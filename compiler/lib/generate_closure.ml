@@ -27,13 +27,8 @@ type closure_info =
   ; args : Code.Var.t list
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
-  ; mutated_vars : Code.Var.Set.t
   ; loc : Code.loc
-  }
-
-type 'a int_ext =
-  { int : 'a
-  ; ext : 'a
+  ; pos : int
   }
 
 module SCC = Strongly_connected_components.Make (Var)
@@ -67,16 +62,15 @@ let rec collect_apply pc blocks visited tc =
           (fun pc (visited, tc) -> collect_apply pc blocks visited tc)
           (visited, tc)
 
-let rec collect_closures blocks mutated_vars l =
+let rec collect_closures blocks l pos =
   match l with
   | (Let (f_name, Closure (args, ((pc, _) as cont))), loc) :: rem ->
       let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
-      let l, rem = collect_closures blocks mutated_vars rem in
-      let mutated_vars = Addr.Map.find pc mutated_vars in
-      { f_name; args; cont; tc; mutated_vars; loc } :: l, rem
+      let l, rem = collect_closures blocks rem (succ pos) in
+      { f_name; args; cont; tc; loc; pos } :: l, rem
   | rem -> [], rem
 
-let group_closures ~tc_only closures_map =
+let group_closures closures_map =
   let names =
     Var.Map.fold (fun _ x names -> Var.Set.add x.f_name names) closures_map Var.Set.empty
   in
@@ -84,13 +78,22 @@ let group_closures ~tc_only closures_map =
     Var.Map.fold
       (fun _ x graph ->
         let calls = Var.Map.fold (fun x _ tc -> Var.Set.add x tc) x.tc Var.Set.empty in
-        let calls = if tc_only then calls else Var.Set.union calls x.mutated_vars in
         Var.Map.add x.f_name (Var.Set.inter names calls) graph)
       closures_map
       Var.Map.empty
   in
+  SCC.connected_components_sorted_from_roots_to_leaf graph |> Array.to_list
 
-  SCC.connected_components_sorted_from_roots_to_leaf graph
+type w =
+  | One of
+      { name : Code.Var.t
+      ; code : Code.instr * loc
+      }
+  | Wrapper of
+      { name : Code.Var.t
+      ; code : Code.instr * loc
+      ; wrapper : Code.instr
+      }
 
 module Trampoline = struct
   let direct_call_block ~counter ~x ~f ~args loc =
@@ -155,7 +158,7 @@ module Trampoline = struct
     | SCC.No_loop id ->
         let ci = Var.Map.find id closures_map in
         let instr = Let (ci.f_name, Closure (ci.args, ci.cont)), ci.loc in
-        free_pc, blocks, { int = []; ext = [ instr ] }
+        free_pc, blocks, [ One { name = ci.f_name; code = instr } ]
     | SCC.Has_loop all ->
         if debug_tc ()
         then (
@@ -169,11 +172,11 @@ module Trampoline = struct
               ( (if tailcall_max_depth = 0 then None else Some (Code.Var.fresh_n "counter"))
               , Var.Map.find id closures_map ))
         in
-        let blocks, free_pc, instrs, instrs_wrapper =
+        let blocks, free_pc, closures =
           List.fold_left
             all
-            ~init:(blocks, free_pc, [], [])
-            ~f:(fun (blocks, free_pc, instrs, instrs_wrapper) (counter, ci) ->
+            ~init:(blocks, free_pc, [])
+            ~f:(fun (blocks, free_pc, closures) (counter, ci) ->
               if debug_tc ()
               then Format.eprintf "Rewriting for %s\n%!" (Var.to_string ci.f_name);
               let new_f = Code.Var.fork ci.f_name in
@@ -185,9 +188,7 @@ module Trampoline = struct
                 wrapper_block new_f ~args:new_args ~counter:new_counter ci.loc
               in
               let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
-              let instr_wrapper =
-                Let (ci.f_name, wrapper_closure wrapper_pc new_args), ci.loc
-              in
+              let instr_wrapper = Let (ci.f_name, wrapper_closure wrapper_pc new_args) in
               let instr_real =
                 match counter with
                 | None -> Let (new_f, Closure (ci.args, ci.cont)), ci.loc
@@ -253,225 +254,78 @@ module Trampoline = struct
                         Addr.Map.add pc block blocks, free_pc
                     | _ -> assert false)
               in
-              blocks, free_pc, instr_real :: instrs, instr_wrapper :: instrs_wrapper)
+              ( blocks
+              , free_pc
+              , Wrapper { name = ci.f_name; code = instr_real; wrapper = instr_wrapper }
+                :: closures ))
         in
-        free_pc, blocks, { int = instrs; ext = instrs_wrapper }
+        free_pc, blocks, closures
 end
 
-module Ident = struct
-  let f free_pc blocks closures_map component =
-    match component with
-    | SCC.No_loop id ->
-        let ci = Var.Map.find id closures_map in
-        let instr = Let (ci.f_name, Closure (ci.args, ci.cont)), ci.loc in
-        free_pc, blocks, { int = []; ext = [ instr ] }
-    | SCC.Has_loop ids ->
-        let instrs =
-          List.map ids ~f:(fun id ->
-              let ci = Var.Map.find id closures_map in
-              let instr = Let (ci.f_name, Closure (ci.args, ci.cont)), ci.loc in
-              instr)
-        in
-        free_pc, blocks, { int = []; ext = instrs }
-end
-
-let rewrite_tc free_pc blocks closures_map component =
-  let open Config.Param in
-  let trampoline =
-    (not (Config.Flag.effects ()))
-    &&
-    match tailcall_optim () with
-    | TcTrampoline -> true
-    | TcNone -> false
-  in
-  if trampoline
-  then Trampoline.f free_pc blocks closures_map component
-  else Ident.f free_pc blocks closures_map component
-
-let rewrite_mutable
-    free_pc
-    blocks
-    mutated_vars
-    rewrite_list
-    { int = closures_intern; ext = closures_extern } =
-  let internal_and_external = closures_intern @ closures_extern in
-  assert (not (List.is_empty closures_extern));
-  let all_mut, names =
-    List.fold_left
-      internal_and_external
-      ~init:(Var.Set.empty, Var.Set.empty)
-      ~f:(fun (all_mut, names) i ->
-        match i with
-        | Let (x, Closure (_, (pc, _))), _ ->
-            let all_mut =
-              try Var.Set.union all_mut (Addr.Map.find pc mutated_vars)
-              with Not_found -> all_mut
-            in
-            let names = Var.Set.add x names in
-            all_mut, names
-        | _ -> assert false)
-  in
-  let vars = Var.Set.elements (Var.Set.diff all_mut names) in
-  if List.is_empty vars
-  then free_pc, blocks, internal_and_external
-  else
-    match internal_and_external with
-    | [ (Let (x, Closure (params, (pc, pc_args))), loc) ] ->
-        let new_pc = free_pc in
-        let free_pc = free_pc + 1 in
-        let closure = Code.Var.fork x in
-        let args = List.map vars ~f:Code.Var.fork in
-        let new_x = Code.Var.fork x in
-        let mapping = Subst.from_map (Subst.build_mapping (x :: vars) (new_x :: args)) in
-        rewrite_list := (mapping, pc) :: !rewrite_list;
-        let new_block =
-          { params = []
-          ; body =
-              [ Let (new_x, Closure (params, (pc, List.map pc_args ~f:mapping))), loc ]
-          ; branch = Return new_x, loc
-          }
-        in
-        let blocks = Addr.Map.add new_pc new_block blocks in
-        let body =
-          [ Let (closure, Closure (args, (new_pc, []))), noloc
-          ; Let (x, Apply { f = closure; args = vars; exact = true }), loc
-          ]
-        in
-        free_pc, blocks, body
-    | _ ->
-        let new_pc = free_pc in
-        let free_pc = free_pc + 1 in
-        let closure = Code.Var.fresh_n "closures" in
-        let closure' = Code.Var.fresh_n "closures" in
-        let b = Code.Var.fresh_n "block" in
-        let args = List.map vars ~f:Code.Var.fork in
-        let pcs =
-          List.map internal_and_external ~f:(function
-              | Let (_, Closure (_, (pc, _))), _ -> pc
-              | _ -> assert false)
-        in
-        let old_xs =
-          List.map closures_extern ~f:(function
-              | Let (x, Closure _), _ -> x
-              | _ -> assert false)
-        in
-        let new_xs = List.map old_xs ~f:Code.Var.fork in
-        let mapping =
-          Subst.from_map (Subst.build_mapping (old_xs @ vars) (new_xs @ args))
-        in
-        rewrite_list := List.map pcs ~f:(fun pc -> mapping, pc) @ !rewrite_list;
-        let new_block =
-          let proj =
-            List.map2 closures_extern new_xs ~f:(fun cl new_x ->
-                match cl with
-                | Let (_, Closure (params, (pc, pc_args))), loc ->
-                    Let (new_x, Closure (params, (pc, List.map pc_args ~f:mapping))), loc
-                | _ -> assert false)
-          in
-          { params = []
-          ; body =
-              closures_intern
-              @ proj
-              @ [ Let (b, Block (0, Array.of_list new_xs, NotArray, Immutable)), noloc ]
-          ; branch = Return b, noloc
-          }
-        in
-        let blocks = Addr.Map.add new_pc new_block blocks in
-        let body =
-          [ Let (closure, Closure (args, (new_pc, []))), noloc
-          ; Let (closure', Apply { f = closure; args = vars; exact = true }), noloc
-          ]
-          @ List.mapi closures_extern ~f:(fun i x ->
-                match x with
-                | Let (x, Closure _), loc -> Let (x, Field (closure', i, Non_float)), loc
-                | _ -> assert false)
-        in
-        free_pc, blocks, body
-
-let rec rewrite_closures mutated_vars rewrite_list free_pc blocks body : int * _ * _ list
-    =
+let rec rewrite_closures free_pc blocks body : int * _ * _ list =
   match body with
   | (Let (_, Closure _), _) :: _ ->
-      let closures, rem = collect_closures blocks mutated_vars body in
+      let closures, rem = collect_closures blocks body 0 in
       let closures_map =
         List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
             Var.Map.add x.f_name x closures_map)
       in
-      let components = group_closures ~tc_only:false closures_map in
+      let components = group_closures closures_map in
       let free_pc, blocks, closures =
         List.fold_left
-          (Array.to_list components)
+          components
           ~init:(free_pc, blocks, [])
           ~f:(fun (free_pc, blocks, acc) component ->
             let free_pc, blocks, closures =
-              let components =
-                match component with
-                | SCC.No_loop _ as one -> [ one ]
-                | SCC.Has_loop all ->
-                    group_closures
-                      ~tc_only:true
-                      (Var.Map.filter
-                         (fun v _ -> List.exists all ~f:(Var.equal v))
-                         closures_map)
-                    |> Array.to_list
-              in
-              List.fold_left
-                ~init:(free_pc, blocks, { int = []; ext = [] })
-                components
-                ~f:(fun (free_pc, blocks, acc) component ->
-                  let free_pc, blocks, ie =
-                    rewrite_tc free_pc blocks closures_map component
-                  in
-                  free_pc, blocks, { int = ie.int :: acc.int; ext = ie.ext :: acc.ext })
+              Trampoline.f free_pc blocks closures_map component
             in
-            let closures =
-              { int = List.concat (List.rev closures.int)
-              ; ext = List.concat (List.rev closures.ext)
-              }
-            in
-            let free_pc, blocks, intrs =
-              rewrite_mutable free_pc blocks mutated_vars rewrite_list closures
-            in
-            free_pc, blocks, intrs :: acc)
+            let intrs = closures :: acc in
+            free_pc, blocks, intrs)
       in
-      let free_pc, blocks, rem =
-        rewrite_closures mutated_vars rewrite_list free_pc blocks rem
+      let closures =
+        let pos_of_var x = (Var.Map.find x closures_map).pos in
+        let pos = function
+          | One { name; _ } -> pos_of_var name
+          | Wrapper { name; _ } -> pos_of_var name
+        in
+        List.flatten closures
+        |> List.sort ~cmp:(fun a b -> compare (pos a) (pos b))
+        |> List.concat_map ~f:(function
+               | One { code; _ } -> [ code ]
+               | Wrapper { code = (_, loc) as code; wrapper; _ } -> [ code; wrapper, loc ])
       in
-      free_pc, blocks, List.flatten closures @ rem
+      let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
+      free_pc, blocks, closures @ rem
   | i :: rem ->
-      let free_pc, blocks, rem =
-        rewrite_closures mutated_vars rewrite_list free_pc blocks rem
-      in
+      let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
       free_pc, blocks, i :: rem
   | [] -> free_pc, blocks, []
 
 let f p : Code.program =
   Code.invariant p;
-  let mutated_vars = Freevars.f p in
-  let rewrite_list = ref [] in
   let blocks, free_pc =
     Addr.Map.fold
       (fun pc _ (blocks, free_pc) ->
         (* make sure we have the latest version *)
         let block = Addr.Map.find pc blocks in
-        let free_pc, blocks, body =
-          rewrite_closures mutated_vars rewrite_list free_pc blocks block.body
-        in
+        let free_pc, blocks, body = rewrite_closures free_pc blocks block.body in
         Addr.Map.add pc { block with body } blocks, free_pc)
       p.blocks
       (p.blocks, p.free_pc)
   in
   (* Code.invariant (pc, blocks, free_pc); *)
   let p = { p with blocks; free_pc } in
-  let p =
-    List.fold_left !rewrite_list ~init:p ~f:(fun program (mapping, pc) ->
-        Subst.cont mapping pc program)
-  in
   Code.invariant p;
   p
 
 let f p =
-  let t = Timer.make () in
-  let p' = f p in
-  if Debug.find "times" () then Format.eprintf "  generate closures: %a@." Timer.print t;
-  p'
+  assert (not (Config.Flag.effects ()));
+  let open Config.Param in
+  match tailcall_optim () with
+  | TcNone -> p
+  | TcTrampoline ->
+      let t = Timer.make () in
+      let p' = f p in
+      if Debug.find "times" ()
+      then Format.eprintf "  generate closures: %a@." Timer.print t;
+      p'

@@ -104,9 +104,9 @@ let outside_color = Js.string (*"#0c1a0d"*) "#070718"
 let option var = Js.Optdef.get var (fun () -> Js.Unsafe.coerce (new%js Js.array_empty))
 
 class type style = object
-  method border : Js.number Js.t Js.optdef Js.readonly_prop
+  method border : Js.number_t Js.optdef Js.readonly_prop
 
-  method padding : Js.number Js.t Js.optdef Js.readonly_prop
+  method padding : Js.number_t Js.optdef Js.readonly_prop
 
   method backgroundColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 

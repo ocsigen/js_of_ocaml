@@ -43,28 +43,21 @@ let fff () =
   [%expect
     {|
     function fff(param, cont){
-     var
-      _b_ =
-        [0,
-         function(e, cont){
-          return e === E
-                  ? cont([0, function(k, cont){return cont(11);}])
-                  : cont(0);
-         }],
-      _c_ = 10;
-     function _d_(x, cont){return cont(x);}
-     var _e_ = Stdlib_Effect[3][5];
      return caml_cps_call4
-             (_e_,
-              _d_,
-              _c_,
-              _b_,
-              function(_f_){
-               var _g_ = Stdlib_Printf[2];
+             (Stdlib_Effect[3][5],
+              function(x, cont){return cont(x);},
+              10,
+              [0,
+               function(e, cont){
+                return e === E
+                        ? cont([0, function(k, cont){return cont(11);}])
+                        : cont(0);
+               }],
+              function(_b_){
                return caml_cps_call2
-                       (_g_,
+                       (Stdlib_Printf[2],
                         _a_,
-                        function(_h_){return caml_cps_call2(_h_, _f_, cont);});
+                        function(_c_){return caml_cps_call2(_c_, _b_, cont);});
               });
     }
     //end |}]

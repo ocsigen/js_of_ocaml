@@ -1,0 +1,183 @@
+name: build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - "4.08"
+          - "4.09"
+          - "4.10"
+          - "4.11"
+          - "4.12"
+          - "4.13"
+          - "5.0"
+          - "5.1"
+        skip-test:
+          - true
+        skip-doc:
+          - true
+        skip-effects:
+          - true
+        include:
+          - os: ubuntu-latest
+            ocaml-compiler: "4.14"
+            skip-effects: true
+            skip-test: false
+            skip-doc: true
+          - os: macos-latest
+            ocaml-compiler: "4.14"
+            skip-effects: true
+            skip-test: false
+            skip-doc: true
+          - os: windows-latest
+            ocaml-compiler: "4.14"
+            skip-effects: true
+            skip-test: false
+            skip-doc: true
+          - os: ubuntu-latest
+            ocaml-compiler: "5.2"
+            skip-effects: false
+            skip-test: false
+            skip-doc: false
+          - os: macos-latest
+            ocaml-compiler: "5.2"
+            skip-effects: true
+            skip-test: false
+            skip-doc: true
+          - os: windows-latest
+            ocaml-compiler: "5.2"
+            skip-effects: false
+            skip-test: false
+            skip-doc: true
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Set git to use LF
+        if: matrix.ocaml-compiler < 5.2
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.ignorecase false
+
+      - name: Checkout tree
+        uses: actions/checkout@v4
+
+      - name: Set-up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          dune-cache: true
+          opam-pin: false
+
+      - name: Pin dune
+        run: |
+          opam pin add dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
+
+      - run: opam install conf-pkg-config
+        if: runner.os == 'Windows'
+
+      - run: opam install . --best-effort
+        if: ${{ matrix.skip-test }}
+
+      - run: cat VERSION | xargs opam pin wasm_of_ocaml-compiler . -n --with-version 
+        if: ${{ !matrix.skip-test }}
+        shell: bash
+
+      - run: opam install conf-c++
+        # Otherwise, the next step fails reinstalling gcc while compiling
+        # other packages
+        if: ${{ !matrix.skip-test && runner.os == 'Windows' }}
+
+      - run: opam install . --with-test --deps-only
+        # Install the test dependencies
+        if: ${{ !matrix.skip-test }}
+
+      - run: opam install .
+        # Install the packages (without running the tests)
+        if: ${{ !matrix.skip-test }}
+
+      - run: opam exec -- make all
+        if: ${{ !matrix.skip-test }}
+
+      - run: opam exec -- make tests
+        if: ${{ !matrix.skip-test }}
+
+      - run: opam exec -- dune build @all @runtest --profile using-effects
+        if: ${{ !matrix.skip-effects }}
+
+      - run: opam exec -- git diff --exit-code
+        if: ${{ !matrix.skip-test }}
+
+      - name: build doc
+        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref_name == 'master'}}
+        run: |
+          opam install odoc lwt_log cohttp-lwt-unix yojson ocp-indent graphics higlo
+          opam exec -- make doc
+
+      - name: synchronize doc
+        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref_name == 'master' }}
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: wikidoc
+          folder: doc-dev
+          clean: true
+          target-folder: doc/dev/
+
+  lint-opam:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.2"
+          dune-cache: true
+      - name: Pin dune
+        run: |
+          opam pin add -n dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
+      - uses: ocaml/setup-ocaml/lint-opam@v3
+
+  lint-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.2"
+          dune-cache: true
+      - name: Pin dune
+        run: |
+          opam pin add -n dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
+      - uses: ocaml/setup-ocaml/lint-fmt@v3
+
+  lint-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up Biome
+        uses: biomejs/setup-biome@v2
+      - name: Run biome
+        run: biome ci

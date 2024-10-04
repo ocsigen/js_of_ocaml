@@ -28,6 +28,11 @@ open Code
 type def =
   | Expr of expr
   | Var of Var.t
+  | Field_update of Var.t
+
+let add_def defs x i =
+  let idx = Var.idx x in
+  defs.(idx) <- i :: defs.(idx)
 
 type variable_uses = int array
 
@@ -48,11 +53,15 @@ let pure_expr pure_funs e = Pure_fun.pure_expr pure_funs e && Config.Flag.deadco
 let rec mark_var st x =
   let x = Var.idx x in
   st.live.(x) <- st.live.(x) + 1;
-  if st.live.(x) = 1 then List.iter st.defs.(x) ~f:(fun e -> mark_def st e)
+  if st.live.(x) = 1 then List.iter st.defs.(x) ~f:(fun e -> mark_def st x e)
 
-and mark_def st d =
+and mark_def st x d =
   match d with
-  | Var x -> mark_var st x
+  | Var y -> mark_var st y
+  | Field_update y ->
+      (* A [Set_field (x, _, y)] becomes live *)
+      st.live.(x) <- st.live.(x) + 1;
+      mark_var st y
   | Expr e -> if pure_expr st.pure_funs e then mark_expr st e
 
 and mark_expr st e =
@@ -82,9 +91,14 @@ and mark_reachable st pc =
         match i with
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
         | Assign _ -> ()
-        | Set_field (x, _, _, y) ->
-            mark_var st x;
-            mark_var st y
+        | Set_field (x, _, _, y) -> (
+            match st.defs.(Var.idx x) with
+            | [ Expr (Block _) ] when st.live.(Var.idx x) = 0 ->
+                (* We will keep this instruction only if x is live *)
+                add_def st.defs x (Field_update y)
+            | _ ->
+                mark_var st x;
+                mark_var st y)
         | Array_set (x, y, z) ->
             mark_var st x;
             mark_var st y;
@@ -110,14 +124,14 @@ and mark_reachable st pc =
 let live_instr st i =
   match i with
   | Let (x, e) -> st.live.(Var.idx x) > 0 || not (pure_expr st.pure_funs e)
-  | Assign (x, _) -> st.live.(Var.idx x) > 0
-  | Set_field _ | Offset_ref _ | Array_set _ -> true
+  | Assign (x, _) | Set_field (x, _, _, _) -> st.live.(Var.idx x) > 0
+  | Offset_ref _ | Array_set _ -> true
 
 let rec filter_args st pl al =
   match pl, al with
   | x :: pl, y :: al ->
       if st.live.(Var.idx x) > 0 then y :: filter_args st pl al else filter_args st pl al
-  | [], _ -> []
+  | [], [] -> []
   | _ -> assert false
 
 let filter_cont blocks st (pc, args) =
@@ -162,16 +176,13 @@ let annot st pc xi =
 
 (****)
 
-let add_def defs x i =
-  let idx = Var.idx x in
-  defs.(idx) <- i :: defs.(idx)
-
 let rec add_arg_dep defs params args =
   match params, args with
   | x :: params, y :: args ->
       add_def defs x (Var y);
       add_arg_dep defs params args
-  | _ -> ()
+  | [], [] -> ()
+  | _ -> assert false
 
 let add_cont_dep blocks defs (pc, args) =
   match try Some (Addr.Map.find pc blocks) with Not_found -> None with

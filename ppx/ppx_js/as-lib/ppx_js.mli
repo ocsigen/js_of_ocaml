@@ -1,7 +1,7 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
  *
- * This program is free software; you can redistribute it and/or modify 
+ * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, with linking exception;
  * either version 2.1 of the License, or (at your option) any later version.
@@ -20,5 +20,5 @@
 
 val mapper : Ast_mapper.mapper
 (** You can use this mapper to register the extension when building a toplevel.
-    You can only use it the way it is; it is not possible to update any fields 
+    You can only use it the way it is; it is not possible to update any fields
     of this mapper. *)

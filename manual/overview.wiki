@@ -91,7 +91,8 @@ integers are 32 bits (rather than 31 bits or 63 bits), which is their
 natural size in JavaScript, and floats are not boxed.  As a
 consequence, marshalling, polymorphic comparison, and hashing
 functions can yield results different from usual:
-  * marshalling of floats is not supported (unmarshalling works);
+  * marshalling floats might generate different output. Such output should not be
+    unmarshalled using the standard ocaml runtime (native or bytecode);
   * the polymorphic hash function will not give the same results on
     datastructures containing floats;
   * these functions may be more prone to stack overflow.

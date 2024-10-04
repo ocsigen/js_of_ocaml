@@ -35,3 +35,60 @@ let f x =
        return;})
      (globalThis);
     //end |}]
+
+let%expect_test _ =
+  let prog =
+    {|
+let rec odd n' = function
+  0 -> n', false
+| 1 -> n', true
+| n -> odd (pred (pred n)) (pred (pred n'))
+    |}
+  in
+  let flags = [ "--enable"; "es6" ] in
+  let program = Util.compile_and_parse ~effects:false ~pretty:false ~flags prog in
+  Util.print_program program;
+  [%expect
+    {|
+    (a=>{
+       "use strict";
+       var b = a.jsoo_runtime;
+       b.caml_register_global
+        (0,
+         [0,
+          (a, b)=>{
+           var d = a, c = b;
+           for(;;){
+            if(0 === c) return [0, d, 0];
+            if(1 === c) return [0, d, 1];
+            [c, d] = [(d - 1 | 0) - 1 | 0, (c - 1 | 0) - 1 | 0];
+           }}],
+         "Test");
+       return;})
+     (globalThis);
+    //end |}];
+  let program = Util.compile_and_parse ~effects:false ~pretty:false ~flags:[] prog in
+  Util.print_program program;
+  [%expect
+    {|
+    (function(a){
+       "use strict";
+       var b = a.jsoo_runtime;
+       b.caml_register_global
+        (0,
+         [0,
+          function(a, b){
+           var d = a, c = b;
+           for(;;){
+            if(0 === c) return [0, d, 0];
+            if(1 === c) return [0, d, 1];
+            var e = (d - 1 | 0) - 1 | 0;
+            d = (c - 1 | 0) - 1 | 0;
+            c = e;
+           }
+          }],
+         "Test");
+       return;
+      }
+      (globalThis));
+    //end |}]

@@ -22,6 +22,8 @@ open Javascript
 class type mapper = object
   method loc : Javascript.location -> Javascript.location
 
+  method parse_info : Parse_info.t -> Parse_info.t
+
   method expression : expression -> expression
 
   method expression_o : expression option -> expression option
@@ -44,6 +46,8 @@ class type mapper = object
        Javascript.variable_declaration_kind
     -> Javascript.for_binding
     -> Javascript.for_binding
+
+  method binding_property : Javascript.binding_property -> Javascript.binding_property
 
   method variable_declaration :
        Javascript.variable_declaration_kind
@@ -173,9 +177,9 @@ end
 class share_constant : mapper
 
 class compact_vardecl : object ('a)
-  inherit free
+  inherit map
 
-  method exc : IdentSet.t
+  method pack : Javascript.statement_list -> Javascript.statement_list
 end
 
 class clean : mapper

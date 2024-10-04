@@ -171,6 +171,8 @@ T_BACKQUOTE
 (*-----------------------------------------*)
 
 %token T_VIRTUAL_SEMICOLON
+%token T_VIRTUAL_SEMICOLON_DO_WHILE
+%token T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT
 %token T_LPAREN_ARROW
 %token T_INCR_NB T_DECR_NB
 
@@ -230,14 +232,28 @@ listc_rev(X):
  | listc_rev(X) { List.rev $1 }
 
 listc_with_empty_trail_rev(X):
- | e=elision               { (List.rev_map (fun () -> None) e) }
- | x=X e=elision           { List.rev_append (List.rev_map (fun () -> None) e) [ Some x ]   }
- | listc_with_empty_trail_rev(X) x=X e=elision { List.rev_append (List.rev_map (fun () -> None) e) (Some x :: $1) }
+ | ","                { [ None ] }
+ | X ","              { [ Some $1 ] }
+ | listc_with_empty_trail_rev(X) X "," { Some $2 :: $1 }
+ | listc_with_empty_trail_rev(X) "," { None :: $1 }
 
 listc_with_empty(X):
-  | X                           { [ Some $1 ] }
-  | listc_with_empty_trail_rev(X)   { List.rev $1 }
-  | listc_with_empty_trail_rev(X) X { List.rev ((Some $2) :: $1) }
+  | listc_with_empty_trail_rev(X) x=X? {
+                                       match x with
+                                       | None -> List.rev $1
+                                       | Some _ -> List.rev (x :: $1)
+                                     }
+  | x=X                              { [ Some x ] }
+  | (* empty *)                       { [] }
+
+listc_with_empty2(X,Y):
+  | listc_with_empty_trail_rev(X) x=X { List.rev (Some x :: $1), None }
+  | listc_with_empty_trail_rev(X)     { List.rev $1, None }
+  | listc_with_empty_trail_rev(X) y=Y { List.rev $1, Some y }
+  | X                                 { [Some $1], None }
+  | Y                                 { [], Some $1 }
+  | (* empty *)                       { [], None }
+
 optl(X):
  | (* empty *) { [] }
  | X           { $1 }
@@ -270,6 +286,8 @@ decl:
  | function_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | generator_decl
+   { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
+ | async_generator_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
  | async_decl
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
@@ -317,8 +335,8 @@ import_specifier:
 
 %inline string_or_ident:
  | T_STRING { `String, fst $1, $symbolstartpos }
- | T_DEFAULT { `Ident, Stdlib.Utf8_string.of_string_exn "default", $symbolstartpos }
  | id { `Ident, $1, $symbolstartpos }
+ | ident_keyword { `Ident, $1, $symbolstartpos }
 
 module_specifier:
   | T_STRING { (fst $1) }
@@ -326,6 +344,16 @@ module_specifier:
 (*----------------------------*)
 (* export *)
 (*----------------------------*)
+
+export_fun_class:
+ | function_expr       { $1 }
+ | class_expr          { $1 }
+ (* es6: *)
+ | generator_expr      { $1 }
+ (* es7: *)
+ | async_function_expr { $1 }
+ | async_generator_expr{ $1 }
+
 
 export_decl:
   | T_EXPORT names=export_clause sc {
@@ -362,15 +390,24 @@ export_decl:
       in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- (* in theory just func/gen/class, no lexical_decl *)
- | T_EXPORT T_DEFAULT e=assignment_expr sc
+ | T_EXPORT T_DEFAULT e=assignment_expr_no_stmt sc
+    {
+      let k = ExportDefaultExpression e in
+      let pos = $symbolstartpos in
+      Export (k,pi pos), p pos }
+ | T_EXPORT T_DEFAULT e=object_literal sc
+    {
+      let k = ExportDefaultExpression e in
+      let pos = $symbolstartpos in
+      Export (k,pi pos), p pos }
+ | T_EXPORT T_DEFAULT e=export_fun_class endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
     {
       let k = match e with
-      | EFun (Some id, decl) ->
+      | EFun (id, decl) ->
          ExportDefaultFun (id,decl)
-      | EClass (Some id, decl) ->
+      | EClass (id, decl) ->
          ExportDefaultClass (id, decl)
-      | e -> ExportDefaultExpression e
+      | _ -> assert false
       in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
@@ -466,10 +503,7 @@ object_binding_pattern:
     { ObjectBinding {list=l;rest= Some r} }
 
 binding_property:
-  | i=ident e=initializer_? { let id = match i with
-                                   | S { name; _ } -> name
-                                   | _ -> assert false in
-                           Prop_binding (PNI id, (BindingIdent i, e)) }
+  | i=ident e=initializer_? { Prop_ident (Prop_and_ident i, e) }
   | pn=property_name ":" e=binding_element { Prop_binding (pn, e) }
 
 binding_property_rest:
@@ -482,20 +516,10 @@ binding_element:
 
 (* array destructuring *)
 
-(* TODO use elision below.
- * invent a new Hole category or maybe an array_argument special
- * type like for the (call)argument type.
- *)
 array_binding_pattern:
-  | "[" "]"                      { ArrayBinding (list []) }
-  | "[" r=binding_element_rest "]"     { ArrayBinding {list = []; rest = Some r }}
-  | "[" l=binding_element_list "]" { ArrayBinding (list l) }
-  | "[" l=binding_element_list r=binding_element_rest "]"
-    { ArrayBinding {list=l;rest= Some r} }
-
-(* can't use listc() here, it's $1 not [$1] below *)
-binding_element_list:
-  | l=listc_with_empty(binding_element) { l }
+  | "[" l=listc_with_empty2(binding_element, binding_element_rest) "]" {
+        ArrayBinding {list = fst l; rest = snd l }
+  }
 
 binding_element_rest:
  (* can appear only at the end of a array_binding_pattern in ECMA *)
@@ -569,6 +593,18 @@ async_function_expr:
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
 (*************************************************************************)
+(* async generators                                                *)
+(*************************************************************************)
+
+async_generator_decl:
+ | T_ASYNC T_FUNCTION "*" name=ident args=call_signature "{" b=function_body "}"
+   { (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
+
+async_generator_expr:
+ | T_ASYNC T_FUNCTION "*" name=ident? args=call_signature "{" b=function_body "}"
+   { EFun (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
+
+(*************************************************************************)
 (* Class declaration *)
 (*************************************************************************)
 
@@ -604,7 +640,7 @@ class_element:
 
 class_property_name:
   | property_name { PropName $1 }
-  | T_POUND ident { PrivName $2 }
+  | T_POUND id { PrivName $2 }
 
 method_definition(name):
  | T_GET name=name args=call_signature "{" b=function_body "}" { name, MethodGet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
@@ -638,6 +674,7 @@ stmt1:
  | switch_stmt     { $1 }
  | throw_stmt      { $1 }
  | try_stmt        { $1 }
+ | with_stmt       { $1 }
  | debugger_stmt   { $1 }
 
 label:
@@ -662,7 +699,7 @@ if_stmt:
      { If_statement (c, t, None) }
 
 iteration_stmt:
- | T_DO body=stmt T_WHILE "(" condition=expr ")" sc
+ | T_DO body=stmt T_WHILE "(" condition=expr ")" endrule(sc | T_VIRTUAL_SEMICOLON_DO_WHILE { () } )
     { Do_while_statement (body, condition) }
  | T_WHILE "(" condition=expr ")" body=stmt
      { While_statement (condition, body) }
@@ -683,6 +720,11 @@ iteration_stmt:
       ForOf_statement (Left left, right, body) }
  | T_FOR "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
    { ForOf_statement (Right left, right, body) }
+ | T_FOR T_AWAIT "(" left=left_hand_side_expr T_OF right=assignment_expr ")" body=stmt
+    { let left = assignment_target_of_expr None left in
+      ForAwaitOf_statement (Left left, right, body) }
+ | T_FOR T_AWAIT "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
+   { ForAwaitOf_statement (Right left, right, body) }
 
 initializer_no_in:
  | "=" e=assignment_expr_no_in { e, p $symbolstartpos }
@@ -708,6 +750,9 @@ labelled_stmt:
 throw_stmt:
  | T_THROW e=expr sc { (Throw_statement e) }
 
+with_stmt:
+ | T_WITH "(" e=expr ")" s=stmt { (With_statement (e,s)) }
+
 try_stmt:
  | T_TRY b=block c=catch { (Try_statement (b, Some c, None)) }
  | T_TRY b=block         f=finally { (Try_statement (b, None, Some f)) }
@@ -721,7 +766,7 @@ finally:
  | T_FINALLY b=block { b }
 
 debugger_stmt:
- | T_DEBUGGER { Debugger_statement }
+ | T_DEBUGGER sc { Debugger_statement }
 
 (*----------------------------*)
 (* auxillary stmts *)
@@ -754,9 +799,9 @@ assignment_expr:
     }
  | arrow_function { $1 }
  | async_arrow_function { $1 }
- | T_YIELD { EYield None }
- | T_YIELD e=assignment_expr { EYield (Some e) }
- | T_YIELD "*" e=assignment_expr { EYield (Some e) }
+ | T_YIELD { EYield { delegate= false; expr = None } }
+ | T_YIELD e=assignment_expr { EYield {delegate=false; expr = (Some e) } }
+ | T_YIELD "*" e=assignment_expr { EYield {delegate=true; expr = (Some e) } }
 
 left_hand_side_expr: left_hand_side_expr_(d1) { $1 }
 
@@ -856,6 +901,8 @@ call_expr(x):
  | T_SUPER a=arguments { ECall(vartok $startpos($1) T_SUPER,ANormal, a, p $symbolstartpos) }
  | e=call_expr(x) a=access i=method_name
     { EDot (e,a,i) }
+ | e=call_expr(x) a=access T_POUND i=method_name
+    { EDotPrivate (e,a,i) }
 
 new_expr(x):
  | e=member_expr(x)    { e }
@@ -867,7 +914,9 @@ access:
 
 member_expr(x):
  | e=primary_expr(x)
-     { e }
+    { e }
+ | T_IMPORT "." T_META
+    { EDot (vartok $startpos($1) T_IMPORT,ANormal,(Stdlib.Utf8_string.of_string_exn "meta")) }
  | e1=member_expr(x) "[" e2=expr "]"
      { (EAccess (e1,ANormal, e2)) }
  | e1=member_expr(x) T_PLING_PERIOD "[" e2=expr "]"
@@ -884,7 +933,8 @@ member_expr(x):
      { (EDot(vartok $startpos($1) T_SUPER,ak,i)) }
   | T_NEW "." T_TARGET
      { (EDot(vartok $startpos($1) T_NEW,ANormal,Stdlib.Utf8_string.of_string_exn "target")) }
-
+  | e1=member_expr(x) a=access T_POUND i=field_name
+    { (EDotPrivate(e1,a,i)) }
 primary_expr(x):
  | e=primary_expr_no_braces
  | e=x { e }
@@ -899,11 +949,13 @@ primary_with_stmt:
  | generator_expr      { $1 }
  (* es7: *)
  | async_function_expr { $1 }
+ | async_generator_expr{ $1 }
 
 
 primary_expr_no_braces:
  | T_THIS                { EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "this")) }
  | i=ident               { EVar i }
+ | T_POUND id            { EPrivName $2 }
  | n=null_literal        { n }
  | b=boolean_literal     { b }
  | n=numeric_literal     { ENum (Num.of_string_unsafe n) }
@@ -970,7 +1022,6 @@ assignment_operator:
 (*----------------------------*)
 
 array_literal:
-  | "[" "]" { EArr [] }
   | "[" l=listc_with_empty (element) "]"
     { (EArr (List.map (function None -> ElementHole | Some x -> x) l)) }
 
@@ -1112,9 +1163,9 @@ assignment_expr_no_stmt:
  | arrow_function { $1 }
  | async_arrow_function { $1 }
  (* es6: *)
- | T_YIELD { EYield None }
- | T_YIELD e=assignment_expr { EYield (Some e) }
- | T_YIELD "*" e=assignment_expr { EYield (Some e) }
+ | T_YIELD { EYield {delegate = false; expr = None} }
+ | T_YIELD e=assignment_expr { EYield {delegate = false; expr = Some e } }
+ | T_YIELD "*" e=assignment_expr { EYield { delegate = true; expr = (Some e) } }
 
 
 primary_for_consise_body:
@@ -1124,6 +1175,7 @@ primary_for_consise_body:
  | generator_expr      { $1 }
  (* es7: *)
  | async_function_expr { $1 }
+ | async_generator_expr{ $1 }
 
 assignment_expr_for_consise_body:
  | conditional_expr(primary_for_consise_body) { $1 }
@@ -1136,9 +1188,9 @@ assignment_expr_for_consise_body:
  | arrow_function { $1 }
  | async_arrow_function { $1 }
  (* es6: *)
- | T_YIELD { EYield None }
- | T_YIELD e=assignment_expr { EYield (Some e) }
- | T_YIELD "*" e=assignment_expr { EYield (Some e) }
+ | T_YIELD { EYield { delegate = false; expr = None } }
+ | T_YIELD e=assignment_expr { EYield {delegate = false; expr = (Some e) } }
+ | T_YIELD "*" e=assignment_expr { EYield {delegate = true; expr = (Some e) } }
 
 (* no object_literal here *)
 primary_no_stmt: T_ERROR TComment { assert false }
@@ -1157,7 +1209,7 @@ ident:
 (* add here keywords which are not considered reserved by ECMA *)
 ident_semi_keyword:
  (* TODO: would like to add T_IMPORT here, but cause conflicts *)
- (* can have AS and ASYNC here but need to restrict arrow_function then *)
+ | T_AS { T_AS }
  | T_ASYNC { T_ASYNC }
  | T_FROM { T_FROM }
  | T_GET { T_GET }
@@ -1245,7 +1297,3 @@ property_name:
 sc:
  | ";"                 { $1 }
  | T_VIRTUAL_SEMICOLON { $1 }
-
-elision:
- | ","         { [] }
- | elision "," { () :: $1 }

@@ -1,38 +1,37 @@
-#include <stdlib.h>
-#include <stdio.h>
+#include <caml/misc.h>
+
 void caml_bytes_of_array () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_bytes_of_array!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_bytes_of_array!");
 }
+
 void caml_custom_identifier () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_custom_identifier!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_custom_identifier!");
 }
+
 void caml_js_error_of_exception () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_error_of_exception!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_error_of_exception!");
 }
+
 void caml_js_get_console () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_get_console!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_get_console!");
 }
+
 void caml_js_html_entities () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_html_entities!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_html_entities!");
 }
+
 void caml_js_html_escape () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_html_escape!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_html_escape!");
 }
+
 void caml_js_on_ie () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_js_on_ie!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_js_on_ie!");
 }
+
 void caml_uint8_array_of_bytes () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_uint8_array_of_bytes!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_uint8_array_of_bytes!");
 }
+
 void caml_xmlhttprequest_create () {
-  fprintf(stderr, "Unimplemented Javascript primitive caml_xmlhttprequest_create!\n");
-  exit(1);
+  caml_fatal_error("Unimplemented Javascript primitive caml_xmlhttprequest_create!");
 }

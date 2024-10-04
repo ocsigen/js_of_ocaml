@@ -1,6 +1,7 @@
 (executables
  (names md5)
  (libraries)
+ (modules md5)
  (modes js))
 
 (rule
@@ -16,3 +17,19 @@
  (deps md5.reference md5.referencejs)
  (action
   (diff md5.reference md5.referencejs)))
+
+(executables
+ (names digests)
+ (libraries)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
+ (modules digests)
+ (modes js))
+
+(rule
+ (alias runtest)
+ (deps digests.bc.js)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
+ (action
+  (run node ./digests.bc.js)))

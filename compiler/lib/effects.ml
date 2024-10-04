@@ -530,11 +530,11 @@ let cps_block ~st ~k pc block =
   in
 
   let rewrite_instr x e loc =
-    let perform_effect ~effect ~continuation loc =
+    let perform_effect ~effect_ ~continuation loc =
       Some
         (fun ~k ->
           let e =
-            Prim (Extern "caml_perform_effect", [ Pv effect; continuation; Pv k ])
+            Prim (Extern "caml_perform_effect", [ Pv effect_; continuation; Pv k ])
           in
           let x = Var.fresh () in
           [ Let (x, e), loc ], (Return x, loc))
@@ -561,10 +561,10 @@ let cps_block ~st ~k pc block =
               ~f
               [ arg; k' ]
               loc)
-    | Prim (Extern "%perform", [ Pv effect ]) ->
-        perform_effect ~effect ~continuation:(Pc (Int 0l)) loc
-    | Prim (Extern "%reperform", [ Pv effect; continuation ]) ->
-        perform_effect ~effect ~continuation loc
+    | Prim (Extern "%perform", [ Pv effect_ ]) ->
+        perform_effect ~effect_ ~continuation:(Pc (Int 0l)) loc
+    | Prim (Extern "%reperform", [ Pv effect_; continuation ]) ->
+        perform_effect ~effect_ ~continuation loc
     | _ -> None
   in
 
@@ -939,13 +939,12 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
 
 (****)
 
-let f (p, live_vars) =
+let f ~flow_info ~live_vars p =
   let t = Timer.make () in
-  let p = remove_empty_blocks ~live_vars p in
-  let flow_info = Global_flow.f ~fast:false p in
   let cps_needed = Partial_cps_analysis.f p flow_info in
   let p, cps_needed = rewrite_toplevel ~cps_needed p in
   let p = split_blocks ~cps_needed p in
   let p, trampolined_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
+  Code.invariant p;
   p, trampolined_calls, in_cps

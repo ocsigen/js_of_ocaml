@@ -51,7 +51,7 @@ let rec constant_of_const c : Code.constant =
         | `JavaScript -> Int32.of_int_warning_on_overflow i
         | `Wasm -> Int31.(of_int_warning_on_overflow i |> to_int32))
   | Const_block (tag, l) ->
-      let l = Array.of_list (List.map l ~f:(fun c -> constant_of_const c)) in
+      let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
 
 let rec find_loc_in_summary ident' = function
@@ -125,6 +125,7 @@ module Symtable = struct
     let to_ident = function
       | Glob_compunit x -> Ident.create_persistent x
       | Glob_predef x -> Ident.create_predef x
+    [@@ocaml.warning "-32"]
   end
 
   module GlobalMap = struct
@@ -207,10 +208,41 @@ module Symtable = struct
     let get i = Char.code (Bytes.get buf i) in
     let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
     n
+  [@@if ocaml_version < (5, 2, 0)]
+
+  let reloc_ident name =
+    let buf = Bigarray.(Array1.create char c_layout 4) in
+    let () =
+      try Symtable.patch_object buf [ reloc_get_of_string name, 0 ]
+      with _ -> Symtable.patch_object buf [ reloc_set_of_string name, 0 ]
+    in
+
+    let get i = Char.code (Bigarray.Array1.get buf i) in
+    let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
+    n
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let current_state () : GlobalMap.t =
     let x : Symtable.global_map = Symtable.current_state () in
     Obj.magic x
+
+  let all_primitives () : string list =
+    let split_primitives p =
+      let len = String.length p in
+      let rec split beg cur =
+        if cur >= len
+        then []
+        else if Char.equal p.[cur] '\000'
+        then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
+        else split beg (cur + 1)
+      in
+      split 0 0
+    in
+    split_primitives (Symtable.data_primitive_names ())
+  [@@if ocaml_version < (5, 2)]
+
+  let all_primitives () : string list = Symtable.data_primitive_names ()
+  [@@if ocaml_version >= (5, 2)]
 end
 
 module Cmo_format = struct
@@ -249,30 +281,4 @@ module Cmo_format = struct
   let imports (t : t) = t.cu_imports
 
   let force_link (t : t) = t.cu_force_link
-end
-
-module Ident = struct
-  [@@@ocaml.warning "-unused-field"]
-
-  (* Copied from ocaml/typing/ident.ml *)
-  type 'a tbl' =
-    | Empty
-    | Node of 'a tbl' * 'a data * 'a tbl' * int
-
-  and 'a data =
-    { ident : Ident.t
-    ; data : 'a
-    ; previous : 'a data option
-    }
-
-  type 'a tbl = 'a Ident.tbl
-
-  let rec table_contents_rec t rem =
-    match t with
-    | Empty -> rem
-    | Node (l, v, r, _) ->
-        table_contents_rec l ((v.data, v.ident) :: table_contents_rec r rem)
-
-  let table_contents (t : 'a tbl) =
-    table_contents_rec (Obj.magic (t : 'a tbl) : 'a tbl') []
 end

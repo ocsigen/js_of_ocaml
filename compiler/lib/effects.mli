@@ -18,6 +18,12 @@
 
 type trampolined_calls = Code.Var.Set.t
 
+val remove_empty_blocks : live_vars:Deadcode.variable_uses -> Code.program -> Code.program
+
 type in_cps = Code.Var.Set.t
 
-val f : Code.program * Deadcode.variable_uses -> Code.program * trampolined_calls * in_cps
+val f :
+     flow_info:Global_flow.info
+  -> live_vars:Deadcode.variable_uses
+  -> Code.program
+  -> Code.program * trampolined_calls * in_cps

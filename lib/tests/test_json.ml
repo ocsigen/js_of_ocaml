@@ -22,30 +22,42 @@ open Js_of_ocaml
 
 let round_trip x =
   let s = Json.output x in
-  Printf.printf "%s\n" (Js.to_bytestring s);
-  let y = Json.unsafe_input s in
-  Printf.printf "%b\n" (x = y)
+  let s1 = Js.to_bytestring s in
+  let s2 =
+    let old = Json.use_native_stringify () in
+    Json.set_use_native_stringify false;
+    let s = Json.output x in
+    Json.set_use_native_stringify old;
+    Js.to_bytestring s
+  in
+  Printf.printf "%s\n" s1;
+  if s1 <> s2 then Printf.printf "Json.output mismatch: %s vs %s\n" s1 s2;
+  (* Other direction of the round-trip (unmarshalling from JSON) is only
+     available with js_of_ocaml *)
+  match Sys.backend_type with
+  | Other "js_of_ocaml" when Json.use_native_stringify () ->
+      let y = Json.unsafe_input s in
+      if not (x = y) then Printf.printf "not invariant by round-trip\n"
+  | _ -> ()
 
 let%expect_test _ =
   round_trip 123L;
   [%expect {|
-    [255,123,0,0]
-    true |}];
+      [255,123,0,0] |}];
   round_trip "asd";
   [%expect {|
-    "asd"
-    true |}];
+      "asd" |}];
   round_trip "\000\255\254";
-  [%expect {|
-    "\u0000ÿþ"
-    true |}];
+  [%expect {| "\u0000ÿþ" |}];
   round_trip (2, 3);
   round_trip (2., 3.);
   round_trip (2.2, 3.3);
   [%expect {|
     [0,2,3]
-    true
     [0,2,3]
-    true
     [0,2.2,3.3]
-    true |}]
+    |}];
+  round_trip [| 1.; 2.; 3. |];
+  [%expect {| [254,1,2,3] |}];
+  round_trip 2n;
+  [%expect {| 2 |}]

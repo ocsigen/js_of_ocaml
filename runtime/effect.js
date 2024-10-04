@@ -52,17 +52,20 @@ var caml_exn_stack = 0;
 //Requires: caml_exn_stack
 //If: effects
 function caml_push_trap(handler) {
-  caml_exn_stack=[0,handler,caml_exn_stack];
+  caml_exn_stack = [0, handler, caml_exn_stack];
 }
 
 //Provides: caml_pop_trap
 //Requires: caml_exn_stack
 //If: effects
 function caml_pop_trap() {
-  if (!caml_exn_stack) return function(x){throw x;}
+  if (!caml_exn_stack)
+    return function (x) {
+      throw x;
+    };
   var h = caml_exn_stack[1];
-  caml_exn_stack=caml_exn_stack[2];
-  return h
+  caml_exn_stack = caml_exn_stack[2];
+  return h;
 }
 
 //Provides: caml_fiber_stack
@@ -76,17 +79,21 @@ var caml_fiber_stack;
 //Requires: caml_named_value, caml_raise_constant, caml_exn_stack, caml_fiber_stack
 //If: effects
 function caml_resume_stack(stack, k) {
-  if (!stack) caml_raise_constant
-                 (caml_named_value("Effect.Continuation_already_resumed"));
+  if (!stack)
+    caml_raise_constant(
+      caml_named_value("Effect.Continuation_already_resumed"),
+    );
   // Update the execution context with the stack of fibers in [stack] in
   // order to resume the continuation
   do {
-    caml_fiber_stack =
-      {h:stack[3], r:{k:k, x:caml_exn_stack, e:caml_fiber_stack}};
+    caml_fiber_stack = {
+      h: stack[3],
+      r: { k: k, x: caml_exn_stack, e: caml_fiber_stack },
+    };
     k = stack[1];
     caml_exn_stack = stack[2];
     stack = stack[4];
-  } while (stack)
+  } while (stack);
   return k;
 }
 
@@ -111,12 +118,13 @@ function caml_perform_effect(eff, cont, k0) {
   var handler = caml_fiber_stack.h[3];
   // Cons the current fiber onto the continuation:
   //   cont := Cons (k, exn_stack, handlers, !cont)
-  cont[1] = [0,k0,caml_exn_stack,caml_fiber_stack.h,cont[1]];
+  cont[1] = [0, k0, caml_exn_stack, caml_fiber_stack.h, cont[1]];
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
-  return caml_stack_check_depth()?handler(eff,cont,k1,k1)
-         :caml_trampoline_return(handler,[eff,cont,k1,k1]);
+  return caml_stack_check_depth()
+    ? handler(eff, cont, k1, k1)
+    : caml_trampoline_return(handler, [eff, cont, k1, k1]);
 }
 
 //Provides: caml_alloc_stack
@@ -124,10 +132,11 @@ function caml_perform_effect(eff, cont, k0) {
 //If: effects
 function caml_alloc_stack(hv, hx, hf) {
   function call(i, x) {
-    var f=caml_fiber_stack.h[i];
+    var f = caml_fiber_stack.h[i];
     var args = [x, caml_pop_fiber()];
-    return caml_stack_check_depth()?caml_call_gen(f,args)
-           :caml_trampoline_return(f,args);
+    return caml_stack_check_depth()
+      ? caml_call_gen(f, args)
+      : caml_trampoline_return(f, args);
   }
   function hval(x) {
     // Call [hv] in the parent fiber
@@ -148,45 +157,52 @@ function caml_alloc_stack(hv, hx, hf) {
 
 //Provides: caml_continuation_use_noexc
 function caml_continuation_use_noexc(cont) {
-  var stack=cont[1];
-  cont[1]=0;
+  var stack = cont[1];
+  cont[1] = 0;
   return stack;
 }
 
 //Provides: caml_continuation_use_and_update_handler_noexc
 //Requires: caml_continuation_use_noexc
-function caml_continuation_use_and_update_handler_noexc(cont, hval, hexn, heff) {
+function caml_continuation_use_and_update_handler_noexc(
+  cont,
+  hval,
+  hexn,
+  heff,
+) {
   var stack = caml_continuation_use_noexc(cont);
   stack[3] = [0, hval, hexn, heff];
   return stack;
 }
 
 //Provides: caml_get_continuation_callstack
-function caml_get_continuation_callstack () { return [0]; }
+function caml_get_continuation_callstack() {
+  return [0];
+}
 
 //Provides: caml_ml_condition_new
-function caml_ml_condition_new(unit){
-    return {condition:1};
+function caml_ml_condition_new(unit) {
+  return { condition: 1 };
 }
 
 //Provides: caml_ml_condition_wait
-function caml_ml_condition_wait(t,mutext){
-    return 0;
+function caml_ml_condition_wait(t, mutext) {
+  return 0;
 }
 
 //Provides: caml_ml_condition_broadcast
-function caml_ml_condition_broadcast(t){
-    return 0;
+function caml_ml_condition_broadcast(t) {
+  return 0;
 }
 
 //Provides: caml_ml_condition_signal
-function caml_ml_condition_signal(t){
-    return 0;
+function caml_ml_condition_signal(t) {
+  return 0;
 }
 
 //Provides: jsoo_effect_not_supported
 //Requires: caml_failwith
 //!If: effects
-function jsoo_effect_not_supported(){
+function jsoo_effect_not_supported() {
   caml_failwith("Effect handlers are not supported");
 }

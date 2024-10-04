@@ -34,6 +34,13 @@ val last : (Var.t -> Var.t) -> last * loc -> last * loc
 
 val cont : (Var.t -> Var.t) -> int -> program -> program
 
+val cont' :
+     (Var.t -> Var.t)
+  -> int
+  -> block Addr.Map.t
+  -> Addr.Set.t
+  -> block Addr.Map.t * Addr.Set.t
+
 val from_array : Var.t array -> Var.t -> Var.t
 
 val build_mapping : Var.t list -> Var.t list -> Var.t Var.Map.t

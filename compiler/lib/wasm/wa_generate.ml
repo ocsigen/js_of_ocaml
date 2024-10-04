@@ -170,7 +170,6 @@ module Generate (Target : Wa_target_sig.S) = struct
           ~cps:(Var.Set.mem x ctx.in_cps)
           x
     | Constant c -> Constant.translate c
-    | Special Undefined -> Constant.translate (Int 0l)
     | Special (Alias_prim _) -> assert false
     | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ])
       when Poly.(target = `GC) ->

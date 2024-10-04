@@ -95,10 +95,20 @@ module Var : sig
 
   module Map : Map.S with type key = t
 
+  module Hashtbl : Hashtbl.S with type key = t
+
   module Tbl : sig
     type key = t
 
     type 'a t
+
+    module DataSet : sig
+      type 'a t
+
+      val iter : ('a -> unit) -> 'a t -> unit
+
+      val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+    end
 
     type size = unit
 
@@ -107,6 +117,10 @@ module Var : sig
     val set : 'a t -> key -> 'a -> unit
 
     val make : size -> 'a -> 'a t
+
+    val make_set : size -> 'a DataSet.t t
+
+    val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
@@ -135,6 +149,8 @@ end = struct
     let compare : t -> t -> int = compare
 
     let equal (a : t) (b : t) = a = b
+
+    let hash x = x
   end
 
   include T
@@ -204,6 +220,24 @@ end = struct
   module Tbl = struct
     type 'a t = 'a array
 
+    module DataSet = struct
+      type 'a t =
+        | Empty
+        | One of 'a
+        | Many of ('a, unit) Hashtbl.t
+
+      let iter f = function
+        | Empty -> ()
+        | One a -> f a
+        | Many t -> Hashtbl.iter (fun k () -> f k) t
+
+      let fold f t acc =
+        match t with
+        | Empty -> acc
+        | One a -> f a acc
+        | Many t -> Hashtbl.fold (fun k () acc -> f k acc) t acc
+    end
+
     type key = T.t
 
     type size = unit
@@ -214,11 +248,25 @@ end = struct
 
     let make () v = Array.make (count ()) v
 
+    let make_set () = Array.make (count ()) DataSet.Empty
+
+    let add_set t x k =
+      match t.(x) with
+      | DataSet.Empty -> t.(x) <- One k
+      | One k' ->
+          let tbl = Hashtbl.create 0 in
+          Hashtbl.replace tbl k' ();
+          Hashtbl.replace tbl k ();
+          t.(x) <- Many tbl
+      | Many tbl -> Hashtbl.replace tbl k ()
+
     let iter f t =
       for i = 0 to Array.length t - 1 do
         f i (Array.unsafe_get t i)
       done
   end
+
+  module Hashtbl = Hashtbl.Make (T)
 
   module ISet = struct
     type t = BitSet.t
@@ -273,11 +321,6 @@ module Native_string = struct
     | Utf (Utf8 x), Utf (Utf8 y) -> String.equal x y
     | Utf _, Byte _ | Byte _, Utf _ -> false
 end
-
-type int_kind =
-  | Regular
-  | Int32
-  | Native
 
 type constant =
   | String of string
@@ -373,9 +416,7 @@ type prim_arg =
   | Pv of Var.t
   | Pc of constant
 
-type special =
-  | Undefined
-  | Alias_prim of string
+type special = Alias_prim of string
 
 type mutability =
   | Immutable
@@ -524,7 +565,6 @@ module Print = struct
 
   let special f s =
     match s with
-    | Undefined -> Format.fprintf f "undefined"
     | Alias_prim s -> Format.fprintf f "alias %s" s
 
   let expr f e =
@@ -672,12 +712,12 @@ let poptraps blocks pc =
           let acc, visited = loop blocks pc1 visited depth acc in
           let acc, visited = loop blocks pc2 visited depth acc in
           acc, visited
-      | Switch (_, a1) ->
+      | Switch (_, a) ->
           let acc, visited =
             Array.fold_right
               ~init:(acc, visited)
               ~f:(fun (pc, _) (acc, visited) -> loop blocks pc visited depth acc)
-              a1
+              a
           in
           acc, visited
   in
@@ -823,7 +863,7 @@ let invariant { blocks; start; _ } =
     let defs = Var.ISet.empty () in
     let check_cont (cont, args) =
       let b = Addr.Map.find cont blocks in
-      assert (List.length args >= List.length b.params)
+      assert (List.length args = List.length b.params)
     in
     let define x =
       if check_defs

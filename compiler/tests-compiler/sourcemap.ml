@@ -23,7 +23,8 @@ open Util
 let print_mapping (sm : Source_map.t) =
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
-  List.iter sm.mappings ~f:(fun (m : Source_map.map) ->
+  let mappings = Source_map.Mappings.decode sm.mappings in
+  List.iter mappings ~f:(fun (m : Source_map.map) ->
       match m with
       | Gen_Ori { gen_line; gen_col; ori_line; ori_col; ori_source }
       | Gen_Ori_Name { gen_line; gen_col; ori_line; ori_col; ori_source; ori_name = _ } ->
@@ -110,8 +111,8 @@ function x (a, b) {
 
 let%expect_test _ =
   let map_str = ";;;;EAEE,EAAE,EAAC,CAAE;ECQY,UACC" in
-  let map = Source_map.mapping_of_string map_str in
-  let map_str' = Source_map.string_of_mapping map in
+  let map = Source_map.Mappings.(decode (of_string map_str)) in
+  let map_str' = Source_map.Mappings.(to_string (encode map)) in
   print_endline map_str;
   print_endline map_str';
   [%expect
@@ -128,21 +129,23 @@ let%expect_test _ =
     { (Source_map.empty ~filename:"1.map") with
       names = [ "na"; "nb"; "nc" ]
     ; sources = [ "sa"; "sb" ]
-    ; mappings = [ gen (1, 1) (10, 10) 0; gen (3, 3) (20, 20) 1 ]
+    ; mappings =
+        Source_map.Mappings.encode [ gen (1, 1) (10, 10) 0; gen (3, 3) (20, 20) 1 ]
     }
   in
   let s2 : Source_map.t =
     { (Source_map.empty ~filename:"2.map") with
       names = [ "na2"; "nb2" ]
     ; sources = [ "sa2" ]
-    ; mappings = [ gen (3, 3) (5, 5) 0 ]
+    ; mappings = Source_map.Mappings.encode [ gen (3, 3) (5, 5) 0 ]
     }
   in
   let m = Source_map.merge [ s1; Source_map.filter_map s2 ~f:(fun x -> Some (x + 20)) ] in
   (match m with
   | None -> ()
   | Some sm ->
-      print_endline (Source_map.string_of_mapping sm.mappings);
+      let encoded_mappings = sm.Source_map.mappings in
+      print_endline (Source_map.Mappings.to_string encoded_mappings);
       print_mapping sm);
   [%expect
     {|

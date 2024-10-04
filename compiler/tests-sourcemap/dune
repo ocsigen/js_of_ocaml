@@ -21,10 +21,7 @@
 (rule
  (target dump)
  (enabled_if
-  (and
-   (<> %{profile} using-effects)
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+  (= %{profile} dev))
  (action
   (with-stdout-to
    %{target}
@@ -33,10 +30,7 @@
 (rule
  (alias runtest)
  (enabled_if
-  (and
-   (<> %{profile} using-effects)
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+  (= %{profile} dev))
  (deps dump.reference dump)
  (action
   (diff dump.reference dump)))

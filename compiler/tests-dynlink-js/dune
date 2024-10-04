@@ -6,7 +6,37 @@
    (<> %{profile} wasm-effects)))
  (modules main)
  (libraries js_of_ocaml)
- (modes byte))
+ (link_flags
+  (:standard -linkall))
+ ;; Until dune is fixed https://github.com/ocaml/dune/pull/10935
+ (js_of_ocaml
+  (flags
+   (:standard)
+   --linkall
+   (:include effects_flags.sexp))
+  (build_runtime_flags
+   (:standard)
+   (:include effects_flags.sexp))
+  (link_flags (:standard)))
+ (modes js byte))
+
+(executable
+ (name effects_flags)
+ (modules effects_flags))
+
+(rule
+ (target effects_flags.sexp)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./effects_flags.exe sexp %{profile}))))
+
+(rule
+ (target effects_flags.txt)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./effects_flags.exe txt %{profile}))))
 
 (rule
  (target main.js)
@@ -15,7 +45,13 @@
    (<> %{profile} wasm)
    (<> %{profile} wasm-effects)))
  (action
-  (run %{bin:js_of_ocaml} --linkall -o %{target} %{dep:main.bc})))
+  (run
+   %{bin:js_of_ocaml}
+   --linkall
+   %{read-strings:effects_flags.txt}
+   -o
+   %{target}
+   %{dep:main.bc})))
 
 (rule
  (target plugin.cmo)
@@ -25,7 +61,29 @@
 (rule
  (target plugin.js)
  (action
-  (run %{bin:js_of_ocaml} %{dep:./plugin.cmo})))
+  (run
+   %{bin:js_of_ocaml}
+   %{read-strings:effects_flags.txt}
+   %{dep:./plugin.cmo})))
+
+(rule
+ (target plugin2.cma)
+ (action
+  (run
+   %{bin:ocamlc}
+   -a
+   %{dep:./plugin2a.ml}
+   %{dep:./plugin2b.ml}
+   -o
+   plugin2.cma)))
+
+(rule
+ (target plugin2.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   %{read-strings:effects_flags.txt}
+   %{dep:./plugin2.cma})))
 
 (rule
  (target main.out)
@@ -33,11 +91,23 @@
   (and
    (<> %{profile} wasm)
    (<> %{profile} wasm-effects)))
- (deps plugin.js)
+ (deps plugin.js plugin2.js)
  (action
   (with-outputs-to
    %{target}
    (run %{bin:node} %{dep:./main.js}))))
+
+(rule
+ (target main.out2)
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
+ (deps plugin.js plugin2.js)
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./main.bc.js}))))
 
 (rule
  (alias runtest)
@@ -47,3 +117,12 @@
    (<> %{profile} wasm-effects)))
  (action
   (diff main.out.expected main.out)))
+
+(rule
+ (alias runtest)
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
+ (action
+  (diff main.out.expected main.out2)))

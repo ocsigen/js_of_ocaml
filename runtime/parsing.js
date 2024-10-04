@@ -24,8 +24,7 @@ var caml_parser_trace = 0;
 //Requires: caml_lex_array, caml_parser_trace,caml_jsstring_of_string
 //Requires: caml_ml_output, caml_ml_string_length, caml_string_of_jsbytes
 //Requires: caml_jsbytes_of_string, MlBytes
-function caml_parse_engine(tables, env, cmd, arg)
-{
+function caml_parse_engine(tables, env, cmd, arg) {
   var ERRCODE = 256;
 
   //var START = 0;
@@ -81,33 +80,25 @@ function caml_parse_engine(tables, env, cmd, arg)
   var tbl_names_const = 15;
   var tbl_names_block = 16;
 
-
   function log(x) {
     var s = caml_string_of_jsbytes(x + "\n");
     caml_ml_output(2, s, 0, caml_ml_string_length(s));
   }
 
-  function token_name(names, number)
-  {
+  function token_name(names, number) {
     var str = caml_jsstring_of_string(names);
-    if (str[0] == '\x00')
-      return "<unknown token>";
-    return str.split('\x00')[number];
+    if (str[0] == "\x00") return "<unknown token>";
+    return str.split("\x00")[number];
   }
 
-  function print_token(state, tok)
-  {
+  function print_token(state, tok) {
     var token, kind;
-    if (tok instanceof Array) {
+    if (Array.isArray(tok)) {
       token = token_name(tables[tbl_names_block], tok[0]);
-      if (typeof tok[1] == "number")
-        kind = "" + tok[1];
-      else if (typeof tok[1] == "string")
-        kind = tok[1]
-      else if (tok[1] instanceof MlBytes)
-        kind = caml_jsbytes_of_string(tok[1])
-      else
-        kind = "_"
+      if (typeof tok[1] == "number") kind = "" + tok[1];
+      else if (typeof tok[1] == "string") kind = tok[1];
+      else if (tok[1] instanceof MlBytes) kind = caml_jsbytes_of_string(tok[1]);
+      else kind = "_";
       log("State " + state + ": read token " + token + "(" + kind + ")");
     } else {
       token = token_name(tables[tbl_names_const], tok);
@@ -116,166 +107,191 @@ function caml_parse_engine(tables, env, cmd, arg)
   }
 
   if (!tables.dgoto) {
-    tables.defred = caml_lex_array (tables[tbl_defred]);
-    tables.sindex = caml_lex_array (tables[tbl_sindex]);
-    tables.check  = caml_lex_array (tables[tbl_check]);
-    tables.rindex = caml_lex_array (tables[tbl_rindex]);
-    tables.table  = caml_lex_array (tables[tbl_table]);
-    tables.len    = caml_lex_array (tables[tbl_len]);
-    tables.lhs    = caml_lex_array (tables[tbl_lhs]);
-    tables.gindex = caml_lex_array (tables[tbl_gindex]);
-    tables.dgoto  = caml_lex_array (tables[tbl_dgoto]);
+    tables.defred = caml_lex_array(tables[tbl_defred]);
+    tables.sindex = caml_lex_array(tables[tbl_sindex]);
+    tables.check = caml_lex_array(tables[tbl_check]);
+    tables.rindex = caml_lex_array(tables[tbl_rindex]);
+    tables.table = caml_lex_array(tables[tbl_table]);
+    tables.len = caml_lex_array(tables[tbl_len]);
+    tables.lhs = caml_lex_array(tables[tbl_lhs]);
+    tables.gindex = caml_lex_array(tables[tbl_gindex]);
+    tables.dgoto = caml_lex_array(tables[tbl_dgoto]);
   }
 
-  var res = 0, n, n1, n2, state1;
+  var res = 0,
+    n,
+    n1,
+    n2,
+    state1;
 
   // RESTORE
   var sp = env[env_sp];
   var state = env[env_state];
   var errflag = env[env_errflag];
 
-  exit:for (;;) {
-    next:switch(cmd) {
-    case 0://START:
-      state = 0;
-      errflag = 0;
+  the_loop: for (;;) {
+    switch (cmd) {
+      case 0: //START:
+        state = 0;
+        errflag = 0;
       // Fall through
 
-    case 6://loop:
-      n = tables.defred[state];
-      if (n != 0) { cmd = reduce; break; }
-      if (env[env_curr_char] >= 0) { cmd = testshift; break; }
-      res = READ_TOKEN;
-      break exit;
+      case 6: //loop:
+        n = tables.defred[state];
+        if (n != 0) {
+          cmd = reduce;
+          break;
+        }
+        if (env[env_curr_char] >= 0) {
+          cmd = testshift;
+          break;
+        }
+        res = READ_TOKEN;
+        break the_loop;
       /* The ML code calls the lexer and updates */
       /* symb_start and symb_end */
-    case 1://TOKEN_READ:
-      if (arg instanceof Array) {
-        env[env_curr_char] = tables[tbl_transl_block][arg[0] + 1];
-        env[env_lval] = arg[1];
-      } else {
-        env[env_curr_char] = tables[tbl_transl_const][arg + 1];
-        env[env_lval] = 0;
-      }
-      if (caml_parser_trace) print_token (state, arg);
+      case 1: //TOKEN_READ:
+        if (Array.isArray(arg)) {
+          env[env_curr_char] = tables[tbl_transl_block][arg[0] + 1];
+          env[env_lval] = arg[1];
+        } else {
+          env[env_curr_char] = tables[tbl_transl_const][arg + 1];
+          env[env_lval] = 0;
+        }
+        if (caml_parser_trace) print_token(state, arg);
       // Fall through
 
-    case 7://testshift:
-      n1 = tables.sindex[state];
-      n2 = n1 + env[env_curr_char];
-      if (n1 != 0 && n2 >= 0 && n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == env[env_curr_char]) {
-        cmd = shift; break;
-      }
-      n1 = tables.rindex[state];
-      n2 = n1 + env[env_curr_char];
-      if (n1 != 0 && n2 >= 0 && n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == env[env_curr_char]) {
-        n = tables.table[n2];
-        cmd = reduce; break;
-      }
-      if (errflag <= 0) {
-        res = CALL_ERROR_FUNCTION;
-        break exit;
-      }
+      case 7: //testshift:
+        n1 = tables.sindex[state];
+        n2 = n1 + env[env_curr_char];
+        if (
+          n1 != 0 &&
+          n2 >= 0 &&
+          n2 <= tables[tbl_tablesize] &&
+          tables.check[n2] == env[env_curr_char]
+        ) {
+          cmd = shift;
+          break;
+        }
+        n1 = tables.rindex[state];
+        n2 = n1 + env[env_curr_char];
+        if (
+          n1 != 0 &&
+          n2 >= 0 &&
+          n2 <= tables[tbl_tablesize] &&
+          tables.check[n2] == env[env_curr_char]
+        ) {
+          n = tables.table[n2];
+          cmd = reduce;
+          break;
+        }
+        if (errflag <= 0) {
+          res = CALL_ERROR_FUNCTION;
+          break the_loop;
+        }
       // Fall through
       /* The ML code calls the error function */
-    case 5://ERROR_DETECTED:
-      if (errflag < 3) {
-        errflag = 3;
-        for (;;) {
-          state1 = env[env_s_stack][sp + 1];
-          n1 = tables.sindex[state1];
-          n2 = n1 + ERRCODE;
-          if (n1 != 0 && n2 >= 0 && n2 <= tables[tbl_tablesize] &&
-              tables.check[n2] == ERRCODE) {
-            if (caml_parser_trace)
-              log("Recovering in state " + state1);
-            cmd = shift_recover; break next;
-          } else {
-            if (caml_parser_trace)
-              log("Discarding state " + state1);
-            if (sp <= env[env_stackbase]) {
-              if (caml_parser_trace)
-                log("No more states to discard");
-              return RAISE_PARSE_ERROR;
+      case 5: //ERROR_DETECTED:
+        if (errflag < 3) {
+          errflag = 3;
+          for (;;) {
+            state1 = env[env_s_stack][sp + 1];
+            n1 = tables.sindex[state1];
+            n2 = n1 + ERRCODE;
+            if (
+              n1 != 0 &&
+              n2 >= 0 &&
+              n2 <= tables[tbl_tablesize] &&
+              tables.check[n2] == ERRCODE
+            ) {
+              if (caml_parser_trace) log("Recovering in state " + state1);
+              cmd = shift_recover;
+              continue the_loop;
+            } else {
+              if (caml_parser_trace) log("Discarding state " + state1);
+              if (sp <= env[env_stackbase]) {
+                if (caml_parser_trace) log("No more states to discard");
+                return RAISE_PARSE_ERROR;
+              }
+              /* The ML code raises Parse_error */
+              sp--;
             }
-            /* The ML code raises Parse_error */
-            sp--;
           }
+        } else {
+          if (env[env_curr_char] == 0)
+            return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
+          if (caml_parser_trace) log("Discarding last token read");
+          env[env_curr_char] = -1;
+          cmd = loop;
+          break;
         }
-      } else {
-        if (env[env_curr_char] == 0)
-          return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
-        if (caml_parser_trace)
-          log("Discarding last token read");
+      // Fall through
+      case 8: //shift:
         env[env_curr_char] = -1;
-        cmd = loop; break;
-      }
+        if (errflag > 0) errflag--;
       // Fall through
-    case 8://shift:
-      env[env_curr_char] = -1;
-      if (errflag > 0) errflag--;
-      // Fall through
-    case 9://shift_recover:
-      if (caml_parser_trace)
-        log("State " + state + ": shift to state " + tables.table[n2]);
-      state = tables.table[n2];
-      sp++;
-      if (sp >= env[env_stacksize]) {
-        res = GROW_STACKS_1;
-        break exit;
-      }
-      // Fall through
-      /* The ML code resizes the stacks */
-    case 2://STACKS_GROWN_1:
-      env[env_s_stack][sp + 1] = state;
-      env[env_v_stack][sp + 1] = env[env_lval];
-      env[env_symb_start_stack][sp + 1] = env[env_symb_start];
-      env[env_symb_end_stack][sp + 1] = env[env_symb_end];
-      cmd = loop;
-      break;
-
-    case 10://reduce:
-      if (caml_parser_trace)
-        log("State " + state + ": reduce by rule " + n);
-      var m = tables.len[n];
-      env[env_asp] = sp;
-      env[env_rule_number] = n;
-      env[env_rule_len] = m;
-      sp = sp - m + 1;
-      m = tables.lhs[n];
-      state1 = env[env_s_stack][sp];
-      n1 = tables.gindex[m];
-      n2 = n1 + state1;
-      if (n1 != 0 && n2 >= 0 && n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == state1)
+      case 9: //shift_recover:
+        if (caml_parser_trace)
+          log("State " + state + ": shift to state " + tables.table[n2]);
         state = tables.table[n2];
-      else
-        state = tables.dgoto[m];
-      if (sp >= env[env_stacksize]) {
-        res = GROW_STACKS_2;
-        break exit;
-      }
+        sp++;
+        if (sp >= env[env_stacksize]) {
+          res = GROW_STACKS_1;
+          break the_loop;
+        }
       // Fall through
       /* The ML code resizes the stacks */
-    case 3://STACKS_GROWN_2:
-      res = COMPUTE_SEMANTIC_ACTION;
-      break exit;
+      case 2: //STACKS_GROWN_1:
+        env[env_s_stack][sp + 1] = state;
+        env[env_v_stack][sp + 1] = env[env_lval];
+        env[env_symb_start_stack][sp + 1] = env[env_symb_start];
+        env[env_symb_end_stack][sp + 1] = env[env_symb_end];
+        cmd = loop;
+        break;
+
+      case 10: //reduce:
+        if (caml_parser_trace) log("State " + state + ": reduce by rule " + n);
+        var m = tables.len[n];
+        env[env_asp] = sp;
+        env[env_rule_number] = n;
+        env[env_rule_len] = m;
+        sp = sp - m + 1;
+        m = tables.lhs[n];
+        state1 = env[env_s_stack][sp];
+        n1 = tables.gindex[m];
+        n2 = n1 + state1;
+        if (
+          n1 != 0 &&
+          n2 >= 0 &&
+          n2 <= tables[tbl_tablesize] &&
+          tables.check[n2] == state1
+        )
+          state = tables.table[n2];
+        else state = tables.dgoto[m];
+        if (sp >= env[env_stacksize]) {
+          res = GROW_STACKS_2;
+          break the_loop;
+        }
+      // Fall through
+      /* The ML code resizes the stacks */
+      case 3: //STACKS_GROWN_2:
+        res = COMPUTE_SEMANTIC_ACTION;
+        break the_loop;
       /* The ML code calls the semantic action */
-    case 4://SEMANTIC_ACTION_COMPUTED:
-      env[env_s_stack][sp + 1] = state;
-      env[env_v_stack][sp + 1] = arg;
-      var asp = env[env_asp];
-      env[env_symb_end_stack][sp + 1] = env[env_symb_end_stack][asp + 1];
-      if (sp > asp) {
-        /* This is an epsilon production. Take symb_start equal to symb_end. */
-        env[env_symb_start_stack][sp + 1] = env[env_symb_end_stack][asp + 1];
-      }
-      cmd = loop; break;
+      case 4: //SEMANTIC_ACTION_COMPUTED:
+        env[env_s_stack][sp + 1] = state;
+        env[env_v_stack][sp + 1] = arg;
+        var asp = env[env_asp];
+        env[env_symb_end_stack][sp + 1] = env[env_symb_end_stack][asp + 1];
+        if (sp > asp) {
+          /* This is an epsilon production. Take symb_start equal to symb_end. */
+          env[env_symb_start_stack][sp + 1] = env[env_symb_end_stack][asp + 1];
+        }
+        cmd = loop;
+        break;
       /* Should not happen */
-    default:
-      return RAISE_PARSE_ERROR;
+      default:
+        return RAISE_PARSE_ERROR;
     }
   }
   // SAVE

@@ -40,7 +40,8 @@ let print_mapping lines (sm : Source_map.t) =
   let lines = Array.of_list lines in
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
-  List.iter sm.mappings ~f:(fun (m : Source_map.map) ->
+  let mappings = Source_map.Mappings.decode sm.mappings in
+  List.iter mappings ~f:(fun (m : Source_map.map) ->
       let file = function
         | -1 -> "null"
         | n -> normalize_path sources.(n)

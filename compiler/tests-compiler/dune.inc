@@ -360,6 +360,66 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/gh1481.ml
+ (name gh1481_15)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (modules gh1481)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ ;; compiler/tests-compiler/gh1494.ml
+ (name gh1494_15)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (modules gh1494)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ ;; compiler/tests-compiler/gh1559.ml
+ (name gh1559_15)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (modules gh1559)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ ;; compiler/tests-compiler/gh1599.ml
+ (name gh1599_15)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (modules gh1599)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/gh1659.ml
  (name gh1659_15)
  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
@@ -394,6 +454,21 @@
  (name gl507_15)
  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules gl507)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ ;; compiler/tests-compiler/global_deadcode.ml
+ (name global_deadcode_15)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (modules global_deadcode)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
   (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
@@ -585,6 +660,21 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/scopes.ml
+ (name scopes_15)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (modules scopes)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/side_effect.ml
  (name side_effect_15)
  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
@@ -679,6 +769,21 @@
  (name target_env_15)
  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules target_env)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ ;; compiler/tests-compiler/test_string.ml
+ (name test_string_15)
+ (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (modules test_string)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
   (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))

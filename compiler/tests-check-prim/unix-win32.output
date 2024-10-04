@@ -8,8 +8,6 @@ caml_dynlink_close_lib
 caml_dynlink_get_current_libs
 caml_dynlink_lookup_symbol
 caml_dynlink_open_lib
-caml_get_current_environment
-caml_get_section_table
 caml_int64_add_native
 caml_int64_and_native
 caml_int64_div_native
@@ -20,13 +18,8 @@ caml_int64_or_native
 caml_int64_sub_native
 caml_int64_xor_native
 caml_int_as_pointer
-caml_invoke_traced_function
-caml_realloc_global
-caml_reify_bytecode
 caml_reset_afl_instrumentation
 caml_signbit
-caml_static_release_bytecode
-caml_terminfo_rows
 caml_unix_map_file_bytecode
 debugger
 is_digit_normalized
@@ -127,6 +120,7 @@ caml_atomic_cas
 caml_atomic_exchange
 caml_atomic_fetch_add
 caml_atomic_load
+caml_atomic_make_contended
 caml_domain_dls
 caml_domain_dls_get
 caml_domain_dls_set
@@ -157,6 +151,7 @@ jsoo_create_file
 jsoo_create_file_extern
 
 From +gc.js:
+caml_memprof_discard
 caml_memprof_set
 
 From +graphics.js:
@@ -217,6 +212,8 @@ caml_mod
 
 From +io.js:
 caml_input_value_to_outside_heap
+caml_ml_input_bigarray
+caml_ml_output_bigarray
 
 From +jslib.js:
 caml_is_js
@@ -234,6 +231,7 @@ caml_array_of_bytes
 caml_array_of_string
 caml_bytes_of_utf16_jsstring
 caml_new_string
+caml_string_concat
 caml_string_set16
 caml_string_set32
 caml_string_set64
@@ -258,12 +256,12 @@ caml_lxm_next
 
 From +runtime_events.js:
 caml_custom_event_index
+caml_ml_runtime_events_pause
+caml_ml_runtime_events_resume
+caml_ml_runtime_events_start
 caml_runtime_events_create_cursor
 caml_runtime_events_free_cursor
-caml_runtime_events_pause
 caml_runtime_events_read_poll
-caml_runtime_events_resume
-caml_runtime_events_start
 caml_runtime_events_user_register
 caml_runtime_events_user_resolve
 caml_runtime_events_user_write
@@ -299,6 +297,15 @@ caml_set_static_env
 caml_spacetime_enabled
 caml_spacetime_only_works_for_native_code
 caml_sys_is_regular_file
+
+From +toplevel.js:
+caml_dynlink_get_bytecode_sections
+caml_static_alloc
+caml_static_free
+caml_terminfo_backup
+caml_terminfo_resume
+caml_terminfo_setup
+caml_terminfo_standout
 
 From +unix.js:
 caml_unix_cleanup

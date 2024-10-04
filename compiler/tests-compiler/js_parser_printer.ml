@@ -341,6 +341,20 @@ let%expect_test "async/await" =
            const glslang = await glslangModule.default();
            return glslang.compileGLSL(src, "compute");
          }
+
+
+    async
+    function test() { }
+
+    async function test() { }
+
+    async
+    function* test() { }
+
+    async function * test() { }
+
+    1 + async function * test() { }
+
  |};
 
   [%expect
@@ -355,7 +369,14 @@ let%expect_test "async/await" =
      glslang = await  /*<<fake:7:33>>*/ glslangModule.default();
      /*<<fake:8:11>>*/ return  /*<<fake:8:18>>*/ glslang.compileGLSL
             (src, "compute");
-    /*<<fake:2:9>>*/ } |}]
+    /*<<fake:2:9>>*/ }
+    /*<<fake:12:4>>*/ async;
+    /*<<fake:13:4>>*/ function test(){ /*<<fake:13:22>>*/ }
+    /*<<fake:15:4>>*/ async function test(){ /*<<fake:15:4>>*/ }
+    /*<<fake:17:4>>*/ async;
+    /*<<fake:18:4>>*/ function* test(){ /*<<fake:18:4>>*/ }
+    /*<<fake:20:4>>*/ async function* test(){ /*<<fake:20:4>>*/ }
+    /*<<fake:22:4>>*/ 1 + async function* test(){ /*<<fake:22:8>>*/ }; |}]
 
 let%expect_test "get/set property" =
   (* GH#1017 *)
@@ -419,9 +440,8 @@ let%expect_test "assignment pattern" =
     /*<<fake:2:4>>*/ var x, y, rest;
     /*<<fake:3:4>>*/  /*<<fake:3:14>>*/ var [x, y] = [1, 2];
     /*<<fake:4:4>>*/  /*<<fake:4:22>>*/ var [x, y, ...rest] = [1, 2, ...o];
-    /*<<fake:6:4>>*/  /*<<fake:6:14>>*/ var {x: x, y: y} = {x: 1, y: 2};
-    /*<<fake:7:4>>*/  /*<<fake:7:22>>*/ var
-    {x: x, y: y, ...rest} = {x: 1, y: 2, ...o};
+    /*<<fake:6:4>>*/  /*<<fake:6:14>>*/ var {x, y} = {x: 1, y: 2};
+    /*<<fake:7:4>>*/  /*<<fake:7:22>>*/ var {x, y, ...rest} = {x: 1, y: 2, ...o};
     /*<<fake:9:4>>*/ [x, y] = [1, 2];
     /*<<fake:10:4>>*/ [x, y, ...rest] = [1, 2];
     /*<<fake:12:4>>*/ ({x, y} = {x: 1, y: 2});
@@ -430,6 +450,27 @@ let%expect_test "assignment pattern" =
      /*<<fake:15:43>>*/ ;
     /*<<fake:17:4>>*/ for([a, b, {c, d = e, [f]: [g, h, a, i, j]}] of 3)
      /*<<fake:17:43>>*/ ; |}]
+
+let%expect_test "for loops" =
+  (* GH#1017 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+    for(x in 3);
+    for(x of 3);
+    async function f(x) {
+    for await(x of 3);
+    }
+ |};
+
+  [%expect
+    {|
+    /*<<fake:2:4>>*/ for(x in 3)  /*<<fake:2:15>>*/ ;
+    /*<<fake:3:4>>*/ for(x of 3)  /*<<fake:3:15>>*/ ;
+    /*<<fake:4:4>>*/ async function f(x){
+     /*<<fake:5:4>>*/ for await(x of 3)  /*<<fake:5:21>>*/ ;
+    /*<<fake:4:4>>*/ } |}]
 
 let%expect_test "string template" =
   (* GH#1017 *)
@@ -644,6 +685,17 @@ let%expect_test "assignment targets" =
     [[[x = 5]], {a, b}, ...rest] = [];
     ({a: [a, b] = f(), b = 3, ...rest} = {}); |}]
 
+let%expect_test "as keyword" =
+  print
+    ~debuginfo:false
+    ~compact:false
+    ~report:true
+    {|
+const as = () => () => ts(void 0, void 0, void 0, function* () {})
+|};
+  [%expect {|
+    const as = ()=>()=>ts(void 0, void 0, void 0, function*(){}); |}]
+
 let%expect_test "error reporting" =
   (try
      print ~invalid:true ~compact:false {|
@@ -687,8 +739,10 @@ let check_vs_string s toks =
   in
   let rec loop offset pos = function
     | [] -> space pos (String.length s)
-    | (Js_token.T_VIRTUAL_SEMICOLON, _, _) :: rest -> loop offset pos rest
-    | ((Js_token.T_STRING (_, codepoint_len) as x), p1, _p2) :: rest ->
+    | (Js_token.(T_VIRTUAL_SEMICOLON | T_VIRTUAL_SEMICOLON_DO_WHILE), _) :: rest ->
+        loop offset pos rest
+    | ((Js_token.T_STRING (_, codepoint_len) as x), loc) :: rest ->
+        let p1 = Loc.p1 loc in
         let { Parse_info.idx = codepoint_idx; _ } = Parse_info.t_of_pos p1 in
         let bytes_idx = codepoint_idx - offset in
         let bytes_len =
@@ -714,7 +768,8 @@ let check_vs_string s toks =
               a
               b);
         loop offset (bytes_idx + bytes_len + 1) rest
-    | (x, p1, _p2) :: rest ->
+    | (x, loc) :: rest ->
+        let p1 = Loc.p1 loc in
         let { Parse_info.idx; _ } = Parse_info.t_of_pos p1 in
         let idx = idx - offset in
         let str = Js_token.to_string x in
@@ -741,8 +796,9 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   let prev = ref 0 in
   let rec loop tokens =
     match tokens with
-    | [ (Js_token.T_EOF, _, _) ] | [] -> Printf.printf "\n"
-    | (tok, p1, _p2) :: xs ->
+    | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
+    | (tok, loc) :: xs ->
+        let p1 = Loc.p1 loc in
         let pos = Parse_info.t_of_pos p1 in
         let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
         (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
@@ -791,7 +847,7 @@ let%expect_test "invalid ident" =
      2: 4:var, 8:\uD83B\uDE62, 21:=, 23:42, 25:;, 27:// invalid surrogate escape sequence,
      3: 4:var, 8:\u{1F42B}, 18:=, 20:2, 21:;, 23:// U+1F42B is not a valid id,
     Lexer error: fake:2:8: Illegal Unicode escape
-    Lexer error: fake:3:8: Unexpected token ILLEGAL |}]
+    Lexer error: fake:3:8: Unexpected "\240\159\144\171" is not a valid identifier |}]
 
 let%expect_test "string" =
   parse_print_token
@@ -950,6 +1006,18 @@ a:while(true){
     do { x } while (true) y
     do ; while (true) y
 
+    async
+    function test() { }
+
+    async function test() { }
+
+    async
+    function* test() { }
+
+    async function * test() { }
+
+    1 + async function * test() { }
+
 |};
   [%expect
     {|
@@ -976,7 +1044,14 @@ a:while(true){
     26: 4:a (identifier), 6:=, 8:b (identifier), 10:+, 12:c (identifier),
     27: 4:(, 5:d (identifier), 7:+, 9:e (identifier), 10:), 11:., 12:print (identifier), 17:(, 18:), 0:; (virtual),
     29: 4:do, 7:{, 9:x (identifier), 0:; (virtual), 11:}, 13:while, 19:(, 20:true, 24:), 0:; (virtual), 26:y (identifier), 0:; (virtual),
-    30: 4:do, 7:;, 9:while, 15:(, 16:true, 20:), 0:; (virtual), 22:y (identifier), 0:; (virtual), |}]
+    30: 4:do, 7:;, 9:while, 15:(, 16:true, 20:), 0:; (virtual), 22:y (identifier), 0:; (virtual),
+    32: 4:async, 0:; (virtual),
+    33: 4:function, 13:test (identifier), 17:(, 18:), 20:{, 22:},
+    35: 4:async, 10:function, 19:test (identifier), 23:(, 24:), 26:{, 28:},
+    37: 4:async, 0:; (virtual),
+    38: 4:function, 12:*, 14:test (identifier), 18:(, 19:), 21:{, 23:},
+    40: 4:async, 10:function, 19:*, 21:test (identifier), 25:(, 26:), 28:{, 30:},
+    42: 4:1, 6:+, 8:async, 14:function, 23:*, 25:test (identifier), 29:(, 30:), 32:{, 34:}, 0:; (virtual), |}]
 
 let%expect_test _ =
   parse_print_token

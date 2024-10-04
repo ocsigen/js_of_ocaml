@@ -3,9 +3,13 @@ open StdLabels
 open Jbuild_plugin.V1
 
 let git_version =
+  let placeholder = "%%VERSION%%" in
   match run_and_read_lines "git describe --always --dirty" with
   | exception _ -> ""
-  | version :: _ -> version
+  | version :: _ ->
+    if "%%" ^ "VERSION" ^ "%%" = placeholder
+    then version
+    else placeholder
   | [] -> ""
 
 let dyn =

@@ -108,7 +108,7 @@ let options =
             ; sources = []
             ; sources_content = Some []
             ; names = []
-            ; mappings = []
+            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in
@@ -152,6 +152,7 @@ let f
     } =
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
+  Linker.reset ();
   let with_output f =
     match output_file with
     | None -> f stdout

@@ -2,18 +2,28 @@ open Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 module J = Jsoo_runtime.Js
 
-let split_primitives p =
-  let len = String.length p in
-  let rec split beg cur =
-    if cur >= len
-    then []
-    else if Char.equal p.[cur] '\000'
-    then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
-    else split beg (cur + 1)
-  in
-  Array.of_list (split 0 0)
+type bytecode_sections =
+  { symb : Ocaml_compiler.Symtable.GlobalMap.t
+  ; crcs : (string * Digest.t option) list
+  ; prim : string list
+  ; dlpt : string list
+  }
+[@@ocaml.warning "-unused-field"]
 
-external get_section_table : unit -> (string * Obj.t) list = "caml_get_section_table"
+external get_bytecode_sections : unit -> bytecode_sections = "jsoo_get_bytecode_sections"
+
+let normalize_bytecode code =
+  match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
+  | true -> code
+  | false ->
+      (* starting with ocaml 5.2, The toplevel no longer append [RETURN 1] *)
+      let { Instr.opcode; _ } = Instr.find RETURN in
+      let len = String.length code in
+      let b = Bytes.create (len + 8) in
+      Bytes.blit_string ~src:code ~src_pos:0 ~dst:b ~dst_pos:0 ~len;
+      Bytes.set_int32_le b len (Int32.of_int opcode);
+      Bytes.set_int32_le b (len + 4) 1l;
+      Bytes.to_string b
 
 let () =
   (match Sys.backend_type with
@@ -22,11 +32,12 @@ let () =
   let global = J.pure_js_expr "globalThis" in
   Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
   Config.Flag.set "effects" (Jsoo_runtime.Sys.Config.effects ());
+  Linker.reset ();
   (* this needs to stay synchronized with toplevel.js *)
-  let toplevel_compile (s : bytes array) (debug : Instruct.debug_event list array) :
+  let toplevel_compile (s : string) (debug : Instruct.debug_event list array) :
       unit -> J.t =
-    let s = String.concat ~sep:"" (List.map ~f:Bytes.to_string (Array.to_list s)) in
-    let prims = split_primitives (Symtable.data_primitive_names ()) in
+    let s = normalize_bytecode s in
+    let prims = Array.of_list (Ocaml_compiler.Symtable.all_primitives ()) in
     let b = Buffer.create 100 in
     let fmt = Pretty_print.to_buffer b in
     Driver.configure fmt;
@@ -51,9 +62,9 @@ let () =
       flush stderr;
       res
   in
-  let toc = get_section_table () in
+  let toc = get_bytecode_sections () in
   let sym =
-    let t : Ocaml_compiler.Symtable.GlobalMap.t = Obj.obj (List.assoc "SYMB" toc) in
+    let t : Ocaml_compiler.Symtable.GlobalMap.t = toc.symb in
     Ocaml_compiler.Symtable.GlobalMap.fold
       (fun i n acc -> StringMap.add (Ocaml_compiler.Symtable.Global.name i) n acc)
       t

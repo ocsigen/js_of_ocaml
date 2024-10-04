@@ -217,11 +217,11 @@ let%expect_test "delete" =
     compile_and_parse
       {|
       let delete_a o =
-        Js.delete o (Js.string "aaa") 
+        Js.delete o (Js.string "aaa")
        let delete_b o  =
-        Js.delete o (Js.string "a b") 
+        Js.delete o (Js.string "a b")
        let delete_c o  =
-        Js.delete o (Js.string "npiπ") 
+        Js.delete o (Js.string "npiπ")
       |}
   in
   print_fun_decl program (Some "delete_a");
@@ -348,8 +348,8 @@ let%expect_test "string sharing" =
        var
         str_npi_xcf_x80 = "npi\xcf\x80",
         str_abcdef = "abcdef",
-        str_npi = "npiπ",
         str_abc_def = "abc\\def",
+        str_npi = "npiπ",
         runtime = globalThis.jsoo_runtime,
         s3 = str_abcdef,
         s6 = str_npi_xcf_x80,
@@ -461,8 +461,8 @@ let%expect_test "string sharing" =
        var
         str_npi_xcf_x80 = "npi\xcf\x80",
         str_abcdef = "abcdef",
-        str_npi = "npiπ",
         str_abc_def = "abc\\def",
+        str_npi = "npiπ",
         runtime = globalThis.jsoo_runtime,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         s3 = caml_string_of_jsbytes(str_abcdef),

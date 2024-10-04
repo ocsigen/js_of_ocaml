@@ -88,8 +88,18 @@ module Var : sig
 
   module Map : Map.S with type key = t
 
+  module Hashtbl : Hashtbl.S with type key = t
+
   module Tbl : sig
     type key = t
+
+    module DataSet : sig
+      type 'a t
+
+      val iter : ('a -> unit) -> 'a t -> unit
+
+      val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+    end
 
     type 'a t
 
@@ -100,6 +110,10 @@ module Var : sig
     val set : 'a t -> key -> 'a -> unit
 
     val make : size -> 'a -> 'a t
+
+    val make_set : size -> 'a DataSet.t t
+
+    val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
@@ -154,11 +168,6 @@ module Native_string : sig
   val equal : t -> t -> bool
 end
 
-type int_kind =
-  | Regular
-  | Int32
-  | Native
-
 type constant =
   | String of string
   | NativeString of Native_string.t
@@ -191,9 +200,7 @@ type prim_arg =
   | Pv of Var.t
   | Pc of constant
 
-type special =
-  | Undefined
-  | Alias_prim of string
+type special = Alias_prim of string
 
 type mutability =
   | Immutable
@@ -249,6 +256,10 @@ module Print : sig
   type xinstr =
     | Instr of (instr * loc)
     | Last of (last * loc)
+
+  val expr : Format.formatter -> expr -> unit
+
+  val constant : Format.formatter -> constant -> unit
 
   val var_list : Format.formatter -> Var.t list -> unit
 

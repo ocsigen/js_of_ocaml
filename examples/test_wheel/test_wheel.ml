@@ -14,16 +14,16 @@ let () =
   html##.onwheel :=
     Dom.handler (fun (event : Dom_html.mousewheelEvent Js.t) ->
         Firebug.console##debug event;
-        let deltaX = Js.to_float event##.deltaX in
-        let deltaY = Js.to_float event##.deltaY in
-        let deltaZ = Js.to_float event##.deltaZ in
+        let deltaX = event##.deltaX in
+        let deltaY = event##.deltaY in
+        let deltaZ = event##.deltaZ in
         let deltaMode = event##.deltaMode in
         let wheelDelta = event##.wheelDelta in
         let wheelDeltaX = event##.wheelDeltaX in
         let wheelDeltaY = event##.wheelDeltaY in
-        Printf.printf "deltaX: %f; " deltaX;
-        Printf.printf "deltaY: %f; " deltaY;
-        Printf.printf "deltaZ: %f; " deltaZ;
+        Printf.printf "deltaX: %f; " (Js.to_float deltaX);
+        Printf.printf "deltaY: %f; " (Js.to_float deltaY);
+        Printf.printf "deltaZ: %f; " (Js.to_float deltaZ);
         Printf.printf
           "deltaMode: %s; "
           (match deltaMode with

@@ -21,24 +21,36 @@ open! Stdlib
 module Lexer : sig
   type t
 
+  type error
+
   val of_file : string -> t
 
   val of_channel : in_channel -> t
 
-  val of_string : ?pos:Lexing.position -> ?filename:string -> string -> t
+  val of_string :
+       ?report_error:(error -> unit)
+    -> ?pos:Lexing.position
+    -> ?filename:string
+    -> string
+    -> t
+
+  val print_error : error -> unit
 
   val curr_pos : t -> Lexing.position
 
-  val token : t -> Js_token.t * Lexing.position * Lexing.position
+  val token : t -> Js_token.t * Loc.t
 
-  val lex_as_regexp : t -> Js_token.t * Lexing.position * Lexing.position
+  val lex_as_regexp : t -> Js_token.t * Loc.t
 
   val rollback : t -> unit
 
   val dummy_pos : Lexing.position
 end = struct
+  type error = Loc.t * Flow_lexer.Parse_error.t
+
   type t =
     { l : Sedlexing.lexbuf
+    ; report_error : error -> unit
     ; mutable env : Flow_lexer.Lex_env.t
     }
 
@@ -46,7 +58,13 @@ end = struct
 
   let zero_pos = { Lexing.pos_fname = ""; pos_lnum = 1; pos_cnum = 0; pos_bol = 0 }
 
-  let create l = { l; env = Flow_lexer.Lex_env.create l }
+  let print_error (loc, e) =
+    let f = Loc.filename loc in
+    let loc = Printf.sprintf "%s:%d:%d" f (Loc.line loc) (Loc.column loc) in
+    Printf.eprintf "Lexer error: %s: %s\n" loc (Flow_lexer.Parse_error.to_string e)
+
+  let create ?(report_error = print_error) l =
+    { l; env = Flow_lexer.Lex_env.create l; report_error }
 
   let of_file file : t =
     let ic = open_in file in
@@ -56,7 +74,7 @@ end = struct
 
   let of_channel ci : t = create (Sedlexing.Utf8.from_channel ci)
 
-  let of_string ?(pos = zero_pos) ?filename s =
+  let of_string ?report_error ?(pos = zero_pos) ?filename s =
     let l = Sedlexing.Utf8.from_string s in
     let pos =
       match filename with
@@ -65,42 +83,22 @@ end = struct
     in
     Sedlexing.set_position l pos;
     Option.iter filename ~f:(Sedlexing.set_filename l);
-    create l
+    create ?report_error l
 
   let curr_pos lexbuf = snd (Sedlexing.lexing_positions lexbuf.l)
 
-  let report_errors res =
+  let report_errors t res =
     match Flow_lexer.Lex_result.errors res with
     | [] -> ()
-    | l ->
-        List.iter l ~f:(fun (loc, e) ->
-            let loc =
-              match loc.Flow_lexer.Loc.source with
-              | None ->
-                  Printf.sprintf
-                    "%d:%d"
-                    loc.start.pos_lnum
-                    (loc.start.pos_cnum - loc.start.pos_bol)
-              | Some f ->
-                  Printf.sprintf
-                    "%s:%d:%d"
-                    f
-                    loc.start.pos_lnum
-                    (loc.start.pos_cnum - loc.start.pos_bol)
-            in
-
-            Printf.eprintf
-              "Lexer error: %s: %s\n"
-              loc
-              (Flow_lexer.Parse_error.to_string e))
+    | l -> List.iter l ~f:t.report_error
 
   let token (t : t) =
     let env, res = Flow_lexer.lex t.env in
     t.env <- env;
     let tok = Flow_lexer.Lex_result.token res in
-    let p1, p2 = Flow_lexer.Lex_result.loc res in
-    report_errors res;
-    tok, p1, p2
+    let loc = Flow_lexer.Lex_result.loc res in
+    report_errors t res;
+    tok, loc
 
   let rollback t = Sedlexing.rollback t.l
 
@@ -109,30 +107,30 @@ end = struct
     let env, res = Flow_lexer.regexp t.env in
     t.env <- env;
     let tok = Flow_lexer.Lex_result.token res in
-    let p1, p2 = Flow_lexer.Lex_result.loc res in
-    report_errors res;
-    tok, p1, p2
+    let loc = Flow_lexer.Lex_result.loc res in
+    report_errors t res;
+    tok, loc
 end
 
 exception Parsing_error of Parse_info.t
 
 let is_comment = function
-  | (Js_token.TComment _ | TAnnot _ | TCommentLineDirective _), _, _ -> true
+  | Js_token.TComment _ | TAnnot _ | TCommentLineDirective _ -> true
   | _ -> false
 
 module State : sig
-  type token = Js_token.t * Lexing.position * Lexing.position
+  type token = Js_token.t * Loc.t
 
   module Cursor : sig
     type 'a t
 
-    val insert_token : 'a t -> token -> 'a t
+    val insert_token : 'a t -> Js_token.t -> Loc.t -> 'a t
 
-    val replace_token : 'a t -> token -> 'a t
+    val replace_token : 'a t -> Js_token.t -> Loc.t -> 'a t
 
-    val last_token : 'a t -> (token * 'a t) option
+    val last_token : 'a t -> (Js_token.t * Loc.t * 'a t) option
 
-    val rewind_block : 'a t -> (token * 'a t) option
+    val rewind_block : 'a t -> (Js_token.t * Loc.t * 'a t) option
   end
 
   type 'a t
@@ -143,7 +141,7 @@ module State : sig
 
   val checkpoint : 'a t -> 'a Js_parser.MenhirInterpreter.checkpoint
 
-  val offer : 'a t -> token -> 'a t
+  val offer : 'a t -> Js_token.t -> Loc.t -> 'a t
 
   val finalize_error : 'a t -> 'a t
 
@@ -153,50 +151,55 @@ module State : sig
 
   val all_tokens : 'a t -> token list
 end = struct
-  type token = Js_token.t * Lexing.position * Lexing.position
+  type token = Js_token.t * Loc.t
 
   type 'a checkpoint = 'a Js_parser.MenhirInterpreter.checkpoint
 
   type 'a w =
     | Start of 'a checkpoint
     | Checkpoint of 'a checkpoint * 'a w
-    | Token of token * 'a w
+    | Token of Js_token.t * Loc.t * 'a w
 
   module Cursor = struct
     type 'a t = 'a w * token list
 
-    let last_token ((h, next) : _ t) : (_ * _ t) option =
+    let last_token ((h, next) : _ t) : (_ * _ * _ t) option =
       let rec find next = function
         | Start _ -> None
         | Checkpoint (_, t) -> find next t
-        | Token (tok, t) ->
-            if is_comment tok then find (tok :: next) t else Some (tok, (t, tok :: next))
+        | Token (tok, loc, t) ->
+            if is_comment tok
+            then find ((tok, loc) :: next) t
+            else Some (tok, loc, (t, (tok, loc) :: next))
       in
       find next h
 
-    let replace_token ((h, next) : _ t) tok : _ t =
+    let replace_token ((h, next) : _ t) tok loc : _ t =
       match next with
       | [] -> assert false
-      | _ :: next -> h, tok :: next
+      | _ :: next -> h, (tok, loc) :: next
 
-    let insert_token ((h, next) : _ t) tok : _ t = h, tok :: next
+    let insert_token ((h, next) : _ t) tok loc : _ t = h, (tok, loc) :: next
 
-    let rewind_block : 'a t -> (token * 'a t) option =
+    let rewind_block : 'a t -> (Js_token.t * Loc.t * 'a t) option =
      fun h ->
       let rec rewind (stack : Js_token.t list) (h : _ t) =
         match last_token h with
         | None -> None
-        | Some (((tok, _, _) as tok'), h) -> (
+        | Some (tok, loc, h) -> (
             match tok, stack with
             | (T_RPAREN | T_RCURLY | T_RBRACKET), _ ->
                 let stack = tok :: stack in
                 rewind stack h
-            | T_LPAREN, [ T_RPAREN ] | T_LBRACKET, [ T_RBRACKET ] | T_LCURLY, [ T_RCURLY ]
-              -> Some (tok', h)
-            | T_LPAREN, T_RPAREN :: stack
+            | (T_LPAREN | T_LPAREN_ARROW), [ T_RPAREN ]
+            | T_LBRACKET, [ T_RBRACKET ]
+            | T_LCURLY, [ T_RCURLY ] -> Some (tok, loc, h)
+            | (T_LPAREN | T_LPAREN_ARROW), T_RPAREN :: stack
             | T_LBRACKET, T_RBRACKET :: stack
             | T_LCURLY, T_RCURLY :: stack -> rewind stack h
-            | T_LPAREN, _ | T_LBRACKET, _ | T_LCURLY, _ -> assert false
+            | T_LPAREN, _ -> assert false
+            | T_LBRACKET, _ -> assert false
+            | T_LCURLY, _ -> assert false
             | _, [] -> None
             | _, (_ :: _ as stack) -> rewind stack h)
       in
@@ -223,39 +226,40 @@ end = struct
 
   let checkpoint { checkpoint; _ } = checkpoint
 
-  let offer { checkpoint; history; next } tok : _ t =
+  let offer { checkpoint; history; next } tok loc : _ t =
     match (checkpoint : _ checkpoint) with
     | Accepted _ -> assert false
-    | Rejected | HandlingError _ -> { checkpoint; history; next = tok :: next }
+    | Rejected | HandlingError _ -> { checkpoint; history; next = (tok, loc) :: next }
     | Shifting _ | AboutToReduce _ -> assert false
     | InputNeeded _ -> (
         if is_comment tok
-        then { checkpoint; history = Token (tok, history); next }
+        then { checkpoint; history = Token (tok, loc, history); next }
         else
           let new_checkpoint =
-            advance (Js_parser.MenhirInterpreter.offer checkpoint tok)
+            advance
+              (Js_parser.MenhirInterpreter.offer checkpoint (tok, Loc.p1 loc, Loc.p2 loc))
           in
           match (new_checkpoint : 'a checkpoint) with
           | Shifting _ | AboutToReduce _ -> assert false
           | Rejected | Accepted _ | InputNeeded _ ->
               let history =
                 match tok with
-                | T_VIRTUAL_SEMICOLON, _, _ ->
+                | T_VIRTUAL_SEMICOLON ->
                     let rec insert = function
-                      | Start _ as start -> Token (tok, start)
+                      | Start _ as start -> Token (tok, loc, start)
                       | Checkpoint (_, x) -> insert x
-                      | Token (inner_tok, tail) as x ->
+                      | Token (inner_tok, loc', tail) as x ->
                           if is_comment inner_tok
-                          then Token (inner_tok, insert tail)
-                          else Token (tok, x)
+                          then Token (inner_tok, loc', insert tail)
+                          else Token (tok, loc, x)
                     in
                     insert history
-                | _ -> Token (tok, history)
+                | _ -> Token (tok, loc, history)
               in
               { checkpoint = new_checkpoint; history; next }
           | HandlingError _ ->
               { checkpoint = new_checkpoint
-              ; history = Token (tok, Checkpoint (checkpoint, history))
+              ; history = Token (tok, loc, Checkpoint (checkpoint, history))
               ; next
               })
 
@@ -264,19 +268,24 @@ end = struct
       match t with
       | Start env -> advance env
       | Checkpoint (env, _) -> advance env
-      | Token (tok, t) -> (
+      | Token (tok, loc, t) -> (
           if is_comment tok
           then compute t
           else
             match compute t with
             | InputNeeded _ as checkpoint ->
-                advance (Js_parser.MenhirInterpreter.offer checkpoint tok)
+                advance
+                  (Js_parser.MenhirInterpreter.offer
+                     checkpoint
+                     (tok, Loc.p1 loc, Loc.p2 loc))
             | Shifting _ | AboutToReduce _ -> assert false
             | Accepted _ | Rejected | HandlingError _ -> assert false)
     in
     let checkpoint = compute h in
-    List.fold_left next ~init:{ checkpoint; history = h; next = [] } ~f:(fun t tok ->
-        offer t tok)
+    List.fold_left
+      next
+      ~init:{ checkpoint; history = h; next = [] }
+      ~f:(fun t (tok, loc) -> offer t tok loc)
 
   let finalize_error { checkpoint; history; next } =
     let rec loop (t : _ Js_parser.MenhirInterpreter.checkpoint) =
@@ -293,7 +302,7 @@ end = struct
       match t with
       | Start _ -> acc
       | Checkpoint (_, tail) -> collect acc tail
-      | Token (tok, tail) -> collect (tok :: acc) tail
+      | Token (tok, loc, tail) -> collect ((tok, loc) :: acc) tail
     in
     collect [] history
 end
@@ -307,41 +316,43 @@ let parse_annot s =
       | Not_found -> None
       | _ -> None)
 
-let rec nl_separated prev ((_, c, _) as ctok) =
+let rec nl_separated prev loc' =
   match State.Cursor.last_token prev with
   | None -> true
-  | Some ((T_VIRTUAL_SEMICOLON, _, _), prev) -> nl_separated prev ctok
-  | Some ((_, _, p2), _) -> c.Lexing.pos_lnum <> p2.Lexing.pos_lnum
+  | Some (T_VIRTUAL_SEMICOLON, _, prev) -> nl_separated prev loc'
+  | Some (_, loc, _) -> Loc.line loc' <> Loc.line_end loc
 
 let acceptable checkpoint token =
   let module I = Js_parser.MenhirInterpreter in
   let checkpoint = State.checkpoint checkpoint in
   I.acceptable checkpoint token Lexer.dummy_pos
 
-let semicolon = Js_token.T_VIRTUAL_SEMICOLON, Lexer.dummy_pos, Lexer.dummy_pos
+let semicolon = Js_token.T_VIRTUAL_SEMICOLON
+
+let dummy_loc = Loc.create Lexer.dummy_pos Lexer.dummy_pos
 
 let rec offer_one t (lexbuf : Lexer.t) =
-  let tok = Lexer.token lexbuf in
+  let tok, loc = Lexer.token lexbuf in
   match tok with
-  | TCommentLineDirective _, _, _ ->
-      let t = State.offer t tok in
+  | TCommentLineDirective _ ->
+      let t = State.offer t tok loc in
       offer_one t lexbuf
-  | (TComment s, p1, p2) as tok ->
+  | TComment s as tok ->
       let tok =
         match parse_annot s with
         | None -> tok
-        | Some a -> TAnnot (s, a), p1, p2
+        | Some a -> TAnnot (s, a)
       in
-      let t = State.offer t tok in
+      let t = State.offer t tok loc in
       offer_one t lexbuf
   | _ ->
       let t =
         match tok with
-        | T_LPAREN, _, _ when acceptable t T_LPAREN_ARROW -> State.save_checkpoint t
+        | T_LPAREN when acceptable t T_LPAREN_ARROW -> State.save_checkpoint t
         | _ -> t
       in
       let h = State.cursor t in
-      let tok =
+      let tok, loc =
         (* restricted productions
            * 7.9.1 - 3
            * When, as the program is parsed from left to right, a token is encountered
@@ -353,65 +364,40 @@ let rec offer_one t (lexbuf : Lexer.t) =
            * one LineTerminator, then a semicolon is automatically inserted before the
            * restricted token. *)
         match State.Cursor.last_token h, tok with
-        | ( Some (((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _, _), _)
-          , (((T_SEMICOLON | T_VIRTUAL_SEMICOLON), _, _) as tok) ) -> tok
-        | Some (((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD), _, _), _), _
-          when nl_separated h tok && acceptable t T_VIRTUAL_SEMICOLON ->
+        | ( Some ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC), _, _)
+          , ((T_SEMICOLON | T_VIRTUAL_SEMICOLON) as tok) ) -> tok, loc
+        | Some ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC), _, _), _
+          when nl_separated h loc && acceptable t T_VIRTUAL_SEMICOLON ->
             (* restricted token can also appear as regular identifier such
                as in [x.return]. In such case, feeding a virtual semicolon
                could trigger a parser error. Here, we first checkpoint
                that a virtual semicolon is acceptable. *)
             Lexer.rollback lexbuf;
-            semicolon
+            semicolon, dummy_loc
         (* The practical effect of these restricted productions is as follows:
            * When a ++ or -- token is encountered where the parser would treat it
            * as a postfix operator, and at least one LineTerminator occurred between
            * the preceding token and the ++ or -- token, then a semicolon is automatically
            * inserted before the ++ or -- token. *)
-        | _, ((T_DECR, p1, p2) as tok) when not (nl_separated h tok) ->
-            Js_token.T_DECR_NB, p1, p2
-        | _, ((T_INCR, p1, p2) as tok) when not (nl_separated h tok) ->
-            Js_token.T_INCR_NB, p1, p2
-        | _, ((((T_DIV | T_DIV_ASSIGN) as tok), _, _) as tok_and_pos) ->
-            if acceptable t tok then tok_and_pos else Lexer.lex_as_regexp lexbuf
-        | _ -> tok
+        | _, T_DECR when not (nl_separated h loc) -> Js_token.T_DECR_NB, loc
+        | _, T_INCR when not (nl_separated h loc) -> Js_token.T_INCR_NB, loc
+        | _, ((T_DIV | T_DIV_ASSIGN) as tok) ->
+            if acceptable t tok
+            then tok, loc
+            else
+              let t, loc = Lexer.lex_as_regexp lexbuf in
+              t, loc
+        | _ -> tok, loc
       in
-      State.offer t tok
+      State.offer t tok loc
 
 let dummy_ident =
   let dummy = "<DUMMY>" in
   Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn dummy, dummy)
 
-let token_to_ident (t, p1, p2) =
+let token_to_ident t =
   let name = Js_token.to_string t in
-  Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn name, name), p1, p2
-
-let end_of_do_whle prev =
-  match State.Cursor.rewind_block prev with
-  | None -> false
-  | Some ((T_LPAREN, _, _), prev) -> (
-      match State.Cursor.last_token prev with
-      | None -> false
-      | Some ((T_WHILE, _, _), prev) -> (
-          match State.Cursor.last_token prev with
-          | None -> false
-          | Some ((T_SEMICOLON, _, _), prev) -> (
-              match State.Cursor.last_token prev with
-              | None -> false
-              | Some ((T_DO, _, _), _) -> true
-              | Some (_, _) -> false)
-          | Some ((T_RCURLY, _, _), _) -> (
-              match State.Cursor.rewind_block prev with
-              | None -> false
-              | Some ((T_LCURLY, _, _), prev) -> (
-                  match State.Cursor.last_token prev with
-                  | None -> false
-                  | Some ((T_DO, _, _), _) -> true
-                  | Some (_, _) -> false)
-              | Some _ -> assert false)
-          | Some (_, _) -> false)
-      | Some (_, _) -> false)
-  | Some _ -> assert false
+  Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn name, name)
 
 let recover error_checkpoint previous_checkpoint =
   (* 7.9.1 - 1 *)
@@ -429,44 +415,50 @@ let recover error_checkpoint previous_checkpoint =
   (* complete ECMAScript Program, then a semicolon is automatically inserted at the end *)
   match State.Cursor.last_token (State.cursor error_checkpoint) with
   | None -> error_checkpoint
-  | Some (offending_token, rest) -> (
+  | Some (offending_token, offending_loc, rest) -> (
       match State.Cursor.last_token rest with
       | None -> error_checkpoint
-      | Some ((last_token, _, _), _) -> (
+      | Some (last_token, _, _) -> (
           match offending_token with
-          | T_VIRTUAL_SEMICOLON, _, _ -> error_checkpoint
+          | T_VIRTUAL_SEMICOLON -> error_checkpoint
           (* contextually allowed as identifiers, namely await and yield; *)
-          | (T_YIELD | T_AWAIT), _, _ when acceptable previous_checkpoint dummy_ident ->
-              State.Cursor.replace_token rest (token_to_ident offending_token)
+          | (T_YIELD | T_AWAIT) when acceptable previous_checkpoint dummy_ident ->
+              State.Cursor.replace_token
+                rest
+                (token_to_ident offending_token)
+                offending_loc
               |> State.try_recover
-          | T_RCURLY, _, _
-            when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
-              State.Cursor.insert_token rest semicolon |> State.try_recover
-          | T_EOF, _, _ when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON
-            -> State.Cursor.insert_token rest semicolon |> State.try_recover
-          | (T_ARROW, _, _) as tok when not (nl_separated rest tok) -> (
+          | T_RCURLY when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
+              State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+          | T_EOF when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
+              State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+          | T_ARROW when not (nl_separated rest offending_loc) -> (
               (* Restart parsing from the openning parens, patching the
                  token to be T_LPAREN_ARROW to help the parser *)
               match last_token with
               | T_RPAREN -> (
                   match State.Cursor.rewind_block rest with
-                  | Some ((T_LPAREN, p1, p2), prev) ->
-                      State.Cursor.replace_token prev (T_LPAREN_ARROW, p1, p2)
+                  | Some (T_LPAREN, loc, prev) ->
+                      State.Cursor.replace_token prev T_LPAREN_ARROW loc
                       |> State.try_recover
                   | Some _ -> assert false
                   | None -> error_checkpoint)
               | _ -> error_checkpoint)
-          | last -> (
+          | _ -> (
               match last_token with
               | T_VIRTUAL_SEMICOLON -> error_checkpoint
               | _
-                when nl_separated rest last
+                when nl_separated rest offending_loc
                      && acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
-                  State.Cursor.insert_token rest semicolon |> State.try_recover
+                  State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
               | T_RPAREN
-                when end_of_do_whle rest
-                     && acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
-                  State.Cursor.insert_token rest semicolon |> State.try_recover
+                when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON_DO_WHILE
+                -> State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+              | T_RCURLY
+                when acceptable
+                       previous_checkpoint
+                       Js_token.T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT ->
+                  State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
               | _ -> error_checkpoint)))
 
 let parse_aux the_parser (lexbuf : Lexer.t) =
@@ -498,14 +490,15 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
         | _ -> loop new_checkpoint new_checkpoint)
   in
   let checkpoint = State.create init in
-  match loop checkpoint checkpoint with
-  | `Ok x -> x
+  let res = loop checkpoint checkpoint in
+  match res with
+  | `Ok all -> all
   | `Error t ->
       let rec last cursor =
         match State.Cursor.last_token cursor with
         | None -> assert false
-        | Some ((T_VIRTUAL_SEMICOLON, _, _), cursor) -> last cursor
-        | Some ((_, p, _), _) -> p
+        | Some (T_VIRTUAL_SEMICOLON, _, cursor) -> last cursor
+        | Some (_, loc, _) -> Loc.p1 loc
       in
       let p = last (State.cursor t) in
       raise (Parsing_error (Parse_info.t_of_pos p))
@@ -541,13 +534,14 @@ let parse' lex =
   let toks = State.all_tokens toks in
   let take_annot_before =
     let toks_r = ref toks in
-    let rec loop start_pos acc (toks : (Js_token.t * _ * _) list) =
+    let rec loop start_pos acc (toks : (Js_token.t * _) list) =
       match toks with
       | [] -> assert false
-      | (TAnnot a, p1, _) :: xs -> loop start_pos ((a, Parse_info.t_of_pos p1) :: acc) xs
-      | ((TComment _ | TCommentLineDirective _), _, _) :: xs -> loop start_pos acc xs
-      | (_, p1, _p2) :: xs ->
-          if p1.Lexing.pos_cnum = start_pos.Lexing.pos_cnum
+      | (TAnnot a, loc) :: xs ->
+          loop start_pos ((a, Parse_info.t_of_pos (Loc.p1 loc)) :: acc) xs
+      | ((TComment _ | TCommentLineDirective _), _) :: xs -> loop start_pos acc xs
+      | (_, loc) :: xs ->
+          if Loc.cnum loc = start_pos.Lexing.pos_cnum
           then (
             toks_r := toks;
             List.rev acc)

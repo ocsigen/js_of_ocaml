@@ -218,6 +218,7 @@ val nfkc : normalization t
 (** Compatibility Decomposition, followed by Canonical Composition *)
 
 (** Specification of Javascript number objects. *)
+
 class type number = object
   method toString : js_string t meth
 

@@ -1,0 +1,29 @@
+;; Test that separate compilation behave correctly in presence of pack
+
+(env
+ (_
+  (js_of_ocaml
+   (compilation_mode separate))))
+
+(executable
+ (name test)
+ (modes byte js)
+ (libraries dynlink)
+ ;; It doesn't seem possible to create a pack-ed module with dune.
+ ;; However, dynlink uses pack to embed a copy
+ ;; of the compiler up until OCaml 5.2.
+ ;; Let's use it for the test
+ (link_flags
+  (:standard -linkall)))
+
+(rule
+ (target test.output)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node %{dep:test.bc.js}))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff test.reference test.output)))

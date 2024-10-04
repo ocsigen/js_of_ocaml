@@ -3,6 +3,9 @@
  (public_name js_of_ocaml-compiler.dynlink)
  (synopsis "Js_of_ocaml compiler dynlink support")
  (library_flags (-linkall))
+ (foreign_stubs
+  (language c)
+  (names stubs))
  (libraries
   js_of_ocaml-compiler
   js_of_ocaml-compiler.runtime
