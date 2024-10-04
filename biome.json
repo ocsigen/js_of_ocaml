@@ -2,11 +2,7 @@
   "$schema": "https://biomejs.dev/schemas/1.9.1/schema.json",
   "files": {
     "include": ["runtime"],
-    "ignore": [
-      "runtime/zstd.ts",
-      "runtime/wasm/runtime.js",
-      "runtime/wasm/deps.json"
-    ]
+    "ignore": ["runtime/zstd.ts"]
   },
   "formatter": {
     "enabled": true,
@@ -46,7 +42,8 @@
         "noDoubleEquals": "off",
         "noFallthroughSwitchClause": "off",
         "noRedeclare": "off",
-        "noSelfCompare": "off"
+        "noSelfCompare": "off",
+        "noRedundantUseStrict": "off"
       }
     }
   },

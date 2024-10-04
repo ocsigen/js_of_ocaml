@@ -17,11 +17,11 @@
 
 ((js) => async (args) => {
     "use strict";
-    let {link, src, generated} = args;
+    const {link, src, generated} = args;
 
     const isNode = globalThis?.process?.versions?.node;
 
-    let math =
+    const math =
         {cos:Math.cos, sin:Math.sin, tan:Math.tan,
          acos:Math.acos, asin:Math.asin, atan:Math.atan,
          cosh:Math.cosh, sinh:Math.sinh, tanh:Math.tanh,
@@ -31,16 +31,16 @@
          atan2:Math.atan2, hypot:Math.hypot, pow:Math.pow,
          fmod:(x, y) => x%y}
 
-    let typed_arrays =
+    const typed_arrays =
       [Float32Array, Float64Array, Int8Array, Uint8Array, Int16Array,
        Uint16Array, Int32Array, Int32Array, Int32Array, Int32Array,
        Float32Array, Float64Array, Uint8Array, Uint8ClampedArray]
 
-    const fs = isNode&&require('fs')
+    const fs = isNode&&require('node:fs')
 
-    let fs_cst = fs?.constants;
+    const fs_cst = fs?.constants;
 
-    let open_flags =
+    const open_flags =
       fs?[fs_cst.RDONLY,fs_cst.O_WRONLY,fs_cst.O_APPEND,fs_cst.O_CREAT,
           fs_cst.O_TRUNC,fs_cst.O_EXCL,fs_cst.O_NONBLOCK]:[]
 
@@ -97,7 +97,7 @@
       return h ^ s.length;
     }
 
-    let bindings =
+    const bindings =
         {jstag:
          WebAssembly.JSTag||
          // ZZZ not supported in Firefox yet
@@ -117,7 +117,7 @@
          new_obj:()=>({}),
          new:(c,args)=>new c(...args),
          global_this:globalThis,
-         iter_props:(o,f)=>{for (var nm in o) if(o.hasOwnProperty(nm)) f(nm)},
+         iter_props:(o,f)=>{for (var nm in o) if(o.hasOwn(nm)) f(nm)},
          array_length:(a)=>a.length,
          array_get:(a,i)=>a[i],
          array_set:(a,i,v)=>a[i]=v,
@@ -128,8 +128,8 @@
          append_string:(s1,s2)=>s1+s2,
          write_string:(s)=>{
            var start = 0, len = s.length;
-           while (1) {
-             let {read,written} = encoder.encodeInto(s.slice(start), out_buffer);
+           for(;;) {
+             const {read,written} = encoder.encodeInto(s.slice(start), out_buffer);
              len -= read;
              if (!len) return written;
              caml_extract_string(written);
@@ -227,7 +227,7 @@
              if (Math.abs(x) < 1.0) {
                return x.toFixed(dp);
              } else {
-               var e = parseInt(x.toString().split('+')[1]);
+               var e = Number.parseInt(x.toString().split('+')[1]);
                if (e > 20) {
                  e -= 20;
                  x /= Math.pow(10,e);
@@ -322,7 +322,7 @@
          argv:()=>isNode?process.argv.slice(1):['a.out'],
          getenv:(n)=>isNode?process.env[n]:null,
          system:(c)=>{
-           var res = require('child_process').spawnSync(c,{shell:true, stdio: 'inherit'});
+           var res = require('node:child_process').spawnSync(c,{shell:true, stdio: 'inherit'});
            if(res.error)throw res.error; return res.signal?255:res.status
          },
          time:()=>performance.now(),
@@ -350,7 +350,7 @@
          map_delete:(m,x)=>m.delete(x),
          log:(x)=>console.log('ZZZZZ', x)
         }
-    let string_ops =
+    const string_ops =
         {test:(v)=>+(typeof v==="string"),
          compare:(s1,s2)=>(s1<s2)?-1:+(s1>s2),
          hash:hash_string,
@@ -366,9 +366,9 @@
     const options = { builtins: ['js-string', 'text-decoder', 'text-encoder'] }
 
     function loadRelative(src) {
-      const path = require('path');
+      const path = require('node:path');
       const f = path.join(path.dirname(require.main.filename),src);
-      return require('fs/promises').readFile(f)
+      return require('node:fs/promises').readFile(f)
     }
     function fetchRelative(src) {
       const base = globalThis?.document?.currentScript?.src;
