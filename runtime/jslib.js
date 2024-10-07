@@ -285,6 +285,7 @@ function caml_js_var(x) {
     );
     //console.error("Js.Unsafe.eval_string")
   }
+  // biome-ignore lint/security/noGlobalEval:
   return eval(x);
 }
 //Provides: caml_js_call (const, mutable, shallow)
@@ -494,6 +495,7 @@ function caml_js_strict_equals(x, y) {
 //Provides: caml_js_eval_string (const)
 //Requires: caml_jsstring_of_string
 function caml_js_eval_string(s) {
+  // biome-ignore lint/security/noGlobalEval:
   return eval(caml_jsstring_of_string(s));
 }
 
@@ -501,6 +503,7 @@ function caml_js_eval_string(s) {
 //Requires: caml_jsstring_of_string
 function caml_js_expr(s) {
   console.error("caml_js_expr: fallback to runtime evaluation\n");
+  // biome-ignore lint/security/noGlobalEval:
   return eval(caml_jsstring_of_string(s));
 }
 
@@ -508,6 +511,7 @@ function caml_js_expr(s) {
 //Requires: caml_jsstring_of_string
 function caml_pure_js_expr(s) {
   console.error("caml_pure_js_expr: fallback to runtime evaluation\n");
+  // biome-ignore lint/security/noGlobalEval:
   return eval(caml_jsstring_of_string(s));
 }
 

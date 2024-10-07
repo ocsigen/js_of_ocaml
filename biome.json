@@ -24,9 +24,6 @@
       "nursery": {
         "noUselessEscapeInRegex": "error"
       },
-      "security": {
-        "noGlobalEval": "off"
-      },
       "style": {
         "noArguments": "off",
         "noCommaOperator": "off",
