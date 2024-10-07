@@ -88,7 +88,7 @@ jobs:
         # getting much better, but no luck yet, c.f:
         # https://github.com/ocaml/opam-repository/pull/26626
       - name: Install apt 32-bit dependencies
-        if: contains( matrix.ocaml-compiler, "ocaml-option-32bit")
+        if: contains( matrix.ocaml-compiler, 'ocaml-option-32bit')
         run: |
           sudo apt-get install aptitude
           sudo dpkg --add-architecture i386
