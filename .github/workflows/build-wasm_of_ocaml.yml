@@ -18,6 +18,11 @@ jobs:
         ocaml-compiler:
           - 4.14.x
           - 5.00.x
+          - 5.01.x
+          - 5.02.x
+        include:
+          - os: macos-latest
+            ocaml-compiler: 5.02.x
 
     runs-on: ${{ matrix.os }}
 
@@ -49,9 +54,13 @@ jobs:
           submodules: true
           ref: version_118
 
-      - name: Install ninja
-        if: steps.cache-binaryen.outputs.cache-hit != 'true'
+      - name: Install ninja (Ubuntu)
+        if: matrix.os == 'ubuntu-latest' && steps.cache-binaryen.outputs.cache-hit != 'true'
         run: sudo apt-get install ninja-build
+
+      - name: Install ninja (MacOS)
+        if: matrix.os == 'macos-latest' && steps.cache-binaryen.outputs.cache-hit != 'true'
+        run: brew install ninja
 
       - name: Build binaryen
         if: steps.cache-binaryen.outputs.cache-hit != 'true'
@@ -79,6 +88,7 @@ jobs:
             ~/.opam
             _opam
             /opt/hostedtoolcache/opam
+            /Users/runner/hostedtoolcache/opam
           key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
 
       - name: Install OCaml ${{ matrix.ocaml-compiler }}
@@ -90,14 +100,20 @@ jobs:
           opam-depext: true
           opam-depext-flags: --with-test
 
-      - name: Install packages
-        if: steps.cache-ocaml.outputs.cache-hit
+      - name: Install packages (Ubuntu)
+        if: matrix.os == 'ubuntu-latest' && steps.cache-ocaml.outputs.cache-hit
         run: sudo apt-get install bubblewrap
+
+      - name: Install packages (MacOs)
+        if: matrix.os == 'macos-latest' && steps.cache-ocaml.outputs.cache-hit
+        # for graphics
+        run: brew install xquartz
 
       - name: Set opam path
         if: steps.cache-ocaml.outputs.cache-hit
         run: |
           echo /opt/hostedtoolcache/opam/*/x86_64 >> $GITHUB_PATH
+          echo /Users/runner/hostedtoolcache/opam/*/arm64 >> $GITHUB_PATH
 
       - name: Cache OCaml
         if: steps.cache-ocaml.outputs.cache-hit != 'true'
@@ -107,6 +123,7 @@ jobs:
             ~/.opam
             _opam
             /opt/hostedtoolcache/opam
+            /Users/runner/hostedtoolcache/opam
           key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
 
       - name: Checkout code
