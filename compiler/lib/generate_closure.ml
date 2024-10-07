@@ -108,7 +108,9 @@ module Trampoline = struct
         let counter_plus_1 = Code.Var.fork counter in
         { params = []
         ; body =
-            [ ( Let (counter_plus_1, Prim (Extern "%int_add", [ Pv counter; Pc (Int 1l) ]))
+            [ ( Let
+                  ( counter_plus_1
+                  , Prim (Extern "%int_add", [ Pv counter; Pc (Int Targetint.one) ]) )
               , noloc )
             ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true }), loc
             ]
@@ -122,8 +124,9 @@ module Trampoline = struct
     ; body =
         [ ( Let
               ( new_args
-              , Prim (Extern "%js_array", Pc (Int 0l) :: List.map args ~f:(fun x -> Pv x))
-              )
+              , Prim
+                  ( Extern "%js_array"
+                  , Pc (Int Targetint.zero) :: List.map args ~f:(fun x -> Pv x) ) )
           , noloc )
         ; Let (return, Prim (Extern "caml_trampoline_return", [ Pv f; Pv new_args ])), loc
         ]
@@ -142,7 +145,7 @@ module Trampoline = struct
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ])), noloc
               ]
           | Some counter ->
-              [ Let (counter, Constant (Int 0l)), noloc
+              [ Let (counter, Constant (Int Targetint.zero)), noloc
               ; Let (result1, Apply { f; args = counter :: args; exact = true }), loc
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ])), noloc
               ])
@@ -244,7 +247,9 @@ module Trampoline = struct
                                     , Prim
                                         ( Lt
                                         , [ Pv counter
-                                          ; Pc (Int (Int32.of_int tailcall_max_depth))
+                                          ; Pc
+                                              (Int
+                                                 (Targetint.of_int_exn tailcall_max_depth))
                                           ] ) )
                                 , noloc )
                               in

@@ -396,7 +396,7 @@ module Arith = struct
     | W.I31Get (S, n') -> return n'
     | _ -> return (W.RefI31 n)
 
-  let wrap31 n = Int31.(of_int32_truncate n |> to_int32)
+  let wrap31 n = Targetint.(of_int32_truncate n |> to_int32)
 
   let of_int31 n =
     let* n = n in

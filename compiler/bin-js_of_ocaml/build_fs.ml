@@ -61,6 +61,7 @@ function jsoo_create_file_extern(name,content){
 }
 |}
   in
+  Config.set_target `JavaScript;
   let fragments = Linker.Fragment.parse_string code in
   Linker.load_fragments ~target_env:Isomorphic ~filename:"<dummy>" fragments;
   Linker.check_deps ();

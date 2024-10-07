@@ -136,10 +136,7 @@ module Check = struct
     let freename = StringSet.diff freename Reserved.provided in
     let freename = StringSet.remove Global_constant.global_object freename in
     let freename = if has_flags then StringSet.remove "FLAG" freename else freename in
-    if StringSet.mem Global_constant.old_global_object freename && false
-       (* Don't warn yet, we want to give a transition period where both
-          "globalThis" and "joo_global_object" are allowed without extra
-          noise *)
+    if StringSet.mem Global_constant.old_global_object freename
     then
       warn
         "warning: %s: 'joo_global_object' is being deprecated, please use `globalThis` \
