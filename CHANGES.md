@@ -21,6 +21,7 @@
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
 * Runtime: allow dynlink of precompiled js with separate compilation (#1676)
+* Runtime: reimplement the runtime of weak and ephemeron (#1707)
 * Lib: Modify Typed_array API for compatibility with WebAssembly
 * Toplevel: no longer set globals for toplevel initialization
 
