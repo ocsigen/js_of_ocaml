@@ -57,7 +57,7 @@ function caml_ephe_unset_key(x, i) {
           if (key === old) count++;
         }
       }
-      if (count == 1) x[1].unregister(old);
+      if (count === 1) x[1].unregister(old);
     }
   }
   x[caml_ephe_key_offset + i] = undefined;
@@ -84,7 +84,7 @@ function caml_weak_create(n) {
 //Requires: caml_invalid_argument
 //Requires: caml_ephe_set_key, caml_ephe_unset_key
 function caml_weak_set(x, i, v) {
-  if (v == 0) caml_ephe_unset_key(x, i);
+  if (v === 0) caml_ephe_unset_key(x, i);
   else caml_ephe_set_key(x, i, v[1]);
   return 0;
 }

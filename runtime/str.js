@@ -194,17 +194,17 @@ var re_match = (function () {
           else backtrack();
           break;
         case opcodes.BOL:
-          if (pos > 0 && s[pos - 1] != 10 /* \n */) {
+          if (pos > 0 && s[pos - 1] !== 10 /* \n */) {
             backtrack();
           }
           break;
         case opcodes.EOL:
-          if (pos < s.length && s[pos] != 10 /* \n */) {
+          if (pos < s.length && s[pos] !== 10 /* \n */) {
             backtrack();
           }
           break;
         case opcodes.WORDBOUNDARY:
-          if (pos == 0) {
+          if (pos === 0) {
             if (pos === s.length) {
               prefix_match();
               break;
@@ -215,7 +215,7 @@ var re_match = (function () {
             if (is_word_letter(s[pos - 1])) break;
             backtrack();
           } else {
-            if (is_word_letter(s[pos - 1]) != is_word_letter(s[pos])) break;
+            if (is_word_letter(s[pos - 1]) !== is_word_letter(s[pos])) break;
             backtrack();
           }
           break;
@@ -240,7 +240,7 @@ var re_match = (function () {
               prefix_match();
               break;
             }
-            if (s[i] != s[pos]) {
+            if (s[i] !== s[pos]) {
               backtrack();
               break;
             }
@@ -354,10 +354,10 @@ function re_replacement_text(repl, groups, orig) {
   var start, end, c;
   while (n < len) {
     cur = repl.charAt(n++);
-    if (cur != "\\") {
+    if (cur !== "\\") {
       res += cur;
     } else {
-      if (n == len) caml_failwith("Str.replace: illegal backslash sequence");
+      if (n === len) caml_failwith("Str.replace: illegal backslash sequence");
       cur = repl.charAt(n++);
       switch (cur) {
         case "\\":
@@ -378,7 +378,7 @@ function re_replacement_text(repl, groups, orig) {
             caml_failwith("Str.replace: reference to unmatched group");
           start = caml_array_get(groups, c * 2);
           end = caml_array_get(groups, c * 2 + 1);
-          if (start == -1)
+          if (start === -1)
             caml_failwith("Str.replace: reference to unmatched group");
           res += orig.slice(start, end);
           break;

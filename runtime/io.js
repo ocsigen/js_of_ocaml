@@ -40,7 +40,7 @@ function caml_sys_close(fd) {
 //Requires: caml_sys_fds
 //Requires: caml_sys_open_for_node
 function caml_sys_open_internal(file, idx) {
-  if (idx == undefined) {
+  if (idx === undefined) {
     idx = caml_sys_fds.length;
   }
   caml_sys_fds[idx] = file;
@@ -303,7 +303,7 @@ function caml_refill(chan) {
   if (chan.refill != null) {
     var str = chan.refill();
     var str_a = caml_uint8_array_of_string(str);
-    if (str_a.length == 0) {
+    if (str_a.length === 0) {
       chan.refill = null;
     } else {
       if (chan.buffer.length < chan.buffer_max + str_a.length) {
@@ -391,7 +391,7 @@ function caml_input_value(chanid) {
     return r;
   }
   var r = block(header, 0, caml_marshal_header_size);
-  if (r == 0) caml_raise_end_of_file();
+  if (r === 0) caml_raise_end_of_file();
   else if (r < caml_marshal_header_size)
     caml_failwith("input_value: truncated object");
   var len = caml_marshal_data_size(caml_bytes_of_array(header), 0);
@@ -507,11 +507,11 @@ function caml_ml_input_scan_line(chanid) {
       }
       var prev_max = chan.buffer_max;
       caml_refill(chan);
-      if (prev_max == chan.buffer_max) {
+      if (prev_max === chan.buffer_max) {
         return -chan.buffer_max | 0;
       }
     }
-  } while (chan.buffer[p++] != 10);
+  } while (chan.buffer[p++] !== 10);
   return (p - chan.buffer_curr) | 0;
 }
 
@@ -521,7 +521,7 @@ function caml_ml_input_scan_line(chanid) {
 function caml_ml_flush(chanid) {
   var chan = caml_ml_channel_get(chanid);
   if (!chan.opened) caml_raise_sys_error("Cannot flush a closed channel");
-  if (!chan.buffer || chan.buffer_curr == 0) return 0;
+  if (!chan.buffer || chan.buffer_curr === 0) return 0;
   if (chan.output) {
     chan.output(caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr));
   } else {

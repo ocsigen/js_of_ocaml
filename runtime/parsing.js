@@ -87,7 +87,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
 
   function token_name(names, number) {
     var str = caml_jsstring_of_string(names);
-    if (str[0] == "\x00") return "<unknown token>";
+    if (str[0] === "\x00") return "<unknown token>";
     return str.split("\x00")[number];
   }
 
@@ -95,8 +95,8 @@ function caml_parse_engine(tables, env, cmd, arg) {
     var token, kind;
     if (Array.isArray(tok)) {
       token = token_name(tables[tbl_names_block], tok[0]);
-      if (typeof tok[1] == "number") kind = "" + tok[1];
-      else if (typeof tok[1] == "string") kind = tok[1];
+      if (typeof tok[1] === "number") kind = "" + tok[1];
+      else if (typeof tok[1] === "string") kind = tok[1];
       else if (tok[1] instanceof MlBytes) kind = caml_jsbytes_of_string(tok[1]);
       else kind = "_";
       log("State " + state + ": read token " + token + "(" + kind + ")");
@@ -139,7 +139,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
 
       case 6: //loop:
         n = tables.defred[state];
-        if (n != 0) {
+        if (n !== 0) {
           cmd = reduce;
           continue the_loop;
         }
@@ -168,10 +168,10 @@ function caml_parse_engine(tables, env, cmd, arg) {
         n1 = tables.sindex[state];
         n2 = n1 + env[env_curr_char];
         if (
-          n1 != 0 &&
+          n1 !== 0 &&
           n2 >= 0 &&
           n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == env[env_curr_char]
+          tables.check[n2] === env[env_curr_char]
         ) {
           cmd = shift;
           continue the_loop;
@@ -179,10 +179,10 @@ function caml_parse_engine(tables, env, cmd, arg) {
         n1 = tables.rindex[state];
         n2 = n1 + env[env_curr_char];
         if (
-          n1 != 0 &&
+          n1 !== 0 &&
           n2 >= 0 &&
           n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == env[env_curr_char]
+          tables.check[n2] === env[env_curr_char]
         ) {
           n = tables.table[n2];
           cmd = reduce;
@@ -202,10 +202,10 @@ function caml_parse_engine(tables, env, cmd, arg) {
             n1 = tables.sindex[state1];
             n2 = n1 + ERRCODE;
             if (
-              n1 != 0 &&
+              n1 !== 0 &&
               n2 >= 0 &&
               n2 <= tables[tbl_tablesize] &&
-              tables.check[n2] == ERRCODE
+              tables.check[n2] === ERRCODE
             ) {
               if (caml_parser_trace) log("Recovering in state " + state1);
               cmd = shift_recover;
@@ -221,7 +221,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
             }
           }
         } else {
-          if (env[env_curr_char] == 0)
+          if (env[env_curr_char] === 0)
             return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
           if (caml_parser_trace) log("Discarding last token read");
           env[env_curr_char] = -1;
@@ -267,10 +267,10 @@ function caml_parse_engine(tables, env, cmd, arg) {
         n1 = tables.gindex[m];
         n2 = n1 + state1;
         if (
-          n1 != 0 &&
+          n1 !== 0 &&
           n2 >= 0 &&
           n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == state1
+          tables.check[n2] === state1
         )
           state = tables.table[n2];
         else state = tables.dgoto[m];

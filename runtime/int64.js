@@ -81,7 +81,7 @@ MlInt64.prototype.mul = function (x) {
   return new MlInt64(lo, mi, hi);
 };
 MlInt64.prototype.isZero = function () {
-  return (this.lo | this.mi | this.hi) == 0;
+  return (this.lo | this.mi | this.hi) === 0;
 };
 MlInt64.prototype.isNeg = function () {
   return this.hi << 16 < 0;
@@ -97,7 +97,7 @@ MlInt64.prototype.xor = function (x) {
 };
 MlInt64.prototype.shift_left = function (s) {
   s = s & 63;
-  if (s == 0) return this;
+  if (s === 0) return this;
   if (s < 24) {
     return new MlInt64(
       this.lo << s,
@@ -115,7 +115,7 @@ MlInt64.prototype.shift_left = function (s) {
 };
 MlInt64.prototype.shift_right_unsigned = function (s) {
   s = s & 63;
-  if (s == 0) return this;
+  if (s === 0) return this;
   if (s < 24)
     return new MlInt64(
       (this.lo >> s) | (this.mi << (24 - s)),
@@ -132,7 +132,7 @@ MlInt64.prototype.shift_right_unsigned = function (s) {
 };
 MlInt64.prototype.shift_right = function (s) {
   s = s & 63;
-  if (s == 0) return this;
+  if (s === 0) return this;
   var h = (this.hi << 16) >> 16;
   if (s < 24)
     return new MlInt64(
@@ -383,7 +383,7 @@ function caml_int64_of_string(s) {
   for (;;) {
     i++;
     c = caml_string_unsafe_get(s, i);
-    if (c == 95) continue;
+    if (c === 95) continue;
     d = caml_parse_digit(c);
     if (d < 0 || d >= base) break;
     /* Detect overflow in multiplication base * res */
@@ -393,7 +393,7 @@ function caml_int64_of_string(s) {
     /* Detect overflow in addition (base * res) + d */
     if (caml_int64_ult(res, d)) caml_failwith("int_of_string");
   }
-  if (i != caml_ml_string_length(s)) caml_failwith("int_of_string");
+  if (i !== caml_ml_string_length(s)) caml_failwith("int_of_string");
   if (signedness && caml_int64_ult(new MlInt64(0, 0, 0x8000), res))
     caml_failwith("int_of_string");
   if (sign < 0) res = caml_int64_neg(res);
