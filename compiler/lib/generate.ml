@@ -797,7 +797,7 @@ let apply_fun_raw ctx f params exact trampolined =
       let l = Utf8_string.of_string_exn "l" in
       J.ECond
         ( J.EBin
-            ( J.EqEq
+            ( J.EqEqEq
             , J.ECond
                 ( J.EBin (J.Ge, J.dot f l, int 0)
                 , J.dot f l
@@ -956,9 +956,10 @@ let _ =
   register_bin_prim "%int_lsr" `Pure (fun cx cy _ -> to_int (J.EBin (J.Lsr, cx, cy)));
   register_bin_prim "%int_asr" `Pure (fun cx cy _ -> J.EBin (J.Asr, cx, cy));
   register_un_prim "%int_neg" `Pure (fun cx _ -> to_int (J.EUn (J.Neg, cx)));
-  register_bin_prim "caml_eq_float" `Pure (fun cx cy _ -> bool (J.EBin (J.EqEq, cx, cy)));
+  register_bin_prim "caml_eq_float" `Pure (fun cx cy _ ->
+      bool (J.EBin (J.EqEqEq, cx, cy)));
   register_bin_prim "caml_neq_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.NotEq, cx, cy)));
+      bool (J.EBin (J.NotEqEq, cx, cy)));
   register_bin_prim "caml_ge_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cy, cx)));
   register_bin_prim "caml_le_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cx, cy)));
   register_bin_prim "caml_gt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cy, cx)));
@@ -1307,7 +1308,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let (px, cx), queue = access_queue' ~ctx queue a in
             let (py, cy), queue = access_queue' ~ctx queue b in
             let prop = or_p px py in
-            bool (J.EBin (J.EqEq, cx, cy)), prop, queue
+            bool (J.EBin (J.EqEqEq, cx, cy)), prop, queue
         | Extern "caml_string_concat", [ a; b ] when Config.Flag.use_js_string () ->
             let (pa, ca), queue = access_queue' ~ctx queue a in
             let (pb, cb), queue = access_queue' ~ctx queue b in

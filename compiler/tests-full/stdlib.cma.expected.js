@@ -338,12 +338,12 @@
     caml_sys_open = runtime.caml_sys_open,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -984,12 +984,12 @@
    "use strict";
    var runtime = globalThis.jsoo_runtime;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -1219,7 +1219,7 @@
     caml_check_bound = runtime.caml_check_bound,
     caml_obj_tag = runtime.caml_obj_tag;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
@@ -1398,7 +1398,7 @@
    "use strict";
    var runtime = globalThis.jsoo_runtime;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
@@ -1476,7 +1476,7 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
@@ -1554,12 +1554,12 @@
    "use strict";
    var runtime = globalThis.jsoo_runtime, caml_obj_tag = runtime.caml_obj_tag;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -1653,17 +1653,17 @@
     runtime = globalThis.jsoo_runtime,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -2598,12 +2598,12 @@
    "use strict";
    var runtime = globalThis.jsoo_runtime;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -2728,12 +2728,12 @@
    "use strict";
    var runtime = globalThis.jsoo_runtime;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -2947,7 +2947,7 @@
     caml_hash = runtime.caml_hash,
     caml_string_of_bytes = runtime.caml_string_of_bytes;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
@@ -3048,12 +3048,12 @@
     caml_format_int = runtime.caml_format_int,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -3208,17 +3208,17 @@
     caml_compare = runtime.caml_compare,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -4870,12 +4870,12 @@
     caml_string_of_bytes = runtime.caml_string_of_bytes,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -6429,17 +6429,17 @@
     caml_string_unsafe_get = runtime.caml_string_unsafe_get,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -6618,7 +6618,7 @@
      /*<<string.ml:99:9>>*/ return 0;
     /*<<string.ml:99:14>>*/ }
    function trim(s){
-     /*<<string.ml:102:2>>*/ if(s == cst$0)
+     /*<<string.ml:102:2>>*/ if(s === cst$0)
       /*<<string.ml:102:17>>*/ return s;
      /*<<string.ml:103:39>>*/ if
      (!
@@ -7057,7 +7057,7 @@
     caml_marshal_data_size = runtime.caml_marshal_data_size,
     caml_ml_bytes_length = runtime.caml_ml_bytes_length;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
@@ -7138,17 +7138,17 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -8108,17 +8108,17 @@
     caml_signbit_float = runtime.caml_signbit_float,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -8135,13 +8135,13 @@
        /*<<float.ml:38:20>>*/ runtime.caml_int64_float_of_bits
        (runtime.caml_int64_create_lo_mi_hi(1, 0, 32752));
    function is_finite(x){
-     /*<<float.ml:39:27>>*/ return x - x == 0. ? 1 : 0;
+     /*<<float.ml:39:27>>*/ return x - x === 0. ? 1 : 0;
     /*<<float.ml:39:38>>*/ }
    function is_infinite(x){
-     /*<<float.ml:40:29>>*/ return 1. / x == 0. ? 1 : 0;
+     /*<<float.ml:40:29>>*/ return 1. / x === 0. ? 1 : 0;
     /*<<float.ml:40:41>>*/ }
    function is_nan(x){
-     /*<<float.ml:41:24>>*/ return x != x ? 1 : 0;
+     /*<<float.ml:41:24>>*/ return x !== x ? 1 : 0;
     /*<<float.ml:41:30>>*/ }
    var
     max_float = Stdlib[25],
@@ -8164,7 +8164,7 @@
       "Float.Array.map2: arrays must have the same length";
    function is_integer(x){
      /*<<float.ml:116:19>>*/ var
-     _aX_ = x ==  /*<<float.ml:116:23>>*/ runtime.caml_trunc_float(x) ? 1 : 0;
+     _aX_ = x ===  /*<<float.ml:116:23>>*/ runtime.caml_trunc_float(x) ? 1 : 0;
     return _aX_ ? is_finite(x) : _aX_;
     /*<<float.ml:116:45>>*/ }
    function succ(x){
@@ -8186,9 +8186,9 @@
         /*<<float.ml:139:18>>*/ caml_signbit_float(y)
        &&  /*<<float.ml:139:34>>*/ caml_signbit_float(x))
       break a;
-      /*<<float.ml:141:10>>*/ return x != x ? x : y;
+      /*<<float.ml:141:10>>*/ return x !== x ? x : y;
     }
-     /*<<float.ml:140:7>>*/ return y != y ? y : x;
+     /*<<float.ml:140:7>>*/ return y !== y ? y : x;
     /*<<float.ml:141:32>>*/ }
    function max(x, y){
      /*<<float.ml:144:2>>*/ a:
@@ -8198,12 +8198,12 @@
         /*<<float.ml:144:18>>*/ caml_signbit_float(y)
        &&  /*<<float.ml:144:34>>*/ caml_signbit_float(x))
       break a;
-      /*<<float.ml:146:10>>*/ return y != y ? y : x;
+      /*<<float.ml:146:10>>*/ return y !== y ? y : x;
     }
-     /*<<float.ml:145:7>>*/ return x != x ? x : y;
+     /*<<float.ml:145:7>>*/ return x !== x ? x : y;
     /*<<float.ml:146:32>>*/ }
    function min_max(x, y){
-     /*<<float.ml:149:2>>*/ if(x == x && y == y){
+     /*<<float.ml:149:2>>*/ if(x === x && y === y){
      a:
      if(! (x < y)){
        /*<<float.ml:150:39>>*/ if
@@ -8225,9 +8225,9 @@
         /*<<float.ml:153:18>>*/ caml_signbit_float(y)
        &&  /*<<float.ml:153:34>>*/ caml_signbit_float(x))
       break a;
-      /*<<float.ml:155:10>>*/ return y != y ? x : y;
+      /*<<float.ml:155:10>>*/ return y !== y ? x : y;
     }
-     /*<<float.ml:154:7>>*/ return x != x ? y : x;
+     /*<<float.ml:154:7>>*/ return x !== x ? y : x;
     /*<<float.ml:155:32>>*/ }
    function max_num(x, y){
      /*<<float.ml:158:2>>*/ a:
@@ -8237,14 +8237,14 @@
         /*<<float.ml:158:18>>*/ caml_signbit_float(y)
        &&  /*<<float.ml:158:34>>*/ caml_signbit_float(x))
       break a;
-      /*<<float.ml:160:10>>*/ return x != x ? y : x;
+      /*<<float.ml:160:10>>*/ return x !== x ? y : x;
     }
-     /*<<float.ml:159:7>>*/ return y != y ? x : y;
+     /*<<float.ml:159:7>>*/ return y !== y ? x : y;
     /*<<float.ml:160:32>>*/ }
    function min_max_num(x, y){
-     /*<<float.ml:163:2>>*/ if(x != x)
+     /*<<float.ml:163:2>>*/ if(x !== x)
       /*<<float.ml:163:19>>*/ return [0, y, y];
-     /*<<float.ml:164:10>>*/ if(y != y)
+     /*<<float.ml:164:10>>*/ if(y !== y)
       /*<<float.ml:164:24>>*/ return [0, x, x];
     a:
     if(! (x < y)){
@@ -8695,7 +8695,7 @@
      /*<<float.ml:398:4>>*/ var n = a.length - 1, i = 0;
      /*<<float.ml:400:6>>*/ for(;;){
      if(i === n)  /*<<float.ml:400:20>>*/ return 0;
-     if(x == a[1 + i])  /*<<float.ml:401:40>>*/ return 1;
+     if(x === a[1 + i])  /*<<float.ml:401:40>>*/ return 1;
       /*<<float.ml:402:11>>*/  /*<<float.ml:402:11>>*/ var i$0 = i + 1 | 0;
      i = i$0;
     }
@@ -9716,27 +9716,27 @@
     caml_create_bytes = runtime.caml_create_bytes,
     caml_ml_bytes_length = runtime.caml_ml_bytes_length;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -10006,17 +10006,17 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -10271,17 +10271,17 @@
     cst_Set_bal$3 = "Set.bal",
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -11281,17 +11281,17 @@
     cst_Map_bal$3 = "Map.bal",
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -12286,17 +12286,17 @@
     runtime = globalThis.jsoo_runtime,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -12426,12 +12426,12 @@
     runtime = globalThis.jsoo_runtime,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -12637,27 +12637,27 @@
     caml_string_get = runtime.caml_string_get,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -13261,7 +13261,7 @@
     caml_ml_mutex_unlock = runtime.caml_ml_mutex_unlock,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
@@ -13318,12 +13318,12 @@
     runtime = globalThis.jsoo_runtime,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -13443,22 +13443,22 @@
     caml_ml_domain_id = runtime.caml_ml_domain_id,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -13766,27 +13766,27 @@
     caml_trampoline_return = runtime.caml_trampoline_return,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -18426,7 +18426,7 @@
      /*<<camlinternalFormat.ml:1962:2>>*/ return make_printf(k, 0, fmt);
    }
    function open_box_of_string(str){
-     /*<<camlinternalFormat.ml:1969:2>>*/ if(str == cst$43)
+     /*<<camlinternalFormat.ml:1969:2>>*/ if(str === cst$43)
       /*<<camlinternalFormat.ml:1969:19>>*/ return _x_;
     var len = caml_ml_string_length(str);
     function invalid_box(param){
@@ -20368,17 +20368,17 @@
    "use strict";
    var runtime = globalThis.jsoo_runtime;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -20497,27 +20497,27 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -21402,32 +21402,32 @@
     caml_sys_argv = runtime.caml_sys_argv,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
     /*<<?>>*/ function caml_call6(f, a0, a1, a2, a3, a4, a5){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 6
+    return (f.l >= 0 ? f.l : f.l = f.length) === 6
             ? f(a0, a1, a2, a3, a4, a5)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4, a5]);
    }
@@ -22299,27 +22299,27 @@
     caml_obj_tag = runtime.caml_obj_tag,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call6(f, a0, a1, a2, a3, a4, a5){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 6
+    return (f.l >= 0 ? f.l : f.l = f.length) === 6
             ? f(a0, a1, a2, a3, a4, a5)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4, a5]);
    }
     /*<<?>>*/ function caml_call8(f, a0, a1, a2, a3, a4, a5, a6, a7){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 8
+    return (f.l >= 0 ? f.l : f.l = f.length) === 8
             ? f(a0, a1, a2, a3, a4, a5, a6, a7)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4, a5, a6, a7]);
    }
@@ -22907,12 +22907,12 @@
     caml_restore_raw_backtrace = runtime.caml_restore_raw_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -23002,22 +23002,22 @@
     cst = "\n",
     caml_ml_string_length = runtime.caml_ml_string_length;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
@@ -23227,27 +23227,27 @@
     caml_ml_input_bigarray = runtime.caml_ml_input_bigarray,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -23590,12 +23590,12 @@
    "use strict";
    var runtime = globalThis.jsoo_runtime;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
@@ -23720,17 +23720,17 @@
     caml_ml_string_length = runtime.caml_ml_string_length,
     caml_string_get = runtime.caml_string_get;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
@@ -24057,17 +24057,17 @@
     caml_make_vect = runtime.caml_make_vect,
     caml_mul = runtime.caml_mul;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -24745,22 +24745,22 @@
     caml_notequal = runtime.caml_notequal,
     caml_sys_random_seed = runtime.caml_sys_random_seed;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -25345,22 +25345,22 @@
     caml_sys_getenv = runtime.caml_sys_getenv,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
@@ -26391,27 +26391,27 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_mod = runtime.caml_mod;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -26958,22 +26958,22 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_ml_string_length = runtime.caml_ml_string_length;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
@@ -29131,22 +29131,22 @@
     caml_trampoline_return = runtime.caml_trampoline_return,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
@@ -31346,22 +31346,22 @@
     caml_string_compare = runtime.caml_string_compare,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call5(f, a0, a1, a2, a3, a4){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 5
+    return (f.l >= 0 ? f.l : f.l = f.length) === 5
             ? f(a0, a1, a2, a3, a4)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4]);
    }
@@ -32435,7 +32435,7 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_obj_tag = runtime.caml_obj_tag;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
@@ -32609,17 +32609,17 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
@@ -33905,22 +33905,22 @@
     caml_trampoline_return = runtime.caml_trampoline_return,
     caml_wrap_exception = runtime.caml_wrap_exception;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 3
+    return (f.l >= 0 ? f.l : f.l = f.length) === 3
             ? f(a0, a1, a2)
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
     /*<<?>>*/ function caml_call4(f, a0, a1, a2, a3){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 4
+    return (f.l >= 0 ? f.l : f.l = f.length) === 4
             ? f(a0, a1, a2, a3)
             : runtime.caml_call_gen(f, [a0, a1, a2, a3]);
    }
@@ -33968,7 +33968,7 @@
     Stdlib_Buffer = global_data.Stdlib__Buffer,
     Stdlib_Sys = global_data.Stdlib__Sys;
    function generic_basename(is_dir_sep, current_dir_name, name){
-     /*<<filename.ml:37:2>>*/ if(name == cst$19)
+     /*<<filename.ml:37:2>>*/ if(name === cst$19)
       /*<<filename.ml:47:7>>*/ return current_dir_name;
     var n$3 = caml_ml_string_length(name) - 1 | 0, n = n$3;
      /*<<filename.ml:38:4>>*/ for(;;){
@@ -33998,7 +33998,7 @@
     }
     /*<<filename.ml:48:40>>*/ }
    function generic_dirname(is_dir_sep, current_dir_name, name){
-     /*<<filename.ml:55:2>>*/ if(name == cst$19)
+     /*<<filename.ml:55:2>>*/ if(name === cst$19)
       /*<<filename.ml:69:7>>*/ return current_dir_name;
     var n$5 = caml_ml_string_length(name) - 1 | 0, n = n$5;
      /*<<filename.ml:56:4>>*/ for(;;){
@@ -34093,7 +34093,7 @@
      r =
         /*<<filename.ml:108:14>>*/ caml_call3
         (Stdlib_String[16], filename, len_f - len_s | 0, len_s);
-     /*<<filename.ml:109:9>>*/ return r == suffix
+     /*<<filename.ml:109:9>>*/ return r === suffix
             ? [0,
                /*<<filename.ml:110:13>>*/ caml_call3
                (Stdlib_String[16], filename, 0, len_f - len_s | 0)]
@@ -34330,7 +34330,7 @@
        /*<<filename.ml:150:31>>*/ _S_ =
          /*<<filename.ml:150:31>>*/ caml_call1(Stdlib_String[27], suff),
       _T_ =
-         /*<<filename.ml:150:4>>*/ caml_call1(Stdlib_String[27], s) == _S_
+         /*<<filename.ml:150:4>>*/ caml_call1(Stdlib_String[27], s) === _S_
          ? 1
          : 0;
     else
@@ -34350,7 +34350,7 @@
         /*<<filename.ml:156:36>>*/ caml_call1(Stdlib_String[27], suffix);
      /*<<filename.ml:156:9>>*/ return  /*<<filename.ml:156:9>>*/ caml_call1
              (Stdlib_String[27], r)
-            == _Q_
+            === _Q_
             ? [0,
                /*<<filename.ml:157:13>>*/ caml_call3
                (Stdlib_String[16], filename, 0, len_f - len_s | 0)]
@@ -34982,7 +34982,7 @@
              /*<<complex.ml:55:40>>*/ Math.sin(a) * n];
     /*<<complex.ml:55:52>>*/ }
    function sqrt(x){
-     /*<<complex.ml:58:2>>*/ if(x[1] == 0. && x[2] == 0.)
+     /*<<complex.ml:58:2>>*/ if(x[1] === 0. && x[2] === 0.)
       /*<<complex.ml:58:35>>*/ return _a_;
      /*<<complex.ml:60:12>>*/ var
       /*<<complex.ml:60:12>>*/ r =  /*<<complex.ml:60:12>>*/ Math.abs(x[1]),
@@ -35673,12 +35673,12 @@
     caml_wrap_exception = runtime.caml_wrap_exception,
     jsoo_effect_not_supported = runtime.jsoo_effect_not_supported;
     /*<<?>>*/ function caml_call1(f, a0){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 1
+    return (f.l >= 0 ? f.l : f.l = f.length) === 1
             ? f(a0)
             : runtime.caml_call_gen(f, [a0]);
    }
     /*<<?>>*/ function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) == 2
+    return (f.l >= 0 ? f.l : f.l = f.length) === 2
             ? f(a0, a1)
             : runtime.caml_call_gen(f, [a0, a1]);
    }
