@@ -109,6 +109,7 @@ function caml_compare_val(a, b, total) {
         }
         return tag_a < tag_b ? -1 : 1;
       }
+      // tag_a = tag_b
       switch (tag_a) {
         // 246: Lazy_tag handled bellow
         case 247: // Closure_tag
@@ -116,8 +117,8 @@ function caml_compare_val(a, b, total) {
           caml_invalid_argument("compare: functional value");
           break;
         case 248: // Object
-          var x = caml_int_compare(a[2], b[2]);
-          if (x !== 0) return x | 0;
+          var x = caml_int_compare(a[2], b[2]) | 0;
+          if (x !== 0) return x;
           break;
         case 249: // Infix
           // Cannot happen
@@ -132,8 +133,8 @@ function caml_compare_val(a, b, total) {
           break;
         case 252: // OCaml bytes
           if (a !== b) {
-            var x = caml_bytes_compare(a, b);
-            if (x !== 0) return x | 0;
+            var x = caml_bytes_compare(a, b) | 0;
+            if (x !== 0) return x;
           }
           break;
         case 253: // Double_tag
@@ -204,20 +205,15 @@ function caml_compare_val(a, b, total) {
           // - if a and b are strings, apply lexicographic comparison
           // - if a or b are not strings, convert a and b to number
           //   and apply standard comparison
-          //
-          // Exception: `!=` will not coerce/convert if both a and b are objects
           if (a < b) return -1;
           if (a > b) return 1;
           if (a !== b) {
-            if (!total) return Number.NaN;
-            if (!Number.isNaN(a)) return 1;
-            if (!Number.isNaN(b)) return -1;
+            return total ? 1 : Number.NaN;
           }
           break;
         case 1251: // JavaScript Symbol, no ordering.
           if (a !== b) {
-            if (!total) return Number.NaN;
-            return 1;
+            return total ? 1 : Number.NaN;
           }
           break;
         case 1252: // ocaml strings
