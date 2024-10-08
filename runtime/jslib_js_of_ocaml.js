@@ -25,7 +25,7 @@ function caml_js_on_ie() {
     globalThis.navigator && globalThis.navigator.userAgent
       ? globalThis.navigator.userAgent
       : "";
-  return ua.indexOf("MSIE") != -1 && ua.indexOf("Opera") != 0;
+  return ua.indexOf("MSIE") !== -1 && ua.indexOf("Opera") !== 0;
 }
 
 //Provides: caml_js_html_escape const (const)

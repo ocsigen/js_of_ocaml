@@ -19,7 +19,7 @@
 //Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_format_int(fmt, i) {
-  if (caml_jsbytes_of_string(fmt) == "%d")
+  if (caml_jsbytes_of_string(fmt) === "%d")
     return caml_string_of_jsbytes("" + i);
   var f = caml_parse_format(fmt);
   if (i < 0) {
@@ -57,7 +57,7 @@ function caml_parse_sign_and_base(s) {
         break;
     }
   }
-  if (i + 1 < len && caml_string_unsafe_get(s, i) == 48)
+  if (i + 1 < len && caml_string_unsafe_get(s, i) === 48)
     switch (caml_string_unsafe_get(s, i + 1)) {
       case 120:
       case 88:
@@ -111,18 +111,18 @@ function caml_int_of_string(s) {
   var res = d;
   for (i++; i < len; i++) {
     c = caml_string_unsafe_get(s, i);
-    if (c == 95) continue;
+    if (c === 95) continue;
     d = caml_parse_digit(c);
     if (d < 0 || d >= base) break;
     res = base * res + d;
     if (res > threshold) caml_failwith("int_of_string");
   }
-  if (i != len) caml_failwith("int_of_string");
+  if (i !== len) caml_failwith("int_of_string");
   // For base different from 10, we expect an unsigned representation,
   // hence any value of 'res' (less than 'threshold') is acceptable.
   // But we have to convert the result back to a signed integer.
   res = sign * res;
-  if (signedness && (res | 0) != res)
+  if (signedness && (res | 0) !== res)
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
     caml_failwith("int_of_string");
   return res | 0;
@@ -136,14 +136,14 @@ function caml_mul(a, b) {
 //Provides: caml_div
 //Requires: caml_raise_zero_divide
 function caml_div(x, y) {
-  if (y == 0) caml_raise_zero_divide();
+  if (y === 0) caml_raise_zero_divide();
   return (x / y) | 0;
 }
 
 //Provides: caml_mod
 //Requires: caml_raise_zero_divide
 function caml_mod(x, y) {
-  if (y == 0) caml_raise_zero_divide();
+  if (y === 0) caml_raise_zero_divide();
   return x % y;
 }
 
