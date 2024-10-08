@@ -54,7 +54,7 @@
          (field (mut (ref eq)))
          (field (mut (ref null $assoc)))))
 
-   (type $assoc_array (array (field (mut (ref null $assoc)))))
+   (type $assoc_array (array (mut (ref null $assoc))))
 
    (global $Named_value_size i32 (i32.const 13))
 

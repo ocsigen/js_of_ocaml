@@ -2137,7 +2137,7 @@
                   (ref.i31 (array.get $string (local.get $s) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
-      (call $wrap (extern.internalize (local.get $ta))))
+      (call $wrap (any.convert_extern (local.get $ta))))
 
    (func (export "caml_ba_get_kind") (param (ref eq)) (result i32)
       (struct.get $bigarray $ba_kind (ref.cast (ref $bigarray) (local.get 0))))
