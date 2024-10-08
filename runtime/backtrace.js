@@ -19,7 +19,7 @@
 //Requires: jsoo_sys_getenv
 var caml_record_backtrace_env_flag = FLAG("with-js-error");
 
-(function () {
+(() => {
   var r = jsoo_sys_getenv("OCAMLRUNPARAM");
   if (r !== undefined) {
     var l = r.split(",");

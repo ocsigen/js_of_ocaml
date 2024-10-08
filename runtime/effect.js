@@ -60,7 +60,7 @@ function caml_push_trap(handler) {
 //If: effects
 function caml_pop_trap() {
   if (!caml_exn_stack)
-    return function (x) {
+    return (x) => {
       throw x;
     };
   var h = caml_exn_stack[1];
