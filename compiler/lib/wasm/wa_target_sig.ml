@@ -19,70 +19,16 @@
 module type S = sig
   type expression = Wa_code_generation.expression
 
-  module Stack : sig
-    type stack = Code.Var.t option list
-
-    type info
-
-    val generate_spilling_information :
-         Code.program
-      -> context:Wa_code_generation.context
-      -> closures:Wa_closure_conversion.closure Code.Var.Map.t
-      -> pc:Code.Addr.t
-      -> env:Code.Var.t
-      -> params:Code.Var.t list
-      -> info
-
-    val make_info : unit -> info
-
-    val add_spilling :
-         info
-      -> location:Code.Var.t
-      -> stack:stack
-      -> live_vars:Code.Var.Set.t
-      -> spilled_vars:Code.Var.Set.t
-      -> info * stack
-
-    type ctx
-
-    val start_function : context:Wa_code_generation.context -> info -> ctx
-
-    val start_block : context:Wa_code_generation.context -> info -> Code.Addr.t -> ctx
-
-    val perform_reloads :
-         ctx
-      -> [ `Branch of Code.last | `Instr of Code.instr | `Vars of Code.Var.Set.t ]
-      -> unit Wa_code_generation.t
-
-    val perform_spilling :
-         ctx
-      -> [ `Function | `Instr of Code.Var.t | `Block of Code.Addr.t ]
-      -> unit Wa_code_generation.t
-
-    val kill_variables : ctx -> unit
-
-    val assign : ctx -> Code.Var.t -> unit Wa_code_generation.t
-
-    val adjust_stack :
-      ctx -> src:Code.Addr.t -> dst:Code.Addr.t -> unit Wa_code_generation.t
-
-    val stack_adjustment_needed : ctx -> src:Code.Addr.t -> dst:Code.Addr.t -> bool
-  end
-
   module Memory : sig
     val allocate :
-         Stack.ctx
-      -> Code.Var.t
-      -> tag:int
-      -> [ `Expr of Wa_ast.expression | `Var of Wa_ast.var ] list
-      -> expression
+      tag:int -> [ `Expr of Wa_ast.expression | `Var of Wa_ast.var ] list -> expression
 
     val load_function_pointer :
          cps:bool
       -> arity:int
       -> ?skip_cast:bool
       -> expression
-      -> ([ `Index | `Ref of Wa_ast.var ] * Wa_ast.expression) Wa_code_generation.t
+      -> (Wa_ast.var * Wa_ast.expression) Wa_code_generation.t
 
     val load_real_closure :
          cps:bool
@@ -130,19 +76,19 @@ module type S = sig
 
     val bytes_set : expression -> expression -> expression -> unit Wa_code_generation.t
 
-    val box_float : Stack.ctx -> Code.Var.t -> expression -> expression
+    val box_float : expression -> expression
 
     val unbox_float : expression -> expression
 
-    val box_int32 : Stack.ctx -> Code.Var.t -> expression -> expression
+    val box_int32 : expression -> expression
 
     val unbox_int32 : expression -> expression
 
-    val box_int64 : Stack.ctx -> Code.Var.t -> expression -> expression
+    val box_int64 : expression -> expression
 
     val unbox_int64 : expression -> expression
 
-    val box_nativeint : Stack.ctx -> Code.Var.t -> expression -> expression
+    val box_nativeint : expression -> expression
 
     val unbox_nativeint : expression -> expression
   end
@@ -215,7 +161,6 @@ module type S = sig
     val translate :
          context:Wa_code_generation.context
       -> closures:Wa_closure_conversion.closure Code.Var.Map.t
-      -> stack_ctx:Stack.ctx
       -> cps:bool
       -> Code.Var.t
       -> expression
@@ -228,9 +173,7 @@ module type S = sig
       -> unit Wa_code_generation.t
 
     val curry_allocate :
-         stack_ctx:Stack.ctx
-      -> x:Code.Var.t
-      -> cps:bool
+         cps:bool
       -> arity:int
       -> int
       -> f:Code.Var.t

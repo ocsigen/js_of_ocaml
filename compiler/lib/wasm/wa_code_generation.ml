@@ -38,7 +38,7 @@ type constant_global =
 
 type context =
   { constants : (Var.t, W.expression) Hashtbl.t
-  ; mutable data_segments : (bool * W.data list) Var.Map.t
+  ; mutable data_segments : string Var.Map.t
   ; mutable constant_globals : constant_global Var.Map.t
   ; mutable other_fields : W.module_field list
   ; mutable imports : (Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
@@ -119,11 +119,9 @@ let expression_list f l =
   in
   loop [] l
 
-let register_data_segment x ~active v st =
-  st.context.data_segments <- Var.Map.add x (active, v) st.context.data_segments;
+let register_data_segment x v st =
+  st.context.data_segments <- Var.Map.add x v st.context.data_segments;
   (), st
-
-let get_data_segment x st = Var.Map.find x st.context.data_segments, st
 
 let get_context st = st.context, st
 
@@ -180,16 +178,13 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
 let register_global name ?exported_name ?(constant = false) typ init st =
   st.context.other_fields <-
     W.Global { name; exported_name; typ; init } :: st.context.other_fields;
-  (match name with
-  | S _ -> ()
-  | V name ->
-      st.context.constant_globals <-
-        Var.Map.add
-          name
-          { init = (if not typ.mut then Some init else None)
-          ; constant = (not typ.mut) || constant
-          }
-          st.context.constant_globals);
+  st.context.constant_globals <-
+    Var.Map.add
+      name
+      { init = (if not typ.mut then Some init else None)
+      ; constant = (not typ.mut) || constant
+      }
+      st.context.constant_globals;
   (), st
 
 let global_is_registered name =
@@ -331,8 +326,6 @@ module Arith = struct
       | W.Const (I32 n), W.Const (I32 n') -> W.Const (I32 (Int32.add n n'))
       | W.Const (I32 0l), _ -> e'
       | _, W.Const (I32 0l) -> e
-      | W.ConstSym (sym, offset), W.Const (I32 n) ->
-          W.ConstSym (sym, offset + Int32.to_int n)
       | W.Const _, _ -> W.BinOp (I32 Add, e', e)
       | _ -> W.BinOp (I32 Add, e, e'))
 
@@ -407,8 +400,8 @@ end
 
 let is_small_constant e =
   match e with
-  | W.ConstSym _ | W.Const _ | W.RefI31 (W.Const _) | W.RefFunc _ -> return true
-  | W.GlobalGet (V name) -> global_is_constant name
+  | W.Const _ | W.RefI31 (W.Const _) | W.RefFunc _ -> return true
+  | W.GlobalGet name -> global_is_constant name
   | _ -> return false
 
 let un_op_is_smi op =
@@ -430,21 +423,16 @@ let rec is_smi e =
   | I31Get (S, _) -> true
   | I31Get (U, _)
   | Const (I64 _ | F32 _ | F64 _)
-  | ConstSym _
   | UnOp ((F32 _ | F64 _), _)
   | I32WrapI64 _
   | I64ExtendI32 _
   | F32DemoteF64 _
   | F64PromoteF32 _
-  | Load _
-  | Load8 _
   | LocalGet _
   | LocalTee _
   | GlobalGet _
   | BlockExpr _
-  | Call_indirect _
   | Call _
-  | MemoryGrow _
   | Seq _
   | Pop _
   | RefFunc _
@@ -526,12 +514,12 @@ let rec store ?(always = false) ?typ x e =
             else
               register_global
                 ~constant:true
-                (V x)
+                x
                 { mut = true; typ }
                 (W.RefI31 (Const (I32 0l)))
           in
-          let* () = register_constant x (W.GlobalGet (V x)) in
-          instr (GlobalSet (V x, e))
+          let* () = register_constant x (W.GlobalGet x) in
+          instr (GlobalSet (x, e))
         else
           let* i = add_var ?typ x in
           instr (LocalSet (i, e))

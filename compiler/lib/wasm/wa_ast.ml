@@ -18,10 +18,6 @@
 
 type var = Code.Var.t
 
-type symbol =
-  | V of var
-  | S of string
-
 type packed_type =
   | I8
   | I16
@@ -137,7 +133,6 @@ type memarg = int32
 
 type expression =
   | Const of (int32, int64, float, float) op
-  | ConstSym of symbol * int
   | UnOp of (int_un_op, int_un_op, float_un_op, float_un_op) op * expression
   | BinOp of
       (int_bin_op, int_bin_op, float_bin_op, float_bin_op) op * expression * expression
@@ -145,15 +140,11 @@ type expression =
   | I64ExtendI32 of signage * expression
   | F32DemoteF64 of expression
   | F64PromoteF32 of expression
-  | Load of (memarg, memarg, memarg, memarg) op * expression
-  | Load8 of signage * (memarg, memarg, memarg, memarg) op * expression
   | LocalGet of var
   | LocalTee of var * expression
-  | GlobalGet of symbol
+  | GlobalGet of var
   | BlockExpr of func_type * instruction list
-  | Call_indirect of func_type * expression * expression list
   | Call of var * expression list
-  | MemoryGrow of int * expression
   | Seq of instruction list * expression
   | Pop of value_type
   | RefFunc of var
@@ -177,10 +168,8 @@ type expression =
 
 and instruction =
   | Drop of expression
-  | Store of (memarg, memarg, memarg, memarg) op * expression * expression
-  | Store8 of (memarg, memarg, memarg, memarg) op * expression * expression
   | LocalSet of var * expression
-  | GlobalSet of symbol * expression
+  | GlobalSet of var * expression
   | Loop of func_type * instruction list
   | Block of func_type * instruction list
   | If of func_type * expression * instruction list * instruction list
@@ -200,7 +189,6 @@ and instruction =
   | Rethrow of int
   | ArraySet of var * expression * expression * expression
   | StructSet of var * int * expression * expression
-  | Return_call_indirect of func_type * expression * expression list
   | Return_call of var * expression list
   | Return_call_ref of var * expression * expression list
   | Location of Code.loc * instruction
@@ -210,14 +198,6 @@ type import_desc =
   | Fun of func_type
   | Global of global_type
   | Tag of value_type
-
-type data =
-  | DataI8 of int
-  | DataI32 of int32
-  | DataI64 of int64
-  | DataBytes of string
-  | DataSym of symbol * int
-  | DataSpace of int
 
 type type_field =
   { name : var
@@ -237,12 +217,10 @@ type module_field =
       }
   | Data of
       { name : var
-      ; active : bool
-      ; read_only : bool
-      ; contents : data list
+      ; contents : string
       }
   | Global of
-      { name : symbol
+      { name : var
       ; exported_name : string option
       ; typ : global_type
       ; init : expression
