@@ -133,7 +133,7 @@ jobs:
 
       - name: Pin faked binaryen-bin package
         # It's faster to use a cached version
-        working-directory: ./wasm_of_ocaml
+        working-directory: ./binaryen
         run: |
           echo opam-version: '"2.0"' > binaryen-bin.opam
           opam pin -n .
