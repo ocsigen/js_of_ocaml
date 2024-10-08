@@ -856,15 +856,15 @@ module Generate (Target : Wa_target_sig.S) = struct
         ~pc
         ~params
     in
-    let g = Wa_structure.build_graph ctx.blocks pc in
-    let dom = Wa_structure.dominator_tree g in
+    let g = Structure.build_graph ctx.blocks pc in
+    let dom = Structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
       let block = Addr.Map.find pc ctx.blocks in
       let keep_ouside pc' =
         match fst block.branch with
         | Switch _ -> true
         | Cond (_, (pc1, _), (pc2, _)) when pc' = pc1 && pc' = pc2 -> true
-        | _ -> Wa_structure.is_merge_node g pc'
+        | _ -> Structure.is_merge_node g pc'
       in
       let code ~context =
         translate_node_within
@@ -873,13 +873,13 @@ module Generate (Target : Wa_target_sig.S) = struct
           ~pc
           ~l:
             (pc
-            |> Wa_structure.get_edges dom
+            |> Structure.get_edges dom
             |> Addr.Set.elements
             |> List.filter ~f:keep_ouside
-            |> Wa_structure.sort_in_post_order g)
+            |> Structure.sort_in_post_order g)
           ~context
       in
-      if Wa_structure.is_loop_header g pc
+      if Structure.is_loop_header g pc
       then
         loop { params = []; result = result_typ } (code ~context:(`Block pc :: context))
       else code ~context
@@ -943,7 +943,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                   List.filter
                     ~f:(fun pc' ->
                       Stack.stack_adjustment_needed stack_ctx ~src:pc ~dst:pc')
-                    (List.rev (Addr.Set.elements (Wa_structure.get_edges dom pc)))
+                    (List.rev (Addr.Set.elements (Structure.get_edges dom pc)))
                 in
                 let br_table e a context =
                   let len = Array.length a in
@@ -999,8 +999,8 @@ module Generate (Target : Wa_target_sig.S) = struct
       match fall_through with
       | `Block dst' when dst = dst' -> return ()
       | _ ->
-          if (src >= 0 && Wa_structure.is_backward g src dst)
-             || Wa_structure.is_merge_node g dst
+          if (src >= 0 && Structure.is_backward g src dst)
+             || Structure.is_merge_node g dst
           then instr (Br (label_index context dst, None))
           else translate_tree result_typ fall_through dst context
     in
