@@ -51,7 +51,7 @@ with Exit ->
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_wrap_exception = runtime.caml_wrap_exception;
        function caml_call2(f, a0, a1){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 2
+        return (f.l >= 0 ? f.l : f.l = f.length) === 2
                 ? f(a0, a1)
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
@@ -75,7 +75,8 @@ with Exit ->
        }
       }
       (globalThis));
-    //end |}];
+    //end
+    |}];
   Util.compile_and_run ~debug:false prog;
   [%expect {|
     1 |}]
@@ -115,7 +116,7 @@ with Exit ->
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         caml_wrap_exception = runtime.caml_wrap_exception;
        function caml_call3(f, a0, a1, a2){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 3
+        return (f.l >= 0 ? f.l : f.l = f.length) === 3
                 ? f(a0, a1, a2)
                 : runtime.caml_call_gen(f, [a0, a1, a2]);
        }
@@ -162,7 +163,8 @@ with Exit ->
        }
       }
       (globalThis));
-    //end |}];
+    //end
+    |}];
   Util.compile_and_run ~debug:false prog;
   [%expect {|
     2 0
@@ -201,7 +203,7 @@ with Exit ->
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         caml_wrap_exception = runtime.caml_wrap_exception;
        function caml_call2(f, a0, a1){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 2
+        return (f.l >= 0 ? f.l : f.l = f.length) === 2
                 ? f(a0, a1)
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
@@ -238,7 +240,8 @@ with Exit ->
        }
       }
       (globalThis));
-    //end |}];
+    //end
+    |}];
   Util.compile_and_run ~debug:false prog;
   [%expect {|
     1

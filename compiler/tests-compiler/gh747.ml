@@ -63,12 +63,12 @@ print_endline(String.make 1 "Ɋ".[0] ^ String.make 1 "Ɋ".[1]);;
       8:     runtime = globalThis.jsoo_runtime,
       9:     caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
      10:     /*<<?>>*/ function caml_call1(f, a0){
-     11:     return (f.l >= 0 ? f.l : f.l = f.length) == 1
+     11:     return (f.l >= 0 ? f.l : f.l = f.length) === 1
      12:             ? f(a0)
      13:             : runtime.caml_call_gen(f, [a0]);
      14:    }
      15:     /*<<?>>*/ function caml_call2(f, a0, a1){
-     16:     return (f.l >= 0 ? f.l : f.l = f.length) == 2
+     16:     return (f.l >= 0 ? f.l : f.l = f.length) === 2
      17:             ? f(a0, a1)
      18:             : runtime.caml_call_gen(f, [a0, a1]);
      19:    }
@@ -110,7 +110,8 @@ print_endline(String.make 1 "Ɋ".[0] ^ String.make 1 "Ɋ".[1]);;
      55:    /*<<?>>*/ }
      56:   (globalThis));
      57:
-     58: //# sourceMappingURL=test.map |}]
+     58: //# sourceMappingURL=test.map
+    |}]
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->
@@ -233,17 +234,17 @@ end
       8:     runtime = globalThis.jsoo_runtime,
       9:     caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
      10:     /*<<?>>*/ function caml_call2(f, a0, a1){
-     11:     return (f.l >= 0 ? f.l : f.l = f.length) == 2
+     11:     return (f.l >= 0 ? f.l : f.l = f.length) === 2
      12:             ? f(a0, a1)
      13:             : runtime.caml_call_gen(f, [a0, a1]);
      14:    }
      15:     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
-     16:     return (f.l >= 0 ? f.l : f.l = f.length) == 3
+     16:     return (f.l >= 0 ? f.l : f.l = f.length) === 3
      17:             ? f(a0, a1, a2)
      18:             : runtime.caml_call_gen(f, [a0, a1, a2]);
      19:    }
      20:     /*<<?>>*/ function caml_call8(f, a0, a1, a2, a3, a4, a5, a6, a7){
-     21:     return (f.l >= 0 ? f.l : f.l = f.length) == 8
+     21:     return (f.l >= 0 ? f.l : f.l = f.length) === 8
      22:             ? f(a0, a1, a2, a3, a4, a5, a6, a7)
      23:             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4, a5, a6, a7]);
      24:    }
@@ -395,4 +396,5 @@ end
     170:    /*<<?>>*/ }
     171:   (globalThis));
     172:
-    173: //# sourceMappingURL=test.map |}]
+    173: //# sourceMappingURL=test.map
+    |}]
