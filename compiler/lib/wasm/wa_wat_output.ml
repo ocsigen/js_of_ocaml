@@ -19,8 +19,6 @@
 open! Stdlib
 open Wa_ast
 
-let target = `Binaryen (*`Reference*)
-
 let assign_names ?(reversed = true) f names =
   let used = ref StringSet.empty in
   let counts = Hashtbl.create 101 in
@@ -394,10 +392,7 @@ let expression_or_instructions ctx st in_function =
         ]
     | MemoryGrow (_, e) -> [ List (Atom "memory.grow" :: expression e) ]
     | Seq (l, e) -> instructions l @ expression e
-    | Pop ty -> (
-        match target with
-        | `Binaryen -> [ List [ Atom "pop"; value_type st ty ] ]
-        | `Reference -> [])
+    | Pop _ -> []
     | RefFunc symb ->
         if in_function then reference_function ctx symb;
         [ List [ Atom "ref.func"; index st.func_names symb ] ]
