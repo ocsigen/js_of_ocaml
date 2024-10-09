@@ -1,0 +1,27 @@
+(executable
+ (modes js)
+ (js_of_ocaml
+  (flags --setenv JSOO_C=from-jsoo-args))
+ (name test))
+
+(rule
+ (target test.js)
+ (action
+  (with-outputs-to
+   %{target}
+   (cat %{dep:setup.js} %{dep:./test.bc.js}))))
+
+(rule
+ (target test.output)
+ (action
+  (with-outputs-to
+   %{target}
+   (setenv
+    JSOO_B
+    from-env
+    (run node %{dep:./test.js})))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff test.reference test.output)))
