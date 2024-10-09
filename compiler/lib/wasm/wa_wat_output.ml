@@ -19,8 +19,6 @@
 open! Stdlib
 open Wa_ast
 
-let target = `Binaryen (*`Reference*)
-
 let assign_names ?(reversed = true) f names =
   let used = ref StringSet.empty in
   let counts = Hashtbl.create 101 in
@@ -72,7 +70,7 @@ let assign_names ?(reversed = true) f names =
 type st =
   { type_names : (var, string) Hashtbl.t
   ; func_names : (var, string) Hashtbl.t
-  ; global_names : (symbol, string) Hashtbl.t
+  ; global_names : (var, string) Hashtbl.t
   ; data_names : (var, string) Hashtbl.t
   ; tag_names : (var, string) Hashtbl.t
   ; local_names : (var, string) Hashtbl.t
@@ -96,18 +94,13 @@ let build_name_tables fields =
       | Import { name; desc; _ } -> (
           match desc with
           | Fun _ -> push func_names name
-          | Global _ -> push global_names (V name)
+          | Global _ -> push global_names name
           | Tag _ -> push tag_names name))
     fields;
   let index = Code.Var.get_name in
-  let symbol name =
-    match name with
-    | V name -> Code.Var.get_name name
-    | S name -> Some name
-  in
   { type_names = assign_names index !type_names
   ; func_names = assign_names index !func_names
-  ; global_names = assign_names symbol !global_names
+  ; global_names = assign_names index !global_names
   ; data_names = assign_names index !data_names
   ; tag_names = assign_names index !tag_names
   ; local_names = Hashtbl.create 1
@@ -135,8 +128,6 @@ let rec format_sexp f s =
   | Comment s -> Format.fprintf f ";;%s" s
 
 let index tbl x = Atom ("$" ^ Hashtbl.find tbl x)
-
-let symbol tbl name = index tbl.global_names name
 
 let heap_type st (ty : heap_type) =
   match ty with
@@ -290,27 +281,11 @@ let select i32 i64 f32 f64 op =
   | F64 x -> f64 "64" x
 
 type ctx =
-  { addresses : int Code.Var.Map.t
-  ; mutable functions : int Code.Var.Map.t
-  ; mutable function_refs : Code.Var.Set.t
-  ; mutable function_count : int
+  { mutable function_refs : Code.Var.Set.t
   ; debug : Parse_bytecode.Debug.t
   }
 
 let reference_function ctx f = ctx.function_refs <- Code.Var.Set.add f ctx.function_refs
-
-let lookup_symbol ctx (x : symbol) =
-  match x with
-  | S _ -> assert false
-  | V x -> (
-      try Code.Var.Map.find x ctx.addresses
-      with Not_found -> (
-        try Code.Var.Map.find x ctx.functions
-        with Not_found ->
-          let i = ctx.function_count in
-          ctx.functions <- Code.Var.Map.add x i ctx.functions;
-          ctx.function_count <- ctx.function_count + 1;
-          i))
 
 let remove_nops l = List.filter ~f:(fun i -> not (Poly.equal i Nop)) l
 
@@ -339,9 +314,6 @@ let expression_or_instructions ctx st in_function =
                    op)
             ]
         ]
-    | ConstSym (symb, ofs) ->
-        let i = lookup_symbol ctx symb in
-        [ List [ Atom "i32.const"; Atom (string_of_int (i + ofs)) ] ]
     | UnOp (op, e') ->
         [ List
             (Atom (type_prefix op (select int_un_op int_un_op float_un_op float_un_op op))
@@ -359,45 +331,19 @@ let expression_or_instructions ctx st in_function =
     | I64ExtendI32 (s, e) -> [ List (Atom (signage "i64.extend_i32" s) :: expression e) ]
     | F32DemoteF64 e -> [ List (Atom "f32.demote_f64" :: expression e) ]
     | F64PromoteF32 e -> [ List (Atom "f64.promote_f32" :: expression e) ]
-    | Load (offset, e') ->
-        let offs _ i =
-          if Int32.equal i 0l then [] else [ Atom (Printf.sprintf "offset=%ld" i) ]
-        in
-        [ List
-            ((Atom (type_prefix offset "load") :: select offs offs offs offs offset)
-            @ expression e')
-        ]
-    | Load8 (s, offset, e') ->
-        let offs _ i =
-          if Int32.equal i 0l then [] else [ Atom (Printf.sprintf "offset=%ld" i) ]
-        in
-        [ List
-            (Atom (type_prefix offset (signage "load" s))
-             :: select offs offs offs offs offset
-            @ expression e')
-        ]
     | LocalGet i -> [ List [ Atom "local.get"; index st.local_names i ] ]
     | LocalTee (i, e') ->
         [ List (Atom "local.tee" :: index st.local_names i :: expression e') ]
-    | GlobalGet nm -> [ List [ Atom "global.get"; symbol st nm ] ]
+    | GlobalGet nm -> [ List [ Atom "global.get"; index st.global_names nm ] ]
     | BlockExpr (ty, l) -> [ List (Atom "block" :: (block_type st ty @ instructions l)) ]
-    | Call_indirect (typ, e, l) ->
-        [ List
-            ((Atom "call_indirect" :: func_type st typ)
-            @ List.concat (List.map ~f:expression (l @ [ e ])))
-        ]
     | Call (f, l) ->
         [ List
             (Atom "call"
             :: index st.func_names f
             :: List.concat (List.map ~f:expression l))
         ]
-    | MemoryGrow (_, e) -> [ List (Atom "memory.grow" :: expression e) ]
     | Seq (l, e) -> instructions l @ expression e
-    | Pop ty -> (
-        match target with
-        | `Binaryen -> [ List [ Atom "pop"; value_type st ty ] ]
-        | `Reference -> [])
+    | Pop _ -> []
     | RefFunc symb ->
         if in_function then reference_function ctx symb;
         [ List [ Atom "ref.func"; index st.func_names symb ] ]
@@ -488,26 +434,11 @@ let expression_or_instructions ctx st in_function =
   and instruction i =
     match i with
     | Drop e -> [ List (Atom "drop" :: expression e) ]
-    | Store (offset, e1, e2) ->
-        let offs _ i =
-          if Int32.equal i 0l then [] else [ Atom (Printf.sprintf "offset=%ld" i) ]
-        in
-        [ List
-            (Atom (type_prefix offset "store")
-            :: (select offs offs offs offs offset @ expression e1 @ expression e2))
-        ]
-    | Store8 (offset, e1, e2) ->
-        let offs _ i =
-          if Int32.equal i 0l then [] else [ Atom (Printf.sprintf "offset=%ld" i) ]
-        in
-        [ List
-            (Atom (type_prefix offset "store8")
-            :: (select offs offs offs offs offset @ expression e1 @ expression e2))
-        ]
     | LocalSet (i, Seq (l, e)) -> instructions (l @ [ LocalSet (i, e) ])
     | LocalSet (i, e) ->
         [ List (Atom "local.set" :: index st.local_names i :: expression e) ]
-    | GlobalSet (nm, e) -> [ List (Atom "global.set" :: symbol st nm :: expression e) ]
+    | GlobalSet (nm, e) ->
+        [ List (Atom "global.set" :: index st.global_names nm :: expression e) ]
     | Loop (ty, l) -> [ List (Atom "loop" :: (block_type st ty @ instructions l)) ]
     | Block (ty, l) -> [ List (Atom "block" :: (block_type st ty @ instructions l)) ]
     | If (ty, e, l1, l2) ->
@@ -579,11 +510,6 @@ let expression_or_instructions ctx st in_function =
             :: Atom (string_of_int i)
             :: (expression e @ expression e'))
         ]
-    | Return_call_indirect (typ, e, l) ->
-        [ List
-            ((Atom "return_call_indirect" :: func_type st typ)
-            @ List.concat (List.map ~f:expression (l @ [ e ])))
-        ]
     | Return_call (f, l) ->
         [ List
             (Atom "return_call"
@@ -640,7 +566,8 @@ let import st f =
           ; List
               (match desc with
               | Fun typ -> Atom "func" :: index st.func_names name :: func_type st typ
-              | Global ty -> [ Atom "global"; symbol st (V name); global_type st ty ]
+              | Global ty ->
+                  [ Atom "global"; index st.global_names name; global_type st ty ]
               | Tag ty ->
                   [ Atom "tag"
                   ; index st.tag_names name
@@ -658,21 +585,6 @@ let escape_string s =
     else Printf.bprintf b "\\%02x" (Char.code c)
   done;
   Buffer.contents b
-
-let data_contents ctx contents =
-  let b = Buffer.create 16 in
-  List.iter
-    ~f:(fun d ->
-      match d with
-      | DataI8 c -> Buffer.add_uint8 b c
-      | DataI32 i -> Buffer.add_int32_le b i
-      | DataI64 i -> Buffer.add_int64_le b i
-      | DataBytes s -> Buffer.add_string b s
-      | DataSym (symb, ofs) ->
-          Buffer.add_int32_le b (Int32.of_int (lookup_symbol ctx symb + ofs))
-      | DataSpace n -> Buffer.add_string b (String.make n '\000'))
-    contents;
-  escape_string (Buffer.contents b)
 
 let type_field st { name; typ; supertype; final } =
   if final && Option.is_none supertype
@@ -697,7 +609,7 @@ let field ctx st f =
   | Global { name; exported_name; typ; init } ->
       [ List
           (Atom "global"
-          :: symbol st name
+          :: index st.global_names name
           :: (export exported_name @ (global_type st typ :: expression ctx st init)))
       ]
   | Tag { name; typ } ->
@@ -708,85 +620,22 @@ let field ctx st f =
           ]
       ]
   | Import _ -> []
-  | Data { name; active; contents; _ } ->
+  | Data { name; contents } ->
       [ List
-          (Atom "data"
-          :: index st.data_names name
-          :: ((if active
-               then
-                 expression
-                   ctx
-                   st
-                   (Const (I32 (Int32.of_int (lookup_symbol ctx (V name)))))
-               else [])
-             @ [ Atom ("\"" ^ data_contents ctx contents ^ "\"") ]))
+          [ Atom "data"
+          ; index st.data_names name
+          ; Atom ("\"" ^ escape_string contents ^ "\"")
+          ]
       ]
   | Type [ t ] -> [ type_field st t ]
   | Type l -> [ List (Atom "rec" :: List.map ~f:(type_field st) l) ]
 
-let data_size contents =
-  List.fold_left
-    ~f:(fun sz d ->
-      sz
-      +
-      match d with
-      | DataI8 _ -> 1
-      | DataI32 _ -> 4
-      | DataI64 _ -> 8
-      | DataBytes s -> String.length s
-      | DataSym _ -> 4
-      | DataSpace n -> n)
-    ~init:0
-    contents
-
-let data_offsets fields =
-  List.fold_left
-    ~f:(fun (i, addresses) f ->
-      match f with
-      | Data { name; contents; active = true; _ } ->
-          i + data_size contents, Code.Var.Map.add name i addresses
-      | Function _ | Global _ | Tag _ | Import _ | Data { active = false; _ } | Type _ ->
-          i, addresses)
-    ~init:(0, Code.Var.Map.empty)
-    fields
-
 let f ~debug ch fields =
   let st = build_name_tables fields in
-  let heap_base, addresses = data_offsets fields in
-  let ctx =
-    { addresses
-    ; functions = Code.Var.Map.empty
-    ; function_refs = Code.Var.Set.empty
-    ; function_count = 0
-    ; debug
-    }
-  in
+  let ctx = { function_refs = Code.Var.Set.empty; debug } in
   let other_fields = List.concat (List.map ~f:(fun f -> field ctx st f) fields) in
-  let funct_table =
-    let functions =
-      List.map
-        ~f:fst
-        (List.sort
-           ~cmp:(fun (_, i) (_, j) -> compare i j)
-           (Code.Var.Map.bindings ctx.functions))
-    in
-    if List.is_empty functions
-    then []
-    else
-      [ List
-          [ Atom "table"
-          ; Atom "funcref"
-          ; List (Atom "elem" :: List.map ~f:(index st.func_names) functions)
-          ]
-      ]
-  in
   let funct_decl =
-    let functions =
-      Code.Var.Set.elements
-        (Code.Var.Set.filter
-           (fun f -> not (Code.Var.Map.mem f ctx.functions))
-           ctx.function_refs)
-    in
+    let functions = Code.Var.Set.elements ctx.function_refs in
     if List.is_empty functions
     then []
     else
@@ -804,14 +653,5 @@ let f ~debug ch fields =
     (List
        (Atom "module"
        :: (List.concat (List.map ~f:(fun i -> import st i) fields)
-          @ (if Code.Var.Map.is_empty addresses
-             then []
-             else
-               [ List
-                   [ Atom "memory"
-                   ; Atom (string_of_int ((heap_base + 0xffff) / 0x10000))
-                   ]
-               ])
-          @ funct_table
           @ funct_decl
           @ other_fields)))

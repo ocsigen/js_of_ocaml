@@ -147,7 +147,9 @@ let is_loop_header g pc =
   Addr.Set.exists (fun pc' -> Hashtbl.find g.block_order pc' >= o) s
 
 let sort_in_post_order t l =
-  List.sort ~cmp:(fun a b -> compare (block_order t a) (block_order t b)) l
+  List.sort ~cmp:(fun a b -> compare (block_order t b) (block_order t a)) l
+
+let blocks_in_reverse_post_order g = g.reverse_post_order
 
 (*
 

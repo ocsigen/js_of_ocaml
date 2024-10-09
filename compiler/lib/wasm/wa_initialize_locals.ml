@@ -33,15 +33,12 @@ let check_initialized ctx i =
 
 let rec scan_expression ctx e =
   match e with
-  | Wa_ast.Const _ | ConstSym _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> ()
+  | Wa_ast.Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> ()
   | UnOp (_, e')
   | I32WrapI64 e'
   | I64ExtendI32 (_, e')
   | F32DemoteF64 e'
   | F64PromoteF32 e'
-  | Load (_, e')
-  | Load8 (_, _, e')
-  | MemoryGrow (_, e')
   | RefI31 e'
   | I31Get (_, e')
   | ArrayLen e'
@@ -61,7 +58,7 @@ let rec scan_expression ctx e =
   | LocalTee (i, e') ->
       scan_expression ctx e';
       mark_initialized ctx i
-  | Call_indirect (_, e', l) | Call_ref (_, e', l) ->
+  | Call_ref (_, e', l) ->
       scan_expressions ctx l;
       scan_expression ctx e'
   | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) -> scan_expressions ctx l
@@ -84,7 +81,7 @@ and scan_instruction ctx i =
   | Throw (_, e)
   | Return (Some e)
   | Push e -> scan_expression ctx e
-  | Store (_, e, e') | Store8 (_, e, e') | StructSet (_, _, e, e') ->
+  | StructSet (_, _, e, e') ->
       scan_expression ctx e;
       scan_expression ctx e'
   | LocalSet (i, e) ->
@@ -105,7 +102,7 @@ and scan_instruction ctx i =
       scan_expression ctx e;
       scan_expression ctx e';
       scan_expression ctx e''
-  | Return_call_indirect (_, e', l) | Return_call_ref (_, e', l) ->
+  | Return_call_ref (_, e', l) ->
       scan_expressions ctx l;
       scan_expression ctx e'
   | Location (_, i) -> scan_instruction ctx i

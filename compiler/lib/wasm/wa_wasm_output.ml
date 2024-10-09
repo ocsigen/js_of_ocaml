@@ -299,7 +299,7 @@ end = struct
                 if typ.mut then Feature.require mutable_globals;
                 output_byte ch 0x03;
                 output_globaltype type_names ch typ;
-                Hashtbl.add global_names (V name) !global_idx;
+                Hashtbl.add global_names name !global_idx;
                 incr global_idx
             | Tag typ ->
                 Feature.require exception_handling;
@@ -428,7 +428,7 @@ end = struct
   type st =
     { type_names : (var, int) Hashtbl.t
     ; func_names : (var, int) Hashtbl.t
-    ; global_names : (symbol, int) Hashtbl.t
+    ; global_names : (var, int) Hashtbl.t
     ; data_names : (var, int) Hashtbl.t
     ; tag_names : (var, int) Hashtbl.t
     ; local_names : (var, (var, int) Hashtbl.t) Hashtbl.t
@@ -481,7 +481,6 @@ end = struct
     | F64PromoteF32 e' ->
         output_expression st ch e';
         output_byte ch 0xBB
-    | Call_indirect _ | ConstSym _ | Load _ | Load8 _ | MemoryGrow _ -> assert false
     | LocalGet i ->
         output_byte ch 0x20;
         output_uint ch (Hashtbl.find st.current_local_names i)
@@ -635,7 +634,6 @@ end = struct
     | Drop e ->
         output_expression st ch e;
         output_byte ch 0x1A
-    | Store _ | Store8 _ -> assert false
     | LocalSet (i, e) ->
         output_expression st ch e;
         output_byte ch 0x21;
@@ -732,7 +730,6 @@ end = struct
         output_byte ch 0x05;
         output_uint ch (Hashtbl.find st.type_names typ);
         output_uint ch idx
-    | Return_call_indirect _ -> assert false
     | Return_call (f, l) ->
         Feature.require tail_call;
         List.iter ~f:(fun e -> output_expression st ch e) l;
@@ -829,20 +826,6 @@ end = struct
     in
     data_count, data_names
 
-  let data_contents contents =
-    let b = Buffer.create 16 in
-    List.iter
-      ~f:(fun d ->
-        match d with
-        | DataI8 c -> Buffer.add_uint8 b c
-        | DataI32 i -> Buffer.add_int32_le b i
-        | DataI64 i -> Buffer.add_int64_le b i
-        | DataBytes s -> Buffer.add_string b s
-        | DataSym _ -> assert false
-        | DataSpace n -> Buffer.add_string b (String.make n '\000'))
-      contents;
-    Buffer.contents b
-
   let output_data_count ch data_count = output_uint ch data_count
 
   let output_data ch (data_count, fields) =
@@ -851,10 +834,9 @@ end = struct
       (List.fold_left
          ~f:(fun idx field ->
            match field with
-           | Data { active; contents; _ } ->
-               assert (not active);
+           | Data { contents; _ } ->
                output_byte ch 1;
-               output_name ch (data_contents contents);
+               output_name ch contents;
                idx + 1
            | Function _ | Type _ | Import _ | Global _ | Tag _ -> idx)
          ~init:0
@@ -883,7 +865,6 @@ end = struct
     | ArrayGet (_, _, e', e'')
     | RefEq (e', e'') ->
         set |> expr_function_references e' |> expr_function_references e''
-    | Call_indirect _ | ConstSym _ | Load _ | Load8 _ | MemoryGrow _ -> assert false
     | IfExpr (_, e1, e2, e3) ->
         set
         |> expr_function_references e1
@@ -912,7 +893,6 @@ end = struct
     | Return (Some e)
     | Push e
     | Throw (_, e) -> expr_function_references e set
-    | Store _ | Store8 _ -> assert false
     | Loop (_, l) | Block (_, l) ->
         List.fold_left ~f:(fun set i -> instr_function_references i set) ~init:set l
     | If (_, e, l1, l2) ->
@@ -950,7 +930,6 @@ end = struct
         |> expr_function_references e3
     | StructSet (_, _, e1, e2) ->
         set |> expr_function_references e1 |> expr_function_references e2
-    | Return_call_indirect _ -> assert false
     | Return_call (_, l) ->
         List.fold_left ~f:(fun set i -> expr_function_references i set) ~init:set l
     | Return_call_ref (_, e', l) ->
@@ -1090,11 +1069,6 @@ end = struct
   let output_names ch st =
     output_name ch "name";
     let index = Code.Var.get_name in
-    let symbol name =
-      match name with
-      | V name -> Code.Var.get_name name
-      | S name -> Some name
-    in
     let out id f tbl =
       let names = assign_names f tbl in
       if not (List.is_empty names)
@@ -1129,7 +1103,7 @@ end = struct
       ch
       locals;
     out 4 index st.type_names;
-    out 7 symbol st.global_names;
+    out 7 index st.global_names;
     out 9 index st.data_names;
     out 11 index st.tag_names
 

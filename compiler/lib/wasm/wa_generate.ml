@@ -21,8 +21,6 @@ open Code
 module W = Wa_ast
 open Wa_code_generation
 
-let target = `GC (*`Core*)
-
 module Generate (Target : Wa_target_sig.S) = struct
   open Target
 
@@ -43,55 +41,54 @@ module Generate (Target : Wa_target_sig.S) = struct
   let func_type n =
     { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
-  let float_bin_op' stack_ctx x op f g =
-    Memory.box_float stack_ctx x (op (Memory.unbox_float f) (Memory.unbox_float g))
+  let float_bin_op' op f g =
+    Memory.box_float (op (Memory.unbox_float f) (Memory.unbox_float g))
 
-  let float_bin_op stack_ctx x op f g =
+  let float_bin_op op f g =
     let* f = Memory.unbox_float f in
     let* g = Memory.unbox_float g in
-    Memory.box_float stack_ctx x (return (W.BinOp (F64 op, f, g)))
+    Memory.box_float (return (W.BinOp (F64 op, f, g)))
 
-  let float_un_op' stack_ctx x op f =
-    Memory.box_float stack_ctx x (op (Memory.unbox_float f))
+  let float_un_op' op f = Memory.box_float (op (Memory.unbox_float f))
 
-  let float_un_op stack_ctx x op f =
+  let float_un_op op f =
     let* f = Memory.unbox_float f in
-    Memory.box_float stack_ctx x (return (W.UnOp (F64 op, f)))
+    Memory.box_float (return (W.UnOp (F64 op, f)))
 
   let float_comparison op f g =
     let* f = Memory.unbox_float f in
     let* g = Memory.unbox_float g in
     Value.val_int (return (W.BinOp (F64 op, f, g)))
 
-  let int32_bin_op stack_ctx x op f g =
+  let int32_bin_op op f g =
     let* f = Memory.unbox_int32 f in
     let* g = Memory.unbox_int32 g in
-    Memory.box_int32 stack_ctx x (return (W.BinOp (I32 op, f, g)))
+    Memory.box_int32 (return (W.BinOp (I32 op, f, g)))
 
-  let int32_shift_op stack_ctx x op f g =
+  let int32_shift_op op f g =
     let* f = Memory.unbox_int32 f in
     let* g = Value.int_val g in
-    Memory.box_int32 stack_ctx x (return (W.BinOp (I32 op, f, g)))
+    Memory.box_int32 (return (W.BinOp (I32 op, f, g)))
 
-  let int64_bin_op stack_ctx x op f g =
+  let int64_bin_op op f g =
     let* f = Memory.unbox_int64 f in
     let* g = Memory.unbox_int64 g in
-    Memory.box_int64 stack_ctx x (return (W.BinOp (I64 op, f, g)))
+    Memory.box_int64 (return (W.BinOp (I64 op, f, g)))
 
-  let int64_shift_op stack_ctx x op f g =
+  let int64_shift_op op f g =
     let* f = Memory.unbox_int64 f in
     let* g = Value.int_val g in
-    Memory.box_int64 stack_ctx x (return (W.BinOp (I64 op, f, I64ExtendI32 (S, g))))
+    Memory.box_int64 (return (W.BinOp (I64 op, f, I64ExtendI32 (S, g))))
 
-  let nativeint_bin_op stack_ctx x op f g =
+  let nativeint_bin_op op f g =
     let* f = Memory.unbox_nativeint f in
     let* g = Memory.unbox_nativeint g in
-    Memory.box_nativeint stack_ctx x (return (W.BinOp (I32 op, f, g)))
+    Memory.box_nativeint (return (W.BinOp (I32 op, f, g)))
 
-  let nativeint_shift_op stack_ctx x op f g =
+  let nativeint_shift_op op f g =
     let* f = Memory.unbox_nativeint f in
     let* g = Value.int_val g in
-    Memory.box_nativeint stack_ctx x (return (W.BinOp (I32 op, f, g)))
+    Memory.box_nativeint (return (W.BinOp (I32 op, f, g)))
 
   let label_index context pc =
     let rec index_rec context pc i =
@@ -106,57 +103,48 @@ module Generate (Target : Wa_target_sig.S) = struct
 
   let zero_divide_pc = -2
 
-  let rec translate_expr ctx stack_ctx context x e =
+  let rec translate_expr ctx context x e =
     match e with
     | Apply { f; args; exact }
       when exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1 ->
-        let* () = Stack.perform_spilling stack_ctx (`Instr x) in
         let rec loop acc l =
           match l with
           | [] -> (
               let arity = List.length args in
               let funct = Var.fresh () in
               let* closure = tee funct (load f) in
-              let* kind, funct =
+              let* ty, funct =
                 Memory.load_function_pointer
                   ~cps:(Var.Set.mem x ctx.in_cps)
                   ~arity
                   (load funct)
               in
-              Stack.kill_variables stack_ctx;
               let* b = is_closure f in
               if b
               then return (W.Call (f, List.rev (closure :: acc)))
               else
-                match kind, funct with
-                | `Index, W.ConstSym (V g, 0) | `Ref _, W.RefFunc g ->
+                match funct with
+                | W.RefFunc g ->
                     (* Functions with constant closures ignore their
                        environment. In case of partial application, we
                        still need the closure. *)
                     let* cl = if exact then Value.unit else return closure in
                     return (W.Call (g, List.rev (cl :: acc)))
-                | `Index, _ ->
-                    return
-                      (W.Call_indirect
-                         (func_type (arity + 1), funct, List.rev (closure :: acc)))
-                | `Ref ty, _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc)))
-              )
+                | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc))))
           | x :: r ->
               let* x = load x in
               loop (x :: acc) r
         in
         loop [] args
     | Apply { f; args; _ } ->
-        let* () = Stack.perform_spilling stack_ctx (`Instr x) in
         let* apply =
           need_apply_fun ~cps:(Var.Set.mem x ctx.in_cps) ~arity:(List.length args)
         in
         let* args = expression_list load args in
         let* closure = load f in
-        Stack.kill_variables stack_ctx;
         return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
-        Memory.allocate stack_ctx x ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
+        Memory.allocate ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
     | Field (x, n, Non_float) -> Memory.field (load x) n
     | Field (x, n, Float) ->
         Memory.float_array_get
@@ -166,15 +154,13 @@ module Generate (Target : Wa_target_sig.S) = struct
         Closure.translate
           ~context:ctx.global_context
           ~closures:ctx.closures
-          ~stack_ctx
           ~cps:(Var.Set.mem x ctx.in_cps)
           x
     | Constant c -> Constant.translate c
     | Special (Alias_prim _) -> assert false
-    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ])
-      when Poly.(target = `GC) ->
+    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ]) ->
         Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:(Targetint.to_int_exn arity)
-    | Prim (Extern "caml_alloc_dummy_infix", _) when Poly.(target = `GC) ->
+    | Prim (Extern "caml_alloc_dummy_infix", _) ->
         Closure.dummy ~cps:(Config.Flag.effects ()) ~arity:1
     | Prim (Extern "caml_get_global", [ Pc (String name) ]) ->
         let* x =
@@ -183,7 +169,7 @@ module Generate (Target : Wa_target_sig.S) = struct
             List.find_map
               ~f:(fun f ->
                 match f with
-                | W.Global { name = V name'; exported_name = Some exported_name; _ }
+                | W.Global { name = name'; exported_name = Some exported_name; _ }
                   when String.equal exported_name name -> Some name'
                 | _ -> None)
               context.other_fields
@@ -193,18 +179,18 @@ module Generate (Target : Wa_target_sig.S) = struct
               let* typ = Value.block_type in
               register_import ~import_module:"OCaml" ~name (Global { mut = true; typ })
         in
-        return (W.GlobalGet (V x))
+        return (W.GlobalGet x)
     | Prim (Extern "caml_set_global", [ Pc (String name); v ]) ->
         let v = transl_prim_arg v in
         let x = Var.fresh_n name in
         let* () =
           let* typ = Value.block_type in
           let* dummy = Value.dummy_block in
-          register_global (V x) ~exported_name:name { mut = true; typ } dummy
+          register_global x ~exported_name:name { mut = true; typ } dummy
         in
         seq
           (let* v = Value.as_block v in
-           instr (W.GlobalSet (V x, v)))
+           instr (W.GlobalSet (x, v)))
           Value.unit
     | Prim (p, l) -> (
         match p with
@@ -278,23 +264,22 @@ module Generate (Target : Wa_target_sig.S) = struct
                    in
                    instr (W.Br_if (label_index context bound_error_pc, cond)))
                   x
-            | Extern "caml_add_float", [ f; g ] -> float_bin_op stack_ctx x Add f g
-            | Extern "caml_sub_float", [ f; g ] -> float_bin_op stack_ctx x Sub f g
-            | Extern "caml_mul_float", [ f; g ] -> float_bin_op stack_ctx x Mul f g
-            | Extern "caml_div_float", [ f; g ] -> float_bin_op stack_ctx x Div f g
-            | Extern "caml_copysign_float", [ f; g ] ->
-                float_bin_op stack_ctx x CopySign f g
+            | Extern "caml_add_float", [ f; g ] -> float_bin_op Add f g
+            | Extern "caml_sub_float", [ f; g ] -> float_bin_op Sub f g
+            | Extern "caml_mul_float", [ f; g ] -> float_bin_op Mul f g
+            | Extern "caml_div_float", [ f; g ] -> float_bin_op Div f g
+            | Extern "caml_copysign_float", [ f; g ] -> float_bin_op CopySign f g
             | Extern "caml_signbit_float", [ f ] ->
                 let* f = Memory.unbox_float f in
                 let sign = W.BinOp (F64 CopySign, Const (F64 1.), f) in
                 Value.val_int (return (W.BinOp (F64 Lt, sign, Const (F64 0.))))
-            | Extern "caml_neg_float", [ f ] -> float_un_op stack_ctx x Neg f
-            | Extern "caml_abs_float", [ f ] -> float_un_op stack_ctx x Abs f
-            | Extern "caml_ceil_float", [ f ] -> float_un_op stack_ctx x Ceil f
-            | Extern "caml_floor_float", [ f ] -> float_un_op stack_ctx x Floor f
-            | Extern "caml_trunc_float", [ f ] -> float_un_op stack_ctx x Trunc f
-            | Extern "caml_round_float", [ f ] -> float_un_op' stack_ctx x Math.round f
-            | Extern "caml_sqrt_float", [ f ] -> float_un_op stack_ctx x Sqrt f
+            | Extern "caml_neg_float", [ f ] -> float_un_op Neg f
+            | Extern "caml_abs_float", [ f ] -> float_un_op Abs f
+            | Extern "caml_ceil_float", [ f ] -> float_un_op Ceil f
+            | Extern "caml_floor_float", [ f ] -> float_un_op Floor f
+            | Extern "caml_trunc_float", [ f ] -> float_un_op Trunc f
+            | Extern "caml_round_float", [ f ] -> float_un_op' Math.round f
+            | Extern "caml_sqrt_float", [ f ] -> float_un_op Sqrt f
             | Extern "caml_eq_float", [ f; g ] -> float_comparison Eq f g
             | Extern "caml_neq_float", [ f; g ] -> float_comparison Ne f g
             | Extern "caml_ge_float", [ f; g ] -> float_comparison Ge f g
@@ -306,71 +291,52 @@ module Generate (Target : Wa_target_sig.S) = struct
                 Value.val_int (return (W.UnOp (I32 (TruncSatF64 S), f)))
             | Extern "caml_float_of_int", [ n ] ->
                 let* n = Value.int_val n in
-                Memory.box_float
-                  stack_ctx
-                  x
-                  (return (W.UnOp (F64 (Convert (`I32, S)), n)))
-            | Extern "caml_cos_float", [ f ] -> float_un_op' stack_ctx x Math.cos f
-            | Extern "caml_sin_float", [ f ] -> float_un_op' stack_ctx x Math.sin f
-            | Extern "caml_tan_float", [ f ] -> float_un_op' stack_ctx x Math.tan f
-            | Extern "caml_acos_float", [ f ] -> float_un_op' stack_ctx x Math.acos f
-            | Extern "caml_asin_float", [ f ] -> float_un_op' stack_ctx x Math.asin f
-            | Extern "caml_atan_float", [ f ] -> float_un_op' stack_ctx x Math.atan f
-            | Extern "caml_atan2_float", [ f; g ] ->
-                float_bin_op' stack_ctx x Math.atan2 f g
-            | Extern "caml_cosh_float", [ f ] -> float_un_op' stack_ctx x Math.cosh f
-            | Extern "caml_sinh_float", [ f ] -> float_un_op' stack_ctx x Math.sinh f
-            | Extern "caml_tanh_float", [ f ] -> float_un_op' stack_ctx x Math.tanh f
-            | Extern "caml_acosh_float", [ f ] -> float_un_op' stack_ctx x Math.acosh f
-            | Extern "caml_asinh_float", [ f ] -> float_un_op' stack_ctx x Math.asinh f
-            | Extern "caml_atanh_float", [ f ] -> float_un_op' stack_ctx x Math.atanh f
-            | Extern "caml_cbrt_float", [ f ] -> float_un_op' stack_ctx x Math.cbrt f
-            | Extern "caml_exp_float", [ f ] -> float_un_op' stack_ctx x Math.exp f
-            | Extern "caml_exp2_float", [ f ] -> float_un_op' stack_ctx x Math.exp2 f
-            | Extern "caml_log_float", [ f ] -> float_un_op' stack_ctx x Math.log f
-            | Extern "caml_expm1_float", [ f ] -> float_un_op' stack_ctx x Math.expm1 f
-            | Extern "caml_log1p_float", [ f ] -> float_un_op' stack_ctx x Math.log1p f
-            | Extern "caml_log2_float", [ f ] -> float_un_op' stack_ctx x Math.log2 f
-            | Extern "caml_log10_float", [ f ] -> float_un_op' stack_ctx x Math.log10 f
-            | Extern "caml_power_float", [ f; g ] ->
-                float_bin_op' stack_ctx x Math.power f g
-            | Extern "caml_hypot_float", [ f; g ] ->
-                float_bin_op' stack_ctx x Math.hypot f g
-            | Extern "caml_fmod_float", [ f; g ] ->
-                float_bin_op' stack_ctx x Math.fmod f g
+                Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n)))
+            | Extern "caml_cos_float", [ f ] -> float_un_op' Math.cos f
+            | Extern "caml_sin_float", [ f ] -> float_un_op' Math.sin f
+            | Extern "caml_tan_float", [ f ] -> float_un_op' Math.tan f
+            | Extern "caml_acos_float", [ f ] -> float_un_op' Math.acos f
+            | Extern "caml_asin_float", [ f ] -> float_un_op' Math.asin f
+            | Extern "caml_atan_float", [ f ] -> float_un_op' Math.atan f
+            | Extern "caml_atan2_float", [ f; g ] -> float_bin_op' Math.atan2 f g
+            | Extern "caml_cosh_float", [ f ] -> float_un_op' Math.cosh f
+            | Extern "caml_sinh_float", [ f ] -> float_un_op' Math.sinh f
+            | Extern "caml_tanh_float", [ f ] -> float_un_op' Math.tanh f
+            | Extern "caml_acosh_float", [ f ] -> float_un_op' Math.acosh f
+            | Extern "caml_asinh_float", [ f ] -> float_un_op' Math.asinh f
+            | Extern "caml_atanh_float", [ f ] -> float_un_op' Math.atanh f
+            | Extern "caml_cbrt_float", [ f ] -> float_un_op' Math.cbrt f
+            | Extern "caml_exp_float", [ f ] -> float_un_op' Math.exp f
+            | Extern "caml_exp2_float", [ f ] -> float_un_op' Math.exp2 f
+            | Extern "caml_log_float", [ f ] -> float_un_op' Math.log f
+            | Extern "caml_expm1_float", [ f ] -> float_un_op' Math.expm1 f
+            | Extern "caml_log1p_float", [ f ] -> float_un_op' Math.log1p f
+            | Extern "caml_log2_float", [ f ] -> float_un_op' Math.log2 f
+            | Extern "caml_log10_float", [ f ] -> float_un_op' Math.log10 f
+            | Extern "caml_power_float", [ f; g ] -> float_bin_op' Math.power f g
+            | Extern "caml_hypot_float", [ f; g ] -> float_bin_op' Math.hypot f g
+            | Extern "caml_fmod_float", [ f; g ] -> float_bin_op' Math.fmod f g
             | Extern "caml_int32_bits_of_float", [ f ] ->
                 let* f = Memory.unbox_float f in
-                Memory.box_int32
-                  stack_ctx
-                  x
-                  (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
+                Memory.box_int32 (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
             | Extern "caml_int32_float_of_bits", [ i ] ->
                 let* i = Memory.unbox_int32 i in
-                Memory.box_float
-                  stack_ctx
-                  x
-                  (return (W.F64PromoteF32 (UnOp (F32 ReinterpretI, i))))
+                Memory.box_float (return (W.F64PromoteF32 (UnOp (F32 ReinterpretI, i))))
             | Extern "caml_int32_of_float", [ f ] ->
                 let* f = Memory.unbox_float f in
-                Memory.box_int32 stack_ctx x (return (W.UnOp (I32 (TruncSatF64 S), f)))
+                Memory.box_int32 (return (W.UnOp (I32 (TruncSatF64 S), f)))
             | Extern "caml_int32_to_float", [ n ] ->
                 let* n = Memory.unbox_int32 n in
-                Memory.box_float
-                  stack_ctx
-                  x
-                  (return (W.UnOp (F64 (Convert (`I32, S)), n)))
+                Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n)))
             | Extern "caml_int32_neg", [ i ] ->
                 let* i = Memory.unbox_int32 i in
-                Memory.box_int32
-                  stack_ctx
-                  x
-                  (return (W.BinOp (I32 Sub, Const (I32 0l), i)))
-            | Extern "caml_int32_add", [ i; j ] -> int32_bin_op stack_ctx x Add i j
-            | Extern "caml_int32_sub", [ i; j ] -> int32_bin_op stack_ctx x Sub i j
-            | Extern "caml_int32_mul", [ i; j ] -> int32_bin_op stack_ctx x Mul i j
-            | Extern "caml_int32_and", [ i; j ] -> int32_bin_op stack_ctx x And i j
-            | Extern "caml_int32_or", [ i; j ] -> int32_bin_op stack_ctx x Or i j
-            | Extern "caml_int32_xor", [ i; j ] -> int32_bin_op stack_ctx x Xor i j
+                Memory.box_int32 (return (W.BinOp (I32 Sub, Const (I32 0l), i)))
+            | Extern "caml_int32_add", [ i; j ] -> int32_bin_op Add i j
+            | Extern "caml_int32_sub", [ i; j ] -> int32_bin_op Sub i j
+            | Extern "caml_int32_mul", [ i; j ] -> int32_bin_op Mul i j
+            | Extern "caml_int32_and", [ i; j ] -> int32_bin_op And i j
+            | Extern "caml_int32_or", [ i; j ] -> int32_bin_op Or i j
+            | Extern "caml_int32_xor", [ i; j ] -> int32_bin_op Xor i j
             | Extern "caml_int32_div", [ i; j ] ->
                 let res = Var.fresh () in
                 (*ZZZ Can we do better?*)
@@ -403,7 +369,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                         (let* i = load i' in
                          let* j = load j' in
                          return (W.BinOp (I32 (Div S), i, j)))))
-                  (Memory.box_int32 stack_ctx x (load res))
+                  (Memory.box_int32 (load res))
             | Extern "caml_int32_mod", [ i; j ] ->
                 let j' = Var.fresh () in
                 seq
@@ -413,43 +379,34 @@ module Generate (Target : Wa_target_sig.S) = struct
                      (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j))))
                   (let* i = Memory.unbox_int32 i in
                    let* j = load j' in
-                   Memory.box_int32 stack_ctx x (return (W.BinOp (I32 (Rem S), i, j))))
-            | Extern "caml_int32_shift_left", [ i; j ] ->
-                int32_shift_op stack_ctx x Shl i j
-            | Extern "caml_int32_shift_right", [ i; j ] ->
-                int32_shift_op stack_ctx x (Shr S) i j
+                   Memory.box_int32 (return (W.BinOp (I32 (Rem S), i, j))))
+            | Extern "caml_int32_shift_left", [ i; j ] -> int32_shift_op Shl i j
+            | Extern "caml_int32_shift_right", [ i; j ] -> int32_shift_op (Shr S) i j
             | Extern "caml_int32_shift_right_unsigned", [ i; j ] ->
-                int32_shift_op stack_ctx x (Shr U) i j
+                int32_shift_op (Shr U) i j
             | Extern "caml_int32_to_int", [ i ] -> Value.val_int (Memory.unbox_int32 i)
-            | Extern "caml_int32_of_int", [ i ] ->
-                Memory.box_int32 stack_ctx x (Value.int_val i)
+            | Extern "caml_int32_of_int", [ i ] -> Memory.box_int32 (Value.int_val i)
             | Extern "caml_int64_bits_of_float", [ f ] ->
                 let* f = Memory.unbox_float f in
-                Memory.box_int64 stack_ctx x (return (W.UnOp (I64 ReinterpretF, f)))
+                Memory.box_int64 (return (W.UnOp (I64 ReinterpretF, f)))
             | Extern "caml_int64_float_of_bits", [ i ] ->
                 let* i = Memory.unbox_int64 i in
-                Memory.box_float stack_ctx x (return (W.UnOp (F64 ReinterpretI, i)))
+                Memory.box_float (return (W.UnOp (F64 ReinterpretI, i)))
             | Extern "caml_int64_of_float", [ f ] ->
                 let* f = Memory.unbox_float f in
-                Memory.box_int64 stack_ctx x (return (W.UnOp (I64 (TruncSatF64 S), f)))
+                Memory.box_int64 (return (W.UnOp (I64 (TruncSatF64 S), f)))
             | Extern "caml_int64_to_float", [ n ] ->
                 let* n = Memory.unbox_int64 n in
-                Memory.box_float
-                  stack_ctx
-                  x
-                  (return (W.UnOp (F64 (Convert (`I64, S)), n)))
+                Memory.box_float (return (W.UnOp (F64 (Convert (`I64, S)), n)))
             | Extern "caml_int64_neg", [ i ] ->
                 let* i = Memory.unbox_int64 i in
-                Memory.box_int64
-                  stack_ctx
-                  x
-                  (return (W.BinOp (I64 Sub, Const (I64 0L), i)))
-            | Extern "caml_int64_add", [ i; j ] -> int64_bin_op stack_ctx x Add i j
-            | Extern "caml_int64_sub", [ i; j ] -> int64_bin_op stack_ctx x Sub i j
-            | Extern "caml_int64_mul", [ i; j ] -> int64_bin_op stack_ctx x Mul i j
-            | Extern "caml_int64_and", [ i; j ] -> int64_bin_op stack_ctx x And i j
-            | Extern "caml_int64_or", [ i; j ] -> int64_bin_op stack_ctx x Or i j
-            | Extern "caml_int64_xor", [ i; j ] -> int64_bin_op stack_ctx x Xor i j
+                Memory.box_int64 (return (W.BinOp (I64 Sub, Const (I64 0L), i)))
+            | Extern "caml_int64_add", [ i; j ] -> int64_bin_op Add i j
+            | Extern "caml_int64_sub", [ i; j ] -> int64_bin_op Sub i j
+            | Extern "caml_int64_mul", [ i; j ] -> int64_bin_op Mul i j
+            | Extern "caml_int64_and", [ i; j ] -> int64_bin_op And i j
+            | Extern "caml_int64_or", [ i; j ] -> int64_bin_op Or i j
+            | Extern "caml_int64_xor", [ i; j ] -> int64_bin_op Xor i j
             | Extern "caml_int64_div", [ i; j ] ->
                 let res = Var.fresh () in
                 (*ZZZ Can we do better?*)
@@ -482,7 +439,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                         (let* i = load i' in
                          let* j = load j' in
                          return (W.BinOp (I64 (Div S), i, j)))))
-                  (Memory.box_int64 stack_ctx x (load res))
+                  (Memory.box_int64 (load res))
             | Extern "caml_int64_mod", [ i; j ] ->
                 let j' = Var.fresh () in
                 seq
@@ -492,78 +449,54 @@ module Generate (Target : Wa_target_sig.S) = struct
                      (W.Br_if (label_index context zero_divide_pc, W.UnOp (I64 Eqz, j))))
                   (let* i = Memory.unbox_int64 i in
                    let* j = load j' in
-                   Memory.box_int64 stack_ctx x (return (W.BinOp (I64 (Rem S), i, j))))
-            | Extern "caml_int64_shift_left", [ i; j ] ->
-                int64_shift_op stack_ctx x Shl i j
-            | Extern "caml_int64_shift_right", [ i; j ] ->
-                int64_shift_op stack_ctx x (Shr S) i j
+                   Memory.box_int64 (return (W.BinOp (I64 (Rem S), i, j))))
+            | Extern "caml_int64_shift_left", [ i; j ] -> int64_shift_op Shl i j
+            | Extern "caml_int64_shift_right", [ i; j ] -> int64_shift_op (Shr S) i j
             | Extern "caml_int64_shift_right_unsigned", [ i; j ] ->
-                int64_shift_op stack_ctx x (Shr U) i j
+                int64_shift_op (Shr U) i j
             | Extern "caml_int64_to_int", [ i ] ->
                 let* i = Memory.unbox_int64 i in
                 Value.val_int (return (W.I32WrapI64 i))
             | Extern "caml_int64_of_int", [ i ] ->
                 let* i = Value.int_val i in
                 Memory.box_int64
-                  stack_ctx
-                  x
                   (return
                      (match i with
                      | Const (I32 i) -> W.Const (I64 (Int64.of_int32 i))
                      | _ -> W.I64ExtendI32 (S, i)))
             | Extern "caml_int64_to_int32", [ i ] ->
                 let* i = Memory.unbox_int64 i in
-                Memory.box_int32 stack_ctx x (return (W.I32WrapI64 i))
+                Memory.box_int32 (return (W.I32WrapI64 i))
             | Extern "caml_int64_of_int32", [ i ] ->
                 let* i = Memory.unbox_int32 i in
-                Memory.box_int64 stack_ctx x (return (W.I64ExtendI32 (S, i)))
+                Memory.box_int64 (return (W.I64ExtendI32 (S, i)))
             | Extern "caml_int64_to_nativeint", [ i ] ->
                 let* i = Memory.unbox_int64 i in
-                Memory.box_nativeint stack_ctx x (return (W.I32WrapI64 i))
+                Memory.box_nativeint (return (W.I32WrapI64 i))
             | Extern "caml_int64_of_nativeint", [ i ] ->
                 let* i = Memory.unbox_nativeint i in
-                Memory.box_int64 stack_ctx x (return (W.I64ExtendI32 (S, i)))
+                Memory.box_int64 (return (W.I64ExtendI32 (S, i)))
             | Extern "caml_nativeint_bits_of_float", [ f ] ->
                 let* f = Memory.unbox_float f in
-                Memory.box_nativeint
-                  stack_ctx
-                  x
-                  (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
+                Memory.box_nativeint (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
             | Extern "caml_nativeint_float_of_bits", [ i ] ->
                 let* i = Memory.unbox_int64 i in
-                Memory.box_float
-                  stack_ctx
-                  x
-                  (return (W.F64PromoteF32 (UnOp (I32 ReinterpretF, i))))
+                Memory.box_float (return (W.F64PromoteF32 (UnOp (I32 ReinterpretF, i))))
             | Extern "caml_nativeint_of_float", [ f ] ->
                 let* f = Memory.unbox_float f in
-                Memory.box_nativeint
-                  stack_ctx
-                  x
-                  (return (W.UnOp (I32 (TruncSatF64 S), f)))
+                Memory.box_nativeint (return (W.UnOp (I32 (TruncSatF64 S), f)))
             | Extern "caml_nativeint_to_float", [ n ] ->
                 let* n = Memory.unbox_nativeint n in
-                Memory.box_float
-                  stack_ctx
-                  x
-                  (return (W.UnOp (F64 (Convert (`I32, S)), n)))
+                Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n)))
             | Extern "caml_nativeint_neg", [ i ] ->
                 let* i = Memory.unbox_nativeint i in
-                Memory.box_nativeint
-                  stack_ctx
-                  x
-                  (return (W.BinOp (I32 Sub, Const (I32 0l), i)))
-            | Extern "caml_nativeint_add", [ i; j ] ->
-                nativeint_bin_op stack_ctx x Add i j
-            | Extern "caml_nativeint_sub", [ i; j ] ->
-                nativeint_bin_op stack_ctx x Sub i j
-            | Extern "caml_nativeint_mul", [ i; j ] ->
-                nativeint_bin_op stack_ctx x Mul i j
-            | Extern "caml_nativeint_and", [ i; j ] ->
-                nativeint_bin_op stack_ctx x And i j
-            | Extern "caml_nativeint_or", [ i; j ] -> nativeint_bin_op stack_ctx x Or i j
-            | Extern "caml_nativeint_xor", [ i; j ] ->
-                nativeint_bin_op stack_ctx x Xor i j
+                Memory.box_nativeint (return (W.BinOp (I32 Sub, Const (I32 0l), i)))
+            | Extern "caml_nativeint_add", [ i; j ] -> nativeint_bin_op Add i j
+            | Extern "caml_nativeint_sub", [ i; j ] -> nativeint_bin_op Sub i j
+            | Extern "caml_nativeint_mul", [ i; j ] -> nativeint_bin_op Mul i j
+            | Extern "caml_nativeint_and", [ i; j ] -> nativeint_bin_op And i j
+            | Extern "caml_nativeint_or", [ i; j ] -> nativeint_bin_op Or i j
+            | Extern "caml_nativeint_xor", [ i; j ] -> nativeint_bin_op Xor i j
             | Extern "caml_nativeint_div", [ i; j ] ->
                 let res = Var.fresh () in
                 (*ZZZ Can we do better?*)
@@ -596,7 +529,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                         (let* i = load i' in
                          let* j = load j' in
                          return (W.BinOp (I32 (Div S), i, j)))))
-                  (Memory.box_nativeint stack_ctx x (load res))
+                  (Memory.box_nativeint (load res))
             | Extern "caml_nativeint_mod", [ i; j ] ->
                 let j' = Var.fresh () in
                 seq
@@ -606,17 +539,16 @@ module Generate (Target : Wa_target_sig.S) = struct
                      (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j))))
                   (let* i = Memory.unbox_nativeint i in
                    let* j = load j' in
-                   Memory.box_nativeint stack_ctx x (return (W.BinOp (I32 (Rem S), i, j))))
-            | Extern "caml_nativeint_shift_left", [ i; j ] ->
-                nativeint_shift_op stack_ctx x Shl i j
+                   Memory.box_nativeint (return (W.BinOp (I32 (Rem S), i, j))))
+            | Extern "caml_nativeint_shift_left", [ i; j ] -> nativeint_shift_op Shl i j
             | Extern "caml_nativeint_shift_right", [ i; j ] ->
-                nativeint_shift_op stack_ctx x (Shr S) i j
+                nativeint_shift_op (Shr S) i j
             | Extern "caml_nativeint_shift_right_unsigned", [ i; j ] ->
-                nativeint_shift_op stack_ctx x (Shr U) i j
+                nativeint_shift_op (Shr U) i j
             | Extern "caml_nativeint_to_int", [ i ] ->
                 Value.val_int (Memory.unbox_nativeint i)
             | Extern "caml_nativeint_of_int", [ i ] ->
-                Memory.box_nativeint stack_ctx x (Value.int_val i)
+                Memory.box_nativeint (Value.int_val i)
             | Extern "caml_int_compare", [ i; j ] ->
                 Value.val_int
                   Arith.(
@@ -632,17 +564,14 @@ module Generate (Target : Wa_target_sig.S) = struct
                     l
                     ~init:(return [])
                 in
-                Memory.allocate stack_ctx x ~tag:0 l
+                Memory.allocate ~tag:0 l
             | Extern name, l ->
                 let name = Primitive.resolve name in
                 (*ZZZ Different calling convention when large number of parameters *)
                 let* f = register_import ~name (Fun (func_type (List.length l))) in
-                let* () = Stack.perform_spilling stack_ctx (`Instr x) in
                 let rec loop acc l =
                   match l with
-                  | [] ->
-                      Stack.kill_variables stack_ctx;
-                      return (W.Call (f, List.rev acc))
+                  | [] -> return (W.Call (f, List.rev acc))
                   | x :: r ->
                       let* x = x in
                       loop (x :: acc) r
@@ -660,17 +589,15 @@ module Generate (Target : Wa_target_sig.S) = struct
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
                 assert false))
 
-  and translate_instr ctx stack_ctx context (i, loc) =
+  and translate_instr ctx context (i, loc) =
     with_location
       loc
       (match i with
-      | Assign (x, y) ->
-          let* () = assign x (load y) in
-          Stack.assign stack_ctx x
+      | Assign (x, y) -> assign x (load y)
       | Let (x, e) ->
           if ctx.live.(Var.idx x) = 0
-          then drop (translate_expr ctx stack_ctx context x e)
-          else store x (translate_expr ctx stack_ctx context x e)
+          then drop (translate_expr ctx context x e)
+          else store x (translate_expr ctx context x e)
       | Set_field (x, n, Non_float, y) -> Memory.set_field (load x) n (load y)
       | Set_field (x, n, Float, y) ->
           Memory.float_array_set
@@ -685,13 +612,12 @@ module Generate (Target : Wa_target_sig.S) = struct
                Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
       | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z))
 
-  and translate_instrs ctx stack_ctx context l =
+  and translate_instrs ctx context l =
     match l with
     | [] -> return ()
     | i :: rem ->
-        let* () = Stack.perform_reloads stack_ctx (`Instr (fst i)) in
-        let* () = translate_instr ctx stack_ctx context i in
-        translate_instrs ctx stack_ctx context rem
+        let* () = translate_instr ctx context i in
+        translate_instrs ctx context rem
 
   let parallel_renaming params args =
     let rec visit visited prev s m x l =
@@ -844,27 +770,15 @@ module Generate (Target : Wa_target_sig.S) = struct
           { ctx with blocks }
       | None -> ctx
     in
-    let stack_info =
-      Stack.generate_spilling_information
-        p
-        ~context:ctx.global_context
-        ~closures:ctx.closures
-        ~env:
-          (match name_opt with
-          | Some name -> name
-          | None -> Var.fresh ())
-        ~pc
-        ~params
-    in
-    let g = Wa_structure.build_graph ctx.blocks pc in
-    let dom = Wa_structure.dominator_tree g in
+    let g = Structure.build_graph ctx.blocks pc in
+    let dom = Structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
       let block = Addr.Map.find pc ctx.blocks in
       let keep_ouside pc' =
         match fst block.branch with
         | Switch _ -> true
         | Cond (_, (pc1, _), (pc2, _)) when pc' = pc1 && pc' = pc2 -> true
-        | _ -> Wa_structure.is_merge_node g pc'
+        | _ -> Structure.is_merge_node g pc'
       in
       let code ~context =
         translate_node_within
@@ -873,13 +787,13 @@ module Generate (Target : Wa_target_sig.S) = struct
           ~pc
           ~l:
             (pc
-            |> Wa_structure.get_edges dom
+            |> Structure.get_edges dom
             |> Addr.Set.elements
             |> List.filter ~f:keep_ouside
-            |> Wa_structure.sort_in_post_order g)
+            |> Structure.sort_in_post_order g)
           ~context
       in
-      if Wa_structure.is_loop_header g pc
+      if Structure.is_loop_header g pc
       then
         loop { params = []; result = result_typ } (code ~context:(`Block pc :: context))
       else code ~context
@@ -910,17 +824,12 @@ module Generate (Target : Wa_target_sig.S) = struct
           translate_tree result_typ fall_through pc' context
       | [] ->
           let block = Addr.Map.find pc ctx.blocks in
-          let* global_context = get_context in
-          let stack_ctx = Stack.start_block ~context:global_context stack_info pc in
-          let* () = translate_instrs ctx stack_ctx context block.body in
-          let* () = Stack.perform_reloads stack_ctx (`Branch (fst block.branch)) in
-          let* () = Stack.perform_spilling stack_ctx (`Block pc) in
+          let* () = translate_instrs ctx context block.body in
           let branch, loc = block.branch in
           with_location
             loc
             (match branch with
-            | Branch cont ->
-                translate_branch result_typ fall_through pc cont context stack_ctx
+            | Branch cont -> translate_branch result_typ fall_through pc cont context
             | Return x -> (
                 let* e = load x in
                 match fall_through with
@@ -931,43 +840,22 @@ module Generate (Target : Wa_target_sig.S) = struct
                 if_
                   { params = []; result = result_typ }
                   (Value.check_is_not_zero (load x))
-                  (translate_branch result_typ fall_through pc cont1 context' stack_ctx)
-                  (translate_branch result_typ fall_through pc cont2 context' stack_ctx)
+                  (translate_branch result_typ fall_through pc cont1 context')
+                  (translate_branch result_typ fall_through pc cont2 context')
             | Stop -> (
                 let* e = Value.unit in
                 match fall_through with
                 | `Return -> instr (Push e)
                 | `Block _ -> instr (Return (Some e)))
-            | Switch (x, a1) ->
-                let l =
-                  List.filter
-                    ~f:(fun pc' ->
-                      Stack.stack_adjustment_needed stack_ctx ~src:pc ~dst:pc')
-                    (List.rev (Addr.Set.elements (Wa_structure.get_edges dom pc)))
+            | Switch (x, a) ->
+                let len = Array.length a in
+                let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
+                let dest (pc, args) =
+                  assert (List.is_empty args);
+                  label_index context pc
                 in
-                let br_table e a context =
-                  let len = Array.length a in
-                  let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
-                  let dest (pc, args) =
-                    assert (List.is_empty args);
-                    label_index context pc
-                  in
-                  let* e = e in
-                  instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
-                in
-                let rec nest l context =
-                  match l with
-                  | pc' :: rem ->
-                      let* () =
-                        Wa_code_generation.block
-                          { params = []; result = [] }
-                          (nest rem (`Block pc' :: context))
-                      in
-                      let* () = Stack.adjust_stack stack_ctx ~src:pc ~dst:pc' in
-                      instr (Br (label_index context pc', None))
-                  | [] -> br_table (Value.int_val (load x)) a1 context
-                in
-                nest l context
+                let* e = Value.int_val (load x) in
+                instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
             | Raise (x, _) ->
                 let* e = load x in
                 let* tag = register_import ~name:exception_name (Tag Value.value) in
@@ -981,13 +869,12 @@ module Generate (Target : Wa_target_sig.S) = struct
                      p
                      (fst cont)
                      (fun ~result_typ ~fall_through ~context ->
-                       translate_branch result_typ fall_through pc cont context stack_ctx))
+                       translate_branch result_typ fall_through pc cont context))
                   x
                   (fun ~result_typ ~fall_through ~context ->
-                    translate_branch result_typ fall_through pc cont' context stack_ctx)
-            | Poptrap cont ->
-                translate_branch result_typ fall_through pc cont context stack_ctx)
-    and translate_branch result_typ fall_through src (dst, args) context stack_ctx =
+                    translate_branch result_typ fall_through pc cont' context)
+            | Poptrap cont -> translate_branch result_typ fall_through pc cont context)
+    and translate_branch result_typ fall_through src (dst, args) context =
       let* () =
         if List.is_empty args
         then return ()
@@ -995,12 +882,11 @@ module Generate (Target : Wa_target_sig.S) = struct
           let block = Addr.Map.find dst ctx.blocks in
           parallel_renaming block.params args
       in
-      let* () = Stack.adjust_stack stack_ctx ~src ~dst in
       match fall_through with
       | `Block dst' when dst = dst' -> return ()
       | _ ->
-          if (src >= 0 && Wa_structure.is_backward g src dst)
-             || Wa_structure.is_merge_node g dst
+          if (src >= 0 && Structure.is_backward g src dst)
+             || Structure.is_merge_node g dst
           then instr (Br (label_index context dst, None))
           else translate_tree result_typ fall_through dst context
     in
@@ -1042,8 +928,6 @@ module Generate (Target : Wa_target_sig.S) = struct
         ~param_names
         ~body:
           (let* () = build_initial_env in
-           let stack_ctx = Stack.start_function ~context:ctx.global_context stack_info in
-           let* () = Stack.perform_spilling stack_ctx `Function in
            wrap_with_handlers
              p
              pc
@@ -1051,7 +935,7 @@ module Generate (Target : Wa_target_sig.S) = struct
              ~fall_through:`Return
              ~context:[]
              (fun ~result_typ ~fall_through ~context ->
-               translate_branch result_typ fall_through (-1) cont context stack_ctx))
+               translate_branch result_typ fall_through (-1) cont context))
     in
     let body = post_process_function_body ~param_names ~locals body in
     W.Function
@@ -1174,8 +1058,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     in
     let constant_data =
       List.map
-        ~f:(fun (name, (active, contents)) ->
-          W.Data { name; read_only = true; active; contents })
+        ~f:(fun (name, contents) -> W.Data { name; contents })
         (Var.Map.bindings context.data_segments)
     in
     List.rev_append context.other_fields (imports @ constant_data)
@@ -1232,51 +1115,25 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
-let start () =
-  make_context
-    ~value_type:
-      (match target with
-      | `Core -> Wa_core_target.Value.value
-      | `GC -> Wa_gc_target.Value.value)
+let start () = make_context ~value_type:Wa_gc_target.Value.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~debug =
   let p = if Config.Flag.effects () then fix_switch_branches p else p in
-  match target with
-  | `Core ->
-      let module G = Generate (Wa_core_target) in
-      G.f ~context ~unit_name ~live_vars ~in_cps ~debug p
-  | `GC ->
-      let module G = Generate (Wa_gc_target) in
-      G.f ~context ~unit_name ~live_vars ~in_cps ~debug p
+  let module G = Generate (Wa_gc_target) in
+  G.f ~context ~unit_name ~live_vars ~in_cps ~debug p
 
 let add_start_function =
-  match target with
-  | `Core ->
-      let module G = Generate (Wa_core_target) in
-      G.add_start_function
-  | `GC ->
-      let module G = Generate (Wa_gc_target) in
-      G.add_start_function
+  let module G = Generate (Wa_gc_target) in
+  G.add_start_function
 
 let add_init_function =
-  match target with
-  | `Core ->
-      let module G = Generate (Wa_core_target) in
-      G.add_init_function
-  | `GC ->
-      let module G = Generate (Wa_gc_target) in
-      G.add_init_function
+  let module G = Generate (Wa_gc_target) in
+  G.add_init_function
 
 let output ch ~context ~debug =
-  match target with
-  | `Core ->
-      let module G = Generate (Wa_core_target) in
-      let fields = G.output ~context in
-      Wa_asm_output.f ch fields
-  | `GC ->
-      let module G = Generate (Wa_gc_target) in
-      let fields = G.output ~context in
-      Wa_wat_output.f ~debug ch fields
+  let module G = Generate (Wa_gc_target) in
+  let fields = G.output ~context in
+  Wa_wat_output.f ~debug ch fields
 
 let wasm_output ch ~context =
   let module G = Generate (Wa_gc_target) in

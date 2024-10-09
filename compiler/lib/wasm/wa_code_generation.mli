@@ -22,7 +22,7 @@ type constant_global
 
 type context =
   { constants : (Code.Var.t, Wa_ast.expression) Hashtbl.t
-  ; mutable data_segments : (bool * Wa_ast.data list) Code.Var.Map.t
+  ; mutable data_segments : string Code.Var.Map.t
   ; mutable constant_globals : constant_global Code.Var.Map.t
   ; mutable other_fields : Wa_ast.module_field list
   ; mutable imports : (Code.Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
@@ -154,7 +154,7 @@ val register_import :
   ?import_module:string -> name:string -> Wa_ast.import_desc -> Wa_ast.var t
 
 val register_global :
-     Wa_ast.symbol
+     Wa_ast.var
   -> ?exported_name:string
   -> ?constant:bool
   -> Wa_ast.global_type
@@ -163,9 +163,7 @@ val register_global :
 
 val get_global : Code.Var.t -> Wa_ast.expression option t
 
-val register_data_segment : Code.Var.t -> active:bool -> Wa_ast.data list -> unit t
-
-val get_data_segment : Code.Var.t -> (bool * Wa_ast.data list) t
+val register_data_segment : Code.Var.t -> string -> unit t
 
 val register_init_code : unit t -> unit t
 

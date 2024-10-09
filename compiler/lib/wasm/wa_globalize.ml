@@ -104,7 +104,7 @@ let traverse_block p st pc =
   List.fold_left ~f:(fun st i -> traverse_instruction st i) ~init:st b.Code.body
 
 let f p g closures =
-  let l = Wa_structure.blocks_in_reverse_post_order g in
+  let l = Structure.blocks_in_reverse_post_order g in
   let in_loop = Freevars.find_loops_in_closure p p.Code.start in
   let st =
     List.fold_left

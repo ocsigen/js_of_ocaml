@@ -30,8 +30,6 @@ let rec rewrite_tail_call ~y i =
   | Wa_ast.Location (loc, i') ->
       Option.map ~f:(fun i -> Wa_ast.Location (loc, i)) (rewrite_tail_call ~y i')
   | LocalSet (x, Call (symb, l)) when Code.Var.equal x y -> Some (Return_call (symb, l))
-  | LocalSet (x, Call_indirect (ty, e, l)) when Code.Var.equal x y ->
-      Some (Return_call_indirect (ty, e, l))
   | LocalSet (x, Call_ref (ty, e, l)) when Code.Var.equal x y ->
       Some (Return_call_ref (ty, e, l))
   | _ -> None
@@ -48,17 +46,13 @@ let rec instruction ~tail i =
         , List.map ~f:(fun (tag, l) -> tag, instructions ~tail l) catches
         , Option.map ~f:(fun l -> instructions ~tail l) catch_all )
   | Return (Some (Call (symb, l))) -> Return_call (symb, l)
-  | Return (Some (Call_indirect (ty, e, l))) -> Return_call_indirect (ty, e, l)
   | Return (Some (Call_ref (ty, e, l))) -> Return_call_ref (ty, e, l)
   | Push (Call (symb, l)) when tail -> Return_call (symb, l)
-  | Push (Call_indirect (ty, e, l)) when tail -> Return_call_indirect (ty, e, l)
   | Push (Call_ref (ty, e, l)) when tail -> Return_call_ref (ty, e, l)
   | Location (loc, i) -> Location (loc, instruction ~tail i)
   | Push (Call_ref _) -> i
   | Drop (BlockExpr (typ, l)) -> Drop (BlockExpr (typ, instructions ~tail:false l))
   | Drop _
-  | Store _
-  | Store8 _
   | LocalSet _
   | GlobalSet _
   | Br_table _
@@ -72,7 +66,6 @@ let rec instruction ~tail i =
   | Push _
   | ArraySet _
   | StructSet _
-  | Return_call_indirect _
   | Return_call _
   | Return_call_ref _ -> i
 

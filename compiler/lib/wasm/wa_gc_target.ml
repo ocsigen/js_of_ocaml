@@ -480,7 +480,7 @@ module Value = struct
         match typ.typ with
         | W.I31 | Eq | Any -> return (W.Const (I32 1l))
         | Type _ | Func | Extern -> return (W.Const (I32 0l)))
-    | GlobalGet (V nm) -> (
+    | GlobalGet nm -> (
         let* init = get_global nm in
         match init with
         | Some (W.ArrayNewFixed (t, _) | W.StructNew (t, _)) ->
@@ -502,14 +502,12 @@ module Value = struct
 
   let rec effect_free e =
     match e with
-    | W.Const _ | ConstSym _ | LocalGet _ | GlobalGet _ | RefFunc _ | RefNull _ -> true
+    | W.Const _ | LocalGet _ | GlobalGet _ | RefFunc _ | RefNull _ -> true
     | UnOp (_, e')
     | I32WrapI64 e'
     | I64ExtendI32 (_, e')
     | F32DemoteF64 e'
     | F64PromoteF32 e'
-    | Load (_, e')
-    | Load8 (_, _, e')
     | RefI31 e'
     | I31Get (_, e')
     | ArrayLen e'
@@ -523,9 +521,7 @@ module Value = struct
     | RefEq (e1, e2) -> effect_free e1 && effect_free e2
     | LocalTee _
     | BlockExpr _
-    | Call_indirect _
     | Call _
-    | MemoryGrow _
     | Seq _
     | Pop _
     | Call_ref _
@@ -619,7 +615,7 @@ module Memory = struct
   let wasm_struct_get ty e i =
     let* e = e in
     match e with
-    | W.RefCast ({ typ; _ }, GlobalGet (V nm)) -> (
+    | W.RefCast ({ typ; _ }, GlobalGet nm) -> (
         let* init = get_global nm in
         match init with
         | Some (W.StructNew (ty', l)) ->
@@ -651,7 +647,7 @@ module Memory = struct
     let* e'' = e'' in
     instr (W.ArraySet (ty, e, e', e''))
 
-  let box_float _ _ e =
+  let box_float e =
     let* ty = Type.float_type in
     let* e = e in
     return (W.StructNew (ty, [ e ]))
@@ -660,7 +656,7 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
-  let allocate _ _ ~tag l =
+  let allocate ~tag l =
     if tag = 254
     then
       let* l =
@@ -730,7 +726,7 @@ module Memory = struct
   let array_set e e' e'' = wasm_array_set e Arith.(Value.int_val e' + const 1l) e''
 
   let float_array_get e e' =
-    box_float () () (wasm_array_get ~ty:Type.float_array_type e (Value.int_val e'))
+    box_float (wasm_array_get ~ty:Type.float_array_type e (Value.int_val e'))
 
   let float_array_set e e' e'' =
     wasm_array_set ~ty:Type.float_array_type e (Value.int_val e') (unbox_float e'')
@@ -760,9 +756,7 @@ module Memory = struct
                in
                instr (Br (1, Some e))))
        in
-       let* e =
-         box_float () () (wasm_array_get ~ty:Type.float_array_type (load a) (load i))
-       in
+       let* e = box_float (wasm_array_get ~ty:Type.float_array_type (load a) (load i)) in
        instr (W.Push e))
 
   let gen_array_set e e' e'' =
@@ -821,7 +815,7 @@ module Memory = struct
     let* fun_ty = Type.function_type ~cps arity in
     let casted_closure = if skip_cast then closure else wasm_cast ty closure in
     let* e = wasm_struct_get ty casted_closure (env_start arity - 1) in
-    return (`Ref fun_ty, e)
+    return (fun_ty, e)
 
   let load_real_closure ~cps ~arity closure =
     let arity = if cps then arity - 1 else arity in
@@ -866,9 +860,9 @@ module Memory = struct
     in
     let* ty = Type.int32_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet (V int32_ops); e ]))
+    return (W.StructNew (ty, [ GlobalGet int32_ops; e ]))
 
-  let box_int32 _ _ e = make_int32 ~kind:`Int32 e
+  let box_int32 e = make_int32 ~kind:`Int32 e
 
   let unbox_int32 e =
     let* ty = Type.int32_type in
@@ -884,15 +878,15 @@ module Memory = struct
     in
     let* ty = Type.int64_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet (V int64_ops); e ]))
+    return (W.StructNew (ty, [ GlobalGet int64_ops; e ]))
 
-  let box_int64 _ _ e = make_int64 e
+  let box_int64 e = make_int64 e
 
   let unbox_int64 e =
     let* ty = Type.int64_type in
     wasm_struct_get ty (wasm_cast ty e) 1
 
-  let box_nativeint _ _ e = make_int32 ~kind:`Nativeint e
+  let box_nativeint e = make_int32 ~kind:`Nativeint e
 
   let unbox_nativeint e =
     let* ty = Type.int32_type in
@@ -906,8 +900,8 @@ module Constant = struct
 
   let store_in_global ?(name = "const") c =
     let name = Code.Var.fresh_n name in
-    let* () = register_global (V name) { mut = false; typ = Type.value } c in
-    return (W.GlobalGet (V name))
+    let* () = register_global name { mut = false; typ = Type.value } c in
+    return (W.GlobalGet name)
 
   let str_js_utf8 s =
     let b = Buffer.create (String.length s) in
@@ -1000,13 +994,13 @@ module Constant = struct
             (Global { mut = false; typ = Ref { nullable = false; typ = Any } })
         in
         let* ty = Type.js_type in
-        return (Const_named ("str_" ^ s), W.StructNew (ty, [ GlobalGet (V x) ]))
+        return (Const_named ("str_" ^ s), W.StructNew (ty, [ GlobalGet x ]))
     | String s ->
         let* ty = Type.string_type in
         if String.length s >= string_length_threshold
         then
           let name = Code.Var.fresh_n "string" in
-          let* () = register_data_segment name ~active:false [ DataBytes s ] in
+          let* () = register_data_segment name s in
           return
             ( Mutated
             , W.ArrayNewData
@@ -1050,12 +1044,12 @@ module Constant = struct
         let* () =
           register_global
             ~constant:true
-            (V name)
+            name
             { mut = true; typ = Type.value }
             (W.RefI31 (Const (I32 0l)))
         in
-        let* () = register_init_code (instr (W.GlobalSet (V name, c))) in
-        return (W.GlobalGet (V name))
+        let* () = register_init_code (instr (W.GlobalSet (name, c))) in
+        return (W.GlobalGet name)
 end
 
 module Closure = struct
@@ -1070,7 +1064,7 @@ module Closure = struct
     | [ (g, _) ] -> Code.Var.equal f g
     | _ :: r -> is_last_fun r f
 
-  let translate ~context ~closures ~stack_ctx:_ ~cps f =
+  let translate ~context ~closures ~cps f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     assert (
@@ -1087,7 +1081,7 @@ module Closure = struct
       let name = Code.Var.fork f in
       let* () =
         register_global
-          (V name)
+          name
           { mut = false; typ = Type.value }
           (W.StructNew
              ( typ
@@ -1101,7 +1095,7 @@ module Closure = struct
                  then Const (I32 (Int32.of_int arity)) :: code_pointers
                  else code_pointers ))
       in
-      return (W.GlobalGet (V name))
+      return (W.GlobalGet name)
     else
       let free_variable_count = List.length free_variables in
       match info.Wa_closure_conversion.functions with
@@ -1238,7 +1232,7 @@ module Closure = struct
                ~init:(0, return ())
                (List.map ~f:fst functions @ free_variables))
 
-  let curry_allocate ~stack_ctx:_ ~x:_ ~cps ~arity m ~f ~closure ~arg =
+  let curry_allocate ~cps ~arity m ~f ~closure ~arg =
     let* ty = Type.curry_type ~cps arity m in
     let* cl_ty =
       if m = arity
@@ -1289,36 +1283,6 @@ module Closure = struct
          , if include_closure_arity
            then Const (I32 1l) :: closure_contents
            else closure_contents ))
-end
-
-module Stack = struct
-  type stack = Code.Var.t option list
-
-  type info = unit
-
-  let generate_spilling_information _ ~context:_ ~closures:_ ~pc:_ ~env:_ ~params:_ = ()
-
-  let add_spilling _ ~location:_ ~stack:_ ~live_vars:_ ~spilled_vars:_ = (), []
-
-  type ctx = unit
-
-  let start_function ~context:_ _ = ()
-
-  let start_block ~context:_ _ _ = ()
-
-  let perform_reloads _ _ = return ()
-
-  let perform_spilling _ _ = return ()
-
-  let kill_variables _ = ()
-
-  let assign _ _ = return ()
-
-  let make_info () = ()
-
-  let adjust_stack _ ~src:_ ~dst:_ = return ()
-
-  let stack_adjustment_needed _ ~src:_ ~dst:_ = false
 end
 
 module Math = struct
