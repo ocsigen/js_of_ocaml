@@ -471,9 +471,9 @@
     const f = path.join(path.dirname(require.main.filename), src);
     return require("node:fs/promises").readFile(f);
   }
+  const fetchBase = globalThis?.document?.currentScript?.src;
   function fetchRelative(src) {
-    const base = globalThis?.document?.currentScript?.src;
-    const url = base ? new URL(src, base) : src;
+    const url = fetchBase ? new URL(src, fetchBase) : src;
     return fetch(url);
   }
   const loadCode = isNode ? loadRelative : fetchRelative;
