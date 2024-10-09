@@ -1,7 +1,7 @@
 (executable
  (modes js)
  (js_of_ocaml
-  (flags --setenv JSOO_C=from-jsoo-args))
+  (flags :standard --setenv JSOO_C=from-jsoo-args))
  (name test))
 
 (rule
