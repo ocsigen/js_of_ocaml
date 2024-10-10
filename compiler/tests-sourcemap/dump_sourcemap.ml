@@ -72,7 +72,7 @@ let print_mapping lines ~line_offset (sm : Source_map.t) =
           | _ -> ()))
 
 let print_sourcemap lines = function
-  | `Standard sm -> print_mapping ~offset:0 lines sm
+  | `Standard sm -> print_mapping ~line_offset:0 lines sm
   | `Index l ->
       List.iter
         l.Source_map.Index.sections

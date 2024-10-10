@@ -45,4 +45,7 @@ let () =
     | _ -> failwith "unable to find sourcemap"
   in
   let sm = Js_of_ocaml_compiler.Source_map.of_string content in
-  print_endline (Js_of_ocaml_compiler.Source_map.to_string sm)
+  print_endline
+    (match sm with
+    | `Standard sm -> Js_of_ocaml_compiler.Source_map.to_string sm
+    | `Index sm -> Js_of_ocaml_compiler.Source_map.Index.to_string sm)
