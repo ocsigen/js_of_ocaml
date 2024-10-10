@@ -98,21 +98,27 @@ function caml_fatal_uncaught_exception(err) {
   }
 }
 
+//Provides: jsoo_static_env
+var jsoo_static_env = {};
+
 //Provides: caml_set_static_env
+//Requires: jsoo_static_env
 function caml_set_static_env(k, v) {
-  if (!globalThis.jsoo_static_env) globalThis.jsoo_static_env = {};
-  globalThis.jsoo_static_env[k] = v;
+  jsoo_static_env[k] = v;
   return 0;
 }
 
 //Provides: jsoo_sys_getenv (const)
+//Requires: jsoo_static_env
 function jsoo_sys_getenv(n) {
+  if (jsoo_static_env[n]) return jsoo_static_env[n];
   var process = globalThis.process;
   //nodejs env
   if (process && process.env && process.env[n] !== undefined)
     return process.env[n];
-  if (globalThis.jsoo_static_env && globalThis.jsoo_static_env[n])
-    return globalThis.jsoo_static_env[n];
+  if (globalThis.jsoo_env && typeof globalThis.jsoo_env[n] === "string") {
+    return globalThis.jsoo_env[n];
+  }
 }
 
 //Provides: caml_sys_getenv (const)
