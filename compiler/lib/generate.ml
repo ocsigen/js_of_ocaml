@@ -1060,9 +1060,10 @@ let maybe_zero_or_nan = function
   | J.ENum n -> (
       match J.Num.to_string n with
       | "NaN" -> true
-      | "-0." | "0." | "0" | "0." -> true
-      | J.EBin ((J.Bor | J.Lsr), _, _) -> false
-      | _ -> true)
+      | "-0." | "0." | "0" | "-0" -> true
+      | _ -> false)
+  | J.EBin ((J.Bor | J.Lsr), _, _) -> false
+  | _ -> true
 
 let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with

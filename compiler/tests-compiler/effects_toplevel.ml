@@ -81,13 +81,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                            dummy,
                            function(_c_){
                             var _d_ = i + 1 | 0;
-<<<<<<< HEAD
-                            if(! Object.is(5, i)) return caml_cps_exact_call1(_b_, _d_);
-                            caml_callback(g, [dummy]);
-=======
                             if(5 !== i) return caml_cps_exact_call1(_b_, _d_);
-                            caml_callback(g, [undef]);
->>>>>>> 21ff3c88d1 (fix)
+                            caml_callback(g, [dummy]);
                             var Test = [0];
                             runtime.caml_register_global(2, Test, "Test");
                            });
