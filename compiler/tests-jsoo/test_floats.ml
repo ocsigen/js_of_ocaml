@@ -177,10 +177,38 @@ let%expect_test "log2" =
   p 1024.0;
   [%expect {| 10.000000 |}]
 
+let print' f = try print (f ()) with e -> print_endline (Printexc.to_string e)
+
 let%expect_test "of_string" =
   let x = "0x1.1" in
-  print (float_of_string x);
+  print' (fun () -> float_of_string x);
   [%expect {| 1.062500 |}];
   let x = "0x1.1p-1" in
-  print (float_of_string x);
-  [%expect {| 0.531250 |}]
+  print' (fun () -> float_of_string x);
+  [%expect {| 0.531250 |}];
+  let x = "  0x1.1" in
+  print' (fun () -> float_of_string x);
+  [%expect {| 1.062500 |}];
+  let x = "  0x1.1 " in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}];
+  let x = "0x1.1 p-1" in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}]
+
+let%expect_test "of_string" =
+  let x = "3.14" in
+  print' (fun () -> float_of_string x);
+  [%expect {| 3.140000 |}];
+  let x = " 3.14" in
+  print' (fun () -> float_of_string x);
+  [%expect {| 3.140000 |}];
+  let x = "3. 14" in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}];
+  let x = "3.1 4" in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}];
+  let x = "3.14 " in
+  print' (fun () -> float_of_string x);
+  [%expect {| Failure("float_of_string") |}]
