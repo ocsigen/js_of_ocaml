@@ -341,8 +341,7 @@ module Mappings = struct
         edits
     in
     (* Remove trailing ';' *)
-    if Buffer.length buf > 0 then
-      Buffer.truncate buf (Buffer.length buf - 1);
+    if Buffer.length buf > 0 then Buffer.truncate buf (Buffer.length buf - 1);
     Uninterpreted (Buffer.contents buf)
 
   let num_gen_lines m =
@@ -415,8 +414,7 @@ module Mappings = struct
             (List.init ~len:(num_gen_lines m2) ~f:(Fun.const Line_edits.Keep))
         in
         (* Remove trailing ';' *)
-        if Buffer.length buf > 0 then
-          Buffer.truncate buf (Buffer.length buf - 1);
+        if Buffer.length buf > 0 then Buffer.truncate buf (Buffer.length buf - 1);
         Uninterpreted (Buffer.contents buf)
 
   let encode mapping =
@@ -909,8 +907,7 @@ module Index = struct
                    "Source_map.Index.of_json: sourcemap version %s not supported"
                    v)
         | _ -> invalid_arg "Source_map.Index.of_json: non-integer `version` value"
-        | exception Not_found ->
-            warn "warning: Missing `version` field in sourcemap");
+        | exception Not_found -> warn "warning: Missing `version` field in sourcemap");
         match List.assoc "sections" fields with
         | `List sections ->
             let sections = List.map ~f:section_of_json sections in
