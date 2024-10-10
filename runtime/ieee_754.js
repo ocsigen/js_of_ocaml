@@ -562,14 +562,16 @@ function caml_format_float(fmt, x) {
 //Requires: caml_failwith, caml_jsbytes_of_string
 function caml_float_of_string(s) {
   var res;
+  var r_float = /^ *[-+]?(?:\d*\.?\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?$/;
   s = caml_jsbytes_of_string(s);
   res = +s;
   //Fast path
-  if (s.length > 0 && !Number.isNaN(res)) return res;
+  if (!Number.isNaN(res) && r_float.test(s)) return res;
   s = s.replace(/_/g, "");
   res = +s;
-  if (s.length > 0 && (!Number.isNaN(res) || /^[+-]?nan$/i.test(s))) return res;
-  var m = /^ *([+-]?)0x([0-9a-f]+)\.?([0-9a-f]*)(p([+-]?[0-9]+))?/i.exec(s);
+  if ((!Number.isNaN(res) && r_float.test(s)) || /^[+-]?nan$/i.test(s))
+    return res;
+  var m = /^ *([+-]?)0x([0-9a-f]+)\.?([0-9a-f]*)(p([+-]?[0-9]+))?$/i.exec(s);
   //          1        2             3           5
   if (m) {
     var m3 = m[3].replace(/0+$/, "");
