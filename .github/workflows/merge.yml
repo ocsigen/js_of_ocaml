@@ -1,0 +1,39 @@
+name: Automatic Merge with Js_of_ocaml
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Executes daily at midnight UTC
+  workflow_dispatch:  # Allows manual triggering of the workflow
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout this repository
+        uses: actions/checkout@v3
+        with:
+          ref: main
+          fetch-depth: 1000
+
+      - name: Set Git committer identity
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+
+      - name: Fetch js_of_ocaml master
+        run: git fetch https://github.com/ocsigen/js_of_ocaml.git master
+
+      - name: Merge js_of_ocaml master into current repository
+        run: git merge FETCH_HEAD
+
+      - name: Push merged changes to 'jsoo-merged' branch
+        run: |
+          if git show-ref --verify --quiet refs/heads/jsoo-merged; then
+            git branch -D jsoo-merged
+          fi
+          git checkout -b jsoo-merged
+          git push --force origin jsoo-merged
