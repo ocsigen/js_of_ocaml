@@ -1056,10 +1056,13 @@ let remove_unused_tail_args ctx exact trampolined args =
     else args
   else args
 
-let is_int = function
-  | J.ENum n -> J.Num.is_int n && not (J.Num.is_zero n)
-  | J.EBin ((J.Bor | J.Lsr), _, _) -> true
-  | _ -> false
+let maybe_zero_or_nan = function
+  | J.ENum n -> (
+      match J.Num.to_string n with
+      | "NaN" -> true
+      | "-0." | "0." | "0" | "0." -> true
+      | J.EBin ((J.Bor | J.Lsr), _, _) -> false
+      | _ -> true)
 
 let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with
@@ -1359,7 +1362,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
             let e =
-              if is_int cx || is_int cy
+              if not (maybe_zero_or_nan cx && maybe_zero_or_nan cy)
               then bool (J.EBin (J.EqEqEq, cx, cy))
               else
                 bool
@@ -1373,7 +1376,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
             let e =
-              if is_int cx || is_int cy
+              if not (maybe_zero_or_nan cx && maybe_zero_or_nan cy)
               then bool (J.EBin (J.NotEqEq, cx, cy))
               else
                 bool_not
