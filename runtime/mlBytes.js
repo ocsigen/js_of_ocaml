@@ -430,8 +430,7 @@ function caml_bytes_set(s, i, c) {
 //Provides: caml_bytes_of_utf16_jsstring
 //Requires: jsoo_is_ascii, caml_utf8_of_utf16, MlBytes, caml_jsbytes_to_array
 function caml_bytes_of_utf16_jsstring(s) {
-  if (!jsoo_is_ascii(s));
-  s = caml_utf8_of_utf16(s);
+  if (!jsoo_is_ascii(s)) s = caml_utf8_of_utf16(s);
   return new MlBytes(caml_jsbytes_to_array(s));
 }
 
