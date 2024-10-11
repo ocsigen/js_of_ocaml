@@ -780,14 +780,14 @@ let parallel_renaming back_edge params args continuation queue =
 
 (****)
 
-let apply_fun_raw ctx f params exact trampolined =
+let apply_fun_raw ctx f params exact trampolined loc =
   let n = List.length params in
   let apply_directly =
     (* Make sure we are performing a regular call, not a (slower)
        method call *)
     match f with
-    | J.EAccess _ | J.EDot _ -> J.call (J.ESeq (int 0, f)) params J.N
-    | _ -> J.call f params J.N
+    | J.EAccess _ | J.EDot _ -> J.call (J.ESeq (int 0, f)) params loc
+    | _ -> J.call f params loc
   in
   let apply =
     (* We skip the arity check when we know that we have the right
@@ -806,7 +806,7 @@ let apply_fun_raw ctx f params exact trampolined =
                 )
             , int n )
         , apply_directly
-        , J.call (runtime_fun ctx "caml_call_gen") [ f; J.array params ] J.N )
+        , J.call (runtime_fun ctx "caml_call_gen") [ f; J.array params ] loc )
   in
   if trampolined
   then (
@@ -816,9 +816,9 @@ let apply_fun_raw ctx f params exact trampolined =
        bounce to a trampoline if needed, to avoid a stack overflow.
        The trampoline then performs the call in an shorter stack. *)
     J.ECond
-      ( J.call (runtime_fun ctx "caml_stack_check_depth") [] J.N
+      ( J.call (runtime_fun ctx "caml_stack_check_depth") [] loc
       , apply
-      , J.call (runtime_fun ctx "caml_trampoline_return") [ f; J.array params ] J.N ))
+      , J.call (runtime_fun ctx "caml_trampoline_return") [ f; J.array params ] loc ))
   else apply
 
 let generate_apply_fun ctx { arity; exact; trampolined } =
@@ -836,7 +836,8 @@ let generate_apply_fun ctx { arity; exact; trampolined } =
     ( None
     , J.fun_
         (f :: params)
-        [ ( J.Return_statement (Some (apply_fun_raw ctx f' params' exact trampolined), J.N)
+        [ ( J.Return_statement
+              (Some (apply_fun_raw ctx f' params' exact trampolined J.N), J.N)
           , J.N )
         ]
         J.N )
@@ -849,7 +850,7 @@ let apply_fun ctx f params exact trampolined loc =
      since the function should get inlined by the JavaScript
      engines. *)
   if Config.Flag.inline_callgen () || (exact && not trampolined)
-  then apply_fun_raw ctx f params exact trampolined
+  then apply_fun_raw ctx f params exact trampolined loc
   else
     let y =
       Share.get_apply
