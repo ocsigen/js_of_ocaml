@@ -141,7 +141,7 @@ function caml_hexstring_of_float(x, prec, style) {
       var size = idx + 1 + prec;
       if (x_str.length < size)
         x_str += caml_str_repeat(size - x_str.length, "0");
-      else x_str = x_str.substr(0, size);
+      else x_str = x_str.slice(0, size);
     }
   }
   return caml_string_of_jsstring(

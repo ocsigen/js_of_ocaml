@@ -52,7 +52,7 @@ function MlFile() {}
 //Requires: fs_node_supported
 function make_path_is_absolute() {
   function posix(path) {
-    if (path.charAt(0) === "/") return ["", path.substring(1)];
+    if (path.charAt(0) === "/") return ["", path.slice(1)];
     return;
   }
 
@@ -68,7 +68,7 @@ function make_path_is_absolute() {
     if (result[2] || isUnc) {
       var root = result[1] || "";
       var sep = result[2] || "";
-      return [root, path.substring(root.length + sep.length)];
+      return [root, path.slice(root.length + sep.length)];
     }
     return;
   }
@@ -156,7 +156,7 @@ function resolve_fs_device(name) {
       res = {
         path: m.path,
         device: m.device,
-        rest: name.substring(m.path.length, name.length),
+        rest: name.slice(m.path.length, name.length),
       };
   }
   if (!res && fs_node_supported()) {
@@ -167,7 +167,7 @@ function resolve_fs_device(name) {
       res = {
         path: m.path,
         device: m.device,
-        rest: name.substring(m.path.length, name.length),
+        rest: name.slice(m.path.length, name.length),
       };
     }
   }

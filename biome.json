@@ -22,7 +22,8 @@
         "noSwitchDeclarations": "off"
       },
       "nursery": {
-        "noUselessEscapeInRegex": "error"
+        "noUselessEscapeInRegex": "error",
+        "noSubstr": "error"
       },
       "style": {
         "noArguments": "off",

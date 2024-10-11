@@ -146,7 +146,7 @@ MlStringReader.prototype = {
   readstr: function (len) {
     var i = this.i;
     this.i = i + len;
-    return caml_string_of_jsbytes(this.s.substring(i, i + len));
+    return caml_string_of_jsbytes(this.s.slice(i, i + len));
   },
   readuint8array: function (len) {
     var b = new Uint8Array(len);
