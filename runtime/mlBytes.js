@@ -572,6 +572,7 @@ function caml_bytes_greaterthan(s1, s2) {
 }
 
 //Provides: caml_fill_bytes
+//Alias: caml_fill_string
 function caml_fill_bytes(s, i, l, c) {
   if (l > 0) {
     for (l += i; i < l; i++) s.a[i] = c;
