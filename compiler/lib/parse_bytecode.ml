@@ -299,6 +299,9 @@ end = struct
 
   let mem { events_by_pc; _ } pc = Int_table.mem events_by_pc pc
 
+  let dummy_location (loc : Location.t) =
+    loc.loc_start.pos_cnum = -1 || loc.loc_end.pos_cnum = -1
+
   let find_loc' { events_by_pc; _ } pc =
     try
       let { event; source } = Int_table.find events_by_pc pc in
@@ -313,7 +316,7 @@ end = struct
         try
           let { event; source } = Int_table.find events_by_pc pc in
           let loc = event.ev_loc in
-          if loc.Location.loc_ghost
+          if dummy_location loc
           then None
           else
             let pos =
