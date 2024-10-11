@@ -725,10 +725,18 @@ function caml_string_lessthan(s1, s2) {
 
 //Provides: caml_string_of_bytes
 //Requires: caml_convert_string_to_bytes, caml_string_of_jsbytes
+//Requires: caml_subarray_to_jsbytes
 //If: js-string
 function caml_string_of_bytes(s) {
-  s.t & 6 && caml_convert_string_to_bytes(s);
-  return caml_string_of_jsbytes(s.c);
+  switch (s.t & 6) {
+    case 0 /* BYTES */:
+      return caml_string_of_jsbytes(s.c);
+    case 2 /* PARTIAL */:
+      caml_convert_string_to_bytes(s);
+      return caml_string_of_jsbytes(s.c);
+    case 4 /* ARRAY */:
+      return caml_subarray_to_jsbytes(s.c, 0, s.c.length);
+  }
 }
 
 //Provides: caml_bytes_of_string const
