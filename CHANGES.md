@@ -18,6 +18,7 @@
   that follows the semantic of the backend (js or wasm)
 * Compiler: warn on joo_global_object
 * Compiler: revisit static env handling (#1708)
+* Compiler: Make phys_equal more like native (wrt NaN and +0/-0) #1410
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
