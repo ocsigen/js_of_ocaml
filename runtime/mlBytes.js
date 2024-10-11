@@ -89,7 +89,7 @@ function caml_utf8_of_utf16(s) {
     if (c < 0x80) {
       for (var j = i + 1; j < l && (c = s.charCodeAt(j)) < 0x80; j++);
       if (j - i > 512) {
-        t.substr(0, 1);
+        t.slice(0, 1);
         b += t;
         t = "";
         b += s.slice(i, j);
@@ -125,7 +125,7 @@ function caml_utf8_of_utf16(s) {
       );
     }
     if (t.length > 1024) {
-      t.substr(0, 1);
+      t.slice(0, 1);
       b += t;
       t = "";
     }
@@ -140,7 +140,7 @@ function caml_utf16_of_utf8(s) {
     if (c1 < 0x80) {
       for (var j = i + 1; j < l && (c1 = s.charCodeAt(j)) < 0x80; j++);
       if (j - i > 512) {
-        t.substr(0, 1);
+        t.slice(0, 1);
         b += t;
         t = "";
         b += s.slice(i, j);
@@ -183,7 +183,7 @@ function caml_utf16_of_utf8(s) {
       t += String.fromCharCode(0xd7c0 + (v >> 10), 0xdc00 + (v & 0x3ff));
     else t += String.fromCharCode(v);
     if (t.length > 1024) {
-      t.substr(0, 1);
+      t.slice(0, 1);
       b += t;
       t = "";
     }
@@ -651,7 +651,7 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
         ? caml_subarray_to_jsbytes(s1.c, i1, len)
         : i1 === 0 && s1.c.length === len
           ? s1.c
-          : s1.c.substr(i1, len);
+          : s1.c.slice(i1, i1 + len);
     s2.t = s2.c.length === s2.l ? 0 /* BYTES | UNKOWN */ : 2; /* PARTIAL */
   } else if (s2.t === 2 /* PARTIAL */ && i2 === s2.c.length) {
     s2.c +=
@@ -659,7 +659,7 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
         ? caml_subarray_to_jsbytes(s1.c, i1, len)
         : i1 === 0 && s1.c.length === len
           ? s1.c
-          : s1.c.substr(i1, len);
+          : s1.c.slice(i1, i1 + len);
     s2.t = s2.c.length === s2.l ? 0 /* BYTES | UNKOWN */ : 2; /* PARTIAL */
   } else {
     if (s2.t !== 4 /* ARRAY */) caml_convert_bytes_to_array(s2);
