@@ -325,13 +325,13 @@ end
      99:       _k_ = slot[6] ? cst_inlined : cst,
     100:       _l_ = slot[2],
     101:       _m_ = slot[7],
-    102:        /*<<test.ml:59:14>>*/ _n_ = info(slot[1]);
+    102:        /*<<test.ml:59:14>>*/ _n_ =  /*<<test.ml:59:14>>*/ info(slot[1]);
     103:       /*<<test.ml:58:6>>*/ return [0,
     104:               /*<<test.ml:58:11>>*/ caml_call8
     105:               (Stdlib_Printf[4], _a_, _n_, _m_, _l_, _k_, _j_, _i_, _h_)] /*<<test.ml:58:6>>*/ ;
     106:     }
     107:     if(slot[1])  /*<<test.ml:54:50>>*/ return 0 /*<<test.ml:54:50>>*/ ;
-    108:     var  /*<<test.ml:56:51>>*/ _o_ = info(0);
+    108:     var  /*<<test.ml:56:51>>*/ _o_ =  /*<<test.ml:56:51>>*/ info(0);
     109:      /*<<test.ml:56:8>>*/ return [0,
     110:              /*<<test.ml:56:13>>*/ caml_call2(Stdlib_Printf[4], _b_, _o_)] /*<<test.ml:56:8>>*/ ;
     111:     /*<<test.ml:61:52>>*/ }
@@ -345,57 +345,58 @@ end
     119:      for(;;){
     120:       var
     121:         /*<<test.ml:70:14>>*/ match =
-    122:          format_backtrace_slot(i, runtime.caml_check_bound(a, i)[1 + i]);
-    123:       if(match){
-    124:        var str = match[1];
-    125:         /*<<test.ml:72:24>>*/  /*<<test.ml:72:24>>*/ caml_call3
-    126:         (Stdlib_Printf[1], outchan, _c_, str);
-    127:       }
-    128:       var  /*<<test.ml:69:6>>*/ _g_ = i + 1 | 0;
-    129:       if(_f_ === i) break;
-    130:       i = _g_;
-    131:      }
-    132:     }
-    133:     return 0;
-    134:     /*<<test.ml:73:10>>*/ }
-    135:    function compare(left, right, e1, e2){
-    136:      /*<<test.ml:77:35>>*/ if(0 === e1[0]){
-    137:      var v1 = e1[1];
-    138:      if(0 !== e2[0])  /*<<test.ml:80:23>>*/ return -1 /*<<test.ml:80:23>>*/ ;
-    139:      var v2 = e2[1];
-    140:       /*<<test.ml:78:24>>*/ return  /*<<test.ml:78:24>>*/ caml_call2
-    141:              (left, v1, v2) /*<<test.ml:81:24>>*/ ;
-    142:     }
-    143:     var v1$0 = e1[1];
-    144:     if(0 === e2[0])  /*<<test.ml:81:23>>*/ return 1 /*<<test.ml:81:23>>*/ ;
-    145:     var v2$0 = e2[1];
-    146:      /*<<test.ml:79:26>>*/ return  /*<<test.ml:79:26>>*/ caml_call2
-    147:             (right, v1$0, v2$0) /*<<test.ml:81:24>>*/ ;
-    148:     /*<<test.ml:81:24>>*/ }
-    149:    var
-    150:      /*<<test.ml:75:16>>*/ Either = [0, compare],
-    151:     Test =
-    152:       [0,
-    153:        executable_name,
-    154:        os_type,
-    155:        backend_type,
-    156:        0,
-    157:        32,
+    122:           /*<<test.ml:70:14>>*/ format_backtrace_slot
+    123:           (i, runtime.caml_check_bound(a, i)[1 + i]);
+    124:       if(match){
+    125:        var str = match[1];
+    126:         /*<<test.ml:72:24>>*/  /*<<test.ml:72:24>>*/ caml_call3
+    127:         (Stdlib_Printf[1], outchan, _c_, str);
+    128:       }
+    129:       var  /*<<test.ml:69:6>>*/ _g_ = i + 1 | 0;
+    130:       if(_f_ === i) break;
+    131:       i = _g_;
+    132:      }
+    133:     }
+    134:     return 0;
+    135:     /*<<test.ml:73:10>>*/ }
+    136:    function compare(left, right, e1, e2){
+    137:      /*<<test.ml:77:35>>*/ if(0 === e1[0]){
+    138:      var v1 = e1[1];
+    139:      if(0 !== e2[0])  /*<<test.ml:80:23>>*/ return -1 /*<<test.ml:80:23>>*/ ;
+    140:      var v2 = e2[1];
+    141:       /*<<test.ml:78:24>>*/ return  /*<<test.ml:78:24>>*/ caml_call2
+    142:              (left, v1, v2) /*<<test.ml:81:24>>*/ ;
+    143:     }
+    144:     var v1$0 = e1[1];
+    145:     if(0 === e2[0])  /*<<test.ml:81:23>>*/ return 1 /*<<test.ml:81:23>>*/ ;
+    146:     var v2$0 = e2[1];
+    147:      /*<<test.ml:79:26>>*/ return  /*<<test.ml:79:26>>*/ caml_call2
+    148:             (right, v1$0, v2$0) /*<<test.ml:81:24>>*/ ;
+    149:     /*<<test.ml:81:24>>*/ }
+    150:    var
+    151:      /*<<test.ml:75:16>>*/ Either = [0, compare],
+    152:     Test =
+    153:       [0,
+    154:        executable_name,
+    155:        os_type,
+    156:        backend_type,
+    157:        0,
     158:        32,
-    159:        unix,
-    160:        win32,
-    161:        cygwin,
-    162:        max_array_length,
-    163:        max_floatarray_length,
-    164:        max_string_length,
-    165:        Unhandled,
-    166:        format_backtrace_slot,
-    167:        print_exception_backtrace,
-    168:        Either];
-    169:    runtime.caml_register_global(12, Test, "Test");
-    170:    return;
-    171:    /*<<?>>*/ }
-    172:   (globalThis));
-    173:
-    174: //# sourceMappingURL=test.map
+    159:        32,
+    160:        unix,
+    161:        win32,
+    162:        cygwin,
+    163:        max_array_length,
+    164:        max_floatarray_length,
+    165:        max_string_length,
+    166:        Unhandled,
+    167:        format_backtrace_slot,
+    168:        print_exception_backtrace,
+    169:        Either];
+    170:    runtime.caml_register_global(12, Test, "Test");
+    171:    return;
+    172:    /*<<?>>*/ }
+    173:   (globalThis));
+    174:
+    175: //# sourceMappingURL=test.map
     |}]
