@@ -283,7 +283,8 @@ let f t x =
      }
      return - 2;
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "loop-and-switch" =
   let program =
@@ -311,7 +312,7 @@ in loop x
     function inspect(x){
      var x$1 = x;
      for(;;){
-      if(Object.is(0, x$1)) return 1;
+      if(0 === x$1) return 1;
       if(1 === x$1) break;
       var x$2 = x$1 + 1 | 0;
       x$1 = x$2;
@@ -334,7 +335,8 @@ in loop x
       return _a_ + 2 | 0;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "buffer.add_substitute" =
   let program =
@@ -501,13 +503,13 @@ let add_substitute =
          var lim = caml_ml_string_length(s), k = k$2, stop = new_start;
          for(;;){
           if(lim <= stop) throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-          if(Object.is(caml_string_get(s, stop), opening)){
+          if(caml_string_get(s, stop) === opening){
            var i = stop + 1 | 0, k$0 = k + 1 | 0;
            k = k$0;
            stop = i;
           }
-          else if(Object.is(caml_string_get(s, stop), closing)){
-           if(Object.is(0, k)) break;
+          else if(caml_string_get(s, stop) === closing){
+           if(0 === k) break;
            var i$0 = stop + 1 | 0, k$1 = k - 1 | 0;
            k = k$1;
            stop = i$0;
@@ -545,7 +547,8 @@ let add_substitute =
       }
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "Bytes.trim" =
   let program =

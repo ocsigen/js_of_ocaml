@@ -289,14 +289,19 @@ end
 
 type cont = Addr.t * Var.t list
 
+type float_or_not =
+  | Float
+  | Not_float
+  | Unknown
+
 type prim =
   | Vectlength
   | Array_get
   | Extern of string
   | Not
   | IsInt
-  | Eq
-  | Neq
+  | Eq of float_or_not
+  | Neq of float_or_not
   | Lt
   | Le
   | Ult
@@ -557,8 +562,8 @@ module Print = struct
     | Extern s, _ -> Format.fprintf f "\"%s\"(%a)" s (list arg) l
     | Not, [ x ] -> Format.fprintf f "!%a" arg x
     | IsInt, [ x ] -> Format.fprintf f "is_int(%a)" arg x
-    | Eq, [ x; y ] -> Format.fprintf f "%a === %a" arg x arg y
-    | Neq, [ x; y ] -> Format.fprintf f "!(%a === %a)" arg x arg y
+    | Eq _, [ x; y ] -> Format.fprintf f "%a === %a" arg x arg y
+    | Neq _, [ x; y ] -> Format.fprintf f "!(%a === %a)" arg x arg y
     | Lt, [ x; y ] -> Format.fprintf f "%a < %a" arg x arg y
     | Le, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
     | Ult, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y

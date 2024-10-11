@@ -52,6 +52,8 @@ val get_approx :
 
 val the_def_of : Info.t -> Code.prim_arg -> Code.expr option
 
+val the_float_or_not_of : Info.t -> Code.prim_arg -> Code.float_or_not
+
 val the_const_of :
   target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> Code.constant option
 

@@ -96,7 +96,7 @@ let () = my_ref := 2
           this_will_be_undefined =
             function(param){var _c_ = 1 === t$1[1] ? 1 : 0; return _c_ ? 1 : 2;},
           i = t[1];
-         if(Object.is(0, i)){var _a_ = this_will_be_undefined(0); break a;}
+         if(0 === i){var _a_ = this_will_be_undefined(0); break a;}
          if(1 === i) break;
          t = t$0;
         }
@@ -204,7 +204,7 @@ let () = my_ref := 2
            this_will_be_undefined =
              function(param){var _e_ = 1 === t$1[1] ? 1 : 0; return _e_ ? 1 : 2;},
            i = t[1];
-          if(Object.is(0, i)) break;
+          if(0 === i) break;
           if(1 === i) break b;
           t = t$0;
          }

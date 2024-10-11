@@ -43,8 +43,6 @@ module Num : sig
 
   val is_neg : t -> bool
 
-  val is_int : t -> bool
-
   (** Arithmetic *)
 
   val add : t -> t -> t

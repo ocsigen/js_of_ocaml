@@ -101,7 +101,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   print_fun_decl code (Some "loop3");
   [%expect
     {|
-
     function exceptions(s, cont){
      try{var _t_ = runtime.caml_int_of_string(s), n = _t_;}
      catch(_x_){
@@ -209,4 +208,5 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                return _f_(l);
               });
     }
-    //end |}]
+    //end
+    |}]

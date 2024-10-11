@@ -78,13 +78,13 @@ let fun2 () =
       try{var i$1 = caml_call1(Stdlib_Random[5], 2);}
       catch(_e_){
        var _d_ = caml_wrap_exception(_e_);
-       if(! Object.is(_d_[1], A)) throw caml_maybe_attach_backtrace(_d_, 0);
+       if(_d_[1] !== A) throw caml_maybe_attach_backtrace(_d_, 0);
        var i = _d_[2];
        if(2 !== i) return i + 2 | 0;
        var i$0 = i;
        break a;
       }
-      if(! Object.is(0, i$1)) return i$1 + 1 | 0;
+      if(0 !== i$1) return i$1 + 1 | 0;
       var i$0 = i$1;
      }
      return i$0;
@@ -96,15 +96,13 @@ let fun2 () =
       try{var i$0 = caml_call1(Stdlib_Random[5], 2);}
       catch(_c_){
        var _a_ = caml_wrap_exception(_c_);
-       if(Object.is(_a_[1], A)){
-        var _b_ = _a_[2];
-        if(2 === _b_){var i = _b_; break a;}
-       }
+       if(_a_[1] === A){var _b_ = _a_[2]; if(2 === _b_){var i = _b_; break a;}}
        throw caml_maybe_attach_backtrace(_a_, 0);
       }
-      if(! Object.is(0, i$0)) return i$0 + 1 | 0;
+      if(0 !== i$0) return i$0 + 1 | 0;
       var i = i$0;
      }
      return i;
     }
-    //end |}]
+    //end
+    |}]

@@ -294,6 +294,26 @@ let specialize_instrs ~target info l =
                 instr (Pv y') :: (Let (y', Prim (Extern check, [ y; z ])), noloc) :: acc
               in
               aux info ((y, idx) :: checks) r acc
+        | Let (x, Prim (Eq Unknown, [ a; b ])) ->
+            let i =
+              match Flow.the_float_or_not_of info a, Flow.the_float_or_not_of info b with
+              | Not_float, (Not_float | Unknown | Float) | (Float | Unknown), Not_float ->
+                  Let (x, Prim (Eq Not_float, [ a; b ]))
+              | Float, Float -> Let (x, Prim (Eq Float, [ a; b ]))
+              | Unknown, _ | _, Unknown -> i
+            in
+
+            aux info checks r ((i, loc) :: acc)
+        | Let (x, Prim (Neq Unknown, [ a; b ])) ->
+            let i =
+              match Flow.the_float_or_not_of info a, Flow.the_float_or_not_of info b with
+              | Not_float, (Not_float | Unknown | Float) | (Float | Unknown), Not_float ->
+                  Let (x, Prim (Neq Not_float, [ a; b ]))
+              | Float, Float -> Let (x, Prim (Neq Float, [ a; b ]))
+              | Unknown, _ | _, Unknown -> i
+            in
+
+            aux info checks r ((i, loc) :: acc)
         | _ ->
             let i = specialize_instr ~target info i in
             aux info checks r ((i, loc) :: acc))

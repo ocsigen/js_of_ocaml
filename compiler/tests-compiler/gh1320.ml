@@ -50,7 +50,7 @@ let () = myfun ()
       var
        f =
          function(x){
-          return Object.is(0, x) ? 1 : runtime.caml_mul(i$0, app(g$0, x - 1 | 0));
+          return 0 === x ? 1 : runtime.caml_mul(i$0, app(g$0, x - 1 | 0));
          },
        g = function(x){return app(f$0, x);};
       let f$0 = f, g$0 = g;
@@ -61,4 +61,5 @@ let () = myfun ()
       i = _b_;
      }
     }
-    //end |}]
+    //end
+    |}]

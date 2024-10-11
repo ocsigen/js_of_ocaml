@@ -55,7 +55,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   print_fun_decl code (Some "exceptions");
   [%expect
     {|
-
     function exceptions(s, cont){
      try{var _k_ = runtime.caml_int_of_string(s), n = _k_;}
      catch(_o_){
@@ -93,7 +92,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      var _i_ = Stdlib[8], raise = caml_pop_trap();
      return raise(caml_maybe_attach_backtrace(_i_, 1));
     }
-    //end |}];
+    //end
+    |}];
   print_fun_decl code (Some "handler_is_loop");
   [%expect
     {|

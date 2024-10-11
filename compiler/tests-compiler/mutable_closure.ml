@@ -130,7 +130,7 @@ let%expect_test _ =
            var counter$1 = counter + 1 | 0;
            return g$0(counter$1, _f_);
           }
-          if(Object.is(0, n)) return i$0;
+          if(0 === n) return i$0;
           var _g_ = n - 1 | 0;
           if(counter >= 50) return caml_trampoline_return(g$0, [0, _g_]);
           var counter$0 = counter + 1 | 0;
@@ -145,7 +145,7 @@ let%expect_test _ =
            var counter$1 = counter + 1 | 0;
            return f$1(counter$1, _d_);
           }
-          if(Object.is(0, n)) return i$0;
+          if(0 === n) return i$0;
           var _e_ = n - 1 | 0;
           if(counter >= 50) return caml_trampoline_return(f$1, [0, _e_]);
           var counter$0 = counter + 1 | 0;
@@ -167,7 +167,8 @@ let%expect_test _ =
      if(runtime.caml_equal(indirect$0, direct$0)) return 0;
      throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
     }
-    //end|}]
+    //end
+    |}]
 
 let%expect_test _ =
   let prog = {|

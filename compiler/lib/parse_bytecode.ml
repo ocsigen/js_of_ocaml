@@ -2207,7 +2207,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Eq, [ Pv y; Pv z ])), loc) :: instrs)
+          ((Let (x, Prim (Eq Unknown, [ Pv y; Pv z ])), loc) :: instrs)
     | NEQ ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -2219,7 +2219,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Neq, [ Pv y; Pv z ])), loc) :: instrs)
+          ((Let (x, Prim (Neq Unknown, [ Pv y; Pv z ])), loc) :: instrs)
     | LTINT ->
         let y, _ = State.accu state in
         let z, _ = State.peek 0 state in
@@ -2303,7 +2303,8 @@ and compile infos pc state instrs =
         let x, _ = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Eq, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
+        ( ( Let (y, Prim (Eq Not_float, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ]))
+          , loc )
           :: instrs
         , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
         , state )
@@ -2313,7 +2314,8 @@ and compile infos pc state instrs =
         let x, _ = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Eq, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
+        ( ( Let (y, Prim (Eq Not_float, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ]))
+          , loc )
           :: instrs
         , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
         , state )

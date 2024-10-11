@@ -978,6 +978,7 @@ let _ =
   register_un_prim "caml_obj_dup" `Mutable (fun cx loc ->
       J.call (J.dot cx (Utf8_string.of_string_exn "slice")) [] loc);
   register_un_prim "caml_int_of_float" `Pure (fun cx _loc -> to_int cx);
+  register_un_prim "caml_float_of_int" `Pure (fun cx _loc -> cx);
   register_un_math_prim "caml_abs_float" "abs";
   register_un_math_prim "caml_acos_float" "acos";
   register_un_math_prim "caml_asin_float" "asin";
@@ -1055,15 +1056,6 @@ let remove_unused_tail_args ctx exact trampolined args =
         args
     else args
   else args
-
-let maybe_zero_or_nan = function
-  | J.ENum n -> (
-      match J.Num.to_string n with
-      | "NaN" -> true
-      | "-0." | "0." | "0" | "-0" -> true
-      | _ -> false)
-  | J.EBin ((J.Bor | J.Lsr), _, _) -> false
-  | _ -> true
 
 let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
   match e with
@@ -1359,32 +1351,32 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
             bool (J.EBin (J.LeInt, cx, cy)), or_p px py, queue
-        | Eq, [ x; y ] ->
+        | Eq k, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
             let e =
-              if not (maybe_zero_or_nan cx && maybe_zero_or_nan cy)
-              then bool (J.EBin (J.EqEqEq, cx, cy))
-              else
-                bool
-                  (J.call
-                     (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
-                     [ cx; cy ]
-                     loc)
+              match k with
+              | Not_float -> bool (J.EBin (J.EqEqEq, cx, cy))
+              | Float | Unknown ->
+                  bool
+                    (J.call
+                       (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                       [ cx; cy ]
+                       loc)
             in
             e, or_p px py, queue
-        | Neq, [ x; y ] ->
+        | Neq k, [ x; y ] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
             let e =
-              if not (maybe_zero_or_nan cx && maybe_zero_or_nan cy)
-              then bool (J.EBin (J.NotEqEq, cx, cy))
-              else
-                bool_not
-                  (J.call
-                     (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
-                     [ cx; cy ]
-                     loc)
+              match k with
+              | Not_float -> bool (J.EBin (J.NotEqEq, cx, cy))
+              | Float | Unknown ->
+                  bool_not
+                    (J.call
+                       (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                       [ cx; cy ]
+                       loc)
             in
             e, or_p px py, queue
         | IsInt, [ x ] ->
@@ -1394,7 +1386,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
             bool (J.EBin (J.LtInt, unsigned cx, unsigned cy)), or_p px py, queue
-        | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
+        | (Vectlength | Array_get | Not | IsInt | Eq _ | Neq _ | Lt | Le | Ult), _ ->
             assert false
       in
       res, []
@@ -2062,7 +2054,7 @@ let init () =
     ; "caml_int32_of_int", "%identity"
     ; "caml_int32_to_int", "%identity"
     ; "caml_int32_of_float", "caml_int_of_float"
-    ; "caml_int32_to_float", "%identity"
+    ; "caml_int32_to_float", "caml_float_of_int"
     ; "caml_int32_format", "caml_format_int"
     ; "caml_int32_of_string", "caml_int_of_string"
     ; "caml_int32_compare", "caml_int_compare"
@@ -2081,7 +2073,7 @@ let init () =
     ; "caml_nativeint_of_int", "%identity"
     ; "caml_nativeint_to_int", "%identity"
     ; "caml_nativeint_of_float", "caml_int_of_float"
-    ; "caml_nativeint_to_float", "%identity"
+    ; "caml_nativeint_to_float", "caml_float_of_int"
     ; "caml_nativeint_of_int32", "%identity"
     ; "caml_nativeint_to_int32", "%identity"
     ; "caml_nativeint_format", "caml_format_int"
@@ -2092,7 +2084,6 @@ let init () =
     ; "caml_int64_to_int", "caml_int64_to_int32"
     ; "caml_int64_of_nativeint", "caml_int64_of_int32"
     ; "caml_int64_to_nativeint", "caml_int64_to_int32"
-    ; "caml_float_of_int", "%identity"
     ; "caml_array_get_float", "caml_array_get"
     ; "caml_floatarray_get", "caml_array_get"
     ; "caml_array_get_addr", "caml_array_get"

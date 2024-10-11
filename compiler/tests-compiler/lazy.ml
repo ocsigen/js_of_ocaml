@@ -34,7 +34,7 @@ let%expect_test "static eval of string get" =
   [%expect
     {|
     function do_the_lazy_rec(n){
-     if(Object.is(0, n)) return 0;
+     if(0 === n) return 0;
      var _b_ = do_the_lazy_rec(n - 1 | 0), _c_ = runtime.caml_obj_tag(lz);
      a:
      if(250 === _c_)
@@ -45,4 +45,5 @@ let%expect_test "static eval of string get" =
      }
      return [0, _d_, _b_];
     }
-    //end |}]
+    //end
+    |}]

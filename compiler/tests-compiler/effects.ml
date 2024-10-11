@@ -49,7 +49,7 @@ let fff () =
               10,
               [0,
                function(e, cont){
-                return Object.is(e, E)
+                return e === E
                         ? cont([0, function(k, cont){return cont(11);}])
                         : cont(0);
                }],
@@ -60,4 +60,5 @@ let fff () =
                         function(_c_){return caml_cps_call2(_c_, _b_, cont);});
               });
     }
-    //end |}]
+    //end
+    |}]

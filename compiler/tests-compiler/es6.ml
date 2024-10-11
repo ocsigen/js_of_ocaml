@@ -59,14 +59,15 @@ let rec odd n' = function
           (a, b)=>{
            var d = a, c = b;
            for(;;){
-            if(Object.is(0, c)) return [0, d, 0];
+            if(0 === c) return [0, d, 0];
             if(1 === c) return [0, d, 1];
             [c, d] = [(d - 1 | 0) - 1 | 0, (c - 1 | 0) - 1 | 0];
            }}],
          "Test");
        return;})
      (globalThis);
-    //end |}];
+    //end
+    |}];
   let program = Util.compile_and_parse ~effects:false ~pretty:false ~flags:[] prog in
   Util.print_program program;
   [%expect
@@ -80,7 +81,7 @@ let rec odd n' = function
           function(a, b){
            var d = a, c = b;
            for(;;){
-            if(Object.is(0, c)) return [0, d, 0];
+            if(0 === c) return [0, d, 0];
             if(1 === c) return [0, d, 1];
             var e = (d - 1 | 0) - 1 | 0;
             d = (c - 1 | 0) - 1 | 0;
@@ -91,4 +92,5 @@ let rec odd n' = function
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

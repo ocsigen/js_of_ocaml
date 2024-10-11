@@ -206,7 +206,7 @@ let expr_escape st _x e =
   | Special _ | Constant _ | Closure _ | Block _ | Field _ -> ()
   | Apply { args; _ } -> List.iter args ~f:(fun x -> block_escape st x)
   | Prim (Array_get, [ Pv x; _ ]) -> block_escape st x
-  | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> ()
+  | Prim ((Vectlength | Array_get | Not | IsInt | Eq _ | Neq _ | Lt | Le | Ult), _) -> ()
   | Prim (Extern name, l) ->
       let ka =
         match Primitive.kind_args name with
@@ -339,6 +339,68 @@ let the_def_of info x =
         (fun _ _ -> None)
         x
   | Pc c -> Some (Constant c)
+
+let float_or_not x : Code.float_or_not =
+  match x with
+  | Block _ -> Not_float
+  | Closure _ -> Not_float
+  | Special (Alias_prim _) -> Not_float
+  | Field _ -> Unknown
+  | Apply _ -> Unknown
+  | Prim (prim, _) -> (
+      match prim with
+      | Extern
+          ( "caml_ml_string_length"
+          | "caml_ml_bytes_length"
+          | "caml_bytes_unsafe_get"
+          | "caml_bytes_get"
+          | "caml_string_unsafe_get"
+          | "caml_string_get"
+          | "%int_add"
+          | "%int_sub"
+          | "%int_mul"
+          | "%direct_int_mul"
+          | "%int_div"
+          | "%direct_int_div"
+          | "%int_mod"
+          | "%direct_int_mod"
+          | "caml_obj_tag" ) -> Not_float
+      | Array_get -> Unknown
+      | Extern _ -> Unknown
+      | Vectlength -> Not_float
+      | Not -> Not_float
+      | IsInt -> Not_float
+      | Eq _ | Neq _ -> Not_float
+      | Lt | Le | Ult -> Not_float)
+  | Constant
+      ( String _
+      | NativeString _
+      | Float_array _
+      | Int _
+      | Int32 _
+      | Int64 _
+      | Tuple _
+      | NativeInt _ ) -> Not_float
+  | Constant (Float _) -> Float
+
+let the_float_or_not_of info x =
+  match x with
+  | Pv x ->
+      get_approx
+        info
+        (fun x ->
+          match info.info_defs.(Var.idx x) with
+          | Expr e -> float_or_not e
+          | Param | Phi _ -> Unknown)
+        Unknown
+        (fun a b ->
+          match a, b with
+          | Unknown, _ | _, Unknown -> Unknown
+          | Float, Float -> Float
+          | Not_float, Not_float -> Not_float
+          | Float, Not_float | Not_float, Float -> Unknown)
+        x
+  | Pc c -> float_or_not (Constant c)
 
 (* If [constant_identical a b = true], then the two values cannot be
    distinguished, i.e., they are not different objects (and [caml_js_equals a b

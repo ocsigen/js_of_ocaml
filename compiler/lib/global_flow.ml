@@ -150,8 +150,9 @@ let possibly_mutable st x = Var.ISet.add st.variable_possibly_mutable x
 
 let expr_deps blocks st x e =
   match e with
-  | Constant _ | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) | Block _
-    -> ()
+  | Constant _
+  | Prim ((Vectlength | Not | IsInt | Eq _ | Neq _ | Lt | Le | Ult), _)
+  | Block _ -> ()
   | Special _ -> ()
   | Prim
       ( ( Extern
@@ -480,7 +481,7 @@ let propagate st ~update approx x =
                   known
             | Top -> Top)
       | Prim (Array_get, _) -> Domain.others
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+      | Prim ((Vectlength | Not | IsInt | Eq _ | Neq _ | Lt | Le | Ult), _) ->
           (* The result of these primitive is neither a function nor a
              block *)
           Domain.bot
