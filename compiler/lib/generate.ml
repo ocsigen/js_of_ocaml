@@ -1643,7 +1643,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
         | true -> never, [ J.Labelled_statement (l, (J.Block inner, J.N)), J.N ] @ code
         | false -> never, inner @ code)
   in
-  let never_after, after = loop ~scope_stack ~fall_through (List.rev new_scopes) in
+  let never_after, after = loop ~scope_stack ~fall_through new_scopes in
   never_after, seq @ after
 
 and compile_decision_tree kind st scope_stack loc cx dtree ~fall_through =
