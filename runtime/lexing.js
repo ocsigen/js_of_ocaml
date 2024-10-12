@@ -28,6 +28,7 @@ function caml_lex_array(s) {
 
 //Provides: caml_lex_engine
 //Requires: caml_failwith, caml_lex_array, caml_uint8_array_of_bytes
+//Requires: caml_bytes_unsafe_get
 function caml_lex_engine(tbl, start_state, lexbuf) {
   var lex_buffer = 2;
   var lex_buffer_len = 3;
@@ -53,7 +54,7 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
   var c,
     state = start_state;
 
-  var buffer = caml_uint8_array_of_bytes(lexbuf[lex_buffer]);
+  var buffer = lexbuf[lex_buffer];
 
   if (state >= 0) {
     /* First entry */
@@ -79,7 +80,7 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
       else c = 256;
     } else {
       /* Read next input char */
-      c = buffer[lexbuf[lex_curr_pos]];
+      c = caml_bytes_unsafe_get(buffer, lexbuf[lex_curr_pos]);
       lexbuf[lex_curr_pos]++;
     }
     /* Determine next state */
@@ -106,6 +107,7 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
 //Provides: caml_new_lex_engine
 //Requires: caml_failwith, caml_lex_array
 //Requires: caml_jsbytes_of_string, caml_uint8_array_of_bytes
+//Requires: caml_bytes_unsafe_get
 function caml_lex_run_mem(s, i, mem, curr_pos) {
   for (;;) {
     var dst = s.charCodeAt(i);
@@ -171,7 +173,7 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
   var c,
     state = start_state;
 
-  var buffer = caml_uint8_array_of_bytes(lexbuf[lex_buffer]);
+  var buffer = lexbuf[lex_buffer];
 
   if (state >= 0) {
     /* First entry */
@@ -203,7 +205,7 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
       else c = 256;
     } else {
       /* Read next input char */
-      c = buffer[lexbuf[lex_curr_pos]];
+      c = caml_bytes_unsafe_get(buffer, lexbuf[lex_curr_pos]);
       lexbuf[lex_curr_pos]++;
     }
     /* Determine next state */
