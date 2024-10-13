@@ -502,7 +502,6 @@ function caml_uint8_array_of_bytes(s) {
 }
 
 //Provides: caml_uint8_array_of_string mutable
-//Requires: caml_convert_bytes_to_array
 //Requires: caml_ml_string_length, caml_string_unsafe_get
 function caml_uint8_array_of_string(s) {
   var l = caml_ml_string_length(s);

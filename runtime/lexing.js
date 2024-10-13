@@ -27,7 +27,7 @@ function caml_lex_array(s) {
 }
 
 //Provides: caml_lex_engine
-//Requires: caml_failwith, caml_lex_array, caml_uint8_array_of_bytes
+//Requires: caml_failwith, caml_lex_array
 //Requires: caml_bytes_unsafe_get
 function caml_lex_engine(tbl, start_state, lexbuf) {
   var lex_buffer = 2;
@@ -106,7 +106,7 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
 
 //Provides: caml_new_lex_engine
 //Requires: caml_failwith, caml_lex_array
-//Requires: caml_jsbytes_of_string, caml_uint8_array_of_bytes
+//Requires: caml_jsbytes_of_string
 //Requires: caml_bytes_unsafe_get
 function caml_lex_run_mem(s, i, mem, curr_pos) {
   for (;;) {
