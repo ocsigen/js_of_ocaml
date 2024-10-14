@@ -9,6 +9,7 @@
 * Compiler: improved global dead code elimination (#2206)
 * Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
 * Compiler: Decode sourcemap mappings only when necessary (#1664)
+* Compiler: reduce linking time by optimizing sourcemaps processing (#1617)
 * Compiler: make indirect call using sequence instead of using the call method
   [f.call(null, args)] becomes [(0,f)(args)]
 * Compiler: mark [TextEncoder] as reserved
