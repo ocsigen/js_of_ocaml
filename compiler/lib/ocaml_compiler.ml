@@ -50,6 +50,10 @@ let rec find_loc_in_summary ident' = function
   | Env.Env_empty -> None
   | Env.Env_value (_summary, ident, description) when Poly.(ident = ident') ->
       Some description.Types.val_loc
+  | Env.Env_module (_summary, ident, _, description) when Ident.same ident ident' ->
+      Some description.Types.md_loc
+  | Env.Env_extension (_summary, ident, description) when Ident.same ident ident' ->
+      Some description.Types.ext_loc
   | Env.Env_value (summary, _, _)
   | Env.Env_type (summary, _, _)
   | Env.Env_extension (summary, _, _)
