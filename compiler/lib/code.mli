@@ -229,6 +229,7 @@ type instr =
   | Set_field of Var.t * int * field_type * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
+  | Event of Parse_info.t
 
 type last =
   | Return of Var.t
