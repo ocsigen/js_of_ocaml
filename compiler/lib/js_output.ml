@@ -146,59 +146,86 @@ struct
 
   let debug_enabled = Config.Flag.debuginfo ()
 
+  let current_loc = ref U
+
+  let on_ident = ref false
+
   let output_debug_info f loc =
-    (if debug_enabled
-     then
-       match loc with
-       | Pi { Parse_info.src = None | Some ""; name = None | Some ""; _ } | N -> ()
-       | U ->
-           PP.non_breaking_space f;
-           PP.string f "/*<<?>>*/";
-           PP.non_breaking_space f
-       | Pi { Parse_info.src; name; line; col; _ } ->
-           let file =
-             match name, src with
-             | (None | Some ""), Some file -> file
-             | Some file, (None | Some "") -> file
-             | Some file, Some _file -> file
-             | None, None -> assert false
-           in
-           PP.non_breaking_space f;
-           PP.string f (Format.sprintf "/*<<%s:%d:%d>>*/" file line col);
-           PP.non_breaking_space f);
-    if source_map_enabled
-    then
+    let loc =
+      (* We force a new mapping after an identifier, to avoid its name
+         to bleed over other identifiers, using the current location
+         when none is provided. *)
       match loc with
-      | N -> ()
-      | U | Pi { Parse_info.src = None | Some ""; _ } ->
-          push_mapping (PP.pos f) (Source_map.Gen { gen_line = -1; gen_col = -1 })
-      | Pi { Parse_info.src = Some file; line; col; _ } ->
-          push_mapping
-            (PP.pos f)
-            (Source_map.Gen_Ori
-               { gen_line = -1
-               ; gen_col = -1
-               ; ori_source = get_file_index file
-               ; ori_line = line
-               ; ori_col = col
-               })
+      | N when !on_ident -> !current_loc
+      | _ -> loc
+    in
+    match loc with
+    | N -> ()
+    | _ ->
+        let location_changed = Poly.(loc <> !current_loc) in
+        (if source_map_enabled && (!on_ident || location_changed)
+         then
+           match loc with
+           | N | U | Pi { Parse_info.src = None | Some ""; _ } ->
+               push_mapping (PP.pos f) (Source_map.Gen { gen_line = -1; gen_col = -1 })
+           | Pi { Parse_info.src = Some file; line; col; _ } ->
+               push_mapping
+                 (PP.pos f)
+                 (Source_map.Gen_Ori
+                    { gen_line = -1
+                    ; gen_col = -1
+                    ; ori_source = get_file_index file
+                    ; ori_line = line
+                    ; ori_col = col
+                    }));
+        (if debug_enabled && location_changed
+         then
+           match loc with
+           | N | U ->
+               PP.non_breaking_space f;
+               PP.string f "/*<<?>>*/";
+               PP.non_breaking_space f
+           | Pi pi ->
+               PP.non_breaking_space f;
+               PP.string f (Format.sprintf "/*<<%s>>*/" (Parse_info.to_string pi));
+               PP.non_breaking_space f);
+        current_loc := loc;
+        on_ident := false
 
   let output_debug_info_ident f nm loc =
     if source_map_enabled
-    then
-      match loc with
-      | None | Some { Parse_info.src = Some "" | None; _ } -> ()
-      | Some { Parse_info.src = Some file; line; col; _ } ->
-          push_mapping
-            (PP.pos f)
-            (Source_map.Gen_Ori_Name
-               { gen_line = -1
-               ; gen_col = -1
-               ; ori_source = get_file_index file
-               ; ori_line = line
-               ; ori_col = col
-               ; ori_name = get_name_index nm
-               })
+    then (
+      let loc =
+        (* Keep the current location if possible, since we don't care
+           about the actual identifier's location *)
+        match !current_loc, loc with
+        | (N | U | Pi { Parse_info.src = Some "" | None; _ }), Some _ -> loc
+        | Pi ({ Parse_info.src = Some _; _ } as loc), _ -> Some loc
+        | _, None -> None
+      in
+      on_ident := true;
+      push_mapping
+        (PP.pos f)
+        (match loc with
+        | None | Some { Parse_info.src = Some "" | None; _ } ->
+            (* Use a dummy location. It is going to be ignored anyway *)
+            Source_map.Gen_Ori_Name
+              { gen_line = -1
+              ; gen_col = -1
+              ; ori_source = 0
+              ; ori_line = 1
+              ; ori_col = 0
+              ; ori_name = get_name_index nm
+              }
+        | Some { Parse_info.src = Some file; line; col; _ } ->
+            Source_map.Gen_Ori_Name
+              { gen_line = -1
+              ; gen_col = -1
+              ; ori_source = get_file_index file
+              ; ori_line = line
+              ; ori_col = col
+              ; ori_name = get_name_index nm
+              }))
 
   let ident f ~kind = function
     | S { name = Utf8 name; var = Some v; _ } ->

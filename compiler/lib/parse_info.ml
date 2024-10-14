@@ -51,3 +51,16 @@ let t_of_position ~src pos =
   ; col = pos.Lexing.pos_cnum - pos.Lexing.pos_bol
   ; idx = 0
   }
+
+let to_string { name; src; line; col; _ } =
+  match name, src with
+  | (None | Some ""), (None | Some "") -> "?"
+  | _ ->
+      let file =
+        match name, src with
+        | (None | Some ""), Some file -> file
+        | Some file, (None | Some "") -> file
+        | Some file, Some _file -> file
+        | None, None -> assert false
+      in
+      Format.sprintf "%s:%d:%d" file line col
