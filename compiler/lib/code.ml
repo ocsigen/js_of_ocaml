@@ -441,8 +441,8 @@ type last =
 
 type block =
   { params : Var.t list
-  ; body : (instr * loc) list
-  ; branch : last * loc
+  ; body : instr list
+  ; branch : last
   }
 
 type program =
@@ -575,7 +575,7 @@ module Print = struct
     | Prim (p, l) -> prim f p l
     | Special s -> special f s
 
-  let instr f (i, _loc) =
+  let instr f i =
     match i with
     | Let (x, e) -> Format.fprintf f "%a = %a" Var.print x expr e
     | Assign (x, y) -> Format.fprintf f "(assign) %a = %a" Var.print x Var.print y
@@ -588,7 +588,7 @@ module Print = struct
         Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
     | Event loc -> Format.fprintf f "event %s" (Parse_info.to_string loc)
 
-  let last f (l, _loc) =
+  let last f l =
     match l with
     | Return x -> Format.fprintf f "return %a" Var.print x
     | Raise (x, `Normal) -> Format.fprintf f "raise %a" Var.print x
@@ -607,8 +607,8 @@ module Print = struct
     | Poptrap c -> Format.fprintf f "poptrap %a" cont c
 
   type xinstr =
-    | Instr of (instr * loc)
-    | Last of (last * loc)
+    | Instr of instr
+    | Last of last
 
   let block annot pc block =
     Format.eprintf "==== %d (%a) ====@." pc var_list block.params;
@@ -627,7 +627,7 @@ end
 let fold_closures p f accu =
   Addr.Map.fold
     (fun _ block accu ->
-      List.fold_left block.body ~init:accu ~f:(fun accu (i, _loc) ->
+      List.fold_left block.body ~init:accu ~f:(fun accu i ->
           match i with
           | Let (x, Closure (params, cont)) -> f (Some x) params cont accu
           | _ -> accu))
@@ -648,12 +648,12 @@ let prepend ({ start; blocks; free_pc } as p) body =
       | exception Not_found ->
           let new_start = free_pc in
           let blocks =
-            Addr.Map.add new_start { params = []; body; branch = Stop, noloc } blocks
+            Addr.Map.add new_start { params = []; body; branch = Stop } blocks
           in
           let free_pc = free_pc + 1 in
           { start = new_start; blocks; free_pc })
 
-let empty_block = { params = []; body = []; branch = Stop, noloc }
+let empty_block = { params = []; body = []; branch = Stop }
 
 let empty =
   let start = 0 in
@@ -666,10 +666,9 @@ let is_empty p =
   | 1 -> (
       let _, v = Addr.Map.choose p.blocks in
       match v with
-      | { body; branch = Stop, _; params = _ } -> (
+      | { body; branch = Stop; params = _ } -> (
           match body with
-          | ([] | [ (Let (_, Prim (Extern "caml_get_global_data", _)), _) ]) when true ->
-              true
+          | ([] | [ Let (_, Prim (Extern "caml_get_global_data", _)) ]) when true -> true
           | _ -> false)
       | _ -> false)
   | _ -> false
@@ -681,7 +680,7 @@ let poptraps blocks pc =
     else
       let visited = Addr.Set.add pc visited in
       let block = Addr.Map.find pc blocks in
-      match fst block.branch with
+      match block.branch with
       | Return _ | Raise _ | Stop -> acc, visited
       | Branch (pc', _) -> loop blocks pc' visited depth acc
       | Poptrap (pc', _) ->
@@ -709,7 +708,7 @@ let poptraps blocks pc =
 
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  match fst block.branch with
+  match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc', _), _, (pc_h, _)) ->
@@ -726,7 +725,7 @@ let fold_children blocks pc f accu =
 
 let fold_children_skip_try_body blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  match fst block.branch with
+  match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc', _), _, (pc_h, _)) ->
@@ -789,7 +788,7 @@ let fold_closures_innermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont)), _ ->
+            | Let (x, Closure (params, cont)) ->
                 let accu = visit blocks (fst cont) f accu in
                 f (Some x) params cont accu
             | _ -> accu))
@@ -808,7 +807,7 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont)), _ ->
+            | Let (x, Closure (params, cont)) ->
                 let accu = f (Some x) params cont accu in
                 visit blocks (fst cont) f accu
             | _ -> accu))
@@ -879,7 +878,7 @@ let invariant { blocks; start; _ } =
       | Prim (_, args) -> List.iter ~f:check_prim_arg args
       | Special _ -> ()
     in
-    let check_instr (i, _loc) =
+    let check_instr i =
       match i with
       | Let (x, e) ->
           define x;
@@ -892,11 +891,11 @@ let invariant { blocks; start; _ } =
     in
     let rec check_events l =
       match l with
-      | (Event _, _) :: (Event _, _) :: _ -> assert false
+      | Event _ :: Event _ :: _ -> assert false
       | _ :: r -> check_events r
       | [] -> ()
     in
-    let check_last (l, _loc) =
+    let check_last l =
       match l with
       | Return _ -> ()
       | Raise _ -> ()

@@ -242,11 +242,9 @@ let run
         let var_k = Code.Var.fresh () in
         let var_v = Code.Var.fresh () in
         Code.
-          [ Let (var_k, Prim (Extern "caml_jsstring_of_string", [ Pc (String k) ])), noloc
-          ; Let (var_v, Prim (Extern "caml_jsstring_of_string", [ Pc (String v) ])), noloc
-          ; ( Let
-                (Var.fresh (), Prim (Extern "caml_set_static_env", [ Pv var_k; Pv var_v ]))
-            , noloc )
+          [ Let (var_k, Prim (Extern "caml_jsstring_of_string", [ Pc (String k) ]))
+          ; Let (var_v, Prim (Extern "caml_jsstring_of_string", [ Pc (String v) ]))
+          ; Let (Var.fresh (), Prim (Extern "caml_set_static_env", [ Pv var_k; Pv var_v ]))
           ])
   in
   let output

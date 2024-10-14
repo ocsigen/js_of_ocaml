@@ -513,10 +513,7 @@ type globals =
   ; mutable is_const : bool array
   ; mutable is_exported : bool array
   ; mutable named_value : string option array
-  ; mutable override :
-      (Var.t -> (Code.instr * Code.loc) list -> Var.t * (Code.instr * Code.loc) list)
-      option
-      array
+  ; mutable override : (Var.t -> Code.instr list -> Var.t * Code.instr list) option array
   ; constants : Code.constant array
   ; primitives : string array
   }
@@ -720,7 +717,7 @@ let access_global g i =
       g.vars.(i) <- Some x;
       x
 
-let register_global ?(force = false) g i loc rem =
+let register_global ?(force = false) g i rem =
   match g.is_exported.(i), force, Config.target () with
   | true, _, `Wasm ->
       (* Register a compilation unit (Wasm) *)
@@ -731,11 +728,9 @@ let register_global ?(force = false) g i loc rem =
         | Some name -> name
       in
       Code.Var.name (access_global g i) name;
-      ( Let
-          ( Var.fresh ()
-          , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ])
-          )
-      , loc )
+      Let
+        ( Var.fresh ()
+        , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ]) )
       :: rem
   | true, _, (`JavaScript as target) | false, true, ((`Wasm | `JavaScript) as target) ->
       (* Register an exception (if force = true), or a compilation unit
@@ -751,16 +746,15 @@ let register_global ?(force = false) g i loc rem =
                 | `Wasm -> String name)
             ]
       in
-      ( Let
-          ( Var.fresh ()
-          , Prim
-              ( Extern "caml_register_global"
-              , Pc (Int (Targetint.of_int_exn i)) :: Pv (access_global g i) :: args ) )
-      , loc )
+      Let
+        ( Var.fresh ()
+        , Prim
+            ( Extern "caml_register_global"
+            , Pc (Int (Targetint.of_int_exn i)) :: Pv (access_global g i) :: args ) )
       :: rem
   | false, false, (`JavaScript | `Wasm) -> rem
 
-let get_global state instrs i loc =
+let get_global state instrs i =
   State.size_globals state (i + 1);
   let g = State.globals state in
   match g.vars.(i) with
@@ -774,7 +768,7 @@ let get_global state instrs i loc =
         (* Inlined constant *)
         let x, state = State.fresh_var state in
         let cst = g.constants.(i) in
-        x, state, (Let (x, Constant cst), loc) :: instrs
+        x, state, Let (x, Constant cst) :: instrs
       else
         match i < Array.length g.constants, Config.target () with
         | true, _ | false, `JavaScript ->
@@ -800,12 +794,12 @@ let get_global state instrs i loc =
                 then Format.printf "%a = get_global(%s)@." Var.print x name;
                 ( x
                 , state
-                , (Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])), loc)
-                  :: instrs )))
+                , Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])) :: instrs
+                )))
 
 let tagged_blocks = ref Addr.Map.empty
 
-let compiled_blocks = ref Addr.Map.empty
+let compiled_blocks : (_ * instr list * last) Addr.Map.t ref = ref Addr.Map.empty
 
 let method_cache_id = ref 1
 
@@ -838,7 +832,7 @@ let string_of_addr debug_data addr =
       in
       Printf.sprintf "%s:%s-%s %s" file (pos loc.loc_start) (pos loc.loc_end) kind)
 
-let rec compile_block blocks debug_data code pc state =
+let rec compile_block blocks debug_data code pc state : unit =
   match Addr.Map.find_opt pc !tagged_blocks with
   | Some old_state -> (
       (* Check that the shape of the stack is compatible with the one used to compile the block *)
@@ -889,16 +883,15 @@ let rec compile_block blocks debug_data code pc state =
       in
       let last =
         match last with
-        | Branch (pc, _), loc -> Branch (mk_cont pc), loc
-        | Cond (x, (pc1, _), (pc2, _)), loc -> Cond (x, mk_cont pc1, mk_cont pc2), loc
-        | Poptrap (pc, _), loc -> Poptrap (mk_cont pc), loc
-        | Switch (x, a), loc ->
-            Switch (x, Array.map a ~f:(fun (pc, _) -> mk_cont pc)), loc
-        | (Raise _ | Return _ | Stop), _ -> last
-        | Pushtrap _, _ -> assert false
+        | Branch (pc, _) -> Branch (mk_cont pc)
+        | Cond (x, (pc1, _), (pc2, _)) -> Cond (x, mk_cont pc1, mk_cont pc2)
+        | Poptrap (pc, _) -> Poptrap (mk_cont pc)
+        | Switch (x, a) -> Switch (x, Array.map a ~f:(fun (pc, _) -> mk_cont pc))
+        | Raise _ | Return _ | Stop -> last
+        | Pushtrap _ -> assert false
       in
       compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
-      match fst last with
+      match last with
       | Branch (pc', _) -> compile_block blocks debug_data code pc' (adjust_state pc')
       | Cond (_, (pc1, _), (pc2, _)) ->
           compile_block blocks debug_data code pc1 (adjust_state pc1);
@@ -908,7 +901,7 @@ let rec compile_block blocks debug_data code pc state =
       | Raise _ | Return _ | Stop -> ()
       | Pushtrap _ -> assert false)
 
-and compile infos pc state instrs =
+and compile infos pc state (instrs : instr list) =
   if debug_parser () then State.print state;
   assert (pc <= infos.limit);
   if debug_parser ()
@@ -919,8 +912,8 @@ and compile infos pc state instrs =
   let instrs =
     let push_event position source event instrs =
       match instrs with
-      | (Event _, _) :: instrs | instrs ->
-          (Event (Debug.event_location ~position ~source ~event), noloc) :: instrs
+      | Event _ :: instrs | instrs ->
+          Event (Debug.event_location ~position ~source ~event) :: instrs
     in
     List.fold_left
       (Debug.find_locs infos.debug pc)
@@ -932,7 +925,7 @@ and compile infos pc state instrs =
             if debug_parser () then Format.eprintf "Ignored allocation event@.";
             instrs
         | ( { ev_kind = Event_pseudo | Event_after _; ev_info = Event_return _; _ }
-          , ((Let (_, (Apply _ | Prim _)), _) as i) :: rem ) ->
+          , (Let (_, (Apply _ | Prim _)) as i) :: rem ) ->
             (* Event after a call. If it is followed by another event,
                it may have been weaken to a pseudo-event but was kept
                for stack traces *)
@@ -969,20 +962,18 @@ and compile infos pc state instrs =
        pc = String.length infos.code / 4
     then (
       if debug_parser () then Format.eprintf "Stop@.";
-      instrs, (Stop, noloc), state)
+      instrs, Stop, state)
     else (
       State.name_vars state infos.debug pc;
       if debug_parser ()
       then Format.eprintf "Branch %d (%a) @." pc Print.var_list (State.stack_vars state);
-      instrs, (Branch (pc, []), Code.noloc), state)
+      instrs, Branch (pc, []), state)
   else (
     if debug_parser () then Format.eprintf "%4d " pc;
     State.name_vars state infos.debug pc;
     let code = infos.code in
     let instr = get_instr_exn code pc in
     if debug_parser () then Format.eprintf "%08x %s@." instr.opcode instr.name;
-    (* No longer used *)
-    let loc = noloc in
 
     match instr.Instr.code with
     | ACC0 -> compile infos (pc + 1) (State.acc 0 state) instrs
@@ -1032,14 +1023,14 @@ and compile infos pc state instrs =
           *)
           List.fold_left
             state.handlers
-            ~init:((Let (x, const 0), loc) :: instrs)
+            ~init:(Let (x, const 0) :: instrs)
             ~f:(fun acc (handler : State.handler) ->
               let handler_stack_size = List.length handler.stack in
               let diff = stack_size - handler_stack_size in
               if n >= diff
               then
                 let dest = State.elt_to_var (List.nth handler.stack (n - diff)) in
-                (Assign (dest, accu), loc) :: acc
+                Assign (dest, accu) :: acc
               else acc)
         in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
@@ -1089,7 +1080,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 3 state)
-          ((Let (x, Apply { f; args; exact = false }), loc) :: instrs)
+          (Let (x, Apply { f; args; exact = false }) :: instrs)
     | APPLY1 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
@@ -1101,7 +1092,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Apply { f; args = [ y ]; exact = false }), loc) :: instrs)
+          (Let (x, Apply { f; args = [ y ]; exact = false }) :: instrs)
     | APPLY2 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
@@ -1124,7 +1115,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 2 state)
-          ((Let (x, Apply { f; args = [ y; z ]; exact = false }), loc) :: instrs)
+          (Let (x, Apply { f; args = [ y; z ]; exact = false }) :: instrs)
     | APPLY3 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
@@ -1150,7 +1141,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 3 state)
-          ((Let (x, Apply { f; args = [ y; z; t ]; exact = false }), loc) :: instrs)
+          (Let (x, Apply { f; args = [ y; z; t ]; exact = false }) :: instrs)
     | APPTERM ->
         let n = getu code (pc + 1) in
         let f = State.accu state in
@@ -1165,17 +1156,13 @@ and compile infos pc state instrs =
           done;
           Format.printf ")@.");
         let x, state = State.fresh_var state in
-        ( (Let (x, Apply { f; args = l; exact = false }), loc) :: instrs
-        , (Return x, loc)
-        , state )
+        Let (x, Apply { f; args = l; exact = false }) :: instrs, Return x, state
     | APPTERM1 ->
         let f = State.accu state in
         let x = State.peek 0 state in
         if debug_parser () then Format.printf "return %a(%a)@." Var.print f Var.print x;
         let y, state = State.fresh_var state in
-        ( (Let (y, Apply { f; args = [ x ]; exact = false }), loc) :: instrs
-        , (Return y, loc)
-        , state )
+        Let (y, Apply { f; args = [ x ]; exact = false }) :: instrs, Return y, state
     | APPTERM2 ->
         let f = State.accu state in
         let x = State.peek 0 state in
@@ -1183,9 +1170,7 @@ and compile infos pc state instrs =
         if debug_parser ()
         then Format.printf "return %a(%a, %a)@." Var.print f Var.print x Var.print y;
         let z, state = State.fresh_var state in
-        ( (Let (z, Apply { f; args = [ x; y ]; exact = false }), loc) :: instrs
-        , (Return z, loc)
-        , state )
+        Let (z, Apply { f; args = [ x; y ]; exact = false }) :: instrs, Return z, state
     | APPTERM3 ->
         let f = State.accu state in
         let x = State.peek 0 state in
@@ -1204,14 +1189,12 @@ and compile infos pc state instrs =
             Var.print
             z;
         let t, state = State.fresh_var state in
-        ( (Let (t, Apply { f; args = [ x; y; z ]; exact = false }), loc) :: instrs
-        , (Return t, loc)
-        , state )
+        Let (t, Apply { f; args = [ x; y; z ]; exact = false }) :: instrs, Return t, state
     | RETURN ->
         let x = State.accu state in
 
         if debug_parser () then Format.printf "return %a@." Var.print x;
-        instrs, (Return x, loc), state
+        instrs, Return x, state
     | RESTART -> assert false
     | GRAB -> assert false
     | CLOSURE ->
@@ -1247,7 +1230,7 @@ and compile infos pc state instrs =
           infos
           (pc + 3)
           state
-          ((Let (x, Closure (List.rev params, (addr, args))), loc) :: instrs)
+          (Let (x, Closure (List.rev params, (addr, args))) :: instrs)
     | CLOSUREREC ->
         let nfuncs = getu code (pc + 1) in
         let nvars = getu code (pc + 2) in
@@ -1300,7 +1283,7 @@ and compile infos pc state instrs =
               let args = State.stack_vars state' in
               let state'', _, _ = Addr.Map.find addr !compiled_blocks in
               Debug.propagate (State.stack_vars state'') args;
-              (Let (x, Closure (List.rev params, (addr, args))), loc) :: instr)
+              Let (x, Closure (List.rev params, (addr, args))) :: instr)
         in
         compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
     | OFFSETCLOSUREM3 ->
@@ -1325,29 +1308,29 @@ and compile infos pc state instrs =
         compile infos (pc + 2) (State.env_acc n state) instrs
     | GETGLOBAL ->
         let i = getu code (pc + 1) in
-        let _, state, instrs = get_global state instrs i loc in
+        let _, state, instrs = get_global state instrs i in
         compile infos (pc + 2) state instrs
     | PUSHGETGLOBAL ->
         let state = State.push state in
         let i = getu code (pc + 1) in
-        let _, state, instrs = get_global state instrs i loc in
+        let _, state, instrs = get_global state instrs i in
         compile infos (pc + 2) state instrs
     | GETGLOBALFIELD ->
         let i = getu code (pc + 1) in
-        let x, state, instrs = get_global state instrs i loc in
+        let x, state, instrs = get_global state instrs i in
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
-        compile infos (pc + 3) state ((Let (y, Field (x, j, Non_float)), loc) :: instrs)
+        compile infos (pc + 3) state (Let (y, Field (x, j, Non_float)) :: instrs)
     | PUSHGETGLOBALFIELD ->
         let state = State.push state in
 
         let i = getu code (pc + 1) in
-        let x, state, instrs = get_global state instrs i loc in
+        let x, state, instrs = get_global state instrs i in
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
-        compile infos (pc + 3) state ((Let (y, Field (x, j, Non_float)), loc) :: instrs)
+        compile infos (pc + 3) state (Let (y, Field (x, j, Non_float)) :: instrs)
     | SETGLOBAL ->
         let i = getu code (pc + 1) in
         State.size_globals state (i + 1);
@@ -1368,8 +1351,8 @@ and compile infos pc state instrs =
         in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
-        let instrs = register_global g i loc instrs in
-        compile infos (pc + 2) state ((Let (x, const 0), loc) :: instrs)
+        let instrs = register_global g i instrs in
+        compile infos (pc + 2) state (Let (x, const 0) :: instrs)
     | ATOM0 ->
         let x, state = State.fresh_var state in
 
@@ -1378,7 +1361,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          ((Let (x, Block (0, [||], Unknown, Maybe_mutable)), loc) :: instrs)
+          (Let (x, Block (0, [||], Unknown, Maybe_mutable)) :: instrs)
     | ATOM ->
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state in
@@ -1388,7 +1371,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Block (i, [||], Unknown, Maybe_mutable)), loc) :: instrs)
+          (Let (x, Block (i, [||], Unknown, Maybe_mutable)) :: instrs)
     | PUSHATOM0 ->
         let state = State.push state in
         let x, state = State.fresh_var state in
@@ -1398,7 +1381,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          ((Let (x, Block (0, [||], Unknown, Maybe_mutable)), loc) :: instrs)
+          (Let (x, Block (0, [||], Unknown, Maybe_mutable)) :: instrs)
     | PUSHATOM ->
         let state = State.push state in
 
@@ -1409,7 +1392,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Block (i, [||], Unknown, Maybe_mutable)), loc) :: instrs)
+          (Let (x, Block (i, [||], Unknown, Maybe_mutable)) :: instrs)
     | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
@@ -1428,8 +1411,7 @@ and compile infos pc state instrs =
           infos
           (pc + 3)
           state
-          ((Let (x, Block (tag, Array.of_list contents, Unknown, Maybe_mutable)), loc)
-          :: instrs)
+          (Let (x, Block (tag, Array.of_list contents, Unknown, Maybe_mutable)) :: instrs)
     | MAKEBLOCK1 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1440,7 +1422,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Block (tag, [| y |], Unknown, Maybe_mutable)), loc) :: instrs)
+          (Let (x, Block (tag, [| y |], Unknown, Maybe_mutable)) :: instrs)
     | MAKEBLOCK2 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1454,7 +1436,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, Block (tag, [| y; z |], Unknown, Maybe_mutable)), loc) :: instrs)
+          (Let (x, Block (tag, [| y; z |], Unknown, Maybe_mutable)) :: instrs)
     | MAKEBLOCK3 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1478,7 +1460,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 2 state)
-          ((Let (x, Block (tag, [| y; z; t |], Unknown, Maybe_mutable)), loc) :: instrs)
+          (Let (x, Block (tag, [| y; z; t |], Unknown, Maybe_mutable)) :: instrs)
     | MAKEFLOATBLOCK ->
         let size = getu code (pc + 1) in
         let state = State.push state in
@@ -1496,39 +1478,38 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Block (254, Array.of_list contents, Unknown, Maybe_mutable)), loc)
-          :: instrs)
+          (Let (x, Block (254, Array.of_list contents, Unknown, Maybe_mutable)) :: instrs)
     | GETFIELD0 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[0]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 0, Non_float)), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, Field (y, 0, Non_float)) :: instrs)
     | GETFIELD1 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[1]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 1, Non_float)), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, Field (y, 1, Non_float)) :: instrs)
     | GETFIELD2 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[2]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 2, Non_float)), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, Field (y, 2, Non_float)) :: instrs)
     | GETFIELD3 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[3]@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Field (y, 3, Non_float)), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, Field (y, 3, Non_float)) :: instrs)
     | GETFIELD ->
         let y = State.accu state in
         let n = getu code (pc + 1) in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
-        compile infos (pc + 2) state ((Let (x, Field (y, n, Non_float)), loc) :: instrs)
+        compile infos (pc + 2) state (Let (x, Field (y, n, Non_float)) :: instrs)
     | GETFLOATFIELD ->
         let y = State.accu state in
         let n = getu code (pc + 1) in
@@ -1536,7 +1517,7 @@ and compile infos pc state instrs =
 
         if debug_parser ()
         then Format.printf "%a = FLOAT{%a[%d]}@." Var.print x Var.print y n;
-        compile infos (pc + 2) state ((Let (x, Field (y, n, Float)), loc) :: instrs)
+        compile infos (pc + 2) state (Let (x, Field (y, n, Float)) :: instrs)
     | SETFIELD0 ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1548,7 +1529,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0), loc) :: (Set_field (y, 0, Non_float, z), loc) :: instrs)
+          (Let (x, const 0) :: Set_field (y, 0, Non_float, z) :: instrs)
     | SETFIELD1 ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1560,7 +1541,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0), loc) :: (Set_field (y, 1, Non_float, z), loc) :: instrs)
+          (Let (x, const 0) :: Set_field (y, 1, Non_float, z) :: instrs)
     | SETFIELD2 ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1572,7 +1553,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0), loc) :: (Set_field (y, 2, Non_float, z), loc) :: instrs)
+          (Let (x, const 0) :: Set_field (y, 2, Non_float, z) :: instrs)
     | SETFIELD3 ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1584,7 +1565,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, const 0), loc) :: (Set_field (y, 3, Non_float, z), loc) :: instrs)
+          (Let (x, const 0) :: Set_field (y, 3, Non_float, z) :: instrs)
     | SETFIELD ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1597,7 +1578,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, const 0), loc) :: (Set_field (y, n, Non_float, z), loc) :: instrs)
+          (Let (x, const 0) :: Set_field (y, n, Non_float, z) :: instrs)
     | SETFLOATFIELD ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1611,17 +1592,13 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, const 0), loc) :: (Set_field (y, n, Float, z), loc) :: instrs)
+          (Let (x, const 0) :: Set_field (y, n, Float, z) :: instrs)
     | VECTLENGTH ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a.length@." Var.print x Var.print y;
-        compile
-          infos
-          (pc + 1)
-          state
-          ((Let (x, Prim (Vectlength, [ Pv y ])), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, Prim (Vectlength, [ Pv y ])) :: instrs)
     | GETVECTITEM ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1633,7 +1610,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Array_get, [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Array_get, [ Pv y; Pv z ])) :: instrs)
     | SETVECTITEM ->
         if debug_parser ()
         then
@@ -1646,12 +1623,11 @@ and compile infos pc state instrs =
             Var.print
             (State.peek 1 state);
         let instrs =
-          (Array_set (State.accu state, State.peek 0 state, State.peek 1 state), loc)
-          :: instrs
+          Array_set (State.accu state, State.peek 0 state, State.peek 1 state) :: instrs
         in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
-        compile infos (pc + 1) (State.pop 2 state) ((Let (x, const 0), loc) :: instrs)
+        compile infos (pc + 1) (State.pop 2 state) (Let (x, const 0) :: instrs)
     | GETSTRINGCHAR ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1663,8 +1639,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "caml_string_unsafe_get", [ Pv y; Pv z ])), loc)
-          :: instrs)
+          (Let (x, Prim (Extern "caml_string_unsafe_get", [ Pv y; Pv z ])) :: instrs)
     | GETBYTESCHAR ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -1676,7 +1651,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "caml_bytes_unsafe_get", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "caml_bytes_unsafe_get", [ Pv y; Pv z ])) :: instrs)
     | SETBYTESCHAR ->
         if debug_parser ()
         then
@@ -1693,24 +1668,23 @@ and compile infos pc state instrs =
         let z = State.peek 1 state in
         let t, state = State.fresh_var state in
         let instrs =
-          (Let (t, Prim (Extern "caml_bytes_unsafe_set", [ Pv x; Pv y; Pv z ])), loc)
-          :: instrs
+          Let (t, Prim (Extern "caml_bytes_unsafe_set", [ Pv x; Pv y; Pv z ])) :: instrs
         in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
-        compile infos (pc + 1) (State.pop 2 state) ((Let (x, const 0), loc) :: instrs)
+        compile infos (pc + 1) (State.pop 2 state) (Let (x, const 0) :: instrs)
     | BRANCH ->
         let offset = gets code (pc + 1) in
         if debug_parser () then Format.printf "... (branch)@.";
-        instrs, (Branch (pc + offset + 1, []), loc), state
+        instrs, Branch (pc + offset + 1, []), state
     | BRANCHIF ->
         let offset = gets code (pc + 1) in
         let x = State.accu state in
-        instrs, (Cond (x, (pc + offset + 1, []), (pc + 2, [])), loc), state
+        instrs, Cond (x, (pc + offset + 1, []), (pc + 2, [])), state
     | BRANCHIFNOT ->
         let offset = gets code (pc + 1) in
         let x = State.accu state in
-        instrs, (Cond (x, (pc + 2, []), (pc + offset + 1, [])), loc), state
+        instrs, Cond (x, (pc + 2, []), (pc + offset + 1, [])), state
     | SWITCH -> (
         if debug_parser () then Format.printf "switch ...@.";
         let sz = getu code (pc + 1) in
@@ -1725,13 +1699,13 @@ and compile infos pc state instrs =
         Array.iter bt ~f:(fun pc' ->
             compile_block infos.blocks infos.debug code pc' state);
         match isize, bsize with
-        | _, 0 -> instrs, (Switch (x, Array.map it ~f:(fun pc -> pc, [])), loc), state
+        | _, 0 -> instrs, Switch (x, Array.map it ~f:(fun pc -> pc, [])), state
         | 0, _ ->
             let x_tag = Var.fresh () in
             let instrs =
-              (Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])), loc) :: instrs
+              Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])) :: instrs
             in
-            instrs, (Switch (x_tag, Array.map bt ~f:(fun pc -> pc, [])), loc), state
+            instrs, Switch (x_tag, Array.map bt ~f:(fun pc -> pc, [])), state
         | _, _ ->
             let isint_branch = pc + 1 in
             let isblock_branch = pc + 2 in
@@ -1742,7 +1716,7 @@ and compile infos pc state instrs =
               compiled_blocks :=
                 Addr.Map.add
                   isint_branch
-                  (i_state, [], (Switch (x, Array.map it ~f:(fun pc -> pc, i_args)), loc))
+                  (i_state, [], Switch (x, Array.map it ~f:(fun pc -> pc, i_args)))
                   !compiled_blocks
             in
             let () =
@@ -1750,27 +1724,21 @@ and compile infos pc state instrs =
               let x_tag = Var.fresh () in
               let b_state = State.start_block isblock_branch state in
               let b_args = State.stack_vars b_state in
-              let instrs =
-                [ Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])), loc ]
-              in
+              let instrs = [ Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])) ] in
               compiled_blocks :=
                 Addr.Map.add
                   isblock_branch
-                  ( b_state
-                  , instrs
-                  , (Switch (x_tag, Array.map bt ~f:(fun pc -> pc, b_args)), loc) )
+                  (b_state, instrs, Switch (x_tag, Array.map bt ~f:(fun pc -> pc, b_args)))
                   !compiled_blocks
             in
             let isint_var = Var.fresh () in
-            let instrs = (Let (isint_var, Prim (IsInt, [ Pv x ])), loc) :: instrs in
-            ( instrs
-            , (Cond (isint_var, (isint_branch, []), (isblock_branch, [])), loc)
-            , state ))
+            let instrs = Let (isint_var, Prim (IsInt, [ Pv x ])) :: instrs in
+            instrs, Cond (isint_var, (isint_branch, []), (isblock_branch, [])), state)
     | BOOLNOT ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = !%a@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Prim (Not, [ Pv y ])), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, Prim (Not, [ Pv y ])) :: instrs)
     | PUSHTRAP ->
         (* We insert an intermediate block that binds the handler's
            context, so that it is also in the scope of the body. Then,
@@ -1788,11 +1756,10 @@ and compile infos pc state instrs =
             interm_addr
             ( handler_ctx_state
             , []
-            , ( Pushtrap
-                  ( (body_addr, State.stack_vars state)
-                  , x
-                  , (handler_addr, State.stack_vars handler_state) )
-              , loc ) )
+            , Pushtrap
+                ( (body_addr, State.stack_vars state)
+                , x
+                , (handler_addr, State.stack_vars handler_state) ) )
             !compiled_blocks;
         compile_block infos.blocks infos.debug code handler_addr handler_state;
         compile_block
@@ -1809,7 +1776,7 @@ and compile infos pc state instrs =
               :: State.Dummy "pushtrap(extra_args)"
               :: state.State.stack
           };
-        instrs, (Branch (interm_addr, []), loc), state
+        instrs, Branch (interm_addr, []), state
     | POPTRAP ->
         let addr = pc + 1 in
         compile_block
@@ -1818,7 +1785,7 @@ and compile infos pc state instrs =
           code
           addr
           (State.pop 4 (State.pop_handler state));
-        instrs, (Poptrap (addr, []), loc), state
+        instrs, Poptrap (addr, []), state
     | RERAISE | RAISE_NOTRACE | RAISE ->
         let kind =
           match instr.Instr.code with
@@ -1828,7 +1795,7 @@ and compile infos pc state instrs =
           | _ -> assert false
         in
         if debug_parser () then Format.printf "throw(%a)@." Var.print (State.accu state);
-        instrs, (Raise (State.accu state, kind), loc), state
+        instrs, Raise (State.accu state, kind), state
     | CHECK_SIGNALS -> compile infos (pc + 1) state instrs
     | C_CALL1 ->
         let prim = primitive_name state (getu code (pc + 1)) in
@@ -1841,11 +1808,7 @@ and compile infos pc state instrs =
           let x, state = State.fresh_var state in
           if debug_parser ()
           then Format.printf "%a = ccall \"%s\" (%a)@." Var.print x prim Var.print y;
-          compile
-            infos
-            (pc + 2)
-            state
-            ((Let (x, Prim (Extern prim, [ Pv y ])), loc) :: instrs)
+          compile infos (pc + 2) state (Let (x, Prim (Extern prim, [ Pv y ])) :: instrs)
     | C_CALL2 ->
         let prim = primitive_name state (getu code (pc + 1)) in
         let y = State.accu state in
@@ -1867,7 +1830,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern prim, [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern prim, [ Pv y; Pv z ])) :: instrs)
     | C_CALL3 ->
         let prim = primitive_name state (getu code (pc + 1)) in
         let y = State.accu state in
@@ -1892,7 +1855,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 2 state)
-          ((Let (x, Prim (Extern prim, [ Pv y; Pv z; Pv t ])), loc) :: instrs)
+          (Let (x, Prim (Extern prim, [ Pv y; Pv z; Pv t ])) :: instrs)
     | C_CALL4 ->
         let nargs = 4 in
         let prim = primitive_name state (getu code (pc + 1)) in
@@ -1912,7 +1875,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))), loc) :: instrs)
+          (Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))) :: instrs)
     | C_CALL5 ->
         let nargs = 5 in
         let prim = primitive_name state (getu code (pc + 1)) in
@@ -1932,7 +1895,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))), loc) :: instrs)
+          (Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))) :: instrs)
     | C_CALLN ->
         let nargs = getu code (pc + 1) in
         let prim = primitive_name state (getu code (pc + 2)) in
@@ -1952,7 +1915,7 @@ and compile infos pc state instrs =
           infos
           (pc + 3)
           state
-          ((Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))), loc) :: instrs)
+          (Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))) :: instrs)
     | (CONST0 | CONST1 | CONST2 | CONST3) as cc ->
         let x, state = State.fresh_var state in
         let n =
@@ -1965,13 +1928,13 @@ and compile infos pc state instrs =
         in
 
         if debug_parser () then Format.printf "%a = %d@." Var.print x n;
-        compile infos (pc + 1) state ((Let (x, const n), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, const n) :: instrs)
     | CONSTINT ->
         let n = gets32 code (pc + 1) in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %ld@." Var.print x n;
-        compile infos (pc + 2) state ((Let (x, const32 n), loc) :: instrs)
+        compile infos (pc + 2) state (Let (x, const32 n) :: instrs)
     | (PUSHCONST0 | PUSHCONST1 | PUSHCONST2 | PUSHCONST3) as cc ->
         let state = State.push state in
         let x, state = State.fresh_var state in
@@ -1985,14 +1948,14 @@ and compile infos pc state instrs =
         in
 
         if debug_parser () then Format.printf "%a = %d@." Var.print x n;
-        compile infos (pc + 1) state ((Let (x, const n), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, const n) :: instrs)
     | PUSHCONSTINT ->
         let state = State.push state in
         let n = gets32 code (pc + 1) in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %ld@." Var.print x n;
-        compile infos (pc + 2) state ((Let (x, const32 n), loc) :: instrs)
+        compile infos (pc + 2) state (Let (x, const32 n) :: instrs)
     | NEGINT ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
@@ -2002,7 +1965,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          ((Let (x, Prim (Extern "%int_neg", [ Pv y ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_neg", [ Pv y ])) :: instrs)
     | ADDINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2014,7 +1977,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_add", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_add", [ Pv y; Pv z ])) :: instrs)
     | SUBINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2026,7 +1989,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_sub", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_sub", [ Pv y; Pv z ])) :: instrs)
     | MULINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2038,7 +2001,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_mul", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_mul", [ Pv y; Pv z ])) :: instrs)
     | DIVINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2050,7 +2013,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_div", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_div", [ Pv y; Pv z ])) :: instrs)
     | MODINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2062,7 +2025,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_mod", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_mod", [ Pv y; Pv z ])) :: instrs)
     | ANDINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2074,7 +2037,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_and", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_and", [ Pv y; Pv z ])) :: instrs)
     | ORINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2086,7 +2049,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_or", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_or", [ Pv y; Pv z ])) :: instrs)
     | XORINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2098,7 +2061,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_xor", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_xor", [ Pv y; Pv z ])) :: instrs)
     | LSLINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2110,7 +2073,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_lsl", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_lsl", [ Pv y; Pv z ])) :: instrs)
     | LSRINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2122,7 +2085,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_lsr", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_lsr", [ Pv y; Pv z ])) :: instrs)
     | ASRINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2134,7 +2097,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Extern "%int_asr", [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%int_asr", [ Pv y; Pv z ])) :: instrs)
     | EQ ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2146,7 +2109,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Eq, [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Eq, [ Pv y; Pv z ])) :: instrs)
     | NEQ ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2158,7 +2121,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Neq, [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Neq, [ Pv y; Pv z ])) :: instrs)
     | LTINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2178,7 +2141,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Lt, [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Lt, [ Pv y; Pv z ])) :: instrs)
     | LEINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2190,7 +2153,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Le, [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Le, [ Pv y; Pv z ])) :: instrs)
     | GTINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2202,7 +2165,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Lt, [ Pv z; Pv y ])), loc) :: instrs)
+          (Let (x, Prim (Lt, [ Pv z; Pv y ])) :: instrs)
     | GEINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2214,7 +2177,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Le, [ Pv z; Pv y ])), loc) :: instrs)
+          (Let (x, Prim (Le, [ Pv z; Pv y ])) :: instrs)
     | OFFSETINT ->
         let n = gets32 code (pc + 1) in
         let y = State.accu state in
@@ -2225,33 +2188,32 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          ((Let (x, Prim (Extern "%int_add", [ Pv y; Pv z ])), loc)
-          :: (Let (z, const32 n), loc)
+          (Let (x, Prim (Extern "%int_add", [ Pv y; Pv z ]))
+          :: Let (z, const32 n)
           :: instrs)
     | OFFSETREF ->
         let n = gets code (pc + 1) in
         let x = State.accu state in
 
         if debug_parser () then Format.printf "%a += %d@." Var.print x n;
-        let instrs = (Offset_ref (x, n), loc) :: instrs in
+        let instrs = Offset_ref (x, n) :: instrs in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "x = 0@.";
-        compile infos (pc + 2) state ((Let (x, const 0), loc) :: instrs)
+        compile infos (pc + 2) state (Let (x, const 0) :: instrs)
     | ISINT ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = !%a@." Var.print x Var.print y;
-        compile infos (pc + 1) state ((Let (x, Prim (IsInt, [ Pv y ])), loc) :: instrs)
+        compile infos (pc + 1) state (Let (x, Prim (IsInt, [ Pv y ])) :: instrs)
     | BEQ ->
         let n = gets32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Eq, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
-          :: instrs
-        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
+        ( Let (y, Prim (Eq, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        , Cond (y, (pc + offset + 2, []), (pc + 3, []))
         , state )
     | BNEQ ->
         let n = gets32 code (pc + 1) in
@@ -2259,9 +2221,8 @@ and compile infos pc state instrs =
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Eq, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
-          :: instrs
-        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
+        ( Let (y, Prim (Eq, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        , Cond (y, (pc + 3, []), (pc + offset + 2, []))
         , state )
     | BLTINT ->
         let n = gets32 code (pc + 1) in
@@ -2269,9 +2230,8 @@ and compile infos pc state instrs =
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Lt, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
-          :: instrs
-        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
+        ( Let (y, Prim (Lt, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        , Cond (y, (pc + offset + 2, []), (pc + 3, []))
         , state )
     | BLEINT ->
         let n = gets32 code (pc + 1) in
@@ -2279,9 +2239,8 @@ and compile infos pc state instrs =
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Le, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
-          :: instrs
-        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
+        ( Let (y, Prim (Le, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        , Cond (y, (pc + offset + 2, []), (pc + 3, []))
         , state )
     | BGTINT ->
         let n = gets32 code (pc + 1) in
@@ -2289,9 +2248,8 @@ and compile infos pc state instrs =
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Le, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
-          :: instrs
-        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
+        ( Let (y, Prim (Le, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        , Cond (y, (pc + 3, []), (pc + offset + 2, []))
         , state )
     | BGEINT ->
         let n = gets32 code (pc + 1) in
@@ -2299,9 +2257,8 @@ and compile infos pc state instrs =
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Lt, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
-          :: instrs
-        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
+        ( Let (y, Prim (Lt, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        , Cond (y, (pc + 3, []), (pc + offset + 2, []))
         , state )
     | BULTINT ->
         let n = getu32 code (pc + 1) in
@@ -2309,18 +2266,16 @@ and compile infos pc state instrs =
         let x = State.accu state in
         let y = Var.fresh () in
 
-        ( (Let (y, Prim (Ult, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
-          :: instrs
-        , (Cond (y, (pc + offset + 2, []), (pc + 3, [])), loc)
+        ( Let (y, Prim (Ult, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        , Cond (y, (pc + offset + 2, []), (pc + 3, []))
         , state )
     | BUGEINT ->
         let n = getu32 code (pc + 1) in
         let offset = gets code (pc + 2) in
         let x = State.accu state in
         let y = Var.fresh () in
-        ( (Let (y, Prim (Ult, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])), loc)
-          :: instrs
-        , (Cond (y, (pc + 3, []), (pc + offset + 2, [])), loc)
+        ( Let (y, Prim (Ult, [ Pc (Int (Targetint.of_int32_exn n)); Pv x ])) :: instrs
+        , Cond (y, (pc + 3, []), (pc + offset + 2, []))
         , state )
     | ULTINT ->
         let y = State.accu state in
@@ -2341,7 +2296,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Ult, [ Pv y; Pv z ])), loc) :: instrs)
+          (Let (x, Prim (Ult, [ Pv y; Pv z ])) :: instrs)
     | UGEINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2353,7 +2308,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           (State.pop 1 state)
-          ((Let (x, Prim (Ult, [ Pv z; Pv y ])), loc) :: instrs)
+          (Let (x, Prim (Ult, [ Pv z; Pv y ])) :: instrs)
     | GETPUBMET ->
         let n = gets32 code (pc + 1) in
         let cache = !method_cache_id in
@@ -2378,13 +2333,12 @@ and compile infos pc state instrs =
           infos
           (pc + 3)
           state
-          (( Let
-               ( m
-               , Prim
-                   ( Extern "caml_get_public_method"
-                   , [ Pv obj; Pv tag; Pc (Int (Targetint.of_int_exn cache)) ] ) )
-           , loc )
-          :: (Let (tag, const32 n), loc)
+          (Let
+             ( m
+             , Prim
+                 ( Extern "caml_get_public_method"
+                 , [ Pv obj; Pv tag; Pc (Int (Targetint.of_int_exn cache)) ] ) )
+          :: Let (tag, const32 n)
           :: instrs)
     | GETDYNMET ->
         let tag = State.accu state in
@@ -2405,12 +2359,11 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          (( Let
-               ( m
-               , Prim
-                   ( Extern "caml_get_public_method"
-                   , [ Pv obj; Pv tag; Pc (Int Targetint.zero) ] ) )
-           , loc )
+          (Let
+             ( m
+             , Prim
+                 ( Extern "caml_get_public_method"
+                 , [ Pv obj; Pv tag; Pc (Int Targetint.zero) ] ) )
           :: instrs)
     | GETMETHOD ->
         let lab = State.accu state in
@@ -2424,10 +2377,10 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          ((Let (m, Prim (Array_get, [ Pv meths; Pv lab ])), loc)
-          :: (Let (meths, Field (obj, 0, Non_float)), loc)
+          (Let (m, Prim (Array_get, [ Pv meths; Pv lab ]))
+          :: Let (meths, Field (obj, 0, Non_float))
           :: instrs)
-    | STOP -> instrs, (Stop, loc), state
+    | STOP -> instrs, Stop, state
     | RESUME ->
         let stack = State.accu state in
         let func = State.peek 0 state in
@@ -2456,8 +2409,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          ((Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg ])), loc)
-          :: instrs)
+          (Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg ])) :: instrs)
     | RESUMETERM ->
         let stack = State.accu state in
         let func = State.peek 0 state in
@@ -2474,8 +2426,8 @@ and compile infos pc state instrs =
             func
             Var.print
             arg;
-        ( (Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg ])), loc) :: instrs
-        , (Return x, loc)
+        ( Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg ])) :: instrs
+        , Return x
         , state )
     | PERFORM ->
         let eff = State.accu state in
@@ -2487,7 +2439,7 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          ((Let (x, Prim (Extern "%perform", [ Pv eff ])), loc) :: instrs)
+          (Let (x, Prim (Extern "%perform", [ Pv eff ])) :: instrs)
     | REPERFORMTERM ->
         let eff = State.accu state in
         let stack = State.peek 0 state in
@@ -2497,8 +2449,8 @@ and compile infos pc state instrs =
 
         if debug_parser ()
         then Format.printf "return reperform(%a, %a)@." Var.print eff Var.print stack;
-        ( (Let (x, Prim (Extern "%reperform", [ Pv eff; Pv stack ])), loc) :: instrs
-        , (Return x, loc)
+        ( Let (x, Prim (Extern "%reperform", [ Pv eff; Pv stack ])) :: instrs
+        , Return x
         , state )
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
@@ -2552,11 +2504,9 @@ let override_global =
             let init_mod = Var.fresh_n "init_mod" in
             let update_mod = Var.fresh_n "update_mod" in
             ( x
-            , (Let (x, Block (0, [| init_mod; update_mod |], NotArray, Immutable)), noloc)
-              :: ( Let (init_mod, Special (Alias_prim "caml_CamlinternalMod_init_mod"))
-                 , noloc )
-              :: ( Let (update_mod, Special (Alias_prim "caml_CamlinternalMod_update_mod"))
-                 , noloc )
+            , Let (x, Block (0, [| init_mod; update_mod |], NotArray, Immutable))
+              :: Let (init_mod, Special (Alias_prim "caml_CamlinternalMod_init_mod"))
+              :: Let (update_mod, Special (Alias_prim "caml_CamlinternalMod_update_mod"))
               :: instrs ) )
       ]
 
@@ -2718,7 +2668,7 @@ let from_exe
   let body =
     List.fold_left predefined_exceptions ~init:[] ~f:(fun body (i, name) ->
         globals.named_value.(i) <- Some name;
-        let body = register_global ~force:true globals i noloc body in
+        let body = register_global ~force:true globals i body in
         globals.is_exported.(i) <- false;
         body)
   in
@@ -2726,8 +2676,8 @@ let from_exe
     Array.fold_right_i globals.constants ~init:body ~f:(fun i _ l ->
         match globals.vars.(i) with
         | Some x when globals.is_const.(i) ->
-            let l = register_global globals i noloc l in
-            (Let (x, Constant globals.constants.(i)), noloc) :: l
+            let l = register_global globals i l in
+            Let (x, Constant globals.constants.(i)) :: l
         | _ -> l)
   in
   let body =
@@ -2755,20 +2705,19 @@ let from_exe
             assert (String.is_valid_utf_8 name);
             need_gdata := true;
             let c = Var.fresh () in
-            (Let (c, Constant const), noloc)
-            :: ( Let
-                   ( Var.fresh ()
-                   , Prim
-                       ( Extern "caml_js_set"
-                       , [ Pv gdata
-                         ; Pc (NativeString (Code.Native_string.of_string name))
-                         ; Pv c
-                         ] ) )
-               , noloc )
+            Let (c, Constant const)
+            :: Let
+                 ( Var.fresh ()
+                 , Prim
+                     ( Extern "caml_js_set"
+                     , [ Pv gdata
+                       ; Pc (NativeString (Code.Native_string.of_string name))
+                       ; Pv c
+                       ] ) )
             :: rem)
       in
       if !need_gdata
-      then (Let (gdata, Prim (Extern "caml_get_global_data", [])), noloc) :: body
+      then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
       else body
     else body
   in
@@ -2860,12 +2809,12 @@ let from_bytes ~prims ~debug (code : bytecode) =
                | None -> ()
                | Some name -> Code.Var.name x name);
             need_gdata := true;
-            (Let (x, Field (gdata, i, Non_float)), noloc) :: l
+            Let (x, Field (gdata, i, Non_float)) :: l
         | _ -> l)
   in
   let body =
     if !need_gdata
-    then (Let (gdata, Prim (Extern "caml_get_global_data", [])), noloc) :: body
+    then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
     else body
   in
   prepend p body, debug_data
@@ -2994,28 +2943,27 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
         | Some x when globals.is_const.(i) -> (
             match globals.named_value.(i) with
             | None ->
-                let l = register_global globals i noloc l in
+                let l = register_global globals i l in
                 let cst = globals.constants.(i) in
                 (match cst, Code.Var.get_name x with
                 | String str, None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
                 | _ -> ());
-                (Let (x, Constant cst), noloc) :: l
+                Let (x, Constant cst) :: l
             | Some name ->
                 Var.name x name;
                 need_gdata := true;
-                ( Let
-                    ( x
-                    , Prim
-                        ( Extern "caml_js_get"
-                        , [ Pv gdata; Pc (NativeString (Native_string.of_string name)) ]
-                        ) )
-                , noloc )
+                Let
+                  ( x
+                  , Prim
+                      ( Extern "caml_js_get"
+                      , [ Pv gdata; Pc (NativeString (Native_string.of_string name)) ] )
+                  )
                 :: l)
         | _ -> l)
   in
   let body =
     if !need_gdata
-    then (Let (gdata, Prim (Extern "caml_get_global_data", [])), noloc) :: body
+    then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
     else body
   in
   let cmis =
@@ -3115,48 +3063,42 @@ let predefined_exceptions () =
         let exn = Var.fresh () in
         let v_name = Var.fresh () in
         let v_index = Var.fresh () in
-        [ Let (v_name, Constant (String name)), noloc
-        ; ( Let
-              ( v_index
-              , Constant
-                  (Int
-                     ((* Predefined exceptions are registered in
-                         Symtable.init with [-index - 1] *)
-                      Targetint.of_int_exn
-                        (-index - 1))) )
-          , noloc )
-        ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable)), noloc
+        [ Let (v_name, Constant (String name))
+        ; Let
+            ( v_index
+            , Constant
+                (Int
+                   ((* Predefined exceptions are registered in
+                       Symtable.init with [-index - 1] *)
+                    Targetint.of_int_exn
+                      (-index - 1))) )
+        ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable))
         ]
         @
         match Config.target () with
         | `JavaScript ->
             let v_name_js = Var.fresh () in
-            [ ( Let (v_name_js, Constant (NativeString (Native_string.of_string name)))
-              , noloc )
-            ; ( Let
-                  ( Var.fresh ()
-                  , Prim
-                      ( Extern "caml_register_global"
-                      , [ Pc (Int (Targetint.of_int_exn index)); Pv exn; Pv v_name_js ] )
-                  )
-              , noloc )
+            [ Let (v_name_js, Constant (NativeString (Native_string.of_string name)))
+            ; Let
+                ( Var.fresh ()
+                , Prim
+                    ( Extern "caml_register_global"
+                    , [ Pc (Int (Targetint.of_int_exn index)); Pv exn; Pv v_name_js ] ) )
             ]
         | `Wasm ->
-            [ ( Let
-                  ( Var.fresh ()
-                  , Prim
-                      ( Extern "caml_register_global"
-                      , [ Pc (Int (Targetint.of_int_exn index)); Pv exn; Pv v_name ] ) )
-              , noloc )
+            [ Let
+                ( Var.fresh ()
+                , Prim
+                    ( Extern "caml_register_global"
+                    , [ Pc (Int (Targetint.of_int_exn index)); Pv exn; Pv v_name ] ) )
               (* Also make the exception available to the generated code *)
-            ; ( Let
-                  ( Var.fresh ()
-                  , Prim (Extern "caml_set_global", [ Pc (String name); Pv exn ]) )
-              , noloc )
+            ; Let
+                ( Var.fresh ()
+                , Prim (Extern "caml_set_global", [ Pc (String name); Pv exn ]) )
             ])
     |> List.concat
   in
-  let block = { params = []; body; branch = Stop, noloc } in
+  let block = { params = []; body; branch = Stop } in
   let unit_info =
     { Unit_info.provides = StringSet.of_list (List.map ~f:snd predefined_exceptions)
     ; requires = StringSet.empty
@@ -3194,19 +3136,16 @@ let link_info ~symbols ~primitives ~crcs =
     let body =
       List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
           let c = Var.fresh () in
-          (Let (c, Constant const), noloc)
-          :: ( Let
-                 ( Var.fresh ()
-                 , Prim
-                     ( Extern "caml_js_set"
-                     , [ Pv gdata
-                       ; Pc (NativeString (Native_string.of_string name))
-                       ; Pv c
-                       ] ) )
-             , noloc )
+          Let (c, Constant const)
+          :: Let
+               ( Var.fresh ()
+               , Prim
+                   ( Extern "caml_js_set"
+                   , [ Pv gdata; Pc (NativeString (Native_string.of_string name)); Pv c ]
+                   ) )
           :: rem)
     in
-    (Let (gdata, Prim (Extern "caml_get_global_data", [])), noloc) :: body
+    Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
   in
-  let block = { params = []; body; branch = Stop, noloc } in
+  let block = { params = []; body; branch = Stop } in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }

@@ -43,14 +43,14 @@ let rec block_iter_last ~f l =
   match l with
   | [] -> ()
   | [ i ] -> f true i
-  | [ i; (Event _, _) ] -> f true i
+  | [ i; Event _ ] -> f true i
   | i :: l ->
       f false i;
       block_iter_last ~f l
 
 let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
   let block = Addr.Map.find pc blocks in
-  block_iter_last block.body ~f:(fun is_last (i, _) ->
+  block_iter_last block.body ~f:(fun is_last i ->
       match i with
       | Let (x, Apply { f; _ }) -> (
           add_var vars x;
@@ -69,7 +69,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                 && is_last
                 &&
                 match block.branch with
-                | Return x', _ -> Var.equal x x'
+                | Return x' -> Var.equal x x'
                 | _ -> false
               in
               Var.Set.iter
@@ -171,7 +171,7 @@ let find_mutually_recursive_calls tail_deps =
 
 let annot st xi =
   match (xi : Print.xinstr) with
-  | Instr (Let (x, _), _) when Var.Set.mem x st -> "*"
+  | Instr (Let (x, _)) when Var.Set.mem x st -> "*"
   | _ -> " "
 
 let f p info =

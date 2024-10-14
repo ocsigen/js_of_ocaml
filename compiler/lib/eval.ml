@@ -270,8 +270,8 @@ let constant_js_equal a b =
   | Tuple _, _
   | _, Tuple _ -> None
 
-let eval_instr ~target info ((x, loc) as i) =
-  match x with
+let eval_instr ~target info i =
+  match i with
   | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) -> (
       match the_const_of ~target info y, the_const_of ~target info z with
       | Some e1, Some e2 -> (
@@ -286,7 +286,7 @@ let eval_instr ~target info ((x, loc) as i) =
               in
               let c = Constant (bool' c) in
               Flow.Info.update_def info x c;
-              [ Let (x, c), loc ])
+              [ Let (x, c) ])
       | _ -> [ i ])
   | Let (x, Prim (Extern ("caml_js_equals" | "caml_js_strict_equals"), [ y; z ])) -> (
       match the_const_of ~target info y, the_const_of ~target info z with
@@ -296,7 +296,7 @@ let eval_instr ~target info ((x, loc) as i) =
           | Some c ->
               let c = Constant (bool' c) in
               Flow.Info.update_def info x c;
-              [ Let (x, c), loc ])
+              [ Let (x, c) ])
       | _ -> [ i ])
   | Let (x, Prim (Extern "caml_ml_string_length", [ s ])) -> (
       let c =
@@ -310,7 +310,7 @@ let eval_instr ~target info ((x, loc) as i) =
       | Some c ->
           let c = Constant (Int c) in
           Flow.Info.update_def info x c;
-          [ Let (x, c), loc ])
+          [ Let (x, c) ])
   | Let
       ( _
       , Prim
@@ -332,13 +332,13 @@ let eval_instr ~target info ((x, loc) as i) =
       | (Y | N) as b ->
           let c = Constant (bool' Poly.(b = Y)) in
           Flow.Info.update_def info x c;
-          [ Let (x, c), loc ])
+          [ Let (x, c) ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
       match the_tag_of info y (fun x -> Some x) with
       | Some tag ->
           let c = Constant (Int (Targetint.of_int_exn tag)) in
           Flow.Info.update_def info x c;
-          [ Let (x, c), loc ]
+          [ Let (x, c) ]
       | None -> [ i ])
   | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
       let jsoo = Code.Var.fresh () in
@@ -347,8 +347,8 @@ let eval_instr ~target info ((x, loc) as i) =
         | `JavaScript -> "js_of_ocaml"
         | `Wasm -> "wasm_of_ocaml"
       in
-      [ Let (jsoo, Constant (String backend_name)), noloc
-      ; Let (x, Block (0, [| jsoo |], NotArray, Immutable)), loc
+      [ Let (jsoo, Constant (String backend_name))
+      ; Let (x, Block (0, [| jsoo |], NotArray, Immutable))
       ]
   | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
@@ -370,28 +370,27 @@ let eval_instr ~target info ((x, loc) as i) =
       | Some c ->
           let c = Constant c in
           Flow.Info.update_def info x c;
-          [ Let (x, c), loc ]
+          [ Let (x, c) ]
       | _ ->
-          [ ( Let
-                ( x
-                , Prim
-                    ( prim
-                    , List.map2 prim_args prim_args' ~f:(fun arg (c : constant option) ->
-                          match c, target with
-                          | Some (Int _ as c), _ -> Pc c
-                          | Some (Int32 _ | NativeInt _ | NativeString _), `Wasm ->
-                              (* Avoid duplicating the constant here as it would cause an
-                                 allocation *)
-                              arg
-                          | Some (Int32 _ | NativeInt _), `JavaScript -> assert false
-                          | Some ((Float _ | NativeString _) as c), `JavaScript -> Pc c
-                          | Some (String _ as c), `JavaScript
-                            when Config.Flag.use_js_string () -> Pc c
-                          | Some _, _
-                          (* do not be duplicated other constant as
-                              they're not represented with constant in javascript. *)
-                          | None, _ -> arg) ) )
-            , loc )
+          [ Let
+              ( x
+              , Prim
+                  ( prim
+                  , List.map2 prim_args prim_args' ~f:(fun arg (c : constant option) ->
+                        match c, target with
+                        | Some (Int _ as c), _ -> Pc c
+                        | Some (Int32 _ | NativeInt _ | NativeString _), `Wasm ->
+                            (* Avoid duplicating the constant here as it would cause an
+                               allocation *)
+                            arg
+                        | Some (Int32 _ | NativeInt _), `JavaScript -> assert false
+                        | Some ((Float _ | NativeString _) as c), `JavaScript -> Pc c
+                        | Some (String _ as c), `JavaScript
+                          when Config.Flag.use_js_string () -> Pc c
+                        | Some _, _
+                        (* do not be duplicated other constant as
+                            they're not represented with constant in javascript. *)
+                        | None, _ -> arg) ) )
           ])
   | _ -> [ i ]
 
@@ -427,24 +426,21 @@ let the_cond_of info x =
       | _ -> Unknown)
     x
 
-let eval_branch info (l, loc) =
-  let l =
-    match l with
-    | Cond (x, ftrue, ffalse) as b -> (
-        if Poly.(ftrue = ffalse)
-        then Branch ftrue
-        else
-          match the_cond_of info x with
-          | Zero -> Branch ffalse
-          | Non_zero -> Branch ftrue
-          | Unknown -> b)
-    | Switch (x, a) as b -> (
-        match the_cont_of info x a with
-        | Some cont -> Branch cont
-        | None -> b)
-    | _ as b -> b
-  in
-  l, loc
+let eval_branch info l =
+  match l with
+  | Cond (x, ftrue, ffalse) as b -> (
+      if Poly.(ftrue = ffalse)
+      then Branch ftrue
+      else
+        match the_cond_of info x with
+        | Zero -> Branch ffalse
+        | Non_zero -> Branch ftrue
+        | Unknown -> b)
+  | Switch (x, a) as b -> (
+      match the_cont_of info x a with
+      | Some cont -> Branch cont
+      | None -> b)
+  | _ as b -> b
 
 exception May_raise
 
@@ -454,7 +450,7 @@ let rec do_not_raise pc visited blocks =
   else
     let visited = Addr.Set.add pc visited in
     let b = Addr.Map.find pc blocks in
-    List.iter b.body ~f:(fun (i, _loc) ->
+    List.iter b.body ~f:(fun i ->
         match i with
         | Event _
         | Array_set (_, _, _)
@@ -469,7 +465,7 @@ let rec do_not_raise pc visited blocks =
             | Prim (Extern name, _) when Primitive.is_pure name -> ()
             | Prim (Extern _, _) -> raise May_raise
             | Prim (_, _) -> ()));
-    match fst b.branch with
+    match b.branch with
     | Raise _ -> raise May_raise
     | Stop | Return _ | Poptrap _ -> visited
     | Branch (pc, _) -> do_not_raise pc visited blocks
@@ -489,10 +485,10 @@ let drop_exception_handler blocks =
   Addr.Map.fold
     (fun pc _ blocks ->
       match Addr.Map.find pc blocks with
-      | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2), loc; _ } as b -> (
+      | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2); _ } as b -> (
           try
             let visited = do_not_raise addr Addr.Set.empty blocks in
-            let b = { b with branch = Branch cont1, loc } in
+            let b = { b with branch = Branch cont1 } in
             let blocks = Addr.Map.add pc b blocks in
             let blocks =
               Addr.Set.fold
@@ -500,7 +496,7 @@ let drop_exception_handler blocks =
                   let b = Addr.Map.find pc2 blocks in
                   let branch =
                     match b.branch with
-                    | Poptrap cont, loc -> Branch cont, loc
+                    | Poptrap cont -> Branch cont
                     | x -> x
                   in
                   let b = { b with branch } in

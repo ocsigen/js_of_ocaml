@@ -27,7 +27,6 @@ type closure_info =
   ; args : Code.Var.t list
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
-  ; loc : Code.loc
   ; pos : int
   }
 
@@ -44,11 +43,11 @@ let rec collect_apply pc blocks visited tc =
     let visited = Addr.Set.add pc visited in
     let block = Addr.Map.find pc blocks in
     let tc_opt =
-      match fst block.branch with
+      match block.branch with
       | Return x -> (
           match List.last block.body with
-          | Some (Let (y, Apply { f; exact = true; _ }), _) when Code.Var.compare x y = 0
-            -> Some (add_multi f pc tc)
+          | Some (Let (y, Apply { f; exact = true; _ })) when Code.Var.compare x y = 0 ->
+              Some (add_multi f pc tc)
           | None -> None
           | Some _ -> None)
       | _ -> None
@@ -64,10 +63,10 @@ let rec collect_apply pc blocks visited tc =
 
 let rec collect_closures blocks l pos =
   match l with
-  | (Let (f_name, Closure (args, ((pc, _) as cont))), loc) :: rem ->
+  | Let (f_name, Closure (args, ((pc, _) as cont))) :: rem ->
       let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
       let l, rem = collect_closures blocks rem (succ pos) in
-      { f_name; args; cont; tc; loc; pos } :: l, rem
+      { f_name; args; cont; tc; pos } :: l, rem
   | rem -> [], rem
 
 let group_closures closures_map =
@@ -87,53 +86,51 @@ let group_closures closures_map =
 type w =
   | One of
       { name : Code.Var.t
-      ; code : Code.instr * loc
+      ; code : Code.instr
       }
   | Wrapper of
       { name : Code.Var.t
-      ; code : Code.instr * loc
+      ; code : Code.instr
       ; wrapper : Code.instr
       }
 
 module Trampoline = struct
-  let direct_call_block ~counter ~x ~f ~args loc =
+  let direct_call_block ~counter ~x ~f ~args =
     let return = Code.Var.fork x in
     match counter with
     | None ->
         { params = []
-        ; body = [ Let (return, Apply { f; args; exact = true }), loc ]
-        ; branch = Return return, loc
+        ; body = [ Let (return, Apply { f; args; exact = true }) ]
+        ; branch = Return return
         }
     | Some counter ->
         let counter_plus_1 = Code.Var.fork counter in
         { params = []
         ; body =
-            [ ( Let
-                  ( counter_plus_1
-                  , Prim (Extern "%int_add", [ Pv counter; Pc (Int Targetint.one) ]) )
-              , noloc )
-            ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true }), loc
+            [ Let
+                ( counter_plus_1
+                , Prim (Extern "%int_add", [ Pv counter; Pc (Int Targetint.one) ]) )
+            ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true })
             ]
-        ; branch = Return return, loc
+        ; branch = Return return
         }
 
-  let bounce_call_block ~x ~f ~args loc =
+  let bounce_call_block ~x ~f ~args =
     let return = Code.Var.fork x in
     let new_args = Code.Var.fresh () in
     { params = []
     ; body =
-        [ ( Let
-              ( new_args
-              , Prim
-                  ( Extern "%js_array"
-                  , Pc (Int Targetint.zero) :: List.map args ~f:(fun x -> Pv x) ) )
-          , noloc )
-        ; Let (return, Prim (Extern "caml_trampoline_return", [ Pv f; Pv new_args ])), loc
+        [ Let
+            ( new_args
+            , Prim
+                ( Extern "%js_array"
+                , Pc (Int Targetint.zero) :: List.map args ~f:(fun x -> Pv x) ) )
+        ; Let (return, Prim (Extern "caml_trampoline_return", [ Pv f; Pv new_args ]))
         ]
-    ; branch = Return return, loc
+    ; branch = Return return
     }
 
-  let wrapper_block f ~args ~counter loc loc' =
+  let wrapper_block f ~args ~counter loc =
     let result1 = Code.Var.fresh () in
     let result2 = Code.Var.fresh () in
     let block =
@@ -141,19 +138,19 @@ module Trampoline = struct
       ; body =
           (match counter with
           | None ->
-              [ Event loc, noloc
-              ; Let (result1, Apply { f; args; exact = true }), loc'
-              ; Event Parse_info.zero, noloc
-              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ])), noloc
+              [ Event loc
+              ; Let (result1, Apply { f; args; exact = true })
+              ; Event Parse_info.zero
+              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
               ]
           | Some counter ->
-              [ Event loc, noloc
-              ; Let (counter, Constant (Int Targetint.zero)), noloc
-              ; Let (result1, Apply { f; args = counter :: args; exact = true }), loc'
-              ; Event Parse_info.zero, noloc
-              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ])), noloc
+              [ Event loc
+              ; Let (counter, Constant (Int Targetint.zero))
+              ; Let (result1, Apply { f; args = counter :: args; exact = true })
+              ; Event Parse_info.zero
+              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
               ])
-      ; branch = Return result2, loc'
+      ; branch = Return result2
       }
     in
     block
@@ -164,7 +161,7 @@ module Trampoline = struct
     match component with
     | SCC.No_loop id ->
         let ci = Var.Map.find id closures_map in
-        let instr = Let (ci.f_name, Closure (ci.args, ci.cont)), ci.loc in
+        let instr = Let (ci.f_name, Closure (ci.args, ci.cont)) in
         free_pc, blocks, [ One { name = ci.f_name; code = instr } ]
     | SCC.Has_loop all ->
         if debug_tc ()
@@ -194,19 +191,18 @@ module Trampoline = struct
               let start_loc =
                 let block = Addr.Map.find (fst ci.cont) blocks in
                 match block.body with
-                | (Event loc, _) :: _ -> loc
+                | Event loc :: _ -> loc
                 | _ -> Parse_info.zero
               in
               let wrapper_block =
-                wrapper_block new_f ~args:new_args ~counter:new_counter start_loc ci.loc
+                wrapper_block new_f ~args:new_args ~counter:new_counter start_loc
               in
               let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
               let instr_wrapper = Let (ci.f_name, wrapper_closure wrapper_pc new_args) in
               let instr_real =
                 match counter with
-                | None -> Let (new_f, Closure (ci.args, ci.cont)), ci.loc
-                | Some counter ->
-                    Let (new_f, Closure (counter :: ci.args, ci.cont)), ci.loc
+                | None -> Let (new_f, Closure (ci.args, ci.cont))
+                | Some counter -> Let (new_f, Closure (counter :: ci.args, ci.cont))
               in
               let counter_and_pc =
                 List.fold_left all ~init:[] ~f:(fun acc (counter, ci2) ->
@@ -226,42 +222,39 @@ module Trampoline = struct
                     let bounce_call_pc = free_pc + 1 in
                     let free_pc = free_pc + 2 in
                     match List.rev block.body with
-                    | (Let (x, Apply { f; args; exact = true }), loc) :: rem_rev ->
+                    | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
                         assert (Var.equal f ci.f_name);
                         let blocks =
                           Addr.Map.add
                             direct_call_pc
-                            (direct_call_block ~counter ~x ~f:new_f ~args loc)
+                            (direct_call_block ~counter ~x ~f:new_f ~args)
                             blocks
                         in
                         let blocks =
                           Addr.Map.add
                             bounce_call_pc
-                            (bounce_call_block ~x ~f:new_f ~args loc)
+                            (bounce_call_block ~x ~f:new_f ~args)
                             blocks
                         in
                         let block =
                           match counter with
                           | None ->
-                              let branch = Branch (bounce_call_pc, []), loc in
+                              let branch = Branch (bounce_call_pc, []) in
                               { block with body = List.rev rem_rev; branch }
                           | Some counter ->
                               let direct = Code.Var.fresh () in
                               let branch =
-                                ( Cond (direct, (direct_call_pc, []), (bounce_call_pc, []))
-                                , loc )
+                                Cond (direct, (direct_call_pc, []), (bounce_call_pc, []))
                               in
                               let last =
-                                ( Let
-                                    ( direct
-                                    , Prim
-                                        ( Lt
-                                        , [ Pv counter
-                                          ; Pc
-                                              (Int
-                                                 (Targetint.of_int_exn tailcall_max_depth))
-                                          ] ) )
-                                , noloc )
+                                Let
+                                  ( direct
+                                  , Prim
+                                      ( Lt
+                                      , [ Pv counter
+                                        ; Pc
+                                            (Int (Targetint.of_int_exn tailcall_max_depth))
+                                        ] ) )
                               in
                               { block with body = List.rev (last :: rem_rev); branch }
                         in
@@ -279,7 +272,7 @@ end
 
 let rec rewrite_closures free_pc blocks body : int * _ * _ list =
   match body with
-  | (Let (_, Closure _), _) :: _ ->
+  | Let (_, Closure _) :: _ ->
       let closures, rem = collect_closures blocks body 0 in
       let closures_map =
         List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
@@ -307,7 +300,7 @@ let rec rewrite_closures free_pc blocks body : int * _ * _ list =
         |> List.sort ~cmp:(fun a b -> compare (pos a) (pos b))
         |> List.concat_map ~f:(function
                | One { code; _ } -> [ code ]
-               | Wrapper { code = (_, loc) as code; wrapper; _ } -> [ code; wrapper, loc ])
+               | Wrapper { code; wrapper; _ } -> [ code; wrapper ])
       in
       let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
       free_pc, blocks, closures @ rem
