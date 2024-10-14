@@ -139,14 +139,19 @@ end
 
 type cont = Addr.t * Var.t list
 
+type float_or_not =
+  | Float
+  | Not_float
+  | Unknown
+
 type prim =
   | Vectlength
   | Array_get
   | Extern of string
   | Not
   | IsInt
-  | Eq
-  | Neq
+  | Eq of float_or_not
+  | Neq of float_or_not
   | Lt
   | Le
   | Ult

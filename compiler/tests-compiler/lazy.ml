@@ -45,4 +45,5 @@ let%expect_test "static eval of string get" =
      }
      return [0, _d_, _b_];
     }
-    //end |}]
+    //end
+    |}]

@@ -167,7 +167,8 @@ let%expect_test _ =
      if(runtime.caml_equal(indirect$0, direct$0)) return 0;
      throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
     }
-    //end|}]
+    //end
+    |}]
 
 let%expect_test _ =
   let prog = {|

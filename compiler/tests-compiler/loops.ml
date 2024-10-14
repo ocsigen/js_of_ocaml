@@ -254,7 +254,7 @@ let f t x =
      try{var val$0 = caml_call2(Stdlib_Hashtbl[6], t, x);}
      catch(_f_){
       var _c_ = caml_wrap_exception(_f_);
-      if(_c_ === Stdlib[8]) return - 1;
+      if(Object.is(_c_, Stdlib[8])) return - 1;
       throw caml_maybe_attach_backtrace(_c_, 0);
      }
      if(val$0 && ! val$0[2]){
@@ -265,7 +265,8 @@ let f t x =
         try{var val = caml_call2(Stdlib_Hashtbl[6], t, x$0);}
         catch(_e_){
          var _a_ = caml_wrap_exception(_e_);
-         if(_a_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_a_, 0);
+         if(! Object.is(_a_, Stdlib[3]))
+          throw caml_maybe_attach_backtrace(_a_, 0);
          var _d_ = 0;
          break a;
         }
@@ -282,7 +283,8 @@ let f t x =
      }
      return - 2;
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "loop-and-switch" =
   let program =
@@ -333,7 +335,8 @@ in loop x
       return _a_ + 2 | 0;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "buffer.add_substitute" =
   let program =
@@ -544,7 +547,8 @@ let add_substitute =
       }
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "Bytes.trim" =
   let program =

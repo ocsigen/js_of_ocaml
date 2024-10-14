@@ -66,7 +66,8 @@ let rec odd n' = function
          "Test");
        return;})
      (globalThis);
-    //end |}];
+    //end
+    |}];
   let program = Util.compile_and_parse ~effects:false ~pretty:false ~flags:[] prog in
   Util.print_program program;
   [%expect
@@ -91,4 +92,5 @@ let rec odd n' = function
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

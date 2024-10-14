@@ -83,8 +83,8 @@ let eval_prim x =
   | Not, [ Int i ] -> bool (Targetint.is_zero i)
   | Lt, [ Int i; Int j ] -> bool Targetint.(i < j)
   | Le, [ Int i; Int j ] -> bool Targetint.(i <= j)
-  | Eq, [ Int i; Int j ] -> bool Targetint.(i = j)
-  | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
+  | Eq _, [ Int i; Int j ] -> bool Targetint.(i = j)
+  | Neq _, [ Int i; Int j ] -> bool Targetint.(i <> j)
   | Ult, [ Int i; Int j ] -> bool (Targetint.(j < zero) || Targetint.(i < j))
   | Extern name, l -> (
       let name = Primitive.resolve name in
