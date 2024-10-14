@@ -200,25 +200,24 @@ struct
                ; ori_name = get_name_index nm
                })
 
-  let ident f = function
+  let ident f ~kind = function
     | S { name = Utf8 name; var = Some v; _ } ->
-        output_debug_info_ident f name (Code.Var.get_loc v);
+        (match kind, Code.Var.get_name v with
+        | `Binding, Some nm -> output_debug_info_ident f nm (Code.Var.get_loc v)
+        | `Reference, _ | `Binding, None -> ());
         if false then PP.string f (Printf.sprintf "/* %d */" (Code.Var.idx v));
         PP.string f name
-    | S { name = Utf8 name; var = None; loc = Pi pi } ->
-        output_debug_info_ident f name (Some pi);
-        PP.string f name
-    | S { name = Utf8 name; var = None; loc = U | N } -> PP.string f name
+    | S { name = Utf8 name; var = None; _ } -> PP.string f name
     | V v ->
         assert accept_unnamed_var;
         PP.string f ("<" ^ Code.Var.to_string v ^ ">")
 
-  let opt_identifier f i =
+  let opt_identifier f ~kind i =
     match i with
     | None -> ()
     | Some i ->
         PP.space f;
-        ident f i
+        ident f ~kind i
 
   let early_error _ = assert false
 
@@ -578,7 +577,7 @@ struct
 
   let rec expression (l : prec) f e =
     match e with
-    | EVar v -> ident f v
+    | EVar v -> ident f ~kind:`Reference v
     | ESeq (e1, e2) ->
         if Prec.(l > Expression)
         then (
@@ -853,9 +852,9 @@ struct
     | EAssignTarget t -> (
         let property f p =
           match p with
-          | TargetPropertyId (Prop_and_ident id, None) -> ident f id
+          | TargetPropertyId (Prop_and_ident id, None) -> ident f ~kind:`Reference id
           | TargetPropertyId (Prop_and_ident id, Some (e, _)) ->
-              ident f id;
+              ident f ~kind:`Reference id;
               PP.space f;
               PP.string f "=";
               PP.space f;
@@ -886,9 +885,9 @@ struct
         let element f p =
           match p with
           | TargetElementHole -> ()
-          | TargetElementId (id, None) -> ident f id
+          | TargetElementId (id, None) -> ident f ~kind:`Reference id
           | TargetElementId (id, Some (e, _)) ->
-              ident f id;
+              ident f ~kind:`Reference id;
               PP.space f;
               PP.string f "=";
               PP.space f;
@@ -1185,11 +1184,11 @@ struct
 
   and variable_declaration f ?(in_ = true) x =
     match x with
-    | DeclIdent (i, None) -> ident f i
+    | DeclIdent (i, None) -> ident f ~kind:`Binding i
     | DeclIdent (i, Some (e, loc)) ->
         PP.start_group f 1;
         PP.start_group f 0;
-        ident f i;
+        ident f ~kind:`Binding i;
         PP.space f;
         PP.string f "=";
         PP.end_group f;
@@ -1238,9 +1237,9 @@ struct
         PP.string f ":";
         PP.space f;
         binding_element f e
-    | Prop_ident (Prop_and_ident i, None) -> ident f i
+    | Prop_ident (Prop_and_ident i, None) -> ident f ~kind:`Binding i
     | Prop_ident (Prop_and_ident i, Some (e, loc)) ->
-        ident f i;
+        ident f ~kind:`Binding i;
         PP.space f;
         PP.string f "=";
         PP.space f;
@@ -1260,7 +1259,7 @@ struct
 
   and binding f x =
     match x with
-    | BindingIdent id -> ident f id
+    | BindingIdent id -> ident f ~kind:`Binding id
     | BindingPattern p -> pattern f p
 
   and binding_array_elt f x =
@@ -1278,7 +1277,7 @@ struct
           ~force_last_comma:(fun _ -> false)
           binding_property
           list
-          ident
+          (ident ~kind:`Binding)
           rest;
         PP.string f "}";
         PP.end_group f
@@ -1591,7 +1590,7 @@ struct
             PP.start_group f 0;
             PP.start_group f 0;
             PP.string f "return function";
-            opt_identifier f i;
+            opt_identifier f ~kind:`Binding i;
             PP.end_group f;
             PP.break f;
             PP.start_group f 1;
@@ -1732,19 +1731,19 @@ struct
         | SideEffect -> ()
         | Default i ->
             PP.space f;
-            ident f i
+            ident f ~kind:`Binding i
         | Namespace (def, i) ->
             Option.iter def ~f:(fun def ->
                 PP.space f;
-                ident f def;
+                ident f ~kind:`Binding def;
                 PP.string f ",");
             PP.space f;
             PP.string f "* as ";
-            ident f i
+            ident f ~kind:`Binding i
         | Named (def, l) ->
             Option.iter def ~f:(fun def ->
                 PP.space f;
-                ident f def;
+                ident f ~kind:`Binding def;
                 PP.string f ",");
             PP.space f;
             PP.string f "{";
@@ -1756,11 +1755,11 @@ struct
                 if match i with
                    | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
                    | _ -> false
-                then ident f i
+                then ident f ~kind:`Binding i
                 else (
                   pp_ident_or_string_lit f s;
                   PP.string f " as ";
-                  ident f i))
+                  ident f ~kind:`Binding i))
               l;
             PP.space f;
             PP.string f "}");
@@ -1788,9 +1787,9 @@ struct
                 if match i with
                    | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
                    | _ -> false
-                then ident f i
+                then ident f ~kind:`Reference i
                 else (
-                  ident f i;
+                  ident f ~kind:`Reference i;
                   PP.string f " as ";
                   pp_ident_or_string_lit f s))
               l;
@@ -1917,7 +1916,7 @@ struct
       | { async = true; generator = true } -> "async function*"
       | { async = false; generator = true } -> "function*"
     in
-    function_declaration f prefix ident name l b loc'
+    function_declaration f prefix (ident ~kind:`Binding) name l b loc'
 
   and class_declaration f i x =
     PP.start_group f 1;
@@ -1928,7 +1927,7 @@ struct
     | None -> ()
     | Some i ->
         PP.space f;
-        ident f i);
+        ident f ~kind:`Binding i);
     PP.end_group f;
     Option.iter x.extends ~f:(fun e ->
         PP.space f;
