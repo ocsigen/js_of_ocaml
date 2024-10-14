@@ -157,7 +157,7 @@
     new: (c, args) => new c(...args),
     global_this: globalThis,
     iter_props: (o, f) => {
-      for (var nm in o) if (o.hasOwn(nm)) f(nm);
+      for (var nm in o) if (Object.hasOwn(o, nm)) f(nm);
     },
     array_length: (a) => a.length,
     array_get: (a, i) => a[i],
