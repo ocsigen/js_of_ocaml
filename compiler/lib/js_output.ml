@@ -39,6 +39,78 @@
      throw
    v}
 *)
+
+(*
+Source maps
+===========
+
+The location of a declaration is determined by the first character of
+the expression.
+
+    var x = e
+            ^
+
+The location of other statements is determined by looking at the first
+character of the statement.
+
+    return e
+    ^
+
+Chrome will also stop at the very character after a return statement
+before returning (which can be ambigous).
+
+    return e;if ...
+             ^
+
+The location of the end of the function is determined by the closing brace.
+Firefox will always stop their. Chrome only if there is no return statement.
+
+    function f() { ... }
+                       ^
+
+For an arrow function Firefox stops on the last character, while
+Chrome stops on the character right after.
+
+    (x)=>x+1
+           ^^
+
+In Chrome the location of a function call is determined by the name of the
+function when it is explicit.
+
+    f(e)         Math.cos(1.)
+    ^                 ^
+
+Otherwise, the location of the opening parenthesis is used. Firefox
+always uses this location.
+
+    (0,f)(e)(e')
+         ^  ^
+
+Except for variable declarations, Chrome stops at the begining of
+statements.
+
+   if (e) { ... }
+   ^
+
+Firefox will rather stop on the expression.
+
+
+   if (e) { ... }
+       ^
+
+Chrome uses the name associated to the location of each bound variable
+to determine its name.
+
+   function f(x) { var y = ... }
+            ^ ^        ^
+
+Chrome uses the location of the opening parenthesis of a function
+declaration to determine the function name in the stack.
+
+    function f() { ... }
+              ^
+*)
+
 open! Stdlib
 
 let stats = Debug.find "output"
