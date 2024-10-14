@@ -75,7 +75,7 @@ let print ?(debuginfo = true) ?(report = false) ?(invalid = false) ~compact sour
 
 let%expect_test "spread operator survives round-trip" =
   print ~compact:true "f(...[1, 2, 3])";
-  [%expect {| /*<<fake:1:0>>*/ /*<<fake:1:0>>*/f/*<<fake:1:0>>*/(...[1,2,3]); |}]
+  [%expect {| /*<<fake:1:0>>*/f(...[1,2,3]); |}]
 
 let%expect_test "no postfix addition coalesce" =
   print ~compact:true "a + +b";
@@ -202,7 +202,7 @@ let%expect_test "ops" =
     /*<<fake:15:4>>*/ y = a?.b?.s?.[a] ?? c ?? d;
     /*<<fake:17:4>>*/ a?.b;
     /*<<fake:18:4>>*/ a?.[b];
-    /*<<fake:19:4>>*/  /*<<fake:19:4>>*/ a /*<<fake:19:4>>*/ ?.(b); |}]
+    /*<<fake:19:4>>*/ a?.(b); |}]
 
 let%expect_test "arrow" =
   print
@@ -249,7 +249,7 @@ let%expect_test "arrow" =
     var
      a =
         /*<<fake:16:10>>*/ x=>
-           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/  /*<<fake:16:27>>*/ ;
+           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/ ;
     var
      a =
         /*<<fake:17:10>>*/ x=>
@@ -295,18 +295,14 @@ function rehb_shape(_face /*: fk_face */, text /*: string */) {
       /*<<fake:7:2>>*/ return undefined /*<<fake:7:18>>*/ ;
      /*<<fake:8:0>>*/ }
     function rehb_shape(_face, text){
-     var
-      str =
-         /*<<fake:13:10>>*/  /*<<fake:13:12>>*/ caml_to_js_string
-          /*<<fake:13:12>>*/ (text);
+     var str =  /*<<fake:13:10>>*/  /*<<fake:13:12>>*/ caml_to_js_string(text);
      var
       ret =
-         /*<<fake:14:10>>*/  /*<<fake:14:12>>*/  /*<<fake:14:12>>*/ str.split
-           /*<<fake:14:12>>*/ ("").map
-          /*<<fake:14:12>>*/ (function mapper(_char){
+         /*<<fake:14:10>>*/  /*<<fake:14:12>>*/ str.split("").map
+         (function mapper(_char){
             /*<<fake:15:6>>*/ return [0, 0, 0] /*<<fake:15:69>>*/ ;
            /*<<fake:14:30>>*/ });
-      /*<<fake:19:2>>*/  /*<<fake:19:2>>*/ ret.unshift /*<<fake:19:2>>*/ (0);
+      /*<<fake:19:2>>*/ ret.unshift(0);
       /*<<fake:20:2>>*/ return ret /*<<fake:20:12>>*/ ;
      /*<<fake:21:0>>*/ } |}]
 
@@ -327,11 +323,10 @@ let%expect_test "rest parameters" =
     {|
     /*<<fake:2:6>>*/ api_obj[key_module][key_func] =
     function(...args){
-      /*<<fake:3:8>>*/ return  /*<<fake:3:15>>*/  /*<<fake:3:15>>*/ checkIfInitialized
-               /*<<fake:3:15>>*/ ().then
-              /*<<fake:3:15>>*/ (function(){
+      /*<<fake:3:8>>*/ return  /*<<fake:3:15>>*/ checkIfInitialized().then
+             (function(){
                 /*<<fake:4:10>>*/ return  /*<<fake:4:17>>*/ callWithProto
-                        /*<<fake:4:17>>*/ (api_json[key_module][key_func], args) /*<<fake:4:68>>*/ ;
+                       (api_json[key_module][key_func], args) /*<<fake:4:68>>*/ ;
                /*<<fake:3:41>>*/ }) /*<<fake:5:10>>*/ ;
      /*<<fake:2:38>>*/ }; |}]
 
@@ -372,13 +367,12 @@ let%expect_test "async/await" =
       glslangModule =
          /*<<fake:4:31>>*/ await
          /*<<fake:4:39>>*/ import
-          /*<<fake:4:39>>*/ ("https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js");
+         ("https://unpkg.com/@webgpu/glslang@0.0.7/web/glslang.js");
      const
       glslang =
-         /*<<fake:7:25>>*/ await
-         /*<<fake:7:33>>*/ glslangModule.default /*<<fake:7:33>>*/ ();
+         /*<<fake:7:25>>*/ await  /*<<fake:7:33>>*/ glslangModule.default();
       /*<<fake:8:11>>*/ return  /*<<fake:8:18>>*/ glslang.compileGLSL
-              /*<<fake:8:18>>*/ (src, "compute") /*<<fake:8:53>>*/ ;
+             (src, "compute") /*<<fake:8:53>>*/ ;
      /*<<fake:2:9>>*/ }
      /*<<fake:12:4>>*/ async;
     function test(){ /*<<fake:13:22>>*/ }
@@ -507,8 +501,7 @@ let%expect_test "string template" =
     var s =  /*<<fake:5:10>>*/  /*<<fake:5:12>>*/ tag`asd ${test} te`;
     var
      s =
-        /*<<fake:7:10>>*/ `asd ${ /*<<fake:7:20>>*/ f
-         /*<<fake:7:20>>*/ (`space ${test} space`, 32)} te`; |}]
+        /*<<fake:7:10>>*/ `asd ${ /*<<fake:7:20>>*/ f(`space ${test} space`, 32)} te`; |}]
 
 let%expect_test "from keyword" =
   (* GH#1017 *)
@@ -532,11 +525,10 @@ let%expect_test "from keyword" =
           /*<<fake:5:34>>*/ return x /*<<fake:5:42>>*/ ;
          /*<<fake:5:18>>*/ };
        /*<<fake:6:6>>*/ return  /*<<fake:6:13>>*/ this.compute
-               /*<<fake:6:13>>*/ ([field],
+              ([field],
                function(state){
                  /*<<fake:6:50>>*/ return  /*<<fake:6:57>>*/ get
-                         /*<<fake:6:57>>*/ ( /*<<fake:6:61>>*/ state.field
-                           /*<<fake:6:61>>*/ (field)) /*<<fake:6:80>>*/ ;
+                        ( /*<<fake:6:61>>*/ state.field(field)) /*<<fake:6:80>>*/ ;
                 /*<<fake:6:34>>*/ }) /*<<fake:6:83>>*/ ;
       /*<<fake:4:3>>*/ }}); |}]
 
@@ -585,9 +577,7 @@ class x extends p {
   [%expect
     {|
     class x extends p {
-       constructor(){
-         /*<<fake:4:6>>*/  /*<<fake:4:6>>*/ super /*<<fake:4:6>>*/ (a, b, c);
-        /*<<fake:3:4>>*/ }
+       constructor(){ /*<<fake:4:6>>*/ super(a, b, c); /*<<fake:3:4>>*/ }
        foo(){
         var s =  /*<<fake:8:12>>*/ super[d];
         var s =  /*<<fake:9:12>>*/ super.d;
