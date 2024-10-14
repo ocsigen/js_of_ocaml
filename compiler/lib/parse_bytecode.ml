@@ -39,10 +39,9 @@ let new_closure_repr = Ocaml_version.compare Ocaml_version.current [ 4; 12 ] >= 
 module Debug : sig
   type t
 
-  type force =
+  type position =
     | Before
     | After
-    | No
 
   val names : t -> bool
 
@@ -58,10 +57,15 @@ module Debug : sig
 
   val find_rec : t -> Code.Addr.t -> (int * Ident.t) list
 
-  val find_loc : t -> ?force:force -> Code.loc -> Parse_info.t option
+  val find_loc : t -> position:position -> Code.Addr.t -> Parse_info.t option
 
-  val find_loc' :
-    t -> int -> (string option * Location.t * Instruct.debug_event_kind) option
+  val find_loc' : t -> int -> (string option * Instruct.debug_event) option
+
+  val event_location :
+       position:position
+    -> source:string option
+    -> event:Instruct.debug_event
+    -> Parse_info.t
 
   val find_source : t -> string -> string option
 
@@ -121,10 +125,9 @@ end = struct
     ; include_cmis : bool
     }
 
-  type force =
+  type position =
     | Before
     | After
-    | No
 
   let names t = t.names
 
@@ -303,34 +306,23 @@ end = struct
     loc.loc_start.pos_cnum = -1 || loc.loc_end.pos_cnum = -1
 
   let find_loc' { events_by_pc; _ } pc =
-    try
-      let { event; source } = Int_table.find events_by_pc pc in
-      let loc = event.ev_loc in
-      Some (source, loc, event.ev_kind)
-    with Not_found -> None
+    match Int_table.find events_by_pc pc with
+    | exception Not_found -> None
+    | { event; source } ->
+        if dummy_location event.ev_loc then None else Some (source, event)
 
-  let find_loc { events_by_pc; _ } ?(force = No) x =
-    match x with
-    | Code.No -> None
-    | Code.Before pc | Code.After pc -> (
-        try
-          let { event; source } = Int_table.find events_by_pc pc in
-          let loc = event.ev_loc in
-          if dummy_location loc
-          then None
-          else
-            let pos =
-              match force with
-              | After -> loc.Location.loc_end
-              | Before -> loc.Location.loc_start
-              | No -> (
-                  match x with
-                  | Code.Before _ -> loc.Location.loc_start
-                  | Code.After _ -> loc.Location.loc_end
-                  | _ -> assert false)
-            in
-            Some (Parse_info.t_of_position ~src:source pos)
-        with Not_found -> None)
+  let event_location ~position ~source ~event =
+    let pos =
+      match position with
+      | After -> event.ev_loc.Location.loc_end
+      | Before -> event.ev_loc.Location.loc_start
+    in
+    Parse_info.t_of_position ~src:source pos
+
+  let find_loc t ~position pc =
+    match find_loc' t pc with
+    | None -> None
+    | Some (source, event) -> Some (event_location ~position ~source ~event)
 
   let rec propagate l1 l2 =
     match l1, l2 with
@@ -875,7 +867,7 @@ type compile_info =
 let string_of_addr debug_data addr =
   match Debug.find_loc' debug_data addr with
   | None -> None
-  | Some (src, loc, kind) ->
+  | Some (src, { ev_loc = loc; ev_kind = kind; _ }) ->
       let pos (p : Lexing.position) =
         Printf.sprintf "%d:%d" p.pos_lnum (p.pos_cnum - p.pos_bol)
       in
@@ -975,6 +967,42 @@ and compile infos pc state instrs =
      match string_of_addr infos.debug pc with
      | None -> ()
      | Some s -> Format.eprintf "@@@@ %s @@@@@." s);
+
+  let instrs =
+    let push_event position source event instrs =
+      match instrs with
+      | (Event _, _) :: instrs | instrs ->
+          (Event (Debug.event_location ~position ~source ~event), noloc) :: instrs
+    in
+    match Debug.find_loc' infos.debug pc with
+    | None -> instrs
+    | Some (source, event) -> (
+        match event, instrs with
+        | { ev_kind = Event_pseudo; ev_info = Event_other; _ }, _ ->
+            (* Ignore allocation events (not very interesting) *)
+            if debug_parser () then Format.eprintf "Ignored allocation event@.";
+            instrs
+        | ( { ev_kind = Event_pseudo | Event_after _; _ }
+          , ((Let (_, (Apply _ | Prim _)), _) as i) :: rem ) ->
+            if debug_parser () then Format.eprintf "Added event across call@.";
+            push_event After source event (i :: push_event Before source event rem)
+        | { ev_kind = Event_pseudo; ev_info = Event_function; _ }, [] ->
+            (* At beginning of function *)
+            if debug_parser () then Format.eprintf "Added event at function start@.";
+            push_event Before source event instrs
+        | { ev_kind = Event_after _ | Event_pseudo; _ }, _ ->
+            if debug_parser () then Format.eprintf "Ignored useless event@.";
+            (* Not interesting:
+               - before a throw instruction, but we already have an event
+                 for the exception
+               - omitted else clause
+            *)
+            instrs
+        | _, _ ->
+            if debug_parser () then Format.eprintf "added event@.";
+            push_event Before source event instrs)
+  in
+
   if pc = infos.limit
   then
     if (* stop if we reach end_of_code (ie when compiling cmo) *)
@@ -1015,7 +1043,8 @@ and compile infos pc state instrs =
             | _ -> assert false
           in
           match Debug.find_loc' infos.debug (pc + offset) with
-          | Some (_, _, (Event_pseudo | Event_after _)) -> Code.Before (pc + offset)
+          | Some (_, { ev_kind = Event_pseudo | Event_after _; _ }) ->
+              Code.Before (pc + offset)
           | Some _ | None -> if Debug.mem infos.debug pc then Code.Before pc else noloc)
       (* bytegen.ml insert a pseudo event after the following instruction *)
       | MAKEBLOCK | MAKEBLOCK1 | MAKEBLOCK2 | MAKEBLOCK3 | MAKEFLOATBLOCK | GETFLOATFIELD
@@ -1027,16 +1056,16 @@ and compile infos pc state instrs =
             | _ -> assert false
           in
           match Debug.find_loc' infos.debug (pc + offset) with
-          | Some (_, _, Event_pseudo) -> Code.Before (pc + offset)
+          | Some (_, { ev_kind = Event_pseudo; _ }) -> Code.Before (pc + offset)
           | Some _ | _ -> if Debug.mem infos.debug pc then Code.Before pc else noloc)
       | RAISE | RAISE_NOTRACE | RERAISE -> (
           match Debug.find_loc' infos.debug pc with
-          | Some (_, _, _) -> Code.Before pc
+          | Some _ -> Code.Before pc
           | None -> noloc)
       | _ -> (
           match Debug.find_loc' infos.debug pc with
-          | Some (_, _, Event_after _) -> Code.Before pc
-          | Some (_, _, (Event_pseudo | Event_before)) -> Code.Before pc
+          | Some (_, { ev_kind = Event_after _; _ }) -> Code.Before pc
+          | Some (_, { ev_kind = Event_pseudo | Event_before; _ }) -> Code.Before pc
           | None -> noloc)
     in
 

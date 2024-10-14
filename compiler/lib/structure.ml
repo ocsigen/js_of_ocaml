@@ -47,13 +47,21 @@ let is_merge_node' block_order preds pc =
   in
   n > 1
 
+let empty_body body =
+  List.for_all
+    ~f:(fun (i, _) ->
+      match i with
+      | Event _ -> true
+      | _ -> false)
+    body
+
 let rec leave_try_body block_order preds blocks pc =
   if is_merge_node' block_order preds pc
   then false
   else
     match Addr.Map.find pc blocks with
-    | { body = []; branch = (Return _ | Stop), _; _ } -> false
-    | { body = []; branch = Branch (pc', _), _; _ } ->
+    | { body; branch = (Return _ | Stop), _; _ } when empty_body body -> false
+    | { body; branch = Branch (pc', _), _; _ } when empty_body body ->
         leave_try_body block_order preds blocks pc'
     | _ -> true
 
@@ -198,6 +206,7 @@ let rec measure blocks g pc limit =
           match x with
           (* A closure is never small *)
           | Let (_, Closure _), _ -> -1
+          | Event _, _ -> acc
           | _ -> acc - 1)
     in
     if limit < 0

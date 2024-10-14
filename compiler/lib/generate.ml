@@ -345,13 +345,10 @@ let bool e = J.ECond (e, one, zero)
 
 (****)
 
-let source_location debug ?force (pc : Code.loc) =
-  match Parse_bytecode.Debug.find_loc debug ?force pc with
+let source_location ctx position pc =
+  match Parse_bytecode.Debug.find_loc ctx.Ctx.debug ~position pc with
   | Some pi -> J.Pi pi
   | None -> J.N
-
-let source_location_ctx ctx ?force (pc : Code.loc) =
-  source_location ctx.Ctx.debug ?force pc
 
 (****)
 
@@ -1101,14 +1098,14 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       let (px, cx), queue = access_queue queue x in
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
-      let loc = source_location_ctx ctx ~force:After (After pc) in
+      let loc = source_location ctx After pc in
       let fv = Addr.Map.find pc ctx.freevars in
       let clo = compile_closure ctx cont in
       let clo =
         match clo with
         | (st, x) :: rem ->
             let loc =
-              match x, source_location_ctx ctx (Before pc) with
+              match x, source_location ctx Before pc with
               | (J.U | J.N), (J.U | J.N) -> J.U
               | x, (J.U | J.N) -> x
               | (J.U | J.N), x -> x
@@ -1371,18 +1368,16 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       in
       res, []
 
-and translate_instr ctx expr_queue instr =
-  let instr, pc = instr in
+and translate_instr ctx expr_queue loc instr =
+  let instr, _ = instr in
   match instr with
   | Assign (x, y) ->
-      let loc = source_location_ctx ctx pc in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       flush_queue
         expr_queue
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ]
   | Let (x, e) -> (
-      let loc = source_location_ctx ctx pc in
       let (ce, prop, expr_queue), instrs = translate_expr ctx expr_queue loc x e 0 in
       let keep_name x =
         match Code.Var.get_name x with
@@ -1408,7 +1403,6 @@ and translate_instr ctx expr_queue instr =
             prop
             (instrs @ [ J.variable_declaration [ J.V x, (ce, loc) ], loc ]))
   | Set_field (x, n, _, y) ->
-      let loc = source_location_ctx ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       flush_queue
@@ -1416,7 +1410,6 @@ and translate_instr ctx expr_queue instr =
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Block.field cx n, cy)), loc ]
   | Offset_ref (x, n) ->
-      let loc = source_location_ctx ctx pc in
       (* FIX: may overflow.. *)
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let expr = Mlvalue.Block.field cx 0 in
@@ -1429,7 +1422,6 @@ and translate_instr ctx expr_queue instr =
       in
       flush_queue expr_queue mutator_p [ J.Expression_statement expr', loc ]
   | Array_set (x, y, z) ->
-      let loc = source_location_ctx ctx pc in
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
       let (_pz, cz), expr_queue = access_queue expr_queue z in
@@ -1437,12 +1429,13 @@ and translate_instr ctx expr_queue instr =
         expr_queue
         mutator_p
         [ J.Expression_statement (J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz)), loc ]
+  | Event _ -> [], expr_queue
 
-and translate_instrs_rev (ctx : Ctx.t) expr_queue instrs acc_rev muts_map : _ * _ =
+and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
   match instrs with
-  | [] -> acc_rev, expr_queue
+  | [] -> loc, acc_rev, expr_queue
   | (Let (_, Closure _), _) :: _ ->
-      let names, pcs, all, rem = collect_closures instrs in
+      let names, pcs, all, rem, loc = collect_closures loc instrs in
       let fvs =
         List.fold_left pcs ~init:Code.Var.Set.empty ~f:(fun acc pc ->
             Code.Var.Set.union acc (Addr.Map.find pc ctx.freevars))
@@ -1519,13 +1512,13 @@ and translate_instrs_rev (ctx : Ctx.t) expr_queue instrs acc_rev muts_map : _ * 
         List.fold_left
           all
           ~init:([], [], expr_queue)
-          ~f:(fun (mut_rec, st_rev, expr_queue) i ->
+          ~f:(fun (mut_rec, st_rev, expr_queue) (i, loc) ->
             let x' =
               match i with
               | Let (x', _), _ -> x'
               | _ -> assert false
             in
-            let l, expr_queue = translate_instr ctx expr_queue i in
+            let l, expr_queue = translate_instr ctx expr_queue loc i in
             if Code.Var.Set.mem x' fvs
             then
               let mut_rec =
@@ -1547,17 +1540,19 @@ and translate_instrs_rev (ctx : Ctx.t) expr_queue instrs acc_rev muts_map : _ * 
       let acc_rev = vd Let bind_fvs_muts @ acc_rev in
       let acc_rev = funs_rev @ acc_rev in
       let acc_rev = vd Let bind_fvs_rec @ acc_rev in
-      translate_instrs_rev ctx expr_queue rem acc_rev muts_map
+      translate_instrs_rev ctx loc expr_queue rem acc_rev muts_map
+  | (Event loc, _) :: rem ->
+      translate_instrs_rev ctx (J.Pi loc) expr_queue rem acc_rev muts_map
   | instr :: rem ->
-      let st, expr_queue = translate_instr ctx expr_queue instr in
+      let st, expr_queue = translate_instr ctx expr_queue loc instr in
       let acc_rev = List.rev_append st acc_rev in
-      translate_instrs_rev ctx expr_queue rem acc_rev muts_map
+      translate_instrs_rev ctx loc expr_queue rem acc_rev muts_map
 
 and translate_instrs (ctx : Ctx.t) expr_queue instrs =
-  let st_rev, expr_queue =
-    translate_instrs_rev (ctx : Ctx.t) expr_queue instrs [] Var.Map.empty
+  let loc, st_rev, expr_queue =
+    translate_instrs_rev (ctx : Ctx.t) J.N expr_queue instrs [] Var.Map.empty
   in
-  List.rev st_rev, expr_queue
+  loc, List.rev st_rev, expr_queue
 
 (* Compile loops. *)
 and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
@@ -1591,7 +1586,7 @@ and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
           if debug () then Format.eprintf "}@]@,";
           let for_loop =
             ( J.For_statement (J.Left None, None, None, Js_simpl.block body)
-            , source_location_ctx st.ctx (Code.location_of_pc pc) )
+            , source_location st.ctx Before pc )
           in
           let label = if !lab_used then Some lab else None in
           let for_loop =
@@ -1613,7 +1608,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
   if debug () then Format.eprintf "Compiling block %d@;" pc;
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
   let block = Addr.Map.find pc st.ctx.blocks in
-  let seq, queue = translate_instrs st.ctx queue block.body in
+  let loc, seq, queue = translate_instrs st.ctx queue block.body in
   let nbbranch =
     match fst block.branch with
     | Switch (_, a) ->
@@ -1635,7 +1630,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
   in
   let rec loop ~scope_stack ~fall_through l =
     match l with
-    | [] -> compile_conditional st queue ~fall_through block.branch scope_stack
+    | [] -> compile_conditional st queue ~fall_through loc block.branch scope_stack
     | x :: xs -> (
         let l = J.Label.fresh () in
         let used = ref false in
@@ -1679,8 +1674,7 @@ and compile_decision_tree kind st scope_stack loc cx dtree ~fall_through =
         in
         ( never1 && never2
         , Js_simpl.if_statement
-            ~function_end:(fun () ->
-              source_location_ctx st.ctx ~force:After (After st.pc))
+            ~function_end:(fun () -> source_location st.ctx After st.pc)
             e'
             loc
             (Js_simpl.block iftrue)
@@ -1744,8 +1738,8 @@ and compile_decision_tree kind st scope_stack loc cx dtree ~fall_through =
   let never, code = loop cx scope_stack dtree in
   never, binds @ code
 
-and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
-  let last, pc = last in
+and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
+  let last, _ = last in
   (if debug ()
    then
      match last with
@@ -1756,7 +1750,6 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
      | Stop -> Format.eprintf "stop;@;"
      | Cond (x, _, _) -> Format.eprintf "@[<hv 2>cond(%a){@;" Code.Var.print x
      | Switch (x, _) -> Format.eprintf "@[<hv 2>switch(%a){@;" Code.Var.print x);
-  let loc = source_location_ctx st.ctx pc in
   let res =
     match last with
     | Return x ->
@@ -1769,7 +1762,7 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
           | ECall _ -> (
               (* We usually don't have a good locations for tail
                  calls, so use the end of the function instead *)
-              match source_location_ctx st.ctx ~force:After (After st.pc) with
+              match source_location st.ctx After st.pc with
               | J.N -> loc
               | loc -> loc)
           | _ -> loc
@@ -1940,12 +1933,14 @@ and compile_closure ctx (pc, args) =
   if debug () then Format.eprintf "}@]@;";
   res
 
-and collect_closures l =
+and collect_closures loc l =
   match l with
+  | (Event loc, _) :: ((Let (_, Closure _), _) :: _ as rem) ->
+      collect_closures (J.Pi loc) rem
   | ((Let (x, Closure (_, (pc, _))), _loc) as i) :: rem ->
-      let names', pcs', i', rem' = collect_closures rem in
-      x :: names', pc :: pcs', i :: i', rem'
-  | _ -> [], [], [], l
+      let names', pcs', i', rem', loc' = collect_closures loc rem in
+      x :: names', pc :: pcs', (i, loc) :: i', rem', loc'
+  | _ -> [], [], [], l, loc
 
 let generate_shared_value ctx =
   let strings =

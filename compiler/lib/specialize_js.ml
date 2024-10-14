@@ -185,6 +185,30 @@ let specialize_instrs ~target info l =
         , _ )
       ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
       ]
+    | [ (Event _, _)
+      ; ((Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])), _) as len1)
+      ; ((Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])), _) as len2)
+      ; (Event _, _)
+      ; ((Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])), _) as len3)
+      ; (Event _, _)
+      ; (Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ])), _)
+      ; (Event _, _)
+      ; ( Let
+            ( u1
+            , Prim
+                ( Extern "caml_blit_string"
+                , [ Pv a'; Pc (Int zero1); Pv bytes'; Pc (Int zero2); Pv alen'' ] ) )
+        , _ )
+      ; (Event _, _)
+      ; ( Let
+            ( u2
+            , Prim
+                ( Extern "caml_blit_string"
+                , [ Pv b'; Pc (Int zero3); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
+        , _ )
+      ; (Event _, _)
+      ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
+      ]
       when Targetint.is_zero zero1
            && Targetint.is_zero zero2
            && Targetint.is_zero zero3
