@@ -46,22 +46,19 @@ let instr s i =
   | Array_set (x, y, z) -> Array_set (s x, s y, s z)
   | Event _ -> i
 
-let instrs s l = List.map l ~f:(fun (i, loc) -> instr s i, loc)
+let instrs s l = List.map l ~f:(fun i -> instr s i)
 
-let last m s (l, loc) =
-  let l =
-    match l with
-    | Stop -> l
-    | Branch cont -> Branch (subst_cont m s cont)
-    | Pushtrap (cont1, x, cont2) ->
-        Pushtrap (subst_cont m s cont1, s x, subst_cont m s cont2)
-    | Return x -> Return (s x)
-    | Raise (x, k) -> Raise (s x, k)
-    | Cond (x, cont1, cont2) -> Cond (s x, subst_cont m s cont1, subst_cont m s cont2)
-    | Switch (x, a1) -> Switch (s x, Array.map a1 ~f:(fun cont -> subst_cont m s cont))
-    | Poptrap cont -> Poptrap (subst_cont m s cont)
-  in
-  l, loc
+let last m s l =
+  match l with
+  | Stop -> l
+  | Branch cont -> Branch (subst_cont m s cont)
+  | Pushtrap (cont1, x, cont2) ->
+      Pushtrap (subst_cont m s cont1, s x, subst_cont m s cont2)
+  | Return x -> Return (s x)
+  | Raise (x, k) -> Raise (s x, k)
+  | Cond (x, cont1, cont2) -> Cond (s x, subst_cont m s cont1, subst_cont m s cont2)
+  | Switch (x, a1) -> Switch (s x, Array.map a1 ~f:(fun cont -> subst_cont m s cont))
+  | Poptrap cont -> Poptrap (subst_cont m s cont)
 
 let block m s block =
   { params = List.map ~f:s block.params

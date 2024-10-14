@@ -239,8 +239,8 @@ type last =
 
 type block =
   { params : Var.t list
-  ; body : (instr * loc) list
-  ; branch : last * loc
+  ; body : instr list
+  ; branch : last
   }
 
 type program =
@@ -251,8 +251,8 @@ type program =
 
 module Print : sig
   type xinstr =
-    | Instr of (instr * loc)
-    | Last of (last * loc)
+    | Instr of instr
+    | Last of last
 
   val expr : Format.formatter -> expr -> unit
 
@@ -260,13 +260,13 @@ module Print : sig
 
   val var_list : Format.formatter -> Var.t list -> unit
 
-  val instr : Format.formatter -> instr * loc -> unit
+  val instr : Format.formatter -> instr -> unit
 
   val block : (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
 
   val program : (Addr.Map.key -> xinstr -> string) -> program -> unit
 
-  val last : Format.formatter -> last * loc -> unit
+  val last : Format.formatter -> last -> unit
 
   val cont : Format.formatter -> cont -> unit
 end
@@ -310,7 +310,7 @@ val traverse :
 val preorder_traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
-val prepend : program -> (instr * loc) list -> program
+val prepend : program -> instr list -> program
 
 val empty : program
 

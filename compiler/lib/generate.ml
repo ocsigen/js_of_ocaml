@@ -146,7 +146,7 @@ module Share = struct
     let count =
       Addr.Map.fold
         (fun _ block share ->
-          List.fold_left block.body ~init:share ~f:(fun share (i, _) ->
+          List.fold_left block.body ~init:share ~f:(fun share i ->
               match i with
               | Let (_, Constant c) -> get_constant c share
               | Let (x, Apply { args; exact; _ }) ->
@@ -1437,7 +1437,6 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
 
 and translate_instr ctx expr_queue loc instr =
   let open Expr_builder in
-  let instr, _ = instr in
   match instr with
   | Assign (x, y) ->
       flush_queue
@@ -1522,7 +1521,7 @@ and translate_instr ctx expr_queue loc instr =
 and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
   match instrs with
   | [] -> loc, acc_rev, expr_queue
-  | (Let (_, Closure _), _) :: _ ->
+  | Let (_, Closure _) :: _ ->
       let names, pcs, all, rem, loc = collect_closures loc instrs in
       let fvs =
         List.fold_left pcs ~init:Code.Var.Set.empty ~f:(fun acc pc ->
@@ -1603,7 +1602,7 @@ and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
           ~f:(fun (mut_rec, st_rev, expr_queue) (i, loc) ->
             let x' =
               match i with
-              | Let (x', _), _ -> x'
+              | Let (x', _) -> x'
               | _ -> assert false
             in
             let l, expr_queue = translate_instr ctx expr_queue loc i in
@@ -1629,7 +1628,7 @@ and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
       let acc_rev = funs_rev @ acc_rev in
       let acc_rev = vd Let bind_fvs_rec @ acc_rev in
       translate_instrs_rev ctx loc expr_queue rem acc_rev muts_map
-  | (Event loc, _) :: rem ->
+  | Event loc :: rem ->
       translate_instrs_rev ctx (J.Pi loc) expr_queue rem acc_rev muts_map
   | instr :: rem ->
       let st, expr_queue = translate_instr ctx expr_queue loc instr in
@@ -1697,7 +1696,7 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
   let block = Addr.Map.find pc st.ctx.blocks in
   let loc, seq, queue = translate_instrs st.ctx loc queue block.body in
   let nbbranch =
-    match fst block.branch with
+    match block.branch with
     | Switch (_, a) ->
         (* Build an artifical dtree with the correct layout so that
            [Dtree.nbbranch dtree pc] is correct *)
@@ -1827,7 +1826,6 @@ and compile_decision_tree kind st scope_stack loc_before cx loc_after dtree ~fal
   never, binds @ code
 
 and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
-  let last, _ = last in
   (if debug ()
    then
      match last with
@@ -2034,7 +2032,7 @@ and compile_closure ctx (pc, args) =
   let start_loc =
     let block = Addr.Map.find pc ctx.Ctx.blocks in
     match block.body with
-    | (Event loc, _) :: _ -> J.Pi loc
+    | Event loc :: _ -> J.Pi loc
     | _ -> J.U
   in
   let _never, res =
@@ -2050,9 +2048,8 @@ and compile_closure ctx (pc, args) =
 
 and collect_closures loc l =
   match l with
-  | (Event loc, _) :: ((Let (_, Closure _), _) :: _ as rem) ->
-      collect_closures (J.Pi loc) rem
-  | ((Let (x, Closure (_, (pc, _))), _loc) as i) :: rem ->
+  | Event loc :: (Let (_, Closure _) :: _ as rem) -> collect_closures (J.Pi loc) rem
+  | (Let (x, Closure (_, (pc, _))) as i) :: rem ->
       let names', pcs', i', rem', loc' = collect_closures loc rem in
       x :: names', pc :: pcs', (i, loc) :: i', rem', loc'
   | _ -> [], [], [], l, loc

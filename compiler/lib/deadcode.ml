@@ -87,7 +87,7 @@ and mark_reachable st pc =
   then (
     st.reachable_blocks <- Addr.Set.add pc st.reachable_blocks;
     let block = Addr.Map.find pc st.blocks in
-    List.iter block.body ~f:(fun (i, _loc) ->
+    List.iter block.body ~f:(fun i ->
         match i with
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
         | Event _ | Assign _ -> ()
@@ -104,7 +104,7 @@ and mark_reachable st pc =
             mark_var st y;
             mark_var st z
         | Offset_ref (x, _) -> mark_var st x);
-    match fst block.branch with
+    match block.branch with
     | Return x | Raise (x, _) -> mark_var st x
     | Stop -> ()
     | Branch cont | Poptrap cont -> mark_cont_reachable st cont
@@ -143,20 +143,17 @@ let filter_closure blocks st i =
   | Let (x, Closure (l, cont)) -> Let (x, Closure (l, filter_cont blocks st cont))
   | _ -> i
 
-let filter_live_last blocks st (l, loc) =
-  let l =
-    match l with
-    | Return _ | Raise _ | Stop -> l
-    | Branch cont -> Branch (filter_cont blocks st cont)
-    | Cond (x, cont1, cont2) ->
-        Cond (x, filter_cont blocks st cont1, filter_cont blocks st cont2)
-    | Switch (x, a1) ->
-        Switch (x, Array.map a1 ~f:(fun cont -> filter_cont blocks st cont))
-    | Pushtrap (cont1, x, cont2) ->
-        Pushtrap (filter_cont blocks st cont1, x, filter_cont blocks st cont2)
-    | Poptrap cont -> Poptrap (filter_cont blocks st cont)
-  in
-  l, loc
+let filter_live_last blocks st l =
+  match l with
+  | Return _ | Raise _ | Stop -> l
+  | Branch cont -> Branch (filter_cont blocks st cont)
+  | Cond (x, cont1, cont2) ->
+      Cond (x, filter_cont blocks st cont1, filter_cont blocks st cont2)
+  | Switch (x, a1) -> Switch (x, Array.map a1 ~f:(fun cont -> filter_cont blocks st cont))
+  | Pushtrap (cont1, x, cont2) ->
+      Pushtrap (filter_cont blocks st cont1, x, filter_cont blocks st cont2)
+  | Poptrap cont -> Poptrap (filter_cont blocks st cont)
+
 (****)
 
 let ref_count st i =
@@ -170,7 +167,7 @@ let annot st pc xi =
   else
     match (xi : Code.Print.xinstr) with
     | Last _ -> " "
-    | Instr (i, _) ->
+    | Instr i ->
         let c = ref_count st i in
         if c > 0 then Format.sprintf "%d" c else if live_instr st i then " " else "x"
 
@@ -197,13 +194,13 @@ let f ({ blocks; _ } as p : Code.program) =
   let pure_funs = Pure_fun.f p in
   Addr.Map.iter
     (fun _ block ->
-      List.iter block.body ~f:(fun (i, _loc) ->
+      List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, e) -> add_def defs x (Expr e)
           | Assign (x, y) -> add_def defs x (Var y)
           | Event _ | Set_field (_, _, _, _) | Array_set (_, _, _) | Offset_ref (_, _) ->
               ());
-      match fst block.branch with
+      match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> add_cont_dep blocks defs cont
       | Cond (_, cont1, cont2) ->
@@ -229,14 +226,14 @@ let f ({ blocks; _ } as p : Code.program) =
             pc
             { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
             ; body =
-                List.fold_left block.body ~init:[] ~f:(fun acc (i, loc) ->
+                List.fold_left block.body ~init:[] ~f:(fun acc i ->
                     match i, acc with
-                    | Event _, (Event _, _) :: prev ->
+                    | Event _, Event _ :: prev ->
                         (* Avoid consecutive events (keep just the last one) *)
-                        (i, loc) :: prev
+                        i :: prev
                     | _ ->
                         if live_instr st i
-                        then (filter_closure all_blocks st i, loc) :: acc
+                        then filter_closure all_blocks st i :: acc
                         else acc)
                 |> List.rev
             ; branch = filter_live_last all_blocks st block.branch
