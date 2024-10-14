@@ -34,7 +34,13 @@ type closure_info =
   }
 
 let block_size { branch; body; _ } =
-  List.length body
+  List.fold_left
+    ~f:(fun n (i, _) ->
+      match i with
+      | Event _ -> n
+      | _ -> n + 1)
+    ~init:0
+    body
   +
   match fst branch with
   | Cond _ -> 2
@@ -303,7 +309,13 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
         | Let (x, Closure (l, (pc, []))), loc when first_class_primitives -> (
             let block = Addr.Map.find pc p.blocks in
             match block with
-            | { body = [ (Let (y, Prim (Extern prim, args)), _loc) ]
+            | { body =
+                  ( [ (Let (y, Prim (Extern prim, args)), _loc) ]
+                  | [ (Event _, _); (Let (y, Prim (Extern prim, args)), _loc) ]
+                  | [ (Event _, _)
+                    ; (Let (y, Prim (Extern prim, args)), _loc)
+                    ; (Event _, _)
+                    ] )
               ; branch = Return y', _
               ; params = []
               } ->

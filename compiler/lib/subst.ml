@@ -47,6 +47,7 @@ let instr s i =
   | Set_field (x, n, typ, y) -> Set_field (s x, n, typ, s y)
   | Offset_ref (x, n) -> Offset_ref (s x, n)
   | Array_set (x, y, z) -> Array_set (s x, s y, s z)
+  | Event _ -> i
 
 let instrs s l = List.map l ~f:(fun (i, loc) -> instr s i, loc)
 

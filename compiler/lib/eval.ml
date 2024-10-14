@@ -456,8 +456,11 @@ let rec do_not_raise pc visited blocks =
     let b = Addr.Map.find pc blocks in
     List.iter b.body ~f:(fun (i, _loc) ->
         match i with
-        | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _, _) | Assign _ ->
-            ()
+        | Event _
+        | Array_set (_, _, _)
+        | Offset_ref (_, _)
+        | Set_field (_, _, _, _)
+        | Assign _ -> ()
         | Let (_, e) -> (
             match e with
             | Block (_, _, _, _) | Field (_, _, _) | Constant _ | Closure _ -> ()
