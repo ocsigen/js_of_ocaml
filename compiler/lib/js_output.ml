@@ -39,6 +39,86 @@
      throw
    v}
 *)
+
+(*
+Source maps
+===========
+Most of this information was obtained by running the Firefox and
+Chrome debuggers on some test programs.
+
+The location of a declaration is determined by the first character of
+the expression.
+
+    var x = e
+            ^
+
+The location of other statements is determined by looking at the first
+character of the statement.
+
+    return e
+    ^
+
+Chrome will also stop at the very character after a return statement
+before returning (which can be ambigous).
+
+    return e;if ...
+             ^
+
+The location of the end of the function is determined by the closing brace.
+Firefox will always stop their. Chrome only if there is no return statement.
+
+    function f() { ... }
+                       ^
+
+For an arrow function Firefox stops on the last character, while
+Chrome stops on the character right after.
+
+    (x)=>x+1
+           ^^
+
+In Chrome the location of a function call is at the start of the name
+of the function when it is explicit.
+
+    f(e)         Math.cos(1.)
+    ^                 ^
+
+Otherwise, the location of the opening parenthesis is used. Firefox
+always uses this location.
+
+    (0,f)(e)(e')
+         ^  ^
+
+Usually, Chrome stops at the begining of statements.
+
+   if (e) { ... }
+   ^
+
+Firefox will rather stop on the expression when there is one.
+
+   if (e) { ... }
+       ^
+
+The debugger don't stop at some statements, such as function
+declarations, labelled statements, and block statements.
+
+Chrome uses the name associated to the location of each bound variable
+to determine its name [1].
+
+   function f(x) { var y = ... }
+            ^ ^        ^
+
+Chrome uses the location of the opening parenthesis of a function
+declaration to determine the function name in the stack [2].
+
+
+    function f() { ... }
+              ^
+
+[1] https://github.com/ChromeDevTools/devtools-frontend/blob/11db398f811784395a6706cf3f800014d98171d9/front_end/models/source_map_scopes/NamesResolver.ts#L238-L243
+
+[2] https://github.com/ChromeDevTools/devtools-frontend/blob/11db398f811784395a6706cf3f800014d98171d9/front_end/models/source_map_scopes/NamesResolver.ts#L765-L768
+*)
+
 open! Stdlib
 
 let stats = Debug.find "output"
