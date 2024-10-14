@@ -112,7 +112,7 @@ let definitions prog =
     (fun _ block ->
       (* Add defs from block body *)
       List.iter
-        ~f:(fun (i, _) ->
+        ~f:(fun i ->
           match i with
           | Let (x, e) -> set_def x (Expr e)
           | Assign (x, _) -> set_def x Param
@@ -210,7 +210,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
   let add_block_uses scope block =
     (* Add uses from block body *)
     List.iter
-      ~f:(fun (i, _) ->
+      ~f:(fun i ->
         match i with
         | Let (x, e) -> add_expr_uses scope x e
         (* For assignment, propagate liveness from new to old variable like a block parameter *)
@@ -218,7 +218,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
         | Event _ | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
       block.body;
     (* Add uses from block branch *)
-    match fst block.branch with
+    match block.branch with
     | Return _ | Raise _ | Stop -> ()
     | Branch cont -> add_cont_deps cont
     | Cond (_, cont1, cont2) ->
@@ -340,8 +340,8 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
     | Event _ | Assign (_, _) -> ()
   in
   let live_block scope block =
-    List.iter ~f:(fun (i, _) -> live_instruction scope i) block.body;
-    match fst block.branch with
+    List.iter ~f:(fun i -> live_instruction scope i) block.body;
+    match block.branch with
     | Return x -> if variable_may_escape x global_info then add_top scope x
     | Raise (x, _) -> add_top scope x
     | Cond (x, _, _) -> add_top scope x
@@ -476,26 +476,25 @@ let zero prog sentinal live_table =
   in
   let zero_block block =
     (* Analyze block instructions *)
-    let body = List.map ~f:(fun (instr, loc) -> zero_instr instr, loc) block.body in
+    let body = List.map ~f:(fun instr -> zero_instr instr) block.body in
     (* Analyze branch *)
     let branch =
       (* Zero out return values in last instruction, otherwise do nothing. *)
       match block.branch with
-      | Return x, loc ->
+      | Return x ->
           let tc =
             (* We don't want to break tailcalls. *)
             match List.last body with
-            | Some (Let (x', Apply _), _) when Code.Var.equal x' x -> true
+            | Some (Let (x', Apply _)) when Code.Var.equal x' x -> true
             | Some _ | None -> false
           in
-          if tc then Return x, loc else Return (zero_var x), loc
-      | Raise (_, _), _
-      | Stop, _
-      | Branch _, _
-      | Cond (_, _, _), _
-      | Switch (_, _), _
-      | Pushtrap (_, _, _), _
-      | Poptrap _, _ -> block.branch
+          if tc then Return x else Return (zero_var x)
+      | Raise (_, _)
+      | Stop | Branch _
+      | Cond (_, _, _)
+      | Switch (_, _)
+      | Pushtrap (_, _, _)
+      | Poptrap _ -> block.branch
     in
     { block with body; branch }
   in
@@ -550,8 +549,8 @@ end
 
 (** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
 let add_sentinal p sentinal =
-  let instr, loc = Let (sentinal, Constant (Int Targetint.zero)), noloc in
-  Code.prepend p [ instr, loc ]
+  let instr = Let (sentinal, Constant (Int Targetint.zero)) in
+  Code.prepend p [ instr ]
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
 let f p ~deadcode_sentinal global_info =
