@@ -89,7 +89,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
               add_dep deps f x)
       | Let (x, Closure _) -> add_var vars x
       | Let (_, (Prim _ | Block _ | Constant _ | Field _ | Special _))
-      | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ())
+      | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ())
 
 let program_deps ~info ~vars ~tail_deps ~deps p =
   fold_closures

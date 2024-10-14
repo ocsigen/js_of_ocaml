@@ -71,7 +71,7 @@ let program_deps { blocks; _ } =
           | Assign (x, y) ->
               add_dep deps x y;
               add_def vars defs x y
-          | Set_field _ | Array_set _ | Offset_ref _ -> ());
+          | Event _ | Set_field _ | Array_set _ | Offset_ref _ -> ());
       match fst block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> cont_deps blocks vars deps defs cont
