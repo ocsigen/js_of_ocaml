@@ -324,11 +324,12 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
       let sm_for_file = ref None in
       let ic = Line_reader.open_ file in
       let skip ic = Line_reader.drop ic in
+      let line_offset = Line_writer.lnum oc in
       let reloc = ref [] in
       let copy ic oc =
         let line = Line_reader.next ic in
         Line_writer.write ~source:ic oc line;
-        reloc := (Line_reader.lnum ic, Line_writer.lnum oc) :: !reloc
+        reloc := (Line_reader.lnum ic, Line_writer.lnum oc - line_offset) :: !reloc
       in
       let rec read () =
         match Line_reader.peek ic with
@@ -432,7 +433,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
           Line_writer.write_lines oc content);
       (match !sm_for_file with
       | None -> ()
-      | Some x -> sm := (x, !reloc) :: !sm);
+      | Some x -> sm := (x, !reloc, line_offset) :: !sm);
       match !build_info, build_info_for_file with
       | None, None -> ()
       | Some _, None -> ()
@@ -445,33 +446,32 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
   match source_map with
   | None -> ()
   | Some (file, init_sm) ->
-      let sm =
-        List.rev_map !sm ~f:(fun (sm, reloc) ->
+      let sections =
+        List.rev_map !sm ~f:(fun (sm, reloc, offset) ->
             let tbl = Hashtbl.create 17 in
             List.iter reloc ~f:(fun (a, b) -> Hashtbl.add tbl a b);
-            Source_map.Standard.filter_map sm ~f:(Hashtbl.find_opt tbl))
+            ( { Source_map.Index.gen_line = offset; gen_column = 0 }
+            , `Map (Source_map.Standard.filter_map sm ~f:(Hashtbl.find_opt tbl)) ))
       in
-      (match Source_map.Standard.merge (init_sm :: sm) with
-      | None -> ()
-      | Some sm -> (
-          (* preserve some info from [init_sm] *)
-          let sm =
-            `Standard
-              { sm with
-                version = init_sm.version
-              ; file = init_sm.file
-              ; sourceroot = init_sm.sourceroot
-              }
-          in
-          match file with
-          | None ->
-              let data = Source_map.to_string sm in
-              let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
-              Line_writer.write oc s
-          | Some file ->
-              Source_map.to_file sm file;
-              let s = sourceMappingURL ^ Filename.basename file in
-              Line_writer.write oc s));
+      let sm =
+        { Source_map.Index.version = init_sm.Source_map.Standard.version
+        ; file = init_sm.file
+        ; sections =
+            (* preserve some info from [init_sm] *)
+            List.map sections ~f:(fun (ofs, `Map sm) ->
+                ofs, `Map { sm with sourceroot = init_sm.sourceroot })
+        }
+      in
+      let sm = `Index sm in
+      (match file with
+      | None ->
+          let data = Source_map.to_string sm in
+          let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
+          Line_writer.write oc s
+      | Some file ->
+          Source_map.to_file sm file;
+          let s = sourceMappingURL ^ Filename.basename file in
+          Line_writer.write oc s);
       if times () then Format.eprintf "  sourcemap: %a@." Timer.print t
 
 let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source_map =
