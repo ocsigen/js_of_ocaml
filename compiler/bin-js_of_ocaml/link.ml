@@ -96,9 +96,9 @@ let options =
       then
         let file, sm_output_file =
           match output_file with
-          | Some file when sourcemap_inline_in_js -> file, None
-          | Some file -> file, Some (chop_extension file ^ ".map")
-          | None -> "STDIN", None
+          | Some file when sourcemap_inline_in_js -> Some file, None
+          | Some file -> Some file, Some (chop_extension file ^ ".map")
+          | None -> None, None
         in
         Some
           ( sm_output_file

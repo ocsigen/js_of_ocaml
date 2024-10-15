@@ -302,9 +302,9 @@ let options =
       then
         let file, sm_output_file =
           match output_file with
-          | `Name file, _ when sourcemap_inline_in_js -> file, None
-          | `Name file, _ -> file, Some (chop_extension file ^ ".map")
-          | `Stdout, _ -> "STDIN", None
+          | `Name file, _ when sourcemap_inline_in_js -> Some file, None
+          | `Name file, _ -> Some file, Some (chop_extension file ^ ".map")
+          | `Stdout, _ -> None, None
         in
         Some
           ( sm_output_file
@@ -531,9 +531,9 @@ let options_runtime_only =
       then
         let file, sm_output_file =
           match output_file with
-          | `Name file, _ when sourcemap_inline_in_js -> file, None
-          | `Name file, _ -> file, Some (chop_extension file ^ ".map")
-          | `Stdout, _ -> "STDIN", None
+          | `Name file, _ when sourcemap_inline_in_js -> Some file, None
+          | `Name file, _ -> Some file, Some (chop_extension file ^ ".map")
+          | `Stdout, _ -> None, None
         in
         Some
           ( sm_output_file

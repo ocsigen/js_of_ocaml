@@ -259,7 +259,7 @@ let list_stringlit_opt name rest =
 module Standard = struct
   type t =
     { version : int
-    ; file : string
+    ; file : string option
     ; sourceroot : string option
     ; sources : string list
     ; sources_content : Source_content.t option list option
@@ -267,9 +267,9 @@ module Standard = struct
     ; mappings : Mappings.t
     }
 
-  let empty ~filename =
+  let empty =
     { version = 3
-    ; file = filename
+    ; file = None
     ; sourceroot = None
     ; sources = []
     ; sources_content = None
@@ -356,7 +356,7 @@ module Standard = struct
         in
         let acc_rev, mappings_rev =
           loop
-            { (empty ~filename:"") with sources_content = Some [] }
+            { empty with sources_content = Some [] }
             []
             ~sources_offset:0
             ~names_offset:0
@@ -379,7 +379,10 @@ module Standard = struct
            | None -> None
            | Some v -> Some (name, v))
          [ "version", Some (`Intlit (string_of_int t.version))
-         ; "file", Some (stringlit (rewrite_path t.file))
+         ; ( "file"
+           , match t.file with
+             | None -> None
+             | Some file -> Some (stringlit (rewrite_path file)) )
          ; ( "sourceRoot"
            , match t.sourceroot with
              | None -> None
@@ -403,11 +406,7 @@ module Standard = struct
     match json with
     | `Assoc (("version", `Intlit version) :: rest) when int_of_string version = 3 ->
         let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
-        let file =
-          match string "file" rest with
-          | None -> ""
-          | Some s -> s
-        in
+        let file = string "file" rest in
         let sourceroot = string "sourceRoot" rest in
         let names =
           match list_stringlit "names" rest with
@@ -457,29 +456,38 @@ module Index = struct
 
   type t =
     { version : int
-    ; file : string
+    ; file : string option
     ; sections : (offset * [ `Map of Standard.t ]) list
     }
 
   let json t =
     let stringlit s = `Stringlit (Yojson.Safe.to_string (`String s)) in
     `Assoc
-      [ "version", `Intlit (string_of_int t.version)
-      ; "file", stringlit (rewrite_path t.file)
-      ; ( "sections"
-        , `List
-            (List.map
-               ~f:(fun ({ gen_line; gen_column }, `Map sm) ->
-                 `Assoc
-                   [ ( "offset"
-                     , `Assoc
-                         [ "line", `Intlit (string_of_int gen_line)
-                         ; "column", `Intlit (string_of_int gen_column)
-                         ] )
-                   ; "map", Standard.json sm
-                   ])
-               t.sections) )
-      ]
+      (List.filter_map
+         ~f:(fun (name, v) ->
+           match v with
+           | None -> None
+           | Some v -> Some (name, v))
+         [ "version", Some (`Intlit (string_of_int t.version))
+         ; ( "file"
+           , match t.file with
+             | None -> None
+             | Some file -> Some (stringlit (rewrite_path file)) )
+         ; ( "sections"
+           , Some
+               (`List
+                 (List.map
+                    ~f:(fun ({ gen_line; gen_column }, `Map sm) ->
+                      `Assoc
+                        [ ( "offset"
+                          , `Assoc
+                              [ "line", `Intlit (string_of_int gen_line)
+                              ; "column", `Intlit (string_of_int gen_column)
+                              ] )
+                        ; "map", Standard.json sm
+                        ])
+                    t.sections)) )
+         ])
 
   let intlit ~errmsg name json =
     match List.assoc name json with
@@ -534,7 +542,7 @@ module Index = struct
         match List.assoc "sections" fields with
         | `List sections ->
             let sections = List.map ~f:section_of_json sections in
-            { version = 3; file = Option.value file ~default:""; sections }
+            { version = 3; file; sections }
         | _ -> invalid_arg "Source_map_io.Index.of_json: `sections` is not an array"
         | exception Not_found ->
             invalid_arg "Source_map_io.Index.of_json: no `sections` field")

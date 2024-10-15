@@ -70,7 +70,7 @@ end
 module Standard : sig
   type t =
     { version : int
-    ; file : string
+    ; file : string option
     ; sourceroot : string option
     ; sources : string list
     ; sources_content : Source_content.t option list option
@@ -90,7 +90,7 @@ module Standard : sig
   (** Merge two lists of debug mappings. The time cost of the merge is more than
     linear in function of the size of the input mappings. *)
 
-  val empty : filename:string -> t
+  val empty : t
 end
 
 module Index : sig
@@ -101,7 +101,7 @@ module Index : sig
 
   type nonrec t =
     { version : int
-    ; file : string
+    ; file : string option
     ; sections : (offset * [ `Map of Standard.t ]) list
     }
 end

@@ -134,7 +134,7 @@ let%expect_test _ =
       { gen_line; gen_col; ori_source = source; ori_line = line; ori_col = col }
   in
   let s1 : Source_map.Standard.t =
-    { (Source_map.Standard.empty ~filename:"1.map") with
+    { Source_map.Standard.empty with
       names = [ "na"; "nb"; "nc" ]
     ; sources = [ "sa"; "sb" ]
     ; mappings =
@@ -142,7 +142,7 @@ let%expect_test _ =
     }
   in
   let s2 : Source_map.Standard.t =
-    { (Source_map.Standard.empty ~filename:"2.map") with
+    { Source_map.Standard.empty with
       names = [ "na2"; "nb2" ]
     ; sources = [ "sa2" ]
     ; mappings = Source_map.Mappings.encode [ gen (3, 3) (5, 5) 0 ]
