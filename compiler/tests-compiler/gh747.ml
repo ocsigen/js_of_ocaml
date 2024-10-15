@@ -265,7 +265,7 @@ end
      44:       [248,
      45:        caml_string_of_jsbytes("Test.Unhandled"),
      46:        runtime.caml_fresh_oo_id(0)],
-     47:     cst_Raised_at = caml_string_of_jsbytes("Raised at"),
+     47:     cst_Raised_at = /*<<?>>*/  caml_string_of_jsbytes("Raised at"),
      48:     cst_Re_raised_at = caml_string_of_jsbytes("Re-raised at"),
      49:     cst_Raised_by_primitive_operat =
      50:       caml_string_of_jsbytes("Raised by primitive operation at"),
