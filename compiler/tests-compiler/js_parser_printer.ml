@@ -232,25 +232,33 @@ let%expect_test "arrow" =
 
   [%expect
     {|
-    var  /*<<fake:2:10>>*/ a = x=> /*<<fake:2:18>>*/ x + 2;
-    var  /*<<fake:3:10>>*/ a = ()=> /*<<fake:3:19>>*/ 2;
-    var  /*<<fake:4:10>>*/ a = x=> /*<<fake:4:20>>*/ x + 2;
-    var  /*<<fake:5:10>>*/ a = (x, y)=> /*<<fake:5:22>>*/ x + y;
+    var  /*<<fake:2:10>>*/ a = x=> /*<<fake:2:18>>*/ x + 2 /*<<fake:2:23>>*/ ;
+    var  /*<<fake:3:10>>*/ a = ()=> /*<<fake:3:19>>*/ 2 /*<<fake:3:20>>*/ ;
+    var  /*<<fake:4:10>>*/ a = x=> /*<<fake:4:20>>*/ x + 2 /*<<fake:4:25>>*/ ;
+    var
+      /*<<fake:5:10>>*/ a = (x, y)=> /*<<fake:5:22>>*/ x + y /*<<fake:5:27>>*/ ;
     var  /*<<fake:7:10>>*/ a = x=>{ /*<<fake:7:20>>*/ x + 2; /*<<fake:7:13>>*/ };
     var  /*<<fake:8:10>>*/ a = ()=>{ /*<<fake:8:21>>*/ 2; /*<<fake:8:13>>*/ };
     var  /*<<fake:9:10>>*/ a = x=>{ /*<<fake:9:22>>*/ x + 2; /*<<fake:9:13>>*/ };
     var
       /*<<fake:11:10>>*/ a =
-       (x =  /*<<fake:11:16>>*/ 1 / 2)=> /*<<fake:11:28>>*/ x + 10;
+       (x =  /*<<fake:11:16>>*/ 1 / 2)=> /*<<fake:11:28>>*/ x + 10 /*<<fake:11:34>>*/ ;
     var
       /*<<fake:13:10>>*/ a =
-       (x =  /*<<fake:13:16>>*/ /qwe/g)=> /*<<fake:13:30>>*/ x + 10;
+       (x =  /*<<fake:13:16>>*/ /qwe/g)=> /*<<fake:13:30>>*/ x + 10 /*<<fake:13:36>>*/ ;
     var
-      /*<<fake:16:10>>*/ a = x=> /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y;
+      /*<<fake:16:10>>*/ a =
+       x=>
+           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/  /*<<fake:16:27>>*/ ;
     var
-      /*<<fake:17:10>>*/ a = x=> /*<<fake:17:17>>*/ y=> /*<<fake:17:23>>*/ x + y;
-    var  /*<<fake:19:10>>*/ a = async x=> /*<<fake:19:23>>*/ y;
-    var  /*<<fake:20:10>>*/ a = async (a, b)=> /*<<fake:20:27>>*/ a + b; |}]
+      /*<<fake:17:10>>*/ a =
+       x=>
+           /*<<fake:17:17>>*/ y=> /*<<fake:17:23>>*/ x + y /*<<fake:17:28>>*/  /*<<fake:17:29>>*/ ;
+    var
+      /*<<fake:19:10>>*/ a = async x=> /*<<fake:19:23>>*/ y /*<<fake:19:24>>*/ ;
+    var
+      /*<<fake:20:10>>*/ a =
+       async (a, b)=> /*<<fake:20:27>>*/ a + b /*<<fake:20:32>>*/ ; |}]
 
 let%expect_test "trailing comma" =
   (* GH#989 *)
@@ -283,7 +291,7 @@ function rehb_shape(_face /*: fk_face */, text /*: string */) {
   [%expect
     {|
     function rehb_new_face(_fontName){
-      /*<<fake:7:2>>*/ return undefined;
+      /*<<fake:7:2>>*/ return undefined /*<<fake:7:18>>*/ ;
      /*<<fake:8:0>>*/ }
     function rehb_shape(_face, text){
      var  /*<<fake:13:10>>*/ str =  /*<<fake:13:12>>*/ caml_to_js_string(text);
@@ -291,10 +299,10 @@ function rehb_shape(_face /*: fk_face */, text /*: string */) {
        /*<<fake:14:10>>*/ ret =
          /*<<fake:14:12>>*/  /*<<fake:14:12>>*/ str.split("").map
          (function mapper(_char){
-            /*<<fake:15:6>>*/ return [0, 0, 0];
+            /*<<fake:15:6>>*/ return [0, 0, 0] /*<<fake:15:69>>*/ ;
            /*<<fake:14:30>>*/ });
       /*<<fake:19:2>>*/  /*<<fake:19:2>>*/ ret.unshift(0);
-      /*<<fake:20:2>>*/ return ret;
+      /*<<fake:20:2>>*/ return ret /*<<fake:20:12>>*/ ;
      /*<<fake:21:0>>*/ } |}]
 
 let%expect_test "rest parameters" =
@@ -318,8 +326,8 @@ let%expect_test "rest parameters" =
               ().then
              (function(){
                 /*<<fake:4:10>>*/ return  /*<<fake:4:17>>*/ callWithProto
-                       (api_json[key_module][key_func], args);
-               /*<<fake:3:41>>*/ });
+                       (api_json[key_module][key_func], args) /*<<fake:4:68>>*/ ;
+               /*<<fake:3:41>>*/ }) /*<<fake:5:10>>*/ ;
      /*<<fake:2:38>>*/ }; |}]
 
 let%expect_test "async/await" =
@@ -364,7 +372,7 @@ let%expect_test "async/await" =
        /*<<fake:7:25>>*/ glslang =
         await  /*<<fake:7:33>>*/ glslangModule.default();
       /*<<fake:8:11>>*/ return  /*<<fake:8:18>>*/ glslang.compileGLSL
-             (src, "compute");
+             (src, "compute") /*<<fake:8:53>>*/ ;
      /*<<fake:2:9>>*/ }
      /*<<fake:12:4>>*/ async;
     function test(){ /*<<fake:13:22>>*/ }
@@ -397,13 +405,21 @@ let%expect_test "get/set property" =
     {|
     var
       /*<<fake:2:11>>*/ x =
-       {get prop(){ /*<<fake:3:20>>*/ return 3; /*<<fake:3:7>>*/ },
-        set prop(x){ /*<<fake:4:21>>*/ return x == 2; /*<<fake:4:7>>*/ },
+       {get prop(){
+          /*<<fake:3:20>>*/ return 3 /*<<fake:3:28>>*/ ;
+         /*<<fake:3:7>>*/ },
+        set prop(x){
+          /*<<fake:4:21>>*/ return x == 2 /*<<fake:4:34>>*/ ;
+         /*<<fake:4:7>>*/ },
         a: 4,
-        b(){ /*<<fake:6:13>>*/ return 5; /*<<fake:6:7>>*/ },
-        * e(){ /*<<fake:7:14>>*/ return 5; /*<<fake:7:7>>*/ },
-        async e(){ /*<<fake:8:19>>*/ return 5; /*<<fake:8:7>>*/ },
-        async* e(){ /*<<fake:9:20>>*/ return 5; /*<<fake:9:7>>*/ },
+        b(){ /*<<fake:6:13>>*/ return 5 /*<<fake:6:21>>*/ ; /*<<fake:6:7>>*/ },
+        * e(){ /*<<fake:7:14>>*/ return 5 /*<<fake:7:22>>*/ ; /*<<fake:7:7>>*/ },
+        async e(){
+          /*<<fake:8:19>>*/ return 5 /*<<fake:8:27>>*/ ;
+         /*<<fake:8:7>>*/ },
+        async* e(){
+          /*<<fake:9:20>>*/ return 5 /*<<fake:9:28>>*/ ;
+         /*<<fake:9:7>>*/ },
         ["field" + 1]: 3}; |}]
 
 let%expect_test "assignment pattern" =
@@ -505,13 +521,15 @@ let%expect_test "from keyword" =
      function from(field, get){
        /*<<fake:5:6>>*/ if(! get)
         /*<<fake:5:14>>*/ get =
-        function get(x){ /*<<fake:5:34>>*/ return x; /*<<fake:5:18>>*/ };
+        function get(x){
+          /*<<fake:5:34>>*/ return x /*<<fake:5:42>>*/ ;
+         /*<<fake:5:18>>*/ };
        /*<<fake:6:6>>*/ return  /*<<fake:6:13>>*/ this.compute
               ([field],
                function(state){
                  /*<<fake:6:50>>*/ return  /*<<fake:6:57>>*/ get
-                        ( /*<<fake:6:61>>*/ state.field(field));
-                /*<<fake:6:34>>*/ });
+                        ( /*<<fake:6:61>>*/ state.field(field)) /*<<fake:6:80>>*/ ;
+                /*<<fake:6:34>>*/ }) /*<<fake:6:83>>*/ ;
       /*<<fake:4:3>>*/ }}); |}]
 
 let%expect_test "new.target" =

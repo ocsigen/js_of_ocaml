@@ -736,7 +736,7 @@ break_stmt:
  | T_BREAK l=label? sc { (Break_statement (l)) }
 
 return_stmt:
- | T_RETURN e=expr? sc { (Return_statement e) }
+ | T_RETURN e=expr? sc { (Return_statement (e, p $endpos(e))) }
 
 switch_stmt:
  | T_SWITCH "(" subject=expr ")" cb=case_block
@@ -1100,7 +1100,7 @@ async_arrow_function:
 (* was called consise body in spec *)
 arrow_body:
  | "{" b=function_body "}" { b, false }
- | e=assignment_expr_for_consise_body { [(Return_statement (Some e), p $symbolstartpos)], true }
+ | e=assignment_expr_for_consise_body { [(Return_statement (Some e, p $endpos), p $symbolstartpos)], true }
 
 (*----------------------------*)
 (* no in                    *)

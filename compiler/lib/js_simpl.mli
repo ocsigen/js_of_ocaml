@@ -21,7 +21,8 @@
 open Javascript
 
 val if_statement :
-     expression
+     function_end:(unit -> location)
+  -> expression
   -> location
   -> statement * location
   -> bool
