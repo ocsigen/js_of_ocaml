@@ -373,25 +373,31 @@ module Standard = struct
   let json t =
     let stringlit s = `Stringlit (Yojson.Safe.to_string (`String s)) in
     `Assoc
-      [ "version", `Intlit (string_of_int t.version)
-      ; "file", stringlit (rewrite_path t.file)
-      ; ( "sourceRoot"
-        , stringlit
-            (match t.sourceroot with
-            | None -> ""
-            | Some s -> rewrite_path s) )
-      ; "names", `List (List.map t.names ~f:(fun s -> stringlit s))
-      ; "sources", `List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))
-      ; "mappings", stringlit (Mappings.to_string t.mappings)
-      ; ( "sourcesContent"
-        , `List
-            (match t.sources_content with
-            | None -> []
-            | Some l ->
-                List.map l ~f:(function
-                    | None -> `Null
-                    | Some x -> Source_content.to_json x)) )
-      ]
+      (List.filter_map
+         ~f:(fun (name, v) ->
+           match v with
+           | None -> None
+           | Some v -> Some (name, v))
+         [ "version", Some (`Intlit (string_of_int t.version))
+         ; "file", Some (stringlit (rewrite_path t.file))
+         ; ( "sourceRoot"
+           , match t.sourceroot with
+             | None -> None
+             | Some s -> Some (stringlit (rewrite_path s)) )
+         ; "names", Some (`List (List.map t.names ~f:(fun s -> stringlit s)))
+         ; ( "sources"
+           , Some (`List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))) )
+         ; "mappings", Some (stringlit (Mappings.to_string t.mappings))
+         ; ( "sourcesContent"
+           , match t.sources_content with
+             | None -> None
+             | Some l ->
+                 Some
+                   (`List
+                     (List.map l ~f:(function
+                         | None -> `Null
+                         | Some x -> Source_content.to_json x))) )
+         ])
 
   let of_json (json : Yojson.Raw.t) =
     match json with

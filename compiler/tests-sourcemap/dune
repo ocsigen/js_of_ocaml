@@ -7,6 +7,9 @@
  (name test)
  (modules test)
  (modes js)
+ (js_of_ocaml
+  (link_flags
+   (:standard --source-map-root /my/sourceRoot)))
  (libraries testlib))
 
 (library

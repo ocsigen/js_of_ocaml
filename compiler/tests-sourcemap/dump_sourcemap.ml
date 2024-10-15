@@ -62,8 +62,14 @@ let print_mapping lines ?(line_offset = 0) (sm : Source_map.Standard.t) =
         -> (
           match file ori_source with
           | "a.ml" | "b.ml" | "c.ml" | "d.ml" ->
+              let root =
+                match sm.sourceroot with
+                | None -> ""
+                | Some root -> root ^ "#"
+              in
               Printf.printf
-                "%s:%d:%d -> %d:%s\n"
+                "%s%s:%d:%d -> %d:%s\n"
+                root
                 (file ori_source)
                 ori_line
                 ori_col

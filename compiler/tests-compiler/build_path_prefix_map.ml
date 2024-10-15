@@ -41,8 +41,8 @@ let%expect_test _ =
       | None -> failwith "no sourcemap generated!");
   [%expect
     {|
-      file: test.js
-      sourceRoot:
-      sources:
-      - /dune-root/test.ml
+    file: test.js
+    sourceRoot: <none>
+    sources:
+    - /dune-root/test.ml
     |}]
