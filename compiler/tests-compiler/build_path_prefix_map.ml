@@ -21,7 +21,7 @@ open Util
 
 let%expect_test _ =
   let print_section (sm : Js_of_ocaml_compiler.Source_map.Standard.t) =
-    Printf.printf "file: %s\n" sm.file;
+    Printf.printf "file: %s\n" (Option.value ~default:"<none>" sm.file);
     Printf.printf "sourceRoot: %s\n" (Option.value ~default:"<none>" sm.sourceroot);
     Printf.printf "sources:\n";
     List.iter sm.sources ~f:(fun source -> Printf.printf "- %s\n" (normalize_path source))
