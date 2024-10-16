@@ -40,7 +40,7 @@ let print_mapping lines ?(line_offset = 0) (sm : Source_map.Standard.t) =
   let lines = Array.of_list lines in
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
-  let mappings = Source_map.Mappings.decode sm.mappings in
+  let mappings = Source_map.Mappings.decode_exn sm.mappings in
   List.iter mappings ~f:(fun (m : Source_map.map) ->
       let file = function
         | -1 -> "null"
@@ -78,13 +78,13 @@ let print_mapping lines ?(line_offset = 0) (sm : Source_map.Standard.t) =
           | _ -> ()))
 
 let print_sourcemap lines = function
-  | `Standard sm -> print_mapping lines sm
-  | `Index l ->
+  | Source_map.Standard sm -> print_mapping lines sm
+  | Index l ->
       List.iter
         l.Source_map.Index.sections
-        ~f:(fun (Source_map.Index.{ gen_line; gen_column }, `Map sm) ->
+        ~f:(fun { Source_map.Index.offset = { gen_line; gen_column }; map } ->
           assert (gen_column = 0);
-          print_mapping lines ~line_offset:gen_line sm)
+          print_mapping lines ~line_offset:gen_line map)
 
 let files = Sys.argv |> Array.to_list |> List.tl
 

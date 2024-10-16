@@ -74,12 +74,13 @@ function jsoo_create_file_extern(name,content){
   let code = Code.prepend Code.empty instr in
   Filename.gen_file output_file (fun chan ->
       let pfs_fmt = Pretty_print.to_out_channel chan in
-      let (_ : Source_map.Standard.t option) =
+      let (_ : Source_map.info) =
         Driver.f
           ~standalone:true
           ~wrap_with_fun:`Iife
           ~link:`Needed
           ~formatter:pfs_fmt
+          ~source_map:false
           (Parse_bytecode.Debug.create ~include_cmis:false false)
           code
       in

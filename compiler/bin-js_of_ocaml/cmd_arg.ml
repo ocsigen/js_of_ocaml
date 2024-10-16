@@ -280,6 +280,7 @@ let options =
       input_file
       js_files
       keep_unit_names =
+    let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
     let fs_external = fs_external || (toplevel && no_cmis) in
@@ -308,13 +309,9 @@ let options =
         in
         Some
           ( sm_output_file
-          , { Source_map.Standard.version = 3
-            ; file
+          , { (Source_map.Standard.empty ~inline_source_content) with
+              file
             ; sourceroot = sourcemap_root
-            ; sources = []
-            ; sources_content = (if sourcemap_don't_inline_content then None else Some [])
-            ; names = []
-            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in
@@ -519,6 +516,7 @@ let options_runtime_only =
       target_env
       output_file
       js_files =
+    let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
     let output_file =
@@ -537,13 +535,9 @@ let options_runtime_only =
         in
         Some
           ( sm_output_file
-          , { Source_map.Standard.version = 3
-            ; file
+          , { (Source_map.Standard.empty ~inline_source_content) with
+              file
             ; sourceroot = sourcemap_root
-            ; sources = []
-            ; sources_content = (if sourcemap_don't_inline_content then None else Some [])
-            ; names = []
-            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in
