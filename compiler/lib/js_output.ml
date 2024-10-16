@@ -464,6 +464,36 @@ struct
     in
     traverse l e
 
+  (* The debuggers do not stop on some statements, like function
+     declarations. So there is no point in outputting some debug
+     information there. *)
+  let stop_on_statement st =
+    match st with
+    | Block _
+    | Variable_statement _
+    | Function_declaration _
+    | Class_declaration _
+    | Empty_statement
+    | Labelled_statement _
+    | Import _
+    | Export _ -> false
+    | Expression_statement _
+    | If_statement _
+    | Do_while_statement _
+    | While_statement _
+    | For_statement _
+    | ForIn_statement _
+    | ForOf_statement _
+    | ForAwaitOf_statement _
+    | Continue_statement _
+    | Break_statement _
+    | Return_statement _
+    | With_statement _
+    | Switch_statement _
+    | Throw_statement _
+    | Try_statement _
+    | Debugger_statement -> true
+
   let best_string_quote s =
     let simple = ref 0 and double = ref 0 in
     for i = 0 to String.length s - 1 do
@@ -1344,7 +1374,7 @@ struct
   and statement ?(last = false) f (s, loc) =
     let can_omit_semi = PP.compact f && last in
     let last_semi () = if can_omit_semi then () else PP.string f ";" in
-    output_debug_info f loc;
+    if stop_on_statement s then output_debug_info f loc;
     match s with
     | Block b -> block f b
     | Variable_statement (k, l) -> variable_declaration_list k (not can_omit_semi) f l
