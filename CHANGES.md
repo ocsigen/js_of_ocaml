@@ -26,6 +26,7 @@
 * Runtime: reimplement the runtime of weak and ephemeron (#1707)
 * Lib: Modify Typed_array API for compatibility with WebAssembly
 * Toplevel: no longer set globals for toplevel initialization
+* Effects: add an optional feature of "dynamic switching" between CPS and direct style, resulting in better performance when no effect handler is installed
 
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
