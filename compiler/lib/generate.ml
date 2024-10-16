@@ -1943,17 +1943,17 @@ let generate_shared_value ctx =
                , ( J.dot
                      (s_var Global_constant.global_object)
                      (Utf8_string.of_string_exn "jsoo_runtime")
-                 , J.N ) )
+                 , J.U ) )
              ])
         @ List.map
             (StringMap.bindings ctx.Ctx.share.Share.vars.Share.byte_strings)
-            ~f:(fun (s, v) -> v, (str_js_byte s, J.N))
+            ~f:(fun (s, v) -> v, (str_js_byte s, J.U))
         @ List.map
             (StringMap.bindings ctx.Ctx.share.Share.vars.Share.utf_strings)
-            ~f:(fun (s, v) -> v, (str_js_utf8 s, J.N))
+            ~f:(fun (s, v) -> v, (str_js_utf8 s, J.U))
         @ List.map
             (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
-            ~f:(fun (s, v) -> v, (runtime_fun ctx s, J.N)))
+            ~f:(fun (s, v) -> v, (runtime_fun ctx s, J.U)))
     , J.U )
   in
   if not (Config.Flag.inline_callgen ())
