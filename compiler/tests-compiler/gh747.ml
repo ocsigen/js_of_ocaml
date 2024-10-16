@@ -60,14 +60,14 @@ print_endline(String.make 1 "Ɋ".[0] ^ String.make 1 "Ɋ".[1]);;
       5:   (globalThis){
       6:    "use strict";
       7:    var
-      8:     runtime = globalThis.jsoo_runtime,
-      9:     caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
-     10:     /*<<?>>*/ function caml_call1(f, a0){
+      8:      /*<<?>>*/ runtime = globalThis.jsoo_runtime,
+      9:      /*<<?>>*/ caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
+     10:    function caml_call1(f, a0){
      11:     return (f.l >= 0 ? f.l : f.l = f.length) === 1
      12:             ? f(a0)
      13:             : runtime.caml_call_gen(f, [a0]);
      14:    }
-     15:     /*<<?>>*/ function caml_call2(f, a0, a1){
+     15:    function caml_call2(f, a0, a1){
      16:     return (f.l >= 0 ? f.l : f.l = f.length) === 2
      17:             ? f(a0, a1)
      18:             : runtime.caml_call_gen(f, [a0, a1]);
@@ -82,7 +82,7 @@ print_endline(String.make 1 "Ɋ".[0] ^ String.make 1 "Ɋ".[1]);;
      27:     /*<<test.ml:3:0>>*/  /*<<test.ml:3:0>>*/ caml_call1(Stdlib[46], greeting);
      28:     /*<<test.ml:5:0>>*/  /*<<test.ml:5:0>>*/ caml_call1
      29:     (Stdlib[46], greeting$0);
-     30:     /*<<test.ml:7:47>>*/ var
+     30:    var
      31:      /*<<test.ml:7:47>>*/ _a_ =
      32:        /*<<test.ml:7:47>>*/ caml_call1(Stdlib_Random[5], 30),
      33:      /*<<test.ml:7:34>>*/ unicodeLength =
@@ -96,7 +96,7 @@ print_endline(String.make 1 "Ɋ".[0] ^ String.make 1 "Ɋ".[1]);;
      41:         caml_string_of_jsbytes('String.length("\xc9\x8a") should be two:'),
      42:         _b_);
      43:     /*<<test.ml:8:0>>*/  /*<<test.ml:8:0>>*/ caml_call1(Stdlib[46], _c_);
-     44:     /*<<test.ml:9:39>>*/ var
+     44:    var
      45:      /*<<test.ml:9:39>>*/ _d_ =
      46:        /*<<test.ml:9:39>>*/ caml_call2(Stdlib_String[1], 1, 138),
      47:      /*<<test.ml:9:14>>*/ _e_ =
@@ -231,24 +231,24 @@ end
       5:   (globalThis){
       6:    "use strict";
       7:    var
-      8:     runtime = globalThis.jsoo_runtime,
-      9:     caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
-     10:     /*<<?>>*/ function caml_call2(f, a0, a1){
+      8:      /*<<?>>*/ runtime = globalThis.jsoo_runtime,
+      9:      /*<<?>>*/ caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
+     10:    function caml_call2(f, a0, a1){
      11:     return (f.l >= 0 ? f.l : f.l = f.length) === 2
      12:             ? f(a0, a1)
      13:             : runtime.caml_call_gen(f, [a0, a1]);
      14:    }
-     15:     /*<<?>>*/ function caml_call3(f, a0, a1, a2){
+     15:    function caml_call3(f, a0, a1, a2){
      16:     return (f.l >= 0 ? f.l : f.l = f.length) === 3
      17:             ? f(a0, a1, a2)
      18:             : runtime.caml_call_gen(f, [a0, a1, a2]);
      19:    }
-     20:     /*<<?>>*/ function caml_call8(f, a0, a1, a2, a3, a4, a5, a6, a7){
+     20:    function caml_call8(f, a0, a1, a2, a3, a4, a5, a6, a7){
      21:     return (f.l >= 0 ? f.l : f.l = f.length) === 8
      22:             ? f(a0, a1, a2, a3, a4, a5, a6, a7)
      23:             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4, a5, a6, a7]);
      24:    }
-     25:     /*<<test.ml:14:22>>*/ var
+     25:    var
      26:     global_data = runtime.caml_get_global_data(),
      27:     cst = caml_string_of_jsbytes(""),
      28:     partial = [4, 0, 0, 0, [12, 45, [4, 0, 0, 0, 0]]],
@@ -318,7 +318,7 @@ end
      92:              : 0 === pos ? cst_Raised_by_primitive_operat : cst_Called_from;
      93:      /*<<test.ml:49:75>>*/ }
      94:      /*<<test.ml:51:2>>*/ if(0 === slot[0]){
-     95:       /*<<test.ml:59:14>>*/ var
+     95:      var
      96:       _h_ = slot[5],
      97:       _i_ = slot[4],
      98:       _j_ = slot[3],
@@ -331,7 +331,7 @@ end
     105:               (Stdlib_Printf[4], _a_, _n_, _m_, _l_, _k_, _j_, _i_, _h_)];
     106:     }
     107:     if(slot[1])  /*<<test.ml:54:50>>*/ return 0;
-    108:      /*<<test.ml:56:51>>*/  /*<<test.ml:56:51>>*/ var _o_ = info(0);
+    108:      /*<<test.ml:56:51>>*/ var _o_ = info(0);
     109:      /*<<test.ml:56:8>>*/ return [0,
     110:              /*<<test.ml:56:13>>*/ caml_call2(Stdlib_Printf[4], _b_, _o_)];
     111:     /*<<test.ml:61:52>>*/ }
@@ -343,14 +343,14 @@ end
     117:     if(_f_ >= 0){
     118:      var i = _e_;
     119:      for(;;){
-    120:        /*<<test.ml:70:14>>*/  /*<<test.ml:70:14>>*/ var
+    120:        /*<<test.ml:70:14>>*/ var
     121:        match = format_backtrace_slot(i, runtime.caml_check_bound(a, i)[1 + i]);
     122:       if(match){
     123:        var str = match[1];
     124:         /*<<test.ml:72:24>>*/  /*<<test.ml:72:24>>*/ caml_call3
     125:         (Stdlib_Printf[1], outchan, _c_, str);
     126:       }
-    127:        /*<<test.ml:69:6>>*/  /*<<test.ml:69:6>>*/ var _g_ = i + 1 | 0;
+    127:        /*<<test.ml:69:6>>*/ var _g_ = i + 1 | 0;
     128:       if(_f_ === i) break;
     129:       i = _g_;
     130:      }
@@ -371,7 +371,7 @@ end
     145:      /*<<test.ml:79:26>>*/ return  /*<<test.ml:79:26>>*/ caml_call2
     146:             (right, v1$0, v2$0);
     147:     /*<<test.ml:81:24>>*/ }
-    148:     /*<<test.ml:75:16>>*/ var
+    148:    var
     149:      /*<<test.ml:75:16>>*/ Either = [0, compare],
     150:     Test =
     151:       [0,
