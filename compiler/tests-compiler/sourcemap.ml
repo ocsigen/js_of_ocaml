@@ -82,7 +82,7 @@ let%expect_test _ =
        11:   (globalThis));
        12:
        13: //# sourceMappingURL=test.map
-      null -> 5:3
+      null -> 5:7
       /dune-root/test.ml:1:4 -> 6:12
       /dune-root/test.ml:1:7 -> 6:15
       /dune-root/test.ml:1:11 -> 6:18
