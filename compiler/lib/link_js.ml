@@ -154,7 +154,7 @@ type action =
   | Drop
   | Unit
   | Build_info of Build_info.t
-  | Source_map of Source_map.Standard.t
+  | Source_map of Source_map.t
 
 let prefix_kind line =
   match String.is_prefix ~prefix:sourceMappingURL line with
@@ -170,10 +170,6 @@ let prefix_kind line =
       | true -> `Json_base64 (String.length sourceMappingURL_base64)
       | false -> `Url (String.length sourceMappingURL))
 
-let rule_out_index_map = function
-  | `Standard sm -> sm
-  | `Index _ -> failwith "unexpected index map at this stage"
-
 let action ~resolve_sourcemap_url ~drop_source_map file line =
   match prefix_kind line, drop_source_map with
   | `Other, (true | false) -> Keep
@@ -181,8 +177,7 @@ let action ~resolve_sourcemap_url ~drop_source_map file line =
   | `Build_info bi, _ -> Build_info bi
   | (`Json_base64 _ | `Url _), true -> Drop
   | `Json_base64 offset, false ->
-      Source_map
-        (rule_out_index_map (Source_map.of_string (Base64.decode_exn ~off:offset line)))
+      Source_map (Source_map.of_string (Base64.decode_exn ~off:offset line))
   | `Url _, false when not resolve_sourcemap_url -> Drop
   | `Url offset, false ->
       let url = String.sub line ~pos:offset ~len:(String.length line - offset) in
@@ -191,7 +186,7 @@ let action ~resolve_sourcemap_url ~drop_source_map file line =
       let l = in_channel_length ic in
       let content = really_input_string ic l in
       close_in ic;
-      Source_map (rule_out_index_map (Source_map.of_string content))
+      Source_map (Source_map.of_string content)
 
 module Units : sig
   val read : Line_reader.t -> Unit_info.t -> Unit_info.t
@@ -227,11 +222,11 @@ end = struct
       | None -> None
       | Some line -> (
           match prefix_kind line with
-          | `Json_base64 _ | `Url _ | `Other ->
+          | `Other ->
               Line_reader.drop ic;
               find_next ic
           | `Build_info bi -> Some bi
-          | `Unit -> None)
+          | `Unit | `Json_base64 _ | `Url _ -> None)
     in
     find_next ic
 
@@ -328,8 +323,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
       let reloc = ref [] in
       let copy ic oc =
         let line = Line_reader.next ic in
-        Line_writer.write ~source:ic oc line;
-        reloc := (Line_reader.lnum ic, Line_writer.lnum oc - line_offset) :: !reloc
+        Line_writer.write ~source:ic oc line
       in
       let rec read () =
         match Line_reader.peek ic with
@@ -366,6 +360,8 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                      let u = if linkall then { u with force_link = true } else u in
                      Line_writer.write_lines oc (Unit_info.to_string u));
                   let size = ref 0 in
+                  let lsize = ref 0 in
+                  let data_r, data_w = Line_reader.lnum ic, Line_writer.lnum oc in
                   while
                     match Line_reader.peek ic with
                     | None -> false
@@ -376,8 +372,10 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                             true
                         | `Json_base64 _ | `Url _ | `Build_info _ | `Unit -> false)
                   do
-                    copy ic oc
+                    copy ic oc;
+                    incr lsize
                   done;
+                  reloc := `Copy (data_r, data_w, !lsize) :: !reloc;
                   if debug ()
                   then
                     Format.eprintf
@@ -392,6 +390,8 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                     Format.eprintf
                       "Skip %s@."
                       (String.concat ~sep:"," (StringSet.elements u.provides));
+                  let lnum = ref 0 in
+                  let data_r = Line_reader.lnum ic in
                   while
                     match Line_reader.peek ic with
                     | None -> false
@@ -400,8 +400,10 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                         | `Other -> true
                         | `Json_base64 _ | `Url _ | `Build_info _ | `Unit -> false)
                   do
-                    skip ic
-                  done)
+                    skip ic;
+                    incr lnum
+                  done;
+                  reloc := `Drop (data_r, !lnum) :: !reloc)
             | Source_map x ->
                 skip ic;
                 sm_for_file := Some x);
@@ -433,7 +435,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
           Line_writer.write_lines oc content);
       (match !sm_for_file with
       | None -> ()
-      | Some x -> sm := (x, !reloc, line_offset) :: !sm);
+      | Some x -> sm := (x, List.rev !reloc, line_offset) :: !sm);
       match !build_info, build_info_for_file with
       | None, None -> ()
       | Some _, None -> ()
@@ -447,22 +449,48 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
   | None -> ()
   | Some (file, init_sm) ->
       let sections =
-        List.rev_map !sm ~f:(fun (sm, reloc, offset) ->
-            let tbl = Hashtbl.create 17 in
-            List.iter reloc ~f:(fun (a, b) -> Hashtbl.add tbl a b);
-            ( { Source_map.Index.gen_line = offset; gen_column = 0 }
-            , `Map (Source_map.Standard.filter_map sm ~f:(Hashtbl.find_opt tbl)) ))
+        List.rev_map !sm ~f:(fun (sm, reloc, _offset) ->
+            let sm =
+              match (sm : Source_map.t) with
+              | Standard sm ->
+                  [ ( Source_map.Mappings.first_line sm.mappings
+                    , Source_map.Mappings.number_of_lines sm.mappings
+                    , 0
+                    , 0
+                    , sm )
+                  ]
+              | Index sm ->
+                  List.map
+                    sm.Source_map.Index.sections
+                    ~f:(fun ({ gen_line; gen_column }, `Map sm) ->
+                      ( gen_line + Source_map.Mappings.first_line sm.mappings
+                      , gen_line + Source_map.Mappings.number_of_lines sm.mappings
+                      , gen_line
+                      , gen_column
+                      , sm ))
+            in
+            List.concat_map reloc ~f:(function
+                | `Drop _ -> []
+                | `Copy (src, dst, len) ->
+                    List.filter_map sm ~f:(fun (first, last, gen_line, gen_column, sm) ->
+                        if first > src + len || last < src
+                        then None
+                        else (
+                          assert (src <= first && last <= src + len);
+                          Some (gen_line + dst - src, gen_column, sm)))))
       in
+      let sections = List.concat sections in
       let sm =
         { Source_map.Index.version = init_sm.Source_map.Standard.version
         ; file = init_sm.file
         ; sections =
             (* preserve some info from [init_sm] *)
-            List.map sections ~f:(fun (ofs, `Map sm) ->
-                ofs, `Map { sm with sourceroot = init_sm.sourceroot })
+            List.map sections ~f:(fun (gen_line, gen_column, sm) ->
+                ( { Source_map.Index.gen_line; gen_column }
+                , `Map { sm with sourceroot = init_sm.sourceroot } ))
         }
       in
-      let sm = `Index sm in
+      let sm = Source_map.Index sm in
       (match file with
       | None ->
           let data = Source_map.to_string sm in

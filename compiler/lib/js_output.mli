@@ -20,7 +20,7 @@
 
 val program :
      ?accept_unnamed_var:bool
+  -> ?source_map:bool
   -> Pretty_print.t
-  -> ?source_map:Source_map.Standard.t
   -> Javascript.program
-  -> Source_map.Standard.t option
+  -> Source_map.info

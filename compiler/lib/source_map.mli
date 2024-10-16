@@ -45,6 +45,8 @@ type map =
       }
 
 module Mappings : sig
+  type decoded = map list
+
   type t
 
   val empty : t
@@ -57,10 +59,16 @@ module Mappings : sig
       validation of its argument, unlike {!val:decode}. It is guaranteed that
       {!val:of_string} and {!val:to_string} are inverse functions. *)
 
-  val decode : t -> map list
+  val decode : t -> decoded
   (** Parse the mappings. *)
 
-  val encode : map list -> t
+  val encode : decoded -> t
+
+  val encode_with_offset : decoded -> int * t
+
+  val number_of_lines : t -> int
+
+  val first_line : t -> int
 
   val to_string : t -> string
   (** Returns the mappings as a string in the Source map v3 format. This
@@ -107,9 +115,8 @@ module Index : sig
 end
 
 type t =
-  [ `Standard of Standard.t
-  | `Index of Index.t
-  ]
+  | Standard of Standard.t
+  | Index of Index.t
 
 val to_string : t -> string
 
@@ -118,3 +125,9 @@ val to_file : t -> string -> unit
 val of_string : string -> t
 
 val of_file : string -> t
+
+type info =
+  { mappings : Mappings.decoded
+  ; sources : string list
+  ; names : string list
+  }

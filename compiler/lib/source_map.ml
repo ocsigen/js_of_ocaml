@@ -58,6 +58,8 @@ let gen_col = function
   | Gen { gen_col; _ } | Gen_Ori { gen_col; _ } | Gen_Ori_Name { gen_col; _ } -> gen_col
 
 module Mappings = struct
+  type decoded = map list
+
   type t = Uninterpreted of string [@@unboxed]
 
   let empty = Uninterpreted ""
@@ -66,83 +68,127 @@ module Mappings = struct
 
   let to_string : t -> string = fun (Uninterpreted s) -> s
 
-  let encode mapping =
-    let a = Array.of_list mapping in
-    let len = Array.length a in
-    Array.stable_sort
-      ~cmp:(fun t1 t2 ->
-        match compare (gen_line t1) (gen_line t2) with
-        | 0 -> compare (gen_col t1) (gen_col t2)
-        | n -> n)
-      a;
-    let buf = Buffer.create 1024 in
-    (* The binary format encodes lines starting at zero, but
-       [ori_line] and [gen_line] are 1 based. *)
-    let gen_line_r = ref 1 in
-    let gen_col_r = ref 0 in
-    let ori_source_r = ref 0 in
-    let ori_line_r = ref 1 in
-    let ori_col_r = ref 0 in
-    let ori_name_r = ref 0 in
-    let rec loop prev i =
-      if i < len
-      then
-        let c = a.(i) in
-        if i + 1 < len && gen_line c = gen_line a.(i + 1) && gen_col c = gen_col a.(i + 1)
-        then (* Only keep one source location per generated location *)
-          loop prev (i + 1)
-        else (
-          if !gen_line_r <> gen_line c
-          then (
-            assert (!gen_line_r < gen_line c);
-            for _i = !gen_line_r to gen_line c - 1 do
-              Buffer.add_char buf ';'
-            done;
-            gen_col_r := 0;
-            gen_line_r := gen_line c)
-          else if i > 0
-          then Buffer.add_char buf ',';
-          let l =
-            match c with
-            | Gen { gen_line = _; gen_col } ->
-                let res = [ gen_col - !gen_col_r ] in
-                gen_col_r := gen_col;
-                res
-            | Gen_Ori { gen_line = _; gen_col; ori_source; ori_line; ori_col } ->
-                let res =
-                  [ gen_col - !gen_col_r
-                  ; ori_source - !ori_source_r
-                  ; ori_line - !ori_line_r
-                  ; ori_col - !ori_col_r
-                  ]
-                in
-                gen_col_r := gen_col;
-                ori_col_r := ori_col;
-                ori_line_r := ori_line;
-                ori_source_r := ori_source;
-                res
-            | Gen_Ori_Name
-                { gen_line = _; gen_col; ori_source; ori_line; ori_col; ori_name } ->
-                let res =
-                  [ gen_col - !gen_col_r
-                  ; ori_source - !ori_source_r
-                  ; ori_line - !ori_line_r
-                  ; ori_col - !ori_col_r
-                  ; ori_name - !ori_name_r
-                  ]
-                in
-                gen_col_r := gen_col;
-                ori_col_r := ori_col;
-                ori_line_r := ori_line;
-                ori_source_r := ori_source;
-                ori_name_r := ori_name;
-                res
-          in
-          Vlq64.encode_l buf l;
-          loop i (i + 1))
+  let number_of_lines (Uninterpreted s) =
+    match s with
+    | "" -> 0
+    | _ ->
+        let c = ref 1 in
+        String.iter s ~f:(function
+            | ';' -> incr c
+            | _ -> ());
+        !c
+
+  let first_line (Uninterpreted s) =
+    let len = String.length s in
+    let rec loop i =
+      if i >= len
+      then i
+      else
+        match String.get s i with
+        | ';' -> loop (i + 1)
+        | _ -> i
     in
-    loop (-1) 0;
-    Uninterpreted (Buffer.contents buf)
+    loop 0
+
+  let encode' ~offset mapping =
+    match mapping with
+    | [] -> 0, empty
+    | _ ->
+        let a = Array.of_list mapping in
+        let len = Array.length a in
+        Array.stable_sort
+          ~cmp:(fun t1 t2 ->
+            match compare (gen_line t1) (gen_line t2) with
+            | 0 -> compare (gen_col t1) (gen_col t2)
+            | n -> n)
+          a;
+        let buf = Buffer.create 1024 in
+        (* The binary format encodes lines starting at zero, but
+           [ori_line] and [gen_line] are 1 based. *)
+        let gen_line_r = ref 1 in
+        let gen_col_r = ref 0 in
+        let ori_source_r = ref 0 in
+        let ori_line_r = ref 1 in
+        let ori_col_r = ref 0 in
+        let ori_name_r = ref 0 in
+        let rec loop prev i =
+          if i < len
+          then
+            let c = a.(i) in
+            if i + 1 < len
+               && gen_line c = gen_line a.(i + 1)
+               && gen_col c = gen_col a.(i + 1)
+            then
+              (* Only keep one source location per generated location *)
+              loop prev (i + 1)
+            else (
+              if !gen_line_r <> gen_line c
+              then (
+                assert (!gen_line_r < gen_line c);
+                for _i = !gen_line_r to gen_line c - 1 do
+                  Buffer.add_char buf ';'
+                done;
+                gen_col_r := 0;
+                gen_line_r := gen_line c)
+              else if i > 0
+              then Buffer.add_char buf ',';
+              let l =
+                match c with
+                | Gen { gen_line = _; gen_col } ->
+                    let res = [ gen_col - !gen_col_r ] in
+                    gen_col_r := gen_col;
+                    res
+                | Gen_Ori { gen_line = _; gen_col; ori_source; ori_line; ori_col } ->
+                    let res =
+                      [ gen_col - !gen_col_r
+                      ; ori_source - !ori_source_r
+                      ; ori_line - !ori_line_r
+                      ; ori_col - !ori_col_r
+                      ]
+                    in
+                    gen_col_r := gen_col;
+                    ori_col_r := ori_col;
+                    ori_line_r := ori_line;
+                    ori_source_r := ori_source;
+                    res
+                | Gen_Ori_Name
+                    { gen_line = _; gen_col; ori_source; ori_line; ori_col; ori_name } ->
+                    let res =
+                      [ gen_col - !gen_col_r
+                      ; ori_source - !ori_source_r
+                      ; ori_line - !ori_line_r
+                      ; ori_col - !ori_col_r
+                      ; ori_name - !ori_name_r
+                      ]
+                    in
+                    gen_col_r := gen_col;
+                    ori_col_r := ori_col;
+                    ori_line_r := ori_line;
+                    ori_source_r := ori_source;
+                    ori_name_r := ori_name;
+                    res
+              in
+              Vlq64.encode_l buf l;
+              loop i (i + 1))
+        in
+
+        let offset =
+          let first_line = gen_line a.(0) in
+          if offset
+          then (
+            gen_line_r := first_line;
+            first_line - 1)
+          else 0
+        in
+        loop (-1) 0;
+        offset, Uninterpreted (Buffer.contents buf)
+
+  let encode mapping =
+    let offset, res = encode' ~offset:false mapping in
+    assert (offset = 0);
+    res
+
+  let encode_with_offset mapping = encode' ~offset:true mapping
 
   let decode (Uninterpreted str) =
     let total_len = String.length str in
@@ -554,15 +600,14 @@ module Index = struct
 end
 
 type t =
-  [ `Standard of Standard.t
-  | `Index of Index.t
-  ]
+  | Standard of Standard.t
+  | Index of Index.t
 
 let of_json = function
   | `Assoc fields as json -> (
       match List.assoc "sections" fields with
-      | _ -> `Index (Index.of_json json)
-      | exception Not_found -> `Standard (Standard.of_json json))
+      | _ -> Index (Index.of_json json)
+      | exception Not_found -> Standard (Standard.of_json json))
   | _ -> invalid_arg "Source_map_io.of_json: map is not an object"
 
 let of_string s = of_json (Yojson.Raw.from_string s)
@@ -570,10 +615,16 @@ let of_string s = of_json (Yojson.Raw.from_string s)
 let of_file f = of_json (Yojson.Raw.from_file f)
 
 let to_string = function
-  | `Standard m -> Standard.to_string m
-  | `Index i -> Index.to_string i
+  | Standard m -> Standard.to_string m
+  | Index i -> Index.to_string i
 
 let to_file x f =
   match x with
-  | `Standard m -> Standard.to_file m f
-  | `Index i -> Index.to_file i f
+  | Standard m -> Standard.to_file m f
+  | Index i -> Index.to_file i f
+
+type info =
+  { mappings : Mappings.decoded
+  ; sources : string list
+  ; names : string list
+  }
