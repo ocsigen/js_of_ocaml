@@ -1183,7 +1183,6 @@ struct
     | DeclIdent (i, None) -> ident f i
     | DeclIdent (i, Some (e, loc)) ->
         PP.start_group f 1;
-        output_debug_info f loc;
         PP.start_group f 0;
         ident f i;
         PP.space f;
@@ -1191,6 +1190,7 @@ struct
         PP.end_group f;
         PP.start_group f 1;
         PP.space f;
+        output_debug_info f loc;
         let p = (not in_) && contains ~in_:true Expression e in
         if p
         then (
@@ -1205,12 +1205,12 @@ struct
         PP.end_group f
     | DeclPattern (p, (e, loc)) ->
         PP.start_group f 1;
-        output_debug_info f loc;
         PP.start_group f 0;
         pattern f p;
         PP.space f;
         PP.string f "=";
         PP.end_group f;
+        output_debug_info f loc;
         PP.start_group f 1;
         PP.space f;
         let p = (not in_) && contains ~in_:true Expression e in
@@ -1246,11 +1246,11 @@ struct
     match e with
     | None -> binding f b
     | Some (e, loc) ->
-        output_debug_info f loc;
         binding f b;
         PP.space f;
         PP.string f "=";
         PP.space f;
+        output_debug_info f loc;
         expression AssignementExpression f e
 
   and binding f x =
@@ -1311,14 +1311,7 @@ struct
   and variable_declaration_list ?in_ kind close f = function
     | [] -> ()
     | [ x ] ->
-        let x, loc =
-          match x with
-          | DeclIdent (_, None) as x -> x, N
-          | DeclIdent (i, Some (e, loc)) -> DeclIdent (i, Some (e, N)), loc
-          | DeclPattern (p, (e, loc)) -> DeclPattern (p, (e, N)), loc
-        in
         PP.start_group f 1;
-        output_debug_info f loc;
         variable_declaration_kind f kind;
         PP.space f;
         variable_declaration f ?in_ x;
