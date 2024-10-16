@@ -35,9 +35,13 @@ let%expect_test _ =
       |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
       |> extract_sourcemap
       |> function
-      | Some (`Standard (sm : Js_of_ocaml_compiler.Source_map.Standard.t)) ->
+      | Some (Standard (sm : Js_of_ocaml_compiler.Source_map.Standard.t)) ->
           print_section sm
-      | Some (`Index i) -> List.iter i.sections ~f:(fun (_, `Map sm) -> print_section sm)
+      | Some (Index i) ->
+          List.iter
+            i.sections
+            ~f:(fun { Js_of_ocaml_compiler.Source_map.Index.offset = _; map } ->
+              print_section map)
       | None -> failwith "no sourcemap generated!");
   [%expect
     {|

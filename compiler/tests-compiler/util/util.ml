@@ -421,7 +421,7 @@ let program_to_string ?(compact = false) p =
   let buffer = Buffer.create 17 in
   let pp = Jsoo.Pretty_print.to_buffer buffer in
   Jsoo.Pretty_print.set_compact pp compact;
-  let (_ : Jsoo.Source_map.Standard.t option) = Jsoo.Js_output.program pp p in
+  let (_ : Jsoo.Source_map.info) = Jsoo.Js_output.program pp p in
   (* This final comment should help to keep merge-confict inside
      {| .. |}, allowing to resolve confict with [dune promote]. *)
   Buffer.add_string buffer "//end\n";

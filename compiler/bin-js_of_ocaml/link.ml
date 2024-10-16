@@ -102,13 +102,9 @@ let options =
         in
         Some
           ( sm_output_file
-          , { Source_map.Standard.version = 3
-            ; file
+          , { (Source_map.Standard.empty ~inline_source_content:true) with
+              file
             ; sourceroot = sourcemap_root
-            ; sources = []
-            ; sources_content = Some []
-            ; names = []
-            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in

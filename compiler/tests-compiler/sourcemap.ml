@@ -23,7 +23,7 @@ open Util
 let print_mapping ~line_offset ~col_offset (sm : Source_map.Standard.t) =
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
-  let mappings = Source_map.Mappings.decode sm.mappings in
+  let mappings = Source_map.Mappings.decode_exn sm.mappings in
   List.iter mappings ~f:(fun (m : Source_map.map) ->
       match m with
       | Gen_Ori { gen_line; gen_col; ori_line; ori_col; ori_source }
@@ -56,14 +56,15 @@ let%expect_test _ =
       print_file (Filetype.path_of_js_file js_file);
       match extract_sourcemap js_file with
       | None -> Printf.printf "No sourcemap found\n"
-      | Some (`Standard sm) -> print_mapping ~line_offset:0 ~col_offset:0 sm
-      | Some (`Index i) ->
+      | Some (Standard sm) -> print_mapping ~line_offset:0 ~col_offset:0 sm
+      | Some (Index i) ->
           List.iter
             i.sections
             ~f:(fun
-                ( ({ gen_line; gen_column } : Js_of_ocaml_compiler.Source_map.Index.offset)
-                , `Map sm )
-              -> print_mapping ~line_offset:gen_line ~col_offset:gen_column sm));
+                { Js_of_ocaml_compiler.Source_map.Index.offset = { gen_line; gen_column }
+                ; map
+                }
+              -> print_mapping ~line_offset:gen_line ~col_offset:gen_column map));
   [%expect
     {|
       $ cat "test.ml"
@@ -119,7 +120,7 @@ function x (a, b) {
 
 let%expect_test _ =
   let map_str = ";;;;EAEE,EAAE,EAAC,CAAE;ECQY,UACC" in
-  let map = Source_map.Mappings.(decode (of_string map_str)) in
+  let map = Source_map.Mappings.(decode_exn (of_string_unsafe map_str)) in
   let map_str' = Source_map.Mappings.(to_string (encode map)) in
   print_endline map_str;
   print_endline map_str';
@@ -134,7 +135,7 @@ let%expect_test _ =
       { gen_line; gen_col; ori_source = source; ori_line = line; ori_col = col }
   in
   let s1 : Source_map.Standard.t =
-    { Source_map.Standard.empty with
+    { (Source_map.Standard.empty ~inline_source_content:false) with
       names = [ "na"; "nb"; "nc" ]
     ; sources = [ "sa"; "sb" ]
     ; mappings =
@@ -142,7 +143,7 @@ let%expect_test _ =
     }
   in
   let s2 : Source_map.Standard.t =
-    { Source_map.Standard.empty with
+    { (Source_map.Standard.empty ~inline_source_content:false) with
       names = [ "na2"; "nb2" ]
     ; sources = [ "sa2" ]
     ; mappings = Source_map.Mappings.encode [ gen (3, 3) (5, 5) 0 ]
