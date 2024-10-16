@@ -83,6 +83,7 @@ let%expect_test _ =
        11:   (globalThis));
        12:
        13: //# sourceMappingURL=test.map
+      null -> 5:3
       /dune-root/test.ml:1:4 -> 6:12
       /dune-root/test.ml:1:7 -> 6:15
       /dune-root/test.ml:1:11 -> 6:18
@@ -113,9 +114,7 @@ function x (a, b) {
       3:   return a + b;
       4: }
     $ cat "test.min.js"
-      1:  /*<<test.ml:2:0>>*/ function x(a, b){
-      2:   /*<<test.ml:3:2>>*/ return a + b;
-      3:  /*<<test.ml:4:0>>*/ }
+      1: function x(a, b){ /*<<test.ml:3:2>>*/ return a + b; /*<<test.ml:4:0>>*/ }
  |}]
 
 let%expect_test _ =
