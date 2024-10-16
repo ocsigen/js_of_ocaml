@@ -113,6 +113,7 @@
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
 * Runtime: allow dynlink of precompiled js with separate compilation (#1676)
 * Runtime: reimplement the runtime of weak and ephemeron (#1707)
+* Runtime: don't change the shape of mlbytes when converting to string
 * Lib: Modify Typed_array API for compatibility with WebAssembly
 * Lib: add details element and toggle event (#1728)
 * Toplevel: no longer set globals for toplevel initialization
