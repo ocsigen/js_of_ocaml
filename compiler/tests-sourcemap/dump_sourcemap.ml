@@ -78,8 +78,8 @@ let print_mapping lines ?(line_offset = 0) (sm : Source_map.Standard.t) =
           | _ -> ()))
 
 let print_sourcemap lines = function
-  | `Standard sm -> print_mapping lines sm
-  | `Index l ->
+  | Source_map.Standard sm -> print_mapping lines sm
+  | Index l ->
       List.iter
         l.Source_map.Index.sections
         ~f:(fun (Source_map.Index.{ gen_line; gen_column }, `Map sm) ->

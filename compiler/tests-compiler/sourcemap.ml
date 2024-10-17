@@ -56,8 +56,8 @@ let%expect_test _ =
       print_file (Filetype.path_of_js_file js_file);
       match extract_sourcemap js_file with
       | None -> Printf.printf "No sourcemap found\n"
-      | Some (`Standard sm) -> print_mapping ~line_offset:0 ~col_offset:0 sm
-      | Some (`Index i) ->
+      | Some (Standard sm) -> print_mapping ~line_offset:0 ~col_offset:0 sm
+      | Some (Index i) ->
           List.iter
             i.sections
             ~f:(fun
