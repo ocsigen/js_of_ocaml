@@ -74,7 +74,7 @@ let print_mapping lines ?(line_offset = 0) (sm : Source_map.Standard.t) =
                 ori_line
                 ori_col
                 gen_col
-                (mark gen_col lines.(gen_line + line_offset))
+                (mark gen_col lines.(gen_line - 1 + line_offset))
           | _ -> ()))
 
 let print_sourcemap lines = function

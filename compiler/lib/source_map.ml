@@ -174,6 +174,7 @@ module Mappings = struct
 
         let offset =
           let first_line = gen_line a.(0) in
+          assert (first_line > 0);
           if offset
           then (
             gen_line_r := first_line;

@@ -361,7 +361,6 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                      Line_writer.write_lines oc (Unit_info.to_string u));
                   let size = ref 0 in
                   let lsize = ref 0 in
-                  let data_r, data_w = Line_reader.lnum ic, Line_writer.lnum oc in
                   while
                     match Line_reader.peek ic with
                     | None -> false
@@ -375,6 +374,9 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                     copy ic oc;
                     incr lsize
                   done;
+                  let data_r, data_w =
+                    Line_reader.lnum ic - !lsize, Line_writer.lnum oc - !lsize
+                  in
                   reloc := `Copy (data_r, data_w, !lsize) :: !reloc;
                   if debug ()
                   then
