@@ -24,3 +24,5 @@ val program :
   -> Pretty_print.t
   -> Javascript.program
   -> Source_map.info
+
+val blackbox_filename : string

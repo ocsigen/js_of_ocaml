@@ -98,6 +98,7 @@ module Standard : sig
           (** Left uninterpreted, since most useful operations can be performed efficiently
           directly on the encoded form, and a full decoding can be costly for big
           sourcemaps. *)
+    ; ignore_list : string list
     }
 
   val filter_map : t -> f:(int -> int option) -> t

@@ -294,6 +294,11 @@ let string_of_stringlit (`Stringlit s) =
   | `String s -> s
   | _ -> invalid ()
 
+let int_of_intlit (`Intlit s) =
+  match Yojson.Safe.from_string s with
+  | `Int s -> s
+  | _ -> invalid ()
+
 let stringlit name rest : [ `Stringlit of string ] option =
   try
     match List.assoc name rest with
@@ -325,6 +330,17 @@ let list_stringlit_opt name rest =
     | _ -> invalid ()
   with Not_found -> None
 
+let list_intlit name rest =
+  try
+    match List.assoc name rest with
+    | `List l ->
+        Some
+          (List.map l ~f:(function
+              | `Intlit _ as s -> s
+              | _ -> invalid ()))
+    | _ -> invalid ()
+  with Not_found -> None
+
 module Standard = struct
   type t =
     { version : int
@@ -334,6 +350,7 @@ module Standard = struct
     ; sources_content : Source_content.t option list option
     ; names : string list
     ; mappings : Mappings.t
+    ; ignore_list : string list
     }
 
   let empty ~inline_source_content =
@@ -344,6 +361,7 @@ module Standard = struct
     ; sources_content = (if inline_source_content then Some [] else None)
     ; names = []
     ; mappings = Mappings.empty
+    ; ignore_list = []
     }
 
   let maps ~sources_offset ~names_offset x =
@@ -472,6 +490,21 @@ module Standard = struct
                      (List.map l ~f:(function
                          | None -> `Null
                          | Some x -> Source_content.to_json x))) )
+         ; ( "ignoreList"
+           , match t.ignore_list with
+             | [] -> None
+             | _ ->
+                 Some
+                   (`List
+                     (let s = StringSet.of_list t.ignore_list in
+                      List.filter_map
+                        ~f:(fun x -> x)
+                        (List.mapi
+                           ~f:(fun i nm ->
+                             if StringSet.mem nm s
+                             then Some (`Intlit (string_of_int i))
+                             else None)
+                           t.sources))) )
          ])
 
   let of_json (json : Yojson.Raw.t) =
@@ -505,6 +538,17 @@ module Standard = struct
           | None -> Mappings.empty
           | Some s -> Mappings.of_string_unsafe s
         in
+        let ignore_list =
+          let s =
+            IntSet.of_list
+              (List.map
+                 ~f:int_of_intlit
+                 (Option.value ~default:[] (list_intlit "ignoreList" rest)))
+          in
+          List.filter_map
+            ~f:(fun x -> x)
+            (List.mapi ~f:(fun i nm -> if IntSet.mem i s then Some nm else None) sources)
+        in
         { version = int_of_string version
         ; file
         ; sourceroot
@@ -512,6 +556,7 @@ module Standard = struct
         ; sources_content
         ; sources
         ; mappings
+        ; ignore_list
         }
     | _ -> invalid ()
 
@@ -520,7 +565,8 @@ module Standard = struct
   let to_file m file = Yojson.Raw.to_file file (json m)
 
   let invariant
-      { version; file = _; sourceroot = _; names; sources_content; sources; mappings } =
+      { version; file = _; sourceroot = _; names; sources_content; sources; mappings; _ }
+      =
     if not (version_is_valid version)
     then invalid_arg "Source_map.Standard.invariant: invalid version";
     match sources_content with

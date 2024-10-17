@@ -79,7 +79,9 @@ let find_source file =
   match Builtins.find file with
   | Some f -> Some (Source_map.Source_content.create (Builtins.File.content f))
   | None ->
-      if Sys.file_exists file && not (Sys.is_directory file)
+      if String.equal file Js_output.blackbox_filename
+      then Some (Source_map.Source_content.create "(* generated code *)")
+      else if Sys.file_exists file && not (Sys.is_directory file)
       then
         let content = Fs.read_file file in
         Some (Source_map.Source_content.create content)
@@ -99,9 +101,18 @@ let sourcemap_section_of_info
         | None -> filename
         | Some _ -> Filename.concat "/builtin" filename)
   in
+  let ignore_list =
+    List.filter sources ~f:(fun filename -> String.is_prefix ~prefix:"/builtin/" filename)
+  in
   let offset, mappings = Source_map.Mappings.encode_with_offset mappings in
   let map =
-    { (base : Source_map.Standard.t) with sources; sources_content; names; mappings }
+    { (base : Source_map.Standard.t) with
+      sources
+    ; sources_content
+    ; names
+    ; mappings
+    ; ignore_list
+    }
   in
   { Source_map.Index.offset; map }
 
