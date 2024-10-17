@@ -48,5 +48,6 @@ let%expect_test _ =
     file: test.js
     sourceRoot: <none>
     sources:
+    - /builtin/blackbox.ml
     - /dune-root/test.ml
     |}]
