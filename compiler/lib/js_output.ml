@@ -2155,22 +2155,37 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
               && String.equal (String.sub filename ~pos:0 ~len:9) "/builtin/")
         in
         let sm_mappings = Source_map.Mappings.decode sm.mappings in
-        let mappings =
-          List.rev_append_map !temp_mappings sm_mappings ~f:(fun (pos, m) ->
-              let gen_line = pos.PP.p_line + 1 in
-              let gen_col = pos.PP.p_col in
-              match m with
-              | Source_map.Gen { gen_col = _; gen_line = _ } ->
-                  Source_map.Gen { gen_col; gen_line }
-              | Source_map.Gen_Ori
-                  { gen_line = _; gen_col = _; ori_source; ori_line; ori_col } ->
-                  Source_map.Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
-              | Source_map.Gen_Ori_Name
-                  { gen_line = _; gen_col = _; ori_source; ori_line; ori_col; ori_name }
-                ->
-                  Source_map.Gen_Ori_Name
-                    { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
+        let relocate pos m =
+          let gen_line = pos.PP.p_line + 1 in
+          let gen_col = pos.PP.p_col in
+          match m with
+          | Source_map.Gen { gen_col = _; gen_line = _ } ->
+              Source_map.Gen { gen_col; gen_line }
+          | Source_map.Gen_Ori m -> Source_map.Gen_Ori { m with gen_line; gen_col }
+          | Source_map.Gen_Ori_Name m ->
+              Source_map.Gen_Ori_Name { m with gen_line; gen_col }
         in
+        let prepend mapping prev_mappings =
+          let rec prepend_rec pos mapping prev_mappings =
+            match mapping with
+            | [] -> prev_mappings
+            | (pos', m) :: rem ->
+                if pos'.PP.p_line = pos.PP.p_line
+                   || (pos'.p_line = pos.p_line - 1 && pos.p_col = 0)
+                then prepend_rec pos' rem (relocate pos' m :: prev_mappings)
+                else if pos.p_col > 0
+                then
+                  let pos = { pos with p_col = 0 } in
+                  prepend_rec pos mapping (relocate pos m :: prev_mappings)
+                else
+                  let pos = { pos with p_line = pos.p_line - 1 } in
+                  prepend_rec pos mapping (relocate pos m :: prev_mappings)
+          in
+          match mapping with
+          | [] -> prev_mappings
+          | (pos, m) :: rem -> prepend_rec pos rem (relocate pos m :: prev_mappings)
+        in
+        let mappings = prepend !temp_mappings sm_mappings in
         let mappings = Source_map.Mappings.encode mappings in
         Some
           { sm with
