@@ -393,7 +393,6 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                       "Skip %s@."
                       (String.concat ~sep:"," (StringSet.elements u.provides));
                   let lnum = ref 0 in
-                  let data_r = Line_reader.lnum ic in
                   while
                     match Line_reader.peek ic with
                     | None -> false
@@ -405,6 +404,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                     skip ic;
                     incr lnum
                   done;
+                  let data_r = Line_reader.lnum ic - !lnum in
                   reloc := `Drop (data_r, !lnum) :: !reloc)
             | Source_map x ->
                 skip ic;
