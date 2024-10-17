@@ -2104,21 +2104,38 @@ let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
     | true ->
         let sources = hashtbl_to_list files in
         let names = hashtbl_to_list names in
+        let relocate pos m =
+          let gen_line = pos.PP.p_line + 1 in
+          let gen_col = pos.PP.p_col in
+          match m with
+          | Source_map.Gen { gen_col = _; gen_line = _ } ->
+              Source_map.Gen { gen_col; gen_line }
+          | Source_map.Gen_Ori m -> Source_map.Gen_Ori { m with gen_line; gen_col }
+          | Source_map.Gen_Ori_Name m ->
+              Source_map.Gen_Ori_Name { m with gen_line; gen_col }
+        in
+        let rec build_mappings pos mapping prev_mappings =
+          match mapping with
+          | [] -> prev_mappings
+          | (pos', m) :: rem ->
+              (* Firefox assumes that a mapping stops at the end of a
+                 line, which is inconvenient. When this happens, we
+                 repeat the mapping on the next line. *)
+              if pos'.PP.p_line = pos.PP.p_line
+                 || (pos'.p_line = pos.p_line - 1 && pos.p_col = 0)
+              then build_mappings pos' rem (relocate pos' m :: prev_mappings)
+              else if pos.p_col > 0
+              then
+                let pos = { pos with p_col = 0 } in
+                build_mappings pos mapping (relocate pos m :: prev_mappings)
+              else
+                let pos = { pos with p_line = pos.p_line - 1 } in
+                build_mappings pos mapping (relocate pos m :: prev_mappings)
+        in
         let mappings =
-          List.rev_map !temp_mappings ~f:(fun (pos, m) ->
-              let gen_line = pos.PP.p_line + 1 in
-              let gen_col = pos.PP.p_col in
-              match m with
-              | Source_map.Gen { gen_col = _; gen_line = _ } ->
-                  Source_map.Gen { gen_col; gen_line }
-              | Source_map.Gen_Ori
-                  { gen_line = _; gen_col = _; ori_source; ori_line; ori_col } ->
-                  Source_map.Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
-              | Source_map.Gen_Ori_Name
-                  { gen_line = _; gen_col = _; ori_source; ori_line; ori_col; ori_name }
-                ->
-                  Source_map.Gen_Ori_Name
-                    { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
+          match !temp_mappings with
+          | [] -> []
+          | (pos, m) :: rem -> build_mappings pos rem [ relocate pos m ]
         in
         { Source_map.sources; names; mappings }
   in

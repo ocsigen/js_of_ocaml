@@ -3,4 +3,5 @@ sourcemap for test.bc.js
 /my/sourceRoot#b.ml:1:6 -> 14:   function f(<>x){return x - 1 | 0; }
 /my/sourceRoot#b.ml:1:10 -> 17:   function f(x){<>return x - 1 | 0; }
 /my/sourceRoot#b.ml:1:15 -> 35:   function f(x){return x - 1 | 0; <>}
+/my/sourceRoot#b.ml:1:15 -> 0:<>   var Testlib_B = [0, f];
 /my/sourceRoot#b.ml:1:15 -> 7:   var <>Testlib_B = [0, f];

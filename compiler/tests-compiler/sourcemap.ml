@@ -85,10 +85,12 @@ let%expect_test _ =
        13: //# sourceMappingURL=test.map
       /builtin/blackbox.ml:1:0 -> 5:7
       /builtin/blackbox.ml:1:0 -> 5:17
+      /builtin/blackbox.ml:1:0 -> 6:0
       /dune-root/test.ml:1:4 -> 6:12
       /dune-root/test.ml:1:7 -> 6:15
       /dune-root/test.ml:1:11 -> 6:18
       /dune-root/test.ml:1:12 -> 6:28
+      /dune-root/test.ml:1:12 -> 7:0
       /dune-root/test.ml:1:12 -> 7:7
       /builtin/blackbox.ml:1:0 -> 7:14
     |}]
