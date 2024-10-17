@@ -125,6 +125,8 @@ module Make (D : sig
 
   val get_name_index : string -> int
 
+  val hidden_location : Source_map.map
+
   val source_map_enabled : bool
 
   val accept_unnamed_var : bool
@@ -159,7 +161,7 @@ struct
          then
            match loc with
            | N | U | Pi { Parse_info.src = None | Some ""; _ } ->
-               push_mapping (PP.pos f) (Source_map.Gen { gen_line = -1; gen_col = -1 })
+               push_mapping (PP.pos f) hidden_location
            | Pi { Parse_info.src = Some file; line; col; _ } ->
                push_mapping
                  (PP.pos f)
@@ -201,10 +203,15 @@ struct
         (match loc with
         | None | Some { Parse_info.src = Some "" | None; _ } ->
             (* Use a dummy location. It is going to be ignored anyway *)
+            let ori_source =
+              match hidden_location with
+              | Source_map.Gen_Ori { ori_source; _ } -> ori_source
+              | _ -> 0
+            in
             Source_map.Gen_Ori_Name
               { gen_line = -1
               ; gen_col = -1
-              ; ori_source = 0
+              ; ori_source
               ; ori_line = 1
               ; ori_col = 0
               ; ori_name = get_name_index nm
@@ -2040,6 +2047,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
     | None | Some { Source_map.Standard.sources_content = None; _ } -> None
     | Some { Source_map.Standard.sources_content = Some _; _ } -> Some (ref [])
   in
+  let blackbox_file = "/builtin/blackbox.ml" in
   let push_mapping, get_file_index, get_name_index, source_map_enabled =
     let source_map_enabled =
       match source_map with
@@ -2066,7 +2074,9 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
       match Builtins.find file with
       | Some f -> Some (Builtins.File.content f)
       | None ->
-          if Sys.file_exists file && not (Sys.is_directory file)
+          if String.equal file blackbox_file
+          then Some "(* generated code *)"
+          else if Sys.file_exists file && not (Sys.is_directory file)
           then
             let content = Fs.read_file file in
             Some content
@@ -2094,12 +2104,23 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
           pos)
     , source_map_enabled )
   in
+  let hidden_location =
+    Source_map.Gen_Ori
+      { gen_line = -1
+      ; gen_col = -1
+      ; ori_source = get_file_index blackbox_file
+      ; ori_line = 1
+      ; ori_col = 0
+      }
+  in
   let module O = Make (struct
     let push_mapping = push_mapping
 
     let get_name_index = get_name_index
 
     let get_file_index = get_file_index
+
+    let hidden_location = hidden_location
 
     let source_map_enabled = source_map_enabled
 
@@ -2128,6 +2149,11 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
               | None -> filename
               | Some _ -> Filename.concat "/builtin" filename)
         in
+        let ignore_list =
+          List.filter sources ~f:(fun filename ->
+              String.length filename >= 9
+              && String.equal (String.sub filename ~pos:0 ~len:9) "/builtin/")
+        in
         let sm_mappings = Source_map.Mappings.decode sm.mappings in
         let mappings =
           List.rev_append_map !temp_mappings sm_mappings ~f:(fun (pos, m) ->
@@ -2146,7 +2172,14 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
                     { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
         in
         let mappings = Source_map.Mappings.encode mappings in
-        Some { sm with Source_map.Standard.sources; names; sources_content; mappings }
+        Some
+          { sm with
+            Source_map.Standard.sources
+          ; names
+          ; sources_content
+          ; mappings
+          ; ignore_list
+          }
   in
   PP.check f;
   (if stats ()
