@@ -337,10 +337,10 @@ end
     117:      /*<<test.ml:64:2>>*/ if(! backtrace)
     118:       /*<<test.ml:66:6>>*/ return caml_call2(Stdlib_Printf[1], outchan, _d_) /*<<test.ml:73:10>>*/ ;
     119:     var
-    120:      a = backtrace[1],
+    120:      a =  /*<<test.ml:64:2>>*/ backtrace[1],
     121:      _f_ =  /*<<test.ml:69:6>>*/ a.length - 2 | 0,
-    122:      _e_ = 0;
-    123:     if(_f_ >= 0){
+    122:      _e_ =  /*<<test.ml:64:2>>*/ 0;
+    123:      /*<<test.ml:69:6>>*/ if(_f_ >= 0){
     124:      var i = _e_;
     125:      for(;;){
     126:       var
@@ -351,23 +351,23 @@ end
     131:        var str = match[1];
     132:         /*<<test.ml:72:24>>*/ caml_call3(Stdlib_Printf[1], outchan, _c_, str);
     133:       }
-    134:       var _g_ = i + 1 | 0;
+    134:       var _g_ =  /*<<test.ml:70:43>>*/ i + 1 | 0;
     135:       if(_f_ === i) break;
     136:       i = _g_;
     137:      }
     138:     }
-    139:     return 0;
+    139:      /*<<test.ml:69:6>>*/ return 0;
     140:     /*<<test.ml:73:10>>*/ }
     141:    function compare(left, right, e1, e2){
     142:      /*<<test.ml:77:35>>*/ if(0 === e1[0]){
     143:      var v1 = e1[1];
     144:      if(0 !== e2[0])  /*<<test.ml:80:23>>*/ return -1;
-    145:      var v2 = e2[1];
+    145:      var v2 =  /*<<test.ml:77:35>>*/ e2[1];
     146:       /*<<test.ml:78:24>>*/ return caml_call2(left, v1, v2) /*<<test.ml:81:24>>*/ ;
     147:     }
-    148:     var v1$0 = e1[1];
+    148:     var v1$0 =  /*<<test.ml:77:35>>*/ e1[1];
     149:     if(0 === e2[0])  /*<<test.ml:81:23>>*/ return 1;
-    150:     var v2$0 = e2[1];
+    150:     var v2$0 =  /*<<test.ml:77:35>>*/ e2[1];
     151:      /*<<test.ml:79:26>>*/ return caml_call2(right, v1$0, v2$0) /*<<test.ml:81:24>>*/ ;
     152:    }
     153:    var
