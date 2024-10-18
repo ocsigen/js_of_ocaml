@@ -1899,68 +1899,24 @@ let hashtbl_to_list htb =
   |> List.sort ~cmp:(fun (_, a) (_, b) -> compare a b)
   |> List.map ~f:fst
 
-let program ?(accept_unnamed_var = false) f ?source_map p =
+let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
   let temp_mappings = ref [] in
   let files = Hashtbl.create 17 in
   let names = Hashtbl.create 17 in
-  let contents : Source_map.Source_content.t option list ref option =
-    match source_map with
-    | None | Some { Source_map.Standard.sources_content = None; _ } -> None
-    | Some { Source_map.Standard.sources_content = Some _; _ } -> Some (ref [])
-  in
-  let push_mapping, get_file_index, get_name_index, source_map_enabled =
-    let source_map_enabled =
-      match source_map with
-      | None -> false
-      | Some sm ->
-          let rec loop s sc =
-            match s, sc with
-            | [], _ -> ()
-            | x :: xs, [] ->
-                Hashtbl.add files x (Hashtbl.length files);
-                Option.iter contents ~f:(fun r -> r := None :: !r);
-                loop xs []
-            | x :: xs, y :: ys ->
-                Hashtbl.add files x (Hashtbl.length files);
-                Option.iter contents ~f:(fun r -> r := y :: !r);
-                loop xs ys
-          in
-          loop sm.sources (Option.value ~default:[] sm.sources_content);
-          List.iter sm.Source_map.Standard.names ~f:(fun f ->
-              Hashtbl.add names f (Hashtbl.length names));
-          true
-    in
-    let find_source file =
-      match Builtins.find file with
-      | Some f -> Some (Builtins.File.content f)
-      | None ->
-          if Sys.file_exists file && not (Sys.is_directory file)
-          then
-            let content = Fs.read_file file in
-            Some content
-          else None
-    in
+  let push_mapping, get_file_index, get_name_index =
     ( (fun pos m -> temp_mappings := (pos, m) :: !temp_mappings)
     , (fun file ->
         try Hashtbl.find files file
         with Not_found ->
           let pos = Hashtbl.length files in
           Hashtbl.add files file pos;
-          Option.iter contents ~f:(fun r ->
-              let source_contents =
-                match find_source file with
-                | None -> None
-                | Some s -> Some (Source_map.Source_content.create s)
-              in
-              r := source_contents :: !r);
           pos)
-    , (fun name ->
+    , fun name ->
         try Hashtbl.find names name
         with Not_found ->
           let pos = Hashtbl.length names in
           Hashtbl.add names name pos;
-          pos)
-    , source_map_enabled )
+          pos )
   in
   let module O = Make (struct
     let push_mapping = push_mapping
@@ -1969,7 +1925,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
 
     let get_file_index = get_file_index
 
-    let source_map_enabled = source_map_enabled
+    let source_map_enabled = source_map
 
     let accept_unnamed_var = accept_unnamed_var
   end) in
@@ -1981,24 +1937,12 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
   PP.newline f;
   let sm =
     match source_map with
-    | None -> None
-    | Some sm ->
+    | false -> { Source_map.sources = []; names = []; mappings = [] }
+    | true ->
         let sources = hashtbl_to_list files in
         let names = hashtbl_to_list names in
-        let sources_content =
-          match contents with
-          | None -> None
-          | Some r -> Some (List.rev !r)
-        in
-        let sources =
-          List.map sources ~f:(fun filename ->
-              match Builtins.find filename with
-              | None -> filename
-              | Some _ -> Filename.concat "/builtin" filename)
-        in
-        let sm_mappings = Source_map.Mappings.decode sm.mappings in
         let mappings =
-          List.rev_append_map !temp_mappings sm_mappings ~f:(fun (pos, m) ->
+          List.rev_map !temp_mappings ~f:(fun (pos, m) ->
               let gen_line = pos.PP.p_line + 1 in
               let gen_col = pos.PP.p_col in
               match m with
@@ -2013,8 +1957,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
                   Source_map.Gen_Ori_Name
                     { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
         in
-        let mappings = Source_map.Mappings.encode mappings in
-        Some { sm with Source_map.Standard.sources; names; sources_content; mappings }
+        { Source_map.sources; names; mappings }
   in
   PP.check f;
   (if stats ()
