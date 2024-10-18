@@ -99,49 +99,30 @@ module Line_writer : sig
 
   val of_channel : out_channel -> t
 
-  val write : ?source:Line_reader.t -> t -> string -> unit
+  val write : t -> string -> unit
 
-  val write_lines : ?source:Line_reader.t -> t -> string -> unit
+  val write_lines : t -> string -> unit
 
   val lnum : t -> int
 end = struct
   type t =
     { oc : out_channel
     ; mutable lnum : int
-    ; mutable source : (string * int) option
     }
 
-  let of_channel oc = { oc; source = None; lnum = 0 }
+  let of_channel oc = { oc; lnum = 0 }
 
-  let write ?source t s =
-    let source =
-      match source with
-      | None -> None
-      | Some ic -> Some (Line_reader.fname ic, Line_reader.lnum ic)
-    in
-    let emit fname lnum =
-      output_string t.oc (Printf.sprintf "//# %d %S\n" lnum fname);
-      1
-    in
-    let lnum_off =
-      match t.source, source with
-      | _, None -> 0
-      | None, Some (fname, lnum) -> emit fname lnum
-      | Some (fname1, lnum1), Some (fname2, lnum2) ->
-          if String.equal fname1 fname2 && lnum1 + 1 = lnum2 then 0 else emit fname2 lnum2
-    in
+  let write t s =
     output_string t.oc s;
     output_string t.oc "\n";
-    let lnum_off = lnum_off + 1 in
-    t.source <- source;
-    t.lnum <- t.lnum + lnum_off
+    t.lnum <- t.lnum + 1
 
-  let write_lines ?source t lines =
+  let write_lines t lines =
     let l = String.split_on_char ~sep:'\n' lines in
     let rec w = function
       | [ "" ] | [] -> ()
       | s :: xs ->
-          write ?source t s;
+          write t s;
           w xs
     in
     w l
@@ -172,7 +153,11 @@ let prefix_kind line =
 
 let action ~resolve_sourcemap_url ~drop_source_map file line =
   match prefix_kind line, drop_source_map with
-  | `Other, (true | false) -> Keep
+  | `Other, (true | false) -> (
+      match line with
+      | "" -> Drop
+      | s when String.equal s Global_constant.header -> Drop
+      | _ -> Keep)
   | `Unit, (true | false) -> Unit
   | `Build_info bi, _ -> Build_info bi
   | (`Json_base64 _ | `Url _), true -> Drop
@@ -323,7 +308,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
       let reloc = ref [] in
       let copy ic oc =
         let line = Line_reader.next ic in
-        Line_writer.write ~source:ic oc line
+        Line_writer.write oc line
       in
       let rec read () =
         match Line_reader.peek ic with
@@ -342,6 +327,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                 if not !build_info_emitted
                 then (
                   let bi = Build_info.with_kind bi (if mklib then `Cma else `Unknown) in
+                  Line_writer.write oc Global_constant.header;
                   Line_writer.write_lines oc (Build_info.to_string bi);
                   build_info_emitted := true)
             | Drop -> skip ic
@@ -361,6 +347,12 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                      Line_writer.write_lines oc (Unit_info.to_string u));
                   let size = ref 0 in
                   let lsize = ref 0 in
+                  Line_writer.write
+                    oc
+                    (Printf.sprintf
+                       "//# %d %S"
+                       (Line_reader.lnum ic)
+                       (Line_reader.fname ic));
                   while
                     match Line_reader.peek ic with
                     | None -> false
@@ -412,7 +404,6 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             read ()
       in
       read ();
-      Line_writer.write oc "";
       Line_reader.close ic;
       (match is_runtime with
       | None -> ()
@@ -434,7 +425,8 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             (Parse_bytecode.Debug.create ~include_cmis:false false)
             code;
           let content = Buffer.contents b in
-          Line_writer.write_lines oc content);
+          Line_writer.write_lines oc content;
+          Line_writer.write oc "");
       (match !sm_for_file with
       | None -> ()
       | Some x -> sm := (x, List.rev !reloc, line_offset) :: !sm);
