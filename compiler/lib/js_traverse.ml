@@ -314,8 +314,8 @@ class map : mapper =
       | EAccess (e1, ak, e2) -> EAccess (m#expression e1, ak, m#expression e2)
       | EDot (e1, ak, id) -> EDot (m#expression e1, ak, id)
       | EDotPrivate (e1, ak, id) -> EDotPrivate (m#expression e1, ak, id)
-      | ENew (e1, args) ->
-          ENew (m#expression e1, Option.map ~f:(List.map ~f:m#argument) args)
+      | ENew (e1, args, loc) ->
+          ENew (m#expression e1, Option.map ~f:(List.map ~f:m#argument) args, m#loc loc)
       | EVar v -> EVar (m#ident v)
       | EFun (idopt, fun_decl) ->
           let idopt = Option.map ~f:m#ident idopt in
@@ -668,10 +668,10 @@ class iter : iterator =
           m#expression e2
       | EDot (e1, _ak, _) -> m#expression e1
       | EDotPrivate (e1, _, _) -> m#expression e1
-      | ENew (e1, Some args) ->
+      | ENew (e1, Some args, _) ->
           m#expression e1;
           List.iter args ~f:m#argument
-      | ENew (e1, None) -> m#expression e1
+      | ENew (e1, None, _) -> m#expression e1
       | EVar v -> m#ident v
       | EFun (idopt, fun_decl) ->
           (match idopt with
