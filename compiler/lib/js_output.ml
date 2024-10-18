@@ -854,12 +854,13 @@ struct
         | ANormal -> PP.string f ".#"
         | ANullish -> PP.string f "?.#");
         PP.string f nm
-    | ENew (e, None) ->
+    | ENew (e, None, loc) ->
         if Prec.(l > NewExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.start_group f 1;
+        output_debug_info f loc;
         PP.string f "new";
         PP.space f;
         expression NewExpression f e;
@@ -868,8 +869,9 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | ENew (e, Some el) ->
+    | ENew (e, Some el, loc) ->
         PP.start_group f 1;
+        output_debug_info f loc;
         PP.string f "new";
         PP.space f;
         expression MemberExpression f e;

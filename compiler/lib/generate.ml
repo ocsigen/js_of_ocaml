@@ -1232,7 +1232,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
                 l
                 ~init:([], mutator_p, queue)
             in
-            ( J.ENew (cc, if List.is_empty args then None else Some args)
+            ( J.ENew (cc, (if List.is_empty args then None else Some args), loc)
             , or_p pc prop
             , queue )
         | Extern "caml_js_get", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident' f ->

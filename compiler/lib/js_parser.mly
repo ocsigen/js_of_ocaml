@@ -906,7 +906,7 @@ call_expr(x):
 
 new_expr(x):
  | e=member_expr(x)    { e }
- | T_NEW e=new_expr(d1) { (ENew (e,None)) }
+ | T_NEW e=new_expr(d1) { (ENew (e,None, p $symbolstartpos)) }
 
 access:
   | "." { ANormal }
@@ -924,7 +924,7 @@ member_expr(x):
  | e1=member_expr(x) ak=access i=field_name
      { (EDot(e1,ak,i)) }
  | T_NEW e1=member_expr(d1) a=arguments
-     { (ENew(e1, Some a)) }
+     { (ENew(e1, Some a, p $symbolstartpos)) }
  | e=member_expr(x) t=template_literal
      { ECallTemplate(e, t, p $symbolstartpos) }
  | T_SUPER "[" e=expr "]"

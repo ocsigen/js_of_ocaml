@@ -490,7 +490,8 @@ let build_runtime_arguments
                                         (EStr
                                            (Utf8_string.of_string_exn
                                               (nm ^ " not implemented")))
-                                    ] ))
+                                    ]
+                                , N ))
                          , N )
                        ]
                        N
