@@ -21,15 +21,16 @@ let%expect_test "Eliminates unused functions from functor" =
    | Javascript.ECall (EVar (S { name = Utf8 name; _ }), _, _, _) -> (
        let _, _, body, _ = find_function program name in
        match List.rev body with
-       | (Return_statement (Some (EArr return)), loc) :: rest ->
+       | (Return_statement (Some (EArr return), loc), loc') :: rest ->
            let return =
              ( Javascript.Return_statement
-                 (Some
-                    (EArr
-                       (List.filter return ~f:(function
-                           | Javascript.ElementHole -> false
-                           | _ -> true))))
-             , loc )
+                 ( Some
+                     (EArr
+                        (List.filter return ~f:(function
+                            | Javascript.ElementHole -> false
+                            | _ -> true)))
+                 , loc )
+             , loc' )
            in
            print_program (List.rev (return :: rest))
        | _ -> ())
