@@ -561,6 +561,7 @@ type state =
   ; dom : Structure.graph
   ; visited_blocks : Addr.Set.t ref
   ; ctx : Ctx.t
+  ; pc : Addr.t
   }
 
 module DTree = struct
@@ -681,7 +682,7 @@ let build_graph ctx pc =
   let visited_blocks = ref Addr.Set.empty in
   let structure = Structure.build_graph ctx.Ctx.blocks pc in
   let dom = Structure.dominator_tree structure in
-  { visited_blocks; structure; dom; ctx }
+  { visited_blocks; structure; dom; ctx; pc }
 
 (****)
 
@@ -835,7 +836,8 @@ let generate_apply_fun ctx { arity; exact; trampolined } =
     ( None
     , J.fun_
         (f :: params)
-        [ J.Return_statement (Some (apply_fun_raw ctx f' params' exact trampolined)), J.N
+        [ ( J.Return_statement (Some (apply_fun_raw ctx f' params' exact trampolined), J.N)
+          , J.N )
         ]
         J.N )
 
@@ -1282,7 +1284,7 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
                 loc
             in
             let e =
-              J.EFun (Some f, J.fun_ args [ J.Return_statement (Some call), J.N ] J.N)
+              J.EFun (Some f, J.fun_ args [ J.Return_statement (Some call, J.N), J.N ] J.N)
             in
             e, const_p, queue
         | Extern "caml_alloc_dummy_function", _ -> assert false
@@ -1675,6 +1677,8 @@ and compile_decision_tree kind st scope_stack loc cx dtree ~fall_through =
         in
         ( never1 && never2
         , Js_simpl.if_statement
+            ~function_end:(fun () ->
+              source_location_ctx st.ctx ~force:After (After st.pc))
             e'
             loc
             (Js_simpl.block iftrue)
@@ -1758,7 +1762,17 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
         let return_expr =
           if Var.equal st.ctx.deadcode_sentinal x then None else Some cx
         in
-        true, flush_all queue [ J.Return_statement return_expr, loc ]
+        let loc' =
+          match cx with
+          | ECall _ -> (
+              (* We usually don't have a good locations for tail
+                 calls, so use the end of the function instead *)
+              match source_location_ctx st.ctx ~force:After (After st.pc) with
+              | J.N -> loc
+              | loc -> loc)
+          | _ -> loc
+        in
+        true, flush_all queue [ J.Return_statement (return_expr, loc'), loc ]
     | Raise (x, k) ->
         let (_px, cx), queue = access_queue queue x in
         true, flush_all queue (throw_statement st.ctx cx k loc)
@@ -1766,7 +1780,7 @@ and compile_conditional st queue ~fall_through last scope_stack : _ * _ =
         let e_opt =
           if st.ctx.Ctx.should_export then Some (s_var Global_constant.exports) else None
         in
-        true, flush_all queue [ J.Return_statement e_opt, loc ]
+        true, flush_all queue [ J.Return_statement (e_opt, loc), loc ]
     | Branch cont -> compile_branch st queue cont scope_stack ~fall_through
     | Pushtrap (c1, x, e1) ->
         let never_body, body = compile_branch st [] c1 scope_stack ~fall_through in

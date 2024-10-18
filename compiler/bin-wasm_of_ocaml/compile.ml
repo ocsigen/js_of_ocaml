@@ -193,7 +193,7 @@ let build_js_runtime ~primitives ?runtime_arguments () =
       List.split_last
       @@ Driver.link_and_pack
            ~link:`Needed
-           [ Javascript.Return_statement (Some (EObj l)), N ]
+           [ Javascript.Return_statement (Some (EObj l), N), N ]
     with
     | Some x -> x
     | None -> assert false

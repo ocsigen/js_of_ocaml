@@ -1417,7 +1417,8 @@ let () =
               let name = Printf.sprintf "js_expr_%x" (String.hash str) in
               let* () =
                 register_fragment name (fun () ->
-                    EArrow (J.fun_ [] [ Return_statement (Some e), N ] N, true, AUnknown))
+                    EArrow
+                      (J.fun_ [] [ Return_statement (Some e, N), N ] N, true, AUnknown))
               in
               let* js_val = JavaScript.invoke_fragment name [] in
               return (W.Call (wrap, [ js_val ]))
@@ -1459,13 +1460,14 @@ let () =
               ( J.fun_
                   (List.map ~f:J.ident (f :: o :: params))
                   [ ( Return_statement
-                        (Some
-                           (J.call
-                              (J.dot
-                                 (EVar (J.ident f))
-                                 (Utf8_string.of_string_exn "call"))
-                              (List.map ~f:(fun x -> J.EVar (J.ident x)) (o :: params))
-                              N))
+                        ( Some
+                            (J.call
+                               (J.dot
+                                  (EVar (J.ident f))
+                                  (Utf8_string.of_string_exn "call"))
+                               (List.map ~f:(fun x -> J.EVar (J.ident x)) (o :: params))
+                               N)
+                        , N )
                     , N )
                   ]
                   N
@@ -1488,11 +1490,12 @@ let () =
               ( J.fun_
                   (List.map ~f:J.ident (f :: params))
                   [ ( Return_statement
-                        (Some
-                           (J.call
-                              (EVar (J.ident f))
-                              (List.map ~f:(fun x -> J.EVar (J.ident x)) params)
-                              N))
+                        ( Some
+                            (J.call
+                               (EVar (J.ident f))
+                               (List.map ~f:(fun x -> J.EVar (J.ident x)) params)
+                               N)
+                        , N )
                     , N )
                   ]
                   N
@@ -1520,11 +1523,12 @@ let () =
                   ( J.fun_
                       (List.map ~f:J.ident (o :: params))
                       [ ( Return_statement
-                            (Some
-                               (J.call
-                                  (J.dot (EVar (J.ident o)) meth)
-                                  (List.map ~f:(fun x -> J.EVar (J.ident x)) params)
-                                  N))
+                            ( Some
+                                (J.call
+                                   (J.dot (EVar (J.ident o)) meth)
+                                   (List.map ~f:(fun x -> J.EVar (J.ident x)) params)
+                                   N)
+                            , N )
                         , N )
                       ]
                       N
@@ -1549,12 +1553,14 @@ let () =
               ( J.fun_
                   (List.map ~f:J.ident (c :: params))
                   [ ( Return_statement
-                        (Some
-                           (ENew
-                              ( EVar (J.ident c)
-                              , Some
-                                  (List.map ~f:(fun x -> J.Arg (EVar (J.ident x))) params)
-                              )))
+                        ( Some
+                            (ENew
+                               ( EVar (J.ident c)
+                               , Some
+                                   (List.map
+                                      ~f:(fun x -> J.Arg (EVar (J.ident x)))
+                                      params) ))
+                        , N )
                     , N )
                   ]
                   N
@@ -1576,7 +1582,7 @@ let () =
                 EArrow
                   ( J.fun_
                       [ J.ident o ]
-                      [ Return_statement (Some (J.dot (EVar (J.ident o)) prop)), N ]
+                      [ Return_statement (Some (J.dot (EVar (J.ident o)) prop), N), N ]
                       N
                   , true
                   , AUnknown ))
@@ -1599,9 +1605,10 @@ let () =
                   ( J.fun_
                       [ J.ident o; J.ident v ]
                       [ ( Return_statement
-                            (Some
-                               (J.EBin
-                                  (J.Eq, J.dot (EVar (J.ident o)) prop, EVar (J.ident v))))
+                            ( Some
+                                (J.EBin
+                                   (J.Eq, J.dot (EVar (J.ident o)) prop, EVar (J.ident v)))
+                            , N )
                         , N )
                       ]
                       N
@@ -1636,15 +1643,16 @@ let () =
               ( J.fun_
                   (List.map ~f:J.ident params)
                   [ ( Return_statement
-                        (Some
-                           (EObj
-                              (List.map2
-                                 ~f:(fun k x ->
-                                   J.Property
-                                     ( (if J.is_ident' k then J.PNI k else J.PNS k)
-                                     , EVar (J.ident x) ))
-                                 kl
-                                 params)))
+                        ( Some
+                            (EObj
+                               (List.map2
+                                  ~f:(fun k x ->
+                                    J.Property
+                                      ( (if J.is_ident' k then J.PNI k else J.PNS k)
+                                      , EVar (J.ident x) ))
+                                  kl
+                                  params))
+                        , N )
                     , N )
                   ]
                   N

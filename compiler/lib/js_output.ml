@@ -509,13 +509,14 @@ struct
             PP.end_group f);
         PP.end_group f;
         (match b, consise with
-        | [ (Return_statement (Some e), loc) ], true ->
+        | [ (Return_statement (Some e, loc), loc') ], true ->
             (* Should not starts with '{' *)
             PP.start_group f 1;
             PP.break1 f;
-            output_debug_info f loc;
+            output_debug_info f loc';
             parenthesized_expression ~obj:true AssignementExpression f e;
-            PP.end_group f
+            PP.end_group f;
+            output_debug_info f loc
         | l, _ ->
             let b =
               match l with
@@ -1466,10 +1467,11 @@ struct
         let (Utf8 l) = nane_of_label s in
         PP.string f l;
         last_semi ()
-    | Return_statement e -> (
+    | Return_statement (e, loc) -> (
         match e with
         | None ->
             PP.string f "return";
+            output_debug_info f loc;
             last_semi ()
         | Some (EFun (i, ({ async = false; generator = false }, l, b, pc))) ->
             PP.start_group f 1;
@@ -1490,6 +1492,7 @@ struct
             function_body f b;
             output_debug_info f pc;
             PP.string f "}";
+            output_debug_info f loc;
             last_semi ();
             PP.end_group f
         | Some e ->
@@ -1498,6 +1501,7 @@ struct
             PP.non_breaking_space f;
             PP.start_group f 0;
             expression Expression f e;
+            output_debug_info f loc;
             last_semi ();
             PP.end_group f;
             PP.end_group f

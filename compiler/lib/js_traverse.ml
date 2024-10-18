@@ -187,7 +187,7 @@ class map : mapper =
           ForAwaitOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
       | Continue_statement s -> Continue_statement s
       | Break_statement s -> Break_statement s
-      | Return_statement e -> Return_statement (m#expression_o e)
+      | Return_statement (e, loc) -> Return_statement (m#expression_o e, m#loc loc)
       | Labelled_statement (l, (s, loc)) ->
           Labelled_statement (l, (m#statement s, m#loc loc))
       | Throw_statement e -> Throw_statement (m#expression e)
@@ -549,7 +549,7 @@ class iter : iterator =
           m#statement s
       | Continue_statement _ -> ()
       | Break_statement _ -> ()
-      | Return_statement e -> m#expression_o e
+      | Return_statement (e, _) -> m#expression_o e
       | Labelled_statement (_, (s, _)) -> m#statement s
       | Throw_statement e -> m#expression e
       | Switch_statement (e, l, def, l') ->
@@ -1750,8 +1750,16 @@ class simpl =
           | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse rem
           (* if (e1) return e2 else return e3 --> return e1 ? e2 : e3 *)
           | If_statement
-              (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
-            -> (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
+              ( cond
+              , (Return_statement (Some e1, _), _)
+              , Some (Return_statement (Some e2, _), _) ) ->
+              ( Return_statement
+                  ( Some (ECond (cond, e1, e2))
+                  , U
+                    (*TODO: it would be better to use the location of the
+                      end of the function, but we can't easily get it. *) )
+              , loc )
+              :: rem
           (* if (e1) v1 = e2 else v1 = e3 --> v1 = e1 ? e2 : e3 *)
           | If_statement
               ( cond

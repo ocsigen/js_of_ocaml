@@ -526,7 +526,7 @@ let build_runtime_arguments
                           , ANullish
                           , Utf8_string.of_string_exn "export" )
                       , EVar (Javascript.ident Global_constant.global_object_) ))
-               ; Return_statement (Some (obj generated_js)), N
+               ; Return_statement (Some (obj generated_js), N), N
                ]
                N
            , true

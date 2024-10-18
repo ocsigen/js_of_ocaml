@@ -314,7 +314,7 @@ end
      89:     function info(is_raise){
      90:       /*<<test.ml:46:4>>*/ return is_raise
      91:              ? 0 === pos ? cst_Raised_at : cst_Re_raised_at
-     92:              : 0 === pos ? cst_Raised_by_primitive_operat : cst_Called_from;
+     92:              : 0 === pos ? cst_Raised_by_primitive_operat : cst_Called_from /*<<test.ml:49:75>>*/ ;
      93:      /*<<test.ml:49:75>>*/ }
      94:      /*<<test.ml:51:2>>*/ if(0 === slot[0]){
      95:       /*<<test.ml:59:14>>*/ var
@@ -327,17 +327,17 @@ end
     102:        /*<<test.ml:59:14>>*/ _n_ = info(slot[1]);
     103:       /*<<test.ml:58:6>>*/ return [0,
     104:               /*<<test.ml:58:11>>*/ caml_call8
-    105:               (Stdlib_Printf[4], _a_, _n_, _m_, _l_, _k_, _j_, _i_, _h_)];
+    105:               (Stdlib_Printf[4], _a_, _n_, _m_, _l_, _k_, _j_, _i_, _h_)] /*<<test.ml:58:6>>*/ ;
     106:     }
-    107:     if(slot[1])  /*<<test.ml:54:50>>*/ return 0;
+    107:     if(slot[1])  /*<<test.ml:54:50>>*/ return 0 /*<<test.ml:54:50>>*/ ;
     108:      /*<<test.ml:56:51>>*/  /*<<test.ml:56:51>>*/ var _o_ = info(0);
     109:      /*<<test.ml:56:8>>*/ return [0,
-    110:              /*<<test.ml:56:13>>*/ caml_call2(Stdlib_Printf[4], _b_, _o_)];
+    110:              /*<<test.ml:56:13>>*/ caml_call2(Stdlib_Printf[4], _b_, _o_)] /*<<test.ml:56:8>>*/ ;
     111:     /*<<test.ml:61:52>>*/ }
     112:    function print_exception_backtrace(outchan, backtrace){
     113:      /*<<test.ml:64:2>>*/ if(! backtrace)
     114:       /*<<test.ml:66:6>>*/ return  /*<<test.ml:66:6>>*/ caml_call2
-    115:              (Stdlib_Printf[1], outchan, _d_);
+    115:              (Stdlib_Printf[1], outchan, _d_) /*<<test.ml:73:10>>*/ ;
     116:     var a = backtrace[1], _f_ = a.length - 2 | 0, _e_ = 0;
     117:     if(_f_ >= 0){
     118:      var i = _e_;
@@ -359,16 +359,16 @@ end
     134:    function compare(left, right, e1, e2){
     135:      /*<<test.ml:77:35>>*/ if(0 === e1[0]){
     136:      var v1 = e1[1];
-    137:      if(0 !== e2[0])  /*<<test.ml:80:23>>*/ return -1;
+    137:      if(0 !== e2[0])  /*<<test.ml:80:23>>*/ return -1 /*<<test.ml:80:23>>*/ ;
     138:      var v2 = e2[1];
     139:       /*<<test.ml:78:24>>*/ return  /*<<test.ml:78:24>>*/ caml_call2
-    140:              (left, v1, v2);
+    140:              (left, v1, v2) /*<<test.ml:81:24>>*/ ;
     141:     }
     142:     var v1$0 = e1[1];
-    143:     if(0 === e2[0])  /*<<test.ml:81:23>>*/ return 1;
+    143:     if(0 === e2[0])  /*<<test.ml:81:23>>*/ return 1 /*<<test.ml:81:23>>*/ ;
     144:     var v2$0 = e2[1];
     145:      /*<<test.ml:79:26>>*/ return  /*<<test.ml:79:26>>*/ caml_call2
-    146:             (right, v1$0, v2$0);
+    146:             (right, v1$0, v2$0) /*<<test.ml:81:24>>*/ ;
     147:     /*<<test.ml:81:24>>*/ }
     148:     /*<<test.ml:75:16>>*/ var
     149:      /*<<test.ml:75:16>>*/ Either = [0, compare],
