@@ -39,7 +39,10 @@
   (:standard -linkall))
  (modes byte js)
  (js_of_ocaml
-  (link_flags (:standard))
+  (link_flags
+   :standard
+   ; The source map would be too large on 32-bit architectures otherwise
+   --no-source-map)
   (build_runtime_flags
    (:standard
     --file
