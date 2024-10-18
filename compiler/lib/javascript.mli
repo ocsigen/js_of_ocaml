@@ -197,7 +197,7 @@ and expression =
   | EAccess of expression * access_kind * expression
   | EDot of expression * access_kind * identifier
   | EDotPrivate of expression * access_kind * identifier
-  | ENew of expression * arguments option
+  | ENew of expression * arguments option * location
   | EVar of ident
   | EFun of ident option * function_declaration
   | EClass of ident option * class_declaration
