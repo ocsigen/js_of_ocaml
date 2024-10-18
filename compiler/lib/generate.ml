@@ -716,7 +716,7 @@ let visit_all params args =
   in
   l
 
-let parallel_renaming back_edge params args continuation queue =
+let parallel_renaming loc back_edge params args continuation queue =
   if back_edge && Config.Flag.es6 ()
      (* This is likely slower than using explicit temp variable
         but let's experiment with es6 a bit *)
@@ -734,14 +734,14 @@ let parallel_renaming back_edge params args continuation queue =
     let never, code = continuation queue in
     match params, args with
     | [ p ], [ a ] ->
-        never, (J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V p), a)), J.N) :: code
+        never, (J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V p), a)), loc) :: code
     | params, args ->
         let lhs =
           J.EAssignTarget
             (J.ArrayTarget (List.map params ~f:(fun p -> J.TargetElementId (J.V p, None))))
         in
         let rhs = J.EArr (List.rev_map args ~f:(fun x -> J.Element x)) in
-        never, (J.Expression_statement (J.EBin (J.Eq, lhs, rhs)), J.N) :: code
+        never, (J.Expression_statement (J.EBin (J.Eq, lhs, rhs)), loc) :: code
   else
     let l = visit_all params args in
     (* if not back_edge
@@ -767,10 +767,10 @@ let parallel_renaming back_edge params args continuation queue =
       if back_edge
       then
         List.map renaming ~f:(fun (t, e) ->
-            J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V t), e)), J.N)
+            J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V t), e)), loc)
       else
         List.map renaming ~f:(fun (t, e) ->
-            J.variable_declaration [ J.V t, (e, J.N) ], J.N)
+            J.variable_declaration [ J.V t, (e, loc) ], loc)
     in
     let never, code = continuation queue in
     never, List.rev_append before (List.rev_append renaming code)
@@ -1548,25 +1548,25 @@ and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
       let acc_rev = List.rev_append st acc_rev in
       translate_instrs_rev ctx loc expr_queue rem acc_rev muts_map
 
-and translate_instrs (ctx : Ctx.t) expr_queue instrs =
+and translate_instrs (ctx : Ctx.t) loc expr_queue instrs =
   let loc, st_rev, expr_queue =
-    translate_instrs_rev (ctx : Ctx.t) J.N expr_queue instrs [] Var.Map.empty
+    translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs [] Var.Map.empty
   in
   loc, List.rev st_rev, expr_queue
 
 (* Compile loops. *)
-and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
+and compile_block st loc queue (pc : Addr.t) scope_stack ~fall_through =
   if (not (List.is_empty queue))
      && (Structure.is_loop_header st.structure pc
         || (* Do not inline expressions across block boundaries when --no-inline is used
               Single-stepping in the debugger should work better this way (fixes #290). *)
         not (Config.Flag.inline ()))
   then
-    let never, code = compile_block st [] pc scope_stack ~fall_through in
+    let never, code = compile_block st loc [] pc scope_stack ~fall_through in
     never, flush_all queue code
   else
     match Structure.is_loop_header st.structure pc with
-    | false -> compile_block_no_loop st queue pc scope_stack ~fall_through
+    | false -> compile_block_no_loop st loc queue pc scope_stack ~fall_through
     | true ->
         if debug () then Format.eprintf "@[<hv 2>for(;;) {@,";
         let never_body, body =
@@ -1581,12 +1581,11 @@ and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
             | Return -> scope_stack
           in
           let never_body, body =
-            compile_block_no_loop st queue pc scope_stack ~fall_through:(Block pc)
+            compile_block_no_loop st loc queue pc scope_stack ~fall_through:(Block pc)
           in
           if debug () then Format.eprintf "}@]@,";
           let for_loop =
-            ( J.For_statement (J.Left None, None, None, Js_simpl.block body)
-            , source_location st.ctx Before pc )
+            J.For_statement (J.Left None, None, None, Js_simpl.block body), loc
           in
           let label = if !lab_used then Some lab else None in
           let for_loop =
@@ -1599,7 +1598,7 @@ and compile_block st queue (pc : Addr.t) scope_stack ~fall_through =
         never_body, body
 
 (* Compile block. Loops have already been handled. *)
-and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
+and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
   if pc < 0 then assert false;
   if Addr.Set.mem pc !(st.visited_blocks)
   then (
@@ -1608,7 +1607,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
   if debug () then Format.eprintf "Compiling block %d@;" pc;
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
   let block = Addr.Map.find pc st.ctx.blocks in
-  let loc, seq, queue = translate_instrs st.ctx queue block.body in
+  let loc, seq, queue = translate_instrs st.ctx loc queue block.body in
   let nbbranch =
     match fst block.branch with
     | Switch (_, a) ->
@@ -1636,7 +1635,7 @@ and compile_block_no_loop st queue (pc : Addr.t) ~fall_through scope_stack =
         let used = ref false in
         let scope_stack = (x, (l, used, Forward)) :: scope_stack in
         let _never_inner, inner = loop ~scope_stack ~fall_through:(Block x) xs in
-        let never, code = compile_block st [] x scope_stack ~fall_through in
+        let never, code = compile_block st loc [] x scope_stack ~fall_through in
         match !used with
         | true -> never, [ J.Labelled_statement (l, (J.Block inner, J.N)), J.N ] @ code
         | false -> never, inner @ code)
@@ -1659,7 +1658,7 @@ and compile_decision_tree kind st scope_stack loc cx dtree ~fall_through =
                 ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
                 (fun fmt pc -> Format.fprintf fmt "%d" pc))
             l;
-        let never, code = compile_branch st [] cont scope_stack ~fall_through in
+        let never, code = compile_branch st loc [] cont scope_stack ~fall_through in
         if debug () then Format.eprintf "}@]@;";
         never, code
     | DTree.If (cond, cont1, cont2) ->
@@ -1776,11 +1775,13 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
           if st.ctx.Ctx.should_export then Some (s_var Global_constant.exports) else None
         in
         true, flush_all queue [ J.Return_statement (e_opt, loc), loc ]
-    | Branch cont -> compile_branch st queue cont scope_stack ~fall_through
+    | Branch cont -> compile_branch st loc queue cont scope_stack ~fall_through
     | Pushtrap (c1, x, e1) ->
-        let never_body, body = compile_branch st [] c1 scope_stack ~fall_through in
+        let never_body, body = compile_branch st J.N [] c1 scope_stack ~fall_through in
         if debug () then Format.eprintf "@,}@]@,@[<hv 2>catch {@;";
-        let never_handler, handler = compile_branch st [] e1 scope_stack ~fall_through in
+        let never_handler, handler =
+          compile_branch st J.U [] e1 scope_stack ~fall_through
+        in
         let exn_var, handler =
           assert (not (List.mem x ~set:(snd e1)));
           let wrap_exn x =
@@ -1805,7 +1806,7 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
               , loc )
             ] )
     | Poptrap cont ->
-        let never, code = compile_branch st [] cont scope_stack ~fall_through in
+        let never, code = compile_branch st J.N [] cont scope_stack ~fall_through in
         never, flush_all queue code
     | Cond (x, c1, c2) ->
         let (_px, cx), queue = access_queue queue x in
@@ -1841,14 +1842,14 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
      | Switch _ | Cond _ | Pushtrap _ -> Format.eprintf "}@]@;");
   res
 
-and compile_argument_passing ctx queue (pc, args) back_edge continuation =
+and compile_argument_passing ctx loc queue (pc, args) back_edge continuation =
   if List.is_empty args
   then continuation queue
   else
     let block = Addr.Map.find pc ctx.Ctx.blocks in
-    parallel_renaming back_edge block.params args continuation queue
+    parallel_renaming loc back_edge block.params args continuation queue
 
-and compile_branch st queue ((pc, _) as cont) scope_stack ~fall_through : bool * _ =
+and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bool * _ =
   let scope = List.assoc_opt pc scope_stack in
   let back_edge =
     List.exists
@@ -1857,7 +1858,7 @@ and compile_branch st queue ((pc, _) as cont) scope_stack ~fall_through : bool *
         | _ -> false)
       scope_stack
   in
-  compile_argument_passing st.ctx queue cont back_edge (fun queue ->
+  compile_argument_passing st.ctx loc queue cont back_edge (fun queue ->
       if match fall_through with
          | Block pc' -> pc' = pc
          | Return -> false
@@ -1917,14 +1918,16 @@ and compile_branch st queue ((pc, _) as cont) scope_stack ~fall_through : bool *
             if debug () then Format.eprintf "(br %d)@;" pc;
             used := true;
             true, flush_all queue [ J.Break_statement (Some l), J.N ]
-        | None -> compile_block st queue pc scope_stack ~fall_through)
+        | None -> compile_block st loc queue pc scope_stack ~fall_through)
 
 and compile_closure ctx (pc, args) =
   let st = build_graph ctx pc in
   let current_blocks = Structure.get_nodes st.structure in
   if debug () then Format.eprintf "@[<hv 2>closure {@;";
   let scope_stack = [] in
-  let _never, res = compile_branch st [] (pc, args) scope_stack ~fall_through:Return in
+  let _never, res =
+    compile_branch st J.N [] (pc, args) scope_stack ~fall_through:Return
+  in
   if Addr.Set.cardinal !(st.visited_blocks) <> Addr.Set.cardinal current_blocks
   then (
     let missing = Addr.Set.diff current_blocks !(st.visited_blocks) in
