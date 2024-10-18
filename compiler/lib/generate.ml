@@ -1102,19 +1102,6 @@ let rec translate_expr ctx queue loc x e level : _ * J.statement_list =
       let fv = Addr.Map.find pc ctx.freevars in
       let clo = compile_closure ctx cont in
       let clo =
-        match clo with
-        | (st, x) :: rem ->
-            let loc =
-              match x, source_location ctx Before pc with
-              | (J.U | J.N), (J.U | J.N) -> J.U
-              | x, (J.U | J.N) -> x
-              | (J.U | J.N), x -> x
-              | _, x -> x
-            in
-            (st, loc) :: rem
-        | _ -> clo
-      in
-      let clo =
         J.EFun
           ( None
           , J.fun_ (List.map args ~f:(fun v -> J.V v)) (Js_simpl.function_body clo) loc )
@@ -1925,8 +1912,14 @@ and compile_closure ctx (pc, args) =
   let current_blocks = Structure.get_nodes st.structure in
   if debug () then Format.eprintf "@[<hv 2>closure {@;";
   let scope_stack = [] in
+  let start_loc =
+    let block = Addr.Map.find pc ctx.Ctx.blocks in
+    match block.body with
+    | (Event loc, _) :: _ -> J.Pi loc
+    | _ -> J.U
+  in
   let _never, res =
-    compile_branch st J.N [] (pc, args) scope_stack ~fall_through:Return
+    compile_branch st start_loc [] (pc, args) scope_stack ~fall_through:Return
   in
   if Addr.Set.cardinal !(st.visited_blocks) <> Addr.Set.cardinal current_blocks
   then (
