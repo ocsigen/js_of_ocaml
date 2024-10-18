@@ -252,9 +252,9 @@ let if_statement e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in
   match iftrue, iffalse with
   (* Shared statements *)
-  | (J.If_statement (e', iftrue', iffalse'), loc), _ when Poly.(iffalse = unopt iffalse')
-    -> if_statement_2 (J.EBin (J.And, e, e')) loc iftrue' truestop iffalse falsestop
-  | (J.If_statement (e', iftrue', iffalse'), loc), _ when Poly.(iffalse = iftrue') ->
+  | (J.If_statement (e', iftrue', iffalse'), _), _ when Poly.(iffalse = unopt iffalse') ->
+      if_statement_2 (J.EBin (J.And, e, e')) loc iftrue' truestop iffalse falsestop
+  | (J.If_statement (e', iftrue', iffalse'), _), _ when Poly.(iffalse = iftrue') ->
       if_statement_2
         (J.EBin (J.And, e, J.EUn (J.Not, e')))
         loc
@@ -262,10 +262,9 @@ let if_statement e loc iftrue truestop iffalse falsestop =
         truestop
         iffalse
         falsestop
-  | _, (J.If_statement (e', iftrue', iffalse'), loc) when Poly.(iftrue = iftrue') ->
+  | _, (J.If_statement (e', iftrue', iffalse'), _) when Poly.(iftrue = iftrue') ->
       if_statement_2 (J.EBin (J.Or, e, e')) loc iftrue truestop (unopt iffalse') falsestop
-  | _, (J.If_statement (e', iftrue', iffalse'), loc) when Poly.(iftrue = unopt iffalse')
-    ->
+  | _, (J.If_statement (e', iftrue', iffalse'), _) when Poly.(iftrue = unopt iffalse') ->
       if_statement_2
         (J.EBin (J.Or, e, J.EUn (J.Not, e')))
         loc
