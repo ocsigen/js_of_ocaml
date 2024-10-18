@@ -26,11 +26,11 @@ val expr : (Var.t -> Var.t) -> expr -> expr
 
 val instr : (Var.t -> Var.t) -> instr -> instr
 
-val instrs : (Var.t -> Var.t) -> (instr * loc) list -> (instr * loc) list
+val instrs : (Var.t -> Var.t) -> instr list -> instr list
 
 val block : (Var.t -> Var.t) -> block -> block
 
-val last : (Var.t -> Var.t) -> last * loc -> last * loc
+val last : (Var.t -> Var.t) -> last -> last
 
 val cont : (Var.t -> Var.t) -> int -> program -> program
 

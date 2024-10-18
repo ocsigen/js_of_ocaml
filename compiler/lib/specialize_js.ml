@@ -167,47 +167,43 @@ let specialize_instrs ~target info l =
   let rec aux info checks l acc =
     match l with
     | [] -> List.rev acc
-    | [ ((Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])), _) as len1)
-      ; ((Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])), _) as len2)
-      ; ((Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])), _) as len3)
-      ; (Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ])), _)
-      ; ( Let
-            ( u1
-            , Prim
-                ( Extern "caml_blit_string"
-                , [ Pv a'; Pc (Int zero1); Pv bytes'; Pc (Int zero2); Pv alen'' ] ) )
-        , _ )
-      ; ( Let
-            ( u2
-            , Prim
-                ( Extern "caml_blit_string"
-                , [ Pv b'; Pc (Int zero3); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
-        , _ )
-      ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
+    | [ (Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])) as len1)
+      ; (Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])) as len2)
+      ; (Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])) as len3)
+      ; Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ]))
+      ; Let
+          ( u1
+          , Prim
+              ( Extern "caml_blit_string"
+              , [ Pv a'; Pc (Int zero1); Pv bytes'; Pc (Int zero2); Pv alen'' ] ) )
+      ; Let
+          ( u2
+          , Prim
+              ( Extern "caml_blit_string"
+              , [ Pv b'; Pc (Int zero3); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
+      ; Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ]))
       ]
-    | [ (Event _, _)
-      ; ((Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])), _) as len1)
-      ; ((Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])), _) as len2)
-      ; (Event _, _)
-      ; ((Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])), _) as len3)
-      ; (Event _, _)
-      ; (Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ])), _)
-      ; (Event _, _)
-      ; ( Let
-            ( u1
-            , Prim
-                ( Extern "caml_blit_string"
-                , [ Pv a'; Pc (Int zero1); Pv bytes'; Pc (Int zero2); Pv alen'' ] ) )
-        , _ )
-      ; (Event _, _)
-      ; ( Let
-            ( u2
-            , Prim
-                ( Extern "caml_blit_string"
-                , [ Pv b'; Pc (Int zero3); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
-        , _ )
-      ; (Event _, _)
-      ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
+    | [ Event _
+      ; (Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])) as len1)
+      ; (Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])) as len2)
+      ; Event _
+      ; (Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])) as len3)
+      ; Event _
+      ; Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ]))
+      ; Event _
+      ; Let
+          ( u1
+          , Prim
+              ( Extern "caml_blit_string"
+              , [ Pv a'; Pc (Int zero1); Pv bytes'; Pc (Int zero2); Pv alen'' ] ) )
+      ; Event _
+      ; Let
+          ( u2
+          , Prim
+              ( Extern "caml_blit_string"
+              , [ Pv b'; Pc (Int zero3); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
+      ; Event _
+      ; Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ]))
       ]
       when Targetint.is_zero zero1
            && Targetint.is_zero zero2
@@ -221,12 +217,12 @@ let specialize_instrs ~target info l =
         [ len1
         ; len2
         ; len3
-        ; Let (u1, Constant (Int Targetint.zero)), No
-        ; Let (u2, Constant (Int Targetint.zero)), No
-        ; Let (res, Prim (Extern "caml_string_concat", [ Pv a; Pv b ])), No
-        ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv res ])), No
+        ; Let (u1, Constant (Int Targetint.zero))
+        ; Let (u2, Constant (Int Targetint.zero))
+        ; Let (res, Prim (Extern "caml_string_concat", [ Pv a; Pv b ]))
+        ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv res ]))
         ]
-    | (i, loc) :: r -> (
+    | i :: r -> (
         (* We make bound checking explicit. Then, we can remove duplicated
            bound checks. Also, it appears to be more efficient to inline
            the array access. The bound checking function returns the array,
@@ -255,7 +251,7 @@ let specialize_instrs ~target info l =
                 | "caml_array_get_addr" -> Array_get
                 | _ -> assert false
               in
-              Let (x, Prim (prim, [ y; z ])), loc
+              Let (x, Prim (prim, [ y; z ]))
             in
             if List.mem (y, idx) ~set:checks
             then
@@ -271,9 +267,7 @@ let specialize_instrs ~target info l =
                 | _ -> assert false
               in
               let y' = Code.Var.fresh () in
-              let acc =
-                instr (Pv y') :: (Let (y', Prim (Extern check, [ y; z ])), noloc) :: acc
-              in
+              let acc = instr (Pv y') :: Let (y', Prim (Extern check, [ y; z ])) :: acc in
               aux info ((y, idx) :: checks) r acc
         | Let
             ( x
@@ -298,7 +292,7 @@ let specialize_instrs ~target info l =
                 | "caml_array_set_addr" -> "caml_array_unsafe_set_addr"
                 | _ -> assert false
               in
-              Let (x, Prim (Extern prim, [ y; z; t ])), loc
+              Let (x, Prim (Extern prim, [ y; z; t ]))
             in
             if List.mem (y, idx) ~set:checks
             then
@@ -314,13 +308,11 @@ let specialize_instrs ~target info l =
                 | _ -> assert false
               in
               let y' = Code.Var.fresh () in
-              let acc =
-                instr (Pv y') :: (Let (y', Prim (Extern check, [ y; z ])), noloc) :: acc
-              in
+              let acc = instr (Pv y') :: Let (y', Prim (Extern check, [ y; z ])) :: acc in
               aux info ((y, idx) :: checks) r acc
         | _ ->
             let i = specialize_instr ~target info i in
-            aux info checks r ((i, loc) :: acc))
+            aux info checks r (i :: acc))
   in
   aux info [] l []
 
@@ -340,7 +332,7 @@ let f_once p =
   let rec loop acc l =
     match l with
     | [] -> List.rev acc
-    | (i, loc) :: r -> (
+    | i :: r -> (
         match i with
         | Let
             ( x
@@ -355,11 +347,9 @@ let f_once p =
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
             let x' = Code.Var.fork x in
-            let acc =
-              (Let (x', p), loc) :: (Let (x, Constant (Int Targetint.zero)), loc) :: acc
-            in
+            let acc = Let (x', p) :: Let (x, Constant (Int Targetint.zero)) :: acc in
             loop acc r
-        | _ -> loop ((i, loc) :: acc) r)
+        | _ -> loop (i :: acc) r)
   in
   let blocks =
     Addr.Map.map (fun block -> { block with Code.body = loop [] block.body }) p.blocks
