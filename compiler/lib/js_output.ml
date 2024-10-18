@@ -652,6 +652,8 @@ struct
         PP.start_group f 1;
         expression CallOrMemberExpression f e;
         PP.break f;
+        (* Make sure that the opening parenthesis has the appropriate info *)
+        output_debug_info f loc;
         PP.start_group f 1;
         (match access_kind with
         | ANormal -> PP.string f "("
