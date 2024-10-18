@@ -129,3 +129,30 @@ let%expect_test "Omit unused return expressions" =
        function f(x){caml_call1(Stdlib[44], x);}
        //end
      |}]
+
+let%expect_test "Bug fix in PR #1681" =
+  let program =
+    compile_and_parse_whole_program
+      {|
+      type t = {mutable a : int; b : int};;
+      let f b =
+        let x = {a = 1; b = 2} in
+        if b then (
+          x
+        ) else (
+          x.a <- 1; (* This has to be handled after [x] is returned *)
+          {a = 3; b = 4}
+        )
+      let g = ref (fun _ -> assert false)
+      let _ =
+        (* We should not track that [f] is used below *)
+        g := f; prerr_int ((!g true).b + (!g false).b)
+      |}
+  in
+  print_fun_decl program (Some "f");
+  (* No field of record x should be eliminated. *)
+  [%expect
+    {|
+       function f(b){var x = [0, 1]; return b ? x : (x[1] = 1, [0, 3, 4]);}
+       //end
+     |}]
