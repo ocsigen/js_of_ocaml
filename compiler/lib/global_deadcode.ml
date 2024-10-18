@@ -116,7 +116,8 @@ let definitions prog =
           match i with
           | Let (x, e) -> set_def x (Expr e)
           | Assign (x, _) -> set_def x Param
-          | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
+          | Event _ | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
+              ())
         block.body)
     prog.blocks;
   defs
@@ -214,7 +215,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
         | Let (x, e) -> add_expr_uses scope x e
         (* For assignment, propagate liveness from new to old variable like a block parameter *)
         | Assign (x, y) -> add_use (Propagate { scope = []; src = x }) x y
-        | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
+        | Event _ | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
       block.body;
     (* Add uses from block branch *)
     match fst block.branch with
@@ -336,7 +337,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
         add_top scope z
     | Offset_ref (x, _) -> add_live_field scope x 0
     (* Assignment can be ignored. Liveness of old variable is just propagated to new variable. See [usages]. *)
-    | Assign (_, _) -> ()
+    | Event _ | Assign (_, _) -> ()
   in
   let live_block scope block =
     List.iter ~f:(fun (i, _) -> live_instruction scope i) block.body;
@@ -467,8 +468,11 @@ let zero prog sentinal live_table =
             Let (x, Apply { ap with args })
         | Field (_, _, _) | Closure (_, _) | Constant _ | Prim (_, _) | Special _ -> instr
         )
-    | Assign (_, _) | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
-        instr
+    | Event _
+    | Assign (_, _)
+    | Set_field (_, _, _, _)
+    | Offset_ref (_, _)
+    | Array_set (_, _, _) -> instr
   in
   let zero_block block =
     (* Analyze block instructions *)

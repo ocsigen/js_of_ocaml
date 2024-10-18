@@ -133,7 +133,7 @@ module Trampoline = struct
     ; branch = Return return, loc
     }
 
-  let wrapper_block f ~args ~counter loc =
+  let wrapper_block f ~args ~counter loc loc' =
     let result1 = Code.Var.fresh () in
     let result2 = Code.Var.fresh () in
     let block =
@@ -141,15 +141,19 @@ module Trampoline = struct
       ; body =
           (match counter with
           | None ->
-              [ Let (result1, Apply { f; args; exact = true }), loc
+              [ Event loc, noloc
+              ; Let (result1, Apply { f; args; exact = true }), loc'
+              ; Event Parse_info.zero, noloc
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ])), noloc
               ]
           | Some counter ->
-              [ Let (counter, Constant (Int Targetint.zero)), noloc
-              ; Let (result1, Apply { f; args = counter :: args; exact = true }), loc
+              [ Event loc, noloc
+              ; Let (counter, Constant (Int Targetint.zero)), noloc
+              ; Let (result1, Apply { f; args = counter :: args; exact = true }), loc'
+              ; Event Parse_info.zero, noloc
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ])), noloc
               ])
-      ; branch = Return result2, loc
+      ; branch = Return result2, loc'
       }
     in
     block
@@ -187,8 +191,14 @@ module Trampoline = struct
               let wrapper_pc = free_pc in
               let free_pc = free_pc + 1 in
               let new_counter = Option.map counter ~f:Code.Var.fork in
+              let start_loc =
+                let block = Addr.Map.find (fst ci.cont) blocks in
+                match block.body with
+                | (Event loc, _) :: _ -> loc
+                | _ -> Parse_info.zero
+              in
               let wrapper_block =
-                wrapper_block new_f ~args:new_args ~counter:new_counter ci.loc
+                wrapper_block new_f ~args:new_args ~counter:new_counter start_loc ci.loc
               in
               let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
               let instr_wrapper = Let (ci.f_name, wrapper_closure wrapper_pc new_args) in

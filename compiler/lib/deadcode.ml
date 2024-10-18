@@ -90,7 +90,7 @@ and mark_reachable st pc =
     List.iter block.body ~f:(fun (i, _loc) ->
         match i with
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
-        | Assign _ -> ()
+        | Event _ | Assign _ -> ()
         | Set_field (x, _, _, y) -> (
             match st.defs.(Var.idx x) with
             | [ Expr (Block _) ] when st.live.(Var.idx x) = 0 ->
@@ -125,7 +125,7 @@ let live_instr st i =
   match i with
   | Let (x, e) -> st.live.(Var.idx x) > 0 || not (pure_expr st.pure_funs e)
   | Assign (x, _) | Set_field (x, _, _, _) -> st.live.(Var.idx x) > 0
-  | Offset_ref _ | Array_set _ -> true
+  | Event _ | Offset_ref _ | Array_set _ -> true
 
 let rec filter_args st pl al =
   match pl, al with
@@ -201,7 +201,8 @@ let f ({ blocks; _ } as p : Code.program) =
           match i with
           | Let (x, e) -> add_def defs x (Expr e)
           | Assign (x, y) -> add_def defs x (Var y)
-          | Set_field (_, _, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> ());
+          | Event _ | Set_field (_, _, _, _) | Array_set (_, _, _) | Offset_ref (_, _) ->
+              ());
       match fst block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> add_cont_dep blocks defs cont
@@ -228,10 +229,16 @@ let f ({ blocks; _ } as p : Code.program) =
             pc
             { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
             ; body =
-                List.filter_map block.body ~f:(fun (i, loc) ->
-                    if live_instr st i
-                    then Some (filter_closure all_blocks st i, loc)
-                    else None)
+                List.fold_left block.body ~init:[] ~f:(fun acc (i, loc) ->
+                    match i, acc with
+                    | Event _, (Event _, _) :: prev ->
+                        (* Avoid consecutive events (keep just the last one) *)
+                        (i, loc) :: prev
+                    | _ ->
+                        if live_instr st i
+                        then (filter_closure all_blocks st i, loc) :: acc
+                        else acc)
+                |> List.rev
             ; branch = filter_live_last all_blocks st block.branch
             }
             blocks)

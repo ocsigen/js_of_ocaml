@@ -308,13 +308,10 @@ let options =
         in
         Some
           ( sm_output_file
-          , { Source_map.Standard.version = 3
-            ; file
+          , { Source_map.Standard.empty with
+              file
             ; sourceroot = sourcemap_root
-            ; sources = []
             ; sources_content = (if sourcemap_don't_inline_content then None else Some [])
-            ; names = []
-            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in
@@ -537,13 +534,10 @@ let options_runtime_only =
         in
         Some
           ( sm_output_file
-          , { Source_map.Standard.version = 3
-            ; file
+          , { Source_map.Standard.empty with
+              file
             ; sourceroot = sourcemap_root
-            ; sources = []
             ; sources_content = (if sourcemap_don't_inline_content then None else Some [])
-            ; names = []
-            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in

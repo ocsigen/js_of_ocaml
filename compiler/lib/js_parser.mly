@@ -736,7 +736,7 @@ break_stmt:
  | T_BREAK l=label? sc { (Break_statement (l)) }
 
 return_stmt:
- | T_RETURN e=expr? sc { (Return_statement e) }
+ | T_RETURN e=expr? sc { (Return_statement (e, p $endpos(e))) }
 
 switch_stmt:
  | T_SWITCH "(" subject=expr ")" cb=case_block
@@ -906,7 +906,7 @@ call_expr(x):
 
 new_expr(x):
  | e=member_expr(x)    { e }
- | T_NEW e=new_expr(d1) { (ENew (e,None)) }
+ | T_NEW e=new_expr(d1) { (ENew (e,None, p $symbolstartpos)) }
 
 access:
   | "." { ANormal }
@@ -924,7 +924,7 @@ member_expr(x):
  | e1=member_expr(x) ak=access i=field_name
      { (EDot(e1,ak,i)) }
  | T_NEW e1=member_expr(d1) a=arguments
-     { (ENew(e1, Some a)) }
+     { (ENew(e1, Some a, p $symbolstartpos)) }
  | e=member_expr(x) t=template_literal
      { ECallTemplate(e, t, p $symbolstartpos) }
  | T_SUPER "[" e=expr "]"
@@ -1100,7 +1100,7 @@ async_arrow_function:
 (* was called consise body in spec *)
 arrow_body:
  | "{" b=function_body "}" { b, false }
- | e=assignment_expr_for_consise_body { [(Return_statement (Some e), p $symbolstartpos)], true }
+ | e=assignment_expr_for_consise_body { [(Return_statement (Some e, p $endpos), p $symbolstartpos)], true }
 
 (*----------------------------*)
 (* no in                    *)

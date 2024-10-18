@@ -446,6 +446,7 @@ type instr =
   | Set_field of Var.t * int * field_type * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
+  | Event of Parse_info.t
 
 type last =
   | Return of Var.t
@@ -604,6 +605,7 @@ module Print = struct
     | Offset_ref (x, i) -> Format.fprintf f "%a[0] += %d" Var.print x i
     | Array_set (x, y, z) ->
         Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
+    | Event loc -> Format.fprintf f "event %s" (Parse_info.to_string loc)
 
   let last f (l, _loc) =
     match l with
@@ -905,6 +907,7 @@ let invariant { blocks; start; _ } =
       | Set_field (_, _i, _, _) -> ()
       | Offset_ref (_x, _i) -> ()
       | Array_set (_x, _y, _z) -> ()
+      | Event _ -> ()
     in
     let check_last (l, _loc) =
       match l with

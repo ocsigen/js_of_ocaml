@@ -39,6 +39,78 @@
      throw
    v}
 *)
+
+(*
+Source maps
+===========
+
+The location of a declaration is determined by the first character of
+the expression.
+
+    var x = e
+            ^
+
+The location of other statements is determined by looking at the first
+character of the statement.
+
+    return e
+    ^
+
+Chrome will also stop at the very character after a return statement
+before returning (which can be ambigous).
+
+    return e;if ...
+             ^
+
+The location of the end of the function is determined by the closing brace.
+Firefox will always stop their. Chrome only if there is no return statement.
+
+    function f() { ... }
+                       ^
+
+For an arrow function Firefox stops on the last character, while
+Chrome stops on the character right after.
+
+    (x)=>x+1
+           ^^
+
+In Chrome the location of a function call is determined by the name of the
+function when it is explicit.
+
+    f(e)         Math.cos(1.)
+    ^                 ^
+
+Otherwise, the location of the opening parenthesis is used. Firefox
+always uses this location.
+
+    (0,f)(e)(e')
+         ^  ^
+
+Except for variable declarations, Chrome stops at the begining of
+statements.
+
+   if (e) { ... }
+   ^
+
+Firefox will rather stop on the expression.
+
+
+   if (e) { ... }
+       ^
+
+Chrome uses the name associated to the location of each bound variable
+to determine its name.
+
+   function f(x) { var y = ... }
+            ^ ^        ^
+
+Chrome uses the location of the opening parenthesis of a function
+declaration to determine the function name in the stack.
+
+    function f() { ... }
+              ^
+*)
+
 open! Stdlib
 
 let stats = Debug.find "output"
@@ -53,6 +125,8 @@ module Make (D : sig
 
   val get_name_index : string -> int
 
+  val hidden_location : Source_map.map
+
   val source_map_enabled : bool
 
   val accept_unnamed_var : bool
@@ -66,79 +140,110 @@ struct
 
   let debug_enabled = Config.Flag.debuginfo ()
 
+  let current_loc = ref U
+
+  let on_ident = ref false
+
   let output_debug_info f loc =
-    (if debug_enabled
-     then
-       match loc with
-       | Pi { Parse_info.src = None | Some ""; name = None | Some ""; _ } | N -> ()
-       | U ->
-           PP.non_breaking_space f;
-           PP.string f "/*<<?>>*/";
-           PP.non_breaking_space f
-       | Pi { Parse_info.src; name; line; col; _ } ->
-           let file =
-             match name, src with
-             | (None | Some ""), Some file -> file
-             | Some file, (None | Some "") -> file
-             | Some file, Some _file -> file
-             | None, None -> assert false
-           in
-           PP.non_breaking_space f;
-           PP.string f (Format.sprintf "/*<<%s:%d:%d>>*/" file line col);
-           PP.non_breaking_space f);
-    if source_map_enabled
-    then
+    let loc =
+      (* We force a new mapping after an identifier, to avoid its name
+         to bleed over other identifiers, using the current location
+         when none is provided. *)
       match loc with
-      | N -> ()
-      | U | Pi { Parse_info.src = None | Some ""; _ } ->
-          push_mapping (PP.pos f) (Source_map.Gen { gen_line = -1; gen_col = -1 })
-      | Pi { Parse_info.src = Some file; line; col; _ } ->
-          push_mapping
-            (PP.pos f)
-            (Source_map.Gen_Ori
-               { gen_line = -1
-               ; gen_col = -1
-               ; ori_source = get_file_index file
-               ; ori_line = line
-               ; ori_col = col
-               })
+      | N when !on_ident -> !current_loc
+      | _ -> loc
+    in
+    match loc with
+    | N -> ()
+    | _ ->
+        let location_changed = Poly.(loc <> !current_loc) in
+        (if source_map_enabled && (!on_ident || location_changed)
+         then
+           match loc with
+           | N | U | Pi { Parse_info.src = None | Some ""; _ } ->
+               push_mapping (PP.pos f) hidden_location
+           | Pi { Parse_info.src = Some file; line; col; _ } ->
+               push_mapping
+                 (PP.pos f)
+                 (Source_map.Gen_Ori
+                    { gen_line = -1
+                    ; gen_col = -1
+                    ; ori_source = get_file_index file
+                    ; ori_line = line
+                    ; ori_col = col
+                    }));
+        (if debug_enabled && location_changed
+         then
+           match loc with
+           | N | U ->
+               PP.non_breaking_space f;
+               PP.string f "/*<<?>>*/";
+               PP.non_breaking_space f
+           | Pi pi ->
+               PP.non_breaking_space f;
+               PP.string f (Format.sprintf "/*<<%s>>*/" (Parse_info.to_string pi));
+               PP.non_breaking_space f);
+        current_loc := loc;
+        on_ident := false
 
   let output_debug_info_ident f nm loc =
     if source_map_enabled
-    then
-      match loc with
-      | None | Some { Parse_info.src = Some "" | None; _ } -> ()
-      | Some { Parse_info.src = Some file; line; col; _ } ->
-          push_mapping
-            (PP.pos f)
-            (Source_map.Gen_Ori_Name
-               { gen_line = -1
-               ; gen_col = -1
-               ; ori_source = get_file_index file
-               ; ori_line = line
-               ; ori_col = col
-               ; ori_name = get_name_index nm
-               })
+    then (
+      let loc =
+        (* Keep the current location if possible, since we don't care
+           about the actual identifier's location *)
+        match !current_loc, loc with
+        | (N | U | Pi { Parse_info.src = Some "" | None; _ }), Some _ -> loc
+        | Pi ({ Parse_info.src = Some _; _ } as loc), _ -> Some loc
+        | _, None -> None
+      in
+      on_ident := true;
+      push_mapping
+        (PP.pos f)
+        (match loc with
+        | None | Some { Parse_info.src = Some "" | None; _ } ->
+            (* Use a dummy location. It is going to be ignored anyway *)
+            let ori_source =
+              match hidden_location with
+              | Source_map.Gen_Ori { ori_source; _ } -> ori_source
+              | _ -> 0
+            in
+            Source_map.Gen_Ori_Name
+              { gen_line = -1
+              ; gen_col = -1
+              ; ori_source
+              ; ori_line = 1
+              ; ori_col = 0
+              ; ori_name = get_name_index nm
+              }
+        | Some { Parse_info.src = Some file; line; col; _ } ->
+            Source_map.Gen_Ori_Name
+              { gen_line = -1
+              ; gen_col = -1
+              ; ori_source = get_file_index file
+              ; ori_line = line
+              ; ori_col = col
+              ; ori_name = get_name_index nm
+              }))
 
-  let ident f = function
+  let ident f ~kind = function
     | S { name = Utf8 name; var = Some v; _ } ->
-        output_debug_info_ident f name (Code.Var.get_loc v);
+        (match kind, Code.Var.get_name v with
+        | `Binding, Some nm -> output_debug_info_ident f nm (Code.Var.get_loc v)
+        | `Reference, _ | `Binding, None -> ());
         if false then PP.string f (Printf.sprintf "/* %d */" (Code.Var.idx v));
         PP.string f name
-    | S { name = Utf8 name; var = None; loc = Pi pi } ->
-        output_debug_info_ident f name (Some pi);
-        PP.string f name
-    | S { name = Utf8 name; var = None; loc = U | N } -> PP.string f name
+    | S { name = Utf8 name; var = None; _ } -> PP.string f name
     | V v ->
         assert accept_unnamed_var;
         PP.string f ("<" ^ Code.Var.to_string v ^ ">")
 
-  let opt_identifier f i =
+  let opt_identifier f ~kind i =
     match i with
     | None -> ()
     | Some i ->
         PP.space f;
-        ident f i
+        ident f ~kind i
 
   let early_error _ = assert false
 
@@ -384,6 +489,33 @@ struct
     in
     traverse l e
 
+  let stop_on_statement st =
+    match st with
+    | Block _
+    | Variable_statement _
+    | Function_declaration _
+    | Class_declaration _
+    | Empty_statement
+    | Labelled_statement _
+    | Import _
+    | Export _ -> false
+    | Expression_statement _
+    | If_statement _
+    | Do_while_statement _
+    | While_statement _
+    | For_statement _
+    | ForIn_statement _
+    | ForOf_statement _
+    | ForAwaitOf_statement _
+    | Continue_statement _
+    | Break_statement _
+    | Return_statement _
+    | With_statement _
+    | Switch_statement _
+    | Throw_statement _
+    | Try_statement _
+    | Debugger_statement -> true
+
   let best_string_quote s =
     let simple = ref 0 and double = ref 0 in
     for i = 0 to String.length s - 1 do
@@ -468,7 +600,7 @@ struct
 
   let rec expression (l : prec) f e =
     match e with
-    | EVar v -> ident f v
+    | EVar v -> ident f ~kind:`Reference v
     | ESeq (e1, e2) ->
         if Prec.(l > Expression)
         then (
@@ -509,13 +641,14 @@ struct
             PP.end_group f);
         PP.end_group f;
         (match b, consise with
-        | [ (Return_statement (Some e), loc) ], true ->
+        | [ (Return_statement (Some e, loc), loc') ], true ->
             (* Should not starts with '{' *)
             PP.start_group f 1;
             PP.break1 f;
-            output_debug_info f loc;
+            output_debug_info f loc';
             parenthesized_expression ~obj:true AssignementExpression f e;
-            PP.end_group f
+            PP.end_group f;
+            output_debug_info f loc
         | l, _ ->
             let b =
               match l with
@@ -542,6 +675,8 @@ struct
         PP.start_group f 1;
         expression CallOrMemberExpression f e;
         PP.break f;
+        (* Make sure that the opening parenthesis has the appropriate info *)
+        output_debug_info f loc;
         PP.start_group f 1;
         (match access_kind with
         | ANormal -> PP.string f "("
@@ -740,9 +875,9 @@ struct
     | EAssignTarget t -> (
         let property f p =
           match p with
-          | TargetPropertyId (Prop_and_ident id, None) -> ident f id
+          | TargetPropertyId (Prop_and_ident id, None) -> ident f ~kind:`Reference id
           | TargetPropertyId (Prop_and_ident id, Some (e, _)) ->
-              ident f id;
+              ident f ~kind:`Reference id;
               PP.space f;
               PP.string f "=";
               PP.space f;
@@ -773,9 +908,9 @@ struct
         let element f p =
           match p with
           | TargetElementHole -> ()
-          | TargetElementId (id, None) -> ident f id
+          | TargetElementId (id, None) -> ident f ~kind:`Binding id
           | TargetElementId (id, Some (e, _)) ->
-              ident f id;
+              ident f ~kind:`Binding id;
               PP.space f;
               PP.string f "=";
               PP.space f;
@@ -853,12 +988,13 @@ struct
         | ANormal -> PP.string f ".#"
         | ANullish -> PP.string f "?.#");
         PP.string f nm
-    | ENew (e, None) ->
+    | ENew (e, None, loc) ->
         if Prec.(l > NewExpression)
         then (
           PP.start_group f 1;
           PP.string f "(");
         PP.start_group f 1;
+        output_debug_info f loc;
         PP.string f "new";
         PP.space f;
         expression NewExpression f e;
@@ -867,8 +1003,9 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | ENew (e, Some el) ->
+    | ENew (e, Some el, loc) ->
         PP.start_group f 1;
+        output_debug_info f loc;
         PP.string f "new";
         PP.space f;
         expression MemberExpression f e;
@@ -1070,17 +1207,17 @@ struct
 
   and variable_declaration f ?(in_ = true) x =
     match x with
-    | DeclIdent (i, None) -> ident f i
+    | DeclIdent (i, None) -> ident f ~kind:`Binding i
     | DeclIdent (i, Some (e, loc)) ->
         PP.start_group f 1;
-        output_debug_info f loc;
         PP.start_group f 0;
-        ident f i;
+        ident f ~kind:`Binding i;
         PP.space f;
         PP.string f "=";
         PP.end_group f;
         PP.start_group f 1;
         PP.space f;
+        output_debug_info f loc;
         let p = (not in_) && contains ~in_:true Expression e in
         if p
         then (
@@ -1095,12 +1232,12 @@ struct
         PP.end_group f
     | DeclPattern (p, (e, loc)) ->
         PP.start_group f 1;
-        output_debug_info f loc;
         PP.start_group f 0;
         pattern f p;
         PP.space f;
         PP.string f "=";
         PP.end_group f;
+        output_debug_info f loc;
         PP.start_group f 1;
         PP.space f;
         let p = (not in_) && contains ~in_:true Expression e in
@@ -1123,9 +1260,9 @@ struct
         PP.string f ":";
         PP.space f;
         binding_element f e
-    | Prop_ident (Prop_and_ident i, None) -> ident f i
+    | Prop_ident (Prop_and_ident i, None) -> ident f ~kind:`Binding i
     | Prop_ident (Prop_and_ident i, Some (e, loc)) ->
-        ident f i;
+        ident f ~kind:`Binding i;
         PP.space f;
         PP.string f "=";
         PP.space f;
@@ -1136,16 +1273,16 @@ struct
     match e with
     | None -> binding f b
     | Some (e, loc) ->
-        output_debug_info f loc;
         binding f b;
         PP.space f;
         PP.string f "=";
         PP.space f;
+        output_debug_info f loc;
         expression AssignementExpression f e
 
   and binding f x =
     match x with
-    | BindingIdent id -> ident f id
+    | BindingIdent id -> ident f ~kind:`Binding id
     | BindingPattern p -> pattern f p
 
   and binding_array_elt f x =
@@ -1163,7 +1300,7 @@ struct
           ~force_last_comma:(fun _ -> false)
           binding_property
           list
-          ident
+          (ident ~kind:`Binding)
           rest;
         PP.string f "}";
         PP.end_group f
@@ -1201,14 +1338,7 @@ struct
   and variable_declaration_list ?in_ kind close f = function
     | [] -> ()
     | [ x ] ->
-        let x, loc =
-          match x with
-          | DeclIdent (_, None) as x -> x, N
-          | DeclIdent (i, Some (e, loc)) -> DeclIdent (i, Some (e, N)), loc
-          | DeclPattern (p, (e, loc)) -> DeclPattern (p, (e, N)), loc
-        in
         PP.start_group f 1;
-        output_debug_info f loc;
         variable_declaration_kind f kind;
         PP.space f;
         variable_declaration f ?in_ x;
@@ -1263,8 +1393,14 @@ struct
 
   and statement ?(last = false) f (s, loc) =
     let can_omit_semi = PP.compact f && last in
-    let last_semi () = if can_omit_semi then () else PP.string f ";" in
-    output_debug_info f loc;
+    let last_semi ?(ret = false) () =
+      if can_omit_semi
+      then ()
+      else if ret && source_map_enabled
+      then PP.string f "; "
+      else PP.string f ";"
+    in
+    if stop_on_statement s then output_debug_info f loc;
     match s with
     | Block b -> block f b
     | Variable_statement (k, l) -> variable_declaration_list k (not can_omit_semi) f l
@@ -1466,17 +1602,18 @@ struct
         let (Utf8 l) = nane_of_label s in
         PP.string f l;
         last_semi ()
-    | Return_statement e -> (
+    | Return_statement (e, loc) -> (
         match e with
         | None ->
             PP.string f "return";
-            last_semi ()
+            output_debug_info f loc;
+            last_semi ~ret:true ()
         | Some (EFun (i, ({ async = false; generator = false }, l, b, pc))) ->
             PP.start_group f 1;
             PP.start_group f 0;
             PP.start_group f 0;
             PP.string f "return function";
-            opt_identifier f i;
+            opt_identifier f ~kind:`Binding i;
             PP.end_group f;
             PP.break f;
             PP.start_group f 1;
@@ -1490,7 +1627,8 @@ struct
             function_body f b;
             output_debug_info f pc;
             PP.string f "}";
-            last_semi ();
+            output_debug_info f loc;
+            last_semi ~ret:true ();
             PP.end_group f
         | Some e ->
             PP.start_group f 7;
@@ -1498,7 +1636,8 @@ struct
             PP.non_breaking_space f;
             PP.start_group f 0;
             expression Expression f e;
-            last_semi ();
+            output_debug_info f loc;
+            last_semi ~ret:true ();
             PP.end_group f;
             PP.end_group f
             (* There MUST be a space between the return and its
@@ -1615,19 +1754,19 @@ struct
         | SideEffect -> ()
         | Default i ->
             PP.space f;
-            ident f i
+            ident f ~kind:`Binding i
         | Namespace (def, i) ->
             Option.iter def ~f:(fun def ->
                 PP.space f;
-                ident f def;
+                ident f ~kind:`Reference def;
                 PP.string f ",");
             PP.space f;
             PP.string f "* as ";
-            ident f i
+            ident f ~kind:`Binding i
         | Named (def, l) ->
             Option.iter def ~f:(fun def ->
                 PP.space f;
-                ident f def;
+                ident f ~kind:`Binding def;
                 PP.string f ",");
             PP.space f;
             PP.string f "{";
@@ -1639,11 +1778,11 @@ struct
                 if match i with
                    | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
                    | _ -> false
-                then ident f i
+                then ident f ~kind:`Binding i
                 else (
                   pp_ident_or_string_lit f s;
                   PP.string f " as ";
-                  ident f i))
+                  ident f ~kind:`Binding i))
               l;
             PP.space f;
             PP.string f "}");
@@ -1671,9 +1810,9 @@ struct
                 if match i with
                    | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
                    | _ -> false
-                then ident f i
+                then ident f ~kind:`Reference i
                 else (
-                  ident f i;
+                  ident f ~kind:`Reference i;
                   PP.string f " as ";
                   pp_ident_or_string_lit f s))
               l;
@@ -1800,7 +1939,7 @@ struct
       | { async = true; generator = true } -> "async function*"
       | { async = false; generator = true } -> "function*"
     in
-    function_declaration f prefix ident name l b loc'
+    function_declaration f prefix (ident ~kind:`Binding) name l b loc'
 
   and class_declaration f i x =
     PP.start_group f 1;
@@ -1811,7 +1950,7 @@ struct
     | None -> ()
     | Some i ->
         PP.space f;
-        ident f i);
+        ident f ~kind:`Binding i);
     PP.end_group f;
     Option.iter x.extends ~f:(fun e ->
         PP.space f;
@@ -1908,6 +2047,7 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
     | None | Some { Source_map.Standard.sources_content = None; _ } -> None
     | Some { Source_map.Standard.sources_content = Some _; _ } -> Some (ref [])
   in
+  let blackbox_file = "/builtin/blackbox.ml" in
   let push_mapping, get_file_index, get_name_index, source_map_enabled =
     let source_map_enabled =
       match source_map with
@@ -1934,7 +2074,9 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
       match Builtins.find file with
       | Some f -> Some (Builtins.File.content f)
       | None ->
-          if Sys.file_exists file && not (Sys.is_directory file)
+          if String.equal file blackbox_file
+          then Some "(* generated code *)"
+          else if Sys.file_exists file && not (Sys.is_directory file)
           then
             let content = Fs.read_file file in
             Some content
@@ -1962,12 +2104,23 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
           pos)
     , source_map_enabled )
   in
+  let hidden_location =
+    Source_map.Gen_Ori
+      { gen_line = -1
+      ; gen_col = -1
+      ; ori_source = get_file_index blackbox_file
+      ; ori_line = 1
+      ; ori_col = 0
+      }
+  in
   let module O = Make (struct
     let push_mapping = push_mapping
 
     let get_name_index = get_name_index
 
     let get_file_index = get_file_index
+
+    let hidden_location = hidden_location
 
     let source_map_enabled = source_map_enabled
 
@@ -1996,25 +2149,52 @@ let program ?(accept_unnamed_var = false) f ?source_map p =
               | None -> filename
               | Some _ -> Filename.concat "/builtin" filename)
         in
-        let sm_mappings = Source_map.Mappings.decode sm.mappings in
-        let mappings =
-          List.rev_append_map !temp_mappings sm_mappings ~f:(fun (pos, m) ->
-              let gen_line = pos.PP.p_line + 1 in
-              let gen_col = pos.PP.p_col in
-              match m with
-              | Source_map.Gen { gen_col = _; gen_line = _ } ->
-                  Source_map.Gen { gen_col; gen_line }
-              | Source_map.Gen_Ori
-                  { gen_line = _; gen_col = _; ori_source; ori_line; ori_col } ->
-                  Source_map.Gen_Ori { gen_line; gen_col; ori_source; ori_line; ori_col }
-              | Source_map.Gen_Ori_Name
-                  { gen_line = _; gen_col = _; ori_source; ori_line; ori_col; ori_name }
-                ->
-                  Source_map.Gen_Ori_Name
-                    { gen_line; gen_col; ori_source; ori_line; ori_col; ori_name })
+        let ignore_list =
+          List.filter sources ~f:(fun filename ->
+              String.length filename >= 9
+              && String.equal (String.sub filename ~pos:0 ~len:9) "/builtin/")
         in
+        let sm_mappings = Source_map.Mappings.decode sm.mappings in
+        let relocate pos m =
+          let gen_line = pos.PP.p_line + 1 in
+          let gen_col = pos.PP.p_col in
+          match m with
+          | Source_map.Gen { gen_col = _; gen_line = _ } ->
+              Source_map.Gen { gen_col; gen_line }
+          | Source_map.Gen_Ori m -> Source_map.Gen_Ori { m with gen_line; gen_col }
+          | Source_map.Gen_Ori_Name m ->
+              Source_map.Gen_Ori_Name { m with gen_line; gen_col }
+        in
+        let prepend mapping prev_mappings =
+          let rec prepend_rec pos mapping prev_mappings =
+            match mapping with
+            | [] -> prev_mappings
+            | (pos', m) :: rem ->
+                if pos'.PP.p_line = pos.PP.p_line
+                   || (pos'.p_line = pos.p_line - 1 && pos.p_col = 0)
+                then prepend_rec pos' rem (relocate pos' m :: prev_mappings)
+                else if pos.p_col > 0
+                then
+                  let pos = { pos with p_col = 0 } in
+                  prepend_rec pos mapping (relocate pos m :: prev_mappings)
+                else
+                  let pos = { pos with p_line = pos.p_line - 1 } in
+                  prepend_rec pos mapping (relocate pos m :: prev_mappings)
+          in
+          match mapping with
+          | [] -> prev_mappings
+          | (pos, m) :: rem -> prepend_rec pos rem (relocate pos m :: prev_mappings)
+        in
+        let mappings = prepend !temp_mappings sm_mappings in
         let mappings = Source_map.Mappings.encode mappings in
-        Some { sm with Source_map.Standard.sources; names; sources_content; mappings }
+        Some
+          { sm with
+            Source_map.Standard.sources
+          ; names
+          ; sources_content
+          ; mappings
+          ; ignore_list
+          }
   in
   PP.check f;
   (if stats ()

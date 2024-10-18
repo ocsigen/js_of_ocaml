@@ -74,7 +74,7 @@ let%expect_test _ =
         3: (function(globalThis){
         4:    "use strict";
         5:    var runtime = globalThis.jsoo_runtime;
-        6:    function id(x){return x;}
+        6:    function id(x){return x; }
         7:    var Test = [0, id];
         8:    runtime.caml_register_global(0, Test, "Test");
         9:    return;
@@ -82,13 +82,16 @@ let%expect_test _ =
        11:   (globalThis));
        12:
        13: //# sourceMappingURL=test.map
+      /builtin/blackbox.ml:1:0 -> 5:7
+      /builtin/blackbox.ml:1:0 -> 5:17
+      /builtin/blackbox.ml:1:0 -> 6:0
       /dune-root/test.ml:1:4 -> 6:12
       /dune-root/test.ml:1:7 -> 6:15
       /dune-root/test.ml:1:11 -> 6:18
-      /dune-root/test.ml:1:7 -> 6:25
-      /dune-root/test.ml:1:12 -> 6:27
-      /dune-root/test.ml:1:4 -> 7:18
-      null -> 10:2
+      /dune-root/test.ml:1:12 -> 6:28
+      /dune-root/test.ml:1:12 -> 7:0
+      /dune-root/test.ml:1:12 -> 7:7
+      /builtin/blackbox.ml:1:0 -> 7:14
     |}]
 
 let%expect_test _ =
@@ -112,8 +115,8 @@ function x (a, b) {
       3:   return a + b;
       4: }
     $ cat "test.min.js"
-      1:  /*<<test.ml:2:0>>*/ function x(a, b){
-      2:   /*<<test.ml:3:2>>*/ return a + b;
+      1: function x(a, b){
+      2:   /*<<test.ml:3:2>>*/ return a + b /*<<test.ml:3:14>>*/ ;
       3:  /*<<test.ml:4:0>>*/ }
  |}]
 

@@ -593,7 +593,7 @@ let cps_block ~st ~k pc block =
             in
             let instrs, branch = f ~k:k' in
             body_prefix, constr_cont @ instrs, branch)
-    | Some (_, ((Set_field _ | Offset_ref _ | Array_set _ | Assign _), _)), _
+    | Some (_, ((Event _ | Set_field _ | Offset_ref _ | Array_set _ | Assign _), _)), _
     | Some _, ((Raise _ | Stop | Cond _ | Switch _ | Pushtrap _ | Poptrap _), _)
     | None, _ -> None
   in
@@ -901,10 +901,18 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
       | None -> cont
   in
   let resolve cont = resolve_rec Addr.Set.empty cont in
+  let empty_body b =
+    List.for_all
+      ~f:(fun (i, _) ->
+        match i with
+        | Event _ -> true
+        | _ -> false)
+      b
+  in
   Addr.Map.iter
     (fun pc block ->
       match block with
-      | { params; body = []; branch = Branch cont, _; _ } ->
+      | { params; body; branch = Branch cont, _; _ } when empty_body body ->
           let args =
             List.fold_left
               ~f:(fun args x -> Var.Set.add x args)
