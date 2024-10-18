@@ -153,6 +153,6 @@ let%expect_test "Bug fix in PR #1681" =
   (* No field of record x should be eliminated. *)
   [%expect
     {|
-       function f(b){var x = [0, 1]; return b ? x : (x[1] = 1, [0, 3, 4]);}
+       function f(b){var x = [0, 1, 2]; return b ? x : (x[1] = 1, [0, 3, 4]);}
        //end
      |}]
