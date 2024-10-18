@@ -18059,7 +18059,9 @@
     }
    }
    function make_printf(k, acc, fmt){
-     /*<<?>>*/ return caml_trampoline(make_printf$0(0, k, acc, fmt));
+     /*<<?>>*/ return caml_trampoline
+            ( /*<<camlinternalFormat.ml:1518:17>>*/ make_printf$0
+              (0, k, acc, fmt)) /*<<?>>*/ ;
    }
    function make_ignored_param$0(counter, k, acc, ign, fmt){
      /*<<camlinternalFormat.ml:1613:21>>*/ if(typeof ign === "number")
@@ -18158,7 +18160,8 @@
    }
    function make_ignored_param(k, acc, ign, fmt){
      /*<<?>>*/ return caml_trampoline
-            (make_ignored_param$0(0, k, acc, ign, fmt));
+            ( /*<<camlinternalFormat.ml:1613:21>>*/ make_ignored_param$0
+              (0, k, acc, ign, fmt)) /*<<?>>*/ ;
    }
    function make_from_fmtty$0(counter, k, acc, fmtty, fmt){
      /*<<camlinternalFormat.ml:1637:23>>*/ if(typeof fmtty !== "number")
@@ -18252,7 +18255,8 @@
    }
    function make_from_fmtty(k, acc, fmtty, fmt){
      /*<<?>>*/ return caml_trampoline
-            (make_from_fmtty$0(0, k, acc, fmtty, fmt));
+            ( /*<<camlinternalFormat.ml:1637:23>>*/ make_from_fmtty$0
+              (0, k, acc, fmtty, fmt)) /*<<?>>*/ ;
    }
    function make_invalid_arg(counter, k, acc, fmt){
     var
@@ -18440,7 +18444,8 @@
    }
    function make_custom(k, acc, rest, arity, f){
      /*<<?>>*/ return caml_trampoline
-            (make_custom$0(0, k, acc, rest, arity, f));
+            ( /*<<camlinternalFormat.ml:1778:28>>*/ make_custom$0
+              (0, k, acc, rest, arity, f)) /*<<?>>*/ ;
    }
    function make_iprintf$0(counter, k, o, fmt){
     var k$0 =  /*<<camlinternalFormat.ml:1788:17>>*/ k, fmt$0 = fmt;
@@ -18725,7 +18730,9 @@
     }
    }
    function make_iprintf(k, o, fmt){
-     /*<<?>>*/ return caml_trampoline(make_iprintf$0(0, k, o, fmt));
+     /*<<?>>*/ return caml_trampoline
+            ( /*<<camlinternalFormat.ml:1788:17>>*/ make_iprintf$0
+              (0, k, o, fmt)) /*<<?>>*/ ;
    }
    function fn_of_padding_precision(k, o, fmt, pad, prec){
      /*<<camlinternalFormat.ml:1863:26>>*/ if(typeof pad === "number"){
@@ -18816,7 +18823,8 @@
    }
    function fn_of_custom_arity(k, o, fmt, param){
      /*<<?>>*/ return caml_trampoline
-            (fn_of_custom_arity$0(0, k, o, fmt, param));
+            ( /*<<camlinternalFormat.ml:1882:4>>*/ fn_of_custom_arity$0
+              (0, k, o, fmt, param)) /*<<?>>*/ ;
    }
    function output_acc(o, acc){
     var acc$0 =  /*<<camlinternalFormat.ml:1897:27>>*/ acc;
@@ -20301,7 +20309,8 @@
               /*<<camlinternalFormat.ml:2736:4>>*/ function
              (str_ind, end_ind, c){
                /*<<?>>*/ return caml_trampoline
-                      (parse_char_set_after_char$0(0, str_ind, end_ind, c));
+                      ( /*<<camlinternalFormat.ml:2755:6>>*/ parse_char_set_after_char$0
+                        (0, str_ind, end_ind, c)) /*<<?>>*/ ;
              };
            /*<<camlinternalFormat.ml:2793:4>>*/ if(str_ind === end_ind)
             /*<<camlinternalFormat.ml:2092:4>>*/ invalid_format_message
@@ -31463,7 +31472,8 @@
      }
     }
     function find_stop(width){
-      /*<<?>>*/ return caml_trampoline(find_stop$0(0, width));
+      /*<<?>>*/ return caml_trampoline
+             ( /*<<scanf.ml:1063:10>>*/ find_stop$0(0, width)) /*<<?>>*/ ;
     }
     function skip_spaces(counter, width){
      var width$0 =  /*<<scanf.ml:1080:10>>*/ width;
@@ -31739,7 +31749,8 @@
     }
     /*<<scanf.ml:1198:45>>*/ }
    function take_format_readers(k, fmt){
-     /*<<?>>*/ return caml_trampoline(take_format_readers$0(0, k, fmt));
+     /*<<?>>*/ return caml_trampoline
+            ( /*<<scanf.ml:1161:13>>*/ take_format_readers$0(0, k, fmt)) /*<<?>>*/ ;
    }
    function take_fmtty_format_readers$0(counter, k, fmtty, fmt){
     var fmtty$0 =  /*<<scanf.ml:1204:19>>*/ fmtty;
@@ -31837,7 +31848,8 @@
     /*<<scanf.ml:1228:58>>*/ }
    function take_fmtty_format_readers(k, fmtty, fmt){
      /*<<?>>*/ return caml_trampoline
-            (take_fmtty_format_readers$0(0, k, fmtty, fmt));
+            ( /*<<scanf.ml:1204:19>>*/ take_fmtty_format_readers$0
+              (0, k, fmtty, fmt)) /*<<?>>*/ ;
    }
    function make_scanf(ib, fmt, readers){
     var fmt$0 =  /*<<scanf.ml:1266:22>>*/ fmt;
@@ -35732,7 +35744,10 @@
       i$0 = i$1;
      }
      /*<<filename.ml:175:48>>*/ }
-    function loop(i){ /*<<?>>*/ return caml_trampoline(loop$0(0, i));}
+    function loop(i){
+      /*<<?>>*/ return caml_trampoline
+             ( /*<<filename.ml:171:6>>*/ loop$0(0, i)) /*<<?>>*/ ;
+    }
     function loop_bs(counter, n, i){
      var n$0 =  /*<<filename.ml:177:6>>*/ n, i$0 = i;
      for(;;){
