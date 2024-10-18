@@ -90,8 +90,7 @@ let%expect_test _ =
       /dune-root/test.ml:1:11 -> 6:18
       /dune-root/test.ml:1:12 -> 6:28
       /dune-root/test.ml:1:12 -> 7:7
-      /dune-root/test.ml:1:12 -> 7:14
-      null -> 10:2
+      null -> 7:14
     |}]
 
 let%expect_test _ =
