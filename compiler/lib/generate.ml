@@ -1782,7 +1782,7 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
           | _ ->
               let handler_var = Code.Var.fork x in
               ( handler_var
-              , (J.variable_declaration [ J.V x, (wrap_exn handler_var, J.N) ], J.N)
+              , (J.variable_declaration [ J.V x, (wrap_exn handler_var, J.U) ], J.N)
                 :: handler )
         in
 
