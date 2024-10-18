@@ -265,7 +265,7 @@ and statement =
       * (statement * location)
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
-  | Return_statement of expression option
+  | Return_statement of expression option * location
   | With_statement of expression * (statement * location)
   | Labelled_statement of Label.t * (statement * location)
   | Switch_statement of
