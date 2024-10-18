@@ -110,13 +110,13 @@ exception Not_expression
 
 let rec expression_of_statement_list l =
   match l with
-  | (J.Return_statement (Some e), _) :: _ -> e
+  | (J.Return_statement (Some e, _), _) :: _ -> e
   | (J.Expression_statement e, _) :: rem -> J.ESeq (e, expression_of_statement_list rem)
   | _ -> raise Not_expression
 
 let expression_of_statement st =
   match fst st with
-  | J.Return_statement (Some e) -> e
+  | J.Return_statement (Some e, _) -> e
   | J.Block l -> expression_of_statement_list l
   | _ -> raise Not_expression
 
@@ -194,7 +194,7 @@ and depth_class_block b =
       | J.CEField _ -> acc
       | J.CEStaticBLock b -> depth_block b + 2)
 
-let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
+let rec if_statement_2 ~function_end e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in
   match fst iftrue, fst iffalse with
   (* Empty blocks *)
@@ -202,7 +202,8 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
       match e with
       | J.EVar _ -> []
       | _ -> [ J.Expression_statement e, loc ])
-  | J.Block [], _ -> if_statement_2 (enot e) loc iffalse falsestop iftrue truestop
+  | J.Block [], _ ->
+      if_statement_2 ~function_end (enot e) loc iffalse falsestop iftrue truestop
   | _, J.Block [] -> [ J.If_statement (e, iftrue, None), loc ]
   | _ -> (
       try
@@ -226,7 +227,7 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
         try
           let e1 = expression_of_statement iftrue in
           let e2 = expression_of_statement iffalse in
-          [ J.Return_statement (Some (J.ECond (e, e1, e2))), loc ]
+          [ J.Return_statement (Some (J.ECond (e, e1, e2)), function_end ()), loc ]
         with Not_expression ->
           let truestop, falsestop =
             if truestop && falsestop
@@ -247,15 +248,23 @@ let unopt b =
   | Some b -> b
   | None -> J.Block [], J.N
 
-let if_statement e loc iftrue truestop iffalse falsestop =
+let if_statement ~function_end e loc iftrue truestop iffalse falsestop =
   (*FIX: should be done at an earlier stage*)
   let e = simplify_condition e in
   match iftrue, iffalse with
   (* Shared statements *)
   | (J.If_statement (e', iftrue', iffalse'), _), _ when Poly.(iffalse = unopt iffalse') ->
-      if_statement_2 (J.EBin (J.And, e, e')) loc iftrue' truestop iffalse falsestop
+      if_statement_2
+        ~function_end
+        (J.EBin (J.And, e, e'))
+        loc
+        iftrue'
+        truestop
+        iffalse
+        falsestop
   | (J.If_statement (e', iftrue', iffalse'), _), _ when Poly.(iffalse = iftrue') ->
       if_statement_2
+        ~function_end
         (J.EBin (J.And, e, J.EUn (J.Not, e')))
         loc
         (unopt iffalse')
@@ -263,16 +272,24 @@ let if_statement e loc iftrue truestop iffalse falsestop =
         iffalse
         falsestop
   | _, (J.If_statement (e', iftrue', iffalse'), _) when Poly.(iftrue = iftrue') ->
-      if_statement_2 (J.EBin (J.Or, e, e')) loc iftrue truestop (unopt iffalse') falsestop
+      if_statement_2
+        ~function_end
+        (J.EBin (J.Or, e, e'))
+        loc
+        iftrue
+        truestop
+        (unopt iffalse')
+        falsestop
   | _, (J.If_statement (e', iftrue', iffalse'), _) when Poly.(iftrue = unopt iffalse') ->
       if_statement_2
+        ~function_end
         (J.EBin (J.Or, e, J.EUn (J.Not, e')))
         loc
         iftrue
         truestop
         iftrue'
         falsestop
-  | _ -> if_statement_2 e loc iftrue truestop iffalse falsestop
+  | _ -> if_statement_2 ~function_end e loc iftrue truestop iffalse falsestop
 
 let function_body b =
   (* We only check for a return at the end since it is by far the most
@@ -281,7 +298,7 @@ let function_body b =
     let rec check l =
       match l with
       | [] -> false
-      | [ (J.Return_statement None, _) ] -> true
+      | [ (J.Return_statement (None, _), _) ] -> true
       | _ :: r -> check r
     in
     check b
@@ -291,7 +308,7 @@ let function_body b =
     let rec remove acc l =
       match l with
       | [] -> acc
-      | [ (J.Return_statement None, _) ] -> acc
+      | [ (J.Return_statement (None, _), _) ] -> acc
       | i :: r -> remove (i :: acc) r
     in
     List.rev (remove [] b)

@@ -88,6 +88,7 @@ let%expect_test _ =
       /dune-root/test.ml:1:7 -> 6:15
       /dune-root/test.ml:1:11 -> 6:18
       /dune-root/test.ml:1:7 -> 6:25
+      /dune-root/test.ml:1:11 -> 6:26
       /dune-root/test.ml:1:12 -> 6:27
       /dune-root/test.ml:1:4 -> 7:18
       null -> 10:2
@@ -114,7 +115,9 @@ function x (a, b) {
       3:   return a + b;
       4: }
     $ cat "test.min.js"
-      1: function x(a, b){ /*<<test.ml:3:2>>*/ return a + b; /*<<test.ml:4:0>>*/ }
+      1: function x(a, b){
+      2:   /*<<test.ml:3:2>>*/ return a + b /*<<test.ml:3:14>>*/ ;
+      3:  /*<<test.ml:4:0>>*/ }
  |}]
 
 let%expect_test _ =
