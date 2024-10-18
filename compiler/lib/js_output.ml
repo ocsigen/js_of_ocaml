@@ -1371,7 +1371,13 @@ struct
 
   and statement ?(last = false) f (s, loc) =
     let can_omit_semi = PP.compact f && last in
-    let last_semi () = if can_omit_semi then () else PP.string f ";" in
+    let last_semi ?(ret = false) () =
+      if can_omit_semi
+      then ()
+      else if ret && source_map_enabled
+      then PP.string f "; "
+      else PP.string f ";"
+    in
     if stop_on_statement s then output_debug_info f loc;
     match s with
     | Block b -> block f b
@@ -1579,7 +1585,7 @@ struct
         | None ->
             PP.string f "return";
             output_debug_info f loc;
-            last_semi ()
+            last_semi ~ret:true ()
         | Some (EFun (i, ({ async = false; generator = false }, l, b, pc))) ->
             PP.start_group f 1;
             PP.start_group f 0;
@@ -1600,7 +1606,7 @@ struct
             output_debug_info f pc;
             PP.string f "}";
             output_debug_info f loc;
-            last_semi ();
+            last_semi ~ret:true ();
             PP.end_group f
         | Some e ->
             PP.start_group f 7;
@@ -1609,7 +1615,7 @@ struct
             PP.start_group f 0;
             expression Expression f e;
             output_debug_info f loc;
-            last_semi ();
+            last_semi ~ret:true ();
             PP.end_group f;
             PP.end_group f
             (* There MUST be a space between the return and its

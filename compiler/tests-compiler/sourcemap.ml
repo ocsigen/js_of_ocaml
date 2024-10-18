@@ -75,7 +75,7 @@ let%expect_test _ =
         3: (function(globalThis){
         4:    "use strict";
         5:    var runtime = globalThis.jsoo_runtime;
-        6:    function id(x){return x;}
+        6:    function id(x){return x; }
         7:    var Test = [0, id];
         8:    runtime.caml_register_global(0, Test, "Test");
         9:    return;
@@ -89,7 +89,7 @@ let%expect_test _ =
       /dune-root/test.ml:1:11 -> 6:18
       /dune-root/test.ml:1:7 -> 6:25
       /dune-root/test.ml:1:11 -> 6:26
-      /dune-root/test.ml:1:12 -> 6:27
+      /dune-root/test.ml:1:12 -> 6:28
       /dune-root/test.ml:1:4 -> 7:18
       null -> 10:2
     |}]
