@@ -157,75 +157,95 @@ let specialize_instr ~target info i =
       | _ -> i)
   | _, _ -> i
 
-let equal2 a b = Code.Var.equal a b
+let skip_event cont ((Event _, _) :: l | l) = cont l
 
-let equal3 a b c = Code.Var.equal a b && Code.Var.equal b c
+let recognize_string_length cont =
+  skip_event
+  @@ fun l ->
+  match l with
+  | ((Let (len, Prim (Extern "caml_ml_string_length", [ Pv str ])), _) as i) :: l ->
+      cont i ~len ~str l
+  | _ -> None
 
-let equal4 a b c d = Code.Var.equal a b && Code.Var.equal b c && Code.Var.equal c d
+let recognize_int_add ~x ~y cont =
+  skip_event
+  @@ fun l ->
+  match l with
+  | ((Let (res, Prim (Extern "%int_add", [ Pv x'; Pv y' ])), _) as i) :: l
+    when Code.Var.equal x x' && Code.Var.equal y y' -> cont i ~res l
+  | _ -> None
+
+let recognize_create_bytes ~len cont =
+  skip_event
+  @@ fun l ->
+  match l with
+  | (Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ])), _) :: l
+    when Code.Var.equal len len' -> cont ~bytes l
+  | _ -> None
+
+let recognize_blit_string ~str ~bytes ~ofs ~len cont =
+  skip_event
+  @@ fun l ->
+  match l with
+  | ( Let
+        ( _
+        , Prim
+            ( Extern "caml_blit_string"
+            , [ Pv str'; Pc (Int zero); Pv bytes'; ofs'; Pv len' ] ) )
+    , _ )
+    :: l
+    when Code.Var.equal str str'
+         && Targetint.is_zero zero
+         && Code.Var.equal bytes bytes'
+         && Code.Var.equal len len'
+         &&
+         match ofs, ofs' with
+         | Pc (Int ofs), Pc (Int ofs') -> Targetint.equal ofs ofs'
+         | Pv ofs, Pv ofs' -> Code.Var.equal ofs ofs'
+         | _ -> false -> cont l
+  | _ -> None
+
+let recognize_string_of_bytes ~bytes cont =
+  skip_event
+  @@ fun l ->
+  match l with
+  | (Let (str, Prim (Extern "caml_string_of_bytes", [ Pv bytes' ])), _) :: l
+    when Code.Var.equal bytes bytes' -> cont ~str l
+  | _ -> None
+
+let recognize_empty_body cont =
+  skip_event @@ fun l -> if List.is_empty l then cont () else None
+
+let specialize_string_concat l =
+  Option.value
+    ~default:l
+    (l
+    |> recognize_string_length
+       @@ fun len1 ~len:alen ~str:a ->
+       recognize_string_length
+       @@ fun len2 ~len:blen ~str:b ->
+       recognize_int_add ~x:alen ~y:blen
+       @@ fun len3 ~res:len ->
+       recognize_create_bytes ~len
+       @@ fun ~bytes ->
+       recognize_blit_string ~str:a ~bytes ~ofs:(Pc (Int Targetint.zero)) ~len:alen
+       @@ recognize_blit_string ~str:b ~bytes ~ofs:(Pv alen) ~len:blen
+       @@ recognize_string_of_bytes ~bytes
+       @@ fun ~str ->
+       recognize_empty_body
+       @@ fun () ->
+       Some
+         [ len1
+         ; len2
+         ; len3
+         ; Let (str, Prim (Extern "caml_string_concat", [ Pv a; Pv b ])), No
+         ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv str ])), No
+         ])
 
 let specialize_instrs ~target info l =
   let rec aux info checks l acc =
     match l with
     | [] -> List.rev acc
-    | [ ((Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])), _) as len1)
-      ; ((Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])), _) as len2)
-      ; ((Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])), _) as len3)
-      ; (Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ])), _)
-      ; ( Let
-            ( u1
-            , Prim
-                ( Extern "caml_blit_string"
-                , [ Pv a'; Pc (Int zero1); Pv bytes'; Pc (Int zero2); Pv alen'' ] ) )
-        , _ )
-      ; ( Let
-            ( u2
-            , Prim
-                ( Extern "caml_blit_string"
-                , [ Pv b'; Pc (Int zero3); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
-        , _ )
-      ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
-      ]
-    | [ (Event _, _)
-      ; ((Let (alen, Prim (Extern "caml_ml_string_length", [ Pv a ])), _) as len1)
-      ; ((Let (blen, Prim (Extern "caml_ml_string_length", [ Pv b ])), _) as len2)
-      ; (Event _, _)
-      ; ((Let (len, Prim (Extern "%int_add", [ Pv alen'; Pv blen' ])), _) as len3)
-      ; (Event _, _)
-      ; (Let (bytes, Prim (Extern "caml_create_bytes", [ Pv len' ])), _)
-      ; (Event _, _)
-      ; ( Let
-            ( u1
-            , Prim
-                ( Extern "caml_blit_string"
-                , [ Pv a'; Pc (Int zero1); Pv bytes'; Pc (Int zero2); Pv alen'' ] ) )
-        , _ )
-      ; (Event _, _)
-      ; ( Let
-            ( u2
-            , Prim
-                ( Extern "caml_blit_string"
-                , [ Pv b'; Pc (Int zero3); Pv bytes''; Pv alen'''; Pv blen'' ] ) )
-        , _ )
-      ; (Event _, _)
-      ; (Let (res, Prim (Extern "caml_string_of_bytes", [ Pv bytes''' ])), _)
-      ]
-      when Targetint.is_zero zero1
-           && Targetint.is_zero zero2
-           && Targetint.is_zero zero3
-           && equal2 a a'
-           && equal2 b b'
-           && equal2 len len'
-           && equal4 alen alen' alen'' alen'''
-           && equal3 blen blen' blen''
-           && equal4 bytes bytes' bytes'' bytes''' ->
-        [ len1
-        ; len2
-        ; len3
-        ; Let (u1, Constant (Int Targetint.zero)), No
-        ; Let (u2, Constant (Int Targetint.zero)), No
-        ; Let (res, Prim (Extern "caml_string_concat", [ Pv a; Pv b ])), No
-        ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv res ])), No
-        ]
     | (i, loc) :: r -> (
         (* We make bound checking explicit. Then, we can remove duplicated
            bound checks. Also, it appears to be more efficient to inline
@@ -327,7 +347,10 @@ let specialize_instrs ~target info l =
 let specialize_all_instrs ~target info p =
   let blocks =
     Addr.Map.map
-      (fun block -> { block with Code.body = specialize_instrs ~target info block.body })
+      (fun block ->
+        { block with
+          Code.body = specialize_instrs ~target info (specialize_string_concat block.body)
+        })
       p.blocks
   in
   { p with blocks }
