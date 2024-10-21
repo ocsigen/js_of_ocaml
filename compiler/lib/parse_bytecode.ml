@@ -952,25 +952,36 @@ and compile infos pc state instrs =
             (* Ignore allocation events (not very interesting) *)
             if debug_parser () then Format.eprintf "Ignored allocation event@.";
             instrs
-        | ( { ev_kind = Event_pseudo | Event_after _; _ }
+        | ( { ev_kind = Event_pseudo | Event_after _; ev_info = Event_return _; _ }
           , ((Let (_, (Apply _ | Prim _)), _) as i) :: rem ) ->
+            (* Event after a call. If it is followed by another event,
+               it may have been weaken to a pseudo-event but was kept
+               for stack traces *)
             if debug_parser () then Format.eprintf "Added event across call@.";
             push_event After source event (i :: push_event Before source event rem)
         | { ev_kind = Event_pseudo; ev_info = Event_function; _ }, [] ->
             (* At beginning of function *)
             if debug_parser () then Format.eprintf "Added event at function start@.";
             push_event Before source event instrs
-        | { ev_kind = Event_after _ | Event_pseudo; _ }, _ ->
-            if debug_parser () then Format.eprintf "Ignored useless event@.";
-            (* Not interesting:
-               - before a throw instruction, but we already have an event
-                 for the exception
-               - omitted else clause
-            *)
+        | { ev_kind = Event_after _ | Event_pseudo; ev_info = Event_return _; _ }, _ ->
+            if debug_parser ()
+            then
+              Format.eprintf "Ignored useless event (beginning of a block after a call)@.";
             instrs
-        | _, _ ->
+        | { ev_kind = Event_after _; ev_info = Event_other; _ }, _ ->
+            if debug_parser ()
+            then Format.eprintf "Ignored useless event (before a raise)@.";
+            (* We already have an event for the exception. The
+               compiler add these events for stack traces. *)
+            instrs
+        | { ev_kind = Event_before; ev_info = Event_other; _ }, _
+        | { ev_kind = Event_before | Event_pseudo; ev_info = Event_function; _ }, _ ->
             if debug_parser () then Format.eprintf "added event@.";
-            push_event Before source event instrs)
+            push_event Before source event instrs
+        | { ev_kind = Event_after _; ev_info = Event_function; _ }, _
+        | { ev_kind = Event_before; ev_info = Event_return _; _ }, _ ->
+            (* Nonsensical events *)
+            assert false)
   in
 
   if pc = infos.limit
