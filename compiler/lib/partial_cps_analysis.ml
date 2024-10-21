@@ -39,9 +39,18 @@ let add_tail_dep deps x y =
       (fun s -> Some (Var.Set.add x (Option.value ~default:Var.Set.empty s)))
       !deps
 
+let rec block_iter_last ~f l =
+  match l with
+  | [] -> ()
+  | [ i ] -> f true i
+  | [ i; (Event _, _) ] -> f true i
+  | i :: l ->
+      f false i;
+      block_iter_last ~f l
+
 let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
   let block = Addr.Map.find pc blocks in
-  List.iter_last block.body ~f:(fun is_last (i, _) ->
+  block_iter_last block.body ~f:(fun is_last (i, _) ->
       match i with
       | Let (x, Apply { f; _ }) -> (
           add_var vars x;

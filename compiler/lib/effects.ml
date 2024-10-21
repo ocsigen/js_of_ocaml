@@ -139,6 +139,28 @@ let dominance_frontier g idom =
     g.preds;
   frontiers
 
+(* Last instruction of a block, ignoring events *)
+let rec last_instr l =
+  match l with
+  | [] -> None
+  | [ i ] | [ i; (Event _, _) ] -> Some i
+  | _ :: rem -> last_instr rem
+
+(* Split a block, separating the last instruction from the preceeding
+   ones, ignoring events *)
+let block_split_last xs =
+  let rec aux acc = function
+    | [] -> None
+    | [ x ] | [ x; (Event _, _) ] -> Some (List.rev acc, x)
+    | x :: xs -> aux (x :: acc) xs
+  in
+  aux [] xs
+
+let empty_body b =
+  match b with
+  | [] | [ (Event _, _) ] -> true
+  | _ -> false
+
 (****)
 
 (*
@@ -176,7 +198,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
       let block = Addr.Map.find pc blocks in
       (match fst block.branch with
       | Branch (dst, _) -> (
-          match List.last block.body with
+          match last_instr block.body with
           | Some
               ( Let
                   (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _)))
@@ -572,7 +594,7 @@ let cps_block ~st ~k pc block =
   in
 
   let rewritten_block =
-    match List.split_last block.body, block.branch with
+    match block_split_last block.body, block.branch with
     | Some (body_prefix, (Let (x, e), loc)), (Return ret, _loc_ret) ->
         Option.map (rewrite_instr x e loc) ~f:(fun f ->
             assert (List.is_empty alloc_jump_closures);
@@ -847,7 +869,7 @@ let split_blocks ~cps_needed (p : Code.program) =
     let is_split_point i r branch =
       match i with
       | Let (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
-          ((not (List.is_empty r))
+          ((not (empty_body r))
           ||
           match fst branch with
           | Branch _ -> false
@@ -901,14 +923,6 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
       | None -> cont
   in
   let resolve cont = resolve_rec Addr.Set.empty cont in
-  let empty_body b =
-    List.for_all
-      ~f:(fun (i, _) ->
-        match i with
-        | Event _ -> true
-        | _ -> false)
-      b
-  in
   Addr.Map.iter
     (fun pc block ->
       match block with
