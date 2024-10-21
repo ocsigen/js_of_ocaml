@@ -71,6 +71,10 @@ let options =
     let profile = List.map Driver.profiles ~f:(fun (i, p) -> string_of_int i, p) in
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
+  let linkall =
+    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    Arg.(value & flag & info [ "linkall" ] ~doc)
+  in
   let no_sourcemap =
     let doc = "Disable sourcemap output." in
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
@@ -104,6 +108,7 @@ let options =
       set_param
       include_dirs
       profile
+      _
       sourcemap
       no_sourcemap
       sourcemap_don't_inline_content
@@ -149,6 +154,7 @@ let options =
       $ set_param
       $ include_dirs
       $ profile
+      $ linkall
       $ sourcemap
       $ no_sourcemap
       $ sourcemap_don't_inline_content
