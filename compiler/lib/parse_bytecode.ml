@@ -59,7 +59,7 @@ module Debug : sig
 
   val find_loc : t -> position:position -> Code.Addr.t -> Parse_info.t option
 
-  val find_loc' : t -> int -> (string option * Instruct.debug_event) option
+  val find_locs : t -> int -> (string option * Instruct.debug_event) list
 
   val event_location :
        position:position
@@ -301,11 +301,16 @@ end = struct
   let dummy_location (loc : Location.t) =
     loc.loc_start.pos_cnum = -1 || loc.loc_end.pos_cnum = -1
 
-  let find_loc' { events_by_pc; _ } pc =
-    match Int_table.find events_by_pc pc with
-    | exception Not_found -> None
-    | { event; source } ->
-        if dummy_location event.ev_loc then None else Some (source, event)
+  (* We can have several events at the same location when a function
+     application is followed by a branch target, typically due to some
+     code like [if ... then f(); ...] : the event after the function
+     application, and the event at the beginning of the continuation.
+     Both events are interesting. They are returned by this function
+     in the expected order: first after the function call, then before
+     the continuation. *)
+  let find_locs { events_by_pc; _ } pc =
+    List.filter_map (Int_table.find_all events_by_pc pc) ~f:(fun { event; source } ->
+        if dummy_location event.ev_loc then None else Some (source, event))
 
   let event_location ~position ~source ~event =
     let pos =
@@ -316,9 +321,9 @@ end = struct
     Parse_info.t_of_position ~src:source pos
 
   let find_loc t ~position pc =
-    match find_loc' t pc with
-    | None -> None
-    | Some (source, event) -> Some (event_location ~position ~source ~event)
+    match find_locs t pc with
+    | [] -> None
+    | (source, event) :: _ -> Some (event_location ~position ~source ~event)
 
   let rec propagate l1 l2 =
     match l1, l2 with
@@ -840,9 +845,9 @@ type compile_info =
   }
 
 let string_of_addr debug_data addr =
-  match Debug.find_loc' debug_data addr with
-  | None -> None
-  | Some (src, { ev_loc = loc; ev_kind = kind; _ }) ->
+  List.map
+    (Debug.find_locs debug_data addr)
+    ~f:(fun (src, { Instruct.ev_loc = loc; ev_kind = kind; _ }) ->
       let pos (p : Lexing.position) =
         Printf.sprintf "%d:%d" p.pos_lnum (p.pos_cnum - p.pos_bol)
       in
@@ -857,7 +862,7 @@ let string_of_addr debug_data addr =
         | Event_after _ -> "(after)"
         | Event_pseudo -> "(pseudo)"
       in
-      Some (Printf.sprintf "%s:%s-%s %s" file (pos loc.loc_start) (pos loc.loc_end) kind)
+      Printf.sprintf "%s:%s-%s %s" file (pos loc.loc_start) (pos loc.loc_end) kind)
 
 let rec compile_block blocks debug_data code pc state =
   match Addr.Map.find_opt pc !tagged_blocks with
@@ -932,11 +937,10 @@ let rec compile_block blocks debug_data code pc state =
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
   assert (pc <= infos.limit);
-  (if debug_parser ()
-   then
-     match string_of_addr infos.debug pc with
-     | None -> ()
-     | Some s -> Format.eprintf "@@@@ %s @@@@@." s);
+  if debug_parser ()
+  then
+    List.iter (string_of_addr infos.debug pc) ~f:(fun s ->
+        Format.eprintf "@@@@ %s @@@@@." s);
 
   let instrs =
     let push_event position source event instrs =
@@ -944,11 +948,12 @@ and compile infos pc state instrs =
       | (Event _, _) :: instrs | instrs ->
           (Event (Debug.event_location ~position ~source ~event), noloc) :: instrs
     in
-    match Debug.find_loc' infos.debug pc with
-    | None -> instrs
-    | Some (source, event) -> (
+    List.fold_left
+      (Debug.find_locs infos.debug pc)
+      ~init:instrs
+      ~f:(fun instrs (source, event) ->
         match event, instrs with
-        | { ev_kind = Event_pseudo; ev_info = Event_other; _ }, _ ->
+        | { Instruct.ev_kind = Event_pseudo; ev_info = Event_other; _ }, _ ->
             (* Ignore allocation events (not very interesting) *)
             if debug_parser () then Format.eprintf "Ignored allocation event@.";
             instrs
