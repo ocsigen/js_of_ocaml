@@ -175,11 +175,13 @@ let options_runtime_only =
     Arg.(required & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let no_sourcemap =
-    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    let doc =
+      "Don't generate source map. All other source map related flags will be be ignored."
+    in
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
   in
   let sourcemap =
-    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    let doc = "Generate source map." in
     Arg.(value & flag & info [ "sourcemap"; "source-map"; "source-map-inline" ] ~doc)
   in
   let sourcemap_don't_inline_content =
