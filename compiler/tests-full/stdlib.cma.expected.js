@@ -23386,9 +23386,9 @@
        bt =  /*<<fun.ml:31:15>>*/ caml_call1(Stdlib_Printexc[12], 0),
        exn =  /*<<fun.ml:32:6>>*/ [0, Finally_raised, e];
       caml_restore_raw_backtrace(exn, bt);
-       /*<<fun.ml:32:57>>*/ throw caml_maybe_attach_backtrace(exn, 0);
+      throw caml_maybe_attach_backtrace(exn, 0);
      }
-    }
+     /*<<fun.ml:32:57>>*/ }
      /*<<fun.ml:34:2>>*/ try{
      var result =  /*<<fun.ml:34:8>>*/ caml_call1(work, 0);
     }
@@ -23397,8 +23397,8 @@
       work_exn =  /*<<?>>*/ caml_wrap_exception(work_exn$0),
       work_bt =  /*<<fun.ml:37:20>>*/ caml_call1(Stdlib_Printexc[12], 0);
       /*<<fun.ml:38:6>>*/ finally_no_exn(0);
-      /*<<fun.ml:39:6>>*/ caml_restore_raw_backtrace(work_exn, work_bt);
-      /*<<fun.ml:39:52>>*/ throw caml_maybe_attach_backtrace(work_exn, 0);
+      /*<<fun.ml:38:23>>*/ caml_restore_raw_backtrace(work_exn, work_bt);
+     throw caml_maybe_attach_backtrace(work_exn, 0);
     }
      /*<<fun.ml:35:14>>*/ finally_no_exn(0);
      /*<<fun.ml:35:31>>*/ return result;
@@ -36172,8 +36172,8 @@
     var _d_ =  /*<<effect.ml:68:11>>*/ caml_continuation_use_noexc(k);
     function _c_(e){
       /*<<effect.ml:68:41>>*/ caml_restore_raw_backtrace(e, bt);
-      /*<<effect.ml:68:75>>*/ throw caml_maybe_attach_backtrace(e, 0);
-    }
+     throw caml_maybe_attach_backtrace(e, 0);
+     /*<<effect.ml:68:75>>*/ }
      /*<<effect.ml:68:30>>*/ return jsoo_effect_not_supported() /*<<effect.ml:69:27>>*/ ;
    }
    function match_with(comp, arg, handler){
@@ -36292,9 +36292,8 @@
             (k,
              function(e){
                /*<<effect.ml:174:29>>*/ caml_restore_raw_backtrace(e, bt);
-               /*<<effect.ml:174:63>>*/ throw caml_maybe_attach_backtrace
-                     (e, 0);
-             },
+              throw caml_maybe_attach_backtrace(e, 0);
+              /*<<effect.ml:174:63>>*/ },
              v,
              handler) /*<<effect.ml:174:74>>*/ ;
    }
