@@ -290,11 +290,11 @@ let with_location loc instrs st =
   ( ()
   , { st with
       instrs =
-        (match st.instrs with
-        | [] -> []
-        | Location _ :: _ when Poly.equal loc No -> st.instrs
-        | Location (_, i) :: rem -> Location (loc, i) :: rem
-        | i :: rem -> Location (loc, i) :: rem)
+        (match loc, st.instrs with
+        | _, [] -> []
+        | None, Location _ :: _ -> st.instrs
+        | Some loc, Location (_, i) :: rem -> Location (loc, i) :: rem
+        | _, i :: rem -> Location (Option.value ~default:None loc, i) :: rem)
     } )
 
 let cast ?(nullable = false) typ e =

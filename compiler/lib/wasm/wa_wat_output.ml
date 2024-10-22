@@ -280,10 +280,7 @@ let select i32 i64 f32 f64 op =
   | F32 x -> f32 "32" x
   | F64 x -> f64 "64" x
 
-type ctx =
-  { mutable function_refs : Code.Var.Set.t
-  ; debug : Parse_bytecode.Debug.t
-  }
+type ctx = { mutable function_refs : Code.Var.Set.t }
 
 let reference_function ctx f = ctx.function_refs <- Code.Var.Set.add f ctx.function_refs
 
@@ -523,11 +520,10 @@ let expression_or_instructions ctx st in_function =
             :: List.concat (List.map ~f:expression (l @ [ e ])))
         ]
     | Location (loc, i) -> (
-        let loc = Generate.source_location ctx.debug loc in
         match loc with
-        | Javascript.N | U | Pi Parse_info.{ src = None; _ } ->
+        | None | Some Parse_info.{ src = None | Some ""; _ } ->
             Comment "@" :: instruction i
-        | Pi Parse_info.{ src = Some src; col; line; _ } ->
+        | Some Parse_info.{ src = Some src; col; line; _ } ->
             let loc = Format.sprintf "%s:%d:%d" src line col in
             Comment ("@ " ^ loc) :: instruction i)
   and instructions l = List.concat (List.map ~f:instruction l) in
@@ -630,9 +626,9 @@ let field ctx st f =
   | Type [ t ] -> [ type_field st t ]
   | Type l -> [ List (Atom "rec" :: List.map ~f:(type_field st) l) ]
 
-let f ~debug ch fields =
+let f ch fields =
   let st = build_name_tables fields in
-  let ctx = { function_refs = Code.Var.Set.empty; debug } in
+  let ctx = { function_refs = Code.Var.Set.empty } in
   let other_fields = List.concat (List.map ~f:(fun f -> field ctx st f) fields) in
   let funct_decl =
     let functions = Code.Var.Set.elements ctx.function_refs in

@@ -676,7 +676,9 @@ module Generate (Target : Wa_target_sig.S) = struct
 
   and translate_instr ctx context (i, loc) =
     with_location
-      loc
+      (match loc with
+      | No -> None
+      | _ -> Some (Parse_bytecode.Debug.find_loc ctx.debug loc))
       (match i with
       | Assign (x, y) -> assign x (load y)
       | Let (x, e) ->
@@ -912,7 +914,9 @@ module Generate (Target : Wa_target_sig.S) = struct
           let* () = translate_instrs ctx context block.body in
           let branch, loc = block.branch in
           with_location
-            loc
+            (match loc with
+            | No -> None
+            | _ -> Some (Parse_bytecode.Debug.find_loc ctx.debug loc))
             (match branch with
             | Branch cont -> translate_branch result_typ fall_through pc cont context
             | Return x -> (
@@ -1223,10 +1227,10 @@ let add_init_function =
   let module G = Generate (Wa_gc_target) in
   G.add_init_function
 
-let output ch ~context ~debug =
+let output ch ~context =
   let module G = Generate (Wa_gc_target) in
   let fields = G.output ~context in
-  Wa_wat_output.f ~debug ch fields
+  Wa_wat_output.f ch fields
 
 let wasm_output ch ~context =
   let module G = Generate (Wa_gc_target) in
