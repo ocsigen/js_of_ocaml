@@ -1407,8 +1407,14 @@ struct
     let last_semi ?(ret = false) () =
       if can_omit_semi
       then ()
-      else if ret && source_map_enabled
-      then PP.string f "; "
+      else if ret && source_map_enabled && PP.compact f
+      then
+        (* In Chrome, the debugger will stop right after a return
+           statement. We want a whitespace between this statement and
+           the next one to avoid confusing this location and the
+           location of the next statement. When pretty-printing, this
+           is already the case. In compact mode, we add a newline. *)
+        PP.string f ";\n"
       else PP.string f ";"
     in
     if stop_on_statement s then output_debug_info f loc;
