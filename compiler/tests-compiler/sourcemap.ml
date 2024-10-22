@@ -86,8 +86,8 @@ let%expect_test _ =
       /builtin/blackbox.ml:1:0 -> 5:7
       /builtin/blackbox.ml:1:0 -> 5:17
       /builtin/blackbox.ml:1:0 -> 6:0
-      /dune-root/test.ml:1:4 -> 6:12
-      /dune-root/test.ml:1:7 -> 6:15
+      /builtin/blackbox.ml:1:0 -> 6:12
+      /builtin/blackbox.ml:1:0 -> 6:15
       /dune-root/test.ml:1:11 -> 6:18
       /dune-root/test.ml:1:12 -> 6:27
       /dune-root/test.ml:1:12 -> 7:0
