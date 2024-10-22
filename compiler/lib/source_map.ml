@@ -565,10 +565,24 @@ module Standard = struct
   let to_file m file = Yojson.Raw.to_file file (json m)
 
   let invariant
-      { version; file = _; sourceroot = _; names; sources_content; sources; mappings; _ }
-      =
+      { version
+      ; file = _
+      ; sourceroot = _
+      ; names
+      ; sources_content
+      ; sources
+      ; mappings
+      ; ignore_list
+      } =
     if not (version_is_valid version)
     then invalid_arg "Source_map.Standard.invariant: invalid version";
+    (if not (List.is_empty ignore_list)
+     then
+       let s = StringSet.of_list sources in
+       if List.exists ~f:(fun nm -> not (StringSet.mem nm s)) ignore_list
+       then
+         invalid_arg
+           "Source_map.Standard.invariant: ignore list should be a subset of sources");
     match sources_content with
     | None -> ()
     | Some x ->

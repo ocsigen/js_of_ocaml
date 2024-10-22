@@ -909,6 +909,12 @@ let invariant { blocks; start; _ } =
       | Array_set (_x, _y, _z) -> ()
       | Event _ -> ()
     in
+    let rec check_events l =
+      match l with
+      | (Event _, _) :: (Event _, _) :: _ -> assert false
+      | _ :: r -> check_events r
+      | [] -> ()
+    in
     let check_last (l, _loc) =
       match l with
       | Return _ -> ()
@@ -928,5 +934,6 @@ let invariant { blocks; start; _ } =
       (fun _pc block ->
         List.iter block.params ~f:define;
         List.iter block.body ~f:check_instr;
+        check_events block.body;
         check_last block.branch)
       blocks)
