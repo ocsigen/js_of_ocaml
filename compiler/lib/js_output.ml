@@ -194,22 +194,14 @@ struct
         current_loc := loc;
         on_ident := false
 
-  let output_debug_info_ident f nm loc =
+  let output_debug_info_ident f nm =
     if source_map_enabled
     then (
-      let loc =
-        (* Keep the current location if possible, since we don't care
-           about the actual identifier's location *)
-        match !current_loc, loc with
-        | (N | U | Pi { Parse_info.src = Some "" | None; _ }), Some _ -> loc
-        | Pi ({ Parse_info.src = Some _; _ } as loc), _ -> Some loc
-        | _, None -> None
-      in
       on_ident := true;
       push_mapping
         (PP.pos f)
-        (match loc with
-        | None | Some { Parse_info.src = Some "" | None; _ } ->
+        (match !current_loc with
+        | N | U | Pi { Parse_info.src = Some "" | None; _ } ->
             (* Use a dummy location. It is going to be ignored anyway *)
             let ori_source =
               match hidden_location with
@@ -224,7 +216,7 @@ struct
               ; ori_col = 0
               ; ori_name = get_name_index nm
               }
-        | Some { Parse_info.src = Some file; line; col; _ } ->
+        | Pi { Parse_info.src = Some file; line; col; _ } ->
             Source_map.Gen_Ori_Name
               { gen_line = -1
               ; gen_col = -1
@@ -237,7 +229,7 @@ struct
   let ident f ~kind = function
     | S { name = Utf8 name; var = Some v; _ } ->
         (match kind, Code.Var.get_name v with
-        | `Binding, Some nm -> output_debug_info_ident f nm (Code.Var.get_loc v)
+        | `Binding, Some nm -> output_debug_info_ident f nm
         | `Reference, _ | `Binding, None -> ());
         if false then PP.string f (Printf.sprintf "/* %d */" (Code.Var.idx v));
         PP.string f name

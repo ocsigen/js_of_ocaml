@@ -67,8 +67,6 @@ module Debug : sig
     -> event:Instruct.debug_event
     -> Parse_info.t
 
-  val find_source : t -> string -> string option
-
   val read_event :
        paths:string list
     -> crcs:(string, string option) Hashtbl.t
@@ -233,15 +231,6 @@ end = struct
       let evl : debug_event list = input_value ic in
       let paths = read_paths ic @ includes in
       List.iter evl ~f:(read_event ~paths ~crcs ~orig debug)
-
-  let find_source { pos_fname_to_source; _ } pos_fname =
-    match pos_fname with
-    | "_none_" -> None
-    | _ -> (
-        match String_table.find_all pos_fname_to_source pos_fname with
-        | [ x ] -> Some x
-        | _ :: _ :: _ -> None
-        | [] -> None)
 
   let read t ~crcs ~includes ic =
     let len = input_binary_int ic in
@@ -696,18 +685,10 @@ module State = struct
       print_env
       st.env
 
-  let pi_of_loc debug location =
-    let pos = location.Location.loc_start in
-    let src = Debug.find_source debug pos.Lexing.pos_fname in
-    Parse_info.t_of_position ~src pos
-
   let rec name_rec debug i l s summary =
     match l, s with
     | [], _ -> ()
     | (j, ident) :: lrem, Var v :: srem when i = j ->
-        (match Ocaml_compiler.find_loc_in_summary ident summary with
-        | None -> ()
-        | Some loc -> Var.loc v (pi_of_loc debug loc));
         Var.name v (Ident.name ident);
         name_rec debug (i + 1) lrem srem summary
     | (j, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary

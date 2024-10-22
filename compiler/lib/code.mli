@@ -68,10 +68,6 @@ module Var : sig
 
   val compare : t -> t -> int
 
-  val loc : t -> Parse_info.t -> unit
-
-  val get_loc : t -> Parse_info.t option
-
   val get_name : t -> string option
 
   val name : t -> string -> unit

@@ -75,10 +75,6 @@ module Var : sig
 
   val compare : t -> t -> int
 
-  val get_loc : t -> Parse_info.t option
-
-  val loc : t -> Parse_info.t -> unit
-
   val name : t -> string -> unit
 
   val get_name : t -> string option
@@ -157,13 +153,10 @@ end = struct
 
   let printer = Var_printer.create Var_printer.Alphabet.javascript
 
-  let locations = Hashtbl.create 17
-
   let last_var = ref 0
 
   let reset () =
     last_var := 0;
-    Hashtbl.clear locations;
     Var_printer.reset printer
 
   let to_string ?origin i = Var_printer.to_string printer ?origin i
@@ -173,14 +166,6 @@ end = struct
   (* Format.fprintf f "%s" (to_string x) *)
 
   let name i nm = Var_printer.name printer i nm
-
-  let loc i pi = Hashtbl.add locations i pi
-
-  (*;
-    Format.eprintf "loc for %d : %d-%d\n%!"
-                   i pi.Parse_info.line pi.Parse_info.col
-  *)
-  let get_loc i = try Some (Hashtbl.find locations i) with Not_found -> None
 
   let fresh () =
     incr last_var;
@@ -199,11 +184,7 @@ end = struct
 
   let get_name i = Var_printer.get_name printer i
 
-  let propagate_name i j =
-    Var_printer.propagate_name printer i j;
-    match get_loc i with
-    | None -> ()
-    | Some l -> loc j l
+  let propagate_name i j = Var_printer.propagate_name printer i j
 
   let set_pretty b = Var_printer.set_pretty printer b
 
