@@ -889,6 +889,20 @@ export_all
 ]}
 *)
 
+module Effect : sig
+  external assume_no_perform : (unit -> 'a) -> 'a = "caml_assume_no_perform"
+  (** Passing a function [f] as argument of `assume_no_perform` guarantees that,
+      when compiling with `--enable doubletranslate`, the direct-style version of
+      [f] is called, which is faster than the CPS version. As a consequence,
+      performing an effect in a transitive callee of [f] will raise
+      `Effect.Unhandled`, regardless of any effect handlers installed before the
+      call to `assume_no_perform`, unless a new effect handler was installed in
+      the meantime.
+
+      When double translation is disabled, `assume_no_perform` simply acts like
+      [fun f -> f ()]. *)
+end
+
 (** {2 Unsafe operations.} *)
 
 (** Unsafe Javascript operations *)

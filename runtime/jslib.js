@@ -67,7 +67,8 @@ function caml_trampoline_return(f, args) {
 
 //Provides:caml_stack_depth
 //If: effects
-var caml_stack_depth = 0;
+var caml_stack_depth = 10; // Initialized to a non-zero value in case of
+// unhandled effect
 
 //Provides:caml_stack_check_depth
 //If: effects
@@ -83,6 +84,7 @@ var caml_callback = caml_call_gen;
 
 //Provides: caml_callback
 //If: effects
+//If: !doubletranslate
 //Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_resume_stack, caml_fresh_oo_id, caml_named_value, caml_raise_with_arg, caml_string_of_jsbytes
 //Requires: caml_raise_constant
 function caml_callback(f, args) {
@@ -133,6 +135,43 @@ function caml_callback(f, args) {
     caml_fiber_stack = saved_fiber_stack;
   }
   return res;
+}
+
+//Provides: caml_callback
+//If: effects
+//If: doubletranslate
+//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_resume_stack, caml_fresh_oo_id, caml_named_value, caml_raise_with_arg, caml_string_of_jsbytes
+//Requires: caml_raise_constant
+function caml_callback(f, args) {
+  function uncaught_effect_handler(eff, k, ms) {
+    // Resumes the continuation k by raising exception Unhandled.
+    caml_resume_stack(k[1], ms);
+    var exn = caml_named_value("Effect.Unhandled");
+    if (exn) caml_raise_with_arg(exn, eff);
+    else {
+      exn = [
+        248,
+        caml_string_of_jsbytes("Effect.Unhandled"),
+        caml_fresh_oo_id(0),
+      ];
+      caml_raise_constant(exn);
+    }
+  }
+  var saved_stack_depth = caml_stack_depth;
+  var saved_exn_stack = caml_exn_stack;
+  var saved_fiber_stack = caml_fiber_stack;
+  try {
+    caml_exn_stack = 0;
+    caml_fiber_stack = {
+      h: [0, 0, 0, uncaught_effect_handler],
+      r: { k: 0, x: 0, e: 0 },
+    };
+    return caml_call_gen(f, args);
+  } finally {
+    caml_stack_depth = saved_stack_depth;
+    caml_exn_stack = saved_exn_stack;
+    caml_fiber_stack = saved_fiber_stack;
+  }
 }
 
 //Provides: caml_is_js
