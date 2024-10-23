@@ -109,13 +109,11 @@ end = struct
     ; source : path option
     }
 
-  module String_table = Hashtbl.Make (String)
   module Int_table = Hashtbl.Make (Int)
 
   type t =
     { events_by_pc : event_and_source Int_table.t
     ; units : (string * string option, ml_unit) Hashtbl.t
-    ; pos_fname_to_source : string String_table.t
     ; names : bool
     ; enabled : bool
     ; include_cmis : bool
@@ -137,7 +135,6 @@ end = struct
     let names = enabled || Config.Flag.pretty () in
     { events_by_pc = Int_table.create 17
     ; units = Hashtbl.create 17
-    ; pos_fname_to_source = String_table.create 17
     ; names
     ; enabled
     ; include_cmis
@@ -155,7 +152,7 @@ end = struct
       ~paths
       ~crcs
       ~orig
-      { events_by_pc; units; pos_fname_to_source; names; enabled; include_cmis = _ }
+      { events_by_pc; units; names; enabled; include_cmis = _ }
       ev =
     let pos_fname =
       match ev.ev_loc.Location.loc_start.Lexing.pos_fname with
@@ -200,10 +197,6 @@ end = struct
             | None -> "NONE"
             | Some x -> x);
         let u = { module_name = ev_module; crc; source; paths } in
-        (match pos_fname, source with
-        | None, _ | _, None -> ()
-        | Some pos_fname, Some source ->
-            String_table.add pos_fname_to_source pos_fname source);
         Hashtbl.add units (ev_module, pos_fname) u;
         u
     in
