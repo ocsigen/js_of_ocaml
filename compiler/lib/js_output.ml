@@ -150,7 +150,7 @@ struct
 
   let current_loc = ref U
 
-  let on_ident = ref false
+  let last_mapping_has_a_name = ref false
 
   let output_debug_info f loc =
     let loc =
@@ -158,14 +158,14 @@ struct
          to bleed over other identifiers, using the current location
          when none is provided. *)
       match loc with
-      | N when !on_ident -> !current_loc
+      | N when !last_mapping_has_a_name -> !current_loc
       | _ -> loc
     in
     match loc with
     | N -> ()
     | _ ->
         let location_changed = Poly.(loc <> !current_loc) in
-        (if source_map_enabled && (!on_ident || location_changed)
+        (if source_map_enabled && (!last_mapping_has_a_name || location_changed)
          then
            match loc with
            | N | U | Pi { Parse_info.src = None | Some ""; _ } ->
@@ -192,45 +192,51 @@ struct
                PP.string f (Format.sprintf "/*<<%s>>*/" (Parse_info.to_string pi));
                PP.non_breaking_space f);
         current_loc := loc;
-        on_ident := false
+        last_mapping_has_a_name := false
 
-  let output_debug_info_ident f nm =
+  let output_debug_info_ident f nm_opt =
     if source_map_enabled
-    then (
-      on_ident := true;
-      push_mapping
-        (PP.pos f)
-        (match !current_loc with
-        | N | U | Pi { Parse_info.src = Some "" | None; _ } ->
-            (* Use a dummy location. It is going to be ignored anyway *)
-            let ori_source =
-              match hidden_location with
-              | Source_map.Gen_Ori { ori_source; _ } -> ori_source
-              | _ -> 0
-            in
-            Source_map.Gen_Ori_Name
-              { gen_line = -1
-              ; gen_col = -1
-              ; ori_source
-              ; ori_line = 1
-              ; ori_col = 0
-              ; ori_name = get_name_index nm
-              }
-        | Pi { Parse_info.src = Some file; line; col; _ } ->
-            Source_map.Gen_Ori_Name
-              { gen_line = -1
-              ; gen_col = -1
-              ; ori_source = get_file_index file
-              ; ori_line = line
-              ; ori_col = col
-              ; ori_name = get_name_index nm
-              }))
+    then
+      match nm_opt with
+      | None ->
+          (* Make sure that the name of a previous identifier does not
+             bleed on this one. *)
+          output_debug_info f N
+      | Some nm ->
+          last_mapping_has_a_name := true;
+          push_mapping
+            (PP.pos f)
+            (match !current_loc with
+            | N | U | Pi { Parse_info.src = Some "" | None; _ } ->
+                (* Use a dummy location. It is going to be ignored anyway *)
+                let ori_source =
+                  match hidden_location with
+                  | Source_map.Gen_Ori { ori_source; _ } -> ori_source
+                  | _ -> 0
+                in
+                Source_map.Gen_Ori_Name
+                  { gen_line = -1
+                  ; gen_col = -1
+                  ; ori_source
+                  ; ori_line = 1
+                  ; ori_col = 0
+                  ; ori_name = get_name_index nm
+                  }
+            | Pi { Parse_info.src = Some file; line; col; _ } ->
+                Source_map.Gen_Ori_Name
+                  { gen_line = -1
+                  ; gen_col = -1
+                  ; ori_source = get_file_index file
+                  ; ori_line = line
+                  ; ori_col = col
+                  ; ori_name = get_name_index nm
+                  })
 
   let ident f ~kind = function
     | S { name = Utf8 name; var = Some v; _ } ->
-        (match kind, Code.Var.get_name v with
-        | `Binding, Some nm -> output_debug_info_ident f nm
-        | `Reference, _ | `Binding, None -> ());
+        (match kind with
+        | `Binding -> output_debug_info_ident f (Code.Var.get_name v)
+        | `Reference -> ());
         if false then PP.string f (Printf.sprintf "/* %d */" (Code.Var.idx v));
         PP.string f name
     | S { name = Utf8 name; var = None; _ } -> PP.string f name
