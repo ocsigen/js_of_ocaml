@@ -16,8 +16,6 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "int64" "caml_copy_int64"
-      (func $caml_copy_int64 (param i64) (result (ref eq))))
    (import "bindings" "ta_get_i32"
       (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_set_i32"
@@ -25,7 +23,7 @@
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
 
-   (func (export "caml_lxm_next") (param $v (ref eq)) (result (ref eq))
+   (func (export "caml_lxm_next") (param $v (ref eq)) (result i64)
       (local $data (ref extern))
       (local $a i64) (local $s i64) (local $q0 i64) (local $q1 i64)
       (local $z i64)
@@ -93,5 +91,5 @@
          (i32.wrap_i64 (local.get $q1)))
       (call $ta_set_i32 (local.get $data) (i32.const 7)
          (i32.wrap_i64 (i64.shr_u (local.get $q1) (i64.const 32))))
-      (return_call $caml_copy_int64 (local.get $z)))
+      (return (local.get $z)))
 )

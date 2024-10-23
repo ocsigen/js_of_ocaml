@@ -194,6 +194,9 @@
     ta_get_ui16: (a, i) => a[i],
     ta_get_i8: (a, i) => a[i],
     ta_get_ui8: (a, i) => a[i],
+    ta_get16_ui8: (a, i) => a[i] | (a[i + 1] << 8),
+    ta_get32_ui8: (a, i) =>
+      a[i] | (a[i + 1] << 8) | (a[i + 2] << 16) | (a[i + 3] << 24),
     ta_set_f64: (a, i, v) => (a[i] = v),
     ta_set_f32: (a, i, v) => (a[i] = v),
     ta_set_i32: (a, i, v) => (a[i] = v),
@@ -201,6 +204,16 @@
     ta_set_ui16: (a, i, v) => (a[i] = v),
     ta_set_i8: (a, i, v) => (a[i] = v),
     ta_set_ui8: (a, i, v) => (a[i] = v),
+    ta_set16_ui8: (a, i, v) => {
+      a[i] = v;
+      a[i + 1] = v >> 8;
+    },
+    ta_set32_ui8: (a, i, v) => {
+      a[i] = v;
+      a[i + 1] = v >> 8;
+      a[i + 2] = v >> 16;
+      a[i + 3] = v >> 24;
+    },
     ta_fill: (a, v) => a.fill(v),
     ta_blit: (s, d) => d.set(s),
     ta_subarray: (a, i, j) => a.subarray(i, j),
@@ -209,6 +222,12 @@
     ta_copy: (ta, t, s, n) => ta.copyWithin(t, s, n),
     ta_bytes: (a) =>
       new Uint8Array(a.buffer, a.byteOffset, a.length * a.BYTES_PER_ELEMENT),
+    ta_blit_from_string: (s, p1, a, p2, l) => {
+      for (let i = 0; i < l; i++) a[p2 + i] = string_get(s, p1 + i);
+    },
+    ta_blit_to_string: (a, p1, s, p2, l) => {
+      for (let i = 0; i < l; i++) string_set(s, p2 + i, a[p1 + i]);
+    },
     wrap_callback: (f) =>
       function () {
         var n = arguments.length;
@@ -524,6 +543,8 @@
     caml_handle_uncaught_exception,
     caml_buffer,
     caml_extract_string,
+    string_get,
+    string_set,
     _initialize,
   } = wasmModule.instance.exports;
 
