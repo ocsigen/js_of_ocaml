@@ -21,7 +21,10 @@ module type S = sig
 
   module Memory : sig
     val allocate :
-      tag:int -> [ `Expr of Wa_ast.expression | `Var of Wa_ast.var ] list -> expression
+         tag:int
+      -> deadcode_sentinal:Code.Var.t
+      -> [ `Expr of Wa_ast.expression | `Var of Wa_ast.var ] list
+      -> expression
 
     val load_function_pointer :
          cps:bool

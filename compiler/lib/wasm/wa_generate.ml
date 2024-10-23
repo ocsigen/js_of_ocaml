@@ -32,6 +32,7 @@ module Generate (Target : Wa_target_sig.S) = struct
   type ctx =
     { live : int array
     ; in_cps : Effects.in_cps
+    ; deadcode_sentinal : Var.t
     ; blocks : block Addr.Map.t
     ; closures : Wa_closure_conversion.closure Var.Map.t
     ; global_context : Wa_code_generation.context
@@ -209,7 +210,10 @@ module Generate (Target : Wa_target_sig.S) = struct
         let* closure = load f in
         return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
-        Memory.allocate ~tag (List.map ~f:(fun x -> `Var x) (Array.to_list a))
+        Memory.allocate
+          ~deadcode_sentinal:ctx.deadcode_sentinal
+          ~tag
+          (List.map ~f:(fun x -> `Var x) (Array.to_list a))
     | Field (x, n, Non_float) -> Memory.field (load x) n
     | Field (x, n, Float) ->
         Memory.float_array_get
@@ -633,7 +637,7 @@ module Generate (Target : Wa_target_sig.S) = struct
                     l
                     ~init:(return [])
                 in
-                Memory.allocate ~tag:0 l
+                Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal l
             | Extern name, l -> (
                 let name = Primitive.resolve name in
                 try
@@ -1088,6 +1092,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     ~should_export
     ~warn_on_unhandled_effect
 *)
+      ~deadcode_sentinal
       ~debug =
     global_context.unit_name <- unit_name;
     let p, closures = Wa_closure_conversion.f p in
@@ -1095,7 +1100,14 @@ module Generate (Target : Wa_target_sig.S) = struct
   Code.Print.program (fun _ _ -> "") p;
 *)
     let ctx =
-      { live = live_vars; in_cps; blocks = p.blocks; closures; global_context; debug }
+      { live = live_vars
+      ; in_cps
+      ; deadcode_sentinal
+      ; blocks = p.blocks
+      ; closures
+      ; global_context
+      ; debug
+      }
     in
     let toplevel_name = Var.fresh_n "toplevel" in
     let functions =
@@ -1198,10 +1210,10 @@ let fix_switch_branches p =
 
 let start () = make_context ~value_type:Wa_gc_target.Value.value
 
-let f ~context ~unit_name p ~live_vars ~in_cps ~debug =
+let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
   let p = if Config.Flag.effects () then fix_switch_branches p else p in
   let module G = Generate (Wa_gc_target) in
-  G.f ~context ~unit_name ~live_vars ~in_cps ~debug p
+  G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p
 
 let add_start_function =
   let module G = Generate (Wa_gc_target) in

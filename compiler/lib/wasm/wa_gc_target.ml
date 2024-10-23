@@ -656,16 +656,18 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
-  let allocate ~tag l =
+  let allocate ~tag ~deadcode_sentinal l =
     if tag = 254
     then
       let* l =
         expression_list
           (fun v ->
-            unbox_float
-              (match v with
-              | `Var y -> load y
-              | `Expr e -> return e))
+            match v with
+            | `Var y ->
+                if Code.Var.equal y deadcode_sentinal
+                then return (W.Const (F64 0.))
+                else unbox_float (load y)
+            | `Expr e -> unbox_float (return e))
           l
       in
       let* ty = Type.float_array_type in
