@@ -1,5 +1,5 @@
 (executables
- (names gh38 gh46 gh107)
+ (names gh38 gh46 gh107 gh112)
  (modes js)
  (js_of_ocaml
   (flags :standard --disable optcall --no-inline)))
@@ -33,3 +33,13 @@
   (with-outputs-to
    %{target}
    (run node %{dep:gh107.bc.js}))))
+
+(rule
+ (target gh112.actual)
+ (enabled_if
+  (= %{profile} wasm))
+ (alias runtest)
+ (action
+  (with-outputs-to
+   %{target}
+   (run node %{dep:gh112.bc.js}))))
