@@ -25,6 +25,7 @@ jobs:
           - "4.13"
           - "5.0"
           - "5.1"
+          - "5.2"
         skip-test:
           - true
         skip-doc:
@@ -53,7 +54,7 @@ jobs:
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "ocaml-variants.5.3.0~alpha1"
             skip-effects: false
             skip-test: false
             skip-doc: false
@@ -64,12 +65,12 @@ jobs:
             skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
             skip-doc: true
           - os: macos-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "ocaml-variants.5.3.0~alpha1"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "ocaml-variants.5.3.0~alpha1"
             skip-effects: false
             skip-test: false
             skip-doc: true
@@ -114,6 +115,13 @@ jobs:
 
       - run: opam install conf-pkg-config
         if: runner.os == 'Windows'
+
+      - run: opam pin add ppxlib --dev --no-action
+        if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0~alpha1' }}
+      - run: opam pin add ppxlib_jane git+https://github.com/hhugo/ppxlib_jane.git#trunk-support-503 --no-action
+        if: ${{ matrix.ocaml-compiler == 'ocaml-variants.5.3.0~alpha1' }}
+
+      - run: opam pin add ./ --no-action
 
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
