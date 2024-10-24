@@ -1159,10 +1159,7 @@ end
 
 let init () =
   let l =
-    [ "caml_make_array", "%identity"
-    ; "caml_ensure_stack_capacity", "%identity"
-    ; "caml_callback", "caml_trampoline"
-    ]
+    [ "caml_ensure_stack_capacity", "%identity"; "caml_callback", "caml_trampoline" ]
   in
 
   let l =
