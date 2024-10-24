@@ -17,16 +17,21 @@
 * Compiler: introduce a Targetint module
   that follows the semantic of the backend (js or wasm)
 * Compiler: warn on joo_global_object
+* Compiler: revisit static env handling (#1708)
+* Compiler: Emit index source_map to avoid changing mappings (#1714, #1715)
+* Compiler: improved source map generation (#1716)
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
 * Runtime: backtraces are really expensive, they need to be be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
 * Runtime: allow dynlink of precompiled js with separate compilation (#1676)
+* Runtime: reimplement the runtime of weak and ephemeron (#1707)
 * Lib: Modify Typed_array API for compatibility with WebAssembly
-
+* Toplevel: no longer set globals for toplevel initialization
 
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
 * Runtime: fix incorrect pos_in after unmarshalling
+* Runtime: make float_of_string stricter (#1609)
 * Toplevel: fix missing primitives with separate compilation
 * Compiler: fix link of packed modules with separate compilation
 * Compiler: Fixed the static evaluation of some equalities (#1659)

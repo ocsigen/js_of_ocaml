@@ -46,27 +46,6 @@ let rec constant_of_const c : Code.constant =
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
 
-let rec find_loc_in_summary ident' = function
-  | Env.Env_empty -> None
-  | Env.Env_value (_summary, ident, description) when Poly.(ident = ident') ->
-      Some description.Types.val_loc
-  | Env.Env_value (summary, _, _)
-  | Env.Env_type (summary, _, _)
-  | Env.Env_extension (summary, _, _)
-  | Env.Env_module (summary, _, _, _)
-  | Env.Env_modtype (summary, _, _)
-  | Env.Env_class (summary, _, _)
-  | Env.Env_cltype (summary, _, _)
-  | Env.Env_open (summary, _)
-  | Env.Env_functor_arg (summary, _)
-  | Env.Env_constraints (summary, _)
-  | ((Env.Env_copy_types (summary, _)) [@if ocaml_version < (4, 10, 0)])
-  | ((Env.Env_copy_types summary) [@if ocaml_version >= (4, 10, 0)])
-  | Env.Env_persistent (summary, _)
-  | ((Env.Env_value_unbound (summary, _, _)) [@if ocaml_version >= (4, 10, 0)])
-  | ((Env.Env_module_unbound (summary, _, _)) [@if ocaml_version >= (4, 10, 0)]) ->
-      find_loc_in_summary ident' summary
-
 module Symtable = struct
   (* Copied from ocaml/bytecomp/symtable.ml *)
   module Num_tbl (M : Map.S) = struct

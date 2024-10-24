@@ -55,6 +55,7 @@ let iter_instr_free_vars f i =
       f y;
       f z
   | Assign (_, y) -> f y
+  | Event _ -> ()
 
 let iter_last_free_var f l =
   match l with
@@ -73,13 +74,13 @@ let iter_last_free_var f l =
       iter_cont_free_vars f cont2
 
 let iter_block_free_vars f block =
-  List.iter block.body ~f:(fun (i, _) -> iter_instr_free_vars f i);
-  iter_last_free_var f (fst block.branch)
+  List.iter block.body ~f:(fun i -> iter_instr_free_vars f i);
+  iter_last_free_var f block.branch
 
 let iter_instr_bound_vars f i =
   match i with
   | Let (x, _) -> f x
-  | Set_field _ | Offset_ref _ | Array_set _ | Assign _ -> ()
+  | Event _ | Set_field _ | Offset_ref _ | Array_set _ | Assign _ -> ()
 
 let iter_last_bound_vars f l =
   match l with
@@ -88,8 +89,8 @@ let iter_last_bound_vars f l =
 
 let iter_block_bound_vars f block =
   List.iter ~f block.params;
-  List.iter block.body ~f:(fun (i, _) -> iter_instr_bound_vars f i);
-  iter_last_bound_vars f (fst block.branch)
+  List.iter block.body ~f:(fun i -> iter_instr_bound_vars f i);
+  iter_last_bound_vars f block.branch
 
 (****)
 
@@ -164,7 +165,7 @@ let mark_variables in_loop p =
          let pc' = Addr.Map.find pc in_loop in
          iter_block_bound_vars (fun x -> Var.Tbl.set vars x pc') block
        with Not_found -> ());
-      List.iter block.body ~f:(fun (i, _) ->
+      List.iter block.body ~f:(fun i ->
           match i with
           | Let (_, Closure (_, (pc', _))) -> traverse pc'
           | _ -> ());
@@ -197,7 +198,7 @@ let free_variables vars in_loop p =
          let pc'' = Addr.Map.find pc in_loop in
          all_freevars := Addr.Map.remove pc'' !all_freevars
        with Not_found -> ());
-      List.iter block.body ~f:(fun (i, _) ->
+      List.iter block.body ~f:(fun i ->
           match i with
           | Let (_, Closure (_, (pc', _))) -> (
               traverse pc';
@@ -236,7 +237,7 @@ let f p =
             iter_block_bound_vars (fun x -> Code.Var.ISet.add bound x) block;
             iter_block_free_vars using block;
             List.iter block.body ~f:(function
-                | Let (_, Closure (_, (pc_clo, _))), _ ->
+                | Let (_, Closure (_, (pc_clo, _))) ->
                     Code.Var.Set.iter using (Code.Addr.Map.find pc_clo acc)
                 | _ -> ());
             Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())

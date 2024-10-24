@@ -23,7 +23,7 @@ open Cmdliner
 
 type t =
   { common : Jsoo_cmdline.Arg.t
-  ; source_map : (string option * Source_map.t) option
+  ; source_map : (string option * Source_map.Standard.t) option
   ; js_files : string list
   ; output_file : string option
   ; resolve_sourcemap_url : bool
@@ -96,19 +96,15 @@ let options =
       then
         let file, sm_output_file =
           match output_file with
-          | Some file when sourcemap_inline_in_js -> file, None
-          | Some file -> file, Some (chop_extension file ^ ".map")
-          | None -> "STDIN", None
+          | Some file when sourcemap_inline_in_js -> Some file, None
+          | Some file -> Some file, Some (chop_extension file ^ ".map")
+          | None -> None, None
         in
         Some
           ( sm_output_file
-          , { Source_map.version = 3
-            ; file
+          , { (Source_map.Standard.empty ~inline_source_content:true) with
+              file
             ; sourceroot = sourcemap_root
-            ; sources = []
-            ; sources_content = Some []
-            ; names = []
-            ; mappings = Source_map.Mappings.empty
             } )
       else None
     in

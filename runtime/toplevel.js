@@ -90,38 +90,58 @@ function caml_dynlink_get_bytecode_sections() {
   return caml_global_data.sections;
 }
 
-//Provides: caml_reify_bytecode
-//Requires: caml_failwith,caml_callback
-//Requires: caml_string_of_array, caml_ba_to_typed_array
-//Version: >= 5.2
-function caml_reify_bytecode(code, debug, _digest) {
-  if (globalThis.toplevelCompile) {
-    code = caml_string_of_array(caml_ba_to_typed_array(code));
-    return [0, 0, caml_callback(globalThis.toplevelCompile, [code, debug])];
-  } else caml_failwith("Toplevel not initialized (toplevelCompile)");
+//Provides: jsoo_toplevel_compile
+//Requires: caml_failwith
+var jsoo_toplevel_compile = undefined;
+
+//Provides: jsoo_toplevel_init_compile
+//Requires: jsoo_toplevel_compile
+function jsoo_toplevel_init_compile(f) {
+  jsoo_toplevel_compile = f;
+}
+
+//Provides: jsoo_toplevel_init_reloc
+//Requires: jsoo_toplevel_reloc
+function jsoo_toplevel_init_reloc(f) {
+  jsoo_toplevel_reloc = f;
 }
 
 //Provides: caml_reify_bytecode
-//Requires: caml_failwith,caml_callback
+//Requires: caml_callback
+//Requires: caml_string_of_array, caml_ba_to_typed_array
+//Requires: jsoo_toplevel_compile, caml_failwith
+//Version: >= 5.2
+function caml_reify_bytecode(code, debug, _digest) {
+  if (!jsoo_toplevel_compile) {
+    caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
+  }
+  code = caml_string_of_array(caml_ba_to_typed_array(code));
+  return [0, 0, caml_callback(jsoo_toplevel_compile, [code, debug])];
+}
+
+//Provides: caml_reify_bytecode
+//Requires: caml_callback
 //Requires: caml_string_of_array, caml_uint8_array_of_bytes
+//Requires: jsoo_toplevel_compile, caml_failwith
 //Version: < 5.2
 function caml_reify_bytecode(code, debug, _digest) {
-  if (globalThis.toplevelCompile) {
-    var len = 0;
-    var all = [];
-    for (var i = 1; i < code.length; i++) {
-      var a = caml_uint8_array_of_bytes(code[i]);
-      all.push(a);
-      len += a.length;
-    }
-    code = new Uint8Array(len);
-    for (var i = 0, len = 0; i < all.length; i++) {
-      code.set(all[i], len);
-      len += all[i].length;
-    }
-    code = caml_string_of_array(code);
-    return [0, 0, caml_callback(globalThis.toplevelCompile, [code, debug])];
-  } else caml_failwith("Toplevel not initialized (toplevelCompile)");
+  if (!jsoo_toplevel_compile) {
+    caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
+  }
+  var len = 0;
+  var all = [];
+  for (var i = 1; i < code.length; i++) {
+    var a = caml_uint8_array_of_bytes(code[i]);
+    all.push(a);
+    len += a.length;
+  }
+  code = new Uint8Array(len);
+  for (var i = 0, len = 0; i < all.length; i++) {
+    code.set(all[i], len);
+    len += all[i].length;
+  }
+  code = caml_string_of_array(code);
+  return [0, 0, caml_callback(jsoo_toplevel_compile, [code, debug])];
 }
 
 //Provides: caml_static_release_bytecode

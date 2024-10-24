@@ -47,13 +47,21 @@ let is_merge_node' block_order preds pc =
   in
   n > 1
 
+let empty_body body =
+  List.for_all
+    ~f:(fun i ->
+      match i with
+      | Event _ -> true
+      | _ -> false)
+    body
+
 let rec leave_try_body block_order preds blocks pc =
   if is_merge_node' block_order preds pc
   then false
   else
     match Addr.Map.find pc blocks with
-    | { body = []; branch = (Return _ | Stop), _; _ } -> false
-    | { body = []; branch = Branch (pc', _), _; _ } ->
+    | { body; branch = Return _ | Stop; _ } when empty_body body -> false
+    | { body; branch = Branch (pc', _); _ } when empty_body body ->
         leave_try_body block_order preds blocks pc'
     | _ -> true
 
@@ -72,7 +80,7 @@ let build_graph blocks pc =
       Addr.Set.iter
         (fun pc' ->
           let englobing_exn_handlers =
-            match fst block.branch with
+            match block.branch with
             | Pushtrap ((body_pc, _), _, _) when pc' = body_pc ->
                 pc :: englobing_exn_handlers
             | Poptrap (leave_pc, _) -> (
@@ -199,7 +207,8 @@ let rec measure blocks g pc limit =
       List.fold_left b.body ~init:limit ~f:(fun acc x ->
           match x with
           (* A closure is never small *)
-          | Let (_, Closure _), _ -> -1
+          | Let (_, Closure _) -> -1
+          | Event _ -> acc
           | _ -> acc - 1)
     in
     if limit < 0
@@ -229,7 +238,7 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
         (* Whatever is in the scope of an exception handler should not be
            moved outside *)
         let ignored =
-          match fst block.branch with
+          match block.branch with
           | Pushtrap ((body_pc, _), _, _) when pc' = body_pc ->
               Addr.Set.union ignored loops
           | _ -> ignored

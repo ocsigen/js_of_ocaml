@@ -38,6 +38,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     ; global_context : Wa_code_generation.context
     ; debug : Parse_bytecode.Debug.t
     }
+  [@@warning "-69"]
 
   type repr =
     | Value
@@ -674,11 +675,9 @@ module Generate (Target : Wa_target_sig.S) = struct
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
                 assert false))
 
-  and translate_instr ctx context (i, loc) =
+  and translate_instr ctx context loc i =
     with_location
-      (match loc with
-      | No -> None
-      | _ -> Some (Parse_bytecode.Debug.find_loc ctx.debug loc))
+      loc
       (match i with
       | Assign (x, y) -> assign x (load y)
       | Let (x, e) ->
@@ -697,14 +696,16 @@ module Generate (Target : Wa_target_sig.S) = struct
             0
             (Value.val_int
                Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
-      | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z))
+      | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z)
+      | Event _ -> assert false)
 
-  and translate_instrs ctx context l =
+  and translate_instrs ctx context loc l =
     match l with
-    | [] -> return ()
+    | [] -> return loc
+    | Event loc :: rem -> translate_instrs ctx context (Some loc) rem
     | i :: rem ->
-        let* () = translate_instr ctx context i in
-        translate_instrs ctx context rem
+        let* () = translate_instr ctx context loc i in
+        translate_instrs ctx context loc rem
 
   let parallel_renaming params args =
     let rec visit visited prev s m x l =
@@ -762,7 +763,7 @@ module Generate (Target : Wa_target_sig.S) = struct
       (fun pc n ->
         let block = Addr.Map.find pc p.blocks in
         List.fold_left
-          ~f:(fun n (i, _) ->
+          ~f:(fun n i ->
             match i with
             | Let
                 ( _
@@ -843,26 +844,12 @@ module Generate (Target : Wa_target_sig.S) = struct
       params
       ((pc, _) as cont)
       acc =
-    let ctx =
-      let loc = Before pc in
-      match Parse_bytecode.Debug.find_loc ctx.debug loc with
-      | Some _ ->
-          let block = Addr.Map.find pc ctx.blocks in
-          let block =
-            match block.body with
-            | (i, _) :: rem -> { block with body = (i, loc) :: rem }
-            | [] -> { block with branch = fst block.branch, loc }
-          in
-          let blocks = Addr.Map.add pc block ctx.blocks in
-          { ctx with blocks }
-      | None -> ctx
-    in
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
       let block = Addr.Map.find pc ctx.blocks in
       let keep_ouside pc' =
-        match fst block.branch with
+        match block.branch with
         | Switch _ -> true
         | Cond (_, (pc1, _), (pc2, _)) when pc' = pc1 && pc' = pc2 -> true
         | _ -> Structure.is_merge_node g pc'
@@ -901,7 +888,7 @@ module Generate (Target : Wa_target_sig.S) = struct
             if (not (List.is_empty rem))
                ||
                let block = Addr.Map.find pc ctx.blocks in
-               match fst block.branch with
+               match block.branch with
                | Cond _ | Pushtrap _ -> false (*ZZZ also some Switch*)
                | _ -> true
             then
@@ -911,12 +898,10 @@ module Generate (Target : Wa_target_sig.S) = struct
           translate_tree result_typ fall_through pc' context
       | [] ->
           let block = Addr.Map.find pc ctx.blocks in
-          let* () = translate_instrs ctx context block.body in
-          let branch, loc = block.branch in
+          let* loc = translate_instrs ctx context None block.body in
+          let branch = block.branch in
           with_location
-            (match loc with
-            | No -> None
-            | _ -> Some (Parse_bytecode.Debug.find_loc ctx.debug loc))
+            loc
             (match branch with
             | Branch cont -> translate_branch result_typ fall_through pc cont context
             | Return x -> (
@@ -1195,7 +1180,7 @@ let fix_switch_branches p =
                      blocks =
                        Addr.Map.add
                          pc'
-                         { params = []; body = []; branch = Branch cont, No }
+                         { params = []; body = []; branch = Branch cont }
                          !p'.blocks
                    ; free_pc = pc' + 1
                    };
@@ -1206,7 +1191,7 @@ let fix_switch_branches p =
   in
   Addr.Map.iter
     (fun _ block ->
-      match fst block.branch with
+      match block.branch with
       | Switch (_, l) -> fix_branches l
       | _ -> ())
     p.blocks;

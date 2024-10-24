@@ -203,7 +203,7 @@ function caml_maybe_attach_backtrace(exn, force) {
 //Requires: caml_global_data
 function caml_exn_with_js_backtrace(exn, force) {
   //never reraise for constant exn
-  if (!exn.js_error || force || exn[0] == 248)
+  if (!exn.js_error || force || exn[0] === 248)
     exn.js_error = new globalThis.Error("Js exception containing backtrace");
   return exn;
 }
@@ -285,6 +285,7 @@ function caml_js_var(x) {
     );
     //console.error("Js.Unsafe.eval_string")
   }
+  // biome-ignore lint/security/noGlobalEval:
   return eval(x);
 }
 //Provides: caml_js_call (const, mutable, shallow)
@@ -483,6 +484,7 @@ function caml_js_function_arity(f) {
 
 //Provides: caml_js_equals mutable (const, const)
 function caml_js_equals(x, y) {
+  // biome-ignore lint/suspicious/noDoubleEquals:
   return +(x == y);
 }
 
@@ -494,6 +496,7 @@ function caml_js_strict_equals(x, y) {
 //Provides: caml_js_eval_string (const)
 //Requires: caml_jsstring_of_string
 function caml_js_eval_string(s) {
+  // biome-ignore lint/security/noGlobalEval:
   return eval(caml_jsstring_of_string(s));
 }
 
@@ -501,6 +504,7 @@ function caml_js_eval_string(s) {
 //Requires: caml_jsstring_of_string
 function caml_js_expr(s) {
   console.error("caml_js_expr: fallback to runtime evaluation\n");
+  // biome-ignore lint/security/noGlobalEval:
   return eval(caml_jsstring_of_string(s));
 }
 
@@ -508,6 +512,7 @@ function caml_js_expr(s) {
 //Requires: caml_jsstring_of_string
 function caml_pure_js_expr(s) {
   console.error("caml_pure_js_expr: fallback to runtime evaluation\n");
+  // biome-ignore lint/security/noGlobalEval:
   return eval(caml_jsstring_of_string(s));
 }
 

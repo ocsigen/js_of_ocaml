@@ -75,10 +75,6 @@ module Var : sig
 
   val compare : t -> t -> int
 
-  val get_loc : t -> Parse_info.t option
-
-  val loc : t -> Parse_info.t -> unit
-
   val name : t -> string -> unit
 
   val get_name : t -> string option
@@ -157,13 +153,10 @@ end = struct
 
   let printer = Var_printer.create Var_printer.Alphabet.javascript
 
-  let locations = Hashtbl.create 17
-
   let last_var = ref 0
 
   let reset () =
     last_var := 0;
-    Hashtbl.clear locations;
     Var_printer.reset printer
 
   let to_string ?origin i = Var_printer.to_string printer ?origin i
@@ -173,14 +166,6 @@ end = struct
   (* Format.fprintf f "%s" (to_string x) *)
 
   let name i nm = Var_printer.name printer i nm
-
-  let loc i pi = Hashtbl.add locations i pi
-
-  (*;
-    Format.eprintf "loc for %d : %d-%d\n%!"
-                   i pi.Parse_info.line pi.Parse_info.col
-  *)
-  let get_loc i = try Some (Hashtbl.find locations i) with Not_found -> None
 
   let fresh () =
     incr last_var;
@@ -199,11 +184,7 @@ end = struct
 
   let get_name i = Var_printer.get_name printer i
 
-  let propagate_name i j =
-    Var_printer.propagate_name printer i j;
-    match get_loc i with
-    | None -> ()
-    | Some l -> loc j l
+  let propagate_name i j = Var_printer.propagate_name printer i j
 
   let set_pretty b = Var_printer.set_pretty printer b
 
@@ -446,6 +427,7 @@ type instr =
   | Set_field of Var.t * int * field_type * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
+  | Event of Parse_info.t
 
 type last =
   | Return of Var.t
@@ -459,8 +441,8 @@ type last =
 
 type block =
   { params : Var.t list
-  ; body : (instr * loc) list
-  ; branch : last * loc
+  ; body : instr list
+  ; branch : last
   }
 
 type program =
@@ -593,7 +575,7 @@ module Print = struct
     | Prim (p, l) -> prim f p l
     | Special s -> special f s
 
-  let instr f (i, _loc) =
+  let instr f i =
     match i with
     | Let (x, e) -> Format.fprintf f "%a = %a" Var.print x expr e
     | Assign (x, y) -> Format.fprintf f "(assign) %a = %a" Var.print x Var.print y
@@ -604,8 +586,9 @@ module Print = struct
     | Offset_ref (x, i) -> Format.fprintf f "%a[0] += %d" Var.print x i
     | Array_set (x, y, z) ->
         Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
+    | Event loc -> Format.fprintf f "event %s" (Parse_info.to_string loc)
 
-  let last f (l, _loc) =
+  let last f l =
     match l with
     | Return x -> Format.fprintf f "return %a" Var.print x
     | Raise (x, `Normal) -> Format.fprintf f "raise %a" Var.print x
@@ -624,8 +607,8 @@ module Print = struct
     | Poptrap c -> Format.fprintf f "poptrap %a" cont c
 
   type xinstr =
-    | Instr of (instr * loc)
-    | Last of (last * loc)
+    | Instr of instr
+    | Last of last
 
   let block annot pc block =
     Format.eprintf "==== %d (%a) ====@." pc var_list block.params;
@@ -644,7 +627,7 @@ end
 let fold_closures p f accu =
   Addr.Map.fold
     (fun _ block accu ->
-      List.fold_left block.body ~init:accu ~f:(fun accu (i, _loc) ->
+      List.fold_left block.body ~init:accu ~f:(fun accu i ->
           match i with
           | Let (x, Closure (params, cont)) -> f (Some x) params cont accu
           | _ -> accu))
@@ -665,12 +648,12 @@ let prepend ({ start; blocks; free_pc } as p) body =
       | exception Not_found ->
           let new_start = free_pc in
           let blocks =
-            Addr.Map.add new_start { params = []; body; branch = Stop, noloc } blocks
+            Addr.Map.add new_start { params = []; body; branch = Stop } blocks
           in
           let free_pc = free_pc + 1 in
           { start = new_start; blocks; free_pc })
 
-let empty_block = { params = []; body = []; branch = Stop, noloc }
+let empty_block = { params = []; body = []; branch = Stop }
 
 let empty =
   let start = 0 in
@@ -683,10 +666,9 @@ let is_empty p =
   | 1 -> (
       let _, v = Addr.Map.choose p.blocks in
       match v with
-      | { body; branch = Stop, _; params = _ } -> (
+      | { body; branch = Stop; params = _ } -> (
           match body with
-          | ([] | [ (Let (_, Prim (Extern "caml_get_global_data", _)), _) ]) when true ->
-              true
+          | ([] | [ Let (_, Prim (Extern "caml_get_global_data", _)) ]) when true -> true
           | _ -> false)
       | _ -> false)
   | _ -> false
@@ -698,7 +680,7 @@ let poptraps blocks pc =
     else
       let visited = Addr.Set.add pc visited in
       let block = Addr.Map.find pc blocks in
-      match fst block.branch with
+      match block.branch with
       | Return _ | Raise _ | Stop -> acc, visited
       | Branch (pc', _) -> loop blocks pc' visited depth acc
       | Poptrap (pc', _) ->
@@ -726,7 +708,7 @@ let poptraps blocks pc =
 
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  match fst block.branch with
+  match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc', _), _, (pc_h, _)) ->
@@ -743,7 +725,7 @@ let fold_children blocks pc f accu =
 
 let fold_children_skip_try_body blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  match fst block.branch with
+  match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc', _), _, (pc_h, _)) ->
@@ -806,7 +788,7 @@ let fold_closures_innermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont)), _ ->
+            | Let (x, Closure (params, cont)) ->
                 let accu = visit blocks (fst cont) f accu in
                 f (Some x) params cont accu
             | _ -> accu))
@@ -825,7 +807,7 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont)), _ ->
+            | Let (x, Closure (params, cont)) ->
                 let accu = f (Some x) params cont accu in
                 visit blocks (fst cont) f accu
             | _ -> accu))
@@ -896,7 +878,7 @@ let invariant { blocks; start; _ } =
       | Prim (_, args) -> List.iter ~f:check_prim_arg args
       | Special _ -> ()
     in
-    let check_instr (i, _loc) =
+    let check_instr i =
       match i with
       | Let (x, e) ->
           define x;
@@ -905,8 +887,15 @@ let invariant { blocks; start; _ } =
       | Set_field (_, _i, _, _) -> ()
       | Offset_ref (_x, _i) -> ()
       | Array_set (_x, _y, _z) -> ()
+      | Event _ -> ()
     in
-    let check_last (l, _loc) =
+    let rec check_events l =
+      match l with
+      | Event _ :: Event _ :: _ -> assert false
+      | _ :: r -> check_events r
+      | [] -> ()
+    in
+    let check_last l =
       match l with
       | Return _ -> ()
       | Raise _ -> ()
@@ -925,5 +914,6 @@ let invariant { blocks; start; _ } =
       (fun _pc block ->
         List.iter block.params ~f:define;
         List.iter block.body ~f:check_instr;
+        check_events block.body;
         check_last block.branch)
       blocks)

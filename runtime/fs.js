@@ -52,7 +52,7 @@ function MlFile() {}
 //Requires: fs_node_supported
 function make_path_is_absolute() {
   function posix(path) {
-    if (path.charAt(0) === "/") return ["", path.substring(1)];
+    if (path.charAt(0) === "/") return ["", path.slice(1)];
     return;
   }
 
@@ -68,7 +68,7 @@ function make_path_is_absolute() {
     if (result[2] || isUnc) {
       var root = result[1] || "";
       var sep = result[2] || "";
-      return [root, path.substring(root.length + sep.length)];
+      return [root, path.slice(root.length + sep.length)];
     }
     return;
   }
@@ -150,13 +150,13 @@ function resolve_fs_device(name) {
   for (var i = 0; i < jsoo_mount_point.length; i++) {
     var m = jsoo_mount_point[i];
     if (
-      name_slash.search(m.path) == 0 &&
+      name_slash.search(m.path) === 0 &&
       (!res || res.path.length < m.path.length)
     )
       res = {
         path: m.path,
         device: m.device,
-        rest: name.substring(m.path.length, name.length),
+        rest: name.slice(m.path.length, name.length),
       };
   }
   if (!res && fs_node_supported()) {
@@ -167,7 +167,7 @@ function resolve_fs_device(name) {
       res = {
         path: m.path,
         device: m.device,
-        rest: name.substring(m.path.length, name.length),
+        rest: name.slice(m.path.length, name.length),
       };
     }
   }
@@ -191,7 +191,7 @@ function caml_unmount(name) {
   var name = caml_trailing_slash(path.join("/"));
   var idx = -1;
   for (var i = 0; i < jsoo_mount_point.length; i++)
-    if (jsoo_mount_point[i].path == name) idx = i;
+    if (jsoo_mount_point[i].path === name) idx = i;
   if (idx > -1) jsoo_mount_point.splice(idx, 1);
   return 0;
 }
@@ -261,7 +261,7 @@ function caml_sys_is_directory(name) {
 function caml_sys_rename(o, n) {
   var o_root = resolve_fs_device(o);
   var n_root = resolve_fs_device(n);
-  if (o_root.device != n_root.device)
+  if (o_root.device !== n_root.device)
     caml_failwith("caml_sys_rename: cannot move file between two filesystem");
   if (!o_root.device.rename) caml_failwith("caml_sys_rename: no implemented");
   o_root.device.rename(o_root.rest, n_root.rest);
@@ -300,8 +300,8 @@ function caml_ba_map_file_bytecode(argv, argn) {
 function jsoo_create_file_extern(name, content) {
   if (globalThis.jsoo_create_file) globalThis.jsoo_create_file(name, content);
   else {
-    if (!globalThis.caml_fs_tmp) globalThis.caml_fs_tmp = [];
-    globalThis.caml_fs_tmp.push({ name: name, content: content });
+    if (!globalThis.jsoo_fs_tmp) globalThis.jsoo_fs_tmp = [];
+    globalThis.jsoo_fs_tmp.push({ name: name, content: content });
   }
   return 0;
 }
@@ -309,14 +309,14 @@ function jsoo_create_file_extern(name, content) {
 //Provides: caml_fs_init
 //Requires: jsoo_create_file
 function caml_fs_init() {
-  var tmp = globalThis.caml_fs_tmp;
+  var tmp = globalThis.jsoo_fs_tmp;
   if (tmp) {
     for (var i = 0; i < tmp.length; i++) {
       jsoo_create_file(tmp[i].name, tmp[i].content);
     }
   }
   globalThis.jsoo_create_file = jsoo_create_file;
-  globalThis.caml_fs_tmp = [];
+  globalThis.jsoo_fs_tmp = [];
   return 0;
 }
 
@@ -341,7 +341,7 @@ function jsoo_create_file(name, content) {
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_string_of_array
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_read_file_content(name) {
-  var name = typeof name == "string" ? caml_string_of_jsbytes(name) : name;
+  var name = typeof name === "string" ? caml_string_of_jsbytes(name) : name;
   var root = resolve_fs_device(name);
   if (root.device.exists(root.rest)) {
     var file = root.device.open(root.rest, { rdonly: 1 });

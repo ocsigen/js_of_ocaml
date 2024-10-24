@@ -92,11 +92,12 @@ let traverse_expression x e st =
 
 let traverse_instruction st i =
   let st = { st with pos = st.pos + 1 } in
-  match fst i with
+  match i with
   | Code.Let (x, e) -> st |> declare x |> traverse_expression x e
   | Assign (_, x) | Offset_ref (x, _) -> st |> use x
   | Set_field (x, _, _, y) -> st |> use x |> use y
   | Array_set (x, y, z) -> st |> use x |> use y |> use z
+  | Event _ -> st
 
 let traverse_block p st pc =
   let b = Code.Addr.Map.find pc p.Code.blocks in

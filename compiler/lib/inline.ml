@@ -34,9 +34,15 @@ type closure_info =
   }
 
 let block_size { branch; body; _ } =
-  List.length body
+  List.fold_left
+    ~f:(fun n i ->
+      match i with
+      | Event _ -> n
+      | _ -> n + 1)
+    ~init:0
+    body
   +
-  match fst branch with
+  match branch with
   | Cond _ -> 2
   | Switch (_, a1) -> Array.length a1
   | _ -> 0
@@ -56,19 +62,19 @@ let simple_function blocks size name params pc =
         let block = Addr.Map.find pc blocks in
         (match block.branch with
         (* We currenly disable inlining when raising and catching exception *)
-        | (Poptrap _ | Pushtrap _), _ -> raise Exit
-        | Raise _, _ -> raise Exit
-        | Stop, _ -> raise Exit
-        | Return x, _ -> (
+        | Poptrap _ | Pushtrap _ -> raise Exit
+        | Raise _ -> raise Exit
+        | Stop -> raise Exit
+        | Return x -> (
             match List.last block.body with
             | None -> ()
-            | Some (Let (y, Apply { f; _ }), _) ->
+            | Some (Let (y, Apply { f; _ })) ->
                 (* track if some params are called in tail position *)
                 if Code.Var.equal x y && List.mem f ~set:params
                 then tc := Var.Set.add f !tc
             | Some _ -> ())
-        | Branch _, _ | Cond _, _ | Switch _, _ -> ());
-        List.iter block.body ~f:(fun (i, _loc) ->
+        | Branch _ | Cond _ | Switch _ -> ());
+        List.iter block.body ~f:(fun i ->
             match i with
             (* We currenly don't want to duplicate Closure *)
             | Let (_, Closure _) -> raise Exit
@@ -105,14 +111,13 @@ let optimizable blocks pc =
       let optimizable =
         optimizable
         && List.for_all b.body ~f:(function
-               | Let (_, Prim (Extern "caml_js_eval_string", _)), _ -> false
-               | Let (_, Prim (Extern "debugger", _)), _ -> false
-               | ( Let
-                     ( _
-                     , Prim
-                         (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
-                     )
-                 , _ ) ->
+               | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
+               | Let (_, Prim (Extern "debugger", _)) -> false
+               | Let
+                   ( _
+                   , Prim
+                       (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
+                   ) ->
                    (* TODO: we should be smarter here and look the generated js *)
                    (* let's consider it this opmiziable *)
                    true
@@ -128,7 +133,7 @@ let get_closures { blocks; _ } =
     (fun _ block closures ->
       List.fold_left block.body ~init:closures ~f:(fun closures i ->
           match i with
-          | Let (x, Closure (cl_params, cl_cont)), _loc ->
+          | Let (x, Closure (cl_params, cl_cont)) ->
               (* we can compute this once during the pass
                  as the property won't change with inlining *)
               let cl_prop = optimizable blocks (fst cl_cont) in
@@ -146,7 +151,7 @@ let rewrite_block pc' pc blocks =
   let block = Addr.Map.find pc blocks in
   let block =
     match block.branch, pc' with
-    | (Return y, loc), Some pc' -> { block with branch = Branch (pc', [ y ]), loc }
+    | Return y, Some pc' -> { block with branch = Branch (pc', [ y ]) }
     | _ -> block
   in
   Addr.Map.add pc block blocks
@@ -175,8 +180,7 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
       ~init:([], (outer, block.branch, p))
       ~f:(fun i (rem, state) ->
         match i with
-        | Let (x, Apply { f; args; exact = true; _ }), loc when Var.Map.mem f closures
-          -> (
+        | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f closures -> (
             let outer, branch, p = state in
             let { cl_params = params
                 ; cl_cont = clos_cont
@@ -200,7 +204,7 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
             then
               let blocks, cont_pc, free_pc =
                 match rem, branch with
-                | [], (Return y, _) when Var.compare x y = 0 ->
+                | [], Return y when Var.compare x y = 0 ->
                     (* We do not need a continuation block for tail calls *)
                     p.blocks, None, p.free_pc
                 | _ ->
@@ -222,11 +226,11 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
               let blocks =
                 Addr.Map.add
                   fresh_addr
-                  { params; body = []; branch = Branch clos_cont, loc }
+                  { params; body = []; branch = Branch clos_cont }
                   blocks
               in
               let outer = { outer with size = outer.size + f_size } in
-              [], (outer, (Branch (fresh_addr, args), loc), { p with blocks; free_pc })
+              [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc })
             else
               match cl_simpl with
               | Some (bound_vars, free_vars, recursive, tc_params)
@@ -263,14 +267,14 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
                   in
                   if recursive
                   then
-                    ( (Let (f, Closure (params, clos_cont)), No)
-                      :: (Let (x, Apply { f; args; exact = true }), loc)
+                    ( Let (f, Closure (params, clos_cont))
+                      :: Let (x, Apply { f; args; exact = true })
                       :: rem
                     , (outer, branch, p) )
                   else
                     let blocks, cont_pc, free_pc =
                       match rem, branch with
-                      | [], (Return y, _) when Var.compare x y = 0 ->
+                      | [], Return y when Var.compare x y = 0 ->
                           (* We do not need a continuation block for tail calls *)
                           p.blocks, None, p.free_pc
                       | _ ->
@@ -292,26 +296,27 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
                     let blocks =
                       Addr.Map.add
                         fresh_addr
-                        { params; body = []; branch = Branch clos_cont, No }
+                        { params; body = []; branch = Branch clos_cont }
                         blocks
                     in
                     let outer = { outer with size = outer.size + f_size } in
-                    ( []
-                    , (outer, (Branch (fresh_addr, args), No), { p with blocks; free_pc })
-                    )
+                    [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc })
               | _ -> i :: rem, state)
-        | Let (x, Closure (l, (pc, []))), loc when first_class_primitives -> (
+        | Let (x, Closure (l, (pc, []))) when first_class_primitives -> (
             let block = Addr.Map.find pc p.blocks in
             match block with
-            | { body = [ (Let (y, Prim (Extern prim, args)), _loc) ]
-              ; branch = Return y', _
+            | { body =
+                  ( [ Let (y, Prim (Extern prim, args)) ]
+                  | [ Event _; Let (y, Prim (Extern prim, args)) ]
+                  | [ Event _; Let (y, Prim (Extern prim, args)); Event _ ] )
+              ; branch = Return y'
               ; params = []
               } ->
                 let len = List.length l in
                 if Code.Var.compare y y' = 0
                    && Primitive.has_arity prim len
                    && args_equal l args
-                then (Let (x, Special (Alias_prim prim)), loc) :: rem, state
+                then Let (x, Special (Alias_prim prim)) :: rem, state
                 else i :: rem, state
             | _ -> i :: rem, state)
         | _ -> i :: rem, state)

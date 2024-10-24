@@ -35,7 +35,7 @@ let pure_expr pure_funs e =
 let pure_instr pure_funs i =
   match i with
   | Let (_, e) -> pure_expr pure_funs e
-  | Assign _ -> true
+  | Event _ | Assign _ -> true
   | Set_field _ | Offset_ref _ | Array_set _ -> false
 
 (****)
@@ -59,14 +59,11 @@ let rec traverse blocks pc visited funs =
 and block blocks pc pure visited funs =
   let b = Addr.Map.find pc blocks in
   let pure =
-    match fst b.branch with
+    match b.branch with
     | Raise _ -> false
     | _ -> pure
   in
-  List.fold_left
-    b.body
-    ~init:(pure, visited, funs)
-    ~f:(fun (pure, visited, funs) (i, _loc) ->
+  List.fold_left b.body ~init:(pure, visited, funs) ~f:(fun (pure, visited, funs) i ->
       let visited, funs =
         match i with
         | Let (x, Closure (_, (pc, _))) ->

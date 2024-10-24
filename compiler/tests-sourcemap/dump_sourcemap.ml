@@ -36,11 +36,11 @@ let extract_sourcemap lines =
       Some (Source_map.of_string content)
   | _ -> None
 
-let print_mapping lines (sm : Source_map.t) =
+let print_mapping lines ?(line_offset = 0) (sm : Source_map.Standard.t) =
   let lines = Array.of_list lines in
   let sources = Array.of_list sm.sources in
   let _names = Array.of_list sm.names in
-  let mappings = Source_map.Mappings.decode sm.mappings in
+  let mappings = Source_map.Mappings.decode_exn sm.mappings in
   List.iter mappings ~f:(fun (m : Source_map.map) ->
       let file = function
         | -1 -> "null"
@@ -62,14 +62,29 @@ let print_mapping lines (sm : Source_map.t) =
         -> (
           match file ori_source with
           | "a.ml" | "b.ml" | "c.ml" | "d.ml" ->
+              let root =
+                match sm.sourceroot with
+                | None -> ""
+                | Some root -> root ^ "#"
+              in
               Printf.printf
-                "%s:%d:%d -> %d:%s\n"
+                "%s%s:%d:%d -> %d:%s\n"
+                root
                 (file ori_source)
                 ori_line
                 ori_col
                 gen_col
-                (mark gen_col lines.(gen_line - 1))
+                (mark gen_col lines.(gen_line - 1 + line_offset))
           | _ -> ()))
+
+let print_sourcemap lines = function
+  | Source_map.Standard sm -> print_mapping lines sm
+  | Index l ->
+      List.iter
+        l.Source_map.Index.sections
+        ~f:(fun { Source_map.Index.offset = { gen_line; gen_column }; map } ->
+          assert (gen_column = 0);
+          print_mapping lines ~line_offset:gen_line map)
 
 let files = Sys.argv |> Array.to_list |> List.tl
 
@@ -80,4 +95,4 @@ let () =
       | None -> Printf.printf "not sourcemap for %s\n" f
       | Some sm ->
           Printf.printf "sourcemap for %s\n" f;
-          print_mapping lines sm)
+          print_sourcemap lines sm)

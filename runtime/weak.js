@@ -25,87 +25,83 @@ var caml_ephe_key_offset = 3;
 //Provides: caml_ephe_data_offset
 var caml_ephe_data_offset = 2;
 
+//Provides: caml_ephe_none
+var caml_ephe_none = { caml_ephe_none: 0 };
+
 //Provides: caml_ephe_set_key
-//Requires: caml_invalid_argument, caml_ephe_key_offset
+//Requires: caml_ephe_key_offset
+//Requires: caml_ephe_get_data
+//Requires: caml_ephe_set_data_opt
 function caml_ephe_set_key(x, i, v) {
-  if (i < 0 || caml_ephe_key_offset + i >= x.length)
-    caml_invalid_argument("Weak.set");
-  if (v instanceof Object && globalThis.WeakRef) {
-    if (x[1].register) x[1].register(v, undefined, v);
-    x[caml_ephe_key_offset + i] = new globalThis.WeakRef(v);
-  } else x[caml_ephe_key_offset + i] = v;
+  var old = caml_ephe_get_data(x);
+  if (globalThis.WeakRef && v instanceof Object) v = new globalThis.WeakRef(v);
+  x[caml_ephe_key_offset + i] = v;
+  caml_ephe_set_data_opt(x, old);
   return 0;
 }
 
 //Provides: caml_ephe_unset_key
-//Requires: caml_invalid_argument, caml_ephe_key_offset
+//Requires: caml_ephe_key_offset
+//Requires: caml_ephe_get_data
+//Requires: caml_ephe_set_data_opt
+//Requires: caml_ephe_none
 function caml_ephe_unset_key(x, i) {
-  if (i < 0 || caml_ephe_key_offset + i >= x.length)
-    caml_invalid_argument("Weak.set");
-  if (
-    globalThis.WeakRef &&
-    x[caml_ephe_key_offset + i] instanceof globalThis.WeakRef &&
-    x[1].unregister
-  ) {
-    var old = x[caml_ephe_key_offset + i].deref();
-    if (old !== undefined) {
-      var count = 0;
-      for (var j = caml_ephe_key_offset; j < x.length; j++) {
-        var key = x[j];
-        if (key instanceof globalThis.WeakRef) {
-          key = key.deref();
-          if (key === old) count++;
-        }
-      }
-      if (count == 1) x[1].unregister(old);
-    }
-  }
-  x[caml_ephe_key_offset + i] = undefined;
+  var old = caml_ephe_get_data(x);
+  x[caml_ephe_key_offset + i] = caml_ephe_none;
+  caml_ephe_set_data_opt(x, old);
   return 0;
 }
 
 //Provides: caml_ephe_create
-//Requires: caml_weak_create, caml_ephe_data_offset
+//Requires: caml_weak_create
 function caml_ephe_create(n) {
-  var x = caml_weak_create(n);
-  return x;
+  return caml_weak_create(n);
 }
 
 //Provides: caml_weak_create
-//Requires: caml_ephe_key_offset, caml_invalid_argument,caml_ephe_data_offset
+//Requires: caml_ephe_key_offset
+//Requires: caml_ephe_none
 function caml_weak_create(n) {
-  if (n < 0) caml_invalid_argument("Weak.create");
-  var x = [251, "caml_ephe_list_head"];
-  x.length = caml_ephe_key_offset + n;
+  var alen = caml_ephe_key_offset + n;
+  var x = new Array(alen);
+  x[0] = 251;
+  x[1] = "caml_ephe_list_head";
+  for (var i = 2; i < alen; i++) {
+    x[i] = caml_ephe_none;
+  }
   return x;
 }
 
 //Provides: caml_weak_set
-//Requires: caml_invalid_argument
 //Requires: caml_ephe_set_key, caml_ephe_unset_key
 function caml_weak_set(x, i, v) {
-  if (v == 0) caml_ephe_unset_key(x, i);
+  if (v === 0) caml_ephe_unset_key(x, i);
   else caml_ephe_set_key(x, i, v[1]);
   return 0;
 }
 //Provides: caml_ephe_get_key
-//Requires: caml_ephe_key_offset, caml_invalid_argument
+//Requires: caml_ephe_key_offset, caml_ephe_data_offset
+//Requires: caml_ephe_none
 //Alias: caml_weak_get
+
 function caml_ephe_get_key(x, i) {
-  if (i < 0 || caml_ephe_key_offset + i >= x.length)
-    caml_invalid_argument("Weak.get_key");
   var weak = x[caml_ephe_key_offset + i];
-  if (globalThis.WeakRef && weak instanceof globalThis.WeakRef)
+  if (weak === caml_ephe_none) return 0;
+  if (globalThis.WeakRef && weak instanceof globalThis.WeakRef) {
     weak = weak.deref();
-  return weak === undefined ? 0 : [0, weak];
+    if (weak === undefined) {
+      x[caml_ephe_key_offset + i] = caml_ephe_none;
+      x[caml_ephe_data_offset] = caml_ephe_none;
+      return 0;
+    }
+  }
+  return [0, weak];
 }
 //Provides: caml_ephe_get_key_copy
 //Requires: caml_ephe_get_key,caml_ephe_key_offset
-//Requires: caml_obj_dup, caml_invalid_argument
+//Requires: caml_obj_dup
 //Alias: caml_weak_get_copy
 function caml_ephe_get_key_copy(x, i) {
-  if (i < 0 || caml_ephe_key_offset + i >= x.length)
-    caml_invalid_argument("Weak.get_copy");
   var y = caml_ephe_get_key(x, i);
   if (y === 0) return y;
   var z = y[1];
@@ -114,21 +110,31 @@ function caml_ephe_get_key_copy(x, i) {
 }
 
 //Provides: caml_ephe_check_key mutable
-//Requires: caml_ephe_key_offset
+//Requires: caml_ephe_key_offset, caml_ephe_data_offset
+//Requires: caml_ephe_none
 //Alias: caml_weak_check
 function caml_ephe_check_key(x, i) {
   var weak = x[caml_ephe_key_offset + i];
-  if (globalThis.WeakRef && weak instanceof globalThis.WeakRef)
+  if (weak === caml_ephe_none) return 0;
+  if (globalThis.WeakRef && weak instanceof globalThis.WeakRef) {
     weak = weak.deref();
-  if (weak === undefined) return 0;
-  else return 1;
+    if (weak === undefined) {
+      x[caml_ephe_key_offset + i] = caml_ephe_none;
+      x[caml_ephe_data_offset] = caml_ephe_none;
+      return 0;
+    }
+  }
+  return 1;
 }
 
 //Provides: caml_ephe_blit_key
 //Requires: caml_array_blit
 //Requires: caml_ephe_key_offset
+//Requires: caml_ephe_get_data
+//Requires: caml_ephe_set_data_opt
 //Alias: caml_weak_blit
 function caml_ephe_blit_key(a1, i1, a2, i2, len) {
+  var old = caml_ephe_get_data(a1);
   // minus one because caml_array_blit works on ocaml array
   caml_array_blit(
     a1,
@@ -137,48 +143,70 @@ function caml_ephe_blit_key(a1, i1, a2, i2, len) {
     caml_ephe_key_offset + i2 - 1,
     len,
   );
+  caml_ephe_set_data_opt(a2, old);
   return 0;
 }
 
 //Provides: caml_ephe_blit_data
-//Requires: caml_ephe_data_offset, caml_ephe_set_data, caml_ephe_unset_data
+//Requires: caml_ephe_get_data, caml_ephe_set_data_opt
 function caml_ephe_blit_data(src, dst) {
-  var n = src[caml_ephe_data_offset];
-  if (n === undefined) caml_ephe_unset_data(dst);
-  else caml_ephe_set_data(dst, n);
+  var old = caml_ephe_get_data(src);
+  caml_ephe_set_data_opt(dst, old);
   return 0;
 }
 
 //Provides: caml_ephe_get_data
-//Requires: caml_ephe_data_offset
+//Requires: caml_ephe_data_offset, caml_ephe_key_offset
+//Requires: caml_ephe_none
 function caml_ephe_get_data(x) {
-  if (x[caml_ephe_data_offset] === undefined) return 0;
-  else return [0, x[caml_ephe_data_offset]];
+  var data = x[caml_ephe_data_offset];
+  if (data === caml_ephe_none) return 0;
+  for (var i = caml_ephe_key_offset; i < x.length; i++) {
+    var k = x[i];
+    if (globalThis.WeakRef && k instanceof globalThis.WeakRef) {
+      var d = k.deref();
+      if (d === undefined) {
+        x[i] = caml_ephe_none;
+        x[caml_ephe_data_offset] = caml_ephe_none;
+        return 0;
+      }
+      if (globalThis.WeakMap) {
+        data = data.get(k);
+        if (data === undefined) {
+          x[caml_ephe_data_offset] = caml_ephe_none;
+          return 0;
+        }
+      }
+    }
+  }
+  return [0, data];
 }
 
 //Provides: caml_ephe_get_data_copy
-//Requires: caml_ephe_data_offset
+//Requires: caml_ephe_get_data
 //Requires: caml_obj_dup
 function caml_ephe_get_data_copy(x) {
-  if (x[caml_ephe_data_offset] === undefined) return 0;
-  else return [0, caml_obj_dup(x[caml_ephe_data_offset])];
+  var r = caml_ephe_get_data(x);
+  if (r === 0) return 0;
+  var z = r[1];
+  if (Array.isArray(z)) return [0, caml_obj_dup(z)];
+  return r;
 }
 
 //Provides: caml_ephe_set_data
-//Requires: caml_ephe_data_offset, caml_ephe_key_offset, caml_ephe_unset_data
+//Requires: caml_ephe_data_offset, caml_ephe_key_offset
+//Requires: caml_ephe_none
 function caml_ephe_set_data(x, data) {
-  if (globalThis.FinalizationRegistry && globalThis.WeakRef) {
-    if (!(x[1] instanceof globalThis.FinalizationRegistry)) {
-      x[1] = new globalThis.FinalizationRegistry(function () {
-        caml_ephe_unset_data(x);
-      });
-      //register all keys
-      for (var j = caml_ephe_key_offset; j < x.length; j++) {
-        var key = x[j];
-        if (key instanceof globalThis.WeakRef) {
-          key = key.deref();
-          if (key) x[1].register(key, undefined, key);
-        }
+  for (var i = x.length - 1; i >= caml_ephe_key_offset; i--) {
+    var k = x[i];
+    if (globalThis.WeakRef && k instanceof globalThis.WeakRef) {
+      var d = k.deref();
+      if (d === undefined) {
+        x[i] = caml_ephe_none;
+        continue;
+      }
+      if (globalThis.WeakMap) {
+        data = new globalThis.WeakMap().set(k, data);
       }
     }
   }
@@ -186,28 +214,27 @@ function caml_ephe_set_data(x, data) {
   return 0;
 }
 
+//Provides: caml_ephe_set_data_opt
+//Requires: caml_ephe_set_data
+//Requires: caml_ephe_unset_data
+function caml_ephe_set_data_opt(x, data_opt) {
+  if (data_opt === 0) caml_ephe_unset_data(x);
+  else caml_ephe_set_data(x, data_opt[1]);
+  return 0;
+}
+
 //Provides: caml_ephe_unset_data
-//Requires: caml_ephe_data_offset, caml_ephe_key_offset
+//Requires: caml_ephe_data_offset
+//Requires: caml_ephe_none
 function caml_ephe_unset_data(x) {
-  if (globalThis.FinalizationRegistry && globalThis.WeakRef) {
-    if (x[1] instanceof globalThis.FinalizationRegistry) {
-      //unregister all keys
-      for (var j = caml_ephe_key_offset; j < x.length; j++) {
-        var key = x[j];
-        if (key instanceof globalThis.WeakRef) {
-          key = key.deref();
-          if (key) x[1].unregister(key);
-        }
-      }
-    }
-  }
-  x[caml_ephe_data_offset] = undefined;
+  x[caml_ephe_data_offset] = caml_ephe_none;
   return 0;
 }
 
 //Provides: caml_ephe_check_data
-//Requires: caml_ephe_data_offset
+//Requires: caml_ephe_get_data
 function caml_ephe_check_data(x) {
-  if (x[caml_ephe_data_offset] === undefined) return 0;
+  var data = caml_ephe_get_data(x);
+  if (data === 0) return 0;
   else return 1;
 }

@@ -129,9 +129,9 @@ Ml_Bigarray.prototype.offset = function (arg) {
   var ofs = 0;
   if (typeof arg === "number") arg = [arg];
   if (!Array.isArray(arg)) caml_invalid_argument("bigarray.js: invalid offset");
-  if (this.dims.length != arg.length)
+  if (this.dims.length !== arg.length)
     caml_invalid_argument("Bigarray.get/set: bad number of dimensions");
-  if (this.layout == 0 /* c_layout */) {
+  if (this.layout === 0 /* c_layout */) {
     for (var i = 0; i < this.dims.length; i++) {
       if (arg[i] < 0 || arg[i] >= this.dims[i]) caml_array_bound_error();
       ofs = ofs * this.dims[i] + arg[i];
@@ -191,11 +191,11 @@ Ml_Bigarray.prototype.fill = function (v) {
       // Int64
       var a = caml_int64_lo32(v);
       var b = caml_int64_hi32(v);
-      if (a == b) {
+      if (a === b) {
         this.data.fill(a);
       } else {
         for (var i = 0; i < this.data.length; i++) {
-          this.data[i] = i % 2 == 0 ? a : b;
+          this.data[i] = i % 2 === 0 ? a : b;
         }
       }
       break;
@@ -204,11 +204,11 @@ Ml_Bigarray.prototype.fill = function (v) {
       // Complex32, Complex64
       var im = v[1];
       var re = v[2];
-      if (im == re) {
+      if (im === re) {
         this.data.fill(im);
       } else {
         for (var i = 0; i < this.data.length; i++) {
-          this.data[i] = i % 2 == 0 ? im : re;
+          this.data[i] = i % 2 === 0 ? im : re;
         }
       }
       break;
@@ -219,16 +219,16 @@ Ml_Bigarray.prototype.fill = function (v) {
 };
 
 Ml_Bigarray.prototype.compare = function (b, total) {
-  if (this.layout != b.layout || this.kind != b.kind) {
+  if (this.layout !== b.layout || this.kind !== b.kind) {
     var k1 = this.kind | (this.layout << 8);
     var k2 = b.kind | (b.layout << 8);
     return k2 - k1;
   }
-  if (this.dims.length != b.dims.length) {
+  if (this.dims.length !== b.dims.length) {
     return b.dims.length - this.dims.length;
   }
   for (var i = 0; i < this.dims.length; i++)
-    if (this.dims[i] != b.dims[i]) return this.dims[i] < b.dims[i] ? -1 : 1;
+    if (this.dims[i] !== b.dims[i]) return this.dims[i] < b.dims[i] ? -1 : 1;
   switch (this.kind) {
     case 0:
     case 1:
@@ -241,10 +241,10 @@ Ml_Bigarray.prototype.compare = function (b, total) {
         y = b.data[i];
         if (x < y) return -1;
         if (x > y) return 1;
-        if (x != y) {
+        if (x !== y) {
           if (!total) return Number.NaN;
-          if (x == x) return 1;
-          if (y == y) return -1;
+          if (!Number.isNaN(x)) return 1;
+          if (!Number.isNaN(y)) return -1;
         }
       }
       break;
@@ -287,7 +287,7 @@ function Ml_Bigarray_c_1_1(kind, layout, dims, buffer) {
 Ml_Bigarray_c_1_1.prototype = new Ml_Bigarray();
 Ml_Bigarray_c_1_1.prototype.offset = function (arg) {
   if (typeof arg !== "number") {
-    if (Array.isArray(arg) && arg.length == 1) arg = arg[0];
+    if (Array.isArray(arg) && arg.length === 1) arg = arg[0];
     else caml_invalid_argument("Ml_Bigarray_c_1_1.offset");
   }
   if (arg < 0 || arg >= this.dims[0]) caml_array_bound_error();
@@ -318,13 +318,13 @@ function caml_ba_compare(a, b, total) {
 //Requires: caml_invalid_argument
 function caml_ba_create_unsafe(kind, layout, dims, data) {
   var size_per_element = caml_ba_get_size_per_element(kind);
-  if (caml_ba_get_size(dims) * size_per_element != data.length) {
+  if (caml_ba_get_size(dims) * size_per_element !== data.length) {
     caml_invalid_argument("length doesn't match dims");
   }
   if (
-    layout == 0 && // c_layout
-    dims.length == 1 && // Array1
-    size_per_element == 1
+    layout === 0 && // c_layout
+    dims.length === 1 && // Array1
+    size_per_element === 1
   )
     // 1-to-1 mapping
     return new Ml_Bigarray_c_1_1(kind, layout, dims, data);
@@ -344,7 +344,7 @@ function caml_ba_create(kind, layout, dims_ml) {
 //Provides: caml_ba_change_layout
 //Requires: caml_ba_create_unsafe
 function caml_ba_change_layout(ba, layout) {
-  if (ba.layout == layout) return ba;
+  if (ba.layout === layout) return ba;
   var new_dims = [];
   for (var i = 0; i < ba.dims.length; i++)
     new_dims[i] = ba.dims[ba.dims.length - i - 1];
@@ -517,10 +517,10 @@ function caml_ba_fill(ba, v) {
 //Provides: caml_ba_blit
 //Requires: caml_invalid_argument
 function caml_ba_blit(src, dst) {
-  if (dst.dims.length != src.dims.length)
+  if (dst.dims.length !== src.dims.length)
     caml_invalid_argument("Bigarray.blit: dimension mismatch");
   for (var i = 0; i < dst.dims.length; i++)
-    if (dst.dims[i] != src.dims[i])
+    if (dst.dims[i] !== src.dims[i])
       caml_invalid_argument("Bigarray.blit: dimension mismatch");
   dst.data.set(src.data);
   return 0;
@@ -532,7 +532,7 @@ function caml_ba_blit(src, dst) {
 function caml_ba_sub(ba, ofs, len) {
   var changed_dim;
   var mul = 1;
-  if (ba.layout == 0) {
+  if (ba.layout === 0) {
     for (var i = 1; i < ba.dims.length; i++) mul = mul * ba.dims[i];
     changed_dim = 0;
   } else {
@@ -565,7 +565,7 @@ function caml_ba_slice(ba, vind) {
     caml_invalid_argument("Bigarray.slice: too many indices");
 
   // Compute offset and check bounds
-  if (ba.layout == 0) {
+  if (ba.layout === 0) {
     for (var i = 0; i < num_inds; i++) index[i] = vind[i];
     for (; i < ba.dims.length; i++) index[i] = 0;
     sub_dims = ba.dims.slice(num_inds);
@@ -605,7 +605,7 @@ function caml_ba_reshape(ba, vind) {
 
   var size = caml_ba_get_size(ba.dims);
   // Check that sizes agree
-  if (num_elts != size)
+  if (num_elts !== size)
     caml_invalid_argument("Bigarray.reshape: size mismatch");
   return caml_ba_create_unsafe(ba.kind, ba.layout, new_dim, ba.data);
 }
@@ -616,7 +616,7 @@ function caml_ba_reshape(ba, vind) {
 function caml_ba_serialize(writer, ba, sz) {
   writer.write(32, ba.dims.length);
   writer.write(32, ba.kind | (ba.layout << 8));
-  if (ba.caml_custom == "_bigarr02")
+  if (ba.caml_custom === "_bigarr02")
     for (var i = 0; i < ba.dims.length; i++) {
       if (ba.dims[i] < 0xffff) writer.write(16, ba.dims[i]);
       else {
@@ -705,13 +705,13 @@ function caml_ba_deserialize(reader, sz, name) {
   var kind = tag & 0xff;
   var layout = (tag >> 8) & 1;
   var dims = [];
-  if (name == "_bigarr02")
+  if (name === "_bigarr02")
     for (var i = 0; i < num_dims; i++) {
       var size_dim = reader.read16u();
-      if (size_dim == 0xffff) {
+      if (size_dim === 0xffff) {
         var size_dim_hi = reader.read32u();
         var size_dim_lo = reader.read32u();
-        if (size_dim_hi != 0)
+        if (size_dim_hi !== 0)
           caml_failwith("input_value: bigarray dimension overflow in 32bit");
         size_dim = size_dim_lo;
       }
@@ -807,7 +807,7 @@ function caml_ba_deserialize(reader, sz, name) {
 //Provides: caml_ba_create_from
 //Requires: caml_ba_create_unsafe, caml_invalid_argument, caml_ba_get_size_per_element
 function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims) {
-  if (data2 || caml_ba_get_size_per_element(kind) == 2) {
+  if (data2 || caml_ba_get_size_per_element(kind) === 2) {
     caml_invalid_argument(
       "caml_ba_create_from: use return caml_ba_create_unsafe",
     );
@@ -838,9 +838,13 @@ function caml_ba_hash(ba) {
       w = 0;
       switch (num_elts & 3) {
         case 3:
-          w = ba.data[i + 2] << 16; /* fallthrough */
+          // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+          w = ba.data[i + 2] << 16;
+        // fallthrough
         case 2:
-          w |= ba.data[i + 1] << 8; /* fallthrough */
+          // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+          w |= ba.data[i + 1] << 8;
+        // fallthrough
         case 1:
           w |= ba.data[i + 0];
           h = caml_hash_mix_int(h, w);
@@ -855,7 +859,7 @@ function caml_ba_hash(ba) {
         w = ba.data[i + 0] | (ba.data[i + 1] << 16);
         h = caml_hash_mix_int(h, w);
       }
-      if ((num_elts & 1) != 0) h = caml_hash_mix_int(h, ba.data[i]);
+      if ((num_elts & 1) !== 0) h = caml_hash_mix_int(h, ba.data[i]);
       break;
     case 6: // Int32Array (int32)
       if (num_elts > 64) num_elts = 64;
@@ -874,13 +878,17 @@ function caml_ba_hash(ba) {
       }
       break;
     case 10: // Float32Array (complex32)
-      num_elts *= 2; /* fallthrough */
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+      num_elts *= 2;
+    // fallthrough
     case 0: // Float32Array
       if (num_elts > 64) num_elts = 64;
       for (var i = 0; i < num_elts; i++) h = caml_hash_mix_float(h, ba.data[i]);
       break;
     case 11: // Float64Array (complex64)
-      num_elts *= 2; /* fallthrough */
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+      num_elts *= 2;
+    // fallthrough
     case 1: // Float64Array
       if (num_elts > 32) num_elts = 32;
       for (var i = 0; i < num_elts; i++) h = caml_hash_mix_float(h, ba.data[i]);

@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+val in_alphabet : char -> bool
+
 val encode_l : Buffer.t -> int list -> unit
 
 val decode_l : string -> pos:int -> len:int -> int list

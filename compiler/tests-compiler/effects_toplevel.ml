@@ -34,7 +34,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   print_program code;
   [%expect
     {|
-
     (function(globalThis){
        "use strict";
        var
@@ -52,7 +51,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                     >= 0
                     ? f.l
                     : f.l = f.length)
-                  == 2
+                  === 2
                   ? f(a0, a1)
                   : runtime.caml_call_gen(f, [a0, a1])
                 : runtime.caml_trampoline_return(f, [a0, a1]);
@@ -93,4 +92,5 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                 []);
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

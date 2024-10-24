@@ -1,0 +1,4 @@
+JSOO_A = from-global-this
+JSOO_B = from-env
+JSOO_C = from-jsoo-args
+JSOO_D not found

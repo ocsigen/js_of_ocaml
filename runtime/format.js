@@ -76,9 +76,12 @@ function caml_parse_format(fmt) {
           i++;
         }
         i--;
+        break;
       case "d":
       case "i":
-        f.signedconv = true; /* fallthrough */
+        f.signedconv = true;
+        f.base = 10;
+        break;
       case "u":
         f.base = 10;
         break;
@@ -116,24 +119,24 @@ function caml_finish_formatting(f, rawbuffer) {
   if (f.uppercase) rawbuffer = rawbuffer.toUpperCase();
   var len = rawbuffer.length;
   /* Adjust len to reflect additional chars (sign, etc) */
-  if (f.signedconv && (f.sign < 0 || f.signstyle != "-")) len++;
+  if (f.signedconv && (f.sign < 0 || f.signstyle !== "-")) len++;
   if (f.alternate) {
-    if (f.base == 8) len += 1;
-    if (f.base == 16) len += 2;
+    if (f.base === 8) len += 1;
+    if (f.base === 16) len += 2;
   }
   /* Do the formatting */
   var buffer = "";
-  if (f.justify == "+" && f.filler == " ")
+  if (f.justify === "+" && f.filler === " ")
     for (var i = len; i < f.width; i++) buffer += " ";
   if (f.signedconv) {
     if (f.sign < 0) buffer += "-";
-    else if (f.signstyle != "-") buffer += f.signstyle;
+    else if (f.signstyle !== "-") buffer += f.signstyle;
   }
-  if (f.alternate && f.base == 8) buffer += "0";
-  if (f.alternate && f.base == 16) buffer += f.uppercase ? "0X" : "0x";
-  if (f.justify == "+" && f.filler == "0")
+  if (f.alternate && f.base === 8) buffer += "0";
+  if (f.alternate && f.base === 16) buffer += f.uppercase ? "0X" : "0x";
+  if (f.justify === "+" && f.filler === "0")
     for (var i = len; i < f.width; i++) buffer += "0";
   buffer += rawbuffer;
-  if (f.justify == "-") for (var i = len; i < f.width; i++) buffer += " ";
+  if (f.justify === "-") for (var i = len; i < f.width; i++) buffer += " ";
   return caml_string_of_jsbytes(buffer);
 }

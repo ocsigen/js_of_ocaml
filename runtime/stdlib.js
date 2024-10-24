@@ -24,7 +24,7 @@ function caml_call_gen(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
-  if (d == 0) return f.apply(null, args);
+  if (d === 0) return f.apply(null, args);
   else if (d < 0) {
     var g = f.apply(null, args.slice(0, n));
     if (typeof g !== "function") return g;
@@ -52,7 +52,7 @@ function caml_call_gen(f, args) {
       }
       default: {
         var g = function () {
-          var extra_args = arguments.length == 0 ? 1 : arguments.length;
+          var extra_args = arguments.length === 0 ? 1 : arguments.length;
           var nargs = new Array(args.length + extra_args);
           for (var i = 0; i < args.length; i++) nargs[i] = args[i];
           for (var i = 0; i < arguments.length; i++)
@@ -73,7 +73,7 @@ function caml_call_gen(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
-  if (d == 0) {
+  if (d === 0) {
     return f.apply(null, args);
   } else if (d < 0) {
     var rest = args.slice(n - 1);
@@ -113,7 +113,7 @@ function caml_call_gen(f, args) {
       }
       default: {
         var g = function () {
-          var extra_args = arguments.length == 0 ? 1 : arguments.length;
+          var extra_args = arguments.length === 0 ? 1 : arguments.length;
           var nargs = new Array(argsLen + extra_args);
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
           for (var i = 0; i < arguments.length; i++)
@@ -162,14 +162,18 @@ function caml_build_symbols(symb) {
   return r;
 }
 
+//Provides: jsoo_toplevel_reloc
+var jsoo_toplevel_reloc = undefined;
+
 //Provides: caml_register_global (const, shallow, const)
 //Requires: caml_global_data, caml_callback, caml_build_symbols
 //Requires: caml_failwith
+//Requires: jsoo_toplevel_reloc
 function caml_register_global(n, v, name_opt) {
   if (name_opt) {
     var name = name_opt;
-    if (globalThis.toplevelReloc) {
-      n = caml_callback(globalThis.toplevelReloc, [name]);
+    if (jsoo_toplevel_reloc) {
+      n = caml_callback(jsoo_toplevel_reloc, [name]);
     } else if (caml_global_data.symbols) {
       if (!caml_global_data.symidx) {
         caml_global_data.symidx = caml_build_symbols(caml_global_data.symbols);

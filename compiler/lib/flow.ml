@@ -113,7 +113,7 @@ let program_deps { blocks; _ } =
   let defs = Array.make nv undefined in
   Addr.Map.iter
     (fun _ block ->
-      List.iter block.body ~f:(fun (i, _loc) ->
+      List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, e) ->
               add_var vars x;
@@ -122,8 +122,8 @@ let program_deps { blocks; _ } =
           | Assign (x, y) ->
               add_dep deps x y;
               add_assign_def vars defs x y
-          | Set_field _ | Array_set _ | Offset_ref _ -> ());
-      match fst block.branch with
+          | Event _ | Set_field _ | Array_set _ | Offset_ref _ -> ());
+      match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont | Poptrap cont -> cont_deps blocks vars deps defs cont
       | Cond (_, cont1, cont2) ->
@@ -253,10 +253,10 @@ let program_escape defs known_origins { blocks; _ } =
   let st = { defs; known_origins; may_escape; possibly_mutable } in
   Addr.Map.iter
     (fun _ block ->
-      List.iter block.body ~f:(fun (i, _loc) ->
+      List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, e) -> expr_escape st x e
-          | Assign _ -> ()
+          | Event _ | Assign _ -> ()
           | Set_field (x, _, _, y) | Array_set (x, _, y) ->
               Var.Set.iter
                 (fun y -> Var.ISet.add possibly_mutable y)
@@ -266,7 +266,7 @@ let program_escape defs known_origins { blocks; _ } =
               Var.Set.iter
                 (fun y -> Var.ISet.add possibly_mutable y)
                 (Var.Tbl.get known_origins x));
-      match fst block.branch with
+      match block.branch with
       | Return x | Raise (x, _) -> block_escape st x
       | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
     blocks;

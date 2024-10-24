@@ -19,14 +19,16 @@
 
 open! Stdlib
 
-let code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 
 let code_rev =
   let a = Array.make 255 (-1) in
-  for i = 0 to String.length code - 1 do
-    a.(Char.code code.[i]) <- i
+  for i = 0 to String.length alphabet - 1 do
+    a.(Char.code alphabet.[i]) <- i
   done;
   a
+
+let in_alphabet x = code_rev.(Char.code x) <> -1
 
 let vlq_base_shift = 5
 
@@ -56,7 +58,7 @@ let fromVLQSigned v =
 (* assert (fromVLQSigned 3 = -1); *)
 (* assert (fromVLQSigned 5 = -2);; *)
 
-let add_char buf x = Buffer.add_char buf code.[x]
+let add_char buf x = Buffer.add_char buf alphabet.[x]
 
 let rec encode' buf x =
   let digit = x land vlq_base_mask in

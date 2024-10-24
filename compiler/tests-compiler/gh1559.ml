@@ -70,12 +70,12 @@ let () = my_ref := 2
        "use strict";
        var runtime = globalThis.jsoo_runtime;
        function caml_call1(f, a0){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 1
+        return (f.l >= 0 ? f.l : f.l = f.length) === 1
                 ? f(a0)
                 : runtime.caml_call_gen(f, [a0]);
        }
        function caml_call2(f, a0, a1){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 2
+        return (f.l >= 0 ? f.l : f.l = f.length) === 2
                 ? f(a0, a1)
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
@@ -114,7 +114,8 @@ let () = my_ref := 2
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let prog =
@@ -174,12 +175,12 @@ let () = my_ref := 2
        "use strict";
        var runtime = globalThis.jsoo_runtime;
        function caml_call1(f, a0){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 1
+        return (f.l >= 0 ? f.l : f.l = f.length) === 1
                 ? f(a0)
                 : runtime.caml_call_gen(f, [a0]);
        }
        function caml_call2(f, a0, a1){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 2
+        return (f.l >= 0 ? f.l : f.l = f.length) === 2
                 ? f(a0, a1)
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
@@ -234,4 +235,5 @@ let () = my_ref := 2
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

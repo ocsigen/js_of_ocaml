@@ -22,10 +22,8 @@
         "noSwitchDeclarations": "off"
       },
       "nursery": {
-        "noUselessEscapeInRegex": "error"
-      },
-      "security": {
-        "noGlobalEval": "off"
+        "noUselessEscapeInRegex": "error",
+        "noSubstr": "error"
       },
       "style": {
         "noArguments": "off",
@@ -39,10 +37,7 @@
       },
       "suspicious": {
         "noAssignInExpressions": "off",
-        "noDoubleEquals": "off",
-        "noFallthroughSwitchClause": "off",
         "noRedeclare": "off",
-        "noSelfCompare": "off",
         "noRedundantUseStrict": "off"
       }
     }

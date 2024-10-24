@@ -1,0 +1,43 @@
+(executable
+ (modes js)
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
+ (js_of_ocaml
+  (flags :standard --setenv JSOO_C=from-jsoo-args))
+ (name test))
+
+(rule
+ (target test.js)
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
+ (action
+  (with-outputs-to
+   %{target}
+   (cat %{dep:setup.js} %{dep:./test.bc.js}))))
+
+(rule
+ (target test.output)
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
+ (action
+  (with-outputs-to
+   %{target}
+   (setenv
+    JSOO_B
+    from-env
+    (run node %{dep:./test.js})))))
+
+(rule
+ (alias runtest)
+ (enabled_if
+  (and
+   (<> %{profile} wasm)
+   (<> %{profile} wasm-effects)))
+ (action
+  (diff test.reference test.output)))
