@@ -140,13 +140,16 @@ function caml_hash_mix_jsbytes(h, s) {
   w = 0;
   switch (len & 3) {
     case 3:
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
       w = s.charCodeAt(i + 2) << 16;
+    // fallthrough
     case 2:
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
       w |= s.charCodeAt(i + 1) << 8;
+    // fallthrough
     case 1:
       w |= s.charCodeAt(i);
       h = caml_hash_mix_int(h, w);
-    default:
   }
   h ^= len;
   return h;
@@ -165,13 +168,16 @@ function caml_hash_mix_bytes_arr(h, s) {
   w = 0;
   switch (len & 3) {
     case 3:
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
       w = s[i + 2] << 16;
+    // fallthrough
     case 2:
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
       w |= s[i + 1] << 8;
+    // fallthrough
     case 1:
       w |= s[i];
       h = caml_hash_mix_int(h, w);
-    default:
   }
   h ^= len;
   return h;

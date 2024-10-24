@@ -54,8 +54,8 @@ function jsoo_create_file_extern(name,content){
   if(globalThis.jsoo_create_file)
     globalThis.jsoo_create_file(name,content);
   else {
-    if(!globalThis.caml_fs_tmp) globalThis.caml_fs_tmp = [];
-    globalThis.caml_fs_tmp.push({name:name,content:content});
+    if(!globalThis.jsoo_fs_tmp) globalThis.jsoo_fs_tmp = [];
+    globalThis.jsoo_fs_tmp.push({name:name,content:content});
   }
   return 0;
 }
@@ -74,12 +74,13 @@ function jsoo_create_file_extern(name,content){
   let code = Code.prepend Code.empty instr in
   Filename.gen_file output_file (fun chan ->
       let pfs_fmt = Pretty_print.to_out_channel chan in
-      let (_ : Source_map.t option) =
+      let (_ : Source_map.info) =
         Driver.f
           ~standalone:true
           ~wrap_with_fun:`Iife
           ~link:`Needed
           ~formatter:pfs_fmt
+          ~source_map:false
           (Parse_bytecode.Debug.create ~include_cmis:false false)
           code
       in

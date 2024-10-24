@@ -35,11 +35,11 @@ val f :
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:profile
   -> link:[ `All | `All_from of string list | `Needed | `No ]
-  -> ?source_map:Source_map.t
+  -> source_map:bool
   -> formatter:Pretty_print.t
   -> Parse_bytecode.Debug.t
   -> Code.program
-  -> Source_map.t option
+  -> Source_map.info
 
 val f' :
      ?standalone:bool

@@ -87,7 +87,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
 
   function token_name(names, number) {
     var str = caml_jsstring_of_string(names);
-    if (str[0] == "\x00") return "<unknown token>";
+    if (str[0] === "\x00") return "<unknown token>";
     return str.split("\x00")[number];
   }
 
@@ -95,8 +95,8 @@ function caml_parse_engine(tables, env, cmd, arg) {
     var token, kind;
     if (Array.isArray(tok)) {
       token = token_name(tables[tbl_names_block], tok[0]);
-      if (typeof tok[1] == "number") kind = "" + tok[1];
-      else if (typeof tok[1] == "string") kind = tok[1];
+      if (typeof tok[1] === "number") kind = "" + tok[1];
+      else if (typeof tok[1] === "string") kind = tok[1];
       else if (tok[1] instanceof MlBytes) kind = caml_jsbytes_of_string(tok[1]);
       else kind = "_";
       log("State " + state + ": read token " + token + "(" + kind + ")");
@@ -132,25 +132,27 @@ function caml_parse_engine(tables, env, cmd, arg) {
   the_loop: for (;;) {
     switch (cmd) {
       case 0: //START:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         state = 0;
         errflag = 0;
-      // Fall through
+      // fallthrough
 
       case 6: //loop:
         n = tables.defred[state];
-        if (n != 0) {
+        if (n !== 0) {
           cmd = reduce;
-          break;
+          continue the_loop;
         }
         if (env[env_curr_char] >= 0) {
           cmd = testshift;
-          break;
+          continue the_loop;
         }
         res = READ_TOKEN;
         break the_loop;
       /* The ML code calls the lexer and updates */
       /* symb_start and symb_end */
       case 1: //TOKEN_READ:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         if (Array.isArray(arg)) {
           env[env_curr_char] = tables[tbl_transl_block][arg[0] + 1];
           env[env_lval] = arg[1];
@@ -159,37 +161,38 @@ function caml_parse_engine(tables, env, cmd, arg) {
           env[env_lval] = 0;
         }
         if (caml_parser_trace) print_token(state, arg);
-      // Fall through
+      // fallthrough
 
       case 7: //testshift:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         n1 = tables.sindex[state];
         n2 = n1 + env[env_curr_char];
         if (
-          n1 != 0 &&
+          n1 !== 0 &&
           n2 >= 0 &&
           n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == env[env_curr_char]
+          tables.check[n2] === env[env_curr_char]
         ) {
           cmd = shift;
-          break;
+          continue the_loop;
         }
         n1 = tables.rindex[state];
         n2 = n1 + env[env_curr_char];
         if (
-          n1 != 0 &&
+          n1 !== 0 &&
           n2 >= 0 &&
           n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == env[env_curr_char]
+          tables.check[n2] === env[env_curr_char]
         ) {
           n = tables.table[n2];
           cmd = reduce;
-          break;
+          continue the_loop;
         }
         if (errflag <= 0) {
           res = CALL_ERROR_FUNCTION;
           break the_loop;
         }
-      // Fall through
+      // fallthrough
       /* The ML code calls the error function */
       case 5: //ERROR_DETECTED:
         if (errflag < 3) {
@@ -199,10 +202,10 @@ function caml_parse_engine(tables, env, cmd, arg) {
             n1 = tables.sindex[state1];
             n2 = n1 + ERRCODE;
             if (
-              n1 != 0 &&
+              n1 !== 0 &&
               n2 >= 0 &&
               n2 <= tables[tbl_tablesize] &&
-              tables.check[n2] == ERRCODE
+              tables.check[n2] === ERRCODE
             ) {
               if (caml_parser_trace) log("Recovering in state " + state1);
               cmd = shift_recover;
@@ -218,19 +221,21 @@ function caml_parse_engine(tables, env, cmd, arg) {
             }
           }
         } else {
-          if (env[env_curr_char] == 0)
+          if (env[env_curr_char] === 0)
             return RAISE_PARSE_ERROR; /* The ML code raises Parse_error */
           if (caml_parser_trace) log("Discarding last token read");
           env[env_curr_char] = -1;
           cmd = loop;
-          break;
+          continue the_loop;
         }
-      // Fall through
+      // Unreachable
       case 8: //shift:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         env[env_curr_char] = -1;
         if (errflag > 0) errflag--;
-      // Fall through
+      // fallthrough
       case 9: //shift_recover:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         if (caml_parser_trace)
           log("State " + state + ": shift to state " + tables.table[n2]);
         state = tables.table[n2];
@@ -239,7 +244,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           res = GROW_STACKS_1;
           break the_loop;
         }
-      // Fall through
+      // fallthrough
       /* The ML code resizes the stacks */
       case 2: //STACKS_GROWN_1:
         env[env_s_stack][sp + 1] = state;
@@ -247,9 +252,10 @@ function caml_parse_engine(tables, env, cmd, arg) {
         env[env_symb_start_stack][sp + 1] = env[env_symb_start];
         env[env_symb_end_stack][sp + 1] = env[env_symb_end];
         cmd = loop;
-        break;
+        continue the_loop;
 
       case 10: //reduce:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         if (caml_parser_trace) log("State " + state + ": reduce by rule " + n);
         var m = tables.len[n];
         env[env_asp] = sp;
@@ -261,10 +267,10 @@ function caml_parse_engine(tables, env, cmd, arg) {
         n1 = tables.gindex[m];
         n2 = n1 + state1;
         if (
-          n1 != 0 &&
+          n1 !== 0 &&
           n2 >= 0 &&
           n2 <= tables[tbl_tablesize] &&
-          tables.check[n2] == state1
+          tables.check[n2] === state1
         )
           state = tables.table[n2];
         else state = tables.dgoto[m];
@@ -272,7 +278,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           res = GROW_STACKS_2;
           break the_loop;
         }
-      // Fall through
+      // fallthrough
       /* The ML code resizes the stacks */
       case 3: //STACKS_GROWN_2:
         res = COMPUTE_SEMANTIC_ACTION;
@@ -288,7 +294,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           env[env_symb_start_stack][sp + 1] = env[env_symb_end_stack][asp + 1];
         }
         cmd = loop;
-        break;
+        continue the_loop;
       /* Should not happen */
       default:
         return RAISE_PARSE_ERROR;

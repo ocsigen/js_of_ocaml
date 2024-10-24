@@ -185,7 +185,7 @@ let%expect_test "static eval of tags" =
        "use strict";
        var runtime = globalThis.jsoo_runtime;
        function caml_call1(f, a0){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 1
+        return (f.l >= 0 ? f.l : f.l = f.length) === 1
                 ? f(a0)
                 : runtime.caml_call_gen(f, [a0]);
        }
@@ -204,4 +204,5 @@ let%expect_test "static eval of tags" =
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

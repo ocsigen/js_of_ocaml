@@ -148,6 +148,7 @@
     delete: (x, y) => delete x[y],
     instanceof: (x, y) => x instanceof y,
     typeof: (x) => typeof x,
+    // biome-ignore lint/suspicious/noDoubleEquals:
     equals: (x, y) => x == y,
     strict_equals: (x, y) => x === y,
     fun_call: (f, o, args) => f.apply(o, args),
@@ -318,7 +319,7 @@
           var s = x.toExponential(prec);
           // exponent should be at least two digits
           var i = s.length;
-          if (s.charAt(i - 3) == "e")
+          if (s.charAt(i - 3) === "e")
             s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
           break;
         case 1:
@@ -332,11 +333,11 @@
           if (exp < -4 || x >= 1e21 || x.toFixed(0).length > prec) {
             // remove trailing zeroes
             var i = j - 1;
-            while (s.charAt(i) == "0") i--;
-            if (s.charAt(i) == ".") i--;
+            while (s.charAt(i) === "0") i--;
+            if (s.charAt(i) === ".") i--;
             s = s.slice(0, i + 1) + s.slice(j);
             i = s.length;
-            if (s.charAt(i - 3) == "e")
+            if (s.charAt(i - 3) === "e")
               s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
             break;
           } else {
@@ -348,8 +349,8 @@
             if (p) {
               // remove trailing zeroes
               var i = s.length - 1;
-              while (s.charAt(i) == "0") i--;
-              if (s.charAt(i) == ".") i--;
+              while (s.charAt(i) === "0") i--;
+              if (s.charAt(i) === ".") i--;
               s = s.slice(0, i + 1);
             }
           }
@@ -410,9 +411,9 @@
     close: (fd) => fs.closeSync(fd),
     write: (fd, b, o, l, p) =>
       fs
-        ? fs.writeSync(fd, b, o, l, p == null ? p : Number(p))
-        : (console[fd == 2 ? "error" : "log"](
-            typeof b == "string" ? b : decoder.decode(b.slice(o, o + l)),
+        ? fs.writeSync(fd, b, o, l, p === null ? p : Number(p))
+        : (console[fd === 2 ? "error" : "log"](
+            typeof b === "string" ? b : decoder.decode(b.slice(o, o + l)),
           ),
           l),
     read: (fd, b, o, l, p) => fs.readSync(fd, b, o, l, p),
@@ -452,13 +453,13 @@
     weak_new: (v) => new WeakRef(v),
     weak_deref: (w) => {
       var v = w.deref();
-      return v == undefined ? null : v;
+      return v === undefined ? null : v;
     },
     weak_map_new: () => new WeakMap(),
     map_new: () => new Map(),
     map_get: (m, x) => {
       var v = m.get(x);
-      return v == undefined ? null : v;
+      return v === undefined ? null : v;
     },
     map_set: (m, x, v) => m.set(x, v),
     map_delete: (m, x) => m.delete(x),

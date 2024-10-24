@@ -44,47 +44,91 @@ type map =
       ; ori_name : int
       }
 
+module Offset : sig
+  type t =
+    { gen_line : int
+    ; gen_column : int
+    }
+end
+
 module Mappings : sig
+  type decoded = map list
+
   type t
+  (** Represent the a list of mapping in its encoded form. *)
 
   val empty : t
-  (** Represents the empty mapping. *)
+  (** The empty mapping. *)
 
-  val of_string : string -> t
-  (** By default, mappings are left uninterpreted, since many operations can be
-      performed efficiently directly on the encoded form. Therefore this
-      function is mostly a no-op and very cheap. It does not perform any
+  val of_string_unsafe : string -> t
+  (** [of_string_unsafe] does not perform any
       validation of its argument, unlike {!val:decode}. It is guaranteed that
-      {!val:of_string} and {!val:to_string} are inverse functions. *)
+      {!val:of_string_unsafe} and {!val:to_string} are inverse functions.
+      Time complexity O(1) *)
 
-  val decode : t -> map list
+  val decode_exn : t -> decoded
   (** Parse the mappings. *)
 
-  val encode : map list -> t
+  val encode : decoded -> t
+  (** Encode the mappings. *)
+
+  val encode_with_offset : decoded -> Offset.t * t
+  (** Encode the mappings shifted by the returned offset so that the
+      encoded mapping is more compact. This is useful to combining
+      multiple mappings into an [Index.t] *)
+
+  val number_of_lines : t -> int
+
+  val first_line : t -> int
 
   val to_string : t -> string
-  (** Returns the mappings as a string in the Source map v3 format. This
-      function is mostly a no-op and is very cheap. *)
+  (** Returns the mappings as a string in the Source map v3 format.
+    Time complexity O(1) *)
+end
+
+module Standard : sig
+  type t =
+    { version : int
+    ; file : string option
+    ; sourceroot : string option
+    ; sources : string list
+    ; sources_content : Source_content.t option list option
+    ; names : string list
+    ; mappings : Mappings.t
+          (** Left uninterpreted, since most useful operations can be performed efficiently
+          directly on the encoded form, and a full decoding can be costly for big
+          sourcemaps. *)
+    ; ignore_list : string list
+    }
+
+  val filter_map : t -> f:(int -> int option) -> t
+  (** If [f l] returns [Some l'], map line [l] to [l'] (in the generated file) in
+    the returned debug mappings. If [f l] returns [None], remove debug mappings
+    which concern line [l] of the generated file. *)
+
+  val merge : t list -> t option
+  (** Merge two lists of debug mappings. The time cost of the merge is more than
+    linear in function of the size of the input mappings. *)
+
+  val empty : inline_source_content:bool -> t
+end
+
+module Index : sig
+  type section =
+    { offset : Offset.t
+    ; map : Standard.t
+    }
+
+  type t =
+    { version : int
+    ; file : string option
+    ; sections : section list
+    }
 end
 
 type t =
-  { version : int
-  ; file : string
-  ; sourceroot : string option
-  ; sources : string list
-  ; sources_content : Source_content.t option list option
-  ; names : string list
-  ; mappings : Mappings.t
-        (** Left uninterpreted, since most useful operations can be performed efficiently
-          directly on the encoded form, and a full decoding can be costly for big
-          sourcemaps. *)
-  }
-
-val filter_map : t -> f:(int -> int option) -> t
-
-val merge : t list -> t option
-
-val empty : filename:string -> t
+  | Standard of Standard.t
+  | Index of Index.t
 
 val to_string : t -> string
 
@@ -93,3 +137,11 @@ val to_file : t -> string -> unit
 val of_string : string -> t
 
 val of_file : string -> t
+
+val invariant : t -> unit
+
+type info =
+  { mappings : Mappings.decoded
+  ; sources : string list
+  ; names : string list
+  }

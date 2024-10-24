@@ -56,12 +56,12 @@ let%expect_test _ =
         runtime = globalThis.jsoo_runtime,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
        function caml_call1(f, a0){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 1
+        return (f.l >= 0 ? f.l : f.l = f.length) === 1
                 ? f(a0)
                 : runtime.caml_call_gen(f, [a0]);
        }
        function caml_call2(f, a0, a1){
-        return (f.l >= 0 ? f.l : f.l = f.length) == 2
+        return (f.l >= 0 ? f.l : f.l = f.length) === 2
                 ? f(a0, a1)
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
@@ -119,7 +119,8 @@ let%expect_test _ =
        return;
       }
       (globalThis));
-    //end |}];
+    //end
+    |}];
   [%expect {| |}];
   Util.compile_and_run
     ~flags:[]

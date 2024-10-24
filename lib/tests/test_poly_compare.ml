@@ -36,7 +36,7 @@ let%expect_test "poly equal neg" =
 let%expect_test "poly compare" =
   let obj1 = Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |] in
   let obj2 = Js.Unsafe.obj [| "a", Js.Unsafe.inject 0 |] in
-  (match List.sort compare [ obj1; obj1 ] with
+  (match List.sort compare [ obj1; obj2 ] with
   | [ a; b ] ->
       if a == obj1 && b == obj2
       then print_endline "preserve"
@@ -98,6 +98,15 @@ let%expect_test "object comparison" =
   assert (compare s1 s2 = 1);
   assert (compare s2 s1 = 1)
 
+let%expect_test "null/undefined comparison" =
+  let s1 = Pack (Js.Unsafe.js_expr "undefined") in
+  let s2 = Pack (Js.Unsafe.js_expr "null") in
+  assert (s1 <> s2);
+  assert (s1 = s1);
+  assert (compare s1 s1 = 0);
+  assert (compare s1 s2 = 1);
+  assert (compare s2 s1 = 1)
+
 let%expect_test "poly compare" =
   let l =
     [ Pack (object end)
@@ -119,10 +128,11 @@ let%expect_test "poly compare" =
     3
     2
     0
-    6
     7
+    6
     5
-    4 |}];
+    4
+    |}];
   let l' = List.sort (fun (_, a) (_, b) -> compare a b) (List.rev l) in
   let l'' = List.sort (fun (_, a) (_, b) -> compare a b) (List.rev l') in
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l';
@@ -134,8 +144,9 @@ let%expect_test "poly compare" =
     0
     4
     5
+    6
     7
-    6 |}];
+    |}];
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l'';
   print_endline "";
   [%expect {|

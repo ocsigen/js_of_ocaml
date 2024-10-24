@@ -96,7 +96,7 @@ function nth_digit_nat_native(nat, ofs) {
 //Provides: num_digits_nat
 function num_digits_nat(nat, ofs, len) {
   for (var i = len - 1; i >= 0; i--) {
-    if (nat.data[ofs + i] != 0) return i + 1;
+    if (nat.data[ofs + i] !== 0) return i + 1;
   }
   return 1; // 0 counts as 1 digit
 }
@@ -139,7 +139,7 @@ function is_digit_int(nat, ofs) {
 
 //Provides: is_digit_zero
 function is_digit_zero(nat, ofs) {
-  if (nat.data[ofs] == 0) return 1;
+  if (nat.data[ofs] === 0) return 1;
   return 0;
 }
 
@@ -155,7 +155,7 @@ function incr_nat(nat, ofs, len, carry_in) {
   for (var i = 0; i < len; i++) {
     var x = (nat.data[ofs + i] >>> 0) + carry;
     nat.data[ofs + i] = x | 0;
-    if (x == x >>> 0) {
+    if (x === x >>> 0) {
       carry = 0;
       break;
     } else {
@@ -173,7 +173,7 @@ function add_nat(nat1, ofs1, len1, nat2, ofs2, len2, carry_in) {
   for (var i = 0; i < len2; i++) {
     var x = (nat1.data[ofs1 + i] >>> 0) + (nat2.data[ofs2 + i] >>> 0) + carry;
     nat1.data[ofs1 + i] = x;
-    if (x == x >>> 0) {
+    if (x === x >>> 0) {
       carry = 0;
     } else {
       carry = 1;
@@ -192,7 +192,7 @@ function complement_nat(nat, ofs, len) {
 // ocaml flips carry_in
 //Provides: decr_nat
 function decr_nat(nat, ofs, len, carry_in) {
-  var borrow = carry_in == 1 ? 0 : 1;
+  var borrow = carry_in === 1 ? 0 : 1;
   for (var i = 0; i < len; i++) {
     var x = (nat.data[ofs + i] >>> 0) - borrow;
     nat.data[ofs + i] = x;
@@ -203,7 +203,7 @@ function decr_nat(nat, ofs, len, carry_in) {
       borrow = 1;
     }
   }
-  return borrow == 1 ? 0 : 1;
+  return borrow === 1 ? 0 : 1;
 }
 
 // ocaml flips carry_in
@@ -211,7 +211,7 @@ function decr_nat(nat, ofs, len, carry_in) {
 //Provides: sub_nat
 //Requires: decr_nat
 function sub_nat(nat1, ofs1, len1, nat2, ofs2, len2, carry_in) {
-  var borrow = carry_in == 1 ? 0 : 1;
+  var borrow = carry_in === 1 ? 0 : 1;
   for (var i = 0; i < len2; i++) {
     var x = (nat1.data[ofs1 + i] >>> 0) - (nat2.data[ofs2 + i] >>> 0) - borrow;
     nat1.data[ofs1 + i] = x;
@@ -221,7 +221,7 @@ function sub_nat(nat1, ofs1, len1, nat2, ofs2, len2, carry_in) {
       borrow = 1;
     }
   }
-  return decr_nat(nat1, ofs1 + len2, len1 - len2, borrow == 1 ? 0 : 1);
+  return decr_nat(nat1, ofs1 + len2, len1 - len2, borrow === 1 ? 0 : 1);
 }
 
 // nat1 += nat2 * nat3[ofs3]
@@ -293,7 +293,7 @@ function square_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
 // 0 <= shift < 32
 //Provides: shift_left_nat
 function shift_left_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
-  if (nbits == 0) {
+  if (nbits === 0) {
     nat2.data[ofs2] = 0;
     return 0;
   }
@@ -339,7 +339,7 @@ function div_digit_nat(natq, ofsq, natr, ofsr, nat1, ofs1, len, nat2, ofs2) {
 //Provides: div_nat
 //Requires: div_digit_nat, div_helper, num_leading_zero_bits_in_digit, shift_left_nat, shift_right_nat, create_nat, set_to_zero_nat, mult_digit_nat, sub_nat, compare_nat, nat_of_array
 function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
-  if (len2 == 1) {
+  if (len2 === 1) {
     div_digit_nat(nat1, ofs1 + 1, nat1, ofs1, nat1, ofs1, len1, nat2, ofs2);
     return 0;
   }
@@ -353,7 +353,7 @@ function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
   for (var i = len1 - 1; i >= len2; i--) {
     // Decent lower bound on quo
     var quo =
-      d == 4294967296
+      d === 4294967296
         ? nat1.data[ofs1 + i] >>> 0
         : div_helper(
             nat1.data[ofs1 + i] >>> 0,
@@ -365,7 +365,7 @@ function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
     sub_nat(nat1, ofs1 + i - len2, len2 + 1, a, 0, len2 + 1, 1);
 
     while (
-      nat1.data[ofs1 + i] != 0 ||
+      nat1.data[ofs1 + i] !== 0 ||
       compare_nat(nat1, ofs1 + i - len2, len2, nat2, ofs2, len2) >= 0
     ) {
       quo = quo + 1;
@@ -383,7 +383,7 @@ function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
 // 0 <= shift < 32
 //Provides: shift_right_nat
 function shift_right_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
-  if (nbits == 0) {
+  if (nbits === 0) {
     nat2.data[ofs2] = 0;
     return 0;
   }

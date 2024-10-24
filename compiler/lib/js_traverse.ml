@@ -187,7 +187,7 @@ class map : mapper =
           ForAwaitOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
       | Continue_statement s -> Continue_statement s
       | Break_statement s -> Break_statement s
-      | Return_statement e -> Return_statement (m#expression_o e)
+      | Return_statement (e, loc) -> Return_statement (m#expression_o e, m#loc loc)
       | Labelled_statement (l, (s, loc)) ->
           Labelled_statement (l, (m#statement s, m#loc loc))
       | Throw_statement e -> Throw_statement (m#expression e)
@@ -314,8 +314,8 @@ class map : mapper =
       | EAccess (e1, ak, e2) -> EAccess (m#expression e1, ak, m#expression e2)
       | EDot (e1, ak, id) -> EDot (m#expression e1, ak, id)
       | EDotPrivate (e1, ak, id) -> EDotPrivate (m#expression e1, ak, id)
-      | ENew (e1, args) ->
-          ENew (m#expression e1, Option.map ~f:(List.map ~f:m#argument) args)
+      | ENew (e1, args, loc) ->
+          ENew (m#expression e1, Option.map ~f:(List.map ~f:m#argument) args, m#loc loc)
       | EVar v -> EVar (m#ident v)
       | EFun (idopt, fun_decl) ->
           let idopt = Option.map ~f:m#ident idopt in
@@ -549,7 +549,7 @@ class iter : iterator =
           m#statement s
       | Continue_statement _ -> ()
       | Break_statement _ -> ()
-      | Return_statement e -> m#expression_o e
+      | Return_statement (e, _) -> m#expression_o e
       | Labelled_statement (_, (s, _)) -> m#statement s
       | Throw_statement e -> m#expression e
       | Switch_statement (e, l, def, l') ->
@@ -668,10 +668,10 @@ class iter : iterator =
           m#expression e2
       | EDot (e1, _ak, _) -> m#expression e1
       | EDotPrivate (e1, _, _) -> m#expression e1
-      | ENew (e1, Some args) ->
+      | ENew (e1, Some args, _) ->
           m#expression e1;
           List.iter args ~f:m#argument
-      | ENew (e1, None) -> m#expression e1
+      | ENew (e1, None, _) -> m#expression e1
       | EVar v -> m#ident v
       | EFun (idopt, fun_decl) ->
           (match idopt with
@@ -1750,8 +1750,16 @@ class simpl =
           | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse rem
           (* if (e1) return e2 else return e3 --> return e1 ? e2 : e3 *)
           | If_statement
-              (cond, (Return_statement (Some e1), _), Some (Return_statement (Some e2), _))
-            -> (Return_statement (Some (ECond (cond, e1, e2))), loc) :: rem
+              ( cond
+              , (Return_statement (Some e1, _), _)
+              , Some (Return_statement (Some e2, _), _) ) ->
+              ( Return_statement
+                  ( Some (ECond (cond, e1, e2))
+                  , U
+                    (*TODO: it would be better to use the location of the
+                      end of the function, but we can't easily get it. *) )
+              , loc )
+              :: rem
           (* if (e1) v1 = e2 else v1 = e3 --> v1 = e1 ? e2 : e3 *)
           | If_statement
               ( cond

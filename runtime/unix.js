@@ -264,7 +264,7 @@ function caml_unix_rmdir(name) {
 function caml_unix_symlink(to_dir, src, dst) {
   var src_root = resolve_fs_device(src);
   var dst_root = resolve_fs_device(dst);
-  if (src_root.device != dst_root.device)
+  if (src_root.device !== dst_root.device)
     caml_failwith("caml_unix_symlink: cannot symlink between two filesystems");
   if (!src_root.device.symlink) {
     caml_failwith("caml_unix_symlink: not implemented");

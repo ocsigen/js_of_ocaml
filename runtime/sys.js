@@ -49,11 +49,11 @@ function caml_is_special_exception(exn) {
 //Requires: MlBytes, caml_is_special_exception
 function caml_format_exception(exn) {
   var r = "";
-  if (exn[0] == 0) {
+  if (exn[0] === 0) {
     r += exn[1][1];
     if (
-      exn.length == 3 &&
-      exn[2][0] == 0 &&
+      exn.length === 3 &&
+      exn[2][0] === 0 &&
       caml_is_special_exception(exn[1])
     ) {
       var bucket = exn[2];
@@ -66,15 +66,15 @@ function caml_format_exception(exn) {
     for (var i = start; i < bucket.length; i++) {
       if (i > start) r += ", ";
       var v = bucket[i];
-      if (typeof v == "number") r += v.toString();
+      if (typeof v === "number") r += v.toString();
       else if (v instanceof MlBytes) {
         r += '"' + v.toString() + '"';
-      } else if (typeof v == "string") {
+      } else if (typeof v === "string") {
         r += '"' + v.toString() + '"';
       } else r += "_";
     }
     r += ")";
-  } else if (exn[0] == 248) {
+  } else if (exn[0] === 248) {
     r += exn[1];
   }
   return r;
@@ -83,7 +83,7 @@ function caml_format_exception(exn) {
 //Provides: caml_fatal_uncaught_exception
 //Requires: caml_named_value, caml_format_exception, caml_callback
 function caml_fatal_uncaught_exception(err) {
-  if (Array.isArray(err) && (err[0] == 0 || err[0] == 248)) {
+  if (Array.isArray(err) && (err[0] === 0 || err[0] === 248)) {
     var handler = caml_named_value("Printexc.handle_uncaught_exception");
     if (handler) caml_callback(handler, [err, false]);
     else {
@@ -98,21 +98,27 @@ function caml_fatal_uncaught_exception(err) {
   }
 }
 
+//Provides: jsoo_static_env
+var jsoo_static_env = {};
+
 //Provides: caml_set_static_env
+//Requires: jsoo_static_env
 function caml_set_static_env(k, v) {
-  if (!globalThis.jsoo_static_env) globalThis.jsoo_static_env = {};
-  globalThis.jsoo_static_env[k] = v;
+  jsoo_static_env[k] = v;
   return 0;
 }
 
 //Provides: jsoo_sys_getenv (const)
+//Requires: jsoo_static_env
 function jsoo_sys_getenv(n) {
+  if (jsoo_static_env[n]) return jsoo_static_env[n];
   var process = globalThis.process;
   //nodejs env
-  if (process && process.env && process.env[n] != undefined)
+  if (process && process.env && process.env[n] !== undefined)
     return process.env[n];
-  if (globalThis.jsoo_static_env && globalThis.jsoo_static_env[n])
-    return globalThis.jsoo_static_env[n];
+  if (globalThis.jsoo_env && typeof globalThis.jsoo_env[n] === "string") {
+    return globalThis.jsoo_env[n];
+  }
 }
 
 //Provides: caml_sys_getenv (const)
@@ -186,7 +192,7 @@ function caml_sys_executable_name(a) {
 //Requires: caml_jsstring_of_string
 function caml_sys_system_command(cmd) {
   var cmd = caml_jsstring_of_string(cmd);
-  if (typeof require != "undefined") {
+  if (typeof require !== "undefined") {
     var child_process = require("node:child_process");
     if (child_process && child_process.execSync)
       try {
@@ -260,17 +266,17 @@ function caml_sys_const_max_wosize() {
 //Provides: caml_sys_const_ostype_unix const
 //Requires: os_type
 function caml_sys_const_ostype_unix() {
-  return os_type == "Unix" ? 1 : 0;
+  return os_type === "Unix" ? 1 : 0;
 }
 //Provides: caml_sys_const_ostype_win32 const
 //Requires: os_type
 function caml_sys_const_ostype_win32() {
-  return os_type == "Win32" ? 1 : 0;
+  return os_type === "Win32" ? 1 : 0;
 }
 //Provides: caml_sys_const_ostype_cygwin const
 //Requires: os_type
 function caml_sys_const_ostype_cygwin() {
-  return os_type == "Cygwin" ? 1 : 0;
+  return os_type === "Cygwin" ? 1 : 0;
 }
 
 //Provides: caml_sys_const_backend_type const
@@ -283,7 +289,7 @@ function caml_sys_const_backend_type() {
 var os_type =
   globalThis.process &&
   globalThis.process.platform &&
-  globalThis.process.platform == "win32"
+  globalThis.process.platform === "win32"
     ? "Win32"
     : "Unix";
 

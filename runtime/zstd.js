@@ -62,7 +62,7 @@ var zstd_decompress = (function () {
   // read Zstandard frame header
   var rzfh = function (dat, w) {
     var n3 = dat[0] | (dat[1] << 8) | (dat[2] << 16);
-    if (n3 == 0x2fb528 && dat[3] == 253) {
+    if (n3 === 0x2fb528 && dat[3] === 253) {
       // Zstandard
       var flg = dat[4];
       //    single segment       checksum             dict flag     frame content flag
@@ -74,14 +74,14 @@ var zstd_decompress = (function () {
       // byte
       var bt = 6 - ss;
       // dict bytes
-      var db = df == 3 ? 4 : df;
+      var db = df === 3 ? 4 : df;
       // dictionary id
       var di = rb(dat, bt, db);
       bt += db;
       // frame size bytes
       var fsb = fcf ? 1 << fcf : ss;
       // frame source size
-      var fss = rb(dat, bt, fsb) + (fcf == 1 && 256);
+      var fss = rb(dat, bt, fsb) + (fcf === 1 && 256);
       // window size
       var ws = fss;
       if (!ss) {
@@ -90,21 +90,21 @@ var zstd_decompress = (function () {
         ws = wb + (wb >> 3) * (dat[5] & 7);
       }
       if (ws > 2145386496) err(1);
-      var buf = new u8((w == 1 ? fss || ws : w ? 0 : ws) + 12);
+      var buf = new u8((w === 1 ? fss || ws : w ? 0 : ws) + 12);
       (buf[0] = 1), (buf[4] = 4), (buf[8] = 8);
       return {
         b: bt + fsb,
         y: 0,
         l: 0,
         d: di,
-        w: w && w != 1 ? w : buf.subarray(12),
+        w: w && w !== 1 ? w : buf.subarray(12),
         e: ws,
         o: new i32(buf.buffer, 0, 3),
         u: fss,
         c: cc,
         m: Math.min(131072, ws),
       };
-    } else if (((n3 >> 4) | (dat[3] << 20)) == 0x184d2a5) {
+    } else if (((n3 >> 4) | (dat[3] << 20)) === 0x184d2a5) {
       // skippable
       return b4(dat, 4) + 8;
     }
@@ -161,7 +161,7 @@ var zstd_decompress = (function () {
         if (val > msk1fb) val -= msv;
       }
       freq[++sym] = --val;
-      if (val == -1) {
+      if (val === -1) {
         probs += val;
         syms[--ht] = sym;
       } else probs -= val;
@@ -172,7 +172,7 @@ var zstd_decompress = (function () {
           re = ((dat[rbt] | (dat[rbt + 1] << 8)) >> (tpos & 7)) & 3;
           tpos += 2;
           sym += re;
-        } while (re == 3);
+        } while (re === 3);
       }
     }
     if (sym > 255 || probs) err(0);
@@ -306,7 +306,7 @@ var zstd_decompress = (function () {
       var pv = ri[i];
       fill(nb, i, pv, (ri[i - 1] = pv + rc[i] * (1 << (mb - i))));
     }
-    if (ri[0] != ts) err(0);
+    if (ri[0] !== ts) err(0);
     for (i = 0; i < wc; ++i) {
       var bits = hw[i];
       if (bits) {
@@ -400,7 +400,7 @@ var zstd_decompress = (function () {
       out[++i] = hu.s[st];
       pos -= btr = hu.n[st];
     }
-    if (pos != eb || i + 1 != ss) err(0);
+    if (pos !== eb || i + 1 !== ss) err(0);
   };
   // decode huffman stream 4x
   // TODO: use workers to parallelize
@@ -438,7 +438,7 @@ var zstd_decompress = (function () {
     var sz = (b0 >> 3) | (dat[bt + 1] << 5) | (dat[bt + 2] << 13);
     // end byte for block
     var ebt = (bt += 3) + sz;
-    if (btype == 1) {
+    if (btype === 1) {
       if (bt >= dat.length) return;
       st.b = bt + 1;
       if (out) {
@@ -448,7 +448,7 @@ var zstd_decompress = (function () {
       return fill(new u8(sz), dat[bt]);
     }
     if (ebt > dat.length) return;
-    if (btype == 0) {
+    if (btype === 0) {
       st.b = ebt;
       if (out) {
         out.set(dat.subarray(bt, ebt), st.y);
@@ -457,7 +457,7 @@ var zstd_decompress = (function () {
       }
       return slc(dat, bt, ebt);
     }
-    if (btype == 2) {
+    if (btype === 2) {
       //    byte 3        lit btype     size format
       var b3 = dat[bt],
         lbt = b3 & 3,
@@ -474,7 +474,7 @@ var zstd_decompress = (function () {
         if (sf < 2)
           (lss |= (dat[++bt] & 63) << 4),
             (lcs = (dat[bt] >> 6) | (dat[++bt] << 2));
-        else if (sf == 2)
+        else if (sf === 2)
           (lss |= (dat[++bt] << 4) | ((dat[++bt] & 3) << 12)),
             (lcs = (dat[bt] >> 2) | (dat[++bt] << 6));
         else
@@ -486,12 +486,12 @@ var zstd_decompress = (function () {
       var buf = out ? out.subarray(st.y, st.y + st.m) : new u8(st.m);
       // starting point for literals
       var spl = buf.length - lss;
-      if (lbt == 0) buf.set(dat.subarray(bt, (bt += lss)), spl);
-      else if (lbt == 1) fill(buf, dat[bt++], spl);
+      if (lbt === 0) buf.set(dat.subarray(bt, (bt += lss)), spl);
+      else if (lbt === 1) fill(buf, dat[bt++], spl);
       else {
         // huffman table
         var hu = st.h;
-        if (lbt == 2) {
+        if (lbt === 2) {
           var hud = rhu(dat, bt);
           // subtract description length
           lcs += bt - (bt = hud[0]);
@@ -502,7 +502,7 @@ var zstd_decompress = (function () {
       // num sequences
       var ns = dat[bt++];
       if (ns) {
-        if (ns == 255) ns = (dat[bt++] | (dat[bt++] << 8)) + 0x7f00;
+        if (ns === 255) ns = (dat[bt++] | (dat[bt++] << 8)) + 0x7f00;
         else if (ns > 127) ns = ((ns - 128) << 8) | dat[bt++];
         // symbol compression modes
         var scm = dat[bt++];
@@ -510,7 +510,7 @@ var zstd_decompress = (function () {
         var dts = [dmlt, doct, dllt];
         for (var i = 2; i > -1; --i) {
           var md = (scm >> ((i << 1) + 2)) & 3;
-          if (md == 1) {
+          if (md === 1) {
             // rle buf
             var rbuf = new u8([0, 0, dat[bt++]]);
             dts[i] = {
@@ -519,10 +519,10 @@ var zstd_decompress = (function () {
               t: new u16(rbuf.buffer, 0, 1),
               b: 0,
             };
-          } else if (md == 2) {
+          } else if (md === 2) {
             // accuracy log 8 for offsets, 9 for others
             (_a = rfse(dat, bt, 9 - (i & 1))), (bt = _a[0]), (dts[i] = _a[1]);
-          } else if (md == 3) {
+          } else if (md === 3) {
             if (!st.t) err(0);
             dts[i] = st.t[i];
           }
@@ -593,9 +593,9 @@ var zstd_decompress = (function () {
             st.o[1] = st.o[0];
             st.o[0] = off -= 3;
           } else {
-            var idx = off - (ll != 0);
+            var idx = off - (ll !== 0);
             if (idx) {
-              off = idx == 3 ? st.o[0] - 1 : st.o[idx];
+              off = idx === 3 ? st.o[0] - 1 : st.o[idx];
               if (idx > 1) st.o[2] = st.o[1];
               st.o[1] = st.o[0];
               st.o[0] = off;
@@ -620,7 +620,7 @@ var zstd_decompress = (function () {
           }
           oubt += ml;
         }
-        if (oubt != spl) {
+        if (oubt !== spl) {
           while (spl < buf.length) {
             buf[oubt++] = buf[spl++];
           }
@@ -644,7 +644,7 @@ var zstd_decompress = (function () {
   };
   // concat
   var cct = function (bufs, ol) {
-    if (bufs.length == 1) return bufs[0];
+    if (bufs.length === 1) return bufs[0];
     var buf = new u8(ol);
     for (var i = 0, b = 0; i < bufs.length; ++i) {
       var chk = bufs[i];
@@ -669,10 +669,10 @@ var zstd_decompress = (function () {
       ol = 0;
     while (dat.length) {
       var st = rzfh(dat, nb || buf);
-      if (typeof st == "object") {
+      if (typeof st === "object") {
         if (nb) {
           buf = null;
-          if (st.w.length == st.u) {
+          if (st.w.length === st.u) {
             bufs.push((buf = st.w));
             ol += st.u;
           }

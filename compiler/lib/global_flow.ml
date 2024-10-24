@@ -47,7 +47,7 @@ let return_values p =
               { fold = fold_children }
               (fun pc s ->
                 let block = Addr.Map.find pc p.blocks in
-                match fst block.branch with
+                match block.branch with
                 | Return x -> Var.Set.add x s
                 | _ -> s)
               pc
@@ -238,14 +238,14 @@ let program_deps st { start; blocks; _ } =
     { Code.fold = Code.fold_children }
     (fun pc () ->
       match Addr.Map.find pc blocks with
-      | { branch = Return x, _; _ } -> do_escape st Escape x
+      | { branch = Return x; _ } -> do_escape st Escape x
       | _ -> ())
     start
     blocks
     ();
   Addr.Map.iter
     (fun _ block ->
-      List.iter block.body ~f:(fun (i, _) ->
+      List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, e) ->
               add_expr_def st x e;
@@ -254,8 +254,8 @@ let program_deps st { start; blocks; _ } =
           | Set_field (x, _, _, y) | Array_set (x, _, y) ->
               possibly_mutable st x;
               do_escape st Escape y
-          | Offset_ref _ -> ());
-      match fst block.branch with
+          | Event _ | Offset_ref _ -> ());
+      match block.branch with
       | Return _ | Stop -> ()
       | Raise (x, _) -> do_escape st Escape x
       | Branch cont | Poptrap cont -> cont_deps blocks st cont
@@ -282,7 +282,7 @@ let program_deps st { start; blocks; _ } =
                   (fun pc tags ->
                     let block = Addr.Map.find pc blocks in
                     List.iter
-                      ~f:(fun (i, _) ->
+                      ~f:(fun i ->
                         match i with
                         | Let (y, Field (x', _, _)) when Var.equal b x' ->
                             Hashtbl.add st.known_cases y tags

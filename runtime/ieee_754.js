@@ -18,11 +18,11 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: jsoo_floor_log2
-var log2_ok = Math.log2 && Math.log2(1.1235582092889474e307) == 1020;
+var log2_ok = Math.log2 && Math.log2(1.1235582092889474e307) === 1020;
 function jsoo_floor_log2(x) {
   if (log2_ok) return Math.floor(Math.log2(x));
   var i = 0;
-  if (x == 0) return Number.NEGATIVE_INFINITY;
+  if (x === 0) return Number.NEGATIVE_INFINITY;
   if (x >= 1) {
     while (x >= 2) {
       x /= 2;
@@ -46,7 +46,11 @@ function caml_int64_bits_of_float(x) {
     else return caml_int64_create_lo_mi_hi(0, 0, 0xfff0);
   }
   var sign =
-    x == 0 && 1 / x == Number.NEGATIVE_INFINITY ? 0x8000 : x >= 0 ? 0 : 0x8000;
+    x === 0 && 1 / x === Number.NEGATIVE_INFINITY
+      ? 0x8000
+      : x >= 0
+        ? 0
+        : 0x8000;
   if (sign) x = -x;
   // Int64.bits_of_float 1.1235582092889474E+307 = 0x7fb0000000000000L
   // using Math.LOG2E*Math.log(x) in place of Math.log2 result in precision lost
@@ -60,7 +64,7 @@ function caml_int64_bits_of_float(x) {
       x *= 2;
       exp -= 1;
     }
-    if (exp == 0) {
+    if (exp === 0) {
       x /= 2;
     }
   }
@@ -93,10 +97,10 @@ function caml_hexstring_of_float(x, prec, style) {
     if (Number.isNaN(x)) return caml_string_of_jsstring("nan");
     return caml_string_of_jsstring(x > 0 ? "infinity" : "-infinity");
   }
-  var sign = x == 0 && 1 / x == Number.NEGATIVE_INFINITY ? 1 : x >= 0 ? 0 : 1;
+  var sign = x === 0 && 1 / x === Number.NEGATIVE_INFINITY ? 1 : x >= 0 ? 0 : 1;
   if (sign) x = -x;
   var exp = 0;
-  if (x == 0) {
+  if (x === 0) {
   } else if (x < 1) {
     while (x < 1 && exp > -1022) {
       x *= 2;
@@ -137,7 +141,7 @@ function caml_hexstring_of_float(x, prec, style) {
       var size = idx + 1 + prec;
       if (x_str.length < size)
         x_str += caml_str_repeat(size - x_str.length, "0");
-      else x_str = x_str.substr(0, size);
+      else x_str = x_str.slice(0, size);
     }
   }
   return caml_string_of_jsstring(
@@ -151,8 +155,8 @@ function caml_int64_float_of_bits(x) {
   var mi = x.mi;
   var hi = x.hi;
   var exp = (hi & 0x7fff) >> 4;
-  if (exp == 2047) {
-    if ((lo | mi | (hi & 0xf)) == 0)
+  if (exp === 2047) {
+    if ((lo | mi | (hi & 0xf)) === 0)
       return hi & 0x8000 ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
     else return Number.NaN;
   }
@@ -170,14 +174,14 @@ function caml_int64_float_of_bits(x) {
 //Requires: caml_int64_float_of_bits, caml_int64_bits_of_float, caml_int64_add, caml_int64_sub,caml_int64_of_int32
 function caml_nextafter_float(x, y) {
   if (Number.isNaN(x) || Number.isNaN(y)) return Number.NaN;
-  if (x == y) return y;
-  if (x == 0) {
+  if (x === y) return y;
+  if (x === 0) {
     if (y < 0) return -Math.pow(2, -1074);
     else return Math.pow(2, -1074);
   }
   var bits = caml_int64_bits_of_float(x);
   var one = caml_int64_of_int32(1);
-  if (x < y == x > 0) bits = caml_int64_add(bits, one);
+  if (x < y === x > 0) bits = caml_int64_add(bits, one);
   else bits = caml_int64_sub(bits, one);
   return caml_int64_float_of_bits(bits);
 }
@@ -199,7 +203,7 @@ function caml_int32_float_of_bits(x) {
 function caml_classify_float(x) {
   if (Number.isFinite(x)) {
     if (Math.abs(x) >= 2.2250738585072014e-308) return 0;
-    if (x != 0) return 1;
+    if (x !== 0) return 1;
     return 2;
   }
   return Number.isNaN(x) ? 4 : 3;
@@ -242,7 +246,7 @@ function caml_ldexp_float(x, exp) {
 //Provides: caml_frexp_float const
 //Requires: jsoo_floor_log2
 function caml_frexp_float(x) {
-  if (x == 0 || !Number.isFinite(x)) return [0, x, 0];
+  if (x === 0 || !Number.isFinite(x)) return [0, x, 0];
   var neg = x < 0;
   if (neg) x = -x;
   var exp = Math.max(-1023, jsoo_floor_log2(x) + 1);
@@ -264,21 +268,21 @@ function caml_float_compare(x, y) {
   if (x === y) return 0;
   if (x < y) return -1;
   if (x > y) return 1;
-  if (x === x) return 1;
-  if (y === y) return -1;
+  if (!Number.isNaN(x)) return 1;
+  if (!Number.isNaN(y)) return -1;
   return 0;
 }
 
 //Provides: caml_copysign_float const
 function caml_copysign_float(x, y) {
-  if (y == 0) y = 1 / y;
+  if (y === 0) y = 1 / y;
   x = Math.abs(x);
   return y < 0 ? -x : x;
 }
 
 //Provides: caml_signbit_float const
 function caml_signbit_float(x) {
-  if (x == 0) x = 1 / x;
+  if (x === 0) x = 1 / x;
   return x < 0 ? 1 : 0;
 }
 
@@ -412,22 +416,13 @@ function caml_fma_float(x, y, z) {
       : x;
   }
 
-  if (
-    x === 0 ||
-    x !== x ||
-    x === +1 / 0 ||
-    x === -1 / 0 ||
-    y === 0 ||
-    y !== y ||
-    y === +1 / 0 ||
-    y === -1 / 0
-  ) {
+  if (x === 0 || y === 0 || !Number.isFinite(x) || !Number.isFinite(y)) {
     return x * y + z;
   }
   if (z === 0) {
     return x * y;
   }
-  if (z !== z || z === +1 / 0 || z === -1 / 0) {
+  if (!Number.isFinite(z)) {
     return z;
   }
 
@@ -507,7 +502,7 @@ function caml_format_float(fmt, x) {
   var s,
     f = caml_parse_format(fmt);
   var prec = f.prec < 0 ? 6 : f.prec;
-  if (x < 0 || (x == 0 && 1 / x == Number.NEGATIVE_INFINITY)) {
+  if (x < 0 || (x === 0 && 1 / x === Number.NEGATIVE_INFINITY)) {
     f.sign = -1;
     x = -x;
   }
@@ -523,7 +518,7 @@ function caml_format_float(fmt, x) {
         var s = x.toExponential(prec);
         // exponent should be at least two digits
         var i = s.length;
-        if (s.charAt(i - 3) == "e")
+        if (s.charAt(i - 3) === "e")
           s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
         break;
       case "f":
@@ -537,11 +532,11 @@ function caml_format_float(fmt, x) {
         if (exp < -4 || x >= 1e21 || x.toFixed(0).length > prec) {
           // remove trailing zeroes
           var i = j - 1;
-          while (s.charAt(i) == "0") i--;
-          if (s.charAt(i) == ".") i--;
+          while (s.charAt(i) === "0") i--;
+          if (s.charAt(i) === ".") i--;
           s = s.slice(0, i + 1) + s.slice(j);
           i = s.length;
-          if (s.charAt(i - 3) == "e")
+          if (s.charAt(i - 3) === "e")
             s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
           break;
         } else {
@@ -553,8 +548,8 @@ function caml_format_float(fmt, x) {
           if (p) {
             // remove trailing zeroes
             var i = s.length - 1;
-            while (s.charAt(i) == "0") i--;
-            if (s.charAt(i) == ".") i--;
+            while (s.charAt(i) === "0") i--;
+            if (s.charAt(i) === ".") i--;
             s = s.slice(0, i + 1);
           }
         }

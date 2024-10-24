@@ -17,4 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Deliberately empty *)
+(*/*)
+
+val eval_ref : (string -> unit -> Jsoo_runtime.Js.t) ref

@@ -292,7 +292,6 @@ let with_location loc instrs st =
       instrs =
         (match st.instrs with
         | [] -> []
-        | Location _ :: _ when Poly.equal loc No -> st.instrs
         | Location (_, i) :: rem -> Location (loc, i) :: rem
         | i :: rem -> Location (loc, i) :: rem)
     } )

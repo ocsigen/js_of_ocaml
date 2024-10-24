@@ -34,3 +34,5 @@ val t_of_pos : Lexing.position -> t
 val start_position : t -> Lexing.position
 
 val t_of_position : src:string option -> Lexing.position -> t
+
+val to_string : t -> string

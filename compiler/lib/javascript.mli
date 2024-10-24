@@ -197,7 +197,7 @@ and expression =
   | EAccess of expression * access_kind * expression
   | EDot of expression * access_kind * identifier
   | EDotPrivate of expression * access_kind * identifier
-  | ENew of expression * arguments option
+  | ENew of expression * arguments option * location
   | EVar of ident
   | EFun of ident option * function_declaration
   | EClass of ident option * class_declaration
@@ -265,7 +265,7 @@ and statement =
       * (statement * location)
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
-  | Return_statement of expression option
+  | Return_statement of expression option * location
   | With_statement of expression * (statement * location)
   | Labelled_statement of Label.t * (statement * location)
   | Switch_statement of

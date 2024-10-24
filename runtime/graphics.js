@@ -53,7 +53,7 @@ function caml_gr_open_graph(info) {
     if (res) return res[2];
   }
   var specs = [];
-  if (!(info == "")) specs.push(info);
+  if (!(info === "")) specs.push(info);
   var target = get("target");
   if (!target) target = "";
   var status = get("status");
@@ -292,9 +292,9 @@ function caml_gr_arc_aux(ctx, cx, cy, ry, rx, a1, a2) {
       ry * Math.cos(i) * Math.sin(rot * Math.PI) +
       rx * Math.sin(i) * Math.cos(rot * Math.PI);
     yPos = yPos.toFixed(2);
-    if (j == 0) {
+    if (j === 0) {
       ctx.moveTo(xPos, yPos);
-    } else if (xPos_prev != xPos || yPos_prev != yPos) {
+    } else if (xPos_prev !== xPos || yPos_prev !== yPos) {
       ctx.lineTo(xPos, yPos);
     }
     xPos_prev = xPos;
@@ -419,7 +419,7 @@ function caml_gr_make_image(arr) {
     for (var j = 0; j < w; j++) {
       var c = arr[i + 1][j + 1];
       var o = i * (w * 4) + j * 4;
-      if (c == -1) {
+      if (c === -1) {
         im.data[o + 0] = 0;
         im.data[o + 1] = 0;
         im.data[o + 2] = 0;

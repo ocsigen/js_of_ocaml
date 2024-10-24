@@ -34,10 +34,6 @@ val add_start_function : context:Wa_code_generation.context -> Wa_ast.var -> uni
 
 val add_init_function : context:Wa_code_generation.context -> to_link:string list -> unit
 
-val output :
-     out_channel
-  -> context:Wa_code_generation.context
-  -> debug:Parse_bytecode.Debug.t
-  -> unit
+val output : out_channel -> context:Wa_code_generation.context -> unit
 
 val wasm_output : out_channel -> context:Wa_code_generation.context -> unit

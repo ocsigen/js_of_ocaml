@@ -496,7 +496,7 @@ let coloring js =
 let output formatter ~source_map () js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Writing file...@.";
-  let sm = Js_output.program formatter ?source_map js in
+  let sm = Js_output.program formatter ~source_map js in
   if times () then Format.eprintf "  write: %a@." Timer.print t;
   sm
 
@@ -713,8 +713,8 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
   emit formatter optimized_code
 
 let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
-  let (_ : Source_map.t option) =
-    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:None ~formatter d p
+  let (_ : Source_map.info) =
+    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:false ~formatter d p
   in
   ()
 
@@ -723,7 +723,7 @@ let f
     ?(wrap_with_fun = `Iife)
     ?(profile = O1)
     ~link
-    ?source_map
+    ~source_map
     ~formatter
     d
     p =
