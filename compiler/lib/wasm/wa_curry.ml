@@ -257,7 +257,13 @@ module Make (Target : Wa_target_sig.S) = struct
         (fun ~typ closure ->
           let* l = expression_list load l in
           call ?typ ~cps:true ~arity closure l)
-        (let* args = Memory.allocate ~tag:0 (List.map ~f:(fun x -> `Var x) (List.tl l)) in
+        (let* args =
+           (* We don't need the deadcode sentinal when the tag is 0 *)
+           Memory.allocate
+             ~tag:0
+             ~deadcode_sentinal:(Code.Var.fresh ())
+             (List.map ~f:(fun x -> `Var x) (List.tl l))
+         in
          let* make_iterator =
            register_import ~name:"caml_apply_continuation" (Fun (func_type 0))
          in

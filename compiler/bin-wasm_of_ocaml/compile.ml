@@ -146,7 +146,9 @@ let generate_prelude ~out_file =
     | Some p -> p
     | None -> assert false
   in
-  let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize ~profile code in
+  let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
+    Driver.optimize ~profile code
+  in
   let context = Wa_generate.start () in
   let debug = Parse_bytecode.Debug.create ~include_cmis:false false in
   let _ =
@@ -155,6 +157,7 @@ let generate_prelude ~out_file =
       ~unit_name:(Some "prelude")
       ~live_vars:variable_uses
       ~in_cps
+      ~deadcode_sentinal
       ~debug
       program
   in
@@ -305,11 +308,20 @@ let run
       | None, Some p -> p
       | None, None -> assert false
     in
-    let Driver.{ program; variable_uses; in_cps; _ } = Driver.optimize ~profile code in
+    let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
+      Driver.optimize ~profile code
+    in
     let context = Wa_generate.start () in
     let debug = one.debug in
     let toplevel_name, generated_js =
-      Wa_generate.f ~context ~unit_name ~live_vars:variable_uses ~in_cps ~debug program
+      Wa_generate.f
+        ~context
+        ~unit_name
+        ~live_vars:variable_uses
+        ~in_cps
+        ~deadcode_sentinal
+        ~debug
+        program
     in
     if standalone then Wa_generate.add_start_function ~context toplevel_name;
     Wa_generate.output ch ~context ~debug;

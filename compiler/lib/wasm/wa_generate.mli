@@ -26,6 +26,7 @@ val f :
   -> Code.program
   -> live_vars:int array
   -> in_cps:Effects.in_cps
+  -> deadcode_sentinal:Code.Var.t
   -> debug:Parse_bytecode.Debug.t
   -> Wa_ast.var * (string list * (string * Javascript.expression) list)
 
