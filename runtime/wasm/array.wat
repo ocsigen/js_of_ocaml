@@ -64,6 +64,30 @@
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (array.new $float_array (f64.const 0) (local.get $sz)))
 
+   (func (export "caml_make_array") (param $vinit (ref eq)) (result (ref eq))
+      (local $init (ref $block)) (local $res (ref $float_array))
+      (local $size i32) (local $i i32)
+      (local.set $init (ref.cast (ref $block) (local.get $vinit)))
+      (local.set $size (array.len (local.get $init)))
+      (if (i32.ne (local.get $size) (i32.const 1))
+         (then
+            (if (ref.test (ref $float)
+                   (array.get $block (local.get $init) (i32.const 1)))
+               (then
+                  (local.set $size (i32.sub (local.get $size) (i32.const 1)))
+                  (local.set $res
+                     (array.new $float_array (f64.const 0) (local.get $size)))
+                  (loop $loop
+                     (array.set $float_array (local.get $res) (local.get $i)
+                        (struct.get $float 0
+                           (ref.cast (ref $float)
+                              (array.get $block (local.get $init)
+                                 (i32.add (local.get $i) (i32.const 1))))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br_if $loop (i32.lt_u (local.get $i) (local.get $size))))
+                  (return (local.get $res))))))
+      (return (local.get $init)))
+
    (func (export "caml_floatarray_unsafe_get")
       (param $a (ref eq)) (param $i (ref eq)) (result (ref eq))
       (struct.new $float
