@@ -191,8 +191,7 @@ and instruction =
   | StructSet of var * int * expression * expression
   | Return_call of var * expression list
   | Return_call_ref of var * expression * expression list
-  | Location of Parse_info.t option * instruction
-      (** Instruction with attached location information *)
+  | Event of Parse_info.t  (** Location information *)
 
 type import_desc =
   | Fun of func_type

@@ -43,7 +43,10 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
       else
         Some
           (List.map source_map.sources ~f:(fun file ->
-               if Sys.file_exists file && not (Sys.is_directory file)
+               if String.equal file Wa_source_map.blackbox_filename
+               then
+                 Some (Source_map.Source_content.create Wa_source_map.blackbox_contents)
+               else if Sys.file_exists file && not (Sys.is_directory file)
                then Some (Source_map.Source_content.create (Fs.read_file file))
                else None))
     in
@@ -52,6 +55,10 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
         sources_content
       ; sourceroot =
           (if Option.is_some sourcemap_root then sourcemap_root else source_map.sourceroot)
+      ; ignore_list =
+          (if List.mem Wa_source_map.blackbox_filename ~set:source_map.sources
+           then [ Wa_source_map.blackbox_filename ]
+           else [])
       }
     in
     Source_map.to_file (Standard source_map) sourcemap_file)

@@ -285,16 +285,21 @@ let blk l st =
   let (), st = l { st with instrs = [] } in
   List.rev st.instrs, { st with instrs }
 
-let with_location loc instrs st =
-  let (), st = instrs st in
+let event loc : unit t =
+ fun st ->
   ( ()
-  , { st with
-      instrs =
-        (match st.instrs with
-        | [] -> []
-        | Location (_, i) :: rem -> Location (loc, i) :: rem
-        | i :: rem -> Location (loc, i) :: rem)
-    } )
+  , match st.instrs with
+    | Event _ :: instrs | instrs -> { st with instrs = Event loc :: instrs } )
+
+let hidden_location =
+  { Parse_info.src = Some Wa_source_map.blackbox_filename
+  ; name = None
+  ; col = 0
+  ; line = 1
+  ; idx = 0
+  }
+
+let no_event = event hidden_location
 
 let cast ?(nullable = false) typ e =
   let* e = e in
@@ -457,13 +462,11 @@ let get_i31_value x st =
       let x = Var.fresh () in
       let x, st = add_var ~typ:I32 x st in
       Some x, { st with instrs = LocalSet (x', RefI31 (LocalTee (x, e))) :: rem }
-  | Location (loc, LocalSet (x', RefI31 e)) :: rem when Code.Var.equal x x' && is_smi e ->
+  | Event loc :: LocalSet (x', RefI31 e) :: rem when Code.Var.equal x x' && is_smi e ->
       let x = Var.fresh () in
       let x, st = add_var ~typ:I32 x st in
       ( Some x
-      , { st with
-          instrs = Location (loc, LocalSet (x', RefI31 (LocalTee (x, e)))) :: rem
-        } )
+      , { st with instrs = Event loc :: LocalSet (x', RefI31 (LocalTee (x, e))) :: rem } )
   | _ -> None, st
 
 let load x =

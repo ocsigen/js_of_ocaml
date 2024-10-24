@@ -138,7 +138,9 @@ val is_small_constant : Wa_ast.expression -> bool t
 
 val get_i31_value : Wa_ast.var -> Wa_ast.var option t
 
-val with_location : Parse_info.t option -> unit t -> unit t
+val event : Parse_info.t -> unit t
+
+val no_event : unit t
 
 type type_def =
   { supertype : Wa_ast.var option

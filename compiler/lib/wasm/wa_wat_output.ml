@@ -117,13 +117,27 @@ let rec format_sexp f s =
   match s with
   | Atom s -> Format.fprintf f "%s" s
   | List l ->
-      if List.exists l ~f:(function
-             | Comment _ -> true
-             | _ -> false)
+      let has_comment =
+        List.exists l ~f:(function
+            | Comment _ -> true
+            | _ -> false)
+      in
+      if has_comment
       then (* Ensure comments are on their own line *)
         Format.fprintf f "@[<v 2>("
       else Format.fprintf f "@[<2>(";
       Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f "@ ") format_sexp f l;
+      if has_comment
+         && List.fold_left
+              ~f:(fun _ i ->
+                match i with
+                | Comment _ -> true
+                | _ -> false)
+              ~init:false
+              l
+      then
+        (* Make sure there is a newline when a comment is at the very end. *)
+        Format.fprintf f "@ ";
       Format.fprintf f ")@]"
   | Comment s -> Format.fprintf f ";;%s" s
 
@@ -519,13 +533,10 @@ let expression_or_instructions ctx st in_function =
             :: index st.type_names typ
             :: List.concat (List.map ~f:expression (l @ [ e ])))
         ]
-    | Location (loc, i) -> (
-        match loc with
-        | None | Some Parse_info.{ src = None | Some ""; _ } ->
-            Comment "@" :: instruction i
-        | Some Parse_info.{ src = Some src; col; line; _ } ->
-            let loc = Format.sprintf "%s:%d:%d" src line col in
-            Comment ("@ " ^ loc) :: instruction i)
+    | Event Parse_info.{ src = None | Some ""; _ } -> [ Comment "@" ]
+    | Event Parse_info.{ src = Some src; col; line; _ } ->
+        let loc = Format.sprintf "%s:%d:%d" src line col in
+        [ Comment ("@ " ^ loc) ]
   and instructions l = List.concat (List.map ~f:instruction l) in
   expression, instructions
 

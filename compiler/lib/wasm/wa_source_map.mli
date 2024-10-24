@@ -25,3 +25,7 @@ val insert_source_contents :
   -> t
   -> (int option -> int option -> string -> string option)
   -> t
+
+val blackbox_filename : string
+
+val blackbox_contents : string

@@ -1679,14 +1679,18 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
        try_
          { params = []; result = [] }
          (body ~result_typ:[] ~fall_through:(`Block (-1)) ~context:(`Skip :: context))
-         [ ocaml_tag, store ~always:true x (return (W.Pop Value.value))
+         [ ( ocaml_tag
+           , let* () = no_event in
+             store ~always:true x (return (W.Pop Value.value)) )
          ; ( js_tag
-           , let exn = Code.Var.fresh () in
+           , let* () = no_event in
+             let exn = Code.Var.fresh () in
              let* () = store ~always:true ~typ:externref exn (return (W.Pop externref)) in
              let* exn = load exn in
              store ~always:true x (return (W.Call (f, [ exn ]))) )
          ]
      in
+     let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
 
 let post_process_function_body = Wa_initialize_locals.f

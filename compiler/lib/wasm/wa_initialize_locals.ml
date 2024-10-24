@@ -97,7 +97,7 @@ and scan_instruction ctx i =
       List.iter ~f:(fun (_, l) -> scan_instructions ctx l) catches;
       Option.iter ~f:(fun l -> scan_instructions ctx l) catch_all
   | CallInstr (_, l) | Return_call (_, l) -> scan_expressions ctx l
-  | Br (_, None) | Return None | Rethrow _ | Nop -> ()
+  | Br (_, None) | Return None | Rethrow _ | Nop | Event _ -> ()
   | ArraySet (_, e, e', e'') ->
       scan_expression ctx e;
       scan_expression ctx e';
@@ -105,7 +105,6 @@ and scan_instruction ctx i =
   | Return_call_ref (_, e', l) ->
       scan_expressions ctx l;
       scan_expression ctx e'
-  | Location (_, i) -> scan_instruction ctx i
 
 and scan_instructions ctx l =
   let ctx = fork_context ctx in
