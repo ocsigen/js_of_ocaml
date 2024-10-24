@@ -947,7 +947,7 @@ module Scan = struct
         let p' = Buffer.length buf in
         let dp = p' - p in
         let dpos = pos' - pos in
-        if dp <> dpos then report pos (dp - dpos));
+        if dp <> dpos then report pos' (dp - dpos));
       pos'
     in
     let rewrite_signed map pos =
@@ -2232,9 +2232,9 @@ let f files ~output_file ~opt_output_sourcemap_file =
         let code (ch : Read.ch) =
           let pos = ch.pos in
           let i = resize_data.i in
-          Scan.push_resize resize_data pos 0;
           let size = Read.uint ch in
           let pos' = ch.pos in
+          Scan.push_resize resize_data pos' 0;
           scan_func ch.pos;
           ch.pos <- ch.pos + size;
           let p = Buffer.length code_pieces in
