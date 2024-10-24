@@ -483,6 +483,12 @@
          (array.new_data $string $float_of_string (i32.const 0) (i32.const 15)))
       (f64.const 0))
 
+   (func $on_whitespace (param $s (ref $string)) (param $i i32) (result i32)
+      (local $c i32)
+      (local.set $c (array.get_u $string (local.get $s) (local.get $i)))
+      (i32.or (i32.eq (local.get $c) (i32.const 32)) ;; ' '
+         (i32.le_u (i32.sub (local.get $c) (i32.const 9)) (i32.const 4))))
+
    (func (export "caml_float_of_string") (param (ref eq)) (result (ref eq))
       (local $s (ref $string)) (local $len i32) (local $i i32) (local $j i32)
       (local $s' (ref $string))
@@ -525,13 +531,15 @@
       (loop $skip_spaces
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
-               (if (i32.eq (i32.const 32) ;; ' '
-                           (array.get_u $string (local.get $s) (local.get $i)))
+               (if (call $on_whitespace (local.get $s) (local.get $i))
                   (then
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (br $skip_spaces))))))
       (block $error
          (br_if $error (i32.eq (local.get $i) (local.get $len)))
+         (br_if $error
+            (call $on_whitespace
+               (local.get $s) (i32.sub (local.get $len) (i32.const 1))))
          (local.set $c (array.get_u $string (local.get $s) (i32.const 0)))
          (if (i32.eq (local.get $c) (i32.const 45)) ;; '-'
             (then
