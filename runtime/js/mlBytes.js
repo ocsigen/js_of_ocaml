@@ -283,9 +283,14 @@ var jsoo_text_decoder = new TextDecoder();
 
 //Provides: caml_bytes_of_utf16_jsstring
 //Requires: MlBytes, jsoo_text_encoder
+//Requires: jsoo_is_ascii
 function caml_bytes_of_utf16_jsstring(s) {
-  var a = jsoo_text_encoder.encode(s);
-  return new MlBytes(4, a, a.length);
+  if (jsoo_is_ascii(s)) {
+    return new MlBytes(9, s, s.length);
+  } else {
+    var a = jsoo_text_encoder.encode(s);
+    return new MlBytes(4, a, a.length);
+  }
 }
 
 //Provides: MlBytes
@@ -670,8 +675,10 @@ function caml_jsstring_of_string(s) {
 //Provides: caml_string_of_jsstring const
 //Requires: caml_string_of_array
 //Requires: jsoo_text_encoder
+//Requires: jsoo_is_ascii, caml_string_of_jsbytes
 //If: js-string
 function caml_string_of_jsstring(s) {
+  if (jsoo_is_ascii(s)) return caml_string_of_jsbytes(s);
   var a = jsoo_text_encoder.encode(s);
   return caml_string_of_array(a);
 }
