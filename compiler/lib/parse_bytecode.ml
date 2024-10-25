@@ -2019,7 +2019,25 @@ and compile infos pc state (instrs : instr list) =
         let y = State.accu state in
         let z = State.peek 0 state in
         let x, state = State.fresh_var state in
-
+        let prim =
+          match prim with
+          | "caml_ba_uint8_get16"
+          | "caml_ba_uint8_get32"
+          | "caml_ba_uint8_get64"
+          | "caml_ba_uint8_getf32"
+          | "caml_string_get16"
+          | "caml_string_get32"
+          | "caml_string_get64"
+          | "caml_string_getf32"
+          | "caml_bytes_get16"
+          | "caml_bytes_get32"
+          | "caml_bytes_get64"
+          | "caml_bytes_getf32" -> (
+              match Hints.find_ccall_opt infos.hints pc with
+              | Some Hint_unsafe -> prim ^ "u"
+              | _ -> prim)
+          | _ -> prim
+        in
         if debug_parser ()
         then
           Format.printf
@@ -2044,7 +2062,21 @@ and compile infos pc state (instrs : instr list) =
         let z = State.peek 0 state in
         let t = State.peek 1 state in
         let x, state = State.fresh_var state in
-
+        let prim =
+          match prim with
+          | "caml_ba_uint8_set16"
+          | "caml_ba_uint8_set32"
+          | "caml_ba_uint8_set64"
+          | "caml_ba_uint8_setf32"
+          | "caml_bytes_set16"
+          | "caml_bytes_set32"
+          | "caml_bytes_set64"
+          | "caml_bytes_setf32" -> (
+              match Hints.find_ccall_opt infos.hints pc with
+              | Some Hint_unsafe -> prim ^ "u"
+              | _ -> prim)
+          | _ -> prim
+        in
         if debug_parser ()
         then
           Format.printf

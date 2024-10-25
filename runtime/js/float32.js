@@ -450,12 +450,28 @@ function caml_ba_uint8_getf32(ba, i) {
   return caml_float32_of_bits_bytecode(caml_ba_uint8_get32(ba, i));
 }
 
+//Provides: caml_ba_uint8_getf32u
+//Requires: caml_ba_uint8_get32u, caml_float32_of_bits_bytecode
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_ba_uint8_getf32u(ba, i) {
+  return caml_float32_of_bits_bytecode(caml_ba_uint8_get32u(ba, i));
+}
+
 //Provides: caml_ba_uint8_setf32
 //Requires: caml_ba_uint8_set32, caml_float32_to_bits_bytecode
 //Version: >= 5.2, < 5.3
 //OxCaml
 function caml_ba_uint8_setf32(ba, i, v) {
   return caml_ba_uint8_set32(ba, i, caml_float32_to_bits_bytecode(v));
+}
+
+//Provides: caml_ba_uint8_setf32u
+//Requires: caml_ba_uint8_set32u, caml_float32_to_bits_bytecode
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_ba_uint8_setf32u(ba, i, v) {
+  return caml_ba_uint8_set32u(ba, i, caml_float32_to_bits_bytecode(v));
 }
 
 //Provides: caml_string_getf32
@@ -466,6 +482,14 @@ function caml_string_getf32(ba, i) {
   return caml_float32_of_bits_bytecode(caml_string_get32(ba, i));
 }
 
+//Provides: caml_string_getf32u
+//Requires: caml_string_get32u, caml_float32_of_bits_bytecode
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_string_getf32u(ba, i) {
+  return caml_float32_of_bits_bytecode(caml_string_get32u(ba, i));
+}
+
 //Provides: caml_bytes_getf32
 //Requires: caml_bytes_get32, caml_float32_of_bits_bytecode
 //Version: >= 5.2, < 5.3
@@ -474,10 +498,26 @@ function caml_bytes_getf32(ba, i) {
   return caml_float32_of_bits_bytecode(caml_bytes_get32(ba, i));
 }
 
+//Provides: caml_bytes_getf32u
+//Requires: caml_bytes_get32u, caml_float32_of_bits_bytecode
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_bytes_getf32u(ba, i) {
+  return caml_float32_of_bits_bytecode(caml_bytes_get32u(ba, i));
+}
+
 //Provides: caml_bytes_setf32
 //Requires: caml_bytes_set32, caml_float32_to_bits_bytecode
 //Version: >= 5.2, < 5.3
 //OxCaml
 function caml_bytes_setf32(ba, i, v) {
   return caml_bytes_set32(ba, i, caml_float32_to_bits_bytecode(v));
+}
+
+//Provides: caml_bytes_setf32u
+//Requires: caml_bytes_set32u, caml_float32_to_bits_bytecode
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_bytes_setf32u(ba, i, v) {
+  return caml_bytes_set32u(ba, i, caml_float32_to_bits_bytecode(v));
 }
