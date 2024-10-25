@@ -1865,7 +1865,7 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser ()
         then (
-          Format.printf "%a = ccal \"%s\" (" Var.print x prim;
+          Format.printf "%a = ccall \"%s\" (" Var.print x prim;
           for i = 0 to nargs - 1 do
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
@@ -1885,7 +1885,7 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser ()
         then (
-          Format.printf "%a = ccal \"%s\" (" Var.print x prim;
+          Format.printf "%a = ccall \"%s\" (" Var.print x prim;
           for i = 0 to nargs - 1 do
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
@@ -1905,7 +1905,7 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser ()
         then (
-          Format.printf "%a = ccal \"%s\" (" Var.print x prim;
+          Format.printf "%a = ccall \"%s\" (" Var.print x prim;
           for i = 0 to nargs - 1 do
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
