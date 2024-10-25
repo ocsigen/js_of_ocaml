@@ -283,4 +283,6 @@ module Cmo_format = struct
   let imports (t : t) = t.cu_imports
 
   let force_link (t : t) = t.cu_force_link
+
+  let hints_pos (t : t) = t.cu_hint
 end
