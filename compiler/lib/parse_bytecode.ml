@@ -2049,13 +2049,40 @@ and compile infos pc state (instrs : instr list) =
             y
             Var.print
             z;
+        let prim, y, z =
+          match Config.target () with
+          | `Wasm -> Extern (prim, Hints.find_ccall_opt infos.hints pc), y, z
+          | `JavaScript -> (
+              match prim with
+              | "caml_equal"
+              | "caml_notequal"
+              | "caml_lessthan"
+              | "caml_greaterthan"
+              | "caml_lessequal"
+              | "caml_greaterequal" -> (
+                  let prim_of_ext = function
+                    | "caml_equal" -> Eq, y, z
+                    | "caml_notequal" -> Neq, y, z
+                    | "caml_lessthan" -> Lt, y, z
+                    | "caml_lessequal" -> Le, y, z
+                    | "caml_greaterequal" -> Le, z, y
+                    | "caml_greaterthan" -> Lt, z, y
+                    | _ -> assert false
+                  in
+                  match Hints.find_ccall_opt infos.hints pc with
+                  | Some (Hint_int boxed) -> (
+                      match boxed with
+                      | Nativeint -> prim_of_ext prim
+                      | Int32 -> prim_of_ext prim
+                      | Int64 -> Extern (prim, None), y, z)
+                  | _ -> Extern (prim, None), y, z)
+              | _ -> Extern (prim, Hints.find_ccall_opt infos.hints pc), y, z)
+        in
         compile
           infos
           (pc + 2)
           (State.pop 1 state)
-          (Let
-             (x, Prim (Extern (prim, Hints.find_ccall_opt infos.hints pc), [ Pv y; Pv z ]))
-          :: instrs)
+          (Let (x, Prim (prim, [ Pv y; Pv z ])) :: instrs)
     | C_CALL3 ->
         let prim = primitive_name state (getu code (pc + 1)) in
         let y = State.accu state in
