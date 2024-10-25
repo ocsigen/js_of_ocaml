@@ -1999,11 +1999,40 @@ and compile infos pc state (instrs : instr list) =
             y
             Var.print
             z;
+        let prim, y, z =
+          match Config.target () with
+          | `Wasm -> Extern prim, y, z
+          | `JavaScript -> (
+              match prim with
+              | "caml_equal"
+              | "caml_notequal"
+              | "caml_lessthan"
+              | "caml_greaterthan"
+              | "caml_lessequal"
+              | "caml_greaterequal" -> (
+                  let prim_of_ext = function
+                    | "caml_equal" -> Eq, y, z
+                    | "caml_notequal" -> Neq, y, z
+                    | "caml_lessthan" -> Lt, y, z
+                    | "caml_lessequal" -> Le, y, z
+                    | "caml_greaterequal" -> Le, z, y
+                    | "caml_greaterthan" -> Lt, z, y
+                    | _ -> assert false
+                  in
+                  match Hints.find infos.hints pc with
+                  | [ Hints.Hint_int boxed ] -> (
+                      match boxed with
+                      | Pnativeint -> prim_of_ext prim
+                      | Pint32 -> prim_of_ext prim
+                      | Pint64 -> Extern prim, y, z)
+                  | _ -> Extern prim, y, z)
+              | _ -> Extern prim, y, z)
+        in
         compile
           infos
           (pc + 2)
           (State.pop 1 state)
-          (Let (x, Prim (Extern prim, [ Pv y; Pv z ])) :: instrs)
+          (Let (x, Prim (prim, [ Pv y; Pv z ])) :: instrs)
     | C_CALL3 ->
         let prim = primitive_name state (getu code (pc + 1)) in
         let y = State.accu state in
