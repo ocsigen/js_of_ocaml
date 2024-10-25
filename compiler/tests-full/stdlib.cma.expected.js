@@ -4826,11 +4826,13 @@
     caml_bswap16 = runtime.caml_bswap16,
     caml_bytes_get = runtime.caml_bytes_get,
     caml_bytes_get16 = runtime.caml_bytes_get16,
+    caml_bytes_get16u = runtime.caml_bytes_get16u,
     caml_bytes_get32 = runtime.caml_bytes_get32,
     caml_bytes_get64 = runtime.caml_bytes_get64,
     caml_bytes_of_string = runtime.caml_bytes_of_string,
     caml_bytes_set = runtime.caml_bytes_set,
     caml_bytes_set16 = runtime.caml_bytes_set16,
+    caml_bytes_set16u = runtime.caml_bytes_set16u,
     caml_bytes_set32 = runtime.caml_bytes_set32,
     caml_bytes_set64 = runtime.caml_bytes_set64,
     caml_bytes_unsafe_get = runtime.caml_bytes_unsafe_get,
@@ -5616,14 +5618,14 @@
    function unsafe_get_uint16_le(b, i){
      /*<<bytes.ml:470:2>>*/ return Stdlib_Sys[11]
             ?  /*<<bytes.ml:471:40>>*/ caml_bswap16
-              ( /*<<bytes.ml:471:14>>*/ caml_bytes_get16(b, i))
-            :  /*<<bytes.ml:472:7>>*/ caml_bytes_get16(b, i) /*<<bytes.ml:472:31>>*/ ;
+              ( /*<<bytes.ml:471:14>>*/ caml_bytes_get16u(b, i))
+            :  /*<<bytes.ml:472:7>>*/ caml_bytes_get16u(b, i) /*<<bytes.ml:472:31>>*/ ;
    }
    function unsafe_get_uint16_be(b, i){
      /*<<bytes.ml:475:2>>*/ return Stdlib_Sys[11]
-            ?  /*<<bytes.ml:476:7>>*/ caml_bytes_get16(b, i)
+            ?  /*<<bytes.ml:476:7>>*/ caml_bytes_get16u(b, i)
             :  /*<<bytes.ml:477:40>>*/ caml_bswap16
-              ( /*<<bytes.ml:477:14>>*/ caml_bytes_get16(b, i)) /*<<bytes.ml:477:40>>*/ ;
+              ( /*<<bytes.ml:477:14>>*/ caml_bytes_get16u(b, i)) /*<<bytes.ml:477:40>>*/ ;
    }
    function get_int8(b, i){
     var
@@ -5687,17 +5689,17 @@
    }
    function unsafe_set_uint16_le(b, i, x){
      /*<<bytes.ml:516:2>>*/ if(Stdlib_Sys[11]){
-      /*<<bytes.ml:517:7>>*/ caml_bytes_set16(b, i, caml_bswap16(x));
+      /*<<bytes.ml:517:7>>*/ caml_bytes_set16u(b, i, caml_bswap16(x));
       /*<<bytes.ml:517:42>>*/ return;
     }
-     /*<<bytes.ml:518:7>>*/ caml_bytes_set16(b, i, x);
+     /*<<bytes.ml:518:7>>*/ caml_bytes_set16u(b, i, x);
     /*<<bytes.ml:518:33>>*/ }
    function unsafe_set_uint16_be(b, i, x){
      /*<<bytes.ml:521:2>>*/ if(Stdlib_Sys[11]){
-      /*<<bytes.ml:522:7>>*/ caml_bytes_set16(b, i, x);
+      /*<<bytes.ml:522:7>>*/ caml_bytes_set16u(b, i, x);
       /*<<bytes.ml:522:33>>*/ return;
     }
-     /*<<bytes.ml:523:2>>*/ caml_bytes_set16(b, i, caml_bswap16(x));
+     /*<<bytes.ml:523:2>>*/ caml_bytes_set16u(b, i, caml_bswap16(x));
     /*<<bytes.ml:523:37>>*/ }
    function set_int16_le(b, i, x){
      /*<<bytes.ml:526:2>>*/ return Stdlib_Sys[11]
@@ -12483,9 +12485,6 @@
     caml_bswap16 = runtime.caml_bswap16,
     caml_bytes_get = runtime.caml_bytes_get,
     caml_bytes_set = runtime.caml_bytes_set,
-    caml_bytes_set16 = runtime.caml_bytes_set16,
-    caml_bytes_set32 = runtime.caml_bytes_set32,
-    caml_bytes_set64 = runtime.caml_bytes_set64,
     caml_bytes_unsafe_set = runtime.caml_bytes_unsafe_set,
     caml_create_bytes = runtime.caml_create_bytes,
     caml_int32_bswap = runtime.caml_int32_bswap,
@@ -12967,10 +12966,10 @@
      new_position =  /*<<buffer.ml:353:2>>*/ position + 2 | 0;
      /*<<buffer.ml:354:2>>*/ if(length < new_position){
       /*<<buffer.ml:355:4>>*/ resize(b, 2);
-      /*<<buffer.ml:356:4>>*/ caml_bytes_set16(b[1][1], b[2], x);
+      /*<<buffer.ml:356:4>>*/ runtime.caml_bytes_set16(b[1][1], b[2], x);
     }
     else
-      /*<<buffer.ml:358:4>>*/ caml_bytes_set16(buffer, position, x);
+      /*<<buffer.ml:358:4>>*/ runtime.caml_bytes_set16u(buffer, position, x);
      /*<<buffer.ml:359:2>>*/ b[2] = new_position;
     return 0;
     /*<<buffer.ml:359:28>>*/ }
@@ -12983,10 +12982,10 @@
      new_position =  /*<<buffer.ml:364:2>>*/ position + 4 | 0;
      /*<<buffer.ml:365:2>>*/ if(length < new_position){
       /*<<buffer.ml:366:4>>*/ resize(b, 4);
-      /*<<buffer.ml:367:4>>*/ caml_bytes_set32(b[1][1], b[2], x);
+      /*<<buffer.ml:367:4>>*/ runtime.caml_bytes_set32(b[1][1], b[2], x);
     }
     else
-      /*<<buffer.ml:369:4>>*/ caml_bytes_set32(buffer, position, x);
+      /*<<buffer.ml:369:4>>*/ runtime.caml_bytes_set32u(buffer, position, x);
      /*<<buffer.ml:370:2>>*/ b[2] = new_position;
     return 0;
     /*<<buffer.ml:370:28>>*/ }
@@ -12999,10 +12998,10 @@
      new_position =  /*<<buffer.ml:375:2>>*/ position + 8 | 0;
      /*<<buffer.ml:376:2>>*/ if(length < new_position){
       /*<<buffer.ml:377:4>>*/ resize(b, 8);
-      /*<<buffer.ml:378:4>>*/ caml_bytes_set64(b[1][1], b[2], x);
+      /*<<buffer.ml:378:4>>*/ runtime.caml_bytes_set64(b[1][1], b[2], x);
     }
     else
-      /*<<buffer.ml:380:4>>*/ caml_bytes_set64(buffer, position, x);
+      /*<<buffer.ml:380:4>>*/ runtime.caml_bytes_set64u(buffer, position, x);
      /*<<buffer.ml:381:2>>*/ b[2] = new_position;
     return 0;
     /*<<buffer.ml:381:28>>*/ }

@@ -169,6 +169,18 @@
                               (i32.add (local.get $p) (i32.const 1)))
                            (i32.const 8)))))
 
+   (export "caml_string_get16u" (func $caml_bytes_get16u))
+   (func $caml_bytes_get16u (export "caml_bytes_get16u")
+      (param $v (ref eq)) (param $i (ref eq)) (result (ref eq))
+      (local $s (ref $bytes)) (local $p i32)
+      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (ref.i31 (i32.or
+                  (array.get_u $bytes (local.get $s) (local.get $p))
+                  (i32.shl (array.get_u $bytes (local.get $s)
+                              (i32.add (local.get $p) (i32.const 1)))
+                           (i32.const 8)))))
+
    (export "caml_string_get32" (func $caml_bytes_get32))
    (func $caml_bytes_get32 (export "caml_bytes_get32")
       (param $v (ref eq)) (param $i (ref eq)) (result i32)
@@ -180,6 +192,26 @@
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 3))
                     (array.len (local.get $s)))
          (then (call $caml_bound_error)))
+      (i32.or
+         (i32.or
+            (array.get_u $bytes (local.get $s) (local.get $p))
+            (i32.shl (array.get_u $bytes (local.get $s)
+                        (i32.add (local.get $p) (i32.const 1)))
+                     (i32.const 8)))
+         (i32.or
+            (i32.shl (array.get_u $bytes (local.get $s)
+                        (i32.add (local.get $p) (i32.const 2)))
+                     (i32.const 16))
+            (i32.shl (array.get_u $bytes (local.get $s)
+                        (i32.add (local.get $p) (i32.const 3)))
+                     (i32.const 24)))))
+
+   (export "caml_string_get32u" (func $caml_bytes_get32u))
+   (func $caml_bytes_get32u (export "caml_bytes_get32u")
+      (param $v (ref eq)) (param $i (ref eq)) (result i32)
+      (local $s (ref $bytes)) (local $p i32)
+      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
       (i32.or
          (i32.or
             (array.get_u $bytes (local.get $s) (local.get $p))
@@ -243,6 +275,50 @@
                               (i32.add (local.get $p) (i32.const 7))))
                         (i64.const 56))))))
 
+   (export "caml_string_get64u" (func $caml_bytes_get64u))
+   (func $caml_bytes_get64u (export "caml_bytes_get64u")
+      (param $v (ref eq)) (param $i (ref eq)) (result i64)
+      (local $s (ref $bytes)) (local $p i32)
+      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (i64.or
+         (i64.or
+            (i64.or
+               (i64.extend_i32_u
+                  (array.get_u $bytes (local.get $s) (local.get $p)))
+               (i64.shl (i64.extend_i32_u
+                           (array.get_u $bytes (local.get $s)
+                              (i32.add (local.get $p) (i32.const 1))))
+                        (i64.const 8)))
+            (i64.or
+               (i64.shl (i64.extend_i32_u
+                           (array.get_u $bytes (local.get $s)
+                              (i32.add (local.get $p) (i32.const 2))))
+                        (i64.const 16))
+               (i64.shl (i64.extend_i32_u
+                           (array.get_u $bytes (local.get $s)
+                              (i32.add (local.get $p) (i32.const 3))))
+                        (i64.const 24))))
+         (i64.or
+            (i64.or
+               (i64.shl (i64.extend_i32_u
+                           (array.get_u $bytes (local.get $s)
+                              (i32.add (local.get $p) (i32.const 4))))
+                        (i64.const 32))
+               (i64.shl (i64.extend_i32_u
+                           (array.get_u $bytes (local.get $s)
+                              (i32.add (local.get $p) (i32.const 5))))
+                        (i64.const 40)))
+            (i64.or
+               (i64.shl (i64.extend_i32_u
+                           (array.get_u $bytes (local.get $s)
+                              (i32.add (local.get $p) (i32.const 6))))
+                        (i64.const 48))
+               (i64.shl (i64.extend_i32_u
+                           (array.get_u $bytes (local.get $s)
+                              (i32.add (local.get $p) (i32.const 7))))
+                        (i64.const 56))))))
+
    (func (export "caml_bytes_set16")
       (param (ref eq) (ref eq) (ref eq)) (result (ref eq))
       (local $s (ref $bytes)) (local $p i32) (local $v i32)
@@ -254,6 +330,18 @@
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 1))
                     (array.len (local.get $s)))
          (then (call $caml_bound_error)))
+      (array.set $bytes (local.get $s) (local.get $p) (local.get $v))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 1))
+         (i32.shr_u (local.get $v) (i32.const 8)))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_bytes_set16u")
+      (param (ref eq) (ref eq) (ref eq)) (result (ref eq))
+      (local $s (ref $bytes)) (local $p i32) (local $v i32)
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get 1))))
+      (local.set $v (i31.get_s (ref.cast (ref i31) (local.get 2))))
       (array.set $bytes (local.get $s) (local.get $p) (local.get $v))
       (array.set $bytes (local.get $s)
          (i32.add (local.get $p) (i32.const 1))
@@ -282,6 +370,23 @@
          (i32.shr_u (local.get $v) (i32.const 24)))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_bytes_set32u")
+      (param (ref eq)) (param (ref eq)) (param $v i32) (result (ref eq))
+      (local $s (ref $bytes)) (local $p i32)
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get 1))))
+      (array.set $bytes (local.get $s) (local.get $p) (local.get $v))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 1))
+         (i32.shr_u (local.get $v) (i32.const 8)))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 2))
+         (i32.shr_u (local.get $v) (i32.const 16)))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 3))
+         (i32.shr_u (local.get $v) (i32.const 24)))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_bytes_set64")
       (param (ref eq)) (param (ref eq)) (param $v i64) (result (ref eq))
       (local $s (ref $bytes)) (local $p i32)
@@ -292,6 +397,36 @@
       (if (i32.ge_u (i32.add (local.get $p) (i32.const 7))
                     (array.len (local.get $s)))
          (then (call $caml_bound_error)))
+      (array.set $bytes (local.get $s) (local.get $p)
+         (i32.wrap_i64 (local.get $v)))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 1))
+         (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 8))))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 2))
+         (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 16))))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 3))
+         (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 24))))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 4))
+         (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 32))))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 5))
+         (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 40))))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 6))
+         (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 48))))
+      (array.set $bytes (local.get $s)
+         (i32.add (local.get $p) (i32.const 7))
+         (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 56))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_bytes_set64u")
+      (param (ref eq)) (param (ref eq)) (param $v i64) (result (ref eq))
+      (local $s (ref $bytes)) (local $p i32)
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get 1))))
       (array.set $bytes (local.get $s) (local.get $p)
          (i32.wrap_i64 (local.get $v)))
       (array.set $bytes (local.get $s)
