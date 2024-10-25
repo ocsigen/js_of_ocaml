@@ -9115,11 +9115,8 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
-    caml_greaterequal = runtime.caml_greaterequal,
     caml_hash = runtime.caml_hash,
     caml_int_compare = runtime.caml_int_compare,
-    caml_lessequal = runtime.caml_lessequal,
-    caml_lessthan = runtime.caml_lessthan,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_mul = runtime.caml_mul,
     caml_wrap_exception = runtime.caml_wrap_exception,
@@ -9132,7 +9129,7 @@
    function succ(n){ /*<<int32.ml:48:21>>*/ return n + 1 | 0;}
    function pred(n){ /*<<int32.ml:49:21>>*/ return n - 1 | 0;}
    function abs(n){
-     /*<<int32.ml:50:15>>*/ return caml_greaterequal(n, 0) ? n : - n | 0 /*<<int32.ml:50:40>>*/ ;
+     /*<<int32.ml:50:22>>*/ return 0 <= n ? n : - n | 0 /*<<int32.ml:50:40>>*/ ;
    }
    function lognot(n){ /*<<int32.ml:53:29>>*/ return n ^ -1;}
    var
@@ -9146,9 +9143,7 @@
      max_int$0 =  /*<<int32.ml:58:20>>*/ Stdlib[19],
      unsigned_to_int =
         /*<<int32.ml:59:6>>*/ function(n){
-         /*<<int32.ml:60:11>>*/ if
-         (caml_greaterequal(n, 0)
-          &&  /*<<int32.ml:60:22>>*/ caml_lessequal(n, max_int$0))
+         /*<<int32.ml:60:18>>*/ if(0 <= n && n <= max_int$0)
           /*<<int32.ml:61:10>>*/ return [0, n];
          /*<<int32.ml:63:10>>*/ return 0;
         /*<<int32.ml:63:14>>*/ };
@@ -9176,7 +9171,8 @@
       /*<<?>>*/ throw caml_maybe_attach_backtrace(exn, 0);
     }
     /*<<int32.ml:78:24>>*/ }
-   var compare =  /*<<?>>*/ caml_int_compare, equal = runtime.caml_equal;
+   var compare =  /*<<?>>*/ caml_int_compare;
+   function equal(x, y){ /*<<int32.ml:83:31>>*/ return x === y ? 1 : 0;}
    function unsigned_compare(n, m){
     var
      y =  /*<<int32.ml:86:26>>*/ m + 2147483648 | 0,
@@ -9184,17 +9180,18 @@
      /*<<int32.ml:82:28>>*/ return caml_int_compare(x, y) /*<<int32.ml:86:41>>*/ ;
    }
    function unsigned_lt(n, m){
-     /*<<int32.ml:89:2>>*/ return caml_lessthan
-            (n + 2147483648 | 0, m + 2147483648 | 0) /*<<int32.ml:89:31>>*/ ;
+     /*<<int32.ml:89:31>>*/ return (n + 2147483648 | 0) < (m + 2147483648 | 0)
+            ? 1
+            : 0;
    }
    function min(x, y){
-     /*<<int32.ml:91:21>>*/ return caml_lessequal(x, y) ? x : y /*<<int32.ml:91:41>>*/ ;
+     /*<<int32.ml:91:27>>*/ return x <= y ? x : y /*<<int32.ml:91:41>>*/ ;
    }
    function max(x, y){
-     /*<<int32.ml:92:21>>*/ return caml_greaterequal(x, y) ? x : y /*<<int32.ml:92:41>>*/ ;
+     /*<<int32.ml:92:27>>*/ return y <= x ? x : y /*<<int32.ml:92:41>>*/ ;
    }
    function unsigned_div(n, d){
-     /*<<int32.ml:98:5>>*/ if(caml_lessthan(d, 0))
+     /*<<int32.ml:98:13>>*/ if(d < 0)
       /*<<int32.ml:99:7>>*/ return unsigned_lt(n, d) ? zero : one /*<<int32.ml:103:41>>*/ ;
     var
      q =  /*<<int32.ml:101:23>>*/ runtime.caml_div(n >>> 1 | 0, d) << 1,
@@ -9400,11 +9397,8 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
-    caml_greaterequal = runtime.caml_greaterequal,
     caml_hash = runtime.caml_hash,
     caml_int_compare = runtime.caml_int_compare,
-    caml_lessequal = runtime.caml_lessequal,
-    caml_lessthan = runtime.caml_lessthan,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_mul = runtime.caml_mul,
     caml_wrap_exception = runtime.caml_wrap_exception,
@@ -9416,7 +9410,7 @@
    function succ(n){ /*<<nativeint.ml:44:21>>*/ return n + 1 | 0;}
    function pred(n){ /*<<nativeint.ml:45:21>>*/ return n - 1 | 0;}
    function abs(n){
-     /*<<nativeint.ml:46:15>>*/ return caml_greaterequal(n, 0) ? n : - n | 0 /*<<nativeint.ml:46:40>>*/ ;
+     /*<<nativeint.ml:46:22>>*/ return 0 <= n ? n : - n | 0 /*<<nativeint.ml:46:40>>*/ ;
    }
    var
     size =  /*<<?>>*/ Stdlib_Sys[9],
@@ -9425,9 +9419,7 @@
    function lognot(n){ /*<<nativeint.ml:50:29>>*/ return n ^ -1;}
    var max_int$0 =  /*<<nativeint.ml:53:16>>*/ Stdlib[19];
    function unsigned_to_int(n){
-     /*<<nativeint.ml:55:7>>*/ if
-     (caml_greaterequal(n, 0)
-      &&  /*<<nativeint.ml:55:18>>*/ caml_lessequal(n, max_int$0))
+     /*<<nativeint.ml:55:14>>*/ if(0 <= n && n <= max_int$0)
       /*<<nativeint.ml:56:6>>*/ return [0, n];
      /*<<nativeint.ml:58:6>>*/ return 0;
     /*<<nativeint.ml:58:10>>*/ }
@@ -9456,17 +9448,18 @@
      /*<<nativeint.ml:71:28>>*/ return caml_int_compare(x, y) /*<<nativeint.ml:75:41>>*/ ;
    }
    function unsigned_lt(n, m){
-     /*<<nativeint.ml:78:2>>*/ return caml_lessthan
-            (n - min_int | 0, m - min_int | 0) /*<<nativeint.ml:78:31>>*/ ;
+     /*<<nativeint.ml:78:31>>*/ return (n - min_int | 0) < (m - min_int | 0)
+            ? 1
+            : 0;
    }
    function min(x, y){
-     /*<<nativeint.ml:80:21>>*/ return caml_lessequal(x, y) ? x : y /*<<nativeint.ml:80:41>>*/ ;
+     /*<<nativeint.ml:80:27>>*/ return x <= y ? x : y /*<<nativeint.ml:80:41>>*/ ;
    }
    function max(x, y){
-     /*<<nativeint.ml:81:21>>*/ return caml_greaterequal(x, y) ? x : y /*<<nativeint.ml:81:41>>*/ ;
+     /*<<nativeint.ml:81:27>>*/ return y <= x ? x : y /*<<nativeint.ml:81:41>>*/ ;
    }
    function unsigned_div(n, d){
-     /*<<nativeint.ml:87:5>>*/ if(caml_lessthan(d, 0))
+     /*<<nativeint.ml:87:13>>*/ if(d < 0)
       /*<<nativeint.ml:88:7>>*/ return unsigned_lt(n, d) ? zero : one /*<<nativeint.ml:92:41>>*/ ;
     var
      q =  /*<<nativeint.ml:90:23>>*/ runtime.caml_div(n >>> 1 | 0, d) << 1,
@@ -24062,34 +24055,31 @@
      var
       r =  /*<<random.ml:227:38>>*/ bits32(s) >>> 1 | 0,
       v =  /*<<random.ml:228:12>>*/ caml_mod(r, n);
-      /*<<random.ml:230:14>>*/ if
-      (! caml_greaterthan(r - v | 0, (Stdlib_Int32[9] - n | 0) + 1 | 0))
+      /*<<random.ml:230:46>>*/ if
+      (((Stdlib_Int32[9] - n | 0) + 1 | 0) >= (r - v | 0))
        /*<<random.ml:232:9>>*/ return v;
     }
     /*<<random.ml:232:10>>*/ }
    function int32(s, bound){
-     /*<<random.ml:235:7>>*/ return caml_lessequal(bound, 0)
+     /*<<random.ml:235:18>>*/ return bound <= 0
             ?  /*<<random.ml:236:9>>*/ Stdlib[1].call(null, cst_Random_int32)
             :  /*<<random.ml:237:9>>*/ int32aux(s, bound) /*<<random.ml:237:25>>*/ ;
    }
    function int32_in_range(s, min, max){
-     /*<<random.ml:246:7>>*/ if(caml_greaterthan(min, max))
+     /*<<random.ml:246:16>>*/ if(max < min)
       /*<<random.ml:247:6>>*/ return Stdlib[1].call
              (null, cst_Random_int32_in_range) /*<<random.ml:254:39>>*/ ;
     var
      span =
         /*<<random.ml:249:17>>*/ Stdlib_Int32[6].call(null, max - min | 0);
-     /*<<random.ml:251:9>>*/ if(! caml_lessequal(span, Stdlib_Int32[1]))
+     /*<<random.ml:251:27>>*/ if(span > Stdlib_Int32[1])
       /*<<random.ml:254:22>>*/ return min + int32aux(s, span) | 0 /*<<random.ml:254:39>>*/ ;
      /*<<random.ml:251:27>>*/ for(;;){
      var
       r =
          /*<<random.ml:242:27>>*/  /*<<random.ml:242:12>>*/ caml_int64_to_int32
          ( /*<<random.ml:242:27>>*/ caml_lxm_next(s));
-      /*<<random.ml:243:7>>*/ if
-      (!
-       caml_lessthan(r, min)
-       && !  /*<<random.ml:243:18>>*/ caml_greaterthan(r, max))
+      /*<<random.ml:243:14>>*/ if(r >= min && max >= r)
        /*<<random.ml:243:67>>*/ return r;
     }
     /*<<random.ml:254:39>>*/ }
