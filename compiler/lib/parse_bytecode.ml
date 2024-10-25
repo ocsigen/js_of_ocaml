@@ -333,6 +333,63 @@ end = struct
     StringSet.of_list (List.concat paths)
 end
 
+module Hints = struct
+  module Primitive = struct
+    type boxed_integer =
+      | Pnativeint
+      | Pint32
+      | Pint64
+
+    type native_repr =
+      | Same_as_ocaml_repr
+      | Unboxed_float
+      | Unboxed_integer of boxed_integer
+      | Untagged_immediate
+
+    type description =
+      { prim_name : string (* Name of primitive  or C function *)
+      ; prim_arity : int (* Number of arguments *)
+      ; prim_alloc : bool (* Does it allocates or raise? *)
+      ; prim_native_name : string (* Name of C function for the nat. code gen. *)
+      ; prim_native_repr_args : native_repr list
+      ; prim_native_repr_res : native_repr
+      }
+    [@@ocaml.warning "-unused-field"]
+  end
+
+  type optimization_hint =
+    | Hint_immutable
+    | Hint_unsafe
+    | Hint_int of Primitive.boxed_integer
+    | Hint_array of Lambda.array_kind
+    | Hint_bigarray of
+        { unsafe : bool
+        ; elt_kind : Lambda.bigarray_kind
+        ; layout : Lambda.bigarray_layout
+        }
+    | Hint_primitive of Primitive.description
+
+  type t = { hints : optimization_hint Int.Hashtbl.t }
+
+  let equal (a : optimization_hint) b = Poly.equal a b
+
+  let create () = { hints = Int.Hashtbl.create 17 }
+
+  let read t ~orig ic =
+    let l : (int * optimization_hint) list = input_value ic in
+
+    List.iter l ~f:(fun (pos, hint) -> Int.Hashtbl.add t.hints ((pos + orig) / 4) hint)
+
+  let read_section t ic =
+    let len = input_binary_int ic in
+    for _i = 0 to len - 1 do
+      let orig = input_binary_int ic in
+      read t ~orig ic
+    done
+
+  let find t pc = Int.Hashtbl.find_all t.hints pc
+end
+
 (* Block analysis *)
 (* Detect each block *)
 module Blocks : sig
@@ -864,6 +921,7 @@ type compile_info =
   ; code : string
   ; limit : int
   ; debug : Debug.t
+  ; hints : Hints.t
   }
 
 let string_of_addr debug_data addr =
@@ -886,9 +944,11 @@ let string_of_addr debug_data addr =
       in
       Printf.sprintf "%s:%s-%s %s" file (pos loc.loc_start) (pos loc.loc_end) kind)
 
-let is_immutable _instr _infos _pc = (* We don't know yet *) Maybe_mutable
+let is_immutable _instr infos pc =
+  let hints = Hints.find infos.hints pc in
+  if List.mem ~eq:Hints.equal Hints.Hint_immutable hints then Immutable else Maybe_mutable
 
-let rec compile_block blocks joins debug_data code pc state : unit =
+let rec compile_block blocks joins hints debug_data code pc state : unit =
   match Addr.Map.find_opt pc !tagged_blocks with
   | Some old_state -> (
       (* Check that the shape of the stack is compatible with the one used to compile the block *)
@@ -920,7 +980,7 @@ let rec compile_block blocks joins debug_data code pc state : unit =
       let state = if Addr.Set.mem pc joins then State.start_block pc state else state in
       tagged_blocks := Addr.Map.add pc state !tagged_blocks;
       let instr, last, state' =
-        compile { blocks; joins; code; limit; debug = debug_data } pc state []
+        compile { blocks; joins; code; limit; debug = debug_data; hints } pc state []
       in
       assert (not (Addr.Map.mem pc !compiled_blocks));
       (* When jumping to a block that was already visited and the
@@ -959,10 +1019,10 @@ let rec compile_block blocks joins debug_data code pc state : unit =
           !compiled_blocks;
       match last with
       | Branch (pc', _) ->
-          compile_block blocks joins debug_data code pc' (adjust_state pc')
+          compile_block blocks joins hints debug_data code pc' (adjust_state pc')
       | Cond (_, (pc1, _), (pc2, _)) ->
-          compile_block blocks joins debug_data code pc1 (adjust_state pc1);
-          compile_block blocks joins debug_data code pc2 (adjust_state pc2)
+          compile_block blocks joins hints debug_data code pc1 (adjust_state pc1);
+          compile_block blocks joins hints debug_data code pc2 (adjust_state pc2)
       | Poptrap (_, _) -> ()
       | Switch (_, _) -> ()
       | Raise _ | Return _ | Stop -> ()
@@ -1289,7 +1349,7 @@ and compile infos pc state (instrs : instr list) =
         let params, state' = State.make_stack nparams state' in
         if debug_parser () then Format.printf ") {@.";
         let state' = State.clear_accu state' in
-        compile_block infos.blocks infos.joins infos.debug code addr state';
+        compile_block infos.blocks infos.joins infos.hints infos.debug code addr state';
         if debug_parser () then Format.printf "}@.";
         compile
           infos
@@ -1347,7 +1407,14 @@ and compile infos pc state (instrs : instr list) =
               let params, state' = State.make_stack nparams state' in
               if debug_parser () then Format.printf ") {@.";
               let state' = State.clear_accu state' in
-              compile_block infos.blocks infos.joins infos.debug code addr state';
+              compile_block
+                infos.blocks
+                infos.joins
+                infos.hints
+                infos.debug
+                code
+                addr
+                state';
               if debug_parser () then Format.printf "}@.";
               Let
                 ( x
@@ -1759,9 +1826,9 @@ and compile infos pc state (instrs : instr list) =
         let it = Array.init isize ~f:(fun i -> base + gets code (base + i)) in
         let bt = Array.init bsize ~f:(fun i -> base + gets code (base + isize + i)) in
         Array.iter it ~f:(fun pc' ->
-            compile_block infos.blocks infos.joins infos.debug code pc' state);
+            compile_block infos.blocks infos.joins infos.hints infos.debug code pc' state);
         Array.iter bt ~f:(fun pc' ->
-            compile_block infos.blocks infos.joins infos.debug code pc' state);
+            compile_block infos.blocks infos.joins infos.hints infos.debug code pc' state);
         match isize, bsize with
         | _, 0 -> instrs, Switch (x, Array.map it ~f:(fun pc -> pc, [])), state
         | 0, _ ->
@@ -1828,10 +1895,18 @@ and compile infos pc state (instrs : instr list) =
             interm_addr
             (Some handler_ctx_state, [], Pushtrap ((body_addr, []), x, (handler_addr, [])))
             !compiled_blocks;
-        compile_block infos.blocks infos.joins infos.debug code handler_addr handler_state;
         compile_block
           infos.blocks
           infos.joins
+          infos.hints
+          infos.debug
+          code
+          handler_addr
+          handler_state;
+        compile_block
+          infos.blocks
+          infos.joins
+          infos.hints
           infos.debug
           code
           body_addr
@@ -1850,6 +1925,7 @@ and compile infos pc state (instrs : instr list) =
         compile_block
           infos.blocks
           infos.joins
+          infos.hints
           infos.debug
           code
           addr
@@ -2539,7 +2615,7 @@ type one =
   ; debug : Debug.summary
   }
 
-let parse_bytecode code globals debug_data =
+let parse_bytecode code globals hints debug_data =
   let immutable = Code.Var.Hashtbl.create 0 in
   let state = State.initial globals immutable in
   Code.Var.reset ();
@@ -2550,7 +2626,7 @@ let parse_bytecode code globals debug_data =
     then (
       let start = 0 in
 
-      compile_block blocks' joins debug_data code start state;
+      compile_block blocks' joins hints debug_data code start state;
       let blocks =
         Addr.Map.mapi
           (fun _ (state, instr, last) ->
@@ -2674,6 +2750,7 @@ let from_exe
     ?(debug = false)
     ic =
   let debug_data = Debug.create ~include_cmis debug in
+  let hints = Hints.create () in
   let toc = Toc.read ic in
   let primitives = read_primitives toc ic in
   let primitive_table = Array.of_list primitives in
@@ -2720,6 +2797,11 @@ let from_exe
             available.@.");
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
 
+  (try
+     ignore (Toc.seek_section toc ic "HINT");
+     Hints.read_section hints ic
+   with Not_found -> ());
+
   let globals = make_globals (Array.length init_data) init_data primitive_table in
   if linkall
   then
@@ -2727,7 +2809,7 @@ let from_exe
     Ocaml_compiler.Symtable.GlobalMap.iter symbols ~f:(fun id n ->
         globals.named_value.(n) <- Some (Ocaml_compiler.Symtable.Global.name id);
         globals.is_exported.(n) <- true);
-  let p = parse_bytecode code globals debug_data in
+  let p = parse_bytecode code globals hints debug_data in
   (* register predefined exception *)
   let body =
     List.fold_left predefined_exceptions ~init:[] ~f:(fun body (i, name) ->
@@ -2835,6 +2917,7 @@ let from_exe
 (* As input: list of primitives + size of global table *)
 let from_bytes ~prims ~debug (code : bytecode) =
   let debug_data = Debug.create ~include_cmis:false true in
+  let hints = Hints.create () in
   let t = Timer.make () in
   if Debug.names debug_data
   then
@@ -2857,7 +2940,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
     t
   in
   let globals = make_globals 0 [||] prims in
-  let p = parse_bytecode code globals debug_data in
+  let p = parse_bytecode code globals hints debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let find_name i =
@@ -2989,7 +3072,7 @@ module Reloc = struct
     globals
 end
 
-let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
+let from_compilation_units ~includes:_ ~include_cmis ~hints ~debug_data l =
   let reloc = Reloc.create () in
   List.iter l ~f:(fun (compunit, code) -> Reloc.step1 reloc compunit code);
   List.iter l ~f:(fun (compunit, code) -> Reloc.step2 reloc compunit code);
@@ -2998,7 +3081,7 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
     let l = List.map l ~f:(fun (_, c) -> Bytes.to_string c) in
     String.concat ~sep:"" l
   in
-  let prog = parse_bytecode code globals debug_data in
+  let prog = parse_bytecode code globals hints debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let body =
@@ -3050,12 +3133,20 @@ let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit 
     seek_in ic compunit.Cmo_format.cu_debug;
     Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
-  let p = from_compilation_units ~includes ~include_cmis ~debug_data [ compunit, code ] in
+  let hints = Hints.create () in
+  if Ocaml_compiler.Cmo_format.hints_pos compunit <> 0
+  then (
+    seek_in ic (Ocaml_compiler.Cmo_format.hints_pos compunit);
+    Hints.read hints ~orig:0 ic);
+  let p =
+    from_compilation_units ~includes ~include_cmis ~hints ~debug_data [ compunit, code ]
+  in
   Code.invariant p.code;
   p
 
 let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
   let debug_data = Debug.create ~include_cmis debug in
+  let hints = Hints.create () in
   let orig = ref 0 in
   let t = ref 0. in
   let units =
@@ -3068,12 +3159,16 @@ let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
         then (
           seek_in ic compunit.Cmo_format.cu_debug;
           Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
+        if Ocaml_compiler.Cmo_format.hints_pos compunit <> 0
+        then (
+          seek_in ic (Ocaml_compiler.Cmo_format.hints_pos compunit);
+          Hints.read hints ~orig:!orig ic);
         t := !t +. Timer.get t0;
         orig := !orig + compunit.Cmo_format.cu_codesize;
         compunit, code)
   in
   if times () then Format.eprintf "    read debug events: %.2f@." !t;
-  let p = from_compilation_units ~includes ~include_cmis ~debug_data units in
+  let p = from_compilation_units ~includes ~include_cmis ~hints ~debug_data units in
   Code.invariant p.code;
   p
 
