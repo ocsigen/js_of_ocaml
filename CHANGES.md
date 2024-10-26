@@ -9,8 +9,6 @@
 * Compiler: improved global dead code elimination (#2206)
 * Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
 * Compiler: Decode sourcemap mappings only when necessary (#1664)
-* Compiler: make indirect call using sequence instead of using the call method
-  [f.call(null, args)] becomes [(0,f)(args)]
 * Compiler: mark [TextEncoder] as reserved
 * Compiler: add support for the Wasm backend in parts of the pipeline, in
   prevision for the merge of wasm_of_ocaml
