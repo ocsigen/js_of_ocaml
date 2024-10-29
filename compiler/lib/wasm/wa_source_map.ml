@@ -189,6 +189,10 @@ let iter_sources sm f =
           iter_sources' (member "map" entry) (if single_map then None else Some i) f)
         l
 
+let blackbox_filename = "/builtin/blackbox.ml"
+
+let blackbox_contents = "(* generated code *)"
+
 let insert_source_contents' ~rewrite_path sm i f =
   let rewrite_path path =
     raw_string_from_string (rewrite_path (string_from_raw_string path))
@@ -196,20 +200,27 @@ let insert_source_contents' ~rewrite_path sm i f =
   let open Yojson.Raw.Util in
   let l = sm |> member "sources" |> to_option to_list |> Option.value ~default:[] in
   let single = List.length l = 1 in
+  let ignored = ref (-1) in
   let contents =
     List.mapi
-      ~f:(fun j nm ->
-        match
-          f
-            i
-            (if single then None else Some j)
-            (string_from_raw_string (to_raw_string nm))
-        with
-        | Some c -> `Stringlit c
-        | None -> `Null)
+      ~f:(fun j name ->
+        let name = string_from_raw_string (to_raw_string name) in
+        if String.equal name blackbox_filename
+        then (
+          ignored := j;
+          `Stringlit (raw_string_from_string blackbox_contents))
+        else
+          match f i (if single then None else Some j) name with
+          | Some c -> `Stringlit c
+          | None -> `Null)
       l
   in
   let sm = replace_member sm "sourcesContent" (`List contents) in
+  let sm =
+    if !ignored >= 0
+    then replace_member sm "ignoreList" (`List [ `Intlit (string_of_int !ignored) ])
+    else sm
+  in
   let sm =
     replace_member
       sm

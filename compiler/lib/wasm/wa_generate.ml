@@ -38,7 +38,6 @@ module Generate (Target : Wa_target_sig.S) = struct
     ; global_context : Wa_code_generation.context
     ; debug : Parse_bytecode.Debug.t
     }
-  [@@warning "-69"]
 
   type repr =
     | Value
@@ -675,37 +674,34 @@ module Generate (Target : Wa_target_sig.S) = struct
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
                 assert false))
 
-  and translate_instr ctx context loc i =
-    with_location
-      loc
-      (match i with
-      | Assign (x, y) -> assign x (load y)
-      | Let (x, e) ->
-          if ctx.live.(Var.idx x) = 0
-          then drop (translate_expr ctx context x e)
-          else store x (translate_expr ctx context x e)
-      | Set_field (x, n, Non_float, y) -> Memory.set_field (load x) n (load y)
-      | Set_field (x, n, Float, y) ->
-          Memory.float_array_set
-            (load x)
-            (Constant.translate (Int (Targetint.of_int_warning_on_overflow n)))
-            (load y)
-      | Offset_ref (x, n) ->
-          Memory.set_field
-            (load x)
-            0
-            (Value.val_int
-               Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
-      | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z)
-      | Event _ -> assert false)
+  and translate_instr ctx context i =
+    match i with
+    | Assign (x, y) -> assign x (load y)
+    | Let (x, e) ->
+        if ctx.live.(Var.idx x) = 0
+        then drop (translate_expr ctx context x e)
+        else store x (translate_expr ctx context x e)
+    | Set_field (x, n, Non_float, y) -> Memory.set_field (load x) n (load y)
+    | Set_field (x, n, Float, y) ->
+        Memory.float_array_set
+          (load x)
+          (Constant.translate (Int (Targetint.of_int_warning_on_overflow n)))
+          (load y)
+    | Offset_ref (x, n) ->
+        Memory.set_field
+          (load x)
+          0
+          (Value.val_int
+             Arith.(Value.int_val (Memory.field (load x) 0) + const (Int32.of_int n)))
+    | Array_set (x, y, z) -> Memory.array_set (load x) (load y) (load z)
+    | Event loc -> event loc
 
-  and translate_instrs ctx context loc l =
+  and translate_instrs ctx context l =
     match l with
-    | [] -> return loc
-    | Event loc :: rem -> translate_instrs ctx context (Some loc) rem
+    | [] -> return ()
     | i :: rem ->
-        let* () = translate_instr ctx context loc i in
-        translate_instrs ctx context loc rem
+        let* () = translate_instr ctx context i in
+        translate_instrs ctx context rem
 
   let parallel_renaming params args =
     let rec visit visited prev s m x l =
@@ -896,58 +892,56 @@ module Generate (Target : Wa_target_sig.S) = struct
             else code ~context
           in
           translate_tree result_typ fall_through pc' context
-      | [] ->
+      | [] -> (
           let block = Addr.Map.find pc ctx.blocks in
-          let* loc = translate_instrs ctx context None block.body in
+          let* () = translate_instrs ctx context block.body in
           let branch = block.branch in
-          with_location
-            loc
-            (match branch with
-            | Branch cont -> translate_branch result_typ fall_through pc cont context
-            | Return x -> (
-                let* e = load x in
-                match fall_through with
-                | `Return -> instr (Push e)
-                | `Block _ -> instr (Return (Some e)))
-            | Cond (x, cont1, cont2) ->
-                let context' = extend_context fall_through context in
-                if_
-                  { params = []; result = result_typ }
-                  (Value.check_is_not_zero (load x))
-                  (translate_branch result_typ fall_through pc cont1 context')
-                  (translate_branch result_typ fall_through pc cont2 context')
-            | Stop -> (
-                let* e = Value.unit in
-                match fall_through with
-                | `Return -> instr (Push e)
-                | `Block _ -> instr (Return (Some e)))
-            | Switch (x, a) ->
-                let len = Array.length a in
-                let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
-                let dest (pc, args) =
-                  assert (List.is_empty args);
-                  label_index context pc
-                in
-                let* e = Value.int_val (load x) in
-                instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
-            | Raise (x, _) ->
-                let* e = load x in
-                let* tag = register_import ~name:exception_name (Tag Value.value) in
-                instr (Throw (tag, e))
-            | Pushtrap (cont, x, cont') ->
-                handle_exceptions
-                  ~result_typ
-                  ~fall_through
-                  ~context:(extend_context fall_through context)
-                  (wrap_with_handlers
-                     p
-                     (fst cont)
-                     (fun ~result_typ ~fall_through ~context ->
-                       translate_branch result_typ fall_through pc cont context))
-                  x
-                  (fun ~result_typ ~fall_through ~context ->
-                    translate_branch result_typ fall_through pc cont' context)
-            | Poptrap cont -> translate_branch result_typ fall_through pc cont context)
+          match branch with
+          | Branch cont -> translate_branch result_typ fall_through pc cont context
+          | Return x -> (
+              let* e = load x in
+              match fall_through with
+              | `Return -> instr (Push e)
+              | `Block _ -> instr (Return (Some e)))
+          | Cond (x, cont1, cont2) ->
+              let context' = extend_context fall_through context in
+              if_
+                { params = []; result = result_typ }
+                (Value.check_is_not_zero (load x))
+                (translate_branch result_typ fall_through pc cont1 context')
+                (translate_branch result_typ fall_through pc cont2 context')
+          | Stop -> (
+              let* e = Value.unit in
+              match fall_through with
+              | `Return -> instr (Push e)
+              | `Block _ -> instr (Return (Some e)))
+          | Switch (x, a) ->
+              let len = Array.length a in
+              let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
+              let dest (pc, args) =
+                assert (List.is_empty args);
+                label_index context pc
+              in
+              let* e = Value.int_val (load x) in
+              instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
+          | Raise (x, _) ->
+              let* e = load x in
+              let* tag = register_import ~name:exception_name (Tag Value.value) in
+              instr (Throw (tag, e))
+          | Pushtrap (cont, x, cont') ->
+              handle_exceptions
+                ~result_typ
+                ~fall_through
+                ~context:(extend_context fall_through context)
+                (wrap_with_handlers
+                   p
+                   (fst cont)
+                   (fun ~result_typ ~fall_through ~context ->
+                     translate_branch result_typ fall_through pc cont context))
+                x
+                (fun ~result_typ ~fall_through ~context ->
+                  translate_branch result_typ fall_through pc cont' context)
+          | Poptrap cont -> translate_branch result_typ fall_through pc cont context)
     and translate_branch result_typ fall_through src (dst, args) context =
       let* () =
         if List.is_empty args
@@ -1001,15 +995,27 @@ module Generate (Target : Wa_target_sig.S) = struct
         ~context:ctx.global_context
         ~param_names
         ~body:
-          (let* () = build_initial_env in
-           wrap_with_handlers
-             p
-             pc
-             ~result_typ:[ Value.value ]
-             ~fall_through:`Return
-             ~context:[]
-             (fun ~result_typ ~fall_through ~context ->
-               translate_branch result_typ fall_through (-1) cont context))
+          (let* () =
+             let block = Addr.Map.find pc ctx.blocks in
+             match block.body with
+             | Event start_loc :: _ -> event start_loc
+             | _ -> no_event
+           in
+           let* () = build_initial_env in
+           let* () =
+             wrap_with_handlers
+               p
+               pc
+               ~result_typ:[ Value.value ]
+               ~fall_through:`Return
+               ~context:[]
+               (fun ~result_typ ~fall_through ~context ->
+                 translate_branch result_typ fall_through (-1) cont context)
+           in
+           let end_loc = Parse_bytecode.Debug.find_loc ctx.debug ~position:After pc in
+           match end_loc with
+           | Some loc -> event loc
+           | None -> return ())
     in
     let body = post_process_function_body ~param_names ~locals body in
     W.Function

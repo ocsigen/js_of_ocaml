@@ -71,6 +71,7 @@ module Make (Target : Wa_target_sig.S) = struct
     in
     let f = Code.Var.fresh_n "f" in
     let body =
+      let* () = no_event in
       let* () = bind_parameters args in
       let* _ = add_var f in
       let* args' = expression_list load args in
@@ -121,6 +122,7 @@ module Make (Target : Wa_target_sig.S) = struct
     let x = Code.Var.fresh_n "x" in
     let f = Code.Var.fresh_n "f" in
     let body =
+      let* () = no_event in
       let* _ = add_var x in
       let* _ = add_var f in
       push (Closure.curry_allocate ~cps:false ~arity m ~f:name' ~closure:f ~arg:x)
@@ -141,6 +143,7 @@ module Make (Target : Wa_target_sig.S) = struct
     in
     let f = Code.Var.fresh_n "f" in
     let body =
+      let* () = no_event in
       let* () = bind_parameters args in
       let* _ = add_var f in
       let* args' = expression_list load args in
@@ -192,6 +195,7 @@ module Make (Target : Wa_target_sig.S) = struct
     let cont = Code.Var.fresh_n "cont" in
     let f = Code.Var.fresh_n "f" in
     let body =
+      let* () = no_event in
       let* _ = add_var x in
       let* _ = add_var cont in
       let* _ = add_var f in
@@ -215,6 +219,7 @@ module Make (Target : Wa_target_sig.S) = struct
     in
     let f = Code.Var.fresh_n "f" in
     let body =
+      let* () = no_event in
       let* () = bind_parameters l in
       let* _ = add_var f in
       Memory.check_function_arity
@@ -248,6 +253,7 @@ module Make (Target : Wa_target_sig.S) = struct
     in
     let f = Code.Var.fresh_n "f" in
     let body =
+      let* () = no_event in
       let* () = bind_parameters l in
       let* _ = add_var f in
       Memory.check_function_arity
@@ -287,6 +293,7 @@ module Make (Target : Wa_target_sig.S) = struct
     in
     let f = Code.Var.fresh_n "f" in
     let body =
+      let* () = no_event in
       let* () = bind_parameters l in
       let* _ = add_var f in
       let* typ, closure = Memory.load_real_closure ~cps ~arity (load f) in

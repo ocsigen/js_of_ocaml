@@ -741,7 +741,7 @@ end = struct
         output_expression st ch e';
         output_byte ch 0x15;
         output_uint ch (Hashtbl.find st.type_names typ)
-    | Location (_, i') -> output_instruction st ch i'
+    | Event _ -> ()
 
   let output_globals ch (st, global_idx, fields) =
     let count =
@@ -937,7 +937,7 @@ end = struct
           ~f:(fun set i -> expr_function_references i set)
           ~init:(expr_function_references e' set)
           l
-    | Location (_, i') -> instr_function_references i' set
+    | Event _ -> set
 
   let function_references fields set =
     List.fold_left

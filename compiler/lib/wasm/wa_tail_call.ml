@@ -18,18 +18,16 @@
 
 open! Stdlib
 
-let rec get_return ~tail i =
+let get_return ~tail i =
   match i with
-  | Wa_ast.Location (_, i') -> get_return ~tail i'
-  | Return (Some (LocalGet y)) -> Some y
+  | Wa_ast.Return (Some (LocalGet y)) -> Some y
   | Push (LocalGet y) when tail -> Some y
   | _ -> None
 
-let rec rewrite_tail_call ~y i =
+let rewrite_tail_call ~y i =
   match i with
-  | Wa_ast.Location (loc, i') ->
-      Option.map ~f:(fun i -> Wa_ast.Location (loc, i)) (rewrite_tail_call ~y i')
-  | LocalSet (x, Call (symb, l)) when Code.Var.equal x y -> Some (Return_call (symb, l))
+  | Wa_ast.LocalSet (x, Call (symb, l)) when Code.Var.equal x y ->
+      Some (Wa_ast.Return_call (symb, l))
   | LocalSet (x, Call_ref (ty, e, l)) when Code.Var.equal x y ->
       Some (Return_call_ref (ty, e, l))
   | _ -> None
@@ -49,7 +47,6 @@ let rec instruction ~tail i =
   | Return (Some (Call_ref (ty, e, l))) -> Return_call_ref (ty, e, l)
   | Push (Call (symb, l)) when tail -> Return_call (symb, l)
   | Push (Call_ref (ty, e, l)) when tail -> Return_call_ref (ty, e, l)
-  | Location (loc, i) -> Location (loc, instruction ~tail i)
   | Push (Call_ref _) -> i
   | Drop (BlockExpr (typ, l)) -> Drop (BlockExpr (typ, instructions ~tail:false l))
   | Drop _
@@ -67,7 +64,8 @@ let rec instruction ~tail i =
   | ArraySet _
   | StructSet _
   | Return_call _
-  | Return_call_ref _ -> i
+  | Return_call_ref _
+  | Event _ -> i
 
 and instructions ~tail l =
   match l with
@@ -75,13 +73,15 @@ and instructions ~tail l =
   | [ i ] -> [ instruction ~tail i ]
   | i :: Nop :: rem -> instructions ~tail (i :: rem)
   | i :: i' :: Nop :: rem -> instructions ~tail (i :: i' :: rem)
-  | [ i; i' ] -> (
+  | i :: i' :: (([] | [ Event _ ]) as event_opt) -> (
+      (* There can be an event at the end of the function, which we
+         should keep. *)
       match get_return ~tail i' with
-      | None -> [ instruction ~tail:false i; instruction ~tail i' ]
+      | None -> instruction ~tail:false i :: instruction ~tail i' :: event_opt
       | Some y -> (
           match rewrite_tail_call ~y i with
-          | None -> [ instruction ~tail:false i; instruction ~tail i' ]
-          | Some i'' -> [ i'' ]))
+          | None -> instruction ~tail:false i :: instruction ~tail i' :: event_opt
+          | Some i'' -> i'' :: event_opt))
   | i :: rem -> instruction ~tail:false i :: instructions ~tail rem
 
 let f l = instructions ~tail:true l
