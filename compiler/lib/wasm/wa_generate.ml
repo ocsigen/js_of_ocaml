@@ -160,10 +160,19 @@ module Generate (Target : Wa_target_sig.S) = struct
     let rec index_rec context pc i =
       match context with
       | `Block pc' :: _ when pc = pc' -> i
-      | (`Block _ | `Skip) :: rem -> index_rec rem pc (i + 1)
+      | (`Block _ | `Skip | `Catch _) :: rem -> index_rec rem pc (i + 1)
       | [] -> assert false
     in
     index_rec context pc 0
+
+  let catch_index context =
+    let rec index_rec context i =
+      match context with
+      | `Catch x :: _ -> Some (x, i)
+      | (`Block _ | `Skip | `Return) :: rem -> index_rec rem (i + 1)
+      | [] -> None
+    in
+    index_rec context 0
 
   let bound_error_pc = -1
 
@@ -750,7 +759,7 @@ module Generate (Target : Wa_target_sig.S) = struct
 
   let extend_context fall_through context =
     match fall_through with
-    | `Block _ as b -> b :: context
+    | (`Block _ | `Catch _) as b -> b :: context
     | `Return -> `Skip :: context
 
   let needed_handlers (p : program) pc =
@@ -902,7 +911,7 @@ module Generate (Target : Wa_target_sig.S) = struct
               let* e = load x in
               match fall_through with
               | `Return -> instr (Push e)
-              | `Block _ -> instr (Return (Some e)))
+              | `Block _ | `Catch _ -> instr (Return (Some e)))
           | Cond (x, cont1, cont2) ->
               let context' = extend_context fall_through context in
               if_
@@ -914,7 +923,7 @@ module Generate (Target : Wa_target_sig.S) = struct
               let* e = Value.unit in
               match fall_through with
               | `Return -> instr (Push e)
-              | `Block _ -> instr (Return (Some e)))
+              | `Block _ | `Catch _ -> instr (Return (Some e)))
           | Switch (x, a) ->
               let len = Array.length a in
               let l = Array.to_list (Array.sub a ~pos:0 ~len:(len - 1)) in
@@ -924,10 +933,17 @@ module Generate (Target : Wa_target_sig.S) = struct
               in
               let* e = Value.int_val (load x) in
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
-          | Raise (x, _) ->
+          | Raise (x, _) -> (
               let* e = load x in
               let* tag = register_import ~name:exception_name (Tag Value.value) in
-              instr (Throw (tag, e))
+              match fall_through with
+              | `Catch x -> store ~always:true x (return e)
+              | `Block _ | `Return -> (
+                  match catch_index context with
+                  | Some (x, i) ->
+                      let* () = store ~always:true x (return e) in
+                      instr (Br (i, None))
+                  | None -> instr (Throw (tag, e))))
           | Pushtrap (cont, x, cont') ->
               handle_exceptions
                 ~result_typ

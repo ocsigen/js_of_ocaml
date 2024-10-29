@@ -252,9 +252,9 @@ module type S = sig
   val handle_exceptions :
        result_typ:Wa_ast.value_type list
     -> fall_through:'a
-    -> context:([> `Skip ] as 'b) list
+    -> context:([> `Catch of Code.Var.t ] as 'b) list
     -> (   result_typ:Wa_ast.value_type list
-        -> fall_through:[> `Block of int ]
+        -> fall_through:[> `Catch of Code.Var.t ]
         -> context:'b list
         -> unit Wa_code_generation.t)
     -> Wa_ast.var

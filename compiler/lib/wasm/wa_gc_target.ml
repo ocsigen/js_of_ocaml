@@ -1678,7 +1678,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
     (let* () =
        try_
          { params = []; result = [] }
-         (body ~result_typ:[] ~fall_through:(`Block (-1)) ~context:(`Skip :: context))
+         (body ~result_typ:[] ~fall_through:(`Catch x) ~context:(`Catch x :: context))
          [ ( ocaml_tag
            , let* () = no_event in
              store ~always:true x (return (W.Pop Value.value)) )
