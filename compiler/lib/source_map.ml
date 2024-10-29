@@ -730,7 +730,7 @@ let of_json = function
 
 let of_string s = of_json (Yojson.Raw.from_string s)
 
-let of_file filename = of_json (Yojson.Raw.from_file filename)
+let of_file f = of_json (Yojson.Raw.from_file f)
 
 let to_string = function
   | Standard m -> Standard.to_string m
