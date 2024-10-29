@@ -65,3 +65,5 @@ val link :
   -> unit
 
 val source_name : int option -> int option -> string -> string
+
+val gen_dir : string -> (string -> 'a) -> 'a

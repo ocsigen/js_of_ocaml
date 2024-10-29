@@ -680,6 +680,29 @@ let load_information files =
                in
                file, (build_info, unit_data)) )
 
+let remove_directory path =
+  try
+    let files = Sys.readdir path in
+    Array.iter ~f:(fun file -> Sys.remove (Filename.concat path file)) files;
+    Sys.rmdir path (* Since OCaml 4.12, so we cannot put this in fs.ml *)
+  with Sys_error _ -> ()
+
+let gen_dir dir f =
+  let d_tmp =
+    Filename.temp_file_name
+      ~temp_dir:(Filename.dirname dir)
+      (Filename.basename dir)
+      ".tmp"
+  in
+  try
+    let res = f d_tmp in
+    remove_directory dir;
+    Sys.rename d_tmp dir;
+    res
+  with exc ->
+    remove_directory d_tmp;
+    raise exc
+
 let link ~output_file ~linkall ~enable_source_maps ~files =
   if times () then Format.eprintf "linking@.";
   let t = Timer.make () in
@@ -770,7 +793,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   let t = Timer.make () in
   let interfaces, wasm_dir, link_spec =
     let dir = Filename.chop_extension output_file ^ ".assets" in
-    Fs.gen_file dir
+    gen_dir dir
     @@ fun tmp_dir ->
     Sys.mkdir tmp_dir 0o777;
     let start_module =

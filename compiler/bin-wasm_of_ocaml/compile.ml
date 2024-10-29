@@ -425,7 +425,7 @@ let run
          Fs.gen_file (Filename.chop_extension output_file ^ ".wat")
          @@ fun wat_file ->
          let dir = Filename.chop_extension output_file ^ ".assets" in
-         Fs.gen_file dir
+         Wa_link.gen_dir dir
          @@ fun tmp_dir ->
          Sys.mkdir tmp_dir 0o777;
          let opt_sourcemap =
