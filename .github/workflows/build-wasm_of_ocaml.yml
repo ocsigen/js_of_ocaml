@@ -221,3 +221,8 @@ jobs:
         if: ${{ matrix.ocaml-compiler < '5.' }}
         working-directory: ./jane-street/lib/bonsai
         run: opam exec -- dune runtest
+
+      - name: Run Bonsai tests (release profile)
+        if: ${{ matrix.ocaml-compiler < '5.' }}
+        working-directory: ./jane-street/lib/bonsai
+        run: opam exec -- dune runtest --profile release
