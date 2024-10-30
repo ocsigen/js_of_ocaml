@@ -180,7 +180,8 @@ module Constant : sig
 
   val ocaml_equal : t -> t -> bool option
   (** Guaranteed equality in terms of OCaml [(=)]: if [constant_equal a b =
-    Some v], then [Poly.(=) a b = v]. This is used for optimization purposes. *)
+    Some v],
+      then [Poly.(=) a b = v]. This is used for optimization purposes. *)
 end
 
 type loc =
@@ -277,26 +278,25 @@ type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
 
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
-(** [fold_closures p f init] folds [f] over all closures in the program [p],
-    starting from the initial value [init]. For each closure, [f] is called
-    with the following arguments: the closure name (enclosed in
-    {!Stdlib.Some}), its parameter list, the address and parameter instantiation
-    of its first block, and the current accumulator. In addition, [f] is called
-    on the initial block [p.start], with [None] as the closure name.
-    All closures in all blocks of [p] are included in the fold, not only the
-    ones reachable from [p.start]. *)
+(** [fold_closures p f init] folds [f] over all closures in the program [p], starting from
+    the initial value [init]. For each closure, [f] is called with the following
+    arguments: the closure name (enclosed in {!Stdlib.Some}), its parameter list, the
+    address and parameter instantiation of its first block, and the current accumulator.
+    In addition, [f] is called on the initial block [p.start], with [None] as the closure
+    name. All closures in all blocks of [p] are included in the fold, not only the ones
+    reachable from [p.start]. *)
 
 val fold_closures_innermost_first :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
-(** Similar to {!fold_closures}, but applies the fold function to the
-    innermost closures first. Unlike with {!fold_closures}, only the closures
-    reachable from [p.start] are considered. *)
+(** Similar to {!fold_closures}, but applies the fold function to the innermost closures
+    first. Unlike with {!fold_closures}, only the closures reachable from [p.start] are
+    considered. *)
 
 val fold_closures_outermost_first :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
-(** Similar to {!fold_closures}, but applies the fold function to the
-    outermost closures first. Unlike with {!fold_closures}, only the closures
-    reachable from [p.start] are considered. *)
+(** Similar to {!fold_closures}, but applies the fold function to the outermost closures
+    first. Unlike with {!fold_closures}, only the closures reachable from [p.start] are
+    considered. *)
 
 val fold_children : 'c fold_blocs
 

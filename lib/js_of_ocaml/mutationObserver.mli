@@ -19,26 +19,32 @@
 
 (** MutationObserver API
 
-  A code example:
-  {[
-    if (MutationObserver.is_supported()) then
-      let doc = Dom_html.document in
-      let target =
-        Js.Opt.get (doc##getElementById (Js.string "observed"))
-          (fun () -> assert false)
-      in
-      let node = (target :> Dom.node Js.t) in
-      let f records observer =
-        Firebug.console##debug records ;
-        Firebug.console##debug observer
-      in
-      MutationObserver.observe ~node ~f
-        ~attributes:true ~child_list:true ~character_data:true
-        ()
-  ]}
+    A code example:
+    {[
+      if MutationObserver.is_supported ()
+      then
+        let doc = Dom_html.document in
+        let target =
+          Js.Opt.get (doc##getElementById (Js.string "observed")) (fun () -> assert false)
+        in
+        let node = (target :> Dom.node Js.t) in
+        let f records observer =
+          Firebug.console##debug records;
+          Firebug.console##debug observer
+        in
+        MutationObserver.observe
+          ~node
+          ~f
+          ~attributes:true
+          ~child_list:true
+          ~character_data:true
+          ()
+    ]}
 
-  @see <https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver> for API documentation.
-  @see <https://dom.spec.whatwg.org/#mutation-observers> for the Web Hypertext Application Technology Working Group (WHATWG) spec. *)
+    @see <https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver>
+      for API documentation.
+    @see <https://dom.spec.whatwg.org/#mutation-observers>
+      for the Web Hypertext Application Technology Working Group (WHATWG) spec. *)
 
 class type mutationObserverInit = object
   method childList : bool Js.writeonly_prop

@@ -470,42 +470,38 @@ module Uchar = struct
 
   module Utf_decode : sig
     type utf_decode [@@immediate]
-    (** The type for UTF decode results. Values of this type represent
-    the result of a Unicode Transformation Format decoding attempt. *)
+    (** The type for UTF decode results. Values of this type represent the result of a
+        Unicode Transformation Format decoding attempt. *)
 
     val utf_decode_is_valid : utf_decode -> bool
-    (** [utf_decode_is_valid d] is [true] if and only if [d] holds a valid
-    decode. *)
+    (** [utf_decode_is_valid d] is [true] if and only if [d] holds a valid decode. *)
 
     val utf_decode_uchar : utf_decode -> t
     (** [utf_decode_uchar d] is the Unicode character decoded by [d] if
-    [utf_decode_is_valid d] is [true] and {!Uchar.rep} otherwise. *)
+        [utf_decode_is_valid d] is [true] and {!Uchar.rep} otherwise. *)
 
     val utf_decode_length : utf_decode -> int
-    (** [utf_decode_length d] is the number of elements from the source
-    that were consumed by the decode [d]. This is always strictly
-    positive and smaller or equal to [4]. The kind of source elements
-    depends on the actual decoder; for the decoders of the standard
-    library this function always returns a length in bytes. *)
+    (** [utf_decode_length d] is the number of elements from the source that were consumed
+        by the decode [d]. This is always strictly positive and smaller or equal to [4].
+        The kind of source elements depends on the actual decoder; for the decoders of the
+        standard library this function always returns a length in bytes. *)
 
     val utf_decode : int -> t -> utf_decode
-    (** [utf_decode n u] is a valid UTF decode for [u] that consumed [n]
-    elements from the source for decoding. [n] must be positive and
-    smaller or equal to [4] (this is not checked by the module). *)
+    (** [utf_decode n u] is a valid UTF decode for [u] that consumed [n] elements from the
+        source for decoding. [n] must be positive and smaller or equal to [4] (this is not
+        checked by the module). *)
 
     val utf_decode_invalid : int -> utf_decode
-    (** [utf_decode_invalid n] is an invalid UTF decode that consumed [n]
-    elements from the source to error. [n] must be positive and
-    smaller or equal to [4] (this is not checked by the module). The
-    resulting decode has {!rep} as the decoded Unicode character. *)
+    (** [utf_decode_invalid n] is an invalid UTF decode that consumed [n] elements from
+        the source to error. [n] must be positive and smaller or equal to [4] (this is not
+        checked by the module). The resulting decode has {!rep} as the decoded Unicode
+        character. *)
 
     val utf_8_byte_length : t -> int
-    (** [utf_8_byte_length u] is the number of bytes needed to encode
-    [u] in UTF-8. *)
+    (** [utf_8_byte_length u] is the number of bytes needed to encode [u] in UTF-8. *)
 
     val utf_16_byte_length : t -> int
-    (** [utf_16_byte_length u] is the number of bytes needed to encode
-    [u] in UTF-16. *)
+    (** [utf_16_byte_length u] is the number of bytes needed to encode [u] in UTF-16. *)
   end = struct
     (* UTF codecs tools *)
 
@@ -621,10 +617,11 @@ module String = struct
       let rec loop i =
         if i > max_idx_a
         then true
-        else if not
-                  (Char.equal
-                     (unsafe_get suffix (len_a - 1 - i))
-                     (unsafe_get s (len_s - 1 - i)))
+        else if
+          not
+            (Char.equal
+               (unsafe_get suffix (len_a - 1 - i))
+               (unsafe_get s (len_s - 1 - i)))
         then false
         else loop (i + 1)
       in
@@ -951,47 +948,53 @@ module String = struct
             else loop max b (last + 1)
         | '\xE0' ->
             let last = i + 2 in
-            if last > max
-               || not_in_xA0_to_xBF (get b (i + 1))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_xA0_to_xBF (get b (i + 1))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xE1' .. '\xEC' | '\xEE' .. '\xEF' ->
             let last = i + 2 in
-            if last > max
-               || not_in_x80_to_xBF (get b (i + 1))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x80_to_xBF (get b (i + 1))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xED' ->
             let last = i + 2 in
-            if last > max
-               || not_in_x80_to_x9F (get b (i + 1))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x80_to_x9F (get b (i + 1))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xF0' ->
             let last = i + 3 in
-            if last > max
-               || not_in_x90_to_xBF (get b (i + 1))
-               || not_in_x80_to_xBF (get b (i + 2))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x90_to_xBF (get b (i + 1))
+              || not_in_x80_to_xBF (get b (i + 2))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xF1' .. '\xF3' ->
             let last = i + 3 in
-            if last > max
-               || not_in_x80_to_xBF (get b (i + 1))
-               || not_in_x80_to_xBF (get b (i + 2))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x80_to_xBF (get b (i + 1))
+              || not_in_x80_to_xBF (get b (i + 2))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xF4' ->
             let last = i + 3 in
-            if last > max
-               || not_in_x80_to_x8F (get b (i + 1))
-               || not_in_x80_to_xBF (get b (i + 2))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x80_to_x8F (get b (i + 1))
+              || not_in_x80_to_xBF (get b (i + 2))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | _ -> false

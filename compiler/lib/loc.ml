@@ -49,9 +49,10 @@ let create ?(last_line = dummy_line) (p1 : Lexing.position) (p2 : Lexing.positio
   if p1.pos_fname = p2.pos_fname && p1.pos_lnum = p2.pos_lnum && p1.pos_bol = p2.pos_bol
   then
     let line =
-      if last_line.pos_fname == p1.pos_fname
-         && last_line.pos_lnum = p1.pos_lnum
-         && last_line.pos_bol = p1.pos_bol
+      if
+        last_line.pos_fname == p1.pos_fname
+        && last_line.pos_lnum = p1.pos_lnum
+        && last_line.pos_bol = p1.pos_bol
       then last_line
       else { pos_fname = p1.pos_fname; pos_lnum = p1.pos_lnum; pos_bol = p1.pos_bol }
     in

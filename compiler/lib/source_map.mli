@@ -61,10 +61,9 @@ module Mappings : sig
   (** The empty mapping. *)
 
   val of_string_unsafe : string -> t
-  (** [of_string_unsafe] does not perform any
-      validation of its argument, unlike {!val:decode}. It is guaranteed that
-      {!val:of_string_unsafe} and {!val:to_string} are inverse functions.
-      Time complexity O(1) *)
+  (** [of_string_unsafe] does not perform any validation of its argument, unlike
+      {!val:decode}. It is guaranteed that {!val:of_string_unsafe} and {!val:to_string}
+      are inverse functions. Time complexity O(1) *)
 
   val decode_exn : t -> decoded
   (** Parse the mappings. *)
@@ -73,17 +72,16 @@ module Mappings : sig
   (** Encode the mappings. *)
 
   val encode_with_offset : decoded -> Offset.t * t
-  (** Encode the mappings shifted by the returned offset so that the
-      encoded mapping is more compact. This is useful to combining
-      multiple mappings into an [Index.t] *)
+  (** Encode the mappings shifted by the returned offset so that the encoded mapping is
+      more compact. This is useful to combining multiple mappings into an [Index.t] *)
 
   val number_of_lines : t -> int
 
   val first_line : t -> int
 
   val to_string : t -> string
-  (** Returns the mappings as a string in the Source map v3 format.
-    Time complexity O(1) *)
+  (** Returns the mappings as a string in the Source map v3 format. Time complexity O(1)
+  *)
 end
 
 module Standard : sig
@@ -95,20 +93,20 @@ module Standard : sig
     ; sources_content : Source_content.t option list option
     ; names : string list
     ; mappings : Mappings.t
-          (** Left uninterpreted, since most useful operations can be performed efficiently
-          directly on the encoded form, and a full decoding can be costly for big
-          sourcemaps. *)
+          (** Left uninterpreted, since most useful operations can be performed
+              efficiently directly on the encoded form, and a full decoding can be costly
+              for big sourcemaps. *)
     ; ignore_list : string list
     }
 
   val filter_map : t -> f:(int -> int option) -> t
-  (** If [f l] returns [Some l'], map line [l] to [l'] (in the generated file) in
-    the returned debug mappings. If [f l] returns [None], remove debug mappings
-    which concern line [l] of the generated file. *)
+  (** If [f l] returns [Some l'], map line [l] to [l'] (in the generated file) in the
+      returned debug mappings. If [f l] returns [None], remove debug mappings which
+      concern line [l] of the generated file. *)
 
   val merge : t list -> t option
-  (** Merge two lists of debug mappings. The time cost of the merge is more than
-    linear in function of the size of the input mappings. *)
+  (** Merge two lists of debug mappings. The time cost of the merge is more than linear in
+      function of the size of the input mappings. *)
 
   val empty : inline_source_content:bool -> t
 end

@@ -114,8 +114,7 @@ let mailbox f =
           | _ -> None)
     }
 
-(** Process handler
-    Slightly modified version of sched.ml **)
+(** Process handler Slightly modified version of sched.ml **)
 let run main () =
   let run_q = Queue.create () in
   let enqueue k = Queue.push k run_q in

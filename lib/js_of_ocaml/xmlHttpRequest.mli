@@ -98,8 +98,8 @@ end
 
 val create : unit -> xmlHttpRequest t
 
-(** The next part of this module allow one to use Ocaml with no need for
-     Javascript documentation. *)
+(** The next part of this module allow one to use Ocaml with no need for Javascript
+    documentation. *)
 
 module Event : sig
   type typ = xmlHttpRequest File.progressEvent t Dom.Event.typ

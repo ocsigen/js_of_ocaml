@@ -160,12 +160,13 @@ module Xml = struct
             else parse_int ~pos:1 ~base:10 e
           in
           Js.string_constr##fromCharCode i
-        else if string_fold e ~pos:0 ~init:true ~f:(fun acc x ->
-                    (* This is not quite right according to
+        else if
+          string_fold e ~pos:0 ~init:true ~f:(fun acc x ->
+              (* This is not quite right according to
                        https://www.xml.com/axml/target.html#NT-Name.
                        but it seems to cover all html5 entities
                        https://dev.w3.org/html5/html-author/charref *)
-                    acc && is_alpha_num x)
+              acc && is_alpha_num x)
         then
           match e with
           | "quot" -> Js.string "\""

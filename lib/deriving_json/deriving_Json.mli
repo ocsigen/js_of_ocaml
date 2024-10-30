@@ -19,8 +19,8 @@
 
 (** Typesafe IO (based on the {i deriving} library).
     @see <https://github.com/ocsigen/deriving> the source code of {i deriving}
-    @see <http://code.google.com/p/deriving/> the documentation of the original {i deriving} library by Jeremy Yallop.
-*)
+    @see <http://code.google.com/p/deriving/>
+      the documentation of the original {i deriving} library by Jeremy Yallop. *)
 
 type 'a t
 (** The type of JSON parser/printer for value of type ['a]. *)
@@ -35,9 +35,9 @@ val to_string : 'a t -> 'a -> string
 (** [to_string Json.t<ty> v] marshal the [v] of type [ty] to a JSON string.*)
 
 val from_string : 'a t -> string -> 'a
-(** [from_string Json.t<ty> s] safely unmarshal the JSON [s] into an
-    OCaml value of type [ty]. Throws [Failure] if the received value
-    isn't the javascript representation of a value of type [ty]. *)
+(** [from_string Json.t<ty> s] safely unmarshal the JSON [s] into an OCaml value of type
+    [ty]. Throws [Failure] if the received value isn't the javascript representation of a
+    value of type [ty]. *)
 
 (** The signature of the JSON class. *)
 module type Json = sig
@@ -62,12 +62,12 @@ end
 
 (**/**)
 
-(** {2 Conversion } *)
+(** {2 Conversion} *)
 
 val convert : 'a t -> ('a -> 'b) -> ('b -> 'a) -> 'b t
-(** [convert (t : 'a t) (from_ : 'a -> 'b) (to_ : 'b -> 'a)]
-    generate a JSON parser/printer for value of type ['b] using the parser/printer of type ['a]
-    provided by [t] *)
+(** [convert (t : 'a t) (from_ : 'a -> 'b) (to_ : 'b -> 'a)] generate a JSON
+    parser/printer for value of type ['b] using the parser/printer of type ['a] provided
+    by [t] *)
 
 (** The signature of the Converter class. *)
 module type Json_converter = sig
@@ -85,38 +85,38 @@ end
 (** Generate a JSON class from a Converter *)
 module Convert (J : Json_converter) : Json with type a = J.b
 
-(** {3 Examples } *)
+(** {3 Examples} *)
 
-(**
-Parse and serialize a map as if it was an array of tuple.
-{[
-(* My map module *)
-module StringMap = Map.Make(String)
+(** Parse and serialize a map as if it was an array of tuple.
+    {[
+      (* My map module *)
+      module StringMap = Map.Make(String)
 
-(* Use deriving_json syntax to generate the JSON class for the array of tuple *)
-type 'a t = (string * 'a) array deriving (Json)
+      (* Use deriving_json syntax to generate the JSON class for the array of tuple *)
+      type 'a t = (string * 'a) array deriving (Json)
 
-(* generate the JSON class for StringMap *)
-module Json_string_map_t(A : Deriving_Json.Json) : Deriving_Json.Json with type a = A.a StringMap.t = struct
-  module S = Json_t(A)
-  include Deriving_Json.Convert(struct
-      type a = A.a t
-      type b = A.a StringMap.t
-      let t = S.t
-      let to_ : b -> A.a t = fun a -> Array.of_list (StringMap.bindings a)
-      let from_ : A.a t -> b = fun l ->
-        Array.fold_left
-          (fun map (x,v) -> StringMap.add x v map)
-          StringMap.empty
-          l
-    end)
-end
-]}
+      (* generate the JSON class for StringMap *)
+      module Json_string_map_t(A : Deriving_Json.Json) : Deriving_Json.Json with type a = A.a StringMap.t = struct
+        module S = Json_t(A)
+        include Deriving_Json.Convert(struct
+            type a = A.a t
+            type b = A.a StringMap.t
+            let t = S.t
+            let to_ : b -> A.a t = fun a -> Array.of_list (StringMap.bindings a)
+            let from_ : A.a t -> b = fun l ->
+              Array.fold_left
+                (fun map (x,v) -> StringMap.add x v map)
+                StringMap.empty
+                l
+          end)
+      end
+    ]}
 
-You can then ask the syntax extension to use the JSON class [Json_string_map_t] for [StringMap.t]
-by registering an alias
-{[Pa_deriving_Json.register_predefs ["StringMap";"t"] ["string_map_t"]]}
-*)
+    You can then ask the syntax extension to use the JSON class [Json_string_map_t] for
+    [StringMap.t] by registering an alias
+    {[
+      Pa_deriving_Json.register_predefs [ "StringMap"; "t" ] [ "string_map_t" ]
+    ]} *)
 
 (**/**)
 

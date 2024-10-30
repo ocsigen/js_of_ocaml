@@ -17,11 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** A minimal table implementation specialized for {!Js.js_string} keys.
-    This is faster than regular OCaml hashtables.
+(** A minimal table implementation specialized for {!Js.js_string} keys. This is faster
+    than regular OCaml hashtables.
 
-    This implementation does not emulate the backtracking behavior of {!Hashtbl}.
-*)
+    This implementation does not emulate the backtracking behavior of {!Hashtbl}. *)
 
 type 'a t
 

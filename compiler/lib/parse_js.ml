@@ -354,15 +354,15 @@ let rec offer_one t (lexbuf : Lexer.t) =
       let h = State.cursor t in
       let tok, loc =
         (* restricted productions
-           * 7.9.1 - 3
-           * When, as the program is parsed from left to right, a token is encountered
-           * that is allowed by some production of the grammar, but the production
-           * is a restricted production and the token would be the first token for a
-           * terminal or nonterminal immediately following the annotation [no LineTerminator here]
-           * within the restricted production (and therefore such a token is called a restricted token),
-           * and the restricted token is separated from the previous token by at least
-           * one LineTerminator, then a semicolon is automatically inserted before the
-           * restricted token. *)
+         * 7.9.1 - 3
+         * When, as the program is parsed from left to right, a token is encountered
+         * that is allowed by some production of the grammar, but the production
+         * is a restricted production and the token would be the first token for a
+         * terminal or nonterminal immediately following the annotation [no LineTerminator here]
+         * within the restricted production (and therefore such a token is called a restricted token),
+         * and the restricted token is separated from the previous token by at least
+         * one LineTerminator, then a semicolon is automatically inserted before the
+         * restricted token. *)
         match State.Cursor.last_token h, tok with
         | ( Some ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC), _, _)
           , ((T_SEMICOLON | T_VIRTUAL_SEMICOLON) as tok) ) -> tok, loc
@@ -375,10 +375,10 @@ let rec offer_one t (lexbuf : Lexer.t) =
             Lexer.rollback lexbuf;
             semicolon, dummy_loc
         (* The practical effect of these restricted productions is as follows:
-           * When a ++ or -- token is encountered where the parser would treat it
-           * as a postfix operator, and at least one LineTerminator occurred between
-           * the preceding token and the ++ or -- token, then a semicolon is automatically
-           * inserted before the ++ or -- token. *)
+         * When a ++ or -- token is encountered where the parser would treat it
+         * as a postfix operator, and at least one LineTerminator occurred between
+         * the preceding token and the ++ or -- token, then a semicolon is automatically
+         * inserted before the ++ or -- token. *)
         | _, T_DECR when not (nl_separated h loc) -> Js_token.T_DECR_NB, loc
         | _, T_INCR when not (nl_separated h loc) -> Js_token.T_INCR_NB, loc
         | _, ((T_DIV | T_DIV_ASSIGN) as tok) ->
@@ -558,8 +558,8 @@ let parse' lex =
   in
   let p =
     List.map groups ~f:(function
-        | [] -> assert false
-        | (annot, _) :: _ as l -> annot, List.map l ~f:snd)
+      | [] -> assert false
+      | (annot, _) :: _ as l -> annot, List.map l ~f:snd)
   in
   p, toks
 

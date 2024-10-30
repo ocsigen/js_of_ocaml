@@ -137,11 +137,12 @@ type usage_kind =
   | Scope  (** variable x is defined in function y *)
 
 (** Compute the adjacency list for the dependency graph of given program. An edge between
-    variables [x] and [y] is marked [Compute] if [x] is used in the definition of [y]. It is marked
-    as [Propagate] if [x] is applied as a closure or block argument the parameter [y].
+    variables [x] and [y] is marked [Compute] if [x] is used in the definition of [y]. It
+    is marked as [Propagate] if [x] is applied as a closure or block argument the
+    parameter [y].
 
-    We use information from global flow to try to add edges between function calls and their return values
-    at known call sites. *)
+    We use information from global flow to try to add edges between function calls and
+    their return values at known call sites. *)
 let usages prog (global_info : Global_flow.info) scoped_live_vars :
     (usage_kind * Var.Set.t) list Var.Tbl.t =
   let uses = Var.Tbl.make () [] in
@@ -274,9 +275,11 @@ let expr_vars e =
     + It is used in a conditonal/switch;
     + It is raised by an exception;
     + It is used in another stateful instruction (like setting a block or array field);
-    + Or, it is returned or applied to a function and the global flow analysis marked it as escaping.
+    + Or, it is returned or applied to a function and the global flow analysis marked it
+      as escaping.
 
-    A variable [x[i]] is marked as [Live {i}] if it is used in an instruction where field [i] is referenced or set. *)
+    A variable [x[i]] is marked as [Live {i}] if it is used in an instruction where field
+    [i] is referenced or set. *)
 let liveness prog pure_funs (global_info : Global_flow.info) =
   let live_vars = Var.Tbl.make () Domain.bot in
   let scoped_live_vars = Var.Tbl.make () None in
@@ -358,8 +361,8 @@ let variables deps =
   vars
 
 (** Propagate liveness of the usages of a variable [x] to [x]. The liveness of [x] is
-    defined by joining its current liveness and the contribution of each vairable [y]
-    that uses [x]. *)
+    defined by joining its current liveness and the contribution of each vairable [y] that
+    uses [x]. *)
 let propagate defs scoped_live_vars ~state ~dep:y ~target:x ~action:usage_kind =
   (* Variable [y] uses [x] either in its definition ([Compute]) or as a closure/block parameter
       ([Propagate]). In the latter case, the contribution is simply the liveness of [y]. In the former,
@@ -393,10 +396,11 @@ let propagate defs scoped_live_vars ~state ~dep:y ~target:x ~action:usage_kind =
           | _ -> Domain.top))
   (* If x is used as an argument for parameter y, then contribution is liveness of y *)
   | Propagate { scope; src } ->
-      if List.for_all scope ~f:(fun z ->
-             match Var.Tbl.get state z with
-             | Dead -> false
-             | _ -> true)
+      if
+        List.for_all scope ~f:(fun z ->
+            match Var.Tbl.get state z with
+            | Dead -> false
+            | _ -> true)
       then Var.Tbl.get state src
       else Domain.bot
   | Scope -> (
@@ -426,13 +430,11 @@ let solver vars uses defs live_vars scoped_live_vars =
   in
   Solver.f ~state:live_vars g (propagate defs scoped_live_vars)
 
-(** Replace each instance of a dead variable with a sentinal value.
-  Blocks that end in dead variables are compacted to the first live entry.
-  Dead variables are replaced when
+(** Replace each instance of a dead variable with a sentinal value. Blocks that end in
+    dead variables are compacted to the first live entry. Dead variables are replaced when
     + They appear in a dead field of a block; or
     + They are returned; or
-    + They are applied to a function.
- *)
+    + They are applied to a function. *)
 let zero prog sentinal live_table =
   let compact_vars vars =
     let i = ref (Array.length vars - 1) in
@@ -547,7 +549,8 @@ module Print = struct
       live_table
 end
 
-(** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
+(** Add a sentinal variable declaration to the IR. The fresh variable is assigned to
+    `undefined`. *)
 let add_sentinal p sentinal =
   let instr = Let (sentinal, Constant (Int Targetint.zero)) in
   Code.prepend p [ instr ]

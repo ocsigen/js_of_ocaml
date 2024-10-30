@@ -59,7 +59,7 @@ let quote_repl s = (Js.bytestring s)##replace quote_repl_re (Js.string "$$$$")
 
 let global_replace r s s_by =
   r##.lastIndex := 0;
-  Js.to_bytestring (Js.bytestring s) ## (replace r (quote_repl s_by))
+  Js.to_bytestring (Js.bytestring s)##(replace r (quote_repl s_by))
 
 let replace_first r s s_by =
   let flags =
@@ -70,7 +70,7 @@ let replace_first r s s_by =
     | true, true -> Js.string "mi"
   in
   let r' = new%js Js.regExp_withFlags r##.source flags in
-  Js.to_bytestring (Js.bytestring s) ## (replace r' (quote_repl s_by))
+  Js.to_bytestring (Js.bytestring s)##(replace r' (quote_repl s_by))
 
 let list_of_js_array a =
   let rec aux accu idx =
@@ -80,17 +80,17 @@ let list_of_js_array a =
 
 let split r s =
   r##.lastIndex := 0;
-  list_of_js_array (Js.str_array (Js.bytestring s) ## (split_regExp r))
+  list_of_js_array (Js.str_array (Js.bytestring s)##(split_regExp r))
 
 let bounded_split r s i =
   r##.lastIndex := 0;
-  list_of_js_array (Js.str_array (Js.bytestring s) ## (split_regExpLimited r i))
+  list_of_js_array (Js.str_array (Js.bytestring s)##(split_regExpLimited r i))
 
 (* More constructors *)
 
 let quote_re = regexp "[\\][()\\\\|+*.?{}^$]"
 
-let quote s = Js.to_bytestring (Js.bytestring s) ## (replace quote_re (Js.string "\\$&"))
+let quote s = Js.to_bytestring (Js.bytestring s)##(replace quote_re (Js.string "\\$&"))
 
 let regexp_string s = regexp (quote s)
 

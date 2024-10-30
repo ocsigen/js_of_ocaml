@@ -270,9 +270,8 @@ module CoerceTo = struct
 end
 
 type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
-(** The type of event listener functions.  The first type parameter
-      ['a] is the type of the target object; the second parameter
-      ['b] is the type of the event object. *)
+(** The type of event listener functions. The first type parameter ['a] is the type of the
+    target object; the second parameter ['b] is the type of the event object. *)
 
 class type ['a] event = object
   method _type : js_string t readonly_prop

@@ -19,6 +19,5 @@
 (**/**)
 
 val mapper : Ast_mapper.mapper
-(** You can use this mapper to register the extension when building a toplevel.
-    You can only use it the way it is; it is not possible to update any fields
-    of this mapper. *)
+(** You can use this mapper to register the extension when building a toplevel. You can
+    only use it the way it is; it is not possible to update any fields of this mapper. *)

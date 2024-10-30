@@ -20,8 +20,8 @@
 (** Base64 RFC4648 implementation.
 
     Base64 is a group of similar binary-to-text encoding schemes that represent binary
-    data in an ASCII string format by translating it into a radix-64 representation. It
-    is specified in RFC 4648. *)
+    data in an ASCII string format by translating it into a radix-64 representation. It is
+    specified in RFC 4648. *)
 
 val default_alphabet : string
 (** A 64-character string specifying the regular Base64 alphabet. *)
@@ -31,8 +31,8 @@ val uri_safe_alphabet : string
 
 val decode : ?alphabet:string -> string -> string
 (** [decode s] decodes the string [s] that is encoded in Base64 format. Will leave
-    trailing NULLs on the string, padding it out to a multiple of 3 characters.
-    [alphabet] defaults to {!default_alphabet}.
+    trailing NULLs on the string, padding it out to a multiple of 3 characters. [alphabet]
+    defaults to {!default_alphabet}.
     @raise Not_found if [s] is not a valid Base64 string. *)
 
 val encode : ?pad:bool -> ?alphabet:string -> string -> string

@@ -30,8 +30,8 @@ let () =
       String.length x > 0
       && (not (Char.equal x.[0] '-'))
       && String.for_all x ~f:(function
-             | 'a' .. 'z' | 'A' .. 'Z' | '-' -> true
-             | _ -> false)
+           | 'a' .. 'z' | 'A' .. 'Z' | '-' -> true
+           | _ -> false)
     in
     match Array.to_list argv with
     | exe :: maybe_command :: rest ->

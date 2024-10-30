@@ -367,19 +367,19 @@ let runtime_fun ctx name =
 let str_js_byte s =
   let b = Buffer.create (String.length s) in
   String.iter s ~f:(function
-      | '\\' -> Buffer.add_string b "\\\\"
-      | '\128' .. '\255' as c ->
-          Buffer.add_string b "\\x";
-          Buffer.add_char_hex b c
-      | c -> Buffer.add_char b c);
+    | '\\' -> Buffer.add_string b "\\\\"
+    | '\128' .. '\255' as c ->
+        Buffer.add_string b "\\x";
+        Buffer.add_char_hex b c
+    | c -> Buffer.add_char b c);
   let s = Buffer.contents b in
   J.EStr (Utf8_string.of_string_exn s)
 
 let str_js_utf8 s =
   let b = Buffer.create (String.length s) in
   String.iter s ~f:(function
-      | '\\' -> Buffer.add_string b "\\\\"
-      | c -> Buffer.add_char b c);
+    | '\\' -> Buffer.add_string b "\\\\"
+    | c -> Buffer.add_char b c);
   let s = Buffer.contents b in
   J.EStr (Utf8_string.of_string_exn s)
 
@@ -738,7 +738,10 @@ module DTree = struct
         with Not_found -> (
           (* do we have to split again ? *)
           (* we count the number of cases, default/last case count for one *)
-          let nbcases = ref 1 (* default case *) in
+          let nbcases =
+            ref 1
+            (* default case *)
+          in
           for i = 0 to array_len - 2 do
             nbcases := !nbcases + List.length (snd array_norm.(i))
           done;
@@ -827,8 +830,9 @@ let visit_all params args =
   l
 
 let parallel_renaming loc back_edge params args continuation queue =
-  if back_edge && Config.Flag.es6 ()
-     (* This is likely slower than using explicit temp variable
+  if
+    back_edge && Config.Flag.es6 ()
+    (* This is likely slower than using explicit temp variable
         but let's experiment with es6 a bit *)
   then
     let args, params =
@@ -1644,11 +1648,13 @@ and translate_instrs (ctx : Ctx.t) loc expr_queue instrs =
 
 (* Compile loops. *)
 and compile_block st loc queue (pc : Addr.t) scope_stack ~fall_through =
-  if (not (List.is_empty queue))
-     && (Structure.is_loop_header st.structure pc
-        || (* Do not inline expressions across block boundaries when --no-inline is used
+  if
+    (not (List.is_empty queue))
+    && (Structure.is_loop_header st.structure pc
+       ||
+       (* Do not inline expressions across block boundaries when --no-inline is used
               Single-stepping in the debugger should work better this way (fixes #290). *)
-        not (Config.Flag.inline ()))
+       not (Config.Flag.inline ()))
   then
     let never, code = compile_block st loc [] pc scope_stack ~fall_through in
     never, flush_all queue loc code
@@ -1964,9 +1970,10 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
       scope_stack
   in
   compile_argument_passing st.ctx loc queue cont back_edge (fun queue ->
-      if match fall_through with
-         | Block pc' -> pc' = pc
-         | Return -> false
+      if
+        match fall_through with
+        | Block pc' -> pc' = pc
+        | Return -> false
       then false, flush_all queue loc []
       else
         match scope with

@@ -20,8 +20,7 @@
 
 (** DOM binding
 
-This is a partial binding to the DOM Core API.
-*)
+    This is a partial binding to the DOM Core API. *)
 
 open Js
 
@@ -236,29 +235,23 @@ end
 (** {2 Helper functions} *)
 
 val insertBefore : #node t -> #node t -> #node t opt -> unit
-(** [insertBefore p n c] inserts node [n] as child of node [p],
-      just before node [c], or as last child if [p] is empty.
-      The expression [insertBefore n c p] behave the same as
-      [p##insertBefore n c] but avoid the need of coercing the
-      different objects to [node t]. *)
+(** [insertBefore p n c] inserts node [n] as child of node [p], just before node [c], or
+    as last child if [p] is empty. The expression [insertBefore n c p] behave the same as
+    [p##insertBefore n c] but avoid the need of coercing the different objects to
+    [node t]. *)
 
 val replaceChild : #node t -> #node t -> #node t -> unit
-(** The expression [replaceChild p n c] behave the same as
-      [p##replaceChild n c] (replace [c] by [n] in [p])
-      but avoid the need of coercing the
-      different objects to [node t]. *)
+(** The expression [replaceChild p n c] behave the same as [p##replaceChild n c] (replace
+    [c] by [n] in [p]) but avoid the need of coercing the different objects to [node t].
+*)
 
 val removeChild : #node t -> #node t -> unit
-(** The expression [removeChild n c] behave the same as
-      [n##removeChild c] (remove [c] from [n])
-      but avoid the need of coercing the
-      different objects to [node t]. *)
+(** The expression [removeChild n c] behave the same as [n##removeChild c] (remove [c]
+    from [n]) but avoid the need of coercing the different objects to [node t]. *)
 
 val appendChild : #node t -> #node t -> unit
-(** The expression [appendChild n c] behave the same as
-      [n##appendChild c] (appends [c] to [n])
-      but avoid the need of coercing the
-      different objects to [node t]. *)
+(** The expression [appendChild n c] behave the same as [n##appendChild c] (appends [c] to
+    [n]) but avoid the need of coercing the different objects to [node t]. *)
 
 val list_of_nodeList : 'a nodeList t -> 'a t list
 
@@ -281,9 +274,8 @@ end
 (** {2 Events} *)
 
 type (-'a, -'b) event_listener
-(** The type of event listener functions.  The first type parameter
-      ['a] is the type of the target object; the second parameter
-      ['b] is the type of the event object. *)
+(** The type of event listener functions. The first type parameter ['a] is the type of the
+    target object; the second parameter ['b] is the type of the event object. *)
 
 class type ['a] event = object
   method _type : js_string t readonly_prop
@@ -308,21 +300,19 @@ val no_handler : ('a, 'b) event_listener
 (** Void event handler (Javascript [null] value). *)
 
 val handler : (('e #event t as 'b) -> bool t) -> ('a, 'b) event_listener
-(** Create an event handler that invokes the provided function.
-      If the handler returns false, the default action is prevented. *)
+(** Create an event handler that invokes the provided function. If the handler returns
+    false, the default action is prevented. *)
 
 val full_handler : ('a -> ('e #event t as 'b) -> bool t) -> ('a, 'b) event_listener
-(** Create an event handler that invokes the provided function.
-      The event target (implicit parameter [this]) is also passed as
-      argument to the function.  *)
+(** Create an event handler that invokes the provided function. The event target (implicit
+    parameter [this]) is also passed as argument to the function. *)
 
 val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
-(** Invoke an existing handler.  Useful to chain event handlers. *)
+(** Invoke an existing handler. Useful to chain event handlers. *)
 
 val eventTarget : (< .. > as 'a) #event t -> 'a t
-(** Returns which object is the target of this event.
-      It raises [Not_found] in case there is no target
-      (if the event has not been triggered yet) *)
+(** Returns which object is the target of this event. It raises [Not_found] in case there
+    is no target (if the event has not been triggered yet) *)
 
 type event_listener_id
 
@@ -340,9 +330,9 @@ val addEventListenerWithOptions :
   -> ?passive:bool t
   -> ('a, 'b) event_listener
   -> event_listener_id
-(** Add an event listener.  This function matches the
-      option-object variant of the [addEventListener] DOM method,
-      except that it returns an id for removing the listener. *)
+(** Add an event listener. This function matches the option-object variant of the
+    [addEventListener] DOM method, except that it returns an id for removing the listener.
+*)
 
 val addEventListener :
      (< .. > t as 'a)
@@ -350,16 +340,16 @@ val addEventListener :
   -> ('a, 'b) event_listener
   -> bool t
   -> event_listener_id
-(** Add an event listener.  This function matches the
-      useCapture boolean variant of the [addEventListener] DOM method,
-      except that it returns an id for removing the listener. *)
+(** Add an event listener. This function matches the useCapture boolean variant of the
+    [addEventListener] DOM method, except that it returns an id for removing the listener.
+*)
 
 val removeEventListener : event_listener_id -> unit
 (** Remove the given event listener. *)
 
 val preventDefault : 'a #event Js.t -> unit
-(** Call this to prevent the default handler for the event.
-    To stop propagation of the event, call {!Dom_html.stopPropagation}. *)
+(** Call this to prevent the default handler for the event. To stop propagation of the
+    event, call {!Dom_html.stopPropagation}. *)
 
 val createCustomEvent :
      ?bubbles:bool

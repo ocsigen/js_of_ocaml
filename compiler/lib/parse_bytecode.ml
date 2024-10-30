@@ -939,8 +939,9 @@ and compile infos pc state (instrs : instr list) =
 
   if pc = infos.limit
   then
-    if (* stop if we reach end_of_code (ie when compiling cmo) *)
-       pc = String.length infos.code / 4
+    if
+      (* stop if we reach end_of_code (ie when compiling cmo) *)
+      pc = String.length infos.code / 4
     then (
       if debug_parser () then Format.eprintf "Stop@.";
       instrs, Stop, state)
@@ -2844,9 +2845,9 @@ module Reloc = struct
         i
     in
     List.iter compunit.cu_reloc ~f:(function
-        | Reloc_literal sc, pos -> gen_patch_int code pos (slot_for_literal sc)
-        | Reloc_primitive name, pos -> gen_patch_int code pos (num_of_prim name)
-        | _ -> ())
+      | Reloc_literal sc, pos -> gen_patch_int code pos (slot_for_literal sc)
+      | Reloc_primitive name, pos -> gen_patch_int code pos (num_of_prim name)
+      | _ -> ())
 
   let step2 t compunit code =
     t.step2_started <- true;
@@ -3002,16 +3003,18 @@ let from_channel ic =
   | `Pre magic -> (
       match Magic_number.kind magic with
       | `Cmo ->
-          if Config.Flag.check_magic ()
-             && not (Magic_number.equal magic Magic_number.current_cmo)
+          if
+            Config.Flag.check_magic ()
+            && not (Magic_number.equal magic Magic_number.current_cmo)
           then raise Magic_number.(Bad_magic_version magic);
           let compunit_pos = input_binary_int ic in
           seek_in ic compunit_pos;
           let compunit : Cmo_format.compilation_unit = input_value ic in
           `Cmo compunit
       | `Cma ->
-          if Config.Flag.check_magic ()
-             && not (Magic_number.equal magic Magic_number.current_cma)
+          if
+            Config.Flag.check_magic ()
+            && not (Magic_number.equal magic Magic_number.current_cma)
           then raise Magic_number.(Bad_magic_version magic);
           let pos_toc = input_binary_int ic in
           (* Go to table of contents *)
@@ -3022,8 +3025,9 @@ let from_channel ic =
   | `Post magic -> (
       match Magic_number.kind magic with
       | `Exe ->
-          if Config.Flag.check_magic ()
-             && not (Magic_number.equal magic Magic_number.current_exe)
+          if
+            Config.Flag.check_magic ()
+            && not (Magic_number.equal magic Magic_number.current_exe)
           then raise Magic_number.(Bad_magic_version magic);
           `Exe
       | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))

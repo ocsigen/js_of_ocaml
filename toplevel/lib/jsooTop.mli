@@ -30,9 +30,9 @@ val execute :
   -> formatter
   -> string
   -> unit
-(** [execute print fmt content] Execute [content].
-    [print] says whether the values and types of the results should be printed.
-    [pp_code] formatter can be use to output ocaml source during lexing. *)
+(** [execute print fmt content] Execute [content]. [print] says whether the values and
+    types of the results should be printed. [pp_code] formatter can be use to output ocaml
+    source during lexing. *)
 
 val initialize : unit -> unit
 (** Initialize Js_of_ocaml toplevel. *)

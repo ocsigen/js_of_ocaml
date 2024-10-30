@@ -21,8 +21,7 @@
     {[
       let init () =
         Compiler_libs.Ast_mapper.register "js_of_ocaml" (fun _ -> Ppx_js.mapper)
-    ]}
-*)
+    ]} *)
 
 (** Helpers to embed PPX into the toplevel. *)
 

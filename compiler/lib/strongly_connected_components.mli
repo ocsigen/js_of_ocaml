@@ -26,9 +26,9 @@ module type S = sig
   end
 
   type directed_graph = Id.Set.t Id.Map.t
-  (** If (a -> set) belongs to the map, it means that there are edges
-      from [a] to every element of [set].  It is assumed that no edge
-      points to a vertex not represented in the map. *)
+  (** If (a -> set) belongs to the map, it means that there are edges from [a] to every
+      element of [set]. It is assumed that no edge points to a vertex not represented in
+      the map. *)
 
   type component =
     | Has_loop of Id.t list

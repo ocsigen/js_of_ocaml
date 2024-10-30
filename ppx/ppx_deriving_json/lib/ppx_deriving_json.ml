@@ -245,9 +245,9 @@ let seqlist = function
 
 let check_record_fields =
   List.iter ~f:(function
-      | { pld_type = { ptyp_desc = Ptyp_poly _; _ }; _ } ->
-          Location.raise_errorf "%s cannot be derived for polymorphic records" deriver
-      | _ -> ())
+    | { pld_type = { ptyp_desc = Ptyp_poly _; _ }; _ } ->
+        Location.raise_errorf "%s cannot be derived for polymorphic records" deriver
+    | _ -> ())
 
 let maybe_tuple_type = function
   | [ y ] -> y

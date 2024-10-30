@@ -1093,7 +1093,8 @@ struct
               PP.end_group f;
               PP.string f ")"
               (* There MUST be a space between the yield and its
-                 argument. A line return will not work *)))
+                 argument. A line return will not work *))
+        )
     | EPrivName (Utf8 i) ->
         PP.string f "#";
         PP.string f i
@@ -1103,11 +1104,11 @@ struct
   and template f l =
     PP.string f "`";
     List.iter l ~f:(function
-        | TStr (Utf8 s) -> PP.string f s
-        | TExp e ->
-            PP.string f "${";
-            expression AssignementExpression f e;
-            PP.string f "}");
+      | TStr (Utf8 s) -> PP.string f s
+      | TExp e ->
+          PP.string f "${";
+          expression AssignementExpression f e;
+          PP.string f "}");
     PP.string f "`"
 
   and property_name f n =
@@ -1656,7 +1657,8 @@ struct
             PP.end_group f;
             PP.end_group f
             (* There MUST be a space between the return and its
-               argument. A line return will not work *))
+               argument. A line return will not work *)
+        )
     | Labelled_statement (i, s) ->
         let (Utf8 l) = nane_of_label i in
         PP.string f l;
@@ -1790,9 +1792,10 @@ struct
               f
               ~force_last_comma:(fun _ -> false)
               (fun f (s, i) ->
-                if match i with
-                   | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
-                   | _ -> false
+                if
+                  match i with
+                  | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
+                  | _ -> false
                 then ident f ~kind:`Binding i
                 else (
                   pp_ident_or_string_lit f s;
@@ -1822,9 +1825,10 @@ struct
               ~force_last_comma:(fun _ -> false)
               f
               (fun f (i, s) ->
-                if match i with
-                   | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
-                   | _ -> false
+                if
+                  match i with
+                  | S { name; _ } when Stdlib.Utf8_string.equal name s -> true
+                  | _ -> false
                 then ident f ~kind:`Reference i
                 else (
                   ident f ~kind:`Reference i;
@@ -1916,8 +1920,8 @@ struct
     PP.string f "}";
     PP.end_group f
 
-  and function_declaration :
-      type a. 'pp -> string -> ('pp -> a -> unit) -> a option -> _ -> _ -> _ -> unit =
+  and function_declaration : type a.
+      'pp -> string -> ('pp -> a -> unit) -> a option -> _ -> _ -> _ -> unit =
    fun f prefix (pp_name : _ -> a -> unit) (name : a option) l body loc ->
     PP.start_group f 0;
     PP.start_group f 0;
@@ -2125,8 +2129,9 @@ let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
               (* Firefox assumes that a mapping stops at the end of a
                  line, which is inconvenient. When this happens, we
                  repeat the mapping on the next line. *)
-              if pos'.PP.p_line = pos.PP.p_line
-                 || (pos'.p_line = pos.p_line - 1 && pos.p_col = 0)
+              if
+                pos'.PP.p_line = pos.PP.p_line
+                || (pos'.p_line = pos.p_line - 1 && pos.p_col = 0)
               then build_mappings pos' rem (relocate pos' m :: prev_mappings)
               else if pos.p_col > 0
               then

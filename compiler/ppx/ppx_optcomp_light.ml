@@ -17,15 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Minimal version of ppx_optcomp
-    It only support the following attribute
+(** Minimal version of ppx_optcomp It only support the following attribute
     {[
       [@if ocaml_version < (4,12,0)]
     ]}
-    on module (Pstr_module),
-    toplevel bindings (Pstr_value, Pstr_primitive)
-    and pattern in case (pc_lhs)
-*)
+    on module (Pstr_module), toplevel bindings (Pstr_value, Pstr_primitive) and pattern in
+    case (pc_lhs) *)
 
 open StdLabels
 open Ppxlib.Parsetree
@@ -99,73 +96,72 @@ let keep loc (attrs : attributes) =
   try
     let keep =
       List.for_all attrs ~f:(function
-          | { attr_name = { txt = ("if" | "ifnot") as ifnot; _ }; attr_payload; _ } -> (
-              let norm =
-                match ifnot with
-                | "if" -> fun x -> x
-                | "ifnot" -> fun x -> not x
-                | _ -> assert false
-              in
-              match attr_payload with
-              | PStr
-                  [ { pstr_desc =
-                        Pstr_eval
-                          ( { pexp_desc = Pexp_construct ({ txt = Lident ident; _ }, None)
-                            ; _
-                            }
-                          , [] )
-                    ; _
-                    }
-                  ] ->
-                  let b =
-                    match bool_of_string (get_env ident) with
-                    | true -> true
-                    | false -> false
-                    | exception _ -> false
-                  in
-                  norm b
-              | PStr
-                  [ { pstr_desc =
-                        Pstr_eval
-                          ( { pexp_desc = Pexp_apply (op, [ (Nolabel, a); (Nolabel, b) ])
-                            ; _
-                            }
-                          , [] )
-                    ; _
-                    }
-                  ] ->
-                  let get_op = function
-                    | { pexp_desc = Pexp_ident { txt = Lident str; _ }; _ } -> (
-                        match str with
-                        | "<=" -> ( <= )
-                        | ">=" -> ( >= )
-                        | ">" -> ( > )
-                        | "<" -> ( < )
-                        | "<>" -> ( <> )
-                        | "=" -> ( = )
-                        | _ -> raise Invalid)
-                    | _ -> raise Invalid
-                  in
-                  let eval = function
-                    | { pexp_desc = Pexp_ident { txt = Lident "ocaml_version"; _ }; _ } ->
-                        Version.current
-                    | { pexp_desc = Pexp_tuple l; _ } ->
-                        let l =
-                          List.map l ~f:(function
-                              | { pexp_desc = Pexp_constant (Pconst_integer (d, None))
-                                ; _
-                                } -> int_of_string d
-                              | _ -> raise Invalid)
-                        in
-                        Version.of_list l
-                    | _ -> raise Invalid
-                  in
-                  let op = get_op op in
-                  let a = eval a in
-                  let b = eval b in
-                  norm (op (Version.compare a b) 0)
-              | _ -> raise Invalid)
-          | _ -> true)
+        | { attr_name = { txt = ("if" | "ifnot") as ifnot; _ }; attr_payload; _ } -> (
+            let norm =
+              match ifnot with
+              | "if" -> fun x -> x
+              | "ifnot" -> fun x -> not x
+              | _ -> assert false
+            in
+            match attr_payload with
+            | PStr
+                [ { pstr_desc =
+                      Pstr_eval
+                        ( { pexp_desc = Pexp_construct ({ txt = Lident ident; _ }, None)
+                          ; _
+                          }
+                        , [] )
+                  ; _
+                  }
+                ] ->
+                let b =
+                  match bool_of_string (get_env ident) with
+                  | true -> true
+                  | false -> false
+                  | exception _ -> false
+                in
+                norm b
+            | PStr
+                [ { pstr_desc =
+                      Pstr_eval
+                        ( { pexp_desc = Pexp_apply (op, [ (Nolabel, a); (Nolabel, b) ])
+                          ; _
+                          }
+                        , [] )
+                  ; _
+                  }
+                ] ->
+                let get_op = function
+                  | { pexp_desc = Pexp_ident { txt = Lident str; _ }; _ } -> (
+                      match str with
+                      | "<=" -> ( <= )
+                      | ">=" -> ( >= )
+                      | ">" -> ( > )
+                      | "<" -> ( < )
+                      | "<>" -> ( <> )
+                      | "=" -> ( = )
+                      | _ -> raise Invalid)
+                  | _ -> raise Invalid
+                in
+                let eval = function
+                  | { pexp_desc = Pexp_ident { txt = Lident "ocaml_version"; _ }; _ } ->
+                      Version.current
+                  | { pexp_desc = Pexp_tuple l; _ } ->
+                      let l =
+                        List.map l ~f:(function
+                          | { pexp_desc = Pexp_constant (Pconst_integer (d, None)); _ } ->
+                              int_of_string d
+                          | _ -> raise Invalid)
+                      in
+                      Version.of_list l
+                  | _ -> raise Invalid
+                in
+                let op = get_op op in
+                let a = eval a in
+                let b = eval b in
+                norm (op (Version.compare a b) 0)
+            | _ -> raise Invalid)
+        | _ -> true)
     in
     if false && not keep
     then

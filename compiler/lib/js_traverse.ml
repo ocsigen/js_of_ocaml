@@ -274,8 +274,8 @@ class map : mapper =
 
     method private template l =
       List.map l ~f:(function
-          | TStr s -> TStr s
-          | TExp e -> TExp (m#expression e))
+        | TStr s -> TStr s
+        | TExp e -> TExp (m#expression e))
 
     method expression x =
       match x with
@@ -288,24 +288,23 @@ class map : mapper =
               EAssignTarget
                 (ArrayTarget
                    (List.map l ~f:(function
-                       | TargetElementHole -> TargetElementHole
-                       | TargetElementId (i, e) ->
-                           TargetElementId (m#ident i, m#initialiser_o e)
-                       | TargetElement e -> TargetElement (m#expression e)
-                       | TargetElementSpread e -> TargetElementSpread (m#expression e))))
+                     | TargetElementHole -> TargetElementHole
+                     | TargetElementId (i, e) ->
+                         TargetElementId (m#ident i, m#initialiser_o e)
+                     | TargetElement e -> TargetElement (m#expression e)
+                     | TargetElementSpread e -> TargetElementSpread (m#expression e))))
           | ObjectTarget l ->
               EAssignTarget
                 (ObjectTarget
                    (List.map l ~f:(function
-                       | TargetPropertyId (Prop_and_ident i, e) ->
-                           TargetPropertyId (Prop_and_ident (m#ident i), m#initialiser_o e)
-                       | TargetProperty (n, e, i) ->
-                           TargetProperty
-                             (m#property_name n, m#expression e, m#initialiser_o i)
-                       | TargetPropertyMethod (n, x) ->
-                           TargetPropertyMethod (m#property_name n, m#method_ x)
-                       | TargetPropertySpread e -> TargetPropertySpread (m#expression e))))
-          )
+                     | TargetPropertyId (Prop_and_ident i, e) ->
+                         TargetPropertyId (Prop_and_ident (m#ident i), m#initialiser_o e)
+                     | TargetProperty (n, e, i) ->
+                         TargetProperty
+                           (m#property_name n, m#expression e, m#initialiser_o i)
+                     | TargetPropertyMethod (n, x) ->
+                         TargetPropertyMethod (m#property_name n, m#method_ x)
+                     | TargetPropertySpread e -> TargetPropertySpread (m#expression e)))))
       | EUn (b, e1) -> EUn (b, m#expression e1)
       | ECallTemplate (e1, t, loc) ->
           ECallTemplate (m#expression e1, m#template t, m#loc loc)
@@ -325,9 +324,9 @@ class map : mapper =
       | EArr l ->
           EArr
             (List.map l ~f:(function
-                | ElementHole -> ElementHole
-                | Element e -> Element (m#expression e)
-                | ElementSpread e -> ElementSpread (m#expression e)))
+              | ElementHole -> ElementHole
+              | Element e -> Element (m#expression e)
+              | ElementSpread e -> ElementSpread (m#expression e)))
       | EObj l ->
           EObj
             (List.map l ~f:(fun p ->
@@ -618,8 +617,8 @@ class iter : iterator =
 
     method private template l =
       List.iter l ~f:(function
-          | TStr _ -> ()
-          | TExp e -> m#expression e)
+        | TStr _ -> ()
+        | TExp e -> m#expression e)
 
     method expression x =
       match x with
@@ -637,25 +636,25 @@ class iter : iterator =
           match x with
           | ArrayTarget l ->
               List.iter l ~f:(function
-                  | TargetElementHole -> ()
-                  | TargetElementId (i, e) ->
-                      m#ident i;
-                      m#initialiser_o e
-                  | TargetElement e -> m#expression e
-                  | TargetElementSpread e -> m#expression e)
+                | TargetElementHole -> ()
+                | TargetElementId (i, e) ->
+                    m#ident i;
+                    m#initialiser_o e
+                | TargetElement e -> m#expression e
+                | TargetElementSpread e -> m#expression e)
           | ObjectTarget l ->
               List.iter l ~f:(function
-                  | TargetPropertyId (Prop_and_ident i, e) ->
-                      m#ident i;
-                      m#initialiser_o e
-                  | TargetProperty (n, e, i) ->
-                      m#property_name n;
-                      m#expression e;
-                      m#initialiser_o i
-                  | TargetPropertyMethod (n, x) ->
-                      m#property_name n;
-                      m#method_ x
-                  | TargetPropertySpread e -> m#expression e))
+                | TargetPropertyId (Prop_and_ident i, e) ->
+                    m#ident i;
+                    m#initialiser_o e
+                | TargetProperty (n, e, i) ->
+                    m#property_name n;
+                    m#expression e;
+                    m#initialiser_o i
+                | TargetPropertyMethod (n, x) ->
+                    m#property_name n;
+                    m#method_ x
+                | TargetPropertySpread e -> m#expression e))
       | EUn (_, e1) -> m#expression e1
       | ECall (e1, _ak, e2, _) ->
           m#expression e1;
@@ -684,9 +683,9 @@ class iter : iterator =
       | EArrow (fun_decl, _, _) -> m#fun_decl fun_decl
       | EArr l ->
           List.iter l ~f:(function
-              | ElementHole -> ()
-              | Element e -> m#expression e
-              | ElementSpread e -> m#expression e)
+            | ElementHole -> ()
+            | Element e -> m#expression e
+            | ElementSpread e -> m#expression e)
       | EObj l ->
           List.iter l ~f:(fun p ->
               match p with
@@ -1273,10 +1272,11 @@ class rename_variable ~esm =
          | CoverExportFrom _ -> ()
 
        method variable_declaration k l =
-         if match scope, k with
-            | (Lexical_block | Fun_block _ | Module), (Let | Const) -> depth = 0
-            | Lexical_block, Var -> false
-            | (Fun_block _ | Module), Var -> true
+         if
+           match scope, k with
+           | (Lexical_block | Fun_block _ | Module), (Let | Const) -> depth = 0
+           | Lexical_block, Var -> false
+           | (Fun_block _ | Module), Var -> true
          then
            let ids = bound_idents_of_variable_declaration l in
            List.iter ids ~f:decl_var
@@ -1286,10 +1286,11 @@ class rename_variable ~esm =
          m#statements l
 
        method for_binding k p =
-         if match scope, k with
-            | (Lexical_block | Fun_block _ | Module), (Let | Const) -> depth = 0
-            | Lexical_block, Var -> false
-            | (Fun_block _ | Module), Var -> true
+         if
+           match scope, k with
+           | (Lexical_block | Fun_block _ | Module), (Let | Const) -> depth = 0
+           | Lexical_block, Var -> false
+           | (Fun_block _ | Module), Var -> true
          then
            match p with
            | BindingIdent i -> decl_var i
@@ -1367,11 +1368,11 @@ class rename_variable ~esm =
       | EAssignTarget (ObjectTarget l) ->
           let l =
             List.map l ~f:(function
-                | TargetPropertyId
-                    (Prop_and_ident (S { name = Utf8 name' as name; _ } as ident), rhs)
-                  when StringMap.mem name' subst ->
-                    TargetProperty (PNI name, EVar ident, rhs)
-                | b -> b)
+              | TargetPropertyId
+                  (Prop_and_ident (S { name = Utf8 name' as name; _ } as ident), rhs)
+                when StringMap.mem name' subst ->
+                  TargetProperty (PNI name, EVar ident, rhs)
+              | b -> b)
           in
           super#expression (EAssignTarget (ObjectTarget l))
       | _ -> super#expression e
@@ -1463,8 +1464,8 @@ class rename_variable ~esm =
                       let ids = bound_idents_of_binding pat in
                       let l =
                         List.filter ids ~f:(function
-                            | S { name = Utf8 name; _ } -> not (StringSet.mem name decl)
-                            | V _ -> false)
+                          | S { name = Utf8 name; _ } -> not (StringSet.mem name decl)
+                          | V _ -> false)
                       in
                       Some p, l
                 in
@@ -1564,13 +1565,13 @@ class compact_vardecl =
           match s with
           | Variable_statement (Var, l) ->
               List.filter_map l ~f:(function
-                  | DeclIdent (x, Some (init, loc)) ->
-                      m#var x;
-                      Some (Expression_statement (expr_eq x init), loc)
-                  | DeclIdent (x, None) ->
-                      m#var x;
-                      None
-                  | DeclPattern _ as x -> Some (Variable_statement (Var, [ x ]), loc))
+                | DeclIdent (x, Some (init, loc)) ->
+                    m#var x;
+                    Some (Expression_statement (expr_eq x init), loc)
+                | DeclIdent (x, None) ->
+                    m#var x;
+                    None
+                | DeclPattern _ as x -> Some (Variable_statement (Var, [ x ]), loc))
           | s -> [ s, loc ])
 
     method program p =
@@ -1588,33 +1589,33 @@ class clean =
     method statements l =
       let l = super#statements l in
       List.filter l ~f:(function
-          | (Empty_statement | Expression_statement (EVar _)), _ -> false
-          | _ -> true)
+        | (Empty_statement | Expression_statement (EVar _)), _ -> false
+        | _ -> true)
       |> List.group ~f:(fun (x, _) (prev, _) ->
              match prev, x with
              | Variable_statement (k1, _), Variable_statement (k2, _) when Poly.(k1 = k2)
                -> true
              | _, _ -> false)
       |> List.map ~f:(function
-             | (Variable_statement (k1, _), _) :: _ as l ->
-                 let loc =
-                   List.find_map l ~f:(fun (_, loc) ->
-                       match loc with
-                       | N | U -> None
-                       | Pi _ -> Some loc)
-                   |> function
-                   | None -> N
-                   | Some x -> x
-                 in
+           | (Variable_statement (k1, _), _) :: _ as l ->
+               let loc =
+                 List.find_map l ~f:(fun (_, loc) ->
+                     match loc with
+                     | N | U -> None
+                     | Pi _ -> Some loc)
+                 |> function
+                 | None -> N
+                 | Some x -> x
+               in
 
-                 ( Variable_statement
-                     ( k1
-                     , List.concat_map l ~f:(function
-                           | Variable_statement (_, l), _ -> l
-                           | _ -> assert false) )
-                 , loc )
-             | [ x ] -> x
-             | [] | _ :: _ :: _ -> assert false)
+               ( Variable_statement
+                   ( k1
+                   , List.concat_map l ~f:(function
+                       | Variable_statement (_, l), _ -> l
+                       | _ -> assert false) )
+               , loc )
+           | [ x ] -> x
+           | [] | _ :: _ :: _ -> assert false)
 
     method statement s =
       let s = super#statement s in
@@ -1757,7 +1758,8 @@ class simpl =
                   ( Some (ECond (cond, e1, e2))
                   , U
                     (*TODO: it would be better to use the location of the
-                      end of the function, but we can't easily get it. *) )
+                      end of the function, but we can't easily get it. *)
+                  )
               , loc )
               :: rem
           (* if (e1) v1 = e2 else v1 = e3 --> v1 = e1 ? e2 : e3 *)

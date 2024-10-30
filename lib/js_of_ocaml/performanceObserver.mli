@@ -21,19 +21,19 @@
 
     A code example:
     {[
-      if (PerformanceObserver.is_supported()) then
+      if PerformanceObserver.is_supported ()
+      then
         let entry_types = [ "measure" ] in
         let f entries observer =
           let entries = entries##getEntries in
-          Firebug.console##debug entries ;
+          Firebug.console##debug entries;
           Firebug.console##debug observer
         in
-        PerformanceObserver.observe ~entry_types ~f
-        ()
-   ]}
+        PerformanceObserver.observe ~entry_types ~f ()
+    ]}
 
-   @see <https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver> for API documentation.
-*)
+    @see <https://developer.mozilla.org/en-US/docs/Web/API/PerformanceObserver>
+      for API documentation. *)
 
 class type performanceObserverInit = object
   method entryTypes : Js.js_string Js.t Js.js_array Js.t Js.writeonly_prop

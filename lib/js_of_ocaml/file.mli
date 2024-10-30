@@ -18,7 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 (** File API
-  @see <https://developer.mozilla.org/en-US/docs/Web/API/File> the documentation of the API. *)
+    @see <https://developer.mozilla.org/en-US/docs/Web/API/File>
+      the documentation of the API. *)
 
 open Js
 open Dom
@@ -172,6 +173,5 @@ val addEventListener :
   -> ('a, 'b) event_listener
   -> bool t
   -> event_listener_id
-(** Add an event listener.  This function matches the
-      [addEventListener] DOM method, except that it returns
-      an id for removing the listener. *)
+(** Add an event listener. This function matches the [addEventListener] DOM method, except
+    that it returns an id for removing the listener. *)

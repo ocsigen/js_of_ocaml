@@ -6,8 +6,8 @@ let is_implem x =
     let fname = Filename.chop_extension x in
     try
       String.iter fname ~f:(function
-          | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> ()
-          | _ -> raise Exit);
+        | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' -> ()
+        | _ -> raise Exit);
       true
     with Exit -> false
   else false
@@ -31,9 +31,10 @@ let prefix : string =
   let rec loop acc rem =
     let basename = Filename.basename rem in
     let dirname = Filename.dirname rem in
-    if String.equal dirname rem
-       || ends_with ~suffix:"_build" dirname
-       || Sys.file_exists (Filename.concat rem "dune-project")
+    if
+      String.equal dirname rem
+      || ends_with ~suffix:"_build" dirname
+      || Sys.file_exists (Filename.concat rem "dune-project")
     then acc
     else
       let acc = Filename.concat basename acc in
@@ -42,8 +43,8 @@ let prefix : string =
   loop "" (Sys.getcwd ())
   (* normalizatio for windows *)
   |> String.map ~f:(function
-         | '\\' -> '/'
-         | c -> c)
+       | '\\' -> '/'
+       | c -> c)
 
 type enabled_if =
   | GE5

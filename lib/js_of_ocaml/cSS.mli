@@ -18,26 +18,27 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** This module contains a few types and values to ease the use of CSS properties
-    and such. If you think a feature is missing, consider sending a patch or an
-    RFE to the mailing list.
+(** This module contains a few types and values to ease the use of CSS properties and
+    such. If you think a feature is missing, consider sending a patch or an RFE to the
+    mailing list.
 
     This module contain submodules each with a signature similar to:
     {[
-      type t            (* type the module is focused on *)
-      type js_t         (* valid js representation of values of type t *)
-      val js: t -> js_t (* conversion *)
-      val ml: js_t -> t (* conversion *)
+      type t (* type the module is focused on *)
+
+      type js_t (* valid js representation of values of type t *)
+
+      val js : t -> js_t (* conversion *)
+
+      val ml : js_t -> t (* conversion *)
     ]}
-    Additional functions (string conversion, standard operation, etc.) are
-    sometime available. Some module have several different types instead of just
-    one.
-*)
+    Additional functions (string conversion, standard operation, etc.) are sometime
+    available. Some module have several different types instead of just one. *)
 
 module Color : sig
   (**All about CSS colors. MDC documentation here:
-  https://developer.mozilla.org/en/CSS/color_value . Specifications here:
-  http://www.w3.org/TR/css3-color/#svg-color .*)
+     https://developer.mozilla.org/en/CSS/color_value . Specifications here:
+     http://www.w3.org/TR/css3-color/#svg-color .*)
 
   (**The colors by name.*)
   type name =
@@ -193,43 +194,40 @@ module Color : sig
   (**Gives the string equivalent of the argument.*)
 
   val rgb_of_name : name -> int * int * int
-  (**Converts a color name into three integers representing the Red, Green and
-  Blue channels. Channel values are in between [0] and [255].*)
+  (**Converts a color name into three integers representing the Red, Green and Blue
+     channels. Channel values are in between [0] and [255].*)
 
   val hex_of_rgb : int * int * int -> string
-  (** Convert a tuple of three integers between [0] and [255] into a hex
-    string *)
+  (** Convert a tuple of three integers between [0] and [255] into a hex string *)
 
   (**The type of colors, either by name, by Red-Green-Blue constructor or by
-   Hue-Saturation-Lightness constructors.*)
+     Hue-Saturation-Lightness constructors.*)
   type t =
     | Name of name  (**A color by name*)
     | RGB of (int * int * int)
-        (**Red, Green and Blue values. Clipped to [0..255] by most (All?)
-     browsers.*)
+        (**Red, Green and Blue values. Clipped to [0..255] by most (All?) browsers.*)
     | RGB_percent of (int * int * int)
         (**RBG channels are specified as a percentage of their maximal value.*)
     | RGBA of (int * int * int * float)
-        (**Same as RGB with additional transparency argument. Opacity should be
-    between [0.] (completely transparent) and [1.] (completely opaque).*)
+        (**Same as RGB with additional transparency argument. Opacity should be between
+           [0.] (completely transparent) and [1.] (completely opaque).*)
     | RGBA_percent of (int * int * int * float)
-        (**RGB channels specified as percentage of their maximal value. Alpha
-    channel (opacity) is still a [0.] to [1.] float.*)
+        (**RGB channels specified as percentage of their maximal value. Alpha channel
+           (opacity) is still a [0.] to [1.] float.*)
     | HSL of (int * int * int)
-        (**Hue, Saturation and Lightness values. Hue is an angle in degree (in
-     interval [0..360]). Saturation is a percentage ([0..100]) with [0]
-     being colorless. Lightness is also a percentage ([0..100]) with [0]
-     being black.*)
+        (**Hue, Saturation and Lightness values. Hue is an angle in degree (in interval
+           [0..360]). Saturation is a percentage ([0..100]) with [0] being colorless.
+           Lightness is also a percentage ([0..100]) with [0] being black.*)
     | HSLA of (int * int * int * float)
         (**Same as HSL with an opacity argument between [0.] and [1.].*)
 
   val rgb : ?a:float -> int -> int -> int -> t
-  (**build a color from the values of red, green, and blue channels. optional [a]
-   argument can be used to specify alpha channel (aka opacity).*)
+  (**build a color from the values of red, green, and blue channels. optional [a] argument
+     can be used to specify alpha channel (aka opacity).*)
 
   val hsl : ?a:float -> int -> int -> int -> t
-  (**build a color from the values of hue, saturation, and lightness channels.
-   optional [a] argument can be used to specify alpha channel (aka opacity).*)
+  (**build a color from the values of hue, saturation, and lightness channels. optional
+     [a] argument can be used to specify alpha channel (aka opacity).*)
 
   type js_t = private Js.js_string Js.t
   (**A [js_t] is a valid string representation of a CSS color*)
@@ -240,8 +238,8 @@ module Color : sig
   (**Convert to a string representation (for debugging purpose mainly).*)
 
   val js : t -> js_t
-  (**Projection from OCaml to Js. [js c] is equivalent
-to [Js.string (string_of_t c)] but with a [js_t] return type.*)
+  (**Projection from OCaml to Js. [js c] is equivalent to [Js.string (string_of_t c)] but
+     with a [js_t] return type.*)
 
   val ml : js_t -> t
   (**Projection from Js to OCaml. The function is the dual of [js].*)
@@ -252,9 +250,8 @@ end
 
 module Length : sig
   (**The type of length attributes. Mdc documentation:
-    https://developer.mozilla.org/en/CSS/length and specification:
-    http://www.w3.org/TR/css3-values/#lengths
-    *)
+     https://developer.mozilla.org/en/CSS/length and specification:
+     http://www.w3.org/TR/css3-values/#lengths *)
   type t =
     | Zero  (**For 0, unit is optional*)
     | Em of float  (**Relative to the font size *)

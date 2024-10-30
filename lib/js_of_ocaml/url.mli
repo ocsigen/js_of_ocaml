@@ -18,22 +18,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** This module provides functions for tampering with Url. It's main goal is to
-    allow one to stay in the Ocaml realm without wandering into the
-    {!Dom_html.window}##.location object. *)
+(** This module provides functions for tampering with Url. It's main goal is to allow one
+    to stay in the Ocaml realm without wandering into the {!Dom_html.window}##.location
+    object. *)
 
-(** The first functions are mainly from and to string conversion functions for
-     the different parts of a url. *)
+(** The first functions are mainly from and to string conversion functions for the
+    different parts of a url. *)
 
 val urldecode : string -> string
-(** [urldecode s] swaps percent encoding characters for their usual
-    representation. *)
+(** [urldecode s] swaps percent encoding characters for their usual representation. *)
 
 val urlencode : ?with_plus:bool -> string -> string
-(** [urlencode ?with_plus s] replace characters for their percent encoding
-    representation. Note that the '/' (slash) character is escaped as well. If
-    [with_plus] is [true] (default) then ['+']'s are escaped as ["%2B"]. If not,
-    ['+']'s are left as is. *)
+(** [urlencode ?with_plus s] replace characters for their percent encoding representation.
+    Note that the '/' (slash) character is escaped as well. If [with_plus] is [true]
+    (default) then ['+']'s are escaped as ["%2B"]. If not, ['+']'s are left as is. *)
 
 type http_url =
   { hu_host : string  (** The host part of the url. *)
@@ -41,8 +39,7 @@ type http_url =
   ; hu_path : string list  (** The path split on ['/'] characters. *)
   ; hu_path_string : string  (** The original entire path. *)
   ; hu_arguments : (string * string) list
-        (** Arguments as a field-value
-                                             association list.*)
+        (** Arguments as a field-value association list.*)
   ; hu_fragment : string  (** The fragment part (after the ['#'] character). *)
   }
 (** The type for HTTP(s) url. *)
@@ -71,29 +68,26 @@ val path_of_path_string : string -> string list
 (** [path_of_path_string s] splits [s] on each ["/"] character. *)
 
 val encode_arguments : (string * string) list -> string
-(** [encode_arguments a] expects a list of pair of values of the form
-    [(name,value)] were [name] is the name of an argument and [value] it's
-    associated value. *)
+(** [encode_arguments a] expects a list of pair of values of the form [(name,value)] were
+    [name] is the name of an argument and [value] it's associated value. *)
 
 val decode_arguments : string -> (string * string) list
-(** [decode_arguments s] parses [s] returning the sliced-diced
-    association list. [s] should be only the arguments part (after the '?')
-    not the whole url. *)
+(** [decode_arguments s] parses [s] returning the sliced-diced association list. [s]
+    should be only the arguments part (after the '?') not the whole url. *)
 
-(** The following part allow one to handle Url object in a much higher level
-    than what a string provides. *)
+(** The following part allow one to handle Url object in a much higher level than what a
+    string provides. *)
 
 val url_of_string : string -> url option
-(** [url_of_string s] parses [s] and builds a value of type [url] if [s] is not
-    a valid url string, it returns [None]. *)
+(** [url_of_string s] parses [s] and builds a value of type [url] if [s] is not a valid
+    url string, it returns [None]. *)
 
 val string_of_url : url -> string
-(** [string_of_url u] returns a valid string representation of [u]. Note that
-  * [string_of_url ((fun Some u -> u) (url_of_string s))] is NOT necessarily
-  * equal to [s]. However [url_of_string (string_of_url u) = u]. *)
+(** [string_of_url u] returns a valid string representation of [u]. Note that *
+    [string_of_url ((fun Some u -> u) (url_of_string s))] is NOT necessarily * equal to
+    [s]. However [url_of_string (string_of_url u) = u]. *)
 
-(** This module can be used to handle the Url associated to the current
-    document. *)
+(** This module can be used to handle the Url associated to the current document. *)
 module Current : sig
   val host : string
   (** The host part of the current url. *)
@@ -114,22 +108,22 @@ module Current : sig
   (** The arguments of the current url as an association list. *)
 
   val get_fragment : unit -> string
-  (** Because the [fragment] of the Url for the current document can change
-        dynamically, we use a functional value here. *)
+  (** Because the [fragment] of the Url for the current document can change dynamically,
+      we use a functional value here. *)
 
   val set_fragment : string -> unit
   (** [set_fragment s] replaces the current fragment by [s]. *)
 
   val get : unit -> url option
-  (** [get ()] returns a value of type {!url} with fields reflecting the
-        state of the current Url. *)
+  (** [get ()] returns a value of type {!url} with fields reflecting the state of the
+      current Url. *)
 
   val set : url -> unit
-  (** [set u] replaces the current Url for [u]. {b WARNING:} Causes the
-        document to change. *)
+  (** [set u] replaces the current Url for [u]. {b WARNING:} Causes the document to
+      change. *)
 
   val as_string : string
-  (** [as_string] is the original string representation of the current Url. It
-        is NOT necessarily equals to [string_of_url (get ())] but
-        [url_of_string as_string = get ()] holds. *)
+  (** [as_string] is the original string representation of the current Url. It is NOT
+      necessarily equals to [string_of_url (get ())] but
+      [url_of_string as_string = get ()] holds. *)
 end

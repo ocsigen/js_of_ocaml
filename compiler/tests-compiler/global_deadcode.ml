@@ -27,8 +27,8 @@ let%expect_test "Eliminates unused functions from functor" =
                  ( Some
                      (EArr
                         (List.filter return ~f:(function
-                            | Javascript.ElementHole -> false
-                            | _ -> true)))
+                          | Javascript.ElementHole -> false
+                          | _ -> true)))
                  , loc )
              , loc' )
            in

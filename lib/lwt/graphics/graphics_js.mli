@@ -29,14 +29,11 @@ type context
 (** type of a graphic context *)
 
 val open_graph : string -> unit
-(** Open a graphics window.
-    The graphics window is cleared and the current point is set
-    to (0, 0). The string argument is used to pass optional
-    information on the desired graphics mode, the graphics window
-    size, and so on. Specification can be found at
-    http://www.w3schools.com/jsref/met_win_open.asp.
-    Note: an extra specification is available, "target",
-    to specifies the target attribute or the name of the window. *)
+(** Open a graphics window. The graphics window is cleared and the current point is set to
+    (0, 0). The string argument is used to pass optional information on the desired
+    graphics mode, the graphics window size, and so on. Specification can be found at
+    http://www.w3schools.com/jsref/met_win_open.asp. Note: an extra specification is
+    available, "target", to specifies the target attribute or the name of the window. *)
 
 val open_canvas : Dom_html.canvasElement Js.t -> unit
 (** use a canvas to setup the current context *)
@@ -50,20 +47,19 @@ val set_context : context -> unit
 (** {2 Mouse and keyboard events} *)
 
 val loop : event list -> (status -> unit) -> unit
-(** Loops forever and listen to the given events. Those events automatically
-    returns a status record, which is used by the function given in argument. *)
+(** Loops forever and listen to the given events. Those events automatically returns a
+    status record, which is used by the function given in argument. *)
 
 (** {2 Mouse and keyboard polling} *)
 
 val mouse_pos : unit -> (int * int) Lwt.t
-(** Return the position of the mouse cursor, relative to the
-   graphics window. If the mouse cursor is outside of the graphics
-   window, [mouse_pos()] returns a point outside of the range
-   [0..size_x()-1, 0..size_y()-1]. *)
+(** Return the position of the mouse cursor, relative to the graphics window. If the mouse
+    cursor is outside of the graphics window, [mouse_pos()] returns a point outside of the
+    range [0..size_x()-1, 0..size_y()-1]. *)
 
 val button_down : unit -> bool Lwt.t
 (** Return [true] if the mouse button is pressed, [false] otherwise. *)
 
 val read_key : unit -> char Lwt.t
-(** Wait for a key to be pressed, and return the corresponding
-    character. Keypresses are queued. *)
+(** Wait for a key to be pressed, and return the corresponding character. Keypresses are
+    queued. *)

@@ -38,10 +38,10 @@ let () = if !verbose then Printf.eprintf "Found %d files\n%!" (List.length files
 
 let () =
   List.iter flags ~f:(function
-      | "--fail" -> failure_expected := true
-      | "-p" | "--progress" -> progress := true
-      | "-v" | "--verbose" -> verbose := true
-      | f -> failwith ("unrecognised flag " ^ f))
+    | "--fail" -> failure_expected := true
+    | "-p" | "--progress" -> progress := true
+    | "-v" | "--verbose" -> verbose := true
+    | f -> failwith ("unrecognised flag " ^ f))
 
 type error =
   | Diff of Javascript.program * Javascript.program

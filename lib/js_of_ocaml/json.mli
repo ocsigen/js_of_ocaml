@@ -23,15 +23,14 @@ val output : 'a -> Js.js_string Js.t
 (** Marshal any OCaml value into this JSON representation. *)
 
 val unsafe_input : Js.js_string Js.t -> 'a
-(** Unmarshal a string in JSON format as an OCaml value (unsafe but
-    fast !). *)
+(** Unmarshal a string in JSON format as an OCaml value (unsafe but fast !). *)
 
 (**/**)
 
 val set_use_native_stringify : bool -> unit
-(** Only affects js_of_ocaml. Whether to use native Javascript [stringify] to
-    turn a value into JSON in {!val:output}. Otherwise, fall back to the slower
-    method used by other backends, such as wasm_of_ocaml. *)
+(** Only affects js_of_ocaml. Whether to use native Javascript [stringify] to turn a value
+    into JSON in {!val:output}. Otherwise, fall back to the slower method used by other
+    backends, such as wasm_of_ocaml. *)
 
 val use_native_stringify : unit -> bool
 (** Whether js_of_ocaml is using [stringify] in {!val:output}. See

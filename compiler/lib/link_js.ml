@@ -256,12 +256,13 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
           ~init:acc
           ~f:(fun (info : Unit_info.t) (requires, to_link, all) ->
             let all = StringSet.union all info.provides in
-            if (not (Config.Flag.auto_link ()))
-               || mklib
-               || cmo_file
-               || linkall
-               || info.force_link
-               || not (StringSet.is_empty (StringSet.inter requires info.provides))
+            if
+              (not (Config.Flag.auto_link ()))
+              || mklib
+              || cmo_file
+              || linkall
+              || info.force_link
+              || not (StringSet.is_empty (StringSet.inter requires info.provides))
             then
               ( StringSet.diff (StringSet.union info.requires requires) info.provides
               , StringSet.union to_link info.provides
@@ -469,25 +470,23 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             (* select sourcemaps that cover copied section *)
             let maps =
               List.concat_map reloc ~f:(function
-                  | `Drop _ -> []
-                  | `Copy (src, dst, len) ->
-                      List.filter_map
-                        sm
-                        ~f:(fun (first, last, gen_line, gen_column, sm) ->
-                          if first > src + len || last < src
-                          then None
-                          else (
-                            (* We don't want to deal with overlapping but not included
+                | `Drop _ -> []
+                | `Copy (src, dst, len) ->
+                    List.filter_map sm ~f:(fun (first, last, gen_line, gen_column, sm) ->
+                        if first > src + len || last < src
+                        then None
+                        else (
+                          (* We don't want to deal with overlapping but not included
                                sourcemap, but we could in theory filter out part of it. *)
-                            assert (src <= first && last <= src + len);
-                            Some (first, last, gen_line + dst - src, gen_column, sm))))
+                          assert (src <= first && last <= src + len);
+                          Some (first, last, gen_line + dst - src, gen_column, sm))))
             in
             (* Make sure dropped sections are not overlapping selected sourcemap. *)
             List.iter reloc ~f:(function
-                | `Copy _ -> ()
-                | `Drop (src, len) ->
-                    List.iter maps ~f:(fun (first, last, _, _, _) ->
-                        if first > src + len || last < src then () else assert false));
+              | `Copy _ -> ()
+              | `Drop (src, len) ->
+                  List.iter maps ~f:(fun (first, last, _, _, _) ->
+                      if first > src + len || last < src then () else assert false));
             maps)
       in
       let sections = List.concat sections in

@@ -20,8 +20,7 @@
 
 (** DOM HTML binding
 
-This is a partial binding to the DOM HTML API.
-*)
+    This is a partial binding to the DOM HTML API. *)
 
 open Js
 
@@ -264,9 +263,8 @@ end
 (** {2 Events} *)
 
 type (-'a, -'b) event_listener = ('a, 'b) Dom.event_listener
-(** The type of event listener functions.  The first type parameter
-      ['a] is the type of the target object; the second parameter
-      ['b] is the type of the event object. *)
+(** The type of event listener functions. The first type parameter ['a] is the type of the
+    target object; the second parameter ['b] is the type of the event object. *)
 
 type mouse_button =
   | No_button
@@ -480,8 +478,7 @@ and dataTransfer = object
   method setDragImage : element t -> int -> int -> unit meth
 end
 
-(** Common properties of event target objects: [onclick],
-    [onkeypress], ... *)
+(** Common properties of event target objects: [onclick], [onkeypress], ... *)
 and eventTarget = object ('self)
   method onclick : ('self t, mouseEvent t) event_listener writeonly_prop
 
@@ -1967,29 +1964,27 @@ val document : document t
 (** The current document *)
 
 val getElementById_opt : string -> element Js.t option
-(** [getElementById_opt id] returns the element with the id [id] in the
-    current document. It returns [None] if there are no such element *)
+(** [getElementById_opt id] returns the element with the id [id] in the current document.
+    It returns [None] if there are no such element *)
 
 val getElementById_exn : string -> element Js.t
-(** [getElementById_exn id] returns the element with the id [id] in the
-    current document. It raises if there are no such element *)
+(** [getElementById_exn id] returns the element with the id [id] in the current document.
+    It raises if there are no such element *)
 
 val getElementById_coerce : string -> (element t -> 'a opt) -> 'a option
-(** [getElementById_coerce id coerce] returns the element with the id [id] in the
-    current document and attempt to coerce it using the provided [coerce] function.
-    It returns [None] if there are no such element or if the [coerce] function
-    returns [Js.none].
+(** [getElementById_coerce id coerce] returns the element with the id [id] in the current
+    document and attempt to coerce it using the provided [coerce] function. It returns
+    [None] if there are no such element or if the [coerce] function returns [Js.none].
     Typical usage is the following:
     {[
       match Dom_html.getElementById_coerce "myinput" Dom_html.CoerceTo.input with
       | None -> ..
       | Some input -> ..
-    ]}
-*)
+    ]} *)
 
 val getElementById : string -> element Js.t
-(** [getElementById id] returns the element with the id [id] in the
-    current document. It raises [Not_found] if there are no such element *)
+(** [getElementById id] returns the element with the id [id] in the current document. It
+    raises [Not_found] if there are no such element *)
 
 (** {2 Window objects} *)
 
@@ -2516,9 +2511,9 @@ val addEventListenerWithOptions :
   -> ?passive:bool t
   -> ('a, 'b) event_listener
   -> event_listener_id
-(** Add an event listener.  This function matches the
-      option-object variant of the [addEventListener] DOM method,
-      except that it returns an id for removing the listener. *)
+(** Add an event listener. This function matches the option-object variant of the
+    [addEventListener] DOM method, except that it returns an id for removing the listener.
+*)
 
 val addEventListener :
      (#eventTarget t as 'a)
@@ -2526,9 +2521,9 @@ val addEventListener :
   -> ('a, 'b) event_listener
   -> bool t
   -> event_listener_id
-(** Add an event listener.  This function matches the
-      useCapture boolean variant of the [addEventListener] DOM method,
-      except that it returns an id for removing the listener. *)
+(** Add an event listener. This function matches the useCapture boolean variant of the
+    [addEventListener] DOM method, except that it returns an id for removing the listener.
+*)
 
 val removeEventListener : event_listener_id -> unit
 (** Remove the given event listener. *)
@@ -2540,20 +2535,18 @@ val addMousewheelEventListenerWithOptions :
   -> ?passive:bool t
   -> (mouseEvent t -> dx:int -> dy:int -> bool t)
   -> event_listener_id
-(** Add a wheel event listener with option-object variant of the
-      [addEventListener] DOM method.  The callback is provided the
-      event and the numbers of ticks the mouse wheel moved.  Positive
-      means down / right. *)
+(** Add a wheel event listener with option-object variant of the [addEventListener] DOM
+    method. The callback is provided the event and the numbers of ticks the mouse wheel
+    moved. Positive means down / right. *)
 
 val addMousewheelEventListener :
      (#eventTarget t as 'a)
   -> (mouseEvent t -> dx:int -> dy:int -> bool t)
   -> bool t
   -> event_listener_id
-(** Add a wheel event listener with the useCapture boolean variant
-      of the [addEventListener] DOM method.  The callback is provided the
-      event and the numbers of ticks the mouse wheel moved.  Positive
-      means down / right. *)
+(** Add a wheel event listener with the useCapture boolean variant of the
+    [addEventListener] DOM method. The callback is provided the event and the numbers of
+    ticks the mouse wheel moved. Positive means down / right. *)
 
 val createCustomEvent :
      ?bubbles:bool
@@ -2739,7 +2732,7 @@ module Keyboard_code : sig
 end
 
 (** Use [Keyboard_key] when you want to identify the character that the user typed. This
-   should only be invoked on keypress events, not keydown or keyup events. *)
+    should only be invoked on keypress events, not keydown or keyup events. *)
 module Keyboard_key : sig
   type t = Uchar.t option
 
@@ -2920,16 +2913,14 @@ val createVideo : document t -> videoElement t
 exception Canvas_not_available
 
 val createCanvas : document t -> canvasElement t
-(** @raise Canvas_not_available when canvas elements are not
-      supported by the browser. *)
+(** @raise Canvas_not_available when canvas elements are not supported by the browser. *)
 
 (****)
 
 (** {2 Coercion functions} *)
 
 val element : #Dom.element t -> element t
-(** Coercion from a general DOM element to an HTML element.
-      (Unsafe in general.) *)
+(** Coercion from a general DOM element to an HTML element. (Unsafe in general.) *)
 
 type taggedElement =
   | A of anchorElement t
@@ -3162,8 +3153,8 @@ end
 type timeout_id_safe
 
 val setTimeout : (unit -> unit) -> float -> timeout_id_safe
-(** Same as [Dom_html.window##setTimeout cb ms] but prevents overflow
-    with delay greater than 24 days. *)
+(** Same as [Dom_html.window##setTimeout cb ms] but prevents overflow with delay greater
+    than 24 days. *)
 
 val clearTimeout : timeout_id_safe -> unit
 
@@ -3174,15 +3165,14 @@ val js_array_of_collection : #element collection Js.t -> #element Js.t Js.js_arr
 
 val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
 [@@ocaml.deprecated "[since 2.6] Use [Dom_html.window##requestAnimationFrame] instead."]
-(** Call the appropriate [requestAnimationFrame] method variant
-      (depending on the navigator), or sleep for a short amount
-      of time when there no such method is provided. We currently
-      prefix the function name with as underscore as the interface of
-      this function is not completely standardized yet. Thus, we leave
-      the room to a function with a possibly refined type.
+(** Call the appropriate [requestAnimationFrame] method variant (depending on the
+    navigator), or sleep for a short amount of time when there no such method is provided.
+    We currently prefix the function name with as underscore as the interface of this
+    function is not completely standardized yet. Thus, we leave the room to a function
+    with a possibly refined type.
 
-      This function is deprecated. Use the requestAnimationFrame of
-      the window object instead. *)
+    This function is deprecated. Use the requestAnimationFrame of the window object
+    instead. *)
 
 (**/**)
 

@@ -45,18 +45,16 @@ val log :
   -> unit Lwt.t
 (** [log ?section ?logger ~level message] logs a message.
 
-      [section] defaults to {!Section.main}. If [logger] is not
-      specified, then the default one is used instead (see
-      {!default}).
+    [section] defaults to {!Section.main}. If [logger] is not specified, then the default
+    one is used instead (see {!default}).
 
-      If [exn] is provided, then its string representation
-      (= [Printexc.to_string exn]) will be append to the message, and if
-      possible the backtrace will also be logged.
+    If [exn] is provided, then its string representation (= [Printexc.to_string exn]) will
+    be append to the message, and if possible the backtrace will also be logged.
 
-      If [inspect] is provided, it will be append to the message.
+    If [inspect] is provided, it will be append to the message.
 
-      [location] contains the location of the logging directive, it is
-      of the form [(file_name, line, column)]. *)
+    [location] contains the location of the logging directive, it is of the form
+    [(file_name, line, column)]. *)
 
 val log_f :
      ?inspect:'v
@@ -67,8 +65,7 @@ val log_f :
   -> level:level
   -> ('a, unit, string, unit Lwt.t) format4
   -> 'a
-(** [log_f] is the same as [log] except that it takes a format
-      string *)
+(** [log_f] is the same as [log] except that it takes a format string *)
 
 val ign_log :
      ?inspect:'v
@@ -92,11 +89,10 @@ val ign_log_f :
   -> 'a
 (** Same as {!log_f} but ignore the resulting thread. *)
 
-(** The following functions are the same as {!log} except that their
-    name determines which level is used.
+(** The following functions are the same as {!log} except that their name determines which
+    level is used.
 
-    For example [info msg] is the same as [log ~level:Info msg].
-*)
+    For example [info msg] is the same as [log ~level:Info msg]. *)
 
 val debug :
      ?inspect:'v

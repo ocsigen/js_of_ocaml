@@ -64,8 +64,7 @@ type http_url =
   ; hu_path : string list  (** The path split on ['/'] characters. *)
   ; hu_path_string : string  (** The original entire path. *)
   ; hu_arguments : (string * string) list
-        (** Arguments as a field-value
-                                             association list.*)
+        (** Arguments as a field-value association list.*)
   ; hu_fragment : string  (** The fragment part (after the ['#'] character). *)
   }
 (** The type for HTTP url. *)
@@ -83,7 +82,7 @@ type url =
   | Https of http_url
   | File of file_url
       (** The type for urls. [File] is for local files and [Exotic s] is for
-    unknown/unsupported protocols. *)
+          unknown/unsupported protocols. *)
 
 exception Not_an_http_protocol
 

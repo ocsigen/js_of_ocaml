@@ -294,10 +294,11 @@ let _divide all o =
   let k = ref 0 in
   for i = 0 to Array.length o.faces - 1 do
     let { v1; v2; v3 } = o.faces.(i) in
-    if all
-       || abs_float o.vertices.(v1).y = 1.
-       || abs_float o.vertices.(v2).y = 1.
-       || abs_float o.vertices.(v3).y = 1.
+    if
+      all
+      || abs_float o.vertices.(v1).y = 1.
+      || abs_float o.vertices.(v2).y = 1.
+      || abs_float o.vertices.(v3).y = 1.
     then (
       let w1 = midpoint v1 v2 in
       let w2 = midpoint v2 v3 in

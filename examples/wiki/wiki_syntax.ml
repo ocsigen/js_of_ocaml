@@ -17,10 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(**
-   Pretty print wiki to DOM elements
-   @author Vincent Balat
-*)
+(** Pretty print wiki to DOM elements
+    @author Vincent Balat *)
 
 open Js_of_ocaml
 module Html = Dom_html

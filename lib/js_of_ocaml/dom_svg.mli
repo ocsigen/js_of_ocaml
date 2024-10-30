@@ -20,8 +20,7 @@
 
 (** DOM SVG binding
 
-This is a partial binding to the DOM SVG API.
-*)
+    This is a partial binding to the DOM SVG API. *)
 
 open Js
 
@@ -189,7 +188,7 @@ class type ['a] list = object
 end
 
 (****)
-(** {2 Elements } *)
+(** {2 Elements} *)
 
 (* interface SVGElement *)
 class type element = object
@@ -2040,8 +2039,8 @@ val document : document t
 (** The current document *)
 
 val getElementById : string -> element t
-(** [getElementById id] returns the element with the id [id] in the
-    current document. It raises [Not_found] if there are no such element *)
+(** [getElementById id] returns the element with the id [id] in the current document. It
+    raises [Not_found] if there are no such element *)
 
 (** {2 Coercion functions} *)
 module CoerceTo : sig

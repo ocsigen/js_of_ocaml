@@ -46,12 +46,12 @@ module Bytesections : sig
   (** Start recording sections from the current position in out_channel *)
 
   val record : toc_writer -> Name.t -> unit
-  (** Record the current position in the out_channel as the end of
-      the section with the given name. *)
+  (** Record the current position in the out_channel as the end of the section with the
+      given name. *)
 
   val write_toc_and_trailer : toc_writer -> unit
-  (** Write the table of contents and the standard trailer for bytecode
-      executable files *)
+  (** Write the table of contents and the standard trailer for bytecode executable files
+  *)
 
   (** Reading sections from a bytecode executable file *)
 
@@ -66,12 +66,11 @@ module Bytesections : sig
   exception Bad_magic_number
 
   val read_toc : in_channel -> section_table
-  (** Read the table of sections from a bytecode executable.
-      Raise [Bad_magic_number] if magic number doesn't match *)
+  (** Read the table of sections from a bytecode executable. Raise [Bad_magic_number] if
+      magic number doesn't match *)
 
   val all : section_table -> section_entry list
-  (** Returns all [section_entry] from a [section_table] in increasing
-      position order. *)
+  (** Returns all [section_entry] from a [section_table] in increasing position order. *)
 
   val pos_first_section : section_table -> int
   (** Return the position of the beginning of the first section *)

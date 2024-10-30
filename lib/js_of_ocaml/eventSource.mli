@@ -70,6 +70,5 @@ val addEventListener :
   -> ('a, 'b) event_listener
   -> bool t
   -> event_listener_id
-(** Add an event listener.  This function matches the
-      [addEventListener] DOM method, except that it returns
-      an id for removing the listener. *)
+(** Add an event listener. This function matches the [addEventListener] DOM method, except
+    that it returns an id for removing the listener. *)

@@ -141,22 +141,21 @@ module Error : sig
   val raise_ : t -> 'a
 
   val attach_js_backtrace : exn -> force:bool -> exn
-  (** Attach a JavasScript error to an OCaml exception.  if [force = false] and a
-    JavasScript error is already attached, it will do nothing. This function is useful to
-    store and retrieve information about JavaScript stack traces.
+  (** Attach a JavasScript error to an OCaml exception. if [force = false] and a
+      JavasScript error is already attached, it will do nothing. This function is useful
+      to store and retrieve information about JavaScript stack traces.
 
-    Attaching JavasScript errors will happen automatically when compiling with
-    [--enable with-js-error]. *)
+      Attaching JavasScript errors will happen automatically when compiling with
+      [--enable with-js-error]. *)
 
   val of_exn : exn -> t option
-  (** Extract a JavaScript error attached to an OCaml exception, if any.  This is useful to
+  (** Extract a JavaScript error attached to an OCaml exception, if any. This is useful to
       inspect an eventual stack strace, especially when sourcemap is enabled. *)
 
   exception Exn of t
-  (** The [Error] exception wrap javascript exceptions when caught by OCaml code.
-      In case the javascript exception is not an instance of javascript [Error],
-      it will be serialized and wrapped into a [Failure] exception.
-  *)
+  (** The [Error] exception wrap javascript exceptions when caught by OCaml code. In case
+      the javascript exception is not an instance of javascript [Error], it will be
+      serialized and wrapped into a [Failure] exception. *)
 end = struct
   type t
 

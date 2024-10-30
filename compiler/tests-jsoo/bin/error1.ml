@@ -9,7 +9,7 @@ exception D of int * string * Int64.t
 
 let _ =
   Printexc.register_printer (function
-      | D _ -> Some "custom printer"
-      | _ -> None)
+    | D _ -> Some "custom printer"
+    | _ -> None)
 
 let _ = raise (D (2, "test", 43L))

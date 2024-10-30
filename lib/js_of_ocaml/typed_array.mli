@@ -80,10 +80,10 @@ type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 
 type float64Array = (number_t, float, Bigarray.float64_elt) typedArray
 
-(** The first type parameter is the type of values that can be read and written
-    in the {!classtype:typedArray}. The last two type parameters define the
-    kind of bigarrays that can be converted to and from the
-    {!classtype:typedArray}. See {!type:Bigarray.kind}. *)
+(** The first type parameter is the type of values that can be read and written in the
+    {!classtype:typedArray}. The last two type parameters define the kind of bigarrays
+    that can be converted to and from the {!classtype:typedArray}. See
+    {!type:Bigarray.kind}. *)
 type (_, _, _) kind =
   | Int8_signed : (int, int, Bigarray.int8_signed_elt) kind
   | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) kind
@@ -275,13 +275,13 @@ end
 
 module Bytes : sig
   val of_uint8Array : uint8Array Js.t -> bytes
-  (** This efficiently converts a typed array to [bytes] because it will usually
-      not copy its input.
+  (** This efficiently converts a typed array to [bytes] because it will usually not copy
+      its input.
 
-      Modifying its input may also modify its output, and vice versa when
-      modifying its output. This is not a guarantee, however, since certain
-      [bytes] operations may require the runtime to make a copy. One should not
-      use this on input that is sensitive to modification. *)
+      Modifying its input may also modify its output, and vice versa when modifying its
+      output. This is not a guarantee, however, since certain [bytes] operations may
+      require the runtime to make a copy. One should not use this on input that is
+      sensitive to modification. *)
 
   val to_uint8Array : bytes -> uint8Array Js.t
   (** See the words of caution for {!of_uint8Array}. *)

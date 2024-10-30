@@ -21,25 +21,23 @@
 
     A code example:
     {[
-      if (ResizeObserver.is_supported ()) then
+      if ResizeObserver.is_supported ()
+      then
         let doc = Dom_html.document in
         let target =
-          Js.Opt.get (doc##getElementById (Js.string "observed"))
-            (fun () -> assert false)
+          Js.Opt.get (doc##getElementById (Js.string "observed")) (fun () -> assert false)
         in
         let node = (target :> Dom.node Js.t) in
         let f entries observer =
           Firebug.console##debug entries;
           Firebug.console##debug observer
         in
-        ResizeObserver.observe ~node ~f
-          ~box:(Js.string "content-box")
-          ()
+        ResizeObserver.observe ~node ~f ~box:(Js.string "content-box") ()
     ]}
 
-    @see <https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver> for API documentation
-    @see <https://drafts.csswg.org/resize-observer> for W3C draft spec
-*)
+    @see <https://developer.mozilla.org/en-US/docs/Web/API/ResizeObserver>
+      for API documentation
+    @see <https://drafts.csswg.org/resize-observer> for W3C draft spec *)
 
 class type resizeObserverSize = object
   method inlineSize : Js.number_t Js.readonly_prop

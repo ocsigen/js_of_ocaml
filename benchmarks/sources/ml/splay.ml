@@ -58,13 +58,10 @@ type tree =
   | Empty
   | Node of (tree * float * content * tree)
 
-(**
- * Perform the splay operation for the given key. Moves the node with
- * the given key to the top of the tree.  If no node has the given
- * key, the last node on the search path is moved to the top of the
- * tree. This is the simplified top-down splaying algorithm from:
- * "Self-adjusting Binary Search Trees" by Sleator and Tarjan
-*)
+(** * Perform the splay operation for the given key. Moves the node with * the given key
+    to the top of the tree. If no node has the given * key, the last node on the search
+    path is moved to the top of the * tree. This is the simplified top-down splaying
+    algorithm from: * "Self-adjusting Binary Search Trees" by Sleator and Tarjan *)
 let rec splay_ ((left, key, value, right) as a) k =
   if k = key
   then a
