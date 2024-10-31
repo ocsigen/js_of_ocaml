@@ -1,8 +1,12 @@
 (env
  (dev
+  (wasm_of_ocaml
+   (enabled_if false))
   (flags
    (:standard -w +a-4-40-41-42-44-48-58-66-70)))
  (using-effects
+  (wasm_of_ocaml
+   (enabled_if false))
   (js_of_ocaml
    (compilation_mode separate)
    (flags
@@ -13,16 +17,18 @@
   (binaries
    (tools/node_wrapper.sh as node))
   (js_of_ocaml
-   (compilation_mode separate)
-   (submodes wasm)))
+   (enabled_if false))
+  (wasm_of_ocaml
+   (compilation_mode separate)))
  (wasm-effects
   (binaries
    (tools/node_wrapper.sh as node))
   (js_of_ocaml
+   (enabled_if false))
+  (wasm_of_ocaml
    (compilation_mode separate)
    (flags
-    (:standard --enable effects))
-   (submodes wasm)))
+    (:standard --enable effects))))
  (bench_no_debug
   (flags
    (:standard \ -g))

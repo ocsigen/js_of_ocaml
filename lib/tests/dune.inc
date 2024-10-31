@@ -5,7 +5,7 @@
  (enabled_if true)
  (modules test_css_angle)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -15,7 +15,7 @@
  (enabled_if true)
  (modules test_css_color)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -25,7 +25,7 @@
  (enabled_if true)
  (modules test_css_length)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -35,7 +35,7 @@
  (enabled_if (and (<> %{profile} using-effects) (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules test_fun_call)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -45,7 +45,7 @@
  (enabled_if true)
  (modules test_fun_call_2)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -55,7 +55,7 @@
  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules test_json)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -65,7 +65,7 @@
  (enabled_if true)
  (modules test_nodejs_filesystem_errors)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -75,7 +75,7 @@
  (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules test_poly_compare)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -85,7 +85,7 @@
  (enabled_if true)
  (modules test_poly_equal)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -95,7 +95,7 @@
  (enabled_if true)
  (modules test_regexp)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -105,7 +105,7 @@
  (enabled_if (and (>= %{ocaml_version} 5) (<> %{profile} wasm) (<> %{profile} wasm-effects)))
  (modules test_sys)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -115,7 +115,7 @@
  (enabled_if true)
  (modules test_typed_array)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -125,7 +125,7 @@
  (enabled_if true)
  (modules test_unsafe_set_get)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -135,6 +135,6 @@
  (enabled_if true)
  (modules test_url)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))

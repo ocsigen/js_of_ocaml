@@ -1,6 +1,6 @@
 (executables
  (names error1 error2)
- (modes exe js)
+ (modes exe js wasm)
  (foreign_stubs
   (language c)
   (names named_value_stubs))
@@ -56,6 +56,14 @@
   (diff %{dep:error1-unregister.expected} %{dep:error1-unregister.js.actual})))
 
 (rule
+ (action
+  (copy error1.bc.wasm.js error1.bc.js))
+ (enabled_if
+  (or
+   (= %{profile} wasm)
+   (= %{profile} wasm-effects))))
+
+(rule
  (target error2.js.actual)
  (deps error2.html)
  (alias runtest)
@@ -105,3 +113,11 @@
  (alias runtest)
  (action
   (diff %{dep:error2-unregister.expected} %{dep:error2-unregister.js.actual})))
+
+(rule
+ (action
+  (copy error2.bc.wasm.js error2.bc.js))
+ (enabled_if
+  (or
+   (= %{profile} wasm)
+   (= %{profile} wasm-effects))))

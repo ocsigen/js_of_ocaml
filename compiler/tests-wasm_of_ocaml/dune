@@ -1,5 +1,7 @@
 (tests
  (names gh38 gh46 gh107 gh112)
- (modes js)
+ (modes js wasm)
  (js_of_ocaml
+  (flags :standard --disable optcall --no-inline))
+ (wasm_of_ocaml
   (flags :standard --disable optcall --no-inline)))

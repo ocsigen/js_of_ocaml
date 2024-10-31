@@ -2,6 +2,7 @@
  (names cat md5)
  (modes
   js
+  wasm
   (best exe)))
 
 (rule
@@ -26,6 +27,14 @@
  (alias runtest)
  (action
   (diff cat-js.stdout cat-native.stdout)))
+
+(rule
+ (action
+  (copy cat.bc.wasm.js cat.bc.js))
+ (enabled_if
+  (or
+   (= %{profile} wasm)
+   (= %{profile} wasm-effects))))
 
 (rule
  (target md5-native.stdout)
@@ -69,3 +78,11 @@
  (alias runtest)
  (action
   (diff md5-js.stdout md5-native.stdout)))
+
+(rule
+ (action
+  (copy md5.bc.wasm.js md5.bc.js))
+ (enabled_if
+  (or
+   (= %{profile} wasm)
+   (= %{profile} wasm-effects))))

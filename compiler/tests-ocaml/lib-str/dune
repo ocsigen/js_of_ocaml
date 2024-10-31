@@ -1,4 +1,4 @@
 (tests
  (names t01)
  (libraries str)
- (modes js))
+ (modes js wasm))

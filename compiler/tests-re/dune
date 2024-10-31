@@ -6,4 +6,4 @@
 (tests
  (names test_str)
  (libraries str re)
- (modes js))
+ (modes js wasm))

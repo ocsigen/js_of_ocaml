@@ -5,7 +5,7 @@
  (enabled_if
   (>= %{ocaml_version} 4.14))
  (inline_tests
-  (modes js best))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 
@@ -16,7 +16,7 @@
  (enabled_if
   (>= %{ocaml_version} 5.1.1))
  (inline_tests
-  (modes js best))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 
@@ -27,7 +27,7 @@
  (enabled_if
   (>= %{ocaml_version} 5.1.1))
  (inline_tests
-  (modes js best))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 
@@ -41,7 +41,7 @@
   (language c)
   (names bigarray_stubs))
  (inline_tests
-  (modes js best))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 
