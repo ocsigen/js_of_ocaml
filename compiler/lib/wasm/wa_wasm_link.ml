@@ -1884,7 +1884,7 @@ let f files ~output_file ~opt_output_sourcemap_file =
       (Array.of_list files)
   in
 
-  let out_ch = open_out output_file in
+  let out_ch = open_out_bin output_file in
   output_string out_ch Read.header;
   let buf = Buffer.create 100000 in
 
