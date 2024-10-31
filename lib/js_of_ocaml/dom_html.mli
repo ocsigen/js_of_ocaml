@@ -458,6 +458,14 @@ and clipboardEvent = object
   method clipboardData : dataTransfer t readonly_prop
 end
 
+and toggleEvent = object
+  inherit event
+
+  method newState : js_string t readonly_prop
+
+  method oldState : js_string t readonly_prop
+end
+
 and dataTransfer = object
   method dropEffect : js_string t prop
 
@@ -1188,6 +1196,16 @@ class type anchorElement = object
   method target : js_string t prop
 
   method _type : js_string t prop
+end
+
+class type detailsElement = object ('self)
+  inherit element
+
+  method open_ : bool t prop
+
+  method name : js_string t prop
+
+  method ontoggle : ('self t, toggleEvent t) event_listener prop
 end
 
 class type imageElement = object ('self)
@@ -2503,6 +2521,8 @@ module Event : sig
 
   val waiting : mediaEvent t typ
 
+  val toggle : toggleEvent t typ
+
   val make : string -> 'a typ
 end
 
@@ -3047,6 +3067,8 @@ module CoerceTo : sig
   val colgroup : #element t -> tableColElement t opt
 
   val del : #element t -> modElement t opt
+
+  val details : #element t -> detailsElement t opt
 
   val div : #element t -> divElement t opt
 

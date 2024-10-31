@@ -70,6 +70,8 @@ module type OF = sig
 
   val of_li : Dom_html.liElement Js.t -> [> Html_types.li ] elt
 
+  val of_details : Dom_html.detailsElement Js.t -> [> Html_types.details ] elt
+
   val of_dialog : Dom_html.dialogElement Js.t -> [> Html_types.dialog ] elt
 
   val of_div : Dom_html.divElement Js.t -> [> Html_types.div ] elt
@@ -181,6 +183,8 @@ module type TO = sig
 
   val of_li : [< Html_types.li ] elt -> Dom_html.liElement Js.t
 
+  val of_details : [< Html_types.details ] elt -> Dom_html.detailsElement Js.t
+
   val of_dialog : [< Html_types.dialog ] elt -> Dom_html.dialogElement Js.t
 
   val of_div : [< Html_types.div ] elt -> Dom_html.divElement Js.t
@@ -278,8 +282,6 @@ module type TO = sig
   val of_datalist : [> Html_types.datalist ] elt -> Dom_html.element Js.t
 
   val of_dd : [> Html_types.dd ] elt -> Dom_html.element Js.t
-
-  val of_details : [> Html_types.details ] elt -> Dom_html.element Js.t
 
   val of_dfn : [> Html_types.dfn ] elt -> Dom_html.element Js.t
 
