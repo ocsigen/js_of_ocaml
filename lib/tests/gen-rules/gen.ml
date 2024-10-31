@@ -71,7 +71,7 @@ let () =
  (enabled_if %s)
  (modules %s)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js))
+ (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 |}

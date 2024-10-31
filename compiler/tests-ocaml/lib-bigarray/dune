@@ -1,4 +1,4 @@
 (tests
  (names bigarrays change_layout fftba pr5115 weak_bigarray)
  (libraries)
- (modes js))
+ (modes js wasm))

@@ -1,4 +1,4 @@
 (tests
  (names test issue9460)
  (libraries)
- (modes js))
+ (modes js wasm))

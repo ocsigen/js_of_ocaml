@@ -5,4 +5,5 @@
   (:standard -no-strict-formats \ -strict-formats))
  (modes
   js
+  wasm
   (best exe)))

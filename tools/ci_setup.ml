@@ -29,7 +29,7 @@ let dune_workspace =
 (env
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
-  (js_of_ocaml (submodes wasm))
+  (js_of_ocaml (enabled_if false))
   (flags :standard -warn-error -8-32-34-49-52-55 -w -67-69)))
 |}
 
@@ -54,6 +54,15 @@ index 91933ec..849e4d7 100644
     )
   ; ( "bignum"
     , {bignum|
+diff --git a/dune-project b/dune-project
+index e563d7e..b87e356 100644
+--- a/dune-project
++++ b/dune-project
+@@ -1,3 +1,3 @@
+-(lang dune 2.0)
++(lang dune 3.17)
+ 
+ (formatting disabled)
 diff --git a/test/src/dune b/test/src/dune
 index f93ae3f..3f00557 100644
 --- a/test/src/dune
@@ -62,7 +71,7 @@ index f93ae3f..3f00557 100644
   (name bignum_test)
   (libraries bigint bignum core expect_test_helpers_core
     sexp_grammar_validation)
-+ (inline_tests (flags -drop-tag no-js -drop-tag no-wasm -drop-tag 64-bits-only) (modes js))
++ (inline_tests (flags -drop-tag no-js -drop-tag no-wasm -drop-tag 64-bits-only) (modes js wasm))
   (preprocess
    (pps ppx_jane)))
 diff --git a/test/src/test_bignum.ml b/test/src/test_bignum.ml

@@ -3,7 +3,7 @@
  (deps ../../../LICENSE)
  (modules hfun)
  (libraries)
- (modes js))
+ (modes js wasm))
 
 (tests
  (names htbl)
@@ -12,7 +12,7 @@
  (build_if
   (>= %{ocaml_version} 5))
  (libraries)
- (modes js))
+ (modes js wasm))
 
 (rule
  (action

@@ -3,12 +3,7 @@
  (enabled_if
   (= %{ocaml_version} "5.2.0"))
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --pretty
-   --debuginfo
-   %{lib:stdlib:stdlib.cma}
-   -o
+  (run %{bin:js_of_ocaml} --pretty --debuginfo %{lib:stdlib:stdlib.cma} -o
    %{targets})))
 
 (rule
@@ -31,12 +26,7 @@
  (targets fs.output.js)
  (deps file1 file2)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   build-fs
-   -o
-   %{targets}
-   file1:/static/file1
+  (run %{bin:js_of_ocaml} build-fs -o %{targets} file1:/static/file1
    file2:/static/dir/file2)))
 
 (rule

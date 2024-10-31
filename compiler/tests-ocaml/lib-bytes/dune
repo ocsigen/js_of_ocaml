@@ -1,4 +1,4 @@
 (tests
  (names test_bytes binary)
  (libraries)
- (modes js))
+ (modes js wasm))

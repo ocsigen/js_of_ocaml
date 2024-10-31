@@ -5,7 +5,7 @@
  (enabled_if
   (>= %{ocaml_version} 4.14))
  (inline_tests
-  (modes js best))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 
@@ -16,7 +16,7 @@
  (enabled_if
   (>= %{ocaml_version} 5.1.1))
  (inline_tests
-  (modes js best))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 
@@ -27,27 +27,21 @@
  (enabled_if
   (>= %{ocaml_version} 5.1.1))
  (inline_tests
-  (modes js best))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 
 (library
  (name jsoo_testsuite)
  (modules
-  (:standard
-   \
-   test_io
-   test_floats
-   test_marshal_compressed
-   test_parsing
-   calc_parser
-   calc_lexer))
+  (:standard \ test_io test_floats test_marshal_compressed test_parsing
+   calc_parser calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (foreign_stubs
   (language c)
   (names bigarray_stubs))
  (inline_tests
-  (modes js best))
+  (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 

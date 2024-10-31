@@ -2,11 +2,7 @@
  (name js_of_ocaml_compiler)
  (public_name js_of_ocaml-compiler)
  (synopsis "Js_of_ocaml compiler library")
- (libraries
-  compiler-libs.common
-  compiler-libs.bytecomp
-  menhirLib
-  sedlex
+ (libraries compiler-libs.common compiler-libs.bytecomp menhirLib sedlex
   yojson)
  (flags
   (:standard -w -7-37 -safe-string))
@@ -17,21 +13,9 @@
 
 (menhir
  (modules js_parser)
- (flags
-  --table
-  --external-tokens
-  Js_token
-  --explain
-  --unused-token
-  TAnnot
-  --unused-token
-  TComment
-  --unused-token
-  TCommentLineDirective
-  --unused-token
-  T_ERROR
-  --unused-token
-  T_AT))
+ (flags --table --external-tokens Js_token --explain --unused-token TAnnot
+  --unused-token TComment --unused-token TCommentLineDirective --unused-token
+  T_ERROR --unused-token T_AT))
 
 (menhir
  (modules annot_parser)

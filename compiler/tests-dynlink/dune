@@ -16,14 +16,7 @@
    (<> %{profile} wasm-effects)))
  (deps plugin.cmo export)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --dynlink
-   --export
-   export
-   --pretty
-   -o
-   %{target}
+  (run %{bin:js_of_ocaml} --dynlink --export export --pretty -o %{target}
    %{dep:main.bc})))
 
 (rule

@@ -3,15 +3,7 @@
  (libraries js_of_ocaml-lwt)
  (modes byte)
  (modules
-  (:standard
-   \
-   scene_extents
-   svg
-   main
-   viewer
-   converter
-   dot_lexer
-   dot_graph
+  (:standard \ scene_extents svg main viewer converter dot_lexer dot_graph
    dot_render))
  (preprocess
   (pps js_of_ocaml-ppx)))
@@ -21,15 +13,8 @@
 (rule
  (targets viewer_js.js)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --source-map
-   %{dep:viewer_js.bc}
-   -o
-   %{targets}
-   --pretty
-   --file
-   %{dep:scene.json})))
+  (run %{bin:js_of_ocaml} --source-map %{dep:viewer_js.bc} -o %{targets}
+   --pretty --file %{dep:scene.json})))
 
 (alias
  (name default)

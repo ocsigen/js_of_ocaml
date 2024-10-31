@@ -1,49 +1,14 @@
 (executables
- (names
-  almabench
-  bdd
-  binary_trees
-  boyer
-  boyer_no_exc
-  fannkuch_redux_2
-  fannkuch_redux
-  fft
-  fib
-  hamming
-  kb
-  kb_no_exc
-  loop
-  nucleic
-  quicksort
-  raytrace
-  soli
-  splay
-  takc
-  taku))
+ (names almabench bdd binary_trees boyer boyer_no_exc fannkuch_redux_2
+  fannkuch_redux fft fib hamming kb kb_no_exc loop nucleic quicksort raytrace
+  soli splay takc taku))
 
 (alias
  (name benchmark)
- (deps
-  almabench.exe
-  bdd.exe
-  binary_trees.exe
-  boyer.exe
-  boyer_no_exc.exe
-  fannkuch_redux_2.exe
-  fannkuch_redux.exe
-  fft.exe
-  fib.exe
-  hamming.exe
-  kb.exe
-  kb_no_exc.exe
-  loop.exe
-  nucleic.exe
-  quicksort.exe
-  raytrace.exe
-  soli.exe
-  splay.exe
-  takc.exe
-  taku.exe))
+ (deps almabench.exe bdd.exe binary_trees.exe boyer.exe boyer_no_exc.exe
+  fannkuch_redux_2.exe fannkuch_redux.exe fft.exe fib.exe hamming.exe kb.exe
+  kb_no_exc.exe loop.exe nucleic.exe quicksort.exe raytrace.exe soli.exe
+  splay.exe takc.exe taku.exe))
 
 (env
  (_

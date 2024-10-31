@@ -114,7 +114,7 @@ jobs:
 
       - name: Pin dune
         run: |
-          opam pin add dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
+          opam pin add dune.3.17 https://github.com/vouillon/dune.git#wasm_of_ocaml-alternative
 
       - run: opam install conf-pkg-config
         if: runner.os == 'Windows'
@@ -178,7 +178,7 @@ jobs:
           dune-cache: true
       - name: Pin dune
         run: |
-          opam pin add -n dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
+          opam pin add -n dune.3.17 https://github.com/vouillon/dune.git#wasm_of_ocaml-alternative
       - uses: ocaml/setup-ocaml/lint-opam@v3
 
   lint-fmt:
@@ -193,7 +193,7 @@ jobs:
           dune-cache: true
       - name: Pin dune
         run: |
-          opam pin add -n dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml
+          opam pin add -n dune.3.17 https://github.com/vouillon/dune.git#wasm_of_ocaml-alternative
       - uses: ocaml/setup-ocaml/lint-fmt@v3
 
   lint-runtime:

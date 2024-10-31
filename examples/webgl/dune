@@ -8,15 +8,8 @@
 (rule
  (targets webgldemo.js)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --source-map
-   %{dep:webgldemo.bc}
-   -o
-   %{targets}
-   --pretty
-   --file
-   %{dep:monkey.model})))
+  (run %{bin:js_of_ocaml} --source-map %{dep:webgldemo.bc} -o %{targets}
+   --pretty --file %{dep:monkey.model})))
 
 (alias
  (name default)

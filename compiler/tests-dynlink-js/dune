@@ -45,13 +45,8 @@
    (<> %{profile} wasm)
    (<> %{profile} wasm-effects)))
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --linkall
-   %{read-strings:effects_flags.txt}
-   -o
-   %{target}
-   %{dep:main.bc})))
+  (run %{bin:js_of_ocaml} --linkall %{read-strings:effects_flags.txt} -o
+   %{target} %{dep:main.bc})))
 
 (rule
  (target plugin.cmo)
@@ -61,28 +56,19 @@
 (rule
  (target plugin.js)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   %{read-strings:effects_flags.txt}
+  (run %{bin:js_of_ocaml} %{read-strings:effects_flags.txt}
    %{dep:./plugin.cmo})))
 
 (rule
  (target plugin2.cma)
  (action
-  (run
-   %{bin:ocamlc}
-   -a
-   %{dep:./plugin2a.ml}
-   %{dep:./plugin2b.ml}
-   -o
+  (run %{bin:ocamlc} -a %{dep:./plugin2a.ml} %{dep:./plugin2b.ml} -o
    plugin2.cma)))
 
 (rule
  (target plugin2.js)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   %{read-strings:effects_flags.txt}
+  (run %{bin:js_of_ocaml} %{read-strings:effects_flags.txt}
    %{dep:./plugin2.cma})))
 
 (rule

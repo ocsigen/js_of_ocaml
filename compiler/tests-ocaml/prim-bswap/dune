@@ -1,4 +1,4 @@
 (tests
  (names bswap)
  (libraries)
- (modes js))
+ (modes js wasm))

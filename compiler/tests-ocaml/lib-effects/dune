@@ -23,31 +23,12 @@
 (tests
  (build_if
   (>= %{ocaml_version} 5))
- (names
-  cmphash
-  marshal
-  effects
-  evenodd
-  manylive
-  overflow
-  partial
-  reperform
-  sched
-  shallow_state_io
-  shallow_state
-  test10
-  test11
-  test1
-  test2
-  test3
-  test4
-  test5
-  test6
-  test_lazy
-  used_cont)
+ (names cmphash marshal effects evenodd manylive overflow partial reperform
+  sched shallow_state_io shallow_state test10 test11 test1 test2 test3 test4
+  test5 test6 test_lazy used_cont)
  (modules
   (:standard \ unhandled_unlinked))
- (modes js))
+ (modes js wasm))
 
 (tests
  (build_if
@@ -60,4 +41,4 @@
     2
     (run node %{test}))
    (run cat)))
- (modes js))
+ (modes js wasm))
