@@ -368,6 +368,7 @@ module Hints = struct
         ; layout : Lambda.bigarray_layout
         }
     | Hint_primitive of Primitive.description
+    | Hint_phys_equal
 
   type t = { hints : optimization_hint Int.Hashtbl.t }
 
@@ -2320,11 +2321,17 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser ()
         then Format.printf "%a = mk_bool(%a == %a)@." Var.print x Var.print y Var.print z;
+        let hints = Hints.find infos.hints pc in
+        let prim =
+          if List.mem ~eq:Hints.equal Hints.Hint_phys_equal hints
+          then Extern "%phys_equal"
+          else Eq
+        in
         compile
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Prim (Eq, [ Pv y; Pv z ])) :: instrs)
+          (Let (x, Prim (prim, [ Pv y; Pv z ])) :: instrs)
     | NEQ ->
         let y = State.accu state in
         let z = State.peek 0 state in
@@ -2332,11 +2339,17 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser ()
         then Format.printf "%a = mk_bool(%a != %a)@." Var.print x Var.print y Var.print z;
+        let hints = Hints.find infos.hints pc in
+        let prim =
+          if List.mem ~eq:Hints.equal Hints.Hint_phys_equal hints
+          then Extern "%not_phys_equal"
+          else Neq
+        in
         compile
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Prim (Neq, [ Pv y; Pv z ])) :: instrs)
+          (Let (x, Prim (prim, [ Pv y; Pv z ])) :: instrs)
     | LTINT ->
         let y = State.accu state in
         let z = State.peek 0 state in
