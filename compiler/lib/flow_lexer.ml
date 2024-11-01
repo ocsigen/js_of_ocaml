@@ -832,9 +832,9 @@ let backquote env lexbuf =
 
 let wrap f =
   let f env =
-    let start, _ = Sedlexing.lexing_positions env.Lex_env.lex_lb in
+    let start = Sedlexing.lexing_position_start env.Lex_env.lex_lb in
     let t = f env env.Lex_env.lex_lb in
-    let _, stop = Sedlexing.lexing_positions env.Lex_env.lex_lb in
+    let stop = Sedlexing.lexing_position_curr env.Lex_env.lex_lb in
     t, Loc.create ~last_line:(Loc.line_end' !(env.lex_last_loc)) start stop
   in
   let rec helper comments env =
