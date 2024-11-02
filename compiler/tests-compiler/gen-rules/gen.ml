@@ -62,10 +62,9 @@ let test_enabled_if = function
 
 let enabled_if cond =
   match cond with
-  | Any -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))"
-  | GE5 ->
-      "(and (<> %{profile} wasm) (<> %{profile} wasm-effects) (>= %{ocaml_version} 5))"
-  | B64 -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects) %{arch_sixtyfour})"
+  | Any -> "true"
+  | GE5 -> "(>= %{ocaml_version} 5)"
+  | B64 -> "%{arch_sixtyfour}"
 
 let () =
   Array.to_list (Sys.readdir ".")
@@ -78,7 +77,7 @@ let () =
 (library
  ;; %s%s.ml
  (name %s_%d)
- (enabled_if %s)
+ (enabled_if (and %s (<> %%{profile} wasm) (<> %%{profile} wasm-effects)))
  (modules %s)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
