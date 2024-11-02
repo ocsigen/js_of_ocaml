@@ -18,7 +18,8 @@ let omitted_others = StringSet.of_list [ "cohttp-async"; "cohttp"; "uri"; "uri-s
 
 let omitted_js = StringSet.of_list [ "sexplib0" ]
 
-let do_not_pin = StringSet.of_list [ "wasocaml"; "wasm_of_ocaml"; "dune" ]
+let do_not_pin =
+  StringSet.of_list [ "wasocaml"; "wasm_of_ocaml"; "dune"; "ocaml-cstruct" ]
 
 let do_pin = StringSet.of_list [ "base"; "ppx_expect"; "ppx_inline_test"; "time_now" ]
 
@@ -206,14 +207,36 @@ let sync_exec f l =
   let l = List.mapi f l in
   List.iter (fun f -> f ()) l
 
+let branch nm =
+  if List.mem
+       nm
+       [ "base"
+       ; "ppx_expect"
+       ; "ppx_inline_test"
+       ; "time_now"
+       ; "core"
+       ; "virtual_dom"
+       ; "zarith_stubs_js"
+       ; "string_dict"
+       ; "async_js"
+       ; "base_bigstring"
+       ; "bin_prot"
+       ; "core_kernel"
+       ; "bonsai"
+       ; "bigstringaf"
+       ]
+  then "wasm-alt"
+  else "wasm"
+
 let pin delay nm =
   exec_async
     ~delay
     (Printf.sprintf
-       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm"
+       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#%s"
        (try List.assoc nm aliases
         with Not_found -> if List.mem_assoc nm packages then nm ^ ".v0.16.0" else nm)
-       nm)
+       nm
+       (branch nm))
 
 let pin_packages js =
   sync_exec
@@ -263,7 +286,7 @@ let () =
   sync_exec (fun i () -> clone i "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec
     (fun i nm ->
-      let branch = if is_forked nm then Some "wasm" else None in
+      let branch = if is_forked nm then Some (branch nm) else None in
       let commit =
         if is_forked nm
         then None
