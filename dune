@@ -36,9 +36,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run
-    %{dep:tools/version/gen/gen.exe}
-    %{dep:VERSION}
+   (run %{dep:tools/version/gen/gen.exe} %{dep:VERSION}
     %{dep:tools/version/GIT-VERSION}))))
 
 (data_only_dirs _wikidoc doc-dev)

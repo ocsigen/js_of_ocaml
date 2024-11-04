@@ -1,9 +1,6 @@
 (executables
  (names main)
- (libraries
-  ppxlib
-  toplevel_expect_test
-  js_of_ocaml.deriving
+ (libraries ppxlib toplevel_expect_test js_of_ocaml.deriving
   js_of_ocaml-ppx_deriving_json)
  (modes byte)
  (link_flags (-linkall)))

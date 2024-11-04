@@ -51,10 +51,7 @@
 (install
  (section man)
  (package js_of_ocaml-compiler)
- (files
-  js_of_ocaml.1
-  js_of_ocaml-link.1
-  js_of_ocaml-build-fs.1
+ (files js_of_ocaml.1 js_of_ocaml-link.1 js_of_ocaml-build-fs.1
   js_of_ocaml-build-runtime.1))
 
 ;; Generate and install runtime.js for compatibility reasons

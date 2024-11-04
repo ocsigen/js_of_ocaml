@@ -33,20 +33,9 @@
  (target runtime.wasm)
  (deps runtime.merged.wasm)
  (action
-  (run
-   wasm-opt
-   -g
-   --enable-gc
-   --enable-exception-handling
-   --enable-reference-types
-   --enable-tail-call
-   --enable-strings
-   --enable-multivalue
-   --enable-bulk-memory
-   %{deps}
-   -O3
-   -o
-   %{target})))
+  (run wasm-opt -g --enable-gc --enable-exception-handling
+   --enable-reference-types --enable-tail-call --enable-strings
+   --enable-multivalue --enable-bulk-memory %{deps} -O3 -o %{target})))
 
 (rule
  (target runtime.merged.wasm)
@@ -59,19 +48,9 @@
     "which wasm-merge > /dev/null || (echo 'Error: Binaryen tools not found in the PATH'; false)")
    (bash
     "wasm-merge --version | grep -q 'version \\(11[89]\\|1[2-9][0-9]\\)' || (echo 'Error: Binaryen version 118 or greater is currently required'; false)")
-   (run
-    wasm-merge
-    -g
-    --enable-gc
-    --enable-exception-handling
-    --enable-reference-types
-    --enable-tail-call
-    --enable-strings
-    --enable-multivalue
-    --enable-bulk-memory
-    %{read-lines:args}
-    -o
-    %{target}))))
+   (run wasm-merge -g --enable-gc --enable-exception-handling
+    --enable-reference-types --enable-tail-call --enable-strings
+    --enable-multivalue --enable-bulk-memory %{read-lines:args} -o %{target}))))
 
 (rule
  (target args)
