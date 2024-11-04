@@ -71,7 +71,7 @@ let () =
  (enabled_if %s)
  (modules %s)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js%s))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 |}
@@ -80,13 +80,11 @@ let () =
            basename
            (Hashtbl.hash prefix mod 100)
            (match enabled_if basename with
-           | Any -> "true"
-           | GE5 ->
-               (* ZZZ /static not yet implemented *)
-               "(and (>= %{ocaml_version} 5) (<> %{profile} wasm) (<> %{profile} \
-                wasm-effects))"
-           | Not_wasm -> "(and (<> %{profile} wasm) (<> %{profile} wasm-effects))"
-           | No_effects_not_wasm ->
-               "(and (<> %{profile} using-effects) (<> %{profile} wasm) (<> %{profile} \
-                wasm-effects))")
-           basename)
+           | Any | Not_wasm -> "true"
+           | GE5 -> "(>= %{ocaml_version} 5)"
+           | No_effects_not_wasm -> "(<> %{profile} using-effects)")
+           basename
+           (match enabled_if basename with
+           | Any -> " wasm"
+           | GE5 -> "" (* ZZZ /static not yet implemented *)
+           | Not_wasm | No_effects_not_wasm -> ""))

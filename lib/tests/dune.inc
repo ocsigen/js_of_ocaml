@@ -32,10 +32,10 @@
 (library
  ;; lib/tests/test_fun_call.ml
  (name test_fun_call_75)
- (enabled_if (and (<> %{profile} using-effects) (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if (<> %{profile} using-effects))
  (modules test_fun_call)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -52,10 +52,10 @@
 (library
  ;; lib/tests/test_json.ml
  (name test_json_75)
- (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if true)
  (modules test_json)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -72,10 +72,10 @@
 (library
  ;; lib/tests/test_poly_compare.ml
  (name test_poly_compare_75)
- (enabled_if (and (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if true)
  (modules test_poly_compare)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -102,10 +102,10 @@
 (library
  ;; lib/tests/test_sys.ml
  (name test_sys_75)
- (enabled_if (and (>= %{ocaml_version} 5) (<> %{profile} wasm) (<> %{profile} wasm-effects)))
+ (enabled_if (>= %{ocaml_version} 5))
  (modules test_sys)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
