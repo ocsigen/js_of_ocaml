@@ -142,13 +142,6 @@ let rec traverse var_depth closures program pc depth =
                     in
                     List.map ~f:(fun f -> f, Var.Map.find f arities) fun_lst
                   in
-                  (*
-                  Format.eprintf "AAA";
-                  List.iter
-                    ~f:(fun (f, _) -> Format.eprintf " %a" Code.Var.print f)
-                    functions;
-                  Format.eprintf "@.";
-*)
                   List.iter
                     ~f:(fun (f, _) ->
                       closures := Var.Map.add f { functions; free_variables } !closures)
