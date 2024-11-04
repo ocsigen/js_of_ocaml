@@ -289,8 +289,8 @@ let rewrite_path path =
 
 let invalid () = invalid_arg "Source_map.of_json"
 
-let string_of_stringlit (`Stringlit s) =
-  match Yojson.Safe.from_string s with
+let string_of_stringlit ?tmp_buf (`Stringlit s) =
+  match Yojson.Safe.from_string ?buf:tmp_buf s with
   | `String s -> s
   | _ -> invalid ()
 
@@ -507,11 +507,13 @@ module Standard = struct
                            t.sources))) )
          ])
 
-  let of_json (json : Yojson.Raw.t) =
+  let of_json ?tmp_buf (json : Yojson.Raw.t) =
     match json with
     | `Assoc (("version", `Intlit version) :: rest)
       when version_is_valid (int_of_string version) ->
-        let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
+        let string name json =
+          Option.map ~f:(fun s -> string_of_stringlit ?tmp_buf s) (stringlit name json)
+        in
         let file = string "file" rest in
         let sourceroot = string "sourceRoot" rest in
         let names =
@@ -641,7 +643,7 @@ module Index = struct
     | _ -> invalid_arg errmsg
     | exception Not_found -> invalid_arg errmsg
 
-  let section_of_json : Yojson.Raw.t -> section = function
+  let section_of_json ?tmp_buf : Yojson.Raw.t -> section = function
     | `Assoc json ->
         let offset =
           match List.assoc "offset" json with
@@ -671,7 +673,7 @@ module Index = struct
               "Source_map.Index.of_json: URLs in index maps are not currently supported"
         | exception Not_found -> ());
         let map =
-          try Standard.of_json (List.assoc "map" json) with
+          try Standard.of_json ?tmp_buf (List.assoc "map" json) with
           | Not_found -> invalid_arg "Source_map.Index.of_json: field 'map' absent"
           | Invalid_argument _ ->
               invalid_arg "Source_map.Index.of_json: invalid sub-map object"
@@ -679,14 +681,14 @@ module Index = struct
         { offset; map }
     | _ -> invalid_arg "Source_map.Index.of_json: section of unexpected type"
 
-  let of_json = function
+  let of_json ?tmp_buf = function
     | `Assoc (("version", `Intlit version) :: fields)
       when version_is_valid (int_of_string version) -> (
         let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
         let file = string "file" fields in
         match List.assoc "sections" fields with
         | `List sections ->
-            let sections = List.map ~f:section_of_json sections in
+            let sections = List.map ~f:(section_of_json ?tmp_buf) sections in
             { version = int_of_string version; file; sections }
         | _ -> invalid_arg "Source_map.Index.of_json: `sections` is not an array"
         | exception Not_found ->
@@ -721,16 +723,16 @@ type t =
   | Standard of Standard.t
   | Index of Index.t
 
-let of_json = function
+let of_json ?tmp_buf = function
   | `Assoc fields as json -> (
       match List.assoc "sections" fields with
-      | _ -> Index (Index.of_json json)
-      | exception Not_found -> Standard (Standard.of_json json))
+      | _ -> Index (Index.of_json ?tmp_buf json)
+      | exception Not_found -> Standard (Standard.of_json ?tmp_buf json))
   | _ -> invalid_arg "Source_map.of_json: map is not an object"
 
-let of_string s = of_json (Yojson.Raw.from_string s)
+let of_string ?tmp_buf s = of_json ?tmp_buf (Yojson.Raw.from_string ?buf:tmp_buf s)
 
-let of_file f = of_json (Yojson.Raw.from_file f)
+let of_file ?tmp_buf f = of_json ?tmp_buf (Yojson.Raw.from_file ?buf:tmp_buf f)
 
 let to_string = function
   | Standard m -> Standard.to_string m
