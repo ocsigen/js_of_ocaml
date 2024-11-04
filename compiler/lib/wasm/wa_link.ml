@@ -575,7 +575,7 @@ let source_name i j file =
 let extract_source_map ~dir ~name z =
   if Zip.has_entry z ~name:"source_map.map"
   then (
-    let sm = Wa_source_map.parse (Zip.read_entry z ~name:"source_map.map") in
+    let sm = Source_map.of_string (Zip.read_entry z ~name:"source_map.map") in
     let sm =
       let rewrite_path path =
         if Filename.is_relative path
@@ -590,7 +590,7 @@ let extract_source_map ~dir ~name z =
           if Zip.has_entry z ~name then Some (Zip.read_entry z ~name) else None)
     in
     let map_name = name ^ ".wasm.map" in
-    Wa_source_map.write (Filename.concat dir map_name) sm;
+    Source_map.to_file sm (Filename.concat dir map_name);
     Wasm_binary.append_source_map_section
       ~file:(Filename.concat dir (name ^ ".wasm"))
       ~url:map_name)
@@ -860,7 +860,7 @@ let rec get_source_map_files files src_index =
   if Zip.has_entry z ~name:"source_map.map"
   then
     let data = Zip.read_entry z ~name:"source_map.map" in
-    let sm = Wa_source_map.parse data in
+    let sm = Source_map.of_string data in
     if not (Wa_source_map.is_empty sm)
     then (
       let l = ref [] in
@@ -879,7 +879,7 @@ let add_source_map files z opt_source_map_file =
   Option.iter
     ~f:(fun file ->
       Zip.add_file z ~name:"source_map.map" ~file;
-      let sm = Wa_source_map.load file in
+      let sm = Source_map.of_file file in
       let files = Array.of_list files in
       let src_index = ref 0 in
       let st = ref None in

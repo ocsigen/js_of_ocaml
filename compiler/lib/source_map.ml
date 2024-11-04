@@ -71,6 +71,8 @@ module Mappings = struct
 
   let empty = Uninterpreted ""
 
+  let is_empty (Uninterpreted s) = String.equal s ""
+
   let of_string_unsafe : string -> t = fun s -> Uninterpreted s
 
   let to_string : t -> string = fun (Uninterpreted s) -> s

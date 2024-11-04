@@ -19,6 +19,16 @@
 
 val in_alphabet : char -> bool
 
+type input =
+  { string : string
+  ; mutable pos : int
+  ; len : int
+  }
+
+val encode : Buffer.t -> int -> unit
+
 val encode_l : Buffer.t -> int list -> unit
+
+val decode : input -> int
 
 val decode_l : string -> pos:int -> len:int -> int list

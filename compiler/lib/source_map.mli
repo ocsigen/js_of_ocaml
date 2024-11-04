@@ -62,6 +62,9 @@ module Mappings : sig
   val empty : t
   (** The empty mapping. *)
 
+  val is_empty : t -> bool
+  (** Test whether the mapping is empty. *)
+
   val of_string_unsafe : string -> t
   (** [of_string_unsafe] does not perform any
       validation of its argument, unlike {!val:decode}. It is guaranteed that
