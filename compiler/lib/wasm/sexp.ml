@@ -111,27 +111,28 @@ module Util = struct
   let single f v =
     match v with
     | [ v ] -> f v
-    | _ -> assert false
+    | _ -> invalid_arg "Sexp.Util.single"
 
   let string v =
     match v with
     | Atom s -> s
-    | _ -> assert false
+    | _ -> invalid_arg "Sexp.Util.string"
 
   let assoc v =
+    let invalid_arg () = invalid_arg "Sexp.Util.assoc" in
     match v with
     | List l ->
         List.map
           ~f:(fun p ->
             match p with
             | List (Atom k :: v) -> k, v
-            | _ -> assert false)
+            | _ -> invalid_arg ())
           l
-    | Atom _ -> assert false
+    | Atom _ -> invalid_arg ()
 
   let member nm v =
     match v with
-    | Atom _ -> assert false
+    | Atom _ -> invalid_arg "Sexp.Util.member"
     | List l ->
         List.find_map
           ~f:(fun p ->
@@ -144,18 +145,10 @@ module Util = struct
     match v with
     | Atom "true" -> true
     | Atom "false" -> false
-    | _ -> assert false
+    | _ -> invalid_arg "Sexp.Util.bool"
 
   let mandatory f v =
     match v with
     | Some v -> f v
-    | None -> assert false
+    | None -> invalid_arg "Sexp.Util.mandatory"
 end
-(*
-parse
-  (to_string
-     (List
-        [ List [ Atom "provides"; Atom "toto" ]
-        ; List [ Atom "requires"; Atom "foo"; Atom "bar"; Atom "foo\n bar" ]
-        ]))
-*)
