@@ -1,9 +1,6 @@
 (executables
  (names toplevel)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (libraries
   js_of_ocaml-compiler
   js_of_ocaml-tyxml
@@ -129,10 +126,7 @@
 
 (rule
  (targets toplevel.js)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (run %{bin:js_of_ocaml} compile --pretty %{read-strings:effects_flags.txt}
    --Werror --target-env browser --file %{dep:examples.ml} --file
@@ -142,8 +136,5 @@
 
 (alias
  (name default)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (deps toplevel.js toplevel.bc.js index.html))

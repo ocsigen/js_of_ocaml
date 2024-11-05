@@ -77,7 +77,7 @@ let () =
 (library
  ;; %s%s.ml
  (name %s_%d)
- (enabled_if (and %s (<> %%{profile} wasm) (<> %%{profile} wasm-effects)))
+ (enabled_if (and %s %%{env:js-enabled=}))
  (modules %s)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests

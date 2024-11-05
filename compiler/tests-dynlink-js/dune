@@ -1,9 +1,6 @@
 (executable
  (name main)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (modules main)
  (libraries js_of_ocaml)
  (link_flags
@@ -40,10 +37,7 @@
 
 (rule
  (target main.js)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (run %{bin:js_of_ocaml} --linkall %{read-strings:effects_flags.txt} -o
    %{target} %{dep:main.bc})))
@@ -73,10 +67,7 @@
 
 (rule
  (target main.out)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (deps plugin.js plugin2.js)
  (action
   (with-outputs-to
@@ -85,10 +76,7 @@
 
 (rule
  (target main.out2)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (deps plugin.js plugin2.js)
  (action
   (with-outputs-to
@@ -97,18 +85,12 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (diff main.out.expected main.out)))
 
 (rule
  (alias runtest)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (diff main.out.expected main.out2)))

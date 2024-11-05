@@ -17,15 +17,10 @@
 (rule
  (action
   (copy hfun.expected-js hfun.expected))
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects))))
+ (enabled_if %{env:js-enabled=}))
 
 (rule
  (action
   (copy hfun.expected-wasm hfun.expected))
  (enabled_if
-  (or
-   (= %{profile} wasm)
-   (= %{profile} wasm-effects))))
+  (not %{env:js-enabled=})))

@@ -59,9 +59,7 @@
  (action
   (copy error1.bc.wasm.js error1.bc.js))
  (enabled_if
-  (or
-   (= %{profile} wasm)
-   (= %{profile} wasm-effects))))
+  (not %{env:js-enabled=})))
 
 (rule
  (target error2.js.actual)
@@ -118,6 +116,4 @@
  (action
   (copy error2.bc.wasm.js error2.bc.js))
  (enabled_if
-  (or
-   (= %{profile} wasm)
-   (= %{profile} wasm-effects))))
+  (not %{env:js-enabled=})))

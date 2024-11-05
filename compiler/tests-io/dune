@@ -32,9 +32,7 @@
  (action
   (copy cat.bc.wasm.js cat.bc.js))
  (enabled_if
-  (or
-   (= %{profile} wasm)
-   (= %{profile} wasm-effects))))
+  (not %{env:js-enabled=})))
 
 (rule
  (target md5-native.stdout)
@@ -83,6 +81,4 @@
  (action
   (copy md5.bc.wasm.js md5.bc.js))
  (enabled_if
-  (or
-   (= %{profile} wasm)
-   (= %{profile} wasm-effects))))
+  (not %{env:js-enabled=})))
