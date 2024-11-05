@@ -37,8 +37,7 @@
       },
       "suspicious": {
         "noAssignInExpressions": "off",
-        "noRedeclare": "off",
-        "noRedundantUseStrict": "off"
+        "noRedeclare": "off"
       }
     }
   },
