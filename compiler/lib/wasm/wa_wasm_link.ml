@@ -1497,7 +1497,7 @@ type t =
   { module_name : string
   ; file : string
   ; contents : Read.t
-  ; source_map_contents : Wa_source_map.t option
+  ; source_map_contents : Source_map.t option
   }
 
 type import_status =
@@ -1877,8 +1877,8 @@ let f files ~output_file ~opt_output_sourcemap_file =
             Option.map
               ~f:(fun src ->
                 match src with
-                | `File file -> Wa_source_map.load ~tmp_buf file
-                | `Data data -> Wa_source_map.parse ~tmp_buf data)
+                | `File file -> Source_map.of_file ~tmp_buf file
+                | `Data data -> Source_map.of_string ~tmp_buf data)
               opt_source_map
         })
       (Array.of_list files)
@@ -2275,12 +2275,12 @@ let f files ~output_file ~opt_output_sourcemap_file =
   add_section out_ch ~id:10 code_pieces;
   Option.iter
     ~f:(fun file ->
-      Wa_source_map.write
-        file
+      Source_map.to_file
         (Wa_source_map.concatenate
            (List.map
               ~f:(fun (pos, sm) -> pos + code_section_offset, sm)
-              (List.rev !source_maps))))
+              (List.rev !source_maps)))
+        file)
     opt_output_sourcemap_file;
 
   (* 11: data *)

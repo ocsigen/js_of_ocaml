@@ -21,6 +21,8 @@ module Source_content : sig
   type t
 
   val create : string -> t
+
+  val of_stringlit : [ `Stringlit of string ] -> t
 end
 
 type map =
@@ -59,6 +61,9 @@ module Mappings : sig
 
   val empty : t
   (** The empty mapping. *)
+
+  val is_empty : t -> bool
+  (** Test whether the mapping is empty. *)
 
   val of_string_unsafe : string -> t
   (** [of_string_unsafe] does not perform any
@@ -134,9 +139,9 @@ val to_string : t -> string
 
 val to_file : t -> string -> unit
 
-val of_string : string -> t
+val of_string : ?tmp_buf:Buffer.t -> string -> t
 
-val of_file : string -> t
+val of_file : ?tmp_buf:Buffer.t -> string -> t
 
 val invariant : t -> unit
 

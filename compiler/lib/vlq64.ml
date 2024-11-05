@@ -22,7 +22,7 @@ open! Stdlib
 let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 
 let code_rev =
-  let a = Array.make 255 (-1) in
+  let a = Array.make 256 (-1) in
   for i = 0 to String.length alphabet - 1 do
     a.(Char.code alphabet.[i]) <- i
   done;
@@ -99,3 +99,21 @@ let decode_l s ~pos ~len =
       aux i (d :: acc) len
   in
   aux pos [] len
+
+type input =
+  { string : string
+  ; mutable pos : int
+  ; len : int
+  }
+
+let rec decode' src s pos offset i =
+  let digit = Array.unsafe_get code_rev (Char.code s.[pos]) in
+  if digit = -1 then invalid_arg "Vql64.decode'";
+  let i = i + ((digit land vlq_base_mask) lsl offset) in
+  if digit >= vlq_continuation_bit
+  then decode' src s (pos + 1) (offset + vlq_base_shift) i
+  else (
+    src.pos <- pos + 1;
+    i)
+
+let decode src = fromVLQSigned (decode' src src.string src.pos 0 0)

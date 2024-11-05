@@ -240,7 +240,7 @@ let add_source_map sourcemap_don't_inline_content z opt_source_map_file =
       Zip.add_file z ~name:"source_map.map" ~file;
       if not sourcemap_don't_inline_content
       then
-        let sm = Wa_source_map.load file in
+        let sm = Source_map.of_file file in
         Wa_source_map.iter_sources sm (fun i j file ->
             if Sys.file_exists file && not (Sys.is_directory file)
             then
