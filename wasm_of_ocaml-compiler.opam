@@ -24,7 +24,7 @@ depends: [
   "menhir"
   "menhirLib"
   "menhirSdk"
-  "yojson"
+  "yojson" {>= "2.1"}
   "binaryen-bin"
   "odoc" {with-doc}
 ]
