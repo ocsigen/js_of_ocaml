@@ -101,7 +101,7 @@
    %{targets})))
 
 (rule
- (target bin.referencejs)
+ (target bin.actual)
  (deps bin.js)
  (action
   (with-stdout-to
@@ -114,9 +114,8 @@
   (and
    (<> %{profile} wasm)
    (<> %{profile} wasm-effects)))
- (deps bin.reference bin.referencejs)
  (action
-  (diff bin.reference bin.referencejs)))
+  (diff bin.expected bin.actual)))
 
 (alias
  (name default)

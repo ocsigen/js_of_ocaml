@@ -24,24 +24,11 @@
    (<> %{profile} wasm-effects)))
  (modules a b c d))
 
-(executable
+(test
  (name dump_sourcemap)
  (modules dump_sourcemap)
+ (action
+  (run %{test} %{dep:test.bc.js}))
+ (enabled_if
+  (= %{profile} dev))
  (libraries js_of_ocaml-compiler))
-
-(rule
- (target dump)
- (enabled_if
-  (= %{profile} dev))
- (action
-  (with-stdout-to
-   %{target}
-   (run ./dump_sourcemap.exe %{dep:test.bc.js}))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (= %{profile} dev))
- (deps dump.reference dump)
- (action
-  (diff dump.reference dump)))
