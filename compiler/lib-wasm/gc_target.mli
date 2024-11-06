@@ -16,8 +16,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f :
-     Code.program
-  -> Structure.t
-  -> Wa_closure_conversion.closure Code.Var.Map.t
-  -> Code.Var.Set.t
+include Target_sig.S

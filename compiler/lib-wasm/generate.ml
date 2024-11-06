@@ -18,10 +18,10 @@
 
 open! Stdlib
 open Code
-module W = Wa_ast
-open Wa_code_generation
+module W = Wasm_ast
+open Code_generation
 
-module Generate (Target : Wa_target_sig.S) = struct
+module Generate (Target : Target_sig.S) = struct
   open Target
 
   let transl_prim_arg x =
@@ -34,8 +34,8 @@ module Generate (Target : Wa_target_sig.S) = struct
     ; in_cps : Effects.in_cps
     ; deadcode_sentinal : Var.t
     ; blocks : block Addr.Map.t
-    ; closures : Wa_closure_conversion.closure Var.Map.t
-    ; global_context : Wa_code_generation.context
+    ; closures : Closure_conversion.closure Var.Map.t
+    ; global_context : Code_generation.context
     ; debug : Parse_bytecode.Debug.t
     }
 
@@ -1002,7 +1002,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     in
     let param_count = List.length param_names in
     (match name_opt with
-    | None -> ctx.global_context.globalized_variables <- Wa_globalize.f p g ctx.closures
+    | None -> ctx.global_context.globalized_variables <- Globalize.f p g ctx.closures
     | Some _ -> ());
     let locals, body =
       function_body
@@ -1083,7 +1083,7 @@ module Generate (Target : Wa_target_sig.S) = struct
       ; body
       }
 
-  module Curry = Wa_curry.Make (Target)
+  module Curry = Curry.Make (Target)
 
   let add_start_function ~context toplevel_name =
     context.other_fields <-
@@ -1104,7 +1104,7 @@ module Generate (Target : Wa_target_sig.S) = struct
       ~deadcode_sentinal
       ~debug =
     global_context.unit_name <- unit_name;
-    let p, closures = Wa_closure_conversion.f p in
+    let p, closures = Closure_conversion.f p in
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
@@ -1214,27 +1214,27 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
-let start () = make_context ~value_type:Wa_gc_target.Value.value
+let start () = make_context ~value_type:Gc_target.Value.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
   let p = if Config.Flag.effects () then fix_switch_branches p else p in
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p
 
 let add_start_function =
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   G.add_start_function
 
 let add_init_function =
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   G.add_init_function
 
 let output ch ~context =
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   let fields = G.output ~context in
-  Wa_wat_output.f ch fields
+  Wat_output.f ch fields
 
 let wasm_output ch ~context =
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   let fields = G.output ~context in
-  Wa_wasm_output.f ch fields
+  Wasm_output.f ch fields

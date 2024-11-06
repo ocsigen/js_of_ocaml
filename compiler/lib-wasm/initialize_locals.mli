@@ -17,7 +17,7 @@
  *)
 
 val f :
-     param_names:Wa_ast.var list
-  -> locals:(Wa_ast.var * Wa_ast.value_type) list
-  -> Wa_ast.instruction list
-  -> Wa_ast.instruction list
+     param_names:Wasm_ast.var list
+  -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
+  -> Wasm_ast.instruction list
+  -> Wasm_ast.instruction list

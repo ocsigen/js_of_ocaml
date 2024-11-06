@@ -18,10 +18,10 @@
 
 open! Stdlib
 open Code
-module W = Wa_ast
-open Wa_code_generation
+module W = Wasm_ast
+open Code_generation
 
-module Make (Target : Wa_target_sig.S) = struct
+module Make (Target : Target_sig.S) = struct
   open Target
 
   let func_type n =

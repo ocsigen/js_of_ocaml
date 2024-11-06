@@ -387,9 +387,9 @@ let generate_start_function ~to_link ~out_file =
   let t1 = Timer.make () in
   Filename.gen_file out_file
   @@ fun ch ->
-  let context = Wa_generate.start () in
-  Wa_generate.add_init_function ~context ~to_link:("prelude" :: to_link);
-  Wa_generate.wasm_output ch ~context;
+  let context = Generate.start () in
+  Generate.add_init_function ~context ~to_link:("prelude" :: to_link);
+  Generate.wasm_output ch ~context;
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
 
 let output_js js =
@@ -585,7 +585,7 @@ let extract_source_map ~dir ~name z =
           | Some map -> Build_path_prefix_map.rewrite map path
           | None -> path
       in
-      Wa_source_map.insert_source_contents ~rewrite_path sm (fun i j file ->
+      Wasm_source_map.insert_source_contents ~rewrite_path sm (fun i j file ->
           let name = source_name i j file in
           if Zip.has_entry z ~name then Some (Zip.read_entry z ~name) else None)
     in
@@ -861,10 +861,10 @@ let rec get_source_map_files files src_index =
   then
     let data = Zip.read_entry z ~name:"source_map.map" in
     let sm = Source_map.of_string data in
-    if not (Wa_source_map.is_empty sm)
+    if not (Wasm_source_map.is_empty sm)
     then (
       let l = ref [] in
-      Wa_source_map.iter_sources sm (fun i j file -> l := source_name i j file :: !l);
+      Wasm_source_map.iter_sources sm (fun i j file -> l := source_name i j file :: !l);
       if not (List.is_empty !l)
       then z, Array.of_list (List.rev !l)
       else (
@@ -888,7 +888,7 @@ let add_source_map files z opt_source_map_file =
         | Some (_, (z', _)) -> Zip.close_in z'
         | None -> ()
       in
-      Wa_source_map.iter_sources sm (fun i j file ->
+      Wasm_source_map.iter_sources sm (fun i j file ->
           let z', files =
             match !st with
             | Some (i', st) when Poly.equal i i' -> st
@@ -945,11 +945,11 @@ let make_library ~output_file ~enable_source_maps ~files =
     Fs.with_intermediate_file
     (if enable_source_maps then Some (Filename.temp_file "wasm" ".map") else None)
   @@ fun opt_output_sourcemap_file ->
-  Wa_wasm_link.f
+  Wasm_link.f
     (List.map
        ~f:(fun file ->
          let z' = Zip.open_in file in
-         { Wa_wasm_link.module_name = "OCaml"
+         { Wasm_link.module_name = "OCaml"
          ; file
          ; code = Some (Zip.read_entry z' ~name:"code.wasm")
          ; opt_source_map =

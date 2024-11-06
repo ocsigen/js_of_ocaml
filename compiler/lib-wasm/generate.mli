@@ -16,6 +16,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Make (_ : Wa_target_sig.S) : sig
-  val f : context:Wa_code_generation.context -> unit
-end
+val init : unit -> unit
+
+val start : unit -> Code_generation.context
+
+val f :
+     context:Code_generation.context
+  -> unit_name:string option
+  -> Code.program
+  -> live_vars:int array
+  -> in_cps:Effects.in_cps
+  -> deadcode_sentinal:Code.Var.t
+  -> debug:Parse_bytecode.Debug.t
+  -> Wasm_ast.var * (string list * (string * Javascript.expression) list)
+
+val add_start_function : context:Code_generation.context -> Wasm_ast.var -> unit
+
+val add_init_function : context:Code_generation.context -> to_link:string list -> unit
+
+val output : out_channel -> context:Code_generation.context -> unit
+
+val wasm_output : out_channel -> context:Code_generation.context -> unit

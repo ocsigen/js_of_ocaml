@@ -819,7 +819,7 @@ module Scan = struct
     ; tag = [||]
     }
 
-  type resize_data = Wa_source_map.resize_data =
+  type resize_data = Wasm_source_map.resize_data =
     { mutable i : int
     ; mutable pos : int array
     ; mutable delta : int array
@@ -2251,8 +2251,9 @@ let f files ~output_file ~opt_output_sourcemap_file =
         Read.repeat' count code contents.ch;
         Option.iter
           ~f:(fun sm ->
-            if not (Wa_source_map.is_empty sm)
-            then source_maps := (pos, Wa_source_map.resize resize_data sm) :: !source_maps)
+            if not (Wasm_source_map.is_empty sm)
+            then
+              source_maps := (pos, Wasm_source_map.resize resize_data sm) :: !source_maps)
           source_map_contents))
     files;
   if start_count > 1
@@ -2276,7 +2277,7 @@ let f files ~output_file ~opt_output_sourcemap_file =
   Option.iter
     ~f:(fun file ->
       Source_map.to_file
-        (Wa_source_map.concatenate
+        (Wasm_source_map.concatenate
            (List.map
               ~f:(fun (pos, sm) -> pos + code_section_offset, sm)
               (List.rev !source_maps)))

@@ -17,7 +17,7 @@
  *)
 
 open! Stdlib
-open Wa_ast
+open Wasm_ast
 
 let assign_names ?(reversed = true) f names =
   let used = ref StringSet.empty in
@@ -221,7 +221,7 @@ let type_prefix op nm =
   | F64 _ -> "f64.")
   ^ nm
 
-let signage op (s : Wa_ast.signage) =
+let signage op (s : Wasm_ast.signage) =
   op
   ^
   match s with
@@ -452,9 +452,8 @@ let expression_or_instructions ctx st in_function =
                         List
                           (Atom "catch"
                           :: index st.tag_names tag
-                          :: (instruction
-                                (Wa_ast.Event Wa_code_generation.hidden_location)
-                             @ instruction (Wa_ast.Br (i + 1, Some (Pop ty))))))
+                          :: (instruction (Wasm_ast.Event Code_generation.hidden_location)
+                             @ instruction (Wasm_ast.Br (i + 1, Some (Pop ty))))))
                       catches))
         ]
   and instruction i =

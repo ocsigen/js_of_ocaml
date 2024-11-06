@@ -17,13 +17,13 @@
  *)
 
 module type S = sig
-  type expression = Wa_code_generation.expression
+  type expression = Code_generation.expression
 
   module Memory : sig
     val allocate :
          tag:int
       -> deadcode_sentinal:Code.Var.t
-      -> [ `Expr of Wa_ast.expression | `Var of Wa_ast.var ] list
+      -> [ `Expr of Wasm_ast.expression | `Var of Wasm_ast.var ] list
       -> expression
 
     val load_function_pointer :
@@ -31,41 +31,39 @@ module type S = sig
       -> arity:int
       -> ?skip_cast:bool
       -> expression
-      -> (Wa_ast.var * Wa_ast.expression) Wa_code_generation.t
+      -> (Wasm_ast.var * Wasm_ast.expression) Code_generation.t
 
     val load_real_closure :
          cps:bool
       -> arity:int
       -> expression
-      -> (Wa_ast.var * Wa_ast.expression) Wa_code_generation.t
+      -> (Wasm_ast.var * Wasm_ast.expression) Code_generation.t
 
     val check_function_arity :
          Code.Var.t
       -> cps:bool
       -> arity:int
-      -> (typ:Wa_ast.value_type option -> expression -> expression)
-      -> unit Wa_code_generation.t
-      -> unit Wa_code_generation.t
+      -> (typ:Wasm_ast.value_type option -> expression -> expression)
+      -> unit Code_generation.t
+      -> unit Code_generation.t
 
     val tag : expression -> expression
 
     val field : expression -> int -> expression
 
-    val set_field : expression -> int -> expression -> unit Wa_code_generation.t
+    val set_field : expression -> int -> expression -> unit Code_generation.t
 
     val array_get : expression -> expression -> expression
 
-    val array_set : expression -> expression -> expression -> unit Wa_code_generation.t
+    val array_set : expression -> expression -> expression -> unit Code_generation.t
 
     val float_array_get : expression -> expression -> expression
 
-    val float_array_set :
-      expression -> expression -> expression -> unit Wa_code_generation.t
+    val float_array_set : expression -> expression -> expression -> unit Code_generation.t
 
     val gen_array_get : expression -> expression -> expression
 
-    val gen_array_set :
-      expression -> expression -> expression -> unit Wa_code_generation.t
+    val gen_array_set : expression -> expression -> expression -> unit Code_generation.t
 
     val array_length : expression -> expression
 
@@ -77,7 +75,7 @@ module type S = sig
 
     val bytes_get : expression -> expression -> expression
 
-    val bytes_set : expression -> expression -> expression -> unit Wa_code_generation.t
+    val bytes_set : expression -> expression -> expression -> unit Code_generation.t
 
     val box_float : expression -> expression
 
@@ -97,7 +95,7 @@ module type S = sig
   end
 
   module Value : sig
-    val value : Wa_ast.value_type
+    val value : Wasm_ast.value_type
 
     val unit : expression
 
@@ -149,7 +147,7 @@ module type S = sig
 
     val int_asr : expression -> expression -> expression
 
-    val block_type : Wa_ast.value_type Wa_code_generation.t
+    val block_type : Wasm_ast.value_type Code_generation.t
 
     val dummy_block : expression
 
@@ -162,18 +160,18 @@ module type S = sig
 
   module Closure : sig
     val translate :
-         context:Wa_code_generation.context
-      -> closures:Wa_closure_conversion.closure Code.Var.Map.t
+         context:Code_generation.context
+      -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
       -> Code.Var.t
       -> expression
 
     val bind_environment :
-         context:Wa_code_generation.context
-      -> closures:Wa_closure_conversion.closure Code.Var.Map.t
+         context:Code_generation.context
+      -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
       -> Code.Var.t
-      -> unit Wa_code_generation.t
+      -> unit Code_generation.t
 
     val curry_allocate :
          cps:bool
@@ -182,16 +180,16 @@ module type S = sig
       -> f:Code.Var.t
       -> closure:Code.Var.t
       -> arg:Code.Var.t
-      -> Wa_ast.expression Wa_code_generation.t
+      -> Wasm_ast.expression Code_generation.t
 
     val curry_load :
          cps:bool
       -> arity:int
       -> int
       -> Code.Var.t
-      -> (expression * expression * Wa_ast.value_type option) Wa_code_generation.t
+      -> (expression * expression * Wasm_ast.value_type option) Code_generation.t
 
-    val dummy : cps:bool -> arity:int -> Wa_ast.expression Wa_code_generation.t
+    val dummy : cps:bool -> arity:int -> Wasm_ast.expression Code_generation.t
   end
 
   module Math : sig
@@ -250,27 +248,27 @@ module type S = sig
     (string, (Code.prim_arg -> expression) -> Code.prim_arg list -> expression) Hashtbl.t
 
   val handle_exceptions :
-       result_typ:Wa_ast.value_type list
+       result_typ:Wasm_ast.value_type list
     -> fall_through:'a
     -> context:([> `Catch | `Skip ] as 'b) list
-    -> (   result_typ:Wa_ast.value_type list
+    -> (   result_typ:Wasm_ast.value_type list
         -> fall_through:[> `Skip ]
         -> context:'b list
-        -> unit Wa_code_generation.t)
-    -> Wa_ast.var
-    -> (   result_typ:Wa_ast.value_type list
+        -> unit Code_generation.t)
+    -> Wasm_ast.var
+    -> (   result_typ:Wasm_ast.value_type list
         -> fall_through:'a
         -> context:'b list
-        -> unit Wa_code_generation.t)
-    -> unit Wa_code_generation.t
+        -> unit Code_generation.t)
+    -> unit Code_generation.t
 
   val post_process_function_body :
-       param_names:Wa_ast.var list
-    -> locals:(Wa_ast.var * Wa_ast.value_type) list
-    -> Wa_ast.instruction list
-    -> Wa_ast.instruction list
+       param_names:Wasm_ast.var list
+    -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
+    -> Wasm_ast.instruction list
+    -> Wasm_ast.instruction list
 
   val entry_point :
-       toplevel_fun:Wa_ast.var
-    -> Wa_ast.func_type * Wa_ast.var list * unit Wa_code_generation.t
+       toplevel_fun:Wasm_ast.var
+    -> Wasm_ast.func_type * Wasm_ast.var list * unit Code_generation.t
 end

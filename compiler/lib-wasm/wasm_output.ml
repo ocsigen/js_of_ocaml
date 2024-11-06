@@ -1,5 +1,5 @@
 open! Stdlib
-open Wa_ast
+open Wasm_ast
 
 module Feature : sig
   type set
