@@ -452,6 +452,14 @@ and clipboardEvent = object
   method clipboardData : dataTransfer t readonly_prop
 end
 
+and toggleEvent = object
+  inherit event
+
+  method newState : js_string t readonly_prop
+
+  method oldState : js_string t readonly_prop
+end
+
 and dataTransfer = object
   method dropEffect : js_string t prop
 
@@ -959,6 +967,8 @@ module Event = struct
 
   let waiting = Dom.Event.make "waiting"
 
+  let toggle = Dom.Event.make "toggle"
+
   let make = Dom.Event.make
 end
 
@@ -1370,6 +1380,16 @@ class type anchorElement = object
   method target : js_string t prop
 
   method _type : js_string t prop
+end
+
+class type detailsElement = object ('self)
+  inherit element
+
+  method open_ : bool t prop
+
+  method name : js_string t prop
+
+  method ontoggle : ('self t, toggleEvent t) event_listener prop
 end
 
 class type imageElement = object ('self)
@@ -2735,6 +2755,8 @@ module CoerceTo = struct
   let colgroup e = unsafeCoerce "colgroup" e
 
   let del e = unsafeCoerce "del" e
+
+  let details e = unsafeCoerce "details" e
 
   let div e = unsafeCoerce "div" e
 
