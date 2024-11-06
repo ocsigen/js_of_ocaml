@@ -1,9 +1,6 @@
 (executables
  (names test_toplevel)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (libraries js_of_ocaml-compiler.dynlink compiler-libs.toplevel)
  (flags
   (:standard -linkall))
@@ -13,20 +10,13 @@
 
 (rule
  (targets test_toplevel.js)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (run %{bin:js_of_ocaml} --toplevel %{dep:test_toplevel.bc} -o %{targets})))
 
 (rule
  (target test_toplevel.bc.js.actual)
- (enabled_if
-  (and
-   (>= %{ocaml_version} 5.2)
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (with-stdout-to
    %{target}
@@ -37,8 +27,7 @@
  (enabled_if
   (and
    (>= %{ocaml_version} 5.2)
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+   %{env:js-enabled=}))
  (action
   (with-stdout-to
    %{target}
@@ -49,8 +38,7 @@
  (enabled_if
   (and
    (>= %{ocaml_version} 5.2)
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+   %{env:js-enabled=}))
  (action
   (progn
    (diff test_toplevel.expected test_toplevel.bc.js.actual)

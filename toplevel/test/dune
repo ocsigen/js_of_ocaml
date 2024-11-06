@@ -28,9 +28,6 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (diff test_toplevel.expected test_toplevel.actual)))

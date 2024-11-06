@@ -76,18 +76,12 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (diff bin.expected bin.actual)))
 
 (alias
  (name default)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (deps myruntime.js stdlib.cma.js std_exit.js module2.js module1.js bin.js
   index.html))

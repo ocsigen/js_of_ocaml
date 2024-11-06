@@ -35,9 +35,6 @@
 
 (rule
  (alias runtest)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (action
   (diff %{dep:for-node.expected} %{dep:for-node.actual})))

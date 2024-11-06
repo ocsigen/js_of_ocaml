@@ -2,10 +2,7 @@
  (name main)
  (modules main test_nats test test_big_ints test_ratios test_nums test_io)
  (libraries num)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (enabled_if %{env:js-enabled=})
  (modes
   js
   (best exe))
