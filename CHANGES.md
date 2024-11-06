@@ -26,6 +26,8 @@
 * Lib: Modify Typed_array API for compatibility with WebAssembly
 * Lib: add details element and toggle event (#1728)
 * Toplevel: no longer set globals for toplevel initialization
+* Runtime: precompute constants used in `caml_lxm_next` (#1730)
+
 
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
