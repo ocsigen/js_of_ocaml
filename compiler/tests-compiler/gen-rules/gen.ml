@@ -66,6 +66,10 @@ let enabled_if cond =
   | GE5 -> "(>= %{ocaml_version} 5)"
   | B64 -> "%{arch_sixtyfour}"
 
+let js_enabled = function
+  | "true" -> "%{env:js-enabled=}"
+  | x -> Printf.sprintf "(and %s %%{env:js-enabled=})" x
+
 let () =
   Array.to_list (Sys.readdir ".")
   |> List.filter ~f:is_implem
@@ -77,7 +81,7 @@ let () =
 (library
  ;; %s%s.ml
  (name %s_%d)
- (enabled_if (and %s %%{env:js-enabled=}))
+ (enabled_if %s)
  (modules %s)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -93,6 +97,6 @@ let () =
            basename
            basename
            (Hashtbl.hash prefix mod 100)
-           (enabled_if (lib_enabled_if basename))
+           (js_enabled (enabled_if (lib_enabled_if basename)))
            basename
            (enabled_if (test_enabled_if basename)))
