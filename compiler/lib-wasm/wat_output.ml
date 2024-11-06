@@ -452,8 +452,7 @@ let expression_or_instructions ctx st in_function =
                         List
                           (Atom "catch"
                           :: index st.tag_names tag
-                          :: (instruction
-                                (Wasm_ast.Event Wa_code_generation.hidden_location)
+                          :: (instruction (Wasm_ast.Event Code_generation.hidden_location)
                              @ instruction (Wasm_ast.Br (i + 1, Some (Pop ty))))))
                       catches))
         ]

@@ -292,7 +292,7 @@ let event loc : unit t =
     | Event _ :: instrs | instrs -> { st with instrs = Event loc :: instrs } )
 
 let hidden_location =
-  { Parse_info.src = Some Wa_source_map.blackbox_filename
+  { Parse_info.src = Some Wasm_source_map.blackbox_filename
   ; name = None
   ; col = 0
   ; line = 1

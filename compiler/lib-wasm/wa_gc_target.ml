@@ -18,9 +18,9 @@
 
 open! Stdlib
 module W = Wasm_ast
-open Wa_code_generation
+open Code_generation
 
-type expression = Wasm_ast.expression Wa_code_generation.t
+type expression = Wasm_ast.expression Code_generation.t
 
 let include_closure_arity = false
 

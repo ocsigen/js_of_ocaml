@@ -18,10 +18,10 @@
 
 val init : unit -> unit
 
-val start : unit -> Wa_code_generation.context
+val start : unit -> Code_generation.context
 
 val f :
-     context:Wa_code_generation.context
+     context:Code_generation.context
   -> unit_name:string option
   -> Code.program
   -> live_vars:int array
@@ -30,10 +30,10 @@ val f :
   -> debug:Parse_bytecode.Debug.t
   -> Wasm_ast.var * (string list * (string * Javascript.expression) list)
 
-val add_start_function : context:Wa_code_generation.context -> Wasm_ast.var -> unit
+val add_start_function : context:Code_generation.context -> Wasm_ast.var -> unit
 
-val add_init_function : context:Wa_code_generation.context -> to_link:string list -> unit
+val add_init_function : context:Code_generation.context -> to_link:string list -> unit
 
-val output : out_channel -> context:Wa_code_generation.context -> unit
+val output : out_channel -> context:Code_generation.context -> unit
 
-val wasm_output : out_channel -> context:Wa_code_generation.context -> unit
+val wasm_output : out_channel -> context:Code_generation.context -> unit

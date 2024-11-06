@@ -19,7 +19,7 @@
 open! Stdlib
 open Code
 module W = Wasm_ast
-open Wa_code_generation
+open Code_generation
 
 module Make (Target : Wa_target_sig.S) = struct
   open Target

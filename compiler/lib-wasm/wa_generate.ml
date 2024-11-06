@@ -19,7 +19,7 @@
 open! Stdlib
 open Code
 module W = Wasm_ast
-open Wa_code_generation
+open Code_generation
 
 module Generate (Target : Wa_target_sig.S) = struct
   open Target
@@ -35,7 +35,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     ; deadcode_sentinal : Var.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
-    ; global_context : Wa_code_generation.context
+    ; global_context : Code_generation.context
     ; debug : Parse_bytecode.Debug.t
     }
 
@@ -1002,7 +1002,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     in
     let param_count = List.length param_names in
     (match name_opt with
-    | None -> ctx.global_context.globalized_variables <- Wa_globalize.f p g ctx.closures
+    | None -> ctx.global_context.globalized_variables <- Globalize.f p g ctx.closures
     | Some _ -> ());
     let locals, body =
       function_body
