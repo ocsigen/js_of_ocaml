@@ -3,11 +3,13 @@
 (env
  (_
   (js_of_ocaml
+   (compilation_mode separate))
+  (wasm_of_ocaml
    (compilation_mode separate))))
 
 (test
  (name test)
- (modes byte js)
+ (modes byte js wasm)
  (libraries dynlink)
  ;; It doesn't seem possible to create a pack-ed module with dune.
  ;; However, dynlink uses pack to embed a copy

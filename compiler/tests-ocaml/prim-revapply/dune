@@ -1,4 +1,4 @@
 (tests
  (names apply revapply)
  (libraries)
- (modes js))
+ (modes js wasm))

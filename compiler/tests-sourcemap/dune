@@ -7,10 +7,6 @@
  (name test)
  (modules test)
  (modes js)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
  (js_of_ocaml
   (link_flags
    (:standard --source-map-root /my/sourceRoot)))
@@ -18,10 +14,6 @@
 
 (library
  (name testlib)
- (enabled_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
  (modules a b c d))
 
 (test

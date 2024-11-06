@@ -148,7 +148,7 @@ jobs:
 
       - name: Pin dune
         run: |
-          opam pin add -n dune.3.17 https://github.com/ocaml-wasm/dune.git#wasm_of_ocaml-incremental
+          opam pin add -n dune.3.17 https://github.com/ocaml/dune.git
 
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml

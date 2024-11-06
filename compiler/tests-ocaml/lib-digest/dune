@@ -2,15 +2,13 @@
  (names md5)
  (libraries)
  (modules md5)
- (modes js))
+ (modes js wasm))
 
 (tests
  (names digests)
  (libraries)
  (build_if
-  (and
-   (>= %{ocaml_version} 5.2)
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+  (>= %{ocaml_version} 5.2))
  (modules digests)
+ ; blake2b not supported by wasm_of_ocaml yet
  (modes js))

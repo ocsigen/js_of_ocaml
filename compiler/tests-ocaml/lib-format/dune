@@ -3,4 +3,4 @@
  (libraries)
  (flags
   (:standard -no-strict-formats \ -strict-formats))
- (modes js))
+ (modes js wasm))

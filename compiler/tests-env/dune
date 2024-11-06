@@ -1,9 +1,5 @@
 (test
- (modes js)
- (build_if
-  (and
-   (<> %{profile} wasm)
-   (<> %{profile} wasm-effects)))
+ (modes js) ; No env support in wasm_of_ocaml yet
  (js_of_ocaml
   (javascript_files setup.js)
   (flags :standard --setenv JSOO_C=from-jsoo-args))

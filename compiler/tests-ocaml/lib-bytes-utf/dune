@@ -5,4 +5,5 @@
   (:standard \ -strict-sequence))
  (modes
   js
+  wasm
   (best exe)))

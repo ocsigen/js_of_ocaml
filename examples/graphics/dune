@@ -1,6 +1,6 @@
 (executable
  (name main)
- (modes js)
+ (modes js wasm)
  (libraries js_of_ocaml-lwt.graphics)
  (preprocess
   (pps js_of_ocaml-ppx)))

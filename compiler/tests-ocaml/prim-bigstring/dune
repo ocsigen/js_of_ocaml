@@ -1,4 +1,4 @@
 (tests
  (names bigstring_access string_access)
  (libraries)
- (modes js))
+ (modes js wasm))

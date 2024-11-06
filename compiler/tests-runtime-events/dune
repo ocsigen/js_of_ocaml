@@ -8,4 +8,4 @@
  (build_if
   (>= %{ocaml_version} 5.1.0))
  (libraries runtime_events)
- (modes js))
+ (modes js wasm))
