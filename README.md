@@ -1,68 +1,144 @@
-# Wasm_of_ocaml
+# Js_of_ocaml (jsoo)
 
-Wasm_of_ocaml is a fork of Js_of_ocaml which compiles OCaml bytecode to WebAssembly.
+[![Build Status](https://github.com/ocsigen/js_of_ocaml/workflows/build/badge.svg?branch=master)](https://github.com/ocsigen/js_of_ocaml/actions)
+[![Update Web site - build](https://github.com/ocsigen/js_of_ocaml/actions/workflows/siteupdate.yml/badge.svg)](https://github.com/ocsigen/js_of_ocaml/actions/workflows/siteupdate.yml)
+[![Update Web site - deploy](https://github.com/ocsigen/js_of_ocaml/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/ocsigen/js_of_ocaml/actions/workflows/pages/pages-build-deployment)
 
-## Supported engines
+Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it
+possible to run pure OCaml programs in JavaScript environment like browsers and
+Node.js.
 
-The generated code works with Chrome 11.9, Node.js 22 and Firefox 122 (or more recent versions of these applications).
+- It is easy to install and use as it works with an existing installation of
+  OCaml, with no need to recompile any library.
+- It comes with bindings for a large part of the browser APIs.
+- According to our benchmarks, the generated programs runs typically faster than
+  with the OCaml bytecode interpreter.
+- We believe this compiler will prove much easier to maintain than a retargeted
+  OCaml compiler, as the bytecode provides a very stable API.
 
-In particular, the output code requires the following [Wasm extensions](https://webassembly.org/roadmap/) to run:
-- [the GC extension](https://github.com/WebAssembly/gc), including functional references and 31-bit integers
-- [the tail-call extension](https://github.com/WebAssembly/tail-call/blob/main/proposals/tail-call/Overview.md)
-- [the exception handling extension](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
+Js_of_ocaml is composed of multiple packages:
+- js_of_ocaml-compiler, the compiler.
+- js_of_ocaml-ppx, a ppx syntax extension.
+- js_of_ocaml, the base library.
+- js_of_ocaml-ppx_deriving_json
+- js_of_ocaml-lwt, lwt support.
+- js_of_ocaml-tyxml, tyxml support.
+- js_of_ocaml-toplevel, lib and tools to build an ocaml toplevel to
+  javascript.
 
-OCaml 5.x code using effect handlers can be compiled in two different ways:
-One can enable the CPS transformation from `js_of_ocaml` by passing the
-`--enable=effects` flag. Without the flag `wasm_of_ocaml` will instead emit code
-utilizing
-- [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md)
+## Requirements
 
+See
+[opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam)
+file for version constraints.
+
+### Toplevel requirements
+
+- tyxml, reactiveData
+- ocp-indent: needed to support indentation in the toplevel
+- higlo: needed to support Syntax highlighting in the toplevel
+- cohttp: needed to build the toplevel webserver
 
 ## Installation
 
-The following commands will perform a minimal installation:
-```
-git clone https://github.com/ocaml-wasm/wasm_of_ocaml
-cd wasm_of_ocaml
-opam pin add -n --with-version 6.0.0 .
-opam install dune.3.17.0 wasm_of_ocaml-compiler
-```
-You may want to install additional packages. For instance:
+### Opam
 
 ```
-opam install js_of_ocaml-ppx js_of_ocaml-lwt
+opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx
 ```
 
 ## Usage
 
-You can try compiling the program in `examples/cubes`. Your program must first be compiled using the OCaml bytecode compiler `ocamlc`. JavaScript bindings are provided by the `js_of_ocaml` package. The syntax extension is provided by `js_of_ocaml-ppx` package. Package `js_of_ocaml-lwt` provides Javascript specific Lwt functions.
+Your program must first be compiled using the OCaml bytecode compiler `ocamlc`.
+JavaScript bindings are provided by the `js_of_ocaml` package. The syntax
+extension is provided by `js_of_ocaml-ppx` package.
 
 ```
-ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml-ppx,js_of_ocaml-lwt -linkpkg -o cubes.byte cubes.mli cubes.ml
+ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx -linkpkg -o cubes.byte cubes.ml
 ```
 
-Then, run the `wasm_of_ocaml` compiler to produce WebAssembly code:
+Then, run the `js_of_ocaml` compiler to produce JavaScript code:
 
 ```
-wasm_of_ocaml cubes.byte
+js_of_ocaml cubes.byte
 ```
 
-This outputs a file `cubes.js` which loads the WebAssembly code from file `cube.wasm`. For debugging, we currently also output the generated WebAssembly code in text file to `cube.wat`. Since Chrome does not allow loading from the filesystem, you need to serve the files using some Web server. For instance:
-```
-python3 -m http.server 8000 --directory .
-```
+## Features
 
-As a larger example, you can try [CAMLBOY](https://github.com/linoscope/CAMLBOY). You need to install a forked version of [Brr](https://github.com/ocaml-wasm/brr/tree/wasm). Once the Js_of_ocaml UI is compiled (with `dune build --profile release`), you can generate WebAssembly code instead with the following command:
-```
-wasm_of_ocaml _build/default/bin/web/index.bc-for-jsoo
-```
+Most of the OCaml standard library is supported. However,
 
-## Implementation status
+- Most of the Sys module is not supported.
 
-A large part of the runtime is [implemented](https://github.com/ocaml-wasm/wasm_of_ocaml/issues/5). File-related functions and dynamic linking are not supported yet.
+Extra libraries distributed with OCaml (such as Thread) are not supported in
+general. However,
 
-## Compatibility with Js_of_ocaml
+- Bigarray: bigarrays are supported using Typed Arrays
+- Num: supported
+- Str: supported
+- Graphics: partially supported using canvas (see js_of_ocaml-lwt.graphics)
+- Unix: time related functions are supported
 
-Since the value representation is different, some adaptations are necessary.
+Tail call is not optimized in general. However, mutually recursive functions are
+optimized:
 
-The most notable change is that, except for integers, OCaml numbers are no longer mapped to JavaScript numbers. So, explicit conversions `Js.to_float` and `Js.float` are now necessary to convert between OCaml floats and JavaScript numbers. The typing of JavaScript Typed Arrays has also been changed to deal with this.
+- self recursive functions (when the tail calls are the function itself) are
+  compiled using a loop.
+- trampolines are used otherwise.
+  [More](http://ocsigen.org/js_of_ocaml/dev/manual/tailcall) about tail call
+  optimization.
+
+Effect handlers are supported with the `--enable=effects` flag.
+
+## Data representation
+
+Data representation differs from the usual one. Most notably, integers are 32
+bits (rather than 31 bits or 63 bits), which is their natural size in
+JavaScript, and floats are not boxed. As a consequence, marshalling, polymorphic
+comparison, and hashing functions can yield results different from usual:
+
+- marshalling floats might generate different output. Such output should not be
+  unmarshalled using the standard ocaml runtime (native or bytecode).
+- the polymorphic hash function will not give the same results on datastructures
+  containing floats;
+- these functions may be more prone to stack overflow.
+
+| OCaml | javascript |
+| ------------- | ------------- |
+| int   | number (32bit int)  |
+| int32 | number (32bit int)  |
+| nativeint | number (32bit int)  |
+| int64 | Object (MlInt64) |
+| float | number |
+| string | string or object (MlBytes) |
+| bytes | object (MlBytes) |
+| "immediate" (e.g. true, false, None, ()) | number (32bit int) |
+| "block" | array with tag as first element (e.g. `C(1,2) => [tag,1,2]`) |
+| array | block with tag 0 (e.g. `[\|1;2\|] => [0,1,2]`) |
+| tuple | block with tag 0 (e.g. `(1,2) => [0,1,2]`) |
+| record | block (e.g. `{x=1;y=2} => [0,1,2]`) |
+| constructor with arguments | block (e.g. `C (1, 2) => [tag,1,2]`) |
+| module | block |
+| exception and extensible variant | block or immediate |
+| function | function |
+
+
+
+## Toplevel
+
+- [OCaml 4.04.0+BER](http://ocsigen.github.io/js_of_ocaml/toplevel/#version=4.04.0+BER)
+  see http://okmij.org/ftp/ML/MetaOCaml.html
+- [OCaml 4.06.0](http://ocsigen.github.io/js_of_ocaml/toplevel/#version=4.06.0)
+  includes Base, Core_kernel, Async_kernel, Async_js
+
+## Contents of the distribution
+
+| Filename    | Description                                  |
+| ----------- | -------------------------------------------- |
+| LICENSE     | license and copyright notice                 |
+| README      | this file                                    |
+| compiler/   | compiler                                     |
+| examples/   | small examples                               |
+| lib/        | library for interfacing with JavaScript APIs |
+| ppx/        | ppx syntax extensions                        |
+| runtime/    | runtime system                               |
+| toplevel/   | web-based OCaml toplevel                     |
