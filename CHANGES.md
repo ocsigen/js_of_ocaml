@@ -28,7 +28,6 @@
 * Toplevel: no longer set globals for toplevel initialization
 * Runtime: precompute constants used in `caml_lxm_next` (#1730)
 
-
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
 * Runtime: fix incorrect pos_in after unmarshalling
