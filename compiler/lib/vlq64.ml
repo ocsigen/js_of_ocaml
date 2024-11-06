@@ -22,7 +22,7 @@ open! Stdlib
 let alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 
 let code_rev =
-  let a = Array.make 255 (-1) in
+  let a = Array.make 256 (-1) in
   for i = 0 to String.length alphabet - 1 do
     a.(Char.code alphabet.[i]) <- i
   done;
