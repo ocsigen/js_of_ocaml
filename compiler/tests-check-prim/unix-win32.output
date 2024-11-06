@@ -251,9 +251,6 @@ caml_obj_is_block
 caml_obj_is_shared
 caml_obj_update_tag
 
-From +prng.js:
-caml_lxm_next
-
 From +runtime_events.js:
 caml_custom_event_index
 caml_ml_runtime_events_pause

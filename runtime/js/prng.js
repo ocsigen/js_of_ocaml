@@ -1,3 +1,15 @@
+//Provides: caml_lxm_M
+//Requires: caml_int64_of_string
+//Requires: caml_new_string
+//Version: >= 5
+var caml_lxm_M = caml_int64_of_string(caml_new_string("0xd1342543de82ef95"));
+
+//Provides: caml_lxm_daba
+//Requires: caml_int64_of_string
+//Requires: caml_new_string
+//Version: >= 5
+var caml_lxm_daba = caml_int64_of_string(caml_new_string("0xdaba0b6eb09322e3"));
+
 //Provides: caml_lxm_next
 //Requires: caml_int64_shift_left
 //Requires: caml_int64_shift_right_unsigned
@@ -7,8 +19,9 @@
 //Requires: caml_int64_mul
 //Requires: caml_ba_get_1
 //Requires: caml_ba_set_1
-//Requires: caml_int64_of_string
-//Requires: caml_new_string
+//Requires: caml_lxm_M
+//Requires: caml_lxm_daba
+//Version: >= 5
 function caml_lxm_next(v) {
   function shift_l(x, k) {
     return caml_int64_shift_left(x, k);
@@ -37,8 +50,8 @@ function caml_lxm_next(v) {
   function set(a, i, x) {
     return caml_ba_set_1(a, i, x);
   }
-  var M = caml_int64_of_string(caml_new_string("0xd1342543de82ef95"));
-  var daba = caml_int64_of_string(caml_new_string("0xdaba0b6eb09322e3"));
+  var M = caml_lxm_M;
+  var daba = caml_lxm_daba;
   var z, q0, q1;
   var st = v;
   var a = get(st, 0);
