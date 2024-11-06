@@ -1059,7 +1059,7 @@ module Closure = struct
   let get_free_variables ~context info =
     List.filter
       ~f:(fun x -> not (Hashtbl.mem context.constants x))
-      info.Wa_closure_conversion.free_variables
+      info.Closure_conversion.free_variables
 
   let rec is_last_fun l f =
     match l with
@@ -1101,7 +1101,7 @@ module Closure = struct
       return (W.GlobalGet name)
     else
       let free_variable_count = List.length free_variables in
-      match info.Wa_closure_conversion.functions with
+      match info.Closure_conversion.functions with
       | [] -> assert false
       | [ _ ] ->
           let* typ = Type.env_type ~cps ~arity free_variable_count in
@@ -1193,7 +1193,7 @@ module Closure = struct
       let arity = List.assoc f info.functions in
       let arity = if cps then arity - 1 else arity in
       let offset = Memory.env_start arity in
-      match info.Wa_closure_conversion.functions with
+      match info.Closure_conversion.functions with
       | [ _ ] ->
           let* typ = Type.env_type ~cps ~arity free_variable_count in
           let* _ = add_var f in
@@ -1700,7 +1700,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
 
-let post_process_function_body = Wa_initialize_locals.f
+let post_process_function_body = Initialize_locals.f
 
 let entry_point ~toplevel_fun =
   let suspender = Code.Var.fresh () in

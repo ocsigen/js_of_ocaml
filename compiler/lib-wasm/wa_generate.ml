@@ -34,7 +34,7 @@ module Generate (Target : Wa_target_sig.S) = struct
     ; in_cps : Effects.in_cps
     ; deadcode_sentinal : Var.t
     ; blocks : block Addr.Map.t
-    ; closures : Wa_closure_conversion.closure Var.Map.t
+    ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Wa_code_generation.context
     ; debug : Parse_bytecode.Debug.t
     }
@@ -1083,7 +1083,7 @@ module Generate (Target : Wa_target_sig.S) = struct
       ; body
       }
 
-  module Curry = Wa_curry.Make (Target)
+  module Curry = Curry.Make (Target)
 
   let add_start_function ~context toplevel_name =
     context.other_fields <-
@@ -1104,7 +1104,7 @@ module Generate (Target : Wa_target_sig.S) = struct
       ~deadcode_sentinal
       ~debug =
     global_context.unit_name <- unit_name;
-    let p, closures = Wa_closure_conversion.f p in
+    let p, closures = Closure_conversion.f p in
     (*
   Code.Print.program (fun _ _ -> "") p;
 *)
@@ -1232,9 +1232,9 @@ let add_init_function =
 let output ch ~context =
   let module G = Generate (Wa_gc_target) in
   let fields = G.output ~context in
-  Wa_wat_output.f ch fields
+  Wat_output.f ch fields
 
 let wasm_output ch ~context =
   let module G = Generate (Wa_gc_target) in
   let fields = G.output ~context in
-  Wa_wasm_output.f ch fields
+  Wasm_output.f ch fields

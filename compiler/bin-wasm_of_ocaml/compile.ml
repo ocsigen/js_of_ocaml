@@ -100,7 +100,7 @@ let link_and_optimize
      then Some (Filename.temp_file "wasm-merged" ".wasm.map")
      else None)
   @@ fun opt_temp_sourcemap ->
-  Wa_binaryen.link
+  Binaryen.link
     ~runtime_files:(runtime_file :: runtime_wasm_files)
     ~input_files:wat_files
     ~opt_output_sourcemap:opt_temp_sourcemap
@@ -112,14 +112,14 @@ let link_and_optimize
     (if enable_source_maps then Some (Filename.temp_file "wasm-dce" ".wasm.map") else None)
   @@ fun opt_temp_sourcemap' ->
   let primitives =
-    Wa_binaryen.dead_code_elimination
+    Binaryen.dead_code_elimination
       ~dependencies:Wa_runtime.dependencies
       ~opt_input_sourcemap:opt_temp_sourcemap
       ~opt_output_sourcemap:opt_temp_sourcemap'
       ~input_file:temp_file
       ~output_file:temp_file'
   in
-  Wa_binaryen.optimize
+  Binaryen.optimize
     ~profile
     ~opt_input_sourcemap:opt_temp_sourcemap'
     ~opt_output_sourcemap:opt_sourcemap
@@ -136,12 +136,12 @@ let link_runtime ~profile runtime_wasm_files output_file =
   Fs.write_file ~name:runtime_file ~contents:Wa_runtime.wasm_runtime;
   Fs.with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
   @@ fun temp_file ->
-  Wa_binaryen.link
+  Binaryen.link
     ~opt_output_sourcemap:None
     ~runtime_files:(runtime_file :: runtime_wasm_files)
     ~input_files:[]
     ~output_file:temp_file;
-  Wa_binaryen.optimize
+  Binaryen.optimize
     ~profile
     ~opt_input_sourcemap:None
     ~opt_output_sourcemap:None
@@ -181,7 +181,7 @@ let build_prelude z =
   Fs.with_intermediate_file (Filename.temp_file "prelude_file" ".wasm")
   @@ fun tmp_prelude_file ->
   let predefined_exceptions = generate_prelude ~out_file:prelude_file in
-  Wa_binaryen.optimize
+  Binaryen.optimize
     ~profile:(Driver.profile 1)
     ~input_file:prelude_file
     ~output_file:tmp_prelude_file
@@ -399,7 +399,7 @@ let run
          let strings, fragments =
            output_gen wat_file (output code ~unit_name:(Some unit_name))
          in
-         Wa_binaryen.optimize
+         Binaryen.optimize
            ~profile
            ~opt_input_sourcemap:None
            ~opt_output_sourcemap:opt_tmp_map_file
@@ -515,10 +515,10 @@ let run
                   else None)
                @@ fun opt_output_sourcemap_file ->
                let l = List.rev l in
-               Wa_wasm_link.f
+               Wasm_link.f
                  (List.map
                     ~f:(fun (_, _, file, opt_source_map) ->
-                      { Wa_wasm_link.module_name = "OCaml"
+                      { Wasm_link.module_name = "OCaml"
                       ; file
                       ; code = None
                       ; opt_source_map = Option.map ~f:(fun f -> `File f) opt_source_map

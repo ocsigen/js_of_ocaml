@@ -163,14 +163,14 @@ module type S = sig
   module Closure : sig
     val translate :
          context:Wa_code_generation.context
-      -> closures:Wa_closure_conversion.closure Code.Var.Map.t
+      -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
       -> Code.Var.t
       -> expression
 
     val bind_environment :
          context:Wa_code_generation.context
-      -> closures:Wa_closure_conversion.closure Code.Var.Map.t
+      -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
       -> Code.Var.t
       -> unit Wa_code_generation.t

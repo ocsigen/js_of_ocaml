@@ -36,7 +36,7 @@ type st =
   { pos : int
   ; visited_variables : int Code.Var.Map.t
   ; globals : Code.Var.Set.t
-  ; closures : Wa_closure_conversion.closure Code.Var.Map.t
+  ; closures : Closure_conversion.closure Code.Var.Map.t
   }
 
 let threshold = 1000
@@ -79,7 +79,7 @@ let traverse_expression x e st =
       List.fold_left
         ~f:(fun st x -> use x st)
         ~init:st
-        (Code.Var.Map.find x st.closures).Wa_closure_conversion.free_variables
+        (Code.Var.Map.find x st.closures).Closure_conversion.free_variables
   | Constant _ | Special _ -> st
   | Prim (_, args) ->
       List.fold_left

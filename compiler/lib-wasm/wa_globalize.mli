@@ -19,5 +19,5 @@
 val f :
      Code.program
   -> Structure.t
-  -> Wa_closure_conversion.closure Code.Var.Map.t
+  -> Closure_conversion.closure Code.Var.Map.t
   -> Code.Var.Set.t

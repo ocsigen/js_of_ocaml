@@ -645,7 +645,7 @@ let function_body ~context ~param_names ~body =
       | Local (i, x, typ) -> local_types.(i) <- x, typ
       | Expr _ -> ())
     st.vars;
-  let body = Wa_tail_call.f body in
+  let body = Tail_call.f body in
   let param_count = List.length param_names in
   let locals =
     local_types

@@ -945,11 +945,11 @@ let make_library ~output_file ~enable_source_maps ~files =
     Fs.with_intermediate_file
     (if enable_source_maps then Some (Filename.temp_file "wasm" ".map") else None)
   @@ fun opt_output_sourcemap_file ->
-  Wa_wasm_link.f
+  Wasm_link.f
     (List.map
        ~f:(fun file ->
          let z' = Zip.open_in file in
-         { Wa_wasm_link.module_name = "OCaml"
+         { Wasm_link.module_name = "OCaml"
          ; file
          ; code = Some (Zip.read_entry z' ~name:"code.wasm")
          ; opt_source_map =
