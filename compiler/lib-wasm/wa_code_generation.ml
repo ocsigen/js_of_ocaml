@@ -18,7 +18,7 @@
 
 open! Stdlib
 open Code
-module W = Wa_ast
+module W = Wasm_ast
 
 (*
 LLVM type checker does not work well. It does not handle 'br', and
@@ -41,9 +41,9 @@ type context =
   ; mutable data_segments : string Var.Map.t
   ; mutable constant_globals : constant_global Var.Map.t
   ; mutable other_fields : W.module_field list
-  ; mutable imports : (Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
+  ; mutable imports : (Var.t * Wasm_ast.import_desc) StringMap.t StringMap.t
   ; type_names : (string, Var.t) Hashtbl.t
-  ; types : (Var.t, Wa_ast.type_field) Hashtbl.t
+  ; types : (Var.t, Wasm_ast.type_field) Hashtbl.t
   ; mutable closure_envs : Var.t Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Var.t IntMap.t
@@ -100,7 +100,7 @@ and state =
 
 and 'a t = state -> 'a * state
 
-type expression = Wa_ast.expression t
+type expression = Wasm_ast.expression t
 
 let ( let* ) (type a b) (e : a t) (f : a -> b t) : b t =
  fun st ->
@@ -130,9 +130,9 @@ let register_constant x e st =
   (), st
 
 type type_def =
-  { supertype : Wa_ast.var option
+  { supertype : Wasm_ast.var option
   ; final : bool
-  ; typ : Wa_ast.str_type
+  ; typ : Wasm_ast.str_type
   }
 
 let register_type nm gen_typ st =
@@ -141,7 +141,7 @@ let register_type nm gen_typ st =
   ( (try Hashtbl.find context.type_names nm
      with Not_found ->
        let name = Var.fresh_n nm in
-       let type_field = { Wa_ast.name; typ; supertype; final } in
+       let type_field = { Wasm_ast.name; typ; supertype; final } in
        context.other_fields <- Type [ type_field ] :: context.other_fields;
        Hashtbl.add context.type_names nm name;
        Hashtbl.add context.types name type_field;

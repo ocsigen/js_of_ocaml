@@ -17,10 +17,10 @@
  *)
 
 open! Stdlib
-module W = Wa_ast
+module W = Wasm_ast
 open Wa_code_generation
 
-type expression = Wa_ast.expression Wa_code_generation.t
+type expression = Wasm_ast.expression Wa_code_generation.t
 
 let include_closure_arity = false
 

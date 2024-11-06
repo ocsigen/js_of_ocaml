@@ -21,13 +21,13 @@ open Stdlib
 type constant_global
 
 type context =
-  { constants : (Code.Var.t, Wa_ast.expression) Hashtbl.t
+  { constants : (Code.Var.t, Wasm_ast.expression) Hashtbl.t
   ; mutable data_segments : string Code.Var.Map.t
   ; mutable constant_globals : constant_global Code.Var.Map.t
-  ; mutable other_fields : Wa_ast.module_field list
-  ; mutable imports : (Code.Var.t * Wa_ast.import_desc) StringMap.t StringMap.t
+  ; mutable other_fields : Wasm_ast.module_field list
+  ; mutable imports : (Code.Var.t * Wasm_ast.import_desc) StringMap.t StringMap.t
   ; type_names : (string, Code.Var.t) Hashtbl.t
-  ; types : (Code.Var.t, Wa_ast.type_field) Hashtbl.t
+  ; types : (Code.Var.t, Wasm_ast.type_field) Hashtbl.t
   ; mutable closure_envs : Code.Var.t Code.Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t
@@ -36,31 +36,31 @@ type context =
   ; mutable cps_curry_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable cps_dummy_funs : Code.Var.t Stdlib.IntMap.t
-  ; mutable init_code : Wa_ast.instruction list
+  ; mutable init_code : Wasm_ast.instruction list
   ; mutable string_count : int
   ; mutable strings : string list
   ; mutable string_index : int StringMap.t
   ; mutable fragments : Javascript.expression StringMap.t
   ; mutable globalized_variables : Code.Var.Set.t
-  ; value_type : Wa_ast.value_type
+  ; value_type : Wasm_ast.value_type
   ; mutable unit_name : string option
   }
 
-val make_context : value_type:Wa_ast.value_type -> context
+val make_context : value_type:Wasm_ast.value_type -> context
 
 type 'a t
 
-type expression = Wa_ast.expression t
+type expression = Wasm_ast.expression t
 
 val ( let* ) : 'a t -> ('a -> 'b t) -> 'b t
 
 val return : 'a -> 'a t
 
-val instr : Wa_ast.instruction -> unit t
+val instr : Wasm_ast.instruction -> unit t
 
 val seq : unit t -> expression -> expression
 
-val expression_list : ('a -> expression) -> 'a list -> Wa_ast.expression list t
+val expression_list : ('a -> expression) -> 'a list -> Wasm_ast.expression list t
 
 module Arith : sig
   val const : int32 -> expression
@@ -106,38 +106,42 @@ module Arith : sig
   val eqz : expression -> expression
 end
 
-val cast : ?nullable:bool -> Wa_ast.heap_type -> expression -> expression
+val cast : ?nullable:bool -> Wasm_ast.heap_type -> expression -> expression
 
-val load : Wa_ast.var -> expression
+val load : Wasm_ast.var -> expression
 
-val tee : ?typ:Wa_ast.value_type -> Wa_ast.var -> expression -> expression
+val tee : ?typ:Wasm_ast.value_type -> Wasm_ast.var -> expression -> expression
 
-val store : ?always:bool -> ?typ:Wa_ast.value_type -> Wa_ast.var -> expression -> unit t
+val store :
+  ?always:bool -> ?typ:Wasm_ast.value_type -> Wasm_ast.var -> expression -> unit t
 
-val assign : Wa_ast.var -> expression -> unit t
+val assign : Wasm_ast.var -> expression -> unit t
 
 val drop : expression -> unit t
 
 val push : expression -> unit t
 
-val loop : Wa_ast.func_type -> unit t -> unit t
+val loop : Wasm_ast.func_type -> unit t -> unit t
 
-val block : Wa_ast.func_type -> unit t -> unit t
+val block : Wasm_ast.func_type -> unit t -> unit t
 
-val block_expr : Wa_ast.func_type -> unit t -> expression
+val block_expr : Wasm_ast.func_type -> unit t -> expression
 
-val if_ : Wa_ast.func_type -> expression -> unit t -> unit t -> unit t
+val if_ : Wasm_ast.func_type -> expression -> unit t -> unit t -> unit t
 
 val try_expr :
-  Wa_ast.func_type -> unit t -> (Code.Var.t * int * Wa_ast.value_type) list -> expression
+     Wasm_ast.func_type
+  -> unit t
+  -> (Code.Var.t * int * Wasm_ast.value_type) list
+  -> expression
 
-val add_var : ?typ:Wa_ast.value_type -> Wa_ast.var -> Wa_ast.var t
+val add_var : ?typ:Wasm_ast.value_type -> Wasm_ast.var -> Wasm_ast.var t
 
-val define_var : Wa_ast.var -> expression -> unit t
+val define_var : Wasm_ast.var -> expression -> unit t
 
-val is_small_constant : Wa_ast.expression -> bool t
+val is_small_constant : Wasm_ast.expression -> bool t
 
-val get_i31_value : Wa_ast.var -> Wa_ast.var option t
+val get_i31_value : Wasm_ast.var -> Wasm_ast.var option t
 
 val event : Parse_info.t -> unit t
 
@@ -146,27 +150,27 @@ val no_event : unit t
 val hidden_location : Parse_info.t
 
 type type_def =
-  { supertype : Wa_ast.var option
+  { supertype : Wasm_ast.var option
   ; final : bool
-  ; typ : Wa_ast.str_type
+  ; typ : Wasm_ast.str_type
   }
 
-val register_type : string -> (unit -> type_def t) -> Wa_ast.var t
+val register_type : string -> (unit -> type_def t) -> Wasm_ast.var t
 
-val heap_type_sub : Wa_ast.heap_type -> Wa_ast.heap_type -> bool t
+val heap_type_sub : Wasm_ast.heap_type -> Wasm_ast.heap_type -> bool t
 
 val register_import :
-  ?import_module:string -> name:string -> Wa_ast.import_desc -> Wa_ast.var t
+  ?import_module:string -> name:string -> Wasm_ast.import_desc -> Wasm_ast.var t
 
 val register_global :
-     Wa_ast.var
+     Wasm_ast.var
   -> ?exported_name:string
   -> ?constant:bool
-  -> Wa_ast.global_type
-  -> Wa_ast.expression
+  -> Wasm_ast.global_type
+  -> Wasm_ast.expression
   -> unit t
 
-val get_global : Code.Var.t -> Wa_ast.expression option t
+val get_global : Code.Var.t -> Wasm_ast.expression option t
 
 val register_data_segment : Code.Var.t -> string -> unit t
 
@@ -198,4 +202,4 @@ val function_body :
      context:context
   -> param_names:Code.Var.t list
   -> body:unit t
-  -> (Wa_ast.var * Wa_ast.value_type) list * Wa_ast.instruction list
+  -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list

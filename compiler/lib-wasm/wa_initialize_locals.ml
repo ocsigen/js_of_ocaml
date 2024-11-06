@@ -33,7 +33,7 @@ let check_initialized ctx i =
 
 let rec scan_expression ctx e =
   match e with
-  | Wa_ast.Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> ()
+  | Wasm_ast.Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> ()
   | UnOp (_, e')
   | I32WrapI64 e'
   | I64ExtendI32 (_, e')
@@ -74,7 +74,7 @@ and scan_expressions ctx l = List.iter ~f:(fun e -> scan_expression ctx e) l
 
 and scan_instruction ctx i =
   match i with
-  | Wa_ast.Drop e
+  | Wasm_ast.Drop e
   | GlobalSet (_, e)
   | Br (_, Some e)
   | Br_if (_, e)
@@ -114,12 +114,12 @@ let f ~param_names ~locals instrs =
   List.iter ~f:(fun x -> mark_initialized ctx x) param_names;
   List.iter
     ~f:(fun (var, typ) ->
-      match (typ : Wa_ast.value_type) with
+      match (typ : Wasm_ast.value_type) with
       | I32 | I64 | F32 | F64 | Ref { nullable = true; _ } -> mark_initialized ctx var
       | Ref { nullable = false; _ } -> ())
     locals;
   scan_instructions ctx instrs;
   List.map
-    ~f:(fun i -> Wa_ast.LocalSet (i, RefI31 (Const (I32 0l))))
+    ~f:(fun i -> Wasm_ast.LocalSet (i, RefI31 (Const (I32 0l))))
     (Code.Var.Set.elements !(ctx.uninitialized))
   @ instrs

@@ -18,7 +18,7 @@
 
 open! Stdlib
 open Code
-module W = Wa_ast
+module W = Wasm_ast
 open Wa_code_generation
 
 module Generate (Target : Wa_target_sig.S) = struct

@@ -28,9 +28,9 @@ val f :
   -> in_cps:Effects.in_cps
   -> deadcode_sentinal:Code.Var.t
   -> debug:Parse_bytecode.Debug.t
-  -> Wa_ast.var * (string list * (string * Javascript.expression) list)
+  -> Wasm_ast.var * (string list * (string * Javascript.expression) list)
 
-val add_start_function : context:Wa_code_generation.context -> Wa_ast.var -> unit
+val add_start_function : context:Wa_code_generation.context -> Wasm_ast.var -> unit
 
 val add_init_function : context:Wa_code_generation.context -> to_link:string list -> unit
 

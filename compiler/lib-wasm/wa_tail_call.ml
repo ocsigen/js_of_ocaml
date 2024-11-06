@@ -20,21 +20,21 @@ open! Stdlib
 
 let get_return ~tail i =
   match i with
-  | Wa_ast.Return (Some (LocalGet y)) -> Some y
+  | Wasm_ast.Return (Some (LocalGet y)) -> Some y
   | Push (LocalGet y) when tail -> Some y
   | _ -> None
 
 let rewrite_tail_call ~y i =
   match i with
-  | Wa_ast.LocalSet (x, Call (symb, l)) when Code.Var.equal x y ->
-      Some (Wa_ast.Return_call (symb, l))
+  | Wasm_ast.LocalSet (x, Call (symb, l)) when Code.Var.equal x y ->
+      Some (Wasm_ast.Return_call (symb, l))
   | LocalSet (x, Call_ref (ty, e, l)) when Code.Var.equal x y ->
       Some (Return_call_ref (ty, e, l))
   | _ -> None
 
 let rec instruction ~tail i =
   match i with
-  | Wa_ast.Loop (ty, l) -> Wa_ast.Loop (ty, instructions ~tail l)
+  | Wasm_ast.Loop (ty, l) -> Wasm_ast.Loop (ty, instructions ~tail l)
   | Block (ty, l) -> Block (ty, instructions ~tail l)
   | If (ty, e, l1, l2) -> If (ty, e, instructions ~tail l1, instructions ~tail l2)
   | Return (Some (Call (symb, l))) -> Return_call (symb, l)
