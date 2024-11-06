@@ -160,10 +160,10 @@ let generate_prelude ~out_file =
   let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
     Driver.optimize ~profile code
   in
-  let context = Wa_generate.start () in
+  let context = Generate.start () in
   let debug = Parse_bytecode.Debug.create ~include_cmis:false false in
   let _ =
-    Wa_generate.f
+    Generate.f
       ~context
       ~unit_name:(Some "prelude")
       ~live_vars:variable_uses
@@ -172,7 +172,7 @@ let generate_prelude ~out_file =
       ~debug
       program
   in
-  Wa_generate.output ch ~context;
+  Generate.output ch ~context;
   uinfo.provides
 
 let build_prelude z =
@@ -266,7 +266,7 @@ let run
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
-  Wa_generate.init ();
+  Generate.init ();
   let output_file = fst output_file in
   if debug_mem () then Debug.start_profiling output_file;
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
@@ -322,10 +322,10 @@ let run
     let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
       Driver.optimize ~profile code
     in
-    let context = Wa_generate.start () in
+    let context = Generate.start () in
     let debug = one.debug in
     let toplevel_name, generated_js =
-      Wa_generate.f
+      Generate.f
         ~context
         ~unit_name
         ~live_vars:variable_uses
@@ -334,8 +334,8 @@ let run
         ~debug
         program
     in
-    if standalone then Wa_generate.add_start_function ~context toplevel_name;
-    Wa_generate.output ch ~context;
+    if standalone then Generate.add_start_function ~context toplevel_name;
+    Generate.output ch ~context;
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
     generated_js
   in

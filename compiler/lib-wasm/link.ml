@@ -387,9 +387,9 @@ let generate_start_function ~to_link ~out_file =
   let t1 = Timer.make () in
   Filename.gen_file out_file
   @@ fun ch ->
-  let context = Wa_generate.start () in
-  Wa_generate.add_init_function ~context ~to_link:("prelude" :: to_link);
-  Wa_generate.wasm_output ch ~context;
+  let context = Generate.start () in
+  Generate.add_init_function ~context ~to_link:("prelude" :: to_link);
+  Generate.wasm_output ch ~context;
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
 
 let output_js js =

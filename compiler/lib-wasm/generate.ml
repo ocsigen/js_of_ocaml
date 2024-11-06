@@ -21,7 +21,7 @@ open Code
 module W = Wasm_ast
 open Code_generation
 
-module Generate (Target : Wa_target_sig.S) = struct
+module Generate (Target : Target_sig.S) = struct
   open Target
 
   let transl_prim_arg x =
@@ -1214,27 +1214,27 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
-let start () = make_context ~value_type:Wa_gc_target.Value.value
+let start () = make_context ~value_type:Gc_target.Value.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
   let p = if Config.Flag.effects () then fix_switch_branches p else p in
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p
 
 let add_start_function =
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   G.add_start_function
 
 let add_init_function =
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   G.add_init_function
 
 let output ch ~context =
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   let fields = G.output ~context in
   Wat_output.f ch fields
 
 let wasm_output ch ~context =
-  let module G = Generate (Wa_gc_target) in
+  let module G = Generate (Gc_target) in
   let fields = G.output ~context in
   Wasm_output.f ch fields

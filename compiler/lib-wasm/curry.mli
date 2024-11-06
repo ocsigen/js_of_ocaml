@@ -16,6 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Make (_ : Wa_target_sig.S) : sig
+module Make (_ : Target_sig.S) : sig
   val f : context:Code_generation.context -> unit
 end
