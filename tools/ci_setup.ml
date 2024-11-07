@@ -18,7 +18,9 @@ let omitted_others = StringSet.of_list [ "cohttp-async"; "cohttp"; "uri"; "uri-s
 
 let omitted_js = StringSet.of_list [ "sexplib0" ]
 
-let do_not_pin = StringSet.of_list [ "wasocaml"; "wasm_of_ocaml"; "dune" ]
+let do_not_pin =
+  StringSet.of_list
+    [ "wasocaml"; "wasm_of_ocaml"; "dune"; "ezjs"; "ezjs_blockies"; "fmlib"; "graphv" ]
 
 let do_pin = StringSet.of_list [ "base"; "ppx_expect"; "ppx_inline_test"; "time_now" ]
 
@@ -141,8 +143,6 @@ index c6d09fb..61b1e5b 100644
 +    ;;
 +
      let%expect_test "bin_io de-serialization V2" =
-       (* Some bignums will have two bin_io representation depending on where their
-          were serialized.  Make sure we're able to parse things back regardless of the
 |bignum}
     )
   ]
@@ -246,7 +246,7 @@ let clone' delay ?branch ?commit nm src =
       let* () = clone delay ?branch ~depth:10 nm src in
       exec_async
         ~delay:0
-        (Printf.sprintf "cd jane-street/lib/%s && git checkout %s" nm commit)
+        (Printf.sprintf "cd jane-street/lib/%s && git checkout -b wasm %s" nm commit)
 
 let () =
   Out_channel.(

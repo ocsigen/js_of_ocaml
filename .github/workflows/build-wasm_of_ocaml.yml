@@ -20,9 +20,15 @@ jobs:
           - 5.00.x
           - 5.01.x
           - 5.02.x
+        separate_compilation:
+          - true
         include:
           - os: macos-latest
             ocaml-compiler: 5.02.x
+            separate_compilation: true
+          - os: ubuntu-latest
+            ocaml-compiler: 4.14.x
+            separate_compilation: false
 
     runs-on: ${{ matrix.os }}
 
@@ -80,51 +86,10 @@ jobs:
         run: |
           echo "$GITHUB_WORKSPACE/binaryen/bin" >> $GITHUB_PATH
 
-      - name: Restore cached OCaml
-        id: cache-ocaml
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/.opam
-            _opam
-            /opt/hostedtoolcache/opam
-            /Users/runner/hostedtoolcache/opam
-          key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
-
       - name: Install OCaml ${{ matrix.ocaml-compiler }}
-        if: steps.cache-ocaml.outputs.cache-hit != 'true'
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: true
-          opam-depext: true
-          opam-depext-flags: --with-test
-
-      - name: Install packages (Ubuntu)
-        if: matrix.os == 'ubuntu-latest' && steps.cache-ocaml.outputs.cache-hit
-        run: sudo apt-get install bubblewrap
-
-      - name: Install packages (MacOs)
-        if: matrix.os == 'macos-latest' && steps.cache-ocaml.outputs.cache-hit
-        # for graphics
-        run: brew install xquartz
-
-      - name: Set opam path
-        if: steps.cache-ocaml.outputs.cache-hit
-        run: |
-          echo /opt/hostedtoolcache/opam/*/x86_64 >> $GITHUB_PATH
-          echo /Users/runner/hostedtoolcache/opam/*/arm64 >> $GITHUB_PATH
-
-      - name: Cache OCaml
-        if: steps.cache-ocaml.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.opam
-            _opam
-            /opt/hostedtoolcache/opam
-            /Users/runner/hostedtoolcache/opam
-          key: ${{ runner.os }}-ocaml-${{ matrix.ocaml-compiler }}
 
       - name: Checkout code
         uses: actions/checkout@v4
@@ -133,11 +98,7 @@ jobs:
 
       - name: Pin faked binaryen-bin package
         # It's faster to use a cached version
-        working-directory: ./binaryen
-        run: |
-          echo opam-version: '"2.0"' > binaryen-bin.opam
-          opam pin -n .
-          rm binaryen-bin.opam
+        run: opam install --fake binaryen-bin
 
       - name: Checkout Jane Street opam repository
         uses: actions/checkout@v4
@@ -147,82 +108,79 @@ jobs:
           path: jane-street/opam-repository
 
       - name: Pin dune
-        run: |
-          opam pin add -n dune.3.17 https://github.com/ocaml/dune.git
+        run: opam pin add -n dune.3.17 https://github.com/ocaml/dune.git
 
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
-        run: |
-           for i in *.opam; do opam pin add -n `basename $i .opam`.`< VERSION` .; done
+        run: opam pin -n --with-version `< VERSION` .
 
-      - name: Install opam file parser
-        run: opam install opam-format ocamlfind dune graphics
+      - name: Install some needed packages
+        run: opam install opam-format ocamlfind dune graphics cmdliner sexplib0.v0.16.0
 
       - name: Checkout Jane Street packages
         run: opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
 
-      - name: Update test dependencies
-        run: opam install num cohttp-lwt-unix ppx_expect cstruct
-
-      - name: Install wasm_of_ocaml
+      - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
-        run: opam install `basename -s .opam *.opam`
+        run: |
+          opam install `basename -s .opam *.opam` num cohttp-lwt-unix ppx_expect cstruct
 
       - name: Run tests
+        if: ${{ matrix.separate_compilation }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @all @runtest --profile wasm
 
       - name: Run tests with CPS effects
-        if: ${{ matrix.ocaml-compiler >= '5.' }}
+        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @all @runtest --profile wasm-effects
 
       - name: Run Base tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/base
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/base_bigstring
         run: opam exec -- dune runtest
 
       - name: Run Core tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/core
         run: opam exec -- dune runtest
 
       - name: Run Bignum tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/bignum
         run: opam exec -- dune runtest
 
       - name: Run Bin_prot tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/bin_prot
         run: opam exec -- dune runtest
 
       - name: Run String_dict tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/string_dict
         run: opam exec -- dune runtest
 
       - name: Run Zarith tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/zarith_stubs_js
         run: opam exec -- dune runtest
 
       - name: Run Virtual_dom tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/virtual_dom
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
         working-directory: ./jane-street/lib/bonsai
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests (release profile)
-        if: ${{ matrix.ocaml-compiler < '5.' }}
+        if: ${{ ! matrix.separate_compilation }}
         working-directory: ./jane-street/lib/bonsai
         run: opam exec -- dune runtest --profile release
