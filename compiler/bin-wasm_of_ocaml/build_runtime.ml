@@ -22,10 +22,7 @@ let info =
   Info.make
     ~name:"build-runtime"
     ~doc:"Build standalone runtime. Used for separate compilation."
-    ~description:
-      "Js_of_ocaml is a compiler from OCaml bytecode to Javascript. It makes it possible \
-       to run pure OCaml programs in JavaScript environments like web browsers and \
-       Node.js."
+    ~description:"Wasm_of_ocaml is a compiler from OCaml bytecode to WebAssembly."
 
 let command =
   let t = Cmdliner.Term.(const Compile.run $ Cmd_arg.options_runtime_only) in

@@ -44,9 +44,9 @@ let options =
   in
   let files =
     let doc =
-      "Link the archive files [$(docv)]. The first archive must be a runtime produced by \
-       $(b,wasm_of_ocaml build-runtime). The other archives can be produced by compiling \
-       .cma or .cmo files."
+      "Link the archive files [$(docv)]. Unless the $(b,-a) option is used, the first \
+       archive must be a runtime produced by $(b,wasm_of_ocaml build-runtime). The other \
+       archives can be produced by compiling .cma or .cmo files."
     in
     Arg.(non_empty & pos_all string [] & info [] ~docv:"FILES" ~doc)
   in
@@ -88,8 +88,8 @@ let info =
     ~name:"link"
     ~doc:"Wasm_of_ocaml linker"
     ~description:
-      "wasm_of_ocaml-link is a JavaScript linker. It can concatenate multiple JavaScript \
-       files keeping sourcemap information."
+      "wasm_of_ocaml-link links together several wasm_of_ocaml intermediate files to \
+       produce either a library or some executable code."
 
 let command =
   let t = Cmdliner.Term.(const f $ options) in
