@@ -82,19 +82,12 @@ let resize_mappings (resize_data : resize_data) mappings =
       0;
     Buffer.contents buf
 
-let resize resize_data sm =
-  match sm with
-  | Source_map.Index _ -> assert false
-  | Standard sm ->
-      let mappings = Source_map.Mappings.to_string sm.mappings in
-      let mappings = resize_mappings resize_data mappings in
-      Source_map.Standard
-        { sm with mappings = Source_map.Mappings.of_string_unsafe mappings }
+let resize resize_data (sm : Source_map.Standard.t) =
+  let mappings = Source_map.Mappings.to_string sm.mappings in
+  let mappings = resize_mappings resize_data mappings in
+  { sm with mappings = Source_map.Mappings.of_string_unsafe mappings }
 
-let is_empty sm =
-  match sm with
-  | Source_map.Standard { mappings; _ } -> Source_map.Mappings.is_empty mappings
-  | _ -> assert false
+let is_empty { Source_map.Standard.mappings; _ } = Source_map.Mappings.is_empty mappings
 
 let concatenate l =
   Source_map.Index
@@ -102,11 +95,8 @@ let concatenate l =
     ; file = None
     ; sections =
         List.map
-          ~f:(fun (ofs, sm) ->
-            match sm with
-            | Source_map.Index _ -> assert false
-            | Standard map ->
-                { Source_map.Index.offset = { gen_line = 0; gen_column = ofs }; map })
+          ~f:(fun (ofs, map) ->
+            { Source_map.Index.offset = { gen_line = 0; gen_column = ofs }; map })
           l
     }
 

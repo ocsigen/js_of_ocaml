@@ -860,11 +860,12 @@ let rec get_source_map_files files src_index =
   if Zip.has_entry z ~name:"source_map.map"
   then
     let data = Zip.read_entry z ~name:"source_map.map" in
-    let sm = Source_map.of_string data in
+    let sm = Source_map.Standard.of_string data in
     if not (Wasm_source_map.is_empty sm)
     then (
       let l = ref [] in
-      Wasm_source_map.iter_sources sm (fun i j file -> l := source_name i j file :: !l);
+      Wasm_source_map.iter_sources (Standard sm) (fun i j file ->
+          l := source_name i j file :: !l);
       if not (List.is_empty !l)
       then z, Array.of_list (List.rev !l)
       else (

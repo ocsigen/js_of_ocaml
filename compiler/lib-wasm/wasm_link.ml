@@ -1497,7 +1497,7 @@ type t =
   { module_name : string
   ; file : string
   ; contents : Read.t
-  ; source_map_contents : Source_map.t option
+  ; source_map_contents : Source_map.Standard.t option
   }
 
 type import_status =
@@ -1877,8 +1877,8 @@ let f files ~output_file ~opt_output_sourcemap_file =
             Option.map
               ~f:(fun src ->
                 match src with
-                | `File file -> Source_map.of_file ~tmp_buf file
-                | `Data data -> Source_map.of_string ~tmp_buf data)
+                | `File file -> Source_map.Standard.of_file ~tmp_buf file
+                | `Data data -> Source_map.Standard.of_string ~tmp_buf data)
               opt_source_map
         })
       (Array.of_list files)

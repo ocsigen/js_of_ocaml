@@ -1,6 +1,6 @@
 type t
 
-val is_empty : Source_map.t -> bool
+val is_empty : Source_map.Standard.t -> bool
 
 type resize_data =
   { mutable i : int
@@ -8,9 +8,9 @@ type resize_data =
   ; mutable delta : int array
   }
 
-val resize : resize_data -> Source_map.t -> Source_map.t
+val resize : resize_data -> Source_map.Standard.t -> Source_map.Standard.t
 
-val concatenate : (int * Source_map.t) list -> Source_map.t
+val concatenate : (int * Source_map.Standard.t) list -> Source_map.t
 
 val iter_sources : Source_map.t -> (int option -> int option -> string -> unit) -> unit
 
