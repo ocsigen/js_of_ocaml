@@ -234,13 +234,20 @@ let build_js_runtime ~primitives ?runtime_arguments () =
   in
   prelude ^ launcher
 
-let add_source_map sourcemap_don't_inline_content z opt_source_map_file =
-  Option.iter
-    ~f:(fun file ->
-      Zip.add_file z ~name:"source_map.map" ~file;
+let add_source_map sourcemap_don't_inline_content z opt_source_map =
+  let sm =
+    match opt_source_map with
+    | `File opt_file ->
+        Option.map opt_file ~f:(fun file ->
+            Zip.add_file z ~name:"source_map.map" ~file;
+            Source_map.of_file file)
+    | `Source_map sm ->
+        Zip.add_entry z ~name:"source_map.map" ~contents:(Source_map.to_string sm);
+        Some sm
+  in
+  Option.iter sm ~f:(fun sm ->
       if not sourcemap_don't_inline_content
       then
-        let sm = Source_map.of_file file in
         Wasm_source_map.iter_sources sm (fun i j file ->
             if Sys.file_exists file && not (Sys.is_directory file)
             then
@@ -249,7 +256,6 @@ let add_source_map sourcemap_don't_inline_content z opt_source_map_file =
                 z
                 ~name:(Link.source_name i j file)
                 ~contents:(Yojson.Basic.to_string (`String sm))))
-    opt_source_map_file
 
 let run
     { Cmd_arg.common
@@ -488,7 +494,7 @@ let run
          let compile_cmo' z cmo =
            compile_cmo cmo (fun unit_data _ tmp_wasm_file opt_tmp_map_file ->
                Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
-               add_source_map sourcemap_don't_inline_content z opt_tmp_map_file;
+               add_source_map sourcemap_don't_inline_content z (`File opt_tmp_map_file);
                unit_data)
          in
          let unit_data = [ compile_cmo' z cmo ] in
@@ -499,6 +505,7 @@ let run
          @@ fun tmp_output_file ->
          let z = Zip.open_out tmp_output_file in
          let unit_data =
+           let tmp_buf = Buffer.create 10000 in
            List.fold_right
              ~f:(fun cmo cont l ->
                compile_cmo cmo
@@ -508,26 +515,26 @@ let run
              ~init:(fun l ->
                Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
                @@ fun tmp_wasm_file ->
-               opt_with
-                 Fs.with_intermediate_file
-                 (if enable_source_maps
-                  then Some (Filename.temp_file "wasm" ".map")
-                  else None)
-               @@ fun opt_output_sourcemap_file ->
                let l = List.rev l in
-               Wasm_link.f
-                 (List.map
-                    ~f:(fun (_, _, file, opt_source_map) ->
-                      { Wasm_link.module_name = "OCaml"
-                      ; file
-                      ; code = None
-                      ; opt_source_map = Option.map ~f:(fun f -> `File f) opt_source_map
-                      })
-                    l)
-                 ~output_file:tmp_wasm_file
-                 ~opt_output_sourcemap_file;
+               let source_map =
+                 Wasm_link.f
+                   (List.map
+                      ~f:(fun (_, _, file, opt_source_map) ->
+                        { Wasm_link.module_name = "OCaml"
+                        ; file
+                        ; code = None
+                        ; opt_source_map =
+                            Option.map
+                              ~f:(fun f -> Source_map.Standard.of_file ~tmp_buf f)
+                              opt_source_map
+                        })
+                      l)
+                   ~output_file:tmp_wasm_file
+               in
                Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
-               add_source_map sourcemap_don't_inline_content z opt_output_sourcemap_file;
+               if enable_source_maps
+               then
+                 add_source_map sourcemap_don't_inline_content z (`Source_map source_map);
                List.map ~f:(fun (unit_data, _, _, _) -> unit_data) l)
              []
          in

@@ -564,6 +564,10 @@ module Standard = struct
         }
     | _ -> invalid ()
 
+  let of_string ?tmp_buf s = of_json ?tmp_buf (Yojson.Raw.from_string ?buf:tmp_buf s)
+
+  let of_file ?tmp_buf f = of_json ?tmp_buf (Yojson.Raw.from_file ?buf:tmp_buf f)
+
   let to_string m = Yojson.Raw.to_string (json m)
 
   let to_file m file = Yojson.Raw.to_file file (json m)

@@ -32,16 +32,16 @@ type input = Vlq64.input =
   ; len : int
   }
 
-let rec next' src mappings pos =
-  pos < src.len
+let rec next' src mappings pos len =
+  pos < len
   &&
   match mappings.[pos] with
   | ',' ->
       src.pos <- pos + 1;
       true
-  | _ -> next' src mappings (pos + 1)
+  | _ -> next' src mappings (pos + 1) len
 
-let next src = next' src src.string src.pos
+let next src = next' src src.string src.pos src.len
 
 let flush buf src start pos =
   if start < pos then Buffer.add_substring buf src.string start (pos - start)
@@ -54,7 +54,7 @@ let rec resize_rec buf start src resize_data i col0 delta0 col =
   then
     if next src
     then resize_rec buf start src resize_data i col0 delta0 col
-    else flush buf src start (String.length src.string)
+    else flush buf src start src.len
   else
     let delta = delta + delta0 in
     adjust buf start src resize_data i col delta pos
@@ -72,7 +72,7 @@ and adjust buf start src (resize_data : resize_data) i col delta pos =
       let start = src.pos in
       if next src
       then resize_rec buf start src resize_data (i + 1) col0 delta0 col
-      else flush buf src start (String.length src.string))
+      else flush buf src start src.len)
     else
       let delta = delta + delta0 in
       adjust buf start src resize_data (i + 1) col delta pos
@@ -80,7 +80,7 @@ and adjust buf start src (resize_data : resize_data) i col delta pos =
     flush buf src start pos;
     Vlq64.encode buf delta;
     let start = src.pos in
-    flush buf src start (String.length src.string))
+    flush buf src start src.len)
 
 let resize_mappings (resize_data : resize_data) mappings =
   if String.equal mappings "" || resize_data.i = 0
@@ -100,19 +100,12 @@ let resize_mappings (resize_data : resize_data) mappings =
       0;
     Buffer.contents buf
 
-let resize resize_data sm =
-  match sm with
-  | Source_map.Index _ -> assert false
-  | Standard sm ->
-      let mappings = Source_map.Mappings.to_string sm.mappings in
-      let mappings = resize_mappings resize_data mappings in
-      Source_map.Standard
-        { sm with mappings = Source_map.Mappings.of_string_unsafe mappings }
+let resize resize_data (sm : Source_map.Standard.t) =
+  let mappings = Source_map.Mappings.to_string sm.mappings in
+  let mappings = resize_mappings resize_data mappings in
+  { sm with mappings = Source_map.Mappings.of_string_unsafe mappings }
 
-let is_empty sm =
-  match sm with
-  | Source_map.Standard { mappings; _ } -> Source_map.Mappings.is_empty mappings
-  | _ -> assert false
+let is_empty { Source_map.Standard.mappings; _ } = Source_map.Mappings.is_empty mappings
 
 let concatenate l =
   Source_map.Index
@@ -120,11 +113,8 @@ let concatenate l =
     ; file = None
     ; sections =
         List.map
-          ~f:(fun (ofs, sm) ->
-            match sm with
-            | Source_map.Index _ -> assert false
-            | Standard map ->
-                { Source_map.Index.offset = { gen_line = 0; gen_column = ofs }; map })
+          ~f:(fun (ofs, map) ->
+            { Source_map.Index.offset = { gen_line = 0; gen_column = ofs }; map })
           l
     }
 

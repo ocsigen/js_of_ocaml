@@ -116,6 +116,10 @@ module Standard : sig
     linear in function of the size of the input mappings. *)
 
   val empty : inline_source_content:bool -> t
+
+  val of_string : ?tmp_buf:Buffer.t -> string -> t
+
+  val of_file : ?tmp_buf:Buffer.t -> string -> t
 end
 
 module Index : sig

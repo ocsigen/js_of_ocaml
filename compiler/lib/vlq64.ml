@@ -106,14 +106,15 @@ type input =
   ; len : int
   }
 
-let rec decode' src s pos offset i =
+let rec decode' src s pos len offset i =
+  if pos = len then invalid_arg "Vql64.decode'";
   let digit = Array.unsafe_get code_rev (Char.code s.[pos]) in
   if digit = -1 then invalid_arg "Vql64.decode'";
   let i = i + ((digit land vlq_base_mask) lsl offset) in
   if digit >= vlq_continuation_bit
-  then decode' src s (pos + 1) (offset + vlq_base_shift) i
+  then decode' src s (pos + 1) len (offset + vlq_base_shift) i
   else (
     src.pos <- pos + 1;
     i)
 
-let decode src = fromVLQSigned (decode' src src.string src.pos 0 0)
+let decode src = fromVLQSigned (decode' src src.string src.pos src.len 0 0)

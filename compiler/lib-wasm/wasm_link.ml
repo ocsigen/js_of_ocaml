@@ -1515,7 +1515,7 @@ type t =
   { module_name : string
   ; file : string
   ; contents : Read.t
-  ; source_map_contents : Source_map.t option
+  ; source_map_contents : Source_map.Standard.t option
   }
 
 type import_status =
@@ -1874,12 +1874,11 @@ type input =
   { module_name : string
   ; file : string
   ; code : string option
-  ; opt_source_map : [ `File of string | `Data of string ] option
+  ; opt_source_map : Source_map.Standard.t option
   }
 
-let f files ~output_file ~opt_output_sourcemap_file =
+let f files ~output_file =
   let files =
-    let tmp_buf = Buffer.create 10000 in
     Array.map
       ~f:(fun { module_name; file; code; opt_source_map } ->
         let data =
@@ -1888,17 +1887,7 @@ let f files ~output_file ~opt_output_sourcemap_file =
           | Some data -> data
         in
         let contents = Read.open_in file data in
-        { module_name
-        ; file
-        ; contents
-        ; source_map_contents =
-            Option.map
-              ~f:(fun src ->
-                match src with
-                | `File file -> Source_map.of_file ~tmp_buf file
-                | `Data data -> Source_map.of_string ~tmp_buf data)
-              opt_source_map
-        })
+        { module_name; file; contents; source_map_contents = opt_source_map })
       (Array.of_list files)
   in
 
@@ -2292,15 +2281,12 @@ let f files ~output_file ~opt_output_sourcemap_file =
     pos_out out_ch + 1 + Buffer.length b
   in
   add_section out_ch ~id:10 code_pieces;
-  Option.iter
-    ~f:(fun file ->
-      Source_map.to_file
-        (Wasm_source_map.concatenate
-           (List.map
-              ~f:(fun (pos, sm) -> pos + code_section_offset, sm)
-              (List.rev !source_maps)))
-        file)
-    opt_output_sourcemap_file;
+  let source_map =
+    Wasm_source_map.concatenate
+      (List.map
+         ~f:(fun (pos, sm) -> pos + code_section_offset, sm)
+         (List.rev !source_maps))
+  in
 
   (* 11: data *)
   ignore
@@ -2447,7 +2433,9 @@ let f files ~output_file ~opt_output_sourcemap_file =
 
   add_section out_ch ~id:0 name_section_buffer;
 
-  close_out out_ch
+  close_out out_ch;
+
+  source_map
 
 (*
 LATER
