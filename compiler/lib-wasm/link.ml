@@ -849,63 +849,51 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   if times () then Format.eprintf "    build JS runtime: %a@." Timer.print t1;
   if times () then Format.eprintf "  emit: %a@." Timer.print t
 
-let opt_with action x f =
-  match x with
-  | None -> f None
-  | Some x -> action x (fun y -> f (Some y))
-
-let rec get_source_map_files files src_index =
+let rec get_source_map_files ~tmp_buf files src_index =
   let z = Zip.open_in files.(!src_index) in
   incr src_index;
-  if Zip.has_entry z ~name:"source_map.map"
-  then
-    let data = Zip.read_entry z ~name:"source_map.map" in
-    let sm = Source_map.Standard.of_string data in
-    if not (Wasm_source_map.is_empty sm)
-    then (
-      let l = ref [] in
-      Wasm_source_map.iter_sources (Standard sm) (fun i j file ->
-          l := source_name i j file :: !l);
-      if not (List.is_empty !l)
-      then z, Array.of_list (List.rev !l)
-      else (
-        Zip.close_in z;
-        get_source_map_files files src_index))
-    else (
-      Zip.close_in z;
-      get_source_map_files files src_index)
-  else get_source_map_files files src_index
+  let l = ref [] in
+  (if Zip.has_entry z ~name:"source_map.map"
+   then
+     let data = Zip.read_entry z ~name:"source_map.map" in
+     let sm = Source_map.Standard.of_string ~tmp_buf data in
+     if not (Wasm_source_map.is_empty sm)
+     then
+       Wasm_source_map.iter_sources (Standard sm) (fun i j file ->
+           l := source_name i j file :: !l));
+  if not (List.is_empty !l)
+  then z, Array.of_list (List.rev !l)
+  else (
+    Zip.close_in z;
+    get_source_map_files ~tmp_buf files src_index)
 
-let add_source_map files z opt_source_map_file =
-  Option.iter
-    ~f:(fun file ->
-      Zip.add_file z ~name:"source_map.map" ~file;
-      let sm = Source_map.of_file file in
-      let files = Array.of_list files in
-      let src_index = ref 0 in
-      let st = ref None in
-      let finalize () =
+let add_source_map files z sm =
+  let tmp_buf = Buffer.create 10000 in
+  Zip.add_entry z ~name:"source_map.map" ~contents:(Source_map.to_string sm);
+  let files = Array.of_list files in
+  let src_index = ref 0 in
+  let st = ref None in
+  let finalize () =
+    match !st with
+    | Some (_, (z', _)) -> Zip.close_in z'
+    | None -> ()
+  in
+  Wasm_source_map.iter_sources sm (fun i j file ->
+      let z', files =
         match !st with
-        | Some (_, (z', _)) -> Zip.close_in z'
-        | None -> ()
+        | Some (i', st) when Poly.equal i i' -> st
+        | _ ->
+            let st' = get_source_map_files ~tmp_buf files src_index in
+            finalize ();
+            st := Some (i, st');
+            st'
       in
-      Wasm_source_map.iter_sources sm (fun i j file ->
-          let z', files =
-            match !st with
-            | Some (i', st) when Poly.equal i i' -> st
-            | _ ->
-                let st' = get_source_map_files files src_index in
-                finalize ();
-                st := Some (i, st');
-                st'
-          in
-          if Array.length files > 0 (* Source has source map *)
-          then
-            let name = files.(Option.value ~default:0 j) in
-            if Zip.has_entry z' ~name
-            then Zip.copy_file z' z ~src_name:name ~dst_name:(source_name i j file));
-      finalize ())
-    opt_source_map_file
+      if Array.length files > 0 (* Source has source map *)
+      then
+        let name = files.(Option.value ~default:0 j) in
+        if Zip.has_entry z' ~name
+        then Zip.copy_file z' z ~src_name:name ~dst_name:(source_name i j file));
+  finalize ()
 
 let make_library ~output_file ~enable_source_maps ~files =
   let info =
@@ -936,33 +924,31 @@ let make_library ~output_file ~enable_source_maps ~files =
   @@ fun tmp_output_file ->
   let z = Zip.open_out tmp_output_file in
   add_info z ~build_info ~unit_data ();
-  (*
-- Merge all code files into a single code file (gathering source maps)
-- Copy source files
-*)
   Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
   @@ fun tmp_wasm_file ->
-  opt_with
-    Fs.with_intermediate_file
-    (if enable_source_maps then Some (Filename.temp_file "wasm" ".map") else None)
-  @@ fun opt_output_sourcemap_file ->
-  Wasm_link.f
-    (List.map
-       ~f:(fun file ->
-         let z' = Zip.open_in file in
-         { Wasm_link.module_name = "OCaml"
-         ; file
-         ; code = Some (Zip.read_entry z' ~name:"code.wasm")
-         ; opt_source_map =
-             (if Zip.has_entry z' ~name:"source_map.map"
-              then Some (`Data (Zip.read_entry z' ~name:"source_map.map"))
-              else None)
-         })
-       files)
-    ~output_file:tmp_wasm_file
-    ~opt_output_sourcemap_file;
+  let output_sourcemap =
+    Wasm_link.f
+      (let tmp_buf = Buffer.create 10000 in
+       List.map
+         ~f:(fun file ->
+           let z' = Zip.open_in file in
+           { Wasm_link.module_name = "OCaml"
+           ; file
+           ; code = Some (Zip.read_entry z' ~name:"code.wasm")
+           ; opt_source_map =
+               (if enable_source_maps && Zip.has_entry z' ~name:"source_map.map"
+                then
+                  Some
+                    (Source_map.Standard.of_string
+                       ~tmp_buf
+                       (Zip.read_entry z' ~name:"source_map.map"))
+                else None)
+           })
+         files)
+      ~output_file:tmp_wasm_file
+  in
   Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
-  add_source_map files z opt_output_sourcemap_file;
+  if enable_source_maps then add_source_map files z output_sourcemap;
   Zip.close_out z
 
 let link ~output_file ~linkall ~mklib ~enable_source_maps ~files =
