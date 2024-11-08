@@ -130,7 +130,7 @@ let options =
   in
   let no_sourcemap =
     let doc =
-      "Don't generate source map. All other source map related flags will be be ignored."
+      "Don't generate source map. All other source map related flags will be ignored."
     in
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
   in
@@ -395,7 +395,7 @@ let options_runtime_only =
   in
   let no_sourcemap =
     let doc =
-      "Don't generate source map. All other source map related flags will be be ignored."
+      "Don't generate source map. All other source map related flags will be ignored."
     in
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
   in

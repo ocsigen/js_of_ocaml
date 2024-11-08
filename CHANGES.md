@@ -19,7 +19,7 @@
 * Compiler: Emit index source_map to avoid changing mappings (#1714, #1715)
 * Compiler: improved source map generation (#1716)
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
-* Runtime: backtraces are really expensive, they need to be be explicitly
+* Runtime: backtraces are really expensive, they need to be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
 * Runtime: allow dynlink of precompiled js with separate compilation (#1676)
 * Runtime: reimplement the runtime of weak and ephemeron (#1707)
