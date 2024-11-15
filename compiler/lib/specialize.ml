@@ -21,29 +21,35 @@ open! Stdlib
 open Code
 open Flow
 
+let merge_kinds k k' =
+  match k, k' with
+  | Generic, _ | _, Generic -> Generic
+  | Exact, _ | _, Exact -> Exact
+  | Known f, Known f' -> if Code.Var.equal f f' then k else Exact
+
 let function_arity info x =
   let rec arity info x acc =
     get_approx
       info
       (fun x ->
         match Flow.Info.def info x with
-        | Some (Closure (l, _)) -> Some (List.length l)
+        | Some (Closure (l, _)) -> Some (List.length l, Known x)
         | Some (Special (Alias_prim prim)) -> (
-            try Some (Primitive.arity prim) with Not_found -> None)
+            try Some (Primitive.arity prim, Exact) with Not_found -> None)
         | Some (Apply { f; args; _ }) -> (
             if List.mem f ~set:acc
             then None
             else
               match arity info f (f :: acc) with
-              | Some n ->
+              | Some (n, _) ->
                   let diff = n - List.length args in
-                  if diff > 0 then Some diff else None
+                  if diff > 0 then Some (diff, Exact) else None
               | None -> None)
         | _ -> None)
       None
       (fun u v ->
         match u, v with
-        | Some n, Some m when n = m -> u
+        | Some (n, kind), Some (n', kind') when n = n' -> Some (n, merge_kinds kind kind')
         | _ -> None)
       x
   in
@@ -56,21 +62,21 @@ let add_event loc instrs =
 
 let specialize_instr function_arity ((acc, free_pc, extra), loc) i =
   match i with
-  | Let (x, Apply { f; args; exact = false }) when Config.Flag.optcall () -> (
+  | Let (x, Apply { f; args; _ }) when Config.Flag.optcall () -> (
       let n' = List.length args in
       match function_arity f with
       | None -> i :: acc, free_pc, extra
-      | Some n when n = n' ->
-          Let (x, Apply { f; args; exact = true }) :: acc, free_pc, extra
-      | Some n when n < n' ->
+      | Some (n, kind) when n = n' ->
+          Let (x, Apply { f; args; kind }) :: acc, free_pc, extra
+      | Some (n, kind) when n < n' ->
           let v = Code.Var.fresh () in
           let args, rest = List.take n args in
           ( (* Reversed *)
-            Let (x, Apply { f = v; args = rest; exact = false })
-            :: add_event loc (Let (v, Apply { f; args; exact = true }) :: acc)
+            Let (x, Apply { f = v; args = rest; kind = Generic })
+            :: add_event loc (Let (v, Apply { f; args; kind }) :: acc)
           , free_pc
           , extra )
-      | Some n when n > n' ->
+      | Some (n, kind) when n > n' ->
           let missing = Array.init (n - n') ~f:(fun _ -> Code.Var.fresh ()) in
           let missing = Array.to_list missing in
           let block =
@@ -79,9 +85,7 @@ let specialize_instr function_arity ((acc, free_pc, extra), loc) i =
             let return' = Code.Var.fresh () in
             { params = params'
             ; body =
-                add_event
-                  loc
-                  [ Let (return', Apply { f; args = args @ params'; exact = true }) ]
+                add_event loc [ Let (return', Apply { f; args = args @ params'; kind }) ]
             ; branch = Return return'
             }
           in
