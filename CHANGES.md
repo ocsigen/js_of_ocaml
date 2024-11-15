@@ -26,6 +26,7 @@
 * Lib: add `Fetch` and `Abort` modules — Fetch API binding with a typed
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 * Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
+* Lib: implement popover API (#1734)
 
 ## Bug fixes
 * Compiler: fix UGEINT bytecode lowering (returned wrong result on
