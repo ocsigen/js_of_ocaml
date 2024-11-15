@@ -27,8 +27,7 @@ module Excluding_Binders = struct
   let expr s e =
     match e with
     | Constant _ -> e
-    | Apply { f; args; exact } ->
-        Apply { f = s f; args = List.map args ~f:(fun x -> s x); exact }
+    | Apply { f; args; kind } -> Apply { f = s f; args = List.map args ~f:s; kind }
     | Block (n, a, k, mut) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc) -> Closure (l, subst_cont s pc)
@@ -115,7 +114,10 @@ module Including_Binders = struct
   let expr s e =
     match e with
     | Constant _ -> e
-    | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
+    | Apply { f; args; kind = Known g } ->
+        Apply { f = s f; args = List.map args ~f:s; kind = Known (s g) }
+    | Apply { f; args; kind = (Generic | Exact) as kind } ->
+        Apply { f = s f; args = List.map args ~f:s; kind }
     | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc) -> Closure (List.map l ~f:s, subst_cont s pc)
