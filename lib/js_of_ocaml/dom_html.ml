@@ -786,6 +786,8 @@ and toggleEvent = object
   method newState : js_string t readonly_prop
 
   method oldState : js_string t readonly_prop
+
+  method source : element t opt readonly_prop
 end
 
 and mediaQueryListEvent = object
@@ -892,6 +894,10 @@ and eventTarget = object ('self)
   method onpointerover : ('self t, pointerEvent t) event_listener writeonly_prop
 
   method onpointerup : ('self t, pointerEvent t) event_listener writeonly_prop
+
+  method onbeforetoggle : ('self t, toggleEvent t) event_listener writeonly_prop
+
+  method ontoggle : ('self t, toggleEvent t) event_listener writeonly_prop
 
   method dispatchEvent : event t -> bool t meth
 end
@@ -1296,6 +1302,16 @@ and focusOptions = object
   method preventScroll : bool t writeonly_prop
 end
 
+and showPopover_options = object
+  method source : element t writeonly_prop
+end
+
+and togglePopover_options = object
+  method force : bool t writeonly_prop
+
+  method source : element t writeonly_prop
+end
+
 and element = object
   inherit Dom.element
 
@@ -1385,6 +1401,8 @@ and element = object
 
   method scrollHeight : int readonly_prop
 
+  method popover : js_string t opt prop
+
   method getClientRects : clientRectList t meth
 
   method getBoundingClientRect : clientRect t meth
@@ -1419,6 +1437,18 @@ and element = object
 
   method getAnimations : animation t js_array t meth
 
+  method hidePopover : unit meth
+
+  method showPopover : unit meth
+
+  method showPopover_options : showPopover_options t -> unit meth
+
+  method togglePopover : bool t meth
+
+  method togglePopover_force : bool t -> bool t meth
+
+  method togglePopover_options : togglePopover_options t -> bool t meth
+
   inherit eventTarget
 end
 
@@ -1441,6 +1471,17 @@ and clientRectList = object
 
   method item : int -> clientRect t opt meth
 end
+
+let showPopover_options ?source () : showPopover_options t =
+  let init = Js.Unsafe.obj [||] in
+  Option.iter (fun s -> init##.source := s) source;
+  init
+
+let togglePopover_options ?force ?source () : togglePopover_options t =
+  let init = Js.Unsafe.obj [||] in
+  Option.iter (fun f -> init##.force := Js.bool f) force;
+  Option.iter (fun s -> init##.source := s) source;
+  init
 
 let no_handler : ('a, 'b) event_listener = Dom.no_handler
 
@@ -1642,6 +1683,8 @@ module Event = struct
   let volumechange = Dom.Event.make "volumechange"
 
   let waiting = Dom.Event.make "waiting"
+
+  let beforetoggle = Dom.Event.make "beforetoggle"
 
   let toggle = Dom.Event.make "toggle"
 
@@ -2032,6 +2075,10 @@ class type inputElement = object ('self)
 
   method setCustomValidity : js_string t -> unit meth
 
+  method popoverTarget : element t opt prop
+
+  method popoverTargetAction : js_string t prop
+
   method onselect : ('self t, event t) event_listener prop
 
   method onchange : ('self t, event t) event_listener prop
@@ -2149,6 +2196,10 @@ class type buttonElement = object
   method _type : js_string t readonly_prop
 
   method value : js_string t prop
+
+  method popoverTarget : element t opt prop
+
+  method popoverTargetAction : js_string t prop
 
   method labels : labelElement Dom.nodeList t readonly_prop
 
@@ -2429,8 +2480,6 @@ class type detailsElement = object ('self)
   method open_ : bool t prop
 
   method name : js_string t prop
-
-  method ontoggle : ('self t, toggleEvent t) event_listener prop
 end
 
 class type imageElement = object ('self)
