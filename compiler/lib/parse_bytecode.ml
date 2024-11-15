@@ -1058,7 +1058,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 2)
           (State.pop 3 state)
-          (Let (x, Apply { f; args; exact = false }) :: instrs)
+          (Let (x, Apply { f; args; kind = Generic }) :: instrs)
     | APPLY1 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
@@ -1070,7 +1070,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Apply { f; args = [ y ]; exact = false }) :: instrs)
+          (Let (x, Apply { f; args = [ y ]; kind = Generic }) :: instrs)
     | APPLY2 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
@@ -1093,7 +1093,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           (State.pop 2 state)
-          (Let (x, Apply { f; args = [ y; z ]; exact = false }) :: instrs)
+          (Let (x, Apply { f; args = [ y; z ]; kind = Generic }) :: instrs)
     | APPLY3 ->
         let f = State.accu state in
         let x, state = State.fresh_var state in
@@ -1119,7 +1119,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           (State.pop 3 state)
-          (Let (x, Apply { f; args = [ y; z; t ]; exact = false }) :: instrs)
+          (Let (x, Apply { f; args = [ y; z; t ]; kind = Generic }) :: instrs)
     | APPTERM ->
         let n = getu code (pc + 1) in
         let f = State.accu state in
@@ -1134,13 +1134,13 @@ and compile infos pc state (instrs : instr list) =
           done;
           Format.printf ")@.");
         let x, state = State.fresh_var state in
-        Let (x, Apply { f; args = l; exact = false }) :: instrs, Return x, state
+        Let (x, Apply { f; args = l; kind = Generic }) :: instrs, Return x, state
     | APPTERM1 ->
         let f = State.accu state in
         let x = State.peek 0 state in
         if debug_parser () then Format.printf "return %a(%a)@." Var.print f Var.print x;
         let y, state = State.fresh_var state in
-        Let (y, Apply { f; args = [ x ]; exact = false }) :: instrs, Return y, state
+        Let (y, Apply { f; args = [ x ]; kind = Generic }) :: instrs, Return y, state
     | APPTERM2 ->
         let f = State.accu state in
         let x = State.peek 0 state in
@@ -1148,7 +1148,7 @@ and compile infos pc state (instrs : instr list) =
         if debug_parser ()
         then Format.printf "return %a(%a, %a)@." Var.print f Var.print x Var.print y;
         let z, state = State.fresh_var state in
-        Let (z, Apply { f; args = [ x; y ]; exact = false }) :: instrs, Return z, state
+        Let (z, Apply { f; args = [ x; y ]; kind = Generic }) :: instrs, Return z, state
     | APPTERM3 ->
         let f = State.accu state in
         let x = State.peek 0 state in
@@ -1167,7 +1167,9 @@ and compile infos pc state (instrs : instr list) =
             Var.print
             z;
         let t, state = State.fresh_var state in
-        Let (t, Apply { f; args = [ x; y; z ]; exact = false }) :: instrs, Return t, state
+        ( Let (t, Apply { f; args = [ x; y; z ]; kind = Generic }) :: instrs
+        , Return t
+        , state )
     | RETURN ->
         let x = State.accu state in
 

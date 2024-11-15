@@ -196,11 +196,16 @@ type field_type =
   | Non_float
   | Float
 
+type apply_kind =
+  | Generic
+  | Exact (* # of arguments = # of parameters *)
+  | Known of Var.t (* Exact and we know which function is called *)
+
 type expr =
   | Apply of
       { f : Var.t
       ; args : Var.t list
-      ; exact : bool (* if true, then # of arguments = # of parameters *)
+      ; kind : apply_kind
       }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type

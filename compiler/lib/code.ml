@@ -370,11 +370,16 @@ type field_type =
   | Non_float
   | Float
 
+type apply_kind =
+  | Generic
+  | Exact
+  | Known of Var.t
+
 type expr =
   | Apply of
       { f : Var.t
       ; args : Var.t list
-      ; exact : bool
+      ; kind : apply_kind
       }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type
@@ -514,10 +519,12 @@ module Print = struct
 
   let expr f e =
     match e with
-    | Apply { f = g; args; exact } ->
-        if exact
-        then Format.fprintf f "%a!(%a)" Var.print g var_list args
-        else Format.fprintf f "%a(%a)" Var.print g var_list args
+    | Apply { f = g; args; kind } -> (
+        match kind with
+        | Generic -> Format.fprintf f "%a(%a)" Var.print g var_list args
+        | Exact -> Format.fprintf f "%a!(%a)" Var.print g var_list args
+        | Known h -> Format.fprintf f "%a{=%a}(%a)" Var.print g Var.print h var_list args
+        )
     | Block (t, a, _, mut) ->
         Format.fprintf
           f

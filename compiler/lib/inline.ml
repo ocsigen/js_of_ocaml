@@ -179,7 +179,8 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
       ~init:([], (outer, block.branch, p))
       ~f:(fun i (rem, state) ->
         match i with
-        | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f closures -> (
+        | Let (x, Apply { f; args; kind = Exact | Known _; _ })
+          when Var.Map.mem f closures -> (
             let outer, branch, p = state in
             let { cl_params = params
                 ; cl_cont = clos_cont
@@ -268,7 +269,7 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
                   if recursive
                   then
                     ( Let (f, Closure (params, clos_cont))
-                      :: Let (x, Apply { f; args; exact = true })
+                      :: Let (x, Apply { f; args; kind = Known f })
                       :: rem
                     , (outer, branch, p) )
                   else

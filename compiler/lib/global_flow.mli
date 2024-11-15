@@ -46,6 +46,6 @@ type info =
 
 val f : fast:bool -> Code.program -> info
 
-val exact_call : info -> Var.t -> int -> bool
+val apply_kind : info -> Var.t -> int -> Code.apply_kind
 
-val function_arity : info -> Var.t -> int option
+val function_arity : info -> Var.t -> (int * Code.apply_kind) option

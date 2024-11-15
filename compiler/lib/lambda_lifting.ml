@@ -200,7 +200,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
                   Let (f'', Closure (List.map s ~f:snd, (pc'', []))) :: functions
                 in
                 let rem', st = rewrite_body false (program, functions) rem in
-                ( Let (f, Apply { f = f''; args = List.map ~f:fst s; exact = true })
+                ( Let (f, Apply { f = f''; args = List.map ~f:fst s; kind = Known f'' })
                   :: rem'
                 , st ))
               else

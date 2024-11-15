@@ -186,10 +186,16 @@ module Generate (Target : Target_sig.S) = struct
 
   let zero_divide_pc = -2
 
+  let exact_call kind =
+    match kind with
+    | Generic -> false
+    | Exact | Known _ -> true
+
   let rec translate_expr ctx context x e =
     match e with
-    | Apply { f; args; exact }
-      when exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1 ->
+    | Apply { f; args; kind }
+      when exact_call kind || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1
+      ->
         let rec loop acc l =
           match l with
           | [] -> (
@@ -206,13 +212,15 @@ module Generate (Target : Target_sig.S) = struct
               if b
               then return (W.Call (f, List.rev (closure :: acc)))
               else
-                match funct with
-                | W.RefFunc g ->
+                match funct, kind with
+                | W.RefFunc g, _ ->
                     (* Functions with constant closures ignore their
                        environment. In case of partial application, we
                        still need the closure. *)
-                    let* cl = if exact then Value.unit else return closure in
+                    let* cl = if exact_call kind then Value.unit else return closure in
                     return (W.Call (g, List.rev (cl :: acc)))
+                | _, Known g when ctx.live.(Var.idx g) >= 0 ->
+                    return (W.Call (g, List.rev (closure :: acc)))
                 | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc))))
           | x :: r ->
               let* x = load x in
