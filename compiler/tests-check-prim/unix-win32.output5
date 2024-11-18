@@ -7,7 +7,6 @@ caml_continuation_use
 caml_drop_continuation
 caml_int_as_pointer
 caml_reset_afl_instrumentation
-caml_signbit
 caml_unix_accept
 caml_unix_access
 caml_unix_bind

@@ -281,6 +281,7 @@ function caml_copysign_float(x, y) {
 }
 
 //Provides: caml_signbit_float const
+//Alias: caml_signbit
 function caml_signbit_float(x) {
   if (x === 0) x = 1 / x;
   return x < 0 ? 1 : 0;
