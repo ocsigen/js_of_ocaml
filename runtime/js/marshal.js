@@ -233,6 +233,7 @@ function caml_float_of_bytes(a) {
 
 //Provides: caml_input_value_from_string mutable
 //Requires: MlStringReader, caml_input_value_from_reader
+//Version: < 4.12
 function caml_input_value_from_string(s, ofs) {
   var reader = new MlStringReader(s, typeof ofs === "number" ? ofs : ofs[0]);
   return caml_input_value_from_reader(reader, ofs);
