@@ -149,7 +149,6 @@ jsoo_create_file
 jsoo_create_file_extern
 
 From +gc.js:
-caml_memprof_discard
 caml_memprof_set
 
 From +graphics.js:
@@ -210,8 +209,6 @@ caml_mod
 
 From +io.js:
 caml_input_value_to_outside_heap
-caml_ml_input_bigarray
-caml_ml_output_bigarray
 
 From +jslib.js:
 caml_is_js
@@ -249,18 +246,6 @@ caml_obj_is_block
 caml_obj_is_shared
 caml_obj_update_tag
 
-From +runtime_events.js:
-caml_custom_event_index
-caml_ml_runtime_events_pause
-caml_ml_runtime_events_resume
-caml_ml_runtime_events_start
-caml_runtime_events_create_cursor
-caml_runtime_events_free_cursor
-caml_runtime_events_read_poll
-caml_runtime_events_user_register
-caml_runtime_events_user_resolve
-caml_runtime_events_user_write
-
 From +stdlib.js:
 caml_build_symbols
 caml_is_printable
@@ -292,7 +277,6 @@ caml_register_channel_for_spacetime
 caml_set_static_env
 caml_spacetime_enabled
 caml_spacetime_only_works_for_native_code
-caml_sys_is_regular_file
 
 From +toplevel.js:
 caml_dynlink_get_bytecode_sections
