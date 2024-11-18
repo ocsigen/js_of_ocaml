@@ -27,9 +27,6 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
-From +domain.js:
-caml_ml_domain_set_name
-
 From +dynlink.js:
 caml_add_debug_info
 caml_register_code_fragment
