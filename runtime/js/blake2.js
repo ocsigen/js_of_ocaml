@@ -326,9 +326,20 @@ function caml_blake2_final(ctx, hashlen) {
 //Provides: caml_blake2_update
 //Requires: blake2b
 //Requires: caml_uint8_array_of_string
-//Version: >= 5.2
+//Version: >= 5.2, < 5.3
 function caml_blake2_update(ctx, buf, ofs, len) {
   var input = caml_uint8_array_of_string(buf);
+  input = input.subarray(ofs, ofs + len);
+  blake2b.Update(ctx, input);
+  return 0;
+}
+
+//Provides: caml_blake2_update
+//Requires: blake2b
+//Requires: caml_uint8_array_of_bytes
+//Version: >= 5.3
+function caml_blake2_update(ctx, buf, ofs, len) {
+  var input = caml_uint8_array_of_bytes(buf);
   input = input.subarray(ofs, ofs + len);
   blake2b.Update(ctx, input);
   return 0;
@@ -338,8 +349,32 @@ function caml_blake2_update(ctx, buf, ofs, len) {
 //Requires: caml_blake2_create
 //Requires: caml_blake2_update
 //Requires: caml_blake2_final
-//Version: >= 5.2
+//Version: >= 5.2, < 5.3
 function caml_blake2_string(hashlen, key, buf, ofs, len) {
+  var ctx = caml_blake2_create(hashlen, key);
+  caml_blake2_update(ctx, buf, ofs, len);
+  return caml_blake2_final(ctx, hashlen);
+}
+
+//Provides: caml_blake2_string
+//Requires: caml_blake2_create
+//Requires: caml_blake2_update
+//Requires: caml_blake2_final
+//Requires: caml_bytes_of_string
+//Version: >= 5.3
+function caml_blake2_string(hashlen, key, buf_str, ofs, len) {
+  var ctx = caml_blake2_create(hashlen, key);
+  var buf = caml_bytes_of_string(buf_str);
+  caml_blake2_update(ctx, buf, ofs, len);
+  return caml_blake2_final(ctx, hashlen);
+}
+
+//Provides: caml_blake2_bytes
+//Requires: caml_blake2_create
+//Requires: caml_blake2_update
+//Requires: caml_blake2_final
+//Version: >= 5.3
+function caml_blake2_bytes(hashlen, key, buf, ofs, len) {
   var ctx = caml_blake2_create(hashlen, key);
   caml_blake2_update(ctx, buf, ofs, len);
   return caml_blake2_final(ctx, hashlen);
