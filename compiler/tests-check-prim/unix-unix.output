@@ -14,7 +14,6 @@ caml_int64_sub_native
 caml_int64_xor_native
 caml_int_as_pointer
 caml_reset_afl_instrumentation
-caml_signbit
 caml_unix_map_file_bytecode
 debugger
 is_digit_normalized
