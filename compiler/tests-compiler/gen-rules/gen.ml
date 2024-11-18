@@ -47,6 +47,8 @@ let prefix : string =
 
 type enabled_if =
   | GE5
+  | GE52
+  | LT52
   | B64
   | Any
 
@@ -58,12 +60,15 @@ let lib_enabled_if = function
 let test_enabled_if = function
   | "obj" | "lazy" -> GE5
   | "gh1051" -> B64
+  | "rec52" -> GE52
+  | "rec" -> LT52
   | _ -> Any
 
-let enabled_if cond =
-  match cond with
+let enabled_if = function
   | Any -> "true"
   | GE5 -> "(>= %{ocaml_version} 5)"
+  | GE52 -> "(>= %{ocaml_version} 5.2)"
+  | LT52 -> "(< %{ocaml_version} 5.2)"
   | B64 -> "%{arch_sixtyfour}"
 
 let js_enabled = function

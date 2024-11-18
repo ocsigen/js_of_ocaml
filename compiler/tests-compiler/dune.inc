@@ -666,7 +666,22 @@
  (modules rec)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
-  (enabled_if true)
+  (enabled_if (< %{ocaml_version} 5.2))
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ ;; compiler/tests-compiler/rec52.ml
+ (name rec52_15)
+ (enabled_if %{env:js-enabled=})
+ (modules rec52)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if (>= %{ocaml_version} 5.2))
   (deps
    (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
