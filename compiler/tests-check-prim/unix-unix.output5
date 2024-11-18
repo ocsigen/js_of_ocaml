@@ -271,10 +271,7 @@ From +sys.js:
 caml_fatal_uncaught_exception
 caml_format_exception
 caml_is_special_exception
-caml_register_channel_for_spacetime
 caml_set_static_env
-caml_spacetime_enabled
-caml_spacetime_only_works_for_native_code
 caml_sys_const_naked_pointers_checked
 
 From +toplevel.js:
