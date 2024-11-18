@@ -1,14 +1,17 @@
 //Provides: caml_custom_event_index
+//Version: >= 5.1
 var caml_custom_event_index = 0;
 
 //Provides: caml_runtime_events_user_register
 //Requires: caml_custom_event_index
+//Version: >= 5.1
 function caml_runtime_events_user_register(event_name, event_tag, event_type) {
   caml_custom_event_index += 1;
   return [0, caml_custom_event_index, event_name, event_type, event_tag];
 }
 
 //Provides: caml_runtime_events_user_write
+//Version: >= 5.1
 function caml_runtime_events_user_write(event, event_content) {
   return 0;
 }

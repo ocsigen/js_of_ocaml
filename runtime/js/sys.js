@@ -365,6 +365,7 @@ function caml_xdg_defaults(_unit) {
 
 //Provides: caml_sys_is_regular_file
 //Requires: resolve_fs_device
+//Version: >= 5.1
 function caml_sys_is_regular_file(name) {
   var root = resolve_fs_device(name);
   return root.device.isFile(root.rest);
