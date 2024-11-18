@@ -19,14 +19,26 @@ function caml_runtime_events_user_resolve() {
 }
 
 //Provides: caml_ml_runtime_events_start
-//Alias: caml_runtime_events_start
+//Version: >= 5.2
 function caml_ml_runtime_events_start() {
   return 0;
 }
 
+//Provides: caml_runtime_events_start
+//Version: < 5.2
+function caml_runtime_events_start() {
+  return 0;
+}
+
 //Provides: caml_ml_runtime_events_pause
-//Alias: caml_runtime_events_pause
+//Version: >= 5.2
 function caml_ml_runtime_events_pause() {
+  return 0;
+}
+
+//Provides: caml_runtime_events_pause
+//Version: < 5.2
+function caml_runtime_events_pause() {
   return 0;
 }
 
@@ -36,8 +48,14 @@ function caml_ml_runtime_events_are_active() {
   return 0;
 }
 
+//Provides: caml_runtime_events_resume
+//Version: < 5.2
+function caml_runtime_events_resume() {
+  return 0;
+}
+
 //Provides: caml_ml_runtime_events_resume
-//Alias: caml_runtime_events_resume
+//Version: >= 5.2
 function caml_ml_runtime_events_resume() {
   return 0;
 }

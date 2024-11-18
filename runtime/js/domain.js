@@ -51,6 +51,7 @@ function caml_atomic_exchange(ref, v) {
 }
 
 //Provides: caml_atomic_make_contended
+//Version: >= 5.2
 function caml_atomic_make_contended(a) {
   return [0, a];
 }
