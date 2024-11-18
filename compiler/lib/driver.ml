@@ -115,9 +115,9 @@ let effects ~deadcode_sentinal p =
       p
       |> Effects.f ~flow_info:info ~live_vars
       |> map_fst
-           (match effects with
-           | `Double_translation -> Fun.id
-           | `Cps -> Lambda_lifting.f)
+           (match Config.target (), effects with
+           | `Wasm, _ | _, `Double_translation -> Fun.id
+           | `JavaScript, `Cps -> Lambda_lifting.f)
   | `Disabled | `Jspi ->
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)
