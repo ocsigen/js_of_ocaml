@@ -92,6 +92,7 @@ function caml_memprof_stop(unit) {
 }
 
 //Provides: caml_memprof_discard
+//Version: >= 5.2
 function caml_memprof_discard(t) {
   return 0;
 }

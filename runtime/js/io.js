@@ -338,6 +338,7 @@ function caml_ml_input(chanid, b, i, l) {
 //Provides: caml_ml_input_bigarray
 //Requires: caml_ml_input_block
 //Requires: caml_ba_to_typed_array
+//Version: >= 5.2
 function caml_ml_input_bigarray(chanid, b, i, l) {
   var ba = caml_ba_to_typed_array(b);
   return caml_ml_input_block(chanid, ba, i, l);
@@ -584,6 +585,7 @@ function caml_ml_output_bytes(chanid, buffer, offset, len) {
 
 //Provides: caml_ml_output_bigarray
 //Requires: caml_ba_to_typed_array, caml_ml_output_ta
+//Version: >= 5.2
 function caml_ml_output_bigarray(chanid, buffer, offset, len) {
   var buffer = caml_ba_to_typed_array(buffer);
   return caml_ml_output_ta(chanid, buffer, offset, len);
