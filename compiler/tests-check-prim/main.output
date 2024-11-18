@@ -3,11 +3,6 @@ Missing
 
 From main.bc:
 caml_alloc_dummy_function
-caml_dynlink_add_primitive
-caml_dynlink_close_lib
-caml_dynlink_get_current_libs
-caml_dynlink_lookup_symbol
-caml_dynlink_open_lib
 caml_int64_add_native
 caml_int64_and_native
 caml_int64_div_native
@@ -57,6 +52,11 @@ caml_ml_domain_id
 caml_ml_domain_set_name
 caml_ml_domain_unique_token
 caml_recommended_domain_count
+
+From +dynlink.js:
+caml_add_debug_info
+caml_register_code_fragment
+caml_remove_debug_info
 
 From +effect.js:
 caml_alloc_stack

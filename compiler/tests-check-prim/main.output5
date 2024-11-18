@@ -5,11 +5,6 @@ From main.bc:
 caml_alloc_dummy_function
 caml_continuation_use
 caml_drop_continuation
-caml_dynlink_add_primitive
-caml_dynlink_close_lib
-caml_dynlink_get_current_libs
-caml_dynlink_lookup_symbol
-caml_dynlink_open_lib
 caml_int_as_pointer
 caml_reset_afl_instrumentation
 caml_signbit
@@ -36,6 +31,11 @@ caml_hash_mix_bigstring
 
 From +domain.js:
 caml_ml_domain_set_name
+
+From +dynlink.js:
+caml_add_debug_info
+caml_register_code_fragment
+caml_remove_debug_info
 
 From +effect.js:
 jsoo_effect_not_supported
