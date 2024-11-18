@@ -17,6 +17,7 @@ function caml_runtime_events_user_write(event, event_content) {
 }
 
 //Provides: caml_runtime_events_user_resolve
+//Version: >= 5.0
 function caml_runtime_events_user_resolve() {
   return 0;
 }
@@ -28,7 +29,7 @@ function caml_ml_runtime_events_start() {
 }
 
 //Provides: caml_runtime_events_start
-//Version: < 5.2
+//Version: >= 5.0, < 5.2
 function caml_runtime_events_start() {
   return 0;
 }
@@ -40,7 +41,7 @@ function caml_ml_runtime_events_pause() {
 }
 
 //Provides: caml_runtime_events_pause
-//Version: < 5.2
+//Version: >= 5.0, < 5.2
 function caml_runtime_events_pause() {
   return 0;
 }
@@ -52,7 +53,7 @@ function caml_ml_runtime_events_are_active() {
 }
 
 //Provides: caml_runtime_events_resume
-//Version: < 5.2
+//Version: >=5.0, < 5.2
 function caml_runtime_events_resume() {
   return 0;
 }
@@ -64,16 +65,19 @@ function caml_ml_runtime_events_resume() {
 }
 
 //Provides: caml_runtime_events_create_cursor
+//Version: >= 5.0
 function caml_runtime_events_create_cursor(target) {
   return {};
 }
 
 //Provides: caml_runtime_events_free_cursor
+//Version: >= 5.0
 function caml_runtime_events_free_cursor(cursor) {
   return 0;
 }
 
 //Provides: caml_runtime_events_read_poll
+//Version: >= 5.0
 function caml_runtime_events_read_poll(cursor, callbacks, num) {
   return 0;
 }
