@@ -15,7 +15,6 @@ caml_int64_xor_native
 caml_int_as_pointer
 caml_reset_afl_instrumentation
 debugger
-is_digit_normalized
 
 Unused
 -------

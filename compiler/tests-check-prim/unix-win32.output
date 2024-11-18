@@ -16,7 +16,6 @@ caml_int_as_pointer
 caml_reset_afl_instrumentation
 caml_unix_map_file_bytecode
 debugger
-is_digit_normalized
 unix_accept
 unix_access
 unix_bind
