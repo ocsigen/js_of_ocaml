@@ -188,7 +188,6 @@ caml_wrap_exception
 
 From +marshal.js:
 BigStringReader
-caml_input_value_from_string
 caml_marshal_constants
 
 From +mlBytes.js:
