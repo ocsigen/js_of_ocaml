@@ -143,6 +143,11 @@ function is_digit_zero(nat, ofs) {
   return 0;
 }
 
+//Provides: is_digit_normalized
+function is_digit_normalized(nat, ofs) {
+  return 1;
+}
+
 //Provides: is_digit_odd
 function is_digit_odd(nat, ofs) {
   if (nat.data[ofs] & 1) return 1;

@@ -85,7 +85,6 @@ caml_unix_waitpid
 caml_unix_write
 caml_unix_write_bigarray
 debugger
-is_digit_normalized
 
 Unused
 -------

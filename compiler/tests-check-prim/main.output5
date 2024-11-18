@@ -8,7 +8,6 @@ caml_drop_continuation
 caml_int_as_pointer
 caml_reset_afl_instrumentation
 debugger
-is_digit_normalized
 
 Unused
 -------
