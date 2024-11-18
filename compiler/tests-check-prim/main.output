@@ -162,15 +162,6 @@ caml_maybe_print_stats
 caml_register_global
 jsoo_toplevel_reloc
 
-From +str.js:
-caml_str_initialize
-re_match
-re_partial_match
-re_replacement_text
-re_search_backward
-re_search_forward
-re_string_match
-
 From +sync.js:
 MlMutex
 caml_ml_mutex_lock
