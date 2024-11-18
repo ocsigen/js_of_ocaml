@@ -56,3 +56,9 @@ function caml_runtime_events_free_cursor(cursor) {
 function caml_runtime_events_read_poll(cursor, callbacks, num) {
   return 0;
 }
+
+//Provides: caml_ml_runtime_events_path const
+//Version: >= 5.3
+function caml_ml_runtime_events_path(_unit) {
+  return 0;
+}
