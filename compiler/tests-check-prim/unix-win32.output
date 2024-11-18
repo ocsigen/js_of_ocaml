@@ -108,23 +108,6 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
-From +domain.js:
-caml_atomic_cas
-caml_atomic_exchange
-caml_atomic_fetch_add
-caml_atomic_load
-caml_atomic_make_contended
-caml_domain_dls
-caml_domain_dls_get
-caml_domain_dls_set
-caml_domain_id
-caml_domain_spawn
-caml_ml_domain_cpu_relax
-caml_ml_domain_id
-caml_ml_domain_set_name
-caml_ml_domain_unique_token
-caml_recommended_domain_count
-
 From +dynlink.js:
 caml_add_debug_info
 caml_register_code_fragment
