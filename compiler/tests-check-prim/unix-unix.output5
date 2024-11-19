@@ -148,14 +148,6 @@ caml_fs_init
 jsoo_create_file
 jsoo_create_file_extern
 
-From +gc.js:
-caml_eventlog_pause
-caml_eventlog_resume
-caml_gc_huge_fallback_count
-caml_get_major_bucket
-caml_get_major_credit
-caml_memprof_set
-
 From +graphics.js:
 caml_gr_arc_aux
 caml_gr_blit_image
