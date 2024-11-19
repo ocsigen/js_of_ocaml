@@ -238,12 +238,6 @@ caml_to_js_string
 From +nat.js:
 compare_nat_real
 
-From +obj.js:
-caml_obj_is_block
-caml_obj_make_forward
-caml_obj_set_tag
-caml_obj_truncate
-
 From +runtime_events.js:
 caml_runtime_events_create_cursor
 caml_runtime_events_free_cursor
