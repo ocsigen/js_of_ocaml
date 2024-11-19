@@ -201,9 +201,6 @@ caml_string_set64
 caml_string_unsafe_set
 caml_to_js_string
 
-From +nat.js:
-compare_nat_real
-
 From +runtime_events.js:
 caml_runtime_events_create_cursor
 caml_runtime_events_free_cursor
