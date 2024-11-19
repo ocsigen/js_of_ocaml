@@ -113,10 +113,6 @@ caml_array_of_bytes
 caml_array_of_string
 caml_bytes_of_utf16_jsstring
 caml_string_concat
-caml_string_set16
-caml_string_set32
-caml_string_set64
-caml_string_unsafe_set
 caml_to_js_string
 
 From +runtime_events.js:
