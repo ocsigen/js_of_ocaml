@@ -144,14 +144,6 @@ caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
 From +effect.js:
-caml_alloc_stack
-caml_continuation_use_and_update_handler_noexc
-caml_continuation_use_noexc
-caml_get_continuation_callstack
-caml_ml_condition_broadcast
-caml_ml_condition_new
-caml_ml_condition_signal
-caml_ml_condition_wait
 jsoo_effect_not_supported
 
 From +fs.js:
