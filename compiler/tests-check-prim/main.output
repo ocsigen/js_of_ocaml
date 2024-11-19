@@ -113,9 +113,6 @@ From +ints.js:
 caml_div
 caml_mod
 
-From +io.js:
-caml_input_value_to_outside_heap
-
 From +jslib.js:
 caml_is_js
 caml_trampoline
