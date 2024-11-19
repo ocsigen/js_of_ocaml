@@ -883,12 +883,6 @@ function caml_js_to_byte_string(s) {
   return caml_string_of_jsbytes(s);
 }
 
-//Provides: caml_new_string
-//Requires: caml_string_of_jsbytes
-function caml_new_string(s) {
-  return caml_string_of_jsbytes(s);
-}
-
 //Provides: caml_js_from_string mutable (const)
 //Requires: caml_jsstring_of_string
 function caml_js_from_string(s) {
