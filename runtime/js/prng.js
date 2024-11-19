@@ -2,13 +2,17 @@
 //Requires: caml_int64_of_string
 //Requires: caml_string_of_jsstring
 //Version: >= 5
-var caml_lxm_M = caml_int64_of_string(caml_string_of_jsstring("0xd1342543de82ef95"));
+var caml_lxm_M = caml_int64_of_string(
+  caml_string_of_jsstring("0xd1342543de82ef95"),
+);
 
 //Provides: caml_lxm_daba
 //Requires: caml_int64_of_string
 //Requires: caml_string_of_jsstring
 //Version: >= 5
-var caml_lxm_daba = caml_int64_of_string(caml_string_of_jsstring("0xdaba0b6eb09322e3"));
+var caml_lxm_daba = caml_int64_of_string(
+  caml_string_of_jsstring("0xdaba0b6eb09322e3"),
+);
 
 //Provides: caml_lxm_next
 //Requires: caml_int64_shift_left
