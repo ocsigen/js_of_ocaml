@@ -27,6 +27,8 @@
 * Lib: add details element and toggle event (#1728)
 * Toplevel: no longer set globals for toplevel initialization
 * Runtime: precompute constants used in `caml_lxm_next` (#1730)
+* Runtime: cleanup runtime
+* Runtime: add support for OCaml 5.3
 
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
