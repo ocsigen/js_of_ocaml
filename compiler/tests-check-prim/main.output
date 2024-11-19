@@ -52,9 +52,6 @@ caml_fs_init
 jsoo_create_file
 jsoo_create_file_extern
 
-From +gc.js:
-caml_memprof_set
-
 From +graphics.js:
 caml_gr_arc_aux
 caml_gr_blit_image
