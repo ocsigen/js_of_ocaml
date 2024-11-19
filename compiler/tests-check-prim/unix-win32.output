@@ -108,11 +108,6 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
-From +dynlink.js:
-caml_add_debug_info
-caml_register_code_fragment
-caml_remove_debug_info
-
 From +effect.js:
 caml_alloc_stack
 caml_continuation_use_and_update_handler_noexc
