@@ -144,16 +144,6 @@ caml_to_js_string
 From +nat.js:
 compare_nat_real
 
-From +obj.js:
-caml_lazy_read_result
-caml_lazy_reset_to_lazy
-caml_lazy_update_to_forcing
-caml_lazy_update_to_forward
-caml_obj_compare_and_swap
-caml_obj_is_block
-caml_obj_is_shared
-caml_obj_update_tag
-
 From +stdlib.js:
 caml_build_symbols
 caml_is_printable
