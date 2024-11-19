@@ -406,6 +406,7 @@ function caml_input_value(chanid) {
 
 //Provides: caml_input_value_to_outside_heap
 //Requires: caml_input_value
+//Version: >= 5
 function caml_input_value_to_outside_heap(c) {
   return caml_input_value(c);
 }
