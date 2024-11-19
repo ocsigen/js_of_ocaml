@@ -231,12 +231,6 @@ caml_set_static_env
 
 From +toplevel.js:
 caml_dynlink_get_bytecode_sections
-caml_static_alloc
-caml_static_free
-caml_terminfo_backup
-caml_terminfo_resume
-caml_terminfo_setup
-caml_terminfo_standout
 jsoo_toplevel_init_compile
 jsoo_toplevel_init_reloc
 
