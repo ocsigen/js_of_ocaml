@@ -130,6 +130,7 @@ function caml_perform_effect(eff, cont, k0) {
 //Provides: caml_alloc_stack
 //Requires: caml_pop_fiber, caml_fiber_stack, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
 //If: effects
+//Version: >= 5.0
 function caml_alloc_stack(hv, hx, hf) {
   function call(i, x) {
     var f = caml_fiber_stack.h[i];
@@ -151,11 +152,13 @@ function caml_alloc_stack(hv, hx, hf) {
 
 //Provides: caml_alloc_stack
 //If: !effects
+//Version: >= 5.0
 function caml_alloc_stack(hv, hx, hf) {
   return 0;
 }
 
 //Provides: caml_continuation_use_noexc
+//Version: >= 5.0
 function caml_continuation_use_noexc(cont) {
   var stack = cont[1];
   cont[1] = 0;
@@ -164,6 +167,7 @@ function caml_continuation_use_noexc(cont) {
 
 //Provides: caml_continuation_use_and_update_handler_noexc
 //Requires: caml_continuation_use_noexc
+//Version: >= 5.0
 function caml_continuation_use_and_update_handler_noexc(
   cont,
   hval,
@@ -176,26 +180,31 @@ function caml_continuation_use_and_update_handler_noexc(
 }
 
 //Provides: caml_get_continuation_callstack
+//Version: >= 5.0
 function caml_get_continuation_callstack() {
   return [0];
 }
 
 //Provides: caml_ml_condition_new
+//Version: >= 5.0
 function caml_ml_condition_new(unit) {
   return { condition: 1 };
 }
 
 //Provides: caml_ml_condition_wait
+//Version: >= 5.0
 function caml_ml_condition_wait(t, mutext) {
   return 0;
 }
 
 //Provides: caml_ml_condition_broadcast
+//Version: >= 5.0
 function caml_ml_condition_broadcast(t) {
   return 0;
 }
 
 //Provides: caml_ml_condition_signal
+//Version: >= 5.0
 function caml_ml_condition_signal(t) {
   return 0;
 }
