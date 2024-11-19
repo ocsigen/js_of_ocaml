@@ -275,6 +275,7 @@ function caml_hash(count, limit, seed, obj) {
 
 //Provides: caml_string_hash
 //Requires: caml_hash_mix_final, caml_hash_mix_string
+//Version: >= 5.0
 function caml_string_hash(h, v) {
   var h = caml_hash_mix_string(h, v);
   var h = caml_hash_mix_final(h);
