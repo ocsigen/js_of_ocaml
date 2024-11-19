@@ -73,16 +73,19 @@ function caml_dynlink_get_current_libs() {
 }
 
 //Provides: caml_register_code_fragment
+//Version: < 4.10
 function caml_register_code_fragment(code, codesize, digest) {
   return 0;
 }
 
 //Provides: caml_add_debug_info
+//Version: < 4.13
 function caml_add_debug_info(code, size, events) {
   return 0;
 }
 
 //Provides: caml_remove_debug_info
+//Version: < 4.13
 function caml_remove_debug_info(code) {
   return 0;
 }
