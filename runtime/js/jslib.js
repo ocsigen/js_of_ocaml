@@ -85,7 +85,7 @@ var caml_callback = caml_call_gen;
 //Provides: caml_callback
 //If: effects
 //If: !doubletranslate
-//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_uncaught_effect_handler
+//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, uncaught_effect_handler
 function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
   var saved_exn_stack = caml_exn_stack;
@@ -93,7 +93,7 @@ function caml_callback(f, args) {
   try {
     caml_exn_stack = 0;
     caml_fiber_stack = {
-      h: [0, 0, 0, caml_uncaught_effect_handler],
+      h: [0, 0, 0, uncaught_effect_handler],
       r: { k: 0, x: 0, e: 0 },
     };
     var res = {
@@ -125,7 +125,7 @@ function caml_callback(f, args) {
 //Provides: caml_callback
 //If: effects
 //If: doubletranslate
-//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_uncaught_effect_handler
+//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, uncaught_effect_handler
 //Requires: caml_raise_constant
 function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
@@ -134,7 +134,7 @@ function caml_callback(f, args) {
   try {
     caml_exn_stack = 0;
     caml_fiber_stack = {
-      h: [0, 0, 0, caml_uncaught_effect_handler],
+      h: [0, 0, 0, uncaught_effect_handler],
       r: { k: 0, x: 0, e: 0 },
     };
     return caml_call_gen(f, args);
