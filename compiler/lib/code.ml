@@ -98,14 +98,6 @@ module Var : sig
 
     type 'a t
 
-    module DataSet : sig
-      type 'a t
-
-      val iter : ('a -> unit) -> 'a t -> unit
-
-      val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
-    end
-
     type size = unit
 
     val get : 'a t -> key -> 'a
@@ -115,10 +107,6 @@ module Var : sig
     val length : 'a t -> int
 
     val make : size -> 'a -> 'a t
-
-    val make_set : size -> 'a DataSet.t t
-
-    val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
@@ -203,24 +191,6 @@ end = struct
   module Tbl = struct
     type 'a t = 'a array
 
-    module DataSet = struct
-      type 'a t =
-        | Empty
-        | One of 'a
-        | Many of ('a, unit) Hashtbl.t
-
-      let iter f = function
-        | Empty -> ()
-        | One a -> f a
-        | Many t -> Hashtbl.iter (fun k () -> f k) t
-
-      let fold f t acc =
-        match t with
-        | Empty -> acc
-        | One a -> f a acc
-        | Many t -> Hashtbl.fold (fun k () acc -> f k acc) t acc
-    end
-
     type key = T.t
 
     type size = unit
@@ -232,18 +202,6 @@ end = struct
     let length t = Array.length t
 
     let make () v = Array.make (count ()) v
-
-    let make_set () = Array.make (count ()) DataSet.Empty
-
-    let add_set t x k =
-      match t.(x) with
-      | DataSet.Empty -> t.(x) <- One k
-      | One k' ->
-          let tbl = Hashtbl.create 0 in
-          Hashtbl.replace tbl k' ();
-          Hashtbl.replace tbl k ();
-          t.(x) <- Many tbl
-      | Many tbl -> Hashtbl.replace tbl k ()
 
     let iter f t =
       for i = 0 to Array.length t - 1 do
