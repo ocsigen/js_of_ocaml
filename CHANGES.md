@@ -5,6 +5,9 @@
 * Test: use dune test stanzas (#1631)
 * Merged Wasm_of_ocaml (#1724)
 
+## Bug fixes
+* Fix small bug in global data flow analysis (#1768)
+
 # 5.9.1 (02-12-2024) - Lille
 
 ## Features/Changes
