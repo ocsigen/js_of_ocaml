@@ -436,11 +436,11 @@ let propagate st ~update approx x =
                          | Some tags -> List.memq t ~set:tags
                          | None -> true ->
                       let t = a.(n) in
+                      let m = Var.ISet.mem st.possibly_mutable z in
+                      if not m then add_dep st x z;
                       add_dep st x t;
                       let a = Var.Tbl.get approx t in
-                      if Var.ISet.mem st.possibly_mutable z
-                      then Domain.join ~update ~st ~approx Domain.others a
-                      else a
+                      if m then Domain.join ~update ~st ~approx Domain.others a else a
                   | Expr (Block _ | Closure _) -> Domain.bot
                   | Phi _ | Expr _ -> assert false)
                 known
@@ -464,6 +464,8 @@ let propagate st ~update approx x =
                   (fun z ->
                     match st.defs.(Var.idx z) with
                     | Expr (Block (_, lst, _, _)) ->
+                        let m = Var.ISet.mem st.possibly_mutable z in
+                        if not m then add_dep st x z;
                         Array.iter ~f:(fun t -> add_dep st x t) lst;
                         let a =
                           Array.fold_left
@@ -472,9 +474,7 @@ let propagate st ~update approx x =
                             ~init:Domain.bot
                             lst
                         in
-                        if Var.ISet.mem st.possibly_mutable z
-                        then Domain.join ~update ~st ~approx Domain.others a
-                        else a
+                        if m then Domain.join ~update ~st ~approx Domain.others a else a
                     | Expr (Closure _) -> Domain.bot
                     | Phi _ | Expr _ -> assert false)
                   known

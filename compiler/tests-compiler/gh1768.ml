@@ -64,9 +64,9 @@ let () =
                 }];
        }
        var x = f();
-       function g(param){return x[1].call(null);}
+       function g(param){return caml_call1(x[1], 7);}
        h(x);
-       if(10 !== caml_call1(g(), dummy))
+       if(10 !== caml_call1(g(), 3))
         throw caml_maybe_attach_backtrace([0, Assert_failure, _b_], 1);
        var Test = [0];
        runtime.caml_register_global(3, Test, "Test");
