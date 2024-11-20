@@ -155,37 +155,3 @@ jobs:
           folder: doc-dev
           clean: true
           target-folder: doc/dev/
-
-  lint-opam:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout tree
-        uses: actions/checkout@v4
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
-        with:
-          ocaml-compiler: "5.2"
-          dune-cache: true
-      - uses: ocaml/setup-ocaml/lint-opam@v3
-
-  lint-fmt:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout tree
-        uses: actions/checkout@v4
-      - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
-        with:
-          ocaml-compiler: "5.2"
-          dune-cache: true
-      - uses: ocaml/setup-ocaml/lint-fmt@v3
-
-  lint-runtime:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout tree
-        uses: actions/checkout@v4
-      - name: Set-up Biome
-        uses: biomejs/setup-biome@v2
-      - name: Run biome
-        run: biome ci
