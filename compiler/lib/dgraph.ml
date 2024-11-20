@@ -258,6 +258,18 @@ struct
       List.iter ~f:(fun x -> Queue.push x queue) !lst;
       { queue; set = to_visit }
 
+    let check g v f report =
+      let update ~children:_ _ = () in
+      NSet.iter
+        (fun x ->
+          let a = NTbl.get v x in
+          let b = f ~update v x in
+          if not (D.equal a b)
+          then (
+            NTbl.set v x b;
+            report x a b))
+        g.domain
+
     let f' size g f =
       n := 0;
       m := 0;
