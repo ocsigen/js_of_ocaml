@@ -112,9 +112,9 @@ let effects ~deadcode_sentinal p =
         Deadcode.f p
       else p, live_vars
     in
-    let p, trampolined_calls, in_cps = Effects.f ~flow_info:info ~live_vars p in
-    let p = if Config.Flag.double_translation () then p else Lambda_lifting.f p in
-    p, trampolined_calls, in_cps)
+    p
+    |> Effects.f ~flow_info:info ~live_vars
+    |> map_fst (if Config.Flag.double_translation () then Fun.id else Lambda_lifting.f))
   else
     ( p
     , (Code.Var.Set.empty : Effects.trampolined_calls)
