@@ -87,7 +87,7 @@ type escape_status =
 
 type state =
   { vars : Var.ISet.t (* Set of all veriables considered *)
-  ; deps : Var.t Var.Tbl.DataSet.t Var.Tbl.t (* Dependency between variables *)
+  ; deps : Var.t list Var.Tbl.t (* Dependency between variables *)
   ; defs : def array (* Definition of each variable *)
   ; variable_may_escape : escape_status array
         (* Any value bound to this variable may escape *)
@@ -114,7 +114,7 @@ type state =
 let add_var st x = Var.ISet.add st.vars x
 
 (* x depends on y *)
-let add_dep st x y = Var.Tbl.add_set st.deps y x
+let add_dep st x y = Var.Tbl.set st.deps y (x :: Var.Tbl.get st.deps y)
 
 let add_expr_def st x e =
   add_var st x;
@@ -606,7 +606,7 @@ let solver st =
     { G.domain = st.vars
     ; G.iter_children =
         (fun f x ->
-          Var.Tbl.DataSet.iter f (Var.Tbl.get st.deps x);
+          List.iter ~f (Var.Tbl.get st.deps x);
           List.iter
             ~f:(fun g -> List.iter ~f (associated_list st.function_call_sites g))
             (associated_list st.functions_from_returned_value x))
@@ -642,7 +642,7 @@ let f ~fast p =
   let rets = return_values p in
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
-  let deps = Var.Tbl.make_set () in
+  let deps = Var.Tbl.make () [] in
   let defs = Array.make nv undefined in
   let variable_may_escape = Array.make nv No in
   let variable_possibly_mutable = Var.ISet.empty () in
