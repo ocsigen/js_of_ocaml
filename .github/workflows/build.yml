@@ -103,7 +103,7 @@ jobs:
           brew update
           brew upgrade
           brew install pkgconf
-          # Temporarily uninstall pkg-config@0.29.2 to work around https://github.com/actions/runner-images/issues/10984
+          # work around https://github.com/actions/runner-images/issues/10984
 
       - name: Checkout tree
         uses: actions/checkout@v4
