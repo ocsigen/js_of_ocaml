@@ -102,7 +102,7 @@ jobs:
         run: |
           brew update
           brew upgrade
-	  echo ok
+          echo ok
           brew install pkgconf
           # work around https://github.com/actions/runner-images/issues/10984
 
