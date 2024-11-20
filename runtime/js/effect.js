@@ -76,7 +76,6 @@ function caml_pop_trap() {
 //Provides: caml_raise_unhandled
 //Requires: caml_named_value, caml_raise_with_arg, caml_raise_constant, caml_string_of_jsbytes, caml_fresh_oo_id
 //If: effects
-//If: doubletranslate
 function caml_raise_unhandled(eff) {
   var exn = caml_named_value("Effect.Unhandled");
   if (exn) caml_raise_with_arg(exn, eff);
@@ -90,11 +89,10 @@ function caml_raise_unhandled(eff) {
   }
 }
 
-//Provides: caml_uncaught_effect_handler
+//Provides: uncaught_effect_handler
 //Requires: caml_resume_stack, caml_raise_unhandled
 //If: effects
-//If: doubletranslate
-function caml_uncaught_effect_handler(eff, k, ms) {
+function uncaught_effect_handler(eff, k, ms) {
   // Resumes the continuation k by raising exception Unhandled.
   caml_resume_stack(k[1], ms);
   caml_raise_unhandled(eff);
