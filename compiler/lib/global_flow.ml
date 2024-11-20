@@ -99,7 +99,7 @@ type state =
         (* Set of variables holding return values of each function *)
   ; functions_from_returned_value : Var.t list Var.Hashtbl.t
         (* Functions associated to each return value *)
-  ; known_cases : (Var.t, int list) Hashtbl.t
+  ; known_cases : int list Var.Hashtbl.t
         (* Possible tags for a block after a [switch]. This is used to
            get a more precise approximation of the effect of a field
            access [Field] *)
@@ -293,7 +293,7 @@ let program_deps st { start; blocks; _ } =
                       ~f:(fun i ->
                         match i with
                         | Let (y, Field (x', _, _)) when Var.equal b x' ->
-                            Hashtbl.add st.known_cases y tags
+                            Var.Hashtbl.add st.known_cases y tags
                         | _ -> ())
                       block.body)
                   h
@@ -428,7 +428,7 @@ let propagate st ~update approx x =
           match Var.Tbl.get approx y with
           | Values { known; others } ->
               let tags =
-                try Some (Hashtbl.find st.known_cases x) with Not_found -> None
+                try Some (Var.Hashtbl.find st.known_cases x) with Not_found -> None
               in
               Domain.join_set
                 ~others
@@ -662,7 +662,7 @@ let f ~fast p =
     ; variable_possibly_mutable
     ; may_escape
     ; possibly_mutable
-    ; known_cases = Hashtbl.create 16
+    ; known_cases = Var.Hashtbl.create 16
     ; applied_functions = Hashtbl.create 16
     ; fast
     ; function_call_sites = Var.Hashtbl.create 128
