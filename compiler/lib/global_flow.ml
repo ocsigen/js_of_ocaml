@@ -568,6 +568,33 @@ let propagate st ~update approx x =
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Solver = G.Solver (Domain)
 
+let print_approx st f a =
+  match a with
+  | Top -> Format.fprintf f "top"
+  | Values { known; others } ->
+      Format.fprintf
+        f
+        "{%a/%b}"
+        (Format.pp_print_list
+           ~pp_sep:(fun f () -> Format.fprintf f ", ")
+           (fun f x ->
+             Format.fprintf
+               f
+               "%a(%s)"
+               Var.print
+               x
+               (match st.defs.(Var.idx x) with
+               | Expr (Closure _) -> "C"
+               | Expr (Block _) -> (
+                   "B"
+                   ^
+                   match st.may_escape.(Var.idx x) with
+                   | Escape -> "X"
+                   | _ -> "")
+               | _ -> "O")))
+        (Var.Set.elements known)
+        others
+
 let solver st =
   let g =
     { G.domain = st.vars
@@ -575,7 +602,19 @@ let solver st =
         (fun f x -> Var.Tbl.DataSet.iter (fun k -> f k) (Var.Tbl.get st.deps x))
     }
   in
-  Solver.f' () g (propagate st)
+  let res = Solver.f' () g (propagate st) in
+  if debug ()
+  then
+    Solver.check g res (propagate st) (fun x a b ->
+        Format.eprintf
+          "Incorrect value: %a: %a -> %a@."
+          Var.print
+          x
+          (print_approx st)
+          a
+          (print_approx st)
+          b);
+  res
 
 (****)
 
@@ -635,29 +674,12 @@ let f ~fast p =
             (fun f a ->
               match a with
               | Top -> Format.fprintf f "top"
-              | Values { known; others } ->
+              | Values _ ->
                   Format.fprintf
                     f
-                    "{%a/%b} mut:%b vmut:%b vesc:%s esc:%s"
-                    (Format.pp_print_list
-                       ~pp_sep:(fun f () -> Format.fprintf f ", ")
-                       (fun f x ->
-                         Format.fprintf
-                           f
-                           "%a(%s)"
-                           Var.print
-                           x
-                           (match st.defs.(Var.idx x) with
-                           | Expr (Closure _) -> "C"
-                           | Expr (Block _) -> (
-                               "B"
-                               ^
-                               match st.may_escape.(Var.idx x) with
-                               | Escape -> "X"
-                               | _ -> "")
-                           | _ -> "O")))
-                    (Var.Set.elements known)
-                    others
+                    "%a mut:%b vmut:%b vesc:%s esc:%s"
+                    (print_approx st)
+                    a
                     (Var.ISet.mem st.possibly_mutable x)
                     (Var.ISet.mem st.variable_possibly_mutable x)
                     (match st.variable_may_escape.(Var.idx x) with
