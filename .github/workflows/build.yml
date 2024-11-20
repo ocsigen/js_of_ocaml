@@ -97,6 +97,14 @@ jobs:
           # try to install them anyways, so we save an apt-roundtrip.
           sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 libx11-dev:i386 -y
 
+      - name: macos fix
+        if: runner.os == 'Macos'
+        run: |
+          brew update
+          brew upgrade
+          brew install pkgconf
+          # work around https://github.com/actions/runner-images/issues/10984
+
       - name: Checkout tree
         uses: actions/checkout@v4
 
