@@ -535,7 +535,7 @@ let propagate st ~update approx x =
                         (fun y -> Var.Tbl.get approx y)
                         (Var.Map.find g st.return_values)
                   | Expr (Closure (_, _)) ->
-                      (* The funciton is partially applied or over applied *)
+                      (* The function is partially applied or over applied *)
                       List.iter
                         ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
                         args;
