@@ -967,23 +967,11 @@ let rewrite_direct_block
           ; Let (x, Prim (Extern "caml_trampoline_cps", [ Pv f; Pv args ]))
           ]
       | Let (x, Prim (Extern "%perform", [ Pv effect ])) ->
-          (* Perform the effect, which should call the "Unhandled effect" handler. *)
-          let k = Int Targetint.zero in
-          (* Dummy continuation *)
-          [ Let
-              ( x
-              , Prim
-                  ( Extern "caml_perform_effect"
-                  , [ Pv effect; Pc (Int Targetint.zero); Pc k ] ) )
-          ]
-      | Let (x, Prim (Extern "%reperform", [ Pv effect; Pv continuation ])) ->
+          (* In direct-style code, we just raise [Effect.Unhandled]. *)
+          [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect ])) ]
+      | Let (x, Prim (Extern "%reperform", [ Pv effect; Pv _continuation ])) ->
           (* Similar to previous case *)
-          let k = Int Targetint.zero in
-          [ Let
-              ( x
-              , Prim (Extern "caml_perform_effect", [ Pv effect; Pv continuation; Pc k ])
-              )
-          ]
+          [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect ])) ]
       | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
           (* We just need to call [f] in direct style. *)
           let unit = Var.fresh_n "unit" in

@@ -478,3 +478,33 @@
  (action
   (ignore-stdout
    (run node ./assume_no_perform.bc.js))))
+
+(executable
+ (name assume_no_perform_unhandled)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (modules assume_no_perform_unhandled)
+ (modes js)
+ (libraries js_of_ocaml))
+
+(rule
+ (target assume_no_perform_unhandled.referencejs)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (deps assume_no_perform_unhandled.bc.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./assume_no_perform_unhandled.bc.js))))
+
+(rule
+ (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (deps
+  assume_no_perform_unhandled.reference
+  assume_no_perform_unhandled.referencejs)
+ (action
+  (diff
+   assume_no_perform_unhandled.reference
+   assume_no_perform_unhandled.referencejs)))

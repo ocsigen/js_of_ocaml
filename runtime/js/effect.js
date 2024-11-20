@@ -73,13 +73,11 @@ function caml_pop_trap() {
   return h;
 }
 
-//Provides: uncaught_effect_handler
-//Requires: caml_named_value, caml_raise_constant, caml_raise_with_arg, caml_string_of_jsbytes, caml_fresh_oo_id, caml_resume_stack
+//Provides: caml_raise_unhandled
+//Requires: caml_named_value, caml_raise_with_arg, caml_raise_constant, caml_string_of_jsbytes, caml_fresh_oo_id
 //If: effects
 //If: doubletranslate
-function uncaught_effect_handler(eff, k, ms) {
-  // Resumes the continuation k by raising exception Unhandled.
-  caml_resume_stack(k[1], ms);
+function caml_raise_unhandled(eff) {
   var exn = caml_named_value("Effect.Unhandled");
   if (exn) caml_raise_with_arg(exn, eff);
   else {
@@ -90,6 +88,16 @@ function uncaught_effect_handler(eff, k, ms) {
     ];
     caml_raise_constant(exn);
   }
+}
+
+//Provides: caml_uncaught_effect_handler
+//Requires: caml_resume_stack, caml_raise_unhandled
+//If: effects
+//If: doubletranslate
+function caml_uncaught_effect_handler(eff, k, ms) {
+  // Resumes the continuation k by raising exception Unhandled.
+  caml_resume_stack(k[1], ms);
+  caml_raise_unhandled(eff);
 }
 
 //Provides: caml_fiber_stack
