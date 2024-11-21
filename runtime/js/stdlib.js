@@ -53,7 +53,7 @@ function caml_call_gen(f, args) {
       default: {
         var g = function (...extra_args) {
           if (extra_args.length === 0) extra_args = [undefined];
-          return caml_call_gen(f, [...args, ...extra_args]);
+          return caml_call_gen(f, args.concat(extra_args));
         };
       }
     }
@@ -111,7 +111,7 @@ function caml_call_gen(f, args) {
         args.length = argsLen;
         var g = function (...extra_args) {
           if (extra_args.length === 0) extra_args = [undefined];
-          return caml_call_gen(f, [...args, ...extra_args]);
+          return caml_call_gen(f, args.concat(extra_args));
         };
       }
     }
