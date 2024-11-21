@@ -49,13 +49,9 @@ function caml_call_gen(f, args) {
         break;
       }
       default: {
-        var g = function () {
-          var extra_args = arguments.length === 0 ? 1 : arguments.length;
-          var nargs = new Array(args.length + extra_args);
-          for (var i = 0; i < args.length; i++) nargs[i] = args[i];
-          for (var i = 0; i < arguments.length; i++)
-            nargs[args.length + i] = arguments[i];
-          return caml_call_gen(f, nargs);
+        var g = function (...extra_args) {
+          if (extra_args.length === 0) extra_args = [undefined];
+          return caml_call_gen(f, [...args, ...extra_args]);
         };
       }
     }
@@ -108,13 +104,10 @@ function caml_call_gen(f, args) {
         break;
       }
       default: {
-        var g = function () {
-          var extra_args = arguments.length === 0 ? 1 : arguments.length;
-          var nargs = new Array(argsLen + extra_args);
-          for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
-          for (var i = 0; i < arguments.length; i++)
-            nargs[argsLen + i] = arguments[i];
-          return caml_call_gen(f, nargs);
+        args.length = argsLen;
+        var g = function (...extra_args) {
+          if (extra_args.length === 0) extra_args = [undefined];
+          return caml_call_gen(f, [...args, ...extra_args]);
         };
       }
     }
