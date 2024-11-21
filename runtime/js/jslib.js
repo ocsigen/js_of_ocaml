@@ -416,7 +416,8 @@ function caml_js_wrap_callback_unsafe(f) {
 //Requires: caml_callback, caml_js_wrap_callback
 function caml_js_wrap_meth_callback(f) {
   return function (...args) {
-    var res = caml_callback(f, [this, ...args]);
+    args.unshift(this);
+    var res = caml_callback(f, args);
     return res instanceof Function ? caml_js_wrap_callback(res) : res;
   };
 }
@@ -431,8 +432,8 @@ function caml_js_wrap_meth_callback_arguments(f) {
 //Requires: caml_callback
 function caml_js_wrap_meth_callback_strict(arity, f) {
   return function (...args) {
-    args = [this, ...args];
-    args.length = arity + 1;
+    args.length = arity;
+    args.unshift(this);
     return caml_callback(f, args);
   };
 }
@@ -441,7 +442,7 @@ function caml_js_wrap_meth_callback_strict(arity, f) {
 function caml_js_wrap_meth_callback_unsafe(f) {
   return function (...args) {
     var len = caml_js_function_arity(f);
-    args = [this, ...args];
+    args.unshift(this);
     args.length = len;
     return caml_callback(f, args);
   };
