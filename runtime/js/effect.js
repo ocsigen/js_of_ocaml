@@ -109,7 +109,7 @@ function uncaught_effect_handler_cps(eff, k, ms, cont) {
 //If: effects
 //If: doubletranslate
 //Weakdef
-var uncaught_effect_handler = { cps : uncaught_effect_handler_cps };
+var uncaught_effect_handler = { cps: uncaught_effect_handler_cps };
 
 //Provides: caml_fiber_stack
 //If: effects
@@ -177,7 +177,7 @@ function caml_perform_effect(eff, cont, k0) {
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
   return caml_stack_check_depth()
-    ? (caml_get_cps_fun(handler))(eff, cont, k1, k1)
+    ? caml_get_cps_fun(handler)(eff, cont, k1, k1)
     : caml_trampoline_return(handler, [eff, cont, k1, k1]);
 }
 
