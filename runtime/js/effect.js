@@ -41,11 +41,6 @@ is resumed first.
 
 The handlers are CPS-transformed functions: they actually take an
 additional parameter which is the current low-level continuation.
-
-Effect and exception handlers are CPS, single-version functions, meaning that
-they are ordinary functions, unlike CPS-transformed functions which, if double
-translation is enabled, exist in both direct style and continuation-passing
-style. Low-level continuations are also ordinary functions.
 */
 
 //Provides: caml_exn_stack
@@ -92,11 +87,29 @@ function caml_raise_unhandled(eff) {
 //Provides: uncaught_effect_handler
 //Requires: caml_resume_stack, caml_raise_unhandled
 //If: effects
+//If: !doubletranslate
 function uncaught_effect_handler(eff, k, ms) {
   // Resumes the continuation k by raising exception Unhandled.
   caml_resume_stack(k[1], ms);
   caml_raise_unhandled(eff);
 }
+
+//Provides: uncaught_effect_handler_cps
+//Requires: caml_resume_stack, caml_raise_unhandled
+//If: effects
+//If: doubletranslate
+function uncaught_effect_handler_cps(eff, k, ms, cont) {
+  // Resumes the continuation k by raising exception Unhandled.
+  caml_resume_stack(k[1], ms);
+  caml_raise_unhandled(eff);
+}
+
+//Provides: uncaught_effect_handler
+//Requires: uncaught_effect_handler_cps
+//If: effects
+//If: doubletranslate
+//Weakdef
+var uncaught_effect_handler = { cps : uncaught_effect_handler_cps };
 
 //Provides: caml_fiber_stack
 //If: effects
@@ -149,22 +162,8 @@ function caml_pop_fiber() {
   return rem.k;
 }
 
-//Provides: caml_prepare_tramp
-//If: effects
-//If: !doubletranslate
-function caml_prepare_tramp(handler) {
-  return handler;
-}
-
-//Provides: caml_prepare_tramp
-//If: effects
-//If: doubletranslate
-function caml_prepare_tramp(handler) {
-  return { cps: handler };
-}
-
 //Provides: caml_perform_effect
-//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack, caml_prepare_tramp
+//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack, caml_get_cps_fun
 //If: effects
 function caml_perform_effect(eff, cont, k0) {
   // Allocate a continuation if we don't already have one
@@ -178,42 +177,26 @@ function caml_perform_effect(eff, cont, k0) {
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
   return caml_stack_check_depth()
-    ? handler(eff, cont, k1, k1)
-    : caml_trampoline_return(caml_prepare_tramp(handler), [eff, cont, k1, k1]);
+    ? (caml_get_cps_fun(handler))(eff, cont, k1, k1)
+    : caml_trampoline_return(handler, [eff, cont, k1, k1]);
 }
 
-//Provides: caml_call_fun
-//Requires: caml_call_gen
+//Provides: caml_get_cps_fun
 //If: effects
 //If: !doubletranslate
-function caml_call_fun(f, args) {
-  return caml_call_gen(f, args);
-}
-
-//Provides: caml_call_fun
-//Requires: caml_call_gen_cps
-//If: effects
-//If: doubletranslate
-function caml_call_fun(f, args) {
-  return caml_call_gen_cps(f, args);
-}
-
-//Provides: caml_get_fun
-//If: effects
-//If: !doubletranslate
-function caml_get_fun(f) {
+function caml_get_cps_fun(f) {
   return f;
 }
 
-//Provides: caml_get_fun
+//Provides: caml_get_cps_fun
 //If: effects
 //If: doubletranslate
-function caml_get_fun(f) {
+function caml_get_cps_fun(f) {
   return f.cps;
 }
 
 //Provides: caml_alloc_stack
-//Requires: caml_pop_fiber, caml_fiber_stack, caml_stack_check_depth, caml_trampoline_return, caml_call_fun, caml_get_fun
+//Requires: caml_pop_fiber, caml_fiber_stack, caml_stack_check_depth, caml_trampoline_return, caml_call_gen_cps
 //If: effects
 //Version: >= 5.0
 function caml_alloc_stack(hv, hx, hf) {
@@ -221,7 +204,7 @@ function caml_alloc_stack(hv, hx, hf) {
     var f = caml_fiber_stack.h[i];
     var args = [x, caml_pop_fiber()];
     return caml_stack_check_depth()
-      ? caml_call_fun(f, args)
+      ? caml_call_gen_cps(f, args)
       : caml_trampoline_return(f, args);
   }
   function hval(x) {
@@ -232,7 +215,7 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return [0, hval, [0, hexn, 0], [0, hv, hx, caml_get_fun(hf)], 0];
+  return [0, hval, [0, hexn, 0], [0, hv, hx, hf], 0];
 }
 
 //Provides: caml_alloc_stack

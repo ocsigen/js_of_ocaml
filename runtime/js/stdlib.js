@@ -120,6 +120,13 @@ function caml_call_gen(f, args) {
   }
 }
 
+//Provides: caml_call_gen_cps
+//Requires: caml_call_gen
+//If: effects
+//If: !doubletranslate
+//Weakdef
+var caml_call_gen_cps = caml_call_gen;
+
 //Provides: caml_call_gen_tuple (const, shallow)
 //Requires: caml_fiber_stack, caml_cps_closure
 //If: effects
