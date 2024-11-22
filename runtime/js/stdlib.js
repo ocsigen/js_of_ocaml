@@ -70,7 +70,7 @@ function caml_call_gen(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
-  if (d === 0) return f(...args);
+  if (d === 0) return f.apply(null, args);
   else if (d < 0) {
     var rest = args.slice(n - 1);
     var k = args[argsLen - 1];
@@ -81,7 +81,7 @@ function caml_call_gen(f, args) {
       args[args.length - 1] = k;
       return caml_call_gen(g, args);
     };
-    return f(...args);
+    return f.apply(null, args);
   } else {
     argsLen--;
     var k = args[argsLen];
@@ -165,7 +165,6 @@ var caml_call_gen_tuple = (function () {
   }
   function caml_call_gen_cps(f, args) {
     var n = f.cps.l >= 0 ? f.cps.l : (f.cps.l = f.cps.length);
-    if (n === 0) return f.cps.apply(null, args);
     var argsLen = args.length;
     var d = n - argsLen;
     if (d === 0) {

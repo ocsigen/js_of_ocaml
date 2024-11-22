@@ -118,7 +118,7 @@ let effects ~deadcode_sentinal p =
   else
     ( p
     , (Code.Var.Set.empty : Effects.trampolined_calls)
-    , (Code.Var.Set.empty : Code.Var.Set.t) )
+    , (Code.Var.Set.empty : Effects.in_cps) )
 
 let exact_calls profile ~deadcode_sentinal p =
   if not (Config.Flag.effects ())

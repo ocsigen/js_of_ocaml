@@ -160,7 +160,6 @@ var caml_call_gen_tuple = (function () {
   }
   function caml_call_gen_cps(f, args) {
     var n = f.cps.l >= 0 ? f.cps.l : (f.cps.l = f.cps.length);
-    if (n === 0) return f.cps(...args);
     var argsLen = args.length;
     var d = n - argsLen;
     if (d === 0) {
