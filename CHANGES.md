@@ -1,10 +1,11 @@
-# dev
+# 5.9.0 (2024-11-22) - Lille
 
 ## Features/Changes
 * Misc: update testsuite to OCaml 5.2
 * Misc: CI uses opam.2.2 and no longer use sunset repo
 * Misc: yojson is no longer optional
 * Misc: reduce the diff with the wasm_of_ocaml fork
+* Misc: finalize support for OCaml 5.3
 * Compiler: speedup global_flow/global_deadcode pass on large bytecode
 * Compiler: improved global dead code elimination (#2206)
 * Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
@@ -28,7 +29,6 @@
 * Toplevel: no longer set globals for toplevel initialization
 * Runtime: precompute constants used in `caml_lxm_next` (#1730)
 * Runtime: cleanup runtime
-* Runtime: add support for OCaml 5.3
 
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)
