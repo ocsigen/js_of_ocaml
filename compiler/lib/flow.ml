@@ -410,6 +410,7 @@ let the_string_of ~target info x =
 let the_native_string_of ~target info x =
   match the_const_of ~target info x with
   | Some (NativeString i) -> Some i
+  | Some (String i) -> Some (Native_string.of_bytestring i)
   | _ -> None
 
 let the_block_contents_of info x =
