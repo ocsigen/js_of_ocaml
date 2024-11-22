@@ -243,7 +243,7 @@ let clone' delay ?branch ?commit nm src =
   match commit with
   | None -> clone delay ?branch nm src
   | Some commit ->
-      let* () = clone delay ?branch ~depth:10 nm src in
+      let* () = clone delay ?branch ~depth:100 nm src in
       exec_async
         ~delay:0
         (Printf.sprintf "cd jane-street/lib/%s && git checkout -b wasm %s" nm commit)
