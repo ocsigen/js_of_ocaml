@@ -24,7 +24,7 @@ depends: [
   "menhir"
   "menhirLib"
   "menhirSdk"
-  "yojson"
+  "yojson" {>= "1.6"}
   "odoc" {with-doc}
 ]
 depopts: ["ocamlfind"]
