@@ -102,6 +102,7 @@ jobs:
         run: |
           brew update
           brew upgrade
+          brew unlink pkg-config@0.29.2
           brew install pkgconf
           # work around https://github.com/actions/runner-images/issues/10984
 
