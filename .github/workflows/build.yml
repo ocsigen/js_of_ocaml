@@ -122,7 +122,7 @@ jobs:
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 
-      - run: cat VERSION | xargs opam pin wasm_of_ocaml-compiler . -n --with-version 
+      - run: cat VERSION | xargs opam pin . -n --with-version 
         if: ${{ !matrix.skip-test }}
         shell: bash
 
