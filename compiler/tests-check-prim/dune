@@ -23,11 +23,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run
-    %{bin:js_of_ocaml}
-    check-runtime
-    +dynlink.js
-    +toplevel.js
+   (run %{bin:js_of_ocaml} check-runtime +dynlink.js +toplevel.js
     %{dep:main.bc}))))
 
 (rule
@@ -41,11 +37,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run
-    %{bin:js_of_ocaml}
-    check-runtime
-    +dynlink.js
-    +toplevel.js
+   (run %{bin:js_of_ocaml} check-runtime +dynlink.js +toplevel.js
     %{dep:unix.bc}))))
 
 (rule
@@ -59,11 +51,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run
-    %{bin:js_of_ocaml}
-    check-runtime
-    +dynlink.js
-    +toplevel.js
+   (run %{bin:js_of_ocaml} check-runtime +dynlink.js +toplevel.js
     %{dep:unix.bc}))))
 
 (rule
@@ -75,11 +63,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run
-    %{bin:js_of_ocaml}
-    check-runtime
-    +dynlink.js
-    +toplevel.js
+   (run %{bin:js_of_ocaml} check-runtime +dynlink.js +toplevel.js
     %{dep:main.bc}))))
 
 (rule
@@ -93,11 +77,7 @@
  (action
   (with-stdout-to
    %{targets}
-   (run
-    %{bin:js_of_ocaml}
-    check-runtime
-    +dynlink.js
-    +toplevel.js
+   (run %{bin:js_of_ocaml} check-runtime +dynlink.js +toplevel.js
     %{dep:unix.bc}))))
 
 (rule
@@ -111,9 +91,5 @@
  (action
   (with-stdout-to
    %{targets}
-   (run
-    %{bin:js_of_ocaml}
-    check-runtime
-    +dynlink.js
-    +toplevel.js
+   (run %{bin:js_of_ocaml} check-runtime +dynlink.js +toplevel.js
     %{dep:unix.bc}))))
