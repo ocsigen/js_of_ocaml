@@ -1170,7 +1170,7 @@ let init () =
   let l =
     [ "caml_ensure_stack_capacity", "%identity"; "caml_callback", "caml_trampoline" ]
   in
-
+  Primitive.register "caml_make_array" `Mutable None None;
   let l =
     if Config.Flag.effects ()
     then ("caml_alloc_stack", "caml_cps_alloc_stack") :: l

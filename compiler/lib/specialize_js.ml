@@ -55,22 +55,22 @@ let specialize_instr ~target info i =
       | Some _ -> Let (x, Constant (Int Targetint.zero))
       | None -> i)
   | Let (x, Prim (Extern "caml_js_call", [ f; o; a ])), _ -> (
-      match the_def_of info a with
-      | Some (Block (_, a, _, _)) ->
+      match the_block_contents_of info a with
+      | Some a ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_call", f :: o :: Array.to_list a))
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_fun_call", [ f; a ])), _ -> (
-      match the_def_of info a with
-      | Some (Block (_, a, _, _)) ->
+      match the_block_contents_of info a with
+      | Some a ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_fun_call", f :: Array.to_list a))
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_meth_call", [ o; m; a ])), _ -> (
       match the_string_of ~target info m with
       | Some m when Javascript.is_ident m -> (
-          match the_def_of info a with
-          | Some (Block (_, a, _, _)) ->
+          match the_block_contents_of info a with
+          | Some a ->
               let a = Array.map a ~f:(fun x -> Pv x) in
               Let
                 ( x
@@ -79,11 +79,11 @@ let specialize_instr ~target info i =
                     , o
                       :: Pc (NativeString (Native_string.of_string m))
                       :: Array.to_list a ) )
-          | _ -> i)
+          | None -> i)
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_new", [ c; a ])), _ -> (
-      match the_def_of info a with
-      | Some (Block (_, a, _, _)) ->
+      match the_block_contents_of info a with
+      | Some a ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_new", c :: Array.to_list a))
       | _ -> i)
