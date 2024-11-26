@@ -465,6 +465,7 @@
     hash: hash_string,
     decodeStringFromUTF8Array: () => "",
     encodeStringToUTF8Array: () => 0,
+    fromCharCodeArray: () => "",
   };
   const imports = Object.assign(
     {
