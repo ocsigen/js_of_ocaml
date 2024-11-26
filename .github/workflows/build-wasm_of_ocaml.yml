@@ -42,7 +42,7 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 23
 
       - name: Restore cached binaryen
         id: cache-binaryen
