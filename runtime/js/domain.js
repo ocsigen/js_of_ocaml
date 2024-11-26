@@ -1,8 +1,10 @@
 //Provides: caml_domain_dls
+//Version: >= 5
 var caml_domain_dls = [0];
 
 //Provides: caml_domain_dls_set
 //Requires: caml_domain_dls
+//Version: >= 5
 function caml_domain_dls_set(a) {
   caml_domain_dls = a;
 }
@@ -18,16 +20,19 @@ function caml_domain_dls_compare_and_set(old, n) {
 
 //Provides: caml_domain_dls_get
 //Requires: caml_domain_dls
+//Version: >= 5
 function caml_domain_dls_get(unit) {
   return caml_domain_dls;
 }
 
 //Provides: caml_atomic_load
+//Version: >= 5
 function caml_atomic_load(ref) {
   return ref[1];
 }
 
 //Provides: caml_atomic_cas
+//Version: >= 5
 function caml_atomic_cas(ref, o, n) {
   if (ref[1] === o) {
     ref[1] = n;
@@ -37,6 +42,7 @@ function caml_atomic_cas(ref, o, n) {
 }
 
 //Provides: caml_atomic_fetch_add
+//Version: >= 5
 function caml_atomic_fetch_add(ref, i) {
   var old = ref[1];
   ref[1] += i;
@@ -44,6 +50,7 @@ function caml_atomic_fetch_add(ref, i) {
 }
 
 //Provides: caml_atomic_exchange
+//Version: >= 5
 function caml_atomic_exchange(ref, v) {
   var r = ref[1];
   ref[1] = v;
@@ -51,23 +58,20 @@ function caml_atomic_exchange(ref, v) {
 }
 
 //Provides: caml_atomic_make_contended
+//Version: >= 5.2
 function caml_atomic_make_contended(a) {
   return [0, a];
 }
 
 //Provides: caml_ml_domain_unique_token
-//Version: < 5.2
+//Version: >= 5.0, < 5.2
 var caml_ml_domain_unique_token_ = [0];
 function caml_ml_domain_unique_token(unit) {
   return caml_ml_domain_unique_token_;
 }
 
-//Provides: caml_ml_domain_set_name
-function caml_ml_domain_set_name(_name) {
-  return 0;
-}
-
 //Provides: caml_recommended_domain_count
+//Version: >= 5
 function caml_recommended_domain_count(unit) {
   return 1;
 }
@@ -80,6 +84,7 @@ function caml_ml_domain_index(unit) {
 }
 
 //Provides: caml_domain_id
+//Version: >= 5
 var caml_domain_id = 0;
 
 //Provides: caml_domain_spawn
@@ -104,7 +109,7 @@ function caml_domain_spawn(f, term_sync) {
 //Requires: caml_ml_mutex_unlock
 //Requires: caml_domain_id
 //Requires: caml_callback
-//Version: < 5.2
+//Version: >= 5.0, < 5.2
 var caml_domain_latest_idx = 1;
 function caml_domain_spawn(f, mutex) {
   var id = caml_domain_latest_idx++;
@@ -118,11 +123,13 @@ function caml_domain_spawn(f, mutex) {
 
 //Provides: caml_ml_domain_id
 //Requires: caml_domain_id
+//Version: >= 5.0
 function caml_ml_domain_id(unit) {
   return caml_domain_id;
 }
 
 //Provides: caml_ml_domain_cpu_relax
+//Version: >= 5
 function caml_ml_domain_cpu_relax(unit) {
   return 0;
 }

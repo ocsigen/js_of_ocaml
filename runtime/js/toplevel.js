@@ -17,22 +17,6 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-//Provides: caml_terminfo_setup
-function caml_terminfo_setup() {
-  return 1;
-} // Bad_term
-//Provides: caml_terminfo_backup
-function caml_terminfo_backup() {
-  return 0;
-}
-//Provides: caml_terminfo_standout
-function caml_terminfo_standout() {
-  return 0;
-}
-//Provides: caml_terminfo_resume
-function caml_terminfo_resume() {
-  return 0;
-}
 //Provides: caml_terminfo_rows
 function caml_terminfo_rows() {
   return 0;
@@ -151,11 +135,13 @@ function caml_static_release_bytecode() {
 
 //Provides: caml_static_alloc
 //Requires: caml_create_bytes
+//Version: < 4.12
 function caml_static_alloc(len) {
   return caml_create_bytes(len);
 }
 
 //Provides: caml_static_free
+//Version: < 4.12
 function caml_static_free() {
   return 0;
 }

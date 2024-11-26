@@ -61,7 +61,7 @@ function caml_compare_val_number_custom(num, custom, swap, total) {
   if (comp) {
     var x = swap > 0 ? comp(custom, num, total) : comp(num, custom, total);
     if (total && Number.isNaN(x)) return swap; // total && nan
-    if (Number.isNan(+x)) return +x; // nan
+    if (Number.isNaN(+x)) return +x; // nan
     if ((x | 0) !== 0) return x | 0; // !nan
   }
   return swap;

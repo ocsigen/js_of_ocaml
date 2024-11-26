@@ -813,16 +813,15 @@ let parseFloat (s : js_string t) : number_t =
   if isNaN s then failwith "parseFloat" else s
 
 let _ =
-  Printexc.register_printer (function
-      | Js_error.Exn e -> Some (Js_error.to_string e)
-      | _ -> None)
-
-let _ =
   Printexc.register_printer (fun e ->
-      let e : < .. > t = Obj.magic e in
-      if instanceof e error_constr
-      then Some (Js_error.to_string (Js_error.of_error e))
-      else None)
+      if instanceof (Obj.magic e : < .. > t) error_constr
+      then
+        let e = Js_error.of_error (Obj.magic e : error t) in
+        Some (Js_error.to_string e)
+      else
+        match e with
+        | Js_error.Exn e -> Some (Js_error.to_string e)
+        | _ -> None)
 
 let export_js (field : js_string t) x =
   Unsafe.set

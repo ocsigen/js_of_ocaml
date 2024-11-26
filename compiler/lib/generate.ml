@@ -898,7 +898,8 @@ let apply_fun_raw ctx f params exact trampolined loc =
     (* Make sure we are performing a regular call, not a (slower)
        method call *)
     match f with
-    | J.EAccess _ | J.EDot _ -> J.call (J.ESeq (int 0, f)) params loc
+    | J.EAccess _ | J.EDot _ ->
+        J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) loc
     | _ -> J.call f params loc
   in
   let apply =

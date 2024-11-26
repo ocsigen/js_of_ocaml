@@ -24,12 +24,12 @@
   (ppxlib (>= 0.15.0))
   (re :with-test)
   (cmdliner (>= 1.1.0))
-  (sedlex (>= 2.3))
+  (sedlex (>= 3.3))
   (qcheck :with-test)
   menhir
   menhirLib
   menhirSdk
-  yojson)
+  (yojson (>= 1.6)))
  (depopts
   ocamlfind)
  (conflicts

@@ -85,7 +85,7 @@ end = struct
     Option.iter filename ~f:(Sedlexing.set_filename l);
     create ?report_error l
 
-  let curr_pos lexbuf = snd (Sedlexing.lexing_positions lexbuf.l)
+  let curr_pos lexbuf = Sedlexing.lexing_position_curr lexbuf.l
 
   let report_errors t res =
     match Flow_lexer.Lex_result.errors res with

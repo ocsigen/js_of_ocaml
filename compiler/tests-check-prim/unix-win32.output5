@@ -5,14 +5,8 @@ From unix.bc:
 caml_alloc_dummy_function
 caml_continuation_use
 caml_drop_continuation
-caml_dynlink_add_primitive
-caml_dynlink_close_lib
-caml_dynlink_get_current_libs
-caml_dynlink_lookup_symbol
-caml_dynlink_open_lib
 caml_int_as_pointer
 caml_reset_afl_instrumentation
-caml_signbit
 caml_unix_accept
 caml_unix_access
 caml_unix_bind
@@ -91,7 +85,6 @@ caml_unix_waitpid
 caml_unix_write
 caml_unix_write_bigarray
 debugger
-is_digit_normalized
 
 Unused
 -------
@@ -111,9 +104,6 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
-From +domain.js:
-caml_ml_domain_set_name
-
 From +effect.js:
 jsoo_effect_not_supported
 
@@ -123,14 +113,6 @@ caml_ba_map_file_bytecode
 caml_fs_init
 jsoo_create_file
 jsoo_create_file_extern
-
-From +gc.js:
-caml_eventlog_pause
-caml_eventlog_resume
-caml_gc_huge_fallback_count
-caml_get_major_bucket
-caml_get_major_credit
-caml_memprof_set
 
 From +graphics.js:
 caml_gr_arc_aux
@@ -193,7 +175,6 @@ caml_wrap_exception
 
 From +marshal.js:
 BigStringReader
-caml_input_value_from_string
 caml_marshal_constants
 
 From +mlBytes.js:
@@ -201,20 +182,7 @@ caml_array_of_bytes
 caml_array_of_string
 caml_bytes_of_utf16_jsstring
 caml_string_concat
-caml_string_set16
-caml_string_set32
-caml_string_set64
-caml_string_unsafe_set
 caml_to_js_string
-
-From +nat.js:
-compare_nat_real
-
-From +obj.js:
-caml_obj_is_block
-caml_obj_make_forward
-caml_obj_set_tag
-caml_obj_truncate
 
 From +runtime_events.js:
 caml_runtime_events_create_cursor
@@ -229,33 +197,15 @@ caml_maybe_print_stats
 caml_register_global
 jsoo_toplevel_reloc
 
-From +str.js:
-caml_str_initialize
-re_match
-re_partial_match
-re_replacement_text
-re_search_backward
-re_search_forward
-re_string_match
-
 From +sys.js:
 caml_fatal_uncaught_exception
 caml_format_exception
 caml_is_special_exception
-caml_register_channel_for_spacetime
 caml_set_static_env
-caml_spacetime_enabled
-caml_spacetime_only_works_for_native_code
 caml_sys_const_naked_pointers_checked
 
 From +toplevel.js:
 caml_get_section_table
-caml_static_alloc
-caml_static_free
-caml_terminfo_backup
-caml_terminfo_resume
-caml_terminfo_setup
-caml_terminfo_standout
 jsoo_toplevel_init_compile
 jsoo_toplevel_init_reloc
 

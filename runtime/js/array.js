@@ -34,6 +34,13 @@ function caml_floatarray_sub(a, i, len) {
   return caml_array_sub(a, i, len);
 }
 
+//Provides: caml_uniform_array_sub mutable
+//Requires: caml_array_sub
+//Version: >= 5.3
+function caml_uniform_array_sub(a, i, len) {
+  return caml_array_sub(a, i, len);
+}
+
 //Provides: caml_array_append mutable
 function caml_array_append(a1, a2) {
   var l1 = a1.length,
@@ -52,6 +59,13 @@ function caml_array_append(a1, a2) {
 //Requires: caml_array_append
 //Version: >= 5.3
 function caml_floatarray_append(a1, a2) {
+  return caml_array_append(a1, a2);
+}
+
+//Provides: caml_uniform_array_append mutable
+//Requires: caml_array_append
+//Version: >= 5.3
+function caml_uniform_array_append(a1, a2) {
   return caml_array_append(a1, a2);
 }
 
@@ -79,6 +93,13 @@ function caml_array_blit(a1, i1, a2, i2, len) {
 //Provides: caml_floatarray_blit
 //Requires: caml_array_blit
 function caml_floatarray_blit(a1, i1, a2, i2, len) {
+  return caml_array_blit(a1, i1, a2, i2, len);
+}
+
+//Provides: caml_uniform_array_blit
+//Requires: caml_array_blit
+//Version: >= 5.3
+function caml_uniform_array_blit(a1, i1, a2, i2, len) {
   return caml_array_blit(a1, i1, a2, i2, len);
 }
 
@@ -110,6 +131,20 @@ function caml_array_fill(array, ofs, len, v) {
 //Requires: caml_array_fill
 //Version: >= 5.3
 function caml_floatarray_fill(array, ofs, len, v) {
+  return caml_array_fill(array, ofs, len, v);
+}
+
+//Provides: caml_floatarray_fill_unboxed
+//Requires: caml_array_fill
+//Version: >= 5.3
+function caml_floatarray_fill_unboxed(array, ofs, len, v) {
+  return caml_array_fill(array, ofs, len, v);
+}
+
+//Provides: caml_uniform_array_fill
+//Requires: caml_array_fill
+//Version: >= 5.3
+function caml_uniform_array_fill(array, ofs, len, v) {
   return caml_array_fill(array, ofs, len, v);
 }
 
@@ -174,5 +209,19 @@ function caml_floatarray_create(len) {
 //Requires: caml_array_make
 //Version: >= 5.3
 function caml_floatarray_make(len, init) {
+  return caml_array_make(len, init);
+}
+
+//Provides: caml_floatarray_make_unboxed const (const)
+//Requires: caml_array_make
+//Version: >= 5.3
+function caml_floatarray_make_unboxed(len, init) {
+  return caml_array_make(len, init);
+}
+
+//Provides: caml_uniform_array_make const (const)
+//Requires: caml_array_make
+//Version: >= 5.3
+function caml_uniform_array_make(len, init) {
   return caml_array_make(len, init);
 }

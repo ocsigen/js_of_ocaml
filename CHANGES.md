@@ -1,16 +1,15 @@
-# dev
+# 5.9.0 (2024-11-22) - Lille
 
 ## Features/Changes
 * Misc: update testsuite to OCaml 5.2
 * Misc: CI uses opam.2.2 and no longer use sunset repo
 * Misc: yojson is no longer optional
 * Misc: reduce the diff with the wasm_of_ocaml fork
+* Misc: finalize support for OCaml 5.3
 * Compiler: speedup global_flow/global_deadcode pass on large bytecode
 * Compiler: improved global dead code elimination (#2206)
 * Compiler: speedup json parsing, relying on Yojson.Raw (#1640)
 * Compiler: Decode sourcemap mappings only when necessary (#1664)
-* Compiler: make indirect call using sequence instead of using the call method
-  [f.call(null, args)] becomes [(0,f)(args)]
 * Compiler: mark [TextEncoder] as reserved
 * Compiler: add support for the Wasm backend in parts of the pipeline, in
   prevision for the merge of wasm_of_ocaml
@@ -21,12 +20,15 @@
 * Compiler: Emit index source_map to avoid changing mappings (#1714, #1715)
 * Compiler: improved source map generation (#1716)
 * Runtime: change Sys.os_type on windows (Cygwin -> Win32)
-* Runtime: backtraces are really expensive, they need to be be explicitly
+* Runtime: backtraces are really expensive, they need to be explicitly
   requested at compile time (--enable with-js-error) or at startup (OCAMLRUNPARAM=b=1)
 * Runtime: allow dynlink of precompiled js with separate compilation (#1676)
 * Runtime: reimplement the runtime of weak and ephemeron (#1707)
 * Lib: Modify Typed_array API for compatibility with WebAssembly
+* Lib: add details element and toggle event (#1728)
 * Toplevel: no longer set globals for toplevel initialization
+* Runtime: precompute constants used in `caml_lxm_next` (#1730)
+* Runtime: cleanup runtime
 
 ## Bug fixes
 * Runtime: fix parsing of unsigned integers (0u2147483648) (#1633, #1666)

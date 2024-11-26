@@ -143,6 +143,11 @@ function is_digit_zero(nat, ofs) {
   return 0;
 }
 
+//Provides: is_digit_normalized
+function is_digit_normalized(nat, ofs) {
+  return 1;
+}
+
 //Provides: is_digit_odd
 function is_digit_odd(nat, ofs) {
   if (nat.data[ofs] & 1) return 1;
@@ -416,12 +421,6 @@ function compare_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
     if (nat1.data[ofs1 + i] >>> 0 < nat2.data[ofs2 + i] >>> 0) return -1;
   }
   return 0;
-}
-
-//Provides: compare_nat_real
-//Requires: compare_nat
-function compare_nat_real(nat1, nat2) {
-  return compare_nat(nat1, 0, nat1.data.length, nat2, 0, nat2.data.length);
 }
 
 //Provides: land_digit_nat

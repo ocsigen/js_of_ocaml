@@ -1,6 +1,6 @@
 (executables
  (names main)
- (libraries js_of_ocaml num)
+ (libraries js_of_ocaml num str)
  (link_flags
   (:standard -linkall))
  (modules main)
@@ -8,7 +8,7 @@
 
 (executables
  (names unix)
- (libraries js_of_ocaml num unix)
+ (libraries js_of_ocaml num str unix)
  (link_flags
   (:standard -linkall))
  (modules unix)
@@ -23,7 +23,12 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:main.bc}))))
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:main.bc}))))
 
 (rule
  (targets unix-unix.output)
@@ -36,7 +41,12 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:unix.bc}))))
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:unix.bc}))))
 
 (rule
  (targets unix-win32.output)
@@ -49,7 +59,12 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:unix.bc}))))
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:unix.bc}))))
 
 (rule
  (targets main.output5)
@@ -60,7 +75,12 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:main.bc}))))
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:main.bc}))))
 
 (rule
  (targets unix-unix.output5)
@@ -73,7 +93,12 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:unix.bc}))))
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:unix.bc}))))
 
 (rule
  (targets unix-win32.output5)
@@ -86,4 +111,9 @@
  (action
   (with-stdout-to
    %{targets}
-   (run %{bin:js_of_ocaml} check-runtime +toplevel.js %{dep:unix.bc}))))
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:unix.bc}))))

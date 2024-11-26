@@ -7,7 +7,7 @@
  (target files.ml)
  (deps
   gen/gen.exe
-  (glob_files ../../runtime/*.js))
+  (glob_files ../../runtime/js/*.js))
  (action
   (with-stdout-to
    %{target}
