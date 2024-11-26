@@ -88,8 +88,6 @@ module Debug : sig
 
   val create : include_cmis:bool -> bool -> t
 
-  val fold : t -> (Code.Addr.t -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
-
   val paths : t -> units:StringSet.t -> StringSet.t
 end = struct
   open Instruct
@@ -315,9 +313,6 @@ end = struct
     | [], [] -> ()
     | _ -> assert false
 
-  let fold t f acc =
-    Int_table.fold (fun k { event; _ } acc -> f k event acc) t.events_by_pc acc
-
   let paths t ~units =
     let paths =
       Hashtbl.fold
@@ -333,46 +328,38 @@ end
 module Blocks : sig
   type t
 
-  val analyse : Debug.t -> bytecode -> t
+  val analyse : bytecode -> t
 
-  val add : t -> int -> t
+  val next : t -> int -> int
 
-  type u
-
-  val finish_analysis : t -> u
-
-  val next : u -> int -> int
-
-  val is_empty : u -> bool
+  val is_empty : t -> bool
 end = struct
-  type t = Addr.Set.t
-
-  type u = int array
+  type t = int array
 
   let add blocks pc = Addr.Set.add pc blocks
 
-  let rec scan debug blocks code pc len =
+  let rec scan blocks code pc len =
     if pc < len
     then
       match (get_instr_exn code pc).kind with
-      | KNullary -> scan debug blocks code (pc + 1) len
-      | KUnary -> scan debug blocks code (pc + 2) len
-      | KBinary -> scan debug blocks code (pc + 3) len
-      | KNullaryCall -> scan debug blocks code (pc + 1) len
-      | KUnaryCall -> scan debug blocks code (pc + 2) len
-      | KBinaryCall -> scan debug blocks code (pc + 3) len
+      | KNullary -> scan blocks code (pc + 1) len
+      | KUnary -> scan blocks code (pc + 2) len
+      | KBinary -> scan blocks code (pc + 3) len
+      | KNullaryCall -> scan blocks code (pc + 1) len
+      | KUnaryCall -> scan blocks code (pc + 2) len
+      | KBinaryCall -> scan blocks code (pc + 3) len
       | KJump ->
           let offset = gets code (pc + 1) in
           let blocks = Addr.Set.add (pc + offset + 1) blocks in
-          scan debug blocks code (pc + 2) len
+          scan blocks code (pc + 2) len
       | KCond_jump ->
           let offset = gets code (pc + 1) in
           let blocks = Addr.Set.add (pc + offset + 1) blocks in
-          scan debug blocks code (pc + 2) len
+          scan blocks code (pc + 2) len
       | KCmp_jump ->
           let offset = gets code (pc + 2) in
           let blocks = Addr.Set.add (pc + offset + 2) blocks in
-          scan debug blocks code (pc + 3) len
+          scan blocks code (pc + 3) len
       | KSwitch ->
           let sz = getu code (pc + 1) in
           let blocks = ref blocks in
@@ -380,18 +367,16 @@ end = struct
             let offset = gets code (pc + 2 + i) in
             blocks := Addr.Set.add (pc + offset + 2) !blocks
           done;
-          scan debug !blocks code (pc + 2 + (sz land 0xffff) + (sz lsr 16)) len
+          scan !blocks code (pc + 2 + (sz land 0xffff) + (sz lsr 16)) len
       | KClosurerec ->
           let nfuncs = getu code (pc + 1) in
-          scan debug blocks code (pc + nfuncs + 3) len
-      | KClosure -> scan debug blocks code (pc + 3) len
-      | KStop n -> scan debug blocks code (pc + n + 1) len
+          scan blocks code (pc + nfuncs + 3) len
+      | KClosure -> scan blocks code (pc + 3) len
+      | KStop n -> scan blocks code (pc + n + 1) len
       | K_will_not_happen -> assert false
     else (
       assert (pc = len);
       blocks)
-
-  let finish_analysis blocks = Array.of_list (Addr.Set.elements blocks)
 
   (* invariant: a.(i) <= x < a.(j) *)
   let rec find a i j x =
@@ -406,17 +391,13 @@ end = struct
 
   let is_empty x = Array.length x <= 1
 
-  let analyse debug_data code =
-    let debug_data =
-      if Debug.enabled debug_data
-      then debug_data
-      else Debug.create ~include_cmis:false false
-    in
+  let analyse code =
     let blocks = Addr.Set.empty in
     let len = String.length code / 4 in
     let blocks = add blocks 0 in
     let blocks = add blocks len in
-    scan debug_data blocks code 0 len
+    let blocks = scan blocks code 0 len in
+    Array.of_list (Addr.Set.elements blocks)
 end
 
 (* Parse constants *)
@@ -806,7 +787,7 @@ let method_cache_id = ref 1
 let clo_offset_3 = if new_closure_repr then 3 else 2
 
 type compile_info =
-  { blocks : Blocks.u
+  { blocks : Blocks.t
   ; code : string
   ; limit : int
   ; debug : Debug.t
@@ -1865,7 +1846,7 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser ()
         then (
-          Format.printf "%a = ccal \"%s\" (" Var.print x prim;
+          Format.printf "%a = ccall \"%s\" (" Var.print x prim;
           for i = 0 to nargs - 1 do
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
@@ -1885,7 +1866,7 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser ()
         then (
-          Format.printf "%a = ccal \"%s\" (" Var.print x prim;
+          Format.printf "%a = ccall \"%s\" (" Var.print x prim;
           for i = 0 to nargs - 1 do
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
@@ -1905,7 +1886,7 @@ and compile infos pc state (instrs : instr list) =
 
         if debug_parser ()
         then (
-          Format.printf "%a = ccal \"%s\" (" Var.print x prim;
+          Format.printf "%a = ccall \"%s\" (" Var.print x prim;
           for i = 0 to nargs - 1 do
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
@@ -2465,14 +2446,7 @@ type one =
 let parse_bytecode code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
-  let blocks = Blocks.analyse debug_data code in
-  let blocks =
-    (* Disabled. [pc] might not be an appropriate place to split blocks *)
-    if false && Debug.enabled debug_data
-    then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
-    else blocks
-  in
-  let blocks' = Blocks.finish_analysis blocks in
+  let blocks' = Blocks.analyse code in
   let p =
     if not (Blocks.is_empty blocks')
     then (

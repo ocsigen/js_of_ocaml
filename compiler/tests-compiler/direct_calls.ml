@@ -84,8 +84,8 @@ let%expect_test "direct calls without --enable effects" =
     //end
     function test3(x){
      function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F([0]), M2 = F([0]), _b_ = (0, M2[1])(2);
-     return [0, (0, M1[1])(1), _b_];
+     var M1 = F([0]), M2 = F([0]), _b_ = M2[1].call(null, 2);
+     return [0, M1[1].call(null, 1), _b_];
     }
     //end
     function test4(x){
@@ -94,11 +94,10 @@ let%expect_test "direct calls without --enable effects" =
       return [0, f];
      }
      var M1 = F([0]), M2 = F([0]);
-     (0, M1[1])(1);
-     return (0, M2[1])(2);
+     M1[1].call(null, 1);
+     return M2[1].call(null, 2);
     }
-    //end
-    |}]
+    //end |}]
 
 let%expect_test "direct calls with --enable effects" =
   let code =
@@ -179,8 +178,8 @@ let%expect_test "direct calls with --enable effects" =
     //end
     function test3(x, cont){
      function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F(), M2 = F(), _c_ = (0, M2[1])(2);
-     return cont([0, (0, M1[1])(1), _c_]);
+     var M1 = F(), M2 = F(), _c_ = M2[1].call(null, 2);
+     return cont([0, M1[1].call(null, 1), _c_]);
     }
     //end
     function test4(x, cont){

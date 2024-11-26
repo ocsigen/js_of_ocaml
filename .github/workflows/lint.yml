@@ -1,0 +1,48 @@
+name: lint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+
+jobs:
+  lint-opam:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.2"
+          dune-cache: true
+      - name: Pin dune
+        run: |
+          opam pin add -n dune.3.17 https://github.com/ocaml/dune.git
+      - uses: ocaml/setup-ocaml/lint-opam@v3
+
+  lint-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.2"
+          dune-cache: true
+      - name: Pin dune
+        run: |
+          opam pin add -n dune.3.17 https://github.com/ocaml/dune.git
+      - uses: ocaml/setup-ocaml/lint-fmt@v3
+
+  lint-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up Biome
+        uses: biomejs/setup-biome@v2
+      - name: Run biome
+        run: biome ci

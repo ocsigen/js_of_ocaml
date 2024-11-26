@@ -79,6 +79,8 @@ end) : Tyxml_cast_sigs.TO with type 'a elt = 'a C.elt = struct
 
   let of_li elt = rebuild_node "of_li" elt
 
+  let of_details elt = rebuild_node "of_details" elt
+
   let of_dialog elt = rebuild_node "of_dialog" elt
 
   let of_div elt = rebuild_node "of_div" elt
@@ -176,8 +178,6 @@ end) : Tyxml_cast_sigs.TO with type 'a elt = 'a C.elt = struct
   let of_datalist elt = rebuild_node "of_datalist" elt
 
   let of_dd elt = rebuild_node "of_dd" elt
-
-  let of_details elt = rebuild_node "of_details" elt
 
   let of_dfn elt = rebuild_node "of_dfn" elt
 
@@ -310,6 +310,8 @@ end) : Tyxml_cast_sigs.OF with type 'a elt = 'a C.elt = struct
   let of_dList elt = rebuild_node "of_dList" elt
 
   let of_li elt = rebuild_node "of_li" elt
+
+  let of_details elt = rebuild_node "of_details" elt
 
   let of_dialog elt = rebuild_node "of_dialog" elt
 

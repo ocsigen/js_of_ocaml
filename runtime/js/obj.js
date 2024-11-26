@@ -39,6 +39,7 @@ function caml_alloc_dummy_infix() {
 }
 
 //Provides: caml_obj_is_block const (const)
+//Version: < 4.12
 function caml_obj_is_block(x) {
   return +Array.isArray(x);
 }
@@ -55,6 +56,7 @@ function caml_obj_tag(x) {
 }
 
 //Provides: caml_obj_set_tag (mutable, const)
+//Version: < 5.0
 function caml_obj_set_tag(x, tag) {
   x[0] = tag;
   return 0;
@@ -86,6 +88,7 @@ function caml_obj_dup(x) {
 
 //Provides: caml_obj_truncate (mutable, const)
 //Requires: caml_invalid_argument
+//Version: < 5.0
 function caml_obj_truncate(x, s) {
   if (s <= 0 || s + 1 > x.length) caml_invalid_argument("Obj.truncate");
   if (x.length !== s + 1) x.length = s + 1;
@@ -93,6 +96,7 @@ function caml_obj_truncate(x, s) {
 }
 
 //Provides: caml_obj_make_forward
+//Version: < 5.0
 function caml_obj_make_forward(b, v) {
   b[0] = 250;
   b[1] = v;
@@ -100,6 +104,7 @@ function caml_obj_make_forward(b, v) {
 }
 
 //Provides: caml_obj_compare_and_swap
+//Version: >= 5.0
 function caml_obj_compare_and_swap(x, i, old, n) {
   if (x[i + 1] === old) {
     x[i + 1] = n;
@@ -109,6 +114,7 @@ function caml_obj_compare_and_swap(x, i, old, n) {
 }
 
 //Provides: caml_obj_is_shared
+//Version: >= 5.0
 function caml_obj_is_shared(x) {
   return 1;
 }
@@ -182,6 +188,7 @@ function caml_obj_add_offset(v, offset) {
 }
 
 //Provides: caml_obj_update_tag
+//Version: >= 5.0
 function caml_obj_update_tag(b, o, n) {
   if (b[0] === o) {
     b[0] = n;
@@ -192,6 +199,7 @@ function caml_obj_update_tag(b, o, n) {
 
 //Provides: caml_lazy_update_to_forcing
 //Requires: caml_obj_update_tag
+//Version: >= 5.0
 function caml_lazy_update_to_forcing(o) {
   if (
     Array.isArray(o) &&
@@ -206,6 +214,7 @@ function caml_lazy_update_to_forcing(o) {
 
 //Provides: caml_lazy_update_to_forward
 //Requires: caml_obj_update_tag
+//Version: >= 5.0
 function caml_lazy_update_to_forward(o) {
   caml_obj_update_tag(o, 244, 250);
   return 0; // unit
@@ -213,6 +222,7 @@ function caml_lazy_update_to_forward(o) {
 
 //Provides: caml_lazy_reset_to_lazy
 //Requires: caml_obj_update_tag
+//Version: >= 5.0
 function caml_lazy_reset_to_lazy(o) {
   caml_obj_update_tag(o, 244, 246);
   return 0;
@@ -220,6 +230,7 @@ function caml_lazy_reset_to_lazy(o) {
 
 //Provides: caml_lazy_read_result
 //Requires: caml_obj_tag
+//Version: >= 5.0
 function caml_lazy_read_result(o) {
   return caml_obj_tag(o) === 250 ? o[1] : o;
 }
