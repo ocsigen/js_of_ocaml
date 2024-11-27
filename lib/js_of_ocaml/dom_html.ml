@@ -727,9 +727,9 @@ and element = object
 
   method offsetHeight : int readonly_prop
 
-  method scrollLeft : int prop
+  method scrollLeft : number_t prop
 
-  method scrollTop : int prop
+  method scrollTop : number_t prop
 
   method scrollWidth : int prop
 
@@ -2321,9 +2321,9 @@ class type window = object
 
   method blur : unit meth
 
-  method scroll : int -> int -> unit meth
+  method scroll : number_t -> number_t -> unit meth
 
-  method scrollBy : int -> int -> unit meth
+  method scrollBy : number_t -> number_t -> unit meth
 
   method sessionStorage : storage t optdef readonly_prop
 
@@ -2888,8 +2888,12 @@ let eventRelatedTarget (e : #mouseEvent t) =
 let eventAbsolutePosition' (e : #mouseEvent t) =
   let body = document##.body in
   let html = document##.documentElement in
-  ( Js.to_float e##.clientX +. Float.of_int (body##.scrollLeft + html##.scrollLeft)
-  , Js.to_float e##.clientY +. Float.of_int (body##.scrollTop + html##.scrollTop) )
+  ( Js.to_float e##.clientX
+    +. Js.to_float body##.scrollLeft
+    +. Js.to_float html##.scrollLeft
+  , Js.to_float e##.clientY
+    +. Js.to_float body##.scrollTop
+    +. Js.to_float html##.scrollTop )
 
 let eventAbsolutePosition (e : #mouseEvent t) =
   Optdef.case
@@ -2911,7 +2915,8 @@ let elementClientPosition (e : #element t) =
 let getDocumentScroll () =
   let body = document##.body in
   let html = document##.documentElement in
-  body##.scrollLeft + html##.scrollLeft, body##.scrollTop + html##.scrollTop
+  ( Js.to_float body##.scrollLeft +. Js.to_float html##.scrollLeft
+  , Js.to_float body##.scrollTop +. Js.to_float html##.scrollTop )
 
 let buttonPressed (ev : #mouseEvent Js.t) =
   Js.Optdef.case
