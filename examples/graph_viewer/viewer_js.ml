@@ -238,23 +238,23 @@ class adjustment
   end
 
 let handle_drag element f =
-  let mx = ref 0 in
-  let my = ref 0 in
+  let mx = ref 0. in
+  let my = ref 0. in
   element##.onmousedown :=
     Html.handler (fun ev ->
-        mx := ev##.clientX;
-        my := ev##.clientY;
+        mx := Js.to_float ev##.clientX;
+        my := Js.to_float ev##.clientY;
         element##.style##.cursor := Js.string "move";
         let c1 =
           Html.addEventListener
             Html.document
             Html.Event.mousemove
             (Html.handler (fun ev ->
-                 let x = ev##.clientX and y = ev##.clientY in
+                 let x = Js.to_float ev##.clientX and y = Js.to_float ev##.clientY in
                  let x' = !mx and y' = !my in
                  mx := x;
                  my := y;
-                 f (x - x') (y - y');
+                 f (x -. x') (y -. y');
                  Js._true))
             Js._true
         in
@@ -431,12 +431,13 @@ Firebug.console##log(Js.string "sleep");
       sadj#set_value (float (height - pos') *. sadj#upper /. float height);
       rescale 0.5 0.5)
   in
-  handle_drag thumb (fun _dx dy -> set_slider_position (min height (max 0 (!pos + dy))));
+  handle_drag thumb (fun _dx dy ->
+      set_slider_position (min height (max 0 (!pos + int_of_float dy))));
   slider##.onmousedown :=
     Html.handler (fun ev ->
-        let ey = ev##.clientY in
+        let ey = Js.to_float ev##.clientY in
         let _, sy = Dom_html.elementClientPosition slider in
-        set_slider_position (max 0 (min height (ey - sy - (size / 2))));
+        set_slider_position (max 0 (min height (int_of_float ey - sy - (size / 2))));
         Js._false);
   let adjust_slider () =
     let pos' = height - truncate ((sadj#value *. float height /. sadj#upper) +. 0.5) in
@@ -454,7 +455,7 @@ Firebug.console##log(Js.string "sleep");
   handle_drag canvas (fun dx dy ->
       let scale = get_scale () in
       let offset a d =
-        a#set_value (min (a#value -. (float d /. scale)) (a#upper -. a#page_size))
+        a#set_value (min (a#value -. (d /. scale)) (a#upper -. a#page_size))
       in
       offset hadj dx;
       offset vadj dy;
@@ -478,8 +479,8 @@ Firebug.console##log(Js.string "sleep");
        canvas
        (fun ev ~dx:_ ~dy ->
          let ex, ey = Dom_html.elementClientPosition canvas in
-         let x = float (ev##.clientX - ex) in
-         let y = float (ev##.clientY - ey) in
+         let x = Js.to_float ev##.clientX -. float ex in
+         let y = Js.to_float ev##.clientY -. float ey in
          if dy < 0
          then bump_scale x y 1.
          else if dy > 0

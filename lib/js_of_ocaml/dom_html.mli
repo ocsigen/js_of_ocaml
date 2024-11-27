@@ -299,18 +299,18 @@ and mouseEvent = object
   method relatedTarget : element t opt optdef readonly_prop
 
   (* Relative to viewport *)
-  method clientX : int readonly_prop
+  method clientX : number_t readonly_prop
 
-  method clientY : int readonly_prop
+  method clientY : number_t readonly_prop
 
   (* Relative to the edge of the screen *)
-  method screenX : int readonly_prop
+  method screenX : number_t readonly_prop
 
-  method screenY : int readonly_prop
+  method screenY : number_t readonly_prop
 
-  method offsetX : int readonly_prop
+  method offsetX : number_t readonly_prop
 
-  method offsetY : int readonly_prop
+  method offsetY : number_t readonly_prop
 
   method ctrlKey : bool t readonly_prop
 
@@ -329,9 +329,9 @@ and mouseEvent = object
 
   method toElement : element t opt optdef readonly_prop
 
-  method pageX : int optdef readonly_prop
+  method pageX : number_t optdef readonly_prop
 
-  method pageY : int optdef readonly_prop
+  method pageY : number_t optdef readonly_prop
 end
 
 and keyboardEvent = object
@@ -427,17 +427,17 @@ and touch = object
 
   method target : element t optdef readonly_prop
 
-  method screenX : int readonly_prop
+  method screenX : number_t readonly_prop
 
-  method screenY : int readonly_prop
+  method screenY : number_t readonly_prop
 
-  method clientX : int readonly_prop
+  method clientX : number_t readonly_prop
 
-  method clientY : int readonly_prop
+  method clientY : number_t readonly_prop
 
-  method pageX : int readonly_prop
+  method pageX : number_t readonly_prop
 
-  method pageY : int readonly_prop
+  method pageY : number_t readonly_prop
 end
 
 and submitEvent = object
@@ -2591,7 +2591,7 @@ val buttonPressed : #mouseEvent Js.t -> mouse_button
 
 (** {2 Position helper functions} *)
 
-val eventAbsolutePosition : #mouseEvent t -> int * int
+val eventAbsolutePosition : #mouseEvent t -> float * float
 (** Returns the absolute position of the mouse pointer. *)
 
 val elementClientPosition : #element t -> int * int

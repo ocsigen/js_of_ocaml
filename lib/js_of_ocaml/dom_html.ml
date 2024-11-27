@@ -297,17 +297,17 @@ and mouseEvent = object
 
   method relatedTarget : element t opt optdef readonly_prop
 
-  method clientX : int readonly_prop
+  method clientX : number_t readonly_prop
 
-  method clientY : int readonly_prop
+  method clientY : number_t readonly_prop
 
-  method screenX : int readonly_prop
+  method screenX : number_t readonly_prop
 
-  method screenY : int readonly_prop
+  method screenY : number_t readonly_prop
 
-  method offsetX : int readonly_prop
+  method offsetX : number_t readonly_prop
 
-  method offsetY : int readonly_prop
+  method offsetY : number_t readonly_prop
 
   method ctrlKey : bool t readonly_prop
 
@@ -325,9 +325,9 @@ and mouseEvent = object
 
   method toElement : element t opt optdef readonly_prop
 
-  method pageX : int optdef readonly_prop
+  method pageX : number_t optdef readonly_prop
 
-  method pageY : int optdef readonly_prop
+  method pageY : number_t optdef readonly_prop
 end
 
 and keyboardEvent = object
@@ -421,17 +421,17 @@ and touch = object
 
   method target : element t optdef readonly_prop
 
-  method screenX : int readonly_prop
+  method screenX : number_t readonly_prop
 
-  method screenY : int readonly_prop
+  method screenY : number_t readonly_prop
 
-  method clientX : int readonly_prop
+  method clientX : number_t readonly_prop
 
-  method clientY : int readonly_prop
+  method clientY : number_t readonly_prop
 
-  method pageX : int readonly_prop
+  method pageX : number_t readonly_prop
 
-  method pageY : int readonly_prop
+  method pageY : number_t readonly_prop
 end
 
 and submitEvent = object
@@ -2888,14 +2888,18 @@ let eventRelatedTarget (e : #mouseEvent t) =
 let eventAbsolutePosition' (e : #mouseEvent t) =
   let body = document##.body in
   let html = document##.documentElement in
-  ( e##.clientX + body##.scrollLeft + html##.scrollLeft
-  , e##.clientY + body##.scrollTop + html##.scrollTop )
+  ( Js.to_float e##.clientX +. Float.of_int (body##.scrollLeft + html##.scrollLeft)
+  , Js.to_float e##.clientY +. Float.of_int (body##.scrollTop + html##.scrollTop) )
 
 let eventAbsolutePosition (e : #mouseEvent t) =
   Optdef.case
     e##.pageX
     (fun () -> eventAbsolutePosition' e)
-    (fun x -> Optdef.case e##.pageY (fun () -> eventAbsolutePosition' e) (fun y -> x, y))
+    (fun x ->
+      Optdef.case
+        e##.pageY
+        (fun () -> eventAbsolutePosition' e)
+        (fun y -> Js.to_float x, Js.to_float y))
 
 let elementClientPosition (e : #element t) =
   let r = e##getBoundingClientRect in
