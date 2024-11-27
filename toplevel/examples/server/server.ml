@@ -31,7 +31,7 @@ let server () =
       >>= fun () -> Server.respond_file ~headers:header_plain_user_charset ~fname ()
     with _ ->
       (* send static file *)
-      let fname = Server.resolve_file ~docroot:"." ~uri in
+      let fname = Path.resolve_local_file ~docroot:"." ~uri in
       Lwt_io.eprintf "static: %s\n" fname
       >>= fun () ->
       let headers =

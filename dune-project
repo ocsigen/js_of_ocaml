@@ -93,7 +93,7 @@
   (ocaml (>= 4.08))
   (js_of_ocaml-compiler (= :version))
   (ocamlfind (>= 1.5.1))
-  (cohttp-lwt-unix :with-test)
+  (cohttp-lwt-unix (and (>= 6.0.0) :with-test))
   (graphics :with-test)
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
