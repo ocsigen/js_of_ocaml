@@ -2321,7 +2321,13 @@ class type window = object
 
   method blur : unit meth
 
+  method scrollX : number_t readonly_prop
+
+  method scrollY : number_t readonly_prop
+
   method scroll : number_t -> number_t -> unit meth
+
+  method scrollTo : number_t -> number_t -> unit meth
 
   method scrollBy : number_t -> number_t -> unit meth
 
