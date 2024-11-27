@@ -62,4 +62,10 @@ module Including_Binders : sig
   val instrs : (Var.t -> Var.t) -> instr list -> instr list
 
   val block : (Var.t -> Var.t) -> block -> block
+
+  module And_Continuations : sig
+    val block : Addr.t Addr.Map.t -> (Var.t -> Var.t) -> block -> block
+    (** Same as [Including_Binders.block], but also substitutes continuation
+        addresses. *)
+  end
 end
