@@ -1,3 +1,8 @@
+# dev
+
+## Features/Changes
+* Lib: fix the type of some DOM properties and methods (#1747)
+
 # 5.9.0 (2024-11-22) - Lille
 
 ## Features/Changes
