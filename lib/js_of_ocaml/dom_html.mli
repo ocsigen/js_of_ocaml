@@ -740,9 +740,9 @@ and element = object
 
   method offsetHeight : int readonly_prop
 
-  method scrollLeft : int prop
+  method scrollLeft : number_t prop
 
-  method scrollTop : int prop
+  method scrollTop : number_t prop
 
   method scrollWidth : int prop
 
@@ -2165,9 +2165,9 @@ class type window = object
 
   method blur : unit meth
 
-  method scroll : int -> int -> unit meth
+  method scroll : number_t -> number_t -> unit meth
 
-  method scrollBy : int -> int -> unit meth
+  method scrollBy : number_t -> number_t -> unit meth
 
   method sessionStorage : storage t optdef readonly_prop
 
@@ -2597,7 +2597,7 @@ val eventAbsolutePosition : #mouseEvent t -> float * float
 val elementClientPosition : #element t -> int * int
 (** Position of an element relative to the viewport *)
 
-val getDocumentScroll : unit -> int * int
+val getDocumentScroll : unit -> float * float
 (** Viewport top/left position *)
 
 (** {2 Key event helper functions} *)

@@ -145,7 +145,7 @@ let resize ~container ~textbox () =
   textbox##.style##.height := Js.string "auto";
   textbox##.style##.height
   := Js.string (Printf.sprintf "%dpx" (max 18 textbox##.scrollHeight));
-  container##.scrollTop := container##.scrollHeight;
+  container##.scrollTop := Js.float (float container##.scrollHeight);
   Lwt.return ()
 
 let setup_printers () =
@@ -376,7 +376,7 @@ let run _ =
     JsooTop.execute true ~pp_code:sharp_ppf ~highlight_location caml_ppf content';
     resize ~container ~textbox ()
     >>= fun () ->
-    container##.scrollTop := container##.scrollHeight;
+    container##.scrollTop := Js.float (float container##.scrollHeight);
     textbox##focus;
     Lwt.return_unit
   in
