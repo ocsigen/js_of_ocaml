@@ -21,7 +21,7 @@
 open! Stdlib
 open Code
 
-let subst_cont s (pc, arg) = pc, List.map arg ~f:(fun x -> s x)
+let subst_cont s (pc, arg) = pc, List.map arg ~f:s
 
 module Excluding_Binders = struct
   let expr s e =
@@ -115,9 +115,8 @@ module Including_Binders = struct
   let expr s e =
     match e with
     | Constant _ -> e
-    | Apply { f; args; exact } ->
-        Apply { f = s f; args = List.map args ~f:(fun x -> s x); exact }
-    | Block (n, a, k, mut) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut)
+    | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
+    | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
     | Closure (l, pc) -> Closure (List.map l ~f:s, subst_cont s pc)
     | Special _ -> e
@@ -156,4 +155,26 @@ module Including_Binders = struct
     ; body = instrs s block.body
     ; branch = last s block.branch
     }
+
+  module And_Continuations = struct
+    let subst_cont m s (pc, arg) = Addr.Map.find pc m, List.map arg ~f:s
+
+    let last m s l =
+      match l with
+      | Stop -> l
+      | Branch cont -> Branch (subst_cont m s cont)
+      | Pushtrap (cont1, x, cont2) ->
+          Pushtrap (subst_cont m s cont1, s x, subst_cont m s cont2)
+      | Return x -> Return (s x)
+      | Raise (x, k) -> Raise (s x, k)
+      | Cond (x, cont1, cont2) -> Cond (s x, subst_cont m s cont1, subst_cont m s cont2)
+      | Switch (x, a1) -> Switch (s x, Array.map a1 ~f:(fun cont -> subst_cont m s cont))
+      | Poptrap cont -> Poptrap (subst_cont m s cont)
+
+    let block m s block =
+      { params = List.map ~f:s block.params
+      ; body = instrs s block.body
+      ; branch = last m s block.branch
+      }
+  end
 end
