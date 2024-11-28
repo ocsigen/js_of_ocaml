@@ -118,17 +118,6 @@ var uncaught_effect_handler = { cps: uncaught_effect_handler_cps };
 // exception stack and fiber stack of the parent fiber.
 var caml_fiber_stack;
 
-//Provides: caml_initialize_fiber_stack
-//Requires: caml_fiber_stack, uncaught_effect_handler
-//If: effects
-//If: doubletranslate
-function caml_initialize_fiber_stack() {
-  caml_fiber_stack = {
-    h: [0, 0, 0, uncaught_effect_handler],
-    r: { k: 0, x: 0, e: 0 },
-  };
-}
-
 //Provides:caml_resume_stack
 //Requires: caml_named_value, caml_raise_constant, caml_exn_stack, caml_fiber_stack
 //If: effects
@@ -284,26 +273,41 @@ function jsoo_effect_not_supported() {
   caml_failwith("Effect handlers are not supported");
 }
 
-//Provides: caml_trampoline_cps
-//Requires:caml_stack_depth, caml_call_gen_cps, caml_exn_stack, caml_fiber_stack, caml_wrap_exception
+//Provides: caml_resume
+//Requires:caml_stack_depth, caml_call_gen_cps, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, uncaught_effect_handler, caml_resume_stack
 //If: effects
 //If: doubletranslate
-function caml_trampoline_cps(f, args) {
-  /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
-  var res = { joo_tramp: f, joo_args: args };
-  do {
-    caml_stack_depth = 40;
-    try {
-      res = caml_call_gen_cps(res.joo_tramp, res.joo_args);
-    } catch (e) {
-      /* Handle exception coming from JavaScript or from the runtime. */
-      if (!caml_exn_stack.length) throw e;
-      var handler = caml_exn_stack[1];
-      caml_exn_stack = caml_exn_stack[2];
-      res = { joo_tramp: { cps: handler }, joo_args: [caml_wrap_exception(e)] };
-    }
-  } while (res && res.joo_args);
-  return res;
+function caml_resume(f, arg, stack) {
+  var saved_stack_depth = caml_stack_depth;
+  var saved_exn_stack = caml_exn_stack;
+  var saved_fiber_stack = caml_fiber_stack;
+  try {
+    caml_exn_stack = 0;
+    caml_fiber_stack = {
+      h: [0, 0, 0, uncaught_effect_handler],
+      r: { k: 0, x: 0, e: 0 },
+    };
+    var k = caml_resume_stack(stack, x => x);
+    /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
+    var res = { joo_tramp: f, joo_args: [arg, k] };
+    do {
+      caml_stack_depth = 40;
+      try {
+        res = caml_call_gen_cps(res.joo_tramp, res.joo_args);
+      } catch (e) {
+        /* Handle exception coming from JavaScript or from the runtime. */
+        if (!caml_exn_stack.length) throw e;
+        var handler = caml_exn_stack[1];
+        caml_exn_stack = caml_exn_stack[2];
+        res = { joo_tramp: { cps: handler }, joo_args: [caml_wrap_exception(e)] };
+      }
+    } while (res && res.joo_args);
+    return res;
+  } finally {
+    caml_stack_depth = saved_stack_depth;
+    caml_exn_stack = saved_exn_stack;
+    caml_fiber_stack = saved_fiber_stack;
+  }
 }
 
 //Provides: caml_cps_closure
