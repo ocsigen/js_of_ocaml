@@ -125,25 +125,8 @@ function caml_callback(f, args) {
 //Provides: caml_callback
 //If: effects
 //If: doubletranslate
-//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, uncaught_effect_handler
-//Requires: caml_raise_constant
-function caml_callback(f, args) {
-  var saved_stack_depth = caml_stack_depth;
-  var saved_exn_stack = caml_exn_stack;
-  var saved_fiber_stack = caml_fiber_stack;
-  try {
-    caml_exn_stack = 0;
-    caml_fiber_stack = {
-      h: [0, 0, 0, uncaught_effect_handler],
-      r: { k: 0, x: 0, e: 0 },
-    };
-    return caml_call_gen(f, args);
-  } finally {
-    caml_stack_depth = saved_stack_depth;
-    caml_exn_stack = saved_exn_stack;
-    caml_fiber_stack = saved_fiber_stack;
-  }
-}
+//Requires: caml_call_gen
+var caml_callback = caml_call_gen;
 
 //Provides: caml_is_js
 function caml_is_js() {
