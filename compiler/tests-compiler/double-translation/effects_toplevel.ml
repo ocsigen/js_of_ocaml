@@ -56,7 +56,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   : runtime.caml_call_gen_cps(f, [a0, a1])
                 : runtime.caml_trampoline_return(f, [a0, a1]);
        }
-       runtime.caml_initialize_fiber_stack();
        var
         dummy = 0,
         global_data = runtime.caml_get_global_data(),
