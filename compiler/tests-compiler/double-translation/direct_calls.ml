@@ -95,7 +95,6 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
                 ? f.cps.call(null, a0, a1, a2)
                 : runtime.caml_trampoline_return(f, [a0, a1, a2]);
        }
-       runtime.caml_initialize_fiber_stack();
        var
         dummy = 0,
         global_data = runtime.caml_get_global_data(),
