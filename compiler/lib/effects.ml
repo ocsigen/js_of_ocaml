@@ -957,12 +957,14 @@ let rewrite_direct_block
           ; Let (x, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
           ]
       | Let (x, Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ])) ->
-          (* Pass the identity as a continuation and pass to
-             [caml_trampoline_cps], which will 1. install a trampoline, 2. call
-             the CPS version of [f] and 3. handle exceptions. *)
+          (* Pass the identity as a continuation and pass to [caml_trampoline_cps], which
+             will 1. install a trampoline, 2. initialize the fiber stack, 3. call the CPS
+             version of [f] and handle exceptions. *)
           let k = Var.fresh_n "cont" in
+          let dummy = Var.fresh_n "dummy" in
           let args = Var.fresh_n "args" in
-          [ Let (k, Prim (Extern "caml_resume_stack", [ Pv stack; Pv ident_fn ]))
+          [ Let (dummy, Prim (Extern "caml_initialize_fiber_stack", []))
+          ; Let (k, Prim (Extern "caml_resume_stack", [ Pv stack; Pv ident_fn ]))
           ; Let (args, Prim (Extern "%js_array", [ Pv arg; Pv k ]))
           ; Let (x, Prim (Extern "caml_trampoline_cps", [ Pv f; Pv args ]))
           ]
@@ -1282,8 +1284,7 @@ let cps_transform ~lifter_functions ~live_vars ~flow_info ~cps_needed p =
   let p =
     if double_translate ()
     then
-      (* Initialize the global fiber stack and define a global identity function,
-         needed to translate [%resume] *)
+      (* Define a global identity function, used when translating [%resume] *)
       let id_pc = p.free_pc in
       let blocks =
         let id_param = Var.fresh_n "x" in
@@ -1293,16 +1294,12 @@ let cps_transform ~lifter_functions ~live_vars ~flow_info ~cps_needed p =
           p.blocks
       in
       let id_arg = Var.fresh_n "x" in
-      let dummy = Var.fresh_n "dummy" in
       let new_start = id_pc + 1 in
       let blocks =
         Addr.Map.add
           new_start
           { params = []
-          ; body =
-              [ Let (ident_fn, Closure ([ id_arg ], (id_pc, [ id_arg ])))
-              ; Let (dummy, Prim (Extern "caml_initialize_fiber_stack", []))
-              ]
+          ; body = [ Let (ident_fn, Closure ([ id_arg ], (id_pc, [ id_arg ]))) ]
           ; branch = Branch (p.start, [])
           }
           blocks
