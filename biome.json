@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.1/schema.json",
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
     "include": ["runtime"],
     "ignore": ["runtime/js/zstd.ts"]
@@ -22,8 +22,11 @@
         "noSwitchDeclarations": "off"
       },
       "nursery": {
-        "noUselessEscapeInRegex": "error",
-        "noSubstr": "error"
+        "noSubstr": "error",
+        "noUselessEscapeInRegex": "error"
+      },
+      "performance": {
+        "all": true
       },
       "style": {
         "noArguments": "off",
