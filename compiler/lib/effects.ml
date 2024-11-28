@@ -935,14 +935,7 @@ let rewrite_direct_instr ~st instr =
    of functions (for resume) or fail (for perform).
    If not double-translating, then just add continuation arguments to function
    definitions, and mark as exact all non-CPS calls. *)
-let rewrite_direct_block
-    ~st
-    ~cps_needed
-    ~closure_info
-    ~ident_fn
-    ~pc
-    ~lifter_functions
-    block =
+let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc ~lifter_functions block =
   debug_print "@[<v>rewrite_direct_block %d@,@]" pc;
   if double_translate ()
   then
@@ -957,17 +950,7 @@ let rewrite_direct_block
           ; Let (x, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
           ]
       | Let (x, Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ])) ->
-          (* Pass the identity as a continuation and pass to [caml_trampoline_cps], which
-             will 1. install a trampoline, 2. initialize the fiber stack, 3. call the CPS
-             version of [f] and handle exceptions. *)
-          let k = Var.fresh_n "cont" in
-          let dummy = Var.fresh_n "dummy" in
-          let args = Var.fresh_n "args" in
-          [ Let (dummy, Prim (Extern "caml_initialize_fiber_stack", []))
-          ; Let (k, Prim (Extern "caml_resume_stack", [ Pv stack; Pv ident_fn ]))
-          ; Let (args, Prim (Extern "%js_array", [ Pv arg; Pv k ]))
-          ; Let (x, Prim (Extern "caml_trampoline_cps", [ Pv f; Pv args ]))
-          ]
+          [ Let (x, Prim (Extern "caml_resume", [ Pv f; Pv arg; Pv stack ])) ]
       | Let (x, Prim (Extern "%perform", [ Pv effect ])) ->
           (* In direct-style code, we just raise [Effect.Unhandled]. *)
           [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect ])) ]
@@ -1031,7 +1014,6 @@ let subst_bound_in_blocks blocks s =
 
 let cps_transform ~lifter_functions ~live_vars ~flow_info ~cps_needed p =
   (* Define an identity function, needed for the boilerplate around "resume" *)
-  let ident_fn = Var.fresh_n "identity" in
   let closure_info = Hashtbl.create 16 in
   let trampolined_calls = ref Var.Set.empty in
   let in_cps = ref Var.Set.empty in
@@ -1182,7 +1164,6 @@ let cps_transform ~lifter_functions ~live_vars ~flow_info ~cps_needed p =
                       ~st
                       ~cps_needed
                       ~closure_info:st.closure_info
-                      ~ident_fn
                       ~pc
                       ~lifter_functions
                       block
@@ -1201,7 +1182,6 @@ let cps_transform ~lifter_functions ~live_vars ~flow_info ~cps_needed p =
                       ~st
                       ~cps_needed
                       ~closure_info:st.closure_info
-                      ~ident_fn
                       ~pc
                       ~lifter_functions
                       block
@@ -1283,28 +1263,7 @@ let cps_transform ~lifter_functions ~live_vars ~flow_info ~cps_needed p =
   in
   let p =
     if double_translate ()
-    then
-      (* Define a global identity function, used when translating [%resume] *)
-      let id_pc = p.free_pc in
-      let blocks =
-        let id_param = Var.fresh_n "x" in
-        Addr.Map.add
-          id_pc
-          { params = [ id_param ]; body = []; branch = Return id_param }
-          p.blocks
-      in
-      let id_arg = Var.fresh_n "x" in
-      let new_start = id_pc + 1 in
-      let blocks =
-        Addr.Map.add
-          new_start
-          { params = []
-          ; body = [ Let (ident_fn, Closure ([ id_arg ], (id_pc, [ id_arg ]))) ]
-          ; branch = Branch (p.start, [])
-          }
-          blocks
-      in
-      { start = new_start; blocks; free_pc = new_start + 1 }
+    then p
     else
       match Hashtbl.find_opt closure_info p.start with
       | None -> p
