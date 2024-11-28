@@ -66,11 +66,7 @@ let collect_free_vars program var_depth depth pc =
   !vars
 
 let mark_bound_variables var_depth block depth =
-  Freevars.iter_block_bound_vars
-    (fun x ->
-      let idx = Var.idx x in
-      if idx < Array.length var_depth then var_depth.(idx) <- depth)
-    block;
+  Freevars.iter_block_bound_vars (fun x -> var_depth.(Var.idx x) <- depth) block;
   List.iter block.body ~f:(fun i ->
       match i with
       | Let (_, Closure (params, _)) ->
@@ -189,22 +185,7 @@ let rec traverse ~to_lift var_depth (program, (functions : instr list), lifters)
                 when List.exists
                        ~f:(fun (f, _, _, _) -> Var.Set.mem f to_lift)
                        current_contiguous ->
-                  let program, functions, lifters =
-                    (if debug ()
-                     then
-                       Format.(
-                         eprintf
-                           "@[<v>Need to lift:@,%a@,@]"
-                           (pp_print_list ~pp_sep:pp_print_space pp_print_string)
-                           (List.map
-                              ~f:(fun (f, _, _, _) -> Code.Var.to_string f)
-                              current_contiguous)));
-                    List.fold_left
-                      current_contiguous
-                      ~f:(fun st (_, _, pc, _) ->
-                        traverse ~to_lift var_depth st pc (depth + 1))
-                      ~init:st
-                  in
+                  let program, functions, lifters = st in
                   let free_vars =
                     List.fold_left
                       current_contiguous
