@@ -112,10 +112,6 @@ jobs:
           dune-cache: true
           opam-pin: false
 
-      - name: Pin dune
-        run: |
-          opam pin add dune.3.17 https://github.com/ocaml/dune.git
-
       - run: opam install conf-pkg-config
         if: runner.os == 'Windows'
 

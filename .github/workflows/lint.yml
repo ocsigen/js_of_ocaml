@@ -17,9 +17,6 @@ jobs:
         with:
           ocaml-compiler: "5.2"
           dune-cache: true
-      - name: Pin dune
-        run: |
-          opam pin add -n dune.3.17 https://github.com/ocaml/dune.git
       - uses: ocaml/setup-ocaml/lint-opam@v3
 
   lint-fmt:
@@ -32,9 +29,6 @@ jobs:
         with:
           ocaml-compiler: "5.2"
           dune-cache: true
-      - name: Pin dune
-        run: |
-          opam pin add -n dune.3.17 https://github.com/ocaml/dune.git
       - uses: ocaml/setup-ocaml/lint-fmt@v3
 
   lint-runtime:

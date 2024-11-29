@@ -107,9 +107,6 @@ jobs:
           ref: feaf8f831051fd5f316963b28efd728cf0b0eca1
           path: jane-street/opam-repository
 
-      - name: Pin dune
-        run: opam pin add -n dune.3.17 https://github.com/ocaml/dune.git
-
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
         run: opam pin -n --with-version `< VERSION` .
