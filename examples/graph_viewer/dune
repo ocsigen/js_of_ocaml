@@ -1,7 +1,7 @@
 (executables
  (names viewer_js) ;; add converter & viewer
  (libraries js_of_ocaml-lwt)
- (modes byte)
+ (modes js wasm)
  (modules
   (:standard
    \
@@ -13,24 +13,19 @@
    dot_lexer
    dot_graph
    dot_render))
+ (js_of_ocaml
+  (flags :standard --file %{dep:scene.json}))
  (preprocess
-  (pps js_of_ocaml-ppx)))
+  (pps js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json)))
 
 (ocamllex dot_lexer)
 
 (rule
- (targets viewer_js.js)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --source-map
-   %{dep:viewer_js.bc}
-   -o
-   %{targets}
-   --pretty
-   --file
-   %{dep:scene.json})))
+  (copy viewer_js.bc.wasm.js viewer_js.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))
 
 (alias
  (name default)
- (deps viewer_js.js index.html))
+ (deps viewer_js.bc.js scene.json index.html))

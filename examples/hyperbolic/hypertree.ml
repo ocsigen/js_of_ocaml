@@ -248,8 +248,6 @@ let lwt_wrap f =
 
 module Html = Dom_html
 
-let json : < parse : Js.js_string Js.t -> 'a > Js.t = Js.Unsafe.pure_js_expr "JSON"
-
 let http_get url =
   XmlHttpRequest.get url
   >>= fun r ->
@@ -257,7 +255,7 @@ let http_get url =
   let msg = r.XmlHttpRequest.content in
   if cod = 0 || cod = 200 then Lwt.return msg else fst (Lwt.wait ())
 
-let getfile f = try Lwt.return (Sys_js.read_file ~name:f) with Not_found -> http_get f
+let getfile f = try Lwt.return (Sys_js.read_file ~name:f) with Sys_error _ -> http_get f
 
 let load_image src =
   let img = Html.createImg Html.document in
@@ -524,6 +522,13 @@ let text_size font txt =
 
 (******)
 
+let of_json ~typ v =
+  match Sys.backend_type with
+  | Other "js_of_ocaml" -> Js._JSON##parse (Js.string v)
+  | _ -> Deriving_Json.from_string typ v
+
+(******)
+
 let default_language () =
   (Js.Optdef.get
      Dom_html.window##.navigator##.language
@@ -546,7 +551,7 @@ let set_language lang =
   language := lang
 
 let load_messages () =
-  getfile "messages.json" >>= fun s -> Lwt.return (json##parse (Js.string s))
+  getfile "messages.json" >>= fun s -> Lwt.return (Js._JSON##parse (Js.string s))
 
 let local_messages msgs : messages Js.t = option (Js.Unsafe.get msgs !language)
 
@@ -794,7 +799,7 @@ let tree_url = "tree.json"
 
 let ( >> ) x f = f x
 
-type 'a tree = Node of 'a * 'a tree array
+type 'a tree = Node of 'a * 'a tree array [@@deriving json]
 
 let rec tree_vertice_count n =
   let (Node (_, l)) = n in
@@ -1067,17 +1072,22 @@ let tree_layout node_names root =
   compute_text_nodes node_names nodes;
   vertices, edges, nodes, boxes
 
+type js_string = Js.js_string Js.t
+
+let js_string_to_json _ _ : unit = assert false
+
+let js_string_of_json buf = Js.bytestring (Deriving_Json.Json_string.read buf)
+
+[@@@warning "-20-39"]
+
+type tree_info =
+  js_string tree * (js_string * (js_string * js_string) array * js_string) array
+[@@deriving json]
+
 let load_tree () =
   getfile tree_url
   >>= fun s ->
-  let info :
-      Js.js_string Js.t tree
-      * (Js.js_string Js.t
-        * (Js.js_string Js.t * Js.js_string Js.t) array
-        * Js.js_string Js.t)
-        array =
-    json##parse (Js.string s)
-  in
+  let info : tree_info = of_json ~typ:[%json: tree_info] s in
   let tree, node_names = info in
   randomize_tree tree;
   let node_names =
@@ -1091,17 +1101,18 @@ let load_tree () =
   Lwt.return (tree_layout node_names tree, node_names)
 
 type info =
-  { name : Js.js_string Js.t
-  ; url : Js.js_string Js.t
-  ; attribution : Js.js_string Js.t
+  { name : js_string
+  ; url : js_string
+  ; attribution : js_string
   ; width : int
   ; height : int
-  ; links : (Js.js_string Js.t * Js.js_string Js.t * Js.js_string Js.t) array
-  ; img_url : Js.js_string Js.t option
+  ; links : (js_string * js_string * js_string) array
+  ; img_url : js_string option
   }
+[@@deriving json]
 
 let load_image_info () : info array Lwt.t =
-  getfile "image_info.json" >>= fun s -> Lwt.return (json##parse (Js.string s))
+  getfile "image_info.json" >>= fun s -> Lwt.return (of_json ~typ:[%json: info array] s)
 
 let close_button over =
   let color = opt_style style##.buttonColor (Js.string "#888888") in
@@ -1845,6 +1856,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
       prev_buttons := Some buttons
     in
     make_buttons ();
+    (*
     let img = Html.createImg doc in
     img##.src := icon "ocsigen-powered.png";
     let a = Html.createA doc in
@@ -1857,15 +1869,11 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
     logo##.style##.bottom := Js.string "0";
     Dom.appendChild logo a;
     Dom.appendChild doc##.body logo;
-    Lwt.return ());
-  Js._false
+*)
+    Lwt.return ())
 
-let start _ =
+let () =
   try
     ignore (Html.createCanvas Html.window##.document);
     start ()
-  with Html.Canvas_not_available ->
-    unsupported_messages ();
-    Js._false
-
-let _ = Html.window##.onload := Html.handler start
+  with Html.Canvas_not_available -> unsupported_messages ()

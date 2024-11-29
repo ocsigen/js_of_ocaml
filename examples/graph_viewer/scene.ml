@@ -17,9 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+[@@@warning "-39"]
+
 type command =
   | Move_to of float * float
   | Curve_to of float * float * float * float * float * float
+[@@deriving json]
 
 type color = float * float * float
 
@@ -28,6 +31,7 @@ type ('color, 'font, 'text) element =
   | Polygon of (float * float) array * 'color option * 'color option
   | Ellipse of float * float * float * float * 'color option * 'color option
   | Text of float * float * 'text * 'font * 'color option * 'color option
+[@@deriving json]
 
 (****)
 

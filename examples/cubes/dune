@@ -1,21 +1,16 @@
 (executables
  (names cubes)
  (libraries js_of_ocaml-lwt)
- (modes byte)
+ (modes js wasm)
  (preprocess
   (pps js_of_ocaml-ppx)))
 
 (rule
- (targets cubes.js)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --source-map
-   %{dep:cubes.bc}
-   -o
-   %{targets}
-   --pretty)))
+  (copy cubes.bc.wasm.js cubes.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))
 
 (alias
  (name default)
- (deps cubes.js index.html))
+ (deps cubes.bc.js index.html))

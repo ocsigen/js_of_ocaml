@@ -4,3 +4,9 @@
  (modes js wasm)
  (preprocess
   (pps js_of_ocaml-ppx)))
+
+(rule
+ (action
+  (copy test_wheel.bc.wasm.js test_wheel.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))

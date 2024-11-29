@@ -5,6 +5,12 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
+(rule
+ (action
+  (copy main.bc.wasm.js main.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))
+
 (alias
  (name default)
  (deps main.bc.js index.html))

@@ -1,31 +1,32 @@
 (executables
  (names hypertree)
  (libraries js_of_ocaml-lwt)
- (modes byte)
- (preprocess
-  (pps js_of_ocaml-ppx)))
-
-(rule
- (targets hypertree.js)
- (action
-  (run
-   %{bin:js_of_ocaml}
-   --source-map
-   %{dep:hypertree.bc}
-   -o
-   %{targets}
-   --pretty
+ (modes js wasm)
+ (js_of_ocaml
+  (flags
+   :standard
    --file
    %{dep:image_info.json}
    --file
    %{dep:messages.json}
    --file
-   %{dep:tree.json})))
+   %{dep:tree.json}))
+ (preprocess
+  (pps js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json)))
+
+(rule
+ (action
+  (copy hypertree.bc.wasm.js hypertree.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))
 
 (alias
  (name default)
  (deps
-  hypertree.js
+  hypertree.bc.js
   index.html
+  image_info.json
+  messages.json
+  tree.json
   (glob_files icons/*.{png,jpg})
   (glob_files thumbnails/*.{png,jpg})))

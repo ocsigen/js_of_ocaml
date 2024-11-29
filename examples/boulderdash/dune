@@ -1,30 +1,25 @@
 (executables
  (names boulderdash)
  (libraries js_of_ocaml-lwt)
- (modes byte)
+ (modes js wasm)
+ (js_of_ocaml
+  (flags :standard --file %{dep:maps.txt} --file maps))
+ (link_deps
+  (glob_files maps/*.map))
  (preprocess
   (pps js_of_ocaml-ppx)))
 
 (rule
- (targets boulderdash.js)
- (deps
-  (glob_files maps/*.map))
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --source-map
-   %{dep:boulderdash.bc}
-   -o
-   %{targets}
-   --pretty
-   --file
-   %{dep:maps.txt}
-   --file
-   maps)))
+  (copy boulderdash.bc.wasm.js boulderdash.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))
 
 (alias
  (name default)
  (deps
-  boulderdash.js
+  boulderdash.bc.js
   index.html
+  maps.txt
+  (glob_files maps/*.map)
   (glob_files sprites/*.{png,svg})))

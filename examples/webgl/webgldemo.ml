@@ -220,7 +220,8 @@ let http_get url =
   if cod = 0 || cod = 200 then Lwt.return msg else fst (Lwt.wait ())
 
 let getfile f =
-  try Lwt.return (Sys_js.read_file ~name:f) with Not_found -> http_get f >|= fun s -> s
+  try Lwt.return (Sys_js.read_file ~name:f)
+  with Sys_error _ -> http_get f >|= fun s -> s
 
 let fetch_model s =
   getfile s
@@ -298,12 +299,9 @@ let start (pos, norm) =
   in
   f ()
 
-let go _ =
+let () =
   ignore
     (debug "fetching model";
      catch
        (fun () -> fetch_model "monkey.model" >>= start)
-       (fun exn -> error "uncaught exception: %s" (Printexc.to_string exn)));
-  _true
-
-let _ = Dom_html.window##.onload := Dom_html.handler go
+       (fun exn -> error "uncaught exception: %s" (Printexc.to_string exn)))

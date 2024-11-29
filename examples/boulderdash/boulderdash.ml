@@ -326,7 +326,7 @@ let http_get url =
   let msg = r.XmlHttpRequest.content in
   if cod = 0 || cod = 200 then Lwt.return msg else fst (Lwt.wait ())
 
-let getfile f = try Lwt.return (Sys_js.read_file ~name:f) with Not_found -> http_get f
+let getfile f = try Lwt.return (Sys_js.read_file ~name:f) with Sys_error _ -> http_get f
 
 exception Eos
 
@@ -507,8 +507,4 @@ let start _ =
   Dom.appendChild body div;
   Lwt.return ()
 
-let _ =
-  Html.window##.onload :=
-    Html.handler (fun _ ->
-        ignore (start ());
-        Js._false)
+let () = Lwt.async start

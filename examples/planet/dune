@@ -1,21 +1,16 @@
 (executables
  (names planet)
  (libraries js_of_ocaml-lwt)
- (modes byte)
+ (modes js wasm)
  (preprocess
   (pps js_of_ocaml-ppx)))
 
 (rule
- (targets planet.js)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --source-map
-   %{dep:planet.bc}
-   -o
-   %{targets}
-   --pretty)))
+  (copy planet.bc.wasm.js planet.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))
 
 (alias
  (name default)
- (deps planet.js index.html texture.jpg))
+ (deps planet.bc.js index.html texture.jpg))
