@@ -84,32 +84,14 @@ function caml_raise_unhandled(eff) {
   }
 }
 
-//Provides: uncaught_effect_handler
+//Provides: caml_uncaught_effect_handler
 //Requires: caml_resume_stack, caml_raise_unhandled
 //If: effects
-//If: !doubletranslate
-function uncaught_effect_handler(eff, k, ms) {
+function caml_uncaught_effect_handler(eff, k, ms, cont) {
   // Resumes the continuation k by raising exception Unhandled.
   caml_resume_stack(k[1], ms);
   caml_raise_unhandled(eff);
 }
-
-//Provides: uncaught_effect_handler_cps
-//Requires: caml_resume_stack, caml_raise_unhandled
-//If: effects
-//If: doubletranslate
-function uncaught_effect_handler_cps(eff, k, ms, cont) {
-  // Resumes the continuation k by raising exception Unhandled.
-  caml_resume_stack(k[1], ms);
-  caml_raise_unhandled(eff);
-}
-
-//Provides: uncaught_effect_handler
-//Requires: uncaught_effect_handler_cps
-//If: effects
-//If: doubletranslate
-//Weakdef
-var uncaught_effect_handler = { cps: uncaught_effect_handler_cps };
 
 //Provides: caml_fiber_stack
 //If: effects
@@ -274,7 +256,7 @@ function jsoo_effect_not_supported() {
 }
 
 //Provides: caml_resume
-//Requires:caml_stack_depth, caml_call_gen_cps, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, uncaught_effect_handler, caml_resume_stack
+//Requires:caml_stack_depth, caml_call_gen_cps, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_uncaught_effect_handler, caml_resume_stack
 //If: effects
 //If: doubletranslate
 function caml_resume(f, arg, stack) {
@@ -284,7 +266,7 @@ function caml_resume(f, arg, stack) {
   try {
     caml_exn_stack = 0;
     caml_fiber_stack = {
-      h: [0, 0, 0, uncaught_effect_handler],
+      h: [0, 0, 0, { cps: caml_uncaught_effect_handler }],
       r: { k: 0, x: 0, e: 0 },
     };
     var k = caml_resume_stack(stack, (x) => x);
