@@ -287,7 +287,7 @@ function caml_resume(f, arg, stack) {
       h: [0, 0, 0, uncaught_effect_handler],
       r: { k: 0, x: 0, e: 0 },
     };
-    var k = caml_resume_stack(stack, x => x);
+    var k = caml_resume_stack(stack, (x) => x);
     /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
     var res = { joo_tramp: f, joo_args: [arg, k] };
     do {
@@ -299,7 +299,10 @@ function caml_resume(f, arg, stack) {
         if (!caml_exn_stack.length) throw e;
         var handler = caml_exn_stack[1];
         caml_exn_stack = caml_exn_stack[2];
-        res = { joo_tramp: { cps: handler }, joo_args: [caml_wrap_exception(e)] };
+        res = {
+          joo_tramp: { cps: handler },
+          joo_args: [caml_wrap_exception(e)],
+        };
       }
     } while (res && res.joo_args);
     return res;
