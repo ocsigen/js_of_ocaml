@@ -81,6 +81,7 @@ let starts_with_closure = function
    lifter functions (to be defined before the new body). *)
 let rec rewrite_blocks
     ~to_lift
+    ~inside_lifted
     ~var_depth
     ~st:(program, (functions : instr list), lifters)
     ~pc
@@ -94,6 +95,7 @@ let rec rewrite_blocks
       let body, (program, functions, lifters) =
         rewrite_body
           ~to_lift
+          ~inside_lifted
           ~var_depth
           ~current_contiguous:[]
           ~st:(program, functions, lifters)
@@ -110,6 +112,7 @@ let rec rewrite_blocks
 
 and rewrite_body
     ~to_lift
+    ~inside_lifted
     ~depth
     ~var_depth
     ~current_contiguous
@@ -121,13 +124,19 @@ and rewrite_body
   match body with
   | Let (f, (Closure (_, (pc', _)) as cl)) :: rem
     when List.is_empty current_contiguous
-         && Var.Set.mem f to_lift
+         && (inside_lifted || Var.Set.mem f to_lift)
          && not (starts_with_closure rem) ->
       (* We lift an isolated closure *)
       if debug ()
       then Format.eprintf "@[<v>lifting isolated closure %s@,@]" (Var.to_string f);
       let program, functions, lifters =
-        rewrite_blocks ~to_lift ~var_depth ~st ~pc:pc' ~depth:(depth + 1)
+        rewrite_blocks
+          ~to_lift
+          ~inside_lifted:true
+          ~var_depth
+          ~st
+          ~pc:pc'
+          ~depth:(depth + 1)
       in
       let free_vars = collect_free_vars program var_depth (depth + 1) pc' in
       if debug ()
@@ -160,6 +169,7 @@ and rewrite_body
       let lifters = Var.Set.add f'' (fst lifters), Var.Map.add f f' (snd lifters) in
       rewrite_body
         ~to_lift
+        ~inside_lifted
         ~current_contiguous:[]
         ~st:(program, functions, lifters)
         ~var_depth
@@ -170,9 +180,18 @@ and rewrite_body
         rem
   | Let (cname, Closure (params, (pc', args))) :: rem ->
       (* More closure definitions follow: accumulate and lift later *)
-      let st = rewrite_blocks ~to_lift ~var_depth ~st ~pc:pc' ~depth:(depth + 1) in
+      let st =
+        rewrite_blocks
+          ~to_lift
+          ~inside_lifted:(inside_lifted || Var.Set.mem cname to_lift)
+          ~var_depth
+          ~st
+          ~pc:pc'
+          ~depth:(depth + 1)
+      in
       rewrite_body
         ~to_lift
+        ~inside_lifted
         ~var_depth
         ~current_contiguous:((cname, params, pc', args) :: current_contiguous)
         ~st
@@ -189,9 +208,10 @@ and rewrite_body
         match current_contiguous with
         | [] -> st, acc_instr
         | _ :: _
-          when List.exists
-                 ~f:(fun (f, _, _, _) -> Var.Set.mem f to_lift)
-                 current_contiguous ->
+          when inside_lifted
+               || List.exists
+                    ~f:(fun (f, _, _, _) -> Var.Set.mem f to_lift)
+                    current_contiguous ->
             (* Lift several closures at once *)
             let program, functions, lifters = st in
             let free_vars =
@@ -287,6 +307,7 @@ and rewrite_body
       | i :: rem ->
           rewrite_body
             ~to_lift
+            ~inside_lifted
             ~var_depth
             ~depth
             ~current_contiguous:[]
@@ -312,6 +333,7 @@ let lift ~to_lift ~pc program : program * Var.Set.t * Var.t Var.Map.t =
                 let program, functions, lifters =
                   rewrite_blocks
                     ~to_lift
+                    ~inside_lifted:false
                     ~var_depth
                     ~st:(program, [], lifters)
                     ~pc:pc'
