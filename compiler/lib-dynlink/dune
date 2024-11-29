@@ -6,5 +6,7 @@
  (foreign_stubs
   (language c)
   (names stubs))
- (libraries js_of_ocaml-compiler js_of_ocaml-compiler.runtime
+ (libraries
+  js_of_ocaml-compiler
+  js_of_ocaml-compiler.runtime
   compiler-libs.bytecomp))

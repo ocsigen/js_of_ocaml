@@ -1,6 +1,8 @@
 (executables
  (names jsoo_sourcemap)
- (libraries js_of_ocaml-compiler compiler-libs.common
+ (libraries
+  js_of_ocaml-compiler
+  compiler-libs.common
   js_of_ocaml-compiler.findlib-support)
  (flags
   (:standard -safe-string)))

@@ -27,31 +27,56 @@
 (rule
  (targets lib1.cma.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --source-map %{dep:lib1.cma} -o
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --source-map
+   %{dep:lib1.cma}
+   -o
    %{targets})))
 
 (rule
  (targets module1.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --source-map %{dep:module1.cmo} -o
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --source-map
+   %{dep:module1.cmo}
+   -o
    %{targets})))
 
 (rule
  (targets module2.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --source-map %{dep:module2.cmo} -o
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --source-map
+   %{dep:module2.cmo}
+   -o
    %{targets})))
 
 (rule
  (targets stdlib.cma.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --source-map %{lib:stdlib:stdlib.cma} -o
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --source-map
+   %{lib:stdlib:stdlib.cma}
+   -o
    %{targets})))
 
 (rule
  (targets std_exit.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --source-map %{lib:stdlib:std_exit.cmo} -o
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --source-map
+   %{lib:stdlib:std_exit.cmo}
+   -o
    %{targets})))
 
 (rule
@@ -62,9 +87,18 @@
 (rule
  (targets bin.js)
  (action
-  (run %{bin:js_of_ocaml} link --pretty %{dep:myruntime.js}
-   %{dep:stdlib.cma.js} %{dep:lib1.cma.js} %{dep:module1.js}
-   %{dep:module2.js} %{dep:std_exit.js} -o %{targets})))
+  (run
+   %{bin:js_of_ocaml}
+   link
+   --pretty
+   %{dep:myruntime.js}
+   %{dep:stdlib.cma.js}
+   %{dep:lib1.cma.js}
+   %{dep:module1.js}
+   %{dep:module2.js}
+   %{dep:std_exit.js}
+   -o
+   %{targets})))
 
 (rule
  (target bin.actual)
@@ -83,5 +117,11 @@
 (alias
  (name default)
  (enabled_if %{env:js-enabled=})
- (deps myruntime.js stdlib.cma.js std_exit.js module2.js module1.js bin.js
+ (deps
+  myruntime.js
+  stdlib.cma.js
+  std_exit.js
+  module2.js
+  module1.js
+  bin.js
   index.html))

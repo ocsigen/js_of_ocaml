@@ -6,20 +6,44 @@
 (rule
  (target a.js)
  (action
-  (run %{bin:js_of_ocaml} %{dep:./a.bc} --wrap-with-fun implemA -o a.js
-   --pretty --target-env browser --no-extern-fs)))
+  (run
+   %{bin:js_of_ocaml}
+   %{dep:./a.bc}
+   --wrap-with-fun
+   implemA
+   -o
+   a.js
+   --pretty
+   --target-env
+   browser
+   --no-extern-fs)))
 
 (rule
  (target a-iife.js)
  (action
-  (run %{bin:js_of_ocaml} %{dep:./a.bc} -o a-iife.js --target-env browser
+  (run
+   %{bin:js_of_ocaml}
+   %{dep:./a.bc}
+   -o
+   a-iife.js
+   --target-env
+   browser
    --no-extern-fs)))
 
 (rule
  (target b.js)
  (action
-  (run %{bin:js_of_ocaml} %{dep:./b.bc} --wrap-with-fun implemB -o b.js
-   --pretty --target-env browser --no-extern-fs)))
+  (run
+   %{bin:js_of_ocaml}
+   %{dep:./b.bc}
+   --wrap-with-fun
+   implemB
+   -o
+   b.js
+   --pretty
+   --target-env
+   browser
+   --no-extern-fs)))
 
 (alias
  (name default)

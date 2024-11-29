@@ -34,8 +34,14 @@
 (library
  (name jsoo_testsuite)
  (modules
-  (:standard \ test_io test_floats test_marshal_compressed test_parsing
-   calc_parser calc_lexer))
+  (:standard
+   \
+   test_io
+   test_floats
+   test_marshal_compressed
+   test_parsing
+   calc_parser
+   calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (foreign_stubs
   (language c)
