@@ -149,7 +149,7 @@ function caml_perform_effect(eff, cont, k0) {
   var k1 = caml_pop_fiber();
   return caml_stack_check_depth()
     ? caml_get_cps_fun(handler)(eff, cont, k1, k1)
-    : caml_trampoline_return(handler, [eff, cont, k1, k1]);
+    : caml_trampoline_return(handler, [eff, cont, k1, k1], 0);
 }
 
 //Provides: caml_get_cps_fun
@@ -176,7 +176,7 @@ function caml_alloc_stack(hv, hx, hf) {
     var args = [x, caml_pop_fiber()];
     return caml_stack_check_depth()
       ? caml_call_gen_cps(f, args)
-      : caml_trampoline_return(f, args);
+      : caml_trampoline_return(f, args, 0);
   }
   function hval(x) {
     // Call [hv] in the parent fiber
@@ -271,19 +271,22 @@ function caml_resume(f, arg, stack) {
     };
     var k = caml_resume_stack(stack, (x) => x);
     /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
-    var res = { joo_tramp: f, joo_args: [arg, k] };
+    var res = { joo_tramp: f, joo_args: [arg, k], joo_direct: 0 };
     do {
       caml_stack_depth = 40;
       try {
-        res = caml_call_gen_cps(res.joo_tramp, res.joo_args);
+        res = res.joo_direct
+          ? res.joo_tramp.apply(null, res.joo_args)
+          : caml_call_gen_cps(res.joo_tramp, res.joo_args);
       } catch (e) {
         /* Handle exception coming from JavaScript or from the runtime. */
         if (!caml_exn_stack.length) throw e;
         var handler = caml_exn_stack[1];
         caml_exn_stack = caml_exn_stack[2];
         res = {
-          joo_tramp: { cps: handler },
+          joo_tramp: handler,
           joo_args: [caml_wrap_exception(e)],
+          joo_direct: 1,
         };
       }
     } while (res && res.joo_args);
