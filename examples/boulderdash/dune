@@ -10,8 +10,17 @@
  (deps
   (glob_files maps/*.map))
  (action
-  (run %{bin:js_of_ocaml} --source-map %{dep:boulderdash.bc} -o %{targets}
-   --pretty --file %{dep:maps.txt} --file maps)))
+  (run
+   %{bin:js_of_ocaml}
+   --source-map
+   %{dep:boulderdash.bc}
+   -o
+   %{targets}
+   --pretty
+   --file
+   %{dep:maps.txt}
+   --file
+   maps)))
 
 (alias
  (name default)

@@ -19,8 +19,15 @@
  (targets eval.js)
  (enabled_if %{env:js-enabled=})
  (action
-  (run %{bin:js_of_ocaml} --export %{dep:export.txt} --toplevel --pretty
-   %{dep:eval.bc} -o %{targets})))
+  (run
+   %{bin:js_of_ocaml}
+   --export
+   %{dep:export.txt}
+   --toplevel
+   --pretty
+   %{dep:eval.bc}
+   -o
+   %{targets})))
 
 (alias
  (name default)

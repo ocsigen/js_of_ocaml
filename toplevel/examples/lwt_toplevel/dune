@@ -69,7 +69,11 @@
  (action
   (with-stdout-to
    %{target}
-   (run ocamlfind query tyxml.functor -format
+   (run
+    ocamlfind
+    query
+    tyxml.functor
+    -format
     "%d/html_types.cmi:/static/cmis/"))))
 
 (rule
@@ -80,15 +84,26 @@
 (rule
  (targets test_dynlink.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --toplevel
-   %{read-strings:effects_flags.txt} %{dep:test_dynlink.cmo})))
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --toplevel
+   %{read-strings:effects_flags.txt}
+   %{dep:test_dynlink.cmo})))
 
 (rule
  (target test_lib_jsoo.js)
  (action
-  (run %{bin:js_of_ocaml} --pretty --toplevel --include-runtime
-   %{read-strings:effects_flags.txt} %{dep:test_lib/stubs.js}
-   %{dep:test_lib/test_lib_jsoo.cma} -o %{target})))
+  (run
+   %{bin:js_of_ocaml}
+   --pretty
+   --toplevel
+   --include-runtime
+   %{read-strings:effects_flags.txt}
+   %{dep:test_lib/stubs.js}
+   %{dep:test_lib/test_lib_jsoo.cma}
+   -o
+   %{target})))
 
 (rule
  (targets export.txt)
@@ -100,11 +115,27 @@
   (package js_of_ocaml-tyxml)
   (package js_of_ocaml-toplevel))
  (action
-  (run jsoo_listunits -o %{targets} stdlib graphics str dynlink
-   js_of_ocaml-compiler.runtime js_of_ocaml-lwt.graphics
-   js_of_ocaml-ppx.as-lib js_of_ocaml.deriving lwt tyxml.functor
-   tyxml.functor:html_types.cmi react reactiveData js_of_ocaml
-   js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel)))
+  (run
+   jsoo_listunits
+   -o
+   %{targets}
+   stdlib
+   graphics
+   str
+   dynlink
+   js_of_ocaml-compiler.runtime
+   js_of_ocaml-lwt.graphics
+   js_of_ocaml-ppx.as-lib
+   js_of_ocaml.deriving
+   lwt
+   tyxml.functor
+   tyxml.functor:html_types.cmi
+   react
+   reactiveData
+   js_of_ocaml
+   js_of_ocaml-lwt
+   js_of_ocaml-tyxml
+   js_of_ocaml-toplevel)))
 
 (executable
  (name effects_flags)
@@ -128,11 +159,30 @@
  (targets toplevel.js)
  (enabled_if %{env:js-enabled=})
  (action
-  (run %{bin:js_of_ocaml} compile --pretty %{read-strings:effects_flags.txt}
-   --Werror --target-env browser --file %{dep:examples.ml} --file
-   %{dep:test_dynlink.cmo} --file %{dep:test_dynlink.js} --file
-   %{dep:test_lib_jsoo.js} --export %{dep:export.txt} --toplevel --disable
-   shortvar %{dep:toplevel.bc} -o %{targets})))
+  (run
+   %{bin:js_of_ocaml}
+   compile
+   --pretty
+   %{read-strings:effects_flags.txt}
+   --Werror
+   --target-env
+   browser
+   --file
+   %{dep:examples.ml}
+   --file
+   %{dep:test_dynlink.cmo}
+   --file
+   %{dep:test_dynlink.js}
+   --file
+   %{dep:test_lib_jsoo.js}
+   --export
+   %{dep:export.txt}
+   --toplevel
+   --disable
+   shortvar
+   %{dep:toplevel.bc}
+   -o
+   %{targets})))
 
 (alias
  (name default)

@@ -15,8 +15,16 @@
 (rule
  (targets test_toplevel.js)
  (action
-  (run %{bin:js_of_ocaml} --export %{dep:export.txt} --toplevel --disable
-   shortvar %{dep:test_toplevel.bc} -o %{targets})))
+  (run
+   %{bin:js_of_ocaml}
+   --export
+   %{dep:export.txt}
+   --toplevel
+   --disable
+   shortvar
+   %{dep:test_toplevel.bc}
+   -o
+   %{targets})))
 
 (rule
  (target test_toplevel.actual)

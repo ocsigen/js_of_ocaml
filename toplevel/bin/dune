@@ -2,5 +2,7 @@
  (names jsoo_mkcmis jsoo_mktop jsoo_listunits)
  (public_names jsoo_mkcmis jsoo_mktop jsoo_listunits)
  (package js_of_ocaml-toplevel)
- (libraries js_of_ocaml-compiler js_of_ocaml-compiler.findlib-support
+ (libraries
+  js_of_ocaml-compiler
+  js_of_ocaml-compiler.findlib-support
   js_of_ocaml-compiler.runtime-files))

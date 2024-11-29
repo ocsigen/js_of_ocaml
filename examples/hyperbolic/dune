@@ -8,8 +8,18 @@
 (rule
  (targets hypertree.js)
  (action
-  (run %{bin:js_of_ocaml} --source-map %{dep:hypertree.bc} -o %{targets}
-   --pretty --file %{dep:image_info.json} --file %{dep:messages.json} --file
+  (run
+   %{bin:js_of_ocaml}
+   --source-map
+   %{dep:hypertree.bc}
+   -o
+   %{targets}
+   --pretty
+   --file
+   %{dep:image_info.json}
+   --file
+   %{dep:messages.json}
+   --file
    %{dep:tree.json})))
 
 (alias
