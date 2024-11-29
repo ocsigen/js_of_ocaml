@@ -54,7 +54,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   === 2
                   ? f.cps.call(null, a0, a1)
                   : runtime.caml_call_gen_cps(f, [a0, a1])
-                : runtime.caml_trampoline_return(f, [a0, a1]);
+                : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        var
         dummy = 0,

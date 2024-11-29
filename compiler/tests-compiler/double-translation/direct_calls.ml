@@ -77,7 +77,7 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
        function caml_exact_trampoline_cps_call(f, a0, a1){
         return runtime.caml_stack_check_depth()
                 ? f.cps.call(null, a0, a1)
-                : runtime.caml_trampoline_return(f, [a0, a1]);
+                : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        function caml_trampoline_cps_call3(f, a0, a1, a2){
         return runtime.caml_stack_check_depth()
@@ -88,12 +88,12 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
                   === 3
                   ? f.cps.call(null, a0, a1, a2)
                   : runtime.caml_call_gen_cps(f, [a0, a1, a2])
-                : runtime.caml_trampoline_return(f, [a0, a1, a2]);
+                : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        function caml_exact_trampoline_cps_call$0(f, a0, a1, a2){
         return runtime.caml_stack_check_depth()
                 ? f.cps.call(null, a0, a1, a2)
-                : runtime.caml_trampoline_return(f, [a0, a1, a2]);
+                : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        var
         dummy = 0,

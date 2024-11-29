@@ -43,7 +43,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        function caml_exact_trampoline_call1(f, a0){
         return runtime.caml_stack_check_depth()
                 ? f(a0)
-                : runtime.caml_trampoline_return(f, [a0]);
+                : runtime.caml_trampoline_return(f, [a0], 1);
        }
        function caml_trampoline_cps_call2(f, a0, a1){
         return runtime.caml_stack_check_depth()
@@ -54,12 +54,12 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                   === 2
                   ? f(a0, a1)
                   : runtime.caml_call_gen(f, [a0, a1])
-                : runtime.caml_trampoline_return(f, [a0, a1]);
+                : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        function caml_exact_trampoline_cps_call(f, a0, a1){
         return runtime.caml_stack_check_depth()
                 ? f(a0, a1)
-                : runtime.caml_trampoline_return(f, [a0, a1]);
+                : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        return caml_callback
                (function(cont){

@@ -966,15 +966,13 @@ let apply_fun_raw =
          optimization. To implement it, we check the stack depth and
          bounce to a trampoline if needed, to avoid a stack overflow.
          The trampoline then performs the call in an shorter stack. *)
-      let f =
-        if Config.Flag.double_translation () && not cps
-        then J.(EObj [ Property (PNS cps_field, f) ])
-        else f
-      in
       J.ECond
         ( J.call (runtime_fun ctx "caml_stack_check_depth") [] loc
         , apply
-        , J.call (runtime_fun ctx "caml_trampoline_return") [ f; J.array params ] loc ))
+        , J.call
+            (runtime_fun ctx "caml_trampoline_return")
+            [ f; J.array params; (if cps then zero else one) ]
+            loc ))
     else apply
 
 let generate_apply_fun ctx { arity; exact; trampolined; in_cps } =

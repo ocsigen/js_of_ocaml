@@ -61,8 +61,8 @@ function caml_trampoline(res) {
 }
 
 //Provides:caml_trampoline_return
-function caml_trampoline_return(f, args) {
-  return { joo_tramp: f, joo_args: args };
+function caml_trampoline_return(f, args, direct) {
+  return { joo_tramp: f, joo_args: args, joo_direct: direct };
 }
 
 //Provides:caml_stack_depth
