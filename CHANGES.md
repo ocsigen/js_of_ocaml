@@ -2,6 +2,7 @@
 
 ## Features/Changes
 * Lib: fix the type of some DOM properties and methods (#1747)
+* Test: use dune test stanzas (#1631)
 
 # 5.9.0 (2024-11-22) - Lille
 
