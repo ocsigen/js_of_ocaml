@@ -22,6 +22,7 @@
 %token<string> TIdent TVNum
 %token TComma TColon EOF EOL LE LT GE GT EQ LPARENT RPARENT
 %token<string> TOTHER
+%token<string> TDeprecated
 %token TBang
 
 %start annot
@@ -40,6 +41,7 @@ annot:
     { `Version (l) }
   | TWeakdef endline { `Weakdef   }
   | TAlways endline { `Always   }
+  | TDeprecated endline { `Deprecated $1 }
   | TAlias TColon name=TIdent endline { `Alias (name) }
   | TIf TColon name=TIdent endline { `If (name) }
   | TIf TColon TBang name=TIdent endline { `Ifnot (name) }

@@ -50,6 +50,7 @@ type t =
   | `Weakdef
   | `Always
   | `Alias of string
+  | `Deprecated of string
   | condition
   ]
 

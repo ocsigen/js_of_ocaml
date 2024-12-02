@@ -1,3 +1,9 @@
+# Dev
+
+## Features/Changes
+* Compiler: add mechanism to deprecate runtime promitives
+* Runtime: re-introduce caml_new_string, marked as deprecated
+
 # 5.9.0 (2024-11-22) - Lille
 
 ## Features/Changes

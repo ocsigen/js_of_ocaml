@@ -217,11 +217,12 @@ BigStringReader
 caml_marshal_constants
 
 From +mlBytes.js:
-caml_array_of_bytes
-caml_array_of_string
+caml_array_of_bytes (deprecated)
+caml_array_of_string (deprecated)
 caml_bytes_of_utf16_jsstring
+caml_new_string (deprecated)
 caml_string_concat
-caml_to_js_string
+caml_to_js_string (deprecated)
 
 From +stdlib.js:
 caml_build_symbols

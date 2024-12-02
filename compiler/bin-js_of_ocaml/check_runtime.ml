@@ -101,11 +101,11 @@ let f (runtime_files, bytecode, target_env) =
     StringSet.of_list (Linker.all state), missing
   in
   assert (StringSet.equal missing missing');
+  let extra = StringSet.diff from_runtime1 all_used |> StringSet.elements in
   let extra =
-    StringSet.diff from_runtime1 all_used
-    |> StringSet.elements
+    extra
     |> List.map ~f:(fun name ->
-           ( name
+           ( (name ^ if Linker.deprecated ~name then " (deprecated)" else "")
            , match Linker.origin ~name with
              | None -> []
              | Some x -> [ x ] ))
