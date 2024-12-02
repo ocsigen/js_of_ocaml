@@ -1168,9 +1168,13 @@ end
 
 let init () =
   let l =
-    [ "caml_ensure_stack_capacity", "%identity"; "caml_callback", "caml_trampoline" ]
+    [ "caml_ensure_stack_capacity", "%identity"
+    ; "caml_process_pending_actions_with_root", "%identity"
+    ; "caml_callback", "caml_trampoline"
+    ; "caml_make_array", "caml_array_of_uniform_array"
+    ]
   in
-  Primitive.register "caml_make_array" `Mutable None None;
+  Primitive.register "caml_array_of_uniform_array" `Mutable None None;
   let l =
     if Config.Flag.effects ()
     then ("caml_alloc_stack", "caml_cps_alloc_stack") :: l
