@@ -20,6 +20,7 @@ jobs:
           - 5.00.x
           - 5.01.x
           - 5.02.x
+          - 5.3.0~beta2
         separate_compilation:
           - true
         include:
