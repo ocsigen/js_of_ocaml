@@ -68,3 +68,5 @@ val all : state -> string list
 val missing : state -> string list
 
 val origin : name:string -> string option
+
+val deprecated : name:string -> bool
