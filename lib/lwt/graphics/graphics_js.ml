@@ -48,12 +48,12 @@ let open_canvas x =
 let compute_real_pos (elt : #Dom_html.element Js.t) ev =
   let r = elt##getBoundingClientRect in
   let x =
-    (float_of_int ev##.clientX -. Js.to_float r##.left)
+    (Js.to_float ev##.clientX -. Js.to_float r##.left)
     /. (Js.to_float r##.right -. Js.to_float r##.left)
     *. float_of_int elt##.width
   in
   let y =
-    (float_of_int ev##.clientY -. Js.to_float r##.top)
+    (Js.to_float ev##.clientY -. Js.to_float r##.top)
     /. (Js.to_float r##.bottom -. Js.to_float r##.top)
     *. float_of_int elt##.height
   in
