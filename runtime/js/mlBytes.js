@@ -879,36 +879,49 @@ function caml_is_ml_string(s) {
 
 //Provides: caml_js_to_byte_string const
 //Requires: caml_string_of_jsbytes
+//Deprecated: Use [caml_string_of_jsbytes] instead
 function caml_js_to_byte_string(s) {
   return caml_string_of_jsbytes(s);
 }
 
 //Provides: caml_js_from_string mutable (const)
 //Requires: caml_jsstring_of_string
+//Deprecated: Use [caml_jsstring_of_string] instead
 function caml_js_from_string(s) {
   return caml_jsstring_of_string(s);
 }
 
 //Provides: caml_to_js_string mutable (const)
 //Requires: caml_jsstring_of_string
+//Deprecated: Use [caml_jsstring_of_string] instead
 function caml_to_js_string(s) {
   return caml_jsstring_of_string(s);
 }
 
 //Provides: caml_js_to_string const
 //Requires: caml_string_of_jsstring
+//Deprecated: Use [caml_string_of_jsstring] instead
 function caml_js_to_string(s) {
   return caml_string_of_jsstring(s);
 }
 
 //Provides: caml_array_of_string
 //Requires: caml_uint8_array_of_string
+//Deprecated: Use [caml_uint8_array_of_string] instead
 function caml_array_of_string(x) {
   return caml_uint8_array_of_string(x);
 }
 
 //Provides: caml_array_of_bytes
 //Requires: caml_uint8_array_of_bytes
+//Deprecated: Use [caml_uint8_array_of_bytes] instead
 function caml_array_of_bytes(x) {
   return caml_uint8_array_of_bytes(x);
+}
+
+//Provides: caml_new_string
+//Requires: caml_string_of_jsbytes
+//Deprecated: Use [caml_string_of_jsbytes] instead
+function caml_new_string(s) {
+  return caml_string_of_jsbytes(s);
 }
