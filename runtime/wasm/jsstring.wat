@@ -22,6 +22,10 @@
       (func $is_string (param externref) (result i32)))
    (import "wasm:js-string" "hash"
       (func $hash_string (param i32) (param anyref) (result i32)))
+   (import "wasm:js-string" "fromCharCodeArray"
+      (func $fromCharCodeArray
+         (param (ref null $wstring)) (param i32) (param i32)
+         (result (ref extern))))
 
    (import "wasm:text-decoder" "decodeStringFromUTF8Array"
       (func $decodeStringFromUTF8Array
@@ -41,15 +45,21 @@
       (func $append_string (param anyref) (param anyref) (result anyref)))
 
    (type $string (array (mut i8)))
+   (type $wstring (array (mut i16)))
 
-   (global $builtins_available (mut i32) (i32.const 0))
+   (global $text_converters_available (mut i32) (i32.const 0))
+   (global $string_builtins_available (mut i32) (i32.const 0))
+
+   (global $utf16_buffer_size i32 (i32.const 32768))
+   (global $buffer (mut (ref $wstring))
+      (array.new $wstring (i32.const 0) (i32.const 0)))
 
    (start $init)
 
    (func $init
       ;; Our dummy implementation of string conversion always returns
       ;; the empty string.
-      (global.set $builtins_available
+      (global.set $text_converters_available
          (i32.ne
             (i32.const 0)
             (call $compare_strings
@@ -58,7 +68,24 @@
                   (i32.const 0) (i32.const 1))
                (call $decodeStringFromUTF8Array
                   (array.new_fixed $string 1 (i32.const 1))
-                   (i32.const 0) (i32.const 1))))))
+                   (i32.const 0) (i32.const 1)))))
+      (global.set $string_builtins_available
+         (i32.ne
+            (i32.const 0)
+            (call $compare_strings
+               (call $fromCharCodeArray
+                  (array.new_fixed $wstring 1 (i32.const 0))
+                  (i32.const 0) (i32.const 1))
+               (call $fromCharCodeArray
+                  (array.new_fixed $wstring 1 (i32.const 1))
+                   (i32.const 0) (i32.const 1)))))
+      (if (i32.eqz (global.get $text_converters_available))
+         (then
+            (if (global.get $string_builtins_available)
+               (then
+                  (global.set $buffer
+                     (array.new $wstring (i32.const 0)
+                        (global.get $utf16_buffer_size))))))))
 
    (func (export "jsstring_compare")
       (param $s anyref) (param $s' anyref) (result i32)
@@ -75,13 +102,34 @@
    (func $jsstring_of_substring (export "jsstring_of_substring")
       (param $s (ref $string)) (param $pos i32) (param $len i32)
       (result anyref)
-      (if (global.get $builtins_available)
+      (local $i i32) (local $c i32)
+      (if (global.get $text_converters_available)
          (then
             (return
                (any.convert_extern
                   (call $decodeStringFromUTF8Array (local.get $s)
                      (local.get $pos)
                      (i32.add (local.get $pos) (local.get $len)))))))
+      (if $continue
+         (i32.and (global.get $string_builtins_available)
+            (i32.le_u (local.get $len) (global.get $utf16_buffer_size)))
+         (then
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (local.set $c
+                        (array.get $string (local.get $s)
+                           (i32.add (local.get $pos) (local.get $i))))
+                     (br_if $continue
+                        (i32.ge_u (local.get $c) (i32.const 128)))
+                     (array.set $wstring (global.get $buffer) (local.get $i)
+                        (local.get $c))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop))))
+            (return
+               (any.convert_extern
+                  (call $fromCharCodeArray (global.get $buffer)
+                     (i32.const 0) (local.get $len))))))
       (return_call $jsstring_of_substring_fallback
          (local.get $s) (local.get $pos) (local.get $len)))
 
@@ -90,7 +138,7 @@
          (local.get $s) (i32.const 0) (array.len (local.get $s))))
 
    (func (export "string_of_jsstring") (param $s anyref) (result (ref $string))
-      (if (global.get $builtins_available)
+      (if (global.get $text_converters_available)
          (then
             (return_call $encodeStringToUTF8Array
                (extern.convert_any (local.get $s)))))
