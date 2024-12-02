@@ -25,7 +25,6 @@ depends: [
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}
 ]
-dev-repo: "git+https://github.com/ocsigen/js_of_ocaml.git"
 build: [
   ["dune" "subst"] {dev}
   [
@@ -36,6 +35,8 @@ build: [
     "-j"
     jobs
     "@install"
+    "@runtest" {with-test}
     "@doc" {with-doc}
   ]
 ]
+dev-repo: "git+https://github.com/ocsigen/js_of_ocaml.git"
