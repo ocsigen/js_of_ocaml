@@ -39,11 +39,6 @@
   (:standard -linkall))
  (modes byte js)
  (js_of_ocaml
-  (link_flags
-   :standard
-   ; We use the generated file in the doc. Let's not bloat it with sourcemap.
-   ; Plus, the source map would be too large on 32-bit architectures
-   --no-source-map)
   (build_runtime_flags
    (:standard
     --file
