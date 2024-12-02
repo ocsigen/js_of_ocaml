@@ -16,7 +16,10 @@
 
 (rule
  (target test_toplevel.bc.js.actual)
- (enabled_if %{env:js-enabled=})
+ (enabled_if
+  (and
+   (>= %{ocaml_version} 5.2)
+   %{env:js-enabled=}))
  (action
   (with-stdout-to
    %{target}

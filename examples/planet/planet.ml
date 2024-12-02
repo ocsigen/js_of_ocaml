@@ -683,23 +683,23 @@ let () =
     p##.innerHTML :=
       Js.string "Credit: <a href='http://visibleearth.nasa.gov/'>Visual Earth</a>, Nasa";
     add doc##.body p;
-    let mx = ref 0 in
-    let my = ref 0 in
+    let mx = ref 0. in
+    let my = ref 0. in
     canvas##.onmousedown :=
       Dom_html.handler (fun ev ->
-          mx := ev##.clientX;
-          my := ev##.clientY;
+          mx := Js.to_float ev##.clientX;
+          my := Js.to_float ev##.clientY;
           let c1 =
             Html.addEventListener
               Html.document
               Html.Event.mousemove
               (Dom_html.handler (fun ev ->
-                   let x = ev##.clientX and y = ev##.clientY in
-                   let dx = x - !mx and dy = y - !my in
-                   if dy != 0
-                   then m := matrix_mul (yz_rotation (2. *. float dy /. float width)) !m;
-                   if dx != 0
-                   then m := matrix_mul (xz_rotation (2. *. float dx /. float width)) !m;
+                   let x = Js.to_float ev##.clientX and y = Js.to_float ev##.clientY in
+                   let dx = x -. !mx and dy = y -. !my in
+                   if dy != 0.
+                   then m := matrix_mul (yz_rotation (2. *. dy /. float width)) !m;
+                   if dx != 0.
+                   then m := matrix_mul (xz_rotation (2. *. dx /. float width)) !m;
                    mx := x;
                    my := y;
                    Js._true))

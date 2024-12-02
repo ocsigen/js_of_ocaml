@@ -294,10 +294,10 @@ let _debug_msg _s = ()
                     *)
 
 let handle_drag element move stop click =
-  let fuzz = 4 in
+  let fuzz = 4. in
   element##.onmousedown :=
     Html.handler (fun ev ->
-        let x0 = ev##.clientX and y0 = ev##.clientY in
+        let x0 = Js.to_float ev##.clientX and y0 = Js.to_float ev##.clientY in
         (*
 debug_msg (Format.sprintf "Mouse down %d %d" x0 y0);
 *)
@@ -307,11 +307,12 @@ debug_msg (Format.sprintf "Mouse down %d %d" x0 y0);
             Html.document
             Html.Event.mousemove
             (Html.handler (fun ev ->
-                 let x = ev##.clientX and y = ev##.clientY in
+                 let x = Js.to_float ev##.clientX and y = Js.to_float ev##.clientY in
                  (*
 debug_msg (Format.sprintf "Mouse move %d %d %d %d" x0 y0 x y);
 *)
-                 if (not !started) && (abs (x - x0) > fuzz || abs (y - y0) > fuzz)
+                 if (not !started)
+                    && (abs_float (x -. x0) > fuzz || abs_float (y -. y0) > fuzz)
                  then (
                    started := true;
                    element##.style##.cursor := Js.string "move");
@@ -335,14 +336,14 @@ debug_msg (Format.sprintf "Mouse up %d %d %d %d" x0 y0 ev##clientX ev##clientY);
                     if !started
                     then (
                       element##.style##.cursor := Js.string "";
-                      stop ev##.clientX ev##.clientY)
-                    else click ev##.clientX ev##.clientY;
+                      stop (Js.to_float ev##.clientX) (Js.to_float ev##.clientY))
+                    else click (Js.to_float ev##.clientX) (Js.to_float ev##.clientY);
                     Js._true))
                Js._true);
         Js._true)
 
 let handle_touch_events element move stop cancel click =
-  let fuzz = 4 in
+  let fuzz = 4. in
   ignore
     (Html.addEventListener
        element
@@ -352,7 +353,8 @@ let handle_touch_events element move stop cancel click =
               (ev##.changedTouches##item 0)
               (fun touch ->
                 let id = touch##.identifier in
-                let x0 = touch##.clientX and y0 = touch##.clientY in
+                let x0 = Js.to_float touch##.clientX
+                and y0 = Js.to_float touch##.clientY in
                 (*
 debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
 *)
@@ -368,12 +370,14 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
                              (fun touch ->
                                if touch##.identifier = id
                                then (
-                                 let x = touch##.clientX and y = touch##.clientY in
+                                 let x = Js.to_float touch##.clientX
+                                 and y = Js.to_float touch##.clientY in
                                  (*
   debug_msg (Format.sprintf "Touch move %d %d %d %d" x0 y0 x y);
 *)
                                  if (not !started)
-                                    && (abs (x - x0) > fuzz || abs (y - y0) > fuzz)
+                                    && (abs_float (x -. x0) > fuzz
+                                       || abs_float (y -. y0) > fuzz)
                                  then (
                                    started := true;
                                    element##.style##.cursor := Js.string "move");
@@ -397,7 +401,8 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
                                 (fun touch ->
                                   if touch##.identifier = id
                                   then (
-                                    let x = touch##.clientX and y = touch##.clientY in
+                                    let x = Js.to_float touch##.clientX
+                                    and y = Js.to_float touch##.clientY in
                                     (*
 debug_msg (Format.sprintf "Touch end %d %d %d %d" x0 y0 x y);
 *)
@@ -582,7 +587,7 @@ let to_screen z = ((z.x +. 1.) *. r, (z.y +. 1.) *. r)
 *)
 let from_screen canvas x y =
   let rx, ry, dx, dy = screen_transform canvas in
-  let z = { x = (float x -. dx) /. rx; y = (float y -. dy) /. ry } in
+  let z = { x = (x -. dx) /. rx; y = (y -. dy) /. ry } in
   let n = norm z in
   if n <= 1. -. eps then z else sdiv z (n /. (1. -. eps))
 
@@ -1631,10 +1636,8 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
       let p = ref (-1) in
       for i = 0 to Array.length boxes.bw - 1 do
         if Array.unsafe_get boxes.bw i > 0.
-           && abs_float (float x -. Array.unsafe_get boxes.bx i)
-              < Array.unsafe_get boxes.bw i
-           && abs_float (float y -. Array.unsafe_get boxes.by i)
-              < Array.unsafe_get boxes.bh i
+           && abs_float (x -. Array.unsafe_get boxes.bx i) < Array.unsafe_get boxes.bw i
+           && abs_float (y -. Array.unsafe_get boxes.by i) < Array.unsafe_get boxes.bh i
         then p := i
       done;
       !p
@@ -1655,7 +1658,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
     in
     canvas##.onmousemove :=
       Html.handler (fun ev ->
-          update_cursor ev##.clientX ev##.clientY;
+          update_cursor (Js.to_float ev##.clientX) (Js.to_float ev##.clientY);
           Js._false);
     handle_drag
       canvas

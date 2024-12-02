@@ -28,6 +28,7 @@ rule main = parse
   | "Always" {TAlways}
   | "If" {TIf}
   | "Alias" {TAlias}
+  | "Deprecated: " ([^'\n']* as txt) {TDeprecated txt}
   | "pure" {TA_Pure }
   | "const" {TA_Const }
   | "mutable" {TA_Mutable }
