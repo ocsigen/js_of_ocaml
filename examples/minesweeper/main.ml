@@ -35,7 +35,7 @@ let button name callback =
   Dom.appendChild res input;
   res
 
-let onload _ =
+let () =
   let main = Js.Opt.get (document##getElementById (js "main")) (fun () -> assert false) in
   let nbr, nbc, nbm = ref 10, ref 12, ref 15 in
   Dom.appendChild main (int_input "Number of columns" nbr);
@@ -50,7 +50,4 @@ let onload _ =
          let div = Html.createDiv document in
          Dom.appendChild main div;
          Minesweeper.run div !nbc !nbr !nbm;
-         Js._false));
-  Js._false
-
-let () = Html.window##.onload := Html.handler onload
+         Js._false))

@@ -1,15 +1,16 @@
 (executables
  (names main)
  (libraries js_of_ocaml-lwt)
- (modes byte)
+ (modes js wasm)
  (preprocess
   (pps js_of_ocaml-ppx)))
 
 (rule
- (targets main.js)
  (action
-  (run %{bin:js_of_ocaml} --source-map %{dep:main.bc} -o %{targets} --pretty)))
+  (copy main.bc.wasm.js main.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))
 
 (alias
  (name default)
- (deps main.js index.html))
+ (deps main.bc.js index.html))

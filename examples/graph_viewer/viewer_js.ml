@@ -166,14 +166,7 @@ open Common
 let redraw st s h v (canvas : Html.canvasElement Js.t) =
   let width = canvas##.width in
   let height = canvas##.height in
-  (*Firebug.console##time (Js.string "draw");*)
   redraw st s h v canvas { x = 0; y = 0; width; height } 0 0 width height
-
-(*
-;Firebug.console##timeEnd (Js.string "draw")
-;Firebug.console##log_2 (Js.string "draw", Js.date##now())
-*)
-let json : < parse : Js.js_string Js.t -> 'a > Js.t = Js.Unsafe.pure_js_expr "JSON"
 
 let ( >>= ) = Lwt.bind
 
@@ -182,7 +175,7 @@ let http_get url =
   >>= fun { XmlHttpRequest.code = cod; content = msg; _ } ->
   if cod = 0 || cod = 200 then Lwt.return msg else fst (Lwt.wait ())
 
-let getfile f = try Lwt.return (Sys_js.read_file ~name:f) with Not_found -> http_get f
+let getfile f = try Lwt.return (Sys_js.read_file ~name:f) with Sys_error _ -> http_get f
 
 class adjustment
   ?(value = 0.)
@@ -275,6 +268,25 @@ let handle_drag element f =
            in this example. *)
         Js._true)
 
+let of_json ~typ v =
+  match Sys.backend_type with
+  | Other "js_of_ocaml" -> Js._JSON##parse (Js.string v)
+  | _ -> Deriving_Json.from_string typ v
+
+type js_string = Js.js_string Js.t
+
+let js_string_to_json _ _ : unit = assert false
+
+let js_string_of_json buf = Js.bytestring (Deriving_Json.Json_string.read buf)
+
+[@@@warning "-20-39"]
+
+type scene =
+  (float * float * float * float)
+  * (float * float * float * float) array
+  * (js_string, js_string, js_string) Scene.element array
+[@@deriving json]
+
 let start () =
   let doc = Html.document in
   let page = doc##.documentElement in
@@ -300,7 +312,7 @@ let start () =
   Firebug.console##timeEnd(Js.string "loading");
   Firebug.console##time(Js.string "parsing");
 *)
-  let (x1, y1, x2, y2), bboxes, scene = json##parse (Js.string s) in
+  let (x1, y1, x2, y2), bboxes, scene = of_json ~typ:[%json: scene] s in
   (*
   Firebug.console##timeEnd(Js.string "parsing");
   Firebug.console##time(Js.string "init");
@@ -560,8 +572,4 @@ Firebug.console##timeEnd(Js.string "init");
 *)
   Lwt.return ()
 
-let _ =
-  Html.window##.onload :=
-    Html.handler (fun _ ->
-        ignore (start ());
-        Js._false)
+let () = Lwt.async start

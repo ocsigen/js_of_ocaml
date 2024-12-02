@@ -102,7 +102,7 @@ let rec html2wiki body =
   done;
   Buffer.contents ans
 
-let onload _ =
+let () =
   let d = Html.document in
   let body =
     Js.Opt.get (d##getElementById (Js.string "wiki_demo")) (fun () -> assert false)
@@ -212,7 +212,4 @@ let onload _ =
         in
         Lwt_js.sleep (if n = 0 then 0.5 else 0.1) >>= fun () -> dyn_preview text n
       in
-      ignore (dyn_preview "" 0));
-  Js._false
-
-let _ = Html.window##.onload := Html.handler onload
+      ignore (dyn_preview "" 0))

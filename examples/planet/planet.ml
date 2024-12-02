@@ -592,9 +592,9 @@ let _texture = Js.string "black.jpg"
 
 let _texture = Js.string "../planet/land_ocean_ice_cloud_2048.jpg"
 
-let texture = Js.string "../planet/texture.jpg"
+let texture = Js.string "texture.jpg"
 
-let start _ =
+let () =
   Lwt.ignore_result
     (load_image texture
     >>= fun texture ->
@@ -776,7 +776,4 @@ if true then Lwt.return () else
       if (not !paused) && !follow then phi_rot := !phi_rot +. angle;
       loop t' (if !paused then phi else phi +. angle)
     in
-    loop (Js.to_float (new%js Js.date_now)##getTime) 0.);
-  Js._false
-
-let _ = Html.window##.onload := Html.handler start
+    loop (Js.to_float (new%js Js.date_now)##getTime) 0.)

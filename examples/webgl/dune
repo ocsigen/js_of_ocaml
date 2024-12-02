@@ -1,23 +1,18 @@
 (executables
  (names webgldemo)
  (libraries js_of_ocaml-lwt)
- (modes byte)
+ (modes js wasm)
+ (js_of_ocaml
+  (flags :standard --file %{dep:monkey.model}))
  (preprocess
   (pps js_of_ocaml-ppx)))
 
 (rule
- (targets webgldemo.js)
  (action
-  (run
-   %{bin:js_of_ocaml}
-   --source-map
-   %{dep:webgldemo.bc}
-   -o
-   %{targets}
-   --pretty
-   --file
-   %{dep:monkey.model})))
+  (copy webgldemo.bc.wasm.js webgldemo.bc.js))
+ (enabled_if
+  (not %{env:js-enabled=})))
 
 (alias
  (name default)
- (deps webgldemo.js index.html))
+ (deps webgldemo.bc.js monkey.model index.html))
