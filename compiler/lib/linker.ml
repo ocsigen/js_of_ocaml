@@ -177,6 +177,7 @@ module Fragment = struct
     ; conditions : bool StringMap.t
     ; fragment_target : Target_env.t option
     ; aliases : StringSet.t
+    ; deprecated : string option
     }
 
   let allowed_flags =
@@ -259,6 +260,7 @@ module Fragment = struct
                 ; conditions = StringMap.empty
                 ; fragment_target = None
                 ; aliases = StringSet.empty
+                ; deprecated = None
                 }
               in
               let fragment =
@@ -289,6 +291,7 @@ module Fragment = struct
                     | `Always -> { fragment with always = true }
                     | `Alias name ->
                         { fragment with aliases = StringSet.add name fragment.aliases }
+                    | `Deprecated txt -> { fragment with deprecated = Some txt }
                     | `If name when Option.is_some (Target_env.of_string name) ->
                         if Option.is_some fragment.fragment_target
                         then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
@@ -394,6 +397,7 @@ type state =
   { ids : IntSet.t
   ; always_required_codes : always_required list
   ; codes : (Javascript.program pack * bool) list
+  ; deprecation : (int list * string) list
   ; missing : StringSet.t
   ; include_ : string -> bool
   }
@@ -456,6 +460,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
       ; aliases
       ; has_macro
       ; conditions
+      ; deprecated
       } -> (
       let should_ignore =
         StringMap.exists
@@ -543,14 +548,14 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
                 name
                 { id; pi; filename; weakdef; target_env = fragment_target };
               Hashtbl.add provided_rev id (name, pi);
-              Hashtbl.add code_pieces id (code, has_macro, requires);
+              Hashtbl.add code_pieces id (code, has_macro, requires, deprecated);
               StringSet.iter (fun alias -> Primitive.alias alias name) aliases;
               `Ok)
 
 let check_deps () =
   let provided = list_all () in
   Hashtbl.iter
-    (fun id (code, _has_macro, requires) ->
+    (fun id (code, _has_macro, requires, _deprecated) ->
       match code with
       | Ok code -> (
           let traverse = new Js_traverse.free in
@@ -617,13 +622,18 @@ and resolve_dep_id_rev state path id =
     state)
   else
     let path = id :: path in
-    let code, has_macro, req = Hashtbl.find code_pieces id in
+    let code, has_macro, req, deprecated = Hashtbl.find code_pieces id in
     let state = { state with ids = IntSet.add id state.ids } in
     let state =
       List.fold_left req ~init:state ~f:(fun state nm ->
           resolve_dep_name_rev state path nm)
     in
-    let state = { state with codes = (code, has_macro) :: state.codes } in
+    let deprecation =
+      match deprecated with
+      | None -> state.deprecation
+      | Some txt -> (path, txt) :: state.deprecation
+    in
+    let state = { state with codes = (code, has_macro) :: state.codes; deprecation } in
     state
 
 let proj_always_required { ar_filename; ar_requires; ar_program } =
@@ -640,6 +650,7 @@ let init ?from () =
       List.rev
         (List.filter_map !always_included ~f:(fun x ->
              if include_ x.ar_filename then Some (proj_always_required x) else None))
+  ; deprecation = []
   ; codes = []
   ; include_
   ; missing = StringSet.empty
@@ -681,6 +692,29 @@ let link ?(check_missing = true) program (state : state) =
         { state with codes = (Ok always.program, false) :: state.codes })
   in
   if check_missing then do_check_missing state;
+  List.iter state.deprecation ~f:(fun (path, txt) ->
+      match path with
+      | [] -> assert false
+      | [ x ] ->
+          if false
+          then
+            let name = fst (Hashtbl.find provided_rev x) in
+            warn "The runtime primitive [%s] is deprecated. %s\n" name txt
+      | x :: path ->
+          let name = fst (Hashtbl.find provided_rev x) in
+          let path =
+            String.concat
+              ~sep:"\n"
+              (List.map path ~f:(fun id ->
+                   let nm, loc = Hashtbl.find provided_rev id in
+                   Printf.sprintf "-> %s:%s" nm (Parse_info.to_string loc)))
+          in
+          warn
+            "The runtime primitive [%s] is deprecated. %s.  Used by:\n%s\n"
+            name
+            txt
+            path);
+
   let codes =
     List.map state.codes ~f:(fun (x, has_macro) ->
         let c = unpack x in
@@ -710,3 +744,10 @@ let origin ~name =
     let x = Hashtbl.find provided name in
     x.pi.Parse_info.src
   with Not_found -> None
+
+let deprecated ~name =
+  try
+    let x = Hashtbl.find provided name in
+    let _, _, _, deprecated = Hashtbl.find code_pieces x.id in
+    Option.is_some deprecated
+  with Not_found -> false
