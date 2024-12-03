@@ -4,10 +4,14 @@ open Effect.Deep
 
 type _ Effect.t += Dummy : unit t
 
-let f () =
+let () =
   try_with
     (fun () ->
       Js_of_ocaml.Js.Effect.assume_no_perform (fun () ->
+        try_with
+          (fun () -> ())
+          ()
+          { effc = (fun (type a) (_ : a Effect.t) -> None) };
         perform Dummy
       )
     )
@@ -15,15 +19,7 @@ let f () =
     { effc =
         (fun (type a) (e : a Effect.t) ->
           match e with
-          | Dummy -> Some (fun (k : (a, _) continuation) -> continue k ())
+          | Dummy ->
+              Some (fun (k : (a, _) continuation) -> print_endline "ok"; continue k ())
           | _ -> None)
     }
-
-let () =
-  try
-    (* When double translation is not enabled, [f] should not raise *)
-    f (); print_endline "ok"
-  with Effect.Unhandled Dummy -> (
-    print_endline "failed";
-    exit 2
-  )

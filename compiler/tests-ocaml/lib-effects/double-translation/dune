@@ -508,3 +508,20 @@
   (diff
    assume_no_perform_unhandled.reference
    assume_no_perform_unhandled.referencejs)))
+
+(executable
+ (name assume_no_perform_nested_handler)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (modules assume_no_perform_nested_handler)
+ (modes js)
+ (libraries js_of_ocaml))
+
+(rule
+ (alias runtest)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (deps assume_no_perform_nested_handler.bc.js)
+ (action
+  (ignore-stdout
+   (run node ./assume_no_perform_nested_handler.bc.js))))
