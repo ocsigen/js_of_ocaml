@@ -132,7 +132,7 @@ and rewrite_body
       let program, functions, lifters =
         rewrite_blocks
           ~to_lift
-          ~inside_lifted:true
+          ~inside_lifted:(Var.Set.mem f to_lift)
           ~var_depth
           ~st
           ~pc:pc'
@@ -183,7 +183,7 @@ and rewrite_body
       let st =
         rewrite_blocks
           ~to_lift
-          ~inside_lifted:(inside_lifted || Var.Set.mem cname to_lift)
+          ~inside_lifted:(Var.Set.mem cname to_lift)
           ~var_depth
           ~st
           ~pc:pc'
@@ -261,7 +261,7 @@ and rewrite_body
               let tuple = Var.fresh_n "tuple" in
               { params = []
               ; body =
-                  List.map2 f's current_contiguous ~f:(fun f' (_, params, pc, args) ->
+                  List.rev_map2 f's current_contiguous ~f:(fun f' (_, params, pc, args) ->
                       Let (f', Closure (params, (pc, args))))
                   @ [ Let (tuple, Block (0, Array.of_list f's, NotArray, Immutable)) ]
               ; branch = Return tuple
@@ -285,14 +285,16 @@ and rewrite_body
                        f's)
                   (snd lifters) )
             in
+            let tuple = Var.fresh_n "tuple" in
             let rev_decl =
-              let tuple = Var.fresh_n "tuple" in
-              List.rev
-                (Let (tuple, Apply { f = f_tuple; args = List.map ~f:fst s; exact = true })
-                :: List.mapi current_contiguous ~f:(fun i (f, _, _, _) ->
-                       Let (f, Field (tuple, i, Non_float))))
+              Let (tuple, Apply { f = f_tuple; args = List.map ~f:fst s; exact = true })
+              :: List.mapi current_contiguous ~f:(fun i (f, _, _, _) ->
+                     Let (f, Field (tuple, i, Non_float)))
             in
-            (program, functions, lifters), rev_decl @ acc_instr
+            ( (program, functions, lifters)
+            , rev_decl
+              @ Let (tuple, Apply { f = f_tuple; args = List.map ~f:fst s; exact = true })
+                :: acc_instr )
         | _ :: _ ->
             (* No need to lift the accumulated closures: just keep their definitions
                unchanged *)
@@ -329,11 +331,11 @@ let lift ~to_lift ~pc program : program * Var.Set.t * Var.t Var.Map.t =
           ~init:(program, [], (Var.Set.empty, Var.Map.empty))
           ~f:(fun i (program, rem, lifters) ->
             match i with
-            | Let (_, Closure (_, (pc', _))) as i ->
+            | Let (f, Closure (_, (pc', _))) as i ->
                 let program, functions, lifters =
                   rewrite_blocks
                     ~to_lift
-                    ~inside_lifted:false
+                    ~inside_lifted:(Var.Set.mem f to_lift)
                     ~var_depth
                     ~st:(program, [], lifters)
                     ~pc:pc'
