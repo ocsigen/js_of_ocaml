@@ -111,17 +111,16 @@ let optimizable blocks pc =
       let optimizable =
         optimizable
         && List.for_all b.body ~f:(function
-               | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
-               | Let (_, Prim (Extern "debugger", _)) -> false
-               | Let
-                   ( _
-                   , Prim
-                       (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
-                   ) ->
-                   (* TODO: we should be smarter here and look the generated js *)
-                   (* let's consider it this opmiziable *)
-                   true
-               | _ -> true)
+             | Let (_, Prim (Extern "caml_js_eval_string", _)) -> false
+             | Let (_, Prim (Extern "debugger", _)) -> false
+             | Let
+                 ( _
+                 , Prim (Extern ("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr"), _)
+                 ) ->
+                 (* TODO: we should be smarter here and look the generated js *)
+                 (* let's consider it this opmiziable *)
+                 true
+             | _ -> true)
       in
       { optimizable; size = size + this_size })
     pc
@@ -196,11 +195,12 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
                 params
                 args
             in
-            if live_vars.(Var.idx f) = 1
-               && Bool.equal outer.optimizable f_optimizable
-                  (* Inlining the code of an optimizable function could
+            if
+              live_vars.(Var.idx f) = 1
+              && Bool.equal outer.optimizable f_optimizable
+                 (* Inlining the code of an optimizable function could
                      make this code unoptimized. (wrt to Jit compilers) *)
-               && f_size < Config.Param.inlining_limit ()
+              && f_size < Config.Param.inlining_limit ()
             then
               let blocks, cont_pc, free_pc =
                 match rem, branch with
@@ -313,9 +313,10 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
               ; params = []
               } ->
                 let len = List.length l in
-                if Code.Var.compare y y' = 0
-                   && Primitive.has_arity prim len
-                   && args_equal l args
+                if
+                  Code.Var.compare y y' = 0
+                  && Primitive.has_arity prim len
+                  && args_equal l args
                 then Let (x, Special (Alias_prim prim)) :: rem, state
                 else i :: rem, state
             | _ -> i :: rem, state)

@@ -86,8 +86,8 @@ let%expect_test "partial application, callback is called when all arguments are 
     got 1, 2, 3, 4, 5, done
     Result: 0 |}]
 
-let%expect_test "partial application, 0 argument call is treated like 1 argument \
-                 (undefined)" =
+let%expect_test
+    "partial application, 0 argument call is treated like 1 argument (undefined)" =
   call_and_log (Js.wrap_callback cb5) {| (function(f){ return f(1)()(3)()(5) }) |};
   [%expect {|
     got 1, undefined, 3, undefined, 5, done

@@ -81,8 +81,8 @@ module Mappings = struct
     | _ ->
         let c = ref 1 in
         String.iter s ~f:(function
-            | ';' -> incr c
-            | _ -> ());
+          | ';' -> incr c
+          | _ -> ());
         !c
 
   let first_line (Uninterpreted s) =
@@ -122,9 +122,10 @@ module Mappings = struct
           if i < len
           then
             let c = a.(i) in
-            if i + 1 < len
-               && gen_line c = gen_line a.(i + 1)
-               && gen_col c = gen_col a.(i + 1)
+            if
+              i + 1 < len
+              && gen_line c = gen_line a.(i + 1)
+              && gen_col c = gen_col a.(i + 1)
             then
               (* Only keep one source location per generated location *)
               loop prev (i + 1)
@@ -268,10 +269,11 @@ module Mappings = struct
   let invariant ~names:_ ~sources:_ (Uninterpreted str) =
     (* We can't check much without decoding (which is expensive) *)
     (* Just do very simple checks *)
-    if not
-         (String.for_all str ~f:(function
-             | ';' | ',' -> true
-             | x -> Vlq64.in_alphabet x))
+    if
+      not
+        (String.for_all str ~f:(function
+          | ';' | ',' -> true
+          | x -> Vlq64.in_alphabet x))
     then invalid_arg "Mappings.invariant"
 end
 
@@ -313,8 +315,8 @@ let list_stringlit name rest =
     | `List l ->
         Some
           (List.map l ~f:(function
-              | `Stringlit _ as s -> s
-              | _ -> invalid ()))
+            | `Stringlit _ as s -> s
+            | _ -> invalid ()))
     | _ -> invalid ()
   with Not_found -> None
 
@@ -324,9 +326,9 @@ let list_stringlit_opt name rest =
     | `List l ->
         Some
           (List.map l ~f:(function
-              | `Stringlit _ as s -> Some s
-              | `Null -> None
-              | _ -> invalid ()))
+            | `Stringlit _ as s -> Some s
+            | `Null -> None
+            | _ -> invalid ()))
     | _ -> invalid ()
   with Not_found -> None
 
@@ -336,8 +338,8 @@ let list_intlit name rest =
     | `List l ->
         Some
           (List.map l ~f:(function
-              | `Intlit _ as s -> s
-              | _ -> invalid ()))
+            | `Intlit _ as s -> s
+            | _ -> invalid ()))
     | _ -> invalid ()
   with Not_found -> None
 
@@ -487,24 +489,24 @@ module Standard = struct
              | Some l ->
                  Some
                    (`List
-                     (List.map l ~f:(function
-                         | None -> `Null
-                         | Some x -> Source_content.to_json x))) )
+                      (List.map l ~f:(function
+                        | None -> `Null
+                        | Some x -> Source_content.to_json x))) )
          ; ( "ignoreList"
            , match t.ignore_list with
              | [] -> None
              | _ ->
                  Some
                    (`List
-                     (let s = StringSet.of_list t.ignore_list in
-                      List.filter_map
-                        ~f:(fun x -> x)
-                        (List.mapi
-                           ~f:(fun i nm ->
-                             if StringSet.mem nm s
-                             then Some (`Intlit (string_of_int i))
-                             else None)
-                           t.sources))) )
+                      (let s = StringSet.of_list t.ignore_list in
+                       List.filter_map
+                         ~f:(fun x -> x)
+                         (List.mapi
+                            ~f:(fun i nm ->
+                              if StringSet.mem nm s
+                              then Some (`Intlit (string_of_int i))
+                              else None)
+                            t.sources))) )
          ])
 
   let of_json (json : Yojson.Raw.t) =
@@ -530,8 +532,8 @@ module Standard = struct
           | Some l ->
               Some
                 (List.map l ~f:(function
-                    | None -> None
-                    | Some s -> Some (Source_content.of_stringlit s)))
+                  | None -> None
+                  | Some s -> Some (Source_content.of_stringlit s)))
         in
         let mappings =
           match string "mappings" rest with
@@ -622,17 +624,17 @@ module Index = struct
          ; ( "sections"
            , Some
                (`List
-                 (List.map
-                    ~f:(fun { offset = { gen_line; gen_column }; map } ->
-                      `Assoc
-                        [ ( "offset"
-                          , `Assoc
-                              [ "line", `Intlit (string_of_int gen_line)
-                              ; "column", `Intlit (string_of_int gen_column)
-                              ] )
-                        ; "map", Standard.json map
-                        ])
-                    t.sections)) )
+                  (List.map
+                     ~f:(fun { offset = { gen_line; gen_column }; map } ->
+                       `Assoc
+                         [ ( "offset"
+                           , `Assoc
+                               [ "line", `Intlit (string_of_int gen_line)
+                               ; "column", `Intlit (string_of_int gen_column)
+                               ] )
+                         ; "map", Standard.json map
+                         ])
+                     t.sections)) )
          ])
 
   let intlit ~errmsg name json =

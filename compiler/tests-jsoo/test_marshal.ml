@@ -57,7 +57,10 @@ let%expect_test _ =
   let tmp_filename = Filename.temp_file "out" "txt" in
   let chan = open_out_bin tmp_filename in
   let v1 = Op (Add, [ Literal (Numeral (SPlus, 5)); Literal (Numeral (SMinus, 7)) ]) in
-  let v2 = Op (Times, [ v1; v1 ]) (* shared *) in
+  let v2 =
+    Op (Times, [ v1; v1 ])
+    (* shared *)
+  in
   let v1_sz = write_out chan v1 in
   let v2_sz = write_out chan v2 in
   let v2_ns_sz = write_out_noshare chan v2 in

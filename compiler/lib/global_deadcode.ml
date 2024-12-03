@@ -393,10 +393,11 @@ let propagate defs scoped_live_vars ~state ~dep:y ~target:x ~action:usage_kind =
           | _ -> Domain.top))
   (* If x is used as an argument for parameter y, then contribution is liveness of y *)
   | Propagate { scope; src } ->
-      if List.for_all scope ~f:(fun z ->
-             match Var.Tbl.get state z with
-             | Dead -> false
-             | _ -> true)
+      if
+        List.for_all scope ~f:(fun z ->
+            match Var.Tbl.get state z with
+            | Dead -> false
+            | _ -> true)
       then Var.Tbl.get state src
       else Domain.bot
   | Scope -> (

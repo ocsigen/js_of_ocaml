@@ -375,9 +375,10 @@ let scroll_view ?width ?height ?packing st =
          then (
            sadj#set_value sadj#upper;
            true)
-         else if keyval = GdkKeysyms._plus
-                 || keyval = GdkKeysyms._equal
-                 || keyval = GdkKeysyms._KP_Add
+         else if
+           keyval = GdkKeysyms._plus
+           || keyval = GdkKeysyms._equal
+           || keyval = GdkKeysyms._KP_Add
          then
            let x, y = display#misc#pointer in
            bump_scale (float x) (float y) 1.
@@ -440,11 +441,12 @@ let create ?(full_screen = false) (x1, y1, x2, y2) scene =
          let keyval = GdkEvent.Key.keyval ev in
          if keyval = GdkKeysyms._q || keyval = GdkKeysyms._Q
          then exit 0
-         else if keyval = GdkKeysyms._F11
-                 || keyval = GdkKeysyms._F5
-                 || (keyval = GdkKeysyms._Escape && !fullscreen)
-                 || keyval = GdkKeysyms._f
-                 || keyval = GdkKeysyms._F
+         else if
+           keyval = GdkKeysyms._F11
+           || keyval = GdkKeysyms._F5
+           || (keyval = GdkKeysyms._Escape && !fullscreen)
+           || keyval = GdkKeysyms._f
+           || keyval = GdkKeysyms._F
          then toggle_fullscreen ()
          else false));
   w#show ()

@@ -355,15 +355,16 @@ let eval_instr ~target info i =
   | Let (x, Prim (prim, prim_args)) -> (
       let prim_args' = List.map prim_args ~f:(fun x -> the_const_of ~target info x) in
       let res =
-        if List.for_all prim_args' ~f:(function
-               | Some _ -> true
-               | _ -> false)
+        if
+          List.for_all prim_args' ~f:(function
+            | Some _ -> true
+            | _ -> false)
         then
           eval_prim
             ( prim
             , List.map prim_args' ~f:(function
-                  | Some c -> c
-                  | None -> assert false) )
+                | Some c -> c
+                | None -> assert false) )
         else None
       in
       match res with
@@ -407,14 +408,14 @@ let the_cond_of info x =
       | Some (Constant (Int x)) -> if Targetint.is_zero x then Zero else Non_zero
       | Some
           (Constant
-            ( Int32 _
-            | NativeInt _
-            | Float _
-            | Tuple _
-            | String _
-            | NativeString _
-            | Float_array _
-            | Int64 _ )) -> Non_zero
+             ( Int32 _
+             | NativeInt _
+             | Float _
+             | Tuple _
+             | String _
+             | NativeString _
+             | Float_array _
+             | Int64 _ )) -> Non_zero
       | Some (Block (_, _, _, _)) -> Non_zero
       | Some (Field _ | Closure _ | Prim _ | Apply _ | Special _) -> Unknown
       | None -> Unknown)

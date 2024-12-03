@@ -2530,14 +2530,15 @@ let rec unsafeCreateElementEx ?_type ?name doc elt =
         Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
     | `Unknown ->
         createElementSyntax :=
-          if try
-               let el : inputElement Js.t =
-                 Js.Unsafe.coerce
-                   (document##createElement (Js.string "<input name=\"x\">"))
-               in
-               Js.equals el##.tagName##toLowerCase (Js.string "input")
-               && Js.equals el##.name (Js.string "x")
-             with _ -> false
+          if
+            try
+              let el : inputElement Js.t =
+                Js.Unsafe.coerce
+                  (document##createElement (Js.string "<input name=\"x\">"))
+              in
+              Js.equals el##.tagName##toLowerCase (Js.string "input")
+              && Js.equals el##.name (Js.string "x")
+            with _ -> false
           then `Extended
           else `Standard;
         unsafeCreateElementEx ?_type ?name doc elt
@@ -2726,12 +2727,12 @@ module CoerceTo = struct
       (* ie < 9 does not have HTMLElement: we have to cheat to check
          that something is an html element *)
       fun e ->
-      if not (Js.Optdef.test (def (Js.Unsafe.coerce e)##.innerHTML))
-      then Js.null
-      else Js.some (Js.Unsafe.coerce e)
+        if not (Js.Optdef.test (def (Js.Unsafe.coerce e)##.innerHTML))
+        then Js.null
+        else Js.some (Js.Unsafe.coerce e)
     else
       fun e ->
-      if Js.instanceof e html_element then Js.some (Js.Unsafe.coerce e) else Js.null
+        if Js.instanceof e html_element then Js.some (Js.Unsafe.coerce e) else Js.null
 
   let unsafeCoerce tag (e : #element t) =
     if Js.equals e##.tagName##toLowerCase (Js.string tag)

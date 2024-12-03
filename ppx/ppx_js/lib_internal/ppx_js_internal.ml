@@ -646,8 +646,8 @@ let literal_object self_id (fields : field_desc list) =
   let extra_types =
     List.concat
       (List.map fields ~f:(function
-          | Val _ -> []
-          | Meth (_, _, _, _, l) -> l))
+        | Val _ -> []
+        | Meth (_, _, _, _, l) -> l))
   in
   let invoker =
     invoker
@@ -691,8 +691,8 @@ let literal_object self_id (fields : field_desc list) =
                      ]))
           ])
       (List.map fields ~f:(function
-          | Val _ -> Arg.make ()
-          | Meth (_, _, _, _, _fun_ty) -> Arg.make ()))
+        | Val _ -> Arg.make ()
+        | Meth (_, _, _, _, _fun_ty) -> Arg.make ()))
   in
   let self = "self" in
   let gloc = { !default_loc with Location.loc_ghost = true } in
@@ -746,13 +746,13 @@ let transform =
       let new_expr =
         match expr with
         (* obj##.var *)
-        | [%expr [%e? obj] ##. [%e? meth]] ->
+        | [%expr [%e? obj]##.[%e? meth]] ->
             let obj = self#expression obj in
             let prop = exp_to_string meth in
             let new_expr = prop_get ~loc:meth.pexp_loc obj prop in
             self#expression { new_expr with pexp_attributes }
         (* obj##.var := value *)
-        | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as prop] := [%e? value]] ->
+        | [%expr [%e? [%expr [%e? obj]##.[%e? meth]] as prop] := [%e? value]] ->
             let obj = self#expression obj in
             let value = self#expression value in
             let prop_loc = prop.pexp_loc in
@@ -760,7 +760,7 @@ let transform =
             let new_expr = prop_set ~loc:meth.pexp_loc ~prop_loc obj prop value in
             self#expression { new_expr with pexp_attributes }
         (* obj##(meth arg1 arg2) .. *)
-        | [%expr [%e? obj] ## [%e? { pexp_desc = Pexp_apply (meth, args); _ }]] ->
+        | [%expr [%e? obj]##[%e? { pexp_desc = Pexp_apply (meth, args); _ }]] ->
             let meth_str = exp_to_string meth in
             let obj = self#expression obj in
             let args = List.map args ~f:(fun (s, e) -> s, self#expression e) in
@@ -774,7 +774,7 @@ let transform =
             in
             self#expression { new_expr with pexp_attributes }
         (* obj##meth arg1 arg2 .. *)
-        | { pexp_desc = Pexp_apply (([%expr [%e? obj] ## [%e? meth]] as prop), args)
+        | { pexp_desc = Pexp_apply (([%expr [%e? obj]##[%e? meth]] as prop), args)
           ; pexp_loc
           ; _
           } ->
@@ -791,7 +791,7 @@ let transform =
             in
             self#expression { new_expr with pexp_attributes }
         (* obj##meth *)
-        | [%expr [%e? obj] ## [%e? meth]] as expr ->
+        | [%expr [%e? obj]##[%e? meth]] as expr ->
             let obj = self#expression obj in
             let meth_str = exp_to_string meth in
             let new_expr =

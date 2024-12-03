@@ -334,8 +334,9 @@ module Engine = struct
                   (Color.multiply_scalar light.Light.color l)));
       (if depth <= options.ray_depth
        then
-         if options.render_reflections
-            && info.Intersection_info.shape.Shape.material.Material.reflection > 0.
+         if
+           options.render_reflections
+           && info.Intersection_info.shape.Shape.material.Material.reflection > 0.
          then
            let reflection_ray =
              get_reflection_ray
@@ -371,9 +372,10 @@ module Engine = struct
             in
             color := Color.add_scalar va db
         | None -> ());
-      if options.render_highlights
-         && !shadow_info <> None
-         && info.Intersection_info.shape.Shape.material.Material.gloss > 0.
+      if
+        options.render_highlights
+        && !shadow_info <> None
+        && info.Intersection_info.shape.Shape.material.Material.gloss > 0.
       then
         (*XXX This looks wrong! *)
         let shape_position = Shape.position info.Intersection_info.shape in

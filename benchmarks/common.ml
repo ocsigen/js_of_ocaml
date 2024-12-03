@@ -193,9 +193,9 @@ end = struct
         then fun x -> x
         else
           fun x ->
-          x
-          |> List.filter ~f:(fun nm -> Filename.check_suffix nm spec.ext)
-          |> List.map ~f:Filename.chop_extension)
+            x
+            |> List.filter ~f:(fun nm -> Filename.check_suffix nm spec.ext)
+            |> List.map ~f:Filename.chop_extension)
     |> List.sort ~cmp:compare
 
   let ml = create "ml" ".ml"

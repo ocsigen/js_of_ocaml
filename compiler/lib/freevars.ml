@@ -237,9 +237,9 @@ let f p =
             iter_block_bound_vars (fun x -> Code.Var.ISet.add bound x) block;
             iter_block_free_vars using block;
             List.iter block.body ~f:(function
-                | Let (_, Closure (_, (pc_clo, _))) ->
-                    Code.Var.Set.iter using (Code.Addr.Map.find pc_clo acc)
-                | _ -> ());
+              | Let (_, Closure (_, (pc_clo, _))) ->
+                  Code.Var.Set.iter using (Code.Addr.Map.find pc_clo acc)
+              | _ -> ());
             Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
         in
         List.iter params ~f:(fun x -> Code.Var.ISet.add bound x);

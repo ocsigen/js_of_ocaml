@@ -299,8 +299,8 @@ let rec rewrite_closures free_pc blocks body : int * _ * _ list =
         List.flatten closures
         |> List.sort ~cmp:(fun a b -> compare (pos a) (pos b))
         |> List.concat_map ~f:(function
-               | One { code; _ } -> [ code ]
-               | Wrapper { code; wrapper; _ } -> [ code; wrapper ])
+             | One { code; _ } -> [ code ]
+             | Wrapper { code; wrapper; _ } -> [ code; wrapper ])
       in
       let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
       free_pc, blocks, closures @ rem

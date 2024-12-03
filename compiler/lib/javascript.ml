@@ -55,11 +55,12 @@ end = struct
   let to_string s = s
 
   let to_targetint s =
-    if String.is_prefix s ~prefix:"0"
-       && String.length s > 1
-       && String.for_all s ~f:(function
-              | '0' .. '7' -> true
-              | _ -> false)
+    if
+      String.is_prefix s ~prefix:"0"
+      && String.length s > 1
+      && String.for_all s ~f:(function
+           | '0' .. '7' -> true
+           | _ -> false)
     then (* legacy octal notation *)
       Targetint.of_string_exn ("0o" ^ s)
     else Targetint.of_string_exn s
@@ -530,16 +531,16 @@ and bound_idents_of_pattern p =
   match p with
   | ObjectBinding { list; rest } -> (
       List.concat_map list ~f:(function
-          | Prop_ident (Prop_and_ident i, _) -> [ i ]
-          | Prop_binding (_, e) -> bound_idents_of_element e)
+        | Prop_ident (Prop_and_ident i, _) -> [ i ]
+        | Prop_binding (_, e) -> bound_idents_of_element e)
       @
       match rest with
       | None -> []
       | Some x -> [ x ])
   | ArrayBinding { list; rest } -> (
       List.concat_map list ~f:(function
-          | None -> []
-          | Some e -> bound_idents_of_element e)
+        | None -> []
+        | Some e -> bound_idents_of_element e)
       @
       match rest with
       | None -> []
@@ -587,30 +588,29 @@ let rec assignment_target_of_expr' x =
   | EObj l ->
       let list =
         List.map l ~f:(function
-            | Property (PNI n, EVar (S { name = n'; _ } as id))
-              when Utf8_string.equal n n' -> TargetPropertyId (Prop_and_ident id, None)
-            | Property (n, e) ->
-                let e, i =
-                  match e with
-                  | EBin (Eq, e, i) -> e, Some (i, N)
-                  | _ -> e, None
-                in
-                TargetProperty (n, assignment_target_of_expr' e, i)
-            | CoverInitializedName (_, i, (e, loc)) ->
-                TargetPropertyId
-                  (Prop_and_ident i, Some (assignment_target_of_expr' e, loc))
-            | PropertySpread e -> TargetPropertySpread (assignment_target_of_expr' e)
-            | PropertyMethod (n, m) -> TargetPropertyMethod (n, m))
+          | Property (PNI n, EVar (S { name = n'; _ } as id)) when Utf8_string.equal n n'
+            -> TargetPropertyId (Prop_and_ident id, None)
+          | Property (n, e) ->
+              let e, i =
+                match e with
+                | EBin (Eq, e, i) -> e, Some (i, N)
+                | _ -> e, None
+              in
+              TargetProperty (n, assignment_target_of_expr' e, i)
+          | CoverInitializedName (_, i, (e, loc)) ->
+              TargetPropertyId (Prop_and_ident i, Some (assignment_target_of_expr' e, loc))
+          | PropertySpread e -> TargetPropertySpread (assignment_target_of_expr' e)
+          | PropertyMethod (n, m) -> TargetPropertyMethod (n, m))
       in
       EAssignTarget (ObjectTarget list)
   | EArr l ->
       let list =
         List.map l ~f:(function
-            | ElementHole -> TargetElementHole
-            | Element (EVar x) -> TargetElementId (x, None)
-            | Element (EBin (Eq, EVar x, rhs)) -> TargetElementId (x, Some (rhs, N))
-            | Element e -> TargetElement (assignment_target_of_expr' e)
-            | ElementSpread e -> TargetElementSpread (assignment_target_of_expr' e))
+          | ElementHole -> TargetElementHole
+          | Element (EVar x) -> TargetElementId (x, None)
+          | Element (EBin (Eq, EVar x, rhs)) -> TargetElementId (x, Some (rhs, N))
+          | Element e -> TargetElement (assignment_target_of_expr' e)
+          | ElementSpread e -> TargetElementSpread (assignment_target_of_expr' e))
       in
       EAssignTarget (ArrayTarget list)
   | _ -> x
