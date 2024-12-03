@@ -1,10 +1,10 @@
 name: build
 
 on:
-  pull_request:
   push:
     branches:
       - master
+  pull_request:
   schedule:
     # Prime the caches every Monday
     - cron: 0 1 * * MON
@@ -23,62 +23,29 @@ jobs:
           - "4.11"
           - "4.12"
           - "4.13"
+          - "4.14"
           - "5.0"
           - "5.1"
-        skip-test:
-          - true
-        skip-doc:
-          - true
-        skip-effects:
-          - true
+          - "5.2"
         include:
-          - os: ubuntu-latest
+          - os: macos-latest
             ocaml-compiler: "4.14"
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
+          - os: windows-latest
+            ocaml-compiler: "4.14"
+          - os: macos-latest
+            ocaml-compiler: "5.2"
+          - os: windows-latest
+            ocaml-compiler: "5.2"
           - os: ubuntu-latest
             ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: macos-latest
-            ocaml-compiler: "4.14"
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: windows-latest
-            ocaml-compiler: "4.14"
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: "5.2"
-            skip-effects: false
-            skip-test: false
-            skip-doc: false
-            # Note this OCaml compiler is bytecode only
-          - os: ubuntu-latest
-            ocaml-compiler: "ocaml-variants.5.2.0+options,ocaml-option-32bit"
-            skip-effects: true # disabled for the same reason than `skip-test`
-            skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
-            skip-doc: true
-          - os: macos-latest
-            ocaml-compiler: "5.2"
-            skip-effects: true
-            skip-test: false
-            skip-doc: true
-          - os: windows-latest
-            ocaml-compiler: "5.2"
-            skip-effects: false
-            skip-test: false
-            skip-doc: true
+            ocaml-compiler: "ocaml-variants.5.2.1+options,ocaml-option-32bit" # Note this OCaml compiler is bytecode only
 
     runs-on: ${{ matrix.os }}
 
     steps:
       - name: Set git to use LF
-        if: matrix.ocaml-compiler < 5.2
+        if: matrix.os == 'windows-latest'
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
@@ -88,7 +55,7 @@ jobs:
         # getting much better, but no luck yet, c.f:
         # https://github.com/ocaml/opam-repository/pull/26626
       - name: Install apt 32-bit dependencies
-        if: contains( matrix.ocaml-compiler, 'ocaml-option-32bit')
+        if: contains(matrix.ocaml-compiler, 'ocaml-option-32bit')
         run: |
           sudo apt-get install aptitude
           sudo dpkg --add-architecture i386
@@ -109,38 +76,30 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: true
-          opam-pin: false
-
-      - run: opam install conf-pkg-config
-        if: runner.os == 'Windows'
 
       - run: opam install . --best-effort
-        if: ${{ matrix.skip-test }}
+        if: matrix.ocaml-compiler < 4.14
 
-      - run: opam install . --with-test
-        if: ${{ !matrix.skip-test }}
+      - run: opam install . --deps-only --with-test --with-doc
+        if: matrix.ocaml-compiler >= 4.14
 
-      - run: opam exec -- make all
-        if: ${{ !matrix.skip-test }}
-
-      - run: opam exec -- make tests
-        if: ${{ !matrix.skip-test }}
+      - run: opam exec -- dune build @all @runtest
+        if: matrix.ocaml-compiler >= 4.14 && matrix.ocaml-compiler < 5.0
 
       - run: opam exec -- dune build @all @runtest --profile using-effects
-        if: ${{ !matrix.skip-effects }}
+        if: matrix.ocaml-compiler >= 5.0
 
       - run: opam exec -- git diff --exit-code
-        if: ${{ !matrix.skip-test }}
+        if: matrix.ocaml-compiler >= 4.14
 
-      - name: build doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref_name == 'master'}}
+      - name: Build doc
+        if: matrix.os == 'ubuntu-latest' && matrix.ocaml-compiler == '5.2' && github.event_name == 'push' && github.ref_name == 'master'
         run: |
           opam install odoc lwt_log cohttp-lwt-unix yojson ocp-indent graphics higlo
           opam exec -- make doc
 
-      - name: synchronize doc
-        if: ${{ !matrix.skip-doc && github.event_name == 'push' && github.ref_name == 'master' }}
+      - name: Synchronize doc
+        if: matrix.os == 'ubuntu-latest' && matrix.ocaml-compiler == '5.2' && github.event_name == 'push' && github.ref_name == 'master'
         uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: wikidoc
