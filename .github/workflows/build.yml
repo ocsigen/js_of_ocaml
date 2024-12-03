@@ -115,6 +115,70 @@ jobs:
       - run: opam install conf-pkg-config
         if: runner.os == 'Windows'
 
+      - name: Restore cached binaryen
+        id: cache-binaryen
+        uses: actions/cache/restore@v4
+        with:
+          path: binaryen
+          key: ${{ runner.os }}-binaryen-version_118
+
+      - name: Checkout binaryen
+        if: steps.cache-binaryen.outputs.cache-hit != 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: WebAssembly/binaryen
+          path: binaryen
+          submodules: true
+          ref: version_118
+
+      - name: Install ninja (Ubuntu)
+        if: matrix.os == 'ubuntu-latest' && steps.cache-binaryen.outputs.cache-hit != 'true'
+        run: sudo apt-get install ninja-build
+
+      - name: Install ninja (MacOS)
+        if: matrix.os == 'macos-latest' && steps.cache-binaryen.outputs.cache-hit != 'true'
+        run: brew install ninja
+
+      - name: Build binaryen
+        if: matrix.os != 'windows-latest' && steps.cache-binaryen.outputs.cache-hit != 'true'
+        working-directory: ./binaryen
+        run: |
+          cmake -G Ninja .
+          ninja
+
+      - name: Install binaryen build dependencies (Windows)
+        if: matrix.os == 'windows-latest' && steps.cache-binaryen.outputs.cache-hit != 'true'
+        working-directory: ./binaryen
+        run: opam install conf-cmake conf-c++
+
+      - name: Build binaryen (Windows)
+        if: matrix.os == 'windows-latest' && steps.cache-binaryen.outputs.cache-hit != 'true'
+        working-directory: ./binaryen
+        run: |
+          opam exec -- cmake . -DBUILD_STATIC_LIB=ON -DBUILD_TESTS=off -DINSTALL_LIBS=off -DCMAKE_C_COMPILER=x86_64-w64-mingw32-gcc
+          make -j 4
+
+      - name: Cache binaryen
+        if: steps.cache-binaryen.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: binaryen
+          key: ${{ runner.os }}-binaryen-version_118
+
+      - name: Set binaryen's path
+        shell: bash
+        run: echo "$GITHUB_WORKSPACE/binaryen/bin" >> $GITHUB_PATH
+
+      - name: Copy binaryen's tools (Windows)
+        if: matrix.os == 'windows-latest'
+        shell: bash
+        # Somehow, setting the path above does not work
+        run: cp $GITHUB_WORKSPACE/binaryen/bin/wasm-{merge,opt}.exe _opam/bin
+
+      - name: Install faked binaryen-bin package
+        # It's faster to use a cached version
+        run: opam install --fake binaryen-bin
+
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 
