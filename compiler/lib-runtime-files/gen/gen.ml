@@ -33,10 +33,10 @@ let read_file f =
 let to_ident s =
   match
     String.map (String.uncapitalize_ascii s) ~f:(function
-        | 'a' .. 'z' as c -> c
-        | 'A' .. 'Z' as c -> c
-        | '0' .. '9' as c -> c
-        | _ -> '_')
+      | 'a' .. 'z' as c -> c
+      | 'A' .. 'Z' as c -> c
+      | '0' .. '9' as c -> c
+      | _ -> '_')
   with
   | "effect" -> "effect_"
   | x -> x

@@ -55,8 +55,8 @@ let of_cmo (cmo : Cmo_format.compilation_unit) =
   let effects_without_cps =
     (not (Config.Flag.effects ()))
     && List.exists (Cmo_format.primitives cmo) ~f:(function
-           | "%resume" | "%reperform" | "%perform" -> true
-           | _ -> false)
+         | "%resume" | "%reperform" | "%perform" -> true
+         | _ -> false)
   in
   let force_link = Cmo_format.force_link cmo in
   let crcs =
@@ -111,8 +111,8 @@ let to_string t =
      else [ prefix; "Effects_without_cps:"; string_of_bool t.effects_without_cps ])
   ]
   |> List.filter_map ~f:(function
-         | [] -> None
-         | l -> Some (String.concat ~sep:" " l))
+       | [] -> None
+       | l -> Some (String.concat ~sep:" " l))
   |> String.concat ~sep:"\n"
   |> fun x -> x ^ "\n"
 

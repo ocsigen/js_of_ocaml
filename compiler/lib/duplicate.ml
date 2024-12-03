@@ -34,8 +34,8 @@ let expr s e =
       Prim
         ( p
         , List.map l ~f:(function
-              | Pv x -> Pv (s x)
-              | Pc _ as x -> x) )
+            | Pv x -> Pv (s x)
+            | Pc _ as x -> x) )
 
 let instr s i =
   match i with

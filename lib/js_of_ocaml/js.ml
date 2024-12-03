@@ -827,9 +827,10 @@ let export_js (field : js_string t) x =
   Unsafe.set
     (Unsafe.pure_js_expr "jsoo_exports")
     field
-    (if String.equal (Js.to_string (typeof (Obj.magic x))) "function"
-        (* function with arity/length equal to zero are already wrapped *)
-        && Unsafe.get (Obj.magic x) (Js.string "length") > 0
+    (if
+       String.equal (Js.to_string (typeof (Obj.magic x))) "function"
+       (* function with arity/length equal to zero are already wrapped *)
+       && Unsafe.get (Obj.magic x) (Js.string "length") > 0
      then Obj.magic (wrap_callback (Obj.magic x))
      else x)
 

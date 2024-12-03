@@ -341,5 +341,5 @@ let _ =
   List.iter compilers ~f:(fun (comp, dir) ->
       measure param src (Filename.concat times dir) Spec.js comp;
       List.iter suites ~f:(function
-          | None -> ()
-          | Some suite -> measure param code (Filename.concat times dir) suite comp))
+        | None -> ()
+        | Some suite -> measure param code (Filename.concat times dir) suite comp))

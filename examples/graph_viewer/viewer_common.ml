@@ -255,8 +255,9 @@ Format.eprintf "REDRAW %d %d %d %d@." x' y' w h;
 Firebug.console##log_6 (dx, pm.valid_rect.width, a.width,
                dy, pm.valid_rect.height, a.height);
 *)
-    if (dx > 0 && pm.valid_rect.width + dx < a.width)
-       || (dy > 0 && pm.valid_rect.height + dy < a.height)
+    if
+      (dx > 0 && pm.valid_rect.width + dx < a.width)
+      || (dy > 0 && pm.valid_rect.height + dy < a.height)
     then pm.valid_rect <- empty_rectangle
     else if not (rectangle_is_empty pm.valid_rect)
     then (

@@ -75,8 +75,9 @@ let seq_loop evh ?(cancel_handler = false) ?use_capture ?passive target handler 
       if cancel_handler then Lwt.cancel !cur_handler;
       cancelled := true);
   let rec aux () =
-    if not !cancelled
-       (* In the case it has been cancelled
+    if
+      not !cancelled
+      (* In the case it has been cancelled
                          during the previous handler,
                          we do not reinstall the event handler *)
     then (
@@ -333,7 +334,7 @@ let mousewheel ?use_capture ?passive target =
            cancel ();
            Lwt.wakeup w (ev, (dx, dy));
            Js.bool true)
-         (* true because we do not want to prevent default ->
+      (* true because we do not want to prevent default ->
                            the user can use the preventDefault function
                            above. *));
   t

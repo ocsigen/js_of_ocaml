@@ -42,13 +42,13 @@ class macro_mapper ~flags =
                   super#expression x)
           | "BLOCK", J.Arg (J.ENum tag) :: (_ :: _ as args)
             when List.for_all args ~f:(function
-                     | J.Arg _ -> true
-                     | J.ArgSpread _ -> false) ->
+                   | J.Arg _ -> true
+                   | J.ArgSpread _ -> false) ->
               let tag = Targetint.to_int_exn (J.Num.to_targetint tag) in
               let args =
                 List.map args ~f:(function
-                    | J.Arg e -> J.Element (m#expression e)
-                    | J.ArgSpread _ -> assert false)
+                  | J.Arg e -> J.Element (m#expression e)
+                  | J.ArgSpread _ -> assert false)
               in
               Mlvalue.Block.make ~tag ~args
           | "TAG", [ J.Arg e ] -> Mlvalue.Block.tag (m#expression e)

@@ -77,17 +77,17 @@ let cmis_of_package pkg : string list =
     in
     let l = String.split_char ~sep:' ' archive in
     List.iter l ~f:(function
-        | "" -> ()
-        | x ->
-            if Filename.check_suffix x ".cmo"
-            then
-              let u = Filename.chop_suffix x ".cmo" in
-              add (read_cmi ~dir (u ^ ".cmi"))
-            else if Filename.check_suffix x ".cma"
-            then List.iter (cmis_of_cma ~dir x) ~f:add
-            else if Filename.check_suffix x ".cmi"
-            then add (read_cmi ~dir (Filename.chop_suffix x ".cmi"))
-            else Format.eprintf "Wrong extension for archive %s@." x);
+      | "" -> ()
+      | x ->
+          if Filename.check_suffix x ".cmo"
+          then
+            let u = Filename.chop_suffix x ".cmo" in
+            add (read_cmi ~dir (u ^ ".cmi"))
+          else if Filename.check_suffix x ".cma"
+          then List.iter (cmis_of_cma ~dir x) ~f:add
+          else if Filename.check_suffix x ".cmi"
+          then add (read_cmi ~dir (Filename.chop_suffix x ".cmi"))
+          else Format.eprintf "Wrong extension for archive %s@." x);
     !fs
   with exn ->
     Format.eprintf "Error for package %s@." pkg;
