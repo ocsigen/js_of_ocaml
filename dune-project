@@ -139,7 +139,7 @@
  (description
   "Wasm_of_ocaml is a compiler from OCaml bytecode to WebAssembly. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
-  (ocaml (and (>= 4.14) (< 5.3)))
+  (ocaml (>= 4.14))
   (js_of_ocaml (= :version))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))

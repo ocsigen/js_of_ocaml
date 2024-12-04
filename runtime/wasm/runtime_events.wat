@@ -62,4 +62,8 @@
    (func (export "caml_runtime_events_read_poll")
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ml_runtime_events_path")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
 )

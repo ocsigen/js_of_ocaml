@@ -95,7 +95,8 @@
    (global $caml_domain_latest_id (export "caml_domain_latest_id") (mut i32)
       (i32.const 1))
 
-   (func (export "caml_ml_domain_id") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_domain_id") (export "caml_ml_domain_index")
+      (param (ref eq)) (result (ref eq))
       (ref.i31 (global.get $caml_domain_id)))
 
    (func (export "caml_ml_domain_cpu_relax") (param (ref eq)) (result (ref eq))

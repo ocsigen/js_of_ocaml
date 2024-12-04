@@ -32,7 +32,7 @@
          (field (ref $int_array)) ;; buffer
          (field (ref $string))))  ;; intermediate buffer
 
-   (func (export "caml_md5_string")
+   (func (export "caml_md5_string") (export "caml_md5_bytes")
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $ctx (ref $context))
       (local.set $ctx (call $MD5Init))
