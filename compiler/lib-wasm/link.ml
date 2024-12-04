@@ -540,23 +540,32 @@ let build_runtime_arguments
       , EArr
           (List.map
              ~f:(fun (m, deps) ->
-               Javascript.Element
-                 (EArr
-                    [ Element (EStr (Utf8_string.of_string_exn m))
-                    ; Element
-                        (match deps with
-                        | None ->
-                            ENum (Javascript.Num.of_targetint (Targetint.of_int_exn 0))
-                        | Some l ->
-                            EArr
-                              (List.map
-                                 ~f:(fun i ->
-                                   Javascript.Element
-                                     (ENum
-                                        (Javascript.Num.of_targetint
-                                           (Targetint.of_int_exn i))))
-                                 l))
-                    ]))
+               let deps =
+                 Javascript.Element
+                   (match deps with
+                   | None -> ENum (Javascript.Num.of_targetint (Targetint.of_int_exn 0))
+                   | Some l ->
+                       EArr
+                         (List.map
+                            ~f:(fun i ->
+                              Javascript.Element
+                                (ENum
+                                   (Javascript.Num.of_targetint (Targetint.of_int_exn i))))
+                            l))
+               in
+               match m with
+               | `Name m ->
+                   Javascript.Element
+                     (EArr [ Element (EStr (Utf8_string.of_string_exn m)); deps ])
+               | `File f ->
+                   let contents =
+                     f
+                     |> Fs.read_file
+                     |> Base64.encode_string
+                     |> Utf8_string.of_string_exn
+                   in
+                   Javascript.Element
+                     (EArr [ ElementHole; deps; Javascript.Element (EStr contents) ]))
              link_spec) )
     ; "generated", generated_js
     ; "src", EStr (Utf8_string.of_string_exn (Filename.basename wasm_dir))
@@ -814,7 +823,10 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
     ( interfaces
     , dir
     , let to_link = compute_dependencies ~files_to_link ~files in
-      List.combine module_names (None :: None :: to_link) @ [ start_module, None ] )
+      List.combine
+        (List.map ~f:(fun nm -> `Name nm) module_names)
+        (None :: None :: to_link)
+      @ [ `Name start_module, None ] )
   in
   let missing_primitives = compute_missing_primitives interfaces in
   if times () then Format.eprintf "    copy wasm files: %a@." Timer.print t;

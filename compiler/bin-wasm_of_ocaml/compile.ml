@@ -479,7 +479,7 @@ let run
                (Link.build_runtime_arguments
                   ~missing_primitives
                   ~wasm_dir:dir
-                  ~link_spec:[ wasm_name, None ]
+                  ~link_spec:[ (*`Name wasm_name*) `File tmp_wasm_file', None ]
                   ~separate_compilation:false
                   ~generated_js:[ None, generated_js ]
                   ())
