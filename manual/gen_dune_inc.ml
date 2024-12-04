@@ -6,17 +6,17 @@ let all : desc list =
     , [ "index.html"; "toplevel.js"; "toplevel.bc.js"; "test_dynlink.js" ] )
   ; ( "../examples/boulderdash"
     , "boulderdash"
-    , [ "index.html"; "boulderdash.js"; "sprites/" ] )
-  ; "../examples/webgl", "webgl", [ "index.html"; "webgldemo.js" ]
-  ; "../examples/graph_viewer", "graph_viewer", [ "index.html"; "viewer_js.js" ]
-  ; "../examples/planet", "planet", [ "index.html"; "texture.jpg"; "planet.js" ]
-  ; "../examples/wiki", "wiki", [ "index.html"; "main.js" ]
-  ; "../examples/wysiwyg", "wysiwyg", [ "index.html"; "main.js" ]
+    , [ "index.html"; "boulderdash.bc.js"; "sprites/" ] )
+  ; "../examples/webgl", "webgl", [ "index.html"; "webgldemo.bc.js" ]
+  ; "../examples/graph_viewer", "graph_viewer", [ "index.html"; "viewer_js.bc.js" ]
+  ; "../examples/planet", "planet", [ "index.html"; "texture.jpg"; "planet.bc.js" ]
+  ; "../examples/wiki", "wiki", [ "index.html"; "main.bc.js" ]
+  ; "../examples/wysiwyg", "wysiwyg", [ "index.html"; "main.bc.js" ]
   ; ( "../examples/hyperbolic"
     , "hyperbolic"
-    , [ "index.html"; "hypertree.js"; "icons/"; "thumbnails/" ] )
-  ; "../examples/minesweeper", "minesweeper", [ "index.html"; "main.js"; "sprites/" ]
-  ; "../examples/cubes", "cubes", [ "index.html"; "cubes.js" ]
+    , [ "index.html"; "hypertree.bc.js"; "icons/"; "thumbnails/" ] )
+  ; "../examples/minesweeper", "minesweeper", [ "index.html"; "main.bc.js"; "sprites/" ]
+  ; "../examples/cubes", "cubes", [ "index.html"; "cubes.bc.js" ]
   ]
 
 let deps (dir, _, files) = List.map (fun f -> dir ^ "/" ^ f) files
