@@ -131,10 +131,6 @@
 
    (func (export "caml_read_file_content")
       (param (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_str
-         (array.new_data $string $caml_read_file_content
-            (i32.const 0) (i32.const 22)))
       (call $caml_raise_no_such_file (local.get 0))
       (ref.i31 (i32.const 0)))
 

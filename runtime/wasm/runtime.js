@@ -458,7 +458,7 @@
     },
     map_set: (m, x, v) => m.set(x, v),
     map_delete: (m, x) => m.delete(x),
-    log: (x) => console.log("ZZZZZ", x),
+    log: (x) => console.log(x),
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
