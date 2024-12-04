@@ -437,6 +437,7 @@
     unlink: (p) => fs.unlinkSync(p),
     readdir: (p) => fs.readdirSync(p),
     file_exists: (p) => +fs.existsSync(p),
+    is_directory: (p) => +fs.lstatSync(p).isDirectory(),
     rename: (o, n) => fs.renameSync(o, n),
     throw: (e) => {
       throw e;
