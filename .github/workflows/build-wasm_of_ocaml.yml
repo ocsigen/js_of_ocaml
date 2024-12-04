@@ -3,6 +3,8 @@ name: Build wasm_of_ocaml
 on:
   pull_request:
   push:
+    branches:
+      - master
 
 jobs:
   build:
