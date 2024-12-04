@@ -323,6 +323,63 @@ end = struct
     StringSet.of_list (List.concat paths)
 end
 
+module Hints = struct
+  module Primitive = struct
+    type boxed_integer =
+      | Pnativeint
+      | Pint32
+      | Pint64
+
+    type native_repr =
+      | Same_as_ocaml_repr
+      | Unboxed_float
+      | Unboxed_integer of boxed_integer
+      | Untagged_immediate
+
+    type description =
+      { prim_name : string (* Name of primitive  or C function *)
+      ; prim_arity : int (* Number of arguments *)
+      ; prim_alloc : bool (* Does it allocates or raise? *)
+      ; prim_native_name : string (* Name of C function for the nat. code gen. *)
+      ; prim_native_repr_args : native_repr list
+      ; prim_native_repr_res : native_repr
+      }
+    [@@ocaml.warning "-unused-field"]
+  end
+
+  type optimization_hint =
+    | Hint_immutable
+    | Hint_unsafe
+    | Hint_int of Primitive.boxed_integer
+    | Hint_array of Lambda.array_kind
+    | Hint_bigarray of
+        { unsafe : bool
+        ; elt_kind : Lambda.bigarray_kind
+        ; layout : Lambda.bigarray_layout
+        }
+    | Hint_primitive of Primitive.description
+
+  module Int_table = Hashtbl.Make (Int)
+
+  type t = { hints : optimization_hint Int_table.t }
+
+  let create () = { hints = Int_table.create 17 }
+
+  let read t ~orig ic =
+    let l : (int * optimization_hint) list = input_value ic in
+
+    List.iter l ~f:(fun (pos, hint) -> Int_table.add t.hints ((pos + orig) / 4) hint)
+
+  let read_section t ic =
+    let len = input_binary_int ic in
+    for _i = 0 to len - 1 do
+      let orig = input_binary_int ic in
+      read t ~orig ic
+    done
+
+  let find t pc = Int_table.find_all t.hints pc
+end
+
 (* Block analysis *)
 (* Detect each block *)
 module Blocks : sig
@@ -548,6 +605,8 @@ module State = struct
     ; env_offset : int
     ; handlers : handler list
     ; globals : globals
+    ; immutable : Code.Var.Set.t ref
+    ; includes : string list
     }
 
   let fresh_var state =
@@ -632,8 +691,16 @@ module State = struct
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
-  let initial g =
-    { accu = Unset; stack = []; env = [||]; env_offset = 0; handlers = []; globals = g }
+  let initial includes g immutable =
+    { accu = Unset
+    ; stack = []
+    ; env = [||]
+    ; env_offset = 0
+    ; handlers = []
+    ; globals = g
+    ; immutable
+    ; includes
+    }
 
   let rec print_stack f l =
     match l with
@@ -656,20 +723,22 @@ module State = struct
       print_env
       st.env
 
-  let rec name_rec debug i l s summary =
+  let rec name_rec debug st i l s summary =
     match l, s with
     | [], _ -> ()
     | (j, ident) :: lrem, Var v :: srem when i = j ->
+        if Ocaml_compiler.is_module_in_summary ident summary
+        then st.immutable := Code.Var.Set.add v !(st.immutable);
         Var.name v (Ident.name ident);
-        name_rec debug (i + 1) lrem srem summary
-    | (j, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary
+        name_rec debug st (i + 1) lrem srem summary
+    | (j, _) :: _, _ :: srem when i < j -> name_rec debug st (i + 1) l srem summary
     | _ -> assert false
 
   let name_vars st debug pc =
     if Debug.names debug
     then
       let l, summary = Debug.find debug pc in
-      name_rec debug 0 l st.stack summary
+      name_rec debug st 0 l st.stack summary
 
   let rec make_stack i state =
     if i = 0
@@ -761,6 +830,12 @@ let get_global state instrs i =
             let x, state = State.fresh_var state in
             if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
             g.vars.(i) <- Some x;
+            (match g.named_value.(i) with
+            | None -> ()
+            | Some name -> (
+                match Shape.Store.load ~name state.includes with
+                | None -> ()
+                | Some shape -> Shape.State.assign x shape));
             x, state, instrs
         | false, `Wasm -> (
             (* Reference to another compilation units in case of separate
@@ -791,6 +866,7 @@ type compile_info =
   ; code : string
   ; limit : int
   ; debug : Debug.t
+  ; hints : Hints.t
   }
 
 let string_of_addr debug_data addr =
@@ -813,7 +889,11 @@ let string_of_addr debug_data addr =
       in
       Printf.sprintf "%s:%s-%s %s" file (pos loc.loc_start) (pos loc.loc_end) kind)
 
-let rec compile_block blocks debug_data code pc state : unit =
+let is_immutable _instr infos pc =
+  let hints = Hints.find infos.hints pc in
+  if List.mem Hints.Hint_immutable ~set:hints then Immutable else Maybe_mutable
+
+let rec compile_block blocks hints debug_data code pc state : unit =
   match Addr.Map.find_opt pc !tagged_blocks with
   | Some old_state -> (
       (* Check that the shape of the stack is compatible with the one used to compile the block *)
@@ -845,7 +925,7 @@ let rec compile_block blocks debug_data code pc state : unit =
       let state = State.start_block pc state in
       tagged_blocks := Addr.Map.add pc state !tagged_blocks;
       let instr, last, state' =
-        compile { blocks; code; limit; debug = debug_data } pc state []
+        compile { blocks; code; limit; debug = debug_data; hints } pc state []
       in
       assert (not (Addr.Map.mem pc !compiled_blocks));
       (* When jumping to a block that was already visited and the
@@ -873,10 +953,11 @@ let rec compile_block blocks debug_data code pc state : unit =
       in
       compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
       match last with
-      | Branch (pc', _) -> compile_block blocks debug_data code pc' (adjust_state pc')
+      | Branch (pc', _) ->
+          compile_block blocks hints debug_data code pc' (adjust_state pc')
       | Cond (_, (pc1, _), (pc2, _)) ->
-          compile_block blocks debug_data code pc1 (adjust_state pc1);
-          compile_block blocks debug_data code pc2 (adjust_state pc2)
+          compile_block blocks hints debug_data code pc1 (adjust_state pc1);
+          compile_block blocks hints debug_data code pc2 (adjust_state pc2)
       | Poptrap (_, _) -> ()
       | Switch (_, _) -> ()
       | Raise _ | Return _ | Stop -> ()
@@ -1203,7 +1284,7 @@ and compile infos pc state (instrs : instr list) =
         let params, state' = State.make_stack nparams state' in
         if debug_parser () then Format.printf ") {@.";
         let state' = State.clear_accu state' in
-        compile_block infos.blocks infos.debug code addr state';
+        compile_block infos.blocks infos.hints infos.debug code addr state';
         if debug_parser () then Format.printf "}@.";
         let args = State.stack_vars state' in
         let state'', _, _ = Addr.Map.find addr !compiled_blocks in
@@ -1260,7 +1341,7 @@ and compile infos pc state (instrs : instr list) =
               let params, state' = State.make_stack nparams state' in
               if debug_parser () then Format.printf ") {@.";
               let state' = State.clear_accu state' in
-              compile_block infos.blocks infos.debug code addr state';
+              compile_block infos.blocks infos.hints infos.debug code addr state';
               if debug_parser () then Format.printf "}@.";
               let args = State.stack_vars state' in
               let state'', _, _ = Addr.Map.find addr !compiled_blocks in
@@ -1303,6 +1384,7 @@ and compile infos pc state (instrs : instr list) =
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
+        Shape.State.propagate x j y;
         compile infos (pc + 3) state (Let (y, Field (x, j, Non_float)) :: instrs)
     | PUSHGETGLOBALFIELD ->
         let state = State.push state in
@@ -1312,6 +1394,7 @@ and compile infos pc state (instrs : instr list) =
         let j = getu code (pc + 2) in
         let y, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
+        Shape.State.propagate x j y;
         compile infos (pc + 3) state (Let (y, Field (x, j, Non_float)) :: instrs)
     | SETGLOBAL ->
         let i = getu code (pc + 1) in
@@ -1334,47 +1417,36 @@ and compile infos pc state (instrs : instr list) =
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         let instrs = register_global g i instrs in
+        state.immutable := Code.Var.Set.add (access_global g i) !(state.immutable);
         compile infos (pc + 2) state (Let (x, const 0) :: instrs)
     | ATOM0 ->
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile
-          infos
-          (pc + 1)
-          state
-          (Let (x, Block (0, [||], Unknown, Maybe_mutable)) :: instrs)
+        let imm = is_immutable instr infos pc in
+        compile infos (pc + 1) state (Let (x, Block (0, [||], Unknown, imm)) :: instrs)
     | ATOM ->
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile
-          infos
-          (pc + 2)
-          state
-          (Let (x, Block (i, [||], Unknown, Maybe_mutable)) :: instrs)
+        let imm = is_immutable instr infos pc in
+        compile infos (pc + 2) state (Let (x, Block (i, [||], Unknown, imm)) :: instrs)
     | PUSHATOM0 ->
         let state = State.push state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile
-          infos
-          (pc + 1)
-          state
-          (Let (x, Block (0, [||], Unknown, Maybe_mutable)) :: instrs)
+        let imm = is_immutable instr infos pc in
+        compile infos (pc + 1) state (Let (x, Block (0, [||], Unknown, imm)) :: instrs)
     | PUSHATOM ->
         let state = State.push state in
 
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile
-          infos
-          (pc + 2)
-          state
-          (Let (x, Block (i, [||], Unknown, Maybe_mutable)) :: instrs)
+        let imm = is_immutable instr infos pc in
+        compile infos (pc + 2) state (Let (x, Block (i, [||], Unknown, imm)) :: instrs)
     | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
@@ -1389,22 +1461,24 @@ and compile infos pc state (instrs : instr list) =
             Format.printf "%d = %a; " i Var.print (List.nth contents i)
           done;
           Format.printf "}@.");
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 3)
           state
-          (Let (x, Block (tag, Array.of_list contents, Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (tag, Array.of_list contents, Unknown, imm)) :: instrs)
     | MAKEBLOCK1 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = { 0 = %a; }@." Var.print x Var.print y;
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 2)
           state
-          (Let (x, Block (tag, [| y |], Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (tag, [| y |], Unknown, imm)) :: instrs)
     | MAKEBLOCK2 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1414,11 +1488,12 @@ and compile infos pc state (instrs : instr list) =
         if debug_parser ()
         then
           Format.printf "%a = { 0 = %a; 1 = %a; }@." Var.print x Var.print y Var.print z;
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 2)
           (State.pop 1 state)
-          (Let (x, Block (tag, [| y; z |], Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (tag, [| y; z |], Unknown, imm)) :: instrs)
     | MAKEBLOCK3 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1438,11 +1513,12 @@ and compile infos pc state (instrs : instr list) =
             z
             Var.print
             t;
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 2)
           (State.pop 2 state)
-          (Let (x, Block (tag, [| y; z; t |], Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (tag, [| y; z; t |], Unknown, imm)) :: instrs)
     | MAKEFLOATBLOCK ->
         let size = getu code (pc + 1) in
         let state = State.push state in
@@ -1456,34 +1532,39 @@ and compile infos pc state (instrs : instr list) =
             Format.printf "%d = %a; " i Var.print (List.nth contents i)
           done;
           Format.printf "}@.");
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 2)
           state
-          (Let (x, Block (254, Array.of_list contents, Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (254, Array.of_list contents, Unknown, imm)) :: instrs)
     | GETFIELD0 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[0]@." Var.print x Var.print y;
+        Shape.State.propagate y 0 x;
         compile infos (pc + 1) state (Let (x, Field (y, 0, Non_float)) :: instrs)
     | GETFIELD1 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[1]@." Var.print x Var.print y;
+        Shape.State.propagate y 1 x;
         compile infos (pc + 1) state (Let (x, Field (y, 1, Non_float)) :: instrs)
     | GETFIELD2 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[2]@." Var.print x Var.print y;
+        Shape.State.propagate y 2 x;
         compile infos (pc + 1) state (Let (x, Field (y, 2, Non_float)) :: instrs)
     | GETFIELD3 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[3]@." Var.print x Var.print y;
+        Shape.State.propagate y 3 x;
         compile infos (pc + 1) state (Let (x, Field (y, 3, Non_float)) :: instrs)
     | GETFIELD ->
         let y = State.accu state in
@@ -1491,6 +1572,7 @@ and compile infos pc state (instrs : instr list) =
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
+        Shape.State.propagate y n x;
         compile infos (pc + 2) state (Let (x, Field (y, n, Non_float)) :: instrs)
     | GETFLOATFIELD ->
         let y = State.accu state in
@@ -1677,9 +1759,9 @@ and compile infos pc state (instrs : instr list) =
         let it = Array.init isize ~f:(fun i -> base + gets code (base + i)) in
         let bt = Array.init bsize ~f:(fun i -> base + gets code (base + isize + i)) in
         Array.iter it ~f:(fun pc' ->
-            compile_block infos.blocks infos.debug code pc' state);
+            compile_block infos.blocks infos.hints infos.debug code pc' state);
         Array.iter bt ~f:(fun pc' ->
-            compile_block infos.blocks infos.debug code pc' state);
+            compile_block infos.blocks infos.hints infos.debug code pc' state);
         match isize, bsize with
         | _, 0 -> instrs, Switch (x, Array.map it ~f:(fun pc -> pc, [])), state
         | 0, _ ->
@@ -1743,9 +1825,10 @@ and compile infos pc state (instrs : instr list) =
                 , x
                 , (handler_addr, State.stack_vars handler_state) ) )
             !compiled_blocks;
-        compile_block infos.blocks infos.debug code handler_addr handler_state;
+        compile_block infos.blocks infos.hints infos.debug code handler_addr handler_state;
         compile_block
           infos.blocks
+          infos.hints
           infos.debug
           code
           body_addr
@@ -1763,6 +1846,7 @@ and compile infos pc state (instrs : instr list) =
         let addr = pc + 1 in
         compile_block
           infos.blocks
+          infos.hints
           infos.debug
           code
           addr
@@ -1796,7 +1880,21 @@ and compile infos pc state (instrs : instr list) =
         let y = State.accu state in
         let z = State.peek 0 state in
         let x, state = State.fresh_var state in
-
+        let prim =
+          match prim with
+          | "caml_ba_uint8_get16"
+          | "caml_ba_uint8_get32"
+          | "caml_ba_uint8_get64"
+          | "caml_string_get16"
+          | "caml_string_get32"
+          | "caml_string_get64"
+          | "caml_bytes_get16"
+          | "caml_bytes_get32"
+          | "caml_bytes_get64" ->
+              let hints = Hints.find infos.hints pc in
+              if List.mem Hints.Hint_unsafe ~set:hints then prim ^ "u" else prim
+          | _ -> prim
+        in
         if debug_parser ()
         then
           Format.printf
@@ -1808,18 +1906,55 @@ and compile infos pc state (instrs : instr list) =
             y
             Var.print
             z;
+        let prim, y, z =
+          match prim with
+          | "caml_equal"
+          | "caml_notequal"
+          | "caml_lessthan"
+          | "caml_greaterthan"
+          | "caml_lessequal"
+          | "caml_greaterequal" -> (
+              let prim_of_ext = function
+                | "caml_equal" -> Eq, y, z
+                | "caml_notequal" -> Neq, y, z
+                | "caml_lessthan" -> Lt, y, z
+                | "caml_lessequal" -> Le, y, z
+                | "caml_greaterequal" -> Le, z, y
+                | "caml_greaterthan" -> Lt, z, y
+                | _ -> assert false
+              in
+              match Hints.find infos.hints pc with
+              | [ Hints.Hint_int boxed ] -> (
+                  match boxed with
+                  | Pnativeint -> prim_of_ext prim
+                  | Pint32 -> prim_of_ext prim
+                  | Pint64 -> Extern prim, y, z)
+              | _ -> Extern prim, y, z)
+          | _ -> Extern prim, y, z
+        in
         compile
           infos
           (pc + 2)
           (State.pop 1 state)
-          (Let (x, Prim (Extern prim, [ Pv y; Pv z ])) :: instrs)
+          (Let (x, Prim (prim, [ Pv y; Pv z ])) :: instrs)
     | C_CALL3 ->
         let prim = primitive_name state (getu code (pc + 1)) in
         let y = State.accu state in
         let z = State.peek 0 state in
         let t = State.peek 1 state in
         let x, state = State.fresh_var state in
-
+        let prim =
+          match prim with
+          | "caml_ba_uint8_set16"
+          | "caml_ba_uint8_set32"
+          | "caml_ba_uint8_set64"
+          | "caml_bytes_set16"
+          | "caml_bytes_set32"
+          | "caml_bytes_set64" ->
+              let hints = Hints.find infos.hints pc in
+              if List.mem Hints.Hint_unsafe ~set:hints then prim ^ "u" else prim
+          | _ -> prim
+        in
         if debug_parser ()
         then
           Format.printf
@@ -2444,18 +2579,28 @@ type one =
   ; debug : Debug.t
   }
 
-let parse_bytecode code globals debug_data =
-  let state = State.initial globals in
+let parse_bytecode ~includes code globals hints debug_data =
+  let immutable = ref Code.Var.Set.empty in
+  let state = State.initial includes globals immutable in
   Code.Var.reset ();
   let blocks' = Blocks.analyse code in
+  Shape.State.reset ();
   let p =
     if not (Blocks.is_empty blocks')
     then (
       let start = 0 in
-      compile_block blocks' debug_data code start state;
+      compile_block blocks' hints debug_data code start state;
+      let immutable = !immutable in
       let blocks =
         Addr.Map.mapi
           (fun _ (state, instr, last) ->
+            let instr =
+              List.map instr ~f:(function
+                  | Let (x, Block (tag, args, k, Maybe_mutable))
+                    when Code.Var.Set.mem x immutable ->
+                      Let (x, Block (tag, args, k, Immutable))
+                  | x -> x)
+            in
             { params = State.stack_vars state; body = instr; branch = last })
           !compiled_blocks
       in
@@ -2578,6 +2723,7 @@ let from_exe
     ?(debug = false)
     ic =
   let debug_data = Debug.create ~include_cmis debug in
+  let hints = Hints.create () in
   let toc = Toc.read ic in
   let primitives = read_primitives toc ic in
   let primitive_table = Array.of_list primitives in
@@ -2623,6 +2769,11 @@ let from_exe
             not available.@.");
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
 
+  (try
+     ignore (Toc.seek_section toc ic "HINT");
+     Hints.read_section hints ic
+   with Not_found -> ());
+
   let globals = make_globals (Array.length init_data) init_data primitive_table in
   (* Initialize module override mechanism *)
   List.iter override_global ~f:(fun (name, v) ->
@@ -2638,7 +2789,7 @@ let from_exe
     Ocaml_compiler.Symtable.GlobalMap.iter symbols ~f:(fun id n ->
         globals.named_value.(n) <- Some (Ocaml_compiler.Symtable.Global.name id);
         globals.is_exported.(n) <- true);
-  let p = parse_bytecode code globals debug_data in
+  let p = parse_bytecode ~includes code globals hints debug_data in
   (* register predefined exception *)
   let body =
     List.fold_left predefined_exceptions ~init:[] ~f:(fun body (i, name) ->
@@ -2744,6 +2895,7 @@ let from_exe
 (* As input: list of primitives + size of global table *)
 let from_bytes ~prims ~debug (code : bytecode) =
   let debug_data = Debug.create ~include_cmis:false true in
+  let hints = Hints.create () in
   let t = Timer.make () in
   if Debug.names debug_data
   then
@@ -2761,7 +2913,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
     t
   in
   let globals = make_globals 0 [||] prims in
-  let p = parse_bytecode code globals debug_data in
+  let p = parse_bytecode ~includes:[] code globals hints debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let find_name i =
@@ -2900,7 +3052,7 @@ module Reloc = struct
     globals
 end
 
-let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
+let from_compilation_units ~includes ~include_cmis ~hints ~debug_data l =
   let reloc = Reloc.create () in
   List.iter l ~f:(fun (compunit, code) -> Reloc.step1 reloc compunit code);
   List.iter l ~f:(fun (compunit, code) -> Reloc.step2 reloc compunit code);
@@ -2909,7 +3061,7 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
     let l = List.map l ~f:(fun (_, c) -> Bytes.to_string c) in
     String.concat ~sep:"" l
   in
-  let prog = parse_bytecode code globals debug_data in
+  let prog = parse_bytecode ~includes code globals hints debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let body =
@@ -2961,12 +3113,20 @@ let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit 
     seek_in ic compunit.Cmo_format.cu_debug;
     Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
-  let p = from_compilation_units ~includes ~include_cmis ~debug_data [ compunit, code ] in
+  let hints = Hints.create () in
+  if Ocaml_compiler.Cmo_format.hints_pos compunit <> 0
+  then (
+    seek_in ic (Ocaml_compiler.Cmo_format.hints_pos compunit);
+    Hints.read hints ~orig:0 ic);
+  let p =
+    from_compilation_units ~includes ~include_cmis ~hints ~debug_data [ compunit, code ]
+  in
   Code.invariant p.code;
   p
 
 let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
   let debug_data = Debug.create ~include_cmis debug in
+  let hints = Hints.create () in
   let orig = ref 0 in
   let t = ref 0. in
   let units =
@@ -2979,12 +3139,16 @@ let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
         then (
           seek_in ic compunit.Cmo_format.cu_debug;
           Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
+        if Ocaml_compiler.Cmo_format.hints_pos compunit <> 0
+        then (
+          seek_in ic (Ocaml_compiler.Cmo_format.hints_pos compunit);
+          Hints.read hints ~orig:!orig ic);
         t := !t +. Timer.get t0;
         orig := !orig + compunit.Cmo_format.cu_codesize;
         compunit, code)
   in
   if times () then Format.eprintf "    read debug events: %.2f@." !t;
-  let p = from_compilation_units ~includes ~include_cmis ~debug_data units in
+  let p = from_compilation_units ~includes ~include_cmis ~hints ~debug_data units in
   Code.invariant p.code;
   p
 

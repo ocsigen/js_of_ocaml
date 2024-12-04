@@ -556,13 +556,17 @@ module Print = struct
         if exact
         then Format.fprintf f "%a!(%a)" Var.print g var_list args
         else Format.fprintf f "%a(%a)" Var.print g var_list args
-    | Block (t, a, _, mut) ->
+    | Block (t, a, k, mut) ->
         Format.fprintf
           f
-          "%s{tag=%d"
+          "{%s%s:tag=%d"
           (match mut with
           | Immutable -> "imm"
           | Maybe_mutable -> "")
+          (match k with
+          | Array -> "A"
+          | NotArray -> "NA"
+          | Unknown -> "U")
           t;
         for i = 0 to Array.length a - 1 do
           Format.fprintf f "; %d = %a" i Var.print a.(i)
