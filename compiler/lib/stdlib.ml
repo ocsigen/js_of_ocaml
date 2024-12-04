@@ -621,10 +621,11 @@ module String = struct
       let rec loop i =
         if i > max_idx_a
         then true
-        else if not
-                  (Char.equal
-                     (unsafe_get suffix (len_a - 1 - i))
-                     (unsafe_get s (len_s - 1 - i)))
+        else if
+          not
+            (Char.equal
+               (unsafe_get suffix (len_a - 1 - i))
+               (unsafe_get s (len_s - 1 - i)))
         then false
         else loop (i + 1)
       in
@@ -951,47 +952,53 @@ module String = struct
             else loop max b (last + 1)
         | '\xE0' ->
             let last = i + 2 in
-            if last > max
-               || not_in_xA0_to_xBF (get b (i + 1))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_xA0_to_xBF (get b (i + 1))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xE1' .. '\xEC' | '\xEE' .. '\xEF' ->
             let last = i + 2 in
-            if last > max
-               || not_in_x80_to_xBF (get b (i + 1))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x80_to_xBF (get b (i + 1))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xED' ->
             let last = i + 2 in
-            if last > max
-               || not_in_x80_to_x9F (get b (i + 1))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x80_to_x9F (get b (i + 1))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xF0' ->
             let last = i + 3 in
-            if last > max
-               || not_in_x90_to_xBF (get b (i + 1))
-               || not_in_x80_to_xBF (get b (i + 2))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x90_to_xBF (get b (i + 1))
+              || not_in_x80_to_xBF (get b (i + 2))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xF1' .. '\xF3' ->
             let last = i + 3 in
-            if last > max
-               || not_in_x80_to_xBF (get b (i + 1))
-               || not_in_x80_to_xBF (get b (i + 2))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x80_to_xBF (get b (i + 1))
+              || not_in_x80_to_xBF (get b (i + 2))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | '\xF4' ->
             let last = i + 3 in
-            if last > max
-               || not_in_x80_to_x8F (get b (i + 1))
-               || not_in_x80_to_xBF (get b (i + 2))
-               || not_in_x80_to_xBF (get b last)
+            if
+              last > max
+              || not_in_x80_to_x8F (get b (i + 1))
+              || not_in_x80_to_xBF (get b (i + 2))
+              || not_in_x80_to_xBF (get b last)
             then false
             else loop max b (last + 1)
         | _ -> false

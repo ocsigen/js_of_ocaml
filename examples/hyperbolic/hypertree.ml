@@ -311,8 +311,9 @@ debug_msg (Format.sprintf "Mouse down %d %d" x0 y0);
                  (*
 debug_msg (Format.sprintf "Mouse move %d %d %d %d" x0 y0 x y);
 *)
-                 if (not !started)
-                    && (abs_float (x -. x0) > fuzz || abs_float (y -. y0) > fuzz)
+                 if
+                   (not !started)
+                   && (abs_float (x -. x0) > fuzz || abs_float (y -. y0) > fuzz)
                  then (
                    started := true;
                    element##.style##.cursor := Js.string "move");
@@ -375,9 +376,10 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
                                  (*
   debug_msg (Format.sprintf "Touch move %d %d %d %d" x0 y0 x y);
 *)
-                                 if (not !started)
-                                    && (abs_float (x -. x0) > fuzz
-                                       || abs_float (y -. y0) > fuzz)
+                                 if
+                                   (not !started)
+                                   && (abs_float (x -. x0) > fuzz
+                                      || abs_float (y -. y0) > fuzz)
                                  then (
                                    started := true;
                                    element##.style##.cursor := Js.string "move");
@@ -1635,9 +1637,10 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
     let find_box boxes x y =
       let p = ref (-1) in
       for i = 0 to Array.length boxes.bw - 1 do
-        if Array.unsafe_get boxes.bw i > 0.
-           && abs_float (x -. Array.unsafe_get boxes.bx i) < Array.unsafe_get boxes.bw i
-           && abs_float (y -. Array.unsafe_get boxes.by i) < Array.unsafe_get boxes.bh i
+        if
+          Array.unsafe_get boxes.bw i > 0.
+          && abs_float (x -. Array.unsafe_get boxes.bx i) < Array.unsafe_get boxes.bw i
+          && abs_float (y -. Array.unsafe_get boxes.by i) < Array.unsafe_get boxes.bh i
         then p := i
       done;
       !p

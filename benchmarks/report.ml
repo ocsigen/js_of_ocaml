@@ -160,8 +160,8 @@ let stats (h, t) =
 let escape_name_for_gnuplot s =
   let b = Buffer.create (String.length s) in
   String.iter s ~f:(function
-      | '_' -> Buffer.add_string b {|\\\_|}
-      | c -> Buffer.add_char b c);
+    | '_' -> Buffer.add_string b {|\\\_|}
+    | c -> Buffer.add_char b c);
   Buffer.contents b
 
 let text_output _no_header (h, t) =
@@ -291,9 +291,9 @@ let output_tables r conf =
       output_table
         r
         (List.map conf ~f:(function
-            | None -> read_blank_column ()
-            | Some (dir1, dir2, color, title, refe) ->
-                read_column ~title ~color dir1 (Spec.create dir2 "") refe))
+          | None -> read_blank_column ()
+          | Some (dir1, dir2, color, title, refe) ->
+              read_column ~title ~color dir1 (Spec.create dir2 "") refe))
         (output_function !no_header);
       no_header := true);
   close ()

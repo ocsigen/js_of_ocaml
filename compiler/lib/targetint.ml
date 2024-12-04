@@ -98,8 +98,9 @@ let is_zero x = equal x 0l
 
 let of_int_exn (x : int) =
   let offset = offset () in
-  if Sys.int_size <= 32
-     || (Int32.to_int (min_int_ offset) <= x && x <= Int32.to_int (max_int_ offset))
+  if
+    Sys.int_size <= 32
+    || (Int32.to_int (min_int_ offset) <= x && x <= Int32.to_int (max_int_ offset))
   then Int32.of_int x
   else failwith (Printf.sprintf "of_int_exn(%d)" x)
 

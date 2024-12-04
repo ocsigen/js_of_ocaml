@@ -46,8 +46,11 @@ val perform_raw :
      ?headers:(string * string) list
   -> ?content_type:string
   -> ?get_args:(string * string) list
-  -> ?check_headers:((* [] *)
-                     int -> (string -> string option) -> bool)
+  -> ?check_headers:
+       (   (* [] *)
+           int
+        -> (string -> string option)
+        -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?contents:
@@ -71,8 +74,11 @@ val perform_raw_url :
      ?headers:(string * string) list
   -> ?content_type:string
   -> ?get_args:(string * string) list
-  -> ?check_headers:((* [] *)
-                     int -> (string -> string option) -> bool)
+  -> ?check_headers:
+       (   (* [] *)
+           int
+        -> (string -> string option)
+        -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?contents:
@@ -101,8 +107,11 @@ val perform :
      ?headers:(string * string) list
   -> ?content_type:string
   -> ?get_args:(string * string) list
-  -> ?check_headers:((* [] *)
-                     int -> (string -> string option) -> bool)
+  -> ?check_headers:
+       (   (* [] *)
+           int
+        -> (string -> string option)
+        -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?contents:

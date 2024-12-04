@@ -127,18 +127,20 @@ let rec fall state =
         set_cell state x (y - 1) Empty;
         set_cell state x y Boulder;
         changed := true);
-      if state.map.(y).(x) = Empty
-         && state.map.(y - 1).(x) = Empty
-         && state.map.(y).(x - 1) = Boulder
-         && state.map.(y - 1).(x - 1) = Boulder
+      if
+        state.map.(y).(x) = Empty
+        && state.map.(y - 1).(x) = Empty
+        && state.map.(y).(x - 1) = Boulder
+        && state.map.(y - 1).(x - 1) = Boulder
       then (
         set_cell state (x - 1) (y - 1) Empty;
         set_cell state x y Boulder;
         changed := true);
-      if state.map.(y).(x) = Empty
-         && state.map.(y - 1).(x) = Empty
-         && state.map.(y).(x + 1) = Boulder
-         && state.map.(y - 1).(x + 1) = Boulder
+      if
+        state.map.(y).(x) = Empty
+        && state.map.(y - 1).(x) = Empty
+        && state.map.(y).(x + 1) = Boulder
+        && state.map.(y - 1).(x + 1) = Boulder
       then (
         set_cell state (x + 1) (y - 1) Empty;
         set_cell state x y Boulder;
@@ -237,8 +239,9 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
   let update_push ((x, y) as pos) next img img_guy =
     let ((x', y') as pos') = next pos in
     let x'', y'' = next pos' in
-    if try state.map.(y').(x') = Boulder && state.map.(y'').(x'') = Empty
-       with Invalid_argument _ -> false
+    if
+      try state.map.(y').(x') = Boulder && state.map.(y'').(x'') = Empty
+      with Invalid_argument _ -> false
     then (
       let over () =
         state.imgs.(y).(x)##.src := img_guy;

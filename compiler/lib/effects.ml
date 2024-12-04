@@ -201,7 +201,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
           match last_instr block.body with
           | Some
               (Let
-                (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))))
+                 (x, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))))
             when Var.Set.mem x cps_needed ->
               (* The block after a function application that needs to
                  be turned to CPS or an effect primitive needs to be
@@ -356,14 +356,15 @@ let allocate_continuation ~st ~alloc_jump_closures ~split_closures pc x cont =
      other cases, we can just pass the closure corresponding
      to the next block. *)
   let pc', args = cont in
-  if (match args with
-     | [] -> true
-     | [ x' ] -> Var.equal x x'
-     | _ -> false)
-     &&
-     match Hashtbl.find st.is_continuation pc' with
-     | `Param _ -> true
-     | `Loop -> st.live_vars.(Var.idx x) = List.length args
+  if
+    (match args with
+    | [] -> true
+    | [ x' ] -> Var.equal x x'
+    | _ -> false)
+    &&
+    match Hashtbl.find st.is_continuation pc' with
+    | `Param _ -> true
+    | `Loop -> st.live_vars.(Var.idx x) = List.length args
   then alloc_jump_closures, closure_of_pc ~st pc'
   else
     let body, branch = cps_branch ~st ~src:pc cont in
@@ -718,7 +719,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               fun pc block -> cps_block ~st ~k pc block)
             else
               fun _ block ->
-              { block with body = List.map block.body ~f:(fun i -> cps_instr ~st i) }
+                { block with body = List.map block.body ~f:(fun i -> cps_instr ~st i) }
           in
           Code.traverse
             { fold = Code.fold_children }
@@ -912,9 +913,10 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
           in
           (* We can skip an empty block if its parameters are only
              used as argument to the continuation *)
-          if List.for_all
-               ~f:(fun x -> live_vars.(Var.idx x) = 1 && Var.Set.mem x args)
-               params
+          if
+            List.for_all
+              ~f:(fun x -> live_vars.(Var.idx x) = 1 && Var.Set.mem x args)
+              params
           then Hashtbl.add shortcuts pc (params, cont)
       | _ -> ())
     p.blocks;
