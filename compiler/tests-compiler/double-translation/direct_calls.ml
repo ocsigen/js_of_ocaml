@@ -50,6 +50,17 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
            let module M1 = F (struct end) in
            let module M2 = F (struct end) in
            M1.f 1; M2.f 2
+
+         (* Result of double-translating two mutually recursive functions *)
+         let test5 () =
+           let g x =
+             let rec f y = if y = 0 then 1 else x + h (y - 1)
+             and h z = if z = 0 then 1 else x + f (z - 1)
+             in
+             print_int (f 12 + h 100)
+           in
+           ignore (g 42);
+           ignore (g (-5));
 |}
   in
   print_program code;
@@ -73,6 +84,17 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
         return (f.l >= 0 ? f.l : f.l = f.length) === 2
                 ? f(a0, a1)
                 : runtime.caml_call_gen(f, [a0, a1]);
+       }
+       function caml_trampoline_cps_call2(f, a0, a1){
+        return runtime.caml_stack_check_depth()
+                ? (f.cps.l
+                    >= 0
+                    ? f.cps.l
+                    : f.cps.l = f.cps.length)
+                  === 2
+                  ? f.cps.call(null, a0, a1)
+                  : runtime.caml_call_gen_cps(f, [a0, a1])
+                : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        function caml_exact_trampoline_cps_call(f, a0, a1){
         return runtime.caml_stack_check_depth()
@@ -98,11 +120,11 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
        var
         dummy = 0,
         global_data = runtime.caml_get_global_data(),
-        _x_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
+        _D_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
         cst_a$0 = caml_string_of_jsbytes("a"),
         cst_a = caml_string_of_jsbytes("a"),
-        Stdlib_Printf = global_data.Stdlib__Printf,
-        Stdlib = global_data.Stdlib;
+        Stdlib = global_data.Stdlib,
+        Stdlib_Printf = global_data.Stdlib__Printf;
        function f$1(){
         function f(g, x){
          try{caml_call1(g, dummy); return;}
@@ -138,7 +160,7 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
             return raise(e$0);
            });
          return caml_exact_trampoline_cps_call
-                 (g, x, function(_D_){caml_pop_trap(); return cont();});
+                 (g, x, function(_P_){caml_pop_trap(); return cont();});
         }
         var f = caml_cps_closure(f$0, f$1);
         return f;
@@ -165,9 +187,9 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
                 (f,
                  _k_(),
                  7,
-                 function(_B_){
+                 function(_N_){
                   return caml_exact_trampoline_cps_call$0
-                          (f, _m_(), cst_a, function(_C_){return cont(0);});
+                          (f, _m_(), cst_a, function(_O_){return cont(0);});
                  });
        }
        var test2 = caml_cps_closure(test2$0, test2$1);
@@ -176,18 +198,18 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
         return F;
        }
        function test3$0(x){
-        var F = F$0(), M1 = F(), M2 = F(), _A_ = caml_call1(M2[1], 2);
-        return [0, caml_call1(M1[1], 1), _A_];
+        var F = F$0(), M1 = F(), M2 = F(), _M_ = caml_call1(M2[1], 2);
+        return [0, caml_call1(M1[1], 1), _M_];
        }
        function test3$1(x, cont){
-        var F = F$0(), M1 = F(), M2 = F(), _z_ = M2[1].call(null, 2);
-        return cont([0, M1[1].call(null, 1), _z_]);
+        var F = F$0(), M1 = F(), M2 = F(), _L_ = M2[1].call(null, 2);
+        return cont([0, M1[1].call(null, 1), _L_]);
        }
        var test3 = caml_cps_closure(test3$0, test3$1);
        function f(){
-        function f$0(x){return caml_call2(Stdlib_Printf[2], _x_, x);}
+        function f$0(x){return caml_call2(Stdlib_Printf[2], _D_, x);}
         function f$1(x, cont){
-         return caml_trampoline_cps_call3(Stdlib_Printf[2], _x_, x, cont);
+         return caml_trampoline_cps_call3(Stdlib_Printf[2], _D_, x, cont);
         }
         var f = caml_cps_closure(f$0, f$1);
         return f;
@@ -203,13 +225,53 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
         return caml_exact_trampoline_cps_call
                 (M1[1],
                  1,
-                 function(_y_){
+                 function(_K_){
                   return caml_exact_trampoline_cps_call(M2[1], 2, cont);
                  });
        }
+       var test4 = caml_cps_closure(test4$0, test4$1);
+       function recfuncs(x){
+        function f(y){return 0 === y ? 1 : x + h(y - 1 | 0) | 0;}
+        function h(z){return 0 === z ? 1 : x + f(z - 1 | 0) | 0;}
+        var tuple = [0, h, f];
+        return tuple;
+       }
+       function g(){
+        function g$0(x){
+         var
+          tuple = recfuncs(x),
+          f = tuple[2],
+          h = tuple[1],
+          _I_ = h(100),
+          _J_ = f(12) + _I_ | 0;
+         return caml_call1(Stdlib[44], _J_);
+        }
+        function g$1(x, cont){
+         var
+          tuple = recfuncs(x),
+          f = tuple[2],
+          h = tuple[1],
+          _G_ = h(100),
+          _H_ = f(12) + _G_ | 0;
+         return caml_trampoline_cps_call2(Stdlib[44], _H_, cont);
+        }
+        var g = caml_cps_closure(g$0, g$1);
+        return g;
+       }
+       function test5$0(param){var g$0 = g(); g$0(42); g$0(- 5); return 0;}
+       function test5$1(param, cont){
+        var g$0 = g();
+        return caml_exact_trampoline_cps_call
+                (g$0,
+                 42,
+                 function(_E_){
+                  return caml_exact_trampoline_cps_call
+                          (g$0, - 5, function(_F_){return cont(0);});
+                 });
+       }
        var
-        test4 = caml_cps_closure(test4$0, test4$1),
-        Test = [0, test1, test2, test3, test4];
+        test5 = caml_cps_closure(test5$0, test5$1),
+        Test = [0, test1, test2, test3, test4, test5];
        runtime.caml_register_global(7, Test, "Test");
        return;
       }
