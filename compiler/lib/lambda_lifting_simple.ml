@@ -287,9 +287,8 @@ and rewrite_body
             in
             let tuple = Var.fresh_n "tuple" in
             let rev_decl =
-              Let (tuple, Apply { f = f_tuple; args = List.map ~f:fst s; exact = true })
-              :: List.mapi current_contiguous ~f:(fun i (f, _, _, _) ->
-                     Let (f, Field (tuple, i, Non_float)))
+              List.mapi current_contiguous ~f:(fun i (f, _, _, _) ->
+                  Let (f, Field (tuple, i, Non_float)))
             in
             ( (program, functions, lifters)
             , rev_decl
