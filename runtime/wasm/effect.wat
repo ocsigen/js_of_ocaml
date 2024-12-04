@@ -36,6 +36,9 @@
          (param $f funcref) (param $env eqref) (result anyref)))
    (import "bindings" "resume_fiber"
       (func $resume_fiber (param externref) (param (ref eq))))
+   (import "obj" "caml_callback_1"
+      (func $caml_callback_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -732,4 +735,7 @@
 
    (func (export "caml_cps_initialize_effects")
       (global.set $caml_trampoline_ref (ref.func $caml_trampoline)))
+
+   (func (export "caml_assume_no_perform") (param $f (ref eq)) (result (ref eq))
+      (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
 )
