@@ -818,24 +818,6 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
     { block with body }
   else { block with body = List.map ~f:(rewrite_direct_instr ~st) block.body }
 
-(* Apply a substitution in a set of blocks *)
-let subst_in_blocks blocks s =
-  Addr.Map.mapi
-    (fun pc block ->
-      if debug ()
-      then (
-        debug_print "@[<v>block before first subst: @,";
-        Code.Print.block (fun _ _ -> "") pc block;
-        debug_print "@]");
-      let res = Subst.Excluding_Binders.block s block in
-      if debug ()
-      then (
-        debug_print "@[<v>block after first subst: @,";
-        Code.Print.block (fun _ _ -> "") pc res;
-        debug_print "@]");
-      res)
-    blocks
-
 (* Apply a substitution in a set of blocks, including to bound variables *)
 let subst_bound_in_blocks blocks s =
   Addr.Map.mapi
@@ -854,20 +836,21 @@ let subst_bound_in_blocks blocks s =
       res)
     blocks
 
+let subst_add array v v' =
+  if 0 <= Var.idx v && Var.idx v < Array.length array then array.(Var.idx v) <- v'
+
 let cps_transform ~live_vars ~flow_info ~cps_needed p =
   (* Define an identity function, needed for the boilerplate around "resume" *)
   let closure_info = Hashtbl.create 16 in
   let trampolined_calls = ref Var.Set.empty in
   let in_cps = ref Var.Set.empty in
   let cps_pc_of_direct = Hashtbl.create 512 in
-  let p, bound_subst, param_subst, new_blocks =
+  let cloned_vars = Array.init (Var.count ()) ~f:Var.of_idx in
+  let cloned_subst = Subst.from_array cloned_vars in
+  let p, new_blocks =
     Code.fold_closures_innermost_first
       p
-      (fun name_opt
-           params
-           (start, args)
-           (({ blocks; free_pc; _ } as p), bound_subst, param_subst, new_blocks)
-         ->
+      (fun name_opt params (start, args) (({ blocks; free_pc; _ } as p), new_blocks) ->
         Option.iter name_opt ~f:(fun v ->
             debug_print "@[<v>cname = %s@,@]" @@ Var.to_string v);
         (* We speculatively add a block at the beginning of the
@@ -957,7 +940,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             start
             blocks
             ());
-        let blocks, free_pc, bound_subst, param_subst, new_blocks =
+        let blocks, free_pc, new_blocks =
           (* For every block in the closure,
              1. CPS-translate it if needed. If we double-translate, add its CPS
                 translation to the block map at a fresh address. Otherwise,
@@ -965,49 +948,41 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
              2. If we double-translate, keep the direct-style block but modify function
                 definitions to add the CPS version where needed, and turn uses of %resume
                 and %perform into switchings to CPS. *)
-          let param_subst, transform_block =
+          let transform_block =
             if function_needs_cps && double_translate ()
             then (
               let k = Var.fresh_n "cont" in
               let cps_start = mk_cps_pc_of_direct ~st start in
               let params' = List.map ~f:Var.fork params in
-              let param_subst =
-                List.fold_left2
-                  ~f:(fun m p p' -> Var.Map.add p p' m)
-                  ~init:param_subst
-                  params
-                  params'
-              in
-              let cps_args = List.map ~f:(Subst.from_map param_subst) args in
+              List.iter2 params params' ~f:(fun x x' -> cloned_vars.(Var.idx x) <- x');
+              let cps_args = List.map ~f:cloned_subst args in
               Hashtbl.add
                 st.closure_info
                 initial_start
                 (params' @ [ k ], (cps_start, cps_args));
-              ( param_subst
-              , fun pc block ->
-                  let cps_block = cps_block ~st ~k ~orig_pc:pc block in
-                  ( rewrite_direct_block
-                      ~st
-                      ~cps_needed
-                      ~closure_info:st.closure_info
-                      ~pc
-                      block
-                  , Some cps_block ) ))
+              fun pc block ->
+                let cps_block = cps_block ~st ~k ~orig_pc:pc block in
+                ( rewrite_direct_block
+                    ~st
+                    ~cps_needed
+                    ~closure_info:st.closure_info
+                    ~pc
+                    block
+                , Some cps_block ))
             else if function_needs_cps && not (double_translate ())
             then (
               let k = Var.fresh_n "cont" in
               Hashtbl.add st.closure_info initial_start (params @ [ k ], (start, args));
-              param_subst, fun pc block -> cps_block ~st ~k ~orig_pc:pc block, None)
+              fun pc block -> cps_block ~st ~k ~orig_pc:pc block, None)
             else
-              ( param_subst
-              , fun pc block ->
-                  ( rewrite_direct_block
-                      ~st
-                      ~cps_needed
-                      ~closure_info:st.closure_info
-                      ~pc
-                      block
-                  , None ) )
+              fun pc block ->
+                ( rewrite_direct_block
+                    ~st
+                    ~cps_needed
+                    ~closure_info:st.closure_info
+                    ~pc
+                    block
+                , None )
           in
           let blocks =
             Code.traverse
@@ -1030,45 +1005,33 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           (* If double-translating, all variables bound in the CPS version will have to be
              subst with fresh ones to avoid clashing with the definitions in the original
              blocks (the actual substitution is done later). *)
-          let bound_subst =
-            if double_translate ()
+          if double_translate ()
+          then
+            if function_needs_cps && double_translate ()
             then
-              let bound =
-                Addr.Map.fold
-                  (fun _ block bound ->
-                    Var.Set.union
-                      bound
-                      (Freevars.block_bound_vars ~closure_params:true block))
-                  new_blocks_this_clos
-                  Var.Set.empty
-              in
-              Var.Set.fold (fun v m -> Var.Map.add v (Var.fork v) m) bound bound_subst
-            else bound_subst
-          in
+              Code.traverse
+                Code.{ fold = fold_children }
+                (fun pc () ->
+                  let block = Addr.Map.find pc blocks in
+                  Freevars.iter_block_bound_vars
+                    (fun v -> subst_add cloned_vars v (Var.fork v))
+                    block)
+                start
+                st.blocks
+                ();
           let blocks = Addr.Map.fold Addr.Map.add new_blocks_this_clos blocks in
           ( blocks
           , free_pc
-          , bound_subst
-          , param_subst
           , Addr.Map.union (fun _ _ -> assert false) new_blocks new_blocks_this_clos )
         in
-        { p with blocks; free_pc }, bound_subst, param_subst, new_blocks)
-      (p, Var.Map.empty, Var.Map.empty, Addr.Map.empty)
+        { p with blocks; free_pc }, new_blocks)
+      (p, Addr.Map.empty)
   in
-  let bound_subst = Subst.from_map bound_subst in
-  let new_blocks = subst_bound_in_blocks new_blocks bound_subst in
-  (* Also apply that substitution to the sets of trampolined calls,
-     single-version closures and cps call sites *)
-  trampolined_calls := Var.Set.map bound_subst !trampolined_calls;
-  in_cps := Var.Set.map bound_subst !in_cps;
-  (* All variables that were a closure parameter in a direct-style block must be
-     substituted by a fresh name. *)
-  let param_subst = Subst.from_map param_subst in
-  let new_blocks = subst_in_blocks new_blocks param_subst in
-  (* Also apply that 2nd substitution to the sets of trampolined calls,
-     single-version closures and cps call sites *)
-  trampolined_calls := Var.Set.map param_subst !trampolined_calls;
-  in_cps := Var.Set.map param_subst !in_cps;
+  let new_blocks = subst_bound_in_blocks new_blocks cloned_subst in
+  (* Also apply that substitution to the sets of trampolined calls, and cps
+     call sites *)
+  trampolined_calls := Var.Set.map cloned_subst !trampolined_calls;
+  in_cps := Var.Set.map cloned_subst !in_cps;
   let p =
     { p with
       blocks =

@@ -155,9 +155,9 @@ let%expect_test "direct calls with --enable effects,doubletranslate" =
         }
         function f$1(g, x, cont){
          runtime.caml_push_trap
-          (function(e){
-            var raise = caml_pop_trap(), e$0 = caml_maybe_attach_backtrace(e, 0);
-            return raise(e$0);
+          (function(e$0){
+            var raise = caml_pop_trap(), e = caml_maybe_attach_backtrace(e$0, 0);
+            return raise(e);
            });
          return caml_exact_trampoline_cps_call
                  (g, x, function(_P_){caml_pop_trap(); return cont();});
