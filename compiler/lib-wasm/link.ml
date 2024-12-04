@@ -739,14 +739,15 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
           | `Cmo -> true
           | `Cma | `Exe | `Runtime | `Unknown -> false
         in
-        if (not (Config.Flag.auto_link ()))
-           || cmo_file
-           || linkall
-           || List.exists ~f:(fun { unit_info; _ } -> unit_info.force_link) units
-           || List.exists
-                ~f:(fun { unit_info; _ } ->
-                  not (StringSet.is_empty (StringSet.inter requires unit_info.provides)))
-                units
+        if
+          (not (Config.Flag.auto_link ()))
+          || cmo_file
+          || linkall
+          || List.exists ~f:(fun { unit_info; _ } -> unit_info.force_link) units
+          || List.exists
+               ~f:(fun { unit_info; _ } ->
+                 not (StringSet.is_empty (StringSet.inter requires unit_info.provides)))
+               units
         then
           ( List.fold_right units ~init:requires ~f:(fun { unit_info; _ } requires ->
                 StringSet.diff
@@ -769,11 +770,12 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
           units
           ~init:acc
           ~f:(fun { unit_name; unit_info; _ } (requires, to_link) ->
-            if (not (Config.Flag.auto_link ()))
-               || cmo_file
-               || linkall
-               || unit_info.force_link
-               || not (StringSet.is_empty (StringSet.inter requires unit_info.provides))
+            if
+              (not (Config.Flag.auto_link ()))
+              || cmo_file
+              || linkall
+              || unit_info.force_link
+              || not (StringSet.is_empty (StringSet.inter requires unit_info.provides))
             then
               ( StringSet.diff
                   (StringSet.union unit_info.requires requires)

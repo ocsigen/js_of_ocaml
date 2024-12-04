@@ -237,8 +237,8 @@ let expr_escape st _x e =
                     Array.iter a ~f:(fun x -> block_escape st x)
                 | Expr
                     (Prim
-                      ( Extern ("caml_make_array" | "caml_array_of_uniform_array")
-                      , [ Pv y ] )) -> (
+                       ( Extern ("caml_make_array" | "caml_array_of_uniform_array")
+                       , [ Pv y ] )) -> (
                     match st.defs.(Var.idx y) with
                     | Expr (Block (_, a, _, _)) ->
                         Array.iter a ~f:(fun x -> block_escape st x)

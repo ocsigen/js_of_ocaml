@@ -365,8 +365,9 @@ module Read = struct
   let header = "\000asm\001\000\000\000"
 
   let check_header file contents =
-    if String.length contents < 8
-       || not (String.equal header (String.sub contents ~pos:0 ~len:8))
+    if
+      String.length contents < 8
+      || not (String.equal header (String.sub contents ~pos:0 ~len:8))
     then failwith (file ^ " is not a Wasm binary file (bad magic)")
 
   type ch =

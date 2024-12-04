@@ -914,7 +914,7 @@ end = struct
         set
         |> expr_function_references e
         |> (fun init ->
-             List.fold_left ~f:(fun set i -> instr_function_references i set) ~init l1)
+        List.fold_left ~f:(fun set i -> instr_function_references i set) ~init l1)
         |> fun init ->
         List.fold_left ~f:(fun set i -> instr_function_references i set) ~init l2
     | Br (_, None) | Return None | Nop | Rethrow _ -> set

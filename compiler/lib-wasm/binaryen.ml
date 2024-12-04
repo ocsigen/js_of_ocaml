@@ -63,15 +63,15 @@ let link ~runtime_files ~input_files ~opt_output_sourcemap ~output_file =
 let generate_dependencies ~dependencies primitives =
   Yojson.Basic.to_string
     (`List
-      (StringSet.fold
-         (fun nm s ->
-           `Assoc
-             [ "name", `String ("js:" ^ nm)
-             ; "import", `List [ `String "js"; `String nm ]
-             ]
-           :: s)
-         primitives
-         (Yojson.Basic.Util.to_list (Yojson.Basic.from_string dependencies))))
+       (StringSet.fold
+          (fun nm s ->
+            `Assoc
+              [ "name", `String ("js:" ^ nm)
+              ; "import", `List [ `String "js"; `String nm ]
+              ]
+            :: s)
+          primitives
+          (Yojson.Basic.Util.to_list (Yojson.Basic.from_string dependencies))))
 
 let filter_unused_primitives primitives usage_file =
   let ch = open_in usage_file in

@@ -909,18 +909,18 @@ module Constant = struct
   let str_js_utf8 s =
     let b = Buffer.create (String.length s) in
     String.iter s ~f:(function
-        | '\\' -> Buffer.add_string b "\\\\"
-        | c -> Buffer.add_char b c);
+      | '\\' -> Buffer.add_string b "\\\\"
+      | c -> Buffer.add_char b c);
     Buffer.contents b
 
   let str_js_byte s =
     let b = Buffer.create (String.length s) in
     String.iter s ~f:(function
-        | '\\' -> Buffer.add_string b "\\\\"
-        | '\128' .. '\255' as c ->
-            Buffer.add_string b "\\x";
-            Buffer.add_char_hex b c
-        | c -> Buffer.add_char b c);
+      | '\\' -> Buffer.add_string b "\\\\"
+      | '\128' .. '\255' as c ->
+          Buffer.add_string b "\\x";
+          Buffer.add_char_hex b c
+      | c -> Buffer.add_char b c);
     Buffer.contents b
 
   type t =
@@ -952,12 +952,13 @@ module Constant = struct
             l
         in
         let c = W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l') in
-        if List.exists
-             ~f:(fun (const, _) ->
-               match const with
-               | Const | Const_named _ -> false
-               | Mutated -> true)
-             l
+        if
+          List.exists
+            ~f:(fun (const, _) ->
+              match const with
+              | Const | Const_named _ -> false
+              | Mutated -> true)
+            l
         then
           let* c = store_in_global c in
           let* () =

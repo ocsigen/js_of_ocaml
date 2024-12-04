@@ -890,12 +890,13 @@ module Generate (Target : Target_sig.S) = struct
             in
             (* Do not insert a block if the inner code contains a
                structured control flow instruction ([if] or [try] *)
-            if (not (List.is_empty rem))
-               ||
-               let block = Addr.Map.find pc ctx.blocks in
-               match block.branch with
-               | Cond _ | Pushtrap _ -> false (*ZZZ also some Switch*)
-               | _ -> true
+            if
+              (not (List.is_empty rem))
+              ||
+              let block = Addr.Map.find pc ctx.blocks in
+              match block.branch with
+              | Cond _ | Pushtrap _ -> false (*ZZZ also some Switch*)
+              | _ -> true
             then
               block { params = []; result = [] } (code ~context:(`Block pc' :: context))
             else code ~context
@@ -967,8 +968,8 @@ module Generate (Target : Target_sig.S) = struct
       match fall_through with
       | `Block dst' when dst = dst' -> return ()
       | _ ->
-          if (src >= 0 && Structure.is_backward g src dst)
-             || Structure.is_merge_node g dst
+          if
+            (src >= 0 && Structure.is_backward g src dst) || Structure.is_merge_node g dst
           then instr (Br (label_index context dst, None))
           else translate_tree result_typ fall_through dst context
     in

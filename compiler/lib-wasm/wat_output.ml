@@ -119,22 +119,23 @@ let rec format_sexp f s =
   | List l ->
       let has_comment =
         List.exists l ~f:(function
-            | Comment _ -> true
-            | _ -> false)
+          | Comment _ -> true
+          | _ -> false)
       in
       if has_comment
       then (* Ensure comments are on their own line *)
         Format.fprintf f "@[<v 2>("
       else Format.fprintf f "@[<2>(";
       Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f "@ ") format_sexp f l;
-      if has_comment
-         && List.fold_left
-              ~f:(fun _ i ->
-                match i with
-                | Comment _ -> true
-                | _ -> false)
-              ~init:false
-              l
+      if
+        has_comment
+        && List.fold_left
+             ~f:(fun _ i ->
+               match i with
+               | Comment _ -> true
+               | _ -> false)
+             ~init:false
+             l
       then
         (* Make sure there is a newline when a comment is at the very end. *)
         Format.fprintf f "@ ";
