@@ -97,7 +97,8 @@ end
 
 (****)
 
-let from_array s x = s.(Var.idx x)
+let from_array s x =
+  if 0 <= Var.idx x && Var.idx x < Array.length s then s.(Var.idx x) else x
 
 (****)
 

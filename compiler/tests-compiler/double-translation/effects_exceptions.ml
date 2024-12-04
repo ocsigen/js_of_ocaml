@@ -87,25 +87,25 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function exceptions$1(s, cont){
-     try{var _r_ = caml_int_of_string(s), n = _r_;}
+     try{var _q_ = caml_int_of_string(s), n = _q_;}
      catch(_v_){
-      var _n_ = caml_wrap_exception(_v_);
-      if(_n_[1] !== Stdlib[7]){
+      var _r_ = caml_wrap_exception(_v_);
+      if(_r_[1] !== Stdlib[7]){
        var raise$1 = caml_pop_trap();
-       return raise$1(caml_maybe_attach_backtrace(_n_, 0));
+       return raise$1(caml_maybe_attach_backtrace(_r_, 0));
       }
       var n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _q_ = 7, m = _q_;
+      var _o_ = 7, m = _o_;
      }
      catch(_u_){
-      var _o_ = caml_wrap_exception(_u_);
-      if(_o_ !== Stdlib[8]){
+      var _p_ = caml_wrap_exception(_u_);
+      if(_p_ !== Stdlib[8]){
        var raise$0 = caml_pop_trap();
-       return raise$0(caml_maybe_attach_backtrace(_o_, 0));
+       return raise$0(caml_maybe_attach_backtrace(_p_, 0));
       }
       var m = 0;
      }
@@ -120,8 +120,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
               (Stdlib[79],
                cst_toto,
                function(_s_){caml_pop_trap(); return cont([0, [0, _s_, n, m]]);});
-     var _p_ = Stdlib[8], raise = caml_pop_trap();
-     return raise(caml_maybe_attach_backtrace(_p_, 1));
+     var _n_ = Stdlib[8], raise = caml_pop_trap();
+     return raise(caml_maybe_attach_backtrace(_n_, 1));
     }
     //end
     var exceptions = caml_cps_closure(exceptions$0, exceptions$1);
@@ -148,24 +148,24 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     //end
     function handler_is_loop$1(f, g, l, cont){
      caml_push_trap
-      (function(_j_){
-        function _k_(l){
+      (function(_k_){
+        function _j_(l){
          return caml_trampoline_cps_call2
                  (g,
                   l,
                   function(match){
                    if(72330306 <= match[1]){
                     var l = match[2];
-                    return caml_exact_trampoline_call1(_k_, l);
+                    return caml_exact_trampoline_call1(_j_, l);
                    }
                    var
-                    exn = match[2],
+                    exn$0 = match[2],
                     raise = caml_pop_trap(),
-                    exn$0 = caml_maybe_attach_backtrace(exn, 1);
-                   return raise(exn$0);
+                    exn = caml_maybe_attach_backtrace(exn$0, 1);
+                   return raise(exn);
                   });
         }
-        return _k_(l);
+        return _j_(l);
        });
      return caml_trampoline_cps_call2
              (f, 0, function(_i_){caml_pop_trap(); return cont(_i_);});
