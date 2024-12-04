@@ -16,7 +16,6 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "jslib" "log_str" (func $log_str (param (ref $string))))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
@@ -826,16 +825,6 @@
             (struct.set $channel $unbuffered (local.get $ch) (i32.const 1))
             (if (i32.ne (struct.get $channel $fd (local.get $ch)) (i32.const -1))
                (then (call $caml_flush (local.get $ch))))))
-      (ref.i31 (i32.const 0)))
-
-   (data $caml_ml_set_channel_refill "caml_ml_set_channel_refill")
-
-   (func (export "caml_ml_set_channel_refill")
-      (param (ref eq) (ref eq)) (result (ref eq))
-      ;; ZZZ
-      (call $log_str
-         (array.new_data $string $caml_ml_set_channel_refill
-            (i32.const 0) (i32.const 26)))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_channel_size") (param (ref eq)) (result (ref eq))
