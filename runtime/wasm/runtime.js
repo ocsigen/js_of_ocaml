@@ -228,72 +228,48 @@
       for (let i = 0; i < l; i++) string_set(s, p2 + i, a[p1 + i]);
     },
     wrap_callback: (f) =>
-      function () {
-        var n = arguments.length;
-        if (n > 0) {
-          var args = new Array(n);
-          for (var i = 0; i < n; i++) args[i] = arguments[i];
-        } else {
+      function (...args) {
+        if (args.length === 0) {
           args = [undefined];
         }
         return caml_callback(f, args.length, args, 1);
       },
     wrap_callback_args: (f) =>
-      function () {
-        var n = arguments.length;
-        var args = new Array(n);
-        for (var i = 0; i < n; i++) args[i] = arguments[i];
+      function (...args) {
         return caml_callback(f, 1, [args], 0);
       },
     wrap_callback_strict: (arity, f) =>
-      function () {
-        var n = arguments.length;
-        var args = new Array(arity);
-        var len = Math.min(arguments.length, arity);
-        for (var i = 0; i < len; i++) args[i] = arguments[i];
+      function (...args) {
+        args.length = arity;
         return caml_callback(f, arity, args, 0);
       },
     wrap_callback_unsafe: (f) =>
-      function () {
-        var n = arguments.length;
-        var args = new Array(n);
-        for (var i = 0; i < n; i++) args[i] = arguments[i];
+      function (...args) {
         return caml_callback(f, args.length, args, 2);
       },
     wrap_meth_callback: (f) =>
-      function () {
-        var n = arguments.length;
-        var args = new Array(n + 1);
-        args[0] = this;
-        for (var i = 0; i < n; i++) args[i + 1] = arguments[i];
+      function (...args) {
+        args.unshift(this);
         return caml_callback(f, args.length, args, 1);
       },
     wrap_meth_callback_args: (f) =>
-      function () {
-        var n = arguments.length;
-        var args = new Array(n);
-        for (var i = 0; i < n; i++) args[i] = arguments[i];
+      function (...args) {
         return caml_callback(f, 2, [this, args], 0);
       },
     wrap_meth_callback_strict: (arity, f) =>
-      function () {
-        var args = new Array(arity + 1);
-        var len = Math.min(arguments.length, arity);
-        args[0] = this;
-        for (var i = 0; i < len; i++) args[i + 1] = arguments[i];
+      function (...args) {
+        args.length = arity;
+        args.unshift(this);
         return caml_callback(f, args.length, args, 0);
       },
     wrap_meth_callback_unsafe: (f) =>
-      function () {
-        var n = arguments.length;
-        var args = new Array(n + 1);
-        args[0] = this;
-        for (var i = 0; i < n; i++) args[i + 1] = arguments[i];
+      function (...args) {
+        args.unshift(this);
         return caml_callback(f, args.length, args, 2);
       },
     wrap_fun_arguments: (f) =>
-      function () {
-        return f(arguments);
+      function (...args) {
+        return f(args);
       },
     format_float: (prec, conversion, pad, x) => {
       function toFixed(x, dp) {
