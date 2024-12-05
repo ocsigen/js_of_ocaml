@@ -493,10 +493,13 @@
     return fetch(url);
   }
   const loadCode = isNode ? loadRelative : fetchRelative;
-  async function instantiateModule(code) {
-    return isNode
-      ? WebAssembly.instantiate(await code, imports, options)
-      : WebAssembly.instantiateStreaming(code, imports, options);
+  async function decodeCode(code) {
+    return fetch("data:application/wasm;base64," + code);
+  }
+  async function instantiateModule(code, stream) {
+    return stream
+      ? WebAssembly.instantiateStreaming(code, imports, options)
+      : WebAssembly.instantiate(await code, imports, options);
   }
   async function instantiateFromDir() {
     imports.OCaml = {};
@@ -504,9 +507,12 @@
     async function loadModule(module, isRuntime) {
       const sync = module[1].constructor !== Array;
       async function instantiate() {
-        const code = loadCode(src + "/" + module[0] + ".wasm");
+        const code = module[0]
+          ? loadCode(src + "/" + module[0] + ".wasm")
+          : decodeCode(module[2]);
+        const stream = !(isNode && module[0]);
         await Promise.all(sync ? deps : module[1].map((i) => deps[i]));
-        const wasmModule = await instantiateModule(code);
+        const wasmModule = await instantiateModule(code, stream);
         Object.assign(
           isRuntime ? imports.env : imports.OCaml,
           wasmModule.instance.exports,
