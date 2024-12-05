@@ -53,6 +53,8 @@ type t =
   ; static_env : (string * string) list
   ; wrap_with_fun : [ `Iife | `Named of string | `Anonymous ]
   ; target_env : Target_env.t
+  ; shape_files : string list
+  ; write_shape : bool
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool
@@ -101,6 +103,14 @@ let options =
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
     Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+  in
+  let shape_files =
+    let doc = "load shape file [$(docv)]." in
+    Arg.(value & opt_all string [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
+  in
+  let write_shape =
+    let doc = "Emit shape files" in
+    Arg.(value & flag & info [ "write-shape" ] ~doc)
   in
   let input_file =
     let doc =
@@ -279,6 +289,8 @@ let options =
       output_file
       input_file
       js_files
+      shape_files
+      write_shape
       keep_unit_names =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
@@ -341,6 +353,8 @@ let options =
       ; bytecode
       ; source_map
       ; keep_unit_names
+      ; shape_files
+      ; write_shape
       }
   in
   let t =
@@ -371,6 +385,8 @@ let options =
       $ output_file
       $ input_file
       $ js_files
+      $ shape_files
+      $ write_shape
       $ keep_unit_names)
   in
   Term.ret t
@@ -567,6 +583,8 @@ let options_runtime_only =
       ; bytecode = `None
       ; source_map
       ; keep_unit_names = false
+      ; shape_files = []
+      ; write_shape = false
       }
   in
   let t =

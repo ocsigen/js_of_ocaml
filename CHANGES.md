@@ -4,6 +4,7 @@
 * Lib: fix the type of some DOM properties and methods (#1747)
 * Test: use dune test stanzas (#1631)
 * Merged Wasm_of_ocaml (#1724)
+* Compiler: Propagate arity between compilation units (#1594)
 
 # 5.9.1 (02-12-2024) - Lille
 
