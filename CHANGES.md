@@ -18,6 +18,7 @@
 * Runtime/wasm: support unmarshaling compressed data (#1898)
 * Ppx: explicitly disallow polymorphic method (#1897)
 * Ppx: allow "function" in object literals (#1897)
+* Compiler: Propagate arity between compilation units (#1594)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
