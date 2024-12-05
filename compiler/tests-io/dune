@@ -88,7 +88,14 @@
    (progn
     (run node %{dep:md5.bc.wasm.js} %{dep:md5.bc.js})
     (run node %{dep:md5.bc.wasm.js} %{dep:md5.bc.js} %{dep:md5.bc.js})
-    (run node %{dep:md5.bc.wasm.js} -offset 2000 -length 4000 %{dep:md5.bc.js})
+    (run
+     node
+     %{dep:md5.bc.wasm.js}
+     -offset
+     2000
+     -length
+     4000
+     %{dep:md5.bc.js})
     (pipe-stdout
      (echo "tests")
      (run node %{dep:md5.bc.wasm.js}))

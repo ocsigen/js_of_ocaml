@@ -85,7 +85,9 @@
 (rule
  (alias runtest-wasm)
  (action
-  (diff %{dep:error1-unregister.expected} %{dep:error1-unregister.wasm.js.actual})))
+  (diff
+   %{dep:error1-unregister.expected}
+   %{dep:error1-unregister.wasm.js.actual})))
 
 (rule
  (target error2.js.actual)
@@ -170,4 +172,6 @@
 (rule
  (alias runtest-wasm)
  (action
-  (diff %{dep:error2-unregister.expected} %{dep:error2-unregister.wasm.js.actual})))
+  (diff
+   %{dep:error2-unregister.expected}
+   %{dep:error2-unregister.wasm.js.actual})))

@@ -12,7 +12,8 @@
  (libraries)
  (modes wasm))
 
-(rule (copy hfun.ml hfun_wasm.ml))
+(rule
+ (copy hfun.ml hfun_wasm.ml))
 
 (tests
  (names htbl)
