@@ -12,32 +12,6 @@
    ;; because dune doesn't know that it should compile
    ;; multiple versions of the dependencies
    (compilation_mode whole_program)))
- (wasm
-  (flags
-   (:standard -w -38))
-  (js_of_ocaml
-   (flags
-    (:standard --enable effects,doubletranslate))
-   (build_runtime_flags
-    (:standard --enable effects,doubletranslate))
-   ;; separate compilation doesn't work when using
-   ;; features such as 'effects', 'doubletranslate' or 'use-js-string'
-   ;; because dune doesn't know that it should compile
-   ;; multiple versions of the dependencies
-   (compilation_mode whole_program)))
- (wasm-effects
-  (flags
-   (:standard -w -38))
-  (js_of_ocaml
-   (flags
-    (:standard --enable effects,doubletranslate))
-   (build_runtime_flags
-    (:standard --enable effects,doubletranslate))
-   ;; separate compilation doesn't work when using
-   ;; features such as 'effects', 'doubletranslate' or 'use-js-string'
-   ;; because dune doesn't know that it should compile
-   ;; multiple versions of the dependencies
-   (compilation_mode whole_program)))
  (_
   (flags
    (:standard -w -38))
@@ -82,7 +56,7 @@
    assume_no_perform
    assume_no_perform_unhandled
    assume_no_perform_nested_handler))
- (modes js wasm))
+ (modes js))
 
 (tests
  (build_if
@@ -95,7 +69,7 @@
     2
     (run node %{test}))
    (run cat)))
- (modes js wasm))
+ (modes js))
 
 (tests
  (build_if
@@ -110,4 +84,4 @@
    (with-accepted-exit-codes
     0
     (run node %{test}))))
- (modes js wasm))
+ (modes js))
