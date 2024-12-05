@@ -75,7 +75,7 @@
    2
    (with-outputs-to
     %{target}
-    (run node %{dep:error1.wasm.bc.js} unregister)))))
+    (run node %{dep:error1.bc.wasm.js} unregister)))))
 
 (rule
  (alias runtest-js)
@@ -109,7 +109,7 @@
    2
    (with-outputs-to
     %{target}
-    (run node %{dep:error2.wasm.bc.js})))))
+    (run node %{dep:error2.bc.wasm.js})))))
 
 (rule
  (target error2.exe.actual)
