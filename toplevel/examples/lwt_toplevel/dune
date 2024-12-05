@@ -1,6 +1,5 @@
 (executables
  (names toplevel)
- (enabled_if %{env:js-enabled=})
  (libraries
   js_of_ocaml-compiler
   js_of_ocaml-tyxml
@@ -157,7 +156,6 @@
 
 (rule
  (targets toplevel.js)
- (enabled_if %{env:js-enabled=})
  (action
   (run
    %{bin:js_of_ocaml}
@@ -186,5 +184,4 @@
 
 (alias
  (name default)
- (enabled_if %{env:js-enabled=})
  (deps toplevel.js toplevel.bc.js index.html))

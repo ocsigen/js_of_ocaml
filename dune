@@ -1,42 +1,25 @@
 (env
  (dev
+  (binaries
+   (tools/node_wrapper.sh as node))
   (wasm_of_ocaml
-   (enabled_if false))
-  (flags
-   (:standard -w +a-4-40-41-42-44-48-58-66-70))
-  (env-vars
-   (js-enabled true)))
- (using-effects
-  (wasm_of_ocaml
-   (enabled_if false))
+   (runtest_alias runtest-wasm))
   (js_of_ocaml
+   (runtest_alias runtest-js))
+  (flags
+   (:standard -w +a-4-40-41-42-44-48-58-66-70)))
+ (using-effects
+  (binaries
+   (tools/node_wrapper.sh as node))
+  (wasm_of_ocaml
+   (runtest_alias runtest-wasm))
+  (js_of_ocaml
+   (runtest_alias runtest-js)
    (compilation_mode separate)
    (flags
     (:standard --enable effects))
    (build_runtime_flags
-    (:standard --enable effects)))
-  (env-vars
-   (js-enabled true)))
- (wasm
-  (binaries
-   (tools/node_wrapper.sh as node))
-  (js_of_ocaml
-   (enabled_if false))
-  (wasm_of_ocaml
-   (compilation_mode separate))
-  (env-vars
-   (js-enabled false)))
- (wasm-effects
-  (binaries
-   (tools/node_wrapper.sh as node))
-  (js_of_ocaml
-   (enabled_if false))
-  (wasm_of_ocaml
-   (compilation_mode separate)
-   (flags
-    (:standard --enable effects)))
-  (env-vars
-   (js-enabled false)))
+    (:standard --enable effects))))
  (bench_no_debug
   (flags
    (:standard \ -g))
@@ -44,11 +27,8 @@
    (:standard \ -g))
   (link_flags
    (:standard \ -g))
-  (env-vars
-   (js-enabled true)))
- (_
-  (env-vars
-   (js-enabled true))))
+  )
+ )
 
 (rule
  (targets version.ml.in)

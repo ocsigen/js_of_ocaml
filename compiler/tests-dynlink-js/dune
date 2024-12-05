@@ -1,6 +1,5 @@
 (executable
  (name main)
- (enabled_if %{env:js-enabled=})
  (modules main)
  (libraries js_of_ocaml)
  (link_flags
@@ -35,7 +34,6 @@
 
 (rule
  (target main.js)
- (enabled_if %{env:js-enabled=})
  (action
   (run
    %{bin:js_of_ocaml}
@@ -79,7 +77,6 @@
 
 (rule
  (target main.out)
- (enabled_if %{env:js-enabled=})
  (deps plugin.js plugin2.js)
  (action
   (with-outputs-to
@@ -88,7 +85,6 @@
 
 (rule
  (target main.out2)
- (enabled_if %{env:js-enabled=})
  (deps plugin.js plugin2.js)
  (action
   (with-outputs-to
@@ -96,13 +92,11 @@
    (run %{bin:node} %{dep:./main.bc.js}))))
 
 (rule
- (alias runtest)
- (enabled_if %{env:js-enabled=})
+ (alias runtest-js)
  (action
   (diff main.out.expected main.out)))
 
 (rule
- (alias runtest)
- (enabled_if %{env:js-enabled=})
+ (alias runtest-js)
  (action
   (diff main.out.expected main.out2)))

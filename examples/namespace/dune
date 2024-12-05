@@ -58,7 +58,6 @@
    (run node for-node.js))))
 
 (rule
- (alias runtest)
- (enabled_if %{env:js-enabled=})
+ (alias runtest-js)
  (action
   (diff %{dep:for-node.expected} %{dep:for-node.actual})))

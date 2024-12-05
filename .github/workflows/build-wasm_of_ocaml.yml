@@ -92,12 +92,12 @@ jobs:
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
         working-directory: ./wasm_of_ocaml
-        run: opam exec -- dune build @all @runtest --profile wasm
+        run: opam exec -- dune build @all @runtest @runtest-wasm --profile wasm
 
       - name: Run tests with CPS effects
         if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
         working-directory: ./wasm_of_ocaml
-        run: opam exec -- dune build @all @runtest --profile wasm-effects
+        run: opam exec -- dune build @all @runtest @runtest-wasm --profile wasm-effects
 
       - name: Run Base tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
