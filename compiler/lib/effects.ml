@@ -583,7 +583,7 @@ let cps_instr ~st (instr : instr) : instr list =
          the right number of parameter *)
       assert (
         (* If this function is unknown to the global flow analysis, then it was
-           introduced by the lambda lifting and does not require CPS *)
+           introduced by the lambda lifting and we don't have exactness info any more. *)
         Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
         || Global_flow.exact_call st.flow_info f (List.length args));
       [ Let (x, Apply { f; args; exact = true }) ]
@@ -593,28 +593,15 @@ let cps_instr ~st (instr : instr) : instr list =
          are handled in a specialized function below. *)
       assert false
   | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
-      if double_translate ()
-      then
-        (* We just need to call [f] in direct style. *)
-        let unit = Var.fresh_n "unit" in
-        let exact = Global_flow.exact_call st.flow_info f 1 in
-        [ Let (unit, Constant (Int Targetint.zero))
-        ; Let (x, Apply { exact; f; args = [ unit ] })
-        ]
-      else (
-        (* The "needs CPS" case should have been taken care of by another, specialized
-           function below. *)
-        assert (not (Var.Set.mem x st.cps_needed));
-        (* Translated like the [Apply] case, with a unit argument *)
-        assert (
-          (* If this function is unknown to the global flow analysis, then it was
-             introduced by the lambda lifting and does not require CPS *)
-          Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
-          || Global_flow.exact_call st.flow_info f 1);
-        let unit = Var.fresh_n "unit" in
-        [ Let (unit, Constant (Int Targetint.zero))
-        ; Let (x, Apply { f; args = [ unit ]; exact = true })
-        ])
+      (* The case when double translation is disabled should be taken care of by a prior
+         pass *)
+      assert (double_translate ());
+      (* We just need to call [f] in direct style. *)
+      let unit = Var.fresh_n "unit" in
+      let exact = Global_flow.exact_call st.flow_info f 1 in
+      [ Let (unit, Constant (Int Targetint.zero))
+      ; Let (x, Apply { exact; f; args = [ unit ] })
+      ]
   | Let (_, Prim (Extern "caml_assume_no_perform", args)) ->
       invalid_arg
       @@ Format.sprintf
@@ -648,10 +635,8 @@ let cps_block ~st ~k ~orig_pc block =
           (fun ~k ->
             let exact =
               exact
-              (* If this function is unknown to the global flow analysis, then it was
-                 introduced by the lambda lifting and is exact *)
-              || Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
-              || Global_flow.exact_call st.flow_info f (List.length args)
+              || Var.idx f < Var.Tbl.length st.flow_info.info_approximation
+                 && Global_flow.exact_call st.flow_info f (List.length args)
             in
             tail_call ~st ~exact ~in_cps:true ~check:true ~f (args @ [ k ]))
     | Prim (Extern "caml_assume_no_perform", [ Pv f ]) when not (double_translate ()) ->
@@ -660,10 +645,8 @@ let cps_block ~st ~k ~orig_pc block =
         Some
           (fun ~k ->
             let exact =
-              (* If this function is unknown to the global flow analysis, then it was
-                 introduced by the lambda lifting and is exact *)
-              Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
-              || Global_flow.exact_call st.flow_info f 1
+              Var.idx f < Var.Tbl.length st.flow_info.info_approximation
+              && Global_flow.exact_call st.flow_info f 1
             in
             let unit = Var.fresh_n "unit" in
             tail_call
@@ -785,12 +768,12 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           ]
       | Let (x, Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ])) ->
           [ Let (x, Prim (Extern "caml_resume", [ Pv f; Pv arg; Pv stack ])) ]
-      | Let (x, Prim (Extern "%perform", [ Pv effect ])) ->
+      | Let (x, Prim (Extern "%perform", [ Pv effect_ ])) ->
           (* In direct-style code, we just raise [Effect.Unhandled]. *)
-          [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect ])) ]
-      | Let (x, Prim (Extern "%reperform", [ Pv effect; Pv _continuation ])) ->
+          [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect_ ])) ]
+      | Let (x, Prim (Extern "%reperform", [ Pv effect_; Pv _continuation ])) ->
           (* Similar to previous case *)
-          [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect ])) ]
+          [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect_ ])) ]
       | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
           (* We just need to call [f] in direct style. *)
           let unit = Var.fresh_n "unit" in
@@ -1246,10 +1229,10 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
 let f ~flow_info ~live_vars p =
   let t = Timer.make () in
   let cps_needed = Partial_cps_analysis.f p flow_info in
-  let p, _, cps_needed =
+  let p, cps_needed =
     if double_translate ()
     then (
-      let p, lifter_functions, liftings = Lambda_lifting_simple.f ~to_lift:cps_needed p in
+      let p, liftings = Lambda_lifting_simple.f ~to_lift:cps_needed p in
       let cps_needed =
         Var.Set.map
           (fun f -> try Subst.from_map liftings f with Not_found -> f)
@@ -1257,8 +1240,6 @@ let f ~flow_info ~live_vars p =
       in
       if debug ()
       then (
-        debug_print "@[<v>Lifting closures:@,";
-        lifter_functions |> Var.Set.iter (fun v -> debug_print "%s,@ " (Var.to_string v));
         debug_print "@]";
         debug_print "@[<v>cps_needed (after lifting) = @[<hov 2>";
         Var.Set.iter (fun v -> debug_print "%s,@ " (Var.to_string v)) cps_needed;
@@ -1266,10 +1247,10 @@ let f ~flow_info ~live_vars p =
         debug_print "@[<v>After lambda lifting...@,";
         Code.Print.program (fun _ _ -> "") p;
         debug_print "@]");
-      p, lifter_functions, cps_needed)
+      p, cps_needed)
     else
       let p, cps_needed = rewrite_toplevel ~cps_needed p in
-      p, Var.Set.empty, cps_needed
+      p, cps_needed
   in
   let p = split_blocks ~cps_needed p in
   let p, trampolined_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
