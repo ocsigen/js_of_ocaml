@@ -1,7 +1,7 @@
 (env
  (dev
   (binaries
-   (tools/node_wrapper.sh as node))
+   (tools/node_wrapper.exe as node))
   (wasm_of_ocaml
    (runtest_alias runtest-wasm))
   (js_of_ocaml
@@ -10,7 +10,7 @@
    (:standard -w +a-4-40-41-42-44-48-58-66-70)))
  (using-effects
   (binaries
-   (tools/node_wrapper.sh as node))
+   (tools/node_wrapper.exe as node))
   (wasm_of_ocaml
    (runtest_alias runtest-wasm))
   (js_of_ocaml
@@ -22,7 +22,7 @@
     (:standard --enable effects))))
  (bench_no_debug
   (binaries
-   (tools/node_wrapper.sh as node))
+   (tools/node_wrapper.exe as node))
   (flags
    (:standard \ -g))
   (ocamlc_flags
@@ -35,7 +35,7 @@
   (js_of_ocaml
    (runtest_alias runtest-js))
   (binaries
-   (tools/node_wrapper.sh as node))))
+   (tools/node_wrapper.exe as node))))
 
 (rule
  (targets version.ml.in)
