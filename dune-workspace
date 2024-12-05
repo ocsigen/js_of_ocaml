@@ -1,0 +1,9 @@
+(lang dune 3.17)
+
+(env
+ (_
+  (wasm_of_ocaml
+   (enabled_if %{env:WASM_OF_OCAML=false})
+   (runtest_alias runtest-wasm))
+  (js_of_ocaml
+   (runtest_alias runtest-js))))

@@ -11,6 +11,7 @@ jobs:
     env:
       OPAMJOBS: 2
       OPAMYES: true
+      WASM_OF_OCAML: true
 
     strategy:
       fail-fast: false
@@ -19,15 +20,15 @@ jobs:
           - ubuntu-latest
         ocaml-compiler:
           - 4.14.x
-          - 5.00.x
-          - 5.01.x
-          - 5.02.x
+          - 5.0.x
+          - 5.1.x
+          - 5.2.x
           - ocaml-compiler.5.3.0~beta2
         separate_compilation:
           - true
         include:
           - os: macos-latest
-            ocaml-compiler: 5.02.x
+            ocaml-compiler: 5.2.x
             separate_compilation: true
           - os: ubuntu-latest
             ocaml-compiler: 4.14.x
@@ -92,12 +93,12 @@ jobs:
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
         working-directory: ./wasm_of_ocaml
-        run: opam exec -- dune build @all @runtest --profile wasm
+        run: opam exec -- dune build @all @runtest @runtest-wasm
 
       - name: Run tests with CPS effects
         if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
         working-directory: ./wasm_of_ocaml
-        run: opam exec -- dune build @all @runtest --profile wasm-effects
+        run: opam exec -- dune build @all @runtest @runtest-wasm --profile with-effects
 
       - name: Run Base tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}

@@ -9,12 +9,6 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
-(rule
- (action
-  (copy boulderdash.bc.wasm.js boulderdash.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
 (alias
  (name default)
  (deps
@@ -23,3 +17,8 @@
   maps.txt
   (glob_files maps/*.map)
   (glob_files sprites/*.{png,svg})))
+
+(alias
+ (name default)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps boulderdash.bc.wasm.js index-wasm.html))

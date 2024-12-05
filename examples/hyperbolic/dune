@@ -14,12 +14,6 @@
  (preprocess
   (pps js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json)))
 
-(rule
- (action
-  (copy hypertree.bc.wasm.js hypertree.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
 (alias
  (name default)
  (deps
@@ -30,3 +24,8 @@
   tree.json
   (glob_files icons/*.{png,jpg})
   (glob_files thumbnails/*.{png,jpg})))
+
+(alias
+ (name default)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps hypertree.bc.wasm.js index-wasm.html))

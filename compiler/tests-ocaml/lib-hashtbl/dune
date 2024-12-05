@@ -3,7 +3,17 @@
  (deps ../../../LICENSE)
  (modules hfun)
  (libraries)
- (modes js wasm))
+ (modes js))
+
+(tests
+ (names hfun_wasm)
+ (deps ../../../LICENSE)
+ (modules hfun_wasm)
+ (libraries)
+ (modes wasm))
+
+(rule
+ (copy hfun.ml hfun_wasm.ml))
 
 (tests
  (names htbl)
@@ -13,14 +23,3 @@
   (>= %{ocaml_version} 5))
  (libraries)
  (modes js wasm))
-
-(rule
- (action
-  (copy hfun.expected-js hfun.expected))
- (enabled_if %{env:js-enabled=}))
-
-(rule
- (action
-  (copy hfun.expected-wasm hfun.expected))
- (enabled_if
-  (not %{env:js-enabled=})))

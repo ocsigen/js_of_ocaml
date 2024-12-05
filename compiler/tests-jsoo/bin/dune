@@ -1,119 +1,21 @@
-(executables
+(tests
  (names error1 error2)
- (modes exe js wasm)
+ (modes js wasm)
  (foreign_stubs
   (language c)
   (names named_value_stubs))
  (js_of_ocaml
   (javascript_files runtime.js))
+ (enabled_if
+  (= %{profile} dev))
+ (action
+  (pipe-outputs
+   (progn
+    (with-accepted-exit-codes
+     2
+     (run node %{test}))
+    (with-accepted-exit-codes
+     2
+     (run node %{test} unregister)))
+   (run cat)))
  (libraries))
-
-(rule
- (target error1.js.actual)
- (deps error1.html)
- (alias runtest)
- (action
-  (with-accepted-exit-codes
-   2
-   (with-outputs-to
-    %{target}
-    (run node %{dep:error1.bc.js})))))
-
-(rule
- (target error1.exe.actual)
- (alias runtest)
- (action
-  (with-accepted-exit-codes
-   2
-   (with-outputs-to
-    %{target}
-    (run %{dep:error1.exe})))))
-
-(rule
- (alias runtest)
- (action
-  (diff %{dep:error1.expected} %{dep:error1.js.actual})))
-
-(rule
- (alias runtest)
- (action
-  (diff %{dep:error1.expected} %{dep:error1.exe.actual})))
-
-(rule
- (target error1-unregister.js.actual)
- (deps error1-unregister.html)
- (alias runtest)
- (action
-  (with-accepted-exit-codes
-   2
-   (with-outputs-to
-    %{target}
-    (run node %{dep:error1.bc.js} unregister)))))
-
-(rule
- (alias runtest)
- (action
-  (diff %{dep:error1-unregister.expected} %{dep:error1-unregister.js.actual})))
-
-(rule
- (action
-  (copy error1.bc.wasm.js error1.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
-(rule
- (target error2.js.actual)
- (deps error2.html)
- (alias runtest)
- (action
-  (with-accepted-exit-codes
-   2
-   (with-outputs-to
-    %{target}
-    (run node %{dep:error2.bc.js})))))
-
-(rule
- (target error2.exe.actual)
- (alias runtest)
- (action
-  (with-accepted-exit-codes
-   2
-   (with-outputs-to
-    %{target}
-    (run %{dep:error2.exe})))))
-
-(rule
- (alias runtest)
- (enabled_if
-  (= %{profile} dev))
- (action
-  (diff %{dep:error2.expected} %{dep:error2.js.actual})))
-
-(rule
- (alias runtest)
- (enabled_if
-  (= %{profile} dev))
- (action
-  (diff %{dep:error2.expected} %{dep:error2.exe.actual})))
-
-(rule
- (target error2-unregister.js.actual)
- (deps error2-unregister.html)
- (alias runtest)
- (action
-  (with-accepted-exit-codes
-   2
-   (with-outputs-to
-    %{target}
-    (run node %{dep:error2.bc.js} unregister)))))
-
-(rule
- (alias runtest)
- (action
-  (diff %{dep:error2-unregister.expected} %{dep:error2-unregister.js.actual})))
-
-(rule
- (action
-  (copy error2.bc.wasm.js error2.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))

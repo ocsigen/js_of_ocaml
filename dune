@@ -1,42 +1,20 @@
 (env
  (dev
-  (wasm_of_ocaml
-   (enabled_if false))
   (flags
    (:standard -w +a-4-40-41-42-44-48-58-66-70))
-  (env-vars
-   (js-enabled true)))
- (using-effects
-  (wasm_of_ocaml
-   (enabled_if false))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
+ (with-effects
   (js_of_ocaml
    (compilation_mode separate)
    (flags
     (:standard --enable effects))
    (build_runtime_flags
     (:standard --enable effects)))
-  (env-vars
-   (js-enabled true)))
- (wasm
   (binaries
-   (tools/node_wrapper.sh as node))
-  (js_of_ocaml
-   (enabled_if false))
-  (wasm_of_ocaml
-   (compilation_mode separate))
-  (env-vars
-   (js-enabled false)))
- (wasm-effects
-  (binaries
-   (tools/node_wrapper.sh as node))
-  (js_of_ocaml
-   (enabled_if false))
-  (wasm_of_ocaml
-   (compilation_mode separate)
-   (flags
-    (:standard --enable effects)))
-  (env-vars
-   (js-enabled false)))
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
  (bench_no_debug
   (flags
    (:standard \ -g))
@@ -44,11 +22,13 @@
    (:standard \ -g))
   (link_flags
    (:standard \ -g))
-  (env-vars
-   (js-enabled true)))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
  (_
-  (env-vars
-   (js-enabled true))))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe))))
 
 (rule
  (targets version.ml.in)
