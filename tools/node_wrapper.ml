@@ -10,7 +10,7 @@ let () =
   | path -> (
       let sep = if Sys.win32 then ';' else ':' in
       match String.split_on_char sep path with
-      | drop :: paths -> Unix.putenv "PATH" (String.concat (String.make 1 sep) paths)
+      | _drop :: paths -> Unix.putenv "PATH" (String.concat (String.make 1 sep) paths)
       | [] -> assert false)
 
 let args =
