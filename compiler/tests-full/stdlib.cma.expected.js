@@ -1121,8 +1121,8 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception,
     global_data = runtime.caml_get_global_data(),
-    ocaml_version = "5.3.0~beta1",
-    ocaml_release = [0, 5, 3, 0, [0, [0, 1, "beta1"]]],
+    ocaml_version = "5.3.0~beta2",
+    ocaml_release = [0, 5, 3, 0, [0, [0, 1, "beta2"]]],
     Stdlib = global_data.Stdlib,
     executable_name =
        /*<<sys.ml.in:36:22>>*/ runtime.caml_sys_executable_name(0),
