@@ -18,7 +18,7 @@
 
 open Code
 
-val f : to_lift:Var.Set.t -> program -> program * Var.Set.t * Var.t Var.Map.t
+val f : to_lift:Var.Set.t -> program -> program * Var.t Var.Map.t
 (** Lambda-lift all functions of the program that are in [to_lift]. All
     functions are lifted to toplevel. Functions that may be
     mutually recursive are lifted together. Also yields the names of the

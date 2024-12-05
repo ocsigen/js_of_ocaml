@@ -12,8 +12,8 @@ let () =
           (fun () -> ())
           ()
           { effc = (fun (type a) (_ : a Effect.t) -> None) };
-        perform Dummy
-      )
+      );
+      perform Dummy
     )
     ()
     { effc =
