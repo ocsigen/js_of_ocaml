@@ -23,6 +23,7 @@
  (target error1.wasm.js.actual)
  (deps error1.html)
  (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
   (with-accepted-exit-codes
    2
@@ -47,6 +48,7 @@
 
 (rule
  (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
   (diff %{dep:error1.expected} %{dep:error1.wasm.js.actual})))
 
@@ -70,6 +72,7 @@
  (target error1-unregister.wasm.js.actual)
  (deps error1-unregister.html)
  (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
   (with-accepted-exit-codes
    2
@@ -84,6 +87,7 @@
 
 (rule
  (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
   (diff
    %{dep:error1-unregister.expected}
@@ -104,6 +108,7 @@
  (target error2.wasm.js.actual)
  (deps error2.html)
  (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
   (with-accepted-exit-codes
    2
@@ -131,7 +136,9 @@
 (rule
  (alias runtest-wasm)
  (enabled_if
-  (= %{profile} dev))
+  (and
+   (= %{profile} dev)
+   %{env:WASMOO=false}))
  (action
   (diff %{dep:error2.expected} %{dep:error2.wasm.js.actual})))
 
@@ -157,6 +164,7 @@
  (target error2-unregister.wasm.js.actual)
  (deps error2-unregister.html)
  (alias runtest-js)
+ (enabled_if %{env:WASMOO=false})
  (action
   (with-accepted-exit-codes
    2
@@ -171,6 +179,7 @@
 
 (rule
  (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
   (diff
    %{dep:error2-unregister.expected}

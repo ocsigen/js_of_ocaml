@@ -25,6 +25,7 @@
 
 (rule
  (target cat-wasm.stdout)
+ (enabled_if %{env:WASMOO=false})
  (action
   (with-stdout-to
    %{target}
@@ -39,6 +40,7 @@
 
 (rule
  (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
   (diff cat-wasm.stdout cat-native.stdout)))
 
@@ -82,6 +84,7 @@
 
 (rule
  (target md5-wasm.stdout)
+ (enabled_if %{env:WASMOO=false})
  (action
   (with-stdout-to
    %{target}
@@ -113,5 +116,6 @@
 
 (rule
  (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
   (diff md5-wasm.stdout md5-native.stdout)))
