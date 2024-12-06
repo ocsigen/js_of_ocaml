@@ -557,18 +557,20 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
             @ (Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body)
           , branch ))
 
-let cps_instr ~st (instr : instr) : instr list =
-  match instr with
-  | Let (x, Closure (_, (pc, _))) when Var.Set.mem x st.cps_needed ->
-      (* Due to lambda lifiting, there are no closures in code that requires
-         transforming. *)
+let rewrite_instr ~target ~st (instr : instr) : instr list =
+  match target, instr with
+  | (`Cps | `Direct_style), Let (x, Closure (_, (pc, _))) when Var.Set.mem x st.cps_needed
+    ->
+      (* When CPS-transforming with double translation enabled, there are no closures in
+         code that requires transforming, due to lambda lifiting. *)
       assert (not (double_translate ()));
       (* Add the continuation parameter, and change the initial block if
          needed *)
       let cps_params, cps_cont = Hashtbl.find st.closure_info pc in
       st.in_cps := Var.Set.add x !(st.in_cps);
       [ Let (x, Closure (cps_params, cps_cont)) ]
-  | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
+  | ( (`Cps | `Direct_style)
+    , Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) ) -> (
       match arity with
       | Pc (Int a) ->
           [ Let
@@ -578,21 +580,26 @@ let cps_instr ~st (instr : instr) : instr list =
                   , [ size; Pc (Int (Targetint.succ a)) ] ) )
           ]
       | _ -> assert false)
-  | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
+  | (`Cps | `Direct_style), Let (x, Apply { f; args; _ })
+    when not (Var.Set.mem x st.cps_needed) ->
       (* At the moment, we turn into CPS any function not called with
          the right number of parameter *)
       assert (
         (* If this function is unknown to the global flow analysis, then it was
            introduced by the lambda lifting and we don't have exactness info any more. *)
-        Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
-        || Global_flow.exact_call st.flow_info f (List.length args));
+        match target with
+        | `Cps ->
+            Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
+            || Global_flow.exact_call st.flow_info f (List.length args)
+        | `Direct_style -> Global_flow.exact_call st.flow_info f (List.length args));
       [ Let (x, Apply { f; args; exact = true }) ]
-  | Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
+  | `Cps, Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
       (* Applications of CPS functions and effect primitives require more work
          (allocating a continuation and/or modifying end-of-block branches) and
          are handled in a specialized function below. *)
       assert false
-  | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
+  | `Direct_style, Let (_, e) when effect_primitive_or_application e -> assert false
+  | `Cps, Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
       (* The case when double translation is disabled should be taken care of by a prior
          pass *)
       assert (double_translate ());
@@ -602,13 +609,13 @@ let cps_instr ~st (instr : instr) : instr list =
       [ Let (unit, Constant (Int Targetint.zero))
       ; Let (x, Apply { exact; f; args = [ unit ] })
       ]
-  | Let (_, Prim (Extern "caml_assume_no_perform", args)) ->
+  | `Cps, Let (_, Prim (Extern "caml_assume_no_perform", args)) ->
       invalid_arg
       @@ Format.sprintf
            "Internal primitive `caml_assume_no_perform` takes exactly 1 argument (%d \
             given)"
            (List.length args)
-  | _ -> [ instr ]
+  | (`Cps | `Direct_style), _ -> [ instr ]
 
 let cps_block ~st ~k ~orig_pc block =
   debug_print "cps_block %d\n" orig_pc;
@@ -706,14 +713,18 @@ let cps_block ~st ~k ~orig_pc block =
     match rewritten_block with
     | Some (body_prefix, last_instrs, last) ->
         let body_prefix =
-          List.map body_prefix ~f:(fun i -> cps_instr ~st i) |> List.concat
+          List.map body_prefix ~f:(fun i -> rewrite_instr ~target:`Cps ~st i)
+          |> List.concat
         in
         body_prefix @ last_instrs, last
     | None ->
         let last_instrs, last =
           cps_last ~st ~alloc_jump_closures orig_pc block.branch ~k
         in
-        let body = List.map block.body ~f:(fun i -> cps_instr ~st i) |> List.concat in
+        let body =
+          List.map block.body ~f:(fun i -> rewrite_instr ~target:`Cps ~st i)
+          |> List.concat
+        in
         body @ last_instrs, last
   in
 
@@ -721,31 +732,6 @@ let cps_block ~st ~k ~orig_pc block =
   ; body
   ; branch = last
   }
-
-let rewrite_direct_instr ~st instr : instr =
-  match instr with
-  | Let (x, Closure (_, (pc, _))) when Var.Set.mem x st.cps_needed ->
-      (* Add the continuation parameter, and change the initial block if
-         needed *)
-      let cps_params, cps_cont = Hashtbl.find st.closure_info pc in
-      st.in_cps := Var.Set.add x !(st.in_cps);
-      Let (x, Closure (cps_params, cps_cont))
-  | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
-      match arity with
-      | Pc (Int a) ->
-          Let
-            ( x
-            , Prim
-                (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Targetint.succ a)) ])
-            )
-      | _ -> assert false)
-  | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
-      (* At the moment, we turn into CPS any function not called with
-         the right number of parameter *)
-      assert (Global_flow.exact_call st.flow_info f (List.length args));
-      Let (x, Apply { f; args; exact = true })
-  | Let (_, e) when effect_primitive_or_application e -> assert false
-  | _ -> instr
 
 (* If double-translating, modify all function applications and closure
    creations to take into account the fact that some closures must now have a
@@ -791,7 +777,10 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
     in
     let body = List.concat_map block.body ~f:(fun i -> rewrite_instr i) in
     { block with body }
-  else { block with body = List.map ~f:(rewrite_direct_instr ~st) block.body }
+  else
+    { block with
+      body = List.concat_map ~f:(rewrite_instr ~target:`Direct_style ~st) block.body
+    }
 
 (* Apply a substitution in a set of blocks, including to bound variables *)
 let subst_bound_in_blocks blocks s =
