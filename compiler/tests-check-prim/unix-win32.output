@@ -3,6 +3,7 @@ Missing
 
 From unix.bc:
 caml_alloc_dummy_function
+caml_assume_no_perform
 caml_int64_add_native
 caml_int64_and_native
 caml_int64_div_native

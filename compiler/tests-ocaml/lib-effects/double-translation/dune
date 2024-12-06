@@ -1,0 +1,137 @@
+(env
+ (using-effects
+  (flags
+   (:standard -w -38))
+  (js_of_ocaml
+   (flags
+    (:standard --enable effects,doubletranslate))
+   (build_runtime_flags
+    (:standard --enable effects,doubletranslate))
+   ;; separate compilation doesn't work when using
+   ;; features such as 'effects', 'doubletranslate' or 'use-js-string'
+   ;; because dune doesn't know that it should compile
+   ;; multiple versions of the dependencies
+   (compilation_mode whole_program)))
+ (_
+  (flags
+   (:standard -w -38))
+  (js_of_ocaml
+   (flags
+    (:standard --enable effects,doubletranslate))
+   ;; separate compilation doesn't work when using
+   ;; features such as 'effects' or 'use-js-string'
+   ;; because dune doesn't know that it should compile
+   ;; multiple versions of the dependencies
+   (compilation_mode whole_program))))
+
+(copy_files ../*.expected)
+
+(copy_files ../cmphash.ml)
+
+(copy_files ../marshal.ml)
+
+(copy_files ../effects.ml)
+
+(copy_files ../evenodd.ml)
+
+(copy_files ../manylive.ml)
+
+(copy_files ../overflow.ml)
+
+(copy_files ../partial.ml)
+
+(copy_files ../reperform.ml)
+
+(copy_files ../sched.ml)
+
+(copy_files ../shallow_state_io.ml)
+
+(copy_files ../shallow_state.ml)
+
+(copy_files ../test10.ml)
+
+(copy_files ../test11.ml)
+
+(copy_files ../test1.ml)
+
+(copy_files ../test2.ml)
+
+(copy_files ../test3.ml)
+
+(copy_files ../test4.ml)
+
+(copy_files ../test5.ml)
+
+(copy_files ../test6.ml)
+
+(copy_files ../test_lazy.ml)
+
+(copy_files ../used_cont.ml)
+
+(copy_files ../unhandled_unlinked.ml)
+
+(copy_files ../assume_no_perform.ml)
+
+(copy_files ../assume_no_perform_nested_handler.ml)
+
+(tests
+ (build_if
+  (>= %{ocaml_version} 5))
+ (names
+  cmphash
+  marshal
+  effects
+  evenodd
+  manylive
+  overflow
+  partial
+  reperform
+  sched
+  shallow_state_io
+  shallow_state
+  test10
+  test11
+  test1
+  test2
+  test3
+  test4
+  test5
+  test6
+  test_lazy
+  used_cont)
+ (modules
+  (:standard
+   \
+   unhandled_unlinked
+   assume_no_perform
+   assume_no_perform_unhandled
+   assume_no_perform_nested_handler))
+ (modes js))
+
+(tests
+ (build_if
+  (>= %{ocaml_version} 5))
+ (names unhandled_unlinked)
+ (modules unhandled_unlinked)
+ (action
+  (pipe-outputs
+   (with-accepted-exit-codes
+    2
+    (run node %{test}))
+   (run cat)))
+ (modes js))
+
+(tests
+ (build_if
+  (>= %{ocaml_version} 5))
+ (names
+  assume_no_perform
+  assume_no_perform_unhandled
+  assume_no_perform_nested_handler)
+ (libraries js_of_ocaml)
+ (action
+  (ignore-outputs
+   (with-accepted-exit-codes
+    0
+    (run node %{test}))))
+ (modes js))
