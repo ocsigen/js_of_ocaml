@@ -3,7 +3,7 @@
   (binaries
    (tools/node_wrapper.exe as node))
   (wasm_of_ocaml
-   (enabled_if (%{env:WASMOO=false)))
+   (enabled_if %{env:WASMOO=false})
    (runtest_alias runtest-wasm))
   (js_of_ocaml
    (runtest_alias runtest-js))
@@ -13,7 +13,7 @@
   (binaries
    (tools/node_wrapper.exe as node))
   (wasm_of_ocaml
-   (enabled_if (%{env:WASMOO=false)))
+   (enabled_if %{env:WASMOO=false})
    (runtest_alias runtest-wasm))
   (js_of_ocaml
    (runtest_alias runtest-js)
@@ -33,7 +33,7 @@
    (:standard \ -g)))
  (_
   (wasm_of_ocaml
-   (enabled_if (%{env:WASMOO=false)))
+   (enabled_if %{env:WASMOO=false})
    (runtest_alias runtest-wasm))
   (js_of_ocaml
    (runtest_alias runtest-js))
