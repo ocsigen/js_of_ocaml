@@ -4,13 +4,15 @@ let extra_args_for_wasoo =
   ; "--stack-size=10000"
   ]
 
+let path_sep, exe_ext = if Sys.win32 then ';', ".exe" else ':', ""
+
 let () =
   match Unix.getenv "PATH" with
   | exception Not_found -> assert false
   | path -> (
-      let sep = if Sys.win32 then ';' else ':' in
-      match String.split_on_char sep path with
-      | _drop :: paths -> Unix.putenv "PATH" (String.concat (String.make 1 sep) paths)
+      match String.split_on_char path_sep path with
+      | _drop :: paths ->
+          Unix.putenv "PATH" (String.concat (String.make 1 path_sep) paths)
       | [] -> assert false)
 
 let args =
@@ -25,4 +27,4 @@ let args =
       Array.of_list (exe :: argv)
   | [] -> assert false
 
-let () = Unix.execvp "node" args
+let () = Unix.execvp ("node" ^ exe_ext) args
