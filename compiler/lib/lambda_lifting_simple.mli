@@ -21,9 +21,9 @@ open Code
 val f : to_lift:Var.Set.t -> program -> program * Var.t Var.Map.t
 (** Lambda-lift all functions of the program that are in [to_lift]. All
     functions are lifted to toplevel. Functions that may be
-    mutually recursive are lifted together. Also yields the names of the
-    lifting closures generated, as well as the names of the lambda-lifted
-    functions. E.g. consider:
+    mutually recursive are lifted together. Also yields a map from the original
+    function names to the names of their lambda-lifted counterparts. E.g.
+    consider:
 
         let y = -3 in
         (* ... *)
