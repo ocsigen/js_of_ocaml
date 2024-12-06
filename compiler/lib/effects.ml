@@ -587,18 +587,9 @@ let rewrite_instr ~target ~st (instr : instr) : instr list =
       assert (
         (* If this function is unknown to the global flow analysis, then it was
            introduced by the lambda lifting and we don't have exactness info any more. *)
-        match target with
-        | `Cps ->
-            Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
-            || Global_flow.exact_call st.flow_info f (List.length args)
-        | `Direct_style -> Global_flow.exact_call st.flow_info f (List.length args));
+        Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
+        || Global_flow.exact_call st.flow_info f (List.length args));
       [ Let (x, Apply { f; args; exact = true }) ]
-  | `Cps, Let (_, (Apply _ | Prim (Extern ("%resume" | "%perform" | "%reperform"), _))) ->
-      (* Applications of CPS functions and effect primitives require more work
-         (allocating a continuation and/or modifying end-of-block branches) and
-         are handled in a specialized function below. *)
-      assert false
-  | `Direct_style, Let (_, e) when effect_primitive_or_application e -> assert false
   | `Cps, Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
       (* The case when double translation is disabled should be taken care of by a prior
          pass *)
@@ -609,6 +600,11 @@ let rewrite_instr ~target ~st (instr : instr) : instr list =
       [ Let (unit, Constant (Int Targetint.zero))
       ; Let (x, Apply { exact; f; args = [ unit ] })
       ]
+  | (`Cps | `Direct_style), Let (_, e) when effect_primitive_or_application e ->
+      (* For the CPS target, applications of CPS functions and effect primitives require
+         more work (allocating a continuation and/or modifying end-of-block branches) and
+         are handled in a specialized function. *)
+      assert false
   | `Cps, Let (_, Prim (Extern "caml_assume_no_perform", args)) ->
       invalid_arg
       @@ Format.sprintf
