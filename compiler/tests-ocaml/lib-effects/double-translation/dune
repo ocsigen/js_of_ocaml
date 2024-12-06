@@ -24,6 +24,56 @@
    ;; multiple versions of the dependencies
    (compilation_mode whole_program))))
 
+(copy_files ../*.expected)
+
+(copy_files ../cmphash.ml)
+
+(copy_files ../marshal.ml)
+
+(copy_files ../effects.ml)
+
+(copy_files ../evenodd.ml)
+
+(copy_files ../manylive.ml)
+
+(copy_files ../overflow.ml)
+
+(copy_files ../partial.ml)
+
+(copy_files ../reperform.ml)
+
+(copy_files ../sched.ml)
+
+(copy_files ../shallow_state_io.ml)
+
+(copy_files ../shallow_state.ml)
+
+(copy_files ../test10.ml)
+
+(copy_files ../test11.ml)
+
+(copy_files ../test1.ml)
+
+(copy_files ../test2.ml)
+
+(copy_files ../test3.ml)
+
+(copy_files ../test4.ml)
+
+(copy_files ../test5.ml)
+
+(copy_files ../test6.ml)
+
+(copy_files ../test_lazy.ml)
+
+(copy_files ../used_cont.ml)
+
+(copy_files ../unhandled_unlinked.ml)
+
+(copy_files ../assume_no_perform.ml)
+
+(copy_files ../assume_no_perform_nested_handler.ml)
+
 (tests
  (build_if
   (>= %{ocaml_version} 5))
