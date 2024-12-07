@@ -4,16 +4,22 @@ let extra_args_for_wasoo =
   ; "--stack-size=10000"
   ]
 
-let path_sep, exe_ext = if Sys.win32 then ';', ".exe" else ':', ""
+let env = Unix.environment ()
 
-let () =
-  match Unix.getenv "PATH" with
-  | exception Not_found -> assert false
-  | path -> (
-      match String.split_on_char path_sep path with
-      | _drop :: paths ->
-          Unix.putenv "PATH" (String.concat (String.make 1 path_sep) paths)
-      | [] -> assert false)
+let env =
+  Array.map
+    (fun e ->
+      if String.starts_with ~prefix:"PATH=" e
+      then
+        let path_sep = if Sys.win32 then ';' else ':' in
+        let path = String.sub e 5 (String.length e - 5) in
+        match String.split_on_char path_sep path with
+        | _drop :: paths ->
+            let paths = String.concat (String.make 1 path_sep) paths in
+            "PATH=" ^ paths
+        | _ -> e
+      else e)
+    env
 
 let args =
   match Array.to_list Sys.argv with
@@ -27,4 +33,14 @@ let args =
       Array.of_list (exe :: argv)
   | [] -> assert false
 
-let () = Unix.execvp ("node" ^ exe_ext) args
+let () =
+  if Sys.win32
+  then
+    let pid =
+      Unix.create_process_env "node.exe" args env Unix.stdin Unix.stdout Unix.stderr
+    in
+    match Unix.waitpid [] pid with
+    | _, WEXITED n -> exit n
+    | _, WSIGNALED _ -> exit 9
+    | _, WSTOPPED _ -> exit 9
+  else Unix.execvpe "node" args env
