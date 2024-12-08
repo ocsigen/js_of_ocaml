@@ -109,14 +109,12 @@
    (run node ./bin.js))))
 
 (rule
- (alias runtest)
- (enabled_if %{env:js-enabled=})
+ (alias runtest-js)
  (action
   (diff bin.expected bin.actual)))
 
 (alias
  (name default)
- (enabled_if %{env:js-enabled=})
  (deps
   myruntime.js
   stdlib.cma.js

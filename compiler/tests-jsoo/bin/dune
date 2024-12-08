@@ -11,13 +11,25 @@
 (rule
  (target error1.js.actual)
  (deps error1.html)
- (alias runtest)
+ (alias runtest-js)
  (action
   (with-accepted-exit-codes
    2
    (with-outputs-to
     %{target}
     (run node %{dep:error1.bc.js})))))
+
+(rule
+ (target error1.wasm.js.actual)
+ (deps error1.html)
+ (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
+ (action
+  (with-accepted-exit-codes
+   2
+   (with-outputs-to
+    %{target}
+    (run node %{dep:error1.bc.wasm.js})))))
 
 (rule
  (target error1.exe.actual)
@@ -30,9 +42,15 @@
     (run %{dep:error1.exe})))))
 
 (rule
- (alias runtest)
+ (alias runtest-js)
  (action
   (diff %{dep:error1.expected} %{dep:error1.js.actual})))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
+ (action
+  (diff %{dep:error1.expected} %{dep:error1.wasm.js.actual})))
 
 (rule
  (alias runtest)
@@ -42,7 +60,7 @@
 (rule
  (target error1-unregister.js.actual)
  (deps error1-unregister.html)
- (alias runtest)
+ (alias runtest-js)
  (action
   (with-accepted-exit-codes
    2
@@ -51,26 +69,52 @@
     (run node %{dep:error1.bc.js} unregister)))))
 
 (rule
- (alias runtest)
+ (target error1-unregister.wasm.js.actual)
+ (deps error1-unregister.html)
+ (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
+ (action
+  (with-accepted-exit-codes
+   2
+   (with-outputs-to
+    %{target}
+    (run node %{dep:error1.bc.wasm.js} unregister)))))
+
+(rule
+ (alias runtest-js)
  (action
   (diff %{dep:error1-unregister.expected} %{dep:error1-unregister.js.actual})))
 
 (rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
-  (copy error1.bc.wasm.js error1.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
+  (diff
+   %{dep:error1-unregister.expected}
+   %{dep:error1-unregister.wasm.js.actual})))
 
 (rule
  (target error2.js.actual)
  (deps error2.html)
- (alias runtest)
+ (alias runtest-js)
  (action
   (with-accepted-exit-codes
    2
    (with-outputs-to
     %{target}
     (run node %{dep:error2.bc.js})))))
+
+(rule
+ (target error2.wasm.js.actual)
+ (deps error2.html)
+ (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
+ (action
+  (with-accepted-exit-codes
+   2
+   (with-outputs-to
+    %{target}
+    (run node %{dep:error2.bc.wasm.js})))))
 
 (rule
  (target error2.exe.actual)
@@ -83,11 +127,20 @@
     (run %{dep:error2.exe})))))
 
 (rule
- (alias runtest)
+ (alias runtest-js)
  (enabled_if
   (= %{profile} dev))
  (action
   (diff %{dep:error2.expected} %{dep:error2.js.actual})))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if
+  (and
+   (= %{profile} dev)
+   %{env:WASMOO=false}))
+ (action
+  (diff %{dep:error2.expected} %{dep:error2.wasm.js.actual})))
 
 (rule
  (alias runtest)
@@ -99,7 +152,7 @@
 (rule
  (target error2-unregister.js.actual)
  (deps error2-unregister.html)
- (alias runtest)
+ (alias runtest-js)
  (action
   (with-accepted-exit-codes
    2
@@ -108,12 +161,26 @@
     (run node %{dep:error2.bc.js} unregister)))))
 
 (rule
- (alias runtest)
+ (target error2-unregister.wasm.js.actual)
+ (deps error2-unregister.html)
+ (alias runtest-js)
+ (enabled_if %{env:WASMOO=false})
+ (action
+  (with-accepted-exit-codes
+   2
+   (with-outputs-to
+    %{target}
+    (run node %{dep:error2.bc.wasm.js} unregister)))))
+
+(rule
+ (alias runtest-js)
  (action
   (diff %{dep:error2-unregister.expected} %{dep:error2-unregister.js.actual})))
 
 (rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
-  (copy error2.bc.wasm.js error2.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
+  (diff
+   %{dep:error2-unregister.expected}
+   %{dep:error2-unregister.wasm.js.actual})))

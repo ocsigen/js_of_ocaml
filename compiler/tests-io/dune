@@ -24,15 +24,25 @@
     (run node %{dep:./cat.bc.js})))))
 
 (rule
- (alias runtest)
+ (target cat-wasm.stdout)
+ (enabled_if %{env:WASMOO=false})
+ (action
+  (with-stdout-to
+   %{target}
+   (pipe-stdout
+    (run printf "echo ☠")
+    (run node %{dep:./cat.bc.wasm.js})))))
+
+(rule
+ (alias runtest-js)
  (action
   (diff cat-js.stdout cat-native.stdout)))
 
 (rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
-  (copy cat.bc.wasm.js cat.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
+  (diff cat-wasm.stdout cat-native.stdout)))
 
 (rule
  (target md5-native.stdout)
@@ -73,12 +83,39 @@
      (run node %{dep:md5.bc.js} -offset 2 -length 5))))))
 
 (rule
- (alias runtest)
+ (target md5-wasm.stdout)
+ (enabled_if %{env:WASMOO=false})
+ (action
+  (with-stdout-to
+   %{target}
+   (progn
+    (run node %{dep:md5.bc.wasm.js} %{dep:md5.bc.js})
+    (run node %{dep:md5.bc.wasm.js} %{dep:md5.bc.js} %{dep:md5.bc.js})
+    (run
+     node
+     %{dep:md5.bc.wasm.js}
+     -offset
+     2000
+     -length
+     4000
+     %{dep:md5.bc.js})
+    (pipe-stdout
+     (echo "tests")
+     (run node %{dep:md5.bc.wasm.js}))
+    (pipe-stdout
+     (echo "teststeststests")
+     (run node %{dep:md5.bc.wasm.js} -offset 5 -length 5))
+    (pipe-stdout
+     (echo "teststeststests")
+     (run node %{dep:md5.bc.wasm.js} -offset 2 -length 5))))))
+
+(rule
+ (alias runtest-js)
  (action
   (diff md5-js.stdout md5-native.stdout)))
 
 (rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASMOO=false})
  (action
-  (copy md5.bc.wasm.js md5.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
+  (diff md5-wasm.stdout md5-native.stdout)))

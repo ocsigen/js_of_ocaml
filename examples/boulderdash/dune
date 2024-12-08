@@ -9,12 +9,6 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
-(rule
- (action
-  (copy boulderdash.bc.wasm.js boulderdash.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
 (alias
  (name default)
  (deps

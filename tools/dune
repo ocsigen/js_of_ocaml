@@ -1,0 +1,3 @@
+(executable
+ (name node_wrapper)
+ (libraries unix))

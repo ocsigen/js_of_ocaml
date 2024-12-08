@@ -1,7 +1,4 @@
 (env
- (using-effects)
- (wasm)
- (wasm-effects)
  (_
   (js_of_ocaml
    (flags

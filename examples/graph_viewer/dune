@@ -20,12 +20,6 @@
 
 (ocamllex dot_lexer)
 
-(rule
- (action
-  (copy viewer_js.bc.wasm.js viewer_js.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
 (alias
  (name default)
  (deps viewer_js.bc.js scene.json index.html))

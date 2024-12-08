@@ -5,12 +5,6 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
-(rule
- (action
-  (copy cubes.bc.wasm.js cubes.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
 (alias
  (name default)
  (deps cubes.bc.js index.html))
