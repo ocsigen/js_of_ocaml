@@ -306,7 +306,13 @@
          (ref.func $do_perform)
          (struct.new $pair (local.get $eff) (local.get $cont))))
 
+   (global $effect_allowed (mut i32) (i32.const 1))
+
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
+      (if (i32.eqz (global.get $effect_allowed))
+         (then
+            (return_call $raise_unhandled
+               (local.get $eff) (ref.i31 (i32.const 0)))))
       (return_call $reperform (local.get $eff)
          (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
            (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0)))))
@@ -737,5 +743,23 @@
       (global.set $caml_trampoline_ref (ref.func $caml_trampoline)))
 
    (func (export "caml_assume_no_perform") (param $f (ref eq)) (result (ref eq))
-      (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+      (local $saved_effect_allowed i32)
+      (local $res (ref eq))
+      (local $exn (ref eq))
+      (local.set $saved_effect_allowed (global.get $effect_allowed))
+      (global.set $effect_allowed (i32.const 0))
+      (local.set $res
+         (try (result (ref eq))
+            (do
+               (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+            (catch $ocaml_exception
+               (local.set $exn (pop (ref eq)))
+               (global.set $effect_allowed (local.get $saved_effect_allowed))
+               (throw $ocaml_exception (local.get $exn)))
+            (catch $javascript_exception
+               (local.set $exn (call $caml_wrap_exception (pop externref)))
+               (global.set $effect_allowed (local.get $saved_effect_allowed))
+               (throw $ocaml_exception (local.get $exn)))))
+      (global.set $effect_allowed (local.get $saved_effect_allowed))
+      (local.get $res))
 )

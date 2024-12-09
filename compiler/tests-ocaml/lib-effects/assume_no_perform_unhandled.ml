@@ -4,10 +4,11 @@ open Effect.Deep
 
 type _ Effect.t += Dummy : unit t
 
-let f () =
+let must_raise () =
   try_with
     (fun () ->
       Js_of_ocaml.Js.Effect.assume_no_perform (fun () ->
+        (* Should raise [Effect.Unhandled] despite the installed handler *)
         perform Dummy
       )
     )
@@ -21,9 +22,5 @@ let f () =
 
 let () =
   try
-    (* When double translation is not enabled, [f] should not raise *)
-    f (); print_endline "ok"
-  with Effect.Unhandled Dummy -> (
-    print_endline "failed";
-    exit 2
-  )
+    must_raise (); print_endline "failed"; exit 2
+  with Effect.Unhandled Dummy -> print_endline "ok"

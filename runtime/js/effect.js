@@ -305,3 +305,11 @@ function caml_cps_closure(direct_f, cps_f) {
   direct_f.cps = cps_f;
   return direct_f;
 }
+
+//Provides: caml_assume_no_perform
+//Requires: caml_callback
+//If: effects
+//If: !doubletranslate
+function caml_assume_no_perform(f) {
+  return caml_callback(f, [0]);
+}
