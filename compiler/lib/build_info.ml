@@ -56,6 +56,7 @@ let create kind =
   in
   [ "use-js-string", string_of_bool (Config.Flag.use_js_string ())
   ; "effects", string_of_bool (Config.Flag.effects ())
+  ; "doubletranslate", string_of_bool (Config.Flag.double_translation ())
   ; "version", version
   ; "kind", string_of_kind kind
   ]
@@ -126,9 +127,10 @@ let merge fname1 info1 fname2 info2 =
         match k, v1, v2 with
         | "kind", v1, v2 ->
             if Option.equal String.equal v1 v2 then v1 else Some (string_of_kind `Unknown)
-        | ("effects" | "use-js-string" | "version"), Some v1, Some v2
+        | ("effects" | "doubletranslate" | "use-js-string" | "version"), Some v1, Some v2
           when String.equal v1 v2 -> Some v1
-        | (("effects" | "use-js-string" | "version") as key), v1, v2 ->
+        | (("effects" | "doubletranslate" | "use-js-string" | "version") as key), v1, v2
+          ->
             raise
               (Incompatible_build_info { key; first = fname1, v1; second = fname2, v2 })
         | _, Some v1, Some v2 when String.equal v1 v2 -> Some v1
@@ -143,6 +145,7 @@ let configure t =
   StringMap.iter
     (fun k v ->
       match k with
-      | "use-js-string" | "effects" -> Config.Flag.set k (bool_of_string v)
+      | "use-js-string" | "effects" | "doubletranslate" ->
+          Config.Flag.set k (bool_of_string v)
       | _ -> ())
     t
