@@ -3,7 +3,7 @@
   (flags
    (:standard -w +a-4-40-41-42-44-48-58-66-70))
   (binaries
-   (tools/node_wrapper.exe as node)
+   (tools/deno.sh as node)
    (tools/node_wrapper.exe as node.exe)))
  (with-effects
   (js_of_ocaml
