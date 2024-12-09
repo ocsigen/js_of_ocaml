@@ -32,6 +32,11 @@ See
 [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam)
 file for version constraints.
 
+## Supported engines
+
+The generated code works with Node.js 16 or any recent web-browser compatible with ECMAScript 6.
+We optionally rely on js `WeakRef`, which is part of ECMAScript 2021, to implement `Stdlib.Weak` and `Stdlib.Ephemeron`.
+
 ### Toplevel requirements
 
 - tyxml, reactiveData
