@@ -7,12 +7,11 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
-(rule
- (action
-  (copy webgldemo.bc.wasm.js webgldemo.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
 (alias
  (name default)
  (deps webgldemo.bc.js monkey.model index.html))
+
+(alias
+ (name default)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps webgldemo.bc.wasm.js index-wasm.html))

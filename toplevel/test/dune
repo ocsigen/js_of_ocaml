@@ -35,7 +35,6 @@
    (run node ./test_toplevel.js))))
 
 (rule
- (alias runtest)
- (enabled_if %{env:js-enabled=})
+ (alias runtest-js)
  (action
   (diff test_toplevel.expected test_toplevel.actual)))

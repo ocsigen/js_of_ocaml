@@ -1,13 +1,11 @@
 (executable
  (name main)
- (enabled_if %{env:js-enabled=})
  (modules main)
  (libraries dynlink js_of_ocaml-compiler.dynlink)
  (modes byte))
 
 (rule
  (target main.js)
- (enabled_if %{env:js-enabled=})
  (deps plugin.cmo export)
  (action
   (run
@@ -27,7 +25,6 @@
 
 (rule
  (target main.out)
- (enabled_if %{env:js-enabled=})
  (deps plugin.cmo)
  (action
   (with-outputs-to
@@ -35,7 +32,6 @@
    (run %{bin:node} %{dep:./main.js}))))
 
 (rule
- (alias runtest)
- (enabled_if %{env:js-enabled=})
+ (alias runtest-js)
  (action
   (diff main.out.expected main.out)))

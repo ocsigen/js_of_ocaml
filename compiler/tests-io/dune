@@ -1,84 +1,72 @@
-(executables
- (names cat md5)
+(tests
+ (names cat)
+ (modes js wasm)
+ (action
+  (pipe-stdout
+   (run printf "echo ☠")
+   (run node %{test}))))
+
+(tests
+ (names cat_nat)
  (modes
-  js
-  wasm
-  (best exe)))
+  (best exe))
+ (action
+  (pipe-stdout
+   (run printf "echo ☠")
+   (run %{test}))))
 
 (rule
- (target cat-native.stdout)
+ (copy cat.ml cat_nat.ml))
+
+(tests
+ (names md5)
+ (modes js wasm)
  (action
-  (with-stdout-to
-   %{target}
+  (progn
+   (run node %{test} %{dep:some-random-file})
+   (run node %{test} %{dep:some-random-file} %{dep:some-random-file})
+   (run node %{test} -offset 2000 -length 4000 %{dep:some-random-file})
    (pipe-stdout
-    (run printf "echo ☠")
-    (run %{dep:./cat.exe})))))
+    (echo "tests")
+    (run node %{test}))
+   (pipe-stdout
+    (echo "teststeststests")
+    (run node %{test} -offset 5 -length 5))
+   (pipe-stdout
+    (echo "teststeststests")
+    (run node %{test} -offset 2 -length 5)))))
+
+(tests
+ (names md5_nat)
+ (modes
+  (best exe))
+ (action
+  (progn
+   (run %{test} %{dep:some-random-file})
+   (run %{test} %{dep:some-random-file} %{dep:some-random-file})
+   (run %{test} -offset 2000 -length 4000 %{dep:some-random-file})
+   (pipe-stdout
+    (echo "tests")
+    (run %{test}))
+   (pipe-stdout
+    (echo "teststeststests")
+    (run %{test} -offset 5 -length 5))
+   (pipe-stdout
+    (echo "teststeststests")
+    (run %{test} -offset 2 -length 5)))))
 
 (rule
- (target cat-js.stdout)
- (action
-  (with-stdout-to
-   %{target}
-   (pipe-stdout
-    (run printf "echo ☠")
-    (run node %{dep:./cat.bc.js})))))
+ (copy md5.ml md5_nat.ml))
+
+(rule
+ (copy ../../manual/files/performances/time.png some-random-file))
 
 (rule
  (alias runtest)
  (action
-  (diff cat-js.stdout cat-native.stdout)))
-
-(rule
- (action
-  (copy cat.bc.wasm.js cat.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
-(rule
- (target md5-native.stdout)
- (action
-  (with-stdout-to
-   %{target}
-   (progn
-    (run %{dep:md5.exe} %{dep:md5.bc.js})
-    (run %{dep:md5.exe} %{dep:md5.bc.js} %{dep:md5.bc.js})
-    (run %{dep:md5.exe} -offset 2000 -length 4000 %{dep:md5.bc.js})
-    (pipe-stdout
-     (echo "tests")
-     (run %{dep:md5.exe}))
-    (pipe-stdout
-     (echo "teststeststests")
-     (run %{dep:md5.exe} -offset 5 -length 5))
-    (pipe-stdout
-     (echo "teststeststests")
-     (run %{dep:md5.exe} -offset 2 -length 5))))))
-
-(rule
- (target md5-js.stdout)
- (action
-  (with-stdout-to
-   %{target}
-   (progn
-    (run node %{dep:md5.bc.js} %{dep:md5.bc.js})
-    (run node %{dep:md5.bc.js} %{dep:md5.bc.js} %{dep:md5.bc.js})
-    (run node %{dep:md5.bc.js} -offset 2000 -length 4000 %{dep:md5.bc.js})
-    (pipe-stdout
-     (echo "tests")
-     (run node %{dep:md5.bc.js}))
-    (pipe-stdout
-     (echo "teststeststests")
-     (run node %{dep:md5.bc.js} -offset 5 -length 5))
-    (pipe-stdout
-     (echo "teststeststests")
-     (run node %{dep:md5.bc.js} -offset 2 -length 5))))))
+  (diff md5.expected md5_nat.expected)))
 
 (rule
  (alias runtest)
  (action
-  (diff md5-js.stdout md5-native.stdout)))
-
-(rule
- (action
-  (copy md5.bc.wasm.js md5.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
+  (diff cat.expected cat_nat.expected)))

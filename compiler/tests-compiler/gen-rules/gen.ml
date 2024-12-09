@@ -72,10 +72,6 @@ let enabled_if = function
   | LT52 -> "(< %{ocaml_version} 5.2)"
   | B64 -> "%{arch_sixtyfour}"
 
-let js_enabled = function
-  | "true" -> "%{env:js-enabled=}"
-  | x -> Printf.sprintf "(and %s %%{env:js-enabled=})" x
-
 let () =
   Array.to_list (Sys.readdir ".")
   |> List.filter ~f:is_implem
@@ -103,6 +99,6 @@ let () =
            basename
            basename
            (Hashtbl.hash prefix mod 100)
-           (js_enabled (enabled_if (lib_enabled_if basename)))
+           (enabled_if (lib_enabled_if basename))
            basename
            (enabled_if (test_enabled_if basename)))

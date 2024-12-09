@@ -2,7 +2,10 @@ all:
 	dune build @all
 
 tests:
-	dune runtest
+	dune build @runtest @runtest-js
+
+tests-wasm:
+	WASM_OF_OCAML=true dune build @runtest-wasm
 
 test runtest runtests: tests
 
@@ -31,4 +34,4 @@ installdoc:
 	git worktree add _wikidoc origin/wikidoc
 	rsync -av doc-dev/ _wikidoc/doc/dev/
 
-.PHONY: all tests test runtest runtests doc clean installdoc
+.PHONY: all tests tests-wasm test runtest runtests doc clean installdoc

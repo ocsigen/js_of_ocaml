@@ -5,12 +5,11 @@
  (preprocess
   (pps js_of_ocaml-ppx)))
 
-(rule
- (action
-  (copy planet.bc.wasm.js planet.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
 (alias
  (name default)
  (deps planet.bc.js index.html texture.jpg))
+
+(alias
+ (name default)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps planet.bc.wasm.js index-wasm.html))

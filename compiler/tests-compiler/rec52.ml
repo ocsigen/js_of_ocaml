@@ -44,6 +44,11 @@ let%expect_test "let rec" =
   in
   let p = compile_and_parse p in
   print_program p;
+  let s = [%expect.output] in
+  let s =
+    Str.global_replace (Str.regexp "runtime.caml_make_vect") "runtime.caml_array_make" s
+  in
+  print_endline s;
   [%expect
     {|
     (function(globalThis){
@@ -61,7 +66,7 @@ let%expect_test "let rec" =
         Stdlib_Hashtbl = global_data.Stdlib__Hashtbl,
         letrec_function_context = [],
         c = [],
-        d = runtime.caml_make_vect(5, 0),
+        d = runtime.caml_array_make(5, 0),
         default$0 = 42;
        function a(x){return b(x);}
        function b(x){

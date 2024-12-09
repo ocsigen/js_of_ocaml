@@ -10,9 +10,9 @@ Or a single one:
 $> dune build @examples/<path-to-example-project>/default
 ```
 
-Add the `--profile wasm` option to compile to Wasm:
+Set the environment variable WASM_OF_OCAML=true to compile to Wasm:
 ```
-$> dune build @examples/boulderdash/default --profile wasm
+$> WASM_OF_OCAML=true dune build @examples/boulderdash/default
 ```
 
 Compilation artifacts can be found in `${REPO_ROOT}/_build/default/examples/`.
@@ -23,4 +23,4 @@ to serve the files, for instance with the following command:
 ```
 python -m http.server -d _build/default/examples/boulderdash/
 ```
-and then open `http://localhost:8000` in a browser.
+and then open `http://localhost:8000/index-wasm.html` in a browser.

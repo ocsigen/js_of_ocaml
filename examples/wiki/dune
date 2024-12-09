@@ -7,12 +7,11 @@
 
 (ocamllex wikicreole)
 
-(rule
- (action
-  (copy main.bc.wasm.js main.bc.js))
- (enabled_if
-  (not %{env:js-enabled=})))
-
 (alias
  (name default)
  (deps main.bc.js index.html))
+
+(alias
+ (name default)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps main.bc.wasm.js index-wasm.html))

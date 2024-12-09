@@ -146,7 +146,7 @@ jobs:
       - run: opam exec -- make tests
         if: ${{ !matrix.skip-test }}
 
-      - run: opam exec -- dune build @all @runtest --profile using-effects
+      - run: opam exec -- dune build @all @runtest @runtest-js --profile with-effects
         if: ${{ !matrix.skip-effects }}
 
       - run: opam exec -- git diff --exit-code

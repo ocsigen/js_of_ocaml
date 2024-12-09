@@ -1,1 +1,2 @@
 Fatal error: exception File "compiler/tests-jsoo/bin/error2.ml", line 13, characters 2-7: Pattern matching failed
+Fatal error: exception Match_failure("compiler/tests-jsoo/bin/error2.ml", 13, 2)
