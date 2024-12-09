@@ -16,14 +16,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
 //Provides: fs_node_supported
 function fs_node_supported() {
   return (
     typeof globalThis.process !== "undefined" &&
     typeof globalThis.process.versions !== "undefined" &&
     typeof globalThis.process.versions.node !== "undefined"
-  );
+  ) || globalThis.Deno;
 }
 //Provides: fs_node_supported
 //If: browser
@@ -35,7 +34,7 @@ function fs_node_supported() {
 //Requires: MlNodeFd, caml_raise_sys_error, caml_raise_with_args
 //Requires: make_unix_err_args, caml_named_value, caml_string_of_jsstring
 function MlNodeDevice(root) {
-  this.fs = require("node:fs");
+  this.fs = nodefs
   this.root = root;
 }
 MlNodeDevice.prototype.nm = function (name) {

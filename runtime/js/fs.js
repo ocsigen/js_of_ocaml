@@ -28,6 +28,8 @@ function caml_trailing_slash(name) {
 //Requires: caml_trailing_slash, fs_node_supported
 if (fs_node_supported() && globalThis.process && globalThis.process.cwd)
   var caml_current_dir = globalThis.process.cwd().replace(/\\/g, "/");
+if (fs_node_supported() && globalThis.Deno && globalThis.Deno.cwd)
+  var caml_current_dir = globalThis.Deno.cwd().replace(/\\/g, "/");
 else var caml_current_dir = "/static";
 caml_current_dir = caml_trailing_slash(caml_current_dir);
 
@@ -78,7 +80,10 @@ function make_path_is_absolute() {
     globalThis.process.platform
   ) {
     return globalThis.process.platform === "win32" ? win32 : posix;
-  } else return posix;
+  } else if (fs_node_supported() && globalThis.Deno) {
+    return posix
+  } else
+    return posix;
 }
 var path_is_absolute = make_path_is_absolute();
 

@@ -30,6 +30,9 @@ function caml_sys_exit(code) {
   //nodejs
   if (globalThis.process && globalThis.process.exit)
     globalThis.process.exit(code);
+  //deno
+  if (globalThis.Deno && globalThis.Deno.exit)
+    globalThis.Deno.exit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
@@ -116,6 +119,11 @@ function jsoo_sys_getenv(n) {
   //nodejs env
   if (process && process.env && process.env[n] !== undefined)
     return process.env[n];
+  //deno env
+  var deno = globalThis.Deno;
+  if (deno && deno.env && deno.env.get){
+    return deno.env.get(n);
+  }
   if (globalThis.jsoo_env && typeof globalThis.jsoo_env[n] === "string") {
     return globalThis.jsoo_env[n];
   }
@@ -142,6 +150,7 @@ function caml_sys_unsafe_getenv(name) {
 //Requires: caml_string_of_jsstring
 var caml_argv = (function () {
   var process = globalThis.process;
+  var deno = globalThis.Deno
   var main = "a.out";
   var args = [];
 
@@ -151,7 +160,10 @@ var caml_argv = (function () {
     main = argv[1];
     args = argv.slice(2);
   }
-
+  else if(deno) {
+    main = deno.mainModule;
+    args = deno.args;
+  }
   var p = caml_string_of_jsstring(main);
   var args2 = [0, p];
   for (var i = 0; i < args.length; i++)
@@ -383,7 +395,14 @@ function caml_setup_uncaught_exception_handler() {
       caml_fatal_uncaught_exception(err);
       process.exit(2);
     });
-  } else if (globalThis.addEventListener) {
+  } else if(globalThis.Deno){
+    globalThis.addEventListener("unhandledrejection", function (event) {
+      if (event.error) {
+        caml_fatal_uncaught_exception(event.error);
+      }
+    });
+  }
+  else if (globalThis.addEventListener) {
     globalThis.addEventListener("error", function (event) {
       if (event.error) {
         caml_fatal_uncaught_exception(event.error);

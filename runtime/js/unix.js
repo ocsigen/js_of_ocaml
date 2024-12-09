@@ -307,6 +307,9 @@ function caml_unix_getuid(unit) {
   if (globalThis.process && globalThis.process.getuid) {
     return globalThis.process.getuid();
   }
+  if (globalThis.Deno && globalThis.Deno.uid) {
+    return globalThis.Deno.uid();
+  }
   caml_raise_not_found();
 }
 
