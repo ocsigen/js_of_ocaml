@@ -96,15 +96,6 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
               (* If a function contains effect primitives, it must be
                  in CPS *)
               add_dep deps f x)
-      | Let (x, Prim (Extern "caml_assume_no_perform", _)) -> (
-          add_var vars x;
-          match fun_name with
-          | None -> ()
-          | Some f ->
-              add_var vars f;
-              (* If a function contains effect primitives, it must be
-                 in CPS *)
-              add_dep deps f x)
       | Let (x, Closure _) -> add_var vars x
       | Let (_, (Prim _ | Block _ | Constant _ | Field _ | Special _))
       | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ())
@@ -159,10 +150,6 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
   | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) ->
       (* Effects primitives are in CPS *)
       true
-  | Expr (Prim (Extern "caml_assume_no_perform", _)) ->
-      (* This primitive calls its function argument in direct style when double translation
-         is enabled. Otherwise, it simply applies its argument to unit. *)
-      not (Config.Flag.double_translation ())
   | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> false
 
 module SCC = Strongly_connected_components.Make (struct

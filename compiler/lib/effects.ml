@@ -169,8 +169,7 @@ let empty_body b =
 (****)
 
 let effect_primitive_or_application = function
-  | Prim (Extern ("%resume" | "%perform" | "%reperform" | "caml_assume_no_perform"), _)
-  | Apply _ -> true
+  | Prim (Extern ("%resume" | "%perform" | "%reperform"), _) | Apply _ -> true
   | Block (_, _, _, _)
   | Field (_, _, _)
   | Closure (_, _)
@@ -595,11 +594,9 @@ let rewrite_instr ~st (instr : instr) : instr =
 
 let cps_instr ~st (instr : instr) : instr list =
   match instr with
-  | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
-      (* The case when double translation is disabled should be taken care of by a prior
-         pass *)
-      assert (double_translate ());
-      (* We just need to call [f] in direct style. *)
+  | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) when double_translate () ->
+      (* When double translation is enabled, we just call [f] in direct style.
+         Otherwise, the runtime primitive is used. *)
       let unit = Var.fresh_n "unit" in
       let exact = Global_flow.exact_call st.flow_info f 1 in
       [ Let (unit, Constant (Int Targetint.zero))
@@ -636,24 +633,6 @@ let cps_block ~st ~k ~orig_pc block =
                  && Global_flow.exact_call st.flow_info f (List.length args)
             in
             tail_call ~st ~exact ~in_cps:true ~check:true ~f (args @ [ k ]))
-    | Prim (Extern "caml_assume_no_perform", [ Pv f ]) when not (double_translate ()) ->
-        assert (Var.Set.mem x st.cps_needed);
-        (* Translated like the [Apply] case, with a unit argument *)
-        Some
-          (fun ~k ->
-            let exact =
-              Var.idx f < Var.Tbl.length st.flow_info.info_approximation
-              && Global_flow.exact_call st.flow_info f 1
-            in
-            let unit = Var.fresh_n "unit" in
-            tail_call
-              ~st
-              ~instrs:[ Let (unit, Constant (Int Targetint.zero)) ]
-              ~exact
-              ~in_cps:true
-              ~check:true
-              ~f
-              [ unit; k ])
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
           (fun ~k ->
@@ -752,12 +731,6 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           let unit_val = Int Targetint.zero in
           let exact = Global_flow.exact_call st.flow_info f 1 in
           [ Let (unit, Constant unit_val); Let (x, Apply { exact; f; args = [ unit ] }) ]
-      | Let (_, Prim (Extern "caml_assume_no_perform", args)) ->
-          invalid_arg
-          @@ Format.sprintf
-               "Internal primitive `caml_assume_no_perform` takes exactly 1 argument (%d \
-                given)"
-               (List.length args)
       | (Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _) as instr
         -> [ instr ]
     in
