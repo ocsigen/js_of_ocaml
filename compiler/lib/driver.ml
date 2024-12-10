@@ -525,6 +525,12 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
   in
   (* pack *)
   let wrap_in_iife ~use_strict js =
+    let prelude, js =
+      List.partition js ~f:(function
+        | J.Import _, _ -> true
+        | J.Export _, _ -> true
+        | _ -> false)
+    in
     let var ident e = J.variable_declaration [ J.ident ident, (e, J.N) ], J.N in
     let expr e = J.Expression_statement e, J.N in
     let freenames =
@@ -573,12 +579,15 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       f [ J.ident Global_constant.global_object_ ] js
     in
     match wrap_with_fun with
-    | `Anonymous -> expr (mk efun)
+    | `Anonymous -> prelude @ [ expr (mk efun) ]
     | `Named name ->
         let name = Utf8_string.of_string_exn name in
-        mk (sfun (J.ident name))
+        prelude @ [ mk (sfun (J.ident name)) ]
     | `Iife ->
-        expr (J.call (mk efun) [ J.EVar (J.ident Global_constant.global_object_) ] J.N)
+        prelude
+        @ [ expr
+              (J.call (mk efun) [ J.EVar (J.ident Global_constant.global_object_) ] J.N)
+          ]
   in
   let always_required_js =
     (* consider adding a comments in the generated file with original
@@ -587,13 +596,13 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
           //# 1 myfile.js
        v}
     *)
-    List.map
+    List.concat_map
       always_required_codes
       ~f:(fun { Linker.program; filename = _; requires = _ } ->
         wrap_in_iife ~use_strict:false program)
   in
   let runtime_js = wrap_in_iife ~use_strict:(Config.Flag.strictmode ()) js in
-  let js = always_required_js @ [ runtime_js ] in
+  let js = always_required_js @ runtime_js in
   let js =
     match wrap_with_fun, standalone with
     | `Named name, (true | false) ->

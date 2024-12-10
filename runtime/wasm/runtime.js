@@ -14,13 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
+import node_fs from "node:fs";
+import { spawnSync } from "node:child_process";
+import path from "node:path";
+import { readFile } from "node:fs/promises";
 (js) => async (args) => {
   // biome-ignore lint/suspicious/noRedundantUseStrict:
   "use strict";
   const { link, src, generated } = args;
 
   const isNode = globalThis?.process?.versions?.node;
+  const isDeno = globalThis?.Deno;
 
   const math = {
     cos: Math.cos,
@@ -65,7 +69,7 @@
     Uint8ClampedArray,
   ];
 
-  const fs = isNode && require("node:fs");
+  const fs = node_fs;
 
   const fs_cst = fs?.constants;
 
@@ -395,11 +399,22 @@
     register_channel,
     unregister_channel,
     channel_list,
-    exit: (n) => isNode && process.exit(n),
-    argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
-    getenv: (n) => (isNode ? process.env[n] : null),
+    exit: (n) => {
+      if (isNode) globalThis.process.exit(n);
+      else if (isDeno) globalThis.Deno.exit(n);
+    },
+    argv: () => {
+      if (isNode) return globalThis.process.argv.slice(1);
+      if (isDeno) return [globalThis.Deno.mainModule, ...globalThis.Deno.args];
+      return ["a.out"];
+    },
+    getenv: (n) => {
+      if (isNode) return globalThis.process.env[n];
+      if (isDeno) return globalThis.Deno.env.get(n);
+      return null;
+    },
     system: (c) => {
-      var res = require("node:child_process").spawnSync(c, {
+      var res = spawnSync(c, {
         shell: true,
         stdio: "inherit",
       });
@@ -407,8 +422,15 @@
       return res.signal ? 255 : res.status;
     },
     time: () => performance.now(),
-    getcwd: () => (isNode ? process.cwd() : "/static"),
-    chdir: (x) => process.chdir(x),
+    getcwd: () => {
+      if (isNode) return globalThis.process.cwd();
+      if (isDeno) return globalThis.Deno.cwd();
+      return "/static";
+    },
+    chdir: (x) => {
+      if (isNode) globalThis.process.chdir(x);
+      if (isDeno) globalThis.Deno.chdir(x);
+    },
     mkdir: (p, m) => fs.mkdirSync(p, m),
     unlink: (p) => fs.unlinkSync(p),
     readdir: (p) => fs.readdirSync(p),
@@ -458,19 +480,27 @@
   );
   const options = { builtins: ["js-string", "text-decoder", "text-encoder"] };
 
-  function loadRelative(src) {
-    const path = require("node:path");
-    const f = path.join(path.dirname(require.main.filename), src);
-    return require("node:fs/promises").readFile(f);
+  function NodeLoadRelative(src) {
+    const f = path.join(path.dirname(import.meta.filename), src);
+    return readFile(f);
+  }
+  function DenoLoadRelative(src) {
+    const f = path.join(path.dirname(Deno.mainModule.substring(7)), src);
+    return Deno.readFile(f);
   }
   const fetchBase = globalThis?.document?.currentScript?.src;
   function fetchRelative(src) {
     const url = fetchBase ? new URL(src, fetchBase) : src;
+    console.error("fetching", import.meta.filename, url);
     return fetch(url);
   }
-  const loadCode = isNode ? loadRelative : fetchRelative;
+  const loadCode = isDeno
+    ? DenoLoadRelative
+    : isNode
+      ? NodeLoadRelative
+      : fetchRelative;
   async function instantiateModule(code) {
-    return isNode
+    return isNode || isDeno
       ? WebAssembly.instantiate(await code, imports, options)
       : WebAssembly.instantiateStreaming(code, imports, options);
   }

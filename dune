@@ -27,7 +27,7 @@
    (tools/node_wrapper.exe as node.exe)))
  (_
   (binaries
-   (tools/node_wrapper.exe as node)
+   (tools/deno.sh as node)
    (tools/node_wrapper.exe as node.exe))))
 
 (rule

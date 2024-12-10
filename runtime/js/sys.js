@@ -15,6 +15,8 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { execSync } from "node:child_process";
+
 ///////////// Sys
 
 //Provides: caml_raise_sys_error (const)
@@ -31,8 +33,7 @@ function caml_sys_exit(code) {
   if (globalThis.process && globalThis.process.exit)
     globalThis.process.exit(code);
   //deno
-  if (globalThis.Deno && globalThis.Deno.exit)
-    globalThis.Deno.exit(code);
+  if (globalThis.Deno && globalThis.Deno.exit) globalThis.Deno.exit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
@@ -121,7 +122,7 @@ function jsoo_sys_getenv(n) {
     return process.env[n];
   //deno env
   var deno = globalThis.Deno;
-  if (deno && deno.env && deno.env.get){
+  if (deno && deno.env && deno.env.get && deno.env.get(n) !== undefined) {
     return deno.env.get(n);
   }
   if (globalThis.jsoo_env && typeof globalThis.jsoo_env[n] === "string") {
@@ -137,7 +138,7 @@ function jsoo_sys_getenv(n) {
 function caml_sys_getenv(name) {
   var r = jsoo_sys_getenv(caml_jsstring_of_string(name));
   if (r === undefined) caml_raise_not_found();
-  return caml_string_of_jsstring(r);
+  return caml_string_of_jsstring(r);node
 }
 
 //Provides: caml_sys_unsafe_getenv
@@ -150,7 +151,7 @@ function caml_sys_unsafe_getenv(name) {
 //Requires: caml_string_of_jsstring
 var caml_argv = (function () {
   var process = globalThis.process;
-  var deno = globalThis.Deno
+  var deno = globalThis.Deno;
   var main = "a.out";
   var args = [];
 
@@ -159,8 +160,7 @@ var caml_argv = (function () {
     //nodejs
     main = argv[1];
     args = argv.slice(2);
-  }
-  else if(deno) {
+  } else if (deno) {
     main = deno.mainModule;
     args = deno.args;
   }
@@ -205,10 +205,9 @@ function caml_sys_executable_name(a) {
 function caml_sys_system_command(cmd) {
   var cmd = caml_jsstring_of_string(cmd);
   if (typeof require !== "undefined") {
-    var child_process = require("node:child_process");
-    if (child_process && child_process.execSync)
+    if (execSync)
       try {
-        child_process.execSync(cmd, { stdio: "inherit" });
+        execSync(cmd, { stdio: "inherit" });
         return 0;
       } catch (e) {
         return 1;
@@ -395,14 +394,13 @@ function caml_setup_uncaught_exception_handler() {
       caml_fatal_uncaught_exception(err);
       process.exit(2);
     });
-  } else if(globalThis.Deno){
+  } else if (globalThis.Deno) {
     globalThis.addEventListener("unhandledrejection", function (event) {
       if (event.error) {
         caml_fatal_uncaught_exception(event.error);
       }
     });
-  }
-  else if (globalThis.addEventListener) {
+  } else if (globalThis.addEventListener) {
     globalThis.addEventListener("error", function (event) {
       if (event.error) {
         caml_fatal_uncaught_exception(event.error);

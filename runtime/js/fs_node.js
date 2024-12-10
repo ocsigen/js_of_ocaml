@@ -16,13 +16,35 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+import {
+  existsSync,
+  statSync,
+  mkdirSync,
+  rmdirSync,
+  readdirSync,
+  unlinkSync,
+  openSync,
+  renameSync,
+  lstatSync,
+  symlinkSync,
+  readlinkSync,
+  opendirSync,
+  ftruncateSync,
+  fstatSync,
+  writeSync,
+  readSync,
+  closeSync,
+} from "node:fs";
+import node_consts from "node:constants";
+
 //Provides: fs_node_supported
 function fs_node_supported() {
   return (
-    typeof globalThis.process !== "undefined" &&
-    typeof globalThis.process.versions !== "undefined" &&
-    typeof globalThis.process.versions.node !== "undefined"
-  ) || globalThis.Deno;
+    (typeof globalThis.process !== "undefined" &&
+      typeof globalThis.process.versions !== "undefined" &&
+      typeof globalThis.process.versions.node !== "undefined") ||
+    globalThis.Deno
+  );
 }
 //Provides: fs_node_supported
 //If: browser
@@ -34,7 +56,6 @@ function fs_node_supported() {
 //Requires: MlNodeFd, caml_raise_sys_error, caml_raise_with_args
 //Requires: make_unix_err_args, caml_named_value, caml_string_of_jsstring
 function MlNodeDevice(root) {
-  this.fs = globalThis.nodefs
   this.root = root;
 }
 MlNodeDevice.prototype.nm = function (name) {
@@ -42,21 +63,21 @@ MlNodeDevice.prototype.nm = function (name) {
 };
 MlNodeDevice.prototype.exists = function (name) {
   try {
-    return this.fs.existsSync(this.nm(name)) ? 1 : 0;
+    return existsSync(this.nm(name)) ? 1 : 0;
   } catch (err) {
     return 0;
   }
 };
 MlNodeDevice.prototype.isFile = function (name) {
   try {
-    return this.fs.statSync(this.nm(name)).isFile() ? 1 : 0;
+    return statSync(this.nm(name)).isFile() ? 1 : 0;
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
 };
 MlNodeDevice.prototype.mkdir = function (name, mode, raise_unix) {
   try {
-    this.fs.mkdirSync(this.nm(name), { mode: mode });
+    mkdirSync(this.nm(name), { mode: mode });
     return 0;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -64,7 +85,7 @@ MlNodeDevice.prototype.mkdir = function (name, mode, raise_unix) {
 };
 MlNodeDevice.prototype.rmdir = function (name, raise_unix) {
   try {
-    this.fs.rmdirSync(this.nm(name));
+    rmdirSync(this.nm(name));
     return 0;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -72,29 +93,29 @@ MlNodeDevice.prototype.rmdir = function (name, raise_unix) {
 };
 MlNodeDevice.prototype.readdir = function (name, raise_unix) {
   try {
-    return this.fs.readdirSync(this.nm(name));
+    return readdirSync(this.nm(name));
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
 };
 MlNodeDevice.prototype.is_dir = function (name) {
   try {
-    return this.fs.statSync(this.nm(name)).isDirectory() ? 1 : 0;
+    return statSync(this.nm(name)).isDirectory() ? 1 : 0;
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
 };
 MlNodeDevice.prototype.unlink = function (name, raise_unix) {
   try {
-    this.fs.unlinkSync(this.nm(name));
+    unlinkSync(this.nm(name));
     return 0;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
 };
 MlNodeDevice.prototype.open = function (name, f, raise_unix) {
-  var consts = require("node:constants");
   var res = 0;
+  var consts = node_consts;
   for (var key in f) {
     switch (key) {
       case "rdonly":
@@ -127,10 +148,8 @@ MlNodeDevice.prototype.open = function (name, f, raise_unix) {
     }
   }
   try {
-    var fd = this.fs.openSync(this.nm(name), res);
-    var isCharacterDevice = this.fs
-      .lstatSync(this.nm(name))
-      .isCharacterDevice();
+    var fd = openSync(this.nm(name), res);
+    var isCharacterDevice = lstatSync(this.nm(name)).isCharacterDevice();
     f.isCharacterDevice = isCharacterDevice;
     return new MlNodeFd(fd, f);
   } catch (err) {
@@ -140,14 +159,14 @@ MlNodeDevice.prototype.open = function (name, f, raise_unix) {
 
 MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
   try {
-    this.fs.renameSync(this.nm(o), this.nm(n));
+    renameSync(this.nm(o), this.nm(n));
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
 };
 MlNodeDevice.prototype.stat = function (name, raise_unix) {
   try {
-    var js_stats = this.fs.statSync(this.nm(name));
+    var js_stats = statSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -155,7 +174,7 @@ MlNodeDevice.prototype.stat = function (name, raise_unix) {
 };
 MlNodeDevice.prototype.lstat = function (name, raise_unix) {
   try {
-    var js_stats = this.fs.lstatSync(this.nm(name));
+    var js_stats = lstatSync(this.nm(name));
     return this.stats_from_js(js_stats);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -163,11 +182,7 @@ MlNodeDevice.prototype.lstat = function (name, raise_unix) {
 };
 MlNodeDevice.prototype.symlink = function (to_dir, target, path, raise_unix) {
   try {
-    this.fs.symlinkSync(
-      this.nm(target),
-      this.nm(path),
-      to_dir ? "dir" : "file",
-    );
+    symlinkSync(this.nm(target), this.nm(path), to_dir ? "dir" : "file");
     return 0;
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -175,7 +190,7 @@ MlNodeDevice.prototype.symlink = function (to_dir, target, path, raise_unix) {
 };
 MlNodeDevice.prototype.readlink = function (name, raise_unix) {
   try {
-    var link = this.fs.readlinkSync(this.nm(name), "utf8");
+    var link = readlinkSync(this.nm(name), "utf8");
     return caml_string_of_jsstring(link);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
@@ -183,7 +198,7 @@ MlNodeDevice.prototype.readlink = function (name, raise_unix) {
 };
 MlNodeDevice.prototype.opendir = function (name, raise_unix) {
   try {
-    return this.fs.opendirSync(this.nm(name));
+    return opendirSync(this.nm(name));
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
@@ -266,7 +281,6 @@ function MlNodeDevice() {}
 //Provides: MlNodeFd
 //Requires: MlFile, caml_uint8_array_of_string, caml_uint8_array_of_bytes, caml_bytes_set, caml_raise_sys_error
 function MlNodeFd(fd, flags) {
-  this.fs = globalThis.nodefs;
   this.fd = fd;
   this.flags = flags;
 }
@@ -275,23 +289,22 @@ MlNodeFd.prototype.constructor = MlNodeFd;
 
 MlNodeFd.prototype.truncate = function (len) {
   try {
-    this.fs.ftruncateSync(this.fd, len | 0);
+    ftruncateSync(this.fd, len | 0);
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
 };
 MlNodeFd.prototype.length = function () {
   try {
-    return this.fs.fstatSync(this.fd).size;
+    return fstatSync(this.fd).size;
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
 };
 MlNodeFd.prototype.write = function (offset, buf, buf_offset, len) {
   try {
-    if (this.flags.isCharacterDevice)
-      this.fs.writeSync(this.fd, buf, buf_offset, len);
-    else this.fs.writeSync(this.fd, buf, buf_offset, len, offset);
+    if (this.flags.isCharacterDevice) writeSync(this.fd, buf, buf_offset, len);
+    else writeSync(this.fd, buf, buf_offset, len, offset);
   } catch (err) {
     caml_raise_sys_error(err.toString());
   }
@@ -300,8 +313,8 @@ MlNodeFd.prototype.write = function (offset, buf, buf_offset, len) {
 MlNodeFd.prototype.read = function (offset, a, buf_offset, len) {
   try {
     if (this.flags.isCharacterDevice)
-      var read = this.fs.readSync(this.fd, a, buf_offset, len);
-    else var read = this.fs.readSync(this.fd, a, buf_offset, len, offset);
+      var read = readSync(this.fd, a, buf_offset, len);
+    else var read = readSync(this.fd, a, buf_offset, len, offset);
     return read;
   } catch (err) {
     caml_raise_sys_error(err.toString());
@@ -309,7 +322,7 @@ MlNodeFd.prototype.read = function (offset, a, buf_offset, len) {
 };
 MlNodeFd.prototype.close = function () {
   try {
-    this.fs.closeSync(this.fd);
+    closeSync(this.fd);
     return 0;
   } catch (err) {
     caml_raise_sys_error(err.toString());
@@ -325,8 +338,7 @@ function MlNodeFd() {}
 function caml_sys_open_for_node(fd, flags) {
   if (flags.name) {
     try {
-      var fs = globalThis.nodefs;
-      var fd2 = fs.openSync(flags.name, "rs");
+      var fd2 = openSync(flags.name, "rs");
       return new MlNodeFd(fd2, flags);
     } catch (e) {}
   }

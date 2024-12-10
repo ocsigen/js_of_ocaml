@@ -1,3 +1,5 @@
+import { isatty } from "node:tty";
+
 //Provides: caml_unix_gettimeofday
 //Alias: unix_gettimeofday
 function caml_unix_gettimeofday() {
@@ -87,9 +89,8 @@ function caml_unix_filedescr_of_fd(x) {
 //Requires: fs_node_supported
 //Alias: unix_isatty
 function caml_unix_isatty(fileDescriptor) {
-  if (fs_node_supported()) {
-    var tty = require("node:tty");
-    return tty.isatty(fileDescriptor) ? 1 : 0;
+  if (node_isatty) {
+    return node_isatty(fileDescriptor) ? 1 : 0;
   } else {
     return 0;
   }

@@ -81,9 +81,8 @@ function make_path_is_absolute() {
   ) {
     return globalThis.process.platform === "win32" ? win32 : posix;
   } else if (fs_node_supported() && globalThis.Deno) {
-    return posix
-  } else
     return posix;
+  } else return posix;
 }
 var path_is_absolute = make_path_is_absolute();
 
