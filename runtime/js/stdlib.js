@@ -24,9 +24,9 @@ function caml_call_gen(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
-  if (d === 0) return f.apply(null, args);
+  if (d === 0) return f(...args);
   else if (d < 0) {
-    var g = f.apply(null, args.slice(0, n));
+    var g = f(...args.slice(0, n));
     if (typeof g !== "function") return g;
     return caml_call_gen(g, args.slice(n));
   } else {
@@ -70,8 +70,9 @@ function caml_call_gen(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
-  if (d === 0) return f.apply(null, args);
-  else if (d < 0) {
+  if (d === 0) {
+    return f(...args);
+  } else if (d < 0) {
     var rest = args.slice(n - 1);
     var k = args[argsLen - 1];
     args = args.slice(0, n);
@@ -81,7 +82,7 @@ function caml_call_gen(f, args) {
       args[args.length - 1] = k;
       return caml_call_gen(g, args);
     };
-    return f.apply(null, args);
+    return f(...args);
   } else {
     argsLen--;
     var k = args[argsLen];

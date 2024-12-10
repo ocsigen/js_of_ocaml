@@ -566,15 +566,7 @@ let compile_and_run_bytecode ?unix s =
       |> run_bytecode
       |> print_endline)
 
-let compile_and_run
-    ?debug
-    ?pretty
-    ?(skip_modern = false)
-    ?(flags = [])
-    ?effects
-    ?use_js_string
-    ?unix
-    s =
+let compile_and_run ?debug ?pretty ?(flags = []) ?effects ?use_js_string ?unix s =
   with_temp_dir ~f:(fun () ->
       let bytecode_file =
         s
@@ -582,7 +574,7 @@ let compile_and_run
         |> Filetype.write_ocaml ~name:"test.ml"
         |> compile_ocaml_to_bc ?debug ?unix
       in
-      let output_without_stdlib_modern =
+      let output =
         compile_bc_to_javascript
           ?pretty
           ~flags
@@ -592,24 +584,7 @@ let compile_and_run
           bytecode_file
         |> run_javascript
       in
-      print_endline output_without_stdlib_modern;
-      if not skip_modern
-      then
-        let output_with_stdlib_modern =
-          compile_bc_to_javascript
-            ~flags:(flags @ [ "+stdlib_modern.js" ])
-            ?effects
-            ?use_js_string
-            ?sourcemap:debug
-            bytecode_file
-          |> run_javascript
-        in
-        if not (String.equal output_without_stdlib_modern output_with_stdlib_modern)
-        then (
-          print_endline "Output was different with stdlib_modern.js:";
-          print_endline "===========================================";
-          print_string output_with_stdlib_modern;
-          print_endline "==========================================="))
+      print_endline output)
 
 let compile_and_parse_whole_program
     ?(debug = true)
