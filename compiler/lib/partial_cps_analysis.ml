@@ -22,6 +22,12 @@ open! Stdlib
 
 let times = Debug.find "times"
 
+let double_translate () =
+  match Config.effects () with
+  | `Disabled | `Jspi -> assert false
+  | `Cps -> false
+  | `Double_translation -> true
+
 open Code
 
 let add_var = Var.ISet.add
@@ -85,7 +91,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                   add_dep deps x g;
                   (* Conversally, if a call point is in CPS then all
                      called functions must be in CPS *)
-                  add_dep deps g x)
+                  if not (double_translate ()) then add_dep deps g x)
                 known)
       | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
           add_var vars x;
@@ -145,6 +151,8 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
       | Top -> true
       | Values { others; _ } -> others)
   | Expr (Closure _) ->
+      (not (double_translate ()))
+      &&
       (* If a function escapes, it must be in CPS *)
       Var.ISet.mem info.Global_flow.info_may_escape x
   | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) ->
