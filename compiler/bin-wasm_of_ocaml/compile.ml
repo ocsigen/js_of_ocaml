@@ -269,8 +269,15 @@ let run
     ; include_dirs
     ; sourcemap_root
     ; sourcemap_don't_inline_content
+    ; effects
     } =
   Config.set_target `Wasm;
+  (* For backward compatibility, consider that [--enable effects] alone means [--effects cps] *)
+  Config.set_effects_backend
+    (match effects with
+    | None -> if Config.Flag.effects () then Some Cps else None
+    | Some Cps -> Some Cps
+    | Some _ -> failwith "Unexpected effects backend");
   Jsoo_cmdline.Arg.eval common;
   Generate.init ();
   let output_file = fst output_file in

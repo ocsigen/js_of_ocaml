@@ -4,9 +4,9 @@
    (:standard -w -38))
   (js_of_ocaml
    (flags
-    (:standard --enable effects,doubletranslate))
+    (:standard --effects=double-translation))
    (build_runtime_flags
-    (:standard --enable effects,doubletranslate))
+    (:standard --effects=double-translation))
    ;; separate compilation doesn't work when using
    ;; features such as 'effects', 'doubletranslate' or 'use-js-string'
    ;; because dune doesn't know that it should compile
@@ -17,7 +17,7 @@
    (:standard -w -38))
   (js_of_ocaml
    (flags
-    (:standard --enable effects,doubletranslate))
+    (:standard --effects=double-translation))
    ;; separate compilation doesn't work when using
    ;; features such as 'effects' or 'use-js-string'
    ;; because dune doesn't know that it should compile

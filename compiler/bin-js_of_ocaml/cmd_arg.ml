@@ -65,6 +65,7 @@ type t =
   ; fs_output : string option
   ; fs_external : bool
   ; keep_unit_names : bool
+  ; effects : Config.effects_backend option
   }
 
 let wrap_with_fun_conv =
@@ -253,6 +254,20 @@ let options =
       & opt (some string) None
       & info [ "ofs" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
+  let effects =
+    let doc =
+      "Select an implementation of effect handlers. [$(docv)] should be one of $(b,cps) \
+       or $(b,double-translation). Effects are not allowed by default."
+    in
+    Arg.(
+      value
+      & opt
+          (some
+             (enum
+                [ "cps", Config.Cps; "double-translation", Double_translation ]))
+          None
+      & info [ "effects" ] ~docv:"KIND" ~doc)
+  in
   let build_t
       common
       set_param
@@ -279,7 +294,8 @@ let options =
       output_file
       input_file
       js_files
-      keep_unit_names =
+      keep_unit_names
+      effects =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
@@ -341,6 +357,7 @@ let options =
       ; bytecode
       ; source_map
       ; keep_unit_names
+      ; effects
       }
   in
   let t =
@@ -371,7 +388,8 @@ let options =
       $ output_file
       $ input_file
       $ js_files
-      $ keep_unit_names)
+      $ keep_unit_names
+      $ effects)
   in
   Term.ret t
 
@@ -567,6 +585,7 @@ let options_runtime_only =
       ; bytecode = `None
       ; source_map
       ; keep_unit_names = false
+      ; effects = None
       }
   in
   let t =

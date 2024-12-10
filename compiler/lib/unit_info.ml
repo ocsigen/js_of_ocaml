@@ -53,7 +53,7 @@ let of_cmo (cmo : Cmo_format.compilation_unit) =
   let requires = StringSet.of_list (Cmo_format.requires cmo) in
   let requires = StringSet.diff requires provides in
   let effects_without_cps =
-    (not (Config.Flag.effects ()))
+    Option.is_none (Config.effects ())
     && List.exists (Cmo_format.primitives cmo) ~f:(function
          | "%resume" | "%reperform" | "%perform" -> true
          | _ -> false)

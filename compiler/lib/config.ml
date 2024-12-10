@@ -70,8 +70,6 @@ module Flag = struct
 
   let effects = o ~name:"effects" ~default:false
 
-  let double_translation = o ~name:"doubletranslate" ~default:false
-
   let staticeval = o ~name:"staticeval" ~default:true
 
   let share_constant = o ~name:"share" ~default:true
@@ -197,3 +195,13 @@ let set_target (t : [ `JavaScript | `Wasm ]) =
   | `JavaScript -> Targetint.set_num_bits 32
   | `Wasm -> Targetint.set_num_bits 31);
   target_ := (t :> [ `JavaScript | `Wasm | `None ])
+
+type effects_backend =
+  | Cps
+  | Double_translation
+
+let effects_ : effects_backend option ref = ref None
+
+let effects () = !effects_
+
+let set_effects_backend backend = effects_ := backend

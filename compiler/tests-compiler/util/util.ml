@@ -295,15 +295,17 @@ let compile_to_javascript
     ~pretty
     ~sourcemap
     file =
+  assert (not doubletranslate || effects);
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
     List.flatten
       [ (if pretty then [ "--pretty" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
-      ; (if effects then [ "--enable=effects" ] else [ "--disable=effects" ])
-      ; (if doubletranslate
-         then [ "--enable=doubletranslate" ]
-         else [ "--disable=doubletranslate" ])
+      ; (if effects && doubletranslate
+         then [ "--effects=double-translation" ]
+         else if effects
+         then [ "--effects=cps" ]
+         else [])
       ; (if use_js_string
          then [ "--enable=use-js-string" ]
          else [ "--disable=use-js-string" ])

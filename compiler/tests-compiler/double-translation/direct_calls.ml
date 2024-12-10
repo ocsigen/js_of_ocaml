@@ -18,7 +18,7 @@
 
 open Util
 
-let%expect_test "direct calls with --enable effects,doubletranslate" =
+let%expect_test "direct calls with --effects=double-translation" =
   let code =
     compile_and_parse
       ~effects:true
