@@ -86,9 +86,9 @@ var caml_callback = caml_call_gen;
 //Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_resume_stack, caml_fresh_oo_id, caml_named_value, caml_raise_with_arg, caml_string_of_jsbytes
 //Requires: caml_raise_constant
 function caml_callback(f, args) {
-  function uncaught_effect_handler(eff, k, ms) {
+  function uncaught_effect_handler(eff, k, last, ms) {
     // Resumes the continuation k by raising exception Unhandled.
-    caml_resume_stack(k[1], ms);
+    caml_resume_stack(k[1], last, ms);
     var exn = caml_named_value("Effect.Unhandled");
     if (exn) caml_raise_with_arg(exn, eff);
     else {
