@@ -91,7 +91,7 @@ function caml_int32_bits_of_float(x) {
 //notation 0x<mantissa in hex>p<exponent> from ISO C99.
 //https://github.com/dankogai/js-hexfloat/blob/master/hexfloat.js
 //Provides: caml_hexstring_of_float const
-//Requires: caml_string_of_jsstring, caml_str_repeat
+//Requires: caml_string_of_jsstring
 function caml_hexstring_of_float(x, prec, style) {
   if (!Number.isFinite(x)) {
     if (Number.isNaN(x)) return caml_string_of_jsstring("nan");
@@ -136,11 +136,11 @@ function caml_hexstring_of_float(x, prec, style) {
   if (prec >= 0) {
     var idx = x_str.indexOf(".");
     if (idx < 0) {
-      x_str += "." + caml_str_repeat(prec, "0");
+      x_str += "." + "0".repeat(prec);
     } else {
       var size = idx + 1 + prec;
       if (x_str.length < size)
-        x_str += caml_str_repeat(size - x_str.length, "0");
+        x_str += "0".repeat(size - x_str.length);
       else x_str = x_str.slice(0, size);
     }
   }

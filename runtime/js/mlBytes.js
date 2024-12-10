@@ -47,25 +47,10 @@
 //   kind(x) =           x&6
 
 //Provides: caml_str_repeat
+//Deprecated: Use js method [s.repeat(n)] instead
 function caml_str_repeat(n, s) {
   if (n === 0) return "";
-  if (s.repeat) {
-    return s.repeat(n);
-  } // ECMAscript 6 and Firefox 24+
-  var r = "",
-    l = 0;
-  for (;;) {
-    if (n & 1) r += s;
-    n >>= 1;
-    if (n === 0) return r;
-    s += s;
-    l++;
-    if (l === 9) {
-      s.slice(0, 1); // flatten the string
-      // then, the flattening of the whole string will be faster,
-      // as it will be composed of larger pieces
-    }
-  }
+  return s.repeat(n);
 }
 
 //Provides: caml_subarray_to_jsbytes
@@ -446,7 +431,7 @@ MlBytes.prototype.slice = function () {
 //Requires: caml_str_repeat, caml_sub_uint8_array_to_jsbytes
 function caml_convert_string_to_bytes(s) {
   /* Assumes not BYTES */
-  if (s.t === 2 /* PARTIAL */) s.c += caml_str_repeat(s.l - s.c.length, "\0");
+  if (s.t === 2 /* PARTIAL */) s.c += "\0".repeat(s.l - s.c.length);
   else s.c = caml_sub_uint8_array_to_jsbytes(s.c, 0, s.c.length);
   s.t = 0; /*BYTES | UNKOWN*/
 }
@@ -608,7 +593,7 @@ function caml_bytes_greaterthan(s1, s2) {
 }
 
 //Provides: caml_fill_bytes
-//Requires: caml_str_repeat, caml_convert_bytes_to_array
+//Requires: caml_convert_bytes_to_array
 //Alias: caml_fill_string
 function caml_fill_bytes(s, i, l, c) {
   if (l > 0) {
@@ -617,7 +602,7 @@ function caml_fill_bytes(s, i, l, c) {
         s.c = "";
         s.t = 2; /* PARTIAL */
       } else {
-        s.c = caml_str_repeat(l, String.fromCharCode(c));
+        s.c = String.fromCharCode(c).repeat(l);
         s.t = l === s.l ? 0 /* BYTES | UNKOWN */ : 2; /* PARTIAL */
       }
     } else {

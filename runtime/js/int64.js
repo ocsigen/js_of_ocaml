@@ -338,7 +338,7 @@ function caml_int64_of_float(x) {
 //Requires: caml_parse_format, caml_finish_formatting
 //Requires: caml_int64_is_negative, caml_int64_neg
 //Requires: caml_int64_of_int32, caml_int64_to_int32
-//Requires: caml_int64_is_zero, caml_str_repeat
+//Requires: caml_int64_is_zero
 function caml_int64_format(fmt, x) {
   var f = caml_parse_format(fmt);
   if (f.signedconv && caml_int64_is_negative(x)) {
@@ -356,7 +356,7 @@ function caml_int64_format(fmt, x) {
   if (f.prec >= 0) {
     f.filler = " ";
     var n = f.prec - buffer.length;
-    if (n > 0) buffer = caml_str_repeat(n, "0") + buffer;
+    if (n > 0) buffer = "0".repeat(n) + buffer;
   }
   return caml_finish_formatting(f, buffer);
 }
