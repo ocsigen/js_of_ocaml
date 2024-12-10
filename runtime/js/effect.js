@@ -195,7 +195,10 @@ function caml_get_cps_fun(f) {
 //If: effects
 //If: doubletranslate
 function caml_get_cps_fun(f) {
-  return f.cps;
+  // This function is only used to get the effect handler. If the
+  // effect handler has no CPS function, we know that we can directly
+  // call the direct version instead.
+  return f.cps ? f.cps : f;
 }
 
 //Provides: caml_alloc_stack
