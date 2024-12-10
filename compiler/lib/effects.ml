@@ -613,11 +613,34 @@ let cps_block ~st ~k ~orig_pc block =
   in
 
   let rewrite_last_instr (x : Var.t) (e : expr) : (k:Var.t -> instr list * last) option =
-    let perform_effect ~effect_ ~continuation =
+    let perform_effect ~effect_ continuation_and_tail =
       Some
         (fun ~k ->
           let e =
-            Prim (Extern "caml_perform_effect", [ Pv effect_; continuation; Pv k ])
+            match Config.target () with
+            | `JavaScript -> (
+                match continuation_and_tail with
+                | None -> Prim (Extern "caml_perform_effect", [ Pv effect_; Pv k ])
+                | Some (continuation, tail) ->
+                    Prim
+                      ( Extern "caml_reperform_effect"
+                      , [ Pv effect_; continuation; tail; Pv k ] ))
+            | `Wasm -> (
+                (* temporary until we finish the change to the wasmoo
+                   runtime *)
+                match continuation_and_tail with
+                | None ->
+                    Prim
+                      ( Extern "caml_perform_effect"
+                      , [ Pv effect_
+                        ; Pc (Int Targetint.zero)
+                        ; Pc (Int Targetint.zero)
+                        ; Pv k
+                        ] )
+                | Some (continuation, tail) ->
+                    Prim
+                      ( Extern "caml_perform_effect"
+                      , [ Pv effect_; continuation; tail; Pv k ] ))
           in
           let x = Var.fresh () in
           [ Let (x, e) ], Return x)
@@ -628,22 +651,22 @@ let cps_block ~st ~k ~orig_pc block =
           (fun ~k ->
             let exact = exact || call_exact st.flow_info f (List.length args) in
             tail_call ~st ~exact ~in_cps:true ~check:true ~f (args @ [ k ]))
-    | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
+    | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg; tail ]) ->
         Some
           (fun ~k ->
             let k' = Var.fresh_n "cont" in
             tail_call
               ~st
-              ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
+              ~instrs:
+                [ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; tail; Pv k ])) ]
               ~exact:(call_exact st.flow_info f 1)
               ~in_cps:true
               ~check:true
               ~f
               [ arg; k' ])
-    | Prim (Extern "%perform", [ Pv effect_ ]) ->
-        perform_effect ~effect_ ~continuation:(Pc (Int Targetint.zero))
-    | Prim (Extern "%reperform", [ Pv effect_; continuation ]) ->
-        perform_effect ~effect_ ~continuation
+    | Prim (Extern "%perform", [ Pv effect_ ]) -> perform_effect ~effect_ None
+    | Prim (Extern "%reperform", [ Pv effect_; continuation; tail ]) ->
+        perform_effect ~effect_ (Some (continuation, tail))
     | _ -> None
   in
 
@@ -712,12 +735,12 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           ; Let (cps_c, Closure (cps_params, cps_cont))
           ; Let (x, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
           ]
-      | Let (x, Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ])) ->
-          [ Let (x, Prim (Extern "caml_resume", [ Pv f; Pv arg; Pv stack ])) ]
+      | Let (x, Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg; Pv tail ])) ->
+          [ Let (x, Prim (Extern "caml_resume", [ Pv f; Pv arg; Pv stack; Pv tail ])) ]
       | Let (x, Prim (Extern "%perform", [ Pv effect_ ])) ->
           (* In direct-style code, we just raise [Effect.Unhandled]. *)
           [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect_ ])) ]
-      | Let (x, Prim (Extern "%reperform", [ Pv effect_; Pv _continuation ])) ->
+      | Let (x, Prim (Extern "%reperform", [ Pv effect_; Pv _continuation; Pv _tail ])) ->
           (* Similar to previous case *)
           [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect_ ])) ]
       | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->

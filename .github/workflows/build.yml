@@ -57,6 +57,11 @@ jobs:
             skip-effects: false
             skip-test: false
             skip-doc: false
+          - os: ubuntu-latest
+            ocaml-compiler: "5.1"
+            skip-effects: false
+            skip-test: false
+            skip-doc: true
             # Note this OCaml compiler is bytecode only
           - os: ubuntu-latest
             ocaml-compiler: "ocaml-variants.5.2.0+options,ocaml-option-32bit"

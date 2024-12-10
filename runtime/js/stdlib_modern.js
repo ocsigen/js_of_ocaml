@@ -119,7 +119,7 @@ function caml_call_gen(f, args) {
 }
 
 //Provides: caml_call_gen_tuple (const, shallow)
-//Requires: caml_fiber_stack, caml_cps_closure
+//Requires: caml_cps_closure
 //If: effects
 //If: doubletranslate
 //Weakdef
