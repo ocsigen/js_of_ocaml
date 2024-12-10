@@ -21,7 +21,6 @@
   --table
   --external-tokens
   Js_token
-  --explain
   --unused-token
   TAnnot
   --unused-token
@@ -34,8 +33,7 @@
   T_AT))
 
 (menhir
- (modules annot_parser)
- (flags --explain))
+ (modules annot_parser))
 
 (rule
  (targets compiler_version.ml)
