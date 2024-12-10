@@ -78,7 +78,7 @@ var caml_fiber_stack;
 //Provides:caml_resume_stack
 //Requires: caml_named_value, caml_raise_constant, caml_exn_stack, caml_fiber_stack
 //If: effects
-function caml_resume_stack(stack, k) {
+function caml_resume_stack(stack, last, k) {
   if (!stack)
     caml_raise_constant(
       caml_named_value("Effect.Continuation_already_resumed"),
@@ -111,9 +111,9 @@ function caml_pop_fiber() {
 //Provides: caml_perform_effect
 //Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack
 //If: effects
-function caml_perform_effect(eff, cont, k0) {
+function caml_perform_effect(eff, cont, last, k0) {
   // Allocate a continuation if we don't already have one
-  if (!cont) cont = [245 /*continuation*/, 0];
+  if (!cont) cont = [245 /*continuation*/, 0, 0];
   // Get current effect handler
   var handler = caml_fiber_stack.h[3];
   // Cons the current fiber onto the continuation:
@@ -123,8 +123,8 @@ function caml_perform_effect(eff, cont, k0) {
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
   return caml_stack_check_depth()
-    ? handler(eff, cont, k1, k1)
-    : caml_trampoline_return(handler, [eff, cont, k1, k1]);
+    ? handler(eff, cont, last, k1)
+    : caml_trampoline_return(handler, [eff, cont, last, k1]);
 }
 
 //Provides: caml_alloc_stack

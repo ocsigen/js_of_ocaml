@@ -88,7 +88,7 @@ var caml_callback = caml_call_gen;
 function caml_callback(f, args) {
   function uncaught_effect_handler(eff, k, ms) {
     // Resumes the continuation k by raising exception Unhandled.
-    caml_resume_stack(k[1], ms);
+    caml_resume_stack(k[1], 0, ms);
     var exn = caml_named_value("Effect.Unhandled");
     if (exn) caml_raise_with_arg(exn, eff);
     else {
