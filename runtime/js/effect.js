@@ -113,7 +113,7 @@ function caml_pop_fiber() {
 //If: effects
 function caml_perform_effect(eff, cont, last, k0) {
   // Allocate a continuation if we don't already have one
-  if (!cont) cont = [245 /*continuation*/, 0];
+  if (!cont) cont = [245 /*continuation*/, 0, 0];
   // Get current effect handler
   var handler = caml_fiber_stack.h[3];
   // Cons the current fiber onto the continuation:
