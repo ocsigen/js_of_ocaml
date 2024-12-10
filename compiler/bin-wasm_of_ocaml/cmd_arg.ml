@@ -51,6 +51,7 @@ type t =
   ; sourcemap_don't_inline_content : bool
   ; params : (string * string) list
   ; include_dirs : string list
+  ; effects : Config.effects_backend option
   }
 
 let options =
@@ -103,6 +104,16 @@ let options =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
   in
+  let effects =
+    let doc =
+      "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
+       (the default) or $(b,cps)."
+    in
+    Arg.(
+      value
+      & opt (enum [ "jspi", None; "cps", Some Config.Cps ]) None
+      & info [ "effects" ] ~docv:"KIND" ~doc)
+  in
   let build_t
       common
       set_param
@@ -115,7 +126,8 @@ let options =
       sourcemap_root
       output_file
       input_file
-      runtime_files =
+      runtime_files
+      effects =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let output_file =
       let ext =
@@ -145,6 +157,7 @@ let options =
       ; enable_source_maps
       ; sourcemap_root
       ; sourcemap_don't_inline_content
+      ; effects
       }
   in
   let t =
@@ -161,7 +174,8 @@ let options =
       $ sourcemap_root
       $ output_file
       $ input_file
-      $ runtime_files)
+      $ runtime_files
+      $ effects)
   in
   Term.ret t
 
@@ -229,6 +243,7 @@ let options_runtime_only =
       ; enable_source_maps
       ; sourcemap_root
       ; sourcemap_don't_inline_content
+      ; effects = None
       }
   in
   let t =

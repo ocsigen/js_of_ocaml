@@ -331,7 +331,7 @@ let times = Debug.find "times"
 let f p live_vars =
   let first_class_primitives =
     match Config.target () with
-    | `JavaScript -> not (Config.Flag.effects ())
+    | `JavaScript -> Option.is_none (Config.effects ())
     | `Wasm -> false
   in
   Code.invariant p;

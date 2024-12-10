@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+
 module Flag : sig
   val available : unit -> string list
 
@@ -39,9 +40,8 @@ module Flag : sig
 
   val staticeval : unit -> bool
 
+  (* Deprecated in favor of toplevel function [effects] below *)
   val effects : unit -> bool
-
-  val double_translation : unit -> bool
 
   val genprim : unit -> bool
 
@@ -117,3 +117,11 @@ end
 val target : unit -> [ `JavaScript | `Wasm ]
 
 val set_target : [ `JavaScript | `Wasm ] -> unit
+
+type effects_backend =
+  | Cps
+  | Double_translation
+
+val effects : unit -> effects_backend option
+
+val set_effects_backend : effects_backend option -> unit

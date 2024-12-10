@@ -185,8 +185,12 @@ module Fragment = struct
       ~f:(fun m (k, v) -> StringMap.add k v m)
       ~init:StringMap.empty
       [ "js-string", Config.Flag.use_js_string
-      ; "effects", Config.Flag.effects
-      ; "doubletranslate", Config.Flag.double_translation
+      ; ("effects", fun () -> Option.is_some (Config.effects ()))
+      ; ( "doubletranslate"
+        , fun () ->
+            match Config.effects () with
+            | Some Double_translation -> true
+            | _ -> false )
       ; ( "wasm"
         , fun () ->
             match Config.target () with

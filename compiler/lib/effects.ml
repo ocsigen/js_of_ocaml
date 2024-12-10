@@ -38,7 +38,11 @@ open Code
 
 let debug = Debug.find "effects"
 
-let double_translate = Config.Flag.double_translation
+let double_translate () =
+  match Config.effects () with
+  | None -> assert false
+  | Some Cps -> false
+  | Some Double_translation -> true
 
 let debug_print fmt =
   if debug () then Format.(eprintf (fmt ^^ "%!")) else Format.(ifprintf err_formatter fmt)

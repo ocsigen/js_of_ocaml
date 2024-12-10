@@ -36,6 +36,17 @@ let string_of_kind = function
   | `Cma -> "cma"
   | `Unknown -> "unknown"
 
+let string_of_effects_backend = function
+  | None -> "none"
+  | Some Config.Cps -> "cps"
+  | Some Config.Double_translation -> "double-translation"
+
+let effects_backend_of_string = function
+  | "none" -> None
+  | "cps" -> Some Config.Cps
+  | "double-translation" -> Some Double_translation
+  | _ -> invalid_arg "effects_backend_of_string"
+
 let kind_of_string s =
   match List.find_opt all ~f:(fun k -> String.equal s (string_of_kind k)) with
   | None -> `Unknown
@@ -55,8 +66,7 @@ let create kind =
     | v -> Printf.sprintf "%s+%s" Compiler_version.s v
   in
   [ "use-js-string", string_of_bool (Config.Flag.use_js_string ())
-  ; "effects", string_of_bool (Config.Flag.effects ())
-  ; "doubletranslate", string_of_bool (Config.Flag.double_translation ())
+  ; "effects", string_of_effects_backend (Config.effects ())
   ; "version", version
   ; "kind", string_of_kind kind
   ]
@@ -127,9 +137,9 @@ let merge fname1 info1 fname2 info2 =
         match k, v1, v2 with
         | "kind", v1, v2 ->
             if Option.equal String.equal v1 v2 then v1 else Some (string_of_kind `Unknown)
-        | ("effects" | "doubletranslate" | "use-js-string" | "version"), Some v1, Some v2
+        | ("effects" | "use-js-string" | "version"), Some v1, Some v2
           when String.equal v1 v2 -> Some v1
-        | (("effects" | "doubletranslate" | "use-js-string" | "version") as key), v1, v2
+        | (("effects" | "use-js-string" | "version") as key), v1, v2
           ->
             raise
               (Incompatible_build_info { key; first = fname1, v1; second = fname2, v2 })
@@ -145,7 +155,7 @@ let configure t =
   StringMap.iter
     (fun k v ->
       match k with
-      | "use-js-string" | "effects" | "doubletranslate" ->
-          Config.Flag.set k (bool_of_string v)
+      | "use-js-string" -> Config.Flag.set k (bool_of_string v)
+      | "effects" -> Config.set_effects_backend (effects_backend_of_string v)
       | _ -> ())
     t
