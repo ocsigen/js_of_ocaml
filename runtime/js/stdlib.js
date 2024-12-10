@@ -36,7 +36,7 @@ function caml_call_gen(f, args) {
           var nargs = new Array(argsLen + 1);
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
-          return f.apply(null, nargs);
+          return f(...nargs);
         };
         break;
       }
@@ -46,7 +46,7 @@ function caml_call_gen(f, args) {
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
-          return f.apply(null, nargs);
+          return f(...nargs);
         };
         break;
       }
@@ -92,7 +92,7 @@ function caml_call_gen(f, args) {
           for (var i = 0; i < argsLen; i++) nargs[i] = args[i];
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
-          return f.apply(null, nargs);
+          return f(...nargs);
         };
         break;
       }
@@ -103,7 +103,7 @@ function caml_call_gen(f, args) {
           nargs[argsLen] = x;
           nargs[argsLen + 1] = y;
           nargs[argsLen + 2] = z;
-          return f.apply(null, nargs);
+          return f(...nargs);
         };
         break;
       }
