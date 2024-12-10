@@ -22,7 +22,7 @@
 let prog = {|let () = Printf.printf "%nx" 0xffffffffn;;|}
 
 let%expect_test _ =
-  Util.compile_and_run ~skip_modern:true prog;
+  Util.compile_and_run prog;
   [%expect
     {|
     Warning: integer overflow: native integer 0xffffffff (4294967295) truncated to 0xffffffff (-1); the generated code might be incorrect.
