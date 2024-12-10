@@ -74,12 +74,11 @@ function caml_str_repeat(n, s) {
 // In such setup, Typed_array would be implemented as polyfill, and [f.apply] would
 // fail here. Mark the primitive as Weakdef, so that people can override it easily.
 function caml_subarray_to_jsbytes(a, i, len) {
-  var f = String.fromCharCode;
-  if (i === 0 && len <= 4096 && len === a.length) return f.apply(null, a);
-  var s = "";
-  for (; 0 < len; i += 1024, len -= 1024)
-    s += f.apply(null, a.slice(i, i + Math.min(len, 1024)));
-  return s;
+  if (i === 0 && len <= 4096 && len === a.length) return String.fromCharCode(...a);
+  var s = new Array(((len + 1023) / 1024) | 0);
+  for (var j = 0; 0 < len; j++, i += 1024, len -= 1024)
+    s[j] = String.fromCharCode(...a.slice(i, i + Math.min(len, 1024)));
+  return s.join('');
 }
 
 //Provides: caml_sub_uint8_array_to_jsbytes
