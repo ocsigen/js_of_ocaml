@@ -98,28 +98,34 @@ let ( +> ) f g x = g (f x)
 let map_fst f (x, y, z) = f x, y, z
 
 let effects ~deadcode_sentinal p =
-  if Config.Flag.effects ()
-  then (
-    if debug () then Format.eprintf "Effects...@.";
-    let p, live_vars = Deadcode.f p in
-    let p = Effects.remove_empty_blocks ~live_vars p in
-    let p, live_vars = Deadcode.f p in
-    let info = Global_flow.f ~fast:false p in
-    let p, live_vars =
-      if Config.Flag.globaldeadcode ()
-      then
-        let p = Global_deadcode.f p ~deadcode_sentinal info in
-        Deadcode.f p
-      else p, live_vars
-    in
-    p |> Effects.f ~flow_info:info ~live_vars +> map_fst Lambda_lifting.f)
-  else
-    ( p
-    , (Code.Var.Set.empty : Effects.trampolined_calls)
-    , (Code.Var.Set.empty : Effects.in_cps) )
+  match Config.effects () with
+  | Some _ ->
+      if debug () then Format.eprintf "Effects...@.";
+      let p, live_vars = Deadcode.f p in
+      let p = Effects.remove_empty_blocks ~live_vars p in
+      let p, live_vars = Deadcode.f p in
+      let info = Global_flow.f ~fast:false p in
+      let p, live_vars =
+        if Config.Flag.globaldeadcode ()
+        then
+          let p = Global_deadcode.f p ~deadcode_sentinal info in
+          Deadcode.f p
+        else p, live_vars
+      in
+      p
+      |> Effects.f ~flow_info:info ~live_vars
+      |> map_fst
+           (match Config.effects () with
+           | Some Double_translation -> Fun.id
+           | Some Cps -> Lambda_lifting.f
+           | None -> assert false)
+  | None ->
+      ( p
+      , (Code.Var.Set.empty : Effects.trampolined_calls)
+      , (Code.Var.Set.empty : Effects.in_cps) )
 
 let exact_calls profile ~deadcode_sentinal p =
-  if not (Config.Flag.effects ())
+  if Option.is_none (Config.effects ())
   then
     let fast =
       match profile with
@@ -202,7 +208,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    { program; variable_uses; trampolined_calls; deadcode_sentinal; in_cps = _ } =
+    { program; variable_uses; trampolined_calls; deadcode_sentinal; in_cps } =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -210,6 +216,7 @@ let generate
     ~exported_runtime
     ~live_vars:variable_uses
     ~trampolined_calls
+    ~in_cps
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinal
@@ -691,9 +698,9 @@ let optimize ~profile p =
     +> exact_calls ~deadcode_sentinal profile
     +> effects ~deadcode_sentinal
     +> map_fst
-         (match Config.target (), Config.Flag.effects () with
-         | `JavaScript, false -> Generate_closure.f
-         | `JavaScript, true | `Wasm, _ -> Fun.id)
+         (match Config.target (), Config.effects () with
+         | `JavaScript, None -> Generate_closure.f
+         | `JavaScript, Some _ | `Wasm, _ -> Fun.id)
     +> map_fst deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";

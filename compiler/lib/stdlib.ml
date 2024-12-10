@@ -1179,6 +1179,21 @@ module Array = struct
         incr i
       done;
       !i = len_a
+
+  let fold_left_map ~f ~init input_array =
+    let len = length input_array in
+    if len = 0
+    then init, [||]
+    else
+      let acc, elt = f init (unsafe_get input_array 0) in
+      let output_array = make len elt in
+      let acc = ref acc in
+      for i = 1 to len - 1 do
+        let acc', elt = f !acc (unsafe_get input_array i) in
+        acc := acc';
+        unsafe_set output_array i elt
+      done;
+      !acc, output_array
 end
 
 module Filename = struct

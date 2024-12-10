@@ -327,7 +327,7 @@ let f p : Code.program =
   p
 
 let f p =
-  assert (not (Config.Flag.effects ()));
+  assert (Option.is_none (Config.effects ()));
   let open Config.Param in
   match tailcall_optim () with
   | TcNone -> p
