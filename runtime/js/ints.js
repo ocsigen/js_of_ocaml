@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_format_int const (const, const)
-//Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
+//Requires: caml_parse_format, caml_finish_formatting
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 function caml_format_int(fmt, i) {
   if (caml_jsbytes_of_string(fmt) === "%d")
@@ -32,7 +32,7 @@ function caml_format_int(fmt, i) {
   if (f.prec >= 0) {
     f.filler = " ";
     var n = f.prec - s.length;
-    if (n > 0) s = caml_str_repeat(n, "0") + s;
+    if (n > 0) s = "0".repeat(n) + s;
   }
   return caml_finish_formatting(f, s);
 }
