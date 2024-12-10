@@ -913,7 +913,6 @@ let parallel_renaming loc back_edge params args continuation queue =
 let apply_fun_raw =
   let cps_field = Utf8_string.of_string_exn "cps" in
   fun ctx f params exact trampolined cps loc ->
-    let n = List.length params in
     let apply_directly f params =
       (* Make sure we are performing a regular call, not a (slower)
          method call *)
@@ -922,7 +921,7 @@ let apply_fun_raw =
           J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) loc
       | _ -> J.call f params loc
     in
-    let apply =
+    let apply ~cps f params =
       (* Adapt if [f] is a (direct-style, CPS) closure pair *)
       let real_closure =
         if not (Config.Flag.effects () && Config.Flag.double_translation () && cps)
@@ -947,7 +946,7 @@ let apply_fun_raw =
                       ( J.Eq
                       , J.dot real_closure l
                       , J.dot real_closure (Utf8_string.of_string_exn "length") ) )
-              , int n )
+              , int (List.length params) )
           , apply_directly real_closure params
           , J.call
               (* Note: when double translation is enabled, [caml_call_gen*] functions takes a two-version function *)
@@ -958,6 +957,22 @@ let apply_fun_raw =
                   else "caml_call_gen"))
               [ f; J.array params ]
               J.N )
+    in
+    let apply =
+      if Config.Flag.double_translation ()
+      then
+        if cps
+        then
+          let n = List.length params in
+          J.ECond
+            ( J.EDot (f, J.ANormal, cps_field)
+            , apply ~cps:true f params
+            , J.call
+                (List.nth params (n - 1))
+                [ apply ~cps:false f (fst (List.take (n - 1) params)) ]
+                J.N )
+        else apply ~cps:false f params
+      else apply ~cps f params
     in
     if trampolined
     then (
