@@ -567,7 +567,7 @@ let cps_block ~st ~k pc block =
             tail_call
               ~st
               ~instrs:
-                [ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k; tail ])) ]
+                [ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; tail; Pv k ])) ]
               ~exact:(Global_flow.exact_call st.flow_info f 1)
               ~in_cps:true
               ~check:true
