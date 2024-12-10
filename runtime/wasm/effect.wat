@@ -218,7 +218,7 @@
    (data $already_resumed "Effect.Continuation_already_resumed")
 
    (func (export "%resume")
-      (param $stack (ref eq)) (param $f (ref eq)) (param $v (ref eq))
+      (param $stack (ref eq)) (param $f (ref eq)) (param $v (ref eq)) (param $tail (ref eq))
       (result (ref eq))
       (local $k (ref $cont))
       (local $pair (ref $pair))
@@ -297,7 +297,7 @@
          (struct.get $cont $cont_func (local.get $k1))))
 
    (func $reperform (export "%reperform")
-      (param $eff (ref eq)) (param $cont (ref eq))
+      (param $eff (ref eq)) (param $cont (ref eq)) (param $tail (ref eq))
       (result (ref eq))
       (return_call $capture_continuation
          (ref.func $do_perform)
@@ -306,7 +306,8 @@
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
       (return_call $reperform (local.get $eff)
          (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
-           (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0)))))
+           (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0)))
+                    (ref.i31 (i32.const 0))))
 
    ;; Allocate a stack
 
