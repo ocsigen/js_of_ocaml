@@ -459,12 +459,12 @@ let start _ =
           let t = Sys.time () in
           if t -. t0 >= 1.
           then (
-            table##.style##.opacity := Js.def (js "1");
+            table##.style##.opacity := js "1";
             Lwt.return ())
           else
             Lwt_js.sleep 0.05
             >>= fun () ->
-            table##.style##.opacity := Js.def (js (Printf.sprintf "%g" (t -. t0)));
+            table##.style##.opacity := js (Printf.sprintf "%g" (t -. t0));
             fade ()
         in
         fade ()

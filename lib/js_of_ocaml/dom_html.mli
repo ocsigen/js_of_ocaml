@@ -189,7 +189,7 @@ class type cssStyleDeclaration = object
 
   method minWidth : js_string t prop
 
-  method opacity : js_string t optdef prop
+  method opacity : js_string t prop
 
   method outline : js_string t prop
 
@@ -290,13 +290,13 @@ end
 and focusEvent = object
   inherit event
 
-  method relatedTarget : element t opt optdef readonly_prop
+  method relatedTarget : element t opt readonly_prop
 end
 
 and mouseEvent = object
   inherit event
 
-  method relatedTarget : element t opt optdef readonly_prop
+  method relatedTarget : element t opt readonly_prop
 
   (* Relative to viewport *)
   method clientX : number_t readonly_prop
@@ -320,10 +320,12 @@ and mouseEvent = object
 
   method metaKey : bool t readonly_prop
 
-  method which : mouse_button optdef readonly_prop
+  method button : int readonly_prop
+
+  method buttons : int readonly_prop
 
   (* Legacy methods *)
-  method button : int readonly_prop
+  method which : mouse_button optdef readonly_prop
 
   method fromElement : element t opt optdef readonly_prop
 
@@ -347,10 +349,15 @@ and keyboardEvent = object
 
   method location : int readonly_prop
 
-  (* Standardized but not fully supported properties *)
-  method key : js_string t optdef readonly_prop
+  method key : js_string t readonly_prop
 
-  method code : js_string t optdef readonly_prop
+  method code : js_string t readonly_prop
+
+  method isComposing : bool t readonly_prop
+
+  method repeat : bool t readonly_prop
+
+  method getModifierState : js_string t -> bool t meth
 
   (* Deprecated properties *)
   method which : int optdef readonly_prop
@@ -359,20 +366,11 @@ and keyboardEvent = object
 
   method keyCode : int readonly_prop
 
-  method getModifierState : js_string t -> bool t meth
-
   method keyIdentifier : js_string t optdef readonly_prop
 end
 
-and mousewheelEvent = object
-  (* All modern browsers *)
+and wheelEvent = object
   inherit mouseEvent
-
-  method wheelDelta : int readonly_prop
-
-  method wheelDeltaX : int optdef readonly_prop
-
-  method wheelDeltaY : int optdef readonly_prop
 
   method deltaX : number_t readonly_prop
 
@@ -381,10 +379,19 @@ and mousewheelEvent = object
   method deltaZ : number_t readonly_prop
 
   method deltaMode : delta_mode readonly_prop
+
+  (* Deprecated *)
+  method wheelDelta : int readonly_prop
+
+  method wheelDeltaX : int optdef readonly_prop
+
+  method wheelDeltaY : int optdef readonly_prop
 end
 
+and mousewheelEvent = (* Deprecated *) wheelEvent
+
 and mouseScrollEvent = object
-  (* Firefox *)
+  (* Deprecated *)
   inherit mouseEvent
 
   method detail : int readonly_prop
@@ -413,7 +420,7 @@ and touchEvent = object
 
   method metaKey : bool t readonly_prop
 
-  method relatedTarget : element t opt optdef readonly_prop
+  method relatedTarget : element t opt readonly_prop
 end
 
 and touchList = object
@@ -425,6 +432,7 @@ end
 and touch = object
   method identifier : int readonly_prop
 
+  (* Not available on Safari *)
   method target : element t optdef readonly_prop
 
   method screenX : number_t readonly_prop
@@ -443,7 +451,7 @@ end
 and submitEvent = object
   inherit event
 
-  method submitter : element t optdef readonly_prop
+  method submitter : element t readonly_prop
 end
 
 and dragEvent = object
@@ -475,6 +483,7 @@ and dataTransfer = object
 
   method types : js_string t js_array t readonly_prop
 
+  (* Not standard *)
   method addElement : element t -> unit meth
 
   method clearData : js_string t -> unit meth
@@ -513,7 +522,7 @@ and eventTarget = object ('self)
 
   method onscroll : ('self t, event t) event_listener writeonly_prop
 
-  method onwheel : ('self t, mousewheelEvent t) event_listener writeonly_prop
+  method onwheel : ('self t, wheelEvent t) event_listener writeonly_prop
 
   method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
 
@@ -773,9 +782,9 @@ and clientRect = object
 
   method left : number_t readonly_prop
 
-  method width : number_t optdef readonly_prop
+  method width : number_t readonly_prop
 
-  method height : number_t optdef readonly_prop
+  method height : number_t readonly_prop
 end
 
 and clientRectList = object
@@ -996,7 +1005,7 @@ class type inputElement = object ('self)
 
   method select : unit meth
 
-  method files : File.fileList t optdef readonly_prop
+  method files : File.fileList t readonly_prop
 
   method placeholder : js_string t writeonly_prop
 
@@ -1224,9 +1233,9 @@ class type imageElement = object ('self)
   method height : int prop
 
   (* Properties naturalWidth/Height not available in all browsers. *)
-  method naturalWidth : int optdef readonly_prop
+  method naturalWidth : int readonly_prop
 
-  method naturalHeight : int optdef readonly_prop
+  method naturalHeight : int readonly_prop
 
   method complete : bool t prop
 
@@ -2021,7 +2030,7 @@ class type location = object
 
   method hostname : js_string t prop
 
-  method origin : js_string t optdef readonly_prop
+  method origin : js_string t readonly_prop
 
   method port : js_string t prop
 
@@ -2078,11 +2087,12 @@ class type navigator = object
 
   method userAgent : js_string t readonly_prop
 
-  method language : js_string t optdef readonly_prop
-
-  method userLanguage : js_string t optdef readonly_prop
+  method language : js_string t opt readonly_prop
 
   method maxTouchPoints : int readonly_prop
+
+  (* Deprecated *)
+  method userLanguage : js_string t optdef readonly_prop
 end
 
 class type screen = object
@@ -2175,9 +2185,9 @@ class type window = object
 
   method scrollBy : number_t -> number_t -> unit meth
 
-  method sessionStorage : storage t optdef readonly_prop
+  method sessionStorage : storage t readonly_prop
 
-  method localStorage : storage t optdef readonly_prop
+  method localStorage : storage t readonly_prop
 
   method top : window t readonly_prop
 
@@ -2375,7 +2385,7 @@ module Event : sig
 
   val _DOMMouseScroll : mouseScrollEvent t typ
 
-  val wheel : mousewheelEvent t typ
+  val wheel : wheelEvent t typ
 
   val touchstart : touchEvent t typ
 

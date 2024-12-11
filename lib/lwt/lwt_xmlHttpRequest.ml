@@ -248,14 +248,13 @@ let perform_raw
             progress e##.loaded e##.total;
             Js._true)
   | None -> ());
-  Optdef.iter req##.upload (fun upload ->
-      match upload_progress with
-      | Some upload_progress ->
-          upload##.onprogress :=
-            Dom.handler (fun e ->
-                upload_progress e##.loaded e##.total;
-                Js._true)
-      | None -> ());
+  (match upload_progress with
+  | Some upload_progress ->
+      req##.upload##.onprogress
+      := Dom.handler (fun e ->
+             upload_progress e##.loaded e##.total;
+             Js._true)
+  | None -> ());
   (match contents with
   | None -> req##send Js.null
   | Some (`Form_contents (`Fields l)) -> req##send (Js.some (string (encode_url !l)))

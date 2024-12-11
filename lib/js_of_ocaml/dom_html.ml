@@ -194,7 +194,7 @@ class type cssStyleDeclaration = object
 
   method minWidth : js_string t prop
 
-  method opacity : js_string t optdef prop
+  method opacity : js_string t prop
 
   method outline : js_string t prop
 
@@ -289,13 +289,13 @@ end
 and focusEvent = object
   inherit event
 
-  method relatedTarget : element t opt optdef readonly_prop
+  method relatedTarget : element t opt readonly_prop
 end
 
 and mouseEvent = object
   inherit event
 
-  method relatedTarget : element t opt optdef readonly_prop
+  method relatedTarget : element t opt readonly_prop
 
   method clientX : number_t readonly_prop
 
@@ -318,6 +318,8 @@ and mouseEvent = object
   method metaKey : bool t readonly_prop
 
   method button : int readonly_prop
+
+  method buttons : int readonly_prop
 
   method which : mouse_button optdef readonly_prop
 
@@ -343,9 +345,15 @@ and keyboardEvent = object
 
   method location : int readonly_prop
 
-  method key : js_string t optdef readonly_prop
+  method key : js_string t readonly_prop
 
-  method code : js_string t optdef readonly_prop
+  method code : js_string t readonly_prop
+
+  method isComposing : bool t readonly_prop
+
+  method repeat : bool t readonly_prop
+
+  method getModifierState : js_string t -> bool t meth
 
   method which : int optdef readonly_prop
 
@@ -353,20 +361,12 @@ and keyboardEvent = object
 
   method keyCode : int readonly_prop
 
-  method getModifierState : js_string t -> bool t meth
-
   method keyIdentifier : js_string t optdef readonly_prop
 end
 
-and mousewheelEvent = object
+and wheelEvent = object
   (* All modern browsers *)
   inherit mouseEvent
-
-  method wheelDelta : int readonly_prop
-
-  method wheelDeltaX : int optdef readonly_prop
-
-  method wheelDeltaY : int optdef readonly_prop
 
   method deltaX : number_t readonly_prop
 
@@ -375,10 +375,18 @@ and mousewheelEvent = object
   method deltaZ : number_t readonly_prop
 
   method deltaMode : delta_mode readonly_prop
+
+  method wheelDelta : int readonly_prop
+
+  method wheelDeltaX : int optdef readonly_prop
+
+  method wheelDeltaY : int optdef readonly_prop
 end
 
+and mousewheelEvent = wheelEvent
+
 and mouseScrollEvent = object
-  (* Firefox *)
+  (* Deprecated *)
   inherit mouseEvent
 
   method detail : int readonly_prop
@@ -407,7 +415,7 @@ and touchEvent = object
 
   method metaKey : bool t readonly_prop
 
-  method relatedTarget : element t opt optdef readonly_prop
+  method relatedTarget : element t opt readonly_prop
 end
 
 and touchList = object
@@ -437,7 +445,7 @@ end
 and submitEvent = object
   inherit event
 
-  method submitter : element t optdef readonly_prop
+  method submitter : element t readonly_prop
 end
 
 and dragEvent = object
@@ -505,7 +513,7 @@ and eventTarget = object ('self)
 
   method onscroll : ('self t, event t) event_listener writeonly_prop
 
-  method onwheel : ('self t, mousewheelEvent t) event_listener writeonly_prop
+  method onwheel : ('self t, wheelEvent t) event_listener writeonly_prop
 
   method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
 
@@ -759,9 +767,9 @@ and clientRect = object
 
   method left : number_t readonly_prop
 
-  method width : number_t optdef readonly_prop
+  method width : number_t readonly_prop
 
-  method height : number_t optdef readonly_prop
+  method height : number_t readonly_prop
 end
 
 and clientRectList = object
@@ -1187,7 +1195,7 @@ class type inputElement = object ('self)
 
   method select : unit meth
 
-  method files : File.fileList t optdef readonly_prop
+  method files : File.fileList t readonly_prop
 
   method placeholder : js_string t writeonly_prop
 
@@ -1407,9 +1415,9 @@ class type imageElement = object ('self)
 
   method height : int prop
 
-  method naturalWidth : int optdef readonly_prop
+  method naturalWidth : int readonly_prop
 
-  method naturalHeight : int optdef readonly_prop
+  method naturalHeight : int readonly_prop
 
   method complete : bool t prop
 
@@ -2175,7 +2183,7 @@ class type location = object
 
   method hostname : js_string t prop
 
-  method origin : js_string t optdef readonly_prop
+  method origin : js_string t readonly_prop
 
   method port : js_string t prop
 
@@ -2192,19 +2200,7 @@ class type location = object
   method reload : unit meth
 end
 
-let location_origin (loc : location t) =
-  Optdef.case
-    loc##.origin
-    (fun () ->
-      let protocol = loc##.protocol in
-      let hostname = loc##.hostname in
-      let port = loc##.port in
-      if protocol##.length = 0 && hostname##.length = 0
-      then Js.string ""
-      else
-        let origin = protocol##concat_2 (Js.string "//") hostname in
-        if port##.length > 0 then origin##concat_2 (Js.string ":") loc##.port else origin)
-    (fun o -> o)
+let location_origin (loc : location t) = loc##.origin
 
 class type history = object
   method length : int readonly_prop
@@ -2241,11 +2237,11 @@ class type navigator = object
 
   method userAgent : js_string t readonly_prop
 
-  method language : js_string t optdef readonly_prop
-
-  method userLanguage : js_string t optdef readonly_prop
+  method language : js_string t opt readonly_prop
 
   method maxTouchPoints : int readonly_prop
+
+  method userLanguage : js_string t optdef readonly_prop
 end
 
 class type screen = object
@@ -2331,9 +2327,9 @@ class type window = object
 
   method scrollBy : number_t -> number_t -> unit meth
 
-  method sessionStorage : storage t optdef readonly_prop
+  method sessionStorage : storage t readonly_prop
 
-  method localStorage : storage t optdef readonly_prop
+  method localStorage : storage t readonly_prop
 
   method top : window t readonly_prop
 
@@ -2885,12 +2881,7 @@ end
 
 let eventTarget = Dom.eventTarget
 
-let eventRelatedTarget (e : #mouseEvent t) =
-  Optdef.get e##.relatedTarget (fun () ->
-      match Js.to_string e##._type with
-      | "mouseover" -> Optdef.get e##.fromElement (fun () -> assert false)
-      | "mouseout" -> Optdef.get e##.toElement (fun () -> assert false)
-      | _ -> Js.null)
+let eventRelatedTarget (e : #mouseEvent t) = e##.relatedTarget
 
 let eventAbsolutePosition' (e : #mouseEvent t) =
   let body = document##.body in
@@ -3363,10 +3354,6 @@ module Keyboard_code = struct
 
   let make_unidentified _ = Unidentified
 
-  let try_next value f = function
-    | Unidentified -> Optdef.case value make_unidentified f
-    | v -> v
-
   let run_next value f = function
     | Unidentified -> f value
     | v -> v
@@ -3382,9 +3369,8 @@ module Keyboard_code = struct
 
   let ( |> ) x f = f x
 
-  let of_event evt =
-    Unidentified
-    |> try_next evt##.code try_code
+  let of_event (evt : keyboardEvent Js.t) =
+    try_code evt##.code
     |> try_key_location evt
     |> run_next (get_key_code evt) try_key_code_normal
 
@@ -3397,12 +3383,10 @@ module Keyboard_key = struct
   let char_of_int value =
     if 0 < value then try Some (Uchar.of_int value) with _ -> None else None
 
-  let empty_string _ = Js.string ""
-
   let none _ = None
 
   let of_event evt =
-    let key = Optdef.get evt##.key empty_string in
+    let key = evt##.key in
     match key##.length with
     | 0 -> Optdef.case evt##.charCode none char_of_int
     | 1 -> char_of_int (int_of_float (Js.to_float (key##charCodeAt 0)))

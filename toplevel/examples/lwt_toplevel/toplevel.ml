@@ -308,11 +308,7 @@ module History = struct
 
   let idx = ref 0
 
-  let get_storage () =
-    match Js.Optdef.to_option Dom_html.window##.localStorage with
-    | exception _ -> raise Not_found
-    | None -> raise Not_found
-    | Some t -> t
+  let get_storage () = Dom_html.window##.localStorage
 
   let setup () =
     try
