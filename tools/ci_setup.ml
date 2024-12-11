@@ -263,7 +263,14 @@ let () =
   sync_exec (fun i () -> clone i "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec
     (fun i nm ->
-      let branch = if is_forked nm then Some "wasm" else None in
+      let branch =
+        if is_forked nm
+        then
+          if List.mem nm [ "bonsai"; "virtual_dom"; "async_js" ]
+          then Some "jsoo-6"
+          else Some "wasm"
+        else None
+      in
       let commit =
         if is_forked nm
         then None
