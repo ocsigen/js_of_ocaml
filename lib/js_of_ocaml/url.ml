@@ -280,7 +280,7 @@ module Current = struct
 
         val mutable hash = empty
 
-        val origin = Js.undefined
+        val origin = empty
 
         method reload = ()
 

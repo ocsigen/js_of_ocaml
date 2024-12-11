@@ -89,7 +89,7 @@ class type xmlHttpRequest = object ('self)
   method ontimeout :
     ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
 
-  method upload : xmlHttpRequestUpload t optdef readonly_prop
+  method upload : xmlHttpRequestUpload t readonly_prop
 end
 
 and xmlHttpRequestUpload = object ('self)

@@ -163,9 +163,6 @@ val filename : file t -> js_string t
 
 val fileReader : fileReader t constr
 
-(* be careful, this might not be implemented in all browser.
-   To check availability, use [Js.Optdef.to_option (Js.def fileReader)] *)
-
 val addEventListener :
      (#progressEventTarget t as 'a)
   -> 'b Event.typ

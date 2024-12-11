@@ -537,24 +537,20 @@ let of_json ~typ v =
 (******)
 
 let default_language () =
-  (Js.Optdef.get
-     Dom_html.window##.navigator##.language
-     (fun () ->
-       Js.Optdef.get Dom_html.window##.navigator##.userLanguage (fun () -> Js.string "en")))
-  ##substring
+  (Js.Opt.get Dom_html.window##.navigator##.language (fun () -> Js.string "en"))##substring
     0
     2
 
 let language =
   ref
-    (Js.Optdef.case Html.window##.localStorage default_language (fun st ->
-         Js.Opt.get (st##getItem (Js.string "hyp_lang")) default_language))
+    (Js.Opt.get
+       (Html.window##.localStorage##getItem (Js.string "hyp_lang"))
+       default_language)
 
 let _ = Firebug.console##log !language
 
 let set_language lang =
-  Js.Optdef.iter Html.window##.localStorage (fun st ->
-      st##setItem (Js.string "hyp_lang") lang);
+  Html.window##.localStorage##setItem (Js.string "hyp_lang") lang;
   language := lang
 
 let load_messages () =
