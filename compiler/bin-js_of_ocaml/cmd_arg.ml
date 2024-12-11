@@ -514,6 +514,20 @@ let options_runtime_only =
       & opt (some string) None
       & info [ "ofs" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
+  let effects =
+    let doc =
+      "Select an implementation of effect handlers. [$(docv)] should be one of $(b,cps) \
+       or $(b,double-translation). Effects are not allowed by default."
+    in
+    Arg.(
+      value
+      & opt
+          (some
+             (enum
+                [ "cps", Config.Cps; "double-translation", Double_translation ]))
+          None
+      & info [ "effects" ] ~docv:"KIND" ~doc)
+  in
   let build_t
       common
       toplevel
@@ -533,7 +547,8 @@ let options_runtime_only =
       sourcemap_root
       target_env
       output_file
-      js_files =
+      js_files
+      effects =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
@@ -585,7 +600,7 @@ let options_runtime_only =
       ; bytecode = `None
       ; source_map
       ; keep_unit_names = false
-      ; effects = None
+      ; effects
       }
   in
   let t =
@@ -609,6 +624,7 @@ let options_runtime_only =
       $ sourcemap_root
       $ target_env
       $ output_file
-      $ js_files)
+      $ js_files
+      $ effects)
   in
   Term.ret t

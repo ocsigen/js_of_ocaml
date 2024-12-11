@@ -1413,7 +1413,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             then (
               warn
                 "Warning: your program contains effect handlers; you should probably run \
-                 js_of_ocaml with option '--enable=effects'@.";
+                 js_of_ocaml with option '--effects=cps'@.";
               ctx.effect_warning := true);
             let name = "jsoo_effect_not_supported" in
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in

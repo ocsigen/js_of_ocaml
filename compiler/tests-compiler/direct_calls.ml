@@ -18,7 +18,7 @@
 
 open Util
 
-let%expect_test "direct calls without --enable effects" =
+let%expect_test "direct calls without --effects=cps" =
   let code =
     compile_and_parse
       {|
@@ -99,7 +99,7 @@ let%expect_test "direct calls without --enable effects" =
     }
     //end |}]
 
-let%expect_test "direct calls with --enable effects" =
+let%expect_test "direct calls with --effects=cps" =
   let code =
     compile_and_parse
       ~effects:true

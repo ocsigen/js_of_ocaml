@@ -139,8 +139,23 @@ function caml_jsoo_flags_use_js_string(unit) {
 }
 
 //Provides: caml_jsoo_flags_effects
+//If: !effects
 function caml_jsoo_flags_effects(unit) {
-  return FLAG("effects");
+  return "none";
+}
+
+//Provides: caml_jsoo_flags_effects
+//If: effects
+//If: !doubletranslate
+function caml_jsoo_flags_effects(unit) {
+  return "cps";
+}
+
+//Provides: caml_jsoo_flags_effects
+//If: effects
+//If: doubletranslate
+function caml_jsoo_flags_effects(unit) {
+  return "double-translation";
 }
 
 //Provides: caml_wrap_exception const (mutable)

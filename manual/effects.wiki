@@ -1,7 +1,7 @@
 == Effect handlers ==
 
-Js_of_ocaml supports effect handlers with the {{{--enable=effects}}}
-flag. This is based on partially transforming the program to
+Js_of_ocaml supports effect handlers with the {{{--effects={cps,double-translation}}}}
+flag. The {{cps}} option is based on partially transforming the program to
 continuation-passing style.
 As a consequence, [[tailcall|tail calls]] are also fully optimized.
 This is not the default for now since the generated code can be slower,
@@ -10,6 +10,8 @@ The transformation is based on an analysis to detect parts of the code that cann
 The analysis is especially effective on monomorphic code. It is not so effective when higher-order functions are heavily used ({{{Lwt}}}, {{{Async}}}, {{{incremental}}}).
 We hope to improve on this by trying alternative compilation
 strategies.
+
+The {{double-translation}} option does a similar CPS transform, but also keeps a direct-style version of the transformed functions. The choice of running the CPS version is delayed to run time. Since CPS code is usually slower, this can avoid degradations. In addition, one can ensure that some code is run in direct style by using {{Js_of_ocaml.Js.assume_no_perform}}.
 
 === Dune integration ===
 
@@ -25,7 +27,7 @@ Put the following in a {{{dune}}} (or {{{dune-workspace}}}) file at the root of 
 (env
  (_
   (js_of_ocaml
-   (flags (:standard --enable effects))
+   (flags (:standard --effects=cps))
    (build_runtime_flags (:standard --enable effects)))))
 }}}
 
@@ -50,7 +52,7 @@ Then pass the rights {{{js_of_ocaml}}} flags to the executable stanza
 {{{
 (executable
   (name main)
-  (js_of_ocaml (flags (:standard --enable effects)))
+  (js_of_ocaml (flags (:standard --effects=cps)))
 )
 }}}
 

@@ -127,7 +127,16 @@ module Sys = struct
   module Config = struct
     external use_js_string : unit -> bool = "caml_jsoo_flags_use_js_string"
 
-    external effects : unit -> bool = "caml_jsoo_flags_effects"
+    type effects_backend = Cps | Double_translation
+
+    external effects_ : unit -> string = "caml_jsoo_flags_effects"
+
+    let effects () =
+      match effects_ () with
+      | "none" -> None
+      | "cps" -> Some Cps
+      | "double-translation" -> Some Double_translation
+      | _ -> assert false
   end
 
   let version = Runtime_version.s

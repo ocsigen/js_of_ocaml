@@ -4,7 +4,9 @@
    (:standard -w -38))
   (js_of_ocaml
    (flags
-    (:standard --enable effects)))))
+    (:standard --enable=effects))
+   (build_runtime_flags
+     (:standard --enable=effects)))))
 
 (tests
  (build_if
