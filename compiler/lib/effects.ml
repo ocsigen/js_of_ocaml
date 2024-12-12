@@ -291,7 +291,8 @@ type trampolined_calls = Var.Set.t
 type in_cps = Var.Set.t
 
 type st =
-  { mutable new_blocks : Code.block Addr.Map.t * Code.Addr.t
+  { mutable new_blocks : Code.block Addr.Map.t
+  ; mutable free_pc : Code.Addr.t
   ; blocks : Code.block Addr.Map.t
   ; cfg : control_flow_graph
   ; idom : (int, int) Hashtbl.t
@@ -313,8 +314,10 @@ type st =
   }
 
 let add_block st block =
-  let blocks, free_pc = st.new_blocks in
-  st.new_blocks <- Addr.Map.add free_pc block blocks, free_pc + 1;
+  let blocks = st.new_blocks in
+  let free_pc = st.free_pc in
+  st.new_blocks <- Addr.Map.add free_pc block blocks;
+  st.free_pc <- free_pc + 1;
   free_pc
 
 (* Provide the address of the CPS translation of a block *)
@@ -323,8 +326,10 @@ let mk_cps_pc_of_direct ~st pc =
   then (
     try Hashtbl.find st.cps_pc_of_direct pc
     with Not_found ->
-      let new_blocks, free_pc = st.new_blocks in
-      st.new_blocks <- new_blocks, free_pc + 1;
+      let new_blocks = st.new_blocks in
+      let free_pc = st.free_pc in
+      st.new_blocks <- new_blocks;
+      st.free_pc <- free_pc + 1;
       Hashtbl.add st.cps_pc_of_direct pc free_pc;
       free_pc)
   else pc
@@ -772,7 +777,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
   let p =
     Code.fold_closures_innermost_first
       p
-      (fun name_opt params (start, args) ({ blocks; free_pc; _ } as p) ->
+      (fun name_opt params (start, args) ({ Code.blocks; free_pc; _ } as p) ->
         Option.iter name_opt ~f:(fun v ->
             debug_print "@[<v>cname = %s@,@]" @@ Var.to_string v);
         (* We speculatively add a block at the beginning of the
@@ -819,7 +824,8 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           else start, args, blocks, free_pc
         in
         let st =
-          { new_blocks = Addr.Map.empty, free_pc
+          { new_blocks = Addr.Map.empty
+          ; free_pc
           ; blocks
           ; cfg
           ; idom
@@ -862,7 +868,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             start
             blocks
             ());
-        let blocks, free_pc =
+        let blocks =
           (* For every block in the closure,
              1. CPS-translate it if needed. If we double-translate, add its CPS
                 translation to the block map at a fresh address. Otherwise,
@@ -916,14 +922,13 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
                 | None -> blocks
                 | Some b ->
                     let cps_pc = mk_cps_pc_of_direct ~st pc in
-                    let new_blocks, free_pc = st.new_blocks in
-                    st.new_blocks <- Addr.Map.add cps_pc b new_blocks, free_pc;
+                    let new_blocks = st.new_blocks in
+                    st.new_blocks <- Addr.Map.add cps_pc b new_blocks;
                     Addr.Map.add cps_pc b blocks)
               start
               st.blocks
               st.blocks
           in
-          let new_blocks_this_clos, free_pc = st.new_blocks in
           (* If double-translating, all variables bound in the CPS version will have to be
              subst with fresh ones to avoid clashing with the definitions in the original
              blocks (the actual substitution is done later). *)
@@ -939,11 +944,10 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               initial_start
               p.blocks
               ();
-          let new_blocks = subst_bound_in_blocks new_blocks_this_clos cloned_subst in
-          let blocks = Addr.Map.fold Addr.Map.add new_blocks blocks in
-          blocks, free_pc
+          let new_blocks = subst_bound_in_blocks st.new_blocks cloned_subst in
+          Addr.Map.fold Addr.Map.add new_blocks blocks
         in
-        { p with blocks; free_pc })
+        { p with blocks; free_pc = st.free_pc })
       p
   in
   (* Also apply our substitution to the sets of trampolined calls, and cps call sites *)
@@ -997,7 +1001,7 @@ let wrap_call ~cps_needed p x f args accu =
     ]
     :: accu )
 
-let wrap_primitive ~cps_needed p x e accu =
+let wrap_primitive ~cps_needed (p : program) x e accu =
   let f = Var.fresh () in
   let closure_pc = p.free_pc in
   ( { p with
