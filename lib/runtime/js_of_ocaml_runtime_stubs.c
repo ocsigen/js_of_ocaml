@@ -16,6 +16,10 @@ void bigstring_to_typed_array () {
   caml_fatal_error("Unimplemented Javascript primitive bigstring_to_typed_array!");
 }
 
+void caml_assume_no_perform () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_assume_no_perform!");
+}
+
 void caml_ba_from_typed_array () {
   caml_fatal_error("Unimplemented Javascript primitive caml_ba_from_typed_array!");
 }
