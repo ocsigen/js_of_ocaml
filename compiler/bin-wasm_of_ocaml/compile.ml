@@ -273,12 +273,12 @@ let run
     } =
   Config.set_target `Wasm;
   (* For backward compatibility, consider that [--enable effects] alone means [--effects cps] *)
+  Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend
     (match effects with
     | None -> if Config.Flag.effects () then Some Cps else None
     | Some Cps -> Some Cps
     | Some _ -> failwith "Unexpected effects backend");
-  Jsoo_cmdline.Arg.eval common;
   Generate.init ();
   let output_file = fst output_file in
   if debug_mem () then Debug.start_profiling output_file;
