@@ -607,7 +607,10 @@ let cps_instr ~st (instr : instr) : instr list =
       (* When double translation is enabled, we just call [f] in direct style.
          Otherwise, the runtime primitive is used. *)
       let unit = Var.fresh_n "unit" in
-      let exact = Global_flow.exact_call st.flow_info f 1 in
+      let exact =
+        Var.idx f < Var.Tbl.length st.flow_info.info_approximation
+        && Global_flow.exact_call st.flow_info f 1
+      in
       [ Let (unit, Constant (Int Targetint.zero))
       ; Let (x, Apply { exact; f; args = [ unit ] })
       ]
