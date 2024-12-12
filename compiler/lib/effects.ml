@@ -326,9 +326,7 @@ let mk_cps_pc_of_direct ~st pc =
   then (
     try Hashtbl.find st.cps_pc_of_direct pc
     with Not_found ->
-      let new_blocks = st.new_blocks in
       let free_pc = st.free_pc in
-      st.new_blocks <- new_blocks;
       st.free_pc <- free_pc + 1;
       Hashtbl.add st.cps_pc_of_direct pc free_pc;
       free_pc)
