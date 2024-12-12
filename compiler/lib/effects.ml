@@ -769,10 +769,10 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
   let cps_pc_of_direct = Hashtbl.create 512 in
   let cloned_vars = Array.init (Var.count ()) ~f:Var.of_idx in
   let cloned_subst = Subst.from_array cloned_vars in
-  let p, new_blocks =
+  let p =
     Code.fold_closures_innermost_first
       p
-      (fun name_opt params (start, args) (({ blocks; free_pc; _ } as p), new_blocks) ->
+      (fun name_opt params (start, args) ({ blocks; free_pc; _ } as p) ->
         Option.iter name_opt ~f:(fun v ->
             debug_print "@[<v>cname = %s@,@]" @@ Var.to_string v);
         (* We speculatively add a block at the beginning of the
@@ -862,7 +862,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             start
             blocks
             ());
-        let blocks, free_pc, new_blocks =
+        let blocks, free_pc =
           (* For every block in the closure,
              1. CPS-translate it if needed. If we double-translate, add its CPS
                 translation to the block map at a fresh address. Otherwise,
@@ -927,45 +927,28 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           (* If double-translating, all variables bound in the CPS version will have to be
              subst with fresh ones to avoid clashing with the definitions in the original
              blocks (the actual substitution is done later). *)
-          if double_translate ()
+          if function_needs_cps && double_translate ()
           then
-            if function_needs_cps && double_translate ()
-            then
-              Code.traverse
-                Code.{ fold = fold_children }
-                (fun pc () ->
-                  let block = Addr.Map.find pc p.blocks in
-                  Freevars.iter_block_bound_vars
-                    (fun v -> subst_add_fresh cloned_vars v)
-                    block)
-                initial_start
-                p.blocks
-                ();
-          let blocks = Addr.Map.fold Addr.Map.add new_blocks_this_clos blocks in
-          ( blocks
-          , free_pc
-          , Addr.Map.union (fun _ _ -> assert false) new_blocks new_blocks_this_clos )
+            Code.traverse
+              Code.{ fold = fold_children }
+              (fun pc () ->
+                let block = Addr.Map.find pc p.blocks in
+                Freevars.iter_block_bound_vars
+                  (fun v -> subst_add_fresh cloned_vars v)
+                  block)
+              initial_start
+              p.blocks
+              ();
+          let new_blocks = subst_bound_in_blocks new_blocks_this_clos cloned_subst in
+          let blocks = Addr.Map.fold Addr.Map.add new_blocks blocks in
+          blocks, free_pc
         in
-        { p with blocks; free_pc }, new_blocks)
-      (p, Addr.Map.empty)
+        { p with blocks; free_pc })
+      p
   in
-  let new_blocks = subst_bound_in_blocks new_blocks cloned_subst in
-  (* Also apply that substitution to the sets of trampolined calls, and cps
-     call sites *)
+  (* Also apply our substitution to the sets of trampolined calls, and cps call sites *)
   trampolined_calls := Var.Set.map cloned_subst !trampolined_calls;
   in_cps := Var.Set.map cloned_subst !in_cps;
-  let p =
-    { p with
-      blocks =
-        Addr.Map.merge
-          (fun _ a b ->
-            match a, b with
-            | _, Some b -> Some b
-            | a, None -> a)
-          p.blocks
-          new_blocks
-    }
-  in
   let p =
     if double_translate ()
     then p
