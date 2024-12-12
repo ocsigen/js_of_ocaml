@@ -181,7 +181,7 @@ let run
     | None -> None
     | Some file ->
         if not (Sys.file_exists file)
-        then failwith (Printf.sprintf "export file %S does not exists" file);
+        then failwith (Printf.sprintf "export file %S does not exist" file);
         let ic = open_in file in
         let t = Hashtbl.create 17 in
         (try
