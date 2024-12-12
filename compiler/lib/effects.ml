@@ -113,12 +113,6 @@ let dominator_tree g =
         l);
   dom
 
-(* pc dominates pc' *)
-let rec dominates g idom pc pc' =
-  pc = pc'
-  || Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
-     && dominates g idom pc (Hashtbl.find idom pc')
-
 (* pc has at least two forward edges moving into it *)
 let is_merge_node g pc =
   let s = try Hashtbl.find g.preds pc with Not_found -> assert false in
@@ -295,7 +289,6 @@ type st =
   ; mutable free_pc : Code.Addr.t
   ; blocks : Code.block Addr.Map.t
   ; cfg : control_flow_graph
-  ; idom : (int, int) Hashtbl.t
   ; jc : jump_closures
   ; closure_info : (Addr.t, Var.t list * (Addr.t * Var.t list)) Hashtbl.t
         (* Associates a function's address with its CPS parameters and CPS continuation *)
@@ -452,15 +445,12 @@ let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x dire
       else if is_merge_node st.cfg direct_pc
       then [], alloc_jump_closures
       else
-        let to_allocate =
-          try Addr.Map.find src_pc st.jc.closures_of_alloc_site with Not_found -> []
-        in
-        let inner, outer =
-          List.partition
-            ~f:(fun (_, pc'') -> dominates st.cfg st.idom direct_pc pc'')
-            to_allocate
-        in
-        do_alloc_jump_closures ~st inner, do_alloc_jump_closures ~st outer
+        List.partition
+          ~f:(fun i ->
+            match i with
+            | Let (_, Closure (_, (pc'', []))) -> pc'' = mk_cps_pc_of_direct ~st direct_pc
+            | _ -> assert false)
+          alloc_jump_closures
     in
     let body, branch =
       allocate_closure ~st ~params:[ x ] ~body:(inner_closures @ body) ~branch
@@ -829,7 +819,6 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           ; free_pc
           ; blocks
           ; cfg
-          ; idom
           ; jc = closure_jc
           ; closure_info
           ; cps_needed
