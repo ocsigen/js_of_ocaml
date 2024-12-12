@@ -295,7 +295,7 @@ let compile_to_javascript
     ~pretty
     ~sourcemap
     file =
-  assert (not doubletranslate || effects);
+  assert ((not doubletranslate) || effects);
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
     List.flatten

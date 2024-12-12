@@ -6,7 +6,7 @@
    (flags
     (:standard --enable=effects))
    (build_runtime_flags
-     (:standard --enable=effects)))))
+    (:standard --enable=effects)))))
 
 (tests
  (build_if

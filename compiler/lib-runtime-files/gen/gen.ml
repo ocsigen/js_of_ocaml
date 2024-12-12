@@ -64,7 +64,9 @@ let () =
       let fragments =
         List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.Fragment.parse_file f)
       in
-      let variants = list_product [ "use-js-string", bool; "effects", effects_backends ] in
+      let variants =
+        list_product [ "use-js-string", bool; "effects", effects_backends ]
+      in
       (* load all files to make sure they are valid *)
       List.iter variants ~f:(fun setup ->
           List.iter setup ~f:(fun (name, v) ->

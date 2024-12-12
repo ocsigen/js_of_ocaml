@@ -262,9 +262,7 @@ let options =
     Arg.(
       value
       & opt
-          (some
-             (enum
-                [ "cps", Config.Cps; "double-translation", Double_translation ]))
+          (some (enum [ "cps", Config.Cps; "double-translation", Double_translation ]))
           None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
@@ -522,9 +520,7 @@ let options_runtime_only =
     Arg.(
       value
       & opt
-          (some
-             (enum
-                [ "cps", Config.Cps; "double-translation", Double_translation ]))
+          (some (enum [ "cps", Config.Cps; "double-translation", Double_translation ]))
           None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in

@@ -139,8 +139,7 @@ let merge fname1 info1 fname2 info2 =
             if Option.equal String.equal v1 v2 then v1 else Some (string_of_kind `Unknown)
         | ("effects" | "use-js-string" | "version"), Some v1, Some v2
           when String.equal v1 v2 -> Some v1
-        | (("effects" | "use-js-string" | "version") as key), v1, v2
-          ->
+        | (("effects" | "use-js-string" | "version") as key), v1, v2 ->
             raise
               (Incompatible_build_info { key; first = fname1, v1; second = fname2, v2 })
         | _, Some v1, Some v2 when String.equal v1 v2 -> Some v1
