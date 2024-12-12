@@ -11,7 +11,7 @@ The analysis is especially effective on monomorphic code. It is not so effective
 We hope to improve on this by trying alternative compilation
 strategies.
 
-The {{double-translation}} option does a similar CPS transform, but also keeps a direct-style version of the transformed functions. The choice of running the CPS version is delayed to run time. Since CPS code is usually slower, this can avoid degradations. In addition, one can ensure that some code is run in direct style by using {{Js_of_ocaml.Js.assume_no_perform}}.
+The {{double-translation}} option does a similar CPS transform, but also keeps a direct-style version of the transformed functions. The choice of running the CPS version is delayed to run time. Since CPS code is usually slower, this can avoid degradations. In addition, one can ensure that some code is run in direct style by using {{Jsoo_runtime.Effect.assume_no_perform}}.
 
 === Dune integration ===
 

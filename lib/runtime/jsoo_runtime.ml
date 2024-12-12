@@ -239,3 +239,18 @@ module Int64 = struct
   external create_int64_lo_mi_hi : int -> int -> int -> Int64.t
     = "caml_int64_create_lo_mi_hi"
 end
+
+module Effect : sig
+  external assume_no_perform : (unit -> 'a) -> 'a = "caml_assume_no_perform"
+  (** Passing a function [f] as argument of `assume_no_perform` guarantees that,
+      when compiling with `--effects=double-translation`, the direct-style
+      version of [f] is called, which is faster than the CPS version. As a
+      consequence, performing an effect in a transitive callee of [f] will
+      raise `Effect.Unhandled`, regardless of any effect handlers installed
+      before the call to `assume_no_perform`, unless a new effect handler was
+      installed in the meantime.
+
+      This behaviour is the same when double translation is disabled. *)
+end = struct
+  external assume_no_perform : (unit -> 'a) -> 'a = "caml_assume_no_perform"
+end

@@ -7,7 +7,7 @@ type _ Effect.t += Dummy : unit t
 let must_raise () =
   try_with
     (fun () ->
-      Js_of_ocaml.Js.Effect.assume_no_perform (fun () ->
+      Jsoo_runtime.Effect.assume_no_perform (fun () ->
         (* Should raise [Effect.Unhandled] despite the installed handler *)
         perform Dummy
       )

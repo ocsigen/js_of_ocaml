@@ -136,7 +136,7 @@ let () =
 
       (* The code below should be called in direct style despite the installed
          effect handler *)
-      Js_of_ocaml.Js.Effect.assume_no_perform (fun () ->
+      Jsoo_runtime.Effect.assume_no_perform (fun () ->
           let m, sd = benchmark iter_fun 5 in
           let () = printf "Iter: mean = %f, sd = %f\n%!" m sd in
 
