@@ -307,9 +307,8 @@ type st =
   }
 
 let add_block st block =
-  let blocks = st.new_blocks in
   let free_pc = st.free_pc in
-  st.new_blocks <- Addr.Map.add free_pc block blocks;
+  st.new_blocks <- Addr.Map.add free_pc block st.new_blocks;
   st.free_pc <- free_pc + 1;
   free_pc
 
@@ -378,36 +377,6 @@ let cps_jump_cont ~st ~src ((pc, _) as cont) =
         add_block st { params = []; body; branch }
       in
       call_block, []
-
-let do_alloc_jump_closures ~st (to_allocate : (Var.t * Code.Addr.t) list) : instr list =
-  List.map to_allocate ~f:(fun (cname, jump_pc) ->
-      let params =
-        let jump_block = Addr.Map.find jump_pc st.blocks in
-        (* For a function to be used as a continuation, it needs
-           exactly one parameter. So, we add a parameter if
-           needed. *)
-        if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
-        then
-          (* We reuse the name of the value of the tail call of
-             one a the previous blocks. When there is a single
-             previous block, this is exactly what we want. For a
-             merge node, the variable is not used so we can just
-             as well use it. For a loop, we don't want the
-             return value of a call right before entering the
-             loop to be overriden by the value returned by the
-             last call in the loop. So, we may need to use an
-             additional closure to bind it, and we have to use a
-             fresh variable here *)
-          let x =
-            match Hashtbl.find st.is_continuation jump_pc with
-            | `Param x -> x
-            | `Loop -> Var.fresh ()
-          in
-          [ x ]
-        else jump_block.params
-      in
-      let cps_jump_pc = mk_cps_pc_of_direct ~st jump_pc in
-      Let (cname, Closure (params, (cps_jump_pc, []))))
 
 let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x direct_cont =
   debug_print
@@ -604,12 +573,46 @@ let cps_instr ~st (instr : instr) : instr list =
       ]
   | _ -> [ rewrite_instr ~st instr ]
 
+let call_exact flow_info (f : Var.t) nargs : bool =
+  (* If [f] is unknown to the global flow analysis, then it was introduced by
+     the lambda lifting and we don't have exactness about it. *)
+  Var.idx f < Var.Tbl.length flow_info.Global_flow.info_approximation
+  && Global_flow.exact_call flow_info f nargs
+
 let cps_block ~st ~k ~orig_pc block =
   debug_print "cps_block %d\n" orig_pc;
   debug_print "cps pc evaluates to %d\n" (mk_cps_pc_of_direct ~st orig_pc);
   let alloc_jump_closures =
     match Addr.Map.find orig_pc st.jc.closures_of_alloc_site with
-    | to_allocate -> do_alloc_jump_closures ~st to_allocate
+    | to_allocate ->
+        List.map to_allocate ~f:(fun (cname, jump_pc) ->
+            let params =
+              let jump_block = Addr.Map.find jump_pc st.blocks in
+              (* For a function to be used as a continuation, it needs
+                 exactly one parameter. So, we add a parameter if
+                 needed. *)
+              if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
+              then
+                (* We reuse the name of the value of the tail call of
+                   one a the previous blocks. When there is a single
+                   previous block, this is exactly what we want. For a
+                   merge node, the variable is not used so we can just
+                   as well use it. For a loop, we don't want the
+                   return value of a call right before entering the
+                   loop to be overriden by the value returned by the
+                   last call in the loop. So, we may need to use an
+                   additional closure to bind it, and we have to use a
+                   fresh variable here *)
+                let x =
+                  match Hashtbl.find st.is_continuation jump_pc with
+                  | `Param x -> x
+                  | `Loop -> Var.fresh ()
+                in
+                [ x ]
+              else jump_block.params
+            in
+            let cps_jump_pc = mk_cps_pc_of_direct ~st jump_pc in
+            Let (cname, Closure (params, (cps_jump_pc, []))))
     | exception Not_found -> []
   in
 
@@ -627,11 +630,7 @@ let cps_block ~st ~k ~orig_pc block =
     | Apply { f; args; exact } when Var.Set.mem x st.cps_needed ->
         Some
           (fun ~k ->
-            let exact =
-              exact
-              || Var.idx f < Var.Tbl.length st.flow_info.info_approximation
-                 && Global_flow.exact_call st.flow_info f (List.length args)
-            in
+            let exact = exact || call_exact st.flow_info f (List.length args) in
             tail_call ~st ~exact ~in_cps:true ~check:true ~f (args @ [ k ]))
     | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg ]) ->
         Some
@@ -640,7 +639,7 @@ let cps_block ~st ~k ~orig_pc block =
             tail_call
               ~st
               ~instrs:[ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; Pv k ])) ]
-              ~exact:(Global_flow.exact_call st.flow_info f 1)
+              ~exact:(call_exact st.flow_info f 1)
               ~in_cps:true
               ~check:true
               ~f
@@ -729,7 +728,7 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           (* We just need to call [f] in direct style. *)
           let unit = Var.fresh_n "unit" in
           let unit_val = Int Targetint.zero in
-          let exact = Global_flow.exact_call st.flow_info f 1 in
+          let exact = call_exact st.flow_info f 1 in
           [ Let (unit, Constant unit_val); Let (x, Apply { exact; f; args = [ unit ] }) ]
       | (Let _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ | Event _) as instr
         -> [ instr ]
@@ -902,28 +901,27 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
                     block
                 , None )
           in
-          let blocks =
-            Code.traverse
-              { fold = Code.fold_children }
-              (fun pc blocks ->
-                let block, cps_block_opt = transform_block pc (Addr.Map.find pc blocks) in
-                let blocks = Addr.Map.add pc block blocks in
-                match cps_block_opt with
-                | None -> blocks
-                | Some b ->
-                    let cps_pc = mk_cps_pc_of_direct ~st pc in
-                    let new_blocks = st.new_blocks in
-                    st.new_blocks <- Addr.Map.add cps_pc b new_blocks;
-                    Addr.Map.add cps_pc b blocks)
-              start
-              st.blocks
-              st.blocks
-          in
-          (* If double-translating, all variables bound in the CPS version will have to be
+          Code.traverse
+            { fold = Code.fold_children }
+            (fun pc blocks ->
+              let block, cps_block_opt = transform_block pc (Addr.Map.find pc blocks) in
+              let blocks = Addr.Map.add pc block blocks in
+              match cps_block_opt with
+              | None -> blocks
+              | Some b ->
+                  let cps_pc = mk_cps_pc_of_direct ~st pc in
+                  st.new_blocks <- Addr.Map.add cps_pc b st.new_blocks;
+                  Addr.Map.add cps_pc b blocks)
+            start
+            st.blocks
+            st.blocks
+        in
+        (* If double-translating, all variables bound in the CPS version will have to be
              subst with fresh ones to avoid clashing with the definitions in the original
              blocks (the actual substitution is done later). *)
+        let new_blocks =
           if function_needs_cps && double_translate ()
-          then
+          then (
             Code.traverse
               Code.{ fold = fold_children }
               (fun pc () ->
@@ -934,9 +932,10 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               initial_start
               p.blocks
               ();
-          let new_blocks = subst_bound_in_blocks st.new_blocks cloned_subst in
-          Addr.Map.fold Addr.Map.add new_blocks blocks
+            subst_bound_in_blocks st.new_blocks cloned_subst)
+          else st.new_blocks
         in
+        let blocks = Addr.Map.fold Addr.Map.add new_blocks blocks in
         { p with blocks; free_pc = st.free_pc })
       p
   in
