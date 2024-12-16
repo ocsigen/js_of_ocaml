@@ -17,5 +17,7 @@
 
 (executable
  (name deep_state)
+ (enabled_if
+  (>= %{ocaml_version} 5))
  (modules deep_state)
  (modes js))
