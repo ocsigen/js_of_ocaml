@@ -27,7 +27,7 @@ Put the following in a {{{dune}}} (or {{{dune-workspace}}}) file at the root of 
 (env
  (_
   (js_of_ocaml
-   (flags (:standard --effects=cps))
+   (flags (:standard --enable effects))
    (build_runtime_flags (:standard --enable effects)))))
 }}}
 
@@ -52,7 +52,7 @@ Then pass the rights {{{js_of_ocaml}}} flags to the executable stanza
 {{{
 (executable
   (name main)
-  (js_of_ocaml (flags (:standard --effects=cps)))
+  (js_of_ocaml (flags (:standard --enable effects)))
 )
 }}}
 

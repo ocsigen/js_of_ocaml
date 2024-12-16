@@ -3,7 +3,7 @@ JavaScript does not (yet) support tail call optimization.
 To circumvent this limitation, and mitigate stack overflows, the Js_of_ocaml
 compiler optimizes some common tail call patterns.
 Besides, all tail calls are optimized when you set the flag
-{{{--effects=cps}}}, at the cost of some performance degradation.
+{{{--enable=effects}}}, at the cost of some performance degradation.
 
 === Self tail recursive
 Self tail recursive function are compiled into a loop.
