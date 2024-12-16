@@ -84,6 +84,7 @@ let preprocessor_variables () =
         | `Disabled | `Jspi -> "jspi"
         | `Cps -> "cps"
         | `Double_translation -> assert false) )
+  ; "use-js-string", Wat_preprocess.Bool (Config.Flag.use_js_string ())
   ]
 
 let with_runtime_files ~runtime_wasm_files f =
