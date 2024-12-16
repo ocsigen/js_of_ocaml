@@ -37,6 +37,7 @@ type t =
       | `Anonymous
       ]
   ; target_env : Target_env.t
+  ; shape_files : string list
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool

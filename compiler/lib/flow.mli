@@ -66,4 +66,6 @@ val the_block_contents_of : Info.t -> Code.prim_arg -> Code.Var.t array option
 val the_int :
   target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> Targetint.t option
 
+val the_shape_of : pure:Code.Var.Set.t -> Info.t -> Code.Var.t -> Shape.t
+
 val f : ?skip_param:bool -> Code.program -> Code.program * Info.t
