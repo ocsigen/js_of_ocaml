@@ -332,6 +332,15 @@ let options =
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
     let include_dirs = normalize_include_dirs include_dirs in
+    (* For backward compatibility, consider that [--enable effects] alone means
+       [--effects cps] *)
+    Config.set_effects_backend
+      (match effects with
+      | None ->
+          if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
+          then Some Cps
+          else None
+      | Some _ -> effects);
     `Ok
       { common
       ; params
@@ -573,6 +582,15 @@ let options_runtime_only =
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
     let include_dirs = normalize_include_dirs include_dirs in
+    (* For backward compatibility, consider that [--enable effects] alone means
+       [--effects cps] *)
+    Config.set_effects_backend
+      (match effects with
+      | None ->
+          if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
+          then Some Cps
+          else None
+      | Some _ -> effects);
     `Ok
       { common
       ; params

@@ -145,6 +145,15 @@ let options =
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
     let include_dirs = normalize_include_dirs include_dirs in
+    (* For backward compatibility, consider that [--enable effects] alone means [--effects cps] *)
+    Config.set_effects_backend
+      (match effects with
+      | None ->
+          if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
+          then Some Config.Cps
+          else None
+      | Some Config.Cps -> Some Config.Cps
+      | Some _ -> failwith "Unexpected effects backend");
     `Ok
       { common
       ; params
@@ -218,6 +227,16 @@ let options_runtime_only =
       & opt_all (list (pair ~sep:'=' (enum all) string)) []
       & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
+  let effects =
+    let doc =
+      "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
+       (the default) or $(b,cps)."
+    in
+    Arg.(
+      value
+      & opt (enum [ "jspi", None; "cps", Some Config.Cps ]) None
+      & info [ "effects" ] ~docv:"KIND" ~doc)
+  in
   let build_t
       common
       set_param
@@ -227,10 +246,20 @@ let options_runtime_only =
       sourcemap_don't_inline_content
       sourcemap_root
       output_file
-      runtime_files =
+      runtime_files
+      effects =
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
     let include_dirs = normalize_include_dirs include_dirs in
+    (* For backward compatibility, consider that [--enable effects] alone means [--effects cps] *)
+    Config.set_effects_backend
+      (match effects with
+      | None ->
+          if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
+          then Some Config.Cps
+          else None
+      | Some Config.Cps -> Some Config.Cps
+      | Some _ -> failwith "Unexpected effects backend");
     `Ok
       { common
       ; params
@@ -257,6 +286,7 @@ let options_runtime_only =
       $ sourcemap_don't_inline_content
       $ sourcemap_root
       $ output_file
-      $ runtime_files)
+      $ runtime_files
+      $ effects)
   in
   Term.ret t

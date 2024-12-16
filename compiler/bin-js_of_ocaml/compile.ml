@@ -173,12 +173,6 @@ let run
   | `Name _, _ -> ());
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
-  (* For backward compatibility, consider that [--enable effects] alone means
-     [--effects cps] *)
-  Config.set_effects_backend
-    (match effects with
-    | None -> if Config.Flag.effects () then Some Cps else None
-    | Some _ -> effects);
   let t = Timer.make () in
   let include_dirs =
     List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
