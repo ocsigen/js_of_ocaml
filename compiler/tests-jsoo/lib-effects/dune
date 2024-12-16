@@ -6,9 +6,16 @@
 
 (library
  (name jsoo_testsuite_effect)
+ (modules (:standard \ deep_state))
  (enabled_if
   (>= %{ocaml_version} 5))
  (inline_tests
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
+
+
+(executable
+ (name deep_state)
+ (modules deep_state)
+ (modes js))
