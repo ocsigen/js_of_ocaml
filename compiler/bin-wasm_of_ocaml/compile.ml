@@ -83,7 +83,7 @@ let with_runtime_files ~runtime_wasm_files f =
 
 let build_runtime ~runtime_file =
   (* Keep this variables in sync with gen/gen.ml *)
-  let variables = [] in
+  let variables = [ "use-js-string", Config.Flag.use_js_string () ] in
   match
     List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
         assert (
