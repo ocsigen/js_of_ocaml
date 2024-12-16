@@ -86,6 +86,8 @@ function caml_resume_stack(stack, last, k) {
     );
   if (last === 0) {
     last = stack;
+    // Pre OCaml 5.2, last/cont[2] was not populated.
+    while (last.r.e !== 0) last = last.r.e;
   }
   var fiber = {
     h: last.sh,
@@ -189,7 +191,13 @@ function caml_continuation_use_and_update_handler_noexc(
 ) {
   var stack = caml_continuation_use_noexc(cont);
   if (stack === 0) return stack;
-  cont[2].sh = [0, hval, hexn, heff];
+  var last = cont[2];
+  if (last === 0) {
+    last = stack;
+    // Pre OCaml 5.2, last/cont[2] was not populated.
+    while (last.r.e !== 0) last = last.r.e;
+  }
+  last.sh = [0, hval, hexn, heff];
   return stack;
 }
 
