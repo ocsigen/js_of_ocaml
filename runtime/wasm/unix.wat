@@ -118,6 +118,7 @@
       (func $Int64_val (param (ref eq)) (result i64)))
 
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))

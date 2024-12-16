@@ -20,11 +20,16 @@
       (func $compare_strings (param externref externref) (result i32)))
    (import "wasm:js-string" "test"
       (func $is_string (param externref) (result i32)))
+   (import "wasm:js-string" "length"
+      (func $string_length (param externref) (result i32)))
+   (import "wasm:js-string" "substring"
+      (func $string_sub (param externref i32 i32) (result (ref extern))))
    (import "wasm:js-string" "fromCharCodeArray"
       (func $fromCharCodeArray
          (param (ref null $wstring)) (param i32) (param i32)
          (result (ref extern))))
-
+   (import "wasm:js-string" "charCodeAt"
+      (func $string_get (param externref i32) (result i32)))
    (import "wasm:text-decoder" "decodeStringFromUTF8Array"
       (func $decodeStringFromUTF8Array
          (param (ref null $bytes)) (param i32) (param i32)
@@ -43,8 +48,13 @@
       (func $write_string (param anyref) (result i32)))
    (import "bindings" "append_string"
       (func $append_string (param anyref) (param anyref) (result anyref)))
+   (import "js" "caml_utf16_of_utf8"
+      (func $utf16_of_utf8 (param anyref) (result anyref)))
+   (import "js" "caml_utf8_of_utf16"
+      (func $utf8_of_utf16 (param anyref) (result anyref)))
 
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $wstring (array (mut i16)))
 
    (global $text_converters_available (mut i32) (i32.const 0))
@@ -96,10 +106,12 @@
    (func (export "jsstring_test") (param $s anyref) (result i32)
       (return_call $is_string (extern.convert_any (local.get $s))))
 
+   (func (export "jsstring_length") (param $s anyref) (result i32)
+      (return_call $string_length (extern.convert_any (local.get $s))))
+
    (export "jsstring_hash" (func $hash_string))
 
    (func $jsstring_of_subbytes (export "jsstring_of_subbytes")
-      (export "jsstring_of_substring") ;; compatibility with zarith stubs
       (param $s (ref $bytes)) (param $pos i32) (param $len i32)
       (result anyref)
       (local $i i32) (local $c i32)
@@ -133,16 +145,160 @@
       (return_call $jsstring_of_subbytes_fallback
          (local.get $s) (local.get $pos) (local.get $len)))
 
-   (func (export "jsstring_of_bytes") (param $s (ref $bytes)) (result anyref)
+   (func $jsstring_of_bytes (export "jsstring_of_bytes")
+      (param $s (ref $bytes)) (result anyref)
       (return_call $jsstring_of_subbytes
          (local.get $s) (i32.const 0) (array.len (local.get $s))))
 
-   (func (export "bytes_of_jsstring") (param $s anyref) (result (ref $bytes))
+   (func $bytes_of_jsstring (export "bytes_of_jsstring")
+      (param $s anyref) (result (ref $bytes))
       (if (global.get $text_converters_available)
          (then
             (return_call $encodeStringToUTF8Array
                (extern.convert_any (local.get $s)))))
-      (return_call $string_of_jsstring_fallback (local.get $s)))
+      (return_call $bytes_of_jsstring_fallback (local.get $s)))
+
+   (func $string_is_ascii (param $vs (ref eq)) (result i32)
+      (local $s externref) (local $len i32) (local $i i32)
+      (local.set $s
+         (extern.convert_any
+            (struct.get $string 0 (ref.cast (ref $string) (local.get $vs)))))
+      (local.set $len (call $string_length (local.get $s)))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (if (i32.ge_u (call $string_get (local.get $s) (local.get $i))
+                      (i32.const 128))
+                  (then (return (i32.const 0))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (i32.const 1))
+
+   (func $jsstring_of_string (export "jsstring_of_string")
+      (param $s (ref eq)) (result (ref eq))
+      (if (result (ref eq)) (call $string_is_ascii (local.get $s))
+         (then
+            (local.get $s))
+         (else
+            (return
+               (struct.new $string
+                  (call $utf16_of_utf8
+                     (struct.get $string 0
+                        (ref.cast (ref $string) (local.get $s)))))))))
+
+   (func (export "jsstring_of_substring")
+      (param $s (ref eq)) (param $i i32) (param $l i32) (result (ref eq))
+      (return_call $jsstring_of_string
+         (struct.new $string
+            (any.convert_extern
+               (call $string_sub
+                  (extern.convert_any
+                     (struct.get $string 0
+                        (ref.cast (ref $string) (local.get $s))))
+                  (local.get $i)
+                  (i32.add (local.get $i) (local.get $l)))))))
+
+   (func (export "string_of_jsstring")
+      (param $s (ref eq)) (result (ref eq))
+      (if (result (ref eq)) (call $string_is_ascii (local.get $s))
+         (then
+            (local.get $s))
+         (else
+            (return
+               (struct.new $string
+                  (call $utf8_of_utf16
+                     (struct.get $string 0
+                        (ref.cast (ref $string) (local.get $s)))))))))
+
+   (func (export "jsbytes_of_bytes") (param $s (ref $bytes)) (result anyref)
+      (local $s' (ref $bytes))
+      (local $l i32) (local $i i32) (local $n i32) (local $c i32)
+      (local.set $l (array.len (local.get $s)))
+      (local.set $i (i32.const 0))
+      (local.set $n (i32.const 0))
+      (loop $count
+         (if (i32.lt_u (local.get $i) (local.get $l))
+            (then
+               (if (i32.ge_u (array.get_u $bytes (local.get $s) (local.get $i))
+                      (i32.const 128))
+                  (then (local.set $n (i32.add (local.get $n) (i32.const 1)))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $count))))
+      (if (i32.eqz (local.get $n))
+         (then
+            (return_call $jsstring_of_bytes (local.get $s))))
+      (local.set $s'
+         (array.new $bytes (i32.const 0)
+            (i32.add (local.get $i) (local.get $n))))
+      (local.set $i (i32.const 0))
+      (local.set $n (i32.const 0))
+      (loop $fill
+         (if (i32.lt_u (local.get $i) (local.get $l))
+            (then
+               (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+               (if (i32.lt_u (local.get $c) (i32.const 128))
+                  (then
+                     (array.set $bytes
+                        (local.get $s') (local.get $n) (local.get $c))
+                     (local.set $n (i32.add (local.get $n) (i32.const 1))))
+                  (else
+                     (array.set $bytes (local.get $s')
+                        (local.get $n)
+                        (i32.or (i32.shr_u (local.get $c) (i32.const 6))
+                           (i32.const 0xC0)))
+                     (array.set $bytes (local.get $s')
+                        (i32.add (local.get $n) (i32.const 1))
+                        (i32.or (i32.const 0x80)
+                           (i32.and (local.get $c) (i32.const 0x3F))))
+                     (local.set $n (i32.add (local.get $n) (i32.const 2)))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $fill))))
+      (return_call $jsstring_of_bytes (local.get $s')))
+
+   (func (export "bytes_of_jsbytes") (param $s anyref) (result (ref $bytes))
+      (local $l i32) (local $i i32) (local $n i32) (local $c i32)
+      (local $s' (ref $bytes)) (local $s'' (ref $bytes))
+      (local.set $s' (call $bytes_of_jsstring (local.get $s)))
+      (local.set $l (array.len (local.get $s')))
+      (local.set $i (i32.const 0))
+      (local.set $n (i32.const 0))
+      (loop $count
+         (if (i32.lt_u (local.get $i) (local.get $l))
+            (then
+               (if (i32.ge_u (array.get_u $bytes (local.get $s') (local.get $i))
+                      (i32.const 0xC0))
+                  (then (local.set $n (i32.add (local.get $n) (i32.const 1)))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $count))))
+      (if (i32.eqz (local.get $n)) (then (return (local.get $s'))))
+      (local.set $s''
+         (array.new $bytes (i32.const 0)
+            (i32.sub (local.get $i) (local.get $n))))
+      (local.set $i (i32.const 0))
+      (local.set $n (i32.const 0))
+      (loop $fill
+         (if (i32.lt_u (local.get $i) (local.get $l))
+            (then
+               (local.set $c
+                  (array.get_u $bytes (local.get $s') (local.get $i)))
+               (if (i32.lt_u (local.get $c) (i32.const 0xC0))
+                  (then
+                     (array.set $bytes
+                        (local.get $s'') (local.get $n) (local.get $c))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1))))
+                  (else
+                     (array.set $bytes (local.get $s'')
+                        (local.get $n)
+                        (i32.sub
+                           (i32.add
+                              (i32.shl (local.get $c) (i32.const 6))
+                              (array.get_u $bytes (local.get $s')
+                                 (i32.add (local.get $i) (i32.const 1))))
+                           (i32.const 0x3080)))
+                     (local.set $i (i32.add (local.get $i) (i32.const 2)))))
+               (local.set $n (i32.add (local.get $n) (i32.const 1)))
+               (br $fill))))
+      (local.get $s''))
 
    ;; Fallback implementation of string conversion functions
 
@@ -210,7 +366,7 @@
       (struct (field $s (ref $bytes)) (field $next (ref null $stack))))
    (global $stack (mut (ref null $stack)) (ref.null $stack))
 
-   (func $string_of_jsstring_fallback (param $s anyref) (result (ref $bytes))
+   (func $bytes_of_jsstring_fallback (param $s anyref) (result (ref $bytes))
       (local $ofs i32) (local $len i32)
       (local $s' (ref $bytes)) (local $s'' (ref $bytes))
       (local $item (ref $stack))
@@ -257,4 +413,106 @@
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $read_from_buffer (local.get $s) (i32.const 0) (local.get $len))
       (global.set $stack (struct.new $stack (local.get $s) (global.get $stack))))
+
+   (func $utf16_to_utf8
+      (param $s externref) (param $l i32) (param $b (ref $wstring)) (result i32)
+      (local $i i32) (local $j i32) (local $c i32) (local $d i32)
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $l))
+            (then
+               (local.set $c (call $string_get (local.get $s) (local.get $i)))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (if (i32.lt_u (local.get $c) (i32.const 0x80))
+                  (then
+                     (array.set $wstring
+                        (local.get $b) (local.get $j) (local.get $c))
+                     (local.set $j (i32.add (local.get $j) (i32.const 1)))
+                     (br $loop)))
+               (if (i32.lt_u (local.get $c) (i32.const 0x800))
+                  (then
+                     (array.set $wstring
+                        (local.get $b) (local.get $j)
+                        (i32.or (i32.const 0xC0)
+                           (i32.shr_u (local.get $c) (i32.const 6))))
+                     (array.set $wstring
+                        (local.get $b)
+                        (i32.add (local.get $j) (i32.const 1))
+                        (i32.or (i32.const 0x80)
+                           (i32.and (local.get $c) (i32.const 0x3F))))
+                     (local.set $j (i32.add (local.get $j) (i32.const 2)))
+                     (br $loop)))
+               (if (i32.and
+                      (i32.ge_u (local.get $c) (i32.const 0xD800))
+                      (i32.lt_u (local.get $c) (i32.const 0xE000)))
+                  (then
+                     (if (i32.and
+                           (i32.lt_u (local.get $c) (i32.const 0xDC00))
+                           (i32.lt_u (local.get $i) (local.get $l)))
+                        (then
+                           (local.set $d
+                              (call $string_get (local.get $s) (local.get $i)))
+                           (if (i32.and
+                                  (i32.ge_u (local.get $c) (i32.const 0xDC00))
+                                  (i32.lt_u (local.get $c) (i32.const 0xE000)))
+                              (then
+                                 (local.set $i
+                                    (i32.add (local.get $i) (i32.const 1)))
+                                 (local.set $c
+                                    (i32.sub
+                                       (i32.add
+                                          (i32.shl
+                                             (local.get $c)
+                                             (i32.const 10))
+                                          (local.get $d))
+                                       (i32.const 0x35fdc00)))
+                                 (array.set $wstring
+                                    (local.get $b) (local.get $j)
+                                    (i32.or (i32.const 0xE0)
+                                       (i32.shr_u (local.get $c)
+                                          (i32.const 18))))
+                                 (array.set $wstring
+                                    (local.get $b)
+                                    (i32.add (local.get $j) (i32.const 1))
+                                    (i32.or (i32.const 0x80)
+                                       (i32.and
+                                          (i32.shr_u (local.get $c)
+                                             (i32.const 12))
+                                          (i32.const 0x3F))))
+                                 (array.set $wstring
+                                    (local.get $b)
+                                    (i32.add (local.get $j) (i32.const 2))
+                                    (i32.or (i32.const 0x80)
+                                       (i32.and
+                                          (i32.shr_u (local.get $c)
+                                             (i32.const 6))
+                                          (i32.const 0x3F))))
+                                 (array.set $wstring
+                                    (local.get $b)
+                                    (i32.add (local.get $j) (i32.const 3))
+                                    (i32.or (i32.const 0x80)
+                                       (i32.and (local.get $c)
+                                          (i32.const 0x3F))))
+                                 (local.set $j
+                                    (i32.add (local.get $j) (i32.const 4)))
+                                 (br $loop)))))
+                     ;; replacement character
+                     (local.set $c (i32.const 0xFFFD))))
+               (array.set $wstring
+                  (local.get $b) (local.get $j)
+                  (i32.or (i32.const 0xE0)
+                     (i32.shr_u (local.get $c) (i32.const 12))))
+               (array.set $wstring
+                  (local.get $b)
+                  (i32.add (local.get $j) (i32.const 1))
+                  (i32.or (i32.const 0x80)
+                     (i32.and (i32.shr_u (local.get $c) (i32.const 6))
+                        (i32.const 0x3F))))
+               (array.set $wstring
+                  (local.get $b)
+                  (i32.add (local.get $j) (i32.const 2))
+                  (i32.or (i32.const 0x80)
+                     (i32.and (local.get $c) (i32.const 0x3F))))
+               (local.set $j (i32.add (local.get $j) (i32.const 3)))
+               (br $loop))))
+      (local.get $j))
 )
