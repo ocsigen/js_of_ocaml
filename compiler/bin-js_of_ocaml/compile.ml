@@ -153,7 +153,7 @@ let run
     ; export_file
     ; keep_unit_names
     ; include_runtime
-    ; effects
+    ; effects = _
     } =
   let source_map_base = Option.map ~f:snd source_map in
   let source_map =
