@@ -5,7 +5,7 @@ let read_file ic = really_input_string ic (in_channel_length ic)
 
 let default_flags = []
 
-let interesting_runtimes = [ [] ]
+let interesting_runtimes = [ [ "use-js-string", false ]; [ "use-js-string", true ] ]
 
 let name_runtime l =
   let flags = List.filter_map (fun (k, v) -> if v then Some k else None) l in

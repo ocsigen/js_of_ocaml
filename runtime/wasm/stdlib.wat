@@ -35,6 +35,8 @@
    (import "string" "caml_string_concat"
       (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
    (import "printexc" "caml_format_exception"
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit (param i32)))
@@ -44,10 +46,11 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
    (type $assoc
       (struct
-         (field (ref $bytes))
+         (field (ref eq))
          (field (mut (ref eq)))
          (field (mut (ref null $assoc)))))
 
@@ -114,9 +117,7 @@
          (return (ref.i31 (i32.const 0))))
       (array.set $assoc_array
          (global.get $named_value_table) (local.get $h)
-         (struct.new $assoc
-            (ref.cast (ref $bytes) (local.get 0))
-            (local.get 1) (local.get $r)))
+         (struct.new $assoc (local.get 0) (local.get 1) (local.get $r)))
       (ref.i31 (i32.const 0)))
 
    ;; Used only for testing (tests-jsoo/bin), but inconvenient to pull out
@@ -231,5 +232,5 @@
                            (call $caml_string_concat
                               (call $caml_format_exception (local.get $exn))
                               (@string "\n")))))))
-               (call $exit (i32.const 2)))))
+            (call $exit (i32.const 2)))))
 )

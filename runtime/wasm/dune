@@ -17,6 +17,22 @@
    link
    --binaryen=-g
    --binaryen-opt=-O3
+   --disable use-js-string
+   %{target}
+   %{read-lines:args})))
+
+(rule
+ (target runtime-use-js-string.wasm)
+ (deps
+  args
+  (glob_files *.wat))
+ (action
+  (run
+   wasmoo_util
+   link
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --enable use-js-string
    %{target}
    %{read-lines:args})))
 
