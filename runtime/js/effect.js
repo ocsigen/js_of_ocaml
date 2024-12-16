@@ -77,6 +77,7 @@ var caml_fiber_stack;
 
 //Provides:caml_resume_stack
 //Requires: caml_named_value, caml_raise_constant, caml_exn_stack, caml_fiber_stack
+//Requires: caml_pop_fiber
 //If: effects
 function caml_resume_stack(stack, last, k) {
   if (!stack)
@@ -86,21 +87,13 @@ function caml_resume_stack(stack, last, k) {
   if(last === 0) {
     last = stack;
   }
-  if(last !== stack) {
-    throw new Error ("invalid last param");
-  }
-  // Update the execution context with the stack of fibers in [stack] in
-  // order to resume the continuation
-  do {
-    caml_fiber_stack = {
-      h: stack.h,
+  var fiber = {
+      h: last.sh,
       r: { k: k, x: caml_exn_stack, e: caml_fiber_stack },
-    };
-    k = stack.r.k;
-    caml_exn_stack = stack.r.x;
-    stack = stack.r.e;
-  } while (stack);
-  return k;
+  };
+  last.r.e = fiber;
+  caml_fiber_stack = stack;
+  return caml_pop_fiber();
 }
 
 //Provides: caml_pop_fiber
@@ -118,17 +111,19 @@ function caml_pop_fiber() {
 //Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack
 //If: effects
 function caml_perform_effect(eff, cont, last, k0) {
-  // Allocate a continuation if we don't already have one
-  if (!cont) cont = [245 /*continuation*/, 0, 0];
   // Get current effect handler
-  var handler = caml_fiber_stack.h[3];
-  // Cons the current fiber onto the continuation:
-  //   cont := Cons (k, exn_stack, handlers, !cont)
-  cont[1] = {r:{k:k0, x:caml_exn_stack, e:cont[1]},h:caml_fiber_stack.h};
+  var handlers = caml_fiber_stack.h;
+  var handler = handlers[3];
+  if (!cont) {
+    var last_fiber = {r:{k:k0, x:caml_exn_stack, e:0},h:null, sh:handlers};
+    cont = [245 /*continuation*/, last_fiber, 0];
+  } else {
+    var last_fiber = {r:{k:k0, x:caml_exn_stack, e:0},h:last.sh, sh:handlers};
+    last.r.e = last_fiber;
+  }
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
-  var last_fiber = cont[1];
   return caml_stack_check_depth()
     ? handler(eff, cont, last_fiber, k1)
     : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
@@ -154,7 +149,8 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return {r:{k:hval, x:[0, hexn, 0], e:0}, h:[0, hv, hx, hf]};
+  var handlers = [0, hv, hx, hf];
+  return {r:{k:hval, x:[0, hexn, 0], e:0}, h:null, sh:handlers};
 }
 
 //Provides: caml_alloc_stack
@@ -182,7 +178,8 @@ function caml_continuation_use_and_update_handler_noexc(
   heff,
 ) {
   var stack = caml_continuation_use_noexc(cont);
-  stack.h = [0, hval, hexn, heff];
+  if(stack == 0) return stack;
+  cont[2].sh = [0, hval, hexn, heff];
   return stack;
 }
 
