@@ -31,9 +31,32 @@
       (func $jsstring_of_bytes (param (ref $bytes)) (result anyref)))
    (import "jsstring" "bytes_of_jsstring"
       (func $bytes_of_jsstring (param anyref) (result (ref $bytes))))
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
 
-   (type $float (struct (field f64)))
+(@if use-js-string
+(@then
+   (import "wasm:js-string" "length"
+      (func $string_length (param externref) (result i32)))
+   (import "wasm:js-string" "charCodeAt"
+      (func $string_get (param externref i32) (result i32)))
+
+   (func $string_val (param $s (ref eq)) (result externref)
+      (extern.convert_any
+         (struct.get $string 0 (ref.cast (ref $string) (local.get $s)))))
+)
+(@else
+   (func $string_length (param $s (ref $bytes)) (result i32)
+      (array.len (local.get $s)))
+   (func $string_get (param $s (ref $bytes)) (param $i i32) (result i32)
+      (array.get $bytes (local.get $s) (local.get $i)))
+   (func $string_val (param $s (ref eq)) (result (ref $bytes))
+      (ref.cast (ref $bytes) (local.get $s)))
+))
+
+  (type $float (struct (field f64)))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $block (array (mut (ref eq))))
 
    (type $chars (array i8))
@@ -189,24 +212,32 @@
                (then
                   (array.set $bytes (local.get $s) (i32.const 0)
                      (local.get $style))))))
-      (local.get $s))
+      (return_call $caml_string_of_bytes (local.get $s)))
 
    (@string $format_error "format_float: bad format")
 
    (func $parse_format
-      (param $s (ref $bytes)) (result i32 i32 i32 i32)
+      (param $v (ref eq)) (result i32 i32 i32 i32)
+(@if use-js-string
+(@then
+      (local $s externref)
+)
+(@else
+      (local $s (ref $bytes))
+))
       (local $i i32) (local $len i32) (local $c i32)
       (local $sign_style i32) (local $precision i32)
       (local $conversion i32) (local $uppercase i32)
-      (local.set $len (array.len (local.get $s)))
+      (local.set $s (call $string_val (local.get $v)))
+      (local.set $len (call $string_length (local.get $s)))
       (local.set $i (i32.const 1))
       (block $return
          (block $bad_format
             (br_if $bad_format (i32.lt_u (local.get $len) (i32.const 2)))
             (br_if $bad_format
-               (i32.ne (array.get_u $bytes (local.get $s) (i32.const 0))
+               (i32.ne (call $string_get (local.get $s) (i32.const 0))
                        (@char "%")))
-            (local.set $c (array.get_u $bytes (local.get $s) (i32.const 1)))
+            (local.set $c (call $string_get (local.get $s) (i32.const 1)))
             (if (i32.eq (local.get $c) (@char "+"))
                (then
                   (local.set $sign_style (i32.const 1))
@@ -217,13 +248,13 @@
                   (local.set $i (i32.add (local.get $i) (i32.const 1)))))
             (br_if $bad_format (i32.eq (local.get $i) (local.get $len)))
             (br_if $bad_format
-               (i32.ne (array.get_u $bytes (local.get $s) (local.get $i))
-                       (@char ".")))
+               (i32.ne (call $string_get (local.get $s) (local.get $i))
+                       (@char "."))) ;; '.'
             (loop $precision
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $bad_format (i32.eq (local.get $i) (local.get $len)))
                (local.set $c
-                  (array.get_u $bytes (local.get $s) (local.get $i)))
+                  (call $string_get (local.get $s) (local.get $i)))
                (if (i32.and (i32.ge_u (local.get $c) (@char "0"))
                             (i32.le_u (local.get $c) (@char "9")))
                   (then
@@ -259,8 +290,7 @@
       (local $num anyref)
       (local.set $f (struct.get $float 0 (ref.cast (ref $float) (local.get 1))))
       (local.set $b (i64.reinterpret_f64 (local.get $f)))
-      (local.set $format
-         (call $parse_format (ref.cast (ref $bytes) (local.get 0))))
+      (local.set $format (call $parse_format (local.get 0)))
       (local.set $sign_style (tuple.extract 4 0 (local.get $format)))
       (local.set $precision (tuple.extract 4 1 (local.get $format)))
       (local.set $conversion (tuple.extract 4 2 (local.get $format)))
@@ -328,23 +358,31 @@
                         (i32.sub (local.get $c) (i32.const 32)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $uppercase (i32.lt_u (local.get $i) (local.get $len))))))
-      (local.get $s))
+      (return_call $caml_string_of_bytes (local.get $s)))
 
    (@string $float_of_string "float_of_string")
 
-   (func $caml_float_of_hex (param $s (ref $bytes)) (param $i i32) (result f64)
+   (func $caml_float_of_hex
+(@if use-js-string
+(@then
+      (param $s externref)
+)
+(@else
+      (param $s (ref $bytes))
+))
+      (param $i i32) (result f64)
       (local $len i32) (local $c i32) (local $d i32) (local $m i64)
       (local $f f64) (local $negative i32)
       (local $dec_point i32) (local $exp i32) (local $adj i32)
       (local $n_bits i32) (local $m_bits i32) (local $x_bits i32)
-      (local.set $len (array.len (local.get $s)))
+      (local.set $len (call $string_length (local.get $s)))
       (local.set $dec_point (i32.const -1))
       (block $error
          (loop $parse
             (if (i32.lt_u (local.get $i) (local.get $len))
                (then
                   (local.set $c
-                     (array.get_u $bytes (local.get $s) (local.get $i)))
+                     (call $string_get (local.get $s) (local.get $i)))
                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
                   (if (i32.eq (local.get $c) (@char "."))
                      (then
@@ -357,7 +395,7 @@
                      (then
                         (br_if $error (i32.eq (local.get $i) (local.get $len)))
                         (local.set $c
-                           (array.get_u $bytes (local.get $s) (local.get $i)))
+                           (call $string_get (local.get $s) (local.get $i)))
                         (local.set $i (i32.add (local.get $i) (i32.const 1)))
                         (if (i32.eq (local.get $c) (@char "-"))
                            (then
@@ -365,7 +403,7 @@
                               (br_if $error
                                  (i32.eq (local.get $i) (local.get $len)))
                               (local.set $c
-                                 (array.get_u $bytes
+                                 (call $string_get
                                     (local.get $s) (local.get $i)))
                               (local.set $i
                                  (i32.add (local.get $i) (i32.const 1)))))
@@ -374,7 +412,7 @@
                               (br_if $error
                                  (i32.eq (local.get $i) (local.get $len)))
                               (local.set $c
-                                 (array.get_u $bytes
+                                 (call $string_get
                                     (local.get $s) (local.get $i)))
                               (local.set $i
                                  (i32.add (local.get $i) (i32.const 1)))))
@@ -394,7 +432,7 @@
                               (if (i32.ne (local.get $i) (local.get $len))
                                  (then
                                     (local.set $c
-                                       (array.get_u $bytes
+                                       (call $string_get
                                           (local.get $s) (local.get $i)))
                                     (local.set $i
                                        (i32.add (local.get $i) (i32.const 1)))
@@ -474,24 +512,39 @@
       (call $caml_failwith (global.get $float_of_string))
       (f64.const 0))
 
-   (func $on_whitespace (param $s (ref $bytes)) (param $i i32) (result i32)
+   (func $on_whitespace
+(@if use-js-string
+(@then
+      (param $s externref)
+)
+(@else
+      (param $s (ref $bytes))
+))
+      (param $i i32) (result i32)
       (local $c i32)
-      (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+      (local.set $c (call $string_get (local.get $s) (local.get $i)))
       (i32.or (i32.eq (local.get $c) (@char " "))
          (i32.le_u (i32.sub (local.get $c) (i32.const 9)) (i32.const 4))))
 
    (func (export "caml_float_of_string") (param (ref eq)) (result (ref eq))
-      (local $s (ref $bytes)) (local $len i32) (local $i i32) (local $j i32)
+(@if use-js-string
+(@then
+      (local $s externref)
+)
+(@else
+      (local $s (ref $bytes))
+))
+      (local $len i32) (local $i i32) (local $j i32)
       (local $s' (ref $bytes))
       (local $negative i32) (local $c i32)
       (local $f f64)
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
-      (local.set $len (array.len (local.get $s)))
+      (local.set $s (call $string_val (local.get 0)))
+      (local.set $len (call $string_length (local.get $s)))
       (loop $count
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (if (i32.eq (@char "_")
-                      (array.get_u $bytes (local.get $s) (local.get $i)))
+                      (call $string_get (local.get $s) (local.get $i)))
                   (then
                      (local.set $j (i32.add (local.get $j) (i32.const 1)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -507,7 +560,7 @@
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (local.set $c
-                        (array.get_u $bytes (local.get $s) (local.get $i)))
+                        (call $string_get (local.get $s) (local.get $i)))
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (if (i32.ne (local.get $c) (@char "_"))
                         (then
@@ -517,7 +570,15 @@
                               (i32.add (local.get $j) (i32.const 1)))))
                      (br $copy))))
             (local.set $len (array.len (local.get $s')))
-            (local.set $s (local.get $s'))))
+(@if use-js-string
+(@then
+            (local.set $s
+               (extern.convert_any (call $jsstring_of_bytes (local.get $s'))))
+)
+(@else
+            (local.set $s (local.get $s'))
+))
+         ))
       (local.set $i (i32.const 0))
       (loop $skip_spaces
          (if (i32.lt_u (local.get $i) (local.get $len))
@@ -531,7 +592,7 @@
          (br_if $error
             (call $on_whitespace
                (local.get $s) (i32.sub (local.get $len) (i32.const 1))))
-         (local.set $c (array.get_u $bytes (local.get $s) (i32.const 0)))
+         (local.set $c (call $string_get (local.get $s) (i32.const 0)))
          (if (i32.eq (local.get $c) (@char "-"))
             (then
                (local.set $negative (i32.const 1))
@@ -541,11 +602,11 @@
                (local.set $i (i32.const 1))))
          (if (i32.lt_u (i32.add (local.get $i) (i32.const 2)) (local.get $len))
             (then
-               (if (i32.eq (array.get_u $bytes (local.get $s) (local.get $i))
+               (if (i32.eq (call $string_get (local.get $s) (local.get $i))
                            (@char "0"))
                   (then
                      (if (i32.eq (i32.and
-                                    (array.get_u $bytes (local.get $s)
+                                    (call $string_get (local.get $s)
                                        (i32.add (local.get $i) (i32.const 1)))
                                     (i32.const 0xdf))
                                  (@char "X"))
@@ -558,17 +619,17 @@
                            (return (struct.new $float (local.get $f)))))))))
          (if (i32.eq (i32.add (local.get $i) (i32.const 3)) (local.get $len))
             (then
-               (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+               (local.set $c (call $string_get (local.get $s) (local.get $i)))
                (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                            (@char "N")) (then
                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
                   (local.set $c
-                     (array.get_u $bytes (local.get $s) (local.get $i)))
+                     (call $string_get (local.get $s) (local.get $i)))
                   (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                               (@char "A")) (then
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (local.set $c
-                        (array.get_u $bytes (local.get $s) (local.get $i)))
+                        (call $string_get (local.get $s) (local.get $i)))
                      (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                                  (@char "N"))
                         (then
@@ -578,12 +639,12 @@
                            (@char "I")) (then
                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
                   (local.set $c
-                     (array.get_u $bytes (local.get $s) (local.get $i)))
+                     (call $string_get (local.get $s) (local.get $i)))
                   (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                               (@char "N")) (then
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (local.set $c
-                        (array.get_u $bytes (local.get $s) (local.get $i)))
+                        (call $string_get (local.get $s) (local.get $i)))
                      (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                                  (@char "F"))
                         (then
@@ -595,34 +656,34 @@
                                     (local.get $negative))))))))))))
          (if (i32.eq (i32.add (local.get $i) (i32.const 8)) (local.get $len))
             (then
-               (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+               (local.set $c (call $string_get (local.get $s) (local.get $i)))
                (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                            (@char "I")) (then
                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
                   (local.set $c
-                     (array.get_u $bytes (local.get $s) (local.get $i)))
+                     (call $string_get (local.get $s) (local.get $i)))
                   (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                               (@char "N")) (then
                      (local.set $i (i32.add (local.get $i) (i32.const 1)))
                      (local.set $c
-                        (array.get_u $bytes (local.get $s) (local.get $i)))
+                        (call $string_get (local.get $s) (local.get $i)))
                      (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                                  (@char "F")) (then
                         (local.set $i (i32.add (local.get $i) (i32.const 1)))
                         (local.set $c
-                           (array.get_u $bytes (local.get $s) (local.get $i)))
+                           (call $string_get (local.get $s) (local.get $i)))
                         (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                                     (@char "I")) (then
                            (local.set $i (i32.add (local.get $i) (i32.const 1)))
                            (local.set $c
-                              (array.get_u $bytes
+                              (call $string_get
                                  (local.get $s) (local.get $i)))
                            (if (i32.eq (i32.and (local.get $c) (i32.const 0xdf))
                                        (@char "N")) (then
                               (local.set $i
                                  (i32.add (local.get $i) (i32.const 1)))
                               (local.set $c
-                                 (array.get_u $bytes
+                                 (call $string_get
                                      (local.get $s) (local.get $i)))
                               (if (i32.eq
                                      (i32.and (local.get $c) (i32.const 0xdf))
@@ -630,7 +691,7 @@
                                  (local.set $i
                                     (i32.add (local.get $i) (i32.const 1)))
                                  (local.set $c
-                                    (array.get_u $bytes
+                                    (call $string_get
                                        (local.get $s) (local.get $i)))
                                  (if (i32.eq
                                         (i32.and (local.get $c) (i32.const 0xdf))
@@ -638,7 +699,7 @@
                                     (local.set $i
                                        (i32.add (local.get $i) (i32.const 1)))
                                     (local.set $c
-                                       (array.get_u $bytes
+                                       (call $string_get
                                            (local.get $s) (local.get $i)))
                                     (if (i32.eq
                                            (i32.and (local.get $c)
@@ -652,7 +713,15 @@
                                                 (local.get $negative))))
                                        ))))))))))))))))))
          (local.set $f
-            (call $parse_float (call $jsstring_of_bytes (local.get $s))))
+            (call $parse_float
+(@if use-js-string
+(@then
+               (any.convert_extern (local.get $s))
+)
+(@else
+               (call $jsstring_of_bytes (local.get $s))
+))
+            ))
          (br_if $error (f64.ne (local.get $f) (local.get $f)))
          (return (struct.new $float (local.get $f))))
       (call $caml_failwith (global.get $float_of_string))

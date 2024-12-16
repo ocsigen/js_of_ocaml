@@ -19,11 +19,115 @@
    (import "fail" "caml_bound_error" (func $caml_bound_error))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param $arg (ref eq))))
+   (import "wasm:js-string" "equals"
+      (func $string_equals (param externref externref) (result i32)))
+   (import "wasm:js-string" "compare"
+      (func $string_compare (param externref externref) (result i32)))
+   (import "wasm:js-string" "length"
+      (func $string_length (param externref) (result i32)))
+   (import "wasm:js-string" "charCodeAt"
+      (func $string_get (param externref i32) (result i32)))
+   (import "wasm:js-string" "concat"
+      (func $string_concat (param externref externref) (result (ref extern))))
+   (import "jsstring" "jsbytes_of_bytes"
+      (func $jsbytes_of_bytes (param (ref $bytes)) (result anyref)))
 
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
-   (export "caml_bytes_equal" (func $caml_string_equal))
+(@if use-js-string
+(@then
    (func $caml_string_equal (export "caml_string_equal")
+      (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
+      (ref.i31
+         (call $string_equals
+            (extern.convert_any
+               (struct.get $string 0
+                  (ref.cast (ref $string) (local.get $p1))))
+            (extern.convert_any
+               (struct.get $string 0
+                  (ref.cast (ref $string) (local.get $p2)))))))
+
+   (func (export "caml_string_notequal")
+      (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
+      (return
+         (ref.i31 (i32.eqz (i31.get_u (ref.cast (ref i31)
+            (call $caml_string_equal (local.get $p1) (local.get $p2))))))))
+
+   (func (export "caml_string_compare")
+      (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
+      (ref.i31
+         (call $string_compare
+            (extern.convert_any
+              (struct.get $string 0
+                 (ref.cast (ref $string) (local.get $p1))))
+            (extern.convert_any
+              (struct.get $string 0
+                 (ref.cast (ref $string) (local.get $p2)))))))
+
+   (func (export "caml_string_lessequal")
+      (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
+      (ref.i31
+         (i32.le_s
+            (call $string_compare
+               (extern.convert_any
+                 (struct.get $string 0
+                    (ref.cast (ref $string) (local.get $p1))))
+               (extern.convert_any
+                 (struct.get $string 0
+                    (ref.cast (ref $string) (local.get $p2)))))
+            (i32.const 0))))
+
+   (func (export "caml_string_lessthan")
+      (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
+      (ref.i31
+         (i32.lt_s
+            (call $string_compare
+               (extern.convert_any
+                 (struct.get $string 0
+                    (ref.cast (ref $string) (local.get $p1))))
+               (extern.convert_any
+                 (struct.get $string 0
+                    (ref.cast (ref $string) (local.get $p2)))))
+            (i32.const 0))))
+
+   (func (export "caml_string_greaterequal")
+      (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
+      (ref.i31
+         (i32.ge_s
+            (call $string_compare
+               (extern.convert_any
+                 (struct.get $string 0
+                    (ref.cast (ref $string) (local.get $p1))))
+               (extern.convert_any
+                 (struct.get $string 0
+                    (ref.cast (ref $string) (local.get $p2)))))
+            (i32.const 0))))
+
+   (func (export "caml_string_greaterthan")
+      (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
+      (ref.i31
+         (i32.gt_s
+            (call $string_compare
+               (extern.convert_any
+                 (struct.get $string 0
+                    (ref.cast (ref $string) (local.get $p1))))
+               (extern.convert_any
+                 (struct.get $string 0
+                    (ref.cast (ref $string) (local.get $p2)))))
+            (i32.const 0))))
+)
+(@else
+   (export "caml_string_equal" (func $caml_bytes_equal))
+   (export "caml_string_notequal" (func $caml_bytes_notequal))
+   (export "caml_string_compare" (func $caml_bytes_compare))
+   (export "caml_string_lessequal" (func $caml_bytes_lessequal))
+   (export "caml_string_lessthan" (func $caml_bytes_lessthan))
+   (export "caml_string_greaterequal" (func $caml_bytes_greaterequal))
+   (export "caml_string_greaterthan" (func $caml_bytes_greaterthan))
+))
+
+   (func $caml_bytes_equal (export "caml_bytes_equal")
       (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
       (local $s1 (ref $bytes)) (local $s2 (ref $bytes))
       (local $len i32) (local $i i32)
@@ -45,14 +149,13 @@
                (br $loop))))
       (ref.i31 (i32.const 1)))
 
-   (export "caml_bytes_notequal" (func $caml_string_notequal))
-   (func $caml_string_notequal (export "caml_string_notequal")
+   (func $caml_bytes_notequal (export "caml_bytes_notequal")
       (param $p1 (ref eq)) (param $p2 (ref eq)) (result (ref eq))
       (return
          (ref.i31 (i32.eqz (i31.get_u (ref.cast (ref i31)
-            (call $caml_string_equal (local.get $p1) (local.get $p2))))))))
+            (call $caml_bytes_equal (local.get $p1) (local.get $p2))))))))
 
-   (func $string_compare
+   (func $bytes_compare
       (param $p1 (ref eq)) (param $p2 (ref eq)) (result i32)
       (local $s1 (ref $bytes)) (local $s2 (ref $bytes))
       (local $l1 i32) (local $l2 i32) (local $len i32) (local $i i32)
@@ -85,39 +188,61 @@
          (then (return (i32.const 1))))
       (i32.const 0))
 
-   (export "caml_bytes_compare" (func $caml_string_compare))
-   (func $caml_string_compare (export "caml_string_compare")
+   (func $caml_bytes_compare (export "caml_bytes_compare")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (ref.i31 (call $string_compare (local.get 0) (local.get 1))))
+      (ref.i31 (call $bytes_compare (local.get 0) (local.get 1))))
 
-   (export "caml_bytes_lessequal" (func $caml_string_lessequal))
-   (func $caml_string_lessequal (export "caml_string_lessequal")
+   (func $caml_bytes_lessequal (export "caml_bytes_lessequal")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.le_s (call $string_compare (local.get 0) (local.get 1))
+      (ref.i31 (i32.le_s (call $bytes_compare (local.get 0) (local.get 1))
                          (i32.const 0))))
 
-   (export "caml_bytes_lessthan" (func $caml_string_lessthan))
-   (func $caml_string_lessthan (export "caml_string_lessthan")
+   (func $caml_bytes_lessthan (export "caml_bytes_lessthan")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.lt_s (call $string_compare (local.get 0) (local.get 1))
+      (ref.i31 (i32.lt_s (call $bytes_compare (local.get 0) (local.get 1))
                          (i32.const 0))))
 
-   (export "caml_bytes_greaterequal" (func $caml_string_greaterequal))
-   (func $caml_string_greaterequal (export "caml_string_greaterequal")
+   (func $caml_bytes_greaterequal (export "caml_bytes_greaterequal")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.ge_s (call $string_compare (local.get 0) (local.get 1))
+      (ref.i31 (i32.ge_s (call $bytes_compare (local.get 0) (local.get 1))
                          (i32.const 0))))
 
-   (export "caml_bytes_greaterthan" (func $caml_string_greaterthan))
-   (func $caml_string_greaterthan (export "caml_string_greaterthan")
+   (func $caml_bytes_greaterthan (export "caml_bytes_greaterthan")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.gt_s (call $string_compare (local.get 0) (local.get 1))
+      (ref.i31 (i32.gt_s (call $bytes_compare (local.get 0) (local.get 1))
                          (i32.const 0))))
 
+(@if use-js-string
+(@then
+   (func (export "caml_bytes_of_string") (param $v (ref eq)) (result (ref eq))
+      (local $s externref) (local $b (ref $bytes)) (local $l i32) (local $i i32)
+      (local.set $s
+         (extern.convert_any
+            (struct.get $string 0
+               (ref.cast (ref $string) (local.get $v)))))
+      (local.set $l (call $string_length (local.get $s)))
+      (local.set $b (array.new $bytes (i32.const 0) (local.get $l)))
+      ;; loop from JS ?
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $l))
+            (then
+               (array.set $bytes (local.get $b) (local.get $i)
+                  (call $string_get (local.get $s) (local.get $i)))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (local.get $b))
+
+   (func (export "caml_string_of_bytes") (param $b (ref eq)) (result (ref eq))
+      (return
+         (struct.new $string
+            (call $jsbytes_of_bytes (ref.cast (ref $bytes) (local.get $b))))))
+)
+(@else
    (export "caml_bytes_of_string" (func $caml_string_of_bytes))
    (func $caml_string_of_bytes (export "caml_string_of_bytes")
       (param $v (ref eq)) (result (ref eq))
       (local.get $v))
+))
 
    (@string $Bytes_create "Bytes.create")
 
@@ -129,8 +254,39 @@
          (then (call $caml_invalid_argument (global.get $Bytes_create))))
       (array.new $bytes (i32.const 0) (local.get $l)))
 
-   (export "caml_blit_bytes" (func $caml_blit_string))
-   (func $caml_blit_string (export "caml_blit_string")
+(@if use-js-string
+(@then
+   (func (export "caml_blit_string")
+      (param $v1 (ref eq)) (param $vi1 (ref eq))
+      (param $v2 (ref eq)) (param $vi2 (ref eq))
+      (param $vn (ref eq)) (result (ref eq))
+      (local $s externref) (local $b (ref $bytes))
+      (local $i1 i32) (local $i2 i32) (local $n i32) (local $i i32)
+      (local.set $s
+         (extern.convert_any
+            (struct.get $string 0
+               (ref.cast (ref $string) (local.get $v1)))))
+      (local.set $i1 (i31.get_s (ref.cast (ref i31) (local.get $vi1))))
+      (local.set $b (ref.cast (ref $bytes) (local.get $v2)))
+      (local.set $i2 (i31.get_s (ref.cast (ref i31) (local.get $vi2))))
+      (local.set $n (i31.get_s (ref.cast (ref i31) (local.get $vn))))
+      ;; loop from JS??
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $n))
+            (then
+               (array.set $bytes (local.get $b)
+                  (i32.add (local.get $i2) (local.get $i))
+                  (call $string_get
+                     (local.get $s) (i32.add (local.get $i1) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (ref.i31 (i32.const 0)))
+)
+(@else
+   (export "caml_blit_string" (func $caml_blit_bytes))
+))
+
+   (func $caml_blit_bytes (export "caml_blit_bytes")
       (param $v1 (ref eq)) (param $i1 (ref eq))
       (param $v2 (ref eq)) (param $i2 (ref eq))
       (param $n (ref eq)) (result (ref eq))
@@ -152,7 +308,111 @@
          (i31.get_u (ref.cast (ref i31) (local.get $len))))
       (ref.i31 (i32.const 0)))
 
+(@if use-js-string
+(@then
+   (func (export "caml_string_get16")
+      (param $v (ref eq)) (param $i (ref eq)) (result (ref eq))
+      (local $s externref) (local $p i32)
+      (local.set $s
+         (extern.convert_any
+            (struct.get $string 0
+               (ref.cast (ref $string) (local.get $v)))))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (if (i32.lt_s (local.get $p) (i32.const 0))
+         (then (call $caml_bound_error)))
+      (if (i32.ge_u (i32.add (local.get $p) (i32.const 1))
+                    (call $string_length (local.get $s)))
+         (then (call $caml_bound_error)))
+      (ref.i31 (i32.or
+                  (call $string_get (local.get $s) (local.get $p))
+                  (i32.shl (call $string_get (local.get $s)
+                              (i32.add (local.get $p) (i32.const 1)))
+                           (i32.const 8)))))
+
+   (func (export "caml_string_get32")
+      (param $v (ref eq)) (param $i (ref eq)) (result i32)
+      (local $s externref) (local $p i32)
+      (local.set $s
+         (extern.convert_any
+            (struct.get $string 0
+               (ref.cast (ref $string) (local.get $v)))))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (if (i32.lt_s (local.get $p) (i32.const 0))
+         (then (call $caml_bound_error)))
+      (if (i32.ge_u (i32.add (local.get $p) (i32.const 3))
+                    (call $string_length (local.get $s)))
+         (then (call $caml_bound_error)))
+      (i32.or
+         (i32.or
+            (call $string_get (local.get $s) (local.get $p))
+            (i32.shl (call $string_get (local.get $s)
+                        (i32.add (local.get $p) (i32.const 1)))
+                     (i32.const 8)))
+         (i32.or
+            (i32.shl (call $string_get (local.get $s)
+                        (i32.add (local.get $p) (i32.const 2)))
+                     (i32.const 16))
+            (i32.shl (call $string_get (local.get $s)
+                        (i32.add (local.get $p) (i32.const 3)))
+                     (i32.const 24)))))
+
+   (func (export "caml_string_get64")
+      (param $v (ref eq)) (param $i (ref eq)) (result i64)
+      (local $s externref) (local $p i32)
+      (local.set $s
+         (extern.convert_any
+            (struct.get $string 0
+               (ref.cast (ref $string) (local.get $v)))))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (if (i32.lt_s (local.get $p) (i32.const 0))
+         (then (call $caml_bound_error)))
+      (if (i32.ge_u (i32.add (local.get $p) (i32.const 7))
+                    (call $string_length (local.get $s)))
+         (then (call $caml_bound_error)))
+      (i64.or
+         (i64.or
+            (i64.or
+               (i64.extend_i32_u
+                  (call $string_get (local.get $s) (local.get $p)))
+               (i64.shl (i64.extend_i32_u
+                           (call $string_get (local.get $s)
+                              (i32.add (local.get $p) (i32.const 1))))
+                        (i64.const 8)))
+            (i64.or
+               (i64.shl (i64.extend_i32_u
+                           (call $string_get (local.get $s)
+                              (i32.add (local.get $p) (i32.const 2))))
+                        (i64.const 16))
+               (i64.shl (i64.extend_i32_u
+                           (call $string_get (local.get $s)
+                              (i32.add (local.get $p) (i32.const 3))))
+                        (i64.const 24))))
+         (i64.or
+            (i64.or
+               (i64.shl (i64.extend_i32_u
+                           (call $string_get (local.get $s)
+                              (i32.add (local.get $p) (i32.const 4))))
+                        (i64.const 32))
+               (i64.shl (i64.extend_i32_u
+                           (call $string_get (local.get $s)
+                              (i32.add (local.get $p) (i32.const 5))))
+                        (i64.const 40)))
+            (i64.or
+               (i64.shl (i64.extend_i32_u
+                           (call $string_get (local.get $s)
+                              (i32.add (local.get $p) (i32.const 6))))
+                        (i64.const 48))
+               (i64.shl (i64.extend_i32_u
+                           (call $string_get (local.get $s)
+                              (i32.add (local.get $p) (i32.const 7))))
+                        (i64.const 56))))))
+)
+(@else
    (export "caml_string_get16" (func $caml_bytes_get16))
+   (export "caml_string_get32" (func $caml_bytes_get32))
+   (export "caml_string_get64" (func $caml_bytes_get64))
+))
+
    (func $caml_bytes_get16 (export "caml_bytes_get16")
       (param $v (ref eq)) (param $i (ref eq)) (result (ref eq))
       (local $s (ref $bytes)) (local $p i32)
@@ -169,7 +429,6 @@
                               (i32.add (local.get $p) (i32.const 1)))
                            (i32.const 8)))))
 
-   (export "caml_string_get32" (func $caml_bytes_get32))
    (func $caml_bytes_get32 (export "caml_bytes_get32")
       (param $v (ref eq)) (param $i (ref eq)) (result i32)
       (local $s (ref $bytes)) (local $p i32)
@@ -194,7 +453,6 @@
                         (i32.add (local.get $p) (i32.const 3)))
                      (i32.const 24)))))
 
-   (export "caml_string_get64" (func $caml_bytes_get64))
    (func $caml_bytes_get64 (export "caml_bytes_get64")
       (param $v (ref eq)) (param $i (ref eq)) (result i64)
       (local $s (ref $bytes)) (local $p i32)
@@ -317,6 +575,22 @@
          (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 56))))
       (ref.i31 (i32.const 0)))
 
+(@if use-js-string
+(@then
+   (func (export "caml_string_concat")
+      (param $s1 (ref eq)) (param $s2 (ref eq)) (result (ref eq))
+      (return
+         (struct.new $string
+            (any.convert_extern
+               (call $string_concat
+                  (extern.convert_any
+                    (struct.get $string 0
+                       (ref.cast (ref $string) (local.get $s1))))
+                  (extern.convert_any
+                    (struct.get $string 0
+                       (ref.cast (ref $string) (local.get $s2)))))))))
+)
+(@else
    (func (export "caml_string_concat")
       (param $vs1 (ref eq)) (param $vs2 (ref eq)) (result (ref eq))
       (local $s1 (ref $bytes)) (local $s2 (ref $bytes))
@@ -336,4 +610,19 @@
          (local.get $s) (local.get $l1) (local.get $s2) (i32.const 0)
          (local.get $l2))
       (local.get $s))
+))
+
+(@if use-js-string
+(@then
+   (func (export "caml_string_length") (param $s (ref eq)) (result i32)
+      (return_call $string_length
+         (extern.convert_any
+            (struct.get $string 0
+               (ref.cast (ref $string) (local.get $s))))))
+)
+(@else
+   (func (export "caml_string_length") (param $s (ref eq)) (result i32)
+      (array.len (ref.cast (ref $bytes) (local.get $s))))
+))
+
 )

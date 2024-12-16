@@ -17,6 +17,7 @@
    --binaryen=-g
    --binaryen-opt=-O3
    --set=effects=jspi
+   --disable=use-js-string
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    %{read-lines:args})))
@@ -32,6 +33,39 @@
    --binaryen=-g
    --binaryen-opt=-O3
    --set=effects=cps
+   --disable=use-js-string
+   --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   %{target}
+   %{read-lines:args})))
+
+(rule
+ (target runtime-jspi-use-js-string.wasm)
+ (deps
+  args
+  (glob_files *.wat))
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --set=effects=jspi
+   --enable=use-js-string
+   --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
+   %{target}
+   %{read-lines:args})))
+
+(rule
+ (target runtime-cps-use-js-string.wasm)
+ (deps
+  args
+  (glob_files *.wat))
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --set=effects=cps
+   --enable=use-js-string
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    %{read-lines:args})))

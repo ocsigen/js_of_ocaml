@@ -92,6 +92,7 @@ let build_runtime ~runtime_file =
           | `Jspi -> "jspi"
           | `Cps -> "cps"
           | `Disabled | `Double_translation -> assert false) )
+    ; "use-js-string", Wat_preprocess.Bool (Config.Flag.use_js_string ())
     ]
   in
   match
