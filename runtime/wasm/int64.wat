@@ -18,11 +18,25 @@
 (module
    (import "ints" "parse_sign_and_base"
       (func $parse_sign_and_base
-         (param (ref $bytes)) (result i32 i32 i32 i32)))
+(@if use-js-string
+(@then
+         (param externref)
+)
+(@else
+         (param (ref $bytes))
+))
+         (result i32 i32 i32 i32)))
    (import "ints" "parse_digit" (func $parse_digit (param i32) (result i32)))
    (import "ints" "parse_int_format"
       (func $parse_int_format
-         (param (ref $bytes)) (result i32 i32 i32 i32 i32)))
+(@if use-js-string
+(@then
+         (param externref)
+)
+(@else
+         (param (ref $bytes))
+))
+         (result i32 i32 i32 i32 i32)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "marshal" "caml_serialize_int_8"
       (func $caml_serialize_int_8 (param (ref eq)) (param i64)))
@@ -32,8 +46,31 @@
       (global $lowercase_hex_table (ref $chars)))
    (import "ints" "uppercase_hex_table"
       (global $uppercase_hex_table (ref $chars)))
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
+
+(@if use-js-string
+(@then
+   (import "wasm:js-string" "length"
+      (func $string_length (param externref) (result i32)))
+   (import "wasm:js-string" "charCodeAt"
+      (func $string_get (param externref i32) (result i32)))
+
+   (func $string_val (param $s (ref eq)) (result externref)
+      (extern.convert_any
+         (struct.get $string 0 (ref.cast (ref $string) (local.get $s)))))
+)
+(@else
+   (func $string_length (param $s (ref $bytes)) (result i32)
+      (array.len (local.get $s)))
+   (func $string_get (param $s (ref $bytes)) (param $i i32) (result i32)
+      (array.get $bytes (local.get $s) (local.get $i)))
+   (func $string_val (param $s (ref eq)) (result (ref $bytes))
+      (ref.cast (ref $bytes) (local.get $s)))
+))
 
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -45,7 +82,13 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
+(@if use-js-string
+(@then
+         (field $id (ref $string))
+)
+(@else
          (field $id (ref $bytes))
+))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -137,17 +180,24 @@
    ;; package "integers".
    (func $caml_i64_of_digits (export "caml_i64_of_digits")
       (param $base i32) (param $signedness i32) (param $sign i32)
-      (param $s (ref $bytes)) (param $i i32) (param $errmsg (ref eq))
+(@if use-js-string
+(@then
+      (param $s externref)
+)
+(@else
+      (param $s (ref $bytes))
+))
+      (param $i i32) (param $errmsg (ref eq))
       (result i64)
       (local $len i32) (local $d i32) (local $c i32)
       (local $res i64) (local $threshold i64)
-      (local.set $len (array.len (local.get $s)))
+      (local.set $len (call $string_length (local.get $s)))
       (if (i32.eqz (local.get $len))
         (then (call $caml_failwith (local.get $errmsg))))
       (local.set $threshold
          (i64.div_u (i64.const -1) (i64.extend_i32_u (local.get $base))))
       (local.set $d
-         (call $parse_digit (array.get_u $bytes (local.get $s) (local.get $i))))
+         (call $parse_digit (call $string_get (local.get $s) (local.get $i))))
       (if (i32.ge_u (local.get $d) (local.get $base))
          (then (call $caml_failwith (local.get $errmsg))))
       (local.set $res (i64.extend_i32_u (local.get $d)))
@@ -155,7 +205,7 @@
          (local.set $i (i32.add (local.get $i) (i32.const 1)))
          (if (i32.lt_s (local.get $i) (local.get $len))
             (then
-               (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
+               (local.set $c (call $string_get (local.get $s) (local.get $i)))
                (br_if $loop (i32.eq (local.get $c) (@char "_")))
                (local.set $d (call $parse_digit (local.get $c)))
                (if (i32.ge_u (local.get $d) (local.get $base))
@@ -186,10 +236,16 @@
       (local.get $res))
 
    (func (export "caml_int64_of_string") (param $v (ref eq)) (result (ref eq))
+(@if use-js-string
+(@then
+      (local $s externref)
+)
+(@else
       (local $s (ref $bytes))
+))
       (local $i i32) (local $signedness i32) (local $sign i32) (local $base i32)
       (local $t (tuple i32 i32 i32 i32))
-      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
+      (local.set $s (call $string_val (local.get $v)))
       (local.set $t (call $parse_sign_and_base (local.get $s)))
       (local.set $i (tuple.extract 4 0 (local.get $t)))
       (local.set $signedness (tuple.extract 4 1 (local.get $t)))
@@ -227,13 +283,20 @@
          (br_if $write (i64.ne (local.get $d) (i64.const 0))))
       (if (local.get $negative)
          (then (array.set $bytes (local.get $s) (i32.const 0) (@char "-"))))
-      (local.get $s))
+      (return_call $caml_string_of_bytes (local.get $s)))
 
    (type $chars (array i8))
 
    (func (export "caml_int64_format")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $d i64)
+(@if use-js-string
+(@then
+      (local $fmt externref)
+)
+(@else
+      (local $fmt (ref $bytes))
+))
       (local $s (ref $bytes))
       (local $format (tuple i32 i32 i32 i32 i32))
       (local $sign_style i32) (local $alternate i32) (local $signed i32)
@@ -242,14 +305,14 @@
       (local $i i32)
       (local $n i64)
       (local $chars (ref $chars))
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $fmt (call $string_val (local.get 0)))
       (local.set $d (struct.get $int64 1 (ref.cast (ref $int64) (local.get 1))))
-      (if (i32.eq (array.len (local.get $s)) (i32.const 2))
+      (if (i32.eq (call $string_length (local.get $fmt)) (i32.const 2))
          (then
-            (if (i32.eq (array.get_u $bytes (local.get $s) (i32.const 1))
+            (if (i32.eq (call $string_get (local.get $fmt) (i32.const 1))
                         (@char "d"))
                (then (return_call $format_int64_default (local.get $d))))))
-      (local.set $format (call $parse_int_format (local.get $s)))
+      (local.set $format (call $parse_int_format (local.get $fmt)))
       (local.set $sign_style (tuple.extract 5 0 (local.get $format)))
       (local.set $alternate (tuple.extract 5 1 (local.get $format)))
       (local.set $signed (tuple.extract 5 2 (local.get $format)))
@@ -315,6 +378,6 @@
                         (array.set $bytes (local.get $s) (i32.const 1)
                            (select (@char "X") (@char "x")
                               (local.get $uppercase)))))))))
-      (local.get $s))
+      (return_call $caml_string_of_bytes (local.get $s)))
 
 )

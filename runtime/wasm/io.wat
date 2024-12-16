@@ -72,6 +72,10 @@
       (func $dv_get_ui8 (param externref i32) (result i32)))
    (import "bindings" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
+   (import "bindings" "ta_blit_from_string"
+      (func $ta_blit_from_string
+         (param anyref) (param i32) (param (ref extern)) (param i32)
+         (param i32)))
    (import "custom" "custom_compare_id"
       (func $custom_compare_id
         (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -88,6 +92,8 @@
       (func $caml_handle_sys_error (param externref)))
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
+   (import "string" "caml_bytes_of_string"
+      (func $caml_bytes_of_string (param (ref eq)) (result (ref eq))))
 
    (import "bindings" "map_new" (func $map_new (result (ref extern))))
    (import "bindings" "map_get"
@@ -101,6 +107,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $offset_array (array (mut i64)))
 
    (type $compare
@@ -114,7 +121,13 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
+(@if use-js-string
+(@then
+         (field $id (ref $string))
+)
+(@else
          (field $id (ref $bytes))
+))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -850,10 +863,31 @@
       (if (i32.ge_u (local.get $len) (local.get $free))
          (then (local.set $len (local.get $free))))
       (local.set $buf (struct.get $channel $buffer (local.get $ch)))
+
       (call $ta_set (local.get $buf)
          (call $ta_subarray (local.get $d)
             (local.get $pos) (i32.add (local.get $pos) (local.get $len)))
          (local.get $curr))
+      (struct.set $channel $curr (local.get $ch)
+         (i32.add (local.get $curr) (local.get $len)))
+      (if (i32.ge_u (local.get $len) (local.get $free))
+         (then (drop (call $caml_flush_partial (local.get $ch)))))
+      (local.get $len))
+
+   (func $caml_putblock_string
+      (param $ch (ref $channel)) (param $s anyref) (param $pos i32)
+      (param $len i32) (result i32)
+      (local $free i32) (local $curr i32)
+      (local $buf (ref extern))
+      (local.set $curr (struct.get $channel $curr (local.get $ch)))
+      (local.set $free
+         (i32.sub (struct.get $channel $size (local.get $ch)) (local.get $curr)))
+      (if (i32.ge_u (local.get $len) (local.get $free))
+         (then (local.set $len (local.get $free))))
+      (local.set $buf (struct.get $channel $buffer (local.get $ch)))
+      (call $ta_blit_from_string
+         (local.get $s) (local.get $pos)
+         (local.get $buf) (local.get $curr) (local.get $len))
       (struct.set $channel $curr (local.get $ch)
          (i32.add (local.get $curr) (local.get $len)))
       (if (i32.ge_u (local.get $len) (local.get $free))
@@ -889,8 +923,34 @@
                (local.set $len (i32.sub (local.get $len) (local.get $written)))
                (br $loop)))))
 
-   (export "caml_ml_output_bytes" (func $caml_ml_output))
+(@if use-js-string
+(@then
    (func $caml_ml_output (export "caml_ml_output")
+      (param $ch (ref eq)) (param $s (ref eq)) (param $vpos (ref eq))
+      (param $vlen (ref eq)) (result (ref eq))
+      (local $pos i32) (local $len i32) (local $written i32)
+      (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      (loop $loop
+         (if (i32.gt_u (local.get $len) (i32.const 0))
+            (then
+               (local.set $written
+                  (call $caml_putblock_string
+                     (ref.cast (ref $channel) (local.get $ch))
+                     (struct.get $string 0
+                       (ref.cast (ref $string) (local.get $s)))
+                     (local.get $pos) (local.get $len)))
+               (local.set $pos (i32.add (local.get $pos) (local.get $written)))
+               (local.set $len (i32.sub (local.get $len) (local.get $written)))
+               (br $loop))))
+      (call $caml_flush_if_unbuffered (local.get $ch))
+      (ref.i31 (i32.const 0)))
+)
+(@else
+   (export "caml_ml_output" (func $caml_ml_output_bytes))
+))
+
+   (func $caml_ml_output_bytes (export "caml_ml_output_bytes")
       (param $ch (ref eq)) (param $s (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
       (local $pos i32) (local $len i32) (local $written i32)

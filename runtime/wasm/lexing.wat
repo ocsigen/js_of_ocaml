@@ -20,15 +20,38 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
-   (func $get (param $a (ref eq)) (param $i i32) (result i32)
-      (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get $a)))
+(@if use-js-string
+(@then
+   (import "wasm:js-string" "charCodeAt"
+      (func $string_get (param externref i32) (result i32)))
+
+   (func $string_val (param $s (ref eq)) (result externref)
+      (extern.convert_any
+         (struct.get $string 0 (ref.cast (ref $string) (local.get $s)))))
+)
+(@else
+   (func $string_get (param $s (ref $bytes)) (param $i i32) (result i32)
+      (array.get $bytes (local.get $s) (local.get $i)))
+   (func $string_val (param $s (ref eq)) (result (ref $bytes))
+      (ref.cast (ref $bytes) (local.get $s)))
+))
+
+   (func $get
+(@if use-js-string
+(@then
+      (param $s externref)
+)
+(@else
+      (param $s (ref $bytes))
+))
+      (param $i i32) (result i32)
       (local.set $i (i32.add (local.get $i) (local.get $i)))
       (i32.extend16_s
-         (i32.or (array.get_u $bytes (local.get $s) (local.get $i))
+         (i32.or (call $string_get (local.get $s) (local.get $i))
             (i32.shl
-               (array.get_u $bytes (local.get $s)
+               (call $string_get (local.get $s)
                   (i32.add (local.get $i) (i32.const 1)))
                (i32.const 8)))))
 
@@ -65,12 +88,23 @@
       (local $buffer (ref $bytes))
       (local $vpos (ref eq)) (local $action (ref eq))
       (local $pos i32) (local $base i32) (local $backtrk i32)
+(@if use-js-string
+(@then
+      (local $lex_base externref)
+      (local $lex_backtrk externref)
+      (local $lex_check externref)
+      (local $lex_check_code externref)
+      (local $lex_trans externref)
+      (local $lex_default externref)
+)
+(@else
       (local $lex_base (ref $bytes))
       (local $lex_backtrk (ref $bytes))
       (local $lex_check (ref $bytes))
       (local $lex_check_code (ref $bytes))
       (local $lex_trans (ref $bytes))
       (local $lex_default (ref $bytes))
+))
       (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
       (local.set $lexbuf (ref.cast (ref $block) (local.get $vlexbuf)))
       (local.set $state
@@ -91,22 +125,22 @@
          (else
             (local.set $state (i32.sub (i32.const -1) (local.get $state)))))
       (local.set $lex_base
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_base))))
       (local.set $lex_backtrk
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_backtrk))))
       (local.set $lex_check
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_check))))
       (local.set $lex_check_code
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_check_code))))
       (local.set $lex_trans
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_trans))))
       (local.set $lex_default
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_default))))
       (loop $loop
          (local.set $base (call $get (local.get $lex_base) (local.get $state)))
@@ -182,7 +216,14 @@
          (br $loop)))
 
    (func $run_mem
-      (param $s (ref $bytes)) (param $i i32) (param $lexbuf (ref $block))
+(@if use-js-string
+(@then
+      (param $s externref)
+)
+(@else
+      (param $s (ref $bytes))
+))
+      (param $i i32) (param $lexbuf (ref $block))
       (param $curr_pos (ref eq))
       (local $dst i32) (local $src i32)
       (local $mem (ref $block))
@@ -190,11 +231,11 @@
          (ref.cast (ref $block)
             (array.get $block (local.get $lexbuf) (global.get $lex_mem))))
       (loop $loop
-         (local.set $dst (array.get_u $bytes (local.get $s) (local.get $i)))
+         (local.set $dst (call $string_get (local.get $s) (local.get $i)))
          (if (i32.eq (local.get $dst) (i32.const 0xff))
             (then (return)))
          (local.set $src
-            (array.get_u $bytes (local.get $s)
+            (call $string_get (local.get $s)
               (i32.add (local.get $i) (i32.const 1))))
          (local.set $i (i32.add (local.get $i) (i32.const 2)))
          (array.set $block (local.get $mem)
@@ -208,7 +249,14 @@
          (br $loop)))
 
    (func $run_tag
-      (param $s (ref $bytes)) (param $i i32) (param $lexbuf (ref $block))
+(@if use-js-string
+(@then
+      (param $s externref)
+)
+(@else
+      (param $s (ref $bytes))
+))
+      (param $i i32) (param $lexbuf (ref $block))
       (return_call $run_mem (local.get $s) (local.get $i) (local.get $lexbuf)
          (ref.i31 (i32.const -1))))
 
@@ -224,6 +272,21 @@
       (local $vpos (ref eq)) (local $action (ref eq))
       (local $pos i32) (local $base i32) (local $backtrk i32)
       (local $pc_off i32) (local $base_code i32)
+(@if use-js-string
+(@then
+      (local $lex_code externref)
+      (local $lex_base externref)
+      (local $lex_base_code externref)
+      (local $lex_backtrk externref)
+      (local $lex_backtrk_code externref)
+      (local $lex_check externref)
+      (local $lex_check_code externref)
+      (local $lex_trans externref)
+      (local $lex_trans_code externref)
+      (local $lex_default externref)
+      (local $lex_default_code externref)
+)
+(@else
       (local $lex_code (ref $bytes))
       (local $lex_base (ref $bytes))
       (local $lex_base_code (ref $bytes))
@@ -235,6 +298,7 @@
       (local $lex_trans_code (ref $bytes))
       (local $lex_default (ref $bytes))
       (local $lex_default_code (ref $bytes))
+))
       (local.set $tbl (ref.cast (ref $block) (local.get $vtbl)))
       (local.set $lexbuf (ref.cast (ref $block) (local.get $vlexbuf)))
       (local.set $state
@@ -255,37 +319,37 @@
          (else
             (local.set $state (i32.sub (i32.const -1) (local.get $state)))))
       (local.set $lex_code
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_code))))
       (local.set $lex_base
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_base))))
       (local.set $lex_base_code
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_base_code))))
       (local.set $lex_backtrk
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_backtrk))))
       (local.set $lex_backtrk_code
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_backtrk_code))))
       (local.set $lex_check
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_check))))
       (local.set $lex_check_code
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_check_code))))
       (local.set $lex_trans
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_trans))))
       (local.set $lex_trans_code
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_trans_code))))
       (local.set $lex_default
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_default))))
       (local.set $lex_default_code
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tbl) (global.get $lex_default_code))))
       (loop $loop
          (local.set $base (call $get (local.get $lex_base) (local.get $state)))

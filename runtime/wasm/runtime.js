@@ -141,7 +141,27 @@
     return (((h + (h << 2)) | 0) + (0xe6546b64 | 0)) | 0;
   }
   function hash_string(h, s) {
-    for (var i = 0; i < s.length; i++) h = hash_int(h, s.charCodeAt(i));
+    const len = s.length;
+    for (var i = 0; i + 4 <= len; i += 4) {
+      var w =
+        s.charCodeAt(i) |
+        (s.charCodeAt(i + 1) << 8) |
+        (s.charCodeAt(i + 2) << 16) |
+        (s.charCodeAt(i + 3) << 24);
+      h = hash_int(h, w);
+    }
+    w = 0;
+    switch (len & 3) {
+      case 3:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+        w = s.charCodeAt(i + 2) << 16;
+      case 2:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+        w |= s.charCodeAt(i + 1) << 8;
+      case 1:
+        w |= s.charCodeAt(i);
+        h = hash_int(h, w);
+    }
     return h ^ s.length;
   }
 
@@ -280,6 +300,17 @@
     dv_set_i16: call.bind(DV.setInt16),
     dv_set_i8: call.bind(DV.setInt8),
     littleEndian: new Uint8Array(new Uint32Array([1]).buffer)[0],
+    ta_blit_from_string: (s, p1, a, p2, l) => {
+      for (let i = 0; i < l; i++) a[p2 + i] = s.charCodeAt(p1 + i);
+    },
+    ta_to_string: (a) => {
+      let len = a.length;
+      if (len <= 4096) return String.fromCharCode(...a);
+      var s = "";
+      for (let i = 0; 0 < len; i += 1024, len -= 1024)
+        s += String.fromCharCode(...a.subarray(i, i + Math.min(len, 1024)));
+      return s;
+    },
     wrap_callback: (f) =>
       function (...args) {
         if (args.length === 0) {
@@ -553,10 +584,15 @@
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
-    compare: (s1, s2) => (s1 < s2 ? -1 : +(s1 > s2)),
+    compare: (s1, s2) => (s1 === s2 ? 0 : s1 < s2 ? -1 : 1),
     decodeStringFromUTF8Array: () => "",
     encodeStringToUTF8Array: () => 0,
     fromCharCodeArray: () => "",
+    length: (s) => s.length,
+    charCodeAt: (s, i) => s.charCodeAt(i),
+    concat: (s1, s2) => s1.concat(s2),
+    equals: (s1, s2) => +(s1 === s2),
+    substring: (s, i, j) => s.substring(i, j),
   };
   const imports = Object.assign(
     {
