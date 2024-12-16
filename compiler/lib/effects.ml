@@ -558,26 +558,22 @@ let rewrite_instr ~st (instr : instr) : instr =
       assert false
   | _ -> instr
 
+let call_exact flow_info (f : Var.t) nargs : bool =
+  (* If [f] is unknown to the global flow analysis, then it was introduced by
+     the lambda lifting and we don't have exactness about it. *)
+  Var.idx f < Var.Tbl.length flow_info.Global_flow.info_approximation
+  && Global_flow.exact_call flow_info f nargs
+
 let cps_instr ~st (instr : instr) : instr list =
   match instr with
   | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) when double_translate () ->
       (* When double translation is enabled, we just call [f] in direct style.
          Otherwise, the runtime primitive is used. *)
       let unit = Var.fresh_n "unit" in
-      let exact =
-        Var.idx f < Var.Tbl.length st.flow_info.info_approximation
-        && Global_flow.exact_call st.flow_info f 1
-      in
       [ Let (unit, Constant (Int Targetint.zero))
-      ; Let (x, Apply { exact; f; args = [ unit ] })
+      ; Let (x, Apply { exact = call_exact st.flow_info f 1; f; args = [ unit ] })
       ]
   | _ -> [ rewrite_instr ~st instr ]
-
-let call_exact flow_info (f : Var.t) nargs : bool =
-  (* If [f] is unknown to the global flow analysis, then it was introduced by
-     the lambda lifting and we don't have exactness about it. *)
-  Var.idx f < Var.Tbl.length flow_info.Global_flow.info_approximation
-  && Global_flow.exact_call flow_info f nargs
 
 let cps_block ~st ~k ~orig_pc block =
   debug_print "cps_block %d\n" orig_pc;
