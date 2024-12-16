@@ -85,7 +85,7 @@ functions are optimized:
 <<a_manual chapter="tailcall" |More about tail call optimization>>.
 
 Effect handlers are fully supported with the
-{{{--effects={cps,double-translation}}}} flag. Effect support is disabled by
+{{{--enable=effects}}} flag. Effect support is disabled by
 default for now since effects are not widely used at the moment and the
 generated code can be slower, larger and less readable. See the dedicated
 manual section about effects for details.
