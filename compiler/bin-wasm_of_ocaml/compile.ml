@@ -269,7 +269,7 @@ let run
     ; include_dirs
     ; sourcemap_root
     ; sourcemap_don't_inline_content
-    ; effects
+    ; effects = _
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
