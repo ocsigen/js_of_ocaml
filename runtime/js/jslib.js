@@ -107,7 +107,7 @@ function caml_callback(f, args) {
     caml_exn_stack = 0;
     caml_fiber_stack = {
       h: [0, 0, 0, uncaught_effect_handler],
-      sh:null,
+      sh: null,
       r: { k: 0, x: 0, e: 0 },
     };
     var res = {

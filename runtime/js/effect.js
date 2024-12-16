@@ -84,12 +84,12 @@ function caml_resume_stack(stack, last, k) {
     caml_raise_constant(
       caml_named_value("Effect.Continuation_already_resumed"),
     );
-  if(last === 0) {
+  if (last === 0) {
     last = stack;
   }
   var fiber = {
-      h: last.sh,
-      r: { k: k, x: caml_exn_stack, e: caml_fiber_stack },
+    h: last.sh,
+    r: { k: k, x: caml_exn_stack, e: caml_fiber_stack },
   };
   last.r.e = fiber;
   caml_fiber_stack = stack;
@@ -115,10 +115,18 @@ function caml_perform_effect(eff, cont, last, k0) {
   var handlers = caml_fiber_stack.h;
   var handler = handlers[3];
   if (!cont) {
-    var last_fiber = {r:{k:k0, x:caml_exn_stack, e:0},h:null, sh:handlers};
+    var last_fiber = {
+      r: { k: k0, x: caml_exn_stack, e: 0 },
+      h: null,
+      sh: handlers,
+    };
     cont = [245 /*continuation*/, last_fiber, 0];
   } else {
-    var last_fiber = {r:{k:k0, x:caml_exn_stack, e:0},h:last.sh, sh:handlers};
+    var last_fiber = {
+      r: { k: k0, x: caml_exn_stack, e: 0 },
+      h: last.sh,
+      sh: handlers,
+    };
     last.r.e = last_fiber;
   }
   // Move to parent fiber and execute the effect handler there
@@ -150,7 +158,7 @@ function caml_alloc_stack(hv, hx, hf) {
     return call(2, e);
   }
   var handlers = [0, hv, hx, hf];
-  return {r:{k:hval, x:[0, hexn, 0], e:0}, h:null, sh:handlers};
+  return { r: { k: hval, x: [0, hexn, 0], e: 0 }, h: null, sh: handlers };
 }
 
 //Provides: caml_alloc_stack
@@ -178,7 +186,7 @@ function caml_continuation_use_and_update_handler_noexc(
   heff,
 ) {
   var stack = caml_continuation_use_noexc(cont);
-  if(stack == 0) return stack;
+  if (stack === 0) return stack;
   cont[2].sh = [0, hval, hexn, heff];
   return stack;
 }
