@@ -115,6 +115,7 @@ function caml_perform_effect(eff, cont, last, k0) {
   var handlers = caml_fiber_stack.h;
   var handler = handlers[3];
   if (!cont) {
+    //Perform
     var last_fiber = {
       r: { k: k0, x: caml_exn_stack, e: 0 },
       h: null,
@@ -122,6 +123,7 @@ function caml_perform_effect(eff, cont, last, k0) {
     };
     cont = [245 /*continuation*/, last_fiber, 0];
   } else {
+    //Reperform
     var last_fiber = {
       r: { k: k0, x: caml_exn_stack, e: 0 },
       h: last.sh,
