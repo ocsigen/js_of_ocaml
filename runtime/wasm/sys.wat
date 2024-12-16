@@ -50,6 +50,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $float (struct (field f64)))
 
    (tag $ocaml_exit (export "ocaml_exit") (param i32))
@@ -148,14 +149,14 @@
       ;; ZZZ
       (ref.i31 (i32.const 0)))
 
-   (data $Unix "Unix")
+   (#string $Unix "Unix")
 
    (func (export "caml_sys_get_config")
       (param (ref eq)) (result (ref eq))
       ;; ZZZ
       ;; (call $log_js (string.const "caml_sys_get_config"))
       (array.new_fixed $block 4 (ref.i31 (i32.const 0))
-         (array.new_data $bytes $Unix (i32.const 0) (i32.const 4))
+         (global.get $Unix)
          (ref.i31 (i32.const 32))
          (ref.i31 (i32.const 0))))
 
@@ -163,11 +164,13 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
+   (#string $empty_string "")
+
    (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $bytes 0))
+      (global.get $empty_string))
 
    (func (export "caml_runtime_parameters") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $bytes 0))
+      (global.get $empty_string))
 
    (func (export "caml_install_signal_handler")
       (param (ref eq) (ref eq)) (result (ref eq))
@@ -185,7 +188,7 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (global.get $caml_runtime_warnings)))
 
-   (data $toString "toString")
+   (#string $toString "toString")
 
    (func $caml_handle_sys_error (export "caml_handle_sys_error")
       (param $exn externref)
@@ -193,6 +196,6 @@
          (call $caml_string_of_jsstring
             (call $caml_js_meth_call
                (call $wrap (any.convert_extern (local.get $exn)))
-               (array.new_data $bytes $toString (i32.const 0) (i32.const 8))
+               (global.get $toString)
                (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
 )

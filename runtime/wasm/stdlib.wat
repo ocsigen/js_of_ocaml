@@ -35,6 +35,8 @@
    (import "string" "caml_string_concat"
       (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
    (import "printexc" "caml_format_exception"
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit (param i32)))
@@ -44,10 +46,11 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
    (type $assoc
       (struct
-         (field (ref $bytes))
+         (field (ref eq))
          (field (mut (ref eq)))
          (field (mut (ref null $assoc)))))
 
@@ -76,7 +79,7 @@
             (br $loop))))
 
    (func $caml_named_value (export "caml_named_value")
-      (param $s (ref $bytes)) (result (ref null eq))
+      (param $s (ref eq)) (result (ref null eq))
       (block $not_found
          (return
             (struct.get $assoc 1
@@ -114,9 +117,7 @@
          (return (ref.i31 (i32.const 0))))
       (array.set $assoc_array
          (global.get $named_value_table) (local.get $h)
-         (struct.new $assoc
-            (ref.cast (ref $bytes) (local.get 0))
-            (local.get 1) (local.get $r)))
+         (struct.new $assoc (local.get 0) (local.get 1) (local.get $r)))
       (ref.i31 (i32.const 0)))
 
    ;; Used only for testing (tests-jsoo/bin), but inconvenient to pull out
@@ -180,9 +181,9 @@
 
    (type $func (func (result (ref eq))))
 
-   (data $fatal_error "Fatal error: exception ")
-   (data $handle_uncaught_exception "Printexc.handle_uncaught_exception")
-   (data $do_at_exit "Pervasives.do_at_exit")
+   (#string $fatal_error "Fatal error: exception ")
+   (#string $handle_uncaught_exception "Printexc.handle_uncaught_exception")
+   (#string $do_at_exit "Pervasives.do_at_exit")
 
    (global $uncaught_exception (mut externref) (ref.null extern))
 
@@ -209,9 +210,7 @@
                      (call $caml_callback_2
                         (br_on_null $not_registered
                            (call $caml_named_value
-                               (array.new_data $bytes
-                                  $handle_uncaught_exception
-                                  (i32.const 0) (i32.const 34))))
+                              (global.get $handle_uncaught_exception)))
                         (local.get $exn)
                         (ref.i31 (i32.const 0))))
                   (br $exit))
@@ -219,19 +218,17 @@
                   (drop
                      (call $caml_callback_1
                         (br_on_null $null
-                           (call $caml_named_value
-                              (array.new_data $bytes $do_at_exit
-                                 (i32.const 0) (i32.const 21))))
+                           (call $caml_named_value (global.get $do_at_exit)))
                         (ref.i31 (i32.const 0)))))
                (call $write (i32.const 2)
                   (call $unwrap
                      (call $caml_jsstring_of_string
                         (call $caml_string_concat
-                           (array.new_data $bytes $fatal_error
-                              (i32.const 0) (i32.const 23))
+                           (global.get $fatal_error)
                            (call $caml_string_concat
                               (call $caml_format_exception (local.get $exn))
-                              (array.new_fixed $bytes 1
-                                 (i32.const 10)))))))) ;; `\n`
-               (call $exit (i32.const 2)))))
+                              (call $caml_string_of_bytes
+                                 (array.new_fixed $bytes 1
+                                    (i32.const 10))))))))) ;; `\n`
+            (call $exit (i32.const 2)))))
 )

@@ -25,9 +25,13 @@
       (func $caml_is_continuation (param (ref eq)) (result i32)))
    (import "effect" "caml_trampoline_ref"
       (global $caml_trampoline_ref (mut (ref null $function_1))))
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
+   (type $js (struct (field anyref)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
@@ -216,6 +220,8 @@
                (struct.get $float 0
                   (br_on_cast_fail $not_float (ref eq) (ref $float)
                      (local.get 0)))))))
+      (if (ref.test (ref $js) (local.get 0))
+         (then (return (local.get 0))))
       (call $caml_dup_custom (local.get 0)))
 
    (func (export "caml_obj_with_tag")
@@ -258,6 +264,13 @@
          (then (return (ref.i31 (global.get $closure_tag)))))
       (if (call $caml_is_continuation (local.get $v))
          (then (return (ref.i31 (global.get $cont_tag)))))
+      (drop (block $not_string (result (ref eq))
+         (if (call $jsstring_test
+                (struct.get $js 0
+                   (br_on_cast_fail $not_string (ref eq) (ref $js)
+                      (local.get $v))))
+            (then (return (ref.i31 (global.get $string_tag)))))
+         (ref.i31 (i32.const 0))))
       (ref.i31 (global.get $abstract_tag)))
 
    (func (export "caml_obj_make_forward")
@@ -340,21 +353,18 @@
          (local.get $v))
       (ref.i31 (i32.const 0)))
 
-   (data $not_implemented "Obj.add_offset is not supported")
+   (#string $not_implemented "Obj.add_offset is not supported")
 
    (func (export "caml_obj_add_offset")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $caml_failwith
-         (array.new_data $bytes $not_implemented (i32.const 0) (i32.const 31)))
+      (call $caml_failwith (global.get $not_implemented))
       (ref.i31 (i32.const 0)))
 
-   (data $truncate_not_implemented "Obj.truncate is not supported")
+   (#string $truncate_not_implemented "Obj.truncate is not supported")
 
    (func (export "caml_obj_truncate")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $caml_failwith
-         (array.new_data $bytes $truncate_not_implemented
-            (i32.const 0) (i32.const 29)))
+      (call $caml_failwith (global.get $truncate_not_implemented))
       (ref.i31 (i32.const 0)))
 
    (global $method_cache (mut (ref $int_array))

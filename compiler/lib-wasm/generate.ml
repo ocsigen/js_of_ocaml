@@ -285,22 +285,29 @@ module Generate (Target : Target_sig.S) = struct
                 seq (Memory.array_set x y z) Value.unit
             | Extern "caml_floatarray_unsafe_set", [ x; y; z ] ->
                 seq (Memory.float_array_set x y z) Value.unit
-            | Extern ("caml_string_unsafe_get" | "caml_bytes_unsafe_get"), [ x; y ] ->
-                Memory.bytes_get x y
-            | Extern ("caml_string_unsafe_set" | "caml_bytes_unsafe_set"), [ x; y; z ] ->
+            | Extern "caml_string_unsafe_get", [ x; y ] -> Memory.string_get x y
+            | Extern "caml_bytes_unsafe_get", [ x; y ] -> Memory.bytes_get x y
+            | Extern "caml_bytes_unsafe_set", [ x; y; z ] ->
                 seq (Memory.bytes_set x y z) Value.unit
-            | Extern ("caml_string_get" | "caml_bytes_get"), [ x; y ] ->
+            | Extern "caml_string_get", [ x; y ] ->
+                seq
+                  (let* cond = Arith.uge (Value.int_val y) (Memory.string_length x) in
+                   instr (W.Br_if (label_index context bound_error_pc, cond)))
+                  (Memory.string_get x y)
+            | Extern "caml_bytes_get", [ x; y ] ->
                 seq
                   (let* cond = Arith.uge (Value.int_val y) (Memory.bytes_length x) in
                    instr (W.Br_if (label_index context bound_error_pc, cond)))
                   (Memory.bytes_get x y)
-            | Extern ("caml_string_set" | "caml_bytes_set"), [ x; y; z ] ->
+            | Extern "caml_bytes_set", [ x; y; z ] ->
                 seq
                   (let* cond = Arith.uge (Value.int_val y) (Memory.bytes_length x) in
                    let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
                    Memory.bytes_set x y z)
                   Value.unit
-            | Extern ("caml_ml_string_length" | "caml_ml_bytes_length"), [ x ] ->
+            | Extern "caml_ml_string_length", [ x ] ->
+                Value.val_int (Memory.string_length x)
+            | Extern "caml_ml_bytes_length", [ x ] ->
                 Value.val_int (Memory.bytes_length x)
             | Extern "%int_add", [ x; y ] -> Value.int_add x y
             | Extern "%int_sub", [ x; y ] -> Value.int_sub x y
@@ -776,7 +783,6 @@ module Generate (Target : Target_sig.S) = struct
                     ( Extern
                         ( "caml_string_get"
                         | "caml_bytes_get"
-                        | "caml_string_set"
                         | "caml_bytes_set"
                         | "caml_check_bound"
                         | "caml_check_bound_gen"
