@@ -21,6 +21,10 @@
       (func $caml_ml_output
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
          (result (ref eq))))
+   (import "io" "caml_ml_output_bytes"
+      (func $caml_ml_output_bytes
+         (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
+         (result (ref eq))))
    (import "io" "caml_ml_flush"
       (func $caml_ml_flush (param (ref eq)) (result (ref eq))))
    (import "ints" "caml_format_int"
@@ -29,19 +33,64 @@
    (import "float" "caml_format_float"
       (func $caml_format_float
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_string_length"
+      (func $caml_string_length (param (ref eq)) (result i32)))
 
    (type $float (struct (field f64)))
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
-   (func $get (param $a (ref eq)) (param $i i32) (result i32)
-      (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get $a)))
+(#if use-js-string
+(#then
+   (import "wasm:js-string" "substring"
+      (func $string_substring (param externref i32 i32) (result (ref extern))))
+   (import "wasm:js-string" "charCodeAt"
+      (func $string_get (param externref i32) (result i32)))
+
+   (func $string_sub
+      (param $s externref) (param $i i32) (param $l i32) (result (ref eq))
+      (struct.new $string
+         (any.convert_extern
+            (call $string_substring
+               (local.get $s)
+               (local.get $i)
+               (i32.add (local.get $i) (local.get $l))))))
+
+   (func $string_val (param $s (ref eq)) (result externref)
+      (extern.convert_any
+         (struct.get $string 0 (ref.cast (ref $string) (local.get $s)))))
+)
+(#else
+   (func $string_sub
+      (param $s (ref $bytes)) (param $i i32) (param $l i32) (result (ref eq))
+      (local $s' (ref $bytes))
+      (local.set $s' (array.new $bytes (i32.const 0) (local.get $l)))
+      (array.copy $bytes $bytes
+         (local.get $s') (i32.const 0)
+         (local.get $s) (local.get $i)
+         (local.get $l))
+      (local.get $s'))
+   (func $string_get (param $s (ref $bytes)) (param $i i32) (result i32)
+      (array.get $bytes (local.get $s) (local.get $i)))
+   (func $string_val (param $s (ref eq)) (result (ref $bytes))
+      (ref.cast (ref $bytes) (local.get $s)))
+))
+
+   (func $get
+(#if use-js-string
+(#then
+      (param $s externref)
+)
+(#else
+      (param $s (ref $bytes))
+))
+      (param $i i32) (result i32)
       (local.set $i (i32.add (local.get $i) (local.get $i)))
       (i32.extend16_s
-         (i32.or (array.get_u $bytes (local.get $s) (local.get $i))
+         (i32.or (call $string_get (local.get $s) (local.get $i))
             (i32.shl
-               (array.get_u $bytes (local.get $s)
+               (call $string_get (local.get $s)
                   (i32.add (local.get $i) (i32.const 1)))
                (i32.const 8)))))
 
@@ -100,29 +149,41 @@
    (global $tbl_names_const i32 (i32.const 15))
    (global $tbl_names_block i32 (i32.const 16))
 
-   (func $strlen (param $s (ref $bytes)) (param $p i32) (result i32)
+   (func $strlen
+(#if use-js-string
+(#then
+      (param $s externref)
+)
+(#else
+      (param $s (ref $bytes))
+))
+      (param $p i32) (result i32)
       (local $i i32)
       (local.set $i (local.get $p))
       (loop $loop
-         (if (i32.ne (array.get_u $bytes (local.get $s) (local.get $i))
+         (if (i32.ne (call $string_get (local.get $s) (local.get $i))
                (i32.const 0))
             (then
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
       (i32.sub (local.get $i) (local.get $p)))
 
-   (data $unknown_token "<unknown token>")
+   (#string $unknown_token "<unknown token>")
    (func $token_name
       (param $vnames (ref eq)) (param $number i32) (result (ref eq))
-      (local $names (ref $bytes)) (local $i i32) (local $len i32)
-      (local $name (ref $bytes))
-      (local.set $names (ref.cast (ref $bytes) (local.get $vnames)))
+(#if use-js-string
+(#then
+      (local $names externref)
+)
+(#else
+      (local $names (ref $bytes))
+))
+      (local $i i32) (local $len i32)
+      (local.set $names (call $string_val (local.get $vnames)))
       (loop $loop
-         (if (i32.eqz (array.get_u $bytes (local.get $names) (local.get $i)))
+         (if (i32.eqz (call $string_get (local.get $names) (local.get $i)))
             (then
-               (return
-                  (array.new_data $bytes $unknown_token
-                     (i32.const 0) (i32.const 15)))))
+               (return (global.get $unknown_token))))
          (if (i32.ne (local.get $number) (i32.const 0))
             (then
                (local.set $i
@@ -132,35 +193,40 @@
                (local.set $number (i32.sub (local.get $number) (i32.const 1)))
                (br $loop))))
       (local.set $len (call $strlen (local.get $names) (local.get $i)))
-      (local.set $name (array.new $bytes (i32.const 0) (local.get $len)))
-      (array.copy $bytes $bytes
-         (local.get $name) (i32.const 0)
-         (local.get $names) (local.get $i) (local.get $len))
-      (local.get $name))
+      (return_call $string_sub
+         (local.get $names) (local.get $i) (local.get $len)))
 
-   (func $output (param (ref eq))
+   (func $output (param $s (ref eq))
+      (drop
+         (call $caml_ml_output (global.get $caml_stderr)
+            (local.get $s) (ref.i31 (i32.const 0))
+            (ref.i31 (call $caml_string_length (local.get $s))))))
+
+   (func $output_bytes (param (ref eq))
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (drop
-         (call $caml_ml_output (global.get $caml_stderr)
+         (call $caml_ml_output_bytes (global.get $caml_stderr)
             (local.get $s) (ref.i31 (i32.const 0))
             (ref.i31 (array.len (local.get $s))))))
 
    (func $output_nl
       (drop
-         (call $caml_ml_output (global.get $caml_stderr)
+         (call $caml_ml_output_bytes (global.get $caml_stderr)
             (array.new_fixed $bytes 1 (i32.const 10))
             (ref.i31 (i32.const 0)) (ref.i31 (i32.const 1))))
       (drop (call $caml_ml_flush (global.get $caml_stderr))))
 
+   (#string $int_format "%d")
+
    (func $output_int (param i32)
       (call $output
-         (call $caml_format_int
-            (array.new_fixed $bytes 2 (i32.const 37) (i32.const 100))
+         (call $caml_format_int (global.get $int_format)
             (ref.i31 (local.get 0)))))
 
-   (data $State "State ")
-   (data $read_token ": read token ")
+   (#string $State "State ")
+   (#string $read_token ": read token ")
+   (#string $float_format "%g")
 
    (func $print_token
       (param $tables (ref $block)) (param $state i32) (param $tok (ref eq))
@@ -168,11 +234,9 @@
       (local $v (ref eq))
       (if (ref.test (ref i31) (local.get $tok))
          (then
-            (call $output
-               (array.new_data $bytes $State (i32.const 0) (i32.const 6)))
+            (call $output (global.get $State))
             (call $output_int (local.get $state))
-            (call $output
-               (array.new_data $bytes $read_token (i32.const 0) (i32.const 13)))
+            (call $output (global.get $read_token))
             (call $output
                (call $token_name
                   (array.get $block (local.get $tables)
@@ -180,11 +244,9 @@
                   (i31.get_u (ref.cast (ref i31) (local.get $tok)))))
             (call $output_nl))
          (else
-            (call $output
-               (array.new_data $bytes $State (i32.const 0) (i32.const 6)))
+            (call $output (global.get $State))
             (call $output_int (local.get $state))
-            (call $output
-               (array.new_data $bytes $read_token (i32.const 0) (i32.const 13)))
+            (call $output (global.get $read_token))
             (local.set $b (ref.cast (ref $block) (local.get $tok)))
             (call $output
                (call $token_name
@@ -193,7 +255,7 @@
                   (i31.get_u
                      (ref.cast (ref i31)
                         (array.get $block (local.get $b) (i32.const 0))))))
-            (call $output (array.new_fixed $bytes 1 (i32.const 40))) ;; "("
+            (call $output_bytes (array.new_fixed $bytes 1 (i32.const 40))) ;; "("
             (local.set $v (array.get $block (local.get $b) (i32.const 1)))
             (if (ref.test (ref i31) (local.get $v))
                (then
@@ -204,22 +266,20 @@
             (else (if (ref.test (ref $float) (local.get $v))
                (then
                   (call $output
-                     (call $caml_format_float
-                        (array.new_fixed $bytes 2
-                           (i32.const 37) (i32.const 103))
+                     (call $caml_format_float (global.get $float_format)
                         (local.get $v))))
             (else
-               (call $output
+               (call $output_bytes
                   (array.new_fixed $bytes 1 (i32.const 95))))))))) ;; '_'
-            (call $output (array.new_fixed $bytes 1 (i32.const 41))) ;; ")"
+            (call $output_bytes (array.new_fixed $bytes 1 (i32.const 41))) ;; ")"
             (call $output_nl))))
 
-   (data $recovering_in_state "Recovering in state ")
-   (data $discarding_state "Discarding state ")
-   (data $no_more_states_to_discard "No more states to discard")
-   (data $discarding_last_token_read "Discarding last token read")
-   (data $shift_to_state ": shift to state ")
-   (data $reduce_by_rule ": reduce by rule ")
+   (#string $recovering_in_state "Recovering in state ")
+   (#string $discarding_state "Discarding state ")
+   (#string $no_more_states_to_discard "No more states to discard")
+   (#string $discarding_last_token_read "Discarding last token read")
+   (#string $shift_to_state ": shift to state ")
+   (#string $reduce_by_rule ": reduce by rule ")
 
    (func (export "caml_parse_engine")
       (param $vtables (ref eq)) (param $venv (ref eq)) (param $vcmd (ref eq))
@@ -230,6 +290,19 @@
       (local $errflag i32)
       (local $tables (ref $block)) (local $env (ref $block)) (local $cmd i32)
       (local $arg (ref $block))
+(#if use-js-string
+(#then
+      (local $tbl_defred externref)
+      (local $tbl_sindex externref)
+      (local $tbl_check externref)
+      (local $tbl_rindex externref)
+      (local $tbl_table externref)
+      (local $tbl_len externref)
+      (local $tbl_lhs externref)
+      (local $tbl_gindex externref)
+      (local $tbl_dgoto externref)
+)
+(#else
       (local $tbl_defred (ref $bytes))
       (local $tbl_sindex (ref $bytes))
       (local $tbl_check (ref $bytes))
@@ -239,33 +312,34 @@
       (local $tbl_lhs (ref $bytes))
       (local $tbl_gindex (ref $bytes))
       (local $tbl_dgoto (ref $bytes))
+))
       (local.set $tables (ref.cast (ref $block) (local.get $vtables)))
       (local.set $tbl_defred
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_defred))))
       (local.set $tbl_sindex
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_sindex))))
       (local.set $tbl_check
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_check))))
       (local.set $tbl_rindex
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_rindex))))
       (local.set $tbl_table
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_table))))
       (local.set $tbl_len
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_len))))
       (local.set $tbl_lhs
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_lhs))))
       (local.set $tbl_gindex
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_gindex))))
       (local.set $tbl_dgoto
-         (ref.cast (ref $bytes)
+         (call $string_val
             (array.get $block (local.get $tables) (global.get $tbl_dgoto))))
       (local.set $env (ref.cast (ref $block) (local.get $venv)))
       (local.set $cmd (i31.get_s (ref.cast (ref i31) (local.get $vcmd))))
@@ -456,10 +530,8 @@
                                          (if (global.get $caml_parser_trace)
                                             (then
                                                (call $output
-                                                  (array.new_data $bytes
-                                                     $recovering_in_state
-                                                     (i32.const 0)
-                                                     (i32.const 20)))
+                                                  (global.get
+                                                     $recovering_in_state))
                                                (call $output_int
                                                   (local.get $state1))
                                                (call $output_nl)))
@@ -468,9 +540,7 @@
                                          (br $next)))))))
                        (if (global.get $caml_parser_trace)
                           (then
-                             (call $output
-                                (array.new_data $bytes $discarding_state
-                                   (i32.const 0) (i32.const 17)))
+                             (call $output (global.get $discarding_state))
                              (call $output_int (local.get $state1))
                              (call $output_nl)))
                        (if (i32.le_s (local.get $sp)
@@ -482,9 +552,7 @@
                              (if (global.get $caml_parser_trace)
                                 (then
                                    (call $output
-                                      (array.new_data $bytes
-                                          $no_more_states_to_discard
-                                          (i32.const 0) (i32.const 25)))
+                                      (global.get $no_more_states_to_discard))
                                    (call $output_nl)))
                              (return (ref.i31 (global.get $RAISE_PARSE_ERROR)))))
                        (local.set $sp (i32.sub (local.get $sp) (i32.const 1)))
@@ -499,8 +567,7 @@
                      (if (global.get $caml_parser_trace)
                         (then
                            (call $output
-                              (array.new_data $bytes $discarding_last_token_read
-                                 (i32.const 0) (i32.const 26)))
+                              (global.get $discarding_last_token_read))
                            (call $output_nl)))
                      (array.set $block (local.get $env)
                         (global.get $env_curr_char)
@@ -518,13 +585,9 @@
              ;; shift_recover:
              (if (global.get $caml_parser_trace)
                 (then
-                   (call $output
-                      (array.new_data $bytes $State
-                         (i32.const 0) (i32.const 6)))
+                   (call $output (global.get $State))
                    (call $output_int (local.get $state))
-                   (call $output
-                      (array.new_data $bytes $shift_to_state
-                         (i32.const 0) (i32.const 17)))
+                   (call $output (global.get $shift_to_state))
                    (call $output_int
                       (call $get (local.get $tbl_table) (local.get $n2)))
                    (call $output_nl)))
@@ -568,12 +631,9 @@
            ;; reduce:
            (if (global.get $caml_parser_trace)
               (then
-                 (call $output
-                    (array.new_data $bytes $State (i32.const 0) (i32.const 6)))
+                 (call $output (global.get $State))
                  (call $output_int (local.get $state))
-                 (call $output
-                    (array.new_data $bytes $reduce_by_rule
-                       (i32.const 0) (i32.const 17)))
+                 (call $output (global.get $reduce_by_rule))
                  (call $output_int (local.get $n))
                  (call $output_nl)))
            (local.set $m (call $get (local.get $tbl_len) (local.get $n)))

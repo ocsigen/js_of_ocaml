@@ -39,6 +39,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
    (type $js (struct (field anyref)))
@@ -215,9 +216,9 @@
       (call $clear_compare_stack)
       (local.get $res))
 
-   (data $abstract_value "compare: abstract value")
-   (data $functional_value "compare: functional value")
-   (data $continuation_value "compare: continuation value")
+   (#string $abstract_value "compare: abstract value")
+   (#string $functional_value "compare: functional value")
+   (#string $continuation_value "compare: continuation value")
 
    (func $do_compare_val
       (param $stack (ref $compare_stack))
@@ -477,9 +478,7 @@
                      (br_if $next_item (i32.eqz (local.get $res)))
                      (return (local.get $res)))
                   (call $clear_compare_stack)
-                  (call $caml_invalid_argument
-                     (array.new_data $bytes $abstract_value
-                        (i32.const 0) (i32.const 23)))
+                  (call $caml_invalid_argument (global.get $abstract_value))
                   (ref.i31 (i32.const 0))))
                (drop (block $v1_not_js (result (ref eq))
                   (local.set $js1
@@ -514,8 +513,7 @@
                               (i32.eqz (call $caml_is_closure (local.get $v2)))))
                      (call $clear_compare_stack)
                      (call $caml_invalid_argument
-                        (array.new_data $bytes $functional_value
-                           (i32.const 0) (i32.const 25)))))
+                        (global.get $functional_value))))
                (if (call $caml_is_continuation (local.get $v1))
                   (then
                      (drop (br_if $heterogeneous(ref.i31 (i32.const 0))
@@ -523,8 +521,7 @@
                                  (call $caml_is_continuation (local.get $v2)))))
                      (call $clear_compare_stack)
                      (call $caml_invalid_argument
-                        (array.new_data $bytes $continuation_value
-                           (i32.const 0) (i32.const 27)))))
+                        (global.get $continuation_value))))
                (ref.i31 (i32.const 0)))) ;; fall through
             ;; heterogeneous comparison
             (local.set $t1
@@ -550,8 +547,7 @@
                (then
                   (call $clear_compare_stack)
                   (call $caml_invalid_argument
-                     (array.new_data $bytes $abstract_value
-                        (i32.const 0) (i32.const 23)))))
+                     (global.get $abstract_value))))
             (return (local.get $res)))
          (if (call $compare_stack_is_not_empty (local.get $stack))
             (then

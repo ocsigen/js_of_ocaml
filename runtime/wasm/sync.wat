@@ -25,6 +25,7 @@
    (import "custom" "custom_next_id" (func $custom_next_id (result i64)))
 
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -75,16 +76,13 @@
       (struct.new $mutex
          (global.get $mutex_ops) (call $custom_next_id) (i32.const 0)))
 
-   (data $lock_failure "Mutex.lock: mutex already locked. Cannot wait.")
+   (#string $lock_failure "Mutex.lock: mutex already locked. Cannot wait.")
 
    (func (export "caml_ml_mutex_lock") (param (ref eq)) (result (ref eq))
       (local $t (ref $mutex))
       (local.set $t (ref.cast (ref $mutex) (local.get 0)))
       (if (struct.get $mutex $state (local.get $t))
-         (then
-            (call $caml_failwith
-               (array.new_data $bytes $lock_failure
-                  (i32.const 0) (i32.const 46)))))
+         (then (call $caml_failwith (global.get $lock_failure))))
       (struct.set $mutex $state (local.get $t) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
@@ -106,13 +104,11 @@
    (func (export "caml_ml_condition_new") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (data $condition_failure "Condition.wait: cannot wait")
+   (#string $condition_failure "Condition.wait: cannot wait")
 
    (func (export "caml_ml_condition_wait")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $caml_failwith
-         (array.new_data $bytes $condition_failure
-            (i32.const 0) (i32.const 27)))
+      (call $caml_failwith (global.get $condition_failure))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_condition_signal") (param (ref eq)) (result (ref eq))
