@@ -83,6 +83,12 @@ function caml_resume_stack(stack, last, k) {
     caml_raise_constant(
       caml_named_value("Effect.Continuation_already_resumed"),
     );
+  if(last === 0) {
+    last = stack;
+  }
+  if(last !== stack) {
+    throw new Error ("invalid last param");
+  }
   // Update the execution context with the stack of fibers in [stack] in
   // order to resume the continuation
   do {
@@ -122,7 +128,7 @@ function caml_perform_effect(eff, cont, last, k0) {
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
-  var last_fiber = "last_fiber"; // FIXME
+  var last_fiber = cont[1];
   return caml_stack_check_depth()
     ? handler(eff, cont, last_fiber, k1)
     : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
