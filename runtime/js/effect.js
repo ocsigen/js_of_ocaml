@@ -93,12 +93,12 @@ function caml_resume_stack(stack, last, k) {
   // order to resume the continuation
   do {
     caml_fiber_stack = {
-      h: stack[3],
+      h: stack.h,
       r: { k: k, x: caml_exn_stack, e: caml_fiber_stack },
     };
-    k = stack[1];
-    caml_exn_stack = stack[2];
-    stack = stack[4];
+    k = stack.r.k;
+    caml_exn_stack = stack.r.x;
+    stack = stack.r.e;
   } while (stack);
   return k;
 }
@@ -124,7 +124,7 @@ function caml_perform_effect(eff, cont, last, k0) {
   var handler = caml_fiber_stack.h[3];
   // Cons the current fiber onto the continuation:
   //   cont := Cons (k, exn_stack, handlers, !cont)
-  cont[1] = [0, k0, caml_exn_stack, caml_fiber_stack.h, cont[1]];
+  cont[1] = {r:{k:k0, x:caml_exn_stack, e:cont[1]},h:caml_fiber_stack.h};
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
@@ -154,7 +154,7 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return [0, hval, [0, hexn, 0], [0, hv, hx, hf], 0];
+  return {r:{k:hval, x:[0, hexn, 0], e:0}, h:[0, hv, hx, hf]};
 }
 
 //Provides: caml_alloc_stack
@@ -182,7 +182,7 @@ function caml_continuation_use_and_update_handler_noexc(
   heff,
 ) {
   var stack = caml_continuation_use_noexc(cont);
-  stack[3] = [0, hval, hexn, heff];
+  stack.h = [0, hval, hexn, heff];
   return stack;
 }
 
