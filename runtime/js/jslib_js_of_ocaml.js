@@ -77,17 +77,6 @@ function caml_xmlhttprequest_create(unit) {
       return new globalThis.XMLHttpRequest();
     } catch (e) {}
   }
-  if (typeof globalThis.activeXObject !== "undefined") {
-    try {
-      return new globalThis.activeXObject("Msxml2.XMLHTTP");
-    } catch (e) {}
-    try {
-      return new globalThis.activeXObject("Msxml3.XMLHTTP");
-    } catch (e) {}
-    try {
-      return new globalThis.activeXObject("Microsoft.XMLHTTP");
-    } catch (e) {}
-  }
   caml_failwith("Cannot create a XMLHttpRequest");
 }
 
