@@ -45,7 +45,7 @@ let normalize_effects effects common =
   match effects with
   | None ->
       if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
-      then Some Cps
+      then Some Config.Cps
       else None
   | Some _ -> effects
 

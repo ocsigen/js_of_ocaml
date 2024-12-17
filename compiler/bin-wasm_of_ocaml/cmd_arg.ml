@@ -40,14 +40,13 @@ let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
 
 let normalize_effects effects common =
   (* For backward compatibility, consider that [--enable effects] alone means [--effects cps] *)
-  Config.set_effects_backend
-    (match effects with
-    | None ->
-        if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
-        then Some Config.Cps
-        else None
-    | Some Config.Cps -> Some Config.Cps
-    | Some _ -> failwith "Unexpected effects backend")
+  match effects with
+  | None ->
+      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
+      then Some Config.Cps
+      else None
+  | Some Config.Cps -> Some Config.Cps
+  | Some _ -> failwith "Unexpected effects backend"
 
 type t =
   { common : Jsoo_cmdline.Arg.t
