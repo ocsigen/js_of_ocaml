@@ -17,5 +17,26 @@
  (action
   (diff tests.expected tests.output)))
 
+(rule
+ (with-stdout-to
+  tests-js-string.output
+  (run
+   %{bin:wasm_of_ocaml}
+   pp
+   --enable
+   use-js-string
+   --enable
+   a
+   --disable
+   b
+   --set
+   c=1
+   %{dep:tests.txt})))
+
+(rule
+ (alias runtest)
+ (action
+  (diff tests-js-string.expected tests-js-string.output)))
+
 (cram
  (deps %{bin:wasm_of_ocaml}))
