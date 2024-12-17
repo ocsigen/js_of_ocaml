@@ -108,6 +108,8 @@ module Flag = struct
   let load_shapes_auto = o ~name:"load-shapes-auto" ~default:false
 
   let exnref = o ~name:"exnref" ~default:false
+
+  let wasi = o ~name:"wasi" ~default:false
 end
 
 module Param = struct
