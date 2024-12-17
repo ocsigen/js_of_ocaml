@@ -32,14 +32,14 @@ let console =
           (Printf.sprintf "[%s] %s" (Section.name section) (String.concat "\n" logs))
       in
       (match level, Lwt.get js_val with
-      | Debug, None -> Firebug.console##debug str
-      | Debug, Some v -> Firebug.console##debug_2 str v
-      | Info, None | Notice, None -> Firebug.console##info str
-      | Info, Some v | Notice, Some v -> Firebug.console##info_2 str v
-      | Warning, None -> Firebug.console##warn str
-      | Warning, Some v -> Firebug.console##warn_2 str v
-      | Error, None | Fatal, None -> Firebug.console##error str
-      | Error, Some v | Fatal, Some v -> Firebug.console##error_2 str v);
+      | Debug, None -> Console.console##debug str
+      | Debug, Some v -> Console.console##debug_2 str v
+      | Info, None | Notice, None -> Console.console##info str
+      | Info, Some v | Notice, Some v -> Console.console##info_2 str v
+      | Warning, None -> Console.console##warn str
+      | Warning, Some v -> Console.console##warn_2 str v
+      | Error, None | Fatal, None -> Console.console##error str
+      | Error, Some v | Fatal, Some v -> Console.console##error_2 str v);
       Lwt.return_unit)
 
 let log ?inspect ?exn ?section ?location ?logger ~level message =
