@@ -33,7 +33,7 @@
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $js (struct (field anyref)))
 
    ;; A weak array is a an abstract value composed of possibly some
@@ -286,7 +286,7 @@
       (if (i32.lt_s (local.get $len) (i32.const 0))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $Weak_create
+               (array.new_data $bytes $Weak_create
                   (i32.const 0) (i32.const 11)))))
       (local.set $res
          (array.new $block (global.get $caml_ephe_none)

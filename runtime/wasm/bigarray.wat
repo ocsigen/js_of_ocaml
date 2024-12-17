@@ -71,11 +71,11 @@
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_blit_from_string"
       (func $ta_blit_from_string
-         (param (ref $string)) (param i32) (param (ref extern)) (param i32)
+         (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
          (param i32)))
    (import "bindings" "ta_blit_to_string"
       (func $ta_blit_to_string
-         (param (ref extern)) (param i32) (param (ref $string)) (param i32)
+         (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
          (param i32)))
    (import "fail" "caml_bound_error" (func $caml_bound_error))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
@@ -126,7 +126,7 @@
       (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
 
@@ -141,7 +141,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $string))
+         (field $id (ref $bytes))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -153,7 +153,7 @@
 
    (global $bigarray_ops (export "bigarray_ops") (ref $custom_operations)
       (struct.new $custom_operations
-         (array.new_fixed $string 9 ;; "_bigarr02"
+         (array.new_fixed $bytes 9 ;; "_bigarr02"
             (i32.const 95) (i32.const 98) (i32.const 105) (i32.const 103)
             (i32.const 97) (i32.const 114) (i32.const 114) (i32.const 48)
             (i32.const 50))
@@ -591,7 +591,7 @@
               (if (call $caml_deserialize_uint_1 (local.get $s))
                  (then
                     (call $caml_failwith
-                       (array.new_data $string $intern_overflow
+                       (array.new_data $bytes $intern_overflow
                           (i32.const 0) (i32.const 56))))))
              ;; int32
              (loop $loop
@@ -716,7 +716,7 @@
       (if (i32.gt_u (local.get $num_dims) (global.get $CAML_BA_MAX_NUM_DIMS))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $ba_create_bad_dims
+               (array.new_data $bytes $ba_create_bad_dims
                   (i32.const 0) (i32.const 41)))))
       (local.set $dim
          (array.new $int_array (i32.const 0) (local.get $num_dims)))
@@ -732,7 +732,7 @@
                (if (i32.lt_s (local.get $n) (i32.const 0))
                   (then
                      (call $caml_invalid_argument
-                        (array.new_data $string $ba_create_negative_dim
+                        (array.new_data $bytes $ba_create_negative_dim
                               (i32.const 0) (i32.const 35)))))
                (array.set $int_array
                   (local.get $dim) (local.get $i) (local.get $n))
@@ -761,7 +761,7 @@
       (if (i32.lt_s (local.get $kind) (i32.const 0))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $ta_unsupported_kind
+               (array.new_data $bytes $ta_unsupported_kind
                   (i32.const 0) (i32.const 41)))))
       (if (i32.eq (local.get $kind) (i32.const 13)) ;; Uint8ClampedArray
          (then (local.set $kind (i32.const 3))))
@@ -769,7 +769,7 @@
       (if (i32.lt_s (local.get $len) (i32.const 0))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $ta_too_large
+               (array.new_data $bytes $ta_too_large
                   (i32.const 0) (i32.const 34)))))
       (struct.new $bigarray
          (global.get $bigarray_ops)
@@ -956,7 +956,7 @@
       (local.set $i (i31.get_s (ref.cast (ref i31) (local.get 1))))
       (if (i32.ge_u (local.get $i) (array.len (local.get $dim)))
          (then (call $caml_invalid_argument
-                  (array.new_data $string $Bigarray_dim
+                  (array.new_data $bytes $Bigarray_dim
                      (i32.const 0) (i32.const 12)))))
       (ref.i31 (array.get $int_array (local.get $dim) (local.get $i))))
 
@@ -1321,7 +1321,7 @@
              (struct.get $bigarray $ba_num_dims (local.get $b)))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $too_many_indices
+               (array.new_data $bytes $too_many_indices
                   (i32.const 0) (i32.const 32)))))
       (local.set $sub_dim
          (array.new $int_array (i32.const 0)
@@ -1438,7 +1438,7 @@
                    (local.get $changed_dim))))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $bad_subarray
+               (array.new_data $bytes $bad_subarray
                   (i32.const 0) (i32.const 27)))))
       (local.set $new_dim
          (array.new $int_array (i32.const 0) (local.get $num_dims)))
@@ -1562,7 +1562,7 @@
              (struct.get $bigarray $ba_num_dims (local.get $src)))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $dim_mismatch
+               (array.new_data $bytes $dim_mismatch
                   (i32.const 0) (i32.const 33)))))
       (local.set $sdim (struct.get $bigarray $ba_dim (local.get $src)))
       (local.set $ddim (struct.get $bigarray $ba_dim (local.get $dst)))
@@ -1574,7 +1574,7 @@
                       (array.get $int_array (local.get $ddim) (local.get $i)))
                   (then
                      (call $caml_invalid_argument
-                        (array.new_data $string $dim_mismatch
+                        (array.new_data $bytes $dim_mismatch
                            (i32.const 0) (i32.const 33)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
@@ -1599,7 +1599,7 @@
       (if (i32.gt_u (local.get $num_dims) (global.get $CAML_BA_MAX_NUM_DIMS))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $bad_number_dim
+               (array.new_data $bytes $bad_number_dim
                   (i32.const 0) (i32.const 42)))))
       (local.set $num_elts (i64.const 1))
       (local.set $dim (array.new $int_array (i32.const 0) (local.get $num_dims)))
@@ -1614,7 +1614,7 @@
                (if (i32.lt_s (local.get $d) (i32.const 0))
                   (then
                      (call $caml_invalid_argument
-                        (array.new_data $string $negative_dim
+                        (array.new_data $bytes $negative_dim
                            (i32.const 0) (i32.const 36)))))
                (array.set $int_array (local.get $dim) (local.get $i)
                   (local.get $d))
@@ -1631,7 +1631,7 @@
                 (struct.get $bigarray $ba_dim (local.get $b))))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $size_mismatch
+               (array.new_data $bytes $size_mismatch
                   (i32.const 0) (i32.const 31)))))
       (struct.new $bigarray
          (global.get $bigarray_ops)
@@ -2025,11 +2025,11 @@
       (param (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string
       (local $a (ref extern)) (local $len i32)
-      (local $s (ref $string))
+      (local $s (ref $bytes))
       (local.set $a
          (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
       (local.set $len (call $ta_length (local.get $a)))
-      (local.set $s (array.new $string (i32.const 0) (local.get $len)))
+      (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $ta_blit_to_string
          (local.get $a) (i32.const 0) (local.get $s) (i32.const 0)
          (local.get $len))
@@ -2040,8 +2040,8 @@
       (param (ref eq)) (result (ref eq))
       ;; Convert a string to a typed array
       (local $ta (ref extern)) (local $len i32)
-      (local $s (ref $string))
-      (local.set $s (ref.cast (ref $string) (local.get 0)))
+      (local $s (ref $bytes))
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (local.set $len (array.len (local.get $s)))
       (local.set $ta
          (call $ta_create
@@ -2083,13 +2083,13 @@
 
    (func (export "string_set")
       (param $s externref) (param $i i32) (param $v i32)
-      (array.set $string
-         (ref.cast (ref null $string) (any.convert_extern (local.get $s)))
+      (array.set $bytes
+         (ref.cast (ref null $bytes) (any.convert_extern (local.get $s)))
          (local.get $i) (local.get $v)))
 
    (func (export "string_get")
       (param $s externref) (param $i i32) (result i32)
-      (array.get $string
-         (ref.cast (ref null $string) (any.convert_extern (local.get $s)))
+      (array.get $bytes
+         (ref.cast (ref null $bytes) (any.convert_extern (local.get $s)))
          (local.get $i)))
 )

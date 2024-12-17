@@ -49,7 +49,7 @@
       (func $jsstring_test (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
 
    (tag $ocaml_exit (export "ocaml_exit") (param i32))
@@ -155,7 +155,7 @@
       ;; ZZZ
       ;; (call $log_js (string.const "caml_sys_get_config"))
       (array.new_fixed $block 4 (ref.i31 (i32.const 0))
-         (array.new_data $string $Unix (i32.const 0) (i32.const 4))
+         (array.new_data $bytes $Unix (i32.const 0) (i32.const 4))
          (ref.i31 (i32.const 32))
          (ref.i31 (i32.const 0))))
 
@@ -164,10 +164,10 @@
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $string 0))
+      (array.new_fixed $bytes 0))
 
    (func (export "caml_runtime_parameters") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $string 0))
+      (array.new_fixed $bytes 0))
 
    (func (export "caml_install_signal_handler")
       (param (ref eq) (ref eq)) (result (ref eq))
@@ -193,6 +193,6 @@
          (call $caml_string_of_jsstring
             (call $caml_js_meth_call
                (call $wrap (any.convert_extern (local.get $exn)))
-               (array.new_data $string $toString (i32.const 0) (i32.const 8))
+               (array.new_data $bytes $toString (i32.const 0) (i32.const 8))
                (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
 )
