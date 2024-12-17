@@ -36,6 +36,14 @@
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
+ (wasi
+  (wasm_of_ocaml
+   (flags
+    (:standard --pretty --enable wasi))
+   (compilation_mode whole_program))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
  (bench_no_debug
   (flags
    (:standard \ -g))

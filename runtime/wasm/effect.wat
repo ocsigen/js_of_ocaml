@@ -33,6 +33,12 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
+(@if wasi
+(@then
+   (func $caml_wrap_exception (param externref) (result (ref eq))
+      (unreachable))
+)
+(@else
    (import "jslib" "caml_wrap_exception"
       (func $caml_wrap_exception (param externref) (result (ref eq))))
    (import "bindings" "start_fiber" (func $start_fiber (param (ref eq))))
@@ -41,6 +47,7 @@
          (param $f funcref) (param $env eqref) (result anyref)))
    (import "bindings" "resume_fiber"
       (func $resume_fiber (param externref) (param (ref eq))))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))

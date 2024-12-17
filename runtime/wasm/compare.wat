@@ -479,6 +479,8 @@
                   (call $clear_compare_stack)
                   (call $caml_invalid_argument (global.get $abstract_value))
                   (ref.i31 (i32.const 0))))
+(@if (not wasi)
+(@then
                (drop (block $v1_not_js (result (ref eq))
                   (local.set $js1
                      (struct.get $js 0
@@ -506,6 +508,7 @@
                            (call $equals (local.get $js1) (local.get $js2)))
                         (return (global.get $unordered))))
                   (br $heterogeneous (ref.i31 (i32.const 0)))))
+))
                (if (call $caml_is_closure (local.get $v1))
                   (then
                      (drop (br_if $heterogeneous (ref.i31 (i32.const 0))
