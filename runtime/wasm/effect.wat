@@ -24,11 +24,20 @@
    (import "obj" "caml_fresh_oo_id"
      (func $caml_fresh_oo_id (param (ref eq)) (result (ref eq))))
    (import "obj" "cont_tag" (global $cont_tag i32))
+   (import "obj" "caml_callback_1"
+      (func $caml_callback_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "stdlib" "caml_named_value"
       (func $caml_named_value (param (ref eq)) (result (ref null eq))))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
+(@if wasi
+(@then
+   (func $caml_wrap_exception (param externref) (result (ref eq))
+      (unreachable))
+)
+(@else
    (import "jslib" "caml_wrap_exception"
       (func $caml_wrap_exception (param externref) (result (ref eq))))
    (import "bindings" "start_fiber" (func $start_fiber (param (ref eq))))
@@ -37,9 +46,7 @@
          (param $f funcref) (param $env eqref) (result anyref)))
    (import "bindings" "resume_fiber"
       (func $resume_fiber (param externref) (param (ref eq))))
-   (import "obj" "caml_callback_1"
-      (func $caml_callback_1
-         (param (ref eq)) (param (ref eq)) (result (ref eq))))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -51,6 +58,37 @@
       (sub $closure
          (struct (field (ref $function_1)) (field (ref $function_3)))))
 
+   ;; Generic fibers
+
+   (type $handlers
+      (struct
+         (field $value (ref eq))
+         (field $exn (ref eq))
+         (field $effect (ref eq))))
+
+   (type $generic_fiber (sub (struct (field $handlers (mut (ref $handlers))))))
+
+   (@string $already_resumed "Effect.Continuation_already_resumed")
+
+   (@string $effect_unhandled "Effect.Unhandled")
+
+   (func $raise_unhandled
+      (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
+      (block $null
+         (call $caml_raise_with_arg
+            (br_on_null $null
+               (call $caml_named_value (global.get $effect_unhandled)))
+            (local.get $eff)))
+      (call $caml_raise_constant
+         (array.new_fixed $block 3 (ref.i31 (i32.const 248))
+            (global.get $effect_unhandled)
+            (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
+      (ref.i31 (i32.const 0)))
+
+   (global $effect_allowed (mut i32) (i32.const 1))
+
+(@if (not wasi)
+(@then
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 
    (type $pair (struct (field (ref eq)) (field (ref eq))))
@@ -115,35 +153,12 @@
 
    ;; Stack of fibers
 
-   (type $handlers
-      (struct
-         (field $value (ref eq))
-         (field $exn (ref eq))
-         (field $effect (ref eq))))
-
-   (type $generic_fiber (sub (struct (field $handlers (mut (ref $handlers))))))
-
    (type $fiber
       (sub final $generic_fiber
          (struct
             (field $handlers (mut (ref $handlers)))
             (field $cont (ref $cont))
             (field $next (ref null $fiber)))))
-
-   (@string $effect_unhandled "Effect.Unhandled")
-
-   (func $raise_unhandled
-      (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
-      (block $null
-         (call $caml_raise_with_arg
-            (br_on_null $null
-               (call $caml_named_value (global.get $effect_unhandled)))
-            (local.get $eff)))
-      (call $caml_raise_constant
-         (array.new_fixed $block 3 (ref.i31 (i32.const 248))
-            (global.get $effect_unhandled)
-            (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
-      (ref.i31 (i32.const 0)))
 
    (func $uncaught_effect_handler
       (param $eff (ref eq)) (param $cont (ref eq)) (param $k (ref eq))
@@ -221,8 +236,6 @@
       (local.set $k (call $push_stack (local.get $stack) (local.get $k)))
       (return_call_ref $cont_func (local.get $p) (local.get $k)
          (struct.get $cont $cont_func (local.get $k))))
-
-   (@string $already_resumed "Effect.Continuation_already_resumed")
 
    (func (export "%resume")
       (param $stack (ref eq)) (param $f (ref eq)) (param $v (ref eq)) (param $tail (ref eq))
@@ -308,8 +321,6 @@
          (ref.func $do_perform)
          (struct.new $pair (local.get $eff) (local.get $cont))))
 
-   (global $effect_allowed (mut i32) (i32.const 1))
-
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
       (if (i32.eqz (global.get $effect_allowed))
          (then
@@ -364,6 +375,7 @@
          (struct.new $handlers (local.get $hv) (local.get $hx) (local.get $hf))
          (struct.new $cont (ref.func $initial_cont))
          (ref.null $fiber)))
+))
 
    ;; Other functions
 

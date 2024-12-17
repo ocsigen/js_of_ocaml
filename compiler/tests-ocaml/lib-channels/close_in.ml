@@ -6,8 +6,14 @@
    between 1 and IO_BUFFER_SIZE *)
 let nb_bytes = 3
 
+let temp_file =
+  let name, ch = Filename.open_temp_file "data" ".txt" in
+  output_string ch (String.make 1024 'a');
+  close_out ch;
+  name
+
 let () =
-  let ic = open_in_bin (Filename.basename Sys.argv.(0)) in
+  let ic = open_in_bin temp_file in
   seek_in ic nb_bytes;
   close_in ic;
   assert (
@@ -21,7 +27,7 @@ let () =
 
 (* A variant of #11878, which #11965 failed to fix. *)
 let () =
-  let ic = open_in_bin (Filename.basename Sys.argv.(0)) in
+  let ic = open_in_bin temp_file in
   close_in ic;
   begin try
     seek_in ic (-1);
