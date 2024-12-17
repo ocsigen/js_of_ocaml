@@ -223,10 +223,10 @@
     ta_copy: (ta, t, s, e) => ta.copyWithin(t, s, e),
     ta_bytes: (a) =>
       new Uint8Array(a.buffer, a.byteOffset, a.length * a.BYTES_PER_ELEMENT),
-    ta_blit_from_string: (s, p1, a, p2, l) => {
+    ta_blit_from_bytes: (s, p1, a, p2, l) => {
       for (let i = 0; i < l; i++) a[p2 + i] = string_get(s, p1 + i);
     },
-    ta_blit_to_string: (a, p1, s, p2, l) => {
+    ta_blit_to_bytes: (a, p1, s, p2, l) => {
       for (let i = 0; i < l; i++) string_set(s, p2 + i, a[p1 + i]);
     },
     wrap_callback: (f) =>

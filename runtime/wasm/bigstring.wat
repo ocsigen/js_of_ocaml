@@ -48,12 +48,12 @@
       (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_bytes"
       (func $ta_bytes (param anyref) (result anyref)))
-   (import "bindings" "ta_blit_from_string"
-      (func $ta_blit_from_string
+   (import "bindings" "ta_blit_from_bytes"
+      (func $ta_blit_from_bytes
          (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
          (param i32)))
-   (import "bindings" "ta_blit_to_string"
-      (func $ta_blit_to_string
+   (import "bindings" "ta_blit_to_bytes"
+      (func $ta_blit_to_bytes
          (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
          (param i32)))
    (import "hash" "caml_hash_mix_int"
@@ -240,7 +240,7 @@
       (local.set $d2 (call $caml_ba_get_data (local.get $ba2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (call $ta_blit_from_string
+      (call $ta_blit_from_bytes
          (local.get $s1) (local.get $pos1)
          (local.get $d2) (local.get $pos2)
          (local.get $len))
@@ -258,7 +258,7 @@
       (local.set $s2 (ref.cast (ref $bytes) (local.get $str2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (call $ta_blit_to_string
+      (call $ta_blit_to_bytes
          (local.get $d1) (local.get $pos1)
          (local.get $s2) (local.get $pos2)
          (local.get $len))
