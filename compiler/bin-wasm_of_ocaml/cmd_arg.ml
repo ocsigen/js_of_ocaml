@@ -46,6 +46,8 @@ let normalize_effects (effects : [ `Disabled | `Cps | `Jspi ] option) common :
         [--effects cps] *)
       if List.mem ~eq:String.equal "effects" common.Jsoo_cmdline.Arg.optim.enable
       then `Cps
+      else if List.mem ~eq:String.equal "wasi" common.Jsoo_cmdline.Arg.optim.enable
+      then `Disabled
       else `Jspi
   | Some ((`Disabled | `Cps | `Jspi) as e) -> e
 

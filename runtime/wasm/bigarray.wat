@@ -65,6 +65,518 @@
       (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
    (import "marshal" "caml_deserialize_int_8"
       (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
+
+(@if wasi
+(@then
+   (type $i64_array (array (mut i64)))
+   (type $i32_array (array (mut i32)))
+   (type $i16_array (array (mut i16)))
+   (type $i8_array (array (mut i8)))
+   (type $f64_array (array (mut f64)))
+   (type $f32_array (array (mut f32)))
+
+   (type $data
+      (struct
+         (field $array (ref array))
+         (field $offset i32)
+         (field $len i32)))
+
+   (func $ta_create (export "ta_create")
+      (param $kind i32) (param $sz i32) (result (ref extern))
+      (local $a (ref array))
+      (local.set $a
+       (block $cont (result (ref array))
+        (block $f32
+         (block $f64
+          (block $i8
+           (block $i16
+            (block $i32
+             (block $i64
+              (br_table
+                 $f32 $f64 $i8 $i8 $i16 $i16 $i32
+                 $i64 $i32 $i32 $f32 $f64 $i8 $i16
+                 (local.get $kind)))
+             ;; i64
+             (local.set $sz (i32.shr_u (local.get $sz) (i32.const 1)))
+             (br $cont (array.new $i64_array (i64.const 0) (local.get $sz))))
+            ;; i32
+            (br $cont (array.new $i32_array (i32.const 0) (local.get $sz))))
+           ;; i16
+           (br $cont (array.new $i16_array (i32.const 0) (local.get $sz))))
+          ;; i8
+          (br $cont (array.new $i8_array (i32.const 0) (local.get $sz))))
+         ;; f64
+         (br $cont (array.new $f64_array (f64.const 0) (local.get $sz))))
+        ;; f32
+        (array.new $f32_array (f32.const 0) (local.get $sz))))
+      (extern.convert_any
+         (struct.new $data (local.get $a) (i32.const 0) (local.get $sz))))
+
+   (func $ta_fill_int (param $b (ref extern)) (param $v i32)
+      (local $d (ref $data))
+      (local $a (ref array))
+      (local $a32 (ref $i32_array)) (local $a16 (ref $i16_array))
+      (local $a8 (ref $bytes))
+      (local $ofs i32) (local $i i32) (local $len i32)
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $a (struct.get $data $array (local.get $d)))
+      (local.set $ofs (struct.get $data $offset (local.get $d)))
+      (local.set $len (struct.get $data $len (local.get $d)))
+      (if (ref.test (ref $i32_array) (local.get $a))
+         (then
+            (local.set $a32 (ref.cast (ref $i32_array) (local.get $a)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $i32_array (local.get $a32)
+                        (i32.add (local.get $ofs) (local.get $i))
+                        (local.get $v))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop)))))
+      (else (if (ref.test (ref $i16_array) (local.get $a))
+         (then
+            (local.set $a16 (ref.cast (ref $i16_array) (local.get $a)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $i16_array (local.get $a16)
+                        (i32.add (local.get $ofs) (local.get $i))
+                        (local.get $v))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop)))))
+      (else
+         (local.set $a8 (ref.cast (ref $bytes) (local.get $a)))
+         (loop $loop
+            (if (i32.lt_u (local.get $i) (local.get $len))
+               (then
+                  (array.set $bytes (local.get $a8)
+                     (i32.add (local.get $ofs) (local.get $i))
+                     (local.get $v))
+                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                  (br $loop)))))))))
+
+   (func $ta_fill_float (param $b (ref extern)) (param $f f64)
+      (local $d (ref $data))
+      (local $a (ref array))
+      (local $a64 (ref $float_array)) (local $a32 (ref $f32_array))
+      (local $f32 f32)
+      (local $ofs i32) (local $i i32) (local $len i32)
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $a (struct.get $data $array (local.get $d)))
+      (local.set $ofs (struct.get $data $offset (local.get $d)))
+      (local.set $len (struct.get $data $len (local.get $d)))
+      (if (ref.test (ref $float_array) (local.get $a))
+         (then
+            (local.set $a64 (ref.cast (ref $float_array) (local.get $a)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $float_array (local.get $a64)
+                        (i32.add (local.get $ofs) (local.get $i))
+                        (local.get $f))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop)))))
+         (else
+            (local.set $a32 (ref.cast (ref $f32_array) (local.get $a)))
+            (local.set $f32 (f32.demote_f64 (local.get $f)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $f32_array (local.get $a32)
+                        (i32.add (local.get $ofs) (local.get $i))
+                        (local.get $f32))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop)))))))
+
+   (func $ta_set (export "ta_set")
+      (param $d (ref extern)) (param $s (ref extern)) (param $do i32)
+      (local $sd (ref $data)) (local $sa (ref array)) (local $so i32)
+      (local $dd (ref $data)) (local $da (ref array))
+      (local $i i32) (local $len i32)
+      (local $sf64 (ref $float_array)) (local $df64 (ref $float_array))
+      (local $sf32 (ref $f32_array)) (local $df32 (ref $f32_array))
+      (local $si64 (ref $i64_array)) (local $di64 (ref $i64_array))
+      (local $si32 (ref $i32_array)) (local $di32 (ref $i32_array))
+      (local $si16 (ref $i16_array)) (local $di16 (ref $i16_array))
+      (local $si8 (ref $bytes)) (local $di8 (ref $bytes))
+      (local.set $sd (ref.cast (ref $data) (any.convert_extern (local.get $s))))
+      (local.set $sa (struct.get $data $array (local.get $sd)))
+      (local.set $so (struct.get $data $offset (local.get $sd)))
+      (local.set $len (struct.get $data $len (local.get $sd)))
+      (local.set $dd (ref.cast (ref $data) (any.convert_extern (local.get $d))))
+      (local.set $da (struct.get $data $array (local.get $dd)))
+      (local.set $do
+         (i32.add (struct.get $data $offset (local.get $dd)) (local.get $do)))
+      (if (ref.test (ref $float_array) (local.get $sa))
+         (then
+            (local.set $sf64 (ref.cast (ref $float_array) (local.get $sa)))
+            (local.set $df64 (ref.cast (ref $float_array) (local.get $da)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $float_array (local.get $df64)
+                        (i32.add (local.get $do) (local.get $i))
+                        (array.get $float_array (local.get $sf64)
+                           (i32.add (local.get $so) (local.get $i))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop))))))
+      (if (ref.test (ref $f32_array) (local.get $sa))
+         (then
+            (local.set $sf32 (ref.cast (ref $f32_array) (local.get $sa)))
+            (local.set $df32 (ref.cast (ref $f32_array) (local.get $da)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $f32_array (local.get $df32)
+                        (i32.add (local.get $do) (local.get $i))
+                        (array.get $f32_array (local.get $sf32)
+                           (i32.add (local.get $so) (local.get $i))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop))))))
+      (if (ref.test (ref $i64_array) (local.get $sa))
+         (then
+            (local.set $si64 (ref.cast (ref $i64_array) (local.get $sa)))
+            (local.set $di64 (ref.cast (ref $i64_array) (local.get $da)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $i64_array (local.get $di64)
+                        (i32.add (local.get $do) (local.get $i))
+                        (array.get $i64_array (local.get $si64)
+                           (i32.add (local.get $so) (local.get $i))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop))))))
+      (if (ref.test (ref $i32_array) (local.get $sa))
+         (then
+            (local.set $si32 (ref.cast (ref $i32_array) (local.get $sa)))
+            (local.set $di32 (ref.cast (ref $i32_array) (local.get $da)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $i32_array (local.get $di32)
+                        (i32.add (local.get $do) (local.get $i))
+                        (array.get $i32_array (local.get $si32)
+                           (i32.add (local.get $so) (local.get $i))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop))))))
+      (if (ref.test (ref $i16_array) (local.get $sa))
+         (then
+            (local.set $si16 (ref.cast (ref $i16_array) (local.get $sa)))
+            (local.set $di16 (ref.cast (ref $i16_array) (local.get $da)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $i16_array (local.get $di16)
+                        (i32.add (local.get $do) (local.get $i))
+                        (array.get $i16_array (local.get $si16)
+                           (i32.add (local.get $so) (local.get $i))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop))))))
+      (if (ref.test (ref $bytes) (local.get $sa))
+         (then
+            (local.set $si8 (ref.cast (ref $bytes) (local.get $sa)))
+            (local.set $di8 (ref.cast (ref $bytes) (local.get $da)))
+            (loop $loop
+               (if (i32.lt_u (local.get $i) (local.get $len))
+                  (then
+                     (array.set $bytes (local.get $di8)
+                        (i32.add (local.get $do) (local.get $i))
+                        (array.get $bytes (local.get $si8)
+                           (i32.add (local.get $so) (local.get $i))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                     (br $loop)))))))
+
+   (func $ta_blit (param $s (ref extern)) (param $d (ref extern))
+      (return_call $ta_set (local.get $d) (local.get $s) (i32.const 0)))
+
+   (func $ta_subarray (export "ta_subarray")
+      (param $b (ref extern)) (param $s i32) (param $e i32) (result (ref extern))
+      (local $d (ref $data))
+      (local $a (ref array))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $a (struct.get $data $array (local.get $d)))
+      (if (ref.test (ref $i64_array) (local.get $a))
+         (then
+            (local.set $s (i32.shr_u (local.get $s) (i32.const 1)))
+            (local.set $e (i32.shr_u (local.get $e) (i32.const 1)))))
+      (extern.convert_any
+         (struct.new $data
+            (local.get $a)
+            (i32.add (struct.get $data $offset (local.get $d)) (local.get $s))
+            (i32.sub (local.get $e) (local.get $s)))))
+
+   (func $ta_blit_from_bytes (export "ta_blit_from_bytes")
+      (param $s (ref $bytes)) (param $so i32)
+      (param $b (ref extern)) (param $do i32)
+      (param $len i32)
+      (local $data (ref $data))
+      (local $d (ref $bytes))
+      (local $i i32)
+      (local.set $data
+         (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $d
+         (ref.cast (ref $bytes) (struct.get $data $array (local.get $data))))
+      (local.set $do
+         (i32.add (local.get $do (struct.get $data $offset (local.get $data)))))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (array.set $bytes (local.get $d)
+                  (i32.add (local.get $do) (local.get $i))
+                  (array.get $bytes (local.get $s)
+                     (i32.add (local.get $so) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop)))))
+
+   (func $ta_blit_to_bytes (export "ta_blit_to_bytes")
+      (param $b (ref extern)) (param $so i32)
+      (param $d (ref $bytes)) (param $do i32)
+      (param $len i32)
+      (local $data (ref $data))
+      (local $s (ref $bytes))
+      (local $i i32)
+      (local.set $data
+         (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $s
+         (ref.cast (ref $bytes) (struct.get $data $array (local.get $data))))
+      (local.set $so
+         (i32.add (local.get $so (struct.get $data $offset (local.get $data)))))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (array.set $bytes (local.get $d)
+                  (i32.add (local.get $do) (local.get $i))
+                  (array.get $bytes (local.get $s)
+                     (i32.add (local.get $so) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop)))))
+
+   (func $dv_make (param $a (ref extern)) (result (ref extern)) (local.get $a))
+
+   (func $dv_get_i8 (export "dv_get_i8")
+      (param $a (ref extern)) (param $i i32) (result i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.get_s $i8_array
+         (ref.cast (ref $i8_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i))))
+
+   (func $dv_get_ui8 (export "dv_get_ui8")
+      (param $a (ref extern)) (param $i i32) (result i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.get_u $i8_array
+         (ref.cast (ref $i8_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i))))
+
+   (func $dv_get_i16
+      (param $a (ref extern)) (param $i i32) (param i32) (result i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.get_s $i16_array
+         (ref.cast (ref $i16_array) (struct.get $data $array (local.get $d)))
+         (i32.shr_u (local.get $i) (i32.const 1))))
+
+   (func $dv_get_ui16
+      (param $a (ref extern)) (param $i i32) (param i32) (result i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.get_u $i16_array
+         (ref.cast (ref $i16_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 1)))))
+
+   (func $dv_get_i32
+      (param $a (ref extern)) (param $i i32) (param i32) (result i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.get $i32_array
+         (ref.cast (ref $i32_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 2)))))
+
+   (func $dv_get_i64 (export "dv_get_i64")
+      (param $a (ref extern)) (param $i i32) (param i32) (result i64)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.get $i64_array
+         (ref.cast (ref $i64_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 3)))))
+
+   (func $dv_get_f32
+      (param $a (ref extern)) (param $i i32) (param i32) (result f32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.get $f32_array
+         (ref.cast (ref $f32_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 2)))))
+
+   (func $dv_get_f64
+      (param $a (ref extern)) (param $i i32) (param i32) (result f64)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.get $f64_array
+         (ref.cast (ref $f64_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 3)))))
+
+   (func $dv_set_i8
+      (param $a (ref extern)) (param $i i32) (param $v i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.set $i8_array
+         (ref.cast (ref $i8_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i))
+         (local.get $v)))
+
+   (func $dv_set_i16
+      (param $a (ref extern)) (param $i i32) (param $v i32) (param i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.set $i16_array
+         (ref.cast (ref $i16_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 1)))
+         (local.get $v)))
+
+   (func $dv_set_i32
+      (param $a (ref extern)) (param $i i32) (param $v i32) (param i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.set $i32_array
+         (ref.cast (ref $i32_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 2)))
+         (local.get $v)))
+
+   (func $dv_set_i64 (export "dv_set_i64")
+      (param $a (ref extern)) (param $i i32) (param $v i64) (param i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.set $i64_array
+         (ref.cast (ref $i64_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 3)))
+         (local.get $v)))
+
+   (func $dv_set_f32
+      (param $a (ref extern)) (param $i i32) (param $v f32) (param i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.set $f32_array
+         (ref.cast (ref $f32_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 2)))
+         (local.get $v)))
+
+   (func $dv_set_f64
+      (param $a (ref extern)) (param $i i32) (param $v f64) (param i32)
+      (local $d (ref $data))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $a))))
+      (array.set $f64_array
+         (ref.cast (ref $f64_array) (struct.get $data $array (local.get $d)))
+         (i32.add (struct.get $data $offset (local.get $d))
+            (i32.shr_u (local.get $i) (i32.const 3)))
+         (local.get $v)))
+
+   (func $dv_get_ui16_unaligned
+      (param $b (ref extern)) (param $i i32) (param i32) (result i32)
+      (local $d (ref $data)) (local $s (ref $bytes))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $s
+         (ref.cast (ref $bytes) (struct.get $data $array (local.get $d))))
+      (local.set $i
+         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i)))
+      (i32.or
+         (array.get_u $bytes (local.get $s) (local.get $i))
+         (i32.shl
+            (array.get_u $bytes (local.get $s)
+               (i32.add (local.get $i) (i32.const 1)))
+            (i32.const 8))))
+
+   (func $dv_get_i32_unaligned (export "dv_get_i32_unaligned")
+      (param $b (ref extern)) (param $i i32) (param i32) (result i32)
+      (local $d (ref $data)) (local $s (ref $bytes))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $s
+         (ref.cast (ref $bytes) (struct.get $data $array (local.get $d))))
+      (local.set $i
+         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i)))
+      (i32.or
+         (i32.or
+            (array.get_u $bytes (local.get $s) (local.get $i))
+            (i32.shl
+               (array.get_u $bytes (local.get $s)
+                  (i32.add (local.get $i) (i32.const 1)))
+               (i32.const 8)))
+         (i32.or
+            (i32.shl
+               (array.get_u $bytes (local.get $s)
+                  (i32.add (local.get $i) (i32.const 2)))
+               (i32.const 16))
+            (i32.shl
+               (array.get_u $bytes (local.get $s)
+                  (i32.add (local.get $i) (i32.const 3)))
+               (i32.const 24)))))
+
+   (func $dv_get_i64_unaligned (export "dv_get_i64_unaligned")
+      (param $b (ref extern)) (param $i i32) (param $le i32) (result i64)
+      (i64.or
+         (i64.extend_i32_u
+            (call $dv_get_i32_unaligned
+               (local.get $b) (local.get $i) (local.get $le)))
+         (i64.shl
+            (i64.extend_i32_u
+               (call $dv_get_i32_unaligned
+                  (local.get $b) (i32.add (local.get $i) (i32.const 4))
+                  (local.get $le)))
+            (i64.const 32))))
+
+   (func $dv_set_i16_unaligned
+      (param $b (ref extern)) (param $i i32) (param $v i32) (param i32)
+      (local $d (ref $data)) (local $s (ref $bytes)) (local $j i32)
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $s
+         (ref.cast (ref $bytes) (struct.get $data $array (local.get $d))))
+      (local.set $i
+         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i)))
+      (array.set $bytes (local.get $s) (local.get $i) (local.get $v))
+      (array.set $bytes (local.get $s) (i32.add (local.get $i) (i32.const 1))
+         (i32.shr_u (local.get $v) (i32.const 8))))
+
+   (func $dv_set_i32_unaligned
+      (param $b (ref extern)) (param $i i32) (param $v i32) (param i32)
+      (local $d (ref $data)) (local $s (ref $bytes))
+      (local.set $d (ref.cast (ref $data) (any.convert_extern (local.get $b))))
+      (local.set $s
+         (ref.cast (ref $bytes) (struct.get $data $array (local.get $d))))
+      (local.set $i
+         (i32.add (struct.get $data $offset (local.get $d)) (local.get $i)))
+      (array.set $bytes (local.get $s) (local.get $i) (local.get $v))
+      (array.set $bytes (local.get $s) (i32.add (local.get $i) (i32.const 1))
+         (i32.shr_u (local.get $v) (i32.const 8)))
+      (array.set $bytes (local.get $s) (i32.add (local.get $i) (i32.const 2))
+         (i32.shr_u (local.get $v) (i32.const 16)))
+      (array.set $bytes (local.get $s) (i32.add (local.get $i) (i32.const 3))
+         (i32.shr_u (local.get $v) (i32.const 24))))
+
+   (func $dv_set_i64_unaligned
+      (param $b (ref extern)) (param $i i32) (param $v i64) (param $le i32)
+      (call $dv_set_i32_unaligned
+         (local.get $b) (local.get $i)
+         (i32.wrap_i64 (local.get $v))
+         (local.get $le))
+      (call $dv_set_i32_unaligned
+         (local.get $b) (i32.add (local.get $i) (i32.const 4))
+         (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 32)))
+         (local.get $le)))
+
+   (global $littleEndian i32 (i32.const 1))
+
+)
+(@else
    (import "bindings" "ta_create"
       (func $ta_create (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_normalize"
@@ -120,7 +632,20 @@
       (func $dv_set_i16 (param externref i32 i32 i32)))
    (import "bindings" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
+   (import "bindings" "dv_get_i64"
+      (func $dv_get_i64_unaligned (param externref i32 i32) (result i64)))
+   (import "bindings" "dv_get_i32"
+      (func $dv_get_i32_unaligned (param externref i32 i32) (result i32)))
+   (import "bindings" "dv_get_ui16"
+      (func $dv_get_ui16_unaligned (param externref i32 i32) (result i32)))
+   (import "bindings" "dv_set_i64"
+      (func $dv_set_i64_unaligned (param externref i32 i64 i32)))
+   (import "bindings" "dv_set_i32"
+      (func $dv_set_i32_unaligned (param externref i32 i32 i32)))
+   (import "bindings" "dv_set_i16"
+      (func $dv_set_i16_unaligned (param externref i32 i32 i32)))
    (import "bindings" "littleEndian" (global $littleEndian i32))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -456,36 +981,63 @@
        (block $int8
         (block $int16
          (block $int32
-          (block $complex32
-           (block $int
-            (block $int64
-             (block $complex64
-              (br_table $int32 $int64 $int8 $int8 $int16 $int16
-                        $int32 $int64 $int $int
-                        $complex32 $complex64 $int8 $int16
-                 (struct.get $bigarray $ba_kind (local.get $b))))
-             ;; complex64
+          (block $int
+           (block $int64
+            (block $float32
+             (block $complex32
+              (block $float64
+               (block $complex64
+                (br_table $float32 $float64 $int8 $int8 $int16 $int16
+                          $int32 $int64 $int $int
+                          $complex32 $complex64 $int8 $int16
+                   (struct.get $bigarray $ba_kind (local.get $b))))
+               ;; complex64
+               (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+               ;; fallthrough
+              ;; float64
+              (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+              (loop $loop
+                 (if (i32.lt_u (local.get $i) (local.get $len))
+                    (then
+                       (call $caml_serialize_int_8 (local.get $s)
+                          (i64.reinterpret_f64
+                             (call $dv_get_f64 (local.get $view)
+                                (local.get $i)
+                                (global.get $littleEndian))))
+                       (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                       (br $loop))))
+              (br $done))
+             ;; complex32
              (local.set $len (i32.shl (local.get $len) (i32.const 1))))
              ;; fallthrough
-            ;; int64 / float64
-            (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+            ;; float32
+            (local.set $len (i32.shl (local.get $len) (i32.const 2)))
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
-                     (call $caml_serialize_int_8 (local.get $s)
-                        (call $dv_get_i64 (local.get $view)
-                           (local.get $i)
-                           (global.get $littleEndian)))
-                     (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                     (call $caml_serialize_int_4 (local.get $s)
+                        (i32.reinterpret_f32
+                           (call $dv_get_f32 (local.get $view) (local.get $i)
+                              (global.get $littleEndian))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 4)))
                      (br $loop))))
             (br $done))
-           ;; int
-           (call $caml_serialize_int_1 (local.get $s) (i32.const 0))
-           (br $int32))
-          ;; complex32
-          (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+           ;; int64
+           (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+           (loop $loop
+              (if (i32.lt_u (local.get $i) (local.get $len))
+                 (then
+                    (call $caml_serialize_int_8 (local.get $s)
+                       (call $dv_get_i64 (local.get $view)
+                          (local.get $i)
+                          (global.get $littleEndian)))
+                    (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                    (br $loop))))
+           (br $done))
+          ;; int
+          (call $caml_serialize_int_1 (local.get $s) (i32.const 0)))
           ;; fallthrough
-         ;; int32 / float32
+         ;; int32
          (local.set $len (i32.shl (local.get $len) (i32.const 2)))
          (loop $loop
             (if (i32.lt_u (local.get $i) (local.get $len))
@@ -496,17 +1048,17 @@
                   (local.set $i (i32.add (local.get $i) (i32.const 4)))
                   (br $loop))))
          (br $done))
-         ;; int16 / uint16 / float16
-         (local.set $len (i32.shl (local.get $len) (i32.const 1)))
-         (loop $loop
-            (if (i32.lt_u (local.get $i) (local.get $len))
-               (then
-                  (call $caml_serialize_int_2 (local.get $s)
-                     (call $dv_get_i16 (local.get $view) (local.get $i)
-                        (global.get $littleEndian)))
-                  (local.set $i (i32.add (local.get $i) (i32.const 2)))
-                  (br $loop))))
-         (br $done))
+        ;; int16 / uint16 / float16
+        (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+        (loop $loop
+           (if (i32.lt_u (local.get $i) (local.get $len))
+              (then
+                 (call $caml_serialize_int_2 (local.get $s)
+                    (call $dv_get_i16 (local.get $view) (local.get $i)
+                       (global.get $littleEndian)))
+                 (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                 (br $loop))))
+        (br $done))
        ;; int8 / uint8
        (loop $loop
           (if (i32.lt_u (local.get $i) (local.get $len))
@@ -514,8 +1066,7 @@
                 (call $caml_serialize_int_1 (local.get $s)
                    (call $dv_get_i8 (local.get $view) (local.get $i)))
                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
-                (br $loop))))
-       (br $done))
+                (br $loop)))))
       (tuple.make 2
          (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))
          (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 8))))
@@ -569,36 +1120,62 @@
        (block $int8
         (block $int16
          (block $int32
-          (block $complex32
-           (block $int
-            (block $int64
-             (block $complex64
-              (br_table $int32 $int64 $int8 $int8 $int16 $int16
-                        $int32 $int64 $int $int
-                        $complex32 $complex64 $int8 $int16
-                 (struct.get $bigarray $ba_kind (local.get $b))))
-             ;; complex64
+          (block $int
+           (block $int64
+            (block $float32
+             (block $complex32
+              (block $float64
+               (block $complex64
+                (br_table $float32 $float64 $int8 $int8 $int16 $int16
+                          $int32 $int64 $int $int
+                          $complex32 $complex64 $int8 $int16
+                   (struct.get $bigarray $ba_kind (local.get $b))))
+               ;; complex64
+               (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+               ;; fallthrough
+              ;; float64
+              (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+              (loop $loop
+                 (if (i32.lt_u (local.get $i) (local.get $len))
+                    (then
+                       (call $dv_set_f64 (local.get $view) (local.get $i)
+                          (f64.reinterpret_i64
+                             (call $caml_deserialize_int_8 (local.get $s)))
+                          (global.get $littleEndian))
+                       (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                       (br $loop))))
+              (br $done))
+             ;; complex32
              (local.set $len (i32.shl (local.get $len) (i32.const 1))))
              ;; fallthrough
-            ;; int64
-            (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+            ;; float32
+            (local.set $len (i32.shl (local.get $len) (i32.const 2)))
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
-                     (call $dv_set_i64 (local.get $view) (local.get $i)
-                        (call $caml_deserialize_int_8 (local.get $s))
+                     (call $dv_set_f32 (local.get $view) (local.get $i)
+                        (f32.reinterpret_i32
+                           (call $caml_deserialize_int_4 (local.get $s)))
                         (global.get $littleEndian))
-                     (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                     (local.set $i (i32.add (local.get $i) (i32.const 4)))
                      (br $loop))))
             (br $done))
-           ;; int
-           (if (call $caml_deserialize_uint_1 (local.get $s))
-              (then (call $caml_failwith (global.get $intern_overflow))))
-           (br $int32))
-          ;; complex32
-          (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+           ;; int64
+           (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+           (loop $loop
+              (if (i32.lt_u (local.get $i) (local.get $len))
+                 (then
+                    (call $dv_set_i64 (local.get $view) (local.get $i)
+                       (call $caml_deserialize_int_8 (local.get $s))
+                       (global.get $littleEndian))
+                    (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                    (br $loop))))
+           (br $done))
+          ;; int
+          (if (call $caml_deserialize_uint_1 (local.get $s))
+             (then (call $caml_failwith (global.get $intern_overflow)))))
           ;; fallthrough
-         ;; int32 / float32
+         ;; int32
          (local.set $len (i32.shl (local.get $len) (i32.const 2)))
          (loop $loop
             (if (i32.lt_u (local.get $i) (local.get $len))
@@ -719,6 +1296,8 @@
    (@string $ta_unsupported_kind "Typed_array.to_genarray: unsupported kind")
    (@string $ta_too_large "Typed_array.to_genarray: too large")
 
+(@if (not wasi)
+(@then
    (func (export "caml_ba_from_typed_array") (param (ref eq)) (result (ref eq))
       (local $data (ref extern))
       (local $kind i32)
@@ -748,6 +1327,7 @@
          (any.convert_extern
             (struct.get $bigarray $ba_data
                (ref.cast (ref $bigarray) (local.get 0))))))
+))
 
    (func $caml_ba_get_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (result (ref eq))
@@ -1966,7 +2546,8 @@
                 (i32.const 0)))
          (then (call $caml_bound_error)))
       (ref.i31
-         (call $dv_get_ui16 (local.get $view) (local.get $p) (i32.const 1))))
+         (call $dv_get_ui16_unaligned
+            (local.get $view) (local.get $p) (i32.const 1))))
 
    (func (export "caml_ba_uint8_get32")
       (param $vba (ref eq)) (param $i (ref eq)) (result i32)
@@ -1983,7 +2564,8 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (return_call $dv_get_i32 (local.get $view) (local.get $p) (i32.const 1)))
+      (return_call $dv_get_i32_unaligned
+         (local.get $view) (local.get $p) (i32.const 1)))
 
    (func (export "caml_ba_uint8_get64")
       (param $vba (ref eq)) (param $i (ref eq)) (result i64)
@@ -2000,7 +2582,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_get_i64
+      (call $dv_get_i64_unaligned
          (local.get $view) (local.get $p) (i32.const 1)))
 
    (func (export "caml_ba_uint8_set16")
@@ -2020,7 +2602,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i16
+      (call $dv_set_i16_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
@@ -2040,7 +2622,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i32
+      (call $dv_set_i32_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
@@ -2060,10 +2642,12 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i64
+      (call $dv_set_i64_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
+(@if (not wasi)
+(@then
    (export "caml_bytes_of_uint8_array" (func $caml_string_of_uint8_array))
    (func $caml_string_of_uint8_array (export "caml_string_of_uint8_array")
       (param (ref eq)) (result (ref eq))
@@ -2095,6 +2679,7 @@
          (local.get $s) (i32.const 0) (local.get $ta) (i32.const 0)
          (local.get $len))
       (call $wrap (any.convert_extern (local.get $ta))))
+))
 
    (func (export "caml_ba_get_kind") (param (ref eq)) (result i32)
       (struct.get $bigarray $ba_kind (ref.cast (ref $bigarray) (local.get 0))))
