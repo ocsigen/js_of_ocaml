@@ -1,4 +1,3 @@
-
 (include dune.inc)
 
 (rule
@@ -29,6 +28,5 @@
  (modes byte))
 
 (executable
-  (name gen_dune)
-  (modules gen_dune)
-)
+ (name gen_dune)
+ (modules gen_dune))
