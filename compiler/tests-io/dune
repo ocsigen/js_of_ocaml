@@ -21,6 +21,8 @@
 (tests
  (names md5)
  (modes js wasm)
+ (deps
+  (sandbox preserve_file_kind))
  (action
   (progn
    (run node %{test} %{dep:some-random-file})
@@ -89,6 +91,8 @@
  (names non_ascii_filenames_wasm)
  (deps "accentué")
  (modes wasm)
+ (enabled_if
+  (<> %{profile} wasi))
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags
@@ -109,6 +113,8 @@
  (names gh1856)
  (deps file.txt)
  (modes js wasm)
+ (enabled_if
+  (<> %{profile} wasi))
  (js_of_ocaml
   (compilation_mode whole_program)
   (flags

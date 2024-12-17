@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+(@if (not wasi)
+(@then
    (import "stdlib" "caml_global_data"
       (global $caml_global_data (mut (ref $block))))
    (import "stdlib" "link_info"
@@ -284,5 +286,5 @@
       (call $caml_failwith
          (@string "caml_invoke_traced_function: not available in Wasm"))
       (unreachable))
-
+))
 )

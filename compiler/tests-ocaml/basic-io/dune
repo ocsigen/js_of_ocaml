@@ -1,6 +1,8 @@
 (tests
  (names wc)
  (modes js wasm)
- (deps wc.ml)
+ (deps
+  wc.ml
+  (sandbox preserve_file_kind))
  (action
   (run node %{test} wc.ml)))

@@ -92,6 +92,11 @@ let config_keys target =
   ; Bool_key
       { name = "toplevel"; get = Config.Flag.toplevel; set = Config.Flag.set "toplevel" }
   ]
+  @
+  match target with
+  | `Wasm ->
+      [ Bool_key { name = "wasi"; get = Config.Flag.wasi; set = Config.Flag.set "wasi" } ]
+  | `JavaScript -> []
 
 let config_key_values = function
   | Bool_key _ -> [ "true"; "false" ]

@@ -16,6 +16,10 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+
+(@if (not wasi)
+(@then
+
    ;; Imports from other wasm modules
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "caml_raise_with_arg"
@@ -546,4 +550,5 @@
       (param (ref eq)) (result (ref eq))
       (call $caml_failwith (global.get $close_subwindow))
       (ref.i31 (i32.const 0)))
+))
 )
