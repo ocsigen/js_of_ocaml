@@ -16,12 +16,35 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+(@if wasi
+(@then
+   (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
+   (import "libc" "memory" (memory 2))
+   (import "libc" "free" (func $free (param i32)))
+   (import "libc" "format_float"
+      (func $format_float (param i32 i32 i32 f64) (result i32)))
+   (import "libc" "strtod" (func $strtod (param i32) (param i32) (result f64)))
+   (import "libc" "exp" (func $exp (param f64) (result f64)))
+   (import "wasi_memory" "checked_malloc"
+     (func $checked_malloc (param i32) (result i32)))
+   (import "wasi_memory" "get_buffer" (func $get_buffer (result i32)))
+   (import "wasi_memory" "write_string_to_memory"
+      (func $write_string_to_memory (param i32 i32 (ref eq)) (result i32)))
+   (import "wasi_memory" "release_memory"
+      (func $release_memory (param i32 i32)))
+   (import "wasi_memory" "blit_string_to_memory"
+      (func $blit_string_to_memory (param i32 (ref $bytes))))
+   (import "wasi_memory" "blit_memory_to_string"
+      (func $blit_memory_to_string (param i32 i32) (result (ref $bytes))))
+)
+(@else
    (import "bindings" "format_float"
       (func $format_float
          (param i32) (param i32) (param i32) (param f64) (result anyref)))
    (import "bindings" "identity"
       (func $parse_float (param anyref) (result f64)))
    (import "Math" "exp" (func $exp (param f64) (result f64)))
+))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
@@ -247,6 +270,49 @@
    (global $inf (ref $chars)
       (array.new_fixed $chars 3 (@char "i") (@char "n") (@char "f")))
 
+(@if wasi
+(@then
+   (func (export "caml_format_float")
+      (param $vfmt (ref eq)) (param $arg (ref eq)) (result (ref eq))
+      (local $fmt (ref $bytes)) (local $res (ref $bytes))
+      (local $d f64)
+      (local $buffer i32) (local $out_buffer i32)
+      (local $fmt_len i32) (local $avail i32) (local $len i32)
+      (local.set $fmt (ref.cast (ref $bytes) (local.get $vfmt)))
+      (local.set $d
+         (struct.get $float 0 (ref.cast (ref $float) (local.get $arg))))
+      (local.set $buffer (call $get_buffer))
+      (local.set $fmt_len (array.len (local.get $fmt)))
+      (call $blit_string_to_memory (local.get $buffer) (local.get $fmt))
+      (i32.store8
+         (i32.add (local.get $buffer) (local.get $fmt_len)) (i32.const 0))
+      (local.set $out_buffer
+         (i32.add (local.get $buffer)
+            (i32.add (local.get $fmt_len) (i32.const 1))))
+      (local.set $avail
+         (i32.sub (global.get $IO_BUFFER_SIZE) (local.get $fmt_len)))
+      (local.set $len
+         (call $format_float
+            (local.get $out_buffer) (local.get $avail)
+            (local.get $buffer) (local.get $d)))
+      (if (i32.ge_u (local.get $len) (local.get $avail))
+         (then
+            (local.set $out_buffer
+               (call $checked_malloc (i32.add (local.get $len) (i32.const 1))))
+            (drop
+               (call $format_float
+                  (local.get $out_buffer)
+                  (i32.add (local.get $len) (i32.const 1))
+                  (local.get $buffer) (local.get $d)))))
+      (local.set $res
+         (call $blit_memory_to_string (local.get $out_buffer) (local.get $len)))
+      (if (i32.ge_u (local.get $len) (local.get $avail))
+         (then
+            (call $free (local.get $out_buffer))))
+      (local.get $res)
+  )
+)
+(@else
    (func (export "caml_format_float")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (local $f f64) (local $b i64) (local $format (tuple i32 i32 i32 i32))
@@ -329,6 +395,7 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $uppercase (i32.lt_u (local.get $i) (local.get $len))))))
       (local.get $s))
+))
 
    (@string $float_of_string "float_of_string")
 
@@ -485,6 +552,7 @@
       (local $s' (ref $bytes))
       (local $negative i32) (local $c i32)
       (local $f f64)
+      (local $buffer i32) (local $buf i32)
       (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (local.set $len (array.len (local.get $s)))
       (loop $count
@@ -651,9 +719,26 @@
                                                 (f64.const inf)
                                                 (local.get $negative))))
                                        ))))))))))))))))))
+(@if wasi
+(@then
+         (local.set $buffer (call $get_buffer))
+         (local.set $buf
+            (call $write_string_to_memory
+               (i32.add (local.get $buffer) (i32.const 4))
+               (global.get $IO_BUFFER_SIZE)
+               (local.get $s)))
+         (local.set $f (call $strtod (local.get $buf) (local.get $buffer)))
+         (call $release_memory (i32.add (local.get $buffer) (i32.const 4))
+            (local.get $buf))
+         (br_if $error
+            (i32.ne (i32.load (local.get $buffer))
+              (i32.add (local.get $buf) (local.get $len))))
+)
+(@else
          (local.set $f
             (call $parse_float (call $jsstring_of_bytes (local.get $s))))
          (br_if $error (f64.ne (local.get $f) (local.get $f)))
+))
          (return (struct.new $float (local.get $f))))
       (call $caml_failwith (global.get $float_of_string))
       (return (ref.i31 (i32.const 0))))

@@ -225,7 +225,7 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Arith.( <> ) else Arith.( = ))
           Arith.(transl_prim_arg ctx ~typ:(Int Unnormalized) x lsl const 1l)
           Arith.(transl_prim_arg ctx ~typ:(Int Unnormalized) y lsl const 1l)
-    | Top, Top ->
+    | Top, Top when not (Config.Flag.wasi ()) ->
         Value.js_eqeqeq
           ~negate
           (transl_prim_arg ctx ~typ:Top x)
@@ -236,7 +236,8 @@ module Generate (Target : Target_sig.S) = struct
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
     | (Int _ | Number _ | Tuple _ | Bigarray _), _
-    | _, (Int _ | Number _ | Tuple _ | Bigarray _) ->
+    | _, (Int _ | Number _ | Tuple _ | Bigarray _)
+    | Top, Top (* when wasi is enabled *) ->
         (* Only Top may contain JavaScript values *)
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)

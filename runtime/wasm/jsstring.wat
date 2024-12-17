@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+(@if (not wasi)
+(@then
    (import "wasm:js-string" "compare"
       (func $compare_strings (param externref externref) (result i32)))
    (import "wasm:js-string" "test"
@@ -257,4 +259,5 @@
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $read_from_buffer (local.get $s) (i32.const 0) (local.get $len))
       (global.set $stack (struct.new $stack (local.get $s) (global.get $stack))))
+))
 )
