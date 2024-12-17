@@ -70,9 +70,7 @@ let normalize_string s =
     | '\b' -> Buffer.add_string b "\\b"
     | '\t' -> Buffer.add_string b "\\t"
     | '\n' -> Buffer.add_string b "\\n"
-    (* This escape sequence is not supported by IE < 9
-       | '\011' -> "\\v"
-    *)
+    | '\011' -> Buffer.add_string b "\\v"
     | '\012' -> Buffer.add_string b "\\f"
     (* https://github.com/ocsigen/js_of_ocaml/issues/898 *)
     | '/' when i > 0 && Char.equal s.[i - 1] '<' -> Buffer.add_string b "\\/"
