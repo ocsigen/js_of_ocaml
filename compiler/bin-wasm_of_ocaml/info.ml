@@ -32,9 +32,9 @@ let make ~name ~doc ~description =
     ; `S "AUTHORS"
     ; `P "Jerome Vouillon, Hugo Heuzard."
     ; `S "LICENSE"
-    ; `P "Copyright (C) 2010-2024."
+    ; `P "Copyright (C) 2010-2025."
     ; `P
-        "js_of_ocaml is free software, you can redistribute it and/or modify it under \
+        "wasm_of_ocaml is free software, you can redistribute it and/or modify it under \
          the terms of the GNU Lesser General Public License as published by the Free \
          Software Foundation, with linking exception; either version 2.1 of the License, \
          or (at your option) any later version."

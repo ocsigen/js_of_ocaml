@@ -16,33 +16,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type link_input =
-  { module_name : string  (** Name under which the module is imported in other modules *)
-  ; file : string  (** File containing the Wasm module *)
-  }
-
-val link :
-     ?options:string list
-  -> inputs:link_input list
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> unit
-  -> unit
-
-val dead_code_elimination :
-     dependencies:string
-  -> opt_input_sourcemap:string option
-  -> input_file:string
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> Stdlib.StringSet.t
-
-val optimize :
-     profile:Driver.profile option
-  -> ?options:string list
-  -> opt_input_sourcemap:string option
-  -> input_file:string
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> unit
-  -> unit
+val command : unit Cmdliner.Cmd.t
