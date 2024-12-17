@@ -24,7 +24,7 @@
       (func $jsstring_hash (param i32) (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $js (struct (field anyref)))
 
@@ -39,7 +39,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $string))
+         (field $id (ref $bytes))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -121,7 +121,7 @@
       (return_call $caml_hash_mix_int (local.get $h) (local.get $i)))
 
    (func $caml_hash_mix_string (export "caml_hash_mix_string")
-      (param $h i32) (param $s (ref $string)) (result i32)
+      (param $h i32) (param $s (ref $bytes)) (result i32)
       (local $i i32) (local $len i32) (local $w i32)
       (local.set $len (array.len (local.get $s)))
       (local.set $i (i32.const 0))
@@ -133,15 +133,15 @@
                      (local.get $h)
                      (i32.or
                         (i32.or
-                           (array.get_u $string (local.get $s) (local.get $i))
-                           (i32.shl (array.get_u $string (local.get $s)
+                           (array.get_u $bytes (local.get $s) (local.get $i))
+                           (i32.shl (array.get_u $bytes (local.get $s)
                                        (i32.add (local.get $i) (i32.const 1)))
                                     (i32.const 8)))
                         (i32.or
-                           (i32.shl (array.get_u $string (local.get $s)
+                           (i32.shl (array.get_u $bytes (local.get $s)
                                        (i32.add (local.get $i) (i32.const 2)))
                                     (i32.const 16))
-                           (i32.shl (array.get_u $string (local.get $s)
+                           (i32.shl (array.get_u $bytes (local.get $s)
                                        (i32.add (local.get $i) (i32.const 3)))
                                     (i32.const 24))))))
                (local.set $i (i32.add (local.get $i) (i32.const 4)))
@@ -154,17 +154,17 @@
                   (br_table $0_bytes $1_byte $2_bytes $3_bytes
                      (i32.and (local.get $len) (i32.const 3))))
                (local.set $w
-                  (i32.shl (array.get_u $string (local.get $s)
+                  (i32.shl (array.get_u $bytes (local.get $s)
                               (i32.add (local.get $i) (i32.const 2)))
                            (i32.const 16))))
             (local.set $w
                (i32.or (local.get $w)
-                  (i32.shl (array.get_u $string (local.get $s)
+                  (i32.shl (array.get_u $bytes (local.get $s)
                               (i32.add (local.get $i) (i32.const 1)))
                            (i32.const 8)))))
          (local.set $w
             (i32.or (local.get $w)
-               (array.get_u $string (local.get $s) (local.get $i))))
+               (array.get_u $bytes (local.get $s) (local.get $i))))
          (local.set $h (call $caml_hash_mix_int (local.get $h) (local.get $w))))
       (i32.xor (local.get $h) (local.get $len)))
 
@@ -219,7 +219,7 @@
                   (drop (block $not_string (result (ref eq))
                      (local.set $h
                         (call $caml_hash_mix_string (local.get $h)
-                           (br_on_cast_fail $not_string (ref eq) (ref $string)
+                           (br_on_cast_fail $not_string (ref eq) (ref $bytes)
                               (local.get $v))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
@@ -331,6 +331,6 @@
             (call $caml_hash_mix_final
                (call $caml_hash_mix_string
                   (i31.get_s (ref.cast (ref i31) (local.get 0)))
-                  (ref.cast (ref $string) (local.get 1))))
+                  (ref.cast (ref $bytes) (local.get 1))))
             (i32.const 0x3FFFFFFF))))
 )

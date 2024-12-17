@@ -20,7 +20,7 @@
       (func $caml_invalid_argument (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
 

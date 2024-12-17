@@ -494,7 +494,7 @@ and rewrite st elt =
       insert
         st
         (Format.asprintf
-           "(global %s (ref eq) (array.new_fixed $string %d%a))"
+           "(global %s (ref eq) (array.new_fixed $bytes %d%a))"
            name
            (String.length s)
            (fun f s ->
@@ -511,7 +511,7 @@ and rewrite st elt =
       insert
         st
         (Format.asprintf
-           "(array.new_fixed $string %d%a)"
+           "(array.new_fixed $bytes %d%a)"
            (String.length s)
            (fun f s ->
              String.iter ~f:(fun c -> Format.fprintf f " (i32.const %d)" (Char.code c)) s)

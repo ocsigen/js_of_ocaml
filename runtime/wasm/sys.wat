@@ -50,7 +50,7 @@
       (func $jsstring_test (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
 
    (tag $ocaml_exit (export "ocaml_exit") (param i32))

@@ -32,7 +32,7 @@
       (func $caml_js_html_entities_js (param anyref) (result anyref)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
 
    (func (export "caml_js_html_escape") (param (ref eq)) (result (ref eq))
       (return_call $wrap

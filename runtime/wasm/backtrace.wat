@@ -20,7 +20,7 @@
       (func $caml_invalid_argument (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
 
    (func (export "caml_get_exception_raw_backtrace")
       (param (ref eq)) (result (ref eq))

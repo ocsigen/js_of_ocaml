@@ -24,7 +24,7 @@ float arrays, and Javascript values. The first field of a block is its
 tag, of type {{{(ref i31)}}}.
 {{{
 (type $block (array (mut (ref eq))))
-(type $string (array (mut i8)))
+(type $bytes (array (mut i8)))
 (type $float (struct (field f64)))
 (type $float_array (array (mut f64)))
 (type $js (struct (ref null any)))
@@ -58,7 +58,7 @@ To form conditional expressions, the following operators are available:
 - comparisons: {{{=}}}, {{{>}}}, {{{>=}}}, {{{<}}}, {{{<=}}}, {{{<>}}};
 - boolean operators: {{{and}}}, {{{or}}}, {{{not}}}
 
-This also provides some syntactic sugar to write strings. The expression{{{(@string "ab")}}} is expanded into {{{(array.new_fixed $string 2 (i32.const 97) (i32.const 98))}}}. The statement {{{(@string $s "ab")}}} is an abbreviatiation for {{{(global $s (ref eq) (@string "ab"))}}}.
+This also provides some syntactic sugar to write strings. The expression{{{(@string "ab")}}} is expanded into {{{(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))}}}. The statement {{{(@string $s "ab")}}} is an abbreviatiation for {{{(global $s (ref eq) (@string "ab"))}}}.
 
 To provide a better debugging experience, the function export name is used to name functions with no explicit id: {{{(func (export "foo") ...)}}}} is expanded into {{{(func $foo (export "foo") ...)}}}}.
 

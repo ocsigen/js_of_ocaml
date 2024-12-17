@@ -24,7 +24,7 @@
       (func $custom_hash_id (param (ref eq)) (result i32)))
    (import "custom" "custom_next_id" (func $custom_next_id (result i64)))
 
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -36,7 +36,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $string))
+         (field $id (ref $bytes))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))

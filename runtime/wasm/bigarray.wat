@@ -71,11 +71,11 @@
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_blit_from_string"
       (func $ta_blit_from_string
-         (param (ref $string)) (param i32) (param (ref extern)) (param i32)
+         (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
          (param i32)))
    (import "bindings" "ta_blit_to_string"
       (func $ta_blit_to_string
-         (param (ref extern)) (param i32) (param (ref $string)) (param i32)
+         (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
          (param i32)))
    (import "fail" "caml_bound_error" (func $caml_bound_error))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
@@ -128,7 +128,7 @@
       (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
 
@@ -143,7 +143,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $string))
+         (field $id (ref $bytes))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -2126,11 +2126,11 @@
       (param (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string
       (local $a (ref extern)) (local $len i32)
-      (local $s (ref $string))
+      (local $s (ref $bytes))
       (local.set $a
          (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
       (local.set $len (call $ta_length (local.get $a)))
-      (local.set $s (array.new $string (i32.const 0) (local.get $len)))
+      (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $ta_blit_to_string
          (local.get $a) (i32.const 0) (local.get $s) (i32.const 0)
          (local.get $len))
@@ -2141,8 +2141,8 @@
       (param (ref eq)) (result (ref eq))
       ;; Convert a string to a typed array
       (local $ta (ref extern)) (local $len i32)
-      (local $s (ref $string))
-      (local.set $s (ref.cast (ref $string) (local.get 0)))
+      (local $s (ref $bytes))
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (local.set $len (array.len (local.get $s)))
       (local.set $ta
          (call $ta_create
@@ -2184,13 +2184,13 @@
 
    (func (export "string_set")
       (param $s externref) (param $i i32) (param $v i32)
-      (array.set $string
-         (ref.cast (ref null $string) (any.convert_extern (local.get $s)))
+      (array.set $bytes
+         (ref.cast (ref null $bytes) (any.convert_extern (local.get $s)))
          (local.get $i) (local.get $v)))
 
    (func (export "string_get")
       (param $s externref) (param $i i32) (result i32)
-      (array.get $string
-         (ref.cast (ref null $string) (any.convert_extern (local.get $s)))
+      (array.get $bytes
+         (ref.cast (ref null $bytes) (any.convert_extern (local.get $s)))
          (local.get $i)))
 )

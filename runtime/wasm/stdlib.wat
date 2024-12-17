@@ -43,11 +43,11 @@
    (import "bindings" "throw" (func $throw (param externref)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
 
    (type $assoc
       (struct
-         (field (ref $string))
+         (field (ref $bytes))
          (field (mut (ref eq)))
          (field (mut (ref null $assoc)))))
 
@@ -115,7 +115,7 @@
       (array.set $assoc_array
          (global.get $named_value_table) (local.get $h)
          (struct.new $assoc
-            (ref.cast (ref $string) (local.get 0))
+            (ref.cast (ref $bytes) (local.get 0))
             (local.get 1) (local.get $r)))
       (ref.i31 (i32.const 0)))
 
