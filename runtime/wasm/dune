@@ -1,10 +1,13 @@
 (install
  (section lib)
  (package wasm_of_ocaml-compiler)
- (files runtime.wasm runtime.js))
+ (files
+  (glob_files *.wat)
+  (glob_files runtime-*.wasm)
+  runtime.js))
 
 (rule
- (target runtime.wasm)
+ (target runtime-standard.wasm)
  (deps
   args
   (glob_files *.wat))

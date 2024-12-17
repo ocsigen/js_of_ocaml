@@ -25,9 +25,10 @@
  (target runtime_files.ml)
  (deps
   gen/gen.exe
-  ../../runtime/wasm/runtime.wasm
   ../../runtime/wasm/runtime.js
-  ../../runtime/wasm/deps.json)
+  ../../runtime/wasm/deps.json
+  (glob_files ../../runtime/wasm/*.wat)
+  (glob_files ../../runtime/wasm/runtime-*.wasm))
  (action
   (with-stdout-to
    %{target}
