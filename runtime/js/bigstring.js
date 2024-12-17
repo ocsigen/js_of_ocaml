@@ -81,7 +81,7 @@ function caml_bigstring_blit_string_to_ba(str1, pos1, ba2, pos2, len) {
   if (ofs2 + len > ba2.data.length) {
     caml_array_bound_error();
   }
-  var slice = caml_uint8_array_of_string(str1).slice(pos1, pos1 + len);
+  var slice = caml_uint8_array_of_string(str1).subarray(pos1, pos1 + len);
   ba2.data.set(slice, ofs2);
   return 0;
 }
@@ -100,7 +100,7 @@ function caml_bigstring_blit_bytes_to_ba(str1, pos1, ba2, pos2, len) {
   if (ofs2 + len > ba2.data.length) {
     caml_array_bound_error();
   }
-  var slice = caml_uint8_array_of_bytes(str1).slice(pos1, pos1 + len);
+  var slice = caml_uint8_array_of_bytes(str1).subarray(pos1, pos1 + len);
   ba2.data.set(slice, ofs2);
   return 0;
 }
@@ -120,7 +120,7 @@ function caml_bigstring_blit_ba_to_bytes(ba1, pos1, bytes2, pos2, len) {
   if (pos2 + len > caml_ml_bytes_length(bytes2)) {
     caml_array_bound_error();
   }
-  var slice = ba1.data.slice(ofs1, ofs1 + len);
+  var slice = ba1.data.subarray(ofs1, ofs1 + len);
   caml_blit_bytes(caml_bytes_of_array(slice), 0, bytes2, pos2, len);
   return 0;
 }
