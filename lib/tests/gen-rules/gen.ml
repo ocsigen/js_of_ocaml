@@ -79,7 +79,7 @@ let () =
         basename
         (Hashtbl.hash prefix mod 100)
         (match enabled_if basename with
-        | Any -> ""
+        | Any -> "\n (enabled_if (<> %{profile} wasi))"
         | GE5 -> "\n (enabled_if (>= %{ocaml_version} 5))"
         | No_effects -> "\n (enabled_if (<> %{profile} with-effects))")
         basename

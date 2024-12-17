@@ -17,7 +17,10 @@
 
 (rule
  (target test_rest_all_wasm.ml.corrected)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} wasi)))
  (deps
   (glob_files ../expect_wasm.bc.wasm.assets/*))
  (action
@@ -25,6 +28,9 @@
 
 (rule
  (alias runtest-wasm)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} wasi)))
  (action
   (diff test_rest_all.ml test_rest_all_wasm.ml.corrected)))

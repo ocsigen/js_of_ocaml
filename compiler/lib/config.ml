@@ -114,6 +114,8 @@ module Flag = struct
   let toplevel = o ~name:"toplevel" ~default:false
 
   let exnref = o ~name:"exnref" ~default:false
+
+  let wasi = o ~name:"wasi" ~default:false
 end
 
 module Param = struct

@@ -1,0 +1,15 @@
+[
+  {
+    "name": "root",
+    "reaches": ["start", "memory"],
+    "root": true
+  },
+  {
+    "name": "start",
+    "export": "_start"
+  },
+  {
+    "name": "memory",
+    "export": "memory"
+  }
+]
