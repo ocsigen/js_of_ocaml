@@ -286,6 +286,9 @@ type st =
   ; mutable pos : pos
   ; variables : value StringMap.t
   ; buf : Buffer.t
+  ; mutable head : int
+  ; head_buf : Buffer.t
+  ; mutable id : int (* to generate distinct string id names *)
   }
 
 let value_type v : typ =
@@ -412,6 +415,11 @@ let insert st s =
 let pred_position { loc; byte_loc } =
   { loc = { loc with pos_cnum = loc.pos_cnum - 1 }; byte_loc = byte_loc - 1 }
 
+let generate_id st _ =
+  let id = Printf.sprintf "$js$string$%d$" st.id in
+  st.id <- st.id + 1;
+  id
+
 let rec rewrite_list st l = List.iter ~f:(rewrite st) l
 
 and rewrite st elt =
@@ -508,15 +516,32 @@ and rewrite st elt =
       then raise (Error (position_of_loc loc_value, "Expecting a string"));
       let s = parse_string loc_value value in
       write st pos;
-      insert
-        st
-        (Format.asprintf
-           "(global %s (ref eq) (array.new_fixed $bytes %d%a))"
-           name
-           (String.length s)
-           (fun f s ->
-             String.iter ~f:(fun c -> Format.fprintf f " (i32.const %d)" (Char.code c)) s)
-           s);
+      if variable_is_set st "use-js-string"
+      then (
+        Printf.bprintf
+          st.head_buf
+          "(import \"\" %s (global %s$string externref)) "
+          value
+          name;
+        insert
+          st
+          (Printf.sprintf
+             "(global %s (ref eq) (struct.new $string (any.convert_extern (global.get \
+              %s$string))))"
+             name
+             name))
+      else
+        insert
+          st
+          (Format.asprintf
+             "(global %s (ref eq) (array.new_fixed $bytes %d%a))"
+             name
+             (String.length s)
+             (fun f s ->
+               String.iter
+                 ~f:(fun c -> Format.fprintf f " (i32.const %d)" (Char.code c))
+                 s)
+             s);
       skip st pos'
   | { desc = List [ { desc = Atom "@string"; _ }; { desc = Atom value; loc = loc_value } ]
     ; loc = pos, pos'
@@ -524,19 +549,83 @@ and rewrite st elt =
       if not (is_string value)
       then raise (Error (position_of_loc loc_value, "Expecting a string"));
       let s = parse_string loc_value value in
+      let name = generate_id st s in
       write st pos;
+      if variable_is_set st "use-js-string"
+      then (
+        Printf.bprintf
+          st.head_buf
+          "(import \"\" %s (global %s$string externref)) "
+          value
+          name;
+        insert
+          st
+          (Printf.sprintf
+             "(struct.new $string (any.convert_extern (global.get %s$string)))"
+             name))
+      else
+        insert
+          st
+          (Format.asprintf
+             "(array.new_fixed $bytes %d%a)"
+             (String.length s)
+             (fun f s ->
+               String.iter
+                 ~f:(fun c -> Format.fprintf f " (i32.const %d)" (Char.code c))
+                 s)
+             s);
+      skip st pos'
+  | { desc =
+        List
+          [ { desc = Atom "@jsstring"; _ }
+          ; { desc = Atom name; _ }
+          ; { desc = Atom value; _ }
+          ]
+    ; loc = pos, pos'
+    } ->
+      write st pos;
+      Printf.bprintf
+        st.head_buf
+        "(import \"\" %s (global %s$string externref)) "
+        value
+        name;
       insert
         st
-        (Format.asprintf
-           "(array.new_fixed $bytes %d%a)"
-           (String.length s)
-           (fun f s ->
-             String.iter ~f:(fun c -> Format.fprintf f " (i32.const %d)" (Char.code c)) s)
-           s);
+        (Printf.sprintf
+           "(global %s (ref eq) (struct.new $js (any.convert_extern (global.get \
+            %s$string))))"
+           name
+           name);
       skip st pos'
-  | { desc = List [ { desc = Atom "@string"; loc = _, pos } ]; loc = _, pos' } ->
+  | { desc =
+        List [ { desc = Atom "@jsstring"; _ }; { desc = Atom value; loc = loc_value } ]
+    ; loc = pos, pos'
+    } ->
+      if not (is_string value)
+      then raise (Error (position_of_loc loc_value, "Expecting a string"));
+      let s = parse_string loc_value value in
+      let name = generate_id st s in
+      write st pos;
+      Printf.bprintf
+        st.head_buf
+        "(import \"\" %s (global %s$string externref)) "
+        value
+        name;
+      insert
+        st
+        (Printf.sprintf
+           "(struct.new $%s (any.convert_extern (global.get %s$string))))"
+           (if variable_is_set st "use-js-string" then "string" else "js")
+           name);
+      skip st pos'
+  | { desc = List [ { desc = Atom ("@string" | "@jsstring"); loc = _, pos } ]
+    ; loc = _, pos'
+    } ->
       raise (Error ((pos.loc, pos'.loc), Printf.sprintf "Expecting an id or a string.\n"))
-  | { desc = List ({ desc = Atom "@string"; _ } :: _ :: _ :: { loc; _ } :: _); _ } ->
+  | { desc =
+        List ({ desc = Atom ("@string" | "@jsstring"); _ } :: _ :: _ :: { loc; _ } :: _)
+    ; _
+    } ->
       raise
         (Error (position_of_loc loc, Printf.sprintf "Expecting a closing parenthesis.\n"))
   | { desc = List [ { desc = Atom "@char"; _ }; { desc = Atom value; loc = loc_value } ]
@@ -576,6 +665,9 @@ and rewrite st elt =
       insert st (Printf.sprintf " $%s " (parse_string export_loc export_name));
       skip st pos';
       rewrite_list st l
+  | { desc = List ({ desc = Atom "module"; loc = _, pos } :: _ as l); _ } ->
+      st.head <- pos.byte_loc;
+      rewrite_list st l
   | { desc = List l; _ } -> rewrite_list st l
   | _ -> ()
 
@@ -585,7 +677,7 @@ let ocaml_version =
   Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun major minor patchlevel ->
       Version (major, minor, patchlevel))
 
-let default_settings = [ "name-wasm-functions", Bool true ]
+let default_settings = [ "name-wasm-functions", Bool true; "use-js-string", Bool false ]
 
 let f ~variables ~filename ~contents:text =
   let variables =
@@ -599,10 +691,23 @@ let f ~variables ~filename ~contents:text =
   Sedlexing.set_filename lexbuf filename;
   try
     let t, (pos, end_pos) = parse lexbuf in
-    let st = { text; pos; variables; buf = Buffer.create (String.length text) } in
+    let st =
+      { text
+      ; pos
+      ; variables
+      ; buf = Buffer.create (String.length text)
+      ; head_buf = Buffer.create 128
+      ; head = 0
+      ; id = 0
+      }
+    in
     rewrite_list st t;
     write st end_pos;
-    Buffer.contents st.buf
+    let head = Buffer.contents st.head_buf in
+    let contents = Buffer.contents st.buf in
+    String.sub contents ~pos:0 ~len:st.head
+    ^ head
+    ^ String.sub contents ~pos:st.head ~len:(String.length contents - st.head)
   with Error (loc, msg) -> report_error loc msg
 
 type source =
