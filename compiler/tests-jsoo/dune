@@ -52,7 +52,7 @@
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (foreign_stubs
   (language c)
-  (names bigarray_stubs))
+  (names bigarray_stubs jsoo_runtime_stubs))
  (inline_tests
   (modes js wasm best))
  (preprocess
