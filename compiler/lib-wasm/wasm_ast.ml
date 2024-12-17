@@ -166,6 +166,7 @@ type expression =
   | Br_on_cast_fail of int * ref_type * ref_type * expression
   | IfExpr of value_type * expression * expression * expression
   | Try of func_type * instruction list * (var * int * value_type) list
+  | ExternConvertAny of expression
 
 and instruction =
   | Drop of expression
