@@ -34,9 +34,6 @@
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
 
-   (func (export "caml_js_on_ie") (param (ref eq)) (result (ref eq))
-      (ref.i31 (call $caml_js_on_ie)))
-
    (func (export "caml_js_html_escape") (param (ref eq)) (result (ref eq))
       (return_call $wrap
          (call $caml_js_html_escape (call $unwrap (local.get 0)))))
