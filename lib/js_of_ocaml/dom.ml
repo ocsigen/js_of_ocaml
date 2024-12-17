@@ -281,6 +281,8 @@ class type ['a] event = object
 
   method currentTarget : 'a t opt readonly_prop
 
+  method preventDefault : unit meth
+
   (* Legacy methods *)
   method srcElement : 'a t opt readonly_prop
 end
@@ -293,55 +295,27 @@ end
 
 let no_handler : ('a, 'b) event_listener = Js.null
 
-let window_event () : 'a #event t = Js.Unsafe.pure_js_expr "event"
-
 (* The function preventDefault must be called explicitly when
    using addEventListener... *)
 let handler f =
   Js.some
     (Js.Unsafe.callback (fun e ->
-         (* depending on the internet explorer version, e can be null or undefined. *)
-         if not (Js.Opt.test (some e))
-         then (
-           let e = window_event () in
-           let res = f e in
-           if not (Js.to_bool res) then e##.returnValue := res;
-           res)
-         else
-           let res = f e in
-           if not (Js.to_bool res) then (Js.Unsafe.coerce e)##preventDefault;
-           res))
+         let res = f e in
+         if not (Js.to_bool res) then e##preventDefault;
+         res))
 
 let full_handler f =
   Js.some
     (Js.Unsafe.meth_callback (fun this e ->
-         (* depending on the internet explorer version, e can be null or undefined *)
-         if not (Js.Opt.test (some e))
-         then (
-           let e = window_event () in
-           let res = f this e in
-           if not (Js.to_bool res) then e##.returnValue := res;
-           res)
-         else
-           let res = f this e in
-           if not (Js.to_bool res) then (Js.Unsafe.coerce e)##preventDefault;
-           res))
+         let res = f this e in
+         if not (Js.to_bool res) then e##preventDefault;
+         res))
 
 let invoke_handler (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
   Js.Unsafe.call f this [| Js.Unsafe.inject event |]
 
 let eventTarget (e : (< .. > as 'a) #event t) : 'a t =
-  let target =
-    Opt.get e##.target (fun () -> Opt.get e##.srcElement (fun () -> raise Not_found))
-  in
-  if Js.instanceof target Js.Unsafe.global##._Node
-  then
-    (* Workaround for Safari bug *)
-    let target' : node Js.t = Js.Unsafe.coerce target in
-    if target'##.nodeType == TEXT
-    then Js.Unsafe.coerce (Opt.get target'##.parentNode (fun () -> assert false))
-    else target
-  else target
+  Opt.get e##.target (fun () -> Opt.get e##.srcElement (fun () -> raise Not_found))
 
 module Event = struct
   type 'a typ = Js.js_string Js.t
@@ -384,10 +358,7 @@ let addEventListener (e : (< .. > as 'a) t) typ h capt =
 
 let removeEventListener id = id ()
 
-let preventDefault ev =
-  if Js.Optdef.test (Js.Unsafe.coerce ev)##.preventDefault (* IE hack *)
-  then (Js.Unsafe.coerce ev)##preventDefault
-  else (Js.Unsafe.coerce ev)##.returnValue := Js.bool false
+let preventDefault ev = ev##preventDefault
 
 let createCustomEvent ?bubbles ?cancelable ?detail typ =
   let opt_iter f = function
@@ -406,8 +377,6 @@ let createCustomEvent ?bubbles ?cancelable ?detail typ =
     Unsafe.global##._CustomEvent
   in
   new%js constr typ opts
-
-(* IE < 9 *)
 
 class type stringList = object
   method item : int -> js_string t opt meth

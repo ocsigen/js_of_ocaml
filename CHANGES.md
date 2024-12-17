@@ -5,6 +5,7 @@
 * Test: use dune test stanzas (#1631)
 * Merged Wasm_of_ocaml (#1724)
 * Lib: removed no longer relevant Js.optdef type annotations (#1769)
+* Misc: drop support for IE
 
 ## Bug fixes
 * Fix small bug in global data flow analysis (#1768)

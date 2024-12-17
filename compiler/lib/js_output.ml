@@ -543,16 +543,14 @@ struct
       let c = s.[i] in
       match c with
       | '\000' when i = l - 1 || not (Char.is_num s.[i + 1]) -> Buffer.add_string b "\\0"
-      | '\b' -> Buffer.add_string b "\\b"
-      | '\t' -> Buffer.add_string b "\\t"
-      | '\n' -> Buffer.add_string b "\\n"
-      (* This escape sequence is not supported by IE < 9
-         | '\011' -> "\\v"
-      *)
+      | '\b' (* 008 *) -> Buffer.add_string b "\\b"
+      | '\t' (* 009 *) -> Buffer.add_string b "\\t"
+      | '\n' (* 010 *) -> Buffer.add_string b "\\n"
+      | '\011' -> Buffer.add_string b "\\v"
       | '\012' -> Buffer.add_string b "\\f"
+      | '\r' (* 013 *) -> Buffer.add_string b "\\r"
       (* https://github.com/ocsigen/js_of_ocaml/issues/898 *)
       | '/' when i > 0 && Char.equal s.[i - 1] '<' -> Buffer.add_string b "\\/"
-      | '\r' -> Buffer.add_string b "\\r"
       | '\000' .. '\031' | '\127' ->
           Buffer.add_string b "\\x";
           Buffer.add_char_hex b c

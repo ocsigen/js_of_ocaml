@@ -21,10 +21,6 @@
 open Js
 open! Import
 
-external caml_js_on_ie : unit -> bool t = "caml_js_on_ie"
-
-let onIE = Js.to_bool (caml_js_on_ie ())
-
 external html_escape : js_string t -> js_string t = "caml_js_html_escape"
 
 external html_entities : js_string t -> js_string t opt = "caml_js_html_entities"
@@ -2717,18 +2713,8 @@ let createCanvas doc : canvasElement t =
 let html_element : htmlElement t constr = Js.Unsafe.global##._HTMLElement
 
 module CoerceTo = struct
-  let element : #Dom.node Js.t -> element Js.t Js.opt =
-    if not (Js.Optdef.test (def html_element))
-    then
-      (* ie < 9 does not have HTMLElement: we have to cheat to check
-         that something is an html element *)
-      fun e ->
-        if not (Js.Optdef.test (def (Js.Unsafe.coerce e)##.innerHTML))
-        then Js.null
-        else Js.some (Js.Unsafe.coerce e)
-    else
-      fun e ->
-        if Js.instanceof e html_element then Js.some (Js.Unsafe.coerce e) else Js.null
+  let element (e : #Dom.node Js.t) : element Js.t Js.opt =
+    if Js.instanceof e html_element then Js.some (Js.Unsafe.coerce e) else Js.null
 
   let unsafeCoerce tag (e : #element t) =
     if Js.equals e##.tagName##toLowerCase (Js.string tag)

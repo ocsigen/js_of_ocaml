@@ -292,6 +292,8 @@ class type ['a] event = object
 
   method currentTarget : 'a t opt readonly_prop
 
+  method preventDefault : unit meth
+
   (* Legacy methods *)
   method srcElement : 'a t opt readonly_prop
 end
