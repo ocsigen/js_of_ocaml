@@ -16,6 +16,10 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (type $bytes (array (mut i8)))
+
+(@if (not wasi)
+(@then
    (import "bindings" "identity" (func $to_float (param anyref) (result f64)))
    (import "bindings" "identity" (func $from_float (param f64) (result anyref)))
    (import "bindings" "identity" (func $to_bool (param anyref) (result i32)))
@@ -104,7 +108,6 @@
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
-   (type $bytes (array (mut i8)))
    (type $js (struct (field anyref)))
 
    (func $wrap (export "wrap") (param anyref) (result (ref eq))
@@ -681,6 +684,7 @@
                   (return
                      (array.get $block (local.get $exn) (i32.const 2)))))))
       (call $wrap (ref.null any)))
+))
 
    (func (export "caml_exn_with_js_backtrace")
       (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
