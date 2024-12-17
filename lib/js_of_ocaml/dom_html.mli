@@ -742,7 +742,6 @@ and element = object
 
   method offsetTop : int readonly_prop
 
-  (* Incorrect in IE until IE7 included *)
   method offsetParent : element t opt readonly_prop
 
   method offsetWidth : int readonly_prop
@@ -925,7 +924,6 @@ class type selectElement = object ('self)
 
   method _type : js_string t readonly_prop
 
-  (* Cannot be changed under IE *)
   method selectedIndex : int prop
 
   method value : js_string t prop
@@ -942,7 +940,6 @@ class type selectElement = object ('self)
 
   method name : js_string t readonly_prop
 
-  (* Cannot be changed under IE *)
   method size : int prop
 
   method tabIndex : int prop
@@ -953,7 +950,6 @@ class type selectElement = object ('self)
 
   method required : bool t writeonly_prop
 
-  (* Not supported by IE 9/Safari *)
   method onchange : ('self t, event t) event_listener prop
 
   method oninput : ('self t, event t) event_listener prop
@@ -972,6 +968,7 @@ class type inputElement = object ('self)
 
   method accessKey : js_string t prop
 
+  (* deprecated *)
   method align : js_string t prop
 
   method alt : js_string t prop
@@ -984,12 +981,10 @@ class type inputElement = object ('self)
 
   method name : js_string t readonly_prop
 
-  (* Cannot be changed under IE *)
   method readOnly : bool t prop
 
   method required : bool t writeonly_prop
 
-  (* Not supported by IE 9/Safari *)
   method size : int prop
 
   method src : js_string t prop
@@ -998,7 +993,7 @@ class type inputElement = object ('self)
 
   method _type : js_string t readonly_prop
 
-  (* Cannot be changed under IE *)
+  (* Deprecated *)
   method useMap : js_string t prop
 
   method value : js_string t prop
@@ -1009,7 +1004,6 @@ class type inputElement = object ('self)
 
   method placeholder : js_string t writeonly_prop
 
-  (* Not supported by IE 9 *)
   method selectionDirection : js_string t prop
 
   method selectionStart : int prop
@@ -1042,7 +1036,6 @@ class type textAreaElement = object ('self)
 
   method name : js_string t readonly_prop
 
-  (* Cannot be changed under IE *)
   method readOnly : bool t prop
 
   method rows : int prop
@@ -1057,17 +1050,14 @@ class type textAreaElement = object ('self)
 
   method _type : js_string t readonly_prop
 
-  (* Cannot be changed under IE *)
   method value : js_string t prop
 
   method select : unit meth
 
   method required : bool t writeonly_prop
 
-  (* Not supported by IE 9/Safari *)
   method placeholder : js_string t writeonly_prop
 
-  (* Not supported by IE 9 *)
   method onselect : ('self t, event t) event_listener prop
 
   method onchange : ('self t, event t) event_listener prop
@@ -1090,12 +1080,10 @@ class type buttonElement = object
 
   method name : js_string t readonly_prop
 
-  (* Cannot be changed under IE *)
   method tabIndex : int prop
 
   method _type : js_string t readonly_prop
 
-  (* Cannot be changed under IE *)
   method value : js_string t prop
 end
 
@@ -3225,8 +3213,6 @@ val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
 (**/**)
 
 val decode_html_entities : js_string t -> js_string t
-
-val onIE : bool
 
 val hasPushState : unit -> bool
 

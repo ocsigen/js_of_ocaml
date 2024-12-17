@@ -19,15 +19,6 @@
 
 ///////////// Jslib: code specific to Js_of_ocaml
 
-//Provides: caml_js_on_ie const
-function caml_js_on_ie() {
-  var ua =
-    globalThis.navigator && globalThis.navigator.userAgent
-      ? globalThis.navigator.userAgent
-      : "";
-  return ua.indexOf("MSIE") !== -1 && ua.indexOf("Opera") !== 0;
-}
-
 //Provides: caml_js_html_escape const (const)
 var caml_js_regexps = { amp: /&/g, lt: /</g, quot: /"/g, all: /[&<"]/ };
 function caml_js_html_escape(s) {

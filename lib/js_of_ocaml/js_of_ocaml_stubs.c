@@ -24,10 +24,6 @@ void caml_js_html_escape () {
   caml_fatal_error("Unimplemented Javascript primitive caml_js_html_escape!");
 }
 
-void caml_js_on_ie () {
-  caml_fatal_error("Unimplemented Javascript primitive caml_js_on_ie!");
-}
-
 void caml_uint8_array_of_bytes () {
   caml_fatal_error("Unimplemented Javascript primitive caml_uint8_array_of_bytes!");
 }
