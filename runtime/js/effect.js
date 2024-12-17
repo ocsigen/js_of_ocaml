@@ -142,12 +142,13 @@ function caml_perform_effect(eff, cont, last, k0) {
 }
 
 //Provides: caml_alloc_stack
-//Requires: caml_pop_fiber, caml_fiber_stack, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
+//Requires: caml_pop_fiber, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
 //If: effects
 //Version: >= 5.0
 function caml_alloc_stack(hv, hx, hf) {
+  var handlers = [0, hv, hx, hf];
   function call(i, x) {
-    var f = caml_fiber_stack.h[i];
+    var f = handlers[i];
     var args = [x, caml_pop_fiber()];
     return caml_stack_check_depth()
       ? caml_call_gen(f, args)
@@ -161,7 +162,6 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  var handlers = [0, hv, hx, hf];
   return { r: { k: hval, x: [0, hexn, 0], e: 0 }, h: null, sh: handlers };
 }
 
@@ -197,7 +197,9 @@ function caml_continuation_use_and_update_handler_noexc(
     // Pre OCaml 5.2, last/cont[2] was not populated.
     while (last.r.e !== 0) last = last.r.e;
   }
-  last.sh = [0, hval, hexn, heff];
+  last.sh[1] = hval;
+  last.sh[2] = hexn;
+  last.sh[3] = heff;
   return stack;
 }
 
