@@ -1,6 +1,10 @@
 (env
  (with-effects-double-translation)
  (with-effects)
+ (wasi
+  (wasm_of_ocaml
+   (flags
+    (:standard --enable effects))))
  (_
   (js_of_ocaml
    (flags
@@ -11,6 +15,8 @@
  (enabled_if
   (>= %{ocaml_version} 5))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (modules
   (:standard
