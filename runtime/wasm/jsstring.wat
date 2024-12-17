@@ -98,8 +98,8 @@
 
    (export "jsstring_hash" (func $hash_string))
 
-   ;; Used by package zarith_stubs_js
-   (func $jsstring_of_substring (export "jsstring_of_substring")
+   (func $jsstring_of_subbytes (export "jsstring_of_subbytes")
+      (export "jsstring_of_substring") ;; compatibility with zarith stubs
       (param $s (ref $bytes)) (param $pos i32) (param $len i32)
       (result anyref)
       (local $i i32) (local $c i32)
@@ -130,14 +130,14 @@
                (any.convert_extern
                   (call $fromCharCodeArray (global.get $buffer)
                      (i32.const 0) (local.get $len))))))
-      (return_call $jsstring_of_substring_fallback
+      (return_call $jsstring_of_subbytes_fallback
          (local.get $s) (local.get $pos) (local.get $len)))
 
-   (func (export "jsstring_of_string") (param $s (ref $bytes)) (result anyref)
-      (return_call $jsstring_of_substring
+   (func (export "jsstring_of_bytes") (param $s (ref $bytes)) (result anyref)
+      (return_call $jsstring_of_subbytes
          (local.get $s) (i32.const 0) (array.len (local.get $s))))
 
-   (func (export "string_of_jsstring") (param $s anyref) (result (ref $bytes))
+   (func (export "bytes_of_jsstring") (param $s anyref) (result (ref $bytes))
       (if (global.get $text_converters_available)
          (then
             (return_call $encodeStringToUTF8Array
@@ -162,7 +162,7 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop)))))
 
-   (func $jsstring_of_substring_fallback
+   (func $jsstring_of_subbytes_fallback
       (param $s (ref $bytes)) (param $pos i32) (param $len i32)
       (result anyref)
       (local $s' anyref)
@@ -252,7 +252,7 @@
             (br $loop)))
       (local.get $s'))
 
-   (func (export "caml_extract_string") (param $len i32)
+   (func (export "caml_extract_bytes") (param $len i32)
       (local $s (ref $bytes))
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $read_from_buffer (local.get $s) (i32.const 0) (local.get $len))

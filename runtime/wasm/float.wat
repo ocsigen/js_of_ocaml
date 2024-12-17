@@ -27,10 +27,10 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "ints" "lowercase_hex_table"
       (global $lowercase_hex_table (ref $chars)))
-   (import "jsstring" "jsstring_of_string"
-      (func $jsstring_of_string (param (ref $bytes)) (result anyref)))
-   (import "jsstring" "string_of_jsstring"
-      (func $string_of_jsstring (param anyref) (result (ref $bytes))))
+   (import "jsstring" "jsstring_of_bytes"
+      (func $jsstring_of_bytes (param (ref $bytes)) (result anyref)))
+   (import "jsstring" "bytes_of_jsstring"
+      (func $bytes_of_jsstring (param anyref) (result (ref $bytes))))
 
    (type $float (struct (field f64)))
    (type $bytes (array (mut i8)))
@@ -308,7 +308,7 @@
                   (local.get $precision) (local.get $conversion)
                   (local.get $i)
                   (f64.abs (local.get $f))))
-            (local.set $s (call $string_of_jsstring (local.get $num)))
+            (local.set $s (call $bytes_of_jsstring (local.get $num)))
             (br $sign (local.get $s))))
       (if (local.get $negative)
          (then
@@ -662,7 +662,7 @@
                                                 (local.get $negative))))
                                        ))))))))))))))))))
          (local.set $f
-            (call $parse_float (call $jsstring_of_string (local.get $s))))
+            (call $parse_float (call $jsstring_of_bytes (local.get $s))))
          (br_if $error (f64.ne (local.get $f) (local.get $f)))
          (return (struct.new $float (local.get $f))))
       (call $caml_failwith

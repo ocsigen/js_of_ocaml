@@ -69,12 +69,12 @@
    (import "bindings" "ta_subarray"
       (func $ta_subarray
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
-   (import "bindings" "ta_blit_from_string"
-      (func $ta_blit_from_string
+   (import "bindings" "ta_blit_from_bytes"
+      (func $ta_blit_from_bytes
          (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
          (param i32)))
-   (import "bindings" "ta_blit_to_string"
-      (func $ta_blit_to_string
+   (import "bindings" "ta_blit_to_bytes"
+      (func $ta_blit_to_bytes
          (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
          (param i32)))
    (import "fail" "caml_bound_error" (func $caml_bound_error))
@@ -2168,7 +2168,7 @@
          (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
       (local.set $len (call $ta_length (local.get $a)))
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
-      (call $ta_blit_to_string
+      (call $ta_blit_to_bytes
          (local.get $a) (i32.const 0) (local.get $s) (i32.const 0)
          (local.get $len))
       (local.get $s))
@@ -2176,7 +2176,7 @@
    (export "caml_uint8_array_of_bytes" (func $caml_uint8_array_of_string))
    (func $caml_uint8_array_of_string (export "caml_uint8_array_of_string")
       (param (ref eq)) (result (ref eq))
-      ;; Convert a string to a typed array
+      ;; Convert bytes to a typed array
       (local $ta (ref extern)) (local $len i32)
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get 0)))
@@ -2185,7 +2185,7 @@
          (call $ta_create
             (i32.const 3) ;; Uint8Array
             (local.get $len)))
-      (call $ta_blit_from_string
+      (call $ta_blit_from_bytes
          (local.get $s) (i32.const 0) (local.get $ta) (i32.const 0)
          (local.get $len))
       (call $wrap (any.convert_extern (local.get $ta))))
@@ -2219,13 +2219,13 @@
          (local.get $kind)
          (local.get $layout)))
 
-   (func (export "string_set")
+   (func (export "bytes_set")
       (param $s externref) (param $i i32) (param $v i32)
       (array.set $bytes
          (ref.cast (ref null $bytes) (any.convert_extern (local.get $s)))
          (local.get $i) (local.get $v)))
 
-   (func (export "string_get")
+   (func (export "bytes_get")
       (param $s externref) (param $i i32) (result i32)
       (array.get $bytes
          (ref.cast (ref null $bytes) (any.convert_extern (local.get $s)))

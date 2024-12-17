@@ -160,7 +160,7 @@
 
    (global $unordered (export "unordered") i32 (i32.const 0x80000000))
 
-   (func $compare_strings
+   (func $compare_bytes
       (param $s1 (ref $bytes)) (param $s2 (ref $bytes)) (result i32)
       (local $l1 i32) (local $l2 i32) (local $len i32) (local $i i32)
       (local $c1 i32) (local $c2 i32)
@@ -392,15 +392,15 @@
                         (if (f64.eq (local.get $f2) (local.get $f2))
                            (then (return (i32.const -1))))))
                   (br $next_item)))
-               (drop (block $v1_not_string (result (ref eq))
+               (drop (block $v1_not_bytes (result (ref eq))
                   (local.set $str1
-                     (br_on_cast_fail $v1_not_string (ref eq) (ref $bytes)
+                     (br_on_cast_fail $v1_not_bytes (ref eq) (ref $bytes)
                         (local.get $v1)))
                   (local.set $str2
                       (br_on_cast_fail $heterogeneous (ref eq) (ref $bytes)
                          (local.get $v2)))
                   (local.set $res
-                     (call $compare_strings (local.get $str1) (local.get $str2)))
+                     (call $compare_bytes (local.get $str1) (local.get $str2)))
                   (br_if $next_item (i32.eqz (local.get $res)))
                   (return (local.get $res))))
                (drop (block $v1_not_float_array (result (ref eq))

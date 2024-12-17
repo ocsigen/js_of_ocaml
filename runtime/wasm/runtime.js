@@ -216,7 +216,7 @@
         );
         len -= read;
         if (!len) return written;
-        caml_extract_string(written);
+        caml_extract_bytes(written);
         start += read;
       }
     },
@@ -262,11 +262,11 @@
     ta_copy: (ta, t, s, e) => ta.copyWithin(t, s, e),
     ta_bytes: (a) =>
       new Uint8Array(a.buffer, a.byteOffset, a.length * a.BYTES_PER_ELEMENT),
-    ta_blit_from_string: (s, p1, a, p2, l) => {
-      for (let i = 0; i < l; i++) a[p2 + i] = string_get(s, p1 + i);
+    ta_blit_from_bytes: (s, p1, a, p2, l) => {
+      for (let i = 0; i < l; i++) a[p2 + i] = bytes_get(s, p1 + i);
     },
-    ta_blit_to_string: (a, p1, s, p2, l) => {
-      for (let i = 0; i < l; i++) string_set(s, p2 + i, a[p1 + i]);
+    ta_blit_to_bytes: (a, p1, s, p2, l) => {
+      for (let i = 0; i < l; i++) bytes_set(s, p2 + i, a[p1 + i]);
     },
     wrap_callback: (f) =>
       function (...args) {
@@ -588,9 +588,9 @@
     caml_start_fiber,
     caml_handle_uncaught_exception,
     caml_buffer,
-    caml_extract_string,
-    string_get,
-    string_set,
+    caml_extract_bytes,
+    bytes_get,
+    bytes_set,
     _initialize,
   } = wasmModule.instance.exports;
 

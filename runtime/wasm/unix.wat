@@ -82,12 +82,12 @@
    (import "io" "caml_ml_open_descriptor_out"
       (func $caml_ml_open_descriptor_out (param (ref eq)) (result (ref eq))))
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
-   (import "bindings" "ta_blit_from_string"
-      (func $ta_blit_from_string
+   (import "bindings" "ta_blit_from_bytes"
+      (func $ta_blit_from_bytes
          (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
          (param i32)))
-   (import "bindings" "ta_blit_to_string"
-      (func $ta_blit_to_string
+   (import "bindings" "ta_blit_to_bytes"
+      (func $ta_blit_to_bytes
          (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
          (param i32)))
    (import "bigarray" "caml_ba_get_data"
@@ -537,7 +537,7 @@
                (local.set $numbytes
                   (select (global.get $IO_BUFFER_SIZE) (local.get $len)
                      (i32.gt_u (local.get $len) (global.get $IO_BUFFER_SIZE))))
-               (call $ta_blit_from_string
+               (call $ta_blit_from_bytes
                   (local.get $s) (local.get $pos)
                   (local.get $buf) (i32.const 0) (local.get $numbytes))
                (try
@@ -593,7 +593,7 @@
                         (i32.const 0) (local.get $len) (ref.null extern))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
-      (call $ta_blit_to_string
+      (call $ta_blit_to_bytes
          (local.get $buf) (i32.const 0)
          (ref.cast (ref $bytes) (local.get $vbuf)) (local.get $pos)
          (local.get $len))
