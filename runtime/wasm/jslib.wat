@@ -686,4 +686,8 @@
                   (return
                      (array.get $block (local.get $exn) (i32.const 2)))))))
       (call $wrap (ref.null any)))
+
+   (func (export "caml_jsoo_flags_use_js_string")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
 )
