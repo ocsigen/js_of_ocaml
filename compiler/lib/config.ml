@@ -106,6 +106,8 @@ module Flag = struct
   let auto_link = o ~name:"auto-link" ~default:true
 
   let es6 = o ~name:"es6" ~default:false
+
+  let wasi = o ~name:"wasi" ~default:false
 end
 
 module Param = struct

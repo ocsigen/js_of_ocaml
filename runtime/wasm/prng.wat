@@ -16,10 +16,20 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+
+(@if wasi
+(@then
+   (import "bigarray" "ta_get_i32"
+      (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
+   (import "bigarray" "ta_set_i32"
+      (func $ta_set_i32 (param (ref extern)) (param i32) (param i32)))
+)
+(@else
    (import "bindings" "ta_get_i32"
       (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_set_i32"
       (func $ta_set_i32 (param (ref extern)) (param i32) (param i32)))
+))
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
 
