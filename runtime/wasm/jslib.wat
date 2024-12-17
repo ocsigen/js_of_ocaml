@@ -84,13 +84,12 @@
       (func $caml_is_closure (param (ref eq)) (result i32)))
    (import "obj" "caml_is_last_arg"
       (func $caml_is_last_arg (param (ref eq)) (result i32)))
-   (import "jsstring" "jsstring_of_string"
-      (func $jsstring_of_string (param (ref $bytes)) (result anyref)))
-   (import "jsstring" "string_of_jsstring"
-      (func $string_of_jsstring (param anyref) (result (ref $bytes))))
-   (import "jsstring" "jsstring_of_substring"
-      (func $jsstring_of_substring
-         (param (ref $bytes) i32 i32) (result anyref)))
+   (import "jsstring" "jsstring_of_bytes"
+      (func $jsstring_of_bytes (param (ref $bytes)) (result anyref)))
+   (import "jsstring" "bytes_of_jsstring"
+      (func $bytes_of_jsstring (param anyref) (result (ref $bytes))))
+   (import "jsstring" "jsstring_of_subbytes"
+      (func $jsstring_of_subbytes (param (ref $bytes) i32 i32) (result anyref)))
    (import "int32" "caml_copy_int32"
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
@@ -188,7 +187,7 @@
       (result (ref eq))
       (if (ref.test (ref $bytes) (local.get $f))
          (then
-            (local.set $f (call $caml_jsbytes_of_string (local.get $f)))))
+            (local.set $f (call $caml_jsbytes_of_bytes (local.get $f)))))
       (return_call $wrap
          (call $meth_call (call $unwrap (local.get $o))
             (call $unwrap (local.get $f))
@@ -198,7 +197,7 @@
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (if (ref.test (ref $bytes) (local.get 1))
          (then
-            (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
+            (local.set 1 (call $caml_jsbytes_of_bytes (local.get 1)))))
       (return_call $wrap
          (call $get
             (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0))))
@@ -208,7 +207,7 @@
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (if (ref.test (ref $bytes) (local.get 1))
          (then
-            (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
+            (local.set 1 (call $caml_jsbytes_of_bytes (local.get 1)))))
       (call $set (call $unwrap (local.get 0)) (call $unwrap (local.get 1))
          (call $unwrap (local.get 2)))
       (ref.i31 (i32.const 0)))
@@ -217,7 +216,7 @@
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (if (ref.test (ref $bytes) (local.get 1))
          (then
-            (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
+            (local.set 1 (call $caml_jsbytes_of_bytes (local.get 1)))))
       (call $delete (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))
       (ref.i31 (i32.const 0)))
 
@@ -265,7 +264,7 @@
                      (array.get $block (local.get $a) (local.get $i))))
                (call $set (local.get $o)
                   (call $unwrap
-                     (call $caml_jsstring_of_string
+                     (call $caml_jsstring_of_bytes
                         (array.get $block (local.get $p) (i32.const 1))))
                   (call $unwrap
                         (array.get $block (local.get $p) (i32.const 2))))
@@ -454,24 +453,24 @@
                                  (local.get $acc)))))))))
       (return_call $unwrap (local.get $acc)))
 
-   (export "caml_js_from_string" (func $caml_jsstring_of_string))
-   (func $caml_jsstring_of_string (export "caml_jsstring_of_string")
+   (export "caml_js_from_string" (func $caml_jsstring_of_bytes))
+   (func $caml_jsstring_of_bytes (export "caml_jsstring_of_string")
       (param (ref eq)) (result (ref eq))
       (local $s (ref $bytes))
       (local.set $s (ref.cast (ref $bytes) (local.get 0)))
-      (return (struct.new $js (call $jsstring_of_string (local.get $s)))))
+      (return (struct.new $js (call $jsstring_of_bytes (local.get $s)))))
 
    (func (export "caml_jsstring_of_substring")
       (param $s (ref eq)) (param $i (ref eq)) (param $l (ref eq))
       (result (ref eq))
       (return
          (struct.new $js
-            (call $jsstring_of_substring
+            (call $jsstring_of_subbytes
                (ref.cast (ref $bytes) (local.get $s))
                (i31.get_u (ref.cast (ref i31) (local.get $i)))
                (i31.get_u (ref.cast (ref i31) (local.get $l)))))))
 
-   (func $caml_jsbytes_of_string (export "caml_jsbytes_of_string")
+   (func $caml_jsbytes_of_bytes (export "caml_jsbytes_of_string")
       (param (ref eq)) (result (ref eq))
       (local $s (ref $bytes))
       (local $s' (ref $bytes))
@@ -492,7 +491,7 @@
          (then
             (return
                (struct.new $js
-                  (call $jsstring_of_string (local.get $s))))))
+                  (call $jsstring_of_bytes (local.get $s))))))
       (local.set $s'
          (array.new $bytes (i32.const 0)
             (i32.add (local.get $i) (local.get $n))))
@@ -519,12 +518,12 @@
                      (local.set $n (i32.add (local.get $n) (i32.const 2)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $fill))))
-      (return (struct.new $js (call $jsstring_of_string (local.get $s')))))
+      (return (struct.new $js (call $jsstring_of_bytes (local.get $s')))))
 
    (export "caml_js_to_string" (func $caml_string_of_jsstring))
    (func $caml_string_of_jsstring (export "caml_string_of_jsstring")
       (param $s (ref eq)) (result (ref eq))
-      (return_call $string_of_jsstring
+      (return_call $bytes_of_jsstring
          (struct.get $js 0 (ref.cast (ref $js) (local.get $s)))))
 
    (func (export "caml_string_of_jsbytes")
@@ -532,7 +531,7 @@
       (local $l i32) (local $i i32) (local $n i32) (local $c i32)
       (local $s' (ref $bytes)) (local $s'' (ref $bytes))
       (local.set $s'
-         (call $string_of_jsstring
+         (call $bytes_of_jsstring
             (struct.get $js 0 (ref.cast (ref $js) (local.get $s)))))
       (local.set $l (array.len (local.get $s')))
       (local.set $i (i32.const 0))
@@ -652,7 +651,7 @@
                (call $meth_call
                   (local.get $exn)
                   (call $unwrap
-                     (call $caml_jsstring_of_string
+                     (call $caml_jsstring_of_bytes
                         (array.new_data $bytes $toString
                            (i32.const 0) (i32.const 8))))
                   (any.convert_extern (call $new_array (i32.const 0))))))))
