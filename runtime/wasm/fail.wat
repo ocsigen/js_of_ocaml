@@ -21,7 +21,7 @@
    (import "bindings" "jstag" (tag $javascript_exception (param externref)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
 
    (tag $ocaml_exception (export "ocaml_exception") (param (ref eq)))
    (export "javascript_exception" (tag $javascript_exception))
@@ -75,7 +75,7 @@
 
    (func (export "caml_bound_error")
       (return_call $caml_invalid_argument
-         (array.new_data $string $index_out_of_bounds
+         (array.new_data $bytes $index_out_of_bounds
             (i32.const 0) (i32.const 19))))
 
    (global $END_OF_FILE_EXN i32 (i32.const 4))

@@ -33,7 +33,7 @@
       (func $caml_js_html_entities (param anyref) (result anyref)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
 
    (func (export "caml_js_on_ie") (param (ref eq)) (result (ref eq))
       (ref.i31 (call $caml_js_on_ie)))
@@ -50,7 +50,7 @@
 
    (func (export "caml_js_get_console") (param (ref eq)) (result (ref eq))
       (return_call $caml_js_get (call $caml_js_global (ref.i31 (i32.const 0)))
-         (array.new_data $string $console (i32.const 0) (i32.const 7))))
+         (array.new_data $bytes $console (i32.const 0) (i32.const 7))))
 
    (data $XMLHttpRequest "XMLHttpRequest")
 
@@ -58,7 +58,7 @@
       (return_call $caml_js_new
          (call $caml_js_get
             (call $caml_js_global (ref.i31 (i32.const 0)))
-            (array.new_data $string $XMLHttpRequest
+            (array.new_data $bytes $XMLHttpRequest
                (i32.const 0) (i32.const 14)))
          (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))
 )
