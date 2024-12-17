@@ -1121,8 +1121,8 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception,
     global_data = runtime.caml_get_global_data(),
-    ocaml_version = "5.2.0",
-    ocaml_release = [0, 5, 2, 0, 0],
+    ocaml_version = "5.2.1",
+    ocaml_release = [0, 5, 2, 1, 0],
     Stdlib = global_data.Stdlib,
     executable_name =
        /*<<sys.ml.in:36:22>>*/ runtime.caml_sys_executable_name(0),
@@ -23571,26 +23571,26 @@
      /*<<gc.ml:115:21>>*/ return caml_call2(Stdlib_Atomic[4], a, 0) /*<<gc.ml:115:39>>*/ ;
    }
    function create_alarm(f){
-    var _y_ =  /*<<gc.ml:118:24>>*/ caml_call1(Stdlib_Atomic[1], 1);
-     /*<<gc.ml:119:2>>*/ caml_call1
+    var alarm =  /*<<gc.ml:119:14>>*/ caml_call1(Stdlib_Atomic[1], 1);
+     /*<<gc.ml:120:2>>*/ caml_call1
      (Stdlib_Domain[6],
       function(param){
-        /*<<gc.ml:119:28>>*/ return delete_alarm(_y_) /*<<gc.ml:119:52>>*/ ;
+        /*<<gc.ml:120:28>>*/ return delete_alarm(alarm) /*<<gc.ml:120:46>>*/ ;
       });
-     /*<<gc.ml:120:26>>*/ return _y_;
-    /*<<gc.ml:121:13>>*/ }
+     /*<<gc.ml:122:26>>*/ return alarm;
+    /*<<gc.ml:123:7>>*/ }
    var
     null_tracker =
        /*<<?>>*/ [0,
-       function(param){ /*<<gc.ml:143:30>>*/ return 0; /*<<gc.ml:143:34>>*/ },
-       function(param){ /*<<gc.ml:144:30>>*/ return 0; /*<<gc.ml:144:34>>*/ },
-       function(param){ /*<<gc.ml:145:26>>*/ return 0; /*<<gc.ml:145:30>>*/ },
-       function(param){ /*<<gc.ml:146:32>>*/ return 0; /*<<gc.ml:146:34>>*/ },
-       function(param){ /*<<gc.ml:147:32>>*/ return 0; /*<<gc.ml:147:34>>*/ }];
+       function(param){ /*<<gc.ml:145:30>>*/ return 0; /*<<gc.ml:145:34>>*/ },
+       function(param){ /*<<gc.ml:146:30>>*/ return 0; /*<<gc.ml:146:34>>*/ },
+       function(param){ /*<<gc.ml:147:26>>*/ return 0; /*<<gc.ml:147:30>>*/ },
+       function(param){ /*<<gc.ml:148:32>>*/ return 0; /*<<gc.ml:148:34>>*/ },
+       function(param){ /*<<gc.ml:149:32>>*/ return 0; /*<<gc.ml:149:34>>*/ }];
    function start(sampling_rate, opt, tracker){
-    var callstack_size =  /*<<gc.ml:155:6>>*/ opt ? opt[1] : Stdlib[19];
-     /*<<gc.ml:158:6>>*/ return runtime.caml_memprof_start
-            (sampling_rate, callstack_size, tracker) /*<<gc.ml:158:50>>*/ ;
+    var callstack_size =  /*<<gc.ml:157:6>>*/ opt ? opt[1] : Stdlib[19];
+     /*<<gc.ml:160:6>>*/ return runtime.caml_memprof_start
+            (sampling_rate, callstack_size, tracker) /*<<gc.ml:160:50>>*/ ;
    }
    var
     Stdlib_Gc =
