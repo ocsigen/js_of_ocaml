@@ -104,6 +104,19 @@ module Wasm_binary = struct
     if not (String.equal s header)
     then failwith (file ^ " is not a Wasm binary file (bad magic)")
 
+  let check ~contents = String.starts_with ~prefix:header contents
+
+  let check_file ~file =
+    let ch = open_in file in
+    let res =
+      try
+        let s = really_input_string ch 8 in
+        String.equal s header
+      with End_of_file -> false
+    in
+    close_in ch;
+    res
+
   type t =
     { ch : in_channel
     ; limit : int
