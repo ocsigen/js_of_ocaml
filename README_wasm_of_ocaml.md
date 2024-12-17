@@ -4,7 +4,7 @@ Wasm_of_ocaml is a fork of Js_of_ocaml which compiles OCaml bytecode to WebAssem
 
 ## Supported engines
 
-The generated code works with Chrome 119, Node.js 22 and Firefox 122 (or more recent versions of these applications).
+The generated code works with Chrome 119, Node.js 22, Firefox 122, and Safari 18.2 (or more recent versions of these applications).
 
 In particular, the output code requires the following [Wasm extensions](https://webassembly.org/roadmap/) to run:
 - [the GC extension](https://github.com/WebAssembly/gc), including functional references and 31-bit integers
@@ -30,7 +30,7 @@ opam install dune.3.17.0 wasm_of_ocaml-compiler
 You may want to install additional packages. For instance:
 
 ```
-opam install js_of_ocaml-ppx js_of_ocaml-lwt
+opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
 
 ## Usage
