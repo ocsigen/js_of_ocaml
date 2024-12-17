@@ -55,12 +55,12 @@
       (func $ta_set_ui8 (param (ref extern)) (param i32) (param i32))) ;; ZZZ ??
    (import "bindings" "ta_get_ui8"
       (func $ta_get_ui8 (param (ref extern)) (param i32) (result i32)))
-   (import "bindings" "ta_blit_from_string"
-      (func $ta_blit_from_string
+   (import "bindings" "ta_blit_from_bytes"
+      (func $ta_blit_from_bytes
          (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
          (param i32)))
-   (import "bindings" "ta_blit_to_string"
-      (func $ta_blit_to_string
+   (import "bindings" "ta_blit_to_bytes"
+      (func $ta_blit_to_bytes
          (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
          (param i32)))
    (import "custom" "custom_compare_id"
@@ -367,7 +367,7 @@
          (then
             (if (i32.gt_u (local.get $len) (local.get $avail))
                (then (local.set $len (local.get $avail))))
-            (call $ta_blit_to_string
+            (call $ta_blit_to_bytes
                (struct.get $channel $buffer (local.get $ch))
                (struct.get $channel $curr (local.get $ch))
                (local.get $s) (local.get $pos)
@@ -382,7 +382,7 @@
       (struct.set $channel $max (local.get $ch) (local.get $nread))
       (if (i32.gt_u (local.get $len) (local.get $nread))
          (then (local.set $len (local.get $nread))))
-      (call $ta_blit_to_string
+      (call $ta_blit_to_bytes
          (struct.get $channel $buffer (local.get $ch))
          (i32.const 0)
          (local.get $s) (local.get $pos)
@@ -438,7 +438,7 @@
                   (local.set $curr (i32.const 0))
                   (if (i32.gt_u (local.get $len) (local.get $nread))
                      (then (local.set $len (local.get $nread))))))))
-      (call $ta_blit_to_string
+      (call $ta_blit_to_bytes
          (local.get $buf) (local.get $curr)
          (local.get $s) (local.get $pos) (local.get $len))
       (struct.set $channel $curr (local.get $ch)
@@ -731,7 +731,7 @@
       (if (i32.ge_u (local.get $len) (local.get $free))
          (then (local.set $len (local.get $free))))
       (local.set $buf (struct.get $channel $buffer (local.get $ch)))
-      (call $ta_blit_from_string
+      (call $ta_blit_from_bytes
          (local.get $s) (local.get $pos)
          (local.get $buf) (local.get $curr) (local.get $len))
       (struct.set $channel $curr (local.get $ch)

@@ -22,8 +22,8 @@
    (import "int64" "int64_ops" (global $int64_ops (ref $custom_operations)))
    (import "bigarray" "bigarray_ops"
       (global $bigarray_ops (ref $custom_operations)))
-   (import "string" "caml_string_equal"
-      (func $caml_string_equal
+   (import "string" "caml_bytes_equal"
+      (func $caml_bytes_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (type $bytes (array (mut i8)))
@@ -116,7 +116,7 @@
          (loop $loop
             (if (i31.get_u
                    (ref.cast (ref i31)
-                       (call $caml_string_equal (local.get $id)
+                       (call $caml_bytes_equal (local.get $id)
                          (struct.get $custom_operations $id
                             (struct.get $custom_operations_list $ops
                                (local.get $l))))))
