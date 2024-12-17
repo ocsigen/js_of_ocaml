@@ -29,8 +29,8 @@
         in
         let node = (target :> Dom.node Js.t) in
         let f entries observer =
-          Firebug.console##debug entries;
-          Firebug.console##debug observer
+          Console.console##debug entries;
+          Console.console##debug observer
         in
         ResizeObserver.observe ~node ~f
           ~box:(Js.string "content-box")

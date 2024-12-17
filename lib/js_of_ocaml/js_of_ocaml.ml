@@ -18,13 +18,15 @@
  *)
 
 module CSS = CSS
+module Console = Console
 module Dom = Dom
 module Dom_events = Dom_events
 module Dom_html = Dom_html
 module Dom_svg = Dom_svg
 module EventSource = EventSource
 module File = File
-module Firebug = Firebug
+module Firebug = Console
+[@@ocaml.deprecated "[since 6.0] Use Js_of_ocaml.Console instead."]
 module Form = Form
 module Geolocation = Geolocation
 module IntersectionObserver = IntersectionObserver

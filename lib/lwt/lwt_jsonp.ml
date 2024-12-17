@@ -59,7 +59,7 @@ let raw_call name uri error_cb user_cb =
             if !executed
             then Lwt.return_unit
             else (
-              Firebug.console##warn
+              Console.console##warn
                 (Js.string "Jsonp: script loaded but callback not executed");
               finalize ();
               error_cb x;

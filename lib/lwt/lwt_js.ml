@@ -37,7 +37,7 @@ let wakeup = function
 
 let () = Lwt.register_pause_notifier wakeup
 
-let prerr_string s = Firebug.console##log (Js.string s)
+let prerr_string s = Console.console##log (Js.string s)
 
 let _ =
   Lwt.async_exception_hook :=

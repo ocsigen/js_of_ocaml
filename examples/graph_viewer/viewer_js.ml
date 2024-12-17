@@ -304,18 +304,18 @@ let start () =
     if not !started then p##.style##.display := Js.string "inline";
     Lwt.return ());
   (*
-  Firebug.console##time(Js.string "loading");
+  Console.console##time(Js.string "loading");
 *)
   getfile "scene.json"
   >>= fun s ->
   (*
-  Firebug.console##timeEnd(Js.string "loading");
-  Firebug.console##time(Js.string "parsing");
+  Console.console##timeEnd(Js.string "loading");
+  Console.console##time(Js.string "parsing");
 *)
   let (x1, y1, x2, y2), bboxes, scene = of_json ~typ:[%json: scene] s in
   (*
-  Firebug.console##timeEnd(Js.string "parsing");
-  Firebug.console##time(Js.string "init");
+  Console.console##timeEnd(Js.string "parsing");
+  Console.console##time(Js.string "init");
 *)
   started := true;
   Dom.removeChild doc##.body p;
@@ -350,7 +350,7 @@ let start () =
   let redraw_queued = ref false in
   let update_view _force =
     (*
-Firebug.console##log_2(Js.string "update", Js.date##now());
+Console.console##log_2(Js.string "update", Js.date##now());
 *)
     let a = allocation () in
     let scale = get_scale () in
@@ -389,7 +389,7 @@ Firebug.console##log_2(Js.string "update", Js.date##now());
     if not !redraw_queued then
       ignore (redraw_queued := true;
 (*
-Firebug.console##log(Js.string "sleep");
+Console.console##log(Js.string "sleep");
 *)
               Lwt_js.yield() >>= fun () ->
               redraw_queued := false;
@@ -502,7 +502,7 @@ Firebug.console##log(Js.string "sleep");
   (*
   Html.addEventListener Html.document Html.Event.keydown
     (Html.handler
-       (fun e -> Firebug.console##log(e##keyCode);
+       (fun e -> Console.console##log(e##keyCode);
          Js._true))
     Js._true;
 *)
@@ -510,7 +510,7 @@ Firebug.console##log(Js.string "sleep");
   Html.addEventListener Html.document Html.Event.keypress
     (Html.handler
        (fun e ->
-             Firebug.console##log(Js.string "press");
+             Console.console##log(Js.string "press");
          match e##keyCode with
          | 37 -> (* left *)
              Js._false
@@ -521,7 +521,7 @@ Firebug.console##log(Js.string "sleep");
          | 40 -> (* down *)
              Js._false
          | _ ->
-             Firebug.console##log(- 1- e##keyCode);
+             Console.console##log(- 1- e##keyCode);
              Js._true))
     Js._true;
 *)
@@ -549,7 +549,7 @@ Firebug.console##log(Js.string "sleep");
         Js._false
     | _ ->
         (*
-        Firebug.console##log_2(Js.string "keycode:", ev##keyCode);
+        Console.console##log_2(Js.string "keycode:", ev##keyCode);
 *)
         Js._true
   in
@@ -564,12 +564,12 @@ Firebug.console##log(Js.string "sleep");
         ignored_keycode := -1;
         if e##.keyCode = k then Js._true else handle_key_event e);
   (*
-Firebug.console##time(Js.string "initial drawing");
+Console.console##time(Js.string "initial drawing");
 *)
   update_view true;
   (*
-Firebug.console##timeEnd(Js.string "initial drawing");
-Firebug.console##timeEnd(Js.string "init");
+Console.console##timeEnd(Js.string "initial drawing");
+Console.console##timeEnd(Js.string "init");
 *)
   Lwt.return ()
 

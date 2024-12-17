@@ -24,7 +24,7 @@
 
 open Js ;;
 
-let fc v = Firebug.console##debug v in
+let fc v = Console.console##debug v in
 
 let jas a = array(Array.map (fun v -> string v) a) in
 
@@ -410,10 +410,10 @@ if (Intl.is_supported()) then (
     ) ;
 
   with
-  | Error err -> Firebug.console##debug (
+  | Error err -> Console.console##debug (
       string (string_of_error err)) ;
 ) else (
-  Firebug.console##debug (string "Intl is not supported!") ;
+  Console.console##debug (string "Intl is not supported!") ;
 )
 
     ]}

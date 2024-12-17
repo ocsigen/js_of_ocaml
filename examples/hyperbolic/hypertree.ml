@@ -547,7 +547,7 @@ let language =
        (Html.window##.localStorage##getItem (Js.string "hyp_lang"))
        default_language)
 
-let _ = Firebug.console##log !language
+let _ = Console.console##log !language
 
 let set_language lang =
   Html.window##.localStorage##setItem (Js.string "hyp_lang") lang;
@@ -643,7 +643,7 @@ type boxes =
 let shadow = false
 
 let draw canvas vertices edges nodes boxes =
-  Firebug.console##time (Js.string "draw");
+  Console.console##time (Js.string "draw");
   let c = canvas##getContext Html._2d_ in
   let ((rx, ry, dx, dy) as transf) = screen_transform canvas in
   c##clearRect
@@ -795,8 +795,8 @@ let draw canvas vertices edges nodes boxes =
           (Js.float (2. *. h))
     | `Txt (_, None, _) | `None -> ()
   done;
-  Firebug.console##timeEnd (Js.string "draw");
-  Firebug.console##log_2 !image_count !large_image_count
+  Console.console##timeEnd (Js.string "draw");
+  Console.console##log_2 !image_count !large_image_count
 
 let tree_url = "tree.json"
 
@@ -1239,7 +1239,7 @@ let show_image all_messages image_info name small_image =
   if !i >= 0
   then (
     let info = image_info.(!i) in
-    Firebug.console##log_2 name !i;
+    Console.console##log_2 name !i;
     let d = Html.document in
     let container = Html.createDiv d in
     container##.style##.margin := Js.string "10px";
@@ -1582,7 +1582,7 @@ let start _ =
     (redraw_funct :=
        fun () ->
          need_redraw := false;
-         Firebug.console##time (Js.string "transform");
+         Console.console##time (Js.string "transform");
          (*
           let transf = hyp_transf !tr' in
           for i = 0 to Array.length vertices - 1 do
@@ -1596,7 +1596,7 @@ let start _ =
            canvas##.width := w;
            canvas##.height := h);
          hyp_transf_vect !tr' vertices vertices';
-         Firebug.console##timeEnd (Js.string "transform");
+         Console.console##timeEnd (Js.string "transform");
          draw canvas vertices' edges nodes boxes);
     perform_redraw ();
     Html.window##.onresize :=
@@ -1692,7 +1692,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
     handle_touch_events
       canvas
       (fun x0 y0 x1 y1 ->
-        Firebug.console##time (Js.string "transform");
+        Console.console##time (Js.string "transform");
         let z0 = from_screen canvas x0 y0 in
         let z1 = from_screen canvas x1 y1 in
         (*

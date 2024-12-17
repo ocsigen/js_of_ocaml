@@ -25,8 +25,8 @@
         let entry_types = [ "measure" ] in
         let f entries observer =
           let entries = entries##getEntries in
-          Firebug.console##debug entries ;
-          Firebug.console##debug observer
+          Console.console##debug entries ;
+          Console.console##debug observer
         in
         PerformanceObserver.observe ~entry_types ~f
         ()

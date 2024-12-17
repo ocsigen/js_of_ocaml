@@ -18,9 +18,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Firebug API (debugging console).
+(** Console API (debugging console).
 
-The Firebug console API
+The console API
 *)
 
 open Js

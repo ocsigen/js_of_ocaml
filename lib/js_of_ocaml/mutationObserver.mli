@@ -29,8 +29,8 @@
       in
       let node = (target :> Dom.node Js.t) in
       let f records observer =
-        Firebug.console##debug records ;
-        Firebug.console##debug observer
+        Console.console##debug records ;
+        Console.console##debug observer
       in
       MutationObserver.observe ~node ~f
         ~attributes:true ~child_list:true ~character_data:true
