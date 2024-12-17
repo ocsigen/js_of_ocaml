@@ -47,4 +47,5 @@
     %{dep:tools/version/GIT-VERSION}))))
 
 (data_only_dirs _wikidoc doc-dev jane-street)
-(vendored_dirs )
+
+(vendored_dirs)
