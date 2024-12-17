@@ -330,9 +330,9 @@ let times = Debug.find "times"
 
 let f p live_vars =
   let first_class_primitives =
-    match Config.target () with
-    | `JavaScript -> Option.is_none (Config.effects ())
-    | `Wasm -> false
+    match Config.target (), Config.effects () with
+    | `JavaScript, None -> true
+    | `JavaScript, Some _ | `Wasm, _ -> false
   in
   Code.invariant p;
   let t = Timer.make () in

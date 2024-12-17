@@ -22,7 +22,7 @@ open Util
 let%expect_test "test-compiler/lib-effects/test1.ml" =
   let program =
     compile_and_parse
-      ~effects:true
+      ~effects:Js_of_ocaml_compiler.Config.Cps
       {|
 
 open Effect

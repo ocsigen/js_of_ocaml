@@ -22,7 +22,7 @@ open Util
 let%expect_test "test-compiler/lib-effects/test1.ml" =
   let code =
     compile_and_parse
-      ~effects:true
+      ~effects:Js_of_ocaml_compiler.Config.Cps
       {|
          let exceptions s =
            (* Compiled using 'try ... catch',

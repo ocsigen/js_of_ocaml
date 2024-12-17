@@ -22,8 +22,7 @@ open Util
 let%expect_test "test-compiler/lib-effects/test1.ml" =
   let code =
     compile_and_parse
-      ~effects:true
-      ~doubletranslate:true
+      ~effects:Js_of_ocaml_compiler.Config.Double_translation
       {|
          (* Function calls at toplevel outside of loops do not use
             [caml_callback] when double translation is enabled. *)

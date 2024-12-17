@@ -290,22 +290,20 @@ let extract_sourcemap file =
 let compile_to_javascript
     ?(flags = [])
     ?(use_js_string = false)
-    ?(effects = false)
-    ?(doubletranslate = false)
+    ?effects
     ~pretty
     ~sourcemap
     file =
-  assert ((not doubletranslate) || effects);
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
     List.flatten
       [ (if pretty then [ "--pretty" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
-      ; (if effects && doubletranslate
-         then [ "--effects=double-translation" ]
-         else if effects
-         then [ "--effects=cps" ]
-         else [])
+      ; (match effects with
+        | Some Js_of_ocaml_compiler.Config.Double_translation ->
+            [ "--effects=double-translation" ]
+        | Some Cps -> [ "--effects=cps" ]
+        | None -> [])
       ; (if use_js_string
          then [ "--enable=use-js-string" ]
          else [ "--disable=use-js-string" ])
@@ -358,7 +356,6 @@ let compile_bc_to_javascript
 let compile_cmo_to_javascript
     ?(flags = [])
     ?effects
-    ?doubletranslate
     ?use_js_string
     ?(pretty = true)
     ?(sourcemap = true)
@@ -366,7 +363,6 @@ let compile_cmo_to_javascript
   Filetype.path_of_cmo_file file
   |> compile_to_javascript
        ?effects
-       ?doubletranslate
        ?use_js_string
        ~flags:([ "--disable"; "header" ] @ flags)
        ~pretty
@@ -632,26 +628,13 @@ let compile_and_parse_whole_program
       |> compile_bc_to_javascript ?pretty ?flags ?effects ?use_js_string ~sourcemap:debug
       |> parse_js)
 
-let compile_and_parse
-    ?(debug = true)
-    ?pretty
-    ?flags
-    ?effects
-    ?doubletranslate
-    ?use_js_string
-    s =
+let compile_and_parse ?(debug = true) ?pretty ?flags ?effects ?use_js_string s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_cmo ~debug
-      |> compile_cmo_to_javascript
-           ?pretty
-           ?flags
-           ?effects
-           ?doubletranslate
-           ?use_js_string
-           ~sourcemap:debug
+      |> compile_cmo_to_javascript ?pretty ?flags ?effects ?use_js_string ~sourcemap:debug
       |> parse_js)
 
 let normalize_path s =

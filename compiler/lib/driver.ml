@@ -99,7 +99,7 @@ let map_fst f (x, y, z) = f x, y, z
 
 let effects ~deadcode_sentinal p =
   match Config.effects () with
-  | Some _ ->
+  | Some (_ as effects) ->
       if debug () then Format.eprintf "Effects...@.";
       let p, live_vars = Deadcode.f p in
       let p = Effects.remove_empty_blocks ~live_vars p in
@@ -115,31 +115,30 @@ let effects ~deadcode_sentinal p =
       p
       |> Effects.f ~flow_info:info ~live_vars
       |> map_fst
-           (match Config.effects () with
-           | Some Double_translation -> Fun.id
-           | Some Cps -> Lambda_lifting.f
-           | None -> assert false)
+           (match effects with
+           | Double_translation -> Fun.id
+           | Cps -> Lambda_lifting.f)
   | None ->
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)
       , (Code.Var.Set.empty : Effects.in_cps) )
 
 let exact_calls profile ~deadcode_sentinal p =
-  if Option.is_none (Config.effects ())
-  then
-    let fast =
-      match profile with
-      | O3 -> false
-      | O1 | O2 -> true
-    in
-    let info = Global_flow.f ~fast p in
-    let p =
-      if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
-      then Global_deadcode.f p ~deadcode_sentinal info
-      else p
-    in
-    Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
-  else p
+  match Config.effects () with
+  | None ->
+      let fast =
+        match profile with
+        | O3 -> false
+        | O1 | O2 -> true
+      in
+      let info = Global_flow.f ~fast p in
+      let p =
+        if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
+        then Global_deadcode.f p ~deadcode_sentinal info
+        else p
+      in
+      Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+  | Some _ -> p
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;

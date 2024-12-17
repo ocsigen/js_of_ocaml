@@ -21,7 +21,7 @@ open Code
 module W = Wasm_ast
 open Code_generation
 
-let effects () = Option.is_some (Config.effects ())
+let effects_cps () = Option.is_some (Config.effects ())
 
 module Generate (Target : Target_sig.S) = struct
   open Target
@@ -239,9 +239,9 @@ module Generate (Target : Target_sig.S) = struct
     | Constant c -> Constant.translate c
     | Special (Alias_prim _) -> assert false
     | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ]) ->
-        Closure.dummy ~cps:(effects ()) ~arity:(Targetint.to_int_exn arity)
+        Closure.dummy ~cps:(effects_cps ()) ~arity:(Targetint.to_int_exn arity)
     | Prim (Extern "caml_alloc_dummy_infix", _) ->
-        Closure.dummy ~cps:(effects ()) ~arity:1
+        Closure.dummy ~cps:(effects_cps ()) ~arity:1
     | Prim (Extern "caml_get_global", [ Pc (String name) ]) ->
         let* x =
           let* context = get_context in
@@ -1178,7 +1178,9 @@ let init () =
     ]
   in
   Primitive.register "caml_array_of_uniform_array" `Mutable None None;
-  let l = if effects () then ("caml_alloc_stack", "caml_cps_alloc_stack") :: l else l in
+  let l =
+    if effects_cps () then ("caml_alloc_stack", "caml_cps_alloc_stack") :: l else l
+  in
   List.iter ~f:(fun (nm, nm') -> Primitive.alias nm nm') l
 
 (* Make sure we can use [br_table] for switches *)
@@ -1220,7 +1222,7 @@ let fix_switch_branches p =
 let start () = make_context ~value_type:Gc_target.Value.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
-  let p = if effects () then fix_switch_branches p else p in
+  let p = if effects_cps () then fix_switch_branches p else p in
   let module G = Generate (Gc_target) in
   G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p
 

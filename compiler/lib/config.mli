@@ -40,7 +40,6 @@ module Flag : sig
 
   val staticeval : unit -> bool
 
-  (* Deprecated in favor of toplevel function [effects] below *)
   val effects : unit -> bool
 
   val genprim : unit -> bool

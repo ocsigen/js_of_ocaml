@@ -21,8 +21,7 @@ open Util
 let%expect_test "direct calls with --effects=double-translation" =
   let code =
     compile_and_parse
-      ~effects:true
-      ~doubletranslate:true
+      ~effects:Js_of_ocaml_compiler.Config.Double_translation
       {|
          (* Arity of the argument of a function / direct call *)
          let test1 () =
