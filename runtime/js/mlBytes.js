@@ -78,7 +78,7 @@ function caml_subarray_to_jsbytes(a, i, len) {
   if (i === 0 && len <= 4096 && len === a.length) return f.apply(null, a);
   var s = "";
   for (; 0 < len; i += 1024, len -= 1024)
-    s += f.apply(null, a.slice(i, i + Math.min(len, 1024)));
+    s += f.apply(null, a.subarray(i, i + Math.min(len, 1024)));
   return s;
 }
 
