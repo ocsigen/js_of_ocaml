@@ -1331,8 +1331,8 @@ module Math = struct
   let unary name x =
     let* f =
       register_import
-        ~allow_tail_call:false
-        ~import_module:"Math"
+        ~allow_tail_call:(Config.Flag.wasi ())
+        ~import_module:(if Config.Flag.wasi () then "env" else "Math")
         ~name
         (Fun (float_func_type 1))
     in
@@ -1380,8 +1380,8 @@ module Math = struct
   let binary name x y =
     let* f =
       register_import
-        ~allow_tail_call:false
-        ~import_module:"Math"
+        ~allow_tail_call:(Config.Flag.wasi ())
+        ~import_module:(if Config.Flag.wasi () then "env" else "Math")
         ~name
         (Fun (float_func_type 2))
     in
@@ -1407,6 +1407,18 @@ module Bigarray = struct
       ~ty:Type.int_array_type
       (Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 3)
       (Arith.const (Int32.of_int n))
+
+  let little_endian () =
+    if Config.Flag.wasi ()
+    then Arith.(const 1l)
+    else
+      let* le =
+        register_import
+          ~import_module:"bindings"
+          ~name:"littleEndian"
+          (Global { mut = false; typ = I32 })
+      in
+      return (W.GlobalGet le)
 
   let get_at_offset ~(kind : Typing.Bigarray.kind) a i =
     let name, (typ : Wasm_ast.value_type), size, box =
@@ -1448,19 +1460,14 @@ module Bigarray = struct
               return (W.F64PromoteF32 x) )
       | Complex64 -> "dv_get_f64", F64, 4, Fun.id
     in
-    let* little_endian =
-      register_import
-        ~import_module:"bindings"
-        ~name:"littleEndian"
-        (Global { mut = false; typ = I32 })
-    in
+    let* little_endian = little_endian () in
     let* f =
       register_import
-        ~import_module:"bindings"
+        ~import_module:(if Config.Flag.wasi () then "env" else "bindings")
         ~name
         (Fun
            { W.params =
-               Ref { nullable = true; typ = Extern }
+               Ref { nullable = not (Config.Flag.wasi ()); typ = Extern }
                :: I32
                :: (if size = 0 then [] else [ I32 ])
            ; result = [ typ ]
@@ -1482,14 +1489,12 @@ module Bigarray = struct
     | Nativeint
     | Float16 ->
         box
-          (return
-             (W.Call
-                (f, ta :: ofs :: (if size = 0 then [] else [ W.GlobalGet little_endian ]))))
+          (return (W.Call (f, ta :: ofs :: (if size = 0 then [] else [ little_endian ]))))
     | Complex32 | Complex64 ->
         let delta = Int32.shift_left 1l (size - 1) in
         let* ofs' = Arith.(return ofs + const delta) in
-        let* x = box (return (W.Call (f, [ ta; ofs; W.GlobalGet little_endian ]))) in
-        let* y = box (return (W.Call (f, [ ta; ofs'; W.GlobalGet little_endian ]))) in
+        let* x = box (return (W.Call (f, [ ta; ofs; little_endian ]))) in
+        let* y = box (return (W.Call (f, [ ta; ofs'; little_endian ]))) in
         let* ty = Type.float_array_type in
         return (W.ArrayNewFixed (ty, [ x; y ]))
 
@@ -1534,19 +1539,14 @@ module Bigarray = struct
     let* ty = Type.bigarray_type in
     let* ta = Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 2 in
     let* ofs = Arith.(i lsl const (Int32.of_int size)) in
-    let* little_endian =
-      register_import
-        ~import_module:"bindings"
-        ~name:"littleEndian"
-        (Global { mut = false; typ = I32 })
-    in
+    let* little_endian = little_endian () in
     let* f =
       register_import
-        ~import_module:"bindings"
+        ~import_module:(if Config.Flag.wasi () then "env" else "bindings")
         ~name
         (Fun
            { W.params =
-               Ref { nullable = true; typ = Extern }
+               Ref { nullable = not (Config.Flag.wasi ()); typ = Extern }
                :: I32
                :: typ
                :: (if size = 0 then [] else [ I32 ])
@@ -1567,18 +1567,15 @@ module Bigarray = struct
     | Float16 ->
         let* v = unbox v in
         instr
-          (W.CallInstr
-             ( f
-             , ta :: ofs :: v :: (if size = 0 then [] else [ W.GlobalGet little_endian ])
-             ))
+          (W.CallInstr (f, ta :: ofs :: v :: (if size = 0 then [] else [ little_endian ])))
     | Complex32 | Complex64 ->
         let delta = Int32.shift_left 1l (size - 1) in
         let* ofs' = Arith.(return ofs + const delta) in
         let ty = Type.float_array_type in
         let* x = unbox (Memory.wasm_array_get ~ty v (Arith.const 0l)) in
-        let* () = instr (W.CallInstr (f, [ ta; ofs; x; W.GlobalGet little_endian ])) in
+        let* () = instr (W.CallInstr (f, [ ta; ofs; x; little_endian ])) in
         let* y = unbox (Memory.wasm_array_get ~ty v (Arith.const 1l)) in
-        instr (W.CallInstr (f, [ ta; ofs'; y; W.GlobalGet little_endian ]))
+        instr (W.CallInstr (f, [ ta; ofs'; y; little_endian ]))
 
   let offset ~bound_error_index ~(layout : Typing.Bigarray.layout) ta ~indices =
     let l =
@@ -1969,21 +1966,34 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
          x
          (block_expr
             { params = []; result = [ Type.value ] }
-            (let* exn =
-               block_expr
-                 { params = []; result = [ externref ] }
-                 (let* e =
-                    try_expr
-                      { params = []; result = [ externref ] }
-                      (body
-                         ~result_typ:[ externref ]
-                         ~fall_through:`Skip
-                         ~context:(`Skip :: `Skip :: `Catch :: context))
-                      [ ocaml_tag, 1, Type.value; js_tag, 0, externref ]
-                  in
-                  instr (W.Push e))
-             in
-             instr (W.CallInstr (f, [ exn ]))))
+            (if Config.Flag.wasi ()
+             then
+               let* e =
+                 try_expr
+                   { params = []; result = [ Type.value ] }
+                   (body
+                      ~result_typ:[ Type.value ]
+                      ~fall_through:`Skip
+                      ~context:(`Skip :: `Catch :: context))
+                   [ ocaml_tag, 0, Type.value ]
+               in
+               instr (W.Push e)
+             else
+               let* exn =
+                 block_expr
+                   { params = []; result = [ externref ] }
+                   (let* e =
+                      try_expr
+                        { params = []; result = [ externref ] }
+                        (body
+                           ~result_typ:[ externref ]
+                           ~fall_through:`Skip
+                           ~context:(`Skip :: `Skip :: `Catch :: context))
+                        [ ocaml_tag, 1, Type.value; js_tag, 0, externref ]
+                    in
+                    instr (W.Push e))
+               in
+               instr (W.CallInstr (f, [ exn ]))))
      in
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
