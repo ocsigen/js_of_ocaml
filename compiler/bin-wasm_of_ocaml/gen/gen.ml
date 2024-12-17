@@ -5,7 +5,7 @@ let read_file ic = really_input_string ic (in_channel_length ic)
 
 let default_flags = []
 
-let interesting_runtimes = [ [] ]
+let interesting_runtimes = [ [ "wasi", false ]; [ "wasi", true ] ]
 
 let name_runtime l =
   let flags = List.filter_map (fun (k, v) -> if v then Some k else None) l in
@@ -25,15 +25,24 @@ let print_flags f flags =
 let () =
   let () = set_binary_mode_out stdout true in
   Format.printf
-    "let js_runtime = \"%s\"@."
+    "let js_launcher = \"%s\"@."
     (String.escaped (read_file (open_in_bin Sys.argv.(1))));
   Format.printf
     "let dependencies = \"%s\"@."
     (String.escaped (read_file (open_in_bin Sys.argv.(2))));
+  Format.printf
+    "let js_wasi_launcher = \"%s\"@."
+    (String.escaped (read_file (open_in_bin Sys.argv.(3))));
+  Format.printf
+    "let wasi_dependencies = \"%s\"@."
+    (String.escaped (read_file (open_in_bin Sys.argv.(4))));
+  Format.printf
+    "let wasi_libc = \"%s\"@."
+    (String.escaped (read_file (open_in_bin Sys.argv.(5))));
   let wat_files, runtimes =
     List.partition
       (fun f -> Filename.check_suffix f ".wat")
-      (Array.to_list (Array.sub Sys.argv 3 (Array.length Sys.argv - 3)))
+      (Array.to_list (Array.sub Sys.argv 6 (Array.length Sys.argv - 6)))
   in
   Format.printf
     "let wat_files = [%a]@."
