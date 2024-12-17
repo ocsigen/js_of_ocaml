@@ -24,6 +24,12 @@ module Wasm_binary : sig
     ; name : string
     }
 
+  val check : contents:string -> bool
+  (** Checks whether [contents] is a Wasm Module *)
+
+  val check_file : file:string -> bool
+  (** Checks whether [file] contains a Wasm Module *)
+
   val read_imports : file:string -> import list
 
   val append_source_map_section : file:string -> url:string -> unit

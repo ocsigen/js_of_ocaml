@@ -31,42 +31,16 @@
 
 (rule
  (target runtime.wasm)
- (deps runtime.merged.wasm)
- (action
-  (run
-   wasm-opt
-   -g
-   --enable-gc
-   --enable-exception-handling
-   --enable-reference-types
-   --enable-tail-call
-   --enable-strings
-   --enable-multivalue
-   --enable-bulk-memory
-   %{deps}
-   -O3
-   -o
-   %{target})))
-
-(rule
- (target runtime.merged.wasm)
  (deps
   args
   (glob_files *.wat))
  (action
   (run
-   wasm-merge
-   -g
-   --enable-gc
-   --enable-exception-handling
-   --enable-reference-types
-   --enable-tail-call
-   --enable-strings
-   --enable-multivalue
-   --enable-bulk-memory
-   %{read-lines:args}
-   -o
-   %{target})))
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   %{target}
+   %{read-lines:args})))
 
 (rule
  (target args)

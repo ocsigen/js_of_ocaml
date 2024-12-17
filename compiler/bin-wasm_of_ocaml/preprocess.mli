@@ -16,33 +16,17 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type link_input =
-  { module_name : string  (** Name under which the module is imported in other modules *)
-  ; file : string  (** File containing the Wasm module *)
+type variables =
+  { enable : string list
+  ; disable : string list
+  ; set : (string * string) list
   }
 
-val link :
-     ?options:string list
-  -> inputs:link_input list
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> unit
-  -> unit
+val variable_options : variables Cmdliner.Term.t
 
-val dead_code_elimination :
-     dependencies:string
-  -> opt_input_sourcemap:string option
-  -> input_file:string
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> Stdlib.StringSet.t
+val set_variables :
+  variables -> (string * Wasm_of_ocaml_compiler.Wat_preprocess.value) list
 
-val optimize :
-     profile:Driver.profile option
-  -> ?options:string list
-  -> opt_input_sourcemap:string option
-  -> input_file:string
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> unit
-  -> unit
+val command : unit Cmdliner.Cmd.t
+
+val command_alias : unit Cmdliner.Cmd.t

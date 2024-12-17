@@ -73,6 +73,14 @@ let output_gen output_file f =
   Code.Var.set_stable (Config.Flag.stable_var ());
   Filename.gen_file output_file f
 
+let with_runtime_files ~runtime_wasm_files f =
+  let inputs =
+    List.map
+      ~f:(fun file -> { Wat_preprocess.module_name = "env"; file; source = File })
+      runtime_wasm_files
+  in
+  Wat_preprocess.with_preprocessed_files ~variables:[] ~inputs f
+
 let link_and_optimize
     ~profile
     ~sourcemap_root
@@ -100,15 +108,15 @@ let link_and_optimize
      then Some (Filename.temp_file "wasm-merged" ".wasm.map")
      else None)
   @@ fun opt_temp_sourcemap ->
+  (with_runtime_files ~runtime_wasm_files
+  @@ fun runtime_inputs ->
   Binaryen.link
     ~inputs:
-      (List.map
-         ~f:(fun file -> { Binaryen.module_name = "env"; file })
-         (runtime_file :: runtime_wasm_files)
+      (({ Binaryen.module_name = "env"; file = runtime_file } :: runtime_inputs)
       @ List.map ~f:(fun file -> { Binaryen.module_name = "OCaml"; file }) wat_files)
     ~opt_output_sourcemap:opt_temp_sourcemap
     ~output_file:temp_file
-    ();
+    ());
   Fs.with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
   @@ fun temp_file' ->
   opt_with
@@ -143,14 +151,13 @@ let link_runtime ~profile runtime_wasm_files output_file =
     @@ fun extra_runtime ->
     Fs.with_intermediate_file (Filename.temp_file "merged_runtime" ".wasm")
     @@ fun temp_file ->
+    (with_runtime_files ~runtime_wasm_files
+    @@ fun runtime_inputs ->
     Binaryen.link
       ~opt_output_sourcemap:None
-      ~inputs:
-        (List.map
-           ~f:(fun file -> { Binaryen.module_name = "env"; file })
-           runtime_wasm_files)
+      ~inputs:runtime_inputs
       ~output_file:temp_file
-      ();
+      ());
     Binaryen.optimize
       ~profile
       ~opt_input_sourcemap:None
