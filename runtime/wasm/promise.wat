@@ -20,6 +20,9 @@
 ;; (ref eq) representation and the JS [anyref] world.
 
 (module
+
+(@if (not wasi)
+(@then
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "js" "caml_jsoo_promise_wrap"
@@ -34,4 +37,6 @@
    (func (export "caml_jsoo_promise_unwrap") (param (ref eq)) (result (ref eq))
       (return_call $wrap
          (call $caml_jsoo_promise_unwrap_js (call $unwrap (local.get 0)))))
+))
+
 )

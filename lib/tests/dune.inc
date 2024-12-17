@@ -2,6 +2,7 @@
 (library
  ;; lib/tests/test_css_angle.ml
  (name test_css_angle_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_css_angle)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -11,6 +12,7 @@
 (library
  ;; lib/tests/test_css_color.ml
  (name test_css_color_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_css_color)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -20,6 +22,7 @@
 (library
  ;; lib/tests/test_css_length.ml
  (name test_css_length_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_css_length)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -29,6 +32,7 @@
 (library
  ;; lib/tests/test_eval.ml
  (name test_eval_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_eval)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -38,7 +42,7 @@
 (library
  ;; lib/tests/test_fetch.ml
  (name test_fetch_75)
- (enabled_if (<> %{profile} quickjs))
+ (enabled_if (and (<> %{profile} quickjs) (<> %{profile} wasi)))
  (modules test_fetch)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -58,6 +62,7 @@
 (library
  ;; lib/tests/test_fun_call_2.ml
  (name test_fun_call_2_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_fun_call_2)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -67,6 +72,7 @@
 (library
  ;; lib/tests/test_json.ml
  (name test_json_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_json)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -76,6 +82,7 @@
 (library
  ;; lib/tests/test_misc.ml
  (name test_misc_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_misc)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -85,6 +92,7 @@
 (library
  ;; lib/tests/test_nodejs_filesystem_errors.ml
  (name test_nodejs_filesystem_errors_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_nodejs_filesystem_errors)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -94,6 +102,7 @@
 (library
  ;; lib/tests/test_poly_compare.ml
  (name test_poly_compare_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_poly_compare)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))
@@ -103,6 +112,7 @@
 (library
  ;; lib/tests/test_poly_equal.ml
  (name test_poly_equal_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_poly_equal)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -112,6 +122,7 @@
 (library
  ;; lib/tests/test_promise.ml
  (name test_promise_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_promise)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -121,6 +132,7 @@
 (library
  ;; lib/tests/test_regexp.ml
  (name test_regexp_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_regexp)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -130,6 +142,7 @@
 (library
  ;; lib/tests/test_string.ml
  (name test_string_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_string)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -149,6 +162,7 @@
 (library
  ;; lib/tests/test_typed_array.ml
  (name test_typed_array_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_typed_array)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -158,6 +172,7 @@
 (library
  ;; lib/tests/test_unsafe_set_get.ml
  (name test_unsafe_set_get_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_unsafe_set_get)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
@@ -167,6 +182,7 @@
 (library
  ;; lib/tests/test_url.ml
  (name test_url_75)
+ (enabled_if (<> %{profile} wasi))
  (modules test_url)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js wasm))
