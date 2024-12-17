@@ -44,11 +44,76 @@
    (import "custom" "caml_find_custom_operations"
       (func $caml_find_custom_operations
          (param (ref $bytes)) (result (ref null $custom_operations))))
+   (type $block (array (mut (ref eq))))
+(@if wasi
+(@then
+   (type $map
+      (struct
+         (field $size (mut i32))
+         (field $keys (mut (ref $block)))
+         (field $values (mut (ref $block)))))
+   (func $map_new (result (ref any))
+      (struct.new $map
+         (i32.const 0)
+         (array.new $block (ref.i31 (i32.const 0)) (i32.const 2))
+         (array.new $block (ref.i31 (i32.const 0)) (i32.const 2))))
+   (func $map_get (param $map (ref any)) (param $k (ref eq)) (result i31ref)
+      (local $m (ref $map)) (local $keys (ref $block))
+      (local $i i32) (local $size i32)
+      (local.set $m (ref.cast (ref $map) (local.get $map)))
+      (local.set $size (struct.get $map $size (local.get $m)))
+      (local.set $keys (struct.get $map $keys (local.get $m)))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $size))
+            (then
+               (if (ref.eq (array.get $block (local.get $keys) (local.get $i))
+                      (local.get $k))
+                  (then
+                     (return
+                        (ref.cast (ref i31)
+                           (array.get $block
+                              (struct.get $map $values (local.get $m))
+                              (local.get $i))))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (ref.null i31))
+   (func $map_set (param $map (ref any)) (param $k (ref eq)) (param $v (ref i31))
+      (local $m (ref $map)) (local $i i32) (local $size i32)
+      (local $keys (ref $block)) (local $a (ref $block))
+      (local.set $m (ref.cast (ref $map) (local.get $map)))
+      (local.set $i (struct.get $map $size (local.get $m)))
+      (local.set $keys (struct.get $map $keys (local.get $m)))
+      (if (i32.eq (local.get $i) (array.len (local.get $keys)))
+         (then
+            (local.set $size (i32.shl (local.get $i) (i32.const 1)))
+            (local.set $a
+               (array.new $block (ref.i31 (i32.const 0)) (local.get $size)))
+            (array.copy $block $block
+               (local.get $a) (i32.const 0)
+               (local.get $keys) (i32.const 0)
+               (local.get $i))
+            (struct.set $map $keys (local.get $m) (local.get $a))
+            (local.set $keys (local.get $a))
+            (local.set $a
+               (array.new $block (ref.i31 (i32.const 0)) (local.get $size)))
+            (array.copy $block $block
+               (local.get $a) (i32.const 0)
+               (struct.get $map $values (local.get $m)) (i32.const 0)
+               (local.get $i))
+            (struct.set $map $values (local.get $m) (local.get $a))))
+      (array.set $block (local.get $keys) (local.get $i) (local.get $k))
+      (array.set $block (struct.get $map $values (local.get $m))
+         (local.get $i) (local.get $v))
+      (struct.set $map $size (local.get $m)
+         (i32.add (local.get $i) (i32.const 1))))
+)
+(@else
    (import "bindings" "map_new" (func $map_new (result (ref any))))
    (import "bindings" "map_get"
       (func $map_get (param (ref any)) (param (ref eq)) (result i31ref)))
    (import "bindings" "map_set"
       (func $map_set (param (ref any)) (param (ref eq)) (param (ref i31))))
+))
 
    (@string $input_val_from_string "input_value_from_string")
 
@@ -130,7 +195,6 @@
          (global.get $input_value))
       (return_call $intern_rec (local.get $s) (local.get $h)))
 
-   (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))

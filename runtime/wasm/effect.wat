@@ -33,6 +33,12 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
+(@if wasi
+(@then
+   (func $caml_wrap_exception (param externref) (result (ref eq))
+      (unreachable))
+)
+(@else
    (import "jslib" "caml_wrap_exception"
       (func $caml_wrap_exception (param externref) (result (ref eq))))
    (import "bindings" "start_fiber" (func $start_fiber (param (ref eq))))
@@ -41,6 +47,7 @@
          (param $f funcref) (param $env eqref) (result anyref)))
    (import "bindings" "resume_fiber"
       (func $resume_fiber (param externref) (param (ref eq))))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -83,6 +90,8 @@
 
    (global $effect_allowed (mut i32) (i32.const 1))
 
+(@if (not wasi)
+(@then
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 
    (type $pair (struct (field (ref eq)) (field (ref eq))))
@@ -382,6 +391,7 @@
          (local.get $hv) (local.get $hx) (local.get $hf)
          (global.get $initial_cont)
          (ref.null $fiber)))
+))
 
    ;; Other functions
 
