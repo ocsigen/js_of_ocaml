@@ -457,6 +457,7 @@ let expression_or_instructions ctx st in_function =
                              @ instruction (Wasm_ast.Br (i + 1, Some (Pop ty))))))
                       catches))
         ]
+    | ExternConvertAny e' -> [ List (Atom "extern.convert_any" :: expression e') ]
   and instruction i =
     match i with
     | Drop e -> [ List (Atom "drop" :: expression e) ]
