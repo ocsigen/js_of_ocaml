@@ -39,10 +39,18 @@
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
+(@if wasi
+(@then
+   (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
+   (import "io" "write_all_to_fd"
+      (func $write_all_to_fd (param i32 (ref eq))))
+)
+(@else
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "bindings" "write" (func $write (param i32) (param anyref)))
    (import "bindings" "exit" (func $exit (param i32)))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -447,6 +455,8 @@
 
    (global $uncaught_exception (mut externref) (ref.null extern))
 
+(@if (not wasi)
+(@then
    (func $reraise_exception (result (ref eq))
       (throw $javascript_exception (global.get $uncaught_exception))
       (ref.i31 (i32.const 0)))
@@ -454,6 +464,7 @@
    (func (export "caml_handle_uncaught_exception") (param $exn externref)
       (global.set $uncaught_exception (local.get $exn))
       (call $caml_main (ref.func $reraise_exception)))
+))
 
    (type $wrapper_func (func (param (ref $func))))
    (global $caml_main_wrapper (export "caml_main_wrapper")
@@ -500,9 +511,16 @@
                      (call $caml_string_concat
                         (call $caml_format_exception (local.get $exn))
                         (@string "\n"))))
+(@if wasi
+(@then
+               (call $write_all_to_fd (i32.const 2) (local.get $msg))
+)
+(@else
                (call $write (i32.const 2)
                   (call $unwrap
-                     (call $caml_jsstring_of_string (local.get $msg)))))
+                     (call $caml_jsstring_of_string (local.get $msg))))
+))
+            )
             (call $exit (i32.const 2)))))
 
    (func (export "caml_with_async_exns") (param $f (ref eq)) (result (ref eq))

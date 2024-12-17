@@ -30,6 +30,9 @@
 *.tmpjs
 *.map
 
+# Wasm runtime: intermediate output of recompile-* aliases
+runtime/wasm/*.new.wasm
+
 ocamltests
 
 gh-pages

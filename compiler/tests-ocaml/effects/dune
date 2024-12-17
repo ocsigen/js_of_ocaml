@@ -2,6 +2,10 @@
  (with-effects-double-translation)
  (with-native-effects)
  (with-effects)
+ (wasi
+  (wasm_of_ocaml
+   (flags
+    (:standard --effects cps))))
  (_
   (js_of_ocaml
    (flags

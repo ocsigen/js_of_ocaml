@@ -31,11 +31,19 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-   (import "jslib" "caml_wrap_exception"
-      (func $caml_wrap_exception (param externref) (result (ref eq))))
    (import "stdlib" "caml_main_wrapper"
       (global $caml_main_wrapper (mut (ref null $wrapper_func))))
    (import "effect" "effect_allowed" (global $effect_allowed (mut i32)))
+(@if wasi
+(@then
+   ;; Never actually called since there is no JavaScript exception
+   (func $caml_wrap_exception (param externref) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+)
+(@else
+   (import "jslib" "caml_wrap_exception"
+      (func $caml_wrap_exception (param externref) (result (ref eq))))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))

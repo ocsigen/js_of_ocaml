@@ -87,10 +87,10 @@ let () =
         basename
         (Hashtbl.hash prefix mod 100)
         (match enabled_if basename with
-        | Any -> ""
+        | Any -> "\n (enabled_if (<> %{profile} wasi))"
         | GE5 -> "\n (enabled_if (>= %{ocaml_version} 5))"
         | No_effects -> "\n (enabled_if (<> %{profile} with-effects))"
-        | Not_quickjs -> "\n (enabled_if (<> %{profile} quickjs))")
+        | Not_quickjs -> "\n (enabled_if (and (<> %{profile} quickjs) (<> %{profile} wasi)))")
         basename
         (match run_wasm basename with
         | true -> "js wasm"

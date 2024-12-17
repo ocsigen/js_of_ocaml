@@ -11,6 +11,8 @@
  (enabled_if
   (>= %{ocaml_version} 4.14))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
@@ -24,6 +26,8 @@
    (>= %{ocaml_version} 5.1.1)
    (not %{oxcaml_supported})))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
@@ -35,6 +39,25 @@
  (enabled_if
   (>= %{ocaml_version} 5.1.1))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ (name jsoo_testsuite_perms)
+ (modules test_unix_perms)
+ (libraries unix)
+ ;; WASI has no notion of file permissions (it uses capabilities instead),
+ ;; and the QuickJS shim only approximates [Unix.access] / [Unix.chmod].
+ (enabled_if
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} quickjs)))
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
@@ -103,6 +126,7 @@
    test_unix
    test_promise
    test_lwt_promise
+   test_unix_perms
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -110,13 +134,15 @@
   (language c)
   (names bigarray_stubs jsoo_runtime_stubs))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
 
-; test_unix exercises [Unix.access] / [Unix.chmod] semantics that the
-; QuickJS shim only approximates, so it lives in its own library that's
-; disabled under the quickjs profile.
+; test_unix exercises [Unix.link], which the QuickJS shim does not
+; implement, so it lives in its own library that's disabled under the
+; quickjs profile.
 
 (library
  (name jsoo_testsuite_unix)
@@ -125,6 +151,8 @@
  (modules test_unix)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
@@ -140,6 +168,8 @@
  (name test_runtime_value)
  (modules test_runtime_value)
  (libraries js_of_ocaml)
+ (enabled_if
+  (<> %{profile} wasi))
  (js_of_ocaml
   (javascript_files custom.js))
  (wasm_of_ocaml
@@ -149,6 +179,8 @@
 (test
  (name test_promise)
  (modules test_promise)
+ (enabled_if
+  (<> %{profile} wasi))
  (libraries js_of_ocaml)
  (modes js wasm)
  (preprocess
@@ -158,6 +190,8 @@
  (name test_lwt_promise)
  (package js_of_ocaml-lwt)
  (modules test_lwt_promise)
+ (enabled_if
+  (<> %{profile} wasi))
  (libraries js_of_ocaml js_of_ocaml-lwt lwt)
  (modes js wasm)
  (preprocess
@@ -166,6 +200,8 @@
 (library
  (name test_custom_name)
  (modules test_custom_name)
+ (enabled_if
+  (<> %{profile} wasi))
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)
@@ -190,6 +226,8 @@
 (library
  (name test_list_of_js_array)
  (modules test_list_of_js_array)
+ (enabled_if
+  (<> %{profile} wasi))
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)

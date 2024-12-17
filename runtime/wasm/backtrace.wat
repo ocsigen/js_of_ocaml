@@ -18,10 +18,20 @@
 (module
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
+(@if wasi
+(@then
+   (global $backtrace_status (mut (ref eq)) (ref.i31 (i32.const 0)))
+   (func $backtrace_status (result (ref eq))
+      (global.get $backtrace_status))
+   (func $record_backtrace (param $b (ref eq))
+      (global.set $backtrace_status (local.get $b)))
+)
+(@else
    (import "bindings" "backtrace_status"
       (func $backtrace_status (result (ref eq))))
    (import "bindings" "record_backtrace"
       (func $record_backtrace (param (ref eq))))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))

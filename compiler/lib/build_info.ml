@@ -106,6 +106,17 @@ let config_keys target =
       ; default = false
       }
   ]
+  @
+  match target with
+  | `Wasm ->
+      [ Bool_key
+          { name = "wasi"
+          ; get = Config.Flag.wasi
+          ; set = Config.Flag.set "wasi"
+          ; default = false
+          }
+      ]
+  | `JavaScript -> []
 
 let config_key_values = function
   | Bool_key _ -> [ "true"; "false" ]

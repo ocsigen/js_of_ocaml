@@ -2,6 +2,10 @@
  (with-effects-double-translation)
  (with-native-effects)
  (with-effects)
+ (wasi
+  (wasm_of_ocaml
+   (flags
+    (:standard --effects cps))))
  (_
   (js_of_ocaml
    (flags
@@ -12,6 +16,8 @@
  (enabled_if
   (>= %{ocaml_version} 5))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (modules
   (:standard

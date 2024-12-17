@@ -80,6 +80,7 @@
  (enabled_if
   (and
    %{env:WASM_OF_OCAML=false}
+   (<> %{profile} wasi)
    (>= %{ocaml_version} 5.4)))
  (action
   (with-stdout-to
@@ -102,6 +103,7 @@
  (enabled_if
   (and
    %{env:WASM_OF_OCAML=false}
+   (<> %{profile} wasi)
    (>= %{ocaml_version} 5.4)))
  (action
   (progn
