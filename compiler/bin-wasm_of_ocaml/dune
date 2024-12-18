@@ -22,7 +22,7 @@
   (:standard -safe-string)))
 
 (rule
- (target wa_runtime.ml)
+ (target runtime_files.ml)
  (deps
   gen/gen.exe
   ../../runtime/wasm/runtime.wasm
