@@ -5,6 +5,5 @@ let%expect_test _ =
       print_endline (Printexc.to_string e);
       print_endline "failure");
   [%expect {|
-    Failure("TypeError: Cannot read properties of undefined (reading 'length')")
-    failure
+    success
  |}]
