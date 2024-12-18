@@ -73,7 +73,7 @@ function caml_pop_trap() {
 // This has the shape {h, r:{k, x, e}} where h is a triple of handlers
 // (see effect.js) and k, x and e are the saved continuation,
 // exception stack and fiber stack of the parent fiber.
-var caml_fiber_stack;
+var caml_fiber_stack = 0;
 
 //Provides:caml_resume_stack
 //Requires: caml_named_value, caml_raise_constant, caml_exn_stack, caml_fiber_stack
@@ -109,10 +109,37 @@ function caml_pop_fiber() {
   return rem.k;
 }
 
+//Provides: caml_make_unhandled_effect_exn
+//Requires: caml_named_value, caml_string_of_jsbytes, caml_fresh_oo_id
+function caml_make_unhandled_effect_exn(eff) {
+  var exn = caml_named_value("Effect.Unhandled");
+  if (exn) exn = [0, exn, eff];
+  else {
+    exn = [
+      248,
+      caml_string_of_jsbytes("Effect.Unhandled"),
+      caml_fresh_oo_id(0),
+    ];
+  }
+  return exn;
+}
+
 //Provides: caml_perform_effect
 //Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack
+//Requires: caml_make_unhandled_effect_exn
+//Requires: caml_resume_stack, caml_continuation_use_noexc
 //If: effects
 function caml_perform_effect(eff, cont, last, k0) {
+  if (caml_fiber_stack === 0) {
+    var exn = caml_make_unhandled_effect_exn(eff);
+    if (!cont) throw exn;
+    else {
+      var stack = caml_continuation_use_noexc(cont);
+      caml_resume_stack(stack, last, k0);
+      throw exn;
+    }
+  }
+
   // Get current effect handler
   var handlers = caml_fiber_stack.h;
   var handler = handlers[3];
