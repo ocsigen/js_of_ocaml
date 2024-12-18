@@ -16,7 +16,6 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "bindings" "log" (func $log_js (param anyref)))
    (import "bindings" "identity" (func $to_float (param anyref) (result f64)))
    (import "bindings" "identity" (func $from_float (param f64) (result anyref)))
    (import "bindings" "identity" (func $to_bool (param anyref) (result i32)))
@@ -686,8 +685,4 @@
                   (return
                      (array.get $block (local.get $exn) (i32.const 2)))))))
       (call $wrap (ref.null any)))
-
-   (func (export "log_str") (param $s (ref $string))
-      (call $log_js
-         (call $unwrap (call $caml_jsstring_of_string (local.get $s)))))
 )
