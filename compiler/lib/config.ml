@@ -222,7 +222,9 @@ let target () =
 let set_target (t : [ `JavaScript | `Wasm ]) =
   (match t with
   | `JavaScript -> Targetint.set_num_bits 32
-  | `Wasm -> Targetint.set_num_bits 31);
+  | `Wasm ->
+      Targetint.set_num_bits 31;
+      Flag.disable "use-js-string");
   target_ := (t :> [ `JavaScript | `Wasm | `None ])
 
 type effects_backend =
