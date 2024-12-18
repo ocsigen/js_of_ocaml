@@ -20,7 +20,6 @@
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
-   (import "obj" "double_array_tag" (global $double_array_tag i32))
    (import "obj" "object_tag" (global $object_tag i32))
    (import "obj" "caml_set_oo_id"
       (func $caml_set_oo_id (param (ref eq)) (result (ref eq))))

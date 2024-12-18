@@ -16,7 +16,6 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "jslib" "log_str" (func $log_str (param (ref $string))))
    (import "bindings" "getcwd" (func $getcwd (result anyref)))
    (import "bindings" "chdir" (func $chdir (param anyref)))
    (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))

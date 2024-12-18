@@ -16,9 +16,6 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "jslib" "caml_jsstring_of_string"
-      (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "fail" "caml_is_special_exception"
       (func $caml_is_special_exception (param (ref eq)) (result i32)))
    (import "ints" "caml_format_int"
