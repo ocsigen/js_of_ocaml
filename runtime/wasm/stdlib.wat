@@ -22,11 +22,8 @@
    (import "string" "caml_string_equal"
       (func $caml_string_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "jslib" "caml_string_of_jsstring"
-      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1

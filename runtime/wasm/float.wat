@@ -16,7 +16,6 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "bindings" "format_float"
       (func $format_float
          (param i32) (param i32) (param i32) (param f64) (result anyref)))
