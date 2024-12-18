@@ -16,12 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "caml_string_of_jsstring"
-      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
    (import "io" "caml_stderr" (global $caml_stderr (mut (ref eq))))
-   (import "io" "caml_ml_open_descriptor_out"
-      (func $caml_ml_open_descriptor_out (param (ref eq)) (result (ref eq))))
    (import "io" "caml_ml_output"
       (func $caml_ml_output
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (param (ref eq))
