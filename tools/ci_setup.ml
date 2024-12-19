@@ -39,6 +39,9 @@ let dune_workspace =
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
   (js_of_ocaml (enabled_if false))
+  (wasm_of_ocaml
+   (flags
+    (:standard --enable use-js-string)))
   (flags :standard -alert -all -warn-error -7-8-27-30-32-34-37-49-52-55 -w -7-27-30-32-34-37-49-52-55-56-58-67-69)))
 |}
 
