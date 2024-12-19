@@ -83,15 +83,17 @@ var caml_callback = caml_call_gen;
 
 //Provides: caml_callback
 //If: effects
-//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_resume_stack, caml_fresh_oo_id, caml_named_value, caml_raise_with_arg, caml_string_of_jsbytes
-//Requires: caml_raise_constant
+//Requires: caml_stack_depth, caml_call_gen, caml_wrap_exception
+//Requires: caml_exn_stack, caml_fiber_stack, caml_handlers
 function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
   var saved_exn_stack = caml_exn_stack;
+  var saved_handlers = caml_handlers;
   var saved_fiber_stack = caml_fiber_stack;
   try {
     caml_exn_stack = 0;
     caml_fiber_stack = 0;
+    caml_handlers = undefined;
     var res = {
       joo_tramp: f,
       joo_args: args.concat(function (x) {
@@ -113,6 +115,7 @@ function caml_callback(f, args) {
   } finally {
     caml_stack_depth = saved_stack_depth;
     caml_exn_stack = saved_exn_stack;
+    caml_handlers = saved_handlers;
     caml_fiber_stack = saved_fiber_stack;
   }
   return res;

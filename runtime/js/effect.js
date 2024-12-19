@@ -48,6 +48,9 @@ additional parameter which is the current low-level continuation.
 // This is an OCaml list of exception handlers
 var caml_exn_stack = 0;
 
+//Provides: caml_handlers
+var caml_handlers;
+
 //Provides: caml_push_trap
 //Requires: caml_exn_stack
 //If: effects
@@ -77,7 +80,7 @@ var caml_fiber_stack = 0;
 
 //Provides:caml_resume_stack
 //Requires: caml_named_value, caml_raise_constant, caml_exn_stack, caml_fiber_stack
-//Requires: caml_pop_fiber
+//Requires: caml_pop_fiber, caml_handlers
 //If: effects
 function caml_resume_stack(stack, last, k) {
   if (!stack)
@@ -92,8 +95,8 @@ function caml_resume_stack(stack, last, k) {
   var fiber = {
     k: k,
     x: caml_exn_stack,
+    h: caml_handlers,
     e: caml_fiber_stack,
-    h: last.sh,
   };
   last.e = fiber;
   caml_fiber_stack = stack;
@@ -102,11 +105,13 @@ function caml_resume_stack(stack, last, k) {
 
 //Provides: caml_pop_fiber
 //Requires: caml_exn_stack, caml_fiber_stack
+//Requires: caml_handlers
 //If: effects
 function caml_pop_fiber() {
   // Move to the parent fiber, returning the parent's low-level continuation
   var c = caml_fiber_stack;
   caml_exn_stack = c.x;
+  caml_handlers = c.h;
   caml_fiber_stack = c.e;
   return c.k;
 }
@@ -129,7 +134,7 @@ function caml_make_unhandled_effect_exn(eff) {
 //Provides: caml_perform_effect
 //Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack
 //Requires: caml_make_unhandled_effect_exn
-//Requires: caml_resume_stack, caml_continuation_use_noexc
+//Requires: caml_resume_stack, caml_continuation_use_noexc, caml_handlers
 //If: effects
 function caml_perform_effect(eff, cont, last, k0) {
   if (caml_fiber_stack === 0) {
@@ -141,29 +146,19 @@ function caml_perform_effect(eff, cont, last, k0) {
       throw exn;
     }
   }
-
+  var last_fiber = {
+    k: k0,
+    x: caml_exn_stack,
+    h: caml_handlers,
+    e: 0,
+  };
   // Get current effect handler
-  var handlers = caml_fiber_stack.h;
-  var handler = handlers[3];
+  var handler = caml_handlers[3];
   if (!cont) {
     //Perform
-    var last_fiber = {
-      k: k0,
-      x: caml_exn_stack,
-      e: 0,
-      h: null,
-      sh: handlers,
-    };
     cont = [245 /*continuation*/, last_fiber, 0];
   } else {
     //Reperform
-    var last_fiber = {
-      k: k0,
-      x: caml_exn_stack,
-      e: 0,
-      h: last.sh,
-      sh: handlers,
-    };
     last.e = last_fiber;
   }
   // Move to parent fiber and execute the effect handler there
@@ -195,7 +190,7 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return { k: hval, x: [hexn, 0], e: 0, h: null, sh: handlers };
+  return { k: hval, x: [hexn, 0], h: handlers, e: 0 };
 }
 
 //Provides: caml_alloc_stack
@@ -230,9 +225,9 @@ function caml_continuation_use_and_update_handler_noexc(
     // Pre OCaml 5.2, last/cont[2] was not populated.
     while (last.e !== 0) last = last.e;
   }
-  last.sh[1] = hval;
-  last.sh[2] = hexn;
-  last.sh[3] = heff;
+  last.h[1] = hval;
+  last.h[2] = hexn;
+  last.h[3] = heff;
   return stack;
 }
 
