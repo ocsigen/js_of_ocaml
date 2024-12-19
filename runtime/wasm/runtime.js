@@ -572,11 +572,22 @@
       "wasm:js-string": string_ops,
       "wasm:text-decoder": string_ops,
       "wasm:text-encoder": string_ops,
+      "": new globalThis.Proxy(
+        {},
+        {
+          get(_, prop) {
+            return prop;
+          },
+        },
+      ),
       env: {},
     },
     generated,
   );
-  const options = { builtins: ["js-string", "text-decoder", "text-encoder"] };
+  const options = {
+    builtins: ["js-string", "text-decoder", "text-encoder"],
+    importedStringConstants: "",
+  };
 
   function loadRelative(src) {
     const path = require("node:path");
