@@ -7,9 +7,12 @@ a triple of handlers, which are invoked when the fiber terminates
 The low-level continuation of the topmost fiber (which is currently
 executing) is passed from function to function as an additional
 argument. Its stack of exception handlers is stored in
-[caml_exn_stack]. Exception handlers are pushed into this stack when
-entering a [try ... with ...] and popped on exit. handlers are stored in [caml_handlers] and the remaining fibers are stored in [caml_fiber_stack]. To install an
-effect handler, we push a new fiber into the execution context.
+[caml_exn_stack].
+Exception handlers are pushed into this stack
+when entering a [try ... with ...] and popped on exit.
+Handlers are stored in [caml_handlers]
+and the remaining fibers are stored in [caml_fiber_stack].
+To install an effect handler, we push a new fiber into the execution context.
 
 We have basically the following type for reified continuations (type
 [continuation] in module [Effect] of the standard library):
