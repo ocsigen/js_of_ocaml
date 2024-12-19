@@ -99,7 +99,7 @@ let map_fst f (x, y, z) = f x, y, z
 
 let effects ~deadcode_sentinal p =
   match Config.effects () with
-  | Some (_ as effects) ->
+  | Some effects ->
       if debug () then Format.eprintf "Effects...@.";
       let p, live_vars = Deadcode.f p in
       let p = Effects.remove_empty_blocks ~live_vars p in
