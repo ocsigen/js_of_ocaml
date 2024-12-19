@@ -135,7 +135,11 @@ module Check = struct
     let freename = StringSet.diff freename Reserved.keyword in
     let freename = StringSet.diff freename Reserved.provided in
     let freename = StringSet.remove Global_constant.global_object freename in
-    let freename = if has_flags then StringSet.remove "FLAG" freename else freename in
+    let freename =
+      if has_flags
+      then StringSet.(diff freename (of_list [ "FLAG"; "CONFIG" ]))
+      else freename
+    in
     if StringSet.mem Global_constant.old_global_object freename
     then
       warn
