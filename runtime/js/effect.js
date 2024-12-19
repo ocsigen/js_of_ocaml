@@ -8,8 +8,7 @@ The low-level continuation of the topmost fiber (which is currently
 executing) is passed from function to function as an additional
 argument. Its stack of exception handlers is stored in
 [caml_exn_stack]. Exception handlers are pushed into this stack when
-entering a [try ... with ...] and popped on exit. Then, handlers and
-the remaining fibers are stored in [caml_fiber_stack]. To install an
+entering a [try ... with ...] and popped on exit. handlers are stored in [caml_handlers] and the remaining fibers are stored in [caml_fiber_stack]. To install an
 effect handler, we push a new fiber into the execution context.
 
 We have basically the following type for reified continuations (type
@@ -45,7 +44,6 @@ additional parameter which is the current low-level continuation.
 
 //Provides: caml_exn_stack
 //If: effects
-// This is an OCaml list of exception handlers
 var caml_exn_stack = 0;
 
 //Provides: caml_handlers
@@ -73,9 +71,11 @@ function caml_pop_trap() {
 
 //Provides: caml_fiber_stack
 //If: effects
-// This has the shape {h, r:{k, x, e}} where h is a triple of handlers
-// (see effect.js) and k, x and e are the saved continuation,
-// exception stack and fiber stack of the parent fiber.
+// This has the shape {k, x, h, e} where
+// - h is a triple of handlers (see effect.ml)
+// - k is the low level continuation
+// - x is the exception stack
+// - e is the fiber stack of the parent fiber.
 var caml_fiber_stack = 0;
 
 //Provides:caml_resume_stack
