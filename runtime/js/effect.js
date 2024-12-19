@@ -87,13 +87,15 @@ function caml_resume_stack(stack, last, k) {
   if (last === 0) {
     last = stack;
     // Pre OCaml 5.2, last/cont[2] was not populated.
-    while (last.r.e !== 0) last = last.r.e;
+    while (last.e !== 0) last = last.e;
   }
   var fiber = {
     h: last.sh,
-    r: { k: k, x: caml_exn_stack, e: caml_fiber_stack },
+    k: k,
+    x: caml_exn_stack,
+    e: caml_fiber_stack,
   };
-  last.r.e = fiber;
+  last.e = fiber;
   caml_fiber_stack = stack;
   return caml_pop_fiber();
 }
@@ -103,10 +105,10 @@ function caml_resume_stack(stack, last, k) {
 //If: effects
 function caml_pop_fiber() {
   // Move to the parent fiber, returning the parent's low-level continuation
-  var rem = caml_fiber_stack.r;
-  caml_exn_stack = rem.x;
-  caml_fiber_stack = rem.e;
-  return rem.k;
+  var c = caml_fiber_stack;
+  caml_exn_stack = c.x;
+  caml_fiber_stack = c.e;
+  return c.k;
 }
 
 //Provides: caml_make_unhandled_effect_exn
@@ -146,7 +148,9 @@ function caml_perform_effect(eff, cont, last, k0) {
   if (!cont) {
     //Perform
     var last_fiber = {
-      r: { k: k0, x: caml_exn_stack, e: 0 },
+      k: k0,
+      x: caml_exn_stack,
+      e: 0,
       h: null,
       sh: handlers,
     };
@@ -154,11 +158,13 @@ function caml_perform_effect(eff, cont, last, k0) {
   } else {
     //Reperform
     var last_fiber = {
-      r: { k: k0, x: caml_exn_stack, e: 0 },
+      k: k0,
+      x: caml_exn_stack,
+      e: 0,
       h: last.sh,
       sh: handlers,
     };
-    last.r.e = last_fiber;
+    last.e = last_fiber;
   }
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
@@ -189,7 +195,7 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return { r: { k: hval, x: [0, hexn, 0], e: 0 }, h: null, sh: handlers };
+  return { k: hval, x: [0, hexn, 0], e: 0, h: null, sh: handlers };
 }
 
 //Provides: caml_alloc_stack
@@ -222,7 +228,7 @@ function caml_continuation_use_and_update_handler_noexc(
   if (last === 0) {
     last = stack;
     // Pre OCaml 5.2, last/cont[2] was not populated.
-    while (last.r.e !== 0) last = last.r.e;
+    while (last.e !== 0) last = last.e;
   }
   last.sh[1] = hval;
   last.sh[2] = hexn;
