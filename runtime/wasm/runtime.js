@@ -573,7 +573,10 @@
     },
     generated,
   );
-  const options = { builtins: ["js-string", "text-decoder", "text-encoder"] };
+  const options = {
+    builtins: ["js-string", "text-decoder", "text-encoder"],
+    importedStringConstants: "",
+  };
 
   function loadRelative(src) {
     const path = require("node:path");
