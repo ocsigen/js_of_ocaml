@@ -7,10 +7,10 @@ a triple of handlers, which are invoked when the fiber terminates
 The low-level continuation of the topmost fiber (which is currently
 executing) is passed from function to function as an additional
 argument. Its stack of exception handlers is stored in
-[caml_exn_stack].
+[caml_current_stack.x].
 Exception handlers are pushed into this stack
 when entering a [try ... with ...] and popped on exit.
-Handlers are stored in [caml_handlers]
+Handlers are stored in [caml_current_stack.h]
 and the remaining fibers are stored in [caml_fiber_stack].
 To install an effect handler, we push a new fiber into the execution context.
 
@@ -145,11 +145,10 @@ function caml_perform_effect(eff, k0) {
   var handler = caml_current_stack.h[3];
   var last_fiber = caml_current_stack;
   last_fiber.k = k0;
-  last_fiber.e = 0;
+  var cont = [245 /*continuation*/, last_fiber, 0];
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
-  var cont = [245 /*continuation*/, last_fiber, 0];
   return caml_stack_check_depth()
     ? handler(eff, cont, last_fiber, k1)
     : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
@@ -172,11 +171,10 @@ function caml_reperform_effect(eff, cont, last, k0) {
   var handler = caml_current_stack.h[3];
   var last_fiber = caml_current_stack;
   last_fiber.k = k0;
-  last_fiber.e = 0;
+  last.e = last_fiber;
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
-  last.e = last_fiber;
   return caml_stack_check_depth()
     ? handler(eff, cont, last_fiber, k1)
     : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
