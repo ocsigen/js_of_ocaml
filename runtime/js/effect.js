@@ -82,6 +82,7 @@ var caml_fiber_stack = 0;
 //Requires: caml_named_value, caml_raise_constant, caml_fiber_stack
 //Requires: caml_pop_fiber, caml_current_stack
 //If: effects
+//Version: >= 5.0
 function caml_resume_stack(stack, last, k) {
   if (!stack)
     caml_raise_constant(
@@ -103,6 +104,7 @@ function caml_resume_stack(stack, last, k) {
 //Provides: caml_pop_fiber
 //Requires: caml_current_stack, caml_fiber_stack
 //If: effects
+//Version: >= 5.0
 function caml_pop_fiber() {
   // Move to the parent fiber, returning the parent's low-level continuation
   var c = caml_fiber_stack;
@@ -114,6 +116,8 @@ function caml_pop_fiber() {
 
 //Provides: caml_make_unhandled_effect_exn
 //Requires: caml_named_value, caml_string_of_jsbytes, caml_fresh_oo_id
+//If: effects
+//Version: >= 5.0
 function caml_make_unhandled_effect_exn(eff) {
   var exn = caml_named_value("Effect.Unhandled");
   if (exn) exn = [0, exn, eff];
@@ -132,6 +136,7 @@ function caml_make_unhandled_effect_exn(eff) {
 //Requires: caml_make_unhandled_effect_exn, caml_current_stack
 //Requires: caml_resume_stack, caml_continuation_use_noexc
 //If: effects
+//Version: >= 5.0
 function caml_perform_effect(eff, cont, last, k0) {
   if (caml_fiber_stack === 0) {
     var exn = caml_make_unhandled_effect_exn(eff);
@@ -257,6 +262,7 @@ function caml_ml_condition_signal(t) {
 //Provides: jsoo_effect_not_supported
 //Requires: caml_failwith
 //!If: effects
+//Version: >= 5.0
 function jsoo_effect_not_supported() {
   caml_failwith("Effect handlers are not supported");
 }
