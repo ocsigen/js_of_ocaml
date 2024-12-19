@@ -82,7 +82,7 @@
   assume_no_perform
   assume_no_perform_unhandled
   assume_no_perform_nested_handler)
- (libraries js_of_ocaml-compiler.runtime)
+ (libraries js_of_ocaml)
  (action
   (ignore-outputs
    (with-accepted-exit-codes

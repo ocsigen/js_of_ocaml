@@ -1,7 +1,8 @@
 (library
  (name js_of_ocaml)
  (public_name js_of_ocaml)
- (libraries js_of_ocaml-compiler.runtime)
+ (libraries
+  (re_export js_of_ocaml-compiler.runtime))
  (foreign_stubs
   (language c)
   (names js_of_ocaml_stubs))
