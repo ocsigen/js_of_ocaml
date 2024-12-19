@@ -6,6 +6,7 @@
 * Merged Wasm_of_ocaml (#1724)
 * Lib: removed no longer relevant Js.optdef type annotations (#1769)
 * Misc: drop support for IE
+* Compiler/Runtime: Make resuming a continuation more efficient (#1765)
 
 ## Bug fixes
 * Fix small bug in global data flow analysis (#1768)
