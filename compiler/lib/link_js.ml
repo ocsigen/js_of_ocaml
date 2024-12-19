@@ -343,7 +343,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
                     warn_effects := true;
                     warn
                       "Warning: your program contains effect handlers; you should \
-                       probably run js_of_ocaml with option '--enable=effects'@.");
+                       probably run js_of_ocaml with option '--effects=cps'@.");
                   (if mklib
                    then
                      let u = if linkall then { u with force_link = true } else u in

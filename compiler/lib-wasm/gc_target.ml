@@ -1706,7 +1706,7 @@ let post_process_function_body = Initialize_locals.f
 let entry_point ~toplevel_fun =
   let code =
     let* () =
-      if Config.Flag.effects ()
+      if Option.is_some (Config.effects ())
       then
         let* f =
           register_import
