@@ -84,16 +84,14 @@ var caml_callback = caml_call_gen;
 //Provides: caml_callback
 //If: effects
 //Requires: caml_stack_depth, caml_call_gen, caml_wrap_exception
-//Requires: caml_exn_stack, caml_fiber_stack, caml_handlers
+//Requires: caml_fiber_stack, caml_current_stack
 function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
-  var saved_exn_stack = caml_exn_stack;
-  var saved_handlers = caml_handlers;
+  var saved_current_stack = caml_current_stack;
   var saved_fiber_stack = caml_fiber_stack;
   try {
-    caml_exn_stack = 0;
     caml_fiber_stack = 0;
-    caml_handlers = undefined;
+    caml_current_stack = {};
     var res = {
       joo_tramp: f,
       joo_args: args.concat(function (x) {
@@ -106,16 +104,15 @@ function caml_callback(f, args) {
         res = caml_call_gen(res.joo_tramp, res.joo_args);
       } catch (e) {
         /* Handle exception coming from JavaScript or from the runtime. */
-        if (!caml_exn_stack) throw e;
-        var handler = caml_exn_stack[0];
-        caml_exn_stack = caml_exn_stack[1];
+        if (!caml_current_stack.x) throw e;
+        var handler = caml_current_stack.x[0];
+        caml_current_stack.x = caml_current_stack.x[1];
         res = { joo_tramp: handler, joo_args: [caml_wrap_exception(e)] };
       }
     } while (res && res.joo_args);
   } finally {
     caml_stack_depth = saved_stack_depth;
-    caml_exn_stack = saved_exn_stack;
-    caml_handlers = saved_handlers;
+    caml_current_stack = saved_current_stack;
     caml_fiber_stack = saved_fiber_stack;
   }
   return res;
