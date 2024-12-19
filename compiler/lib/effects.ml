@@ -543,11 +543,34 @@ let cps_block ~st ~k pc block =
   in
 
   let rewrite_instr x e =
-    let perform_effect ~effect_ ~continuation ~tail =
+    let perform_effect ~effect_ continuation_and_tail =
       Some
         (fun ~k ->
           let e =
-            Prim (Extern "caml_perform_effect", [ Pv effect_; continuation; tail; Pv k ])
+            match Config.target () with
+            | `JavaScript -> (
+                match continuation_and_tail with
+                | None -> Prim (Extern "caml_perform_effect", [ Pv effect_; Pv k ])
+                | Some (continuation, tail) ->
+                    Prim
+                      ( Extern "caml_reperform_effect"
+                      , [ Pv effect_; continuation; tail; Pv k ] ))
+            | `Wasm -> (
+                (* temporary until we finish the change to the wasmoo
+                   runtime *)
+                match continuation_and_tail with
+                | None ->
+                    Prim
+                      ( Extern "caml_perform_effect"
+                      , [ Pv effect_
+                        ; Pc (Int Targetint.zero)
+                        ; Pc (Int Targetint.zero)
+                        ; Pv k
+                        ] )
+                | Some (continuation, tail) ->
+                    Prim
+                      ( Extern "caml_perform_effect"
+                      , [ Pv effect_; continuation; tail; Pv k ] ))
           in
           let x = Var.fresh () in
           [ Let (x, e) ], Return x)
@@ -573,13 +596,9 @@ let cps_block ~st ~k pc block =
               ~check:true
               ~f
               [ arg; k' ])
-    | Prim (Extern "%perform", [ Pv effect_ ]) ->
-        perform_effect
-          ~effect_
-          ~continuation:(Pc (Int Targetint.zero))
-          ~tail:(Pc (Int Targetint.zero))
+    | Prim (Extern "%perform", [ Pv effect_ ]) -> perform_effect ~effect_ None
     | Prim (Extern "%reperform", [ Pv effect_; continuation; tail ]) ->
-        perform_effect ~effect_ ~continuation ~tail
+        perform_effect ~effect_ (Some (continuation, tail))
     | _ -> None
   in
 

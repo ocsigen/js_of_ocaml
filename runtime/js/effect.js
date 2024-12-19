@@ -134,18 +134,12 @@ function caml_make_unhandled_effect_exn(eff) {
 //Provides: caml_perform_effect
 //Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_fiber_stack
 //Requires: caml_make_unhandled_effect_exn, caml_current_stack
-//Requires: caml_resume_stack, caml_continuation_use_noexc
 //If: effects
 //Version: >= 5.0
-function caml_perform_effect(eff, cont, last, k0) {
+function caml_perform_effect(eff, k0) {
   if (caml_fiber_stack === 0) {
     var exn = caml_make_unhandled_effect_exn(eff);
-    if (!cont) throw exn;
-    else {
-      var stack = caml_continuation_use_noexc(cont);
-      caml_resume_stack(stack, last, k0);
-      throw exn;
-    }
+    throw exn;
   }
   // Get current effect handler
   var handler = caml_current_stack.h[3];
@@ -155,13 +149,34 @@ function caml_perform_effect(eff, cont, last, k0) {
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
-  if (!cont) {
-    //Perform
-    cont = [245 /*continuation*/, last_fiber, 0];
-  } else {
-    //Reperform
-    last.e = last_fiber;
+  var cont = [245 /*continuation*/, last_fiber, 0];
+  return caml_stack_check_depth()
+    ? handler(eff, cont, last_fiber, k1)
+    : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
+}
+
+//Provides: caml_reperform_effect
+//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_fiber_stack
+//Requires: caml_make_unhandled_effect_exn, caml_current_stack
+//Requires: caml_resume_stack, caml_continuation_use_noexc
+//If: effects
+//Version: >= 5.0
+function caml_reperform_effect(eff, cont, last, k0) {
+  if (caml_fiber_stack === 0) {
+    var exn = caml_make_unhandled_effect_exn(eff);
+    var stack = caml_continuation_use_noexc(cont);
+    caml_resume_stack(stack, last, k0);
+    throw exn;
   }
+  // Get current effect handler
+  var handler = caml_current_stack.h[3];
+  var last_fiber = caml_current_stack;
+  last_fiber.k = k0;
+  last_fiber.e = 0;
+  // Move to parent fiber and execute the effect handler there
+  // The handler is defined in Stdlib.Effect, so we know that the arity matches
+  var k1 = caml_pop_fiber();
+  last.e = last_fiber;
   return caml_stack_check_depth()
     ? handler(eff, cont, last_fiber, k1)
     : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
