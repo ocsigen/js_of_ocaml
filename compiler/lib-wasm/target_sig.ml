@@ -77,6 +77,10 @@ module type S = sig
 
     val bytes_set : expression -> expression -> expression -> unit Code_generation.t
 
+    val string_length : expression -> expression
+
+    val string_get : expression -> expression -> expression
+
     val box_float : expression -> expression
 
     val unbox_float : expression -> expression
