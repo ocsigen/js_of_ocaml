@@ -90,10 +90,10 @@ function caml_resume_stack(stack, last, k) {
     while (last.e !== 0) last = last.e;
   }
   var fiber = {
-    h: last.sh,
     k: k,
     x: caml_exn_stack,
     e: caml_fiber_stack,
+    h: last.sh,
   };
   last.e = fiber;
   caml_fiber_stack = stack;
