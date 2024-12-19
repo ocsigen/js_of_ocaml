@@ -52,7 +52,7 @@ var caml_exn_stack = 0;
 //Requires: caml_exn_stack
 //If: effects
 function caml_push_trap(handler) {
-  caml_exn_stack = [0, handler, caml_exn_stack];
+  caml_exn_stack = [handler, caml_exn_stack];
 }
 
 //Provides: caml_pop_trap
@@ -63,8 +63,8 @@ function caml_pop_trap() {
     return function (x) {
       throw x;
     };
-  var h = caml_exn_stack[1];
-  caml_exn_stack = caml_exn_stack[2];
+  var h = caml_exn_stack[0];
+  caml_exn_stack = caml_exn_stack[1];
   return h;
 }
 
@@ -195,7 +195,7 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return { k: hval, x: [0, hexn, 0], e: 0, h: null, sh: handlers };
+  return { k: hval, x: [hexn, 0], e: 0, h: null, sh: handlers };
 }
 
 //Provides: caml_alloc_stack
