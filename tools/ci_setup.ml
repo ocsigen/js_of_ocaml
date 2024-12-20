@@ -266,7 +266,7 @@ let () =
       let branch =
         if is_forked nm
         then
-          if List.mem nm [ "bonsai"; "virtual_dom"; "async_js" ]
+          if List.mem nm [ "bonsai"; "virtual_dom"; "async_js"; "zarith_stubs_js" ]
           then Some "jsoo-6"
           else Some "wasm"
         else None

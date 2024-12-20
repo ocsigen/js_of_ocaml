@@ -24,7 +24,7 @@
      (func $caml_fresh_oo_id (param (ref eq)) (result (ref eq))))
    (import "obj" "cont_tag" (global $cont_tag i32))
    (import "stdlib" "caml_named_value"
-      (func $caml_named_value (param (ref $string)) (result (ref null eq))))
+      (func $caml_named_value (param (ref eq)) (result (ref null eq))))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
