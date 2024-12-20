@@ -11,7 +11,7 @@ argument. Its stack of exception handlers is stored in
 Exception handlers are pushed into this stack
 when entering a [try ... with ...] and popped on exit.
 Handlers are stored in [caml_current_stack.h]
-and the remaining fibers are stored in [caml_fiber_stack].
+and the remaining fibers are stored in [caml_current_stack.e].
 To install an effect handler, we push a new fiber into the execution context.
 
 We have basically the following type for reified continuations (type
@@ -47,7 +47,12 @@ additional parameter which is the current low-level continuation.
 
 //Provides: caml_current_stack
 //If: effects
-var caml_current_stack = {};
+// This has the shape {k, x, h, e} where
+// - h is a triple of handlers (see effect.ml)
+// - k is the low level continuation
+// - x is the exception stack
+// - e is the fiber stack of the parent fiber.
+var caml_current_stack = {k:0, x:0, h:0, e:0};
 
 //Provides: caml_push_trap
 //Requires: caml_current_stack
@@ -69,17 +74,8 @@ function caml_pop_trap() {
   return h;
 }
 
-//Provides: caml_fiber_stack
-//If: effects
-// This has the shape {k, x, h, e} where
-// - h is a triple of handlers (see effect.ml)
-// - k is the low level continuation
-// - x is the exception stack
-// - e is the fiber stack of the parent fiber.
-var caml_fiber_stack = 0;
-
 //Provides:caml_resume_stack
-//Requires: caml_named_value, caml_raise_constant, caml_fiber_stack
+//Requires: caml_named_value, caml_raise_constant
 //Requires: caml_pop_fiber, caml_current_stack
 //If: effects
 //Version: >= 5.0
@@ -93,24 +89,21 @@ function caml_resume_stack(stack, last, k) {
     // Pre OCaml 5.2, last/cont[2] was not populated.
     while (last.e !== 0) last = last.e;
   }
-  var fiber = caml_current_stack;
-  fiber.k = k;
-  fiber.e = caml_fiber_stack;
-  last.e = fiber;
-  caml_fiber_stack = stack;
-  return caml_pop_fiber();
+  caml_current_stack.k = k;
+  last.e = caml_current_stack;
+  caml_current_stack = stack;
+  return stack.k;
 }
 
 //Provides: caml_pop_fiber
-//Requires: caml_current_stack, caml_fiber_stack
+//Requires: caml_current_stack
 //If: effects
 //Version: >= 5.0
 function caml_pop_fiber() {
   // Move to the parent fiber, returning the parent's low-level continuation
-  var c = caml_fiber_stack;
-  caml_current_stack = c;
-  caml_fiber_stack = c.e;
+  var c = caml_current_stack.e;
   caml_current_stack.e = 0;
+  caml_current_stack = c;
   return c.k;
 }
 
@@ -132,12 +125,12 @@ function caml_make_unhandled_effect_exn(eff) {
 }
 
 //Provides: caml_perform_effect
-//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_fiber_stack
+//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return
 //Requires: caml_make_unhandled_effect_exn, caml_current_stack
 //If: effects
 //Version: >= 5.0
 function caml_perform_effect(eff, k0) {
-  if (caml_fiber_stack === 0) {
+  if (caml_current_stack.e === 0) {
     var exn = caml_make_unhandled_effect_exn(eff);
     throw exn;
   }
@@ -155,13 +148,13 @@ function caml_perform_effect(eff, k0) {
 }
 
 //Provides: caml_reperform_effect
-//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_fiber_stack
+//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return
 //Requires: caml_make_unhandled_effect_exn, caml_current_stack
 //Requires: caml_resume_stack, caml_continuation_use_noexc
 //If: effects
 //Version: >= 5.0
 function caml_reperform_effect(eff, cont, last, k0) {
-  if (caml_fiber_stack === 0) {
+  if (caml_current_stack.e === 0) {
     var exn = caml_make_unhandled_effect_exn(eff);
     var stack = caml_continuation_use_noexc(cont);
     caml_resume_stack(stack, last, k0);
