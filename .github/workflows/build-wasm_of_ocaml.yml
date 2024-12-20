@@ -20,17 +20,29 @@ jobs:
           - "4.14"
           - "5.0"
           - "5.1"
-          - "5.2"
           - "5.3"
         separate_compilation:
           - true
+        jane_street_tests:
+          - false
+        all_jane_street_tests:
+          - false
         include:
           - os: macos-latest
             ocaml-compiler: "5.3"
             separate_compilation: true
+            jane_street_tests: false
+            all_jane_street_tests: false
           - os: ubuntu-latest
-            ocaml-compiler: "4.14"
+            ocaml-compiler: "5.2"
+            separate_compilation: true
+            jane_street_tests: true
+            all_jane_street_tests: true
+          - os: ubuntu-latest
+            ocaml-compiler: "5.2"
             separate_compilation: false
+            jane_street_tests: true
+            all_jane_street_tests: false
 
     runs-on: ${{ matrix.os }}
 
@@ -48,10 +60,11 @@ jobs:
           path: wasm_of_ocaml
 
       - name: Checkout Jane Street opam repository
+        if: matrix.jane_street_tests
         uses: actions/checkout@v4
         with:
           repository: janestreet/opam-repository
-          ref: feaf8f831051fd5f316963b28efd728cf0b0eca1
+          ref: 41c89c7824533f6b63cc5b6d75e6ddb1441d1520
           path: janestreet/opam-repository
 
       - name: Set-up Node.js
@@ -78,9 +91,19 @@ jobs:
         run: opam pin -n --with-version `< VERSION` .
 
       - name: Checkout Jane Street packages
+        if: matrix.jane_street_tests
         run: |
-          opam install opam-format ocamlfind dune graphics cmdliner sexplib0.v0.16.0
+          opam repo add js janestreet/opam-repository
+          opam install opam-format ocamlfind dune graphics cmdliner
           opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
+
+      - name: Pin Jane Street packages
+        if: ${{ ! matrix.jane_street_tests }}
+        run: |
+          opam pin add -n base.v0.16.1 https://github.com/ocaml-wasm/base.git#wasm
+          opam pin add -n time_now.v0.16.1 https://github.com/ocaml-wasm/time_now.git#wasm
+          opam pin add -n ppx_inline_test.v0.16.1 https://github.com/ocaml-wasm/ppx_inline_test.git#wasm
+          opam pin add -n ppx_expect.v0.16.1 https://github.com/ocaml-wasm/ppx_expect.git#wasm
 
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
@@ -97,52 +120,82 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
+      - name: Create node wrapper for Jane Street tests
+        run: |
+          mkdir -p ~/.local/bin
+          cat > ~/.local/bin/node <<EOF
+          #!/bin/sh
+          exec `which node` --experimental-wasm-jspi "\$@"
+          EOF
+          chmod +x ~/.local/bin/node
+          echo ~/.local/bin >> "$GITHUB_PATH"
+
       - name: Run Base tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/base
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/base_bigstring
         run: opam exec -- dune runtest
 
       - name: Run Core tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/core
         run: opam exec -- dune runtest
 
       - name: Run Bignum tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bignum
         run: opam exec -- dune runtest
 
       - name: Run Bin_prot tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bin_prot
         run: opam exec -- dune runtest
 
       - name: Run String_dict tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/string_dict
         run: opam exec -- dune runtest
 
       - name: Run Zarith tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/zarith_stubs_js
         run: opam exec -- dune runtest
 
       - name: Run Virtual_dom tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/virtual_dom
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
-        if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./janestreet/lib/bonsai
+        if: matrix.all_jane_street_tests
+        working-directory: ./janestreet/lib/bonsai_test
+        run: opam exec -- dune runtest
+
+      - name: Run Bonsai web tests
+        if: matrix.all_jane_street_tests
+        working-directory: ./janestreet/lib/bonsai_web_test
+        run: opam exec -- dune runtest
+
+      - name: Run Bonsai web components' tests
+        if: matrix.all_jane_street_tests
+        working-directory: ./janestreet/lib/bonsai_web_components
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests (release profile)
         if: ${{ ! matrix.separate_compilation }}
-        working-directory: ./janestreet/lib/bonsai
+        working-directory: ./janestreet/lib/bonsai_test
+        run: opam exec -- dune runtest --profile release
+
+      - name: Run Bonsai web tests (release profile)
+        if: ${{ ! matrix.separate_compilation }}
+        working-directory: ./janestreet/lib/bonsai_web_test
+        run: opam exec -- dune runtest --profile release
+
+      - name: Run Bonsai web components' tests (release profile)
+        if: ${{ ! matrix.separate_compilation }}
+        working-directory: ./janestreet/lib/bonsai_web_components
         run: opam exec -- dune runtest --profile release
