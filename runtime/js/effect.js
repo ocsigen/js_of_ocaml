@@ -53,7 +53,7 @@ var caml_current_stack = {};
 //Requires: caml_current_stack
 //If: effects
 function caml_push_trap(handler) {
-  caml_current_stack.x = [handler, caml_current_stack.x];
+  caml_current_stack.x = {h:handler,t:caml_current_stack.x};
 }
 
 //Provides: caml_pop_trap
@@ -64,8 +64,8 @@ function caml_pop_trap() {
     return function (x) {
       throw x;
     };
-  var h = caml_current_stack.x[0];
-  caml_current_stack.x = caml_current_stack.x[1];
+  var h = caml_current_stack.x.h;
+  caml_current_stack.x = caml_current_stack.x.t;
   return h;
 }
 
@@ -201,7 +201,7 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return { k: hval, x: [hexn, 0], h: handlers, e: 0 };
+  return { k: hval, x: {h:hexn,t:0}, h: handlers, e: 0 };
 }
 
 //Provides: caml_alloc_stack
