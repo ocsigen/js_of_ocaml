@@ -7,10 +7,12 @@ a triple of handlers, which are invoked when the fiber terminates
 The low-level continuation of the topmost fiber (which is currently
 executing) is passed from function to function as an additional
 argument. Its stack of exception handlers is stored in
-[caml_exn_stack]. Exception handlers are pushed into this stack when
-entering a [try ... with ...] and popped on exit. Then, handlers and
-the remaining fibers are stored in [caml_fiber_stack]. To install an
-effect handler, we push a new fiber into the execution context.
+[caml_current_stack.x].
+Exception handlers are pushed into this stack
+when entering a [try ... with ...] and popped on exit.
+Handlers are stored in [caml_current_stack.h]
+and the remaining fibers are stored in [caml_current_stack.e].
+To install an effect handler, we push a new fiber into the execution context.
 
 We have basically the following type for reified continuations (type
 [continuation] in module [Effect] of the standard library):
@@ -43,97 +45,142 @@ The handlers are CPS-transformed functions: they actually take an
 additional parameter which is the current low-level continuation.
 */
 
-//Provides: caml_exn_stack
+//Provides: caml_current_stack
 //If: effects
-// This is an OCaml list of exception handlers
-var caml_exn_stack = 0;
+// This has the shape {k, x, h, e} where
+// - h is a triple of handlers (see effect.ml)
+// - k is the low level continuation
+// - x is the exception stack
+// - e is the fiber stack of the parent fiber.
+var caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
 
 //Provides: caml_push_trap
-//Requires: caml_exn_stack
+//Requires: caml_current_stack
 //If: effects
 function caml_push_trap(handler) {
-  caml_exn_stack = [0, handler, caml_exn_stack];
+  caml_current_stack.x = { h: handler, t: caml_current_stack.x };
 }
 
 //Provides: caml_pop_trap
-//Requires: caml_exn_stack
+//Requires: caml_current_stack
 //If: effects
 function caml_pop_trap() {
-  if (!caml_exn_stack)
+  if (!caml_current_stack.x)
     return function (x) {
       throw x;
     };
-  var h = caml_exn_stack[1];
-  caml_exn_stack = caml_exn_stack[2];
+  var h = caml_current_stack.x.h;
+  caml_current_stack.x = caml_current_stack.x.t;
   return h;
 }
 
-//Provides: caml_fiber_stack
-//If: effects
-// This has the shape {h, r:{k, x, e}} where h is a triple of handlers
-// (see effect.js) and k, x and e are the saved continuation,
-// exception stack and fiber stack of the parent fiber.
-var caml_fiber_stack;
-
 //Provides:caml_resume_stack
-//Requires: caml_named_value, caml_raise_constant, caml_exn_stack, caml_fiber_stack
+//Requires: caml_named_value, caml_raise_constant
+//Requires: caml_pop_fiber, caml_current_stack
 //If: effects
-function caml_resume_stack(stack, k) {
+//Version: >= 5.0
+function caml_resume_stack(stack, last, k) {
   if (!stack)
     caml_raise_constant(
       caml_named_value("Effect.Continuation_already_resumed"),
     );
-  // Update the execution context with the stack of fibers in [stack] in
-  // order to resume the continuation
-  do {
-    caml_fiber_stack = {
-      h: stack[3],
-      r: { k: k, x: caml_exn_stack, e: caml_fiber_stack },
-    };
-    k = stack[1];
-    caml_exn_stack = stack[2];
-    stack = stack[4];
-  } while (stack);
-  return k;
+  if (last === 0) {
+    last = stack;
+    // Pre OCaml 5.2, last/cont[2] was not populated.
+    while (last.e !== 0) last = last.e;
+  }
+  caml_current_stack.k = k;
+  last.e = caml_current_stack;
+  caml_current_stack = stack;
+  return stack.k;
 }
 
 //Provides: caml_pop_fiber
-//Requires: caml_exn_stack, caml_fiber_stack
+//Requires: caml_current_stack
 //If: effects
+//Version: >= 5.0
 function caml_pop_fiber() {
   // Move to the parent fiber, returning the parent's low-level continuation
-  var rem = caml_fiber_stack.r;
-  caml_exn_stack = rem.x;
-  caml_fiber_stack = rem.e;
-  return rem.k;
+  var c = caml_current_stack.e;
+  caml_current_stack.e = 0;
+  caml_current_stack = c;
+  return c.k;
+}
+
+//Provides: caml_make_unhandled_effect_exn
+//Requires: caml_named_value, caml_string_of_jsbytes, caml_fresh_oo_id
+//If: effects
+//Version: >= 5.0
+function caml_make_unhandled_effect_exn(eff) {
+  var exn = caml_named_value("Effect.Unhandled");
+  if (exn) exn = [0, exn, eff];
+  else {
+    exn = [
+      248,
+      caml_string_of_jsbytes("Effect.Unhandled"),
+      caml_fresh_oo_id(0),
+    ];
+  }
+  return exn;
 }
 
 //Provides: caml_perform_effect
-//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack
+//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return
+//Requires: caml_make_unhandled_effect_exn, caml_current_stack
 //If: effects
-function caml_perform_effect(eff, cont, k0) {
-  // Allocate a continuation if we don't already have one
-  if (!cont) cont = [245 /*continuation*/, 0];
+//Version: >= 5.0
+function caml_perform_effect(eff, k0) {
+  if (caml_current_stack.e === 0) {
+    var exn = caml_make_unhandled_effect_exn(eff);
+    throw exn;
+  }
   // Get current effect handler
-  var handler = caml_fiber_stack.h[3];
-  // Cons the current fiber onto the continuation:
-  //   cont := Cons (k, exn_stack, handlers, !cont)
-  cont[1] = [0, k0, caml_exn_stack, caml_fiber_stack.h, cont[1]];
+  var handler = caml_current_stack.h[3];
+  var last_fiber = caml_current_stack;
+  last_fiber.k = k0;
+  var cont = [245 /*continuation*/, last_fiber, 0];
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
   return caml_stack_check_depth()
-    ? handler(eff, cont, k1, k1)
-    : caml_trampoline_return(handler, [eff, cont, k1, k1]);
+    ? handler(eff, cont, last_fiber, k1)
+    : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
+}
+
+//Provides: caml_reperform_effect
+//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return
+//Requires: caml_make_unhandled_effect_exn, caml_current_stack
+//Requires: caml_resume_stack, caml_continuation_use_noexc
+//If: effects
+//Version: >= 5.0
+function caml_reperform_effect(eff, cont, last, k0) {
+  if (caml_current_stack.e === 0) {
+    var exn = caml_make_unhandled_effect_exn(eff);
+    var stack = caml_continuation_use_noexc(cont);
+    caml_resume_stack(stack, last, k0);
+    throw exn;
+  }
+  // Get current effect handler
+  var handler = caml_current_stack.h[3];
+  var last_fiber = caml_current_stack;
+  last_fiber.k = k0;
+  last.e = last_fiber;
+  // Move to parent fiber and execute the effect handler there
+  // The handler is defined in Stdlib.Effect, so we know that the arity matches
+  var k1 = caml_pop_fiber();
+  return caml_stack_check_depth()
+    ? handler(eff, cont, last_fiber, k1)
+    : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
 }
 
 //Provides: caml_alloc_stack
-//Requires: caml_pop_fiber, caml_fiber_stack, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
+//Requires: caml_pop_fiber, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
 //If: effects
 //Version: >= 5.0
 function caml_alloc_stack(hv, hx, hf) {
+  var handlers = [0, hv, hx, hf];
   function call(i, x) {
-    var f = caml_fiber_stack.h[i];
+    var f = handlers[i];
     var args = [x, caml_pop_fiber()];
     return caml_stack_check_depth()
       ? caml_call_gen(f, args)
@@ -147,7 +194,7 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return [0, hval, [0, hexn, 0], [0, hv, hx, hf], 0];
+  return { k: hval, x: { h: hexn, t: 0 }, h: handlers, e: 0 };
 }
 
 //Provides: caml_alloc_stack
@@ -175,7 +222,16 @@ function caml_continuation_use_and_update_handler_noexc(
   heff,
 ) {
   var stack = caml_continuation_use_noexc(cont);
-  stack[3] = [0, hval, hexn, heff];
+  if (stack === 0) return stack;
+  var last = cont[2];
+  if (last === 0) {
+    last = stack;
+    // Pre OCaml 5.2, last/cont[2] was not populated.
+    while (last.e !== 0) last = last.e;
+  }
+  last.h[1] = hval;
+  last.h[2] = hexn;
+  last.h[3] = heff;
   return stack;
 }
 
@@ -212,6 +268,7 @@ function caml_ml_condition_signal(t) {
 //Provides: jsoo_effect_not_supported
 //Requires: caml_failwith
 //!If: effects
+//Version: >= 5.0
 function jsoo_effect_not_supported() {
   caml_failwith("Effect handlers are not supported");
 }
