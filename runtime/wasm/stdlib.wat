@@ -79,7 +79,7 @@
             (br $loop))))
 
    (func $caml_named_value (export "caml_named_value")
-      (param $s (ref $string)) (result (ref null eq))
+      (param $s (ref eq)) (result (ref null eq))
       (block $not_found
          (return
             (struct.get $assoc 1
