@@ -5,11 +5,10 @@
   (js_of_ocaml
    (flags
     (:standard --effects=double-translation))
-   (build_runtime_flags
-    (:standard --effects=double-translation))
    ;; separate compilation doesn't yet work when using
    ;; '--effect=double-translation' since Dune doesn't know it should compile a
    ;; different version of the dependencies.
+   ;; TODO: remove once support in ocaml/dune#11222 is released.
    (compilation_mode whole_program)))
  (_
   (flags
@@ -17,11 +16,10 @@
   (js_of_ocaml
    (flags
     (:standard --effects=double-translation))
-   (build_runtime_flags
-    (:standard --effects=double-translation))
    ;; separate compilation doesn't yet work when using
    ;; '--effect=double-translation' since Dune doesn't know it should compile a
    ;; different version of the dependencies.
+   ;; TODO: remove once support in ocaml/dune#11222 is released.
    (compilation_mode whole_program))))
 
 (copy_files ../*.expected)
