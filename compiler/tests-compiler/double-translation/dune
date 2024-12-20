@@ -1,0 +1,14 @@
+(include dune.inc)
+
+(rule
+ (deps
+  (glob_files *.ml))
+ (action
+  (with-stdout-to
+   dune.inc.gen
+   (run ../gen-rules/gen.exe jsoo_compiler_test))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff dune.inc dune.inc.gen)))

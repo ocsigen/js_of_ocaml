@@ -92,7 +92,8 @@ optimized:
   [More](http://ocsigen.org/js_of_ocaml/dev/manual/tailcall) about tail call
   optimization.
 
-Effect handlers are supported with the `--enable=effects` flag.
+Effect handlers are supported with the `--effects={cps,double-translation}`
+flag.
 
 ## Data representation
 
