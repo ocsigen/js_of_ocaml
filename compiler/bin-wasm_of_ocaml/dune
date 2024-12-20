@@ -22,12 +22,12 @@
   (:standard -safe-string)))
 
 (rule
- (target wa_runtime.ml)
+ (target runtime_files.ml)
  (deps
   gen/gen.exe
-  ../../runtime/wasm/runtime.wasm
   ../../runtime/wasm/runtime.js
-  ../../runtime/wasm/deps.json)
+  ../../runtime/wasm/deps.json
+  (glob_files ../../runtime/wasm/*.wat))
  (action
   (with-stdout-to
    %{target}
