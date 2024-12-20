@@ -89,7 +89,7 @@ function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;
   try {
-    caml_current_stack = {k:0, x:0, h:0, e:0};
+    caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
     var res = {
       joo_tramp: f,
       joo_args: args.concat(function (x) {

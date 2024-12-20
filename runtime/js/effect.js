@@ -52,13 +52,13 @@ additional parameter which is the current low-level continuation.
 // - k is the low level continuation
 // - x is the exception stack
 // - e is the fiber stack of the parent fiber.
-var caml_current_stack = {k:0, x:0, h:0, e:0};
+var caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
 
 //Provides: caml_push_trap
 //Requires: caml_current_stack
 //If: effects
 function caml_push_trap(handler) {
-  caml_current_stack.x = {h:handler,t:caml_current_stack.x};
+  caml_current_stack.x = { h: handler, t: caml_current_stack.x };
 }
 
 //Provides: caml_pop_trap
@@ -194,7 +194,7 @@ function caml_alloc_stack(hv, hx, hf) {
     // Call [hx] in the parent fiber
     return call(2, e);
   }
-  return { k: hval, x: {h:hexn,t:0}, h: handlers, e: 0 };
+  return { k: hval, x: { h: hexn, t: 0 }, h: handlers, e: 0 };
 }
 
 //Provides: caml_alloc_stack
