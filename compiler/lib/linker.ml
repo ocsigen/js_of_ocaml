@@ -189,12 +189,15 @@ module Fragment = struct
       ~f:(fun m (k, v) -> StringMap.add k v m)
       ~init:StringMap.empty
       [ "js-string", Config.Flag.use_js_string
-      ; ("effects", fun () -> Option.is_some (Config.effects ()))
+      ; ("effects", fun () ->
+        match Config.effects () with
+        | `Disabled | `Jspi -> false
+        | `Cps | `Double_translation -> true)
       ; ( "doubletranslate"
         , fun () ->
             match Config.effects () with
-            | Some Double_translation -> true
-            | _ -> false )
+            | `Double_translation -> true
+            | `Jspi | `Cps | `Disabled -> false )
       ; ( "wasm"
         , fun () ->
             match Config.target () with

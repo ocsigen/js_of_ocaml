@@ -118,9 +118,12 @@ val target : unit -> [ `JavaScript | `Wasm ]
 val set_target : [ `JavaScript | `Wasm ] -> unit
 
 type effects_backend =
-  | Cps
-  | Double_translation
+  [ `Disabled
+  | `Cps
+  | `Double_translation
+  | `Jspi
+  ]
 
-val effects : unit -> effects_backend option
+val effects : unit -> effects_backend
 
-val set_effects_backend : effects_backend option -> unit
+val set_effects_backend : effects_backend -> unit

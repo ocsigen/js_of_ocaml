@@ -99,7 +99,7 @@ let map_fst f (x, y, z) = f x, y, z
 
 let effects ~deadcode_sentinal p =
   match Config.effects () with
-  | Some effects ->
+  | `Cps | `Double_translation as effects ->
       if debug () then Format.eprintf "Effects...@.";
       let p, live_vars = Deadcode.f p in
       let p = Effects.remove_empty_blocks ~live_vars p in
@@ -116,16 +116,16 @@ let effects ~deadcode_sentinal p =
       |> Effects.f ~flow_info:info ~live_vars
       |> map_fst
            (match effects with
-           | Double_translation -> Fun.id
-           | Cps -> Lambda_lifting.f)
-  | None ->
+           | `Double_translation -> Fun.id
+           | `Cps -> Lambda_lifting.f)
+  | `Disabled | `Jspi ->
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)
       , (Code.Var.Set.empty : Effects.in_cps) )
 
 let exact_calls profile ~deadcode_sentinal p =
   match Config.effects () with
-  | None ->
+  | `Disabled | `Jspi ->
       let fast =
         match profile with
         | O3 -> false
@@ -138,7 +138,7 @@ let exact_calls profile ~deadcode_sentinal p =
         else p
       in
       Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
-  | Some _ -> p
+  | `Cps | `Double_translation -> p
 
 let print p =
   if debug () then Code.Print.program (fun _ _ -> "") p;
@@ -698,8 +698,9 @@ let optimize ~profile p =
     +> effects ~deadcode_sentinal
     +> map_fst
          (match Config.target (), Config.effects () with
-         | `JavaScript, None -> Generate_closure.f
-         | `JavaScript, Some _ | `Wasm, _ -> Fun.id)
+         | `JavaScript, `Disabled -> Generate_closure.f
+         | `JavaScript, (`Cps | `Double_translation) | `Wasm, (`Jspi | `Cps) -> Fun.id
+         | `JavaScript, `Jspi | `Wasm, (`Disabled | `Double_translation) -> assert false)
     +> map_fst deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";

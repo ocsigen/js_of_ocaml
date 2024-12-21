@@ -197,11 +197,18 @@ let set_target (t : [ `JavaScript | `Wasm ]) =
   target_ := (t :> [ `JavaScript | `Wasm | `None ])
 
 type effects_backend =
-  | Cps
-  | Double_translation
+  [ `Disabled
+  | `Cps
+  | `Double_translation
+  | `Jspi
+  ]
 
-let effects_ : effects_backend option ref = ref None
+let effects_ : [< `None | effects_backend ] ref = ref `None
 
-let effects () = !effects_
+let effects () =
+  match !effects_ with
+  | `None -> failwith "effects was not set"
+  | `Jspi | `Cps | `Disabled | `Double_translation as b -> b
 
-let set_effects_backend backend = effects_ := backend
+let set_effects_backend (backend : effects_backend) =
+  effects_ := (backend :> [ `None | effects_backend ])

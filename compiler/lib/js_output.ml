@@ -2100,9 +2100,10 @@ let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
   end) in
   PP.set_needed_space_function f need_space;
   (match Config.effects () with
-  | Some Cps | Some Double_translation ->
+  | `Cps | `Double_translation ->
       PP.set_adjust_indentation_function f (fun n -> n mod 40)
-  | None -> ());
+  | `Disabled -> ()
+  | `Jspi -> assert false);
   PP.start_group f 0;
   O.program f p;
   PP.end_group f;

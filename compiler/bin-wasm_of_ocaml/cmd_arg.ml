@@ -38,15 +38,15 @@ let trim_trailing_dir_sep s =
 
 let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
 
-let normalize_effects effects common =
-  (* For backward compatibility, consider that [--enable effects] alone means [--effects cps] *)
+let normalize_effects (effects : [ `Cps | `Jspi ] option) common : Config.effects_backend =
   match effects with
   | None ->
+     (* For backward compatibility, consider that [--enable effects] alone means
+        [--effects cps] *)
       if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
-      then Some Config.Cps
-      else None
-  | Some Config.Cps -> Some Config.Cps
-  | Some _ -> failwith "Unexpected effects backend"
+      then `Cps
+      else `Jspi
+  | Some (`Cps | `Jspi as e) -> e
 
 type t =
   { common : Jsoo_cmdline.Arg.t
@@ -61,7 +61,7 @@ type t =
   ; sourcemap_don't_inline_content : bool
   ; params : (string * string) list
   ; include_dirs : string list
-  ; effects : Config.effects_backend option
+  ; effects : Config.effects_backend
   }
 
 let options =
@@ -121,7 +121,7 @@ let options =
     in
     Arg.(
       value
-      & opt (enum [ "jspi", None; "cps", Some Config.Cps ]) None
+      & opt (some (enum [ "jspi", `Jspi; "cps", `Cps ])) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
   let build_t
@@ -236,7 +236,7 @@ let options_runtime_only =
     in
     Arg.(
       value
-      & opt (enum [ "jspi", None; "cps", Some Config.Cps ]) None
+      & opt (some (enum [ "jspi", `Jspi; "cps", `Cps ])) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
   let build_t

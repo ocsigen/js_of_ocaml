@@ -39,15 +39,15 @@ let trim_trailing_dir_sep s =
 
 let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
 
-let normalize_effects effects common =
-  (* For backward compatibility, consider that [--enable effects] alone means
-       [--effects cps] *)
+let normalize_effects (effects : [ `Cps | `Double_translation ] option) common : Config.effects_backend =
   match effects with
   | None ->
+      (* For backward compatibility, consider that [--enable effects] alone means
+         [--effects cps] *)
       if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
-      then Some Config.Cps
-      else None
-  | Some _ -> effects
+      then `Cps
+      else `Disabled
+  | Some (`Cps | `Double_translation as e) -> (e :> Config.effects_backend)
 
 type t =
   { common : Jsoo_cmdline.Arg.t
@@ -75,7 +75,7 @@ type t =
   ; fs_output : string option
   ; fs_external : bool
   ; keep_unit_names : bool
-  ; effects : Config.effects_backend option
+  ; effects : Config.effects_backend
   }
 
 let wrap_with_fun_conv =
@@ -272,7 +272,7 @@ let options =
     Arg.(
       value
       & opt
-          (some (enum [ "cps", Config.Cps; "double-translation", Double_translation ]))
+          (some (enum [ "cps", `Cps; "double-translation", `Double_translation ]))
           None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
@@ -531,7 +531,7 @@ let options_runtime_only =
     Arg.(
       value
       & opt
-          (some (enum [ "cps", Config.Cps; "double-translation", Double_translation ]))
+          (some (enum [ "cps", `Cps; "double-translation", `Double_translation ]))
           None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in

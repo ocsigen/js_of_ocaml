@@ -39,11 +39,7 @@ let () =
   | Sys.(Native | Bytecode | Other _) -> failwith "Expected backend `js_of_ocaml`");
   let global = J.pure_js_expr "globalThis" in
   Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
-  Config.set_effects_backend
-    (match Jsoo_runtime.Sys.Config.effects () with
-    | None -> None
-    | Some Jsoo_runtime.Sys.Config.Cps -> Some Config.Cps
-    | Some Jsoo_runtime.Sys.Config.Double_translation -> Some Config.Double_translation);
+  Config.set_effects_backend (Jsoo_runtime.Sys.Config.effects ());
   Linker.reset ();
   (* this needs to stay synchronized with toplevel.js *)
   let toplevel_compile (s : string) (debug : Instruct.debug_event list array) :

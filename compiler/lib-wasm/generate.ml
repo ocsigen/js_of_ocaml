@@ -21,7 +21,11 @@ open Code
 module W = Wasm_ast
 open Code_generation
 
-let effects_cps () = Option.is_some (Config.effects ())
+let effects_cps () =
+  match Config.effects () with
+  | `Cps | `Double_translation -> true
+  | `Jspi -> false
+  | `Disabled -> assert false
 
 module Generate (Target : Target_sig.S) = struct
   open Target

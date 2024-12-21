@@ -54,8 +54,8 @@ let of_cmo (cmo : Cmo_format.compilation_unit) =
   let requires = StringSet.diff requires provides in
   let effects_without_cps =
     (match Config.effects () with
-    | None -> true
-    | Some (Cps | Double_translation) -> false)
+    | `Disabled | `Jspi -> true
+    | `Cps | `Double_translation -> false)
     && List.exists (Cmo_format.primitives cmo) ~f:(function
          | "%resume" | "%reperform" | "%perform" -> true
          | _ -> false)

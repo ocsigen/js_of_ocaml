@@ -24,6 +24,12 @@ let debug = Debug.find "gen"
 
 let times = Debug.find "times"
 
+let cps_transform () =
+  match Config.effects () with
+  | `Cps | `Double_translation -> true
+  | `Disabled -> false
+  | `Jspi -> assert false
+
 open Code
 module J = Javascript
 
@@ -926,10 +932,11 @@ let apply_fun_raw =
       (* Adapt if [f] is a (direct-style, CPS) closure pair *)
       let real_closure =
         match Config.effects () with
-        | Some Double_translation when cps ->
+        | `Double_translation when cps ->
             (* Effects enabled, CPS version, not single-version *)
             J.EDot (f, J.ANormal, cps_field)
-        | _ -> f
+        | `Cps | `Double_translation | `Disabled -> f
+        | `Jspi -> assert false
       in
       (* We skip the arity check when we know that we have the right
          number of parameters, since this test is expensive. *)
@@ -954,14 +961,15 @@ let apply_fun_raw =
               (runtime_fun
                  ctx
                  (match Config.effects () with
-                 | Some Double_translation when cps -> "caml_call_gen_cps"
-                 | _ -> "caml_call_gen"))
+                 | `Double_translation when cps -> "caml_call_gen_cps"
+                 | `Double_translation | `Cps | `Disabled -> "caml_call_gen"
+                 | `Jspi -> assert false))
               [ f; J.array params ]
               J.N )
     in
     if trampolined
     then (
-      assert (Option.is_some (Config.effects ()));
+      assert (cps_transform ());
       (* When supporting effect, we systematically perform tailcall
          optimization. To implement it, we check the stack depth and
          bounce to a trampoline if needed, to avoid a stack overflow.
@@ -1408,7 +1416,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             return e
         | Extern "caml_alloc_dummy_function", _ -> assert false
         | Extern ("%resume" | "%perform" | "%reperform"), _ ->
-            assert (Option.is_none (Config.effects ()));
+            assert (not (cps_transform ()));
             if not !(ctx.effect_warning)
             then (
               warn

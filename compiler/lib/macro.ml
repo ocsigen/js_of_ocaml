@@ -23,11 +23,6 @@ type m =
   | Replace
   | Count of int ref
 
-let string_of_effects_backend = function
-  | None -> "none"
-  | Some Config.Cps -> "cps"
-  | Some Config.Double_translation -> "double-translation"
-
 class macro_mapper ~flags =
   object (m)
     inherit Js_traverse.map as super
@@ -48,7 +43,7 @@ class macro_mapper ~flags =
           | "CONFIG", [ J.Arg (J.EStr (Utf8 "effects")) ] -> (
               match flags with
               | Replace ->
-                  let s = string_of_effects_backend (Config.effects ()) in
+                  let s = Build_info.string_of_effects_backend (Config.effects ()) in
                   J.EStr (Utf8_string.of_string_exn s)
               | Count count ->
                   incr count;

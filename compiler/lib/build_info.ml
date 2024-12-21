@@ -36,15 +36,17 @@ let string_of_kind = function
   | `Cma -> "cma"
   | `Unknown -> "unknown"
 
-let string_of_effects_backend = function
-  | None -> "none"
-  | Some Config.Cps -> "cps"
-  | Some Config.Double_translation -> "double-translation"
+let string_of_effects_backend : Config.effects_backend -> string = function
+  | `Disabled -> "disabled"
+  | `Cps -> "cps"
+  | `Double_translation -> "double-translation"
+  | `Jspi -> "jspi"
 
 let effects_backend_of_string = function
-  | "none" -> None
-  | "cps" -> Some Config.Cps
-  | "double-translation" -> Some Double_translation
+  | "disabled" -> `Disabled
+  | "cps" -> `Cps
+  | "double-translation" -> `Double_translation
+  | "jspi" -> `Jspi
   | _ -> invalid_arg "effects_backend_of_string"
 
 let kind_of_string s =

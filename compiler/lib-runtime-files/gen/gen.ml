@@ -50,9 +50,7 @@ let rec list_product l =
 
 let bool = [ `Bool true; `Bool false ]
 
-let effects_backends =
-  let open Js_of_ocaml_compiler.Config in
-  [ `Effects None; `Effects (Some Cps); `Effects (Some Double_translation) ]
+let effects_backends = [ `Effects `Disabled; `Effects `Cps; `Effects `Double_translation ]
 
 let () =
   Js_of_ocaml_compiler.Config.set_target `JavaScript;

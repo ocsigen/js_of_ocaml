@@ -31,7 +31,7 @@ type t =
   ; sourcemap_don't_inline_content : bool
   ; params : (string * string) list
   ; include_dirs : string list
-  ; effects : Config.effects_backend option
+  ; effects : Config.effects_backend
   }
 
 val options : t Cmdliner.Term.t
