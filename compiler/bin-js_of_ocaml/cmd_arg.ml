@@ -526,7 +526,7 @@ let options_runtime_only =
   let effects =
     let doc =
       "Select an implementation of effect handlers. [$(docv)] should be one of $(b,cps) \
-       or $(b,double-translation). Effects are not allowed by default."
+       or $(b,double-translation). Effects won't be supported if unspecified."
     in
     Arg.(
       value
