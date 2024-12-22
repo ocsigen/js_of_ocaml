@@ -2102,8 +2102,7 @@ let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
   (match Config.effects () with
   | `Cps | `Double_translation ->
       PP.set_adjust_indentation_function f (fun n -> n mod 40)
-  | `Disabled -> ()
-  | `Jspi -> assert false);
+  | `Disabled | `Jspi -> ());
   PP.start_group f 0;
   O.program f p;
   PP.end_group f;
