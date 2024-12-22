@@ -127,7 +127,11 @@ module Sys = struct
   module Config = struct
     external use_js_string : unit -> bool = "caml_jsoo_flags_use_js_string"
 
-    type effects_backend = [ `Disabled | `Cps | `Double_translation ]
+    type effects_backend =
+      [ `Disabled
+      | `Cps
+      | `Double_translation
+      ]
 
     external effects_ : unit -> string = "caml_jsoo_flags_effects"
 

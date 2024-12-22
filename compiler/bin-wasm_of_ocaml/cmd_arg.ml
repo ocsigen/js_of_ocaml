@@ -38,15 +38,14 @@ let trim_trailing_dir_sep s =
 
 let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
 
-let normalize_effects (effects : [ `Cps | `Jspi ] option) common : Config.effects_backend =
+let normalize_effects (effects : [ `Cps | `Jspi ] option) common : Config.effects_backend
+    =
   match effects with
   | None ->
-     (* For backward compatibility, consider that [--enable effects] alone means
+      (* For backward compatibility, consider that [--enable effects] alone means
         [--effects cps] *)
-      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
-      then `Cps
-      else `Jspi
-  | Some (`Cps | `Jspi as e) -> e
+      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable then `Cps else `Jspi
+  | Some ((`Cps | `Jspi) as e) -> e
 
 type t =
   { common : Jsoo_cmdline.Arg.t
