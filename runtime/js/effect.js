@@ -273,6 +273,8 @@ function caml_resume(f, arg, stack) {
     /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
     var res = { joo_tramp: f, joo_args: [arg, k], joo_direct: 0 };
     do {
+      /* Avoids trampolining too often while still avoiding stack overflow. See
+         [caml_callback]. */
       caml_stack_depth = 40;
       try {
         res = res.joo_direct
