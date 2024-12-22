@@ -290,7 +290,7 @@ let extract_sourcemap file =
 let compile_to_javascript
     ?(flags = [])
     ?(use_js_string = false)
-    ?effects
+    ?(effects = `Disabled)
     ~pretty
     ~sourcemap
     file =
@@ -300,10 +300,10 @@ let compile_to_javascript
       [ (if pretty then [ "--pretty" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
       ; (match effects with
-        | Some Js_of_ocaml_compiler.Config.Double_translation ->
+        | `Double_translation ->
             [ "--effects=double-translation" ]
-        | Some Cps -> [ "--effects=cps" ]
-        | None -> [])
+        | `Cps -> [ "--effects=cps" ]
+        | `Disabled -> [])
       ; (if use_js_string
          then [ "--enable=use-js-string" ]
          else [ "--disable=use-js-string" ])

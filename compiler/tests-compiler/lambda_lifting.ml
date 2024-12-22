@@ -14,10 +14,10 @@ Printf.printf "%d\n" (f 3)
   let flags =
     [ "--no-inline"; "--set=lifting-threshold=1"; "--set=lifting-baseline=0" ]
   in
-  Util.compile_and_run ~effects:Js_of_ocaml_compiler.Config.Cps ~flags prog;
+  Util.compile_and_run ~effects:`Cps ~flags prog;
   [%expect {|15 |}];
   let program =
-    Util.compile_and_parse ~effects:Js_of_ocaml_compiler.Config.Cps ~flags prog
+    Util.compile_and_parse ~effects:`Cps ~flags prog
   in
   Util.print_program program;
   [%expect

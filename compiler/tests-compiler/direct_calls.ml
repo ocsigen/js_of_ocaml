@@ -102,7 +102,7 @@ let%expect_test "direct calls without --effects=cps" =
 let%expect_test "direct calls with --effects=cps" =
   let code =
     compile_and_parse
-      ~effects:Js_of_ocaml_compiler.Config.Cps
+      ~effects:`Cps
       {|
          (* Arity of the argument of a function / direct call *)
          let test1 () =

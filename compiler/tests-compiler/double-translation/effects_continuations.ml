@@ -22,7 +22,7 @@ open Util
 let%expect_test "test-compiler/lib-effects/test1.ml" =
   let code =
     compile_and_parse
-      ~effects:Js_of_ocaml_compiler.Config.Double_translation
+      ~effects:`Double_translation
       {|
          let list_rev = List.rev
          (* Avoid to expose the offset of stdlib modules *)
