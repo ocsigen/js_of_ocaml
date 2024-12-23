@@ -135,7 +135,11 @@ module Check = struct
     let freename = StringSet.diff freename Reserved.keyword in
     let freename = StringSet.diff freename Reserved.provided in
     let freename = StringSet.remove Global_constant.global_object freename in
-    let freename = if has_flags then StringSet.remove "FLAG" freename else freename in
+    let freename =
+      if has_flags
+      then StringSet.(diff freename (of_list [ "FLAG"; "CONFIG" ]))
+      else freename
+    in
     if StringSet.mem Global_constant.old_global_object freename
     then
       warn
@@ -185,7 +189,16 @@ module Fragment = struct
       ~f:(fun m (k, v) -> StringMap.add k v m)
       ~init:StringMap.empty
       [ "js-string", Config.Flag.use_js_string
-      ; "effects", Config.Flag.effects
+      ; ( "effects"
+        , fun () ->
+            match Config.effects () with
+            | `Disabled | `Jspi -> false
+            | `Cps | `Double_translation -> true )
+      ; ( "doubletranslate"
+        , fun () ->
+            match Config.effects () with
+            | `Double_translation -> true
+            | `Jspi | `Cps | `Disabled -> false )
       ; ( "wasm"
         , fun () ->
             match Config.target () with

@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+
 module Flag : sig
   val available : unit -> string list
 
@@ -115,3 +116,14 @@ end
 val target : unit -> [ `JavaScript | `Wasm ]
 
 val set_target : [ `JavaScript | `Wasm ] -> unit
+
+type effects_backend =
+  [ `Disabled
+  | `Cps
+  | `Double_translation
+  | `Jspi
+  ]
+
+val effects : unit -> effects_backend
+
+val set_effects_backend : effects_backend -> unit

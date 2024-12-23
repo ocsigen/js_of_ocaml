@@ -38,6 +38,15 @@ let trim_trailing_dir_sep s =
 
 let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
 
+let normalize_effects (effects : [ `Cps | `Jspi ] option) common : Config.effects_backend
+    =
+  match effects with
+  | None ->
+      (* For backward compatibility, consider that [--enable effects] alone means
+        [--effects cps] *)
+      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable then `Cps else `Jspi
+  | Some ((`Cps | `Jspi) as e) -> e
+
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
@@ -51,6 +60,7 @@ type t =
   ; sourcemap_don't_inline_content : bool
   ; params : (string * string) list
   ; include_dirs : string list
+  ; effects : Config.effects_backend
   }
 
 let options =
@@ -103,6 +113,16 @@ let options =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
   in
+  let effects =
+    let doc =
+      "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
+       (the default) or $(b,cps)."
+    in
+    Arg.(
+      value
+      & opt (some (enum [ "jspi", `Jspi; "cps", `Cps ])) None
+      & info [ "effects" ] ~docv:"KIND" ~doc)
+  in
   let build_t
       common
       set_param
@@ -115,7 +135,8 @@ let options =
       sourcemap_root
       output_file
       input_file
-      runtime_files =
+      runtime_files
+      effects =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let output_file =
       let ext =
@@ -133,6 +154,7 @@ let options =
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
     let include_dirs = normalize_include_dirs include_dirs in
+    let effects = normalize_effects effects common in
     `Ok
       { common
       ; params
@@ -145,6 +167,7 @@ let options =
       ; enable_source_maps
       ; sourcemap_root
       ; sourcemap_don't_inline_content
+      ; effects
       }
   in
   let t =
@@ -161,7 +184,8 @@ let options =
       $ sourcemap_root
       $ output_file
       $ input_file
-      $ runtime_files)
+      $ runtime_files
+      $ effects)
   in
   Term.ret t
 
@@ -204,6 +228,16 @@ let options_runtime_only =
       & opt_all (list (pair ~sep:'=' (enum all) string)) []
       & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
+  let effects =
+    let doc =
+      "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
+       (the default) or $(b,cps)."
+    in
+    Arg.(
+      value
+      & opt (some (enum [ "jspi", `Jspi; "cps", `Cps ])) None
+      & info [ "effects" ] ~docv:"KIND" ~doc)
+  in
   let build_t
       common
       set_param
@@ -213,10 +247,12 @@ let options_runtime_only =
       sourcemap_don't_inline_content
       sourcemap_root
       output_file
-      runtime_files =
+      runtime_files
+      effects =
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
     let include_dirs = normalize_include_dirs include_dirs in
+    let effects = normalize_effects effects common in
     `Ok
       { common
       ; params
@@ -229,6 +265,7 @@ let options_runtime_only =
       ; enable_source_maps
       ; sourcemap_root
       ; sourcemap_don't_inline_content
+      ; effects
       }
   in
   let t =
@@ -242,6 +279,7 @@ let options_runtime_only =
       $ sourcemap_don't_inline_content
       $ sourcemap_root
       $ output_file
-      $ runtime_files)
+      $ runtime_files
+      $ effects)
   in
   Term.ret t

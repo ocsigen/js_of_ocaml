@@ -24,6 +24,12 @@ let debug = Debug.find "gen"
 
 let times = Debug.find "times"
 
+let cps_transform () =
+  match Config.effects () with
+  | `Cps | `Double_translation -> true
+  | `Disabled -> false
+  | `Jspi -> assert false
+
 open Code
 module J = Javascript
 
@@ -56,6 +62,7 @@ type application_description =
   { arity : int
   ; exact : bool
   ; trampolined : bool
+  ; in_cps : bool
   }
 
 module Share = struct
@@ -134,6 +141,7 @@ module Share = struct
 
   let get
       ~trampolined_calls
+      ~in_cps
       ?alias_strings
       ?(alias_prims = false)
       ?(alias_apply = true)
@@ -151,8 +159,12 @@ module Share = struct
               | Let (_, Constant c) -> get_constant c share
               | Let (x, Apply { args; exact; _ }) ->
                   let trampolined = Var.Set.mem x trampolined_calls in
+                  let in_cps = Var.Set.mem x in_cps in
                   if (not exact) || trampolined
-                  then add_apply { arity = List.length args; exact; trampolined } share
+                  then
+                    add_apply
+                      { arity = List.length args; exact; trampolined; in_cps }
+                      share
                   else share
               | Let (_, Special (Alias_prim name)) ->
                   let name = Primitive.resolve name in
@@ -244,15 +256,20 @@ module Share = struct
       try J.EVar (AppMap.find desc t.vars.applies)
       with Not_found ->
         let x =
-          let { arity; exact; trampolined } = desc in
+          let { arity; exact; trampolined; in_cps } = desc in
           Var.fresh_n
             (Printf.sprintf
                "caml_%scall%d"
-               (match exact, trampolined with
-               | true, false -> assert false
-               | true, true -> "cps_exact_"
-               | false, false -> ""
-               | false, true -> "cps_")
+               (match exact, trampolined, in_cps with
+               | true, false, false -> assert false (* inlined *)
+               | true, false, true -> "exact_cps_"
+               | true, true, false -> "exact_trampoline_"
+               | false, false, true ->
+                   assert false (* CPS functions are always trampolined *)
+               | false, false, false -> ""
+               | false, true, false -> "trampoline_"
+               | false, true, true -> "trampoline_cps_"
+               | true, true, true -> "exact_trampoline_cps_")
                arity)
         in
         let v = J.V x in
@@ -273,6 +290,7 @@ module Ctx = struct
     ; deadcode_sentinal : Var.t
     ; mutated_vars : Code.Var.Set.t Code.Addr.Map.t
     ; freevars : Code.Var.Set.t Code.Addr.Map.t
+    ; in_cps : Effects.in_cps
     }
 
   let initial
@@ -282,6 +300,7 @@ module Ctx = struct
       ~deadcode_sentinal
       ~mutated_vars
       ~freevars
+      ~in_cps
       blocks
       live
       trampolined_calls
@@ -298,6 +317,7 @@ module Ctx = struct
     ; deadcode_sentinal
     ; mutated_vars
     ; freevars
+    ; in_cps
     }
 end
 
@@ -896,49 +916,74 @@ let parallel_renaming loc back_edge params args continuation queue =
 
 (****)
 
-let apply_fun_raw ctx f params exact trampolined loc =
-  let n = List.length params in
-  let apply_directly =
-    (* Make sure we are performing a regular call, not a (slower)
-       method call *)
-    match f with
-    | J.EAccess _ | J.EDot _ ->
-        J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) loc
-    | _ -> J.call f params loc
-  in
-  let apply =
-    (* We skip the arity check when we know that we have the right
-       number of parameters, since this test is expensive. *)
-    if exact
-    then apply_directly
-    else
-      let l = Utf8_string.of_string_exn "l" in
+let apply_fun_raw =
+  let cps_field = Utf8_string.of_string_exn "cps" in
+  fun ctx f params exact trampolined cps loc ->
+    let n = List.length params in
+    let apply_directly f params =
+      (* Make sure we are performing a regular call, not a (slower)
+         method call *)
+      match f with
+      | J.EAccess _ | J.EDot _ ->
+          J.call (J.dot f (Utf8_string.of_string_exn "call")) (s_var "null" :: params) loc
+      | _ -> J.call f params loc
+    in
+    let apply =
+      (* Adapt if [f] is a (direct-style, CPS) closure pair *)
+      let real_closure =
+        match Config.effects () with
+        | `Double_translation when cps ->
+            (* Effects enabled, CPS version, not single-version *)
+            J.EDot (f, J.ANormal, cps_field)
+        | `Cps | `Double_translation | `Disabled -> f
+        | `Jspi -> assert false
+      in
+      (* We skip the arity check when we know that we have the right
+         number of parameters, since this test is expensive. *)
+      if exact
+      then apply_directly real_closure params
+      else
+        let l = Utf8_string.of_string_exn "l" in
+        J.ECond
+          ( J.EBin
+              ( J.EqEqEq
+              , J.ECond
+                  ( J.EBin (J.Ge, J.dot real_closure l, int 0)
+                  , J.dot real_closure l
+                  , J.EBin
+                      ( J.Eq
+                      , J.dot real_closure l
+                      , J.dot real_closure (Utf8_string.of_string_exn "length") ) )
+              , int n )
+          , apply_directly real_closure params
+          , J.call
+              (* Note: when double translation is enabled, [caml_call_gen*] functions takes a two-version function *)
+              (runtime_fun
+                 ctx
+                 (match Config.effects () with
+                 | `Double_translation when cps -> "caml_call_gen_cps"
+                 | `Double_translation | `Cps | `Disabled -> "caml_call_gen"
+                 | `Jspi -> assert false))
+              [ f; J.array params ]
+              J.N )
+    in
+    if trampolined
+    then (
+      assert (cps_transform ());
+      (* When supporting effect, we systematically perform tailcall
+         optimization. To implement it, we check the stack depth and
+         bounce to a trampoline if needed, to avoid a stack overflow.
+         The trampoline then performs the call in an shorter stack. *)
       J.ECond
-        ( J.EBin
-            ( J.EqEqEq
-            , J.ECond
-                ( J.EBin (J.Ge, J.dot f l, int 0)
-                , J.dot f l
-                , J.EBin (J.Eq, J.dot f l, J.dot f (Utf8_string.of_string_exn "length"))
-                )
-            , int n )
-        , apply_directly
-        , J.call (runtime_fun ctx "caml_call_gen") [ f; J.array params ] loc )
-  in
-  if trampolined
-  then (
-    assert (Config.Flag.effects ());
-    (* When supporting effect, we systematically perform tailcall
-       optimization. To implement it, we check the stack depth and
-       bounce to a trampoline if needed, to avoid a stack overflow.
-       The trampoline then performs the call in an shorter stack. *)
-    J.ECond
-      ( J.call (runtime_fun ctx "caml_stack_check_depth") [] loc
-      , apply
-      , J.call (runtime_fun ctx "caml_trampoline_return") [ f; J.array params ] loc ))
-  else apply
+        ( J.call (runtime_fun ctx "caml_stack_check_depth") [] loc
+        , apply
+        , J.call
+            (runtime_fun ctx "caml_trampoline_return")
+            [ f; J.array params; (if cps then zero else one) ]
+            loc ))
+    else apply
 
-let generate_apply_fun ctx { arity; exact; trampolined } =
+let generate_apply_fun ctx { arity; exact; trampolined; in_cps } =
   let f' = Var.fresh_n "f" in
   let f = J.V f' in
   let params =
@@ -954,12 +999,12 @@ let generate_apply_fun ctx { arity; exact; trampolined } =
     , J.fun_
         (f :: params)
         [ ( J.Return_statement
-              (Some (apply_fun_raw ctx f' params' exact trampolined J.N), J.N)
+              (Some (apply_fun_raw ctx f' params' exact trampolined in_cps J.N), J.N)
           , J.N )
         ]
         J.N )
 
-let apply_fun ctx f params exact trampolined loc =
+let apply_fun ctx f params exact trampolined in_cps loc =
   (* We always go through an intermediate function when doing CPS
      calls. This function first checks the stack depth to prevent
      a stack overflow. This makes the code smaller than inlining
@@ -967,12 +1012,12 @@ let apply_fun ctx f params exact trampolined loc =
      since the function should get inlined by the JavaScript
      engines. *)
   if Config.Flag.inline_callgen () || (exact && not trampolined)
-  then apply_fun_raw ctx f params exact trampolined loc
+  then apply_fun_raw ctx f params exact trampolined in_cps loc
   else
     let y =
       Share.get_apply
         (generate_apply_fun ctx)
-        { arity = List.length params; exact; trampolined }
+        { arity = List.length params; exact; trampolined; in_cps }
         ctx.Ctx.share
     in
     J.call y (f :: params) loc
@@ -1189,9 +1234,10 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
       let trampolined = Var.Set.mem x ctx.Ctx.trampolined_calls in
       let args = remove_unused_tail_args ctx exact trampolined args in
       let* () = info ~need_loc:true mutator_p in
+      let in_cps = Var.Set.mem x ctx.Ctx.in_cps in
       let* args = list_map access args in
       let* f = access f in
-      return (apply_fun ctx f args exact trampolined loc, [])
+      return (apply_fun ctx f args exact trampolined in_cps loc, [])
   | Block (tag, a, array_or_not, _mut) ->
       let* contents =
         list_map
@@ -1370,12 +1416,12 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             return e
         | Extern "caml_alloc_dummy_function", _ -> assert false
         | Extern ("%resume" | "%perform" | "%reperform"), _ ->
-            if Config.Flag.effects () then assert false;
+            assert (not (cps_transform ()));
             if not !(ctx.effect_warning)
             then (
               warn
                 "Warning: your program contains effect handlers; you should probably run \
-                 js_of_ocaml with option '--enable=effects'@.";
+                 js_of_ocaml with option '--effects=cps'@.";
               ctx.effect_warning := true);
             let name = "jsoo_effect_not_supported" in
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
@@ -1565,7 +1611,8 @@ and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
             List.fold_left
               pcs
               ~init:(ctx.blocks, Addr.Set.empty)
-              ~f:(fun (blocks, visited) pc -> Subst.cont' subst pc blocks visited)
+              ~f:(fun (blocks, visited) pc ->
+                Subst.Excluding_Binders.cont' subst pc blocks visited)
           in
           { ctx with blocks = p }
       in
@@ -2111,12 +2158,13 @@ let f
     ~exported_runtime
     ~live_vars
     ~trampolined_calls
+    ~in_cps
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinal
     debug =
   let t' = Timer.make () in
-  let share = Share.get ~trampolined_calls ~alias_prims:exported_runtime p in
+  let share = Share.get ~trampolined_calls ~in_cps ~alias_prims:exported_runtime p in
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
@@ -2130,6 +2178,7 @@ let f
       ~deadcode_sentinal
       ~mutated_vars
       ~freevars
+      ~in_cps
       p.blocks
       live_vars
       trampolined_calls

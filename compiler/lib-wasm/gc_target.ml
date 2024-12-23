@@ -1706,15 +1706,16 @@ let post_process_function_body = Initialize_locals.f
 let entry_point ~toplevel_fun =
   let code =
     let* () =
-      if Config.Flag.effects ()
-      then
-        let* f =
-          register_import
-            ~name:"caml_cps_initialize_effects"
-            (Fun { W.params = []; result = [] })
-        in
-        instr (W.CallInstr (f, []))
-      else return ()
+      match Config.effects () with
+      | `Cps | `Double_translation ->
+          let* f =
+            register_import
+              ~name:"caml_cps_initialize_effects"
+              (Fun { W.params = []; result = [] })
+          in
+          instr (W.CallInstr (f, []))
+      | `Jspi -> return ()
+      | `Disabled -> assert false
     in
     let* main =
       register_import

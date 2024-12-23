@@ -61,8 +61,8 @@ function caml_trampoline(res) {
 }
 
 //Provides:caml_trampoline_return
-function caml_trampoline_return(f, args) {
-  return { joo_tramp: f, joo_args: args };
+function caml_trampoline_return(f, args, direct) {
+  return { joo_tramp: f, joo_args: args, joo_direct: direct };
 }
 
 //Provides:caml_stack_depth
@@ -83,30 +83,16 @@ var caml_callback = caml_call_gen;
 
 //Provides: caml_callback
 //If: effects
-//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_resume_stack, caml_fresh_oo_id, caml_named_value, caml_raise_with_arg, caml_string_of_jsbytes
-//Requires: caml_raise_constant
+//If: !doubletranslate
+//Requires:caml_stack_depth, caml_call_gen, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_uncaught_effect_handler
 function caml_callback(f, args) {
-  function uncaught_effect_handler(eff, k, ms) {
-    // Resumes the continuation k by raising exception Unhandled.
-    caml_resume_stack(k[1], ms);
-    var exn = caml_named_value("Effect.Unhandled");
-    if (exn) caml_raise_with_arg(exn, eff);
-    else {
-      exn = [
-        248,
-        caml_string_of_jsbytes("Effect.Unhandled"),
-        caml_fresh_oo_id(0),
-      ];
-      caml_raise_constant(exn);
-    }
-  }
   var saved_stack_depth = caml_stack_depth;
   var saved_exn_stack = caml_exn_stack;
   var saved_fiber_stack = caml_fiber_stack;
   try {
     caml_exn_stack = 0;
     caml_fiber_stack = {
-      h: [0, 0, 0, uncaught_effect_handler],
+      h: [0, 0, 0, caml_uncaught_effect_handler],
       r: { k: 0, x: 0, e: 0 },
     };
     var res = {
@@ -135,6 +121,12 @@ function caml_callback(f, args) {
   return res;
 }
 
+//Provides: caml_callback
+//If: effects
+//If: doubletranslate
+//Requires: caml_call_gen
+var caml_callback = caml_call_gen;
+
 //Provides: caml_is_js
 function caml_is_js() {
   return 1;
@@ -147,7 +139,7 @@ function caml_jsoo_flags_use_js_string(unit) {
 
 //Provides: caml_jsoo_flags_effects
 function caml_jsoo_flags_effects(unit) {
-  return FLAG("effects");
+  return CONFIG("effects");
 }
 
 //Provides: caml_wrap_exception const (mutable)

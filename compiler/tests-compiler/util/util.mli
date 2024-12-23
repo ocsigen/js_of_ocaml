@@ -34,7 +34,7 @@ val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
 
 val compile_cmo_to_javascript :
      ?flags:string list
-  -> ?effects:bool
+  -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
@@ -43,7 +43,7 @@ val compile_cmo_to_javascript :
 
 val compile_bc_to_javascript :
      ?flags:string list
-  -> ?effects:bool
+  -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
@@ -75,12 +75,15 @@ val find_variable : Javascript.program -> string -> Javascript.expression
 
 val find_function : Javascript.program -> string -> Javascript.function_declaration
 
+(* Prints the two versions of a doubly translated function *)
+val print_double_fun_decl : Javascript.program -> string -> unit
+
 val compile_and_run :
      ?debug:bool
   -> ?pretty:bool
   -> ?skip_modern:bool
   -> ?flags:string list
-  -> ?effects:bool
+  -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
   -> ?unix:bool
   -> string
@@ -92,7 +95,7 @@ val compile_and_parse :
      ?debug:bool
   -> ?pretty:bool
   -> ?flags:string list
-  -> ?effects:bool
+  -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
   -> string
   -> Javascript.program
@@ -101,7 +104,7 @@ val compile_and_parse_whole_program :
      ?debug:bool
   -> ?pretty:bool
   -> ?flags:string list
-  -> ?effects:bool
+  -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
   -> ?unix:bool
   -> string

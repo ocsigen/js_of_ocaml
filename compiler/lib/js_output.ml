@@ -2099,7 +2099,9 @@ let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
     let accept_unnamed_var = accept_unnamed_var
   end) in
   PP.set_needed_space_function f need_space;
-  if Config.Flag.effects () then PP.set_adjust_indentation_function f (fun n -> n mod 40);
+  (match Config.effects () with
+  | `Cps | `Double_translation -> PP.set_adjust_indentation_function f (fun n -> n mod 40)
+  | `Disabled | `Jspi | (exception Failure _) -> ());
   PP.start_group f 0;
   O.program f p;
   PP.end_group f;

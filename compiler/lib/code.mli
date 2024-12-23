@@ -105,6 +105,8 @@ module Var : sig
 
     val set : 'a t -> key -> 'a -> unit
 
+    val length : 'a t -> int
+
     val make : size -> 'a -> 'a t
 
     val make_set : size -> 'a DataSet.t t

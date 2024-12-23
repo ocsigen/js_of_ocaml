@@ -11,6 +11,8 @@ The analysis is especially effective on monomorphic code. It is not so effective
 We hope to improve on this by trying alternative compilation
 strategies.
 
+An alternative CPS transform is provided under the {{--effects=double-translation}} option. It keeps a direct-style version of the transformed functions in addition to the CPS version. The choice of running the CPS version is delayed to run time. Since CPS code is usually slower, this can avoid degradations. In addition, one can ensure that some code is run in direct style by using {{Jsoo_runtime.Effect.assume_no_perform}}. A caveat is that Dune does not know about {{--effects=double-translation}} yet and may try to link together files built with {{--enable=double-translation}} and files built with only {{--enable=effects}}, which gives an error. A work-around is to disable separate compilation by using the option {{(js_of_ocaml (compilation_mode whole_program))}}.
+
 === Dune integration ===
 
 We're still working on dune support for compiling js_of_ocaml programs

@@ -40,6 +40,16 @@ class macro_mapper ~flags =
               | Count count ->
                   incr count;
                   super#expression x)
+          | "CONFIG", [ J.Arg (J.EStr (Utf8 "effects")) ] -> (
+              match flags with
+              | Replace ->
+                  let s = Build_info.string_of_effects_backend (Config.effects ()) in
+                  J.EStr (Utf8_string.of_string_exn s)
+              | Count count ->
+                  incr count;
+                  super#expression x)
+          | "CONFIG", [ J.Arg (J.EStr (Utf8 s)) ] ->
+              failwith ("unsupported CONFIG parameter " ^ s)
           | "BLOCK", J.Arg (J.ENum tag) :: (_ :: _ as args)
             when List.for_all args ~f:(function
                    | J.Arg _ -> true

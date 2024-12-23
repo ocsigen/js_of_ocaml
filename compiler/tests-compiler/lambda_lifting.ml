@@ -14,9 +14,9 @@ Printf.printf "%d\n" (f 3)
   let flags =
     [ "--no-inline"; "--set=lifting-threshold=1"; "--set=lifting-baseline=0" ]
   in
-  Util.compile_and_run ~effects:true ~flags prog;
+  Util.compile_and_run ~effects:`Cps ~flags prog;
   [%expect {|15 |}];
-  let program = Util.compile_and_parse ~effects:true ~flags prog in
+  let program = Util.compile_and_parse ~effects:`Cps ~flags prog in
   Util.print_program program;
   [%expect
     {|
@@ -26,16 +26,17 @@ Printf.printf "%d\n" (f 3)
         runtime = globalThis.jsoo_runtime,
         global_data = runtime.caml_get_global_data(),
         Stdlib_Printf = global_data.Stdlib__Printf,
-        _b_ =
+        _e_ =
           [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")];
        function h(x, y){function h(z){return (x + y | 0) + z | 0;} return h;}
        function g(x){function g(y){var h$0 = h(x, y); return h$0(7);} return g;}
        function f(x){var g$0 = g(x); return g$0(5);}
-       var _a_ = f(3);
-       runtime.caml_callback(Stdlib_Printf[2], [_b_, _a_]);
+       var _d_ = f(3);
+       runtime.caml_callback(Stdlib_Printf[2], [_e_, _d_]);
        var Test = [0];
        runtime.caml_register_global(2, Test, "Test");
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

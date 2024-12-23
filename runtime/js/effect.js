@@ -68,6 +68,31 @@ function caml_pop_trap() {
   return h;
 }
 
+//Provides: caml_raise_unhandled
+//Requires: caml_named_value, caml_raise_with_arg, caml_raise_constant, caml_string_of_jsbytes, caml_fresh_oo_id
+//If: effects
+function caml_raise_unhandled(eff) {
+  var exn = caml_named_value("Effect.Unhandled");
+  if (exn) caml_raise_with_arg(exn, eff);
+  else {
+    exn = [
+      248,
+      caml_string_of_jsbytes("Effect.Unhandled"),
+      caml_fresh_oo_id(0),
+    ];
+    caml_raise_constant(exn);
+  }
+}
+
+//Provides: caml_uncaught_effect_handler
+//Requires: caml_resume_stack, caml_raise_unhandled
+//If: effects
+function caml_uncaught_effect_handler(eff, k, ms, cont) {
+  // Resumes the continuation k by raising exception Unhandled.
+  caml_resume_stack(k[1], ms);
+  caml_raise_unhandled(eff);
+}
+
 //Provides: caml_fiber_stack
 //If: effects
 // This has the shape {h, r:{k, x, e}} where h is a triple of handlers
@@ -109,7 +134,7 @@ function caml_pop_fiber() {
 }
 
 //Provides: caml_perform_effect
-//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack
+//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return, caml_exn_stack, caml_fiber_stack, caml_get_cps_fun
 //If: effects
 function caml_perform_effect(eff, cont, k0) {
   // Allocate a continuation if we don't already have one
@@ -123,12 +148,26 @@ function caml_perform_effect(eff, cont, k0) {
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
   return caml_stack_check_depth()
-    ? handler(eff, cont, k1, k1)
-    : caml_trampoline_return(handler, [eff, cont, k1, k1]);
+    ? caml_get_cps_fun(handler)(eff, cont, k1, k1)
+    : caml_trampoline_return(handler, [eff, cont, k1, k1], 0);
+}
+
+//Provides: caml_get_cps_fun
+//If: effects
+//If: !doubletranslate
+function caml_get_cps_fun(f) {
+  return f;
+}
+
+//Provides: caml_get_cps_fun
+//If: effects
+//If: doubletranslate
+function caml_get_cps_fun(f) {
+  return f.cps;
 }
 
 //Provides: caml_alloc_stack
-//Requires: caml_pop_fiber, caml_fiber_stack, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
+//Requires: caml_pop_fiber, caml_fiber_stack, caml_stack_check_depth, caml_trampoline_return, caml_call_gen_cps
 //If: effects
 //Version: >= 5.0
 function caml_alloc_stack(hv, hx, hf) {
@@ -136,8 +175,8 @@ function caml_alloc_stack(hv, hx, hf) {
     var f = caml_fiber_stack.h[i];
     var args = [x, caml_pop_fiber()];
     return caml_stack_check_depth()
-      ? caml_call_gen(f, args)
-      : caml_trampoline_return(f, args);
+      ? caml_call_gen_cps(f, args)
+      : caml_trampoline_return(f, args, 0);
   }
   function hval(x) {
     // Call [hv] in the parent fiber
@@ -214,4 +253,65 @@ function caml_ml_condition_signal(t) {
 //!If: effects
 function jsoo_effect_not_supported() {
   caml_failwith("Effect handlers are not supported");
+}
+
+//Provides: caml_resume
+//Requires:caml_stack_depth, caml_call_gen_cps, caml_exn_stack, caml_fiber_stack, caml_wrap_exception, caml_uncaught_effect_handler, caml_resume_stack
+//If: effects
+//If: doubletranslate
+function caml_resume(f, arg, stack) {
+  var saved_stack_depth = caml_stack_depth;
+  var saved_exn_stack = caml_exn_stack;
+  var saved_fiber_stack = caml_fiber_stack;
+  try {
+    caml_exn_stack = 0;
+    caml_fiber_stack = {
+      h: [0, 0, 0, { cps: caml_uncaught_effect_handler }],
+      r: { k: 0, x: 0, e: 0 },
+    };
+    var k = caml_resume_stack(stack, (x) => x);
+    /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
+    var res = { joo_tramp: f, joo_args: [arg, k], joo_direct: 0 };
+    do {
+      /* Avoids trampolining too often while still avoiding stack overflow. See
+         [caml_callback]. */
+      caml_stack_depth = 40;
+      try {
+        res = res.joo_direct
+          ? res.joo_tramp.apply(null, res.joo_args)
+          : caml_call_gen_cps(res.joo_tramp, res.joo_args);
+      } catch (e) {
+        /* Handle exception coming from JavaScript or from the runtime. */
+        if (!caml_exn_stack.length) throw e;
+        var handler = caml_exn_stack[1];
+        caml_exn_stack = caml_exn_stack[2];
+        res = {
+          joo_tramp: handler,
+          joo_args: [caml_wrap_exception(e)],
+          joo_direct: 1,
+        };
+      }
+    } while (res && res.joo_args);
+    return res;
+  } finally {
+    caml_stack_depth = saved_stack_depth;
+    caml_exn_stack = saved_exn_stack;
+    caml_fiber_stack = saved_fiber_stack;
+  }
+}
+
+//Provides: caml_cps_closure
+//If: effects
+//If: doubletranslate
+function caml_cps_closure(direct_f, cps_f) {
+  direct_f.cps = cps_f;
+  return direct_f;
+}
+
+//Provides: caml_assume_no_perform
+//Requires: caml_callback
+//If: effects
+//If: !doubletranslate
+function caml_assume_no_perform(f) {
+  return caml_callback(f, [0]);
 }
