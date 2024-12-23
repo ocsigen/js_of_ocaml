@@ -300,8 +300,7 @@ let compile_to_javascript
       [ (if pretty then [ "--pretty" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
       ; (match effects with
-        | `Double_translation ->
-            [ "--effects=double-translation" ]
+        | `Double_translation -> [ "--effects=double-translation" ]
         | `Cps -> [ "--effects=cps" ]
         | `Disabled -> [])
       ; (if use_js_string

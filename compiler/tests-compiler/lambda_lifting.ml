@@ -16,9 +16,7 @@ Printf.printf "%d\n" (f 3)
   in
   Util.compile_and_run ~effects:`Cps ~flags prog;
   [%expect {|15 |}];
-  let program =
-    Util.compile_and_parse ~effects:`Cps ~flags prog
-  in
+  let program = Util.compile_and_parse ~effects:`Cps ~flags prog in
   Util.print_program program;
   [%expect
     {|
