@@ -6,6 +6,8 @@ Features are grouped by ECMAScript version.
 ## ECMAScript 2015 - ES6
 ### rest parameters
 - added in Nodejs 6
+### spread in function call
+- added in Nodejs 5
 ### Object.assign
 - added In Nodejs 4
 ### ArrowFunction
