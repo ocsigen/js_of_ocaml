@@ -77,7 +77,7 @@
    (import "fail" "caml_failwith_tag"
       (func $caml_failwith_tag (result (ref eq))))
    (import "stdlib" "caml_named_value"
-      (func $caml_named_value (param (ref $string)) (result (ref null eq))))
+      (func $caml_named_value (param (ref eq)) (result (ref null eq))))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -89,6 +89,9 @@
       (func $jsstring_of_string (param (ref $string)) (result anyref)))
    (import "jsstring" "string_of_jsstring"
       (func $string_of_jsstring (param anyref) (result (ref $string))))
+   (import "jsstring" "jsstring_of_substring"
+      (func $jsstring_of_substring
+         (param (ref $string) i32 i32) (result anyref)))
    (import "int32" "caml_copy_int32"
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
@@ -458,6 +461,16 @@
       (local $s (ref $string))
       (local.set $s (ref.cast (ref $string) (local.get 0)))
       (return (struct.new $js (call $jsstring_of_string (local.get $s)))))
+
+   (func (export "caml_jsstring_of_substring")
+      (param $s (ref eq)) (param $i (ref eq)) (param $l (ref eq))
+      (result (ref eq))
+      (return
+         (struct.new $js
+            (call $jsstring_of_substring
+               (ref.cast (ref $string) (local.get $s))
+               (i31.get_u (ref.cast (ref i31) (local.get $i)))
+               (i31.get_u (ref.cast (ref i31) (local.get $l)))))))
 
    (func $caml_jsbytes_of_string (export "caml_jsbytes_of_string")
       (param (ref eq)) (result (ref eq))
