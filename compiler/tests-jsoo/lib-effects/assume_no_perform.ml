@@ -6,13 +6,6 @@ module type TREE = sig
   type 'a t
   (** The type of tree. *)
 
-  val leaf : 'a t
-  (** A tree with only a leaf. *)
-
-  val node : 'a t -> 'a -> 'a t -> 'a t
-  (** [node l x r] constructs a new tree with a new node [x] as the value, with
-      [l] and [r] being the left and right sub-trees. *)
-
   val deep : int -> int t
   (** [deep n] constructs a tree of depth n, in linear time, where every node at
       level [l] has value [l]. *)
@@ -34,10 +27,6 @@ module Tree : TREE = struct
   type 'a t =
     | Leaf
     | Node of 'a t * 'a * 'a t
-
-  let leaf = Leaf
-
-  let node l x r = Node (l, x, r)
 
   let rec deep = function
     | 0 -> Leaf
@@ -120,7 +109,7 @@ let benchmark f n =
 
 (* Main follows *)
 
-type _ Effect.t += Dummy : unit t
+type _ Effect.t += Dummy : unit t [@@warning "-38"]
 
 let () =
   try_with
