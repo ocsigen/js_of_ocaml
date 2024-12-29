@@ -7,7 +7,7 @@ type _ Effect.t += Dummy : unit t
 let () =
   try_with
     (fun () ->
-      Jsoo_runtime.Effect.assume_no_perform (fun () ->
+      Js_of_ocaml.Effect_js.assume_no_perform (fun () ->
         try_with
           (fun () -> ())
           ()

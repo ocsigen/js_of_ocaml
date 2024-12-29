@@ -1,6 +1,6 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2017 Hugo Heuzard
+ * Copyright (C) 2024 Olivier Nicole
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,31 +17,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module CSS = CSS
-module Dom = Dom
-module Dom_events = Dom_events
-module Dom_html = Dom_html
-module Dom_svg = Dom_svg
-module Effect_js = Effect_js
-module EventSource = EventSource
-module File = File
-module Firebug = Firebug
-module Form = Form
-module Geolocation = Geolocation
-module IntersectionObserver = IntersectionObserver
-module Intl = Intl
-module Js = Js
-module Js_error = Js.Js_error
-module Json = Json
-module Jstable = Jstable
-module MutationObserver = MutationObserver
-module PerformanceObserver = PerformanceObserver
-module ResizeObserver = ResizeObserver
-module Regexp = Regexp
-module Sys_js = Sys_js
-module Typed_array = Typed_array
-module Url = Url
-module WebGL = WebGL
-module WebSockets = WebSockets
-module Worker = Worker
-module XmlHttpRequest = XmlHttpRequest
+(** Javascript-specific effect functions. *)
+
+external assume_no_perform : (unit -> 'a) -> 'a = "caml_assume_no_perform"
+(** Passing a function [f] as argument of `assume_no_perform` guarantees that,
+    when compiling with `--effects=double-translation`, the direct-style
+    version of [f] is called, which is faster than the CPS version. As a
+    consequence, performing an effect in a transitive callee of [f] will raise
+    `Effect.Unhandled`, regardless of any effect handlers installed before the
+    call to `assume_no_perform`, unless a new effect handler was installed in
+    the meantime.
+
+    This behaviour is the same when double translation is disabled. *)
