@@ -8,18 +8,16 @@ let () =
   try_with
     (fun () ->
       Js_of_ocaml.Effect_js.assume_no_perform (fun () ->
-        try_with
-          (fun () -> ())
-          ()
-          { effc = (fun (type a) (_ : a Effect.t) -> None) };
-      );
-      perform Dummy
-    )
+          try_with (fun () -> ()) () { effc = (fun (type a) (_ : a Effect.t) -> None) });
+      perform Dummy)
     ()
     { effc =
         (fun (type a) (e : a Effect.t) ->
           match e with
           | Dummy ->
-              Some (fun (k : (a, _) continuation) -> print_endline "ok"; continue k ())
+              Some
+                (fun (k : (a, _) continuation) ->
+                  print_endline "ok";
+                  continue k ())
           | _ -> None)
     }

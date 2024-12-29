@@ -34,12 +34,7 @@
   test_lazy
   used_cont)
  (modules
-  (:standard
-   \
-   unhandled_unlinked
-   assume_no_perform
-   assume_no_perform_unhandled
-   assume_no_perform_nested_handler))
+  (:standard \ unhandled_unlinked))
  (modes js wasm))
 
 (tests
@@ -53,19 +48,4 @@
     2
     (run node %{test}))
    (run cat)))
- (modes js wasm))
-
-(tests
- (build_if
-  (>= %{ocaml_version} 5))
- (names
-  assume_no_perform
-  assume_no_perform_unhandled
-  assume_no_perform_nested_handler)
- (libraries js_of_ocaml)
- (action
-  (ignore-outputs
-   (with-accepted-exit-codes
-    0
-    (run node %{test}))))
  (modes js wasm))
