@@ -84,7 +84,11 @@ functions are optimized:
   * trampolines are used otherwise.
 <<a_manual chapter="tailcall" |More about tail call optimization>>.
 
-Effect handlers are fully supported with the {{{--enable=effects}}} flag. This is not the default for now since effects are not widely used at the moment and the generated code can be slower, larger and less readable.
+Effect handlers are fully supported with the
+{{{--enable=effects}}} flag. Effect support is disabled by
+default for now since effects are not widely used at the moment and the
+generated code can be slower, larger and less readable. See the dedicated
+manual section about effects for details.
 
 Data representation differs from the usual one. Most notably,
 integers are 32 bits (rather than 31 bits or 63 bits), which is their

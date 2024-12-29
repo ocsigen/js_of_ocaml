@@ -6,6 +6,7 @@
 * Merged Wasm_of_ocaml (#1724)
 * Lib: removed no longer relevant Js.optdef type annotations (#1769)
 * Misc: drop support for IE
+* Effects: add an optional feature of "dynamic switching" between CPS and direct style, resulting in better performance when no effect handler is installed
 
 ## Bug fixes
 * Fix small bug in global data flow analysis (#1768)

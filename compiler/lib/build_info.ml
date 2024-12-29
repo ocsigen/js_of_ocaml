@@ -36,6 +36,19 @@ let string_of_kind = function
   | `Cma -> "cma"
   | `Unknown -> "unknown"
 
+let string_of_effects_backend : Config.effects_backend -> string = function
+  | `Disabled -> "disabled"
+  | `Cps -> "cps"
+  | `Double_translation -> "double-translation"
+  | `Jspi -> "jspi"
+
+let effects_backend_of_string = function
+  | "disabled" -> `Disabled
+  | "cps" -> `Cps
+  | "double-translation" -> `Double_translation
+  | "jspi" -> `Jspi
+  | _ -> invalid_arg "effects_backend_of_string"
+
 let kind_of_string s =
   match List.find_opt all ~f:(fun k -> String.equal s (string_of_kind k)) with
   | None -> `Unknown
@@ -55,7 +68,7 @@ let create kind =
     | v -> Printf.sprintf "%s+%s" Compiler_version.s v
   in
   [ "use-js-string", string_of_bool (Config.Flag.use_js_string ())
-  ; "effects", string_of_bool (Config.Flag.effects ())
+  ; "effects", string_of_effects_backend (Config.effects ())
   ; "version", version
   ; "kind", string_of_kind kind
   ]
@@ -143,6 +156,7 @@ let configure t =
   StringMap.iter
     (fun k v ->
       match k with
-      | "use-js-string" | "effects" -> Config.Flag.set k (bool_of_string v)
+      | "use-js-string" -> Config.Flag.set k (bool_of_string v)
+      | "effects" -> Config.set_effects_backend (effects_backend_of_string v)
       | _ -> ())
     t

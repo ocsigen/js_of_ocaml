@@ -153,6 +153,7 @@ let run
     ; export_file
     ; keep_unit_names
     ; include_runtime
+    ; effects
     } =
   let source_map_base = Option.map ~f:snd source_map in
   let source_map =
@@ -165,6 +166,7 @@ let run
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
+  Config.set_effects_backend effects;
   Linker.reset ();
   (match output_file with
   | `Stdout, _ -> ()

@@ -39,6 +39,17 @@ let trim_trailing_dir_sep s =
 
 let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
 
+let normalize_effects (effects : [ `Cps | `Double_translation ] option) common :
+    Config.effects_backend =
+  match effects with
+  | None ->
+      (* For backward compatibility, consider that [--enable effects] alone means
+         [--effects cps] *)
+      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
+      then `Cps
+      else `Disabled
+  | Some ((`Cps | `Double_translation) as e) -> (e :> Config.effects_backend)
+
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
@@ -65,6 +76,7 @@ type t =
   ; fs_output : string option
   ; fs_external : bool
   ; keep_unit_names : bool
+  ; effects : Config.effects_backend
   }
 
 let wrap_with_fun_conv =
@@ -253,6 +265,16 @@ let options =
       & opt (some string) None
       & info [ "ofs" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
+  let effects =
+    let doc =
+      "Select an implementation of effect handlers. [$(docv)] should be one of $(b,cps) \
+       or $(b,double-translation). Effects won't be supported if unspecified."
+    in
+    Arg.(
+      value
+      & opt (some (enum [ "cps", `Cps; "double-translation", `Double_translation ])) None
+      & info [ "effects" ] ~docv:"KIND" ~doc)
+  in
   let build_t
       common
       set_param
@@ -279,7 +301,8 @@ let options =
       output_file
       input_file
       js_files
-      keep_unit_names =
+      keep_unit_names
+      effects =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
@@ -318,6 +341,7 @@ let options =
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
     let include_dirs = normalize_include_dirs include_dirs in
+    let effects = normalize_effects effects common in
     `Ok
       { common
       ; params
@@ -341,6 +365,7 @@ let options =
       ; bytecode
       ; source_map
       ; keep_unit_names
+      ; effects
       }
   in
   let t =
@@ -371,7 +396,8 @@ let options =
       $ output_file
       $ input_file
       $ js_files
-      $ keep_unit_names)
+      $ keep_unit_names
+      $ effects)
   in
   Term.ret t
 
@@ -496,6 +522,16 @@ let options_runtime_only =
       & opt (some string) None
       & info [ "ofs" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
+  let effects =
+    let doc =
+      "Select an implementation of effect handlers. [$(docv)] should be one of $(b,cps) \
+       or $(b,double-translation). Effects won't be supported if unspecified."
+    in
+    Arg.(
+      value
+      & opt (some (enum [ "cps", `Cps; "double-translation", `Double_translation ])) None
+      & info [ "effects" ] ~docv:"KIND" ~doc)
+  in
   let build_t
       common
       toplevel
@@ -515,7 +551,8 @@ let options_runtime_only =
       sourcemap_root
       target_env
       output_file
-      js_files =
+      js_files
+      effects =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
@@ -544,6 +581,7 @@ let options_runtime_only =
     let params : (string * string) list = List.flatten set_param in
     let static_env : (string * string) list = List.flatten set_env in
     let include_dirs = normalize_include_dirs include_dirs in
+    let effects = normalize_effects effects common in
     `Ok
       { common
       ; params
@@ -567,6 +605,7 @@ let options_runtime_only =
       ; bytecode = `None
       ; source_map
       ; keep_unit_names = false
+      ; effects
       }
   in
   let t =
@@ -590,6 +629,7 @@ let options_runtime_only =
       $ sourcemap_root
       $ target_env
       $ output_file
-      $ js_files)
+      $ js_files
+      $ effects)
   in
   Term.ret t

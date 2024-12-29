@@ -1,0 +1,40 @@
+(env
+ (with-effects
+  (flags
+   (:standard -w -38))
+  (js_of_ocaml
+   (flags
+    (:standard --effects=double-translation))
+   ;; separate compilation doesn't yet work when using
+   ;; '--effect=double-translation' since Dune doesn't know it should compile a
+   ;; different version of the dependencies.
+   ;; TODO: remove once support in ocaml/dune#11222 is released.
+   (compilation_mode whole_program)))
+ (_
+  (flags
+   (:standard -w -38))
+  (js_of_ocaml
+   (flags
+    (:standard --effects=double-translation))
+   ;; separate compilation doesn't yet work when using
+   ;; '--effect=double-translation' since Dune doesn't know it should compile a
+   ;; different version of the dependencies.
+   ;; TODO: remove once support in ocaml/dune#11222 is released.
+   (compilation_mode whole_program))))
+
+(copy_files# ../*.ml)
+
+(tests
+ (build_if
+  (>= %{ocaml_version} 5))
+ (names
+  assume_no_perform
+  assume_no_perform_unhandled
+  assume_no_perform_nested_handler)
+ (libraries js_of_ocaml)
+ (action
+  (ignore-outputs
+   (with-accepted-exit-codes
+    0
+    (run node %{test}))))
+ (modes js))

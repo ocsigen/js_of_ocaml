@@ -513,7 +513,7 @@ let f ?skip_param p =
     }
   in
   let s = build_subst info vars in
-  let p = Subst.program (Subst.from_array s) p in
+  let p = Subst.Excluding_Binders.program (Subst.from_array s) p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
   Code.invariant p;

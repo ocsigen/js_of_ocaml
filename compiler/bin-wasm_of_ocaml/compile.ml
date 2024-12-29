@@ -269,9 +269,11 @@ let run
     ; include_dirs
     ; sourcemap_root
     ; sourcemap_don't_inline_content
+    ; effects
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
+  Config.set_effects_backend effects;
   Generate.init ();
   let output_file = fst output_file in
   if debug_mem () then Debug.start_profiling output_file;

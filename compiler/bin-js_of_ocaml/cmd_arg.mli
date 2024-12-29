@@ -49,6 +49,7 @@ type t =
   ; fs_output : string option
   ; fs_external : bool
   ; keep_unit_names : bool
+  ; effects : Config.effects_backend
   }
 
 val options : t Cmdliner.Term.t

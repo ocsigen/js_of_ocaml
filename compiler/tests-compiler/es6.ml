@@ -10,7 +10,7 @@ let f x =
     |}
   in
   let flags = [ "--enable"; "es6" ] in
-  let program = Util.compile_and_parse ~effects:false ~pretty:true ~flags prog in
+  let program = Util.compile_and_parse ?effects:None ~pretty:true ~flags prog in
   Util.print_program program;
   [%expect
     {|
@@ -24,7 +24,7 @@ let f x =
        return;})
      (globalThis);
     //end |}];
-  let program = Util.compile_and_parse ~effects:false ~pretty:false ~flags prog in
+  let program = Util.compile_and_parse ?effects:None ~pretty:false ~flags prog in
   Util.print_program program;
   [%expect
     {|
@@ -46,7 +46,7 @@ let rec odd n' = function
     |}
   in
   let flags = [ "--enable"; "es6" ] in
-  let program = Util.compile_and_parse ~effects:false ~pretty:false ~flags prog in
+  let program = Util.compile_and_parse ?effects:None ~pretty:false ~flags prog in
   Util.print_program program;
   [%expect
     {|
@@ -67,7 +67,7 @@ let rec odd n' = function
        return;})
      (globalThis);
     //end |}];
-  let program = Util.compile_and_parse ~effects:false ~pretty:false ~flags:[] prog in
+  let program = Util.compile_and_parse ?effects:None ~pretty:false ~flags:[] prog in
   Util.print_program program;
   [%expect
     {|

@@ -10,5 +10,30 @@
   (>= %{ocaml_version} 5))
  (inline_tests
   (modes js wasm best))
+ (modules
+  (:standard
+   \
+   assume_no_perform
+   assume_no_perform_unhandled
+   assume_no_perform_nested_handler))
  (preprocess
   (pps ppx_expect)))
+
+(tests
+ (build_if
+  (>= %{ocaml_version} 5))
+ (names
+  assume_no_perform
+  assume_no_perform_unhandled
+  assume_no_perform_nested_handler)
+ (modules
+  assume_no_perform
+  assume_no_perform_unhandled
+  assume_no_perform_nested_handler)
+ (libraries js_of_ocaml)
+ (action
+  (ignore-outputs
+   (with-accepted-exit-codes
+    0
+    (run node %{test}))))
+ (modes js wasm))
