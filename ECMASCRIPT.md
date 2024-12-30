@@ -3,32 +3,59 @@
 The goal of the document is to list features we rely on for the runtime and the generated code.
 Features are grouped by ECMAScript version.
 
-## ECMAScript 2015 - ES6
-### rest parameters
-- added in Nodejs 6
-### spread in function call
-- added in Nodejs 5
+## ECMAScript 2015
+
+### Rest parameters
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters#browser_compatibility)
+
+### Spread syntax (in function call)
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax#browser_compatibility)
+
 ### Object.assign
-- added In Nodejs 4
-### ArrowFunction
-- for wasm_of_ocaml
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign#browser_compatibility)
+
+### Arrow function expressions
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions#browser_compatibility)
+- For Wasm_of_ocaml
+
 ### TypedArray
-- to implement bigarray
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray#browser_compatibility)
+- To implement bigarray
 
 ## ECMAScript 2016
-### Async/Await
-- for wasm_of_ocaml
+
+### async function
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/async_function#browser_compatibility)
+- For Wasm_of_ocaml
+
+### await
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/await#browser_compatibility)
+- For Wasm_of_ocaml
 
 ## ECMAScript 2020
+
 ### globalThis
-- added in Nodejs 12
-- polyfill-ed in the repo
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/globalThis#browser_compatibility)
+- Polyfilled in the repository
 
 ## ECMAScript 2021
-### WeakRef to implement weak and ephemeron
-- added in Nodejs 14.6
-- optional
 
-## Node
-### Namespaced require `require("node:fs")`
-- added in Nodejs 16
+### WeakRef
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakRef#browser_compatibility)
+- To implement weak and ephemeron
+- Optional
+
+## Node.js
+
+### Built-in modules with `node:` prefix
+
+- [Compatibility](https://nodejs.org/docs/latest/api/modules.html#built-in-modules)
