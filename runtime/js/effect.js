@@ -200,27 +200,33 @@ function caml_get_cps_fun(f) {
 
 //Provides: caml_alloc_stack
 //Requires: caml_pop_fiber, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
-//Requires: caml_call_gen_cps
+//Requires: caml_call_gen_cps, caml_current_stack
 //If: effects
 //Version: >= 5.0
+function caml_alloc_stack_call(f, x) {
+  var args = [x, caml_pop_fiber()];
+  return caml_stack_check_depth()
+    ? caml_call_gen_cps(f, args)
+    : caml_trampoline_return(f, args, 0);
+}
+function caml_alloc_stack_hval(x) {
+  // Call [hv] in the parent fiber
+  var f = caml_current_stack.h[1];
+  return caml_alloc_stack_call(f, x);
+}
+function caml_alloc_stack_hexn(e) {
+  // Call [hx] in the parent fiber
+  var f = caml_current_stack.h[2];
+  return caml_alloc_stack_call(f, e);
+}
 function caml_alloc_stack(hv, hx, hf) {
   var handlers = [0, hv, hx, hf];
-  function call(i, x) {
-    var f = handlers[i];
-    var args = [x, caml_pop_fiber()];
-    return caml_stack_check_depth()
-      ? caml_call_gen_cps(f, args)
-      : caml_trampoline_return(f, args, 0);
-  }
-  function hval(x) {
-    // Call [hv] in the parent fiber
-    return call(1, x);
-  }
-  function hexn(e) {
-    // Call [hx] in the parent fiber
-    return call(2, e);
-  }
-  return { k: hval, x: { h: hexn, t: 0 }, h: handlers, e: 0 };
+  return {
+    k: caml_alloc_stack_hval,
+    x: { h: caml_alloc_stack_hexn, t: 0 },
+    h: handlers,
+    e: 0,
+  };
 }
 
 //Provides: caml_alloc_stack
