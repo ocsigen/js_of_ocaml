@@ -1,8 +1,13 @@
 {
   "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
   "files": {
-    "include": ["runtime"],
-    "ignore": ["runtime/js/zstd.ts"]
+    "ignore": [
+      "benchmarks/sources/js",
+      "compiler/tests-full",
+      "compiler/tests-js-parser",
+      "examples/**/*.json",
+      "runtime/js/zstd.ts"
+    ]
   },
   "formatter": {
     "enabled": true,
