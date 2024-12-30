@@ -45,7 +45,6 @@ let%expect_test _ =
     +prng.js
     +runtime_events.js
     +stdlib.js
-    +stdlib_modern.js
     +str.js
     +sync.js
     +sys.js
@@ -98,5 +97,4 @@ let%expect_test _ =
   printl extra;
   [%expect {|
     +dynlink.js
-    +stdlib_modern.js
     +toplevel.js |}]
