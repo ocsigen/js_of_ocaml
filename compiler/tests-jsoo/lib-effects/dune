@@ -16,7 +16,7 @@
    assume_no_perform
    assume_no_perform_unhandled
    assume_no_perform_nested_handler
-   deep_state ))
+   deep_state))
  (preprocess
   (pps ppx_expect)))
 
