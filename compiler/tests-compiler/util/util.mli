@@ -81,7 +81,6 @@ val print_double_fun_decl : Javascript.program -> string -> unit
 val compile_and_run :
      ?debug:bool
   -> ?pretty:bool
-  -> ?skip_modern:bool
   -> ?flags:string list
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
