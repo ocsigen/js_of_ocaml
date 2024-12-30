@@ -735,14 +735,14 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           ; Let (cps_c, Closure (cps_params, cps_cont))
           ; Let (x, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
           ]
-      | Let (x, Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg; Pv tail ])) ->
-          [ Let (x, Prim (Extern "caml_resume", [ Pv f; Pv arg; Pv stack; Pv tail ])) ]
-      | Let (x, Prim (Extern "%perform", [ Pv effect_ ])) ->
+      | Let (x, Prim (Extern "%resume", [ stack; f; arg; tail ])) ->
+          [ Let (x, Prim (Extern "caml_resume", [ f; arg; stack; tail ])) ]
+      | Let (x, Prim (Extern "%perform", [ effect_ ])) ->
           (* In direct-style code, we just raise [Effect.Unhandled]. *)
-          [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect_ ])) ]
-      | Let (x, Prim (Extern "%reperform", [ Pv effect_; Pv _continuation; Pv _tail ])) ->
+          [ Let (x, Prim (Extern "caml_raise_unhandled", [ effect_ ])) ]
+      | Let (x, Prim (Extern "%reperform", [ effect_; _continuation; _tail ])) ->
           (* Similar to previous case *)
-          [ Let (x, Prim (Extern "caml_raise_unhandled", [ Pv effect_ ])) ]
+          [ Let (x, Prim (Extern "caml_raise_unhandled", [ effect_ ])) ]
       | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
           (* We just need to call [f] in direct style. *)
           let unit = Var.fresh_n "unit" in
