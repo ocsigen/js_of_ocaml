@@ -153,7 +153,7 @@ function caml_perform_effect(eff, k0) {
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
   return caml_stack_check_depth()
-  ? caml_get_cps_fun(handler)(eff, cont, last_fiber, k1)
+    ? caml_get_cps_fun(handler)(eff, cont, last_fiber, k1)
     : caml_trampoline_return(handler, [eff, cont, last_fiber, k1]);
 }
 
@@ -303,12 +303,15 @@ function jsoo_effect_not_supported() {
 //Requires:caml_stack_depth, caml_call_gen_cps, caml_current_stack, caml_wrap_exception, caml_resume_stack
 //If: effects
 //If: doubletranslate
+//Version: >= 5.0
 function caml_resume(f, arg, stack, last) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;
   try {
     caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
-    var k = caml_resume_stack(stack, last, (function (x) { return x }));
+    var k = caml_resume_stack(stack, last, function (x) {
+      return x;
+    });
     /* Note: f is not an ordinary function but a (direct-style, CPS) closure pair */
     var res = { joo_tramp: f, joo_args: [arg, k], joo_direct: 0 };
     do {
