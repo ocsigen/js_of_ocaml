@@ -109,9 +109,6 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
-From +effect.js:
-jsoo_effect_not_supported
-
 From +fs.js:
 caml_ba_map_file
 caml_ba_map_file_bytecode

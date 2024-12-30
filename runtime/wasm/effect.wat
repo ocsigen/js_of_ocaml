@@ -221,7 +221,7 @@
    (data $already_resumed "Effect.Continuation_already_resumed")
 
    (func (export "%resume")
-      (param $stack (ref eq)) (param $f (ref eq)) (param $v (ref eq))
+      (param $stack (ref eq)) (param $f (ref eq)) (param $v (ref eq)) (param $tail (ref eq))
       (result (ref eq))
       (local $k (ref $cont))
       (local $pair (ref $pair))
@@ -300,7 +300,7 @@
          (struct.get $cont $cont_func (local.get $k1))))
 
    (func $reperform (export "%reperform")
-      (param $eff (ref eq)) (param $cont (ref eq))
+      (param $eff (ref eq)) (param $cont (ref eq)) (param $tail (ref eq))
       (result (ref eq))
       (return_call $capture_continuation
          (ref.func $do_perform)
@@ -315,7 +315,8 @@
                (local.get $eff) (ref.i31 (i32.const 0)))))
       (return_call $reperform (local.get $eff)
          (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
-           (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0)))))
+           (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0)))
+         (ref.i31 (i32.const 0))))
 
    ;; Allocate a stack
 
@@ -623,7 +624,7 @@
       (struct.get $cps_fiber $cont (local.get $top)))
 
    (func $caml_resume_stack (export "caml_resume_stack")
-      (param $vstack (ref eq)) (param $k (ref eq)) (result (ref eq))
+      (param $vstack (ref eq)) (param $last (ref eq)) (param $k (ref eq)) (result (ref eq))
       (local $stack (ref $cps_fiber))
       (drop (block $already_resumed (result (ref eq))
          (local.set $stack
@@ -653,7 +654,7 @@
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_perform_effect")
-      (param $eff (ref eq)) (param $vcont (ref eq)) (param $k0 (ref eq))
+      (param $eff (ref eq)) (param $vcont (ref eq)) (param $last (ref eq)) (param $k0 (ref eq))
       (result (ref eq))
       (local $handlers (ref $handlers))
       (local $handler (ref eq)) (local $k1 (ref eq))
@@ -736,6 +737,7 @@
          (call $caml_resume_stack
             (array.get $block
                (ref.cast (ref $block) (local.get $k)) (i32.const 1))
+            (ref.i31 (i32.const 0))
             (local.get $ms)))
       (call $raise_unhandled (local.get $eff) (ref.i31 (i32.const 0))))
 

@@ -15,7 +15,8 @@
    \
    assume_no_perform
    assume_no_perform_unhandled
-   assume_no_perform_nested_handler))
+   assume_no_perform_nested_handler
+   deep_state))
  (preprocess
   (pps ppx_expect)))
 
@@ -37,3 +38,10 @@
     0
     (run node %{test}))))
  (modes js wasm))
+
+(executable
+ (name deep_state)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (modules deep_state)
+ (modes js))

@@ -36136,8 +36136,8 @@
       /*<<effect.ml:28:11>>*/ return 0;
     var
      x =  /*<<effect.ml:22:16>>*/ param[2],
-     _i_ =  /*<<effect.ml:25:12>>*/ caml_call1(Stdlib_Printexc[26], x),
-     msg =  /*<<effect.ml:24:18>>*/ caml_call2(Stdlib_Printf[4], _a_, _i_);
+     _o_ =  /*<<effect.ml:25:12>>*/ caml_call1(Stdlib_Printexc[26], x),
+     msg =  /*<<effect.ml:24:18>>*/ caml_call2(Stdlib_Printf[4], _a_, _o_);
      /*<<effect.ml:27:8>>*/ return [0, msg];
     /*<<effect.ml:28:15>>*/ }
     /*<<effect.ml:30:2>>*/ caml_call1(Stdlib_Printexc[9], printer);
@@ -36155,22 +36155,28 @@
      "Effect.Continuation_already_resumed",
      Continuation_already_resumed);
    function continue$0(k, v){
-    var _h_ =  /*<<effect.ml:62:11>>*/ caml_continuation_use_noexc(k);
-    function _g_(x){
+    var
+     _l_ =  /*<<effect.ml:62:11>>*/ k[2],
+     _n_ = caml_continuation_use_noexc(k);
+    function _m_(x){
       /*<<effect.ml:62:41>>*/ return x;
      /*<<effect.ml:62:42>>*/ }
      /*<<effect.ml:62:30>>*/ return jsoo_effect_not_supported() /*<<effect.ml:62:65>>*/ ;
    }
    function discontinue(k, e){
-    var _f_ =  /*<<effect.ml:65:11>>*/ caml_continuation_use_noexc(k);
-    function _e_(e){
+    var
+     _i_ =  /*<<effect.ml:65:11>>*/ k[2],
+     _k_ = caml_continuation_use_noexc(k);
+    function _j_(e){
       /*<<effect.ml:65:41>>*/ throw caml_maybe_attach_backtrace(e, 1);
      /*<<effect.ml:65:48>>*/ }
      /*<<effect.ml:65:30>>*/ return jsoo_effect_not_supported() /*<<effect.ml:65:71>>*/ ;
    }
    function discontinue_with_backtrace(k, e, bt){
-    var _d_ =  /*<<effect.ml:68:11>>*/ caml_continuation_use_noexc(k);
-    function _c_(e){
+    var
+     _f_ =  /*<<effect.ml:68:11>>*/ k[2],
+     _h_ = caml_continuation_use_noexc(k);
+    function _g_(e){
       /*<<effect.ml:68:41>>*/ caml_restore_raw_backtrace(e, bt);
      throw caml_maybe_attach_backtrace(e, 0);
      /*<<effect.ml:68:75>>*/ }
@@ -36187,8 +36193,9 @@
     }
     var
      s =
-        /*<<effect.ml:87:12>>*/ caml_alloc_stack(handler[1], handler[2], effc);
-     /*<<effect.ml:88:4>>*/ return jsoo_effect_not_supported() /*<<effect.ml:88:23>>*/ ;
+        /*<<effect.ml:87:12>>*/ caml_alloc_stack(handler[1], handler[2], effc),
+     _e_ =  /*<<effect.ml:88:4>>*/ 0;
+    return jsoo_effect_not_supported() /*<<effect.ml:88:23>>*/ ;
    }
    function try_with(comp, arg, handler){
     function effc(eff, k, last_fiber){
@@ -36208,8 +36215,9 @@
          function(e){
            /*<<effect.ml:101:47>>*/ throw caml_maybe_attach_backtrace(e, 1);
           /*<<effect.ml:101:54>>*/ },
-         effc);
-     /*<<effect.ml:102:4>>*/ return jsoo_effect_not_supported() /*<<effect.ml:102:23>>*/ ;
+         effc),
+     _d_ =  /*<<effect.ml:102:4>>*/ 0;
+    return jsoo_effect_not_supported() /*<<effect.ml:102:23>>*/ ;
    }
    var
     Deep =
@@ -36243,7 +36251,7 @@
     var s =  /*<<effect.ml:135:12>>*/ caml_alloc_stack(error, error, effc);
      /*<<effect.ml:136:4>>*/ try{
       /*<<effect.ml:136:10>>*/ jsoo_effect_not_supported();
-     var _b_ =  /*<<effect.ml:136:26>>*/ 0;
+     var _b_ =  /*<<effect.ml:136:26>>*/ 0, _c_ = 0;
     }
     catch(exn$0){
      var exn =  /*<<?>>*/ caml_wrap_exception(exn$0);
@@ -36263,6 +36271,7 @@
       /*<<effect.ml:160:10>>*/ return caml_call1(f, k) /*<<effect.ml:161:42>>*/ ;
     }
     var
+     last_fiber =  /*<<effect.ml:163:4>>*/ k[2],
      stack =
         /*<<effect.ml:164:16>>*/ runtime.caml_continuation_use_and_update_handler_noexc
         (k, handler[1], handler[2], effc);
