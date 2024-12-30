@@ -77,6 +77,7 @@ function caml_pop_trap() {
 //Provides: caml_raise_unhandled
 //Requires: caml_make_unhandled_effect_exn
 //If: effects
+//Version: >= 5.0
 function caml_raise_unhandled(eff) {
   var exn = caml_make_unhandled_effect_exn(eff);
   throw exn;
