@@ -9,8 +9,6 @@ on:
 jobs:
   build:
     env:
-      OPAMJOBS: 2
-      OPAMYES: true
       WASM_OF_OCAML: true
 
     strategy:
@@ -19,44 +17,43 @@ jobs:
         os:
           - ubuntu-latest
         ocaml-compiler:
-          - 4.14.x
-          - 5.0.x
-          - 5.1.x
-          - 5.2.x
+          - "4.14"
+          - "5.0"
+          - "5.1"
+          - "5.2"
           - ocaml-compiler.5.3.0~beta2
         separate_compilation:
           - true
         include:
           - os: macos-latest
-            ocaml-compiler: 5.2.x
+            ocaml-compiler: "5.2"
             separate_compilation: true
           - os: ubuntu-latest
-            ocaml-compiler: 4.14.x
+            ocaml-compiler: "4.14"
             separate_compilation: false
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Set git to use LF
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global core.ignorecase false
+      - name: Checkout tree
+        uses: actions/checkout@v4
 
-      - name: Install node
+      - name: Checkout Jane Street opam repository
+        uses: actions/checkout@v4
+        with:
+          repository: janestreet/opam-repository
+          ref: feaf8f831051fd5f316963b28efd728cf0b0eca1
+          path: janestreet/opam-repository
+
+      - name: Set-up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 23
+          node-version: latest
 
-      - name: Install OCaml ${{ matrix.ocaml-compiler }}
+      - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          path: wasm_of_ocaml
 
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
@@ -67,84 +64,68 @@ jobs:
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
 
-      - name: Checkout Jane Street opam repository
-        uses: actions/checkout@v4
-        with:
-          repository: janestreet/opam-repository
-          ref: feaf8f831051fd5f316963b28efd728cf0b0eca1
-          path: jane-street/opam-repository
-
-      - name: Pin wasm_of_ocaml
-        working-directory: ./wasm_of_ocaml
-        run: opam pin -n --with-version `< VERSION` .
-
-      - name: Install some needed packages
-        run: opam install opam-format ocamlfind dune graphics cmdliner sexplib0.v0.16.0
-
       - name: Checkout Jane Street packages
-        run: opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
-
-      - name: Install wasm_of_ocaml and its test dependencies
-        working-directory: ./wasm_of_ocaml
         run: |
-          opam install `basename -s .opam *.opam` num cohttp-lwt-unix ppx_expect cstruct
+          opam install opam-format ocamlfind dune graphics cmdliner sexplib0.v0.16.0
+          opam exec -- ocaml tools/ci_setup.ml
+
+      - name: Install dependencies
+        run: opam install . --deps-only --with-test
 
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
-        working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm
 
       - name: Run tests with CPS effects
         if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
-        working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
       - name: Run Base tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/base
+        working-directory: ./janestreet/lib/base
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/base_bigstring
+        working-directory: ./janestreet/lib/base_bigstring
         run: opam exec -- dune runtest
 
       - name: Run Core tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/core
+        working-directory: ./janestreet/lib/core
         run: opam exec -- dune runtest
 
       - name: Run Bignum tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/bignum
+        working-directory: ./janestreet/lib/bignum
         run: opam exec -- dune runtest
 
       - name: Run Bin_prot tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/bin_prot
+        working-directory: ./janestreet/lib/bin_prot
         run: opam exec -- dune runtest
 
       - name: Run String_dict tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/string_dict
+        working-directory: ./janestreet/lib/string_dict
         run: opam exec -- dune runtest
 
       - name: Run Zarith tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/zarith_stubs_js
+        working-directory: ./janestreet/lib/zarith_stubs_js
         run: opam exec -- dune runtest
 
       - name: Run Virtual_dom tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/virtual_dom
+        working-directory: ./janestreet/lib/virtual_dom
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
         if: ${{ matrix.ocaml-compiler < '5.' && matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/bonsai
+        working-directory: ./janestreet/lib/bonsai
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests (release profile)
         if: ${{ ! matrix.separate_compilation }}
-        working-directory: ./jane-street/lib/bonsai
+        working-directory: ./janestreet/lib/bonsai
         run: opam exec -- dune runtest --profile release

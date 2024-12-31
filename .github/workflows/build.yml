@@ -83,11 +83,14 @@ jobs:
 
     steps:
       - name: Set git to use LF
-        if: matrix.ocaml-compiler < 5.2
+        if: ${{ matrix.os == 'windows-latest' && matrix.ocaml-compiler < 5.2 }}
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
           git config --global core.ignorecase false
+
+      - name: Checkout tree
+        uses: actions/checkout@v4
 
         # EJGA: Note that I tried to fix this upstream as depext is
         # getting much better, but no luck yet, c.f:
@@ -102,23 +105,15 @@ jobs:
           # try to install them anyways, so we save an apt-roundtrip.
           sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 libx11-dev:i386 -y
 
-      - name: Checkout tree
-        uses: actions/checkout@v4
-
       - name: Set-up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: latest
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-          dune-cache: true
-          opam-pin: false
-
-      - run: opam install conf-pkg-config
-        if: runner.os == 'Windows'
 
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
@@ -132,11 +127,7 @@ jobs:
       - run: opam install . --best-effort
         if: ${{ matrix.skip-test }}
 
-      - run: cat VERSION | xargs opam pin . -n --with-version
-        if: ${{ !matrix.skip-test }}
-        shell: bash
-
-      - run: opam install . --with-test --deps-only
+      - run: opam install . --deps-only --with-test
         # Install the test dependencies
         if: ${{ !matrix.skip-test }}
 
