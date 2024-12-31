@@ -41,9 +41,16 @@ Most of the OCaml standard library is supported. However,
 
 Extra libraries distributed with Ocaml (such as Thread) are not
 supported in general. However,
-  * Bigarray: bigarray are supported using Typed Arrays
+  * Bigarray: bigarrays are supported using Typed Arrays
   * Str: supported
   * Graphics: partially supported using canvas (see also js_of_ocaml-lwt.graphics)
   * Unix: time related functions are supported
 
-Effect handlers are fully supported with the {{{--enable=effects}}} flag. This is not the default for now since effects are not widely used at the moment and the generated code can be slower, larger and less readable.
+Compared to Js_of_ocaml, dynlink is not supported, and it is not possible to build an OCaml toplevel. The virtual filesystem is not implemented either.
+
+OCaml 5.x code using effect handlers can be compiled in two different ways:
+One can enable the CPS transformation from `js_of_ocaml` by passing the
+`--effects=cps` flag. Without the flag `wasm_of_ocaml` will instead default to
+`--effects=jspi` and emit code utilizing
+ [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md).
+The CPS transformation is not the default since the generated code is slower, larger and less readable. On the other hand, the JSPI extension is not yet enabled by default in Web browsers, and performing effects is slower when using this extension.

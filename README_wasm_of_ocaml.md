@@ -15,15 +15,15 @@ OCaml 5.x code using effect handlers can be compiled in two different ways:
 One can enable the CPS transformation from `js_of_ocaml` by passing the
 `--effects=cps` flag. Without the flag `wasm_of_ocaml` will instead default to
 `--effects=jspi` and emit code utilizing
-- [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md)
+- [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md).
 
 
 ## Installation
 
 The following commands will perform a minimal installation:
 ```
-git clone https://github.com/ocaml-wasm/wasm_of_ocaml
-cd wasm_of_ocaml
+git clone https://github.com/ocsigen/js_of_ocaml
+cd js_of_ocaml
 opam pin add -n --with-version 6.0.0 .
 opam install dune.3.17.0 wasm_of_ocaml-compiler
 ```
@@ -31,6 +31,20 @@ You may want to install additional packages. For instance:
 
 ```
 opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
+```
+
+## Running the testsuite
+
+```
+opam switch create wasm-tests 4.14.0
+eval $(opam env --switch=wasm-tests)
+opam pin add -n base.v0.16.1 git@github.com:ocaml-wasm/base#wasm
+opam pin add -n time_now.v0.16.1 git@github.com:ocaml-wasm/time_now#wasm
+opam pin add -n ppx_inline_test.v0.16.1 git@github.com:ocaml-wasm/ppx_inline_test#wasm
+opam pin add -n ppx_expect.v0.16.1 git@github.com:ocaml-wasm/ppx_expect#wasm
+opam pin add -y -n --with-version 6.0.0 .
+opam install . --deps-only --with-test
+WASM_OF_OCAML=true dune build @runtest-wasm
 ```
 
 ## Usage
@@ -44,10 +58,10 @@ ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml-ppx,js_of_ocaml-lwt -linkpkg -
 Then, run the `wasm_of_ocaml` compiler to produce WebAssembly code:
 
 ```
-wasm_of_ocaml cubes.byte
+wasm_of_ocaml cubes.byte -o cubes.bc.js
 ```
 
-This outputs a file `cubes.js` which loads the WebAssembly code from file `cube.wasm`. For debugging, we currently also output the generated WebAssembly code in text file to `cube.wat`. Since Chrome does not allow loading from the filesystem, you need to serve the files using some Web server. For instance:
+This outputs a file `cubes.bc.js` which loads the WebAssembly code from file `cube.bc.wasm`. For debugging, we currently also output the generated WebAssembly code in text file to `cube.wat`. Since Chrome does not allow loading from the filesystem, you need to serve the files using some Web server. For instance:
 ```
 python3 -m http.server 8000 --directory .
 ```
