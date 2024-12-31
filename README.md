@@ -25,6 +25,7 @@ Js_of_ocaml is composed of multiple packages:
 - js_of_ocaml-tyxml, tyxml support.
 - js_of_ocaml-toplevel, lib and tools to build an ocaml toplevel to
   javascript.
+- wasm_of_ocaml-compiler, [the Wasm_of_ocaml compiler](README_wasm_of_ocaml.md).
 
 ## Requirements
 
