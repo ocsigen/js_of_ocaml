@@ -388,7 +388,7 @@ let generate_start_function ~to_link ~out_file =
   Filename.gen_file out_file
   @@ fun ch ->
   let context = Generate.start () in
-  Generate.add_init_function ~context ~to_link:("prelude" :: to_link);
+  Generate.add_init_function ~context ~to_link:("wasmoo_prelude" :: to_link);
   Generate.wasm_output ch ~context;
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
 
@@ -669,11 +669,11 @@ let load_information files =
   match files with
   | [] -> assert false
   | runtime :: other_files ->
-      let build_info, predefined_exceptions, _unit_data =
+      let build_info, predefined_exceptions, unit_data =
         Zip.with_open_in runtime read_info
       in
       ( predefined_exceptions
-      , (runtime, (build_info, []))
+      , (runtime, (build_info, unit_data))
         :: List.map other_files ~f:(fun file ->
                let build_info, _predefined_exceptions, unit_data =
                  Zip.with_open_in file read_info
@@ -775,7 +775,8 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
               || cmo_file
               || linkall
               || unit_info.force_link
-              || not (StringSet.is_empty (StringSet.inter requires unit_info.provides))
+              || (not (StringSet.is_empty (StringSet.inter requires unit_info.provides)))
+              || String.equal unit_name "wasmoo_prelude"
             then
               ( StringSet.diff
                   (StringSet.union unit_info.requires requires)

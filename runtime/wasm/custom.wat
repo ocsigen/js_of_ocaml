@@ -22,11 +22,11 @@
    (import "int64" "int64_ops" (global $int64_ops (ref $custom_operations)))
    (import "bigarray" "bigarray_ops"
       (global $bigarray_ops (ref $custom_operations)))
-   (import "string" "caml_string_equal"
-      (func $caml_string_equal
+   (import "string" "caml_bytes_equal"
+      (func $caml_bytes_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -38,7 +38,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $string))
+         (field $id (ref $bytes))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -109,14 +109,14 @@
             (local.get $ops) (global.get $custom_operations))))
 
    (func (export "caml_find_custom_operations")
-      (param $id (ref $string)) (result (ref null $custom_operations))
+      (param $id (ref $bytes)) (result (ref null $custom_operations))
       (local $l (ref null $custom_operations_list))
       (block $not_found
          (local.set $l (br_on_null $not_found (global.get $custom_operations)))
          (loop $loop
             (if (i31.get_u
                    (ref.cast (ref i31)
-                       (call $caml_string_equal (local.get $id)
+                       (call $caml_bytes_equal (local.get $id)
                          (struct.get $custom_operations $id
                             (struct.get $custom_operations_list $ops
                                (local.get $l))))))
