@@ -10,7 +10,7 @@ module StringSet = Set.Make (String)
 
 (****)
 
-let repo = "jane-street/opam-repository/packages"
+let repo = "janestreet/opam-repository/packages"
 
 let roots = [ "bonsai"; "string_dict" ]
 
@@ -212,7 +212,7 @@ let pin delay nm =
     (Printf.sprintf
        "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm"
        (try List.assoc nm aliases
-        with Not_found -> if List.mem_assoc nm packages then nm ^ ".v0.16.0" else nm)
+        with Not_found -> if List.mem_assoc nm packages then nm ^ ".v0.16.1" else nm)
        nm)
 
 let pin_packages js =
@@ -231,7 +231,7 @@ let clone delay ?branch ?(depth = 1) nm src =
   exec_async
     ~delay
     (Printf.sprintf
-       "git clone -q --depth %d %s%s jane-street/lib/%s"
+       "git clone -q --depth %d %s%s janestreet/lib/%s"
        depth
        (match branch with
        | None -> ""
@@ -246,12 +246,11 @@ let clone' delay ?branch ?commit nm src =
       let* () = clone delay ?branch ~depth:100 nm src in
       exec_async
         ~delay:0
-        (Printf.sprintf "cd jane-street/lib/%s && git checkout -b wasm %s" nm commit)
+        (Printf.sprintf "cd janestreet/lib/%s && git checkout -b wasm %s" nm commit)
 
 let () =
   Out_channel.(
-    with_open_bin "jane-street/dune-workspace"
-    @@ fun ch -> output_string ch dune_workspace)
+    with_open_bin "janestreet/dune-workspace" @@ fun ch -> output_string ch dune_workspace)
 
 let () =
   let js, others =
@@ -296,7 +295,7 @@ let () =
   List.iter
     (fun (dir, patch) ->
       let ch =
-        Unix.open_process_out (Printf.sprintf "cd jane-street/lib/%s && patch -p 1" dir)
+        Unix.open_process_out (Printf.sprintf "cd janestreet/lib/%s && patch -p 1" dir)
       in
       output_string ch patch;
       ignore (Unix.close_process_out ch))
