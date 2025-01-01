@@ -4,10 +4,9 @@
  (package js_of_ocaml-compiler)
  (libraries
   jsoo_cmdline
-  js_of_ocaml-compiler
   cmdliner
-  compiler-libs.common
   js_of_ocaml-compiler.runtime-files
+  js_of_ocaml-compiler.version
   (select
    findlib_support.ml
    from

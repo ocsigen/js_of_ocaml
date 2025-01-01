@@ -2,7 +2,7 @@
  (name jsoo_minify)
  (public_name jsoo_minify)
  (package js_of_ocaml-compiler)
- (libraries jsoo_cmdline js_of_ocaml-compiler cmdliner compiler-libs.common)
+ (libraries jsoo_cmdline cmdliner js_of_ocaml-compiler.version)
  (flags
   (:standard -safe-string)))
 

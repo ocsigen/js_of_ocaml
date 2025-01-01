@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml_compiler
 open Cmdliner
 
 let make ~name ~doc ~description =
@@ -41,9 +40,5 @@ let make ~name ~doc ~description =
          or (at your option) any later version."
     ]
   in
-  let version =
-    match Compiler_version.git_version with
-    | "" -> Compiler_version.s
-    | v -> Printf.sprintf "%s+%s" Compiler_version.s v
-  in
+  let version = Jsoo_version.get () in
   Cmd.info name ~version ~doc ~man

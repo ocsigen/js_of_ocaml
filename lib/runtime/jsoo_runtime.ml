@@ -143,9 +143,7 @@ module Sys = struct
       | _ -> assert false
   end
 
-  let version = Runtime_version.s
-
-  let git_version = Runtime_version.git_version
+  let version = Jsoo_version.get ()
 end
 
 module Error : sig

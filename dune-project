@@ -19,6 +19,7 @@
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
   (ocaml (and (>= 4.08) (< 5.4)))
+  dune-build-info
   (num :with-test)
   (ppx_expect (and (>= v0.16.1) :with-test))
   (ppxlib (>= 0.15.0))

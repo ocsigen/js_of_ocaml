@@ -57,7 +57,4 @@ let mount ~path f =
 
 let unmount ~path = unmount path
 
-let js_of_ocaml_version =
-  if String.equal Lib_version.git_version ""
-  then Lib_version.s
-  else Lib_version.s ^ "+" ^ Lib_version.git_version
+let js_of_ocaml_version = Jsoo_version.get ()
