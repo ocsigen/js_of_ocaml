@@ -10,6 +10,7 @@
   and direct style, resulting in better performance when
   no effect handler is installed
 * Compiler/Runtime: Make resuming a continuation more efficient in js (#1765)
+* Lib: Add other textMetrics property (#1784)
 
 ## Bug fixes
 * Fix small bug in global data flow analysis (#1768)
