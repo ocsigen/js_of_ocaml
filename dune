@@ -36,16 +36,6 @@
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe))))
 
-(rule
- (targets version.ml.in)
- (action
-  (with-stdout-to
-   %{targets}
-   (run
-    %{dep:tools/version/gen/gen.exe}
-    %{dep:VERSION}
-    %{dep:tools/version/GIT-VERSION}))))
-
 (data_only_dirs _wikidoc doc-dev janestreet)
 
 (vendored_dirs)
