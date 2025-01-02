@@ -15,6 +15,11 @@
 * Fix small bug in global data flow analysis (#1768)
 * Runtime: no longer leak channels
 
+# 5.9.2 (2025-01-02) - Lille
+
+## Features/Changes
+* Lib: add other TextMetrics property
+
 # 5.9.1 (02-12-2024) - Lille
 
 ## Features/Changes
