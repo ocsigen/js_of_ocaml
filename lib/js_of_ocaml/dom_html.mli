@@ -1809,7 +1809,35 @@ and canvasGradient = object
 end
 
 and textMetrics = object
+  method actualBoundingBoxAscent : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/actualBoundingBoxAscent *)
+
+  method actualBoundingBoxDescent : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/actualBoundingBoxDescent *)
+
+  method actualBoundingBoxLeft : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/actualBoundingBoxLeft *)
+
+  method actualBoundingBoxRight : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/actualBoundingBoxRight *)
+
+  method alphabeticBaseline : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/alphabeticBaseline *)
+
+  method fontBoundingBoxAscent : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/fontBoundingBoxAscent *)
+
+  method fontBoundingBoxDescent : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/fontBoundingBoxDescent *)
+
+  method hangingBaseline : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/hangingBaseline *)
+
+  method ideographicBaseline : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/ideographicBaseline *)
+
   method width : number_t readonly_prop
+  (** https://developer.mozilla.org/docs/Web/API/TextMetrics/width *)
 end
 
 and imageData = object
