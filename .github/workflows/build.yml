@@ -115,6 +115,12 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
+      # Work-around a race between reinstalling mingw-w64-shims
+      # (because of conf-pkg-config optional dep) and installing other
+      # packages that implicitly depend on mingw-w64-shims.
+      - run: opam install conf-pkg-config
+        if: runner.os == 'Windows'
+
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
         with:
