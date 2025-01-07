@@ -36,6 +36,7 @@ jobs:
 
     steps:
       - name: Set git to use LF
+        if: ${{ matrix.os == 'windows-latest' && matrix.ocaml-compiler < 5.2 }}
         run: |
           git config --global core.autocrlf false
           git config --global core.eol lf
@@ -63,7 +64,6 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
         with:
@@ -88,13 +88,13 @@ jobs:
           opam install `basename -s .opam *.opam` num cohttp-lwt-unix ppx_expect cstruct
 
       - name: Run tests
-        working-directory: ./wasm_of_ocaml
         if: ${{ matrix.separate_compilation }}
+        working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm
 
       - name: Run tests with CPS effects
-        working-directory: ./wasm_of_ocaml
         if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
+        working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
       - name: Run Base tests
