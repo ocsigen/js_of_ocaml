@@ -3,3 +3,7 @@
 
 *.ml linguist-language=OCaml
 *.mli linguist-language=OCaml
+
+# We are pinning wasm_of_ocaml using this file in the CI. This would
+# fail on Windows otherwise.
+VERSION -text

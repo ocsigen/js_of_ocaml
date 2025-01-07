@@ -35,6 +35,12 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Set git to use LF
+        run: |
+          git config --global core.autocrlf false
+          git config --global core.eol lf
+          git config --global core.ignorecase false
+
       - name: Checkout tree
         uses: actions/checkout@v4
         with:
@@ -57,6 +63,7 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
+
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
         with:
@@ -66,14 +73,19 @@ jobs:
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
 
+      - name: Pin wasm_of_ocaml
+        working-directory: ./wasm_of_ocaml
+        run: opam pin -n --with-version `< VERSION` .
+
       - name: Checkout Jane Street packages
         run: |
           opam install opam-format ocamlfind dune graphics cmdliner sexplib0.v0.16.0
           opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
 
-      - name: Install dependencies
+      - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
-        run: opam install . --deps-only --with-test
+        run: |
+          opam install `basename -s .opam *.opam` num cohttp-lwt-unix ppx_expect cstruct
 
       - name: Run tests
         working-directory: ./wasm_of_ocaml
