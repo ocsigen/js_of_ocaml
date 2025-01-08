@@ -1,6 +1,6 @@
 # Wasm_of_ocaml
 
-Wasm_of_ocaml is a fork of Js_of_ocaml which compiles OCaml bytecode to WebAssembly.
+Wasm_of_ocaml is an alternative compiler which compiles OCaml bytecode to WebAssembly.
 
 ## Supported engines
 
@@ -12,7 +12,7 @@ In particular, the output code requires the following [Wasm extensions](https://
 - [the exception handling extension](https://github.com/WebAssembly/exception-handling/blob/master/proposals/exception-handling/Exceptions.md)
 
 OCaml 5.x code using effect handlers can be compiled in two different ways:
-One can enable the CPS transformation from `js_of_ocaml` by passing the
+one can enable the CPS transformation from `js_of_ocaml` by passing the
 `--effects=cps` flag. Without the flag `wasm_of_ocaml` will instead default to
 `--effects=jspi` and emit code utilizing
 - [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md).
@@ -33,8 +33,9 @@ You may want to install additional packages. For instance:
 opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 ```
 
-## Running the testsuite
+## Running the test suite
 
+The following commands can be used to set up an opam switch and run the test suite.
 ```
 opam switch create wasm-tests 4.14.0
 eval $(opam env --switch=wasm-tests)

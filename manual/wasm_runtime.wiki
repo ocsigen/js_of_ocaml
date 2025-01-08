@@ -3,11 +3,15 @@
 User-defined primitives can be implemented by writing Wasm modules.
 This modules (".wat" extension for text modules and ".wasm" extension
 for binary modules) can be passed on the command-line.
+With dune, you can use the option
+{{{(wasm_of_ocaml (wasm_files ...))}}} to specify these runtime files.
 
 It still makes sense to link JavaScript files to specify the possible
 side-effects of some primitives (see <<a_manual chapter="linker" |Link
 with JavaScript code>>), or to implement some functionalities in
 JavaScript.
+With dune, you can use the option
+{{{(wasm_of_ocaml (javascript_files ...))}}} to specify these files.
 
 == Data representation ==
 
@@ -44,14 +48,14 @@ You can import the following functions to access or allocate integers of type in
 
 == Implementing primitives
 
-Primitives can be defined as exported Wasm functions with parameters and return value of type {{{(ref eq)}}}.
+You define a primitive by exporting a Wasm function with parameters and return value of type {{{(ref eq)}}}.
 {{{
 (func (export "input") (param $channel (ref eq)) (param $buffer (ref eq)) (param $offset (ref eq)) (param $length (ref eq)) (result (ref eq))
   ...
 )
 }}}
 
-== Linking with JavaScript ==
+== Linking with JavaScript code ==
 
 If you need to use JavaScript functions to implement your Wasm primitives, you can import them using the {{{"js"}}} namespace:
 {{{
@@ -59,4 +63,12 @@ If you need to use JavaScript functions to implement your Wasm primitives, you c
 }}}
 The <<a_manual chapter="linker" |Js_of_ocaml linker>> is used include them in the generated code.
 
-You can use functions defined in `runtime/wasm/jslib.wat` for conversions between JavaScript values and OCaml values.
+== Interfacing with JavaScript ==
+
+You can use functions defined in `runtime/wasm/jslib.wat` for conversions between JavaScript values and OCaml values (for instance, the function {{{caml_js_to_float}}} converts a JavaScript to an OCaml float) and to perform various JavaScript operations such as property access (function {{{caml_js_get}}} below) or function call.
+{{{
+(import "env" "caml_js_to_float"
+   (func $caml_js_to_float (param (ref eq)) (result (ref eq))))
+(import "env" "caml_js_get"
+   (func $caml_js_get (param (ref eq)) (param (ref eq)) (result (ref eq))))
+}}}
