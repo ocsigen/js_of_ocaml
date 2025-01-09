@@ -25,6 +25,7 @@ jobs:
           - "4.13"
           - "5.0"
           - "5.1"
+          - "5.2"
         skip-test:
           - true
         skip-doc:
@@ -53,7 +54,7 @@ jobs:
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "5.3"
             skip-effects: false
             skip-test: false
             skip-doc: false
@@ -69,12 +70,12 @@ jobs:
             skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
             skip-doc: true
           - os: macos-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "5.3"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "5.3"
             skip-effects: false
             skip-test: false
             skip-doc: true

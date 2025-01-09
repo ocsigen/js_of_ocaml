@@ -2,8 +2,8 @@
  (targets stdlib.cma.js)
  (enabled_if
   (and
-   (>= %{ocaml_version} "5.2")
-   (< %{ocaml_version} "5.3")))
+   (>= %{ocaml_version} "5.3")
+   (< %{ocaml_version} "5.4")))
  (action
   (run
    %{bin:js_of_ocaml}
@@ -17,8 +17,8 @@
  (targets stdlib.cma.output.js)
  (enabled_if
   (and
-   (>= %{ocaml_version} "5.2")
-   (< %{ocaml_version} "5.3")))
+   (>= %{ocaml_version} "5.3")
+   (< %{ocaml_version} "5.4")))
  (action
   (with-stdout-to
    %{targets}
@@ -28,8 +28,8 @@
  (alias runtest)
  (enabled_if
   (and
-   (>= %{ocaml_version} "5.2")
-   (< %{ocaml_version} "5.3")))
+   (>= %{ocaml_version} "5.3")
+   (< %{ocaml_version} "5.4")))
  (action
   (diff stdlib.cma.expected.js stdlib.cma.output.js)))
 
