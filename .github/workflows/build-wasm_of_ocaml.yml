@@ -182,6 +182,11 @@ jobs:
           EOF
           chmod +x ~/.local/bin/node
 
+      - name: ZZZZZ
+        run: |
+          which node
+          ls -l ~/.local/bin/node
+
       - name: Run Bonsai web components' tests
         if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bonsai_web_components
