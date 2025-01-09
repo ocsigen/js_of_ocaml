@@ -126,13 +126,6 @@ let rec traverse visited p =
     | exception Not_found -> visited
     | opam ->
         let l = dependencies opam in
-        Format.eprintf
-          "%s: %a@."
-          p
-          (Format.pp_print_list
-             ~pp_sep:(fun f () -> Format.fprintf f " ")
-             (fun f -> Format.fprintf f "%s"))
-          l;
         List.fold_left traverse visited l
 
 let forked_packages =
@@ -146,7 +139,7 @@ let forked_packages =
   close_in ch;
   StringSet.of_list l
 
-let is_forked p = false (*ZZZ StringSet.mem p forked_packages*)
+let is_forked p = StringSet.mem p forked_packages
 
 let exec_async ~delay cmd =
   let p =
@@ -211,23 +204,12 @@ let () =
     List.fold_left traverse StringSet.empty roots
     |> StringSet.partition (fun p -> List.mem_assoc p packages)
   in
-  (* ZZZ
-  opam repo add js /tmp/jane-street/opam-repository/
-
   pin_packages js;
   install_others others;
-*)
   sync_exec (fun i () -> clone i "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec
     (fun i nm ->
-      let branch =
-        if is_forked nm
-        then
-          if List.mem nm [ "bonsai"; "virtual_dom"; "async_js"; "zarith_stubs_js" ]
-          then Some "jsoo-6"
-          else Some "wasm"
-        else None
-      in
+      let branch = if is_forked nm then Some "wasm-v0.18" else None in
       let commit =
         if is_forked nm
         then None
