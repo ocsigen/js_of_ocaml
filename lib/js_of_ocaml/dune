@@ -1,7 +1,7 @@
 (library
  (name js_of_ocaml)
  (public_name js_of_ocaml)
- (libraries js_of_ocaml-compiler.runtime)
+ (libraries js_of_ocaml-compiler.runtime js_of_ocaml-compiler.version)
  (foreign_stubs
   (language c)
   (names js_of_ocaml_stubs))
@@ -20,10 +20,3 @@
   (with-stdout-to
    %{targets}
    (run ../gen_stubs/gen_stubs.exe %{jsoo} --except %{runtime}))))
-
-(rule
- (targets lib_version.ml)
- (deps
-  (:input-file ../../version.ml.in))
- (action
-  (copy %{input-file} %{targets})))

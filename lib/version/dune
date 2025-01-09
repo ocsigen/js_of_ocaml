@@ -1,0 +1,4 @@
+(library
+ (name jsoo_version)
+ (public_name js_of_ocaml-compiler.version)
+ (libraries dune-build-info))
