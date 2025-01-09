@@ -62,10 +62,6 @@ jobs:
           ref: 41c89c7824533f6b63cc5b6d75e6ddb1441d1520
           path: janestreet/opam-repository
 
-      - name: Add Jane Street opam repository
-        if: matrix.jane_street_tests
-        run: opam repo add js jane-street/opam-repository
-
       - name: Set-up Node.js
         uses: actions/setup-node@v4
         with:
@@ -92,10 +88,11 @@ jobs:
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests
         run: |
-          opam install opam-format ocamlfind dune graphics cmdliner sexplib0.v0.16.0
+          opam repo add js jane-street/opam-repository
+          opam install opam-format ocamlfind dune graphics cmdliner sexplib0
           opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
 
-      - name: Checkout Jane Street packages
+      - name: Pin Jane Street packages
         if: ${{ ! matrix.jane_street_tests }}
         run: |
           opam pin add -n base.v0.16.1 https://github.com/ocaml-wasm/base.git#wasm
