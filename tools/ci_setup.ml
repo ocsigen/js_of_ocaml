@@ -28,7 +28,28 @@ let do_pin =
     ; "bigstringaf"
     ]
 
-let aliases = [ "ocaml-cstruct", "cstruct" ]
+let forked_packages =
+  StringSet.of_list
+    [ "async_js"
+    ; "base"
+    ; "base_bigstring"
+    ; "bin_prot"
+    ; "bonsai_test"
+    ; "bonsai_web"
+    ; "bonsai_web_components"
+    ; "bonsai_web_test"
+    ; "core"
+    ; "core_kernel"
+    ; "ocaml_intrinsics_kernel"
+    ; "ppx_expect"
+    ; "ppx_inline_test"
+    ; "ppx_module_timer"
+    ; "string_dict"
+    ; "time_now"
+    ; "virtual_dom"
+    ; "virtual_dom_toplayer"
+    ; "zarith_stubs_js"
+    ]
 
 let dune_workspace =
   {|(lang dune 3.17)
@@ -132,29 +153,6 @@ let rec traverse visited p =
         let l = dependencies opam in
         List.fold_left traverse visited l
 
-let forked_packages =
-  StringSet.of_list
-    [ "async_js"
-    ; "base"
-    ; "base_bigstring"
-    ; "bin_prot"
-    ; "bonsai_test"
-    ; "bonsai_web"
-    ; "bonsai_web_components"
-    ; "bonsai_web_test"
-    ; "core"
-    ; "core_kernel"
-    ; "ocaml_intrinsics_kernel"
-    ; "ppx_expect"
-    ; "ppx_inline_test"
-    ; "ppx_module_timer"
-    ; "string_dict"
-    ; "time_now"
-    ; "virtual_dom"
-    ; "virtual_dom_toplayer"
-    ; "zarith_stubs_js"
-    ]
-
 let is_forked p = StringSet.mem p forked_packages
 
 let exec_async ~delay cmd =
@@ -174,7 +172,7 @@ let pin delay nm =
     ~delay
     (Printf.sprintf
        "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-v0.18"
-       (try List.assoc nm aliases with Not_found -> nm)
+       nm
        nm)
 
 let pin_packages () = sync_exec pin (StringSet.elements do_pin)
