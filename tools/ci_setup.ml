@@ -129,15 +129,7 @@ let rec traverse visited p =
         List.fold_left traverse visited l
 
 let forked_packages =
-  let ch =
-    Unix.open_process_in
-      "curl -L -H 'Accept: application/vnd.github+json' -H 'X-GitHub-Api-Version: \
-       2022-11-28' https://api.github.com/orgs/ocaml-wasm/repos 2> /dev/null | jq -r \
-       '.[] | .name'"
-  in
-  let l = Str.(split (regexp "\n")) (In_channel.input_all ch) in
-  close_in ch;
-  StringSet.of_list l
+StringSet.of_list ["async_js"; "base"; "base_bigstring"; "bignum"; "bin_prot"; "bonsai_test"; "bonsai_web"; "bonsai_web_components"; "bonsai_web_test"; "core"; "core_kernel"; "ocaml_intrinsics_kernel"; "ppx_expect"; "ppx_inline_test"; "sexp_grammar"; "string_dict"; "time_now"; "virtual_dom"; "virtual_dom_toplayer"; "zarith_stubs_js"]
 
 let is_forked p = StringSet.mem p forked_packages
 

@@ -89,7 +89,7 @@ jobs:
         if: matrix.jane_street_tests
         run: |
           opam repo add js janestreet/opam-repository
-          opam install opam-format ocamlfind dune graphics cmdliner sexplib0
+          opam install opam-format ocamlfind dune graphics cmdliner
           opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
 
       - name: Pin Jane Street packages
@@ -114,6 +114,9 @@ jobs:
         if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
+
+      - if: matrix.jane_street_tests
+        run: opam upgrade sexplib0
 
       - name: Run Base tests
         if: matrix.jane_street_tests
