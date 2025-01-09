@@ -170,9 +170,6 @@ jobs:
 #        working-directory: ./janestreet/lib/bonsai_web_test
 #        run: opam exec -- dune runtest
 
-      - name: ZZZZZ
-        run: echo $PATH
-
       - name: Write node wrapper
         run: |
           mkdir -p ~/.local/bin
@@ -181,11 +178,13 @@ jobs:
           exec `which node` --experimental-wasm-stack-switching "\$@"
           EOF
           chmod +x ~/.local/bin/node
+          echo ~/.local/bin >> "$GITHUB_PATH"
 
       - name: ZZZZZ
         run: |
           which node
           ls -l ~/.local/bin/node
+          echo $PATH
 
       - name: Run Bonsai web components' tests
         if: matrix.all_jane_street_tests
