@@ -10,6 +10,7 @@
   and direct style, resulting in better performance when
   no effect handler is installed
 * Compiler/Runtime: Make resuming a continuation more efficient in js (#1765)
+* Compiler: Propagate arity between compilation units (#1594)
 * Lib: Add other textMetrics property (#1784)
 * Misc: move tests to OCaml 5.3
 
