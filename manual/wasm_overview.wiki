@@ -31,7 +31,7 @@ This produces a Javascript loading script {{{cube.js}} and a directory
 {{{cube.assets}} containing the Wasm code.
 
 === with dune ===
-  Dune has native support for wasm_of_ocaml.
+  Dune has native support for wasm_of_ocaml (starting with dune 3.17.0).
   It supports both standard and separate compilation. See https://dune.readthedocs.io/en/latest/wasmoo.html
 
 == Supported features ==
