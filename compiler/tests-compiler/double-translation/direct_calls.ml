@@ -86,45 +86,55 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        function caml_trampoline_cps_call2(f, a0, a1){
         return runtime.caml_stack_check_depth()
-                ? (f.cps.l
-                    >= 0
-                    ? f.cps.l
-                    : f.cps.l = f.cps.length)
-                  === 2
-                  ? f.cps.call(null, a0, a1)
-                  : runtime.caml_call_gen_cps(f, [a0, a1])
+                ? f.cps
+                  ? (f.cps.l
+                      >= 0
+                      ? f.cps.l
+                      : f.cps.l = f.cps.length)
+                    === 2
+                    ? f.cps.call(null, a0, a1)
+                    : runtime.caml_call_gen_cps(f, [a0, a1])
+                  : a1
+                    ((f.l >= 0 ? f.l : f.l = f.length) === 1
+                      ? f(a0)
+                      : runtime.caml_call_gen(f, [a0]))
                 : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        function caml_exact_trampoline_cps_call(f, a0, a1){
         return runtime.caml_stack_check_depth()
-                ? f.cps.call(null, a0, a1)
+                ? f.cps ? f.cps.call(null, a0, a1) : a1(f(a0))
                 : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        function caml_trampoline_cps_call3(f, a0, a1, a2){
         return runtime.caml_stack_check_depth()
-                ? (f.cps.l
-                    >= 0
-                    ? f.cps.l
-                    : f.cps.l = f.cps.length)
-                  === 3
-                  ? f.cps.call(null, a0, a1, a2)
-                  : runtime.caml_call_gen_cps(f, [a0, a1, a2])
+                ? f.cps
+                  ? (f.cps.l
+                      >= 0
+                      ? f.cps.l
+                      : f.cps.l = f.cps.length)
+                    === 3
+                    ? f.cps.call(null, a0, a1, a2)
+                    : runtime.caml_call_gen_cps(f, [a0, a1, a2])
+                  : a2
+                    ((f.l >= 0 ? f.l : f.l = f.length) === 2
+                      ? f(a0, a1)
+                      : runtime.caml_call_gen(f, [a0, a1]))
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        function caml_exact_trampoline_cps_call$0(f, a0, a1, a2){
         return runtime.caml_stack_check_depth()
-                ? f.cps.call(null, a0, a1, a2)
+                ? f.cps ? f.cps.call(null, a0, a1, a2) : a2(f(a0, a1))
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        var
         dummy = 0,
         global_data = runtime.caml_get_global_data(),
-        _D_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
+        _z_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
         cst_a$0 = caml_string_of_jsbytes("a"),
         cst_a = caml_string_of_jsbytes("a"),
         Stdlib = global_data.Stdlib,
         Stdlib_Printf = global_data.Stdlib__Printf;
-       function f$1(){
+       function test1(param){
         function f(g, x){
          try{caml_call1(g, dummy); return;}
          catch(e$0){
@@ -132,18 +142,10 @@ let%expect_test "direct calls with --effects=double-translation" =
           throw caml_maybe_attach_backtrace(e, 0);
          }
         }
-        return f;
+        f(function(x){});
+        f(function(x){});
+        return 0;
        }
-       function _d_(){return function(x){};}
-       function _f_(){return function(x){};}
-       function test1$0(param){var f = f$1(); f(_d_()); f(_f_()); return 0;}
-       function test1$1(param, cont){
-        var f = f$1();
-        f(_d_());
-        f(_f_());
-        return cont(0);
-       }
-       var test1 = caml_cps_closure(test1$0, test1$1);
        function f$0(){
         function f$0(g, x){
          try{caml_call1(g, x); return;}
@@ -159,15 +161,13 @@ let%expect_test "direct calls with --effects=double-translation" =
             return raise(e);
            });
          return caml_exact_trampoline_cps_call
-                 (g, x, function(_P_){caml_pop_trap(); return cont();});
+                 (g, x, function(_K_){caml_pop_trap(); return cont();});
         }
         var f = caml_cps_closure(f$0, f$1);
         return f;
        }
-       function _k_(){
-        return caml_cps_closure(function(x){}, function(x, cont){return cont();});
-       }
-       function _m_(){
+       function _h_(){return function(x){};}
+       function _j_(){
         return caml_cps_closure
                 (function(x){return caml_call2(Stdlib[28], x, cst_a$0);},
                  function(x, cont){
@@ -176,39 +176,31 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        function test2$0(param){
         var f = f$0();
-        f(_k_(), 7);
-        f(_m_(), cst_a);
+        f(_h_(), 7);
+        f(_j_(), cst_a);
         return 0;
        }
        function test2$1(param, cont){
         var f = f$0();
         return caml_exact_trampoline_cps_call$0
                 (f,
-                 _k_(),
+                 _h_(),
                  7,
-                 function(_N_){
+                 function(_I_){
                   return caml_exact_trampoline_cps_call$0
-                          (f, _m_(), cst_a, function(_O_){return cont(0);});
+                          (f, _j_(), cst_a, function(_J_){return cont(0);});
                  });
        }
        var test2 = caml_cps_closure(test2$0, test2$1);
-       function F$0(){
+       function test3(x){
         function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-        return F;
+        var M1 = F(), M2 = F(), _H_ = caml_call1(M2[1], 2);
+        return [0, caml_call1(M1[1], 1), _H_];
        }
-       function test3$0(x){
-        var F = F$0(), M1 = F(), M2 = F(), _M_ = caml_call1(M2[1], 2);
-        return [0, caml_call1(M1[1], 1), _M_];
-       }
-       function test3$1(x, cont){
-        var F = F$0(), M1 = F(), M2 = F(), _L_ = M2[1].call(null, 2);
-        return cont([0, M1[1].call(null, 1), _L_]);
-       }
-       var test3 = caml_cps_closure(test3$0, test3$1);
        function f(){
-        function f$0(x){return caml_call2(Stdlib_Printf[2], _D_, x);}
+        function f$0(x){return caml_call2(Stdlib_Printf[2], _z_, x);}
         function f$1(x, cont){
-         return caml_trampoline_cps_call3(Stdlib_Printf[2], _D_, x, cont);
+         return caml_trampoline_cps_call3(Stdlib_Printf[2], _z_, x, cont);
         }
         var f = caml_cps_closure(f$0, f$1);
         return f;
@@ -224,7 +216,7 @@ let%expect_test "direct calls with --effects=double-translation" =
         return caml_exact_trampoline_cps_call
                 (M1[1],
                  1,
-                 function(_K_){
+                 function(_G_){
                   return caml_exact_trampoline_cps_call(M2[1], 2, cont);
                  });
        }
@@ -241,18 +233,18 @@ let%expect_test "direct calls with --effects=double-translation" =
           tuple = recfuncs(x),
           f = tuple[2],
           h = tuple[1],
-          _I_ = h(100),
-          _J_ = f(12) + _I_ | 0;
-         return caml_call1(Stdlib[44], _J_);
+          _E_ = h(100),
+          _F_ = f(12) + _E_ | 0;
+         return caml_call1(Stdlib[44], _F_);
         }
         function g$1(x, cont){
          var
           tuple = recfuncs(x),
           f = tuple[2],
           h = tuple[1],
-          _G_ = h(100),
-          _H_ = f(12) + _G_ | 0;
-         return caml_trampoline_cps_call2(Stdlib[44], _H_, cont);
+          _C_ = h(100),
+          _D_ = f(12) + _C_ | 0;
+         return caml_trampoline_cps_call2(Stdlib[44], _D_, cont);
         }
         var g = caml_cps_closure(g$0, g$1);
         return g;
@@ -263,9 +255,9 @@ let%expect_test "direct calls with --effects=double-translation" =
         return caml_exact_trampoline_cps_call
                 (g$0,
                  42,
-                 function(_E_){
+                 function(_A_){
                   return caml_exact_trampoline_cps_call
-                          (g$0, - 5, function(_F_){return cont(0);});
+                          (g$0, - 5, function(_B_){return cont(0);});
                  });
        }
        var

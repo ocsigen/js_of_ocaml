@@ -165,6 +165,10 @@ var caml_call_gen_tuple = (function () {
     }
   }
   function caml_call_gen_cps(f, args) {
+    if (!f.cps) {
+      var k = args.pop();
+      return k(caml_call_gen_direct(f, args));
+    }
     var n = f.cps.l >= 0 ? f.cps.l : (f.cps.l = f.cps.length);
     var argsLen = args.length;
     var d = n - argsLen;

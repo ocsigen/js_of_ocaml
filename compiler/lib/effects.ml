@@ -542,15 +542,22 @@ let rewrite_instr ~st (instr : instr) : instr =
                 (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Targetint.succ a)) ])
             )
       | _ -> assert false)
-  | Let (x, Apply { f; args; _ }) when not (Var.Set.mem x st.cps_needed) ->
-      (* At the moment, we turn into CPS any function not called with
-         the right number of parameter *)
-      assert (
-        (* If this function is unknown to the global flow analysis, then it was
+  | Let (x, Apply { f; args; exact }) when not (Var.Set.mem x st.cps_needed) ->
+      if double_translate ()
+      then
+        let exact =
+          (* If this function is unknown to the global flow analysis, then it was
            introduced by the lambda lifting and we don't have exactness info any more. *)
-        Var.idx f >= Var.Tbl.length st.flow_info.info_approximation
-        || Global_flow.exact_call st.flow_info f (List.length args));
-      Let (x, Apply { f; args; exact = true })
+          exact
+          || Var.idx f < Var.Tbl.length st.flow_info.info_approximation
+             && Global_flow.exact_call st.flow_info f (List.length args)
+        in
+        Let (x, Apply { f; args; exact })
+      else (
+        (* At the moment, we turn into CPS any function not called with
+         the right number of parameter *)
+        assert (Global_flow.exact_call st.flow_info f (List.length args));
+        Let (x, Apply { f; args; exact = true }))
   | Let (_, e) when effect_primitive_or_application e ->
       (* For the CPS target, applications of CPS functions and effect primitives require
          more work (allocating a continuation and/or modifying end-of-block branches) and

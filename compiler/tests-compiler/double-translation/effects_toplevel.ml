@@ -46,13 +46,18 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        }
        function caml_trampoline_cps_call2(f, a0, a1){
         return runtime.caml_stack_check_depth()
-                ? (f.cps.l
-                    >= 0
-                    ? f.cps.l
-                    : f.cps.l = f.cps.length)
-                  === 2
-                  ? f.cps.call(null, a0, a1)
-                  : runtime.caml_call_gen_cps(f, [a0, a1])
+                ? f.cps
+                  ? (f.cps.l
+                      >= 0
+                      ? f.cps.l
+                      : f.cps.l = f.cps.length)
+                    === 2
+                    ? f.cps.call(null, a0, a1)
+                    : runtime.caml_call_gen_cps(f, [a0, a1])
+                  : a1
+                    ((f.l >= 0 ? f.l : f.l = f.length) === 1
+                      ? f(a0)
+                      : runtime.caml_call_gen(f, [a0]))
                 : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        var
