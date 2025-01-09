@@ -125,10 +125,10 @@ jobs:
         working-directory: ./janestreet/lib/base
         run: opam exec -- dune runtest
 
-#      - name: Run Base bigstring tests
-#        if: matrix.all_jane_street_tests
-#        working-directory: ./janestreet/lib/base_bigstring
-#        run: opam exec -- dune runtest
+      - name: Run Base bigstring tests
+        if: matrix.all_jane_street_tests
+        working-directory: ./janestreet/lib/base_bigstring
+        run: opam exec -- dune runtest
 
       - name: Run Core tests
         if: matrix.all_jane_street_tests
@@ -165,11 +165,6 @@ jobs:
         working-directory: ./janestreet/lib/bonsai_test
         run: opam exec -- dune runtest
 
-#      - name: Run Bonsai web tests
-#        if: matrix.all_jane_street_tests
-#        working-directory: ./janestreet/lib/bonsai_web_test
-#        run: opam exec -- dune runtest
-
       - name: Write node wrapper
         run: |
           mkdir -p ~/.local/bin
@@ -180,11 +175,10 @@ jobs:
           chmod +x ~/.local/bin/node
           echo ~/.local/bin >> "$GITHUB_PATH"
 
-      - name: ZZZZZ
-        run: |
-          which node
-          ls -l ~/.local/bin/node
-          echo $PATH
+      - name: Run Bonsai web tests
+        if: matrix.all_jane_street_tests
+        working-directory: ./janestreet/lib/bonsai_web_test
+        run: opam exec -- dune runtest
 
       - name: Run Bonsai web components' tests
         if: matrix.all_jane_street_tests
@@ -196,10 +190,10 @@ jobs:
         working-directory: ./janestreet/lib/bonsai_test
         run: opam exec -- dune runtest --profile release
 
-#      - name: Run Bonsai web tests (release profile)
-#        if: ${{ ! matrix.separate_compilation }}
-#        working-directory: ./janestreet/lib/bonsai_web_test
-#        run: opam exec -- dune runtest --profile release
+      - name: Run Bonsai web tests (release profile)
+        if: ${{ ! matrix.separate_compilation }}
+        working-directory: ./janestreet/lib/bonsai_web_test
+        run: opam exec -- dune runtest --profile release
 
       - name: Run Bonsai web components' tests (release profile)
         if: ${{ ! matrix.separate_compilation }}
