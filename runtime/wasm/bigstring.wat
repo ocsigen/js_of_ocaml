@@ -215,12 +215,12 @@
       (local.set $cur
          (i32.sub (i32.add (local.get $pos) (local.get $len)) (i32.const 1)))
       (loop $loop
-         (if (i32.gt_u (local.get $cur) (local.get $pos))
+         (if (i32.ge_u (local.get $cur) (local.get $pos))
             (then
                (if (i32.eq (local.get $c)
                       (call $ta_get_ui8 (local.get $d) (local.get $cur)))
                   (then
-                     (return (ref.i31 (local.get $pos)))))
+                     (return (ref.i31 (local.get $cur)))))
                (local.set $cur (i32.sub (local.get $cur) (i32.const 1)))
                (br $loop))))
      (ref.i31 (i32.const -1)))
