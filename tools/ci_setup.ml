@@ -20,7 +20,13 @@ let omitted_js = StringSet.of_list [ "sexplib0" ]
 
 let do_pin =
   StringSet.of_list
-    [ "base"; "ppx_expect"; "ppx_inline_test"; "time_now"; "ocaml_intrinsics_kernel" ]
+    [ "base"
+    ; "ppx_expect"
+    ; "ppx_inline_test"
+    ; "time_now"
+    ; "ocaml_intrinsics_kernel"
+    ; "bigstringaf"
+    ]
 
 let aliases = [ "ocaml-cstruct", "cstruct" ]
 
@@ -178,7 +184,6 @@ let install_others others =
   ignore (Sys.command ("opam install -y " ^ String.concat " " others))
 
 let clone delay ?branch ?(depth = 1) nm src =
-  prerr_endline src;
   exec_async
     ~delay
     (Printf.sprintf

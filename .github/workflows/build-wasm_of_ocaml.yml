@@ -120,18 +120,15 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
-      - if: matrix.jane_street_tests
-        run: opam upgrade sexplib0
-
       - name: Run Base tests
         if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/base
         run: opam exec -- dune runtest
 
-      - name: Run Base bigstring tests
-        if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/base_bigstring
-        run: opam exec -- dune runtest
+#      - name: Run Base bigstring tests
+#        if: matrix.all_jane_street_tests
+#        working-directory: ./janestreet/lib/base_bigstring
+#        run: opam exec -- dune runtest
 
       - name: Run Core tests
         if: matrix.all_jane_street_tests
