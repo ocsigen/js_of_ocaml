@@ -151,7 +151,7 @@ let pin delay nm =
     (Printf.sprintf
        "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm"
        (try List.assoc nm aliases
-        with Not_found -> if List.mem_assoc nm packages then nm ^ ".v0.16.1" else nm)
+        with Not_found -> if List.mem_assoc nm packages then nm ^ ".v0.18" else nm)
        nm)
 
 let pin_packages js =
