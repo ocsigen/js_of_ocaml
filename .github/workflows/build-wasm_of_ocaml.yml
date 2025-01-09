@@ -175,6 +175,7 @@ jobs:
 
       - name: Write node wrapper
         run: |
+          mkdir -p ~/.local/bin
           cat > ~/.local/bin/node <<EOF
           #!/bin/sh
           exec `which node` --experimental-wasm-stack-switching "\$@"
