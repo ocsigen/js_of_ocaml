@@ -141,6 +141,7 @@ let forked_packages =
     ; "ocaml_intrinsics_kernel"
     ; "ppx_expect"
     ; "ppx_inline_test"
+    ; "ppx_module_timer"
     ; "string_dict"
     ; "time_now"
     ; "virtual_dom"
