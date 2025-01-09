@@ -25,19 +25,24 @@ jobs:
           - true
         jane_street_tests:
           - false
+        all_jane_street_tests:
+          - false
         include:
           - os: macos-latest
             ocaml-compiler: "5.3"
             separate_compilation: true
             jane_street_tests: true
+            all_jane_street_tests: true
           - os: ubuntu-latest
             ocaml-compiler: "5.3"
             separate_compilation: true
-            jane_street_tests: true
+            jane_street_tests: false
+            all_jane_street_tests: false
           - os: ubuntu-latest
             ocaml-compiler: "5.3"
             separate_compilation: false
-            jane_street_tests: false
+            jane_street_tests: true
+            all_jane_street_tests: false
 
     runs-on: ${{ matrix.os }}
 
@@ -119,57 +124,57 @@ jobs:
         run: opam upgrade sexplib0
 
       - name: Run Base tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/base
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/base_bigstring
         run: opam exec -- dune runtest
 
       - name: Run Core tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/core
         run: opam exec -- dune runtest
 
       - name: Run Bignum tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bignum
         run: opam exec -- dune runtest
 
       - name: Run Bin_prot tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bin_prot
         run: opam exec -- dune runtest
 
       - name: Run String_dict tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/string_dict
         run: opam exec -- dune runtest
 
       - name: Run Zarith tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/zarith_stubs_js
         run: opam exec -- dune runtest
 
       - name: Run Virtual_dom tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/virtual_dom
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bonsai_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bonsai_web_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web components' tests
-        if: matrix.jane_street_tests
+        if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bonsai_web_components
         run: opam exec -- dune runtest
 
