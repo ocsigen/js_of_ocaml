@@ -21,12 +21,12 @@ jobs:
           - "5.0"
           - "5.1"
           - "5.2"
-          - ocaml-compiler.5.3.0~beta2
+          - "5.3"
         separate_compilation:
           - true
         include:
           - os: macos-latest
-            ocaml-compiler: "5.2"
+            ocaml-compiler: "5.3"
             separate_compilation: true
           - os: ubuntu-latest
             ocaml-compiler: "4.14"
