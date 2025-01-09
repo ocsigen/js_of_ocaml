@@ -64,7 +64,7 @@ jobs:
 
       - name: Add Jane Street opam repository
         if: matrix.jane_street_tests
-        run: opam repo add js /tmp/jane-street/opam-repository/
+        run: opam repo add js jane-street/opam-repository
 
       - name: Set-up Node.js
         uses: actions/setup-node@v4
@@ -98,10 +98,10 @@ jobs:
       - name: Checkout Jane Street packages
         if: ${{ ! matrix.jane_street_tests }}
         run: |
-          opam pin add -n base.v0.16.1 git@github.com:ocaml-wasm/base#wasm
-          opam pin add -n time_now.v0.16.1 git@github.com:ocaml-wasm/time_now#wasm
-          opam pin add -n ppx_inline_test.v0.16.1 git@github.com:ocaml-wasm/ppx_inline_test#wasm
-          opam pin add -n ppx_expect.v0.16.1 git@github.com:ocaml-wasm/ppx_expect#wasm
+          opam pin add -n base.v0.16.1 https://github.com/ocaml-wasm/base.git#wasm
+          opam pin add -n time_now.v0.16.1 https://github.com/ocaml-wasm/time_now.git#wasm
+          opam pin add -n ppx_inline_test.v0.16.1 https://github.com/ocaml-wasm/ppx_inline_test.git#wasm
+          opam pin add -n ppx_expect.v0.16.1 https://github.com/ocaml-wasm/ppx_expect.git#wasm
 
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
