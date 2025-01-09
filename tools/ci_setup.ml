@@ -149,7 +149,7 @@ let pin delay nm =
   exec_async
     ~delay
     (Printf.sprintf
-       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm"
+       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-v0.18"
        (try List.assoc nm aliases
         with Not_found -> nm)
        nm)

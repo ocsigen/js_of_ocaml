@@ -31,13 +31,13 @@ jobs:
           - os: macos-latest
             ocaml-compiler: "5.3"
             separate_compilation: true
-            jane_street_tests: true
-            all_jane_street_tests: true
+            jane_street_tests: false
+            all_jane_street_tests: false
           - os: ubuntu-latest
             ocaml-compiler: "5.3"
             separate_compilation: true
-            jane_street_tests: false
-            all_jane_street_tests: false
+            jane_street_tests: true
+            all_jane_street_tests: true
           - os: ubuntu-latest
             ocaml-compiler: "5.3"
             separate_compilation: false
