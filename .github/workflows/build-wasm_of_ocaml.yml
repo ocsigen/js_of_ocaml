@@ -173,6 +173,14 @@ jobs:
       - name: ZZZZZ
         run: echo $PATH
 
+      - name: Write node wrapper
+        run: |
+          cat > ~/.local/bin/node <<EOF
+          #!/bin/sh
+          exec `which node` --experimental-wasm-stack-switching "\$@"
+          EOF
+          chmod +x ~/.local/bin/node
+
       - name: Run Bonsai web components' tests
         if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/bonsai_web_components
