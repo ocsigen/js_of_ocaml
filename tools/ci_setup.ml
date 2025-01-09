@@ -18,11 +18,9 @@ let omitted_others = StringSet.of_list [ "cohttp-async"; "cohttp"; "uri"; "uri-s
 
 let omitted_js = StringSet.of_list [ "sexplib0" ]
 
-let do_not_pin =
+let do_pin =
   StringSet.of_list
-    [ "wasocaml"; "wasm_of_ocaml"; "dune"; "ezjs"; "ezjs_blockies"; "fmlib"; "graphv" ]
-
-let do_pin = StringSet.of_list [ "base"; "ppx_expect"; "ppx_inline_test"; "time_now" ]
+    [ "base"; "ppx_expect"; "ppx_inline_test"; "time_now"; "ocaml_intrinsics_kernel" ]
 
 let aliases = [ "ocaml-cstruct", "cstruct" ]
 
@@ -129,7 +127,26 @@ let rec traverse visited p =
         List.fold_left traverse visited l
 
 let forked_packages =
-StringSet.of_list ["async_js"; "base"; "base_bigstring"; "bignum"; "bin_prot"; "bonsai_test"; "bonsai_web"; "bonsai_web_components"; "bonsai_web_test"; "core"; "core_kernel"; "ocaml_intrinsics_kernel"; "ppx_expect"; "ppx_inline_test"; "sexp_grammar"; "string_dict"; "time_now"; "virtual_dom"; "virtual_dom_toplayer"; "zarith_stubs_js"]
+  StringSet.of_list
+    [ "async_js"
+    ; "base"
+    ; "base_bigstring"
+    ; "bin_prot"
+    ; "bonsai_test"
+    ; "bonsai_web"
+    ; "bonsai_web_components"
+    ; "bonsai_web_test"
+    ; "core"
+    ; "core_kernel"
+    ; "ocaml_intrinsics_kernel"
+    ; "ppx_expect"
+    ; "ppx_inline_test"
+    ; "string_dict"
+    ; "time_now"
+    ; "virtual_dom"
+    ; "virtual_dom_toplayer"
+    ; "zarith_stubs_js"
+    ]
 
 let is_forked p = StringSet.mem p forked_packages
 
@@ -150,23 +167,17 @@ let pin delay nm =
     ~delay
     (Printf.sprintf
        "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-v0.18"
-       (try List.assoc nm aliases
-        with Not_found -> nm)
+       (try List.assoc nm aliases with Not_found -> nm)
        nm)
 
-let pin_packages js =
-  sync_exec
-    pin
-    (StringSet.elements
-       (StringSet.union
-          (StringSet.diff (StringSet.diff forked_packages js) do_not_pin)
-          do_pin))
+let pin_packages () = sync_exec pin (StringSet.elements do_pin)
 
 let install_others others =
   let others = StringSet.elements (StringSet.diff others omitted_others) in
   ignore (Sys.command ("opam install -y " ^ String.concat " " others))
 
 let clone delay ?branch ?(depth = 1) nm src =
+  prerr_endline src;
   exec_async
     ~delay
     (Printf.sprintf
@@ -196,7 +207,7 @@ let () =
     List.fold_left traverse StringSet.empty roots
     |> StringSet.partition (fun p -> List.mem_assoc p packages)
   in
-  pin_packages js;
+  pin_packages ();
   install_others others;
   sync_exec (fun i () -> clone i "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec
