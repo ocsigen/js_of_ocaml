@@ -65,7 +65,7 @@ jobs:
             skip-doc: true
             # Note this OCaml compiler is bytecode only
           - os: ubuntu-latest
-            ocaml-compiler: "ocaml-variants.5.2.0+options,ocaml-option-32bit"
+            ocaml-compiler: "ocaml-variants.5.3.0+options,ocaml-option-32bit"
             skip-effects: true # disabled for the same reason than `skip-test`
             skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
             skip-doc: true
