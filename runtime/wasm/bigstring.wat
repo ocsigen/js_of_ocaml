@@ -201,7 +201,29 @@
                (local.set $len (i32.sub (local.get $len) (i32.const 1)))
                (local.set $pos (i32.add (local.get $pos) (i32.const 1)))
                (br $loop))))
-     (ref.i31 (i32.const -1)))
+      (ref.i31 (i32.const -1)))
+
+   (func (export "caml_bigstring_memrchr")
+      (param $s (ref eq)) (param $vc (ref eq))
+      (param $vpos (ref eq)) (param $vlen (ref eq)) (result (ref eq))
+      (local $pos i32) (local $len i32) (local $c i32) (local $cur i32)
+      (local $d (ref extern))
+      (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
+      (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
+      (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      (local.set $d (call $caml_ba_get_data (local.get $s)))
+      (local.set $cur
+         (i32.sub (i32.add (local.get $pos) (local.get $len)) (i32.const 1)))
+      (loop $loop
+         (if (i32.ge_s (local.get $cur) (local.get $pos))
+            (then
+               (if (i32.eq (local.get $c)
+                      (call $ta_get_ui8 (local.get $d) (local.get $cur)))
+                  (then
+                     (return (ref.i31 (local.get $cur)))))
+               (local.set $cur (i32.sub (local.get $cur) (i32.const 1)))
+               (br $loop))))
+      (ref.i31 (i32.const -1)))
 
    (export "caml_bigstring_blit_string_to_ba"
       (func $caml_bigstring_blit_bytes_to_ba))
