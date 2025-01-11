@@ -28,6 +28,9 @@ jobs:
           - os: macos-latest
             ocaml-compiler: "5.3"
             separate_compilation: true
+          - os: windows-latest
+            ocaml-compiler: "5.3"
+            separate_compilation: true
           - os: ubuntu-latest
             ocaml-compiler: "4.14"
             separate_compilation: false
