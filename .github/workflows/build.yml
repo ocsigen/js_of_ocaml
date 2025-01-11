@@ -65,7 +65,7 @@ jobs:
             skip-doc: true
             # Note this OCaml compiler is bytecode only
           - os: ubuntu-latest
-            ocaml-compiler: "ocaml-variants.5.2.0+options,ocaml-option-32bit"
+            ocaml-compiler: "ocaml-variants.5.3.0+options,ocaml-option-32bit"
             skip-effects: true # disabled for the same reason than `skip-test`
             skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
             skip-doc: true
@@ -104,7 +104,7 @@ jobs:
           sudo aptitude -o Acquire::Retries=30 update -q
           # Note we also install the 64-bit versions here as opam will
           # try to install them anyways, so we save an apt-roundtrip.
-          sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 libx11-dev:i386 -y
+          sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 libx11-dev libx11-dev:i386 -y
 
       - name: Set-up Node.js
         uses: actions/setup-node@v4
