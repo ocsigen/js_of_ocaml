@@ -93,7 +93,7 @@ jobs:
 
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
-        run: opam pin -n --with-version `< VERSION` .
+        run: opam pin -n --with-version 6.0 .
 
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests
