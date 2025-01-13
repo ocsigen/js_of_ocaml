@@ -146,6 +146,7 @@
   (ppxlib (>= 0.15.0))
   (re :with-test)
   (cmdliner (>= 1.1.0))
+  (opam-format :with-test)
   (sedlex (>= 2.3))
   menhir
   menhirLib
