@@ -100,7 +100,7 @@ jobs:
         run: |
           opam repo add js janestreet/opam-repository
           opam install opam-format ocamlfind dune graphics cmdliner
-          opam exec -- ocaml wasm_of_ocaml/tools/ci_setup.ml
+          opam exec -- dune exec wasm_of_ocaml/tools/ci_setup.exe
 
       - name: Pin Jane Street packages
         if: ${{ ! matrix.jane_street_tests }}

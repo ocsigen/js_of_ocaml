@@ -1,3 +1,9 @@
 (executable
  (name node_wrapper)
+ (modules node_wrapper)
  (libraries unix))
+
+(executable
+ (name ci_setup)
+ (modules ci_setup)
+ (libraries opam-format unix))

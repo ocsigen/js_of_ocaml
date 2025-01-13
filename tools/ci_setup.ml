@@ -1,11 +1,3 @@
-#use "topfind"
-
-#require "opam-format"
-
-#require "unix"
-
-#require "str"
-
 module StringSet = Set.Make (String)
 
 (****)
@@ -137,7 +129,7 @@ let read_opam_file filename =
     ~pos:{ filename; start = 0, 0; stop = 0, 0 }
     (OpamParser.FullPos.file (Filename.concat (Filename.concat repo filename) "opam"))
 
-let dependencies (_, { OpamFile.OPAM.depends }) =
+let dependencies (_, { OpamFile.OPAM.depends; _ }) =
   let open OpamFormula in
   depends
   |> map (fun (nm, _) -> Atom (nm, None))
