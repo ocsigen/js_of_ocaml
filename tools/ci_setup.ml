@@ -60,6 +60,16 @@ let dune_workspace =
   (flags :standard -warn-error -7-8-27-30-32-34-37-49-52-55 -w -67-69)))
 |}
 
+let node_wrapper =
+  [ ( "node_wrapper/dune"
+    , {|(executable
+ (public_name node)
+ (name node_wrapper)
+ (libraries unix))|} )
+  ; "node_wrapper/dune-project", "(lang dune 3.17)"
+  ; "node_wrapper/node_wrapper.opam", ""
+  ]
+
 let patches =
   [ ( "sexp_grammar"
     , {|
@@ -203,8 +213,23 @@ let clone' delay ?branch ?commit nm src =
         (Printf.sprintf "cd janestreet/lib/%s && git checkout -b wasm %s" nm commit)
 
 let () =
-  Out_channel.(
-    with_open_bin "janestreet/dune-workspace" @@ fun ch -> output_string ch dune_workspace)
+  let write f contents =
+    Out_channel.(
+      with_open_bin (Filename.concat "janestreet" f)
+      @@ fun ch -> output_string ch contents)
+  in
+  let copy f f' =
+    let contents =
+      In_channel.(with_open_bin (Filename.concat "wasm_of_ocaml" f) @@ input_all)
+    in
+    Out_channel.(
+      with_open_bin (Filename.concat "janestreet" f')
+      @@ fun ch -> output_string ch contents)
+  in
+  write "dune-workspace" dune_workspace;
+  Unix.mkdir "janestreet/node_wrapper" 0o755;
+  List.iter (fun (f, contents) -> write f contents) node_wrapper;
+  copy "tools/node_wrapper.ml" "node_wrapper/node_wrapper.ml"
 
 let () =
   let js, others =
