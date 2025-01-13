@@ -2,7 +2,12 @@ module StringSet = Set.Make (String)
 
 (****)
 
-let repo = "janestreet/opam-repository/packages"
+let root =
+  match Sys.argv with
+  | [| _; root |] -> root
+  | _ -> "janestreet"
+
+let repo = Filename.concat root "opam-repository/packages"
 
 let roots = [ "bonsai_web_components"; "string_dict"; "ppx_html" ]
 
@@ -187,12 +192,13 @@ let clone delay ?branch ?(depth = 1) nm src =
   exec_async
     ~delay
     (Printf.sprintf
-       "git clone -q --depth %d %s%s janestreet/lib/%s"
+       "git clone -q --depth %d %s%s %s/lib/%s"
        depth
        (match branch with
        | None -> ""
        | Some b -> Printf.sprintf "-b %s " b)
        src
+       root
        nm)
 
 let clone' delay ?branch ?commit nm src =
@@ -202,12 +208,12 @@ let clone' delay ?branch ?commit nm src =
       let* () = clone delay ?branch ~depth:100 nm src in
       exec_async
         ~delay:0
-        (Printf.sprintf "cd janestreet/lib/%s && git checkout -b wasm %s" nm commit)
+        (Printf.sprintf "cd %s/lib/%s && git checkout -b wasm %s" root nm commit)
 
 let () =
   let write f contents =
     Out_channel.(
-      with_open_bin (Filename.concat "janestreet" f)
+      with_open_bin (Filename.concat root f)
       @@ fun ch -> output_string ch contents)
   in
   let copy f f' =
@@ -215,11 +221,11 @@ let () =
       In_channel.(with_open_bin (Filename.concat "wasm_of_ocaml" f) @@ input_all)
     in
     Out_channel.(
-      with_open_bin (Filename.concat "janestreet" f')
+      with_open_bin (Filename.concat root f')
       @@ fun ch -> output_string ch contents)
   in
   write "dune-workspace" dune_workspace;
-  Unix.mkdir "janestreet/node_wrapper" 0o755;
+  Unix.mkdir (Filename.concat root "node_wrapper") 0o755;
   List.iter (fun (f, contents) -> write f contents) node_wrapper;
   copy "tools/node_wrapper.ml" "node_wrapper/node_wrapper.ml"
 
@@ -259,7 +265,7 @@ let () =
   List.iter
     (fun (dir, patch) ->
       let ch =
-        Unix.open_process_out (Printf.sprintf "cd janestreet/lib/%s && patch -p 1" dir)
+        Unix.open_process_out (Printf.sprintf "cd %s/lib/%s && patch -p 1" root dir)
       in
       output_string ch patch;
       ignore (Unix.close_process_out ch))
