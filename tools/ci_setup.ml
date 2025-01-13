@@ -162,21 +162,18 @@ let rec traverse visited p =
 
 let is_forked p = StringSet.mem p forked_packages
 
-let exec_async ~delay cmd =
-  let p =
-    Unix.open_process_out (Printf.sprintf "sleep %f; %s" (float delay /. 10.) cmd)
-  in
+let exec_async cmd =
+  let p = Unix.open_process_out (Printf.sprintf "%s" cmd) in
   fun () -> ignore (Unix.close_process_out p)
 
 let ( let* ) (f : unit -> 'a) (g : 'a -> unit -> 'b) : unit -> 'b = fun () -> g (f ()) ()
 
 let sync_exec f l =
-  let l = List.mapi f l in
+  let l = List.map f l in
   List.iter (fun f -> f ()) l
 
-let pin delay nm =
+let pin nm =
   exec_async
-    ~delay
     (Printf.sprintf
        "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-v0.18"
        nm
@@ -188,9 +185,8 @@ let install_others others =
   let others = StringSet.elements (StringSet.diff others omitted_others) in
   ignore (Sys.command ("opam install -y " ^ String.concat " " others))
 
-let clone delay ?branch ?(depth = 1) nm src =
+let clone ?branch ?(depth = 1) nm src =
   exec_async
-    ~delay
     (Printf.sprintf
        "git clone -q --depth %d %s%s %s/lib/%s"
        depth
@@ -201,14 +197,12 @@ let clone delay ?branch ?(depth = 1) nm src =
        root
        nm)
 
-let clone' delay ?branch ?commit nm src =
+let clone' ?branch ?commit nm src =
   match commit with
-  | None -> clone delay ?branch nm src
+  | None -> clone ?branch nm src
   | Some commit ->
-      let* () = clone delay ?branch ~depth:100 nm src in
-      exec_async
-        ~delay:0
-        (Printf.sprintf "cd %s/lib/%s && git checkout -b wasm %s" root nm commit)
+      let* () = clone ?branch ~depth:100 nm src in
+      exec_async (Printf.sprintf "cd %s/lib/%s && git checkout -b wasm %s" root nm commit)
 
 let () =
   let write f contents =
@@ -236,9 +230,9 @@ let () =
   in
   pin_packages ();
   install_others others;
-  sync_exec (fun i () -> clone i "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
+  sync_exec (fun () -> clone "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec
-    (fun i nm ->
+    (fun nm ->
       let branch = if is_forked nm then Some "wasm-v0.18" else None in
       let commit =
         if is_forked nm
@@ -251,7 +245,6 @@ let () =
              String.sub tar_file 0 (String.index tar_file '.'))
       in
       clone'
-        i
         ?branch
         ?commit
         nm
