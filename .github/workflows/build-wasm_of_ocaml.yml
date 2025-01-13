@@ -96,11 +96,12 @@ jobs:
         run: opam pin -n --with-version 6.0 .
 
       - name: Checkout Jane Street packages
+        working-directory: ./wasm_of_ocaml
         if: matrix.jane_street_tests
         run: |
           opam repo add js janestreet/opam-repository
           opam install opam-format ocamlfind dune graphics cmdliner
-          opam exec -- dune exec wasm_of_ocaml/tools/ci_setup.exe
+          opam exec -- dune exec tools/ci_setup.exe
 
       - name: Pin Jane Street packages
         if: ${{ ! matrix.jane_street_tests }}
