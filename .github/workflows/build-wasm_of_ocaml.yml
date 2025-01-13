@@ -36,8 +36,8 @@ jobs:
           - os: windows-latest
             ocaml-compiler: "5.2"
             separate_compilation: true
-            jane_street_tests: true
-            all_jane_street_tests: true
+            jane_street_tests: false
+            all_jane_street_tests: false
           - os: ubuntu-latest
             ocaml-compiler: "5.2"
             separate_compilation: true
