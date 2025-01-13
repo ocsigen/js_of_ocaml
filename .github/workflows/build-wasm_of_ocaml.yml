@@ -99,7 +99,7 @@ jobs:
         if: matrix.jane_street_tests
         run: |
           opam repo add js janestreet/opam-repository
-          opam install opam-format ocamlfind.1.9 dune graphics cmdliner
+          opam install opam-format ocamlfind.1.9.6 dune graphics cmdliner
           opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe
 
       - name: Pin Jane Street packages
