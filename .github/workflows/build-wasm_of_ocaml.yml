@@ -90,7 +90,13 @@ jobs:
       - name: Pin faked binaryen-bin package
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
-
+        
+      # Work-around a race between reinstalling mingw-w64-shims
+      # (because of conf-pkg-config optional dep) and installing other
+      # packages that implicitly depend on mingw-w64-shims.
+      - run: opam install conf-pkg-config
+        if: runner.os == 'Windows'
+        
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
         run: opam pin -n --with-version 6.0 .
