@@ -120,16 +120,6 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
-      - name: Create node wrapper for Jane Street tests
-        run: |
-          mkdir -p ~/.local/bin
-          cat > ~/.local/bin/node <<EOF
-          #!/bin/sh
-          exec `which node` --experimental-wasm-jspi "\$@"
-          EOF
-          chmod +x ~/.local/bin/node
-          echo ~/.local/bin >> "$GITHUB_PATH"
-
       - name: Run Base tests
         if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/base
