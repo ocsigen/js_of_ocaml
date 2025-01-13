@@ -114,7 +114,8 @@ jobs:
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
         run: |
-          opam install `basename -s .opam *.opam` num cohttp-lwt-unix ppx_expect cstruct
+          opam install ./
+          opam install num cohttp-lwt-unix ppx_expect cstruct
 
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
