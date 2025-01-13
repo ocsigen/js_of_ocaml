@@ -34,17 +34,17 @@ jobs:
             jane_street_tests: false
             all_jane_street_tests: false
           - os: windows-latest
-            ocaml-compiler: "5.3"
+            ocaml-compiler: "5.2"
             separate_compilation: true
             jane_street_tests: true
             all_jane_street_tests: true
           - os: ubuntu-latest
-            ocaml-compiler: "5.3"
+            ocaml-compiler: "5.2"
             separate_compilation: true
             jane_street_tests: true
             all_jane_street_tests: true
           - os: ubuntu-latest
-            ocaml-compiler: "5.3"
+            ocaml-compiler: "5.2"
             separate_compilation: false
             jane_street_tests: true
             all_jane_street_tests: false
@@ -99,7 +99,7 @@ jobs:
         if: matrix.jane_street_tests
         run: |
           opam repo add js janestreet/opam-repository
-          opam install opam-format ocamlfind dune graphics cmdliner
+          opam install opam-format ocamlfind.1.9 dune graphics cmdliner
           opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe
 
       - name: Pin Jane Street packages
