@@ -144,7 +144,7 @@ jobs:
       - name: Run Base bigstring tests
         if: matrix.all_jane_street_tests
         working-directory: ./janestreet/lib/base_bigstring
-        run: opam exec -- dune runtest
+        run: opam exec -- dune runtest --sandbox=none
 
       - name: Run Core tests
         if: matrix.all_jane_street_tests
