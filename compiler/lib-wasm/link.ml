@@ -688,12 +688,7 @@ let remove_directory path =
   with Sys_error _ -> ()
 
 let gen_dir dir f =
-  let d_tmp =
-    Filename.temp_file_name
-      ~temp_dir:(Filename.dirname dir)
-      "assets"
-      ".tmp"
-  in
+  let d_tmp = Filename.temp_file_name ~temp_dir:(Filename.dirname dir) "assets" ".tmp" in
   try
     let res = f d_tmp in
     remove_directory dir;

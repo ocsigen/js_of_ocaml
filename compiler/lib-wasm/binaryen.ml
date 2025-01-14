@@ -26,7 +26,12 @@ let command ~output_file cmdline =
   let res = Sys.command cmdline in
   if res <> 0 then failwith ("the following command terminated unsuccessfully: " ^ cmdline);
   if not (Sys.file_exists output_file)
-  then failwith (Printf.sprintf "the following command didn't generate the expected file (%s): %s" output_file cmdline)
+  then
+    failwith
+      (Printf.sprintf
+         "the following command didn't generate the expected file (%s): %s"
+         output_file
+         cmdline)
 
 let common_options () =
   let l =
@@ -48,7 +53,8 @@ let opt_flag flag v =
   | Some v -> [ flag; Filename.quote v ]
 
 let link ~runtime_files ~input_files ~opt_output_sourcemap ~output_file =
-  command ~output_file
+  command
+    ~output_file
     ("wasm-merge"
     :: (common_options ()
        @ List.flatten
@@ -100,7 +106,8 @@ let dead_code_elimination
   @@ fun usage_file ->
   let primitives = Linker.list_all () in
   Fs.write_file ~name:deps_file ~contents:(generate_dependencies ~dependencies primitives);
-  command ~output_file
+  command
+    ~output_file
     ("wasm-metadce"
     :: (common_options ()
        @ [ "--graph-file"; Filename.quote deps_file; Filename.quote input_file ]
@@ -123,7 +130,8 @@ let optimize ~profile ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~ou
     | None -> 1
     | Some p -> fst (List.find ~f:(fun (_, p') -> Poly.equal p p') Driver.profiles)
   in
-  command ~output_file
+  command
+    ~output_file
     ("wasm-opt"
      :: (common_options ()
         @ optimization_options.(level - 1)

@@ -207,16 +207,14 @@ let clone' ?branch ?commit nm src =
 let () =
   let write f contents =
     Out_channel.(
-      with_open_bin (Filename.concat root f)
-      @@ fun ch -> output_string ch contents)
+      with_open_bin (Filename.concat root f) @@ fun ch -> output_string ch contents)
   in
   let copy f f' =
     let contents =
       In_channel.(with_open_bin (Filename.concat "wasm_of_ocaml" f) @@ input_all)
     in
     Out_channel.(
-      with_open_bin (Filename.concat root f')
-      @@ fun ch -> output_string ch contents)
+      with_open_bin (Filename.concat root f') @@ fun ch -> output_string ch contents)
   in
   write "dune-workspace" dune_workspace;
   Unix.mkdir (Filename.concat root "node_wrapper") 0o755;
