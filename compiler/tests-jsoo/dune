@@ -10,7 +10,7 @@
   (pps ppx_expect)))
 
 (library
- (name j__compression)
+ (name j__comp)
  (modules test_marshal_compressed)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (enabled_if
