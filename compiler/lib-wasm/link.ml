@@ -691,7 +691,7 @@ let gen_dir dir f =
   let d_tmp =
     Filename.temp_file_name
       ~temp_dir:(Filename.dirname dir)
-      (Filename.basename dir)
+      "assets"
       ".tmp"
   in
   try
