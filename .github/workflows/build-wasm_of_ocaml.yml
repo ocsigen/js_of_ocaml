@@ -97,6 +97,9 @@ jobs:
       - run: opam install conf-pkg-config
         if: runner.os == 'Windows'
         
+      - name: Pin dune
+        run: opam pin add -n dune https://github.com/vouillon/dune.git#inline-tests-wasm
+
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
         run: opam pin -n --with-version 6.0 .
