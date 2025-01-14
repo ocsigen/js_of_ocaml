@@ -30,6 +30,16 @@
   (pps ppx_js_internal ppx_expect)))
 
 (library
+ ;; lib/tests/test_fs_err.ml
+ (name test_fs_err_75)
+ (enabled_if true)
+ (modules test_fs_err)
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js wasm))
+ (preprocess
+  (pps ppx_js_internal ppx_expect)))
+
+(library
  ;; lib/tests/test_fun_call.ml
  (name test_fun_call_75)
  (enabled_if (<> %{profile} with-effects))
@@ -56,16 +66,6 @@
  (modules test_json)
  (libraries js_of_ocaml unix)
  (inline_tests (modes js))
- (preprocess
-  (pps ppx_js_internal ppx_expect)))
-
-(library
- ;; lib/tests/test_nodejs_filesystem_errors.ml
- (name test_nodejs_filesystem_errors_75)
- (enabled_if true)
- (modules test_nodejs_filesystem_errors)
- (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 

@@ -1,5 +1,5 @@
 (library
- (name jsoo_testsuite_latest)
+ (name j__latest)
  (modules test_io test_floats)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (enabled_if
@@ -10,7 +10,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_testsuite_compression)
+ (name j__compression)
  (modules test_marshal_compressed)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (enabled_if
@@ -21,7 +21,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_testsuite_parsing)
+ (name j__parsing)
  (modules test_parsing calc_parser calc_lexer)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (enabled_if
@@ -32,7 +32,7 @@
   (pps ppx_expect)))
 
 (library
- (name jsoo_testsuite)
+ (name j__common)
  (modules
   (:standard
    \

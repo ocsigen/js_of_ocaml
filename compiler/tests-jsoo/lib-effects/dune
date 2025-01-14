@@ -5,7 +5,7 @@
     (:standard --enable effects)))))
 
 (library
- (name jsoo_testsuite_effect)
+ (name j__effect)
  (enabled_if
   (>= %{ocaml_version} 5))
  (inline_tests

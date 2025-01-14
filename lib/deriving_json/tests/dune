@@ -1,5 +1,5 @@
 (library
- (name deriving_expect_tests)
+ (name j__deriving)
  (libraries unix js_of_ocaml js_of_ocaml.deriving)
  (inline_tests
   (modes js wasm))
