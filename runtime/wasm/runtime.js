@@ -397,6 +397,12 @@
     channel_list,
     exit: (n) => isNode && process.exit(n),
     argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
+    ostype: () =>
+    globalThis.process &&
+    globalThis.process.platform &&
+    globalThis.process.platform === "win32"
+      ? "Win32"
+      : "Unix",
     getenv: (n) => (isNode ? process.env[n] : null),
     system: (c) => {
       var res = require("node:child_process").spawnSync(c, {
