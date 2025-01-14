@@ -53,9 +53,9 @@ type enabled_if =
   | Any
 
 let enabled_if = function
-  | "test_sys" -> GE5
-  | "test_fun_call" -> No_effects_not_wasm
-  | "test_json" | "test_poly_compare" -> Not_wasm
+  | "sys" -> GE5
+  | "fcall" -> No_effects_not_wasm
+  | "json" | "poly_comp" -> Not_wasm
   | _ -> Any
 
 let () =

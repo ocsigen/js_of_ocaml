@@ -32,10 +32,10 @@
 (library
  ;; lib/tests/fcall.ml
  (name fcall_75)
- (enabled_if true)
+ (enabled_if (<> %{profile} with-effects))
  (modules fcall)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -65,7 +65,7 @@
  (enabled_if true)
  (modules json)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -75,7 +75,7 @@
  (enabled_if true)
  (modules poly_comp)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
@@ -102,10 +102,10 @@
 (library
  ;; lib/tests/sys.ml
  (name sys_75)
- (enabled_if true)
+ (enabled_if (>= %{ocaml_version} 5))
  (modules sys)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js wasm))
+ (inline_tests (modes js))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 
