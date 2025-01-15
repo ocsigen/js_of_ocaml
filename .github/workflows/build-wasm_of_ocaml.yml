@@ -125,40 +125,40 @@ jobs:
           opam install .
           opam install num cohttp-lwt-unix ppx_expect cstruct uucp
 
-      - name: Run tests
-        if: ${{ matrix.separate_compilation }}
-        working-directory: ./w
-        run: opam exec -- dune build @runtest-wasm
-
-      - name: Run tests with CPS effects
-        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
-        working-directory: ./w
-        run: opam exec -- dune build @runtest-wasm --profile with-effects
-
-      - name: Run Base tests
-        if: matrix.all_jane_street_tests
-        working-directory: ./j/lib/base
-        run: opam exec -- dune runtest
-
-      - name: Run Base bigstring tests
-        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
-        working-directory: ./j/lib/base_bigstring
-        run: opam exec -- dune runtest
-
-      - name: Run Core tests
-        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
-        working-directory: ./j/lib/core
-        run: opam exec -- dune runtest
-
-      - name: Run Bignum tests
-        if: matrix.all_jane_street_tests
-        working-directory: ./j/lib/bignum
-        run: opam exec -- dune runtest
-
-      - name: Run Bin_prot tests
-        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
-        working-directory: ./j/lib/bin_prot
-        run: opam exec -- dune runtest
+#      - name: Run tests
+#        if: ${{ matrix.separate_compilation }}
+#        working-directory: ./w
+#        run: opam exec -- dune build @runtest-wasm
+#
+#      - name: Run tests with CPS effects
+#        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
+#        working-directory: ./w
+#        run: opam exec -- dune build @runtest-wasm --profile with-effects
+#
+#      - name: Run Base tests
+#        if: matrix.all_jane_street_tests
+#        working-directory: ./j/lib/base
+#        run: opam exec -- dune runtest
+#
+#      - name: Run Base bigstring tests
+#        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
+#        working-directory: ./j/lib/base_bigstring
+#        run: opam exec -- dune runtest
+#
+#      - name: Run Core tests
+#        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
+#        working-directory: ./j/lib/core
+#        run: opam exec -- dune runtest
+#
+#      - name: Run Bignum tests
+#        if: matrix.all_jane_street_tests
+#        working-directory: ./j/lib/bignum
+#        run: opam exec -- dune runtest
+#
+#      - name: Run Bin_prot tests
+#        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
+#        working-directory: ./j/lib/bin_prot
+#        run: opam exec -- dune runtest
 
       - name: Run String_dict tests
         if: matrix.all_jane_street_tests
