@@ -228,6 +228,7 @@ let () =
   in
   pin_packages ();
   install_others others;
+  ignore (Sys.command ("opam install -y uucp"));
   sync_exec (fun () -> clone "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec
     (fun nm ->
