@@ -102,6 +102,7 @@ jobs:
 
       - name: Pin wasm_of_ocaml
         working-directory: ./w
+        shell: bash
         run: cat VERSION | xargs opam pin . -n --with-version 
 
       - name: Checkout Jane Street packages
