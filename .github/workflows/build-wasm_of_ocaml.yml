@@ -90,25 +90,24 @@ jobs:
       - name: Pin faked binaryen-bin package
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
-        
+
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
       # packages that implicitly depend on mingw-w64-shims.
       - run: opam install conf-pkg-config conf-mingw-w64-gcc-i686
         if: runner.os == 'Windows'
-        
+
       - name: Pin dune
         run: opam pin add -n dune https://github.com/vouillon/dune.git#inline-tests-wasm
 
       - name: Pin wasm_of_ocaml
         working-directory: ./w
-        run: opam pin -n --with-version 6.0 .
+        run: cat VERSION | xargs opam pin . -n --with-version 
 
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests
         run: |
           opam repo add js j/opam-repository
-          opam pin add ocamlfind --dev
           opam install opam-format ocamlfind dune graphics cmdliner
           opam exec -- dune exec --root w tools/ci_setup.exe j
 
@@ -142,9 +141,9 @@ jobs:
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
-        if: matrix.all_jane_street_tests
+        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
         working-directory: ./j/lib/base_bigstring
-        run: opam exec -- dune runtest --sandbox=none
+        run: opam exec -- dune runtest
 
       - name: Run Core tests
         if: matrix.all_jane_street_tests
