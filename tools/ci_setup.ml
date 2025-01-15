@@ -11,7 +11,9 @@ let repo = Filename.concat root "opam-repository/packages"
 
 let roots = [ "bonsai_web_components"; "string_dict"; "ppx_html" ]
 
-let omitted_others = StringSet.of_list [ "cohttp-async"; "cohttp"; "uri"; "uri-sexp"; "cstruct"; "uucp"; "odoc-parser" ]
+let omitted_others =
+  StringSet.of_list
+    [ "cohttp-async"; "cohttp"; "uri"; "uri-sexp"; "cstruct"; "uucp"; "odoc-parser" ]
 
 let omitted_js = StringSet.of_list [ "sexplib0" ]
 
@@ -163,7 +165,7 @@ let rec traverse visited p =
 let is_forked p = StringSet.mem p forked_packages
 
 let exec_async cmd =
-  let p = Unix.open_process_out (Printf.sprintf "%s" cmd) in
+  let p = Unix.open_process_out cmd in
   fun () -> ignore (Unix.close_process_out p)
 
 let ( let* ) (f : unit -> 'a) (g : 'a -> unit -> 'b) : unit -> 'b = fun () -> g (f ()) ()
@@ -210,9 +212,7 @@ let () =
       with_open_bin (Filename.concat root f) @@ fun ch -> output_string ch contents)
   in
   let copy f f' =
-    let contents =
-      In_channel.(with_open_bin (Filename.concat "w" f) @@ input_all)
-    in
+    let contents = In_channel.(with_open_bin (Filename.concat "w" f) @@ input_all) in
     Out_channel.(
       with_open_bin (Filename.concat root f') @@ fun ch -> output_string ch contents)
   in
