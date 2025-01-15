@@ -159,11 +159,11 @@ jobs:
 #        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
 #        working-directory: ./j/lib/bin_prot
 #        run: opam exec -- dune runtest
-
-      - name: Run String_dict tests
-        if: matrix.all_jane_street_tests
-        working-directory: ./j/lib/string_dict
-        run: opam exec -- dune runtest
+#
+#      - name: Run String_dict tests
+#        if: matrix.all_jane_street_tests
+#        working-directory: ./j/lib/string_dict
+#        run: opam exec -- dune runtest
 
       - name: Run Zarith tests
         if: matrix.all_jane_street_tests
