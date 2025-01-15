@@ -70,7 +70,7 @@ jobs:
         with:
           repository: janestreet/opam-repository
           ref: 41c89c7824533f6b63cc5b6d75e6ddb1441d1520
-          path: janestreet/opam-repository
+          path: j/opam-repository
 
       - name: Set-up Node.js
         uses: actions/setup-node@v4
@@ -107,10 +107,10 @@ jobs:
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests
         run: |
-          opam repo add js janestreet/opam-repository
+          opam repo add js j/opam-repository
           opam pin add ocamlfind --dev
           opam install opam-format ocamlfind dune graphics cmdliner
-          opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe
+          opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe j
 
       - name: Pin Jane Street packages
         if: ${{ ! matrix.jane_street_tests }}
@@ -138,70 +138,70 @@ jobs:
 
       - name: Run Base tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/base
+        working-directory: ./j/lib/base
         run: opam exec -- dune runtest
 
       - name: Run Base bigstring tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/base_bigstring
+        working-directory: ./j/lib/base_bigstring
         run: opam exec -- dune runtest --sandbox=none
 
       - name: Run Core tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/core
+        working-directory: ./j/lib/core
         run: opam exec -- dune runtest
 
       - name: Run Bignum tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/bignum
+        working-directory: ./j/lib/bignum
         run: opam exec -- dune runtest
 
       - name: Run Bin_prot tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/bin_prot
+        working-directory: ./j/lib/bin_prot
         run: opam exec -- dune runtest
 
       - name: Run String_dict tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/string_dict
+        working-directory: ./j/lib/string_dict
         run: opam exec -- dune runtest
 
       - name: Run Zarith tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/zarith_stubs_js
+        working-directory: ./j/lib/zarith_stubs_js
         run: opam exec -- dune runtest
 
       - name: Run Virtual_dom tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/virtual_dom
+        working-directory: ./j/lib/virtual_dom
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/bonsai_test
+        working-directory: ./j/lib/bonsai_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/bonsai_web_test
+        working-directory: ./j/lib/bonsai_web_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web components' tests
         if: matrix.all_jane_street_tests
-        working-directory: ./janestreet/lib/bonsai_web_components
+        working-directory: ./j/lib/bonsai_web_components
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests (release profile)
         if: ${{ ! matrix.separate_compilation }}
-        working-directory: ./janestreet/lib/bonsai_test
+        working-directory: ./j/lib/bonsai_test
         run: opam exec -- dune runtest --profile release
 
       - name: Run Bonsai web tests (release profile)
         if: ${{ ! matrix.separate_compilation }}
-        working-directory: ./janestreet/lib/bonsai_web_test
+        working-directory: ./j/lib/bonsai_web_test
         run: opam exec -- dune runtest --profile release
 
       - name: Run Bonsai web components' tests (release profile)
         if: ${{ ! matrix.separate_compilation }}
-        working-directory: ./janestreet/lib/bonsai_web_components
+        working-directory: ./j/lib/bonsai_web_components
         run: opam exec -- dune runtest --profile release
