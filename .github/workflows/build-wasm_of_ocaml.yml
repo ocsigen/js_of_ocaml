@@ -62,7 +62,7 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v4
         with:
-          path: wasm_of_ocaml
+          path: w
 
       - name: Checkout Jane Street opam repository
         if: matrix.jane_street_tests
@@ -101,7 +101,7 @@ jobs:
         run: opam pin add -n dune https://github.com/vouillon/dune.git#inline-tests-wasm
 
       - name: Pin wasm_of_ocaml
-        working-directory: ./wasm_of_ocaml
+        working-directory: ./w
         run: opam pin -n --with-version 6.0 .
 
       - name: Checkout Jane Street packages
@@ -110,7 +110,7 @@ jobs:
           opam repo add js j/opam-repository
           opam pin add ocamlfind --dev
           opam install opam-format ocamlfind dune graphics cmdliner
-          opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe j
+          opam exec -- dune exec --root w tools/ci_setup.exe j
 
       - name: Pin Jane Street packages
         if: ${{ ! matrix.jane_street_tests }}
@@ -121,19 +121,19 @@ jobs:
           opam pin add -n ppx_expect.v0.16.1 https://github.com/ocaml-wasm/ppx_expect.git#wasm
 
       - name: Install wasm_of_ocaml and its test dependencies
-        working-directory: ./wasm_of_ocaml
+        working-directory: ./w
         run: |
           opam install .
           opam install num cohttp-lwt-unix ppx_expect cstruct
 
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
-        working-directory: ./wasm_of_ocaml
+        working-directory: ./w
         run: opam exec -- dune build @runtest-wasm
 
       - name: Run tests with CPS effects
         if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
-        working-directory: ./wasm_of_ocaml
+        working-directory: ./w
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
       - name: Run Base tests
