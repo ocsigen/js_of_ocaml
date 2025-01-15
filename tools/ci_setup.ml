@@ -11,7 +11,7 @@ let repo = Filename.concat root "opam-repository/packages"
 
 let roots = [ "bonsai_web_components"; "string_dict"; "ppx_html" ]
 
-let omitted_others = StringSet.of_list [ "cohttp-async"; "cohttp"; "uri"; "uri-sexp" ]
+let omitted_others = StringSet.of_list [ "cohttp-async"; "cohttp"; "uri"; "uri-sexp"; "cstruct"; "uucp"; "odoc-parser" ]
 
 let omitted_js = StringSet.of_list [ "sexplib0" ]
 
