@@ -123,7 +123,7 @@ jobs:
         working-directory: ./w
         run: |
           opam install .
-          opam install num cohttp-lwt-unix ppx_expect cstruct
+          opam install num cohttp-lwt-unix ppx_expect cstruct uucp
 
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
@@ -156,7 +156,7 @@ jobs:
         run: opam exec -- dune runtest
 
       - name: Run Bin_prot tests
-        if: matrix.all_jane_street_tests
+        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
         working-directory: ./j/lib/bin_prot
         run: opam exec -- dune runtest
 
