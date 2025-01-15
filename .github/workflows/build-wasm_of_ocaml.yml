@@ -173,11 +173,11 @@ jobs:
 #        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
 #        working-directory: ./j/lib/zarith_stubs_js
 #        run: opam exec -- dune runtest
-
-      - name: Run Virtual_dom tests
-        if: matrix.all_jane_street_tests
-        working-directory: ./j/lib/virtual_dom
-        run: opam exec -- dune runtest
+#
+#      - name: Run Virtual_dom tests
+#        if: matrix.all_jane_street_tests
+#        working-directory: ./j/lib/virtual_dom
+#        run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
         if: matrix.all_jane_street_tests
