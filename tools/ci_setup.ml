@@ -211,7 +211,7 @@ let () =
   in
   let copy f f' =
     let contents =
-      In_channel.(with_open_bin (Filename.concat "wasm_of_ocaml" f) @@ input_all)
+      In_channel.(with_open_bin (Filename.concat "w" f) @@ input_all)
     in
     Out_channel.(
       with_open_bin (Filename.concat root f') @@ fun ch -> output_string ch contents)
