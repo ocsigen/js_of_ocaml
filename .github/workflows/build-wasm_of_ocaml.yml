@@ -100,6 +100,10 @@ jobs:
       - name: Pin dune
         run: opam pin add -n dune https://github.com/vouillon/dune.git#inline-tests-wasm
 
+      - name: Pin wasm_of_ocaml
+        working-directory: ./w
+        run: opam pin . -n --with-version dev
+
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests
         run: |
