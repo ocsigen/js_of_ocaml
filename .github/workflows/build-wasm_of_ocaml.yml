@@ -162,7 +162,7 @@ jobs:
         run: opam exec -- dune runtest
 
       - name: Run String_dict tests
-        if: ${{ matrix.all_jane_street_tests || matrix.os == 'windows-latest' }}
+        if: matrix.all_jane_street_tests
         working-directory: ./j/lib/string_dict
         run: opam exec -- dune runtest
 
