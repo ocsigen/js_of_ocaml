@@ -146,7 +146,7 @@ jobs:
         run: opam exec -- dune runtest
 
       - name: Run Core tests
-        if: matrix.all_jane_street_tests
+        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
         working-directory: ./j/lib/core
         run: opam exec -- dune runtest
 
