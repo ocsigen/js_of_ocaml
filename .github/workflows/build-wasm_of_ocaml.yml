@@ -141,11 +141,13 @@ jobs:
 #        run: opam exec -- dune runtest
 #
 #      - name: Run Base bigstring tests
+#        # sandboxing issue
 #        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
 #        working-directory: ./j/lib/base_bigstring
 #        run: opam exec -- dune runtest
 #
 #      - name: Run Core tests
+#        # tests fails on windows
 #        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
 #        working-directory: ./j/lib/core
 #        run: opam exec -- dune runtest
@@ -156,6 +158,7 @@ jobs:
 #        run: opam exec -- dune runtest
 #
 #      - name: Run Bin_prot tests
+#        # tests fails on windows
 #        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
 #        working-directory: ./j/lib/bin_prot
 #        run: opam exec -- dune runtest
@@ -164,11 +167,12 @@ jobs:
 #        if: matrix.all_jane_street_tests
 #        working-directory: ./j/lib/string_dict
 #        run: opam exec -- dune runtest
-
-      - name: Run Zarith tests
-        if: matrix.all_jane_street_tests
-        working-directory: ./j/lib/zarith_stubs_js
-        run: opam exec -- dune runtest
+#
+#      - name: Run Zarith tests
+#        # sandboxing issue
+#        if: ${{ matrix.all_jane_street_tests && matrix.os != 'windows-latest'}}
+#        working-directory: ./j/lib/zarith_stubs_js
+#        run: opam exec -- dune runtest
 
       - name: Run Virtual_dom tests
         if: matrix.all_jane_street_tests
