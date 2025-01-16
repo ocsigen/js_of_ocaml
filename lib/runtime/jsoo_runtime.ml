@@ -234,7 +234,7 @@ module Typed_array = struct
     external of_uint8Array : uint8Array -> t = "bigstring_of_typed_array"
   end
 
-  external of_uint8Array : uint8Array -> string = "caml_string_of_array"
+  external of_uint8Array : uint8Array -> string = "caml_string_of_uint8_array"
 end
 
 module Int64 = struct

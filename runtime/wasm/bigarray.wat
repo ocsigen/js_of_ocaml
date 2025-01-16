@@ -2020,8 +2020,8 @@
          (i32.wrap_i64 (i64.shr_u (local.get $d) (i64.const 32))))
       (ref.i31 (i32.const 0)))
 
-   (export "caml_bytes_of_array" (func $caml_string_of_array))
-   (func $caml_string_of_array (export "caml_string_of_array")
+   (export "caml_bytes_of_array" (func $caml_string_of_uint8_array))
+   (func $caml_string_of_uint8_array (export "caml_string_of_uint8_array")
       (param (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string
       (local $a (ref extern)) (local $len i32)

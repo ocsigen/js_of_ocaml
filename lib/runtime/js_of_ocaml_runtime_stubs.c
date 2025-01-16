@@ -256,16 +256,16 @@ void caml_read_file_content () {
   caml_fatal_error("Unimplemented Javascript primitive caml_read_file_content!");
 }
 
-void caml_string_of_array () {
-  caml_fatal_error("Unimplemented Javascript primitive caml_string_of_array!");
-}
-
 void caml_string_of_jsbytes () {
   caml_fatal_error("Unimplemented Javascript primitive caml_string_of_jsbytes!");
 }
 
 void caml_string_of_jsstring () {
   caml_fatal_error("Unimplemented Javascript primitive caml_string_of_jsstring!");
+}
+
+void caml_string_of_uint8_array () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_string_of_uint8_array!");
 }
 
 void caml_unmount () {

@@ -702,12 +702,10 @@ function caml_ml_pos_out_64(chanid) {
 }
 
 //Provides: caml_ml_output_int
-//Requires: caml_ml_output
-//Requires: caml_string_of_array
+//Requires: caml_ml_output_ta
 function caml_ml_output_int(chanid, i) {
   var arr = [(i >> 24) & 0xff, (i >> 16) & 0xff, (i >> 8) & 0xff, i & 0xff];
-  var s = caml_string_of_array(arr);
-  caml_ml_output(chanid, s, 0, 4);
+  caml_ml_output_ta(chanid, new Uint8Array(arr), 0, 4);
   return 0;
 }
 

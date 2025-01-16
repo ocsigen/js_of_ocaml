@@ -511,6 +511,20 @@ function caml_string_of_array(a) {
   return caml_string_of_jsbytes(caml_subarray_to_jsbytes(a, 0, a.length));
 }
 
+//Provides: caml_string_of_uint8_array
+//Requires: caml_sub_uint8_array_to_jsbytes
+//If: js-string
+function caml_string_of_uint8_array(a) {
+  return caml_sub_uint8_array_to_jsbytes(a, 0, a.length);
+}
+
+//Provides: caml_string_of_uint8_array
+//Requires: caml_bytes_of_uint8_array
+//If: !js-string
+function caml_string_of_uint8_array(a) {
+  return caml_bytes_of_uint8_array(a.slice());
+}
+
 //Provides: caml_bytes_of_array
 //Requires: MlBytes
 function caml_bytes_of_array(a) {
