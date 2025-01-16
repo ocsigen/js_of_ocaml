@@ -92,20 +92,20 @@ function jsoo_toplevel_init_reloc(f) {
 
 //Provides: caml_reify_bytecode
 //Requires: caml_callback
-//Requires: caml_string_of_array, caml_ba_to_typed_array
+//Requires: caml_string_of_uint8_array, caml_ba_to_typed_array
 //Requires: jsoo_toplevel_compile, caml_failwith
 //Version: >= 5.2
 function caml_reify_bytecode(code, debug, _digest) {
   if (!jsoo_toplevel_compile) {
     caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
   }
-  code = caml_string_of_array(caml_ba_to_typed_array(code));
+  code = caml_string_of_uint8_array(caml_ba_to_typed_array(code));
   return [0, 0, caml_callback(jsoo_toplevel_compile, [code, debug])];
 }
 
 //Provides: caml_reify_bytecode
 //Requires: caml_callback
-//Requires: caml_string_of_array, caml_uint8_array_of_bytes
+//Requires: caml_string_of_uint8_array, caml_uint8_array_of_bytes
 //Requires: jsoo_toplevel_compile, caml_failwith
 //Version: < 5.2
 function caml_reify_bytecode(code, debug, _digest) {
@@ -124,7 +124,7 @@ function caml_reify_bytecode(code, debug, _digest) {
     code.set(all[i], len);
     len += all[i].length;
   }
-  code = caml_string_of_array(code);
+  code = caml_string_of_uint8_array(code);
   return [0, 0, caml_callback(jsoo_toplevel_compile, [code, debug])];
 }
 

@@ -47,7 +47,7 @@ var caml_marshal_constants = {
 };
 
 //Provides: UInt8ArrayReader
-//Requires: caml_string_of_array, caml_jsbytes_of_string
+//Requires: caml_string_of_uint8_array, caml_jsbytes_of_string
 function UInt8ArrayReader(s, i) {
   this.s = s;
   this.i = i;
@@ -86,7 +86,7 @@ UInt8ArrayReader.prototype = {
   readstr: function (len) {
     var i = this.i;
     this.i = i + len;
-    return caml_string_of_array(this.s.subarray(i, i + len));
+    return caml_string_of_uint8_array(this.s.subarray(i, i + len));
   },
   readuint8array: function (len) {
     var i = this.i;
@@ -161,7 +161,7 @@ MlStringReader.prototype = {
 };
 
 //Provides: BigStringReader
-//Requires: caml_string_of_array, caml_ba_get_1
+//Requires: caml_string_of_uint8_array, caml_ba_get_1
 function BigStringReader(bs, i) {
   this.s = bs;
   this.i = i;
@@ -210,12 +210,11 @@ BigStringReader.prototype = {
   },
   readstr: function (len) {
     var i = this.i;
-    var arr = new Array(len);
-    for (var j = 0; j < len; j++) {
-      arr[j] = caml_ba_get_1(this.s, i + j);
-    }
+    var offset = this.offset(i);
     this.i = i + len;
-    return caml_string_of_array(arr);
+    return caml_string_of_uint8_array(
+      this.s.data.subarray(offset, offset + len),
+    );
   },
   readuint8array: function (len) {
     var i = this.i;
@@ -868,9 +867,9 @@ var caml_output_val = (function () {
 })();
 
 //Provides: caml_output_value_to_string mutable
-//Requires: caml_output_val, caml_string_of_array
+//Requires: caml_output_val, caml_string_of_uint8_array
 function caml_output_value_to_string(v, flags) {
-  return caml_string_of_array(caml_output_val(v, flags));
+  return caml_string_of_uint8_array(caml_output_val(v, flags));
 }
 
 //Provides: caml_output_value_to_bytes mutable

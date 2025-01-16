@@ -266,7 +266,7 @@ module Bigstring = struct
 end
 
 module String = struct
-  external of_uint8Array : uint8Array Js.t -> string = "caml_string_of_array"
+  external of_uint8Array : uint8Array Js.t -> string = "caml_string_of_uint8_array"
 
   let of_arrayBuffer ab =
     let uint8 = new%js uint8Array_fromBuffer ab in

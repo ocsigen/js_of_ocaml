@@ -18,7 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_md5_chan
-//Requires: caml_string_of_array
+//Requires: caml_string_of_uint8_array
 //Requires: caml_raise_end_of_file, caml_ml_input_block
 //Requires: caml_MD5Init, caml_MD5Update, caml_MD5Final
 function caml_md5_chan(chanid, toread) {
@@ -43,7 +43,7 @@ function caml_md5_chan(chanid, toread) {
       toread -= read;
     }
   }
-  return caml_string_of_array(caml_MD5Final(ctx));
+  return caml_string_of_uint8_array(caml_MD5Final(ctx));
 }
 
 //Provides: caml_md5_string
@@ -224,11 +224,11 @@ function caml_MD5Final(ctx) {
 }
 
 //Provides: caml_md5_bytes
-//Requires: caml_uint8_array_of_bytes, caml_string_of_array
+//Requires: caml_uint8_array_of_bytes, caml_string_of_uint8_array
 //Requires: caml_MD5Init, caml_MD5Update, caml_MD5Final
 function caml_md5_bytes(s, ofs, len) {
   var ctx = caml_MD5Init();
   var a = caml_uint8_array_of_bytes(s);
   caml_MD5Update(ctx, a.subarray(ofs, ofs + len), len);
-  return caml_string_of_array(caml_MD5Final(ctx));
+  return caml_string_of_uint8_array(caml_MD5Final(ctx));
 }

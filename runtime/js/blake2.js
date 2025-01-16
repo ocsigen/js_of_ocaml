@@ -315,12 +315,12 @@ function caml_blake2_create(hashlen, key) {
 }
 
 //Provides: caml_blake2_final
-//Requires: caml_string_of_array
+//Requires: caml_string_of_uint8_array
 //Requires: blake2b
 //Version: >= 5.2
 function caml_blake2_final(ctx, hashlen) {
   var r = blake2b.Final(ctx);
-  return caml_string_of_array(r);
+  return caml_string_of_uint8_array(r);
 }
 
 //Provides: caml_blake2_update
