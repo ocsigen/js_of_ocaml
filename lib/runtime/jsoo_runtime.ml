@@ -202,6 +202,8 @@ module For_compatibility_only = struct
   external caml_list_to_js_array : 'a list -> 'a Js.js_array = "caml_list_to_js_array"
 
   external variable : string -> 'a = "caml_js_var"
+
+  external caml_string_of_array : 'a array -> string = "caml_string_of_array"
 end
 
 module Typed_array = struct
