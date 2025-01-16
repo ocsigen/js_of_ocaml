@@ -12,6 +12,7 @@
 * Compiler/Runtime: Make resuming a continuation more efficient in js (#1765)
 * Lib: Add other textMetrics property (#1784)
 * Misc: move tests to OCaml 5.3
+* Test: run wasm tests on windows
 
 ## Bug fixes
 * Fix small bug in global data flow analysis (#1768)

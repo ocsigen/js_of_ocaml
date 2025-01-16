@@ -1,20 +1,19 @@
-#use "topfind"
-
-#require "opam-format"
-
-#require "unix"
-
-#require "str"
-
 module StringSet = Set.Make (String)
 
 (****)
 
-let repo = "janestreet/opam-repository/packages"
+let jane_root, wasmoo_root =
+  match Sys.argv with
+  | [| _; jane_root; wasmoo_root |] -> jane_root, wasmoo_root
+  | _ -> "janestreet", "wasm_of_ocaml"
+
+let repo = Filename.concat jane_root "opam-repository/packages"
 
 let roots = [ "bonsai_web_components"; "string_dict"; "ppx_html" ]
 
-let omitted_others = StringSet.of_list [ "cohttp-async"; "cohttp"; "uri"; "uri-sexp" ]
+let omitted_others =
+  StringSet.of_list
+    [ "cohttp-async"; "cohttp"; "uri"; "uri-sexp"; "cstruct"; "uucp"; "odoc-parser" ]
 
 let omitted_js = StringSet.of_list [ "sexplib0" ]
 
@@ -137,7 +136,7 @@ let read_opam_file filename =
     ~pos:{ filename; start = 0, 0; stop = 0, 0 }
     (OpamParser.FullPos.file (Filename.concat (Filename.concat repo filename) "opam"))
 
-let dependencies (_, { OpamFile.OPAM.depends }) =
+let dependencies (_, { OpamFile.OPAM.depends; _ }) =
   let open OpamFormula in
   depends
   |> map (fun (nm, _) -> Atom (nm, None))
@@ -165,21 +164,18 @@ let rec traverse visited p =
 
 let is_forked p = StringSet.mem p forked_packages
 
-let exec_async ~delay cmd =
-  let p =
-    Unix.open_process_out (Printf.sprintf "sleep %f; %s" (float delay /. 10.) cmd)
-  in
+let exec_async cmd =
+  let p = Unix.open_process_out cmd in
   fun () -> ignore (Unix.close_process_out p)
 
 let ( let* ) (f : unit -> 'a) (g : 'a -> unit -> 'b) : unit -> 'b = fun () -> g (f ()) ()
 
 let sync_exec f l =
-  let l = List.mapi f l in
+  let l = List.map f l in
   List.iter (fun f -> f ()) l
 
-let pin delay nm =
+let pin nm =
   exec_async
-    ~delay
     (Printf.sprintf
        "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-v0.18"
        nm
@@ -191,45 +187,42 @@ let install_others others =
   let others = StringSet.elements (StringSet.diff others omitted_others) in
   ignore (Sys.command ("opam install -y " ^ String.concat " " others))
 
-let clone delay ?branch ?(depth = 1) nm src =
+let clone ?branch ?(depth = 1) nm src =
   exec_async
-    ~delay
     (Printf.sprintf
-       "git clone -q --depth %d %s%s janestreet/lib/%s"
+       "git clone -q --depth %d %s%s %s/lib/%s"
        depth
        (match branch with
        | None -> ""
        | Some b -> Printf.sprintf "-b %s " b)
        src
+       jane_root
        nm)
 
-let clone' delay ?branch ?commit nm src =
+let clone' ?branch ?commit nm src =
   match commit with
-  | None -> clone delay ?branch nm src
+  | None -> clone ?branch nm src
   | Some commit ->
-      let* () = clone delay ?branch ~depth:100 nm src in
+      let* () = clone ?branch ~depth:100 nm src in
       exec_async
-        ~delay:0
-        (Printf.sprintf "cd janestreet/lib/%s && git checkout -b wasm %s" nm commit)
+        (Printf.sprintf "cd %s/lib/%s && git checkout -b wasm %s" jane_root nm commit)
 
 let () =
   let write f contents =
-    Out_channel.(
-      with_open_bin (Filename.concat "janestreet" f)
-      @@ fun ch -> output_string ch contents)
+    Out_channel.(with_open_bin f @@ fun ch -> output_string ch contents)
   in
   let copy f f' =
-    let contents =
-      In_channel.(with_open_bin (Filename.concat "wasm_of_ocaml" f) @@ input_all)
-    in
-    Out_channel.(
-      with_open_bin (Filename.concat "janestreet" f')
-      @@ fun ch -> output_string ch contents)
+    let contents = In_channel.(with_open_bin f @@ input_all) in
+    Out_channel.(with_open_bin f' @@ fun ch -> output_string ch contents)
   in
-  write "dune-workspace" dune_workspace;
-  Unix.mkdir "janestreet/node_wrapper" 0o755;
-  List.iter (fun (f, contents) -> write f contents) node_wrapper;
-  copy "tools/node_wrapper.ml" "node_wrapper/node_wrapper.ml"
+  write (Filename.concat jane_root "dune-workspace") dune_workspace;
+  Unix.mkdir (Filename.concat jane_root "node_wrapper") 0o755;
+  List.iter
+    (fun (f, contents) -> write (Filename.concat jane_root f) contents)
+    node_wrapper;
+  copy
+    (Filename.concat wasmoo_root "tools/node_wrapper.ml")
+    (Filename.concat jane_root "node_wrapper/node_wrapper.ml")
 
 let () =
   let js, others =
@@ -238,9 +231,9 @@ let () =
   in
   pin_packages ();
   install_others others;
-  sync_exec (fun i () -> clone i "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
+  sync_exec (fun () -> clone "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
   sync_exec
-    (fun i nm ->
+    (fun nm ->
       let branch = if is_forked nm then Some "wasm-v0.18" else None in
       let commit =
         if is_forked nm
@@ -253,7 +246,6 @@ let () =
              String.sub tar_file 0 (String.index tar_file '.'))
       in
       clone'
-        i
         ?branch
         ?commit
         nm
@@ -266,9 +258,25 @@ let () =
 let () =
   List.iter
     (fun (dir, patch) ->
+      let p = if Sys.win32 then "patch --binary" else "patch" in
       let ch =
-        Unix.open_process_out (Printf.sprintf "cd janestreet/lib/%s && patch -p 1" dir)
+        Unix.open_process_out
+          (Printf.sprintf "cd %s/lib/%s && %s -p 1 --" jane_root dir p)
+      in
+      let patch =
+        if Sys.win32
+        then String.concat "\r\n" (String.split_on_char '\n' patch)
+        else patch
       in
       output_string ch patch;
-      ignore (Unix.close_process_out ch))
+      match Unix.close_process_out ch with
+      | WEXITED 0 -> ()
+      | e ->
+          let name, i =
+            match e with
+            | WEXITED n -> "exit", n
+            | WSIGNALED n -> "signal", n
+            | WSTOPPED n -> "stop", n
+          in
+          failwith (Printf.sprintf "%s %d while patching %s" name i dir))
     patches
