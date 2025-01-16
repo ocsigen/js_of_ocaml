@@ -558,13 +558,15 @@ function caml_ml_input_scan_line(chanid) {
 
 //Provides: caml_ml_flush
 //Requires: caml_raise_sys_error, caml_ml_channel_get
-//Requires: caml_subarray_to_jsbytes
+//Requires: caml_sub_uint8_array_to_jsbytes
 function caml_ml_flush(chanid) {
   var chan = caml_ml_channel_get(chanid);
   if (!chan.opened) caml_raise_sys_error("Cannot flush a closed channel");
   if (!chan.buffer || chan.buffer_curr === 0) return 0;
   if (chan.output) {
-    chan.output(caml_subarray_to_jsbytes(chan.buffer, 0, chan.buffer_curr));
+    chan.output(
+      caml_sub_uint8_array_to_jsbytes(chan.buffer, 0, chan.buffer_curr),
+    );
   } else {
     chan.file.write(chan.offset, chan.buffer, 0, chan.buffer_curr);
   }

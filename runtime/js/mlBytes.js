@@ -82,6 +82,20 @@ function caml_subarray_to_jsbytes(a, i, len) {
   return s;
 }
 
+//Provides: caml_sub_uint8_array_to_jsbytes
+//Weakdef
+// Pre ECMAScript 5, [apply] would not support array-like object.
+// In such setup, Typed_array would be implemented as polyfill, and [f.apply] would
+// fail here. Mark the primitive as Weakdef, so that people can override it easily.
+function caml_sub_uint8_array_to_jsbytes(a, i, len) {
+  var f = String.fromCharCode;
+  if (i === 0 && len <= 4096 && len === a.length) return f.apply(null, a);
+  var s = "";
+  for (; 0 < len; i += 1024, len -= 1024)
+    s += f.apply(null, a.subarray(i, i + Math.min(len, 1024)));
+  return s;
+}
+
 //Provides: caml_utf8_of_utf16
 function caml_utf8_of_utf16(s) {
   for (var b = "", t = b, c, d, i = 0, l = s.length; i < l; i++) {
@@ -430,11 +444,11 @@ MlBytes.prototype.slice = function () {
 };
 
 //Provides: caml_convert_string_to_bytes
-//Requires: caml_str_repeat, caml_subarray_to_jsbytes
+//Requires: caml_str_repeat, caml_sub_uint8_array_to_jsbytes
 function caml_convert_string_to_bytes(s) {
   /* Assumes not BYTES */
   if (s.t === 2 /* PARTIAL */) s.c += caml_str_repeat(s.l - s.c.length, "\0");
-  else s.c = caml_subarray_to_jsbytes(s.c, 0, s.c.length);
+  else s.c = caml_sub_uint8_array_to_jsbytes(s.c, 0, s.c.length);
   s.t = 0; /*BYTES | UNKOWN*/
 }
 
@@ -596,7 +610,7 @@ function caml_fill_bytes(s, i, l, c) {
 }
 
 //Provides: caml_blit_bytes
-//Requires: caml_subarray_to_jsbytes, caml_convert_bytes_to_array
+//Requires: caml_sub_uint8_array_to_jsbytes, caml_convert_bytes_to_array
 function caml_blit_bytes(s1, i1, s2, i2, len) {
   if (len === 0) return 0;
   if (
@@ -605,7 +619,7 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
   ) {
     s2.c =
       s1.t === 4 /* ARRAY */
-        ? caml_subarray_to_jsbytes(s1.c, i1, len)
+        ? caml_sub_uint8_array_to_jsbytes(s1.c, i1, len)
         : i1 === 0 && s1.c.length === len
           ? s1.c
           : s1.c.slice(i1, i1 + len);
@@ -613,7 +627,7 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
   } else if (s2.t === 2 /* PARTIAL */ && i2 === s2.c.length) {
     s2.c +=
       s1.t === 4 /* ARRAY */
-        ? caml_subarray_to_jsbytes(s1.c, i1, len)
+        ? caml_sub_uint8_array_to_jsbytes(s1.c, i1, len)
         : i1 === 0 && s1.c.length === len
           ? s1.c
           : s1.c.slice(i1, i1 + len);
