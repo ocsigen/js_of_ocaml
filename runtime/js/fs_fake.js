@@ -307,7 +307,7 @@ MlFakeDevice.prototype.constructor = MlFakeDevice;
 //Provides: MlFakeFile
 //Requires: MlFile
 //Requires: caml_create_bytes, caml_ml_bytes_length, caml_blit_bytes
-//Requires: caml_uint8_array_of_bytes, caml_bytes_of_array
+//Requires: caml_uint8_array_of_bytes, caml_bytes_of_uint8_array
 function MlFakeFile(content) {
   this.data = content;
 }
@@ -329,7 +329,7 @@ MlFakeFile.prototype.write = function (offset, buf, pos, len) {
     this.data = new_str;
     caml_blit_bytes(old_data, 0, this.data, 0, clen);
   }
-  caml_blit_bytes(caml_bytes_of_array(buf), pos, this.data, offset, len);
+  caml_blit_bytes(caml_bytes_of_uint8_array(buf), pos, this.data, offset, len);
   return 0;
 };
 MlFakeFile.prototype.read = function (offset, buf, pos, len) {
@@ -346,7 +346,7 @@ MlFakeFile.prototype.read = function (offset, buf, pos, len) {
 };
 
 //Provides: MlFakeFd_out
-//Requires: MlFakeFile, caml_create_bytes, caml_blit_bytes, caml_bytes_of_array
+//Requires: MlFakeFile, caml_create_bytes, caml_blit_bytes, caml_bytes_of_uint8_array
 //Requires: caml_raise_sys_error
 function MlFakeFd_out(fd, flags) {
   MlFakeFile.call(this, caml_create_bytes(0));
@@ -374,7 +374,7 @@ MlFakeFd_out.prototype.write = function (offset, buf, pos, len) {
     // Do not output the last \n if present
     // as console logging display a newline at the end
     var src = caml_create_bytes(len);
-    caml_blit_bytes(caml_bytes_of_array(buf), pos, src, 0, len);
+    caml_blit_bytes(caml_bytes_of_uint8_array(buf), pos, src, 0, len);
     this.log(src.toUtf16());
     return 0;
   }

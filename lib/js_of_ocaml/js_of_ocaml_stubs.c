@@ -1,7 +1,7 @@
 #include <caml/misc.h>
 
-void caml_bytes_of_array () {
-  caml_fatal_error("Unimplemented Javascript primitive caml_bytes_of_array!");
+void caml_bytes_of_uint8_array () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_bytes_of_uint8_array!");
 }
 
 void caml_custom_identifier () {
