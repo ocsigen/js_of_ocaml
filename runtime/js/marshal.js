@@ -873,16 +873,16 @@ function caml_output_value_to_string(v, flags) {
 }
 
 //Provides: caml_output_value_to_bytes mutable
-//Requires: caml_output_val, caml_bytes_of_array
+//Requires: caml_output_val, caml_bytes_of_uint8_array
 function caml_output_value_to_bytes(v, flags) {
-  return caml_bytes_of_array(caml_output_val(v, flags));
+  return caml_bytes_of_uint8_array(caml_output_val(v, flags));
 }
 
 //Provides: caml_output_value_to_buffer
-//Requires: caml_output_val, caml_failwith, caml_blit_bytes, caml_bytes_of_array
+//Requires: caml_output_val, caml_failwith, caml_blit_bytes, caml_bytes_of_uint8_array
 function caml_output_value_to_buffer(s, ofs, len, v, flags) {
   var t = caml_output_val(v, flags);
   if (t.length > len) caml_failwith("Marshal.to_buffer: buffer overflow");
-  caml_blit_bytes(caml_bytes_of_array(t), 0, s, ofs, t.length);
+  caml_blit_bytes(caml_bytes_of_uint8_array(t), 0, s, ofs, t.length);
   return 0;
 }

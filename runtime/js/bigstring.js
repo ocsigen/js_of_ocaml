@@ -107,7 +107,7 @@ function caml_bigstring_blit_bytes_to_ba(str1, pos1, ba2, pos2, len) {
 
 //Provides: caml_bigstring_blit_ba_to_bytes
 //Requires: caml_invalid_argument, caml_array_bound_error
-//Requires: caml_blit_bytes, caml_bytes_of_array
+//Requires: caml_blit_bytes, caml_bytes_of_uint8_array
 //Requires: caml_ml_bytes_length
 function caml_bigstring_blit_ba_to_bytes(ba1, pos1, bytes2, pos2, len) {
   if (12 !== ba1.kind)
@@ -121,6 +121,6 @@ function caml_bigstring_blit_ba_to_bytes(ba1, pos1, bytes2, pos2, len) {
     caml_array_bound_error();
   }
   var slice = ba1.data.subarray(ofs1, ofs1 + len);
-  caml_blit_bytes(caml_bytes_of_array(slice), 0, bytes2, pos2, len);
+  caml_blit_bytes(caml_bytes_of_uint8_array(slice), 0, bytes2, pos2, len);
   return 0;
 }

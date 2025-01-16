@@ -274,7 +274,7 @@ module String = struct
 end
 
 module Bytes = struct
-  external of_uint8Array : uint8Array Js.t -> bytes = "caml_bytes_of_array"
+  external of_uint8Array : uint8Array Js.t -> bytes = "caml_bytes_of_uint8_array"
 
   external to_uint8Array : bytes -> uint8Array Js.t = "caml_uint8_array_of_bytes"
 

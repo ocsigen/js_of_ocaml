@@ -409,7 +409,7 @@ function caml_ml_input_block(chanid, ba, i, l) {
 }
 
 //Provides: caml_input_value
-//Requires: caml_marshal_data_size, caml_input_value_from_bytes, caml_create_bytes, caml_ml_channel_get, caml_bytes_of_array
+//Requires: caml_marshal_data_size, caml_input_value_from_bytes, caml_create_bytes, caml_ml_channel_get, caml_bytes_of_uint8_array
 //Requires: caml_refill, caml_failwith, caml_raise_end_of_file
 //Requires: caml_marshal_header_size
 function caml_input_value(chanid) {
@@ -434,12 +434,12 @@ function caml_input_value(chanid) {
   if (r === 0) caml_raise_end_of_file();
   else if (r < caml_marshal_header_size)
     caml_failwith("input_value: truncated object");
-  var len = caml_marshal_data_size(caml_bytes_of_array(header), 0);
+  var len = caml_marshal_data_size(caml_bytes_of_uint8_array(header), 0);
   var buf = new Uint8Array(len + caml_marshal_header_size);
   buf.set(header, 0);
   var r = block(buf, caml_marshal_header_size, len);
   if (r < len) caml_failwith("input_value: truncated object " + r + "  " + len);
-  var res = caml_input_value_from_bytes(caml_bytes_of_array(buf), 0);
+  var res = caml_input_value_from_bytes(caml_bytes_of_uint8_array(buf), 0);
   return res;
 }
 
