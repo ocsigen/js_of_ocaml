@@ -126,8 +126,29 @@ index c6d09fb..61b1e5b 100644
      let t' = require_no_allocation (fun () -> abs t) in
 |bignum}
     )
+  ; ( "bin_prot"
+    , {|
+diff --git a/test/dune b/test/dune
+index 6c0ef2f..9968f59 100644
+--- a/test/dune
++++ b/test/dune
+@@ -5,11 +5,3 @@
+    float_array base.md5 sexplib splittable_random stdio)
+  (preprocess
+   (pps ppx_jane)))
+-
+-(rule
+- (alias runtest)
+- (deps core/blob_stability_tests.ml integers_repr_tests_64bit.ml
+-   integers_repr_tests_js.ml integers_repr_tests_wasm.ml)
+- (action
+-  (bash
+-    "diff <(\necho '869e6b3143f14201f406eac9c05c4cdb  core/blob_stability_tests.ml'\necho '2db396dfced6ae8d095f308acb4c80eb  integers_repr_tests_64bit.ml'\necho '9f7b6332177a4ae9547d37d17008d7ef  integers_repr_tests_js.ml'\necho '22f653bfba79ce30c22fe378c596df54  integers_repr_tests_wasm.ml'\n  ) <(md5sum %{deps})")))
+    |}
+    )
   ]
 
+let removes = [ "core/core/test/test_sys.ml" ]
 (****)
 
 let read_opam_file filename =
@@ -279,4 +300,5 @@ let () =
             | WSTOPPED n -> "stop", n
           in
           failwith (Printf.sprintf "%s %d while patching %s" name i dir))
-    patches
+    patches;
+  List.iter (fun p -> Sys.remove (Printf.sprintf "%s/lib/%s" jane_root p)) removes

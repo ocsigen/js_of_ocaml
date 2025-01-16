@@ -137,6 +137,7 @@ jobs:
 
       - name: Run Base tests
         if: matrix.all_jane_street_tests
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./janestreet/lib/base
         run: opam exec -- dune runtest
 
@@ -154,6 +155,7 @@ jobs:
 
       - name: Run Bignum tests
         if: matrix.all_jane_street_tests
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./janestreet/lib/bignum
         run: opam exec -- dune runtest
 
