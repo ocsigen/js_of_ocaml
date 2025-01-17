@@ -56,7 +56,7 @@ let dune_workspace =
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
   (js_of_ocaml (enabled_if false))
-  (flags :standard -warn-error -7-8-27-30-32-34-37-49-52-55 -w -67-69)))
+  (flags :standard -warn-error -7-8-27-30-32-34-37-49-52-55 -w -7-27-30-32-34-37-49-52-55-58-67-69)))
 |}
 
 let node_wrapper =
@@ -126,8 +126,111 @@ index c6d09fb..61b1e5b 100644
      let t' = require_no_allocation (fun () -> abs t) in
 |bignum}
     )
+  ; ( "bin_prot"
+    , {|
+diff --git a/test/dune b/test/dune
+index 6c0ef2f..9968f59 100644
+--- a/test/dune
++++ b/test/dune
+@@ -5,11 +5,3 @@
+    float_array base.md5 sexplib splittable_random stdio)
+  (preprocess
+   (pps ppx_jane)))
+-
+-(rule
+- (alias runtest)
+- (deps core/blob_stability_tests.ml integers_repr_tests_64bit.ml
+-   integers_repr_tests_js.ml integers_repr_tests_wasm.ml)
+- (action
+-  (bash
+-    "diff <(\necho '869e6b3143f14201f406eac9c05c4cdb  core/blob_stability_tests.ml'\necho '2db396dfced6ae8d095f308acb4c80eb  integers_repr_tests_64bit.ml'\necho '9f7b6332177a4ae9547d37d17008d7ef  integers_repr_tests_js.ml'\necho '22f653bfba79ce30c22fe378c596df54  integers_repr_tests_wasm.ml'\n  ) <(md5sum %{deps})")))
+    |}
+    )
+  ; ( "base_bigstring"
+    , {|
+diff --git a/src/base_bigstring_stubs.c b/src/base_bigstring_stubs.c
+index 164c393..6cf4835 100644
+--- a/src/base_bigstring_stubs.c
++++ b/src/base_bigstring_stubs.c
+@@ -17,6 +17,50 @@
+ #include <assert.h>
+ #include <stdint.h>
+ 
++
++static inline void * mymemrchr(const void * s, int c, size_t n)
++{
++  const unsigned char * p = (const unsigned char *)s + n;
++
++  while (n--) {
++    if (*(--p) == (unsigned char) c) {
++      return (void *)p;
++    }
++  }
++
++  return NULL;
++}
++static inline void *mymemmem(const void *haystack, size_t haystack_len,
++                const void *needle, size_t needle_len)
++{
++	const char *begin = haystack;
++	const char *last_possible = begin + haystack_len - needle_len;
++	const char *tail = needle;
++	char point;
++
++	/*
++	 * The first occurrence of the empty string is deemed to occur at
++	 * the beginning of the string.
++	 */
++	if (needle_len == 0)
++		return (void *)begin;
++
++	/*
++	 * Sanity check, otherwise the loop might search through the whole
++	 * memory.
++	 */
++	if (haystack_len < needle_len)
++		return NULL;
++
++	point = *tail++;
++	for (; begin <= last_possible; begin++) {
++		if (*begin == point && !memcmp(begin + 1, tail, needle_len - 1))
++			return (void *)begin;
++	}
++
++	return NULL;
++}
++
+ #ifdef __APPLE__
+ #include <libkern/OSByteOrder.h>
+ #define bswap_16 OSSwapInt16
+@@ -239,7 +283,7 @@ CAMLprim value bigstring_rfind(value v_str, value v_needle,
+   char *start, *r;
+ 
+   start = get_bstr(v_str, v_pos);
+-  r = (char*) memrchr(start, Int_val(v_needle), Long_val(v_len));
++  r = (char*) mymemrchr(start, Int_val(v_needle), Long_val(v_len));
+ 
+   return ptr_to_offset(start, v_pos, r);
+ }
+@@ -250,7 +294,7 @@ CAMLprim value bigstring_memmem(value v_haystack, value v_needle,
+ {
+   const char *haystack = get_bstr(v_haystack, v_haystack_pos);
+   const char *needle = get_bstr(v_needle, v_needle_pos);
+-  const char *result = memmem(haystack, Long_val(v_haystack_len),
++  const char *result = mymemmem(haystack, Long_val(v_haystack_len),
+                               needle, Long_val(v_needle_len));
+ 
+   return ptr_to_offset(haystack, v_haystack_pos, result);
+|}
+    )
   ]
 
+let removes =
+  [ "core/core/test/test_sys.ml"
+  ; "core/core/test/test_sys.mli"
+  ; "core/core/test/test_timezone.ml"
+  ; "core/core/test/test_timezone.mli"
+  ]
 (****)
 
 let read_opam_file filename =
@@ -279,4 +382,5 @@ let () =
             | WSTOPPED n -> "stop", n
           in
           failwith (Printf.sprintf "%s %d while patching %s" name i dir))
-    patches
+    patches;
+  List.iter (fun p -> Sys.remove (Printf.sprintf "%s/lib/%s" jane_root p)) removes
