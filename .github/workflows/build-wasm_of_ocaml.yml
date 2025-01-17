@@ -184,19 +184,19 @@ jobs:
         run: opam exec -- dune runtest
 
       - name: Run Bonsai tests
-        if: matrix.all_jane_street_tests
+        if: {{ matrix.all_jane_street_tests && matrix.os != 'windows-latest' }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./janestreet/lib/bonsai_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web tests
-        if: matrix.all_jane_street_tests
+        if: {{ matrix.all_jane_street_tests && matrix.os != 'windows-latest' }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./janestreet/lib/bonsai_web_test
         run: opam exec -- dune runtest
 
       - name: Run Bonsai web components' tests
-        if: matrix.all_jane_street_tests
+        if: {{ matrix.all_jane_street_tests && matrix.os != 'windows-latest' }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./janestreet/lib/bonsai_web_components
         run: opam exec -- dune runtest

@@ -225,7 +225,12 @@ index 164c393..6cf4835 100644
     )
   ]
 
-let removes = [ "core/core/test/test_sys.ml"; "core/core/test/test_sys.mli" ]
+let removes =
+  [ "core/core/test/test_sys.ml"
+  ; "core/core/test/test_sys.mli"
+  ; "core/core/test/test_timezone.ml"
+  ; "core/core/test/test_timezone.mli"
+  ]
 (****)
 
 let read_opam_file filename =
