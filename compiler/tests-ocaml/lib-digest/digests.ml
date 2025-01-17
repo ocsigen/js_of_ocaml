@@ -4,10 +4,7 @@
 module Test(H: Digest.S) = struct
 
   let string (msg, hh) =
-    if not ( (H.(equal (string msg) (of_hex hh))))
-    then (
-      Printf.printf "Expecting %S\
-                   \nGot       %S\n" hh (H.to_hex (H.string msg)); assert false)
+    assert (H.(equal (string msg) (of_hex hh)))
 
   let file wlen rlen =
     let data = String.init wlen Char.unsafe_chr in

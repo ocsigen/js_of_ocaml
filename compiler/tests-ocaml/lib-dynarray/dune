@@ -1,0 +1,4 @@
+(tests
+  (names test heap_sort)
+  (libraries)
+  (modes js wasm))
