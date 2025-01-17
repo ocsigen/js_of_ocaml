@@ -7,3 +7,8 @@
  (name ci_setup)
  (modules ci_setup)
  (libraries opam-format unix))
+
+(executable
+ (name sync_testsuite)
+ (modules sync_testsuite)
+ (libraries))
