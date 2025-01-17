@@ -1,4 +1,11 @@
 (tests
- (names bigarrays change_layout fftba pr5115 weak_bigarray)
+ (names change_layout fftba pr5115 weak_bigarray)
+ (libraries)
+ (modes js wasm))
+
+(tests
+ (names bigarrays specialized)
+ (build_if
+  (>= %{ocaml_version} 5.2))
  (libraries)
  (modes js wasm))
