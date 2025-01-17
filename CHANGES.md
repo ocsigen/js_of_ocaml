@@ -1,23 +1,24 @@
 # dev
 
 ## Features/Changes
-* Lib: fix the type of some DOM properties and methods (#1747)
-* Test: use dune test stanzas (#1631)
-* Merged Wasm_of_ocaml (#1724)
-* Lib: removed no longer relevant Js.optdef type annotations (#1769)
-* Misc: drop support for IE
-* Effects: add an optional feature of "dynamic switching" between CPS
+* Compiler/Runtime: Make resuming a continuation more efficient in js (#1765)
+* Compiler/Runtime: Effects: add an optional feature of "dynamic switching" between CPS
   and direct style, resulting in better performance when
   no effect handler is installed
-* Compiler/Runtime: Make resuming a continuation more efficient in js (#1765)
+* Compiler: Merged Wasm_of_ocaml (#1724)
+* Lib: fix the type of some DOM properties and methods (#1747)
+* Lib: removed no longer relevant Js.optdef type annotations (#1769)
 * Lib: Add other textMetrics property (#1784)
-* Misc: move tests to OCaml 5.3
+* Lib: rename Firebug to Console (#1802)
+* Test: use dune test stanzas (#1631)
 * Test: run wasm tests on windows
+* Misc: drop support for IE
+* Misc: move tests to OCaml 5.3
 
 ## Bug fixes
-* Fix small bug in global data flow analysis (#1768)
+* Compiler: Fix small bug in global data flow analysis (#1768)
 * Runtime: no longer leak channels
-* Fix Marshal.to_buffer (#1798)
+* Runtime: Fix Marshal.to_buffer (#1798)
 
 # 5.9.1 (02-12-2024) - Lille
 
