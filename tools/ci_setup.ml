@@ -56,7 +56,7 @@ let dune_workspace =
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
   (js_of_ocaml (enabled_if false))
-  (flags :standard -warn-error -7-8-27-30-32-34-37-49-52-55 -w -7-27-30-32-34-37-49-52-55-58-67-69)))
+  (flags :standard -alert -all -warn-error -7-8-27-30-32-34-37-49-52-55 -w -7-27-30-32-34-37-49-52-55-58-67-69)))
 |}
 
 let node_wrapper =
