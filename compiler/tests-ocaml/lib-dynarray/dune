@@ -1,4 +1,6 @@
 (tests
-  (names test heap_sort)
-  (libraries)
-  (modes js wasm))
+ (build_if
+  (>= %{ocaml_version} 5.3))
+ (names test heap_sort)
+ (libraries)
+ (modes js wasm))

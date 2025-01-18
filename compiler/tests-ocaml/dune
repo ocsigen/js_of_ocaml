@@ -2,3 +2,8 @@
  (_
   (flags
    (:standard -w -27-32-33-35-39-50-60))))
+
+(library
+ (name ocaml_testing)
+ (modules testing)
+ (wrapped false))

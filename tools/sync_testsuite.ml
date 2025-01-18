@@ -36,6 +36,8 @@ let _ignore_ = function
   | "lib-array" -> `Expect
   | "lib-bigarray-2" -> `Stubs
   | "lib-bigarray-file" -> `Mapfile
+  | "lib-lazy" -> `Expect
+  | "lib-internalformat" -> `Expect
   | _ -> `No
 
 let () =
@@ -63,6 +65,8 @@ let () =
             String.starts_with ~prefix:"lib-" x || String.starts_with ~prefix:"prim-" x
           then Printf.eprintf "missing %s\n" x
           else ()
+      | `Extra (Dir "effects/double-translation") -> ()
+      | `Extra (Ml "testing.ml") -> ()
       | `Extra (Dir x | Ml x) -> Printf.eprintf "extra %s\n" x
       | `Same x -> (
           Sys.command
@@ -72,7 +76,7 @@ let () =
                (Filename.concat dst x))
           |> function
           | 0 -> ()
-          | _ -> Printf.eprintf "difer %s\n" x))
+          | _ -> Printf.eprintf "differ %s\n" x))
     src
     dst
     ""

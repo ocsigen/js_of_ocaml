@@ -24,7 +24,9 @@
 
 (copy_files ../*.expected)
 
-(copy_files# ../*.ml)
+(copy_files#
+ (only_sources true)
+ (files ../*.ml))
 
 (tests
  (build_if
@@ -32,7 +34,6 @@
  (names
   cmphash
   marshal
-  effects
   evenodd
   manylive
   overflow
