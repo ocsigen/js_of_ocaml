@@ -1,7 +1,4 @@
-[@@@ocaml.warning "-35"]
-
-(* TEST
-*)
+(* TEST *)
 
 open Bigarray
 
@@ -149,12 +146,12 @@ let test np =
       pxi.{i+1} <- y;
       pxi.{j+1} <- -.y
   done;
-(*
+(**
   print_newline();
   for i=0 to 15 do Printf.printf "%d  %f  %f\n" i pxr.{i+1} pxi.{i+1} done;
 **)
   let _ = fft pxr pxi np in
-(*
+(**
   for i=0 to 15 do Printf.printf "%d  %f  %f\n" i pxr.{i+1} pxi.{i+1} done;
 **)
   let zr = ref 0.0 in

@@ -17,3 +17,5 @@ let _ =
   done
 
 let _ = exit 0
+
+include Testing

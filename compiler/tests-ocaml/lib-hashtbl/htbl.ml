@@ -1,9 +1,6 @@
-(* TEST
-*)
+(* TEST *)
 
 (* Hashtable operations, using maps as a reference *)
-
-[@@@ocaml.warning "-unused-var-strict"]
 
 open Printf
 

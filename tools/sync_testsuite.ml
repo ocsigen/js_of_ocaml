@@ -31,14 +31,25 @@ let readdir s =
 
 let split a b = FileSet.diff a b, FileSet.inter a b, FileSet.diff b a
 
-let _ignore_ = function
-  | "lib-either" -> `Expect
-  | "lib-array" -> `Expect
-  | "lib-bigarray-2" -> `Stubs
-  | "lib-bigarray-file" -> `Mapfile
-  | "lib-lazy" -> `Expect
-  | "lib-internalformat" -> `Expect
-  | _ -> `No
+let _ignore_ x =
+  if String.starts_with ~prefix:"typing-" x
+  then `Typing
+  else if String.starts_with ~prefix:"tool-" x
+  then `Tool
+  else if String.starts_with ~prefix:"lib-dynlink-" x
+  then `Dynlink
+  else
+    match x with
+    | "lib-either" -> `Expect
+    | "lib-array" -> `Expect
+    | "lib-bigarray-2" -> `Stubs
+    | "lib-digest/blake2b_self_test.ml" -> `Stubs
+    | "lib-bigarray-file" -> `Mapfile
+    | "lib-lazy" -> `Expect
+    | "lib-internalformat" -> `Expect
+    | "lib-random/parallel.ml" | "lib-str/parallel.ml" -> `Parallel
+    | "lib-hashtbl/compatibility.ml" -> `Old
+    | _ -> `No
 
 let () =
   let rec diff f a b path =
@@ -55,16 +66,13 @@ let () =
   in
   diff
     (function
-      | `Missing (Dir x | Ml x) ->
-          if
-            String.starts_with ~prefix:"typing-" x || String.starts_with ~prefix:"tool-" x
-          then ()
-          else if String.starts_with ~prefix:"lib-dynlink" x
-          then ()
-          else if
-            String.starts_with ~prefix:"lib-" x || String.starts_with ~prefix:"prim-" x
-          then Printf.eprintf "missing %s\n" x
-          else ()
+      | `Missing (Dir x | Ml x) -> (
+          match _ignore_ x with
+          | `Tool | `Typing | `Dynlink | `Expect -> ()
+          | `Stubs | `Old -> ()
+          | `Parallel -> ()
+          | `Mapfile -> ()
+          | `No -> Printf.eprintf "missing %s\n" x)
       | `Extra (Dir "effects/double-translation") -> ()
       | `Extra (Ml "testing.ml") -> ()
       | `Extra (Dir x | Ml x) -> Printf.eprintf "extra %s\n" x
