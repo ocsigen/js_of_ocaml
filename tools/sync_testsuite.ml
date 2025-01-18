@@ -2,6 +2,7 @@ module File = struct
   type t =
     | Ml of string
     | Dir of string
+    | Expected of string
 
   let compare a b = compare a b
 
@@ -9,6 +10,7 @@ module File = struct
     match b with
     | Ml x -> Ml (Filename.concat a x)
     | Dir x -> Dir (Filename.concat a x)
+    | Expected x -> Expected (Filename.concat a x)
 end
 
 module FileSet = Set.Make (File)
@@ -26,6 +28,10 @@ let readdir s =
          then Some (File.Dir f)
          else if String.ends_with ~suffix:".ml" f
          then Some (File.Ml f)
+         else if String.ends_with ~suffix:".expected" f
+         then Some (File.Expected (Filename.chop_suffix f ".expected"))
+         else if String.ends_with ~suffix:".reference" f
+         then Some (File.Expected (Filename.chop_suffix f ".reference"))
          else None)
   |> FileSet.of_seq
 
@@ -61,7 +67,8 @@ let () =
     FileSet.iter
       (function
         | Dir x -> diff f a b (Filename.concat path x)
-        | Ml x -> f (`Same (Filename.concat path x)))
+        | Ml x -> f (`Same (Filename.concat path x))
+        | Expected x -> f (`Expected (Filename.concat path x)))
       common
   in
   diff
@@ -73,13 +80,30 @@ let () =
           | `Parallel -> ()
           | `Mapfile -> ()
           | `No -> Printf.eprintf "missing %s\n" x)
+      | `Missing (Expected x) -> (
+          match _ignore_ (x ^ ".ml") with
+          | `Tool | `Typing | `Dynlink | `Expect -> ()
+          | `Stubs | `Old -> ()
+          | `Parallel -> ()
+          | `Mapfile -> ()
+          | `No -> Printf.eprintf "missing expected %s\n" x)
       | `Extra (Dir "effects/double-translation") -> ()
       | `Extra (Ml "testing.ml") -> ()
+      | `Extra (Expected x) -> Printf.eprintf "extra expected %s\n" x
       | `Extra (Dir x | Ml x) -> Printf.eprintf "extra %s\n" x
       | `Same x -> (
           Sys.command
             (Printf.sprintf
                "patdiff %s %s"
+               (Filename.concat src x)
+               (Filename.concat dst x))
+          |> function
+          | 0 -> ()
+          | _ -> Printf.eprintf "differ %s\n" x)
+      | `Expected x -> (
+          Sys.command
+            (Printf.sprintf
+               "patdiff %s.reference %s.expected"
                (Filename.concat src x)
                (Filename.concat dst x))
           |> function
