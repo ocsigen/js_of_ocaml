@@ -1,7 +1,7 @@
 (tests
  (names chi2 selfinit defaultinit testvectors compat_32_64)
  (build_if
-  (>= %{ocaml_version} 5))
+  (>= %{ocaml_version} 5.2))
  (libraries ocaml_testing)
  (modes
   js
