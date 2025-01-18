@@ -24,10 +24,10 @@
 
 (copy_files#
  (only_sources true)
- (files ../*.ml))
+ (files ../lib-effects/*.ml))
 
 (library
- (name jsoo_testsuite_effect_double2)
+ (name jsoo_testsuite_effect2)
  (enabled_if
   (>= %{ocaml_version} 5))
  (inline_tests
