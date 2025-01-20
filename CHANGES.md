@@ -14,6 +14,7 @@
 * Test: run wasm tests on windows
 * Misc: drop support for IE
 * Misc: move tests to OCaml 5.3
+* Runtime: support for float16 bigarrays
 
 ## Bug fixes
 * Compiler: Fix small bug in global data flow analysis (#1768)
