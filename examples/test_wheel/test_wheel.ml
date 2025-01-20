@@ -13,7 +13,7 @@ let () =
   in
   html##.onwheel :=
     Dom.handler (fun (event : Dom_html.mousewheelEvent Js.t) ->
-        Firebug.console##debug event;
+        Console.console##debug event;
         let deltaX = event##.deltaX in
         let deltaY = event##.deltaY in
         let deltaZ = event##.deltaZ in

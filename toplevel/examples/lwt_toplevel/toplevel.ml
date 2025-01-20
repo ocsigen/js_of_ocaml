@@ -442,7 +442,7 @@ let run _ =
        match exc with
        | Js_error.Exn e ->
            let e = Js_error.to_error e in
-           Firebug.console##log e##.stack
+           Console.console##log e##.stack
        | _ -> ());
   Lwt.async (fun () ->
       resize ~container ~textbox ()
@@ -477,7 +477,7 @@ let run _ =
   with
   | Not_found -> ()
   | exc ->
-      Firebug.console##log_3
+      Console.console##log_3
         (Js.string "exception")
         (Js.string (Printexc.to_string exc))
         exc

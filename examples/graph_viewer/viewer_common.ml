@@ -252,7 +252,7 @@ Format.eprintf "REDRAW %d %d %d %d@." x' y' w h;
     let dx = pm.valid_rect.x - x0 in
     let dy = pm.valid_rect.y - y0 in
     (*
-Firebug.console##log_6 (dx, pm.valid_rect.width, a.width,
+Console.console##log_6 (dx, pm.valid_rect.width, a.width,
                dy, pm.valid_rect.height, a.height);
 *)
     if

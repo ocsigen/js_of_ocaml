@@ -61,7 +61,7 @@ let with_error_log f x =
   Lwt.catch
     (fun () -> f x)
     (fun e ->
-      Firebug.console##log (Js.string (Printexc.to_string e));
+      Console.console##log (Js.string (Printexc.to_string e));
       Lwt.return ())
 
 let seq_loop evh ?(cancel_handler = false) ?use_capture ?passive target handler =
@@ -330,7 +330,7 @@ let mousewheel ?use_capture ?passive target =
          ?passive:(opt_map Js.bool passive)
          target
          (fun (ev : #Dom_html.event Js.t) ~dx ~dy ->
-           Firebug.console##log ev;
+           Console.console##log ev;
            cancel ();
            Lwt.wakeup w (ev, (dx, dy));
            Js.bool true)
