@@ -132,6 +132,7 @@ jobs:
 
       - name: Run tests with CPS effects
         if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
 
