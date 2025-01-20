@@ -109,6 +109,17 @@
          (then (local.set $i (i32.const 0))))
       (return_call $caml_hash_mix_int (local.get $h) (local.get $i)))
 
+   (func (export "caml_hash_mix_float16")
+      (param $h i32) (param $i i32) (result i32)
+      (if (i32.eq (i32.and (local.get $i) (i32.const 0x7c00))
+                  (i32.const 0x7c00))
+         (then
+            (if (i32.and (local.get $i) (i32.const 0x03ff))
+               (then (local.set $i (i32.const 0x7FC01))))))
+      (if (i32.eq (local.get $i) (i32.const 0x8000))
+         (then (local.set $i (i32.const 0))))
+      (return_call $caml_hash_mix_int (local.get $h) (local.get $i)))
+
    (func $caml_hash_mix_string (export "caml_hash_mix_string")
       (param $h i32) (param $s (ref $string)) (result i32)
       (local $i i32) (local $len i32) (local $w i32)

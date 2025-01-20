@@ -2,6 +2,7 @@ let extra_args_for_wasoo =
   [ "--experimental-wasm-imported-strings"
   ; "--experimental-wasm-stack-switching"
   ; "--stack-size=10000"
+  ; "--js-float16array"
   ]
 
 let env = Unix.environment ()

@@ -62,6 +62,7 @@
     Float32Array,
     Float64Array,
     Uint8Array,
+    globalThis.Float16Array || Float32Array,
     Uint8ClampedArray,
   ];
 
@@ -188,6 +189,7 @@
     ta_length: (a) => a.length,
     ta_get_f64: (a, i) => a[i],
     ta_get_f32: (a, i) => a[i],
+    ta_get_f16: (a, i) => a[i],
     ta_get_i32: (a, i) => a[i],
     ta_get_i16: (a, i) => a[i],
     ta_get_ui16: (a, i) => a[i],
@@ -198,6 +200,7 @@
       a[i] | (a[i + 1] << 8) | (a[i + 2] << 16) | (a[i + 3] << 24),
     ta_set_f64: (a, i, v) => (a[i] = v),
     ta_set_f32: (a, i, v) => (a[i] = v),
+    ta_set_f16: (a, i, v) => (a[i] = v),
     ta_set_i32: (a, i, v) => (a[i] = v),
     ta_set_i16: (a, i, v) => (a[i] = v),
     ta_set_ui16: (a, i, v) => (a[i] = v),
