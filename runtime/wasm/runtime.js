@@ -62,6 +62,7 @@
     Float32Array,
     Float64Array,
     Uint8Array,
+    Uint16Array,
     Uint8ClampedArray,
   ];
 
