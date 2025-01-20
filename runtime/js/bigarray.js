@@ -1012,12 +1012,12 @@ function caml_ba_hash(ba) {
 
 //Provides: caml_hash_mix_float16
 //Requires: caml_hash_mix_int
-function caml_hash_mix_float16(h, d) {
+function caml_hash_mix_float16(hash, d) {
   /* Normalize NaNs */
   if ((d & 0x7c00) === 0x7c00 && (d & 0x03ff) !== 0) {
     d = 0x7c01;
   } else if (d === 0x8000) {
-  /* Normalize -0 into +0 */
+    /* Normalize -0 into +0 */
     d = 0;
   }
   return caml_hash_mix_int(hash, d);
