@@ -986,8 +986,10 @@
                       (struct.get $bigarray $ba_kind (local.get $ba))))
                    ;; float16
                    (call $ta_set_f16 (local.get $data) (local.get $i)
-                      (struct.get $float 0
-                         (ref.cast (ref $float) (local.get $v))))
+                      (call $float16_to_double
+                         (call $double_to_float16
+                            (struct.get $float 0
+                               (ref.cast (ref $float) (local.get $v))))))
                    (return))
                  ;; complex64
                  (local.set $i (i32.shl (local.get $i) (i32.const 1)))
