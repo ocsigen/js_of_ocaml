@@ -54,6 +54,8 @@
 
 (test
  (name test_float16)
+ (build_if
+  (>= %{ocaml_version} 5.2))
  (modules test_float16)
  (modes js wasm native))
 
