@@ -74,104 +74,111 @@ var caml_unpackFloat16 = (function () {
 
 //Provides: caml_packFloat16
 var caml_packFloat16 = (function () {
-const INVERSE_OF_EPSILON = 1 / Number.EPSILON;
+  const INVERSE_OF_EPSILON = 1 / Number.EPSILON;
 
-function roundTiesToEven(num) {
-  return (num + INVERSE_OF_EPSILON) - INVERSE_OF_EPSILON;
-}
-
-const FLOAT16_MIN_VALUE = 6.103515625e-05;
-const FLOAT16_MAX_VALUE = 65504;
-const FLOAT16_EPSILON = 0.0009765625;
-
-const FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE = FLOAT16_EPSILON * FLOAT16_MIN_VALUE;
-const FLOAT16_EPSILON_DEVIDED_BY_EPSILON = FLOAT16_EPSILON * INVERSE_OF_EPSILON;
-
-function roundToFloat16(num) {
-  const number = +num;
-
-  // NaN, Infinity, -Infinity, 0, -0
-  if (!Number.isFinite(number) || number === 0) {
-    return number;
+  function roundTiesToEven(num) {
+    return num + INVERSE_OF_EPSILON - INVERSE_OF_EPSILON;
   }
 
-  // finite except 0, -0
-  const sign = number > 0 ? 1 : -1;
-  const absolute = Math.abs(number);
+  const FLOAT16_MIN_VALUE = 6.103515625e-5;
+  const FLOAT16_MAX_VALUE = 65504;
+  const FLOAT16_EPSILON = 0.0009765625;
 
-  // small number
-  if (absolute < FLOAT16_MIN_VALUE) {
-    return sign * roundTiesToEven(absolute / FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE) * FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE;
+  const FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE =
+    FLOAT16_EPSILON * FLOAT16_MIN_VALUE;
+  const FLOAT16_EPSILON_DEVIDED_BY_EPSILON =
+    FLOAT16_EPSILON * INVERSE_OF_EPSILON;
+
+  function roundToFloat16(num) {
+    const number = +num;
+
+    // NaN, Infinity, -Infinity, 0, -0
+    if (!Number.isFinite(number) || number === 0) {
+      return number;
+    }
+
+    // finite except 0, -0
+    const sign = number > 0 ? 1 : -1;
+    const absolute = Math.abs(number);
+
+    // small number
+    if (absolute < FLOAT16_MIN_VALUE) {
+      return (
+        sign *
+        roundTiesToEven(
+          absolute / FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE,
+        ) *
+        FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE
+      );
+    }
+
+    const temp = (1 + FLOAT16_EPSILON_DEVIDED_BY_EPSILON) * absolute;
+    const result = temp - (temp - absolute);
+
+    // large number
+    if (result > FLOAT16_MAX_VALUE || Number.isNaN(result)) {
+      return sign * Number.POSITIVE_INFINITY;
+    }
+
+    return sign * result;
   }
 
-  const temp = (1 + FLOAT16_EPSILON_DEVIDED_BY_EPSILON) * absolute;
-  const result = temp - (temp - absolute);
+  // base algorithm: http://fox-toolkit.org/ftp/fasthalffloatconversion.pdf
 
-  // large number
-  if (result > FLOAT16_MAX_VALUE || Number.isNaN(result)) {
-    return sign * Infinity;
+  const baseTable = new Uint16Array(512);
+  const shiftTable = new Uint8Array(512);
+
+  for (let i = 0; i < 256; ++i) {
+    const e = i - 127;
+
+    // very small number (0, -0)
+    if (e < -24) {
+      baseTable[i] = 0x0000;
+      baseTable[i | 0x100] = 0x8000;
+      shiftTable[i] = 24;
+      shiftTable[i | 0x100] = 24;
+
+      // small number (denorm)
+    } else if (e < -14) {
+      baseTable[i] = 0x0400 >> (-e - 14);
+      baseTable[i | 0x100] = (0x0400 >> (-e - 14)) | 0x8000;
+      shiftTable[i] = -e - 1;
+      shiftTable[i | 0x100] = -e - 1;
+
+      // normal number
+    } else if (e <= 15) {
+      baseTable[i] = (e + 15) << 10;
+      baseTable[i | 0x100] = ((e + 15) << 10) | 0x8000;
+      shiftTable[i] = 13;
+      shiftTable[i | 0x100] = 13;
+
+      // large number (Infinity, -Infinity)
+    } else if (e < 128) {
+      baseTable[i] = 0x7c00;
+      baseTable[i | 0x100] = 0xfc00;
+      shiftTable[i] = 24;
+      shiftTable[i | 0x100] = 24;
+
+      // stay (NaN, Infinity, -Infinity)
+    } else {
+      baseTable[i] = 0x7c00;
+      baseTable[i | 0x100] = 0xfc00;
+      shiftTable[i] = 13;
+      shiftTable[i | 0x100] = 13;
+    }
   }
 
-  return sign * result;
-}
-
-// base algorithm: http://fox-toolkit.org/ftp/fasthalffloatconversion.pdf
-
-const baseTable = new Uint16Array(512);
-const shiftTable = new Uint8Array(512);
-
-for (let i = 0; i < 256; ++i) {
-  const e = i - 127;
-
-  // very small number (0, -0)
-  if (e < -24) {
-    baseTable[i]         = 0x0000;
-    baseTable[i | 0x100] = 0x8000;
-    shiftTable[i]         = 24;
-    shiftTable[i | 0x100] = 24;
-
-  // small number (denorm)
-  } else if (e < -14) {
-    baseTable[i]         =  0x0400 >> (-e - 14);
-    baseTable[i | 0x100] = (0x0400 >> (-e - 14)) | 0x8000;
-    shiftTable[i]         = -e - 1;
-    shiftTable[i | 0x100] = -e - 1;
-
-  // normal number
-  } else if (e <= 15) {
-    baseTable[i]         =  (e + 15) << 10;
-    baseTable[i | 0x100] = ((e + 15) << 10) | 0x8000;
-    shiftTable[i]         = 13;
-    shiftTable[i | 0x100] = 13;
-
-  // large number (Infinity, -Infinity)
-  } else if (e < 128) {
-    baseTable[i]         = 0x7c00;
-    baseTable[i | 0x100] = 0xfc00;
-    shiftTable[i]         = 24;
-    shiftTable[i | 0x100] = 24;
-
-  // stay (NaN, Infinity, -Infinity)
-  } else {
-    baseTable[i]         = 0x7c00;
-    baseTable[i | 0x100] = 0xfc00;
-    shiftTable[i]         = 13;
-    shiftTable[i | 0x100] = 13;
-  }
-}
-
-    const buffer = new ArrayBuffer(4);
+  const buffer = new ArrayBuffer(4);
   const floatView = new Float32Array(buffer);
   const uint32View = new Uint32Array(buffer);
 
-
-return function (num) {
-  floatView[0] = roundToFloat16(num);
-  const f = uint32View[0];
-  const e = (f >> 23) & 0x1ff;
-  return baseTable[e] + ((f & 0x007fffff) >> shiftTable[e]);
-}
-})()
+  return function (num) {
+    floatView[0] = roundToFloat16(num);
+    const f = uint32View[0];
+    const e = (f >> 23) & 0x1ff;
+    return baseTable[e] + ((f & 0x007fffff) >> shiftTable[e]);
+  };
+})();
 
 //Provides: caml_ba_get_size_per_element
 function caml_ba_get_size_per_element(kind) {
