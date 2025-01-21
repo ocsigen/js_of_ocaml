@@ -74,46 +74,104 @@ var caml_unpackFloat16 = (function () {
 
 //Provides: caml_packFloat16
 var caml_packFloat16 = (function () {
-  var pow = Math.pow;
-  var MIN_INFINITY16 = 65520; // (2 - 2 ** -11) * 2 ** 15
-  var MIN_NORMAL16 = 0.000061005353927612305; // (1 - 2 ** -11) * 2 ** -14
-  var REC_MIN_SUBNORMAL16 = 16777216; // 2 ** 10 * 2 ** 14
-  var REC_SIGNIFICAND_DENOM16 = 1024; // 2 ** 10;
+const INVERSE_OF_EPSILON = 1 / Number.EPSILON;
 
-  var EPSILON = 2.220446049250313e-16; // Number.EPSILON
-  var INVERSE_EPSILON = 1 / EPSILON;
+function roundTiesToEven(num) {
+  return (num + INVERSE_OF_EPSILON) - INVERSE_OF_EPSILON;
+}
 
-  function roundTiesToEven(n) {
-    return n + INVERSE_EPSILON - INVERSE_EPSILON;
+const FLOAT16_MIN_VALUE = 6.103515625e-05;
+const FLOAT16_MAX_VALUE = 65504;
+const FLOAT16_EPSILON = 0.0009765625;
+
+const FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE = FLOAT16_EPSILON * FLOAT16_MIN_VALUE;
+const FLOAT16_EPSILON_DEVIDED_BY_EPSILON = FLOAT16_EPSILON * INVERSE_OF_EPSILON;
+
+function roundToFloat16(num) {
+  const number = +num;
+
+  // NaN, Infinity, -Infinity, 0, -0
+  if (!Number.isFinite(number) || number === 0) {
+    return number;
   }
-  return function (value) {
-    var orig = value;
-    if (Number.isNaN(value)) return 0x7e00; // NaN
-    if (value === 0) return (1 / value === Number.NEGATIVE_INFINITY) << 15; // +0 or -0
 
-    var neg = value < 0;
-    if (neg) value = -value;
-    if (value >= MIN_INFINITY16) return (neg << 15) | 0x7c00; // Infinity
-    if (value < MIN_NORMAL16)
-      return (neg << 15) | roundTiesToEven(value * REC_MIN_SUBNORMAL16); // subnormal
+  // finite except 0, -0
+  const sign = number > 0 ? 1 : -1;
+  const absolute = Math.abs(number);
 
-    // normal
-    var exponent = Math.log2(value) | 0;
-    if (exponent === -15) {
-      // we round from a value between 2 ** -15 * (1 + 1022/1024) (the largest subnormal) and 2 ** -14 * (1 + 0/1024) (the smallest normal)
-      // to the latter (former impossible because of the subnormal check above)
-      return (neg << 15) | REC_SIGNIFICAND_DENOM16;
-    }
-    var significand = roundTiesToEven(
-      (value * pow(2, -exponent) - 1) * REC_SIGNIFICAND_DENOM16,
-    );
-    if (significand === REC_SIGNIFICAND_DENOM16) {
-      // we round from a value between 2 ** n * (1 + 1023/1024) and 2 ** (n + 1) * (1 + 0/1024) to the latter
-      return (neg << 15) | ((exponent + 16) << 10);
-    }
-    return (neg << 15) | ((exponent + 15) << 10) | significand;
-  };
-})();
+  // small number
+  if (absolute < FLOAT16_MIN_VALUE) {
+    return sign * roundTiesToEven(absolute / FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE) * FLOAT16_EPSILON_MULTIPLIED_BY_FLOAT16_MIN_VALUE;
+  }
+
+  const temp = (1 + FLOAT16_EPSILON_DEVIDED_BY_EPSILON) * absolute;
+  const result = temp - (temp - absolute);
+
+  // large number
+  if (result > FLOAT16_MAX_VALUE || Number.isNaN(result)) {
+    return sign * Infinity;
+  }
+
+  return sign * result;
+}
+
+// base algorithm: http://fox-toolkit.org/ftp/fasthalffloatconversion.pdf
+
+const baseTable = new Uint16Array(512);
+const shiftTable = new Uint8Array(512);
+
+for (let i = 0; i < 256; ++i) {
+  const e = i - 127;
+
+  // very small number (0, -0)
+  if (e < -24) {
+    baseTable[i]         = 0x0000;
+    baseTable[i | 0x100] = 0x8000;
+    shiftTable[i]         = 24;
+    shiftTable[i | 0x100] = 24;
+
+  // small number (denorm)
+  } else if (e < -14) {
+    baseTable[i]         =  0x0400 >> (-e - 14);
+    baseTable[i | 0x100] = (0x0400 >> (-e - 14)) | 0x8000;
+    shiftTable[i]         = -e - 1;
+    shiftTable[i | 0x100] = -e - 1;
+
+  // normal number
+  } else if (e <= 15) {
+    baseTable[i]         =  (e + 15) << 10;
+    baseTable[i | 0x100] = ((e + 15) << 10) | 0x8000;
+    shiftTable[i]         = 13;
+    shiftTable[i | 0x100] = 13;
+
+  // large number (Infinity, -Infinity)
+  } else if (e < 128) {
+    baseTable[i]         = 0x7c00;
+    baseTable[i | 0x100] = 0xfc00;
+    shiftTable[i]         = 24;
+    shiftTable[i | 0x100] = 24;
+
+  // stay (NaN, Infinity, -Infinity)
+  } else {
+    baseTable[i]         = 0x7c00;
+    baseTable[i | 0x100] = 0xfc00;
+    shiftTable[i]         = 13;
+    shiftTable[i | 0x100] = 13;
+  }
+}
+
+    const buffer = new ArrayBuffer(4);
+  const floatView = new Float32Array(buffer);
+  const uint32View = new Uint32Array(buffer);
+
+
+return function (num) {
+  floatView[0] = roundToFloat16(num);
+  const f = uint32View[0];
+  const e = (f >> 23) & 0x1ff;
+  return baseTable[e] + ((f & 0x007fffff) >> shiftTable[e]);
+}
+})()
 
 //Provides: caml_ba_get_size_per_element
 function caml_ba_get_size_per_element(kind) {
