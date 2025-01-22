@@ -5,9 +5,9 @@ https://github.com/ocaml/ocaml under the testsuite/tests/
 directory.
 
 The tests have been updated to accommodate wasoo and jsoo but we should
-aim to keep diffs as small as possible to simplify (re-)synchronisation.
+aim at keeping diffs as small as possible to simplify (re-)synchronisation.
 
-- `*.reference` files in the ocaml repo and renamed to `*.expected` here.
+- `*.reference` files in the ocaml repo are renamed to `*.expected` here.
 - expect test are not suppot yet.
 
 ## Tooling
