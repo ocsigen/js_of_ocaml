@@ -238,7 +238,7 @@ function caml_ba_create_buffer(kind, size) {
       view = Uint8Array;
       break;
     case 13:
-      view = Uint16Array;
+      view = globalThis.Float16Array || Uint16Array;
       break;
   }
   if (!view) caml_invalid_argument("Bigarray.create: unsupported kind");
@@ -303,7 +303,9 @@ Ml_Bigarray.prototype.get = function (ofs) {
       var i = this.data[ofs * 2 + 1];
       return [254, r, i];
     case 13:
-      return caml_unpackFloat16(this.data[ofs]);
+      if (this.data instanceof Uint16Array)
+        return caml_unpackFloat16(this.data[ofs]);
+      else return this.data[ofs];
     default:
       return this.data[ofs];
   }
@@ -323,7 +325,9 @@ Ml_Bigarray.prototype.set = function (ofs, v) {
       this.data[ofs * 2 + 1] = v[2];
       break;
     case 13:
-      this.data[ofs] = caml_packFloat16(v);
+      if (this.data instanceof Uint16Array)
+        this.data[ofs] = caml_packFloat16(v);
+      else this.data[ofs] = v;
       break;
     default:
       this.data[ofs] = v;
@@ -360,7 +364,8 @@ Ml_Bigarray.prototype.fill = function (v) {
       }
       break;
     case 13:
-      this.data.fill(caml_packFloat16(v));
+      if (this.data instanceof Uint16Array) this.data.fill(caml_packFloat16(v));
+      else this.data.fill(v);
       break;
     default:
       this.data.fill(v);
@@ -380,6 +385,23 @@ Ml_Bigarray.prototype.compare = function (b, total) {
   for (var i = 0; i < this.dims.length; i++)
     if (this.dims[i] !== b.dims[i]) return this.dims[i] < b.dims[i] ? -1 : 1;
   switch (this.kind) {
+    case 13:
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+      if (this.data instanceof Uint16Array) {
+        for (var i = 0; i < this.data.length; i++) {
+          var x = caml_unpackFloat16(this.data[i]);
+          var y = caml_unpackFloat16(b.data[i]);
+          if (x < y) return -1;
+          if (x > y) return 1;
+          if (x !== y) {
+            if (!total) return Number.NaN;
+            if (!Number.isNaN(x)) return 1;
+            if (!Number.isNaN(y)) return -1;
+          }
+        }
+        break;
+      }
+    // fallthrough
     case 0:
     case 1:
     case 10:
@@ -406,14 +428,6 @@ Ml_Bigarray.prototype.compare = function (b, total) {
         if (this.data[i + 1] > b.data[i + 1]) return 1;
         if (this.data[i] >>> 0 < b.data[i] >>> 0) return -1;
         if (this.data[i] >>> 0 > b.data[i] >>> 0) return 1;
-      }
-      break;
-    case 13:
-      for (var i = 0; i < this.data.length; i++) {
-        var aa = caml_unpackFloat16(this.data[i]);
-        var bb = caml_unpackFloat16(b.data[i]);
-        if (aa < bb) return -1;
-        if (aa > bb) return 1;
       }
       break;
     case 2:
@@ -483,7 +497,7 @@ function caml_ba_create_unsafe(kind, layout, dims, data) {
     layout === 0 && // c_layout
     dims.length === 1 && // Array1
     size_per_element === 1 &&
-    kind !== 13 // float16
+    (kind !== 13 || data instanceof globalThis.Float16Array) // float16
   )
     // 1-to-1 mapping
     return new Ml_Bigarray_c_1_1(kind, layout, dims, data);
@@ -825,8 +839,11 @@ function caml_ba_serialize(writer, ba, sz) {
       }
       break;
     case 13: // Float16Array
-      for (var i = 0; i < ba.data.length; i++) {
-        writer.write(16, ba.data[i]);
+      var data2 = ba.data;
+      if (data2 instanceof globalThis.Float16Array)
+        data2 = new Uint16Array(data2.buffer, data2.byteOffset, data2.length);
+      for (var i = 0; i < data2.length; i++) {
+        writer.write(16, data2[i]);
       }
       break;
     case 0: // Float32Array
@@ -942,8 +959,11 @@ function caml_ba_deserialize(reader, sz, name) {
       }
       break;
     case 13: // Float16Array
+      var data2 = data;
+      if (data2 instanceof globalThis.Float16Array)
+        data2 = new Uint16Array(data2.buffer, data2.byteOffset, data2.length);
       for (var i = 0; i < size; i++) {
-        data[i] = reader.read16u();
+        data2[i] = reader.read16u();
       }
       break;
     case 0: // Float32Array
@@ -1067,8 +1087,11 @@ function caml_ba_hash(ba) {
       break;
     case 13:
       if (num_elts > 128) num_elts = 128;
+      var data2 = data;
+      if (data2 instanceof globalThis.Float16Array)
+        data2 = new Uint16Array(data2.buffer, data2.byteOffset, data2.length);
       for (var i = 0; i < num_elts; i++) {
-        h = caml_hash_mix_float16(h, ba.data[i]);
+        h = caml_hash_mix_float16(h, data2[i]);
       }
       break;
   }
