@@ -1,5 +1,6 @@
 (* TEST
-   include testing
+   include testing;
+   flags = "-no-strict-formats";
 *)
 
 (*
@@ -677,5 +678,3 @@ with e ->
   printf "unexpected exception: %s\n%!" (Printexc.to_string e);
   test false;
 ;;
-
-let () = exit 0

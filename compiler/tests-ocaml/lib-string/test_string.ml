@@ -44,15 +44,15 @@ let () =
 
 let () =
   printf "-- Hashtbl.hash raw_string: %x\n%!" (Hashtbl.hash raw_string);
-  printf "-- String.unseeded_hash raw_string: %x\n%!" (String.hash raw_string);
+  printf "-- String.hash raw_string: %x\n%!" (String.hash raw_string);
   printf "-- Hashtbl.seeded_hash 16 raw_string: %x\n%!" (Hashtbl.seeded_hash 16 raw_string);
-  printf "-- String.hash 16 raw_string: %x\n%!" (String.seeded_hash 16 raw_string);
+  printf "-- String.seeded_hash 16 raw_string: %x\n%!" (String.seeded_hash 16 raw_string);
 ;;
 
 (* GPR#805/815/833 *)
-let ()  =
-  if Sys.word_size = 32 then begin
-(*
+let () =
+  if Sys.word_size = 32 && Sys.backend_type = Native || Sys.backend_type = Bytecode
+  then begin
     let big = String.make Sys.max_string_length 'x' in
     let push x l = l := x :: !l in
     let (+=) a b = a := !a + b in
@@ -61,7 +61,9 @@ let ()  =
     while !sz <= 0 do push big l; sz += Sys.max_string_length done;
     try ignore (String.concat "" !l); assert false
     with Invalid_argument _ -> ();
-*)
+  end
+
+let () =
     assert(String.starts_with ~prefix:"foob" "foobarbaz");
     assert(String.starts_with ~prefix:"" "foobarbaz");
     assert(String.starts_with ~prefix:"" "");
@@ -74,4 +76,3 @@ let ()  =
     assert(not (String.ends_with ~suffix:"foobar" "bar"));
     assert(not (String.ends_with ~suffix:"foo" ""));
     assert(not (String.ends_with ~suffix:"obaz" "foobar"));
-  end

@@ -11,7 +11,7 @@ let _ =
   (* Violate abstraction of type Random.State.t to manipulate state directly *)
   let r = (Obj.magic a : Random.State.t) in
   for i = 0 to 49 do
-    Printf.printf "%Ld\n" (Random.State.bits64 r);
+    Printf.printf "%Ld\n" (Random.State.bits64 r)
   done
 
 let _ = exit 0

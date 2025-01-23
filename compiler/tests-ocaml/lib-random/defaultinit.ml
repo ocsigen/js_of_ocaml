@@ -1,5 +1,5 @@
 (* TEST
-   include testing
+ include testing;
 *)
 
 (* Check that the numbers drawn from the default state are the same
@@ -17,3 +17,5 @@ let _ =
   done
 
 let _ = exit 0
+
+include Testing

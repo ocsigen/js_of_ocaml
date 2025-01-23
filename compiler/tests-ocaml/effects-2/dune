@@ -22,9 +22,11 @@
    ;; TODO: remove once support in ocaml/dune#11222 is released.
    (compilation_mode whole_program))))
 
-(copy_files ../*.expected)
+(copy_files ../effects/*.expected)
 
-(copy_files# ../*.ml)
+(copy_files#
+ (only_sources true)
+ (files ../effects/*.ml))
 
 (tests
  (build_if
@@ -32,7 +34,6 @@
  (names
   cmphash
   marshal
-  effects
   evenodd
   manylive
   overflow

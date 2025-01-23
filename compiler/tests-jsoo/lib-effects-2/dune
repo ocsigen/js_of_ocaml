@@ -22,12 +22,42 @@
    ;; TODO: remove once support in ocaml/dune#11222 is released.
    (compilation_mode whole_program))))
 
-(copy_files# ../*.ml)
+(copy_files#
+ (only_sources true)
+ (files ../lib-effects/*.ml))
+
+(library
+ (name jsoo_testsuite_effect2)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (inline_tests
+  (modes js wasm best))
+ (modules
+  (:standard
+   \
+   assume_no_perform
+   assume_no_perform_unhandled
+   assume_no_perform_nested_handler
+   deep_state
+   effects))
+ (preprocess
+  (pps ppx_expect)))
+
+(tests
+ (build_if
+  (>= %{ocaml_version} 5))
+ (names effects)
+ (modules effects)
+ (modes js wasm))
 
 (tests
  (build_if
   (>= %{ocaml_version} 5))
  (names
+  assume_no_perform
+  assume_no_perform_unhandled
+  assume_no_perform_nested_handler)
+ (modules
   assume_no_perform
   assume_no_perform_unhandled
   assume_no_perform_nested_handler)

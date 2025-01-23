@@ -1,5 +1,6 @@
 (* TEST
-   include testing
+   include testing;
+   flags = "-no-strict-formats";
 *)
 
 (*
@@ -56,7 +57,7 @@ try
      test (sprintf "%u" (-1) = "2147483647");
   | 32 ->
      test (sprintf "%u" (-1) = "4294967295");
-  | 62 ->
+  | 63 ->
      test (sprintf "%u" (-1) = "9223372036854775807");
   | _ -> test false
   end;

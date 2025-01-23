@@ -16,9 +16,17 @@
    assume_no_perform
    assume_no_perform_unhandled
    assume_no_perform_nested_handler
-   deep_state))
+   deep_state
+   effects))
  (preprocess
   (pps ppx_expect)))
+
+(tests
+ (build_if
+  (>= %{ocaml_version} 5))
+ (names effects)
+ (modules effects)
+ (modes js wasm))
 
 (tests
  (build_if
