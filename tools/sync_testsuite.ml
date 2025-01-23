@@ -87,7 +87,7 @@ let () =
           | `Parallel -> ()
           | `Mapfile -> ()
           | `No -> Printf.eprintf "missing expected %s\n" x)
-      | `Extra (Dir "effects/double-translation") -> ()
+      | `Extra (Dir "effects-2") -> ()
       | `Extra (Ml "testing.ml") -> ()
       | `Extra (Expected x) -> Printf.eprintf "extra expected %s\n" x
       | `Extra (Dir x | Ml x) -> Printf.eprintf "extra %s\n" x
