@@ -107,9 +107,9 @@ module Test (A : S) : sig end = struct
   check_inval (fun i -> A.set a i 1.0) (-1);
   check_inval (fun i -> A.set a i 1.0) 1000;
   check_inval A.create (-1);
-  (* check_inval A.create (A.max_length + 1);*)
+  check_inval A.create (A.max_length + 1);
   check_inval (fun i -> A.make i 1.0) (-1);
-  (* check_inval (fun i -> A.make i 1.0) (A.max_length + 1); *)
+  check_inval (fun i -> A.make i 1.0) (A.max_length + 1);
 
   (* [length] *)
   let test_length l = assert (l = (A.length (A.create l))) in
@@ -125,8 +125,7 @@ module Test (A : S) : sig end = struct
   let a = A.init 1000 Float.of_int in
   check_i a;
   check_inval (fun i -> A.init i Float.of_int) (-1);
-  (* check_inval (fun i -> A.init i Float.of_int) (A.max_length + 1); *)
-
+  check_inval (fun i -> A.init i Float.of_int) (A.max_length + 1);
 
   (* [make_matrix] *)
   let check_make_matrix m n =
@@ -641,8 +640,7 @@ module Test (A : S) : sig end = struct
     assert (compare value value' = 0)
   in
   let l = [0.; 0.25; -4.; 3.14159265; nan; infinity; neg_infinity; neg_zero] in
-  (* js_of_ocaml doesn't marshal floats *)
-  if false then test_structured_io (A.of_list l);
+  test_structured_io (A.of_list l);
 
   (* map_inplace *)
   let a = A.init 4 (fun i -> Float.of_int (i + 1)) in

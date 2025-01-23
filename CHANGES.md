@@ -21,6 +21,7 @@
 * Runtime: no longer leak channels
 * Runtime: Fix Marshal.to_buffer (#1798)
 * Runtime: unmarshalling objects should refresh its id
+* Runtime: check size upper bound during array creation
 
 # 5.9.1 (02-12-2024) - Lille
 

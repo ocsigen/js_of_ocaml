@@ -158,7 +158,7 @@ function caml_check_bound(array, index) {
 //Provides: caml_array_make const (const, mutable)
 //Requires: caml_array_bound_error
 function caml_array_make(len, init) {
-  if (len < 0) caml_array_bound_error();
+  if (len >>> 0 >= ((0x7fffffff / 4) | 0)) caml_array_bound_error();
   var len = (len + 1) | 0;
   var b = new Array(len);
   b[0] = 0;
@@ -175,7 +175,7 @@ function caml_make_vect(len, init) {
 //Provides: caml_make_float_vect const (const)
 //Requires: caml_array_bound_error
 function caml_make_float_vect(len) {
-  if (len < 0) caml_array_bound_error();
+  if (len >>> 0 >= ((0x7fffffff / 8) | 0)) caml_array_bound_error();
   var len = (len + 1) | 0;
   var b = new Array(len);
   b[0] = 254;
@@ -187,7 +187,7 @@ function caml_make_float_vect(len) {
 //Requires: caml_array_bound_error
 //Version: >= 5.3
 function caml_array_create_float(len) {
-  if (len < 0) caml_array_bound_error();
+  if (len >>> 0 >= ((0x7fffffff / 8) | 0)) caml_array_bound_error();
   var len = (len + 1) | 0;
   var b = new Array(len);
   b[0] = 254;
@@ -197,7 +197,7 @@ function caml_array_create_float(len) {
 //Provides: caml_floatarray_create const (const)
 //Requires: caml_array_bound_error
 function caml_floatarray_create(len) {
-  if (len < 0) caml_array_bound_error();
+  if (len >>> 0 >= ((0x7fffffff / 8) | 0)) caml_array_bound_error();
   var len = (len + 1) | 0;
   var b = new Array(len);
   b[0] = 254;
@@ -206,17 +206,22 @@ function caml_floatarray_create(len) {
 }
 
 //Provides: caml_floatarray_make const (const)
-//Requires: caml_array_make
+//Requires: caml_array_bound_error
 //Version: >= 5.3
 function caml_floatarray_make(len, init) {
-  return caml_array_make(len, init);
+  if (len >>> 0 >= ((0x7fffffff / 8) | 0)) caml_array_bound_error();
+  var len = (len + 1) | 0;
+  var b = new Array(len);
+  b[0] = 254;
+  for (var i = 1; i < len; i++) b[i] = init;
+  return b;
 }
 
 //Provides: caml_floatarray_make_unboxed const (const)
-//Requires: caml_array_make
+//Requires: caml_floatarray_make
 //Version: >= 5.3
 function caml_floatarray_make_unboxed(len, init) {
-  return caml_array_make(len, init);
+  return caml_floatarray_make(len, init);
 }
 
 //Provides: caml_uniform_array_make const (const)
