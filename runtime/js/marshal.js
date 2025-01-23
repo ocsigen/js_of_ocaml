@@ -330,6 +330,7 @@ var caml_custom_ops = {
 //Requires: caml_float_of_bytes, caml_custom_ops
 //Requires: UInt8ArrayReader
 //Requires: caml_decompress_input
+//Requires: caml_set_oo_id
 function caml_input_value_from_reader(reader, ofs) {
   function readvlq(overflow) {
     var c = reader.read8u();
