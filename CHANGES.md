@@ -20,6 +20,7 @@
 * Compiler: Fix small bug in global data flow analysis (#1768)
 * Runtime: no longer leak channels
 * Runtime: Fix Marshal.to_buffer (#1798)
+* Runtime: unmarshalling objects should refresh its id
 
 # 5.9.1 (02-12-2024) - Lille
 

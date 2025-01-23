@@ -330,6 +330,7 @@ var caml_custom_ops = {
 //Requires: caml_float_of_bytes, caml_custom_ops
 //Requires: UInt8ArrayReader
 //Requires: caml_decompress_input
+//Requires: caml_set_oo_id
 function caml_input_value_from_reader(reader, ofs) {
   function readvlq(overflow) {
     var c = reader.read8u();
@@ -378,6 +379,7 @@ function caml_input_value_from_reader(reader, ofs) {
       break;
   }
   var stack = [];
+  var objects = [];
   var intern_obj_table = num_objects > 0 ? [] : null;
   var obj_counter = 0;
   function intern_rec(reader) {
@@ -389,6 +391,7 @@ function caml_input_value_from_reader(reader, ofs) {
         var v = [tag];
         if (size === 0) return v;
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+        if (tag === 248) objects.push(v);
         stack.push(v, size);
         return v;
       } else return code & 0x3f;
@@ -428,6 +431,7 @@ function caml_input_value_from_reader(reader, ofs) {
             var v = [tag];
             if (size === 0) return v;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+            if (tag === 248) objects.push(v);
             stack.push(v, size);
             return v;
           case 0x13: //cst.CODE_BLOCK64:
@@ -563,6 +567,10 @@ function caml_input_value_from_reader(reader, ofs) {
     var d = v.length;
     if (d < size) stack.push(v, size);
     v[d] = intern_rec(reader);
+  }
+  while (objects.length > 0) {
+    var x = objects.pop();
+    if (x[2] >= 0) caml_set_oo_id(x);
   }
   return res;
 }

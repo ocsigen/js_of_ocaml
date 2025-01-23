@@ -537,6 +537,6 @@ let () =
   let c = Marshal.from_string buf 0 in
   (* Note: currently the equality of dynarrays is *not* stable by
      marshalling-unmarshalling. *)
-  if false then assert (Stdlib.compare a c <> 0);
-  if false then assert (a <> c);
+  assert (Stdlib.compare a c <> 0);
+  assert (a <> c);
   ();;

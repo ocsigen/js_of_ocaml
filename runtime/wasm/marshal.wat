@@ -21,6 +21,9 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "obj" "double_array_tag" (global $double_array_tag i32))
+   (import "obj" "object_tag" (global $object_tag i32))
+   (import "obj" "caml_set_oo_id"
+      (func $caml_set_oo_id (param (ref eq)) (result (ref eq))))
    (import "string" "caml_string_concat"
       (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -47,7 +50,6 @@
    (import "custom" "caml_find_custom_operations"
       (func $caml_find_custom_operations
          (param (ref $string)) (result (ref null $custom_operations))))
-
    (import "version-dependent" "caml_marshal_header_size"
       (global $caml_marshal_header_size i32))
 
@@ -482,6 +484,22 @@
         (struct.set $stack_item $pos (local.get $item) (local.get $pos'))
         (if (i32.eq (local.get $pos') (array.len (local.get $dest)))
            (then
+               ;; If this is an object, refresh its ID
+               (if (i32.and
+                      (ref.eq
+                         (array.get $block (local.get $dest) (i32.const 0))
+                         (ref.i31 (global.get $object_tag)))
+                      (i32.gt_u (array.len (local.get $dest)) (i32.const 2)))
+                  (then
+                     ;; Predefined exception slots have a negative ID
+                     ;; and should not be refreshed
+                     (if (i32.le_s (i32.const 0)
+                            (i31.get_s
+                               (ref.cast (ref i31)
+                                  (array.get $block (local.get $dest)
+                                     (i32.const 2)))))
+                         (then
+                            (drop (call $caml_set_oo_id (local.get $dest)))))))
                (local.set $sp
                   (struct.get $stack_item $next (local.get $item)))))
         (block $done
