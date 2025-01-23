@@ -38,6 +38,7 @@
    \
    test_io
    test_floats
+   test_float16
    test_marshal_compressed
    test_parsing
    calc_parser
@@ -50,6 +51,13 @@
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
+
+(test
+ (name test_float16)
+ (build_if
+  (>= %{ocaml_version} 5.2))
+ (modules test_float16)
+ (modes js wasm native))
 
 (ocamlyacc calc_parser)
 
