@@ -4,7 +4,7 @@
  (_
   (js_of_ocaml
    (flags
-    (:standard --enable effects)))))
+    (:standard --effects cps)))))
 
 (tests
  (names
