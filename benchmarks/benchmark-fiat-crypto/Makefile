@@ -6,7 +6,7 @@ SHELL=/bin/bash -o pipefail
 
 bench:
 	@date -u +"%FT%TZ - $(NAME): starting"
-	$(MAKE) perform COMPILER=js_of_ocaml EXTRA_ARGS="--enable effects" KIND=js
+	$(MAKE) perform COMPILER=js_of_ocaml EXTRA_ARGS="--effects cps" KIND=js
 	$(MAKE) perform COMPILER=wasm_of_ocaml EXTRA_ARGS="" KIND=wasm
 	@date -u +"%FT%TZ - $(NAME): done"
 

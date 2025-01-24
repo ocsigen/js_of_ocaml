@@ -3,9 +3,9 @@ let () =
   let effects_flags l =
     match l, major >= 5 with
     | [ "with-effects-double-translation" ], true -> [ "--effects"; "double-translation" ]
-    | [ "with-effects" ], true -> [ "--enable"; "effects" ]
-    | _, true -> [ "--disable"; "effects" ]
-    | _, false -> [ "--disable"; "effects" ]
+    | [ "with-effects" ], true -> [ "--effects"; "cps" ]
+    | _, true -> []
+    | _, false -> []
   in
   match Sys.argv |> Array.to_list |> List.tl with
   | "txt" :: rest -> List.iter print_endline (effects_flags rest)
