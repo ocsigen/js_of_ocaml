@@ -1,4 +1,4 @@
-(lang dune 3.17)
+(lang dune 3.19)
 
 ;; Install the following opam switches, copy this file as
 ;; dune-workspace and run:

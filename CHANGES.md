@@ -2,6 +2,7 @@
 
 ## Features/Changes
 * Misc: drop support for OCaml 4.12 and bellow
+* Misc: switch to dune.3.19
 * Compiler: use a Wasm text files preprocessor (#1822)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
 * Compiler: optimize compilation of switches

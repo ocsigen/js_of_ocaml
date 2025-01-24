@@ -9,11 +9,11 @@
   (js_of_ocaml
    (compilation_mode separate)
    (flags
-    (:standard --enable effects)))
+    (:standard --effects cps)))
   (wasm_of_ocaml
    (compilation_mode separate)
    (flags
-    (:standard --enable effects)))
+    (:standard --effects cps)))
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
