@@ -3,17 +3,17 @@
  (deps ../../../LICENSE)
  (modules hfun)
  (libraries)
- (modes js))
-
-(tests
- (names hfun_wasm)
- (deps ../../../LICENSE)
- (modules hfun_wasm)
- (libraries)
  (modes wasm))
 
+(tests
+ (names hfun_js)
+ (deps ../../../LICENSE)
+ (modules hfun_js)
+ (libraries)
+ (modes js))
+
 (rule
- (copy hfun.ml hfun_wasm.ml))
+ (copy hfun.ml hfun_js.ml))
 
 (tests
  (names htbl)
