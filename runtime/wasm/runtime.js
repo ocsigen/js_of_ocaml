@@ -412,6 +412,7 @@
     getcwd: () => (isNode ? process.cwd() : "/static"),
     chdir: (x) => process.chdir(x),
     mkdir: (p, m) => fs.mkdirSync(p, m),
+    rmdir: (p) => fs.rmdirSync(p),
     unlink: (p) => fs.unlinkSync(p),
     readdir: (p) => fs.readdirSync(p),
     file_exists: (p) => +fs.existsSync(p),
