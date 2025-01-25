@@ -107,8 +107,9 @@ function caml_sys_open(name, flags, _perms) {
   return caml_sys_open_internal(file, undefined);
 }
 (function () {
+  var is_node = fs_node_supported();
   function file(fd, flags) {
-    if (fs_node_supported()) {
+    if (is_node) {
       return caml_sys_open_for_node(fd, flags);
     } else return new MlFakeFd_out(fd, flags);
   }
@@ -117,11 +118,11 @@ function caml_sys_open(name, flags, _perms) {
     0,
   );
   caml_sys_open_internal(
-    file(1, { buffered: 2, wronly: 1, isCharacterDevice: true }),
+    file(1, { buffered: is_node ? 1 : 2, wronly: 1, isCharacterDevice: true }),
     1,
   );
   caml_sys_open_internal(
-    file(2, { buffered: 2, wronly: 1, isCharacterDevice: true }),
+    file(2, { buffered: is_node ? 1 : 2, wronly: 1, isCharacterDevice: true }),
     2,
   );
 })();
@@ -338,6 +339,7 @@ function caml_ml_set_channel_refill(chanid, f) {
 
 //Provides: caml_refill
 //Requires: caml_ml_string_length, caml_uint8_array_of_string
+//Requires: caml_raise_sys_error
 function caml_refill(chan) {
   if (chan.refill != null) {
     var str = chan.refill();
@@ -355,6 +357,9 @@ function caml_refill(chan) {
       chan.buffer_max += str_a.length;
     }
   } else {
+    if (chan.fd === -1) {
+      caml_raise_sys_error("Bad file descriptor");
+    }
     var nread = chan.file.read(
       chan.offset,
       chan.buffer,
