@@ -1,15 +1,4 @@
 (env
- (with-effects
-  (flags
-   (:standard -w -38))
-  (js_of_ocaml
-   (flags
-    (:standard --effects=double-translation))
-   ;; separate compilation doesn't yet work when using
-   ;; '--effect=double-translation' since Dune doesn't know it should compile a
-   ;; different version of the dependencies.
-   ;; TODO: remove once support in ocaml/dune#11222 is released.
-   (compilation_mode whole_program)))
  (_
   (flags
    (:standard -w -38))
@@ -26,12 +15,16 @@
  (only_sources true)
  (files ../lib-effects/*.ml))
 
+(copy_files
+ (only_sources true)
+ (files ../lib-effects/*.expected))
+
 (library
  (name jsoo_testsuite_effect2)
  (enabled_if
   (>= %{ocaml_version} 5))
  (inline_tests
-  (modes js wasm best))
+  (modes js))
  (modules
   (:standard
    \
@@ -48,7 +41,7 @@
   (>= %{ocaml_version} 5))
  (names effects)
  (modules effects)
- (modes js wasm))
+ (modes js))
 
 (tests
  (build_if
