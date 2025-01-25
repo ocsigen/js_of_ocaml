@@ -612,8 +612,7 @@
                      (call $ta_copy
                         (struct.get $channel $buffer (local.get $ch))
                         (i32.const 0) (local.get $n)
-                        (i32.sub (struct.get $channel $max (local.get $ch))
-                           (struct.get $channel $curr (local.get $ch))))
+                        (struct.get $channel $max (local.get $ch)))
                      (struct.set $channel $curr (local.get $ch) (i32.const 0))
                      (struct.set $channel $max (local.get $ch)
                         (i32.sub (struct.get $channel $max (local.get $ch))
@@ -711,12 +710,12 @@
                (i64.add
                   (local.get $offset)
                   (i64.extend_i32_u (local.get $written))))
-            (local.set $towrite
-               (i32.sub (local.get $towrite) (local.get $written)))
-            (if (i32.gt_u (local.get $towrite) (i32.const 0))
+            (if (i32.gt_u (local.get $towrite) (local.get $written))
                (then
                   (call $ta_copy (local.get $buf)
                      (i32.const 0) (local.get $written) (local.get $towrite))))
+            (local.set $towrite
+               (i32.sub (local.get $towrite) (local.get $written)))
             (struct.set $channel $curr (local.get $ch) (local.get $towrite))))
       (i32.eqz (local.get $towrite)))
 
