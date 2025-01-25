@@ -1,0 +1,15 @@
+(tests
+ (names rename)
+ (libraries ocaml_testing)
+ (flags
+  (:standard -no-strict-formats \ -strict-formats))
+ (modes js wasm))
+
+(tests
+ (names immediate64)
+ (build_if
+  (>= %{ocaml_version} 4.10))
+ (libraries ocaml_testing)
+ (flags
+  (:standard -no-strict-formats \ -strict-formats))
+ (modes js wasm))
