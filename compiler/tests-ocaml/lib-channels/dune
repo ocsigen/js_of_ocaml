@@ -1,0 +1,37 @@
+(tests
+ (names close_in close_out in_channel_length seek_in)
+ (libraries ocaml_testing)
+ (flags
+  (:standard -no-strict-formats \ -strict-formats))
+ (modes js wasm))
+
+(tests
+ (names buffered)
+ (build_if
+  (>= %{ocaml_version} 4.14))
+ (libraries ocaml_testing)
+ (action
+  (pipe-outputs
+   (run node %{test})
+   (run cat)))
+ (flags
+  (:standard -no-strict-formats \ -strict-formats))
+ (modes js wasm))
+
+(tests
+ (names input_lines)
+ (build_if
+  (>= %{ocaml_version} 5.1))
+ (libraries ocaml_testing)
+ (flags
+  (:standard -no-strict-formats \ -strict-formats))
+ (modes js wasm))
+
+(tests
+ (names bigarrays)
+ (build_if
+  (>= %{ocaml_version} 5.2))
+ (libraries ocaml_testing)
+ (flags
+  (:standard -no-strict-formats \ -strict-formats))
+ (modes js wasm))
