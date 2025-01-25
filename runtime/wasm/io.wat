@@ -65,6 +65,11 @@
       (func $ta_blit_to_string
          (param (ref extern)) (param i32) (param (ref $string)) (param i32)
          (param i32)))
+   (import "bindings" "ta_subarray"
+      (func $ta_subarray
+         (param (ref extern)) (param i32) (param i32) (result (ref extern))))
+   (import "bindings" "ta_set"
+      (func $ta_set (param (ref extern)) (param (ref extern)) (param i32)))
    (import "custom" "custom_compare_id"
       (func $custom_compare_id
         (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -79,6 +84,8 @@
       (tag $javascript_exception (param externref)))
    (import "sys" "caml_handle_sys_error"
       (func $caml_handle_sys_error (param externref)))
+   (import "bigarray" "caml_ba_get_data"
+      (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
 
    (import "bindings" "map_new" (func $map_new (result (ref extern))))
    (import "bindings" "map_get"
@@ -400,6 +407,46 @@
          (i32.const 0)
          (local.get $s) (local.get $pos)
          (local.get $len))
+      (struct.set $channel $curr (local.get $ch) (local.get $len))
+      (local.get $len))
+
+   (func $caml_getblock_typed_array
+      (param $vch (ref eq)) (param $d (ref extern))
+      (param $pos i32) (param $len i32)
+      (result i32)
+      (local $ch (ref $channel))
+      (local $avail i32)
+      (local $nread i32)
+      (if (i32.eqz (local.get $len))
+         (then (return (i32.const 0))))
+      (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
+      (local.set $avail
+         (i32.sub (struct.get $channel $max (local.get $ch))
+            (struct.get $channel $curr (local.get $ch))))
+      (if (local.get $avail)
+         (then
+            (if (i32.gt_u (local.get $len) (local.get $avail))
+               (then (local.set $len (local.get $avail))))
+            (call $ta_set (local.get $d)
+               (call $ta_subarray (struct.get $channel $buffer (local.get $ch))
+                  (struct.get $channel $curr (local.get $ch))
+                  (i32.add (struct.get $channel $curr (local.get $ch))
+                     (local.get $len)))
+               (local.get $pos))
+            (struct.set $channel $curr (local.get $ch)
+               (i32.add (struct.get $channel $curr (local.get $ch))
+                  (local.get $len)))
+            (return (local.get $len))))
+      (local.set $nread
+         (call $caml_do_read (local.get $ch)
+            (i32.const 0) (struct.get $channel $size (local.get $ch))))
+      (struct.set $channel $max (local.get $ch) (local.get $nread))
+      (if (i32.gt_u (local.get $len) (local.get $nread))
+         (then (local.set $len (local.get $nread))))
+      (call $ta_set (local.get $d)
+         (call $ta_subarray (struct.get $channel $buffer (local.get $ch))
+            (i32.const 0) (local.get $len))
+         (local.get $pos))
       (struct.set $channel $curr (local.get $ch) (local.get $len))
       (local.get $len))
 
@@ -752,6 +799,27 @@
          (then (drop (call $caml_flush_partial (local.get $ch)))))
       (local.get $len))
 
+   (func $caml_putblock_typed_array
+      (param $ch (ref $channel)) (param $d (ref extern)) (param $pos i32)
+      (param $len i32) (result i32)
+      (local $free i32) (local $curr i32)
+      (local $buf (ref extern))
+      (local.set $curr (struct.get $channel $curr (local.get $ch)))
+      (local.set $free
+         (i32.sub (struct.get $channel $size (local.get $ch)) (local.get $curr)))
+      (if (i32.ge_u (local.get $len) (local.get $free))
+         (then (local.set $len (local.get $free))))
+      (local.set $buf (struct.get $channel $buffer (local.get $ch)))
+      (call $ta_set (local.get $buf)
+         (call $ta_subarray (local.get $d)
+            (local.get $pos) (i32.add (local.get $pos) (local.get $len)))
+         (local.get $curr))
+      (struct.set $channel $curr (local.get $ch)
+         (i32.add (local.get $curr) (local.get $len)))
+      (if (i32.ge_u (local.get $len) (local.get $free))
+         (then (drop (call $caml_flush_partial (local.get $ch)))))
+      (local.get $len))
+
    (func (export "caml_really_putblock")
       (param $ch (ref eq)) (param $s (ref $string))
       (param $pos i32) (param $len i32)
@@ -762,6 +830,21 @@
                (local.set $written
                   (call $caml_putblock (ref.cast (ref $channel) (local.get $ch))
                      (local.get $s) (local.get $pos) (local.get $len)))
+               (local.set $pos (i32.add (local.get $pos) (local.get $written)))
+               (local.set $len (i32.sub (local.get $len) (local.get $written)))
+               (br $loop)))))
+
+   (func $caml_really_putblock_typed_array
+      (param $ch (ref eq)) (param $d (ref extern))
+      (param $pos i32) (param $len i32)
+      (local $written i32)
+      (loop $loop
+         (if (local.get $len)
+            (then
+               (local.set $written
+                  (call $caml_putblock_typed_array
+                     (ref.cast (ref $channel) (local.get $ch))
+                     (local.get $d) (local.get $pos) (local.get $len)))
                (local.set $pos (i32.add (local.get $pos) (local.get $written)))
                (local.set $len (i32.sub (local.get $len) (local.get $written)))
                (br $loop)))))
@@ -862,4 +945,29 @@
          (call $get_fd_offset
             (struct.get $channel $fd
                (ref.cast (ref $channel) (local.get $ch))))))
+
+   (func (export "caml_ml_output_bigarray")
+      (param $ch (ref eq)) (param $a (ref eq)) (param $vpos (ref eq))
+      (param $vlen (ref eq)) (result (ref eq))
+      (local $d (ref extern)) (local $pos i32) (local $len i32)
+      (local.set $d (call $caml_ba_get_data (local.get $a)))
+      (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      (call $caml_really_putblock_typed_array
+         (local.get $ch)
+         (local.get $d)
+         (local.get $pos)
+         (local.get $len))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ml_input_bigarray")
+      (param $ch (ref eq)) (param $a (ref eq)) (param $vpos (ref eq))
+      (param $vlen (ref eq)) (result (ref eq))
+      (local $d (ref extern)) (local $pos i32) (local $len i32)
+      (local.set $d (call $caml_ba_get_data (local.get $a)))
+      (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      (ref.i31
+         (call $caml_getblock_typed_array
+            (local.get $ch) (local.get $d) (local.get $pos) (local.get $len))))
 )
