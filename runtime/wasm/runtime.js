@@ -219,7 +219,7 @@
     ta_subarray: (a, i, j) => a.subarray(i, j),
     ta_set: (a, b, i) => a.set(b, i),
     ta_new: (len) => new Uint8Array(len),
-    ta_copy: (ta, t, s, n) => ta.copyWithin(t, s, n),
+    ta_copy: (ta, t, s, e) => ta.copyWithin(t, s, e),
     ta_bytes: (a) =>
       new Uint8Array(a.buffer, a.byteOffset, a.length * a.BYTES_PER_ELEMENT),
     ta_blit_from_string: (s, p1, a, p2, l) => {
