@@ -294,9 +294,13 @@
       (local $ch (ref $channel))
       (local $fd i32)
       (local.set $ch (ref.cast (ref $channel) (local.get 0)))
-      (struct.set $channel $curr (local.get $ch) (i32.const 0))
-      (struct.set $channel $max (local.get $ch) (i32.const 0))
-      (struct.set $channel $size (local.get $ch) (i32.const 0))
+      ;; output channels: any output will trigger a flush since the
+      ;; buffer is non-empty (curr > 0) and full (curr = size)
+      ;; input channels: any input will trigger a read since the buffer
+      ;; is empty (curr = max)
+      (struct.set $channel $curr (local.get $ch) (i32.const 1))
+      (struct.set $channel $max (local.get $ch) (i32.const 1))
+      (struct.set $channel $size (local.get $ch) (i32.const 1))
       (local.set $fd (struct.get $channel $fd (local.get $ch)))
       (if (i32.ne (local.get $fd) (i32.const -1))
          (then
