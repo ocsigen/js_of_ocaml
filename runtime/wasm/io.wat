@@ -17,6 +17,8 @@
 
 (module
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
+   (import "fail" "caml_raise_sys_error"
+      (func $caml_raise_sys_error (param (ref eq))))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_jsstring_of_string"
@@ -170,7 +172,14 @@
    (func $release_fd_offset (param $fd i32)
       (call $map_delete (call $get_fd_offsets) (local.get $fd)))
 
+   (data $bad_file_descriptor "Bad file descriptor")
+
    (func $get_fd_offset (param $fd i32) (result (ref $fd_offset))
+      (if (i32.eq (local.get $fd) (i32.const -1))
+         (then
+            (call $caml_raise_sys_error
+               (array.new_data $string $bad_file_descriptor
+                  (i32.const 0) (i32.const 19)))))
       (call $map_get (call $get_fd_offsets) (local.get $fd)))
 
    (global $IO_BUFFER_SIZE i32 (i32.const 65536))
