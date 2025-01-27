@@ -144,33 +144,29 @@ if (globalThis.process?.platform === "win32") {
     try {
       var target = this.nm(n);
       var source = this.nm(o);
-      var target_stats = this.fs.existsSync(target)
-        ? this.fs.statSync(target)
-        : null;
-      var source_stats = this.fs.existsSync(source)
-        ? this.fs.statSync(source)
-        : null;
+      var target_stats, source_stats;
       if (
-        source_stats &&
-        source_stats.isDirectory() &&
-        target_stats &&
-        !target_stats.isDirectory()
+        (target_stats = this.fs.statSync(target, { throwIfNoEntry: false })) &&
+        (source_stats = this.fs.statSync(source, { throwIfNoEntry: false })) &&
+        source_stats.isDirectory()
       ) {
-        var err = new Error("rename");
-        err.code = 26;
-        err.path = n;
-        this.raise_nodejs_error(err, raise_unix);
+        if (target_stats.isDirectory()) {
+          if (!target.startsWith(source))
+            try {
+              this.fs.rmdirSync(target);
+            } catch {}
+        } else {
+          var err = new Error(
+            `ENOTDIR: not a directory, rename '${source}' -> '${target}'`,
+          );
+          throw Object.assign(err, {
+            errno: -20,
+            code: "ENOTDIR",
+            syscall: "rename",
+            path: target,
+          });
+        }
       }
-      if (
-        source_stats &&
-        source_stats.isDirectory() &&
-        target_stats &&
-        target_stats.isDirectory() &&
-        !target.startsWith(source)
-      )
-        try {
-          this.fs.rmdirSync(target);
-        } catch {}
       this.fs.renameSync(this.nm(o), this.nm(n));
     } catch (err) {
       this.raise_nodejs_error(err, raise_unix);
