@@ -20,6 +20,7 @@
    (import "bindings" "getcwd" (func $getcwd (result anyref)))
    (import "bindings" "chdir" (func $chdir (param anyref)))
    (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
+   (import "bindings" "rmdir" (func $rmdir (param anyref)))
    (import "bindings" "unlink" (func $unlink (param anyref)))
    (import "bindings" "readdir"
       (func $readdir (param anyref) (result (ref extern))))
@@ -82,6 +83,16 @@
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
             (return (ref.i31 (i32.const 0))))))
+
+   (func (export "caml_sys_rmdir")
+      (param $name (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $rmdir
+               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_sys_remove")
       (param $name (ref eq)) (result (ref eq))

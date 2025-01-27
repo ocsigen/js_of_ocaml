@@ -139,13 +139,49 @@ MlNodeDevice.prototype.open = function (name, f, raise_unix) {
   }
 };
 
-MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
-  try {
-    this.fs.renameSync(this.nm(o), this.nm(n));
-  } catch (err) {
-    this.raise_nodejs_error(err, raise_unix);
-  }
-};
+if (globalThis.process?.platform === "win32") {
+  MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
+    try {
+      var target = this.nm(n);
+      var source = this.nm(o);
+      var target_stats, source_stats;
+      if (
+        (target_stats = this.fs.statSync(target, { throwIfNoEntry: false })) &&
+        (source_stats = this.fs.statSync(source, { throwIfNoEntry: false })) &&
+        source_stats.isDirectory()
+      ) {
+        if (target_stats.isDirectory()) {
+          if (!target.startsWith(source))
+            try {
+              this.fs.rmdirSync(target);
+            } catch {}
+        } else {
+          var err = new Error(
+            `ENOTDIR: not a directory, rename '${source}' -> '${target}'`,
+          );
+          throw Object.assign(err, {
+            errno: -20,
+            code: "ENOTDIR",
+            syscall: "rename",
+            path: target,
+          });
+        }
+      }
+      this.fs.renameSync(this.nm(o), this.nm(n));
+    } catch (err) {
+      this.raise_nodejs_error(err, raise_unix);
+    }
+  };
+} else {
+  MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
+    try {
+      this.fs.renameSync(this.nm(o), this.nm(n));
+    } catch (err) {
+      this.raise_nodejs_error(err, raise_unix);
+    }
+  };
+}
+
 MlNodeDevice.prototype.stat = function (name, raise_unix) {
   try {
     var js_stats = this.fs.statSync(this.nm(name));

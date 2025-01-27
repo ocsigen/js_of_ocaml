@@ -135,6 +135,7 @@
     return h ^ s.length;
   }
 
+  const on_windows = isNode && process.platform === "win32";
   const bindings = {
     jstag:
       WebAssembly.JSTag ||
@@ -398,7 +399,7 @@
     channel_list,
     exit: (n) => isNode && process.exit(n),
     argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
-    on_windows: () => isNode && process.platform === "win32",
+    on_windows: () => on_windows,
     getenv: (n) => (isNode ? process.env[n] : null),
     system: (c) => {
       var res = require("node:child_process").spawnSync(c, {
@@ -412,11 +413,37 @@
     getcwd: () => (isNode ? process.cwd() : "/static"),
     chdir: (x) => process.chdir(x),
     mkdir: (p, m) => fs.mkdirSync(p, m),
+    rmdir: (p) => fs.rmdirSync(p),
     unlink: (p) => fs.unlinkSync(p),
     readdir: (p) => fs.readdirSync(p),
     file_exists: (p) => +fs.existsSync(p),
     is_directory: (p) => +fs.lstatSync(p).isDirectory(),
-    rename: (o, n) => fs.renameSync(o, n),
+    rename: (o, n) => {
+      var n_stat;
+      if (
+        on_windows &&
+        (n_stat = fs.statSync(n, { throwIfNoEntry: false })) &&
+        fs.statSync(o, { throwIfNoEntry: false })?.isDirectory()
+      ) {
+        if (n_stat.isDirectory()) {
+          if (!n.startsWith(o))
+            try {
+              fs.rmdirSync(n);
+            } catch {}
+        } else {
+          var e = new Error(
+            `ENOTDIR: not a directory, rename '${o}' -> '${n}'`,
+          );
+          throw Object.assign(e, {
+            errno: -20,
+            code: "ENOTDIR",
+            syscall: "rename",
+            path: n,
+          });
+        }
+      }
+      fs.renameSync(o, n);
+    },
     throw: (e) => {
       throw e;
     },
@@ -528,9 +555,8 @@
 
   start_fiber = make_promising(caml_start_fiber);
   var _initialize = make_promising(_initialize);
-  var process = globalThis.process;
-  if (process && process.on) {
-    process.on("uncaughtException", (err, origin) =>
+  if (globalThis.process && globalThis.process.on) {
+    globalThis.process.on("uncaughtException", (err, origin) =>
       caml_handle_uncaught_exception(err),
     );
   } else if (globalThis.addEventListener) {
