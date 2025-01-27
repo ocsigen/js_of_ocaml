@@ -152,16 +152,22 @@ if (globalThis.process?.platform === "win32") {
         : null;
       if (
         source_stats &&
-        !source_stats.isDirectory() &&
+        source_stats.isDirectory() &&
         target_stats &&
-        target_stats.isDirectory()
+        !target_stats.isDirectory()
       ) {
         var err = new Error("rename");
         err.code = 26;
-        err.path = o;
+        err.path = n;
         this.raise_nodejs_error(err, raise_unix);
       }
-      if (target_stats && target_stats.isDirectory())
+      if (
+        source_stats &&
+        source_stats.isDirectory() &&
+        target_stats &&
+        target_stats.isDirectory() &&
+        !target.startsWith(source)
+      )
         try {
           this.fs.rmdirSync(target);
         } catch {}
