@@ -22,6 +22,7 @@
 * Runtime: Fix Marshal.to_buffer (#1798)
 * Runtime: unmarshalling objects should refresh its id
 * Runtime: check size upper bound during array creation
+* Runtime: return sys_error when reading from a closed channels
 
 # 5.9.1 (02-12-2024) - Lille
 
