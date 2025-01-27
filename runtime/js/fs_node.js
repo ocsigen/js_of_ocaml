@@ -139,13 +139,47 @@ MlNodeDevice.prototype.open = function (name, f, raise_unix) {
   }
 };
 
-MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
-  try {
-    this.fs.renameSync(this.nm(o), this.nm(n));
-  } catch (err) {
-    this.raise_nodejs_error(err, raise_unix);
-  }
-};
+if (globalThis.process?.platform === "win32") {
+  MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
+    try {
+      var target = this.nm(n);
+      var source = this.nm(o);
+      var target_stats = this.fs.existsSync(target)
+        ? this.fs.statSync(target)
+        : null;
+      var source_stats = this.fs.existsSync(source)
+        ? this.fs.statSync(source)
+        : null;
+      if (
+        source_stats &&
+        !source_stats.isDirectory() &&
+        target_stats &&
+        target_stats.isDirectory()
+      ) {
+        var err = new Error("rename");
+        err.code = 26;
+        err.path = o;
+        this.raise_nodejs_error(err, raise_unix);
+      }
+      if (target_stats && target_stats.isDirectory())
+        try {
+          this.fs.rmdirSync(target);
+        } catch {}
+      this.fs.renameSync(this.nm(o), this.nm(n));
+    } catch (err) {
+      this.raise_nodejs_error(err, raise_unix);
+    }
+  };
+} else {
+  MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
+    try {
+      this.fs.renameSync(this.nm(o), this.nm(n));
+    } catch (err) {
+      this.raise_nodejs_error(err, raise_unix);
+    }
+  };
+}
+
 MlNodeDevice.prototype.stat = function (name, raise_unix) {
   try {
     var js_stats = this.fs.statSync(this.nm(name));
