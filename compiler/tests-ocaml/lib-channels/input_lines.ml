@@ -3,7 +3,7 @@
 open Printf
 
 let data_file =
-  "data.txt"
+  "input_lines_data.txt"
 
 let length = 500
 

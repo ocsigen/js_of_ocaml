@@ -1,0 +1,5 @@
+(tests
+ (names Tests toplevel_lets)
+ (build_if
+  (>= %{ocaml_version} 5.3))
+ (modes js wasm))

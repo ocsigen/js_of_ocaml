@@ -1,0 +1,3 @@
+(tests
+ (names kbmain)
+ (modes js wasm))

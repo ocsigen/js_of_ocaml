@@ -1,0 +1,4 @@
+(tests
+ (names new_obj with_tag)
+ (flags :standard -no-strict-sequence)
+ (modes js wasm))

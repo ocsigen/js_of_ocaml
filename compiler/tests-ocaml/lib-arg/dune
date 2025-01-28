@@ -1,0 +1,13 @@
+(tests
+ (names testarg testerror)
+ (modes js wasm))
+
+(rule
+ (target test_rest_all.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:test_rest_all.ml})))
+
+(rule
+ (alias runtest-js)
+ (action
+  (diff test_rest_all.ml test_rest_all.ml.corrected)))

@@ -7,7 +7,7 @@
    time, not just the first time. *)
 
 let () =
-  let oc = open_out_bin "testfile.tmp" in
+  let oc = open_out_bin Sys.argv.(1) in
   close_out oc;
   begin match output_byte oc 0 with
   | exception Sys_error _ -> ()

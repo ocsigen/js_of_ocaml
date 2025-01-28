@@ -1,0 +1,46 @@
+(rule
+ (target constprop.ml)
+ (action
+  (run gcc -P -E %{dep:constprop.ml.c} -o %{target})))
+
+(tests
+ (names
+  arrays
+  bigints
+  boxedints
+  constprop
+  divint
+  equality
+  eval_order_1
+  eval_order_2
+  eval_order_3
+  eval_order_4
+  eval_order_6
+  eval_order_7
+  eval_order_8
+  eval_order_pr10283
+  float
+  float_physical_equality
+  includestruct
+  localexn
+  localfunction
+  maps
+  min_int
+  objects
+  opt_variants
+  patmatch
+  pr7253
+  pr7533
+  pr7657
+  recvalues
+  sets
+  stringmatch
+  switch_opts
+  ; tailcalls ;; fixme
+  trigraph
+  tuple_match
+  zero_divided_by_n)
+ (build_if
+  (>= %{ocaml_version} 5.1))
+ (flags :standard -w -9-34-37-45-68-69-74 \ -strict-sequence)
+ (modes js wasm))

@@ -1,9 +1,18 @@
 (tests
- (names close_in close_out in_channel_length seek_in)
+ (names close_in in_channel_length seek_in)
  (libraries ocaml_testing)
  (flags
   (:standard -no-strict-formats \ -strict-formats))
  (modes js wasm))
+
+(tests
+ (names close_out)
+ (libraries ocaml_testing)
+ (flags
+  (:standard -no-strict-formats \ -strict-formats))
+ (modes js wasm)
+ (action
+  (run node %{test} testfile.tmp)))
 
 (tests
  (names buffered)

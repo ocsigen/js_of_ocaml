@@ -1,0 +1,29 @@
+(env
+ (_
+  (flags
+   (:standard -w -38))
+  (js_of_ocaml
+   (flags
+    (:standard --enable=effects))
+   (build_runtime_flags
+    (:standard --enable=effects)))))
+
+(tests
+ (names
+  coroutines
+  iterators
+  shallow2deep
+  resume_exn
+  test1
+  test2
+  test3
+  test4
+  test5
+  test6
+  test10
+  test11
+  tutorial)
+ (flags :standard -w -38)
+ (build_if
+  (>= %{ocaml_version} 5.3))
+ (modes js wasm))

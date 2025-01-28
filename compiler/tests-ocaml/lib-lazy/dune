@@ -1,0 +1,9 @@
+(rule
+ (target test.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:test.ml})))
+
+(rule
+ (alias runtest-js)
+ (action
+  (diff test.ml test.ml.corrected)))

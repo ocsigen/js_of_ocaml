@@ -1,0 +1,3 @@
+(tests
+ (names tupled tupled2)
+ (modes js wasm))

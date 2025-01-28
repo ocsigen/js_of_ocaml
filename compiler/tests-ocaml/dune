@@ -7,3 +7,14 @@
  (name ocaml_testing)
  (modules testing)
  (wrapped false))
+
+(executable
+ (name expect)
+ (modules expect)
+ (libraries toplevel_expect_test js_of_ocaml-toplevel)
+ (flags
+  (:standard -linkall))
+ (js_of_ocaml
+  (flags :standard --toplevel)
+  (compilation_mode whole_program))
+ (modes js))

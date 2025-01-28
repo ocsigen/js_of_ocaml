@@ -1,11 +1,11 @@
 (* TEST *)
 
 let () =
-  let oc = open_out_bin "data.txt" in
+  let oc = open_out_bin "seek_in_data.txt" in
   output_string oc "0\r\n1\r\n";
   close_out oc;
   (* Open in text mode to trigger EOL conversion under Windows *)
-  let ic = open_in "data.txt" in
+  let ic = open_in "seek_in_data.txt" in
   ignore (input_line ic);
   seek_in ic 3;
   (* Normally we should be looking at "1\r\n", which will be read as
