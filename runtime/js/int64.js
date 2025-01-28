@@ -297,12 +297,12 @@ function caml_int64_shift_right(x, s) {
   return x.shift_right(s);
 }
 
-//Provides: caml_int64_div const
+//Provides: caml_int64_div
 function caml_int64_div(x, y) {
   return x.div(y);
 }
 
-//Provides: caml_int64_mod const
+//Provides: caml_int64_mod
 function caml_int64_mod(x, y) {
   return x.mod(y);
 }
