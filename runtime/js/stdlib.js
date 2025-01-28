@@ -141,10 +141,9 @@ var caml_call_gen_tuple = (function () {
     if (d === 0) {
       return f.apply(null, args);
     } else if (d < 0) {
-      return caml_call_gen_direct(
-        f.apply(null, args.slice(0, n)),
-        args.slice(n),
-      );
+      var g = f(...args.slice(0, n));
+      if (typeof g !== "function") return g;
+      return caml_call_gen_direct(g, args.slice(n));
     } else {
       // FIXME: Restore the optimization of handling specially d = 1 or 2
       var args_ = args.slice();
