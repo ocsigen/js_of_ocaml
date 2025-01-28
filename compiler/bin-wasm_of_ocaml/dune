@@ -6,8 +6,8 @@
   jsoo_cmdline
   wasm_of_ocaml-compiler
   cmdliner
-  compiler-libs.common
   js_of_ocaml-compiler.runtime-files
+  js_of_ocaml-compiler.version
   yojson
   (select
    findlib_support.ml
