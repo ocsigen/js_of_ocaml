@@ -288,9 +288,9 @@ MlNodeDevice.prototype.stats_from_js = function (js_stats) {
     js_stats.gid,
     js_stats.rdev,
     js_stats.size,
-    js_stats.atimeMs,
-    js_stats.mtimeMs,
-    js_stats.ctimeMs,
+    js_stats.atimeMs / 1000,
+    js_stats.mtimeMs / 1000,
+    js_stats.ctimeMs / 1000,
   );
 };
 
