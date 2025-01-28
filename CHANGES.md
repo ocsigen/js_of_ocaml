@@ -1,4 +1,4 @@
-# dev
+# 6.0.0
 
 ## Features/Changes
 * Compiler/Runtime: Make resuming a continuation more efficient in js (#1765)
