@@ -412,7 +412,7 @@
                            (if (local.get $negative)
                               (then
                                  (br_if $overflow
-                                    (i32.gt_u (local.get $exp)
+                                    (i32.ge_u (local.get $exp)
                                        (i32.const 0x80000000)))
                                  (local.set $exp
                                     (i32.sub (i32.const 0) (local.get $exp))))
@@ -469,10 +469,12 @@
                   (i32.add (local.get $adj)
                      (i32.sub (local.get $dec_point) (local.get $n_bits))))))
          (if (i32.and (i32.gt_s (local.get $adj) (i32.const 0))
-                      (i32.gt_s (local.get $exp) (i32.const 0x7fffffff)))
+                      (i32.gt_s (local.get $exp)
+                         (i32.sub (i32.const 0x7fffffff) (local.get $adj))))
             (then (local.set $exp (i32.const 0x7fffffff)))
          (else (if (i32.and (i32.lt_s (local.get $adj) (i32.const 0))
-                            (i32.lt_s (local.get $exp) (i32.const 0x80000000)))
+                      (i32.lt_s (local.get $exp)
+                         (i32.sub (i32.const 0x80000000) (local.get $adj))))
             (then (local.set $exp (i32.const 0x80000000)))
             (else
               (local.set $exp (i32.add (local.get $exp) (local.get $adj)))))))
