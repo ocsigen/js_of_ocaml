@@ -34,6 +34,7 @@ function fs_node_supported() {
 //Provides: MlNodeDevice
 //Requires: MlNodeFd, caml_raise_sys_error, caml_raise_with_args
 //Requires: make_unix_err_args, caml_named_value, caml_string_of_jsstring
+//Requires: caml_int64_of_float
 function MlNodeDevice(root) {
   this.fs = require("node:fs");
   this.root = root;
@@ -182,18 +183,18 @@ if (globalThis.process?.platform === "win32") {
   };
 }
 
-MlNodeDevice.prototype.stat = function (name, raise_unix) {
+MlNodeDevice.prototype.stat = function (name, large, raise_unix) {
   try {
     var js_stats = this.fs.statSync(this.nm(name));
-    return this.stats_from_js(js_stats);
+    return this.stats_from_js(js_stats, large);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
 };
-MlNodeDevice.prototype.lstat = function (name, raise_unix) {
+MlNodeDevice.prototype.lstat = function (name, large, raise_unix) {
   try {
     var js_stats = this.fs.lstatSync(this.nm(name));
-    return this.stats_from_js(js_stats);
+    return this.stats_from_js(js_stats, large);
   } catch (err) {
     this.raise_nodejs_error(err, raise_unix);
   }
@@ -234,7 +235,7 @@ MlNodeDevice.prototype.raise_nodejs_error = function (err, raise_unix) {
     caml_raise_sys_error(err.toString());
   }
 };
-MlNodeDevice.prototype.stats_from_js = function (js_stats) {
+MlNodeDevice.prototype.stats_from_js = function (js_stats, large) {
   /* ===Unix.file_kind===
    * type file_kind =
    *     S_REG                       (** Regular file *)
@@ -280,14 +281,14 @@ MlNodeDevice.prototype.stats_from_js = function (js_stats) {
   return BLOCK(
     0,
     js_stats.dev,
-    js_stats.ino,
+    js_stats.ino | 0,
     file_kind,
     js_stats.mode,
     js_stats.nlink,
     js_stats.uid,
     js_stats.gid,
     js_stats.rdev,
-    js_stats.size,
+    large ? caml_int64_of_float(js_stats.size) : js_stats.size | 0,
     js_stats.atimeMs / 1000,
     js_stats.mtimeMs / 1000,
     js_stats.ctimeMs / 1000,
