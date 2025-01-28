@@ -184,6 +184,19 @@ let%expect_test "wrap_callback_strict" =
     got 1, 2, undefined, done
     Result: 0 |}]
 
+(* Wrap callback unsafe *)
+let%expect_test "over application, extra arguments are dropped" =
+  call_and_log (Js.Unsafe.callback cb3) {| (function(f){ return f(1,2,3,4) }) |};
+  [%expect {|
+    got 1, 2, 3, done
+    Result: 0 |}]
+
+let%expect_test "partial application, extra arguments set to undefined" =
+  call_and_log (Js.Unsafe.callback cb3) {| (function(f){ return f(1,2) }) |};
+  [%expect {|
+    got 1, 2, undefined, done
+    Result: 0 |}]
+
 (* Wrap meth callback *)
 
 let%expect_test "over application, extra arguments are dropped" =
