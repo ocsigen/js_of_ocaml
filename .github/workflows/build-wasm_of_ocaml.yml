@@ -98,6 +98,7 @@ jobs:
         if: runner.os == 'Windows'
 
       - name: Pin dune
+        if: runner.os == 'Windows'
         run: opam pin add -n dune https://github.com/hhugo/dune.git#shorter-path-jsoo
 
       - name: Pin wasm_of_ocaml
