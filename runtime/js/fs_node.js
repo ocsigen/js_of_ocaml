@@ -360,10 +360,10 @@ function MlNodeFd() {}
 //Provides: caml_sys_open_for_node
 //Requires: MlNodeFd
 function caml_sys_open_for_node(fd, flags) {
-  if (flags.name) {
+  if (flags.altname) {
     try {
       var fs = require("node:fs");
-      var fd2 = fs.openSync(flags.name, "rs");
+      var fd2 = fs.openSync(flags.altname, "rs");
       return new MlNodeFd(fd2, flags);
     } catch (e) {}
   }
