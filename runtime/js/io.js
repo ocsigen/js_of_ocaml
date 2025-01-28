@@ -310,7 +310,7 @@ function caml_ml_close_channel(chanid) {
 //Requires: caml_ml_channel_get
 function caml_ml_channel_size(chanid) {
   var chan = caml_ml_channel_get(chanid);
-  return chan.file.length();
+  return chan.file.length() | 0;
 }
 
 //Provides: caml_ml_channel_size_64
@@ -519,13 +519,13 @@ function caml_ml_seek_in_64(chanid, pos) {
 //Requires: caml_ml_channel_get
 function caml_pos_in(chanid) {
   var chan = caml_ml_channel_get(chanid);
-  return (chan.offset - (chan.buffer_max - chan.buffer_curr)) | 0;
+  return chan.offset - (chan.buffer_max - chan.buffer_curr);
 }
 
 //Provides: caml_ml_pos_in
 //Requires: caml_pos_in
 function caml_ml_pos_in(chanid) {
-  return caml_pos_in(chanid);
+  return caml_pos_in(chanid) | 0;
 }
 
 //Provides: caml_ml_pos_in_64
@@ -697,7 +697,7 @@ function caml_pos_out(chanid) {
 //Provides: caml_ml_pos_out
 //Requires: caml_pos_out
 function caml_ml_pos_out(chanid) {
-  return caml_pos_out(chanid);
+  return caml_pos_out(chanid) | 0;
 }
 
 //Provides: caml_ml_pos_out_64

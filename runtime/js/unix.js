@@ -204,16 +204,26 @@ function caml_unix_stat(name) {
   if (!root.device.stat) {
     caml_failwith("caml_unix_stat: not implemented");
   }
-  return root.device.stat(root.rest, /* raise Unix_error */ true);
+  return root.device.stat(
+    root.rest,
+    /* large */ false,
+    /* raise Unix_error */ true,
+  );
 }
 
 //Provides: caml_unix_stat_64
-//Requires: caml_unix_stat, caml_int64_of_int32
+//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_stat_64
 function caml_unix_stat_64(name) {
-  var r = caml_unix_stat(name);
-  r[9] = caml_int64_of_int32(r[9]);
-  return r;
+  var root = resolve_fs_device(name);
+  if (!root.device.stat) {
+    caml_failwith("caml_unix_stat: not implemented");
+  }
+  return root.device.stat(
+    root.rest,
+    /* large */ true,
+    /* raise Unix_error */ true,
+  );
 }
 
 //Provides: caml_unix_lstat
@@ -224,16 +234,26 @@ function caml_unix_lstat(name) {
   if (!root.device.lstat) {
     caml_failwith("caml_unix_lstat: not implemented");
   }
-  return root.device.lstat(root.rest, /* raise Unix_error */ true);
+  return root.device.lstat(
+    root.rest,
+    /* large */ false,
+    /* raise Unix_error */ true,
+  );
 }
 
 //Provides: caml_unix_lstat_64
-//Requires: caml_unix_lstat, caml_int64_of_int32
+//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_lstat_64
 function caml_unix_lstat_64(name) {
-  var r = caml_unix_lstat(name);
-  r[9] = caml_int64_of_int32(r[9]);
-  return r;
+  var root = resolve_fs_device(name);
+  if (!root.device.lstat) {
+    caml_failwith("caml_unix_lstat: not implemented");
+  }
+  return root.device.lstat(
+    root.rest,
+    /* large */ true,
+    /* raise Unix_error */ true,
+  );
 }
 
 //Provides: caml_unix_mkdir
