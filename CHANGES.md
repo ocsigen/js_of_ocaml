@@ -14,6 +14,7 @@
 * Test: run wasm tests on windows
 * Misc: drop support for IE
 * Misc: move tests to OCaml 5.3
+* Misc: import many test from the OCaml codebase
 * Runtime: support for float16 bigarrays
 
 ## Bug fixes
@@ -23,6 +24,8 @@
 * Runtime: unmarshalling objects should refresh its id
 * Runtime: check size upper bound during array creation
 * Runtime: return sys_error when reading from a closed channels
+* Runtime: fix parsing of hex-float with very large exponent
+* Runtime: make sure [n / 0L] is not optimized away by DCE
 
 # 5.9.1 (02-12-2024) - Lille
 
