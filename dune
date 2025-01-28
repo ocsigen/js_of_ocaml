@@ -21,6 +21,22 @@
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
+ (with-effects-double-translation
+  (js_of_ocaml
+   (compilation_mode separate)
+   (flags
+    (:standard --enable effects --effects double-translation))
+   (build_runtime_flags
+    (:standard --enable effects --effects double-translation)))
+  (wasm_of_ocaml
+   (compilation_mode separate)
+   (flags
+    (:standard --enable effects))
+   (build_runtime_flags
+    (:standard --enable effects)))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
  (bench_no_debug
   (flags
    (:standard \ -g))

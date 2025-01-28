@@ -1,4 +1,13 @@
 (env
+ (with-effects-double-translation
+  (flags
+   (:standard -w -38))
+  (js_of_ocaml
+   ;; separate compilation doesn't yet work when using
+   ;; '--effect=double-translation' since Dune doesn't know it should compile a
+   ;; different version of the dependencies.
+   ;; TODO: remove once support in ocaml/dune#11222 is released.
+   (compilation_mode whole_program)))
  (_
   (flags
    (:standard -w -38))
