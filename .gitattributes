@@ -3,3 +3,6 @@
 
 *.ml linguist-language=OCaml
 *.mli linguist-language=OCaml
+
+# needed for the testsuite
+compiler/tests-ocaml/basic-io/wc.ml -text
