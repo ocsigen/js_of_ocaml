@@ -577,7 +577,7 @@ function caml_float_of_string(s) {
   if (m) {
     var m3 = m[3].replace(/0+$/, "");
     var mantissa = Number.parseInt(m[1] + m[2] + m3, 16);
-    var exponent = (m[5] | 0) - 4 * m3.length;
+    var exponent = (+m[5] || 0) - 4 * m3.length;
     res = mantissa * Math.pow(2, exponent);
     return res;
   }
