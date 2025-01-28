@@ -484,22 +484,6 @@
         (struct.set $stack_item $pos (local.get $item) (local.get $pos'))
         (if (i32.eq (local.get $pos') (array.len (local.get $dest)))
            (then
-               ;; If this is an object, refresh its ID
-               (if (i32.and
-                      (ref.eq
-                         (array.get $block (local.get $dest) (i32.const 0))
-                         (ref.i31 (global.get $object_tag)))
-                      (i32.gt_u (array.len (local.get $dest)) (i32.const 2)))
-                  (then
-                     ;; Predefined exception slots have a negative ID
-                     ;; and should not be refreshed
-                     (if (i32.le_s (i32.const 0)
-                            (i31.get_s
-                               (ref.cast (ref i31)
-                                  (array.get $block (local.get $dest)
-                                     (i32.const 2)))))
-                         (then
-                            (drop (call $caml_set_oo_id (local.get $dest)))))))
                (local.set $sp
                   (struct.get $stack_item $next (local.get $item)))))
         (block $done
@@ -671,6 +655,23 @@
          (br $done))
         ;; done
         (array.set $block (local.get $dest) (local.get $pos) (local.get $v))
+        (if
+           ;; If this is an object, refresh its ID
+           (i32.and
+             (i32.eq (local.get $pos) (i32.const 2))
+             (ref.eq
+                     (array.get $block (local.get $dest) (i32.const 0))
+                     (ref.i31 (global.get $object_tag))))
+           (then
+             ;; Predefined exception slots have a negative ID
+             ;; and should not be refreshed
+             (if (i32.le_s (i32.const 0)
+                    (i31.get_s
+                       (ref.cast (ref i31)
+                          (array.get $block (local.get $dest)
+                             (i32.const 2)))))
+                 (then
+                    (drop (call $caml_set_oo_id (local.get $dest)))))))
         (br $loop)))
       (array.get $block (local.get $res) (i32.const 0)))
 
@@ -1332,6 +1333,7 @@
       (tuple.make 3 (local.get $len) (local.get $header) (local.get $s)))
 
    (func (export "caml_output_value_to_string")
+      (export "caml_output_value_to_bytes")
       (param $v (ref eq)) (param $flags (ref eq)) (result (ref eq))
       (local $r (tuple i32 (ref $string) (ref $extern_state)))
       (local $blk (ref $output_block)) (local $pos i32) (local $len i32)
