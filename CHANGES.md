@@ -26,6 +26,9 @@
 * Runtime: return sys_error when reading from a closed channels
 * Runtime: fix parsing of hex-float with very large exponent
 * Runtime: make sure [n / 0L] is not optimized away by DCE
+* Runtime: fix Unix.LargeFile.stat/lstat
+* Runtime: fix stat/lstat times
+* Runtime: fix reading from stdin in an interactive nodejs
 
 # 5.9.1 (02-12-2024) - Lille
 
