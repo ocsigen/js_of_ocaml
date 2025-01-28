@@ -63,6 +63,7 @@ function caml_obj_set_tag(x, tag) {
 }
 //Provides: caml_obj_block const (const,const)
 function caml_obj_block(tag, size) {
+  // TODO: fail for value that are not represented as an array
   var o = new Array(size + 1);
   o[0] = tag;
   for (var i = 1; i <= size; i++) o[i] = 0;
