@@ -1,0 +1,15 @@
+(tests
+ (names
+  lazy1
+  lazy2
+  ; lazy3
+  lazy4
+  lazy5
+  ; lazy6
+  ; lazy7
+  lazy8
+  ; minor_major_force
+  )
+ (build_if
+  (>= %{ocaml_version} 5.0))
+ (modes js wasm))

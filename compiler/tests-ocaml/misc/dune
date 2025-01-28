@@ -1,0 +1,33 @@
+(tests
+ (names
+  boyer
+  fib
+  gc_mark_stack_overflow
+  ; gcwords
+  gpr1370
+  hamming
+  nucleic
+  ; sieve
+  sorts
+  takc
+  taku)
+ (flags :standard -w -34-37)
+ (modes js wasm))
+
+(tests
+ (names
+  pr7168
+  ;; Stack overflows cannot be caught in Wasm
+  bdd
+  ;; wasm_of_ocaml: Error: the following command terminated unsuccessfully:
+  ;; wasm-opt -g --enable-gc --enable-multivalue
+  ;; --enable-exception-handling --enable-reference-types
+  ;; --enable-tail-call --enable-bulk-memory
+  ;; --enable-nontrapping-float-to-int --enable-strings -O2
+  ;; --skip-pass=inlining-optimizing --traps-never-happen
+  ;; '/tmp/build_664e90_dune/Dune__exe__Pr716884d8d3.wat' -o
+  ;; '/tmp/build_664e90_dune/Dune__exe__Pr7168c7cb63.wasm'
+  ;; --output-source-map
+  ;; '/tmp/build_664e90_dune/Dune__exe__Pr7168164d5d.wasm.map'
+  )
+ (modes js))

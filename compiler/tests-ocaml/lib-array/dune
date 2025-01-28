@@ -1,0 +1,11 @@
+(rule
+ (target test_array.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:test_array.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
+ (action
+  (diff test_array.ml test_array.ml.corrected)))

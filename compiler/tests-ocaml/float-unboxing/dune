@@ -1,0 +1,5 @@
+(tests
+ (names bug13448 bug13448bis float_subst_boxed_number unbox_under_assign)
+ (flags :standard -w -37)
+ (libraries compiler-libs.common)
+ (modes js wasm))

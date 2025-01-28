@@ -1,0 +1,6 @@
+(tests
+ (names tscanf)
+ (libraries ocaml_testing)
+ (build_if
+  (>= %{ocaml_version} 5.0))
+ (modes js wasm))
