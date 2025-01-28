@@ -4,6 +4,7 @@
 ==[[library|Library overview]]
 ==[[bindings|Binding a JS library]]
 ==[[rev-bindings|Export OCaml code to JavaScript]]
+==[[environment-variable|Environment variable]]
 ==<<a_api subproject="js_of_ocaml" text="API"|index>>
 
 =Wasm_of_ocaml - Reference Manual
