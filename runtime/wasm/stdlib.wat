@@ -208,16 +208,20 @@
             (local.set $exn (pop (ref eq)))
             (block $exit
                (block $not_registered
-                  (drop
-                     (call $caml_callback_2
-                        (br_on_null $not_registered
-                           (call $caml_named_value
-                               (array.new_data $string
-                                  $handle_uncaught_exception
-                                  (i32.const 0) (i32.const 34))))
-                        (local.get $exn)
-                        (ref.i31 (i32.const 0))))
-                  (br $exit))
+                  (try
+                     (do
+                        (drop
+                           (call $caml_callback_2
+                              (br_on_null $not_registered
+                                 (call $caml_named_value
+                                     (array.new_data $string
+                                        $handle_uncaught_exception
+                                        (i32.const 0) (i32.const 34))))
+                              (local.get $exn)
+                              (ref.i31 (i32.const 0)))))
+                     (catch $ocaml_exit
+                        (call $exit (pop i32))))
+                     (br $exit))
                (block $null
                   (drop
                      (call $caml_callback_1
