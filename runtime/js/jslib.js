@@ -443,6 +443,14 @@ function caml_js_function_arity(f) {
 
 //Provides: caml_js_function_arity
 //If: effects
+//If: doubletranslate
+function caml_js_function_arity(f) {
+  return f.l >= 0 ? f.l : (f.l = f.length);
+}
+
+//Provides: caml_js_function_arity
+//If: effects
+//If: !doubletranslate
 function caml_js_function_arity(f) {
   // Functions have an additional continuation parameter. This should
   // not be visible when calling them from JavaScript
