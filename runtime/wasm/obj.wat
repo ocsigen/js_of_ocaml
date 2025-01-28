@@ -230,6 +230,7 @@
       (param $tag (ref eq)) (param $size (ref eq)) (result (ref eq))
       (local $res (ref $block))
       ;; ZZZ float array / specific types?
+      ;; TODO: fail for value that are not represented as an array
       (local.set $res
          (array.new $block
             (ref.i31 (i32.const 0))
