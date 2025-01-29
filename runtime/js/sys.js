@@ -25,6 +25,8 @@ function caml_raise_sys_error(msg) {
 
 //Provides: caml_sys_exit
 //Requires: caml_invalid_argument
+//Alias: caml_unix_exit
+//Alias: unix_exit
 function caml_sys_exit(code) {
   if (globalThis.quit) globalThis.quit(code);
   //nodejs

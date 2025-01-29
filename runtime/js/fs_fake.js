@@ -25,6 +25,7 @@
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 //Requires: caml_named_value, caml_raise_with_args, caml_named_values
 //Requires: make_unix_err_args
+//Requires: caml_raise_system_error
 function MlFakeDevice(root, f) {
   this.content = {};
   this.root = root;
@@ -220,22 +221,26 @@ MlFakeDevice.prototype.unlink = function (name) {
   delete this.content[name];
   return 0;
 };
-MlFakeDevice.prototype.open = function (name, f) {
+MlFakeDevice.prototype.open = function (name, f, _perms, raise_unix) {
   var file;
-  if (f.rdonly && f.wronly)
-    caml_raise_sys_error(
-      this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible",
-    );
-  if (f.text && f.binary)
-    caml_raise_sys_error(
-      this.nm(name) + " : flags Open_text and Open_binary are not compatible",
-    );
   this.lookup(name);
   if (this.content[name]) {
     if (this.is_dir(name))
-      caml_raise_sys_error(this.nm(name) + " : is a directory");
+      caml_raise_system_error(
+        raise_unix,
+        "EISDIR",
+        "open",
+        "illegal operation on a directory",
+        this.nm(name),
+      );
     if (f.create && f.excl)
-      caml_raise_sys_error(this.nm(name) + " : file already exists");
+      caml_raise_system_error(
+        raise_unix,
+        "EEXIST",
+        "open",
+        "file already exists",
+        this.nm(name),
+      );
     file = this.content[name];
     if (f.truncate) file.truncate();
   } else if (f.create) {
@@ -243,39 +248,28 @@ MlFakeDevice.prototype.open = function (name, f) {
     this.content[name] = new MlFakeFile(caml_create_bytes(0));
     file = this.content[name];
   } else {
-    caml_raise_no_such_file(this.nm(name));
+    caml_raise_no_such_file(this.nm(name), raise_unix);
   }
   return new MlFakeFd(this.nm(name), file, f);
 };
-
-MlFakeDevice.prototype.open = function (name, f) {
+MlFakeDevice.prototype.truncate = function (name, len, raise_unix) {
   var file;
-  if (f.rdonly && f.wronly)
-    caml_raise_sys_error(
-      this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible",
-    );
-  if (f.text && f.binary)
-    caml_raise_sys_error(
-      this.nm(name) + " : flags Open_text and Open_binary are not compatible",
-    );
   this.lookup(name);
   if (this.content[name]) {
     if (this.is_dir(name))
-      caml_raise_sys_error(this.nm(name) + " : is a directory");
-    if (f.create && f.excl)
-      caml_raise_sys_error(this.nm(name) + " : file already exists");
+      caml_raise_system_error(
+        raise_unix,
+        "EISDIR",
+        "open",
+        "illegal operation on a directory",
+        this.nm(name),
+      );
     file = this.content[name];
-    if (f.truncate) file.truncate();
-  } else if (f.create) {
-    this.create_dir_if_needed(name);
-    this.content[name] = new MlFakeFile(caml_create_bytes(0));
-    file = this.content[name];
+    file.truncate(len);
   } else {
-    caml_raise_no_such_file(this.nm(name));
+    caml_raise_no_such_file(this.nm(name), raise_unix);
   }
-  return new MlFakeFd(this.nm(name), file, f);
 };
-
 MlFakeDevice.prototype.register = function (name, content) {
   var file;
   if (this.content[name])
@@ -330,7 +324,7 @@ MlFakeFile.prototype.write = function (offset, buf, pos, len) {
     caml_blit_bytes(old_data, 0, this.data, 0, clen);
   }
   caml_blit_bytes(caml_bytes_of_uint8_array(buf), pos, this.data, offset, len);
-  return 0;
+  return len;
 };
 MlFakeFile.prototype.read = function (offset, buf, pos, len) {
   var clen = this.length();
@@ -347,7 +341,7 @@ MlFakeFile.prototype.read = function (offset, buf, pos, len) {
 
 //Provides: MlFakeFd_out
 //Requires: MlFakeFile, caml_create_bytes, caml_blit_bytes, caml_bytes_of_uint8_array
-//Requires: caml_raise_sys_error
+//Requires: caml_raise_system_error
 function MlFakeFd_out(fd, flags) {
   MlFakeFile.call(this, caml_create_bytes(0));
   this.log = function (s) {
@@ -362,7 +356,16 @@ function MlFakeFd_out(fd, flags) {
 MlFakeFd_out.prototype.length = function () {
   return 0;
 };
-MlFakeFd_out.prototype.write = function (offset, buf, pos, len) {
+MlFakeFd_out.prototype.truncate = function (len, raise_unix) {
+  caml_raise_system_error(
+    raise_unix,
+    "EINVAL",
+    "ftruncate",
+    "invalid argument",
+  );
+};
+MlFakeFd_out.prototype.write = function (buf, pos, len, raise_unix) {
+  var written = len;
   if (this.log) {
     if (
       len > 0 &&
@@ -376,41 +379,87 @@ MlFakeFd_out.prototype.write = function (offset, buf, pos, len) {
     var src = caml_create_bytes(len);
     caml_blit_bytes(caml_bytes_of_uint8_array(buf), pos, src, 0, len);
     this.log(src.toUtf16());
-    return 0;
+    return written;
   }
-  caml_raise_sys_error(this.fd + ": file descriptor already closed");
+  caml_raise_system_error(raise_unix, "EBADF", "write", "bad file descriptor");
 };
-MlFakeFd_out.prototype.read = function (offset, buf, pos, len) {
-  caml_raise_sys_error(this.fd + ": file descriptor is write only");
+MlFakeFd_out.prototype.read = function (buf, pos, len, raise_unix) {
+  caml_raise_system_error(raise_unix, "EBADF", "read", "bad file descriptor");
+};
+MlFakeFd_out.prototype.seek = function (len, whence, raise_unix) {
+  caml_raise_system_error(raise_unix, "ESPIPE", "lseek", "illegal seek");
 };
 MlFakeFd_out.prototype.close = function () {
   this.log = undefined;
 };
+MlFakeFd_out.prototype.check_stream_semantics = function (cmd) {};
 
 //Provides: MlFakeFd
 //Requires: MlFakeFile
-//Requires: caml_raise_sys_error
+//Requires: caml_raise_system_error
 function MlFakeFd(name, file, flags) {
   this.file = file;
   this.name = name;
   this.flags = flags;
+  this.offset = 0;
+  this.seeked = false;
 }
 
-MlFakeFd.prototype.err_closed = function () {
-  caml_raise_sys_error(this.name + ": file descriptor already closed");
+MlFakeFd.prototype.err_closed = function (cmd, raise_unix) {
+  caml_raise_system_error(raise_unix, "EBADF", cmd, "bad file descriptor");
 };
 MlFakeFd.prototype.length = function () {
   if (this.file) return this.file.length();
-  this.err_closed();
+  this.err_closed("length");
 };
-MlFakeFd.prototype.write = function (offset, buf, pos, len) {
-  if (this.file) return this.file.write(offset, buf, pos, len);
-  this.err_closed();
+MlFakeFd.prototype.truncate = function (len, raise_unix) {
+  if (this.file) {
+    if (!(this.flags.wronly || this.flags.rdwr))
+      caml_raise_system_error(
+        raise_unix,
+        "EINVAL",
+        "truncate",
+        "invalid argument",
+      );
+    return this.file.truncate(len);
+  }
+  this.err_closed("truncate", raise_unix);
 };
-MlFakeFd.prototype.read = function (offset, buf, pos, len) {
-  if (this.file) return this.file.read(offset, buf, pos, len);
-  this.err_closed();
+MlFakeFd.prototype.write = function (buf, pos, len, raise_unix) {
+  if (this.file && (this.flags.wronly || this.flags.rdwr)) {
+    var offset = this.offset;
+    this.offset += len;
+    return this.file.write(offset, buf, pos, len);
+  }
+  this.err_closed("write", raise_unix);
+};
+MlFakeFd.prototype.read = function (buf, pos, len, raise_unix) {
+  if (this.file && !this.flags.wronly) {
+    var offset = this.offset;
+    this.offset += len;
+    return this.file.read(offset, buf, pos, len);
+  }
+  this.err_closed("read", raise_unix);
+};
+MlFakeFd.prototype.seek = function (offset, whence, raise_unix) {
+  switch (whence) {
+    case 0:
+      break;
+    case 1:
+      offset += this.offset;
+      break;
+    case 2:
+      offset += this.length();
+      break;
+  }
+  if (offset < 0)
+    caml_raise_system_error(raise_unix, "EINVAL", "lseek", "invalid argument");
+  this.offset = offset;
+  this.seeked = true;
 };
 MlFakeFd.prototype.close = function () {
   this.file = undefined;
+};
+MlFakeFd.prototype.check_stream_semantics = function (cmd) {
+  if (!this.file) return this.err_closed(cmd, /* raise Unix_error */ 1);
 };

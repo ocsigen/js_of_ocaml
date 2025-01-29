@@ -84,12 +84,12 @@ function caml_unix_filedescr_of_fd(x) {
 }
 
 //Provides: caml_unix_isatty
-//Requires: fs_node_supported
+//Requires: fs_node_supported, caml_unix_lookup_file
 //Alias: unix_isatty
-function caml_unix_isatty(fileDescriptor) {
+function caml_unix_isatty(fd) {
   if (fs_node_supported()) {
     var tty = require("node:tty");
-    return tty.isatty(fileDescriptor) ? 1 : 0;
+    return tty.isatty(caml_unix_lookup_file(fd).fd) ? 1 : 0;
   } else {
     return 0;
   }
@@ -256,6 +256,19 @@ function caml_unix_lstat_64(name) {
   );
 }
 
+//Provides: caml_unix_rename
+//Requires: caml_failwith, resolve_fs_device
+//Requires: caml_raise_system_error
+//Alias: unix_rename
+function caml_unix_rename(o, n) {
+  var o_root = resolve_fs_device(o);
+  var n_root = resolve_fs_device(n);
+  if (o_root.device !== n_root.device)
+    caml_raise_system_error(/* raise Unix_error */ 1, "EXDEV", "rename");
+  if (!o_root.device.rename) caml_failwith("caml_sys_rename: no implemented");
+  o_root.device.rename(o_root.rest, n_root.rest, /* raise Unix_error */ true);
+}
+
 //Provides: caml_unix_mkdir
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_mkdir
@@ -318,6 +331,253 @@ function caml_unix_unlink(name) {
   }
   root.device.unlink(root.rest, /* raise Unix_error */ true);
   return 0;
+}
+
+//Provides: caml_unix_utimes
+//Requires: resolve_fs_device, caml_failwith
+//Alias: unix_utimes
+function caml_unix_utimes(name, atime, mtime) {
+  var root = resolve_fs_device(name);
+  if (!root.device.utimes) {
+    caml_failwith("caml_unix_utimes: not implemented");
+  }
+  root.device.utimes(root.rest, atime, mtime, /* raise Unix_error */ true);
+  return 0;
+}
+
+//Provides: caml_unix_truncate
+//Requires: resolve_fs_device, caml_failwith
+//Alias: unix_truncate
+function caml_unix_truncate(name, len) {
+  var root = resolve_fs_device(name);
+  if (!root.device.truncate) {
+    caml_failwith("caml_unix_truncate: not implemented");
+  }
+  root.device.truncate(root.rest, len, /* raise Unix_error */ true);
+  return 0;
+}
+
+//Provides: caml_unix_truncate_64
+//Requires: resolve_fs_device, caml_failwith, caml_int64_to_float
+//Alias: unix_truncate_64
+function caml_unix_truncate_64(name, len) {
+  var root = resolve_fs_device(name);
+  if (!root.device.truncate) {
+    caml_failwith("caml_unix_truncate: not implemented");
+  }
+  root.device.truncate(
+    root.rest,
+    caml_int64_to_float(len),
+    /* raise Unix_error */ true,
+  );
+  return 0;
+}
+
+//Provides: caml_unix_open
+//Requires: resolve_fs_device, caml_sys_fds, MlChanid
+//Alias: unix_open
+function caml_unix_open(name, flags, perms) {
+  var f = {};
+  while (flags) {
+    switch (flags[1]) {
+      case 0:
+        f.rdonly = 1;
+        break;
+      case 1:
+        f.wronly = 1;
+        break;
+      case 2:
+        f.rdwr = 1;
+        break;
+      case 3:
+        f.nonblock = 1;
+        break;
+      case 4:
+        f.append = 1;
+        break;
+      case 5:
+        f.create = 1;
+        break;
+      case 6:
+        f.truncate = 1;
+        break;
+      case 7:
+        f.excl = 1;
+        break;
+      case 8:
+        f.noctty = 1;
+        break;
+      case 9:
+        f.dsync = 1;
+        break;
+      case 10:
+        f.sync = 1;
+        break;
+    }
+    flags = flags[2];
+  }
+  var root = resolve_fs_device(name);
+  var file = root.device.open(root.rest, f, perms, /* raise Unix_error */ true);
+  var idx = caml_sys_fds.length;
+  var chanid = new MlChanid(idx);
+  caml_sys_fds[idx] = { file: file, chanid: chanid };
+  return idx | 0;
+}
+
+//Provides: caml_unix_lookup_file
+//Requires: caml_sys_fds, caml_raise_system_error
+function caml_unix_lookup_file(fd, cmd) {
+  var fd_desc = caml_sys_fds[fd];
+  if (fd_desc === undefined)
+    caml_raise_system_error(/* raise Unix_error */ 1, "EBADF", cmd);
+  return fd_desc.file;
+}
+
+//Provides: caml_unix_fstat
+//Alias: unix_fstat
+//Requires: caml_unix_lookup_file, caml_failwith
+function caml_unix_fstat(fd) {
+  var file = caml_unix_lookup_file(fd, "fstat");
+  if (!file.stat) {
+    caml_failwith("caml_unix_fstat: not implemented");
+  }
+  return file.stat(/* large */ false);
+}
+
+//Provides: caml_unix_fstat_64
+//Alias: unix_fstat_64
+//Requires: caml_unix_lookup_file, caml_failwith
+function caml_unix_fstat_64(fd) {
+  var file = caml_unix_lookup_file(fd, "fstat");
+  if (!file.stat) {
+    caml_failwith("caml_unix_fstat64: not implemented");
+  }
+  return file.stat(/* large */ true);
+}
+
+//Provides: caml_unix_write
+//Alias: unix_write
+//Requires: caml_unix_lookup_file, caml_uint8_array_of_bytes
+function caml_unix_write(fd, buf, pos, len) {
+  var file = caml_unix_lookup_file(fd, "write");
+  var a = caml_uint8_array_of_bytes(buf);
+  var written = 0;
+  while (len > 0) {
+    var n = file.write(a, pos, len, /* raise unix_error */ 1);
+    written += n;
+    pos += n;
+    len -= n;
+  }
+  return written;
+}
+
+//Provides: caml_unix_write_bigarray
+//Alias: caml_unix_lookup_file
+//Requires: caml_ba_to_typed_array, caml_unix_lookup_file
+//Version: >= 5.2
+function caml_unix_write_bigarray(fd, buf, pos, len) {
+  var a = caml_ba_to_typed_array(buf);
+  var file = caml_unix_lookup_file(fd, "write");
+  var written = 0;
+  while (len > 0) {
+    var n = file.write(a, pos, len, /* raise unix_error */ 1);
+    written += n;
+    pos += n;
+    len -= n;
+  }
+  return written;
+}
+
+//Provides: caml_unix_read
+//Alias: unix_read
+//Requires: caml_unix_lookup_file, caml_uint8_array_of_bytes
+function caml_unix_read(fd, buf, pos, len) {
+  var file = caml_unix_lookup_file(fd, "read");
+  return file.read(
+    caml_uint8_array_of_bytes(buf),
+    pos,
+    len,
+    /* raise unix_error */ 1,
+  );
+}
+
+//Provides: caml_unix_read_bigarray
+//Alias: unix_read_bigarray
+//Requires: caml_ba_to_typed_array, caml_unix_lookup_file
+//Version: >= 5.2
+function caml_unix_read_bigarray(fd, buf, pos, len) {
+  var a = caml_ba_to_typed_array(buf);
+  var file = caml_unix_lookup_file(fd, "read");
+  return file.read(a, pos, len, /* raise unix_error */ 1);
+}
+
+//Provides: caml_unix_lseek
+//Alias: unix_lseek
+//Requires: caml_unix_lookup_file
+function caml_unix_lseek(fd, len, whence) {
+  var file = caml_unix_lookup_file(fd, "lseek");
+  return file.seek(len, whence, /* raise unix_error */ 1);
+}
+
+//Provides: caml_unix_lseek_64
+//Alias: unix_lseek_64
+//Requires: caml_unix_lookup_file, caml_int64_to_float
+function caml_unix_lseek_64(fd, len, whence) {
+  var file = caml_unix_lookup_file(fd, "lseek");
+  return file.seek(caml_int64_to_float(len), whence, /* raise unix_error */ 1);
+}
+
+//Provides: caml_unix_ftruncate
+//Alias: unix_ftruncate
+//Requires: caml_unix_lookup_file, caml_failwith
+function caml_unix_ftruncate(fd, len) {
+  var file = caml_unix_lookup_file(fd, "ftruncate");
+  if (!file.truncate) {
+    caml_failwith("caml_unix_ftruncate: not implemented");
+  }
+  file.truncate(len, /* raise unix_error */ 1);
+  return 0;
+}
+
+//Provides: caml_unix_ftruncate_64
+//Alias: unix_ftruncate_64
+//Requires: caml_unix_lookup_file, caml_failwith, caml_int64_to_float
+function caml_unix_ftruncate_64(fd, len) {
+  var file = caml_unix_lookup_file(fd, "ftruncate");
+  if (!file.truncate) {
+    caml_failwith("caml_unix_ftruncate_64: not implemented");
+  }
+  file.truncate(caml_int64_to_float(len), /* raise unix_error */ 1);
+  return 0;
+}
+
+//Provides: caml_unix_close
+//Alias: unix_close
+//Requires: caml_unix_lookup_file
+function caml_unix_close(fd) {
+  var file = caml_unix_lookup_file(fd, "close");
+  file.close(/* raise unix_error */ 1);
+  return 0;
+}
+
+//Provides: caml_unix_inchannel_of_filedescr
+//Alias: unix_inchannel_of_filedescr
+//Alias: win_inchannel_of_filedescr
+//Requires: caml_unix_lookup_file, caml_ml_open_descriptor_in
+function caml_unix_inchannel_of_filedescr(fd) {
+  var file = caml_unix_lookup_file(fd, "out_channel_of_descr");
+  file.check_stream_semantics("in_channel_of_descr");
+  return caml_ml_open_descriptor_in(fd);
+}
+
+//Provides: caml_unix_outchannel_of_filedescr
+//Alias: unix_outchannel_of_filedescr
+//Alias: win_outchannel_of_filedescr
+//Requires: caml_unix_lookup_file, caml_ml_open_descriptor_out
+function caml_unix_outchannel_of_filedescr(fd) {
+  var file = caml_unix_lookup_file(fd, "out_channel_of_descr");
+  file.check_stream_semantics("out_channel_of_descr");
+  return caml_ml_open_descriptor_out(fd);
 }
 
 //Provides: caml_unix_getuid
@@ -438,4 +698,18 @@ function caml_unix_findclose(dir_handle) {
 //Alias: unix_inet_addr_of_string
 function caml_unix_inet_addr_of_string() {
   return 0;
+}
+
+//Provides: caml_raise_system_error
+//Requires: caml_raise_with_args, make_unix_err_args, caml_named_value
+//Requires: caml_raise_sys_error
+function caml_raise_system_error(raise_unix, code, cmd, msg, path) {
+  var unix_error = caml_named_value("Unix.Unix_error");
+  if (raise_unix && unix_error)
+    caml_raise_with_args(unix_error, make_unix_err_args(code, cmd, path));
+  else {
+    var msg = code + ": " + msg + ", " + cmd;
+    if (path !== undefined) msg += " '" + path + "'";
+    caml_raise_sys_error(msg);
+  }
 }

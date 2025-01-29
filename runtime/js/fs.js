@@ -217,9 +217,14 @@ function caml_sys_chdir(dir) {
 }
 
 //Provides: caml_raise_no_such_file
-//Requires: caml_raise_sys_error
-function caml_raise_no_such_file(name) {
-  caml_raise_sys_error(name + ": No such file or directory");
+//Requires: caml_raise_system_error
+function caml_raise_no_such_file(name, raise_unix) {
+  caml_raise_system_error(
+    raise_unix,
+    "ENOENT",
+    "no such file or directory",
+    name,
+  );
 }
 
 //Provides: caml_sys_file_exists
@@ -347,7 +352,7 @@ function caml_read_file_content(name) {
     var file = root.device.open(root.rest, { rdonly: 1 });
     var len = file.length();
     var buf = new Uint8Array(len);
-    file.read(0, buf, 0, len);
+    file.read(buf, 0, len);
     return caml_string_of_uint8_array(buf);
   }
   caml_raise_no_such_file(caml_jsbytes_of_string(name));
