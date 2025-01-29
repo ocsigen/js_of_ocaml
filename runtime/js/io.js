@@ -42,7 +42,6 @@ function MlChanid(id) {
 //Requires: caml_raise_sys_error
 //Requires: MlFakeFd_out
 //Requires: resolve_fs_device
-//Requires: caml_jsbytes_of_string
 //Requires: fs_node_supported
 //Requires: caml_sys_fds
 //Requires: caml_sys_open_for_node
