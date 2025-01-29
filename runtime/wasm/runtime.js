@@ -455,7 +455,7 @@
     mkdir: (p, m) => fs.mkdirSync(p, m),
     rmdir: (p) => fs.rmdirSync(p),
     unlink: (p) => fs.unlinkSync(p),
-    readdir: (p) => fs.readdirSync(p),
+    read_dir: (p) => fs.readdirSync(p),
     stat: (p, l) => alloc_stat(fs.statSync(p), l),
     lstat: (p, l) => alloc_stat(fs.lstatSync(p), l),
     fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
