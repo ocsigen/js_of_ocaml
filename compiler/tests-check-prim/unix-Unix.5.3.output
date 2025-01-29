@@ -8,11 +8,8 @@ caml_continuation_use
 caml_int_as_pointer
 caml_reset_afl_instrumentation
 caml_unix_accept
-caml_unix_access
 caml_unix_alarm
 caml_unix_bind
-caml_unix_chdir
-caml_unix_chmod
 caml_unix_chown
 caml_unix_chroot
 caml_unix_clear_close_on_exec
@@ -22,22 +19,13 @@ caml_unix_dup
 caml_unix_dup2
 caml_unix_environment
 caml_unix_environment_unsafe
-caml_unix_error_message
 caml_unix_execv
 caml_unix_execve
 caml_unix_execvp
 caml_unix_execvpe
-caml_unix_fchmod
 caml_unix_fchown
 caml_unix_fork
-caml_unix_fsync
 caml_unix_getaddrinfo
-caml_unix_getcwd
-caml_unix_getegid
-caml_unix_geteuid
-caml_unix_getgid
-caml_unix_getgrgid
-caml_unix_getgrnam
 caml_unix_getgroups
 caml_unix_gethostbyaddr
 caml_unix_gethostbyname
@@ -50,14 +38,12 @@ caml_unix_getpid
 caml_unix_getppid
 caml_unix_getprotobyname
 caml_unix_getprotobynumber
-caml_unix_getpwnam
 caml_unix_getservbyname
 caml_unix_getservbyport
 caml_unix_getsockname
 caml_unix_getsockopt
 caml_unix_initgroups
 caml_unix_kill
-caml_unix_link
 caml_unix_listen
 caml_unix_lockf
 caml_unix_map_file_bytecode
@@ -83,7 +69,6 @@ caml_unix_shutdown
 caml_unix_sigpending
 caml_unix_sigprocmask
 caml_unix_sigsuspend
-caml_unix_single_write
 caml_unix_sleep
 caml_unix_socket
 caml_unix_socketpair
@@ -95,7 +80,6 @@ caml_unix_tcflush
 caml_unix_tcgetattr
 caml_unix_tcsendbreak
 caml_unix_tcsetattr
-caml_unix_times
 caml_unix_umask
 caml_unix_wait
 caml_unix_waitpid
@@ -225,10 +209,13 @@ jsoo_toplevel_init_compile
 jsoo_toplevel_init_reloc
 
 From +unix.js:
+caml_strerror
+caml_sys_putenv
 caml_unix_cleanup
 caml_unix_filedescr_of_fd
 caml_unix_findclose
 caml_unix_findfirst
 caml_unix_findnext
 caml_unix_startup
+unix_error_message
 

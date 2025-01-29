@@ -203,6 +203,23 @@ MlFakeDevice.prototype.unlink = function (name, raise_unix) {
   delete this.content[name];
   return 0;
 };
+MlFakeDevice.prototype.access = function (name, f, raise_unix) {
+  var file;
+  this.lookup(name);
+  if (this.content[name]) {
+    if (this.is_dir(name))
+      caml_raise_system_error(
+        raise_unix,
+        "EACCESS",
+        "access",
+        "permission denied,",
+        this.nm(name),
+      );
+  } else {
+    caml_raise_no_such_file(this.nm(name), raise_unix);
+  }
+  return 0;
+};
 MlFakeDevice.prototype.open = function (name, f, _perms, raise_unix) {
   var file;
   this.lookup(name);
