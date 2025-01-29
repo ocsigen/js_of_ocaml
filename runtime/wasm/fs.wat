@@ -28,6 +28,8 @@
       (func $file_exists (param anyref) (result (ref eq))))
    (import "bindings" "is_directory"
       (func $is_directory (param anyref) (result (ref eq))))
+   (import "bindings" "is_file"
+      (func $is_file (param anyref) (result (ref eq))))
    (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
@@ -157,6 +159,18 @@
          (do
             (return
                (call $is_directory
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $name))))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))
+            (return (ref.i31 (i32.const 0))))))
+
+   (func (export "caml_sys_is_regular_file")
+      (param $name (ref eq)) (result (ref eq))
+      (try
+         (do
+            (return
+               (call $is_file
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $name))))))
          (catch $javascript_exception
