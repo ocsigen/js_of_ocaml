@@ -73,6 +73,15 @@
     "reaches": ["callback"]
   },
   {
+    "name": "alloc_times",
+    "export": "caml_alloc_times"
+  },
+  {
+    "name": "times",
+    "import": ["bindings", "times"],
+    "reaches": ["alloc_times"]
+  },
+  {
     "name": "alloc_tm",
     "export": "caml_alloc_tm"
   },
