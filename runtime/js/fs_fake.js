@@ -440,6 +440,7 @@ MlFakeFd.prototype.seek = function (offset, whence, raise_unix) {
   this.seeked = true;
 };
 MlFakeFd.prototype.close = function () {
+  if (!this.file) this.err_closed("close");
   this.file = undefined;
 };
 MlFakeFd.prototype.check_stream_semantics = function (cmd) {
