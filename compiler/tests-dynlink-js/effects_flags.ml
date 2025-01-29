@@ -6,7 +6,7 @@ let () =
   let major = String.split_on_char '.' Sys.ocaml_version |> List.hd |> int_of_string in
   let has_effect l =
     match l with
-    | [ "with-effects" | "with-effects-double-translation" ] -> major >= 5
+    | [ ("with-effects" | "with-effects-double-translation") ] -> major >= 5
     | _ -> false
   in
   let aux l = enable (has_effect l) "effects" in
