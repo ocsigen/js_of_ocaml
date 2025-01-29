@@ -37,6 +37,8 @@
    (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
    (import "bindings" "argv" (func $argv (result (ref extern))))
    (import "bindings" "on_windows" (global $on_windows i32))
+   (import "bindings" "isatty"
+      (func $isatty (param (ref eq)) (result (ref eq))))
    (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
    (import "bindings" "getenv" (func $getenv (param anyref) (result anyref)))
    (import "bindings" "time" (func $time (result f64)))
@@ -49,6 +51,8 @@
    (import "jsstring" "jsstring_test"
       (func $jsstring_test (param anyref) (result i32)))
    (import "bindings" "exit" (func $exit (param (ref eq))))
+   (import "io" "caml_channel_descriptor"
+      (func $caml_channel_descriptor (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -162,8 +166,8 @@
          (ref.i31 (i32.const 0))))
 
    (func (export "caml_sys_isatty")
-      (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.const 0)))
+      (param $ch (ref eq)) (result (ref eq))
+      (return_call $isatty (call $caml_channel_descriptor (local.get $ch))))
 
    (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
       (@string ""))

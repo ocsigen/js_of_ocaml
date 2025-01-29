@@ -310,6 +310,15 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 1)))
 
+   (func (export "caml_channel_descriptor")
+      (param $ch (ref eq)) (result (ref eq))
+      (local $fd i32)
+      (local.set $fd
+         (struct.get $channel $fd (ref.cast (ref $channel) (local.get $ch))))
+      (if (i32.eq (local.get $fd) (i32.const -1))
+         (then (call $caml_raise_sys_error (@string "bad file descriptor"))))
+      (ref.i31 (local.get $fd)))
+
    (func (export "caml_ml_close_channel")
       (param (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
@@ -623,7 +632,8 @@
                   (i32.wrap_i64
                      (i64.sub (local.get $offset) (local.get $dest))))))
          (else
-            ;; ZZZ Check for error
+            (if (i64.lt_s (local.get $offset) (i64.const 0))
+               (then (call $caml_raise_sys_error (@string "Invalid argument"))))
             (struct.set $fd_offset $offset (local.get $fd_offset)
                (local.get $dest))
             (struct.set $fd_offset $seeked (local.get $fd_offset)
@@ -646,29 +656,32 @@
    (func (export "caml_ml_seek_out")
       (param $vch (ref eq)) (param $voffset (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
-      (local $fd_offset (ref $fd_offset))
+      (local $fd_offset (ref $fd_offset)) (local $offset i64)
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_flush (local.get $ch))
-      ;; ZZZ Check for error
       (local.set $fd_offset
          (call $get_fd_offset (struct.get $channel $fd (local.get $ch))))
-      (struct.set $fd_offset $offset (local.get $fd_offset)
+      (local.set $offset
          (i64.extend_i32_s
             (i31.get_s (ref.cast (ref i31) (local.get $voffset)))))
+      (if (i64.lt_s (local.get $offset) (i64.const 0))
+         (then (call $caml_raise_sys_error (@string "Invalid argument"))))
+      (struct.set $fd_offset $offset (local.get $fd_offset) (local.get $offset))
       (struct.set $fd_offset $seeked (local.get $fd_offset) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_seek_out_64")
       (param $vch (ref eq)) (param $voffset (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
-      (local $fd_offset (ref $fd_offset))
+      (local $fd_offset (ref $fd_offset)) (local $offset i64)
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_flush (local.get $ch))
-      ;; ZZZ Check for error
       (local.set $fd_offset
          (call $get_fd_offset (struct.get $channel $fd (local.get $ch))))
-      (struct.set $fd_offset $offset (local.get $fd_offset)
-         (call $Int64_val (local.get $voffset)))
+      (local.set $offset (call $Int64_val (local.get $voffset)))
+      (if (i64.lt_s (local.get $offset) (i64.const 0))
+         (then (call $caml_raise_sys_error (@string "Invalid argument"))))
+      (struct.set $fd_offset $offset (local.get $fd_offset) (local.get $offset))
       (struct.set $fd_offset $seeked (local.get $fd_offset) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
