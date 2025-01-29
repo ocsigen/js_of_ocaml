@@ -70,6 +70,10 @@
 
   const fs_cst = fs?.constants;
 
+  const access_flags = fs
+    ? [fs_cst.R_OK, fs_cst.W_OK, fs_cst.X_OK, fs_cst.F_OK]
+    : [];
+
   const open_flags = fs
     ? [
         fs_cst.O_RDONLY,
@@ -374,6 +378,15 @@
       return pad ? " " + s : s;
     },
     gettimeofday: () => new Date().getTime() / 1000,
+    times: () => {
+      if (globalThis.process?.cpuUsage) {
+        var t = globalThis.process.cpuUsage();
+        return caml_alloc_times(t.user / 1e6, t.system / 1e6);
+      } else {
+        var t = performance.now() / 1000;
+        return call_alloc_times(t, t);
+      }
+    },
     gmtime: (t) => {
       var d = new Date(t * 1000);
       var d_num = d.getTime();
@@ -417,6 +430,11 @@
     mktime: (year, month, day, h, m, s) =>
       new Date(year, month, day, h, m, s).getTime(),
     random_seed: () => crypto.getRandomValues(new Int32Array(12)),
+    access: (p, flags) =>
+      fs.accessSync(
+        p,
+        access_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
+      ),
     open: (p, flags, perm) =>
       fs.openSync(
         p,
@@ -432,6 +450,7 @@
           ),
           l),
     read: (fd, b, o, l, p) => fs.readSync(fd, b, o, l, p),
+    fsync: (fd) => fs.fsyncSync(fd),
     file_size: (fd) => fs.fstatSync(fd, { bigint: true }).size,
     register_channel,
     unregister_channel,
@@ -440,6 +459,7 @@
     argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
     on_windows: +on_windows,
     getenv: (n) => (isNode ? process.env[n] : null),
+    putenv: (n, v) => process.env[n] = v,
     system: (c) => {
       var res = require("node:child_process").spawnSync(c, {
         shell: true,
@@ -454,13 +474,25 @@
     chdir: (x) => process.chdir(x),
     mkdir: (p, m) => fs.mkdirSync(p, m),
     rmdir: (p) => fs.rmdirSync(p),
+    link: (d, s) => fs.linkSync(d, s),
+    symlink: (t, p, kind) => fs.symlinkSync(t, p, [null, "file", "dir"][kind]),
+    readlink: (p) => fs.readlinkSync(p),
     unlink: (p) => fs.unlinkSync(p),
     read_dir: (p) => fs.readdirSync(p),
+    opendir: (p) => fs.opendirSync(p),
+    readdir: (d) => {
+      var n = d.readSync()?.name;
+      return n === undefined ? null : n;
+    },
+    closedir: (d) => d.closeSync(),
     stat: (p, l) => alloc_stat(fs.statSync(p), l),
     lstat: (p, l) => alloc_stat(fs.lstatSync(p), l),
     fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
+    chmod: (p, perms) => fs.chmodSync(p, perms),
+    fchmod: (p, perms) => fs.fchmodSync(p, perms),
     file_exists: (p) => +fs.existsSync(p),
     is_directory: (p) => +fs.lstatSync(p).isDirectory(),
+    is_file: (p) => +fs.lstatSync(p).isFile(),
     utimes: (p, a, m) => fs.utimesSync(p, a, m),
     truncate: (p, l) => fs.truncateSync(p, l),
     ftruncate: (fd, l) => fs.ftruncateSync(fd, l),
@@ -583,6 +615,7 @@
 
   var {
     caml_callback,
+    caml_alloc_times,
     caml_alloc_tm,
     caml_alloc_stat,
     caml_start_fiber,
