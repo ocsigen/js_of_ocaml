@@ -55,7 +55,8 @@
 
    (tag $ocaml_exit (export "ocaml_exit") (param i32))
 
-   (func (export "caml_sys_exit") (param (ref eq)) (result (ref eq))
+   (func (export "caml_sys_exit") (export "unix_exit") (export "caml_unix_exit")
+      (param (ref eq)) (result (ref eq))
       (throw $ocaml_exit (i31.get_s (ref.cast (ref i31) (local.get 0)))))
 
    (export "caml_sys_unsafe_getenv" (func $caml_sys_getenv))

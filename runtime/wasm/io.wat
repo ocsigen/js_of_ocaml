@@ -90,7 +90,7 @@
    (import "bindings" "map_new" (func $map_new (result (ref extern))))
    (import "bindings" "map_get"
       (func $map_get
-         (param (ref extern)) (param i32) (result (ref $fd_offset))))
+         (param (ref extern)) (param i32) (result (ref null $fd_offset))))
    (import "bindings" "map_set"
       (func $map_set
          (param (ref extern)) (param i32) (param (ref $fd_offset))))
@@ -171,40 +171,49 @@
             (global.set $fd_offsets (local.get $m))))
       (ref.as_non_null (global.get $fd_offsets)))
 
-   (func $initialize_fd_offset (param $fd i32) (param $offset i64)
+   (func $initialize_fd_offset (export "initialize_fd_offset")
+      (param $fd i32) (param $offset i64)
       (call $map_set (call $get_fd_offsets)
          (local.get $fd)
          (struct.new $fd_offset (local.get $offset) (i32.const 0))))
 
-   (func $release_fd_offset (param $fd i32)
+   (func $release_fd_offset (export "release_fd_offset") (param $fd i32)
       (call $map_delete (call $get_fd_offsets) (local.get $fd)))
 
    (data $bad_file_descriptor "Bad file descriptor")
 
+   (func $get_fd_offset_unchecked (export "get_fd_offset_unchecked")
+      (param $fd i32) (result (ref null $fd_offset))
+      (return_call $map_get (call $get_fd_offsets) (local.get $fd)))
+
    (func $get_fd_offset (param $fd i32) (result (ref $fd_offset))
-      (if (i32.eq (local.get $fd) (i32.const -1))
+      (local $res (ref null $fd_offset))
+      (local.set $res (call $get_fd_offset_unchecked (local.get $fd)))
+      (if (ref.is_null (local.get $res))
          (then
             (call $caml_raise_sys_error
                (array.new_data $string $bad_file_descriptor
                   (i32.const 0) (i32.const 19)))))
-      (call $map_get (call $get_fd_offsets) (local.get $fd)))
+      (ref.as_non_null (local.get $res)))
 
-   (global $IO_BUFFER_SIZE i32 (i32.const 65536))
+   (global $IO_BUFFER_SIZE (export "IO_BUFFER_SIZE") i32 (i32.const 65536))
 
    (type $open_flags (array i8))
-   ;;  1 O_RDONLY
-   ;;  2 O_WRONLY
-   ;;  4 O_APPEND
-   ;;  8 O_CREAT
-   ;; 16 O_TRUNC
-   ;; 32 O_EXCL
-   ;; 64 O_NONBLOCK
+   ;;   1 O_RDONLY
+   ;;   2 O_WRONLY
+   ;;   4 O_RDWR
+   ;;   8 O_APPEND
+   ;;  16 O_CREAT
+   ;;  32 O_TRUNC
+   ;;  64 O_EXCL
+   ;; 128 O_NONBLOCK
    (global $sys_open_flags (ref $open_flags)
       (array.new_fixed $open_flags 9
-         (i32.const 1) (i32.const 2) (i32.const 6) (i32.const 8) (i32.const 16)
-         (i32.const 32) (i32.const 0) (i32.const 0) (i32.const 64)))
+         (i32.const 1) (i32.const 2) (i32.const 10) (i32.const 16) (i32.const 32)
+         (i32.const 64) (i32.const 0) (i32.const 0) (i32.const 128)))
 
-   (func $convert_flag_list (param $vflags (ref eq)) (result i32)
+   (func $convert_flag_list (export "convert_flag_list")
+      (param $tbl (ref $open_flags)) (param $vflags (ref eq)) (result i32)
       (local $flags i32)
       (local $cons (ref $block))
       (loop $loop
@@ -213,7 +222,7 @@
                (br_on_cast_fail $done (ref eq) (ref $block) (local.get $vflags)))
             (local.set $flags
                (i32.or (local.get $flags)
-                  (array.get_u $open_flags (global.get $sys_open_flags)
+                  (array.get_u $open_flags (local.get $tbl)
                      (i31.get_u
                         (ref.cast (ref i31)
                            (array.get $block
@@ -227,7 +236,9 @@
       (param $path (ref eq)) (param $vflags (ref eq)) (param $perm (ref eq))
       (result (ref eq))
       (local $fd i32) (local $flags i32) (local $offset i64)
-      (local.set $flags (call $convert_flag_list (local.get $vflags)))
+      (local.set $flags
+         (call $convert_flag_list
+            (global.get $sys_open_flags) (local.get $vflags)))
       (try
          (do
             (local.set $fd
@@ -295,6 +306,10 @@
          (then
             (global.set $caml_stderr (local.get $res))))
       (local.get $res))
+
+   (func (export "caml_ml_set_binary_mode")
+      (param (ref eq) (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_close_channel")
       (param (ref eq)) (result (ref eq))
