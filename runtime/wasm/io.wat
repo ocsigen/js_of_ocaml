@@ -311,6 +311,18 @@
       (param (ref eq) (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_channel_descriptor")
+      (param $ch (ref eq)) (result (ref eq))
+      (local $fd i32)
+      (local.set $fd
+         (struct.get $channel $fd (ref.cast (ref $channel) (local.get $ch))))
+      (if (i32.eq (local.get $fd) (i32.const -1))
+         (then
+            (call $caml_raise_sys_error
+               (array.new_data $string $bad_file_descriptor
+                  (i32.const 0) (i32.const 19)))))
+      (ref.i31 (local.get $fd)))
+
    (func (export "caml_ml_close_channel")
       (param (ref eq)) (result (ref eq))
       (local $ch (ref $channel))
@@ -600,6 +612,17 @@
                (call $get_fd_offset
                   (struct.get $channel $fd (local.get $ch))))
             (i64.extend_i32_s (struct.get $channel $curr (local.get $ch))))))
+
+(;ZZZ
+   (func $check_valid_offset
+      (param $fd i32) (param $offset i64) (param $prev_offset i64)
+      (if (i32.or (i32.lt_s (local.get $offset (i64.const 0)))
+             (i32.gt_s (local.get $offset)
+                (call $file_size (local.get $fd)))))
+         (then
+            ;;;
+         )))
+;)
 
    (func $caml_seek_in
       (param $ch (ref $channel)) (param $dest i64) (result (ref eq))

@@ -17,6 +17,7 @@
 
 (module
    (import "bindings" "gettimeofday" (func $gettimeofday (result f64)))
+   (import "bindings" "times" (func $times (result (ref eq))))
    (import "bindings" "gmtime" (func $gmtime (param f64) (result (ref eq))))
    (import "bindings" "localtime"
       (func $localtime (param f64) (result (ref eq))))
@@ -25,16 +26,31 @@
          (param i32) (param i32) (param i32) (param i32) (param i32) (param i32)
          (result f64)))
    (import "bindings" "utimes" (func $utimes (param anyref f64 f64)))
+   (import "bindings" "putenv" (func $putenv (param anyref anyref)))
    (import "bindings" "stat" (func $stat (param anyref i32) (result (ref eq))))
    (import "bindings" "lstat" (func $lstat (param anyref i32) (result (ref eq))))
    (import "bindings" "fstat"
       (func $fstat (param (ref eq) i32) (result (ref eq))))
+   (import "bindings" "chmod" (func $chmod (param anyref (ref eq))))
+   (import "bindings" "fchmod" (func $fchmod (param (ref eq) (ref eq))))
    (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
+   (import "bindings" "getcwd" (func $getcwd (result anyref)))
+   (import "bindings" "chdir" (func $chdir (param anyref)))
+   (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
+   (import "bindings" "opendir" (func $opendir (param anyref) (result anyref)))
+   (import "bindings" "readdir" (func $readdir (param anyref) (result anyref)))
+   (import "bindings" "closedir" (func $closedir (param anyref)))
+   (import "bindings" "rmdir" (func $rmdir (param anyref)))
+   (import "bindings" "link" (func $link (param anyref anyref)))
+   (import "bindings" "symlink" (func $symlink (param anyref anyref i32)))
+   (import "bindings" "readlink" (func $readlink (param anyref) (result anyref)))
+   (import "bindings" "unlink" (func $unlink (param anyref)))
    (import "bindings" "truncate" (func $truncate (param anyref (ref eq))))
    (import "bindings" "truncate" (func $truncate_64 (param anyref f64)))
    (import "bindings" "ftruncate" (func $ftruncate (param (ref eq) (ref eq))))
    (import "bindings" "ftruncate" (func $ftruncate_64 (param (ref eq) f64)))
    (import "bindings" "file_size" (func $file_size (param i32) (result i64)))
+   (import "bindings" "access" (func $access (param anyref) (param i32)))
    (import "bindings" "open"
       (func $open (param anyref) (param i32) (param i32) (result i32)))
    (import "bindings" "write"
@@ -45,10 +61,13 @@
       (func $read (param i32 (ref extern) i32 i32 i64) (result i32)))
    (import "bindings" "read"
       (func $read' (param i32 (ref extern) i32 i32 nullexternref) (result i32)))
+   (import "bindings" "fsync" (func $fsync (param (ref eq))))
    (import "bindings" "close" (func $close (param (ref eq))))
    (import "bindings" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
    (import "js" "unix_error" (global $unix_error_js (ref any)))
+   (import "js" "caml_strerror"
+      (func $caml_strerror (param i32) (result (ref any))))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_js_meth_call"
@@ -67,10 +86,12 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
+   (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
+   (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
    (import "io" "convert_flag_list"
-      (func $convert_flag_list (param (ref $open_flags) (ref eq)) (result i32)))
+      (func $convert_flag_list (param (ref $flags) (ref eq)) (result i32)))
    (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
    (import "io" "initialize_fd_offset"
       (func $initialize_fd_offset (param i32 i64)))
@@ -199,10 +220,40 @@
                (call $caml_js_get (local.get $exn)
                   (array.new_data $string $path (i32.const 0) (i32.const 4)))))))
 
-   (export "caml_unix_gettimeofday" (func $unix_gettimeofday))
-   (func $unix_gettimeofday (export "unix_gettimeofday")
+   (func (export "unix_error_message") (export "caml_unix_error_message")
+      (param $err (ref eq)) (result (ref eq))
+      (local $errno i32)
+      (local.set $errno
+         (if (result i32) (ref.test (ref i31) (local.get $err))
+            (then
+               (i31.get_u (ref.cast (ref i31) (local.get $err))))
+            (else
+               (i32.sub (i32.const 0)
+                  (i31.get_u
+                     (ref.cast (ref i31)
+                        (array.get $block
+                           (ref.cast (ref $block) (local.get $err))
+                           (i32.const 1))))))))
+      (return_call $caml_string_of_jsstring
+         (call $wrap (call $caml_strerror (local.get $errno)))))
+
+   (func (export "unix_gettimeofday") (export "caml_unix_gettimeofday")
       (param (ref eq)) (result (ref eq))
       (struct.new $float (call $gettimeofday)))
+
+   (global $zero (ref eq) (struct.new $float (f64.const 0)))
+
+   (func (export "caml_alloc_times")
+      (param $u f64) (param $s f64) (result (ref eq))
+      (array.new_fixed $block 5 (ref.i31 (i32.const 0))
+         (struct.new $float (local.get $u))
+         (struct.new $float (local.get $s))
+         (global.get $zero)
+         (global.get $zero)))
+
+   (func (export "unix_times") (export "caml_unix_times")
+      (param (ref eq)) (result (ref eq))
+      (return_call $times))
 
    (func (export "caml_alloc_tm")
       (param $sec i32) (param $min i32) (param $hour i32) (param $mday i32)
@@ -286,6 +337,12 @@
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_sys_putenv")
+      (param $name (ref eq)) (param $value (ref eq))
+      (call $putenv
+         (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
+         (call $unwrap (call $caml_jsstring_of_string (local.get $value)))))
 
    (func (export "caml_alloc_stat")
       (param $large i32)
@@ -373,6 +430,26 @@
             (call $caml_unix_error (pop externref) (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
+   (func (export "unix_chmod") (export "caml_unix_chmod")
+      (param $path (ref eq)) (param $perms (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $chmod
+               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (local.get $perms)))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_fchmod") (export "caml_unix_fchmod")
+      (param $fd (ref eq)) (param $perms (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $chmod (local.get $fd) (local.get $perms)))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
    (func (export "unix_rename") (export "caml_unix_rename")
       (param $o (ref eq)) (param $n (ref eq)) (result (ref eq))
       (try
@@ -380,6 +457,165 @@
             (call $rename
                (call $unwrap (call $caml_jsstring_of_string (local.get $o)))
                (call $unwrap (call $caml_jsstring_of_string (local.get $n)))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_getcwd") (export "caml_unix_getcwd")
+      (param (ref eq)) (result (ref eq))
+      (try (result (ref eq))
+         (do
+            (call $caml_string_of_jsstring (call $wrap (call $getcwd))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))
+            (ref.i31 (i32.const 0)))))
+
+   (func (export "unix_chdir") (export "caml_unix_chdir")
+      (param $name (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $chdir
+               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_mkdir") (export "caml_unix_mkdir")
+      (param $name (ref eq)) (param $perm (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $mkdir
+               (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
+               (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_opendir") (export "caml_unix_opendir")
+      (param $name (ref eq)) (result (ref eq))
+      (try (result (ref eq))
+         (do
+            (call $wrap
+               (call $opendir
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $name))))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))
+            (ref.i31 (i32.const 0)))))
+
+   (func (export "unix_readdir") (export "caml_unix_readdir")
+      (param $dir (ref eq)) (result (ref eq))
+      (block $end
+         (return
+            (try (result (ref eq))
+               (do
+                  (call $caml_string_of_jsstring
+                     (call $wrap
+                       (br_on_null $end
+                          (call $readdir (call $unwrap (local.get $dir)))))))
+               (catch $javascript_exception
+                  (call $caml_unix_error (pop externref) (ref.null eq))
+                  (ref.i31 (i32.const 0))))))
+      (call $caml_raise_end_of_file)
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_closedir") (export "caml_unix_closedir")
+      (param $dir (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $closedir (call $unwrap (local.get $dir))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (data $rewinddir_not_implemented "rewinddir not implemented")
+
+   (func (export "unix_rewinddir") (export "caml_unix_rewinddir")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_invalid_argument
+         (array.new_data $string $rewinddir_not_implemented
+            (i32.const 0) (i32.const 25)))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_unlink") (export "caml_unix_unlink")
+      (param $p (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $unlink
+               (call $unwrap (call $caml_jsstring_of_string (local.get $p)))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_rmdir") (export "caml_unix_rmdir")
+      (param $p (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $rmdir
+               (call $unwrap (call $caml_jsstring_of_string (local.get $p)))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (data $link "link")
+
+   (func (export "unix_link") (export "caml_unix_link")
+      (param $follow (ref eq)) (param $d (ref eq)) (param $s (ref eq))
+      (result (ref eq))
+      (if (ref.test (ref $block) (local.get $follow))
+         (then
+            (throw $ocaml_exception
+               (array.new_fixed $block 5
+                  (ref.i31 (i32.const 0))
+                  (call $get_unix_error_exn)
+                  (ref.i31 (i32.const 25)) ;; ENOSYS
+                  (array.new_data $string $link (i32.const 0) (i32.const 4))
+                  (global.get $no_arg)))))
+      (try
+         (do
+            (call $link
+               (call $unwrap (call $caml_jsstring_of_string (local.get $d)))
+               (call $unwrap (call $caml_jsstring_of_string (local.get $s)))))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_has_symlink") (export "caml_unix_has_symlink")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
+
+   (func (export "unix_symlink") (export "caml_unix_symlink")
+      (param $to_dir (ref eq)) (param $t (ref eq)) (param $p (ref eq))
+      (result (ref eq))
+      (local $kind i32)
+      (if (ref.test (ref $block) (local.get $to_dir))
+         (then
+            (local.set $kind
+               (i32.add (i32.const 1)
+                  (i31.get_s
+                     (ref.cast (ref i31)
+                        (array.get $block
+                           (ref.cast (ref $block) (local.get $to_dir))
+                           (i32.const 0))))))))
+      (try
+         (do
+            (call $symlink
+               (call $unwrap (call $caml_jsstring_of_string (local.get $t)))
+               (call $unwrap (call $caml_jsstring_of_string (local.get $p)))
+               (local.get $kind)))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "unix_readlink") (export "caml_unix_readlink")
+      (param $path (ref eq)) (result (ref eq))
+      (try
+         (do
+            (return_call $caml_string_of_jsstring
+               (call $wrap
+                  (call $readdir
+                     (call $unwrap
+                        (call $caml_jsstring_of_string (local.get $path)))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (ref.i31 (i32.const 0)))
@@ -459,7 +695,26 @@
                 (local.get $len))))
       (ref.i31 (i32.const 0)))
 
-   (type $open_flags (array i8))
+   (global $access_flags (ref $flags)
+      (array.new_fixed $flags 4
+         (i32.const 1) (i32.const 2) (i32.const 4) (i32.const 8)))
+
+   (func (export "unix_access") (export "caml_unix_access")
+      (param $path (ref eq)) (param $vflags (ref eq)) (result (ref eq))
+      (local $flags i32)
+      (local.set $flags
+         (call $convert_flag_list
+            (global.get $access_flags) (local.get $vflags)))
+      (try
+         (do
+            (call $access
+               (call $unwrap (call $caml_jsstring_of_string (local.get $path)))
+               (local.get $flags)))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
+
+   (type $flags (array i8))
    ;;    1 O_RDONLY
    ;;    2 O_WRONLY
    ;;    4 O_RDWR
@@ -471,8 +726,8 @@
    ;;  256 O_NOCTTY
    ;;  512 O_DSYNC
    ;; 1024 O_SYNC
-   (global $unix_open_flags (ref $open_flags)
-      (array.new_fixed $open_flags 15
+   (global $unix_open_flags (ref $flags)
+      (array.new_fixed $flags 15
          (i32.const 1) (i32.const 2) (i32.const 4) (i32.const 128)
          (i32.const 8) (i32.const 16) (i32.const 32) (i32.const 64)
          (i32.const 256) (i32.const 512) (i32.const 1024) (i32.const 0)
@@ -563,6 +818,51 @@
                (local.set $pos (i32.add (local.get $pos) (local.get $n)))
                (local.set $len (i32.sub (local.get $len) (local.get $n)))
                (br $loop))))
+      (ref.i31 (local.get $n)))
+
+   (func (export "unix_single_write") (export "caml_unix_single_write")
+      (param $vfd (ref eq)) (param $vbuf (ref eq)) (param $vpos (ref eq))
+      (param $vlen (ref eq)) (result (ref eq))
+      (local $fd i32) (local $s (ref $string)) (local $buf (ref extern))
+      (local $pos i32) (local $len i32) (local $numbytes i32)
+      (local $written i32) (local $n i32)
+      (local $fd_offset (ref $fd_offset))
+      (local $offset i64)
+      (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
+      (local.set $s (ref.cast (ref $string) (local.get $vbuf)))
+      (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
+      (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
+      (local.set $buf (call $get_io_buffer))
+      (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
+      (local.set $offset
+         (struct.get $fd_offset $offset (local.get $fd_offset)))
+      (if (i32.gt_u (local.get $len) (i32.const 0))
+         (then
+            (local.set $numbytes
+               (select (global.get $IO_BUFFER_SIZE) (local.get $len)
+                  (i32.gt_u (local.get $len) (global.get $IO_BUFFER_SIZE))))
+            (call $ta_blit_from_string
+               (local.get $s) (local.get $pos)
+               (local.get $buf) (i32.const 0) (local.get $numbytes))
+            (try
+               (do
+                  (local.set $n
+                     (if (result i32)
+                         (struct.get $fd_offset $seeked (local.get $fd_offset))
+                        (then
+                           (call $write (local.get $fd) (local.get $buf)
+                              (i32.const 0) (local.get $numbytes)
+                              (local.get $offset)))
+                        (else
+                           (call $write' (local.get $fd) (local.get $buf)
+                              (i32.const 0) (local.get $numbytes)
+                              (ref.null extern))))))
+               (catch $javascript_exception
+                  (call $caml_unix_error (pop externref) (ref.null eq))))
+            (local.set $offset
+               (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
+            (struct.set $fd_offset $offset
+               (local.get $fd_offset) (local.get $offset))))
       (ref.i31 (local.get $n)))
 
    (func (export "unix_read") (export "caml_unix_read")
@@ -688,7 +988,7 @@
          (block $non_null (result (ref $fd_offset))
             (br_on_non_null $non_null
                (call $get_fd_offset_unchecked (local.get $fd)))
-            (throw $ocaml_exception (call $lseek_exn (i32.const 9))))) ;; EBADF
+            (throw $ocaml_exception (call $lseek_exn (i32.const 3))))) ;; EBADF
       (if (ref.eq (local.get $cmd) (ref.i31 (i32.const 1)))
          (then
             (local.set $offset
@@ -722,6 +1022,15 @@
          (local.get $fd)
          (call $Int64_val (local.get $ofs))
          (local.get $cmd)))
+
+   (func (export "unix_fsync") (export "caml_unix_fsync")
+      (param $fd (ref eq)) (result (ref eq))
+      (try
+         (do
+            (call $fsync (local.get $fd)))
+         (catch $javascript_exception
+            (call $caml_unix_error (pop externref) (ref.null eq))))
+      (ref.i31 (i32.const 0)))
 
    (data $out_channel_of_descr "out_channel_of_descr")
    (data $in_channel_of_descr "in_channel_of_descr")
@@ -787,6 +1096,20 @@
 
    (export "unix_isatty" (func $isatty))
    (export "caml_unix_isatty" (func $isatty))
+
+   (func (export "unix_getuid") (export "caml_unix_getuid")
+      (export "unix_geteuid") (export "caml_unix_geteuid")
+      (export "unix_getgid") (export "caml_unix_getgid")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
+
+   (func (export "unix_getpwnam") (export "caml_unix_getpwnam")
+      (export "unix_getpwuid") (export "caml_unix_getpwuid")
+      (export "unix_getgrnam") (export "caml_unix_getgrnam")
+      (export "unix_getgruid") (export "caml_unix_getgruid")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_raise_not_found)
+      (ref.i31 (i32.const 0)))
 
    (func (export "unix_inet_addr_of_string")
       (export "caml_unix_inet_addr_of_string")
