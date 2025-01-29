@@ -28,7 +28,7 @@ let s x =
     if(x === undefined)
       return "undefined"
     if(typeof x === "function")
-      return "function#" + x.length + "#" + x.l
+      return "function#" + (x.l > 0 ? x.l : x.length) + "#" + x.l
     if(x.toString() == "[object Arguments]")
       return "(Arguments: " + Array.prototype.slice.call(x).toString() + ")";
     return x.toString()
