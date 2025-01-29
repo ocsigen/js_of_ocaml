@@ -21,8 +21,8 @@
    (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
    (import "bindings" "rmdir" (func $rmdir (param anyref)))
    (import "bindings" "unlink" (func $unlink (param anyref)))
-   (import "bindings" "readdir"
-      (func $readdir (param anyref) (result (ref extern))))
+   (import "bindings" "read_dir"
+      (func $read_dir (param anyref) (result (ref extern))))
    (import "bindings" "file_exists"
       (func $file_exists (param anyref) (result (ref eq))))
    (import "bindings" "is_directory"
@@ -49,7 +49,12 @@
 
    (func (export "caml_sys_getcwd")
       (param (ref eq)) (result (ref eq))
-      (return_call $caml_string_of_jsstring (call $wrap (call $getcwd))))
+      (try (result (ref eq))
+         (do
+            (call $caml_string_of_jsstring (call $wrap (call $getcwd))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))
+            (ref.i31 (i32.const 0)))))
 
    (func (export "caml_sys_chdir")
       (param $name (ref eq)) (result (ref eq))
@@ -78,7 +83,7 @@
          (do
             (return
                (call $caml_js_to_string_array
-                  (call $readdir
+                  (call $read_dir
                      (call $unwrap
                         (call $caml_jsstring_of_string (local.get $name)))))))
          (catch $javascript_exception

@@ -211,23 +211,22 @@
          (ref.i31 (local.get $yday))
          (ref.i31 (local.get $isdst))))
 
-   (export "caml_unix_gmtime" (func $unix_gmtime))
-   (func $unix_gmtime (export "unix_gmtime") (param (ref eq)) (result (ref eq))
+   (func $unix_gmtime (export "unix_gmtime") (export "caml_unix_gmtime")
+      (param (ref eq)) (result (ref eq))
       (call $gmtime
          (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
 
-   (export "caml_unix_localtime" (func $unix_localtime))
-   (func $unix_localtime (export "unix_localtime")
+   (func $unix_localtime (export "unix_localtime") (export "caml_unix_localtime")
       (param (ref eq)) (result (ref eq))
       (call $localtime
          (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
 
-   (export "caml_unix_time" (func $unix_time))
-   (func $unix_time (export "unix_time") (param (ref eq)) (result (ref eq))
+   (func $unix_time (export "unix_time") (export "caml_unix_time")
+      (param (ref eq)) (result (ref eq))
       (struct.new $float (f64.floor (call $gettimeofday))))
 
-   (export "caml_unix_mktime" (func $unix_mktime))
-   (func $unix_mktime (export "unix_mktime") (param (ref eq)) (result (ref eq))
+   (func $unix_mktime (export "unix_mktime") (export "caml_unix_mktime")
+      (param (ref eq)) (result (ref eq))
       (local $tm (ref $block)) (local $t f64)
       (local.set $tm (ref.cast (ref $block) (local.get 0)))
       (local.set $t
@@ -778,15 +777,16 @@
    (export "unix_isatty" (func $isatty))
    (export "caml_unix_isatty" (func $isatty))
 
-   (export "caml_unix_inet_addr_of_string" (func $unix_inet_addr_of_string))
-   (func $unix_inet_addr_of_string (export "unix_inet_addr_of_string")
+   (func (export "unix_inet_addr_of_string")
+      (export "caml_unix_inet_addr_of_string")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
-   (export "caml_unix_filedescr_of_fd" (func $unix_filedescr_of_fd))
-   (func $unix_filedescr_of_fd (export "unix_filedescr_of_fd")
+
+   (func (export "win_handle_fd") (export "caml_unix_filedescr_of_fd")
       (param (ref eq)) (result (ref eq))
       (local.get 0))
-   (func $unix_cleanup (export "caml_unix_cleanup")
+
+   (func (export "win_cleanup") (export "caml_unix_cleanup")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 )
