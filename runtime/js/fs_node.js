@@ -233,9 +233,9 @@ MlNodeDevice.prototype.lstat = function (name, large, raise_unix) {
 MlNodeDevice.prototype.symlink = function (to_dir, target, path, raise_unix) {
   try {
     this.fs.symlinkSync(
-      this.nm(target),
+      target,
       this.nm(path),
-      to_dir ? "dir" : "file",
+      to_dir === 0 ? null : to_dir[1] ? "dir" : "file",
     );
     return 0;
   } catch (err) {

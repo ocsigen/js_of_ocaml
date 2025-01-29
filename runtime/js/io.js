@@ -93,16 +93,6 @@ function caml_sys_open(name, flags, perms) {
     }
     flags = flags[2];
   }
-  if (f.rdonly && f.wronly)
-    caml_raise_sys_error(
-      caml_jsbytes_of_string(name) +
-        " : flags Open_rdonly and Open_wronly are not compatible",
-    );
-  if (f.text && f.binary)
-    caml_raise_sys_error(
-      caml_jsbytes_of_string(name) +
-        " : flags Open_text and Open_binary are not compatible",
-    );
   var root = resolve_fs_device(name);
   var file = root.device.open(root.rest, f, perms);
   return caml_sys_open_internal(file, undefined);
@@ -572,7 +562,9 @@ function caml_ml_flush(chanid) {
       caml_sub_uint8_array_to_jsbytes(chan.buffer, 0, chan.buffer_curr),
     );
   } else {
-    chan.file.write(chan.buffer, 0, chan.buffer_curr);
+    for (var pos = 0; pos < chan.buffer_curr; ) {
+      pos += chan.file.write(chan.buffer, pos, chan.buffer_curr - pos);
+    }
   }
   chan.offset += chan.buffer_curr;
   chan.buffer_curr = 0;

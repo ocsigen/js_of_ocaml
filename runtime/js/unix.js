@@ -188,7 +188,8 @@ function make_unix_err_args(code, syscall, path, errno) {
       errno = -9999;
     }
     // If none of the above variants, fallback to EUNKNOWNERR(int)
-    variant = BLOCK(0, errno);
+    // errno is expected to be positive
+    variant = BLOCK(0, -errno);
   }
   var args = [
     variant,
@@ -294,19 +295,16 @@ function caml_unix_rmdir(name) {
 }
 
 //Provides: caml_unix_symlink
-//Requires: resolve_fs_device, caml_failwith
+//Requires: resolve_fs_device, caml_failwith, caml_jsstring_of_string
 //Alias: unix_symlink
 function caml_unix_symlink(to_dir, src, dst) {
-  var src_root = resolve_fs_device(src);
   var dst_root = resolve_fs_device(dst);
-  if (src_root.device !== dst_root.device)
-    caml_failwith("caml_unix_symlink: cannot symlink between two filesystems");
-  if (!src_root.device.symlink) {
+  if (!dst_root.device.symlink) {
     caml_failwith("caml_unix_symlink: not implemented");
   }
-  return src_root.device.symlink(
+  return dst_root.device.symlink(
     to_dir,
-    src_root.rest,
+    caml_jsstring_of_string(src),
     dst_root.rest,
     /* raise Unix_error */ true,
   );
@@ -583,13 +581,12 @@ function caml_unix_outchannel_of_filedescr(fd) {
 }
 
 //Provides: caml_unix_getuid
-//Requires: caml_raise_not_found
 //Alias: unix_getuid
 function caml_unix_getuid(unit) {
   if (globalThis.process && globalThis.process.getuid) {
     return globalThis.process.getuid();
   }
-  caml_raise_not_found();
+  return 1;
 }
 
 //Provides: caml_unix_getpwuid

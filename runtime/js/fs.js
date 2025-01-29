@@ -203,14 +203,18 @@ function caml_sys_getcwd() {
 }
 
 //Provides: caml_sys_chdir
-//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash, caml_jsbytes_of_string
+//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash, caml_jsbytes_of_string, caml_raise_sys_error
 function caml_sys_chdir(dir) {
   var root = resolve_fs_device(dir);
-  if (root.device.exists(root.rest)) {
+  if (root.device.is_dir(root.rest)) {
     if (root.rest)
       caml_current_dir = caml_trailing_slash(root.path + root.rest);
     else caml_current_dir = root.path;
     return 0;
+  } else if (root.device.exists(root.rest)) {
+    caml_raise_sys_error(
+      "ENOTDIR: not a directory, chdir '" + caml_jsbytes_of_string(dir) + "'",
+    );
   } else {
     caml_raise_no_such_file(caml_jsbytes_of_string(dir));
   }
