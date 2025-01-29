@@ -23,8 +23,6 @@
 //Requires: caml_string_of_jsbytes, caml_string_of_jsstring
 //Requires: caml_bytes_of_array, caml_bytes_of_string, caml_bytes_of_jsbytes
 //Requires: caml_is_ml_bytes, caml_is_ml_string
-//Requires: caml_named_value, caml_raise_with_args, caml_named_values
-//Requires: make_unix_err_args
 //Requires: caml_raise_system_error
 function MlFakeDevice(root, f) {
   this.content = {};
@@ -76,76 +74,62 @@ MlFakeDevice.prototype.isFile = function (name) {
   }
 };
 MlFakeDevice.prototype.mkdir = function (name, mode, raise_unix) {
-  var unix_error = raise_unix && caml_named_value("Unix.Unix_error");
-  if (this.exists(name)) {
-    if (unix_error) {
-      caml_raise_with_args(
-        unix_error,
-        make_unix_err_args("EEXIST", "mkdir", this.nm(name)),
-      );
-    } else {
-      caml_raise_sys_error(name + ": File exists");
-    }
-  }
+  if (this.exists(name))
+    caml_raise_system_error(
+      raise_unix,
+      "EEXIST",
+      "mkdir",
+      "file already exists",
+      this.nm(name),
+    );
   var parent = /^(.*)\/[^/]+/.exec(name);
   parent = (parent && parent[1]) || "";
-  if (!this.exists(parent)) {
-    if (unix_error) {
-      caml_raise_with_args(
-        unix_error,
-        make_unix_err_args("ENOENT", "mkdir", this.nm(parent)),
-      );
-    } else {
-      caml_raise_sys_error(parent + ": No such file or directory");
-    }
-  }
-  if (!this.is_dir(parent)) {
-    if (unix_error) {
-      caml_raise_with_args(
-        unix_error,
-        make_unix_err_args("ENOTDIR", "mkdir", this.nm(parent)),
-      );
-    } else {
-      caml_raise_sys_error(parent + ": Not a directory");
-    }
-  }
+  if (!this.exists(parent))
+    caml_raise_system_error(
+      raise_unix,
+      "ENOENT",
+      "mkdir",
+      "no such file or directory",
+      this.nm(name),
+    );
+  if (!this.is_dir(parent))
+    caml_raise_system_error(
+      raise_unix,
+      "ENOTDIR",
+      "mkdir",
+      "not a directory",
+      this.nm(name),
+    );
   this.create_dir_if_needed(this.slash(name));
 };
 MlFakeDevice.prototype.rmdir = function (name, raise_unix) {
-  var unix_error = raise_unix && caml_named_value("Unix.Unix_error");
   var name_slash = name === "" ? "" : this.slash(name);
   var r = new RegExp("^" + name_slash + "([^/]+)");
-  if (!this.exists(name)) {
-    if (unix_error) {
-      caml_raise_with_args(
-        unix_error,
-        make_unix_err_args("ENOENT", "rmdir", this.nm(name)),
-      );
-    } else {
-      caml_raise_sys_error(name + ": No such file or directory");
-    }
-  }
-  if (!this.is_dir(name)) {
-    if (unix_error) {
-      caml_raise_with_args(
-        unix_error,
-        make_unix_err_args("ENOTDIR", "rmdir", this.nm(name)),
-      );
-    } else {
-      caml_raise_sys_error(name + ": Not a directory");
-    }
-  }
+  if (!this.exists(name))
+    caml_raise_system_error(
+      raise_unix,
+      "ENOENT",
+      "rmdir",
+      "no such file or directory",
+      this.nm(name),
+    );
+  if (!this.is_dir(name))
+    caml_raise_system_error(
+      raise_unix,
+      "ENOTDIR",
+      "rmdir",
+      "not a directory",
+      this.nm(name),
+    );
   for (var n in this.content) {
-    if (n.match(r)) {
-      if (unix_error) {
-        caml_raise_with_args(
-          unix_error,
-          make_unix_err_args("ENOTEMPTY", "rmdir", this.nm(name)),
-        );
-      } else {
-        caml_raise_sys_error(this.nm(name) + ": Directory not empty");
-      }
-    }
+    if (n.match(r))
+      caml_raise_system_error(
+        raise_unix,
+        "ENOTEMPTY",
+        "rmdir",
+        "directory not empty",
+        this.nm(name),
+      );
   }
   delete this.content[name_slash];
 };
@@ -170,39 +154,31 @@ MlFakeDevice.prototype.readdir = function (name) {
   return a;
 };
 MlFakeDevice.prototype.opendir = function (name, raise_unix) {
-  var unix_error = raise_unix && caml_named_value("Unix.Unix_error");
-
   var a = this.readdir(name);
   var c = false;
   var i = 0;
   return {
     readSync: function () {
-      if (c) {
-        if (unix_error) {
-          caml_raise_with_args(
-            unix_error,
-            make_unix_err_args("EBADF", "closedir", this.nm(name)),
-          );
-        } else {
-          caml_raise_sys_error(name + ": closedir failed");
-        }
-      }
+      if (c)
+        caml_raise_system_error(
+          raise_unix,
+          "EBADF",
+          "readdir",
+          "bad file descriptor",
+        );
       if (i === a.length) return null;
       var entry = a[i];
       i++;
       return { name: entry };
     },
     closeSync: function () {
-      if (c) {
-        if (unix_error) {
-          caml_raise_with_args(
-            unix_error,
-            make_unix_err_args("EBADF", "closedir", this.nm(name)),
-          );
-        } else {
-          caml_raise_sys_error(name + ": closedir failed");
-        }
-      }
+      if (c)
+        caml_raise_system_error(
+          raise_unix,
+          "EBADF",
+          "readdir",
+          "bad file descriptor",
+        );
       c = true;
       a = [];
     },
@@ -213,10 +189,16 @@ MlFakeDevice.prototype.is_dir = function (name) {
   var name_slash = this.slash(name);
   return this.content[name_slash] ? 1 : 0;
 };
-MlFakeDevice.prototype.unlink = function (name) {
+MlFakeDevice.prototype.unlink = function (name, raise_unix) {
   if (!this.exists(name, true)) {
     // [true] means no "lookup" if not found.
-    caml_raise_sys_error(name + ": No such file or directory");
+    caml_raise_system_error(
+      raise_unix,
+      "ENOENT",
+      "unlink",
+      "no such file or directory",
+      name,
+    );
   }
   delete this.content[name];
   return 0;

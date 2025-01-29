@@ -621,18 +621,14 @@ function caml_unix_opendir(path) {
 //Provides: caml_unix_readdir
 //Requires: caml_raise_end_of_file
 //Requires: caml_string_of_jsstring
-//Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
+//Requires: caml_raise_system_error
 //Alias: unix_readdir
 function caml_unix_readdir(dir_handle) {
   var entry;
   try {
     entry = dir_handle.pointer.readSync();
   } catch (e) {
-    var unix_error = caml_named_value("Unix.Unix_error");
-    caml_raise_with_args(
-      unix_error,
-      make_unix_err_args("EBADF", "readdir", dir_handle.path),
-    );
+    caml_raise_system_error(/* raise Unix_error */ 1, "EBADF", "readdir");
   }
   if (entry === null) {
     caml_raise_end_of_file();
@@ -642,17 +638,13 @@ function caml_unix_readdir(dir_handle) {
 }
 
 //Provides: caml_unix_closedir
-//Requires: make_unix_err_args, caml_raise_with_args, caml_named_value
+//Requires: caml_raise_system_error
 //Alias: unix_closedir
 function caml_unix_closedir(dir_handle) {
   try {
     dir_handle.pointer.closeSync();
   } catch (e) {
-    var unix_error = caml_named_value("Unix.Unix_error");
-    caml_raise_with_args(
-      unix_error,
-      make_unix_err_args("EBADF", "closedir", dir_handle.path),
-    );
+    caml_raise_system_error(/* raise Unix_error */ 1, "EBADF", "closedir");
   }
 }
 
