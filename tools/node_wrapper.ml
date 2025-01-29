@@ -4,6 +4,8 @@ let extra_args_for_wasoo =
   ; "--stack-size=10000"
   ]
 
+let extra_args_for_jsoo = [ "--stack-size=3000" ]
+
 let env = Unix.environment ()
 
 let env =
@@ -28,7 +30,7 @@ let args =
         match argv with
         | file :: _ when Filename.check_suffix file ".wasm.js" ->
             extra_args_for_wasoo @ argv
-        | _ -> argv
+        | _ -> extra_args_for_jsoo @ argv
       in
       Array.of_list (exe :: argv)
   | [] -> assert false
