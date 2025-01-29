@@ -30,8 +30,7 @@ function caml_raise_sys_error(msg) {
 function caml_sys_exit(code) {
   if (globalThis.quit) globalThis.quit(code);
   //nodejs
-  if (globalThis.process && globalThis.process.exit)
-    globalThis.process.exit(code);
+  if (globalThis.process?.exit) globalThis.process.exit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
@@ -288,12 +287,7 @@ function caml_sys_const_backend_type() {
 }
 
 //Provides: os_type
-var os_type =
-  globalThis.process &&
-  globalThis.process.platform &&
-  globalThis.process.platform === "win32"
-    ? "Win32"
-    : "Unix";
+var os_type = globalThis.process?.platform === "win32" ? "Win32" : "Unix";
 
 //Provides: caml_sys_get_config const
 //Requires: caml_string_of_jsbytes, os_type

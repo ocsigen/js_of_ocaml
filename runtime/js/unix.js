@@ -11,6 +11,20 @@ function caml_unix_time() {
   return Math.floor(caml_unix_gettimeofday());
 }
 
+//Provides: caml_unix_times
+//Requires: caml_failwith
+//Alias: unix_times
+function caml_unix_times() {
+  if (globalThis.process?.cpuUsage) {
+    var t = globalThis.process.cpuUsage();
+    return BLOCK(0, t.user / 1e6, t.system / 1e6, 0, 0);
+  } else if (globalThis.performance?.now) {
+    return BLOCK(0, globalThis.performance.now() / 1000, 0, 0, 0);
+  } else {
+    caml_failwith("caml_unix_times: not implemented");
+  }
+}
+
 //Provides: caml_unix_gmtime
 //Alias: unix_gmtime
 function caml_unix_gmtime(t) {
@@ -76,6 +90,22 @@ function caml_unix_startup() {}
 //Provides: caml_unix_cleanup const
 //Alias: win_cleanup
 function caml_unix_cleanup() {}
+
+//Provides: caml_sys_putenv (const, const)
+//Requires: caml_jsstring_of_string, jsoo_static_env
+function caml_sys_putenv(name, value) {
+  var name = caml_jsstring_of_string(name);
+  var value = caml_jsstring_of_string(value);
+  delete jsoo_static_env[name];
+  //nodejs env
+  var process = globalThis.process;
+  if (process && process.env) {
+    process.env[name] = value;
+    return 0;
+  }
+  if (!globalThis.jsoo_env) globalThis.jsoo_env = {};
+  globalThis.jsoo_env[name] = value;
+}
 
 //Provides: caml_unix_filedescr_of_fd const
 //Alias: win_handle_fd
@@ -199,6 +229,36 @@ function make_unix_err_args(code, syscall, path, errno) {
   return args;
 }
 
+//Provides: caml_strerror
+//Requires: unix_error
+function caml_strerror(errno) {
+  const util = require("node:util");
+  if (errno >= 0) {
+    const code = unix_error[errno];
+    return util
+      .getSystemErrorMap()
+      .entries()
+      .find((x) => x[1][0] === code)[1][1];
+  } else {
+    return util.getSystemErrorMessage(errno);
+  }
+}
+
+//Provides: unix_error_message
+//Alias: caml_unix_error_message
+//Requires: caml_strerror, caml_string_of_jsstring
+function unix_error_message(err) {
+  const errno = typeof err === "number" ? err : -err[1];
+  return caml_string_of_jsstring(caml_strerror(errno));
+}
+
+//Provides: caml_unix_chdir
+//Requires: caml_sys_chdir
+//Alias: unix_chdir
+function caml_unix_chdir(dir) {
+  return caml_sys_chdir(dir, /* raise Unix_error */ true);
+}
+
 //Provides: caml_unix_stat
 //Requires: resolve_fs_device, caml_failwith
 //Alias: unix_stat
@@ -259,6 +319,17 @@ function caml_unix_lstat_64(name) {
   );
 }
 
+//Provides: caml_unix_chmod
+//Requires: resolve_fs_device, caml_failwith
+//Alias: unix_chmod
+function caml_unix_chmod(name, perms) {
+  var root = resolve_fs_device(name);
+  if (!root.device.chmod) {
+    caml_failwith("caml_unix_chmod: not implemented");
+  }
+  return root.device.chmod(root.rest, perms);
+}
+
 //Provides: caml_unix_rename
 //Requires: caml_failwith, resolve_fs_device
 //Requires: caml_raise_system_error
@@ -292,6 +363,28 @@ function caml_unix_rmdir(name) {
     caml_failwith("caml_unix_rmdir: not implemented");
   }
   return root.device.rmdir(root.rest, /* raise Unix_error */ true);
+}
+
+//Provides: caml_unix_link
+//Requires: resolve_fs_device, caml_failwith, caml_raise_system_error
+//Alias: unix_link
+function caml_unix_link(follow, src, dst) {
+  var src_root = resolve_fs_device(src);
+  var dst_root = resolve_fs_device(dst);
+  if (!src_root.device.link) {
+    caml_failwith("caml_unix_link: not implemented");
+  }
+  // We can't control whether a 'src' symlink is followed or not.
+  // So we fail when 'follow' is set, as documented in the Unix module.
+  if (typeof follow !== "number")
+    caml_raise_system_error(/* raise Unix_error */ 1, "ENOSYS", "link");
+  if (src_root.device !== dst_root.device)
+    caml_raise_system_error(/* raise Unix_error */ 1, "EXDEV", "link");
+  return src_root.device.link(
+    src_root.rest,
+    dst_root.rest,
+    /* raise Unix_error */ true,
+  );
 }
 
 //Provides: caml_unix_symlink
@@ -370,6 +463,36 @@ function caml_unix_truncate_64(name, len) {
     caml_int64_to_float(len),
     /* raise Unix_error */ true,
   );
+  return 0;
+}
+
+//Provides: caml_unix_access
+//Requires: resolve_fs_device, caml_failwith
+//Alias: unix_access
+function caml_unix_access(name, flags) {
+  var f = {};
+  while (flags) {
+    switch (flags[1]) {
+      case 0:
+        f.r = 1;
+        break;
+      case 1:
+        f.w = 1;
+        break;
+      case 2:
+        f.x = 1;
+        break;
+      case 3:
+        f.f = 1;
+        break;
+    }
+    flags = flags[2];
+  }
+  var root = resolve_fs_device(name);
+  if (!root.device.access) {
+    caml_failwith("caml_unix_access: not implemented");
+  }
+  root.device.access(root.rest, f, /* raise Unix_error */ true);
   return 0;
 }
 
@@ -455,6 +578,28 @@ function caml_unix_fstat_64(fd) {
   return file.stat(/* large */ true);
 }
 
+//Provides: caml_unix_fchmod
+//Alias: unix_fchmod
+//Requires: caml_unix_lookup_file, caml_failwith
+function caml_unix_fchmod(fd, perms) {
+  var file = caml_unix_lookup_file(fd, "fchmod");
+  if (!file.chmod) {
+    caml_failwith("caml_unix_fchmod: not implemented");
+  }
+  return file.chmod(perms);
+}
+
+//Provides: caml_unix_fsync
+//Alias: unix_fsync
+//Requires: caml_unix_lookup_file, caml_failwith
+function caml_unix_fsync(fd) {
+  var file = caml_unix_lookup_file(fd, "fsync");
+  if (!file.sync) {
+    caml_failwith("caml_unix_fsync: not implemented");
+  }
+  return file.sync();
+}
+
 //Provides: caml_unix_write
 //Alias: unix_write
 //Requires: caml_unix_lookup_file, caml_uint8_array_of_bytes
@@ -469,6 +614,20 @@ function caml_unix_write(fd, buf, pos, len) {
     len -= n;
   }
   return written;
+}
+
+//Provides: caml_unix_single_write
+//Alias: unix_single_write
+//Requires: caml_unix_lookup_file, caml_uint8_array_of_bytes
+function caml_unix_single_write(fd, buf, pos, len) {
+  var file = caml_unix_lookup_file(fd, "write");
+  if (len === 0) return 0;
+  return file.write(
+    caml_uint8_array_of_bytes(buf),
+    pos,
+    len,
+    /* raise unix_error */ 1,
+  );
 }
 
 //Provides: caml_unix_write_bigarray
@@ -583,16 +742,49 @@ function caml_unix_outchannel_of_filedescr(fd) {
 //Provides: caml_unix_getuid
 //Alias: unix_getuid
 function caml_unix_getuid(unit) {
-  if (globalThis.process && globalThis.process.getuid) {
+  if (globalThis.process?.getuid) {
     return globalThis.process.getuid();
   }
   return 1;
 }
 
-//Provides: caml_unix_getpwuid
+//Provides: caml_unix_geteuid
+//Alias: unix_geteuid
+function caml_unix_geteuid(unit) {
+  if (globalThis.process?.geteuid) {
+    return globalThis.process.geteuid();
+  }
+  return 1;
+}
+
+//Provides: caml_unix_getgid
+//Alias: unix_getgid
+function caml_unix_getgid(unit) {
+  if (globalThis.process?.getgid) {
+    return globalThis.process.getgid();
+  }
+  return 1;
+}
+
+//Provides: caml_unix_getegid
+//Alias: unix_getegid
+function caml_unix_getegid(unit) {
+  if (globalThis.process?.getegid) {
+    return globalThis.process.getegid();
+  }
+  return 1;
+}
+
+//Provides: caml_unix_getpwnam
 //Requires: caml_raise_not_found
+//Alias: unix_getpwnam
+//Alias: caml_unix_getpwuid
 //Alias: unix_getpwuid
-function caml_unix_getpwuid(unit) {
+//Alias: caml_unix_getgrnam
+//Alias: unix_getgrnam
+//Alias: caml_unix_getgrgid
+//Alias: unix_getgrgid
+function caml_unix_getpwnam(unit) {
   caml_raise_not_found();
 }
 

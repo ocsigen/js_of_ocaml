@@ -9,10 +9,7 @@ caml_drop_continuation
 caml_int_as_pointer
 caml_reset_afl_instrumentation
 caml_unix_accept
-caml_unix_access
 caml_unix_bind
-caml_unix_chdir
-caml_unix_chmod
 caml_unix_clear_close_on_exec
 caml_unix_clear_nonblock
 caml_unix_connect
@@ -20,15 +17,12 @@ caml_unix_create_process
 caml_unix_dup
 caml_unix_dup2
 caml_unix_environment
-caml_unix_error_message
 caml_unix_execv
 caml_unix_execve
 caml_unix_execvp
 caml_unix_execvpe
 caml_unix_filedescr_of_channel
-caml_unix_fsync
 caml_unix_getaddrinfo
-caml_unix_getcwd
 caml_unix_gethostbyaddr
 caml_unix_gethostbyname
 caml_unix_gethostname
@@ -41,7 +35,6 @@ caml_unix_getservbyname
 caml_unix_getservbyport
 caml_unix_getsockname
 caml_unix_getsockopt
-caml_unix_link
 caml_unix_listen
 caml_unix_lockf
 caml_unix_map_file_bytecode
@@ -57,14 +50,12 @@ caml_unix_set_close_on_exec
 caml_unix_set_nonblock
 caml_unix_setsockopt
 caml_unix_shutdown
-caml_unix_single_write
 caml_unix_sleep
 caml_unix_socket
 caml_unix_socketpair
 caml_unix_string_of_inet_addr
 caml_unix_system
 caml_unix_terminate_process
-caml_unix_times
 caml_unix_waitpid
 debugger
 
@@ -193,7 +184,14 @@ jsoo_toplevel_init_compile
 jsoo_toplevel_init_reloc
 
 From +unix.js:
+caml_strerror
 caml_unix_getpwuid
+caml_unix_fchmod
+caml_unix_getegid
+caml_unix_geteuid
+caml_unix_getgid
+caml_unix_getpwnam
 caml_unix_getuid
 caml_unix_rewinddir
+unix_error_message
 

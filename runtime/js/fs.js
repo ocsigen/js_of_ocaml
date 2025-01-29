@@ -198,13 +198,15 @@ function caml_unmount(name) {
 
 //Provides: caml_sys_getcwd
 //Requires: caml_current_dir, caml_string_of_jsstring
+//Alias: caml_unix_getcwd
+//Alias: unix_getcwd
 function caml_sys_getcwd() {
   return caml_string_of_jsstring(caml_current_dir);
 }
 
 //Provides: caml_sys_chdir
-//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash, caml_jsstring_of_string, caml_raise_sys_error
-function caml_sys_chdir(dir) {
+//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash, caml_jsstring_of_string, caml_raise_system_error
+function caml_sys_chdir(dir, raise_unix) {
   var root = resolve_fs_device(dir);
   if (root.device.is_dir(root.rest)) {
     if (root.rest)
@@ -212,11 +214,15 @@ function caml_sys_chdir(dir) {
     else caml_current_dir = root.path;
     return 0;
   } else if (root.device.exists(root.rest)) {
-    caml_raise_sys_error(
-      "ENOTDIR: not a directory, chdir '" + caml_jsstring_of_string(dir) + "'",
+    caml_raise_system_error(
+      raise_unix,
+      "ENOTDIR",
+      "chdir",
+      "not a directory",
+      caml_jsstring_of_string(dir),
     );
   } else {
-    caml_raise_no_such_file(caml_jsstring_of_string(dir));
+    caml_raise_no_such_file(caml_jsstring_of_string(dir), raise_unix);
   }
 }
 
