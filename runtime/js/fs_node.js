@@ -161,10 +161,6 @@ MlNodeDevice.prototype.open = function (name, f, perms, raise_unix) {
   }
   try {
     var fd = this.fs.openSync(this.nm(name), res, perms);
-    var isCharacterDevice = this.fs
-      .lstatSync(this.nm(name))
-      .isCharacterDevice();
-    f.isCharacterDevice = isCharacterDevice;
     return new MlNodeFd(fd, f);
   } catch (err) {
     caml_raise_nodejs_error(err, raise_unix);
@@ -333,7 +329,10 @@ function MlNodeFd(fd, flags) {
   this.fs = require("node:fs");
   this.fd = fd;
   this.flags = flags;
-  this.offset = this.flags.append ? this.length() : 0;
+  var stats = this.fs.fstatSync(fd);
+  flags.noSeek =
+    stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
+  this.offset = this.flags.append ? stats.size : 0;
   this.seeked = false;
 }
 MlNodeFd.prototype = new MlFile();
@@ -356,7 +355,7 @@ MlNodeFd.prototype.length = function () {
 };
 MlNodeFd.prototype.write = function (buf, buf_offset, len, raise_unix) {
   try {
-    if (this.flags.isCharacterDevice || !this.seeked)
+    if (this.flags.noSeek || !this.seeked)
       var written = this.fs.writeSync(this.fd, buf, buf_offset, len);
     else
       var written = this.fs.writeSync(
@@ -374,7 +373,7 @@ MlNodeFd.prototype.write = function (buf, buf_offset, len, raise_unix) {
 };
 MlNodeFd.prototype.read = function (a, buf_offset, len, raise_unix) {
   try {
-    if (this.flags.isCharacterDevice || !this.seeked)
+    if (this.flags.noSeek || !this.seeked)
       var read = this.fs.readSync(this.fd, a, buf_offset, len);
     else var read = this.fs.readSync(this.fd, a, buf_offset, len, this.offset);
     this.offset += read;
@@ -384,7 +383,7 @@ MlNodeFd.prototype.read = function (a, buf_offset, len, raise_unix) {
   }
 };
 MlNodeFd.prototype.seek = function (offset, whence, raise_unix) {
-  if (this.flags.isCharacterDevice)
+  if (this.flags.noSeek)
     caml_raise_system_error(raise_unix, "ESPIPE", "lseek", "illegal seek");
   switch (whence) {
     case 0:
