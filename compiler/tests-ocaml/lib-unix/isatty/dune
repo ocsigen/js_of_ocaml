@@ -1,0 +1,7 @@
+(tests
+ (names isatty_std)
+ ; isatty_tty does not work on the CI since we are not running in a tty there
+ (libraries ocaml_testing unix)
+ (flags
+  (:standard -no-strict-formats \ -strict-formats))
+ (modes js wasm))

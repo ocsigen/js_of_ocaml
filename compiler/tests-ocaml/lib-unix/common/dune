@@ -1,0 +1,19 @@
+(tests
+ (names
+  append
+  channel_of
+  cmdline_prog
+  reflector
+  rename
+  truncate
+  uexit
+  utimes)
+ (libraries ocaml_testing unix)
+ (modes js wasm))
+
+(tests
+ (names bigarrays)
+ (build_if
+  (>= %{ocaml_version} 5.2))
+ (libraries ocaml_testing unix)
+ (modes js wasm))
