@@ -87,6 +87,25 @@
     "reaches": ["alloc_tm"]
   },
   {
+    "name": "alloc_stat",
+    "export": "caml_alloc_stat"
+  },
+  {
+    "name": "stat",
+    "import": ["bindings", "stat"],
+    "reaches": ["alloc_stat"]
+  },
+  {
+    "name": "lstat",
+    "import": ["bindings", "lstat"],
+    "reaches": ["alloc_stat"]
+  },
+  {
+    "name": "fstat",
+    "import": ["bindings", "fstat"],
+    "reaches": ["alloc_stat"]
+  },
+  {
     "name": "effects",
     "export": "caml_start_fiber"
   },

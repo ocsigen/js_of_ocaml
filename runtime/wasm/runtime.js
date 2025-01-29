@@ -72,13 +72,17 @@
 
   const open_flags = fs
     ? [
-        fs_cst.RDONLY,
+        fs_cst.O_RDONLY,
         fs_cst.O_WRONLY,
+        fs_cst.O_RDWR,
         fs_cst.O_APPEND,
         fs_cst.O_CREAT,
         fs_cst.O_TRUNC,
         fs_cst.O_EXCL,
         fs_cst.O_NONBLOCK,
+        fs_cst.O_NOCTTY,
+        fs_cst.O_DSYNC,
+        fs_cst.O_SYNC,
       ]
     : [];
 
@@ -135,7 +139,42 @@
     return h ^ s.length;
   }
 
+  function alloc_stat(s, large) {
+    var kind;
+    if (s.isFile()) {
+      kind = 0;
+    } else if (s.isDirectory()) {
+      kind = 1;
+    } else if (s.isCharacterDevice()) {
+      kind = 2;
+    } else if (s.isBlockDevice()) {
+      kind = 3;
+    } else if (s.isSymbolicLink()) {
+      kind = 4;
+    } else if (s.isFIFO()) {
+      kind = 5;
+    } else if (s.isSocket()) {
+      kind = 6;
+    }
+    return caml_alloc_stat(
+      large,
+      s.dev,
+      s.ino | 0,
+      kind,
+      s.mode,
+      s.nlink,
+      s.uid,
+      s.gid,
+      s.rdev,
+      BigInt(s.size),
+      s.atimeMs / 1000,
+      s.mtimeMs / 1000,
+      s.ctimeMs / 1000,
+    );
+  }
+
   const on_windows = isNode && process.platform === "win32";
+
   const bindings = {
     jstag:
       WebAssembly.JSTag ||
@@ -409,6 +448,7 @@
       if (res.error) throw res.error;
       return res.signal ? 255 : res.status;
     },
+    isatty: (fd) => +require("node:tty").isatty(fd),
     time: () => performance.now(),
     getcwd: () => (isNode ? process.cwd() : "/static"),
     chdir: (x) => process.chdir(x),
@@ -416,8 +456,14 @@
     rmdir: (p) => fs.rmdirSync(p),
     unlink: (p) => fs.unlinkSync(p),
     readdir: (p) => fs.readdirSync(p),
+    stat: (p, l) => alloc_stat(fs.statSync(p), l),
+    lstat: (p, l) => alloc_stat(fs.lstatSync(p), l),
+    fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
     file_exists: (p) => +fs.existsSync(p),
     is_directory: (p) => +fs.lstatSync(p).isDirectory(),
+    utimes: (p, a, m) => fs.utimesSync(p, a, m),
+    truncate: (p, l) => fs.truncateSync(p, l),
+    ftruncate: (fd, l) => fs.ftruncateSync(fd, l),
     rename: (o, n) => {
       var n_stat;
       if (
@@ -541,6 +587,7 @@
   var {
     caml_callback,
     caml_alloc_tm,
+    caml_alloc_stat,
     caml_start_fiber,
     caml_handle_uncaught_exception,
     caml_buffer,
