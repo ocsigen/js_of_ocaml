@@ -136,26 +136,40 @@ jsoo_toplevel_init_reloc
 
 From +unix.js:
 caml_unix_cleanup
+caml_unix_close
 caml_unix_closedir
 caml_unix_filedescr_of_fd
 caml_unix_findclose
 caml_unix_findfirst
 caml_unix_findnext
+caml_unix_fstat
+caml_unix_fstat_64
+caml_unix_ftruncate
+caml_unix_ftruncate_64
 caml_unix_getpwuid
 caml_unix_gettimeofday
 caml_unix_getuid
 caml_unix_gmtime
 caml_unix_has_symlink
+caml_unix_inchannel_of_filedescr
 caml_unix_inet_addr_of_string
 caml_unix_isatty
 caml_unix_localtime
+caml_unix_lookup_file
+caml_unix_lseek
+caml_unix_lseek_64
 caml_unix_lstat
 caml_unix_lstat_64
 caml_unix_mkdir
 caml_unix_mktime
+caml_unix_open
 caml_unix_opendir
+caml_unix_outchannel_of_filedescr
+caml_unix_read
+caml_unix_read_bigarray
 caml_unix_readdir
 caml_unix_readlink
+caml_unix_rename
 caml_unix_rewinddir
 caml_unix_rmdir
 caml_unix_startup
@@ -163,5 +177,10 @@ caml_unix_stat
 caml_unix_stat_64
 caml_unix_symlink
 caml_unix_time
+caml_unix_truncate
+caml_unix_truncate_64
 caml_unix_unlink
+caml_unix_utimes
+caml_unix_write
+caml_unix_write_bigarray
 

@@ -58,7 +58,7 @@ function caml_sys_open_internal(file, idx) {
   caml_sys_fds[idx] = { file: file, chanid: chanid };
   return idx | 0;
 }
-function caml_sys_open(name, flags, _perms) {
+function caml_sys_open(name, flags, perms) {
   var f = {};
   while (flags) {
     switch (flags[1]) {
@@ -70,6 +70,7 @@ function caml_sys_open(name, flags, _perms) {
         break;
       case 2:
         f.append = 1;
+        f.writeonly = 1;
         break;
       case 3:
         f.create = 1;
@@ -103,7 +104,7 @@ function caml_sys_open(name, flags, _perms) {
         " : flags Open_text and Open_binary are not compatible",
     );
   var root = resolve_fs_device(name);
-  var file = root.device.open(root.rest, f);
+  var file = root.device.open(root.rest, f, perms);
   return caml_sys_open_internal(file, undefined);
 }
 (function () {
@@ -204,11 +205,10 @@ function caml_ml_open_descriptor_out(fd) {
     caml_raise_sys_error("fd " + fd + " doesn't exist");
   var file = fd_desc.file;
   var chanid = fd_desc.chanid;
-  if (file.flags.rdonly) caml_raise_sys_error("fd " + fd + " is readonly");
   var buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1;
   var channel = {
     file: file,
-    offset: file.flags.append ? file.length() : 0,
+    offset: file.offset,
     fd: fd,
     opened: true,
     out: true,
@@ -230,11 +230,10 @@ function caml_ml_open_descriptor_in(fd) {
     caml_raise_sys_error("fd " + fd + " doesn't exist");
   var file = fd_desc.file;
   var chanid = fd_desc.chanid;
-  if (file.flags.wronly) caml_raise_sys_error("fd " + fd + " is writeonly");
   var refill = null;
   var channel = {
     file: file,
-    offset: file.flags.append ? file.length() : 0,
+    offset: file.offset,
     fd: fd,
     opened: true,
     out: false,
@@ -361,7 +360,6 @@ function caml_refill(chan) {
       caml_raise_sys_error("Bad file descriptor");
     }
     var nread = chan.file.read(
-      chan.offset,
       chan.buffer,
       chan.buffer_max,
       chan.buffer.length - chan.buffer_max,
@@ -495,6 +493,7 @@ function caml_seek_in(chanid, pos) {
   ) {
     chan.buffer_curr = chan.buffer_max - (chan.offset - pos);
   } else {
+    chan.file.seek(pos, 0);
     chan.offset = pos;
     chan.buffer_curr = 0;
     chan.buffer_max = 0;
@@ -573,7 +572,7 @@ function caml_ml_flush(chanid) {
       caml_sub_uint8_array_to_jsbytes(chan.buffer, 0, chan.buffer_curr),
     );
   } else {
-    chan.file.write(chan.offset, chan.buffer, 0, chan.buffer_curr);
+    chan.file.write(chan.buffer, 0, chan.buffer_curr);
   }
   chan.offset += chan.buffer_curr;
   chan.buffer_curr = 0;
@@ -671,6 +670,7 @@ function caml_output_value(chanid, v, flags) {
 function caml_seek_out(chanid, pos) {
   caml_ml_flush(chanid);
   var chan = caml_ml_channel_get(chanid);
+  chan.file.seek(pos, 0);
   chan.offset = pos;
   return 0;
 }
