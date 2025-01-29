@@ -18,9 +18,9 @@
 ///////////// Sys
 
 //Provides: caml_raise_sys_error (const)
-//Requires: caml_raise_with_string, caml_global_data
+//Requires: caml_raise_with_arg, caml_global_data, caml_string_of_jsstring
 function caml_raise_sys_error(msg) {
-  caml_raise_with_string(caml_global_data.Sys_error, msg);
+  caml_raise_with_arg(caml_global_data.Sys_error, caml_string_of_jsstring(msg));
 }
 
 //Provides: caml_sys_exit

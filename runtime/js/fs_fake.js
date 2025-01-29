@@ -47,8 +47,8 @@ MlFakeDevice.prototype.slash = function (name) {
 MlFakeDevice.prototype.lookup = function (name) {
   if (!this.content[name] && this.lookupFun) {
     var res = this.lookupFun(
-      caml_string_of_jsbytes(this.root),
-      caml_string_of_jsbytes(name),
+      caml_string_of_jsstring(this.root),
+      caml_string_of_jsstring(name),
     );
     if (res !== 0) {
       this.create_dir_if_needed(name);

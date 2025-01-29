@@ -130,12 +130,12 @@ jsoo_mount_point.push({
 });
 
 //Provides:caml_list_mount_point
-//Requires: jsoo_mount_point, caml_string_of_jsbytes
+//Requires: jsoo_mount_point, caml_string_of_jsstring
 function caml_list_mount_point() {
   var prev = 0;
   for (var i = 0; i < jsoo_mount_point.length; i++) {
     var old = prev;
-    prev = [0, caml_string_of_jsbytes(jsoo_mount_point[i].path), old];
+    prev = [0, caml_string_of_jsstring(jsoo_mount_point[i].path), old];
   }
   return prev;
 }
@@ -197,13 +197,13 @@ function caml_unmount(name) {
 }
 
 //Provides: caml_sys_getcwd
-//Requires: caml_current_dir, caml_string_of_jsbytes
+//Requires: caml_current_dir, caml_string_of_jsstring
 function caml_sys_getcwd() {
-  return caml_string_of_jsbytes(caml_current_dir);
+  return caml_string_of_jsstring(caml_current_dir);
 }
 
 //Provides: caml_sys_chdir
-//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash, caml_jsbytes_of_string, caml_raise_sys_error
+//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device, caml_trailing_slash, caml_jsstring_of_string, caml_raise_sys_error
 function caml_sys_chdir(dir) {
   var root = resolve_fs_device(dir);
   if (root.device.is_dir(root.rest)) {
@@ -213,10 +213,10 @@ function caml_sys_chdir(dir) {
     return 0;
   } else if (root.device.exists(root.rest)) {
     caml_raise_sys_error(
-      "ENOTDIR: not a directory, chdir '" + caml_jsbytes_of_string(dir) + "'",
+      "ENOTDIR: not a directory, chdir '" + caml_jsstring_of_string(dir) + "'",
     );
   } else {
-    caml_raise_no_such_file(caml_jsbytes_of_string(dir));
+    caml_raise_no_such_file(caml_jsstring_of_string(dir));
   }
 }
 
@@ -239,14 +239,14 @@ function caml_sys_file_exists(name) {
 }
 
 //Provides: caml_sys_read_directory
-//Requires: caml_string_of_jsbytes
+//Requires: caml_string_of_jsstring
 //Requires: resolve_fs_device
 function caml_sys_read_directory(name) {
   var root = resolve_fs_device(name);
   var a = root.device.readdir(root.rest);
   var l = new Array(a.length + 1);
   l[0] = 0;
-  for (var i = 0; i < a.length; i++) l[i + 1] = caml_string_of_jsbytes(a[i]);
+  for (var i = 0; i < a.length; i++) l[i + 1] = caml_string_of_jsstring(a[i]);
   return l;
 }
 
@@ -339,18 +339,18 @@ function caml_create_file(name, content) {
 }
 
 //Provides: jsoo_create_file
-//Requires: caml_create_file, caml_string_of_jsbytes
+//Requires: caml_create_file, caml_string_of_jsbytes, caml_string_of_jsstring
 function jsoo_create_file(name, content) {
-  var name = caml_string_of_jsbytes(name);
+  var name = caml_string_of_jsstring(name);
   var content = caml_string_of_jsbytes(content);
   return caml_create_file(name, content);
 }
 
 //Provides: caml_read_file_content
 //Requires: resolve_fs_device, caml_raise_no_such_file, caml_string_of_uint8_array
-//Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
+//Requires: caml_string_of_jsstring, caml_jsstring_of_string
 function caml_read_file_content(name) {
-  var name = typeof name === "string" ? caml_string_of_jsbytes(name) : name;
+  var name = typeof name === "string" ? caml_string_of_jsstring(name) : name;
   var root = resolve_fs_device(name);
   if (root.device.exists(root.rest)) {
     var file = root.device.open(root.rest, { rdonly: 1 });
@@ -359,5 +359,5 @@ function caml_read_file_content(name) {
     file.read(buf, 0, len);
     return caml_string_of_uint8_array(buf);
   }
-  caml_raise_no_such_file(caml_jsbytes_of_string(name));
+  caml_raise_no_such_file(caml_jsstring_of_string(name));
 }
