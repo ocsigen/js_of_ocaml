@@ -101,10 +101,14 @@ let link_and_optimize
      else None)
   @@ fun opt_temp_sourcemap ->
   Binaryen.link
-    ~runtime_files:(runtime_file :: runtime_wasm_files)
-    ~input_files:wat_files
+    ~inputs:
+      (List.map
+         ~f:(fun file -> { Binaryen.module_name = "env"; file })
+         (runtime_file :: runtime_wasm_files)
+      @ List.map ~f:(fun file -> { Binaryen.module_name = "OCaml"; file }) wat_files)
     ~opt_output_sourcemap:opt_temp_sourcemap
-    ~output_file:temp_file;
+    ~output_file:temp_file
+    ();
   Fs.with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
   @@ fun temp_file' ->
   opt_with
@@ -124,7 +128,8 @@ let link_and_optimize
     ~opt_input_sourcemap:opt_temp_sourcemap'
     ~opt_output_sourcemap:opt_sourcemap
     ~input_file:temp_file'
-    ~output_file;
+    ~output_file
+    ();
   Option.iter
     ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
     opt_sourcemap_file;
@@ -140,23 +145,30 @@ let link_runtime ~profile runtime_wasm_files output_file =
     @@ fun temp_file ->
     Binaryen.link
       ~opt_output_sourcemap:None
-      ~runtime_files:runtime_wasm_files
-      ~input_files:[]
-      ~output_file:temp_file;
+      ~inputs:
+        (List.map
+           ~f:(fun file -> { Binaryen.module_name = "env"; file })
+           runtime_wasm_files)
+      ~output_file:temp_file
+      ();
     Binaryen.optimize
       ~profile
       ~opt_input_sourcemap:None
       ~opt_output_sourcemap:None
       ~input_file:temp_file
-      ~output_file:extra_runtime;
+      ~output_file:extra_runtime
+      ();
     Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
     @@ fun runtime_file ->
     Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
     Binaryen.link
       ~opt_output_sourcemap:None
-      ~runtime_files:[ runtime_file; extra_runtime ]
-      ~input_files:[]
+      ~inputs:
+        (List.map
+           ~f:(fun file -> { Binaryen.module_name = "env"; file })
+           [ runtime_file; extra_runtime ])
       ~output_file
+      ()
 
 let generate_prelude ~out_file =
   Filename.gen_file out_file
@@ -196,7 +208,8 @@ let build_prelude z =
     ~input_file:prelude_file
     ~output_file:tmp_prelude_file
     ~opt_input_sourcemap:None
-    ~opt_output_sourcemap:None;
+    ~opt_output_sourcemap:None
+    ();
   Zip.add_file z ~name:"prelude.wasm" ~file:tmp_prelude_file;
   predefined_exceptions
 
@@ -423,7 +436,8 @@ let run
            ~opt_input_sourcemap:None
            ~opt_output_sourcemap:opt_tmp_map_file
            ~input_file:wat_file
-           ~output_file:tmp_wasm_file;
+           ~output_file:tmp_wasm_file
+           ();
          { Link.unit_name; unit_info; strings; fragments }
        in
        cont unit_data unit_name tmp_wasm_file opt_tmp_map_file
