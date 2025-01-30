@@ -49,8 +49,6 @@
    (import "custom" "caml_find_custom_operations"
       (func $caml_find_custom_operations
          (param (ref $bytes)) (result (ref null $custom_operations))))
-   (import "version-dependent" "caml_marshal_header_size"
-      (global $caml_marshal_header_size i32))
 
    (global $input_val_from_string (ref $bytes)
       (array.new_fixed $bytes 21
@@ -721,6 +719,16 @@
          (local.get $num_objects)))
 
    (data $marshal_data_size "Marshal.data_size")
+
+(@if (>= ocaml_version (5 1 0))
+(@then
+   (global $caml_marshal_header_size (export "caml_marshal_header_size") i32
+      (i32.const 16))
+)
+(@else
+   (global $caml_marshal_header_size (export "caml_marshal_header_size") i32
+      (i32.const 20))
+))
 
    (func (export "caml_marshal_data_size")
       (param $buf (ref eq)) (param $ofs (ref eq)) (result (ref eq))
