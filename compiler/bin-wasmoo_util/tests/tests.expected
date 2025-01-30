@@ -1,0 +1,67 @@
+;; conditional
+              a is true                     
+                                b is false  
+              a is true  
+                         
+
+;; nested conditionals
+                                                     a is true and b is false  
+                                                                            
+
+;; not
+                                
+                    b is false  
+
+;; and
+                  true  
+                    a is true  
+                               
+                                        
+                            a is true and b is false  
+                                                      
+                                                     
+
+;; or
+                        
+                   a is true  
+                              
+                     a or b is true  
+                           a is true or b is false  
+                                                    
+                                 a or b is false  
+
+;; strings
+                           newline  
+                         quote  
+
+;; string comparisons
+                      c is 1  
+                              
+                                   
+                       c is not 2  
+
+;; version comparisons
+                                                   
+                                (4 1 1) = (4 1 1)  
+                                                   
+                                 (4 1 1) <> (4 1 0)  
+                                                     
+                                 (4 1 1) <> (4 1 2)  
+                                                     
+                                 (4 1 1) <= (4 1 1)  
+                                 (4 1 1) <= (4 1 2)  
+                                 (4 1 1) >= (4 1 0)  
+                                 (4 1 1) >= (4 1 1)  
+                                                     
+                                (4 1 1) > (4 1 0)  
+                                                   
+                                                   
+
+;; version comparisons: lexicographic order
+                                                   
+                                                   
+                                (4 1 1) < (4 1 2)  
+                                                   
+                                (4 1 1) < (4 2 0)  
+                                (4 1 1) < (5 0 1)  
+                                                   
