@@ -1,0 +1,67 @@
+;; conditional
+(@if a (@then a is true) (@else a is false))
+(@if b (@then b is true) (@else b is false))
+(@if a (@then a is true))
+(@if b (@then b is true))
+
+;; nested conditionals
+(@if a (@then (@if b (@then a and b are true) (@else a is true and b is false)))
+ (@else (@if b (@then a is false and b is true) (@else a and b are false))))
+
+;; not
+(@if (not a) (@then a is false))
+(@if (not b) (@then b is false))
+
+;; and
+(@if (and) (@then true))
+(@if (and a) (@then a is true))
+(@if (and b) (@then b is true))
+(@if (and a b) (@then a and b are true))
+(@if (and a (not b)) (@then a is true and b is false))
+(@if (and (not a) b) (@then a is false and b is true))
+(@if (and (not a) (not b)) (@then a and b are false))
+
+;; or
+(@if (or) (@then false))
+(@if (or a) (@then a is true))
+(@if (or b) (@then b is true))
+(@if (or a b) (@then a or b is true))
+(@if (or a (not b)) (@then a is true or b is false))
+(@if (or (not a) b) (@then a is false or b is true))
+(@if (or (not a) (not b)) (@then a or b is false))
+
+;; strings
+(@if (= "\n" "\0a") (@then newline))
+(@if (= "\'" "'") (@then quote))
+
+;; string comparisons
+(@if (= c "1") (@then c is 1))
+(@if (= c "2") (@then c is 2))
+(@if (<> c "1") (@then c is not 1))
+(@if (<> c "2") (@then c is not 2))
+
+;; version comparisons
+(@if (= (4 1 1) (4 1 0)) (@then (4 1 1) = (4 1 0)))
+(@if (= (4 1 1) (4 1 1)) (@then (4 1 1) = (4 1 1)))
+(@if (= (4 1 1) (4 1 2)) (@then (4 1 1) = (4 1 2)))
+(@if (<> (4 1 1) (4 1 0)) (@then (4 1 1) <> (4 1 0)))
+(@if (<> (4 1 1) (4 1 1)) (@then (4 1 1) <> (4 1 1)))
+(@if (<> (4 1 1) (4 1 2)) (@then (4 1 1) <> (4 1 2)))
+(@if (<= (4 1 1) (4 1 0)) (@then (4 1 1) <= (4 1 0)))
+(@if (<= (4 1 1) (4 1 1)) (@then (4 1 1) <= (4 1 1)))
+(@if (<= (4 1 1) (4 1 2)) (@then (4 1 1) <= (4 1 2)))
+(@if (>= (4 1 1) (4 1 0)) (@then (4 1 1) >= (4 1 0)))
+(@if (>= (4 1 1) (4 1 1)) (@then (4 1 1) >= (4 1 1)))
+(@if (>= (4 1 1) (4 1 2)) (@then (4 1 1) >= (4 1 2)))
+(@if (> (4 1 1) (4 1 0)) (@then (4 1 1) > (4 1 0)))
+(@if (> (4 1 1) (4 1 1)) (@then (4 1 1) > (4 1 1)))
+(@if (> (4 1 1) (4 1 2)) (@then (4 1 1) > (4 1 2)))
+
+;; version comparisons: lexicographic order
+(@if (< (4 1 1) (4 1 0)) (@then (4 1 1) < (4 1 0)))
+(@if (< (4 1 1) (4 1 1)) (@then (4 1 1) < (4 1 1)))
+(@if (< (4 1 1) (4 1 2)) (@then (4 1 1) < (4 1 2)))
+(@if (< (4 1 1) (4 0 2)) (@then (4 1 1) < (4 0 2)))
+(@if (< (4 1 1) (4 2 0)) (@then (4 1 1) < (4 2 0)))
+(@if (< (4 1 1) (5 0 1)) (@then (4 1 1) < (5 0 1)))
+(@if (< (4 1 1) (3 2 1)) (@then (4 1 1) < (3 2 1)))
