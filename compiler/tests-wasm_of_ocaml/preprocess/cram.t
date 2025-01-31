@@ -152,3 +152,35 @@ Wrong type
   File "-", line 1, characters 14-16:
   Expected a boolean but this is a string.
   [1]
+
+Bad strings
+
+  $ echo '(@string)' | wasm_of_ocaml pp
+  File "-", line 1, characters 8-9:
+  Expecting an id or a string.
+  [1]
+
+  $ echo '(@string a "b")' | wasm_of_ocaml pp
+  File "-", line 1, characters 9-10:
+  Expecting an id
+  [1]
+
+  $ echo '(@string $a b)' | wasm_of_ocaml pp
+  File "-", line 1, characters 12-13:
+  Expecting a string
+  [1]
+
+  $ echo '(@string $bad "\u{D800}")' | wasm_of_ocaml pp
+  File "-", line 1, characters 14-24:
+  Invalid Unicode escape sequences.
+  [1]
+
+  $ echo '(@string a)' | wasm_of_ocaml pp
+  File "-", line 1, characters 9-10:
+  Expecting a string
+  [1]
+
+  $ echo '(@string a b c)' | wasm_of_ocaml pp
+  File "-", line 1, characters 13-14:
+  Expecting a closing parenthesis.
+  [1]
