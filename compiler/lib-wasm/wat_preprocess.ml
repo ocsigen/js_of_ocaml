@@ -288,6 +288,11 @@ let type_name (t : typ) =
   | String -> "string"
   | Version -> "version"
 
+let variable_is_set st nm =
+  match StringMap.find_opt nm st.variables with
+  | Some (Bool true) -> true
+  | _ -> false
+
 let check_type ?typ expr actual_typ =
   match typ with
   | None -> ()
@@ -520,6 +525,25 @@ and rewrite st elt =
   | { desc = List ({ desc = Atom "@string"; _ } :: _ :: _ :: { loc; _ } :: _); _ } ->
       raise
         (Error (position_of_loc loc, Printf.sprintf "Expecting a closing parenthesis.\n"))
+  | { desc =
+        List
+          ({ desc = Atom "func"; loc = _, pos }
+          :: { desc =
+                 List
+                   [ { desc = Atom "export"; _ }
+                   ; { desc = Atom export_name; loc = export_loc }
+                   ]
+             ; loc = pos', _
+             }
+          :: l)
+    ; _
+    }
+    when variable_is_set st "name-wasm-functions"
+         && is_id ("$" ^ parse_string export_loc export_name) ->
+      write st pos;
+      insert st (Printf.sprintf " $%s " (parse_string export_loc export_name));
+      skip st pos';
+      rewrite_list st l
   | { desc = List l; _ } -> rewrite_list st l
   | _ -> ()
 
@@ -529,12 +553,14 @@ let ocaml_version =
   Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun major minor patchlevel ->
       Version (major, minor, patchlevel))
 
+let default_settings = [ "name-wasm-functions", Bool true ]
+
 let f ~variables ~filename ~contents:text =
   let variables =
     List.fold_left
       ~f:(fun m (k, v) -> StringMap.add k v m)
       ~init:StringMap.empty
-      variables
+      (default_settings @ variables)
   in
   let variables = StringMap.add "ocaml_version" ocaml_version variables in
   let lexbuf = Sedlexing.Utf8.from_string text in

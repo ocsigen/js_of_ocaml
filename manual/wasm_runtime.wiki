@@ -62,6 +62,8 @@ To form conditional expressions, the following operators are available:
 
 It also provides some syntactic sugar to write strings. The expression{{{(@string "ab")}}} is expanded into {{{(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))}}}. The statement {{{(@string $s "ab")}}} is an abbreviation for {{{(global $s (ref eq) (@string "ab"))}}}.
 
+To provide a better debugging experience, the function export name is used to name functions with no explicit id: {{{(func (export "foo") ...)}}}} is expanded into {{{(func $foo (export "foo") ...)}}}}.
+
 == Implementing primitives ==
 
 You define a primitive by exporting a Wasm function with parameters and return value of type {{{(ref eq)}}}.
