@@ -24,7 +24,7 @@
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
 
-   (data $Array_make "Array.make")
+   (@string $Array_make "Array.make")
 
    (global $empty_array (ref eq)
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
@@ -34,10 +34,7 @@
       (local $sz i32) (local $b (ref $block)) (local $f f64)
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
       (if (i32.ge_u (local.get $sz) (i32.const 0xfffffff))
-         (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $Array_make
-                               (i32.const 0) (i32.const 10)))))
+         (then (call $caml_invalid_argument (global.get $Array_make))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (drop (block $not_float (result (ref eq))
          (local.set $f
@@ -56,10 +53,7 @@
       (local $sz i32) (local $f f64)
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
       (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
-         (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $Array_make
-                               (i32.const 0) (i32.const 10)))))
+         (then (call $caml_invalid_argument (global.get $Array_make))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (local.set $f
          (struct.get $float 0
@@ -73,10 +67,7 @@
       (local $sz i32)
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
       (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
-         (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $Array_make
-                               (i32.const 0) (i32.const 10)))))
+         (then (call $caml_invalid_argument (global.get $Array_make))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (array.new $float_array (f64.const 0) (local.get $sz)))
 

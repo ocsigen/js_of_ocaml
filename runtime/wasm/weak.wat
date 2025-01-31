@@ -275,7 +275,7 @@
       (call $caml_ephe_set_data_opt (local.get $vx) (local.get $d))
       (ref.i31 (i32.const 0)))
 
-   (data $Weak_create "Weak.create")
+   (@string $Weak_create "Weak.create")
 
    (export "caml_weak_create" (func $caml_ephe_create))
    (func $caml_ephe_create (export "caml_ephe_create")
@@ -284,10 +284,7 @@
       (local $res (ref $block))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
       (if (i32.lt_s (local.get $len) (i32.const 0))
-         (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $Weak_create
-                  (i32.const 0) (i32.const 11)))))
+         (then (call $caml_invalid_argument (global.get $Weak_create))))
       (local.set $res
          (array.new $block (global.get $caml_ephe_none)
             (i32.add (local.get $len) (global.get $caml_ephe_key_offset))))

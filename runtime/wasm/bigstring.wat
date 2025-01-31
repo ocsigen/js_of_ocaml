@@ -98,13 +98,13 @@
          (local.set $h (call $caml_hash_mix_int (local.get $h) (local.get $w))))
       (i32.xor (local.get $h) (local.get $len)))
 
-   (data $buffer "buffer")
+   (@string $buffer "buffer")
 
    (func (export "bigstring_to_array_buffer")
       (param $bs (ref eq)) (result (ref eq))
       (return_call $caml_js_get
          (call $caml_ba_to_typed_array (local.get $bs))
-         (array.new_data $bytes $buffer (i32.const 0) (i32.const 6))))
+         (global.get $buffer)))
 
    (export "bigstring_to_typed_array" (func $caml_ba_to_typed_array))
 
