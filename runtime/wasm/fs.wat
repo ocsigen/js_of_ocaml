@@ -42,6 +42,8 @@
       (tag $javascript_exception (param externref)))
    (import "sys" "caml_handle_sys_error"
       (func $caml_handle_sys_error (param externref)))
+   (import "string" "caml_string_concat"
+      (func $caml_string_concat (param (ref eq) (ref eq)) (result (ref eq))))
 
    (type $bytes (array (mut i8)))
 
@@ -119,25 +121,12 @@
       (return_call $file_exists
          (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
 
-   (data $no_such_file ": No such file or directory")
+   (@string $no_such_file ": No such file or directory")
 
-   (func $caml_raise_no_such_file (param $vname (ref eq))
-      (local $name (ref $bytes)) (local $msg (ref $bytes))
-      (local $len i32)
-      (local.set $name (ref.cast (ref $bytes) (local.get $vname)))
-      (local.set $len (array.len (local.get $name)))
-      (local.set $msg
-         (array.new $bytes (i32.const 0)
-            (i32.add (local.get $len) (i32.const 27))))
-      (array.copy $bytes $bytes
-         (local.get $msg) (i32.const 0)
-         (local.get $name) (i32.const 0)
-         (local.get $len))
-      (array.init_data $bytes $no_such_file
-         (local.get $msg) (local.get $len) (i32.const 0) (i32.const 27))
-      (call $caml_raise_sys_error (local.get $msg)))
-
-   (data $caml_read_file_content "caml_read_file_content")
+   (func $caml_raise_no_such_file (param $name (ref eq))
+      (call $caml_raise_sys_error
+         (call $caml_string_concat (local.get $name)
+            (global.get $no_such_file))))
 
    (func (export "caml_read_file_content")
       (param (ref eq)) (result (ref eq))
@@ -146,8 +135,6 @@
 
    (func (export "caml_fs_init") (result (ref eq))
       (ref.i31 (i32.const 0)))
-
-   (data $caml_sys_is_directory "caml_sys_is_directory")
 
    (func (export "caml_sys_is_directory")
       (param $name (ref eq)) (result (ref eq))

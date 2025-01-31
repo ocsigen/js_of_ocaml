@@ -150,17 +150,14 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (data $Unix "Unix")
-   (data $Win32 "Win32")
+   (@string $Unix "Unix")
+   (@string $Win32 "Win32")
 
    (func (export "caml_sys_get_config")
       (param (ref eq)) (result (ref eq))
       (array.new_fixed $block 4 (ref.i31 (i32.const 0))
-         (if (result (ref eq)) (global.get $on_windows)
-            (then
-               (array.new_data $bytes $Win32 (i32.const 0) (i32.const 5)))
-            (else
-               (array.new_data $bytes $Unix (i32.const 0) (i32.const 4))))
+         (select (result (ref eq)) (global.get $Win32) (global.get $Unix)
+            (global.get $on_windows))
          (ref.i31 (i32.const 32))
          (ref.i31 (i32.const 0))))
 
@@ -169,10 +166,10 @@
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $bytes 0))
+      (@string ""))
 
    (func (export "caml_runtime_parameters") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $bytes 0))
+      (@string ""))
 
    (func (export "caml_install_signal_handler")
       (param (ref eq) (ref eq)) (result (ref eq))
@@ -190,7 +187,7 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (global.get $caml_runtime_warnings)))
 
-   (data $toString "toString")
+   (@string $toString "toString")
 
    (func $caml_handle_sys_error (export "caml_handle_sys_error")
       (param $exn externref)
@@ -198,6 +195,6 @@
          (call $caml_string_of_jsstring
             (call $caml_js_meth_call
                (call $wrap (any.convert_extern (local.get $exn)))
-               (array.new_data $bytes $toString (i32.const 0) (i32.const 8))
+               (global.get $toString)
                (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
 )

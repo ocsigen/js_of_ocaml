@@ -52,7 +52,7 @@
    (global $lex_check_code i32 (i32.const 10))
    (global $lex_code i32 (i32.const 11))
 
-   (data $lexing_empty_token "lexing: empty token")
+   (@string $lexing_empty_token "lexing: empty token")
 
    (func (export "caml_lex_engine")
       (param $vtbl (ref eq)) (param $start_state (ref eq))
@@ -172,10 +172,7 @@
                   (array.get $block (local.get $lexbuf)
                      (global.get $lex_last_action)))
                (if (ref.eq (local.get $action) (ref.i31 (i32.const -1)))
-                  (then
-                     (call $caml_failwith
-                        (array.new_data $bytes $lexing_empty_token
-                           (i32.const 0) (i32.const 19)))))
+                  (then (call $caml_failwith (global.get $lexing_empty_token))))
                (return (local.get $action))))
          (if (i32.eq (local.get $c) (i32.const 256))
             (then
@@ -363,10 +360,7 @@
                   (array.get $block (local.get $lexbuf)
                      (global.get $lex_last_action)))
                (if (ref.eq (local.get $action) (ref.i31 (i32.const -1)))
-                  (then
-                     (call $caml_failwith
-                        (array.new_data $bytes $lexing_empty_token
-                           (i32.const 0) (i32.const 19)))))
+                  (then (call $caml_failwith (global.get $lexing_empty_token))))
                (return (local.get $action))))
          (local.set $base_code
             (call $get (local.get $lex_base_code) (local.get $pstate)))

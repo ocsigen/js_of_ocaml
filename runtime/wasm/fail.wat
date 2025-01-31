@@ -71,12 +71,10 @@
               (global.get $INVALID_EXN))
            (local.get 0)))
 
-   (data $index_out_of_bounds "index out of bounds")
+   (@string $index_out_of_bounds "index out of bounds")
 
    (func (export "caml_bound_error")
-      (return_call $caml_invalid_argument
-         (array.new_data $bytes $index_out_of_bounds
-            (i32.const 0) (i32.const 19))))
+      (return_call $caml_invalid_argument (global.get $index_out_of_bounds)))
 
    (global $END_OF_FILE_EXN i32 (i32.const 4))
 

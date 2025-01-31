@@ -119,17 +119,14 @@
       (param $v (ref eq)) (result (ref eq))
       (local.get $v))
 
-   (data $Bytes_create "Bytes.create")
+   (@string $Bytes_create "Bytes.create")
 
    (func (export "caml_create_bytes")
       (param $len (ref eq)) (result (ref eq))
       (local $l i32)
       (local.set $l (i31.get_s (ref.cast (ref i31) (local.get $len))))
       (if (i32.lt_s (local.get $l) (i32.const 0))
-         (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $Bytes_create
-                               (i32.const 0) (i32.const 12)))))
+         (then (call $caml_invalid_argument (global.get $Bytes_create))))
       (array.new $bytes (i32.const 0) (local.get $l)))
 
    (export "caml_blit_bytes" (func $caml_blit_string))
