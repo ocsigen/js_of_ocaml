@@ -237,10 +237,18 @@ let parse_string loc s =
            , Printf.sprintf "Unicode escape sequences are not supported.\n" ))
   | Some s -> s
 
+let is_string s = String.length s > 0 && Char.equal s.[0] '"'
+
 let is_keyword s =
   let lexbuf = Sedlexing.Utf8.from_string s in
   match%sedlex lexbuf with
   | keyword, eof -> true
+  | _ -> false
+
+let is_id s =
+  let lexbuf = Sedlexing.Utf8.from_string s in
+  match%sedlex lexbuf with
+  | id, eof -> true
   | _ -> false
 
 (****)
@@ -370,6 +378,14 @@ let skip st (pos' : pos) =
   Buffer.add_string st.buf (String.make (max 0 cols) ' ');
   st.pos <- pos'
 
+let insert st s =
+  Buffer.add_string st.buf s;
+  let n = String.length s in
+  st.pos <-
+    { loc = { st.pos.loc with pos_cnum = st.pos.loc.pos_cnum + n }
+    ; byte_loc = st.pos.byte_loc - 1
+    }
+
 let pred_position { loc; byte_loc } =
   { loc = { loc with pos_cnum = loc.pos_cnum - 1 }; byte_loc = byte_loc - 1 }
 
@@ -456,6 +472,50 @@ and rewrite st elt =
            ( position_of_loc loc
            , Printf.sprintf "Unexpected %s clause. Maybe you forgot a parenthesis.\n" nm
            ))
+  | { desc =
+        List
+          [ { desc = Atom "@string"; _ }
+          ; { desc = Atom name; loc = loc_name }
+          ; { desc = Atom value; loc = loc_value }
+          ]
+    ; loc = pos, pos'
+    } ->
+      if not (is_id name) then raise (Error (position_of_loc loc_name, "Expecting an id"));
+      if not (is_string value)
+      then raise (Error (position_of_loc loc_value, "Expecting a string"));
+      let s = parse_string loc_value value in
+      write st pos;
+      insert
+        st
+        (Format.asprintf
+           "(global %s (ref eq) (array.new_fixed $string %d%a))"
+           name
+           (String.length s)
+           (fun f s ->
+             String.iter ~f:(fun c -> Format.fprintf f " (i32.const %d)" (Char.code c)) s)
+           s);
+      skip st pos'
+  | { desc = List [ { desc = Atom "@string"; _ }; { desc = Atom value; loc = loc_value } ]
+    ; loc = pos, pos'
+    } ->
+      if not (is_string value)
+      then raise (Error (position_of_loc loc_value, "Expecting a string"));
+      let s = parse_string loc_value value in
+      write st pos;
+      insert
+        st
+        (Format.asprintf
+           "(array.new_fixed $string %d%a)"
+           (String.length s)
+           (fun f s ->
+             String.iter ~f:(fun c -> Format.fprintf f " (i32.const %d)" (Char.code c)) s)
+           s);
+      skip st pos'
+  | { desc = List [ { desc = Atom "@string"; loc = _, pos } ]; loc = _, pos' } ->
+      raise (Error ((pos.loc, pos'.loc), Printf.sprintf "Expecting an id or a string.\n"))
+  | { desc = List ({ desc = Atom "@string"; _ } :: _ :: _ :: { loc; _ } :: _); _ } ->
+      raise
+        (Error (position_of_loc loc, Printf.sprintf "Expecting a closing parenthesis.\n"))
   | { desc = List l; _ } -> rewrite_list st l
   | _ -> ()
 
