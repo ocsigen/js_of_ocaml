@@ -225,11 +225,12 @@ let rec parse_string_contents lexbuf =
       None
   | _ -> assert false
 
+let opt_parse_string s =
+  parse_string_contents
+    (Sedlexing.Utf8.from_string (String.sub s ~pos:1 ~len:(String.length s - 2)))
+
 let parse_string loc s =
-  match
-    parse_string_contents
-      (Sedlexing.Utf8.from_string (String.sub s ~pos:1 ~len:(String.length s - 2)))
-  with
+  match opt_parse_string s with
   | None ->
       raise
         (Error
@@ -283,6 +284,11 @@ let type_name (t : typ) =
   | Bool -> "boolean"
   | String -> "string"
   | Version -> "version"
+
+let variable_is_set st nm =
+  match StringMap.find_opt nm st.variables with
+  | Some (Bool true) -> true
+  | _ -> false
 
 let check_type ?typ expr actual_typ =
   match typ with
@@ -516,6 +522,28 @@ and rewrite st elt =
   | { desc = List ({ desc = Atom "@string"; _ } :: _ :: _ :: { loc; _ } :: _); _ } ->
       raise
         (Error (position_of_loc loc, Printf.sprintf "Expecting a closing parenthesis.\n"))
+  | { desc =
+        List
+          ({ desc = Atom "func"; loc = _, pos }
+          :: { desc =
+                 List
+                   [ { desc = Atom "export"; _ }
+                   ; { desc = Atom export_name; loc = export_loc }
+                   ]
+             ; loc = pos', _
+             }
+          :: l)
+    ; _
+    }
+    when variable_is_set st "name-wasm-functions"
+         &&
+         match opt_parse_string export_name with
+         | None -> false
+         | Some s -> is_id ("$" ^ s) ->
+      write st pos;
+      insert st (Printf.sprintf " $%s " (parse_string export_loc export_name));
+      skip st pos';
+      rewrite_list st l
   | { desc = List l; _ } -> rewrite_list st l
   | _ -> ()
 
@@ -525,12 +553,14 @@ let ocaml_version =
   Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun major minor patchlevel ->
       Version (major, minor, patchlevel))
 
+let default_settings = [ "name-wasm-functions", Bool true ]
+
 let f ~variables ~filename ~contents:text =
   let variables =
     List.fold_left
       ~f:(fun m (k, v) -> StringMap.add k v m)
       ~init:StringMap.empty
-      variables
+      (default_settings @ variables)
   in
   let variables = StringMap.add "ocaml_version" ocaml_version variables in
   let lexbuf = Sedlexing.Utf8.from_string text in
