@@ -152,3 +152,38 @@ Wrong type
   File "-", line 1, characters 14-16:
   Expected a boolean but this is a string.
   [1]
+
+Bad strings
+
+  $ echo '(@string)' | wasmoo_util pp
+  File "-", line 1, characters 8-9:
+  Expecting an id or a string.
+  [1]
+
+  $ echo '(@string a "b")' | wasmoo_util pp
+  File "-", line 1, characters 9-10:
+  Expecting an id
+  [1]
+
+  $ echo '(@string $a b)' | wasmoo_util pp
+  File "-", line 1, characters 12-13:
+  Expecting a string
+  [1]
+
+  $ echo '(@string $good "\u{1F600}")' | wasmoo_util pp
+  (global $good (ref eq) (array.new_fixed $bytes 4 (i32.const 240) (i32.const 159) (i32.const 152) (i32.const 128)))
+
+  $ echo '(@string $bad "\u{D800}")' | wasmoo_util pp
+  File "-", line 1, characters 14-24:
+  Invalid Unicode escape sequences.
+  [1]
+
+  $ echo '(@string a)' | wasmoo_util pp
+  File "-", line 1, characters 9-10:
+  Expecting a string
+  [1]
+
+  $ echo '(@string a b c)' | wasmoo_util pp
+  File "-", line 1, characters 13-14:
+  Expecting a closing parenthesis.
+  [1]
