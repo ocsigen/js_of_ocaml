@@ -70,3 +70,17 @@
  (alias runtest)
  (action
   (diff cat.expected cat_nat.expected)))
+
+(rule
+ (with-stdout-to
+  "accentué"
+  (echo test)))
+
+(tests
+ (names non_ascii_filenames)
+ (deps "accentué")
+ (modes js)
+ (js_of_ocaml
+  (compilation_mode whole_program)
+  (flags
+   (:standard --file "accentué"))))
