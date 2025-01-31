@@ -38,14 +38,12 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (data $raw_backtrace_slot_err
+   (@string $raw_backtrace_slot_err
       "Printexc.get_raw_backtrace_slot: index out of bounds")
 
    (func (export "caml_raw_backtrace_slot")
       (param (ref eq) (ref eq)) (result (ref eq))
-      (call $caml_invalid_argument
-          (array.new_data $bytes $raw_backtrace_slot_err
-             (i32.const 0) (i32.const 52)))
+      (call $caml_invalid_argument (global.get $raw_backtrace_slot_err))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_convert_raw_backtrace_slot")

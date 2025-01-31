@@ -341,21 +341,18 @@
          (local.get $v))
       (ref.i31 (i32.const 0)))
 
-   (data $not_implemented "Obj.add_offset is not supported")
+   (@string $not_implemented "Obj.add_offset is not supported")
 
    (func (export "caml_obj_add_offset")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $caml_failwith
-         (array.new_data $bytes $not_implemented (i32.const 0) (i32.const 31)))
+      (call $caml_failwith (global.get $not_implemented))
       (ref.i31 (i32.const 0)))
 
-   (data $truncate_not_implemented "Obj.truncate is not supported")
+   (@string $truncate_not_implemented "Obj.truncate is not supported")
 
    (func (export "caml_obj_truncate")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $caml_failwith
-         (array.new_data $bytes $truncate_not_implemented
-            (i32.const 0) (i32.const 29)))
+      (call $caml_failwith (global.get $truncate_not_implemented))
       (ref.i31 (i32.const 0)))
 
    (global $method_cache (mut (ref $int_array))

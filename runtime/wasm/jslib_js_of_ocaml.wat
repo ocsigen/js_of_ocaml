@@ -42,19 +42,18 @@
       (return_call $wrap
          (call $caml_js_html_entities (call $unwrap (local.get 0)))))
 
-   (data $console "console")
+   (@string $console "console")
 
    (func (export "caml_js_get_console") (param (ref eq)) (result (ref eq))
       (return_call $caml_js_get (call $caml_js_global (ref.i31 (i32.const 0)))
-         (array.new_data $bytes $console (i32.const 0) (i32.const 7))))
+         (global.get $console)))
 
-   (data $XMLHttpRequest "XMLHttpRequest")
+   (@string $XMLHttpRequest "XMLHttpRequest")
 
    (func (export "caml_xmlhttprequest_create") (param (ref eq)) (result (ref eq))
       (return_call $caml_js_new
          (call $caml_js_get
             (call $caml_js_global (ref.i31 (i32.const 0)))
-            (array.new_data $bytes $XMLHttpRequest
-               (i32.const 0) (i32.const 14)))
+            (global.get $XMLHttpRequest))
          (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))
 )

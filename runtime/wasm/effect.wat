@@ -130,23 +130,18 @@
             (field $cont (ref $cont))
             (field $next (ref null $fiber)))))
 
-   (data $effect_unhandled "Effect.Unhandled")
+   (@string $effect_unhandled "Effect.Unhandled")
 
    (func $raise_unhandled
       (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
-      (local $effect_unhandled (ref $bytes))
-      (local.set $effect_unhandled
-         (array.new_data $bytes $effect_unhandled
-            (i32.const 0) (i32.const 16)))
       (block $null
          (call $caml_raise_with_arg
             (br_on_null $null
-               (call $caml_named_value
-                  (local.get $effect_unhandled)))
+               (call $caml_named_value (global.get $effect_unhandled)))
             (local.get $eff)))
       (call $caml_raise_constant
          (array.new_fixed $block 3 (ref.i31 (i32.const 248))
-            (local.get $effect_unhandled)
+            (global.get $effect_unhandled)
             (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
       (ref.i31 (i32.const 0)))
 
@@ -227,7 +222,7 @@
       (return_call_ref $cont_func (local.get $p) (local.get $k)
          (struct.get $cont $cont_func (local.get $k))))
 
-   (data $already_resumed "Effect.Continuation_already_resumed")
+   (@string $already_resumed "Effect.Continuation_already_resumed")
 
    (func (export "%resume")
       (param $stack (ref eq)) (param $f (ref eq)) (param $v (ref eq)) (param $tail (ref eq))
@@ -238,9 +233,7 @@
          (then
             (call $caml_raise_constant
                (ref.as_non_null
-                  (call $caml_named_value
-                     (array.new_data $bytes $already_resumed
-                        (i32.const 0) (i32.const 35)))))))
+                  (call $caml_named_value (global.get $already_resumed))))))
       (return_call $capture_continuation
          (ref.func $do_resume)
           (struct.new $pair
@@ -657,9 +650,7 @@
          (return (local.get $k))))
       (call $caml_raise_constant
          (ref.as_non_null
-            (call $caml_named_value
-               (array.new_data $bytes $already_resumed
-                  (i32.const 0) (i32.const 35)))))
+            (call $caml_named_value (global.get $already_resumed))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_perform_effect")

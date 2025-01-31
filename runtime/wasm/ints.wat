@@ -94,7 +94,7 @@
       (return (i32.const -1)))
 
    (func $parse_int (export "parse_int")
-      (param $v (ref eq)) (param $nbits i32) (param $errmsg (ref $bytes))
+      (param $v (ref eq)) (param $nbits i32) (param $errmsg (ref eq))
       (result i32)
       (local $s (ref $bytes))
       (local $i i32) (local $len i32) (local $d i32) (local $c i32)
@@ -157,12 +157,7 @@
          (then (local.set $res (i32.sub (i32.const 0) (local.get $res)))))
       (local.get $res))
 
-   (global $INT_ERRMSG (ref $bytes)
-      (array.new_fixed $bytes 13 ;; "int.of_string"
-         (i32.const 105) (i32.const 110) (i32.const 116) (i32.const 95)
-         (i32.const 111) (i32.const 102) (i32.const 95) (i32.const 115)
-         (i32.const 116) (i32.const 114) (i32.const 105) (i32.const 110)
-         (i32.const 103)))
+   (@string $INT_ERRMSG "int_of_string")
 
    (func (export "caml_int_of_string")
       (param $v (ref eq)) (result (ref eq))
@@ -222,7 +217,7 @@
                (i32.const 45)))) ;; '-'
       (local.get $s))
 
-   (data $format_error "format_int: bad format")
+   (@string $format_error "format_int: bad format")
 
    (func $parse_int_format (export "parse_int_format")
       (param $s (ref $bytes)) (result i32 i32 i32 i32 i32)
@@ -283,9 +278,7 @@
             (else
                (br $bad_format)))))))))))
             (br $return))
-         (call $caml_invalid_argument
-            (array.new_data $bytes $format_error
-               (i32.const 0) (i32.const 22))))
+         (call $caml_invalid_argument (global.get $format_error)))
       (tuple.make 5
          (local.get $sign_style)
          (local.get $alternate)

@@ -107,9 +107,9 @@
 
    (global $unix_error_exn (mut (ref eq)) (ref.i31 (i32.const 0)))
 
-   (data $unix_error "Unix.Unix_error")
+   (@string $unix_error_str "Unix.Unix_error")
 
-   (data $unix_error_not_initialized
+   (@string $unix_error_not_initialized
       "Exception Unix.Unix_error not initialized, please link unix.cma")
 
    (func $get_unix_error_exn (result (ref eq))
@@ -117,19 +117,16 @@
       (if (ref.test (ref i31) (global.get $unix_error_exn))
          (then
             (local.set $unix_error_exn
-               (call $caml_named_value
-                  (array.new_data $bytes $unix_error
-                     (i32.const 0) (i32.const 15))))
+               (call $caml_named_value (global.get $unix_error_str)))
             (if (ref.is_null (local.get $unix_error_exn))
                (then
                   (call $caml_invalid_argument
-                      (array.new_data $bytes $unix_error_not_initialized
-                         (i32.const 0) (i32.const 63)))))
+                      (global.get $unix_error_not_initialized))))
             (global.set $unix_error_exn
                (ref.as_non_null (local.get $unix_error_exn)))))
       (global.get $unix_error_exn))
 
-   (global $no_arg (ref eq) (array.new_fixed $bytes 0))
+   (@string $no_arg "")
 
    (global $unix_error (ref eq) (struct.new $js (global.get $unix_error_js)))
 
@@ -146,11 +143,11 @@
          (return (call $caml_string_of_jsstring (local.get $s)))))
       (return (global.get $no_arg)))
 
-   (data $code "code")
-   (data $errno "errno")
-   (data $indexOf "indexOf")
-   (data $syscall "syscall")
-   (data $path "path")
+   (@string $code "code")
+   (@string $errno "errno")
+   (@string $indexOf "indexOf")
+   (@string $syscall "syscall")
+   (@string $path "path")
 
    (func $caml_unix_error (param $exception externref) (param $cmd eqref)
       (local $exn (ref eq))
@@ -158,19 +155,16 @@
       (local $errno (ref eq))
       (local $variant (ref eq))
       (local.set $exn (call $wrap (any.convert_extern (local.get $exception))))
-      (local.set $code
-         (call $caml_js_get (local.get $exn)
-            (array.new_data $bytes $code (i32.const 0) (i32.const 4))))
+      (local.set $code (call $caml_js_get (local.get $exn) (global.get $code)))
       (local.set $variant
          (call $caml_js_meth_call (global.get $unix_error)
-            (array.new_data $bytes $indexOf (i32.const 0) (i32.const 7))
+            (global.get $indexOf)
             (array.new_fixed $block 2 (ref.i31 (i32.const 0))
                (local.get $code))))
       (if (ref.eq (local.get $variant) (ref.i31 (i32.const -1)))
          (then
             (local.set $errno
-               (call $caml_js_get (local.get $exn)
-                  (array.new_data $bytes $errno (i32.const 0) (i32.const 4))))
+               (call $caml_js_get (local.get $exn) (global.get $errno)))
             (local.set $errno
                (ref.i31
                   (if (result i32) (ref.test (ref i31) (local.get $errno))
@@ -191,13 +185,11 @@
                (then
                   (call $ensure_string
                      (call $caml_js_get (local.get $exn)
-                        (array.new_data $bytes $syscall
-                           (i32.const 0) (i32.const 7)))))
+                        (global.get $syscall))))
                (else
                   (ref.as_non_null (local.get $cmd))))
             (call $ensure_string
-               (call $caml_js_get (local.get $exn)
-                  (array.new_data $bytes $path (i32.const 0) (i32.const 4)))))))
+               (call $caml_js_get (local.get $exn) (global.get $path))))))
 
    (export "caml_unix_gettimeofday" (func $unix_gettimeofday))
    (func $unix_gettimeofday (export "unix_gettimeofday")
@@ -670,14 +662,14 @@
          (i64.add (local.get $offset) (i64.extend_i32_s (local.get $n))))
       (ref.i31 (local.get $n)))
 
-   (data $lseek "lseek")
+   (@string $lseek "lseek")
 
    (func $lseek_exn (param $errno i32) (result (ref eq))
       (array.new_fixed $block 5
          (ref.i31 (i32.const 0))
          (call $get_unix_error_exn)
          (ref.i31 (local.get $errno))
-         (array.new_data $bytes $lseek (i32.const 0) (i32.const 5))
+         (global.get $lseek)
          (global.get $no_arg)))
 
    (func $lseek
@@ -724,17 +716,14 @@
          (call $Int64_val (local.get $ofs))
          (local.get $cmd)))
 
-   (data $out_channel_of_descr "out_channel_of_descr")
-   (data $in_channel_of_descr "in_channel_of_descr")
+   (@string $out_channel_of_descr "out_channel_of_descr")
+   (@string $in_channel_of_descr "in_channel_of_descr")
 
    (func $channel_of_descr_name (param $out i32) (result (ref eq))
-      (if (result (ref eq)) (local.get $out)
-         (then
-            (array.new_data $bytes $out_channel_of_descr
-               (i32.const 0) (i32.const 20)))
-         (else
-            (array.new_data $bytes $in_channel_of_descr
-               (i32.const 0) (i32.const 19)))))
+      (select (result (ref eq))
+         (global.get $out_channel_of_descr)
+         (global.get $in_channel_of_descr)
+         (local.get $out)))
 
    (func $caml_unix_check_stream_semantics (param $fd (ref eq)) (param $out i32)
       (local $s (ref $block)) (local $kind i32)
