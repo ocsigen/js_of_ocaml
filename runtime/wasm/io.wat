@@ -129,9 +129,7 @@
 
    (global $channel_ops (ref $custom_operations)
       (struct.new $custom_operations
-         (array.new_fixed $string 5 ;; "_chan"
-            (i32.const 95) (i32.const 99) (i32.const 104) (i32.const 97)
-            (i32.const 110))
+         (@string "_chan")
          (ref.func $custom_compare_id)
          (ref.null $compare)
          (ref.func $custom_hash_id)
@@ -179,14 +177,11 @@
    (func $release_fd_offset (param $fd i32)
       (call $map_delete (call $get_fd_offsets) (local.get $fd)))
 
-   (data $bad_file_descriptor "Bad file descriptor")
+   (@string $bad_file_descriptor "Bad file descriptor")
 
    (func $get_fd_offset (param $fd i32) (result (ref $fd_offset))
       (if (i32.eq (local.get $fd) (i32.const -1))
-         (then
-            (call $caml_raise_sys_error
-               (array.new_data $string $bad_file_descriptor
-                  (i32.const 0) (i32.const 19)))))
+         (then (call $caml_raise_sys_error (global.get $bad_file_descriptor))))
       (call $map_get (call $get_fd_offsets) (local.get $fd)))
 
    (global $IO_BUFFER_SIZE i32 (i32.const 65536))

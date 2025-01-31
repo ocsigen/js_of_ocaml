@@ -195,7 +195,7 @@
                      (local.get $style))))))
       (local.get $s))
 
-   (data $format_error "format_float: bad format")
+   (@string $format_error "format_float: bad format")
 
    (func $parse_format
       (param $s (ref $string)) (result i32 i32 i32 i32)
@@ -243,9 +243,7 @@
                   (i32.and (local.get $c) (i32.const 0xdf))
                   (i32.const 69))) ;; 'E'
             (br_if $return (i32.le_u (local.get $conversion) (i32.const 2))))
-         (call $caml_invalid_argument
-            (array.new_data $string $format_error
-               (i32.const 0) (i32.const 22))))
+         (call $caml_invalid_argument (global.get $format_error)))
       (tuple.make 4
          (local.get $sign_style)
          (local.get $precision)
@@ -340,7 +338,7 @@
                (br_if $uppercase (i32.lt_u (local.get $i) (local.get $len))))))
       (local.get $s))
 
-   (data $float_of_string "float_of_string")
+   (@string $float_of_string "float_of_string")
 
    (func $caml_float_of_hex (param $s (ref $string)) (param $i i32) (result f64)
       (local $len i32) (local $c i32) (local $d i32) (local $m i64)
@@ -481,8 +479,7 @@
          (if (local.get $exp)
             (then (local.set $f (call $ldexp (local.get $f) (local.get $exp)))))
          (return (local.get $f)))
-      (call $caml_failwith
-         (array.new_data $string $float_of_string (i32.const 0) (i32.const 15)))
+      (call $caml_failwith (global.get $float_of_string))
       (f64.const 0))
 
    (func $on_whitespace (param $s (ref $string)) (param $i i32) (result i32)
@@ -666,8 +663,7 @@
             (call $parse_float (call $jsstring_of_string (local.get $s))))
          (br_if $error (f64.ne (local.get $f) (local.get $f)))
          (return (struct.new $float (local.get $f))))
-      (call $caml_failwith
-         (array.new_data $string $float_of_string (i32.const 0) (i32.const 15)))
+      (call $caml_failwith (global.get $float_of_string))
       (return (ref.i31 (i32.const 0))))
 
    (func (export "caml_nextafter_float")
