@@ -1,7 +1,16 @@
 (env
  (_
   (flags
-   (:standard -w -27-32-33-35-39-50-60))))
+   (:standard
+    -w
+    -26-27-32..39-60-69 ;; unused something
+    -w
+    -7-8-9-11-45-50-68-74
+    -no-strict-formats
+    -no-strict-sequence
+    \
+    -strict-formats
+    -strict-sequence))))
 
 (library
  (name ocaml_testing)

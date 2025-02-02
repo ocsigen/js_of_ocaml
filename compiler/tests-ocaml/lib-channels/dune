@@ -1,15 +1,11 @@
 (tests
  (names close_in in_channel_length seek_in)
  (libraries ocaml_testing)
- (flags
-  (:standard -no-strict-formats \ -strict-formats))
  (modes js wasm))
 
 (tests
  (names close_out)
  (libraries ocaml_testing)
- (flags
-  (:standard -no-strict-formats \ -strict-formats))
  (modes js wasm)
  (action
   (run node %{test} testfile.tmp)))
@@ -23,8 +19,6 @@
   (pipe-outputs
    (run node %{test})
    (run cat)))
- (flags
-  (:standard -no-strict-formats \ -strict-formats))
  (modes js wasm))
 
 (tests
@@ -32,8 +26,6 @@
  (build_if
   (>= %{ocaml_version} 5.1))
  (libraries ocaml_testing)
- (flags
-  (:standard -no-strict-formats \ -strict-formats))
  (modes js wasm))
 
 (tests
@@ -41,6 +33,4 @@
  (build_if
   (>= %{ocaml_version} 5.2))
  (libraries ocaml_testing)
- (flags
-  (:standard -no-strict-formats \ -strict-formats))
  (modes js wasm))

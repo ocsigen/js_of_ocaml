@@ -42,5 +42,4 @@
   zero_divided_by_n)
  (build_if
   (>= %{ocaml_version} 5.1))
- (flags :standard -w -9-34-37-45-68-69-74 \ -strict-sequence)
  (modes js wasm))

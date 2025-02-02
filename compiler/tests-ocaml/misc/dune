@@ -11,7 +11,6 @@
   sorts
   takc
   taku)
- (flags :standard -w -34-37)
  (modes js wasm))
 
 (tests
