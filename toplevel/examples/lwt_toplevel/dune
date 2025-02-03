@@ -55,9 +55,7 @@
     --file
     (:include html_types_path.txt)))
   (flags
-   (:standard
-    --toplevel
-    (:include effects_flags.sexp))))
+   (:standard --toplevel)))
  (modules
   (:standard \ test_dynlink examples effects_flags))
  (preprocess
@@ -141,18 +139,11 @@
  (modules effects_flags))
 
 (rule
- (target effects_flags.sexp)
- (action
-  (with-stdout-to
-   %{target}
-   (run ./effects_flags.exe sexp))))
-
-(rule
  (target effects_flags.txt)
  (action
   (with-stdout-to
    %{target}
-   (run ./effects_flags.exe txt))))
+   (run ./effects_flags.exe txt %{profile}))))
 
 (rule
  (targets toplevel.js)

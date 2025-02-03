@@ -4,26 +4,11 @@
  (libraries js_of_ocaml)
  (link_flags
   (:standard -linkall))
- (js_of_ocaml
-  (flags
-   (:standard)
-   (:include effects_flags.sexp))
-  (build_runtime_flags
-   (:standard)
-   (:include effects_flags.sexp))
-  (link_flags (:standard)))
  (modes js byte))
 
 (executable
  (name effects_flags)
  (modules effects_flags))
-
-(rule
- (target effects_flags.sexp)
- (action
-  (with-stdout-to
-   %{target}
-   (run ./effects_flags.exe sexp %{profile}))))
 
 (rule
  (target effects_flags.txt)
