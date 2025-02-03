@@ -4,8 +4,7 @@ let extra_args_for_wasoo =
   ; "--stack-size=10000"
   ]
 
-let extra_args_for_jsoo = [ "--stack-size=3000" ]
-(* We somehow need a larger stack with --effects=double-translation. *)
+let extra_args_for_jsoo = [] @ Node_wrapper_per_profile.args
 
 let env = Unix.environment ()
 
