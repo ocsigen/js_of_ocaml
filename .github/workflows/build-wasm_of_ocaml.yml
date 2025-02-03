@@ -131,6 +131,10 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm
 
+      # we continue-on-error on windows because we seem to often hit
+      # an internal assert inside libuv.
+      # See https://github.com/libuv/libuv/issues/3622
+
       - name: Run tests with CPS effects
         if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
