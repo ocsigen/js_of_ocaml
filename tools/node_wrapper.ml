@@ -5,6 +5,7 @@ let extra_args_for_wasoo =
   ]
 
 let extra_args_for_jsoo = [ "--stack-size=3000" ]
+(* We somehow need a larger stack with --effects=double-translation. *)
 
 let env = Unix.environment ()
 
