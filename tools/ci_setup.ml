@@ -64,7 +64,8 @@ let node_wrapper =
     , {|(executable
  (public_name node)
  (name node_wrapper)
- (libraries unix))|} )
+       (libraries unix))|} )
+  ; "node_wrapper/node_wrapper_per_profile.ml", {|let args = []|}
   ; "node_wrapper/dune-project", "(lang dune 3.17)"
   ; "node_wrapper/node_wrapper.opam", ""
   ]
