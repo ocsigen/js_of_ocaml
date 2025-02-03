@@ -2,7 +2,7 @@
 
 == Use the right compiler flags
 === OCaml flags
-Make sure to use "-g" flags when compiling and linking ocaml bytecode.
+Make sure to use {{{-g}}} flags when compiling and linking ocaml bytecode.
 Js_of_ocaml will attempt to preserve variable names.
 
 === Js_of_ocaml flags
