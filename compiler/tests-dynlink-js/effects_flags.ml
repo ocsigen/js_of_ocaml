@@ -1,19 +1,16 @@
-let enable b n =
-  let f = if b then "--enable" else "--disable" in
-  [ f; n ]
-
 let () =
   let major = String.split_on_char '.' Sys.ocaml_version |> List.hd |> int_of_string in
-  let has_effect l =
-    match l with
-    | [ ("with-effects" | "with-effects-double-translation") ] -> major >= 5
-    | _ -> false
+  let effects_flags l =
+    match l, major >= 5 with
+    | [ "with-effects-double-translation" ], true -> [ "--effects"; "double-translation" ]
+    | [ "with-effects" ], true -> [ "--enable"; "effects" ]
+    | _, true -> [ "--disable"; "effects" ]
+    | _, false -> [ "--disable"; "effects" ]
   in
-  let aux l = enable (has_effect l) "effects" in
   match Sys.argv |> Array.to_list |> List.tl with
-  | "txt" :: rest -> List.iter print_endline (aux rest)
+  | "txt" :: rest -> List.iter print_endline (effects_flags rest)
   | "sexp" :: rest ->
       print_endline "(";
-      List.iter print_endline (aux rest);
+      List.iter print_endline (effects_flags rest);
       print_endline ")"
   | _ -> assert false
