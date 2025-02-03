@@ -23,6 +23,9 @@ Js_of_ocaml is composed of multiple packages:
   * js_of_ocaml-toplevel, lib and tools to build an ocaml toplevel to
     javascript.
 
+There is also a compiler targeting WebAssembly provided by the
+wasm_of_ocaml package, see <<a_manual chapter="wasm_overview" |wasm_of_ocaml>>.
+
 Note: All code examples in this manual use Js_of_ocaml's ppx syntax.
 It is, however, possible to use Js_of_ocaml purely as a compiler
 while using a different package (e.g. gen_js_api, brr) to
@@ -87,8 +90,8 @@ functions are optimized:
 Effect handlers are fully supported with the
 {{{--enable=effects}}} flag. Effect support is disabled by
 default for now since effects are not widely used at the moment and the
-generated code can be slower, larger and less readable. See the dedicated
-manual section about effects for details.
+generated code can be slower, larger and less readable. See the [[effects|dedicated
+manual section]] for details.
 
 Data representation differs from the usual one. Most notably,
 integers are 32 bits (rather than 31 bits or 63 bits), which is their

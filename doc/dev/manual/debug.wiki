@@ -6,26 +6,26 @@ Make sure to use "-g" flags when compiling and linking ocaml bytecode.
 Js_of_ocaml will attempt to preserve variable names.
 
 === Js_of_ocaml flags
-  * [--pretty]     - format the generated JavaScript in a readable way and try to keep OCaml variable names.
-  * [--no-inline]  - prevent function inlining.
-  * [--debug-info] - annotate the JavaScript file with locations from the OCaml sources.
-  * [--source-map] - enable source-map support
+  * {{{--pretty}}}     - format the generated JavaScript in a readable way and try to keep OCaml variable names.
+  * {{{--no-inline}}}  - prevent function inlining.
+  * {{{--debug-info}}} - annotate the JavaScript file with locations from the OCaml sources.
+  * {{{--source-map}}} - enable source-map support
 
 == JavaScript stacktrace
-Js_of_ocaml can attach a JavaScript [Error] that embed the current
-stacktrace to an OCaml exception. The [Error] can be attached with
+Js_of_ocaml can attach a JavaScript {{{Error}}} that embed the current
+stacktrace to an OCaml exception. The {{{Error}}} can be attached with
 {{{Js.Js_error.attach_js_backtrace}}} and extracted using
 {{{Js.Js_error.of_exn}}}. Un-handled OCaml exception will throw any
-JavaScript [Error] attached to them, allowing the JS engine to display
+JavaScript {{{Error}}} attached to them, allowing the JS engine to display
 the stacktrace nicely.
 
-Js_of_ocaml will attach an [Error] automatically when raising an OCaml
+Js_of_ocaml will attach an {{{Error}}} automatically when raising an OCaml
 exception (with {{{raise}}}, not with {{{raise_notrace}}}) if
 {{{Printexc.backtrace_status() = true}}} and either the environment
-variable [OCAMLRUNPARAM] is set with [b=1] or the program was compiled
-with [--enable with-js-error].
+variable {{{OCAMLRUNPARAM}}} is set with {{{b=1}}} or the program was compiled
+with {{{--enable with-js-error}}}.
 
-Note that creating JavaScript [Error]s is costly and can degrade performance a lot.
+Note that creating JavaScript {{{Error}}}s is costly and can degrade performance a lot.
 This is the reason why such feature is not enabled by default.
 
 == Breakpoint

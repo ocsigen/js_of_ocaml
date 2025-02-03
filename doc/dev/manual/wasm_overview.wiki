@@ -5,7 +5,7 @@
 Wasm_of_ocaml is a compiler from OCaml bytecode programs to WebAssembly.
 It provides an alternative way to run pure OCaml programs in JavaScript environments like browsers and Node.js.
 
-The compiler is provided by the wasm_of_ocaml-package. The <<a_manual chapter="overview" |Js_of_ocaml libraries>> are compatible with this compiler.
+The compiler is provided by the wasm_of_ocaml-compiler package. The <<a_manual chapter="overview" |Js_of_ocaml libraries>> are compatible with this compiler.
 
 == Installation
 
