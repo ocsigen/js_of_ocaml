@@ -23,9 +23,9 @@ separate compilation with some differences.
 
 The general idea is generate one JavaScript file containing the
 JavaScript runtime and JavaScript files for every compilation unit (or
-library) needed to run the program. One can then link (or
-"concatenate") all individual JavaScript files together, respecting
-the order induced by dependencies, into a single JavaScript file.
+library) needed to run the program. One can then link all individual
+JavaScript files together, respecting the order induced by
+dependencies, into a single JavaScript file.
 
 === 1. Build the runtime
 

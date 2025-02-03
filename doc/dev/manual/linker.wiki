@@ -35,6 +35,6 @@ function primitive_name(..){
    the returned value of the primitive; when no annotation is provided,
    the linker assumes that the primitive may have side-effects.
  * **{{{//Requires}}}** is used if other primitives need to be loaded first
- * **version_constraint** looks like "{{{< 4.12.0}}}"
+ * **version_constraint** looks like {{{< 4.12.0}}}
  * **{{{//Version}}}** is optional and is rarely used
 All JavaScript code following a **{{{//Provides}}}** annotation is associated to this annotation, until the next **{{{//Provides}}}** annotation.
