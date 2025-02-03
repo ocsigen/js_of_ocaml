@@ -17,6 +17,7 @@
 * Misc: import many test from the OCaml codebase
 * Runtime: support for float16 bigarrays
 * Runtime: support more Unix functions (#1823)
+* Runtime: various filesystem fixes (#1825)
 
 ## Bug fixes
 * Compiler: Fix small bug in global data flow analysis (#1768)
