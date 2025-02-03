@@ -150,7 +150,6 @@ let () =
           | `Tool | `Typing | `Dynlink -> ()
           | `Ignore -> ()
           | `No -> Printf.eprintf "missing expected %s\n" x)
-      | `Extra (Dir "effects-2") -> ()
       | `Extra (Ml "testing.ml") -> ()
       | `Extra (Ml "expect.ml") -> ()
       | `Extra (Expected x) -> Printf.eprintf "extra expected %s\n" x
