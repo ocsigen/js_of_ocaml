@@ -1,7 +1,5 @@
 (env
  (_
-  (flags
-   (:standard -w -38))
   (js_of_ocaml
    (flags
     (:standard --enable=effects))

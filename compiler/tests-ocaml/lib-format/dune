@@ -9,6 +9,4 @@
  (build_if
   (>= %{ocaml_version} 5.1))
  (libraries ocaml_testing)
- (flags
-  (:standard -no-strict-formats \ -strict-formats))
  (modes js wasm))

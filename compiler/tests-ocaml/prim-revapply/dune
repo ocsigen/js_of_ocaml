@@ -1,6 +1,4 @@
 (tests
  (names apply revapply)
  (libraries)
- (flags
-  (:standard -w -34-37))
  (modes js wasm))

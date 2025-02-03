@@ -5,5 +5,4 @@
   tfloat_hex
   tfloat_record
   zero_sized_float_arrays)
- (flags :standard -w -69)
  (modes js wasm))

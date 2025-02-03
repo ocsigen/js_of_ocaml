@@ -1,7 +1,5 @@
 (env
  (with-effects
-  (flags
-   (:standard -w -38))
   (js_of_ocaml
    (flags
     (:standard --effects=double-translation))
@@ -11,8 +9,6 @@
    ;; TODO: remove once support in ocaml/dune#11222 is released.
    (compilation_mode whole_program)))
  (_
-  (flags
-   (:standard -w -38))
   (js_of_ocaml
    (flags
     (:standard --effects=double-translation))

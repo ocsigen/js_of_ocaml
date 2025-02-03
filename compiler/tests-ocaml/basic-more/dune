@@ -23,5 +23,4 @@
  (libraries ocaml_testing)
  (build_if
   (>= %{ocaml_version} 5.2))
- (flags :standard -w -8-9-11-37-38-45-69)
  (modes js wasm))

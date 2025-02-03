@@ -8,5 +8,4 @@
   raise_from_success_continuation
   streams
   tail_calls)
- (flags :standard -w -38)
  (modes js wasm))

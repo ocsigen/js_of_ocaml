@@ -1,7 +1,19 @@
 (env
  (_
   (flags
-   (:standard -w -27-32-33-35-39-50-60))))
+   (:standard
+    (-warn-error -a)
+    (-w -26-27-32..39-60-66-67-69) ;; unused something
+    (-w -50) ;; doc-comment
+    (-w -7) ;; method-override
+    (-w -9) ;; missing-record-field-pattern
+    (-w -45) ;; open-shadow-label-constructor
+    (-w -8-11-68-74) ;; partial/unused patterns
+    -no-strict-formats
+    -no-strict-sequence
+    \
+    -strict-formats
+    -strict-sequence))))
 
 (library
  (name ocaml_testing)
