@@ -46,6 +46,10 @@ Features are grouped by ECMAScript version.
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/globalThis#browser_compatibility)
 - Polyfilled in the repository
 
+### BigInt
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#browser_compatibility)
+- For Wasm_of_ocaml
+
 ## ECMAScript 2021
 
 ### WeakRef
