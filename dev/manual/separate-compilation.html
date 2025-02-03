@@ -58,9 +58,9 @@ elimination almost useless.
 separate compilation with some differences.
 </p><p>The general idea is generate one JavaScript file containing the
 JavaScript runtime and JavaScript files for every compilation unit (or
-library) needed to run the program. One can then link (or
-&quot;concatenate&quot;) all individual JavaScript files together, respecting
-the order induced by dependencies, into a single JavaScript file.
+library) needed to run the program. One can then link all individual
+JavaScript files together, respecting the order induced by
+dependencies, into a single JavaScript file.
 </p><h3> 1. Build the runtime</h3><p>To build a standalone runtime:
 </p><pre>js_of_ocaml build-runtime -o my-runtime.js
 </pre><p>Additional runtime files are sometime needed and can be passed on the
