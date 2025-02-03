@@ -220,7 +220,7 @@ function caml_unix_stat(name) {
 function caml_unix_stat_64(name) {
   var root = resolve_fs_device(name);
   if (!root.device.stat) {
-    caml_failwith("caml_unix_stat: not implemented");
+    caml_failwith("caml_unix_stat_64: not implemented");
   }
   return root.device.stat(
     root.rest,
@@ -250,7 +250,7 @@ function caml_unix_lstat(name) {
 function caml_unix_lstat_64(name) {
   var root = resolve_fs_device(name);
   if (!root.device.lstat) {
-    caml_failwith("caml_unix_lstat: not implemented");
+    caml_failwith("caml_unix_lstat_64: not implemented");
   }
   return root.device.lstat(
     root.rest,
@@ -363,7 +363,7 @@ function caml_unix_truncate(name, len) {
 function caml_unix_truncate_64(name, len) {
   var root = resolve_fs_device(name);
   if (!root.device.truncate) {
-    caml_failwith("caml_unix_truncate: not implemented");
+    caml_failwith("caml_unix_truncate_64: not implemented");
   }
   root.device.truncate(
     root.rest,
