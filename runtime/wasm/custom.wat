@@ -26,7 +26,8 @@
       (func $caml_string_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -38,7 +39,13 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
+(@if use-js-string
+(@then
          (field $id (ref $string))
+)
+(@else
+         (field $id (ref $bytes))
+))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -109,7 +116,7 @@
             (local.get $ops) (global.get $custom_operations))))
 
    (func (export "caml_find_custom_operations")
-      (param $id (ref $string)) (result (ref null $custom_operations))
+      (param $id (ref eq)) (result (ref null $custom_operations))
       (local $l (ref null $custom_operations_list))
       (block $not_found
          (local.set $l (br_on_null $not_found (global.get $custom_operations)))

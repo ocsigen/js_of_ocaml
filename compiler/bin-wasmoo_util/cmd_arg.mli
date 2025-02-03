@@ -16,33 +16,37 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type link_input =
-  { module_name : string
-  ; file : string
+type variables =
+  { enable : string list
+  ; disable : string list
+  ; set : (string * string) list
   }
 
-val link :
-     ?options:string list
-  -> inputs:link_input list
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> unit
-  -> unit
+type preprocess_options =
+  { input_file : string option
+  ; output_file : string option
+  ; variables : variables
+  }
 
-val dead_code_elimination :
-     dependencies:string
-  -> opt_input_sourcemap:string option
-  -> input_file:string
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> Stdlib.StringSet.t
+val preprocess_options : preprocess_options Cmdliner.Term.t
 
-val optimize :
-     profile:Driver.profile option
-  -> ?options:string list
-  -> opt_input_sourcemap:string option
-  -> input_file:string
-  -> opt_output_sourcemap:string option
-  -> output_file:string
-  -> unit
-  -> unit
+val preprocess_info : Cmdliner.Cmd.info
+
+type binaryen_options =
+  { common : string list
+  ; opt : string list
+  ; merge : string list
+  }
+
+type link_options =
+  { input_modules : (string * string) list
+  ; output_file : string
+  ; variables : variables
+  ; binaryen_options : binaryen_options
+  }
+
+val link_options : link_options Cmdliner.Term.t
+
+val link_info : Cmdliner.Cmd.info
+
+val info : Cmdliner.Cmd.info

@@ -1,72 +1,40 @@
 (install
  (section lib)
  (package wasm_of_ocaml-compiler)
- (files runtime.wasm runtime.js))
+ (files
+  (glob_files *.wat)
+  (glob_files runtime-*.wasm)
+  runtime.js))
 
 (rule
- (target version-dependent.wat)
- (deps version-dependent/post-5.2.wat)
- (enabled_if
-  (>= %{ocaml_version} 5.2.0))
- (action
-  (copy %{deps} %{target})))
-
-(rule
- (target version-dependent.wat)
- (deps version-dependent/post-5.1.wat)
- (enabled_if
-  (and
-   (>= %{ocaml_version} 5.1.0)
-   (< %{ocaml_version} 5.2.0)))
- (action
-  (copy %{deps} %{target})))
-
-(rule
- (target version-dependent.wat)
- (deps version-dependent/pre-5.1.wat)
- (enabled_if
-  (< %{ocaml_version} 5.1.0))
- (action
-  (copy %{deps} %{target})))
-
-(rule
- (target runtime.wasm)
- (deps runtime.merged.wasm)
- (action
-  (run
-   wasm-opt
-   -g
-   --enable-gc
-   --enable-exception-handling
-   --enable-reference-types
-   --enable-tail-call
-   --enable-strings
-   --enable-multivalue
-   --enable-bulk-memory
-   %{deps}
-   -O3
-   -o
-   %{target})))
-
-(rule
- (target runtime.merged.wasm)
+ (target runtime-standard.wasm)
  (deps
   args
   (glob_files *.wat))
  (action
   (run
-   wasm-merge
-   -g
-   --enable-gc
-   --enable-exception-handling
-   --enable-reference-types
-   --enable-tail-call
-   --enable-strings
-   --enable-multivalue
-   --enable-bulk-memory
-   %{read-lines:args}
-   -o
-   %{target})))
+   wasmoo_util
+   link
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --disable use-js-string
+   %{target}
+   %{read-lines:args})))
+
+(rule
+ (target runtime-use-js-string.wasm)
+ (deps
+  args
+  (glob_files *.wat))
+ (action
+  (run
+   wasmoo_util
+   link
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --enable use-js-string
+   %{target}
+   %{read-lines:args})))
 
 (rule
  (target args)

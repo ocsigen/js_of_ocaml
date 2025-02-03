@@ -22,11 +22,8 @@
    (import "string" "caml_string_equal"
       (func $caml_string_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "jslib" "caml_string_of_jsstring"
-      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
@@ -38,6 +35,8 @@
    (import "string" "caml_string_concat"
       (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
    (import "printexc" "caml_format_exception"
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit (param i32)))
@@ -46,11 +45,12 @@
    (import "bindings" "throw" (func $throw (param externref)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
    (type $assoc
       (struct
-         (field (ref $string))
+         (field (ref eq))
          (field (mut (ref eq)))
          (field (mut (ref null $assoc)))))
 
@@ -117,9 +117,7 @@
          (return (ref.i31 (i32.const 0))))
       (array.set $assoc_array
          (global.get $named_value_table) (local.get $h)
-         (struct.new $assoc
-            (ref.cast (ref $string) (local.get 0))
-            (local.get 1) (local.get $r)))
+         (struct.new $assoc (local.get 0) (local.get 1) (local.get $r)))
       (ref.i31 (i32.const 0)))
 
    ;; Used only for testing (tests-jsoo/bin), but inconvenient to pull out
@@ -183,9 +181,9 @@
 
    (type $func (func (result (ref eq))))
 
-   (data $fatal_error "Fatal error: exception ")
-   (data $handle_uncaught_exception "Printexc.handle_uncaught_exception")
-   (data $do_at_exit "Pervasives.do_at_exit")
+   (@string $fatal_error "Fatal error: exception ")
+   (@string $handle_uncaught_exception "Printexc.handle_uncaught_exception")
+   (@string $do_at_exit "Pervasives.do_at_exit")
 
    (global $uncaught_exception (mut externref) (ref.null extern))
 
@@ -214,9 +212,7 @@
                            (call $caml_callback_2
                               (br_on_null $not_registered
                                  (call $caml_named_value
-                                     (array.new_data $string
-                                        $handle_uncaught_exception
-                                        (i32.const 0) (i32.const 34))))
+                                     (global.get $handle_uncaught_exception)))
                               (local.get $exn)
                               (ref.i31 (i32.const 0)))))
                      (catch $ocaml_exit
@@ -226,19 +222,15 @@
                   (drop
                      (call $caml_callback_1
                         (br_on_null $null
-                           (call $caml_named_value
-                              (array.new_data $string $do_at_exit
-                                 (i32.const 0) (i32.const 21))))
+                           (call $caml_named_value (global.get $do_at_exit)))
                         (ref.i31 (i32.const 0)))))
                (call $write (i32.const 2)
                   (call $unwrap
                      (call $caml_jsstring_of_string
                         (call $caml_string_concat
-                           (array.new_data $string $fatal_error
-                              (i32.const 0) (i32.const 23))
+                           (global.get $fatal_error)
                            (call $caml_string_concat
                               (call $caml_format_exception (local.get $exn))
-                              (array.new_fixed $string 1
-                                 (i32.const 10)))))))) ;; `\n`
-               (call $exit (i32.const 2)))))
+                              (@string "\n")))))))
+            (call $exit (i32.const 2)))))
 )

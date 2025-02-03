@@ -21,7 +21,8 @@
    (import "bindings" "jstag" (tag $javascript_exception (param externref)))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
    (tag $ocaml_exception (export "ocaml_exception") (param (ref eq)))
    (export "javascript_exception" (tag $javascript_exception))
@@ -60,7 +61,7 @@
        (return_call $caml_raise_with_arg
            (array.get $block (global.get $caml_global_data)
               (global.get $FAILURE_EXN))
-           (local.get 0)))
+           (local.get $arg)))
 
    (global $INVALID_EXN i32 (i32.const 3))
 
@@ -71,12 +72,10 @@
               (global.get $INVALID_EXN))
            (local.get 0)))
 
-   (data $index_out_of_bounds "index out of bounds")
+   (@string $index_out_of_bounds "index out of bounds")
 
    (func (export "caml_bound_error")
-      (return_call $caml_invalid_argument
-         (array.new_data $string $index_out_of_bounds
-            (i32.const 0) (i32.const 19))))
+      (return_call $caml_invalid_argument (global.get $index_out_of_bounds)))
 
    (global $END_OF_FILE_EXN i32 (i32.const 4))
 
