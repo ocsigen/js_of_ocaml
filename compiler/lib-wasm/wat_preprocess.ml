@@ -9,6 +9,14 @@ let report_error loc msg =
 
 (****)
 
+(*
+See the WebAssembly Text Format Specification:
+https://webassembly.github.io/spec/core/text/index.html
+
+We use custom annotations to extend the syntax
+(https://github.com/WebAssembly/annotations).
+*)
+
 let digit = [%sedlex.regexp? '0' .. '9']
 
 let hexdigit = [%sedlex.regexp? '0' .. '9' | 'a' .. 'f' | 'A' .. 'F']
