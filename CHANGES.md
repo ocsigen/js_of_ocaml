@@ -1,3 +1,8 @@
+# dev
+
+## Features/Changes
+* Compiler: use a Wasm text files preprocessor (#1822)
+
 # 6.0.1 (2025-02-07) - Lille
 
 ## Features/Changes
