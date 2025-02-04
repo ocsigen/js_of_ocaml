@@ -91,22 +91,6 @@ function caml_unix_startup() {}
 //Alias: win_cleanup
 function caml_unix_cleanup() {}
 
-//Provides: caml_sys_putenv (const, const)
-//Requires: caml_jsstring_of_string, jsoo_static_env
-function caml_sys_putenv(name, value) {
-  var name = caml_jsstring_of_string(name);
-  var value = caml_jsstring_of_string(value);
-  delete jsoo_static_env[name];
-  //nodejs env
-  var process = globalThis.process;
-  if (process && process.env) {
-    process.env[name] = value;
-    return 0;
-  }
-  if (!globalThis.jsoo_env) globalThis.jsoo_env = {};
-  globalThis.jsoo_env[name] = value;
-}
-
 //Provides: caml_unix_filedescr_of_fd const
 //Alias: win_handle_fd
 function caml_unix_filedescr_of_fd(x) {

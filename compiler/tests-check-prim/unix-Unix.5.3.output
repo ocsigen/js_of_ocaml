@@ -210,7 +210,6 @@ jsoo_toplevel_init_reloc
 
 From +unix.js:
 caml_strerror
-caml_sys_putenv
 caml_unix_cleanup
 caml_unix_filedescr_of_fd
 caml_unix_findclose
