@@ -341,9 +341,9 @@ and keyboardEvent = object
 
   method location : int readonly_prop
 
-  method key : js_string t readonly_prop
+  method key : js_string t optdef readonly_prop
 
-  method code : js_string t readonly_prop
+  method code : js_string t optdef readonly_prop
 
   method isComposing : bool t readonly_prop
 
@@ -2351,9 +2351,9 @@ class type window = object
 
   method scrollBy : number_t -> number_t -> unit meth
 
-  method sessionStorage : storage t readonly_prop
+  method sessionStorage : storage t optdef readonly_prop
 
-  method localStorage : storage t readonly_prop
+  method localStorage : storage t optdef readonly_prop
 
   method top : window t readonly_prop
 
@@ -3368,6 +3368,10 @@ module Keyboard_code = struct
 
   let make_unidentified _ = Unidentified
 
+  let try_next value f = function
+    | Unidentified -> Optdef.case value make_unidentified f
+    | v -> v
+
   let run_next value f = function
     | Unidentified -> f value
     | v -> v
@@ -3383,8 +3387,9 @@ module Keyboard_code = struct
 
   let ( |> ) x f = f x
 
-  let of_event (evt : keyboardEvent Js.t) =
-    try_code evt##.code
+  let of_event evt =
+    Unidentified
+    |> try_next evt##.code try_code
     |> try_key_location evt
     |> run_next (get_key_code evt) try_key_code_normal
 
@@ -3397,10 +3402,12 @@ module Keyboard_key = struct
   let char_of_int value =
     if 0 < value then try Some (Uchar.of_int value) with _ -> None else None
 
+  let empty_string _ = Js.string ""
+
   let none _ = None
 
   let of_event evt =
-    let key = evt##.key in
+    let key = Optdef.get evt##.key empty_string in
     match key##.length with
     | 0 -> Optdef.case evt##.charCode none char_of_int
     | 1 -> char_of_int (int_of_float (Js.to_float (key##charCodeAt 0)))

@@ -349,9 +349,12 @@ and keyboardEvent = object
 
   method location : int readonly_prop
 
-  method key : js_string t readonly_prop
+  (* Chrome can send fake keyboard events without any of the expected
+     properties (https://chromium-review.googlesource.com/771674), so
+     we keep the [optdef] annotation for now *)
+  method key : js_string t optdef readonly_prop
 
-  method code : js_string t readonly_prop
+  method code : js_string t optdef readonly_prop
 
   method isComposing : bool t readonly_prop
 
@@ -2201,9 +2204,13 @@ class type window = object
 
   method scrollBy : number_t -> number_t -> unit meth
 
-  method sessionStorage : storage t readonly_prop
+  (* These two properties are not available on non-Web environments
+     (for instance, Web workers, node). So we keep the [optdef]
+     annotation for now. *)
 
-  method localStorage : storage t readonly_prop
+  method sessionStorage : storage t optdef readonly_prop
+
+  method localStorage : storage t optdef readonly_prop
 
   method top : window t readonly_prop
 
