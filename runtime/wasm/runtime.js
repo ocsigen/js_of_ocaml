@@ -459,7 +459,6 @@
     argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
     on_windows: +on_windows,
     getenv: (n) => (isNode ? process.env[n] : null),
-    putenv: (n, v) => process.env[n] = v,
     system: (c) => {
       var res = require("node:child_process").spawnSync(c, {
         shell: true,
