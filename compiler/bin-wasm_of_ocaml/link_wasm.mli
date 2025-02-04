@@ -16,37 +16,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type variables =
-  { enable : string list
-  ; disable : string list
-  ; set : (string * string) list
-  }
-
-type preprocess_options =
-  { input_file : string option
-  ; output_file : string option
-  ; variables : variables
-  }
-
-val preprocess_options : preprocess_options Cmdliner.Term.t
-
-val preprocess_info : Cmdliner.Cmd.info
-
-type binaryen_options =
-  { common : string list
-  ; opt : string list
-  ; merge : string list
-  }
-
-type link_options =
-  { input_modules : (string * string) list
-  ; output_file : string
-  ; variables : variables
-  ; binaryen_options : binaryen_options
-  }
-
-val link_options : link_options Cmdliner.Term.t
-
-val link_info : Cmdliner.Cmd.info
-
-val info : Cmdliner.Cmd.info
+val command : unit Cmdliner.Cmd.t

@@ -1,6 +1,6 @@
-(executable
- (name wasm_of_ocaml)
- (public_name wasm_of_ocaml)
+(executables
+ (names wasm_of_ocaml wasmoo_link_wasm)
+ (public_names wasm_of_ocaml -)
  (package wasm_of_ocaml-compiler)
  (libraries
   jsoo_cmdline
