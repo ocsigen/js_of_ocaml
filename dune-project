@@ -29,7 +29,7 @@
   menhir
   menhirLib
   menhirSdk
-  (yojson (>= 1.6)))
+  (yojson (>= 2.1)))
  (depopts
   ocamlfind)
  (conflicts

@@ -34,6 +34,7 @@ conflicts: [
   "ocamlfind" {< "1.5.1"}
   "js_of_ocaml" {< "3.0"}
 ]
+dev-repo: "git+https://github.com/ocsigen/js_of_ocaml.git"
 build: [
   ["dune" "subst"] {dev}
   [
@@ -44,8 +45,6 @@ build: [
     "-j"
     jobs
     "@install"
-    "@runtest" {with-test}
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/ocsigen/js_of_ocaml.git"
