@@ -26,7 +26,6 @@
          (param i32) (param i32) (param i32) (param i32) (param i32) (param i32)
          (result f64)))
    (import "bindings" "utimes" (func $utimes (param anyref f64 f64)))
-   (import "bindings" "putenv" (func $putenv (param anyref anyref)))
    (import "bindings" "stat" (func $stat (param anyref i32) (result (ref eq))))
    (import "bindings" "lstat" (func $lstat (param anyref i32) (result (ref eq))))
    (import "bindings" "fstat"
@@ -325,12 +324,6 @@
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (ref.i31 (i32.const 0)))
-
-   (func (export "caml_sys_putenv")
-      (param $name (ref eq)) (param $value (ref eq))
-      (call $putenv
-         (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
-         (call $unwrap (call $caml_jsstring_of_string (local.get $value)))))
 
    (func (export "caml_alloc_stat")
       (param $large i32)
