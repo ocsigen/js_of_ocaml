@@ -10,8 +10,7 @@
   (glob_files *.wat))
  (action
   (run
-   wasmoo_util
-   link
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
    --binaryen=-g
    --binaryen-opt=-O3
    %{target}
