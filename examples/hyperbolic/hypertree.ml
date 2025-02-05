@@ -543,14 +543,14 @@ let default_language () =
 
 let language =
   ref
-    (Js.Opt.get
-       (Html.window##.localStorage##getItem (Js.string "hyp_lang"))
-       default_language)
+    (Js.Optdef.case Html.window##.localStorage default_language (fun st ->
+         Js.Opt.get (st##getItem (Js.string "hyp_lang")) default_language))
 
 let _ = Console.console##log !language
 
 let set_language lang =
-  Html.window##.localStorage##setItem (Js.string "hyp_lang") lang;
+  Js.Optdef.iter Html.window##.localStorage (fun st ->
+      st##setItem (Js.string "hyp_lang") lang);
   language := lang
 
 let load_messages () =
