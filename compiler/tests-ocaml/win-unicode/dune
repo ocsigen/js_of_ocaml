@@ -1,0 +1,4 @@
+(tests
+ (names mltest)
+ (libraries ocaml_testing unix)
+ (modes js wasm))
