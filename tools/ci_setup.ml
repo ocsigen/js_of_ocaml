@@ -34,7 +34,6 @@ let forked_packages =
     ; "base_bigstring"
     ; "bin_prot"
     ; "bonsai_test"
-    ; "bonsai_web"
     ; "bonsai_web_components"
     ; "bonsai_web_test"
     ; "core"
