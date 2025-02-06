@@ -134,10 +134,10 @@ jobs:
       - run: opam install conf-pkg-config conf-mingw-w64-g++-i686 conf-mingw-w64-g++-x86_64
         if: runner.os == 'Windows'
 
-      - name: Set-up Binaryen
-        uses: Aandreba/setup-binaryen@v1.0.0
+      - name: Install Binaryen
+        uses: ./.github/actions/install-binaryen
         with:
-          token: ${{ github.token }}
+          build: false
 
       - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
