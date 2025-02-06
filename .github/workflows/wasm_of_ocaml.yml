@@ -119,6 +119,35 @@ jobs:
           cargo build
           echo `pwd`/target/debug >> "$GITHUB_PATH"
 
+      - name: Checkout Virgil
+        if: matrix.wasi
+        uses: actions/checkout@v4
+        with:
+          repository: titzer/virgil
+          path: virgil
+
+      - name: Build Virgil
+        if: matrix.wasi
+        working-directory: ./virgil
+        run: |
+          export PATH=$PATH:`pwd`/bin
+          echo `pwd`/bin >> "$GITHUB_PATH"
+          make
+
+      - name: Checkout Wizard engine
+        if: matrix.wasi
+        uses: actions/checkout@v4
+        with:
+          repository: titzer/wizard-engine
+          path: wizard-engine
+
+      - name: Build Wizard engine
+        if: matrix.wasi
+        working-directory: ./wizard-engine
+        run: |
+          make -j 4
+          echo `pwd`/bin >> "$GITHUB_PATH"
+
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
         with:
@@ -185,6 +214,13 @@ jobs:
       - name: Run tests (WASI runtime - node)
         if: ${{ matrix.wasi }}
         working-directory: ./wasm_of_ocaml
+        run: opam exec -- dune build @runtest-wasm --profile wasi
+
+      - name: Run tests (WASI runtime - Wizard engine)
+        if: ${{ matrix.wasi }}
+        working-directory: ./wasm_of_ocaml
+        env:
+          WASM_ENGINE: wizard-fast
         run: opam exec -- dune build @runtest-wasm --profile wasi
 
       - name: Run tests (WASI runtime - wasmtime)
