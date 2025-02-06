@@ -153,10 +153,10 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - name: Set-up Binaryen
-        uses: Aandreba/setup-binaryen@v1.0.0
+      - name: Install Binaryen
+        uses: ./wasm_of_ocaml/.github/actions/install-binaryen
         with:
-          token: ${{ github.token }}
+          build: false
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
