@@ -1,4 +1,4 @@
-# 6.0.0
+# 6.0.1 (2025-02-07) - Lille
 
 ## Features/Changes
 * Compiler/Runtime: Make resuming a continuation more efficient in js (#1765)
