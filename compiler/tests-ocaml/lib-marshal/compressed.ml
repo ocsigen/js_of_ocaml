@@ -161,8 +161,8 @@ let test_supported filename =
   if false then test 100 (actually_supported = compression_supported)
 
 let main () =
-  test_out "intext.data"; test_in "intext.data";
-  test_supported "intext.data";
-  Sys.remove "intext.data"
+  test_out "intext_compressed.data"; test_in "intext_compressed.data";
+  test_supported "intext_compressed.data";
+  Sys.remove "intext_compressed.data"
 
 let _ = main ()

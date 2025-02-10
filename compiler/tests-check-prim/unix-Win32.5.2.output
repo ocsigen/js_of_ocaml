@@ -185,7 +185,6 @@ jsoo_toplevel_init_reloc
 
 From +unix.js:
 caml_strerror
-caml_unix_getpwuid
 caml_unix_fchmod
 caml_unix_getegid
 caml_unix_geteuid
