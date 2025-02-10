@@ -1,3 +1,9 @@
+(env
+ (_
+  ;; for testing
+  (env-vars
+   (FOO bar))))
+
 (library
  (name jsoo_testsuite_latest)
  (modules test_io test_floats)
