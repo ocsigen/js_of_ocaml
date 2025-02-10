@@ -13,14 +13,7 @@ let () =
   Printf.printf "reading directories\n";
   let check_file d =
     let a = Sys.readdir d in
-    if
-      not
-        (Array.exists
-           (fun x ->
-             prerr_endline x;
-             x = "accentué")
-           a)
-    then raise Not_found
+    if not (Array.exists (fun x -> x = "accentué") a) then raise Not_found
   in
   test check_file ".";
   test check_file "/static";
