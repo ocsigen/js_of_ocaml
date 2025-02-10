@@ -1,3 +1,8 @@
+# dev
+
+## Features/Changes
+* Runtime: support more Unix functions (#1829)
+
 # 6.0.1 (2025-02-07) - Lille
 
 ## Features/Changes
