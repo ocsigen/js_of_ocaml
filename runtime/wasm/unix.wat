@@ -472,7 +472,7 @@
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "unix_opendir") (export "caml_unix_opendir")
+   (func $unix_opendir (export "unix_opendir") (export "caml_unix_opendir")
       (param $name (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
@@ -484,8 +484,18 @@
             (call $caml_unix_error (pop externref) (ref.null eq))
             (ref.i31 (i32.const 0)))))
 
-   (func (export "unix_readdir") (export "caml_unix_readdir")
-      (param $dir (ref eq)) (result (ref eq))
+   (func $throw_ebadf (param $cmd (ref eq))
+      (throw $ocaml_exception
+         (array.new_fixed $block 5
+            (ref.i31 (i32.const 0))
+            (call $get_unix_error_exn)
+            (ref.i31 (i32.const 3)) ;; EBADF
+            (local.get $cmd)
+            (global.get $no_arg))))
+
+   (data $readdir "readdir")
+
+   (func $readdir_helper (param $dir (ref eq)) (result (ref eq))
       (block $end
          (return
             (try (result (ref eq))
@@ -495,19 +505,58 @@
                        (br_on_null $end
                           (call $readdir (call $unwrap (local.get $dir)))))))
                (catch $javascript_exception
-                  (call $caml_unix_error (pop externref) (ref.null eq))
+                  (drop (pop externref))
+                  (call $throw_ebadf
+                     (array.new_data $bytes $readdir
+                        (i32.const 0) (i32.const 7)))
                   (ref.i31 (i32.const 0))))))
       (call $caml_raise_end_of_file)
       (ref.i31 (i32.const 0)))
 
-   (func (export "unix_closedir") (export "caml_unix_closedir")
+   (data $closedir "closedir")
+
+   (func $unix_closedir (export "unix_closedir") (export "caml_unix_closedir")
+      (export "win_findclose") (export "caml_unix_findclose")
       (param $dir (ref eq)) (result (ref eq))
       (try
          (do
             (call $closedir (call $unwrap (local.get $dir))))
          (catch $javascript_exception
-            (call $caml_unix_error (pop externref) (ref.null eq))))
+            (drop (pop externref))
+            (call $throw_ebadf
+               (array.new_data $bytes $closedir (i32.const 0) (i32.const 8)))))
       (ref.i31 (i32.const 0)))
+
+   (func (export "unix_readdir") (export "caml_unix_readdir")
+      (param $dir (ref eq)) (result (ref eq))
+      (block $return (result (ref eq))
+         (br_on_non_null $return (call $readdir_helper (local.get $dir)))
+         (call $caml_raise_end_of_file)
+         (ref.i31 (i32.const 0))))
+
+   (func $win_find_next (export "win_findnext") (export "caml_unix_findnext")
+      (param $dir (ref eq)) (result (ref eq))
+      (block $return (result (ref eq))
+         (br_on_non_null $return (call $readdir_helper (local.get $dir)))
+         (drop (call $unix_closedir (local.get $dir)))
+         (call $caml_raise_end_of_file)
+         (ref.i31 (i32.const 0))))
+
+   (func (export "win_findfirst") (export "caml_unix_findfirst")
+      (param $vpath (ref eq)) (result (ref eq))
+      (local $dir (ref eq)) (local $p (ref $bytes)) (local $p' (ref $bytes))
+      (local $len i32)
+      (local.set $p (ref.cast (ref $bytes) (local.get $vpath)))
+      (local.set $len (i32.sub (array.len (local.get $p)) (i32.const 3)))
+      (local.set $p' (array.new $bytes (i32.const 0) (local.get $len)))
+      (array.copy $bytes $bytes
+         (local.get $p') (i32.const 0)
+         (local.get $p) (i32.const 0)
+         (local.get $len))
+      (local.set $dir (call $unix_opendir (local.get $p')))
+      (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+         (call $win_find_next (local.get $dir))
+         (local.get $dir)))
 
    (data $rewinddir_not_implemented "rewinddir not implemented")
 
