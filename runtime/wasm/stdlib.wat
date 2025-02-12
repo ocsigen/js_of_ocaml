@@ -40,7 +40,7 @@
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "printexc" "caml_format_exception"
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
-   (import "sys" "ocaml_exit" (tag $ocaml_exit (param i32)))
+   (import "sys" "ocaml_exit" (tag $ocaml_exit))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "bindings" "exit" (func $exit (param i32)))
    (import "bindings" "throw" (func $throw (param externref)))
@@ -202,8 +202,7 @@
       (try
          (do
             (drop (call_ref $func (ref.cast (ref $func) (local.get $start)))))
-         (catch $ocaml_exit
-            (call $exit (pop i32)))
+         (catch $ocaml_exit)
          (catch $ocaml_exception
             (local.set $exn (pop (ref eq)))
             (block $exit
@@ -220,8 +219,8 @@
                               (local.get $exn)
                               (ref.i31 (i32.const 0)))))
                      (catch $ocaml_exit
-                        (call $exit (pop i32))))
-                     (br $exit))
+                        (return)))
+                  (br $exit))
                (block $null
                   (drop
                      (call $caml_callback_1
@@ -240,5 +239,5 @@
                               (call $caml_format_exception (local.get $exn))
                               (array.new_fixed $string 1
                                  (i32.const 10)))))))) ;; `\n`
-               (call $exit (i32.const 2)))))
+            (call $exit (i32.const 2)))))
 )

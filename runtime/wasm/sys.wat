@@ -48,16 +48,19 @@
       (tag $javascript_exception (param externref)))
    (import "jsstring" "jsstring_test"
       (func $jsstring_test (param anyref) (result i32)))
+   (import "bindings" "exit" (func $exit (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
    (type $float (struct (field f64)))
 
-   (tag $ocaml_exit (export "ocaml_exit") (param i32))
+   (tag $ocaml_exit (export "ocaml_exit"))
 
    (func (export "caml_sys_exit") (export "unix_exit") (export "caml_unix_exit")
-      (param (ref eq)) (result (ref eq))
-      (throw $ocaml_exit (i31.get_s (ref.cast (ref i31) (local.get 0)))))
+      (param $code (ref eq)) (result (ref eq))
+      (call $exit (local.get $code))
+      ;; Fallback: try to exit through an exception
+      (throw $ocaml_exit))
 
    (export "caml_sys_unsafe_getenv" (func $caml_sys_getenv))
    (func $caml_sys_getenv (export "caml_sys_getenv")
