@@ -36,7 +36,7 @@
       (func $caml_raise_sys_error (param (ref eq))))
    (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
    (import "bindings" "argv" (func $argv (result (ref extern))))
-   (import "bindings" "on_windows" (func $on_windows (result i32)))
+   (import "bindings" "on_windows" (global $on_windows i32))
    (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
    (import "bindings" "getenv" (func $getenv (param anyref) (result anyref)))
    (import "bindings" "time" (func $time (result f64)))
@@ -140,11 +140,11 @@
 
    (func (export "caml_sys_const_ostype_unix")
       (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.eqz (call $on_windows))))
+      (ref.i31 (i32.eqz (global.get $on_windows))))
 
    (func (export "caml_sys_const_ostype_win32")
       (param (ref eq)) (result (ref eq))
-      (ref.i31 (call $on_windows)))
+      (ref.i31 (global.get $on_windows)))
 
    (func (export "caml_sys_const_ostype_cygwin")
       (param (ref eq)) (result (ref eq))
@@ -156,7 +156,7 @@
    (func (export "caml_sys_get_config")
       (param (ref eq)) (result (ref eq))
       (array.new_fixed $block 4 (ref.i31 (i32.const 0))
-         (if (result (ref eq)) (call $on_windows)
+         (if (result (ref eq)) (global.get $on_windows)
             (then
                (array.new_data $string $Win32 (i32.const 0) (i32.const 5)))
             (else
