@@ -42,8 +42,9 @@
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
    (import "bindings" "exit" (func $exit (param i32)))
-   (import "bindings" "throw" (func $throw (param externref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -190,7 +191,7 @@
    (global $uncaught_exception (mut externref) (ref.null extern))
 
    (func $reraise_exception (result (ref eq))
-      (call $throw (global.get $uncaught_exception))
+      (throw $javascript_exception (global.get $uncaught_exception))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_handle_uncaught_exception") (param $exn externref)

@@ -490,9 +490,6 @@
       }
       fs.renameSync(o, n);
     },
-    throw: (e) => {
-      throw e;
-    },
     start_fiber: (x) => start_fiber(x),
     suspend_fiber: make_suspending((f, env) => new Promise((k) => f(k, env))),
     resume_fiber: (k, v) => k(v),
