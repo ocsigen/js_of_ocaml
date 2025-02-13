@@ -178,7 +178,7 @@
   const bindings = {
     jstag:
       WebAssembly.JSTag ||
-      // ZZZ not supported in Firefox yet
+      // ZZZ not supported in Safari yet
       new WebAssembly.Tag({ parameters: ["externref"], results: [] }),
     identity: (x) => x,
     from_bool: (x) => !!x,
