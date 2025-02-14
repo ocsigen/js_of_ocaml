@@ -38,7 +38,11 @@
      wasi
      (:include wasi_extra_flags)))
    (flags
-    (:standard --pretty --enable wasi))
+    (:standard
+     --pretty
+     --enable
+     wasi
+     (:include wasi_extra_flags)))
    (compilation_mode separate))
   (binaries
    (tools/node_wrapper.exe as node)
@@ -67,6 +71,13 @@
     %{dep:tools/version/gen/gen.exe}
     %{dep:VERSION}
     %{dep:tools/version/GIT-VERSION}))))
+
+(rule
+ (targets wasi_extra_flags)
+ (action
+  (with-stdout-to
+   %{targets}
+   (echo "(%{env:WASI_FLAGS=})"))))
 
 (data_only_dirs _wikidoc doc-dev janestreet)
 
