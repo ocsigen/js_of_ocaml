@@ -86,6 +86,7 @@ let preprocessor_variables () =
         | `Cps -> "cps"
         | `Double_translation -> assert false) )
   ; "wasi", Wat_preprocess.Bool (Config.Flag.wasi ())
+  ; "trap-on-exception", Wat_preprocess.Bool (Config.Flag.trap_on_exception ())
   ]
 
 let with_runtime_files ~runtime_wasm_files f =

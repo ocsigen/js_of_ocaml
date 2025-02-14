@@ -418,6 +418,69 @@ and rewrite st elt =
   match elt with
   | { desc =
         List
+          ({ desc = Atom "try"; _ }
+          :: { desc = List ({ desc = Atom "result"; _ } :: _)
+             ; loc = pos_before_result, pos_after_result
+             }
+          :: { desc = List ({ desc = Atom "do"; loc = _, pos_after_do } :: body)
+             ; loc = _, pos_after_body
+             }
+          :: _)
+    ; loc = pos, pos'
+    }
+    when variable_is_set st "trap-on-exception" ->
+      write st pos;
+      Buffer.add_string st.buf "(block";
+      skip st pos_before_result;
+      write st pos_after_result;
+      skip st pos_after_do;
+      rewrite_list st body;
+      write st pos_after_body;
+      skip st pos'
+  | { desc =
+        List
+          ({ desc = Atom "try"; _ }
+          :: { desc = List ({ desc = Atom "do"; loc = _, pos_after_do } :: body)
+             ; loc = _, pos_after_body
+             }
+          :: _)
+    ; loc = pos, pos'
+    }
+    when variable_is_set st "trap-on-exception" ->
+      write st pos;
+      Buffer.add_string st.buf "(block";
+      skip st pos_after_do;
+      rewrite_list st body;
+      write st pos_after_body;
+      skip st pos'
+  | { desc = List ({ desc = Atom "throw"; _ } :: _); loc = pos, pos' }
+    when variable_is_set st "trap-on-exception" ->
+      write st pos;
+      Buffer.add_string st.buf "(unreachable)";
+      skip st pos'
+  | { desc = List ({ desc = Atom "tag"; _ } :: _); loc = pos, pos' }
+  | { desc =
+        List
+          ({ desc = Atom "import"; _ }
+          :: _
+          :: _
+          :: { desc = List ({ desc = Atom "tag"; _ } :: _); _ }
+          :: _)
+    ; loc = pos, pos'
+    }
+  | { desc =
+        List
+          ({ desc = Atom "export"; _ }
+          :: _
+          :: { desc = List ({ desc = Atom "tag"; _ } :: _); _ }
+          :: _)
+    ; loc = pos, pos'
+    }
+    when variable_is_set st "trap-on-exception" ->
+      write st pos;
+      skip st pos'
+  | { desc =
+        List
           [ { desc = Atom "@if"; _ }
           ; expr
           ; { desc = List ({ desc = Atom "@then"; loc = _, pos_after_then } :: then_body)

@@ -123,9 +123,9 @@ let dead_code_elimination
   filter_unused_primitives primitives usage_file
 
 let optimization_options : Profile.t -> _ = function
-  | O1 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-  | O2 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-  | O3 -> [ "-O3"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+  | O1 -> [ "-O2"; "--skip-pass=inlining-optimizing" ]
+  | O2 -> [ "-O2"; "--skip-pass=inlining-optimizing" ]
+  | O3 -> [ "-O3"; "--skip-pass=inlining-optimizing" ]
 
 let optimize
     ~profile
@@ -138,6 +138,7 @@ let optimize
   command
     ("wasm-opt"
      :: (common_options ()
+        @ (if Config.Flag.trap_on_exception () then [] else [ "--traps-never-happen" ])
         @ (match options with
           | Some o -> o
           | None -> optimization_options profile)
