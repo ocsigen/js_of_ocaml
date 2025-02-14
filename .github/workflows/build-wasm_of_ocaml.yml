@@ -122,7 +122,8 @@ jobs:
         if: matrix.wasi
         uses: actions/checkout@v4
         with:
-          repository: titzer/virgil
+          repository: vouillon/virgil
+          ref: wasi
           path: virgil
 
       - name: Build Virgil
@@ -137,7 +138,8 @@ jobs:
         if: matrix.wasi
         uses: actions/checkout@v4
         with:
-          repository: titzer/wizard-engine
+          repository: vouillon/wizard-engine
+          ref: wasi
           path: wizard-engine
 
       - name: Build Wizard engine
