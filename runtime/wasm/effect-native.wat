@@ -130,9 +130,12 @@
                                (on $effect $handle_effect)
                                (local.get $f) (local.get $v)
                                (struct.get $fiber $cont (local.get $fiber))))
+(@if (not wasi)
+(@then
                         (catch $javascript_exception
                            (br $handle_exception
                               (call $caml_wrap_exception (pop externref))))
+))
                         (catch $ocaml_exception
                            (br $handle_exception (pop (ref eq))))))
                   ;; handle return
