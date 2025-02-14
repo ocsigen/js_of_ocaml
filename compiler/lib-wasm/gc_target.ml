@@ -573,9 +573,13 @@ module Value = struct
        return ())
       (val_int (if negate then Arith.eqz n else n))
 
-  let eq x y = eq_gen ~negate:false x y
+  let eq x y =
+    if Config.Flag.wasi () then val_int (ref_eq x y) else eq_gen ~negate:false x y
 
-  let neq x y = eq_gen ~negate:true x y
+  let neq x y =
+    if Config.Flag.wasi ()
+    then val_int (Arith.eqz (ref_eq x y))
+    else eq_gen ~negate:true x y
 
   let ult = binop Arith.(ult)
 
@@ -1294,7 +1298,12 @@ module Math = struct
     { W.params = List.init ~len:n ~f:(fun _ : W.value_type -> F64); result = [ F64 ] }
 
   let unary name x =
-    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 1)) in
+    let* f =
+      register_import
+        ~import_module:(if Config.Flag.wasi () then "env" else "Math")
+        ~name
+        (Fun (float_func_type 1))
+    in
     let* x = x in
     return (W.Call (f, [ x ]))
 
@@ -1337,7 +1346,12 @@ module Math = struct
   let log10 f = unary "log10" f
 
   let binary name x y =
-    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 2)) in
+    let* f =
+      register_import
+        ~import_module:(if Config.Flag.wasi () then "env" else "Math")
+        ~name
+        (Fun (float_func_type 2))
+    in
     let* x = x in
     let* y = y in
     return (W.Call (f, [ x; y ]))
@@ -1682,21 +1696,34 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
          x
          (block_expr
             { params = []; result = [ Value.value ] }
-            (let* exn =
-               block_expr
-                 { params = []; result = [ externref ] }
-                 (let* e =
-                    try_expr
-                      { params = []; result = [ externref ] }
-                      (body
-                         ~result_typ:[ externref ]
-                         ~fall_through:`Skip
-                         ~context:(`Skip :: `Skip :: `Catch :: context))
-                      [ ocaml_tag, 1, Value.value; js_tag, 0, externref ]
-                  in
-                  instr (W.Push e))
-             in
-             instr (W.CallInstr (f, [ exn ]))))
+            (if Config.Flag.wasi ()
+             then
+               let* e =
+                 try_expr
+                   { params = []; result = [ Value.value ] }
+                   (body
+                      ~result_typ:[ Value.value ]
+                      ~fall_through:`Skip
+                      ~context:(`Skip :: `Catch :: context))
+                   [ ocaml_tag, 0, Value.value ]
+               in
+               instr (W.Push e)
+             else
+               let* exn =
+                 block_expr
+                   { params = []; result = [ externref ] }
+                   (let* e =
+                      try_expr
+                        { params = []; result = [ externref ] }
+                        (body
+                           ~result_typ:[ externref ]
+                           ~fall_through:`Skip
+                           ~context:(`Skip :: `Skip :: `Catch :: context))
+                        [ ocaml_tag, 1, Value.value; js_tag, 0, externref ]
+                    in
+                    instr (W.Push e))
+               in
+               instr (W.CallInstr (f, [ exn ]))))
      in
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)

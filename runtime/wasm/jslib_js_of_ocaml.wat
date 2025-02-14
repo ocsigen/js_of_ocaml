@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+(@if (not wasi)
+(@then
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_js_global"
@@ -27,34 +29,34 @@
    (import "jslib" "caml_js_from_array"
       (func $caml_js_from_array (param (ref eq)) (result (ref eq))))
    (import "js" "caml_js_html_escape"
-      (func $caml_js_html_escape (param anyref) (result anyref)))
+      (func $caml_js_html_escape_js (param anyref) (result anyref)))
    (import "js" "caml_js_html_entities"
-      (func $caml_js_html_entities (param anyref) (result anyref)))
+      (func $caml_js_html_entities_js (param anyref) (result anyref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
 
    (func (export "caml_js_html_escape") (param (ref eq)) (result (ref eq))
       (return_call $wrap
-         (call $caml_js_html_escape (call $unwrap (local.get 0)))))
+         (call $caml_js_html_escape_js (call $unwrap (local.get 0)))))
 
    (func (export "caml_js_html_entities") (param (ref eq)) (result (ref eq))
       (return_call $wrap
-         (call $caml_js_html_entities (call $unwrap (local.get 0)))))
+         (call $caml_js_html_entities_js (call $unwrap (local.get 0)))))
 
-   (data $console "console")
+   (@string $console "console")
 
    (func (export "caml_js_get_console") (param (ref eq)) (result (ref eq))
       (return_call $caml_js_get (call $caml_js_global (ref.i31 (i32.const 0)))
-         (array.new_data $string $console (i32.const 0) (i32.const 7))))
+         (global.get $console)))
 
-   (data $XMLHttpRequest "XMLHttpRequest")
+   (@string $XMLHttpRequest "XMLHttpRequest")
 
    (func (export "caml_xmlhttprequest_create") (param (ref eq)) (result (ref eq))
       (return_call $caml_js_new
          (call $caml_js_get
             (call $caml_js_global (ref.i31 (i32.const 0)))
-            (array.new_data $string $XMLHttpRequest
-               (i32.const 0) (i32.const 14)))
+            (global.get $XMLHttpRequest))
          (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))
+))
 )

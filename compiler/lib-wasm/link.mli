@@ -24,6 +24,10 @@ module Wasm_binary : sig
     ; name : string
     }
 
+  val check : contents:string -> bool
+
+  val check_file : file:string -> bool
+
   val read_imports : file:string -> import list
 
   val append_source_map_section : file:string -> url:string -> unit

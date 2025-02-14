@@ -57,7 +57,7 @@
 
    (global $int64_ops (export "int64_ops") (ref $custom_operations)
       (struct.new $custom_operations
-         (array.new_fixed $string 2 (i32.const 95) (i32.const 106)) ;; "_j"
+         (@string "_j")
          (ref.func $int64_cmp)
          (ref.null $compare)
          (ref.func $int64_hash)
@@ -128,12 +128,7 @@
       (ref.i31 (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
                         (i64.lt_s (local.get $i1) (local.get $i2)))))
 
-   (global $INT64_ERRMSG (ref $string)
-      (array.new_fixed $string 15 ;; "Int64.of_string"
-         (i32.const 73) (i32.const 110) (i32.const 116) (i32.const 54)
-         (i32.const 52) (i32.const 46) (i32.const 111) (i32.const 102)
-         (i32.const 95) (i32.const 115) (i32.const 116) (i32.const 114)
-         (i32.const 105) (i32.const 110) (i32.const 103)))
+   (@string $INT64_ERRMSG "Int64.of_string")
 
    ;; Parse a sequence of digits into an i64 as dicted by $base,
    ;; $signedness and $sign. The sequence is read in $s starting from $i.
@@ -142,7 +137,7 @@
    ;; package "integers".
    (func $caml_i64_of_digits (export "caml_i64_of_digits")
       (param $base i32) (param $signedness i32) (param $sign i32)
-      (param $s (ref $string)) (param $i i32) (param $errmsg (ref $string))
+      (param $s (ref $string)) (param $i i32) (param $errmsg (ref eq))
       (result i64)
       (local $len i32) (local $d i32) (local $c i32)
       (local $res i64) (local $threshold i64)

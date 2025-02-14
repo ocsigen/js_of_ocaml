@@ -113,6 +113,33 @@ MlNodeDevice.prototype.truncate = function (name, len, raise_unix) {
     caml_raise_nodejs_error(err, raise_unix);
   }
 };
+MlNodeDevice.prototype.access = function (name, f, raise_unix) {
+  var consts = require("node:constants");
+  var res = 0;
+  for (var key in f) {
+    switch (key) {
+      case "r":
+        res |= consts.R_OK;
+        break;
+      case "w":
+        res |= consts.W_OK;
+        break;
+      case "x":
+        res |=
+          globalThis.process?.platform === "win32" ? consts.R_OK : consts.X_OK;
+        break;
+      case "f":
+        res |= consts.F_OK;
+        break;
+    }
+  }
+  try {
+    this.fs.accessSync(this.nm(name), res);
+    return 0;
+  } catch (err) {
+    caml_raise_nodejs_error(err, raise_unix);
+  }
+};
 MlNodeDevice.prototype.open = function (name, f, perms, raise_unix) {
   var consts = require("node:constants");
   var res = 0;
@@ -222,6 +249,22 @@ MlNodeDevice.prototype.lstat = function (name, large, raise_unix) {
   try {
     var js_stats = this.fs.lstatSync(this.nm(name));
     return fs_node_stats_from_js(js_stats, large);
+  } catch (err) {
+    caml_raise_nodejs_error(err, raise_unix);
+  }
+};
+MlNodeDevice.prototype.chmod = function (name, perms, raise_unix) {
+  try {
+    this.fs.chmodSync(this.nm(name), perms);
+    return 0;
+  } catch (err) {
+    caml_raise_nodejs_error(err, raise_unix);
+  }
+};
+MlNodeDevice.prototype.link = function (target, path, raise_unix) {
+  try {
+    this.fs.linkSync(this.nm(target), this.nm(path));
+    return 0;
   } catch (err) {
     caml_raise_nodejs_error(err, raise_unix);
   }
@@ -405,6 +448,22 @@ MlNodeFd.prototype.stat = function (large) {
   try {
     var js_stats = this.fs.fstatSync(this.fd);
     return fs_node_stats_from_js(js_stats, large);
+  } catch (err) {
+    caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
+  }
+};
+MlNodeFd.prototype.chmod = function (perms) {
+  try {
+    this.fs.fchmodSync(this.fd, perms);
+    return 0;
+  } catch (err) {
+    caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
+  }
+};
+MlNodeFd.prototype.sync = function () {
+  try {
+    this.fs.fsyncSync(this.fd);
+    return 0;
   } catch (err) {
     caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
   }
