@@ -51,7 +51,8 @@
   (wasm_of_ocaml
    (flags
     (:standard --pretty --enable wasi))
-   (compilation_mode separate))
+   ; Wasmtime is slow on large binaries, so use whole program compilation
+   (compilation_mode whole_program))
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
