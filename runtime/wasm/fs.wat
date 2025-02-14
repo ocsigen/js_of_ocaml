@@ -22,12 +22,14 @@
    (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
    (import "bindings" "rmdir" (func $rmdir (param anyref)))
    (import "bindings" "unlink" (func $unlink (param anyref)))
-   (import "bindings" "readdir"
-      (func $readdir (param anyref) (result (ref extern))))
+   (import "bindings" "read_dir"
+      (func $read_dir (param anyref) (result (ref extern))))
    (import "bindings" "file_exists"
       (func $file_exists (param anyref) (result (ref eq))))
    (import "bindings" "is_directory"
       (func $is_directory (param anyref) (result (ref eq))))
+   (import "bindings" "is_file"
+      (func $is_file (param anyref) (result (ref eq))))
    (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
@@ -48,7 +50,12 @@
 
    (func (export "caml_sys_getcwd")
       (param (ref eq)) (result (ref eq))
-      (return_call $caml_string_of_jsstring (call $wrap (call $getcwd))))
+      (try (result (ref eq))
+         (do
+            (call $caml_string_of_jsstring (call $wrap (call $getcwd))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))
+            (ref.i31 (i32.const 0)))))
 
    (func (export "caml_sys_chdir")
       (param $name (ref eq)) (result (ref eq))
@@ -77,7 +84,7 @@
          (do
             (return
                (call $caml_js_to_string_array
-                  (call $readdir
+                  (call $read_dir
                      (call $unwrap
                         (call $caml_jsstring_of_string (local.get $name)))))))
          (catch $javascript_exception
@@ -138,8 +145,6 @@
          (local.get $msg) (local.get $len) (i32.const 0) (i32.const 27))
       (call $caml_raise_sys_error (local.get $msg)))
 
-   (data $caml_read_file_content "caml_read_file_content")
-
    (func (export "caml_read_file_content")
       (param (ref eq)) (result (ref eq))
       (call $caml_raise_no_such_file (local.get 0))
@@ -148,14 +153,24 @@
    (func (export "caml_fs_init") (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (data $caml_sys_is_directory "caml_sys_is_directory")
-
    (func (export "caml_sys_is_directory")
       (param $name (ref eq)) (result (ref eq))
       (try
          (do
             (return
                (call $is_directory
+                  (call $unwrap
+                     (call $caml_jsstring_of_string (local.get $name))))))
+         (catch $javascript_exception
+            (call $caml_handle_sys_error (pop externref))
+            (return (ref.i31 (i32.const 0))))))
+
+   (func (export "caml_sys_is_regular_file")
+      (param $name (ref eq)) (result (ref eq))
+      (try
+         (do
+            (return
+               (call $is_file
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $name))))))
          (catch $javascript_exception
