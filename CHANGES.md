@@ -1,3 +1,9 @@
+# dev
+
+## Features/Changes
+* Runtime: support more Unix functions (#1829)
+* Compiler: use a Wasm text files preprocessor (#1822)
+
 # 6.0.1 (2025-02-07) - Lille
 
 ## Features/Changes

@@ -30,6 +30,18 @@
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
+ (wasi
+  (wasm_of_ocaml
+   (flags
+    (:standard
+     --pretty
+     --enable
+     wasi
+     (:include wasi_extra_flags)))
+   (compilation_mode whole_program))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
  (bench_no_debug
   (flags
    (:standard \ -g))
@@ -54,6 +66,13 @@
     %{dep:tools/version/gen/gen.exe}
     %{dep:VERSION}
     %{dep:tools/version/GIT-VERSION}))))
+
+(rule
+ (targets wasi_extra_flags)
+ (action
+  (with-stdout-to
+   %{targets}
+   (echo "(%{env:WASI_FLAGS=})"))))
 
 (data_only_dirs _wikidoc doc-dev janestreet)
 

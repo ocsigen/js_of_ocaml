@@ -1,6 +1,20 @@
+let wizard_args = [ "-ext:stack-switching"; "--dir=."; "--dir=/tmp" ]
+
+let wasmtime_args =
+  [ (* "-C"; "collector=null"; *) "-W=all-proposals=y"; "--dir=."; "--dir=/tmp" ]
+
+let wasmedge_args =
+  [ "--enable-gc"
+  ; "--enable-exception-handling"
+  ; "--enable-tail-call"
+  ; "--dir=."
+  ; "--dir=/tmp"
+  ]
+
 let extra_args_for_wasoo =
   [ "--experimental-wasm-imported-strings"
   ; "--experimental-wasm-stack-switching"
+  ; "--experimental-wasm-exnref"
   ; "--stack-size=10000"
   ]
 
@@ -23,16 +37,37 @@ let env =
       else e)
     env
 
-let args =
+let environment_args () =
+  List.filter
+    (fun e -> not (String.contains e ','))
+    (Array.to_list (Array.map (fun e -> "--env=" ^ e) env))
+
+let find_wasm file =
+  let dir = Filename.chop_extension file ^ ".assets" in
+  Filename.concat
+    dir
+    (List.find
+       (fun f -> Filename.check_suffix f ".wasm")
+       (Array.to_list (Sys.readdir dir)))
+
+let common_args file argv = environment_args () @ (find_wasm file :: List.tl argv)
+
+let exe, args =
   match Array.to_list Sys.argv with
   | exe :: argv ->
-      let argv =
+      let exe', argv =
         match argv with
-        | file :: _ when Filename.check_suffix file ".wasm.js" ->
-            extra_args_for_wasoo @ argv
-        | _ -> extra_args_for_jsoo @ argv
+        | file :: _ when Filename.check_suffix file ".wasm.js" -> (
+            match Sys.getenv_opt "WASM_ENGINE" with
+            | Some "wizard" -> "wizeng.x86-linux", wizard_args @ common_args file argv
+            | Some "wizard-fast" ->
+                "wizeng.x86-64-linux", wizard_args @ common_args file argv
+            | Some "wasmtime" -> "wasmtime", wasmtime_args @ common_args file argv
+            | Some "wasmedge" -> "wasmedge", wasmedge_args @ common_args file argv
+            | _ -> "node", extra_args_for_wasoo @ argv)
+        | _ -> "node", extra_args_for_jsoo @ argv
       in
-      Array.of_list (exe :: argv)
+      exe', Array.of_list (exe :: argv)
   | [] -> assert false
 
 let () =
@@ -45,4 +80,4 @@ let () =
     | _, WEXITED n -> exit n
     | _, WSIGNALED _ -> exit 9
     | _, WSTOPPED _ -> exit 9
-  else Unix.execvpe "node" args env
+  else Unix.execvpe exe args env
