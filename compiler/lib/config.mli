@@ -80,6 +80,8 @@ module Flag : sig
 
   val trap_on_exception : unit -> bool
 
+  val use_new_eh : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit

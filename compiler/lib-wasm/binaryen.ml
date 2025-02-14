@@ -134,6 +134,7 @@ let optimize
     ("wasm-opt"
      :: (common_options ()
         @ (if Config.Flag.trap_on_exception () then [] else [ "--traps-never-happen" ])
+        @ (if Config.Flag.use_new_eh () then [ "--translate-to-new-eh" ] else [])
         @ Option.value ~default:optimization_options.(level - 1) options
         @ [ Filename.quote input_file; "-o"; Filename.quote output_file ])
     @ opt_flag "--input-source-map" opt_input_sourcemap

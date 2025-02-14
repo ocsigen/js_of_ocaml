@@ -105,6 +105,8 @@ module Flag = struct
   let wasi = o ~name:"wasi" ~default:false
 
   let trap_on_exception = o ~name:"trap-on-exception" ~default:false
+
+  let use_new_eh = o ~name:"use-new-eh" ~default:false
 end
 
 module Param = struct
