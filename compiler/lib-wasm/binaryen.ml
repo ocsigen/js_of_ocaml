@@ -112,9 +112,9 @@ let dead_code_elimination
   filter_unused_primitives primitives usage_file
 
 let optimization_options =
-  [| [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-   ; [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-   ; [ "-O3"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+  [| [ "-O2"; "--skip-pass=inlining-optimizing" ]
+   ; [ "-O2"; "--skip-pass=inlining-optimizing" ]
+   ; [ "-O3"; "--skip-pass=inlining-optimizing" ]
   |]
 
 let optimize
@@ -134,6 +134,7 @@ let optimize
   command
     ("wasm-opt"
      :: (common_options ()
+        @ (if Config.Flag.trap_on_exception () then [] else [ "--traps-never-happen" ])
         @ Option.value ~default:optimization_options.(level - 1) options
         @ [ Filename.quote input_file; "-o"; Filename.quote output_file ])
     @ opt_flag "--input-source-map" opt_input_sourcemap
