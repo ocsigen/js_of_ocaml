@@ -3,7 +3,7 @@ let read_file ic = really_input_string ic (in_channel_length ic)
 (* Keep the two variables below in sync with function build_runtime in
    ../compile.ml *)
 
-let default_flags = []
+let default_flags = [ "trap-on-exception", false ]
 
 let interesting_runtimes = [ [ "wasi", false ]; [ "wasi", true ] ]
 
