@@ -178,7 +178,7 @@
   const bindings = {
     jstag:
       WebAssembly.JSTag ||
-      // ZZZ not supported in Firefox yet
+      // ZZZ not supported in Safari yet
       new WebAssembly.Tag({ parameters: ["externref"], results: [] }),
     identity: (x) => x,
     from_bool: (x) => !!x,
@@ -438,7 +438,7 @@
     channel_list,
     exit: (n) => isNode && process.exit(n),
     argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
-    on_windows: () => on_windows,
+    on_windows: +on_windows,
     getenv: (n) => (isNode ? process.env[n] : null),
     system: (c) => {
       var res = require("node:child_process").spawnSync(c, {
@@ -489,9 +489,6 @@
         }
       }
       fs.renameSync(o, n);
-    },
-    throw: (e) => {
-      throw e;
     },
     start_fiber: (x) => start_fiber(x),
     suspend_fiber: make_suspending((f, env) => new Promise((k) => f(k, env))),
