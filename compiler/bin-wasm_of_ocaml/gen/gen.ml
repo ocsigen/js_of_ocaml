@@ -32,7 +32,7 @@ let check_js_file fname =
 (* Keep the two variables below in sync with function build_runtime in
    ../compile.ml *)
 
-let default_flags = []
+let default_flags = [ "trap-on-exception", `B false ]
 
 let interesting_runtimes =
   [ [ "effects", `S "jspi"; "wasi", `B false ]

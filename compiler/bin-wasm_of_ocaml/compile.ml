@@ -94,6 +94,7 @@ let build_runtime ~runtime_file =
           | `Cps -> "cps"
           | `Double_translation -> assert false) )
     ; "wasi", Wat_preprocess.Bool (Config.Flag.wasi ())
+    ; "trap-on-exception", Wat_preprocess.Bool (Config.Flag.trap_on_exception ())
     ]
   in
   match
