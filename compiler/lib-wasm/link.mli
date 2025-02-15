@@ -45,7 +45,7 @@ val add_info :
   -> unit
 
 val build_runtime_arguments :
-     link_spec:(string * int list option) list
+     link_spec:([ `Name of string | `File of string ] * int list option) list
   -> separate_compilation:bool
   -> missing_primitives:string list
   -> wasm_dir:string
