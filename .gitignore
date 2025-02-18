@@ -41,6 +41,7 @@ _build
 benchmarks/*.svg
 benchmarks/*.pdf
 benchmarks/__run
+benchmarks/__run_wasm
 benchmarks/build
 benchmarks/results
 benchmarks/config

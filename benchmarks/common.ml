@@ -114,11 +114,46 @@ let code = "build"
 
 let hostname = Unix.gethostname ()
 
-let times = Filename.concat "results/times" hostname
+module Measure = struct
+  type t =
+    { name : string
+    ; units : string
+    ; description : string option
+    ; trend : string option
+    ; path : string
+    ; color : string option
+    }
+end
 
-let sizes = "results/sizes"
+let times =
+  Measure.
+    { name = "execution-time"
+    ; units = "s"
+    ; description = Some "Execution time"
+    ; trend = Some "lower-is-better"
+    ; path = Filename.concat "results/times" hostname
+    ; color = None
+    }
 
-let compiletimes = Filename.concat "results/compiletimes" hostname
+let sizes =
+  Measure.
+    { name = "code-size"
+    ; units = "B"
+    ; description = Some "Code size"
+    ; trend = Some "lower-is-better"
+    ; path = "results/sizes"
+    ; color = None
+    }
+
+let compiletimes =
+  Measure.
+    { name = "compile-time"
+    ; units = "s"
+    ; description = Some "Compile time"
+    ; trend = Some "lower-is-better"
+    ; path = Filename.concat "results/compiletimes" hostname
+    ; color = None
+    }
 
 module Spec : sig
   type t
@@ -138,6 +173,8 @@ module Spec : sig
   val ml : t
 
   val js : t
+
+  val wasm : t
 
   val byte : t
 
@@ -164,6 +201,8 @@ module Spec : sig
   val js_of_ocaml_call : t
 
   val js_of_ocaml_effects : t
+
+  val wasm_of_ocaml : t
 end = struct
   type t =
     { dir : string
@@ -202,6 +241,8 @@ end = struct
 
   let js = create "js" ".js"
 
+  let wasm = create "wasm" ".js"
+
   let byte = create "byte" ""
 
   let opt = create "opt" ""
@@ -227,6 +268,8 @@ end = struct
   let js_of_ocaml_call = create "nooptcall" ".js"
 
   let js_of_ocaml_effects = create "effects" ".js"
+
+  let wasm_of_ocaml = create "wasm_of_ocaml" ".js"
 end
 
 let rec mkdir d =
@@ -246,11 +289,11 @@ let need_update src dst =
 
 let measures_need_update code meas spec nm =
   let p = Spec.file ~root:code spec nm in
-  let m = Spec.file ~root:meas (Spec.no_ext spec) nm in
+  let m = Spec.file ~root:meas.Measure.path (Spec.no_ext spec) nm in
   need_update p m
 
-let read_measures meas spec nm =
-  let m = Spec.file ~root:meas (Spec.no_ext spec) nm in
+let read_measures path spec nm =
+  let m = Spec.file ~root:path (Spec.no_ext spec) nm in
   let l = ref [] in
   if Sys.file_exists m
   then (
@@ -265,9 +308,9 @@ let read_measures meas spec nm =
   else []
 
 let write_measures meas spec nm l =
-  let m = Spec.file ~root:meas (Spec.no_ext spec) nm in
-  let tmp = Spec.file ~root:meas (Spec.no_ext spec) "_tmp_" in
-  mkdir (Spec.dir ~root:meas spec);
+  let m = Spec.file ~root:meas.Measure.path (Spec.no_ext spec) nm in
+  let tmp = Spec.file ~root:meas.Measure.path (Spec.no_ext spec) "_tmp_" in
+  mkdir (Spec.dir ~root:meas.Measure.path spec);
   let ch = open_out tmp in
   List.iter ~f:(fun t -> Printf.fprintf ch "%f\n" t) (List.rev l);
   close_out ch;
