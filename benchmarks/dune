@@ -1,6 +1,6 @@
 (executables
  (names report run stripdebug)
- (libraries unix compiler-libs.bytecomp))
+ (libraries unix compiler-libs.bytecomp yojson))
 
 (alias
  (name default)
