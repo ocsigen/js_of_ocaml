@@ -23,6 +23,10 @@ type heaptype =
   | Nofunc
   | Extern
   | Noextern
+  | Exn
+  | Noexn
+  | Cont
+  | Nocont
   | Any
   | Eq
   | I31
@@ -66,6 +70,7 @@ type comptype =
       }
   | Struct of fieldtype array
   | Array of fieldtype
+  | Cont of int
 
 type subtype =
   { final : bool
@@ -164,6 +169,8 @@ module Write = struct
 
   let heaptype st ch typ =
     match (typ : heaptype) with
+    | Nocont -> byte ch 0x75
+    | Noexn -> byte ch 0x74
     | Nofunc -> byte ch 0x73
     | Noextern -> byte ch 0x72
     | None_ -> byte ch 0x71
@@ -174,6 +181,8 @@ module Write = struct
     | I31 -> byte ch 0x6C
     | Struct -> byte ch 0x6B
     | Array -> byte ch 0x6A
+    | Exn -> byte ch 0x69
+    | Cont -> byte ch 0x68
     | Type idx -> sint ch (typeidx st idx)
 
   let reftype st ch { nullable; typ } =
@@ -219,6 +228,9 @@ module Write = struct
         byte ch 1;
         uint ch (typeidx st supertype));
     match typ with
+    | Cont idx ->
+        byte ch 0x5D;
+        sint ch (typeidx st idx)
     | Array field_type ->
         byte ch 0x5E;
         fieldtype st ch field_type
@@ -571,7 +583,9 @@ module Read = struct
   let heaptype st ch =
     let i = sint ch in
     match i + 128 with
-    | 0X73 -> Nofunc
+    | 0x75 -> Nocont
+    | 0x74 -> Noexn
+    | 0x73 -> Nofunc
     | 0x72 -> Noextern
     | 0x71 -> None_
     | 0x70 -> Func
@@ -581,6 +595,8 @@ module Read = struct
     | 0x6C -> I31
     | 0x6B -> Struct
     | 0x6A -> Array
+    | 0x69 -> Exn
+    | 0x68 -> Cont
     | _ ->
         if i < 0 then failwith (Printf.sprintf "Unknown heaptype %x@." i);
         let i =
@@ -598,7 +614,9 @@ module Read = struct
 
   let reftype' st i ch =
     match i with
-    | 0X73 -> nullable Nofunc
+    | 0x75 -> nullable Nocont
+    | 0x74 -> nullable Noexn
+    | 0x73 -> nullable Nofunc
     | 0x72 -> nullable Noextern
     | 0x71 -> nullable None_
     | 0x70 -> nullable Func
@@ -608,6 +626,8 @@ module Read = struct
     | 0x6C -> nullable I31
     | 0x6B -> nullable Struct
     | 0x6A -> nullable Array
+    | 0x69 -> nullable Exn
+    | 0x68 -> nullable Cont
     | 0x63 -> nullable (heaptype st ch)
     | 0x64 -> { nullable = false; typ = heaptype st ch }
     | _ -> failwith (Printf.sprintf "Unknown reftype %x@." i)
@@ -654,6 +674,14 @@ module Read = struct
 
   let comptype st i ch =
     match i with
+    | 0x5D ->
+        let i = sint ch in
+        let i =
+          if i >= st.type_index_count
+          then lnot (i - st.type_index_count)
+          else st.type_mapping.(i)
+        in
+        Cont i
     | 0x5E -> Array (fieldtype st ch)
     | 0x5F -> Struct (vec (fieldtype st) ch)
     | 0x60 ->
@@ -1260,6 +1288,13 @@ module Scan = struct
       | 0xD1 (* ref.is_null *) | 0xD3 (* ref.eq *) | 0xD4 (* ref.as_non_null *) ->
           pos + 1 |> instructions
       | 0xD2 (* ref.func *) -> pos + 1 |> funcidx |> instructions
+      | 0xE0 (* cont.new *) -> pos + 1 |> typeidx |> instructions
+      | 0xE1 (* cont.bind *) -> pos + 1 |> typeidx |> typeidx |> instructions
+      | 0xE2 (* suspend *) -> pos + 1 |> tagidx |> instructions
+      | 0xE3 (* resume *) -> pos + 1 |> typeidx |> vector on_clause |> instructions
+      | 0xE4 (* resume_throw *) ->
+          pos + 1 |> typeidx |> tagidx |> vector on_clause |> instructions
+      | 0xE5 (* switch *) -> pos + 1 |> typeidx |> tagidx |> instructions
       | 0xFB -> pos + 1 |> gc_instruction
       | 0xFC -> (
           if debug then Format.eprintf "  %d@." (get (pos + 1));
@@ -1394,6 +1429,11 @@ module Scan = struct
       | 0 (* catch *) | 1 (* catch_ref *) -> pos + 1 |> tagidx |> labelidx
       | 2 (* catch_all *) | 3 (* catch_all_ref *) -> pos + 1 |> labelidx
       | c -> failwith (Printf.sprintf "bad catch 0x02%d@." c)
+    and on_clause pos =
+      match get pos with
+      | 0 (* on *) -> pos + 1 |> tagidx |> labelidx
+      | 1 (* on .. switch *) -> pos + 1 |> tagidx
+      | c -> failwith (Printf.sprintf "bad on clause 0x02%d@." c)
     and block_end pos =
       if debug then Format.eprintf "0x%02X (@%d) block end@." (get pos) pos;
       match get pos with
@@ -1546,30 +1586,43 @@ let rec subtype subtyping_info (i : int) i' =
   | None -> false
   | Some s -> subtype subtyping_info s i'
 
-let heap_subtype (subtyping_info : subtype array) (ty : heaptype) (ty' : heaptype) =
+let rec heap_subtype (subtyping_info : subtype array) (ty : heaptype) (ty' : heaptype) =
   match ty, ty' with
-  | (Func | Nofunc), Func
-  | Nofunc, Nofunc
-  | (Extern | Noextern), Extern
+  | Func, Func
+  | Extern, Extern
+  | Noextern, Noextern
+  | Exn, Exn
+  | Noexn, Noexn
+  | Cont, Cont
+  | Nocont, Nocont
   | (Any | Eq | I31 | Struct | Array | None_ | Type _), Any
   | (Eq | I31 | Struct | Array | None_ | Type _), Eq
-  | (I31 | None_), I31
-  | (Struct | None_), Struct
-  | (Array | None_), Array
+  | I31, I31
+  | Struct, Struct
+  | Array, Array
   | None_, None_ -> true
   | Type i, Struct -> (
       match subtyping_info.(i).typ with
       | Struct _ -> true
-      | Array _ | Func _ -> false)
+      | Array _ | Func _ | Cont _ -> false)
   | Type i, Array -> (
       match subtyping_info.(i).typ with
       | Array _ -> true
-      | Struct _ | Func _ -> false)
+      | Struct _ | Func _ | Cont _ -> false)
   | Type i, Func -> (
       match subtyping_info.(i).typ with
       | Func _ -> true
-      | Struct _ | Array _ -> false)
+      | Struct _ | Array _ | Cont _ -> false)
+  | Type i, Cont -> (
+      match subtyping_info.(i).typ with
+      | Cont _ -> true
+      | Struct _ | Array _ | Func _ -> false)
   | Type i, Type i' -> subtype subtyping_info i i'
+  | Nofunc, _ -> heap_subtype subtyping_info ty' Func
+  | Noextern, _ -> heap_subtype subtyping_info ty' Extern
+  | Noexn, _ -> heap_subtype subtyping_info ty' Exn
+  | Nocont, _ -> heap_subtype subtyping_info ty' Cont
+  | None_, _ -> heap_subtype subtyping_info ty' Any
   | _ -> false
 
 let ref_subtype subtyping_info { nullable; typ } { nullable = nullable'; typ = typ' } =
@@ -2457,7 +2510,6 @@ let f ?(filter_export = fun _ -> true) files ~output_file =
 (*
 LATER
 - testsuite : import/export matching, source maps, multiple start functions, ...
-- missing instructions ==> typed continuations (?)
 - check features?
 
 MAYBE
