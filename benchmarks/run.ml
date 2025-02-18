@@ -112,9 +112,11 @@ let rec measure_rec ~print (param : Param.t) cmd l =
   let l = t :: l in
   if need_more ~print param l then measure_rec ~print param cmd l else l
 
-let measure_one param code meas spec nm cmd =
+let measure_one param code (meas : Measure.t) spec nm cmd =
   let l =
-    if measures_need_update code meas spec nm then [] else read_measures meas spec nm
+    if measures_need_update code meas spec nm
+    then []
+    else read_measures meas.Measure.path spec nm
   in
   if need_more ~print:false param l
   then (
@@ -126,7 +128,7 @@ let measure_one param code meas spec nm cmd =
     l)
   else l
 
-let measure param code meas spec cmd =
+let measure ~param ~code ~(meas : Measure.t) ~spec cmd =
   List.iter (Spec.find_names ~root:code spec) ~f:(fun nm ->
       let cmd = if cmd = "" then cmd else cmd ^ " " in
       let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
@@ -211,17 +213,30 @@ let read_config file =
 let _ =
   let compile_only = ref false in
   let full = ref false in
-  let effects = ref false in
+  let effects = ref `None in
   let conf_file = ref "run.config" in
   let nobyteopt = ref false in
+  let wasm = ref false in
   let param = ref Param.default in
   let fast_run () = param := Param.fast !param in
   let ffast_run () = param := Param.ffast !param in
   let verbose () = param := Param.verbose !param in
+  let set_effects (backend : [ `None | `Cps | `Double_translation ]) =
+    effects := backend
+  in
+  let nojs = ref false in
   let options =
     [ "-compile", Arg.Set compile_only, " only compiles"
     ; "-all", Arg.Set full, " run all benchmarks"
-    ; "-effects", Arg.Set effects, " only run with and without effect handler support"
+    ; ( "-effects"
+      , Arg.Symbol
+          ( [ "none"; "cps"; "double-translation" ]
+          , function
+            | "none" -> set_effects `None
+            | "cps" -> set_effects `Cps
+            | "double-translation" -> set_effects `Double_translation
+            | _ -> assert false )
+      , " only run with and without effect handler support" )
     ; "-config", Arg.Set_string conf_file, "<file> use <file> as a config file"
     ; "-fast", Arg.Unit fast_run, " perform less iterations"
     ; "-ffast", Arg.Unit ffast_run, " perform very few iterations"
@@ -229,6 +244,10 @@ let _ =
     ; ( "-nobyteopt"
       , Arg.Set nobyteopt
       , " do not run benchs on bytecode and native programs" )
+    ; ( "-nojs"
+      , Arg.Set nojs
+      , " do not compile to Javascript with js_of_ocaml (default: compiles)" )
+    ; "-wasm", Arg.Set wasm, " compile to Wasm with wasm_of_ocaml (default false)"
     ]
   in
   Arg.parse
@@ -239,107 +258,221 @@ let _ =
   let compile_only = !compile_only in
   let nobyteopt = !nobyteopt in
   let full = !full in
-  let effects = !effects in
   let param = !param in
   let interpreters = read_config conf_file in
   let compile = compile param ~comptime:true in
-  let compile_jsoo ?(effects = false) opts =
+  let compile_jsoo ~wasm ?(effects = `None) opts =
     compile
       (Format.sprintf
-         "js_of_ocaml -q --target-env browser --debug mark-runtime-gen %s %s"
+         "%s -q %s%s %s"
+         (if wasm then "wasm_of_ocaml" else "js_of_ocaml")
+         (if wasm then "" else "--target-env browser --debug mark-runtime-gen ")
          opts
-         (if effects then "--enable=effects" else "--disable=effects"))
+         (match effects with
+         | `None -> "--disable=effects"
+         | `Cps -> "--effects=cps"
+         | `Double_translation -> "--effects=double-translation"))
+  in
+  let js = not !nojs in
+  let wasm = !wasm in
+  let effects =
+    match !effects, wasm with
+    | ((`None | `Cps) as e), _ -> e
+    | (`Double_translation as e), false -> e
+    | `Double_translation, true ->
+        raise
+          (Arg.Bad "option `-effects double-translation` incompatible with option `-wasm`")
   in
   Format.eprintf "Compile@.";
   compile "ocamlc" src Spec.ml code Spec.byte;
   compile "ocamlopt" src Spec.ml code Spec.opt;
-  compile_jsoo "" code Spec.byte code Spec.js_of_ocaml;
-  compile_jsoo "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
-  compile_jsoo "--enable=use-js-string" code Spec.byte code Spec.js_of_ocaml_js_string;
-  compile_jsoo "--disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
-  compile_jsoo "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
-  compile_jsoo "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
-  compile_jsoo "--disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
-  compile_jsoo ~effects:true "" code Spec.byte code Spec.js_of_ocaml_effects;
   compile "ocamlc -unsafe" src Spec.ml code Spec.byte_unsafe;
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
-  compile_jsoo "" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
+  if wasm then compile_jsoo ~wasm "" code Spec.byte code Spec.wasm_of_ocaml;
+  if js
+  then (
+    compile_jsoo ~wasm "" code Spec.byte code Spec.js_of_ocaml;
+    compile_jsoo ~wasm "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
+    compile_jsoo
+      ~wasm
+      "--enable=use-js-string"
+      code
+      Spec.byte
+      code
+      Spec.js_of_ocaml_js_string;
+    compile_jsoo ~wasm "--disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
+    compile_jsoo ~wasm "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
+    compile_jsoo ~wasm "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
+    compile_jsoo ~wasm "--disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
+    (match effects with
+    | `None -> ()
+    | _ -> compile_jsoo ~wasm ~effects "" code Spec.byte code Spec.js_of_ocaml_effects);
+    compile_jsoo ~wasm "" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe);
   Format.eprintf "Sizes@.";
-  ml_size param src Spec.ml sizes Spec.ml;
-  file_size param code Spec.byte sizes Spec.byte;
-  file_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "full");
-  compr_file_size
-    param
-    code
-    Spec.js_of_ocaml
-    sizes
-    (Spec.sub_spec Spec.js_of_ocaml "gzipped");
-  compr_file_size
-    param
-    code
-    Spec.js_of_ocaml_effects
-    sizes
-    (Spec.sub_spec Spec.js_of_ocaml_effects "gzipped");
-  bzip2_file_size
-    param
-    code
-    Spec.js_of_ocaml_effects
-    sizes
-    (Spec.sub_spec Spec.js_of_ocaml_effects "bzip2");
-  bzip2_file_size
-    param
-    code
-    Spec.js_of_ocaml
-    sizes
-    (Spec.sub_spec Spec.js_of_ocaml "bzip2");
-  runtime_size
-    param
-    code
-    Spec.js_of_ocaml
-    sizes
-    (Spec.sub_spec Spec.js_of_ocaml "runtime");
-  gen_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "generated");
-  gen_size param code Spec.js_of_ocaml_o3 sizes Spec.js_of_ocaml_o3;
-  gen_size param code Spec.js_of_ocaml_js_string sizes Spec.js_of_ocaml_js_string;
-  gen_size param code Spec.js_of_ocaml_inline sizes Spec.js_of_ocaml_inline;
-  gen_size param code Spec.js_of_ocaml_deadcode sizes Spec.js_of_ocaml_deadcode;
-  gen_size param code Spec.js_of_ocaml_compact sizes Spec.js_of_ocaml_compact;
-  gen_size param code Spec.js_of_ocaml_call sizes Spec.js_of_ocaml_call;
-  gen_size param code Spec.js_of_ocaml_effects sizes Spec.js_of_ocaml_effects;
+  ml_size param src Spec.ml sizes.Measure.path Spec.ml;
+  file_size param code Spec.byte sizes.Measure.path Spec.byte;
+  if js
+  then
+    file_size
+      param
+      code
+      Spec.js_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.js_of_ocaml "full");
+  if wasm
+  then
+    file_size
+      param
+      code
+      Spec.wasm_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.wasm_of_ocaml "full");
+  if js
+  then (
+    compr_file_size
+      param
+      code
+      Spec.js_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.js_of_ocaml "gzipped");
+    (match effects with
+    | `None -> ()
+    | _ ->
+        compr_file_size
+          param
+          code
+          Spec.js_of_ocaml_effects
+          sizes.Measure.path
+          (Spec.sub_spec Spec.js_of_ocaml_effects "gzipped");
+        bzip2_file_size
+          param
+          code
+          Spec.js_of_ocaml_effects
+          sizes.Measure.path
+          (Spec.sub_spec Spec.js_of_ocaml_effects "bzip2"));
+    bzip2_file_size
+      param
+      code
+      Spec.js_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.js_of_ocaml "bzip2");
+    runtime_size
+      param
+      code
+      Spec.js_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.js_of_ocaml "runtime");
+    gen_size
+      param
+      code
+      Spec.js_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.js_of_ocaml "generated");
+    gen_size param code Spec.js_of_ocaml_o3 sizes.Measure.path Spec.js_of_ocaml_o3;
+    gen_size
+      param
+      code
+      Spec.js_of_ocaml_js_string
+      sizes.Measure.path
+      Spec.js_of_ocaml_js_string;
+    gen_size param code Spec.js_of_ocaml_inline sizes.Measure.path Spec.js_of_ocaml_inline;
+    gen_size
+      param
+      code
+      Spec.js_of_ocaml_deadcode
+      sizes.Measure.path
+      Spec.js_of_ocaml_deadcode;
+    gen_size
+      param
+      code
+      Spec.js_of_ocaml_compact
+      sizes.Measure.path
+      Spec.js_of_ocaml_compact;
+    gen_size param code Spec.js_of_ocaml_call sizes.Measure.path Spec.js_of_ocaml_call;
+    match effects with
+    | `None -> ()
+    | _ ->
+        gen_size
+          param
+          code
+          Spec.js_of_ocaml_effects
+          sizes.Measure.path
+          Spec.js_of_ocaml_effects);
+  if wasm
+  then (
+    compr_file_size
+      param
+      code
+      Spec.wasm_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.wasm_of_ocaml "gzipped");
+    bzip2_file_size
+      param
+      code
+      Spec.wasm_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.wasm_of_ocaml "bzip2");
+    gen_size
+      param
+      code
+      Spec.wasm_of_ocaml
+      sizes.Measure.path
+      (Spec.sub_spec Spec.wasm_of_ocaml "generated"));
   if compile_only then exit 0;
   Format.eprintf "Measure@.";
   if not nobyteopt
   then (
-    measure param code times Spec.opt "";
-    measure param code times Spec.byte "");
-  let compilers, suites =
+    measure ~param ~code ~meas:times ~spec:Spec.opt "";
+    measure ~param ~code ~meas:times ~spec:Spec.byte "");
+  let interpreters, suites =
     if full
     then
       ( interpreters
-      , [ Some Spec.js_of_ocaml
-        ; Some Spec.js_of_ocaml_o3
-        ; Some Spec.js_of_ocaml_js_string
-        ; Some Spec.js_of_ocaml_unsafe
-        ; Some Spec.js_of_ocaml_inline
-        ; Some Spec.js_of_ocaml_deadcode
-        ; Some Spec.js_of_ocaml_compact
-        ; Some Spec.js_of_ocaml_call
-        ; Some Spec.js_of_ocaml_effects
-        ] )
-    else if effects
-    then
-      ( (match interpreters with
-        | i :: _ -> [ i ]
-        | [] -> [])
-      , [ Some Spec.js_of_ocaml; Some Spec.js_of_ocaml_effects ] )
+      , (if js
+         then
+           [ Some Spec.js_of_ocaml
+           ; Some Spec.js_of_ocaml_o3
+           ; Some Spec.js_of_ocaml_js_string
+           ; Some Spec.js_of_ocaml_unsafe
+           ; Some Spec.js_of_ocaml_inline
+           ; Some Spec.js_of_ocaml_deadcode
+           ; Some Spec.js_of_ocaml_compact
+           ; Some Spec.js_of_ocaml_call
+           ]
+           @
+           match effects with
+           | `None -> []
+           | _ -> [ Some Spec.js_of_ocaml_effects ]
+         else [])
+        @ if wasm then [ Some Spec.wasm_of_ocaml ] else [] )
     else
       ( (match interpreters with
         | i :: _ -> [ i ]
         | [] -> [])
-      , [ Some Spec.js_of_ocaml ] )
+      , (match effects, js with
+        | `Cps, true -> [ Some Spec.js_of_ocaml; Some Spec.js_of_ocaml_effects ]
+        | `Double_translation, _ ->
+            failwith "double translation benchmarks not implemented"
+        | `None, true -> [ Some Spec.js_of_ocaml ]
+        | _, false -> [])
+        @ if wasm then [ Some Spec.wasm_of_ocaml ] else [] )
   in
-  List.iter compilers ~f:(fun (comp, dir) ->
-      measure param src (Filename.concat times dir) Spec.js comp;
+  List.iter interpreters ~f:(fun (comp, dir) ->
+      if js
+      then
+        (* Measure the time taken by an implementation in Javascript for comparison *)
+        measure
+          ~param
+          ~code:src
+          ~meas:Measure.{ times with path = Filename.concat times.path dir }
+          ~spec:Spec.js
+          comp;
       List.iter suites ~f:(function
         | None -> ()
-        | Some suite -> measure param code (Filename.concat times dir) suite comp))
+        | Some suite ->
+            measure
+              ~param
+              ~code
+              ~meas:Measure.{ times with path = Filename.concat times.path dir }
+              ~spec:suite
+              comp))
