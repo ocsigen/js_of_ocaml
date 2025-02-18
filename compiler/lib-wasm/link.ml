@@ -173,7 +173,20 @@ module Wasm_binary = struct
 
   let reftype' i ch =
     match i with
-    | 0x6a | 0x6b | 0x6c | 0x6d | 0x6e | 0x6f | 0x70 | 0x71 | 0x72 | 0x73 -> ()
+    | 0x68
+    | 0x69
+    | 0x6a
+    | 0x6b
+    | 0x6c
+    | 0x6d
+    | 0x6e
+    | 0x6f
+    | 0x70
+    | 0x71
+    | 0x72
+    | 0x73
+    | 0x74
+    | 0x75 -> ()
     | 0x63 | 0x64 -> heaptype ch
     | _ ->
         Format.eprintf "Unknown reftype %x@." i;
@@ -206,6 +219,7 @@ module Wasm_binary = struct
     | Func of { arity : int }
     | Struct
     | Array
+    | Cont
 
   let supertype ch =
     match input_byte ch with
@@ -225,6 +239,9 @@ module Wasm_binary = struct
 
   let comptype i ch =
     match i with
+    | 0x5D ->
+        ignore (read_sint ch);
+        Cont
     | 0x5E ->
         fieldtype ch;
         Array
