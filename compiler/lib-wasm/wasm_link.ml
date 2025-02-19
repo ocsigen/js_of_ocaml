@@ -1402,7 +1402,7 @@ module Scan = struct
     let limits pos =
       let c = get pos in
       assert (c < 8);
-      if c land 1 = 0 then pos |> int else pos |> int |> int
+      if c land 1 = 0 then pos + 1 |> int else pos + 1 |> int |> int
     in
     let tabletype pos =
       mark pos;

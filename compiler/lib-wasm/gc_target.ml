@@ -1406,11 +1406,6 @@ let () =
   in
   let register_js_expr prim_name =
     register prim_name (fun transl_prim_arg l ->
-        let* wrap =
-          register_import
-            ~name:"wrap"
-            (Fun { params = [ JavaScript.anyref ]; result = [ Value.value ] })
-        in
         match l with
         | Code.[ Pc (String str) ] -> (
             try
@@ -1422,8 +1417,7 @@ let () =
                     EArrow
                       (J.fun_ [] [ Return_statement (Some e, N), N ] N, true, AUnknown))
               in
-              let* js_val = JavaScript.invoke_fragment name [] in
-              return (W.Call (wrap, [ js_val ]))
+              JavaScript.invoke_fragment name []
             with Parse_js.Parsing_error pi ->
               failwith
                 (Printf.sprintf
