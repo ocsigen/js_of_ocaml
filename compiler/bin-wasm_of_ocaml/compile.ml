@@ -522,9 +522,12 @@ let run
              tmp_wasm_file
          in
          let wasm_name =
-           Printf.sprintf
-             "code-%s"
-             (String.sub (Digest.to_hex (Digest.file tmp_wasm_file)) ~pos:0 ~len:20)
+           if Config.Flag.wasi ()
+           then "code"
+           else
+             Printf.sprintf
+               "code-%s"
+               (String.sub (Digest.to_hex (Digest.file tmp_wasm_file)) ~pos:0 ~len:20)
          in
          let tmp_wasm_file' = Filename.concat tmp_dir (wasm_name ^ ".wasm") in
          Sys.rename tmp_wasm_file tmp_wasm_file';

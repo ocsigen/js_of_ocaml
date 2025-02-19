@@ -19,9 +19,17 @@
 open Stdlib
 
 module Wasm_binary : sig
+  type importdesc =
+    | Func of int
+    | Table
+    | Mem
+    | Global
+    | Tag
+
   type import =
     { module_ : string
     ; name : string
+    ; desc : importdesc
     }
 
   val check : contents:string -> bool
