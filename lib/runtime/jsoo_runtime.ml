@@ -177,7 +177,7 @@ end = struct
 
   let _ = Callback.register_exception "jsError" (Exn (Obj.magic [||]))
 
-  let raise_ : t -> 'a = Js.js_expr "(function (exn) { throw exn })"
+  external raise_ : t -> 'a = "caml_throw_js_exception"
 
   external of_exn : exn -> t option = "caml_js_error_option_of_exception"
 

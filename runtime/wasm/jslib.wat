@@ -75,6 +75,8 @@
       (func $wrap_fun_arguments (param anyref) (result anyref)))
    (import "fail" "caml_failwith_tag"
       (func $caml_failwith_tag (result (ref eq))))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
    (import "stdlib" "caml_named_value"
       (func $caml_named_value (param (ref eq)) (result (ref null eq))))
    (import "obj" "caml_callback_1"
@@ -665,6 +667,11 @@
                      (array.new_fixed $block 2 (ref.i31 (i32.const 0))
                         (array.get $block (local.get $exn) (i32.const 2))))))))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_throw_js_exception")
+      (param $exn (ref eq)) (result (ref eq))
+      (throw $javascript_exception
+         (extern.convert_any (call $unwrap (local.get $exn)))))
 
    (func (export "caml_js_error_of_exception")
       (param (ref eq)) (result (ref eq))

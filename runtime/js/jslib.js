@@ -203,6 +203,11 @@ function caml_js_error_option_of_exception(exn) {
   return 0;
 }
 
+//Provides: caml_throw_js_exception
+function caml_throw_js_exception(exn) {
+  throw exn;
+}
+
 //Provides: caml_js_from_bool const (const)
 function caml_js_from_bool(x) {
   return !!x;
