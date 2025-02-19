@@ -311,6 +311,10 @@
       (param (ref eq) (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_ml_is_binary_mode")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
+
    (func (export "caml_ml_close_channel")
       (param (ref eq)) (result (ref eq))
       (local $ch (ref $channel))

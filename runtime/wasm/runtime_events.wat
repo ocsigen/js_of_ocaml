@@ -37,29 +37,31 @@
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_runtime_events_start") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_runtime_events_start")
+      (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_runtime_events_pause") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_runtime_events_pause")
+      (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_runtime_events_resume") (param (ref eq)) (result (ref eq))
+   (func (export "caml_ml_runtime_events_resume")
+      (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ml_runtime_events_are_active")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   ;; TODO: use Javascript function
-   ;;(func (export "caml_runtime_events_create_cursor")
-   ;;   (param (ref eq)) (result (ref eq))
-   ;;   (ref.i31 (i32.const 0)))
-
-   (func (export "caml_runtime_events_free_cursor")
+   (func (export "caml_ml_runtime_events_create_cursor")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_runtime_events_read_poll")
+   (func (export "caml_ml_runtime_events_free_cursor")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ml_runtime_events_read_poll")
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 

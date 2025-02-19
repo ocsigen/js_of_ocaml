@@ -110,6 +110,9 @@
    (func (export "caml_memprof_stop") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_memprof_discard") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_eventlog_pause") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 

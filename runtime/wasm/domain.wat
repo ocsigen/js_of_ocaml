@@ -57,6 +57,10 @@
       (array.set $block (local.get $b) (i32.const 1) (local.get $v))
       (local.get $r))
 
+   (func (export "caml_atomic_make_contended")
+      (param $v (ref eq)) (result (ref eq))
+      (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $v)))
+
    (global $caml_domain_dls (mut (ref eq))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
