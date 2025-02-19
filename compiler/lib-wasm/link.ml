@@ -181,11 +181,12 @@ module Wasm_binary = struct
 
   let reftype ch = reftype' (input_byte ch) ch
 
-  let valtype ch =
-    let i = read_uint ch in
+  let valtype' i ch =
     match i with
-    | 0x7b | 0x7c | 0x7d | 0x7e | 0x7f -> ()
+    | 0x7B | 0x7C | 0x7D | 0x7E | 0x7F -> ()
     | _ -> reftype' i ch
+
+  let valtype ch = valtype' (read_uint ch) ch
 
   let limits ch =
     match input_byte ch with
@@ -201,32 +202,95 @@ module Wasm_binary = struct
     reftype ch;
     limits ch
 
+  type comptype =
+    | Func of { arity : int }
+    | Struct
+    | Array
+
+  let supertype ch =
+    match input_byte ch with
+    | 0 -> ()
+    | 1 -> ignore (read_uint ch)
+    | _ -> assert false
+
+  let storagetype ch =
+    let i = read_uint ch in
+    match i with
+    | 0x78 | 0x77 -> ()
+    | _ -> valtype' i ch
+
+  let fieldtype ch =
+    storagetype ch;
+    ignore (input_byte ch)
+
+  let comptype i ch =
+    match i with
+    | 0x5E ->
+        fieldtype ch;
+        Array
+    | 0x5F ->
+        ignore (vec fieldtype ch);
+        Struct
+    | 0x60 ->
+        let params = vec valtype ch in
+        let _ = vec valtype ch in
+        Func { arity = List.length params }
+    | c -> failwith (Printf.sprintf "Unknown comptype %d" c)
+
+  let subtype i ch =
+    match i with
+    | 0x50 ->
+        supertype ch;
+        comptype (input_byte ch) ch
+    | 0x4F ->
+        supertype ch;
+        comptype (input_byte ch) ch
+    | _ -> comptype i ch
+
+  let rectype ch =
+    match input_byte ch with
+    | 0x4E -> vec (fun ch -> subtype (input_byte ch) ch) ch
+    | i -> [ subtype i ch ]
+
+  type importdesc =
+    | Func of int
+    | Table
+    | Mem
+    | Global
+    | Tag
+
   type import =
     { module_ : string
     ; name : string
+    ; desc : importdesc
     }
 
   let import ch =
     let module_ = name ch in
     let name = name ch in
     let d = read_uint ch in
-    let _ =
+    let desc =
       match d with
-      | 0 -> ignore (read_uint ch)
-      | 1 -> tabletype ch
-      | 2 -> memtype ch
+      | 0 -> Func (read_uint ch)
+      | 1 ->
+          tabletype ch;
+          Table
+      | 2 ->
+          memtype ch;
+          Mem
       | 3 ->
           let _typ = valtype ch in
           let _mut = input_byte ch in
-          ()
+          Global
       | 4 ->
           assert (read_uint ch = 0);
-          ignore (read_uint ch)
+          ignore (read_uint ch);
+          Tag
       | _ ->
           Format.eprintf "Unknown import %x@." d;
           assert false
     in
-    { module_; name }
+    { module_; name; desc }
 
   let export ch =
     let name = name ch in
@@ -256,6 +320,7 @@ module Wasm_binary = struct
   type interface =
     { imports : import list
     ; exports : string list
+    ; types : comptype array
     }
 
   let read_interface ch =
@@ -263,7 +328,11 @@ module Wasm_binary = struct
       match next_section ch with
       | None -> i
       | Some s ->
-          if s.id = 2
+          if s.id = 1
+          then
+            find_sections
+              { i with types = Array.of_list (List.flatten (vec rectype ch.ch)) }
+          else if s.id = 2
           then find_sections { i with imports = vec import ch.ch }
           else if s.id = 7
           then { i with exports = vec export ch.ch }
@@ -271,7 +340,7 @@ module Wasm_binary = struct
             skip_section ch s;
             find_sections i)
     in
-    find_sections { imports = []; exports = [] }
+    find_sections { imports = []; exports = []; types = [||] }
 
   let append_source_map_section ~file ~url =
     let ch = open_out_gen [ Open_wronly; Open_append; Open_binary ] 0o666 file in
@@ -394,6 +463,13 @@ let generate_start_function ~to_link ~out_file =
   Generate.add_init_function ~context ~to_link:("prelude" :: to_link);
   Generate.wasm_output ch ~opt_source_map_file:None ~context;
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
+
+let generate_missing_primitives ~missing_primitives ~out_file =
+  Filename.gen_file out_file
+  @@ fun ch ->
+  let context = Generate.start () in
+  Generate.add_missing_primitives ~context missing_primitives;
+  Generate.wasm_output ch ~opt_source_map_file:None ~context
 
 let output_js js =
   let js = Driver.simplify_js js in
@@ -630,17 +706,20 @@ let compute_dependencies ~files_to_link ~files =
 
 let compute_missing_primitives (runtime_intf, intfs) =
   let provided_primitives = StringSet.of_list runtime_intf.Wasm_binary.exports in
-  StringSet.elements
+  StringMap.bindings
   @@ List.fold_left
-       ~f:(fun s { Wasm_binary.imports; _ } ->
+       ~f:(fun s { Wasm_binary.imports; types; _ } ->
          List.fold_left
-           ~f:(fun s { Wasm_binary.module_; name; _ } ->
-             if String.equal module_ "env" && not (StringSet.mem name provided_primitives)
-             then StringSet.add name s
-             else s)
+           ~f:(fun s { Wasm_binary.module_; name; desc } ->
+             match module_, desc with
+             | "env", Func idx when not (StringSet.mem name provided_primitives) -> (
+                 match types.(idx) with
+                 | Func { arity } -> StringMap.add name arity s
+                 | _ -> s)
+             | _ -> s)
            ~init:s
            imports)
-       ~init:StringSet.empty
+       ~init:StringMap.empty
        intfs
 
 let load_information files =
@@ -675,6 +754,72 @@ let gen_dir dir f =
   with exc ->
     remove_directory d_tmp;
     raise exc
+
+let link_to_module ~to_link ~files_to_link ~files ~enable_source_maps:_ ~dir =
+  let process_file ~name ~module_name file =
+    Zip.with_open_in file
+    @@ fun z ->
+    let intf =
+      let ch, pos, len, _ = Zip.get_entry z ~name in
+      Wasm_binary.read_interface (Wasm_binary.from_channel ~name ch pos len)
+    in
+    ( { Wasm_link.module_name
+      ; file
+      ; code = Some (Zip.read_entry z ~name)
+      ; opt_source_map = None
+      }
+    , intf )
+  in
+  let runtime_file = fst (List.hd files) in
+  let z = Zip.open_in runtime_file in
+  let runtime, runtime_intf =
+    process_file ~name:"runtime.wasm" ~module_name:"env" runtime_file
+  in
+  let prelude =
+    { Wasm_link.module_name = "OCaml"
+    ; file = runtime_file
+    ; code = Some (Zip.read_entry z ~name:"prelude.wasm")
+    ; opt_source_map = None
+    }
+  in
+  Zip.close_in z;
+  let lst =
+    List.tl files
+    |> List.filter_map ~f:(fun (file, _) ->
+        if StringSet.mem file files_to_link
+        then Some (process_file ~name:"code.wasm" ~module_name:"OCaml" file)
+        else None)
+  in
+  let missing_primitives =
+    if Config.Flag.genprim ()
+    then compute_missing_primitives (runtime_intf, List.map ~f:snd lst)
+    else []
+  in
+  Fs.with_intermediate_file (Filename.temp_file "start" ".wasm")
+  @@ fun start_module ->
+  generate_start_function ~to_link ~out_file:start_module;
+  let start =
+    { Wasm_link.module_name = "OCaml"
+    ; file = start_module
+    ; code = None
+    ; opt_source_map = None
+    }
+  in
+  Fs.with_intermediate_file (Filename.temp_file "stubs" ".wasm")
+  @@ fun stubs_module ->
+  generate_missing_primitives ~missing_primitives ~out_file:stubs_module;
+  let missing_primitives =
+    { Wasm_link.module_name = "env"
+    ; file = stubs_module
+    ; code = None
+    ; opt_source_map = None
+    }
+  in
+  ignore
+    (Wasm_link.f
+       (runtime :: prelude :: missing_primitives :: start :: List.map ~f:fst lst)
+       ~filter_export:(fun nm -> String.equal nm "_start" || String.equal nm "memory")
+       ~output_file:(Filename.concat dir "code.wasm"))
 
 let link ~output_file ~linkall ~enable_source_maps ~files =
   if times () then Format.eprintf "linking@.";
@@ -766,30 +911,35 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   if times () then Format.eprintf "    finding what to link: %a@." Timer.print t1;
   if times () then Format.eprintf "  scan: %a@." Timer.print t;
   let t = Timer.make () in
-  let interfaces, wasm_dir, link_spec =
+  let missing_primitives, wasm_dir, link_spec =
     let dir = Filename.chop_extension output_file ^ ".assets" in
     gen_dir dir
     @@ fun tmp_dir ->
     Sys.mkdir tmp_dir 0o777;
-    let start_module =
-      "start-"
-      ^ String.sub
-          (Digest.to_hex (Digest.string (String.concat ~sep:"/" to_link)))
-          ~pos:0
-          ~len:8
-    in
-    generate_start_function
-      ~to_link
-      ~out_file:(Filename.concat tmp_dir (start_module ^ ".wasm"));
-    let module_names, interfaces =
-      link_to_directory ~files_to_link ~files ~enable_source_maps ~dir:tmp_dir
-    in
-    ( interfaces
-    , dir
-    , let to_link = compute_dependencies ~files_to_link ~files in
-      List.combine module_names (None :: None :: to_link) @ [ start_module, None ] )
+    if not (Config.Flag.wasi ())
+    then (
+      let start_module =
+        "start-"
+        ^ String.sub
+            (Digest.to_hex (Digest.string (String.concat ~sep:"/" to_link)))
+            ~pos:0
+            ~len:8
+      in
+      let module_names, interfaces =
+        link_to_directory ~files_to_link ~files ~enable_source_maps ~dir:tmp_dir
+      in
+      let missing_primitives = compute_missing_primitives interfaces in
+      generate_start_function
+        ~to_link
+        ~out_file:(Filename.concat tmp_dir (start_module ^ ".wasm"));
+      ( List.map ~f:fst missing_primitives
+      , dir
+      , let to_link = compute_dependencies ~files_to_link ~files in
+        List.combine module_names (None :: None :: to_link) @ [ start_module, None ] ))
+    else (
+      link_to_module ~to_link ~files_to_link ~files ~enable_source_maps ~dir:tmp_dir;
+      [], dir, [ "code", None ])
   in
-  let missing_primitives = compute_missing_primitives interfaces in
   if times () then Format.eprintf "    copy wasm files: %a@." Timer.print t;
   let t1 = Timer.make () in
   let js_runtime =
