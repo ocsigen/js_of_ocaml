@@ -41,7 +41,7 @@
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $function_3
@@ -125,9 +125,9 @@
 
    (func $raise_unhandled
       (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
-      (local $effect_unhandled (ref $string))
+      (local $effect_unhandled (ref $bytes))
       (local.set $effect_unhandled
-         (array.new_data $string $effect_unhandled
+         (array.new_data $bytes $effect_unhandled
             (i32.const 0) (i32.const 16)))
       (block $null
          (call $caml_raise_with_arg
@@ -230,7 +230,7 @@
             (call $caml_raise_constant
                (ref.as_non_null
                   (call $caml_named_value
-                     (array.new_data $string $already_resumed
+                     (array.new_data $bytes $already_resumed
                         (i32.const 0) (i32.const 35)))))))
       (return_call $capture_continuation
          (ref.func $do_resume)
@@ -649,7 +649,7 @@
       (call $caml_raise_constant
          (ref.as_non_null
             (call $caml_named_value
-               (array.new_data $string $already_resumed
+               (array.new_data $bytes $already_resumed
                   (i32.const 0) (i32.const 35)))))
       (ref.i31 (i32.const 0)))
 

@@ -24,7 +24,7 @@
       (func $custom_hash_id (param (ref eq)) (result i32)))
    (import "custom" "custom_next_id" (func $custom_next_id (result i64)))
 
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -36,7 +36,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $string))
+         (field $id (ref $bytes))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -53,7 +53,7 @@
 
    (global $mutex_ops (ref $custom_operations)
       (struct.new $custom_operations
-         (array.new_fixed $string 6 ;; "_mutex"
+         (array.new_fixed $bytes 6 ;; "_mutex"
             (i32.const 95) (i32.const 109) (i32.const 117) (i32.const 116)
             (i32.const 101) (i32.const 120))
          (ref.func $custom_compare_id)
@@ -83,7 +83,7 @@
       (if (struct.get $mutex $state (local.get $t))
          (then
             (call $caml_failwith
-               (array.new_data $string $lock_failure
+               (array.new_data $bytes $lock_failure
                   (i32.const 0) (i32.const 46)))))
       (struct.set $mutex $state (local.get $t) (i32.const 1))
       (ref.i31 (i32.const 0)))
@@ -111,7 +111,7 @@
    (func (export "caml_ml_condition_wait")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (call $caml_failwith
-         (array.new_data $string $condition_failure
+         (array.new_data $bytes $condition_failure
             (i32.const 0) (i32.const 27)))
       (ref.i31 (i32.const 0)))
 

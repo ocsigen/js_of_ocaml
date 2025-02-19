@@ -84,11 +84,11 @@
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
    (import "bindings" "ta_blit_from_string"
       (func $ta_blit_from_string
-         (param (ref $string)) (param i32) (param (ref extern)) (param i32)
+         (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
          (param i32)))
    (import "bindings" "ta_blit_to_string"
       (func $ta_blit_to_string
-         (param (ref extern)) (param i32) (param (ref $string)) (param i32)
+         (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
          (param i32)))
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
@@ -97,7 +97,7 @@
    (import "int64" "Int64_val"
       (func $Int64_val (param (ref eq)) (result i64)))
 
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
    (type $js (struct (field anyref)))
@@ -118,18 +118,18 @@
          (then
             (local.set $unix_error_exn
                (call $caml_named_value
-                  (array.new_data $string $unix_error
+                  (array.new_data $bytes $unix_error
                      (i32.const 0) (i32.const 15))))
             (if (ref.is_null (local.get $unix_error_exn))
                (then
                   (call $caml_invalid_argument
-                      (array.new_data $string $unix_error_not_initialized
+                      (array.new_data $bytes $unix_error_not_initialized
                          (i32.const 0) (i32.const 63)))))
             (global.set $unix_error_exn
                (ref.as_non_null (local.get $unix_error_exn)))))
       (global.get $unix_error_exn))
 
-   (global $no_arg (ref eq) (array.new_fixed $string 0))
+   (global $no_arg (ref eq) (array.new_fixed $bytes 0))
 
    (global $unix_error (ref eq) (struct.new $js (global.get $unix_error_js)))
 
@@ -160,17 +160,17 @@
       (local.set $exn (call $wrap (any.convert_extern (local.get $exception))))
       (local.set $code
          (call $caml_js_get (local.get $exn)
-            (array.new_data $string $code (i32.const 0) (i32.const 4))))
+            (array.new_data $bytes $code (i32.const 0) (i32.const 4))))
       (local.set $variant
          (call $caml_js_meth_call (global.get $unix_error)
-            (array.new_data $string $indexOf (i32.const 0) (i32.const 7))
+            (array.new_data $bytes $indexOf (i32.const 0) (i32.const 7))
             (array.new_fixed $block 2 (ref.i31 (i32.const 0))
                (local.get $code))))
       (if (ref.eq (local.get $variant) (ref.i31 (i32.const -1)))
          (then
             (local.set $errno
                (call $caml_js_get (local.get $exn)
-                  (array.new_data $string $errno (i32.const 0) (i32.const 4))))
+                  (array.new_data $bytes $errno (i32.const 0) (i32.const 4))))
             (local.set $errno
                (ref.i31
                   (if (result i32) (ref.test (ref i31) (local.get $errno))
@@ -191,13 +191,13 @@
                (then
                   (call $ensure_string
                      (call $caml_js_get (local.get $exn)
-                        (array.new_data $string $syscall
+                        (array.new_data $bytes $syscall
                            (i32.const 0) (i32.const 7)))))
                (else
                   (ref.as_non_null (local.get $cmd))))
             (call $ensure_string
                (call $caml_js_get (local.get $exn)
-                  (array.new_data $string $path (i32.const 0) (i32.const 4)))))))
+                  (array.new_data $bytes $path (i32.const 0) (i32.const 4)))))))
 
    (export "caml_unix_gettimeofday" (func $unix_gettimeofday))
    (func $unix_gettimeofday (export "unix_gettimeofday")
@@ -518,13 +518,13 @@
    (func (export "unix_write") (export "caml_unix_write")
       (param $vfd (ref eq)) (param $vbuf (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
-      (local $fd i32) (local $s (ref $string)) (local $buf (ref extern))
+      (local $fd i32) (local $s (ref $bytes)) (local $buf (ref extern))
       (local $pos i32) (local $len i32) (local $numbytes i32)
       (local $written i32) (local $n i32)
       (local $fd_offset (ref $fd_offset))
       (local $offset i64)
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
-      (local.set $s (ref.cast (ref $string) (local.get $vbuf)))
+      (local.set $s (ref.cast (ref $bytes) (local.get $vbuf)))
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (local.set $buf (call $get_io_buffer))
@@ -595,7 +595,7 @@
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (call $ta_blit_to_string
          (local.get $buf) (i32.const 0)
-         (ref.cast (ref $string) (local.get $vbuf)) (local.get $pos)
+         (ref.cast (ref $bytes) (local.get $vbuf)) (local.get $pos)
          (local.get $len))
       (ref.i31 (local.get $n)))
 
@@ -677,7 +677,7 @@
          (ref.i31 (i32.const 0))
          (call $get_unix_error_exn)
          (ref.i31 (local.get $errno))
-         (array.new_data $string $lseek (i32.const 0) (i32.const 5))
+         (array.new_data $bytes $lseek (i32.const 0) (i32.const 5))
          (global.get $no_arg)))
 
    (func $lseek
@@ -730,10 +730,10 @@
    (func $channel_of_descr_name (param $out i32) (result (ref eq))
       (if (result (ref eq)) (local.get $out)
          (then
-            (array.new_data $string $out_channel_of_descr
+            (array.new_data $bytes $out_channel_of_descr
                (i32.const 0) (i32.const 20)))
          (else
-            (array.new_data $string $in_channel_of_descr
+            (array.new_data $bytes $in_channel_of_descr
                (i32.const 0) (i32.const 19)))))
 
    (func $caml_unix_check_stream_semantics (param $fd (ref eq)) (param $out i32)

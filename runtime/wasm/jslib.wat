@@ -85,12 +85,12 @@
    (import "obj" "caml_is_last_arg"
       (func $caml_is_last_arg (param (ref eq)) (result i32)))
    (import "jsstring" "jsstring_of_string"
-      (func $jsstring_of_string (param (ref $string)) (result anyref)))
+      (func $jsstring_of_string (param (ref $bytes)) (result anyref)))
    (import "jsstring" "string_of_jsstring"
-      (func $string_of_jsstring (param anyref) (result (ref $string))))
+      (func $string_of_jsstring (param anyref) (result (ref $bytes))))
    (import "jsstring" "jsstring_of_substring"
       (func $jsstring_of_substring
-         (param (ref $string) i32 i32) (result anyref)))
+         (param (ref $bytes) i32 i32) (result anyref)))
    (import "int32" "caml_copy_int32"
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
@@ -103,7 +103,7 @@
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $js (struct (field anyref)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
@@ -186,7 +186,7 @@
    (func (export "caml_js_meth_call")
       (param $o (ref eq)) (param $f (ref eq)) (param $args (ref eq))
       (result (ref eq))
-      (if (ref.test (ref $string) (local.get $f))
+      (if (ref.test (ref $bytes) (local.get $f))
          (then
             (local.set $f (call $caml_jsbytes_of_string (local.get $f)))))
       (return_call $wrap
@@ -196,7 +196,7 @@
 
    (func (export "caml_js_get")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (if (ref.test (ref $string) (local.get 1))
+      (if (ref.test (ref $bytes) (local.get 1))
          (then
             (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
       (return_call $wrap
@@ -206,7 +206,7 @@
 
    (func (export "caml_js_set")
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (if (ref.test (ref $string) (local.get 1))
+      (if (ref.test (ref $bytes) (local.get 1))
          (then
             (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
       (call $set (call $unwrap (local.get 0)) (call $unwrap (local.get 1))
@@ -215,7 +215,7 @@
 
    (func (export "caml_js_delete")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (if (ref.test (ref $string) (local.get 1))
+      (if (ref.test (ref $bytes) (local.get 1))
          (then
             (local.set 1 (call $caml_jsbytes_of_string (local.get 1)))))
       (call $delete (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))
@@ -457,8 +457,8 @@
    (export "caml_js_from_string" (func $caml_jsstring_of_string))
    (func $caml_jsstring_of_string (export "caml_jsstring_of_string")
       (param (ref eq)) (result (ref eq))
-      (local $s (ref $string))
-      (local.set $s (ref.cast (ref $string) (local.get 0)))
+      (local $s (ref $bytes))
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (return (struct.new $js (call $jsstring_of_string (local.get $s)))))
 
    (func (export "caml_jsstring_of_substring")
@@ -467,23 +467,23 @@
       (return
          (struct.new $js
             (call $jsstring_of_substring
-               (ref.cast (ref $string) (local.get $s))
+               (ref.cast (ref $bytes) (local.get $s))
                (i31.get_u (ref.cast (ref i31) (local.get $i)))
                (i31.get_u (ref.cast (ref i31) (local.get $l)))))))
 
    (func $caml_jsbytes_of_string (export "caml_jsbytes_of_string")
       (param (ref eq)) (result (ref eq))
-      (local $s (ref $string))
-      (local $s' (ref $string))
+      (local $s (ref $bytes))
+      (local $s' (ref $bytes))
       (local $l i32) (local $i i32) (local $n i32) (local $c i32)
-      (local.set $s (ref.cast (ref $string) (local.get 0)))
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (local.set $l (array.len (local.get $s)))
       (local.set $i (i32.const 0))
       (local.set $n (i32.const 0))
       (loop $count
          (if (i32.lt_u (local.get $i) (local.get $l))
             (then
-               (if (i32.ge_u (array.get_u $string (local.get $s) (local.get $i))
+               (if (i32.ge_u (array.get_u $bytes (local.get $s) (local.get $i))
                       (i32.const 128))
                   (then (local.set $n (i32.add (local.get $n) (i32.const 1)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -494,25 +494,25 @@
                (struct.new $js
                   (call $jsstring_of_string (local.get $s))))))
       (local.set $s'
-         (array.new $string (i32.const 0)
+         (array.new $bytes (i32.const 0)
             (i32.add (local.get $i) (local.get $n))))
       (local.set $i (i32.const 0))
       (local.set $n (i32.const 0))
       (loop $fill
          (if (i32.lt_u (local.get $i) (local.get $l))
             (then
-               (local.set $c (array.get_u $string (local.get $s) (local.get $i)))
+               (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
                (if (i32.lt_u (local.get $c) (i32.const 128))
                   (then
-                     (array.set $string
+                     (array.set $bytes
                         (local.get $s') (local.get $n) (local.get $c))
                      (local.set $n (i32.add (local.get $n) (i32.const 1))))
                   (else
-                     (array.set $string (local.get $s')
+                     (array.set $bytes (local.get $s')
                         (local.get $n)
                         (i32.or (i32.shr_u (local.get $c) (i32.const 6))
                            (i32.const 0xC0)))
-                     (array.set $string (local.get $s')
+                     (array.set $bytes (local.get $s')
                         (i32.add (local.get $n) (i32.const 1))
                         (i32.or (i32.const 0x80)
                            (i32.and (local.get $c) (i32.const 0x3F))))
@@ -530,7 +530,7 @@
    (func (export "caml_string_of_jsbytes")
       (param $s (ref eq)) (result (ref eq))
       (local $l i32) (local $i i32) (local $n i32) (local $c i32)
-      (local $s' (ref $string)) (local $s'' (ref $string))
+      (local $s' (ref $bytes)) (local $s'' (ref $bytes))
       (local.set $s'
          (call $string_of_jsstring
             (struct.get $js 0 (ref.cast (ref $js) (local.get $s)))))
@@ -540,14 +540,14 @@
       (loop $count
          (if (i32.lt_u (local.get $i) (local.get $l))
             (then
-               (if (i32.ge_u (array.get_u $string (local.get $s') (local.get $i))
+               (if (i32.ge_u (array.get_u $bytes (local.get $s') (local.get $i))
                       (i32.const 0xC0))
                   (then (local.set $n (i32.add (local.get $n) (i32.const 1)))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $count))))
       (if (i32.eqz (local.get $n)) (then (return (local.get $s'))))
       (local.set $s''
-         (array.new $string (i32.const 0)
+         (array.new $bytes (i32.const 0)
             (i32.sub (local.get $i) (local.get $n))))
       (local.set $i (i32.const 0))
       (local.set $n (i32.const 0))
@@ -555,19 +555,19 @@
          (if (i32.lt_u (local.get $i) (local.get $l))
             (then
                (local.set $c
-                  (array.get_u $string (local.get $s') (local.get $i)))
+                  (array.get_u $bytes (local.get $s') (local.get $i)))
                (if (i32.lt_u (local.get $c) (i32.const 0xC0))
                   (then
-                     (array.set $string
+                     (array.set $bytes
                         (local.get $s'') (local.get $n) (local.get $c))
                      (local.set $i (i32.add (local.get $i) (i32.const 1))))
                   (else
-                     (array.set $string (local.get $s'')
+                     (array.set $bytes (local.get $s'')
                         (local.get $n)
                         (i32.sub
                            (i32.add
                               (i32.shl (local.get $c) (i32.const 6))
-                              (array.get_u $string (local.get $s')
+                              (array.get_u $bytes (local.get $s')
                                  (i32.add (local.get $i) (i32.const 1))))
                            (i32.const 0x3080)))
                      (local.set $i (i32.add (local.get $i) (i32.const 2)))))
@@ -628,8 +628,8 @@
                (br $loop))))
       (local.get $l))
 
-   (global $jsError (ref $string)
-      (array.new_fixed $string 7 ;; 'jsError'
+   (global $jsError (ref $bytes)
+      (array.new_fixed $bytes 7 ;; 'jsError'
          (i32.const 106) (i32.const 115) (i32.const 69) (i32.const 114)
          (i32.const 114) (i32.const 111) (i32.const 114)))
 
@@ -653,7 +653,7 @@
                   (local.get $exn)
                   (call $unwrap
                      (call $caml_jsstring_of_string
-                        (array.new_data $string $toString
+                        (array.new_data $bytes $toString
                            (i32.const 0) (i32.const 8))))
                   (any.convert_extern (call $new_array (i32.const 0))))))))
 

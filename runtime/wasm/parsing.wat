@@ -32,16 +32,16 @@
 
    (type $float (struct (field f64)))
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
 
    (func $get (param $a (ref eq)) (param $i i32) (result i32)
-      (local $s (ref $string))
-      (local.set $s (ref.cast (ref $string) (local.get $a)))
+      (local $s (ref $bytes))
+      (local.set $s (ref.cast (ref $bytes) (local.get $a)))
       (local.set $i (i32.add (local.get $i) (local.get $i)))
       (i32.extend16_s
-         (i32.or (array.get_u $string (local.get $s) (local.get $i))
+         (i32.or (array.get_u $bytes (local.get $s) (local.get $i))
             (i32.shl
-               (array.get_u $string (local.get $s)
+               (array.get_u $bytes (local.get $s)
                   (i32.add (local.get $i) (i32.const 1)))
                (i32.const 8)))))
 
@@ -100,11 +100,11 @@
    (global $tbl_names_const i32 (i32.const 15))
    (global $tbl_names_block i32 (i32.const 16))
 
-   (func $strlen (param $s (ref $string)) (param $p i32) (result i32)
+   (func $strlen (param $s (ref $bytes)) (param $p i32) (result i32)
       (local $i i32)
       (local.set $i (local.get $p))
       (loop $loop
-         (if (i32.ne (array.get_u $string (local.get $s) (local.get $i))
+         (if (i32.ne (array.get_u $bytes (local.get $s) (local.get $i))
                (i32.const 0))
             (then
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -114,14 +114,14 @@
    (data $unknown_token "<unknown token>")
    (func $token_name
       (param $vnames (ref eq)) (param $number i32) (result (ref eq))
-      (local $names (ref $string)) (local $i i32) (local $len i32)
-      (local $name (ref $string))
-      (local.set $names (ref.cast (ref $string) (local.get $vnames)))
+      (local $names (ref $bytes)) (local $i i32) (local $len i32)
+      (local $name (ref $bytes))
+      (local.set $names (ref.cast (ref $bytes) (local.get $vnames)))
       (loop $loop
-         (if (i32.eqz (array.get_u $string (local.get $names) (local.get $i)))
+         (if (i32.eqz (array.get_u $bytes (local.get $names) (local.get $i)))
             (then
                (return
-                  (array.new_data $string $unknown_token
+                  (array.new_data $bytes $unknown_token
                      (i32.const 0) (i32.const 15)))))
          (if (i32.ne (local.get $number) (i32.const 0))
             (then
@@ -132,15 +132,15 @@
                (local.set $number (i32.sub (local.get $number) (i32.const 1)))
                (br $loop))))
       (local.set $len (call $strlen (local.get $names) (local.get $i)))
-      (local.set $name (array.new $string (i32.const 0) (local.get $len)))
-      (array.copy $string $string
+      (local.set $name (array.new $bytes (i32.const 0) (local.get $len)))
+      (array.copy $bytes $bytes
          (local.get $name) (i32.const 0)
          (local.get $names) (local.get $i) (local.get $len))
       (local.get $name))
 
    (func $output (param (ref eq))
-      (local $s (ref $string))
-      (local.set $s (ref.cast (ref $string) (local.get 0)))
+      (local $s (ref $bytes))
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
       (drop
          (call $caml_ml_output (global.get $caml_stderr)
             (local.get $s) (ref.i31 (i32.const 0))
@@ -149,14 +149,14 @@
    (func $output_nl
       (drop
          (call $caml_ml_output (global.get $caml_stderr)
-            (array.new_fixed $string 1 (i32.const 10))
+            (array.new_fixed $bytes 1 (i32.const 10))
             (ref.i31 (i32.const 0)) (ref.i31 (i32.const 1))))
       (drop (call $caml_ml_flush (global.get $caml_stderr))))
 
    (func $output_int (param i32)
       (call $output
          (call $caml_format_int
-            (array.new_fixed $string 2 (i32.const 37) (i32.const 100))
+            (array.new_fixed $bytes 2 (i32.const 37) (i32.const 100))
             (ref.i31 (local.get 0)))))
 
    (data $State "State ")
@@ -169,10 +169,10 @@
       (if (ref.test (ref i31) (local.get $tok))
          (then
             (call $output
-               (array.new_data $string $State (i32.const 0) (i32.const 6)))
+               (array.new_data $bytes $State (i32.const 0) (i32.const 6)))
             (call $output_int (local.get $state))
             (call $output
-               (array.new_data $string $read_token (i32.const 0) (i32.const 13)))
+               (array.new_data $bytes $read_token (i32.const 0) (i32.const 13)))
             (call $output
                (call $token_name
                   (array.get $block (local.get $tables)
@@ -181,10 +181,10 @@
             (call $output_nl))
          (else
             (call $output
-               (array.new_data $string $State (i32.const 0) (i32.const 6)))
+               (array.new_data $bytes $State (i32.const 0) (i32.const 6)))
             (call $output_int (local.get $state))
             (call $output
-               (array.new_data $string $read_token (i32.const 0) (i32.const 13)))
+               (array.new_data $bytes $read_token (i32.const 0) (i32.const 13)))
             (local.set $b (ref.cast (ref $block) (local.get $tok)))
             (call $output
                (call $token_name
@@ -193,25 +193,25 @@
                   (i31.get_u
                      (ref.cast (ref i31)
                         (array.get $block (local.get $b) (i32.const 0))))))
-            (call $output (array.new_fixed $string 1 (i32.const 40))) ;; "("
+            (call $output (array.new_fixed $bytes 1 (i32.const 40))) ;; "("
             (local.set $v (array.get $block (local.get $b) (i32.const 1)))
             (if (ref.test (ref i31) (local.get $v))
                (then
                   (call $output_int
                      (i31.get_s (ref.cast (ref i31) (local.get $v)))))
-            (else (if (ref.test (ref $string) (local.get $v))
+            (else (if (ref.test (ref $bytes) (local.get $v))
                (then (call $output (local.get $v)))
             (else (if (ref.test (ref $float) (local.get $v))
                (then
                   (call $output
                      (call $caml_format_float
-                        (array.new_fixed $string 2
+                        (array.new_fixed $bytes 2
                            (i32.const 37) (i32.const 103))
                         (local.get $v))))
             (else
                (call $output
-                  (array.new_fixed $string 1 (i32.const 95))))))))) ;; '_'
-            (call $output (array.new_fixed $string 1 (i32.const 41))) ;; ")"
+                  (array.new_fixed $bytes 1 (i32.const 95))))))))) ;; '_'
+            (call $output (array.new_fixed $bytes 1 (i32.const 41))) ;; ")"
             (call $output_nl))))
 
    (data $recovering_in_state "Recovering in state ")
@@ -230,42 +230,42 @@
       (local $errflag i32)
       (local $tables (ref $block)) (local $env (ref $block)) (local $cmd i32)
       (local $arg (ref $block))
-      (local $tbl_defred (ref $string))
-      (local $tbl_sindex (ref $string))
-      (local $tbl_check (ref $string))
-      (local $tbl_rindex (ref $string))
-      (local $tbl_table (ref $string))
-      (local $tbl_len (ref $string))
-      (local $tbl_lhs (ref $string))
-      (local $tbl_gindex (ref $string))
-      (local $tbl_dgoto (ref $string))
+      (local $tbl_defred (ref $bytes))
+      (local $tbl_sindex (ref $bytes))
+      (local $tbl_check (ref $bytes))
+      (local $tbl_rindex (ref $bytes))
+      (local $tbl_table (ref $bytes))
+      (local $tbl_len (ref $bytes))
+      (local $tbl_lhs (ref $bytes))
+      (local $tbl_gindex (ref $bytes))
+      (local $tbl_dgoto (ref $bytes))
       (local.set $tables (ref.cast (ref $block) (local.get $vtables)))
       (local.set $tbl_defred
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_defred))))
       (local.set $tbl_sindex
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_sindex))))
       (local.set $tbl_check
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_check))))
       (local.set $tbl_rindex
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_rindex))))
       (local.set $tbl_table
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_table))))
       (local.set $tbl_len
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_len))))
       (local.set $tbl_lhs
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_lhs))))
       (local.set $tbl_gindex
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_gindex))))
       (local.set $tbl_dgoto
-         (ref.cast (ref $string)
+         (ref.cast (ref $bytes)
             (array.get $block (local.get $tables) (global.get $tbl_dgoto))))
       (local.set $env (ref.cast (ref $block) (local.get $venv)))
       (local.set $cmd (i31.get_s (ref.cast (ref i31) (local.get $vcmd))))
@@ -456,7 +456,7 @@
                                          (if (global.get $caml_parser_trace)
                                             (then
                                                (call $output
-                                                  (array.new_data $string
+                                                  (array.new_data $bytes
                                                      $recovering_in_state
                                                      (i32.const 0)
                                                      (i32.const 20)))
@@ -469,7 +469,7 @@
                        (if (global.get $caml_parser_trace)
                           (then
                              (call $output
-                                (array.new_data $string $discarding_state
+                                (array.new_data $bytes $discarding_state
                                    (i32.const 0) (i32.const 17)))
                              (call $output_int (local.get $state1))
                              (call $output_nl)))
@@ -482,7 +482,7 @@
                              (if (global.get $caml_parser_trace)
                                 (then
                                    (call $output
-                                      (array.new_data $string
+                                      (array.new_data $bytes
                                           $no_more_states_to_discard
                                           (i32.const 0) (i32.const 25)))
                                    (call $output_nl)))
@@ -499,7 +499,7 @@
                      (if (global.get $caml_parser_trace)
                         (then
                            (call $output
-                              (array.new_data $string $discarding_last_token_read
+                              (array.new_data $bytes $discarding_last_token_read
                                  (i32.const 0) (i32.const 26)))
                            (call $output_nl)))
                      (array.set $block (local.get $env)
@@ -519,11 +519,11 @@
              (if (global.get $caml_parser_trace)
                 (then
                    (call $output
-                      (array.new_data $string $State
+                      (array.new_data $bytes $State
                          (i32.const 0) (i32.const 6)))
                    (call $output_int (local.get $state))
                    (call $output
-                      (array.new_data $string $shift_to_state
+                      (array.new_data $bytes $shift_to_state
                          (i32.const 0) (i32.const 17)))
                    (call $output_int
                       (call $get (local.get $tbl_table) (local.get $n2)))
@@ -569,10 +569,10 @@
            (if (global.get $caml_parser_trace)
               (then
                  (call $output
-                    (array.new_data $string $State (i32.const 0) (i32.const 6)))
+                    (array.new_data $bytes $State (i32.const 0) (i32.const 6)))
                  (call $output_int (local.get $state))
                  (call $output
-                    (array.new_data $string $reduce_by_rule
+                    (array.new_data $bytes $reduce_by_rule
                        (i32.const 0) (i32.const 17)))
                  (call $output_int (local.get $n))
                  (call $output_nl)))
