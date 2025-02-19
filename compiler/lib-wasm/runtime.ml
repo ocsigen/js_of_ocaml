@@ -49,7 +49,7 @@ let build ~allowed_imports ~link_options ~opt_options ~variables ~inputs ~output
       then (
         Format.eprintf "The runtime contains unknown imports:@.";
         List.iter
-          ~f:(fun { Link.Wasm_binary.module_; name } ->
+          ~f:(fun { Link.Wasm_binary.module_; name; _ } ->
             Format.eprintf "  %s %s@." module_ name)
           missing_imports;
         exit 2))
