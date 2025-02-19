@@ -29,11 +29,11 @@
 
    (import "wasm:text-decoder" "decodeStringFromUTF8Array"
       (func $decodeStringFromUTF8Array
-         (param (ref null $string)) (param i32) (param i32)
+         (param (ref null $bytes)) (param i32) (param i32)
          (result (ref extern))))
    (import "wasm:text-encoder" "encodeStringToUTF8Array"
       (func $encodeStringToUTF8Array
-         (param externref) (result (ref $string))))
+         (param externref) (result (ref $bytes))))
 
    (import "bindings" "read_string"
       (func $read_string (param i32) (result anyref)))
@@ -44,7 +44,7 @@
    (import "bindings" "append_string"
       (func $append_string (param anyref) (param anyref) (result anyref)))
 
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $wstring (array (mut i16)))
 
    (global $text_converters_available (mut i32) (i32.const 0))
@@ -64,10 +64,10 @@
             (i32.const 0)
             (call $compare_strings
                (call $decodeStringFromUTF8Array
-                  (array.new_fixed $string 1 (i32.const 0))
+                  (array.new_fixed $bytes 1 (i32.const 0))
                   (i32.const 0) (i32.const 1))
                (call $decodeStringFromUTF8Array
-                  (array.new_fixed $string 1 (i32.const 1))
+                  (array.new_fixed $bytes 1 (i32.const 1))
                    (i32.const 0) (i32.const 1)))))
       (global.set $string_builtins_available
          (i32.ne
@@ -98,9 +98,9 @@
 
    (export "jsstring_hash" (func $hash_string))
 
-   ;; Used by package zarith_stubs_js
-   (func $jsstring_of_substring (export "jsstring_of_substring")
-      (param $s (ref $string)) (param $pos i32) (param $len i32)
+   (func $jsstring_of_subbytes (export "jsstring_of_subbytes")
+      (export "jsstring_of_substring") ;; compatibility with zarith stubs
+      (param $s (ref $bytes)) (param $pos i32) (param $len i32)
       (result anyref)
       (local $i i32) (local $c i32)
       (if (global.get $text_converters_available)
@@ -118,7 +118,7 @@
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (local.set $c
-                        (array.get $string (local.get $s)
+                        (array.get $bytes (local.get $s)
                            (i32.add (local.get $pos) (local.get $i))))
                      (br_if $continue
                         (i32.ge_u (local.get $c) (i32.const 128)))
@@ -130,14 +130,14 @@
                (any.convert_extern
                   (call $fromCharCodeArray (global.get $buffer)
                      (i32.const 0) (local.get $len))))))
-      (return_call $jsstring_of_substring_fallback
+      (return_call $jsstring_of_subbytes_fallback
          (local.get $s) (local.get $pos) (local.get $len)))
 
-   (func (export "jsstring_of_string") (param $s (ref $string)) (result anyref)
-      (return_call $jsstring_of_substring
+   (func (export "jsstring_of_bytes") (param $s (ref $bytes)) (result anyref)
+      (return_call $jsstring_of_subbytes
          (local.get $s) (i32.const 0) (array.len (local.get $s))))
 
-   (func (export "string_of_jsstring") (param $s anyref) (result (ref $string))
+   (func (export "bytes_of_jsstring") (param $s anyref) (result (ref $bytes))
       (if (global.get $text_converters_available)
          (then
             (return_call $encodeStringToUTF8Array
@@ -151,19 +151,19 @@
    (global $buffer_size i32 (i32.const 65536))
 
    (func $write_to_buffer
-      (param $s (ref $string)) (param $pos i32) (param $len i32)
+      (param $s (ref $bytes)) (param $pos i32) (param $len i32)
       (local $i i32)
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
                (i32.store8 (local.get $i)
-                  (array.get_u $string (local.get $s)
+                  (array.get_u $bytes (local.get $s)
                      (i32.add (local.get $pos) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop)))))
 
-   (func $jsstring_of_substring_fallback
-      (param $s (ref $string)) (param $pos i32) (param $len i32)
+   (func $jsstring_of_subbytes_fallback
+      (param $s (ref $bytes)) (param $pos i32) (param $len i32)
       (result anyref)
       (local $s' anyref)
       (local $continued i32)
@@ -195,30 +195,30 @@
       (local.get $s'))
 
    (func $read_from_buffer
-      (param $s (ref $string)) (param $pos i32) (param $len i32)
+      (param $s (ref $bytes)) (param $pos i32) (param $len i32)
       (local $i i32)
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
-               (array.set $string (local.get $s)
+               (array.set $bytes (local.get $s)
                   (i32.add (local.get $pos) (local.get $i))
                   (i32.load8_u (local.get $i)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop)))))
 
    (type $stack
-      (struct (field $s (ref $string)) (field $next (ref null $stack))))
+      (struct (field $s (ref $bytes)) (field $next (ref null $stack))))
    (global $stack (mut (ref null $stack)) (ref.null $stack))
 
-   (func $string_of_jsstring_fallback (param $s anyref) (result (ref $string))
+   (func $string_of_jsstring_fallback (param $s anyref) (result (ref $bytes))
       (local $ofs i32) (local $len i32)
-      (local $s' (ref $string)) (local $s'' (ref $string))
+      (local $s' (ref $bytes)) (local $s'' (ref $bytes))
       (local $item (ref $stack))
       (local.set $len (call $write_string (local.get $s)))
       (if (ref.is_null (global.get $stack))
          (then
             (local.set $s'
-               (array.new $string (i32.const 0) (local.get $len)))
+               (array.new $bytes (i32.const 0) (local.get $len)))
             (call $read_from_buffer
                (local.get $s') (i32.const 0) (local.get $len))
             (return (local.get $s'))))
@@ -232,7 +232,7 @@
                (br_on_null $done (struct.get $stack $next (local.get $item))))
             (br $loop)))
       (local.set $s'
-         (array.new $string (i32.const 0)
+         (array.new $bytes (i32.const 0)
             (i32.add (local.get $len) (local.get $ofs))))
       (call $read_from_buffer
          (local.get $s') (local.get $ofs) (local.get $len))
@@ -243,7 +243,7 @@
             (local.set $s'' (struct.get $stack $s (local.get $item)))
             (local.set $len (array.len (local.get $s'')))
             (local.set $ofs (i32.sub (local.get $ofs) (local.get $len)))
-            (array.copy $string $string
+            (array.copy $bytes $bytes
                (local.get $s') (local.get $ofs)
                (local.get $s'') (i32.const 0)
                (local.get $len))
@@ -252,9 +252,9 @@
             (br $loop)))
       (local.get $s'))
 
-   (func (export "caml_extract_string") (param $len i32)
-      (local $s (ref $string))
-      (local.set $s (array.new $string (i32.const 0) (local.get $len)))
+   (func (export "caml_extract_bytes") (param $len i32)
+      (local $s (ref $bytes))
+      (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $read_from_buffer (local.get $s) (i32.const 0) (local.get $len))
       (global.set $stack (struct.new $stack (local.get $s) (global.get $stack))))
 )

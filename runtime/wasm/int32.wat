@@ -18,7 +18,7 @@
 (module
    (import "ints" "parse_int"
       (func $parse_int
-         (param (ref eq)) (param i32) (param (ref $string)) (result i32)))
+         (param (ref eq)) (param i32) (param (ref $bytes)) (result i32)))
    (import "ints" "format_int"
       (func $format_int
          (param (ref eq)) (param i32) (param i32) (result (ref eq))))
@@ -32,7 +32,7 @@
    (import "marshal" "caml_deserialize_int_4"
       (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
 
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
@@ -44,7 +44,7 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
-         (field $id (ref $string))
+         (field $id (ref $bytes))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -56,7 +56,7 @@
 
    (global $int32_ops (export "int32_ops") (ref $custom_operations)
       (struct.new $custom_operations
-         (array.new_fixed $string 2 (i32.const 95) (i32.const 105)) ;; "_i"
+         (array.new_fixed $bytes 2 (i32.const 95) (i32.const 105)) ;; "_i"
          (ref.func $int32_cmp)
          (ref.null $compare)
          (ref.func $int32_hash)
@@ -117,8 +117,8 @@
          (i32.rotl (i32.and (local.get $i) (i32.const 0xFF00FF00))
                    (i32.const 8))))
 
-   (global $INT32_ERRMSG (ref $string)
-      (array.new_fixed $string 15 ;; "Int32.of_string"
+   (global $INT32_ERRMSG (ref $bytes)
+      (array.new_fixed $bytes 15 ;; "Int32.of_string"
          (i32.const 73) (i32.const 110) (i32.const 116) (i32.const 51)
          (i32.const 50) (i32.const 46) (i32.const 111) (i32.const 102)
          (i32.const 95) (i32.const 115) (i32.const 116) (i32.const 114)
@@ -137,7 +137,7 @@
 
    (global $nativeint_ops (export "nativeint_ops") (ref $custom_operations)
       (struct.new $custom_operations
-         (array.new_fixed $string 2 (i32.const 95) (i32.const 110)) ;; "_n"
+         (array.new_fixed $bytes 2 (i32.const 95) (i32.const 110)) ;; "_n"
          (ref.func $int32_cmp)
          (ref.null $compare)
          (ref.func $int32_hash)
@@ -160,7 +160,7 @@
       (if (i32.ne (call $caml_deserialize_uint_1 (local.get $s)) (i32.const 1))
          (then
             (call $caml_failwith
-               (array.new_data $string $integer_too_large
+               (array.new_data $bytes $integer_too_large
                   (i32.const 0) (i32.const 43)))))
       (tuple.make 2
          (struct.new $int32 (global.get $nativeint_ops)
@@ -171,8 +171,8 @@
       (param $i i32) (result (ref eq))
       (struct.new $int32 (global.get $nativeint_ops) (local.get $i)))
 
-   (global $NATIVEINT_ERRMSG (ref $string)
-      (array.new_fixed $string 16 ;; "Nativeint.of_string"
+   (global $NATIVEINT_ERRMSG (ref $bytes)
+      (array.new_fixed $bytes 16 ;; "Nativeint.of_string"
          (i32.const 78) (i32.const 97) (i32.const 116) (i32.const 105)
          (i32.const 118) (i32.const 101) (i32.const 46) (i32.const 111)
          (i32.const 102) (i32.const 95) (i32.const 115) (i32.const 116)

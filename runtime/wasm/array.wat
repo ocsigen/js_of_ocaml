@@ -20,7 +20,7 @@
       (func $caml_invalid_argument (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
-   (type $string (array (mut i8)))
+   (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
 
@@ -36,7 +36,7 @@
       (if (i32.ge_u (local.get $sz) (i32.const 0xfffffff))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $Array_make
+               (array.new_data $bytes $Array_make
                                (i32.const 0) (i32.const 10)))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (drop (block $not_float (result (ref eq))
@@ -58,7 +58,7 @@
       (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $Array_make
+               (array.new_data $bytes $Array_make
                                (i32.const 0) (i32.const 10)))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (local.set $f
@@ -75,7 +75,7 @@
       (if (i32.ge_u (local.get $sz) (i32.const 0x7ffffff))
          (then
             (call $caml_invalid_argument
-               (array.new_data $string $Array_make
+               (array.new_data $bytes $Array_make
                                (i32.const 0) (i32.const 10)))))
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (array.new $float_array (f64.const 0) (local.get $sz)))
