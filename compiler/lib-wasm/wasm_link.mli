@@ -23,4 +23,5 @@ type input =
   ; opt_source_map : Source_map.Standard.t option
   }
 
-val f : input list -> output_file:string -> Source_map.t
+val f :
+  ?filter_export:(string -> bool) -> input list -> output_file:string -> Source_map.t

@@ -51,7 +51,7 @@
   (wasm_of_ocaml
    (flags
     (:standard --pretty --enable wasi))
-   (compilation_mode whole_program))
+   (compilation_mode separate))
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
