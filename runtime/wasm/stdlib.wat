@@ -22,11 +22,8 @@
    (import "string" "caml_string_equal"
       (func $caml_string_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "jslib" "caml_string_of_jsstring"
-      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
@@ -40,10 +37,11 @@
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "printexc" "caml_format_exception"
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
-   (import "sys" "ocaml_exit" (tag $ocaml_exit (param i32)))
+   (import "sys" "ocaml_exit" (tag $ocaml_exit))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
    (import "bindings" "exit" (func $exit (param i32)))
-   (import "bindings" "throw" (func $throw (param externref)))
 
    (type $block (array (mut (ref eq))))
    (type $string (array (mut i8)))
@@ -190,7 +188,7 @@
    (global $uncaught_exception (mut externref) (ref.null extern))
 
    (func $reraise_exception (result (ref eq))
-      (call $throw (global.get $uncaught_exception))
+      (throw $javascript_exception (global.get $uncaught_exception))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_handle_uncaught_exception") (param $exn externref)
@@ -202,8 +200,7 @@
       (try
          (do
             (drop (call_ref $func (ref.cast (ref $func) (local.get $start)))))
-         (catch $ocaml_exit
-            (call $exit (pop i32)))
+         (catch $ocaml_exit)
          (catch $ocaml_exception
             (local.set $exn (pop (ref eq)))
             (block $exit
@@ -220,8 +217,8 @@
                               (local.get $exn)
                               (ref.i31 (i32.const 0)))))
                      (catch $ocaml_exit
-                        (call $exit (pop i32))))
-                     (br $exit))
+                        (return)))
+                  (br $exit))
                (block $null
                   (drop
                      (call $caml_callback_1
@@ -240,5 +237,5 @@
                               (call $caml_format_exception (local.get $exn))
                               (array.new_fixed $string 1
                                  (i32.const 10)))))))) ;; `\n`
-               (call $exit (i32.const 2)))))
+            (call $exit (i32.const 2)))))
 )
