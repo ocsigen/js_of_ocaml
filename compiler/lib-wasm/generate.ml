@@ -1773,6 +1773,38 @@ module Generate (Target : Target_sig.S) = struct
       :: context.other_fields;
     name
 
+  let add_missing_primitives ~context l =
+    let failwith_desc = W.Fun { params = [ Type.value ]; result = [] } in
+    List.iter l ~f:(fun (exported_name, arity) ->
+        let name = Code.Var.fresh_n exported_name in
+        let locals, body =
+          function_body
+            ~context
+            ~param_names:[]
+            ~body:
+              (let* failwith =
+                 register_import ~import_module:"env" ~name:"caml_failwith" failwith_desc
+               in
+               let* msg =
+                 Constant.translate
+                   ~unboxed:false
+                   (String (exported_name ^ " not implemented"))
+               in
+               let* () = instr (CallInstr (failwith, [ msg ])) in
+               push Value.unit)
+        in
+        context.other_fields <-
+          W.Function
+            { name
+            ; exported_name = Some exported_name
+            ; typ = None
+            ; signature = Type.primitive_type arity
+            ; param_names = []
+            ; locals
+            ; body
+            }
+          :: context.other_fields)
+
   let entry_point context toplevel_fun entry_name =
     let signature, param_names, body = entry_point ~toplevel_fun in
     let locals, body = function_body ~context ~param_names ~body in
@@ -1955,6 +1987,10 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_d
 let add_start_function = G.add_start_function
 
 let add_init_function = G.add_init_function
+
+let add_missing_primitives =
+  let module G = Generate (Gc_target) in
+  G.add_missing_primitives
 
 let output ch ~context =
   let t = Timer.make () in
