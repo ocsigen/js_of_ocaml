@@ -36,6 +36,7 @@ let common_options () =
     ; "--enable-bulk-memory"
     ; "--enable-nontrapping-float-to-int"
     ; "--enable-strings"
+    ; "--enable-multimemory" (* To keep wasm-merge happy *)
     ]
   in
   if Config.Flag.pretty () then "-g" :: l else l
@@ -45,18 +46,20 @@ let opt_flag flag v =
   | None -> []
   | Some v -> [ flag; Filename.quote v ]
 
-let link ~runtime_files ~input_files ~opt_output_sourcemap ~output_file =
+type link_input =
+  { module_name : string
+  ; file : string
+  }
+
+let link ?options ~inputs ~opt_output_sourcemap ~output_file () =
   command
     ("wasm-merge"
     :: (common_options ()
+       @ Option.value ~default:[] options
        @ List.flatten
            (List.map
-              ~f:(fun runtime_file -> [ Filename.quote runtime_file; "env" ])
-              runtime_files)
-       @ List.flatten
-           (List.map
-              ~f:(fun input_file -> [ Filename.quote input_file; "OCaml" ])
-              input_files)
+              ~f:(fun { file; module_name } -> [ Filename.quote file; module_name ])
+              inputs)
        @ [ "-o"; Filename.quote output_file ]
        @ opt_flag "--output-source-map" opt_output_sourcemap))
 
@@ -109,13 +112,19 @@ let dead_code_elimination
   filter_unused_primitives primitives usage_file
 
 let optimization_options =
-  [| [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-   ; [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-   ; [ "-O3"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+  [| [ "-O2"; "--skip-pass=inlining-optimizing" ]
+   ; [ "-O2"; "--skip-pass=inlining-optimizing" ]
+   ; [ "-O3"; "--skip-pass=inlining-optimizing" ]
   |]
 
-let optimize ~profile ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~output_file
-    =
+let optimize
+    ~profile
+    ?options
+    ~opt_input_sourcemap
+    ~input_file
+    ~opt_output_sourcemap
+    ~output_file
+    () =
   let level =
     match profile with
     | None -> 1
@@ -124,7 +133,8 @@ let optimize ~profile ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~ou
   command
     ("wasm-opt"
      :: (common_options ()
-        @ optimization_options.(level - 1)
+        @ (if Config.Flag.trap_on_exception () then [] else [ "--traps-never-happen" ])
+        @ Option.value ~default:optimization_options.(level - 1) options
         @ [ Filename.quote input_file; "-o"; Filename.quote output_file ])
     @ opt_flag "--input-source-map" opt_input_sourcemap
     @ opt_flag "--output-source-map" opt_output_sourcemap)

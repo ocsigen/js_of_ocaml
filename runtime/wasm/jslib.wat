@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+(@if (not wasi)
+(@then
    (import "bindings" "identity" (func $to_float (param anyref) (result f64)))
    (import "bindings" "identity" (func $from_float (param f64) (result anyref)))
    (import "bindings" "identity" (func $to_bool (param anyref) (result i32)))
@@ -75,6 +77,8 @@
       (func $wrap_fun_arguments (param anyref) (result anyref)))
    (import "fail" "caml_failwith_tag"
       (func $caml_failwith_tag (result (ref eq))))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
    (import "stdlib" "caml_named_value"
       (func $caml_named_value (param (ref eq)) (result (ref null eq))))
    (import "obj" "caml_callback_1"
@@ -627,12 +631,9 @@
                (br $loop))))
       (local.get $l))
 
-   (global $jsError (ref $bytes)
-      (array.new_fixed $bytes 7 ;; 'jsError'
-         (i32.const 106) (i32.const 115) (i32.const 69) (i32.const 114)
-         (i32.const 114) (i32.const 111) (i32.const 114)))
+   (@string $jsError "jsError")
 
-   (data $toString "toString")
+   (@string $toString "toString")
 
    (func (export "caml_wrap_exception") (param externref) (result (ref eq))
       (local $exn anyref)
@@ -651,9 +652,7 @@
                (call $meth_call
                   (local.get $exn)
                   (call $unwrap
-                     (call $caml_jsstring_of_bytes
-                        (array.new_data $bytes $toString
-                           (i32.const 0) (i32.const 8))))
+                     (call $caml_jsstring_of_bytes (global.get $toString)))
                   (any.convert_extern (call $new_array (i32.const 0))))))))
 
    (func (export "caml_js_error_option_of_exception")
@@ -671,6 +670,11 @@
                         (array.get $block (local.get $exn) (i32.const 2))))))))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_throw_js_exception")
+      (param $exn (ref eq)) (result (ref eq))
+      (throw $javascript_exception
+         (extern.convert_any (call $unwrap (local.get $exn)))))
+
    (func (export "caml_js_error_of_exception")
       (param (ref eq)) (result (ref eq))
       (local $exn (ref $block))
@@ -684,4 +688,5 @@
                   (return
                      (array.get $block (local.get $exn) (i32.const 2)))))))
       (call $wrap (ref.null any)))
+))
 )

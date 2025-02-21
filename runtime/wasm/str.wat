@@ -507,7 +507,7 @@
       ;; reject
       (ref.i31 (i32.const 0)))
 
-   (data $search_forward "Str.search_forward")
+   (@string $search_forward "Str.search_forward")
 
    (func (export "re_search_forward")
       (param $re (ref eq)) (param $vs (ref eq)) (param $vpos (ref eq))
@@ -520,10 +520,7 @@
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
-         (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $search_forward
-                  (i32.const 0) (i32.const 18)))))
+         (then (call $caml_invalid_argument (global.get $search_forward))))
       (loop $loop
          (local.set $res
             (call $re_match
@@ -535,7 +532,7 @@
          (br_if $loop (i32.le_u (local.get $pos) (local.get $len))))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
-   (data $search_backward "Str.search_backward")
+   (@string $search_backward "Str.search_backward")
 
    (func (export "re_search_backward")
       (param $re (ref eq)) (param $vs (ref eq)) (param $vpos (ref eq))
@@ -549,9 +546,7 @@
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $search_backward
-                  (i32.const 0) (i32.const 19)))))
+            (call $caml_invalid_argument (global.get $search_backward))))
       (loop $loop
          (local.set $res
             (call $re_match
@@ -563,7 +558,7 @@
          (br_if $loop (i32.ge_s (local.get $pos) (i32.const 0))))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
-   (data $string_match "Str.string_match")
+   (@string $string_match "Str.string_match")
 
    (func (export "re_string_match")
       (param $re (ref eq)) (param $vs (ref eq)) (param $vpos (ref eq))
@@ -576,10 +571,7 @@
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
-         (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $string_match
-                  (i32.const 0) (i32.const 16)))))
+         (then (call $caml_invalid_argument (global.get $string_match))))
       (local.set $res
          (call $re_match
             (local.get $re) (local.get $s) (local.get $pos) (i32.const 0)))
@@ -588,7 +580,7 @@
             (return (local.get $res))))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
-   (data $string_partial_match "Str.string_partial_match")
+   (@string $string_partial_match "Str.string_partial_match")
 
    (func (export "re_partial_match")
       (param $re (ref eq)) (param $vs (ref eq)) (param $vpos (ref eq))
@@ -602,9 +594,7 @@
       (local.set $len (array.len (local.get $s)))
       (if (i32.gt_u (local.get $pos) (local.get $len))
          (then
-            (call $caml_invalid_argument
-               (array.new_data $bytes $string_partial_match
-                  (i32.const 0) (i32.const 24)))))
+            (call $caml_invalid_argument (global.get $string_partial_match))))
       (local.set $res
          (call $re_match
             (local.get $re) (local.get $s) (local.get $pos) (i32.const 1)))
@@ -613,8 +603,8 @@
             (return (local.get $res))))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
-   (data $illegal_backslash "Str.replace: illegal backslash sequence")
-   (data $unmatched_group "Str.replace: reference to unmatched group")
+   (@string $illegal_backslash "Str.replace: illegal backslash sequence")
+   (@string $unmatched_group "Str.replace: reference to unmatched group")
 
    (func (export "re_replacement_text")
       (param $vrepl (ref eq)) (param $vgroups (ref eq)) (param $vorig (ref eq))
@@ -640,10 +630,7 @@
                      (local.set $len (i32.add (local.get $len) (i32.const 1)))
                      (br $loop)))
                (if (i32.eq (local.get $i) (local.get $l))
-                  (then
-                     (call $caml_failwith
-                        (array.new_data $bytes $illegal_backslash
-                           (i32.const 0) (i32.const 39)))))
+                  (then (call $caml_failwith (global.get $illegal_backslash))))
                (local.set $c
                   (array.get_u $bytes (local.get $repl) (local.get $i)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
@@ -659,10 +646,7 @@
                (local.set $c (i32.shl (local.get $c) (i32.const 1)))
                (if (i32.gt_u (i32.add (local.get $c) (i32.const 1))
                       (array.len (local.get $groups)))
-                  (then
-                     (call $caml_failwith
-                        (array.new_data $bytes $unmatched_group
-                           (i32.const 0) (i32.const 41)))))
+                  (then (call $caml_failwith (global.get $unmatched_group))))
                (local.set $start
                   (i31.get_s
                      (ref.cast (ref i31)
@@ -674,10 +658,7 @@
                         (array.get $block (local.get $groups)
                            (i32.add (local.get $c) (i32.const 2))))))
                (if (i32.eq (local.get $start) (i32.const -1))
-                  (then
-                     (call $caml_failwith
-                        (array.new_data $bytes $unmatched_group
-                           (i32.const 0) (i32.const 41)))))
+                  (then (call $caml_failwith (global.get $unmatched_group))))
                (local.set $len
                    (i32.add (local.get $len)
                       (i32.sub (local.get $end) (local.get $start))))
@@ -718,10 +699,7 @@
                (local.set $c (i32.shl (local.get $c) (i32.const 1)))
                (if (i32.gt_u (i32.add (local.get $c) (i32.const 1))
                       (array.len (local.get $groups)))
-                  (then
-                     (call $caml_failwith
-                        (array.new_data $bytes $unmatched_group
-                           (i32.const 0) (i32.const 41)))))
+                  (then (call $caml_failwith (global.get $unmatched_group))))
                (local.set $start
                   (i31.get_s
                      (ref.cast (ref i31)

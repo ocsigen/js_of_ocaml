@@ -117,8 +117,7 @@
                        (then
                            (call $add_string (local.get $buf)
                               (call $caml_format_int
-                                  (array.new_fixed $bytes 2
-                                     (i32.const 37) (i32.const 100)) ;; %d
+                                  (@string "%d")
                                   (ref.cast (ref i31) (local.get $v)))))
                     (else (if (ref.test (ref $bytes) (local.get $v))
                        (then

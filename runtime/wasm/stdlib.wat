@@ -31,7 +31,6 @@
    (import "obj" "caml_callback_2"
       (func $caml_callback_2
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "bindings" "write" (func $write (param i32) (param anyref)))
    (import "string" "caml_string_concat"
       (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -39,9 +38,26 @@
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
+(@if wasi
+(@then
+   (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
+   (import "wasi_snapshot_preview1" "fd_write"
+      (func $fd_write (param i32 i32 i32 i32) (result i32)))
+   (import "wasi_memory" "get_buffer" (func $get_buffer (result i32)))
+   (import "wasi_memory" "write_string_to_memory"
+      (func $write_string_to_memory (param i32 i32 (ref eq)) (result i32)))
+   (import "wasi_memory" "release_memory"
+      (func $release_memory (param i32 i32)))
+   (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
+   (import "libc" "memory" (memory 2))
+)
+(@else
+   (import "bindings" "write" (func $write (param i32) (param anyref)))
+   (import "bindings" "exit" (func $exit (param i32)))
+   (import "bindings" "throw" (func $throw (param externref)))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-   (import "bindings" "exit" (func $exit (param i32)))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -181,12 +197,14 @@
 
    (type $func (func (result (ref eq))))
 
-   (data $fatal_error "Fatal error: exception ")
-   (data $handle_uncaught_exception "Printexc.handle_uncaught_exception")
-   (data $do_at_exit "Pervasives.do_at_exit")
+   (@string $fatal_error "Fatal error: exception ")
+   (@string $handle_uncaught_exception "Printexc.handle_uncaught_exception")
+   (@string $do_at_exit "Pervasives.do_at_exit")
 
    (global $uncaught_exception (mut externref) (ref.null extern))
 
+(@if (not wasi)
+(@then
    (func $reraise_exception (result (ref eq))
       (throw $javascript_exception (global.get $uncaught_exception))
       (ref.i31 (i32.const 0)))
@@ -194,9 +212,18 @@
    (func (export "caml_handle_uncaught_exception") (param $exn externref)
       (global.set $uncaught_exception (local.get $exn))
       (call $caml_main (ref.func $reraise_exception)))
+))
 
    (func $caml_main (export "caml_main") (param $start (ref func))
       (local $exn (ref eq))
+      (local $msg (ref eq))
+(@if wasi
+(@then
+      (local $buffer i32) (local $i i32) (local $len i32)
+      (local $buf i32) (local $remaining i32)
+      (local $iovs i32) (local $iovs_len i32) (local $nwritten i32)
+      (local $res i32)
+))
       (try
          (do
             (drop (call_ref $func (ref.cast (ref $func) (local.get $start)))))
@@ -211,9 +238,7 @@
                            (call $caml_callback_2
                               (br_on_null $not_registered
                                  (call $caml_named_value
-                                     (array.new_data $bytes
-                                        $handle_uncaught_exception
-                                        (i32.const 0) (i32.const 34))))
+                                     (global.get $handle_uncaught_exception)))
                               (local.get $exn)
                               (ref.i31 (i32.const 0)))))
                      (catch $ocaml_exit
@@ -223,19 +248,50 @@
                   (drop
                      (call $caml_callback_1
                         (br_on_null $null
-                           (call $caml_named_value
-                              (array.new_data $bytes $do_at_exit
-                                 (i32.const 0) (i32.const 21))))
+                           (call $caml_named_value (global.get $do_at_exit)))
                         (ref.i31 (i32.const 0)))))
+               (local.set $msg
+                  (call $caml_string_concat
+                     (global.get $fatal_error)
+                     (call $caml_string_concat
+                        (call $caml_format_exception (local.get $exn))
+                        (@string "\n"))))
+(@if wasi
+(@then
+               (local.set $len
+                  (array.len (ref.cast (ref $bytes) (local.get $msg))))
+               (local.set $buffer (call $get_buffer))
+               (local.set $nwritten (local.get $buffer))
+               (local.set $iovs (i32.add (local.get $buffer) (i32.const 4)))
+               (local.set $iovs_len (i32.const 1))
+               (local.set $buffer (i32.add (local.get $buffer) (i32.const 12)))
+               (local.set $buf
+                  (call $write_string_to_memory
+                     (local.get $buf) (global.get $IO_BUFFER_SIZE)
+                     (local.get $msg)))
+               (local.set $remaining (local.get $buf))
+               (loop $write
+                  (i32.store (local.get $iovs) (local.get $remaining))
+                  (i32.store offset=4 (local.get $iovs) (local.get $len))
+                  (local.set $res
+                     (call $fd_write
+                        (i32.const 2) (local.get $iovs) (local.get $iovs_len)
+                        (local.get $nwritten)))
+                  (if (i32.eqz (local.get $res))
+                     (then
+                        (local.set $len
+                           (i32.sub (local.get $len)
+                              (i32.load (local.get $nwritten))))
+                        (local.set $remaining
+                           (i32.add (local.get $remaining)
+                              (i32.load (local.get $nwritten))))
+                        (br_if $write (local.get $len)))))
+               (call $release_memory (local.get $buffer) (local.get $buf))
+)
+(@else
                (call $write (i32.const 2)
                   (call $unwrap
-                     (call $caml_jsstring_of_string
-                        (call $caml_string_concat
-                           (array.new_data $bytes $fatal_error
-                              (i32.const 0) (i32.const 23))
-                           (call $caml_string_concat
-                              (call $caml_format_exception (local.get $exn))
-                              (array.new_fixed $bytes 1
-                                 (i32.const 10)))))))) ;; `\n`
-            (call $exit (i32.const 2)))))
-)
+                     (call $caml_jsstring_of_string (local.get $msg))))
+))
+            )
+            (call $exit (i32.const 2))))))
