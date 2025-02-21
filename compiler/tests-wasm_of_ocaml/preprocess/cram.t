@@ -184,3 +184,28 @@ Bad strings
   File "-", line 1, characters 13-14:
   Expecting a closing parenthesis.
   [1]
+
+Bad characters
+
+  $ echo '(@char "")' | wasm_of_ocaml pp
+  File "-", line 1, characters 7-9:
+  Expecting an ASCII character
+  [1]
+
+
+  $ echo '(@char "aa")' | wasm_of_ocaml pp
+  File "-", line 1, characters 7-11:
+  Expecting an ASCII character
+  [1]
+
+
+  $ echo '(@char "é")' | wasm_of_ocaml pp
+  File "-", line 1, characters 7-10:
+  Expecting an ASCII character
+  [1]
+
+
+  $ echo '(@char "\80")' | wasm_of_ocaml pp
+  File "-", line 1, characters 7-12:
+  Expecting an ASCII character
+  [1]

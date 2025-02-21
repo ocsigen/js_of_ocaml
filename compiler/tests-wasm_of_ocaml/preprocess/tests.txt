@@ -72,3 +72,8 @@
 (@string "\\\'\28\n")
 (@if (and) (@then (@string "abcd")))
 (@if (or) (@then) (@else (@string "abcd")))
+
+;; chars
+(@string "0")
+(@string "\n")
+

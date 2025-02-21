@@ -60,7 +60,7 @@ To form conditional expressions, the following operators are available:
 - comparisons: {{{=}}}, {{{>}}}, {{{>=}}}, {{{<}}}, {{{<=}}}, {{{<>}}};
 - boolean operators: {{{and}}}, {{{or}}}, {{{not}}}
 
-It also provides some syntactic sugar to write strings. The expression{{{(@string "ab")}}} is expanded into {{{(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))}}}. The statement {{{(@string $s "ab")}}} is an abbreviation for {{{(global $s (ref eq) (@string "ab"))}}}.
+It also provides some syntactic sugar for strings and ASCII characters. The expression {{{(@string "ab")}}} is expanded into {{{(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))}}}. The statement {{{(@string $s "ab")}}} is an abbreviation for {{{(global $s (ref eq) (@string "ab"))}}}. The expression {{{(@char "a")}}} is expanded to {{{(i32.const 92)}}}.
 
 To provide a better debugging experience, the function export name is used to name functions with no explicit id: {{{(func (export "foo") ...)}}}} is expanded into {{{(func $foo (export "foo") ...)}}}}.
 

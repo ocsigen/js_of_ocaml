@@ -109,7 +109,7 @@
            (local.set $len (array.len (local.get $bucket)))
            (if (i32.lt_u (local.get $i) (local.get $len))
               (then
-                 (call $add_char (local.get $buf) (i32.const 40)) ;; '\('
+                 (call $add_char (local.get $buf) (@char "("))
                  (loop $loop
                     (local.set $v
                        (array.get $block (local.get $bucket) (local.get $i)))
@@ -121,23 +121,18 @@
                                   (ref.cast (ref i31) (local.get $v)))))
                     (else (if (ref.test (ref $bytes) (local.get $v))
                        (then
-                          (call $add_char (local.get $buf)
-                             (i32.const 34)) ;; '\"'
+                          (call $add_char (local.get $buf) (@char "\""))
                           (call $add_string (local.get $buf) (local.get $v))
-                          (call $add_char (local.get $buf)
-                             (i32.const 34))) ;; '\"'
+                          (call $add_char (local.get $buf) (@char "\"")))
                     (else
-                       (call $add_char (local.get $buf)
-                          (i32.const 95)))))) ;; '_'
+                       (call $add_char (local.get $buf) (@char "_"))))))
                     (local.set $i (i32.add (local.get $i) (i32.const 1)))
                     (if (i32.lt_u (local.get $i) (local.get $len))
                        (then
-                          (call $add_char (local.get $buf)
-                             (i32.const 44)) ;; ','
-                          (call $add_char (local.get $buf)
-                             (i32.const 32)) ;; ' '
+                          (call $add_char (local.get $buf) (@char ","))
+                          (call $add_char (local.get $buf) (@char " "))
                           (br $loop))))
-                 (call $add_char (local.get $buf) (i32.const 41)))) ;; '\)'
+                 (call $add_char (local.get $buf) (@char ")"))))
             (local.set $s
                (array.new $bytes (i32.const 0)
                   (struct.get $buffer 0 (local.get $buf))))

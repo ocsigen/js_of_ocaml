@@ -261,7 +261,7 @@
                        ;; BOL
                        (br_if $continue (i32.eqz (local.get $pos)))
                        (br_if $continue
-                          (i32.eq (i32.const 10) ;; '\n'
+                          (i32.eq (@char "\n")
                              (array.get_u $bytes (local.get $s)
                                 (i32.sub (local.get $pos) (i32.const 1)))))
                        (br $backtrack))
@@ -269,7 +269,7 @@
                       (br_if $continue
                          (i32.eq (local.get $pos) (local.get $len)))
                       (br_if $continue
-                         (i32.eq (i32.const 10) ;; '\n'
+                         (i32.eq (@char "\n")
                             (array.get_u $bytes (local.get $s)
                                (local.get $pos))))
                       (br $backtrack))
@@ -625,7 +625,7 @@
                (local.set $c
                   (array.get_u $bytes (local.get $repl) (local.get $i)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (if (i32.ne (local.get $c) (i32.const 92)) ;; '\\'
+               (if (i32.ne (local.get $c) (@char "\\"))
                   (then
                      (local.set $len (i32.add (local.get $len) (i32.const 1)))
                      (br $loop)))
@@ -634,11 +634,11 @@
                (local.set $c
                   (array.get_u $bytes (local.get $repl) (local.get $i)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (if (i32.eq (local.get $c) (i32.const 92)) ;; '\\'
+               (if (i32.eq (local.get $c) (@char "\\"))
                   (then
                      (local.set $len (i32.add (local.get $len) (i32.const 1)))
                      (br $loop)))
-               (local.set $c (i32.sub (local.get $c) (i32.const 48))) ;; '0'
+               (local.set $c (i32.sub (local.get $c) (@char "0")))
                (if (i32.gt_u (local.get $c) (i32.const 9))
                   (then
                      (local.set $len (i32.add (local.get $len) (i32.const 2)))
@@ -671,7 +671,7 @@
                (local.set $c
                   (array.get_u $bytes (local.get $repl) (local.get $i)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (if (i32.ne (local.get $c) (i32.const 92)) ;; '\\'
+               (if (i32.ne (local.get $c) (@char "\\"))
                   (then
                      (array.set $bytes (local.get $res) (local.get $j)
                         (local.get $c))
@@ -680,20 +680,20 @@
                (local.set $c
                   (array.get_u $bytes (local.get $repl) (local.get $i)))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
-               (if (i32.eq (local.get $c) (i32.const 92)) ;; '\\'
+               (if (i32.eq (local.get $c) (@char "\\"))
                   (then
                      (array.set $bytes (local.get $res) (local.get $j)
                         (local.get $c))
                      (local.set $j (i32.add (local.get $j) (i32.const 1)))
                      (br $loop)))
-               (local.set $c (i32.sub (local.get $c) (i32.const 48))) ;; '0'
+               (local.set $c (i32.sub (local.get $c) (@char "0")))
                (if (i32.gt_u (local.get $c) (i32.const 9))
                   (then
                      (array.set $bytes (local.get $res) (local.get $j)
-                        (i32.const 92))
+                        (@char "\\"))
                      (array.set $bytes (local.get $res)
                         (i32.add (local.get $j) (i32.const 1))
-                        (i32.add (local.get $c) (i32.const 48)))
+                        (i32.add (local.get $c) (@char "0")))
                      (local.set $j (i32.add (local.get $j) (i32.const 2)))
                      (br $loop)))
                (local.set $c (i32.shl (local.get $c) (i32.const 1)))
