@@ -131,22 +131,32 @@ let link_and_optimize
   primitives
 
 let link_runtime ~profile runtime_wasm_files output_file =
-  Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
-  @@ fun runtime_file ->
-  Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
-  Fs.with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
-  @@ fun temp_file ->
-  Binaryen.link
-    ~opt_output_sourcemap:None
-    ~runtime_files:(runtime_file :: runtime_wasm_files)
-    ~input_files:[]
-    ~output_file:temp_file;
-  Binaryen.optimize
-    ~profile
-    ~opt_input_sourcemap:None
-    ~opt_output_sourcemap:None
-    ~input_file:temp_file
-    ~output_file
+  if List.is_empty runtime_wasm_files
+  then Fs.write_file ~name:output_file ~contents:Runtime_files.wasm_runtime
+  else
+    Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
+    @@ fun extra_runtime ->
+    Fs.with_intermediate_file (Filename.temp_file "merged_runtime" ".wasm")
+    @@ fun temp_file ->
+    Binaryen.link
+      ~opt_output_sourcemap:None
+      ~runtime_files:runtime_wasm_files
+      ~input_files:[]
+      ~output_file:temp_file;
+    Binaryen.optimize
+      ~profile
+      ~opt_input_sourcemap:None
+      ~opt_output_sourcemap:None
+      ~input_file:temp_file
+      ~output_file:extra_runtime;
+    Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
+    @@ fun runtime_file ->
+    Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+    Binaryen.link
+      ~opt_output_sourcemap:None
+      ~runtime_files:[ runtime_file; extra_runtime ]
+      ~input_files:[]
+      ~output_file
 
 let generate_prelude ~out_file =
   Filename.gen_file out_file
