@@ -533,6 +533,24 @@ and rewrite st elt =
   | { desc = List ({ desc = Atom "@string"; _ } :: _ :: _ :: { loc; _ } :: _); _ } ->
       raise
         (Error (position_of_loc loc, Printf.sprintf "Expecting a closing parenthesis.\n"))
+  | { desc = List [ { desc = Atom "@char"; _ }; { desc = Atom value; loc = loc_value } ]
+    ; loc = pos, pos'
+    } ->
+      if
+        (not (is_string value))
+        ||
+        let s = parse_string loc_value value in
+        String.length s <> 1 || Char.code s.[0] > 127
+      then raise (Error (position_of_loc loc_value, "Expecting an ASCII character"));
+      let s = parse_string loc_value value in
+      write st pos;
+      insert st (Format.asprintf "(i32.const %d)" (Char.code s.[0]));
+      skip st pos'
+  | { desc = List [ { desc = Atom "@char"; loc = _, pos } ]; loc = _, pos' } ->
+      raise (Error ((pos.loc, pos'.loc), Printf.sprintf "Expecting a string.\n"))
+  | { desc = List ({ desc = Atom "@char"; _ } :: _ :: _ :: { loc; _ } :: _); _ } ->
+      raise
+        (Error (position_of_loc loc, Printf.sprintf "Expecting a closing parenthesis.\n"))
   | { desc =
         List
           ({ desc = Atom "func"; loc = _, pos }
