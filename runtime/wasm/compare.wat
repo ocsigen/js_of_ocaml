@@ -36,6 +36,17 @@
       (func $jsstring_test (param anyref) (result i32)))
    (import "jsstring" "jsstring_compare"
       (func $jsstring_compare (param anyref) (param anyref) (result i32)))
+   (import "custom" "custom" (type $custom (sub eq)))
+   (import "custom" "custom_same_kind"
+      (func $custom_same_kind (param (ref $custom) (ref $custom)) (result i32)))
+   (import "custom" "custom_get_id"
+      (func $custom_get_id (param (ref $custom)) (result (ref $bytes))))
+   (import "custom" "custom_get_compare"
+      (func $custom_get_compare
+         (param (ref $custom)) (result (ref null $compare))))
+   (import "custom" "custom_get_compare_ext"
+      (func $custom_get_compare_ext
+         (param (ref $custom)) (result (ref null $compare))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -53,24 +64,6 @@
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
-   (type $hash
-      (func (param (ref eq)) (result i32)))
-   (type $fixed_length (struct (field $bsize_32 i32) (field $bsize_64 i32)))
-   (type $serialize
-      (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
-   (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
-   (type $dup (func (param (ref eq)) (result (ref eq))))
-   (type $custom_operations
-      (struct
-         (field $id (ref $bytes))
-         (field $compare (ref null $compare))
-         (field $compare_ext (ref null $compare))
-         (field $hash (ref null $hash))
-         (field $fixed_length (ref null $fixed_length))
-         (field $serialize (ref null $serialize))
-         (field $deserialize (ref null $deserialize))
-         (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (global $dummy_block (ref $block)
       (array.new $block (ref.i31 (i32.const 0)) (i32.const 0)))
@@ -275,8 +268,7 @@
                         (call_ref $compare
                            (local.get $v1) (local.get $v2) (local.get $total)
                            (br_on_null $v2_not_comparable
-                              (struct.get $custom_operations $compare_ext
-                                 (struct.get $custom 0 (local.get $c2))))))
+                              (call $custom_get_compare_ext (local.get $c2)))))
                      (br_if $next_item (i32.eqz (local.get $res)))
                      (return (local.get $res)))))
                ;; v1 long < v2 block
@@ -308,8 +300,8 @@
                            (call_ref $compare
                               (local.get $v1) (local.get $v2) (local.get $total)
                               (br_on_null $v1_not_comparable
-                                 (struct.get $custom_operations $compare_ext
-                                    (struct.get $custom 0 (local.get $c1))))))
+                                 (call $custom_get_compare_ext
+                                    (local.get $c1)))))
                         (br_if $next_item (i32.eqz (local.get $res)))
                         (return (local.get $res)))))
                   ;; v1 block > v1 long
@@ -454,26 +446,21 @@
                       (br_on_cast_fail $heterogeneous (ref eq) (ref $custom)
                          (local.get $v2)))
                   (if (i32.eqz
-                         (ref.eq (struct.get $custom 0 (local.get $c1))
-                                 (struct.get $custom 0 (local.get $c2))))
+                         (call $custom_same_kind
+                            (local.get $c1) (local.get $c2)))
                      (then
                         (return
                            (i31.get_s
                               (ref.cast (ref i31)
                                  (call $caml_string_compare
-                                    (struct.get $custom_operations $id
-                                       (struct.get $custom 0
-                                          (local.get $c1)))
-                                    (struct.get $custom_operations $id
-                                       (struct.get $custom 0
-                                          (local.get $c2)))))))))
+                                    (call $custom_get_id (local.get $c1))
+                                    (call $custom_get_id (local.get $c2))))))))
                   (block $not_comparable
                      (local.set $res
                         (call_ref $compare
                            (local.get $v1) (local.get $v2) (local.get $total)
                            (br_on_null $not_comparable
-                              (struct.get $custom_operations $compare
-                                 (struct.get $custom 0 (local.get $c1))))))
+                              (call $custom_get_compare (local.get $c1)))))
                      (br_if $next_item (i32.eqz (local.get $res)))
                      (return (local.get $res)))
                   (call $clear_compare_stack)

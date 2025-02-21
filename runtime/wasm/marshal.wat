@@ -46,9 +46,25 @@
       (func $caml_flush_if_unbuffered (param (ref eq))))
    (import "custom" "caml_init_custom_operations"
       (func $caml_init_custom_operations))
+   (import "custom" "custom_operations" (type $custom_operations))
    (import "custom" "caml_find_custom_operations"
       (func $caml_find_custom_operations
          (param (ref $bytes)) (result (ref null $custom_operations))))
+   (import "custom" "custom_operations_get_fixed_length"
+      (func $custom_operations_get_fixed_length
+         (param (ref $custom_operations)) (result (ref null $fixed_length))))
+   (import "custom" "custom_operations_get_deserialize"
+      (func $custom_operations_get_deserialize
+         (param (ref $custom_operations)) (result (ref null $deserialize))))
+   (import "custom" "custom" (type $custom (sub eq)))
+   (import "custom" "custom_get_id"
+      (func $custom_get_id (param (ref $custom)) (result (ref $bytes))))
+   (import "custom" "custom_get_fixed_length"
+      (func $custom_get_fixed_length
+         (param (ref $custom)) (result (ref null $fixed_length))))
+   (import "custom" "custom_get_serialize"
+      (func $custom_get_serialize
+         (param (ref $custom)) (result (ref null $serialize))))
 
    (@string $input_val_from_string "input_value_from_string")
 
@@ -111,26 +127,10 @@
    (type $float_array (array (mut f64)))
    (type $js (struct (field anyref)))
 
-   (type $compare
-      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
-   (type $hash
-      (func (param (ref eq)) (result i32)))
    (type $fixed_length (struct (field $bsize_32 i32) (field $bsize_64 i32)))
    (type $serialize
       (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
    (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
-   (type $dup (func (param (ref eq)) (result (ref eq))))
-   (type $custom_operations
-      (struct
-         (field $id (ref $bytes))
-         (field $compare (ref null $compare))
-         (field $compare_ext (ref null $compare))
-         (field $hash (ref null $hash))
-         (field $fixed_length (ref null $fixed_length))
-         (field $serialize (ref null $serialize))
-         (field $deserialize (ref null $deserialize))
-         (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (global $Intext_magic_number_small i32 (i32.const 0x8495A6BE))
    (global $Intext_magic_number_big i32 (i32.const 0x8495A6BF))
@@ -403,7 +403,7 @@
                   (local.set $expected_size
                      (struct.get $fixed_length $bsize_32
                         (br_on_null $no_length
-                           (struct.get $custom_operations $fixed_length
+                           (call $custom_operations_get_fixed_length
                               (local.get $ops))))))
             (else
                (if (i32.eq (local.get $code) (global.get $CODE_CUSTOM_LEN))
@@ -414,7 +414,7 @@
                            (i32.const 8)))))))
             (local.set $r
                (call_ref $deserialize (local.get $s)
-                  (struct.get $custom_operations $deserialize (local.get $ops))))
+                  (call $custom_operations_get_deserialize (local.get $ops))))
             (if (i32.and
                   (i32.ne (tuple.extract 2 1 (local.get $r))
                      (local.get $expected_size))
@@ -1046,24 +1046,21 @@
 
    (func $extern_custom
       (param $s (ref $extern_state)) (param $v (ref $custom)) (result i32 i32)
-      (local $ops (ref $custom_operations))
       (local $serialize (ref $serialize))
       (local $fixed_length (ref $fixed_length))
       (local $pos i32) (local $buf (ref $bytes))
       (local $r (tuple i32 i32))
-      (local.set $ops (struct.get $custom 0 (local.get $v)))
       (block $abstract
          (local.set $serialize
             (br_on_null $abstract
-               (struct.get $custom_operations $serialize (local.get $ops))))
+               (call $custom_get_serialize (local.get $v))))
          (block $variable_length
             (local.set $fixed_length
                (br_on_null $variable_length
-                  (struct.get $custom_operations $fixed_length
-                     (local.get $ops))))
+                  (call $custom_get_fixed_length (local.get $v))))
             (call $write (local.get $s) (global.get $CODE_CUSTOM_FIXED))
             (call $writeblock (local.get $s)
-               (struct.get $custom_operations $id (local.get $ops)))
+               (call $custom_get_id (local.get $v)))
             (call $write (local.get $s) (i32.const 0))
             (local.set $r
                (call_ref $serialize
@@ -1079,13 +1076,11 @@
                    (call $caml_failwith
                       (call $caml_string_concat
                          (global.get $incorrect_sizes)
-                         (struct.get $custom_operations $id
-                            (local.get $ops))))))
+                         (call $custom_get_id (local.get $v))))))
             (return (local.get $r)))
          ;; variable length
          (call $write (local.get $s) (global.get $CODE_CUSTOM_LEN))
-         (call $writeblock (local.get $s)
-            (struct.get $custom_operations $id (local.get $ops)))
+         (call $writeblock (local.get $s) (call $custom_get_id (local.get $v)))
          (call $write (local.get $s) (i32.const 0))
          (local.set $pos
             (call $reserve_extern_output (local.get $s) (i32.const 12)))

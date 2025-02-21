@@ -36,6 +36,7 @@ let common_options () =
     ; "--enable-bulk-memory"
     ; "--enable-nontrapping-float-to-int"
     ; "--enable-strings"
+    ; "--enable-type-imports"
     ]
   in
   if Config.Flag.pretty () then "-g" :: l else l

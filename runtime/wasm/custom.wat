@@ -36,7 +36,7 @@
       (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
    (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
    (type $dup (func (param (ref eq)) (result (ref eq))))
-   (type $custom_operations
+   (type $custom_operations (export "custom_operations")
       (struct
          (field $id (ref $bytes))
          (field $compare (ref null $compare))
@@ -46,7 +46,55 @@
          (field $serialize (ref null $serialize))
          (field $deserialize (ref null $deserialize))
          (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
+   (type $custom (export "custom")
+      (sub (struct (field (ref $custom_operations)))))
+
+   (func (export "custom_operations_get_fixed_length")
+      (param $ops (ref $custom_operations)) (result (ref null $fixed_length))
+      (struct.get $custom_operations $fixed_length (local.get $ops)))
+
+   (func (export "custom_operations_get_deserialize")
+      (param $ops (ref $custom_operations)) (result (ref null $deserialize))
+      (struct.get $custom_operations $deserialize (local.get $ops)))
+
+   (func (export "custom_same_kind")
+      (param $v1 (ref $custom)) (param $v2 (ref $custom)) (result i32)
+      (ref.eq (struct.get $custom 0 (local.get $v1))
+         (struct.get $custom 0 (local.get $v2))))
+
+   (func (export "custom_get_id") (param $v (ref $custom)) (result (ref $bytes))
+      (struct.get $custom_operations $id
+         (struct.get $custom 0 (local.get $v))))
+
+   (func (export "custom_get_compare")
+      (param $v (ref $custom)) (result (ref null $compare))
+      (struct.get $custom_operations $compare
+         (struct.get $custom 0 (local.get $v))))
+
+   (func (export "custom_get_compare_ext")
+      (param $v (ref $custom)) (result (ref null $compare))
+      (struct.get $custom_operations $compare_ext
+         (struct.get $custom 0 (local.get $v))))
+
+   (func (export "custom_get_hash")
+      (param $v (ref $custom)) (result (ref null $hash))
+      (struct.get $custom_operations $hash
+         (struct.get $custom 0 (local.get $v))))
+
+   (func (export "custom_get_fixed_length")
+      (param $v (ref $custom)) (result (ref null $fixed_length))
+      (struct.get $custom_operations $fixed_length
+         (struct.get $custom 0 (local.get $v))))
+
+   (func (export "custom_get_serialize")
+      (param $v (ref $custom)) (result (ref null $serialize))
+      (struct.get $custom_operations $serialize
+         (struct.get $custom 0 (local.get $v))))
+
+   (func (export "custom_get_deserialize")
+      (param $v (ref $custom)) (result (ref null $deserialize))
+      (struct.get $custom_operations $deserialize
+         (struct.get $custom 0 (local.get $v))))
 
    (type $custom_with_id
       (sub $custom

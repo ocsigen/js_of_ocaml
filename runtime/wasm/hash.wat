@@ -22,32 +22,17 @@
       (func $jsstring_test (param anyref) (result i32)))
    (import "jsstring" "jsstring_hash"
       (func $jsstring_hash (param i32) (param anyref) (result i32)))
+   (import "custom" "custom" (type $custom (sub eq)))
+   (import "custom" "custom_get_hash"
+      (func $custom_get_hash (param (ref $custom)) (result (ref null $hash))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $js (struct (field anyref)))
 
-   (type $compare
-      (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
    (type $hash
       (func (param (ref eq)) (result i32)))
-   (type $fixed_length (struct (field $bsize_32 i32) (field $bsize_64 i32)))
-   (type $serialize
-      (func (param (ref eq)) (param (ref eq)) (result i32) (result i32)))
-   (type $deserialize (func (param (ref eq)) (result (ref eq)) (result i32)))
-   (type $dup (func (param (ref eq)) (result (ref eq))))
-   (type $custom_operations
-      (struct
-         (field $id (ref $bytes))
-         (field $compare (ref null $compare))
-         (field $compare_ext (ref null $compare))
-         (field $hash (ref null $hash))
-         (field $fixed_length (ref null $fixed_length))
-         (field $serialize (ref null $serialize))
-         (field $deserialize (ref null $deserialize))
-         (field $dup (ref null $dup))))
-   (type $custom (sub (struct (field (ref $custom_operations)))))
 
    (func $caml_hash_mix_int (export "caml_hash_mix_int")
       (param $h i32) (param $d i32) (result i32)
@@ -297,11 +282,10 @@
                            (call_ref $hash
                               (local.get $v)
                               (br_on_null $loop
-                                 (struct.get $custom_operations $hash
-                                    (struct.get $custom 0
-                                       (br_on_cast_fail $not_custom
-                                          (ref eq) (ref $custom)
-                                          (local.get $v))))))))
+                                 (call $custom_get_hash
+                                    (br_on_cast_fail $not_custom
+                                       (ref eq) (ref $custom)
+                                       (local.get $v)))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
                   (drop (block $not_jsstring (result anyref)

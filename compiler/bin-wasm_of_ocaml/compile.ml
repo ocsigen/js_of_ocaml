@@ -145,7 +145,18 @@ let link_and_optimize
 
 let link_runtime ~profile runtime_wasm_files output_file =
   if List.is_empty runtime_wasm_files
-  then Fs.write_file ~name:output_file ~contents:Runtime_files.wasm_runtime
+  then (
+    Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
+    @@ fun input_file ->
+    Fs.write_file ~name:input_file ~contents:Runtime_files.wasm_runtime;
+    Binaryen.optimize
+      ~profile
+      ~options:[ "--strip-type-exports" ]
+      ~input_file
+      ~output_file
+      ~opt_input_sourcemap:None
+      ~opt_output_sourcemap:None
+      ())
   else
     Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
     @@ fun extra_runtime ->
@@ -169,6 +180,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
     @@ fun runtime_file ->
     Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
     Binaryen.link
+      ~options:[ "--strip-type-exports" ]
       ~opt_output_sourcemap:None
       ~inputs:
         (List.map
