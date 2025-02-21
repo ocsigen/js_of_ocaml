@@ -16,6 +16,12 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "obj" "caml_callback_1"
+      (func $caml_callback_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "sync" "caml_ml_mutex_unlock"
+      (func $caml_ml_mutex_unlock (param (ref eq)) (result (ref eq))))
+
    (type $block (array (mut (ref eq))))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
@@ -98,6 +104,47 @@
    (global $caml_domain_id (export "caml_domain_id") (mut i32) (i32.const 0))
    (global $caml_domain_latest_id (export "caml_domain_latest_id") (mut i32)
       (i32.const 1))
+
+(@if (>= ocaml_version (5 2 0))
+(@then
+   (func (export "caml_domain_spawn")
+      (param $f (ref eq)) (param $term_sync_v (ref eq)) (result (ref eq))
+      (local $id i32) (local $old i32) (local $ts (ref $block)) (local $res (ref eq))
+      (local.set $id (global.get $caml_domain_latest_id))
+      (global.set $caml_domain_latest_id
+         (i32.add (local.get $id) (i32.const 1)))
+      (local.set $old (global.get $caml_domain_id))
+      (local.set $res
+         (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+      (global.set $caml_domain_id (local.get $old))
+      (local.set $ts (ref.cast (ref $block) (local.get $term_sync_v)))
+      (drop (call $caml_ml_mutex_unlock (array.get $block (local.get $ts) (i32.const 2))))
+      ;; TODO: fix exn case
+      (array.set
+         $block
+         (local.get $ts)
+         (i32.const 1)
+         (array.new_fixed
+            $block
+            2
+            (ref.i31 (i32.const 0))
+            (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $res))))
+      (ref.i31 (local.get $id)))
+)
+(@else
+   (func (export "caml_domain_spawn")
+      (param $f (ref eq)) (param $mutex (ref eq)) (result (ref eq))
+      (local $id i32) (local $old i32)
+      (local.set $id (global.get $caml_domain_latest_id))
+      (global.set $caml_domain_latest_id
+         (i32.add (local.get $id) (i32.const 1)))
+      (local.set $old (global.get $caml_domain_id))
+      (drop (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
+      (global.set $caml_domain_id (local.get $old))
+      (drop (call $caml_ml_mutex_unlock (local.get $mutex)))
+      (ref.i31 (local.get $id)))
+))
+
 
    (func (export "caml_ml_domain_id") (export "caml_ml_domain_index")
       (param (ref eq)) (result (ref eq))

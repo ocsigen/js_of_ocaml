@@ -272,6 +272,10 @@ void caml_string_of_uint8_array () {
   caml_fatal_error("Unimplemented Javascript primitive caml_string_of_uint8_array!");
 }
 
+void caml_throw_js_exception () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_throw_js_exception!");
+}
+
 void caml_unmount () {
   caml_fatal_error("Unimplemented Javascript primitive caml_unmount!");
 }
