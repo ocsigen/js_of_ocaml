@@ -20,6 +20,7 @@
       (func $caml_raise_constant (param (ref eq))))
    (import "fail" "caml_raise_with_arg"
       (func $caml_raise_with_arg (param $tag (ref eq)) (param $arg (ref eq))))
+   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "obj" "caml_fresh_oo_id"
      (func $caml_fresh_oo_id (param (ref eq)) (result (ref eq))))
    (import "obj" "cont_tag" (global $cont_tag i32))
@@ -94,15 +95,23 @@
          (struct.get $thunk 1 (local.get $t))
          (struct.get $thunk 0 (local.get $t))))
 
+   (data $unsupported
+      "Effect handlers are not supported: "
+      "the JavaScript Promise Integration API is not enabled")
+
    (func $capture_continuation
       (param $f (ref $called_with_continuation))
       (param $v (ref eq))
       (result (ref eq))
-      (return_call $apply_pair
-         (ref.cast (ref $pair)
-            (call $suspend_fiber
-               (ref.func $apply_continuation)
-               (struct.new $thunk (local.get $f) (local.get $v))))))
+      (drop (block $unsupported (result anyref)
+         (return_call $apply_pair
+            (br_on_cast_fail $unsupported anyref (ref $pair)
+               (call $suspend_fiber
+                  (ref.func $apply_continuation)
+                  (struct.new $thunk (local.get $f) (local.get $v)))))))
+      (call $caml_failwith
+         (array.new_data $bytes $unsupported (i32.const 0) (i32.const 88)))
+      (ref.i31 (i32.const 0)))
 
    ;; Stack of fibers
 
