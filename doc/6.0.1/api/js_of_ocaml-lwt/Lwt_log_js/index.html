@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Lwt_log_js (js_of_ocaml-lwt.Lwt_log_js)</title><meta charset="utf-8"/><link rel="stylesheet" href="../../odoc.support/odoc.css"/><meta name="generator" content="odoc 2.4.4"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../../odoc.support/highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body class="odoc"><nav class="odoc-nav"><a href="../index.html">Up</a> – <a href="../index.html">js_of_ocaml-lwt</a> &#x00BB; Lwt_log_js</nav><header class="odoc-preamble"><h1>Module <code><span>Lwt_log_js</span></code></h1></header><nav class="odoc-toc"><ul><li><a href="#predefined-logger">Predefined logger</a></li><li><a href="#logging-functions">Logging functions</a></li></ul></nav><div class="odoc-content"><div class="odoc-include"><details open="open"><summary class="spec include"><code><span><span class="keyword">include</span> <span class="keyword">module</span> <span class="keyword">type</span> <span class="keyword">of</span> <span class="xref-unresolved">Lwt_log_core</span>
+  <span class="keyword">with</span> <span><span class="keyword">type</span> <span class="xref-unresolved">level</span> = <span class="xref-unresolved">Lwt_log_core</span>.level</span>
+   <span class="keyword">and</span> <span><span class="keyword">type</span> <span class="xref-unresolved">logger</span> = <span class="xref-unresolved">Lwt_log_core</span>.logger</span>
+   <span class="keyword">and</span> <span><span class="keyword">type</span> <span class="xref-unresolved">section</span> = <span class="xref-unresolved">Lwt_log_core</span>.section</span>
+   <span class="keyword">and</span> <span><span class="keyword">type</span> <span class="xref-unresolved">template</span> = <span class="xref-unresolved">Lwt_log_core</span>.template</span>
+   <span class="keyword">and</span> <span><span class="keyword">module</span> <span class="xref-unresolved">Section</span> = <span class="xref-unresolved">Lwt_log_core</span>.Section</span></span></code></summary><div class="odoc-spec"><div class="spec type anchored" id="type-level"><a href="#type-level" class="anchor"></a><code><span><span class="keyword">type</span> level</span><span> = <span class="xref-unresolved">Lwt_log_core</span>.level</span><span> = </span></code><ol><li id="type-level.Debug" class="def variant constructor anchored"><a href="#type-level.Debug" class="anchor"></a><code><span>| </span><span><span class="constructor">Debug</span></span></code></li><li id="type-level.Info" class="def variant constructor anchored"><a href="#type-level.Info" class="anchor"></a><code><span>| </span><span><span class="constructor">Info</span></span></code></li><li id="type-level.Notice" class="def variant constructor anchored"><a href="#type-level.Notice" class="anchor"></a><code><span>| </span><span><span class="constructor">Notice</span></span></code></li><li id="type-level.Warning" class="def variant constructor anchored"><a href="#type-level.Warning" class="anchor"></a><code><span>| </span><span><span class="constructor">Warning</span></span></code></li><li id="type-level.Error" class="def variant constructor anchored"><a href="#type-level.Error" class="anchor"></a><code><span>| </span><span><span class="constructor">Error</span></span></code></li><li id="type-level.Fatal" class="def variant constructor anchored"><a href="#type-level.Fatal" class="anchor"></a><code><span>| </span><span><span class="constructor">Fatal</span></span></code></li></ol></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-logger"><a href="#type-logger" class="anchor"></a><code><span><span class="keyword">type</span> logger</span><span> = <span class="xref-unresolved">Lwt_log_core</span>.logger</span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-section"><a href="#type-section" class="anchor"></a><code><span><span class="keyword">type</span> section</span><span> = <span class="xref-unresolved">Lwt_log_core</span>.section</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-string_of_level"><a href="#val-string_of_level" class="anchor"></a><code><span><span class="keyword">val</span> string_of_level : <span><a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span> string</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-level_of_string"><a href="#val-level_of_string" class="anchor"></a><code><span><span class="keyword">val</span> level_of_string : <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-level">level</a> option</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-load_rules"><a href="#val-load_rules" class="anchor"></a><code><span><span class="keyword">val</span> load_rules : <span><span class="optlabel">?fail_on_error</span>:bool <span class="arrow">&#45;&gt;</span></span> <span>string <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-add_rule"><a href="#val-add_rule" class="anchor"></a><code><span><span class="keyword">val</span> add_rule : <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-append_rule"><a href="#val-append_rule" class="anchor"></a><code><span><span class="keyword">val</span> append_rule : <span>string <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-reset_rules"><a href="#val-reset_rules" class="anchor"></a><code><span><span class="keyword">val</span> reset_rules : <span>unit <span class="arrow">&#45;&gt;</span></span> unit</span></code></div></div><div class="odoc-spec"><div class="spec module anchored" id="module-Section"><a href="#module-Section" class="anchor"></a><code><span><span class="keyword">module</span> <a href="Section/index.html">Section</a></span><span> : <span class="keyword">sig</span> ... <span class="keyword">end</span></span></code></div></div><div class="odoc-spec"><div class="spec type anchored" id="type-template"><a href="#type-template" class="anchor"></a><code><span><span class="keyword">type</span> template</span><span> = <span class="xref-unresolved">Lwt_log_core</span>.template</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-render"><a href="#val-render" class="anchor"></a><code><span><span class="keyword">val</span> render : 
+  <span><span class="label">buffer</span>:<span class="xref-unresolved">Stdlib</span>.Buffer.t <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">template</span>:<a href="#type-template">template</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">level</span>:<a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">message</span>:string <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-location_key"><a href="#val-location_key" class="anchor"></a><code><span><span class="keyword">val</span> location_key : <span><span>(string * int * int)</span> <span class="xref-unresolved">Lwt</span>.key</span></span></code></div></div><div class="odoc-spec"><div class="spec exception anchored" id="exception-Logger_closed"><a href="#exception-Logger_closed" class="anchor"></a><code><span><span class="keyword">exception</span> </span><span><span class="exception">Logger_closed</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-make"><a href="#val-make" class="anchor"></a><code><span><span class="keyword">val</span> make : 
+  <span><span class="label">output</span>:<span>(<span><a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span> <span><span>string list</span> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">close</span>:<span>(<span>unit <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="arrow">&#45;&gt;</span></span>
+  <a href="#type-logger">logger</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-close"><a href="#val-close" class="anchor"></a><code><span><span class="keyword">val</span> close : <span><a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span> <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-default"><a href="#val-default" class="anchor"></a><code><span><span class="keyword">val</span> default : <span><a href="#type-logger">logger</a> <span class="xref-unresolved">Stdlib</span>.ref</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-broadcast"><a href="#val-broadcast" class="anchor"></a><code><span><span class="keyword">val</span> broadcast : <span><span><a href="#type-logger">logger</a> list</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-logger">logger</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-dispatch"><a href="#val-dispatch" class="anchor"></a><code><span><span class="keyword">val</span> dispatch : <span><span>(<span><a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span> <span><a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span> <a href="#type-logger">logger</a>)</span> <span class="arrow">&#45;&gt;</span></span> <a href="#type-logger">logger</a></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-null"><a href="#val-null" class="anchor"></a><code><span><span class="keyword">val</span> null : <a href="#type-logger">logger</a></span></code></div></div></details></div><p>Lwt logger for js_of_ocaml</p><h3 id="predefined-logger"><a href="#predefined-logger" class="anchor"></a>Predefined logger</h3><div class="odoc-spec"><div class="spec value anchored" id="val-console"><a href="#val-console" class="anchor"></a><code><span><span class="keyword">val</span> console : <span class="xref-unresolved">Lwt_log_core</span>.logger</span></code></div><div class="spec-doc"><p>Logger that use the javascript console object.</p></div></div><h3 id="logging-functions"><a href="#logging-functions" class="anchor"></a>Logging functions</h3><div class="odoc-spec"><div class="spec value anchored" id="val-log"><a href="#val-log" class="anchor"></a><code><span><span class="keyword">val</span> log : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">level</span>:<a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div><div class="spec-doc"><p><code>log ?section ?logger ~level message</code> logs a message.</p><p><code>section</code> defaults to <a href="Section/index.html#val-main"><code>Section.main</code></a>. If <code>logger</code> is not specified, then the default one is used instead (see <a href="#val-default"><code>default</code></a>).</p><p>If <code>exn</code> is provided, then its string representation (= <code>Printexc.to_string exn</code>) will be append to the message, and if possible the backtrace will also be logged.</p><p>If <code>inspect</code> is provided, it will be append to the message.</p><p><code>location</code> contains the location of the logging directive, it is of the form <code>(file_name, line, column)</code>.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-log_f"><a href="#val-log_f" class="anchor"></a><code><span><span class="keyword">val</span> log_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">level</span>:<a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div><div class="spec-doc"><p><code>log_f</code> is the same as <code>log</code> except that it takes a format string</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_log"><a href="#val-ign_log" class="anchor"></a><code><span><span class="keyword">val</span> ign_log : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">level</span>:<a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div><div class="spec-doc"><p>Same as <a href="#val-log"><code>log</code></a> but ignore the resulting thread.</p></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_log_f"><a href="#val-ign_log_f" class="anchor"></a><code><span><span class="keyword">val</span> ign_log_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="label">level</span>:<a href="#type-level">level</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, unit)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div><div class="spec-doc"><p>Same as <a href="#val-log_f"><code>log_f</code></a> but ignore the resulting thread.</p></div></div><p>The following functions are the same as <a href="#val-log"><code>log</code></a> except that their name determines which level is used.</p><p>For example <code>info msg</code> is the same as <code>log ~level:Info msg</code>.</p><div class="odoc-spec"><div class="spec value anchored" id="val-debug"><a href="#val-debug" class="anchor"></a><code><span><span class="keyword">val</span> debug : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-debug_f"><a href="#val-debug_f" class="anchor"></a><code><span><span class="keyword">val</span> debug_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_debug"><a href="#val-ign_debug" class="anchor"></a><code><span><span class="keyword">val</span> ign_debug : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_debug_f"><a href="#val-ign_debug_f" class="anchor"></a><code><span><span class="keyword">val</span> ign_debug_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, unit)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-info"><a href="#val-info" class="anchor"></a><code><span><span class="keyword">val</span> info : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-info_f"><a href="#val-info_f" class="anchor"></a><code><span><span class="keyword">val</span> info_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_info"><a href="#val-ign_info" class="anchor"></a><code><span><span class="keyword">val</span> ign_info : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_info_f"><a href="#val-ign_info_f" class="anchor"></a><code><span><span class="keyword">val</span> ign_info_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, unit)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-notice"><a href="#val-notice" class="anchor"></a><code><span><span class="keyword">val</span> notice : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-notice_f"><a href="#val-notice_f" class="anchor"></a><code><span><span class="keyword">val</span> notice_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_notice"><a href="#val-ign_notice" class="anchor"></a><code><span><span class="keyword">val</span> ign_notice : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_notice_f"><a href="#val-ign_notice_f" class="anchor"></a><code><span><span class="keyword">val</span> ign_notice_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, unit)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-warning"><a href="#val-warning" class="anchor"></a><code><span><span class="keyword">val</span> warning : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-warning_f"><a href="#val-warning_f" class="anchor"></a><code><span><span class="keyword">val</span> warning_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_warning"><a href="#val-ign_warning" class="anchor"></a><code><span><span class="keyword">val</span> ign_warning : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_warning_f"><a href="#val-ign_warning_f" class="anchor"></a><code><span><span class="keyword">val</span> ign_warning_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, unit)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-error"><a href="#val-error" class="anchor"></a><code><span><span class="keyword">val</span> error : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-error_f"><a href="#val-error_f" class="anchor"></a><code><span><span class="keyword">val</span> error_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_error"><a href="#val-ign_error" class="anchor"></a><code><span><span class="keyword">val</span> ign_error : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_error_f"><a href="#val-ign_error_f" class="anchor"></a><code><span><span class="keyword">val</span> ign_error_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, unit)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-fatal"><a href="#val-fatal" class="anchor"></a><code><span><span class="keyword">val</span> fatal : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  <span>unit <span class="xref-unresolved">Lwt</span>.t</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-fatal_f"><a href="#val-fatal_f" class="anchor"></a><code><span><span class="keyword">val</span> fatal_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, <span>unit <span class="xref-unresolved">Lwt</span>.t</span>)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_fatal"><a href="#val-ign_fatal" class="anchor"></a><code><span><span class="keyword">val</span> ign_fatal : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span>string <span class="arrow">&#45;&gt;</span></span>
+  unit</span></code></div></div><div class="odoc-spec"><div class="spec value anchored" id="val-ign_fatal_f"><a href="#val-ign_fatal_f" class="anchor"></a><code><span><span class="keyword">val</span> ign_fatal_f : 
+  <span><span class="optlabel">?inspect</span>:<span class="type-var">'v</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?exn</span>:exn <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?section</span>:<a href="#type-section">section</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?location</span>:<span>(string * int * int)</span> <span class="arrow">&#45;&gt;</span></span>
+  <span><span class="optlabel">?logger</span>:<a href="#type-logger">logger</a> <span class="arrow">&#45;&gt;</span></span>
+  <span><span><span>(<span class="type-var">'a</span>, unit, string, unit)</span> <span class="xref-unresolved">Stdlib</span>.format4</span> <span class="arrow">&#45;&gt;</span></span>
+  <span class="type-var">'a</span></span></code></div></div></div></body></html>
