@@ -1,3 +1,8 @@
+# dev version (????-??-??) - ?
+
+## Features/Changes
+* Misc: add a benchmarking suite for wasm_of_ocaml targeting [current-bench](https://github.com/ocurrent/current-bench)
+
 # 6.0.1 (2025-02-07) - Lille
 
 ## Features/Changes
