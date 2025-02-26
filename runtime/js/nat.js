@@ -10,18 +10,19 @@ function initialize_nat() {
 }
 
 //Provides: MlNat
-function MlNat(x) {
-  this.data = new Int32Array(x);
-  // For num < 1.5
-  // length_nat isn't external, so we have to make the Obj.size
-  // work out right.
-  // We add +2 to the array length:
-  // - +1 for the tag
-  // - +1 for the custom_ops slot
-  this.length = this.data.length + 2;
+class MlNat {
+  constructor(x) {
+    this.data = new Int32Array(x);
+    // For num < 1.5
+    // length_nat isn't external, so we have to make the Obj.size
+    // work out right.
+    // We add +2 to the array length:
+    // - +1 for the tag
+    // - +1 for the custom_ops slot
+    this.length = this.data.length + 2;
+    this.caml_custom = "_nat";
+  }
 }
-
-MlNat.prototype.caml_custom = "_nat";
 
 //Provides: caml_hash_nat
 //Requires: caml_hash_mix_int, num_digits_nat

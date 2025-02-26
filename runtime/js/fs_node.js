@@ -30,270 +30,292 @@ function fs_node_supported() {
 //Provides: MlNodeDevice
 //Requires: MlNodeFd, caml_raise_sys_error, caml_string_of_jsstring
 //Requires: caml_raise_nodejs_error, fs_node_stats_from_js
-function MlNodeDevice(root) {
-  this.fs = require("node:fs");
-  this.root = root;
-}
-MlNodeDevice.prototype.nm = function (name) {
-  return this.root + name;
-};
-MlNodeDevice.prototype.exists = function (name) {
-  try {
-    return this.fs.existsSync(this.nm(name)) ? 1 : 0;
-  } catch (err) {
-    return 0;
+class MlNodeDevice {
+  constructor(root) {
+    this.fs = require("node:fs");
+    this.root = root;
   }
-};
-MlNodeDevice.prototype.isFile = function (name) {
-  try {
-    return this.fs.statSync(this.nm(name)).isFile() ? 1 : 0;
-  } catch (err) {
-    caml_raise_sys_error(err.toString());
-  }
-};
-MlNodeDevice.prototype.mkdir = function (name, mode, raise_unix) {
-  try {
-    this.fs.mkdirSync(this.nm(name), { mode: mode });
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.rmdir = function (name, raise_unix) {
-  try {
-    this.fs.rmdirSync(this.nm(name));
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.readdir = function (name, raise_unix) {
-  try {
-    return this.fs.readdirSync(this.nm(name));
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.is_dir = function (name) {
-  try {
-    return this.fs.statSync(this.nm(name)).isDirectory() ? 1 : 0;
-  } catch (err) {
-    caml_raise_sys_error(err.toString());
-  }
-};
-MlNodeDevice.prototype.unlink = function (name, raise_unix) {
-  try {
-    this.fs.unlinkSync(this.nm(name));
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.utimes = function (name, atime, mtime, raise_unix) {
-  try {
-    if (atime === 0 && mtime === 0) {
-      atime = new Date().getTime() / 1000;
-      mtime = atime;
-    }
-    this.fs.utimesSync(this.nm(name), atime, mtime);
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.truncate = function (name, len, raise_unix) {
-  try {
-    this.fs.truncateSync(this.nm(name), len | 0);
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.access = function (name, f, raise_unix) {
-  var consts = require("node:constants");
-  var res = 0;
-  for (var key in f) {
-    switch (key) {
-      case "r":
-        res |= consts.R_OK;
-        break;
-      case "w":
-        res |= consts.W_OK;
-        break;
-      case "x":
-        res |=
-          globalThis.process?.platform === "win32" ? consts.R_OK : consts.X_OK;
-        break;
-      case "f":
-        res |= consts.F_OK;
-        break;
-    }
-  }
-  try {
-    this.fs.accessSync(this.nm(name), res);
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.open = function (name, f, perms, raise_unix) {
-  var consts = require("node:constants");
-  var res = 0;
-  for (var key in f) {
-    switch (key) {
-      case "rdonly":
-        res |= consts.O_RDONLY;
-        break;
-      case "wronly":
-        res |= consts.O_WRONLY;
-        break;
-      case "rdwr":
-        res |= consts.O_RDWR;
-        break;
-      case "append":
-        res |= consts.O_APPEND;
-        break;
-      case "create":
-        res |= consts.O_CREAT;
-        break;
-      case "truncate":
-        res |= consts.O_TRUNC;
-        break;
-      case "excl":
-        res |= consts.O_EXCL;
-        break;
-      case "binary":
-        res |= consts.O_BINARY;
-        break;
-      case "text":
-        res |= consts.O_TEXT;
-        break;
-      case "nonblock":
-        res |= consts.O_NONBLOCK;
-        break;
-      case "noctty":
-        res |= consts.O_NOCTTY;
-        break;
-      case "dsync":
-        res |= consts.O_DSYNC;
-        break;
-      case "sync":
-        res |= consts.O_SYNC;
-        break;
-    }
-  }
-  try {
-    var fd = this.fs.openSync(this.nm(name), res, perms);
-    return new MlNodeFd(fd, f);
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
 
-if (globalThis.process?.platform === "win32") {
-  MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
+  nm(name) {
+    return this.root + name;
+  }
+
+  exists(name) {
     try {
-      var target = this.nm(n);
-      var source = this.nm(o);
-      var target_stats, source_stats;
-      if (
-        (target_stats = this.fs.statSync(target, { throwIfNoEntry: false })) &&
-        (source_stats = this.fs.statSync(source, { throwIfNoEntry: false })) &&
-        source_stats.isDirectory()
-      ) {
-        if (target_stats.isDirectory()) {
-          if (!target.startsWith(source))
-            try {
-              this.fs.rmdirSync(target);
-            } catch {}
-        } else {
-          var err = new Error(
-            `ENOTDIR: not a directory, rename '${source}' -> '${target}'`,
-          );
-          throw Object.assign(err, {
-            errno: -20,
-            code: "ENOTDIR",
-            syscall: "rename",
-            path: target,
-          });
-        }
+      return this.fs.existsSync(this.nm(name)) ? 1 : 0;
+    } catch (err) {
+      return 0;
+    }
+  }
+
+  isFile(name) {
+    try {
+      return this.fs.statSync(this.nm(name)).isFile() ? 1 : 0;
+    } catch (err) {
+      caml_raise_sys_error(err.toString());
+    }
+  }
+
+  mkdir(name, mode, raise_unix) {
+    try {
+      this.fs.mkdirSync(this.nm(name), { mode: mode });
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  rmdir(name, raise_unix) {
+    try {
+      this.fs.rmdirSync(this.nm(name));
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  readdir(name, raise_unix) {
+    try {
+      return this.fs.readdirSync(this.nm(name));
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  is_dir(name) {
+    try {
+      return this.fs.statSync(this.nm(name)).isDirectory() ? 1 : 0;
+    } catch (err) {
+      caml_raise_sys_error(err.toString());
+    }
+  }
+
+  unlink(name, raise_unix) {
+    try {
+      this.fs.unlinkSync(this.nm(name));
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  utimes(name, atime, mtime, raise_unix) {
+    try {
+      if (atime === 0 && mtime === 0) {
+        atime = new Date().getTime() / 1000;
+        mtime = atime;
       }
-      this.fs.renameSync(this.nm(o), this.nm(n));
+      this.fs.utimesSync(this.nm(name), atime, mtime);
+      return 0;
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
-  };
-} else {
-  MlNodeDevice.prototype.rename = function (o, n, raise_unix) {
+  }
+
+  truncate(name, len, raise_unix) {
     try {
-      this.fs.renameSync(this.nm(o), this.nm(n));
+      this.fs.truncateSync(this.nm(name), len | 0);
+      return 0;
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
-  };
+  }
+
+  access(name, f, raise_unix) {
+    var consts = require("node:constants");
+    var res = 0;
+    for (var key in f) {
+      switch (key) {
+        case "r":
+          res |= consts.R_OK;
+          break;
+        case "w":
+          res |= consts.W_OK;
+          break;
+        case "x":
+          res |=
+            globalThis.process?.platform === "win32"
+              ? consts.R_OK
+              : consts.X_OK;
+          break;
+        case "f":
+          res |= consts.F_OK;
+          break;
+      }
+    }
+    try {
+      this.fs.accessSync(this.nm(name), res);
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  open(name, f, perms, raise_unix) {
+    var consts = require("node:constants");
+    var res = 0;
+    for (var key in f) {
+      switch (key) {
+        case "rdonly":
+          res |= consts.O_RDONLY;
+          break;
+        case "wronly":
+          res |= consts.O_WRONLY;
+          break;
+        case "rdwr":
+          res |= consts.O_RDWR;
+          break;
+        case "append":
+          res |= consts.O_APPEND;
+          break;
+        case "create":
+          res |= consts.O_CREAT;
+          break;
+        case "truncate":
+          res |= consts.O_TRUNC;
+          break;
+        case "excl":
+          res |= consts.O_EXCL;
+          break;
+        case "binary":
+          res |= consts.O_BINARY;
+          break;
+        case "text":
+          res |= consts.O_TEXT;
+          break;
+        case "nonblock":
+          res |= consts.O_NONBLOCK;
+          break;
+        case "noctty":
+          res |= consts.O_NOCTTY;
+          break;
+        case "dsync":
+          res |= consts.O_DSYNC;
+          break;
+        case "sync":
+          res |= consts.O_SYNC;
+          break;
+      }
+    }
+    try {
+      var fd = this.fs.openSync(this.nm(name), res, perms);
+      return new MlNodeFd(fd, f);
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  rename(o, n, raise_unix) {
+    if (globalThis.process?.platform === "win32") {
+      try {
+        var target = this.nm(n);
+        var source = this.nm(o);
+        var target_stats, source_stats;
+        if (
+          (target_stats = this.fs.statSync(target, {
+            throwIfNoEntry: false,
+          })) &&
+          (source_stats = this.fs.statSync(source, {
+            throwIfNoEntry: false,
+          })) &&
+          source_stats.isDirectory()
+        ) {
+          if (target_stats.isDirectory()) {
+            if (!target.startsWith(source))
+              try {
+                this.fs.rmdirSync(target);
+              } catch {}
+          } else {
+            var err = new Error(
+              `ENOTDIR: not a directory, rename '${source}' -> '${target}'`,
+            );
+            throw Object.assign(err, {
+              errno: -20,
+              code: "ENOTDIR",
+              syscall: "rename",
+              path: target,
+            });
+          }
+        }
+        this.fs.renameSync(this.nm(o), this.nm(n));
+      } catch (err) {
+        caml_raise_nodejs_error(err, raise_unix);
+      }
+    } else {
+      try {
+        this.fs.renameSync(this.nm(o), this.nm(n));
+      } catch (err) {
+        caml_raise_nodejs_error(err, raise_unix);
+      }
+    }
+  }
+
+  stat(name, large, raise_unix) {
+    try {
+      var js_stats = this.fs.statSync(this.nm(name));
+      return fs_node_stats_from_js(js_stats, large);
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  lstat(name, large, raise_unix) {
+    try {
+      var js_stats = this.fs.lstatSync(this.nm(name));
+      return fs_node_stats_from_js(js_stats, large);
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  chmod(name, perms, raise_unix) {
+    try {
+      this.fs.chmodSync(this.nm(name), perms);
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  link(target, path, raise_unix) {
+    try {
+      this.fs.linkSync(this.nm(target), this.nm(path));
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  symlink(to_dir, target, path, raise_unix) {
+    try {
+      this.fs.symlinkSync(
+        target,
+        this.nm(path),
+        to_dir === 0 ? null : to_dir[1] ? "dir" : "file",
+      );
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  readlink(name, raise_unix) {
+    try {
+      var link = this.fs.readlinkSync(this.nm(name), "utf8");
+      return caml_string_of_jsstring(link);
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
+
+  opendir(name, raise_unix) {
+    try {
+      return this.fs.opendirSync(this.nm(name));
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+  }
 }
-
-MlNodeDevice.prototype.stat = function (name, large, raise_unix) {
-  try {
-    var js_stats = this.fs.statSync(this.nm(name));
-    return fs_node_stats_from_js(js_stats, large);
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.lstat = function (name, large, raise_unix) {
-  try {
-    var js_stats = this.fs.lstatSync(this.nm(name));
-    return fs_node_stats_from_js(js_stats, large);
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.chmod = function (name, perms, raise_unix) {
-  try {
-    this.fs.chmodSync(this.nm(name), perms);
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.link = function (target, path, raise_unix) {
-  try {
-    this.fs.linkSync(this.nm(target), this.nm(path));
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.symlink = function (to_dir, target, path, raise_unix) {
-  try {
-    this.fs.symlinkSync(
-      target,
-      this.nm(path),
-      to_dir === 0 ? null : to_dir[1] ? "dir" : "file",
-    );
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.readlink = function (name, raise_unix) {
-  try {
-    var link = this.fs.readlinkSync(this.nm(name), "utf8");
-    return caml_string_of_jsstring(link);
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-MlNodeDevice.prototype.opendir = function (name, raise_unix) {
-  try {
-    return this.fs.opendirSync(this.nm(name));
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
-  }
-};
-
-MlNodeDevice.prototype.constructor = MlNodeDevice;
 
 //Provides: fs_node_stats_from_js
 //Requires: caml_int64_of_float
@@ -359,144 +381,164 @@ function fs_node_stats_from_js(js_stats, large) {
 
 //Provides: MlNodeDevice
 //If: browser
-function MlNodeDevice() {}
+class MlNodeDevice {}
 
 //Provides: MlNodeFd
 //Requires: MlFile, caml_uint8_array_of_string, caml_uint8_array_of_bytes, caml_bytes_set, caml_raise_sys_error
 //Requires: caml_raise_nodejs_error, caml_raise_system_error, fs_node_stats_from_js
-function MlNodeFd(fd, flags) {
-  this.fs = require("node:fs");
-  this.fd = fd;
-  this.flags = flags;
-  var stats = this.fs.fstatSync(fd);
-  flags.noSeek =
-    stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
-  this.offset = this.flags.append ? stats.size : 0;
-  this.seeked = false;
-}
-MlNodeFd.prototype = new MlFile();
-MlNodeFd.prototype.constructor = MlNodeFd;
+class MlNodeFd extends MlFile {
+  constructor(fd, flags) {
+    super();
+    this.fs = require("node:fs");
+    this.fd = fd;
+    this.flags = flags;
+    var stats = this.fs.fstatSync(fd);
+    flags.noSeek =
+      stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
+    this.offset = this.flags.append ? stats.size : 0;
+    this.seeked = false;
+  }
 
-MlNodeFd.prototype.truncate = function (len, raise_unix) {
-  try {
-    this.fs.ftruncateSync(this.fd, len | 0);
-    if (this.offset > len) this.offset = len;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
+  truncate(len, raise_unix) {
+    try {
+      this.fs.ftruncateSync(this.fd, len | 0);
+      if (this.offset > len) this.offset = len;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
   }
-};
-MlNodeFd.prototype.length = function () {
-  try {
-    return this.fs.fstatSync(this.fd).size;
-  } catch (err) {
-    caml_raise_sys_error(err.toString());
+
+  length() {
+    try {
+      return this.fs.fstatSync(this.fd).size;
+    } catch (err) {
+      caml_raise_sys_error(err.toString());
+    }
   }
-};
-MlNodeFd.prototype.write = function (buf, buf_offset, len, raise_unix) {
-  try {
-    if (this.flags.noSeek || !this.seeked)
-      var written = this.fs.writeSync(this.fd, buf, buf_offset, len);
-    else
-      var written = this.fs.writeSync(
-        this.fd,
-        buf,
-        buf_offset,
-        len,
-        this.offset,
-      );
-    this.offset += written;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
+
+  write(buf, buf_offset, len, raise_unix) {
+    try {
+      if (this.flags.noSeek || !this.seeked) {
+        var written = this.fs.writeSync(this.fd, buf, buf_offset, len);
+      } else {
+        var written = this.fs.writeSync(
+          this.fd,
+          buf,
+          buf_offset,
+          len,
+          this.offset,
+        );
+      }
+      this.offset += written;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
+    return written;
   }
-  return written;
-};
-MlNodeFd.prototype.read = function (a, buf_offset, len, raise_unix) {
-  try {
-    if (this.flags.noSeek || !this.seeked)
-      var read = this.fs.readSync(this.fd, a, buf_offset, len);
-    else var read = this.fs.readSync(this.fd, a, buf_offset, len, this.offset);
-    this.offset += read;
+
+  read(a, buf_offset, len, raise_unix) {
+    try {
+      if (this.flags.noSeek || !this.seeked) {
+        var read = this.fs.readSync(this.fd, a, buf_offset, len);
+      } else {
+        var read = this.fs.readSync(this.fd, a, buf_offset, len, this.offset);
+      }
+      this.offset += read;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
     return read;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
   }
-};
-MlNodeFd.prototype.seek = function (offset, whence, raise_unix) {
-  if (this.flags.noSeek)
-    caml_raise_system_error(raise_unix, "ESPIPE", "lseek", "illegal seek");
-  switch (whence) {
-    case 0:
-      break;
-    case 1:
-      offset += this.offset;
-      break;
-    case 2:
-      offset += this.length();
-      break;
+
+  seek(offset, whence, raise_unix) {
+    if (this.flags.noSeek) {
+      caml_raise_system_error(raise_unix, "ESPIPE", "lseek", "illegal seek");
+    }
+    switch (whence) {
+      case 0:
+        break;
+      case 1:
+        offset += this.offset;
+        break;
+      case 2:
+        offset += this.length();
+        break;
+    }
+    if (offset < 0) {
+      caml_raise_system_error(
+        raise_unix,
+        "EINVAL",
+        "lseek",
+        "invalid argument",
+      );
+    }
+    this.offset = offset;
+    this.seeked = true;
+    return this.offset;
   }
-  if (offset < 0)
-    caml_raise_system_error(raise_unix, "EINVAL", "lseek", "invalid argument");
-  this.offset = offset;
-  this.seeked = true;
-  return this.offset;
-};
-MlNodeFd.prototype.stat = function (large) {
-  try {
-    var js_stats = this.fs.fstatSync(this.fd);
-    return fs_node_stats_from_js(js_stats, large);
-  } catch (err) {
-    caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
+
+  stat(large) {
+    try {
+      var js_stats = this.fs.fstatSync(this.fd);
+      return fs_node_stats_from_js(js_stats, large);
+    } catch (err) {
+      caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
+    }
   }
-};
-MlNodeFd.prototype.chmod = function (perms) {
-  try {
-    this.fs.fchmodSync(this.fd, perms);
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
+
+  chmod(perms) {
+    try {
+      this.fs.fchmodSync(this.fd, perms);
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
+    }
   }
-};
-MlNodeFd.prototype.sync = function () {
-  try {
-    this.fs.fsyncSync(this.fd);
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
+
+  sync() {
+    try {
+      this.fs.fsyncSync(this.fd);
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
+    }
   }
-};
-MlNodeFd.prototype.close = function (raise_unix) {
-  try {
-    this.fs.closeSync(this.fd);
-    return 0;
-  } catch (err) {
-    caml_raise_nodejs_error(err, raise_unix);
+
+  close(raise_unix) {
+    try {
+      this.fs.closeSync(this.fd);
+      return 0;
+    } catch (err) {
+      caml_raise_nodejs_error(err, raise_unix);
+    }
   }
-};
-MlNodeFd.prototype.check_stream_semantics = function (cmd) {
-  try {
-    var js_stats = this.fs.fstatSync(this.fd);
-  } catch (err) {
-    caml_raise_nodejs_error(err, /* raise Unix_error */ 1, cmd);
-  }
-  if (
-    !(
-      js_stats.isFile() ||
-      js_stats.isCharacterDevice() ||
-      js_stats.isFIFO() ||
-      js_stats.isSocket()
+
+  check_stream_semantics(cmd) {
+    try {
+      var js_stats = this.fs.fstatSync(this.fd);
+    } catch (err) {
+      caml_raise_nodejs_error(err, /* raise Unix_error */ 1, cmd);
+    }
+    if (
+      !(
+        js_stats.isFile() ||
+        js_stats.isCharacterDevice() ||
+        js_stats.isFIFO() ||
+        js_stats.isSocket()
+      )
     )
-  )
-    caml_raise_system_error(
-      /* raise Unix_error */ 1,
-      "EINVAL",
-      cmd,
-      "invalid argument",
-    );
-};
+      caml_raise_system_error(
+        /* raise Unix_error */ 1,
+        "EINVAL",
+        cmd,
+        "invalid argument",
+      );
+  }
+}
 
 //Provides: MlNodeFd
 //If: browser
-function MlNodeFd() {}
+class MlNodeFd {}
 
 //Provides: caml_sys_open_for_node
 //Requires: MlNodeFd

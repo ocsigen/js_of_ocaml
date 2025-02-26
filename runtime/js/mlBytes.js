@@ -412,36 +412,41 @@ function caml_bytes_of_utf16_jsstring(s) {
 
 //Provides: MlBytes
 //Requires: caml_convert_string_to_bytes, jsoo_is_ascii, caml_utf16_of_utf8
-function MlBytes(tag, contents, length) {
-  this.t = tag;
-  this.c = contents;
-  this.l = length;
-}
-MlBytes.prototype.toString = function () {
-  switch (this.t) {
-    case 9: /*BYTES | ASCII*/
-    case 8 /*BYTES | NOT_ASCII*/:
-      return this.c;
-    case 4: /* ARRAY */
-    case 2 /* PARTIAL */:
-      // biome-ignore lint/suspicious/noFallthroughSwitchClause:
-      caml_convert_string_to_bytes(this);
-    // fallthrough
-    case 0 /*BYTES | UNKOWN*/:
-      if (jsoo_is_ascii(this.c)) this.t = 9; /*BYTES | ASCII*/
-      else this.t = 8; /*BYTES | NOT_ASCII*/
-      return this.c;
+class MlBytes {
+  constructor(tag, contents, length) {
+    this.t = tag;
+    this.c = contents;
+    this.l = length;
   }
-};
-MlBytes.prototype.toUtf16 = function () {
-  var r = this.toString();
-  if (this.t === 9) return r;
-  return caml_utf16_of_utf8(r);
-};
-MlBytes.prototype.slice = function () {
-  var content = this.t === 4 ? this.c.slice() : this.c;
-  return new MlBytes(this.t, content, this.l);
-};
+
+  toString() {
+    switch (this.t) {
+      case 9: /*BYTES | ASCII*/
+      case 8 /*BYTES | NOT_ASCII*/:
+        return this.c;
+      case 4: /* ARRAY */
+      case 2 /* PARTIAL */:
+        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
+        caml_convert_string_to_bytes(this);
+      // fallthrough
+      case 0 /*BYTES | UNKOWN*/:
+        if (jsoo_is_ascii(this.c)) this.t = 9; /*BYTES | ASCII*/
+        else this.t = 8; /*BYTES | NOT_ASCII*/
+        return this.c;
+    }
+  }
+
+  toUtf16() {
+    var r = this.toString();
+    if (this.t === 9) return r;
+    return caml_utf16_of_utf8(r);
+  }
+
+  slice() {
+    var content = this.t === 4 ? this.c.slice() : this.c;
+    return new MlBytes(this.t, content, this.l);
+  }
+}
 
 //Provides: caml_convert_string_to_bytes
 //Requires: caml_str_repeat, caml_sub_uint8_array_to_jsbytes

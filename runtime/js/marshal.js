@@ -48,79 +48,92 @@ var caml_marshal_constants = {
 
 //Provides: UInt8ArrayReader
 //Requires: caml_string_of_uint8_array, caml_jsbytes_of_string
-function UInt8ArrayReader(s, i) {
-  this.s = s;
-  this.i = i;
-}
-UInt8ArrayReader.prototype = {
-  read8u: function () {
+class UInt8ArrayReader {
+  constructor(s, i) {
+    this.s = s;
+    this.i = i;
+  }
+
+  read8u() {
     return this.s[this.i++];
-  },
-  read8s: function () {
+  }
+
+  read8s() {
     return (this.s[this.i++] << 24) >> 24;
-  },
-  read16u: function () {
+  }
+
+  read16u() {
     var s = this.s,
       i = this.i;
     this.i = i + 2;
     return (s[i] << 8) | s[i + 1];
-  },
-  read16s: function () {
+  }
+
+  read16s() {
     var s = this.s,
       i = this.i;
     this.i = i + 2;
     return ((s[i] << 24) >> 16) | s[i + 1];
-  },
-  read32u: function () {
+  }
+
+  read32u() {
     var s = this.s,
       i = this.i;
     this.i = i + 4;
     return ((s[i] << 24) | (s[i + 1] << 16) | (s[i + 2] << 8) | s[i + 3]) >>> 0;
-  },
-  read32s: function () {
+  }
+
+  read32s() {
     var s = this.s,
       i = this.i;
     this.i = i + 4;
     return (s[i] << 24) | (s[i + 1] << 16) | (s[i + 2] << 8) | s[i + 3];
-  },
-  readstr: function (len) {
+  }
+
+  readstr(len) {
     var i = this.i;
     this.i = i + len;
     return caml_string_of_uint8_array(this.s.subarray(i, i + len));
-  },
-  readuint8array: function (len) {
+  }
+
+  readuint8array(len) {
     var i = this.i;
     this.i = i + len;
     return this.s.subarray(i, i + len);
-  },
-};
+  }
+}
 
 //Provides: MlStringReader
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
-function MlStringReader(s, i) {
-  this.s = caml_jsbytes_of_string(s);
-  this.i = i;
-}
-MlStringReader.prototype = {
-  read8u: function () {
+class MlStringReader {
+  constructor(s, i) {
+    this.s = caml_jsbytes_of_string(s);
+    this.i = i;
+  }
+
+  read8u() {
     return this.s.charCodeAt(this.i++);
-  },
-  read8s: function () {
+  }
+
+  read8s() {
     return (this.s.charCodeAt(this.i++) << 24) >> 24;
-  },
-  read16u: function () {
+  }
+
+  read16u() {
     var s = this.s,
       i = this.i;
     this.i = i + 2;
     return (s.charCodeAt(i) << 8) | s.charCodeAt(i + 1);
-  },
-  read16s: function () {
+  }
+
+  read16s() {
     var s = this.s,
       i = this.i;
     this.i = i + 2;
     return ((s.charCodeAt(i) << 24) >> 16) | s.charCodeAt(i + 1);
-  },
-  read32u: function () {
+  }
+
+  read32u() {
     var s = this.s,
       i = this.i;
     this.i = i + 4;
@@ -131,8 +144,9 @@ MlStringReader.prototype = {
         s.charCodeAt(i + 3)) >>>
       0
     );
-  },
-  read32s: function () {
+  }
+
+  read32s() {
     var s = this.s,
       i = this.i;
     this.i = i + 4;
@@ -142,13 +156,15 @@ MlStringReader.prototype = {
       (s.charCodeAt(i + 2) << 8) |
       s.charCodeAt(i + 3)
     );
-  },
-  readstr: function (len) {
+  }
+
+  readstr(len) {
     var i = this.i;
     this.i = i + len;
     return caml_string_of_jsbytes(this.s.slice(i, i + len));
-  },
-  readuint8array: function (len) {
+  }
+
+  readuint8array(len) {
     var b = new Uint8Array(len);
     var s = this.s;
     var i = this.i;
@@ -157,35 +173,40 @@ MlStringReader.prototype = {
     }
     this.i = i + len;
     return b;
-  },
-};
+  }
+}
 
 //Provides: BigStringReader
 //Requires: caml_string_of_uint8_array, caml_ba_get_1
-function BigStringReader(bs, i) {
-  this.s = bs;
-  this.i = i;
-}
-BigStringReader.prototype = {
-  read8u: function () {
+class BigStringReader {
+  constructor(bs, i) {
+    this.s = bs;
+    this.i = i;
+  }
+
+  read8u() {
     return caml_ba_get_1(this.s, this.i++);
-  },
-  read8s: function () {
+  }
+
+  read8s() {
     return (caml_ba_get_1(this.s, this.i++) << 24) >> 24;
-  },
-  read16u: function () {
+  }
+
+  read16u() {
     var s = this.s,
       i = this.i;
     this.i = i + 2;
     return (caml_ba_get_1(s, i) << 8) | caml_ba_get_1(s, i + 1);
-  },
-  read16s: function () {
+  }
+
+  read16s() {
     var s = this.s,
       i = this.i;
     this.i = i + 2;
     return ((caml_ba_get_1(s, i) << 24) >> 16) | caml_ba_get_1(s, i + 1);
-  },
-  read32u: function () {
+  }
+
+  read32u() {
     var s = this.s,
       i = this.i;
     this.i = i + 4;
@@ -196,8 +217,9 @@ BigStringReader.prototype = {
         caml_ba_get_1(s, i + 3)) >>>
       0
     );
-  },
-  read32s: function () {
+  }
+
+  read32s() {
     var s = this.s,
       i = this.i;
     this.i = i + 4;
@@ -207,22 +229,24 @@ BigStringReader.prototype = {
       (caml_ba_get_1(s, i + 2) << 8) |
       caml_ba_get_1(s, i + 3)
     );
-  },
-  readstr: function (len) {
+  }
+
+  readstr(len) {
     var i = this.i;
     var offset = this.offset(i);
     this.i = i + len;
     return caml_string_of_uint8_array(
       this.s.data.subarray(offset, offset + len),
     );
-  },
-  readuint8array: function (len) {
+  }
+
+  readuint8array(len) {
     var i = this.i;
     var offset = this.offset(i);
     this.i = i + len;
     return this.s.data.subarray(offset, offset + len);
-  },
-};
+  }
+}
 
 //Provides: caml_float_of_bytes
 //Requires: caml_int64_float_of_bits, caml_int64_of_bytes
@@ -630,22 +654,24 @@ function caml_marshal_data_size(s, ofs) {
 }
 
 //Provides: MlObjectTable
-function MlObjectTable() {
-  this.objs = [];
-  this.lookup = new globalThis.Map();
+class MlObjectTable {
+  constructor() {
+    this.objs = [];
+    this.lookup = new globalThis.Map();
+  }
+
+  store(v) {
+    this.lookup.set(v, this.objs.length);
+    this.objs.push(v);
+  }
+
+  recall(v) {
+    var i = this.lookup.get(v);
+    return i === undefined
+      ? undefined
+      : this.objs.length - i; /* index is relative */
+  }
 }
-
-MlObjectTable.prototype.store = function (v) {
-  this.lookup.set(v, this.objs.length);
-  this.objs.push(v);
-};
-
-MlObjectTable.prototype.recall = function (v) {
-  var i = this.lookup.get(v);
-  return i === undefined
-    ? undefined
-    : this.objs.length - i; /* index is relative */
-};
 
 //Provides: caml_output_val
 //Requires: caml_int64_to_bytes, caml_failwith
@@ -655,40 +681,46 @@ MlObjectTable.prototype.recall = function (v) {
 //Requires: MlObjectTable, caml_list_to_js_array, caml_custom_ops
 //Requires: caml_invalid_argument,caml_string_of_jsbytes, caml_is_continuation_tag
 var caml_output_val = (function () {
-  function Writer() {
-    this.chunk = [];
-  }
-  Writer.prototype = {
-    chunk_idx: 20,
-    block_len: 0,
-    obj_counter: 0,
-    size_32: 0,
-    size_64: 0,
-    write: function (size, value) {
+  class Writer {
+    constructor() {
+      this.chunk = [];
+      this.chunk_idx = 20;
+      this.block_len = 0;
+      this.obj_counter = 0;
+      this.size_32 = 0;
+      this.size_64 = 0;
+    }
+
+    write(size, value) {
       for (var i = size - 8; i >= 0; i -= 8)
         this.chunk[this.chunk_idx++] = (value >> i) & 0xff;
-    },
-    write_at: function (pos, size, value) {
+    }
+
+    write_at(pos, size, value) {
       var pos = pos;
       for (var i = size - 8; i >= 0; i -= 8)
         this.chunk[pos++] = (value >> i) & 0xff;
-    },
-    write_code: function (size, code, value) {
+    }
+
+    write_code(size, code, value) {
       this.chunk[this.chunk_idx++] = code;
       for (var i = size - 8; i >= 0; i -= 8)
         this.chunk[this.chunk_idx++] = (value >> i) & 0xff;
-    },
-    write_shared: function (offset) {
+    }
+
+    write_shared(offset) {
       if (offset < 1 << 8)
         this.write_code(8, 0x04 /*cst.CODE_SHARED8*/, offset);
       else if (offset < 1 << 16)
         this.write_code(16, 0x05 /*cst.CODE_SHARED16*/, offset);
       else this.write_code(32, 0x06 /*cst.CODE_SHARED32*/, offset);
-    },
-    pos: function () {
+    }
+
+    pos() {
       return this.chunk_idx;
-    },
-    finalize: function () {
+    }
+
+    finalize() {
       this.block_len = this.chunk_idx - 20;
       this.chunk_idx = 0;
       this.write(32, 0x8495a6be);
@@ -697,8 +729,8 @@ var caml_output_val = (function () {
       this.write(32, this.size_32);
       this.write(32, this.size_64);
       return this.chunk;
-    },
-  };
+    }
+  }
   return function (v, flags) {
     flags = caml_list_to_js_array(flags);
 
