@@ -258,213 +258,209 @@ var caml_ba_custom_name = "_bigarr02";
 //Requires: caml_array_bound_error, caml_invalid_argument, caml_ba_custom_name
 //Requires: caml_int64_create_lo_hi, caml_int64_hi32, caml_int64_lo32
 //Requires: caml_packFloat16, caml_unpackFloat16
-function Ml_Bigarray(kind, layout, dims, buffer) {
-  this.kind = kind;
-  this.layout = layout;
-  this.dims = dims;
-  this.data = buffer;
+class Ml_Bigarray {
+  constructor(kind, layout, dims, buffer) {
+    this.kind = kind;
+    this.layout = layout;
+    this.dims = dims;
+    this.data = buffer;
+    this.caml_custom = caml_ba_custom_name;
+  }
+
+  offset(arg) {
+    var ofs = 0;
+    if (typeof arg === "number") arg = [arg];
+    if (!Array.isArray(arg))
+      caml_invalid_argument("bigarray.js: invalid offset");
+    if (this.dims.length !== arg.length)
+      caml_invalid_argument("Bigarray.get/set: bad number of dimensions");
+    if (this.layout === 0 /* c_layout */) {
+      for (var i = 0; i < this.dims.length; i++) {
+        if (arg[i] < 0 || arg[i] >= this.dims[i]) caml_array_bound_error();
+        ofs = ofs * this.dims[i] + arg[i];
+      }
+    } else {
+      for (var i = this.dims.length - 1; i >= 0; i--) {
+        if (arg[i] < 1 || arg[i] > this.dims[i]) {
+          caml_array_bound_error();
+        }
+        ofs = ofs * this.dims[i] + (arg[i] - 1);
+      }
+    }
+    return ofs;
+  }
+
+  get(ofs) {
+    switch (this.kind) {
+      case 7:
+        // Int64
+        var l = this.data[ofs * 2 + 0];
+        var h = this.data[ofs * 2 + 1];
+        return caml_int64_create_lo_hi(l, h);
+      case 10:
+      case 11:
+        // Complex32, Complex64
+        var r = this.data[ofs * 2 + 0];
+        var i = this.data[ofs * 2 + 1];
+        return [254, r, i];
+      case 13:
+        return caml_unpackFloat16(this.data[ofs]);
+      default:
+        return this.data[ofs];
+    }
+  }
+
+  set(ofs, v) {
+    switch (this.kind) {
+      case 7:
+        // Int64
+        this.data[ofs * 2 + 0] = caml_int64_lo32(v);
+        this.data[ofs * 2 + 1] = caml_int64_hi32(v);
+        break;
+      case 10:
+      case 11:
+        // Complex32, Complex64
+        this.data[ofs * 2 + 0] = v[1];
+        this.data[ofs * 2 + 1] = v[2];
+        break;
+      case 13:
+        this.data[ofs] = caml_packFloat16(v);
+        break;
+      default:
+        this.data[ofs] = v;
+        break;
+    }
+    return 0;
+  }
+
+  fill(v) {
+    switch (this.kind) {
+      case 7:
+        // Int64
+        var a = caml_int64_lo32(v);
+        var b = caml_int64_hi32(v);
+        if (a === b) {
+          this.data.fill(a);
+        } else {
+          for (var i = 0; i < this.data.length; i++) {
+            this.data[i] = i % 2 === 0 ? a : b;
+          }
+        }
+        break;
+      case 10:
+      case 11:
+        // Complex32, Complex64
+        var im = v[1];
+        var re = v[2];
+        if (im === re) {
+          this.data.fill(im);
+        } else {
+          for (var i = 0; i < this.data.length; i++) {
+            this.data[i] = i % 2 === 0 ? im : re;
+          }
+        }
+        break;
+      case 13:
+        this.data.fill(caml_packFloat16(v));
+        break;
+      default:
+        this.data.fill(v);
+        break;
+    }
+  }
+
+  compare(b, total) {
+    if (this.layout !== b.layout || this.kind !== b.kind) {
+      var k1 = this.kind | (this.layout << 8);
+      var k2 = b.kind | (b.layout << 8);
+      return k2 - k1;
+    }
+    if (this.dims.length !== b.dims.length) {
+      return b.dims.length - this.dims.length;
+    }
+    for (var i = 0; i < this.dims.length; i++)
+      if (this.dims[i] !== b.dims[i]) return this.dims[i] < b.dims[i] ? -1 : 1;
+    switch (this.kind) {
+      case 0:
+      case 1:
+      case 10:
+      case 11:
+        // Floats
+        var x, y;
+        for (var i = 0; i < this.data.length; i++) {
+          x = this.data[i];
+          y = b.data[i];
+          if (x < y) return -1;
+          if (x > y) return 1;
+          if (x !== y) {
+            if (!total) return Number.NaN;
+            if (!Number.isNaN(x)) return 1;
+            if (!Number.isNaN(y)) return -1;
+          }
+        }
+        break;
+      case 7:
+        // Int64
+        for (var i = 0; i < this.data.length; i += 2) {
+          // Check highest bits first
+          if (this.data[i + 1] < b.data[i + 1]) return -1;
+          if (this.data[i + 1] > b.data[i + 1]) return 1;
+          if (this.data[i] >>> 0 < b.data[i] >>> 0) return -1;
+          if (this.data[i] >>> 0 > b.data[i] >>> 0) return 1;
+        }
+        break;
+      case 13:
+        for (var i = 0; i < this.data.length; i++) {
+          var aa = caml_unpackFloat16(this.data[i]);
+          var bb = caml_unpackFloat16(b.data[i]);
+          if (aa < bb) return -1;
+          if (aa > bb) return 1;
+        }
+        break;
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+      case 6:
+      case 8:
+      case 9:
+      case 12:
+        for (var i = 0; i < this.data.length; i++) {
+          if (this.data[i] < b.data[i]) return -1;
+          if (this.data[i] > b.data[i]) return 1;
+        }
+        break;
+    }
+    return 0;
+  }
 }
-
-Ml_Bigarray.prototype.caml_custom = caml_ba_custom_name;
-
-Ml_Bigarray.prototype.offset = function (arg) {
-  var ofs = 0;
-  if (typeof arg === "number") arg = [arg];
-  if (!Array.isArray(arg)) caml_invalid_argument("bigarray.js: invalid offset");
-  if (this.dims.length !== arg.length)
-    caml_invalid_argument("Bigarray.get/set: bad number of dimensions");
-  if (this.layout === 0 /* c_layout */) {
-    for (var i = 0; i < this.dims.length; i++) {
-      if (arg[i] < 0 || arg[i] >= this.dims[i]) caml_array_bound_error();
-      ofs = ofs * this.dims[i] + arg[i];
-    }
-  } else {
-    for (var i = this.dims.length - 1; i >= 0; i--) {
-      if (arg[i] < 1 || arg[i] > this.dims[i]) {
-        caml_array_bound_error();
-      }
-      ofs = ofs * this.dims[i] + (arg[i] - 1);
-    }
-  }
-  return ofs;
-};
-
-Ml_Bigarray.prototype.get = function (ofs) {
-  switch (this.kind) {
-    case 7:
-      // Int64
-      var l = this.data[ofs * 2 + 0];
-      var h = this.data[ofs * 2 + 1];
-      return caml_int64_create_lo_hi(l, h);
-    case 10:
-    case 11:
-      // Complex32, Complex64
-      var r = this.data[ofs * 2 + 0];
-      var i = this.data[ofs * 2 + 1];
-      return [254, r, i];
-    case 13:
-      return caml_unpackFloat16(this.data[ofs]);
-    default:
-      return this.data[ofs];
-  }
-};
-
-Ml_Bigarray.prototype.set = function (ofs, v) {
-  switch (this.kind) {
-    case 7:
-      // Int64
-      this.data[ofs * 2 + 0] = caml_int64_lo32(v);
-      this.data[ofs * 2 + 1] = caml_int64_hi32(v);
-      break;
-    case 10:
-    case 11:
-      // Complex32, Complex64
-      this.data[ofs * 2 + 0] = v[1];
-      this.data[ofs * 2 + 1] = v[2];
-      break;
-    case 13:
-      this.data[ofs] = caml_packFloat16(v);
-      break;
-    default:
-      this.data[ofs] = v;
-      break;
-  }
-  return 0;
-};
-
-Ml_Bigarray.prototype.fill = function (v) {
-  switch (this.kind) {
-    case 7:
-      // Int64
-      var a = caml_int64_lo32(v);
-      var b = caml_int64_hi32(v);
-      if (a === b) {
-        this.data.fill(a);
-      } else {
-        for (var i = 0; i < this.data.length; i++) {
-          this.data[i] = i % 2 === 0 ? a : b;
-        }
-      }
-      break;
-    case 10:
-    case 11:
-      // Complex32, Complex64
-      var im = v[1];
-      var re = v[2];
-      if (im === re) {
-        this.data.fill(im);
-      } else {
-        for (var i = 0; i < this.data.length; i++) {
-          this.data[i] = i % 2 === 0 ? im : re;
-        }
-      }
-      break;
-    case 13:
-      this.data.fill(caml_packFloat16(v));
-      break;
-    default:
-      this.data.fill(v);
-      break;
-  }
-};
-
-Ml_Bigarray.prototype.compare = function (b, total) {
-  if (this.layout !== b.layout || this.kind !== b.kind) {
-    var k1 = this.kind | (this.layout << 8);
-    var k2 = b.kind | (b.layout << 8);
-    return k2 - k1;
-  }
-  if (this.dims.length !== b.dims.length) {
-    return b.dims.length - this.dims.length;
-  }
-  for (var i = 0; i < this.dims.length; i++)
-    if (this.dims[i] !== b.dims[i]) return this.dims[i] < b.dims[i] ? -1 : 1;
-  switch (this.kind) {
-    case 0:
-    case 1:
-    case 10:
-    case 11:
-      // Floats
-      var x, y;
-      for (var i = 0; i < this.data.length; i++) {
-        x = this.data[i];
-        y = b.data[i];
-        if (x < y) return -1;
-        if (x > y) return 1;
-        if (x !== y) {
-          if (!total) return Number.NaN;
-          if (!Number.isNaN(x)) return 1;
-          if (!Number.isNaN(y)) return -1;
-        }
-      }
-      break;
-    case 7:
-      // Int64
-      for (var i = 0; i < this.data.length; i += 2) {
-        // Check highest bits first
-        if (this.data[i + 1] < b.data[i + 1]) return -1;
-        if (this.data[i + 1] > b.data[i + 1]) return 1;
-        if (this.data[i] >>> 0 < b.data[i] >>> 0) return -1;
-        if (this.data[i] >>> 0 > b.data[i] >>> 0) return 1;
-      }
-      break;
-    case 13:
-      for (var i = 0; i < this.data.length; i++) {
-        var aa = caml_unpackFloat16(this.data[i]);
-        var bb = caml_unpackFloat16(b.data[i]);
-        if (aa < bb) return -1;
-        if (aa > bb) return 1;
-      }
-      break;
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-    case 6:
-    case 8:
-    case 9:
-    case 12:
-      for (var i = 0; i < this.data.length; i++) {
-        if (this.data[i] < b.data[i]) return -1;
-        if (this.data[i] > b.data[i]) return 1;
-      }
-      break;
-  }
-  return 0;
-};
 
 //Provides: Ml_Bigarray_c_1_1
 //Requires: Ml_Bigarray, caml_array_bound_error, caml_invalid_argument
-function Ml_Bigarray_c_1_1(kind, layout, dims, buffer) {
-  this.kind = kind;
-  this.layout = layout;
-  this.dims = dims;
-  this.data = buffer;
-}
-
-Ml_Bigarray_c_1_1.prototype = new Ml_Bigarray();
-Ml_Bigarray_c_1_1.prototype.offset = function (arg) {
-  if (typeof arg !== "number") {
-    if (Array.isArray(arg) && arg.length === 1) arg = arg[0];
-    else caml_invalid_argument("Ml_Bigarray_c_1_1.offset");
+class Ml_Bigarray_c_1_1 extends Ml_Bigarray {
+  offset(arg) {
+    if (typeof arg !== "number") {
+      if (Array.isArray(arg) && arg.length === 1) arg = arg[0];
+      else caml_invalid_argument("Ml_Bigarray_c_1_1.offset");
+    }
+    if (arg < 0 || arg >= this.dims[0]) caml_array_bound_error();
+    return arg;
   }
-  if (arg < 0 || arg >= this.dims[0]) caml_array_bound_error();
-  return arg;
-};
 
-Ml_Bigarray_c_1_1.prototype.get = function (ofs) {
-  return this.data[ofs];
-};
+  get(ofs) {
+    return this.data[ofs];
+  }
 
-Ml_Bigarray_c_1_1.prototype.set = function (ofs, v) {
-  this.data[ofs] = v;
-  return 0;
-};
+  set(ofs, v) {
+    this.data[ofs] = v;
+    return 0;
+  }
 
-Ml_Bigarray_c_1_1.prototype.fill = function (v) {
-  this.data.fill(v);
-  return 0;
-};
+  fill(v) {
+    this.data.fill(v);
+    return 0;
+  }
+}
 
 //Provides: caml_ba_compare
 function caml_ba_compare(a, b, total) {

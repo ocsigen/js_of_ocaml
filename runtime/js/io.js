@@ -129,23 +129,29 @@ function caml_ml_set_channel_name(chanid, name) {
 
 //Provides: caml_ml_channels
 //Requires: MlChanid
-function caml_ml_channels_state() {
-  this.map = new globalThis.WeakMap();
-  this.opened = new globalThis.Set();
+class caml_ml_channels_state {
+  constructor() {
+    this.map = new globalThis.WeakMap();
+    this.opened = new globalThis.Set();
+  }
+
+  close(chanid) {
+    this.opened.delete(chanid);
+  }
+
+  get(chanid) {
+    return this.map.get(chanid);
+  }
+
+  set(chanid, val) {
+    if (val.opened) this.opened.add(chanid);
+    return this.map.set(chanid, val);
+  }
+
+  all() {
+    return this.opened.values();
+  }
 }
-caml_ml_channels_state.prototype.close = function (chanid) {
-  this.opened.delete(chanid);
-};
-caml_ml_channels_state.prototype.get = function (chanid) {
-  return this.map.get(chanid);
-};
-caml_ml_channels_state.prototype.set = function (chanid, val) {
-  if (val.opened) this.opened.add(chanid);
-  return this.map.set(chanid, val);
-};
-caml_ml_channels_state.prototype.all = function () {
-  return this.opened.values();
-};
 
 var caml_ml_channels = new caml_ml_channels_state();
 
