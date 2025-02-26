@@ -46,7 +46,25 @@ You can import the following functions to access or allocate integers of type in
    (func $caml_copy_int64 (param i64) (result (ref eq))))
 }}}
 
-== Implementing primitives
+== Preprocessor ==
+
+The Wasm text files are passed through a preprocessor. You can run the processor manually: {{{wasm_of_ocaml pp test.wasm}}}.
+
+This preprocessing step allows optional compilations of pieces of code depending on the version of the compiler.
+{{{
+(@if (>= ocaml_version  (5 2 0))
+   (@then ...)
+   (@else ...))
+}}}
+To form conditional expressions, the following operators are available:
+- comparisons: {{{=}}}, {{{>}}}, {{{>=}}}, {{{<}}}, {{{<=}}}, {{{<>}}};
+- boolean operators: {{{and}}}, {{{or}}}, {{{not}}}
+
+It also provides some syntactic sugar for strings and ASCII characters. The expression {{{(@string "ab")}}} is expanded into {{{(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))}}}. The statement {{{(@string $s "ab")}}} is an abbreviation for {{{(global $s (ref eq) (@string "ab"))}}}. The expression {{{(@char "a")}}} is expanded to {{{(i32.const 92)}}}.
+
+To provide a better debugging experience, the function export name is used to name functions with no explicit id: {{{(func (export "foo") ...)}}}} is expanded into {{{(func $foo (export "foo") ...)}}}}.
+
+== Implementing primitives ==
 
 You define a primitive by exporting a Wasm function with parameters and return value of type {{{(ref eq)}}}.
 {{{
