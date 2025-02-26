@@ -5,6 +5,10 @@ Features are grouped by ECMAScript version.
 
 ## ECMAScript 2015
 
+### Classes
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Classes#browser_compatibility)
+
 ### Rest parameters
 
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters#browser_compatibility)
@@ -47,6 +51,7 @@ Features are grouped by ECMAScript version.
 - Polyfilled in the repository
 
 ### BigInt
+
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#browser_compatibility)
 - For Wasm_of_ocaml
 
