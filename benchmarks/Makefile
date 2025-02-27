@@ -13,7 +13,10 @@ all: _perf graphsnopr graphspr graphseff _noperf
 # This target is the one run by `current-bench`,
 # see https://github.com/ocurrent/current-bench
 .PHONY: bench
-bench: time-wasm.json
+bench: __run_wasm
+	$(REPORT) -format current-bench -config report-wasm-cb.config \
+	  -ylabel "Wasm - Execution time"
+
 
 graphsnopr: _noprecomp $(GRAPHSNOPR)
 
@@ -247,11 +250,6 @@ nativejs.png: nativejs.svg
 
 %.png: %.svg
 	inkscape -D -o "$@" -w 1024 $<
-
-time-wasm.json: __run_wasm
-	$(REPORT) -format current-bench -config report-wasm-cb.config \
-	  -ylabel "Wasm - Execution time" \
-	  > $@
 
 _perf:
 	for i in /sys/devices/system/cpu/cpu* ; \
