@@ -35,8 +35,6 @@ installdoc:
 	rsync -av doc-dev/ _wikidoc/doc/dev/
 
 bench:
-	opam pin add -n .
-	opam install wasm_of_ocaml-compiler
 	$(MAKE) -C benchmarks bench
 
 .PHONY: all tests tests-wasm test runtest runtests doc clean installdoc bench
