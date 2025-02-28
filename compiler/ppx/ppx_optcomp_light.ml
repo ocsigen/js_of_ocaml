@@ -88,92 +88,146 @@ end = struct
         | n -> n)
 end
 
-exception Invalid
+exception Invalid of Location.t
 
-let get_env s =
-  match Properties.get s with
-  | None -> Sys.getenv s
-  | Some p -> p
+type op =
+  | LE
+  | GE
+  | GT
+  | LT
+  | NEQ
+  | EQ
+  | AND
+  | OR
+  | NOT
+
+type e =
+  | Version of Version.t
+  | Tuple of e list
+  | Bool of bool
+  | Int of int
+  | String of string
+
+let get_bin_op = function
+  | { pexp_desc = Pexp_ident { txt = Lident str; _ }; pexp_loc = loc; _ } -> (
+      match str with
+      | "<=" -> LE
+      | ">=" -> GE
+      | ">" -> GT
+      | "<" -> LT
+      | "=" -> EQ
+      | "<>" -> NEQ
+      | "&&" -> AND
+      | "||" -> OR
+      | _ -> raise (Invalid loc))
+  | { pexp_loc = loc; _ } -> raise (Invalid loc)
+
+let get_un_op = function
+  | { pexp_desc = Pexp_ident { txt = Lident str; _ }; pexp_loc = loc; _ } -> (
+      match str with
+      | "not" -> NOT
+      | _ -> raise (Invalid loc))
+  | { pexp_loc = loc; _ } -> raise (Invalid loc)
+
+let version = function
+  | Version v -> v
+  | Tuple l ->
+      Version.of_list
+        (List.map l ~f:(function
+          | Int i -> i
+          | _ -> raise (Invalid Location.none)))
+  | Bool _ | Int _ | String _ -> raise (Invalid Location.none)
 
 let keep loc (attrs : attributes) =
-  try
-    let keep =
-      List.for_all attrs ~f:(function
-        | { attr_name = { txt = ("if" | "ifnot") as ifnot; _ }; attr_payload; _ } -> (
-            let norm =
-              match ifnot with
-              | "if" -> fun x -> x
-              | "ifnot" -> fun x -> not x
-              | _ -> assert false
-            in
+  let ifs =
+    List.filter attrs ~f:(function
+      | { attr_name = { txt = "if"; _ }; _ } -> true
+      | _ -> false)
+  in
+  match ifs with
+  | [] -> true
+  | _ -> (
+      try
+        let keep_one { attr_payload; attr_loc; _ } =
+          let e =
             match attr_payload with
-            | PStr
-                [ { pstr_desc =
-                      Pstr_eval
-                        ( { pexp_desc = Pexp_construct ({ txt = Lident ident; _ }, None)
-                          ; _
-                          }
-                        , [] )
-                  ; _
-                  }
-                ] ->
-                let b =
-                  match bool_of_string (get_env ident) with
-                  | true -> true
-                  | false -> false
-                  | exception _ -> false
-                in
-                norm b
-            | PStr
-                [ { pstr_desc =
-                      Pstr_eval
-                        ( { pexp_desc = Pexp_apply (op, [ (Nolabel, a); (Nolabel, b) ])
-                          ; _
-                          }
-                        , [] )
-                  ; _
-                  }
-                ] ->
-                let get_op = function
-                  | { pexp_desc = Pexp_ident { txt = Lident str; _ }; _ } -> (
-                      match str with
-                      | "<=" -> ( <= )
-                      | ">=" -> ( >= )
-                      | ">" -> ( > )
-                      | "<" -> ( < )
-                      | "<>" -> ( <> )
-                      | "=" -> ( = )
-                      | _ -> raise Invalid)
-                  | _ -> raise Invalid
-                in
-                let eval = function
-                  | { pexp_desc = Pexp_ident { txt = Lident "ocaml_version"; _ }; _ } ->
-                      Version.current
-                  | { pexp_desc = Pexp_tuple l; _ } ->
-                      let l =
-                        List.map l ~f:(function
-                          | { pexp_desc = Pexp_constant (Pconst_integer (d, None)); _ } ->
-                              int_of_string d
-                          | _ -> raise Invalid)
-                      in
-                      Version.of_list l
-                  | _ -> raise Invalid
-                in
-                let op = get_op op in
+            | PStr [ { pstr_desc = Pstr_eval (e, []); _ } ] -> e
+            | _ -> raise (Invalid attr_loc)
+          in
+          let loc = e.pexp_loc in
+          let rec eval = function
+            | { pexp_desc = Pexp_ident { txt = Lident "ocaml_version"; _ }; _ } ->
+                Version Version.current
+            | { pexp_desc = Pexp_construct ({ txt = Lident "true"; _ }, None); _ } ->
+                Bool true
+            | { pexp_desc = Pexp_construct ({ txt = Lident "false"; _ }, None); _ } ->
+                Bool false
+            | { pexp_desc = Pexp_constant (Pconst_integer (d, None)); _ } ->
+                Int (int_of_string d)
+            | { pexp_desc = Pexp_tuple l; _ } -> Tuple (List.map l ~f:eval)
+            | { pexp_desc = Pexp_apply (op, [ (Nolabel, a); (Nolabel, b) ]); pexp_loc; _ }
+              -> (
+                let op = get_bin_op op in
                 let a = eval a in
                 let b = eval b in
-                norm (op (Version.compare a b) 0)
-            | _ -> raise Invalid)
-        | _ -> true)
-    in
-    if false && not keep
-    then
-      Printf.eprintf
-        "dropping %s:%d\n%!"
-        loc.Location.loc_start.pos_fname
-        loc.Location.loc_start.pos_lnum;
-    keep
-  with Invalid -> Location.raise_errorf ~loc "Invalid attribute format"
+                match op with
+                | LE | GE | LT | GT | NEQ | EQ ->
+                    let comp =
+                      match a, b with
+                      | Version _, _ | _, Version _ ->
+                          Version.compare (version a) (version b)
+                      | Int a, Int b -> compare a b
+                      | _ -> raise (Invalid pexp_loc)
+                    in
+                    let op =
+                      match op with
+                      | LE -> ( <= )
+                      | GE -> ( >= )
+                      | LT -> ( < )
+                      | GT -> ( > )
+                      | EQ -> ( = )
+                      | NEQ -> ( <> )
+                      | _ -> assert false
+                    in
+                    Bool (op comp 0)
+                | AND -> (
+                    match a, b with
+                    | Bool a, Bool b -> Bool (a && b)
+                    | _ -> raise (Invalid loc))
+                | OR -> (
+                    match a, b with
+                    | Bool a, Bool b -> Bool (a || b)
+                    | _ -> raise (Invalid loc))
+                | NOT -> raise (Invalid loc))
+            | { pexp_desc = Pexp_apply (op, [ (Nolabel, a) ]); _ } -> (
+                let op = get_un_op op in
+                let a = eval a in
+                match op, a with
+                | NOT, Bool b -> Bool (not b)
+                | NOT, _ -> raise (Invalid loc)
+                | _ -> raise (Invalid loc))
+            | _ -> raise (Invalid loc)
+          in
+          match eval e with
+          | Bool b -> b
+          | Int _ | String _ | Tuple _ | Version _ -> raise (Invalid loc)
+        in
+        let keep = List.for_all ~f:keep_one ifs in
+        if false
+        then
+          if not keep
+          then
+            Printf.eprintf
+              "dropping %s:%d\n%!"
+              loc.Location.loc_start.pos_fname
+              loc.Location.loc_start.pos_lnum
+          else
+            Printf.eprintf
+              "keep %s:%d\n%!"
+              loc.Location.loc_start.pos_fname
+              loc.Location.loc_start.pos_lnum;
+        keep
+      with Invalid loc -> Location.raise_errorf ~loc "Invalid attribute format")
 
 let filter_map ~f l =
   let l =
