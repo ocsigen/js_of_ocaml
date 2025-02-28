@@ -256,7 +256,8 @@ end = struct
       in
       List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
     with Not_found -> []
-  [@@if ocaml_version < (5, 2, 0)]
+  [@@if
+    ocaml_version < (4, 14, 3) || (ocaml_version >= (5, 0) && ocaml_version < (5, 2, 0))]
 
   let find_rec { events_by_pc; _ } pc =
     try
@@ -276,7 +277,10 @@ end = struct
       in
       List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
     with Not_found -> []
-  [@@if ocaml_version >= (5, 2, 0)]
+  [@@if
+    not
+      (ocaml_version < (4, 14, 3)
+      || (ocaml_version >= (5, 0) && ocaml_version < (5, 2, 0)))]
 
   let dummy_location (loc : Location.t) =
     loc.loc_start.pos_cnum = -1 || loc.loc_end.pos_cnum = -1
