@@ -286,15 +286,16 @@ let current_bench_output
     List.concat_map t ~f:(function test_name, measures ->
         assert (List.length measures = List.length measure_descs);
         List.map2 measure_descs measures ~f:(fun desc (m, _confidence_itvl) ->
-            let description = Option.value desc.Measure.description ~default:desc.Measure.name in
+            let description =
+              Option.value desc.Measure.description ~default:desc.Measure.name
+            in
             `Assoc
               [ "name", `String (String.concat ~sep:" - " [ test_name; description ])
               ; "value", `Float m
               ; "units", `String desc.Measure.units
               ]))
   in
-  let results =
-    `Assoc [ "name", `String "Microbenchmarks"; "metrics", `List metrics ] in
+  let results = `Assoc [ "name", `String "Microbenchmarks"; "metrics", `List metrics ] in
   let json = `Assoc [ "name", `String suite_name; "results", `List [ results ] ] in
   Yojson.Basic.to_channel ch json
 
