@@ -76,6 +76,10 @@ module Flag : sig
 
   val es6 : unit -> bool
 
+  val wasi : unit -> bool
+
+  val trap_on_exception : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit

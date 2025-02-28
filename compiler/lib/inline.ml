@@ -328,7 +328,7 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
 
 let times = Debug.find "times"
 
-let f p live_vars =
+let f p (live_vars : Deadcode.variable_uses) =
   let first_class_primitives =
     match Config.target (), Config.effects () with
     | `JavaScript, `Disabled -> true
