@@ -282,20 +282,20 @@ let current_bench_output
       | None -> failwith "Blank columns are not supported with current-bench output."
       | Some desc -> desc)
   in
-  let results =
-    List.map t ~f:(function test_name, measures ->
+  let metrics =
+    List.concat_map t ~f:(function test_name, measures ->
         assert (List.length measures = List.length measure_descs);
-        let measures =
-          List.map2 measure_descs measures ~f:(fun desc (m, _confidence_itvl) ->
-              `Assoc
-                [ "name", `String desc.Measure.name
-                ; "value", `Float m
-                ; "units", `String desc.Measure.units
-                ])
-        in
-        `Assoc [ "name", `String test_name; "metrics", `List measures ])
+        List.map2 measure_descs measures ~f:(fun desc (m, _confidence_itvl) ->
+            let description = Option.value desc.Measure.description ~default:desc.Measure.name in
+            `Assoc
+              [ "name", `String (String.concat ~sep:" - " [ test_name; description ])
+              ; "value", `Float m
+              ; "units", `String desc.Measure.units
+              ]))
   in
-  let json = `Assoc [ "name", `String suite_name; "results", `List results ] in
+  let results =
+    `Assoc [ "name", `String "Microbenchmarks"; "metrics", `List metrics ] in
+  let json = `Assoc [ "name", `String suite_name; "results", `List [ results ] ] in
   Yojson.Basic.to_channel ch json
 
 let output ~format r conf =

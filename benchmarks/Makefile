@@ -15,7 +15,7 @@ all: _perf graphsnopr graphspr graphseff _noperf
 .PHONY: bench
 bench: __run_wasm
 	$(REPORT) -format current-bench -config report-wasm-cb.config \
-	  -ylabel "Wasm - Execution time"
+	  -ylabel "Wasm_of_ocaml"
 
 
 graphsnopr: _noprecomp $(GRAPHSNOPR)
