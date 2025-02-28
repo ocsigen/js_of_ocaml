@@ -2,6 +2,7 @@
 
 ## Features/Changes
 * Compiler: use a Wasm text files preprocessor (#1822)
+* Compiler: support for OCaml 4.14.3+trunk (#1844)
 * Runtime: support more Unix functions (#1829)
 
 # 6.0.1 (2025-02-07) - Lille
