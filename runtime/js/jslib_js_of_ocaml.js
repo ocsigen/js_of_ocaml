@@ -72,12 +72,14 @@ function caml_js_get_console() {
 //Requires: caml_failwith
 //Weakdef
 function caml_xmlhttprequest_create(unit) {
-  if (typeof globalThis.XMLHttpRequest !== "undefined") {
-    try {
-      return new globalThis.XMLHttpRequest();
-    } catch (e) {}
+  if (typeof XMLHttpRequest === "undefined") {
+    caml_failwith("XMLHttpRequest is not available");
   }
-  caml_failwith("Cannot create a XMLHttpRequest");
+  try {
+    return new XMLHttpRequest();
+  } catch {
+    caml_failwith("Failed to create XMLHttpRequest");
+  }
 }
 
 //Provides: caml_js_error_of_exception
