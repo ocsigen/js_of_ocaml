@@ -630,32 +630,9 @@ function caml_marshal_data_size(s, ofs) {
 }
 
 //Provides: MlObjectTable
-var MlObjectTable;
-if (typeof globalThis.Map === "undefined") {
-  MlObjectTable = (function () {
-    /* polyfill (using linear search) */
-    function NaiveLookup(objs) {
-      this.objs = objs;
-    }
-    NaiveLookup.prototype.get = function (v) {
-      for (var i = 0; i < this.objs.length; i++) {
-        if (this.objs[i] === v) return i;
-      }
-    };
-    NaiveLookup.prototype.set = function () {
-      // Do nothing here. [MlObjectTable.store] will push to [this.objs] directly.
-    };
-
-    return function MlObjectTable() {
-      this.objs = [];
-      this.lookup = new NaiveLookup(this.objs);
-    };
-  })();
-} else {
-  MlObjectTable = function MlObjectTable() {
-    this.objs = [];
-    this.lookup = new globalThis.Map();
-  };
+function MlObjectTable() {
+  this.objs = [];
+  this.lookup = new globalThis.Map();
 }
 
 MlObjectTable.prototype.store = function (v) {
