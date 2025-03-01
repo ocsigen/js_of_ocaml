@@ -27,6 +27,10 @@ Features are grouped by ECMAScript version.
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/TypedArray#browser_compatibility)
 - To implement bigarray
 
+### Map
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map#browser_compatibility)
+
 ## ECMAScript 2016
 
 ### async function
@@ -47,6 +51,7 @@ Features are grouped by ECMAScript version.
 - Polyfilled in the repository
 
 ### BigInt
+
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/BigInt#browser_compatibility)
 - For Wasm_of_ocaml
 
@@ -57,6 +62,12 @@ Features are grouped by ECMAScript version.
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakRef#browser_compatibility)
 - To implement weak and ephemeron
 - Optional
+
+## Web APIs
+
+### XMLHttpRequest
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/API/XMLHttpRequest#browser_compatibility)
 
 ## Node.js
 
