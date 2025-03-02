@@ -81,6 +81,39 @@ let with_runtime_files ~runtime_wasm_files f =
   in
   Wat_preprocess.with_preprocessed_files ~variables:[] ~inputs f
 
+let build_runtime ~runtime_file =
+  (* Keep this variables in sync with gen/gen.ml *)
+  let variables =
+    [ "wasi", Config.Flag.wasi (); "trap-on-exception", Config.Flag.trap_on_exception () ]
+  in
+  match
+    List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
+        assert (
+          List.length flags = List.length variables
+          && List.for_all2 ~f:(fun (k, _) (k', _) -> String.equal k k') flags variables);
+        Poly.equal flags variables)
+  with
+  | Some (_, contents) -> Fs.write_file ~name:runtime_file ~contents
+  | None ->
+      let inputs =
+        List.map
+          ~f:(fun (module_name, contents) ->
+            { Wat_preprocess.module_name
+            ; file = module_name ^ ".wat"
+            ; source = Contents contents
+            })
+          (if Config.Flag.wasi ()
+           then ("libc", Runtime_files.wasi_libc) :: Runtime_files.wat_files
+           else Runtime_files.wat_files)
+      in
+      Runtime.build
+        ~link_options:[ "-g" ]
+        ~opt_options:[ "-g"; "-O2" ]
+        ~variables:
+          (List.map ~f:(fun (k, v) : (_ * Wat_preprocess.value) -> k, Bool v) variables)
+        ~inputs
+        ~output_file:runtime_file
+
 let link_and_optimize
     ~profile
     ~sourcemap_root
@@ -99,7 +132,7 @@ let link_and_optimize
   let enable_source_maps = Option.is_some opt_sourcemap_file in
   Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
   @@ fun runtime_file ->
-  Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+  build_runtime ~runtime_file;
   Fs.with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
   @@ fun temp_file ->
   opt_with
@@ -125,7 +158,10 @@ let link_and_optimize
   @@ fun opt_temp_sourcemap' ->
   let primitives =
     Binaryen.dead_code_elimination
-      ~dependencies:Runtime_files.dependencies
+      ~dependencies:
+        (if Config.Flag.wasi ()
+         then Runtime_files.wasi_dependencies
+         else Runtime_files.dependencies)
       ~opt_input_sourcemap:opt_temp_sourcemap
       ~opt_output_sourcemap:opt_temp_sourcemap'
       ~input_file:temp_file
@@ -145,7 +181,7 @@ let link_and_optimize
 
 let link_runtime ~profile runtime_wasm_files output_file =
   if List.is_empty runtime_wasm_files
-  then Fs.write_file ~name:output_file ~contents:Runtime_files.wasm_runtime
+  then build_runtime ~runtime_file:output_file
   else
     Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
     @@ fun extra_runtime ->
@@ -167,7 +203,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
       ();
     Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
     @@ fun runtime_file ->
-    Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+    build_runtime ~runtime_file;
     Binaryen.link
       ~opt_output_sourcemap:None
       ~inputs:
@@ -246,7 +282,13 @@ let build_js_runtime ~primitives ?runtime_arguments () =
   in
   let prelude = Link.output_js always_required_js in
   let init_fun =
-    match Parse_js.parse (Parse_js.Lexer.of_string Runtime_files.js_runtime) with
+    match
+      Parse_js.parse
+        (Parse_js.Lexer.of_string
+           (if Config.Flag.wasi ()
+            then Runtime_files.js_wasi_launcher
+            else Runtime_files.js_launcher))
+    with
     | [ (Expression_statement f, _) ] -> f
     | _ -> assert false
   in
@@ -487,9 +529,12 @@ let run
              tmp_wasm_file
          in
          let wasm_name =
-           Printf.sprintf
-             "code-%s"
-             (String.sub (Digest.to_hex (Digest.file tmp_wasm_file)) ~pos:0 ~len:20)
+           if Config.Flag.wasi ()
+           then "code"
+           else
+             Printf.sprintf
+               "code-%s"
+               (String.sub (Digest.to_hex (Digest.file tmp_wasm_file)) ~pos:0 ~len:20)
          in
          let tmp_wasm_file' = Filename.concat tmp_dir (wasm_name ^ ".wasm") in
          Sys.rename tmp_wasm_file tmp_wasm_file';
