@@ -1,10 +1,13 @@
 (install
  (section lib)
  (package wasm_of_ocaml-compiler)
- (files runtime.wasm runtime.js))
+ (files
+  (glob_files *.wat)
+  (glob_files runtime-*.wasm)
+  runtime.js))
 
 (rule
- (target runtime.wasm)
+ (target runtime-standard.wasm)
  (deps
   args
   (glob_files *.wat))
@@ -13,6 +16,23 @@
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
    --binaryen=-g
    --binaryen-opt=-O3
+   --disable
+   use-js-string
+   %{target}
+   %{read-lines:args})))
+
+(rule
+ (target runtime-use-js-string.wasm)
+ (deps
+  args
+  (glob_files *.wat))
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --enable
+   use-js-string
    %{target}
    %{read-lines:args})))
 
