@@ -392,9 +392,15 @@ class MlNodeFd extends MlFile {
     this.fs = require("node:fs");
     this.fd = fd;
     this.flags = flags;
-    var stats = this.fs.fstatSync(fd);
-    flags.noSeek =
-      stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
+    try {
+      var stats = this.fs.fstatSync(fd);
+      flags.noSeek =
+        stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
+    } catch (err) {
+      // The fstat will fail on standard streams under Windows with node
+      // 18 (and lower). See https://github.com/libuv/libuv/pull/3811.
+      flags.noSeek = true;
+    }
     this.offset = this.flags.append ? stats.size : 0;
     this.seeked = false;
   }
