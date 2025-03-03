@@ -444,10 +444,10 @@ class MlNodeFd extends MlFile {
         var read = this.fs.readSync(this.fd, a, buf_offset, len, this.offset);
       }
       this.offset += read;
+      return read;
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
-    return read;
   }
 
   seek(offset, whence, raise_unix) {
