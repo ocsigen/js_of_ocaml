@@ -94,7 +94,7 @@ function caml_make_path(name) {
   for (var i = 0; i < comp.length; i++) {
     switch (comp[i]) {
       case "..":
-        if (ncomp.length > 1) ncomp.pop();
+        ncomp.pop();
         break;
       case ".":
         break;
