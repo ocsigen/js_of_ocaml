@@ -1,6 +1,8 @@
 //Provides: MlMutex
-function MlMutex() {
-  this.locked = false;
+class MlMutex {
+  constructor() {
+    this.locked = false;
+  }
 }
 
 //Provides: caml_ml_mutex_new

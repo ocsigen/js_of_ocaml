@@ -1,6 +1,7 @@
 # dev
 
 ## Features/Changes
+* Runtime: use es6 class (#1840)
 * Compiler: use a Wasm text files preprocessor (#1822)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
 * Runtime: support more Unix functions (#1829)
