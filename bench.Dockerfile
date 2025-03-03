@@ -1,10 +1,14 @@
 FROM ocaml/opam:debian-ocaml-5.3
 WORKDIR /bench-dir
 RUN sudo apt-get update
-RUN sudo apt-get install -qq -yy --no-install-recommends pkg-config libgmp-dev
+RUN sudo apt-get install -qq -yy --no-install-recommends pkg-config libgmp-dev \
+      wget
 RUN sudo ln -sf /usr/bin/opam-2.1 /usr/bin/opam
 RUN opam remote add origin https://github.com/ocaml/opam-repository.git && \
     opam update
+RUN wget https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.xz
+RUN tar xJvf node-v22.14.0-linux-x64.tar.xz
+RUN sudo cp node-v22.14.0-linux-x64/bin/node /usr/bin/node
 COPY --chown=opam:opam . ./
 RUN opam exec -- git init
 RUN opam exec -- git add .

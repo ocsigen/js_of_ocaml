@@ -1,0 +1,27 @@
+opam-version: "2.0"
+synopsis: "Compiler and toolchain infrastructure library for WebAssembly"
+description: """
+ Binaryen is a compiler and toolchain infrastructure library for WebAssembly.
+ It aims to make compiling to WebAssembly easy, fast, and effective.
+"""
+maintainer: "Jérôme Vouillon <jerome@tarides.com>"
+license: "Apache-2.0"
+authors: ["Alon Zakai" "Thomas Lively"]
+homepage: "https://github.com/WebAssembly/binaryen/"
+bug-reports: "https://github.com/ocaml-wasm/wasm_of_ocaml/issues"
+dev-repo: "git+https://github.com/WebAssembly/binaryen.git"
+depends: []
+build: [
+]
+install: [
+  ["cp" "bin/wasm-opt" "bin/wasm-metadce" "bin/wasm-merge" "%{bin}%"] { os-family != "windows" }
+  ["cp" "bin/wasm-opt.exe" "bin/wasm-metadce.exe" "bin/wasm-merge.exe" "%{bin}%"] { os-family = "windows" }
+]
+url {
+  src:
+    "https://github.com/WebAssembly/binaryen/releases/download/version_119/binaryen-version_119-x86_64-linux.tar.gz"
+  checksum: [
+    "md5=caa9f82ff119294240caee12de8497df"
+    "sha512=09287200b1584e68379c16423a4559ce6af0eff9e2d0abf4cc22f8a72689c7246596c195e4e86973618e048857eac12b97fdf8530000d440dcda4514449e1336"
+  ]
+}
