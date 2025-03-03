@@ -7,6 +7,9 @@
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
 * Runtime: refactor caml_xmlhttprequest_create implementation (#1846)
 
+## Bug fixes
+* Runtime: fix path normalization (#1848)
+
 # 6.0.1 (2025-02-07) - Lille
 
 ## Features/Changes
