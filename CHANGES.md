@@ -7,9 +7,11 @@
 * Runtime: support more Unix functions (#1829)
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
 * Runtime: refactor caml_xmlhttprequest_create implementation (#1846)
+* Misc: add a benchmarking suite for wasm_of_ocaml targeting [current-bench](https://github.com/ocurrent/current-bench)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
+* Misc: add a benchmarking suite for wasm_of_ocaml targeting [current-bench](https://github.com/ocurrent/current-bench)
 
 # 6.0.1 (2025-02-07) - Lille
 
