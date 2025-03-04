@@ -60,7 +60,7 @@ __run_effects:
 	touch __run_effects
 
 __run_wasm:
-	$(RUN) -ffast -nobyteopt -wasm -nojs -verbose
+	$(RUN) -nobyteopt -wasm -nojs -verbose
 	touch __run_wasm
 
 fastrun:
