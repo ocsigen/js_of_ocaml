@@ -159,13 +159,3 @@
   (ocamlfind (< 1.5.1))
   (js_of_ocaml (< 3.0))
 ))
-
-(package
- (name wasm_of_ocaml-bench)
- (synopsis "Dependencies for benchmarking wasm_of_ocaml")
- (description "Dependencies for benchmarking wasm_of_ocaml")
- (allow_empty)
- (depends
-  (wasm_of_ocaml-compiler (= :version))
- )
-)
