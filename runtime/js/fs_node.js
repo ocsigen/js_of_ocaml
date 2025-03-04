@@ -122,7 +122,7 @@ class MlNodeDevice {
   }
 
   access(name, f, raise_unix) {
-    var consts = require("node:constants");
+    var consts = require("node:fs").constants;
     var res = 0;
     for (var key in f) {
       switch (key) {
@@ -152,7 +152,7 @@ class MlNodeDevice {
   }
 
   open(name, f, perms, raise_unix) {
-    var consts = require("node:constants");
+    var consts = require("node:fs").constants;
     var res = 0;
     for (var key in f) {
       switch (key) {

@@ -7,6 +7,7 @@
 * Runtime: support more Unix functions (#1829)
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
 * Runtime: refactor caml_xmlhttprequest_create implementation (#1846)
+* Runtime: update constant imports to use `node:fs` module (#1850)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
