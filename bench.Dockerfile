@@ -15,8 +15,7 @@ RUN opam exec -- git init && \
     opam exec -- git commit -m dummy && \
     opam exec -- git tag -a $(cat VERSION)-dev -m dummy
 RUN opam pin -yn --with-version=dev .
-RUN opam install -y --depext-only wasm_of_ocaml-compiler && \
-    opam install -y --deps-only js_of_ocaml-compiler && \
+RUN opam install -y --deps-only js_of_ocaml-compiler && \
     opam install -y binaryen-bin
 COPY --chown=opam:opam . ./
 RUN opam exec -- git add . && \
