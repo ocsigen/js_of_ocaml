@@ -577,6 +577,10 @@ and eventTarget = object ('self)
 
   method onpointerup : ('self t, pointerEvent t) event_listener writeonly_prop
 
+  method onbeforetoggle : ('self t, toggleEvent t) event_listener writeonly_prop
+
+  method ontoggle : ('self t, toggleEvent t) event_listener writeonly_prop
+
   method dispatchEvent : event t -> bool t meth
 end
 
@@ -759,6 +763,8 @@ and element = object
 
   method scrollHeight : int prop
 
+  method popover : js_string t opt prop
+
   method getClientRects : clientRectList t meth
 
   method getBoundingClientRect : clientRect t meth
@@ -770,6 +776,18 @@ and element = object
   method focus : unit meth
 
   method blur : unit meth
+
+  method hidePopover : unit meth
+
+  method showPopover : unit meth
+
+  method showPopover_options : _ -> unit meth
+
+  method togglePopover : bool t meth
+
+  method togglePopover_force : bool t -> bool t meth
+
+  method togglePopover_options : _ -> bool t meth
 
   inherit eventTarget
 end
@@ -1013,6 +1031,10 @@ class type inputElement = object ('self)
 
   method selectionEnd : int prop
 
+  method popovertarget : element t opt prop
+
+  method popovertargetaction : js_string t prop
+
   method onselect : ('self t, event t) event_listener prop
 
   method onchange : ('self t, event t) event_listener prop
@@ -1088,6 +1110,10 @@ class type buttonElement = object
   method _type : js_string t readonly_prop
 
   method value : js_string t prop
+
+  method popovertarget : element t opt prop
+
+  method popovertargetaction : js_string t prop
 end
 
 class type labelElement = object
@@ -1204,8 +1230,6 @@ class type detailsElement = object ('self)
   method open_ : bool t prop
 
   method name : js_string t prop
-
-  method ontoggle : ('self t, toggleEvent t) event_listener prop
 end
 
 class type imageElement = object ('self)
@@ -2559,6 +2583,8 @@ module Event : sig
   val volumechange : mediaEvent t typ
 
   val waiting : mediaEvent t typ
+
+  val beforetoggle : toggleEvent t typ
 
   val toggle : toggleEvent t typ
 
