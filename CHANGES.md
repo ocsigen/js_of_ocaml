@@ -8,6 +8,7 @@
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
 * Runtime: refactor caml_xmlhttprequest_create implementation (#1846)
 * Runtime: update constant imports to use `node:fs` module (#1850)
+* Misc: add a benchmarking suite for wasm_of_ocaml targeting [current-bench](https://github.com/ocurrent/current-bench)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
