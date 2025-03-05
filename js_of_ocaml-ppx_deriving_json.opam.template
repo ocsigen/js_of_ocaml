@@ -1,5 +1,4 @@
 build: [
-  ["dune" "subst"] {dev}
   [
     "dune"
     "build"
