@@ -11,6 +11,7 @@
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
+* Runtime: fix reading from the pseudo-filesystem (#1859)
 * Runtime: fix initialization of standard streams under Windows (#1849)
 
 # 6.0.1 (2025-02-07) - Lille
