@@ -7,10 +7,6 @@ It provides an alternative way to run pure OCaml programs in JavaScript environm
 
 The compiler is provided by the wasm_of_ocaml-compiler package. The <<a_manual chapter="overview" |Js_of_ocaml libraries>> are compatible with this compiler.
 
-== Dependencies
-
-Wasm_of_ocaml depends on [[https://github.com/WebAssembly/binaryen|the Binaryen toolchain]] version 119 or later.
-
 == Installation
 
 The easiest way to install wasm_of_ocaml is to use opam.
