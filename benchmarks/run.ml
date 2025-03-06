@@ -243,12 +243,15 @@ let _ =
   let param = !param in
   let interpreters = read_config conf_file in
   let compile = compile param ~comptime:true in
-  let compile_jsoo ?(effects = false) opts =
+  let compile_jsoo ?(effects=`None) opts =
     compile
       (Format.sprintf
          "js_of_ocaml -q --target-env browser --debug mark-runtime-gen %s %s"
          opts
-         (if effects then "--enable=effects" else "--disable=effects"))
+         (match effects with
+          | `None -> ""
+          | `Cps -> "--effects=cps"
+          | `Double_translation -> "--effects=double-translation"))
   in
   Format.eprintf "Compile@.";
   compile "ocamlc" src Spec.ml code Spec.byte;
@@ -260,7 +263,8 @@ let _ =
   compile_jsoo "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
   compile_jsoo "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
   compile_jsoo "--disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
-  compile_jsoo ~effects:true "" code Spec.byte code Spec.js_of_ocaml_effects;
+  compile_jsoo ~effects:`Cps "" code Spec.byte code Spec.js_of_ocaml_effects_cps;
+  compile_jsoo ~effects:`Double_translation "" code Spec.byte code Spec.js_of_ocaml_effects_double_translation;
   compile "ocamlc -unsafe" src Spec.ml code Spec.byte_unsafe;
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
   compile_jsoo "" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
@@ -277,15 +281,27 @@ let _ =
   compr_file_size
     param
     code
-    Spec.js_of_ocaml_effects
+    Spec.js_of_ocaml_effects_cps
     sizes
-    (Spec.sub_spec Spec.js_of_ocaml_effects "gzipped");
+    (Spec.sub_spec Spec.js_of_ocaml_effects_cps "gzipped");
+  compr_file_size
+    param
+    code
+    Spec.js_of_ocaml_effects_double_translation
+    sizes
+    (Spec.sub_spec Spec.js_of_ocaml_effects_double_translation "gzipped");
   bzip2_file_size
     param
     code
-    Spec.js_of_ocaml_effects
+    Spec.js_of_ocaml_effects_cps
     sizes
-    (Spec.sub_spec Spec.js_of_ocaml_effects "bzip2");
+    (Spec.sub_spec Spec.js_of_ocaml_effects_cps "bzip2");
+  bzip2_file_size
+    param
+    code
+    Spec.js_of_ocaml_effects_double_translation
+    sizes
+    (Spec.sub_spec Spec.js_of_ocaml_effects_double_translation "bzip2");
   bzip2_file_size
     param
     code
@@ -305,7 +321,8 @@ let _ =
   gen_size param code Spec.js_of_ocaml_deadcode sizes Spec.js_of_ocaml_deadcode;
   gen_size param code Spec.js_of_ocaml_compact sizes Spec.js_of_ocaml_compact;
   gen_size param code Spec.js_of_ocaml_call sizes Spec.js_of_ocaml_call;
-  gen_size param code Spec.js_of_ocaml_effects sizes Spec.js_of_ocaml_effects;
+  gen_size param code Spec.js_of_ocaml_effects_cps sizes Spec.js_of_ocaml_effects_cps;
+  gen_size param code Spec.js_of_ocaml_effects_double_translation sizes Spec.js_of_ocaml_effects_double_translation;
   if compile_only then exit 0;
   Format.eprintf "Measure@.";
   if not nobyteopt
@@ -324,14 +341,15 @@ let _ =
         ; Some Spec.js_of_ocaml_deadcode
         ; Some Spec.js_of_ocaml_compact
         ; Some Spec.js_of_ocaml_call
-        ; Some Spec.js_of_ocaml_effects
-        ] )
+        ; Some Spec.js_of_ocaml_effects_cps
+        ; Some Spec.js_of_ocaml_effects_double_translation
+      ] )
     else if effects
     then
       ( (match interpreters with
         | i :: _ -> [ i ]
         | [] -> [])
-      , [ Some Spec.js_of_ocaml; Some Spec.js_of_ocaml_effects ] )
+      , [ Some Spec.js_of_ocaml; Some Spec.js_of_ocaml_effects_cps; Some Spec.js_of_ocaml_effects_double_translation ] )
     else
       ( (match interpreters with
         | i :: _ -> [ i ]
