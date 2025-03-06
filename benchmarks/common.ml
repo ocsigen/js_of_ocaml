@@ -163,8 +163,8 @@ module Spec : sig
 
   val js_of_ocaml_call : t
 
-
   val js_of_ocaml_effects_cps : t
+
   val js_of_ocaml_effects_double_translation : t
 end = struct
   type t =
@@ -229,6 +229,7 @@ end = struct
   let js_of_ocaml_call = create "nooptcall" ".js"
 
   let js_of_ocaml_effects_cps = create "effects-cps" ".js"
+
   let js_of_ocaml_effects_double_translation = create "effects-double-translation" ".js"
 end
 
