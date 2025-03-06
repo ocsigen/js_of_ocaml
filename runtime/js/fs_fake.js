@@ -472,8 +472,9 @@ class MlFakeFd {
   write(buf, pos, len, raise_unix) {
     if (this.file && (this.flags.wronly || this.flags.rdwr)) {
       var offset = this.offset;
+      len = this.file.write(offset, buf, pos, len);
       this.offset += len;
-      return this.file.write(offset, buf, pos, len);
+      return len;
     }
     this.err_closed("write", raise_unix);
   }
@@ -481,8 +482,9 @@ class MlFakeFd {
   read(buf, pos, len, raise_unix) {
     if (this.file && !this.flags.wronly) {
       var offset = this.offset;
+      len = this.file.read(offset, buf, pos, len);
       this.offset += len;
-      return this.file.read(offset, buf, pos, len);
+      return len;
     }
     this.err_closed("read", raise_unix);
   }

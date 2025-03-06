@@ -84,3 +84,17 @@
   (compilation_mode whole_program)
   (flags
    (:standard --file "accentué"))))
+
+(rule
+ (with-stdout-to
+  "file.txt"
+  (echo test)))
+
+(tests
+ (names gh1856)
+ (deps file.txt)
+ (modes js)
+ (js_of_ocaml
+  (compilation_mode whole_program)
+  (flags
+   (:standard --file file.txt))))
