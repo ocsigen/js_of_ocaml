@@ -10,6 +10,7 @@
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
+* Runtime: fix reading from the pseudo-filesystem (#1859)
 
 # 6.0.1 (2025-02-07) - Lille
 
