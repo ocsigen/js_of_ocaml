@@ -10,6 +10,16 @@ GRAPHSEFF = time-effects.pdf size-effects.pdf size-bzip2-effects.pdf
 # For full benchs:
 all: _perf graphsnopr graphspr graphseff _noperf
 
+# This target is the one run by `current-bench`,
+# see https://github.com/ocurrent/current-bench
+.PHONY: bench
+bench: __run
+	$(REPORT) -format current-bench -config report-wasm-cb.config \
+	  -ylabel "Wasm_of_ocaml"
+	$(REPORT) -format current-bench -config report-jsoo-cb.config \
+	  -ylabel "Js_of_ocaml"
+
+
 graphsnopr: _noprecomp $(GRAPHSNOPR)
 
 graphspr: __precomp $(GRAPHSPR)
