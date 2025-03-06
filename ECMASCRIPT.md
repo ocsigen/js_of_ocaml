@@ -89,6 +89,7 @@ Features are grouped by ECMAScript version.
 ### FinalizationRegistry
 
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry#browser_compatibility)
+- Optional for js_of_ocaml
 
 ### WeakRef
 
