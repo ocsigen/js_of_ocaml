@@ -26,7 +26,6 @@ depends: [
 depopts: ["graphics" "lwt_log"]
 dev-repo: "git+https://github.com/ocsigen/js_of_ocaml.git"
 build: [
-  ["dune" "subst"] {dev}
   [
     "dune"
     "build"

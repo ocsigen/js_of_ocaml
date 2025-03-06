@@ -122,7 +122,7 @@ class MlNodeDevice {
   }
 
   access(name, f, raise_unix) {
-    var consts = require("node:constants");
+    var consts = require("node:fs").constants;
     var res = 0;
     for (var key in f) {
       switch (key) {
@@ -152,7 +152,7 @@ class MlNodeDevice {
   }
 
   open(name, f, perms, raise_unix) {
-    var consts = require("node:constants");
+    var consts = require("node:fs").constants;
     var res = 0;
     for (var key in f) {
       switch (key) {
@@ -392,9 +392,15 @@ class MlNodeFd extends MlFile {
     this.fs = require("node:fs");
     this.fd = fd;
     this.flags = flags;
-    var stats = this.fs.fstatSync(fd);
-    flags.noSeek =
-      stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
+    try {
+      var stats = this.fs.fstatSync(fd);
+      flags.noSeek =
+        stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
+    } catch (err) {
+      // The fstat will fail on standard streams under Windows with node
+      // 18 (and lower). See https://github.com/libuv/libuv/pull/3811.
+      flags.noSeek = true;
+    }
     this.offset = this.flags.append ? stats.size : 0;
     this.seeked = false;
   }
