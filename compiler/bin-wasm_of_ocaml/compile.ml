@@ -463,7 +463,9 @@ let run
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          Fs.with_intermediate_file
-           (Filename.temp_file (Filename.chop_extension output_file) ".wat")
+           (Filename.temp_file
+              (Filename.basename (Filename.chop_extension output_file))
+              ".wat")
          @@ fun wat_file ->
          let dir = Filename.chop_extension output_file ^ ".assets" in
          Link.gen_dir dir

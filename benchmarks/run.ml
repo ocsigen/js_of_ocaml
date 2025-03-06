@@ -146,17 +146,38 @@ let ml_size param =
         src
         dst)
 
-let file_size param =
+let file_size ?(wasm = false) param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
-      Format.sprintf "wc -c < %s > %s" src dst)
+      let files =
+        if wasm then src ^ " " ^ Filename.remove_extension src ^ ".assets/*" else src
+      in
+      Format.sprintf "wc -c --total only %s > %s" files dst)
 
-let compr_file_size param =
+let compr_file_size ?(wasm = false) param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
-      Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s" src dst)
+      let input =
+        if wasm
+        then
+          Printf.sprintf
+            "echo %s %s | xargs gzip -c"
+            src
+            (Filename.remove_extension src ^ ".assets/*")
+        else Printf.sprintf "sed 's/^ *//g' %s | gzip -c" src
+      in
+      Format.sprintf "%s | wc -c > %s" input dst)
 
-let bzip2_file_size param =
+let bzip2_file_size ?(wasm = false) param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
-      Format.sprintf "sed 's/^ *//g' %s | bzip2 -c | wc -c > %s" src dst)
+      let input =
+        if wasm
+        then
+          Printf.sprintf
+            "echo %s %s | xargs bzip2 -c"
+            src
+            (Filename.remove_extension src ^ ".assets/*")
+        else Printf.sprintf "sed 's/^ *//g' %s | bzip2 -c" src
+      in
+      Format.sprintf "%s | wc -c > %s" input dst)
 
 let runtime_size param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
@@ -253,9 +274,19 @@ let _ =
          | `Cps -> "--effects=cps"
          | `Double_translation -> "--effects=double-translation"))
   in
+  let compile_wasmoo ?(effects = `None) opts =
+    compile
+      (Format.sprintf
+         "wasm_of_ocaml -q %s %s"
+         opts
+         (match effects with
+         | `None -> ""
+         | `Cps -> "--effects=cps"))
+  in
   Format.eprintf "Compile@.";
   compile "ocamlc" src Spec.ml code Spec.byte;
   compile "ocamlopt" src Spec.ml code Spec.opt;
+  compile_wasmoo "" code Spec.byte code Spec.wasm_of_ocaml;
   compile_jsoo "" code Spec.byte code Spec.js_of_ocaml;
   compile_jsoo "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
   compile_jsoo "--enable=use-js-string" code Spec.byte code Spec.js_of_ocaml_js_string;
@@ -278,6 +309,13 @@ let _ =
   ml_size param src Spec.ml sizes Spec.ml;
   file_size param code Spec.byte sizes Spec.byte;
   file_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "full");
+  file_size
+    ~wasm:true
+    param
+    code
+    Spec.wasm_of_ocaml
+    sizes
+    (Spec.sub_spec Spec.wasm_of_ocaml "full");
   compr_file_size
     param
     code
@@ -296,6 +334,13 @@ let _ =
     Spec.js_of_ocaml_effects_double_translation
     sizes
     (Spec.sub_spec Spec.js_of_ocaml_effects_double_translation "gzipped");
+  compr_file_size
+    ~wasm:true
+    param
+    code
+    Spec.wasm_of_ocaml
+    sizes
+    (Spec.sub_spec Spec.wasm_of_ocaml "gzipped");
   bzip2_file_size
     param
     code
@@ -314,6 +359,13 @@ let _ =
     Spec.js_of_ocaml
     sizes
     (Spec.sub_spec Spec.js_of_ocaml "bzip2");
+  bzip2_file_size
+    ~wasm:true
+    param
+    code
+    Spec.wasm_of_ocaml
+    sizes
+    (Spec.sub_spec Spec.wasm_of_ocaml "bzip2");
   runtime_size
     param
     code
@@ -354,6 +406,7 @@ let _ =
         ; Some Spec.js_of_ocaml_call
         ; Some Spec.js_of_ocaml_effects_cps
         ; Some Spec.js_of_ocaml_effects_double_translation
+        ; Some Spec.wasm_of_ocaml
         ] )
     else if effects
     then
@@ -368,7 +421,7 @@ let _ =
       ( (match interpreters with
         | i :: _ -> [ i ]
         | [] -> [])
-      , [ Some Spec.js_of_ocaml ] )
+      , [ Some Spec.js_of_ocaml; Some Spec.wasm_of_ocaml ] )
   in
   List.iter compilers ~f:(fun (comp, dir) ->
       measure param src (Filename.concat times dir) Spec.js comp;
