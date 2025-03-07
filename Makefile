@@ -34,4 +34,7 @@ installdoc:
 	git worktree add _wikidoc origin/wikidoc
 	rsync -av doc-dev/ _wikidoc/doc/dev/
 
-.PHONY: all tests tests-wasm test runtest runtests doc clean installdoc
+bench:
+	$(MAKE) -C benchmarks bench
+
+.PHONY: all tests tests-wasm test runtest runtests doc clean installdoc bench
