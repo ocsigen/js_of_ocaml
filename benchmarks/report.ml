@@ -264,7 +264,7 @@ let filter (h, t) =
 
 let output_table =
   let old_table = ref None in
-  fun _r (l : (Measure.t option list * _) option list) f ->
+  fun (l : (Measure.t option list * _) option list) f ->
     let t = merge_columns l !old_table in
     old_table := Some (snd t);
     let t = filter t in
@@ -298,7 +298,7 @@ let current_bench_output
   let json = `Assoc [ "name", `String suite_name; "results", `List [ results ] ] in
   Yojson.Basic.to_channel ch json
 
-let output ~format r conf =
+let output ~format conf =
   let output_function, close =
     match format with
     | `Text -> text_output, fun () -> ()
@@ -311,7 +311,6 @@ let output ~format r conf =
   let no_header = ref false in
   List.iter conf ~f:(fun conf ->
       output_table
-        r
         (List.map conf ~f:(function
           | None -> read_blank_column ()
           | Some (dir1, dir2, measure, refe) ->
@@ -386,7 +385,7 @@ let read_config () =
    with End_of_file -> ());
   close_in ch;
   if !info <> [] then fullinfo := List.rev !info :: !fullinfo;
-  !reference, List.rev !fullinfo
+  List.rev !fullinfo
 
 let _ =
   let options =
@@ -428,8 +427,8 @@ let _ =
     (Arg.align options)
     (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let r, conf = read_config () in
-  output ~format:!format r conf
+  let conf = read_config () in
+  output ~format:!format conf
 
 (*
 http://hacks.mozilla.org/2009/07/tracemonkey-overview/
