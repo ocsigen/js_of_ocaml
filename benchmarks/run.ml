@@ -112,9 +112,11 @@ let rec measure_rec ~print (param : Param.t) cmd l =
   let l = t :: l in
   if need_more ~print param l then measure_rec ~print param cmd l else l
 
-let measure_one param code meas spec nm cmd =
+let measure_one param code (meas : Measure.t) spec nm cmd =
   let l =
-    if measures_need_update code meas spec nm then [] else read_measures meas spec nm
+    if measures_need_update code meas spec nm
+    then []
+    else read_measures meas.Measure.path spec nm
   in
   if need_more ~print:false param l
   then (
@@ -126,7 +128,7 @@ let measure_one param code meas spec nm cmd =
     l)
   else l
 
-let measure param code meas spec cmd =
+let measure ~param ~code ~(meas : Measure.t) ~spec cmd =
   List.iter (Spec.find_names ~root:code spec) ~f:(fun nm ->
       let cmd = if cmd = "" then cmd else cmd ^ " " in
       let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
@@ -242,7 +244,7 @@ let _ =
   let options =
     [ "-compile", Arg.Set compile_only, " only compiles"
     ; "-all", Arg.Set full, " run all benchmarks"
-    ; "-effects", Arg.Set effects, " only run with and without effect handler support"
+    ; "-effects", Arg.Set effects, " only run with effect handler support"
     ; "-config", Arg.Set_string conf_file, "<file> use <file> as a config file"
     ; "-fast", Arg.Unit fast_run, " perform less iterations"
     ; "-ffast", Arg.Unit ffast_run, " perform very few iterations"
@@ -306,6 +308,7 @@ let _ =
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
   compile_jsoo "" code Spec.byte_unsafe code Spec.js_of_ocaml_unsafe;
   Format.eprintf "Sizes@.";
+  let sizes = sizes.Measure.path in
   ml_size param src Spec.ml sizes Spec.ml;
   file_size param code Spec.byte sizes Spec.byte;
   file_size param code Spec.js_of_ocaml sizes (Spec.sub_spec Spec.js_of_ocaml "full");
@@ -390,9 +393,9 @@ let _ =
   Format.eprintf "Measure@.";
   if not nobyteopt
   then (
-    measure param code times Spec.opt "";
-    measure param code times Spec.byte "");
-  let compilers, suites =
+    measure ~param ~code ~meas:times ~spec:Spec.opt "";
+    measure ~param ~code ~meas:times ~spec:Spec.byte "");
+  let interpreters, suites =
     if full
     then
       ( interpreters
@@ -423,8 +426,20 @@ let _ =
         | [] -> [])
       , [ Some Spec.js_of_ocaml; Some Spec.wasm_of_ocaml ] )
   in
-  List.iter compilers ~f:(fun (comp, dir) ->
-      measure param src (Filename.concat times dir) Spec.js comp;
+  List.iter interpreters ~f:(fun (comp, dir) ->
+      (* Measure the time taken by an implementation in Javascript for comparison *)
+      measure
+        ~param
+        ~code:src
+        ~meas:Measure.{ times with path = Filename.concat times.path dir }
+        ~spec:Spec.js
+        comp;
       List.iter suites ~f:(function
         | None -> ()
-        | Some suite -> measure param code (Filename.concat times dir) suite comp))
+        | Some suite ->
+            measure
+              ~param
+              ~code
+              ~meas:Measure.{ times with path = Filename.concat times.path dir }
+              ~spec:suite
+              comp))
