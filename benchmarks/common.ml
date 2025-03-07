@@ -174,8 +174,6 @@ module Spec : sig
 
   val js : t
 
-  val wasm : t
-
   val byte : t
 
   val opt : t
@@ -242,8 +240,6 @@ end = struct
   let ml = create "ml" ".ml"
 
   let js = create "js" ".js"
-
-  let wasm = create "wasm" ".js"
 
   let byte = create "byte" ""
 

@@ -244,7 +244,7 @@ let _ =
   let options =
     [ "-compile", Arg.Set compile_only, " only compiles"
     ; "-all", Arg.Set full, " run all benchmarks"
-    ; "-effects", Arg.Set effects, " run with effect handler support (default false)"
+    ; "-effects", Arg.Set effects, " only run with effect handler support"
     ; "-config", Arg.Set_string conf_file, "<file> use <file> as a config file"
     ; "-fast", Arg.Unit fast_run, " perform less iterations"
     ; "-ffast", Arg.Unit ffast_run, " perform very few iterations"
