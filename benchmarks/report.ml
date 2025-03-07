@@ -29,15 +29,11 @@ let maximum = ref (-1.)
 
 let minimum = ref 0.
 
-let format : [ `Gnuplot | `Text | `Current_bench ] ref = ref `Gnuplot
-
 let omitted = ref []
 
 let appended = ref []
 
 let errors = ref false
-
-let script = ref false
 
 let svg = ref false
 
@@ -300,7 +296,7 @@ let output ~format conf =
   let output_function, close =
     match format with
     | `Text -> text_output, fun () -> ()
-    | `Gnuplot when !script -> gnuplot_output stdout, fun () -> ()
+    | `Gnuplot_script -> gnuplot_output stdout, fun () -> ()
     | `Gnuplot ->
         let ch = Unix.open_process_out "gnuplot -persist" in
         gnuplot_output ch, fun () -> close_out ch
@@ -386,6 +382,10 @@ let read_config file =
 
 let _ =
   let conf = ref "report.config" in
+  let format : [ `Gnuplot | `Gnuplot_script | `Text | `Current_bench ] ref =
+    ref `Gnuplot
+  in
+  let script = ref false in
   let options =
     [ "-ref", Arg.Set_int nreference, "<col> use column <col> as the baseline"
     ; "-max", Arg.Set_float maximum, "<m> truncate graph at level <max>"
@@ -425,8 +425,17 @@ let _ =
     (Arg.align options)
     (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
+  let format =
+    match !format, !script with
+    | `Gnuplot, true -> `Gnuplot_script
+    | `Gnuplot, false -> `Gnuplot
+    | _, true ->
+        Printf.eprintf "-script only work with gnuplot format";
+        exit 2
+    | ((`Gnuplot_script | `Text | `Current_bench) as x), false -> x
+  in
   let conf = read_config !conf in
-  output ~format:!format conf
+  output ~format conf
 
 (*
 http://hacks.mozilla.org/2009/07/tracemonkey-overview/
