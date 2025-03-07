@@ -315,3 +315,104 @@ let write_measures meas spec nm l =
   List.iter ~f:(fun t -> Printf.fprintf ch "%f\n" t) (List.rev l);
   close_out ch;
   Sys.rename tmp m
+
+let read_interpreter_config file =
+  if not (Sys.file_exists file)
+  then (
+    Format.eprintf "Configuration file '%s' not found!@." file;
+    exit 1);
+  let i = ref [] in
+  let ch = open_in file in
+  (try
+     while true do
+       let line = String.trim (input_line ch) in
+       if line.[0] <> '#'
+       then
+         match
+           List.filter
+             ~f:(function
+               | "" -> false
+               | _ -> true)
+             (split_on_char line ~sep:' ')
+         with
+         | "interpreter" :: nm :: rem -> i := (String.concat ~sep:" " rem, nm) :: !i
+         | [ "interpreter" ] ->
+             Format.eprintf "Malformed config option '%s'@." line;
+             exit 1
+         | kind :: _ ->
+             Format.eprintf "Unknown config option '%s'@." kind;
+             exit 1
+         | [] ->
+             Format.eprintf "Bad config line '%s'@." line;
+             exit 1
+     done
+   with End_of_file -> ());
+  close_in ch;
+  List.rev !i
+
+let read_report_config ?(column_ref = -1) file =
+  if not (Sys.file_exists file)
+  then (
+    Format.eprintf "Configuration file '%s' not found!@." file;
+    exit 1);
+  let fullinfo = ref [] in
+  let info = ref [] in
+  let i = ref 0 in
+  let reference = ref false in
+  let ch = open_in file in
+  let split_at_space l =
+    try
+      let i = String.index l ' ' in
+      String.sub l ~pos:0 ~len:i, String.sub l ~pos:(i + 1) ~len:(String.length l - i - 1)
+    with Not_found -> l, ""
+  in
+  let get_info measure rem refe =
+    let dir0 = measure.Measure.path in
+    let dir1, rem = split_at_space rem in
+    let dir2, rem = split_at_space rem in
+    let color, title = split_at_space rem in
+    let dir1 = if dir1 = "\"\"" then dir0 else dir0 ^ "/" ^ dir1 in
+    let name = String.concat ~sep:"-" [ measure.Measure.name; title ] in
+    let description =
+      match measure.Measure.description with
+      | None -> None
+      | Some d -> Some (String.concat ~sep:", " [ d; title ])
+    in
+    let measure = Measure.{ measure with name; description; color = Some color } in
+    info := Some (dir1, dir2, measure, refe) :: !info
+  in
+  (try
+     while true do
+       let l = input_line ch in
+       if String.length l = 0
+       then (
+         if !info <> []
+         then (
+           fullinfo := List.rev !info :: !fullinfo;
+           info := [];
+           i := 0))
+       else if l.[0] <> '#'
+       then (
+         incr i;
+         reference := column_ref = !i;
+         let kind, rem = split_at_space l in
+         let kind2, rem = split_at_space rem in
+         (match kind with
+         | "histogram" -> ()
+         | "histogramref" when column_ref < 0 -> reference := true
+         | _ ->
+             Format.eprintf "Unknown config options '%s'@." kind;
+             exit 1);
+         match kind2 with
+         | "blank" -> info := None :: !info
+         | "times" -> get_info times rem !reference
+         | "compiletimes" -> get_info compiletimes rem !reference
+         | "sizes" -> get_info sizes rem !reference
+         | _ ->
+             Format.eprintf "Unknown config options '%s'@." kind2;
+             exit 1)
+     done
+   with End_of_file -> ());
+  close_in ch;
+  if !info <> [] then fullinfo := List.rev !info :: !fullinfo;
+  List.rev !fullinfo
