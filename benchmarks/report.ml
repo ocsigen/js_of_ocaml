@@ -39,8 +39,6 @@ let errors = ref false
 
 let script = ref false
 
-let conf = ref "report.config"
-
 let svg = ref false
 
 let svgfontsize = ref 7
@@ -319,17 +317,16 @@ let output ~format conf =
       no_header := true);
   close ()
 
-let read_config () =
-  let f = !conf in
-  if not (Sys.file_exists f)
+let read_config file =
+  if not (Sys.file_exists file)
   then (
-    Format.eprintf "Configuration file '%s' not found!@." f;
+    Format.eprintf "Configuration file '%s' not found!@." file;
     exit 1);
   let fullinfo = ref [] in
   let info = ref [] in
   let i = ref 0 in
   let reference = ref false in
-  let ch = open_in f in
+  let ch = open_in file in
   let split_at_space l =
     try
       let i = String.index l ' ' in
@@ -388,6 +385,7 @@ let read_config () =
   List.rev !fullinfo
 
 let _ =
+  let conf = ref "report.config" in
   let options =
     [ "-ref", Arg.Set_int nreference, "<col> use column <col> as the baseline"
     ; "-max", Arg.Set_float maximum, "<m> truncate graph at level <max>"
@@ -427,7 +425,7 @@ let _ =
     (Arg.align options)
     (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let conf = read_config () in
+  let conf = read_config !conf in
   output ~format:!format conf
 
 (*
