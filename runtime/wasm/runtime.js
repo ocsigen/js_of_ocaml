@@ -327,7 +327,7 @@
             x /= Math.pow(10, e);
             x += new Array(e + 1).join("0");
             if (dp > 0) {
-              x = x + "." + new Array(dp + 1).join("0");
+              x = `${x}.${new Array(dp + 1).join("0")}`;
             }
             return x;
           } else return x.toFixed(dp);
@@ -339,7 +339,7 @@
           // exponent should be at least two digits
           var i = s.length;
           if (s.charAt(i - 3) === "e")
-            s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
+            s = `${s.slice(0, i - 1)}0${s.slice(i - 1)}`;
           break;
         case 1:
           s = toFixed(x, prec);
@@ -357,7 +357,7 @@
             s = s.slice(0, i + 1) + s.slice(j);
             i = s.length;
             if (s.charAt(i - 3) === "e")
-              s = s.slice(0, i - 1) + "0" + s.slice(i - 1);
+              s = `${s.slice(0, i - 1)}0${s.slice(i - 1)}`;
             break;
           } else {
             var p = prec;
@@ -375,7 +375,7 @@
           }
           break;
       }
-      return pad ? " " + s : s;
+      return pad ? ` ${s}` : s;
     },
     gettimeofday: () => new Date().getTime() / 1000,
     times: () => {
@@ -583,7 +583,7 @@
     async function loadModule(module, isRuntime) {
       const sync = module[1].constructor !== Array;
       async function instantiate() {
-        const code = loadCode(src + "/" + module[0] + ".wasm");
+        const code = loadCode(`${src}/${module[0]}.wasm`);
         await Promise.all(sync ? deps : module[1].map((i) => deps[i]));
         const wasmModule = await instantiateModule(code);
         Object.assign(
