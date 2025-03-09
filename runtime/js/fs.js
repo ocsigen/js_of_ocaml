@@ -21,7 +21,7 @@
 
 //Provides: caml_trailing_slash
 function caml_trailing_slash(name) {
-  return name.slice(-1) !== "/" ? name + "/" : name;
+  return name.slice(-1) !== "/" ? `${name}/` : name;
 }
 
 //Provides: caml_current_dir
@@ -36,7 +36,7 @@ caml_current_dir = caml_trailing_slash(caml_current_dir);
 function caml_get_root(path) {
   var x = path_is_absolute(path);
   if (!x) return;
-  return x[0] + "/";
+  return `${x[0]}/`;
 }
 
 //Provides: caml_root
@@ -172,7 +172,7 @@ function resolve_fs_device(name) {
     }
   }
   if (res) return res;
-  caml_raise_sys_error("no device found for " + name_slash);
+  caml_raise_sys_error(`no device found for ${name_slash}`);
 }
 
 //Provides: caml_mount_autoload

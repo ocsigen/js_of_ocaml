@@ -39,14 +39,14 @@ class MlFakeDevice {
     var comp = name.split("/");
     var res = "";
     for (var i = 0; i < comp.length - 1; i++) {
-      res += comp[i] + "/";
+      res += `${comp[i]}/`;
       if (this.content[res]) continue;
       this.content[res] = Symbol("directory");
     }
   }
 
   slash(name) {
-    return /\/$/.test(name) ? name : name + "/";
+    return /\/$/.test(name) ? name : `${name}/`;
   }
 
   lookup(name) {
@@ -113,7 +113,7 @@ class MlFakeDevice {
 
   rmdir(name, raise_unix) {
     var name_slash = name === "" ? "" : this.slash(name);
-    var r = new RegExp("^" + name_slash + "([^/]+)");
+    var r = new RegExp(`^${name_slash}([^/]+)`);
     if (!this.exists(name))
       caml_raise_system_error(
         raise_unix,
@@ -146,12 +146,12 @@ class MlFakeDevice {
   readdir(name) {
     var name_slash = name === "" ? "" : this.slash(name);
     if (!this.exists(name)) {
-      caml_raise_sys_error(name + ": No such file or directory");
+      caml_raise_sys_error(`${name}: No such file or directory`);
     }
     if (!this.is_dir(name)) {
-      caml_raise_sys_error(name + ": Not a directory");
+      caml_raise_sys_error(`${name}: Not a directory`);
     }
-    var r = new RegExp("^" + name_slash + "([^/]+)");
+    var r = new RegExp(`^${name_slash}([^/]+)`);
     var seen = {};
     var a = [];
     for (var n in this.content) {
@@ -289,7 +289,7 @@ class MlFakeDevice {
   register(name, content) {
     var file;
     if (this.content[name])
-      caml_raise_sys_error(this.nm(name) + " : file already exists");
+      caml_raise_sys_error(`${this.nm(name)} : file already exists`);
     if (caml_is_ml_bytes(content)) file = new MlFakeFile(content);
     if (caml_is_ml_string(content))
       file = new MlFakeFile(caml_bytes_of_string(content));
@@ -308,7 +308,7 @@ class MlFakeDevice {
       this.content[name] = file;
     } else
       caml_raise_sys_error(
-        this.nm(name) + " : registering file with invalid content type",
+        `${this.nm(name)} : registering file with invalid content type`,
       );
   }
 }

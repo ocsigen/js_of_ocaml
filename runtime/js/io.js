@@ -196,8 +196,7 @@ function caml_ml_out_channels_list() {
 //Requires: caml_sys_open
 function caml_ml_open_descriptor_out(fd) {
   var fd_desc = caml_sys_fds[fd];
-  if (fd_desc === undefined)
-    caml_raise_sys_error("fd " + fd + " doesn't exist");
+  if (fd_desc === undefined) caml_raise_sys_error(`fd ${fd} doesn't exist`);
   var file = fd_desc.file;
   var chanid = fd_desc.chanid;
   var buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1;
@@ -221,8 +220,7 @@ function caml_ml_open_descriptor_out(fd) {
 //Requires: caml_sys_open
 function caml_ml_open_descriptor_in(fd) {
   var fd_desc = caml_sys_fds[fd];
-  if (fd_desc === undefined)
-    caml_raise_sys_error("fd " + fd + " doesn't exist");
+  if (fd_desc === undefined) caml_raise_sys_error(`fd ${fd} doesn't exist`);
   var file = fd_desc.file;
   var chanid = fd_desc.chanid;
   var refill = null;
@@ -436,7 +434,7 @@ function caml_input_value(chanid) {
   var buf = new Uint8Array(len + caml_marshal_header_size);
   buf.set(header, 0);
   var r = block(buf, caml_marshal_header_size, len);
-  if (r < len) caml_failwith("input_value: truncated object " + r + "  " + len);
+  if (r < len) caml_failwith(`input_value: truncated object ${r} ${len}`);
   var res = caml_input_value_from_bytes(caml_bytes_of_uint8_array(buf), 0);
   return res;
 }

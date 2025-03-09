@@ -789,7 +789,7 @@ var caml_output_val = (function () {
           ops.serialize(writer, v, sz_32_64);
           if (ops.fixed_length !== writer.pos() - old_pos)
             caml_failwith(
-              "output_value: incorrect fixed sizes specified by " + name,
+              `output_value: incorrect fixed sizes specified by ${name}`,
             );
         }
         writer.size_32 += 2 + ((sz_32_64[0] + 3) >> 2);
@@ -846,7 +846,7 @@ var caml_output_val = (function () {
         if (v !== (v | 0)) {
           var type_of_v = typeof v;
           if (type_of_v !== "number")
-            caml_failwith("output_value: abstract value (" + type_of_v + ")");
+            caml_failwith(`output_value: abstract value (${type_of_v})`);
           // If a float happens to be an integer it is serialized as an integer
           // (Js_of_ocaml cannot tell whether the type of an integer number is
           // float or integer.) This can result in unexpected crashes when
