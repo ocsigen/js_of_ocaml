@@ -50,7 +50,7 @@ function caml_dynlink_lookup_symbol(idx, fun_name) {
   var name = caml_jsstring_of_string(fun_name);
   console.log("Dynlink: looking for symbol", name);
   var current_libs = get_current_libs();
-  if (current_libs[idx] && current_libs[idx][name])
+  if (current_libs[idx]?.[name])
     return { name: name, symbol: current_libs[idx][name] };
   return 0;
 }

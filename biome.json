@@ -18,8 +18,7 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "useArrowFunction": "off",
-        "useOptionalChain": "off"
+        "useArrowFunction": "off"
       },
       "correctness": {
         "noInnerDeclarations": "off",

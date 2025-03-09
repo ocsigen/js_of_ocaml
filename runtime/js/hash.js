@@ -72,7 +72,7 @@ function caml_hash_univ_param(count, limit, obj) {
       count--;
       var p = caml_int64_to_bytes(caml_int64_bits_of_float(obj));
       for (var i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
-    } else if (obj && obj.caml_custom) {
+    } else if (obj?.caml_custom) {
       if (
         caml_custom_ops[obj.caml_custom] &&
         caml_custom_ops[obj.caml_custom].hash
@@ -216,7 +216,7 @@ function caml_hash(count, limit, seed, obj) {
   wr = 1;
   while (rd < wr && num > 0) {
     v = queue[rd++];
-    if (v && v.caml_custom) {
+    if (v?.caml_custom) {
       if (
         caml_custom_ops[v.caml_custom] &&
         caml_custom_ops[v.caml_custom].hash

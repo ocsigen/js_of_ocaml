@@ -146,7 +146,7 @@ var caml_argv = (function () {
   var main = "a.out";
   var args = [];
 
-  if (process && process.argv && process.argv.length > 1) {
+  if (process?.argv?.length > 1) {
     var argv = process.argv;
     //nodejs
     main = argv[1];
@@ -195,7 +195,7 @@ function caml_sys_system_command(cmd) {
   var cmd = caml_jsstring_of_string(cmd);
   if (typeof require !== "undefined") {
     var child_process = require("node:child_process");
-    if (child_process && child_process.execSync)
+    if (child_process?.execSync)
       try {
         child_process.execSync(cmd, { stdio: "inherit" });
         return 0;
@@ -374,7 +374,7 @@ function caml_sys_is_regular_file(name) {
 //If: !wasm
 function caml_setup_uncaught_exception_handler() {
   var process = globalThis.process;
-  if (process && process.on) {
+  if (process?.on) {
     process.on("uncaughtException", function (err, origin) {
       caml_fatal_uncaught_exception(err);
       process.exit(2);
