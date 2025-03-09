@@ -342,7 +342,7 @@ function caml_resume(f, arg, stack, last) {
           joo_direct: 1,
         };
       }
-    } while (res && res.joo_args);
+    } while (res?.joo_args);
     return res;
   } finally {
     caml_stack_depth = saved_stack_depth;

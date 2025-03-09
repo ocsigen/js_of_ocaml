@@ -161,7 +161,7 @@ function resolve_fs_device(name) {
   }
   if (!res && fs_node_supported()) {
     var root = caml_get_root(name);
-    if (root && root.match(/^[a-zA-Z]:\/$/)) {
+    if (root?.match(/^[a-zA-Z]:\/$/)) {
       var m = { path: root, device: new MlNodeDevice(root) };
       jsoo_mount_point.push(m);
       res = {

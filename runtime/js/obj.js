@@ -51,7 +51,7 @@ function caml_obj_tag(x) {
   else if (caml_is_ml_bytes(x)) return 252;
   else if (caml_is_ml_string(x)) return 252;
   else if (x instanceof Function || typeof x === "function") return 247;
-  else if (x && x.caml_custom) return 255;
+  else if (x?.caml_custom) return 255;
   else return 1000;
 }
 
