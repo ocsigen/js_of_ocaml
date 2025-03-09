@@ -53,7 +53,7 @@ function caml_js_typeof(o) {
 //Provides:caml_trampoline
 function caml_trampoline(res) {
   var c = 1;
-  while (res && res.joo_tramp) {
+  while (res?.joo_tramp) {
     res = res.joo_tramp.apply(null, res.joo_args);
     c++;
   }
@@ -108,7 +108,7 @@ function caml_callback(f, args) {
         caml_current_stack.x = caml_current_stack.x.t;
         res = { joo_tramp: handler, joo_args: [caml_wrap_exception(e)] };
       }
-    } while (res && res.joo_args);
+    } while (res?.joo_args);
   } finally {
     caml_stack_depth = saved_stack_depth;
     caml_current_stack = saved_current_stack;

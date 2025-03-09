@@ -631,7 +631,7 @@
 
   start_fiber = make_promising(caml_start_fiber);
   var _initialize = make_promising(_initialize);
-  if (globalThis.process && globalThis.process.on) {
+  if (globalThis.process?.on) {
     globalThis.process.on("uncaughtException", (err, origin) =>
       caml_handle_uncaught_exception(err),
     );
