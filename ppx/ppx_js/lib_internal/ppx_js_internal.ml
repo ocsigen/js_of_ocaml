@@ -583,9 +583,14 @@ let preprocess_literal_object mappper fields :
         let body, body_ty = drop_pexp_poly (mappper body) in
         let rec create_meth_ty exp =
           match exp.pexp_desc with
-          | Pexp_fun (label, _, _, body) -> Arg.make ~label () :: create_meth_ty body
-          | Pexp_function _ -> [ Arg.make () ]
-          | Pexp_newtype (_, body) -> create_meth_ty body
+          | Pexp_function (params, _, Pfunction_body body) ->
+              let params =
+                List.filter_map params ~f:(function
+                  | { pparam_desc = Pparam_newtype _; _ } -> None
+                  | { pparam_desc = Pparam_val (label, _, _arg); _ } ->
+                      Some (Arg.make ~label ()))
+              in
+              params @ create_meth_ty body
           | _ -> []
         in
         let fun_ty = create_meth_ty body in
