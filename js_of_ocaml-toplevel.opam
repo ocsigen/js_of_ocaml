@@ -19,7 +19,7 @@ depends: [
   "graphics" {with-test}
   "num" {with-test}
   "ppx_expect" {>= "v0.14.2" & with-test}
-  "ppxlib" {>= "0.15"}
+  "ppxlib" {>= "0.36"}
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}
 ]
