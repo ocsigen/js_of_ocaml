@@ -19,7 +19,7 @@ depends: [
   "lwt" {>= "2.4.4"}
   "num" {with-test}
   "ppx_expect" {>= "v0.14.2" & with-test}
-  "ppxlib" {>= "0.22.0" & with-test}
+  "ppxlib" {>= "0.36" & with-test}
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}
 ]
