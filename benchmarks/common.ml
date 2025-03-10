@@ -158,6 +158,8 @@ let compiletimes =
 module Spec : sig
   type t
 
+  val name : t -> string
+
   val create : string -> string -> t
 
   val dir : root:string -> t -> string
@@ -208,6 +210,8 @@ end = struct
     { dir : string
     ; ext : string
     }
+
+  let name { dir; _ } = dir
 
   let create dir ext = { dir; ext }
 

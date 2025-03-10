@@ -48,7 +48,7 @@ __run:
 	touch __run
 
 __run_effects:
-	$(RUN) -fast -nobyteopt -effects
+	$(RUN) -fast report-time-effects.config
 	touch __run_effects
 
 fastrun:

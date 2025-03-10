@@ -200,37 +200,47 @@ let gen_size param =
 let _ =
   let compile_only = ref false in
   let full = ref false in
-  let effects = ref false in
-  let conf_file = ref "run.config" in
-  let nobyteopt = ref false in
+  let interpreter_config = ref "run.config" in
   let param = ref Param.default in
+  let reports = ref [] in
   let fast_run () = param := Param.fast !param in
   let ffast_run () = param := Param.ffast !param in
   let verbose () = param := Param.verbose !param in
   let options =
     [ "-compile", Arg.Set compile_only, " only compiles"
     ; "-all", Arg.Set full, " run all benchmarks"
-    ; "-effects", Arg.Set effects, " only run benchmarks with various effects backends"
-    ; "-config", Arg.Set_string conf_file, "<file> use <file> as a config file"
+    ; "-config", Arg.Set_string interpreter_config, "<file> use <file> as a config file"
     ; "-fast", Arg.Unit fast_run, " perform less iterations"
     ; "-ffast", Arg.Unit ffast_run, " perform very few iterations"
     ; "-verbose", Arg.Unit verbose, " verbose"
-    ; ( "-nobyteopt"
-      , Arg.Set nobyteopt
-      , " do not run benchmarks on bytecode and native programs" )
     ]
   in
   Arg.parse
     (Arg.align options)
-    (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
-    (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let conf_file = !conf_file in
+    (fun report -> reports := report :: !reports)
+    (Format.sprintf "Usage: %s [options] [REPORTS.config]*" Sys.argv.(0));
   let compile_only = !compile_only in
-  let nobyteopt = !nobyteopt in
   let full = !full in
-  let effects = !effects in
   let param = !param in
-  let interpreters = read_interpreter_config conf_file in
+  let interpreters = read_interpreter_config !interpreter_config in
+  let filtered, filter_bench =
+    match !reports with
+    | [] -> false, fun (_, _) -> true
+    | reports ->
+        List.map reports ~f:read_report_config
+        |> List.concat_map ~f:(fun l ->
+               List.concat_map l ~f:(fun l ->
+                   List.concat_map l ~f:(function
+                     | None -> []
+                     | Some (p1, p2, _measure, _) -> (
+                         match String.split_on_char ~sep:'/' p1 with
+                         | [ "results"; "times"; _host; interpreter ] ->
+                             [ interpreter, p2 ]
+                         | _ -> []))))
+        |> List.sort_uniq ~cmp:compare
+        |> fun required ->
+        true, fun (interp, suite) -> List.mem (interp, Spec.name suite) ~set:required
+  in
   let compile = compile param ~comptime:true in
   let compile_jsoo ?(effects = `None) opts =
     compile
@@ -357,35 +367,25 @@ let _ =
     Spec.js_of_ocaml_effects_double_translation;
   if compile_only then exit 0;
   Format.eprintf "Measure@.";
-  if not nobyteopt
-  then (
-    measure ~param ~code ~meas:times ~spec:Spec.opt "";
-    measure ~param ~code ~meas:times ~spec:Spec.byte "");
+  if filter_bench ("", Spec.opt) then measure ~param ~code ~meas:times ~spec:Spec.opt "";
+  if filter_bench ("", Spec.byte) then measure ~param ~code ~meas:times ~spec:Spec.byte "";
+  let all_spec =
+    [ Some Spec.js_of_ocaml
+    ; Some Spec.js_of_ocaml_o3
+    ; Some Spec.js_of_ocaml_js_string
+    ; Some Spec.js_of_ocaml_unsafe
+    ; Some Spec.js_of_ocaml_inline
+    ; Some Spec.js_of_ocaml_deadcode
+    ; Some Spec.js_of_ocaml_compact
+    ; Some Spec.js_of_ocaml_call
+    ; Some Spec.js_of_ocaml_effects_cps
+    ; Some Spec.js_of_ocaml_effects_double_translation
+    ; Some Spec.wasm_of_ocaml
+    ]
+  in
   let interpreters, suites =
-    if full
-    then
-      ( interpreters
-      , [ Some Spec.js_of_ocaml
-        ; Some Spec.js_of_ocaml_o3
-        ; Some Spec.js_of_ocaml_js_string
-        ; Some Spec.js_of_ocaml_unsafe
-        ; Some Spec.js_of_ocaml_inline
-        ; Some Spec.js_of_ocaml_deadcode
-        ; Some Spec.js_of_ocaml_compact
-        ; Some Spec.js_of_ocaml_call
-        ; Some Spec.js_of_ocaml_effects_cps
-        ; Some Spec.js_of_ocaml_effects_double_translation
-        ; Some Spec.wasm_of_ocaml
-        ] )
-    else if effects
-    then
-      ( (match interpreters with
-        | i :: _ -> [ i ]
-        | [] -> [])
-      , [ Some Spec.js_of_ocaml
-        ; Some Spec.js_of_ocaml_effects_cps
-        ; Some Spec.js_of_ocaml_effects_double_translation
-        ] )
+    if full || filtered
+    then interpreters, all_spec
     else
       ( (match interpreters with
         | i :: _ -> [ i ]
@@ -394,18 +394,22 @@ let _ =
   in
   List.iter interpreters ~f:(fun (comp, dir) ->
       (* Measure the time taken by an implementation in Javascript for comparison *)
-      measure
-        ~param
-        ~code:src
-        ~meas:Measure.{ times with path = Filename.concat times.path dir }
-        ~spec:Spec.js
-        comp;
+      if filter_bench (dir, Spec.js)
+      then
+        measure
+          ~param
+          ~code:src
+          ~meas:Measure.{ times with path = Filename.concat times.path dir }
+          ~spec:Spec.js
+          comp;
       List.iter suites ~f:(function
         | None -> ()
         | Some suite ->
-            measure
-              ~param
-              ~code
-              ~meas:Measure.{ times with path = Filename.concat times.path dir }
-              ~spec:suite
-              comp))
+            if filter_bench (dir, suite)
+            then
+              measure
+                ~param
+                ~code
+                ~meas:Measure.{ times with path = Filename.concat times.path dir }
+                ~spec:suite
+                comp))

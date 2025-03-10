@@ -373,5 +373,4 @@ let _ =
 
 (*
 http://hacks.mozilla.org/2009/07/tracemonkey-overview/
-http://weblogs.mozillazine.org/bz/archives/020732.html
 *)
