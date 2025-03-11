@@ -23,23 +23,15 @@ open Common
 
 let reference = ref None
 
-let nreference = ref (-1)
-
 let maximum = ref (-1.)
 
 let minimum = ref 0.
-
-let table = ref false
 
 let omitted = ref []
 
 let appended = ref []
 
 let errors = ref false
-
-let script = ref false
-
-let conf = ref "report.config"
 
 let svg = ref false
 
@@ -65,23 +57,19 @@ let rec merge f l1 l2 =
 
 let merge_blank = List.map ~f:(fun (n2, v2) -> n2, (0.0, 0.0) :: v2)
 
-let read_column ?title ?color meas spec refe =
+let read_column ~measure path spec refe :
+    (Measure.t option list * (string * (float * float) list) list) option =
   let l =
     List.map
-      (Spec.find_names ~root:meas (Spec.no_ext spec))
+      (Spec.find_names ~root:path (Spec.no_ext spec))
       ~f:(fun nm ->
-        let l = read_measures meas spec nm in
+        let l = read_measures path spec nm in
         let a = Array.of_list l in
         let m, i = mean_with_confidence a in
         nm, [ m, i ])
   in
-  let nm =
-    match title with
-    | Some nm -> nm
-    | None -> Spec.dir ~root:meas (Spec.no_ext spec)
-  in
   if refe then reference := Some l;
-  Some ([ Some (nm, color) ], l)
+  Some ([ Some measure ], l)
 
 let read_blank_column () = None
 
@@ -144,7 +132,7 @@ let normalize (h, t) =
 let stats (h, t) =
   for i = 0 to List.length h - 1 do
     match List.nth h i with
-    | Some (nm, _) ->
+    | Some Measure.{ name = nm; _ } ->
         let l = List.map t ~f:(fun (_, l) -> fst (List.nth l i)) in
         let a = Array.of_list l in
         Array.sort a ~cmp:compare;
@@ -169,7 +157,7 @@ let text_output _no_header (h, t) =
   List.iter h ~f:(fun v ->
       let nm =
         match v with
-        | Some (nm, _) -> nm
+        | Some Measure.{ name; _ } -> name
         | None -> ""
       in
       Format.printf " - \"%s\"" nm);
@@ -223,11 +211,11 @@ let gnuplot_output ch no_header (h, t) =
   Printf.fprintf ch "plot";
   for i = 0 to n - 1 do
     match List.nth h i with
-    | Some (_, col) -> (
+    | Some Measure.{ color; _ } -> (
         if i > 0
         then Printf.fprintf ch ", \"-\" using 2:3 title columnhead lw 0"
         else Printf.fprintf ch " \"-\" using 2:3:xtic(1) title columnhead lw 0";
-        match col with
+        match color with
         | Some c -> Printf.fprintf ch " lc rgb '%s'" c
         | None -> ())
     | None ->
@@ -240,7 +228,7 @@ let gnuplot_output ch no_header (h, t) =
   for i = 0 to n - 1 do
     let nm =
       match List.nth h i with
-      | Some (nm, _) -> nm
+      | Some Measure.{ name; _ } -> name
       | None -> ""
     in
     Printf.fprintf ch "- \"%s\"\n" (escape_name_for_gnuplot nm);
@@ -268,7 +256,7 @@ let filter (h, t) =
 
 let output_table =
   let old_table = ref None in
-  fun _r (l : ((string * 'a option) option list * _) option list) f ->
+  fun (l : (Measure.t option list * _) option list) f ->
     let t = merge_columns l !old_table in
     old_table := Some (snd t);
     let t = filter t in
@@ -276,94 +264,76 @@ let output_table =
     stats t;
     f t
 
-let output_tables r conf =
+let current_bench_output
+    (ch : out_channel)
+    (_no_header : bool)
+    ((header : Measure.t option list), (t : (string * (float * float) list) list)) =
+  let suite_name = !ylabel in
+  let measure_descs =
+    (* Filter out blank columns *)
+    List.filter_map header ~f:Fun.id
+  in
+  let metrics =
+    List.concat_map t ~f:(function test_name, measures ->
+        assert (List.length measures = List.length measure_descs);
+        List.map2 measure_descs measures ~f:(fun desc (m, _confidence_itvl) ->
+            let description =
+              Option.value desc.Measure.description ~default:desc.Measure.name
+            in
+            `Assoc
+              [ "name", `String (String.concat ~sep:" - " [ test_name; description ])
+              ; "value", `Float m
+              ; "units", `String desc.Measure.units
+              ]))
+  in
+  let results = `Assoc [ "name", `String "Microbenchmarks"; "metrics", `List metrics ] in
+  let json = `Assoc [ "name", `String suite_name; "results", `List [ results ] ] in
+  Yojson.Basic.to_channel ch json
+
+let output ~format conf =
   let output_function, close =
-    if !table
-    then text_output, fun () -> ()
-    else if !script
-    then gnuplot_output stdout, fun () -> ()
-    else
-      let ch = Unix.open_process_out "gnuplot -persist" in
-      gnuplot_output ch, fun () -> close_out ch
+    match format with
+    | `Text -> text_output, fun () -> ()
+    | `Gnuplot_script -> gnuplot_output stdout, fun () -> ()
+    | `Gnuplot ->
+        let ch = Unix.open_process_out "gnuplot -persist" in
+        gnuplot_output ch, fun () -> close_out ch
+    | `Current_bench -> current_bench_output stdout, fun () -> ()
   in
   let no_header = ref false in
   List.iter conf ~f:(fun conf ->
       output_table
-        r
         (List.map conf ~f:(function
           | None -> read_blank_column ()
-          | Some (dir1, dir2, color, title, refe) ->
-              read_column ~title ~color dir1 (Spec.create dir2 "") refe))
+          | Some (dir1, dir2, measure, refe) ->
+              read_column ~measure dir1 (Spec.create dir2 "") refe))
         (output_function !no_header);
       no_header := true);
   close ()
 
-let read_config () =
-  let f = !conf in
-  if not (Sys.file_exists f)
-  then (
-    Format.eprintf "Configuration file '%s' not found!@." f;
-    exit 1);
-  let fullinfo = ref [] in
-  let info = ref [] in
-  let i = ref 0 in
-  let reference = ref false in
-  let ch = open_in f in
-  let split_at_space l =
-    try
-      let i = String.index l ' ' in
-      String.sub l ~pos:0 ~len:i, String.sub l ~pos:(i + 1) ~len:(String.length l - i - 1)
-    with Not_found -> l, ""
-  in
-  let get_info dir0 rem refe =
-    let dir1, rem = split_at_space rem in
-    let dir2, rem = split_at_space rem in
-    let color, title = split_at_space rem in
-    let dir1 = if dir1 = "\"\"" then dir0 else dir0 ^ "/" ^ dir1 in
-    info := Some (dir1, dir2, color, title, refe) :: !info
-  in
-  (try
-     while true do
-       let l = input_line ch in
-       if String.length l = 0
-       then (
-         if !info <> []
-         then (
-           fullinfo := List.rev !info :: !fullinfo;
-           info := [];
-           i := 0))
-       else if l.[0] <> '#'
-       then (
-         incr i;
-         reference := !nreference = !i;
-         let kind, rem = split_at_space l in
-         let kind2, rem = split_at_space rem in
-         (match kind with
-         | "histogram" -> ()
-         | "histogramref" -> if !nreference = -1 then reference := true
-         | _ ->
-             Format.eprintf "Unknown config options '%s'@." kind;
-             exit 1);
-         match kind2 with
-         | "blank" -> info := None :: !info
-         | "times" -> get_info times rem !reference
-         | "compiletimes" -> get_info compiletimes rem !reference
-         | "sizes" -> get_info sizes rem !reference
-         | _ ->
-             Format.eprintf "Unknown config options '%s'@." kind2;
-             exit 1)
-     done
-   with End_of_file -> ());
-  close_in ch;
-  if !info <> [] then fullinfo := List.rev !info :: !fullinfo;
-  !reference, List.rev !fullinfo
-
 let _ =
+  let conf = ref "report.config" in
+  let format : [ `Gnuplot | `Gnuplot_script | `Text | `Current_bench ] ref =
+    ref `Gnuplot
+  in
+  let script = ref false in
+  let nreference = ref None in
   let options =
-    [ "-ref", Arg.Set_int nreference, "<col> use column <col> as the baseline"
+    [ ( "-ref"
+      , Arg.Int (fun i -> nreference := Some i)
+      , "<col> use column <col> as the baseline. Overrides histogramref." )
     ; "-max", Arg.Set_float maximum, "<m> truncate graph at level <max>"
     ; "-min", Arg.Set_float minimum, "<m> truncate graph below level <min>"
-    ; "-table", Arg.Set table, " output a text table"
+    ; ( "-format"
+      , Arg.Symbol
+          ( [ "gnuplot"; "table"; "current-bench" ]
+          , function
+            | "gnuplot" -> format := `Gnuplot
+            | "table" -> format := `Text
+            | "current-bench" -> format := `Current_bench
+            | _ -> assert false )
+      , " output format: a Gnuplot graph, a text table, or a JSON object for use by \
+         current-bench (default gnuplot)" )
     ; ( "-omit"
       , Arg.String (fun s -> omitted := split_on_char s ~sep:',' @ !omitted)
       , " omit the given benchmark" )
@@ -389,10 +359,18 @@ let _ =
     (Arg.align options)
     (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let r, conf = read_config () in
-  output_tables r conf
+  let format =
+    match !format, !script with
+    | `Gnuplot, true -> `Gnuplot_script
+    | `Gnuplot, false -> `Gnuplot
+    | _, true ->
+        Printf.eprintf "-script only work with gnuplot format";
+        exit 2
+    | ((`Gnuplot_script | `Text | `Current_bench) as x), false -> x
+  in
+  let conf = read_report_config ?column_ref:!nreference !conf in
+  output ~format conf
 
 (*
 http://hacks.mozilla.org/2009/07/tracemonkey-overview/
-http://weblogs.mozillazine.org/bz/archives/020732.html
 *)
