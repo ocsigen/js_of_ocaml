@@ -277,6 +277,21 @@ let%expect_test "let inside block" =
       7:   ());
     4 2 |}]
 
+let%expect_test "functions have local scope" =
+  test {|
+function f (p) {
+  return e
+  if (p) {
+    function e () {}
+    e ();
+  }
+}
+|};
+  [%expect
+    {|
+        $ cat "test.min.js"
+          1: function f(v1){return e; if(v1){function v2(){} v2();}} |}]
+
 let%expect_test "import" =
   let test ?(module_ = false) js_prog =
     let name = if module_ then "test.mjs" else "test.js" in
@@ -510,7 +525,7 @@ export default function functionName() { /* … */ }
 export default class ClassName { /* … */ }|};
   [%expect {|
     $ cat "test.min.js"
-      1: export default class ClassName{} |}];
+      1: export default class v1{} |}];
   t {|
 export default function* generatorFunctionName() { /* … */ }|};
   [%expect

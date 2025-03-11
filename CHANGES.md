@@ -14,6 +14,7 @@
 * Runtime: fix reading from the pseudo-filesystem (#1859)
 * Runtime: fix initialization of standard streams under Windows (#1849)
 * Compiler: fix stack overflow issues with double translation (#1869)
+* Compiler: minifier fix (#1867)
 
 # 6.0.1 (2025-02-07) - Lille
 

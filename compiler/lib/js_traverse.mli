@@ -171,7 +171,8 @@ type scope =
 class rename_variable : esm:bool -> object ('a)
   inherit mapper
 
-  method update_state : scope -> Javascript.ident list -> Javascript.statement_list -> 'a
+  method update_state :
+    ?toplevel:bool -> scope -> Javascript.ident list -> Javascript.statement_list -> 'a
 end
 
 class share_constant : mapper

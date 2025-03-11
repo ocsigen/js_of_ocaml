@@ -1188,7 +1188,7 @@ type scope =
   | Fun_block of ident option
 
 class rename_variable ~esm =
-  let declared scope params body =
+  let declared toplevel scope params body =
     let declared_names = ref StringSet.empty in
     let decl_var x =
       match x with
@@ -1214,14 +1214,15 @@ class rename_variable ~esm =
 
        method statement x =
          match scope, x with
-         | (Fun_block _ | Module), Function_declaration (id, fd) ->
-             decl_var id;
+         | (Lexical_block | Fun_block _ | Module), Function_declaration (id, fd) ->
+             (* ECMAScript 8.2.10: At the top level of a function or
+                script, inner function declarations are treated like
+                var declarations *)
+             if depth = 0 && not toplevel then decl_var id;
              self#fun_decl fd
-         | Lexical_block, Function_declaration (_, fd) -> self#fun_decl fd
-         | (Fun_block _ | Module), Class_declaration (id, cl_decl) ->
-             decl_var id;
+         | (Lexical_block | Fun_block _ | Module), Class_declaration (id, cl_decl) ->
+             if depth = 0 then decl_var id;
              self#class_decl cl_decl
-         | Lexical_block, Class_declaration (_, cl_decl) -> self#class_decl cl_decl
          | _, For_statement (Right (((Const | Let) as k), l), _e1, _e2, (st, _loc)) ->
              let m = {<depth = depth + 1>} in
              List.iter ~f:(m#variable_declaration k) l;
@@ -1311,8 +1312,8 @@ class rename_variable ~esm =
 
     val labels = StringMap.empty
 
-    method update_state scope params iter_body =
-      let declared_names = declared scope params iter_body in
+    method update_state ?(toplevel = false) scope params iter_body =
+      let declared_names = declared toplevel scope params iter_body in
       {<subst = StringSet.fold
                   (fun name subst -> StringMap.add name (Code.Var.fresh_n name) subst)
                   declared_names
@@ -1343,7 +1344,7 @@ class rename_variable ~esm =
         let m' = m#update_state Module [] p in
         m'#statements p
       else
-        let m' = m#update_state Lexical_block [] p in
+        let m' = m#update_state ~toplevel:true Lexical_block [] p in
         m'#statements p
 
     method binding_property x =
