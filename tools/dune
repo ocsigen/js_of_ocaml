@@ -1,18 +1,7 @@
 (executable
  (name node_wrapper)
- (modules node_wrapper node_wrapper_per_profile)
+ (modules node_wrapper)
  (libraries unix))
-
-(executable
- (name gen_node_wrapper_per_profile)
- (modules gen_node_wrapper_per_profile))
-
-(rule
- (target node_wrapper_per_profile.ml)
- (action
-  (with-stdout-to
-   %{target}
-   (run ./gen_node_wrapper_per_profile.exe %{profile}))))
 
 (executable
  (name ci_setup)
