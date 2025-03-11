@@ -1184,11 +1184,12 @@ class free =
 
 type scope =
   | Module
+  | Script
   | Lexical_block
   | Fun_block of ident option
 
 class rename_variable ~esm =
-  let declared toplevel scope params body =
+  let declared scope params body =
     let declared_names = ref StringSet.empty in
     let decl_var x =
       match x with
@@ -1197,6 +1198,7 @@ class rename_variable ~esm =
     in
     (match scope with
     | Module -> ()
+    | Script -> ()
     | Lexical_block -> ()
     | Fun_block None -> ()
     | Fun_block (Some x) -> decl_var x);
@@ -1215,12 +1217,15 @@ class rename_variable ~esm =
        method statement x =
          match scope, x with
          | (Lexical_block | Fun_block _ | Module), Function_declaration (id, fd) ->
+             if depth = 0 then decl_var id;
+             self#fun_decl fd
+         | Script, Function_declaration (_, fd) ->
              (* ECMAScript 8.2.10: At the top level of a function or
                 script, inner function declarations are treated like
                 var declarations *)
-             if depth = 0 && not toplevel then decl_var id;
              self#fun_decl fd
-         | (Lexical_block | Fun_block _ | Module), Class_declaration (id, cl_decl) ->
+         | (Lexical_block | Fun_block _ | Module | Script), Class_declaration (id, cl_decl)
+           ->
              if depth = 0 then decl_var id;
              self#class_decl cl_decl
          | _, For_statement (Right (((Const | Let) as k), l), _e1, _e2, (st, _loc)) ->
@@ -1254,7 +1259,7 @@ class rename_variable ~esm =
                  List.iter ~f:(fun (_, id) -> decl_var id) l
              | Default import_default -> decl_var import_default
              | SideEffect -> ())
-         | (Fun_block _ | Lexical_block | Module), _ -> super#statement x
+         | (Fun_block _ | Lexical_block | Module | Script), _ -> super#statement x
 
        method export e =
          match e with
@@ -1275,8 +1280,8 @@ class rename_variable ~esm =
        method variable_declaration k l =
          if
            match scope, k with
-           | (Lexical_block | Fun_block _ | Module), (Let | Const) -> depth = 0
-           | Lexical_block, Var -> false
+           | (Lexical_block | Fun_block _ | Module | Script), (Let | Const) -> depth = 0
+           | (Lexical_block | Script), Var -> false
            | (Fun_block _ | Module), Var -> true
          then
            let ids = bound_idents_of_variable_declaration l in
@@ -1289,8 +1294,8 @@ class rename_variable ~esm =
        method for_binding k p =
          if
            match scope, k with
-           | (Lexical_block | Fun_block _ | Module), (Let | Const) -> depth = 0
-           | Lexical_block, Var -> false
+           | (Lexical_block | Fun_block _ | Module | Script), (Let | Const) -> depth = 0
+           | (Lexical_block | Script), Var -> false
            | (Fun_block _ | Module), Var -> true
          then
            match p with
@@ -1312,8 +1317,8 @@ class rename_variable ~esm =
 
     val labels = StringMap.empty
 
-    method update_state ?(toplevel = false) scope params iter_body =
-      let declared_names = declared toplevel scope params iter_body in
+    method update_state scope params iter_body =
+      let declared_names = declared scope params iter_body in
       {<subst = StringSet.fold
                   (fun name subst -> StringMap.add name (Code.Var.fresh_n name) subst)
                   declared_names
@@ -1344,7 +1349,7 @@ class rename_variable ~esm =
         let m' = m#update_state Module [] p in
         m'#statements p
       else
-        let m' = m#update_state ~toplevel:true Lexical_block [] p in
+        let m' = m#update_state Script [] p in
         m'#statements p
 
     method binding_property x =
