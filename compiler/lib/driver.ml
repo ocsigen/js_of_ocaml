@@ -99,7 +99,7 @@ let map_fst f (x, y, z) = f x, y, z
 
 let effects ~deadcode_sentinal p =
   match Config.effects () with
-  | (`Cps | `Double_translation) as effects ->
+  | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
       let p, live_vars = Deadcode.f p in
       let p = Effects.remove_empty_blocks ~live_vars p in
@@ -112,12 +112,7 @@ let effects ~deadcode_sentinal p =
           Deadcode.f p
         else p, live_vars
       in
-      p
-      |> Effects.f ~flow_info:info ~live_vars
-      |> map_fst
-           (match effects with
-           | `Double_translation -> Fun.id
-           | `Cps -> Lambda_lifting.f)
+      p |> Effects.f ~flow_info:info ~live_vars |> map_fst Lambda_lifting.f
   | `Disabled | `Jspi ->
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)

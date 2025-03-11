@@ -4,7 +4,7 @@ let extra_args_for_wasoo =
   ; "--stack-size=10000"
   ]
 
-let extra_args_for_jsoo = [] @ Node_wrapper_per_profile.args
+let extra_args_for_jsoo = []
 
 let env = Unix.environment ()
 
