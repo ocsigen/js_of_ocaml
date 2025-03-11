@@ -91,7 +91,7 @@ class MlFakeDevice {
         this.nm(name),
       );
     var parent = /^(.*)\/[^/]+/.exec(name);
-    parent = (parent && parent[1]) || "";
+    parent = parent?.[1] || "";
     if (!this.exists(parent))
       caml_raise_system_error(
         raise_unix,
