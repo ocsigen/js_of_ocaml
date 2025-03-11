@@ -36,15 +36,16 @@ let wrap f =
 |}
   in
   print_double_fun_decl program "wrap";
-  [%expect {|
+  [%expect
+    {|
     function wrap$0(f){
      try{var _d_ = caml_call1(f, 0); return _d_;}
-     catch(exn$2){
-      var exn = caml_wrap_exception(exn$2), exn$0 = exn;
+     catch(exn$1){
+      var exn = caml_wrap_exception(exn$1);
       for(;;){
-       if(exn$0[1] !== Nested) throw caml_maybe_attach_backtrace(exn$0, 1);
-       var exn$1 = exn$0[2];
-       exn$0 = exn$1;
+       if(exn[1] !== Nested) throw caml_maybe_attach_backtrace(exn, 1);
+       var exn$0 = exn[2];
+       exn = exn$0;
       }
      }
     }
@@ -64,4 +65,5 @@ let wrap f =
     }
     //end
     var wrap = runtime.caml_cps_closure(wrap$0, wrap$1);
-    //end |}]
+    //end
+    |}]
