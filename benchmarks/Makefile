@@ -13,7 +13,8 @@ all: _perf graphsnopr graphspr graphseff _noperf
 # This target is the one run by `current-bench`,
 # see https://github.com/ocurrent/current-bench
 .PHONY: bench
-bench: __run
+bench:
+	$(RUN) ./report-wasm-cb.config ./report-jsoo-cb.config
 	$(REPORT) -format current-bench -config report-wasm-cb.config \
 	  -ylabel "Wasm_of_ocaml"
 	$(REPORT) -format current-bench -config report-jsoo-cb.config \
