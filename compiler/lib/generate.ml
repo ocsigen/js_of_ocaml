@@ -1947,7 +1947,6 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
           compile_branch st J.U [] e1 scope_stack ~fall_through
         in
         let exn_var, handler =
-          assert (not (List.mem x ~set:(snd e1)));
           let wrap_exn x =
             J.call
               (Share.get_prim (runtime_fun st.ctx) "caml_wrap_exception" st.ctx.Ctx.share)
