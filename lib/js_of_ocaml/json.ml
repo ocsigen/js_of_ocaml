@@ -116,9 +116,9 @@ let rec write b v =
           write_int64 b i
       | id -> failwith (Printf.sprintf "Json.output: unsupported custom value %s " id)
     else if t = Obj.abstract_tag
-      then
-        (* Presumably a JavaScript value *)
-        Buffer.add_string b (Js.to_string (json##stringify v))
+    then
+      (* Presumably a JavaScript value *)
+      Buffer.add_string b (Js.to_string (json##stringify v))
     else failwith (Printf.sprintf "Json.output: unsupported tag %d " t)
 
 let to_json v =

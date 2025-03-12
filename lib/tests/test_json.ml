@@ -63,7 +63,13 @@ let%expect_test _ =
   [%expect {| 2 |}]
 
 let%expect_test "JavaScript object" =
-  let x = object%js val x = 1 val y = Js.string "abcd" end in
+  let x =
+    object%js
+      val x = 1
+
+      val y = Js.string "abcd"
+    end
+  in
   let s = Json.output x in
   let s1 = Js.to_string s in
   Printf.printf "%s\n" s1;
