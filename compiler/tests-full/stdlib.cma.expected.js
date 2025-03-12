@@ -22432,13 +22432,13 @@
     /*<<printexc.ml:301:39>>*/ }
    var
     errors =
-       /*<<printexc.ml:20:29>>*/ [0,
-        cst$4,
-        "(Cannot print locations:\n bytecode executable program file not found)",
-        "(Cannot print locations:\n bytecode executable program file appears to be corrupt)",
-        "(Cannot print locations:\n bytecode executable program file has wrong magic number)",
-        "(Cannot print locations:\n bytecode executable program file cannot be opened;\n -- too many open files. Try running with OCAMLRUNPARAM=b=2)"].slice
-       (),
+       /*<<printexc.ml:20:29>>*/ runtime.caml_obj_dup
+       ([0,
+         cst$4,
+         "(Cannot print locations:\n bytecode executable program file not found)",
+         "(Cannot print locations:\n bytecode executable program file appears to be corrupt)",
+         "(Cannot print locations:\n bytecode executable program file has wrong magic number)",
+         "(Cannot print locations:\n bytecode executable program file cannot be opened;\n -- too many open files. Try running with OCAMLRUNPARAM=b=2)"]),
     _o_ =
       [0,
        [11, cst_Fatal_error_exception, [2, 0, [12, 10, 0]]],
@@ -31106,7 +31106,7 @@
     Stdlib_List = global_data.Stdlib__List,
     Stdlib_Map = global_data.Stdlib__Map;
    function copy(o){
-    var o$0 =  /*<<camlinternalOO.ml:23:19>>*/ o.slice();
+    var o$0 =  /*<<camlinternalOO.ml:23:19>>*/ runtime.caml_obj_dup(o);
      /*<<camlinternalOO.ml:24:2>>*/ return caml_set_oo_id(o$0) /*<<camlinternalOO.ml:24:10>>*/ ;
    }
    var params =  /*<<?>>*/ [0, 1, 1, 1, 3, 16];

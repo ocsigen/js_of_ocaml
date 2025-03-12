@@ -81,10 +81,7 @@ function caml_obj_with_tag(tag, x) {
 
 //Provides: caml_obj_dup mutable (mutable)
 function caml_obj_dup(x) {
-  var l = x.length;
-  var a = new Array(l);
-  for (var i = 0; i < l; i++) a[i] = x[i];
-  return a;
+  return typeof x === "number" ? x : x.slice();
 }
 
 //Provides: caml_obj_truncate (mutable, const)

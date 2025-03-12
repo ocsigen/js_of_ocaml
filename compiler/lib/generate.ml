@@ -1159,8 +1159,6 @@ let _ =
   register_tern_prim "caml_array_unsafe_set" (fun cx cy cz _ ->
       J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
   register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.array []);
-  register_un_prim "caml_obj_dup" ~need_loc:true `Mutable (fun cx loc ->
-      J.call (J.dot cx (Utf8_string.of_string_exn "slice")) [] loc);
   register_un_prim "caml_int_of_float" `Pure (fun cx _loc -> to_int cx);
   register_un_math_prim "caml_abs_float" "abs";
   register_un_math_prim "caml_acos_float" "acos";
