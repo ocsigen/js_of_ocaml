@@ -14,6 +14,7 @@ all: _perf graphsnopr graphspr graphseff _noperf
 # see https://github.com/ocurrent/current-bench
 .PHONY: bench
 bench:
+	make _noprecomp
 	$(RUN) ./report-wasm-cb.config ./report-jsoo-cb.config
 	$(REPORT) -format current-bench -config report-wasm-cb.config \
 	  -ylabel "Wasm_of_ocaml"
