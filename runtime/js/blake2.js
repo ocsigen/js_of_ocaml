@@ -379,3 +379,34 @@ function caml_blake2_bytes(hashlen, key, buf, ofs, len) {
   caml_blake2_update(ctx, buf, ofs, len);
   return caml_blake2_final(ctx, hashlen);
 }
+
+//Provides: blake2_js_for_wasm_create
+//Requires: caml_blake2_create, caml_string_of_jsbytes
+//Version: >= 5.2
+function blake2_js_for_wasm_create(hashlen, key) {
+  const key_jsoo_string = caml_string_of_jsbytes(key);
+  return caml_blake2_create(hashlen, key_jsoo_string);
+}
+
+//Provides: blake2_js_for_wasm_final
+//Requires: caml_blake2_final, caml_jsbytes_of_string
+//Version: >= 5.2
+function blake2_js_for_wasm_final(ctx, hashlen) {
+  return caml_jsbytes_of_string(caml_blake2_final(ctx, hashlen));
+}
+
+//Provides: blake2_js_for_wasm_update
+//Requires: caml_blake2_update, caml_bytes_of_jsbytes
+//Version: >= 5.2, < 5.3
+function blake2_js_for_wasm_update(ctx, buf, ofs, len) {
+  const buf_jsoo_string = caml_string_of_jsbytes(buf);
+  return caml_blake2_update(ctx, buf_jsoo_string, ofs, len);
+}
+
+//Provides: blake2_js_for_wasm_update
+//Requires: caml_blake2_update, caml_bytes_of_jsbytes
+//Version: >= 5.3
+function blake2_js_for_wasm_update(ctx, buf, ofs, len) {
+  const buf_jsoo_string = caml_bytes_of_jsbytes(buf);
+  return caml_blake2_update(ctx, buf_jsoo_string, ofs, len);
+}

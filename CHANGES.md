@@ -10,6 +10,7 @@
 * Runtime: update constant imports to use `node:fs` module (#1850)
 * Runtime: make Obj.dup work with floats and boxed numbers (#1871)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
+* Runtime: implement BLAKE2b primitives for Wasm (#1873)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
