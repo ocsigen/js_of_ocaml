@@ -517,8 +517,7 @@ export default ({obj : 2});
   t {|
 export default function functionName() { /* … */ }
 |};
-  [%expect
-    {|
+  [%expect {|
     $ cat "test.min.js"
       1: export default function v1(){}
     |}];
@@ -529,8 +528,7 @@ export default class ClassName { /* … */ }|};
       1: export default class v1{} |}];
   t {|
 export default function* generatorFunctionName() { /* … */ }|};
-  [%expect
-    {|
+  [%expect {|
     $ cat "test.min.js"
       1: export default function* v1(){}
     |}];
