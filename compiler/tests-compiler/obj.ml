@@ -58,5 +58,5 @@ let%expect_test "static eval of string get" =
     //end
     function my_new_block(x, l){return runtime.caml_obj_block(x + 1 | 0, 3);}
     //end
-    function my_dup(t){return [0, t, 0].slice();}
+    function my_dup(t){return runtime.caml_obj_dup([0, t, 0]);}
     //end |}]

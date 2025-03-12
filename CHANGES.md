@@ -8,6 +8,7 @@
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
 * Runtime: refactor caml_xmlhttprequest_create implementation (#1846)
 * Runtime: update constant imports to use `node:fs` module (#1850)
+* Runtime: make Obj.dup work with floats and boxed numbers (#1871)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)

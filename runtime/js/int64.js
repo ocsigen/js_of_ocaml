@@ -30,7 +30,7 @@ class MlInt64 {
     this.caml_custom = "_j";
   }
 
-  copy() {
+  slice() {
     return new MlInt64(this.lo, this.mi, this.hi);
   }
 
@@ -179,8 +179,8 @@ class MlInt64 {
 
   udivmod(x) {
     var offset = 0;
-    var modulus = this.copy();
-    var divisor = x.copy();
+    var modulus = this.slice();
+    var divisor = x.slice();
     var quotient = new MlInt64(0, 0, 0);
     while (modulus.ucompare(divisor) > 0) {
       offset++;

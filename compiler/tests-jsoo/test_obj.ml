@@ -45,7 +45,7 @@ let%expect_test "is_int" =
 (* https://github.com/ocsigen/js_of_ocaml/issues/666 *)
 (* https://github.com/ocsigen/js_of_ocaml/pull/725 *)
 
-let%expect_test "dup" =
+let%expect_test "dup string/bytes" =
   let magic = "abcd" in
   let js_string_enabled =
     match Sys.backend_type with
@@ -67,6 +67,55 @@ let%expect_test "dup" =
   print_bool (s <> s');
   [%expect {|
     true
+    true
+    true
+  |}]
+
+let%expect_test "dup tuple" =
+  let x = 1, "a", 2.1 in
+  let x' = Obj.obj (Obj.dup (Obj.repr x)) in
+  print_bool (x = x');
+  print_bool (x != x');
+  [%expect {|
+    true
+    true
+  |}]
+
+let%expect_test "dup numbers" =
+  let js =
+    match Sys.backend_type with
+    | Other "js_of_ocaml" -> true
+    | _ -> false
+  in
+  let x = 2.1 in
+  let x' = Obj.obj (Obj.dup (Obj.repr x)) in
+  print_bool (x = x');
+  print_bool ((not js) = (x != x'));
+  [%expect {|
+    true
+    true
+  |}];
+  let x = 21L in
+  let x' = Obj.obj (Obj.dup (Obj.repr x)) in
+  print_bool (x = x');
+  print_bool (x != x');
+  [%expect {|
+    true
+    true
+  |}];
+  let x = 21l in
+  let x' = Obj.obj (Obj.dup (Obj.repr x)) in
+  print_bool (x = x');
+  print_bool ((not js) = (x != x'));
+  [%expect {|
+    true
+    true
+  |}];
+  let x = 21n in
+  let x' = Obj.obj (Obj.dup (Obj.repr x)) in
+  print_bool (x = x');
+  print_bool ((not js) = (x != x'));
+  [%expect {|
     true
     true
   |}]
