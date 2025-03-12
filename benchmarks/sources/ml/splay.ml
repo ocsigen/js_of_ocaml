@@ -191,10 +191,10 @@ let random =
     | 31 | 32 -> -1
     | _ -> int_of_string "0xffffffff"
   in
-  let l_0xc761c23c = int_of_string "0xc761c23c" in
-  let l_0xd3a2646c = int_of_string "0xd3a2646c" in
-  let l_0xfd7046c5 = int_of_string "0xfd7046c5" in
-  let l_0xb55a4f09 = int_of_string "0xb55a4f09" in
+  let l_0xc761c23c = Int64.of_string "0xc761c23c" |> Int64.to_int in
+  let l_0xd3a2646c = Int64.of_string "0xd3a2646c" |> Int64.to_int in
+  let l_0xfd7046c5 = Int64.of_string "0xfd7046c5" |> Int64.to_int in
+  let l_0xb55a4f09 = Int64.of_string "0xb55a4f09" |> Int64.to_int in
   fun () ->
     (*    // Robert Jenkins' 32 bit integer hash function. *)
     let s = !seed in
