@@ -30,6 +30,10 @@ class MlInt64 {
     this.caml_custom = "_j";
   }
 
+  static UNSIGNED_MAX = new MlInt64(0xffffff, 0xffffff, 0xffff);
+  static SIGNED_MAX = new MlInt64(0xffffff, 0xffffff, 0x7fff);
+  static SIGNED_MIN = new MlInt64(0x000000, 0x000000, 0x8000);
+
   slice() {
     return new MlInt64(this.lo, this.mi, this.hi);
   }
@@ -399,12 +403,10 @@ function caml_int64_of_string(s) {
     base = r[2],
     signedness = r[3];
   var base64 = caml_int64_of_int32(base);
-  var threshold = new MlInt64(0xffffff, 0xfffffff, 0xffff).udivmod(
-    base64,
-  ).quotient;
+  var threshold = MlInt64.UNSIGNED_MAX.udivmod(base64).quotient;
   var c = caml_string_unsafe_get(s, i);
   var d = caml_parse_digit(c);
-  if (d < 0 || d >= base) caml_failwith("int_of_string");
+  if (d < 0 || d >= base) caml_failwith("Int64.of_string");
   var res = caml_int64_of_int32(d);
   for (;;) {
     i++;
@@ -413,15 +415,18 @@ function caml_int64_of_string(s) {
     d = caml_parse_digit(c);
     if (d < 0 || d >= base) break;
     /* Detect overflow in multiplication base * res */
-    if (caml_int64_ult(threshold, res)) caml_failwith("int_of_string");
+    if (caml_int64_ult(threshold, res)) caml_failwith("Int64.of_string");
     d = caml_int64_of_int32(d);
     res = caml_int64_add(caml_int64_mul(base64, res), d);
     /* Detect overflow in addition (base * res) + d */
-    if (caml_int64_ult(res, d)) caml_failwith("int_of_string");
+    if (caml_int64_ult(res, d)) caml_failwith("Int64.of_string");
   }
-  if (i !== caml_ml_string_length(s)) caml_failwith("int_of_string");
-  if (signedness && caml_int64_ult(new MlInt64(0, 0, 0x8000), res))
-    caml_failwith("int_of_string");
+  if (i !== caml_ml_string_length(s)) caml_failwith("Int64.of_string");
+  if (
+    signedness &&
+    caml_int64_ult(sign < 0 ? MlInt64.SIGNED_MIN : MlInt64.SIGNED_MAX, res)
+  )
+    caml_failwith("Int64.of_string");
   if (sign < 0) res = caml_int64_neg(res);
   return res;
 }
