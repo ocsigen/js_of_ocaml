@@ -1268,9 +1268,11 @@ class rename_variable ~esm =
          | ExportClass (_id, _f) -> ()
          | ExportNames l -> List.iter ~f:(fun (id, _) -> self#ident id) l
          | ExportDefaultFun (Some id, decl) ->
-             self#statement (Function_declaration (id, decl))
+             if depth = 0 then decl_var id;
+             self#fun_decl decl
          | ExportDefaultClass (Some id, decl) ->
-             self#statement (Class_declaration (id, decl))
+             if depth = 0 then decl_var id;
+             self#class_decl decl
          | ExportDefaultFun (None, decl) -> self#fun_decl decl
          | ExportDefaultClass (None, decl) -> self#class_decl decl
          | ExportDefaultExpression e -> self#expression e
