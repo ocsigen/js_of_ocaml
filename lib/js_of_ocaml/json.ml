@@ -94,10 +94,15 @@ let rec write b v =
     then
       match custom_identifier v with
       | "_i" -> Printf.bprintf b "%ld" (Obj.obj v : int32)
+      | "_n" -> Printf.bprintf b "%nd" (Obj.obj v : nativeint)
       | "_j" ->
           let i : int64 = Obj.obj v in
           write_int64 b i
       | id -> failwith (Printf.sprintf "Json.output: unsupported custom value %s " id)
+    else if t = Obj.abstract_tag
+      then
+        (* Presumably a JavaScript value *)
+        Buffer.add_string b (Js.to_string (Unsafe.global##._JSON##stringify v))
     else failwith (Printf.sprintf "Json.output: unsupported tag %d " t)
 
 let to_json v =
