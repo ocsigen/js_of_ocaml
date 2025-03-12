@@ -39,57 +39,49 @@ module Line_reader : sig
 
   val drop : t -> unit
 
-  val close : t -> unit
+  val reset : t -> unit
 
   val lnum : t -> int
 
   val fname : t -> string
 end = struct
   type t =
-    { ic : in_channel
-    ; fname : string
-    ; mutable next : string option
+    { fname : string
+    ; lines : string list
+    ; mutable current : string list
     ; mutable lnum : int
     }
 
-  let close t = close_in t.ic
+  let reset t =
+    t.current <- t.lines;
+    t.lnum <- 0
 
   let open_ fname =
-    let ic = open_in_bin fname in
-    { ic; lnum = 0; fname; next = None }
+    let lines =
+      In_channel.input_all (open_in_bin fname) |> String.split_on_char ~sep:'\n'
+    in
+    { lines; lnum = 0; fname; current = lines }
 
   let next t =
     let lnum = t.lnum in
-    let s =
-      match t.next with
-      | None -> input_line t.ic
-      | Some s ->
-          t.next <- None;
-          s
-    in
-    t.lnum <- lnum + 1;
-    s
+    match t.current with
+    | [] -> raise End_of_file
+    | s :: rem ->
+        t.current <- rem;
+        t.lnum <- lnum + 1;
+        s
 
   let peek t =
-    match t.next with
-    | Some x -> Some x
-    | None -> (
-        try
-          let s = input_line t.ic in
-          t.next <- Some s;
-          Some s
-        with End_of_file -> None)
+    match t.current with
+    | x :: _ -> Some x
+    | [] -> None
 
   let drop t =
-    match t.next with
-    | Some _ ->
-        t.next <- None;
+    match t.current with
+    | [] -> ()
+    | _ :: rem ->
+        t.current <- rem;
         t.lnum <- t.lnum + 1
-    | None -> (
-        try
-          let (_ : string) = input_line t.ic in
-          t.lnum <- t.lnum + 1
-        with End_of_file -> ())
 
   let lnum t = t.lnum
 
@@ -183,7 +175,7 @@ let action ~resolve_sourcemap_url ~drop_source_map file line =
 module Units : sig
   val read : Line_reader.t -> Unit_info.t -> Unit_info.t
 
-  val scan_file : string -> Build_info.t option * Unit_info.t list
+  val scan_file : Line_reader.t -> Build_info.t option * Unit_info.t list
 end = struct
   let rec read ic uinfo =
     match Line_reader.peek ic with
@@ -222,16 +214,15 @@ end = struct
     in
     find_next ic
 
-  let scan_file file =
-    let ic = Line_reader.open_ file in
+  let scan_file ic =
     let rec scan_all ic acc =
       match find_unit_info ic with
       | None -> List.rev acc
       | Some x -> scan_all ic (x :: acc)
     in
+    Line_reader.reset ic;
     let build_info = find_build_info ic in
     let units = scan_all ic [] in
-    Line_reader.close ic;
     build_info, units
 end
 
@@ -242,12 +233,16 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
   let t = Timer.make () in
   let oc = Line_writer.of_channel output in
   let warn_effects = ref false in
-  let files = List.map files ~f:(fun file -> file, Units.scan_file file) in
+  let files =
+    List.map files ~f:(fun file ->
+        let lr = Line_reader.open_ file in
+        file, lr, Units.scan_file lr)
+  in
   let missing, to_link, all =
     List.fold_right
       files
       ~init:(StringSet.empty, StringSet.empty, StringSet.empty)
-      ~f:(fun (_file, (build_info, units)) acc ->
+      ~f:(fun (_file, _lr, (build_info, units)) acc ->
         let cmo_file =
           match build_info with
           | Some bi -> (
@@ -287,7 +282,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
   let t = Timer.make () in
   let sym = ref Ocaml_compiler.Symtable.GlobalMap.empty in
   let sym_js = ref [] in
-  List.iter files ~f:(fun (_, (_, units)) ->
+  List.iter files ~f:(fun (_, _, (_, units)) ->
       List.iter units ~f:(fun (u : Unit_info.t) ->
           StringSet.iter
             (fun s ->
@@ -300,7 +295,8 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             u.Unit_info.provides));
 
   let build_info_emitted = ref false in
-  List.iter files ~f:(fun (file, (build_info_for_file, units)) ->
+  List.iter files ~f:(fun (file, ic, (build_info_for_file, units)) ->
+      Line_reader.reset ic;
       let is_runtime =
         match build_info_for_file with
         | Some bi -> (
@@ -310,7 +306,6 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
         | None -> None
       in
       let sm_for_file = ref None in
-      let ic = Line_reader.open_ file in
       let skip ic = Line_reader.drop ic in
       let line_offset = Line_writer.lnum oc in
       let reloc = ref [] in
@@ -413,7 +408,6 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             read ()
       in
       read ();
-      Line_reader.close ic;
       (match is_runtime with
       | None -> ()
       | Some bi ->
