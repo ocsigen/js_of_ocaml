@@ -15,6 +15,7 @@
 * Runtime: fix initialization of standard streams under Windows (#1849)
 * Compiler: fix stack overflow issues with double translation (#1869)
 * Compiler: minifier fix (#1867)
+* Compiler: fix assert failure with double translation (#1870)
 
 # 6.0.1 (2025-02-07) - Lille
 
