@@ -56,7 +56,13 @@ end = struct
 
   let open_ fname =
     let lines =
-      In_channel.input_all (open_in_bin fname) |> String.split_on_char ~sep:'\n'
+      (* If we are not on 32-bit hardware (where the max string length is too
+         small), read the entire file and split it in lines. This is faster
+         than reading it line by line. On 32 bits, we fall back to a
+         line-by-line read. *)
+      if Sys.word_size >= 64
+      then In_channel.input_all (open_in_bin fname) |> String.split_on_char ~sep:'\n'
+      else In_channel.input_lines (open_in_bin fname)
     in
     { lines; lnum = 0; fname; current = lines }
 
