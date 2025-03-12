@@ -520,7 +520,8 @@ export default function functionName() { /* … */ }
   [%expect
     {|
     $ cat "test.min.js"
-      1: export default function functionName(){} |}];
+      1: export default function v1(){}
+    |}];
   t {|
 export default class ClassName { /* … */ }|};
   [%expect {|
@@ -531,7 +532,8 @@ export default function* generatorFunctionName() { /* … */ }|};
   [%expect
     {|
     $ cat "test.min.js"
-      1: export default function* generatorFunctionName(){} |}];
+      1: export default function* v1(){}
+    |}];
   t {|
 export default function () { /* … */ }|};
   [%expect {|
