@@ -165,6 +165,7 @@ class free : freevar
 
 type scope =
   | Module
+  | Script
   | Lexical_block
   | Fun_block of ident option
 
