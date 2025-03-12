@@ -137,19 +137,24 @@ type action =
   | Build_info of Build_info.t
   | Source_map of Source_map.t
 
+let info_prefix = "//#"
+
 let prefix_kind line =
-  match String.is_prefix ~prefix:sourceMappingURL line with
-  | false -> (
-      match Build_info.parse line with
-      | Some bi -> `Build_info bi
-      | None -> (
-          match Unit_info.parse Unit_info.empty line with
-          | Some _ -> `Unit
-          | None -> `Other))
+  match String.is_prefix ~prefix:info_prefix line with
+  | false -> `Other
   | true -> (
-      match String.is_prefix ~prefix:sourceMappingURL_base64 line with
-      | true -> `Json_base64 (String.length sourceMappingURL_base64)
-      | false -> `Url (String.length sourceMappingURL))
+      match String.is_prefix ~prefix:sourceMappingURL line with
+      | false -> (
+          match Build_info.parse line with
+          | Some bi -> `Build_info bi
+          | None -> (
+              match Unit_info.parse Unit_info.empty line with
+              | Some _ -> `Unit
+              | None -> `Other))
+      | true -> (
+          match String.is_prefix ~prefix:sourceMappingURL_base64 line with
+          | true -> `Json_base64 (String.length sourceMappingURL_base64)
+          | false -> `Url (String.length sourceMappingURL)))
 
 let action ~resolve_sourcemap_url ~drop_source_map file line =
   match prefix_kind line, drop_source_map with
