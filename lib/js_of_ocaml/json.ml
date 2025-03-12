@@ -22,6 +22,22 @@ open! Import
 
 (****)
 
+class type json = object
+  method parse : 'a. js_string t -> 'a meth
+
+  method parse_ :
+    'a 'b 'c 'd. js_string t -> ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
+
+  method stringify : 'a. 'a -> js_string t meth
+
+  method stringify_ :
+    'a 'b 'c 'd. 'a -> ('b, js_string t -> 'c -> 'd) meth_callback -> js_string t meth
+end
+
+let json : json Js.t = Unsafe.global##._JSON
+
+(****)
+
 (* The writing logic for basic types is copied from [lib/deriving_json]. *)
 
 let write_string buffer s =
@@ -94,10 +110,15 @@ let rec write b v =
     then
       match custom_identifier v with
       | "_i" -> Printf.bprintf b "%ld" (Obj.obj v : int32)
+      | "_n" -> Printf.bprintf b "%nd" (Obj.obj v : nativeint)
       | "_j" ->
           let i : int64 = Obj.obj v in
           write_int64 b i
       | id -> failwith (Printf.sprintf "Json.output: unsupported custom value %s " id)
+    else if t = Obj.abstract_tag
+    then
+      (* Presumably a JavaScript value *)
+      Buffer.add_string b (Js.to_string (json##stringify v))
     else failwith (Printf.sprintf "Json.output: unsupported tag %d " t)
 
 let to_json v =
@@ -106,20 +127,6 @@ let to_json v =
   Buffer.contents buf
 
 (****)
-
-class type json = object
-  method parse : 'a. js_string t -> 'a meth
-
-  method parse_ :
-    'a 'b 'c 'd. js_string t -> ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
-
-  method stringify : 'a. 'a -> js_string t meth
-
-  method stringify_ :
-    'a 'b 'c 'd. 'a -> ('b, js_string t -> 'c -> 'd) meth_callback -> js_string t meth
-end
-
-let json : json Js.t = Unsafe.global##._JSON
 
 let input_reviver =
   let reviver _this _key (value : Unsafe.any) : Obj.t =
