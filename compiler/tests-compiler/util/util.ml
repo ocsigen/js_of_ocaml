@@ -527,7 +527,11 @@ class find_double_function_declaration r n =
                 ( S { name = Utf8 name; _ }
                 , Some
                     ( ECall
-                        ( EVar (S { name = Utf8 "caml_cps_closure"; _ })
+                        ( ( EVar (S { name = Utf8 "caml_cps_closure"; _ })
+                          | EDot
+                              ( EVar (S { name = Utf8 "runtime"; _ })
+                              , _
+                              , Utf8 "caml_cps_closure" ) )
                         , _
                         , [ Arg e1; Arg e2 ]
                         , _ )

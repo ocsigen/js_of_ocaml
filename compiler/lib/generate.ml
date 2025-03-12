@@ -1941,26 +1941,36 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
     | Pushtrap (c1, x, e1) ->
         let never_body, body = compile_branch st J.N [] c1 scope_stack ~fall_through in
         if debug () then Format.eprintf "@,}@]@,@[<hv 2>catch {@;";
-        let never_handler, handler =
-          compile_branch st J.U [] e1 scope_stack ~fall_through
-        in
-        let exn_var, handler =
-          assert (not (List.mem x ~set:(snd e1)));
-          let wrap_exn x =
-            J.call
-              (Share.get_prim (runtime_fun st.ctx) "caml_wrap_exception" st.ctx.Ctx.share)
-              [ J.EVar (J.V x) ]
-              J.N
-          in
+        let exn_var, never_handler, handler =
           match st.ctx.Ctx.live.(Var.idx x) with
-          | 0 -> x, handler
-          | _ ->
+          | 0 ->
+              let never_handler, handler =
+                compile_branch st J.U [] e1 scope_stack ~fall_through
+              in
+              x, never_handler, handler
+          | n ->
               let handler_var = Code.Var.fork x in
-              ( handler_var
-              , (J.variable_declaration [ J.V x, (wrap_exn handler_var, J.U) ], J.N)
-                :: handler )
+              let wrapped_exn =
+                J.call
+                  (Share.get_prim
+                     (runtime_fun st.ctx)
+                     "caml_wrap_exception"
+                     st.ctx.Ctx.share)
+                  [ J.EVar (J.V handler_var) ]
+                  J.N
+              in
+              let instrs, queue =
+                if List.mem x ~set:(snd e1)
+                then (
+                  assert (n = 1);
+                  enqueue [] const_p x wrapped_exn J.U None [])
+                else [ J.variable_declaration [ J.V x, (wrapped_exn, J.U) ], J.N ], []
+              in
+              let never_handler, handler =
+                compile_branch st J.U queue e1 scope_stack ~fall_through
+              in
+              handler_var, never_handler, instrs @ handler
         in
-
         ( never_body && never_handler
         , flush_all
             queue
