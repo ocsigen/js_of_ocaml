@@ -700,7 +700,7 @@ function caml_string_concat(a, b) {
 function caml_string_concat(s1, s2) {
   s1.t & 6 && caml_convert_string_to_bytes(s1);
   s2.t & 6 && caml_convert_string_to_bytes(s2);
-  return new MlBytes(s1.t, s1.c + s2.c, s1.l + s2.l);
+  return new MlBytes(0, s1.c + s2.c, s1.l + s2.l);
 }
 
 //Provides: caml_string_unsafe_get const
