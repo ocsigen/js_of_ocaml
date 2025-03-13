@@ -143,6 +143,11 @@
     return h ^ s.length;
   }
 
+  function getenv(n) {
+    if (isNode && process.env[n] !== undefined) return process.env[n];
+    return globalThis.jsoo_env?.[n];
+  }
+
   function alloc_stat(s, large) {
     var kind;
     if (s.isFile()) {
@@ -458,7 +463,7 @@
     exit: (n) => isNode && process.exit(n),
     argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
     on_windows: +on_windows,
-    getenv: (n) => (isNode ? process.env[n] : null),
+    getenv,
     system: (c) => {
       var res = require("node:child_process").spawnSync(c, {
         shell: true,
