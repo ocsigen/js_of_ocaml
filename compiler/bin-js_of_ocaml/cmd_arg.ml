@@ -54,7 +54,7 @@ type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
     profile : Driver.profile option
-  ; source_map : (string option * Source_map.Standard.t) option
+  ; source_map : Source_map.Encoding_spec.t option
   ; runtime_files : string list
   ; no_runtime : bool
   ; include_runtime : bool
@@ -157,6 +157,10 @@ let options =
   let sourcemap_don't_inline_content =
     let doc = "Do not inline sources in source map." in
     Arg.(value & flag & info [ "source-map-no-source" ] ~doc)
+  in
+  let sourcemap_empty =
+    let doc = "Always generate empty source maps." in
+    Arg.(value & flag & info [ "empty-sourcemap"; "empty-source-map" ] ~doc)
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
@@ -296,6 +300,7 @@ let options =
       sourcemap
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
+      sourcemap_empty
       sourcemap_root
       target_env
       output_file
@@ -330,12 +335,19 @@ let options =
           | `Name file, _ -> Some file, Some (chop_extension file ^ ".map")
           | `Stdout, _ -> None, None
         in
-        Some
-          ( sm_output_file
-          , { (Source_map.Standard.empty ~inline_source_content) with
-              file
-            ; sourceroot = sourcemap_root
-            } )
+        let source_map =
+          { (Source_map.Standard.empty ~inline_source_content) with
+            file
+          ; sourceroot = sourcemap_root
+          }
+        in
+        let spec =
+          { Source_map.Encoding_spec.output_file = sm_output_file
+          ; source_map
+          ; keep_empty = sourcemap_empty
+          }
+        in
+        Some spec
       else None
     in
     let params : (string * string) list = List.flatten set_param in
@@ -391,6 +403,7 @@ let options =
       $ sourcemap
       $ sourcemap_inline_in_js
       $ sourcemap_don't_inline_content
+      $ sourcemap_empty
       $ sourcemap_root
       $ target_env
       $ output_file
@@ -436,6 +449,10 @@ let options_runtime_only =
   let sourcemap_don't_inline_content =
     let doc = "Do not inline sources in source map." in
     Arg.(value & flag & info [ "source-map-no-source" ] ~doc)
+  in
+  let sourcemap_empty =
+    let doc = "Always generate empty source maps." in
+    Arg.(value & flag & info [ "empty-sourcemap"; "empty-source-map" ] ~doc)
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
@@ -548,6 +565,7 @@ let options_runtime_only =
       sourcemap
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
+      sourcemap_empty
       sourcemap_root
       target_env
       output_file
@@ -570,12 +588,19 @@ let options_runtime_only =
           | `Name file, _ -> Some file, Some (chop_extension file ^ ".map")
           | `Stdout, _ -> None, None
         in
-        Some
-          ( sm_output_file
-          , { (Source_map.Standard.empty ~inline_source_content) with
-              file
-            ; sourceroot = sourcemap_root
-            } )
+        let source_map =
+          { (Source_map.Standard.empty ~inline_source_content) with
+            file
+          ; sourceroot = sourcemap_root
+          }
+        in
+        let spec =
+          { Source_map.Encoding_spec.output_file = sm_output_file
+          ; source_map
+          ; keep_empty = sourcemap_empty
+          }
+        in
+        Some spec
       else None
     in
     let params : (string * string) list = List.flatten set_param in
@@ -626,6 +651,7 @@ let options_runtime_only =
       $ sourcemap
       $ sourcemap_inline_in_js
       $ sourcemap_don't_inline_content
+      $ sourcemap_empty
       $ sourcemap_root
       $ target_env
       $ output_file

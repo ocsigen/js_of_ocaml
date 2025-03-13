@@ -224,7 +224,14 @@ end = struct
     build_info, units
 end
 
-let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source_map =
+let link
+    ~output
+    ~linkall
+    ~mklib
+    ~toplevel
+    ~files
+    ~resolve_sourcemap_url
+    ~(source_map : Source_map.Encoding_spec.t option) =
   (* we currently don't do anything with [toplevel]. It could be used
      to conditionally include link_info ?*)
   ignore (toplevel : bool);
@@ -315,13 +322,12 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
         match Line_reader.peek ic with
         | None -> ()
         | Some line ->
-            (match
-               action
-                 ~resolve_sourcemap_url
-                 ~drop_source_map:(Option.is_none source_map)
-                 file
-                 line
-             with
+            let drop_source_map =
+              match source_map with
+              | None | Some { keep_empty = true; _ } -> true
+              | Some { keep_empty = false; _ } -> false
+            in
+            (match action ~resolve_sourcemap_url ~drop_source_map file line with
             | Keep -> copy ic oc
             | Build_info bi ->
                 skip ic;
@@ -443,7 +449,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
   let t = Timer.make () in
   match source_map with
   | None -> ()
-  | Some (file, init_sm) ->
+  | Some { output_file = file; source_map = init_sm; keep_empty = _ } ->
       let sections =
         List.rev_map !sm ~f:(fun (sm, reloc, _offset) ->
             let sm =
