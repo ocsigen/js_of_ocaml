@@ -37,16 +37,17 @@ let jsoo_header formatter build_info =
   Pretty_print.string formatter (Printf.sprintf "%s\n" Global_constant.header);
   Pretty_print.string formatter (Build_info.to_string build_info)
 
-type source_map_output =
-  | No_sourcemap
-  | Inline
-  | File of string
+let source_map_enabled : Source_map.Encoding_spec.t option -> bool = function
+  | None -> false
+  | Some _ -> true
 
-let source_map_enabled = function
-  | No_sourcemap -> false
-  | Inline | File _ -> true
-
-let output_gen ~standalone ~custom_header ~build_info ~source_map output_file f =
+let output_gen
+    ~standalone
+    ~custom_header
+    ~build_info
+    ~(source_map : Source_map.Encoding_spec.t option)
+    output_file
+    f =
   let f chan k =
     let fmt = Pretty_print.to_out_channel chan in
     Driver.configure fmt;
@@ -54,16 +55,15 @@ let output_gen ~standalone ~custom_header ~build_info ~source_map output_file f 
     if Config.Flag.header () then jsoo_header fmt build_info;
     let sm = f ~standalone ~source_map (k, fmt) in
     match source_map, sm with
-    | No_sourcemap, _ | _, None -> ()
-    | ((Inline | File _) as output), Some sm ->
+    | None, _ | _, None -> ()
+    | Some { output_file = output; source_map = _; keep_empty = _ }, Some sm ->
         if Debug.find "invariant" () then Source_map.invariant sm;
         let urlData =
           match output with
-          | No_sourcemap -> assert false
-          | Inline ->
+          | None ->
               let data = Source_map.to_string sm in
               "data:application/json;base64," ^ Base64.encode_exn data
-          | File output_file ->
+          | Some output_file ->
               Source_map.to_file sm output_file;
               Filename.basename output_file
         in
@@ -156,12 +156,8 @@ let run
     ; include_runtime
     ; effects
     } =
-  let source_map_base = Option.map ~f:snd source_map in
-  let source_map =
-    match source_map with
-    | None -> No_sourcemap
-    | Some (None, _) -> Inline
-    | Some (Some file, _) -> File file
+  let source_map_base =
+    Option.map ~f:(fun spec -> spec.Source_map.Encoding_spec.source_map) source_map
   in
   let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
@@ -223,9 +219,9 @@ let run
   Linker.check_deps ();
   if times () then Format.eprintf "  parsing js: %a@." Timer.print t1;
   if times () then Format.eprintf "Start parsing...@.";
-  let need_debug = source_map_enabled source_map || Config.Flag.debuginfo () in
+  let need_debug = Option.is_some source_map || Config.Flag.debuginfo () in
   let check_debug (one : Parse_bytecode.one) =
-    if source_map_enabled source_map && Parse_bytecode.Debug.is_empty one.debug
+    if Option.is_some source_map && Parse_bytecode.Debug.is_empty one.debug
     then
       warn
         "Warning: '--source-map' is enabled but the bytecode program was compiled with \
@@ -254,7 +250,7 @@ let run
       (one : Parse_bytecode.one)
       ~check_sourcemap
       ~standalone
-      ~source_map
+      ~(source_map : Source_map.Encoding_spec.t option)
       ~link
       output_file =
     if check_sourcemap then check_debug one;
