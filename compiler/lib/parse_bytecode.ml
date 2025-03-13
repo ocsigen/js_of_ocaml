@@ -3090,7 +3090,6 @@ let predefined_exceptions () =
   let unit_info =
     { Unit_info.provides = StringSet.of_list (List.map ~f:snd predefined_exceptions)
     ; requires = StringSet.empty
-    ; crcs = StringMap.empty
     ; force_link = true
     ; effects_without_cps = false
     ; primitives = []
