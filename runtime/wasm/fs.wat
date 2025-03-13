@@ -140,6 +140,11 @@
       (call $caml_raise_no_such_file (local.get 0))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_create_file")
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (call $caml_raise_no_such_file (local.get 0))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_fs_init") (result (ref eq))
       (ref.i31 (i32.const 0)))
 
@@ -166,4 +171,8 @@
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
             (return (ref.i31 (i32.const 0))))))
+
+   (func (export "caml_mount_autoload")
+      (param (ref eq) (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
 )

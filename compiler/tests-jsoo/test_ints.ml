@@ -66,3 +66,17 @@ let%expect_test _ =
   [%expect {| -481418970354774920 |}];
   Printf.printf "%Ld\n" (Int64.of_string "0U17965325103354776696");
   [%expect {| -481418970354774920 |}]
+
+let%expect_test _ =
+  let check_fail x =
+    try Printf.printf "%Lx\n" (Int64.of_string x)
+    with Failure _ -> Format.printf "overflow\n"
+  in
+  Printf.printf "%Ld\n" (Int64.of_string "9223372036854775807");
+  [%expect {| 9223372036854775807 |}];
+  Printf.printf "%Ld\n" (Int64.of_string "-9223372036854775808");
+  [%expect {| -9223372036854775808 |}];
+  check_fail "9223372036854775808";
+  [%expect {| overflow |}];
+  check_fail "-9223372036854775809";
+  [%expect {| overflow |}]
