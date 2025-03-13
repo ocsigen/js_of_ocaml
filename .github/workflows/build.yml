@@ -127,10 +127,12 @@ jobs:
       - run: opam install conf-pkg-config conf-mingw-w64-g++-i686 conf-mingw-w64-g++-x86_64
         if: runner.os == 'Windows'
 
-      - name: Set-up Binaryen
-        uses: Aandreba/setup-binaryen@v1.0.0
+      - name: Install Binaryen
+        uses: ./.github/actions/install-binaryen
         with:
-          token: ${{ github.token }}
+          build: true
+          repository: vouillon/binaryen
+          ref: stack-switching-fixes
 
       - name: Install faked binaryen-bin package
         # It's faster to use a cached version
