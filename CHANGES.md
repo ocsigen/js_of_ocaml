@@ -18,8 +18,10 @@
 * Compiler: fix stack overflow issues with double translation (#1869)
 * Compiler: minifier fix (#1867)
 * Compiler: fix assert failure with double translation (#1870)
+* Lib: fix Dom_html.Keyboard_code.of_event (#1878)
 * Runtime: fix Int64.of_string overflow check (#1874)
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
+
 
 # 6.0.1 (2025-02-07) - Lille
 
