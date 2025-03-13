@@ -103,11 +103,6 @@ caml_bigstring_blit_string_to_ba
 caml_bigstring_memcmp
 caml_hash_mix_bigstring
 
-From +blake2.js:
-blake2_js_for_wasm_create
-blake2_js_for_wasm_final
-blake2_js_for_wasm_update
-
 From +effect.js:
 jsoo_effect_not_supported
 
