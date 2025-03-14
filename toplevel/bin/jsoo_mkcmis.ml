@@ -58,6 +58,8 @@ let rec scan_args acc = function
   | [] -> List.rev acc
 
 let () =
+  Js_of_ocaml_compiler.Config.set_target `JavaScript;
+  Js_of_ocaml_compiler.Config.set_effects_backend `Disabled;
   let args = List.tl (Array.to_list Sys.argv) in
   let args = scan_args [] args in
   let runtime_files, args =
