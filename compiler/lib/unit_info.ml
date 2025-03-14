@@ -23,7 +23,6 @@ type t =
   { provides : StringSet.t
   ; requires : StringSet.t
   ; primitives : string list
-  ; crcs : Digest.t option StringMap.t
   ; force_link : bool
   ; effects_without_cps : bool
   }
@@ -32,7 +31,6 @@ let empty =
   { provides = StringSet.empty
   ; requires = StringSet.empty
   ; primitives = []
-  ; crcs = StringMap.empty
   ; force_link = false
   ; effects_without_cps = false
   }
@@ -41,7 +39,6 @@ let of_primitives l =
   { provides = StringSet.empty
   ; requires = StringSet.empty
   ; primitives = l
-  ; crcs = StringMap.empty
   ; force_link = true
   ; effects_without_cps = false
   }
@@ -61,38 +58,18 @@ let of_cmo (cmo : Cmo_format.compilation_unit) =
          | _ -> false)
   in
   let force_link = Cmo_format.force_link cmo in
-  let crcs =
-    List.fold_left (Cmo_format.imports cmo) ~init:StringMap.empty ~f:(fun acc (s, o) ->
-        StringMap.add s o acc)
-  in
-  { provides; requires; primitives = []; force_link; effects_without_cps; crcs }
+  { provides; requires; primitives = []; force_link; effects_without_cps }
 
 let union t1 t2 =
   let provides = StringSet.union t1.provides t2.provides in
   let requires = StringSet.union t1.requires t2.requires in
   let requires = StringSet.diff requires provides in
   let primitives = t1.primitives @ t2.primitives in
-  let crcs =
-    StringMap.merge
-      (fun _ v1 v2 ->
-        match v1, v2 with
-        | None, x -> x
-        | x, None -> x
-        | Some None, Some x -> Some x
-        | Some x, Some None -> Some x
-        | Some (Some x), Some (Some y) ->
-            if String.equal x y
-            then Some (Some x)
-            else failwith (Printf.sprintf "Inconsistent assumption blah.."))
-      t1.crcs
-      t2.crcs
-  in
   { provides
   ; requires
   ; primitives
   ; force_link = t1.force_link || t2.force_link
   ; effects_without_cps = t1.effects_without_cps || t2.effects_without_cps
-  ; crcs
   }
 
 let prefix = "//# unitInfo:"

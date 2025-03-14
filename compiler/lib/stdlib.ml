@@ -115,7 +115,7 @@ module List = struct
     | [] -> acc
     | x :: xs -> rev_append_map ~f xs (f x :: acc)
 
-  let slow_map l ~f = rev (rev_map ~f l)
+  let slow_map l ~f = rev (rev_map ~f l) [@@if ocaml_version < (4, 14, 0)]
 
   let max_non_tailcall =
     match Sys.backend_type with
@@ -155,8 +155,15 @@ module List = struct
         :: f4
         :: f5
         :: (if ctr > max_non_tailcall then slow_map ~f tl else count_map ~f tl (ctr + 1))
+  [@@if ocaml_version < (4, 14, 0)]
 
-  let map l ~f = count_map ~f l 0
+  let map l ~f = count_map ~f l 0 [@@if ocaml_version < (4, 14, 0)]
+
+  let[@tail_mod_cons] rec map l ~f =
+    match l with
+    | [] -> []
+    | x :: tl -> f x :: (map [@tailcall]) tl ~f
+  [@@if ocaml_version >= (4, 14, 0)]
 
   let rec take' acc n l =
     if n = 0

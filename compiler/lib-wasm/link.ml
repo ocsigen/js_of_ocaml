@@ -92,7 +92,6 @@ end = struct
     ; force_link = t |> member "force_link" |> bool empty.force_link
     ; effects_without_cps =
         t |> member "effects_without_cps" |> bool empty.effects_without_cps
-    ; crcs = StringMap.empty
     }
 end
 
