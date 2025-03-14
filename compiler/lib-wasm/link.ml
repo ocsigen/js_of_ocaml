@@ -589,15 +589,7 @@ let extract_source_map ~dir ~name z =
   then (
     let sm = Source_map.of_string (Zip.read_entry z ~name:"source_map.map") in
     let sm =
-      let rewrite_path path =
-        if Filename.is_relative path
-        then path
-        else
-          match Build_path_prefix_map.get_build_path_prefix_map () with
-          | Some map -> Build_path_prefix_map.rewrite map path
-          | None -> path
-      in
-      Wasm_source_map.insert_source_contents ~rewrite_path sm (fun i j file ->
+      Wasm_source_map.insert_source_contents sm (fun i j file ->
           let name = source_name i j file in
           if Zip.has_entry z ~name then Some (Zip.read_entry z ~name) else None)
     in
