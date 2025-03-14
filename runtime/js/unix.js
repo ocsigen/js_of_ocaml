@@ -875,8 +875,8 @@ function caml_raise_system_error(raise_unix, code, cmd, msg, path) {
   if (raise_unix && unix_error)
     caml_raise_with_args(unix_error, make_unix_err_args(code, cmd, path));
   else {
-    var msg = code + ": " + msg + ", " + cmd;
-    if (path !== undefined) msg += " '" + path + "'";
+    var msg = `${code}: ${msg}, ${cmd}`;
+    if (path !== undefined) msg += ` '${path}'`;
     caml_raise_sys_error(msg);
   }
 }
