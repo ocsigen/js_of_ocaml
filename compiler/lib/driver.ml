@@ -678,6 +678,33 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> coloring
   |> check_js
 
+let all_functions p =
+  let open Code in
+  fold_closures
+    p
+    (fun name _ _ acc ->
+      match name with
+      | Some name -> Var.Set.add name acc
+      | None -> acc)
+    Var.Set.empty
+
+let effects_or_lambda_lift ~deadcode_sentinal p =
+  (* If effects are disabled, we lambda-lift aggressively. While not necessary, it results
+     in a substantial gain in performance for Javascript. *)
+  match Config.(target (), effects ()) with
+  | `JavaScript, `Disabled ->
+      let to_lift = all_functions p in
+      let p, _ = Lambda_lifting_simple.f ~to_lift p in
+      ( p
+      , (Code.Var.Set.empty : Effects.trampolined_calls)
+      , (Code.Var.Set.empty : Effects.in_cps) )
+  | _, (`Cps | `Double_translation) -> effects ~deadcode_sentinal p
+  | `Wasm, (`Disabled | `Jspi) ->
+      ( p
+      , (Code.Var.Set.empty : Effects.trampolined_calls)
+      , (Code.Var.Set.empty : Effects.in_cps) )
+  | `JavaScript, `Jspi -> assert false
+
 let optimize ~profile p =
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
@@ -690,7 +717,7 @@ let optimize ~profile p =
        | O2 -> o2
        | O3 -> o3)
     +> exact_calls ~deadcode_sentinal profile
-    +> effects ~deadcode_sentinal
+    +> effects_or_lambda_lift ~deadcode_sentinal
     +> map_fst
          (match Config.target (), Config.effects () with
          | `JavaScript, `Disabled -> Generate_closure.f
