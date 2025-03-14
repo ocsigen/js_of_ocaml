@@ -309,7 +309,7 @@
                (local.get $handler)
                (local.get $eff)
                (local.get $cont))
-            (local.get $tail))
+            (local.get $last_fiber))
          (local.get $k1)
          (struct.get $cont $cont_func (local.get $k1))))
 
@@ -395,15 +395,33 @@
       (param $heff (ref eq)) (result (ref eq))
       (local $stack (ref eq))
       (local $handlers (ref $handlers))
+      (local $last (ref $fiber))
       (local.set $stack (call $caml_continuation_use_noexc (local.get $cont)))
-      (if (ref.test (ref $generic_fiber) (local.get $stack))
+      (if (ref.test (ref $fiber) (local.get $stack))
          (then
+            (local.set $last
+               (ref.cast (ref $fiber)
+                  (if (result (ref eq))
+                      (ref.test (ref $fiber)
+                         (array.get $block
+                            (ref.cast (ref $block) (local.get $cont))
+                            (i32.const 2)))
+                     (then
+                        (array.get $block
+                           (ref.cast (ref $block) (local.get $cont))
+                           (i32.const 2)))
+                     (else
+                        (local.get $stack)))))
+(;
+            (block $exit
+               (loop $loop
+                  (local.set $last
+                     (br_on_null $exit
+                        (struct.get $fiber $next (local.get $last))))
+                     (br $loop)))
+;)
             (local.set $handlers
-               (struct.get $fiber $handlers
-                  (ref.cast (ref $fiber)
-                     (array.get $block
-                        (ref.cast (ref $block) (local.get $cont))
-                        (i32.const 2)))))
+               (struct.get $fiber $handlers (local.get $last)))
             (struct.set $handlers $value (local.get $handlers) (local.get $hval))
             (struct.set $handlers $exn (local.get $handlers) (local.get $hexn))
             (struct.set $handlers $effect (local.get $handlers)
