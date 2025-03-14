@@ -11,6 +11,7 @@
 * Runtime: make Obj.dup work with floats and boxed numbers (#1871)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
 * Compiler: add the `--empty-sourcemap` flag
+* Runtime: implement BLAKE2b primitives for Wasm (#1873)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
@@ -19,8 +20,10 @@
 * Compiler: fix stack overflow issues with double translation (#1869)
 * Compiler: minifier fix (#1867)
 * Compiler: fix assert failure with double translation (#1870)
+* Lib: fix Dom_html.Keyboard_code.of_event (#1878)
 * Runtime: fix Int64.of_string overflow check (#1874)
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
+
 
 # 6.0.1 (2025-02-07) - Lille
 

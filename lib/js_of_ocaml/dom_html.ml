@@ -3383,7 +3383,7 @@ module Keyboard_code = struct
     | 1 -> run_next (get_key_code evt) try_key_code_left
     | 2 -> run_next (get_key_code evt) try_key_code_right
     | 3 -> run_next (get_key_code evt) try_key_code_numpad
-    | _ -> make_unidentified
+    | _ -> fun v -> v
 
   let ( |> ) x f = f x
 
