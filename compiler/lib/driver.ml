@@ -165,6 +165,17 @@ let effects_and_exact_calls
       Deadcode.f pure_fun p
     else Deadcode.f pure_fun p
   in
+  let p =
+    match Config.(target (), effects ()) with
+    | `JavaScript, `Disabled ->
+        (* If effects are disabled, we lambda-lift aggressively. While not
+           necessary, it results in a substantial gain in performance in some
+           programs in Javascript. *)
+        let to_lift = all_functions p in
+        let p, _ = Lambda_lifting_simple.f ~to_lift p in
+        p
+    | _ -> p
+  in
   match Config.effects () with
   | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
@@ -695,6 +706,16 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> link' ~export_runtime ~standalone ~link
   |> pack ~wrap_with_fun ~standalone
   |> check_js
+
+let all_functions p =
+  let open Code in
+  fold_closures
+    p
+    (fun name _ _ _ acc ->
+      match name with
+      | Some name -> Var.Set.add name acc
+      | None -> acc)
+    Var.Set.empty
 
 let optimize ~shapes ~profile ~keep_flow_data p =
   let deadcode_sentinal =
