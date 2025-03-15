@@ -16,6 +16,10 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "bindings" "backtrace_status"
+      (func $backtrace_status (result (ref eq))))
+   (import "bindings" "record_backtrace"
+      (func $record_backtrace (param (ref eq))))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
 
@@ -28,7 +32,7 @@
 
    (func (export "caml_backtrace_status")
       (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.const 0)))
+      (call $backtrace_status))
 
    (func (export "caml_convert_raw_backtrace")
       (param (ref eq)) (result (ref eq))
@@ -62,6 +66,7 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_record_backtrace") (param (ref eq)) (result (ref eq))
+   (func (export "caml_record_backtrace") (param $b (ref eq)) (result (ref eq))
+      (call $record_backtrace (local.get $b))
       (ref.i31 (i32.const 0)))
 )
