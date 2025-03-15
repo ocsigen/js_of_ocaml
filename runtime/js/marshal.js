@@ -233,7 +233,7 @@ class BigStringReader {
 
   readstr(len) {
     var i = this.i;
-    var offset = this.offset(i);
+    var offset = this.s.offset(i);
     this.i = i + len;
     return caml_string_of_uint8_array(
       this.s.data.subarray(offset, offset + len),
@@ -242,7 +242,7 @@ class BigStringReader {
 
   readuint8array(len) {
     var i = this.i;
-    var offset = this.offset(i);
+    var offset = this.s.offset(i);
     this.i = i + len;
     return this.s.data.subarray(offset, offset + len);
   }
