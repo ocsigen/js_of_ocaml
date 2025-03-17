@@ -13,6 +13,7 @@
 * Runtime: implement BLAKE2b primitives for Wasm (#1873)
 * Runtime: delete BigStringReader, one should use UInt8ArrayReader instead
 * Runtime/wasm: support jsoo_env and keep track of backtrace status (#1881)
+* Runtime: less conversion during un-marshalling (#1889)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
