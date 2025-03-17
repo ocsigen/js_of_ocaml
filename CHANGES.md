@@ -96,6 +96,7 @@
 * Runtime: reimplement the runtime of weak and ephemeron (#1707)
 * Lib: Modify Typed_array API for compatibility with WebAssembly
 * Lib: add details element and toggle event (#1728)
+* Lib: implement popover API (#1734)
 * Toplevel: no longer set globals for toplevel initialization
 * Runtime: precompute constants used in `caml_lxm_next` (#1730)
 * Runtime: cleanup runtime
