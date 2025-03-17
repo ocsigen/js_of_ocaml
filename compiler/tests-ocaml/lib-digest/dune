@@ -10,5 +10,4 @@
  (build_if
   (>= %{ocaml_version} 5.2))
  (modules digests)
- ; blake2b not supported by wasm_of_ocaml yet
- (modes js))
+ (modes js wasm))
