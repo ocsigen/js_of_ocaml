@@ -143,6 +143,18 @@
     return h ^ s.length;
   }
 
+  function getenv(n) {
+    if (isNode && process.env[n] !== undefined) return process.env[n];
+    return globalThis.jsoo_env?.[n];
+  }
+
+  let record_backtrace_flag = 0;
+
+  for (const l of getenv("OCAMLRUNPARAM")?.split(",") || []) {
+    if (l === "b") record_backtrace_flag = 1;
+    if (l.startsWith("b=")) record_backtrace_flag = +l[i].slice(2) ? 1 : 0;
+  }
+
   function alloc_stat(s, large) {
     var kind;
     if (s.isFile()) {
@@ -458,7 +470,9 @@
     exit: (n) => isNode && process.exit(n),
     argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
     on_windows: +on_windows,
-    getenv: (n) => (isNode ? process.env[n] : null),
+    getenv,
+    backtrace_status: () => record_backtrace_flag,
+    record_backtrace: (b) => (record_backtrace_flag = b),
     system: (c) => {
       var res = require("node:child_process").spawnSync(c, {
         shell: true,
