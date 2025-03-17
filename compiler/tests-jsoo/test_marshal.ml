@@ -171,3 +171,19 @@ let%expect_test "test float" =
     {|
     "\132\149\166\190\000\000\000\017\000\000\000\004\000\000\000\012\000\000\000\011\160\160\012\031\133\235Q\184\030\t@\004\001\160\004\003@"
     3.140000 3.140000 3.140000 3.140000 |}]
+
+let%expect_test "test input with offset" =
+  let s = 3.14 in
+  let b = Bytes.create 1000 in
+  let prefix = "not-marshal" in
+  Bytes.blit_string prefix 0 b 0 (String.length prefix);
+  let _ =
+    Marshal.to_buffer
+      b
+      (String.length prefix)
+      (Bytes.length b - String.length prefix)
+      s
+      []
+  in
+  Printf.printf "%f" (Marshal.from_bytes b (String.length prefix));
+  [%expect {| 3.140000 |}]
