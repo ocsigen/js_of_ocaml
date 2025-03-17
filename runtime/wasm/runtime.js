@@ -152,7 +152,7 @@
 
   for (const l of getenv("OCAMLRUNPARAM")?.split(",") || []) {
     if (l === "b") record_backtrace_flag = 1;
-    if (l.startsWith("b=")) record_backtrace_flag = +!!+l[i].slice(2);
+    if (l.startsWith("b=")) record_backtrace_flag = +l[i].slice(2) ? 1 : 0;
   }
 
   function alloc_stat(s, large) {
