@@ -38,3 +38,8 @@
  (alias runtest-js)
  (action
   (diff test_toplevel.expected test_toplevel.actual)))
+
+(rule
+ (alias runtest)
+ (action
+  (run jsoo_mkcmis -o a.js --no-runtime stdlib)))
