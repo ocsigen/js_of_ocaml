@@ -474,9 +474,18 @@ let check_js js =
   if times () then Format.eprintf "  checks: %a@." Timer.print t;
   js
 
-let coloring js =
+let name_variables js =
   let t = Timer.make () in
-  if times () then Format.eprintf "Start Coloring...@.";
+  if times () then Format.eprintf "Start naming variables...@.";
+  let js =
+    if Config.Flag.shortvar ()
+    then (
+      let t5 = Timer.make () in
+      let js = (new Js_traverse.rename_variable ~esm:false)#program js in
+      if times () then Format.eprintf "    shortten vars: %a@." Timer.print t5;
+      js)
+    else js
+  in
   let traverse = new Js_traverse.free in
   let js = traverse#program js in
   let free = traverse#get_free in
@@ -641,22 +650,18 @@ if (typeof module === 'object' && module.exports) {
         in
         e @ js
   in
+  if times () then Format.eprintf "  packing: %a@." Timer.print t;
+  js
+
+let simplify_js js =
   (* post pack optim *)
+  let t = Timer.make () in
   let t3 = Timer.make () in
   let js = (new Js_traverse.simpl)#program js in
   if times () then Format.eprintf "    simpl: %a@." Timer.print t3;
   let t4 = Timer.make () in
   let js = (new Js_traverse.clean)#program js in
   if times () then Format.eprintf "    clean: %a@." Timer.print t4;
-  let js =
-    if Config.Flag.shortvar ()
-    then (
-      let t5 = Timer.make () in
-      let js = (new Js_traverse.rename_variable ~esm:false)#program js in
-      if times () then Format.eprintf "    shortten vars: %a@." Timer.print t5;
-      js)
-    else js
-  in
   if times () then Format.eprintf "  optimizing: %a@." Timer.print t;
   js
 
@@ -675,7 +680,6 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   p
   |> link' ~export_runtime ~standalone ~link
   |> pack ~wrap_with_fun ~standalone
-  |> coloring
   |> check_js
 
 let optimize ~profile p =
@@ -710,6 +714,8 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
   let emit formatter =
     generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
     +> link_and_pack ~standalone ~wrap_with_fun ~link
+    +> simplify_js
+    +> name_variables
     +> output formatter ~source_map ()
   in
   emit formatter optimized_code

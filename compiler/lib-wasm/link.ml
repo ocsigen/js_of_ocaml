@@ -405,27 +405,12 @@ let generate_start_function ~to_link ~out_file =
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
 
 let output_js js =
+  let js = Driver.simplify_js js in
+  let js = Driver.name_variables js in
   Code.Var.reset ();
   let b = Buffer.create 1024 in
   let f = Pretty_print.to_buffer b in
   Driver.configure f;
-  let traverse = new Js_traverse.free in
-  let js = traverse#program js in
-  let free = traverse#get_free in
-  Javascript.IdentSet.iter
-    (fun x ->
-      match x with
-      | V _ -> assert false
-      | S { name = Utf8 x; _ } -> Var_printer.add_reserved x)
-    free;
-  let js =
-    if Config.Flag.shortvar ()
-    then (new Js_traverse.rename_variable ~esm:false)#program js
-    else js
-  in
-  let js = (new Js_traverse.simpl)#program js in
-  let js = (new Js_traverse.clean)#program js in
-  let js = Js_assign.program js in
   ignore (Js_output.program f js);
   Buffer.contents b
 
