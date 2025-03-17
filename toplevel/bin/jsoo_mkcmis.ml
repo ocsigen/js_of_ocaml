@@ -44,7 +44,7 @@ let rec scan_args acc = function
   | ("--verbose" | "-verbose") :: xs ->
       Jsoo_common.verbose := true;
       scan_args acc xs
-  | "-prefix" :: y :: xs ->
+  | ("--prefix" | "-prefix") :: y :: xs ->
       prefix := y;
       scan_args acc xs
   | "-o" :: name :: xs ->

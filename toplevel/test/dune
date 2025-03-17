@@ -1,6 +1,6 @@
 (executables
- (names test_toplevel)
- (libraries js_of_ocaml js_of_ocaml_toplevel)
+ (names test_toplevel1 test_toplevel2)
+ (libraries js_of_ocaml js_of_ocaml_toplevel re)
  (flags
   (:standard -linkall))
  (modes byte))
@@ -10,10 +10,14 @@
  (deps
   (package js_of_ocaml-toplevel))
  (action
-  (run jsoo_listunits -o %{targets} stdlib js_of_ocaml-toplevel)))
+  (run jsoo_listunits -o %{targets} stdlib js_of_ocaml-toplevel re)))
 
 (rule
- (targets test_toplevel.js)
+ (target re.cmis.js)
+ (action (run jsoo_mkcmis -o %{target} re )))
+
+(rule
+ (targets test_toplevel1.js)
  (action
   (run
    %{bin:js_of_ocaml}
@@ -22,22 +26,49 @@
    --toplevel
    --disable
    shortvar
-   %{dep:test_toplevel.bc}
+   %{dep:test_toplevel1.bc}
    -o
    %{targets})))
 
 (rule
- (target test_toplevel.actual)
- (deps test_toplevel.js)
+ (targets test_toplevel2.js)
+ (action
+  (run
+   %{bin:js_of_ocaml}
+   --toplevel
+   --no-cmis
+   --disable
+   shortvar
+   %{dep:test_toplevel2.bc}
+   -o
+   %{targets})))
+
+
+(rule
+ (target test_toplevel1.actual)
+ (deps test_toplevel1.js re.cmis.js)
  (action
   (with-stdout-to
    %{target}
-   (run node ./test_toplevel.js))))
+   (run node ./test_toplevel1.js))))
+
+(rule
+ (target test_toplevel2.actual)
+ (deps test_toplevel2.js re.cmis.js)
+ (action
+  (with-stdout-to
+   %{target}
+   (run node ./test_toplevel2.js))))
 
 (rule
  (alias runtest-js)
  (action
-  (diff test_toplevel.expected test_toplevel.actual)))
+  (diff test_toplevel.expected test_toplevel1.actual)))
+
+(rule
+ (alias runtest-js)
+ (action
+  (diff test_toplevel.expected test_toplevel2.actual)))
 
 (rule
  (alias runtest)
