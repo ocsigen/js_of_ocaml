@@ -47,7 +47,7 @@ var caml_marshal_constants = {
 };
 
 //Provides: UInt8ArrayReader
-//Requires: caml_string_of_uint8_array, caml_jsbytes_of_string
+//Requires: caml_string_of_uint8_array
 class UInt8ArrayReader {
   constructor(s, i) {
     this.s = s;
@@ -103,11 +103,11 @@ class UInt8ArrayReader {
   }
 }
 
-//Provides: MlStringReader
-//Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
-class MlStringReader {
+//Provides: JsStringReader
+//Requires: caml_string_of_jsbytes
+class JsStringReader {
   constructor(s, i) {
-    this.s = caml_jsbytes_of_string(s);
+    this.s = s;
     this.i = i;
   }
 
@@ -183,21 +183,32 @@ function caml_float_of_bytes(a) {
 }
 
 //Provides: caml_input_value_from_string mutable
-//Requires: MlStringReader, caml_input_value_from_reader
+//Requires: JsStringReader, UInt8ArrayReader
+//Requires: caml_input_value_from_reader
+//Requires: caml_ml_bytes_content
 //Version: < 4.12
 function caml_input_value_from_string(s, ofs) {
-  var reader = new MlStringReader(s, typeof ofs === "number" ? ofs : ofs[0]);
-  return caml_input_value_from_reader(reader, ofs);
+  var c = typeof s === "string" ? s : caml_ml_bytes_content(s);
+  var ofs = typeof ofs === "number" ? ofs : ofs[0];
+  var reader =
+    c instanceof Uint8Array
+      ? new UInt8ArrayReader(c, ofs)
+      : new JsStringReader(c, ofs);
+  return caml_input_value_from_reader(reader);
 }
 
 //Provides: caml_input_value_from_bytes mutable
-//Requires: MlStringReader, caml_input_value_from_reader, caml_string_of_bytes
+//Requires: JsStringReader, UInt8ArrayReader
+//Requires: caml_input_value_from_reader
+//Requires: caml_ml_bytes_content
 function caml_input_value_from_bytes(s, ofs) {
-  var reader = new MlStringReader(
-    caml_string_of_bytes(s),
-    typeof ofs === "number" ? ofs : ofs[0],
-  );
-  return caml_input_value_from_reader(reader, ofs);
+  var c = caml_ml_bytes_content(s);
+  var ofs = typeof ofs === "number" ? ofs : ofs[0];
+  var reader =
+    c instanceof Uint8Array
+      ? new UInt8ArrayReader(c, ofs)
+      : new JsStringReader(c, ofs);
+  return caml_input_value_from_reader(reader);
 }
 
 //Provides: caml_int64_unmarshal
@@ -283,7 +294,7 @@ var caml_custom_ops = {
 //Requires: UInt8ArrayReader
 //Requires: caml_decompress_input
 //Requires: caml_set_oo_id
-function caml_input_value_from_reader(reader, ofs) {
+function caml_input_value_from_reader(reader) {
   function readvlq(overflow) {
     var c = reader.read8u();
     var n = c & 0x7f;
