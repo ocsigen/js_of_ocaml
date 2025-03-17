@@ -476,14 +476,13 @@ module Standard = struct
          ; ( "file"
            , match t.file with
              | None -> None
-             | Some file -> Some (stringlit (rewrite_path file)) )
+             | Some file -> Some (stringlit file) )
          ; ( "sourceRoot"
            , match t.sourceroot with
              | None -> None
-             | Some s -> Some (stringlit (rewrite_path s)) )
+             | Some s -> Some (stringlit s) )
          ; "names", Some (`List (List.map t.names ~f:(fun s -> stringlit s)))
-         ; ( "sources"
-           , Some (`List (List.map t.sources ~f:(fun s -> stringlit (rewrite_path s)))) )
+         ; "sources", Some (`List (List.map t.sources ~f:(fun s -> stringlit s)))
          ; "mappings", Some (stringlit (Mappings.to_string t.mappings))
          ; ( "sourcesContent"
            , match t.sources_content with
@@ -570,9 +569,16 @@ module Standard = struct
 
   let of_file ?tmp_buf f = of_json ?tmp_buf (Yojson.Raw.from_file ?buf:tmp_buf f)
 
-  let to_string m = Yojson.Raw.to_string (json m)
+  let rewrite_paths sm =
+    { sm with
+      file = Option.map ~f:rewrite_path sm.file
+    ; sourceroot = Option.map ~f:rewrite_path sm.sourceroot
+    ; sources = List.map ~f:rewrite_path sm.sources
+    }
 
-  let to_file m file = Yojson.Raw.to_file file (json m)
+  let to_string m = Yojson.Raw.to_string (json (rewrite_paths m))
+
+  let to_file m file = Yojson.Raw.to_file file (json (rewrite_paths m))
 
   let invariant
       { version
@@ -628,7 +634,7 @@ module Index = struct
          ; ( "file"
            , match t.file with
              | None -> None
-             | Some file -> Some (stringlit (rewrite_path file)) )
+             | Some file -> Some (stringlit file) )
          ; ( "sections"
            , Some
                (`List
@@ -703,9 +709,16 @@ module Index = struct
             invalid_arg "Source_map.Index.of_json: no `sections` field")
     | _ -> invalid_arg "Source_map.Index.of_json"
 
-  let to_string m = Yojson.Raw.to_string (json m)
+  let rewrite_paths m =
+    { m with
+      file = Option.map ~f:rewrite_path m.file
+    ; sections =
+        List.map ~f:(fun m -> { m with map = Standard.rewrite_paths m.map }) m.sections
+    }
 
-  let to_file m file = Yojson.Raw.to_file file (json m)
+  let to_string m = Yojson.Raw.to_string (json (rewrite_paths m))
+
+  let to_file m file = Yojson.Raw.to_file file (json (rewrite_paths m))
 
   let invariant { version; file = _; sections } =
     if not (version_is_valid version)

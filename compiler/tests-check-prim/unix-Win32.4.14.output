@@ -150,7 +150,6 @@ caml_trampoline_return
 caml_wrap_exception
 
 From +marshal.js:
-BigStringReader
 caml_marshal_constants
 
 From +mlBytes.js:

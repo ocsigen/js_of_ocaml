@@ -267,15 +267,11 @@ let build_js_runtime ~primitives ?runtime_arguments () =
 let add_source_map sourcemap_don't_inline_content z opt_source_map =
   let sm =
     match opt_source_map with
-    | `File opt_file ->
-        Option.map opt_file ~f:(fun file ->
-            Zip.add_file z ~name:"source_map.map" ~file;
-            Source_map.of_file file)
-    | `Source_map sm ->
-        Zip.add_entry z ~name:"source_map.map" ~contents:(Source_map.to_string sm);
-        Some sm
+    | `File opt_file -> Option.map ~f:Source_map.of_file opt_file
+    | `Source_map sm -> Some sm
   in
   Option.iter sm ~f:(fun sm ->
+      Zip.add_entry z ~name:"source_map.map" ~contents:(Source_map.to_string sm);
       if not sourcemap_don't_inline_content
       then
         Wasm_source_map.iter_sources sm (fun i j file ->

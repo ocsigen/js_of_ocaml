@@ -137,7 +137,7 @@ let blackbox_filename = "/builtin/blackbox.ml"
 
 let blackbox_contents = "(* generated code *)"
 
-let insert_source_contents' ~rewrite_path (sm : Source_map.Standard.t) i f =
+let insert_source_contents' (sm : Source_map.Standard.t) i f =
   let l = sm.sources in
   let single = List.length l = 1 in
   let contents =
@@ -157,13 +157,11 @@ let insert_source_contents' ~rewrite_path (sm : Source_map.Standard.t) i f =
     then { sm with ignore_list = [ blackbox_filename ] }
     else sm
   in
-  let sm = { sm with sources = List.map ~f:rewrite_path sm.sources } in
   sm
 
-let insert_source_contents ~rewrite_path sm f =
+let insert_source_contents sm f =
   match sm with
-  | Source_map.Standard sm ->
-      Source_map.Standard (insert_source_contents' ~rewrite_path sm None f)
+  | Source_map.Standard sm -> Source_map.Standard (insert_source_contents' sm None f)
   | Index ({ sections; _ } as sm) ->
       let single_map = List.length sections = 1 in
       let sections =
@@ -172,7 +170,6 @@ let insert_source_contents ~rewrite_path sm f =
             { entry with
               Source_map.Index.map =
                 insert_source_contents'
-                  ~rewrite_path
                   entry.Source_map.Index.map
                   (if single_map then None else Some i)
                   f

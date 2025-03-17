@@ -11,6 +11,7 @@
 * Runtime: make Obj.dup work with floats and boxed numbers (#1871)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
 * Runtime: implement BLAKE2b primitives for Wasm (#1873)
+* Runtime: delete BigStringReader, one should use UInt8ArrayReader instead
 * Runtime/wasm: support jsoo_env and keep track of backtrace status (#1881)
 
 ## Bug fixes
@@ -23,7 +24,7 @@
 * Lib: fix Dom_html.Keyboard_code.of_event (#1878)
 * Runtime: fix Int64.of_string overflow check (#1874)
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
-
+* Compiler: fix path rewriting of Wasm source maps (#1882)
 
 # 6.0.1 (2025-02-07) - Lille
 
