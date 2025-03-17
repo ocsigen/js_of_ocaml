@@ -153,7 +153,7 @@ let file_size ?(wasm = false) param =
       let files =
         if wasm then src ^ " " ^ Filename.remove_extension src ^ ".assets/*" else src
       in
-      Format.sprintf "wc -c --total only %s > %s" files dst)
+      Format.sprintf "cat %s | wc -c > %s" files dst)
 
 let compr_file_size ?(wasm = false) param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
