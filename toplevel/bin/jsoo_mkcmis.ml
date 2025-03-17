@@ -44,7 +44,7 @@ let rec scan_args acc = function
   | ("--verbose" | "-verbose") :: xs ->
       Jsoo_common.verbose := true;
       scan_args acc xs
-  | "-prefix" :: y :: xs ->
+  | ("--prefix" | "-prefix") :: y :: xs ->
       prefix := y;
       scan_args acc xs
   | "-o" :: name :: xs ->
@@ -58,6 +58,8 @@ let rec scan_args acc = function
   | [] -> List.rev acc
 
 let () =
+  Js_of_ocaml_compiler.Config.set_target `JavaScript;
+  Js_of_ocaml_compiler.Config.set_effects_backend `Disabled;
   let args = List.tl (Array.to_list Sys.argv) in
   let args = scan_args [] args in
   let runtime_files, args =
