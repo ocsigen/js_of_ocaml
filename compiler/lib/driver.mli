@@ -65,6 +65,10 @@ val link_and_pack :
   -> Javascript.statement_list
   -> Javascript.statement_list
 
+val simplify_js : Javascript.statement_list -> Javascript.statement_list
+
+val name_variables : Javascript.statement_list -> Javascript.statement_list
+
 val configure : Pretty_print.t -> unit
 
 val profiles : (int * profile) list

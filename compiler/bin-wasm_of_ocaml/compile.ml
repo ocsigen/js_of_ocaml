@@ -244,25 +244,21 @@ let build_js_runtime ~primitives ?runtime_arguments () =
     | Javascript.Expression_statement e, N -> e
     | _ -> assert false
   in
-  let prelude = Link.output_js always_required_js in
   let init_fun =
     match Parse_js.parse (Parse_js.Lexer.of_string Runtime_files.js_runtime) with
     | [ (Expression_statement f, _) ] -> f
     | _ -> assert false
   in
   let launcher =
+    let js = Javascript.call init_fun [ primitives ] N in
     let js =
-      let js = Javascript.call init_fun [ primitives ] N in
-      let js =
-        match runtime_arguments with
-        | None -> js
-        | Some runtime_arguments -> Javascript.call js [ runtime_arguments ] N
-      in
-      [ Javascript.Expression_statement js, Javascript.N ]
+      match runtime_arguments with
+      | None -> js
+      | Some runtime_arguments -> Javascript.call js [ runtime_arguments ] N
     in
-    Link.output_js js
+    [ Javascript.Expression_statement js, Javascript.N ]
   in
-  prelude ^ launcher
+  Link.output_js (always_required_js @ launcher)
 
 let add_source_map sourcemap_don't_inline_content z opt_source_map =
   let sm =
