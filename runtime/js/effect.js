@@ -95,7 +95,7 @@ function caml_resume_stack(stack, last, k) {
     );
   if (last === 0) {
     last = stack;
-    // Pre OCaml 5.2, last/cont[2] was not populated.
+    // Pre OCaml 5.2, last was not populated.
     while (last.e !== 0) last = last.e;
   }
   caml_current_stack.k = k;
@@ -148,7 +148,7 @@ function caml_perform_effect(eff, k0) {
   var handler = caml_current_stack.h[3];
   var last_fiber = caml_current_stack;
   last_fiber.k = k0;
-  var cont = [245 /*continuation*/, last_fiber, 0];
+  var cont = [245 /*continuation*/, last_fiber, last_fiber];
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
@@ -176,6 +176,7 @@ function caml_reperform_effect(eff, cont, last, k0) {
   var last_fiber = caml_current_stack;
   last_fiber.k = k0;
   last.e = last_fiber;
+  cont[2] = last_fiber;
   // Move to parent fiber and execute the effect handler there
   // The handler is defined in Stdlib.Effect, so we know that the arity matches
   var k1 = caml_pop_fiber();
@@ -259,11 +260,6 @@ function caml_continuation_use_and_update_handler_noexc(
   var stack = caml_continuation_use_noexc(cont);
   if (stack === 0) return stack;
   var last = cont[2];
-  if (last === 0) {
-    last = stack;
-    // Pre OCaml 5.2, last/cont[2] was not populated.
-    while (last.e !== 0) last = last.e;
-  }
   last.h[1] = hval;
   last.h[2] = hexn;
   last.h[3] = heff;
