@@ -14,7 +14,8 @@
 
 (rule
  (target re.cmis.js)
- (action (run jsoo_mkcmis -o %{target} re )))
+ (action
+  (run jsoo_mkcmis -o %{target} re)))
 
 (rule
  (targets test_toplevel1.js)
@@ -42,7 +43,6 @@
    %{dep:test_toplevel2.bc}
    -o
    %{targets})))
-
 
 (rule
  (target test_toplevel1.actual)
