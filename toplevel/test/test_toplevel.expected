@@ -13,12 +13,9 @@ hello
 <ERR>: Line 3, characters 2-4:
 <ERR>: Error: Syntax error
 
-let regex = Re.compile Re.(seq [str "//"; rep print ]);;
-
-val regex : Re.re = <abstr>
-Re.execp regex "// a C comment";;
-
-- : bool = true
-Re.execp ~pos:1 regex "// a C comment";;
-
-- : bool = false
+let () =
+  let regex = Re.compile Re.(seq [str "//"; rep print ]) in
+  Printf.printf "%b\n%!" (Re.execp regex "// a C comment");
+  Printf.printf "%b\n%!" (Re.execp ~pos:1 regex "// a C comment");;
+true
+false

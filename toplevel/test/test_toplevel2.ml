@@ -47,7 +47,8 @@ let () =
     ~highlight_location:(fun _ -> ())
     fmt
     {|
-let regex = Re.compile Re.(seq [str "//"; rep print ]);;
-Re.execp regex "// a C comment";;
-Re.execp ~pos:1 regex "// a C comment";;
+let () =
+  let regex = Re.compile Re.(seq [str "//"; rep print ]) in
+  Printf.printf "%b\n%!" (Re.execp regex "// a C comment");
+  Printf.printf "%b\n%!" (Re.execp ~pos:1 regex "// a C comment");;
 |}
