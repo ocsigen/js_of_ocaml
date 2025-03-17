@@ -1,37 +1,38 @@
 # dev
 
 ## Features/Changes
-* Runtime: use es6 class (#1840)
 * Compiler: use a Wasm text files preprocessor (#1822)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
+* Runtime: use es6 class (#1840)
 * Runtime: support more Unix functions (#1829)
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
 * Runtime: refactor caml_xmlhttprequest_create implementation (#1846)
 * Runtime: update constant imports to use `node:fs` module (#1850)
 * Runtime: make Obj.dup work with floats and boxed numbers (#1871)
-* Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
-* Runtime: implement BLAKE2b primitives for Wasm (#1873)
 * Runtime: delete BigStringReader, one should use UInt8ArrayReader instead
-* Runtime/wasm: support jsoo_env and keep track of backtrace status (#1881)
 * Runtime: less conversion during un-marshalling (#1889)
-* Compiler: improve performance of Javascript linking
+* Runtime/wasm: implement BLAKE2b primitives for Wasm (#1873)
+* Runtime/wasm: support jsoo_env and keep track of backtrace status (#1881)
 * Runtime/wasm: support unmarshaling compressed data (#1898)
+* Runtime/wasm: make resuming a continuation more efficient in Wasm (#1892)
+* Compiler: improve performance of Javascript linking
 * Ppx: explicitly disallow polymorphic method (#1897)
 * Ppx: allow "function" in object literals (#1897)
+* Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
 
 ## Bug fixes
-* Runtime: fix path normalization (#1848)
-* Runtime: fix reading from the pseudo-filesystem (#1859)
-* Runtime: fix initialization of standard streams under Windows (#1849)
 * Compiler: fix stack overflow issues with double translation (#1869)
 * Compiler: minifier fix (#1867)
 * Compiler: fix assert failure with double translation (#1870)
+* Compiler: fix path rewriting of Wasm source maps (#1882)
+* Compiler/wasm: fix bound check for empty float array (#1904)
 * Lib: fix Dom_html.Keyboard_code.of_event (#1878)
+* Runtime: fix path normalization (#1848)
+* Runtime: fix reading from the pseudo-filesystem (#1859)
+* Runtime: fix initialization of standard streams under Windows (#1849)
 * Runtime: fix Int64.of_string overflow check (#1874)
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
-* Compiler: fix path rewriting of Wasm source maps (#1882)
 * Tools: fix jsoo_mktop and jsoo_mkcmis (#1877)
-* Compiler/wasm: fix bound check for empty float array (#1904)
 
 # 6.0.1 (2025-02-07) - Lille
 
