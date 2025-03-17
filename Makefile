@@ -27,6 +27,12 @@ fmt:
 	dune build @fmt --auto-promote 2> /dev/null || true
 	git diff --exit-code
 
+fmt-js:
+	npx @biomejs/biome format --write
+
+lint-js:
+	npx @biomejs/biome lint
+
 clean:
 	dune clean
 
