@@ -54,4 +54,8 @@
  (enabled_if
   (>= %{ocaml_version} 5))
  (modules deep_state)
- (modes js))
+ (js_of_ocaml
+  (compilation_mode whole_program))
+ (wasm_of_ocaml
+  (compilation_mode whole_program))
+ (modes js wasm))
