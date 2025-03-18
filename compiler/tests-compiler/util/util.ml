@@ -261,20 +261,7 @@ let print_file file =
   List.iteri all ~f:(fun i line -> Printf.printf "%3d: %s\n" (i + 1) line)
 
 let extract_sourcemap file =
-  let open Js_of_ocaml_compiler.Stdlib in
-  let lines =
-    file_lines_text (Filetype.path_of_js_file file)
-    |> List.filter_map ~f:(String.drop_prefix ~prefix:"//# sourceMappingURL=")
-  in
-  match lines with
-  | [ line ] ->
-      let content =
-        match String.drop_prefix ~prefix:"data:application/json;base64," line with
-        | None -> String.concat ~sep:"\n" (file_lines_text line)
-        | Some base64 -> Js_of_ocaml_compiler.Base64.decode_exn base64
-      in
-      Some (Js_of_ocaml_compiler.Source_map.of_string content)
-  | _ -> None
+  Js_of_ocaml_compiler.Source_map.find_in_js_file (Filetype.path_of_js_file file)
 
 let compile_to_javascript
     ?(flags = [])

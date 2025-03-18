@@ -1383,11 +1383,11 @@ let split_lines s =
 
 let input_lines_read_once ic len = really_input_string ic len |> split_lines
 
-let file_lines open_in fname =
+let file_lines_bin fname =
   (* If possible, read the entire file and split it in lines.
      This is faster than reading it line by line.
      Otherwise, we fall back to a line-by-line read. *)
-  let ic = open_in fname in
+  let ic = open_in_bin fname in
   let len = in_channel_length ic in
   let x =
     if len < Sys.max_string_length
@@ -1397,9 +1397,11 @@ let file_lines open_in fname =
   close_in ic;
   x
 
-let file_lines_text = file_lines open_in_text
-
-let file_lines_bin = file_lines open_in_bin
+let file_lines_text file =
+  let ic = open_in_text file in
+  let c = In_channel.input_lines ic in
+  close_in ic;
+  c
 
 let generated_name = function
   | "param" | "match" | "switcher" -> true

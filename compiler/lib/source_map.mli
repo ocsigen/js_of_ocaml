@@ -149,6 +149,8 @@ val of_file : ?tmp_buf:Buffer.t -> string -> t
 
 val invariant : t -> unit
 
+val find_in_js_file : string -> t option
+
 type info =
   { mappings : Mappings.decoded
   ; sources : string list
