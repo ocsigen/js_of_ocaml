@@ -90,8 +90,8 @@ let () =
   let program = Js_of_ocaml_compiler.Code.prepend Js_of_ocaml_compiler.Code.empty instr in
   let oc =
     match !output, args with
-    | Some x, _ -> open_out x
-    | None, [ x ] -> open_out (x ^ ".cmis.js")
+    | Some x, _ -> open_out_bin x
+    | None, [ x ] -> open_out_bin (x ^ ".cmis.js")
     | None, _ -> failwith "-o <name> needed"
   in
   let pfs_fmt = Js_of_ocaml_compiler.Pretty_print.to_out_channel oc in

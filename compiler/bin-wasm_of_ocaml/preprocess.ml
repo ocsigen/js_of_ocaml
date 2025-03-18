@@ -22,19 +22,6 @@ open Wasm_of_ocaml_compiler
 
 let () = Sys.catch_break true
 
-let read_contents ch =
-  let buf = Buffer.create 65536 in
-  let b = Bytes.create 65536 in
-  let rec read () =
-    let n = input ch b 0 (Bytes.length b) in
-    if n > 0
-    then (
-      Buffer.add_subbytes buf b 0 n;
-      read ())
-  in
-  read ();
-  Buffer.contents buf
-
 type variables =
   { enable : string list
   ; disable : string list
@@ -102,7 +89,7 @@ let preprocess { input_file; output_file; variables } =
     match input_file with
     | None -> f stdin
     | Some file ->
-        let ch = open_in file in
+        let ch = open_in_bin file in
         let res = f ch in
         close_in ch;
         res
@@ -112,7 +99,7 @@ let preprocess { input_file; output_file; variables } =
     | Some "-" | None -> f stdout
     | Some file -> Filename.gen_file file f
   in
-  let contents = with_input read_contents in
+  let contents = with_input In_channel.input_all in
   let res =
     Wat_preprocess.f
       ~filename:(Option.value ~default:"-" input_file)

@@ -16,6 +16,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+let open_in_text = open_in
+
+let open_out_text = open_out
+
+module Deprecated : sig
+  val open_in : string -> in_channel [@@deprecated "use open_int_text/open_int_bin"]
+
+  val open_out : string -> out_channel [@@deprecated "use open_out_text/open_out_bin"]
+end = struct
+  let open_in = open_in
+
+  let open_out = open_out
+end
+
 module Poly = struct
   external ( < ) : 'a -> 'a -> bool = "%lessthan"
 
@@ -1234,6 +1248,8 @@ module Fun = struct
 end
 
 module In_channel = struct
+  let stdlib_input_line = input_line
+
   (* Read up to [len] bytes into [buf], starting at [ofs]. Return total bytes
      read. *)
   let read_upto ic buf ofs len =
@@ -1327,6 +1343,8 @@ module In_channel = struct
       | exception End_of_file -> acc
     in
     List.rev (aux [])
+
+  let input_line_exn = stdlib_input_line
 end
 [@@if ocaml_version < (4, 14, 0)]
 
@@ -1341,6 +1359,8 @@ module In_channel = struct
     | line -> line :: input_lines ic
     | exception End_of_file -> []
   [@@if ocaml_version < (5, 1, 0)]
+
+  let input_line_exn = stdlib_input_line
 end
 [@@if ocaml_version >= (4, 14, 0)]
 

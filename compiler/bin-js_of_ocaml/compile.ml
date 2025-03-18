@@ -184,11 +184,11 @@ let run
     | Some file ->
         if not (Sys.file_exists file)
         then failwith (Printf.sprintf "export file %S does not exist" file);
-        let ic = open_in file in
+        let ic = open_in_text file in
         let t = Hashtbl.create 17 in
         (try
            while true do
-             Hashtbl.add t (input_line ic) ()
+             Hashtbl.add t (String.trim (In_channel.input_line_exn ic)) ()
            done;
            assert false
          with End_of_file -> ());

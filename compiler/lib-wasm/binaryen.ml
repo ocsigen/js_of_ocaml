@@ -76,13 +76,13 @@ let generate_dependencies ~dependencies primitives =
           (Yojson.Basic.Util.to_list (Yojson.Basic.from_string dependencies))))
 
 let filter_unused_primitives primitives usage_file =
-  let ch = open_in usage_file in
+  let ch = open_in_bin usage_file in
   let s = ref primitives in
   (try
      while true do
        let l = input_line ch in
        match String.drop_prefix ~prefix:"unused: js:" l with
-       | Some nm -> s := StringSet.remove nm !s
+       | Some nm -> s := StringSet.remove (String.trim nm) !s
        | None -> ()
      done
    with End_of_file -> ());

@@ -11,14 +11,9 @@ let normalize_path s =
   in
   Filename.basename s
 
-let input_lines file =
-  let rec loop acc ic =
-    match input_line ic with
-    | line -> loop (line :: acc) ic
-    | exception End_of_file -> List.rev acc
-  in
-  let ic = open_in file in
-  let lines = loop [] ic in
+let input_lines_text file =
+  let ic = open_in_text file in
+  let lines = In_channel.input_lines ic in
   close_in ic;
   lines
 
@@ -30,7 +25,7 @@ let extract_sourcemap lines =
   | [ line ] ->
       let content =
         match String.drop_prefix ~prefix:"data:application/json;base64," line with
-        | None -> String.concat ~sep:"\n" (input_lines line)
+        | None -> String.concat ~sep:"\n" (input_lines_text line)
         | Some base64 -> Base64.decode_exn base64
       in
       Some (Source_map.of_string content)
@@ -90,7 +85,7 @@ let files = Sys.argv |> Array.to_list |> List.tl
 
 let () =
   List.iter files ~f:(fun f ->
-      let lines = input_lines f in
+      let lines = input_lines_text f in
       match extract_sourcemap lines with
       | None -> Printf.printf "not sourcemap for %s\n" f
       | Some sm ->
