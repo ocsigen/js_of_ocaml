@@ -254,29 +254,23 @@ let run_bytecode file =
 let swap_extention filename ~ext =
   Format.sprintf "%s.%s" (Filename.remove_extension filename) ext
 
-let input_lines_text file =
-  let ic = open_in_text file in
-  let lines = In_channel.input_lines ic in
-  close_in ic;
-  lines
-
 let print_file file =
   let open Js_of_ocaml_compiler.Stdlib in
-  let all = input_lines_text file in
+  let all = file_lines_text file in
   Printf.printf "$ cat %S\n" file;
   List.iteri all ~f:(fun i line -> Printf.printf "%3d: %s\n" (i + 1) line)
 
 let extract_sourcemap file =
   let open Js_of_ocaml_compiler.Stdlib in
   let lines =
-    input_lines_text (Filetype.path_of_js_file file)
+    file_lines_text (Filetype.path_of_js_file file)
     |> List.filter_map ~f:(String.drop_prefix ~prefix:"//# sourceMappingURL=")
   in
   match lines with
   | [ line ] ->
       let content =
         match String.drop_prefix ~prefix:"data:application/json;base64," line with
-        | None -> String.concat ~sep:"\n" (input_lines_text line)
+        | None -> String.concat ~sep:"\n" (file_lines_text line)
         | Some base64 -> Js_of_ocaml_compiler.Base64.decode_exn base64
       in
       Some (Js_of_ocaml_compiler.Source_map.of_string content)

@@ -1364,6 +1364,43 @@ module In_channel = struct
 end
 [@@if ocaml_version >= (4, 14, 0)]
 
+let split_lines s =
+  if String.equal s ""
+  then []
+  else
+    let sep = '\n' in
+    let r = ref [] in
+    let j = ref (String.length s) in
+    (* ignore trailing new line *)
+    if Char.equal (String.unsafe_get s (!j - 1)) sep then decr j;
+    for i = !j - 1 downto 0 do
+      if Char.equal (String.unsafe_get s i) sep
+      then (
+        r := String.sub s ~pos:(i + 1) ~len:(!j - i - 1) :: !r;
+        j := i)
+    done;
+    String.sub s ~pos:0 ~len:!j :: !r
+
+let input_lines_read_once ic len = really_input_string ic len |> split_lines
+
+let file_lines open_in fname =
+  (* If possible, read the entire file and split it in lines.
+     This is faster than reading it line by line.
+     Otherwise, we fall back to a line-by-line read. *)
+  let ic = open_in fname in
+  let len = in_channel_length ic in
+  let x =
+    if len < Sys.max_string_length
+    then input_lines_read_once ic len
+    else In_channel.input_lines ic
+  in
+  close_in ic;
+  x
+
+let file_lines_text = file_lines open_in_text
+
+let file_lines_bin = file_lines open_in_bin
+
 let generated_name = function
   | "param" | "match" | "switcher" -> true
   | s -> String.is_prefix ~prefix:"cst_" s

@@ -19,23 +19,17 @@
 
 open Js_of_ocaml_compiler.Stdlib
 
-let input_lines_text file =
-  let ic = open_in_text file in
-  let lines = In_channel.input_lines ic in
-  close_in ic;
-  lines
-
 let () =
   let file = Sys.argv.(1) in
   let lines =
-    input_lines_text file
+    file_lines_text file
     |> List.filter_map ~f:(String.drop_prefix ~prefix:"//# sourceMappingURL=")
   in
   let content =
     match lines with
     | [ line ] -> (
         match String.drop_prefix ~prefix:"data:application/json;base64," line with
-        | None -> String.concat ~sep:"\n" (input_lines_text line)
+        | None -> String.concat ~sep:"\n" (file_lines_text line)
         | Some base64 -> Js_of_ocaml_compiler.Base64.decode_exn base64)
     | _ -> failwith "unable to find sourcemap"
   in

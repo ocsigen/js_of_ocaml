@@ -57,20 +57,7 @@ end = struct
     t.lnum <- 0
 
   let open_ fname =
-    let lines =
-      (* If possible, read the entire file and split it in lines.
-         This is faster than reading it line by line.
-         Otherwise, we fall back to a line-by-line read. *)
-      let ic = open_in_bin fname in
-      let len = in_channel_length ic in
-      let x =
-        if len < Sys.max_string_length
-        then really_input_string ic len |> String.split_on_char ~sep:'\n'
-        else In_channel.input_lines ic
-      in
-      close_in ic;
-      x
-    in
+    let lines = file_lines_bin fname in
     { lines; lnum = 0; fname; current = lines }
 
   let next t =
