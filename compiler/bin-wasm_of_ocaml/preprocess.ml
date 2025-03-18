@@ -89,7 +89,7 @@ let preprocess { input_file; output_file; variables } =
     match input_file with
     | None -> f stdin
     | Some file ->
-        let ch = open_in_bin file in
+        let ch = open_in_text file in
         let res = f ch in
         close_in ch;
         res
