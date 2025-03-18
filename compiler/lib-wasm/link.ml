@@ -106,7 +106,7 @@ module Wasm_binary = struct
   let check ~contents = String.starts_with ~prefix:header contents
 
   let check_file ~file =
-    let ch = open_in file in
+    let ch = open_in_bin file in
     let res =
       try
         let s = really_input_string ch 8 in

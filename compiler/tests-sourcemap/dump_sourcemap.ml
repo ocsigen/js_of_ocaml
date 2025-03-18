@@ -11,31 +11,6 @@ let normalize_path s =
   in
   Filename.basename s
 
-let input_lines file =
-  let rec loop acc ic =
-    match input_line ic with
-    | line -> loop (line :: acc) ic
-    | exception End_of_file -> List.rev acc
-  in
-  let ic = open_in file in
-  let lines = loop [] ic in
-  close_in ic;
-  lines
-
-let extract_sourcemap lines =
-  let lines =
-    List.filter_map lines ~f:(String.drop_prefix ~prefix:"//# sourceMappingURL=")
-  in
-  match lines with
-  | [ line ] ->
-      let content =
-        match String.drop_prefix ~prefix:"data:application/json;base64," line with
-        | None -> String.concat ~sep:"\n" (input_lines line)
-        | Some base64 -> Base64.decode_exn base64
-      in
-      Some (Source_map.of_string content)
-  | _ -> None
-
 let print_mapping lines ?(line_offset = 0) (sm : Source_map.Standard.t) =
   let lines = Array.of_list lines in
   let sources = Array.of_list sm.sources in
@@ -90,8 +65,8 @@ let files = Sys.argv |> Array.to_list |> List.tl
 
 let () =
   List.iter files ~f:(fun f ->
-      let lines = input_lines f in
-      match extract_sourcemap lines with
+      let lines = file_lines_bin f in
+      match Source_map.find_in_js_file f with
       | None -> Printf.printf "not sourcemap for %s\n" f
       | Some sm ->
           Printf.printf "sourcemap for %s\n" f;

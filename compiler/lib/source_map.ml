@@ -773,3 +773,22 @@ type info =
   ; sources : string list
   ; names : string list
   }
+
+let find_in_js_file file =
+  let lines =
+    file_lines_bin file
+    |> List.filter_map ~f:(String.drop_prefix ~prefix:"//# sourceMappingURL=")
+  in
+  match lines with
+  | [ line ] ->
+      let content =
+        match String.drop_prefix ~prefix:"data:application/json;base64," line with
+        | None ->
+            let ic = open_in_bin (String.trim line) in
+            let c = In_channel.input_all ic in
+            close_in ic;
+            c
+        | Some base64 -> Base64.decode_exn (String.trim base64)
+      in
+      Some (of_string content)
+  | _ -> None

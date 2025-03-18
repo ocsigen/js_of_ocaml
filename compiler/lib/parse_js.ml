@@ -67,7 +67,7 @@ end = struct
     { l; env = Flow_lexer.Lex_env.create l; report_error }
 
   let of_file file : t =
-    let ic = open_in file in
+    let ic = open_in_bin file in
     let lexbuf = Sedlexing.Utf8.from_channel ic in
     Sedlexing.set_filename lexbuf file;
     create lexbuf
