@@ -583,9 +583,13 @@ let preprocess_literal_object mappper fields :
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
         let names = check_name id names in
         let body = format_meth (mappper body) in
-        let rec create_meth_ty exp =
+        let create_meth_ty exp =
           match exp.pexp_desc with
-          | Pexp_fun (label, _, _, body) -> Arg.make ~label () :: create_meth_ty body
+          | Pexp_function (params, _, _) ->
+              List.filter_map params ~f:(function
+                | { pparam_desc = Pparam_newtype _; _ } -> None
+                | { pparam_desc = Pparam_val (label, _, _arg); _ } ->
+                    Some (Arg.make ~label ()))
           | _ -> []
         in
         let fun_ty = create_meth_ty body in
