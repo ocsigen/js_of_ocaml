@@ -84,16 +84,37 @@
 
    (func (export "caml_input_value") (param $ch (ref eq)) (result (ref eq))
       ;; ZZZ check binary channel?
-      (local $r i32) (local $len i32)
+      (local $r i32) (local $magic i32) (local $len i32)
       (local $header (ref $bytes)) (local $buf (ref $bytes))
       (local $s (ref $intern_state)) (local $h (ref $marshal_header))
-      (local.set $header (array.new $bytes (i32.const 0) (i32.const 20)))
+      (local.set $header (array.new $bytes (i32.const 0) (i32.const 55)))
       (local.set $r
          (call $caml_really_getblock
-            (local.get $ch) (local.get $header) (i32.const 0) (i32.const 20)))
+            (local.get $ch) (local.get $header) (i32.const 0) (i32.const 5)))
       (if (i32.eqz (local.get $r))
          (then (call $caml_raise_end_of_file)))
-      (if (i32.lt_u (local.get $r) (i32.const 20))
+      (if (i32.lt_u (local.get $r) (i32.const 5))
+         (then (call $caml_failwith (global.get $truncated_obj))))
+      (local.set $s
+         (call $get_intern_state (local.get $header) (i32.const 0)))
+      (local.set $magic (call $read32 (local.get $s)))
+      (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_big))
+         (then (call $too_large (global.get $input_value))))
+      (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_small))
+         (then (local.set $len (i32.const 15))))
+      (if (i32.eq (local.get $magic)
+             (global.get $Intext_magic_number_compressed))
+         (then
+            (local.set $len
+               (i32.sub
+                  (i32.and (call $read8u (local.get $s)) (i32.const 0x3F))
+                  (i32.const 5)))))
+      (if (i32.eqz (local.get $len))
+         (then (call $bad_object (global.get $marshal_data_size))))
+      (if (i32.lt_u
+             (call $caml_really_getblock (local.get $ch)
+                (local.get $header) (i32.const 5) (local.get $len))
+             (local.get $len))
          (then (call $caml_failwith (global.get $truncated_obj))))
       (local.set $s
          (call $get_intern_state (local.get $header) (i32.const 0)))
