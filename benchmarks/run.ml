@@ -264,8 +264,8 @@ let _ =
   Format.eprintf "Compile@.";
   compile "ocamlc" src Spec.ml code Spec.byte;
   compile "ocamlopt" src Spec.ml code Spec.opt;
-  compile_wasmoo "" code Spec.byte code Spec.wasm_of_ocaml;
-  compile_jsoo "" code Spec.byte code Spec.js_of_ocaml;
+  compile_wasmoo "--opt=2" code Spec.byte code Spec.wasm_of_ocaml;
+  compile_jsoo "--opt=2" code Spec.byte code Spec.js_of_ocaml;
   compile_jsoo "--opt=3" code Spec.byte code Spec.js_of_ocaml_o3;
   compile_jsoo "--enable=use-js-string" code Spec.byte code Spec.js_of_ocaml_js_string;
   compile_jsoo "--disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
