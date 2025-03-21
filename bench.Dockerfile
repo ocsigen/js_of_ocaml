@@ -6,11 +6,11 @@ RUN sudo apt-get update && \
 RUN sudo ln -sf /usr/bin/opam-2.3 /usr/bin/opam
 RUN opam remote add origin https://github.com/ocaml/opam-repository.git && \
     opam update
-RUN wget https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.xz && \
-    tar xJvf node-v22.14.0-linux-x64.tar.xz
+RUN wget -q https://nodejs.org/dist/v22.14.0/node-v22.14.0-linux-x64.tar.xz && \
+    tar xf node-v22.14.0-linux-x64.tar.xz
 ENV PATH="/bench-dir/node-v22.14.0-linux-x64/bin:$PATH"
-RUN wget https://github.com/WebAssembly/binaryen/releases/download/version_122/binaryen-version_122-x86_64-linux.tar.gz && \
-    tar xzvf binaryen-version_122-x86_64-linux.tar.gz
+RUN wget -q https://github.com/WebAssembly/binaryen/releases/download/version_122/binaryen-version_122-x86_64-linux.tar.gz && \
+    tar xf binaryen-version_122-x86_64-linux.tar.gz
 ENV PATH="/bench-dir/binaryen-version_122/bin:$PATH"
 RUN opam install --fake binaryen-bin
 COPY --chown=opam:opam ./*.opam ./
