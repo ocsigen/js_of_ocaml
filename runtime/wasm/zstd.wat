@@ -29,25 +29,31 @@
       (func $zstd_decompress (param (ref extern)) (param (ref extern))))
 
    (type $bytes (array (mut i8)))
-   (type $decompress (func (param (ref $bytes) (ref $bytes))))
+   (type $decompress
+      (func (param (ref $bytes) i32 i32 i32) (result (ref $bytes))))
 
    (global $decompress (export "caml_intern_decompress_input")
       (mut (ref null $decompress))
       (ref.null $decompress))
 
-   (func $decompress (param $input (ref $bytes)) (param $output (ref $bytes))
+   (func $decompress
+      (param $input (ref $bytes)) (param $pos i32) (param $len i32)
+      (param $out_len i32) (result (ref $bytes))
       (local $in_buf (ref extern)) (local $out_buf (ref extern))
-      (local.set $in_buf (call $ta_new (array.len (local.get $input))))
-      (local.set $out_buf (call $ta_new (array.len (local.get $output))))
+      (local $output (ref $bytes))
+      (local.set $in_buf (call $ta_new (local.get $len)))
+      (local.set $out_buf (call $ta_new (local.get $out_len)))
       (call $ta_blit_from_bytes
-         (local.get $input) (i32.const 0)
+         (local.get $input) (local.get $pos)
          (local.get $in_buf) (i32.const 0)
-         (array.len (local.get $input)))
+         (local.get $len))
       (call $zstd_decompress (local.get $in_buf) (local.get $out_buf))
+      (local.set $output (array.new $bytes (i32.const 0) (local.get $out_len)))
       (call $ta_blit_to_bytes
          (local.get $out_buf) (i32.const 0)
          (local.get $output) (i32.const 0)
-         (array.len (local.get $output))))
+         (array.len (local.get $output)))
+      (local.get $output))
 
    (func (export "caml_zstd_initialize") (param (ref eq)) (result (ref eq))
       (global.set $decompress (ref.func $decompress))

@@ -49,6 +49,8 @@
    (import "custom" "caml_find_custom_operations"
       (func $caml_find_custom_operations
          (param (ref $bytes)) (result (ref null $custom_operations))))
+   (import "zstd" "caml_intern_decompress_input"
+      (global $caml_intern_decompress_input (mut (ref null $decompress))))
 
    (@string $input_val_from_string "input_value_from_string")
 
@@ -72,6 +74,8 @@
              (array.len (local.get $str)))
          (then
             (call $bad_length (global.get $input_val_from_string))))
+      (call $decompress_input (local.get $s) (local.get $h)
+         (global.get $input_val_from_string))
       (return_call $intern_rec (local.get $s) (local.get $h)))
 
    (@string $truncated_obj "input_value: truncated object")
@@ -103,6 +107,8 @@
              (local.get $len))
          (then (call $caml_failwith (global.get $truncated_obj))))
       (local.set $s (call $get_intern_state (local.get $buf) (i32.const 0)))
+      (call $decompress_input (local.get $s) (local.get $h)
+         (global.get $input_value))
       (return_call $intern_rec (local.get $s) (local.get $h)))
 
    (type $block (array (mut (ref eq))))
@@ -110,6 +116,9 @@
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
    (type $js (struct (field anyref)))
+
+   (type $decompress
+      (func (param (ref $bytes) i32 i32 i32) (result (ref $bytes))))
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -165,7 +174,7 @@
 
    (type $intern_state
       (struct
-         (field $src (ref $bytes))
+         (field $src (mut (ref $bytes)))
          (field $pos (mut i32))
          (field $obj_table (mut (ref null $block)))
          (field $obj_counter (mut i32))
@@ -428,6 +437,26 @@
          (call $caml_failwith (global.get $expected_size)))
       (call $caml_failwith (global.get $unknown_custom))
       (ref.i31 (i32.const 0)))
+
+   (func $decompress_input
+      (param $s (ref $intern_state)) (param $h (ref $marshal_header))
+      (param $prim (ref eq))
+      (if (i32.eqz (struct.get $marshal_header $compressed (local.get $h)))
+         (then (return)))
+      (block $cannot_decompress
+         (struct.set $intern_state $src (local.get $s)
+            (call_ref $decompress
+               (struct.get $intern_state $src (local.get $s))
+               (struct.get $intern_state $pos (local.get $s))
+               (struct.get $marshal_header $data_len (local.get $h))
+               (struct.get $marshal_header $uncompressed_data_len (local.get $h))
+               (br_on_null $cannot_decompress
+                  (global.get $caml_intern_decompress_input))))
+         (struct.set $intern_state $pos (local.get $s) (i32.const 0))
+         (return))
+      (call $caml_failwith
+         (call $caml_string_concat (local.get $prim)
+            (@string ": compressed object, cannot decompress"))))
 
    (func $intern_rec
       (param $s (ref $intern_state)) (param $h (ref $marshal_header))
