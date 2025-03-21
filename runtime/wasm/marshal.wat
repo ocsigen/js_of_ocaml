@@ -619,10 +619,12 @@
                          (br $done))
                         ))))
             ;; read_shared
-            (local.set $ofs
-               (i32.sub
-                  (struct.get $intern_state $obj_counter (local.get $s))
-                  (local.get $ofs)))
+            (if (i32.eqz (struct.get $marshal_header $compressed (local.get $h)))
+               (then
+                  (local.set $ofs
+                     (i32.sub
+                        (struct.get $intern_state $obj_counter (local.get $s))
+                        (local.get $ofs)))))
             (local.set $v
                (array.get $block
                   (ref.as_non_null
