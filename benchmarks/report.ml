@@ -264,6 +264,18 @@ let output_table =
     stats t;
     f t
 
+let rec transpose (l : (string * 'a list) list) : (string * 'a) list list =
+  match l with
+  | (_, _ :: _) :: _ ->
+      List.map ~f:(fun (label, data) -> label, List.hd data) l
+      :: transpose (List.map ~f:(fun (label, data) -> label, List.tl data) l)
+  | (_, []) :: _ | [] -> []
+
+let geometric_mean l =
+  exp
+    (List.fold_left ~f:( +. ) ~init:0. (List.map l ~f:(fun (_, (v, _)) -> log v))
+    /. float (List.length l))
+
 let current_bench_output
     (ch : out_channel)
     (_no_header : bool)
@@ -273,21 +285,47 @@ let current_bench_output
     (* Filter out blank columns *)
     List.filter_map header ~f:Fun.id
   in
-  let metrics =
-    List.concat_map t ~f:(function test_name, measures ->
-        assert (List.length measures = List.length measure_descs);
-        List.map2 measure_descs measures ~f:(fun desc (m, _confidence_itvl) ->
-            let description =
-              Option.value desc.Measure.description ~default:desc.Measure.name
-            in
-            `Assoc
-              [ "name", `String (String.concat ~sep:" - " [ test_name; description ])
-              ; "value", `Float m
-              ; "units", `String desc.Measure.units
-              ]))
+  let measures = transpose t in
+  assert (List.length measures = List.length measure_descs);
+  let summary =
+    let metrics =
+      List.map2 measure_descs measures ~f:(fun desc measures ->
+          let description =
+            Option.value desc.Measure.description ~default:desc.Measure.name
+          in
+          let mean = geometric_mean measures in
+          `Assoc
+            [ "name", `String description
+            ; "value", `Float mean
+            ; "units", `String desc.Measure.units
+            ])
+    in
+    `Assoc
+      [ "name", `String "Microbenchmarks - summary (geometric means)"
+      ; "metrics", `List metrics
+      ]
   in
-  let results = `Assoc [ "name", `String "Microbenchmarks"; "metrics", `List metrics ] in
-  let json = `Assoc [ "name", `String suite_name; "results", `List [ results ] ] in
+  let results =
+    List.map2 measure_descs measures ~f:(fun desc measures ->
+        let description =
+          Option.value desc.Measure.description ~default:desc.Measure.name
+        in
+        let metrics : Yojson.Basic.t list =
+          List.map measures ~f:(fun (test_name, (m, _confidence_itvl)) ->
+              `Assoc
+                [ "name", `String test_name
+                ; "value", `Float m
+                ; "units", `String desc.Measure.units
+                ])
+        in
+        `Assoc
+          [ "name", `String (String.concat ~sep:" - " [ "Microbenchmarks"; description ])
+          ; "metrics", `List metrics
+          ])
+  in
+  let json =
+    `Assoc [ "name", `String suite_name; "results", `List (summary :: results) ]
+  in
   Yojson.Basic.to_channel ch json
 
 let output ~format conf =
