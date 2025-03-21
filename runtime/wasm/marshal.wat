@@ -67,8 +67,8 @@
          (call $parse_header (local.get $s) (global.get $input_val_from_string)))
       (if (i32.gt_s
              (i32.add (local.get $ofs)
-                (i32.add (struct.get $marshal_header $data_len (local.get $h))
-                   (i32.const 20)))
+                (i32.add (struct.get $marshal_header $header_len (local.get $h))
+                    (struct.get $marshal_header $data_len (local.get $h))))
              (array.len (local.get $str)))
          (then
             (call $bad_length (global.get $input_val_from_string))))
@@ -134,6 +134,8 @@
 
    (global $Intext_magic_number_small i32 (i32.const 0x8495A6BE))
    (global $Intext_magic_number_big i32 (i32.const 0x8495A6BF))
+   (global $Intext_magic_number_compressed i32 (i32.const 0x8495A6BD))
+
 
    (global $PREFIX_SMALL_BLOCK i32 (i32.const 0x80))
    (global $PREFIX_SMALL_INT i32 (i32.const 0x40))
@@ -166,12 +168,14 @@
          (field $src (ref $bytes))
          (field $pos (mut i32))
          (field $obj_table (mut (ref null $block)))
-         (field $obj_counter (mut i32))))
+         (field $obj_counter (mut i32))
+         (field $overflow (mut i32))))
 
    (func $get_intern_state
       (param $src (ref $bytes)) (param $pos i32) (result (ref $intern_state))
       (struct.new $intern_state
-         (local.get $src) (local.get $pos) (ref.null $block) (i32.const 0)))
+         (local.get $src) (local.get $pos) (ref.null $block)
+         (i32.const 0) (i32.const 0)))
 
    (func $read8u (param $s (ref $intern_state)) (result i32)
       (local $pos i32) (local $res i32)
@@ -665,28 +669,71 @@
 
    (type $marshal_header
       (struct
+         (field $header_len i32)
          (field $data_len i32)
-         (field $num_objects i32)))
+         (field $uncompressed_data_len i32)
+         (field $num_objects i32)
+         (field $compressed i32)))
+
+   (func $readvlq (param $s (ref $intern_state)) (result i32)
+      (local $c i32) (local $n i32) (local $n7 i32)
+      (local.set $c (call $read8u (local.get $s)))
+      (local.set $n (i32.and (local.get $c) (i32.const 0x7F)))
+      (loop $loop
+         (if (i32.and (local.get $c) (i32.const 0x80))
+            (then
+               (local.set $c (call $read8u (local.get $s)))
+               (local.set $n7 (i32.shl (local.get $n) (i32.const 7)))
+               (if (i32.ne (local.get $n)
+                      (i32.shr_u (local.get $n7) (i32.const 7)))
+                  (then
+                     (struct.set $intern_state $overflow (local.get $s)
+                        (i32.const 1))))
+               (local.set $n
+                  (i32.or (local.get $n7)
+                     (i32.and (local.get $c) (i32.const 0x7f))))
+               (br $loop))))
+      (local.get $n))
 
    (func $parse_header
       (param $s (ref $intern_state)) (param $prim (ref eq))
       (result (ref $marshal_header))
-      (local $magic i32)
-      (local $data_len i32) (local $num_objects i32) (local $whsize i32)
+      (local $magic i32) (local $header_len i32)
+      (local $data_len i32) (local $uncompressed_data_len i32)
+      (local $num_objects i32) (local $whsize i32) (local $compressed i32)
       (local.set $magic (call $read32 (local.get $s)))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_big))
          (then
             (call $too_large (local.get $prim))))
-      (if (i32.ne (local.get $magic) (global.get $Intext_magic_number_small))
+      (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_small))
          (then
-            (call $bad_object (local.get $prim))))
-      (local.set $data_len (call $read32 (local.get $s)))
-      (local.set $num_objects (call $read32 (local.get $s)))
-      (drop (call $read32 (local.get $s)))
-      (drop (call $read32 (local.get $s)))
+            (local.set $header_len (i32.const 20))
+            (local.set $data_len (call $read32 (local.get $s)))
+            (local.set $uncompressed_data_len (local.get $data_len))
+            (local.set $num_objects (call $read32 (local.get $s)))
+            (drop (call $read32 (local.get $s)))
+            (drop (call $read32 (local.get $s))))
+      (else (if (i32.eq (local.get $magic)
+                   (global.get $Intext_magic_number_compressed))
+         (then
+            (local.set $header_len
+               (i32.and (call $read8u (local.get $s)) (i32.const 0x3F)))
+            (local.set $data_len (call $readvlq (local.get $s)))
+            (local.set $uncompressed_data_len (call $readvlq (local.get $s)))
+            (local.set $num_objects (call $readvlq (local.get $s)))
+            (drop (call $readvlq (local.get $s)))
+            (if (struct.get $intern_state $overflow (local.get $s))
+               (then (call $too_large (local.get $prim))))
+            (drop (call $readvlq (local.get $s)))
+            (local.set $compressed (i32.const 1)))
+         (else
+            (call $bad_object (local.get $prim))))))
       (struct.new $marshal_header
+         (local.get $header_len)
          (local.get $data_len)
-         (local.get $num_objects)))
+         (local.get $uncompressed_data_len)
+         (local.get $num_objects)
+         (local.get $compressed)))
 
    (@string $marshal_data_size "Marshal.data_size")
 
@@ -703,7 +750,7 @@
    (func (export "caml_marshal_data_size")
       (param $buf (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (local $s (ref $intern_state))
-      (local $magic i32)
+      (local $magic i32) (local $header_len i32)
       (local.set $s
          (call $get_intern_state
             (ref.cast (ref $bytes) (local.get $buf))
@@ -711,11 +758,22 @@
       (local.set $magic (call $read32 (local.get $s)))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_big))
          (then (call $too_large (global.get $marshal_data_size))))
-      (if (i32.ne (local.get $magic) (global.get $Intext_magic_number_small))
-         (then (call $bad_object (global.get $marshal_data_size))))
+      (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_small))
+         (then
+            (local.set $header_len (i32.const 20)))
+      (else (if (i32.eq (local.get $magic)
+                   (global.get $Intext_magic_number_compressed))
+         (then
+            (local.set $header_len
+               (i32.and (call $read8u (local.get $s)) (i32.const 0x3F)))
+            (drop (call $readvlq (local.get $s)))
+            (if (struct.get $intern_state $overflow (local.get $s))
+               (then (call $too_large (global.get $marshal_data_size)))))
+         (else
+            (call $bad_object (global.get $marshal_data_size))))))
       (ref.i31
          (i32.add
-            (i32.sub (i32.const 20)
+            (i32.sub (local.get $header_len)
                (global.get $caml_marshal_header_size))
             (call $read32 (local.get $s)))))
 
