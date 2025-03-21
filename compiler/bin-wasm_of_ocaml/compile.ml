@@ -81,6 +81,35 @@ let with_runtime_files ~runtime_wasm_files f =
   in
   Wat_preprocess.with_preprocessed_files ~variables:[] ~inputs f
 
+let build_runtime ~runtime_file =
+  (* Keep this variables in sync with gen/gen.ml *)
+  let variables = [ "use-js-string", Config.Flag.use_js_string () ] in
+  match
+    List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
+        assert (
+          List.length flags = List.length variables
+          && List.for_all2 ~f:(fun (k, _) (k', _) -> String.equal k k') flags variables);
+        Poly.equal flags variables)
+  with
+  | Some (_, contents) -> Fs.write_file ~name:runtime_file ~contents
+  | None ->
+      let inputs =
+        List.map
+          ~f:(fun (module_name, contents) ->
+            { Wat_preprocess.module_name
+            ; file = module_name ^ ".wat"
+            ; source = Contents contents
+            })
+          Runtime_files.wat_files
+      in
+      Runtime.build
+        ~link_options:[ "-g" ]
+        ~opt_options:[ "-g"; "-O2" ]
+        ~variables:
+          (List.map ~f:(fun (k, v) : (_ * Wat_preprocess.value) -> k, Bool v) variables)
+        ~inputs
+        ~output_file:runtime_file
+
 let link_and_optimize
     ~profile
     ~sourcemap_root
@@ -99,7 +128,7 @@ let link_and_optimize
   let enable_source_maps = Option.is_some opt_sourcemap_file in
   Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
   @@ fun runtime_file ->
-  Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+  build_runtime ~runtime_file;
   Fs.with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
   @@ fun temp_file ->
   opt_with
@@ -145,7 +174,7 @@ let link_and_optimize
 
 let link_runtime ~profile runtime_wasm_files output_file =
   if List.is_empty runtime_wasm_files
-  then Fs.write_file ~name:output_file ~contents:Runtime_files.wasm_runtime
+  then build_runtime ~runtime_file:output_file
   else
     Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
     @@ fun extra_runtime ->
@@ -167,7 +196,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
       ();
     Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
     @@ fun runtime_file ->
-    Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+    build_runtime ~runtime_file;
     Binaryen.link
       ~opt_output_sourcemap:None
       ~inputs:
@@ -191,10 +220,10 @@ let generate_prelude ~out_file =
   in
   let context = Generate.start () in
   let debug = Parse_bytecode.Debug.create ~include_cmis:false false in
-  let _ =
+  let _, generated_js =
     Generate.f
       ~context
-      ~unit_name:(Some "prelude")
+      ~unit_name:(Some "wasmoo_prelude")
       ~live_vars:variable_uses
       ~in_cps
       ~deadcode_sentinal
@@ -202,14 +231,14 @@ let generate_prelude ~out_file =
       program
   in
   Generate.output ch ~context;
-  uinfo.provides
+  uinfo.provides, generated_js
 
 let build_prelude z =
   Fs.with_intermediate_file (Filename.temp_file "prelude" ".wasm")
   @@ fun prelude_file ->
   Fs.with_intermediate_file (Filename.temp_file "prelude_file" ".wasm")
   @@ fun tmp_prelude_file ->
-  let predefined_exceptions = generate_prelude ~out_file:prelude_file in
+  let info = generate_prelude ~out_file:prelude_file in
   Binaryen.optimize
     ~profile:(Driver.profile 1)
     ~input_file:prelude_file
@@ -218,7 +247,7 @@ let build_prelude z =
     ~opt_output_sourcemap:None
     ();
   Zip.add_file z ~name:"prelude.wasm" ~file:tmp_prelude_file;
-  predefined_exceptions
+  info
 
 let build_js_runtime ~primitives ?runtime_arguments () =
   let always_required_js, primitives =
@@ -388,12 +417,18 @@ let run
      let z = Zip.open_out tmp_output_file in
      Zip.add_file z ~name:"runtime.wasm" ~file:tmp_wasm_file;
      Zip.add_entry z ~name:"runtime.js" ~contents:js_runtime;
-     let predefined_exceptions = build_prelude z in
+     let predefined_exceptions, (strings, fragments) = build_prelude z in
      Link.add_info
        z
        ~predefined_exceptions
        ~build_info:(Build_info.create `Runtime)
-       ~unit_data:[]
+       ~unit_data:
+         [ { Link.unit_name = "wasmoo_prelude"
+           ; unit_info = Unit_info.empty
+           ; strings
+           ; fragments
+           }
+         ]
        ();
      Zip.close_out z)
    else
