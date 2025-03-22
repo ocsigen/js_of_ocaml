@@ -251,35 +251,9 @@ let rec filter_pattern = function
   | { ppat_attributes; ppat_loc; _ } as p ->
       if keep ppat_loc ppat_attributes then Some p else None
 
-(* TODO: This class is useful while we transition to ppxlib.0.17 that provides the `cases`
-   method. Remove this once we drop support for ppxlib < 0.17 *)
-class map =
-  object (self)
-    inherit Ppxlib.Ast_traverse.map as super
-
-    method cases = self#list self#case [@@ocaml.warning "-7"]
-
-    method expression_desc : expression_desc -> expression_desc =
-      fun x ->
-        match x with
-        | Pexp_function a ->
-            let a = self#cases a in
-            Pexp_function a
-        | Pexp_match (a, b) ->
-            let a = self#expression a in
-            let b = self#cases b in
-            Pexp_match (a, b)
-        | Pexp_try (a, b) ->
-            let a = self#expression a in
-            let b = self#cases b in
-            Pexp_try (a, b)
-        | _ -> super#expression_desc x
-    [@@ocaml.warning "-7"]
-  end
-
 let traverse =
   object
-    inherit map as super
+    inherit Ppxlib.Ast_traverse.map as super
 
     method! structure items =
       let items =
