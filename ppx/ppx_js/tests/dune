@@ -14,6 +14,15 @@
   (run %{exe:main.bc} %{dep:ppx.mlt})))
 
 (rule
+ (targets gen.mlt.corrected)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} 5.3)
+   (< %{ocaml_version} 5.4)))
+ (action
+  (run %{exe:main.bc} %{dep:gen.mlt})))
+
+(rule
  (alias runtest)
  (package js_of_ocaml-ppx)
  (enabled_if
@@ -22,3 +31,13 @@
    (< %{ocaml_version} 5.4)))
  (action
   (diff ppx.mlt ppx.mlt.corrected)))
+
+(rule
+ (alias runtest)
+ (package js_of_ocaml-ppx)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} 5.3)
+   (< %{ocaml_version} 5.4)))
+ (action
+  (diff gen.mlt gen.mlt.corrected)))
