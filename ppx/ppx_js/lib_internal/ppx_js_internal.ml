@@ -236,7 +236,6 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
     let args = List.map ~f:ident arguments in
     body args
   in
-  let annotated_ebody = Exp.constraint_ ebody tfunc_res in
   (* Build the function.
      The last arguments is just used to tie all types together.
      It's unused in the implementation.
@@ -248,16 +247,15 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
         let patt = Pat.var (mknoloc (Arg.name d)) in
         label, patt)
   in
-  let make_fun (label, pat) (label', typ) expr =
-    assert (label' = label);
-    Exp.fun_ label None (Pat.constraint_ pat typ) expr
-  in
-  let invoker =
-    List.fold_right2
+  let args =
+    List.map2
+      ~f:(fun (label, pat) (label', typ) ->
+        assert (label' = label);
+        label, Pat.constraint_ pat typ)
       labels_and_pats
       tfunc_args
-      ~f:make_fun
-      ~init:(make_fun (nolabel, Pat.any ()) (nolabel, twrap) annotated_ebody)
+    @ [ nolabel, Pat.constraint_ (Pat.any ()) twrap ]
+    |> List.map ~f:(fun (l, pat) -> Pparam_val (l, None, pat))
   in
   (* Introduce all local types:
      {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
@@ -265,9 +263,18 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
   let local_types =
     make_str res :: List.map (extra_types @ arguments) ~f:(fun x -> make_str (Arg.name x))
   in
-  let result = List.fold_right local_types ~init:invoker ~f:Exp.newtype in
+  let result = List.map local_types ~f:(fun x -> Pparam_newtype x) in
   default_loc := default_loc';
-  result
+  { pexp_desc =
+      Pexp_function
+        ( List.map (result @ args) ~f:(fun pparam_desc ->
+              { pparam_desc; pparam_loc = Location.none })
+        , Some (Pconstraint tfunc_res)
+        , Pfunction_body ebody )
+  ; pexp_loc = Location.none
+  ; pexp_loc_stack = []
+  ; pexp_attributes = []
+  }
 
 let open_t loc = Js.type_ ~loc "t" [ Typ.object_ ~loc [] Open ]
 
