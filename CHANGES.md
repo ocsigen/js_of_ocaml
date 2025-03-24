@@ -15,6 +15,7 @@
 * Runtime/wasm: support jsoo_env and keep track of backtrace status (#1881)
 * Runtime: less conversion during un-marshalling (#1889)
 * Compiler: improve performance of Javascript linking
+* Runtime/wasm: support unmarshaling compressed data (#1898)
 
 ## Bug fixes
 * Runtime: fix path normalization (#1848)
