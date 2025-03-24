@@ -20,7 +20,7 @@
 (** A minimal table implementation specialized for {!Js.js_string} keys.
     This is faster than regular OCaml hashtables.
 
-    This implementation does not emulate the backtracking behavior of {!Hashtbl}.
+    This implementation does not emulate the backtracking behavior of {!Stdlib.Hashtbl}.
 *)
 
 type 'a t

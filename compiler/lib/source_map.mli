@@ -67,7 +67,7 @@ module Mappings : sig
 
   val of_string_unsafe : string -> t
   (** [of_string_unsafe] does not perform any
-      validation of its argument, unlike {!val:decode}. It is guaranteed that
+      validation of its argument, unlike {!val:decode_exn}. It is guaranteed that
       {!val:of_string_unsafe} and {!val:to_string} are inverse functions.
       Time complexity O(1) *)
 
