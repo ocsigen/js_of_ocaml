@@ -124,7 +124,7 @@ jobs:
       - name: Pin for ppxlib 0.36
         run: |
           opam pin add --no-action https://github.com/hhugo/ppx_inline_test.git#ppxlib36
-          opam pin add --no-action https://github.com/hhugo/ppx_epxect.git#ppxlib36
+          opam pin add --no-action https://github.com/hhugo/ppx_expect.git#ppxlib36
           opam pin add --no-action https://github.com/hhugo/sedlex.git#ppxlib36
 
       # Work-around a race between reinstalling mingw-w64-shims
