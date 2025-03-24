@@ -124,7 +124,7 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: |
           opam install .
-          opam install num cohttp-lwt-unix ppx_expect cstruct uucp
+          opam install num ppx_expect cstruct uucp
 
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
