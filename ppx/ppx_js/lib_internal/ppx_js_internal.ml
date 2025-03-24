@@ -587,6 +587,7 @@ let preprocess_literal_object mappper fields :
           match exp.pexp_desc with
           | Pexp_fun (label, _, _, body) -> Arg.make ~label () :: create_meth_ty body
           | Pexp_function _ -> [ Arg.make () ]
+          | Pexp_newtype (_, body) -> create_meth_ty body
           | _ -> []
         in
         let fun_ty = create_meth_ty body in
