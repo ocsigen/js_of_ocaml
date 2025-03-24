@@ -16,6 +16,7 @@ all: _perf graphsnopr graphspr graphseff _noperf
 bench:
 	$(MAKE) microbenchmarks
 	$(MAKE) -C benchmark-fiat-crypto bench
+	$(MAKE) -C benchmark-ocamlc bench
 
 microbenchmarks:
 	make _noprecomp
