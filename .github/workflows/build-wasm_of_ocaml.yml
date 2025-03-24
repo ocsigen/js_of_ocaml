@@ -99,7 +99,7 @@ jobs:
 
       - name: Pin dune
         if: runner.os == 'Windows'
-        run: opam pin add -n dune https://github.com/hhugo/dune.git#shorter-path-jsoo
+        run: opam pin add --no-action dune https://github.com/OlivierNicole/dune.git#jsoo-effects
 
       - name: Pin for ppxlib 0.36
         run: |
