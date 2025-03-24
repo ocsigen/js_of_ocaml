@@ -351,24 +351,9 @@ let o () =
   end
 
 [%%expect {|
-let o () =
-  (fun (type res) ->
-     fun (type t24) ->
-       fun (type t25) ->
-         fun (t25 : res Js_of_ocaml.Js.t -> t24 -> t25)
-           (_ :
-             res Js_of_ocaml.Js.t ->
-               (res Js_of_ocaml.Js.t -> t24 -> t25 Js_of_ocaml.Js.meth) ->
-                 res)
-           : res Js_of_ocaml.Js.t->
-           Js_of_ocaml.Js.Unsafe.obj
-             [|("m1",
-                 (Js_of_ocaml.Js.Unsafe.inject
-                    (Js_of_ocaml.Js.wrap_meth_callback t25)))|])
-    (fun _ a -> ignore a) ((fun self m1 -> object method m1 = m1 self end)
-    [@merlin.hide ]);;
-val o : unit -> < m1 : 't24 -> unit Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
-  <fun>
+let o () = [%ocaml.error "Polymorphic method not supported."];;
+Line _, characters 4-50:
+Error: Polymorphic method not supported.
 |}]
 
 let o () =
@@ -377,22 +362,63 @@ let o () =
   end
 
 [%%expect {|
+let o () = [%ocaml.error "Polymorphic method not supported."];;
+Line _, characters 4-65:
+Error: Polymorphic method not supported.
+|}]
+
+
+let o () =
+  object%js
+    method m1 : 'a  -> unit = fun (type a) (a : a) -> ignore a
+    method m2 : int -> unit = fun (type a) (a : a) -> ignore a
+    method m3 : 'b -> unit = fun (a : 'b) -> ignore a
+  end
+
+[%%expect {|
 let o () =
   (fun (type res) ->
      fun (type t26) ->
        fun (type t27) ->
-         fun (t27 : res Js_of_ocaml.Js.t -> t26 -> t27)
-           (_ :
-             res Js_of_ocaml.Js.t ->
-               (res Js_of_ocaml.Js.t -> t26 -> t27 Js_of_ocaml.Js.meth) ->
-                 res)
-           : res Js_of_ocaml.Js.t->
-           Js_of_ocaml.Js.Unsafe.obj
-             [|("m1",
-                 (Js_of_ocaml.Js.Unsafe.inject
-                    (Js_of_ocaml.Js.wrap_meth_callback t27)))|])
-    (fun _ (type a) (a : a) -> ignore a)
-    ((fun self m1 -> object method m1 = m1 self end)[@merlin.hide ]);;
-val o : unit -> < m1 : 't26 -> unit Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
-  <fun>
+         fun (type t28) ->
+           fun (type t29) ->
+             fun (type t30) ->
+               fun (type t31) ->
+                 fun (t29 : res Js_of_ocaml.Js.t -> t26 -> t29)
+                   (t30 : res Js_of_ocaml.Js.t -> t27 -> t30)
+                   (t31 : res Js_of_ocaml.Js.t -> t28 -> t31)
+                   (_ :
+                     res Js_of_ocaml.Js.t ->
+                       (res Js_of_ocaml.Js.t ->
+                          t26 -> t29 Js_of_ocaml.Js.meth)
+                         ->
+                         (res Js_of_ocaml.Js.t ->
+                            t27 -> t30 Js_of_ocaml.Js.meth)
+                           ->
+                           (res Js_of_ocaml.Js.t ->
+                              t28 -> t31 Js_of_ocaml.Js.meth)
+                             -> res)
+                   : res Js_of_ocaml.Js.t->
+                   Js_of_ocaml.Js.Unsafe.obj
+                     [|("m1",
+                         (Js_of_ocaml.Js.Unsafe.inject
+                            (Js_of_ocaml.Js.wrap_meth_callback t29)));
+                       ("m2",
+                         (Js_of_ocaml.Js.Unsafe.inject
+                            (Js_of_ocaml.Js.wrap_meth_callback t30)));
+                       ("m3",
+                         (Js_of_ocaml.Js.Unsafe.inject
+                            (Js_of_ocaml.Js.wrap_meth_callback t31)))|])
+    (fun _ : 'a -> unit-> fun (type a) -> fun (a : a) -> ignore a)
+    (fun _ : int -> unit-> fun (type a) -> fun (a : a) -> ignore a)
+    (fun _ : 'b -> unit-> fun (a : 'b) -> ignore a)
+    ((fun self m1 m2 m3 ->
+        object method m1 = m1 self method m2 = m2 self method m3 = m3 self
+        end)[@merlin.hide ]);;
+val o :
+  unit ->
+  < m1 : 't26 -> unit Js_of_ocaml.Js.meth;
+    m2 : int -> unit Js_of_ocaml.Js.meth;
+    m3 : 't28 -> unit Js_of_ocaml.Js.meth >
+  Js_of_ocaml.Js.t = <fun>
 |}]

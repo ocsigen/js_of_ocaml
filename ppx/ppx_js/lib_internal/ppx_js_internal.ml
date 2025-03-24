@@ -465,12 +465,10 @@ let new_object constr args =
 
 module S = Map.Make (String)
 
-(** We remove Pexp_poly as it should never be in the parsetree except after a method call.
-*)
-let format_meth body =
+let drop_pexp_poly body =
   match body.pexp_desc with
-  | Pexp_poly (e, _) -> e
-  | _ -> body
+  | Pexp_poly (e, ty) -> e, ty
+  | _ -> body, None
 
 (** Ensure basic sanity rules about fields of a literal object:
     - No duplicated declaration
@@ -582,7 +580,7 @@ let preprocess_literal_object mappper fields :
         names, Val (id, kind, bang, body) :: fields
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
         let names = check_name id names in
-        let body = format_meth (mappper body) in
+        let body, body_ty = drop_pexp_poly (mappper body) in
         let rec create_meth_ty exp =
           match exp.pexp_desc with
           | Pexp_fun (label, _, _, body) -> Arg.make ~label () :: create_meth_ty body
@@ -591,6 +589,13 @@ let preprocess_literal_object mappper fields :
           | _ -> []
         in
         let fun_ty = create_meth_ty body in
+        let body =
+          match body_ty with
+          | None -> body
+          | Some { ptyp_desc = Ptyp_poly _; _ } ->
+              raise_errorf ~loc:exp.pcf_loc "Polymorphic method not supported."
+          | Some ty -> Exp.constraint_ body ty
+        in
         names, Meth (id, priv, bang, body, fun_ty) :: fields
     | _ ->
         raise_errorf
