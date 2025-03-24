@@ -290,20 +290,24 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t18) ->
-       fun (t18 : res Js_of_ocaml.Js.t -> t18)
-         (_ :
-           res Js_of_ocaml.Js.t ->
-             (res Js_of_ocaml.Js.t -> t18 Js_of_ocaml.Js.meth) -> res)
-         : res Js_of_ocaml.Js.t->
-         Js_of_ocaml.Js.Unsafe.obj
-           [|("m1",
-               (Js_of_ocaml.Js.Unsafe.inject
-                  (Js_of_ocaml.Js.wrap_meth_callback t18)))|])
+     fun (type t19) ->
+       fun (type t18) ->
+         fun (type t20) ->
+           fun (t20 : res Js_of_ocaml.Js.t -> t19 -> t18 -> t20)
+             (_ :
+               res Js_of_ocaml.Js.t ->
+                 (res Js_of_ocaml.Js.t ->
+                    t19 -> t18 -> t20 Js_of_ocaml.Js.meth)
+                   -> res)
+             : res Js_of_ocaml.Js.t->
+             Js_of_ocaml.Js.Unsafe.obj
+               [|("m1",
+                   (Js_of_ocaml.Js.Unsafe.inject
+                      (Js_of_ocaml.Js.wrap_meth_callback t20)))|])
     (fun _ (type b) a -> function | 0 -> a | b -> a + b)
     ((fun self m1 -> object method m1 = m1 self end)[@merlin.hide ]);;
 val o :
-  unit -> < m1 : (int -> int -> int) Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
+  unit -> < m1 : int -> int -> int Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
   <fun>
 |}]
 
@@ -319,22 +323,24 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t19) ->
-       fun (type t20) ->
-         fun (t20 : res Js_of_ocaml.Js.t -> t19 -> t20)
-           (_ :
-             res Js_of_ocaml.Js.t ->
-               (res Js_of_ocaml.Js.t -> t19 -> t20 Js_of_ocaml.Js.meth) ->
-                 res)
-           : res Js_of_ocaml.Js.t->
-           Js_of_ocaml.Js.Unsafe.obj
-             [|("m1",
-                 (Js_of_ocaml.Js.Unsafe.inject
-                    (Js_of_ocaml.Js.wrap_meth_callback t20)))|])
+     fun (type t22) ->
+       fun (type t21) ->
+         fun (type t23) ->
+           fun (t23 : res Js_of_ocaml.Js.t -> t22 -> t21 -> t23)
+             (_ :
+               res Js_of_ocaml.Js.t ->
+                 (res Js_of_ocaml.Js.t ->
+                    t22 -> t21 -> t23 Js_of_ocaml.Js.meth)
+                   -> res)
+             : res Js_of_ocaml.Js.t->
+             Js_of_ocaml.Js.Unsafe.obj
+               [|("m1",
+                   (Js_of_ocaml.Js.Unsafe.inject
+                      (Js_of_ocaml.Js.wrap_meth_callback t23)))|])
     (fun _ a (type b) -> function | 0 -> a | b -> a + b)
     ((fun self m1 -> object method m1 = m1 self end)[@merlin.hide ]);;
 val o :
-  unit -> < m1 : int -> (int -> int) Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
+  unit -> < m1 : int -> int -> int Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
   <fun>
 |}]
 
@@ -347,21 +353,21 @@ let o () =
 [%%expect {|
 let o () =
   (fun (type res) ->
-     fun (type t21) ->
-       fun (type t22) ->
-         fun (t22 : res Js_of_ocaml.Js.t -> t21 -> t22)
+     fun (type t24) ->
+       fun (type t25) ->
+         fun (t25 : res Js_of_ocaml.Js.t -> t24 -> t25)
            (_ :
              res Js_of_ocaml.Js.t ->
-               (res Js_of_ocaml.Js.t -> t21 -> t22 Js_of_ocaml.Js.meth) ->
+               (res Js_of_ocaml.Js.t -> t24 -> t25 Js_of_ocaml.Js.meth) ->
                  res)
            : res Js_of_ocaml.Js.t->
            Js_of_ocaml.Js.Unsafe.obj
              [|("m1",
                  (Js_of_ocaml.Js.Unsafe.inject
-                    (Js_of_ocaml.Js.wrap_meth_callback t22)))|])
+                    (Js_of_ocaml.Js.wrap_meth_callback t25)))|])
     (fun _ a -> ignore a) ((fun self m1 -> object method m1 = m1 self end)
     [@merlin.hide ]);;
-val o : unit -> < m1 : 't21 -> unit Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
+val o : unit -> < m1 : 't24 -> unit Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
   <fun>
 |}]
 
@@ -373,18 +379,20 @@ let o () =
 [%%expect {|
 let o () =
   (fun (type res) ->
-     fun (type t23) ->
-       fun (t23 : res Js_of_ocaml.Js.t -> t23)
-         (_ :
-           res Js_of_ocaml.Js.t ->
-             (res Js_of_ocaml.Js.t -> t23 Js_of_ocaml.Js.meth) -> res)
-         : res Js_of_ocaml.Js.t->
-         Js_of_ocaml.Js.Unsafe.obj
-           [|("m1",
-               (Js_of_ocaml.Js.Unsafe.inject
-                  (Js_of_ocaml.Js.wrap_meth_callback t23)))|])
+     fun (type t26) ->
+       fun (type t27) ->
+         fun (t27 : res Js_of_ocaml.Js.t -> t26 -> t27)
+           (_ :
+             res Js_of_ocaml.Js.t ->
+               (res Js_of_ocaml.Js.t -> t26 -> t27 Js_of_ocaml.Js.meth) ->
+                 res)
+           : res Js_of_ocaml.Js.t->
+           Js_of_ocaml.Js.Unsafe.obj
+             [|("m1",
+                 (Js_of_ocaml.Js.Unsafe.inject
+                    (Js_of_ocaml.Js.wrap_meth_callback t27)))|])
     (fun _ (type a) (a : a) -> ignore a)
     ((fun self m1 -> object method m1 = m1 self end)[@merlin.hide ]);;
-val o : unit -> < m1 : ('a -> unit) Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
+val o : unit -> < m1 : 't26 -> unit Js_of_ocaml.Js.meth > Js_of_ocaml.Js.t =
   <fun>
 |}]
