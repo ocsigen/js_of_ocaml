@@ -28,4 +28,17 @@ let%expect_test _ =
     else String.make 10000 'c'
   in
   Printf.printf "%s ... (%d)\n" (String.sub s 0 20) (String.length s);
+  [%expect {| cccccccccccccccccccc ... (10000) |}];
+  let tmp = Filename.temp_file "a" "txt" in
+  let ch = open_out tmp in
+  output_string ch data;
+  close_out ch;
+  let ch = open_in tmp in
+  let s =
+    if Compression.compression_supported
+    then Marshal.from_channel ch
+    else String.make 10000 'c'
+  in
+  close_in ch;
+  Printf.printf "%s ... (%d)\n" (String.sub s 0 20) (String.length s);
   [%expect {| cccccccccccccccccccc ... (10000) |}]
