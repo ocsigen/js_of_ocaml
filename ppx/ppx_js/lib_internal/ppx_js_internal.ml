@@ -656,8 +656,23 @@ let literal_object self_id (fields : field_desc list) =
   in
   let body = function
     | Val (_, _, _, body) -> body
-    | Meth (_, _, _, body, _) ->
-        Exp.fun_ ~loc:{ body.pexp_loc with loc_ghost = true } Nolabel None self_id body
+    | Meth (_, _, _, body, _) -> (
+        match body.pexp_desc with
+        | Pexp_function (params, c, b) ->
+            let params =
+              { pparam_desc = Pparam_val (nolabel, None, self_id)
+              ; pparam_loc = { body.pexp_loc with loc_ghost = true }
+              }
+              :: params
+            in
+            { body with pexp_desc = Pexp_function (params, c, b) }
+        | _ ->
+            Exp.fun_
+              ~loc:{ body.pexp_loc with loc_ghost = true }
+              Nolabel
+              None
+              self_id
+              body)
   in
   let extra_types =
     List.concat
@@ -741,13 +756,20 @@ let literal_object self_id (fields : field_desc list) =
     invoker
     (List.map fields ~f:(fun f -> app_arg (body f))
     @ [ app_arg
-          { (List.fold_right
-               (self :: List.map fields ~f:(fun f -> (name f).txt))
-               ~init:fake_object
-               ~f:(fun name fun_ ->
-                 Exp.fun_ ~loc:gloc nolabel None (Pat.var ~loc:gloc (mknoloc name)) fun_))
-            with
-            pexp_attributes = [ merlin_hide ]
+          { pexp_desc =
+              Pexp_function
+                ( List.map
+                    (self :: List.map fields ~f:(fun f -> (name f).txt))
+                    ~f:(fun name ->
+                      { pparam_desc =
+                          Pparam_val (nolabel, None, Pat.var ~loc:gloc (mknoloc name))
+                      ; pparam_loc = gloc
+                      })
+                , None
+                , Pfunction_body fake_object )
+          ; pexp_loc_stack = []
+          ; pexp_loc = gloc
+          ; pexp_attributes = [ merlin_hide ]
           }
       ])
 
