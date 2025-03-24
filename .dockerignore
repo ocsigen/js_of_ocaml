@@ -1,0 +1,6 @@
+bench.Dockerfile
+_build
+.git
+compiler/tests-*
+manual
+examples
