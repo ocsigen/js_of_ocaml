@@ -102,7 +102,6 @@ jobs:
         run: opam pin add -n dune https://github.com/hhugo/dune.git#shorter-path-jsoo
 
       - name: Pin for ppxlib 0.36
-        if: ${{ matrix.ocaml-compiler >= 5.1 }}
         run: |
           opam pin add --no-action https://github.com/hhugo/ppx_inline_test.git#ppxlib36
           opam pin add --no-action https://github.com/hhugo/ppx_expect.git#ppxlib36
