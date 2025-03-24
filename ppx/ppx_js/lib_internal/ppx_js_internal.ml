@@ -588,13 +588,19 @@ let preprocess_literal_object mappper fields :
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
         let names = check_name id names in
         let body, body_ty = drop_pexp_poly (mappper body) in
-        let create_meth_ty exp =
+        let rec create_meth_ty exp =
           match exp.pexp_desc with
-          | Pexp_function (params, _, _) ->
+          | Pexp_function (params, _, body) -> (
               List.filter_map params ~f:(function
                 | { pparam_desc = Pparam_newtype _; _ } -> None
                 | { pparam_desc = Pparam_val (label, _, _arg); _ } ->
                     Some (Arg.make ~label ()))
+              @
+              match body with
+              | Pfunction_cases _ -> [ Arg.make () ]
+              | Pfunction_body e ->
+                  (* TODO: should we recurse or not ? *)
+                  create_meth_ty e)
           | _ -> []
         in
         let fun_ty = create_meth_ty body in
