@@ -624,30 +624,12 @@ let cps_block ~st ~k ~orig_pc block =
       Some
         (fun ~k ->
           let e =
-            match Config.target () with
-            | `JavaScript -> (
-                match continuation_and_tail with
-                | None -> Prim (Extern "caml_perform_effect", [ Pv effect_; Pv k ])
-                | Some (continuation, tail) ->
-                    Prim
-                      ( Extern "caml_reperform_effect"
-                      , [ Pv effect_; continuation; tail; Pv k ] ))
-            | `Wasm -> (
-                (* temporary until we finish the change to the wasmoo
-                   runtime *)
-                match continuation_and_tail with
-                | None ->
-                    Prim
-                      ( Extern "caml_perform_effect"
-                      , [ Pv effect_
-                        ; Pc (Int Targetint.zero)
-                        ; Pc (Int Targetint.zero)
-                        ; Pv k
-                        ] )
-                | Some (continuation, tail) ->
-                    Prim
-                      ( Extern "caml_perform_effect"
-                      , [ Pv effect_; continuation; tail; Pv k ] ))
+            match continuation_and_tail with
+            | None -> Prim (Extern "caml_perform_effect", [ Pv effect_; Pv k ])
+            | Some (continuation, tail) ->
+                Prim
+                  ( Extern "caml_reperform_effect"
+                  , [ Pv effect_; continuation; tail; Pv k ] )
           in
           let x = Var.fresh () in
           [ Let (x, e) ], Return x)
