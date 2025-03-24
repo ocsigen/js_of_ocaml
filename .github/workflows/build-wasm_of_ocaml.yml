@@ -121,8 +121,7 @@ jobs:
       - name: Pin Jane Street packages
         if: ${{ ! matrix.jane_street_tests }}
         run: |
-          opam pin add -n base.v0.16.1 https://github.com/ocaml-wasm/base.git#wasm
-          opam pin add -n time_now.v0.16.1 https://github.com/ocaml-wasm/time_now.git#wasm
+          opam pin add -n base https://github.com/ocaml-wasm/base.git#wasm
 
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
