@@ -64,7 +64,7 @@ val decode_exn :
     [padding] character. If input is not padded correctly, decoder does the
     best-effort but it does not ensure [decode_exn (encode ~pad:false x) = x].
 
-    @raise if Invalid_argument [s] is not a valid Base64 string. *)
+    @raise Stdlib.Invalid_argument if [s] is not a valid Base64 string. *)
 
 val decode_sub :
      ?pad:bool

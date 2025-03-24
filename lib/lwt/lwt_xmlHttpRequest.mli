@@ -126,7 +126,7 @@ val perform :
   -> Url.url
   -> http_frame Lwt.t
 (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
-      {!Url.url}. *)
+      {!Js_of_ocaml.Url.url}. *)
 
 val get : string -> http_frame Lwt.t
 (** [get url] makes an asynchronous request to the specified [url] *)

@@ -81,9 +81,9 @@ type float32Array = (number_t, float, Bigarray.float32_elt) typedArray
 type float64Array = (number_t, float, Bigarray.float64_elt) typedArray
 
 (** The first type parameter is the type of values that can be read and written
-    in the {!classtype:typedArray}. The last two type parameters define the
+    in the {!class-type:typedArray}. The last two type parameters define the
     kind of bigarrays that can be converted to and from the
-    {!classtype:typedArray}. See {!type:Bigarray.kind}. *)
+    {!class-type:typedArray}. See {!Stdlib.Bigarray.kind}. *)
 type (_, _, _) kind =
   | Int8_signed : (int, int, Bigarray.int8_signed_elt) kind
   | Int8_unsigned : (int, int, Bigarray.int8_unsigned_elt) kind
