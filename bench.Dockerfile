@@ -2,7 +2,8 @@ FROM ocaml/opam:debian-ocaml-5.3
 WORKDIR /bench-dir
 
 RUN sudo apt-get update \
- && sudo apt-get install -qq -yy --no-install-recommends pkg-config libgmp-dev
+ && sudo apt-get install -qq -yy --no-install-recommends \
+      pkg-config libgmp-dev jq time
 
 RUN sudo ln -sf /usr/bin/opam-2.3 /usr/bin/opam
 RUN opam remote add origin https://github.com/ocaml/opam-repository.git \
