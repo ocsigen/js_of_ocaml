@@ -335,6 +335,7 @@ let () =
   pin_packages ();
   install_others others;
   sync_exec (fun () -> clone "ocaml-uri" "https://github.com/mirage/ocaml-uri") [ () ];
+  sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
       let branch = if is_forked nm then Some "wasm-v0.18" else None in
