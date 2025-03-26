@@ -101,6 +101,9 @@ jobs:
         if: runner.os == 'Windows'
         run: opam pin add -n dune https://github.com/hhugo/dune.git#shorter-path-jsoo
 
+      - name: Install dune
+        run: opam install dune
+
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
         run: opam pin . -n --with-version dev
@@ -109,7 +112,7 @@ jobs:
         if: matrix.jane_street_tests
         run: |
           opam repo add js janestreet/opam-repository
-          opam install opam-format ocamlfind dune graphics cmdliner
+          opam install opam-format
           opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe
 
       - name: Pin Jane Street packages
@@ -123,8 +126,7 @@ jobs:
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
         run: |
-          opam install .
-          opam install num ppx_expect cstruct uucp
+          opam install . -t
 
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
