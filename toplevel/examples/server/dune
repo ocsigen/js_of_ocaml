@@ -1,3 +1,4 @@
 (executables
  (names server)
+ (enabled_if false)
  (libraries findlib cohttp-lwt-unix))
