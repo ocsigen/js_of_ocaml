@@ -61,6 +61,8 @@ module type S = sig
 
     val float_array_set : expression -> expression -> expression -> unit Code_generation.t
 
+    val check_is_float_array : expression -> expression
+
     val gen_array_get : expression -> expression -> expression
 
     val gen_array_set : expression -> expression -> expression -> unit Code_generation.t

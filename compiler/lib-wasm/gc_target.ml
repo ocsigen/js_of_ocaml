@@ -687,6 +687,10 @@ module Memory = struct
 
   let tag e = wasm_array_get e (Arith.const 0l)
 
+  let check_is_float_array e =
+    let* float_array = Type.float_array_type in
+    Value.ref_test (Value.ref float_array) e
+
   let array_length e =
     let* block = Type.block_type in
     let* e = wasm_cast block e in

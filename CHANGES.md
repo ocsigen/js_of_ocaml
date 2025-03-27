@@ -31,6 +31,7 @@
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
 * Compiler: fix path rewriting of Wasm source maps (#1882)
 * Tools: fix jsoo_mktop and jsoo_mkcmis (#1877)
+* Compiler/wasm: fix bound check for empty float array (#1904)
 
 # 6.0.1 (2025-02-07) - Lille
 
