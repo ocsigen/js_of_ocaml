@@ -34,6 +34,7 @@ https://github.com/llvm/llvm-project/issues/58438
 type constant_global =
   { init : W.expression option
   ; constant : bool
+  ; typ : W.value_type
   }
 
 type context =
@@ -206,6 +207,7 @@ let register_global name ?exported_name ?(constant = false) typ init st =
       name
       { init = (if not typ.mut then Some init else None)
       ; constant = (not typ.mut) || constant
+      ; typ = typ.typ
       }
       st.context.constant_globals;
   (), st
@@ -521,7 +523,6 @@ and expression_type (e : W.expression) st =
   | I64ExtendI32 _
   | F32DemoteF64 _
   | F64PromoteF32 _
-  | GlobalGet _
   | BlockExpr _
   | Call _
   | RefFunc _
@@ -535,6 +536,9 @@ and expression_type (e : W.expression) st =
   | Try _
   | Br_on_null _ -> None, st
   | LocalGet x | LocalTee (x, _) -> variable_type x st
+  | GlobalGet x ->
+      let typ = (Var.Map.find x st.context.constant_globals).typ in
+      (if Poly.equal typ st.context.value_type then None else Some typ), st
   | Seq (_, e') -> expression_type e' st
   | Pop typ -> Some typ, st
   | RefI31 _ -> Some (Ref { nullable = false; typ = I31 }), st
@@ -624,21 +628,29 @@ let rec store ?(always = false) ?typ x e =
         let* b = should_make_global x in
         if b
         then
-          let* typ =
-            match typ with
-            | Some typ -> return typ
-            | None -> value_type
-          in
           let* () =
             let* b = global_is_registered x in
             if b
             then return ()
             else
-              register_global
-                ~constant:true
-                x
-                { mut = true; typ }
-                (W.RefI31 (Const (I32 0l)))
+              let* typ =
+                match typ with
+                | Some typ -> return typ
+                | None -> (
+                    let* typ = expression_type e in
+                    match typ with
+                    | None -> value_type
+                    | Some typ -> return typ)
+              in
+              let* default, typ', cast = default_value typ in
+              let* () =
+                register_constant
+                  x
+                  (match cast with
+                  | Some typ -> W.RefCast (typ, W.GlobalGet x)
+                  | None -> W.GlobalGet x)
+              in
+              register_global ~constant:true x { mut = true; typ = typ' } default
           in
           let* () = register_constant x (W.GlobalGet x) in
           instr (GlobalSet (x, e))

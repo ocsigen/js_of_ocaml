@@ -1050,13 +1050,15 @@ module Constant = struct
         if b then return c else store_in_global c
     | Const_named name -> store_in_global ~name c
     | Mutated ->
+        let* typ = Type.string_type in
         let name = Code.Var.fresh_n "const" in
+        let* placeholder = array_placeholder typ in
         let* () =
           register_global
             ~constant:true
             name
-            { mut = true; typ = Type.value }
-            (W.RefI31 (Const (I32 0l)))
+            { mut = true; typ = Ref { nullable = false; typ = Type typ } }
+            placeholder
         in
         let* () = register_init_code (instr (W.GlobalSet (name, c))) in
         return (W.GlobalGet name)
