@@ -22,6 +22,7 @@ open Code
 type closure =
   { functions : (Var.t * int) list
   ; free_variables : Var.t list
+  ; mutable id : int option
   }
 
 module SCC = Strongly_connected_components.Make (Var)
@@ -144,7 +145,8 @@ let rec traverse var_depth closures program pc depth =
                   in
                   List.iter
                     ~f:(fun (f, _) ->
-                      closures := Var.Map.add f { functions; free_variables } !closures)
+                      closures :=
+                        Var.Map.add f { functions; free_variables; id = None } !closures)
                     functions;
                   fun_lst)
                 components
