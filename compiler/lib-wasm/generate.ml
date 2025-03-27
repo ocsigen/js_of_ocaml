@@ -1303,7 +1303,7 @@ module Generate (Target : Target_sig.S) = struct
            | Some loc -> event loc
            | None -> return ())
     in
-    let body = post_process_function_body ~param_names ~locals body in
+    let locals, body = post_process_function_body ~param_names ~locals body in
     W.Function
       { name =
           (match name_opt with

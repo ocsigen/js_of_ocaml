@@ -280,7 +280,7 @@ module type S = sig
        param_names:Wasm_ast.var list
     -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
     -> Wasm_ast.instruction list
-    -> Wasm_ast.instruction list
+    -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
 
   val entry_point :
        toplevel_fun:Wasm_ast.var
