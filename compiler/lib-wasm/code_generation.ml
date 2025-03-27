@@ -537,8 +537,11 @@ and expression_type (e : W.expression) st =
   | Br_on_null _ -> None, st
   | LocalGet x | LocalTee (x, _) -> variable_type x st
   | GlobalGet x ->
-      let typ = (Var.Map.find x st.context.constant_globals).typ in
-      (if Poly.equal typ st.context.value_type then None else Some typ), st
+      ( (try
+           let typ = (Var.Map.find x st.context.constant_globals).typ in
+           if Poly.equal typ st.context.value_type then None else Some typ
+         with Not_found -> None)
+      , st )
   | Seq (_, e') -> expression_type e' st
   | Pop typ -> Some typ, st
   | RefI31 _ -> Some (Ref { nullable = false; typ = I31 }), st
