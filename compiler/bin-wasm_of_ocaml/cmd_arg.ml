@@ -63,7 +63,7 @@ type t =
   ; effects : Config.effects_backend
   }
 
-let options =
+let options () =
   let runtime_files =
     let doc = "Link JavaScript and WebAssembly files [$(docv)]. " in
     Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"RUNTIME_FILES" ~doc)
@@ -189,7 +189,7 @@ let options =
   in
   Term.ret t
 
-let options_runtime_only =
+let options_runtime_only () =
   let runtime_files =
     let doc = "Link JavaScript and WebAssembly files [$(docv)]. " in
     Arg.(value & pos_all string [] & info [] ~docv:"RUNTIME_FILES" ~doc)
