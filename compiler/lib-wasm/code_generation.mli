@@ -30,6 +30,7 @@ type context =
   ; types : Wasm_ast.type_field Code.Var.Hashtbl.t
   ; mutable closure_envs : Code.Var.t Code.Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
+  ; closure_types : (Wasm_ast.value_type option list, int) Hashtbl.t
   ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable cps_apply_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable curry_funs : Code.Var.t Stdlib.IntMap.t
@@ -60,7 +61,7 @@ val instr : Wasm_ast.instruction -> unit t
 
 val seq : unit t -> expression -> expression
 
-val expression_list : ('a -> expression) -> 'a list -> Wasm_ast.expression list t
+val expression_list : ('a -> 'b t) -> 'a list -> 'b list t
 
 module Arith : sig
   val const : int32 -> expression
@@ -203,6 +204,8 @@ val function_body :
   -> param_names:Code.Var.t list
   -> body:unit t
   -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
+
+val variable_type : Code.Var.t -> Wasm_ast.value_type option t
 
 val array_placeholder : Code.Var.t -> expression
 
