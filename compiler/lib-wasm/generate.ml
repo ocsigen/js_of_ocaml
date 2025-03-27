@@ -920,6 +920,8 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> Structure.is_merge_node g pc'
       in
       let code ~context =
+        let block = Addr.Map.find pc ctx.blocks in
+        let* () = translate_instrs ctx context block.body in
         translate_node_within
           ~result_typ
           ~fall_through
@@ -964,7 +966,6 @@ module Generate (Target : Target_sig.S) = struct
           translate_tree result_typ fall_through pc' context
       | [] -> (
           let block = Addr.Map.find pc ctx.blocks in
-          let* () = translate_instrs ctx context block.body in
           let branch = block.branch in
           match branch with
           | Branch cont -> translate_branch result_typ fall_through pc cont context
