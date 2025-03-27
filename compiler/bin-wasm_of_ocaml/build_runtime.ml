@@ -25,5 +25,5 @@ let info =
     ~description:"Wasm_of_ocaml is a compiler from OCaml bytecode to WebAssembly."
 
 let command =
-  let t = Cmdliner.Term.(const Compile.run $ Cmd_arg.options_runtime_only) in
+  let t = Cmdliner.Term.(const Compile.run $ Cmd_arg.options_runtime_only ()) in
   Cmdliner.Cmd.v info t

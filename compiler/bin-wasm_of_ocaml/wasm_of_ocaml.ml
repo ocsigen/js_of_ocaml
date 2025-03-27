@@ -48,7 +48,7 @@ let () =
         (Cmdliner.Cmd.group
            ~default:Compile.term
            (Compile.info "wasm_of_ocaml")
-           [ Link.command
+           [ Link.command ()
            ; Build_runtime.command
            ; Compile.command
            ; Preprocess.command
