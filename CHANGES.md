@@ -44,6 +44,7 @@
 * Compiler: rewrote inlining pass (#1935, #2018, #2027)
 * Compiler/wasm: optimize integer operations (#2032)
 * Compiler/wasm: use type analysis to remove some unnecessary uses of JavasScript strict equality (#2040)
+* Compiler/wasm: use more precise environment types (#2041)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
