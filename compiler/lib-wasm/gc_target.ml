@@ -1045,13 +1045,15 @@ module Constant = struct
         if b then return c else store_in_global c
     | Const_named name -> store_in_global ~name c
     | Mutated ->
+        let* typ = Type.string_type in
         let name = Code.Var.fresh_n "const" in
+        let* placeholder = array_placeholder typ in
         let* () =
           register_global
             ~constant:true
             name
-            { mut = true; typ = Type.value }
-            (W.RefI31 (Const (I32 0l)))
+            { mut = true; typ = Ref { nullable = false; typ = Type typ } }
+            placeholder
         in
         let* () = register_init_code (instr (W.GlobalSet (name, c))) in
         return (W.GlobalGet name)
@@ -1111,6 +1113,7 @@ module Closure = struct
           id
       in
       info.id <- Some env_type_id;
+      (*
       Format.eprintf
         "%a@."
         (Format.pp_print_list
@@ -1132,6 +1135,7 @@ module Closure = struct
                            "%s"
                            (Option.value ~default:"???" (Code.Var.get_name v))))))
         env_type;
+*)
       match info.Closure_conversion.functions with
       | [] -> assert false
       | [ _ ] ->
