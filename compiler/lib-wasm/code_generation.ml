@@ -558,6 +558,11 @@ let tee ?typ x e =
     let* () = register_constant x e in
     return e
   else
+    let* typ =
+      match typ with
+      | Some _ -> return typ
+      | None -> expression_type e
+    in
     let* i = add_var ?typ x in
     return (W.LocalTee (i, e))
 
@@ -628,7 +633,14 @@ let rec store ?(always = false) ?typ x e =
               let* typ =
                 match typ with
                 | Some typ -> return typ
-                | None -> value_type
+                | None -> (
+                    if always
+                    then value_type
+                    else
+                      let* typ = expression_type e in
+                      match typ with
+                      | None -> value_type
+                      | Some typ -> return typ)
               in
               let* default, typ', cast = default_value typ in
               let* () =
@@ -642,6 +654,11 @@ let rec store ?(always = false) ?typ x e =
           in
           instr (GlobalSet (x, e))
         else
+          let* typ =
+            match typ with
+            | Some _ -> return typ
+            | None -> if always then return None else expression_type e
+          in
           let* i = add_var ?typ x in
           instr (LocalSet (i, e))
 
