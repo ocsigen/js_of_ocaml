@@ -343,10 +343,17 @@ module Generate (Target : Target_sig.S) = struct
                   x
             | Extern "caml_check_bound_float", [ x; y ] ->
                 seq
-                  (let* cond =
-                     Arith.uge (Value.int_val y) (Memory.float_array_length x)
+                  (let a = Code.Var.fresh () in
+                   let* () = store a x in
+                   let label = label_index context bound_error_pc in
+                   (* If this is not a float array, it must be the
+                      empty array, and the bound check should fail. *)
+                   let* cond = Arith.eqz (Memory.check_is_float_array (load a)) in
+                   let* () = instr (W.Br_if (label, cond)) in
+                   let* cond =
+                     Arith.uge (Value.int_val y) (Memory.float_array_length (load a))
                    in
-                   instr (W.Br_if (label_index context bound_error_pc, cond)))
+                   instr (W.Br_if (label, cond)))
                   x
             | Extern "caml_add_float", [ f; g ] -> float_bin_op Add f g
             | Extern "caml_sub_float", [ f; g ] -> float_bin_op Sub f g
