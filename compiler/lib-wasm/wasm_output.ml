@@ -179,6 +179,7 @@ end = struct
     | Any -> output_byte ch 0x6E
     | Eq -> output_byte ch 0x6D
     | I31 -> output_byte ch 0x6C
+    | Struct -> output_byte ch 0x6B
     | Type nm -> output_sint ch (Hashtbl.find type_names nm)
 
   let output_valtype type_names ch (typ : value_type) =

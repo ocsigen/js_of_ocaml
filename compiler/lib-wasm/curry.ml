@@ -25,9 +25,12 @@ module Make (Target : Target_sig.S) = struct
   open Target
 
   let func_type n =
-    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> Value.value)
+    { W.params = List.init ~len:n ~f:(fun _ -> Value.value) @ [ Value.closure ]
     ; result = [ Value.value ]
     }
+
+  let primitive_type n =
+    { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
   let bind_parameters l =
     List.fold_left
@@ -40,7 +43,12 @@ module Make (Target : Target_sig.S) = struct
 
   let call ?typ ~cps ~arity closure args =
     let funct = Var.fresh () in
-    let* closure = tee ?typ funct closure in
+    let closure = tee ?typ funct closure in
+    let* closure =
+      match typ with
+      | None -> Memory.cast_closure ~cps ~arity closure
+      | Some _ -> closure
+    in
     let args = args @ [ closure ] in
     let* ty, funct =
       Memory.load_function_pointer
@@ -73,7 +81,7 @@ module Make (Target : Target_sig.S) = struct
     let body =
       let* () = no_event in
       let* () = bind_parameters args in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Value.closure f in
       let* args' = expression_list load args in
       let* _f = load f in
       let rec loop m args closure closure_typ =
@@ -124,7 +132,7 @@ module Make (Target : Target_sig.S) = struct
     let body =
       let* () = no_event in
       let* _ = add_var x in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Value.closure f in
       push (Closure.curry_allocate ~cps:false ~arity m ~f:name' ~closure:f ~arg:x)
     in
     let param_names = [ x; f ] in
@@ -145,7 +153,7 @@ module Make (Target : Target_sig.S) = struct
     let body =
       let* () = no_event in
       let* () = bind_parameters args in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Value.closure f in
       let* args' = expression_list load args in
       let* _f = load f in
       let rec loop m args closure closure_typ =
@@ -198,7 +206,7 @@ module Make (Target : Target_sig.S) = struct
       let* () = no_event in
       let* _ = add_var x in
       let* _ = add_var cont in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Value.closure f in
       let* e = Closure.curry_allocate ~cps:true ~arity m ~f:name' ~closure:f ~arg:x in
       let* c = call ~cps:false ~arity:1 (load cont) [ e ] in
       instr (W.Return (Some c))
@@ -243,7 +251,13 @@ module Make (Target : Target_sig.S) = struct
     let param_names = l @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type arity; param_names; locals; body }
+      { name
+      ; exported_name = None
+      ; typ = primitive_type (arity + 1)
+      ; param_names
+      ; locals
+      ; body
+      }
 
   let cps_apply ~context ~arity ~name =
     assert (arity > 2);
@@ -271,7 +285,7 @@ module Make (Target : Target_sig.S) = struct
              (List.map ~f:(fun x -> `Var x) (List.tl l))
          in
          let* make_iterator =
-           register_import ~name:"caml_apply_continuation" (Fun (func_type 0))
+           register_import ~name:"caml_apply_continuation" (Fun (primitive_type 1))
          in
          let iterate = Var.fresh_n "iterate" in
          let* () = store iterate (return (W.Call (make_iterator, [ args ]))) in
@@ -283,7 +297,13 @@ module Make (Target : Target_sig.S) = struct
     let param_names = l @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type arity; param_names; locals; body }
+      { name
+      ; exported_name = None
+      ; typ = primitive_type (arity + 1)
+      ; param_names
+      ; locals
+      ; body
+      }
 
   let dummy ~context ~cps ~arity ~name =
     let arity = if cps then arity + 1 else arity in
@@ -295,7 +315,7 @@ module Make (Target : Target_sig.S) = struct
     let body =
       let* () = no_event in
       let* () = bind_parameters l in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Value.closure f in
       let* typ, closure = Memory.load_real_closure ~cps ~arity (load f) in
       let* l = expression_list load l in
       let* e =

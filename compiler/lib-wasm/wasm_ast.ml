@@ -27,6 +27,7 @@ type heap_type =
   | Extern
   | Any
   | Eq
+  | Struct
   | I31
   | Type of var
 
