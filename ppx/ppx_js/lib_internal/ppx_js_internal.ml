@@ -236,7 +236,6 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
     let args = List.map ~f:ident arguments in
     body args
   in
-  let annotated_ebody = Exp.constraint_ ebody tfunc_res in
   (* Build the function.
      The last arguments is just used to tie all types together.
      It's unused in the implementation.
@@ -248,16 +247,15 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
         let patt = Pat.var (mknoloc (Arg.name d)) in
         label, patt)
   in
-  let make_fun (label, pat) (label', typ) expr =
-    assert (label' = label);
-    Exp.fun_ label None (Pat.constraint_ pat typ) expr
-  in
-  let invoker =
-    List.fold_right2
+  let args =
+    List.map2
+      ~f:(fun (label, pat) (label', typ) ->
+        assert (label' = label);
+        label, Pat.constraint_ pat typ)
       labels_and_pats
       tfunc_args
-      ~f:make_fun
-      ~init:(make_fun (nolabel, Pat.any ()) (nolabel, twrap) annotated_ebody)
+    @ [ nolabel, Pat.constraint_ (Pat.any ()) twrap ]
+    |> List.map ~f:(fun (l, pat) -> Pparam_val (l, None, pat))
   in
   (* Introduce all local types:
      {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
@@ -265,9 +263,18 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
   let local_types =
     make_str res :: List.map (extra_types @ arguments) ~f:(fun x -> make_str (Arg.name x))
   in
-  let result = List.fold_right local_types ~init:invoker ~f:Exp.newtype in
+  let result = List.map local_types ~f:(fun x -> Pparam_newtype x) in
   default_loc := default_loc';
-  result
+  { pexp_desc =
+      Pexp_function
+        ( List.map (result @ args) ~f:(fun pparam_desc ->
+              { pparam_desc; pparam_loc = Location.none })
+        , Some (Pconstraint tfunc_res)
+        , Pfunction_body ebody )
+  ; pexp_loc = Location.none
+  ; pexp_loc_stack = []
+  ; pexp_attributes = []
+  }
 
 let open_t loc = Js.type_ ~loc "t" [ Typ.object_ ~loc [] Open ]
 
@@ -583,9 +590,17 @@ let preprocess_literal_object mappper fields :
         let body, body_ty = drop_pexp_poly (mappper body) in
         let rec create_meth_ty exp =
           match exp.pexp_desc with
-          | Pexp_fun (label, _, _, body) -> Arg.make ~label () :: create_meth_ty body
-          | Pexp_function _ -> [ Arg.make () ]
-          | Pexp_newtype (_, body) -> create_meth_ty body
+          | Pexp_function (params, _, body) -> (
+              List.filter_map params ~f:(function
+                | { pparam_desc = Pparam_newtype _; _ } -> None
+                | { pparam_desc = Pparam_val (label, _, _arg); _ } ->
+                    Some (Arg.make ~label ()))
+              @
+              match body with
+              | Pfunction_cases _ -> [ Arg.make () ]
+              | Pfunction_body e ->
+                  (* TODO: should we recurse or not ? *)
+                  create_meth_ty e)
           | _ -> []
         in
         let fun_ty = create_meth_ty body in
@@ -647,8 +662,23 @@ let literal_object self_id (fields : field_desc list) =
   in
   let body = function
     | Val (_, _, _, body) -> body
-    | Meth (_, _, _, body, _) ->
-        Exp.fun_ ~loc:{ body.pexp_loc with loc_ghost = true } Nolabel None self_id body
+    | Meth (_, _, _, body, _) -> (
+        match body.pexp_desc with
+        | Pexp_function (params, c, b) ->
+            let params =
+              { pparam_desc = Pparam_val (nolabel, None, self_id)
+              ; pparam_loc = { body.pexp_loc with loc_ghost = true }
+              }
+              :: params
+            in
+            { body with pexp_desc = Pexp_function (params, c, b) }
+        | _ ->
+            Exp.fun_
+              ~loc:{ body.pexp_loc with loc_ghost = true }
+              Nolabel
+              None
+              self_id
+              body)
   in
   let extra_types =
     List.concat
@@ -732,13 +762,20 @@ let literal_object self_id (fields : field_desc list) =
     invoker
     (List.map fields ~f:(fun f -> app_arg (body f))
     @ [ app_arg
-          { (List.fold_right
-               (self :: List.map fields ~f:(fun f -> (name f).txt))
-               ~init:fake_object
-               ~f:(fun name fun_ ->
-                 Exp.fun_ ~loc:gloc nolabel None (Pat.var ~loc:gloc (mknoloc name)) fun_))
-            with
-            pexp_attributes = [ merlin_hide ]
+          { pexp_desc =
+              Pexp_function
+                ( List.map
+                    (self :: List.map fields ~f:(fun f -> (name f).txt))
+                    ~f:(fun name ->
+                      { pparam_desc =
+                          Pparam_val (nolabel, None, Pat.var ~loc:gloc (mknoloc name))
+                      ; pparam_loc = gloc
+                      })
+                , None
+                , Pfunction_body fake_object )
+          ; pexp_loc_stack = []
+          ; pexp_loc = gloc
+          ; pexp_attributes = [ merlin_hide ]
           }
       ])
 
