@@ -607,6 +607,14 @@ module Value = struct
   let int_asr = binop Arith.( asr )
 end
 
+let store_in_global ?(name = "const") c =
+  let name = Code.Var.fresh_n name in
+  let* typ = expression_type c in
+  let* () =
+    register_global name { mut = false; typ = Option.value ~default:Type.value typ } c
+  in
+  return (W.GlobalGet name)
+
 module Memory = struct
   let wasm_cast ty e =
     let* e = e in
@@ -866,7 +874,9 @@ module Memory = struct
     in
     let* ty = Type.int32_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet int32_ops; e ]))
+    let e' = W.StructNew (ty, [ GlobalGet int32_ops; e ]) in
+    let* b = is_small_constant e in
+    if b then store_in_global e' else return e'
 
   let box_int32 e = make_int32 ~kind:`Int32 e
 
@@ -884,7 +894,9 @@ module Memory = struct
     in
     let* ty = Type.int64_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet int64_ops; e ]))
+    let e' = W.StructNew (ty, [ GlobalGet int64_ops; e ]) in
+    let* b = is_small_constant e in
+    if b then store_in_global e' else return e'
 
   let box_int64 e = make_int64 e
 
@@ -903,11 +915,6 @@ module Constant = struct
   (* dune-build-info use a 64-byte placeholder. This ensures that such
      strings are encoded as a sequence of bytes in the wasm module. *)
   let string_length_threshold = 64
-
-  let store_in_global ?(name = "const") c =
-    let name = Code.Var.fresh_n name in
-    let* () = register_global name { mut = false; typ = Type.value } c in
-    return (W.GlobalGet name)
 
   let str_js_utf8 s =
     let b = Buffer.create (String.length s) in

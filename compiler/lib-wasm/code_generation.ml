@@ -539,7 +539,13 @@ and expression_type (e : W.expression) st =
   | GlobalGet x ->
       ( (try
            let typ = (Var.Map.find x st.context.constant_globals).typ in
-           if Poly.equal typ st.context.value_type then None else Some typ
+           if Poly.equal typ st.context.value_type
+           then None
+           else
+             Some
+               (match typ with
+               | Ref { typ; nullable = true } -> Ref { typ; nullable = false }
+               | _ -> typ)
          with Not_found -> None)
       , st )
   | Seq (_, e') -> expression_type e' st
@@ -640,10 +646,13 @@ let rec store ?(always = false) ?typ x e =
                 match typ with
                 | Some typ -> return typ
                 | None -> (
-                    let* typ = expression_type e in
-                    match typ with
-                    | None -> value_type
-                    | Some typ -> return typ)
+                    if always
+                    then value_type
+                    else
+                      let* typ = expression_type e in
+                      match typ with
+                      | None -> value_type
+                      | Some typ -> return typ)
               in
               let* default, typ', cast = default_value typ in
               let* () =
@@ -655,7 +664,6 @@ let rec store ?(always = false) ?typ x e =
               in
               register_global ~constant:true x { mut = true; typ = typ' } default
           in
-          let* () = register_constant x (W.GlobalGet x) in
           instr (GlobalSet (x, e))
         else
           let* typ =
