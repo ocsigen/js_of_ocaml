@@ -46,8 +46,8 @@ let rec collect_apply pc blocks visited tc =
       match block.branch with
       | Return x -> (
           match List.last block.body with
-          | Some (Let (y, Apply { f; exact = true; _ })) when Code.Var.compare x y = 0 ->
-              Some (add_multi f pc tc)
+          | Some (Let (y, Apply { f; kind = Exact | Known _; _ }))
+            when Code.Var.compare x y = 0 -> Some (add_multi f pc tc)
           | None -> None
           | Some _ -> None)
       | _ -> None
@@ -100,7 +100,7 @@ module Trampoline = struct
     match counter with
     | None ->
         { params = []
-        ; body = [ Let (return, Apply { f; args; exact = true }) ]
+        ; body = [ Let (return, Apply { f; args; kind = Known f }) ]
         ; branch = Return return
         }
     | Some counter ->
@@ -110,7 +110,7 @@ module Trampoline = struct
             [ Let
                 ( counter_plus_1
                 , Prim (Extern "%int_add", [ Pv counter; Pc (Int Targetint.one) ]) )
-            ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true })
+            ; Let (return, Apply { f; args = counter_plus_1 :: args; kind = Known f })
             ]
         ; branch = Return return
         }
@@ -139,14 +139,14 @@ module Trampoline = struct
           (match counter with
           | None ->
               [ Event loc
-              ; Let (result1, Apply { f; args; exact = true })
+              ; Let (result1, Apply { f; args; kind = Known f })
               ; Event Parse_info.zero
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
               ]
           | Some counter ->
               [ Event loc
               ; Let (counter, Constant (Int Targetint.zero))
-              ; Let (result1, Apply { f; args = counter :: args; exact = true })
+              ; Let (result1, Apply { f; args = counter :: args; kind = Known f })
               ; Event Parse_info.zero
               ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
               ])
@@ -222,7 +222,7 @@ module Trampoline = struct
                     let bounce_call_pc = free_pc + 1 in
                     let free_pc = free_pc + 2 in
                     match List.rev block.body with
-                    | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
+                    | Let (x, Apply { f; args; kind = Exact | Known _ }) :: rem_rev ->
                         assert (Var.equal f ci.f_name);
                         let blocks =
                           Addr.Map.add

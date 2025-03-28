@@ -128,8 +128,8 @@ let exact_calls profile ~deadcode_sentinal p =
   | `Disabled | `Jspi ->
       let fast =
         match profile with
-        | O3 -> false
-        | O1 | O2 -> true
+        | O2 | O3 -> false
+        | O1 -> true
       in
       let info = Global_flow.f ~fast p in
       let p =
