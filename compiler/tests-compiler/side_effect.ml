@@ -67,10 +67,10 @@ let%expect_test _ =
        }
        var
         global_data = runtime.caml_get_global_data(),
+        cst_Success = caml_string_of_jsbytes("Success!"),
         Stdlib_Printf = global_data.Stdlib__Printf,
         Stdlib = global_data.Stdlib,
-        i = [0, 0],
-        cst_Success = caml_string_of_jsbytes("Success!");
+        i = [0, 0];
        function log_success(param){return caml_call1(Stdlib[46], cst_Success);}
        var
         log_failure =
@@ -111,7 +111,7 @@ let%expect_test _ =
            ? caml_call1(Stdlib_Printf[2], _b_)
            : caml_call1(Stdlib_Printf[2], _c_);
        if(1 === i[1])
-        log_success(0);
+        caml_call1(Stdlib[46], cst_Success);
        else
         caml_call1(log_failure, cst_side_effect_computed_twice);
        var Test = [0, i, log_success, log_failure, side_effect, f];
