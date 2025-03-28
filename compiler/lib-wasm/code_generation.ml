@@ -503,6 +503,31 @@ let tee ?typ x e =
 
 let should_make_global x st = Var.Set.mem x st.context.globalized_variables, st
 
+let get_constant x st = Var.Hashtbl.find_opt st.context.constants x, st
+
+let placeholder_value typ f =
+  let* c = get_constant typ in
+  match c with
+  | None ->
+      let x = Var.fresh () in
+      let* () = register_constant typ (W.GlobalGet x) in
+      let* () =
+        register_global
+          ~constant:true
+          x
+          { mut = false; typ = Ref { nullable = false; typ = Type typ } }
+          (f typ)
+      in
+      return (W.GlobalGet x)
+  | Some c -> return c
+
+let empty_struct =
+  let* typ =
+    register_type "empty_struct" (fun () ->
+        return { supertype = None; final = true; typ = W.Struct [] })
+  in
+  placeholder_value typ (fun typ -> W.StructNew (typ, []))
+
 let value_type st = st.context.value_type, st
 
 let get_constant x st = Var.Hashtbl.find_opt st.context.constants x, st
