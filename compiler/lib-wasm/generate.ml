@@ -111,6 +111,11 @@ module Generate (Target : Target_sig.S) = struct
     h
 
   let func_type n =
+    { W.params = List.init ~len:(n - 1) ~f:(fun _ -> Value.value) @ [ Value.closure ]
+    ; result = [ Value.value ]
+    }
+
+  let primitive_type n =
     { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
   let float_bin_op' op f g =
@@ -193,7 +198,12 @@ module Generate (Target : Target_sig.S) = struct
           | [] -> (
               let arity = List.length args in
               let funct = Var.fresh () in
-              let* closure = tee funct (load f) in
+              let* closure =
+                Memory.cast_closure
+                  ~cps:(Var.Set.mem x ctx.in_cps)
+                  ~arity
+                  (tee funct (load f))
+              in
               let* ty, funct =
                 Memory.load_function_pointer
                   ~cps:(Var.Set.mem x ctx.in_cps)
@@ -209,7 +219,7 @@ module Generate (Target : Target_sig.S) = struct
                     (* Functions with constant closures ignore their
                        environment. In case of partial application, we
                        still need the closure. *)
-                    let* cl = if exact then Value.unit else return closure in
+                    let* cl = if exact then Value.dummy_closure else return closure in
                     return (W.Call (g, List.rev (cl :: acc)))
                 | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc))))
           | x :: r ->
@@ -675,7 +685,7 @@ module Generate (Target : Target_sig.S) = struct
                   in
                   loop [] (fst typ) l
                 with Not_found ->
-                  let* f = register_import ~name (Fun (func_type (List.length l))) in
+                  let* f = register_import ~name (Fun (primitive_type (List.length l))) in
                   let rec loop acc l =
                     match l with
                     | [] -> return (W.Call (f, List.rev acc))
@@ -1056,7 +1066,10 @@ module Generate (Target : Target_sig.S) = struct
           | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
           | Some _ -> None)
       ; param_names
-      ; typ = func_type param_count
+      ; typ =
+          (match name_opt with
+          | None -> primitive_type param_count
+          | Some _ -> func_type param_count)
       ; locals
       ; body
       }

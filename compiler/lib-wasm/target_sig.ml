@@ -26,6 +26,8 @@ module type S = sig
       -> [ `Expr of Wasm_ast.expression | `Var of Wasm_ast.var ] list
       -> expression
 
+    val cast_closure : cps:bool -> arity:int -> expression -> expression
+
     val load_function_pointer :
          cps:bool
       -> arity:int
@@ -99,6 +101,8 @@ module type S = sig
   module Value : sig
     val value : Wasm_ast.value_type
 
+    val closure : Wasm_ast.value_type
+
     val unit : expression
 
     val val_int : expression -> expression
@@ -152,6 +156,8 @@ module type S = sig
     val block_type : Wasm_ast.value_type Code_generation.t
 
     val dummy_block : expression
+
+    val dummy_closure : expression
 
     val as_block : expression -> expression
   end
