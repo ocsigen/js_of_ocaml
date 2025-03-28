@@ -428,7 +428,7 @@ module Value = struct
 
   let dummy_block =
     let* t = Type.block_type in
-    return (W.ArrayNewFixed (t, []))
+    array_placeholder t
 
   let as_block e =
     let* t = Type.block_type in
