@@ -1,6 +1,8 @@
 # dev
 
 ## Features/Changes
+* Compiler/Wasm: functions take their environment as a `(ref struct)` rather
+  than a `(ref eq)`, and closures are cast once where they are defined
 * Compiler: with `--effects={cps,double-translation}`, specialize calls to
   known functions using the global flow analysis before the CPS transformation
   (#2456)
