@@ -244,7 +244,7 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
                           let farg_tc = Var.Map.find x map_param_to_arg in
                           Var.Map.mem farg_tc closures && live_vars.(Var.idx farg_tc) = 1)
                         tc_params
-                     || f_size <= 1)
+                     || f_size <= 2)
                      && ((not recursive)
                         ||
                         match name with
