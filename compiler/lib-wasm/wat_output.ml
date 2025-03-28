@@ -150,6 +150,7 @@ let heap_type st (ty : heap_type) =
   | Extern -> Atom "extern"
   | Any -> Atom "any"
   | Eq -> Atom "eq"
+  | Struct -> Atom "struct"
   | I31 -> Atom "i31"
   | Type t -> index st.type_names t
 

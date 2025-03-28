@@ -161,9 +161,16 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   match ty, ty' with
   | Func, Func
   | Extern, Extern
-  | (Any | Eq | I31 | Type _), Any
-  | (Eq | I31 | Type _), Eq
+  | (Any | Eq | Struct | I31 | Type _), Any
+  | (Eq | Struct | I31 | Type _), Eq
+  | Struct, Struct -> true, st
   | I31, I31 -> true, st
+  | Type t, Struct ->
+      ( (let type_field = Hashtbl.find st.context.types t in
+         match type_field.typ with
+         | Struct _ -> true
+         | Array _ | Func _ -> false)
+      , st )
   | Type t, Type t' -> type_index_sub t t' st
   (* Func and Extern are only in suptyping relation with themselves *)
   | Func, _
@@ -172,8 +179,8 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   | _, Extern
   (* Any has no supertype *)
   | Any, _
-  (* I31, struct and arrays have no subtype (of a different kind) *)
-  | _, (I31 | Type _) -> false, st
+  (* I31, struct and arrays have no subtype of a different kind *)
+  | _, (I31 | Type _ | Struct) -> false, st
 
 let register_global name ?exported_name ?(constant = false) typ init st =
   st.context.other_fields <-
