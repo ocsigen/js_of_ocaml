@@ -42,6 +42,8 @@ module Domain : sig
 
   val top : t
 
+  val live_block : t
+
   val live_field : int -> t -> t
 
   val join : t -> t -> t
@@ -73,6 +75,8 @@ end = struct
         if depth = 0 then Top else Live (IntMap.map (fun l' -> truncate (depth - 1) l') f)
 
   let depth_treshold = 4
+
+  let live_block = Live IntMap.empty
 
   let live_field i l =
     (* We need to limit the depth of the liveness information,
@@ -385,11 +389,13 @@ let propagate defs scoped_live_vars ~state ~dep:y ~target:x ~action:usage_kind =
                 vars;
               !live
           | Expr (Field (_, i, _)) -> Domain.live_field i l
+          | Expr (Prim (IsInt, _)) -> Domain.live_block
           | _ -> Domain.top)
       (* If y is top and y is a field access, x depends only on that field *)
       | Top -> (
           match Var.Tbl.get defs y with
           | Expr (Field (_, i, _)) -> Domain.live_field i Domain.top
+          | Expr (Prim (IsInt, _)) -> Domain.live_block
           | _ -> Domain.top))
   (* If x is used as an argument for parameter y, then contribution is liveness of y *)
   | Propagate { scope; src } ->
