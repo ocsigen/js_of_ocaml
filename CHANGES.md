@@ -63,6 +63,8 @@
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in
   fixed-width `Bytes` accesses (#2470, #2505)
+* Compiler/Wasm: functions take their environment as a `(ref struct)` rather
+  than a `(ref eq)`, and closures are cast once where they are defined
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new
