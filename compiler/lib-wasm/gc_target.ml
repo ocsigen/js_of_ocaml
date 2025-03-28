@@ -27,6 +27,8 @@ let include_closure_arity = false
 module Type = struct
   let value = W.Ref { nullable = false; typ = Eq }
 
+  let closure = W.Ref { nullable = false; typ = Struct }
+
   let block_type =
     register_type "block" (fun () ->
         return
@@ -205,7 +207,8 @@ module Type = struct
   let primitive_type n =
     { W.params = List.init ~len:n ~f:(fun _ -> value); result = [ value ] }
 
-  let func_type n = primitive_type (n + 1)
+  let func_type n =
+    { W.params = List.init ~len:n ~f:(fun _ -> value) @ [ closure ]; result = [ value ] }
 
   let function_type ~cps n =
     let n = if cps then n + 1 else n in
@@ -432,6 +435,8 @@ module Value = struct
   let dummy_block =
     let* t = Type.block_type in
     return (W.ArrayNewFixed (t, []))
+
+  let dummy_closure = empty_struct
 
   let as_block e =
     let* t = Type.block_type in
@@ -818,6 +823,11 @@ module Memory = struct
     then 1
     else (if include_closure_arity then 1 else 0) + if arity = 1 then 1 else 2
 
+  let cast_closure ~cps ~arity closure =
+    let arity = if cps then arity - 1 else arity in
+    let* ty = Type.closure_type ~usage:`Access ~cps arity in
+    wasm_cast ty closure
+
   let load_function_pointer ~cps ~arity ?(skip_cast = false) closure =
     let arity = if cps then arity - 1 else arity in
     let* ty = Type.closure_type ~usage:`Access ~cps arity in
@@ -1197,7 +1207,7 @@ module Closure = struct
     if free_variable_count = 0
     then
       (* The closures are all constants and the environment is empty. *)
-      let* _ = add_var (Code.Var.fresh ()) in
+      let* _ = add_var ~typ:Type.closure (Code.Var.fresh ()) in
       return ()
     else
       let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
@@ -1206,7 +1216,7 @@ module Closure = struct
       match info.Closure_conversion.functions with
       | [ _ ] ->
           let* typ = Type.env_type ~cps ~arity free_variable_count in
-          let* _ = add_var f in
+          let* _ = add_var ~typ:Type.closure f in
           let env = Code.Var.fresh_n "env" in
           let* () =
             store
@@ -1227,7 +1237,7 @@ module Closure = struct
           let* typ =
             Type.rec_closure_type ~cps ~arity ~function_count ~free_variable_count
           in
-          let* _ = add_var f in
+          let* _ = add_var ~typ:Type.closure f in
           let env = Code.Var.fresh_n "env" in
           let* env_typ = Type.rec_env_type ~function_count ~free_variable_count in
           let* () =
