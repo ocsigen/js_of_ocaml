@@ -515,7 +515,13 @@ and expression_type (e : W.expression) st =
   | GlobalGet x ->
       ( (try
            let typ = (Var.Map.find x st.context.constant_globals).typ in
-           if Poly.equal typ st.context.value_type then None else Some typ
+           if Poly.equal typ st.context.value_type
+           then None
+           else
+             Some
+               (match typ with
+               | Ref { typ; nullable = true } -> Ref { typ; nullable = false }
+               | _ -> typ)
          with Not_found -> None)
       , st )
   | Seq (_, e') -> expression_type e' st
@@ -555,14 +561,20 @@ let tee ?typ x e =
 
 let should_make_global x st = Var.Set.mem x st.context.globalized_variables, st
 
-let default_value typ st =
-  match typ with
-  | W.Ref { typ = I31 | Eq | Any; _ } -> Some (W.RefI31 (Const (I32 0l))), st
-  | W.Ref { typ = Type typ; _ } -> (
+let default_value val_typ st =
+  match val_typ with
+  | W.Ref { typ = I31 | Eq | Any; _ } -> (W.RefI31 (Const (I32 0l)), val_typ, None), st
+  | W.Ref { typ = Type typ; nullable = false } -> (
       match (Hashtbl.find st.context.types typ).typ with
-      | Array _ -> Some (W.ArrayNewFixed (typ, [])), st
-      | Struct _ | Func _ -> None, st)
-  | W.Ref { typ = Func | Extern; _ } | I32 | I64 | F32 | F64 -> None, st
+      | Array _ -> (W.ArrayNewFixed (typ, []), val_typ, None), st (*ZZZ use global*)
+      | Struct _ | Func _ ->
+          ( ( W.RefNull (Type typ)
+            , W.Ref { typ = Type typ; nullable = true }
+            , Some { W.typ = Type typ; nullable = false } )
+          , st ))
+  | W.Ref { nullable = true; _ }
+  | W.Ref { typ = Func | Extern; _ }
+  | I32 | I64 | F32 | F64 -> assert false
 
 let rec store ?(always = false) ?typ x e =
   let* e = e in
@@ -587,21 +599,24 @@ let rec store ?(always = false) ?typ x e =
                 match typ with
                 | Some typ -> return typ
                 | None -> (
-                    let* typ = expression_type e in
-                    match typ with
-                    | None -> value_type
-                    | Some typ -> return typ)
+                    if always
+                    then value_type
+                    else
+                      let* typ = expression_type e in
+                      match typ with
+                      | None -> value_type
+                      | Some typ -> return typ)
               in
-              let* default = default_value typ in
-              let default, typ =
-                match default with
-                | Some default -> default, return typ
-                | None -> W.RefI31 (Const (I32 0l)), value_type
+              let* default, typ', cast = default_value typ in
+              let* () =
+                register_constant
+                  x
+                  (match cast with
+                  | Some typ -> W.RefCast (typ, W.GlobalGet x)
+                  | None -> W.GlobalGet x)
               in
-              let* typ = typ in
-              register_global ~constant:true x { mut = true; typ } default
+              register_global ~constant:true x { mut = true; typ = typ' } default
           in
-          let* () = register_constant x (W.GlobalGet x) in
           instr (GlobalSet (x, e))
         else
           let* typ =

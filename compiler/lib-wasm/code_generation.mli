@@ -206,3 +206,5 @@ val function_body :
   -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
 
 val variable_type : Code.Var.t -> Wasm_ast.value_type option t
+
+val expression_type : Wasm_ast.expression -> Wasm_ast.value_type option t
