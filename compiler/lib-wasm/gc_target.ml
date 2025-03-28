@@ -549,26 +549,45 @@ module Value = struct
     let xv = Code.Var.fresh () in
     let yv = Code.Var.fresh () in
     let* js = Type.js_type in
-    let n =
-      if_expr
-        I32
-        (* We mimic an "and" on the two conditions, but in a way that is nicer to the
-           binaryen optimizer. *)
-        (if_expr
-           I32
-           (ref_test (ref js) (load xv))
-           (ref_test (ref js) (load yv))
-           (Arith.const 0l))
-        (caml_js_strict_equals (load xv) (load yv)
-        >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
-        >>| fun e -> W.I31Get (S, e))
-        (ref_eq (load xv) (load yv))
+    let* x = x in
+    let* y = y in
+    let* tx = expression_type x in
+    let* ty = expression_type y in
+    let* bx =
+      match tx with
+      | None | Some (I32 | I64 | F32 | F64) -> return true
+      | Some (Ref { typ; _ }) -> heap_type_sub (Type js) typ
     in
-    seq
-      (let* () = store xv x in
-       let* () = store yv y in
-       return ())
-      (val_int (if negate then Arith.eqz n else n))
+    let* by =
+      match ty with
+      | None | Some (I32 | I64 | F32 | F64) -> return true
+      | Some (Ref { typ; _ }) -> heap_type_sub (Type js) typ
+    in
+    if bx && by
+    then
+      let n =
+        if_expr
+          I32
+          (* We mimic an "and" on the two conditions, but in a way that is nicer to the
+           binaryen optimizer. *)
+          (if_expr
+             I32
+             (ref_test (ref js) (load xv))
+             (ref_test (ref js) (load yv))
+             (Arith.const 0l))
+          (caml_js_strict_equals (load xv) (load yv)
+          >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
+          >>| fun e -> W.I31Get (S, e))
+          (ref_eq (load xv) (load yv))
+      in
+      seq
+        (let* () = store xv (return x) in
+         let* () = store yv (return y) in
+         return ())
+        (val_int (if negate then Arith.eqz n else n))
+    else
+      let n = ref_eq (return x) (return y) in
+      val_int (if negate then Arith.eqz n else n)
 
   let eq x y = eq_gen ~negate:false x y
 
