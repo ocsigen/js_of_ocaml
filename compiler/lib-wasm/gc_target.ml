@@ -479,7 +479,7 @@ module Value = struct
     | W.RefI31 _ -> (
         match typ.typ with
         | W.I31 | Eq | Any -> return (W.Const (I32 1l))
-        | Type _ | Func | Extern -> return (W.Const (I32 0l)))
+        | Struct | Array | Type _ | None_ | Func | Extern -> return (W.Const (I32 0l)))
     | GlobalGet nm -> (
         let* init = get_global nm in
         match init with

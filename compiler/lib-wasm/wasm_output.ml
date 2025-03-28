@@ -172,13 +172,17 @@ end = struct
     res
 
   (****)
+
   let output_heaptype type_names ch typ =
     match (typ : heap_type) with
+    | None_ -> output_byte ch 0x71
     | Func -> output_byte ch 0x70
     | Extern -> output_byte ch 0x6F
     | Any -> output_byte ch 0x6E
     | Eq -> output_byte ch 0x6D
     | I31 -> output_byte ch 0x6C
+    | Struct -> output_byte ch 0x6B
+    | Array -> output_byte ch 0x6A
     | Type nm -> output_sint ch (Hashtbl.find type_names nm)
 
   let output_valtype type_names ch (typ : value_type) =
