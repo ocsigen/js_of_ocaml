@@ -203,3 +203,9 @@ val function_body :
   -> param_names:Code.Var.t list
   -> body:unit t
   -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
+
+val array_placeholder : Code.Var.t -> expression
+
+val default_value :
+     Wasm_ast.value_type
+  -> (Wasm_ast.expression * Wasm_ast.value_type * Wasm_ast.ref_type option) t
