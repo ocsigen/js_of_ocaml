@@ -208,3 +208,5 @@ val function_body :
 val variable_type : Code.Var.t -> Wasm_ast.value_type option t
 
 val expression_type : Wasm_ast.expression -> Wasm_ast.value_type option t
+
+val array_placeholder : Code.Var.t -> expression

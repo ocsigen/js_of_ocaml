@@ -428,7 +428,7 @@ module Value = struct
 
   let dummy_block =
     let* t = Type.block_type in
-    return (W.ArrayNewFixed (t, []))
+    array_placeholder t
 
   let as_block e =
     let* t = Type.block_type in
@@ -1054,12 +1054,13 @@ module Constant = struct
     | Mutated ->
         let* typ = Type.string_type in
         let name = Code.Var.fresh_n "const" in
+        let* placeholder = array_placeholder typ in
         let* () =
           register_global
             ~constant:true
             name
             { mut = true; typ = Ref { nullable = false; typ = Type typ } }
-            (W.ArrayNewFixed (typ, []))
+            placeholder
         in
         let* () = register_init_code (instr (W.GlobalSet (name, c))) in
         return (W.GlobalGet name)

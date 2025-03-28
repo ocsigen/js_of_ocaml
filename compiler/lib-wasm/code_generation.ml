@@ -561,12 +561,33 @@ let tee ?typ x e =
 
 let should_make_global x st = Var.Set.mem x st.context.globalized_variables, st
 
+let get_constant x st = Hashtbl.find_opt st.context.constants x, st
+
+let array_placeholder typ =
+  let* c = get_constant typ in
+  match c with
+  | None ->
+      let x = Var.fresh () in
+      let* () = register_constant typ (W.GlobalGet x) in
+      let* () =
+        register_global
+          ~constant:true
+          x
+          { mut = false; typ = Ref { nullable = false; typ = Type typ } }
+          (ArrayNewFixed (typ, []))
+      in
+      return (W.GlobalGet x)
+  | Some c -> return c
+
 let default_value val_typ st =
   match val_typ with
   | W.Ref { typ = I31 | Eq | Any; _ } -> (W.RefI31 (Const (I32 0l)), val_typ, None), st
   | W.Ref { typ = Type typ; nullable = false } -> (
       match (Hashtbl.find st.context.types typ).typ with
-      | Array _ -> (W.ArrayNewFixed (typ, []), val_typ, None), st (*ZZZ use global*)
+      | Array _ ->
+          (let* placeholder = array_placeholder typ in
+           return (placeholder, val_typ, None))
+            st
       | Struct _ | Func _ ->
           ( ( W.RefNull (Type typ)
             , W.Ref { typ = Type typ; nullable = true }
