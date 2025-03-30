@@ -99,7 +99,7 @@ let link_and_optimize
   let enable_source_maps = Option.is_some opt_sourcemap_file in
   Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
   @@ fun runtime_file ->
-  Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+  Fs.write_file ~name:runtime_file ~contents:Runtime_files.runtime_dot_wasm;
   Fs.with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
   @@ fun temp_file ->
   opt_with
@@ -125,7 +125,7 @@ let link_and_optimize
   @@ fun opt_temp_sourcemap' ->
   let primitives =
     Binaryen.dead_code_elimination
-      ~dependencies:Runtime_files.dependencies
+      ~dependencies:Runtime_files.deps_dot_json
       ~opt_input_sourcemap:opt_temp_sourcemap
       ~opt_output_sourcemap:opt_temp_sourcemap'
       ~input_file:temp_file
@@ -145,7 +145,7 @@ let link_and_optimize
 
 let link_runtime ~profile runtime_wasm_files output_file =
   if List.is_empty runtime_wasm_files
-  then Fs.write_file ~name:output_file ~contents:Runtime_files.wasm_runtime
+  then Fs.write_file ~name:output_file ~contents:Runtime_files.runtime_dot_wasm
   else
     Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
     @@ fun extra_runtime ->
@@ -167,7 +167,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
       ();
     Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
     @@ fun runtime_file ->
-    Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+    Fs.write_file ~name:runtime_file ~contents:Runtime_files.runtime_dot_wasm;
     Binaryen.link
       ~opt_output_sourcemap:None
       ~inputs:
@@ -245,7 +245,7 @@ let build_js_runtime ~primitives ?runtime_arguments () =
     | _ -> assert false
   in
   let init_fun =
-    match Parse_js.parse (Parse_js.Lexer.of_string Runtime_files.js_runtime) with
+    match Parse_js.parse (Parse_js.Lexer.of_string Runtime_files.runtime_dot_js) with
     | [ (Expression_statement f, _) ] -> f
     | _ -> assert false
   in
