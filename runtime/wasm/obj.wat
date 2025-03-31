@@ -24,12 +24,13 @@
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
    (import "effect" "caml_trampoline_ref"
-      (global $caml_trampoline_ref (mut (ref null $function_1))))
+      (global $caml_trampoline_ref (mut (ref null $primitive))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
+   (type $primitive (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $closure_last_arg
@@ -460,7 +461,7 @@
             (struct.get $closure 0
                (br_on_cast_fail $cps (ref eq) (ref $closure)
                   (local.get $f))))))
-      (return_call_ref $function_1
+      (return_call_ref $primitive
          (local.get $f)
          (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $x))
          (ref.as_non_null (global.get $caml_trampoline_ref))))
@@ -480,7 +481,7 @@
                (call $caml_callback_1 (local.get $f) (local.get $x))
                (local.get $y)))
          (else
-            (return_call_ref $function_1
+            (return_call_ref $primitive
                (local.get $f)
                (array.new_fixed $block 3 (ref.i31 (i32.const 0))
                  (local.get $x) (local.get $y))
