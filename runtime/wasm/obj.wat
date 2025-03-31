@@ -28,15 +28,17 @@
    (import "effect" "caml_cps_trampoline"
       (func $caml_cps_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
 ))
+   (import "stdlib" "caml_exception" (global $caml_exception (mut (ref eq))))
+   (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
+   (type $function_1 (func (param (ref eq) (ref eq)) (result eqref)))
    (type $closure (sub (struct (field (ref $function_1)))))
    (type $closure_last_arg (sub $closure (struct (field (ref $function_1)))))
-   (type $function_2 (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+   (type $function_2 (func (param (ref eq) (ref eq) (ref eq)) (result eqref)))
    (type $cps_closure (sub (struct (field (ref $function_2)))))
    (type $cps_closure_last_arg
       (sub $cps_closure (struct (field (ref $function_2)))))
@@ -57,7 +59,7 @@
             (field (mut (ref null $closure_2))))))
 
    (type $function_3
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result eqref)))
 
    (type $closure_3
       (sub $closure
@@ -70,7 +72,7 @@
 
    (type $function_4
       (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
-         (result (ref eq))))
+         (result eqref)))
 
    (type $closure_4
       (sub $closure
@@ -544,19 +546,30 @@
 (@else
    (func $caml_callback_1 (export "caml_callback_1")
       (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))
-      (return_call_ref $function_1 (local.get $x)
-         (local.get $f)
-         (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
+      (local $res eqref)
+      (local.set $res
+         (call_ref $function_1 (local.get $x)
+            (local.get $f)
+            (struct.get $closure 0
+               (ref.cast (ref $closure) (local.get $f)))))
+      (if (ref.is_null (local.get $res))
+         (then (throw $ocaml_exception (global.get $caml_exception))))
+      (return (ref.as_non_null (local.get $res))))
 
    (func (export "caml_callback_2")
       (param $f (ref eq)) (param $x (ref eq)) (param $y (ref eq))
       (result (ref eq))
+      (local $res eqref)
       (drop (block $not_direct (result (ref eq))
-         (return_call_ref $function_2 (local.get $x) (local.get $y)
-            (local.get $f)
-            (struct.get $closure_2 1
-               (br_on_cast_fail $not_direct (ref eq) (ref $closure_2)
-                  (local.get $f))))))
+         (local.set $res
+            (call_ref $function_2 (local.get $x) (local.get $y)
+               (local.get $f)
+               (struct.get $closure_2 1
+                  (br_on_cast_fail $not_direct (ref eq) (ref $closure_2)
+                     (local.get $f)))))
+         (if (ref.is_null (local.get $res))
+            (then (throw $ocaml_exception (global.get $caml_exception))))
+         (return (ref.as_non_null (local.get $res)))))
       (return_call $caml_callback_1
          (call $caml_callback_1 (local.get $f) (local.get $x))
          (local.get $y)))

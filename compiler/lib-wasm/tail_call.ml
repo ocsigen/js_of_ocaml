@@ -30,6 +30,10 @@ let rewrite_tail_call ~y i =
       Some (Wasm_ast.Return_call (symb, l))
   | LocalSet (x, Call_ref (ty, e, l)) when Code.Var.equal x y ->
       Some (Return_call_ref (ty, e, l))
+  | LocalSet (x, Br_on_null (_, Call (symb, l))) when Code.Var.equal x y ->
+      Some (Wasm_ast.Return_call (symb, l))
+  | LocalSet (x, Br_on_null (_, Call_ref (ty, e, l))) when Code.Var.equal x y ->
+      Some (Return_call_ref (ty, e, l))
   | _ -> None
 
 let rec instruction ~tail i =
@@ -42,6 +46,11 @@ let rec instruction ~tail i =
   | Push (Call (symb, l)) when tail -> Return_call (symb, l)
   | Push (Call_ref (ty, e, l)) when tail -> Return_call_ref (ty, e, l)
   | Push (Call_ref _) -> i
+  | Return (Some (Br_on_null (_, Call (symb, l)))) -> Return_call (symb, l)
+  | Return (Some (Br_on_null (_, Call_ref (ty, e, l)))) -> Return_call_ref (ty, e, l)
+  | Push (Br_on_null (_, Call (symb, l))) when tail -> Return_call (symb, l)
+  | Push (Br_on_null (_, Call_ref (ty, e, l))) when tail -> Return_call_ref (ty, e, l)
+  | Push (Br_on_null (_, Call_ref _)) -> i
   | Drop (BlockExpr (typ, l)) -> Drop (BlockExpr (typ, instructions ~tail:false l))
   | Drop _
   | LocalSet _

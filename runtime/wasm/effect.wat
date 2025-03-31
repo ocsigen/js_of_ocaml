@@ -41,13 +41,14 @@
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "stdlib" "caml_exception" (global $caml_exception (mut (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
+   (type $function_1 (func (param (ref eq) (ref eq)) (result eqref)))
    (type $closure (sub (struct (field (ref $function_1)))))
    (type $function_3
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result eqref)))
    (type $closure_3
       (sub $closure
          (struct (field (ref $function_1)) (field (ref $function_3)))))
@@ -66,7 +67,7 @@
    (@string $effect_unhandled "Effect.Unhandled")
 
    (func $raise_unhandled
-      (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $eff (ref eq)) (param (ref eq)) (result eqref)
       (block $null
          (call $caml_raise_with_arg
             (br_on_null $null
@@ -140,9 +141,15 @@
 
    (func $apply_pair (param $p (ref $pair)) (result (ref eq))
       (local $f (ref eq))
-      (return_call_ref $function_1 (struct.get $pair 1 (local.get $p))
-         (local.tee $f (struct.get $pair 0 (local.get $p)))
-         (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
+      (local $res eqref)
+      (local.set $res
+         (call_ref $function_1 (struct.get $pair 1 (local.get $p))
+            (local.tee $f (struct.get $pair 0 (local.get $p)))
+            (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
+      (if (ref.is_null (local.get $res))
+         (then
+            (throw $ocaml_exception (global.get $caml_exception))))
+      (return (ref.as_non_null (local.get $res))))
 
    ;; Low-level primitives
 
@@ -298,7 +305,7 @@
             (field $cont (ref eq)))))
 
    (func $call_effect_handler
-      (param $tail (ref eq)) (param $venv (ref eq)) (result (ref eq))
+      (param $tail (ref eq)) (param $venv (ref eq)) (result eqref)
       (local $env (ref $call_handler_env))
       (local $handler (ref $closure_3))
       (local.set $env (ref.cast (ref $call_handler_env) (local.get $venv)))
@@ -339,8 +346,10 @@
       (if (i32.or (i32.eqz (global.get $effect_allowed))
              (ref.is_null (struct.get $fiber $next (global.get $stack))))
          (then
-            (return_call $raise_unhandled
-               (local.get $eff) (ref.i31 (i32.const 0)))))
+            (return
+               (ref.as_non_null
+                  (call $raise_unhandled
+                     (local.get $eff) (ref.i31 (i32.const 0)))))))
       (return_call $capture_continuation
          (ref.func $do_perform) (local.get $eff)))
 
@@ -413,7 +422,8 @@
             (do
                (try (result (ref eq))
                   (do
-                     (call $apply_pair (ref.cast (ref $pair) (local.get $p))))
+                     (call $apply_pair
+                        (ref.cast (ref $pair) (local.get $p))))
                   (catch $javascript_exception
                      (throw $ocaml_exception
                         (call $caml_wrap_exception (pop externref))))))
@@ -438,10 +448,10 @@
 (@if (= effects "cps")
 (@then
    (type $function_2
-      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (func (param (ref eq) (ref eq) (ref eq)) (result eqref)))
    (type $function_4
       (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
-         (result (ref eq))))
+         (result eqref)))
    (type $cps_closure (sub (struct (field (ref $function_2)))))
    (type $cps_closure_0 (sub (struct (field (ref $function_1)))))
    (type $cps_closure_3
@@ -485,7 +495,7 @@
       (ref.i31 (i32.const 0)))
 
    (func $raise_exception
-      (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $exn (ref eq)) (param (ref eq)) (result eqref)
       (throw $ocaml_exception (local.get $exn)))
 
    (global $raise_exception (ref eq)
@@ -506,13 +516,13 @@
       (param $exn (ref eq)) (param (ref eq)) (result (ref eq))
       (local.get $exn))
 
-   (func $identity (param (ref eq)) (param (ref eq)) (result (ref eq))
+   (func $identity (param (ref eq)) (param (ref eq)) (result eqref)
       (local.get 0))
 
    (global $identity (ref $closure) (struct.new $closure (ref.func $identity)))
 
    (func $trampoline_iterator
-      (param $f (ref eq)) (param $venv (ref eq)) (result (ref eq))
+      (param $f (ref eq)) (param $venv (ref eq)) (result eqref)
       (local $env (ref $iterator))
       (local $i i32) (local $args (ref $block))
       (local.set $env (ref.cast (ref $iterator) (local.get $venv)))
@@ -532,7 +542,7 @@
             (ref.cast (ref $cps_closure) (local.get $f)))))
 
    (func $apply_iterator
-      (param $f (ref eq)) (param $venv (ref eq)) (result (ref eq))
+      (param $f (ref eq)) (param $venv (ref eq)) (result eqref)
       (local $env (ref $iterator))
       (local $i i32) (local $args (ref $block))
       (local.set $env (ref.cast (ref $iterator) (local.get $venv)))
@@ -562,13 +572,13 @@
          (ref.cast (ref $block) (local.get $args))))
 
    (func $dummy_cps_fun
-      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result eqref)
       (unreachable))
 
    (func $caml_trampoline (export "caml_cps_trampoline")
       (param $f (ref eq)) (param $vargs (ref eq)) (result (ref eq))
       (local $args (ref $block))
-      (local $i i32) (local $res (ref eq))
+      (local $i i32) (local $res eqref)
       (local $exn (ref eq)) (local $top (ref $exn_stack))
       (local $saved_fiber_stack (ref $cps_fiber))
       (local.set $saved_fiber_stack (global.get $cps_fiber_stack))
@@ -585,7 +595,7 @@
          (try (result (ref eq))
             (do
                (local.set $res
-                  (if (result (ref eq))
+                  (if (result eqref)
                       (i32.eq (array.len (local.get $args)) (i32.const 1))
                      (then
                         (call_ref $function_1 (global.get $identity)
@@ -607,8 +617,13 @@
                            (local.get $f)
                            (struct.get $cps_closure 0
                               (ref.cast (ref $cps_closure) (local.get $f)))))))
-               (global.set $cps_fiber_stack (local.get $saved_fiber_stack))
-               (return (local.get $res)))
+               (if (result (ref eq)) (ref.is_null (local.get $res))
+                  (then
+                     (global.get $caml_exception))
+                  (else
+                     (global.set $cps_fiber_stack
+                         (local.get $saved_fiber_stack))
+                     (return (ref.as_non_null (local.get $res))))))
             (catch $ocaml_exception
                (pop (ref eq)))
             (catch $javascript_exception
@@ -632,7 +647,11 @@
                         (struct.get $closure 0
                            (ref.cast (ref $closure) (local.get $f)))))
                   (global.set $cps_fiber_stack (local.get $saved_fiber_stack))
-                  (return (local.get $res)))
+                  (if (ref.is_null (local.get $res))
+                     (then
+                        (local.set $exn (global.get $caml_exception))
+                        (br $loop)))
+                  (return (ref.as_non_null (local.get $res))))
                (catch $ocaml_exception
                   (local.set $exn (pop (ref eq)))
                   (br $loop))
@@ -685,15 +704,17 @@
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_perform_effect")
-      (param $eff (ref eq)) (param $k0 (ref eq)) (result (ref eq))
+      (param $eff (ref eq)) (param $k0 (ref eq)) (result eqref)
       (local $handler (ref eq)) (local $k1 (ref eq))
       (local $cont (ref $block))
       (local $last_fiber (ref $cps_fiber))
       (if (ref.is_null
              (struct.get $cps_fiber $next (global.get $cps_fiber_stack)))
          (then
-            (return_call $raise_unhandled
-               (local.get $eff) (ref.i31 (i32.const 0)))))
+            (return
+               (ref.as_non_null
+                  (call $raise_unhandled
+                     (local.get $eff) (ref.i31 (i32.const 0)))))))
       (local.set $handler
          (struct.get $cps_fiber $effect (global.get $cps_fiber_stack)))
       (local.set $last_fiber (global.get $cps_fiber_stack))
@@ -710,7 +731,7 @@
 
    (func (export "caml_reperform_effect")
       (param $eff (ref eq)) (param $vcont (ref eq)) (param $vtail (ref eq))
-      (param $k0 (ref eq)) (result (ref eq))
+      (param $k0 (ref eq)) (result eqref)
       (local $handler (ref eq)) (local $k1 (ref eq))
       (local $cont (ref $block))
       (local $tail (ref $cps_fiber)) (local $last_fiber (ref $cps_fiber))
@@ -722,8 +743,10 @@
                   (call $caml_continuation_use_noexc (local.get $vcont))
                   (local.get $vtail)
                   (local.get $k0)))
-            (return_call $raise_unhandled
-               (local.get $eff) (ref.i31 (i32.const 0)))))
+            (return
+               (ref.as_non_null
+                  (call $raise_unhandled
+                     (local.get $eff) (ref.i31 (i32.const 0)))))))
       (local.set $cont (ref.cast (ref $block) (local.get $vcont)))
       (local.set $tail (ref.cast (ref $cps_fiber) (local.get $vtail)))
       (local.set $handler
@@ -741,7 +764,7 @@
             (ref.cast (ref $cps_closure_3) (local.get $handler)))))
 
    (func $cps_call_handler
-      (param $handler (ref eq)) (param $x (ref eq)) (result (ref eq))
+      (param $handler (ref eq)) (param $x (ref eq)) (result eqref)
       (return_call_ref $function_2
          (local.get $x)
          (call $caml_pop_fiber)
@@ -749,7 +772,7 @@
          (struct.get $cps_closure 0
             (ref.cast (ref $cps_closure) (local.get $handler)))))
 
-   (func $value_handler (param $x (ref eq)) (param (ref eq)) (result (ref eq))
+   (func $value_handler (param $x (ref eq)) (param (ref eq)) (result eqref)
       (return_call $cps_call_handler
           (struct.get $cps_fiber $value (global.get $cps_fiber_stack))
           (local.get $x)))
@@ -757,7 +780,7 @@
    (global $value_handler (ref $closure)
       (struct.new $closure (ref.func $value_handler)))
 
-   (func $exn_handler (param $x (ref eq)) (param (ref eq)) (result (ref eq))
+   (func $exn_handler (param $x (ref eq)) (param (ref eq)) (result eqref)
       (return_call $cps_call_handler
           (struct.get $cps_fiber $exn (global.get $cps_fiber_stack))
           (local.get $x)))
