@@ -24,11 +24,6 @@ open Code_generation
 module Make (Target : Target_sig.S) = struct
   open Target
 
-  let func_type n =
-    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> Value.value)
-    ; result = [ Value.value ]
-    }
-
   let bind_parameters l =
     List.fold_left
       ~f:(fun l x ->
@@ -102,7 +97,7 @@ module Make (Target : Target_sig.S) = struct
     let param_names = args @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type 1; param_names; locals; body }
+      { name; exported_name = None; typ = Type.func_type 1; param_names; locals; body }
 
   let curry_name n m = Printf.sprintf "curry_%d_%d" n m
 
@@ -130,7 +125,7 @@ module Make (Target : Target_sig.S) = struct
     let param_names = [ x; f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type 1; param_names; locals; body }
+      { name; exported_name = None; typ = Type.func_type 1; param_names; locals; body }
     :: functions
 
   let curry ~arity ~name = curry ~arity arity ~name
@@ -174,7 +169,7 @@ module Make (Target : Target_sig.S) = struct
     let param_names = args @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type 2; param_names; locals; body }
+      { name; exported_name = None; typ = Type.func_type 2; param_names; locals; body }
 
   let cps_curry_name n m = Printf.sprintf "cps_curry_%d_%d" n m
 
@@ -206,7 +201,7 @@ module Make (Target : Target_sig.S) = struct
     let param_names = [ x; cont; f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type 2; param_names; locals; body }
+      { name; exported_name = None; typ = Type.func_type 2; param_names; locals; body }
     :: functions
 
   let cps_curry ~arity ~name = cps_curry ~arity arity ~name
@@ -243,7 +238,13 @@ module Make (Target : Target_sig.S) = struct
     let param_names = l @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type arity; param_names; locals; body }
+      { name
+      ; exported_name = None
+      ; typ = Type.primitive_type (arity + 1)
+      ; param_names
+      ; locals
+      ; body
+      }
 
   let cps_apply ~context ~arity ~name =
     assert (arity > 2);
@@ -271,7 +272,7 @@ module Make (Target : Target_sig.S) = struct
              (List.map ~f:(fun x -> `Var x) (List.tl l))
          in
          let* make_iterator =
-           register_import ~name:"caml_apply_continuation" (Fun (func_type 0))
+           register_import ~name:"caml_apply_continuation" (Fun (Type.primitive_type 1))
          in
          let iterate = Var.fresh_n "iterate" in
          let* () = store iterate (return (W.Call (make_iterator, [ args ]))) in
@@ -283,7 +284,13 @@ module Make (Target : Target_sig.S) = struct
     let param_names = l @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type arity; param_names; locals; body }
+      { name
+      ; exported_name = None
+      ; typ = Type.primitive_type (arity + 1)
+      ; param_names
+      ; locals
+      ; body
+      }
 
   let dummy ~context ~cps ~arity ~name =
     let arity = if cps then arity + 1 else arity in
@@ -311,7 +318,13 @@ module Make (Target : Target_sig.S) = struct
     let param_names = l @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
-      { name; exported_name = None; typ = func_type arity; param_names; locals; body }
+      { name
+      ; exported_name = None
+      ; typ = Type.func_type arity
+      ; param_names
+      ; locals
+      ; body
+      }
 
   let f ~context =
     IntMap.iter

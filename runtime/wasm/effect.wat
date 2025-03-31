@@ -44,6 +44,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $primitive (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $function_3
@@ -642,7 +643,7 @@
       (throw $ocaml_exception (local.get $exn)))
 
    (global $caml_trampoline_ref (export "caml_trampoline_ref")
-      (mut (ref null $function_1)) (ref.null $function_1))
+      (mut (ref null $primitive)) (ref.null $primitive))
 
    (func $caml_pop_fiber (result (ref eq))
       (local $f (ref $cps_fiber))
