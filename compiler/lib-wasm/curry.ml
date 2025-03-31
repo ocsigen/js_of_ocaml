@@ -228,19 +228,24 @@ module Make (Target : Target_sig.S) = struct
            match l with
            | [] ->
                let* y = y in
-               instr (Push y)
+               instr (Return (Some y))
            | x :: rem ->
                let* x = load x in
-               build_applies (call ~cps:false ~arity:1 y [ x ]) rem
+               let* c = call ~cps:false ~arity:1 y [ x ] in
+               build_applies (return (W.Br_on_null (0, c))) rem
          in
          build_applies (load f) l)
+    in
+    let body =
+      let* () = block { params = []; result = [] } body in
+      instr (Return (Some (RefNull Any)))
     in
     let param_names = l @ [ f ] in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
       { name
       ; exported_name = None
-      ; typ = Type.primitive_type (arity + 1)
+      ; typ = Type.func_type arity
       ; param_names
       ; locals
       ; body
