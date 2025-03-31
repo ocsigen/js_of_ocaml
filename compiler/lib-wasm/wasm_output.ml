@@ -638,6 +638,11 @@ end = struct
         output_uint ch i;
         output_heaptype st.type_names ch typ1.typ;
         output_heaptype st.type_names ch typ2.typ
+    | Br_on_null (i, e') ->
+        Feature.require gc;
+        output_expression st ch e';
+        output_byte ch 0xD5;
+        output_uint ch i
     | IfExpr (typ, e1, e2, e3) ->
         output_expression st ch e1;
         output_byte ch 0x04;
@@ -871,7 +876,8 @@ end = struct
     | RefCast (_, e')
     | RefTest (_, e')
     | Br_on_cast (_, _, _, e')
-    | Br_on_cast_fail (_, _, _, e') -> expr_function_references e' set
+    | Br_on_cast_fail (_, _, _, e')
+    | Br_on_null (_, e') -> expr_function_references e' set
     | BinOp (_, e', e'')
     | ArrayNew (_, e', e'')
     | ArrayNewData (_, _, e', e'')
