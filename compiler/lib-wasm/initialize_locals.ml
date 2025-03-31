@@ -47,6 +47,7 @@ let rec scan_expression ctx e =
   | RefTest (_, e')
   | Br_on_cast (_, _, _, e')
   | Br_on_cast_fail (_, _, _, e')
+  | Br_on_null (_, e') -> scan_expression ctx e'
   | ExternConvertAny e' -> scan_expression ctx e'
   | BinOp (_, e', e'')
   | ArrayNew (_, e', e'')

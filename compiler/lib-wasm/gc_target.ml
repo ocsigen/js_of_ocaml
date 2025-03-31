@@ -528,6 +528,7 @@ module Value = struct
     | Call_ref _
     | Br_on_cast _
     | Br_on_cast_fail _
+    | Br_on_null _
     | Try _ -> false
     | IfExpr (_, e1, e2, e3) -> effect_free e1 && effect_free e2 && effect_free e3
     | ArrayNewFixed (_, l) | StructNew (_, l) -> List.for_all ~f:effect_free l
