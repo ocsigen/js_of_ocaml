@@ -29,11 +29,11 @@
       (func $caml_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
 ))
 
-
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
+   (type $primitive (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $closure_last_arg
