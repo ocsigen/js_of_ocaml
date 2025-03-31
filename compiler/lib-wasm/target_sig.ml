@@ -96,9 +96,15 @@ module type S = sig
     val unbox_nativeint : expression -> expression
   end
 
-  module Value : sig
+  module Type : sig
     val value : Wasm_ast.value_type
 
+    val func_type : int -> Wasm_ast.func_type
+
+    val primitive_type : int -> Wasm_ast.func_type
+  end
+
+  module Value : sig
     val unit : expression
 
     val val_int : expression -> expression
