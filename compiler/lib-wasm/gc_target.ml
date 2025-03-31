@@ -27,6 +27,8 @@ let include_closure_arity = false
 module Type = struct
   let value = W.Ref { nullable = false; typ = Eq }
 
+  let value_or_exn = W.Ref { nullable = true; typ = Eq }
+
   let block_type =
     register_type "block" (fun () ->
         return
@@ -205,7 +207,8 @@ module Type = struct
   let primitive_type n =
     { W.params = List.init ~len:n ~f:(fun _ -> value); result = [ value ] }
 
-  let func_type n = primitive_type (n + 1)
+  let func_type n =
+    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> value); result = [ value_or_exn ] }
 
   let function_type ~cps n =
     let n = if cps then n + 1 else n in
