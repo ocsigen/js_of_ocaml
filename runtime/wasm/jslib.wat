@@ -106,11 +106,6 @@
    (type $float_array (array (mut f64)))
    (type $bytes (array (mut i8)))
    (type $js (struct (field anyref)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
-   (type $function_2
-      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
-   (type $cps_closure (sub (struct (field (ref $function_2)))))
 
    (func $wrap (export "wrap") (param anyref) (result (ref eq))
       (block $is_eq (result (ref eq))
