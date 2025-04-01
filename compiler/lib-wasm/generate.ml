@@ -122,7 +122,6 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_nextafter_float", ([ Float; Float ], Float)
       ; "caml_classify_float", ([ Float ], Value)
       ; "caml_ldexp_float", ([ Float; Value ], Float)
-      ; "caml_signbit_float", ([ Float ], Value)
       ; "caml_erf_float", ([ Float ], Float)
       ; "caml_erfc_float", ([ Float ], Float)
       ; "caml_float_compare", ([ Float; Float ], Value)
