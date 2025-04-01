@@ -35,8 +35,7 @@
         "noUselessElse": "off",
         "noVar": "off",
         "useExponentiationOperator": "off",
-        "useSingleVarDeclarator": "off",
-        "useTemplate": "off"
+        "useSingleVarDeclarator": "off"
       },
       "suspicious": {
         "noAssignInExpressions": "off",
