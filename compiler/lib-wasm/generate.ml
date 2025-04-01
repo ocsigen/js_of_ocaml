@@ -32,11 +32,6 @@ let effects_cps () =
 module Generate (Target : Target_sig.S) = struct
   open Target
 
-  let transl_prim_arg x =
-    match x with
-    | Pv x -> load x
-    | Pc c -> Constant.translate c
-
   type ctx =
     { live : int array
     ; in_cps : Effects.in_cps
@@ -46,6 +41,28 @@ module Generate (Target : Target_sig.S) = struct
     ; global_context : Code_generation.context
     ; debug : Parse_bytecode.Debug.t
     }
+
+  let label_index context pc =
+    let rec index_rec context pc i =
+      match context with
+      | `Block pc' :: _ when pc = pc' -> i
+      | (`Block _ | `Skip | `Catch) :: rem -> index_rec rem pc (i + 1)
+      | [] -> assert false
+    in
+    index_rec context pc 0
+
+  let catch_index context =
+    let rec index_rec context i =
+      match context with
+      | `Catch :: _ -> Some i
+      | (`Block _ | `Skip | `Return) :: rem -> index_rec rem (i + 1)
+      | [] -> None
+    in
+    index_rec context 0
+
+  let bound_error_pc = -1
+
+  let zero_divide_pc = -2
 
   type repr =
     | Value
@@ -164,27 +181,10 @@ module Generate (Target : Target_sig.S) = struct
     let* g = Value.int_val g in
     Memory.box_nativeint (return (W.BinOp (I32 op, f, g)))
 
-  let label_index context pc =
-    let rec index_rec context pc i =
-      match context with
-      | `Block pc' :: _ when pc = pc' -> i
-      | (`Block _ | `Skip | `Catch) :: rem -> index_rec rem pc (i + 1)
-      | [] -> assert false
-    in
-    index_rec context pc 0
-
-  let catch_index context =
-    let rec index_rec context i =
-      match context with
-      | `Catch :: _ -> Some i
-      | (`Block _ | `Skip | `Return) :: rem -> index_rec rem (i + 1)
-      | [] -> None
-    in
-    index_rec context 0
-
-  let bound_error_pc = -1
-
-  let zero_divide_pc = -2
+  let transl_prim_arg x =
+    match x with
+    | Pv x -> load x
+    | Pc c -> Constant.translate c
 
   let rec translate_expr ctx context x e =
     match e with
@@ -1192,7 +1192,6 @@ module Generate (Target : Target_sig.S) = struct
         (Var.Map.bindings context.data_segments)
     in
     List.rev_append context.other_fields (imports @ constant_data)
-end
 
 let init () =
   Primitive.register "caml_make_array" `Mutable None None;
@@ -1234,34 +1233,31 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
+module G = Generate (Gc_target)
+
+let init = G.init
+
 let start () = make_context ~value_type:Gc_target.Value.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
   let t = Timer.make () in
   let p = if effects_cps () then fix_switch_branches p else p in
-  let module G = Generate (Gc_target) in
   let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
 
-let add_start_function =
-  let module G = Generate (Gc_target) in
-  G.add_start_function
+let add_start_function = G.add_start_function
 
-let add_init_function =
-  let module G = Generate (Gc_target) in
-  G.add_init_function
+let add_init_function = G.add_init_function
 
 let output ch ~context =
   let t = Timer.make () in
-  let module G = Generate (Gc_target) in
   let fields = G.output ~context in
   Wat_output.f ch fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t
 
 let wasm_output ch ~context =
   let t = Timer.make () in
-  let module G = Generate (Gc_target) in
   let fields = G.output ~context in
   Wasm_output.f ch fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t
