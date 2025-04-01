@@ -73,10 +73,70 @@ let bool' b = Int Targetint.(if b then one else zero)
 
 let bool b = Some (bool' b)
 
+let float_unop_bool (l : constant list) (f : float -> bool) =
+  match l with
+  | [ Float i ] -> bool (f i)
+  | [ Int i ] -> bool (f (Targetint.to_float i))
+  | _ -> None
+
 let float_binop_bool l f =
   match float_binop_aux l f with
   | Some b -> bool b
   | None -> None
+
+let int32 i =
+  match Config.target () with
+  | `JavaScript -> Some (Int (Targetint.of_int32_exn i))
+  | `Wasm -> Some (Int32 i)
+
+let int32_unop (l : constant list) (f : int32 -> int32) : constant option =
+  match l with
+  | [ Int32 i ] -> Some (Int32 (f i))
+  | _ -> None
+
+let int32_binop (l : constant list) (f : int32 -> int32 -> int32) : constant option =
+  match l with
+  | [ Int32 i; Int32 j ] -> Some (Int32 (f i j))
+  | _ -> None
+
+let int32_shiftop (l : constant list) (f : int32 -> int -> int32) : constant option =
+  match l with
+  | [ Int32 i; Int j ] -> Some (Int32 (f i (Targetint.to_int_exn j)))
+  | _ -> None
+
+let int64 i = Some (Int64 i)
+
+let int64_unop (l : constant list) (f : int64 -> int64) : constant option =
+  match l with
+  | [ Int64 i ] -> Some (Int64 (f i))
+  | _ -> None
+
+let int64_binop (l : constant list) (f : int64 -> int64 -> int64) : constant option =
+  match l with
+  | [ Int64 i; Int64 j ] -> Some (Int64 (f i j))
+  | _ -> None
+
+let int64_shiftop (l : constant list) (f : int64 -> int -> int64) : constant option =
+  match l with
+  | [ Int64 i; Int j ] -> Some (Int64 (f i (Targetint.to_int_exn j)))
+  | _ -> None
+
+let nativeint i = Some (NativeInt i)
+
+let nativeint_unop (l : constant list) (f : int32 -> int32) : constant option =
+  match l with
+  | [ NativeInt i ] -> Some (NativeInt (f i))
+  | _ -> None
+
+let nativeint_binop (l : constant list) (f : int32 -> int32 -> int32) : constant option =
+  match l with
+  | [ NativeInt i; NativeInt j ] -> Some (NativeInt (f i j))
+  | _ -> None
+
+let nativeint_shiftop (l : constant list) (f : int32 -> int -> int32) : constant option =
+  match l with
+  | [ NativeInt i; Int j ] -> Some (NativeInt (f i (Targetint.to_int_exn j)))
+  | _ -> None
 
 let eval_prim x =
   match x with
@@ -92,8 +152,7 @@ let eval_prim x =
       (* int *)
       | "%int_add", _ -> int_binop l Targetint.add
       | "%int_sub", _ -> int_binop l Targetint.sub
-      | "%direct_int_mul", _ -> int_binop l Targetint.mul
-      | "%direct_int_div", [ _; Int x ] when Targetint.is_zero x -> None
+      | ("%int_mul" | "%direct_int_mul"), _ -> int_binop l Targetint.mul
       | "%direct_int_div", _ -> int_binop l Targetint.div
       | "%direct_int_mod", _ -> int_binop l Targetint.rem
       | "%int_and", _ -> int_binop l Targetint.logand
@@ -103,6 +162,8 @@ let eval_prim x =
       | "%int_lsr", _ -> shift_op l Targetint.shift_right_logical
       | "%int_asr", _ -> shift_op l Targetint.shift_right
       | "%int_neg", _ -> int_unop l Targetint.neg
+      | "caml_int_compare", _ ->
+          int_binop l Targetint.(fun i j -> of_int_exn (compare i j))
       (* float *)
       | "caml_eq_float", _ -> float_binop_bool l Float.( = )
       | "caml_neq_float", _ -> float_binop_bool l Float.( <> )
@@ -119,6 +180,7 @@ let eval_prim x =
           match Targetint.of_float_opt f with
           | None -> None
           | Some f -> Some (Int f))
+      | "caml_float_of_int", [ Int i ] -> Some (Float (Targetint.to_float i))
       (* Math *)
       | "caml_neg_float", _ -> float_unop l ( ~-. )
       | "caml_abs_float", _ -> float_unop l abs_float
@@ -126,15 +188,123 @@ let eval_prim x =
       | "caml_asin_float", _ -> float_unop l asin
       | "caml_atan_float", _ -> float_unop l atan
       | "caml_atan2_float", _ -> float_binop l atan2
+      | "caml_hypot_float", _ -> float_binop l hypot
       | "caml_ceil_float", _ -> float_unop l ceil
+      | "caml_floor_float", _ -> float_unop l floor
+      | "caml_trunc_float", _ -> float_unop l Float.trunc
+      | "caml_round_float", _ -> float_unop l Float.round
       | "caml_cos_float", _ -> float_unop l cos
       | "caml_exp_float", _ -> float_unop l exp
-      | "caml_floor_float", _ -> float_unop l floor
+      | "caml_exp2_float", _ -> float_unop l Float.exp2
+      | "caml_expm1_float", _ -> float_unop l expm1
       | "caml_log_float", _ -> float_unop l log
+      | "caml_log1p_float", _ -> float_unop l log1p
+      | "caml_log2_float", _ -> float_unop l Float.log2
+      | "caml_log10_float", _ -> float_unop l log10
+      | "caml_cosh_float", _ -> float_unop l cosh
+      | "caml_sinh_float", _ -> float_unop l sinh
+      | "caml_tanh_float", _ -> float_unop l tanh
+      | "caml_acosh_float", _ -> float_unop l Float.acosh
+      | "caml_asinh_float", _ -> float_unop l Float.asinh
+      | "caml_atanh_float", _ -> float_unop l Float.atanh
       | "caml_power_float", _ -> float_binop l ( ** )
       | "caml_sin_float", _ -> float_unop l sin
       | "caml_sqrt_float", _ -> float_unop l sqrt
+      | "caml_cbrt_float", _ -> float_unop l Float.cbrt
       | "caml_tan_float", _ -> float_unop l tan
+      | "caml_copysign_float", _ -> float_binop l copysign
+      | "caml_signbit_float", _ -> float_unop_bool l Float.sign_bit
+      | "caml_erf_float", _ -> float_unop l Float.erf
+      | "caml_erfc_float", _ -> float_unop l Float.erfc
+      | "caml_nextafter_float", _ -> float_binop l Float.next_after
+      | "caml_float_compare", [ Float i; Float j ] ->
+          Some (Int (Targetint.of_int_exn (Float.compare i j)))
+      | "caml_ldexp_float", [ Float f; Int i ] ->
+          Some (Float (ldexp f (Targetint.to_int_exn i)))
+      (* int32 *)
+      | "caml_int32_bits_of_float", [ Float f ] -> int32 (Int32.bits_of_float f)
+      | "caml_int32_float_of_bits", [ Int i ] ->
+          Some (Float (Int32.float_of_bits (Targetint.to_int32 i)))
+      | "caml_int32_float_of_bits", [ Int32 i ] -> Some (Float (Int32.float_of_bits i))
+      | "caml_int32_of_float", [ Float f ] -> int32 (Int32.of_float f)
+      | "caml_int32_to_float", [ Int32 i ] -> Some (Float (Int32.to_float i))
+      | "caml_int32_neg", _ -> int32_unop l Int32.neg
+      | "caml_int32_add", _ -> int32_binop l Int32.add
+      | "caml_int32_sub", _ -> int32_binop l Int32.sub
+      | "caml_int32_mul", _ -> int32_binop l Int32.mul
+      | "caml_int32_and", _ -> int32_binop l Int32.logand
+      | "caml_int32_or", _ -> int32_binop l Int32.logor
+      | "caml_int32_xor", _ -> int32_binop l Int32.logxor
+      | "caml_int32_div", [ _; Int32 i ] when not (Int32.equal i 0l) ->
+          int32_binop l Int32.div
+      | "caml_int32_mod", [ _; Int32 i ] when not (Int32.equal i 0l) ->
+          int32_binop l Int32.rem
+      | "caml_int32_shift_left", _ -> int32_shiftop l Int32.shift_left
+      | "caml_int32_shift_right", _ -> int32_shiftop l Int32.shift_right
+      | "caml_int32_shift_right_unsigned", _ -> int32_shiftop l Int32.shift_right_logical
+      | "caml_int32_compare", [ Int32 i; Int32 j ] ->
+          Some (Int (Targetint.of_int_exn (Int32.compare i j)))
+      | "caml_int32_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
+      | "caml_int32_of_int", [ Int i ] -> int32 (Targetint.to_int32 i)
+      | "caml_nativeint_of_int32", [ Int32 i ] -> Some (NativeInt i)
+      | "caml_nativeint_to_int32", [ NativeInt i ] -> Some (Int32 i)
+      (* nativeint *)
+      | "caml_nativeint_bits_of_float", [ Float f ] -> nativeint (Int32.bits_of_float f)
+      | "caml_nativeint_float_of_bits", [ Int i ] ->
+          Some (Float (Int32.float_of_bits (Targetint.to_int32 i)))
+      | "caml_nativeint_float_of_bits", [ NativeInt i ] ->
+          Some (Float (Int32.float_of_bits i))
+      | "caml_nativeint_of_float", [ Float f ] -> nativeint (Int32.of_float f)
+      | "caml_nativeint_to_float", [ NativeInt i ] -> Some (Float (Int32.to_float i))
+      | "caml_nativeint_neg", _ -> nativeint_unop l Int32.neg
+      | "caml_nativeint_add", _ -> nativeint_binop l Int32.add
+      | "caml_nativeint_sub", _ -> nativeint_binop l Int32.sub
+      | "caml_nativeint_mul", _ -> nativeint_binop l Int32.mul
+      | "caml_nativeint_and", _ -> nativeint_binop l Int32.logand
+      | "caml_nativeint_or", _ -> nativeint_binop l Int32.logor
+      | "caml_nativeint_xor", _ -> nativeint_binop l Int32.logxor
+      | "caml_nativeint_div", [ _; NativeInt i ] when not (Int32.equal i 0l) ->
+          nativeint_binop l Int32.div
+      | "caml_nativeint_mod", [ _; NativeInt i ] when not (Int32.equal i 0l) ->
+          nativeint_binop l Int32.rem
+      | "caml_nativeint_shift_left", _ -> nativeint_shiftop l Int32.shift_left
+      | "caml_nativeint_shift_right", _ -> nativeint_shiftop l Int32.shift_right
+      | "caml_nativeint_shift_right_unsigned", _ ->
+          nativeint_shiftop l Int32.shift_right_logical
+      | "caml_nativeint_compare", [ NativeInt i; NativeInt j ] ->
+          Some (Int (Targetint.of_int_exn (Int32.compare i j)))
+      | "caml_nativeint_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
+      | "caml_nativeint_of_int", [ Int i ] -> nativeint (Targetint.to_int32 i)
+      (* int64 *)
+      | "caml_int64_bits_of_float", [ Float f ] -> int64 (Int64.bits_of_float f)
+      | "caml_int64_float_of_bits", [ Int64 i ] -> Some (Float (Int64.float_of_bits i))
+      | "caml_int64_of_float", [ Float f ] -> int64 (Int64.of_float f)
+      | "caml_int64_to_float", [ Int64 i ] -> Some (Float (Int64.to_float i))
+      | "caml_int64_neg", _ -> int64_unop l Int64.neg
+      | "caml_int64_add", _ -> int64_binop l Int64.add
+      | "caml_int64_sub", _ -> int64_binop l Int64.sub
+      | "caml_int64_mul", _ -> int64_binop l Int64.mul
+      | "caml_int64_and", _ -> int64_binop l Int64.logand
+      | "caml_int64_or", _ -> int64_binop l Int64.logor
+      | "caml_int64_xor", _ -> int64_binop l Int64.logxor
+      | "caml_int64_div", [ _; Int64 i ] when not (Int64.equal i 0L) ->
+          int64_binop l Int64.div
+      | "caml_int64_mod", [ _; Int64 i ] when not (Int64.equal i 0L) ->
+          int64_binop l Int64.rem
+      | "caml_int64_shift_left", _ -> int64_shiftop l Int64.shift_left
+      | "caml_int64_shift_right", _ -> int64_shiftop l Int64.shift_right
+      | "caml_int64_shift_right_unsigned", _ -> int64_shiftop l Int64.shift_right_logical
+      | "caml_int64_compare", [ Int64 i; Int64 j ] ->
+          Some (Int (Targetint.of_int_exn (Int64.compare i j)))
+      | "caml_int64_to_int", [ Int64 i ] ->
+          Some (Int (Targetint.of_int32_truncate (Int64.to_int32 i)))
+      | ( ("caml_int64_of_int" | "caml_int64_of_int32" | "caml_int64_of_nativeint")
+        , [ Int i ] ) -> int64 (Int64.of_int32 (Targetint.to_int32 i))
+      | "caml_int64_to_int32", [ Int64 i ] -> int32 (Int64.to_int32 i)
+      | "caml_int64_of_int32", [ Int32 i ] -> int64 (Int64.of_int32 i)
+      | "caml_int64_to_nativeint", [ Int64 i ] -> nativeint (Int64.to_int32 i)
+      | "caml_int64_of_nativeint", [ NativeInt i ] -> int64 (Int64.of_int32 i)
+      (* others *)
       | ("caml_string_get" | "caml_string_unsafe_get"), [ String s; Int pos ] ->
           let pos = Targetint.to_int_exn pos in
           if Config.Flag.safe_string () && pos >= 0 && pos < String.length s
