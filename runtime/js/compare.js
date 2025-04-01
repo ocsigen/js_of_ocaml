@@ -256,7 +256,7 @@ function caml_compare_val(a, b, total) {
 function caml_compare(a, b) {
   return caml_compare_val(a, b, true);
 }
-//Provides: caml_int_compare mutable (const, const)
+//Provides: caml_int_compare const
 function caml_int_compare(a, b) {
   if (a < b) return -1;
   if (a === b) return 0;

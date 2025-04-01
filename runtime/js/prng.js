@@ -14,7 +14,7 @@ var caml_lxm_daba = caml_int64_of_string(
   caml_string_of_jsstring("0xdaba0b6eb09322e3"),
 );
 
-//Provides: caml_lxm_next
+//Provides: caml_lxm_next const
 //Requires: caml_int64_shift_left
 //Requires: caml_int64_shift_right_unsigned
 //Requires: caml_int64_or
