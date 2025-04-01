@@ -688,13 +688,13 @@ function caml_ml_bytes_length(s) {
   return s.l;
 }
 
-//Provides: caml_string_concat
+//Provides: caml_string_concat const
 //If: js-string
 function caml_string_concat(a, b) {
   return a + b;
 }
 
-//Provides: caml_string_concat
+//Provides: caml_string_concat const
 //Requires: caml_convert_string_to_bytes, MlBytes
 //If: !js-string
 function caml_string_concat(s1, s2) {
