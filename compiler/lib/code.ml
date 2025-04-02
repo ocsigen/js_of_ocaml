@@ -843,7 +843,6 @@ let with_invariant = Debug.find "invariant"
 let check_defs = false
 
 let invariant { blocks; start; _ } =
-  let target = Config.target () in
   if with_invariant ()
   then (
     assert (Addr.Map.mem start blocks);
@@ -859,11 +858,7 @@ let invariant { blocks; start; _ } =
         Var.ISet.add defs x)
     in
     let check_constant = function
-      | NativeInt _ | Int32 _ ->
-          assert (
-            match target with
-            | `Wasm -> true
-            | _ -> false)
+      | NativeInt _ | Int32 _ -> ()
       | String _ | NativeString _ | Float _ | Float_array _ | Int _ | Int64 _
       | Tuple (_, _, _) -> ()
     in

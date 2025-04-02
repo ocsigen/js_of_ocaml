@@ -76,7 +76,11 @@ let has_arity nm a = try Hashtbl.find arities (resolve nm) = a with Not_found ->
 
 let is_pure nm =
   match nm with
-  | "%identity" | "%direct_int_div" | "%direct_int_mod" | "%direct_int_mul" -> true
+  | "%identity"
+  | "%identity-ints-repr"
+  | "%direct_int_div"
+  | "%direct_int_mod"
+  | "%direct_int_mul" -> true
   | _ -> Poly.(kind nm <> `Mutator)
 
 let exists p = Hashtbl.mem kinds p

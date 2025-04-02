@@ -63,7 +63,6 @@ val the_native_string_of :
 
 val the_block_contents_of : Info.t -> Code.prim_arg -> Code.Var.t array option
 
-val the_int :
-  target:[ `JavaScript | `Wasm ] -> Info.t -> Code.prim_arg -> Targetint.t option
+val the_int : Info.t -> Code.prim_arg -> Targetint.t option
 
 val f : ?skip_param:bool -> Code.program -> Code.program * Info.t

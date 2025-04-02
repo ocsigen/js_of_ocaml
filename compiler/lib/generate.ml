@@ -511,8 +511,7 @@ let rec constant_rec ~ctx x level instrs =
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> targetint i, instrs
-  | Int32 _ | NativeInt _ ->
-      assert false (* Should not be produced when compiling to Javascript *)
+  | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
 
 let constant ~ctx x level =
   let expr, instr = constant_rec ~ctx x level [] in
@@ -1457,15 +1456,21 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             return (add ca cb)
         | Extern name, l -> (
             let name = Primitive.resolve name in
-            match internal_prim name with
-            | Some f -> f l ctx loc
-            | None ->
-                if String.is_prefix name ~prefix:"%"
-                then failwith (Printf.sprintf "Unresolved internal primitive: %s" name);
-                let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
-                let* () = info ~need_loc:true (kind (Primitive.kind name)) in
-                let* args = list_map (fun x -> access' ~ctx x) l in
-                return (J.call prim args loc))
+            match name, l with
+            | "%identity-ints-repr", [ x ] ->
+                let* cx = access' ~ctx x in
+                return cx
+            | _ -> (
+                match internal_prim name with
+                | Some f -> f l ctx loc
+                | None ->
+                    if String.is_prefix name ~prefix:"%"
+                    then
+                      failwith (Printf.sprintf "Unresolved internal primitive: %s" name);
+                    let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
+                    let* () = info ~need_loc:true (kind (Primitive.kind name)) in
+                    let* args = list_map (fun x -> access' ~ctx x) l in
+                    return (J.call prim args loc)))
         | Not, [ x ] ->
             let* cx = access' ~ctx x in
             return (J.EBin (J.Minus, one, cx))
@@ -1532,7 +1537,8 @@ and translate_instr ctx expr_queue loc instr =
       | 1, _
         when Config.Flag.compact () && ((not (Config.Flag.pretty ())) || not (keep_name x))
         -> enqueue expr_queue x loc e'
-      | 1, Constant (Int _ | Float _) -> enqueue expr_queue x loc e'
+      | 1, Constant (Int _ | Int32 _ | NativeInt _ | Float _) ->
+          enqueue expr_queue x loc e'
       | _ ->
           flush_queue
             expr_queue
@@ -2211,6 +2217,8 @@ let f
   p
 
 let init () =
+  let identity_ints_repr = "%identity-ints-repr" in
+  assert (Primitive.is_pure identity_ints_repr);
   List.iter
     ~f:(fun (nm, nm') -> Primitive.alias nm nm')
     [ "%int_mul", "caml_mul"
@@ -2228,10 +2236,10 @@ let init () =
     ; "caml_int32_shift_left", "%int_lsl"
     ; "caml_int32_shift_right", "%int_asr"
     ; "caml_int32_shift_right_unsigned", "%int_lsr"
-    ; "caml_int32_of_int", "%identity"
-    ; "caml_int32_to_int", "%identity"
+    ; "caml_int32_of_int", identity_ints_repr
+    ; "caml_int32_to_int", identity_ints_repr
     ; "caml_int32_of_float", "caml_int_of_float"
-    ; "caml_int32_to_float", "%identity"
+    ; "caml_int32_to_float", identity_ints_repr
     ; "caml_int32_format", "caml_format_int"
     ; "caml_int32_of_string", "caml_int_of_string"
     ; "caml_int32_compare", "caml_int_compare"
@@ -2247,12 +2255,12 @@ let init () =
     ; "caml_nativeint_shift_left", "%int_lsl"
     ; "caml_nativeint_shift_right", "%int_asr"
     ; "caml_nativeint_shift_right_unsigned", "%int_lsr"
-    ; "caml_nativeint_of_int", "%identity"
-    ; "caml_nativeint_to_int", "%identity"
+    ; "caml_nativeint_of_int", identity_ints_repr
+    ; "caml_nativeint_to_int", identity_ints_repr
     ; "caml_nativeint_of_float", "caml_int_of_float"
-    ; "caml_nativeint_to_float", "%identity"
-    ; "caml_nativeint_of_int32", "%identity"
-    ; "caml_nativeint_to_int32", "%identity"
+    ; "caml_nativeint_to_float", identity_ints_repr
+    ; "caml_nativeint_of_int32", identity_ints_repr
+    ; "caml_nativeint_to_int32", identity_ints_repr
     ; "caml_nativeint_format", "caml_format_int"
     ; "caml_nativeint_of_string", "caml_int_of_string"
     ; "caml_nativeint_compare", "caml_int_compare"
@@ -2261,7 +2269,7 @@ let init () =
     ; "caml_int64_to_int", "caml_int64_to_int32"
     ; "caml_int64_of_nativeint", "caml_int64_of_int32"
     ; "caml_int64_to_nativeint", "caml_int64_to_int32"
-    ; "caml_float_of_int", "%identity"
+    ; "caml_float_of_int", identity_ints_repr
     ; "caml_array_get_float", "caml_array_get"
     ; "caml_floatarray_get", "caml_array_get"
     ; "caml_array_get_addr", "caml_array_get"

@@ -49,9 +49,6 @@ let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
   let args =
     match l with
     | [ Float i; Float j ] -> Some (i, j)
-    | [ Int i; Int j ] -> Some (Targetint.to_float i, Targetint.to_float j)
-    | [ Int i; Float j ] -> Some (Targetint.to_float i, j)
-    | [ Float i; Int j ] -> Some (i, Targetint.to_float j)
     | _ -> None
   in
   match args with
@@ -66,7 +63,6 @@ let float_binop (l : constant list) (f : float -> float -> float) : constant opt
 let float_unop (l : constant list) (f : float -> float) : constant option =
   match l with
   | [ Float i ] -> Some (Float (f i))
-  | [ Int i ] -> Some (Float (f (Targetint.to_float i)))
   | _ -> None
 
 let bool' b = Int Targetint.(if b then one else zero)
@@ -86,9 +82,21 @@ let eval_prim x =
   | Eq, [ Int i; Int j ] -> bool Targetint.(i = j)
   | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
   | Ult, [ Int i; Int j ] -> bool (Targetint.(j < zero) || Targetint.(i < j))
-  | Extern name, l -> (
-      let name = Primitive.resolve name in
+  | Extern name', l -> (
+      let name = Primitive.resolve name' in
       match name, l with
+      | "%identity-ints-repr", [ c ] -> (
+          match name', c with
+          | "caml_int32_of_int", Int x -> Some (Int32 (Targetint.to_int32 x))
+          | "caml_int32_to_int", Int32 x -> Some (Int (Targetint.of_int32_exn x))
+          | "caml_int32_to_float", Int32 x -> Some (Float (Int32.to_float x))
+          | "caml_nativeint_of_int", Int x -> Some (NativeInt (Targetint.to_int32 x))
+          | "caml_nativeint_to_int", NativeInt x -> Some (Int (Targetint.of_int32_exn x))
+          | "caml_nativeint_to_float", NativeInt x -> Some (Float (Int32.to_float x))
+          | "caml_nativeint_of_int32", Int32 x -> Some (NativeInt x)
+          | "caml_nativeint_to_int32", NativeInt x -> Some (Int32 x)
+          | "caml_float_of_int", Int x -> Some (Float (Targetint.to_float x))
+          | _ -> assert false)
       (* int *)
       | "%int_add", _ -> int_binop l Targetint.add
       | "%int_sub", _ -> int_binop l Targetint.sub
@@ -155,14 +163,14 @@ let eval_prim x =
       | _ -> None)
   | _ -> None
 
-let the_length_of ~target info x =
+let the_length_of info x =
   get_approx
     info
     (fun x ->
       match Flow.Info.def info x with
       | Some (Constant (String s)) -> Some (Targetint.of_int_exn (String.length s))
       | Some (Prim (Extern "caml_create_string", [ arg ]))
-      | Some (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int ~target info arg
+      | Some (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int info arg
       | None | Some _ -> None)
     None
     (fun u v ->
@@ -184,9 +192,6 @@ let is_int info x =
         (fun x ->
           match Flow.Info.def info x with
           | Some (Constant (Int _)) -> Y
-          | Some (Constant (NativeInt _ | Int32 _)) ->
-              (* These Wasm-specific constants are boxed *)
-              N
           | Some (Block (_, _, _, _) | Constant _) -> N
           | None | Some _ -> Unknown)
         Unknown
@@ -197,9 +202,6 @@ let is_int info x =
           | _ -> Unknown)
         x
   | Pc (Int _) -> Y
-  | Pc (NativeInt _ | Int32 _) ->
-      (* These Wasm-specific constants are boxed *)
-      N
   | Pc _ -> N
 
 let the_tag_of info x get =
@@ -302,7 +304,7 @@ let eval_instr ~target info i =
       let c =
         match s with
         | Pc (String s) -> Some (Targetint.of_int_exn (String.length s))
-        | Pv v -> the_length_of ~target info v
+        | Pv v -> the_length_of info v
         | _ -> None
       in
       match c with
@@ -384,7 +386,7 @@ let eval_instr ~target info i =
                             (* Avoid duplicating the constant here as it would cause an
                                allocation *)
                             arg
-                        | Some (Int32 _ | NativeInt _), `JavaScript -> assert false
+                        | Some ((Int32 _ | NativeInt _) as c), `JavaScript -> Pc c
                         | Some ((Float _ | NativeString _) as c), `JavaScript -> Pc c
                         | Some (String _ as c), `JavaScript
                           when Config.Flag.use_js_string () -> Pc c
