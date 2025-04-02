@@ -190,6 +190,7 @@ and instruction =
   | StructSet of var * int * expression * expression
   | Return_call of var * expression list
   | Return_call_ref of var * expression * expression list
+  | Unreachable
   | Event of Parse_info.t  (** Location information *)
 
 type import_desc =
@@ -209,6 +210,7 @@ type module_field =
       { name : var
       ; exported_name : string option
       ; typ : func_type
+      ; type_name : var option
       ; param_names : var list
       ; locals : (var * value_type) list
       ; body : instruction list

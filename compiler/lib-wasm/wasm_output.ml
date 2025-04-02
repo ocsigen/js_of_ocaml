@@ -220,10 +220,13 @@ end = struct
     List.fold_left
       ~f:(fun acc field ->
         match field with
-        | Function { typ; _ } | Import { desc = Fun typ; _ } -> func_type acc typ
+        | Function { typ; type_name = None; _ } | Import { desc = Fun typ; _ } ->
+            func_type acc typ
         | Import { desc = Tag typ; _ } -> func_type acc { params = [ typ ]; result = [] }
         | Type l -> explicit_definition acc l
-        | Import { desc = Global _; _ } | Data _ | Global _ | Tag _ -> acc)
+        | Function { type_name = Some _; _ }
+        | Import { desc = Global _; _ }
+        | Data _ | Global _ | Tag _ -> acc)
       ~init:acc
       fields
 
@@ -261,25 +264,30 @@ end = struct
             output_uint ch len);
           List.fold_left
             ~f:(fun idx { name; typ; supertype; final } ->
-              Hashtbl.add type_names name idx;
-              (match supertype, final with
-              | None, true -> ()
-              | None, false ->
-                  output_byte ch 0x50;
-                  output_byte ch 0
-              | Some supertype, _ ->
-                  output_byte ch (if final then 0X4F else 0x50);
-                  output_byte ch 1;
-                  output_uint ch (Hashtbl.find type_names supertype));
-              (match typ with
-              | Array field_type ->
-                  output_byte ch 0x5E;
-                  output_fieldtype type_names ch field_type
-              | Struct l ->
-                  output_byte ch 0x5F;
-                  output_vec (output_fieldtype type_names) ch l
-              | Func typ -> output_functype type_names ch typ);
-              idx + 1)
+              match typ, supertype, final, len with
+              | Func typ, None, true, 1 when Hashtbl.mem func_types typ ->
+                  Hashtbl.add type_names name (Hashtbl.find func_types typ);
+                  idx
+              | _ ->
+                  Hashtbl.add type_names name idx;
+                  (match supertype, final with
+                  | None, true -> ()
+                  | None, false ->
+                      output_byte ch 0x50;
+                      output_byte ch 0
+                  | Some supertype, _ ->
+                      output_byte ch (if final then 0X4F else 0x50);
+                      output_byte ch 1;
+                      output_uint ch (Hashtbl.find type_names supertype));
+                  (match typ with
+                  | Array field_type ->
+                      output_byte ch 0x5E;
+                      output_fieldtype type_names ch field_type
+                  | Struct l ->
+                      output_byte ch 0x5F;
+                      output_vec (output_fieldtype type_names) ch l
+                  | Func typ -> output_functype type_names ch typ);
+                  idx + 1)
             ~init:idx
             l)
         0
@@ -758,6 +766,7 @@ end = struct
         output_expression st ch e';
         output_byte ch 0x15;
         output_uint ch (Hashtbl.find st.type_names typ)
+    | Unreachable -> output_byte ch 0x00
     | Event _ -> ()
 
   let output_globals ch (st, global_idx, fields) =
@@ -938,7 +947,7 @@ end = struct
           ~f:(fun set i -> expr_function_references i set)
           ~init:(expr_function_references e' set)
           l
-    | Event _ -> set
+    | Unreachable | Event _ -> set
 
   let function_references fields set =
     List.fold_left
