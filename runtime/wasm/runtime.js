@@ -20,7 +20,7 @@
   "use strict";
   const { link, src, generated } = args;
 
-  const isNode = globalThis?.process?.versions?.node;
+  const isNode = globalThis.process?.versions?.node;
 
   const math = {
     cos: Math.cos,
@@ -144,7 +144,7 @@
   }
 
   function getenv(n) {
-    if (isNode && process.env[n] !== undefined) return process.env[n];
+    if (isNode && globalThis.process.env[n] !== undefined) return globalThis.process.env[n];
     return globalThis.jsoo_env?.[n];
   }
 
@@ -189,7 +189,7 @@
     );
   }
 
-  const on_windows = isNode && process.platform === "win32";
+  const on_windows = isNode && globalThis.process.platform === "win32";
 
   const bindings = {
     jstag:
@@ -396,7 +396,7 @@
         return caml_alloc_times(t.user / 1e6, t.system / 1e6);
       } else {
         var t = performance.now() / 1000;
-        return call_alloc_times(t, t);
+        return caml_alloc_times(t, t);
       }
     },
     gmtime: (t) => {
@@ -467,8 +467,8 @@
     register_channel,
     unregister_channel,
     channel_list,
-    exit: (n) => isNode && process.exit(n),
-    argv: () => (isNode ? process.argv.slice(1) : ["a.out"]),
+    exit: (n) => isNode && globalThis.process.exit(n),
+    argv: () => (isNode ? globalThis.process.argv.slice(1) : ["a.out"]),
     on_windows: +on_windows,
     getenv,
     backtrace_status: () => record_backtrace_flag,
@@ -483,8 +483,8 @@
     },
     isatty: (fd) => +require("node:tty").isatty(fd),
     time: () => performance.now(),
-    getcwd: () => (isNode ? process.cwd() : "/static"),
-    chdir: (x) => process.chdir(x),
+    getcwd: () => (isNode ? globalThis.process.cwd() : "/static"),
+    chdir: (x) => globalThis.process.chdir(x),
     mkdir: (p, m) => fs.mkdirSync(p, m),
     rmdir: (p) => fs.rmdirSync(p),
     link: (d, s) => fs.linkSync(d, s),

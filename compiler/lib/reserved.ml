@@ -155,6 +155,7 @@ let provided =
     ; "Uint32Array"
     ; "Uint8Array"
     ; "Uint8ClampedArray"
+    ; "URL"
     ; "atob"
     ; "btoa"
     ; "clearInterval"
@@ -163,4 +164,13 @@ let provided =
     ; "importScripts" (* only available in WebWorker *)
     ; "performance" (* Not available in node until v16+ *)
     ; "setTimeout"
+    ; "Map"
+    ; "Set"
+    ; "WeakRef"
+    ; "WeakMap"
+    ; "FinalizationRegistry"
+    ; "WebAssembly"
+    ; "Promise"
+    ; "fetch"
+    ; "crypto"
     ]
