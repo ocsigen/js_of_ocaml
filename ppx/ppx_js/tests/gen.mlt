@@ -409,8 +409,8 @@ let o () =
                        ("m3",
                          (Js_of_ocaml.Js.Unsafe.inject
                             (Js_of_ocaml.Js.wrap_meth_callback t31)))|])
-    (fun _ : 'a -> unit-> fun (type a) (a : a) -> ignore a)
-    (fun _ : int -> unit-> fun (type a) (a : a) -> ignore a)
+    (fun _ : 'a -> unit-> fun (type a) -> fun (a : a) -> ignore a)
+    (fun _ : int -> unit-> fun (type a) -> fun (a : a) -> ignore a)
     (fun _ : 'b -> unit-> fun (a : 'b) -> ignore a)
     ((fun self m1 m2 m3 ->
         object method m1 = m1 self method m2 = m2 self method m3 = m3 self
