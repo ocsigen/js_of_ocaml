@@ -4,7 +4,7 @@
  (synopsis "Js_of_ocaml ppx")
  (libraries compiler-libs.common ppxlib)
  (preprocess
-  (pps ppxlib.metaquot)))
+  (pps ppx_optcomp_light ppxlib.metaquot)))
 
 (rule
  (targets ppx_js_internal.ml)

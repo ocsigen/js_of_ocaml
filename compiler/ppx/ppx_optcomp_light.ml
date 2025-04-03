@@ -158,6 +158,8 @@ let keep loc (attrs : attributes) =
           let rec eval = function
             | { pexp_desc = Pexp_ident { txt = Lident "ocaml_version"; _ }; _ } ->
                 Version Version.current
+            | { pexp_desc = Pexp_ident { txt = Lident "ast_version"; _ }; _ } ->
+                Int Ppxlib.Selected_ast.version
             | { pexp_desc = Pexp_construct ({ txt = Lident "true"; _ }, None); _ } ->
                 Bool true
             | { pexp_desc = Pexp_construct ({ txt = Lident "false"; _ }, None); _ } ->
@@ -275,11 +277,14 @@ let traverse =
       in
       super#structure items
 
-    method! cases =
-      filter_map ~f:(fun case ->
-          match filter_pattern case.pc_lhs with
-          | None -> None
-          | Some pattern -> Some { case with pc_lhs = pattern })
+    method! cases cases =
+      let cases =
+        filter_map cases ~f:(fun case ->
+            match filter_pattern case.pc_lhs with
+            | None -> None
+            | Some pattern -> Some { case with pc_lhs = pattern })
+      in
+      super#cases cases
   end
 
 let () =
