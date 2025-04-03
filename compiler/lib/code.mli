@@ -89,14 +89,6 @@ module Var : sig
   module Tbl : sig
     type key = t
 
-    module DataSet : sig
-      type 'a t
-
-      val iter : ('a -> unit) -> 'a t -> unit
-
-      val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
-    end
-
     type 'a t
 
     type size = unit
@@ -108,10 +100,6 @@ module Var : sig
     val length : 'a t -> int
 
     val make : size -> 'a -> 'a t
-
-    val make_set : size -> 'a DataSet.t t
-
-    val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end

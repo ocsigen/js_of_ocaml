@@ -31,6 +31,10 @@ let times = Debug.find "times"
 
 open Code
 
+let associated_list h x = try Var.Hashtbl.find h x with Not_found -> []
+
+let add_to_list h x v = Var.Hashtbl.replace h x (v :: associated_list h x)
+
 (****)
 
 (* Compute the list of variables containing the return values of each
@@ -83,7 +87,7 @@ type escape_status =
 
 type state =
   { vars : Var.ISet.t (* Set of all veriables considered *)
-  ; deps : Var.t Var.Tbl.DataSet.t Var.Tbl.t (* Dependency between variables *)
+  ; deps : Var.t list Var.Tbl.t (* Dependency between variables *)
   ; defs : def array (* Definition of each variable *)
   ; variable_may_escape : escape_status array
         (* Any value bound to this variable may escape *)
@@ -93,20 +97,24 @@ type state =
   ; possibly_mutable : Var.ISet.t (* This value may be mutable *)
   ; return_values : Var.Set.t Var.Map.t
         (* Set of variables holding return values of each function *)
-  ; known_cases : (Var.t, int list) Hashtbl.t
+  ; functions_from_returned_value : Var.t list Var.Hashtbl.t
+        (* Functions associated to each return value *)
+  ; known_cases : int list Var.Hashtbl.t
         (* Possible tags for a block after a [switch]. This is used to
            get a more precise approximation of the effect of a field
            access [Field] *)
   ; applied_functions : (Var.t * Var.t, unit) Hashtbl.t
         (* Functions that have been already considered at a call site.
            This is to avoid repeated computations *)
+  ; function_call_sites : Var.t list Var.Hashtbl.t
+        (* Known call sites of each functions *)
   ; fast : bool
   }
 
 let add_var st x = Var.ISet.add st.vars x
 
 (* x depends on y *)
-let add_dep st x y = Var.Tbl.add_set st.deps y x
+let add_dep st x y = Var.Tbl.set st.deps y (x :: Var.Tbl.get st.deps y)
 
 let add_expr_def st x e =
   add_var st x;
@@ -223,10 +231,10 @@ let expr_deps blocks st x e =
       match st.defs.(Var.idx f) with
       | Expr (Closure (params, _)) when List.length args = List.length params ->
           Hashtbl.add st.applied_functions (x, f) ();
+          add_to_list st.function_call_sites f x;
           if st.fast
           then List.iter ~f:(fun a -> do_escape st Escape a) args
-          else List.iter2 ~f:(fun p a -> add_assign_def st p a) params args;
-          Var.Set.iter (fun y -> add_dep st x y) (Var.Map.find f st.return_values)
+          else List.iter2 ~f:(fun p a -> add_assign_def st p a) params args
       | _ -> ())
   | Closure (l, cont) ->
       List.iter l ~f:(fun x -> add_param_def st x);
@@ -285,7 +293,7 @@ let program_deps st { start; blocks; _ } =
                       ~f:(fun i ->
                         match i with
                         | Let (y, Field (x', _, _)) when Var.equal b x' ->
-                            Hashtbl.add st.known_cases y tags
+                            Var.Hashtbl.add st.known_cases y tags
                         | _ -> ())
                       block.body)
                   h
@@ -420,7 +428,7 @@ let propagate st ~update approx x =
           match Var.Tbl.get approx y with
           | Values { known; others } ->
               let tags =
-                try Some (Hashtbl.find st.known_cases x) with Not_found -> None
+                try Some (Var.Hashtbl.find st.known_cases x) with Not_found -> None
               in
               Domain.join_set
                 ~others
@@ -506,6 +514,7 @@ let propagate st ~update approx x =
                       if not (Hashtbl.mem st.applied_functions (x, g))
                       then (
                         Hashtbl.add st.applied_functions (x, g) ();
+                        add_to_list st.function_call_sites g x;
                         if st.fast
                         then
                           List.iter
@@ -518,10 +527,7 @@ let propagate st ~update approx x =
                               add_assign_def st p a;
                               update ~children:false p)
                             params
-                            args;
-                        Var.Set.iter
-                          (fun y -> add_dep st x y)
-                          (Var.Map.find g st.return_values));
+                            args);
                       Domain.join_set
                         ~update
                         ~st
@@ -529,7 +535,7 @@ let propagate st ~update approx x =
                         (fun y -> Var.Tbl.get approx y)
                         (Var.Map.find g st.return_values)
                   | Expr (Closure (_, _)) ->
-                      (* The funciton is partially applied or over applied *)
+                      (* The function is partially applied or over applied *)
                       List.iter
                         ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
                         args;
@@ -599,7 +605,11 @@ let solver st =
   let g =
     { G.domain = st.vars
     ; G.iter_children =
-        (fun f x -> Var.Tbl.DataSet.iter (fun k -> f k) (Var.Tbl.get st.deps x))
+        (fun f x ->
+          List.iter ~f (Var.Tbl.get st.deps x);
+          List.iter
+            ~f:(fun g -> List.iter ~f (associated_list st.function_call_sites g))
+            (associated_list st.functions_from_returned_value x))
     }
   in
   let res = Solver.f' () g (propagate st) in
@@ -632,24 +642,30 @@ let f ~fast p =
   let rets = return_values p in
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
-  let deps = Var.Tbl.make_set () in
+  let deps = Var.Tbl.make () [] in
   let defs = Array.make nv undefined in
   let variable_may_escape = Array.make nv No in
   let variable_possibly_mutable = Var.ISet.empty () in
   let may_escape = Array.make nv No in
   let possibly_mutable = Var.ISet.empty () in
+  let functions_from_returned_value = Var.Hashtbl.create 128 in
+  Var.Map.iter
+    (fun f s -> Var.Set.iter (fun x -> add_to_list functions_from_returned_value x f) s)
+    rets;
   let st =
     { vars
     ; deps
     ; defs
     ; return_values = rets
+    ; functions_from_returned_value
     ; variable_may_escape
     ; variable_possibly_mutable
     ; may_escape
     ; possibly_mutable
-    ; known_cases = Hashtbl.create 16
+    ; known_cases = Var.Hashtbl.create 16
     ; applied_functions = Hashtbl.create 16
     ; fast
+    ; function_call_sites = Var.Hashtbl.create 128
     }
   in
   program_deps st p;
