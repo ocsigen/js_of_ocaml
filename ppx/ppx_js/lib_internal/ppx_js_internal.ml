@@ -305,7 +305,7 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
         | eobj :: eargs ->
             let eargs = inject_args eargs in
             Js.unsafe "meth_call" [ eobj; ocaml_str (unescape meth); eargs ])
-      (Arg.make () :: List.map args ~f:(fun (label, _) -> Arg.make ~label ()))
+      (List.map (nolabel :: List.map ~f:fst args) ~f:(fun label -> Arg.make ~label ()))
   in
   Exp.apply
     ~loc:apply_loc
@@ -455,7 +455,7 @@ let new_object constr args =
       (function
         | constr :: args -> Js.unsafe "new_obj" [ constr; inject_args args ]
         | _ -> assert false)
-      (Arg.make () :: List.map args ~f:(fun (label, _) -> Arg.make ~label ()))
+      (List.map (nolabel :: List.map ~f:fst args) ~f:(fun label -> Arg.make ~label ()))
   in
   let gloc = { constr.loc with loc_ghost = true } in
   Exp.apply
@@ -583,12 +583,14 @@ let preprocess_literal_object mappper fields :
         let body, body_ty = drop_pexp_poly (mappper body) in
         let rec create_meth_ty exp =
           match exp.pexp_desc with
-          | Pexp_fun (label, _, _, body) -> Arg.make ~label () :: create_meth_ty body
-          | Pexp_function _ -> [ Arg.make () ]
+          | Pexp_fun (label, _, _, body) -> label :: create_meth_ty body
+          | Pexp_function _ -> [ nolabel ]
           | Pexp_newtype (_, body) -> create_meth_ty body
           | _ -> []
         in
-        let fun_ty = create_meth_ty body in
+        let fun_ty =
+          List.map ~f:(fun label -> Arg.make ~label ()) (create_meth_ty body)
+        in
         let body =
           match body_ty with
           | None -> body
