@@ -50,4 +50,10 @@ RUN eval $(opam env) \
  && dune build --root janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.wasm.js lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.js
 RUN cp -r janestreet/_build/default/lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.* ./benchmarks/benchmark-partial-render-table
 
+# CAMLBOY
+RUN opam install brr \
+ && git clone --depth 1 https://github.com/ocaml-wasm/CAMLBOY -b node \
+ && cd CAMLBOY \
+ && opam exec -- dune build --root . --profile release ./bin/web
+
 WORKDIR ./benchmarks
