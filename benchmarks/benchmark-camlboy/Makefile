@@ -8,10 +8,11 @@ SCRIPT=../../CAMLBOY/_build/default/bin/web/bench_node.bc
 ROM=../../CAMLBOY/resource/games/tobu.gb
 
 bench:
-	$(MAKE) perform COMPILER=Js_of_ocaml SUFFIX=.js
-	$(MAKE) perform COMPILER=Wasm_of_ocaml SUFFIX=.wasm.js
+	$(MAKE) perform COMPILER=Js_of_ocaml SUFFIX=.js KIND=js
+	$(MAKE) perform COMPILER=Wasm_of_ocaml SUFFIX=.wasm.js KIND=wasm
 
 perform:
 	node $(SCRIPT)$(SUFFIX) $(ROM) | \
 	tee /dev/stderr | \
-	ocaml output_results.ml $(COMPILER)
+	ocaml output_results.ml $(COMPILER) | \
+	sh ../utils/aggregate.sh $(KIND)
