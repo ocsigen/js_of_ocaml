@@ -105,13 +105,13 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t1) ->
-       fun (type t0) ->
+     fun (type t0) ->
+       fun (type t1) ->
          fun (type t2) ->
-           fun (t2 : res Js_of_ocaml.Js.t -> t1 -> t0 -> t2)
+           fun (t2 : res Js_of_ocaml.Js.t -> t0 -> t1 -> t2)
              (_ :
                res Js_of_ocaml.Js.t ->
-                 (res Js_of_ocaml.Js.t -> t1 -> t0 -> t2 Js_of_ocaml.Js.meth)
+                 (res Js_of_ocaml.Js.t -> t0 -> t1 -> t2 Js_of_ocaml.Js.meth)
                    -> res)
              : res Js_of_ocaml.Js.t->
              Js_of_ocaml.Js.Unsafe.obj
@@ -134,13 +134,13 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t4) ->
-       fun (type t3) ->
+     fun (type t3) ->
+       fun (type t4) ->
          fun (type t5) ->
-           fun (t5 : res Js_of_ocaml.Js.t -> t4 -> t3 -> t5)
+           fun (t5 : res Js_of_ocaml.Js.t -> t3 -> t4 -> t5)
              (_ :
                res Js_of_ocaml.Js.t ->
-                 (res Js_of_ocaml.Js.t -> t4 -> t3 -> t5 Js_of_ocaml.Js.meth)
+                 (res Js_of_ocaml.Js.t -> t3 -> t4 -> t5 Js_of_ocaml.Js.meth)
                    -> res)
              : res Js_of_ocaml.Js.t->
              Js_of_ocaml.Js.Unsafe.obj
@@ -163,13 +163,13 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t7) ->
-       fun (type t6) ->
+     fun (type t6) ->
+       fun (type t7) ->
          fun (type t8) ->
-           fun (t8 : res Js_of_ocaml.Js.t -> t7 -> t6 -> t8)
+           fun (t8 : res Js_of_ocaml.Js.t -> t6 -> t7 -> t8)
              (_ :
                res Js_of_ocaml.Js.t ->
-                 (res Js_of_ocaml.Js.t -> t7 -> t6 -> t8 Js_of_ocaml.Js.meth)
+                 (res Js_of_ocaml.Js.t -> t6 -> t7 -> t8 Js_of_ocaml.Js.meth)
                    -> res)
              : res Js_of_ocaml.Js.t->
              Js_of_ocaml.Js.Unsafe.obj
@@ -192,14 +192,14 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t10) ->
-       fun (type t9) ->
+     fun (type t9) ->
+       fun (type t10) ->
          fun (type t11) ->
-           fun (t11 : res Js_of_ocaml.Js.t -> t10 -> t9 -> t11)
+           fun (t11 : res Js_of_ocaml.Js.t -> t9 -> t10 -> t11)
              (_ :
                res Js_of_ocaml.Js.t ->
                  (res Js_of_ocaml.Js.t ->
-                    t10 -> t9 -> t11 Js_of_ocaml.Js.meth)
+                    t9 -> t10 -> t11 Js_of_ocaml.Js.meth)
                    -> res)
              : res Js_of_ocaml.Js.t->
              Js_of_ocaml.Js.Unsafe.obj
@@ -224,14 +224,14 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t13) ->
-       fun (type t12) ->
+     fun (type t12) ->
+       fun (type t13) ->
          fun (type t14) ->
-           fun (t14 : res Js_of_ocaml.Js.t -> t13 -> t12 -> t14)
+           fun (t14 : res Js_of_ocaml.Js.t -> t12 -> t13 -> t14)
              (_ :
                res Js_of_ocaml.Js.t ->
                  (res Js_of_ocaml.Js.t ->
-                    t13 -> t12 -> t14 Js_of_ocaml.Js.meth)
+                    t12 -> t13 -> t14 Js_of_ocaml.Js.meth)
                    -> res)
              : res Js_of_ocaml.Js.t->
              Js_of_ocaml.Js.Unsafe.obj
@@ -257,14 +257,14 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t16) ->
-       fun (type t15) ->
+     fun (type t15) ->
+       fun (type t16) ->
          fun (type t17) ->
-           fun (t17 : res Js_of_ocaml.Js.t -> t16 -> t15 -> t17)
+           fun (t17 : res Js_of_ocaml.Js.t -> t15 -> t16 -> t17)
              (_ :
                res Js_of_ocaml.Js.t ->
                  (res Js_of_ocaml.Js.t ->
-                    t16 -> t15 -> t17 Js_of_ocaml.Js.meth)
+                    t15 -> t16 -> t17 Js_of_ocaml.Js.meth)
                    -> res)
              : res Js_of_ocaml.Js.t->
              Js_of_ocaml.Js.Unsafe.obj
@@ -290,14 +290,14 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t19) ->
-       fun (type t18) ->
+     fun (type t18) ->
+       fun (type t19) ->
          fun (type t20) ->
-           fun (t20 : res Js_of_ocaml.Js.t -> t19 -> t18 -> t20)
+           fun (t20 : res Js_of_ocaml.Js.t -> t18 -> t19 -> t20)
              (_ :
                res Js_of_ocaml.Js.t ->
                  (res Js_of_ocaml.Js.t ->
-                    t19 -> t18 -> t20 Js_of_ocaml.Js.meth)
+                    t18 -> t19 -> t20 Js_of_ocaml.Js.meth)
                    -> res)
              : res Js_of_ocaml.Js.t->
              Js_of_ocaml.Js.Unsafe.obj
@@ -323,14 +323,14 @@ let o () =
 {|
 let o () =
   (fun (type res) ->
-     fun (type t22) ->
-       fun (type t21) ->
+     fun (type t21) ->
+       fun (type t22) ->
          fun (type t23) ->
-           fun (t23 : res Js_of_ocaml.Js.t -> t22 -> t21 -> t23)
+           fun (t23 : res Js_of_ocaml.Js.t -> t21 -> t22 -> t23)
              (_ :
                res Js_of_ocaml.Js.t ->
                  (res Js_of_ocaml.Js.t ->
-                    t22 -> t21 -> t23 Js_of_ocaml.Js.meth)
+                    t21 -> t22 -> t23 Js_of_ocaml.Js.meth)
                    -> res)
              : res Js_of_ocaml.Js.t->
              Js_of_ocaml.Js.Unsafe.obj
