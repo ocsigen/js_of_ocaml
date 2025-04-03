@@ -34,6 +34,6 @@ type t =
   ; effects : Config.effects_backend
   }
 
-val options : t Cmdliner.Term.t
+val options : unit -> t Cmdliner.Term.t
 
-val options_runtime_only : t Cmdliner.Term.t
+val options_runtime_only : unit -> t Cmdliner.Term.t
