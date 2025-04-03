@@ -34,13 +34,13 @@ module Param = struct
     { warm_up_time = 1.0
     ; min_measures = 10
     ; max_confidence = 0.03
-    ; max_duration = 20.
+    ; max_duration = 120.
     ; verbose = false
     }
 
-  let fast x = { x with min_measures = 5; max_confidence = 0.15 }
+  let fast x = { x with min_measures = 5; max_confidence = 0.15; max_duration = 20. }
 
-  let ffast x = { x with min_measures = 2; max_confidence = 42. }
+  let ffast x = { x with min_measures = 2; max_confidence = 42.; max_duration = 20. }
 
   let verbose x = { x with verbose = true }
 end

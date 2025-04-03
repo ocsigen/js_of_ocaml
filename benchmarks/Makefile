@@ -24,9 +24,9 @@ microbenchmarks:
 	make _noprecomp
 	$(RUN) ./report-wasm-cb.config ./report-jsoo-cb.config
 	$(REPORT) -format current-bench -config report-wasm-cb.config \
-	  -ylabel "Wasm_of_ocaml"
+	  -ylabel "Wasm_of_ocaml" | sh utils/aggregate.sh wasm
 	$(REPORT) -format current-bench -config report-jsoo-cb.config \
-	  -ylabel "Js_of_ocaml"
+	  -ylabel "Js_of_ocaml" | sh utils/aggregate.sh js
 
 graphsnopr: _noprecomp $(GRAPHSNOPR)
 
