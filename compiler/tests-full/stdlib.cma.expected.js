@@ -9146,11 +9146,11 @@
     caml_mul = runtime.caml_mul,
     caml_wrap_exception = runtime.caml_wrap_exception,
     global_data = runtime.caml_get_global_data(),
-    zero = 0,
-    one = 1,
     Stdlib = global_data.Stdlib,
     Stdlib_Sys = global_data.Stdlib__Sys,
-    Assert_failure = global_data.Assert_failure;
+    Assert_failure = global_data.Assert_failure,
+    zero = 0,
+    one = 1;
    function succ(n){ /*<<int32.ml:48:21>>*/ return n + 1 | 0;}
    function pred(n){ /*<<int32.ml:49:21>>*/ return n - 1 | 0;}
    function abs(n){
@@ -9159,10 +9159,10 @@
    function lognot(n){ /*<<int32.ml:53:29>>*/ return n ^ -1;}
    var
     _a_ =  /*<<?>>*/ Stdlib_Sys[9],
+    _b_ = [0, "int32.ml", 69, 6],
     minus_one = -1,
     min_int = -2147483648,
-    max_int = 2147483647,
-    _b_ = [0, "int32.ml", 69, 6];
+    max_int = 2147483647;
    if(32 === _a_)
     var
      max_int$0 =  /*<<int32.ml:58:20>>*/ Stdlib[19],
@@ -9428,10 +9428,10 @@
     caml_mul = runtime.caml_mul,
     caml_wrap_exception = runtime.caml_wrap_exception,
     global_data = runtime.caml_get_global_data(),
-    zero = 0,
-    one = 1,
     Stdlib = global_data.Stdlib,
-    Stdlib_Sys = global_data.Stdlib__Sys;
+    Stdlib_Sys = global_data.Stdlib__Sys,
+    zero = 0,
+    one = 1;
    function succ(n){ /*<<nativeint.ml:44:21>>*/ return n + 1 | 0;}
    function pred(n){ /*<<nativeint.ml:45:21>>*/ return n - 1 | 0;}
    function abs(n){
