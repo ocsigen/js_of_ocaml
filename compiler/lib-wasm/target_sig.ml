@@ -247,7 +247,10 @@ module type S = sig
   end
 
   val internal_primitives :
-    (string, (Code.prim_arg -> expression) -> Code.prim_arg list -> expression) Hashtbl.t
+    (string
+    * Primitive.kind
+    * ((Code.prim_arg -> expression) -> Code.prim_arg list -> expression))
+    list
 
   val handle_exceptions :
        result_typ:Wasm_ast.value_type list

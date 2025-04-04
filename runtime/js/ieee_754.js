@@ -186,7 +186,7 @@ function caml_nextafter_float(x, y) {
   return caml_int64_float_of_bits(bits);
 }
 
-//Provides: caml_trunc_float
+//Provides: caml_trunc_float const
 function caml_trunc_float(x) {
   return Math.trunc(x);
 }

@@ -1394,10 +1394,9 @@ module JavaScript = struct
     return (W.Call (wrap, [ Call (f, args) ]))
 end
 
-let internal_primitives = Hashtbl.create 100
-
-let () =
-  let register name f = Hashtbl.add internal_primitives name f in
+let internal_primitives =
+  let l = ref [] in
+  let register name ?(kind = `Mutator) f = l := (name, kind, f) :: !l in
   let module J = Javascript in
   let call_prim ~transl_prim_arg name args =
     let arity = List.length args in
@@ -1408,8 +1407,8 @@ let () =
     let* args = expression_list Fun.id args in
     return (W.Call (f, args))
   in
-  let register_js_expr prim_name =
-    register prim_name (fun transl_prim_arg l ->
+  let register_js_expr (prim_name, kind) =
+    register prim_name ~kind (fun transl_prim_arg l ->
         match l with
         | Code.[ Pc (String str) ] -> (
             try
@@ -1444,7 +1443,11 @@ let () =
   in
   List.iter
     ~f:register_js_expr
-    [ "caml_js_expr"; "caml_pure_js_expr"; "caml_js_var"; "caml_js_eval_string" ];
+    [ "caml_js_expr", `Mutator
+    ; "caml_pure_js_expr", `Pure
+    ; "caml_js_var", `Mutable
+    ; "caml_js_eval_string", `Mutator
+    ];
   register "%caml_js_opt_call" (fun transl_prim_arg l ->
       let arity = List.length l - 2 in
       let name = Printf.sprintf "call_%d" arity in
@@ -1661,7 +1664,8 @@ let () =
               , AUnknown ))
       in
       let l = List.map ~f:transl_prim_arg vl in
-      JavaScript.invoke_fragment name l)
+      JavaScript.invoke_fragment name l);
+  !l
 
 let externref = W.Ref { nullable = true; typ = Extern }
 

@@ -793,11 +793,6 @@
          (struct.new $float (tuple.extract 2 0 (local.get $r)))
          (ref.i31 (tuple.extract 2 1 (local.get $r)))))
 
-   (func (export "caml_signbit_float") (param $x f64) (result (ref eq))
-      (ref.i31
-         (i32.wrap_i64
-            (i64.shr_u (i64.reinterpret_f64 (local.get $x)) (i64.const 63)))))
-
    (func $erf (export "caml_erf_float") (param $x f64) (result f64)
       (local $a1 f64) (local $a2 f64) (local $a3 f64)
       (local $a4 f64) (local $a5 f64) (local $p f64)

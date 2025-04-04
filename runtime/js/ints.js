@@ -147,11 +147,11 @@ function caml_mod(x, y) {
   return x % y;
 }
 
-//Provides: caml_bswap16
+//Provides: caml_bswap16 const
 function caml_bswap16(x) {
   return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8);
 }
-//Provides: caml_int32_bswap
+//Provides: caml_int32_bswap const
 function caml_int32_bswap(x) {
   return (
     ((x & 0x000000ff) << 24) |
@@ -160,7 +160,7 @@ function caml_int32_bswap(x) {
     ((x & 0xff000000) >>> 24)
   );
 }
-//Provides: caml_int64_bswap
+//Provides: caml_int64_bswap const
 //Requires: caml_int64_to_bytes, caml_int64_of_bytes
 function caml_int64_bswap(x) {
   var y = caml_int64_to_bytes(x);
