@@ -30,11 +30,6 @@
       (func $caml_is_closure (param (ref eq)) (result i32)))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
-   (import "bindings" "map_new" (func $map_new (result (ref any))))
-   (import "bindings" "map_get"
-      (func $map_get (param (ref any)) (param (ref eq)) (result i31ref)))
-   (import "bindings" "map_set"
-      (func $map_set (param (ref any)) (param (ref eq)) (param (ref i31))))
    (import "io" "caml_really_putblock"
       (func $caml_really_putblock
          (param (ref eq)) (param (ref $bytes)) (param i32) (param i32)))
@@ -49,6 +44,11 @@
    (import "custom" "caml_find_custom_operations"
       (func $caml_find_custom_operations
          (param (ref $bytes)) (result (ref null $custom_operations))))
+   (import "bindings" "map_new" (func $map_new (result (ref any))))
+   (import "bindings" "map_get"
+      (func $map_get (param (ref any)) (param (ref eq)) (result i31ref)))
+   (import "bindings" "map_set"
+      (func $map_set (param (ref any)) (param (ref eq)) (param (ref i31))))
 
    (@string $input_val_from_string "input_value_from_string")
 
