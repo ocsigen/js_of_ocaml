@@ -16,6 +16,9 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "fail" "caml_raise_sys_error"
+      (func $caml_raise_sys_error (param (ref eq))))
+   (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
    (import "bindings" "ta_length"
       (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_get_i32"
@@ -32,9 +35,6 @@
    (import "jslib" "caml_js_meth_call"
       (func $caml_js_meth_call
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "fail" "caml_raise_sys_error"
-      (func $caml_raise_sys_error (param (ref eq))))
-   (import "fail" "caml_raise_not_found" (func $caml_raise_not_found))
    (import "bindings" "argv" (func $argv (result (ref extern))))
    (import "bindings" "on_windows" (global $on_windows i32))
    (import "bindings" "isatty"
@@ -42,15 +42,11 @@
    (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
    (import "bindings" "getenv" (func $getenv (param anyref) (result anyref)))
    (import "bindings" "time" (func $time (result f64)))
-   (import "bindings" "array_length"
-      (func $array_length (param (ref extern)) (result i32)))
-   (import "bindings" "array_get"
-      (func $array_get (param (ref extern)) (param i32) (result anyref)))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "jsstring" "jsstring_test"
       (func $jsstring_test (param anyref) (result i32)))
-   (import "bindings" "exit" (func $exit (param (ref eq))))
+   (import "bindings" "exit" (func $exit (param i32)))
    (import "io" "caml_channel_descriptor"
       (func $caml_channel_descriptor (param (ref eq)) (result (ref eq))))
 
@@ -62,12 +58,11 @@
 
    (func (export "caml_sys_exit") (export "unix_exit") (export "caml_unix_exit")
       (param $code (ref eq)) (result (ref eq))
-      (call $exit (local.get $code))
+      (call $exit (i31.get_s (ref.cast (ref i31) (local.get $code))))
       ;; Fallback: try to exit through an exception
       (throw $ocaml_exit))
 
-   (export "caml_sys_unsafe_getenv" (func $caml_sys_getenv))
-   (func $caml_sys_getenv (export "caml_sys_getenv")
+   (func (export "caml_sys_getenv") (export "caml_sys_unsafe_getenv")
       (param (ref eq)) (result (ref eq))
       (local $res anyref)
       (local.set $res
@@ -100,8 +95,7 @@
          (ref.cast (ref $block) (call $caml_js_to_string_array (call $argv)))
          (i32.const 1)))
 
-   (export "caml_sys_time_include_children" (func $caml_sys_time))
-   (func $caml_sys_time (export "caml_sys_time")
+   (func (export "caml_sys_time") (export "caml_sys_time_include_children")
       (param (ref eq)) (result (ref eq))
       (struct.new $float (f64.mul (call $time) (f64.const 0.001))))
 
@@ -114,8 +108,8 @@
                (call $system
                   (call $unwrap (call $caml_jsstring_of_string (local.get 0))))))
          (catch $javascript_exception
-            (call $caml_handle_sys_error (pop externref))
-            (return (ref.i31 (i32.const 0))))))
+            (call $caml_handle_sys_error (pop externref))))
+      (return (ref.i31 (i32.const 0))))
 
    (func (export "caml_sys_random_seed")
       (param (ref eq)) (result (ref eq))
@@ -127,7 +121,6 @@
       (local.set $a
          (array.new $block (ref.i31 (i32.const 0))
             (i32.add (local.get $n) (i32.const 1))))
-      (local.set $i (i32.const 0))
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $n))
             (then
