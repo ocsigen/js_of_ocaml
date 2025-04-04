@@ -220,10 +220,13 @@ end = struct
     List.fold_left
       ~f:(fun acc field ->
         match field with
-        | Function { typ; _ } | Import { desc = Fun typ; _ } -> func_type acc typ
+        | Function { typ = None; signature; _ } | Import { desc = Fun signature; _ } ->
+            func_type acc signature
         | Import { desc = Tag typ; _ } -> func_type acc { params = [ typ ]; result = [] }
         | Type l -> explicit_definition acc l
-        | Import { desc = Global _; _ } | Data _ | Global _ | Tag _ -> acc)
+        | Function { typ = Some _; _ }
+        | Import { desc = Global _; _ }
+        | Data _ | Global _ | Tag _ -> acc)
       ~init:acc
       fields
 
@@ -338,7 +341,7 @@ end = struct
       List.fold_left
         ~f:(fun acc field ->
           match field with
-          | Function { typ; _ } -> typ :: acc
+          | Function { signature; _ } -> signature :: acc
           | Type _ | Import _ | Data _ | Global _ | Tag _ -> acc)
         ~init:[]
         fields

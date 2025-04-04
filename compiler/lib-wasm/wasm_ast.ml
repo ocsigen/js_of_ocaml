@@ -210,7 +210,8 @@ type module_field =
   | Function of
       { name : var
       ; exported_name : string option
-      ; typ : func_type
+      ; typ : var option
+      ; signature : func_type
       ; param_names : var list
       ; locals : (var * value_type) list
       ; body : instruction list

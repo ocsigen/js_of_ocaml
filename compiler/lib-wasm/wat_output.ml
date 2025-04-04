@@ -550,7 +550,7 @@ let expression ctx st = fst (expression_or_instructions ctx st false)
 
 let instructions ctx st = snd (expression_or_instructions ctx st true)
 
-let funct ctx st name exported_name typ param_names locals body =
+let funct ctx st name exported_name typ signature param_names locals body =
   let st =
     { st with
       local_names =
@@ -562,7 +562,10 @@ let funct ctx st name exported_name typ param_names locals body =
   in
   List
     ((Atom "func" :: index st.func_names name :: export exported_name)
-    @ func_type st ~param_names typ
+    @ (match typ with
+      | None -> []
+      | Some typ -> [ List [ Atom "type"; index st.type_names typ ] ])
+    @ func_type st ~param_names signature
     @ List.map
         ~f:(fun (i, t) -> List [ Atom "local"; index st.local_names i; value_type st t ])
         locals
@@ -617,8 +620,8 @@ let type_field st { name; typ; supertype; final } =
 
 let field ctx st f =
   match f with
-  | Function { name; exported_name; typ; param_names; locals; body } ->
-      [ funct ctx st name exported_name typ param_names locals body ]
+  | Function { name; exported_name; typ; signature; param_names; locals; body } ->
+      [ funct ctx st name exported_name typ signature param_names locals body ]
   | Global { name; exported_name; typ; init } ->
       [ List
           (Atom "global"
