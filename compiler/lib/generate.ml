@@ -1094,8 +1094,8 @@ let register_bin_prims names k f =
 
 let register_bin_prim name k f = register_bin_prims [ name ] k f
 
-let register_tern_prim name f =
-  register_prims [ name ] `Mutator (fun name l ctx loc ->
+let register_tern_prims names f =
+  register_prims names `Mutator (fun name l ctx loc ->
       match l with
       | [ x; y; z ] ->
           let open Expr_builder in
@@ -1105,6 +1105,8 @@ let register_tern_prim name f =
           let* () = info mutator_p in
           return (f cx cy cz loc)
       | _ -> invalid_arity name l ~loc ~expected:3)
+
+let register_tern_prim name f = register_tern_prims [ name ] f
 
 let register_un_math_prim name prim =
   let prim = Utf8_string.of_string_exn prim in
@@ -1121,8 +1123,13 @@ let _ =
       let s = J.EBin (J.Plus, str_js_utf8 "", cx) in
       ocaml_string ~ctx ~loc s);
   register_un_prim "%direct_obj_tag" `Mutator (fun cx _loc -> Mlvalue.Block.tag cx);
-  register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
-      Mlvalue.Array.field cx cy);
+  register_bin_prims
+    [ "caml_array_unsafe_get"
+    ; "caml_array_unsafe_get_float"
+    ; "caml_floatarray_unsafe_get"
+    ]
+    `Mutable
+    (fun cx cy _ -> Mlvalue.Array.field cx cy);
   register_un_prims
     [ "caml_int32_of_int"
     ; "caml_int32_to_int"
@@ -1203,11 +1210,22 @@ let _ =
   register_bin_prim "caml_div_float" `Pure (fun cx cy _ -> J.EBin (J.Div, cx, cy));
   register_un_prim "caml_neg_float" `Pure (fun cx _ -> J.EUn (J.Neg, cx));
   register_bin_prim "caml_fmod_float" `Pure (fun cx cy _ -> J.EBin (J.Mod, cx, cy));
-  register_tern_prim "caml_array_unsafe_set" (fun cx cy cz _ ->
-      J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
-  register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.array []);
+  register_tern_prims
+    [ "caml_array_unsafe_set"
+    ; "caml_array_unsafe_set_float"
+    ; "caml_floatarray_unsafe_set"
+    ; "caml_array_unsafe_set_addr"
+    ]
+    (fun cx cy cz _ -> J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
+  register_un_prims [ "caml_alloc_dummy"; "caml_alloc_dummy_float" ] `Pure (fun _ _ ->
+      J.array []);
   register_un_prims
-    [ "caml_int_of_float"; "caml_int32_of_float"; "caml_nativeint_of_float" ]
+    [ "caml_int_of_float"
+    ; "caml_int32_of_float"
+    ; "caml_nativeint_of_float"
+    ; "caml_js_to_int32"
+    ; "caml_js_to_nativeint"
+    ]
     `Pure
     (fun cx _loc -> to_int cx);
   register_un_math_prim "caml_abs_float" "abs";
@@ -2265,48 +2283,15 @@ let init () =
   List.iter
     ~f:(fun (nm, nm') -> Primitive.alias nm nm')
     [ "%int_mul", "caml_mul"
-    ; "caml_int32_mul", "caml_mul"
-    ; "caml_nativeint_mul", "caml_mul"
     ; "%int_div", "caml_div"
-    ; "caml_int32_div", "caml_div"
-    ; "caml_nativeint_div", "caml_div"
     ; "%int_mod", "caml_mod"
-    ; "caml_int32_mod", "caml_mod"
-    ; "caml_nativeint_mod", "caml_mod"
-    ; "caml_int32_format", "caml_format_int"
-    ; "caml_int32_of_string", "caml_int_of_string"
-    ; "caml_int32_compare", "caml_int_compare"
-    ; "caml_nativeint_format", "caml_format_int"
-    ; "caml_nativeint_of_string", "caml_int_of_string"
-    ; "caml_nativeint_compare", "caml_int_compare"
-    ; "caml_nativeint_bswap", "caml_int32_bswap"
-    ; "caml_int64_of_int", "caml_int64_of_int32"
-    ; "caml_int64_to_int", "caml_int64_to_int32"
-    ; "caml_int64_of_nativeint", "caml_int64_of_int32"
-    ; "caml_int64_to_nativeint", "caml_int64_to_int32"
-    ; "caml_array_get_float", "caml_array_get"
-    ; "caml_floatarray_get", "caml_array_get"
-    ; "caml_array_get_addr", "caml_array_get"
-    ; "caml_array_set_float", "caml_array_set"
-    ; "caml_floatarray_set", "caml_array_set"
-    ; "caml_array_set_addr", "caml_array_set"
-    ; "caml_array_unsafe_get_float", "caml_array_unsafe_get"
-    ; "caml_floatarray_unsafe_get", "caml_array_unsafe_get"
-    ; "caml_array_unsafe_set_float", "caml_array_unsafe_set"
-    ; "caml_array_unsafe_set_addr", "caml_array_unsafe_set"
-    ; "caml_floatarray_unsafe_set", "caml_array_unsafe_set"
-    ; "caml_check_bound_gen", "caml_check_bound"
-    ; "caml_check_bound_float", "caml_check_bound"
-    ; "caml_alloc_dummy_float", "caml_alloc_dummy"
     ; "caml_make_array", "%identity"
     ; "caml_array_of_uniform_array", "%identity"
     ; "caml_ensure_stack_capacity", "%identity"
     ; "caml_js_from_float", "%identity"
-    ; "caml_js_to_float", "%identity"
     ; "caml_js_from_int32", "%identity"
     ; "caml_js_from_nativeint", "%identity"
-    ; "caml_js_to_int32", "caml_int_of_float"
-    ; "caml_js_to_nativeint", "caml_int_of_float"
+    ; "caml_js_to_float", "%identity"
     ];
   Hashtbl.iter
     (fun name (k, _) -> Primitive.register name k None None)
