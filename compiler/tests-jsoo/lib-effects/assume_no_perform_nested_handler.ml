@@ -6,7 +6,7 @@ type _ Effect.t += Dummy : unit t
 let () =
   try_with
     (fun () ->
-      Js_of_ocaml.Effect_js.assume_no_perform (fun () ->
+      Jsoo_runtime.Effect.assume_no_perform (fun () ->
           try_with (fun () -> ()) () { effc = (fun (type a) (_ : a Effect.t) -> None) });
       perform Dummy)
     ()
