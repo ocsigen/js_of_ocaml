@@ -56,7 +56,8 @@ let%expect_test "let inside forloop" =
       7:   }
       8:   ());
     1
-    2 |}]
+    2
+    |}]
 
 let%expect_test "let inside forin" =
   test
@@ -88,7 +89,8 @@ let%expect_test "let inside forin" =
     1
     2
     6
-    2 |}]
+    2
+    |}]
 
 let%expect_test "let inside forof" =
   test
@@ -119,7 +121,8 @@ let%expect_test "let inside forof" =
     2
     3
     6
-    2 |}]
+    2
+    |}]
 
 let%expect_test "let inside forawaitof" =
   test
@@ -144,7 +147,8 @@ async function f () {
       4:  for await(let v3 of [1, 2, 3]){console.log(v3); v2 += v3;}
       5:  console.log(v2);
       6:  console.log(v1);
-      7: } |}]
+      7: }
+    |}]
 
 let%expect_test "let inside switch" =
   test
@@ -172,7 +176,8 @@ let%expect_test "let inside switch" =
       7:   }
       8:   ());
     3
-    2 |}]
+    2
+    |}]
 
 let%expect_test "let and var inside class static block" =
   test
@@ -208,7 +213,8 @@ let%expect_test "let and var inside class static block" =
      10:    console.log(v3, v2, v4.z);
      11:   }
      12:   ());
-    0 2 3 |}]
+    0 2 3
+    |}]
 
 let%expect_test "named class expression" =
   test
@@ -250,7 +256,8 @@ let%expect_test "named class expression" =
      13:    console.log(v3, v2.z, v4.z);
      14:   }
      15:   ());
-    0 3 0 |}]
+    0 3 0
+    |}]
 
 let%expect_test "let inside block" =
   test
@@ -275,7 +282,8 @@ let%expect_test "let inside block" =
       5:    console.log(v2, v1);
       6:   }
       7:   ());
-    4 2 |}]
+    4 2
+    |}]
 
 let%expect_test "functions have local scope" =
   test {|
@@ -289,8 +297,9 @@ function f (p) {
 |};
   [%expect
     {|
-        $ cat "test.min.js"
-          1: function f(v1){return e; if(v1){function v2(){} v2();}} |}]
+    $ cat "test.min.js"
+      1: function f(v1){return e; if(v1){function v2(){} v2();}}
+    |}]
 
 let%expect_test "import" =
   let test ?(module_ = false) js_prog =
@@ -321,7 +330,8 @@ import defaultExport from "./module-name.mjs";
     $ cat "test.min.js"
       1: import v1 from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import defaultExport from "./module-name.mjs"; |}];
+      1: import defaultExport from "./module-name.mjs";
+    |}];
   t {|
 import * as name from "./module-name.mjs";
 |};
@@ -330,7 +340,8 @@ import * as name from "./module-name.mjs";
     $ cat "test.min.js"
       1: import * as v1 from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import * as name from "./module-name.mjs"; |}];
+      1: import * as name from "./module-name.mjs";
+    |}];
   t {|
 import { export1 } from "./module-name.mjs";
 |};
@@ -339,7 +350,8 @@ import { export1 } from "./module-name.mjs";
     $ cat "test.min.js"
       1: import { export1 as v1 } from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import { export1 } from "./module-name.mjs"; |}];
+      1: import { export1 } from "./module-name.mjs";
+    |}];
   t {|
 import { export1 as alias1 } from "./module-name.mjs";
 |};
@@ -348,7 +360,8 @@ import { export1 as alias1 } from "./module-name.mjs";
     $ cat "test.min.js"
       1: import { export1 as v1 } from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import { export1 as alias1 } from "./module-name.mjs"; |}];
+      1: import { export1 as alias1 } from "./module-name.mjs";
+    |}];
   t {|
 import { default as alias } from "module-name";
 |};
@@ -357,7 +370,8 @@ import { default as alias } from "module-name";
     $ cat "test.min.js"
       1: import { default as v1 } from "module-name";
     $ cat "test.min.js"
-      1: import { default as alias } from "module-name"; |}];
+      1: import { default as alias } from "module-name";
+    |}];
   t {|
 import { export1, export2 } from "./module-name.mjs";
 |};
@@ -366,7 +380,8 @@ import { export1, export2 } from "./module-name.mjs";
     $ cat "test.min.js"
       1: import { export1 as v1, export2 as v2 } from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import { export1, export2 } from "./module-name.mjs"; |}];
+      1: import { export1, export2 } from "./module-name.mjs";
+    |}];
   t {|
 import { export1, export2 as alias2, /* … */ } from "./module-name.mjs";
 |};
@@ -375,7 +390,8 @@ import { export1, export2 as alias2, /* … */ } from "./module-name.mjs";
     $ cat "test.min.js"
       1: import { export1 as v2, export2 as v1 } from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import { export1, export2 as alias2 } from "./module-name.mjs"; |}];
+      1: import { export1, export2 as alias2 } from "./module-name.mjs";
+    |}];
   t {|
 import { "string name" as alias } from "./module-name.mjs";
 |};
@@ -384,7 +400,8 @@ import { "string name" as alias } from "./module-name.mjs";
     $ cat "test.min.js"
       1: import { "string name" as v1 } from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import { "string name" as alias } from "./module-name.mjs"; |}];
+      1: import { "string name" as alias } from "./module-name.mjs";
+    |}];
   t {|
 import defaultExport, { export1, /* … */ } from "./module-name.mjs";
 |};
@@ -393,7 +410,8 @@ import defaultExport, { export1, /* … */ } from "./module-name.mjs";
     $ cat "test.min.js"
       1: import v1, { export1 as v2 } from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import defaultExport, { export1 } from "./module-name.mjs"; |}];
+      1: import defaultExport, { export1 } from "./module-name.mjs";
+    |}];
   t {|
 import defaultExport, * as name from "./module-name.mjs";
 |};
@@ -402,7 +420,8 @@ import defaultExport, * as name from "./module-name.mjs";
     $ cat "test.min.js"
       1: import v1, * as v2 from "./module-name.mjs";
     $ cat "test.min.js"
-      1: import defaultExport, * as name from "./module-name.mjs"; |}];
+      1: import defaultExport, * as name from "./module-name.mjs";
+    |}];
   t {|
 import "./module-name.mjs";
 |};
@@ -525,7 +544,8 @@ export default function functionName() { /* … */ }
 export default class ClassName { /* … */ }|};
   [%expect {|
     $ cat "test.min.js"
-      1: export default class v1{} |}];
+      1: export default class v1{}
+    |}];
   t {|
 export default function* generatorFunctionName() { /* … */ }|};
   [%expect {|
