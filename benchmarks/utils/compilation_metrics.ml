@@ -16,10 +16,12 @@ let () =
    with End_of_file -> ());
   let l = Hashtbl.fold (fun nm v rem -> (nm, v) :: rem) times [] in
   let l = List.filter (fun (_, v) -> v > 0.2) l in
-  let l = List.map (fun (nm, v) -> "phase/" ^ nm, "s", v) l in
+  let l = List.map (fun (nm, v) -> "Compilation phases/" ^ nm, "s", v) l in
   let l' =
     Scanf.sscanf !last_line "%f:%f %f" (fun m s mem ->
-        [ "Compilation time", "s", (m *. 60.) +. s; "Memory usage", "KiB", mem ])
+        [ "Compilation time", "s", (m *. 60.) +. s
+        ; "Compilation memory usage", "KiB", mem
+        ])
   in
   Format.printf
     {|{ "name": "%s",
