@@ -40,14 +40,14 @@
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_js_to_string_array"
       (func $caml_js_to_string_array (param $a (ref extern)) (result (ref eq))))
-   (import "fail" "caml_raise_sys_error"
-      (func $caml_raise_sys_error (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "sys" "caml_handle_sys_error"
       (func $caml_handle_sys_error (param externref)))
    (import "string" "caml_string_concat"
       (func $caml_string_concat (param (ref eq) (ref eq)) (result (ref eq))))
+   (import "fail" "caml_raise_sys_error"
+      (func $caml_raise_sys_error (param (ref eq))))
 
    (type $bytes (array (mut i8)))
 
