@@ -82,8 +82,8 @@
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "wrap" (func $wrap (param externref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
    (import "int32" "caml_copy_int32"
       (func $caml_copy_int32 (param i32) (result (ref eq))))
    (import "int32" "Int32_val"
@@ -836,8 +836,7 @@
       (local $kind i32)
       (local $len i32)
       (local.set $data
-         (call $ta_normalize
-            (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0))))))
+         (call $ta_normalize (ref.as_non_null (call $unwrap (local.get 0)))))
       (local.set $kind (call $ta_kind (local.get $data)))
       (if (i32.lt_s (local.get $kind) (i32.const 0))
          (then (call $caml_invalid_argument (global.get $ta_unsupported_kind))))
@@ -856,9 +855,8 @@
 
    (func (export "caml_ba_to_typed_array") (param (ref eq)) (result (ref eq))
       (call $wrap
-         (any.convert_extern
-            (struct.get $bigarray $ba_data
-               (ref.cast (ref $bigarray) (local.get 0))))))
+         (struct.get $bigarray $ba_data
+            (ref.cast (ref $bigarray) (local.get 0)))))
 
    (func $caml_ba_get_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (result (ref eq))
@@ -2127,8 +2125,7 @@
       ;; used to convert a typed array to a string
       (local $a (ref extern)) (local $len i32)
       (local $s (ref $bytes))
-      (local.set $a
-         (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
+      (local.set $a (ref.as_non_null (call $unwrap (local.get 0))))
       (local.set $len (call $ta_length (local.get $a)))
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
       (call $ta_blit_to_bytes
@@ -2151,7 +2148,7 @@
       (call $ta_blit_from_bytes
          (local.get $s) (i32.const 0) (local.get $ta) (i32.const 0)
          (local.get $len))
-      (call $wrap (any.convert_extern (local.get $ta))))
+      (call $wrap (local.get $ta)))
 
    (func (export "caml_ba_get_kind") (param (ref eq)) (result i32)
       (struct.get $bigarray $ba_kind (ref.cast (ref $bigarray) (local.get 0))))

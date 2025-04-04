@@ -18,9 +18,9 @@
 (module
    (import "bindings" "format_float"
       (func $format_float
-         (param i32) (param i32) (param i32) (param f64) (result anyref)))
+         (param i32) (param i32) (param i32) (param f64) (result externref)))
    (import "bindings" "identity"
-      (func $parse_float (param anyref) (result f64)))
+      (func $parse_float (param externref) (result f64)))
    (import "Math" "exp" (func $exp (param f64) (result f64)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "caml_invalid_argument"
@@ -28,9 +28,9 @@
    (import "ints" "lowercase_hex_table"
       (global $lowercase_hex_table (ref $chars)))
    (import "jsstring" "jsstring_of_bytes"
-      (func $jsstring_of_bytes (param (ref $bytes)) (result anyref)))
+      (func $jsstring_of_bytes (param (ref $bytes)) (result externref)))
    (import "jsstring" "bytes_of_jsstring"
-      (func $bytes_of_jsstring (param anyref) (result (ref $bytes))))
+      (func $bytes_of_jsstring (param externref) (result (ref $bytes))))
 
    (type $float (struct (field f64)))
    (type $bytes (array (mut i8)))
@@ -256,7 +256,7 @@
       (local $exp i32) (local $m i64)
       (local $i i32) (local $len i32) (local $c i32)
       (local $s (ref $bytes)) (local $txt (ref $chars))
-      (local $num anyref)
+      (local $num externref)
       (local.set $f (struct.get $float 0 (ref.cast (ref $float) (local.get 1))))
       (local.set $b (i64.reinterpret_f64 (local.get $f)))
       (local.set $format

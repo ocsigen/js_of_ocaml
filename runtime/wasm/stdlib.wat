@@ -24,14 +24,14 @@
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
    (import "obj" "caml_callback_1"
       (func $caml_callback_1
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "obj" "caml_callback_2"
       (func $caml_callback_2
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
-   (import "bindings" "write" (func $write (param i32) (param anyref)))
+   (import "bindings" "write" (func $write (param i32) (param externref)))
    (import "string" "caml_string_concat"
       (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))

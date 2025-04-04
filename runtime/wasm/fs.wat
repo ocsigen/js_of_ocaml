@@ -16,22 +16,22 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "bindings" "getcwd" (func $getcwd (result anyref)))
-   (import "bindings" "chdir" (func $chdir (param anyref)))
-   (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
-   (import "bindings" "rmdir" (func $rmdir (param anyref)))
-   (import "bindings" "unlink" (func $unlink (param anyref)))
+   (import "bindings" "getcwd" (func $getcwd (result externref)))
+   (import "bindings" "chdir" (func $chdir (param externref)))
+   (import "bindings" "mkdir" (func $mkdir (param externref) (param i32)))
+   (import "bindings" "rmdir" (func $rmdir (param externref)))
+   (import "bindings" "unlink" (func $unlink (param externref)))
    (import "bindings" "read_dir"
-      (func $read_dir (param anyref) (result (ref extern))))
+      (func $read_dir (param externref) (result (ref extern))))
    (import "bindings" "file_exists"
-      (func $file_exists (param anyref) (result (ref eq))))
+      (func $file_exists (param externref) (result (ref eq))))
    (import "bindings" "is_directory"
-      (func $is_directory (param anyref) (result (ref eq))))
+      (func $is_directory (param externref) (result (ref eq))))
    (import "bindings" "is_file"
-      (func $is_file (param anyref) (result (ref eq))))
-   (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+      (func $is_file (param externref) (result (ref eq))))
+   (import "bindings" "rename" (func $rename (param externref) (param externref)))
+   (import "jslib" "wrap" (func $wrap (param externref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
    (import "jslib" "caml_string_of_jsstring"
       (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"

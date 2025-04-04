@@ -17,7 +17,7 @@
 
 (module
    (import "bindings" "equals"
-      (func $equals (param anyref) (param anyref) (result i32)))
+      (func $equals (param externref) (param externref) (result i32)))
    (import "obj" "forward_tag" (global $forward_tag i32))
    (import "obj" "object_tag" (global $object_tag i32))
    (import "obj" "double_array_tag" (global $double_array_tag i32))
@@ -33,15 +33,15 @@
       (func $caml_string_compare
         (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "jsstring" "jsstring_test"
-      (func $jsstring_test (param anyref) (result i32)))
+      (func $jsstring_test (param externref) (result i32)))
    (import "jsstring" "jsstring_compare"
-      (func $jsstring_compare (param anyref) (param anyref) (result i32)))
+      (func $jsstring_compare (param externref) (param externref) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field externref)))
 
    (type $int_array (array (mut i32)))
    (type $block_array (array (mut (ref $block))))
@@ -230,7 +230,7 @@
       (local $fa1 (ref $float_array)) (local $fa2 (ref $float_array))
       (local $str1 (ref $bytes)) (local $str2 (ref $bytes))
       (local $c1 (ref $custom)) (local $c2 (ref $custom))
-      (local $js1 anyref) (local $js2 anyref)
+      (local $js1 externref) (local $js2 externref)
       (local $tuple (tuple (ref eq) (ref eq)))
       (local $res i32)
       (loop $loop

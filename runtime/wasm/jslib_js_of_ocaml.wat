@@ -16,8 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "wrap" (func $wrap (param externref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
    (import "jslib" "caml_js_global"
       (func $caml_js_global (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_js_get"
@@ -27,9 +27,9 @@
    (import "jslib" "caml_js_from_array"
       (func $caml_js_from_array (param (ref eq)) (result (ref eq))))
    (import "js" "caml_js_html_escape"
-      (func $caml_js_html_escape_js (param anyref) (result anyref)))
+      (func $caml_js_html_escape_js (param externref) (result externref)))
    (import "js" "caml_js_html_entities"
-      (func $caml_js_html_entities_js (param anyref) (result anyref)))
+      (func $caml_js_html_entities_js (param externref) (result externref)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))

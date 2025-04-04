@@ -16,8 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "wrap" (func $wrap (param externref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
    (import "jslib" "caml_js_get"
       (func $caml_js_get (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "bigarray" "caml_ba_to_typed_array"
@@ -32,7 +32,7 @@
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
    (import "bindings" "ta_create"
-      (func $ta_create (param i32) (param anyref) (result anyref)))
+      (func $ta_create (param i32) (param externref) (result externref)))
    (import "bindings" "ta_get_ui8"
       (func $ta_get_ui8 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_get32_ui8"
@@ -47,7 +47,7 @@
    (import "bindings" "ta_length"
       (func $ta_length (param (ref extern)) (result i32)))
    (import "bindings" "ta_bytes"
-      (func $ta_bytes (param anyref) (result anyref)))
+      (func $ta_bytes (param externref) (result externref)))
    (import "bindings" "ta_blit_from_bytes"
       (func $ta_blit_from_bytes
          (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)

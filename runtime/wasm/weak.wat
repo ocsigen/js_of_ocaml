@@ -22,19 +22,19 @@
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param $arg (ref eq))))
    (import "bindings" "weak_new"
-      (func $weak_new (param (ref eq)) (result anyref)))
+      (func $weak_new (param (ref eq)) (result externref)))
    (import "bindings" "weak_deref"
-      (func $weak_deref (param anyref) (result eqref)))
-   (import "bindings" "weak_map_new" (func $weak_map_new (result (ref any))))
+      (func $weak_deref (param externref) (result eqref)))
+   (import "bindings" "weak_map_new" (func $weak_map_new (result (ref extern))))
    (import "bindings" "map_get"
-      (func $map_get (param (ref any)) (param (ref eq)) (result anyref)))
+      (func $map_get (param (ref extern)) (param (ref eq)) (result externref)))
    (import "bindings" "map_set"
-      (func $map_set (param (ref any)) (param (ref eq)) (param (ref any))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+      (func $map_set (param (ref extern)) (param (ref eq)) (param (ref extern))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
+   (import "jslib" "wrap" (func $wrap (param externref) (result (ref eq))))
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field externref)))
 
    ;; A weak array is a an abstract value composed of possibly some
    ;; data and an array of keys.
@@ -53,7 +53,7 @@
       (param $vx (ref eq)) (result (ref eq))
       (local $x (ref $block))
       (local $d (ref eq)) (local $v (ref eq))
-      (local $m (ref any))
+      (local $m (ref extern))
       (local $i i32) (local $len i32)
       (local.set $x (ref.cast (ref $block) (local.get $vx)))
       (local.set $d
@@ -83,7 +83,7 @@
                      (br $loop))))
             (return
               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
-                 (ref.cast (ref eq) (local.get $m)))))
+                 (ref.cast (ref eq) (any.convert_extern (local.get $m))))))
          (array.set $block (local.get $x) (global.get $caml_ephe_data_offset)
             (global.get $caml_ephe_none)))
       (ref.i31 (i32.const 0)))
@@ -107,11 +107,11 @@
       (param $vx (ref eq)) (param $data (ref eq)) (result (ref eq))
       (local $x (ref $block))
       (local $v (ref eq))
-      (local $m (ref any)) (local $m' (ref any))
+      (local $m (ref extern)) (local $m' (ref extern))
       (local $i i32)
       (local.set $x (ref.cast (ref $block) (local.get $vx)))
       (local.set $i (array.len (local.get $x)))
-      (local.set $m (local.get $data))
+      (local.set $m (extern.convert_any (local.get $data)))
       (loop $loop
          (local.set $i (i32.sub (local.get $i) (i32.const 1)))
          (if (i32.ge_u (local.get $i) (global.get $caml_ephe_key_offset))

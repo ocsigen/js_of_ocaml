@@ -19,14 +19,14 @@
    (import "obj" "object_tag" (global $object_tag i32))
    (import "obj" "forward_tag" (global $forward_tag i32))
    (import "jsstring" "jsstring_test"
-      (func $jsstring_test (param anyref) (result i32)))
+      (func $jsstring_test (param externref) (result i32)))
    (import "jsstring" "jsstring_hash"
-      (func $jsstring_hash (param i32) (param anyref) (result i32)))
+      (func $jsstring_hash (param i32) (param externref) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field externref)))
 
    (type $compare
       (func (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -184,7 +184,7 @@
       (local $i i32)
       (local $len i32)
       (local $tag i32)
-      (local $str anyref)
+      (local $str externref)
       (local.set $sz (i31.get_u (ref.cast (ref i31) (local.get $limit))))
       (if (i32.gt_u (local.get $sz) (global.get $HASH_QUEUE_SIZE))
          (then (local.set $sz (global.get $HASH_QUEUE_SIZE))))
@@ -304,7 +304,7 @@
                                           (local.get $v))))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
-                  (drop (block $not_jsstring (result anyref)
+                  (drop (block $not_jsstring (result (ref eq))
                      (local.set $str
                         (struct.get $js 0
                            (br_on_cast_fail $not_jsstring (ref eq) (ref $js)

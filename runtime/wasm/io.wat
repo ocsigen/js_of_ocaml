@@ -19,14 +19,14 @@
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "wrap" (func $wrap (param externref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_list_of_js_array"
       (func $caml_list_of_js_array (param (ref eq)) (result (ref eq))))
    (import "bindings" "open"
-      (func $open (param anyref) (param i32) (param i32) (result i32)))
+      (func $open (param externref) (param i32) (param i32) (result i32)))
    (import "bindings" "close" (func $close (param i32)))
    (import "bindings" "write"
       (func $write
@@ -49,7 +49,7 @@
       (func $register_channel (param (ref eq))))
    (import "bindings" "unregister_channel"
       (func $unregister_channel (param (ref eq))))
-   (import "bindings" "channel_list" (func $channel_list (result anyref)))
+   (import "bindings" "channel_list" (func $channel_list (result externref)))
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
    (import "bindings" "ta_copy"
       (func $ta_copy (param (ref extern)) (param i32) (param i32) (param i32)))

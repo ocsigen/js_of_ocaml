@@ -21,8 +21,8 @@
    (import "bindings" "ta_get_i32"
       (func $ta_get_i32 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "random_seed" (func $random_seed (result (ref extern))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
+   (import "jslib" "wrap" (func $wrap (param externref) (result (ref eq))))
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_string_of_jsstring"
@@ -39,17 +39,17 @@
    (import "bindings" "on_windows" (global $on_windows i32))
    (import "bindings" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
-   (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
-   (import "bindings" "getenv" (func $getenv (param anyref) (result anyref)))
+   (import "bindings" "system" (func $system (param externref) (result (ref eq))))
+   (import "bindings" "getenv" (func $getenv (param externref) (result externref)))
    (import "bindings" "time" (func $time (result f64)))
    (import "bindings" "array_length"
       (func $array_length (param (ref extern)) (result i32)))
    (import "bindings" "array_get"
-      (func $array_get (param (ref extern)) (param i32) (result anyref)))
+      (func $array_get (param (ref extern)) (param i32) (result externref)))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "jsstring" "jsstring_test"
-      (func $jsstring_test (param anyref) (result i32)))
+      (func $jsstring_test (param externref) (result i32)))
    (import "bindings" "exit" (func $exit (param (ref eq))))
    (import "io" "caml_channel_descriptor"
       (func $caml_channel_descriptor (param (ref eq)) (result (ref eq))))
@@ -69,7 +69,7 @@
    (export "caml_sys_unsafe_getenv" (func $caml_sys_getenv))
    (func $caml_sys_getenv (export "caml_sys_getenv")
       (param (ref eq)) (result (ref eq))
-      (local $res anyref)
+      (local $res externref)
       (local.set $res
          (call $getenv
             (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
@@ -198,7 +198,7 @@
       (call $caml_raise_sys_error
          (call $caml_string_of_jsstring
             (call $caml_js_meth_call
-               (call $wrap (any.convert_extern (local.get $exn)))
+               (call $wrap (local.get $exn))
                (global.get $toString)
                (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))))
 )

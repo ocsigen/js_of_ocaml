@@ -25,33 +25,33 @@
       (func $mktime
          (param i32) (param i32) (param i32) (param i32) (param i32) (param i32)
          (result f64)))
-   (import "bindings" "utimes" (func $utimes (param anyref f64 f64)))
-   (import "bindings" "stat" (func $stat (param anyref i32) (result (ref eq))))
-   (import "bindings" "lstat" (func $lstat (param anyref i32) (result (ref eq))))
+   (import "bindings" "utimes" (func $utimes (param externref f64 f64)))
+   (import "bindings" "stat" (func $stat (param externref i32) (result (ref eq))))
+   (import "bindings" "lstat" (func $lstat (param externref i32) (result (ref eq))))
    (import "bindings" "fstat"
       (func $fstat (param (ref eq) i32) (result (ref eq))))
-   (import "bindings" "chmod" (func $chmod (param anyref (ref eq))))
+   (import "bindings" "chmod" (func $chmod (param externref (ref eq))))
    (import "bindings" "fchmod" (func $fchmod (param (ref eq) (ref eq))))
-   (import "bindings" "rename" (func $rename (param anyref) (param anyref)))
-   (import "bindings" "getcwd" (func $getcwd (result anyref)))
-   (import "bindings" "chdir" (func $chdir (param anyref)))
-   (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
-   (import "bindings" "opendir" (func $opendir (param anyref) (result anyref)))
-   (import "bindings" "readdir" (func $readdir (param anyref) (result anyref)))
-   (import "bindings" "closedir" (func $closedir (param anyref)))
-   (import "bindings" "rmdir" (func $rmdir (param anyref)))
-   (import "bindings" "link" (func $link (param anyref anyref)))
-   (import "bindings" "symlink" (func $symlink (param anyref anyref i32)))
-   (import "bindings" "readlink" (func $readlink (param anyref) (result anyref)))
-   (import "bindings" "unlink" (func $unlink (param anyref)))
-   (import "bindings" "truncate" (func $truncate (param anyref (ref eq))))
-   (import "bindings" "truncate" (func $truncate_64 (param anyref f64)))
+   (import "bindings" "rename" (func $rename (param externref) (param externref)))
+   (import "bindings" "getcwd" (func $getcwd (result externref)))
+   (import "bindings" "chdir" (func $chdir (param externref)))
+   (import "bindings" "mkdir" (func $mkdir (param externref) (param i32)))
+   (import "bindings" "opendir" (func $opendir (param externref) (result externref)))
+   (import "bindings" "readdir" (func $readdir (param externref) (result externref)))
+   (import "bindings" "closedir" (func $closedir (param externref)))
+   (import "bindings" "rmdir" (func $rmdir (param externref)))
+   (import "bindings" "link" (func $link (param externref externref)))
+   (import "bindings" "symlink" (func $symlink (param externref externref i32)))
+   (import "bindings" "readlink" (func $readlink (param externref) (result externref)))
+   (import "bindings" "unlink" (func $unlink (param externref)))
+   (import "bindings" "truncate" (func $truncate (param externref (ref eq))))
+   (import "bindings" "truncate" (func $truncate_64 (param externref f64)))
    (import "bindings" "ftruncate" (func $ftruncate (param (ref eq) (ref eq))))
    (import "bindings" "ftruncate" (func $ftruncate_64 (param (ref eq) f64)))
    (import "bindings" "file_size" (func $file_size (param i32) (result i64)))
-   (import "bindings" "access" (func $access (param anyref) (param i32)))
+   (import "bindings" "access" (func $access (param externref) (param i32)))
    (import "bindings" "open"
-      (func $open (param anyref) (param i32) (param i32) (result i32)))
+      (func $open (param externref) (param i32) (param i32) (result i32)))
    (import "bindings" "write"
       (func $write (param i32 (ref extern) i32 i32 i64) (result i32)))
    (import "bindings" "write"
@@ -64,11 +64,11 @@
    (import "bindings" "close" (func $close (param (ref eq))))
    (import "bindings" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
-   (import "js" "unix_error" (global $unix_error_js (ref any)))
+   (import "js" "unix_error" (global $unix_error_js (ref extern)))
    (import "js" "caml_strerror"
-      (func $caml_strerror (param i32) (result (ref any))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+      (func $caml_strerror (param i32) (result (ref extern))))
+   (import "jslib" "wrap" (func $wrap (param externref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result externref)))
    (import "jslib" "caml_js_meth_call"
       (func $caml_js_meth_call
          (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
@@ -79,7 +79,7 @@
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jsstring" "jsstring_test"
-      (func $jsstring_test (param anyref) (result i32)))
+      (func $jsstring_test (param externref) (result i32)))
    (import "stdlib" "caml_named_value"
       (func $caml_named_value (param (ref eq)) (result (ref null eq))))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
@@ -121,7 +121,7 @@
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field externref)))
 
    (type $fd_offset
       (struct (field $offset (mut i64)) (field $seeked (mut i32))))
@@ -152,8 +152,8 @@
    (global $unix_error (ref eq) (struct.new $js (global.get $unix_error_js)))
 
    (func $ensure_string (param $s (ref eq)) (result (ref eq))
-      (local $str anyref)
-      (drop (block $not_jsstring (result anyref)
+      (local $str externref)
+      (drop (block $not_jsstring (result (ref eq))
          (local.set $str
             (struct.get $js 0
                (br_on_cast_fail $not_jsstring (ref eq) (ref $js)
@@ -175,7 +175,7 @@
       (local $code (ref eq))
       (local $errno (ref eq))
       (local $variant (ref eq))
-      (local.set $exn (call $wrap (any.convert_extern (local.get $exception))))
+      (local.set $exn (call $wrap (local.get $exception)))
       (local.set $code (call $caml_js_get (local.get $exn) (global.get $code)))
       (local.set $variant
          (call $caml_js_meth_call (global.get $unix_error)

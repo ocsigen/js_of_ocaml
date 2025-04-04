@@ -134,7 +134,7 @@
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
-   (type $js (struct (field anyref)))
+   (type $js (struct (field externref)))
 
    (type $decompress
       (func (param (ref $bytes) i32 i32 i32) (result (ref $bytes))))
