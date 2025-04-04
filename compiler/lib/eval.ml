@@ -176,21 +176,8 @@ let eval_prim x =
   | Eq, [ Int i; Int j ] -> bool Targetint.(i = j)
   | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
   | Ult, [ Int i; Int j ] -> bool (Targetint.(j < zero) || Targetint.(i < j))
-  | Extern name', l -> (
-      let name = Primitive.resolve name' in
+  | Extern name, l -> (
       match name, l with
-      | "%identity-ints-repr", [ c ] -> (
-          match name', c with
-          | "caml_int32_of_int", Int x -> Some (Int32 (Targetint.to_int32 x))
-          | "caml_int32_to_int", Int32 x -> Some (Int (Targetint.of_int32_exn x))
-          | "caml_int32_to_float", Int32 x -> Some (Float (Int32.to_float x))
-          | "caml_nativeint_of_int", Int x -> Some (NativeInt (Targetint.to_int32 x))
-          | "caml_nativeint_to_int", NativeInt x -> Some (Int (Targetint.of_int32_exn x))
-          | "caml_nativeint_to_float", NativeInt x -> Some (Float (Int32.to_float x))
-          | "caml_nativeint_of_int32", Int32 x -> Some (NativeInt x)
-          | "caml_nativeint_to_int32", NativeInt x -> Some (Int32 x)
-          | "caml_float_of_int", Int x -> Some (Float (Targetint.to_float x))
-          | _ -> assert false)
       (* int *)
       | "%int_add", _ -> int_binop l Targetint.add
       | "%int_sub", _ -> int_binop l Targetint.sub
