@@ -96,9 +96,8 @@
          (struct.get $thunk 1 (local.get $t))
          (struct.get $thunk 0 (local.get $t))))
 
-   (data $unsupported
-      "Effect handlers are not supported: "
-      "the JavaScript Promise Integration API is not enabled")
+   (@string $unsupported
+      "Effect handlers are not supported: the JavaScript Promise Integration API is not enabled")
 
    (func $capture_continuation
       (param $f (ref $called_with_continuation))
@@ -110,8 +109,7 @@
                (call $suspend_fiber
                   (ref.func $apply_continuation)
                   (struct.new $thunk (local.get $f) (local.get $v)))))))
-      (call $caml_failwith
-         (array.new_data $bytes $unsupported (i32.const 0) (i32.const 88)))
+      (call $caml_failwith (global.get $unsupported))
       (ref.i31 (i32.const 0)))
 
    ;; Stack of fibers
