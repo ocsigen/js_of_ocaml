@@ -161,10 +161,31 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   match ty, ty' with
   | Func, Func
   | Extern, Extern
-  | (Any | Eq | I31 | Type _), Any
-  | (Eq | I31 | Type _), Eq
-  | I31, I31 -> true, st
+  | (Any | Eq | Struct | Array | I31 | None_ | Type _), Any
+  | (Eq | Struct | Array | I31 | None_ | Type _), Eq
+  | (None_ | Struct), Struct -> true, st
+  | (None_ | Array), Array -> true, st
+  | (None_ | I31), I31 -> true, st
+  | None_, None_ -> true, st
+  | Type t, Struct ->
+      ( (let type_field = Hashtbl.find st.context.types t in
+         match type_field.typ with
+         | Struct _ -> true
+         | Array _ | Func _ -> false)
+      , st )
+  | Type t, Array ->
+      ( (let type_field = Hashtbl.find st.context.types t in
+         match type_field.typ with
+         | Array _ -> true
+         | Struct _ | Func _ -> false)
+      , st )
   | Type t, Type t' -> type_index_sub t t' st
+  | None_, Type t ->
+      ( (let type_field = Hashtbl.find st.context.types t in
+         match type_field.typ with
+         | Struct _ | Array _ -> true
+         | Func _ -> false)
+      , st )
   (* Func and Extern are only in suptyping relation with themselves *)
   | Func, _
   | _, Func
@@ -172,8 +193,8 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   | _, Extern
   (* Any has no supertype *)
   | Any, _
-  (* I31, struct and arrays have no subtype (of a different kind) *)
-  | _, (I31 | Type _) -> false, st
+  (* I31, struct, array and none have no other subtype *)
+  | _, (I31 | Type _ | Struct | Array | None_) -> false, st
 
 let register_global name ?exported_name ?(constant = false) typ init st =
   st.context.other_fields <-
@@ -453,7 +474,8 @@ let rec is_smi e =
   | RefNull _
   | Br_on_cast _
   | Br_on_cast_fail _
-  | Try _ -> false
+  | Try _
+  | ExternConvertAny _ -> false
   | BinOp ((F32 _ | F64 _), _, _) | RefTest _ | RefEq _ -> true
   | IfExpr (_, _, ift, iff) -> is_smi ift && is_smi iff
 

@@ -172,13 +172,17 @@ end = struct
     res
 
   (****)
+
   let output_heaptype type_names ch typ =
     match (typ : heap_type) with
+    | None_ -> output_byte ch 0x71
     | Func -> output_byte ch 0x70
     | Extern -> output_byte ch 0x6F
     | Any -> output_byte ch 0x6E
     | Eq -> output_byte ch 0x6D
     | I31 -> output_byte ch 0x6C
+    | Struct -> output_byte ch 0x6B
+    | Array -> output_byte ch 0x6A
     | Type nm -> output_sint ch (Hashtbl.find type_names nm)
 
   let output_valtype type_names ch (typ : value_type) =
@@ -216,10 +220,13 @@ end = struct
     List.fold_left
       ~f:(fun acc field ->
         match field with
-        | Function { typ; _ } | Import { desc = Fun typ; _ } -> func_type acc typ
+        | Function { typ = None; signature; _ } | Import { desc = Fun signature; _ } ->
+            func_type acc signature
         | Import { desc = Tag typ; _ } -> func_type acc { params = [ typ ]; result = [] }
         | Type l -> explicit_definition acc l
-        | Import { desc = Global _; _ } | Data _ | Global _ | Tag _ -> acc)
+        | Function { typ = Some _; _ }
+        | Import { desc = Global _; _ }
+        | Data _ | Global _ | Tag _ -> acc)
       ~init:acc
       fields
 
@@ -334,7 +341,7 @@ end = struct
       List.fold_left
         ~f:(fun acc field ->
           match field with
-          | Function { typ; _ } -> typ :: acc
+          | Function { signature; _ } -> signature :: acc
           | Type _ | Import _ | Data _ | Global _ | Tag _ -> acc)
         ~init:[]
         fields
@@ -658,6 +665,11 @@ end = struct
             output_instruction st ch (Br (l + 1, Some (Pop ty))))
           catches;
         output_byte ch 0X0B
+    | ExternConvertAny e' ->
+        Feature.require gc;
+        output_expression st ch e';
+        output_byte ch 0xFB;
+        output_byte ch 0x1B
 
   and output_instruction st ch i =
     match i with
@@ -754,6 +766,7 @@ end = struct
         output_expression st ch e';
         output_byte ch 0x15;
         output_uint ch (Hashtbl.find st.type_names typ)
+    | Unreachable -> output_byte ch 0x00
     | Event _ -> ()
 
   let output_globals ch (st, global_idx, fields) =
@@ -871,7 +884,8 @@ end = struct
     | RefCast (_, e')
     | RefTest (_, e')
     | Br_on_cast (_, _, _, e')
-    | Br_on_cast_fail (_, _, _, e') -> expr_function_references e' set
+    | Br_on_cast_fail (_, _, _, e')
+    | ExternConvertAny e' -> expr_function_references e' set
     | BinOp (_, e', e'')
     | ArrayNew (_, e', e'')
     | ArrayNewData (_, _, e', e'')
@@ -934,7 +948,7 @@ end = struct
           ~f:(fun set i -> expr_function_references i set)
           ~init:(expr_function_references e' set)
           l
-    | Event _ -> set
+    | Unreachable | Event _ -> set
 
   let function_references fields set =
     List.fold_left

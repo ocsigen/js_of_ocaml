@@ -150,7 +150,10 @@ let heap_type st (ty : heap_type) =
   | Extern -> Atom "extern"
   | Any -> Atom "any"
   | Eq -> Atom "eq"
+  | Struct -> Atom "struct"
+  | Array -> Atom "array"
   | I31 -> Atom "i31"
+  | None_ -> Atom "none"
   | Type t -> index st.type_names t
 
 let ref_type st { nullable; typ } =
@@ -457,6 +460,7 @@ let expression_or_instructions ctx st in_function =
                              @ instruction (Wasm_ast.Br (i + 1, Some (Pop ty))))))
                       catches))
         ]
+    | ExternConvertAny e' -> [ List (Atom "extern.convert_any" :: expression e') ]
   and instruction i =
     match i with
     | Drop e -> [ List (Atom "drop" :: expression e) ]
@@ -534,6 +538,7 @@ let expression_or_instructions ctx st in_function =
             :: index st.type_names typ
             :: List.concat (List.map ~f:expression (l @ [ e ])))
         ]
+    | Unreachable -> [ List [ Atom "unreachable" ] ]
     | Event Parse_info.{ src = None | Some ""; _ } -> [ Comment "@" ]
     | Event Parse_info.{ src = Some src; col; line; _ } ->
         let loc = Format.sprintf "%s:%d:%d" src line col in
@@ -545,7 +550,7 @@ let expression ctx st = fst (expression_or_instructions ctx st false)
 
 let instructions ctx st = snd (expression_or_instructions ctx st true)
 
-let funct ctx st name exported_name typ param_names locals body =
+let funct ctx st name exported_name typ signature param_names locals body =
   let st =
     { st with
       local_names =
@@ -557,7 +562,10 @@ let funct ctx st name exported_name typ param_names locals body =
   in
   List
     ((Atom "func" :: index st.func_names name :: export exported_name)
-    @ func_type st ~param_names typ
+    @ (match typ with
+      | None -> []
+      | Some typ -> [ List [ Atom "type"; index st.type_names typ ] ])
+    @ func_type st ~param_names signature
     @ List.map
         ~f:(fun (i, t) -> List [ Atom "local"; index st.local_names i; value_type st t ])
         locals
@@ -612,8 +620,8 @@ let type_field st { name; typ; supertype; final } =
 
 let field ctx st f =
   match f with
-  | Function { name; exported_name; typ; param_names; locals; body } ->
-      [ funct ctx st name exported_name typ param_names locals body ]
+  | Function { name; exported_name; typ; signature; param_names; locals; body } ->
+      [ funct ctx st name exported_name typ signature param_names locals body ]
   | Global { name; exported_name; typ; init } ->
       [ List
           (Atom "global"
