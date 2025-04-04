@@ -24,6 +24,8 @@ let times = Debug.find "times"
 
 let debug_mem = Debug.find "mem"
 
+let debug_wat = Debug.find "wat"
+
 let () = Sys.catch_break true
 
 let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_file =
@@ -425,7 +427,11 @@ let run
           else None)
        @@ fun opt_tmp_map_file ->
        let unit_data =
-         Fs.with_intermediate_file (Filename.temp_file unit_name ".wat")
+         (if debug_wat ()
+          then
+            fun f ->
+              f (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+          else Fs.with_intermediate_file (Filename.temp_file unit_name ".wat"))
          @@ fun wat_file ->
          let strings, fragments =
            output_gen wat_file (output code ~unit_name:(Some unit_name))
@@ -454,7 +460,9 @@ let run
              ic
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-         Fs.with_intermediate_file (Filename.temp_file "code" ".wat")
+         (if debug_wat ()
+          then fun f -> f (Filename.chop_extension output_file ^ ".wat")
+          else Fs.with_intermediate_file (Filename.temp_file "code" ".wat"))
          @@ fun wat_file ->
          let dir = Filename.chop_extension output_file ^ ".assets" in
          Link.gen_dir dir
@@ -575,8 +583,10 @@ let info name =
     ~doc:"Wasm_of_ocaml compiler"
     ~description:"Wasm_of_ocaml is a compiler from OCaml bytecode to WebAssembly."
 
-let term = Cmdliner.Term.(const run $ Cmd_arg.options)
+let options = Cmd_arg.options ()
+
+let term = Cmdliner.Term.(const run $ options)
 
 let command =
-  let t = Cmdliner.Term.(const run $ Cmd_arg.options) in
+  let t = Cmdliner.Term.(const run $ options) in
   Cmdliner.Cmd.v (info "compile") t

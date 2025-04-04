@@ -54,13 +54,13 @@ module Generate (Target : Target_sig.S) = struct
 
   let repr_type r =
     match r with
-    | Value -> Value.value
+    | Value -> Type.value
     | Float -> F64
     | Int32 -> I32
     | Nativeint -> I32
     | Int64 -> I64
 
-  let specialized_func_type (params, result) =
+  let specialized_primitive_type (params, result) =
     { W.params = List.map ~f:repr_type params; result = [ repr_type result ] }
 
   let box_value r e =
@@ -109,9 +109,6 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_float_compare", ([ Float; Float ], Value)
       ];
     h
-
-  let func_type n =
-    { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
   let float_bin_op' op f g =
     Memory.box_float (op (Memory.unbox_float f) (Memory.unbox_float g))
@@ -664,7 +661,7 @@ module Generate (Target : Target_sig.S) = struct
                 let name = Primitive.resolve name in
                 try
                   let typ = Hashtbl.find specialized_primitives name in
-                  let* f = register_import ~name (Fun (specialized_func_type typ)) in
+                  let* f = register_import ~name (Fun (specialized_primitive_type typ)) in
                   let rec loop acc arg_typ l =
                     match arg_typ, l with
                     | [], [] -> box_value (snd typ) (return (W.Call (f, List.rev acc)))
@@ -675,7 +672,9 @@ module Generate (Target : Target_sig.S) = struct
                   in
                   loop [] (fst typ) l
                 with Not_found ->
-                  let* f = register_import ~name (Fun (func_type (List.length l))) in
+                  let* f =
+                    register_import ~name (Fun (Type.primitive_type (List.length l)))
+                  in
                   let rec loop acc l =
                     match l with
                     | [] -> return (W.Call (f, List.rev acc))
@@ -827,7 +826,7 @@ module Generate (Target : Target_sig.S) = struct
       then handler
       else
         let* () = handler in
-        instr (W.Return (Some (RefI31 (Const (I32 0l)))))
+        instr W.Unreachable
     else body ~result_typ ~fall_through ~context
 
   let wrap_with_handlers p pc ~result_typ ~fall_through ~context body =
@@ -853,6 +852,70 @@ module Generate (Target : Target_sig.S) = struct
       ~fall_through
       ~context
 
+  let return_type (p : Code.program) name_opt ~toplevel_name pc =
+    let* ty =
+      Code.preorder_traverse
+        { fold = Code.fold_children }
+        (fun pc ty ->
+          let block = Code.Addr.Map.find pc p.blocks in
+          match block.branch with
+          | Return x ->
+              let* ty = ty in
+              let* ty' = variable_type x in
+              value_type_lub ty (Option.value ~default:Type.value ty')
+          | Stop -> return Type.value
+          | Raise _ | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ty)
+        pc
+        p.blocks
+        (return (W.Ref { nullable = false; typ = None_ }))
+    in
+    ignore (name_opt, toplevel_name);
+    (*
+    let nm v = Option.value ~default:"???" (Code.Var.get_name v) in
+    Format.eprintf
+      "%a: %s@."
+      (fun f ty ->
+        match (ty : W.value_type) with
+        | I32 | I64 | F32 | F64 -> assert false
+        | Ref { typ; _ } -> (
+            match typ with
+            | Func | Extern -> assert false
+            | Any -> Format.fprintf f "any"
+            | Eq -> Format.fprintf f "eq"
+            | Struct -> Format.fprintf f "struct"
+            | Array -> Format.fprintf f "array"
+            | None_ -> Format.fprintf f "none"
+            | I31 -> Format.fprintf f "i31"
+            | Type v ->
+                Format.fprintf f "$%s" (Option.value ~default:"???" (Code.Var.get_name v))
+            ))
+      ty
+      (nm
+         (match name_opt with
+         | None -> toplevel_name
+         | Some x -> x));
+*)
+    return ty
+
+  let rec refine_type ~typ (instrs : W.instruction list) : W.instruction list =
+    match instrs with
+    | [ i ] -> [ refine_instr ~typ i ]
+    | [ i; (Event _ as i') ] -> [ refine_instr ~typ i; i' ]
+    | i :: rem -> i :: refine_type ~typ rem
+    | [] -> []
+
+  and refine_instr ~typ i =
+    match i with
+    | Block (ty, instrs') -> Block ({ ty with result = [ typ ] }, refine_type ~typ instrs')
+    | Loop (ty, instrs') -> Loop ({ ty with result = [ typ ] }, refine_type ~typ instrs')
+    | If (ty, e, instrs', instrs'') ->
+        If
+          ( { ty with result = [ typ ] }
+          , e
+          , refine_type ~typ instrs'
+          , refine_type ~typ instrs'' )
+    | i -> i
+
   let translate_function
       p
       ctx
@@ -873,6 +936,8 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> Structure.is_merge_node g pc'
       in
       let code ~context =
+        let block = Addr.Map.find pc ctx.blocks in
+        let* () = translate_instrs ctx context block.body in
         translate_node_within
           ~result_typ
           ~fall_through
@@ -917,7 +982,6 @@ module Generate (Target : Target_sig.S) = struct
           translate_tree result_typ fall_through pc' context
       | [] -> (
           let block = Addr.Map.find pc ctx.blocks in
-          let* () = translate_instrs ctx context block.body in
           let branch = block.branch in
           match branch with
           | Branch cont -> translate_branch result_typ fall_through pc cont context
@@ -949,7 +1013,7 @@ module Generate (Target : Target_sig.S) = struct
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
               let* e = load x in
-              let* tag = register_import ~name:exception_name (Tag Value.value) in
+              let* tag = register_import ~name:exception_name (Tag Type.value) in
               match fall_through with
               | `Catch -> instr (Push e)
               | `Block _ | `Return | `Skip -> (
@@ -1018,7 +1082,7 @@ module Generate (Target : Target_sig.S) = struct
     (match name_opt with
     | None -> ctx.global_context.globalized_variables <- Globalize.f p g ctx.closures
     | Some _ -> ());
-    let locals, body =
+    let locals, return_typ, body =
       function_body
         ~context:ctx.global_context
         ~param_names
@@ -1034,18 +1098,21 @@ module Generate (Target : Target_sig.S) = struct
              wrap_with_handlers
                p
                pc
-               ~result_typ:[ Value.value ]
+               ~result_typ:[ Type.value ]
                ~fall_through:`Return
                ~context:[]
                (fun ~result_typ ~fall_through ~context ->
                  translate_branch result_typ fall_through (-1) cont context)
            in
            let end_loc = Parse_bytecode.Debug.find_loc ctx.debug ~position:After pc in
-           match end_loc with
-           | Some loc -> event loc
-           | None -> return ())
+           let* () =
+             match end_loc with
+             | Some loc -> event loc
+             | None -> return ()
+           in
+           return_type p name_opt ~toplevel_name pc)
     in
-    let body = post_process_function_body ~param_names ~locals body in
+    let locals, body = post_process_function_body ~param_names ~locals body in
     W.Function
       { name =
           (match name_opt with
@@ -1056,16 +1123,36 @@ module Generate (Target : Target_sig.S) = struct
           | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
           | Some _ -> None)
       ; param_names
-      ; typ = func_type param_count
+      ; typ =
+          (match name_opt with
+          | None -> Type.primitive_type param_count
+          | Some _ -> Type.func_type ~ret:return_typ (param_count - 1))
+      ; type_name =
+          (match name_opt with
+          | None -> None
+          | Some f ->
+              Some
+                (Code_generation.eval
+                   ~context:ctx.global_context
+                   (Type.function_type
+                      ~cps:(Var.Set.mem f ctx.in_cps)
+                      ?ret:
+                        (if Poly.equal return_typ Type.value
+                         then None
+                         else Some return_typ)
+                      (param_count - 1))))
       ; locals
-      ; body
+      ; body =
+          (if Poly.equal return_typ Type.value
+           then body
+           else refine_type ~typ:return_typ body)
       }
     :: acc
 
   let init_function ~context ~to_link =
     let name = Code.Var.fresh_n "initialize" in
-    let typ = { W.params = []; result = [ Value.value ] } in
-    let locals, body =
+    let typ = { W.params = []; result = [ Type.value ] } in
+    let locals, _, body =
       function_body
         ~context
         ~param_names:[]
@@ -1077,21 +1164,32 @@ module Generate (Target : Target_sig.S) = struct
                in
                let* () = instr (Drop (Call (f, []))) in
                cont)
-             ~init:(instr (Push (RefI31 (Const (I32 0l)))))
+             ~init:
+               (let* unit = Value.unit in
+                instr (Push unit))
              to_link)
     in
     context.other_fields <-
-      W.Function { name; exported_name = None; typ; param_names = []; locals; body }
+      W.Function
+        { name
+        ; exported_name = None
+        ; typ
+        ; type_name = None
+        ; param_names = []
+        ; locals
+        ; body
+        }
       :: context.other_fields;
     name
 
   let entry_point context toplevel_fun entry_name =
     let typ, param_names, body = entry_point ~toplevel_fun in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name = Var.fresh_n "entry_point"
       ; exported_name = Some entry_name
       ; typ
+      ; type_name = None
       ; param_names
       ; locals
       ; body
@@ -1230,7 +1328,7 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
-let start () = make_context ~value_type:Gc_target.Value.value
+let start () = make_context ~value_type:Gc_target.Type.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
   let p = if effects_cps () then fix_switch_branches p else p in

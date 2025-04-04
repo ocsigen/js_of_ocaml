@@ -24,18 +24,19 @@
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
    (import "effect" "caml_trampoline_ref"
-      (global $caml_trampoline_ref (mut (ref null $function_1))))
+      (global $caml_trampoline_ref (mut (ref null $primitive))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
+   (type $primitive (func (param (ref eq) (ref eq)) (result (ref eq))))
+   (type $function_1 (sub (func (param (ref eq) (ref eq)) (result (ref eq)))))
    (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
    (type $closure_last_arg
       (sub $closure (struct (;(field i32);) (field (ref $function_1)))))
    (type $function_2
-      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
    (type $cps_closure (sub (struct (field (ref $function_2)))))
    (type $cps_closure_last_arg
       (sub $cps_closure (struct (field (ref $function_2)))))
@@ -56,7 +57,7 @@
             (field (mut (ref null $closure_2))))))
 
    (type $function_3
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
 
    (type $closure_3
       (sub $closure
@@ -68,8 +69,8 @@
             (field (mut (ref null $closure_3))))))
 
    (type $function_4
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
-         (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
+              (result (ref eq)))))
 
    (type $closure_4
       (sub $closure
@@ -460,7 +461,7 @@
             (struct.get $closure 0
                (br_on_cast_fail $cps (ref eq) (ref $closure)
                   (local.get $f))))))
-      (return_call_ref $function_1
+      (return_call_ref $primitive
          (local.get $f)
          (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $x))
          (ref.as_non_null (global.get $caml_trampoline_ref))))
@@ -480,7 +481,7 @@
                (call $caml_callback_1 (local.get $f) (local.get $x))
                (local.get $y)))
          (else
-            (return_call_ref $function_1
+            (return_call_ref $primitive
                (local.get $f)
                (array.new_fixed $block 3 (ref.i31 (i32.const 0))
                  (local.get $x) (local.get $y))

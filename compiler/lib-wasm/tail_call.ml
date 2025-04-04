@@ -59,6 +59,7 @@ let rec instruction ~tail i =
   | StructSet _
   | Return_call _
   | Return_call_ref _
+  | Unreachable
   | Event _ -> i
 
 and instructions ~tail l =
