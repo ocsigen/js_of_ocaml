@@ -257,21 +257,21 @@
          (ref.i31 (local.get $yday))
          (ref.i31 (local.get $isdst))))
 
-   (func $unix_gmtime (export "unix_gmtime") (export "caml_unix_gmtime")
+   (func (export "caml_unix_gmtime") (export "unix_gmtime")
       (param (ref eq)) (result (ref eq))
       (call $gmtime
          (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
 
-   (func $unix_localtime (export "unix_localtime") (export "caml_unix_localtime")
+   (func (export "caml_unix_localtime") (export "unix_localtime")
       (param (ref eq)) (result (ref eq))
       (call $localtime
          (struct.get $float 0 (ref.cast (ref $float) (local.get 0)))))
 
-   (func $unix_time (export "unix_time") (export "caml_unix_time")
+   (func (export "caml_unix_time") (export "unix_time")
       (param (ref eq)) (result (ref eq))
       (struct.new $float (f64.floor (call $gettimeofday))))
 
-   (func $unix_mktime (export "unix_mktime") (export "caml_unix_mktime")
+   (func (export "caml_unix_mktime") (export "unix_mktime")
       (param (ref eq)) (result (ref eq))
       (local $tm (ref $block)) (local $t f64)
       (local.set $tm (ref.cast (ref $block) (local.get 0)))
@@ -520,6 +520,11 @@
             (call $throw_ebadf (@string "closedir"))))
       (ref.i31 (i32.const 0)))
 
+   (func (export "unix_rewinddir") (export "caml_unix_rewinddir")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_invalid_argument (@string "rewinddir not implemented"))
+      (ref.i31 (i32.const 0)))
+
    (func (export "unix_readdir") (export "caml_unix_readdir")
       (param $dir (ref eq)) (result (ref eq))
       (block $return (result (ref eq))
@@ -550,11 +555,6 @@
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (call $win_find_next (local.get $dir))
          (local.get $dir)))
-
-   (func (export "unix_rewinddir") (export "caml_unix_rewinddir")
-      (param (ref eq)) (result (ref eq))
-      (call $caml_invalid_argument (@string "rewinddir not implemented"))
-      (ref.i31 (i32.const 0)))
 
    (func (export "unix_unlink") (export "caml_unix_unlink")
       (param $p (ref eq)) (result (ref eq))

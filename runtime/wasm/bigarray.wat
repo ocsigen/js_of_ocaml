@@ -16,6 +16,55 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "fail" "caml_bound_error" (func $caml_bound_error))
+   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
+   (import "fail" "caml_invalid_argument"
+      (func $caml_invalid_argument (param (ref eq))))
+   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "int32" "caml_copy_int32"
+      (func $caml_copy_int32 (param i32) (result (ref eq))))
+   (import "int32" "Int32_val"
+      (func $Int32_val (param (ref eq)) (result i32)))
+   (import "int32" "caml_copy_nativeint"
+      (func $caml_copy_nativeint (param i32) (result (ref eq))))
+   (import "int64" "caml_copy_int64"
+      (func $caml_copy_int64 (param i64) (result (ref eq))))
+   (import "int64" "Int64_val"
+      (func $Int64_val (param (ref eq)) (result i64)))
+   (import "obj" "double_array_tag" (global $double_array_tag i32))
+   (import "compare" "unordered" (global $unordered i32))
+   (import "hash" "caml_hash_mix_int"
+      (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
+   (import "hash" "caml_hash_mix_int64"
+      (func $caml_hash_mix_int64 (param i32) (param i64) (result i32)))
+   (import "hash" "caml_hash_mix_double"
+      (func $caml_hash_mix_double (param i32) (param f64) (result i32)))
+   (import "hash" "caml_hash_mix_float"
+      (func $caml_hash_mix_float (param i32) (param f32) (result i32)))
+   (import "hash" "caml_hash_mix_float16"
+      (func $caml_hash_mix_float16 (param i32) (param i32) (result i32)))
+   (import "marshal" "caml_serialize_int_1"
+      (func $caml_serialize_int_1 (param (ref eq)) (param i32)))
+   (import "marshal" "caml_serialize_int_2"
+      (func $caml_serialize_int_2 (param (ref eq)) (param i32)))
+   (import "marshal" "caml_serialize_int_4"
+      (func $caml_serialize_int_4 (param (ref eq)) (param i32)))
+   (import "marshal" "caml_serialize_int_8"
+      (func $caml_serialize_int_8 (param (ref eq)) (param i64)))
+   (import "marshal" "caml_deserialize_uint_1"
+      (func $caml_deserialize_uint_1 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_sint_1"
+      (func $caml_deserialize_sint_1 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_uint_2"
+      (func $caml_deserialize_uint_2 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_sint_2"
+      (func $caml_deserialize_sint_2 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_int_4"
+      (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_int_8"
+      (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
    (import "bindings" "ta_create"
       (func $ta_create (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_normalize"
@@ -72,55 +121,6 @@
    (import "bindings" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
    (import "bindings" "littleEndian" (global $littleEndian i32))
-   (import "fail" "caml_bound_error" (func $caml_bound_error))
-   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
-   (import "fail" "caml_invalid_argument"
-      (func $caml_invalid_argument (param (ref eq))))
-   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "int32" "caml_copy_int32"
-      (func $caml_copy_int32 (param i32) (result (ref eq))))
-   (import "int32" "Int32_val"
-      (func $Int32_val (param (ref eq)) (result i32)))
-   (import "int32" "caml_copy_nativeint"
-      (func $caml_copy_nativeint (param i32) (result (ref eq))))
-   (import "int64" "caml_copy_int64"
-      (func $caml_copy_int64 (param i64) (result (ref eq))))
-   (import "int64" "Int64_val"
-      (func $Int64_val (param (ref eq)) (result i64)))
-   (import "obj" "double_array_tag" (global $double_array_tag i32))
-   (import "compare" "unordered" (global $unordered i32))
-   (import "hash" "caml_hash_mix_int"
-      (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
-   (import "hash" "caml_hash_mix_int64"
-      (func $caml_hash_mix_int64 (param i32) (param i64) (result i32)))
-   (import "hash" "caml_hash_mix_double"
-      (func $caml_hash_mix_double (param i32) (param f64) (result i32)))
-   (import "hash" "caml_hash_mix_float"
-      (func $caml_hash_mix_float (param i32) (param f32) (result i32)))
-   (import "hash" "caml_hash_mix_float16"
-      (func $caml_hash_mix_float16 (param i32) (param i32) (result i32)))
-   (import "marshal" "caml_serialize_int_1"
-      (func $caml_serialize_int_1 (param (ref eq)) (param i32)))
-   (import "marshal" "caml_serialize_int_2"
-      (func $caml_serialize_int_2 (param (ref eq)) (param i32)))
-   (import "marshal" "caml_serialize_int_4"
-      (func $caml_serialize_int_4 (param (ref eq)) (param i32)))
-   (import "marshal" "caml_serialize_int_8"
-      (func $caml_serialize_int_8 (param (ref eq)) (param i64)))
-   (import "marshal" "caml_deserialize_uint_1"
-      (func $caml_deserialize_uint_1 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_sint_1"
-      (func $caml_deserialize_sint_1 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_uint_2"
-      (func $caml_deserialize_uint_2 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_sint_2"
-      (func $caml_deserialize_sint_2 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_int_4"
-      (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_int_8"
-      (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))

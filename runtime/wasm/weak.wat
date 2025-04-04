@@ -81,9 +81,10 @@
                         (br_on_null $released
                            (call $map_get (local.get $m) (local.get $v))))
                      (br $loop))))
+            (local.set $d (ref.cast (ref eq) (local.get $m)))
             (return
               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
-                 (ref.cast (ref eq) (local.get $m)))))
+                 (local.get $d))))
          (array.set $block (local.get $x) (global.get $caml_ephe_data_offset)
             (global.get $caml_ephe_none)))
       (ref.i31 (i32.const 0)))
@@ -133,8 +134,9 @@
                (array.set $block (local.get $x) (local.get $i)
                   (global.get $caml_ephe_none))
                (br $loop))))
+      (local.set $data (call $wrap (local.get $m)))
       (array.set $block (local.get $x) (global.get $caml_ephe_data_offset)
-         (call $wrap (local.get $m)))
+         (local.get $data))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_ephe_unset_data")
