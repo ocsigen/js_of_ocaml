@@ -25,6 +25,9 @@
      (func $caml_fresh_oo_id (param (ref eq)) (result (ref eq))))
    (import "obj" "cont_tag" (global $cont_tag i32))
    (import "obj" "object_tag" (global $object_tag i32))
+   (import "obj" "caml_callback_1"
+      (func $caml_callback_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "stdlib" "caml_named_value"
       (func $caml_named_value (param (ref eq)) (result (ref null eq))))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
@@ -38,9 +41,6 @@
          (param $f funcref) (param $env eqref) (result anyref)))
    (import "bindings" "resume_fiber"
       (func $resume_fiber (param externref) (param (ref eq))))
-   (import "obj" "caml_callback_1"
-      (func $caml_callback_1
-         (param (ref eq)) (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -51,6 +51,37 @@
    (type $closure_3
       (sub $closure
          (struct (field (ref $function_1)) (field (ref $function_3)))))
+
+   ;; Generic fibers
+
+   (type $generic_fiber
+      (sub
+         (struct
+            (field $value (mut (ref eq)))
+            (field $exn (mut (ref eq)))
+            (field $effect (mut (ref eq))))))
+
+   (@string $already_resumed "Effect.Continuation_already_resumed")
+
+   (@string $effect_unhandled "Effect.Unhandled")
+
+   (func $raise_unhandled
+      (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
+      (block $null
+         (call $caml_raise_with_arg
+            (br_on_null $null
+               (call $caml_named_value (global.get $effect_unhandled)))
+            (local.get $eff)))
+      (call $caml_raise_constant
+         (array.new_fixed $block 3 (ref.i31 (global.get $object_tag))
+            (global.get $effect_unhandled)
+            (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
+      (ref.i31 (i32.const 0)))
+
+   (global $raise_unhandled (ref $closure)
+      (struct.new $closure (ref.func $raise_unhandled)))
+
+   (global $effect_allowed (mut i32) (i32.const 1))
 
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 
@@ -114,13 +145,6 @@
 
    ;; Stack of fibers
 
-   (type $generic_fiber
-      (sub
-         (struct
-            (field $value (mut (ref eq)))
-            (field $exn (mut (ref eq)))
-            (field $effect (mut (ref eq))))))
-
    (type $fiber
       (sub final $generic_fiber
          (struct
@@ -129,24 +153,6 @@
             (field $effect (mut (ref eq)))
             (field $cont (mut (ref $cont)))
             (field $next (mut (ref null $fiber))))))
-
-   (@string $effect_unhandled "Effect.Unhandled")
-
-   (func $raise_unhandled
-      (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
-      (block $null
-         (call $caml_raise_with_arg
-            (br_on_null $null
-               (call $caml_named_value (global.get $effect_unhandled)))
-            (local.get $eff)))
-      (call $caml_raise_constant
-         (array.new_fixed $block 3 (ref.i31 (global.get $object_tag))
-            (global.get $effect_unhandled)
-            (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
-      (ref.i31 (i32.const 0)))
-
-   (global $raise_unhandled (ref $closure)
-      (struct.new $closure (ref.func $raise_unhandled)))
 
    (func $initial_cont (param $p (ref $pair)) (param (ref eq))
       (return_call $start_fiber (local.get $p)))
@@ -214,8 +220,6 @@
          (local.get $k)
          (struct.get $cont $cont_func (local.get $k))))
 
-   (@string $already_resumed "Effect.Continuation_already_resumed")
-
    (func $resume (export "%resume")
       (param $stack_head (ref eq)) (param $f (ref eq)) (param $v (ref eq))
       (param $stack_tail (ref eq)) (result (ref eq))
@@ -279,8 +283,6 @@
             (local.get $last_fiber))
          (local.get $k1)
          (struct.get $cont $cont_func (local.get $k1))))
-
-   (global $effect_allowed (mut i32) (i32.const 1))
 
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
       (if (i32.or (i32.eqz (global.get $effect_allowed))
