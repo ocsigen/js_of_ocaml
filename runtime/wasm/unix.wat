@@ -493,8 +493,6 @@
             (local.get $cmd)
             (global.get $no_arg))))
 
-   (data $readdir "readdir")
-
    (func $readdir_helper (param $dir (ref eq)) (result (ref eq))
       (block $end
          (return
@@ -506,14 +504,10 @@
                           (call $readdir (call $unwrap (local.get $dir)))))))
                (catch $javascript_exception
                   (drop (pop externref))
-                  (call $throw_ebadf
-                     (array.new_data $bytes $readdir
-                        (i32.const 0) (i32.const 7)))
+                  (call $throw_ebadf (@string "readdir"))
                   (ref.i31 (i32.const 0))))))
       (call $caml_raise_end_of_file)
       (ref.i31 (i32.const 0)))
-
-   (data $closedir "closedir")
 
    (func $unix_closedir (export "unix_closedir") (export "caml_unix_closedir")
       (export "win_findclose") (export "caml_unix_findclose")
@@ -523,8 +517,7 @@
             (call $closedir (call $unwrap (local.get $dir))))
          (catch $javascript_exception
             (drop (pop externref))
-            (call $throw_ebadf
-               (array.new_data $bytes $closedir (i32.const 0) (i32.const 8)))))
+            (call $throw_ebadf (@string "closedir"))))
       (ref.i31 (i32.const 0)))
 
    (func (export "unix_readdir") (export "caml_unix_readdir")
@@ -558,13 +551,9 @@
          (call $win_find_next (local.get $dir))
          (local.get $dir)))
 
-   (data $rewinddir_not_implemented "rewinddir not implemented")
-
    (func (export "unix_rewinddir") (export "caml_unix_rewinddir")
       (param (ref eq)) (result (ref eq))
-      (call $caml_invalid_argument
-         (array.new_data $bytes $rewinddir_not_implemented
-            (i32.const 0) (i32.const 25)))
+      (call $caml_invalid_argument (@string "rewinddir not implemented"))
       (ref.i31 (i32.const 0)))
 
    (func (export "unix_unlink") (export "caml_unix_unlink")
@@ -587,8 +576,6 @@
             (call $caml_unix_error (pop externref) (ref.null eq))))
       (ref.i31 (i32.const 0)))
 
-   (data $link "link")
-
    (func (export "unix_link") (export "caml_unix_link")
       (param $follow (ref eq)) (param $d (ref eq)) (param $s (ref eq))
       (result (ref eq))
@@ -599,7 +586,7 @@
                   (ref.i31 (i32.const 0))
                   (call $get_unix_error_exn)
                   (ref.i31 (i32.const 25)) ;; ENOSYS
-                  (array.new_data $bytes $link (i32.const 0) (i32.const 4))
+                  (@string "link")
                   (global.get $no_arg)))))
       (try
          (do
@@ -999,14 +986,12 @@
          (i64.add (local.get $offset) (i64.extend_i32_s (local.get $n))))
       (ref.i31 (local.get $n)))
 
-   (@string $lseek "lseek")
-
    (func $lseek_exn (param $errno i32) (result (ref eq))
       (array.new_fixed $block 5
          (ref.i31 (i32.const 0))
          (call $get_unix_error_exn)
          (ref.i31 (local.get $errno))
-         (global.get $lseek)
+         (@string "lseek")
          (global.get $no_arg)))
 
    (func $lseek
