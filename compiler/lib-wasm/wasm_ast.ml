@@ -188,6 +188,7 @@ and instruction =
   | StructSet of var * int * expression * expression
   | Return_call of var * expression list
   | Return_call_ref of var * expression * expression list
+  | Unreachable
   | Event of Parse_info.t  (** Location information *)
 
 type import_desc =

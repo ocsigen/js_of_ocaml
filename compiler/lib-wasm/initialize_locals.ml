@@ -95,7 +95,7 @@ and scan_instruction ctx i =
       scan_instructions ctx l;
       scan_instructions ctx l'
   | CallInstr (_, l) | Return_call (_, l) -> scan_expressions ctx l
-  | Br (_, None) | Return None | Rethrow _ | Nop | Event _ -> ()
+  | Br (_, None) | Return None | Rethrow _ | Nop | Unreachable | Event _ -> ()
   | ArraySet (_, e, e', e'') ->
       scan_expression ctx e;
       scan_expression ctx e';

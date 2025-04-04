@@ -759,6 +759,7 @@ end = struct
         output_expression st ch e';
         output_byte ch 0x15;
         output_uint ch (Hashtbl.find st.type_names typ)
+    | Unreachable -> output_byte ch 0x00
     | Event _ -> ()
 
   let output_globals ch (st, global_idx, fields) =
@@ -940,7 +941,7 @@ end = struct
           ~f:(fun set i -> expr_function_references i set)
           ~init:(expr_function_references e' set)
           l
-    | Event _ -> set
+    | Unreachable | Event _ -> set
 
   let function_references fields set =
     List.fold_left

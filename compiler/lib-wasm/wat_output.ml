@@ -535,6 +535,7 @@ let expression_or_instructions ctx st in_function =
             :: index st.type_names typ
             :: List.concat (List.map ~f:expression (l @ [ e ])))
         ]
+    | Unreachable -> [ List [ Atom "unreachable" ] ]
     | Event Parse_info.{ src = None | Some ""; _ } -> [ Comment "@" ]
     | Event Parse_info.{ src = Some src; col; line; _ } ->
         let loc = Format.sprintf "%s:%d:%d" src line col in
