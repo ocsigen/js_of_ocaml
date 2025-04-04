@@ -697,6 +697,12 @@ module Read = struct
         let pos = st.type_index_count in
         let pos' = add_rectype types ty in
         let count = Array.length ty in
+        let len = Array.length st.type_mapping in
+        if pos + count > len
+        then (
+          let m = Array.make (len + (len / 5) + count) 0 in
+          Array.blit ~src:st.type_mapping ~src_pos:0 ~dst:m ~dst_pos:0 ~len;
+          st.type_mapping <- m);
         for i = 0 to count - 1 do
           st.type_mapping.(pos + i) <- pos' + i
         done;
