@@ -48,11 +48,34 @@
       (func $caml_init_custom_operations))
    (import "custom" "caml_find_custom_operations"
       (func $caml_find_custom_operations
-         (param (ref $bytes)) (result (ref null $custom_operations))))
+         (param (ref eq)) (result (ref null $custom_operations))))
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_bytes_of_string"
+      (func $caml_bytes_of_string (param (ref eq)) (result (ref eq))))
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param anyref) (result i32)))
+   (import "jsstring" "jsstring_length"
+      (func $jsstring_length (param anyref) (result i32)))
+   (import "string" "caml_blit_string"
+      (func $caml_blit_string
+         (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
+         (result (ref eq))))
 
    (@string $input_val_from_string "input_value_from_string")
 
+(@if use-js-string
+(@then
+   (func (export "caml_input_value_from_string")
+      (param $vstr (ref eq)) (param $vofs (ref eq)) (result (ref eq))
+      ;; It would be better to parse the header and extract just the
+      ;; relevant substring
+      (return_call $caml_input_value_from_bytes
+         (call $caml_bytes_of_string (local.get $vstr)) (local.get $vofs)))
+)
+(@else
    (export "caml_input_value_from_string" (func $caml_input_value_from_bytes))
+))
    (func $caml_input_value_from_bytes (export "caml_input_value_from_bytes")
       (param $vstr (ref eq)) (param $vofs (ref eq)) (result (ref eq))
       (local $str (ref $bytes))
@@ -132,6 +155,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
    (type $js (struct (field anyref)))
@@ -150,7 +174,13 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
+(@if use-js-string
+(@then
+         (field $id (ref $string))
+)
+(@else
          (field $id (ref $bytes))
+))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -427,8 +457,8 @@
             (br_on_null $unknown
                (call
                   $caml_find_custom_operations
-                  (call $readstr
-                     (local.get $s)))))
+                  (call $caml_string_of_bytes
+                     (call $readstr (local.get $s))))))
          (block $no_length
             (if (i32.eq (local.get $code) (global.get $CODE_CUSTOM_FIXED))
                (then
@@ -664,7 +694,7 @@
           ;; read_string
           (local.set $str (array.new $bytes (i32.const 0) (local.get $len)))
           (call $readblock (local.get $s) (local.get $str))
-          (local.set $v (local.get $str))
+          (local.set $v (call $caml_string_of_bytes (local.get $str)))
           (call $register_object (local.get $s) (local.get $v))
           (br $done))
          ;; read_block
@@ -995,6 +1025,19 @@
          (struct.get $extern_state $buf (local.get $s)) (local.get $pos)
          (local.get $str) (i32.const 0) (local.get $len)))
 
+   (func $writestring
+      (param $s (ref $extern_state)) (param $str anyref) (param $len i32)
+      (local $pos i32)
+      (local.set $len (call $jsstring_length (local.get $str)))
+      (local.set $pos
+         (call $reserve_extern_output (local.get $s) (local.get $len)))
+      (drop
+         (call $caml_blit_string ;; ZZZ lower level func?
+            (struct.new $js (local.get $str)) (ref.i31 (i32.const 0))
+            (struct.get $extern_state $buf (local.get $s))
+            (ref.i31 (local.get $pos))
+            (ref.i31 (local.get $len)))))
+
    (func $writefloat
       (param $s (ref $extern_state)) (param $f f64)
       (local $pos i32) (local $buf (ref $bytes)) (local $d i64) (local $i i32)
@@ -1121,7 +1164,7 @@
                (i32.or (local.get $tag)
                   (i32.shl (local.get $sz) (i32.const 10)))))))
 
-   (func $extern_string (param $s (ref $extern_state)) (param $v (ref $bytes))
+   (func $extern_bytes (param $s (ref $extern_state)) (param $v (ref $bytes))
       (local $len i32)
       (local.set $len (array.len (local.get $v)))
       (if (i32.lt_u (local.get $len) (i32.const 0x20))
@@ -1136,6 +1179,22 @@
          (call $writecode32 (local.get $s) (global.get $CODE_STRING32)
             (local.get $len))))))
       (call $writeblock (local.get $s) (local.get $v)))
+
+   (func $extern_string (param $s (ref $extern_state)) (param $v anyref)
+      (local $len i32)
+      (local.set $len (call $jsstring_length (local.get $v)))
+      (if (i32.lt_u (local.get $len) (i32.const 0x20))
+         (then
+            (call $write (local.get $s)
+               (i32.add (global.get $PREFIX_SMALL_STRING) (local.get $len))))
+      (else (if (i32.lt_u (local.get $len) (i32.const 0x100))
+         (then
+            (call $writecode8 (local.get $s) (global.get $CODE_STRING8)
+               (local.get $len)))
+      (else
+         (call $writecode32 (local.get $s) (global.get $CODE_STRING32)
+            (local.get $len))))))
+      (call $writestring (local.get $s) (local.get $v) (local.get $len)))
 
    (func $extern_float (param $s (ref $extern_state)) (param $v f64)
       (call $write (local.get $s) (global.get $CODE_DOUBLE_LITTLE))
@@ -1163,6 +1222,10 @@
       (local $fixed_length (ref $fixed_length))
       (local $pos i32) (local $buf (ref $bytes))
       (local $r (tuple i32 i32))
+(@if use-js-string
+(@then
+      (local $id anyref)
+))
       (local.set $ops (struct.get $custom 0 (local.get $v)))
       (block $abstract
          (local.set $serialize
@@ -1174,8 +1237,18 @@
                   (struct.get $custom_operations $fixed_length
                      (local.get $ops))))
             (call $write (local.get $s) (global.get $CODE_CUSTOM_FIXED))
+(@if use-js-string
+(@then
+            (local.set $id
+               (struct.get $string 0
+                  (struct.get $custom_operations $id (local.get $ops))))
+            (call $writestring (local.get $s) (local.get $id)
+               (call $jsstring_length (local.get $id)))
+)
+(@else
             (call $writeblock (local.get $s)
                (struct.get $custom_operations $id (local.get $ops)))
+))
             (call $write (local.get $s) (i32.const 0))
             (local.set $r
                (call_ref $serialize
@@ -1196,8 +1269,18 @@
             (return (local.get $r)))
          ;; variable length
          (call $write (local.get $s) (global.get $CODE_CUSTOM_LEN))
+(@if use-js-string
+(@then
+            (local.set $id
+               (struct.get $string 0
+                  (struct.get $custom_operations $id (local.get $ops))))
+            (call $writestring (local.get $s) (local.get $id)
+               (call $jsstring_length (local.get $id)))
+)
+(@else
          (call $writeblock (local.get $s)
             (struct.get $custom_operations $id (local.get $ops)))
+))
          (call $write (local.get $s) (i32.const 0))
          (local.set $pos
             (call $reserve_extern_output (local.get $s) (i32.const 12)))
@@ -1227,6 +1310,7 @@
       (local $hd i32) (local $tag i32) (local $sz i32)
       (local $pos i32)
       (local $r (tuple i32 i32))
+      (local $js anyref)
       (loop $loop
          (block $next_item
             (drop (block $not_int (result (ref eq))
@@ -1286,7 +1370,7 @@
                (local.set $str
                   (br_on_cast_fail $not_string (ref eq) (ref $bytes)
                      (local.get $v)))
-               (call $extern_string (local.get $s) (local.get $str))
+               (call $extern_bytes (local.get $s) (local.get $str))
                (local.set $sz (array.len (local.get $str)))
                (call $extern_size (local.get $s)
                   (i32.add (i32.const 1)
@@ -1328,9 +1412,25 @@
                (then (call $caml_invalid_argument (global.get $func_value))))
             (if (call $caml_is_continuation (local.get $v))
                (then (call $caml_invalid_argument (global.get $cont_value))))
-            (if (ref.test (ref $js) (local.get $v))
-               (then (call $caml_invalid_argument (global.get $js_value))))
-            (call $caml_invalid_argument (global.get $abstract_value)))
+            (drop (block $not_js (result (ref eq))
+               (local.set $js
+                  (struct.get $js 0
+                     (br_on_cast_fail $not_js (ref eq) (ref $js)
+                        (local.get $v))))
+               (if (call $jsstring_test (local.get $js))
+                  (then
+                     (call $extern_string (local.get $s) (local.get $js))
+                     (local.set $sz (call $jsstring_length (local.get $js)))
+                     (call $extern_size (local.get $s)
+                        (i32.add (i32.const 1)
+                           (i32.shr_u (local.get $sz) (i32.const 2)))
+                        (i32.add (i32.const 1)
+                           (i32.shr_u (local.get $sz) (i32.const 3))))
+                     (br $next_item)))
+               (call $caml_invalid_argument (global.get $js_value))
+               (ref.i31 (i32.const 0))))
+            (call $caml_invalid_argument (global.get $abstract_value))
+         )
          ;; next_item
          (block $done
             (local.set $item (br_on_null $done (local.get $sp)))
@@ -1398,8 +1498,18 @@
          (struct.get $extern_state $size_64 (local.get $s)))
       (tuple.make 3 (local.get $len) (local.get $header) (local.get $s)))
 
+(@if use-js-string
+(@then
    (func (export "caml_output_value_to_string")
-      (export "caml_output_value_to_bytes")
+      (param $v (ref eq)) (param $flags (ref eq)) (result (ref eq))
+      (return_call $caml_string_of_bytes
+         (call $caml_output_value_to_bytes (local.get $v) (local.get $flags))))
+)
+(@else
+   (export "caml_output_value_to_string" (func $caml_output_value_to_bytes))
+))
+
+   (func $caml_output_value_to_bytes (export "caml_output_value_to_bytes")
       (param $v (ref eq)) (param $flags (ref eq)) (result (ref eq))
       (local $r (tuple i32 (ref $bytes) (ref $extern_state)))
       (local $blk (ref $output_block)) (local $pos i32) (local $len i32)
