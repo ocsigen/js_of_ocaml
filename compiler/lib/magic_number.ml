@@ -67,11 +67,6 @@ let equal a b = compare a b = 0
 let v =
   let current = Ocaml_version.current in
   match current with
-  | 4 :: 08 :: _ -> 25
-  | 4 :: 09 :: _ -> 26
-  | 4 :: 10 :: _ -> 27
-  | 4 :: 11 :: _ -> 28
-  | 4 :: 12 :: _ -> 29
   | 4 :: 13 :: _ -> 30
   | 4 :: 14 :: _ -> 31
   | 5 :: 00 :: _ -> 32
@@ -79,8 +74,8 @@ let v =
   | 5 :: 02 :: _ -> 34
   | 5 :: 03 :: _ -> 35
   | _ ->
-      if Ocaml_version.compare current [ 4; 8 ] < 0
-      then failwith "OCaml version unsupported. Upgrade to OCaml 4.08 or newer."
+      if Ocaml_version.compare current [ 4; 13 ] < 0
+      then failwith "OCaml version unsupported. Upgrade to OCaml 4.13 or newer."
       else (
         assert (Ocaml_version.compare current [ 5; 4 ] >= 0);
         failwith "OCaml version unsupported. Upgrade js_of_ocaml.")

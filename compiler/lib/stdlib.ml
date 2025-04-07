@@ -413,7 +413,7 @@ module Int64 = struct
 end
 
 module Float = struct
-  type t = float
+  include Float
 
   let equal (_ : float) (_ : float) = `Use_ieee_equal_or_bitwise_equal
 
@@ -421,9 +421,6 @@ module Float = struct
 
   let bitwise_equal (a : float) (b : float) =
     Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
-
-  (* Re-defined here to stay compatible with OCaml 4.02 *)
-  external classify_float : float -> fpclass = "caml_classify_float"
 
   external ( < ) : t -> t -> bool = "%lessthan"
 

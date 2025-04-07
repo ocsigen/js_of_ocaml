@@ -33,8 +33,6 @@ type bytecode = string
 let predefined_exceptions =
   Runtimedef.builtin_exceptions |> Array.to_list |> List.mapi ~f:(fun i name -> i, name)
 
-let new_closure_repr = Ocaml_version.compare Ocaml_version.current [ 4; 12 ] >= 0
-
 (* Read and manipulate debug section *)
 module Debug : sig
   type t
@@ -249,10 +247,7 @@ end = struct
       let { event; _ } = Int_table.find events_by_pc pc in
       let env = event.ev_compenv in
       let names =
-        Ident.fold_name
-          (fun ident i acc -> ((if new_closure_repr then i / 3 else i / 2), ident) :: acc)
-          env.ce_rec
-          []
+        Ident.fold_name (fun ident i acc -> (i / 3, ident) :: acc) env.ce_rec []
       in
       List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
     with Not_found -> []
@@ -788,7 +783,7 @@ let compiled_blocks : (_ * instr list * last) Addr.Map.t ref = ref Addr.Map.empt
 
 let method_cache_id = ref 1
 
-let clo_offset_3 = if new_closure_repr then 3 else 2
+let clo_offset_3 = 3
 
 type compile_info =
   { blocks : Blocks.t
@@ -1194,7 +1189,7 @@ and compile infos pc state (instrs : instr list) =
         let env =
           let code = State.Dummy "closure(code)" in
           let closure_info = State.Dummy "closure(info)" in
-          if new_closure_repr then code :: closure_info :: env else code :: env
+          code :: closure_info :: env
         in
         let env = Array.of_list env in
         if debug_parser () then Format.printf "fun %a (" Var.print x;
@@ -1241,9 +1236,7 @@ and compile infos pc state (instrs : instr list) =
         List.iter !vars ~f:(fun (i, x) ->
             let code = State.Var x in
             let closure_info = State.Dummy "closurerec(info)" in
-            if new_closure_repr
-            then env := code :: closure_info :: !env
-            else env := code :: !env;
+            env := code :: closure_info :: !env;
             if i > 0
             then
               let infix_tag = State.Dummy "closurerec(infix_tag)" in
@@ -2477,26 +2470,6 @@ let parse_bytecode code globals debug_data =
   tagged_blocks := Addr.Map.empty;
   p
 
-(* HACK - override module *)
-
-let override_global =
-  match Ocaml_version.compare Ocaml_version.current [ 4; 13 ] >= 0 with
-  | true -> []
-  | false ->
-      [ ( "CamlinternalMod"
-        , fun _orig instrs ->
-            let x = Var.fresh_n "internalMod" in
-            let init_mod = Var.fresh_n "init_mod" in
-            let update_mod = Var.fresh_n "update_mod" in
-            ( x
-            , Let (x, Block (0, [| init_mod; update_mod |], NotArray, Immutable))
-              :: Let (init_mod, Special (Alias_prim "caml_CamlinternalMod_init_mod"))
-              :: Let (update_mod, Special (Alias_prim "caml_CamlinternalMod_update_mod"))
-              :: instrs ) )
-      ]
-
-(* HACK END *)
-
 module Toc : sig
   type t
 
@@ -2634,14 +2607,6 @@ let from_exe
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
 
   let globals = make_globals (Array.length init_data) init_data primitive_table in
-  (* Initialize module override mechanism *)
-  List.iter override_global ~f:(fun (name, v) ->
-      try
-        let nn = Ocaml_compiler.Symtable.Global.Glob_compunit name in
-        let i = Ocaml_compiler.Symtable.GlobalMap.find nn orig_symbols in
-        globals.override.(i) <- Some v;
-        if debug_parser () then Format.eprintf "overriding global %s@." name
-      with Not_found -> ());
   if linkall
   then
     (* export globals *)
@@ -2900,13 +2865,6 @@ module Reloc = struct
     let globals = make_globals (Array.length constants) constants primitives in
     resize_globals globals t.pos;
     Hashtbl.iter (fun name i -> globals.named_value.(i) <- Some name) t.names;
-    (* Initialize module override mechanism *)
-    List.iter override_global ~f:(fun (name, v) ->
-        try
-          let i = Hashtbl.find t.names name in
-          globals.override.(i) <- Some v;
-          if debug_parser () then Format.eprintf "overriding global %s@." name
-        with Not_found -> ());
     globals
 end
 

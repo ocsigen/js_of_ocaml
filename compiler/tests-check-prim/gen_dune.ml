@@ -1,12 +1,7 @@
 (** *)
 
 type version =
-  [ `V4_08
-  | `V4_09
-  | `V4_10
-  | `V4_11
-  | `V4_12
-  | `V4_13
+  [ `V4_13
   | `V4_14
   | `V5_0
   | `V5_1
@@ -16,11 +11,6 @@ type version =
   ]
 
 let string_of_version : version -> string = function
-  | `V4_08 -> "4.08"
-  | `V4_09 -> "4.09"
-  | `V4_10 -> "4.10"
-  | `V4_11 -> "4.11"
-  | `V4_12 -> "4.12"
   | `V4_13 -> "4.13"
   | `V4_14 -> "4.14"
   | `V5_0 -> "5.0"
@@ -30,11 +20,6 @@ let string_of_version : version -> string = function
   | `V5_4 -> "5.4"
 
 let next_version : version -> version option = function
-  | `V4_08 -> Some `V4_09
-  | `V4_09 -> Some `V4_10
-  | `V4_10 -> Some `V4_11
-  | `V4_11 -> Some `V4_12
-  | `V4_12 -> Some `V4_13
   | `V4_13 -> Some `V4_14
   | `V4_14 -> Some `V5_0
   | `V5_0 -> Some `V5_1

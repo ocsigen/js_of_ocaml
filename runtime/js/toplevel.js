@@ -133,19 +133,6 @@ function caml_static_release_bytecode() {
   return 0;
 }
 
-//Provides: caml_static_alloc
-//Requires: caml_create_bytes
-//Version: < 4.12
-function caml_static_alloc(len) {
-  return caml_create_bytes(len);
-}
-
-//Provides: caml_static_free
-//Version: < 4.12
-function caml_static_free() {
-  return 0;
-}
-
 //Provides: caml_realloc_global
 //Requires: caml_global_data
 function caml_realloc_global(len) {

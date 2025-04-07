@@ -9,26 +9,6 @@
 
 (context
  (opam
-  (switch 4.08.1)))
-
-(context
- (opam
-  (switch 4.09.1)))
-
-(context
- (opam
-  (switch 4.10.2)))
-
-(context
- (opam
-  (switch 4.11.2)))
-
-(context
- (opam
-  (switch 4.12.1)))
-
-(context
- (opam
   (switch 4.13.1)))
 
 (context

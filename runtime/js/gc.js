@@ -25,16 +25,10 @@ function caml_gc_counters() {
   return [254, 0, 0, 0];
 }
 //Provides: caml_gc_quick_stat
-//Version: >= 4.12
 function caml_gc_quick_stat() {
   return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 }
 
-//Provides: caml_gc_quick_stat
-//Version: < 4.12
-function caml_gc_quick_stat() {
-  return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-}
 //Provides: caml_gc_stat
 //Requires: caml_gc_quick_stat
 function caml_gc_stat() {
@@ -49,12 +43,6 @@ function caml_gc_set(_control) {
 //Provides: caml_gc_get
 function caml_gc_get() {
   return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-}
-
-//Provides: caml_memprof_set
-//Version: = 4.10
-function caml_memprof_set(_control) {
-  return 0;
 }
 
 //Provides: caml_final_register const

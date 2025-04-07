@@ -332,28 +332,9 @@ function caml_ml_runtime_warnings_enabled(_unit) {
   return caml_runtime_warnings;
 }
 
-//Provides: caml_spacetime_enabled const (const)
-//Version: < 4.12
-function caml_spacetime_enabled(_unit) {
-  return 0;
-}
-
 //Provides: caml_sys_const_naked_pointers_checked const (const)
 function caml_sys_const_naked_pointers_checked(_unit) {
   return 0;
-}
-
-//Provides: caml_register_channel_for_spacetime const (const)
-//Version: < 4.12
-function caml_register_channel_for_spacetime(_channel) {
-  return 0;
-}
-
-//Provides: caml_spacetime_only_works_for_native_code
-//Requires: caml_failwith
-//Version: < 4.12
-function caml_spacetime_only_works_for_native_code() {
-  caml_failwith("Spacetime profiling only works for native code");
 }
 
 //Provides: caml_xdg_defaults

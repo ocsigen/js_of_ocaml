@@ -49,7 +49,6 @@ let () =
     | _ -> assert false
   in
   match maj, min with
-  | 4, 8 | 4, 9 | 4, 10 -> dump_file "toplevel_expect_test.ml-4.08"
   | 4, min ->
       assert (min >= 11);
       dump_file "toplevel_expect_test.ml-4.11"

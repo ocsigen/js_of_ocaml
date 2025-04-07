@@ -30,7 +30,6 @@ let%expect_test _ =
     +hash.js
     +ieee_754.js
     +int64.js
-    +internalMod.js
     +ints.js
     +io.js
     +jslib.js
@@ -51,7 +50,8 @@ let%expect_test _ =
     +toplevel.js
     +unix.js
     +weak.js
-    +zstd.js |}];
+    +zstd.js
+    |}];
   printl runtime;
   [%expect
     {|
@@ -73,7 +73,6 @@ let%expect_test _ =
     +hash.js
     +ieee_754.js
     +int64.js
-    +internalMod.js
     +ints.js
     +io.js
     +jslib.js
@@ -93,7 +92,8 @@ let%expect_test _ =
     +sys.js
     +unix.js
     +weak.js
-    +zstd.js |}];
+    +zstd.js
+    |}];
   printl extra;
   [%expect {|
     +dynlink.js

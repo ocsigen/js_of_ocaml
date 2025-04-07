@@ -38,12 +38,6 @@ function caml_alloc_dummy_infix() {
   };
 }
 
-//Provides: caml_obj_is_block const (const)
-//Version: < 4.12
-function caml_obj_is_block(x) {
-  return +Array.isArray(x);
-}
-
 //Provides: caml_obj_tag
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
