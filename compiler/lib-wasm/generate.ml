@@ -56,13 +56,13 @@ module Generate (Target : Target_sig.S) = struct
 
   let repr_type r =
     match r with
-    | Value -> Value.value
+    | Value -> Type.value
     | Float -> F64
     | Int32 -> I32
     | Nativeint -> I32
     | Int64 -> I64
 
-  let specialized_func_type (params, result) =
+  let specialized_primitive_type (params, result) =
     { W.params = List.map ~f:repr_type params; result = [ repr_type result ] }
 
   let box_value r e =
@@ -111,9 +111,6 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_float_compare", ([ Float; Float ], Value)
       ];
     h
-
-  let func_type n =
-    { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
   let float_bin_op' op f g =
     Memory.box_float (op (Memory.unbox_float f) (Memory.unbox_float g))
@@ -186,6 +183,8 @@ module Generate (Target : Target_sig.S) = struct
 
   let zero_divide_pc = -2
 
+  let exception_handler_pc = -3
+
   let rec translate_expr ctx context x e =
     match e with
     | Apply { f; args; exact }
@@ -203,8 +202,9 @@ module Generate (Target : Target_sig.S) = struct
                   (load funct)
               in
               let* b = is_closure f in
+              let label = label_index context exception_handler_pc in
               if b
-              then return (W.Call (f, List.rev (closure :: acc)))
+              then return (W.Br_on_null (label, W.Call (f, List.rev (closure :: acc))))
               else
                 match funct with
                 | W.RefFunc g ->
@@ -212,8 +212,11 @@ module Generate (Target : Target_sig.S) = struct
                        environment. In case of partial application, we
                        still need the closure. *)
                     let* cl = if exact then Value.unit else return closure in
-                    return (W.Call (g, List.rev (cl :: acc)))
-                | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc))))
+                    return (W.Br_on_null (label, W.Call (g, List.rev (cl :: acc))))
+                | _ ->
+                    return
+                      (W.Br_on_null
+                         (label, W.Call_ref (ty, funct, List.rev (closure :: acc)))))
           | x :: r ->
               let* x = load x in
               loop (x :: acc) r
@@ -225,7 +228,9 @@ module Generate (Target : Target_sig.S) = struct
         in
         let* args = expression_list load args in
         let* closure = load f in
-        return (W.Call (apply, args @ [ closure ]))
+        return
+          (W.Br_on_null
+             (label_index context exception_handler_pc, W.Call (apply, args @ [ closure ])))
     | Block (tag, a, _, _) ->
         Memory.allocate
           ~deadcode_sentinal:ctx.deadcode_sentinal
@@ -666,7 +671,7 @@ module Generate (Target : Target_sig.S) = struct
                 let name = Primitive.resolve name in
                 try
                   let typ = Hashtbl.find specialized_primitives name in
-                  let* f = register_import ~name (Fun (specialized_func_type typ)) in
+                  let* f = register_import ~name (Fun (specialized_primitive_type typ)) in
                   let rec loop acc arg_typ l =
                     match arg_typ, l with
                     | [], [] -> box_value (snd typ) (return (W.Call (f, List.rev acc)))
@@ -677,7 +682,9 @@ module Generate (Target : Target_sig.S) = struct
                   in
                   loop [] (fst typ) l
                 with Not_found ->
-                  let* f = register_import ~name (Fun (func_type (List.length l))) in
+                  let* f =
+                    register_import ~name (Fun (Type.primitive_type (List.length l)))
+                  in
                   let rec loop acc l =
                     match l with
                     | [] -> return (W.Call (f, List.rev acc))
@@ -825,32 +832,55 @@ module Generate (Target : Target_sig.S) = struct
           { params = []; result = [] }
           (body ~result_typ:[] ~fall_through:(`Block pc) ~context:(`Block pc :: context))
       in
-      if List.is_empty result_typ
+      if true && List.is_empty result_typ
       then handler
       else
         let* () = handler in
-        instr (W.Return (Some (RefI31 (Const (I32 0l)))))
+        let* u = Value.unit in
+        instr (W.Return (Some u))
     else body ~result_typ ~fall_through ~context
 
-  let wrap_with_handlers p pc ~result_typ ~fall_through ~context body =
+  let wrap_with_handlers ~location p pc ~result_typ ~fall_through ~context body =
     let need_zero_divide_handler, need_bound_error_handler = needed_handlers p pc in
     wrap_with_handler
-      need_bound_error_handler
-      bound_error_pc
-      (let* f =
-         register_import ~name:"caml_bound_error" (Fun { params = []; result = [] })
-       in
-       instr (CallInstr (f, [])))
-      (wrap_with_handler
-         need_zero_divide_handler
-         zero_divide_pc
-         (let* f =
+      true
+      exception_handler_pc
+      (match location with
+      | `Toplevel ->
+          let* exn =
             register_import
-              ~name:"caml_raise_zero_divide"
-              (Fun { params = []; result = [] })
+              ~import_module:"env"
+              ~name:"caml_exception"
+              (Global { mut = true; typ = Type.value })
+          in
+          let* tag = register_import ~name:exception_name (Tag Type.value) in
+          instr (Throw (tag, GlobalGet exn))
+      | `Exception_handler ->
+          let* exn =
+            register_import
+              ~import_module:"env"
+              ~name:"caml_exception"
+              (Global { mut = true; typ = Type.value })
+          in
+          instr (Br (2, Some (GlobalGet exn)))
+      | `Function -> instr (Return (Some (RefNull Any))))
+      (wrap_with_handler
+         need_bound_error_handler
+         bound_error_pc
+         (let* f =
+            register_import ~name:"caml_bound_error" (Fun { params = []; result = [] })
           in
           instr (CallInstr (f, [])))
-         body)
+         (wrap_with_handler
+            need_zero_divide_handler
+            zero_divide_pc
+            (let* f =
+               register_import
+                 ~name:"caml_raise_zero_divide"
+                 (Fun { params = []; result = [] })
+             in
+             instr (CallInstr (f, [])))
+            body))
       ~result_typ
       ~fall_through
       ~context
@@ -951,19 +981,34 @@ module Generate (Target : Target_sig.S) = struct
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
               let* e = load x in
-              let* tag = register_import ~name:exception_name (Tag Value.value) in
               match fall_through with
               | `Catch -> instr (Push e)
               | `Block _ | `Return | `Skip -> (
                   match catch_index context with
                   | Some i -> instr (Br (i, Some e))
-                  | None -> instr (Throw (tag, e))))
+                  | None ->
+                      if Option.is_some name_opt
+                      then
+                        let* exn =
+                          register_import
+                            ~import_module:"env"
+                            ~name:"caml_exception"
+                            (Global { mut = true; typ = Type.value })
+                        in
+                        let* () = instr (GlobalSet (exn, e)) in
+                        instr (Return (Some (RefNull Any)))
+                      else
+                        let* tag =
+                          register_import ~name:exception_name (Tag Type.value)
+                        in
+                        instr (Throw (tag, e))))
           | Pushtrap (cont, x, cont') ->
               handle_exceptions
                 ~result_typ
                 ~fall_through
                 ~context:(extend_context fall_through context)
                 (wrap_with_handlers
+                   ~location:`Exception_handler
                    p
                    (fst cont)
                    (fun ~result_typ ~fall_through ~context ->
@@ -1034,9 +1079,13 @@ module Generate (Target : Target_sig.S) = struct
            let* () = build_initial_env in
            let* () =
              wrap_with_handlers
+               ~location:
+                 (match name_opt with
+                 | None -> `Toplevel
+                 | Some _ -> `Function)
                p
                pc
-               ~result_typ:[ Value.value ]
+               ~result_typ:[ Type.value ]
                ~fall_through:`Return
                ~context:[]
                (fun ~result_typ ~fall_through ~context ->
@@ -1058,7 +1107,10 @@ module Generate (Target : Target_sig.S) = struct
           | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
           | Some _ -> None)
       ; param_names
-      ; typ = func_type param_count
+      ; typ =
+          (match name_opt with
+          | None -> Type.primitive_type param_count
+          | Some _ -> Type.func_type (param_count - 1))
       ; locals
       ; body
       }
@@ -1066,7 +1118,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let init_function ~context ~to_link =
     let name = Code.Var.fresh_n "initialize" in
-    let typ = { W.params = []; result = [ Value.value ] } in
+    let typ = { W.params = []; result = [ Type.value ] } in
     let locals, body =
       function_body
         ~context
@@ -1079,7 +1131,9 @@ module Generate (Target : Target_sig.S) = struct
                in
                let* () = instr (Drop (Call (f, []))) in
                cont)
-             ~init:(instr (Push (RefI31 (Const (I32 0l)))))
+             ~init:
+               (let* u = Value.unit in
+                instr (Push u))
              to_link)
     in
     context.other_fields <-
@@ -1232,7 +1286,7 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
-let start () = make_context ~value_type:Gc_target.Value.value
+let start () = make_context ~value_type:Gc_target.Type.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
   let t = Timer.make () in

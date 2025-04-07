@@ -232,4 +232,6 @@
                               (call $caml_format_exception (local.get $exn))
                               (@string "\n")))))))
             (call $exit (i32.const 2)))))
+
+   (global (export "caml_exception") (mut (ref eq)) (ref.i31 (i32.const 0)))
 )
