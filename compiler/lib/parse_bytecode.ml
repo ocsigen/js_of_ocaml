@@ -493,7 +493,6 @@ type globals =
   ; mutable is_const : bool array
   ; mutable is_exported : bool array
   ; mutable named_value : string option array
-  ; mutable override : (Var.t -> Code.instr list -> Var.t * Code.instr list) option array
   ; constants : Code.constant array
   ; primitives : string array
   }
@@ -503,7 +502,6 @@ let make_globals size constants primitives =
   ; is_const = Array.make size false
   ; is_exported = Array.make size false
   ; named_value = Array.make size None
-  ; override = Array.make size None
   ; constants
   ; primitives
   }
@@ -517,8 +515,7 @@ let resize_globals g size =
   g.vars <- resize_array g.vars size None;
   g.is_const <- resize_array g.is_const size false;
   g.is_exported <- resize_array g.is_exported size true;
-  g.named_value <- resize_array g.named_value size None;
-  g.override <- resize_array g.override size None
+  g.named_value <- resize_array g.named_value size None
 
 (* State of the VM *)
 module State = struct
@@ -1318,16 +1315,7 @@ and compile infos pc state (instrs : instr list) =
 
         assert (Option.is_none g.vars.(i));
         if debug_parser () then Format.printf "(global %d) = %a@." i Var.print y;
-        let instrs =
-          match g.override.(i) with
-          | Some f ->
-              let v, instrs = f y instrs in
-              g.vars.(i) <- Some v;
-              instrs
-          | None ->
-              g.vars.(i) <- Some y;
-              instrs
-        in
+        g.vars.(i) <- Some y;
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         let instrs = register_global g i instrs in
