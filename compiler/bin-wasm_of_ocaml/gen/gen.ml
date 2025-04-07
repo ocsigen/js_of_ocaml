@@ -5,7 +5,7 @@ let read_file ic = really_input_string ic (in_channel_length ic)
 
 let default_flags = []
 
-let interesting_runtimes = [ [] ]
+let interesting_runtimes = [ [ "effects", `S "jspi" ]; [ "effects", `S "cps" ] ]
 
 let name_runtime standard l =
   let flags =

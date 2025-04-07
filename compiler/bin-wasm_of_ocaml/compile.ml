@@ -83,7 +83,15 @@ let with_runtime_files ~runtime_wasm_files f =
 
 let build_runtime ~runtime_file =
   (* Keep this variables in sync with gen/gen.ml *)
-  let variables = [] in
+  let variables =
+    [ ( "effects"
+      , Wat_preprocess.String
+          (match Config.effects () with
+          | `Jspi -> "jspi"
+          | `Cps -> "cps"
+          | `Disabled | `Double_translation -> assert false) )
+    ]
+  in
   match
     List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
         assert (

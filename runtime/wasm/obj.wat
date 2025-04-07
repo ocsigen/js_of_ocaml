@@ -23,8 +23,12 @@
       (func $caml_dup_custom (param (ref eq)) (result (ref eq))))
    (import "effect" "caml_is_continuation"
       (func $caml_is_continuation (param (ref eq)) (result i32)))
-   (import "effect" "caml_trampoline_ref"
-      (global $caml_trampoline_ref (mut (ref null $function_1))))
+(@if (= effects "cps")
+(@then
+   (import "effect" "caml_trampoline"
+      (func $caml_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
+))
+
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -452,18 +456,28 @@
    (func (export "caml_obj_reachable_words") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
+(@if (= effects "cps")
+(@then
    (func $caml_callback_1 (export "caml_callback_1")
       (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))
-      (drop (block $cps (result (ref eq))
-         (return_call_ref $function_1 (local.get $x)
-            (local.get $f)
-            (struct.get $closure 0
-               (br_on_cast_fail $cps (ref eq) (ref $closure)
-                  (local.get $f))))))
-      (return_call_ref $function_1
+      (return_call $caml_trampoline
          (local.get $f)
-         (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $x))
-         (ref.as_non_null (global.get $caml_trampoline_ref))))
+         (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $x))))
+
+   (func (export "caml_callback_2")
+      (param $f (ref eq)) (param $x (ref eq)) (param $y (ref eq))
+      (result (ref eq))
+      (return_call $caml_trampoline
+         (local.get $f)
+         (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+           (local.get $x) (local.get $y))))
+)
+(@else
+   (func $caml_callback_1 (export "caml_callback_1")
+      (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))
+      (return_call_ref $function_1 (local.get $x)
+         (local.get $f)
+         (struct.get $closure 0 (ref.cast (ref $closure) (local.get $f)))))
 
    (func (export "caml_callback_2")
       (param $f (ref eq)) (param $x (ref eq)) (param $y (ref eq))
@@ -474,15 +488,8 @@
             (struct.get $closure_2 1
                (br_on_cast_fail $not_direct (ref eq) (ref $closure_2)
                   (local.get $f))))))
-      (if (ref.test (ref $closure) (local.get $f))
-         (then
-            (return_call $caml_callback_1
-               (call $caml_callback_1 (local.get $f) (local.get $x))
-               (local.get $y)))
-         (else
-            (return_call_ref $function_1
-               (local.get $f)
-               (array.new_fixed $block 3 (ref.i31 (i32.const 0))
-                 (local.get $x) (local.get $y))
-               (ref.as_non_null (global.get $caml_trampoline_ref))))))
+      (return_call $caml_callback_1
+         (call $caml_callback_1 (local.get $f) (local.get $x))
+         (local.get $y)))
+))
 )
