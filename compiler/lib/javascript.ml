@@ -42,6 +42,8 @@ module Num : sig
 
   val is_neg : t -> bool
 
+  val is_int : t -> bool
+
   (** Arithmetic *)
 
   val add : t -> t -> t
@@ -133,6 +135,11 @@ end = struct
   let is_one s = String.equal s "1"
 
   let is_neg s = Char.equal s.[0] '-'
+
+  let is_int s =
+    String.for_all s ~f:(function
+      | '0' .. '9' | '-' -> true
+      | _ -> false)
 
   let neg s =
     match String.drop_prefix s ~prefix:"-" with

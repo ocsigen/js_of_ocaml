@@ -140,3 +140,11 @@ function caml_finish_formatting(f, rawbuffer) {
   if (f.justify === "-") for (var i = len; i < f.width; i++) buffer += " ";
   return caml_string_of_jsbytes(buffer);
 }
+
+//Provides: caml_format_int_special const
+//Alias: %caml_format_int_special
+//Requires: caml_string_of_jsstring
+//Inline
+function caml_format_int_special(x) {
+  return caml_string_of_jsstring ("" + x);
+}
