@@ -27,7 +27,10 @@ type heap_type =
   | Extern
   | Any
   | Eq
+  | Struct
+  | Array
   | I31
+  | None_
   | Type of var
 
 type ref_type =

@@ -203,3 +203,5 @@ val function_body :
   -> param_names:Code.Var.t list
   -> body:unit t
   -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
+
+val empty_struct : expression
