@@ -29,7 +29,7 @@ type t =
   ; enable_source_maps : bool
   }
 
-let options =
+let options () =
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
     Arg.(required & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
@@ -91,6 +91,6 @@ let info =
       "wasm_of_ocaml-link links together several wasm_of_ocaml intermediate files to \
        produce either a library or some executable code."
 
-let command =
-  let t = Cmdliner.Term.(const f $ options) in
+let command () =
+  let t = Cmdliner.Term.(const f $ options ()) in
   Cmdliner.Cmd.v info t
