@@ -71,4 +71,6 @@ val missing : state -> string list
 
 val origin : name:string -> string option
 
+val inline : name:string -> Javascript.expression option
+
 val deprecated : name:string -> bool

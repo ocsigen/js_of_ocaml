@@ -149,6 +149,7 @@ let f
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Linker.reset ();
+  Generate.reset ();
   let with_output f =
     match output_file with
     | None -> f stdout

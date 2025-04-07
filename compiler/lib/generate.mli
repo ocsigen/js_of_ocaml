@@ -30,4 +30,4 @@ val f :
   -> Parse_bytecode.Debug.t
   -> Javascript.program
 
-val init : unit -> unit
+val reset : unit -> unit
