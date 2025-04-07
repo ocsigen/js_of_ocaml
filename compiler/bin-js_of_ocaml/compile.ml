@@ -166,6 +166,7 @@ let run
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
   Linker.reset ();
+  Generate.reset ();
   (match output_file with
   | `Stdout, _ -> ()
   | `Name name, _ when debug_mem () -> Debug.start_profiling name

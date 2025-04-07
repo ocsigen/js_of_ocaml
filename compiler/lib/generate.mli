@@ -29,4 +29,4 @@ val f :
   -> deadcode_sentinal:Code.Var.t
   -> Javascript.program
 
-val init : unit -> unit
+val reset : unit -> unit
