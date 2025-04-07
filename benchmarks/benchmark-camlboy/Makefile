@@ -4,8 +4,9 @@ export NAME=Camlboy
 
 SHELL=/bin/bash -o pipefail
 
-SCRIPT=../../CAMLBOY/_build/default/bin/web/bench_node.bc
-ROM=../../CAMLBOY/resource/games/tobu.gb
+DIR=../../../CAMLBOY
+SCRIPT=$(DIR)/_build/default/bin/web/bench_node.bc
+ROM=$(DIR)/resource/games/tobu.gb
 
 bench:
 	$(MAKE) perform COMPILER=Js_of_ocaml SUFFIX=.js KIND=js
