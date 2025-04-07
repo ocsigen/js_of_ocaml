@@ -1196,11 +1196,7 @@ module Generate (Target : Target_sig.S) = struct
 end
 
 let init () =
-  let l =
-    [ "caml_callback", "caml_trampoline"
-    ; "caml_make_array", "caml_array_of_uniform_array"
-    ]
-  in
+  let l = [ "caml_make_array", "caml_array_of_uniform_array" ] in
   Primitive.register "caml_array_of_uniform_array" `Mutable None None;
   List.iter ~f:(fun (nm, nm') -> Primitive.alias nm nm') l
 

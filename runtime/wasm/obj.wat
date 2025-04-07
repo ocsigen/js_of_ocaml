@@ -25,8 +25,8 @@
       (func $caml_is_continuation (param (ref eq)) (result i32)))
 (@if (= effects "cps")
 (@then
-   (import "effect" "caml_trampoline"
-      (func $caml_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
+   (import "effect" "caml_cps_trampoline"
+      (func $caml_cps_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
 ))
 
 
@@ -460,14 +460,14 @@
 (@then
    (func $caml_callback_1 (export "caml_callback_1")
       (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))
-      (return_call $caml_trampoline
+      (return_call $caml_cps_trampoline
          (local.get $f)
          (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $x))))
 
    (func (export "caml_callback_2")
       (param $f (ref eq)) (param $x (ref eq)) (param $y (ref eq))
       (result (ref eq))
-      (return_call $caml_trampoline
+      (return_call $caml_cps_trampoline
          (local.get $f)
          (array.new_fixed $block 3 (ref.i31 (i32.const 0))
            (local.get $x) (local.get $y))))
