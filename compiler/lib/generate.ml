@@ -407,13 +407,6 @@ let one = J.ENum (J.Num.of_targetint Targetint.one)
 
 let zero = J.ENum (J.Num.of_targetint Targetint.zero)
 
-let plus_int x y =
-  match x, y with
-  | J.ENum y, x when J.Num.is_zero y -> x
-  | x, J.ENum y when J.Num.is_zero y -> x
-  | J.ENum x, J.ENum y -> J.ENum (J.Num.add x y)
-  | x, y -> J.EBin (J.Plus, x, y)
-
 let maybe_bool ctx x e =
   if Bool_context.is_bool_context_only ctx.Ctx.bool_context x
   then e
@@ -1258,16 +1251,6 @@ let register_un_prims names ?(need_loc = false) k f =
 
 let register_un_prim name k f = register_un_prims [ name ] k f
 
-let register_un_prim_ctx name k f =
-  register_prims [ name ] k (fun name l ctx loc ->
-      match l with
-      | [ x ] ->
-          let open Expr_builder in
-          let* cx = access' ~ctx x in
-          let* () = info (kind k) in
-          return (f ctx cx loc)
-      | _ -> invalid_arity name l ~loc ~expected:1)
-
 let register_bin_prims names k f =
   register_prims names k (fun name l ctx loc ->
       match l with
@@ -1295,26 +1278,9 @@ let register_tern_prims names k f =
 
 let register_tern_prim name k f = register_tern_prims [ name ] k f
 
-let register_un_math_prim name prim =
-  let prim = Utf8_string.of_string_exn prim in
-  register_un_prim name `Pure (fun cx loc ->
-      J.call (J.dot (s_var "Math") prim) [ cx ] loc)
-
-let register_bin_math_prim name prim =
-  let prim = Utf8_string.of_string_exn prim in
-  register_bin_prims [ name ] `Pure (fun cx cy loc ->
-      J.call (J.dot (s_var "Math") prim) [ cx; cy ] loc)
-
 let _ =
-  register_un_prim_ctx "%caml_format_int_special" `Pure (fun ctx cx loc ->
-      let s = J.EBin (J.Plus, str_js_utf8 "", cx) in
-      ocaml_string ~ctx ~loc s);
-  register_un_prim "%direct_obj_tag" `Pure (fun cx _loc -> Mlvalue.Block.tag cx);
   register_bin_prims
-    [ "caml_array_unsafe_get"
-    ; "caml_array_unsafe_get_float"
-    ; "caml_floatarray_unsafe_get"
-    ; "caml_array_unsafe_get_indexed_by_int32"
+    [ "caml_array_unsafe_get_indexed_by_int32"
     ; "caml_array_unsafe_get_indexed_by_nativeint"
     ]
     `Mutable
@@ -1336,79 +1302,13 @@ let _ =
     [ "caml_checked_nativeint_to_int"; "caml_checked_int32_to_int" ]
     `Mutator
     (fun cx _ -> cx);
-  register_bin_prims
-    [ "%int_add"; "caml_int32_add"; "caml_nativeint_add" ]
-    `Pure
-    (fun cx cy _ ->
-      match cx, cy with
-      | J.EBin (J.Minus, cz, J.ENum n), J.ENum m ->
-          to_int (J.EBin (J.Plus, cz, J.ENum (J.Num.add m (J.Num.neg n))))
-      | _ -> to_int (plus_int cx cy));
-  register_bin_prims
-    [ "%int_sub"; "caml_int32_sub"; "caml_nativeint_sub" ]
-    `Pure
-    (fun cx cy _ ->
-      match cx, cy with
-      | J.EBin (J.Minus, cz, J.ENum n), J.ENum m ->
-          to_int (J.EBin (J.Minus, cz, J.ENum (J.Num.add n m)))
-      | _ -> to_int (J.EBin (J.Minus, cx, cy)));
-  register_bin_prim "%direct_int_mul" `Pure (fun cx cy _ ->
-      to_int (J.EBin (J.Mul, cx, cy)));
-  register_bin_prim "%direct_int_div" `Pure (fun cx cy _ ->
-      to_int (J.EBin (J.Div, cx, cy)));
-  register_bin_prim "%direct_int_mod" `Pure (fun cx cy _ ->
-      to_int (J.EBin (J.Mod, cx, cy)));
-  register_bin_prims
-    [ "%int_and"; "caml_int32_and"; "caml_nativeint_and" ]
-    `Pure
-    (fun cx cy _ -> J.EBin (J.Band, cx, cy));
-  register_bin_prims
-    [ "%int_or"; "caml_int32_or"; "caml_nativeint_or" ]
-    `Pure
-    (fun cx cy _ -> J.EBin (J.Bor, cx, cy));
-  register_bin_prims
-    [ "%int_xor"; "caml_int32_xor"; "caml_nativeint_xor" ]
-    `Pure
-    (fun cx cy _ -> J.EBin (J.Bxor, cx, cy));
-  register_bin_prims
-    [ "%int_lsl"; "caml_int32_shift_left"; "caml_nativeint_shift_left" ]
-    `Pure
-    (fun cx cy _ -> J.EBin (J.Lsl, cx, cy));
-  register_bin_prims
-    [ "%int_lsr"
-    ; "caml_int32_shift_right_unsigned"
-    ; "caml_nativeint_shift_right_unsigned"
-    ]
-    `Pure
-    (fun cx cy _ -> to_int (J.EBin (J.Lsr, cx, cy)));
-  register_bin_prims
-    [ "%int_asr"; "caml_int32_shift_right"; "caml_nativeint_shift_right" ]
-    `Pure
-    (fun cx cy _ -> J.EBin (J.Asr, cx, cy));
-  register_un_prims
-    [ "%int_neg"; "caml_int32_neg"; "caml_nativeint_neg" ]
-    `Pure
-    (fun cx _ -> to_int (J.EUn (J.Neg, cx)));
-  register_bin_prim "caml_add_float" `Pure (fun cx cy _ -> J.EBin (J.Plus, cx, cy));
-  register_bin_prim "caml_sub_float" `Pure (fun cx cy _ -> J.EBin (J.Minus, cx, cy));
-  register_bin_prim "caml_mul_float" `Pure (fun cx cy _ -> J.EBin (J.Mul, cx, cy));
-  register_bin_prim "caml_div_float" `Pure (fun cx cy _ -> J.EBin (J.Div, cx, cy));
-  register_un_prim "caml_neg_float" `Pure (fun cx _ -> J.EUn (J.Neg, cx));
-  register_bin_prim "caml_fmod_float" `Pure (fun cx cy _ -> J.EBin (J.Mod, cx, cy));
   register_tern_prims
-    [ "caml_array_unsafe_set"
-    ; "caml_array_unsafe_set_float"
-    ; "caml_floatarray_unsafe_set"
-    ; "caml_array_unsafe_set_addr"
-    ; "caml_array_unsafe_set_indexed_by_int32"
+    [ "caml_array_unsafe_set_indexed_by_int32"
     ; "caml_array_unsafe_set_indexed_by_nativeint"
     ]
     `Mutator
     (fun cx cy cz _ -> J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
-  register_un_prims
-    [ "caml_alloc_dummy"; "caml_alloc_dummy_float"; "caml_alloc_dummy_mixed" ]
-    `Pure
-    (fun _ _ -> J.array []);
+  register_un_prims [ "caml_alloc_dummy_mixed" ] `Pure (fun _ _ -> J.array []);
   register_un_prims
     [ "caml_int_of_float"
     ; "caml_int32_of_float"
@@ -1418,20 +1318,6 @@ let _ =
     ]
     `Pure
     (fun cx _loc -> to_int cx);
-  register_un_math_prim "caml_abs_float" "abs";
-  register_un_math_prim "caml_acos_float" "acos";
-  register_un_math_prim "caml_asin_float" "asin";
-  register_un_math_prim "caml_atan_float" "atan";
-  register_bin_math_prim "caml_atan2_float" "atan2";
-  register_un_math_prim "caml_ceil_float" "ceil";
-  register_un_math_prim "caml_cos_float" "cos";
-  register_un_math_prim "caml_exp_float" "exp";
-  register_un_math_prim "caml_floor_float" "floor";
-  register_un_math_prim "caml_log_float" "log";
-  register_bin_math_prim "caml_power_float" "pow";
-  register_un_math_prim "caml_sin_float" "sin";
-  register_un_math_prim "caml_sqrt_float" "sqrt";
-  register_un_math_prim "caml_tan_float" "tan";
   register_un_prim "caml_js_from_bool" `Pure (fun cx _ ->
       J.EUn (J.Not, J.EUn (J.Not, cx)));
   register_un_prim "caml_js_to_bool" `Pure (fun cx _ -> to_int cx);
@@ -1491,6 +1377,17 @@ let remove_unused_tail_args ctx exact trampolined args =
   else args
 
 let keep_name x = not (Code.Var.generated_name x)
+
+(* var substitution *)
+class subst sub =
+  object
+    inherit Js_traverse.map as super
+
+    method expression x =
+      match x with
+      | EVar v -> ( try sub v with Not_found -> super#expression x)
+      | _ -> super#expression x
+  end
 
 let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t =
   let open Expr_builder in
@@ -1777,13 +1674,53 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let name = Primitive.resolve name_orig in
             match internal_prim name with
             | Some f -> f name l ctx loc
-            | None ->
+            | None -> (
                 if String.starts_with name ~prefix:"%"
                 then failwith (Printf.sprintf "Unresolved internal primitive: %s" name);
-                let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
-                let* () = info ~need_loc:true (kind (Primitive.kind name)) in
-                let* args = list_map (fun x -> access' ~ctx x) l in
-                return (J.call prim args loc))
+                match Linker.inline ~name with
+                | Some (req, f)
+                  when Option.is_none ctx.Ctx.exported_runtime || List.is_empty req -> (
+                    let c = new Js_traverse.rename_variable ~esm:false in
+                    let f = c#expression f in
+                    match f with
+                    | EFun
+                        ( None
+                        , ( { async = false; generator = false }
+                          , { list = params; rest = None }
+                          , [ (Return_statement (Some body, _), _) ]
+                          , _loc ) )
+                      when List.length params = List.length l ->
+                        let* l = list_map (fun x -> access' ~ctx x) l in
+                        let* () = info (kind (Primitive.kind name)) in
+                        let params =
+                          List.map params ~f:(fun (x, _) ->
+                              match x with
+                              | BindingIdent x -> x
+                              | BindingPattern _ -> assert false)
+                        in
+                        let sub =
+                          let t = Var.Hashtbl.create (List.length l) in
+                          List.iter2 params l ~f:(fun p x ->
+                              let k =
+                                match p with
+                                | J.V v -> v
+                                | _ -> assert false
+                              in
+                              Var.Hashtbl.add t k x);
+
+                          fun x ->
+                            match x with
+                            | J.S _ -> J.EVar x
+                            | J.V x -> Var.Hashtbl.find t x
+                        in
+                        let r = new subst sub in
+                        return (r#expression body)
+                    | _ -> assert false)
+                | None | Some _ ->
+                    let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
+                    let* () = info ~need_loc:true (kind (Primitive.kind name)) in
+                    let* args = list_map (fun x -> access' ~ctx x) l in
+                    return (J.call prim args loc)))
         | Not, [ x ] ->
             let* cx = access' ~ctx x in
             return (J.EBin (J.Minus, one, cx))
@@ -2621,7 +2558,7 @@ let f
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
   p
 
-let init () =
+let reset () =
   String.Hashtbl.iter
     (fun name (k, _) -> Primitive.register name k None None)
     internal_primitives;

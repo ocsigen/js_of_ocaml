@@ -46,6 +46,7 @@ let f (runtime_files, bytecode, target_env) =
   Config.set_target `JavaScript;
   Config.set_effects_backend `Disabled;
   Linker.reset ();
+  Generate.reset ();
   let runtime_files, builtin =
     List.partition_map runtime_files ~f:(fun name ->
         match Builtins.find name with

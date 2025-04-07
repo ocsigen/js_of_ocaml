@@ -51,6 +51,8 @@ module Num : sig
 
   val equal : t -> t -> bool
 
+  val is_int : t -> bool
+
   (** Arithmetic *)
 
   val add : t -> t -> t
