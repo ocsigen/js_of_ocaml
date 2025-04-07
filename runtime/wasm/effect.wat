@@ -562,7 +562,7 @@
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (unreachable))
 
-   (func $caml_trampoline (export "caml_trampoline")
+   (func $caml_trampoline (export "caml_cps_trampoline")
       (param $f (ref eq)) (param $vargs (ref eq)) (result (ref eq))
       (local $args (ref $block))
       (local $i i32) (local $res (ref eq))

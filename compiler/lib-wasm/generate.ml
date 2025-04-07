@@ -1186,7 +1186,6 @@ let init () =
   let l =
     [ "caml_ensure_stack_capacity", "%identity"
     ; "caml_process_pending_actions_with_root", "%identity"
-    ; "caml_callback", "caml_trampoline"
     ; "caml_make_array", "caml_array_of_uniform_array"
     ]
   in
