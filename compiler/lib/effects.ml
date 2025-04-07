@@ -847,7 +847,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               (* Toplevel code: if we double-translate, no need to handle it
                  specially: CPS calls in it are like all other CPS calls from
                  direct code. Otherwise, it needs to wrapped within a
-                 [caml_callback], but only if it performs CPS calls. *)
+                 [caml_cps_trampoline], but only if it performs CPS calls. *)
               not (double_translate () || Addr.Set.is_empty blocks_to_transform)
         in
         if debug ()
@@ -957,7 +957,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
       match Hashtbl.find_opt closure_info p.start with
       | None -> p
       | Some (cps_params, cps_cont) ->
-          (* Call [caml_callback] to set up the execution context. *)
+          (* Call [caml_cps_trampoline] to set up the execution context. *)
           let new_start = p.free_pc in
           let blocks =
             let main = Var.fresh () in
@@ -969,7 +969,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               ; body =
                   [ Let (main, Closure (cps_params, cps_cont))
                   ; Let (args, Prim (Extern "%js_array", []))
-                  ; Let (res, Prim (Extern "caml_callback", [ Pv main; Pv args ]))
+                  ; Let (res, Prim (Extern "caml_cps_trampoline", [ Pv main; Pv args ]))
                   ]
               ; branch = Return res
               }
@@ -994,7 +994,7 @@ let wrap_call ~cps_needed p x f args accu =
   ( p
   , Var.Set.remove x cps_needed
   , [ Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
-    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv arg_array ]))
+    ; Let (x, Prim (Extern "caml_cps_trampoline", [ Pv f; Pv arg_array ]))
     ]
     :: accu )
 
@@ -1014,7 +1014,7 @@ let wrap_primitive ~cps_needed (p : program) x e accu =
   , let args = Var.fresh () in
     [ Let (f, Closure ([], (closure_pc, [])))
     ; Let (args, Prim (Extern "%js_array", []))
-    ; Let (x, Prim (Extern "caml_callback", [ Pv f; Pv args ]))
+    ; Let (x, Prim (Extern "caml_cps_trampoline", [ Pv f; Pv args ]))
     ]
     :: accu )
 
@@ -1026,9 +1026,9 @@ let rewrite_toplevel_instr (p, cps_needed, accu) instr =
       wrap_primitive ~cps_needed p x e accu
   | _ -> p, cps_needed, [ instr ] :: accu
 
-(* Wrap function calls inside [caml_callback] at toplevel to avoid
+(* Wrap function calls inside [caml_cps_trampoline] at toplevel to avoid
    unncessary function nestings. This is not done inside loops since
-   using repeatedly [caml_callback] can be costly. *)
+   using repeatedly [caml_cps_trampoline] can be costly. *)
 let rewrite_toplevel ~cps_needed p =
   let { start; blocks; _ } = p in
   let cfg = build_graph blocks start in
