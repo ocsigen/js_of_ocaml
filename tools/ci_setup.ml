@@ -9,7 +9,7 @@ let jane_root, wasmoo_root =
 
 let repo = Filename.concat jane_root "opam-repository/packages"
 
-let roots = [ "bonsai_web_components"; "string_dict"; "ppx_html" ]
+let roots = [ "bonsai_web_components"; "string_dict"; "ppx_html"; "bonsai_bench" ]
 
 let omitted_others = StringSet.of_list []
 
@@ -31,6 +31,7 @@ let forked_packages =
     ; "base"
     ; "base_bigstring"
     ; "bin_prot"
+    ; "bonsai"
     ; "bonsai_test"
     ; "bonsai_web_components"
     ; "bonsai_web_test"

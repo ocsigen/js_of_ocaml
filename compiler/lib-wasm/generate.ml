@@ -21,6 +21,8 @@ open Code
 module W = Wasm_ast
 open Code_generation
 
+let times = Debug.find "times"
+
 let effects_cps () =
   match Config.effects () with
   | `Cps | `Double_translation -> true
@@ -1233,9 +1235,12 @@ let fix_switch_branches p =
 let start () = make_context ~value_type:Gc_target.Value.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
+  let t = Timer.make () in
   let p = if effects_cps () then fix_switch_branches p else p in
   let module G = Generate (Gc_target) in
-  G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p
+  let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p in
+  if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
+  res
 
 let add_start_function =
   let module G = Generate (Gc_target) in
@@ -1246,11 +1251,15 @@ let add_init_function =
   G.add_init_function
 
 let output ch ~context =
+  let t = Timer.make () in
   let module G = Generate (Gc_target) in
   let fields = G.output ~context in
-  Wat_output.f ch fields
+  Wat_output.f ch fields;
+  if times () then Format.eprintf "  output: %a@." Timer.print t
 
 let wasm_output ch ~context =
+  let t = Timer.make () in
   let module G = Generate (Gc_target) in
   let fields = G.output ~context in
-  Wasm_output.f ch fields
+  Wasm_output.f ch fields;
+  if times () then Format.eprintf "  output: %a@." Timer.print t

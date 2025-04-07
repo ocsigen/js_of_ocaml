@@ -2188,13 +2188,13 @@ let f
     ~warn_on_unhandled_effect
     ~deadcode_sentinal
     debug =
+  let mutated_vars = Freevars.f_mutable p in
+  let freevars = Freevars.f p in
   let t' = Timer.make () in
   let share = Share.get ~trampolined_calls ~in_cps ~alias_prims:exported_runtime p in
   let exported_runtime =
     if exported_runtime then Some (Code.Var.fresh_n "runtime", ref false) else None
   in
-  let mutated_vars = Freevars.f_mutable p in
-  let freevars = Freevars.f p in
   let ctx =
     Ctx.initial
       ~warn_on_unhandled_effect

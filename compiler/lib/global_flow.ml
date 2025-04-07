@@ -654,12 +654,11 @@ let f ~fast p =
   in
   program_deps st p;
   if times ()
-  then Format.eprintf "      global flow analysis (initialize): %a@." Timer.print t1;
+  then Format.eprintf "    global flow analysis (initialize): %a@." Timer.print t1;
   let t2 = Timer.make () in
   let approximation = solver st in
-  if times ()
-  then Format.eprintf "      global flow analysis (solve): %a@." Timer.print t2;
-  if times () then Format.eprintf "    global flow analysis: %a@." Timer.print t;
+  if times () then Format.eprintf "    global flow analysis (solve): %a@." Timer.print t2;
+  if times () then Format.eprintf "  global flow analysis: %a@." Timer.print t;
   if debug ()
   then
     Var.ISet.iter
