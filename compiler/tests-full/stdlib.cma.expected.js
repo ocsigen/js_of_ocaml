@@ -360,6 +360,7 @@
     caml_atomic_load = runtime.caml_atomic_load,
     caml_create_bytes = runtime.caml_create_bytes,
     caml_float_of_string = runtime.caml_float_of_string,
+    caml_int64_create_lo_mi_hi = runtime.caml_int64_create_lo_mi_hi,
     caml_int64_float_of_bits = runtime.caml_int64_float_of_bits,
     caml_int_of_string = runtime.caml_int_of_string,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
@@ -435,22 +436,22 @@
    var
     infinity =
        /*<<stdlib.ml:180:2>>*/ caml_int64_float_of_bits
-       (runtime.caml_int64_create_lo_mi_hi(0, 0, 32752)),
+       (caml_int64_create_lo_mi_hi(0, 0, 32752)),
     neg_infinity =
        /*<<stdlib.ml:182:2>>*/ caml_int64_float_of_bits
-       (runtime.caml_int64_create_lo_mi_hi(0, 0, 65520)),
+       (caml_int64_create_lo_mi_hi(0, 0, 65520)),
     nan =
        /*<<stdlib.ml:184:2>>*/ caml_int64_float_of_bits
-       (runtime.caml_int64_create_lo_mi_hi(1, 0, 32760)),
+       (caml_int64_create_lo_mi_hi(1, 0, 32760)),
     max_float =
        /*<<stdlib.ml:186:2>>*/ caml_int64_float_of_bits
-       (runtime.caml_int64_create_lo_mi_hi(16777215, 16777215, 32751)),
+       (caml_int64_create_lo_mi_hi(16777215, 16777215, 32751)),
     min_float =
        /*<<stdlib.ml:188:2>>*/ caml_int64_float_of_bits
-       (runtime.caml_int64_create_lo_mi_hi(0, 0, 16)),
+       (caml_int64_create_lo_mi_hi(0, 0, 16)),
     epsilon_float =
        /*<<stdlib.ml:190:2>>*/ caml_int64_float_of_bits
-       (runtime.caml_int64_create_lo_mi_hi(0, 0, 15536)),
+       (caml_int64_create_lo_mi_hi(0, 0, 15536)),
     symbol_concat =  /*<<stdlib.ml:190:42>>*/ caml_string_concat,
     cst_char_of_int = "char_of_int",
     cst_true = cst_true$0,
@@ -8065,6 +8066,7 @@
     caml_floatarray_make = runtime.caml_floatarray_make,
     caml_floatarray_sub = runtime.caml_floatarray_sub,
     caml_hash = runtime.caml_hash,
+    caml_int64_create_lo_mi_hi = runtime.caml_int64_create_lo_mi_hi,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_nextafter_float = runtime.caml_nextafter_float,
     caml_signbit_float = runtime.caml_signbit_float,
@@ -8095,7 +8097,7 @@
     nan = Stdlib[24],
     signaling_nan =
        /*<<float.ml:38:20>>*/ runtime.caml_int64_float_of_bits
-       (runtime.caml_int64_create_lo_mi_hi(1, 0, 32752));
+       (caml_int64_create_lo_mi_hi(1, 0, 32752));
    function is_finite(x){
      /*<<float.ml:39:33>>*/ return x - x === 0. ? 1 : 0;
     /*<<float.ml:39:38>>*/ }
@@ -9298,6 +9300,7 @@
     caml_hash = runtime.caml_hash,
     caml_int64_add = runtime.caml_int64_add,
     caml_int64_compare = runtime.caml_int64_compare,
+    caml_int64_create_lo_mi_hi = runtime.caml_int64_create_lo_mi_hi,
     caml_int64_mul = runtime.caml_int64_mul,
     caml_int64_sub = runtime.caml_int64_sub,
     caml_lessequal = runtime.caml_lessequal,
@@ -9305,16 +9308,16 @@
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_wrap_exception = runtime.caml_wrap_exception,
     global_data = runtime.caml_get_global_data(),
-    _a_ = runtime.caml_int64_create_lo_mi_hi(1, 0, 0),
-    zero = runtime.caml_int64_create_lo_mi_hi(0, 0, 0),
-    one = runtime.caml_int64_create_lo_mi_hi(1, 0, 0),
-    minus_one = runtime.caml_int64_create_lo_mi_hi(16777215, 16777215, 65535),
-    min_int = runtime.caml_int64_create_lo_mi_hi(0, 0, 32768),
-    max_int = runtime.caml_int64_create_lo_mi_hi(16777215, 16777215, 32767),
+    _a_ = caml_int64_create_lo_mi_hi(1, 0, 0),
+    zero = caml_int64_create_lo_mi_hi(0, 0, 0),
+    one = caml_int64_create_lo_mi_hi(1, 0, 0),
+    minus_one = caml_int64_create_lo_mi_hi(16777215, 16777215, 65535),
+    min_int = caml_int64_create_lo_mi_hi(0, 0, 32768),
+    max_int = caml_int64_create_lo_mi_hi(16777215, 16777215, 32767),
     Stdlib = global_data.Stdlib,
-    _b_ = runtime.caml_int64_create_lo_mi_hi(1, 0, 0),
-    _c_ = runtime.caml_int64_create_lo_mi_hi(0, 0, 0),
-    _d_ = runtime.caml_int64_create_lo_mi_hi(16777215, 16777215, 65535);
+    _b_ = caml_int64_create_lo_mi_hi(1, 0, 0),
+    _c_ = caml_int64_create_lo_mi_hi(0, 0, 0),
+    _d_ = caml_int64_create_lo_mi_hi(16777215, 16777215, 65535);
    function succ(n){
      /*<<int64.ml:46:13>>*/ return caml_int64_add(n, _a_) /*<<int64.ml:46:21>>*/ ;
    }
@@ -9332,7 +9335,7 @@
    var
     max_int$0 =
        /*<<int64.ml:54:16>>*/ runtime.caml_int64_of_int32(Stdlib[19]),
-    _e_ =  /*<<int64.ml:55:2>>*/ runtime.caml_int64_create_lo_mi_hi(0, 0, 0);
+    _e_ =  /*<<int64.ml:55:2>>*/ caml_int64_create_lo_mi_hi(0, 0, 0);
    function unsigned_to_int(n){
      /*<<int64.ml:56:7>>*/ if
      (caml_greaterequal(n, _e_)
@@ -24306,6 +24309,7 @@
     caml_create_bytes = runtime.caml_create_bytes,
     caml_greaterthan = runtime.caml_greaterthan,
     caml_int64_add = runtime.caml_int64_add,
+    caml_int64_create_lo_mi_hi = runtime.caml_int64_create_lo_mi_hi,
     caml_int64_of_int32 = runtime.caml_int64_of_int32,
     caml_int64_shift_right_unsigne = runtime.caml_int64_shift_right_unsigned,
     caml_int64_sub = runtime.caml_int64_sub,
@@ -24349,11 +24353,11 @@
     Stdlib_String = global_data.Stdlib__String,
     Stdlib_Bigarray = global_data.Stdlib__Bigarray,
     Stdlib_Nativeint = global_data.Stdlib__Nativeint,
-    _a_ = runtime.caml_int64_create_lo_mi_hi(1, 0, 0),
-    _b_ = runtime.caml_int64_create_lo_mi_hi(0, 0, 0),
-    _c_ = runtime.caml_int64_create_lo_mi_hi(0, 0, 0),
-    _d_ = runtime.caml_int64_create_lo_mi_hi(2, 0, 0),
-    _e_ = runtime.caml_int64_create_lo_mi_hi(1, 0, 0);
+    _a_ = caml_int64_create_lo_mi_hi(1, 0, 0),
+    _b_ = caml_int64_create_lo_mi_hi(0, 0, 0),
+    _c_ = caml_int64_create_lo_mi_hi(0, 0, 0),
+    _d_ = caml_int64_create_lo_mi_hi(2, 0, 0),
+    _e_ = caml_int64_create_lo_mi_hi(1, 0, 0);
    function create(param){
      /*<<random.ml:31:4>>*/ return caml_call3(Stdlib_Bigarray[20][1], 7, 0, 4) /*<<random.ml:31:34>>*/ ;
    }
@@ -24581,8 +24585,8 @@
     /*<<random.ml:254:39>>*/ }
    var
     bits64 =  /*<<?>>*/ caml_lxm_next,
-    _f_ = runtime.caml_int64_create_lo_mi_hi(1, 0, 0),
-    _g_ = runtime.caml_int64_create_lo_mi_hi(0, 0, 0),
+    _f_ = caml_int64_create_lo_mi_hi(1, 0, 0),
+    _g_ = caml_int64_create_lo_mi_hi(0, 0, 0),
     cst_Random_int64 = "Random.int64",
     cst_Random_int64_in_range = "Random.int64_in_range";
    function int64aux(s, n){
@@ -24627,13 +24631,12 @@
     }
     /*<<random.ml:289:39>>*/ }
    var
-    _j_ =
-       /*<<?>>*/ runtime.caml_int64_create_lo_mi_hi(14371852, 15349651, 22696),
-    _k_ = runtime.caml_int64_create_lo_mi_hi(12230193, 11438743, 35013),
-    _l_ = runtime.caml_int64_create_lo_mi_hi(1424933, 15549263, 2083),
-    _m_ = runtime.caml_int64_create_lo_mi_hi(9492471, 4696708, 43520),
-    _h_ = runtime.caml_int64_create_lo_mi_hi(0, 0, 0),
-    _i_ = runtime.caml_int64_create_lo_mi_hi(0, 0, 0),
+    _j_ =  /*<<?>>*/ caml_int64_create_lo_mi_hi(14371852, 15349651, 22696),
+    _k_ = caml_int64_create_lo_mi_hi(12230193, 11438743, 35013),
+    _l_ = caml_int64_create_lo_mi_hi(1424933, 15549263, 2083),
+    _m_ = caml_int64_create_lo_mi_hi(9492471, 4696708, 43520),
+    _h_ = caml_int64_create_lo_mi_hi(0, 0, 0),
+    _i_ = caml_int64_create_lo_mi_hi(0, 0, 0),
     nativebits =
       32 === Stdlib_Nativeint[9]
        ? function
