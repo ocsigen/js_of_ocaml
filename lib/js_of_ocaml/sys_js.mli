@@ -49,7 +49,7 @@ val mount : path:string -> (prefix:string -> path:string -> string option) -> un
 
 val read_file : name:string -> string
 (** [read_file name] returns the content of the file [name].
-      Raise [Not_found] if the file does not exists. *)
+      Raise [Sys_error] if the file does not exist. *)
 
 val create_file : name:string -> content:string -> unit
 (** Register a file to a Pseudo Filesystem.
