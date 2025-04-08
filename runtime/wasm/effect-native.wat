@@ -49,19 +49,19 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
+   (type $function_1 (sub (func (param (ref eq) (ref eq)) (result (ref eq)))))
    (type $closure (sub (struct (;(field i32);) (field $func (ref $function_1)))))
 (@if (< $ocaml_version (5 6 0))
 (@then
    (type $function_3
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
    (type $closure_3
       (sub $closure
          (struct (field $func (ref $function_1)) (field $direct (ref $function_3)))))
 )
 (@else
    (type $function_2
-      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
    (type $closure_2
       (sub $closure
          (struct (field $func (ref $function_1)) (field $direct (ref $function_2)))))
@@ -94,7 +94,7 @@
 
    (@string $effect_unhandled "Effect.Unhandled")
 
-   (func $raise_unhandled
+   (func $raise_unhandled (type $function_1)
       (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
       (block $null
          (call $caml_raise_with_arg
