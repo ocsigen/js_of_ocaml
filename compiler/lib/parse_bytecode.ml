@@ -2530,7 +2530,7 @@ end
 let read_primitives toc ic =
   let prim = Toc.read_prim toc ic in
   assert (Char.equal (String.get prim (String.length prim - 1)) '\000');
-  String.split_char ~sep:'\000' (String.sub prim ~pos:0 ~len:(String.length prim - 1))
+  String.split_on_char ~sep:'\000' (String.sub prim ~pos:0 ~len:(String.length prim - 1))
 
 type bytesections =
   { symb : Ocaml_compiler.Symtable.GlobalMap.t

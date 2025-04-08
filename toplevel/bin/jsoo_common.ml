@@ -75,7 +75,7 @@ let cmis_of_package pkg : string list =
       try Findlib.package_property [ "byte" ] pkg "archive"
       with exc -> if String.equal pkg "stdlib" then "stdlib.cma" else raise exc
     in
-    let l = String.split_char ~sep:' ' archive in
+    let l = String.split_on_char ~sep:' ' archive in
     List.iter l ~f:(function
       | "" -> ()
       | x ->
@@ -107,7 +107,7 @@ let cmis files =
       match kind file with
       | `Pkg pkg -> cmis_of_package pkg @ fs
       | `Cmi s -> (
-          match String.split_char ~sep:':' s with
+          match String.split_on_char ~sep:':' s with
           | [ s ] -> read_cmi ~dir:"." s :: fs
           | [ pkg; s ] ->
               let dir = Findlib.package_directory pkg in

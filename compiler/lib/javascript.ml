@@ -56,7 +56,7 @@ end = struct
 
   let to_targetint s =
     if
-      String.is_prefix s ~prefix:"0"
+      String.starts_with s ~prefix:"0"
       && String.length s > 1
       && String.for_all s ~f:(function
            | '0' .. '7' -> true

@@ -93,7 +93,7 @@ let name t v nm_orig =
   then (
     let buf = Buffer.create (String.length nm_orig) in
     let idx = ref 0 in
-    while !idx < len && not (Char.is_alpha nm_orig.[!idx]) do
+    while !idx < len && not (Char.is_letter nm_orig.[!idx]) do
       incr idx
     done;
     let pending = ref false in
@@ -102,7 +102,7 @@ let name t v nm_orig =
       pending := true;
       idx := 0);
     for i = !idx to len - 1 do
-      if Char.is_alpha nm_orig.[i] || Char.is_num nm_orig.[i]
+      if Char.is_letter nm_orig.[i] || Char.is_digit nm_orig.[i]
       then (
         if !pending then Buffer.add_char buf '_';
         Buffer.add_char buf nm_orig.[i];

@@ -1464,7 +1464,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             match internal_prim name with
             | Some f -> f l ctx loc
             | None ->
-                if String.is_prefix name ~prefix:"%"
+                if String.starts_with name ~prefix:"%"
                 then failwith (Printf.sprintf "Unresolved internal primitive: %s" name);
                 let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
                 let* () = info ~need_loc:true (kind (Primitive.kind name)) in
@@ -1522,7 +1522,7 @@ and translate_instr ctx expr_queue loc instr =
             (* "switcher" is emitted by the OCaml compiler when compiling
                pattern matching, it does not help much to keep it in the
                generated js, let's drop it *)
-            (not (generated_name s)) && not (String.is_prefix s ~prefix:"jsoo_")
+            (not (generated_name s)) && not (String.starts_with s ~prefix:"jsoo_")
       in
       match ctx.Ctx.live.(Var.idx x), e with
       | 0, _ ->

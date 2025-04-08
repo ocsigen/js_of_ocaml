@@ -183,7 +183,7 @@ let exec_to_string_exn ?input ~fail ~cmd () =
     let prev, env =
       Unix.environment ()
       |> Array.to_list
-      |> List.partition ~f:(String.is_prefix ~prefix:build_path_prefix_map)
+      |> List.partition ~f:(String.starts_with ~prefix:build_path_prefix_map)
     in
     let prev =
       List.filter_map ~f:(String.drop_prefix ~prefix:build_path_prefix_map) prev

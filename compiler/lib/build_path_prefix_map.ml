@@ -100,7 +100,7 @@ let decode_map str =
         | Ok str -> Some str
         | Error err -> raise (Shortcut err))
   in
-  let pairs = String.split_char ~sep:':' str in
+  let pairs = String.split_on_char ~sep:':' str in
   match List.map ~f:decode_or_empty pairs with
   | exception Shortcut err -> Error err
   | map -> Ok map
@@ -108,7 +108,7 @@ let decode_map str =
 let rewrite_opt prefix_map path =
   let is_prefix = function
     | None -> false
-    | Some { target = _; source } -> String.is_prefix path ~prefix:source
+    | Some { target = _; source } -> String.starts_with path ~prefix:source
   in
   match
     List.find

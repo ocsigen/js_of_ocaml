@@ -542,7 +542,8 @@ struct
     for i = 0 to l - 1 do
       let c = s.[i] in
       match c with
-      | '\000' when i = l - 1 || not (Char.is_num s.[i + 1]) -> Buffer.add_string b "\\0"
+      | '\000' when i = l - 1 || not (Char.is_digit s.[i + 1]) ->
+          Buffer.add_string b "\\0"
       | '\b' (* 008 *) -> Buffer.add_string b "\\b"
       | '\t' (* 009 *) -> Buffer.add_string b "\\t"
       | '\n' (* 010 *) -> Buffer.add_string b "\\n"

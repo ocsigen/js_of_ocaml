@@ -61,7 +61,7 @@ let list_files name paths =
   in
   let name, exts (* extensions filter *) =
     match String.lsplit2 name ~on:'=' with
-    | Some (name, exts) -> name, String.split_char ~sep:',' exts
+    | Some (name, exts) -> name, String.split_on_char ~sep:',' exts
     | None -> name, []
   in
   let file =
