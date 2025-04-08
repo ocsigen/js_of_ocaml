@@ -144,7 +144,8 @@
   }
 
   function getenv(n) {
-    if (isNode && globalThis.process.env[n] !== undefined) return globalThis.process.env[n];
+    if (isNode && globalThis.process.env[n] !== undefined)
+      return globalThis.process.env[n];
     return globalThis.jsoo_env?.[n];
   }
 
