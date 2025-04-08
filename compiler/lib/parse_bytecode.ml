@@ -1766,8 +1766,19 @@ and compile infos pc state (instrs : instr list) =
     | CHECK_SIGNALS -> compile infos (pc + 1) state instrs
     | C_CALL1 ->
         let prim = primitive_name state (getu code (pc + 1)) in
-
-        if String.equal (Primitive.resolve prim) "%identity"
+        let noop =
+          match prim, Config.target () with
+          | "%identity", _ -> true
+          | "caml_ensure_stack_capacity", _ -> true
+          | "caml_process_pending_actions_with_root", _ -> true
+          | "caml_make_array", `JavaScript -> true
+          | "caml_array_of_uniform_array", `JavaScript -> true
+          | _, `JavaScript ->
+              (* Temporary until we remove aliases to %identity *)
+              String.equal (Primitive.resolve prim) "%identity"
+          | _, `Wasm -> false
+        in
+        if noop
         then (* This is a no-op *)
           compile infos (pc + 2) state instrs
         else

@@ -90,6 +90,17 @@ let f (runtime_files, bytecode, target_env) =
       needed
   in
   let needed = StringSet.of_list (List.map ~f:fst needed) in
+  let needed =
+    (* this list was copied from parse_bytecode *)
+    List.fold_left
+      ~f:(fun acc x -> StringSet.remove x acc)
+      ~init:needed
+      [ "caml_ensure_stack_capacity"
+      ; "caml_process_pending_actions_with_root"
+      ; "caml_make_array"
+      ; "caml_array_of_uniform_array"
+      ]
+  in
   let from_runtime1 = Linker.list_all () in
   let from_runtime2 = Primitive.get_external () in
   (* [from_runtime2] is a superset of [from_runtime1].
