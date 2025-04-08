@@ -300,4 +300,3 @@ function caml_is_printable(c) {
 function caml_maybe_print_stats(unit) {
   return 0;
 }
-
