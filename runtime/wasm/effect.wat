@@ -52,6 +52,88 @@
       (sub $closure
          (struct (field (ref $function_1)) (field (ref $function_3)))))
 
+   ;; Generic fibers
+
+   (type $generic_fiber
+      (sub
+         (struct
+            (field $value (mut (ref eq)))
+            (field $exn (mut (ref eq)))
+            (field $effect (mut (ref eq))))))
+
+   (@string $already_resumed "Effect.Continuation_already_resumed")
+
+   (@string $effect_unhandled "Effect.Unhandled")
+
+   (func $raise_unhandled
+      (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
+      (block $null
+         (call $caml_raise_with_arg
+            (br_on_null $null
+               (call $caml_named_value (global.get $effect_unhandled)))
+            (local.get $eff)))
+      (call $caml_raise_constant
+         (array.new_fixed $block 3 (ref.i31 (global.get $object_tag))
+            (global.get $effect_unhandled)
+            (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
+      (ref.i31 (i32.const 0)))
+
+   (global $raise_unhandled (ref $closure)
+      (struct.new $closure (ref.func $raise_unhandled)))
+
+   (global $effect_allowed (mut i32) (i32.const 1))
+
+   (func $caml_continuation_use_noexc (export "caml_continuation_use_noexc")
+      (param (ref eq)) (result (ref eq))
+      (local $cont (ref $block))
+      (local $stack (ref eq))
+      (drop (block $used (result (ref eq))
+         (local.set $cont (ref.cast (ref $block) (local.get 0)))
+         (local.set $stack
+            (br_on_cast_fail $used (ref eq) (ref $generic_fiber)
+               (array.get $block (local.get $cont) (i32.const 1))))
+         (array.set $block (local.get $cont) (i32.const 1)
+            (ref.i31 (i32.const 0)))
+         (return (local.get $stack))))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_continuation_use_and_update_handler_noexc")
+      (param $cont (ref eq)) (param $hval (ref eq)) (param $hexn (ref eq))
+      (param $heff (ref eq)) (result (ref eq))
+      (local $stack (ref eq))
+      (local $tail (ref $generic_fiber))
+      (local.set $stack (call $caml_continuation_use_noexc (local.get $cont)))
+      (if (ref.test (ref $generic_fiber) (local.get $stack))
+         (then
+            (local.set $tail
+               (ref.cast (ref $generic_fiber)
+                  (array.get $block
+                     (ref.cast (ref $block) (local.get $cont))
+                        (i32.const 2))))
+            (struct.set $generic_fiber $value (local.get $tail)
+               (local.get $hval))
+            (struct.set $generic_fiber $exn (local.get $tail) (local.get $hexn))
+            (struct.set $generic_fiber $effect (local.get $tail)
+               (local.get $heff))))
+      (local.get $stack))
+
+   (func (export "caml_get_continuation_callstack")
+      (param (ref eq) (ref eq)) (result (ref eq))
+      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
+
+   (func (export "caml_is_continuation") (param (ref eq)) (result i32)
+      (drop (block $not_continuation (result (ref eq))
+         (return
+            (ref.eq
+               (array.get $block
+                  (br_on_cast_fail $not_continuation (ref eq) (ref $block)
+                     (local.get 0))
+                  (i32.const 0))
+               (ref.i31 (global.get $cont_tag))))))
+      (i32.const 0))
+
+(@if (= effects "jspi")
+(@then
    ;; Apply a function f to a value v, both contained in a pair (f, v)
 
    (type $pair (struct (field (ref eq)) (field (ref eq))))
@@ -114,13 +196,6 @@
 
    ;; Stack of fibers
 
-   (type $generic_fiber
-      (sub
-         (struct
-            (field $value (mut (ref eq)))
-            (field $exn (mut (ref eq)))
-            (field $effect (mut (ref eq))))))
-
    (type $fiber
       (sub final $generic_fiber
          (struct
@@ -129,24 +204,6 @@
             (field $effect (mut (ref eq)))
             (field $cont (mut (ref $cont)))
             (field $next (mut (ref null $fiber))))))
-
-   (@string $effect_unhandled "Effect.Unhandled")
-
-   (func $raise_unhandled
-      (param $eff (ref eq)) (param (ref eq)) (result (ref eq))
-      (block $null
-         (call $caml_raise_with_arg
-            (br_on_null $null
-               (call $caml_named_value (global.get $effect_unhandled)))
-            (local.get $eff)))
-      (call $caml_raise_constant
-         (array.new_fixed $block 3 (ref.i31 (global.get $object_tag))
-            (global.get $effect_unhandled)
-            (call $caml_fresh_oo_id (ref.i31 (i32.const 0)))))
-      (ref.i31 (i32.const 0)))
-
-   (global $raise_unhandled (ref $closure)
-      (struct.new $closure (ref.func $raise_unhandled)))
 
    (func $initial_cont (param $p (ref $pair)) (param (ref eq))
       (return_call $start_fiber (local.get $p)))
@@ -214,8 +271,6 @@
          (local.get $k)
          (struct.get $cont $cont_func (local.get $k))))
 
-   (@string $already_resumed "Effect.Continuation_already_resumed")
-
    (func $resume (export "%resume")
       (param $stack_head (ref eq)) (param $f (ref eq)) (param $v (ref eq))
       (param $stack_tail (ref eq)) (result (ref eq))
@@ -279,8 +334,6 @@
             (local.get $last_fiber))
          (local.get $k1)
          (struct.get $cont $cont_func (local.get $k1))))
-
-   (global $effect_allowed (mut i32) (i32.const 1))
 
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
       (if (i32.or (i32.eqz (global.get $effect_allowed))
@@ -380,60 +433,10 @@
          (local.get $hv) (local.get $hx) (local.get $hf)
          (global.get $initial_cont)
          (ref.null $fiber)))
+))
 
-   ;; Other functions
-
-   (func $caml_continuation_use_noexc (export "caml_continuation_use_noexc")
-      (param (ref eq)) (result (ref eq))
-      (local $cont (ref $block))
-      (local $stack (ref eq))
-      (drop (block $used (result (ref eq))
-         (local.set $cont (ref.cast (ref $block) (local.get 0)))
-         (local.set $stack
-            (br_on_cast_fail $used (ref eq) (ref $generic_fiber)
-               (array.get $block (local.get $cont) (i32.const 1))))
-         (array.set $block (local.get $cont) (i32.const 1)
-            (ref.i31 (i32.const 0)))
-         (return (local.get $stack))))
-      (ref.i31 (i32.const 0)))
-
-   (func (export "caml_continuation_use_and_update_handler_noexc")
-      (param $cont (ref eq)) (param $hval (ref eq)) (param $hexn (ref eq))
-      (param $heff (ref eq)) (result (ref eq))
-      (local $stack (ref eq))
-      (local $tail (ref $generic_fiber))
-      (local.set $stack (call $caml_continuation_use_noexc (local.get $cont)))
-      (if (ref.test (ref $generic_fiber) (local.get $stack))
-         (then
-            (local.set $tail
-               (ref.cast (ref $generic_fiber)
-                  (array.get $block
-                     (ref.cast (ref $block) (local.get $cont))
-                        (i32.const 2))))
-            (struct.set $generic_fiber $value (local.get $tail)
-               (local.get $hval))
-            (struct.set $generic_fiber $exn (local.get $tail) (local.get $hexn))
-            (struct.set $generic_fiber $effect (local.get $tail)
-               (local.get $heff))))
-      (local.get $stack))
-
-   (func (export "caml_get_continuation_callstack")
-      (param (ref eq) (ref eq)) (result (ref eq))
-      (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
-
-   (func (export "caml_is_continuation") (param (ref eq)) (result i32)
-      (drop (block $not_continuation (result (ref eq))
-         (return
-            (ref.eq
-               (array.get $block
-                  (br_on_cast_fail $not_continuation (ref eq) (ref $block)
-                     (local.get 0))
-                  (i32.const 0))
-               (ref.i31 (global.get $cont_tag))))))
-      (i32.const 0))
-
-   ;; Effects through CPS transformation
-
+(@if (= effects "cps")
+(@then
    (type $function_2
       (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
    (type $function_4
@@ -562,7 +565,7 @@
       (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
       (unreachable))
 
-   (func $caml_trampoline (export "caml_trampoline")
+   (func (export "caml_trampoline")
       (param $f (ref eq)) (param $vargs (ref eq)) (result (ref eq))
       (local $args (ref $block))
       (local $i i32) (local $res (ref eq))
@@ -638,9 +641,6 @@
                   (br $loop)))))
       (global.set $cps_fiber_stack (local.get $saved_fiber_stack))
       (throw $ocaml_exception (local.get $exn)))
-
-   (global $caml_trampoline_ref (export "caml_trampoline_ref")
-      (mut (ref null $function_1)) (ref.null $function_1))
 
    (func $caml_pop_fiber (result (ref eq))
       (local $f (ref $cps_fiber))
@@ -765,7 +765,7 @@
    (global $exn_handler (ref $closure)
       (struct.new $closure (ref.func $exn_handler)))
 
-   (func (export "caml_cps_alloc_stack")
+   (func (export "caml_alloc_stack")
       (param $hv (ref eq)) (param $hx (ref eq)) (param $hf (ref eq))
       (result (ref eq))
       (struct.new $cps_fiber
@@ -773,9 +773,7 @@
          (global.get $value_handler)
          (struct.new $exn_stack (global.get $exn_handler) (ref.null $exn_stack))
          (ref.null $cps_fiber)))
-
-   (func (export "caml_cps_initialize_effects")
-      (global.set $caml_trampoline_ref (ref.func $caml_trampoline)))
+))
 
    (func (export "caml_assume_no_perform") (param $f (ref eq)) (result (ref eq))
       (local $saved_effect_allowed i32)

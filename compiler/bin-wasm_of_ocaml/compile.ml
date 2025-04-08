@@ -83,6 +83,42 @@ let with_runtime_files ~runtime_wasm_files f =
   in
   Wat_preprocess.with_preprocessed_files ~variables:[] ~inputs f
 
+let build_runtime ~runtime_file =
+  (* Keep this variables in sync with gen/gen.ml *)
+  let variables =
+    [ ( "effects"
+      , Wat_preprocess.String
+          (match Config.effects () with
+          | `Jspi -> "jspi"
+          | `Cps -> "cps"
+          | `Disabled | `Double_translation -> assert false) )
+    ]
+  in
+  match
+    List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
+        assert (
+          List.length flags = List.length variables
+          && List.for_all2 ~f:(fun (k, _) (k', _) -> String.equal k k') flags variables);
+        Poly.equal flags variables)
+  with
+  | Some (_, contents) -> Fs.write_file ~name:runtime_file ~contents
+  | None ->
+      let inputs =
+        List.map
+          ~f:(fun (module_name, contents) ->
+            { Wat_preprocess.module_name
+            ; file = module_name ^ ".wat"
+            ; source = Contents contents
+            })
+          Runtime_files.wat_files
+      in
+      Runtime.build
+        ~link_options:[ "-g" ]
+        ~opt_options:[ "-g"; "-O2" ]
+        ~variables
+        ~inputs
+        ~output_file:runtime_file
+
 let link_and_optimize
     ~profile
     ~sourcemap_root
@@ -101,7 +137,7 @@ let link_and_optimize
   let enable_source_maps = Option.is_some opt_sourcemap_file in
   Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
   @@ fun runtime_file ->
-  Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+  build_runtime ~runtime_file;
   Fs.with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
   @@ fun temp_file ->
   opt_with
@@ -147,7 +183,7 @@ let link_and_optimize
 
 let link_runtime ~profile runtime_wasm_files output_file =
   if List.is_empty runtime_wasm_files
-  then Fs.write_file ~name:output_file ~contents:Runtime_files.wasm_runtime
+  then build_runtime ~runtime_file:output_file
   else
     Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
     @@ fun extra_runtime ->
@@ -169,7 +205,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
       ();
     Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
     @@ fun runtime_file ->
-    Fs.write_file ~name:runtime_file ~contents:Runtime_files.wasm_runtime;
+    build_runtime ~runtime_file;
     Binaryen.link
       ~opt_output_sourcemap:None
       ~inputs:

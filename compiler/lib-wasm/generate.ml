@@ -1204,9 +1204,6 @@ let init () =
     ]
   in
   Primitive.register "caml_array_of_uniform_array" `Mutable None None;
-  let l =
-    if effects_cps () then ("caml_alloc_stack", "caml_cps_alloc_stack") :: l else l
-  in
   List.iter ~f:(fun (nm, nm') -> Primitive.alias nm nm') l
 
 (* Make sure we can use [br_table] for switches *)
