@@ -202,13 +202,38 @@ module Type = struct
                 ]
           })
 
-  let func_type n =
-    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> value); result = [ value ] }
+  let primitive_type n =
+    { W.params = List.init ~len:n ~f:(fun _ -> value); result = [ value ] }
 
-  let function_type ~cps n =
-    let n = if cps then n + 1 else n in
-    register_type (Printf.sprintf "function_%d" n) (fun () ->
-        return { supertype = None; final = true; typ = W.Func (func_type n) })
+  let func_type ?(ret = value) n =
+    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> value); result = [ ret ] }
+
+  let rec function_type ~cps ?ret n =
+    let n' = if cps then n + 1 else n in
+    let ret_str =
+      match ret with
+      | None -> ""
+      | Some (W.Ref { nullable = false; typ }) -> (
+          match typ with
+          | Eq -> "_eq" (*ZZZ remove ret in that case*)
+          | I31 -> "_i31"
+          | Struct -> "_struct"
+          | Array -> "_array"
+          | None_ -> "_none"
+          | Type v -> (
+              match Code.Var.get_name v with
+              | None -> assert false
+              | Some name -> "_" ^ name)
+          | _ -> assert false)
+      | _ -> assert false
+    in
+    register_type (Printf.sprintf "function_%d%s" n' ret_str) (fun () ->
+        match ret with
+        | None -> return { supertype = None; final = false; typ = W.Func (func_type n') }
+        | Some ret ->
+            let* super = function_type ~cps n in
+            return
+              { supertype = Some super; final = false; typ = W.Func (func_type ~ret n') })
 
   let closure_common_fields ~cps =
     let* fun_ty = function_type ~cps 1 in
@@ -279,11 +304,19 @@ module Type = struct
                     ])
             })
 
-  let env_type ~cps ~arity n =
+  let make_env_type env_type =
+    List.map
+      ~f:(fun typ ->
+        { W.mut = false
+        ; typ = W.Value (Option.value ~default:(W.Ref { nullable = false; typ = Eq }) typ)
+        })
+      env_type
+
+  let env_type ~cps ~arity ~env_type_id ~env_type =
     register_type
       (if cps
-       then Printf.sprintf "cps_env_%d_%d" arity n
-       else Printf.sprintf "env_%d_%d" arity n)
+       then Printf.sprintf "cps_env_%d_%d" arity env_type_id
+       else Printf.sprintf "env_%d_%d" arity env_type_id)
       (fun () ->
         let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
         let* common = closure_common_fields ~cps in
@@ -307,18 +340,11 @@ module Type = struct
                         ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
                         }
                       ])
-                @ List.init
-                    ~f:(fun _ ->
-                      { W.mut = false
-                      ; typ = W.Value (Ref { nullable = false; typ = Eq })
-                      })
-                    ~len:n)
+                @ make_env_type env_type)
           })
 
-  let rec_env_type ~function_count ~free_variable_count =
-    register_type
-      (Printf.sprintf "rec_env_%d_%d" function_count free_variable_count)
-      (fun () ->
+  let rec_env_type ~function_count ~env_type_id ~env_type =
+    register_type (Printf.sprintf "rec_env_%d_%d" function_count env_type_id) (fun () ->
         return
           { supertype = None
           ; final = true
@@ -329,24 +355,20 @@ module Type = struct
                      { W.mut = i < function_count
                      ; typ = W.Value (Ref { nullable = false; typ = Eq })
                      })
-                   ~len:(function_count + free_variable_count))
+                   ~len:function_count
+                @ make_env_type env_type)
           })
 
-  let rec_closure_type ~cps ~arity ~function_count ~free_variable_count =
+  let rec_closure_type ~cps ~arity ~function_count ~env_type_id ~env_type =
     register_type
       (if cps
-       then
-         Printf.sprintf
-           "cps_closure_rec_%d_%d_%d"
-           arity
-           function_count
-           free_variable_count
-       else Printf.sprintf "closure_rec_%d_%d_%d" arity function_count free_variable_count)
+       then Printf.sprintf "cps_closure_rec_%d_%d_%d" arity function_count env_type_id
+       else Printf.sprintf "closure_rec_%d_%d_%d" arity function_count env_type_id)
       (fun () ->
         let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
         let* common = closure_common_fields ~cps in
         let* fun_ty' = function_type ~cps arity in
-        let* env_ty = rec_env_type ~function_count ~free_variable_count in
+        let* env_ty = rec_env_type ~function_count ~env_type_id ~env_type in
         return
           { supertype = Some cl_typ
           ; final = true
@@ -423,15 +445,13 @@ module Type = struct
 end
 
 module Value = struct
-  let value = Type.value
-
   let block_type =
     let* t = Type.block_type in
     return (W.Ref { nullable = false; typ = Type t })
 
   let dummy_block =
     let* t = Type.block_type in
-    return (W.ArrayNewFixed (t, []))
+    array_placeholder t
 
   let as_block e =
     let* t = Type.block_type in
@@ -549,30 +569,46 @@ module Value = struct
 
   let ( >>| ) x f = map f x
 
+  let may_be_js js x =
+    let* ty = expression_type x in
+    match ty with
+    | None -> return true
+    | Some (Ref { typ; _ }) -> heap_type_sub (Type js) typ
+    | Some (I32 | I64 | F32 | F64) -> return false
+
   let eq_gen ~negate x y =
-    let xv = Code.Var.fresh () in
-    let yv = Code.Var.fresh () in
+    let* x = x in
+    let* y = y in
     let* js = Type.js_type in
-    let n =
-      if_expr
-        I32
-        (* We mimic an "and" on the two conditions, but in a way that is nicer to the
+    let* bx = may_be_js js x in
+    let* by = may_be_js js y in
+    if bx && by
+    then
+      let xv = Code.Var.fresh () in
+      let yv = Code.Var.fresh () in
+      let n =
+        if_expr
+          I32
+          (* We mimic an "and" on the two conditions, but in a way that is nicer to the
            binaryen optimizer. *)
-        (if_expr
-           I32
-           (ref_test (ref js) (load xv))
-           (ref_test (ref js) (load yv))
-           (Arith.const 0l))
-        (caml_js_strict_equals (load xv) (load yv)
-        >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
-        >>| fun e -> W.I31Get (S, e))
-        (ref_eq (load xv) (load yv))
-    in
-    seq
-      (let* () = store xv x in
-       let* () = store yv y in
-       return ())
-      (val_int (if negate then Arith.eqz n else n))
+          (if_expr
+             I32
+             (ref_test (ref js) (load xv))
+             (ref_test (ref js) (load yv))
+             (Arith.const 0l))
+          (caml_js_strict_equals (load xv) (load yv)
+          >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
+          >>| fun e -> W.I31Get (S, e))
+          (ref_eq (load xv) (load yv))
+      in
+      seq
+        (let* () = store xv (return x) in
+         let* () = store yv (return y) in
+         return ())
+        (val_int (if negate then Arith.eqz n else n))
+    else
+      let n = ref_eq (return x) (return y) in
+      val_int (if negate then Arith.eqz n else n)
 
   let eq x y = eq_gen ~negate:false x y
 
@@ -608,6 +644,14 @@ module Value = struct
 
   let int_asr = binop Arith.( asr )
 end
+
+let store_in_global ?(name = "const") c =
+  let name = Code.Var.fresh_n name in
+  let* typ = expression_type c in
+  let* () =
+    register_global name { mut = false; typ = Option.value ~default:Type.value typ } c
+  in
+  return (W.GlobalGet name)
 
 module Memory = struct
   let wasm_cast ty e =
@@ -743,13 +787,13 @@ module Memory = struct
     let a = Code.Var.fresh_n "a" in
     let i = Code.Var.fresh_n "i" in
     block_expr
-      { params = []; result = [ Value.value ] }
+      { params = []; result = [ Type.value ] }
       (let* () = store a e in
        let* () = store ~typ:I32 i (Value.int_val e') in
        let* () =
          drop
            (block_expr
-              { params = []; result = [ Value.value ] }
+              { params = []; result = [ Type.value ] }
               (let* block = Type.block_type in
                let* a = load a in
                let* e =
@@ -779,7 +823,7 @@ module Memory = struct
       (let* () =
          drop
            (block_expr
-              { params = []; result = [ Value.value ] }
+              { params = []; result = [ Type.value ] }
               (let* block = Type.block_type in
                let* a = load a in
                let* () =
@@ -840,7 +884,7 @@ module Memory = struct
     let* () =
       drop
         (block_expr
-           { params = []; result = [ Value.value ] }
+           { params = []; result = [ Type.value ] }
            (let* e =
               if_match
                 ~typ:(Some (W.Ref { nullable = false; typ = Type fun_ty }))
@@ -868,7 +912,9 @@ module Memory = struct
     in
     let* ty = Type.int32_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet int32_ops; e ]))
+    let e' = W.StructNew (ty, [ GlobalGet int32_ops; e ]) in
+    let* b = is_small_constant e in
+    if b then store_in_global e' else return e'
 
   let box_int32 e = make_int32 ~kind:`Int32 e
 
@@ -886,7 +932,9 @@ module Memory = struct
     in
     let* ty = Type.int64_type in
     let* e = e in
-    return (W.StructNew (ty, [ GlobalGet int64_ops; e ]))
+    let e' = W.StructNew (ty, [ GlobalGet int64_ops; e ]) in
+    let* b = is_small_constant e in
+    if b then store_in_global e' else return e'
 
   let box_int64 e = make_int64 e
 
@@ -905,11 +953,6 @@ module Constant = struct
   (* dune-build-info use a 64-byte placeholder. This ensures that such
      strings are encoded as a sequence of bytes in the wasm module. *)
   let string_length_threshold = 64
-
-  let store_in_global ?(name = "const") c =
-    let name = Code.Var.fresh_n name in
-    let* () = register_global name { mut = false; typ = Type.value } c in
-    return (W.GlobalGet name)
 
   let str_js_utf8 s =
     let b = Buffer.create (String.length s) in
@@ -1049,13 +1092,15 @@ module Constant = struct
         if b then return c else store_in_global c
     | Const_named name -> store_in_global ~name c
     | Mutated ->
+        let* typ = Type.string_type in
         let name = Code.Var.fresh_n "const" in
+        let* placeholder = array_placeholder typ in
         let* () =
           register_global
             ~constant:true
             name
-            { mut = true; typ = Type.value }
-            (W.RefI31 (Const (I32 0l)))
+            { mut = true; typ = Ref { nullable = false; typ = Type typ } }
+            placeholder
         in
         let* () = register_init_code (instr (W.GlobalSet (name, c))) in
         return (W.GlobalGet name)
@@ -1106,11 +1151,19 @@ module Closure = struct
       in
       return (W.GlobalGet name)
     else
-      let free_variable_count = List.length free_variables in
+      let* env_type = expression_list variable_type free_variables in
+      let env_type_id =
+        try Hashtbl.find context.closure_types env_type
+        with Not_found ->
+          let id = Hashtbl.length context.closure_types in
+          Hashtbl.add context.closure_types env_type id;
+          id
+      in
+      info.id <- Some env_type_id;
       match info.Closure_conversion.functions with
       | [] -> assert false
       | [ _ ] ->
-          let* typ = Type.env_type ~cps ~arity free_variable_count in
+          let* typ = Type.env_type ~cps ~arity ~env_type_id ~env_type in
           let* l = expression_list load free_variables in
           return
             (W.StructNew
@@ -1129,7 +1182,7 @@ module Closure = struct
                  @ l ))
       | (g, _) :: _ as functions ->
           let function_count = List.length functions in
-          let* env_typ = Type.rec_env_type ~function_count ~free_variable_count in
+          let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type in
           let env =
             if Code.Var.equal f g
             then
@@ -1151,7 +1204,7 @@ module Closure = struct
               load env
           in
           let* typ =
-            Type.rec_closure_type ~cps ~arity ~function_count ~free_variable_count
+            Type.rec_closure_type ~cps ~arity ~function_count ~env_type_id ~env_type
           in
           let res =
             let* env = env in
@@ -1196,12 +1249,13 @@ module Closure = struct
       let* _ = add_var (Code.Var.fresh ()) in
       return ()
     else
+      let env_type_id = Option.value ~default:(-1) info.id in
       let arity = List.assoc f info.functions in
       let arity = if cps then arity - 1 else arity in
       let offset = Memory.env_start arity in
       match info.Closure_conversion.functions with
       | [ _ ] ->
-          let* typ = Type.env_type ~cps ~arity free_variable_count in
+          let* typ = Type.env_type ~cps ~arity ~env_type_id ~env_type:[] in
           let* _ = add_var f in
           let env = Code.Var.fresh_n "env" in
           let* () =
@@ -1221,11 +1275,11 @@ module Closure = struct
       | functions ->
           let function_count = List.length functions in
           let* typ =
-            Type.rec_closure_type ~cps ~arity ~function_count ~free_variable_count
+            Type.rec_closure_type ~cps ~arity ~function_count ~env_type_id ~env_type:[]
           in
           let* _ = add_var f in
           let env = Code.Var.fresh_n "env" in
-          let* env_typ = Type.rec_env_type ~function_count ~free_variable_count in
+          let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type:[] in
           let* () =
             store
               ~typ:(W.Ref { nullable = false; typ = Type env_typ })
@@ -1404,7 +1458,7 @@ let () =
     let arity = List.length args in
     (* [Type.func_type] counts one additional argument for the closure environment (absent
        here) *)
-    let* f = register_import ~name (Fun (Type.func_type (arity - 1))) in
+    let* f = register_import ~name (Fun (Type.primitive_type arity)) in
     let args = List.map ~f:transl_prim_arg args in
     let* args = expression_list Fun.id args in
     return (W.Call (f, args))
@@ -1668,11 +1722,11 @@ let externref = W.Ref { nullable = true; typ = Extern }
 
 let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
   let* js_tag = register_import ~name:"javascript_exception" (Tag externref) in
-  let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Value.value) in
+  let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Type.value) in
   let* f =
     register_import
       ~name:"caml_wrap_exception"
-      (Fun { params = [ externref ]; result = [ Value.value ] })
+      (Fun { params = [ externref ]; result = [ Type.value ] })
   in
   block
     { params = []; result = result_typ }
@@ -1680,7 +1734,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
        store
          x
          (block_expr
-            { params = []; result = [ Value.value ] }
+            { params = []; result = [ Type.value ] }
             (let* exn =
                block_expr
                  { params = []; result = [ externref ] }
@@ -1691,7 +1745,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
                          ~result_typ:[ externref ]
                          ~fall_through:`Skip
                          ~context:(`Skip :: `Skip :: `Catch :: context))
-                      [ ocaml_tag, 1, Value.value; js_tag, 0, externref ]
+                      [ ocaml_tag, 1, Type.value; js_tag, 0, externref ]
                   in
                   instr (W.Push e))
              in
