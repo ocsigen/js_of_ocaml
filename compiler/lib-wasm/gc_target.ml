@@ -203,12 +203,35 @@ module Type = struct
   let primitive_type n =
     { W.params = List.init ~len:n ~f:(fun _ -> value); result = [ value ] }
 
-  let func_type n = primitive_type (n + 1)
+  let func_type ?(ret = value) n =
+    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> value); result = [ ret ] }
 
-  let function_type ~cps n =
-    let n = if cps then n + 1 else n in
-    register_type (Printf.sprintf "function_%d" n) (fun () ->
-        return { supertype = None; final = true; typ = W.Func (func_type n) })
+  let rec function_type ~cps ?ret n =
+    let n' = if cps then n + 1 else n in
+    let ret_str =
+      match ret with
+      | None -> ""
+      | Some (W.Ref { nullable = false; typ }) -> (
+          match typ with
+          | Eq -> "_eq" (*ZZZ remove ret in that case*)
+          | I31 -> "_i31"
+          | Struct -> "_struct"
+          | Array -> "_array"
+          | None_ -> "_none"
+          | Type v -> (
+              match Code.Var.get_name v with
+              | None -> assert false
+              | Some name -> "_" ^ name)
+          | _ -> assert false)
+      | _ -> assert false
+    in
+    register_type (Printf.sprintf "function_%d%s" n' ret_str) (fun () ->
+        match ret with
+        | None -> return { supertype = None; final = false; typ = W.Func (func_type n') }
+        | Some ret ->
+            let* super = function_type ~cps n in
+            return
+              { supertype = Some super; final = false; typ = W.Func (func_type ~ret n') })
 
   let closure_common_fields ~cps =
     let* fun_ty = function_type ~cps 1 in
