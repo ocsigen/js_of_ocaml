@@ -199,6 +199,68 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   (* I31, struct, array and none have no other subtype *)
   | _, (I31 | Type _ | Struct | Array | None_) -> false, st
 
+(*ZZZ*)
+let rec type_index_lub ty ty' st =
+  if Var.equal ty ty'
+  then Some ty
+  else
+    let type_field = Var.Hashtbl.find st.context.types ty in
+    match type_field.supertype with
+    | None -> None
+    | Some ty -> (
+        match type_index_lub ty ty' st with
+        | Some ty -> Some ty
+        | None -> (
+            let type_field = Var.Hashtbl.find st.context.types ty' in
+            match type_field.supertype with
+            | None -> None
+            | Some ty' -> type_index_lub ty ty' st))
+
+let heap_type_lub (ty : W.heap_type) (ty' : W.heap_type) =
+  match ty, ty' with
+  | (Func | Extern), _ | _, (Func | Extern) -> assert false
+  | None_, _ -> return ty'
+  | _, None_ | Struct, Struct | Array, Array -> return ty
+  | Any, _ | _, Any -> return W.Any
+  | Eq, _
+  | _, Eq
+  | (Struct | Array | Type _), I31
+  | I31, (Struct | Array | Type _)
+  | Struct, Array
+  | Array, Struct -> return (Eq : W.heap_type)
+  | Struct, Type t | Type t, Struct -> (
+      fun st ->
+        let type_field = Var.Hashtbl.find st.context.types t in
+        match type_field.typ with
+        | Struct _ -> W.Struct, st
+        | Array _ | Func _ -> W.Eq, st)
+  | Array, Type t | Type t, Array -> (
+      fun st ->
+        let type_field = Var.Hashtbl.find st.context.types t in
+        match type_field.typ with
+        | Array _ -> W.Struct, st
+        | Struct _ | Func _ -> W.Eq, st)
+  | Type t, Type t' -> (
+      let* r = fun st -> type_index_lub t t' st, st in
+      match r with
+      | Some t'' -> return (Type t'' : W.heap_type)
+      | None -> (
+          fun st ->
+            let type_field = Var.Hashtbl.find st.context.types t in
+            let type_field' = Var.Hashtbl.find st.context.types t' in
+            match type_field.typ, type_field'.typ with
+            | Struct _, Struct _ -> (Struct : W.heap_type), st
+            | Array _, Array _ -> W.Array, st
+            | (Array _ | Struct _ | Func _), (Array _ | Struct _ | Func _) -> W.Eq, st))
+  | I31, I31 -> return W.I31
+
+let value_type_lub (ty : W.value_type) (ty' : W.value_type) =
+  match ty, ty' with
+  | Ref { nullable; typ }, Ref { nullable = nullable'; typ = typ' } ->
+      let* typ = heap_type_lub typ typ' in
+      return (W.Ref { nullable = nullable || nullable'; typ })
+  | _ -> assert false
+
 let register_global name ?exported_name ?(constant = false) typ init st =
   st.context.other_fields <-
     W.Global { name; exported_name; typ; init } :: st.context.other_fields;
@@ -703,13 +765,28 @@ let push e =
       instr (Push e')
   | _ -> instr (Push e)
 
+let blk' ty l st =
+  let instrs = st.instrs in
+  let (), st = l { st with instrs = [] } in
+  let ty, st =
+    match st.instrs with
+    | Push e :: _ ->
+        (let* ty' = expression_type e in
+         match ty' with
+         | None -> return ty
+         | Some ty' -> return { ty with W.result = [ ty' ] })
+          st
+    | _ -> ty, st
+  in
+  (List.rev st.instrs, ty), { st with instrs }
+
 let loop ty l =
-  let* instrs = blk l in
-  instr (Loop (ty, instrs))
+  let* instrs, ty' = blk' ty l in
+  instr (Loop (ty', instrs))
 
 let block ty l =
-  let* instrs = blk l in
-  instr (Block (ty, instrs))
+  let* instrs, ty' = blk' ty l in
+  instr (Block (ty', instrs))
 
 let block_expr ty l =
   let* instrs = blk l in
@@ -782,7 +859,7 @@ let init_code context = instrs context.init_code
 
 let function_body ~context ~param_names ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
-  let (), st = body st in
+  let res, st = body st in
   let local_count, body = st.var_count, List.rev st.instrs in
   let local_types = Array.make local_count (Var.fresh (), None) in
   List.iteri ~f:(fun i x -> local_types.(i) <- x, None) param_names;
@@ -800,4 +877,10 @@ let function_body ~context ~param_names ~body =
     |> (fun a -> Array.sub a ~pos:param_count ~len:(Array.length a - param_count))
     |> Array.to_list
   in
-  locals, body
+  locals, res, body
+
+let eval ~context e =
+  let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
+  let r, st = e st in
+  assert (st.var_count = 0 && List.is_empty st.instrs);
+  r
