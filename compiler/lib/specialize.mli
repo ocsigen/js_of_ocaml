@@ -21,3 +21,5 @@
 val function_arity : Flow.Info.t -> Code.Var.t -> int option
 
 val f : function_arity:(Code.Var.t -> int option) -> Code.program -> Code.program
+
+val switches : Code.program -> Code.program
