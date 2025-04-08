@@ -719,17 +719,29 @@ let f ~fast p =
   ; info_return_vals = rets
   }
 
-let exact_call info f n =
+let apply_kind info f n =
   match Var.Tbl.get info.info_approximation f with
-  | Top | Values { others = true; _ } -> false
-  | Values { known; others = false } ->
-      Var.Set.for_all
-        (fun g ->
-          match info.info_defs.(Var.idx g) with
-          | Expr (Closure (params, _)) -> List.length params = n
-          | Expr (Block _) -> true
-          | Expr _ | Phi _ -> assert false)
-        known
+  | Top | Values { others = true; _ } -> Generic
+  | Values { known; others = false } -> (
+      match
+        Var.Set.fold
+          (fun g acc ->
+            match info.info_defs.(Var.idx g) with
+            | Expr (Closure (params, _)) ->
+                if List.length params = n
+                then
+                  match acc with
+                  | None -> Some (Known g)
+                  | Some (Known _) -> Some Exact
+                  | Some (Exact | Generic) -> acc
+                else Some Generic
+            | Expr (Block _) -> acc
+            | Expr _ | Phi _ -> assert false)
+          known
+          None
+      with
+      | None -> Exact
+      | Some kind -> kind)
 
 let function_arity info f =
   match Var.Tbl.get info.info_approximation f with
@@ -742,9 +754,10 @@ let function_arity info f =
             | Expr (Closure (params, _)) -> (
                 let n = List.length params in
                 match acc with
-                | None -> Some (Some n)
-                | Some (Some n') when n <> n' -> Some None
-                | Some _ -> acc)
+                | None -> Some (Some (n, Known g))
+                | Some (Some (n', _)) when n <> n' -> Some None
+                | Some (Some (_, Known _)) -> Some (Some (n, Exact))
+                | Some (None | Some (_, (Exact | Generic))) -> acc)
             | Expr (Block _) -> acc
             | Expr _ | Phi _ -> assert false)
           known
