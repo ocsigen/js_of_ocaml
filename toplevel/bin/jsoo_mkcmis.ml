@@ -68,8 +68,8 @@ let () =
   let runtime_files, builtin =
     List.partition_map runtime_files ~f:(fun name ->
         match Js_of_ocaml_compiler.Builtins.find name with
-        | Some t -> `Snd t
-        | None -> `Fst name)
+        | Some t -> Right t
+        | None -> Left name)
   in
   let builtin =
     if !runtime then Js_of_ocaml_compiler_runtime_files.runtime @ builtin else builtin

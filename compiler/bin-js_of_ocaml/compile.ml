@@ -102,7 +102,8 @@ let sourcemap_section_of_info
         | Some _ -> Filename.concat "/builtin" filename)
   in
   let ignore_list =
-    List.filter sources ~f:(fun filename -> String.is_prefix ~prefix:"/builtin/" filename)
+    List.filter sources ~f:(fun filename ->
+        String.starts_with ~prefix:"/builtin/" filename)
   in
   let offset, mappings = Source_map.Mappings.encode_with_offset mappings in
   let map =
@@ -207,8 +208,8 @@ let run
   let runtime_files, builtin =
     List.partition_map runtime_files ~f:(fun name ->
         match Builtins.find name with
-        | Some t -> `Snd t
-        | None -> `Fst name)
+        | Some t -> Right t
+        | None -> Left name)
   in
   let t1 = Timer.make () in
   let builtin =

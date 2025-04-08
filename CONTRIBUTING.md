@@ -28,8 +28,4 @@ opam install odoc lwt_log yojson ocp-indent graphics higlo
 
 ### Running the tests
 
-Tests are maintained for a single version of the OCaml compiler (currently 4.13).
-
-Make sure to use the correct opam switch (e.g. `opam switch 4.13.1`).
-
 Run `make tests`.

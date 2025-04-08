@@ -12,7 +12,6 @@
   graphics.js
   ieee_754.js
   int64.js
-  internalMod.js
   io.js
   jslib.js
   jslib_js_of_ocaml.js

@@ -315,8 +315,8 @@ let run
   let runtime_js_files, builtin =
     List.partition_map runtime_js_files ~f:(fun name ->
         match Builtins.find name with
-        | Some t -> `Snd t
-        | None -> `Fst name)
+        | Some t -> Right t
+        | None -> Left name)
   in
   let t1 = Timer.make () in
   let builtin = Js_of_ocaml_compiler_runtime_files.runtime @ builtin in

@@ -22,7 +22,7 @@ open Js_of_ocaml_compiler
 
 let group_by_snd l =
   l
-  |> List.sort_uniq ~compare:(fun (n1, l1) (n2, l2) ->
+  |> List.sort_uniq ~cmp:(fun (n1, l1) (n2, l2) ->
          match Poly.compare l1 l2 with
          | 0 -> String.compare n1 n2
          | c -> c)
@@ -49,8 +49,8 @@ let f (runtime_files, bytecode, target_env) =
   let runtime_files, builtin =
     List.partition_map runtime_files ~f:(fun name ->
         match Builtins.find name with
-        | Some t -> `Snd t
-        | None -> `Fst name)
+        | Some t -> Right t
+        | None -> Left name)
   in
   let builtin =
     if false then builtin else Js_of_ocaml_compiler_runtime_files.runtime @ builtin

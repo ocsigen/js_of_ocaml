@@ -30,6 +30,8 @@ end = struct
   let open_out = open_out
 end
 
+include Deprecated
+
 module Poly = struct
   external ( < ) : 'a -> 'a -> bool = "%lessthan"
 
@@ -99,30 +101,8 @@ let failwith_ fmt =
 let raise_ exn =
   if !fail then raise exn else Format.eprintf "%s@." (Printexc.to_string exn)
 
-let int_num_bits = Sys.int_size
-
 module List = struct
   include ListLabels
-
-  let rec equal ~eq a b =
-    match a, b with
-    | [], [] -> true
-    | x :: xs, y :: ys -> eq x y && equal ~eq xs ys
-    | [], _ :: _ | _ :: _, [] -> false
-
-  let rec find_map ~f = function
-    | [] -> None
-    | x :: l -> (
-        match f x with
-        | Some _ as result -> result
-        | None -> find_map ~f l)
-
-  let rec find_map_value ~f ~default = function
-    | [] -> default
-    | x :: l -> (
-        match f x with
-        | Some result -> result
-        | None -> find_map_value ~f ~default l)
 
   let rec rev_append_map ~f l acc =
     match l with
@@ -196,34 +176,12 @@ module List = struct
     | [ x ] -> Some x
     | _ :: xs -> last xs
 
-  let sort_uniq ~compare l =
-    let l = List.sort compare l in
-    match l with
-    | ([] | [ _ ]) as l -> l
-    | x :: xs ->
-        let rec loop prev = function
-          | [] -> [ prev ]
-          | x :: rest when compare x prev = 0 -> loop prev rest
-          | x :: rest -> prev :: loop x rest
-        in
-        loop x xs
-
   let is_empty = function
     | [] -> true
     | _ -> false
+  [@@if ocaml_version < (5, 1, 0)]
 
-  let partition_map t ~f =
-    let rec loop t fst snd =
-      match t with
-      | [] -> rev fst, rev snd
-      | x :: t -> (
-          match f x with
-          | `Fst y -> loop t (y :: fst) snd
-          | `Snd y -> loop t fst (y :: snd))
-    in
-    loop t [] []
-
-  let tail_append l1 l2 = rev_append (rev l1) l2
+  let tail_append l1 l2 = rev_append (rev l1) l2 [@@if ocaml_version < (5, 1, 0)]
 
   let rec count_append l1 l2 count =
     match l2 with
@@ -245,8 +203,9 @@ module List = struct
             (if count > max_non_tailcall
              then tail_append tl l2
              else count_append tl l2 (count + 1)))
+  [@@if ocaml_version < (5, 1, 0)]
 
-  let append l1 l2 = count_append l1 l2 0
+  let append l1 l2 = count_append l1 l2 0 [@@if ocaml_version < (5, 1, 0)]
 
   let group l ~f =
     let rec loop (l : 'a list) (this_group : 'a list) (acc : 'a list list) : 'a list list
@@ -262,15 +221,6 @@ module List = struct
     match l with
     | [] -> []
     | x :: xs -> loop xs [ x ] []
-
-  let concat_map ~f l =
-    let rec aux f acc = function
-      | [] -> rev acc
-      | x :: l ->
-          let xs = f x in
-          aux f (rev_append xs acc) l
-    in
-    aux f [] l
 
   let split_last xs =
     let rec aux acc = function
@@ -303,12 +253,6 @@ end
 
 let ( @ ) = List.append
 
-module Nativeint = struct
-  include Nativeint
-
-  external equal : nativeint -> nativeint -> bool = "%equal"
-end
-
 module Int32 = struct
   include Int32
 
@@ -323,10 +267,6 @@ module Int32 = struct
   external ( > ) : int32 -> int32 -> bool = "%greaterthan"
 
   external ( >= ) : int32 -> int32 -> bool = "%greaterequal"
-
-  external compare : int32 -> int32 -> int = "%compare"
-
-  external equal : int32 -> int32 -> bool = "%equal"
 
   let warn_overflow name ~to_dec ~to_hex i i32 =
     warn
@@ -356,14 +296,12 @@ module Int32 = struct
 end
 
 module Option = struct
+  include Option
+
   let map ~f x =
     match x with
     | None -> None
     | Some v -> Some (f v)
-
-  let to_list = function
-    | None -> []
-    | Some x -> [ x ]
 
   let bind ~f x =
     match x with
@@ -380,40 +318,13 @@ module Option = struct
     | None -> None
     | Some v -> if f v then Some v else None
 
-  let compare compare_elt a b =
-    match a, b with
-    | None, None -> 0
-    | None, Some _ -> -1
-    | Some _, None -> 1
-    | Some a, Some b -> compare_elt a b
-
-  let equal equal_elt a b =
-    match a, b with
-    | None, None -> true
-    | Some a, Some b -> equal_elt a b
-    | Some _, None | None, Some _ -> false
-
-  let is_none = function
-    | None -> true
-    | Some _ -> false
-
-  let is_some = function
-    | None -> false
-    | Some _ -> true
-
   let value ~default = function
     | None -> default
     | Some s -> s
 end
 
-module Int64 = struct
-  include Int64
-
-  let equal (a : int64) (b : int64) = Poly.(a = b)
-end
-
 module Float = struct
-  type t = float
+  include Float
 
   let equal (_ : float) (_ : float) = `Use_ieee_equal_or_bitwise_equal
 
@@ -421,9 +332,6 @@ module Float = struct
 
   let bitwise_equal (a : float) (b : float) =
     Int64.equal (Int64.bits_of_float a) (Int64.bits_of_float b)
-
-  (* Re-defined here to stay compatible with OCaml 4.02 *)
-  external classify_float : float -> fpclass = "caml_classify_float"
 
   external ( < ) : t -> t -> bool = "%lessthan"
 
@@ -439,13 +347,13 @@ module Float = struct
 end
 
 module Bool = struct
+  include Bool
+
   external ( <> ) : bool -> bool -> bool = "%notequal"
 
   external ( = ) : bool -> bool -> bool = "%equal"
 
   external ( > ) : bool -> bool -> bool = "%greaterthan"
-
-  external equal : bool -> bool -> bool = "%equal"
 end
 
 module Char = struct
@@ -463,27 +371,13 @@ module Char = struct
 
   external ( >= ) : char -> char -> bool = "%greaterequal"
 
-  external compare : char -> char -> int = "%compare"
-
-  external equal : char -> char -> bool = "%equal"
-
-  let is_alpha = function
+  let is_letter = function
     | 'a' .. 'z' | 'A' .. 'Z' -> true
     | _ -> false
 
-  let is_num = function
+  let is_digit = function
     | '0' .. '9' -> true
     | _ -> false
-
-  let lowercase_ascii c =
-    match c with
-    | 'A' .. 'Z' as c -> Char.unsafe_chr (Char.code c + 32)
-    | _ -> c
-
-  let uppercase_ascii c =
-    match c with
-    | 'a' .. 'z' as c -> Char.unsafe_chr (Char.code c - 32)
-    | _ -> c
 end
 
 module Uchar = struct
@@ -585,72 +479,16 @@ module Buffer = struct
     Buffer.add_char b (Array.unsafe_get array_conv (c land 0xf))
 end
 
-module Bytes = struct
-  include BytesLabels
-
-  let sub_string b ~pos:ofs ~len = unsafe_to_string (Bytes.sub b ofs len)
-
-  let fold_left ~f ~init b =
-    let r = ref init in
-    for i = 0 to length b - 1 do
-      r := f !r (unsafe_get b i)
-    done;
-    !r
-
-  let fold_right ~f b ~init =
-    let r = ref init in
-    for i = length b - 1 downto 0 do
-      r := f (unsafe_get b i) !r
-    done;
-    !r
-end
+module Bytes = BytesLabels
 
 module String = struct
   include StringLabels
-
-  let equal (a : string) (b : string) = Poly.(a = b)
 
   let hash (a : string) = Hashtbl.hash a
 
   let is_empty = function
     | "" -> true
     | _ -> false
-
-  let is_prefix ~prefix s =
-    let len_a = length prefix in
-    let len_s = length s in
-    if len_a > len_s
-    then false
-    else
-      let max_idx_a = len_a - 1 in
-      let rec loop i =
-        if i > max_idx_a
-        then true
-        else if not (Char.equal (unsafe_get prefix i) (unsafe_get s i))
-        then false
-        else loop (i + 1)
-      in
-      loop 0
-
-  let is_suffix ~suffix s =
-    let len_a = length suffix in
-    let len_s = length s in
-    if len_a > len_s
-    then false
-    else
-      let max_idx_a = len_a - 1 in
-      let rec loop i =
-        if i > max_idx_a
-        then true
-        else if
-          not
-            (Char.equal
-               (unsafe_get suffix (len_a - 1 - i))
-               (unsafe_get s (len_s - 1 - i)))
-        then false
-        else loop (i + 1)
-      in
-      loop 0
 
   let drop_prefix ~prefix s =
     let plen = String.length prefix in
@@ -663,16 +501,6 @@ module String = struct
         done;
         Some (String.sub s plen (String.length s - plen))
       with Exit -> None
-
-  let for_all =
-    let rec loop s ~f ~last i =
-      if i > last
-      then true
-      else if f (String.unsafe_get s i)
-      then loop s ~f ~last (i + 1)
-      else false
-    in
-    fun s ~f -> loop s ~f ~last:(String.length s - 1) 0
 
   let is_ascii s =
     let res = ref true in
@@ -690,69 +518,6 @@ module String = struct
     done;
     !res
 
-  let split_char ~sep p = String.split_on_char sep p
-
-  (* copied from https://github.com/ocaml/ocaml/pull/10 *)
-  let split ~sep s =
-    let sep_len = String.length sep in
-    if sep_len = 1
-    then split_char ~sep:sep.[0] s
-    else
-      let sep_max = sep_len - 1 in
-      if sep_max < 0
-      then invalid_arg "String.split: empty separator"
-      else
-        let s_max = String.length s - 1 in
-        if s_max < 0
-        then [ "" ]
-        else
-          let acc = ref [] in
-          let sub_start = ref 0 in
-          let k = ref 0 in
-          let i = ref 0 in
-          (* We build the substrings by running from the start of [s] to the
-             end with [i] trying to match the first character of [sep] in
-             [s]. If this matches, we verify that the whole [sep] is matched
-             using [k]. If this matches we extract a substring from the start
-             of the current substring [sub_start] to [!i - 1] (the position
-             before the [sep] we found).  We then continue to try to match
-             with [i] by starting after the [sep] we just found, this is also
-             becomes the start position of the next substring. If [i] is such
-             that no separator can be found we exit the loop and make a
-             substring from [sub_start] until the end of the string. *)
-          while !i + sep_max <= s_max do
-            if not (Char.equal (String.unsafe_get s !i) (String.unsafe_get sep 0))
-            then incr i
-            else (
-              (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
-                   guaranteed by loop invariant. *)
-              k := 1;
-              while
-                !k <= sep_max
-                && Char.equal (String.unsafe_get s (!i + !k)) (String.unsafe_get sep !k)
-              do
-                incr k
-              done;
-              if !k <= sep_max
-              then (* no match *) incr i
-              else
-                let new_sub_start = !i + sep_max + 1 in
-                let sub_end = !i - 1 in
-                let sub_len = sub_end - !sub_start + 1 in
-                acc := String.sub s !sub_start sub_len :: !acc;
-                sub_start := new_sub_start;
-                i := new_sub_start)
-          done;
-          List.rev (String.sub s !sub_start (s_max - !sub_start + 1) :: !acc)
-
-  let apply1 f (s : string) : string =
-    let b = Bytes.of_string s in
-    if Bytes.length b = 0
-    then s
-    else (
-      Bytes.unsafe_set b 0 (f (Bytes.unsafe_get b 0));
-      Bytes.to_string b)
-
   let lsplit2 line ~on:delim =
     try
       let pos = index line delim in
@@ -764,10 +529,6 @@ module String = struct
       let pos = rindex line delim in
       Some (sub line ~pos:0 ~len:pos, sub line ~pos:(pos + 1) ~len:(length line - pos - 1))
     with Not_found -> None
-
-  let capitalize_ascii s = apply1 Char.uppercase_ascii s
-
-  let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
   let[@inline] not_in_x80_to_xBF b = b lsr 6 <> 0b10
 
@@ -1025,20 +786,6 @@ module String = struct
         | _ -> false
     in
     loop (length b - 1) b 0
-
-  let fold_left ~f ~init s =
-    let r = ref init in
-    for i = 0 to length s - 1 do
-      r := f !r (unsafe_get s i)
-    done;
-    !r
-
-  let fold_right ~f s ~init =
-    let r = ref init in
-    for i = length s - 1 downto 0 do
-      r := f (unsafe_get s i) !r
-    done;
-    !r
 end
 
 module Utf8_string : sig
@@ -1063,11 +810,7 @@ end = struct
 end
 
 module Int = struct
-  type t = int
-
-  let compare (x : int) y = compare x y
-
-  let equal (x : t) y = x = y
+  include Int
 
   let hash (x : t) = Hashtbl.hash x
 end
@@ -1106,14 +849,14 @@ end = struct
 
   let create () = { arr = Array.make 1 0 }
 
-  let create' n = { arr = Array.make ((n / int_num_bits) + 1) 0 }
+  let create' n = { arr = Array.make ((n / Sys.int_size) + 1) 0 }
 
-  let size t = Array.length t.arr * int_num_bits
+  let size t = Array.length t.arr * Sys.int_size
 
   let mem t i =
     let arr = t.arr in
-    let idx = i / int_num_bits in
-    let off = i mod int_num_bits in
+    let idx = i / Sys.int_size in
+    let off = i mod Sys.int_size in
     idx < Array.length arr
     &&
     let x = Array.unsafe_get arr idx in
@@ -1130,15 +873,15 @@ end = struct
     t.arr <- a
 
   let set t i =
-    let idx = i / int_num_bits in
-    let off = i mod int_num_bits in
+    let idx = i / Sys.int_size in
+    let off = i mod Sys.int_size in
     let size = Array.length t.arr in
     if idx >= size then resize t idx;
     Array.unsafe_set t.arr idx (Array.unsafe_get t.arr idx lor (1 lsl off))
 
   let unset t i =
-    let idx = i / int_num_bits in
-    let off = i mod int_num_bits in
+    let idx = i / Sys.int_size in
+    let off = i mod Sys.int_size in
     let size = Array.length t.arr in
     if idx >= size
     then ()
@@ -1171,17 +914,6 @@ end
 
 module Array = struct
   include ArrayLabels
-
-  let find_opt ~f:p a =
-    let n = length a in
-    let rec loop i =
-      if i = n
-      then None
-      else
-        let x = unsafe_get a i in
-        if p x then Some x else loop (succ i)
-    in
-    loop 0
 
   let fold_right_i a ~f ~init:x =
     let r = ref x in
@@ -1405,4 +1137,4 @@ let file_lines_text file =
 
 let generated_name = function
   | "param" | "match" | "switcher" -> true
-  | s -> String.is_prefix ~prefix:"cst_" s
+  | s -> String.starts_with ~prefix:"cst_" s

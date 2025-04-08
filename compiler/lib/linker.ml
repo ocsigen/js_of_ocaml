@@ -101,7 +101,7 @@ module Check = struct
             (fun x acc ->
               match x with
               | S { name = Utf8_string.Utf8 s; _ } ->
-                  if String.is_prefix s ~prefix:"_" || String.equal s name
+                  if String.starts_with s ~prefix:"_" || String.equal s name
                   then acc
                   else s :: acc
               | V _ -> acc)

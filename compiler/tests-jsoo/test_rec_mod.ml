@@ -38,7 +38,7 @@ let%expect_test _ =
     ignore (IdSet.mem { id = 1 } basic_set : bool)
     (* diverge here *)
   with e ->
-    if String.is_suffix ~suffix:"Undefined recursive module" (Printexc.to_string e)
+    if String.ends_with ~suffix:"Undefined recursive module" (Printexc.to_string e)
     then ()
     else raise e
 

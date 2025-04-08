@@ -34,7 +34,6 @@ let runtime =
     ; hash
     ; ieee_754
     ; int64
-    ; internalMod
     ; ints
     ; io
     ; jslib

@@ -58,7 +58,7 @@ let () =
   match Array.to_list Sys.argv with
   | [] -> assert false
   | _ :: rest ->
-      let rest = List.sort_uniq ~compare:String.compare rest in
+      let rest = List.sort_uniq ~cmp:String.compare rest in
       let fragments =
         List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.Fragment.parse_file f)
       in

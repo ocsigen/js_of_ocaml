@@ -130,10 +130,10 @@ type action =
   | Source_map of Source_map.t
 
 let prefix_kind line =
-  match String.is_prefix ~prefix:info_prefix line with
+  match String.starts_with ~prefix:info_prefix line with
   | false -> `Other
   | true -> (
-      match String.is_prefix ~prefix:sourceMappingURL line with
+      match String.starts_with ~prefix:sourceMappingURL line with
       | false -> (
           match Build_info.parse line with
           | Some bi -> `Build_info bi
@@ -142,7 +142,7 @@ let prefix_kind line =
               | Some _ -> `Unit
               | None -> `Other))
       | true -> (
-          match String.is_prefix ~prefix:sourceMappingURL_base64 line with
+          match String.starts_with ~prefix:sourceMappingURL_base64 line with
           | true -> `Json_base64 (String.length sourceMappingURL_base64)
           | false -> `Url (String.length sourceMappingURL)))
 

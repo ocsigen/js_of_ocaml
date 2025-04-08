@@ -247,11 +247,6 @@ function caml_ba_create_buffer(kind, size) {
 }
 
 //Provides: caml_ba_custom_name
-//Version: < 4.11
-var caml_ba_custom_name = "_bigarray";
-
-//Provides: caml_ba_custom_name
-//Version: >= 4.11
 var caml_ba_custom_name = "_bigarr02";
 
 //Provides: Ml_Bigarray

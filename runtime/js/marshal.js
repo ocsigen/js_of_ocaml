@@ -182,21 +182,6 @@ function caml_float_of_bytes(a) {
   return caml_int64_float_of_bits(caml_int64_of_bytes(a));
 }
 
-//Provides: caml_input_value_from_string mutable
-//Requires: JsStringReader, UInt8ArrayReader
-//Requires: caml_input_value_from_reader
-//Requires: caml_ml_bytes_content
-//Version: < 4.12
-function caml_input_value_from_string(s, ofs) {
-  var c = typeof s === "string" ? s : caml_ml_bytes_content(s);
-  var ofs = typeof ofs === "number" ? ofs : ofs[0];
-  var reader =
-    c instanceof Uint8Array
-      ? new UInt8ArrayReader(c, ofs)
-      : new JsStringReader(c, ofs);
-  return caml_input_value_from_reader(reader);
-}
-
 //Provides: caml_input_value_from_bytes mutable
 //Requires: JsStringReader, UInt8ArrayReader
 //Requires: caml_input_value_from_reader

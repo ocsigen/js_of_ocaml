@@ -1,6 +1,7 @@
 # dev
 
 ## Features/Changes
+* Misc: drop support for OCaml 4.12 and bellow
 * Compiler: use a Wasm text files preprocessor (#1822)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
 * Runtime: use es6 class (#1840)
