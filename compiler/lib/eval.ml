@@ -246,6 +246,26 @@ let the_cont_of info x (a : cont array) =
       | _ -> None)
     x
 
+let is_equal info x (i : Targetint.t) =
+  (* The value of [x] might be meaningless when we're inside a dead code.
+     The proper fix would be to remove the deadcode entirely.
+     Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
+     see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
+  get_approx
+    info
+    (fun x ->
+      match Flow.Info.def info x with
+      | Some (Prim (Extern "%direct_obj_tag", [ b ])) ->
+          the_tag_of info b (fun j -> Some Targetint.(equal (of_int_exn j) i))
+      | Some (Constant (Int j)) -> Some (Targetint.equal i j)
+      | None | Some _ -> None)
+    None
+    (fun u v ->
+      match u, v with
+      | Some i, Some j when Poly.(i = j) -> u
+      | _ -> None)
+    x
+
 (* If [constant_js_equal a b = Some v], then [caml_js_equals a b = v]). *)
 let constant_js_equal a b =
   match a, b with
@@ -333,6 +353,13 @@ let eval_instr ~target info i =
           let c = Constant (bool' Poly.(b = Y)) in
           Flow.Info.update_def info x c;
           [ Let (x, c) ])
+  | Let (x, Prim (Eq, ([ Pv y; Pc (Int j) ] | [ Pc (Int j); Pv y ]))) -> (
+      match is_equal info y j with
+      | Some b ->
+          let c = Constant (bool' b) in
+          Flow.Info.update_def info x c;
+          [ Let (x, c) ]
+      | None -> [ i ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
       match the_tag_of info y (fun x -> Some x) with
       | Some tag ->

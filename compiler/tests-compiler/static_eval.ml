@@ -159,7 +159,7 @@ let%expect_test "static eval of string get" =
     }
     //end |}]
 
-let%expect_test "static eval of tags" =
+let%expect_test "static eval of tags (optimized switch)" =
   let program =
     compile_and_parse
       {|
@@ -191,11 +191,54 @@ let%expect_test "static eval of tags" =
        }
        var
         global_data = runtime.caml_get_global_data(),
-        Stdlib_Random = global_data.Stdlib__Random,
-        _a_ = [0, [1, 0]],
-        _b_ = [1, 0],
-        x = 1 < caml_call1(Stdlib_Random[5], 3) ? _a_ : _b_;
-       x[0];
+        Stdlib_Random = global_data.Stdlib__Random;
+       1 < caml_call1(Stdlib_Random[5], 3);
+       var
+        foobar = 3,
+        export$0 = [0, foobar, foobar],
+        Test = [0, foobar, export$0];
+       runtime.caml_register_global(3, Test, "Test");
+       return;
+      }
+      (globalThis));
+    //end
+    |}]
+
+let%expect_test "static eval of tags" =
+  let program =
+    compile_and_parse
+      {|
+
+      type t = A | B | C of t | D of t | E of t | F of t
+
+      let foobar =
+        let x = if Random.int 3 > 1 then C (D A) else D (A) in
+        match x with
+        | A -> 1
+        | B -> 2
+        | C _
+        | D _ -> 3
+        | E _ -> 5
+        | F _ -> 7
+
+      let export = [|foobar;foobar|]
+  |}
+  in
+  print_program program;
+  [%expect
+    {|
+    (function(globalThis){
+       "use strict";
+       var runtime = globalThis.jsoo_runtime;
+       function caml_call1(f, a0){
+        return (f.l >= 0 ? f.l : f.l = f.length) === 1
+                ? f(a0)
+                : runtime.caml_call_gen(f, [a0]);
+       }
+       var
+        global_data = runtime.caml_get_global_data(),
+        Stdlib_Random = global_data.Stdlib__Random;
+       1 < caml_call1(Stdlib_Random[5], 3);
        var
         foobar = 3,
         export$0 = [0, foobar, foobar],
