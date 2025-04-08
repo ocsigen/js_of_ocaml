@@ -46,7 +46,8 @@ let rec scan_expression ctx e =
   | RefCast (_, e')
   | RefTest (_, e')
   | Br_on_cast (_, _, _, e')
-  | Br_on_cast_fail (_, _, _, e') -> scan_expression ctx e'
+  | Br_on_cast_fail (_, _, _, e')
+  | ExternConvertAny e' -> scan_expression ctx e'
   | BinOp (_, e', e'')
   | ArrayNew (_, e', e'')
   | ArrayNewData (_, _, e', e'')
@@ -94,7 +95,7 @@ and scan_instruction ctx i =
       scan_instructions ctx l;
       scan_instructions ctx l'
   | CallInstr (_, l) | Return_call (_, l) -> scan_expressions ctx l
-  | Br (_, None) | Return None | Rethrow _ | Nop | Event _ -> ()
+  | Br (_, None) | Return None | Rethrow _ | Nop | Unreachable | Event _ -> ()
   | ArraySet (_, e, e', e'') ->
       scan_expression ctx e;
       scan_expression ctx e';

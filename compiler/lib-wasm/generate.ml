@@ -1057,8 +1057,9 @@ module Generate (Target : Target_sig.S) = struct
           (match name_opt with
           | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
           | Some _ -> None)
+      ; typ = None
+      ; signature = func_type param_count
       ; param_names
-      ; typ = func_type param_count
       ; locals
       ; body
       }
@@ -1066,7 +1067,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let init_function ~context ~to_link =
     let name = Code.Var.fresh_n "initialize" in
-    let typ = { W.params = []; result = [ Value.value ] } in
+    let signature = { W.params = []; result = [ Value.value ] } in
     let locals, body =
       function_body
         ~context
@@ -1075,7 +1076,10 @@ module Generate (Target : Target_sig.S) = struct
           (List.fold_right
              ~f:(fun name cont ->
                let* f =
-                 register_import ~import_module:"OCaml" ~name:(name ^ ".init") (Fun typ)
+                 register_import
+                   ~import_module:"OCaml"
+                   ~name:(name ^ ".init")
+                   (Fun signature)
                in
                let* () = instr (Drop (Call (f, []))) in
                cont)
@@ -1083,17 +1087,26 @@ module Generate (Target : Target_sig.S) = struct
              to_link)
     in
     context.other_fields <-
-      W.Function { name; exported_name = None; typ; param_names = []; locals; body }
+      W.Function
+        { name
+        ; exported_name = None
+        ; typ = None
+        ; signature
+        ; param_names = []
+        ; locals
+        ; body
+        }
       :: context.other_fields;
     name
 
   let entry_point context toplevel_fun entry_name =
-    let typ, param_names, body = entry_point ~toplevel_fun in
+    let signature, param_names, body = entry_point ~toplevel_fun in
     let locals, body = function_body ~context ~param_names ~body in
     W.Function
       { name = Var.fresh_n "entry_point"
       ; exported_name = Some entry_name
-      ; typ
+      ; typ = None
+      ; signature
       ; param_names
       ; locals
       ; body

@@ -27,7 +27,10 @@ type heap_type =
   | Extern
   | Any
   | Eq
+  | Struct
+  | Array
   | I31
+  | None_
   | Type of var
 
 type ref_type =
@@ -166,6 +169,7 @@ type expression =
   | Br_on_cast_fail of int * ref_type * ref_type * expression
   | IfExpr of value_type * expression * expression * expression
   | Try of func_type * instruction list * (var * int * value_type) list
+  | ExternConvertAny of expression
 
 and instruction =
   | Drop of expression
@@ -187,6 +191,7 @@ and instruction =
   | StructSet of var * int * expression * expression
   | Return_call of var * expression list
   | Return_call_ref of var * expression * expression list
+  | Unreachable
   | Event of Parse_info.t  (** Location information *)
 
 type import_desc =
@@ -205,7 +210,8 @@ type module_field =
   | Function of
       { name : var
       ; exported_name : string option
-      ; typ : func_type
+      ; typ : var option
+      ; signature : func_type
       ; param_names : var list
       ; locals : (var * value_type) list
       ; body : instruction list
