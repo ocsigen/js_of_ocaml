@@ -412,6 +412,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
           Build_info.configure bi;
           let primitives =
             List.fold_left units ~init:StringSet.empty ~f:(fun acc (u : Unit_info.t) ->
+                List.iter u.aliases ~f:(fun (a, b) -> Primitive.alias a b);
                 StringSet.union acc (StringSet.of_list u.primitives))
           in
           let code = Parse_bytecode.link_info ~symbols:!sym ~primitives ~crcs:[] in

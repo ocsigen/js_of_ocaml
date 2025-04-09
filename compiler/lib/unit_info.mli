@@ -23,13 +23,14 @@ type t =
   { provides : StringSet.t
   ; requires : StringSet.t
   ; primitives : string list
+  ; aliases : (string * string) list
   ; force_link : bool
   ; effects_without_cps : bool
   }
 
 val of_cmo : Cmo_format.compilation_unit -> t
 
-val of_primitives : string list -> t
+val of_primitives : aliases:(string * string) list -> string list -> t
 
 val union : t -> t -> t
 
