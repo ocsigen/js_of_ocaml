@@ -1773,10 +1773,11 @@ and compile infos pc state (instrs : instr list) =
           | "caml_process_pending_actions_with_root", _ -> true
           | "caml_make_array", `JavaScript -> true
           | "caml_array_of_uniform_array", `JavaScript -> true
-          | _, `JavaScript ->
-              (* Temporary until we remove aliases to %identity *)
-              String.equal (Primitive.resolve prim) "%identity"
-          | _, `Wasm -> false
+          | "caml_js_from_float", `JavaScript -> true
+          | "caml_js_from_int32", `JavaScript -> true
+          | "caml_js_from_nativeint", `JavaScript -> true
+          | "caml_js_to_float", `JavaScript -> true
+          | _ -> false
         in
         if noop
         then (* This is a no-op *)

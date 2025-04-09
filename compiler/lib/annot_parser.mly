@@ -19,7 +19,7 @@
 
 %token TProvides TRequires TVersion TWeakdef TIf TAlways TAlias
 %token TA_Pure TA_Const TA_Mutable TA_Mutator TA_Shallow TA_Object_literal
-%token<string> TIdent TVNum
+%token<string> TIdent TIdent_percent TVNum
 %token TComma TColon EOF EOL LE LT GE GT EQ LPARENT RPARENT
 %token<string> TOTHER
 %token<string> TDeprecated
@@ -43,6 +43,7 @@ annot:
   | TAlways endline { `Always   }
   | TDeprecated endline { `Deprecated $1 }
   | TAlias TColon name=TIdent endline { `Alias (name) }
+  | TAlias TColon name=TIdent_percent endline { `Alias (name) }
   | TIf TColon name=TIdent endline { `If (name) }
   | TIf TColon TBang name=TIdent endline { `Ifnot (name) }
 prim_annot:
