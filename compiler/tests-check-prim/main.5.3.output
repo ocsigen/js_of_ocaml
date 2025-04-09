@@ -128,6 +128,7 @@ caml_set_static_env
 caml_sys_const_naked_pointers_checked
 
 From +toplevel.js:
+jsoo_get_runtime_aliases
 jsoo_toplevel_init_compile
 jsoo_toplevel_init_reloc
 

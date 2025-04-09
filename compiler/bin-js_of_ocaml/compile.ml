@@ -336,10 +336,17 @@ let run
   in
   let output_partial_runtime ~standalone ~source_map ((_, fmt) as output_file) =
     assert (not standalone);
-    let uinfo =
-      Unit_info.of_primitives
-        (Linker.list_all ~from:runtime_files_from_cmdline () |> StringSet.elements)
+    let primitives, aliases =
+      let all = Linker.list_all_with_aliases ~from:runtime_files_from_cmdline () in
+      StringMap.fold
+        (fun n a (primitives, aliases) ->
+          let primitives = StringSet.add n primitives in
+          let aliases = List.map (StringSet.elements a) ~f:(fun a -> a, n) @ aliases in
+          primitives, aliases)
+        all
+        (StringSet.empty, [])
     in
+    let uinfo = Unit_info.of_primitives ~aliases (StringSet.elements primitives) in
     Pretty_print.string fmt "\n";
     Pretty_print.string fmt (Unit_info.to_string uinfo);
     let code =
@@ -358,10 +365,20 @@ let run
   in
   (match bytecode with
   | `None ->
-      let prims = Linker.list_all () |> StringSet.elements in
-      assert (List.length prims > 0);
+      let primitives, aliases =
+        let all = Linker.list_all_with_aliases () in
+        StringMap.fold
+          (fun n a (primitives, aliases) ->
+            let primitives = StringSet.add n primitives in
+            let aliases = List.map (StringSet.elements a) ~f:(fun a -> a, n) @ aliases in
+            primitives, aliases)
+          all
+          (StringSet.empty, [])
+      in
+      let primitives = StringSet.elements primitives in
+      assert (List.length primitives > 0);
       let code, uinfo = Parse_bytecode.predefined_exceptions () in
-      let uinfo = { uinfo with primitives = uinfo.primitives @ prims } in
+      let uinfo = Unit_info.union uinfo (Unit_info.of_primitives ~aliases primitives) in
       let code : Parse_bytecode.one =
         { code
         ; cmis = StringSet.empty
