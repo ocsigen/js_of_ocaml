@@ -89,6 +89,7 @@ end = struct
     { provides = t |> member "provides" |> set empty.provides
     ; requires = t |> member "requires" |> set empty.requires
     ; primitives = t |> member "primitives" |> list empty.primitives
+    ; aliases = []
     ; force_link = t |> member "force_link" |> bool empty.force_link
     ; effects_without_cps =
         t |> member "effects_without_cps" |> bool empty.effects_without_cps

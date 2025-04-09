@@ -2645,10 +2645,12 @@ let from_exe
       let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
       let gdata = Var.fresh () in
       let need_gdata = ref false in
+      let aliases = Primitive.aliases () in
       let infos =
         [ "sections", Constants.parse (Obj.repr sections)
         ; "symbols", Constants.parse (Obj.repr symbols_array)
         ; "prim_count", Int (Targetint.of_int_exn (Array.length globals.primitives))
+        ; "aliases", Constants.parse (Obj.repr aliases)
         ]
       in
       let body =
@@ -3052,6 +3054,7 @@ let predefined_exceptions () =
     ; force_link = true
     ; effects_without_cps = false
     ; primitives = []
+    ; aliases = []
     }
   in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
@@ -3073,10 +3076,12 @@ let link_info ~symbols ~primitives ~crcs =
   let body =
     (* Include linking information *)
     let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
+    let aliases = Primitive.aliases () in
     let infos =
       [ "sections", Constants.parse (Obj.repr sections)
       ; "symbols", Constants.parse (Obj.repr symbols_array)
       ; "prim_count", Int (Targetint.of_int_exn (List.length primitives))
+      ; "aliases", Constants.parse (Obj.repr aliases)
       ]
     in
     let body =

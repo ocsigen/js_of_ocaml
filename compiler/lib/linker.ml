@@ -426,6 +426,7 @@ type provided =
   ; filename : string
   ; weakdef : bool
   ; target_env : Target_env.t
+  ; aliases : StringSet.t
   }
 
 let always_included = ref []
@@ -454,6 +455,18 @@ let list_all ?from () =
     (fun nm p set -> if include_ p.filename nm then StringSet.add nm set else set)
     provided
     StringSet.empty
+
+let list_all_with_aliases ?from () =
+  let include_ =
+    match from with
+    | None -> fun _ _ -> true
+    | Some l -> fun fn _nm -> List.mem fn ~set:l
+  in
+  Hashtbl.fold
+    (fun nm p map ->
+      if include_ p.filename nm then StringMap.add nm p.aliases map else map)
+    provided
+    StringMap.empty
 
 let load_fragment ~target_env ~filename (f : Fragment.t) =
   match f with
@@ -559,7 +572,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               Hashtbl.add
                 provided
                 name
-                { id; pi; filename; weakdef; target_env = fragment_target };
+                { id; pi; filename; weakdef; target_env = fragment_target; aliases };
               Hashtbl.add provided_rev id (name, pi);
               Hashtbl.add code_pieces id (code, has_macro, requires, deprecated);
               StringSet.iter (fun alias -> Primitive.alias alias name) aliases;

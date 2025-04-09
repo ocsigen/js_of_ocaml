@@ -12,6 +12,8 @@ type bytecode_sections =
 
 external get_bytecode_sections : unit -> bytecode_sections = "jsoo_get_bytecode_sections"
 
+external get_runtime_aliases : unit -> (string * string) list = "jsoo_get_runtime_aliases"
+
 external toplevel_init_compile :
   (string -> Instruct.debug_event list array -> unit -> J.t) -> unit
   = "jsoo_toplevel_init_compile"
@@ -37,10 +39,12 @@ let () =
   (match Sys.backend_type with
   | Sys.Other "js_of_ocaml" -> Config.set_target `JavaScript
   | Sys.(Native | Bytecode | Other _) -> failwith "Expected backend `js_of_ocaml`");
+  let aliases = get_runtime_aliases () in
   let global = J.pure_js_expr "globalThis" in
   Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
   Config.set_effects_backend (Jsoo_runtime.Sys.Config.effects ());
   Linker.reset ();
+  List.iter aliases ~f:(fun (a, b) -> Primitive.alias a b);
   (* this needs to stay synchronized with toplevel.js *)
   let toplevel_compile (s : string) (debug : Instruct.debug_event list array) :
       unit -> J.t =
