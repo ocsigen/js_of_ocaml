@@ -37,32 +37,32 @@ WORKDIR /bench-dir/js_of_ocaml
 COPY --chown=opam:opam ./*.opam ./
 RUN opam pin -yn --with-version=dev .
 RUN opam install -y --deps-only js_of_ocaml-compiler \
- && opam install opam-format stringext uucp cstruct bigstringaf \
+ && opam install opam-format stringext uucp cstruct \
  && opam clean
 
 # Install js_of_ocaml / wasm_of_ocaml
 COPY --chown=opam:opam . ./
-RUN opam install -y wasm_of_ocaml-compiler \
- && opam clean
-
-# Compile partial render table benchmark
-#RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
-# && opam install ppxlib.0.35.0 # temporary workaround \
+#RUN opam install -y wasm_of_ocaml-compiler \
 # && opam clean
-
-RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
- && opam install ppxlib.0.35.0 \
- && eval $(opam env) \
- && dune build --root ../janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.wasm.js lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.js \
- && cp -r ../janestreet/_build/default/lib/bonsai_web_components/partial_render_table/bench/bin/main.bc* ./benchmarks/benchmark-partial-render-table/ \
- && rm -rf ../janestreet
-
-# CAMLBOY
-WORKDIR /bench-dir
-RUN opam install brr \
- && opam clean \
- && git clone --depth 1 https://github.com/ocaml-wasm/CAMLBOY -b node \
- && cd CAMLBOY \
- && opam exec -- dune build --root . --profile release ./bin/web
+#
+## Compile partial render table benchmark
+##RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
+## && opam install ppxlib.0.35.0 # temporary workaround \
+## && opam clean
+#
+#RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
+# && opam install ppxlib.0.35.0 \
+# && eval $(opam env) \
+# && dune build --root ../janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.wasm.js lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.js \
+# && cp -r ../janestreet/_build/default/lib/bonsai_web_components/partial_render_table/bench/bin/main.bc* ./benchmarks/benchmark-partial-render-table/ \
+# && rm -rf ../janestreet
+#
+## CAMLBOY
+#WORKDIR /bench-dir
+#RUN opam install brr \
+# && opam clean \
+# && git clone --depth 1 https://github.com/ocaml-wasm/CAMLBOY -b node \
+# && cd CAMLBOY \
+# && opam exec -- dune build --root . --profile release ./bin/web
 
 WORKDIR /bench-dir/js_of_ocaml/benchmarks
