@@ -49,9 +49,6 @@ let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
   let args =
     match l with
     | [ Float i; Float j ] -> Some (i, j)
-    | [ Int i; Int j ] -> Some (Targetint.to_float i, Targetint.to_float j)
-    | [ Int i; Float j ] -> Some (Targetint.to_float i, j)
-    | [ Float i; Int j ] -> Some (i, Targetint.to_float j)
     | _ -> None
   in
   match args with
@@ -66,7 +63,6 @@ let float_binop (l : constant list) (f : float -> float -> float) : constant opt
 let float_unop (l : constant list) (f : float -> float) : constant option =
   match l with
   | [ Float i ] -> Some (Float (f i))
-  | [ Int i ] -> Some (Float (f (Targetint.to_float i)))
   | _ -> None
 
 let bool' b = Int Targetint.(if b then one else zero)
@@ -76,7 +72,6 @@ let bool b = Some (bool' b)
 let float_unop_bool (l : constant list) (f : float -> bool) =
   match l with
   | [ Float i ] -> bool (f i)
-  | [ Int i ] -> bool (f (Targetint.to_float i))
   | _ -> None
 
 let float_binop_bool l f =
@@ -84,10 +79,7 @@ let float_binop_bool l f =
   | Some b -> bool b
   | None -> None
 
-let int32 i =
-  match Config.target () with
-  | `JavaScript -> Some (Int (Targetint.of_int32_exn i))
-  | `Wasm -> Some (Int32 i)
+let int32 i = Some (Int32 i)
 
 let int32_unop (l : constant list) (f : int32 -> int32) : constant option =
   match l with
@@ -324,14 +316,14 @@ let eval_prim x =
       | _ -> None)
   | _ -> None
 
-let the_length_of ~target info x =
+let the_length_of info x =
   get_approx
     info
     (fun x ->
       match Flow.Info.def info x with
       | Some (Constant (String s)) -> Some (Targetint.of_int_exn (String.length s))
       | Some (Prim (Extern "caml_create_string", [ arg ]))
-      | Some (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int ~target info arg
+      | Some (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int info arg
       | None | Some _ -> None)
     None
     (fun u v ->
@@ -353,9 +345,6 @@ let is_int info x =
         (fun x ->
           match Flow.Info.def info x with
           | Some (Constant (Int _)) -> Y
-          | Some (Constant (NativeInt _ | Int32 _)) ->
-              (* These Wasm-specific constants are boxed *)
-              N
           | Some (Block (_, _, _, _) | Constant _) -> N
           | None | Some _ -> Unknown)
         Unknown
@@ -366,9 +355,6 @@ let is_int info x =
           | _ -> Unknown)
         x
   | Pc (Int _) -> Y
-  | Pc (NativeInt _ | Int32 _) ->
-      (* These Wasm-specific constants are boxed *)
-      N
   | Pc _ -> N
 
 let the_tag_of info x get =
@@ -498,7 +484,7 @@ let eval_instr ~target info i =
       let c =
         match s with
         | Pc (String s) -> Some (Targetint.of_int_exn (String.length s))
-        | Pv v -> the_length_of ~target info v
+        | Pv v -> the_length_of info v
         | _ -> None
       in
       match c with
@@ -605,7 +591,7 @@ let eval_instr ~target info i =
                             (* Avoid duplicating the constant here as it would cause an
                                allocation *)
                             arg
-                        | Some (Int32 _ | NativeInt _), `JavaScript -> assert false
+                        | Some ((Int32 _ | NativeInt _) as c), `JavaScript -> Pc c
                         | Some ((Float _ | NativeString _) as c), `JavaScript -> Pc c
                         | Some (String _ as c), `JavaScript
                           when Config.Flag.use_js_string () -> Pc c

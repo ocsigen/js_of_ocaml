@@ -30,12 +30,12 @@ let specialize_instr ~target info i =
          Wasm to have a special case for this. *)
       match the_string_of ~target info y with
       | Some "%d" -> (
-          match the_int ~target info z with
+          match the_int info z with
           | Some i -> Let (x, Constant (String (Targetint.to_string i)))
           | None -> Let (x, Prim (Extern "%caml_format_int_special", [ z ])))
       | _ -> i)
   | Let (x, Prim (Extern "%caml_format_int_special", [ z ])), `JavaScript -> (
-      match the_int ~target info z with
+      match the_int info z with
       | Some i -> Let (x, Constant (String (Targetint.to_string i)))
       | None -> i)
   (* inline the String constant argument so that generate.ml can attempt to parse it *)
@@ -139,19 +139,19 @@ let specialize_instr ~target info i =
       (* Using * to multiply integers in JavaScript yields a float; and if the
            float is large enough, some bits can be lost. So, in the general case,
            we have to use Math.imul. There is no such issue in Wasm. *)
-      match the_int ~target info y, the_int ~target info z with
+      match the_int info y, the_int info z with
       | Some j, _ when Targetint.(abs j < limit) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
       | _, Some j when Targetint.(abs j < limit) ->
           Let (x, Prim (Extern "%direct_int_mul", [ y; z ]))
       | _ -> i)
   | Let (x, Prim (Extern "%int_div", [ y; z ])), _ -> (
-      match the_int ~target info z with
+      match the_int info z with
       | Some j when not (Targetint.is_zero j) ->
           Let (x, Prim (Extern "%direct_int_div", [ y; z ]))
       | _ -> i)
   | Let (x, Prim (Extern "%int_mod", [ y; z ])), _ -> (
-      match the_int ~target info z with
+      match the_int info z with
       | Some j when not (Targetint.is_zero j) ->
           Let (x, Prim (Extern "%direct_int_mod", [ y; z ]))
       | _ -> i)
@@ -261,7 +261,7 @@ let specialize_instrs ~target info l =
                      | "caml_array_get_addr" ) as prim)
                 , [ y; z ] ) ) ->
             let idx =
-              match the_int ~target info z with
+              match the_int info z with
               | Some idx -> `Cst idx
               | None -> `Var z
             in
@@ -302,7 +302,7 @@ let specialize_instrs ~target info l =
                      | "caml_array_set_addr" ) as prim)
                 , [ y; z; t ] ) ) ->
             let idx =
-              match the_int ~target info z with
+              match the_int info z with
               | Some idx -> `Cst idx
               | None -> `Var z
             in

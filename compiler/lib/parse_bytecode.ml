@@ -403,7 +403,7 @@ end
 module Constants : sig
   val parse : Obj.t -> Code.constant
 
-  val inlined : Code.constant -> bool
+  val inlined : target:[ `JavaScript | `Wasm ] -> Code.constant -> bool
 end = struct
   (* In order to check that two custom objects share the same kind, we
      compare their identifier.  The identifier is currently extracted
@@ -448,16 +448,12 @@ end = struct
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
-        | Some name when same_ident name ident_32 -> (
+        | Some name when same_ident name ident_32 ->
             let i : int32 = Obj.magic x in
-            match Config.target () with
-            | `JavaScript -> Int (Targetint.of_int32_warning_on_overflow i)
-            | `Wasm -> Int32 i)
-        | Some name when same_ident name ident_native -> (
+            Int32 i
+        | Some name when same_ident name ident_native ->
             let i : nativeint = Obj.magic x in
-            match Config.target () with
-            | `JavaScript -> Int (Targetint.of_nativeint_warning_on_overflow i)
-            | `Wasm -> NativeInt (Int32.of_nativeint_warning_on_overflow i))
+            NativeInt (Int32.of_nativeint_warning_on_overflow i)
         | Some name when same_ident name ident_64 -> Int64 (Obj.magic x : int64)
         | Some name ->
             failwith
@@ -473,14 +469,18 @@ end = struct
       let i : int = Obj.magic x in
       Int (Targetint.of_int_warning_on_overflow i)
 
-  let inlined = function
+  let inlined ~target c =
+    match c with
     | String _ | NativeString _ -> false
     | Float _ -> true
     | Float_array _ -> false
     | Int64 _ -> false
     | Tuple _ -> false
     | Int _ -> true
-    | Int32 _ | NativeInt _ -> false
+    | Int32 _ | NativeInt _ -> (
+        match target with
+        | `JavaScript -> true
+        | `Wasm -> false)
 end
 
 let const32 i = Constant (Int (Targetint.of_int32_exn i))
@@ -740,14 +740,15 @@ let get_global state instrs i =
       if debug_parser () then Format.printf "(global access %a)@." Var.print x;
       x, State.set_accu state x, instrs
   | None -> (
-      if i < Array.length g.constants && Constants.inlined g.constants.(i)
+      let target = Config.target () in
+      if i < Array.length g.constants && Constants.inlined ~target g.constants.(i)
       then
         (* Inlined constant *)
         let x, state = State.fresh_var state in
         let cst = g.constants.(i) in
         x, state, Let (x, Constant cst) :: instrs
       else
-        match i < Array.length g.constants, Config.target () with
+        match i < Array.length g.constants, target with
         | true, _ | false, `JavaScript ->
             (* Non-inlined constant, and reference to another compilation
                units in case of separate compilation (JavaScript).
