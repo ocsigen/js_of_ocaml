@@ -339,11 +339,15 @@ function caml_int64_mod(x, y) {
 
 //Provides: caml_int64_of_int32 const
 //Requires: MlInt64
+//Alias: caml_int64_of_int
+//Alias: caml_int64_of_nativeint
 function caml_int64_of_int32(x) {
   return new MlInt64(x & 0xffffff, (x >> 24) & 0xffffff, (x >> 31) & 0xffff);
 }
 
 //Provides: caml_int64_to_int32 const
+//Alias: caml_int64_to_int
+//Alias: caml_int64_to_nativeint
 function caml_int64_to_int32(x) {
   return x.toInt();
 }
