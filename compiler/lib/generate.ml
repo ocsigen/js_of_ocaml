@@ -515,8 +515,7 @@ let rec constant_rec ~ctx x level instrs =
           in
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> targetint i, instrs
-  | Int32 _ | NativeInt _ ->
-      assert false (* Should not be produced when compiling to Javascript *)
+  | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
 
 let constant ~ctx x level =
   let expr, instr = constant_rec ~ctx x level [] in
@@ -1606,7 +1605,8 @@ and translate_instr ctx expr_queue loc instr =
       | 1, _
         when Config.Flag.compact () && ((not (Config.Flag.pretty ())) || not (keep_name x))
         -> enqueue expr_queue x loc e'
-      | 1, Constant (Int _ | Float _) -> enqueue expr_queue x loc e'
+      | 1, Constant (Int _ | Int32 _ | NativeInt _ | Float _) ->
+          enqueue expr_queue x loc e'
       | _ ->
           flush_queue
             expr_queue

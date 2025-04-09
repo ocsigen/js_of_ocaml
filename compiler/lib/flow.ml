@@ -344,6 +344,7 @@ let the_def_of info x =
         (fun x ->
           match info.info_defs.(Var.idx x) with
           | Expr (Constant (Float _ | Int _ | NativeString _) as e) -> Some e
+          | Expr (Constant (Int32 _ | NativeInt _) as e) -> Some e
           | Expr (Constant (String _) as e) when Config.Flag.safe_string () -> Some e
           | Expr e -> if Var.ISet.mem info.info_possibly_mutable x then None else Some e
           | _ -> None)
@@ -370,10 +371,10 @@ let constant_identical ~(target : [ `JavaScript | `Wasm ]) a b =
       false (* Strings are boxed in Wasm and are possibly different objects *)
   | Int32 _, Int32 _, `Wasm ->
       false (* [Int32]s are boxed in Wasm and are possibly different objects *)
-  | Int32 _, Int32 _, `JavaScript -> assert false
+  | Int32 a, Int32 b, `JavaScript -> Int32.equal a b
   | NativeInt _, NativeInt _, `Wasm ->
       false (* [NativeInt]s are boxed in Wasm and are possibly different objects *)
-  | NativeInt _, NativeInt _, `JavaScript -> assert false
+  | NativeInt a, NativeInt b, `JavaScript -> Int32.equal a b
   (* All other values may be distinct objects and thus different by [caml_js_equals]. *)
   | Int64 _, Int64 _, _ -> false
   | Tuple _, Tuple _, _ -> false
@@ -388,10 +389,11 @@ let the_const_of ~target info x =
       get_approx
         info
         (fun x ->
-          match info.info_defs.(Var.idx x) with
-          | Expr (Constant ((Float _ | Int _ | NativeString _) as c)) -> Some c
-          | Expr (Constant (String _ as c)) when Config.Flag.safe_string () -> Some c
-          | Expr (Constant c) ->
+          match info.info_defs.(Var.idx x), target with
+          | Expr (Constant ((Float _ | Int _ | NativeString _) as c)), _ -> Some c
+          | Expr (Constant ((Int32 _ | NativeInt _) as c)), `JavaScript -> Some c
+          | Expr (Constant (String _ as c)), _ when Config.Flag.safe_string () -> Some c
+          | Expr (Constant c), _ ->
               if Var.ISet.mem info.info_possibly_mutable x then None else Some c
           | _ -> None)
         None
@@ -402,10 +404,23 @@ let the_const_of ~target info x =
         x
   | Pc c -> Some c
 
-let the_int ~target info x =
-  match the_const_of ~target info x with
-  | Some (Int i) -> Some i
-  | _ -> None
+let the_int info x =
+  match x with
+  | Pv x ->
+      get_approx
+        info
+        (fun x ->
+          match info.info_defs.(Var.idx x) with
+          | Expr (Constant (Int c)) -> Some c
+          | _ -> None)
+        None
+        (fun u v ->
+          match u, v with
+          | Some i, Some j when Targetint.equal i j -> u
+          | _ -> None)
+        x
+  | Pc (Int c) -> Some c
+  | Pc _ -> None
 
 let the_string_of ~target info x =
   match the_const_of info ~target x with
