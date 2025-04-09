@@ -71,7 +71,7 @@
       (if (i32.eqz (local.get $sz)) (then (return (global.get $empty_array))))
       (array.new $float_array (f64.const 0) (local.get $sz)))
 
-   (func (export "caml_array_of_uniform_array")
+   (func (export "caml_array_of_uniform_array") (export "caml_make_array")
       (param $vinit (ref eq)) (result (ref eq))
       (local $init (ref $block)) (local $res (ref $float_array))
       (local $size i32) (local $i i32)

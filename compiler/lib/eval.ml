@@ -147,7 +147,6 @@ let eval_prim x =
   | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
   | Ult, [ Int i; Int j ] -> bool (Targetint.unsigned_lt i j)
   | Extern name, l -> (
-      let name = Primitive.resolve name in
       match name, l with
       (* int *)
       | "%int_add", _ -> int_binop l Targetint.add
