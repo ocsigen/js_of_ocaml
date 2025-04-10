@@ -249,3 +249,69 @@ let%expect_test "static eval of tags" =
       (globalThis));
     //end
     |}]
+
+let%expect_test "static eval int prims" =
+  let program =
+    compile_and_parse
+      {|
+
+      let lt =
+        let x = if Random.int 3 > 1 then 1 else 2 in
+        x < 5
+
+      let le =
+         let x = if Random.int 3 > 1 then 1 else 2 in
+         x <= 5
+
+      let eq =
+        let x = if Random.int 3 > 1 then 1 else 2 in
+        x = 3
+
+      let neq =
+        let x = if Random.int 3 > 1 then 1 else 2 in
+       x <> 3
+
+      type ult = A | B | C | D
+
+      let ult =
+        let x = if Random.int 3 > 1 then A else D in
+        match x with
+        | A | D -> true
+        | B | C -> false
+
+      let export = [| lt; le; eq; neq; ult |]
+  |}
+  in
+  print_program program;
+  [%expect
+    {|
+    (function(globalThis){
+       "use strict";
+       var runtime = globalThis.jsoo_runtime;
+       function caml_call1(f, a0){
+        return (f.l >= 0 ? f.l : f.l = f.length) === 1
+                ? f(a0)
+                : runtime.caml_call_gen(f, [a0]);
+       }
+       var
+        global_data = runtime.caml_get_global_data(),
+        Stdlib_Random = global_data.Stdlib__Random,
+        x = 1 < caml_call1(Stdlib_Random[5], 3) ? 1 : 2,
+        lt = x < 5 ? 1 : 0,
+        x$0 = 1 < caml_call1(Stdlib_Random[5], 3) ? 1 : 2,
+        le = x$0 <= 5 ? 1 : 0;
+       1 < caml_call1(Stdlib_Random[5], 3);
+       var
+        eq = 0,
+        x$1 = 1 < caml_call1(Stdlib_Random[5], 3) ? 1 : 2,
+        neq = 3 !== x$1 ? 1 : 0,
+        x$2 = 1 < caml_call1(Stdlib_Random[5], 3) ? 0 : 3,
+        ult = 1 < x$2 - 1 >>> 0 ? 1 : 0,
+        export$0 = [0, lt, le, eq, neq, ult],
+        Test = [0, lt, le, eq, neq, ult, export$0];
+       runtime.caml_register_global(1, Test, "Test");
+       return;
+      }
+      (globalThis));
+    //end
+    |}]
