@@ -30,6 +30,7 @@ type options =
   { input_modules : (string * string) list
   ; output_file : string
   ; variables : Preprocess.variables
+  ; allowed_imports : string list option
   ; binaryen_options : binaryen_options
   }
 
@@ -47,6 +48,13 @@ let options =
     let doc = "Specify the Wasm binary output file $(docv)." in
     Arg.(required & pos 0 (some string) None & info [] ~docv:"WASM_FILE" ~doc)
   in
+  let allowed_imports =
+    let doc = "List of modules we expect to import from." in
+    Arg.(
+      value
+      & opt_all (list ~sep:',' string) []
+      & info [ "allowed-imports" ] ~docv:"IMPORT" ~doc)
+  in
   let binaryen_options =
     let doc = "Pass option $(docv) to binaryen tools" in
     Arg.(value & opt_all string [] & info [ "binaryen" ] ~docv:"OPT" ~doc)
@@ -59,9 +67,17 @@ let options =
     let doc = "Pass option $(docv) to $(b,wasm-merge)" in
     Arg.(value & opt_all string [] & info [ "binaryen-merge" ] ~docv:"OPT" ~doc)
   in
-  let build_t input_modules output_file variables common opt merge =
+  let build_t input_modules output_file variables allowed_imports common opt merge =
+    let allowed_imports =
+      if List.is_empty allowed_imports then None else Some (List.concat allowed_imports)
+    in
     `Ok
-      { input_modules; output_file; variables; binaryen_options = { common; opt; merge } }
+      { input_modules
+      ; output_file
+      ; variables
+      ; allowed_imports
+      ; binaryen_options = { common; opt; merge }
+      }
   in
   let t =
     Term.(
@@ -69,6 +85,7 @@ let options =
       $ input_modules
       $ output_file
       $ Preprocess.variable_options
+      $ allowed_imports
       $ binaryen_options
       $ opt_options
       $ merge_options)
@@ -76,13 +93,19 @@ let options =
   Term.ret t
 
 let link
-    { input_modules; output_file; variables; binaryen_options = { common; merge; opt } } =
+    { input_modules
+    ; output_file
+    ; variables
+    ; allowed_imports
+    ; binaryen_options = { common; merge; opt }
+    } =
   let inputs =
     List.map
       ~f:(fun (module_name, file) -> { Wat_preprocess.module_name; file; source = File })
       input_modules
   in
   Runtime.build
+    ~allowed_imports
     ~link_options:(common @ merge)
     ~opt_options:(common @ opt)
     ~variables:(Preprocess.set_variables variables)

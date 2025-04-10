@@ -1,6 +1,6 @@
 open Stdlib
 
-let build ~link_options ~opt_options ~variables ~inputs ~output_file =
+let build ~allowed_imports ~link_options ~opt_options ~variables ~inputs ~output_file =
   Fs.with_intermediate_file (Filename.temp_file "runtime-merged" ".wasm")
   @@ fun merge_file ->
   (Wat_preprocess.with_preprocessed_files ~variables ~inputs
@@ -18,4 +18,20 @@ let build ~link_options ~opt_options ~variables ~inputs ~output_file =
     ~input_file:merge_file
     ~opt_output_sourcemap:None
     ~output_file
-    ()
+    ();
+  let imports = Link.Wasm_binary.read_imports ~file:output_file in
+  Option.iter allowed_imports ~f:(fun allowed_imports ->
+      let missing_imports =
+        List.filter
+          ~f:(fun { Link.Wasm_binary.module_; _ } ->
+            not (List.mem module_ ~set:allowed_imports))
+          imports
+      in
+      if not (List.is_empty missing_imports)
+      then (
+        Format.eprintf "The runtime contains unknown imports:@.";
+        List.iter
+          ~f:(fun { Link.Wasm_binary.module_; name } ->
+            Format.eprintf "  %s %s@." module_ name)
+          missing_imports;
+        exit 2))

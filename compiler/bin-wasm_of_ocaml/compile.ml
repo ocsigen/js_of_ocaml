@@ -116,6 +116,15 @@ let build_runtime ~runtime_file =
         ~link_options:[ "-g" ]
         ~opt_options:[ "-g"; "-O2" ]
         ~variables
+        ~allowed_imports:
+          (Some
+             [ "bindings"
+             ; "Math"
+             ; "js"
+             ; "wasm:js-string"
+             ; "wasm:text-encoder"
+             ; "wasm:text-decoder"
+             ])
         ~inputs
         ~output_file:runtime_file
 
