@@ -120,8 +120,9 @@ function caml_array_set(array, index, newval) {
 //Alias: caml_floatarray_unsafe_set
 //Alias: caml_array_unsafe_set_addr
 //Inline
-function caml_array_unsafe_set(a,i,v) { return a[i + 1] = v}
-
+function caml_array_unsafe_set(a, i, v) {
+  return (a[i + 1] = v);
+}
 
 //Provides: caml_array_get mutable (mutable, const)
 //Requires: caml_array_bound_error
@@ -137,7 +138,9 @@ function caml_array_get(array, index) {
 //Alias: caml_array_unsafe_get_float
 //Alias: caml_floatarray_unsafe_get
 //Inline
-function caml_array_unsafe_get(a,i) { return a[i + 1] }
+function caml_array_unsafe_get(a, i) {
+  return a[i + 1];
+}
 //Provides: caml_array_fill
 function caml_array_fill(array, ofs, len, v) {
   for (var i = 0; i < len; i++) {

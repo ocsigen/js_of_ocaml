@@ -141,8 +141,9 @@ function caml_finish_formatting(f, rawbuffer) {
   return caml_string_of_jsbytes(buffer);
 }
 
-
 //Provides: caml_format_int_special
 //Alias: %caml_format_int_special
 //Inline
-function caml_format_int_special(x) { return "" + x }
+function caml_format_int_special(x) {
+  return "" + x;
+}

@@ -41,7 +41,9 @@ function caml_alloc_dummy_infix() {
 //Provides: caml_alloc_dummy
 //Alias: caml_alloc_dummy_float
 //Inline
-function caml_alloc_dummy(_unit) { return [] }
+function caml_alloc_dummy(_unit) {
+  return [];
+}
 
 //Provides: caml_obj_tag
 //Requires: caml_is_ml_bytes, caml_is_ml_string
@@ -57,7 +59,9 @@ function caml_obj_tag(x) {
 //Provides: caml_obj_tag_direct
 //Alias: %direct_obj_tag
 //Inline
-function caml_obj_tag_direct(b) { return b[0] }
+function caml_obj_tag_direct(b) {
+  return b[0];
+}
 
 //Provides: caml_obj_set_tag (mutable, const)
 //Version: < 5.0

@@ -77,7 +77,7 @@ function caml_dynlink_get_bytecode_sections() {
 //Provides: jsoo_get_runtime_aliases
 //Requires: caml_global_data, caml_failwith
 function jsoo_get_runtime_aliases() {
-  if (caml_global_data.aliases == undefined) {
+  if (caml_global_data.aliases === undefined) {
     caml_failwith("Program not compiled with --toplevel");
   }
   return caml_global_data.aliases;
