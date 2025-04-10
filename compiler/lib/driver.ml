@@ -49,12 +49,12 @@ let deadcode p =
   let p = Code.compact p in
   p
 
-let inline p =
+let inline profile p =
   if Config.Flag.inline () && Config.Flag.deadcode ()
   then (
     let p, live_vars = deadcode' p in
     if debug () then Format.eprintf "Inlining...@.";
-    Inline.f p live_vars)
+    Inline.f ~profile p live_vars)
   else p
 
 let specialize_1 (p, info) =
@@ -153,20 +153,26 @@ let rec loop max name round i (p : 'a) : 'a =
     p')
   else loop max name round (i + 1) p'
 
-let round : 'a -> 'a =
-  print +> tailcall +> (flow +> specialize +> eval +> fst) +> inline +> phi +> deadcode
+let round profile : 'a -> 'a =
+  print
+  +> tailcall
+  +> (flow +> specialize +> eval +> fst)
+  +> inline profile
+  +> phi
+  +> deadcode
 
 (* o1 *)
 
-let o1 = loop 2 "round" round 1 +> (flow +> specialize +> eval +> fst) +> print
+let o1 =
+  loop 2 "round" (round Profile.O1) 1 +> (flow +> specialize +> eval +> fst) +> print
 
 (* o2 *)
 
-let o2 = loop 10 "round" round 1 +> print
+let o2 = loop 10 "round" (round Profile.O2) 1 +> print
 
 (* o3 *)
 
-let o3 = loop 30 "round" round 1 +> print
+let o3 = loop 30 "round" (round Profile.O3) 1 +> print
 
 let generate
     ~exported_runtime
