@@ -14,7 +14,8 @@ all: _perf graphsnopr graphspr graphseff _noperf
 # see https://github.com/ocurrent/current-bench
 .PHONY: bench microbenchmarks
 bench:
-	opam install -y wasm_of_ocaml-compiler
+	opam pin -yn --with-version=dev ..
+	opam install -y wasm_of_ocaml-compiler js_of_ocaml-ppx gen_js_api brr
 	$(MAKE) microbenchmarks
 	$(MAKE) -C benchmark-fiat-crypto bench
 	$(MAKE) -C benchmark-ocamlc bench

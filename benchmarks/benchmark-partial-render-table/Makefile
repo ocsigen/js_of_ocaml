@@ -5,8 +5,6 @@ export NAME=Partial Render Table
 SHELL=/bin/bash -o pipefail
 
 bench:
-	cd ../.. && opam exec -- dune exec tools/ci_setup.exe ../janestreet .
-	opam install ppxlib.0.35.0 # temporary workaround
 	dune build --root ../../../janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.wasm.js lib/bonsai_web_components/partial_render_table/bench/bin/main.bc.js
 	cp -r ../../../janestreet/_build/default/lib/bonsai_web_components/partial_render_table/bench/bin/main.bc* .
 	$(MAKE) perform COMPILER=js_of_ocaml SCRIPT=main.bc.js KIND=js
