@@ -295,18 +295,18 @@ let%expect_test "static eval int prims" =
        }
        var
         global_data = runtime.caml_get_global_data(),
-        Stdlib_Random = global_data.Stdlib__Random,
-        x = 1 < caml_call1(Stdlib_Random[5], 3) ? 1 : 2,
-        lt = x < 5 ? 1 : 0,
-        x$0 = 1 < caml_call1(Stdlib_Random[5], 3) ? 1 : 2,
-        le = x$0 <= 5 ? 1 : 0;
+        Stdlib_Random = global_data.Stdlib__Random;
+       1 < caml_call1(Stdlib_Random[5], 3);
+       var lt = 1;
+       1 < caml_call1(Stdlib_Random[5], 3);
+       var le = 1;
+       1 < caml_call1(Stdlib_Random[5], 3);
+       var eq = 0;
+       1 < caml_call1(Stdlib_Random[5], 3);
+       var neq = 1;
        1 < caml_call1(Stdlib_Random[5], 3);
        var
-        eq = 0,
-        x$1 = 1 < caml_call1(Stdlib_Random[5], 3) ? 1 : 2,
-        neq = 3 !== x$1 ? 1 : 0,
-        x$2 = 1 < caml_call1(Stdlib_Random[5], 3) ? 0 : 3,
-        ult = 1 < x$2 - 1 >>> 0 ? 1 : 0,
+        ult = 1,
         export$0 = [0, lt, le, eq, neq, ult],
         Test = [0, lt, le, eq, neq, ult, export$0];
        runtime.caml_register_global(1, Test, "Test");
