@@ -14,6 +14,9 @@ all: _perf graphsnopr graphspr graphseff _noperf
 # see https://github.com/ocurrent/current-bench
 .PHONY: bench microbenchmarks
 bench:
+	@date -u +"%FT%TZ - Installing dependencies"
+	opam pin -yn --with-version=dev ..
+	opam install -y wasm_of_ocaml-compiler js_of_ocaml-ppx gen_js_api brr
 	$(MAKE) microbenchmarks
 	$(MAKE) -C benchmark-fiat-crypto bench
 	$(MAKE) -C benchmark-ocamlc bench
@@ -21,12 +24,15 @@ bench:
 	$(MAKE) -C benchmark-camlboy bench
 
 microbenchmarks:
+	@date -u +"%FT%TZ - Microbenchmarks: starting"
 	make _noprecomp
+	@date -u +"%FT%TZ - Microbenchmarks: compiler"
 	$(RUN) ./report-wasm-cb.config ./report-jsoo-cb.config
 	$(REPORT) -format current-bench -config report-wasm-cb.config \
 	  -ylabel "Wasm_of_ocaml" | sh utils/aggregate.sh wasm
 	$(REPORT) -format current-bench -config report-jsoo-cb.config \
 	  -ylabel "Js_of_ocaml" | sh utils/aggregate.sh js
+	@date -u +"%FT%TZ - Microbenchmarks: done"
 
 graphsnopr: _noprecomp $(GRAPHSNOPR)
 
