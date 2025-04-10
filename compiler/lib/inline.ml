@@ -23,20 +23,29 @@ open Code
 
 (*
 JavaScript:
-- Don't inline if Config.Flag.debugger and contains a debugger statement
-  (either inlinee or inliner)
 - Don't inline function containing closures (except at toplevel)
 
 Always:
+- Don't inline if Config.Flag.debugger and contains a debugger statement
+  (either inlinee or inliner)
 - Don't inline loops into large functions
 
 Wasm:
-- Don't inline loop
+- Don't inline loops (no tear-up)
 
-Try to detect closure applications and inline them aggressively
+Try to detect functor applications and inline them aggressively
+==> straight line body, returning a block
+==> body is mostly field accesses / closures (but not too large) / constants
+
+Small functions:
+- there is a parameter which is a function used once and called once
+  in the body
+- known array as input, used once, accessed in function (???)
+
+Don't attempt to inline a not yet visited function
 *)
 
-let straighline_code { blocks; _ } pc =
+let straightline_code { blocks; _ } pc =
   let rec follow visited pc =
     if Addr.Set.mem pc visited
     then None
@@ -63,25 +72,127 @@ let contains_loop { blocks; _ } pc =
   in
   snd (traverse pc (Addr.Map.empty, false))
 
-let stats p _live_vars _uses =
+let sum f { blocks; _ } pc =
+  Code.traverse
+    { fold = fold_children }
+    (fun pc acc -> f (Addr.Map.find pc blocks) + acc)
+    pc
+    blocks
+    0
+
+let rec block_size ~recurse blocks { branch; body; _ } =
+  List.fold_left
+    ~f:(fun n i ->
+      match i with
+      | Event _ -> n
+      | Let (_, Closure (_, (pc, _))) ->
+          n + 1 + if recurse then size ~recurse blocks pc else 0
+      | _ -> n + 1)
+    ~init:0
+    body
+  +
+  match branch with
+  | Cond _ -> 2
+  | Switch (_, a1) -> Array.length a1
+  | _ -> 0
+
+and size ?(recurse = true) blocks pc = sum (block_size ~recurse blocks) blocks pc
+
+let field_accesses =
+  sum
+  @@ fun { body; _ } ->
+  List.fold_left
+    ~f:(fun n i ->
+      match i with
+      | Let (_, Field _) -> n + 1
+      | _ -> n)
+    ~init:0
+    body
+
+let count_closures =
+  sum
+  @@ fun { body; _ } ->
+  List.fold_left
+    ~f:(fun n i ->
+      match i with
+      | Let (_, Closure _) -> n + 1
+      | _ -> n)
+    ~init:0
+    body
+
+let contains_closure { blocks; _ } pc =
+  Code.traverse
+    { fold = fold_children }
+    (fun pc acc ->
+      acc
+      ||
+      let block = Addr.Map.find pc blocks in
+      List.exists
+        ~f:(fun i ->
+          match i with
+          | Let (_, Closure _) -> true
+          | _ -> false)
+        block.body)
+    pc
+    blocks
+    false
+
+let stats p live_vars defs =
+  Format.eprintf "==================@.";
   ignore
     (Code.fold_closures_in_reverse_postorder
        p
-       (fun name_opt _params (pc, _) acc ->
-         (match name_opt with
-         | None -> ()
-         | Some f ->
-             Format.eprintf
-               "%a%s: straight:%b loop:%b"
-               Code.Var.print
-               f
-               (match Code.Var.get_name f with
-               | Some s -> "_" ^ s
-               | None -> "")
-               (Option.is_some (straighline_code p pc))
-               (contains_loop p pc));
-         acc)
-       ())
+       (fun _name_opt _ (pc, _) env ->
+         Code.traverse
+           { fold = Code.fold_children }
+           (fun pc env ->
+             let block = Addr.Map.find pc p.blocks in
+             List.fold_left
+               ~f:(fun env i ->
+                 match i with
+                 | Let (_, Apply { f; _ }) when not (Var.Set.mem f env) ->
+                     (match defs.(Var.idx f) with
+                     | [ Deadcode.Expr (Closure (_, (pc, _))) ] ->
+                         let sz = size p pc in
+                         let ret = straightline_code p pc in
+                         let return_block =
+                           match ret with
+                           | None -> false
+                           | Some x -> (
+                               match defs.(Var.idx x) with
+                               | [ Expr (Block _) ] -> true
+                               | _ -> false)
+                         in
+                         let sz' = size ~recurse:false p pc in
+                         Format.eprintf
+                           "%a%s: uses:%d straight:%b block:%b loop:%b clos:%b \
+                            size:%d/%d closures:%d fields:%.0f(%.0f)@."
+                           Code.Var.print
+                           f
+                           (match Code.Var.get_name f with
+                           | Some s -> "_" ^ s
+                           | None -> "")
+                           live_vars.(Var.idx f)
+                           (Option.is_some ret)
+                           return_block
+                           (contains_loop p pc)
+                           (contains_closure p pc)
+                           sz
+                           sz'
+                           (count_closures p pc)
+                           (float (field_accesses p pc) /. float sz *. 100.)
+                           (float (field_accesses p pc + count_closures p pc)
+                           /. float sz'
+                           *. 100.)
+                     | _ -> ());
+                     Var.Set.add f env
+                 | _ -> env)
+               ~init:env
+               block.body)
+           pc
+           p.blocks
+           env)
+       Var.Set.empty)
 
 (****)
 
@@ -392,8 +503,8 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
 
 let times = Debug.find "times"
 
-let f p live_vars uses =
-  stats p live_vars uses;
+let f p live_vars defs =
+  stats p live_vars defs;
   let first_class_primitives =
     match Config.target (), Config.effects () with
     | `JavaScript, `Disabled -> true
