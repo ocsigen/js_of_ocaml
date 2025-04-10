@@ -326,7 +326,8 @@ let current_bench_output
   let json =
     `Assoc [ "name", `String suite_name; "results", `List (summary :: results) ]
   in
-  Yojson.Basic.to_channel ch json
+  Yojson.Basic.to_channel ch json;
+  output_char ch '\n'
 
 let output ~format conf =
   let output_function, close =
