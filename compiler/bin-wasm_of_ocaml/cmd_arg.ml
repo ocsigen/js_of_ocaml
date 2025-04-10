@@ -44,7 +44,11 @@ let normalize_effects (effects : [ `Cps | `Jspi ] option) common : Config.effect
   | None ->
       (* For backward compatibility, consider that [--enable effects] alone means
         [--effects cps] *)
-      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable then `Cps else `Jspi
+      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
+      then `Cps
+      else if List.mem "wasi" ~set:common.Jsoo_cmdline.Arg.optim.enable
+      then `Disabled
+      else `Jspi
   | Some ((`Cps | `Jspi) as e) -> e
 
 type t =

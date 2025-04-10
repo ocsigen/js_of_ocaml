@@ -17,7 +17,8 @@ let test_size =
 
 let num_domains = 1 lsl test_size
 
-let max_data_depth = 500000
+let max_data_depth = 10000
+(* Reduced since we use a quadratic algorithm for sharing in the WASI runtime *)
 
 type t = A | B of int | C of float | D of string | E of char
        | F of t | G of t * t | H of int * t | I of t * float | J
