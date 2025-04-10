@@ -93,6 +93,7 @@ let%expect_test "Omit unused fields" =
     compile_and_parse
       {|
       let f b x =
+        for i = 0 to 2 do prerr_endline "X" done; (* Prevent inlining *)
         let t = if b then (1, 2, x) else (3, x, 4) in
         let (u, _, v) = t in
         (u, v)
