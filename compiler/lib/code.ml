@@ -742,6 +742,10 @@ let rec preorder_traverse' { fold } f pc visited blocks acc =
 let preorder_traverse fold f pc blocks acc =
   snd (preorder_traverse' fold f pc Addr.Set.empty blocks acc)
 
+let reverse_postorder_traverse fold f pc blocks acc =
+  let l = traverse fold (fun pc acc -> pc :: acc) pc blocks [] in
+  List.fold_left ~f:(fun acc pc -> f pc acc) ~init:acc l
+
 let fold_closures_innermost_first { start; blocks; _ } f accu =
   let rec visit blocks pc f accu =
     traverse
@@ -779,6 +783,25 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
   in
   let accu = f None [] (start, []) accu in
   visit blocks start f accu
+
+let fold_closures_in_reverse_postorder { start; blocks; _ } f accu =
+  let rec visit blocks pc f accu =
+    reverse_postorder_traverse
+      { fold = fold_children }
+      (fun pc accu ->
+        let block = Addr.Map.find pc blocks in
+        List.fold_left block.body ~init:accu ~f:(fun accu i ->
+            match i with
+            | Let (x, Closure (params, cont)) ->
+                let accu = visit blocks (fst cont) f accu in
+                f (Some x) params cont accu
+            | _ -> accu))
+      pc
+      blocks
+      accu
+  in
+  let accu = visit blocks start f accu in
+  f None [] (start, []) accu
 
 let eq p1 p2 =
   p1.start = p2.start

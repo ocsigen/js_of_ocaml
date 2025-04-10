@@ -21,6 +21,70 @@
 open! Stdlib
 open Code
 
+(*
+JavaScript:
+- Don't inline if Config.Flag.debugger and contains a debugger statement
+  (either inlinee or inliner)
+- Don't inline function containing closures (except at toplevel)
+
+Always:
+- Don't inline loops into large functions
+
+Wasm:
+- Don't inline loop
+
+Try to detect closure applications and inline them aggressively
+*)
+
+let straighline_code { blocks; _ } pc =
+  let rec follow visited pc =
+    if Addr.Set.mem pc visited
+    then None
+    else
+      let block = Addr.Map.find pc blocks in
+      match block.branch with
+      | Return x -> Some x
+      | Branch (pc', _) -> follow (Addr.Set.add pc visited) pc'
+      | Raise _ | Stop | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> None
+  in
+  follow Addr.Set.empty pc
+
+let contains_loop { blocks; _ } pc =
+  let rec traverse pc ((visited, loop) as accu) =
+    if loop
+    then accu
+    else if Addr.Map.mem pc visited
+    then visited, Addr.Map.find pc visited
+    else
+      let visited, loop =
+        Code.fold_children blocks pc traverse (Addr.Map.add pc false visited, false)
+      in
+      Addr.Map.add pc true visited, loop
+  in
+  snd (traverse pc (Addr.Map.empty, false))
+
+let stats p _live_vars _uses =
+  ignore
+    (Code.fold_closures_in_reverse_postorder
+       p
+       (fun name_opt _params (pc, _) acc ->
+         (match name_opt with
+         | None -> ()
+         | Some f ->
+             Format.eprintf
+               "%a%s: straight:%b loop:%b"
+               Code.Var.print
+               f
+               (match Code.Var.get_name f with
+               | Some s -> "_" ^ s
+               | None -> "")
+               (Option.is_some (straighline_code p pc))
+               (contains_loop p pc));
+         acc)
+       ())
+
+(****)
+
 type prop =
   { size : int
   ; optimizable : bool
@@ -328,7 +392,8 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
 
 let times = Debug.find "times"
 
-let f p live_vars =
+let f p live_vars uses =
+  stats p live_vars uses;
   let first_class_primitives =
     match Config.target (), Config.effects () with
     | `JavaScript, `Disabled -> true

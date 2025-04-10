@@ -243,4 +243,4 @@ let f ({ blocks; _ } as p : Code.program) =
       Addr.Map.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
-  { p with blocks }, st.live
+  { p with blocks }, (st.live, st.defs)
