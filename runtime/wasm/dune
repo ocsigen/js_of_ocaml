@@ -17,6 +17,7 @@
    --binaryen=-g
    --binaryen-opt=-O3
    --set=effects=jspi
+   --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    %{read-lines:args})))
 
@@ -31,6 +32,7 @@
    --binaryen=-g
    --binaryen-opt=-O3
    --set=effects=cps
+   --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    %{read-lines:args})))
 
