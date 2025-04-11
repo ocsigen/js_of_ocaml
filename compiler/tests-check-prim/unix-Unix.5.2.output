@@ -206,6 +206,7 @@ caml_sys_const_naked_pointers_checked
 
 From +toplevel.js:
 caml_get_section_table
+jsoo_get_runtime_aliases
 jsoo_toplevel_init_compile
 jsoo_toplevel_init_reloc
 

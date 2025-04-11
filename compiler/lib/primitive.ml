@@ -19,9 +19,9 @@
  *)
 open! Stdlib
 
-let aliases = Hashtbl.create 17
+let aliases_ = Hashtbl.create 17
 
-let rec resolve nm = try resolve (Hashtbl.find aliases nm) with Not_found -> nm
+let rec resolve nm = try resolve (Hashtbl.find aliases_ nm) with Not_found -> nm
 
 (****)
 
@@ -48,6 +48,7 @@ type t =
   | `Provides of string * kind * kind_arg list option
   | `Version of ((int -> int -> bool) * string) list
   | `Weakdef
+  | `Inline
   | `Always
   | `Alias of string
   | `Deprecated of string
@@ -109,7 +110,9 @@ let register p k kargs arity =
 let alias nm nm' =
   add_external nm';
   add_external nm;
-  Hashtbl.replace aliases nm nm'
+  Hashtbl.replace aliases_ nm nm'
+
+let aliases () = Hashtbl.to_seq aliases_ |> List.of_seq
 
 let named_values = ref StringSet.empty
 
@@ -121,5 +124,5 @@ let reset () =
   Hashtbl.clear kinds;
   Hashtbl.clear kind_args_tbl;
   Hashtbl.clear arities;
-  Hashtbl.clear aliases;
+  Hashtbl.clear aliases_;
   named_values := StringSet.empty

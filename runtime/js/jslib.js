@@ -86,6 +86,7 @@ var caml_callback = caml_call_gen;
 //If: !doubletranslate
 //Requires: caml_stack_depth, caml_call_gen, caml_wrap_exception
 //Requires: caml_current_stack
+//Alias: caml_cps_trampoline
 function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;

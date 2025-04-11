@@ -18,6 +18,8 @@
 //Provides: caml_format_int const (const, const)
 //Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
+//Alias: caml_int32_format
+//Alias: caml_nativeint_format
 function caml_format_int(fmt, i) {
   if (caml_jsbytes_of_string(fmt) === "%d")
     return caml_string_of_jsbytes("" + i);
@@ -97,6 +99,8 @@ function caml_parse_digit(c) {
 //Provides: caml_int_of_string (const)
 //Requires: caml_ml_string_length, caml_string_unsafe_get
 //Requires: caml_parse_sign_and_base, caml_parse_digit, caml_failwith
+//Alias: caml_int32_of_string
+//Alias: caml_nativeint_of_string
 function caml_int_of_string(s) {
   var r = caml_parse_sign_and_base(s);
   var i = r[0],
@@ -129,12 +133,120 @@ function caml_int_of_string(s) {
 }
 
 //Provides: caml_mul const
+//Alias: caml_int32_mul
+//Alias: caml_nativeint_mul
+//Alias: %int_mul
 function caml_mul(a, b) {
   return Math.imul(a, b);
 }
 
+//Provides: caml_add const
+//Alias: %int_add
+//Alias: caml_int32_add
+//Alias: caml_nativeint_add
+//Inline
+function caml_add(a, b) {
+  return (a + b) | 0;
+}
+
+//Provides: caml_sub const
+//Alias: %int_sub
+//Alias: caml_int32_sub
+//Alias: caml_nativeint_sub
+//Inline
+function caml_sub(a, b) {
+  return (a - b) | 0;
+}
+
+//Provides: caml_mul_direct const
+//Alias: %direct_int_mul
+//Inline
+function caml_mul_direct(a, b) {
+  return (a * b) | 0;
+}
+
+//Provides: caml_div_direct const
+//Alias: %direct_int_div
+//Inline
+function caml_div_direct(a, b) {
+  return (a / b) | 0;
+}
+
+//Provides: caml_mod_direct const
+//Alias: %direct_int_mod
+//Inline
+function caml_mod_direct(a, b) {
+  return (a % b) | 0;
+}
+
+//Provides: caml_int_and const
+//Alias: %int_and
+//Alias: caml_int32_and
+//Alias: caml_nativeint_and
+//Inline
+function caml_int_and(a, b) {
+  return a & b;
+}
+
+//Provides: caml_int_or const
+//Alias: %int_or
+//Alias: caml_int32_or
+//Alias: caml_nativeint_or
+//Inline
+function caml_int_or(a, b) {
+  return a | b;
+}
+
+//Provides: caml_int_xor const
+//Alias: %int_xor
+//Alias: caml_int32_xor
+//Alias: caml_nativeint_xor
+//Inline
+function caml_int_xor(a, b) {
+  return a ^ b;
+}
+
+//Provides: caml_int_shift_left const
+//Alias: %int_lsl
+//Alias: caml_int32_shift_left
+//Alias: caml_nativeint_shift_left
+//Inline
+function caml_int_shift_left(a, i) {
+  return a << i;
+}
+
+//Provides: caml_int_shift_right_unsigned const
+//Alias: %int_lsr
+//Alias: caml_int32_shift_right_unsigned
+//Alias: caml_nativeint_shift_right_unsigned
+//Inline
+function caml_int_shift_right_unsigned(a, i) {
+  return (a >>> i) | 0;
+}
+
+//Provides: caml_int_shift_right const
+//Alias: %int_asr
+//Alias: caml_int32_shift_right
+//Alias: caml_nativeint_shift_right
+//Inline
+function caml_int_shift_right(a, i) {
+  return a >> i;
+}
+
+//Provides: caml_int_neg const
+//Alias: %int_neg
+//Alias: caml_int32_neg
+//Alias: caml_nativeint_neg
+//Inline
+function caml_int_neg(a) {
+  return -a | 0;
+}
+
 //Provides: caml_div
 //Requires: caml_raise_zero_divide
+//Alias: caml_int32_div
+//Alias: caml_nativeint_div
+//Alias: %int_div
 function caml_div(x, y) {
   if (y === 0) caml_raise_zero_divide();
   return (x / y) | 0;
@@ -142,6 +254,9 @@ function caml_div(x, y) {
 
 //Provides: caml_mod
 //Requires: caml_raise_zero_divide
+//Alias: caml_int32_mod
+//Alias: caml_nativeint_mod
+//Alias: %int_mod
 function caml_mod(x, y) {
   if (y === 0) caml_raise_zero_divide();
   return x % y;
@@ -152,6 +267,7 @@ function caml_bswap16(x) {
   return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8);
 }
 //Provides: caml_int32_bswap
+//Alias: caml_nativeint_bswap
 function caml_int32_bswap(x) {
   return (
     ((x & 0x000000ff) << 24) |

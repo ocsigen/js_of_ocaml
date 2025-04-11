@@ -106,19 +106,41 @@ function caml_uniform_array_blit(a1, i1, a2, i2, len) {
 ///////////// Pervasive
 //Provides: caml_array_set (mutable, const, mutable)
 //Requires: caml_array_bound_error
+//Alias: caml_array_set_float
+//Alias: caml_floatarray_set
+//Alias: caml_array_set_addr
 function caml_array_set(array, index, newval) {
   if (index < 0 || index >= array.length - 1) caml_array_bound_error();
   array[index + 1] = newval;
   return 0;
 }
 
+//Provides: caml_array_unsafe_set
+//Alias: caml_array_unsafe_set_float
+//Alias: caml_floatarray_unsafe_set
+//Alias: caml_array_unsafe_set_addr
+//Inline
+function caml_array_unsafe_set(a, i, v) {
+  return (a[i + 1] = v);
+}
+
 //Provides: caml_array_get mutable (mutable, const)
 //Requires: caml_array_bound_error
+//Alias: caml_array_get_float
+//Alias: caml_floatarray_get
+//Alias: caml_array_get_addr
 function caml_array_get(array, index) {
   if (index < 0 || index >= array.length - 1) caml_array_bound_error();
   return array[index + 1];
 }
 
+//Provides: caml_array_unsafe_get mutable (mutable, const)
+//Alias: caml_array_unsafe_get_float
+//Alias: caml_floatarray_unsafe_get
+//Inline
+function caml_array_unsafe_get(a, i) {
+  return a[i + 1];
+}
 //Provides: caml_array_fill
 function caml_array_fill(array, ofs, len, v) {
   for (var i = 0; i < len; i++) {
@@ -150,6 +172,8 @@ function caml_uniform_array_fill(array, ofs, len, v) {
 
 //Provides: caml_check_bound (mutable, const)
 //Requires: caml_array_bound_error
+//Alias: caml_check_bound_gen
+//Alias: caml_check_bound_float
 function caml_check_bound(array, index) {
   if (index >>> 0 >= array.length - 1) caml_array_bound_error();
   return array;

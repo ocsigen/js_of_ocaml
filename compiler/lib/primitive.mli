@@ -46,6 +46,7 @@ type t =
   | `Provides of string * kind * kind_arg list option
   | `Version of ((int -> int -> bool) * string) list
   | `Weakdef
+  | `Inline
   | `Always
   | `Alias of string
   | `Deprecated of string
@@ -63,6 +64,8 @@ val arity : string -> int
 val has_arity : string -> int -> bool
 
 val alias : string -> string -> unit
+
+val aliases : unit -> (string * string) list
 
 val resolve : string -> string
 

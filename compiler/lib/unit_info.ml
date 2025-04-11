@@ -23,6 +23,7 @@ type t =
   { provides : StringSet.t
   ; requires : StringSet.t
   ; primitives : string list
+  ; aliases : (string * string) list
   ; force_link : bool
   ; effects_without_cps : bool
   }
@@ -30,14 +31,16 @@ type t =
 let empty =
   { provides = StringSet.empty
   ; requires = StringSet.empty
+  ; aliases = []
   ; primitives = []
   ; force_link = false
   ; effects_without_cps = false
   }
 
-let of_primitives l =
+let of_primitives ~aliases l =
   { provides = StringSet.empty
   ; requires = StringSet.empty
+  ; aliases
   ; primitives = l
   ; force_link = true
   ; effects_without_cps = false
@@ -58,16 +61,18 @@ let of_cmo (cmo : Cmo_format.compilation_unit) =
          | _ -> false)
   in
   let force_link = Cmo_format.force_link cmo in
-  { provides; requires; primitives = []; force_link; effects_without_cps }
+  { provides; requires; aliases = []; primitives = []; force_link; effects_without_cps }
 
 let union t1 t2 =
   let provides = StringSet.union t1.provides t2.provides in
   let requires = StringSet.union t1.requires t2.requires in
   let requires = StringSet.diff requires provides in
   let primitives = t1.primitives @ t2.primitives in
+  let aliases = t1.aliases @ t2.aliases in
   { provides
   ; requires
   ; primitives
+  ; aliases
   ; force_link = t1.force_link || t2.force_link
   ; effects_without_cps = t1.effects_without_cps || t2.effects_without_cps
   }
@@ -82,6 +87,15 @@ let to_string t =
   ; (if List.equal ~eq:String.equal empty.primitives t.primitives
      then []
      else [ prefix; "Primitives:"; String.concat ~sep:", " t.primitives ])
+  ; (if List.is_empty t.aliases
+     then []
+     else
+       [ prefix
+       ; "Aliases:"
+       ; String.concat
+           ~sep:", "
+           (List.map t.aliases ~f:(fun (a, b) -> String.concat ~sep:"=" [ a; b ]))
+       ])
   ; (if Bool.equal empty.force_link t.force_link
      then []
      else [ prefix; "Force_link:"; string_of_bool t.force_link ])
@@ -123,6 +137,15 @@ let parse acc s =
             }
       | Some ("Primitives", primitives) ->
           Some { acc with primitives = acc.primitives @ parse_stringlist primitives }
+      | Some ("Aliases", aliases) ->
+          let x =
+            parse_stringlist aliases
+            |> List.map ~f:(fun s ->
+                   match String.lsplit2 s ~on:'=' with
+                   | None -> assert false
+                   | Some (a, b) -> a, b)
+          in
+          Some { acc with aliases = acc.aliases @ x }
       | Some ("Force_link", flink) ->
           Some
             { acc with force_link = bool_of_string (String.trim flink) || acc.force_link }

@@ -26,15 +26,9 @@ let rec constant_of_const c : Code.constant =
   | Const_base (Const_char c) -> Int (Targetint.of_int_exn (Char.code c))
   | Const_base (Const_string (s, _, _)) -> String s
   | Const_base (Const_float s) -> Float (float_of_string s)
-  | Const_base (Const_int32 i) -> (
-      match Config.target () with
-      | `JavaScript -> Int (Targetint.of_int32_warning_on_overflow i)
-      | `Wasm -> Int32 i)
+  | Const_base (Const_int32 i) -> Int32 i
   | Const_base (Const_int64 i) -> Int64 i
-  | Const_base (Const_nativeint i) -> (
-      match Config.target () with
-      | `JavaScript -> Int (Targetint.of_nativeint_warning_on_overflow i)
-      | `Wasm -> NativeInt (Int32.of_nativeint_warning_on_overflow i))
+  | Const_base (Const_nativeint i) -> NativeInt (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
       let l = List.map ~f:(fun f -> float_of_string f) sl in

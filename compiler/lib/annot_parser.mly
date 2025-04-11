@@ -17,9 +17,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-%token TProvides TRequires TVersion TWeakdef TIf TAlways TAlias
+%token TProvides TRequires TVersion TWeakdef TInline TIf TAlways TAlias
 %token TA_Pure TA_Const TA_Mutable TA_Mutator TA_Shallow TA_Object_literal
-%token<string> TIdent TVNum
+%token<string> TIdent TIdent_percent TVNum
 %token TComma TColon EOF EOL LE LT GE GT EQ LPARENT RPARENT
 %token<string> TOTHER
 %token<string> TDeprecated
@@ -40,9 +40,11 @@ annot:
   | TVersion TColon l=separated_nonempty_list(TComma,version) endline
     { `Version (l) }
   | TWeakdef endline { `Weakdef   }
+  | TInline endline { `Inline   }
   | TAlways endline { `Always   }
   | TDeprecated endline { `Deprecated $1 }
   | TAlias TColon name=TIdent endline { `Alias (name) }
+  | TAlias TColon name=TIdent_percent endline { `Alias (name) }
   | TIf TColon name=TIdent endline { `If (name) }
   | TIf TColon TBang name=TIdent endline { `Ifnot (name) }
 prim_annot:

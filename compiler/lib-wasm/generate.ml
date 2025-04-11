@@ -663,7 +663,6 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal l
             | Extern name, l -> (
-                let name = Primitive.resolve name in
                 try
                   let typ = Hashtbl.find specialized_primitives name in
                   let* f = register_import ~name (Fun (specialized_func_type typ)) in
@@ -1195,14 +1194,7 @@ module Generate (Target : Target_sig.S) = struct
     List.rev_append context.other_fields (imports @ constant_data)
 end
 
-let init () =
-  let l =
-    [ "caml_callback", "caml_trampoline"
-    ; "caml_make_array", "caml_array_of_uniform_array"
-    ]
-  in
-  Primitive.register "caml_array_of_uniform_array" `Mutable None None;
-  List.iter ~f:(fun (nm, nm') -> Primitive.alias nm nm') l
+let init () = ()
 
 (* Make sure we can use [br_table] for switches *)
 let fix_switch_branches p =

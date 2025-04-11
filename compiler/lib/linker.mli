@@ -57,6 +57,8 @@ type output =
 
 val list_all : ?from:string list -> unit -> StringSet.t
 
+val list_all_with_aliases : ?from:string list -> unit -> StringSet.t StringMap.t
+
 val init : ?from:string list -> unit -> state
 
 val resolve_deps : ?check_missing:bool -> state -> StringSet.t -> state * StringSet.t
@@ -68,5 +70,7 @@ val all : state -> string list
 val missing : state -> string list
 
 val origin : name:string -> string option
+
+val inline : name:string -> Javascript.expression option
 
 val deprecated : name:string -> bool
