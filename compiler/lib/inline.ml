@@ -26,9 +26,7 @@ JavaScript:
 - Don't inline function containing closures (except at toplevel)
 
 Always:
-- Don't inline if Config.Flag.debugger and contains a debugger statement
-  (either inlinee or inliner)
-- Don't inline loops into large functions
+- Don't inline loops at toplevel
 
 Wasm:
 - Don't inline loops (no tear-up)
@@ -137,6 +135,12 @@ let contains_closure { blocks; _ } pc =
     blocks
     false
 
+(*
+type t = {
+ 
+}
+*)
+
 let stats p live_vars defs =
   Format.eprintf "==================@.";
   ignore
@@ -147,6 +151,17 @@ let stats p live_vars defs =
            { fold = Code.fold_children }
            (fun pc env ->
              let block = Addr.Map.find pc p.blocks in
+             Format.eprintf
+               "ZZZ %b@."
+               (List.exists
+                  ~f:(fun i ->
+                    match i with
+                    | Let (_, Apply { f; _ }) -> (
+                        match defs.(Var.idx f) with
+                        | [ Deadcode.Expr (Closure _) ] -> true
+                        | _ -> false)
+                    | _ -> false)
+                  block.body);
              List.fold_left
                ~f:(fun env i ->
                  match i with
@@ -193,6 +208,49 @@ let stats p live_vars defs =
            p.blocks
            env)
        Var.Set.empty)
+
+(****)
+
+let rewrite_block pc' pc blocks =
+  let block = Addr.Map.find pc blocks in
+  let block =
+    match block.branch, pc' with
+    | Return y, Some pc' -> { block with branch = Branch (pc', [ y ]) }
+    | _ -> block
+  in
+  Addr.Map.add pc block blocks
+
+let rewrite_closure blocks cont_pc clos_pc =
+  Code.traverse
+    { fold = Code.fold_children_skip_try_body }
+    (rewrite_block cont_pc)
+    clos_pc
+    blocks
+    blocks
+
+let _inline_function p rem branch x params clos_cont args =
+  let blocks, cont_pc, free_pc =
+    match rem, branch with
+    | [], Return y when Var.compare x y = 0 ->
+        (* We do not need a continuation block for tail calls *)
+        p.blocks, None, p.free_pc
+    | _ ->
+        let fresh_addr = p.free_pc in
+        let free_pc = fresh_addr + 1 in
+        ( Addr.Map.add fresh_addr { params = [ x ]; body = rem; branch } p.blocks
+        , Some fresh_addr
+        , free_pc )
+  in
+  let blocks = rewrite_closure blocks cont_pc (fst clos_cont) in
+  (* We do not really need this intermediate block.
+                 It just avoids the need to find which function
+                 parameters are used in the function body. *)
+  let fresh_addr = free_pc in
+  let free_pc = fresh_addr + 1 in
+  let blocks =
+    Addr.Map.add fresh_addr { params; body = []; branch = Branch clos_cont } blocks
+  in
+  [], (Branch (fresh_addr, args), { p with blocks; free_pc })
 
 (****)
 
@@ -318,25 +376,6 @@ let get_closures { blocks; _ } =
           | _ -> closures))
     blocks
     Var.Map.empty
-
-(****)
-
-let rewrite_block pc' pc blocks =
-  let block = Addr.Map.find pc blocks in
-  let block =
-    match block.branch, pc' with
-    | Return y, Some pc' -> { block with branch = Branch (pc', [ y ]) }
-    | _ -> block
-  in
-  Addr.Map.add pc block blocks
-
-let rewrite_closure blocks cont_pc clos_pc =
-  Code.traverse
-    { fold = Code.fold_children_skip_try_body }
-    (rewrite_block cont_pc)
-    clos_pc
-    blocks
-    blocks
 
 (****)
 
