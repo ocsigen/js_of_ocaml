@@ -306,12 +306,20 @@ let remove_nops l = List.filter ~f:(fun i -> not (Poly.equal i Nop)) l
 
 let float64 _ f =
   match classify_float f with
-  | FP_normal | FP_subnormal | FP_zero | FP_nan -> Printf.sprintf "%h" f
+  | FP_normal | FP_subnormal | FP_zero -> Printf.sprintf "%h" f
+  | FP_nan ->
+      Printf.sprintf
+        "nan:0x%Lx"
+        Int64.(logand (bits_of_float f) (of_int ((1 lsl 52) - 1)))
   | FP_infinite -> if Float.(f > 0.) then "inf" else "-inf"
 
 let float32 _ f =
   match classify_float f with
-  | FP_normal | FP_subnormal | FP_zero | FP_nan -> Printf.sprintf "%h" f
+  | FP_normal | FP_subnormal | FP_zero -> Printf.sprintf "%h" f
+  | FP_nan ->
+      Printf.sprintf
+        "nan:0x%lx"
+        Int32.(logand (bits_of_float f) (of_int ((1 lsl 23) - 1)))
   | FP_infinite -> if Float.(f > 0.) then "inf" else "-inf"
 
 let expression_or_instructions ctx st in_function =

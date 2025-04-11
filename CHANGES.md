@@ -22,6 +22,7 @@
 * Ppx: explicitly disallow polymorphic method (#1897)
 * Ppx: allow "function" in object literals (#1897)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
+* Compiler: static evaluation of more primitives (#1912)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
