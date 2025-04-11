@@ -164,3 +164,5 @@ external ( = ) : int32 -> int32 -> bool = "%equal"
 external ( > ) : int32 -> int32 -> bool = "%greaterthan"
 
 external ( >= ) : int32 -> int32 -> bool = "%greaterequal"
+
+let unsigned_lt n m = Int32.(sub n min_int < sub m min_int)

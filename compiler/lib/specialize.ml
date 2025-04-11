@@ -117,3 +117,97 @@ let specialize_instrs ~function_arity p =
   { p with blocks; free_pc }
 
 let f = specialize_instrs
+
+(***)
+
+(* For switches, at this point, we know that this it is sufficient to
+   check the [pc]. *)
+let equal (pc, _) (pc', _) = pc = pc'
+
+let find_outlier_index arr =
+  let len = Array.length arr in
+  let rec find w i =
+    if i >= len
+    then `All_equals
+    else if equal arr.(i) w
+    then find w (i + 1)
+    else `Distinguished i
+  in
+  let a0 = arr.(0) in
+  match find a0 0 with
+  | `All_equals as res -> res
+  | `Distinguished i -> (
+      match find arr.(i) i with
+      | `All_equals ->
+          if i = 1
+          then `Distinguished 0
+          else if i = len - 1
+          then `Distinguished i
+          else `Splitted i
+      | `Distinguished j -> (
+          match find a0 j with
+          | `All_equals -> if j = i + 1 then `Distinguished i else `Splitted_shifted (i, j)
+          | `Distinguished _ -> `Many_cases))
+
+let switches p =
+  { p with
+    blocks =
+      Addr.Map.fold
+        (fun pc block blocks ->
+          match block.branch with
+          | Switch (x, l) -> (
+              match find_outlier_index l with
+              | `All_equals -> Addr.Map.add pc { block with branch = Branch l.(0) } blocks
+              | `Distinguished i ->
+                  let block =
+                    let c = Var.fresh () in
+                    { block with
+                      body =
+                        block.body
+                        @ [ Let (c, Prim (Eq, [ Pc (Int (Targetint.of_int_exn i)); Pv x ]))
+                          ]
+                    ; branch = Cond (c, l.(i), l.((i + 1) mod Array.length l))
+                    }
+                  in
+                  Addr.Map.add pc block blocks
+              | `Splitted i ->
+                  let block =
+                    let c = Var.fresh () in
+                    { block with
+                      body =
+                        block.body
+                        @ [ Let (c, Prim (Lt, [ Pv x; Pc (Int (Targetint.of_int_exn i)) ]))
+                          ]
+                    ; branch = Cond (c, l.(i - 1), l.(i))
+                    }
+                  in
+                  Addr.Map.add pc block blocks
+              | `Splitted_shifted (i, j) ->
+                  let block =
+                    let shifted = Var.fresh () in
+                    let c = Var.fresh () in
+                    { block with
+                      body =
+                        block.body
+                        @ [ Let
+                              ( shifted
+                              , Prim
+                                  ( Extern "%int_sub"
+                                  , [ Pv x; Pc (Int (Targetint.of_int_exn i)) ] ) )
+                          ; Let
+                              ( c
+                              , Prim
+                                  ( Ult
+                                  , [ Pv shifted
+                                    ; Pc (Int (Targetint.of_int_exn (j - i)))
+                                    ] ) )
+                          ]
+                    ; branch = Cond (c, l.(i), l.(j))
+                    }
+                  in
+                  Addr.Map.add pc block blocks
+              | `Many_cases -> blocks)
+          | _ -> blocks)
+        p.blocks
+        p.blocks
+  }

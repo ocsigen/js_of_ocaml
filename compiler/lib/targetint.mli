@@ -93,3 +93,5 @@ val ( > ) : t -> t -> bool
 val ( = ) : t -> t -> bool
 
 val ( <> ) : t -> t -> bool
+
+val unsigned_lt : t -> t -> bool

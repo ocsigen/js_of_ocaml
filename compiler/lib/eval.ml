@@ -85,7 +85,7 @@ let eval_prim x =
   | Le, [ Int i; Int j ] -> bool Targetint.(i <= j)
   | Eq, [ Int i; Int j ] -> bool Targetint.(i = j)
   | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
-  | Ult, [ Int i; Int j ] -> bool (Targetint.(j < zero) || Targetint.(i < j))
+  | Ult, [ Int i; Int j ] -> bool (Targetint.unsigned_lt i j)
   | Extern name, l -> (
       let name = Primitive.resolve name in
       match name, l with
@@ -246,6 +246,33 @@ let the_cont_of info x (a : cont array) =
       | _ -> None)
     x
 
+let rec int_predicate deep info pred x (i : Targetint.t) =
+  if deep > 2
+  then None
+  else
+    (* The value of [x] might be meaningless when we're inside a dead code.
+     The proper fix would be to remove the deadcode entirely.
+     Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
+     see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
+    get_approx
+      info
+      (fun x ->
+        match Flow.Info.def info x with
+        | Some (Prim (Extern "%direct_obj_tag", [ b ])) ->
+            the_tag_of info b (fun j -> Some (pred (Targetint.of_int_exn j) i))
+        | Some (Prim (Extern "%int_sub", [ Pv a; Pc (Int b) ])) ->
+            int_predicate (deep + 1) info (fun x y -> pred (Targetint.sub x b) y) a i
+        | Some (Prim (Extern "%int_add", [ Pv a; Pc (Int b) ])) ->
+            int_predicate (deep + 1) info (fun x y -> pred (Targetint.add x b) y) a i
+        | Some (Constant (Int j)) -> Some (pred j i)
+        | None | Some _ -> None)
+      None
+      (fun u v ->
+        match u, v with
+        | Some i, Some j when Bool.equal i j -> u
+        | _ -> None)
+      x
+
 (* If [constant_js_equal a b = Some v], then [caml_js_equals a b = v]). *)
 let constant_js_equal a b =
   match a, b with
@@ -333,6 +360,31 @@ let eval_instr ~target info i =
           let c = Constant (bool' Poly.(b = Y)) in
           Flow.Info.update_def info x c;
           [ Let (x, c) ])
+  | Let
+      ( x
+      , Prim
+          ( ((Eq | Neq | Lt | Le | Ult) as prim)
+          , ([ (Pv y as fst); Pc (Int j) ] | [ (Pc (Int j) as fst); Pv y ]) ) ) -> (
+      let pred =
+        match prim with
+        | Eq -> fun a b -> Targetint.equal a b
+        | Neq -> fun a b -> not (Targetint.equal a b)
+        | Lt -> fun a b -> Targetint.( < ) a b
+        | Le -> fun a b -> Targetint.( <= ) a b
+        | Ult -> fun a b -> Targetint.unsigned_lt a b
+        | _ -> assert false
+      in
+      let pred =
+        match fst with
+        | Pv _ -> pred
+        | Pc _ -> fun a b -> pred b a
+      in
+      match int_predicate 0 info pred y j with
+      | Some b ->
+          let c = Constant (bool' b) in
+          Flow.Info.update_def info x c;
+          [ Let (x, c) ]
+      | None -> [ i ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
       match the_tag_of info y (fun x -> Some x) with
       | Some tag ->

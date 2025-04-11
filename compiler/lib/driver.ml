@@ -693,7 +693,8 @@ let optimize ~profile p =
     Code.Var.fresh_n "dummy"
   in
   let opt =
-    specialize_js_once
+    Specialize.switches
+    +> specialize_js_once
     +> (match profile with
        | O1 -> o1
        | O2 -> o2
