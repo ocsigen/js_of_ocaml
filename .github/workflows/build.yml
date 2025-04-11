@@ -107,7 +107,7 @@ jobs:
           node-version: latest
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-        uses: hhugo/setup-ocaml@9ccdb585e1b4e029446514f83ed3b552ba075337
+        uses: hhugo/setup-ocaml@ef0c1e46c7cb43a62bb6cc079bc89998e56f7ff6
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
