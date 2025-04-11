@@ -38,7 +38,7 @@ Try to detect functor applications and inline them aggressively
 Small functions:
 - there is a parameter which is a function used once and called once
   in the body
-- known array as input, used once, accessed in function (???)
+- not recursive
 
 Don't attempt to inline a not yet visited function
 *)
@@ -243,8 +243,8 @@ let _inline_function p rem branch x params clos_cont args =
   in
   let blocks = rewrite_closure blocks cont_pc (fst clos_cont) in
   (* We do not really need this intermediate block.
-                 It just avoids the need to find which function
-                 parameters are used in the function body. *)
+     It just avoids the need to find which function
+     parameters are used in the function body. *)
   let fresh_addr = free_pc in
   let free_pc = fresh_addr + 1 in
   let blocks =
@@ -379,13 +379,7 @@ let get_closures { blocks; _ } =
 
 (****)
 
-let rec args_equal xs ys =
-  match xs, ys with
-  | [], [] -> true
-  | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
-  | _ -> false
-
-let inline ~first_class_primitives live_vars closures name pc (outer, p) =
+let inline live_vars closures name pc (outer, p) =
   let block = Addr.Map.find pc p.blocks in
   let body, (outer, branch, p) =
     List.fold_right
@@ -516,24 +510,6 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
                     let outer = { outer with size = outer.size + f_size } in
                     [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc })
               | _ -> i :: rem, state)
-        | Let (x, Closure (l, (pc, []))) when first_class_primitives -> (
-            let block = Addr.Map.find pc p.blocks in
-            match block with
-            | { body =
-                  ( [ Let (y, Prim (Extern prim, args)) ]
-                  | [ Event _; Let (y, Prim (Extern prim, args)) ]
-                  | [ Event _; Let (y, Prim (Extern prim, args)); Event _ ] )
-              ; branch = Return y'
-              ; params = []
-              } ->
-                let len = List.length l in
-                if
-                  Code.Var.compare y y' = 0
-                  && Primitive.has_arity prim len
-                  && args_equal l args
-                then Let (x, Special (Alias_prim prim)) :: rem, state
-                else i :: rem, state
-            | _ -> i :: rem, state)
         | _ -> i :: rem, state)
   in
   outer, { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
@@ -544,12 +520,6 @@ let times = Debug.find "times"
 
 let f p live_vars defs =
   stats p live_vars defs;
-  let first_class_primitives =
-    match Config.target (), Config.effects () with
-    | `JavaScript, `Disabled -> true
-    | `JavaScript, (`Cps | `Double_translation) | `Wasm, _ -> false
-    | `JavaScript, `Jspi -> assert false
-  in
   Code.invariant p;
   let t = Timer.make () in
   let closures = get_closures p in
@@ -560,7 +530,7 @@ let f p live_vars defs =
         let traverse outer =
           Code.traverse
             { fold = Code.fold_children }
-            (inline ~first_class_primitives live_vars closures name)
+            (inline live_vars closures name)
             pc
             p.blocks
             (outer, p)
