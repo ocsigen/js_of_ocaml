@@ -42,27 +42,40 @@ let bound_variables { blocks; _ } ~f ~params ~cont:(pc, _) =
   traverse blocks pc;
   !bound_vars
 
+let rec blocks_to_rename p pc lst =
+  Code.traverse
+    { fold = Code.fold_children }
+    (fun pc lst ->
+      let block = Addr.Map.find pc p.blocks in
+      List.fold_left
+        ~f:(fun lst i ->
+          match i with
+          | Let (_, Closure (_, (pc', _))) -> blocks_to_rename p pc' lst
+          | _ -> lst)
+        ~init:(pc :: lst)
+        block.body)
+    pc
+    p.blocks
+    lst
+
 let closure p ~f ~params ~cont =
   let s = Subst.from_map (bound_variables p ~f ~params ~cont) in
   let pc, args = cont in
+  let blocks = blocks_to_rename p pc [] in
   let free_pc, m =
-    Code.traverse
-      { fold = Code.fold_children }
-      (fun pc (pc', m) -> pc' + 1, Addr.Map.add pc pc' m)
-      pc
-      p.blocks
-      (p.free_pc, Addr.Map.empty)
+    List.fold_left
+      ~f:(fun (pc', m) pc -> pc' + 1, Addr.Map.add pc pc' m)
+      ~init:(p.free_pc, Addr.Map.empty)
+      blocks
   in
   let blocks =
-    Code.traverse
-      { fold = Code.fold_children }
-      (fun pc blocks ->
+    List.fold_left
+      ~f:(fun blocks pc ->
         let b = Addr.Map.find pc blocks in
         let b = Subst.Including_Binders.And_Continuations.block m s b in
         Addr.Map.add (Addr.Map.find pc m) b blocks)
-      pc
-      p.blocks
-      p.blocks
+      ~init:p.blocks
+      blocks
   in
   let p = { p with blocks; free_pc } in
   p, s f, List.map ~f:s params, (Addr.Map.find pc m, List.map ~f:s args)

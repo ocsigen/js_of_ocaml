@@ -25,32 +25,6 @@ let debug = Debug.find "inlining"
 
 let times = Debug.find "times"
 
-(*
-JavaScript:
-- Don't inline function containing closures (except at toplevel)
-
-Always:
-- Don't inline loops at toplevel
-
-Wasm:
-- Don't inline loops (no tear-up)
-
-Small functions:
-- there is a parameter which is a function used once, containing no closure
-  and called once in the body
-- not recursive
-- small enough
-- no closures
-
-Don't attempt to inline a not yet visited function
-
-Functor
-- no loop
-- returns an array
-- many closures (but not tool large) / constants / blocks / array accesses
-===> inline aggressively
-*)
-
 type 'a cache = 'a option ref
 
 type info =
@@ -69,11 +43,8 @@ type info =
 
 let cache ref f p pc =
   match !ref with
-  | Some v ->
-      prerr_endline "found";
-      v
+  | Some v -> v
   | None ->
-      prerr_endline "not found";
       let v = f p pc in
       ref := Some v;
       v
@@ -96,9 +67,7 @@ let contains_loop info =
 let sum f { blocks; _ } pc =
   Code.traverse
     { fold = fold_children }
-    (fun pc acc ->
-      Format.eprintf ">> %d@." pc;
-      f (Addr.Map.find pc blocks) + acc)
+    (fun pc acc -> f (Addr.Map.find pc blocks) + acc)
     pc
     blocks
     0
@@ -126,13 +95,9 @@ let rec block_size ~recurse ~env p { branch; body; _ } =
 
 and size ~recurse ~env p pc = sum (block_size ~recurse ~env p) p pc
 
-let body_size info ~env =
-  prerr_endline "body_size";
-  cache info.body_size (fun p pc -> size ~recurse:false ~env p pc)
+let body_size info ~env = cache info.body_size (fun p pc -> size ~recurse:false ~env p pc)
 
-let full_size info ~env =
-  prerr_endline "full_size";
-  cache info.full_size (fun p pc -> size ~recurse:true ~env p pc)
+let full_size info ~env = cache info.full_size (fun p pc -> size ~recurse:true ~env p pc)
 
 let closure_count info =
   cache
@@ -167,7 +132,6 @@ let is_recursive info ~env p f pc =
         Code.traverse
           { fold = fold_children }
           (fun pc _ ->
-            Format.eprintf "REC %d@." pc;
             let block = Addr.Map.find pc blocks in
             Freevars.iter_block_free_vars
               (fun f' -> if Code.Var.equal f f' then raise Exit)
@@ -195,7 +159,6 @@ let return_block info =
       Code.traverse
         { fold = fold_children }
         (fun pc acc ->
-          Format.eprintf "RET %d@." pc;
           acc
           &&
           let block = Addr.Map.find pc blocks in
@@ -220,7 +183,6 @@ let interesting_parameters info ~live_vars p params pc =
         Code.traverse
           { fold = fold_children }
           (fun pc lst ->
-            Format.eprintf "INT %d@." pc;
             let block = Addr.Map.find pc blocks in
             List.fold_left
               ~f:(fun lst i ->
@@ -236,7 +198,6 @@ let interesting_parameters info ~live_vars p params pc =
     pc
 
 let small_function ~live_vars ~env p info args f pc params =
-  Format.eprintf "sf %d@." pc;
   body_size info ~env p pc <= 15
   && closure_count info p pc = 0
   && (not (is_recursive info ~env p f pc))
@@ -319,8 +280,42 @@ let inline_function p rem branch x params cont args =
   let blocks =
     Addr.Map.add fresh_addr { params; body = []; branch = Branch cont } blocks
   in
-  Format.eprintf "CONV %d@." fresh_addr;
   [], (Branch (fresh_addr, args), { p with blocks; free_pc })
+
+let remove_dead_closures_from_block ~env p pc block =
+  let is_dead_closure i =
+    match i with
+    | Let (f, Closure _) -> not (Var.Map.find f env).dead
+    | _ -> true
+  in
+  if List.exists ~f:is_dead_closure block.body
+  then
+    { p with
+      blocks =
+        Addr.Map.add
+          pc
+          { block with body = List.filter ~f:is_dead_closure block.body }
+          p.blocks
+    }
+  else p
+
+let rec remove_dead_closures ~env p pc =
+  Code.traverse
+    { fold = fold_children }
+    (fun pc p ->
+      let block = Addr.Map.find pc p.blocks in
+      let p = remove_dead_closures_from_block ~env p pc block in
+      let block = Addr.Map.find pc p.blocks in
+      List.fold_left
+        ~f:(fun p i ->
+          match i with
+          | Let (_, Closure (_, (pc', _))) -> remove_dead_closures ~env p pc'
+          | _ -> p)
+        ~init:p
+        block.body)
+    pc
+    p.blocks
+    p
 
 let trace_inlining info ~live_vars ~env p at_toplevel x args f params pc =
   if debug ()
@@ -328,8 +323,8 @@ let trace_inlining info ~live_vars ~env p at_toplevel x args f params pc =
     let sz = body_size info ~env p pc in
     let sz' = full_size info ~env p pc in
     Format.eprintf
-      "%a <- %a%s: %b uses:%d size:%d/%d loop:%b rec:%b clos:%d init:%d bl:%b functor:%b \
-       small:%b@."
+      "%a <- %a%s: %b uses:%d size:%d/%d loop:%b rec:%b closures:%d init:%d \
+       return_block:%b functor:%b small:%b@."
       Code.Var.print
       x
       Code.Var.print
@@ -350,13 +345,11 @@ let trace_inlining info ~live_vars ~env p at_toplevel x args f params pc =
       (small_function ~live_vars ~env p info args f pc params)
 
 let inline_in_block ~live_vars env p at_toplevel pc block =
-  Format.eprintf "ZZZ %d@." pc;
   let body, (branch, p) =
     List.fold_right
       ~f:(fun i (rem, state) ->
         match i with
         | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f env ->
-            Format.eprintf "CONSIDERING %a@." Code.Var.print f;
             let info = Var.Map.find f env in
             let { params; cont = (pc, _) as cont; _ } = info in
             trace_inlining info ~live_vars ~env p at_toplevel x args f params pc;
@@ -365,6 +358,7 @@ let inline_in_block ~live_vars env p at_toplevel pc block =
               let branch, p = state in
               if live_vars.(Var.idx f) > 1
               then (
+                let p = remove_dead_closures ~env p pc in
                 let p, _, params, cont = Duplicate.closure p ~f ~params ~cont in
                 live_vars.(Var.idx f) <- live_vars.(Var.idx f) - 1;
                 inline_function p rem branch x params cont args)
@@ -384,16 +378,12 @@ let inline p ~live_vars =
     (Code.fold_closures_in_reverse_postorder
        p
        (fun name_opt params ((pc, _) as cont) (p, env) ->
-         Option.iter
-           ~f:(fun nm -> Format.eprintf "ENTERING %a@." Code.Var.print nm)
-           name_opt;
          let at_toplevel = Option.is_none name_opt in
          let p =
            Code.traverse
              { fold = Code.fold_children }
              (fun pc p ->
                let block = Addr.Map.find pc p.blocks in
-               prerr_endline "AAA";
                if
                  (* Skip blocks with no call of known function *)
                  List.for_all
