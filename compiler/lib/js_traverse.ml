@@ -1702,11 +1702,6 @@ class simpl =
 
     method expression e =
       let e = super#expression e in
-      let is_zero x =
-        match Num.to_string x with
-        | "0" | "0." -> true
-        | _ -> false
-      in
       match e with
       | EBin (Plus, e1, e2) -> (
           match e1, e2 with
