@@ -21,9 +21,4 @@
 type variable_uses =
   int array (* For each variable, indicates how many times it is used. *)
 
-type def =
-  | Expr of Code.expr
-  | Var of Code.Var.t
-  | Field_update of Code.Var.t
-
-val f : Code.program -> Code.program * (variable_uses * def list array)
+val f : Code.program -> Code.program * variable_uses

@@ -803,6 +803,12 @@ let fold_closures_in_reverse_postorder { start; blocks; _ } f accu =
   let accu = visit blocks start f accu in
   f None [] (start, []) accu
 
+let rec last_instr l =
+  match l with
+  | [] -> None
+  | [ i ] | [ i; Event _ ] -> Some i
+  | _ :: rem -> last_instr rem
+
 let eq p1 p2 =
   p1.start = p2.start
   && Addr.Map.cardinal p1.blocks = Addr.Map.cardinal p2.blocks

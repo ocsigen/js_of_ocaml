@@ -55,9 +55,9 @@ let deadcode p =
 let inline p =
   if Config.Flag.inline () && Config.Flag.deadcode ()
   then (
-    let p, (live_vars, uses) = deadcode' p in
+    let p, live_vars = deadcode' p in
     if debug () then Format.eprintf "Inlining...@.";
-    Inline.f p live_vars uses)
+    Inline.f p live_vars)
   else p
 
 let specialize_1 (p, info) =
@@ -101,16 +101,15 @@ let effects ~deadcode_sentinal p =
   match Config.effects () with
   | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
-      let p, (live_vars, _) = Deadcode.f p in
+      let p, live_vars = Deadcode.f p in
       let p = Effects.remove_empty_blocks ~live_vars p in
-      let p, (live_vars, _) = Deadcode.f p in
+      let p, live_vars = Deadcode.f p in
       let info = Global_flow.f ~fast:false p in
       let p, live_vars =
         if Config.Flag.globaldeadcode ()
         then
           let p = Global_deadcode.f p ~deadcode_sentinal info in
-          let p, (live_vars, _) = Deadcode.f p in
-          p, live_vars
+          Deadcode.f p
         else p, live_vars
       in
       p
@@ -453,9 +452,7 @@ let check_js js =
     Javascript.IdentSet.fold
       (fun x acc ->
         match x with
-        | V x ->
-            Format.eprintf "VVVV %a@." Code.Var.print x;
-            assert false
+        | V _ -> assert false
         | S { name = Utf8 x; _ } -> StringSet.add x acc)
       free
       StringSet.empty
@@ -712,7 +709,7 @@ let optimize ~profile p =
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let (program, (variable_uses, _)), trampolined_calls, in_cps = opt p in
+  let (program, variable_uses), trampolined_calls, in_cps = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal }
 
