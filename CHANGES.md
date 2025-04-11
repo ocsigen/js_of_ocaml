@@ -5,6 +5,7 @@
 * Compiler: use a Wasm text files preprocessor (#1822)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
 * Compiler: optimize compilation of switches
+* Compiler: evaluate statically more primitives (#1915)
 * Runtime: use es6 class (#1840)
 * Runtime: support more Unix functions (#1829)
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
