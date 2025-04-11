@@ -21,6 +21,10 @@
 open! Stdlib
 open Code
 
+let debug = Debug.find "inlining"
+
+let times = Debug.find "times"
+
 (*
 JavaScript:
 - Don't inline function containing closures (except at toplevel)
@@ -31,44 +35,57 @@ Always:
 Wasm:
 - Don't inline loops (no tear-up)
 
-Try to detect functor applications and inline them aggressively
-==> straight line body, returning a block
-==> body is mostly field accesses / closures (but not too large) / constants
-
 Small functions:
-- there is a parameter which is a function used once and called once
-  in the body
+- there is a parameter which is a function used once, containing no closure
+  and called once in the body
 - not recursive
+- small enough
+- no closures
 
 Don't attempt to inline a not yet visited function
+
+Functor
+- no loop
+- returns an array
+- many closures (but not tool large) / constants / blocks / array accesses
+===> inline aggressively
 *)
 
-let straightline_code { blocks; _ } pc =
-  let rec follow visited pc =
-    if Addr.Set.mem pc visited
-    then None
-    else
-      let block = Addr.Map.find pc blocks in
-      match block.branch with
-      | Return x -> Some x
-      | Branch (pc', _) -> follow (Addr.Set.add pc visited) pc'
-      | Raise _ | Stop | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> None
-  in
-  follow Addr.Set.empty pc
+type 'a cache = 'a option ref
 
-let contains_loop { blocks; _ } pc =
-  let rec traverse pc ((visited, loop) as accu) =
-    if loop
-    then accu
-    else if Addr.Map.mem pc visited
-    then visited, Addr.Map.find pc visited
-    else
-      let visited, loop =
-        Code.fold_children blocks pc traverse (Addr.Map.add pc false visited, false)
+type info =
+  { loops : bool cache
+  ; body_size : int cache
+  ; full_size : int cache
+  ; closure_count : int cache
+  ; init_code : int cache
+  ; recursive : bool cache
+  ; return_block : bool cache
+  ; interesting_params : Code.Var.t list cache
+  }
+
+let cache ref f p pc =
+  match !ref with
+  | Some v -> v
+  | None ->
+      let v = f p pc in
+      ref := Some v;
+      v
+
+let contains_loop info =
+  cache info.loops (fun { blocks; _ } pc ->
+      let rec traverse pc ((visited, loop) as accu) =
+        if loop
+        then accu
+        else if Addr.Map.mem pc visited
+        then visited, Addr.Map.find pc visited
+        else
+          let visited, loop =
+            Code.fold_children blocks pc traverse (Addr.Map.add pc true visited, false)
+          in
+          Addr.Map.add pc false visited, loop
       in
-      Addr.Map.add pc true visited, loop
-  in
-  snd (traverse pc (Addr.Map.empty, false))
+      snd (traverse pc (Addr.Map.empty, false)))
 
 let sum f { blocks; _ } pc =
   Code.traverse
@@ -78,13 +95,12 @@ let sum f { blocks; _ } pc =
     blocks
     0
 
-let rec block_size ~recurse blocks { branch; body; _ } =
+let rec block_size ~recurse p { branch; body; _ } =
   List.fold_left
     ~f:(fun n i ->
       match i with
       | Event _ -> n
-      | Let (_, Closure (_, (pc, _))) ->
-          n + 1 + if recurse then size ~recurse blocks pc else 0
+      | Let (_, Closure (_, (pc, _))) -> n + 1 + if recurse then size ~recurse p pc else 0
       | _ -> n + 1)
     ~init:0
     body
@@ -94,120 +110,151 @@ let rec block_size ~recurse blocks { branch; body; _ } =
   | Switch (_, a1) -> Array.length a1
   | _ -> 0
 
-and size ?(recurse = true) blocks pc = sum (block_size ~recurse blocks) blocks pc
+and size ~recurse p pc = sum (block_size ~recurse p) p pc
 
-let field_accesses =
-  sum
-  @@ fun { body; _ } ->
-  List.fold_left
-    ~f:(fun n i ->
-      match i with
-      | Let (_, Field _) -> n + 1
-      | _ -> n)
-    ~init:0
-    body
+let body_size info = cache info.body_size (fun p pc -> size ~recurse:false p pc)
 
-let count_closures =
-  sum
-  @@ fun { body; _ } ->
-  List.fold_left
-    ~f:(fun n i ->
-      match i with
-      | Let (_, Closure _) -> n + 1
-      | _ -> n)
-    ~init:0
-    body
+let full_size info = cache info.full_size (fun p pc -> size ~recurse:true p pc)
 
-let contains_closure { blocks; _ } pc =
-  Code.traverse
-    { fold = fold_children }
-    (fun pc acc ->
-      acc
-      ||
-      let block = Addr.Map.find pc blocks in
-      List.exists
-        ~f:(fun i ->
-          match i with
-          | Let (_, Closure _) -> true
-          | _ -> false)
-        block.body)
+let closure_count info =
+  cache
+    info.closure_count
+    (sum (fun { body; _ } ->
+         List.fold_left
+           ~f:(fun n i ->
+             match i with
+             | Let (_, Closure _) -> n + 1
+             | _ -> n)
+           ~init:0
+           body))
+
+let count_init_code info =
+  cache
+    info.init_code
+    (sum
+    @@ fun { body; _ } ->
+    List.fold_left
+      ~f:(fun n i ->
+        match i with
+        | Let (_, (Closure _ | Field _ | Constant _ | Block _)) -> n + 1
+        | _ -> n)
+      ~init:0
+      body)
+
+let is_recursive info p f pc =
+  cache
+    info.recursive
+    (fun { blocks; _ } pc ->
+      let rec traverse blocks f pc =
+        Code.traverse
+          { fold = fold_children }
+          (fun pc _ ->
+            let block = Addr.Map.find pc blocks in
+            Freevars.iter_block_free_vars
+              (fun f' -> if Code.Var.equal f f' then raise Exit)
+              block;
+            List.iter
+              ~f:(fun i ->
+                match i with
+                | Let (_, Closure (_, (pc', _))) -> traverse blocks f pc'
+                | _ -> ())
+              block.body)
+          pc
+          blocks
+          ()
+      in
+      try
+        traverse blocks f pc;
+        false
+      with Exit -> true)
+    p
     pc
-    blocks
+
+let return_block info ~defs =
+  cache info.return_block (fun { blocks; _ } pc ->
+      Code.traverse
+        { fold = fold_children }
+        (fun pc acc ->
+          acc
+          &&
+          let block = Addr.Map.find pc blocks in
+          match block.branch with
+          | Return x -> (
+              match defs.(Var.idx x) with
+              | [ Deadcode.Expr (Block _) ] -> true
+              | _ -> false)
+          | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> true)
+        pc
+        blocks
+        true)
+
+let interesting_parameters info ~live_vars p params pc =
+  cache
+    info.interesting_params
+    (fun { blocks; _ } pc ->
+      let params = List.filter ~f:(fun x -> live_vars.(Var.idx x) = 1) params in
+      if List.is_empty params
+      then []
+      else
+        Code.traverse
+          { fold = fold_children }
+          (fun pc lst ->
+            let block = Addr.Map.find pc blocks in
+            List.fold_left
+              ~f:(fun lst i ->
+                match i with
+                | Let (_, Apply { f; _ }) when List.mem f ~set:params -> f :: lst
+                | _ -> lst)
+              ~init:lst
+              block.body)
+          pc
+          blocks
+          [])
+    p
+    pc
+
+let small_function ~live_vars ~defs p info args f pc params =
+  body_size info p pc <= 15
+  && closure_count info p pc = 0
+  && (not (is_recursive info p f pc))
+  &&
+  let relevant_params = interesting_parameters info ~live_vars p params pc in
+  try
+    List.iter2
+      ~f:(fun arg param ->
+        if live_vars.(Var.idx arg) = 1
+        then
+          match defs.(Var.idx arg) with
+          | [ Deadcode.Expr (Closure (_, (pc, _))) ] ->
+              if List.mem param ~set:relevant_params && closure_count info p pc = 0
+              then raise Exit
+          | _ -> ())
+      args
+      params;
     false
+  with Exit -> true
 
-(*
-type t = {
- 
-}
-*)
+let functor_like ~defs p info f pc =
+  (not (contains_loop info p pc))
+  && return_block info ~defs p pc
+  && count_init_code info p pc * 2 > body_size info p pc
+  && (not (is_recursive info p f pc))
+  && full_size info p pc < 20 * closure_count info p pc
 
-let stats p live_vars defs =
-  Format.eprintf "==================@.";
-  ignore
-    (Code.fold_closures_in_reverse_postorder
-       p
-       (fun _name_opt _ (pc, _) env ->
-         Code.traverse
-           { fold = Code.fold_children }
-           (fun pc env ->
-             let block = Addr.Map.find pc p.blocks in
-             Format.eprintf
-               "ZZZ %b@."
-               (List.exists
-                  ~f:(fun i ->
-                    match i with
-                    | Let (_, Apply { f; _ }) -> (
-                        match defs.(Var.idx f) with
-                        | [ Deadcode.Expr (Closure _) ] -> true
-                        | _ -> false)
-                    | _ -> false)
-                  block.body);
-             List.fold_left
-               ~f:(fun env i ->
-                 match i with
-                 | Let (_, Apply { f; _ }) when not (Var.Set.mem f env) ->
-                     (match defs.(Var.idx f) with
-                     | [ Deadcode.Expr (Closure (_, (pc, _))) ] ->
-                         let sz = size p pc in
-                         let ret = straightline_code p pc in
-                         let return_block =
-                           match ret with
-                           | None -> false
-                           | Some x -> (
-                               match defs.(Var.idx x) with
-                               | [ Expr (Block _) ] -> true
-                               | _ -> false)
-                         in
-                         let sz' = size ~recurse:false p pc in
-                         Format.eprintf
-                           "%a%s: uses:%d straight:%b block:%b loop:%b clos:%b \
-                            size:%d/%d closures:%d fields:%.0f(%.0f)@."
-                           Code.Var.print
-                           f
-                           (match Code.Var.get_name f with
-                           | Some s -> "_" ^ s
-                           | None -> "")
-                           live_vars.(Var.idx f)
-                           (Option.is_some ret)
-                           return_block
-                           (contains_loop p pc)
-                           (contains_closure p pc)
-                           sz
-                           sz'
-                           (count_closures p pc)
-                           (float (field_accesses p pc) /. float sz *. 100.)
-                           (float (field_accesses p pc + count_closures p pc)
-                           /. float sz'
-                           *. 100.)
-                     | _ -> ());
-                     Var.Set.add f env
-                 | _ -> env)
-               ~init:env
-               block.body)
-           pc
-           p.blocks
-           env)
-       Var.Set.empty)
+let should_inline ~live_vars ~defs p ~at_toplevel info args f pc params =
+  (* Don't inline loops at toplevel *)
+  (not (at_toplevel && contains_loop info p pc))
+  (* Don't inline closures in JavaScript, except at toplevel, since
+     this can results in memory leaks *)
+  && (at_toplevel
+     ||
+     match Config.target () with
+     | `JavaScript -> closure_count info p pc = 0
+     | `Wasm -> true)
+  && (live_vars.(Var.idx f) = 1
+     || functor_like ~defs p info f pc
+     || body_size info p pc = 1
+     || small_function ~live_vars ~defs p info args f pc params)
 
 (****)
 
@@ -228,7 +275,7 @@ let rewrite_closure blocks cont_pc clos_pc =
     blocks
     blocks
 
-let _inline_function p rem branch x params clos_cont args =
+let inline_function p rem branch x params cont args =
   let blocks, cont_pc, free_pc =
     match rem, branch with
     | [], Return y when Var.compare x y = 0 ->
@@ -241,16 +288,127 @@ let _inline_function p rem branch x params clos_cont args =
         , Some fresh_addr
         , free_pc )
   in
-  let blocks = rewrite_closure blocks cont_pc (fst clos_cont) in
+  let blocks = rewrite_closure blocks cont_pc (fst cont) in
   (* We do not really need this intermediate block.
      It just avoids the need to find which function
      parameters are used in the function body. *)
   let fresh_addr = free_pc in
   let free_pc = fresh_addr + 1 in
   let blocks =
-    Addr.Map.add fresh_addr { params; body = []; branch = Branch clos_cont } blocks
+    Addr.Map.add fresh_addr { params; body = []; branch = Branch cont } blocks
   in
   [], (Branch (fresh_addr, args), { p with blocks; free_pc })
+
+let trace_inlining info ~live_vars ~defs p at_toplevel x args f params pc =
+  if debug ()
+  then
+    let sz = body_size info p pc in
+    let sz' = full_size info p pc in
+    Format.eprintf
+      "%a <- %a%s: %b uses:%d size:%d/%d loop:%b rec:%b clos:%d init:%d bl:%b functor:%b \
+       small:%b@."
+      Code.Var.print
+      x
+      Code.Var.print
+      f
+      (match Code.Var.get_name f with
+      | Some s -> "(" ^ s ^ ")"
+      | None -> "")
+      (should_inline ~live_vars ~defs ~at_toplevel p info args f pc params)
+      live_vars.(Var.idx f)
+      sz
+      sz'
+      (contains_loop info p pc)
+      (is_recursive info p f pc)
+      (closure_count info p pc)
+      (count_init_code info p pc)
+      (return_block info ~defs p pc)
+      (functor_like ~defs p info f pc)
+      (small_function ~live_vars ~defs p info args f pc params)
+
+let inline_in_block ~live_vars ~defs env p at_toplevel pc block =
+  Format.eprintf "ZZZ %d@." pc;
+  let body, (branch, p) =
+    List.fold_right
+      ~f:(fun i (rem, state) ->
+        match i with
+        | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f env -> (
+            match defs.(Var.idx f) with
+            | [ Deadcode.Expr (Closure (params, ((pc, _) as cont))) ] ->
+                let info = Var.Map.find f env in
+                trace_inlining info ~live_vars ~defs p at_toplevel x args f params pc;
+                if
+                  live_vars.(Var.idx f) = 1 (*ZZZ*)
+                  && should_inline ~live_vars ~defs ~at_toplevel p info args f pc params
+                then
+                  let branch, p = state in
+                  if live_vars.(Var.idx f) > 1
+                  then (*ZZZ*)
+                    let p, _, params, cont = Duplicate.cl p ~f ~params ~cont in
+                    inline_function p rem branch x params cont args
+                  else inline_function p rem branch x params cont args
+                else i :: rem, state
+            | _ -> i :: rem, state)
+        | _ -> i :: rem, state)
+      ~init:([], (block.branch, p))
+      block.body
+  in
+  { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
+
+let stats p ~live_vars ~defs =
+  if debug () then Format.eprintf "====== inlining ======@.";
+  fst
+    (Code.fold_closures_in_reverse_postorder
+       p
+       (fun name_opt _ (pc, _) (p, env) ->
+         Option.iter
+           ~f:(fun nm -> Format.eprintf "ENTERING %a@." Code.Var.print nm)
+           name_opt;
+         let at_toplevel = Option.is_none name_opt in
+         let p =
+           Code.traverse
+             { fold = Code.fold_children }
+             (fun pc p ->
+               let block = Addr.Map.find pc p.blocks in
+               prerr_endline "AAA";
+               if
+                 (* Skip blocks with no call of known function *)
+                 List.for_all
+                   ~f:(fun i ->
+                     match i with
+                     | Let (_, Apply { f; exact = true; _ }) -> (
+                         (not (Var.Map.mem f env))
+                         ||
+                         match defs.(Var.idx f) with
+                         | [ Deadcode.Expr (Closure _) ] -> false
+                         | _ -> true)
+                     | _ -> true)
+                   block.body
+               then p
+               else inline_in_block ~live_vars ~defs env p at_toplevel pc block)
+             pc
+             p.blocks
+             p
+         in
+         let env =
+           match name_opt with
+           | Some f ->
+               Var.Map.add
+                 f
+                 { loops = ref None
+                 ; body_size = ref None
+                 ; full_size = ref None
+                 ; closure_count = ref None
+                 ; init_code = ref None
+                 ; recursive = ref None
+                 ; return_block = ref None
+                 ; interesting_params = ref None
+                 }
+                 env
+           | None -> env
+         in
+         p, env)
+       (p, Var.Map.empty))
 
 (****)
 
@@ -516,38 +674,41 @@ let inline live_vars closures name pc (outer, p) =
 
 (****)
 
-let times = Debug.find "times"
-
 let f p live_vars defs =
-  stats p live_vars defs;
   Code.invariant p;
   let t = Timer.make () in
-  let closures = get_closures p in
-  let _closures, p =
-    Code.fold_closures_innermost_first
-      p
-      (fun name cl_params (pc, _) (closures, p) ->
-        let traverse outer =
-          Code.traverse
-            { fold = Code.fold_children }
-            (inline live_vars closures name)
-            pc
-            p.blocks
-            (outer, p)
-        in
-        match name with
-        | None ->
-            let _, p = traverse (optimizable p.blocks pc) in
-            closures, p
-        | Some x ->
-            let info = Var.Map.find x closures in
-            let outer, p = traverse info.cl_prop in
-            let cl_simpl = simple_function p.blocks outer.size x cl_params pc in
-            let closures =
-              Var.Map.add x { info with cl_prop = outer; cl_simpl } closures
+  let p =
+    if true
+    then stats p ~live_vars ~defs
+    else
+      let closures = get_closures p in
+      let _closures, p =
+        Code.fold_closures_innermost_first
+          p
+          (fun name cl_params (pc, _) (closures, p) ->
+            let traverse outer =
+              Code.traverse
+                { fold = Code.fold_children }
+                (inline live_vars closures name)
+                pc
+                p.blocks
+                (outer, p)
             in
-            closures, p)
-      (closures, p)
+            match name with
+            | None ->
+                let _, p = traverse (optimizable p.blocks pc) in
+                closures, p
+            | Some x ->
+                let info = Var.Map.find x closures in
+                let outer, p = traverse info.cl_prop in
+                let cl_simpl = simple_function p.blocks outer.size x cl_params pc in
+                let closures =
+                  Var.Map.add x { info with cl_prop = outer; cl_simpl } closures
+                in
+                closures, p)
+          (closures, p)
+      in
+      p
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
   Code.invariant p;

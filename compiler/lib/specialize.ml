@@ -138,7 +138,12 @@ let specialize_instrs ~function_arity p =
                   let (body, free_pc, extra), _ = acc in
                   (i :: body, free_pc, extra), Some loc
               | _ ->
-                  ( specialize_instr ~first_class_primitives ~blocks function_arity acc i
+                  ( specialize_instr
+                      ~first_class_primitives
+                      ~blocks:p.blocks
+                      function_arity
+                      acc
+                      i
                   , None ))
         in
         let blocks =

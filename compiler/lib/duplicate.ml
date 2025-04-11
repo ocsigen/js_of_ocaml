@@ -45,3 +45,51 @@ let closure p ~bound_vars ~f ~params ~cont:(pc, args) =
   in
   let p = { p with blocks; free_pc } in
   p, s f, List.map ~f:s params, (Addr.Map.find pc m, List.map ~f:s args)
+
+let bound_variables { blocks; _ } ~f ~params ~cont:(pc, _) =
+  let bound_vars = ref Var.Map.empty in
+  let add_var x = bound_vars := Var.Map.add x (Var.fork x) !bound_vars in
+  List.iter ~f:add_var (f :: params);
+  let rec traverse blocks pc =
+    Code.traverse
+      { fold = fold_children }
+      (fun pc _ ->
+        let block = Addr.Map.find pc blocks in
+        Freevars.iter_block_bound_vars add_var block;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (_, Closure (_, (pc', _))) -> traverse blocks pc'
+            | _ -> ())
+          block.body)
+      pc
+      blocks
+      ()
+  in
+  traverse blocks pc;
+  !bound_vars
+
+let cl p ~f ~params ~cont =
+  let s = Subst.from_map (bound_variables p ~f ~params ~cont) in
+  let pc, args = cont in
+  let free_pc, m =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc (pc', m) -> pc' + 1, Addr.Map.add pc pc' m)
+      pc
+      p.blocks
+      (p.free_pc, Addr.Map.empty)
+  in
+  let blocks =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc blocks ->
+        let b = Addr.Map.find pc blocks in
+        let b = Subst.Including_Binders.And_Continuations.block m s b in
+        Addr.Map.add (Addr.Map.find pc m) b blocks)
+      pc
+      p.blocks
+      p.blocks
+  in
+  let p = { p with blocks; free_pc } in
+  p, s f, List.map ~f:s params, (Addr.Map.find pc m, List.map ~f:s args)
