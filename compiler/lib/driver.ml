@@ -453,7 +453,9 @@ let check_js js =
     Javascript.IdentSet.fold
       (fun x acc ->
         match x with
-        | V _ -> assert false
+        | V x ->
+            Format.eprintf "VVVV %a@." Code.Var.print x;
+            assert false
         | S { name = Utf8 x; _ } -> StringSet.add x acc)
       free
       StringSet.empty

@@ -54,7 +54,9 @@ Functor
 type 'a cache = 'a option ref
 
 type info =
-  { loops : bool cache
+  { params : Code.Var.t list
+  ; cont : Code.cont
+  ; loops : bool cache
   ; body_size : int cache
   ; full_size : int cache
   ; closure_count : int cache
@@ -62,12 +64,16 @@ type info =
   ; recursive : bool cache
   ; return_block : bool cache
   ; interesting_params : Code.Var.t list cache
+  ; mutable dead : bool
   }
 
 let cache ref f p pc =
   match !ref with
-  | Some v -> v
+  | Some v ->
+      prerr_endline "found";
+      v
   | None ->
+      prerr_endline "not found";
       let v = f p pc in
       ref := Some v;
       v
@@ -90,17 +96,25 @@ let contains_loop info =
 let sum f { blocks; _ } pc =
   Code.traverse
     { fold = fold_children }
-    (fun pc acc -> f (Addr.Map.find pc blocks) + acc)
+    (fun pc acc ->
+      Format.eprintf ">> %d@." pc;
+      f (Addr.Map.find pc blocks) + acc)
     pc
     blocks
     0
 
-let rec block_size ~recurse p { branch; body; _ } =
+let rec block_size ~recurse ~env p { branch; body; _ } =
   List.fold_left
     ~f:(fun n i ->
       match i with
       | Event _ -> n
-      | Let (_, Closure (_, (pc, _))) -> n + 1 + if recurse then size ~recurse p pc else 0
+      | Let (f, Closure (_, (pc, _))) ->
+          let info = Var.Map.find f env in
+          if info.dead
+          then n
+          else if recurse
+          then cache info.full_size (size ~recurse ~env) p pc + n + 1
+          else n + 1
       | _ -> n + 1)
     ~init:0
     body
@@ -110,11 +124,15 @@ let rec block_size ~recurse p { branch; body; _ } =
   | Switch (_, a1) -> Array.length a1
   | _ -> 0
 
-and size ~recurse p pc = sum (block_size ~recurse p) p pc
+and size ~recurse ~env p pc = sum (block_size ~recurse ~env p) p pc
 
-let body_size info = cache info.body_size (fun p pc -> size ~recurse:false p pc)
+let body_size info ~env =
+  prerr_endline "body_size";
+  cache info.body_size (fun p pc -> size ~recurse:false ~env p pc)
 
-let full_size info = cache info.full_size (fun p pc -> size ~recurse:true p pc)
+let full_size info ~env =
+  prerr_endline "full_size";
+  cache info.full_size (fun p pc -> size ~recurse:true ~env p pc)
 
 let closure_count info =
   cache
@@ -141,7 +159,7 @@ let count_init_code info =
       ~init:0
       body)
 
-let is_recursive info p f pc =
+let is_recursive info ~env p f pc =
   cache
     info.recursive
     (fun { blocks; _ } pc ->
@@ -149,6 +167,7 @@ let is_recursive info p f pc =
         Code.traverse
           { fold = fold_children }
           (fun pc _ ->
+            Format.eprintf "REC %d@." pc;
             let block = Addr.Map.find pc blocks in
             Freevars.iter_block_free_vars
               (fun f' -> if Code.Var.equal f f' then raise Exit)
@@ -156,7 +175,8 @@ let is_recursive info p f pc =
             List.iter
               ~f:(fun i ->
                 match i with
-                | Let (_, Closure (_, (pc', _))) -> traverse blocks f pc'
+                | Let (f', Closure (_, (pc', _))) ->
+                    if not (Var.Map.find f' env).dead then traverse blocks f pc'
                 | _ -> ())
               block.body)
           pc
@@ -175,12 +195,16 @@ let return_block info ~defs =
       Code.traverse
         { fold = fold_children }
         (fun pc acc ->
+          Format.eprintf "RET %d@." pc;
           acc
           &&
           let block = Addr.Map.find pc blocks in
           match block.branch with
           | Return x -> (
-              match defs.(Var.idx x) with
+              let idx = Var.idx x in
+              idx < Array.length defs
+              &&
+              match defs.(idx) with
               | [ Deadcode.Expr (Block _) ] -> true
               | _ -> false)
           | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> true)
@@ -199,6 +223,7 @@ let interesting_parameters info ~live_vars p params pc =
         Code.traverse
           { fold = fold_children }
           (fun pc lst ->
+            Format.eprintf "INT %d@." pc;
             let block = Addr.Map.find pc blocks in
             List.fold_left
               ~f:(fun lst i ->
@@ -213,35 +238,34 @@ let interesting_parameters info ~live_vars p params pc =
     p
     pc
 
-let small_function ~live_vars ~defs p info args f pc params =
-  body_size info p pc <= 15
+let small_function ~live_vars ~env p info args f pc params =
+  Format.eprintf "sf %d@." pc;
+  body_size info ~env p pc <= 15
   && closure_count info p pc = 0
-  && (not (is_recursive info p f pc))
+  && (not (is_recursive info ~env p f pc))
   &&
   let relevant_params = interesting_parameters info ~live_vars p params pc in
   try
     List.iter2
       ~f:(fun arg param ->
-        if live_vars.(Var.idx arg) = 1
+        if live_vars.(Var.idx arg) = 1 && Var.Map.mem arg env
         then
-          match defs.(Var.idx arg) with
-          | [ Deadcode.Expr (Closure (_, (pc, _))) ] ->
-              if List.mem param ~set:relevant_params && closure_count info p pc = 0
-              then raise Exit
-          | _ -> ())
+          let pc, _ = (Var.Map.find arg env).cont in
+          if List.mem param ~set:relevant_params && closure_count info p pc = 0
+          then raise Exit)
       args
       params;
     false
   with Exit -> true
 
-let functor_like ~defs p info f pc =
+let functor_like ~defs ~env p info f pc =
   (not (contains_loop info p pc))
   && return_block info ~defs p pc
-  && count_init_code info p pc * 2 > body_size info p pc
-  && (not (is_recursive info p f pc))
-  && full_size info p pc < 20 * closure_count info p pc
+  && count_init_code info p pc * 2 > body_size info ~env p pc
+  && (not (is_recursive info ~env p f pc))
+  && full_size info ~env p pc < 20 * closure_count info p pc
 
-let should_inline ~live_vars ~defs p ~at_toplevel info args f pc params =
+let should_inline ~live_vars ~defs ~env p ~at_toplevel info args f pc params =
   (* Don't inline loops at toplevel *)
   (not (at_toplevel && contains_loop info p pc))
   (* Don't inline closures in JavaScript, except at toplevel, since
@@ -252,9 +276,9 @@ let should_inline ~live_vars ~defs p ~at_toplevel info args f pc params =
      | `JavaScript -> closure_count info p pc = 0
      | `Wasm -> true)
   && (live_vars.(Var.idx f) = 1
-     || functor_like ~defs p info f pc
-     || body_size info p pc = 1
-     || small_function ~live_vars ~defs p info args f pc params)
+     || functor_like ~defs ~env p info f pc
+     || body_size info ~env p pc = 1
+     || small_function ~live_vars ~env p info args f pc params)
 
 (****)
 
@@ -294,16 +318,18 @@ let inline_function p rem branch x params cont args =
      parameters are used in the function body. *)
   let fresh_addr = free_pc in
   let free_pc = fresh_addr + 1 in
+  assert (List.length args = List.length params);
   let blocks =
     Addr.Map.add fresh_addr { params; body = []; branch = Branch cont } blocks
   in
+  Format.eprintf "CONV %d@." fresh_addr;
   [], (Branch (fresh_addr, args), { p with blocks; free_pc })
 
-let trace_inlining info ~live_vars ~defs p at_toplevel x args f params pc =
+let trace_inlining info ~live_vars ~defs ~env p at_toplevel x args f params pc =
   if debug ()
   then
-    let sz = body_size info p pc in
-    let sz' = full_size info p pc in
+    let sz = body_size info ~env p pc in
+    let sz' = full_size info ~env p pc in
     Format.eprintf
       "%a <- %a%s: %b uses:%d size:%d/%d loop:%b rec:%b clos:%d init:%d bl:%b functor:%b \
        small:%b@."
@@ -314,17 +340,17 @@ let trace_inlining info ~live_vars ~defs p at_toplevel x args f params pc =
       (match Code.Var.get_name f with
       | Some s -> "(" ^ s ^ ")"
       | None -> "")
-      (should_inline ~live_vars ~defs ~at_toplevel p info args f pc params)
+      (should_inline ~live_vars ~defs ~env ~at_toplevel p info args f pc params)
       live_vars.(Var.idx f)
       sz
       sz'
       (contains_loop info p pc)
-      (is_recursive info p f pc)
+      (is_recursive info ~env p f pc)
       (closure_count info p pc)
       (count_init_code info p pc)
       (return_block info ~defs p pc)
-      (functor_like ~defs p info f pc)
-      (small_function ~live_vars ~defs p info args f pc params)
+      (functor_like ~defs ~env p info f pc)
+      (small_function ~live_vars ~env p info args f pc params)
 
 let inline_in_block ~live_vars ~defs env p at_toplevel pc block =
   Format.eprintf "ZZZ %d@." pc;
@@ -332,23 +358,22 @@ let inline_in_block ~live_vars ~defs env p at_toplevel pc block =
     List.fold_right
       ~f:(fun i (rem, state) ->
         match i with
-        | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f env -> (
-            match defs.(Var.idx f) with
-            | [ Deadcode.Expr (Closure (params, ((pc, _) as cont))) ] ->
-                let info = Var.Map.find f env in
-                trace_inlining info ~live_vars ~defs p at_toplevel x args f params pc;
-                if
-                  live_vars.(Var.idx f) = 1 (*ZZZ*)
-                  && should_inline ~live_vars ~defs ~at_toplevel p info args f pc params
-                then
-                  let branch, p = state in
-                  if live_vars.(Var.idx f) > 1
-                  then (*ZZZ*)
-                    let p, _, params, cont = Duplicate.cl p ~f ~params ~cont in
-                    inline_function p rem branch x params cont args
-                  else inline_function p rem branch x params cont args
-                else i :: rem, state
-            | _ -> i :: rem, state)
+        | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f env ->
+            Format.eprintf "CONSIDERING %a@." Code.Var.print f;
+            let info = Var.Map.find f env in
+            let { params; cont = (pc, _) as cont; _ } = info in
+            trace_inlining info ~live_vars ~defs ~env p at_toplevel x args f params pc;
+            if should_inline ~live_vars ~defs ~env ~at_toplevel p info args f pc params
+            then
+              let branch, p = state in
+              if live_vars.(Var.idx f) > 1
+              then
+                let p, _, params, cont = Duplicate.cl p ~f ~params ~cont in
+                inline_function p rem branch x params cont args
+              else (
+                info.dead <- true;
+                inline_function p rem branch x params cont args)
+            else i :: rem, state
         | _ -> i :: rem, state)
       ~init:([], (block.branch, p))
       block.body
@@ -360,7 +385,7 @@ let stats p ~live_vars ~defs =
   fst
     (Code.fold_closures_in_reverse_postorder
        p
-       (fun name_opt _ (pc, _) (p, env) ->
+       (fun name_opt params ((pc, _) as cont) (p, env) ->
          Option.iter
            ~f:(fun nm -> Format.eprintf "ENTERING %a@." Code.Var.print nm)
            name_opt;
@@ -376,12 +401,7 @@ let stats p ~live_vars ~defs =
                  List.for_all
                    ~f:(fun i ->
                      match i with
-                     | Let (_, Apply { f; exact = true; _ }) -> (
-                         (not (Var.Map.mem f env))
-                         ||
-                         match defs.(Var.idx f) with
-                         | [ Deadcode.Expr (Closure _) ] -> false
-                         | _ -> true)
+                     | Let (_, Apply { f; exact = true; _ }) -> not (Var.Map.mem f env)
                      | _ -> true)
                    block.body
                then p
@@ -395,7 +415,9 @@ let stats p ~live_vars ~defs =
            | Some f ->
                Var.Map.add
                  f
-                 { loops = ref None
+                 { params
+                 ; cont
+                 ; loops = ref None
                  ; body_size = ref None
                  ; full_size = ref None
                  ; closure_count = ref None
@@ -403,6 +425,7 @@ let stats p ~live_vars ~defs =
                  ; recursive = ref None
                  ; return_block = ref None
                  ; interesting_params = ref None
+                 ; dead = false
                  }
                  env
            | None -> env
@@ -677,6 +700,7 @@ let inline live_vars closures name pc (outer, p) =
 let f p live_vars defs =
   Code.invariant p;
   let t = Timer.make () in
+  Print.program (fun _ _ -> "") p;
   let p =
     if true
     then stats p ~live_vars ~defs
@@ -711,5 +735,6 @@ let f p live_vars defs =
       p
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
+  Print.program (fun _ _ -> "") p;
   Code.invariant p;
   p

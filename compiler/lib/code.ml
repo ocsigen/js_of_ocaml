@@ -831,6 +831,7 @@ let invariant { blocks; start; _ } =
     let defs = Var.ISet.empty () in
     let check_cont (cont, args) =
       let b = Addr.Map.find cont blocks in
+      if List.length args <> List.length b.params then Format.eprintf "ZZZ %d@." cont;
       assert (List.length args = List.length b.params)
     in
     let define x =
