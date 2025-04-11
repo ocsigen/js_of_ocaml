@@ -221,7 +221,7 @@ let functor_like ~env p info f pc =
   && return_block info p pc
   && count_init_code info p pc * 2 > body_size info ~env p pc
   && (not (is_recursive info ~env p f pc))
-  && full_size info ~env p pc < 20 * closure_count info p pc
+  && full_size info ~env p pc < 25 * closure_count info p pc
 
 let should_inline ~live_vars ~env p ~at_toplevel info args f pc params =
   (* Don't inline loops at toplevel *)

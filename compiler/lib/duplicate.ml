@@ -32,7 +32,9 @@ let bound_variables { blocks; _ } ~f ~params ~cont:(pc, _) =
         List.iter
           ~f:(fun i ->
             match i with
-            | Let (_, Closure (_, (pc', _))) -> traverse blocks pc'
+            | Let (_, Closure (params, (pc', _))) ->
+                List.iter ~f:add_var params;
+                traverse blocks pc'
             | _ -> ())
           block.body)
       pc
