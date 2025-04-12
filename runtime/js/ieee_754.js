@@ -423,7 +423,7 @@ function caml_fma_float(x, y, z) {
 }
 
 //Provides: caml_format_float const
-//Requires: caml_parse_format, caml_finish_formatting
+//Requires: caml_str_repeat, caml_parse_format, caml_finish_formatting
 function caml_format_float(fmt, x) {
   function toFixed(x, dp) {
     if (Math.abs(x) < 1.0) {
@@ -433,9 +433,9 @@ function caml_format_float(fmt, x) {
       if (e > 20) {
         e -= 20;
         x /= Math.pow(10, e);
-        x += new Array(e + 1).join("0");
+        x += caml_str_repeat(e, "0");
         if (dp > 0) {
-          x = x + "." + new Array(dp + 1).join("0");
+          x = x + "." + caml_str_repeat(dp, "0");
         }
         return x;
       } else return x.toFixed(dp);
