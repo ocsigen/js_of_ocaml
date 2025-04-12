@@ -18,8 +18,6 @@
 
 type trampolined_calls = Code.Var.Set.t
 
-val remove_empty_blocks : live_vars:Deadcode.variable_uses -> Code.program -> Code.program
-
 type in_cps = Code.Var.Set.t
 
 val f :

@@ -19,6 +19,7 @@
 * Runtime/wasm: support unmarshaling compressed data (#1898)
 * Runtime/wasm: make resuming a continuation more efficient in Wasm (#1892)
 * Compiler: improve performance of Javascript linking
+* Compiler: remove empty blocks (#1934)
 * Ppx: explicitly disallow polymorphic method (#1897)
 * Ppx: allow "function" in object literals (#1897)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)

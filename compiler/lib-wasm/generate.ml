@@ -1238,7 +1238,7 @@ let start () = make_context ~value_type:Gc_target.Value.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
   let t = Timer.make () in
-  let p = if effects_cps () then fix_switch_branches p else p in
+  let p = fix_switch_branches p in
   let module G = Generate (Gc_target) in
   let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;

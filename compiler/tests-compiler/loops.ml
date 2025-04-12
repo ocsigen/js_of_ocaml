@@ -130,18 +130,21 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
-      for(;;){
-       for(;;){if(10 <= runtime.caml_mul(k, j)) break; id[1]++;}
-       var _b_ = j + 1 | 0;
-       if(10 === j) break;
-       j = _b_;
-      }
+      for(;;)
+       if(10 <= runtime.caml_mul(k, j)){
+        var _b_ = j + 1 | 0;
+        if(10 === j) break;
+        j = _b_;
+       }
+       else
+        id[1]++;
       var _a_ = k + 1 | 0;
       if(10 === k) return 0;
       k = _a_;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "for-for-while-try" =
   let program =
@@ -166,23 +169,24 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
-      for(;;){
-       for(;;){
-        if(10 <= caml_div(k, j)) break;
+      for(;;)
+       if(10 <= caml_div(k, j)){
+        var _b_ = j + 1 | 0;
+        if(10 === j) break;
+        j = _b_;
+       }
+       else{
         try{caml_div(k, j);}
         catch(_c_){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
         id[1]++;
        }
-       var _b_ = j + 1 | 0;
-       if(10 === j) break;
-       j = _b_;
-      }
       var _a_ = k + 1 | 0;
       if(10 === k) return 0;
       k = _a_;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "loop seq.ml" =
   let program =
@@ -454,35 +458,25 @@ let add_substitute =
         a:
         {
          if(40 !== opening && 123 !== opening){
-          var start = start$0 + 1 | 0, lim$0 = caml_ml_string_length(s);
-          b:
-          {
-           c:
-           {
-            d:
-            {
-             var i$2 = start;
-             for(;;){
-              if(lim$0 <= i$2) break c;
-              var match = caml_string_get(s, i$2);
-              if(91 <= match){
-               if(97 <= match){
-                if(123 <= match) break d;
-               }
-               else if(95 !== match) break d;
-              }
-              else if(58 <= match){
-               if(65 > match) break;
-              }
-              else if(48 > match) break d;
-              var i$3 = i$2 + 1 | 0;
-              i$2 = i$3;
-             }
+          var
+           start = start$0 + 1 | 0,
+           lim$0 = caml_ml_string_length(s),
+           i$2 = start;
+          for(;;){
+           if(lim$0 <= i$2){var stop$0 = lim$0; break;}
+           var match = caml_string_get(s, i$2);
+           if(91 <= match){
+            if(97 <= match){
+             if(123 <= match){var stop$0 = i$2; break;}
             }
-            var stop$0 = i$2;
-            break b;
+            else if(95 !== match){var stop$0 = i$2; break;}
            }
-           var stop$0 = lim$0;
+           else if(58 <= match){
+            if(65 > match){var stop$0 = i$2; break;}
+           }
+           else if(48 > match){var stop$0 = i$2; break;}
+           var i$3 = i$2 + 1 | 0;
+           i$2 = i$3;
           }
           var
            match$0 =
@@ -544,7 +538,8 @@ let add_substitute =
       }
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "Bytes.trim" =
   let program =

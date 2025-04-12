@@ -142,11 +142,11 @@ let%expect_test "static eval of string get" =
       key = param[1],
       data = param[2],
       next = param[3],
-      prec$1 = [0, key, data, next],
-      prec = prec$1,
+      r = [0, key, data, next],
+      prec = r,
       param$0 = next;
      for(;;){
-      if(! param$0) return prec$1;
+      if(! param$0) return r;
       var
        key$0 = param$0[1],
        data$0 = param$0[2],
@@ -157,7 +157,8 @@ let%expect_test "static eval of string get" =
       param$0 = next$0;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "static eval of tags (optimized switch)" =
   let program =
@@ -192,7 +193,7 @@ let%expect_test "static eval of tags (optimized switch)" =
        var
         global_data = runtime.caml_get_global_data(),
         Stdlib_Random = global_data.Stdlib__Random;
-       1 < caml_call1(Stdlib_Random[5], 3);
+       caml_call1(Stdlib_Random[5], 3);
        var
         foobar = 3,
         export$0 = [0, foobar, foobar],
@@ -238,7 +239,7 @@ let%expect_test "static eval of tags" =
        var
         global_data = runtime.caml_get_global_data(),
         Stdlib_Random = global_data.Stdlib__Random;
-       1 < caml_call1(Stdlib_Random[5], 3);
+       caml_call1(Stdlib_Random[5], 3);
        var
         foobar = 3,
         export$0 = [0, foobar, foobar],
@@ -296,15 +297,15 @@ let%expect_test "static eval int prims" =
        var
         global_data = runtime.caml_get_global_data(),
         Stdlib_Random = global_data.Stdlib__Random;
-       1 < caml_call1(Stdlib_Random[5], 3);
+       caml_call1(Stdlib_Random[5], 3);
        var lt = 1;
-       1 < caml_call1(Stdlib_Random[5], 3);
+       caml_call1(Stdlib_Random[5], 3);
        var le = 1;
-       1 < caml_call1(Stdlib_Random[5], 3);
+       caml_call1(Stdlib_Random[5], 3);
        var eq = 0;
-       1 < caml_call1(Stdlib_Random[5], 3);
+       caml_call1(Stdlib_Random[5], 3);
        var neq = 1;
-       1 < caml_call1(Stdlib_Random[5], 3);
+       caml_call1(Stdlib_Random[5], 3);
        var
         ult = 1,
         export$0 = [0, lt, le, eq, neq, ult],

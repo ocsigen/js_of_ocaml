@@ -24,10 +24,11 @@ let f x =
     (function(globalThis){
        "use strict";
        var runtime = globalThis.jsoo_runtime;
-       function f(x){for(;;) switch(x){case 0: break;case 1: break;}}
+       function f(x){for(;;) ;}
        var Test = [0, f];
        runtime.caml_register_global(0, Test, "Test");
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

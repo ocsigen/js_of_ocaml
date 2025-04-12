@@ -45,12 +45,11 @@ let%expect_test "conditional" =
     function f(a, b, c, d, e, f){
      a:
      {
-      b:
       if(a){
        if(! b && ! c && ! d && ! e && ! f){var x = 1; break a;}
       }
       else if(b){
-       if(! c && ! d){if(e) break b; if(f) break b; var x = 2; break a;}
+       if(! c && ! d && ! e && ! f){var x = 2; break a;}
       }
       else if(c){
        if(! d && ! e && ! f){var x = 3; break a;}
@@ -66,4 +65,5 @@ let%expect_test "conditional" =
      }
      return x + 2 | 0;
     }
-    //end |}]
+    //end
+    |}]
