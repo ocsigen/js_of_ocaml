@@ -48,24 +48,7 @@
 
 //Provides: caml_str_repeat
 function caml_str_repeat(n, s) {
-  if (n === 0) return "";
-  if (s.repeat) {
-    return s.repeat(n);
-  } // ECMAscript 6 and Firefox 24+
-  var r = "",
-    l = 0;
-  for (;;) {
-    if (n & 1) r += s;
-    n >>= 1;
-    if (n === 0) return r;
-    s += s;
-    l++;
-    if (l === 9) {
-      s.slice(0, 1); // flatten the string
-      // then, the flattening of the whole string will be faster,
-      // as it will be composed of larger pieces
-    }
-  }
+  return s.repeat(n);
 }
 
 //Provides: caml_subarray_to_jsbytes
