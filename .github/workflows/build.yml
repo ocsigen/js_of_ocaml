@@ -107,9 +107,14 @@ jobs:
           node-version: latest
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-        uses: hhugo/setup-ocaml@e2c53ef4dfff086a9e29c70199e2c5049fb3f68f
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Fix cygwin
+        if: runner.os == 'Windows'
+        shell: bash
+        run: sed -i -e 's/binary/noacl,&/' /etc/fstab
 
       # Pin Dune to a version which supports the new --effects flag
       # (https://github.com/ocaml/dune/pull/11222).
