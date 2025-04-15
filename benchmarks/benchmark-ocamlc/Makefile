@@ -15,7 +15,7 @@ ARGS=ml/*.ml ml/*.ml ml/*.ml ml/*.ml ml/*.ml ml/*.ml ml/*.ml ml/*.ml
 
 perform:
 	/usr/bin/time -f "%E %R" $(COMPILER) --debug times --opt 2 --pretty `which ocamlc.byte` -o $(SCRIPT) 2>&1 | \
-	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) $(NAME) | \
+	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) $(NAME) $(SCRIPT) | \
 	sh ../utils/aggregate.sh $(KIND)
 	/usr/bin/time -f '{"compiler": "$(COMPILER)", "time":"%E"}' node $(SCRIPT) -c $(ARGS) 2>&1 | \
 	sh ../utils/format_metrics.sh exec | \
