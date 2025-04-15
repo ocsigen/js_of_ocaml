@@ -32,11 +32,6 @@ let effects_cps () =
 module Generate (Target : Target_sig.S) = struct
   open Target
 
-  let transl_prim_arg x =
-    match x with
-    | Pv x -> load x
-    | Pc c -> Constant.translate c
-
   type ctx =
     { live : int array
     ; in_cps : Effects.in_cps
@@ -46,6 +41,28 @@ module Generate (Target : Target_sig.S) = struct
     ; global_context : Code_generation.context
     ; debug : Parse_bytecode.Debug.t
     }
+
+  let label_index context pc =
+    let rec index_rec context pc i =
+      match context with
+      | `Block pc' :: _ when pc = pc' -> i
+      | (`Block _ | `Skip | `Catch) :: rem -> index_rec rem pc (i + 1)
+      | [] -> assert false
+    in
+    index_rec context pc 0
+
+  let catch_index context =
+    let rec index_rec context i =
+      match context with
+      | `Catch :: _ -> Some i
+      | (`Block _ | `Skip | `Return) :: rem -> index_rec rem (i + 1)
+      | [] -> None
+    in
+    index_rec context 0
+
+  let bound_error_pc = -1
+
+  let zero_divide_pc = -2
 
   type repr =
     | Value
@@ -62,7 +79,7 @@ module Generate (Target : Target_sig.S) = struct
     | Nativeint -> I32
     | Int64 -> I64
 
-  let specialized_func_type (params, result) =
+  let specialized_func_type (_, params, result) =
     { W.params = List.map ~f:repr_type params; result = [ repr_type result ] }
 
   let box_value r e =
@@ -85,30 +102,29 @@ module Generate (Target : Target_sig.S) = struct
     let h = Hashtbl.create 18 in
     List.iter
       ~f:(fun (nm, typ) -> Hashtbl.add h nm typ)
-      [ "caml_int32_bswap", ([ Int32 ], Int32)
-      ; "caml_nativeint_bswap", ([ Nativeint ], Nativeint)
-      ; "caml_int64_bswap", ([ Int64 ], Int64)
-      ; "caml_int32_compare", ([ Int32; Int32 ], Value)
-      ; "caml_nativeint_compare", ([ Nativeint; Nativeint ], Value)
-      ; "caml_int64_compare", ([ Int64; Int64 ], Value)
-      ; "caml_string_get32", ([ Value; Value ], Int32)
-      ; "caml_string_get64", ([ Value; Value ], Int64)
-      ; "caml_bytes_get32", ([ Value; Value ], Int32)
-      ; "caml_bytes_get64", ([ Value; Value ], Int64)
-      ; "caml_bytes_set32", ([ Value; Value; Int32 ], Value)
-      ; "caml_bytes_set64", ([ Value; Value; Int64 ], Value)
-      ; "caml_lxm_next", ([ Value ], Int64)
-      ; "caml_ba_uint8_get32", ([ Value; Value ], Int32)
-      ; "caml_ba_uint8_get64", ([ Value; Value ], Int64)
-      ; "caml_ba_uint8_set32", ([ Value; Value; Int32 ], Value)
-      ; "caml_ba_uint8_set64", ([ Value; Value; Int64 ], Value)
-      ; "caml_nextafter_float", ([ Float; Float ], Float)
-      ; "caml_classify_float", ([ Float ], Value)
-      ; "caml_ldexp_float", ([ Float; Value ], Float)
-      ; "caml_signbit_float", ([ Float ], Value)
-      ; "caml_erf_float", ([ Float ], Float)
-      ; "caml_erfc_float", ([ Float ], Float)
-      ; "caml_float_compare", ([ Float; Float ], Value)
+      [ "caml_int32_bswap", (`Pure, [ Int32 ], Int32)
+      ; "caml_nativeint_bswap", (`Pure, [ Nativeint ], Nativeint)
+      ; "caml_int64_bswap", (`Pure, [ Int64 ], Int64)
+      ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Value)
+      ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Value)
+      ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Value)
+      ; "caml_string_get32", (`Mutator, [ Value; Value ], Int32)
+      ; "caml_string_get64", (`Mutator, [ Value; Value ], Int64)
+      ; "caml_bytes_get32", (`Mutator, [ Value; Value ], Int32)
+      ; "caml_bytes_get64", (`Mutator, [ Value; Value ], Int64)
+      ; "caml_bytes_set32", (`Mutator, [ Value; Value; Int32 ], Value)
+      ; "caml_bytes_set64", (`Mutator, [ Value; Value; Int64 ], Value)
+      ; "caml_lxm_next", (`Pure, [ Value ], Int64)
+      ; "caml_ba_uint8_get32", (`Mutator, [ Value; Value ], Int32)
+      ; "caml_ba_uint8_get64", (`Mutator, [ Value; Value ], Int64)
+      ; "caml_ba_uint8_set32", (`Mutator, [ Value; Value; Int32 ], Value)
+      ; "caml_ba_uint8_set64", (`Mutator, [ Value; Value; Int64 ], Value)
+      ; "caml_nextafter_float", (`Pure, [ Float; Float ], Float)
+      ; "caml_classify_float", (`Pure, [ Float ], Value)
+      ; "caml_ldexp_float", (`Pure, [ Float; Value ], Float)
+      ; "caml_erf_float", (`Pure, [ Float ], Float)
+      ; "caml_erfc_float", (`Pure, [ Float ], Float)
+      ; "caml_float_compare", (`Pure, [ Float; Float ], Value)
       ];
     h
 
@@ -164,27 +180,433 @@ module Generate (Target : Target_sig.S) = struct
     let* g = Value.int_val g in
     Memory.box_nativeint (return (W.BinOp (I32 op, f, g)))
 
-  let label_index context pc =
-    let rec index_rec context pc i =
-      match context with
-      | `Block pc' :: _ when pc = pc' -> i
-      | (`Block _ | `Skip | `Catch) :: rem -> index_rec rem pc (i + 1)
-      | [] -> assert false
+  let transl_prim_arg x =
+    match x with
+    | Pv x -> load x
+    | Pc c -> Constant.translate c
+
+  let internal_primitives =
+    let h = Hashtbl.create 128 in
+    List.iter
+      ~f:(fun (nm, k, f) ->
+        Hashtbl.add h nm (k, fun _ _ transl_prim_arg l -> f transl_prim_arg l))
+      internal_primitives;
+    h
+
+  let register_prim name k f = Hashtbl.add internal_primitives name (k, f)
+
+  let invalid_arity name l ~expected =
+    failwith
+      (Printf.sprintf
+         "Invalid arity for primitive %s. Expecting %d but used with %d."
+         name
+         expected
+         (List.length l))
+
+  let register_un_prim name k f =
+    register_prim name k (fun _ _ transl_prim_arg l ->
+        match l with
+        | [ x ] -> f (transl_prim_arg x)
+        | l -> invalid_arity name l ~expected:1)
+
+  let register_bin_prim name k f =
+    register_prim name k (fun _ _ transl_prim_arg l ->
+        match l with
+        | [ x; y ] -> f (transl_prim_arg x) (transl_prim_arg y)
+        | _ -> invalid_arity name l ~expected:2)
+
+  let register_bin_prim_ctx name f =
+    register_prim name `Mutator (fun _ context transl_prim_arg l ->
+        match l with
+        | [ x; y ] -> f context (transl_prim_arg x) (transl_prim_arg y)
+        | _ -> invalid_arity name l ~expected:2)
+
+  let register_tern_prim name f =
+    register_prim name `Mutator (fun _ _ transl_prim_arg l ->
+        match l with
+        | [ x; y; z ] -> f (transl_prim_arg x) (transl_prim_arg y) (transl_prim_arg z)
+        | _ -> invalid_arity name l ~expected:3)
+
+  let register_tern_prim_ctx name f =
+    register_prim name `Mutator (fun _ context transl_prim_arg l ->
+        match l with
+        | [ x; y; z ] ->
+            f context (transl_prim_arg x) (transl_prim_arg y) (transl_prim_arg z)
+        | _ -> invalid_arity name l ~expected:3)
+
+  let () =
+    register_bin_prim "caml_array_unsafe_get" `Mutable Memory.gen_array_get;
+    register_bin_prim "caml_floatarray_unsafe_get" `Mutable Memory.float_array_get;
+    register_tern_prim "caml_array_unsafe_set" (fun x y z ->
+        seq (Memory.gen_array_set x y z) Value.unit);
+    register_tern_prim "caml_array_unsafe_set_addr" (fun x y z ->
+        seq (Memory.array_set x y z) Value.unit);
+    register_tern_prim "caml_floatarray_unsafe_set" (fun x y z ->
+        seq (Memory.float_array_set x y z) Value.unit);
+    register_bin_prim "caml_string_unsafe_get" `Pure Memory.bytes_get;
+    register_bin_prim "caml_bytes_unsafe_get" `Mutable Memory.bytes_get;
+    register_tern_prim "caml_string_unsafe_set" (fun x y z ->
+        seq (Memory.bytes_set x y z) Value.unit);
+    register_tern_prim "caml_bytes_unsafe_set" (fun x y z ->
+        seq (Memory.bytes_set x y z) Value.unit);
+    let bytes_get context x y =
+      seq
+        (let* cond = Arith.uge (Value.int_val y) (Memory.bytes_length x) in
+         instr (W.Br_if (label_index context bound_error_pc, cond)))
+        (Memory.bytes_get x y)
     in
-    index_rec context pc 0
-
-  let catch_index context =
-    let rec index_rec context i =
-      match context with
-      | `Catch :: _ -> Some i
-      | (`Block _ | `Skip | `Return) :: rem -> index_rec rem (i + 1)
-      | [] -> None
+    register_bin_prim_ctx "caml_string_get" bytes_get;
+    register_bin_prim_ctx "caml_bytes_get" bytes_get;
+    let bytes_set context x y z =
+      seq
+        (let* cond = Arith.uge (Value.int_val y) (Memory.bytes_length x) in
+         let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+         Memory.bytes_set x y z)
+        Value.unit
     in
-    index_rec context 0
-
-  let bound_error_pc = -1
-
-  let zero_divide_pc = -2
+    register_tern_prim_ctx "caml_string_set" bytes_set;
+    register_tern_prim_ctx "caml_bytes_set" bytes_set;
+    register_un_prim "caml_ml_string_length" `Pure (fun x ->
+        Value.val_int (Memory.bytes_length x));
+    register_un_prim "caml_ml_bytes_length" `Pure (fun x ->
+        Value.val_int (Memory.bytes_length x));
+    register_bin_prim "%int_add" `Pure Value.int_add;
+    register_bin_prim "%int_sub" `Pure Value.int_sub;
+    register_bin_prim "%int_mul" `Pure Value.int_mul;
+    register_bin_prim "%direct_int_mul" `Pure Value.int_mul;
+    register_bin_prim "%direct_int_div" `Pure Value.int_div;
+    register_bin_prim_ctx "%int_div" (fun context x y ->
+        seq
+          (let* cond = Arith.eqz (Value.int_val y) in
+           instr (W.Br_if (label_index context zero_divide_pc, cond)))
+          (Value.int_div x y));
+    register_bin_prim "%direct_int_mod" `Pure Value.int_mod;
+    register_bin_prim_ctx "%int_mod" (fun context x y ->
+        seq
+          (let* cond = Arith.eqz (Value.int_val y) in
+           instr (W.Br_if (label_index context zero_divide_pc, cond)))
+          (Value.int_mod x y));
+    register_un_prim "%int_neg" `Pure Value.int_neg;
+    register_bin_prim "%int_or" `Pure Value.int_or;
+    register_bin_prim "%int_and" `Pure Value.int_and;
+    register_bin_prim "%int_xor" `Pure Value.int_xor;
+    register_bin_prim "%int_lsl" `Pure Value.int_lsl;
+    register_bin_prim "%int_lsr" `Pure Value.int_lsr;
+    register_bin_prim "%int_asr" `Pure Value.int_asr;
+    register_un_prim "%direct_obj_tag" `Pure Memory.tag;
+    register_bin_prim_ctx "caml_check_bound" (fun context x y ->
+        seq
+          (let* cond = Arith.uge (Value.int_val y) (Memory.array_length x) in
+           instr (W.Br_if (label_index context bound_error_pc, cond)))
+          x);
+    register_bin_prim_ctx "caml_check_bound_gen" (fun context x y ->
+        seq
+          (let* cond = Arith.uge (Value.int_val y) (Memory.gen_array_length x) in
+           instr (W.Br_if (label_index context bound_error_pc, cond)))
+          x);
+    register_bin_prim_ctx "caml_check_bound_float" (fun context x y ->
+        seq
+          (let a = Code.Var.fresh () in
+           let* () = store a x in
+           let label = label_index context bound_error_pc in
+           (* If this is not a float array, it must be the
+                      empty array, and the bound check should fail. *)
+           let* cond = Arith.eqz (Memory.check_is_float_array (load a)) in
+           let* () = instr (W.Br_if (label, cond)) in
+           let* cond = Arith.uge (Value.int_val y) (Memory.float_array_length (load a)) in
+           instr (W.Br_if (label, cond)))
+          x);
+    register_bin_prim "caml_add_float" `Pure (fun f g -> float_bin_op Add f g);
+    register_bin_prim "caml_sub_float" `Pure (fun f g -> float_bin_op Sub f g);
+    register_bin_prim "caml_mul_float" `Pure (fun f g -> float_bin_op Mul f g);
+    register_bin_prim "caml_div_float" `Pure (fun f g -> float_bin_op Div f g);
+    register_bin_prim "caml_copysign_float" `Pure (fun f g -> float_bin_op CopySign f g);
+    register_un_prim "caml_signbit_float" `Pure (fun f ->
+        let* f = Memory.unbox_float f in
+        let sign = W.BinOp (F64 CopySign, Const (F64 1.), f) in
+        Value.val_int (return (W.BinOp (F64 Lt, sign, Const (F64 0.)))));
+    register_un_prim "caml_neg_float" `Pure (fun f -> float_un_op Neg f);
+    register_un_prim "caml_abs_float" `Pure (fun f -> float_un_op Abs f);
+    register_un_prim "caml_ceil_float" `Pure (fun f -> float_un_op Ceil f);
+    register_un_prim "caml_floor_float" `Pure (fun f -> float_un_op Floor f);
+    register_un_prim "caml_trunc_float" `Pure (fun f -> float_un_op Trunc f);
+    register_un_prim "caml_round_float" `Pure (fun f -> float_un_op' Math.round f);
+    register_un_prim "caml_sqrt_float" `Pure (fun f -> float_un_op Sqrt f);
+    register_bin_prim "caml_eq_float" `Pure (fun f g -> float_comparison Eq f g);
+    register_bin_prim "caml_neq_float" `Pure (fun f g -> float_comparison Ne f g);
+    register_bin_prim "caml_ge_float" `Pure (fun f g -> float_comparison Ge f g);
+    register_bin_prim "caml_le_float" `Pure (fun f g -> float_comparison Le f g);
+    register_bin_prim "caml_gt_float" `Pure (fun f g -> float_comparison Gt f g);
+    register_bin_prim "caml_lt_float" `Pure (fun f g -> float_comparison Lt f g);
+    register_un_prim "caml_int_of_float" `Pure (fun f ->
+        let* f = Memory.unbox_float f in
+        Value.val_int (return (W.UnOp (I32 (TruncSatF64 S), f))));
+    register_un_prim "caml_float_of_int" `Pure (fun n ->
+        let* n = Value.int_val n in
+        Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n))));
+    register_un_prim "caml_cos_float" `Pure (fun f -> float_un_op' Math.cos f);
+    register_un_prim "caml_sin_float" `Pure (fun f -> float_un_op' Math.sin f);
+    register_un_prim "caml_tan_float" `Pure (fun f -> float_un_op' Math.tan f);
+    register_un_prim "caml_acos_float" `Pure (fun f -> float_un_op' Math.acos f);
+    register_un_prim "caml_asin_float" `Pure (fun f -> float_un_op' Math.asin f);
+    register_un_prim "caml_atan_float" `Pure (fun f -> float_un_op' Math.atan f);
+    register_bin_prim "caml_atan2_float" `Pure (fun f g -> float_bin_op' Math.atan2 f g);
+    register_un_prim "caml_cosh_float" `Pure (fun f -> float_un_op' Math.cosh f);
+    register_un_prim "caml_sinh_float" `Pure (fun f -> float_un_op' Math.sinh f);
+    register_un_prim "caml_tanh_float" `Pure (fun f -> float_un_op' Math.tanh f);
+    register_un_prim "caml_acosh_float" `Pure (fun f -> float_un_op' Math.acosh f);
+    register_un_prim "caml_asinh_float" `Pure (fun f -> float_un_op' Math.asinh f);
+    register_un_prim "caml_atanh_float" `Pure (fun f -> float_un_op' Math.atanh f);
+    register_un_prim "caml_cbrt_float" `Pure (fun f -> float_un_op' Math.cbrt f);
+    register_un_prim "caml_exp_float" `Pure (fun f -> float_un_op' Math.exp f);
+    register_un_prim "caml_exp2_float" `Pure (fun f -> float_un_op' Math.exp2 f);
+    register_un_prim "caml_log_float" `Pure (fun f -> float_un_op' Math.log f);
+    register_un_prim "caml_expm1_float" `Pure (fun f -> float_un_op' Math.expm1 f);
+    register_un_prim "caml_log1p_float" `Pure (fun f -> float_un_op' Math.log1p f);
+    register_un_prim "caml_log2_float" `Pure (fun f -> float_un_op' Math.log2 f);
+    register_un_prim "caml_log10_float" `Pure (fun f -> float_un_op' Math.log10 f);
+    register_bin_prim "caml_power_float" `Pure (fun f g -> float_bin_op' Math.power f g);
+    register_bin_prim "caml_hypot_float" `Pure (fun f g -> float_bin_op' Math.hypot f g);
+    register_bin_prim "caml_fmod_float" `Pure (fun f g -> float_bin_op' Math.fmod f g);
+    register_un_prim "caml_int32_bits_of_float" `Pure (fun f ->
+        let* f = Memory.unbox_float f in
+        Memory.box_int32 (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f))));
+    register_un_prim "caml_int32_float_of_bits" `Pure (fun i ->
+        let* i = Memory.unbox_int32 i in
+        Memory.box_float (return (W.F64PromoteF32 (UnOp (F32 ReinterpretI, i)))));
+    register_un_prim "caml_int32_of_float" `Pure (fun f ->
+        let* f = Memory.unbox_float f in
+        Memory.box_int32 (return (W.UnOp (I32 (TruncSatF64 S), f))));
+    register_un_prim "caml_int32_to_float" `Pure (fun n ->
+        let* n = Memory.unbox_int32 n in
+        Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n))));
+    register_un_prim "caml_int32_neg" `Pure (fun i ->
+        let* i = Memory.unbox_int32 i in
+        Memory.box_int32 (return (W.BinOp (I32 Sub, Const (I32 0l), i))));
+    register_bin_prim "caml_int32_add" `Pure (fun i j -> int32_bin_op Add i j);
+    register_bin_prim "caml_int32_sub" `Pure (fun i j -> int32_bin_op Sub i j);
+    register_bin_prim "caml_int32_mul" `Pure (fun i j -> int32_bin_op Mul i j);
+    register_bin_prim "caml_int32_and" `Pure (fun i j -> int32_bin_op And i j);
+    register_bin_prim "caml_int32_or" `Pure (fun i j -> int32_bin_op Or i j);
+    register_bin_prim "caml_int32_xor" `Pure (fun i j -> int32_bin_op Xor i j);
+    register_bin_prim_ctx "caml_int32_div" (fun context i j ->
+        let res = Var.fresh () in
+        (*ZZZ Can we do better?*)
+        let i' = Var.fresh () in
+        let j' = Var.fresh () in
+        seq
+          (let* () = store ~typ:I32 j' (Memory.unbox_int32 j) in
+           let* () =
+             let* j = load j' in
+             instr (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j)))
+           in
+           let* () = store ~typ:I32 i' (Memory.unbox_int32 i) in
+           if_
+             { params = []; result = [] }
+             Arith.(
+               (let* j = load j' in
+                return (W.BinOp (I32 Eq, j, Const (I32 (-1l)))))
+               land let* i = load i' in
+                    return (W.BinOp (I32 Eq, i, Const (I32 Int32.min_int))))
+             (store ~always:true ~typ:I32 res (return (W.Const (I32 Int32.min_int))))
+             (store
+                ~always:true
+                ~typ:I32
+                res
+                (let* i = load i' in
+                 let* j = load j' in
+                 return (W.BinOp (I32 (Div S), i, j)))))
+          (Memory.box_int32 (load res)));
+    register_bin_prim_ctx "caml_int32_mod" (fun context i j ->
+        let j' = Var.fresh () in
+        seq
+          (let* () = store ~typ:I32 j' (Memory.unbox_int32 j) in
+           let* j = load j' in
+           instr (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j))))
+          (let* i = Memory.unbox_int32 i in
+           let* j = load j' in
+           Memory.box_int32 (return (W.BinOp (I32 (Rem S), i, j)))));
+    register_bin_prim "caml_int32_shift_left" `Pure (fun i j -> int32_shift_op Shl i j);
+    register_bin_prim "caml_int32_shift_right" `Pure (fun i j ->
+        int32_shift_op (Shr S) i j);
+    register_bin_prim "caml_int32_shift_right_unsigned" `Pure (fun i j ->
+        int32_shift_op (Shr U) i j);
+    register_un_prim "caml_int32_to_int" `Pure (fun i ->
+        Value.val_int (Memory.unbox_int32 i));
+    register_un_prim "caml_int32_of_int" `Pure (fun i ->
+        Memory.box_int32 (Value.int_val i));
+    register_un_prim "caml_nativeint_of_int32" `Pure (fun i ->
+        Memory.box_nativeint (Memory.unbox_int32 i));
+    register_un_prim "caml_nativeint_to_int32" `Pure (fun i ->
+        Memory.box_int32 (Memory.unbox_nativeint i));
+    register_un_prim "caml_int64_bits_of_float" `Pure (fun f ->
+        let* f = Memory.unbox_float f in
+        Memory.box_int64 (return (W.UnOp (I64 ReinterpretF, f))));
+    register_un_prim "caml_int64_float_of_bits" `Pure (fun i ->
+        let* i = Memory.unbox_int64 i in
+        Memory.box_float (return (W.UnOp (F64 ReinterpretI, i))));
+    register_un_prim "caml_int64_of_float" `Pure (fun f ->
+        let* f = Memory.unbox_float f in
+        Memory.box_int64 (return (W.UnOp (I64 (TruncSatF64 S), f))));
+    register_un_prim "caml_int64_to_float" `Pure (fun n ->
+        let* n = Memory.unbox_int64 n in
+        Memory.box_float (return (W.UnOp (F64 (Convert (`I64, S)), n))));
+    register_un_prim "caml_int64_neg" `Pure (fun i ->
+        let* i = Memory.unbox_int64 i in
+        Memory.box_int64 (return (W.BinOp (I64 Sub, Const (I64 0L), i))));
+    register_bin_prim "caml_int64_add" `Pure (fun i j -> int64_bin_op Add i j);
+    register_bin_prim "caml_int64_sub" `Pure (fun i j -> int64_bin_op Sub i j);
+    register_bin_prim "caml_int64_mul" `Pure (fun i j -> int64_bin_op Mul i j);
+    register_bin_prim "caml_int64_and" `Pure (fun i j -> int64_bin_op And i j);
+    register_bin_prim "caml_int64_or" `Pure (fun i j -> int64_bin_op Or i j);
+    register_bin_prim "caml_int64_xor" `Pure (fun i j -> int64_bin_op Xor i j);
+    register_bin_prim_ctx "caml_int64_div" (fun context i j ->
+        let res = Var.fresh () in
+        (*ZZZ Can we do better?*)
+        let i' = Var.fresh () in
+        let j' = Var.fresh () in
+        seq
+          (let* () = store ~typ:I64 j' (Memory.unbox_int64 j) in
+           let* () =
+             let* j = load j' in
+             instr (W.Br_if (label_index context zero_divide_pc, W.UnOp (I64 Eqz, j)))
+           in
+           let* () = store ~typ:I64 i' (Memory.unbox_int64 i) in
+           if_
+             { params = []; result = [] }
+             Arith.(
+               (let* j = load j' in
+                return (W.BinOp (I64 Eq, j, Const (I64 (-1L)))))
+               land let* i = load i' in
+                    return (W.BinOp (I64 Eq, i, Const (I64 Int64.min_int))))
+             (store ~always:true ~typ:I64 res (return (W.Const (I64 Int64.min_int))))
+             (store
+                ~always:true
+                ~typ:I64
+                res
+                (let* i = load i' in
+                 let* j = load j' in
+                 return (W.BinOp (I64 (Div S), i, j)))))
+          (Memory.box_int64 (load res)));
+    register_bin_prim_ctx "caml_int64_mod" (fun context i j ->
+        let j' = Var.fresh () in
+        seq
+          (let* () = store ~typ:I64 j' (Memory.unbox_int64 j) in
+           let* j = load j' in
+           instr (W.Br_if (label_index context zero_divide_pc, W.UnOp (I64 Eqz, j))))
+          (let* i = Memory.unbox_int64 i in
+           let* j = load j' in
+           Memory.box_int64 (return (W.BinOp (I64 (Rem S), i, j)))));
+    register_bin_prim "caml_int64_shift_left" `Pure (fun i j -> int64_shift_op Shl i j);
+    register_bin_prim "caml_int64_shift_right" `Pure (fun i j ->
+        int64_shift_op (Shr S) i j);
+    register_bin_prim "caml_int64_shift_right_unsigned" `Pure (fun i j ->
+        int64_shift_op (Shr U) i j);
+    register_un_prim "caml_int64_to_int" `Pure (fun i ->
+        let* i = Memory.unbox_int64 i in
+        Value.val_int (return (W.I32WrapI64 i)));
+    register_un_prim "caml_int64_of_int" `Pure (fun i ->
+        let* i = Value.int_val i in
+        Memory.box_int64
+          (return
+             (match i with
+             | Const (I32 i) -> W.Const (I64 (Int64.of_int32 i))
+             | _ -> W.I64ExtendI32 (S, i))));
+    register_un_prim "caml_int64_to_int32" `Pure (fun i ->
+        let* i = Memory.unbox_int64 i in
+        Memory.box_int32 (return (W.I32WrapI64 i)));
+    register_un_prim "caml_int64_of_int32" `Pure (fun i ->
+        let* i = Memory.unbox_int32 i in
+        Memory.box_int64 (return (W.I64ExtendI32 (S, i))));
+    register_un_prim "caml_int64_to_nativeint" `Pure (fun i ->
+        let* i = Memory.unbox_int64 i in
+        Memory.box_nativeint (return (W.I32WrapI64 i)));
+    register_un_prim "caml_int64_of_nativeint" `Pure (fun i ->
+        let* i = Memory.unbox_nativeint i in
+        Memory.box_int64 (return (W.I64ExtendI32 (S, i))));
+    register_un_prim "caml_nativeint_bits_of_float" `Pure (fun f ->
+        let* f = Memory.unbox_float f in
+        Memory.box_nativeint (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f))));
+    register_un_prim "caml_nativeint_float_of_bits" `Pure (fun i ->
+        let* i = Memory.unbox_int64 i in
+        Memory.box_float (return (W.F64PromoteF32 (UnOp (I32 ReinterpretF, i)))));
+    register_un_prim "caml_nativeint_of_float" `Pure (fun f ->
+        let* f = Memory.unbox_float f in
+        Memory.box_nativeint (return (W.UnOp (I32 (TruncSatF64 S), f))));
+    register_un_prim "caml_nativeint_to_float" `Pure (fun n ->
+        let* n = Memory.unbox_nativeint n in
+        Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n))));
+    register_un_prim "caml_nativeint_neg" `Pure (fun i ->
+        let* i = Memory.unbox_nativeint i in
+        Memory.box_nativeint (return (W.BinOp (I32 Sub, Const (I32 0l), i))));
+    register_bin_prim "caml_nativeint_add" `Pure (fun i j -> nativeint_bin_op Add i j);
+    register_bin_prim "caml_nativeint_sub" `Pure (fun i j -> nativeint_bin_op Sub i j);
+    register_bin_prim "caml_nativeint_mul" `Pure (fun i j -> nativeint_bin_op Mul i j);
+    register_bin_prim "caml_nativeint_and" `Pure (fun i j -> nativeint_bin_op And i j);
+    register_bin_prim "caml_nativeint_or" `Pure (fun i j -> nativeint_bin_op Or i j);
+    register_bin_prim "caml_nativeint_xor" `Pure (fun i j -> nativeint_bin_op Xor i j);
+    register_bin_prim_ctx "caml_nativeint_div" (fun context i j ->
+        let res = Var.fresh () in
+        (*ZZZ Can we do better?*)
+        let i' = Var.fresh () in
+        let j' = Var.fresh () in
+        seq
+          (let* () = store ~typ:I32 j' (Memory.unbox_nativeint j) in
+           let* () =
+             let* j = load j' in
+             instr (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j)))
+           in
+           let* () = store ~typ:I32 i' (Memory.unbox_nativeint i) in
+           if_
+             { params = []; result = [] }
+             Arith.(
+               (let* j = load j' in
+                return (W.BinOp (I32 Eq, j, Const (I32 (-1l)))))
+               land let* i = load i' in
+                    return (W.BinOp (I32 Eq, i, Const (I32 Int32.min_int))))
+             (store ~always:true ~typ:I32 res (return (W.Const (I32 Int32.min_int))))
+             (store
+                ~always:true
+                ~typ:I32
+                res
+                (let* i = load i' in
+                 let* j = load j' in
+                 return (W.BinOp (I32 (Div S), i, j)))))
+          (Memory.box_nativeint (load res)));
+    register_bin_prim_ctx "caml_nativeint_mod" (fun context i j ->
+        let j' = Var.fresh () in
+        seq
+          (let* () = store ~typ:I32 j' (Memory.unbox_nativeint j) in
+           let* j = load j' in
+           instr (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j))))
+          (let* i = Memory.unbox_nativeint i in
+           let* j = load j' in
+           Memory.box_nativeint (return (W.BinOp (I32 (Rem S), i, j)))));
+    register_bin_prim "caml_nativeint_shift_left" `Pure (fun i j ->
+        nativeint_shift_op Shl i j);
+    register_bin_prim "caml_nativeint_shift_right" `Pure (fun i j ->
+        nativeint_shift_op (Shr S) i j);
+    register_bin_prim "caml_nativeint_shift_right_unsigned" `Pure (fun i j ->
+        nativeint_shift_op (Shr U) i j);
+    register_un_prim "caml_nativeint_to_int" `Pure (fun i ->
+        Value.val_int (Memory.unbox_nativeint i));
+    register_un_prim "caml_nativeint_of_int" `Pure (fun i ->
+        Memory.box_nativeint (Value.int_val i));
+    register_bin_prim "caml_int_compare" `Pure (fun i j ->
+        Value.val_int
+          Arith.(
+            (Value.int_val j < Value.int_val i) - (Value.int_val i < Value.int_val j)));
+    register_prim "%js_array" `Pure (fun ctx _ transl_prim_arg l ->
+        let* l =
+          List.fold_right
+            ~f:(fun x acc ->
+              let* x = transl_prim_arg x in
+              let* acc = acc in
+              return (`Expr x :: acc))
+            l
+            ~init:(return [])
+        in
+        Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal l)
 
   let rec translate_expr ctx context x e =
     match e with
@@ -281,400 +703,25 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (p, l) -> (
         match p with
         | Extern name when Hashtbl.mem internal_primitives name ->
-            Hashtbl.find internal_primitives name transl_prim_arg l
+            snd (Hashtbl.find internal_primitives name) ctx context transl_prim_arg l
         | _ -> (
             let l = List.map ~f:transl_prim_arg l in
             match p, l with
-            | Extern "caml_array_unsafe_get", [ x; y ] -> Memory.gen_array_get x y
-            | Extern "caml_floatarray_unsafe_get", [ x; y ] -> Memory.float_array_get x y
-            | Extern "caml_array_unsafe_set", [ x; y; z ] ->
-                seq (Memory.gen_array_set x y z) Value.unit
-            | Extern "caml_array_unsafe_set_addr", [ x; y; z ] ->
-                seq (Memory.array_set x y z) Value.unit
-            | Extern "caml_floatarray_unsafe_set", [ x; y; z ] ->
-                seq (Memory.float_array_set x y z) Value.unit
-            | Extern ("caml_string_unsafe_get" | "caml_bytes_unsafe_get"), [ x; y ] ->
-                Memory.bytes_get x y
-            | Extern ("caml_string_unsafe_set" | "caml_bytes_unsafe_set"), [ x; y; z ] ->
-                seq (Memory.bytes_set x y z) Value.unit
-            | Extern ("caml_string_get" | "caml_bytes_get"), [ x; y ] ->
-                seq
-                  (let* cond = Arith.uge (Value.int_val y) (Memory.bytes_length x) in
-                   instr (W.Br_if (label_index context bound_error_pc, cond)))
-                  (Memory.bytes_get x y)
-            | Extern ("caml_string_set" | "caml_bytes_set"), [ x; y; z ] ->
-                seq
-                  (let* cond = Arith.uge (Value.int_val y) (Memory.bytes_length x) in
-                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
-                   Memory.bytes_set x y z)
-                  Value.unit
-            | Extern ("caml_ml_string_length" | "caml_ml_bytes_length"), [ x ] ->
-                Value.val_int (Memory.bytes_length x)
-            | Extern "%int_add", [ x; y ] -> Value.int_add x y
-            | Extern "%int_sub", [ x; y ] -> Value.int_sub x y
-            | Extern ("%int_mul" | "%direct_int_mul"), [ x; y ] -> Value.int_mul x y
-            | Extern "%direct_int_div", [ x; y ] -> Value.int_div x y
-            | Extern "%int_div", [ x; y ] ->
-                seq
-                  (let* cond = Arith.eqz (Value.int_val y) in
-                   instr (W.Br_if (label_index context zero_divide_pc, cond)))
-                  (Value.int_div x y)
-            | Extern "%int_mod", [ x; y ] ->
-                seq
-                  (let* cond = Arith.eqz (Value.int_val y) in
-                   instr (W.Br_if (label_index context zero_divide_pc, cond)))
-                  (Value.int_mod x y)
-            | Extern "%direct_int_mod", [ x; y ] -> Value.int_mod x y
-            | Extern "%int_neg", [ x ] -> Value.int_neg x
-            | Extern "%int_or", [ x; y ] -> Value.int_or x y
-            | Extern "%int_and", [ x; y ] -> Value.int_and x y
-            | Extern "%int_xor", [ x; y ] -> Value.int_xor x y
-            | Extern "%int_lsl", [ x; y ] -> Value.int_lsl x y
-            | Extern "%int_lsr", [ x; y ] -> Value.int_lsr x y
-            | Extern "%int_asr", [ x; y ] -> Value.int_asr x y
-            | Extern "%direct_obj_tag", [ x ] -> Memory.tag x
-            | Extern "caml_check_bound", [ x; y ] ->
-                seq
-                  (let* cond = Arith.uge (Value.int_val y) (Memory.array_length x) in
-                   instr (W.Br_if (label_index context bound_error_pc, cond)))
-                  x
-            | Extern "caml_check_bound_gen", [ x; y ] ->
-                seq
-                  (let* cond = Arith.uge (Value.int_val y) (Memory.gen_array_length x) in
-                   instr (W.Br_if (label_index context bound_error_pc, cond)))
-                  x
-            | Extern "caml_check_bound_float", [ x; y ] ->
-                seq
-                  (let a = Code.Var.fresh () in
-                   let* () = store a x in
-                   let label = label_index context bound_error_pc in
-                   (* If this is not a float array, it must be the
-                      empty array, and the bound check should fail. *)
-                   let* cond = Arith.eqz (Memory.check_is_float_array (load a)) in
-                   let* () = instr (W.Br_if (label, cond)) in
-                   let* cond =
-                     Arith.uge (Value.int_val y) (Memory.float_array_length (load a))
-                   in
-                   instr (W.Br_if (label, cond)))
-                  x
-            | Extern "caml_add_float", [ f; g ] -> float_bin_op Add f g
-            | Extern "caml_sub_float", [ f; g ] -> float_bin_op Sub f g
-            | Extern "caml_mul_float", [ f; g ] -> float_bin_op Mul f g
-            | Extern "caml_div_float", [ f; g ] -> float_bin_op Div f g
-            | Extern "caml_copysign_float", [ f; g ] -> float_bin_op CopySign f g
-            | Extern "caml_signbit_float", [ f ] ->
-                let* f = Memory.unbox_float f in
-                let sign = W.BinOp (F64 CopySign, Const (F64 1.), f) in
-                Value.val_int (return (W.BinOp (F64 Lt, sign, Const (F64 0.))))
-            | Extern "caml_neg_float", [ f ] -> float_un_op Neg f
-            | Extern "caml_abs_float", [ f ] -> float_un_op Abs f
-            | Extern "caml_ceil_float", [ f ] -> float_un_op Ceil f
-            | Extern "caml_floor_float", [ f ] -> float_un_op Floor f
-            | Extern "caml_trunc_float", [ f ] -> float_un_op Trunc f
-            | Extern "caml_round_float", [ f ] -> float_un_op' Math.round f
-            | Extern "caml_sqrt_float", [ f ] -> float_un_op Sqrt f
-            | Extern "caml_eq_float", [ f; g ] -> float_comparison Eq f g
-            | Extern "caml_neq_float", [ f; g ] -> float_comparison Ne f g
-            | Extern "caml_ge_float", [ f; g ] -> float_comparison Ge f g
-            | Extern "caml_le_float", [ f; g ] -> float_comparison Le f g
-            | Extern "caml_gt_float", [ f; g ] -> float_comparison Gt f g
-            | Extern "caml_lt_float", [ f; g ] -> float_comparison Lt f g
-            | Extern "caml_int_of_float", [ f ] ->
-                let* f = Memory.unbox_float f in
-                Value.val_int (return (W.UnOp (I32 (TruncSatF64 S), f)))
-            | Extern "caml_float_of_int", [ n ] ->
-                let* n = Value.int_val n in
-                Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n)))
-            | Extern "caml_cos_float", [ f ] -> float_un_op' Math.cos f
-            | Extern "caml_sin_float", [ f ] -> float_un_op' Math.sin f
-            | Extern "caml_tan_float", [ f ] -> float_un_op' Math.tan f
-            | Extern "caml_acos_float", [ f ] -> float_un_op' Math.acos f
-            | Extern "caml_asin_float", [ f ] -> float_un_op' Math.asin f
-            | Extern "caml_atan_float", [ f ] -> float_un_op' Math.atan f
-            | Extern "caml_atan2_float", [ f; g ] -> float_bin_op' Math.atan2 f g
-            | Extern "caml_cosh_float", [ f ] -> float_un_op' Math.cosh f
-            | Extern "caml_sinh_float", [ f ] -> float_un_op' Math.sinh f
-            | Extern "caml_tanh_float", [ f ] -> float_un_op' Math.tanh f
-            | Extern "caml_acosh_float", [ f ] -> float_un_op' Math.acosh f
-            | Extern "caml_asinh_float", [ f ] -> float_un_op' Math.asinh f
-            | Extern "caml_atanh_float", [ f ] -> float_un_op' Math.atanh f
-            | Extern "caml_cbrt_float", [ f ] -> float_un_op' Math.cbrt f
-            | Extern "caml_exp_float", [ f ] -> float_un_op' Math.exp f
-            | Extern "caml_exp2_float", [ f ] -> float_un_op' Math.exp2 f
-            | Extern "caml_log_float", [ f ] -> float_un_op' Math.log f
-            | Extern "caml_expm1_float", [ f ] -> float_un_op' Math.expm1 f
-            | Extern "caml_log1p_float", [ f ] -> float_un_op' Math.log1p f
-            | Extern "caml_log2_float", [ f ] -> float_un_op' Math.log2 f
-            | Extern "caml_log10_float", [ f ] -> float_un_op' Math.log10 f
-            | Extern "caml_power_float", [ f; g ] -> float_bin_op' Math.power f g
-            | Extern "caml_hypot_float", [ f; g ] -> float_bin_op' Math.hypot f g
-            | Extern "caml_fmod_float", [ f; g ] -> float_bin_op' Math.fmod f g
-            | Extern "caml_int32_bits_of_float", [ f ] ->
-                let* f = Memory.unbox_float f in
-                Memory.box_int32 (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
-            | Extern "caml_int32_float_of_bits", [ i ] ->
-                let* i = Memory.unbox_int32 i in
-                Memory.box_float (return (W.F64PromoteF32 (UnOp (F32 ReinterpretI, i))))
-            | Extern "caml_int32_of_float", [ f ] ->
-                let* f = Memory.unbox_float f in
-                Memory.box_int32 (return (W.UnOp (I32 (TruncSatF64 S), f)))
-            | Extern "caml_int32_to_float", [ n ] ->
-                let* n = Memory.unbox_int32 n in
-                Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n)))
-            | Extern "caml_int32_neg", [ i ] ->
-                let* i = Memory.unbox_int32 i in
-                Memory.box_int32 (return (W.BinOp (I32 Sub, Const (I32 0l), i)))
-            | Extern "caml_int32_add", [ i; j ] -> int32_bin_op Add i j
-            | Extern "caml_int32_sub", [ i; j ] -> int32_bin_op Sub i j
-            | Extern "caml_int32_mul", [ i; j ] -> int32_bin_op Mul i j
-            | Extern "caml_int32_and", [ i; j ] -> int32_bin_op And i j
-            | Extern "caml_int32_or", [ i; j ] -> int32_bin_op Or i j
-            | Extern "caml_int32_xor", [ i; j ] -> int32_bin_op Xor i j
-            | Extern "caml_int32_div", [ i; j ] ->
-                let res = Var.fresh () in
-                (*ZZZ Can we do better?*)
-                let i' = Var.fresh () in
-                let j' = Var.fresh () in
-                seq
-                  (let* () = store ~typ:I32 j' (Memory.unbox_int32 j) in
-                   let* () =
-                     let* j = load j' in
-                     instr
-                       (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j)))
-                   in
-                   let* () = store ~typ:I32 i' (Memory.unbox_int32 i) in
-                   if_
-                     { params = []; result = [] }
-                     Arith.(
-                       (let* j = load j' in
-                        return (W.BinOp (I32 Eq, j, Const (I32 (-1l)))))
-                       land let* i = load i' in
-                            return (W.BinOp (I32 Eq, i, Const (I32 Int32.min_int))))
-                     (store
-                        ~always:true
-                        ~typ:I32
-                        res
-                        (return (W.Const (I32 Int32.min_int))))
-                     (store
-                        ~always:true
-                        ~typ:I32
-                        res
-                        (let* i = load i' in
-                         let* j = load j' in
-                         return (W.BinOp (I32 (Div S), i, j)))))
-                  (Memory.box_int32 (load res))
-            | Extern "caml_int32_mod", [ i; j ] ->
-                let j' = Var.fresh () in
-                seq
-                  (let* () = store ~typ:I32 j' (Memory.unbox_int32 j) in
-                   let* j = load j' in
-                   instr
-                     (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j))))
-                  (let* i = Memory.unbox_int32 i in
-                   let* j = load j' in
-                   Memory.box_int32 (return (W.BinOp (I32 (Rem S), i, j))))
-            | Extern "caml_int32_shift_left", [ i; j ] -> int32_shift_op Shl i j
-            | Extern "caml_int32_shift_right", [ i; j ] -> int32_shift_op (Shr S) i j
-            | Extern "caml_int32_shift_right_unsigned", [ i; j ] ->
-                int32_shift_op (Shr U) i j
-            | Extern "caml_int32_to_int", [ i ] -> Value.val_int (Memory.unbox_int32 i)
-            | Extern "caml_int32_of_int", [ i ] -> Memory.box_int32 (Value.int_val i)
-            | Extern "caml_nativeint_of_int32", [ i ] ->
-                Memory.box_nativeint (Memory.unbox_int32 i)
-            | Extern "caml_nativeint_to_int32", [ i ] ->
-                Memory.box_int32 (Memory.unbox_nativeint i)
-            | Extern "caml_int64_bits_of_float", [ f ] ->
-                let* f = Memory.unbox_float f in
-                Memory.box_int64 (return (W.UnOp (I64 ReinterpretF, f)))
-            | Extern "caml_int64_float_of_bits", [ i ] ->
-                let* i = Memory.unbox_int64 i in
-                Memory.box_float (return (W.UnOp (F64 ReinterpretI, i)))
-            | Extern "caml_int64_of_float", [ f ] ->
-                let* f = Memory.unbox_float f in
-                Memory.box_int64 (return (W.UnOp (I64 (TruncSatF64 S), f)))
-            | Extern "caml_int64_to_float", [ n ] ->
-                let* n = Memory.unbox_int64 n in
-                Memory.box_float (return (W.UnOp (F64 (Convert (`I64, S)), n)))
-            | Extern "caml_int64_neg", [ i ] ->
-                let* i = Memory.unbox_int64 i in
-                Memory.box_int64 (return (W.BinOp (I64 Sub, Const (I64 0L), i)))
-            | Extern "caml_int64_add", [ i; j ] -> int64_bin_op Add i j
-            | Extern "caml_int64_sub", [ i; j ] -> int64_bin_op Sub i j
-            | Extern "caml_int64_mul", [ i; j ] -> int64_bin_op Mul i j
-            | Extern "caml_int64_and", [ i; j ] -> int64_bin_op And i j
-            | Extern "caml_int64_or", [ i; j ] -> int64_bin_op Or i j
-            | Extern "caml_int64_xor", [ i; j ] -> int64_bin_op Xor i j
-            | Extern "caml_int64_div", [ i; j ] ->
-                let res = Var.fresh () in
-                (*ZZZ Can we do better?*)
-                let i' = Var.fresh () in
-                let j' = Var.fresh () in
-                seq
-                  (let* () = store ~typ:I64 j' (Memory.unbox_int64 j) in
-                   let* () =
-                     let* j = load j' in
-                     instr
-                       (W.Br_if (label_index context zero_divide_pc, W.UnOp (I64 Eqz, j)))
-                   in
-                   let* () = store ~typ:I64 i' (Memory.unbox_int64 i) in
-                   if_
-                     { params = []; result = [] }
-                     Arith.(
-                       (let* j = load j' in
-                        return (W.BinOp (I64 Eq, j, Const (I64 (-1L)))))
-                       land let* i = load i' in
-                            return (W.BinOp (I64 Eq, i, Const (I64 Int64.min_int))))
-                     (store
-                        ~always:true
-                        ~typ:I64
-                        res
-                        (return (W.Const (I64 Int64.min_int))))
-                     (store
-                        ~always:true
-                        ~typ:I64
-                        res
-                        (let* i = load i' in
-                         let* j = load j' in
-                         return (W.BinOp (I64 (Div S), i, j)))))
-                  (Memory.box_int64 (load res))
-            | Extern "caml_int64_mod", [ i; j ] ->
-                let j' = Var.fresh () in
-                seq
-                  (let* () = store ~typ:I64 j' (Memory.unbox_int64 j) in
-                   let* j = load j' in
-                   instr
-                     (W.Br_if (label_index context zero_divide_pc, W.UnOp (I64 Eqz, j))))
-                  (let* i = Memory.unbox_int64 i in
-                   let* j = load j' in
-                   Memory.box_int64 (return (W.BinOp (I64 (Rem S), i, j))))
-            | Extern "caml_int64_shift_left", [ i; j ] -> int64_shift_op Shl i j
-            | Extern "caml_int64_shift_right", [ i; j ] -> int64_shift_op (Shr S) i j
-            | Extern "caml_int64_shift_right_unsigned", [ i; j ] ->
-                int64_shift_op (Shr U) i j
-            | Extern "caml_int64_to_int", [ i ] ->
-                let* i = Memory.unbox_int64 i in
-                Value.val_int (return (W.I32WrapI64 i))
-            | Extern "caml_int64_of_int", [ i ] ->
-                let* i = Value.int_val i in
-                Memory.box_int64
-                  (return
-                     (match i with
-                     | Const (I32 i) -> W.Const (I64 (Int64.of_int32 i))
-                     | _ -> W.I64ExtendI32 (S, i)))
-            | Extern "caml_int64_to_int32", [ i ] ->
-                let* i = Memory.unbox_int64 i in
-                Memory.box_int32 (return (W.I32WrapI64 i))
-            | Extern "caml_int64_of_int32", [ i ] ->
-                let* i = Memory.unbox_int32 i in
-                Memory.box_int64 (return (W.I64ExtendI32 (S, i)))
-            | Extern "caml_int64_to_nativeint", [ i ] ->
-                let* i = Memory.unbox_int64 i in
-                Memory.box_nativeint (return (W.I32WrapI64 i))
-            | Extern "caml_int64_of_nativeint", [ i ] ->
-                let* i = Memory.unbox_nativeint i in
-                Memory.box_int64 (return (W.I64ExtendI32 (S, i)))
-            | Extern "caml_nativeint_bits_of_float", [ f ] ->
-                let* f = Memory.unbox_float f in
-                Memory.box_nativeint (return (W.UnOp (I32 ReinterpretF, F32DemoteF64 f)))
-            | Extern "caml_nativeint_float_of_bits", [ i ] ->
-                let* i = Memory.unbox_int64 i in
-                Memory.box_float (return (W.F64PromoteF32 (UnOp (I32 ReinterpretF, i))))
-            | Extern "caml_nativeint_of_float", [ f ] ->
-                let* f = Memory.unbox_float f in
-                Memory.box_nativeint (return (W.UnOp (I32 (TruncSatF64 S), f)))
-            | Extern "caml_nativeint_to_float", [ n ] ->
-                let* n = Memory.unbox_nativeint n in
-                Memory.box_float (return (W.UnOp (F64 (Convert (`I32, S)), n)))
-            | Extern "caml_nativeint_neg", [ i ] ->
-                let* i = Memory.unbox_nativeint i in
-                Memory.box_nativeint (return (W.BinOp (I32 Sub, Const (I32 0l), i)))
-            | Extern "caml_nativeint_add", [ i; j ] -> nativeint_bin_op Add i j
-            | Extern "caml_nativeint_sub", [ i; j ] -> nativeint_bin_op Sub i j
-            | Extern "caml_nativeint_mul", [ i; j ] -> nativeint_bin_op Mul i j
-            | Extern "caml_nativeint_and", [ i; j ] -> nativeint_bin_op And i j
-            | Extern "caml_nativeint_or", [ i; j ] -> nativeint_bin_op Or i j
-            | Extern "caml_nativeint_xor", [ i; j ] -> nativeint_bin_op Xor i j
-            | Extern "caml_nativeint_div", [ i; j ] ->
-                let res = Var.fresh () in
-                (*ZZZ Can we do better?*)
-                let i' = Var.fresh () in
-                let j' = Var.fresh () in
-                seq
-                  (let* () = store ~typ:I32 j' (Memory.unbox_nativeint j) in
-                   let* () =
-                     let* j = load j' in
-                     instr
-                       (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j)))
-                   in
-                   let* () = store ~typ:I32 i' (Memory.unbox_nativeint i) in
-                   if_
-                     { params = []; result = [] }
-                     Arith.(
-                       (let* j = load j' in
-                        return (W.BinOp (I32 Eq, j, Const (I32 (-1l)))))
-                       land let* i = load i' in
-                            return (W.BinOp (I32 Eq, i, Const (I32 Int32.min_int))))
-                     (store
-                        ~always:true
-                        ~typ:I32
-                        res
-                        (return (W.Const (I32 Int32.min_int))))
-                     (store
-                        ~always:true
-                        ~typ:I32
-                        res
-                        (let* i = load i' in
-                         let* j = load j' in
-                         return (W.BinOp (I32 (Div S), i, j)))))
-                  (Memory.box_nativeint (load res))
-            | Extern "caml_nativeint_mod", [ i; j ] ->
-                let j' = Var.fresh () in
-                seq
-                  (let* () = store ~typ:I32 j' (Memory.unbox_nativeint j) in
-                   let* j = load j' in
-                   instr
-                     (W.Br_if (label_index context zero_divide_pc, W.UnOp (I32 Eqz, j))))
-                  (let* i = Memory.unbox_nativeint i in
-                   let* j = load j' in
-                   Memory.box_nativeint (return (W.BinOp (I32 (Rem S), i, j))))
-            | Extern "caml_nativeint_shift_left", [ i; j ] -> nativeint_shift_op Shl i j
-            | Extern "caml_nativeint_shift_right", [ i; j ] ->
-                nativeint_shift_op (Shr S) i j
-            | Extern "caml_nativeint_shift_right_unsigned", [ i; j ] ->
-                nativeint_shift_op (Shr U) i j
-            | Extern "caml_nativeint_to_int", [ i ] ->
-                Value.val_int (Memory.unbox_nativeint i)
-            | Extern "caml_nativeint_of_int", [ i ] ->
-                Memory.box_nativeint (Value.int_val i)
-            | Extern "caml_int_compare", [ i; j ] ->
-                Value.val_int
-                  Arith.(
-                    (Value.int_val j < Value.int_val i)
-                    - (Value.int_val i < Value.int_val j))
-            | Extern "%js_array", l ->
-                let* l =
-                  List.fold_right
-                    ~f:(fun x acc ->
-                      let* x = x in
-                      let* acc = acc in
-                      return (`Expr x :: acc))
-                    l
-                    ~init:(return [])
-                in
-                Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal l
             | Extern name, l -> (
                 try
-                  let typ = Hashtbl.find specialized_primitives name in
+                  let ((_, arg_typ, res_typ) as typ) =
+                    Hashtbl.find specialized_primitives name
+                  in
                   let* f = register_import ~name (Fun (specialized_func_type typ)) in
                   let rec loop acc arg_typ l =
                     match arg_typ, l with
-                    | [], [] -> box_value (snd typ) (return (W.Call (f, List.rev acc)))
+                    | [], [] -> box_value res_typ (return (W.Call (f, List.rev acc)))
                     | repr :: rem, x :: r ->
                         let* x = unbox_value repr x in
                         loop (x :: acc) rem r
                     | [], _ :: _ | _ :: _, [] -> assert false
                   in
-                  loop [] (fst typ) l
+                  loop [] arg_typ l
                 with Not_found ->
                   let* f = register_import ~name (Fun (func_type (List.length l))) in
                   let rec loop acc l =
@@ -1192,11 +1239,17 @@ module Generate (Target : Target_sig.S) = struct
         (Var.Map.bindings context.data_segments)
     in
     List.rev_append context.other_fields (imports @ constant_data)
-end
 
-let init () =
-  Primitive.register "caml_make_array" `Mutable None None;
-  Primitive.register "caml_array_of_uniform_array" `Mutable None None
+  let init () =
+    Primitive.register "caml_make_array" `Mutable None None;
+    Primitive.register "caml_array_of_uniform_array" `Mutable None None;
+    Hashtbl.iter
+      (fun name (k, _) -> Primitive.register name k None None)
+      internal_primitives;
+    Hashtbl.iter
+      (fun name (k, _, _) -> Primitive.register name k None None)
+      specialized_primitives
+end
 
 (* Make sure we can use [br_table] for switches *)
 let fix_switch_branches p =
@@ -1234,34 +1287,31 @@ let fix_switch_branches p =
     p.blocks;
   !p'
 
+module G = Generate (Gc_target)
+
+let init = G.init
+
 let start () = make_context ~value_type:Gc_target.Value.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
   let t = Timer.make () in
   let p = fix_switch_branches p in
-  let module G = Generate (Gc_target) in
   let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
 
-let add_start_function =
-  let module G = Generate (Gc_target) in
-  G.add_start_function
+let add_start_function = G.add_start_function
 
-let add_init_function =
-  let module G = Generate (Gc_target) in
-  G.add_init_function
+let add_init_function = G.add_init_function
 
 let output ch ~context =
   let t = Timer.make () in
-  let module G = Generate (Gc_target) in
   let fields = G.output ~context in
   Wat_output.f ch fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t
 
 let wasm_output ch ~context =
   let t = Timer.make () in
-  let module G = Generate (Gc_target) in
   let fields = G.output ~context in
   Wasm_output.f ch fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t
