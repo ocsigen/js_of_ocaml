@@ -85,12 +85,12 @@ let%expect_test "Eliminates unused functions from functor" =
        l = param$0[1],
        c = caml_call2(Ord[1], x, v);
       if(0 === c) return v;
-      var r$0 = 0 <= c ? r : l;
-      param$0 = r$0;
+      param$0 = 0 <= c ? r : l;
      }
     }
     return [0, 0, add, singleton, find];
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "Omit unused fields" =
   let program =

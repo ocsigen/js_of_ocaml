@@ -22,3 +22,5 @@ type variable_uses =
   int array (* For each variable, indicates how many times it is used. *)
 
 val f : Code.program -> Code.program * variable_uses
+
+val remove_empty_blocks : live_vars:variable_uses -> Code.program -> Code.program

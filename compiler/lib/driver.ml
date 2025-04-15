@@ -49,8 +49,8 @@ let deadcode' p =
   Deadcode.f p
 
 let deadcode p =
-  let r, _ = deadcode' p in
-  r
+  let r, live_vars = deadcode' p in
+  Deadcode.remove_empty_blocks ~live_vars r
 
 let inline p =
   if Config.Flag.inline () && Config.Flag.deadcode ()
@@ -102,7 +102,7 @@ let effects ~deadcode_sentinal p =
   | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
       let p, live_vars = Deadcode.f p in
-      let p = Effects.remove_empty_blocks ~live_vars p in
+      let p = Deadcode.remove_empty_blocks ~live_vars p in
       let p, live_vars = Deadcode.f p in
       let info = Global_flow.f ~fast:false p in
       let p, live_vars =

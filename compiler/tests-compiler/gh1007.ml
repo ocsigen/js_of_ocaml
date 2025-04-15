@@ -332,11 +332,11 @@ let ()  = M.myfun M.x
        len = len$0;
        param = l$0;
       }
-      if(2 <= len) sort(len, l);
-      x$0 = next;
+      if(2 <= len){sort(len, l); x$0 = next;} else x$0 = next;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let prog =
