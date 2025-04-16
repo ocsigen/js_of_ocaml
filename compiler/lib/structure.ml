@@ -42,10 +42,20 @@ let is_forward g pc pc' = Hashtbl.find g.block_order pc < Hashtbl.find g.block_o
 let is_merge_node' block_order preds pc =
   let s = try Hashtbl.find preds pc with Not_found -> Addr.Set.empty in
   let o = Hashtbl.find block_order pc in
-  let n =
-    Addr.Set.fold (fun pc' n -> if Hashtbl.find block_order pc' < o then n + 1 else n) s 0
-  in
-  n > 1
+  try
+    ignore
+      (Addr.Set.fold
+         (fun pc' found_first ->
+           if Hashtbl.find block_order pc' < o
+           then
+             if found_first
+             then (* Exit early to avoid quadratic behavior *) raise Exit
+             else true
+           else found_first)
+         s
+         false);
+    false
+  with Exit -> true
 
 let empty_body body =
   List.for_all
