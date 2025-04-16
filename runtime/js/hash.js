@@ -41,9 +41,26 @@ function caml_hash_mix_final(h) {
 }
 
 //Provides: caml_hash_mix_float
-//Requires: caml_int64_bits_of_float, caml_hash_mix_int64
-function caml_hash_mix_float(h, v0) {
-  return caml_hash_mix_int64(h, caml_int64_bits_of_float(v0));
+//Requires: caml_int64_bits_of_float
+//Requires: caml_hash_mix_int
+//Requires: caml_int64_lo32, caml_int64_hi32
+function caml_hash_mix_float(hash, v0) {
+  var i64 = caml_int64_bits_of_float(v0);
+  var l = caml_int64_lo32(i64);
+  var h = caml_int64_hi32(i64);
+  /* Normalize NaNs */
+  if ((h & 0x7ff00000) === 0x7ff00000 && (l | (h & 0xfffff)) !== 0) {
+    h = 0x7ff00000;
+    l = 0x00000001;
+  } else if (h === (0x80000000 | 0) && l === 0) {
+    /* Normalize -0 into +0 */
+    // This code path is not used by caml_hash because 0 and -0 look
+    // like integers
+    h = 0;
+  }
+  hash = caml_hash_mix_int(hash, l);
+  hash = caml_hash_mix_int(hash, h);
+  return hash;
 }
 //Provides: caml_hash_mix_int64
 //Requires: caml_hash_mix_int
