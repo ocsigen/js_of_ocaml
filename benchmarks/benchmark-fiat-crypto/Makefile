@@ -11,8 +11,8 @@ bench:
 	@date -u +"%FT%TZ - $(NAME): done"
 
 perform: bedrock2_fiat_crypto.byte
-	/usr/bin/time -f "%E %R" $(COMPILER) --debug times --source-map $(EXTRA_ARGS) $< 2>&1 | \
-	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) $(NAME) | \
+	/usr/bin/time -f "%E %R" $(COMPILER) --debug times --source-map $(EXTRA_ARGS) $< -o out.js 2>&1 | \
+	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) $(NAME) out.js | \
 	sh ../utils/aggregate.sh $(KIND)
 
 bedrock2_fiat_crypto.byte: bedrock2_fiat_crypto.ml

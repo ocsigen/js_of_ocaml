@@ -1,3 +1,9 @@
+let compiler = Sys.argv.(1)
+
+let benchmark_name = Sys.argv.(2)
+
+let output = Sys.argv.(3)
+
 let time_re = Str.regexp "^  \\([^ ].*\\): \\([0-9.]+\\)$"
 
 let () =
@@ -14,6 +20,21 @@ let () =
        last_line := l
      done
    with End_of_file -> ());
+  let file_size =
+    let file =
+      match compiler with
+      | "js_of_ocaml" -> output
+      | "wasm_of_ocaml" ->
+          let dir = Filename.chop_suffix output ".js" ^ ".assets" in
+          let contents = Sys.readdir dir in
+          let code =
+            Array.find_opt (fun nm -> Filename.check_suffix nm ".wasm") contents
+          in
+          Filename.concat dir (Option.get code)
+      | _ -> assert false
+    in
+    In_channel.(with_open_bin file length)
+  in
   let l = Hashtbl.fold (fun nm v rem -> (nm, v) :: rem) times [] in
   let l = List.filter (fun (_, v) -> v > 0.2) l in
   let l = List.map (fun (nm, v) -> "Compilation phases/" ^ nm, "s", v) l in
@@ -21,6 +42,7 @@ let () =
     Scanf.sscanf !last_line "%f:%f %f" (fun m s mem ->
         [ "Compilation time", "s", (m *. 60.) +. s
         ; "Compilation memory usage", "KiB", mem
+        ; "Code size", "KiB", float (Int64.to_int file_size / 1024)
         ])
   in
   Format.printf
@@ -28,8 +50,8 @@ let () =
   "results":
     [ { "name": "%s",
         "metrics":@.|}
-    (String.capitalize_ascii Sys.argv.(1))
-    Sys.argv.(2);
+    (String.capitalize_ascii compiler)
+    benchmark_name;
   Format.printf "          [ @[";
   List.iteri
     (fun i (nm, u, v) ->
