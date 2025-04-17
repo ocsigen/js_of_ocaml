@@ -1708,8 +1708,8 @@ class simpl =
           | (ENum _ as x), ENum zero when is_zero zero -> x
           | _ -> e)
       | EBin (Minus, e1, e2) -> (
-          match e2, e1 with
-          | ENum n, _ when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
+          match e1, e2 with
+          | _, ENum n when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
           | (ENum _ as x), ENum zero when is_zero zero -> x
           | _ -> e)
       | EFun
