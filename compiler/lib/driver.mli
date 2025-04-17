@@ -20,6 +20,8 @@
 
 type profile
 
+val profile_equal : profile -> profile -> bool
+
 type optimized_result =
   { program : Code.program
   ; variable_uses : Deadcode.variable_uses

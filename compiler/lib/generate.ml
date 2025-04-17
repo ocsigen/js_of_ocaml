@@ -69,7 +69,17 @@ module Share = struct
   module AppMap = Map.Make (struct
     type t = application_description
 
-    let compare = Poly.compare
+    let compare { arity; exact; trampolined; in_cps } b =
+      let c = compare arity b.arity in
+      if c <> 0
+      then c
+      else
+        let c = Bool.compare exact b.exact in
+        if c <> 0
+        then c
+        else
+          let c = Bool.compare trampolined b.trampolined in
+          if c <> 0 then c else Bool.compare in_cps b.in_cps
   end)
 
   type 'a aux =
@@ -714,8 +724,8 @@ module DTree = struct
   let normalize a =
     a
     |> Array.to_list
-    |> List.sort ~cmp:(fun (cont1, _) (cont2, _) -> Poly.compare cont1 cont2)
-    |> list_group ~equal:Poly.equal fst snd
+    |> List.sort ~cmp:(fun (cont1, _) (cont2, _) -> cont_compare cont1 cont2)
+    |> list_group ~equal:cont_equal fst snd
     |> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
     |> List.sort ~cmp:(fun (_, l1) (_, l2) -> compare (List.length l1) (List.length l2))
     |> Array.of_list
@@ -727,7 +737,7 @@ module DTree = struct
     let ai = Array.mapi a ~f:(fun i x -> x, i) in
     (* group the contiguous cases with the same continuation *)
     let ai : (Code.cont * int list) array =
-      Array.of_list (list_group ~equal:Poly.equal fst snd (Array.to_list ai))
+      Array.of_list (list_group ~equal:cont_equal fst snd (Array.to_list ai))
     in
     let rec loop low up =
       let array_norm : (Code.cont * int list) array =
@@ -887,7 +897,7 @@ let parallel_renaming loc back_edge params args continuation queue =
   else
     let l = visit_all params args in
     (* if not back_edge
-     * then assert (Poly.( = ) l (List.rev_map2 params args ~f:(fun a b -> a, b))); *)
+     * then assert (Poly.equal l (List.rev_map2 params args ~f:(fun a b -> a, b))); *)
     let queue, before, renaming, _ =
       List.fold_left
         l
@@ -2127,7 +2137,7 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
               | [] -> assert false
               | (_, (_, _, (Forward | Exit_switch _))) :: rem -> can_skip_label rem
               | (pc', (l', _, (Loop | Exit_loop _))) :: rem ->
-                  Poly.(l' = l) && (pc = pc' || can_skip_label rem)
+                  J.Label.equal l' l && (pc = pc' || can_skip_label rem)
             in
             let label =
               if can_skip_label scope_stack
@@ -2152,7 +2162,7 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
               | [] -> assert false
               | (_, (_, _, Forward)) :: rem -> can_skip_label rem
               | (pc', (l', _, (Loop | Exit_loop _ | Exit_switch _))) :: rem ->
-                  Poly.(l' = l) && (pc = pc' || can_skip_label rem)
+                  J.Label.equal l' l && (pc = pc' || can_skip_label rem)
             in
             let label =
               if can_skip_label scope_stack

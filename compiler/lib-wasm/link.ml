@@ -868,7 +868,7 @@ let add_source_map files z sm =
   Wasm_source_map.iter_sources sm (fun i j file ->
       let z', files =
         match !st with
-        | Some (i', st) when Poly.equal i i' -> st
+        | Some (i', st) when Option.equal ( = ) i i' -> st
         | _ ->
             let st' = get_source_map_files ~tmp_buf files src_index in
             finalize ();

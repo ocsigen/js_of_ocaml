@@ -710,7 +710,10 @@ let f ~fast p =
   let info_variable_may_escape = variable_may_escape in
   let info_may_escape = Var.ISet.empty () in
   Array.iteri
-    ~f:(fun i s -> if Poly.(s <> No) then Var.ISet.add info_may_escape (Var.of_idx i))
+    ~f:(fun i s ->
+      match s with
+      | Escape_constant | Escape -> Var.ISet.add info_may_escape (Var.of_idx i)
+      | No -> ())
     may_escape;
   { info_defs = defs
   ; info_approximation = approximation

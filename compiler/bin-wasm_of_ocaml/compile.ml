@@ -96,10 +96,13 @@ let build_runtime ~runtime_file =
   in
   match
     List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
-        assert (
-          List.length flags = List.length variables
-          && List.for_all2 ~f:(fun (k, _) (k', _) -> String.equal k k') flags variables);
-        Poly.equal flags variables)
+        assert (List.length flags = List.length variables);
+        List.equal
+          ~eq:(fun (k1, v1) (k2, v2) ->
+            assert (String.equal k1 k2);
+            Wat_preprocess.value_equal v1 v2)
+          flags
+          variables)
   with
   | Some (_, contents) -> Fs.write_file ~name:runtime_file ~contents
   | None ->

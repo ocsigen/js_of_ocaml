@@ -3,6 +3,8 @@ type value =
   | String of string
   | Version of int * int * int
 
+val value_equal : value -> value -> bool
+
 val f : variables:(string * value) list -> filename:string -> contents:string -> string
 
 type source =

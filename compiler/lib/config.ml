@@ -153,12 +153,15 @@ module Param = struct
     | TcNone
     | TcTrampoline
 
+  let tc_equal (a : tc) b = Poly.equal a b
+
   (* | TcWhile *)
 
   let tc_default = TcTrampoline
 
   let _tc_all =
-    tc_default :: List.filter [ TcNone; TcTrampoline ] ~f:(Poly.( <> ) tc_default)
+    tc_default
+    :: List.filter [ TcNone; TcTrampoline ] ~f:(fun x -> not (tc_equal tc_default x))
 
   let tailcall_optim =
     p

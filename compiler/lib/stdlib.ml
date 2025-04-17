@@ -33,18 +33,6 @@ end
 include Deprecated
 
 module Poly = struct
-  external ( < ) : 'a -> 'a -> bool = "%lessthan"
-
-  external ( <= ) : 'a -> 'a -> bool = "%lessequal"
-
-  external ( <> ) : 'a -> 'a -> bool = "%notequal"
-
-  external ( = ) : 'a -> 'a -> bool = "%equal"
-
-  external ( > ) : 'a -> 'a -> bool = "%greaterthan"
-
-  external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
-
   external compare : 'a -> 'a -> int = "%compare"
 
   external equal : 'a -> 'a -> bool = "%equal"
@@ -293,6 +281,22 @@ module Int32 = struct
       ~to_dec:(Printf.sprintf "%nd")
       ~to_hex:(Printf.sprintf "%nx")
       n
+end
+
+module Int64 = struct
+  include Int64
+
+  external ( < ) : int64 -> int64 -> bool = "%lessthan"
+
+  external ( <= ) : int64 -> int64 -> bool = "%lessequal"
+
+  external ( <> ) : int64 -> int64 -> bool = "%notequal"
+
+  external ( = ) : int64 -> int64 -> bool = "%equal"
+
+  external ( > ) : int64 -> int64 -> bool = "%greaterthan"
+
+  external ( >= ) : int64 -> int64 -> bool = "%greaterequal"
 end
 
 module Option = struct

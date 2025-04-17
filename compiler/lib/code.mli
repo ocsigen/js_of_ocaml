@@ -170,7 +170,7 @@ module Constant : sig
 
   val ocaml_equal : t -> t -> bool option
   (** Guaranteed equality in terms of OCaml [(=)]: if [constant_equal a b =
-    Some v], then [Poly.(=) a b = v]. This is used for optimization purposes. *)
+    Some v], then [Poly.equal a b = v]. This is used for optimization purposes. *)
 end
 
 type loc =
@@ -309,3 +309,7 @@ val is_empty : program -> bool
 val eq : program -> program -> bool
 
 val invariant : program -> unit
+
+val cont_equal : cont -> cont -> bool
+
+val cont_compare : cont -> cont -> int

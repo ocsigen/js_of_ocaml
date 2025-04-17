@@ -106,7 +106,7 @@ end = struct
       output_sint ch (i asr 7))
 
   let output_sint32 ch i =
-    if Poly.(i >= -64l && i < 64l)
+    if Int32.(i >= -64l && i < 64l)
     then
       let i = Int32.to_int i in
       if i >= 0 then output_byte ch i else output_byte ch (i + 128)
@@ -115,7 +115,7 @@ end = struct
       output_sint ch (Int32.to_int (Int32.shift_right i 7)))
 
   let rec output_sint64 ch i =
-    if Poly.(i >= -64L && i < 64L)
+    if Int64.(i >= -64L && i < 64L)
     then
       let i = Int64.to_int i in
       if i >= 0 then output_byte ch i else output_byte ch (i + 128)
