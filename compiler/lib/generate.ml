@@ -69,7 +69,17 @@ module Share = struct
   module AppMap = Map.Make (struct
     type t = application_description
 
-    let compare = Poly.compare
+    let compare { arity; exact; trampolined; in_cps } b =
+      let c = compare arity b.arity in
+      if c <> 0
+      then c
+      else
+        let c = Bool.compare exact b.exact in
+        if c <> 0
+        then c
+        else
+          let c = Bool.compare trampolined b.trampolined in
+          if c <> 0 then c else Bool.compare in_cps b.in_cps
   end)
 
   type 'a aux =
