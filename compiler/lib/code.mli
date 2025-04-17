@@ -311,3 +311,5 @@ val eq : program -> program -> bool
 val invariant : program -> unit
 
 val cont_equal : cont -> cont -> bool
+
+val cont_compare : cont -> cont -> int

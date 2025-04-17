@@ -866,4 +866,8 @@ let invariant { blocks; start; _ } =
         check_last block.branch)
       blocks)
 
-let cont_equal (a : cont) b = Poly.equal a b
+let cont_equal (pc, args) (pc', args') = pc = pc' && List.equal ~eq:Var.equal args args'
+
+let cont_compare (pc, args) (pc', args') =
+  let c = compare pc pc' in
+  if c = 0 then c else List.compare ~cmp:Var.compare args args'

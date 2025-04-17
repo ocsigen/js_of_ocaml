@@ -714,7 +714,7 @@ module DTree = struct
   let normalize a =
     a
     |> Array.to_list
-    |> List.sort ~cmp:(fun (cont1, _) (cont2, _) -> Poly.compare cont1 cont2)
+    |> List.sort ~cmp:(fun (cont1, _) (cont2, _) -> cont_compare cont1 cont2)
     |> list_group ~equal:cont_equal fst snd
     |> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
     |> List.sort ~cmp:(fun (_, l1) (_, l2) -> compare (List.length l1) (List.length l2))

@@ -107,6 +107,23 @@ type exportable =
   | Global
   | Tag
 
+let heaptype_eq t1 t2 =
+  Stdlib.phys_equal t1 t2
+  ||
+  match t1, t2 with
+  | Type i1, Type i2 -> i1 = i2
+  | _ -> false
+
+let reftype_eq { nullable = n1; typ = t1 } { nullable = n2; typ = t2 } =
+  Bool.(n1 = n2) && heaptype_eq t1 t2
+
+let valtype_eq t1 t2 =
+  Stdlib.phys_equal t1 t2
+  ||
+  match t1, t2 with
+  | Ref t1, Ref t2 -> reftype_eq t1 t2
+  | _ -> false
+
 let rec output_uint ch i =
   if i < 128
   then output_byte ch i
@@ -488,23 +505,6 @@ module Read = struct
     let hash t =
       (* We have large structs, that tend to hash to the same value *)
       Hashtbl.hash_param 15 100 t
-
-    let heaptype_eq t1 t2 =
-      Stdlib.phys_equal t1 t2
-      ||
-      match t1, t2 with
-      | Type i1, Type i2 -> i1 = i2
-      | _ -> false
-
-    let reftype_eq { nullable = n1; typ = t1 } { nullable = n2; typ = t2 } =
-      Bool.(n1 = n2) && heaptype_eq t1 t2
-
-    let valtype_eq t1 t2 =
-      Stdlib.phys_equal t1 t2
-      ||
-      match t1, t2 with
-      | Ref t1, Ref t2 -> reftype_eq t1 t2
-      | _ -> false
 
     let storagetype_eq t1 t2 =
       match t1, t2 with
@@ -1583,11 +1583,11 @@ let check_export_import_types ~subtyping_info ~files i (desc : importdesc) i' im
     match desc, import.desc with
     | Func t, Func t' -> subtype subtyping_info t t'
     | Table { limits; typ }, Table { limits = limits'; typ = typ' } ->
-        check_limits limits limits' && Poly.equal typ typ'
+        check_limits limits limits' && reftype_eq typ typ'
     | Mem limits, Mem limits' -> check_limits limits limits'
     | Global { mut; typ }, Global { mut = mut'; typ = typ' } ->
         Bool.(mut = mut')
-        && if mut then Poly.equal typ typ' else val_subtype subtyping_info typ typ'
+        && if mut then valtype_eq typ typ' else val_subtype subtyping_info typ typ'
     | Tag t, Tag t' -> t = t'
     | _ -> false
   in

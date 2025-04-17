@@ -151,7 +151,11 @@ module Label = struct
 
   let of_string s = S s
 
-  let equal (a : t) b = Poly.equal a b
+  let equal a b =
+    match a, b with
+    | L x, L y -> Code.Var.equal x y
+    | S s, S t -> Utf8_string.equal s t
+    | L _, S _ | S _, L _ -> false
 end
 
 type location =
