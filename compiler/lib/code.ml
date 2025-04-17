@@ -870,4 +870,4 @@ let cont_equal (pc, args) (pc', args') = pc = pc' && List.equal ~eq:Var.equal ar
 
 let cont_compare (pc, args) (pc', args') =
   let c = compare pc pc' in
-  if c = 0 then c else List.compare ~cmp:Var.compare args args'
+  if c <> 0 then c else List.compare ~cmp:Var.compare args args'
