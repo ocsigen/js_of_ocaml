@@ -18,14 +18,11 @@
 
 val closure :
      Code.program
-  -> bound_vars:Code.Var.Set.t
   -> f:Code.Var.t
   -> params:Code.Var.t list
   -> cont:int * Code.Var.t list
   -> Code.program * Code.Var.t * Code.Var.t list * (int * Code.Var.t list)
-(** Given a program and a closure [f] -- defined by its name, parameters, and its
-    continuation --, return a program in which the body of [f] has been updated with fresh
-    variable names to replace elements of [bound_vars]. Also returns the new name of [f]
-    (fresh if [f] is in [bound_vars]), and the similarly substituted parameter list and
-    continuation.
-  *)
+(** Given a program and a closure [f] -- defined by its name,
+    parameters, and its continuation --, return a program with a copy
+    of [f]. Also returns the new name of [f], and the similarly
+    substituted parameter list and continuation. *)
