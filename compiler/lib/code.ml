@@ -787,12 +787,32 @@ let eq p1 p2 =
        (fun pc block1 b ->
          b
          &&
-         try
-           let block2 = Addr.Map.find pc p2.blocks in
-           Poly.equal block1.params block2.params
-           && Poly.equal block1.branch block2.branch
-           && Poly.equal block1.body block2.body
-         with Not_found -> false)
+         match Addr.Map.find pc p2.blocks with
+         | exception Not_found -> false
+         | block2 ->
+             List.equal ~eq:Var.equal block1.params block2.params
+             && Poly.equal block1.branch block2.branch
+             && List.equal
+                  ~eq:(fun i i' ->
+                    match i, i' with
+                    | Let (x, Constant (Float f)), Let (x', Constant (Float f')) ->
+                        Var.equal x x' && Float.bitwise_equal f f'
+                    | ( Let (x, Constant (Float_array a))
+                      , Let (x', Constant (Float_array a')) ) ->
+                        Var.equal x x' && Array.equal Float.bitwise_equal a a'
+                    | Let (x, Prim (prim, args)), Let (x', Prim (prim', args')) ->
+                        Var.equal x x'
+                        && Poly.equal prim prim'
+                        && List.equal
+                             ~eq:(fun a a' ->
+                               match a, a' with
+                               | Pc (Float f), Pc (Float f') -> Float.bitwise_equal f f'
+                               | _ -> Poly.equal a a')
+                             args
+                             args'
+                    | _ -> Poly.equal i i')
+                  block1.body
+                  block2.body)
        p1.blocks
        true
 
