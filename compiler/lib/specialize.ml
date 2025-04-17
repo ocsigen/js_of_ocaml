@@ -54,7 +54,18 @@ let add_event loc instrs =
   | Some loc -> Event loc :: instrs
   | None -> instrs
 
-let specialize_instr function_arity ((acc, free_pc, extra), loc) i =
+let rec args_equal xs ys =
+  match xs, ys with
+  | [], [] -> true
+  | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
+  | _ -> false
+
+let specialize_instr
+    ~first_class_primitives
+    ~blocks
+    function_arity
+    ((acc, free_pc, extra), loc)
+    i =
   match i with
   | Let (x, Apply { f; args; exact = false }) when Config.Flag.optcall () -> (
       let n' = List.length args in
@@ -89,9 +100,31 @@ let specialize_instr function_arity ((acc, free_pc, extra), loc) i =
           , free_pc + 1
           , (free_pc, block) :: extra )
       | _ -> i :: acc, free_pc, extra)
+  | Let (x, Closure (l, (pc, []))) when first_class_primitives -> (
+      let block = Addr.Map.find pc blocks in
+      match block with
+      | { body =
+            ( [ Let (y, Prim (Extern prim, args)) ]
+            | [ Event _; Let (y, Prim (Extern prim, args)) ]
+            | [ Event _; Let (y, Prim (Extern prim, args)); Event _ ] )
+        ; branch = Return y'
+        ; params = []
+        } ->
+          let len = List.length l in
+          if
+            Code.Var.compare y y' = 0 && Primitive.has_arity prim len && args_equal l args
+          then Let (x, Special (Alias_prim prim)) :: acc, free_pc, extra
+          else i :: acc, free_pc, extra
+      | _ -> i :: acc, free_pc, extra)
   | _ -> i :: acc, free_pc, extra
 
 let specialize_instrs ~function_arity p =
+  let first_class_primitives =
+    match Config.target (), Config.effects () with
+    | `JavaScript, `Disabled -> true
+    | `JavaScript, (`Cps | `Double_translation) | `Wasm, _ -> false
+    | `JavaScript, `Jspi -> assert false
+  in
   let blocks, free_pc =
     Addr.Map.fold
       (fun pc block (blocks, free_pc) ->
@@ -104,7 +137,14 @@ let specialize_instrs ~function_arity p =
               | Event loc ->
                   let (body, free_pc, extra), _ = acc in
                   (i :: body, free_pc, extra), Some loc
-              | _ -> specialize_instr function_arity acc i, None)
+              | _ ->
+                  ( specialize_instr
+                      ~first_class_primitives
+                      ~blocks:p.blocks
+                      function_arity
+                      acc
+                      i
+                  , None ))
         in
         let blocks =
           List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->
