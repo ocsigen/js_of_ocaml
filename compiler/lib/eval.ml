@@ -21,6 +21,10 @@ open! Stdlib
 open Code
 open Flow
 
+let times = Debug.find "times"
+
+let stats = Debug.find "stats"
+
 let static_env = Hashtbl.create 17
 
 let clear_static_env () = Hashtbl.clear static_env
@@ -461,7 +465,7 @@ let constant_js_equal a b =
   | Tuple _, _
   | _, Tuple _ -> None
 
-let eval_instr ~target info i =
+let eval_instr update_count ~target info i =
   match i with
   | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) -> (
       match the_const_of ~target info y, the_const_of ~target info z with
@@ -477,6 +481,7 @@ let eval_instr ~target info i =
               in
               let c = Constant (bool' c) in
               Flow.Info.update_def info x c;
+              incr update_count;
               [ Let (x, c) ])
       | _ -> [ i ])
   | Let (x, Prim (Extern ("caml_js_equals" | "caml_js_strict_equals"), [ y; z ])) -> (
@@ -487,6 +492,7 @@ let eval_instr ~target info i =
           | Some c ->
               let c = Constant (bool' c) in
               Flow.Info.update_def info x c;
+              incr update_count;
               [ Let (x, c) ])
       | _ -> [ i ])
   | Let (x, Prim (Extern "caml_ml_string_length", [ s ])) -> (
@@ -501,6 +507,7 @@ let eval_instr ~target info i =
       | Some c ->
           let c = Constant (Int c) in
           Flow.Info.update_def info x c;
+          incr update_count;
           [ Let (x, c) ])
   | Let
       ( _
@@ -527,6 +534,7 @@ let eval_instr ~target info i =
       | N ->
           let c = Constant (bool' false) in
           Flow.Info.update_def info x c;
+          incr update_count;
           [ Let (x, c) ])
   | Let
       ( x
@@ -551,6 +559,7 @@ let eval_instr ~target info i =
       | Some b ->
           let c = Constant (bool' b) in
           Flow.Info.update_def info x c;
+          incr update_count;
           [ Let (x, c) ]
       | None -> [ i ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
@@ -558,6 +567,7 @@ let eval_instr ~target info i =
       | Some tag ->
           let c = Constant (Int (Targetint.of_int_exn tag)) in
           Flow.Info.update_def info x c;
+          incr update_count;
           [ Let (x, c) ]
       | None -> [ i ])
   | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
@@ -567,6 +577,7 @@ let eval_instr ~target info i =
         | `JavaScript -> "js_of_ocaml"
         | `Wasm -> "wasm_of_ocaml"
       in
+      incr update_count;
       [ Let (jsoo, Constant (String backend_name))
       ; Let (x, Block (0, [| jsoo |], NotArray, Immutable))
       ]
@@ -591,6 +602,7 @@ let eval_instr ~target info i =
       | Some c ->
           let c = Constant c in
           Flow.Info.update_def info x c;
+          incr update_count;
           [ Let (x, c) ]
       | _ ->
           [ Let
@@ -702,13 +714,14 @@ let rec do_not_raise pc visited blocks =
         visited
     | Pushtrap _ -> raise May_raise
 
-let drop_exception_handler blocks =
+let drop_exception_handler drop_count blocks =
   Addr.Map.fold
     (fun pc _ blocks ->
       match Addr.Map.find pc blocks with
       | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2); _ } as b -> (
           try
             let visited = do_not_raise addr Addr.Set.empty blocks in
+            incr drop_count;
             let b = { b with branch = Branch cont1 } in
             let blocks = Addr.Map.add pc b blocks in
             let blocks =
@@ -731,15 +744,25 @@ let drop_exception_handler blocks =
     blocks
     blocks
 
-let eval ~target info blocks =
+let eval update_count ~target info blocks =
   Addr.Map.map
     (fun block ->
-      let body = List.concat_map block.body ~f:(eval_instr ~target info) in
+      let body = List.concat_map block.body ~f:(eval_instr update_count ~target info) in
       let branch = eval_branch info block.branch in
       { block with Code.body; Code.branch })
     blocks
 
 let f info p =
-  let blocks = eval ~target:(Config.target ()) info p.blocks in
-  let blocks = drop_exception_handler blocks in
+  let update_count = ref 0 in
+  let drop_count = ref 0 in
+  let t = Timer.make () in
+  let blocks = eval update_count ~target:(Config.target ()) info p.blocks in
+  let blocks = drop_exception_handler drop_count blocks in
+  if times () then Format.eprintf "  eval: %a@." Timer.print t;
+  if stats ()
+  then
+    Format.eprintf
+      "Stats - eval: %d optimizations, %d dropped exception handlers@."
+      !update_count
+      !drop_count;
   { p with blocks }

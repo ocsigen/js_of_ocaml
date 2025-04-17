@@ -23,6 +23,8 @@ let debug = Debug.find "deadcode"
 
 let times = Debug.find "times"
 
+let stats = Debug.find "stats"
+
 open Code
 
 type def =
@@ -42,6 +44,9 @@ type t =
   ; defs : def list array
   ; mutable reachable_blocks : Addr.Set.t
   ; pure_funs : Var.Set.t
+  ; mutable deleted_instrs : int
+  ; mutable deleted_blocks : int
+  ; mutable deleted_params : int
   }
 
 (****)
@@ -130,7 +135,11 @@ let live_instr st i =
 let rec filter_args st pl al =
   match pl, al with
   | x :: pl, y :: al ->
-      if st.live.(Var.idx x) > 0 then y :: filter_args st pl al else filter_args st pl al
+      if st.live.(Var.idx x) > 0
+      then y :: filter_args st pl al
+      else (
+        st.deleted_params <- st.deleted_params + 1;
+        filter_args st pl al)
   | [], [] -> []
   | _ -> assert false
 
@@ -269,7 +278,17 @@ let f ({ blocks; _ } as p : Code.program) =
           add_cont_dep blocks defs cont
       | Poptrap cont -> add_cont_dep blocks defs cont)
     blocks;
-  let st = { live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs } in
+  let st =
+    { live
+    ; defs
+    ; blocks
+    ; reachable_blocks = Addr.Set.empty
+    ; pure_funs
+    ; deleted_instrs = 0
+    ; deleted_blocks = 0
+    ; deleted_params = 0
+    }
+  in
   mark_reachable st p.start;
   if debug () then Print.program (fun pc xi -> annot st pc xi) p;
   let all_blocks = blocks in
@@ -277,7 +296,9 @@ let f ({ blocks; _ } as p : Code.program) =
     Addr.Map.fold
       (fun pc block blocks ->
         if not (Addr.Set.mem pc st.reachable_blocks)
-        then blocks
+        then (
+          st.deleted_blocks <- st.deleted_blocks + 1;
+          blocks)
         else
           Addr.Map.add
             pc
@@ -291,7 +312,9 @@ let f ({ blocks; _ } as p : Code.program) =
                     | _ ->
                         if live_instr st i
                         then filter_closure all_blocks st i :: acc
-                        else acc)
+                        else (
+                          st.deleted_instrs <- st.deleted_instrs + 1;
+                          acc))
                 |> List.rev
             ; branch = filter_live_last all_blocks st block.branch
             }
@@ -300,4 +323,11 @@ let f ({ blocks; _ } as p : Code.program) =
       Addr.Map.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
+  if stats ()
+  then
+    Format.eprintf
+      "Stats - dead code: deleted %d instructions, %d blocks, %d parameters@."
+      st.deleted_instrs
+      st.deleted_blocks
+      st.deleted_params;
   { p with blocks }, st.live
