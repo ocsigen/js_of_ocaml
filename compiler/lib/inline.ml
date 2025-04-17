@@ -77,12 +77,12 @@ type info =
   ; params : Var.t list
   ; cont : Code.cont
   ; enclosing_function : Var.t option
+  ; recursive : bool
   ; loops : bool cache
   ; body_size : int cache
   ; full_size : int cache
   ; closure_count : int cache
   ; init_code : int cache
-  ; recursive : bool cache
   ; return_block : bool cache
   ; interesting_params : (Var.t * int) list cache
   ; mutable dead : bool
@@ -176,34 +176,6 @@ let count_init_code info =
       ~init:0
       body)
 
-let is_recursive info ~env =
-  let f = info.f in
-  cache info.cont info.recursive (fun { blocks; _ } pc ->
-      let rec traverse blocks f pc =
-        Code.traverse
-          { fold = fold_children }
-          (fun pc _ ->
-            let block = Addr.Map.find pc blocks in
-            Freevars.iter_block_free_vars
-              (fun f' -> if Var.equal f f' then raise Exit)
-              block;
-            List.iter
-              ~f:(fun i ->
-                match i with
-                | Let (f', Closure (_, (pc', _))) ->
-                    if not (Var.Map.mem f' env && (Var.Map.find f' env).dead)
-                    then traverse blocks f pc'
-                | _ -> ())
-              block.body)
-          pc
-          blocks
-          ()
-      in
-      try
-        traverse blocks f pc;
-        false
-      with Exit -> true)
-
 let return_block info =
   cache info.cont info.return_block (fun { blocks; _ } pc ->
       Code.traverse
@@ -246,10 +218,10 @@ let interesting_parameters info ~live_vars =
           [])
 
 let functor_like ~env p info =
-  (not (contains_loop info p))
+  (not info.recursive)
+  && (not (contains_loop info p))
   && return_block info p
   && count_init_code info p * 2 > body_size info ~env p
-  && (not (is_recursive info ~env p))
   && full_size info ~env p - body_size info ~env p <= 20 * closure_count info ~env p
 
 let rec small_function
@@ -262,9 +234,9 @@ let rec small_function
     ~has_closures
     info
     args =
-  body_size info ~env p <= 15
+  (not info.recursive)
+  && body_size info ~env p <= 15
   && closure_count info ~env p = 0
-  && (not (is_recursive info ~env p))
   && (not (List.is_empty args))
   &&
   let relevant_params = interesting_parameters info ~live_vars p in
@@ -340,6 +312,79 @@ and should_inline
           ~has_closures
           info
           args)
+
+(****)
+
+let collect_closures p =
+  let rec traverse p current pc closures =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc closures ->
+        let block = Addr.Map.find pc p.blocks in
+        List.fold_left
+          ~f:(fun closures i ->
+            match i with
+            | Let (f, Closure (params, ((pc', _) as cont))) ->
+                let closures = Var.Map.add f (params, cont, current) closures in
+                traverse p (Some f) pc' closures
+            | _ -> closures)
+          ~init:closures
+          block.body)
+      pc
+      p.blocks
+      closures
+  in
+  traverse p None p.start Var.Map.empty
+
+let add_dep deps current f =
+  Option.iter
+    ~f:(fun g -> deps := Var.Map.add f (Var.Set.add g (Var.Map.find f !deps)) !deps)
+    current
+
+let collect_deps p closures =
+  let deps = ref (Var.Map.map (fun _ -> Var.Set.empty) closures) in
+  let traverse p current pc =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc () ->
+        let block = Addr.Map.find pc p.blocks in
+        Freevars.iter_block_free_vars
+          (fun f -> if Var.Map.mem f closures then add_dep deps current f)
+          block;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (f, Closure _) -> add_dep deps current f
+            | _ -> ())
+          block.body)
+      pc
+      p.blocks
+      ()
+  in
+  traverse p None p.start;
+  Var.Map.iter (fun f (_, (pc, _), _) -> traverse p (Some f) pc) closures;
+  !deps
+
+module Var_SCC = Strongly_connected_components.Make (Var)
+
+let visit_closures p f acc =
+  let closures = collect_closures p in
+  let deps = collect_deps p closures in
+  let scc = Var_SCC.connected_components_sorted_from_roots_to_leaf deps in
+  let f' recursive acc g =
+    let params, cont, parent = Var.Map.find g closures in
+    f recursive parent (Some g) params cont acc
+  in
+  let acc =
+    Array.fold_left
+      scc
+      ~f:(fun acc group ->
+        match group with
+        | Var_SCC.No_loop g -> f' false acc g
+        | Has_loop l -> List.fold_left ~f:(fun acc g -> f' true acc g) ~init:acc l)
+      ~init:acc
+  in
+  f false None None [] (p.start, []) acc
 
 (****)
 
@@ -468,7 +513,7 @@ let trace_inlining
       sz
       sz'
       (contains_loop info p)
-      (is_recursive info ~env p)
+      info.recursive
       (closure_count info ~env p)
       (count_init_code info p)
       (return_block info p)
@@ -547,9 +592,9 @@ let inline_in_block
 let inline ~inline_count p ~live_vars =
   if debug () then Format.eprintf "====== inlining ======@.";
   fst
-    (Code.fold_closures_in_reverse_postorder
+    (visit_closures
        p
-       (fun enclosing_function name_opt params ((pc, _) as cont) (p, env) ->
+       (fun recursive enclosing_function name_opt params ((pc, _) as cont) (p, env) ->
          let has_closures = ref (closure_count_uncached ~env p pc > 0) in
          let in_loop = blocks_in_loop p pc in
          let p =
@@ -591,12 +636,12 @@ let inline ~inline_count p ~live_vars =
                  ; params
                  ; cont
                  ; enclosing_function
+                 ; recursive
                  ; loops = ref None
                  ; body_size = ref None
                  ; full_size = ref None
                  ; closure_count = ref None
                  ; init_code = ref None
-                 ; recursive = ref None
                  ; return_block = ref None
                  ; interesting_params = ref None
                  ; dead = false
