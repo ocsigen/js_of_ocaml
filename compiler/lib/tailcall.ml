@@ -21,6 +21,8 @@ open! Stdlib
 
 let times = Debug.find "times"
 
+let stats = Debug.find "stats"
+
 open Code
 
 (* FIX: it should be possible to deal with tail-recursion in exception
@@ -39,7 +41,7 @@ let rec tail_call x f l =
     -> Some args
   | _ :: rem -> tail_call x f rem
 
-let rewrite_block (f, f_params, f_pc, args) pc blocks =
+let rewrite_block update_count (f, f_params, f_pc, args) pc blocks =
   let block = Addr.Map.find pc blocks in
   match block.branch with
   | Return x -> (
@@ -47,6 +49,7 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
       | Some f_args when List.length f_params = List.length f_args ->
           let m = Subst.build_mapping f_params f_args in
           List.iter2 f_params f_args ~f:(fun p a -> Code.Var.propagate_name p a);
+          incr update_count;
           Addr.Map.add
             pc
             { params = block.params
@@ -57,17 +60,17 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
       | _ -> blocks)
   | _ -> blocks
 
-let rec traverse f pc visited blocks =
+let rec traverse update_count f pc visited blocks =
   if not (Addr.Set.mem pc visited)
   then
     let visited = Addr.Set.add pc visited in
-    let blocks = rewrite_block f pc blocks in
+    let blocks = rewrite_block update_count f pc blocks in
     let visited, blocks =
       Code.fold_children_skip_try_body
         blocks
         pc
         (fun pc (visited, blocks) ->
-          let visited, blocks = traverse f pc visited blocks in
+          let visited, blocks = traverse update_count f pc visited blocks in
           visited, blocks)
         (visited, blocks)
     in
@@ -75,6 +78,7 @@ let rec traverse f pc visited blocks =
   else visited, blocks
 
 let f p =
+  let update_count = ref 0 in
   let t = Timer.make () in
   let blocks =
     fold_closures
@@ -82,10 +86,13 @@ let f p =
       (fun f params (pc, args) _ blocks ->
         match f with
         | Some f when List.length params = List.length args ->
-            let _, blocks = traverse (f, params, pc, args) pc Addr.Set.empty blocks in
+            let _, blocks =
+              traverse update_count (f, params, pc, args) pc Addr.Set.empty blocks
+            in
             blocks
         | _ -> blocks)
       p.blocks
   in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
+  if stats () then Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
   { p with blocks }
