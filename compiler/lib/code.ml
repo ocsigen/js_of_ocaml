@@ -777,6 +777,12 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
   let accu = f None [] (start, []) None accu in
   visit blocks start f accu
 
+let rec last_instr l =
+  match l with
+  | [] | [ Event _ ] -> None
+  | [ i ] | [ i; Event _ ] -> Some i
+  | _ :: rem -> last_instr rem
+
 let equal p1 p2 =
   p1.start = p2.start
   && Addr.Map.equal

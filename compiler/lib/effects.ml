@@ -142,13 +142,6 @@ let dominance_frontier g idom =
     g.preds;
   frontiers
 
-(* Last instruction of a block, ignoring events *)
-let rec last_instr l =
-  match l with
-  | [] -> None
-  | [ i ] | [ i; Event _ ] -> Some i
-  | _ :: rem -> last_instr rem
-
 (* Split a block, separating the last instruction from the preceeding
    ones, ignoring events *)
 let block_split_last xs =
@@ -210,7 +203,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
       let block = Addr.Map.find pc blocks in
       (match block.branch with
       | Branch (dst, _) -> (
-          match last_instr block.body with
+          match Code.last_instr block.body with
           | Some (Let (x, e))
             when effect_primitive_or_application e && Var.Set.mem x cps_needed ->
               (* The block after a function application that needs to
