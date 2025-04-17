@@ -386,7 +386,7 @@ let source_location ctx position pc =
 
 (****)
 
-let float_const f = J.ENum (J.Num.of_float f)
+let float_const f = J.ENum (J.Num.of_float (Int64.float_of_bits f))
 
 let s_var name = J.EVar (J.ident (Utf8_string.of_string_exn name))
 
