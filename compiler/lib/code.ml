@@ -349,6 +349,33 @@ module Constant = struct
     | NativeInt _, (Int _ | Int32 _)
     | (Int32 _ | NativeInt _), Float _
     | Float _, (Int32 _ | NativeInt _) -> None
+
+  let rec equal c c' =
+    match c, c' with
+    | String s, String s' -> String.equal s s'
+    | NativeString s, NativeString s' -> Native_string.equal s s'
+    | Float f, Float f' -> Float.bitwise_equal f f'
+    | Float_array a, Float_array a' -> Array.equal Float.bitwise_equal a a'
+    | Int i, Int i' -> Targetint.equal i i'
+    | Int32 i, Int32 i' | NativeInt i, NativeInt i' -> Int32.equal i i'
+    | Int64 i, Int64 i' -> Int64.equal i i'
+    | Tuple (t, a, kind), Tuple (t', a', kind') -> (
+        t = t'
+        && Array.equal equal a a'
+        &&
+        match kind, kind' with
+        | Array, Array | NotArray, NotArray | Unknown, Unknown -> true
+        | (Array | NotArray | Unknown), _ -> false)
+    | ( ( String _
+        | NativeString _
+        | Float _
+        | Float_array _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Int64 _
+        | Tuple _ )
+      , _ ) -> false
 end
 
 type loc =
@@ -795,18 +822,15 @@ let eq p1 p2 =
              && List.equal
                   ~eq:(fun i i' ->
                     match i, i' with
-                    | Let (x, Constant (Float f)), Let (x', Constant (Float f')) ->
-                        Var.equal x x' && Float.bitwise_equal f f'
-                    | ( Let (x, Constant (Float_array a))
-                      , Let (x', Constant (Float_array a')) ) ->
-                        Var.equal x x' && Array.equal Float.bitwise_equal a a'
+                    | Let (x, Constant c), Let (x', Constant c') ->
+                        Var.equal x x' && Constant.equal c c'
                     | Let (x, Prim (prim, args)), Let (x', Prim (prim', args')) ->
                         Var.equal x x'
                         && Poly.equal prim prim'
                         && List.equal
                              ~eq:(fun a a' ->
                                match a, a' with
-                               | Pc (Float f), Pc (Float f') -> Float.bitwise_equal f f'
+                               | Pc c, Pc c' -> Constant.equal c c'
                                | _ -> Poly.equal a a')
                              args
                              args'
