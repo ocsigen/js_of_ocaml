@@ -788,19 +788,13 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
 
 let eq p1 p2 =
   p1.start = p2.start
-  && Addr.Map.cardinal p1.blocks = Addr.Map.cardinal p2.blocks
-  && Addr.Map.fold
-       (fun pc block1 b ->
-         b
-         &&
-         match Addr.Map.find pc p2.blocks with
-         | exception Not_found -> false
-         | block2 ->
-             List.equal ~eq:Var.equal block1.params block2.params
-             && Poly.equal block1.branch block2.branch
-             && List.equal ~eq:Poly.equal block1.body block2.body)
+  && Addr.Map.equal
+       (fun { params; body; branch } b ->
+         List.equal ~eq:Var.equal params b.params
+         && Poly.equal branch b.branch
+         && List.equal ~eq:Poly.equal body b.body)
        p1.blocks
-       true
+       p2.blocks
 
 let with_invariant = Debug.find "invariant"
 
