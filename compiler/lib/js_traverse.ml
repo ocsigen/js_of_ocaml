@@ -1701,9 +1701,9 @@ class simpl =
       in
       match e with
       | EBin (Plus, e1, e2) -> (
-          match e2, e1 with
-          | ENum n, _ when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
-          | _, ENum n when Num.is_neg n -> EBin (Minus, e2, ENum (Num.neg n))
+          match e1, e2 with
+          | _, ENum n when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
+          | ENum n, _ when Num.is_neg n -> EBin (Minus, e2, ENum (Num.neg n))
           | ENum zero, (ENum _ as x) when is_zero zero -> x
           | (ENum _ as x), ENum zero when is_zero zero -> x
           | _ -> e)
