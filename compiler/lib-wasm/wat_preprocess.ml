@@ -277,6 +277,10 @@ type value =
   | String of string
   | Version of int * int * int
 
+let value_equal (a : value) b = Poly.equal a b
+
+let value_compare (a : value) b = Poly.compare a b
+
 type st =
   { text : string
   ; mutable pos : pos
@@ -305,7 +309,7 @@ let check_type ?typ expr actual_typ =
   match typ with
   | None -> ()
   | Some typ ->
-      if Poly.(actual_typ <> typ)
+      if not (Poly.equal actual_typ typ)
       then
         raise
           (Error
@@ -367,15 +371,17 @@ and bin_op st ?typ loc op args =
       let v = eval st expr in
       let v' = eval ~typ:(value_type v) st expr' in
       Bool
-        Poly.(
-          match op with
-          | "=" -> v = v'
-          | "<" -> v < v'
-          | ">" -> v > v'
-          | "<=" -> v <= v'
-          | ">=" -> v >= v'
-          | "<>" -> v <> v'
-          | _ -> assert false)
+        (let op =
+           match op with
+           | "=" -> ( = )
+           | "<" -> ( < )
+           | ">" -> ( > )
+           | "<=" -> ( <= )
+           | ">=" -> ( >= )
+           | "<>" -> ( <> )
+           | _ -> assert false
+         in
+         op (value_compare v v') 0)
   | _ -> raise (Error (position_of_loc loc, Printf.sprintf "Syntax error.\n"))
 
 (****)

@@ -150,6 +150,8 @@ module Label = struct
   let fresh () = L (Code.Var.fresh ())
 
   let of_string s = S s
+
+  let equal (a : t) b = Poly.equal a b
 end
 
 type location =
@@ -509,6 +511,8 @@ let ident ?(loc = N) ?var (Utf8_string.Utf8 n as name) =
   if not (is_ident' name) then failwith (Printf.sprintf "%s not a valid ident" n);
   S { name; var; loc }
 
+let ident_equal (a : ident) b = Poly.equal a b
+
 let param' id = BindingIdent id, None
 
 let param ?loc ?var name = param' (ident ?loc ?var name)
@@ -619,3 +623,5 @@ and assignment_target_of_expr op x =
   match op with
   | None | Some Eq -> assignment_target_of_expr' x
   | _ -> x
+
+let location_equal (a : location) b = Poly.equal a b

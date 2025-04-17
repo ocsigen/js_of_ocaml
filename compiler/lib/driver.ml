@@ -36,6 +36,8 @@ type profile =
   | O2
   | O3
 
+let profile_equal (a : profile) b = Poly.equal a b
+
 let should_export = function
   | `Iife -> false
   | `Named _ | `Anonymous -> true

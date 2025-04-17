@@ -1583,11 +1583,11 @@ let check_export_import_types ~subtyping_info ~files i (desc : importdesc) i' im
     match desc, import.desc with
     | Func t, Func t' -> subtype subtyping_info t t'
     | Table { limits; typ }, Table { limits = limits'; typ = typ' } ->
-        check_limits limits limits' && Poly.(typ = typ')
+        check_limits limits limits' && Poly.equal typ typ'
     | Mem limits, Mem limits' -> check_limits limits limits'
     | Global { mut; typ }, Global { mut = mut'; typ = typ' } ->
         Bool.(mut = mut')
-        && if mut then Poly.(typ = typ') else val_subtype subtyping_info typ typ'
+        && if mut then Poly.equal typ typ' else val_subtype subtyping_info typ typ'
     | Tag t, Tag t' -> t = t'
     | _ -> false
   in

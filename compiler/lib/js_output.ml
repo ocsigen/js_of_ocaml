@@ -164,7 +164,7 @@ struct
     match loc with
     | N -> ()
     | _ ->
-        let location_changed = Poly.(loc <> !current_loc) in
+        let location_changed = not (location_equal loc !current_loc) in
         (if source_map_enabled && (!last_mapping_has_a_name || location_changed)
          then
            match loc with
@@ -467,7 +467,12 @@ struct
       | EAssignTarget (ArrayTarget _) -> false
       | EBin (op, e1, e2) ->
           let out, lft, rght = op_prec op in
-          Prec.(l <= out) && (Poly.(op = In && in_) || traverse lft e1 || traverse rght e2)
+          Prec.(l <= out)
+          && ((match op with
+              | In -> in_
+              | _ -> false)
+             || traverse lft e1
+             || traverse rght e2)
       | EUn ((IncrA | DecrA | IncrB | DecrB), e) ->
           Prec.(l <= UpdateExpression) && traverse LeftHandSideExpression e
       | EUn (_, e) -> Prec.(l <= UnaryExpression) && traverse UnaryExpression e
@@ -765,7 +770,10 @@ struct
         then (
           PP.start_group f 1;
           PP.string f "(");
-        if Poly.(op = IncrB) then PP.string f "++" else PP.string f "--";
+        (match op with
+        | IncrB -> PP.string f "++"
+        | DecrB -> PP.string f "--"
+        | _ -> assert false);
         expression UnaryExpression f e;
         if Prec.(l > p)
         then (
@@ -778,7 +786,10 @@ struct
           PP.start_group f 1;
           PP.string f "(");
         expression LeftHandSideExpression f e;
-        if Poly.(op = IncrA) then PP.string f "++" else PP.string f "--";
+        (match op with
+        | IncrA -> PP.string f "++"
+        | DecrA -> PP.string f "--"
+        | _ -> assert false);
         if Prec.(l > p)
         then (
           PP.string f ")";

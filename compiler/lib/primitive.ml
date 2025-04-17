@@ -31,6 +31,8 @@ type kind =
   | `Mutator
   ]
 
+let kind_equal (a : kind) b = Poly.equal a b
+
 type kind_arg =
   [ `Shallow_const
   | `Object_literal
@@ -77,7 +79,10 @@ let has_arity nm a = try Hashtbl.find arities (resolve nm) = a with Not_found ->
 let is_pure nm =
   match nm with
   | "%identity" | "%direct_int_div" | "%direct_int_mod" | "%direct_int_mul" -> true
-  | _ -> Poly.(kind nm <> `Mutator)
+  | _ -> (
+      match kind nm with
+      | `Mutator -> false
+      | `Mutable | `Pure -> true)
 
 let exists p = Hashtbl.mem kinds p
 
@@ -90,7 +95,7 @@ let get_external () = !externals
 let register p k kargs arity =
   (match Hashtbl.find kinds (resolve p) with
   | exception Not_found -> ()
-  | k' when Poly.(k = k') -> ()
+  | k' when kind_equal k k' -> ()
   | k' ->
       warn
         "Warning: overriding the purity of the primitive %s: %s -> %s@."

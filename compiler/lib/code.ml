@@ -789,9 +789,9 @@ let eq p1 p2 =
          &&
          try
            let block2 = Addr.Map.find pc p2.blocks in
-           Poly.(block1.params = block2.params)
-           && Poly.(block1.branch = block2.branch)
-           && Poly.(block1.body = block2.body)
+           Poly.equal block1.params block2.params
+           && Poly.equal block1.branch block2.branch
+           && Poly.equal block1.body block2.body
          with Not_found -> false)
        p1.blocks
        true
@@ -865,3 +865,5 @@ let invariant { blocks; start; _ } =
         check_events block.body;
         check_last block.branch)
       blocks)
+
+let cont_equal (a : cont) b = Poly.equal a b

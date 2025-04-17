@@ -302,7 +302,12 @@ type ctx = { mutable function_refs : Code.Var.Set.t }
 
 let reference_function ctx f = ctx.function_refs <- Code.Var.Set.add f ctx.function_refs
 
-let remove_nops l = List.filter ~f:(fun i -> not (Poly.equal i Nop)) l
+let remove_nops l =
+  List.filter
+    ~f:(function
+      | Nop -> false
+      | _ -> true)
+    l
 
 let float64 _ f =
   match classify_float f with
@@ -604,7 +609,7 @@ let escape_string s =
   let b = Buffer.create (String.length s + 2) in
   for i = 0 to String.length s - 1 do
     let c = s.[i] in
-    if Poly.(c >= ' ' && c <= '~' && c <> '"' && c <> '\\')
+    if Char.(c >= ' ' && c <= '~' && c <> '"' && c <> '\\')
     then Buffer.add_char b c
     else Printf.bprintf b "\\%02x" (Char.code c)
   done;

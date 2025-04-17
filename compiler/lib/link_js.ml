@@ -318,7 +318,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
             (match
                action
                  ~resolve_sourcemap_url
-                 ~drop_source_map:Poly.(source_map = None)
+                 ~drop_source_map:(Option.is_none source_map)
                  file
                  line
              with

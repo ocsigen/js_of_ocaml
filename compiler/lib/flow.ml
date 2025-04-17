@@ -76,7 +76,10 @@ let add_assign_def vars defs x y =
 let add_param_def vars defs x =
   add_var vars x;
   let idx = Var.idx x in
-  assert (is_undefined defs.(idx) || Poly.(defs.(idx) = Param));
+  assert (
+    match defs.(idx) with
+    | Param -> true
+    | x -> is_undefined x);
   defs.(idx) <- Param
 
 (* x depends on y *)

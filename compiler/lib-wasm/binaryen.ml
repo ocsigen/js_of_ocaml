@@ -127,7 +127,8 @@ let optimize
   let level =
     match profile with
     | None -> 1
-    | Some p -> fst (List.find ~f:(fun (_, p') -> Poly.equal p p') Driver.profiles)
+    | Some p ->
+        fst (List.find ~f:(fun (_, p') -> Driver.profile_equal p p') Driver.profiles)
   in
   command
     ("wasm-opt"

@@ -136,9 +136,9 @@ let token_equal : Js_token.t -> Js_token.t -> bool =
   | T_IDENTIFIER (Utf8 a, _), T_IDENTIFIER (Utf8 b, _) -> String.equal a b
   | T_STRING (Utf8 a, _), T_STRING (Utf8 b, _) ->
       String.equal a b || String.equal (normalize_string a) (normalize_string b)
-  | a, T_IDENTIFIER (Utf8 b, _) when Poly.(Some a = Js_token.is_keyword b) -> true
-  | T_IDENTIFIER (Utf8 a, _), b when Poly.(Some b = Js_token.is_keyword a) -> true
-  | a, b -> Poly.(a = b)
+  | a, T_IDENTIFIER (Utf8 b, _) when Poly.equal (Some a) (Js_token.is_keyword b) -> true
+  | T_IDENTIFIER (Utf8 a, _), b when Poly.equal (Some b) (Js_token.is_keyword a) -> true
+  | a, b -> Poly.equal a b
 
 let rec check_toks
     (a : (Js_token.t * _) list)
@@ -276,7 +276,7 @@ let () =
                   in
                   let p2 = List.concat_map p2 ~f:snd in
                   match
-                    Poly.(clean_loc p1 = clean_loc p2), check_toks toks1 [] toks2 []
+                    Poly.equal (clean_loc p1) (clean_loc p2), check_toks toks1 [] toks2 []
                   with
                   | true, Error s when false ->
                       fail := (Tok_missmatch s, filename) :: !fail

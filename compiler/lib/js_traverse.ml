@@ -1601,8 +1601,14 @@ class clean =
         | _ -> true)
       |> List.group ~f:(fun (x, _) (prev, _) ->
              match prev, x with
-             | Variable_statement (k1, _), Variable_statement (k2, _) when Poly.(k1 = k2)
-               -> true
+             | Variable_statement (k1, _), Variable_statement (k2, _) -> (
+                 match k1, k2 with
+                 | Let, Let -> true
+                 | Var, Var -> true
+                 | Const, Const -> true
+                 | Let, _ -> false
+                 | Var, _ -> false
+                 | Const, _ -> false)
              | _, _ -> false)
       |> List.map ~f:(function
            | (Variable_statement (k1, _), _) :: _ as l ->
@@ -1682,6 +1688,8 @@ let use_fun_context l =
       l;
     false
   with True -> true
+
+let expression_equal (a : expression) b = Poly.equal a b
 
 (* - Split variable_statement *)
 (* - rewrite assign_op *)
@@ -1775,7 +1783,7 @@ class simpl =
               ( cond
               , (Expression_statement (EBin (Eq, v1, e1)), _)
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
-            when Poly.(v1 = v2) ->
+            when expression_equal v1 v2 ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
           (* The following optimizations cause the generated JS to compress less.
              (* if (e1) e2 else e3 --> e1 ? e2 : e3 *)

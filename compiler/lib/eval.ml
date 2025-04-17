@@ -357,7 +357,7 @@ let is_int info x =
   | Pc (Int _) -> Y
   | Pc _ -> N
 
-let the_tag_of info x get =
+let the_tag_of info x get equal =
   match x with
   | Pv x ->
       get_approx
@@ -367,7 +367,10 @@ let the_tag_of info x get =
           | Some (Block (j, _, _, mut)) ->
               if Flow.Info.possibly_mutable info x
               then (
-                assert (Poly.(mut = Maybe_mutable));
+                assert (
+                  match mut with
+                  | Maybe_mutable -> true
+                  | Immutable -> false);
                 None)
               else get j
           | Some (Constant (Tuple (j, _, _))) -> get j
@@ -375,7 +378,7 @@ let the_tag_of info x get =
         None
         (fun u v ->
           match u, v with
-          | Some i, Some j when Poly.(i = j) -> u
+          | Some i, Some j when equal i j -> u
           | _ -> None)
         x
   | Pc (Tuple (j, _, _)) -> get j
@@ -391,13 +394,13 @@ let the_cont_of info x (a : cont array) =
     info
     (fun x ->
       match Flow.Info.def info x with
-      | Some (Prim (Extern "%direct_obj_tag", [ b ])) -> the_tag_of info b get
+      | Some (Prim (Extern "%direct_obj_tag", [ b ])) -> the_tag_of info b get cont_equal
       | Some (Constant (Int j)) -> get (Targetint.to_int_exn j)
       | None | Some _ -> None)
     None
     (fun u v ->
       match u, v with
-      | Some i, Some j when Poly.(i = j) -> u
+      | Some i, Some j when cont_equal i j -> u
       | _ -> None)
     x
 
@@ -414,7 +417,7 @@ let rec int_predicate deep info pred x (i : Targetint.t) =
       (fun x ->
         match Flow.Info.def info x with
         | Some (Prim (Extern "%direct_obj_tag", [ b ])) ->
-            the_tag_of info b (fun j -> Some (pred (Targetint.of_int_exn j) i))
+            the_tag_of info b (fun j -> Some (pred (Targetint.of_int_exn j) i)) Bool.equal
         | Some (Prim (Extern "%int_sub", [ Pv a; Pc (Int b) ])) ->
             int_predicate (deep + 1) info (fun x y -> pred (Targetint.sub x b) y) a i
         | Some (Prim (Extern "%int_add", [ Pv a; Pc (Int b) ])) ->
@@ -511,8 +514,12 @@ let eval_instr ~target info i =
   | Let (x, Prim (IsInt, [ y ])) -> (
       match is_int info y with
       | Unknown -> [ i ]
-      | (Y | N) as b ->
-          let c = Constant (bool' Poly.(b = Y)) in
+      | Y ->
+          let c = Constant (bool' true) in
+          Flow.Info.update_def info x c;
+          [ Let (x, c) ]
+      | N ->
+          let c = Constant (bool' false) in
           Flow.Info.update_def info x c;
           [ Let (x, c) ])
   | Let
@@ -541,7 +548,7 @@ let eval_instr ~target info i =
           [ Let (x, c) ]
       | None -> [ i ])
   | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
-      match the_tag_of info y (fun x -> Some x) with
+      match the_tag_of info y (fun x -> Some x) ( = ) with
       | Some tag ->
           let c = Constant (Int (Targetint.of_int_exn tag)) in
           Flow.Info.update_def info x c;
@@ -637,7 +644,7 @@ let the_cond_of info x =
 let eval_branch info l =
   match l with
   | Cond (x, ftrue, ffalse) as b -> (
-      if Poly.(ftrue = ffalse)
+      if cont_equal ftrue ffalse
       then Branch ftrue
       else
         match the_cond_of info x with
