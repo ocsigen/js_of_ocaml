@@ -230,7 +230,7 @@ let inline inline_count live_vars closures pc (outer, p) =
               [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc }))
             else
               match cl_simpl with
-              | Some (bound_vars, free_vars, recursive, tc_params)
+              | Some (_, free_vars, recursive, tc_params)
               (* We inline/duplicate
                  - single instruction functions (f_size = 1)
                  - small funtions that call one of their arguments in
@@ -255,8 +255,7 @@ let inline inline_count live_vars closures pc (outer, p) =
                     live_vars.(Var.idx f) <- live_vars.(Var.idx f) - 1
                   in
                   let p, f, params, clos_cont =
-                    let bound_vars = Var.Set.add f bound_vars in
-                    Duplicate.closure p ~bound_vars ~f ~params ~cont:clos_cont
+                    Duplicate.closure p ~f ~params ~cont:clos_cont
                   in
                   if recursive
                   then
