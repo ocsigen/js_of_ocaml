@@ -288,6 +288,14 @@ val fold_closures_outermost_first :
     outermost closures first. Unlike with {!fold_closures}, only the closures
     reachable from [p.start] are considered. *)
 
+val fold_closures_in_reverse_postorder :
+  program -> (Var.t option -> Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
+(** Similar to {!fold_closures}, but traverse the program in reverse
+    postorder, visiting innermost closures first. The function
+    parameter is called with the enclosing function as first
+    argument. Unlike with {!fold_closures}, only the closures
+    reachable from [p.start] are considered. *)
+
 val fold_children : 'c fold_blocs
 
 val fold_children_skip_try_body : 'c fold_blocs
@@ -299,6 +307,12 @@ val traverse :
 
 val preorder_traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
+
+val reverse_postorder_traverse :
+  fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
+
+val last_instr : instr list -> instr option
+(** Last instruction of a block body, ignoring events *)
 
 val prepend : program -> instr list -> program
 
