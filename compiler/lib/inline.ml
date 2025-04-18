@@ -171,7 +171,7 @@ let rec args_equal xs ys =
   | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
   | _ -> false
 
-let inline ~first_class_primitives live_vars closures name pc (outer, p) =
+let inline ~first_class_primitives live_vars closures pc (outer, p) =
   let block = Addr.Map.find pc p.blocks in
   let body, (outer, branch, p) =
     List.fold_right
@@ -245,11 +245,7 @@ let inline ~first_class_primitives live_vars closures name pc (outer, p) =
                           Var.Map.mem farg_tc closures && live_vars.(Var.idx farg_tc) = 1)
                         tc_params
                      || f_size <= 1)
-                     && ((not recursive)
-                        ||
-                        match name with
-                        | None -> true
-                        | Some f' -> not (Var.equal f f')) ->
+                     && not recursive ->
                   let () =
                     (* Update live_vars *)
                     Var.Map.iter
@@ -345,7 +341,7 @@ let f p live_vars =
         let traverse outer =
           Code.traverse
             { fold = Code.fold_children }
-            (inline ~first_class_primitives live_vars closures name)
+            (inline ~first_class_primitives live_vars closures)
             pc
             p.blocks
             (outer, p)

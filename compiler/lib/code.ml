@@ -268,8 +268,8 @@ end
 type constant =
   | String of string
   | NativeString of Native_string.t
-  | Float of float
-  | Float_array of float array
+  | Float of Int64.t
+  | Float_array of Int64.t array
   | Int of Targetint.t
   | Int32 of Int32.t
   | Int64 of Int64.t
@@ -299,8 +299,14 @@ module Constant = struct
     | Int32 a, Int32 b -> Some (Int32.equal a b)
     | Int64 a, Int64 b -> Some (Int64.equal a b)
     | NativeInt a, NativeInt b -> Some (Int32.equal a b)
-    | Float_array a, Float_array b -> Some (Array.equal Float.ieee_equal a b)
-    | Float a, Float b -> Some (Float.ieee_equal a b)
+    | Float_array a, Float_array b ->
+        Some
+          (Array.equal
+             (fun f g -> Float.ieee_equal (Int64.float_of_bits f) (Int64.float_of_bits g))
+             a
+             b)
+    | Float a, Float b ->
+        Some (Float.ieee_equal (Int64.float_of_bits a) (Int64.float_of_bits b))
     | String _, NativeString _ | NativeString _, String _ -> None
     | Int _, Float _ | Float _, Int _ -> None
     | Tuple ((0 | 254), _, _), Float_array _ -> None
@@ -434,12 +440,12 @@ module Print = struct
     | String s -> Format.fprintf f "%S" s
     | NativeString (Byte s) -> Format.fprintf f "%Sj" s
     | NativeString (Utf (Utf8 s)) -> Format.fprintf f "%Sj" s
-    | Float fl -> Format.fprintf f "%.12g" fl
+    | Float fl -> Format.fprintf f "%.12g" (Int64.float_of_bits fl)
     | Float_array a ->
         Format.fprintf f "[|";
         for i = 0 to Array.length a - 1 do
           if i > 0 then Format.fprintf f ", ";
-          Format.fprintf f "%.12g" a.(i)
+          Format.fprintf f "%.12g" (Int64.float_of_bits a.(i))
         done;
         Format.fprintf f "|]"
     | Int i -> Format.fprintf f "%s" (Targetint.to_string i)
@@ -782,19 +788,13 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
 
 let eq p1 p2 =
   p1.start = p2.start
-  && Addr.Map.cardinal p1.blocks = Addr.Map.cardinal p2.blocks
-  && Addr.Map.fold
-       (fun pc block1 b ->
-         b
-         &&
-         try
-           let block2 = Addr.Map.find pc p2.blocks in
-           Poly.equal block1.params block2.params
-           && Poly.equal block1.branch block2.branch
-           && Poly.equal block1.body block2.body
-         with Not_found -> false)
+  && Addr.Map.equal
+       (fun { params; body; branch } b ->
+         List.equal ~eq:Var.equal params b.params
+         && Poly.equal branch b.branch
+         && List.equal ~eq:Poly.equal body b.body)
        p1.blocks
-       true
+       p2.blocks
 
 let with_invariant = Debug.find "invariant"
 

@@ -45,10 +45,12 @@ let shift_op l f =
   | [ Int i; Int j ] -> Some (Int (f i (Targetint.to_int_exn j)))
   | _ -> None
 
+let float f : constant = Float (Int64.bits_of_float f)
+
 let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
   let args =
     match l with
-    | [ Float i; Float j ] -> Some (i, j)
+    | [ Float i; Float j ] -> Some (Int64.float_of_bits i, Int64.float_of_bits j)
     | _ -> None
   in
   match args with
@@ -57,12 +59,12 @@ let float_binop_aux (l : constant list) (f : float -> float -> 'a) : 'a option =
 
 let float_binop (l : constant list) (f : float -> float -> float) : constant option =
   match float_binop_aux l f with
-  | Some x -> Some (Float x)
+  | Some x -> Some (float x)
   | None -> None
 
 let float_unop (l : constant list) (f : float -> float) : constant option =
   match l with
-  | [ Float i ] -> Some (Float (f i))
+  | [ Float i ] -> Some (float (f (Int64.float_of_bits i)))
   | _ -> None
 
 let bool' b = Int Targetint.(if b then one else zero)
@@ -71,7 +73,7 @@ let bool b = Some (bool' b)
 
 let float_unop_bool (l : constant list) (f : float -> bool) =
   match l with
-  | [ Float i ] -> bool (f i)
+  | [ Float i ] -> bool (f (Int64.float_of_bits i))
   | _ -> None
 
 let float_binop_bool l f =
@@ -168,10 +170,10 @@ let eval_prim x =
       | "caml_div_float", _ -> float_binop l ( /. )
       | "caml_fmod_float", _ -> float_binop l mod_float
       | "caml_int_of_float", [ Float f ] -> (
-          match Targetint.of_float_opt f with
+          match Targetint.of_float_opt (Int64.float_of_bits f) with
           | None -> None
           | Some f -> Some (Int f))
-      | "caml_float_of_int", [ Int i ] -> Some (Float (Targetint.to_float i))
+      | "caml_float_of_int", [ Int i ] -> Some (float (Targetint.to_float i))
       (* Math *)
       | "caml_neg_float", _ -> float_unop l ( ~-. )
       | "caml_abs_float", _ -> float_unop l abs_float
@@ -209,16 +211,19 @@ let eval_prim x =
       | "caml_erfc_float", _ -> float_unop l Float.erfc
       | "caml_nextafter_float", _ -> float_binop l Float.next_after
       | "caml_float_compare", [ Float i; Float j ] ->
-          Some (Int (Targetint.of_int_exn (Float.compare i j)))
+          Some
+            (Int
+               (Targetint.of_int_exn
+                  (Float.compare (Int64.float_of_bits i) (Int64.float_of_bits j))))
       | "caml_ldexp_float", [ Float f; Int i ] ->
-          Some (Float (ldexp f (Targetint.to_int_exn i)))
+          Some (float (ldexp (Int64.float_of_bits f) (Targetint.to_int_exn i)))
       (* int32 *)
-      | "caml_int32_bits_of_float", [ Float f ] -> int32 (Int32.bits_of_float f)
-      | "caml_int32_float_of_bits", [ Int i ] ->
-          Some (Float (Int32.float_of_bits (Targetint.to_int32 i)))
-      | "caml_int32_float_of_bits", [ Int32 i ] -> Some (Float (Int32.float_of_bits i))
-      | "caml_int32_of_float", [ Float f ] -> int32 (Int32.of_float f)
-      | "caml_int32_to_float", [ Int32 i ] -> Some (Float (Int32.to_float i))
+      | "caml_int32_bits_of_float", [ Float f ] ->
+          int32 (Int32.bits_of_float (Int64.float_of_bits f))
+      | "caml_int32_float_of_bits", [ Int32 i ] -> Some (float (Int32.float_of_bits i))
+      | "caml_int32_of_float", [ Float f ] ->
+          int32 (Int32.of_float (Int64.float_of_bits f))
+      | "caml_int32_to_float", [ Int32 i ] -> Some (float (Int32.to_float i))
       | "caml_int32_neg", _ -> int32_unop l Int32.neg
       | "caml_int32_add", _ -> int32_binop l Int32.add
       | "caml_int32_sub", _ -> int32_binop l Int32.sub
@@ -240,13 +245,13 @@ let eval_prim x =
       | "caml_nativeint_of_int32", [ Int32 i ] -> Some (NativeInt i)
       | "caml_nativeint_to_int32", [ NativeInt i ] -> Some (Int32 i)
       (* nativeint *)
-      | "caml_nativeint_bits_of_float", [ Float f ] -> nativeint (Int32.bits_of_float f)
-      | "caml_nativeint_float_of_bits", [ Int i ] ->
-          Some (Float (Int32.float_of_bits (Targetint.to_int32 i)))
+      | "caml_nativeint_bits_of_float", [ Float f ] ->
+          nativeint (Int32.bits_of_float (Int64.float_of_bits f))
       | "caml_nativeint_float_of_bits", [ NativeInt i ] ->
-          Some (Float (Int32.float_of_bits i))
-      | "caml_nativeint_of_float", [ Float f ] -> nativeint (Int32.of_float f)
-      | "caml_nativeint_to_float", [ NativeInt i ] -> Some (Float (Int32.to_float i))
+          Some (float (Int32.float_of_bits i))
+      | "caml_nativeint_of_float", [ Float f ] ->
+          nativeint (Int32.of_float (Int64.float_of_bits f))
+      | "caml_nativeint_to_float", [ NativeInt i ] -> Some (float (Int32.to_float i))
       | "caml_nativeint_neg", _ -> nativeint_unop l Int32.neg
       | "caml_nativeint_add", _ -> nativeint_binop l Int32.add
       | "caml_nativeint_sub", _ -> nativeint_binop l Int32.sub
@@ -267,10 +272,11 @@ let eval_prim x =
       | "caml_nativeint_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
       | "caml_nativeint_of_int", [ Int i ] -> nativeint (Targetint.to_int32 i)
       (* int64 *)
-      | "caml_int64_bits_of_float", [ Float f ] -> int64 (Int64.bits_of_float f)
-      | "caml_int64_float_of_bits", [ Int64 i ] -> Some (Float (Int64.float_of_bits i))
-      | "caml_int64_of_float", [ Float f ] -> int64 (Int64.of_float f)
-      | "caml_int64_to_float", [ Int64 i ] -> Some (Float (Int64.to_float i))
+      | "caml_int64_bits_of_float", [ Float f ] -> int64 f
+      | "caml_int64_float_of_bits", [ Int64 i ] -> Some (Float i)
+      | "caml_int64_of_float", [ Float f ] ->
+          int64 (Int64.of_float (Int64.float_of_bits f))
+      | "caml_int64_to_float", [ Int64 i ] -> Some (float (Int64.to_float i))
       | "caml_int64_neg", _ -> int64_unop l Int64.neg
       | "caml_int64_add", _ -> int64_binop l Int64.add
       | "caml_int64_sub", _ -> int64_binop l Int64.sub
@@ -289,8 +295,7 @@ let eval_prim x =
           Some (Int (Targetint.of_int_exn (Int64.compare i j)))
       | "caml_int64_to_int", [ Int64 i ] ->
           Some (Int (Targetint.of_int32_truncate (Int64.to_int32 i)))
-      | ( ("caml_int64_of_int" | "caml_int64_of_int32" | "caml_int64_of_nativeint")
-        , [ Int i ] ) -> int64 (Int64.of_int32 (Targetint.to_int32 i))
+      | "caml_int64_of_int", [ Int i ] -> int64 (Int64.of_int32 (Targetint.to_int32 i))
       | "caml_int64_to_int32", [ Int64 i ] -> int32 (Int64.to_int32 i)
       | "caml_int64_of_int32", [ Int32 i ] -> int64 (Int64.of_int32 i)
       | "caml_int64_to_nativeint", [ Int64 i ] -> nativeint (Int64.to_int32 i)
@@ -435,7 +440,8 @@ let rec int_predicate deep info pred x (i : Targetint.t) =
 let constant_js_equal a b =
   match a, b with
   | Int i, Int j -> Some (Targetint.equal i j)
-  | Float a, Float b -> Some (Float.ieee_equal a b)
+  | Float a, Float b ->
+      Some (Float.ieee_equal (Int64.float_of_bits a) (Int64.float_of_bits b))
   | NativeString a, NativeString b -> Some (Native_string.equal a b)
   | String a, String b when Config.Flag.use_js_string () -> Some (String.equal a b)
   | Int _, Float _ | Float _, Int _ -> None

@@ -442,9 +442,12 @@ end = struct
       if tag = Obj.string_tag
       then String (Obj.magic x : string)
       else if tag = Obj.double_tag
-      then Float (Obj.magic x : float)
+      then Float (Int64.bits_of_float (Obj.magic x : float))
       else if tag = Obj.double_array_tag
-      then Float_array (Array.init (Obj.size x) ~f:(fun i -> Obj.double_field x i))
+      then
+        Float_array
+          (Array.init (Obj.size x) ~f:(fun i ->
+               Int64.bits_of_float (Obj.double_field x i)))
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with

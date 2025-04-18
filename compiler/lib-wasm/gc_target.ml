@@ -1025,12 +1025,15 @@ module Constant = struct
           return (Const_named ("str_" ^ s), W.ArrayNewFixed (ty, l))
     | Float f ->
         let* ty = Type.float_type in
-        return (Const, W.StructNew (ty, [ Const (F64 f) ]))
+        return (Const, W.StructNew (ty, [ Const (F64 (Int64.float_of_bits f)) ]))
     | Float_array l ->
         let l = Array.to_list l in
         let* ty = Type.float_array_type in
         (*ZZZ Boxed array? *)
-        return (Const, W.ArrayNewFixed (ty, List.map ~f:(fun f -> W.Const (F64 f)) l))
+        return
+          ( Const
+          , W.ArrayNewFixed
+              (ty, List.map ~f:(fun f -> W.Const (F64 (Int64.float_of_bits f))) l) )
     | Int64 i ->
         let* e = Memory.make_int64 (return (W.Const (I64 i))) in
         return (Const, e)

@@ -362,7 +362,7 @@ let the_def_of info x =
 let constant_identical ~(target : [ `JavaScript | `Wasm ]) a b =
   match a, b, target with
   | Int i, Int j, _ -> Targetint.equal i j
-  | Float a, Float b, `JavaScript -> Float.bitwise_equal a b
+  | Float a, Float b, `JavaScript -> Int64.equal a b
   | Float _, Float _, `Wasm -> false
   | NativeString a, NativeString b, `JavaScript -> Native_string.equal a b
   | NativeString _, NativeString _, `Wasm ->

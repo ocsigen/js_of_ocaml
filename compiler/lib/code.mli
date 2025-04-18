@@ -157,8 +157,8 @@ end
 type constant =
   | String of string
   | NativeString of Native_string.t
-  | Float of float
-  | Float_array of float array
+  | Float of Int64.t
+  | Float_array of Int64.t array
   | Int of Targetint.t
   | Int32 of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Int64 of Int64.t
