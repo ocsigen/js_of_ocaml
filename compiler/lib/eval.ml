@@ -677,9 +677,9 @@ let eval_branch info l =
 
 exception May_raise
 
-let rec do_not_raise pc visited blocks =
+let rec do_not_raise pc visited rewrite blocks =
   if Addr.Set.mem pc visited
-  then visited
+  then visited, rewrite
   else
     let visited = Addr.Set.add pc visited in
     let b = Addr.Map.find pc blocks in
@@ -700,18 +700,21 @@ let rec do_not_raise pc visited blocks =
             | Prim (_, _) -> ()));
     match b.branch with
     | Raise _ -> raise May_raise
-    | Stop | Return _ | Poptrap _ -> visited
-    | Branch (pc, _) -> do_not_raise pc visited blocks
+    | Stop | Return _ -> visited, rewrite
+    | Poptrap _ -> visited, pc :: rewrite
+    | Branch (pc, _) -> do_not_raise pc visited rewrite blocks
     | Cond (_, (pc1, _), (pc2, _)) ->
-        let visited = do_not_raise pc1 visited blocks in
-        let visited = do_not_raise pc2 visited blocks in
-        visited
+        let visited, rewrite = do_not_raise pc1 visited rewrite blocks in
+        let visited, rewrite = do_not_raise pc2 visited rewrite blocks in
+        visited, rewrite
     | Switch (_, a1) ->
-        let visited =
-          Array.fold_left a1 ~init:visited ~f:(fun visited (pc, _) ->
-              do_not_raise pc visited blocks)
+        let visited, rewrite =
+          Array.fold_left
+            a1
+            ~init:(visited, rewrite)
+            ~f:(fun (visited, rewrite) (pc, _) -> do_not_raise pc visited rewrite blocks)
         in
-        visited
+        visited, rewrite
     | Pushtrap _ -> raise May_raise
 
 let drop_exception_handler drop_count blocks =
@@ -719,27 +722,26 @@ let drop_exception_handler drop_count blocks =
     (fun pc _ blocks ->
       match Addr.Map.find pc blocks with
       | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2); _ } as b -> (
-          try
-            let visited = do_not_raise addr Addr.Set.empty blocks in
-            incr drop_count;
-            let b = { b with branch = Branch cont1 } in
-            let blocks = Addr.Map.add pc b blocks in
-            let blocks =
-              Addr.Set.fold
-                (fun pc2 blocks ->
-                  let b = Addr.Map.find pc2 blocks in
-                  let branch =
-                    match b.branch with
-                    | Poptrap cont -> Branch cont
-                    | x -> x
-                  in
-                  let b = { b with branch } in
-                  Addr.Map.add pc2 b blocks)
-                visited
-                blocks
-            in
-            blocks
-          with May_raise -> blocks)
+          match do_not_raise addr Addr.Set.empty [] blocks with
+          | exception May_raise -> blocks
+          | _visited, rewrite ->
+              incr drop_count;
+              let b = { b with branch = Branch cont1 } in
+              let blocks = Addr.Map.add pc b blocks in
+              let blocks =
+                List.fold_left
+                  ~f:(fun blocks pc2 ->
+                    Addr.Map.update
+                      pc2
+                      (function
+                        | Some ({ branch = Poptrap cont; _ } as b) ->
+                            Some { b with branch = Branch cont }
+                        | None | Some _ -> assert false)
+                      blocks)
+                  rewrite
+                  ~init:blocks
+              in
+              blocks)
       | _ -> blocks)
     blocks
     blocks

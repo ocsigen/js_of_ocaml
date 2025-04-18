@@ -293,15 +293,14 @@ let f ({ blocks; _ } as p : Code.program) =
   if debug () then Print.program Format.err_formatter (fun pc xi -> annot st pc xi) p;
   let all_blocks = blocks in
   let blocks =
-    Addr.Map.fold
-      (fun pc block blocks ->
+    Addr.Map.filter_map
+      (fun pc block ->
         if not (Addr.Set.mem pc st.reachable_blocks)
         then (
           st.deleted_blocks <- st.deleted_blocks + 1;
-          blocks)
+          None)
         else
-          Addr.Map.add
-            pc
+          Some
             { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
             ; body =
                 List.fold_left block.body ~init:[] ~f:(fun acc i ->
@@ -317,10 +316,8 @@ let f ({ blocks; _ } as p : Code.program) =
                           acc))
                 |> List.rev
             ; branch = filter_live_last all_blocks st block.branch
-            }
-            blocks)
+            })
       blocks
-      Addr.Map.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
