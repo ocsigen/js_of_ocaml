@@ -754,13 +754,13 @@ let subst_bound_in_blocks blocks s =
       if debug ()
       then (
         debug_print "@[<v>block before first subst: @,";
-        Code.Print.block (fun _ _ -> "") pc block;
+        Code.Print.block Format.err_formatter (fun _ _ -> "") pc block;
         debug_print "@]");
       let res = Subst.Including_Binders.block s block in
       if debug ()
       then (
         debug_print "@[<v>block after first subst: @,";
-        Code.Print.block (fun _ _ -> "") pc res;
+        Code.Print.block Format.err_formatter (fun _ _ -> "") pc res;
         debug_print "@]");
       res)
     blocks
@@ -861,6 +861,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
               let block = Addr.Map.find pc blocks in
               Code.Print.block
+                Format.err_formatter
                 (fun _ xi -> Partial_cps_analysis.annot cps_needed xi)
                 pc
                 block)
@@ -1129,7 +1130,7 @@ let f ~flow_info ~live_vars p =
         Var.Set.iter (fun v -> debug_print "%s,@ " (Var.to_string v)) cps_needed;
         debug_print "@]@,@]";
         debug_print "@[<v>After lambda lifting...@,";
-        Code.Print.program (fun _ _ -> "") p;
+        Code.Print.program Format.err_formatter (fun _ _ -> "") p;
         debug_print "@]");
       p, cps_needed)
     else
@@ -1143,6 +1144,6 @@ let f ~flow_info ~live_vars p =
   if debug ()
   then (
     debug_print "@[<v>After CPS transform:@,";
-    Code.Print.program (fun _ _ -> "") p;
+    Code.Print.program Format.err_formatter (fun _ _ -> "") p;
     debug_print "@]");
   p, trampolined_calls, in_cps

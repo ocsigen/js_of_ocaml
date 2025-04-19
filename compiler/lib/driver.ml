@@ -143,7 +143,7 @@ let exact_calls profile ~deadcode_sentinal p =
   | `Cps | `Double_translation -> p
 
 let print p =
-  if debug () then Code.Print.program (fun _ _ -> "") p;
+  if debug () then Code.Print.program Format.err_formatter (fun _ _ -> "") p;
   p
 
 let rec loop max name round i (p : 'a) : 'a =

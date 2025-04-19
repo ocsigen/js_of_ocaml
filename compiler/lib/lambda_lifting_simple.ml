@@ -358,7 +358,7 @@ let f ~to_lift program =
   if debug ()
   then (
     Format.eprintf "@[<v>Program before lambda lifting:@,";
-    Code.Print.program (fun _ _ -> "") program;
+    Code.Print.program Format.err_formatter (fun _ _ -> "") program;
     Format.eprintf "@]");
   let t = Timer.make () in
   let program, liftings = lift ~to_lift ~pc:program.start program in

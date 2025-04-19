@@ -290,7 +290,7 @@ let f ({ blocks; _ } as p : Code.program) =
     }
   in
   mark_reachable st p.start;
-  if debug () then Print.program (fun pc xi -> annot st pc xi) p;
+  if debug () then Print.program Format.err_formatter (fun pc xi -> annot st pc xi) p;
   let all_blocks = blocks in
   let blocks =
     Addr.Map.fold
