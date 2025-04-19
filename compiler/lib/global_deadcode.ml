@@ -573,7 +573,7 @@ let f p ~deadcode_sentinal global_info =
   if debug ()
   then (
     Format.eprintf "Before Zeroing:@.";
-    Code.Print.program (fun _ _ -> "") p;
+    Code.Print.program Format.err_formatter (fun _ _ -> "") p;
     Print.print_uses uses;
     Print.print_live_tbl live_table);
   (* Zero out dead fields *)
@@ -581,6 +581,6 @@ let f p ~deadcode_sentinal global_info =
   if debug ()
   then (
     Format.eprintf "After Zeroing:@.";
-    Code.Print.program (fun _ _ -> "") p);
+    Code.Print.program Format.err_formatter (fun _ _ -> "") p);
   if times () then Format.eprintf "  global dead code elim.: %a@." Timer.print t;
   p

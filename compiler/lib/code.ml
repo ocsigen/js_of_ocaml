@@ -583,16 +583,16 @@ module Print = struct
     | Instr of instr
     | Last of last
 
-  let block annot pc block =
-    Format.eprintf "==== %d (%a) ====@." pc var_list block.params;
+  let block f annot pc block =
+    Format.fprintf f "==== %d (%a) ====@." pc var_list block.params;
     List.iter block.body ~f:(fun i ->
-        Format.eprintf " %s %a@." (annot pc (Instr i)) instr i);
-    Format.eprintf " %s %a@." (annot pc (Last block.branch)) last block.branch;
-    Format.eprintf "@."
+        Format.fprintf f " %s %a@." (annot pc (Instr i)) instr i);
+    Format.fprintf f " %s %a@." (annot pc (Last block.branch)) last block.branch;
+    Format.fprintf f "@."
 
-  let program annot { start; blocks; _ } =
-    Format.eprintf "Entry point: %d@.@." start;
-    Addr.Map.iter (block annot) blocks
+  let program f annot { start; blocks; _ } =
+    Format.fprintf f "Entry point: %d@.@." start;
+    Addr.Map.iter (block f annot) blocks
 end
 
 (****)
