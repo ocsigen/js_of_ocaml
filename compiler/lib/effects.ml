@@ -400,7 +400,7 @@ let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x dire
     &&
     match Hashtbl.find st.is_continuation direct_pc with
     | `Param _ -> true
-    | `Loop -> st.live_vars.(Var.idx x) = List.length args
+    | `Loop -> List.compare_length_with args ~len:st.live_vars.(Var.idx x) = 0
   then alloc_jump_closures, closure_of_pc ~st direct_pc
   else
     let body, branch = cps_branch ~st ~src:src_pc direct_cont in
