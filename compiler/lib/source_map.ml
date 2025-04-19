@@ -433,7 +433,7 @@ module Standard = struct
                           let contents =
                             match sm.sources_content with
                             | Some x ->
-                                assert (List.length x = List.length sm.sources);
+                                assert (List.compare_lengths x sm.sources = 0);
                                 x
                             | None -> List.map sm.sources ~f:(fun _ -> None)
                           in
@@ -602,7 +602,7 @@ module Standard = struct
     match sources_content with
     | None -> ()
     | Some x ->
-        if not (List.length sources = List.length x)
+        if List.compare_lengths sources x <> 0
         then
           invalid_arg
             "Source_map.Standard.invariant: sources and sourcesContent must have the \

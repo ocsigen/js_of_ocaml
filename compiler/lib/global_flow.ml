@@ -229,7 +229,7 @@ let expr_deps blocks st x e =
          dependencies right now. This speeds up the analysis
          significantly. *)
       match st.defs.(Var.idx f) with
-      | Expr (Closure (params, _, _)) when List.length args = List.length params ->
+      | Expr (Closure (params, _, _)) when List.compare_lengths args params = 0 ->
           Hashtbl.add st.applied_functions (x, f) ();
           add_to_list st.function_call_sites f x;
           if st.fast
@@ -510,7 +510,7 @@ let propagate st ~update approx x =
                 (fun g ->
                   match st.defs.(Var.idx g) with
                   | Expr (Closure (params, _, _))
-                    when List.length args = List.length params ->
+                    when List.compare_lengths args params = 0 ->
                       if not (Hashtbl.mem st.applied_functions (x, g))
                       then (
                         Hashtbl.add st.applied_functions (x, g) ();
@@ -729,7 +729,7 @@ let exact_call info f n =
       Var.Set.for_all
         (fun g ->
           match info.info_defs.(Var.idx g) with
-          | Expr (Closure (params, _, _)) -> List.length params = n
+          | Expr (Closure (params, _, _)) -> List.compare_length_with params ~len:n = 0
           | Expr (Block _) -> true
           | Expr _ | Phi _ -> assert false)
         known

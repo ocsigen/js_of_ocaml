@@ -812,7 +812,7 @@ let invariant { blocks; start; _ } =
     let defs = Var.ISet.empty () in
     let check_cont (cont, args) =
       let b = Addr.Map.find cont blocks in
-      assert (List.length args = List.length b.params)
+      assert (List.compare_lengths args b.params = 0)
     in
     let define x =
       if check_defs

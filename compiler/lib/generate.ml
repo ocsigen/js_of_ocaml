@@ -724,7 +724,7 @@ module DTree = struct
     |> List.sort ~cmp:(fun (cont1, _) (cont2, _) -> cont_compare cont1 cont2)
     |> list_group ~equal:cont_equal fst snd
     |> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
-    |> List.sort ~cmp:(fun (_, l1) (_, l2) -> compare (List.length l1) (List.length l2))
+    |> List.sort ~cmp:(fun (_, l1) (_, l2) -> List.compare_lengths l1 l2)
     |> Array.of_list
 
   let build_if b1 b2 = If (IsTrue, Branch ([ 1 ], b1), Branch ([ 0 ], b2))
@@ -1678,7 +1678,7 @@ and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
         List.fold_left names ~init:Code.Var.Set.empty ~f:(fun acc name ->
             Code.Var.Set.add name acc)
       in
-      assert (Code.Var.Set.cardinal names = List.length all);
+      assert (List.compare_length_with all ~len:(Code.Var.Set.cardinal names) = 0);
       assert (Code.Var.Set.(is_empty (diff muts fvs)));
       let old_muts_map = muts_map in
       let muts_map_l =
