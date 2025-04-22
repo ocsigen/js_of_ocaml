@@ -291,9 +291,9 @@ let program_escape defs known_origins { blocks; _ } =
 
 (****)
 
-let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
+let propagate2 defs known_origins possibly_mutable st x =
   match defs.(Var.idx x) with
-  | Param -> skip_param
+  | Param -> false
   | Phi s -> Var.Set.exists (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
@@ -320,11 +320,11 @@ end
 
 module Solver2 = G.Solver (Domain2)
 
-let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
+let solver2 vars deps defs known_origins possibly_mutable =
   let g =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
-  Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
+  Solver2.f () g (propagate2 defs known_origins possibly_mutable)
 
 let get_approx
     { Info.info_defs = _; info_known_origins; info_maybe_unknown; _ }
@@ -501,7 +501,7 @@ let print_stats s =
   done;
   Format.eprintf "Stats - flow updates: %d@." !count
 
-let f ?skip_param p =
+let f p =
   Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in
@@ -514,7 +514,7 @@ let f ?skip_param p =
   let possibly_mutable = program_escape defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
   let t4 = Timer.make () in
-  let maybe_unknown = solver2 ?skip_param vars deps defs known_origins possibly_mutable in
+  let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
   if times () then Format.eprintf "    flow analysis 4: %a@." Timer.print t4;
   if debug ()
   then

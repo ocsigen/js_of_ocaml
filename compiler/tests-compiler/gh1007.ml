@@ -158,8 +158,9 @@ let ()  = M.myfun M.x
      var x$0 = x;
      for(;;){
       if(! x$0) return 0;
+      var next = x$0[1], cmp = runtime.caml_int_compare;
+      let cmp$0 = cmp;
       var
-       next = x$0[1],
        sort =
          function(n, l){
           if(2 === n){
@@ -170,10 +171,7 @@ let ()  = M.myfun M.x
               tl = match[2],
               x2 = match[1],
               x1 = l[1],
-              s =
-                0 < caml_int_compare(x1, x2)
-                 ? [0, x2, [0, x1, 0]]
-                 : [0, x1, [0, x2, 0]];
+              s = 0 < cmp$0(x1, x2) ? [0, x2, [0, x1, 0]] : [0, x1, [0, x2, 0]];
              return [0, s, tl];
             }
            }
@@ -189,18 +187,18 @@ let ()  = M.myfun M.x
               x2$0 = _d_[1],
               x1$0 = l[1],
               s$0 =
-                0 < caml_int_compare(x1$0, x2$0)
+                0 < cmp$0(x1$0, x2$0)
                  ? 0
-                   < caml_int_compare(x1$0, x3)
+                   < cmp$0(x1$0, x3)
                    ? 0
-                     < caml_int_compare(x2$0, x3)
+                     < cmp$0(x2$0, x3)
                      ? [0, x3, [0, x2$0, [0, x1$0, 0]]]
                      : [0, x2$0, [0, x3, [0, x1$0, 0]]]
                    : [0, x2$0, [0, x1$0, [0, x3, 0]]]
                  : 0
-                   < caml_int_compare(x2$0, x3)
+                   < cmp$0(x2$0, x3)
                    ? 0
-                     < caml_int_compare(x1$0, x3)
+                     < cmp$0(x1$0, x3)
                      ? [0, x3, [0, x1$0, [0, x2$0, 0]]]
                      : [0, x1$0, [0, x3, [0, x2$0, 0]]]
                    : [0, x1$0, [0, x2$0, [0, x3, 0]]];
@@ -224,7 +222,7 @@ let ()  = M.myfun M.x
            if(l1){
             if(l2){
              var t2 = l2[2], h2 = l2[1], t1 = l1[2], h1 = l1[1];
-             if(0 < caml_int_compare(h1, h2)){
+             if(0 < cmp$0(h1, h2)){
               var accu$0 = [0, h1, accu];
               l1 = t1;
               accu = accu$0;
@@ -252,10 +250,7 @@ let ()  = M.myfun M.x
               tl = match[2],
               x2 = match[1],
               x1 = l[1],
-              s =
-                0 < caml_int_compare(x1, x2)
-                 ? [0, x1, [0, x2, 0]]
-                 : [0, x2, [0, x1, 0]];
+              s = 0 < cmp$0(x1, x2) ? [0, x1, [0, x2, 0]] : [0, x2, [0, x1, 0]];
              return [0, s, tl];
             }
            }
@@ -271,19 +266,19 @@ let ()  = M.myfun M.x
               x2$0 = _b_[1],
               x1$0 = l[1],
               s$0 =
-                0 < caml_int_compare(x1$0, x2$0)
+                0 < cmp$0(x1$0, x2$0)
                  ? 0
-                   < caml_int_compare(x2$0, x3)
+                   < cmp$0(x2$0, x3)
                    ? [0, x1$0, [0, x2$0, [0, x3, 0]]]
                    : 0
-                     < caml_int_compare(x1$0, x3)
+                     < cmp$0(x1$0, x3)
                      ? [0, x1$0, [0, x3, [0, x2$0, 0]]]
                      : [0, x3, [0, x1$0, [0, x2$0, 0]]]
                  : 0
-                   < caml_int_compare(x1$0, x3)
+                   < cmp$0(x1$0, x3)
                    ? [0, x2$0, [0, x1$0, [0, x3, 0]]]
                    : 0
-                     < caml_int_compare(x2$0, x3)
+                     < cmp$0(x2$0, x3)
                      ? [0, x2$0, [0, x3, [0, x1$0, 0]]]
                      : [0, x3, [0, x2$0, [0, x1$0, 0]]];
              return [0, s$0, tl$1];
@@ -306,7 +301,7 @@ let ()  = M.myfun M.x
            if(l1){
             if(l2){
              var t2 = l2[2], h2 = l2[1], t1 = l1[2], h1 = l1[1];
-             if(0 < caml_int_compare(h1, h2)){
+             if(0 < cmp$0(h1, h2)){
               var accu$0 = [0, h2, accu];
               l2 = t2;
               accu = accu$0;

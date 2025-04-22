@@ -87,10 +87,6 @@ let flow p =
   if debug () then Format.eprintf "Data flow...@.";
   Flow.f p
 
-let flow_simple p =
-  if debug () then Format.eprintf "Data flow...@.";
-  Flow.f ~skip_param:true p
-
 let phi p =
   if debug () then Format.eprintf "Variable passing simplification...@.";
   Phisimpl.f p
@@ -161,7 +157,7 @@ let identity x = x
 let o1 : 'a -> 'a =
   print
   +> tailcall
-  +> flow_simple (* flow simple to keep information for future tailcall opt *)
+  +> flow
   +> specialize'
   +> eval
   +> inline (* inlining may reveal new tailcall opt *)
@@ -190,19 +186,7 @@ let o2 : 'a -> 'a = loop 10 "o1" o1 1 +> print
 
 (* o3 *)
 
-let round1 : 'a -> 'a =
-  print
-  +> tailcall
-  +> inline (* inlining may reveal new tailcall opt *)
-  +> deadcode (* deadcode required before flow simple -> provided by constant *)
-  +> flow_simple (* flow simple to keep information for future tailcall opt *)
-  +> specialize'
-  +> eval
-  +> identity
-
-let round2 = flow +> specialize' +> eval +> deadcode +> o1
-
-let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
+let o3 = loop 10 "o1" o1 1 +> print
 
 let generate
     ~exported_runtime

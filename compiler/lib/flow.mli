@@ -65,4 +65,4 @@ val the_block_contents_of : Info.t -> Code.prim_arg -> Code.Var.t array option
 
 val the_int : Info.t -> Code.prim_arg -> Targetint.t option
 
-val f : ?skip_param:bool -> Code.program -> Code.program * Info.t
+val f : Code.program -> Code.program * Info.t

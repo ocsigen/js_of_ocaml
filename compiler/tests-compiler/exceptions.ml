@@ -37,7 +37,7 @@ let prevent_inline = some_name
       try{throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
       catch(x$0){var x = caml_wrap_exception(x$0), i = x;}
      }
-     catch(_a_){var i = caml_wrap_exception(_a_);}
+     catch(i$0){var i = caml_wrap_exception(i$0);}
      throw caml_maybe_attach_backtrace(i, 1);
     }
     //end

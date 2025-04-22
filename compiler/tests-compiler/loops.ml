@@ -36,18 +36,19 @@ let rec fun_with_loop acc = function
   print_fun_decl program (Some "fun_with_loop");
   [%expect
     {|
-    function fun_with_loop(acc, param){
-     var acc$0 = acc, param$0 = param;
+    function fun_with_loop(acc$1, param$0){
+     var acc = acc$1, param = param$0;
      for(;;){
-      if(! param$0)
+      if(! param)
        return caml_call1
-               (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc$0)));
-      var xs = param$0[2], x = param$0[1], acc$1 = [0, x, acc$0];
-      acc$0 = acc$1;
-      param$0 = xs;
+               (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc)));
+      var xs = param[2], x = param[1], acc$0 = [0, x, acc];
+      acc = acc$0;
+      param = xs;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "rec-fun-2" =
   let program =
@@ -77,36 +78,35 @@ let rec fun_with_loop acc = function
   print_fun_decl program (Some "fun_with_loop");
   [%expect
     {|
-    function fun_with_loop(acc, param){
-     var acc$0 = acc, param$0 = param;
+    function fun_with_loop(acc$1, param$0){
+     var acc = acc$1, param = param$0;
      for(;;){
-      if(! param$0)
+      if(! param)
        return caml_call1
-               (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc$0)));
-      var x = param$0[1];
-      if(1 === x && ! param$0[2]){
-       var a$0 = [0, acc$0], i$0 = 0;
-       for(;;){
-        a$0[1] = [0, 1, a$0[1]];
-        var _b_ = i$0 + 1 | 0;
-        if(10 === i$0) return a$0[1];
-        i$0 = _b_;
-       }
-      }
-      var xs = param$0[2], a = [0, acc$0], i = 0;
+               (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc)));
+      var x = param[1];
+      if(1 === x && ! param[2]) break;
+      var xs = param[2], a = [0, acc], i = 0;
       for(;;){
        a[1] = [0, 1, a[1]];
        var _a_ = i + 1 | 0;
        if(10 === i) break;
        i = _a_;
       }
-      var acc$1 = [0, x, a[1]];
-      acc$0 = acc$1;
-      param$0 = xs;
+      var acc$0 = [0, x, a[1]];
+      acc = acc$0;
+      param = xs;
+     }
+     var a$0 = [0, acc], i$0 = 0;
+     for(;;){
+      a$0[1] = [0, 1, a$0[1]];
+      var _b_ = i$0 + 1 | 0;
+      if(10 === i$0) return a$0[1];
+      i$0 = _b_;
      }
     }
     //end
- |}]
+    |}]
 
 let%expect_test "for-for-while" =
   let program =
@@ -177,7 +177,7 @@ let for_for_while () =
        }
        else{
         try{caml_div(k, j);}
-        catch(_c_){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
+        catch(exn){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
         id[1]++;
        }
       var _a_ = k + 1 | 0;
@@ -213,15 +213,15 @@ let rec equal eq xs ys =
   print_fun_decl program (Some "equal");
   [%expect
     {|
-    function equal(eq, xs, ys){
-     var xs$0 = xs, ys$0 = ys;
+    function equal(eq, xs$1, ys$1){
+     var xs = xs$1, ys = ys$1;
      for(;;){
-      var match = caml_call1(xs$0, 0), match$0 = caml_call1(ys$0, 0);
+      var match = caml_call1(xs, 0), match$0 = caml_call1(ys, 0);
       if(match){
        if(match$0){
-        var ys$1 = match$0[2], xs$1 = match[2];
-        xs$0 = xs$1;
-        ys$0 = ys$1;
+        var ys$0 = match$0[2], xs$0 = match[2];
+        xs = xs$0;
+        ys = ys$0;
         continue;
        }
       }
@@ -229,7 +229,8 @@ let rec equal eq xs ys =
       return 0;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "try-catch inside loop" =
   let program =
@@ -256,10 +257,10 @@ let f t x =
     {|
     function f(t, x){
      try{var val$0 = caml_call2(Stdlib_Hashtbl[6], t, x);}
-     catch(_f_){
-      var _c_ = caml_wrap_exception(_f_);
-      if(_c_ === Stdlib[8]) return - 1;
-      throw caml_maybe_attach_backtrace(_c_, 0);
+     catch(exn){
+      var exn$0 = caml_wrap_exception(exn);
+      if(exn$0 === Stdlib[8]) return - 1;
+      throw caml_maybe_attach_backtrace(exn$0, 0);
      }
      if(val$0 && ! val$0[2]){
       var x$1 = val$0[1], x$0 = x$1;
@@ -267,26 +268,27 @@ let f t x =
        a:
        {
         try{var val = caml_call2(Stdlib_Hashtbl[6], t, x$0);}
-        catch(_e_){
-         var _a_ = caml_wrap_exception(_e_);
-         if(_a_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_a_, 0);
-         var _d_ = 0;
+        catch(exn$0){
+         var exn = caml_wrap_exception(exn$0);
+         if(exn !== Stdlib[3]) throw caml_maybe_attach_backtrace(exn, 0);
+         var _b_ = 0;
          break a;
         }
         if(val && ! val[2]){
-         var y = val[1], _b_ = y === (x$0 + 1 | 0) ? 1 : 0;
-         if(_b_){var _d_ = _b_; break a;}
+         var y = val[1], _a_ = y === (x$0 + 1 | 0) ? 1 : 0;
+         if(_a_){var _b_ = _a_; break a;}
          x$0 = y;
          continue;
         }
-        var _d_ = 0;
+        var _b_ = 0;
        }
-       return _d_ ? 1 : 2;
+       return _b_ ? 1 : 2;
       }
      }
      return - 2;
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "loop-and-switch" =
   let program =

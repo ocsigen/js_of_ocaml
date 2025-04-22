@@ -47,27 +47,28 @@ let%expect_test _ =
     function fun1(param){
      function odd$0(counter, x){
       if(0 === x) return 0;
-      var _f_ = x - 1 | 0;
-      if(counter >= 50) return caml_trampoline_return(even$0, [0, _f_]);
+      var _e_ = x - 1 | 0;
+      if(counter >= 50) return caml_trampoline_return(even$0, [0, _e_]);
       var counter$0 = counter + 1 | 0;
-      return even$0(counter$0, _f_);
+      return even$0(counter$0, _e_);
      }
      function odd(x){return caml_trampoline(odd$0(0, x));}
      function even$0(counter, x){
       if(0 === x) return 1;
-      var _e_ = x - 1 | 0;
-      if(counter >= 50) return caml_trampoline_return(odd$0, [0, _e_]);
+      var _d_ = x - 1 | 0;
+      if(counter >= 50) return caml_trampoline_return(odd$0, [0, _d_]);
       var counter$0 = counter + 1 | 0;
-      return odd$0(counter$0, _e_);
+      return odd$0(counter$0, _d_);
      }
      function even(x){return caml_trampoline(even$0(0, x));}
      var _b_ = even(1);
      if(odd(1) === _b_)
       throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
      try{odd(5000); var _c_ = log_success(0); return _c_;}
-     catch(_d_){return caml_call1(log_failure, cst_too_much_recursion);}
+     catch(exn){return caml_call1(log_failure, cst_too_much_recursion);}
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let prog =
@@ -106,6 +107,7 @@ let%expect_test _ =
      if(odd(1) === _b_)
       throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
      try{odd(5000); var _c_ = log_success(0); return _c_;}
-     catch(_d_){return caml_call1(log_failure, cst_too_much_recursion);}
+     catch(exn){return caml_call1(log_failure, cst_too_much_recursion);}
     }
-    //end |}]
+    //end
+    |}]
