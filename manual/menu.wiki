@@ -9,8 +9,7 @@
 
 =Wasm_of_ocaml - Reference Manual
 ==[[wasm_overview|Overview]]
-==[[wasm_runtime|Binding a JS library]]
-==<<a_api subproject="js_of_ocaml" text="API"|index>>
+==[[wasm_runtime|Writing Wasm primitives]]
 
 =Js_of_ocaml_lwt - Reference Manual
 ==[[lwt|Lwt support]]

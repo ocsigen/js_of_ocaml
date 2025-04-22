@@ -14,19 +14,17 @@ The easiest way to install wasm_of_ocaml is to use opam.
 
 == Usage ==
 
-  Your program must first be compiled using the OCaml bytecode
-  compiler {{{ocamlc}}}.  JavaScript bindings are provided by the
-  {{{js_of_ocaml}}} package and the syntax extension by the
-  {{{js_of_ocaml-ppx}}} package
+Your program must first be compiled using the OCaml bytecode compiler
+{{{ocamlc}}}.  JavaScript bindings are provided by the {{{js_of_ocaml}}}
+package and the syntax extension by the {{{js_of_ocaml-ppx}}} package.
 {{{
       ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx \
           -linkpkg -o cubes.byte cubes.ml
 }}}
-  Then, run the {{{wasm_of_ocaml}}} compiler to produce Wasm code:
+Then, run the {{{wasm_of_ocaml}}} compiler to produce Wasm code:
 {{{
       wasm_of_ocaml cubes.byte
 }}}
-
 This produces a Javascript loading script {{{cube.js}} and a directory
 {{{cube.assets}} containing the Wasm code.
 
@@ -54,3 +52,7 @@ one can enable the CPS transformation from {{{js_of_ocaml}}} by passing the
 {{{--effects=jspi}}} and emit code utilizing
  [[https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md|the JavaScript-Promise Integration extension]].
 The CPS transformation is not the default since the generated code is slower, larger and less readable. On the other hand, the JSPI extension is not yet enabled by default in Web browsers, and performing effects is slower when using this extension.
+
+== Binding with Javascript libraries ==
+
+Js_of_ocaml lets the user bind their code with Javascript libraries by linking in {{{.js}}} files. Similarly, wasm_of_ocaml allows to link in Wasm modules ({{{.wasm}}} or {{{.wat}}} files): see [[wasm_runtime|Writing Wasm primitives]]. If a js_of_ocaml projects uses some {{{external}}} primitives defined in companion {{{.js}}} files, it will need the same primitives to be implemented in Wasm module in order to be build with wasm_of_ocaml.
