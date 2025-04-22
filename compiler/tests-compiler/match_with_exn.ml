@@ -76,10 +76,10 @@ let fun2 () =
      a:
      {
       try{var i$1 = caml_call1(Stdlib_Random[5], 2);}
-      catch(_e_){
-       var _d_ = caml_wrap_exception(_e_);
-       if(_d_[1] !== A) throw caml_maybe_attach_backtrace(_d_, 0);
-       var i = _d_[2];
+      catch(exn$0){
+       var exn = caml_wrap_exception(exn$0);
+       if(exn[1] !== A) throw caml_maybe_attach_backtrace(exn, 0);
+       var i = exn[2];
        if(2 !== i) return i + 2 | 0;
        var i$0 = i;
        break a;
@@ -104,4 +104,5 @@ let fun2 () =
      }
      return i;
     }
-    //end |}]
+    //end
+    |}]

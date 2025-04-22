@@ -75,17 +75,13 @@ let%expect_test "Eliminates unused functions from functor" =
      return l === ll ? t : bal(ll, v, r);
     }
     function singleton(x){return [0, 0, x, 0, 1];}
-    function find(x, param){
-     var param$0 = param;
+    function find(x, param$0){
+     var param = param$0;
      for(;;){
-      if(! param$0) throw caml_maybe_attach_backtrace(Not_found, 1);
-      var
-       r = param$0[3],
-       v = param$0[2],
-       l = param$0[1],
-       c = caml_call2(Ord[1], x, v);
+      if(! param) throw caml_maybe_attach_backtrace(Not_found, 1);
+      var r = param[3], v = param[2], l = param[1], c = caml_call2(Ord[1], x, v);
       if(0 === c) return v;
-      param$0 = 0 <= c ? r : l;
+      param = 0 <= c ? r : l;
      }
     }
     return [0, 0, add, singleton, find];
