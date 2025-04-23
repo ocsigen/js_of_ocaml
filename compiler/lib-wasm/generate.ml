@@ -115,13 +115,6 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_erf_float", (`Pure, [ Float ], Float)
       ; "caml_erfc_float", (`Pure, [ Float ], Float)
       ; "caml_float_compare", (`Pure, [ Float; Float ], Int)
-      ; "caml_greaterthan", (`Mutator, [ Value; Value ], Int)
-      ; "caml_greaterequal", (`Mutator, [ Value; Value ], Int)
-      ; "caml_lessthan", (`Mutator, [ Value; Value ], Int)
-      ; "caml_lessequal", (`Mutator, [ Value; Value ], Int)
-      ; "caml_equal", (`Mutator, [ Value; Value ], Int)
-      ; "caml_notequal", (`Mutator, [ Value; Value ], Int)
-      ; "caml_compare", (`Mutator, [ Value; Value ], Int)
       ];
     h
 
@@ -289,6 +282,39 @@ module Generate (Target : Target_sig.S) = struct
               (transl_prim_arg ctx ?typ:ty y)
               (transl_prim_arg ctx ?typ:tz z)
         | _ -> invalid_arity name l ~expected:3)
+
+  let register_comparison name cmp_int cmp_boxed_int cmp_float =
+    register_prim name `Mutator (fun ctx _ l ->
+        match l with
+        | [ x; y ] -> (
+            match get_type ctx x, get_type ctx y with
+            | Int _, Int _ -> cmp_int ctx x y
+            | Number (Int32, _), Number (Int32, _) ->
+                let x = transl_prim_arg ctx ~typ:(Number (Int32, Unboxed)) x in
+                let y = transl_prim_arg ctx ~typ:(Number (Int32, Unboxed)) y in
+                int32_bin_op cmp_boxed_int x y
+            | Number (Nativeint, _), Number (Nativeint, _) ->
+                let x = transl_prim_arg ctx ~typ:(Number (Nativeint, Unboxed)) x in
+                let y = transl_prim_arg ctx ~typ:(Number (Nativeint, Unboxed)) y in
+                nativeint_bin_op cmp_boxed_int x y
+            | Number (Int64, _), Number (Int64, _) ->
+                let x = transl_prim_arg ctx ~typ:(Number (Int64, Unboxed)) x in
+                let y = transl_prim_arg ctx ~typ:(Number (Int64, Unboxed)) y in
+                int64_bin_op cmp_boxed_int x y
+            | Number (Float, _), Number (Float, _) ->
+                let x = transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) x in
+                let y = transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) y in
+                float_bin_op cmp_float x y
+            | _ ->
+                let* f =
+                  register_import
+                    ~name
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x = transl_prim_arg ctx x in
+                let* y = transl_prim_arg ctx y in
+                return (W.Call (f, [ x; y ])))
+        | _ -> invalid_arity name l ~expected:2)
 
   let () =
     register_bin_prim
@@ -1092,7 +1118,83 @@ module Generate (Target : Target_sig.S) = struct
       ~ty:(Int Normalized)
       (fun i j -> Arith.((j < i) - (i < j)));
     register_prim "%js_array" `Pure (fun ctx _ l ->
-        Memory.allocate ~tag:0 (expression_list (fun x -> transl_prim_arg ctx x) l))
+        Memory.allocate ~tag:0 (expression_list (fun x -> transl_prim_arg ctx x) l));
+    register_comparison
+      "caml_greaterthan"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x < y)) x y)
+      (Gt S)
+      Gt;
+    register_comparison
+      "caml_greaterequal"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x <= y)) x y)
+      (Ge S)
+      Ge;
+    register_comparison
+      "caml_lessthan"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( < ) x y)
+      (Lt S)
+      Lt;
+    register_comparison
+      "caml_lessequal"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( <= ) x y)
+      (Le S)
+      Le;
+    register_comparison
+      "caml_equal"
+      (fun ctx x y -> translate_int_equality ctx ~negate:false x y)
+      Eq
+      Eq;
+    register_comparison
+      "caml_notequal"
+      (fun ctx x y -> translate_int_equality ctx ~negate:true x y)
+      Ne
+      Ne;
+    register_prim "caml_compare" `Mutator (fun ctx _ l ->
+        match l with
+        | [ x; y ] -> (
+            match get_type ctx x, get_type ctx y with
+            | Int _, Int _ ->
+                let x' = transl_prim_arg ctx ~typ:(Int Normalized) x in
+                let y' = transl_prim_arg ctx ~typ:(Int Normalized) y in
+                Arith.((y' < x') - (x' < y'))
+            | Number (Int32, _), Number (Int32, _)
+            | Number (Nativeint, _), Number (Nativeint, _) ->
+                let* f =
+                  register_import
+                    ~name:"caml_int32_compare"
+                    (Fun { W.params = [ I32; I32 ]; result = [ I32 ] })
+                in
+                let* x' = transl_prim_arg ctx ~typ:(Number (Int32, Unboxed)) x in
+                let* y' = transl_prim_arg ctx ~typ:(Number (Int32, Unboxed)) y in
+                return (W.Call (f, [ x'; y' ]))
+            | Number (Int64, _), Number (Int64, _) ->
+                let* f =
+                  register_import
+                    ~name:"caml_int64_compare"
+                    (Fun { W.params = [ I64; I64 ]; result = [ I32 ] })
+                in
+                let* x' = transl_prim_arg ctx ~typ:(Number (Int64, Unboxed)) x in
+                let* y' = transl_prim_arg ctx ~typ:(Number (Int64, Unboxed)) y in
+                return (W.Call (f, [ x'; y' ]))
+            | Number (Float, _), Number (Float, _) ->
+                let* f =
+                  register_import
+                    ~name:"caml_float_compare"
+                    (Fun { W.params = [ F64; F64 ]; result = [ I32 ] })
+                in
+                let* x' = transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) x in
+                let* y' = transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) y in
+                return (W.Call (f, [ x'; y' ]))
+            | _ ->
+                let* f =
+                  register_import
+                    ~name:"caml_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = transl_prim_arg ctx x in
+                let* y' = transl_prim_arg ctx y in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity "caml_compare" l ~expected:2)
 
   let unboxed_type ty : W.value_type option =
     match ty with
