@@ -26,7 +26,10 @@ type optimized_result =
   ; deadcode_sentinal : Code.Var.t
   }
 
-val optimize : profile:Profile.t -> Code.program -> optimized_result
+val optimize_for_wasm :
+     profile:Profile.t
+  -> Code.program
+  -> optimized_result * (Global_flow.state * Global_flow.info)
 
 val f :
      ?standalone:bool

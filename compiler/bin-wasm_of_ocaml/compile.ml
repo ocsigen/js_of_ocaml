@@ -245,8 +245,8 @@ let generate_prelude ~out_file =
   @@ fun ch ->
   let code, uinfo = Parse_bytecode.predefined_exceptions () in
   let profile = Profile.O1 in
-  let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
-    Driver.optimize ~profile code
+  let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ }, global_flow_data =
+    Driver.optimize_for_wasm ~profile code
   in
   let context = Generate.start () in
   let _ =
@@ -256,6 +256,7 @@ let generate_prelude ~out_file =
       ~live_vars:variable_uses
       ~in_cps
       ~deadcode_sentinal
+      ~global_flow_data
       program
   in
   Generate.wasm_output ch ~opt_source_map_file:None ~context;
@@ -397,8 +398,9 @@ let run
     check_debug one;
     let code = one.code in
     let standalone = Option.is_none unit_name in
-    let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
-      Driver.optimize ~profile code
+    let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ }, global_flow_data
+        =
+      Driver.optimize_for_wasm ~profile code
     in
     let context = Generate.start () in
     let toplevel_name, generated_js =
@@ -408,6 +410,7 @@ let run
         ~live_vars:variable_uses
         ~in_cps
         ~deadcode_sentinal
+        ~global_flow_data
         program
     in
     if standalone then Generate.add_start_function ~context toplevel_name;

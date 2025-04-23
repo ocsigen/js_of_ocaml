@@ -36,6 +36,7 @@ module Generate (Target : Target_sig.S) = struct
     { live : int array
     ; in_cps : Effects.in_cps
     ; deadcode_sentinal : Var.t
+    ; types : Typing.typ Var.Tbl.t [@warning "-69"]
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -1184,7 +1185,8 @@ module Generate (Target : Target_sig.S) = struct
     ~should_export
     ~warn_on_unhandled_effect
 *)
-      ~deadcode_sentinal =
+      ~deadcode_sentinal
+      ~types =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
     (*
@@ -1194,6 +1196,7 @@ module Generate (Target : Target_sig.S) = struct
       { live = live_vars
       ; in_cps
       ; deadcode_sentinal
+      ; types
       ; blocks = p.blocks
       ; closures
       ; global_context
@@ -1300,10 +1303,12 @@ let init = G.init
 
 let start () = make_context ~value_type:Gc_target.Type.value
 
-let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal =
+let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_data =
+  let state, info = global_flow_data in
+  let types = Typing.f ~state ~info ~deadcode_sentinal p in
   let t = Timer.make () in
   let p = fix_switch_branches p in
-  let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal p in
+  let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~types p in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
 

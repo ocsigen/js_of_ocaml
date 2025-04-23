@@ -27,6 +27,7 @@ val f :
   -> live_vars:int array
   -> in_cps:Effects.in_cps
   -> deadcode_sentinal:Code.Var.t
+  -> global_flow_data:Global_flow.state * Global_flow.info
   -> Wasm_ast.var * (string * Javascript.expression) list
 
 val add_start_function : context:Code_generation.context -> Wasm_ast.var -> unit
