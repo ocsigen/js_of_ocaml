@@ -82,11 +82,6 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - name: Fix cygwin
-        if: runner.os == 'Windows'
-        shell: bash
-        run: sed -i -e 's/binary/noacl,&/' /etc/fstab
-
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
         with:

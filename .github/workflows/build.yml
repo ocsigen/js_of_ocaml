@@ -111,11 +111,6 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      - name: Fix cygwin
-        if: runner.os == 'Windows'
-        shell: bash
-        run: sed -i -e 's/binary/noacl,&/' /etc/fstab
-
       # Pin Dune to a version which supports the new --effects flag
       # (https://github.com/ocaml/dune/pull/11222).
       - name: Pin Dune
@@ -136,7 +131,7 @@ jobs:
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
 
-      - run: opam install . --best-effort
+      - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
 
       - run: opam install . --deps-only --with-test
