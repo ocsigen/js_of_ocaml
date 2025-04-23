@@ -214,11 +214,13 @@ let prim_type ~approx prim hint args =
   | "caml_lessthan"
   | "caml_lessequal"
   | "caml_equal"
-  | "caml_compare" -> Int Ref
+  | "caml_notequal"
+  | "caml_compare" -> Int Normalized
   | "caml_int32_bswap" -> Number Int32
   | "caml_nativeint_bswap" -> Number Nativeint
   | "caml_int64_bswap" -> Number Int64
-  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" -> Int Ref
+  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" ->
+      Int Normalized
   | "caml_string_get32" -> Number Int32
   | "caml_string_get64" -> Number Int64
   | "caml_bytes_get32" -> Number Int32
@@ -229,7 +231,7 @@ let prim_type ~approx prim hint args =
   | "caml_nextafter_float" -> Number Float
   | "caml_classify_float" -> Int Ref
   | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number Float
-  | "caml_float_compare" -> Int Ref
+  | "caml_float_compare" -> Int Normalized
   | "caml_floatarray_unsafe_get" -> Number Float
   | "caml_bytes_unsafe_get"
   | "caml_string_unsafe_get"
@@ -448,6 +450,27 @@ let solver st =
   in
   Solver.f () g (propagate st)
 
+let print_opt typ f e =
+  match e with
+  | Prim
+      ( Extern
+          ( ( "caml_greaterthan"
+            | "caml_greaterequal"
+            | "caml_lessthan"
+            | "caml_lessequal"
+            | "caml_equal"
+            | "caml_compare" )
+          , _ )
+      , l ) -> (
+      match List.map ~f:(arg_type ~approx:typ) l with
+      | [ Int _; Int _ ]
+      | [ Number Int32; Number Int32 ]
+      | [ Number Int64; Number Int64 ]
+      | [ Number Nativeint; Number Nativeint ]
+      | [ Number Float; Number Float ] -> Format.fprintf f " OPT"
+      | _ -> ())
+  | _ -> ()
+
 let f ~state ~info ~deadcode_sentinal p =
   let t = Timer.make () in
   update_deps state p;
@@ -470,7 +493,8 @@ let f ~state ~info ~deadcode_sentinal p =
       Format.err_formatter
       (fun _ i ->
         match i with
-        | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get typ x)
+        | Instr (Let (x, e)) ->
+            Format.asprintf "{%a}%a" Domain.print (Var.Tbl.get typ x) (print_opt typ) e
         | _ -> "")
       p);
   typ

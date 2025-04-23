@@ -69,6 +69,7 @@ module Generate (Target : Target_sig.S) = struct
   type repr =
     | Value
     | Float
+    | Int
     | Int32
     | Nativeint
     | Int64
@@ -77,8 +78,7 @@ module Generate (Target : Target_sig.S) = struct
     match r with
     | Value -> Type.value
     | Float -> F64
-    | Int32 -> I32
-    | Nativeint -> I32
+    | Int | Int32 | Nativeint -> I32
     | Int64 -> I64
 
   let specialized_primitive_type (_, params, result) =
@@ -86,7 +86,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let box_value r e =
     match r with
-    | Value -> e
+    | Value | Int -> e
     | Float -> Memory.box_float e
     | Int32 -> Memory.box_int32 e
     | Nativeint -> Memory.box_nativeint e
@@ -94,7 +94,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let unbox_value r e =
     match r with
-    | Value -> e
+    | Value | Int -> e
     | Float -> Memory.unbox_float e
     | Int32 -> Memory.unbox_int32 e
     | Nativeint -> Memory.unbox_nativeint e
@@ -107,9 +107,9 @@ module Generate (Target : Target_sig.S) = struct
       [ "caml_int32_bswap", (`Pure, [ Int32 ], Int32)
       ; "caml_nativeint_bswap", (`Pure, [ Nativeint ], Nativeint)
       ; "caml_int64_bswap", (`Pure, [ Int64 ], Int64)
-      ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Value)
-      ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Value)
-      ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Value)
+      ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Int)
+      ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Int)
+      ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Int)
       ; "caml_string_get32", (`Mutator, [ Value; Value ], Int32)
       ; "caml_string_get32u", (`Mutator, [ Value; Value ], Int32)
       ; "caml_string_get64", (`Mutator, [ Value; Value ], Int64)
@@ -136,7 +136,7 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_ldexp_float", (`Pure, [ Float; Value ], Float)
       ; "caml_erf_float", (`Pure, [ Float ], Float)
       ; "caml_erfc_float", (`Pure, [ Float ], Float)
-      ; "caml_float_compare", (`Pure, [ Float; Float ], Value)
+      ; "caml_float_compare", (`Pure, [ Float; Float ], Int)
       ];
     h
 
@@ -310,6 +310,38 @@ module Generate (Target : Target_sig.S) = struct
               (transl_prim_arg ctx ?typ:ty y)
               (transl_prim_arg ctx ?typ:tz z)
         | _ -> invalid_arity name l ~expected:3)
+
+  let register_comparison name cmp_int cmp_boxed_int cmp_float =
+    register_prim name `Mutable (fun ctx _ (hint : Optimization_hint.t option) l ->
+        match l with
+        | [ x; y ] -> (
+            let x' = transl_prim_arg ctx x in
+            let y' = transl_prim_arg ctx y in
+            match hint, get_type ctx x, get_type ctx y with
+            | _, Int _, Int _ -> cmp_int ctx x y
+            | Some (Hint_int Int32), _, _ | _, Number Int32, Number Int32 ->
+                let* x' = Memory.unbox_int32 x' in
+                let* y' = Memory.unbox_int32 y' in
+                return (W.BinOp (I32 cmp_boxed_int, x', y'))
+            | Some (Hint_int Nativeint), _, _ | _, Number Nativeint, Number Nativeint ->
+                let* x' = Memory.unbox_nativeint x' in
+                let* y' = Memory.unbox_nativeint y' in
+                return (W.BinOp (I32 cmp_boxed_int, x', y'))
+            | Some (Hint_int Int64), _, _ | _, Number Int64, Number Int64 ->
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.BinOp (I64 cmp_boxed_int, x', y'))
+            | _, Number Float, Number Float -> float_comparison cmp_float x' y'
+            | _ ->
+                let* f =
+                  register_import
+                    ~name
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = x' in
+                let* y' = y' in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity name l ~expected:2)
 
   let () =
     register_bin_prim
@@ -793,6 +825,92 @@ module Generate (Target : Target_sig.S) = struct
             ~init:(return [])
         in
         Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal ~load l);
+    register_comparison
+      "caml_greaterthan"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x < y)) x y)
+      (Gt S)
+      Gt;
+    register_comparison
+      "caml_greaterequal"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x <= y)) x y)
+      (Ge S)
+      Ge;
+    register_comparison
+      "caml_lessthan"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( < ) x y)
+      (Lt S)
+      Lt;
+    register_comparison
+      "caml_lessequal"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( <= ) x y)
+      (Le S)
+      Le;
+    register_comparison
+      "caml_equal"
+      (fun ctx x y -> translate_int_equality ctx ~negate:false x y)
+      Eq
+      Eq;
+    register_comparison
+      "caml_notequal"
+      (fun ctx x y -> translate_int_equality ctx ~negate:true x y)
+      Ne
+      Ne;
+    register_prim "caml_compare" `Mutable (fun ctx _ _ l ->
+        match l with
+        | [ x; y ] -> (
+            let x' = transl_prim_arg ctx x in
+            let y' = transl_prim_arg ctx y in
+            match get_type ctx x, get_type ctx y with
+            | Int _, Int _ ->
+                Arith.(
+                  (Value.int_val y' < Value.int_val x')
+                  - (Value.int_val x' < Value.int_val y'))
+            | Number Int32, Number Int32 ->
+                let* f =
+                  register_import
+                    ~name:"caml_int32_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = Memory.unbox_int32 x' in
+                let* y' = Memory.unbox_int32 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Nativeint, Number Nativeint ->
+                let* f =
+                  register_import
+                    ~name:"caml_nativeint_compare"
+                    (Fun (Type.primitive_type 2))
+                in
+                let* x' = Memory.unbox_nativeint x' in
+                let* y' = Memory.unbox_nativeint y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Int64, Number Int64 ->
+                let* f =
+                  register_import
+                    ~name:"caml_int64_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Float, Number Float ->
+                let* f =
+                  register_import
+                    ~name:"caml_float_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | _ ->
+                let* f =
+                  register_import
+                    ~name:"caml_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = x' in
+                let* y' = y' in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity "caml_compare" l ~expected:2);
     let caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices =
       let ta' = transl_prim_arg ctx ta in
       Bigarray.get
