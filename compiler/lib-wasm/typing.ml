@@ -15,6 +15,14 @@ module Integer = struct
     | Unnormalized, _ | _, Unnormalized -> Unnormalized
     | Ref, Ref -> Ref
     | _ -> Normalized
+
+  let sub r r' =
+    match r, r' with
+    | _, Unnormalized -> true
+    | Ref, _ -> true
+    | Normalized, Normalized -> true
+    | Unnormalized, (Ref | Normalized) -> false
+    | Normalized, Ref -> false
 end
 
 type boxed_number =
@@ -61,6 +69,21 @@ module Domain = struct
     | Tuple t, Tuple t' ->
         Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
     | (Top | Tuple _ | Int _ | Number _ | Bot), _ -> false
+
+  let rec sub t t' =
+    match t, t' with
+    | _, Top | Bot, _ -> true
+    | Top, _ | _, Bot -> false
+    | Int t, Int t' -> Integer.sub t t'
+    | Number t, Number t' -> Poly.equal t t'
+    | Tuple t, Tuple t' ->
+        Array.length t <= Array.length t'
+        &&
+        let rec compare t t' i l =
+          i = l || (sub t.(i) t'.(i) && compare t t' (i + 1) l)
+        in
+        compare t t' 0 (Array.length t)
+    | (Int _ | Number _ | Tuple _), _ -> false
 
   let bot = Bot
 
@@ -186,11 +209,13 @@ let prim_type ~approx prim args =
   | "caml_lessthan"
   | "caml_lessequal"
   | "caml_equal"
-  | "caml_compare" -> Int Ref
+  | "caml_notequal"
+  | "caml_compare" -> Int Normalized
   | "caml_int32_bswap" -> Number Int32
   | "caml_nativeint_bswap" -> Number Nativeint
   | "caml_int64_bswap" -> Number Int64
-  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" -> Int Ref
+  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" ->
+      Int Normalized
   | "caml_string_get32" -> Number Int32
   | "caml_string_get64" -> Number Int64
   | "caml_bytes_get32" -> Number Int32
@@ -201,7 +226,7 @@ let prim_type ~approx prim args =
   | "caml_nextafter_float" -> Number Float
   | "caml_classify_float" -> Int Ref
   | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number Float
-  | "caml_float_compare" -> Int Ref
+  | "caml_float_compare" -> Int Normalized
   | "caml_floatarray_unsafe_get" -> Number Float
   | "caml_bytes_unsafe_get"
   | "caml_string_unsafe_get"
@@ -414,6 +439,40 @@ let solver st =
   in
   Solver.f () g (propagate st)
 
+let print_opt typ f e =
+  match e with
+  | Prim
+      ( Extern
+          ( "caml_greaterthan"
+          | "caml_greaterequal"
+          | "caml_lessthan"
+          | "caml_lessequal"
+          | "caml_equal"
+          | "caml_compare" )
+      , l ) ->
+      if
+        List.exists
+          ~f:(fun t' ->
+            List.for_all
+              ~f:(fun p ->
+                let t =
+                  match p with
+                  | Pc c -> constant_type c
+                  | Pv x -> Var.Tbl.get typ x
+                in
+                Domain.sub t t')
+              l)
+          [ Int Ref
+          ; Int Normalized
+          ; Int Unnormalized
+          ; Number Int32
+          ; Number Int64
+          ; Number Nativeint
+          ; Number Float
+          ]
+      then Format.fprintf f " OPT"
+  | _ -> ()
+
 let f ~state ~info ~deadcode_sentinal p =
   update_deps state p;
   let function_parameters = mark_function_parameters p in
@@ -434,7 +493,8 @@ let f ~state ~info ~deadcode_sentinal p =
       Format.err_formatter
       (fun _ i ->
         match i with
-        | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get typ x)
+        | Instr (Let (x, e)) ->
+            Format.asprintf "{%a}%a" Domain.print (Var.Tbl.get typ x) (print_opt typ) e
         | _ -> "")
       p);
   typ
