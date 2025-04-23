@@ -214,11 +214,13 @@ let prim_type ~approx prim args =
   | "caml_lessthan"
   | "caml_lessequal"
   | "caml_equal"
-  | "caml_compare" -> Int Ref
+  | "caml_notequal"
+  | "caml_compare" -> Int Normalized
   | "caml_int32_bswap" -> Number (Int32, Unboxed)
   | "caml_nativeint_bswap" -> Number (Nativeint, Unboxed)
   | "caml_int64_bswap" -> Number (Int64, Unboxed)
-  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" -> Int Ref
+  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" ->
+      Int Normalized
   | "caml_string_get32" -> Number (Int32, Unboxed)
   | "caml_string_get64" -> Number (Int64, Unboxed)
   | "caml_bytes_get32" -> Number (Int32, Unboxed)
@@ -229,7 +231,7 @@ let prim_type ~approx prim args =
   | "caml_nextafter_float" -> Number (Float, Unboxed)
   | "caml_classify_float" -> Int Ref
   | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number (Float, Unboxed)
-  | "caml_float_compare" -> Int Ref
+  | "caml_float_compare" -> Int Normalized
   | "caml_floatarray_unsafe_get" -> Number (Float, Unboxed)
   | "caml_bytes_unsafe_get"
   | "caml_string_unsafe_get"

@@ -1132,13 +1132,12 @@
       (struct.new $float (local.get $y)))
 
    (func (export "caml_float_compare")
-      (param $x f64) (param $y f64) (result (ref eq))
-      (ref.i31
-         (i32.add
-            (i32.sub (f64.gt (local.get $x) (local.get $y))
-                     (f64.lt (local.get $x) (local.get $y)))
-            (i32.sub (f64.eq (local.get $x) (local.get $x))
-                     (f64.eq (local.get $y) (local.get $y))))))
+      (param $x f64) (param $y f64) (result i32)
+      (i32.add
+         (i32.sub (f64.gt (local.get $x) (local.get $y))
+                  (f64.lt (local.get $x) (local.get $y)))
+         (i32.sub (f64.eq (local.get $x) (local.get $x))
+                  (f64.eq (local.get $y) (local.get $y)))))
 
    (func (export "caml_round") (param $x f64) (result f64)
       (local $y f64)

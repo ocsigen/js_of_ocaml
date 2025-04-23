@@ -126,9 +126,9 @@
 
    (export "caml_nativeint_compare" (func $caml_int32_compare))
    (func $caml_int32_compare (export "caml_int32_compare")
-      (param $i1 i32) (param $i2 i32) (result (ref eq))
-      (ref.i31 (i32.sub (i32.gt_s (local.get $i1) (local.get $i2))
-                        (i32.lt_s (local.get $i1) (local.get $i2)))))
+      (param $i1 i32) (param $i2 i32) (result i32)
+      (i32.sub (i32.gt_s (local.get $i1) (local.get $i2))
+               (i32.lt_s (local.get $i1) (local.get $i2))))
 
    (global $nativeint_ops (export "nativeint_ops") (ref $custom_operations)
       (struct.new $custom_operations
