@@ -78,14 +78,9 @@ jobs:
           node-version: latest
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v3.2
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-
-      - name: Fix cygwin
-        if: runner.os == 'Windows'
-        shell: bash
-        run: sed -i -e 's/binary/noacl,&/' /etc/fstab
 
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
