@@ -27,7 +27,7 @@ let function_arity info x =
       info
       (fun x ->
         match Flow.Info.def info x with
-        | Some (Closure (l, _)) -> Some (List.length l)
+        | Some (Closure (l, _, _)) -> Some (List.length l)
         | Some (Special (Alias_prim prim)) -> (
             try Some (Primitive.arity prim) with Not_found -> None)
         | Some (Apply { f; args; _ }) -> (
@@ -85,7 +85,7 @@ let specialize_instr function_arity ((acc, free_pc, extra), loc) i =
             ; branch = Return return'
             }
           in
-          ( Let (x, Closure (missing, (free_pc, missing))) :: acc
+          ( Let (x, Closure (missing, (free_pc, missing), None)) :: acc
           , free_pc + 1
           , (free_pc, block) :: extra )
       | _ -> i :: acc, free_pc, extra)

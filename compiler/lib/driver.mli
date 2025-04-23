@@ -39,7 +39,6 @@ val f :
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> source_map:bool
   -> formatter:Pretty_print.t
-  -> Parse_bytecode.Debug.t
   -> Code.program
   -> Source_map.info
 
@@ -49,7 +48,6 @@ val f' :
   -> ?profile:profile
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> Pretty_print.t
-  -> Parse_bytecode.Debug.t
   -> Code.program
   -> unit
 

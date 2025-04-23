@@ -27,7 +27,6 @@ val f :
   -> should_export:bool
   -> warn_on_unhandled_effect:bool
   -> deadcode_sentinal:Code.Var.t
-  -> Parse_bytecode.Debug.t
   -> Javascript.program
 
 val init : unit -> unit

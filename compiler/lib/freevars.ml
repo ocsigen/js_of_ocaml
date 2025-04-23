@@ -150,7 +150,7 @@ let find_loops_in_closure p pc = find_loops p Addr.Map.empty pc
 let find_all_loops p =
   Code.fold_closures
     p
-    (fun _ _ (pc, _) (in_loop : _ Addr.Map.t) -> find_loops p in_loop pc)
+    (fun _ _ (pc, _) _ (in_loop : _ Addr.Map.t) -> find_loops p in_loop pc)
     Addr.Map.empty
 
 let mark_variables in_loop p =
@@ -167,7 +167,7 @@ let mark_variables in_loop p =
        with Not_found -> ());
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (_, Closure (_, (pc', _))) -> traverse pc'
+          | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
           | _ -> ());
       Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
   in
@@ -200,7 +200,7 @@ let free_variables vars in_loop p =
        with Not_found -> ());
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (_, Closure (_, (pc', _))) -> (
+          | Let (_, Closure (_, (pc', _), _)) -> (
               traverse pc';
               try
                 let pc'' = Addr.Map.find pc in_loop in
@@ -224,7 +224,7 @@ let f p =
   let free_vars =
     Code.fold_closures_innermost_first
       p
-      (fun _name_opt params (pc, args) acc ->
+      (fun _name_opt params (pc, args) _ acc ->
         let free = ref Var.Set.empty in
         let using x =
           if Code.Var.ISet.mem bound x then () else free := Var.Set.add x !free
@@ -237,7 +237,7 @@ let f p =
             iter_block_bound_vars (fun x -> Code.Var.ISet.add bound x) block;
             iter_block_free_vars using block;
             List.iter block.body ~f:(function
-              | Let (_, Closure (_, (pc_clo, _))) ->
+              | Let (_, Closure (_, (pc_clo, _), _)) ->
                   Code.Var.Set.iter using (Code.Addr.Map.find pc_clo acc)
               | _ -> ());
             Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())

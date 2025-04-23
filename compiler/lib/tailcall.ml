@@ -79,7 +79,7 @@ let f p =
   let blocks =
     fold_closures
       p
-      (fun f params (pc, args) blocks ->
+      (fun f params (pc, args) _ blocks ->
         match f with
         | Some f when List.length params = List.length args ->
             let _, blocks = traverse (f, params, pc, args) pc Addr.Set.empty blocks in

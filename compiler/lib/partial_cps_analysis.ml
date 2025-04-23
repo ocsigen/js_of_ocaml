@@ -109,7 +109,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
 let program_deps ~info ~vars ~tail_deps ~deps p =
   fold_closures
     p
-    (fun fun_name _ (pc, _) _ ->
+    (fun fun_name _ (pc, _) _ () ->
       traverse
         { fold = Code.fold_children }
         (fun pc () ->

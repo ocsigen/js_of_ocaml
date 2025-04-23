@@ -240,7 +240,6 @@ let generate_prelude ~out_file =
     Driver.optimize ~profile code
   in
   let context = Generate.start () in
-  let debug = Parse_bytecode.Debug.create ~include_cmis:false false in
   let _ =
     Generate.f
       ~context
@@ -248,7 +247,6 @@ let generate_prelude ~out_file =
       ~live_vars:variable_uses
       ~in_cps
       ~deadcode_sentinal
-      ~debug
       program
   in
   Generate.output ch ~context;
@@ -404,7 +402,6 @@ let run
       Driver.optimize ~profile code
     in
     let context = Generate.start () in
-    let debug = one.debug in
     let toplevel_name, generated_js =
       Generate.f
         ~context
@@ -412,7 +409,6 @@ let run
         ~live_vars:variable_uses
         ~in_cps
         ~deadcode_sentinal
-        ~debug
         program
     in
     if standalone then Generate.add_start_function ~context toplevel_name;

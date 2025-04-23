@@ -419,13 +419,7 @@ let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source
           let b = Buffer.create 100 in
           let fmt = Pretty_print.to_buffer b in
           Driver.configure fmt;
-          Driver.f'
-            ~standalone:false
-            ~link:`No
-            ~wrap_with_fun:`Iife
-            fmt
-            (Parse_bytecode.Debug.create ~include_cmis:false false)
-            code;
+          Driver.f' ~standalone:false ~link:`No ~wrap_with_fun:`Iife fmt code;
           let content = Buffer.contents b in
           Line_writer.write_lines oc content;
           Line_writer.write oc "");

@@ -96,7 +96,7 @@ end
 let iter_with_scope prog f =
   Code.fold_closures
     prog
-    (fun scope _ (pc, _) () ->
+    (fun scope _ (pc, _) _ () ->
       Code.traverse
         { fold = fold_children }
         (fun pc () -> f scope (Addr.Map.find pc prog.blocks))
@@ -173,7 +173,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
                 (* 1. Look at return values, and add edge between x and these values. *)
                 (* 2. Add an edge pairwise between the parameters and arguments *)
                 match global_info.info_defs.(Var.idx k) with
-                | Expr (Closure (params, _)) ->
+                | Expr (Closure (params, _, _)) ->
                     (* If the function is under/over-applied then global flow will mark arguments and return value as escaping.
                        So we only need to consider the case when there is an exact application. *)
                     if List.compare_lengths params args = 0
@@ -198,7 +198,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
     | Field (z, _, _) -> add_use Compute x z
     | Constant _ -> ()
     | Special _ -> ()
-    | Closure (_, cont) -> add_cont_deps cont
+    | Closure (_, cont, _) -> add_cont_deps cont
     | Prim (_, args) ->
         List.iter
           ~f:(fun arg ->
@@ -265,7 +265,7 @@ let expr_vars e =
   (* We can ignore closures. We want the set of previously defined variables used
      in the expression, so not parameters. The continuation may use some variables
      but we will add these when we visit the body *)
-  | Constant _ | Closure (_, _) | Special _ -> vars
+  | Constant _ | Closure (_, _, _) | Special _ -> vars
 
 (** Compute the initial liveness of each variable in the program.
 
@@ -322,7 +322,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
                 args
           | Block (_, _, _, _)
           | Field (_, _, _)
-          | Closure (_, _)
+          | Closure (_, _, _)
           | Constant _
           | Prim (_, _)
           | Special _ ->
@@ -467,8 +467,8 @@ let zero prog sentinal live_table =
         | Apply ap ->
             let args = List.map ~f:zero_var ap.args in
             Let (x, Apply { ap with args })
-        | Field (_, _, _) | Closure (_, _) | Constant _ | Prim (_, _) | Special _ -> instr
-        )
+        | Field (_, _, _) | Closure (_, _, _) | Constant _ | Prim (_, _) | Special _ ->
+            instr)
     | Event _
     | Assign (_, _)
     | Set_field (_, _, _, _)

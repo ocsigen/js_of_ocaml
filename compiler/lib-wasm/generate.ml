@@ -39,7 +39,6 @@ module Generate (Target : Target_sig.S) = struct
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
-    ; debug : Parse_bytecode.Debug.t
     }
 
   let label_index context pc =
@@ -909,6 +908,7 @@ module Generate (Target : Target_sig.S) = struct
       ~unit_name
       params
       ((pc, _) as cont)
+      cloc
       acc =
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
@@ -1088,8 +1088,7 @@ module Generate (Target : Target_sig.S) = struct
                (fun ~result_typ ~fall_through ~context ->
                  translate_branch result_typ fall_through (-1) cont context)
            in
-           let end_loc = Parse_bytecode.Debug.find_loc ctx.debug ~position:After pc in
-           match end_loc with
+           match cloc with
            | Some loc -> event loc
            | None -> return ())
     in
@@ -1176,8 +1175,7 @@ module Generate (Target : Target_sig.S) = struct
     ~should_export
     ~warn_on_unhandled_effect
 *)
-      ~deadcode_sentinal
-      ~debug =
+      ~deadcode_sentinal =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
     (*
@@ -1190,15 +1188,14 @@ module Generate (Target : Target_sig.S) = struct
       ; blocks = p.blocks
       ; closures
       ; global_context
-      ; debug
       }
     in
     let toplevel_name = Var.fresh_n "toplevel" in
     let functions =
       Code.fold_closures_outermost_first
         p
-        (fun name_opt params cont ->
-          translate_function p ctx name_opt ~toplevel_name ~unit_name params cont)
+        (fun name_opt params cont cloc ->
+          translate_function p ctx name_opt ~toplevel_name ~unit_name params cont cloc)
         []
     in
     let functions =
@@ -1293,10 +1290,10 @@ let init = G.init
 
 let start () = make_context ~value_type:Gc_target.Value.value
 
-let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~debug =
+let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal =
   let t = Timer.make () in
   let p = fix_switch_branches p in
-  let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~debug p in
+  let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal p in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
 

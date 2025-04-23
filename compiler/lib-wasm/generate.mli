@@ -27,7 +27,6 @@ val f :
   -> live_vars:int array
   -> in_cps:Effects.in_cps
   -> deadcode_sentinal:Code.Var.t
-  -> debug:Parse_bytecode.Debug.t
   -> Wasm_ast.var * (string list * (string * Javascript.expression) list)
 
 val add_start_function : context:Code_generation.context -> Wasm_ast.var -> unit

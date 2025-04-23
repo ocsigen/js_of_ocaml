@@ -82,7 +82,6 @@ function jsoo_create_file_extern(name,content){
           ~link:`Needed
           ~formatter:pfs_fmt
           ~source_map:false
-          (Parse_bytecode.Debug.create ~include_cmis:false false)
           code
       in
       ())
