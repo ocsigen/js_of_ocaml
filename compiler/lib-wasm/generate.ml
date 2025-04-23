@@ -283,6 +283,38 @@ module Generate (Target : Target_sig.S) = struct
               (transl_prim_arg ctx ?typ:tz z)
         | _ -> invalid_arity name l ~expected:3)
 
+  let register_comparison name cmp_int cmp_boxed_int cmp_float =
+    register_prim name `Mutable (fun ctx _ l ->
+        match l with
+        | [ x; y ] -> (
+            let x' = transl_prim_arg ctx x in
+            let y' = transl_prim_arg ctx y in
+            match get_type ctx x, get_type ctx y with
+            | Int _, Int _ -> cmp_int ctx x y
+            | Number Int32, Number Int32 ->
+                let* x' = Memory.unbox_int32 x' in
+                let* y' = Memory.unbox_int32 y' in
+                return (W.BinOp (I32 cmp_boxed_int, x', y'))
+            | Number Nativeint, Number Nativeint ->
+                let* x' = Memory.unbox_nativeint x' in
+                let* y' = Memory.unbox_nativeint y' in
+                return (W.BinOp (I32 cmp_boxed_int, x', y'))
+            | Number Int64, Number Int64 ->
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.BinOp (I64 cmp_boxed_int, x', y'))
+            | Number Float, Number Float -> float_comparison cmp_float x' y'
+            | _ ->
+                let* f =
+                  register_import
+                    ~name
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = x' in
+                let* y' = y' in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity name l ~expected:2)
+
   let () =
     register_bin_prim
       "caml_array_unsafe_get"
@@ -764,7 +796,86 @@ module Generate (Target : Target_sig.S) = struct
             l
             ~init:(return [])
         in
-        Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal ~load l)
+        Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal ~load l);
+    register_comparison
+      "caml_greaterthan"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x < y)) x y)
+      (Gt S)
+      Gt;
+    register_comparison
+      "caml_greaterequal"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x <= y)) x y)
+      (Ge S)
+      Ge;
+    register_comparison
+      "caml_lessthan"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( < ) x y)
+      (Lt S)
+      Lt;
+    register_comparison
+      "caml_lessequal"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( <= ) x y)
+      (Le S)
+      Le;
+    register_comparison
+      "caml_equal"
+      (fun ctx x y -> translate_int_equality ctx Arith.( = ) Value.eq x y)
+      Eq
+      Eq;
+    register_comparison
+      "caml_notequal"
+      (fun ctx x y -> translate_int_equality ctx Arith.( <> ) Value.neq x y)
+      Ne
+      Ne;
+    register_prim "caml_compare" `Mutable (fun ctx _ l ->
+        match l with
+        | [ x; y ] -> (
+            let x' = transl_prim_arg ctx x in
+            let y' = transl_prim_arg ctx y in
+            match get_type ctx x, get_type ctx y with
+            | Int _, Int _ ->
+                Value.val_int
+                  Arith.(
+                    (Value.int_val y' < Value.int_val x')
+                    - (Value.int_val x' < Value.int_val y'))
+            | Number Int32, Number Int32 ->
+                let* f =
+                  register_import ~name:"caml_int32_compare" (Fun (Type.primitive_type 2))
+                in
+                let* x' = Memory.unbox_int32 x' in
+                let* y' = Memory.unbox_int32 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Nativeint, Number Nativeint ->
+                let* f =
+                  register_import
+                    ~name:"caml_nativeint_compare"
+                    (Fun (Type.primitive_type 2))
+                in
+                let* x' = Memory.unbox_nativeint x' in
+                let* y' = Memory.unbox_nativeint y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Int64, Number Int64 ->
+                let* f =
+                  register_import ~name:"caml_int64_compare" (Fun (Type.primitive_type 2))
+                in
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Float, Number Float ->
+                let* f =
+                  register_import ~name:"caml_float_compare" (Fun (Type.primitive_type 2))
+                in
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | _ ->
+                let* f =
+                  register_import ~name:"caml_compare" (Fun (Type.primitive_type 2))
+                in
+                let* x' = x' in
+                let* y' = y' in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity "caml_compare" l ~expected:2)
 
   let rec translate_expr ctx context x e =
     match e with
