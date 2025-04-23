@@ -107,7 +107,7 @@ jobs:
           node-version: latest
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
-        uses: ocaml/setup-ocaml@v3.2
+        uses: ocaml/setup-ocaml@v3.2.19
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
