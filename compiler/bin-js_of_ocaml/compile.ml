@@ -56,7 +56,8 @@ let output_gen
     let sm = f ~standalone ~source_map (k, fmt) in
     match source_map, sm with
     | None, _ | _, None -> ()
-    | Some { output_file = output; source_map = _; keep_empty = _ }, Some sm ->
+    | Some { output_file = output; source_map; keep_empty }, Some sm ->
+        let sm = if keep_empty then Source_map.Standard source_map else sm in
         if Debug.find "invariant" () then Source_map.invariant sm;
         let urlData =
           match output with
