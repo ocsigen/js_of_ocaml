@@ -590,6 +590,24 @@ let primitives_with_unboxed_parameters =
     ];
   h
 
+let type_specialized_primitive types name args =
+  match name with
+  | "caml_greaterthan"
+  | "caml_greaterequal"
+  | "caml_lessthan"
+  | "caml_lessequal"
+  | "caml_equal"
+  | "caml_notequal"
+  | "caml_compare" -> (
+      match List.map ~f:(arg_type ~approx:types) args with
+      | [ Int _; Int _ ]
+      | [ Number (Int32, _); Number (Int32, _) ]
+      | [ Number (Int64, _); Number (Int64, _) ]
+      | [ Number (Nativeint, _); Number (Nativeint, _) ]
+      | [ Number (Float, _); Number (Float, _) ] -> true
+      | _ -> false)
+  | _ -> false
+
 let box_numbers p st types =
   (* We box numbers eagerly if the boxed value is ever used. *)
   let should_box = Var.ISet.empty () in
@@ -636,7 +654,10 @@ let box_numbers p st types =
                       then List.iter ~f:box args
                   | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
                   | Prim (Extern s, args) ->
-                      if not (String.Hashtbl.mem primitives_with_unboxed_parameters s)
+                      if
+                        not
+                          (String.Hashtbl.mem primitives_with_unboxed_parameters s
+                          || type_specialized_primitive types s args)
                       then
                         List.iter
                           ~f:(fun a ->
@@ -667,6 +688,12 @@ let box_numbers p st types =
         ())
     ()
 
+let print_opt typ f e =
+  match e with
+  | Prim (Extern name, args) when type_specialized_primitive typ name args ->
+      Format.fprintf f " OPT"
+  | _ -> ()
+
 type t =
   { types : typ Var.Tbl.t
   ; return_types : typ Var.Hashtbl.t
@@ -696,7 +723,13 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
       Format.err_formatter
       (fun _ i ->
         match i with
-        | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get types x)
+        | Instr (Let (x, e)) ->
+            Format.asprintf
+              "{%a}%a"
+              Domain.print
+              (Var.Tbl.get types x)
+              (print_opt types)
+              e
         | _ -> "")
       p);
   let return_types = Var.Hashtbl.create 128 in
