@@ -388,28 +388,33 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> invalid_arity name l ~expected:3)
 
   let register_comparison name cmp_boxed_int cmp_float cmp_int =
-    register_prim name `Mutator ~ret_typ:int_n (fun ctx _ _ l ->
+    register_prim
+      name
+      `Mutator
+      ~ret_typ:int_n
+      (fun ctx _ (hint : Optimization_hint.ccall option) l ->
         match l with
         | [ x; y ] -> (
-            match get_type ctx x, get_type ctx y with
-            | Int _, Int _ -> cmp_int ctx x y
-            | Number (Int32, _), Number (Int32, _) ->
+            match hint, get_type ctx x, get_type ctx y with
+            | _, Int _, Int _ -> cmp_int ctx x y
+            | Some (Hint_int Int32), _, _ | _, Number (Int32, _), Number (Int32, _) ->
                 let x = transl_prim_arg ctx ~typ:int32_u x in
                 let y = transl_prim_arg ctx ~typ:int32_u y in
                 int32_bin_op cmp_boxed_int x y
-            | Number (Nativeint, _), Number (Nativeint, _) ->
+            | Some (Hint_int Nativeint), _, _
+            | _, Number (Nativeint, _), Number (Nativeint, _) ->
                 let x = transl_prim_arg ctx ~typ:nativeint_u x in
                 let y = transl_prim_arg ctx ~typ:nativeint_u y in
                 nativeint_bin_op cmp_boxed_int x y
-            | Number (Int64, _), Number (Int64, _) ->
+            | Some (Hint_int Int64), _, _ | _, Number (Int64, _), Number (Int64, _) ->
                 let x = transl_prim_arg ctx ~typ:int64_u x in
                 let y = transl_prim_arg ctx ~typ:int64_u y in
                 int64_bin_op cmp_boxed_int x y
-            | Number (Float, _), Number (Float, _) ->
+            | _, Number (Float, _), Number (Float, _) ->
                 let x = transl_prim_arg ctx ~typ:float_u x in
                 let y = transl_prim_arg ctx ~typ:float_u y in
                 float_bin_op cmp_float x y
-            | Number (Float32, _), Number (Float32, _) ->
+            | _, Number (Float32, _), Number (Float32, _) ->
                 let x = transl_prim_arg ctx ~typ:float32_u x in
                 let y = transl_prim_arg ctx ~typ:float32_u y in
                 float32_bin_op cmp_float x y
