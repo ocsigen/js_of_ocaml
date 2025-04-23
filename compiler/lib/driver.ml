@@ -93,16 +93,18 @@ let phi p =
 
 let ( +> ) f g x = g (f x)
 
-let map_fst f (x, y, z) = f x, y, z
+let map_fst f (x, y) = f x, y
 
-let effects_and_exact_calls ~deadcode_sentinal (profile : Profile.t) p =
+let effects_and_exact_calls ~keep_flow_data ~deadcode_sentinal (profile : Profile.t) p =
   let fast =
     match Config.effects (), profile with
     | (`Cps | `Double_translation), _ -> false
     | _, (O2 | O3) -> false
     | _, O1 -> true
   in
-  let info = Global_flow.f ~fast p in
+  let global_flow_data = Global_flow.f ~fast p in
+  let _, info = global_flow_data in
+  let global_flow_data = if keep_flow_data then Some global_flow_data else None in
   let pure_fun = Pure_fun.f p in
   let p, live_vars =
     if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
@@ -114,7 +116,8 @@ let effects_and_exact_calls ~deadcode_sentinal (profile : Profile.t) p =
   match Config.effects () with
   | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
-      Effects.f ~flow_info:info ~live_vars p
+      let p, trampolined_calls, in_cps = Effects.f ~flow_info:info ~live_vars p in
+      (p, (trampolined_calls, in_cps, None))
       |> map_fst
            (match Config.target () with
            | `Wasm -> Fun.id
@@ -124,8 +127,9 @@ let effects_and_exact_calls ~deadcode_sentinal (profile : Profile.t) p =
         Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
       in
       ( p
-      , (Code.Var.Set.empty : Effects.trampolined_calls)
-      , (Code.Var.Set.empty : Effects.in_cps) )
+      , ( (Code.Var.Set.empty : Effects.trampolined_calls)
+        , (Code.Var.Set.empty : Effects.in_cps)
+        , global_flow_data ) )
 
 let print p =
   if debug () then Code.Print.program Format.err_formatter (fun _ _ -> "") p;
@@ -613,7 +617,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> pack ~wrap_with_fun ~standalone
   |> check_js
 
-let optimize ~profile p =
+let optimize ~profile ~keep_flow_data p =
   let deadcode_sentinal =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "dummy"
@@ -626,7 +630,7 @@ let optimize ~profile p =
        | O2 -> o2
        | O3 -> o3)
     +> specialize_js_once_after
-    +> effects_and_exact_calls ~deadcode_sentinal profile
+    +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinal profile
     +> map_fst
          (match Config.target (), Config.effects () with
          | `JavaScript, `Disabled -> Generate_closure.f
@@ -637,12 +641,20 @@ let optimize ~profile p =
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
-  let (program, variable_uses), trampolined_calls, in_cps = opt p in
+  let (program, variable_uses), (trampolined_calls, in_cps, global_flow_info) = opt p in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal }
+  ( { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal }
+  , global_flow_info )
+
+let optimize_for_wasm ~profile p =
+  let optimized_code, global_flow_data = optimize ~profile ~keep_flow_data:true p in
+  ( optimized_code
+  , match global_flow_data with
+    | Some data -> data
+    | None -> Global_flow.f ~fast:false optimized_code.program )
 
 let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter p =
-  let optimized_code = optimize ~profile p in
+  let optimized_code, _ = optimize ~profile ~keep_flow_data:false p in
   let exported_runtime = not standalone in
   let emit formatter =
     generate ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone

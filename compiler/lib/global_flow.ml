@@ -79,14 +79,15 @@ type def =
   | Phi of
       { known : Var.Set.t (* Known arguments *)
       ; others : bool (* Can there be other arguments *)
+      ; unit : bool (* Whether we are propagating unit (used for typing) *)
       }
 
-let undefined = Phi { known = Var.Set.empty; others = false }
+let undefined = Phi { known = Var.Set.empty; others = false; unit = false }
 
 let is_undefined d =
   match d with
   | Expr _ -> false
-  | Phi { known; others } -> Var.Set.is_empty known && not others
+  | Phi { known; others; unit } -> Var.Set.is_empty known && (not others) && not unit
 
 type escape_status =
   | Escape
@@ -141,13 +142,22 @@ let add_assign_def st x y =
   let idx = Var.idx x in
   match st.defs.(idx) with
   | Expr _ -> assert false
-  | Phi { known; others } -> st.defs.(idx) <- Phi { known = Var.Set.add y known; others }
+  | Phi { known; others; unit } ->
+      st.defs.(idx) <- Phi { known = Var.Set.add y known; others; unit }
+
+let add_unit_def st x =
+  add_var st x;
+  let idx = Var.idx x in
+  match st.defs.(idx) with
+  | Expr _ -> assert false
+  | Phi { known; others; _ } -> st.defs.(idx) <- Phi { known; others; unit = true }
 
 let add_param_def st x =
   add_var st x;
   let idx = Var.idx x in
   assert (is_undefined st.defs.(idx));
-  if st.fast then st.defs.(idx) <- Phi { known = Var.Set.empty; others = true }
+  if st.fast
+  then st.defs.(idx) <- Phi { known = Var.Set.empty; others = true; unit = false }
 
 let rec arg_deps st ?ignore params args =
   match params, args with
@@ -155,7 +165,7 @@ let rec arg_deps st ?ignore params args =
       (* This is to deal with the [else] clause of a conditional,
          where we know that the value of the tested variable is 0. *)
       (match ignore with
-      | Some y' when Var.equal y y' -> ()
+      | Some y' when Var.equal y y' -> add_unit_def st x
       | _ -> add_assign_def st x y);
       arg_deps st params args
   | [], [] -> ()
@@ -323,7 +333,8 @@ let program_deps st { start; blocks; _ } =
             | Expr _ | Phi _ -> ())
       | Pushtrap (cont, x, cont_h) ->
           add_var st x;
-          st.defs.(Var.idx x) <- Phi { known = Var.Set.empty; others = true };
+          st.defs.(Var.idx x) <-
+            Phi { known = Var.Set.empty; others = true; unit = false };
           cont_deps blocks st cont_h;
           cont_deps blocks st cont)
     blocks
@@ -382,7 +393,8 @@ module Domain = struct
           List.iter
             ~f:(fun y ->
               (match st.defs.(Var.idx y) with
-              | Phi { known; _ } -> st.defs.(Var.idx y) <- Phi { known; others = true }
+              | Phi { known; _ } ->
+                  st.defs.(Var.idx y) <- Phi { known; others = true; unit = false }
               | Expr _ -> assert false);
               update ~children:false y)
             params;
@@ -449,7 +461,7 @@ end
 
 let propagate st ~update approx x =
   match st.defs.(Var.idx x) with
-  | Phi { known; others } ->
+  | Phi { known; others; _ } ->
       Domain.join_set ~update ~st ~approx ~others (fun y -> Var.Tbl.get approx y) known
   | Expr e -> (
       match e with
@@ -773,12 +785,13 @@ let f ~fast p =
       | Escape_constant | Escape -> Var.ISet.add info_may_escape (Var.of_idx i)
       | No -> ())
     may_escape;
-  { info_defs = defs
-  ; info_approximation = approximation
-  ; info_variable_may_escape
-  ; info_may_escape
-  ; info_return_vals = rets
-  }
+  ( st
+  , { info_defs = defs
+    ; info_approximation = approximation
+    ; info_variable_may_escape
+    ; info_may_escape
+    ; info_return_vals = rets
+    } )
 
 let exact_call info f n =
   match Var.Tbl.get info.info_approximation f with
