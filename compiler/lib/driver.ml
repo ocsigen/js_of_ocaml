@@ -157,8 +157,6 @@ let rec loop max name round i (p : 'a) : 'a =
     p')
   else loop max name round (i + 1) p'
 
-let identity x = x
-
 (* o1 *)
 
 let o1 : 'a -> 'a =
@@ -183,11 +181,10 @@ let o1 : 'a -> 'a =
   +> inline
   +> deadcode
   +> phi
-  +> identity
 
 (* o2 *)
 
-let o2 : 'a -> 'a = loop 10 "o1" o1 1 +> print
+let o2 = loop 10 "o1" o1 1 +> print
 
 (* o3 *)
 
