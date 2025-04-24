@@ -147,12 +147,17 @@ let print p =
   p
 
 let rec loop max name round i (p : 'a) : 'a =
+  if times () then Format.eprintf "%s#%d...@." name i;
   let p' = round p in
-  if i >= max || Code.eq p' p
-  then p'
-  else (
-    if times () then Format.eprintf "Start Iteration (%s) %d...@." name i;
-    loop max name round (i + 1) p')
+  if i >= max
+  then (
+    if times () then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
+    p')
+  else if Code.eq p' p
+  then (
+    if times () then Format.eprintf "%s#%d: fix-point reached.@." name i;
+    p')
+  else loop max name round (i + 1) p'
 
 let identity x = x
 
