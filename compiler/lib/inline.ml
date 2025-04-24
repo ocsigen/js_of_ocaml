@@ -166,13 +166,7 @@ let rewrite_closure blocks cont_pc clos_pc =
 
 (****)
 
-let rec args_equal xs ys =
-  match xs, ys with
-  | [], [] -> true
-  | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
-  | _ -> false
-
-let inline ~first_class_primitives live_vars closures pc (outer, p) =
+let inline live_vars closures pc (outer, p) =
   let block = Addr.Map.find pc p.blocks in
   let body, (outer, branch, p) =
     List.fold_right
@@ -300,24 +294,6 @@ let inline ~first_class_primitives live_vars closures pc (outer, p) =
                     let outer = { outer with size = outer.size + f_size } in
                     [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc })
               | _ -> i :: rem, state)
-        | Let (x, Closure (l, (pc, []), _)) when first_class_primitives -> (
-            let block = Addr.Map.find pc p.blocks in
-            match block with
-            | { body =
-                  ( [ Let (y, Prim (Extern prim, args)) ]
-                  | [ Event _; Let (y, Prim (Extern prim, args)) ]
-                  | [ Event _; Let (y, Prim (Extern prim, args)); Event _ ] )
-              ; branch = Return y'
-              ; params = []
-              } ->
-                let len = List.length l in
-                if
-                  Code.Var.compare y y' = 0
-                  && Primitive.has_arity prim len
-                  && args_equal l args
-                then Let (x, Special (Alias_prim prim)) :: rem, state
-                else i :: rem, state
-            | _ -> i :: rem, state)
         | _ -> i :: rem, state)
   in
   outer, { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
@@ -327,12 +303,6 @@ let inline ~first_class_primitives live_vars closures pc (outer, p) =
 let times = Debug.find "times"
 
 let f p live_vars =
-  let first_class_primitives =
-    match Config.target (), Config.effects () with
-    | `JavaScript, `Disabled -> true
-    | `JavaScript, (`Cps | `Double_translation) | `Wasm, _ -> false
-    | `JavaScript, `Jspi -> assert false
-  in
   Code.invariant p;
   let t = Timer.make () in
   let closures = get_closures p in
@@ -343,7 +313,7 @@ let f p live_vars =
         let traverse outer =
           Code.traverse
             { fold = Code.fold_children }
-            (inline ~first_class_primitives live_vars closures)
+            (inline live_vars closures)
             pc
             p.blocks
             (outer, p)

@@ -20,4 +20,6 @@
 
 val f : Flow.Info.t -> Code.program -> Code.program
 
-val f_once : Code.program -> Code.program
+val f_once_before : Code.program -> Code.program
+
+val f_once_after : Code.program -> Code.program

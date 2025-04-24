@@ -354,7 +354,7 @@ let specialize_all_instrs ~target info p =
 
 let f info p = specialize_all_instrs ~target:(Config.target ()) info p
 
-let f_once p =
+let f_once_before p =
   let rec loop acc l =
     match l with
     | [] -> List.rev acc
@@ -381,3 +381,47 @@ let f_once p =
     Addr.Map.map (fun block -> { block with Code.body = loop [] block.body }) p.blocks
   in
   { p with blocks }
+
+let rec args_equal xs ys =
+  match xs, ys with
+  | [], [] -> true
+  | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
+  | _ -> false
+
+let f_once_after p =
+  let first_class_primitives =
+    match Config.target (), Config.effects () with
+    | `JavaScript, `Disabled -> true
+    | `JavaScript, (`Cps | `Double_translation) | `Wasm, _ -> false
+    | `JavaScript, `Jspi -> assert false
+  in
+  let f = function
+    | Let (x, Closure (l, (pc, []), _)) as i -> (
+        let block = Addr.Map.find pc p.blocks in
+        match block with
+        | { body =
+              ( [ Let (y, Prim (Extern prim, args)) ]
+              | [ Event _; Let (y, Prim (Extern prim, args)) ]
+              | [ Event _; Let (y, Prim (Extern prim, args)); Event _ ] )
+          ; branch = Return y'
+          ; params = []
+          } ->
+            let len = List.length l in
+            if
+              Code.Var.compare y y' = 0
+              && Primitive.has_arity prim len
+              && args_equal l args
+            then Let (x, Special (Alias_prim prim))
+            else i
+        | _ -> i)
+    | i -> i
+  in
+  if first_class_primitives
+  then
+    let blocks =
+      Addr.Map.map
+        (fun block -> { block with Code.body = List.map block.body ~f })
+        p.blocks
+    in
+    { p with blocks }
+  else p
