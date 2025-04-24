@@ -22,7 +22,8 @@
 let%expect_test _ =
   let prog =
     {|
-let app f x = try f x with e -> raise e
+exception I of int
+let app f x = try f x with e -> raise (I (f x))
 
 let myfun () =
   for i = 1 to 4 do

@@ -92,12 +92,15 @@ let%expect_test "Omit unused fields" =
   let program =
     compile_and_parse
       {|
+      let l = ref []
+       
       let f b x =
-        for i = 0 to 2 do prerr_endline "X" done; (* Prevent inlining *)
+        l := (fun y -> x + y) :: !l; (* Prevent inlining *)
         let t = if b then (1, 2, x) else (3, x, 4) in
         let (u, _, v) = t in
         (u, v)
-      in print_int (fst (f true 1) + snd (f false 2))
+
+      let () = print_int (fst (f true 1) + snd (f false 2))
       |}
   in
   (* Expect second field in each triple to be omitted. *)
@@ -105,10 +108,12 @@ let%expect_test "Omit unused fields" =
   [%expect
     {|
     function f(b, x){
+     l[1] = [0, function(y){return x + y | 0;}, l[1]];
      var t = b ? [0, 1, , x] : [0, 3, , 4], v = t[3], u = t[1];
      return [0, u, v];
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "Omit unused return expressions" =
   let program =
