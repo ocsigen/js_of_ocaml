@@ -21,19 +21,19 @@
 open Stdlib
 
 module Debug : sig
-  type t
+  type summary
 
-  val create : include_cmis:bool -> bool -> t
+  val is_empty : summary -> bool
 
-  val is_empty : t -> bool
+  val default_summary : summary
 
-  val paths : t -> units:StringSet.t -> StringSet.t
+  val paths : summary -> units:StringSet.t -> StringSet.t
 end
 
 type one =
   { code : Code.program
   ; cmis : StringSet.t
-  ; debug : Debug.t
+  ; debug : Debug.summary
   }
 
 module Toc : sig

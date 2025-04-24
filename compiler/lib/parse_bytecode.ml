@@ -45,8 +45,6 @@ module Debug : sig
 
   val enabled : t -> bool
 
-  val is_empty : t -> bool
-
   val dbg_section_needed : t -> bool
 
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
@@ -86,7 +84,15 @@ module Debug : sig
 
   val create : include_cmis:bool -> bool -> t
 
-  val paths : t -> units:StringSet.t -> StringSet.t
+  type summary
+
+  val summarize : t -> summary
+
+  val default_summary : summary
+
+  val is_empty : summary -> bool
+
+  val paths : summary -> units:StringSet.t -> StringSet.t
 end = struct
   open Instruct
 
@@ -135,8 +141,6 @@ end = struct
     ; enabled
     ; include_cmis
     }
-
-  let is_empty t = Int_table.length t.events_by_pc = 0
 
   let find_ml_in_paths paths name =
     let uname = String.uncapitalize_ascii name in
@@ -312,11 +316,22 @@ end = struct
     | [], [] -> ()
     | _ -> assert false
 
-  let paths t ~units =
+  type summary =
+    { is_empty : bool
+    ; units : (string * string option, ml_unit) Hashtbl.t
+    }
+
+  let default_summary = { is_empty = true; units = Hashtbl.create 0 }
+
+  let summarize t = { is_empty = Int_table.length t.events_by_pc = 0; units = t.units }
+
+  let is_empty t = t.is_empty
+
+  let paths (s : summary) ~units =
     let paths =
       Hashtbl.fold
         (fun _ u acc -> if StringSet.mem u.module_name units then u.paths :: acc else acc)
-        t.units
+        s.units
         []
     in
     StringSet.of_list (List.concat paths)
@@ -2460,7 +2475,7 @@ and compile infos pc state (instrs : instr list) =
 type one =
   { code : Code.program
   ; cmis : StringSet.t
-  ; debug : Debug.t
+  ; debug : Debug.summary
   }
 
 let parse_bytecode code globals debug_data =
@@ -2732,7 +2747,7 @@ let from_exe
   in
   let code = prepend p body in
   Code.invariant code;
-  { code; cmis; debug = debug_data }
+  { code; cmis; debug = Debug.summarize debug_data }
 
 (* As input: list of primitives + size of global table *)
 let from_bytes ~prims ~debug (code : bytecode) =
@@ -2934,7 +2949,7 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
           StringSet.add (Ocaml_compiler.Cmo_format.name compunit) acc)
     else StringSet.empty
   in
-  { code = prepend prog body; cmis; debug = debug_data }
+  { code = prepend prog body; cmis; debug = Debug.summarize debug_data }
 
 let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit ic =
   let debug_data = Debug.create ~include_cmis debug in

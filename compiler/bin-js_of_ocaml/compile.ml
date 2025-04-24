@@ -343,7 +343,7 @@ let run
     let code =
       { Parse_bytecode.code = Code.empty
       ; cmis = StringSet.empty
-      ; debug = Parse_bytecode.Debug.create ~include_cmis:false false
+      ; debug = Parse_bytecode.Debug.default_summary
       }
     in
     output
@@ -371,10 +371,7 @@ let run
       let code, uinfo = Parse_bytecode.predefined_exceptions () in
       let uinfo = Unit_info.union uinfo (Unit_info.of_primitives ~aliases primitives) in
       let code : Parse_bytecode.one =
-        { code
-        ; cmis = StringSet.empty
-        ; debug = Parse_bytecode.Debug.create ~include_cmis:false false
-        }
+        { code; cmis = StringSet.empty; debug = Parse_bytecode.Debug.default_summary }
       in
       output_gen
         ~standalone:true
