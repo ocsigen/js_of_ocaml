@@ -31,6 +31,7 @@ type closure_info =
   ; cl_cont : int * Var.t list
   ; cl_prop : prop
   ; cl_simpl : (Var.Set.t * int Var.Map.t * bool * Var.Set.t) option
+  ; cl_loc : Parse_info.t option
   }
 
 let block_size { branch; body; _ } =
@@ -132,14 +133,14 @@ let get_closures { blocks; _ } =
     (fun _ block closures ->
       List.fold_left block.body ~init:closures ~f:(fun closures i ->
           match i with
-          | Let (x, Closure (cl_params, cl_cont)) ->
+          | Let (x, Closure (cl_params, cl_cont, cl_loc)) ->
               (* we can compute this once during the pass
                  as the property won't change with inlining *)
               let cl_prop = optimizable blocks (fst cl_cont) in
               let cl_simpl =
                 simple_function blocks cl_prop.size x cl_params (fst cl_cont)
               in
-              Var.Map.add x { cl_params; cl_cont; cl_prop; cl_simpl } closures
+              Var.Map.add x { cl_params; cl_cont; cl_prop; cl_simpl; cl_loc } closures
           | _ -> closures))
     blocks
     Var.Map.empty
@@ -185,6 +186,7 @@ let inline ~first_class_primitives live_vars closures pc (outer, p) =
                 ; cl_cont = clos_cont
                 ; cl_prop = { size = f_size; optimizable = f_optimizable }
                 ; cl_simpl
+                ; cl_loc
                 } =
               Var.Map.find f closures
             in
@@ -263,7 +265,7 @@ let inline ~first_class_primitives live_vars closures pc (outer, p) =
                   in
                   if recursive
                   then
-                    ( Let (f, Closure (params, clos_cont))
+                    ( Let (f, Closure (params, clos_cont, cl_loc))
                       :: Let (x, Apply { f; args; exact = true })
                       :: rem
                     , (outer, branch, p) )
@@ -298,7 +300,7 @@ let inline ~first_class_primitives live_vars closures pc (outer, p) =
                     let outer = { outer with size = outer.size + f_size } in
                     [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc })
               | _ -> i :: rem, state)
-        | Let (x, Closure (l, (pc, []))) when first_class_primitives -> (
+        | Let (x, Closure (l, (pc, []), _)) when first_class_primitives -> (
             let block = Addr.Map.find pc p.blocks in
             match block with
             | { body =
@@ -337,7 +339,7 @@ let f p live_vars =
   let _closures, p =
     Code.fold_closures_innermost_first
       p
-      (fun name cl_params (pc, _) (closures, p) ->
+      (fun name cl_params (pc, _) _ (closures, p) ->
         let traverse outer =
           Code.traverse
             { fold = Code.fold_children }

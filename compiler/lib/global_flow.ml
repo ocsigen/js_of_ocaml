@@ -42,7 +42,7 @@ let add_to_list h x v = Var.Hashtbl.replace h x (v :: associated_list h x)
 let return_values p =
   Code.fold_closures
     p
-    (fun name_opt _ (pc, _) rets ->
+    (fun name_opt _ (pc, _) _ rets ->
       match name_opt with
       | None -> rets
       | Some name ->
@@ -229,14 +229,14 @@ let expr_deps blocks st x e =
          dependencies right now. This speeds up the analysis
          significantly. *)
       match st.defs.(Var.idx f) with
-      | Expr (Closure (params, _)) when List.length args = List.length params ->
+      | Expr (Closure (params, _, _)) when List.length args = List.length params ->
           Hashtbl.add st.applied_functions (x, f) ();
           add_to_list st.function_call_sites f x;
           if st.fast
           then List.iter ~f:(fun a -> do_escape st Escape a) args
           else List.iter2 ~f:(fun p a -> add_assign_def st p a) params args
       | _ -> ())
-  | Closure (l, cont) ->
+  | Closure (l, cont, _) ->
       List.iter l ~f:(fun x -> add_param_def st x);
       cont_deps blocks st cont
   | Field (y, _, _) -> add_dep st x y
@@ -355,7 +355,7 @@ module Domain = struct
               Var.ISet.add st.possibly_mutable x;
               update ~children:true x
           | (Escape_constant | No), _ | Escape, Immutable -> ())
-      | Expr (Closure (params, _)) ->
+      | Expr (Closure (params, _, _)) ->
           List.iter
             ~f:(fun y ->
               (match st.defs.(Var.idx y) with
@@ -509,8 +509,8 @@ let propagate st ~update approx x =
                 ~others
                 (fun g ->
                   match st.defs.(Var.idx g) with
-                  | Expr (Closure (params, _)) when List.length args = List.length params
-                    ->
+                  | Expr (Closure (params, _, _))
+                    when List.length args = List.length params ->
                       if not (Hashtbl.mem st.applied_functions (x, g))
                       then (
                         Hashtbl.add st.applied_functions (x, g) ();
@@ -534,7 +534,7 @@ let propagate st ~update approx x =
                         ~approx
                         (fun y -> Var.Tbl.get approx y)
                         (Var.Map.find g st.return_values)
-                  | Expr (Closure (_, _)) ->
+                  | Expr (Closure (_, _, _)) ->
                       (* The function is partially applied or over applied *)
                       List.iter
                         ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
@@ -729,7 +729,7 @@ let exact_call info f n =
       Var.Set.for_all
         (fun g ->
           match info.info_defs.(Var.idx g) with
-          | Expr (Closure (params, _)) -> List.length params = n
+          | Expr (Closure (params, _, _)) -> List.length params = n
           | Expr (Block _) -> true
           | Expr _ | Phi _ -> assert false)
         known
@@ -742,7 +742,7 @@ let function_arity info f =
         Var.Set.fold
           (fun g acc ->
             match info.info_defs.(Var.idx g) with
-            | Expr (Closure (params, _)) -> (
+            | Expr (Closure (params, _, _)) -> (
                 let n = List.length params in
                 match acc with
                 | None -> Some (Some n)

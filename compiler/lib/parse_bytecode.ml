@@ -1212,7 +1212,13 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 3)
           state
-          (Let (x, Closure (List.rev params, (addr, args))) :: instrs)
+          (Let
+             ( x
+             , Closure
+                 ( List.rev params
+                 , (addr, args)
+                 , Debug.find_loc infos.debug ~position:After addr ) )
+          :: instrs)
     | CLOSUREREC ->
         let nfuncs = getu code (pc + 1) in
         let nvars = getu code (pc + 2) in
@@ -1263,7 +1269,13 @@ and compile infos pc state (instrs : instr list) =
               let args = State.stack_vars state' in
               let state'', _, _ = Addr.Map.find addr !compiled_blocks in
               Debug.propagate (State.stack_vars state'') args;
-              Let (x, Closure (List.rev params, (addr, args))) :: instr)
+              Let
+                ( x
+                , Closure
+                    ( List.rev params
+                    , (addr, args)
+                    , Debug.find_loc infos.debug ~position:After addr ) )
+              :: instr)
         in
         compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
     | OFFSETCLOSUREM3 ->
@@ -2773,7 +2785,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
     then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
     else body
   in
-  prepend p body, debug_data
+  prepend p body
 
 let from_string ~prims ~debug (code : string) = from_bytes ~prims ~debug code
 

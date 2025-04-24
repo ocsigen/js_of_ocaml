@@ -66,7 +66,7 @@ and block blocks pc pure visited funs =
   List.fold_left b.body ~init:(pure, visited, funs) ~f:(fun (pure, visited, funs) i ->
       let visited, funs =
         match i with
-        | Let (x, Closure (_, (pc, _))) ->
+        | Let (x, Closure (_, (pc, _), _)) ->
             let pure, visited, funs = traverse blocks pc visited funs in
             visited, if pure then Var.Set.add x funs else funs
         | _ -> visited, funs

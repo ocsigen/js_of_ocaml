@@ -384,7 +384,7 @@ type expr =
       }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type
-  | Closure of Var.t list * cont
+  | Closure of Var.t list * cont * Parse_info.t option
   | Constant of constant
   | Prim of prim * prim_arg list
   | Special of special
@@ -538,7 +538,7 @@ module Print = struct
         Format.fprintf f "}"
     | Field (x, i, Non_float) -> Format.fprintf f "%a[%d]" Var.print x i
     | Field (x, i, Float) -> Format.fprintf f "FLOAT{%a[%d]}" Var.print x i
-    | Closure (l, c) -> Format.fprintf f "fun(%a){%a}" var_list l cont c
+    | Closure (l, c, _) -> Format.fprintf f "fun(%a){%a}" var_list l cont c
     | Constant c -> Format.fprintf f "CONST{%a}" constant c
     | Prim (p, l) -> prim f p l
     | Special s -> special f s
@@ -597,10 +597,10 @@ let fold_closures p f accu =
     (fun _ block accu ->
       List.fold_left block.body ~init:accu ~f:(fun accu i ->
           match i with
-          | Let (x, Closure (params, cont)) -> f (Some x) params cont accu
+          | Let (x, Closure (params, cont, cloc)) -> f (Some x) params cont cloc accu
           | _ -> accu))
     p.blocks
-    (f None [] (p.start, []) accu)
+    (f None [] (p.start, []) None accu)
 
 (****)
 
@@ -756,16 +756,16 @@ let fold_closures_innermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont)) ->
+            | Let (x, Closure (params, cont, cloc)) ->
                 let accu = visit blocks (fst cont) f accu in
-                f (Some x) params cont accu
+                f (Some x) params cont cloc accu
             | _ -> accu))
       pc
       blocks
       accu
   in
   let accu = visit blocks start f accu in
-  f None [] (start, []) accu
+  f None [] (start, []) None accu
 
 let fold_closures_outermost_first { start; blocks; _ } f accu =
   let rec visit blocks pc f accu =
@@ -775,15 +775,15 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont)) ->
-                let accu = f (Some x) params cont accu in
+            | Let (x, Closure (params, cont, cloc)) ->
+                let accu = f (Some x) params cont cloc accu in
                 visit blocks (fst cont) f accu
             | _ -> accu))
       pc
       blocks
       accu
   in
-  let accu = f None [] (start, []) accu in
+  let accu = f None [] (start, []) None accu in
   visit blocks start f accu
 
 let eq p1 p2 =
@@ -819,7 +819,7 @@ let invariant { blocks; start; _ } =
       | Apply _ -> ()
       | Block (_, _, _, _) -> ()
       | Field (_, _, _) -> ()
-      | Closure (l, cont) ->
+      | Closure (l, cont, _) ->
           List.iter l ~f:define;
           check_cont cont
       | Constant _ -> ()

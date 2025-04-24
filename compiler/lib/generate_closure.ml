@@ -28,6 +28,7 @@ type closure_info =
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
   ; pos : int
+  ; cloc : Parse_info.t option
   }
 
 module SCC = Strongly_connected_components.Make (Var)
@@ -63,10 +64,10 @@ let rec collect_apply pc blocks visited tc =
 
 let rec collect_closures blocks l pos =
   match l with
-  | Let (f_name, Closure (args, ((pc, _) as cont))) :: rem ->
+  | Let (f_name, Closure (args, ((pc, _) as cont), cloc)) :: rem ->
       let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
       let l, rem = collect_closures blocks rem (succ pos) in
-      { f_name; args; cont; tc; pos } :: l, rem
+      { f_name; args; cont; tc; pos; cloc } :: l, rem
   | rem -> [], rem
 
 let group_closures closures_map =
@@ -155,13 +156,13 @@ module Trampoline = struct
     in
     block
 
-  let wrapper_closure pc args = Closure (args, (pc, []))
+  let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
 
   let f free_pc blocks closures_map component =
     match component with
     | SCC.No_loop id ->
         let ci = Var.Map.find id closures_map in
-        let instr = Let (ci.f_name, Closure (ci.args, ci.cont)) in
+        let instr = Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) in
         free_pc, blocks, [ One { name = ci.f_name; code = instr } ]
     | SCC.Has_loop all ->
         if debug_tc ()
@@ -198,11 +199,14 @@ module Trampoline = struct
                 wrapper_block new_f ~args:new_args ~counter:new_counter start_loc
               in
               let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
-              let instr_wrapper = Let (ci.f_name, wrapper_closure wrapper_pc new_args) in
+              let instr_wrapper =
+                Let (ci.f_name, wrapper_closure wrapper_pc new_args ci.cloc)
+              in
               let instr_real =
                 match counter with
-                | None -> Let (new_f, Closure (ci.args, ci.cont))
-                | Some counter -> Let (new_f, Closure (counter :: ci.args, ci.cont))
+                | None -> Let (new_f, Closure (ci.args, ci.cont, ci.cloc))
+                | Some counter ->
+                    Let (new_f, Closure (counter :: ci.args, ci.cont, ci.cloc))
               in
               let counter_and_pc =
                 List.fold_left all ~init:[] ~f:(fun acc (counter, ci2) ->

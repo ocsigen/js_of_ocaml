@@ -205,7 +205,6 @@ let round2 = flow +> specialize' +> eval +> deadcode +> o1
 let o3 = loop 10 "tailcall+inline" round1 1 +> loop 10 "flow" round2 1 +> print
 
 let generate
-    d
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
@@ -221,7 +220,6 @@ let generate
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinal
-    d
 
 let debug_linker = Debug.find "linker"
 
@@ -716,11 +714,11 @@ let optimize ~profile p =
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
   { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal }
 
-let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
+let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter p =
   let optimized_code = optimize ~profile p in
   let exported_runtime = not standalone in
   let emit formatter =
-    generate d ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
+    generate ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
     +> link_and_pack ~standalone ~wrap_with_fun ~link
     +> simplify_js
     +> name_variables
@@ -728,9 +726,9 @@ let full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p =
   in
   emit formatter optimized_code
 
-let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p =
+let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link p =
   let (_ : Source_map.info) =
-    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:false ~formatter d p
+    full ~standalone ~wrap_with_fun ~profile ~link ~source_map:false ~formatter p
   in
   ()
 
@@ -741,22 +739,20 @@ let f
     ~link
     ~source_map
     ~formatter
-    d
     p =
-  full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter d p
+  full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter p
 
-let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter d p =
-  full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link d p
+let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter p =
+  full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link p
 
 let from_string ~prims ~debug s formatter =
-  let p, d = Parse_bytecode.from_string ~prims ~debug s in
+  let p = Parse_bytecode.from_string ~prims ~debug s in
   full_no_source_map
     ~formatter
     ~standalone:false
     ~wrap_with_fun:`Anonymous
     ~profile:O1
     ~link:`No
-    d
     p
 
 let profiles = [ 1, O1; 2, O2; 3, O3 ]

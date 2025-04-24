@@ -277,7 +277,6 @@ let run
             ~wrap_with_fun
             ~source_map:(source_map_enabled source_map)
             ~formatter
-            one.debug
             code
       | `File, formatter ->
           let fs_instr1, fs_instr2 =
@@ -301,7 +300,6 @@ let run
               ~wrap_with_fun
               ~source_map:(source_map_enabled source_map)
               ~formatter
-              one.debug
               code
           in
           Option.iter fs_output ~f:(fun file ->
@@ -309,14 +307,7 @@ let run
                   let instr = fs_instr2 in
                   let code = Code.prepend Code.empty instr in
                   let pfs_fmt = Pretty_print.to_out_channel chan in
-                  Driver.f'
-                    ~standalone
-                    ~link:`Needed
-                    ?profile
-                    ~wrap_with_fun
-                    pfs_fmt
-                    one.debug
-                    code));
+                  Driver.f' ~standalone ~link:`Needed ?profile ~wrap_with_fun pfs_fmt code));
           res
     in
     if times () then Format.eprintf "compilation: %a@." Timer.print t;

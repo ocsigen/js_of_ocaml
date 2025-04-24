@@ -76,7 +76,7 @@ let rec compute_depth program pc =
       let block = Code.Addr.Map.find pc program.blocks in
       List.fold_left block.body ~init:d ~f:(fun d i ->
           match i with
-          | Let (_, Closure (_, (pc', _))) ->
+          | Let (_, Closure (_, (pc', _), _)) ->
               let d' = compute_depth program pc' in
               max d (d' + 1)
           | _ -> d))
@@ -103,7 +103,7 @@ let collect_free_vars program var_depth depth pc =
           block;
         List.iter block.body ~f:(fun i ->
             match i with
-            | Let (_, Closure (_, (pc', _))) -> traverse pc'
+            | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
             | _ -> ()))
       pc
       program.blocks
@@ -116,7 +116,7 @@ let mark_bound_variables var_depth block depth =
   Freevars.iter_block_bound_vars (fun x -> var_depth.(Var.idx x) <- depth) block;
   List.iter block.body ~f:(fun i ->
       match i with
-      | Let (_, Closure (params, _)) ->
+      | Let (_, Closure (params, _, _)) ->
           List.iter params ~f:(fun x -> var_depth.(Var.idx x) <- depth + 1)
       | _ -> ())
 
@@ -133,7 +133,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
         let program, body =
           List.fold_right block.body ~init:(program, []) ~f:(fun i (program, rem) ->
               match i with
-              | Let (_, Closure (_, (pc', _))) as i ->
+              | Let (_, Closure (_, (pc', _), _)) as i ->
                   let program, functions =
                     traverse var_depth (program, []) pc' (depth + 1) limit
                   in
@@ -145,7 +145,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
       then
         List.fold_left block.body ~init:(program, functions) ~f:(fun st i ->
             match i with
-            | Let (_, Closure (_, (pc', _))) ->
+            | Let (_, Closure (_, (pc', _), _)) ->
                 traverse var_depth st pc' (depth + 1) limit
             | _ -> st)
       else
@@ -159,7 +159,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
         in
         let rec rewrite_body first st l =
           match l with
-          | (Let (f, (Closure (_, (pc', _)) as cl)) as i) :: rem
+          | (Let (f, (Closure (_, (pc', _), _) as cl)) as i) :: rem
             when first && does_not_start_with_closure rem ->
               let threshold = Config.Param.lambda_lifting_threshold () in
               let program, functions =
@@ -197,7 +197,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
                   }
                 in
                 let functions =
-                  Let (f'', Closure (List.map s ~f:snd, (pc'', []))) :: functions
+                  Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions
                 in
                 let rem', st = rewrite_body false (program, functions) rem in
                 ( Let (f, Apply { f = f''; args = List.map ~f:fst s; exact = true })
@@ -206,7 +206,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
               else
                 let rem', st = rewrite_body false (program, functions) rem in
                 i :: rem', st
-          | (Let (_, Closure (_, (pc', _))) as i) :: rem ->
+          | (Let (_, Closure (_, (pc', _), _)) as i) :: rem ->
               let st = traverse var_depth st pc' (depth + 1) limit in
               let rem', st = rewrite_body false st rem in
               i :: rem', st

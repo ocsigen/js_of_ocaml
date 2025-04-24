@@ -296,7 +296,6 @@ module Ctx = struct
     { blocks : block Addr.Map.t
     ; live : Deadcode.variable_uses
     ; share : Share.t
-    ; debug : Parse_bytecode.Debug.t
     ; exported_runtime : (Code.Var.t * bool ref) option
     ; should_export : bool
     ; effect_warning : bool ref
@@ -318,12 +317,10 @@ module Ctx = struct
       blocks
       live
       trampolined_calls
-      share
-      debug =
+      share =
     { blocks
     ; live
     ; share
-    ; debug
     ; exported_runtime
     ; should_export
     ; effect_warning = ref (not warn_on_unhandled_effect)
@@ -379,8 +376,8 @@ let bool e = J.ECond (e, one, zero)
 
 (****)
 
-let source_location ctx position pc =
-  match Parse_bytecode.Debug.find_loc ctx.Ctx.debug ~position pc with
+let source_location loc =
+  match loc with
   | Some pi -> J.Pi pi
   | None -> J.N
 
@@ -701,7 +698,7 @@ type state =
   ; dom : Structure.graph
   ; visited_blocks : Addr.Set.t ref
   ; ctx : Ctx.t
-  ; pc : Addr.t
+  ; cloc : Parse_info.t option
   }
 
 module DTree = struct
@@ -821,11 +818,11 @@ module DTree = struct
     loop 0 a
 end
 
-let build_graph ctx pc =
+let build_graph ctx pc cloc =
   let visited_blocks = ref Addr.Set.empty in
   let structure = Structure.build_graph ctx.Ctx.blocks pc in
   let dom = Structure.dominator_tree structure in
-  { visited_blocks; structure; dom; ctx; pc }
+  { visited_blocks; structure; dom; ctx; cloc }
 
 (****)
 
@@ -1358,10 +1355,10 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
       let* cx = access x in
       let* () = info mutable_p in
       return (Mlvalue.Block.field cx n, [])
-  | Closure (args, ((pc, _) as cont)) ->
-      let loc = source_location ctx After pc in
+  | Closure (args, ((pc, _) as cont), cloc) ->
+      let loc = source_location cloc in
       let fv = Addr.Map.find pc ctx.freevars in
-      let clo = compile_closure ctx cont in
+      let clo = compile_closure ctx cont cloc in
       let clo =
         J.EFun
           ( None
@@ -1910,7 +1907,7 @@ and compile_decision_tree kind st scope_stack loc_before cx loc_after dtree ~fal
         in
         ( never1 && never2
         , Js_simpl.if_statement
-            ~function_end:(fun () -> source_location st.ctx After st.pc)
+            ~function_end:(fun () -> source_location st.cloc)
             e'
             loc
             (Js_simpl.block iftrue)
@@ -1999,7 +1996,7 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
             | ECall _ -> (
                 (* We usually don't have a good locations for tail
                    calls, so use the end of the function instead *)
-                match source_location st.ctx After st.pc with
+                match source_location st.cloc with
                 | J.N -> loc
                 | loc -> loc)
             | _ -> loc
@@ -2184,8 +2181,8 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
             true, flush_all queue loc [ J.Break_statement (Some l), J.N ]
         | None -> compile_block st loc queue pc scope_stack ~fall_through)
 
-and compile_closure ctx (pc, args) =
-  let st = build_graph ctx pc in
+and compile_closure ctx (pc, args) (cloc : Parse_info.t option) =
+  let st = build_graph ctx pc cloc in
   let current_blocks = Structure.get_nodes st.structure in
   if debug () then Format.eprintf "@[<hv 2>closure {@;";
   let scope_stack = [] in
@@ -2209,7 +2206,7 @@ and compile_closure ctx (pc, args) =
 and collect_closures loc l =
   match l with
   | Event loc :: (Let (_, Closure _) :: _ as rem) -> collect_closures (J.Pi loc) rem
-  | (Let (x, Closure (_, (pc, _))) as i) :: rem ->
+  | (Let (x, Closure (_, (pc, _), _)) as i) :: rem ->
       let names', pcs', i', rem', loc' = collect_closures loc rem in
       x :: names', pc :: pcs', (i, loc) :: i', rem', loc'
   | _ -> [], [], [], l, loc
@@ -2253,7 +2250,7 @@ let generate_shared_value ctx =
 
 let compile_program ctx pc =
   if debug () then Format.eprintf "@[<v 2>";
-  let res = compile_closure ctx (pc, []) in
+  let res = compile_closure ctx (pc, []) None in
   let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@]@.";
   res
@@ -2266,8 +2263,7 @@ let f
     ~in_cps
     ~should_export
     ~warn_on_unhandled_effect
-    ~deadcode_sentinal
-    debug =
+    ~deadcode_sentinal =
   let mutated_vars = Freevars.f_mutable p in
   let freevars = Freevars.f p in
   let t' = Timer.make () in
@@ -2288,7 +2284,6 @@ let f
       live_vars
       trampolined_calls
       share
-      debug
   in
   let p = compile_program ctx p.start in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t';

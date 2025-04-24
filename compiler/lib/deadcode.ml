@@ -72,7 +72,7 @@ and mark_expr st e =
       List.iter args ~f:(fun x -> mark_var st x)
   | Block (_, a, _, _) -> Array.iter a ~f:(fun x -> mark_var st x)
   | Field (x, _, _) -> mark_var st x
-  | Closure (_, (pc, _)) -> mark_reachable st pc
+  | Closure (_, (pc, _), _) -> mark_reachable st pc
   | Special _ -> ()
   | Prim (_, l) ->
       List.iter l ~f:(fun x ->
@@ -140,7 +140,8 @@ let filter_cont blocks st (pc, args) =
 
 let filter_closure blocks st i =
   match i with
-  | Let (x, Closure (l, cont)) -> Let (x, Closure (l, filter_cont blocks st cont))
+  | Let (x, Closure (l, cont, gloc)) ->
+      Let (x, Closure (l, filter_cont blocks st cont, gloc))
   | _ -> i
 
 let filter_live_last blocks st l =

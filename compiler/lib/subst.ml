@@ -31,7 +31,7 @@ module Excluding_Binders = struct
         Apply { f = s f; args = List.map args ~f:(fun x -> s x); exact }
     | Block (n, a, k, mut) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
-    | Closure (l, pc) -> Closure (l, subst_cont s pc)
+    | Closure (l, pc, loc) -> Closure (l, subst_cont s pc, loc)
     | Special _ -> e
     | Prim (p, l) ->
         Prim
@@ -81,7 +81,7 @@ module Excluding_Binders = struct
       let blocks, visited =
         List.fold_left b.body ~init:(blocks, visited) ~f:(fun (blocks, visited) instr ->
             match instr with
-            | Let (_, Closure (_, (pc, _))) -> cont' s pc blocks visited
+            | Let (_, Closure (_, (pc, _), _)) -> cont' s pc blocks visited
             | _ -> blocks, visited)
       in
       Code.fold_children
@@ -118,7 +118,7 @@ module Including_Binders = struct
     | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
     | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
-    | Closure (l, pc) -> Closure (List.map l ~f:s, subst_cont s pc)
+    | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont s pc, loc)
     | Special _ -> e
     | Prim (p, l) ->
         Prim

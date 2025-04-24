@@ -103,7 +103,7 @@ let cont_deps blocks vars deps defs (pc, args) =
 let expr_deps blocks vars deps defs x e =
   match e with
   | Constant _ | Apply _ | Prim _ | Special _ -> ()
-  | Closure (l, cont) ->
+  | Closure (l, cont, _) ->
       List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
   | Block (_, a, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)

@@ -23,13 +23,7 @@ open Stdlib
 module Debug : sig
   type t
 
-  type position =
-    | Before
-    | After
-
   val create : include_cmis:bool -> bool -> t
-
-  val find_loc : t -> position:position -> Code.Addr.t -> Parse_info.t option
 
   val is_empty : t -> bool
 
@@ -81,10 +75,7 @@ val from_channel :
   -> [ `Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe ]
 
 val from_string :
-     prims:string array
-  -> debug:Instruct.debug_event list array
-  -> string
-  -> Code.program * Debug.t
+  prims:string array -> debug:Instruct.debug_event list array -> string -> Code.program
 
 val predefined_exceptions : unit -> Code.program * Unit_info.t
 
