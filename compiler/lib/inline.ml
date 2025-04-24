@@ -166,7 +166,7 @@ let rewrite_closure blocks cont_pc clos_pc =
 
 (****)
 
-let inline live_vars closures pc (outer, p) =
+let inline inline_count live_vars closures pc (outer, p) =
   let block = Addr.Map.find pc p.blocks in
   let body, (outer, branch, p) =
     List.fold_right
@@ -197,7 +197,7 @@ let inline live_vars closures pc (outer, p) =
                  (* Inlining the code of an optimizable function could
                      make this code unoptimized. (wrt to Jit compilers) *)
               && f_size < Config.Param.inlining_limit ()
-            then
+            then (
               let blocks, cont_pc, free_pc =
                 match rem, branch with
                 | [], Return y when Var.compare x y = 0 ->
@@ -226,7 +226,8 @@ let inline live_vars closures pc (outer, p) =
                   blocks
               in
               let outer = { outer with size = outer.size + f_size } in
-              [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc })
+              incr inline_count;
+              [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc }))
             else
               match cl_simpl with
               | Some (bound_vars, free_vars, recursive, tc_params)
@@ -292,6 +293,7 @@ let inline live_vars closures pc (outer, p) =
                         blocks
                     in
                     let outer = { outer with size = outer.size + f_size } in
+                    incr inline_count;
                     [], (outer, Branch (fresh_addr, args), { p with blocks; free_pc })
               | _ -> i :: rem, state)
         | _ -> i :: rem, state)
@@ -302,7 +304,10 @@ let inline live_vars closures pc (outer, p) =
 
 let times = Debug.find "times"
 
+let stats = Debug.find "stats"
+
 let f p live_vars =
+  let inline_count = ref 0 in
   Code.invariant p;
   let t = Timer.make () in
   let closures = get_closures p in
@@ -313,7 +318,7 @@ let f p live_vars =
         let traverse outer =
           Code.traverse
             { fold = Code.fold_children }
-            (inline live_vars closures)
+            (inline inline_count live_vars closures)
             pc
             p.blocks
             (outer, p)
@@ -333,5 +338,6 @@ let f p live_vars =
       (closures, p)
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
+  if stats () then Format.eprintf "Stats - inline: %d optimizations@." !inline_count;
   Code.invariant p;
   p
