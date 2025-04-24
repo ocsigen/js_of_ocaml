@@ -70,9 +70,13 @@ let specialize_js (p, info) =
   if debug () then Format.eprintf "Specialize js...@.";
   Specialize_js.f info p
 
-let specialize_js_once p =
+let specialize_js_once_before p =
   if debug () then Format.eprintf "Specialize js once...@.";
-  Specialize_js.f_once p
+  Specialize_js.f_once_before p
+
+let specialize_js_once_after p =
+  if debug () then Format.eprintf "Specialize js once...@.";
+  Specialize_js.f_once_after p
 
 let specialize' (p, info) =
   let p = specialize_1 (p, info) in
@@ -678,11 +682,12 @@ let optimize ~profile p =
   in
   let opt =
     Specialize.switches
-    +> specialize_js_once
+    +> specialize_js_once_before
     +> (match profile with
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
+    +> specialize_js_once_after
     +> exact_calls ~deadcode_sentinal profile
     +> effects ~deadcode_sentinal
     +> map_fst
