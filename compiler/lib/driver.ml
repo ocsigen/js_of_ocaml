@@ -78,12 +78,10 @@ let specialize_js_once_after p =
   if debug () then Format.eprintf "Specialize js once...@.";
   Specialize_js.f_once_after p
 
-let specialize' (p, info) =
+let specialize (p, info) =
   let p = specialize_1 (p, info) in
   let p = specialize_js (p, info) in
   p, info
-
-let specialize p = fst (specialize' p)
 
 let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p else p
 
@@ -167,26 +165,24 @@ let o1 : 'a -> 'a =
   print
   +> tailcall
   +> flow
-  +> specialize'
+  +> specialize
   +> eval
   +> inline (* inlining may reveal new tailcall opt *)
   +> deadcode
   +> tailcall
   +> phi
   +> flow
-  +> specialize'
+  +> specialize
   +> eval
   +> inline
   +> deadcode
   +> print
   +> flow
-  +> specialize'
+  +> specialize
   +> eval
   +> inline
   +> deadcode
   +> phi
-  +> flow
-  +> specialize
   +> identity
 
 (* o2 *)
