@@ -22,21 +22,31 @@ let%expect_test "direct calls without --effects=cps" =
   let code =
     compile_and_parse
       {|
+         let l = ref []
+
          (* Arity of the argument of a function / direct call *)
          let test1 () =
-           let f g x = try g x with e -> raise e in
+           let f g x =
+             l := (fun () -> ()) :: !l; (* pervent inlining *)
+             try g x with e -> raise e in
            ignore (f (fun x -> x + 1) 7);
            ignore (f (fun x -> x *. 2.) 4.)
 
          (* Arity of the argument of a function / CPS call *)
          let test2 () =
-           let f g x = try g x with e -> raise e in
+           let f g x =
+             l := (fun () -> ()) :: !l; (* pervent inlining *)
+             try g x with e -> raise e in
            ignore (f (fun x -> x + 1) 7);
            ignore (f (fun x -> x ^ "a") "a")
 
          (* Arity of functions in a functor / direct call *)
          let test3 x =
-           let module F(_ : sig end) = struct let f x = x + 1 end in
+       let module F(_ : sig end) = struct
+         let r = ref 0
+         let () = for _ = 0 to 2 do incr r done (* pervent inlining *)
+         let f x = x + 1
+       end in
            let module M1 = F (struct end) in
            let module M2 = F (struct end) in
            (M1.f 1, M2.f 2)
@@ -44,7 +54,11 @@ let%expect_test "direct calls without --effects=cps" =
          (* Arity of functions in a functor / CPS call *)
          let test4 x =
            let module F(_ : sig end) =
-             struct let f x = Printf.printf "%d" x end in
+             struct
+               let r = ref 0
+               let () = for _ = 0 to 2 do incr r done (* pervent inlining *)
+               let f x = Printf.printf "%d" x
+             end in
            let module M1 = F (struct end) in
            let module M2 = F (struct end) in
            M1.f 1; M2.f 2
@@ -58,6 +72,7 @@ let%expect_test "direct calls without --effects=cps" =
     {|
     function test1(param){
      function f(g, x){
+      l[1] = [0, function(param){return 0;}, l[1]];
       try{caml_call1(g, x); return;}
       catch(e$0){
        var e = caml_wrap_exception(e$0);
@@ -71,6 +86,7 @@ let%expect_test "direct calls without --effects=cps" =
     //end
     function test2(param){
      function f(g, x){
+      l[1] = [0, function(param){return 0;}, l[1]];
       try{caml_call1(g, x); return;}
       catch(e$0){
        var e = caml_wrap_exception(e$0);
@@ -83,19 +99,26 @@ let%expect_test "direct calls without --effects=cps" =
     }
     //end
     function test3(x){
-     function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F([0]), M2 = F([0]), _a_ = M2[1].call(null, 2);
-     return [0, M1[1].call(null, 1), _a_];
+     function F(symbol){
+      var r = [0, 0], for$ = 0;
+      for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
+      function f(x){return x + 1 | 0;}
+      return [0, , f];
+     }
+     var M1 = F([0]), M2 = F([0]), _b_ = M2[2].call(null, 2);
+     return [0, M1[2].call(null, 1), _b_];
     }
     //end
     function test4(x){
      function F(symbol){
+      var r = [0, 0], for$ = 0;
+      for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
       function f(x){return caml_call2(Stdlib_Printf[2], _a_, x);}
-      return [0, f];
+      return [0, , f];
      }
      var M1 = F([0]), M2 = F([0]);
-     M1[1].call(null, 1);
-     return M2[1].call(null, 2);
+     M1[2].call(null, 1);
+     return M2[2].call(null, 2);
     }
     //end
     |}]
@@ -105,21 +128,31 @@ let%expect_test "direct calls with --effects=cps" =
     compile_and_parse
       ~effects:`Cps
       {|
+         let l = ref []
+
          (* Arity of the argument of a function / direct call *)
          let test1 () =
-           let f g x = try g x with e -> raise e in
+           let f g x =
+             l := (fun () -> ()) :: !l; (* pervent inlining *)
+             try g x with e -> raise e in
            ignore (f (fun x -> x + 1) 7);
            ignore (f (fun x -> x *. 2.) 4.)
 
          (* Arity of the argument of a function / CPS call *)
          let test2 () =
-           let f g x = try g x with e -> raise e in
+           let f g x =
+             l := (fun () -> ()) :: !l; (* pervent inlining *)
+             try g x with e -> raise e in
            ignore (f (fun x -> x + 1) 7);
            ignore (f (fun x -> x ^ "a") "a")
 
          (* Arity of functions in a functor / direct call *)
          let test3 x =
-           let module F(_ : sig end) = struct let f x = x + 1 end in
+       let module F(_ : sig end) = struct
+         let r = ref 0
+         let () = for _ = 0 to 2 do incr r done (* pervent inlining *)
+         let f x = x + 1
+       end in
            let module M1 = F (struct end) in
            let module M2 = F (struct end) in
            (M1.f 1, M2.f 2)
@@ -127,7 +160,11 @@ let%expect_test "direct calls with --effects=cps" =
          (* Arity of functions in a functor / CPS call *)
          let test4 x =
            let module F(_ : sig end) =
-             struct let f x = Printf.printf "%d" x end in
+             struct
+               let r = ref 0
+               let () = for _ = 0 to 2 do incr r done (* pervent inlining *)
+               let f x = Printf.printf "%d" x
+             end in
            let module M1 = F (struct end) in
            let module M2 = F (struct end) in
            M1.f 1; M2.f 2
@@ -141,6 +178,7 @@ let%expect_test "direct calls with --effects=cps" =
     {|
     function test1(param, cont){
      function f(g, x){
+      l[1] = [0, function(param, cont){return cont(0);}, l[1]];
       try{g(); return;}
       catch(e$0){
        var e = caml_wrap_exception(e$0);
@@ -154,19 +192,20 @@ let%expect_test "direct calls with --effects=cps" =
     //end
     function test2(param, cont){
      function f(g, x, cont){
+      l[1] = [0, function(param, cont){return cont(0);}, l[1]];
       runtime.caml_push_trap
        (function(e){
          var raise = caml_pop_trap(), e$0 = caml_maybe_attach_backtrace(e, 0);
          return raise(e$0);
         });
       return caml_exact_trampoline_cps_call
-              (g, x, function(_a_){caml_pop_trap(); return cont();});
+              (g, x, function(_b_){caml_pop_trap(); return cont();});
      }
      return caml_exact_trampoline_cps_call$0
              (f,
               function(x, cont){return cont();},
               7,
-              function(_a_){
+              function(_b_){
                return caml_exact_trampoline_cps_call$0
                        (f,
                         function(x, cont){
@@ -174,29 +213,36 @@ let%expect_test "direct calls with --effects=cps" =
                                  (Stdlib[28], x, cst_a$0, cont);
                         },
                         cst_a,
-                        function(_a_){return cont(0);});
+                        function(_b_){return cont(0);});
               });
     }
     //end
     function test3(x, cont){
-     function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-     var M1 = F(), M2 = F(), _a_ = M2[1].call(null, 2);
-     return cont([0, M1[1].call(null, 1), _a_]);
+     function F(symbol){
+      var r = [0, 0], for$ = 0;
+      for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
+      function f(x){return x + 1 | 0;}
+      return [0, , f];
+     }
+     var M1 = F(), M2 = F(), _b_ = M2[2].call(null, 2);
+     return cont([0, M1[2].call(null, 1), _b_]);
     }
     //end
     function test4(x, cont){
      function F(symbol){
+      var r = [0, 0], for$ = 0;
+      for(;;){r[1]++; var _b_ = for$ + 1 | 0; if(2 === for$) break; for$ = _b_;}
       function f(x, cont){
        return caml_trampoline_cps_call3(Stdlib_Printf[2], _a_, x, cont);
       }
-      return [0, f];
+      return [0, , f];
      }
      var M1 = F(), M2 = F();
      return caml_exact_trampoline_cps_call
-             (M1[1],
+             (M1[2],
               1,
               function(_a_){
-               return caml_exact_trampoline_cps_call(M2[1], 2, cont);
+               return caml_exact_trampoline_cps_call(M2[2], 2, cont);
               });
     }
     //end
