@@ -159,7 +159,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
         in
         let rec rewrite_body first st l =
           match l with
-          | (Let (f, (Closure (_, (pc', _), cloc) as cl)) as i) :: rem
+          | (Let (f, (Closure (_, (pc', _), _) as cl)) as i) :: rem
             when first && does_not_start_with_closure rem ->
               let threshold = Config.Param.lambda_lifting_threshold () in
               let program, functions =
@@ -197,7 +197,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
                   }
                 in
                 let functions =
-                  Let (f'', Closure (List.map s ~f:snd, (pc'', []), cloc)) :: functions
+                  Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions
                 in
                 let rem', st = rewrite_body false (program, functions) rem in
                 ( Let (f, Apply { f = f''; args = List.map ~f:fst s; exact = true })

@@ -122,7 +122,7 @@ and rewrite_body
   (* We lift possibly mutually recursive closures (that are created by contiguous
      statements) together. Isolated closures are lambda-lifted normally. *)
   match body with
-  | Let (f, (Closure (_, (pc', _), cloc) as cl)) :: rem
+  | Let (f, (Closure (_, (pc', _), _) as cl)) :: rem
     when List.is_empty current_contiguous
          && (inside_lifted || Var.Set.mem f to_lift)
          && not (starts_with_closure rem) ->
@@ -166,7 +166,7 @@ and rewrite_body
       in
       (* Add to returned list of lifter functions definitions *)
       let functions =
-        Let (f'', Closure (List.map s ~f:snd, (pc'', []), cloc)) :: functions
+        Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions
       in
       let lifters = Var.Map.add f f' lifters in
       rewrite_body

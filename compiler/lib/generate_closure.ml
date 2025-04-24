@@ -156,7 +156,7 @@ module Trampoline = struct
     in
     block
 
-  let wrapper_closure pc args = Closure (args, (pc, []), None)
+  let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
 
   let f free_pc blocks closures_map component =
     match component with
@@ -199,7 +199,9 @@ module Trampoline = struct
                 wrapper_block new_f ~args:new_args ~counter:new_counter start_loc
               in
               let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
-              let instr_wrapper = Let (ci.f_name, wrapper_closure wrapper_pc new_args) in
+              let instr_wrapper =
+                Let (ci.f_name, wrapper_closure wrapper_pc new_args ci.cloc)
+              in
               let instr_real =
                 match counter with
                 | None -> Let (new_f, Closure (ci.args, ci.cont, ci.cloc))

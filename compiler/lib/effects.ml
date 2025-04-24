@@ -290,8 +290,7 @@ type st =
   ; blocks : Code.block Addr.Map.t
   ; cfg : control_flow_graph
   ; jc : jump_closures
-  ; closure_info :
-      (Addr.t, Var.t list * (Addr.t * Var.t list) * Parse_info.t option) Hashtbl.t
+  ; closure_info : (Addr.t, Var.t list * (Addr.t * Var.t list)) Hashtbl.t
         (* Associates a function's address with its CPS parameters and CPS continuation *)
   ; cps_needed : Var.Set.t
   ; blocks_to_transform : Addr.Set.t
@@ -532,9 +531,9 @@ let rewrite_instr ~st (instr : instr) : instr =
       assert (not (double_translate ()));
       (* Add the continuation parameter, and change the initial block if
          needed *)
-      let cps_params, cps_cont, cps_cloc = Hashtbl.find st.closure_info pc in
+      let cps_params, cps_cont = Hashtbl.find st.closure_info pc in
       st.in_cps := Var.Set.add x !(st.in_cps);
-      Let (x, Closure (cps_params, cps_cont, cps_cloc))
+      Let (x, Closure (cps_params, cps_cont, None))
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
       match arity with
       | Pc (Int a) ->
@@ -722,9 +721,9 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
         ->
           let direct_c = Var.fork x in
           let cps_c = Var.fork x in
-          let cps_params, cps_cont, cps_cloc = Hashtbl.find closure_info pc in
+          let cps_params, cps_cont = Hashtbl.find closure_info pc in
           [ Let (direct_c, Closure (params, cont, cloc))
-          ; Let (cps_c, Closure (cps_params, cps_cont, cps_cloc))
+          ; Let (cps_c, Closure (cps_params, cps_cont, None))
           ; Let (x, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
           ]
       | Let (x, Prim (Extern "%resume", [ stack; f; arg; tail ])) ->
@@ -887,7 +886,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               Hashtbl.add
                 st.closure_info
                 initial_start
-                (params' @ [ k ], (cps_start, cps_args), None);
+                (params' @ [ k ], (cps_start, cps_args));
               fun pc block ->
                 let cps_block = cps_block ~st ~k ~orig_pc:pc block in
                 ( rewrite_direct_block
@@ -900,10 +899,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             else if function_needs_cps && not (double_translate ())
             then (
               let k = Var.fresh_n "cont" in
-              Hashtbl.add
-                st.closure_info
-                initial_start
-                (params @ [ k ], (start, args), None);
+              Hashtbl.add st.closure_info initial_start (params @ [ k ], (start, args));
               fun pc block -> cps_block ~st ~k ~orig_pc:pc block, None)
             else
               fun pc block ->
@@ -962,7 +958,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
     else
       match Hashtbl.find_opt closure_info p.start with
       | None -> p
-      | Some (cps_params, cps_cont, cps_cloc) ->
+      | Some (cps_params, cps_cont) ->
           (* Call [caml_cps_trampoline] to set up the execution context. *)
           let new_start = p.free_pc in
           let blocks =
@@ -973,7 +969,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               new_start
               { params = []
               ; body =
-                  [ Let (main, Closure (cps_params, cps_cont, cps_cloc))
+                  [ Let (main, Closure (cps_params, cps_cont, None))
                   ; Let (args, Prim (Extern "%js_array", []))
                   ; Let (res, Prim (Extern "caml_cps_trampoline", [ Pv main; Pv args ]))
                   ]
