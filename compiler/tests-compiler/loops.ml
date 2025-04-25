@@ -480,8 +480,9 @@ let add_substitute =
             }
             stop$0 = lim$0;
            }
-           _b_ =
-            [0, caml_call3(string_sub, s, start$0, stop$0 - start$0 | 0), stop$0];
+           var
+            next_i = stop$0,
+            ident = caml_call3(string_sub, s, start$0, stop$0 - start$0 | 0);
            break a;
           }
          }
@@ -503,10 +504,9 @@ let add_substitute =
           }
           else if(caml_string_get(s, stop) === closing){
            if(0 === k){
-            _b_ =
-             [0,
-              caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0),
-              stop + 1 | 0];
+            next_i = stop + 1 | 0;
+            ident =
+             caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0);
             break;
            }
            var i$0 = stop + 1 | 0, k$1 = k - 1 | 0;
@@ -516,7 +516,6 @@ let add_substitute =
           else{var i$1 = stop + 1 | 0; stop = i$1;}
          }
         }
-        var next_i = _b_[2], ident = _b_[1];
         caml_call2(add_string, b, caml_call1(f, ident));
         previous = 32;
         i$4 = next_i;
