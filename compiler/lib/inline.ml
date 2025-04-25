@@ -326,7 +326,9 @@ let interesting_parameters ~context info =
    code elimination, ...
 *)
 let functor_like ~context info =
-  (context.aggressive || body_size ~context info <= 15)
+  (match Config.target () with
+  | `Wasm when context.aggressive -> true
+  | _ -> body_size ~context info <= 15)
   && (not info.recursive)
   && (not (contains_loop ~context info))
   && returns_a_block ~context info
