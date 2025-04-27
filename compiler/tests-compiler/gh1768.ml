@@ -56,7 +56,7 @@ let () =
         Assert_failure = global_data.Assert_failure,
         _a_ = [0, caml_string_of_jsbytes("test.ml"), 4, 27],
         _b_ = [0, caml_string_of_jsbytes("test.ml"), 8, 2];
-       function h(x){x[1] = function(x, y){return x + y | 0;};}
+       function h(x){x[1] = runtime.caml_add;}
        function f(param){
         return [0,
                 function(param){
@@ -73,4 +73,5 @@ let () =
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

@@ -1707,13 +1707,13 @@ class simpl =
           match e1, e2 with
           | _, ENum n when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
           | ENum n, _ when Num.is_neg n -> EBin (Minus, e2, ENum (Num.neg n))
-          | ENum zero, (ENum _ as x) when is_zero zero -> x
-          | (ENum _ as x), ENum zero when is_zero zero -> x
+          | ENum zero, (ENum _ as x) when Num.is_zero zero -> x
+          | (ENum _ as x), ENum zero when Num.is_zero zero -> x
           | _ -> e)
       | EBin (Minus, e1, e2) -> (
           match e1, e2 with
           | _, ENum n when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
-          | (ENum _ as x), ENum zero when is_zero zero -> x
+          | (ENum _ as x), ENum zero when Num.is_zero zero -> x
           | _ -> e)
       | EFun
           (None, (({ generator = false; async = true | false }, _, body, _) as fun_decl))

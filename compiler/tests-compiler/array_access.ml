@@ -33,8 +33,9 @@ let%expect_test "array_set" =
   print_fun_decl program (Some "some_name");
   [%expect
     {|
-    function some_name(a, n){runtime.caml_check_bound(a, n)[1 + n] = n; return 1;}
-    //end |}]
+    function some_name(a, n){runtime.caml_check_bound(a, n)[n + 1] = n; return 1;}
+    //end
+    |}]
 
 let%expect_test "array_set" =
   compile_and_run array_set;
