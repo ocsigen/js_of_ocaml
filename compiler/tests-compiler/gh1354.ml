@@ -67,7 +67,7 @@ with Exit ->
        catch(_e_){
         var _c_ = caml_wrap_exception(_e_);
         if(_c_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_c_, 0);
-        caml_call2(Stdlib_Printf[3], _d_, _b_ + 0 | 0);
+        caml_call2(Stdlib_Printf[3], _d_, _b_ | 0);
         var Test = [0];
         runtime.caml_register_global(3, Test, "Test");
         0;
@@ -148,14 +148,14 @@ with Exit ->
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
         catch(_k_){
-         caml_call3(Stdlib_Printf[3], _h_, _g_ + 0 | 0, _b_);
+         caml_call3(Stdlib_Printf[3], _h_, _g_ | 0, _b_);
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
        }
        catch(_j_){
         var _d_ = caml_wrap_exception(_j_);
         if(_d_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_d_, 0);
-        caml_call3(Stdlib_Printf[3], _e_, _c_ + 0 | 0, _b_);
+        caml_call3(Stdlib_Printf[3], _e_, _c_ | 0, _b_);
         var Test = [0];
         runtime.caml_register_global(4, Test, "Test");
         0;
