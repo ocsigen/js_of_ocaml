@@ -746,7 +746,8 @@
      /*<<stdlib.ml:488:20>>*/ return output_bytes(stdout, s) /*<<stdlib.ml:488:41>>*/ ;
    }
    function print_int(i){
-     /*<<stdlib.ml:489:56>>*/ return output_string(stdout, "" + i);
+     /*<<stdlib.ml:266:2>>*/ return  /*<<stdlib.ml:489:56>>*/ output_string
+            (stdout,  /*<<stdlib.ml:266:2>>*/ caml_format_int_special(i)) /*<<stdlib.ml:489:56>>*/ ;
    }
    function print_float(f){
      /*<<stdlib.ml:490:41>>*/ return  /*<<stdlib.ml:490:60>>*/ output_string
@@ -771,7 +772,8 @@
      /*<<stdlib.ml:499:20>>*/ return output_bytes(stderr, s) /*<<stdlib.ml:499:41>>*/ ;
    }
    function prerr_int(i){
-     /*<<stdlib.ml:500:56>>*/ return output_string(stderr, "" + i);
+     /*<<stdlib.ml:266:2>>*/ return  /*<<stdlib.ml:500:56>>*/ output_string
+            (stderr,  /*<<stdlib.ml:266:2>>*/ caml_format_int_special(i)) /*<<stdlib.ml:500:56>>*/ ;
    }
    function prerr_float(f){
      /*<<stdlib.ml:501:41>>*/ return  /*<<stdlib.ml:501:60>>*/ output_string

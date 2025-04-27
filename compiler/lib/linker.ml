@@ -795,8 +795,8 @@ let inline ~name =
   | { id; inline; _ } ->
       if inline
       then
-        let code, _has_macro, _req, _deprecated = Hashtbl.find code_pieces id in
+        let code, _has_macro, req, _deprecated = Hashtbl.find code_pieces id in
         match unpack code with
-        | [ (Function_declaration (_, f), _) ] -> Some (Javascript.EFun (None, f))
+        | [ (Function_declaration (_, f), _) ] -> Some (req, Javascript.EFun (None, f))
         | _ -> None
       else None

@@ -1425,7 +1425,8 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
                 if String.starts_with name ~prefix:"%"
                 then failwith (Printf.sprintf "Unresolved internal primitive: %s" name);
                 match Linker.inline ~name with
-                | Some f -> (
+                | Some (req, f)
+                  when Option.is_none ctx.Ctx.exported_runtime || List.is_empty req -> (
                     let c = new Js_traverse.rename_variable ~esm:false in
                     let f = c#expression f in
                     match f with
@@ -1461,7 +1462,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
                         let r = new subst sub in
                         return (r#expression body)
                     | _ -> assert false)
-                | None ->
+                | None | Some _ ->
                     let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
                     let* () = info ~need_loc:true (kind (Primitive.kind name)) in
                     let* args = list_map (fun x -> access' ~ctx x) l in

@@ -143,7 +143,8 @@ function caml_finish_formatting(f, rawbuffer) {
 
 //Provides: caml_format_int_special const
 //Alias: %caml_format_int_special
+//Requires: caml_string_of_jsstring
 //Inline
 function caml_format_int_special(x) {
-  return "" + x;
+  return caml_string_of_jsstring ("" + x);
 }

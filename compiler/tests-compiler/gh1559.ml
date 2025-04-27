@@ -60,8 +60,8 @@ let () = my_ref := 2
 |}
   in
   Util.compile_and_run prog;
-  [%expect {|
-    1 |}];
+  [%expect
+    {| 1 |}];
   let program = Util.compile_and_parse prog in
   Util.print_program program;
   [%expect
@@ -165,8 +165,8 @@ let () = my_ref := 2
 |}
   in
   Util.compile_and_run prog;
-  [%expect {|
-    2 |}];
+  [%expect
+    {| 2 |}];
   let program = Util.compile_and_parse prog in
   Util.print_program program;
   [%expect
