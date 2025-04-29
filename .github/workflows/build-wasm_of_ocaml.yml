@@ -97,9 +97,10 @@ jobs:
       - run: opam install conf-pkg-config conf-mingw-w64-gcc-i686 conf-mingw-w64-g++-x86_64
         if: runner.os == 'Windows'
 
-      - name: Pin dune
-        if: runner.os == 'Windows'
-        run: opam pin add -n dune https://github.com/hhugo/dune.git#shorter-path-jsoo
+      # Pin Dune to a version which supports the new --effects flag
+      # (https://github.com/ocaml/dune/pull/11222).
+      - name: Pin Dune
+        run: opam pin add --no-action dune https://github.com/OlivierNicole/dune.git#jsoo-effects- name: Pin dune
 
       - name: Install dune
         run: opam install dune
