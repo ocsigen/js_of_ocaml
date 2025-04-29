@@ -69,6 +69,10 @@ let program_deps { blocks; _ } =
     (fun _pc block ->
       List.iter block.body ~f:(fun i ->
           match i with
+          | Let (x, Prim (Extern "%identity", [ Pv y ])) ->
+              add_var vars x;
+              add_dep deps x y;
+              add_def vars defs x y
           | Let (x, e) ->
               add_var vars x;
               expr_deps blocks vars deps defs x e
