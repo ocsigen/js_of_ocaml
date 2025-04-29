@@ -217,6 +217,7 @@ let round profile : 'a -> 'a =
   print
   +> tailcall
   +> (flow +> specialize +> eval +> fst)
+  +> Ref_unboxing.f
   +> inline profile
   +> phi
   +> deadcode
