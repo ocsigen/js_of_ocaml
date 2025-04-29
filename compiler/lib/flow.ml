@@ -360,53 +360,25 @@ let the_def_of info x =
         x
   | Pc c -> Some (Constant c)
 
-(* If [constant_identical a b = true], then the two values cannot be
-   distinguished, i.e., they are not different objects (and [caml_js_equals a b
-   = true]) and if both are floats, they are bitwise equal. *)
-let constant_identical ~(target : [ `JavaScript | `Wasm ]) a b =
-  match a, b, target with
-  | Int i, Int j, _ -> Targetint.equal i j
-  | Float a, Float b, `JavaScript -> Int64.equal a b
-  | Float _, Float _, `Wasm -> false
-  | NativeString a, NativeString b, `JavaScript -> Native_string.equal a b
-  | NativeString _, NativeString _, `Wasm ->
-      false
-      (* Native strings are boxed (JavaScript objects) in Wasm and are
-          possibly different objects *)
-  | String a, String b, `JavaScript -> Config.Flag.use_js_string () && String.equal a b
-  | String _, String _, `Wasm ->
-      false (* Strings are boxed in Wasm and are possibly different objects *)
-  | Int32 _, Int32 _, `Wasm ->
-      false (* [Int32]s are boxed in Wasm and are possibly different objects *)
-  | Int32 a, Int32 b, `JavaScript -> Int32.equal a b
-  | NativeInt _, NativeInt _, `Wasm ->
-      false (* [NativeInt]s are boxed in Wasm and are possibly different objects *)
-  | NativeInt a, NativeInt b, `JavaScript -> Int32.equal a b
-  (* All other values may be distinct objects and thus different by [caml_js_equals]. *)
-  | Int64 _, Int64 _, _ -> false
-  | Tuple _, Tuple _, _ -> false
-  | Float_array _, Float_array _, _ -> false
-  | (Int _ | Float _ | Int64 _ | Int32 _ | NativeInt _), _, _ -> false
-  | (String _ | NativeString _), _, _ -> false
-  | (Float_array _ | Tuple _), _, _ -> false
-
-let the_const_of ~target info x =
+let the_const_of ~eq info x =
   match x with
   | Pv x ->
       get_approx
         info
         (fun x ->
-          match info.info_defs.(Var.idx x), target with
-          | Expr (Constant ((Float _ | Int _ | NativeString _) as c)), _ -> Some c
-          | Expr (Constant ((Int32 _ | NativeInt _) as c)), `JavaScript -> Some c
-          | Expr (Constant (String _ as c)), _ when Config.Flag.safe_string () -> Some c
-          | Expr (Constant c), _ ->
-              if Var.ISet.mem info.info_possibly_mutable x then None else Some c
+          match info.info_defs.(Var.idx x) with
+          | Expr
+              (Constant
+                 ((Float _ | Int _ | Int32 _ | Int64 _ | NativeInt _ | NativeString _) as
+                  c)) -> Some c
+          | Expr (Constant c)
+            when Config.Flag.safe_string ()
+                 || not (Var.ISet.mem info.info_possibly_mutable x) -> Some c
           | _ -> None)
         None
         (fun u v ->
           match u, v with
-          | Some i, Some j when constant_identical ~target i j -> u
+          | Some i, Some j when eq i j -> u
           | _ -> None)
         x
   | Pc c -> Some c
@@ -429,13 +401,13 @@ let the_int info x =
   | Pc (Int c) -> Some c
   | Pc _ -> None
 
-let the_string_of ~target info x =
-  match the_const_of info ~target x with
+let the_string_of info x =
+  match the_const_of ~eq:(fun _ _ -> false) info x with
   | Some (String i) -> Some i
   | _ -> None
 
-let the_native_string_of ~target info x =
-  match the_const_of ~target info x with
+let the_native_string_of info x =
+  match the_const_of ~eq:(fun _ _ -> false) info x with
   | Some (NativeString i) -> Some i
   | Some (String i) ->
       (* This function is used to optimize the primitives that access

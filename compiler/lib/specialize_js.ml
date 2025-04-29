@@ -34,7 +34,7 @@ let specialize_instr opt_count ~target info i =
       (* We can implement the special case where the format string is "%s" in JavaScript
          in a concise and efficient way with [""+x]. It does not make as much sense in
          Wasm to have a special case for this. *)
-      match the_string_of ~target info y with
+      match the_string_of info y with
       | Some "%d" -> (
           incr opt_count;
           match the_int info z with
@@ -53,15 +53,15 @@ let specialize_instr opt_count ~target info i =
         , Prim
             ( Extern (("caml_js_var" | "caml_js_expr" | "caml_pure_js_expr") as prim)
             , [ (Pv _ as y) ] ) )
-    , target ) -> (
-      match the_string_of ~target info y with
+    , _ ) -> (
+      match the_string_of info y with
       | Some s ->
           incr opt_count;
           Let (x, Prim (Extern prim, [ Pc (String s) ]))
       | _ -> i)
   | Let (x, Prim (Extern ("caml_register_named_value" as prim), [ (Pv _ as y); z ])), _
     -> (
-      match the_string_of ~target info y with
+      match the_string_of info y with
       | Some s when Primitive.need_named_value s ->
           incr opt_count;
           Let (x, Prim (Extern prim, [ Pc (String s); z ]))
@@ -84,7 +84,7 @@ let specialize_instr opt_count ~target info i =
           Let (x, Prim (Extern "%caml_js_opt_fun_call", f :: Array.to_list a))
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_meth_call", [ o; m; a ])), _ -> (
-      match the_string_of ~target info m with
+      match the_string_of info m with
       | Some m when Javascript.is_ident m -> (
           match the_block_contents_of info a with
           | Some a ->
@@ -118,7 +118,7 @@ let specialize_instr opt_count ~target info i =
               match the_def_of info (Pv x) with
               | Some (Block (_, [| k; v |], _, _)) ->
                   let k =
-                    match the_string_of ~target info (Pv k) with
+                    match the_string_of info (Pv k) with
                     | Some s when String.is_valid_utf_8 s ->
                         Pc (NativeString (Native_string.of_string s))
                     | Some _ | None -> raise Exit
@@ -133,32 +133,32 @@ let specialize_instr opt_count ~target info i =
         Let (x, Prim (Extern "%caml_js_opt_object", List.flatten (Array.to_list a)))
       with Exit -> i)
   | Let (x, Prim (Extern "caml_js_get", [ o; (Pv _ as f) ])), _ -> (
-      match the_native_string_of ~target info f with
+      match the_native_string_of info f with
       | Some s ->
           incr opt_count;
           Let (x, Prim (Extern "caml_js_get", [ o; Pc (NativeString s) ]))
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_set", [ o; (Pv _ as f); v ])), _ -> (
-      match the_native_string_of ~target info f with
+      match the_native_string_of info f with
       | Some s ->
           incr opt_count;
           Let (x, Prim (Extern "caml_js_set", [ o; Pc (NativeString s); v ]))
       | _ -> i)
   | Let (x, Prim (Extern "caml_js_delete", [ o; (Pv _ as f) ])), _ -> (
-      match the_native_string_of ~target info f with
+      match the_native_string_of info f with
       | Some s ->
           incr opt_count;
           Let (x, Prim (Extern "caml_js_delete", [ o; Pc (NativeString s) ]))
       | _ -> i)
   | Let (x, Prim (Extern ("caml_jsstring_of_string" | "caml_js_from_string"), [ y ])), _
     -> (
-      match the_string_of ~target info y with
+      match the_string_of info y with
       | Some s when String.is_valid_utf_8 s ->
           incr opt_count;
           Let (x, Constant (NativeString (Native_string.of_string s)))
       | Some _ | None -> i)
   | Let (x, Prim (Extern "caml_jsbytes_of_string", [ y ])), _ -> (
-      match the_string_of ~target info y with
+      match the_string_of info y with
       | Some s ->
           incr opt_count;
           Let (x, Constant (NativeString (Native_string.of_bytestring s)))
