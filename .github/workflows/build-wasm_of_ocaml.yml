@@ -100,7 +100,7 @@ jobs:
       # Pin Dune to a version which supports the new --effects flag
       # (https://github.com/ocaml/dune/pull/11222).
       - name: Pin Dune
-        run: opam pin add --no-action dune https://github.com/OlivierNicole/dune.git#jsoo-effects- name: Pin dune
+        run: opam pin add --no-action dune https://github.com/OlivierNicole/dune.git#jsoo-effects
 
       - name: Install dune
         run: opam install dune
