@@ -27,6 +27,8 @@ let include_closure_arity = false
 module Type = struct
   let value = W.Ref { nullable = false; typ = Eq }
 
+  let closure = W.Ref { nullable = false; typ = Struct }
+
   let block_type =
     register_type "block" (fun () ->
         return
@@ -202,8 +204,11 @@ module Type = struct
                 ]
           })
 
+  let primitive_type n =
+    { W.params = List.init ~len:n ~f:(fun _ -> value); result = [ value ] }
+
   let func_type n =
-    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> value); result = [ value ] }
+    { W.params = List.init ~len:n ~f:(fun _ -> value) @ [ closure ]; result = [ value ] }
 
   let function_type ~cps n =
     let n = if cps then n + 1 else n in
@@ -423,8 +428,6 @@ module Type = struct
 end
 
 module Value = struct
-  let value = Type.value
-
   let block_type =
     let* t = Type.block_type in
     return (W.Ref { nullable = false; typ = Type t })
@@ -432,6 +435,8 @@ module Value = struct
   let dummy_block =
     let* t = Type.block_type in
     return (W.ArrayNewFixed (t, []))
+
+  let dummy_closure = empty_struct
 
   let as_block e =
     let* t = Type.block_type in
@@ -743,13 +748,13 @@ module Memory = struct
     let a = Code.Var.fresh_n "a" in
     let i = Code.Var.fresh_n "i" in
     block_expr
-      { params = []; result = [ Value.value ] }
+      { params = []; result = [ Type.value ] }
       (let* () = store a e in
        let* () = store ~typ:I32 i (Value.int_val e') in
        let* () =
          drop
            (block_expr
-              { params = []; result = [ Value.value ] }
+              { params = []; result = [ Type.value ] }
               (let* block = Type.block_type in
                let* a = load a in
                let* e =
@@ -779,7 +784,7 @@ module Memory = struct
       (let* () =
          drop
            (block_expr
-              { params = []; result = [ Value.value ] }
+              { params = []; result = [ Type.value ] }
               (let* block = Type.block_type in
                let* a = load a in
                let* () =
@@ -817,6 +822,11 @@ module Memory = struct
     then 1
     else (if include_closure_arity then 1 else 0) + if arity = 1 then 1 else 2
 
+  let cast_closure ~cps ~arity closure =
+    let arity = if cps then arity - 1 else arity in
+    let* ty = Type.closure_type ~usage:`Access ~cps arity in
+    wasm_cast ty closure
+
   let load_function_pointer ~cps ~arity ?(skip_cast = false) closure =
     let arity = if cps then arity - 1 else arity in
     let* ty = Type.closure_type ~usage:`Access ~cps arity in
@@ -840,7 +850,7 @@ module Memory = struct
     let* () =
       drop
         (block_expr
-           { params = []; result = [ Value.value ] }
+           { params = []; result = [ Type.value ] }
            (let* e =
               if_match
                 ~typ:(Some (W.Ref { nullable = false; typ = Type fun_ty }))
@@ -1196,7 +1206,7 @@ module Closure = struct
     if free_variable_count = 0
     then
       (* The closures are all constants and the environment is empty. *)
-      let* _ = add_var (Code.Var.fresh ()) in
+      let* _ = add_var ~typ:Type.closure (Code.Var.fresh ()) in
       return ()
     else
       let arity = List.assoc f info.functions in
@@ -1205,7 +1215,7 @@ module Closure = struct
       match info.Closure_conversion.functions with
       | [ _ ] ->
           let* typ = Type.env_type ~cps ~arity free_variable_count in
-          let* _ = add_var f in
+          let* _ = add_var ~typ:Type.closure f in
           let env = Code.Var.fresh_n "env" in
           let* () =
             store
@@ -1226,7 +1236,7 @@ module Closure = struct
           let* typ =
             Type.rec_closure_type ~cps ~arity ~function_count ~free_variable_count
           in
-          let* _ = add_var f in
+          let* _ = add_var ~typ:Type.closure f in
           let env = Code.Var.fresh_n "env" in
           let* env_typ = Type.rec_env_type ~function_count ~free_variable_count in
           let* () =
@@ -1406,7 +1416,7 @@ let internal_primitives =
     let arity = List.length args in
     (* [Type.func_type] counts one additional argument for the closure environment (absent
        here) *)
-    let* f = register_import ~name (Fun (Type.func_type (arity - 1))) in
+    let* f = register_import ~name (Fun (Type.primitive_type arity)) in
     let args = List.map ~f:transl_prim_arg args in
     let* args = expression_list Fun.id args in
     return (W.Call (f, args))
@@ -1675,11 +1685,11 @@ let externref = W.Ref { nullable = true; typ = Extern }
 
 let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
   let* js_tag = register_import ~name:"javascript_exception" (Tag externref) in
-  let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Value.value) in
+  let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Type.value) in
   let* f =
     register_import
       ~name:"caml_wrap_exception"
-      (Fun { params = [ externref ]; result = [ Value.value ] })
+      (Fun { params = [ externref ]; result = [ Type.value ] })
   in
   block
     { params = []; result = result_typ }
@@ -1687,7 +1697,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
        store
          x
          (block_expr
-            { params = []; result = [ Value.value ] }
+            { params = []; result = [ Type.value ] }
             (let* exn =
                block_expr
                  { params = []; result = [ externref ] }
@@ -1698,7 +1708,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
                          ~result_typ:[ externref ]
                          ~fall_through:`Skip
                          ~context:(`Skip :: `Skip :: `Catch :: context))
-                      [ ocaml_tag, 1, Value.value; js_tag, 0, externref ]
+                      [ ocaml_tag, 1, Type.value; js_tag, 0, externref ]
                   in
                   instr (W.Push e))
              in
