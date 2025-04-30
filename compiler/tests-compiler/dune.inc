@@ -855,6 +855,21 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/tuple_unboxing.ml
+ (name tuple_unboxing_15)
+ (enabled_if true)
+ (modules tuple_unboxing)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/unix_fs.ml
  (name unix_fs_15)
  (enabled_if true)
