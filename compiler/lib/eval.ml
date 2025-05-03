@@ -659,6 +659,70 @@ let the_cond_of info x =
       | _ -> Unknown)
     x
 
+let eval_int_cond body branch x i =
+  match body, branch with
+  | [ Let (y, Prim (Eq, [ Pc (Int j); Pv x' ])) ], Cond (y', cont, cont')
+    when Var.equal x x' && Var.equal y y' ->
+      Some (if Targetint.equal i j then cont else cont')
+  | [ Let (y, Prim (Lt, [ Pc (Int j); Pv x' ])) ], Cond (y', cont, cont')
+    when Var.equal x x' && Var.equal y y' ->
+      Some (if Targetint.( < ) i j then cont else cont')
+  | [ Let (y, Prim (IsInt, [ Pv x' ])) ], Cond (y', cont, _)
+    when Var.equal x x' && Var.equal y y' -> Some cont
+  | [], Switch (x', a)
+    when Var.equal x x' && Targetint.unsigned_lt i (Targetint.of_int_exn (Array.length a))
+    -> Some a.(Targetint.to_int_exn i)
+  | _ -> None
+
+let eval_tag_cond body branch x i =
+  match body, branch with
+  | Let (y, Prim (Extern "%direct_obj_tag", [ Pv x' ])) :: rem, _ when Var.equal x x' ->
+      eval_int_cond rem branch y i
+  | [ Let (y, Prim (IsInt, [ Pv x' ])) ], Cond (y', _, cont)
+    when Var.equal x x' && Var.equal y y' -> Some cont
+  | _ -> None
+
+let check_cont info blocks pc (pc', args) kind =
+  let block = Addr.Map.find pc' blocks in
+  List.iter2
+    ~f:(fun arg param ->
+      if
+        match Flow.Info.def info arg with
+        | Some (Constant (Int i)) ->
+            true || Option.is_none (eval_int_cond block.body block.branch param i)
+        | Some (Block (i, _, _, _)) ->
+            true
+            || Option.is_none
+                 (eval_tag_cond block.body block.branch param (Targetint.of_int_exn i))
+        | _ -> false
+      then
+        let l = List.length args in
+        match block.body, block.branch with
+        | Let (_, Prim (Extern "%direct_obj_tag", [ Pv x ])) :: _, _
+          when Var.equal x param -> Format.eprintf "ZZZZ %d %s tag %d@." pc kind l
+        | Let (_, Prim (Eq, [ Pc _; Pv x ])) :: _, _ when Var.equal x param ->
+            Format.eprintf "ZZZZ %d %s eq %d@." pc kind l
+        | Let (_, Prim (Lt, [ Pc _; Pv x ])) :: _, _ when Var.equal x param ->
+            Format.eprintf "ZZZZ %d %s lt %d@." pc kind l
+        | Let (_, Prim (IsInt, [ Pv x ])) :: _, _ when Var.equal x param ->
+            Format.eprintf "ZZZZ %d %s int %d@." pc kind l
+        | _, Switch (x, _) when Var.equal x param ->
+            Format.eprintf "ZZZZ %d %s switch %d@." pc kind l
+        | _ -> ())
+    args
+    block.params
+
+let check_branch info blocks pc branch =
+  match branch with
+  | Return _ | Raise _ | Stop -> ()
+  | Branch cont -> check_cont info blocks pc cont "branch"
+  | Cond (_, cont, cont') ->
+      check_cont info blocks pc cont "cond";
+      check_cont info blocks pc cont' "cond"
+  | Switch (_, a) -> Array.iter ~f:(fun cont -> check_cont info blocks pc cont "switch") a
+  | Pushtrap (cont, _, _) -> check_cont info blocks pc cont "pushtrap"
+  | Poptrap cont -> check_cont info blocks pc cont "poptrap"
+
 let eval_branch info l =
   match l with
   | Cond (x, ftrue, ffalse) as b -> (
@@ -747,9 +811,10 @@ let drop_exception_handler drop_count blocks =
     blocks
 
 let eval update_count ~target info blocks =
-  Addr.Map.map
-    (fun block ->
+  Addr.Map.mapi
+    (fun pc block ->
       let body = List.concat_map block.body ~f:(eval_instr update_count ~target info) in
+      if false then check_branch info blocks pc block.branch;
       let branch = eval_branch info block.branch in
       { block with Code.body; Code.branch })
     blocks

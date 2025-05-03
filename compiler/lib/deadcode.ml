@@ -183,6 +183,99 @@ let annot st pc xi =
 
 (****)
 
+let eval_int_cond body branch x i =
+  match body, branch with
+  | [ Let (y, Prim (Eq, [ Pc (Int j); Pv x' ])) ], Cond (y', cont, cont')
+    when Var.equal x x' && Var.equal y y' ->
+      Some (if Targetint.equal i j then cont else cont')
+  | [ Let (y, Prim (Lt, [ Pc (Int j); Pv x' ])) ], Cond (y', cont, cont')
+    when Var.equal x x' && Var.equal y y' ->
+      Some (if Targetint.( < ) i j then cont else cont')
+  | [ Let (y, Prim (IsInt, [ Pv x' ])) ], Cond (y', cont, _)
+    when Var.equal x x' && Var.equal y y' -> Some cont
+  | [], Switch (x', a)
+    when Var.equal x x' && Targetint.unsigned_lt i (Targetint.of_int_exn (Array.length a))
+    -> Some a.(Targetint.to_int_exn i)
+  | _ -> None
+
+let eval_tag_cond body branch x i =
+  match body, branch with
+  | Let (y, Prim (Extern "%direct_obj_tag", [ Pv x' ])) :: rem, _ when Var.equal x x' ->
+      eval_int_cond rem branch y i
+  | [ Let (y, Prim (IsInt, [ Pv x' ])) ], Cond (y', _, cont)
+    when Var.equal x x' && Var.equal y y' -> Some cont
+  | _ -> None
+
+let check_cont st blocks pc (pc', args) kind =
+  let block = Addr.Map.find pc' blocks in
+  List.iter2
+    ~f:(fun arg param ->
+      if
+        match st.defs.(Var.idx arg) with
+        | [ Expr (Constant (Int i)) ] ->
+            true || Option.is_none (eval_int_cond block.body block.branch param i)
+        | [ Expr (Block (i, _, _, _)) ] ->
+            true
+            || Option.is_none
+                 (eval_tag_cond block.body block.branch param (Targetint.of_int_exn i))
+        | _ -> false
+      then
+        if
+          match block.body, block.branch with
+          | Let (_, Prim (Extern "%direct_obj_tag", [ Pv x ])) :: _, _
+            when Var.equal x param ->
+              Format.eprintf "ZZZZ %d %s tag@." pc kind;
+              true
+          | Let (_, Prim (Eq, [ Pc _; Pv x ])) :: _, _ when Var.equal x param ->
+              Format.eprintf "ZZZZ %d %s eq@." pc kind;
+              true
+          | Let (_, Prim (Lt, [ Pc _; Pv x ])) :: _, _ when Var.equal x param ->
+              Format.eprintf "ZZZZ %d %s lt@." pc kind;
+              true
+          | Let (_, Prim (IsInt, [ Pv x ])) :: _, _ when Var.equal x param ->
+              Format.eprintf "ZZZZ %d %s int@." pc kind;
+              true
+          | _, Switch (x, _) when Var.equal x param ->
+              Format.eprintf "ZZZZ %d %s switch@." pc kind;
+              true
+          | _ -> false
+        then (
+          (try
+             let g = Structure.build_graph blocks pc in
+             let t = Structure.dominator_tree g in
+             Format.eprintf
+               "BBB %b %d@."
+               (Structure.is_loop_header g pc')
+               (Addr.Set.cardinal (Structure.get_edges t pc'))
+           with Assert_failure _ -> ());
+          Format.eprintf "AAA %d" (List.length args);
+          List.iter
+            ~f:(fun x ->
+              Format.eprintf
+                " %d%s"
+                st.live.(Var.idx x)
+                (if Var.equal x param then "*" else ""))
+            block.params;
+          Format.eprintf "@."))
+    args
+    block.params
+
+let check_branch st blocks pc branch =
+  match branch with
+  | Return _ | Raise _ | Stop -> ()
+  | Branch cont -> check_cont st blocks pc cont "branch"
+  | Cond (_, cont, cont') ->
+      check_cont st blocks pc cont "cond";
+      check_cont st blocks pc cont' "cond"
+  | Switch (_, a) -> Array.iter ~f:(fun cont -> check_cont st blocks pc cont "switch") a
+  | Pushtrap (cont, _, _) -> check_cont st blocks pc cont "pushtrap"
+  | Poptrap cont -> check_cont st blocks pc cont "poptrap"
+
+let check_branches st (p : program) =
+  Addr.Map.iter (fun pc block -> check_branch st p.blocks pc block.branch) p.blocks
+
+(****)
+
 let rec add_arg_dep defs params args =
   match params, args with
   | x :: params, y :: args ->
@@ -320,6 +413,7 @@ let f ({ blocks; _ } as p : Code.program) =
       blocks
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
+  check_branches st { p with blocks };
   if stats ()
   then
     Format.eprintf
