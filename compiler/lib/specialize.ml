@@ -60,9 +60,13 @@ let add_event loc instrs =
   | Some loc -> Event loc :: instrs
   | None -> instrs
 
-let specialize_instr opt_count function_arity ((acc, free_pc, extra), loc) i =
+let unknown_apply = function
+  | Let (_, Apply { f = _; args = _; exact = false }) -> true
+  | _ -> false
+
+let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
   match i with
-  | Let (x, Apply { f; args; exact = false }) when Config.Flag.optcall () -> (
+  | Let (x, Apply { f; args; exact = false }) -> (
       let n' = List.length args in
       match function_arity f with
       | None -> i :: acc, free_pc, extra
@@ -97,31 +101,34 @@ let specialize_instr opt_count function_arity ((acc, free_pc, extra), loc) i =
           ( Let (x, Closure (missing, (free_pc, missing), None)) :: acc
           , free_pc + 1
           , (free_pc, block) :: extra )
-      | _ -> i :: acc, free_pc, extra)
+      | Some _ -> assert false)
   | _ -> i :: acc, free_pc, extra
 
 let specialize_instrs ~function_arity opt_count p =
   let blocks, free_pc =
     Addr.Map.fold
       (fun pc block (blocks, free_pc) ->
-        let (body, free_pc, extra), _ =
-          List.fold_left
-            block.body
-            ~init:(([], free_pc, []), None)
-            ~f:(fun acc i ->
-              match i with
-              | Event loc ->
-                  let (body, free_pc, extra), _ = acc in
-                  (i :: body, free_pc, extra), Some loc
-              | _ -> specialize_instr opt_count function_arity acc i, None)
-        in
-        let blocks =
-          List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->
-              Addr.Map.add pc b blocks)
-        in
-        Addr.Map.add pc { block with Code.body = List.rev body } blocks, free_pc)
+        if List.exists ~f:unknown_apply block.body
+        then
+          let (body, free_pc, extra), _ =
+            List.fold_left
+              block.body
+              ~init:(([], free_pc, []), None)
+              ~f:(fun acc i ->
+                match i with
+                | Event loc ->
+                    let (body, free_pc, extra), _ = acc in
+                    (i :: body, free_pc, extra), Some loc
+                | _ -> specialize_apply opt_count function_arity acc i, None)
+          in
+          let blocks =
+            List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->
+                Addr.Map.add pc b blocks)
+          in
+          Addr.Map.add pc { block with Code.body = List.rev body } blocks, free_pc
+        else blocks, free_pc)
       p.blocks
-      (Addr.Map.empty, p.free_pc)
+      (p.blocks, p.free_pc)
   in
   { p with blocks; free_pc }
 
@@ -129,7 +136,9 @@ let f ~function_arity p =
   let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
-  let p = specialize_instrs ~function_arity opt_count p in
+  let p =
+    if Config.Flag.optcall () then specialize_instrs ~function_arity opt_count p else p
+  in
   if times () then Format.eprintf "  optcall: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - optcall: %d@." !opt_count;
   if debug_stats ()
