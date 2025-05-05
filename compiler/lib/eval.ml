@@ -796,6 +796,7 @@ let f info p =
       p.blocks
   in
   let blocks = drop_exception_handler drop_count blocks in
+  let p = { p with blocks } in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;
   if stats ()
   then
@@ -806,13 +807,12 @@ let f info p =
       !inline_constant
       !drop_count
       !update_branch;
-  let p, deadblock = Deadcode.remove_unused_blocks { p with blocks } in
   if debug_stats ()
   then
     Code.check_updates
       ~name:"eval"
       previous_p
       p
-      ~updates:
-        (!update_count + !inline_constant + !drop_count + !update_branch + deadblock);
+      ~updates:(!update_count + !inline_constant + !drop_count + !update_branch);
+  let p = Deadcode.remove_unused_blocks p in
   p

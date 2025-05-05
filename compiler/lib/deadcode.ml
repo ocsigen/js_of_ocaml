@@ -186,32 +186,27 @@ let annot st pc xi =
 
 (****)
 
-let remove_unused_blocks p =
+let remove_unused_blocks' p =
   let count = ref 0 in
-  let visited = BitSet.create' p.free_pc in
-  let rec mark_used pc =
-    if not (BitSet.mem visited pc)
-    then (
-      BitSet.set visited pc;
-      let block = Addr.Map.find pc p.blocks in
-      List.iter
-        ~f:(fun i ->
-          match i with
-          | Let (_, Closure (_, (pc', _), _)) -> mark_used pc'
-          | _ -> ())
-        block.body;
-      Code.fold_children p.blocks pc (fun pc' () -> mark_used pc') ())
-  in
-  mark_used p.start;
+  let used = Code.used_blocks p in
   let blocks =
     Addr.Map.filter
       (fun pc _ ->
-        let b = BitSet.mem visited pc in
+        let b = BitSet.mem used pc in
         if not b then incr count;
         b)
       p.blocks
   in
   { p with blocks }, !count
+
+let remove_unused_blocks p =
+  let previous_p = p in
+  let t = Timer.make () in
+  let p, count = remove_unused_blocks' p in
+  if times () then Format.eprintf "  dead block: %a@." Timer.print t;
+  if stats () then Format.eprintf "Stats - dead block: deleted %d@." count;
+  if debug_stats () then Code.check_updates ~name:"dead block" previous_p p ~updates:count;
+  p
 
 (****)
 
@@ -364,8 +359,6 @@ let f ({ blocks; _ } as p : Code.program) =
   in
   let p = { p with blocks } in
   let p = remove_empty_blocks st p in
-  let p, deleted_blocks = remove_unused_blocks p in
-  st.deleted_blocks <- st.deleted_blocks + deleted_blocks;
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
   then
@@ -384,4 +377,5 @@ let f ({ blocks; _ } as p : Code.program) =
       p
       ~updates:
         (st.deleted_instrs + st.deleted_blocks + st.deleted_params + st.block_shortcut);
+  let p = remove_unused_blocks p in
   p, st.live
