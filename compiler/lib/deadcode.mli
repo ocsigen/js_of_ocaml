@@ -24,3 +24,5 @@ type variable_uses =
 val f : Code.program -> Code.program * variable_uses
 
 val remove_empty_blocks : live_vars:variable_uses -> Code.program -> Code.program
+
+val remove_unused_blocks : Code.program -> Code.program
