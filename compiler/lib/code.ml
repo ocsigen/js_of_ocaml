@@ -835,6 +835,12 @@ let check_updates ~name p1 p2 ~updates =
       print_diff p1 p2;
       assert false
 
+let cont_equal (pc, args) (pc', args') = pc = pc' && List.equal ~eq:Var.equal args args'
+
+let cont_compare (pc, args) (pc', args') =
+  let c = compare pc pc' in
+  if c <> 0 then c else List.compare ~cmp:Var.compare args args'
+
 let with_invariant = Debug.find "invariant"
 
 let check_defs = false
@@ -907,6 +913,7 @@ let invariant ({ blocks; start; _ } as p) =
       | Stop -> ()
       | Branch cont -> check_cont cont
       | Cond (_x, cont1, cont2) ->
+          assert (not (cont_equal cont1 cont2));
           check_cont cont1;
           check_cont cont2
       | Switch (_x, a1) -> Array.iteri a1 ~f:(fun _ cont -> check_cont cont)
@@ -924,9 +931,3 @@ let invariant ({ blocks; start; _ } as p) =
         check_events block.body;
         check_last block.branch)
       blocks)
-
-let cont_equal (pc, args) (pc', args') = pc = pc' && List.equal ~eq:Var.equal args args'
-
-let cont_compare (pc, args) (pc', args') =
-  let c = compare pc pc' in
-  if c <> 0 then c else List.compare ~cmp:Var.compare args args'
