@@ -308,7 +308,7 @@ let stats = Debug.find "stats"
 
 let debug_stats = Debug.find "stats-debug"
 
-let f p live_vars =
+let f p (live_vars : Deadcode.variable_uses) =
   let previous_p = p in
   let inline_count = ref 0 in
   Code.invariant p;
