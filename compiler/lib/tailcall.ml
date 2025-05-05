@@ -144,6 +144,7 @@ let f p =
       in
       if !rewrite_body then blocks := Addr.Map.add pc { block with body } !blocks)
     p.blocks;
+  let p = { p with blocks = !blocks; free_pc = !free_pc } in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
-  { p with blocks = !blocks; free_pc = !free_pc }
+  p

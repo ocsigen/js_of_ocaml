@@ -494,13 +494,6 @@ let build_subst (info : Info.t) vars =
 
 (****)
 
-let print_stats s =
-  let count = ref 0 in
-  for i = 0 to Array.length s - 1 do
-    if not (Var.equal (Var.of_idx i) s.(i)) then incr count
-  done;
-  Format.eprintf "Stats - flow updates: %d@." !count
-
 let f p =
   Code.invariant p;
   let t = Timer.make () in
@@ -543,6 +536,14 @@ let f p =
   let p = Subst.Excluding_Binders.program (Subst.from_array s) p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
-  if stats () then print_stats s;
+  let updates =
+    lazy
+      (let count = ref 0 in
+       for i = 0 to Array.length s - 1 do
+         if not (Var.equal (Var.of_idx i) s.(i)) then incr count
+       done;
+       !count)
+  in
+  if stats () then Format.eprintf "Stats - flow updates: %d@." (Lazy.force updates);
   Code.invariant p;
   p, info

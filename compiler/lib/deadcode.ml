@@ -202,6 +202,8 @@ let empty_body b =
   | _ -> false
 
 let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
+  let t = Timer.make () in
+  let count = ref 0 in
   let shortcuts = Hashtbl.create 16 in
   let rec resolve_rec visited ((pc, args) as cont) =
     if Addr.Set.mem pc visited
@@ -209,6 +211,7 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
     else
       match Hashtbl.find_opt shortcuts pc with
       | Some (params, cont) ->
+          incr count;
           let pc', args' = resolve_rec (Addr.Set.add pc visited) cont in
           let s = Subst.from_map (Subst.build_mapping params args) in
           pc', List.map ~f:s args'
@@ -250,7 +253,10 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
         })
       p.blocks
   in
-  { p with blocks }
+  let p = { p with blocks } in
+  if times () then Format.eprintf "  dead code elim. empty blocks: %a@." Timer.print t;
+  if stats () then Format.eprintf "Stats - dead code empty blocks: %d@." !count;
+  p
 
 let f ({ blocks; _ } as p : Code.program) =
   let t = Timer.make () in
@@ -319,6 +325,7 @@ let f ({ blocks; _ } as p : Code.program) =
             })
       blocks
   in
+  let p = { p with blocks } in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
   then
@@ -327,4 +334,4 @@ let f ({ blocks; _ } as p : Code.program) =
       st.deleted_instrs
       st.deleted_blocks
       st.deleted_params;
-  { p with blocks }, st.live
+  p, st.live

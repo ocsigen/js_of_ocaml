@@ -150,13 +150,6 @@ let solver1 vars deps defs =
       | Some y -> repr reprs y
       | None -> Var.of_idx idx)
 
-let print_stats s =
-  let count = ref 0 in
-  for i = 0 to Array.length s - 1 do
-    if not (Var.equal (Var.of_idx i) s.(i)) then incr count
-  done;
-  Format.eprintf "Stats - phi updates: %d@." !count
-
 let f p =
   let t = Timer.make () in
   let t' = Timer.make () in
@@ -169,5 +162,13 @@ let f p =
       if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
   let p = Subst.Excluding_Binders.program (Subst.from_array subst) p in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
-  if stats () then print_stats subst;
+  let updates =
+    lazy
+      (let count = ref 0 in
+       for i = 0 to Array.length subst - 1 do
+         if not (Var.equal (Var.of_idx i) subst.(i)) then incr count
+       done;
+       !count)
+  in
+  if stats () then Format.eprintf "Stats - phi updates: %d@." (Lazy.force updates);
   p

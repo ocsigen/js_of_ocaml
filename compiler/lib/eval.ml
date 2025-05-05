@@ -659,19 +659,27 @@ let the_cond_of info x =
       | _ -> Unknown)
     x
 
-let eval_branch info l =
+let eval_branch update_branch info l =
   match l with
   | Cond (x, ftrue, ffalse) as b -> (
       if cont_equal ftrue ffalse
-      then Branch ftrue
+      then (
+        incr update_branch;
+        Branch ftrue)
       else
         match the_cond_of info x with
-        | Zero -> Branch ffalse
-        | Non_zero -> Branch ftrue
+        | Zero ->
+            incr update_branch;
+            Branch ffalse
+        | Non_zero ->
+            incr update_branch;
+            Branch ftrue
         | Unknown -> b)
   | Switch (x, a) as b -> (
       match the_cont_of info x a with
-      | Some cont -> Branch cont
+      | Some cont ->
+          incr update_branch;
+          Branch cont
       | None -> b)
   | _ as b -> b
 
@@ -746,25 +754,28 @@ let drop_exception_handler drop_count blocks =
     blocks
     blocks
 
-let eval update_count ~target info blocks =
+let eval update_count update_branch ~target info blocks =
   Addr.Map.map
     (fun block ->
       let body = List.concat_map block.body ~f:(eval_instr update_count ~target info) in
-      let branch = eval_branch info block.branch in
+      let branch = eval_branch update_branch info block.branch in
       { block with Code.body; Code.branch })
     blocks
 
 let f info p =
   let update_count = ref 0 in
+  let update_branch = ref 0 in
   let drop_count = ref 0 in
   let t = Timer.make () in
-  let blocks = eval update_count ~target:(Config.target ()) info p.blocks in
+  let blocks = eval update_count update_branch ~target:(Config.target ()) info p.blocks in
   let blocks = drop_exception_handler drop_count blocks in
+  let p = { p with blocks } in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;
   if stats ()
   then
     Format.eprintf
-      "Stats - eval: %d optimizations, %d dropped exception handlers@."
+      "Stats - eval: %d optimizations, %d dropped exception handlers, %d branch updated@."
       !update_count
-      !drop_count;
-  { p with blocks }
+      !drop_count
+      !update_branch;
+  p
