@@ -99,7 +99,7 @@ jobs:
 
       - name: Pin dune
         if: runner.os == 'Windows'
-        run: opam pin add -n dune https://github.com/hhugo/dune.git#shorter-path-jsoo
+        run: opam pin add -n dune https://github.com/hhugo/dune.git#jsoo-effects
 
       - name: Install dune
         run: opam install dune
