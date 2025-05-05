@@ -467,7 +467,7 @@ let constant_js_equal a b =
   | Tuple _, _
   | _, Tuple _ -> None
 
-let eval_instr update_count ~target info i =
+let eval_instr update_count inline_constant ~target info i =
   match i with
   | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) -> (
       match the_const_of ~target info y, the_const_of ~target info z with
@@ -612,20 +612,31 @@ let eval_instr update_count ~target info i =
               , Prim
                   ( prim
                   , List.map2 prim_args prim_args' ~f:(fun arg (c : constant option) ->
-                        match c, target with
-                        | Some (Int _ as c), _ -> Pc c
-                        | Some (Int32 _ | NativeInt _ | NativeString _), `Wasm ->
-                            (* Avoid duplicating the constant here as it would cause an
+                        match arg with
+                        | Pc _ -> arg
+                        | Pv _ -> (
+                            match c, target with
+                            | Some (Int _ as c), _ ->
+                                incr inline_constant;
+                                Pc c
+                            | Some (Int32 _ | NativeInt _ | NativeString _), `Wasm ->
+                                (* Avoid duplicating the constant here as it would cause an
                                allocation *)
-                            arg
-                        | Some ((Int32 _ | NativeInt _) as c), `JavaScript -> Pc c
-                        | Some ((Float _ | NativeString _) as c), `JavaScript -> Pc c
-                        | Some (String _ as c), `JavaScript
-                          when Config.Flag.use_js_string () -> Pc c
-                        | Some _, _
-                        (* do not be duplicated other constant as
+                                arg
+                            | Some ((Int32 _ | NativeInt _) as c), `JavaScript ->
+                                incr inline_constant;
+                                Pc c
+                            | Some ((Float _ | NativeString _) as c), `JavaScript ->
+                                incr inline_constant;
+                                Pc c
+                            | Some (String _ as c), `JavaScript
+                              when Config.Flag.use_js_string () ->
+                                incr inline_constant;
+                                Pc c
+                            | Some _, _
+                            (* do not be duplicated other constant as
                             they're not represented with constant in javascript. *)
-                        | None, _ -> arg) ) )
+                            | None, _ -> arg)) ) )
           ])
   | _ -> [ i ]
 
@@ -756,10 +767,14 @@ let drop_exception_handler drop_count blocks =
     blocks
     blocks
 
-let eval update_count update_branch ~target info blocks =
+let eval update_count update_branch inline_constant ~target info blocks =
   Addr.Map.map
     (fun block ->
-      let body = List.concat_map block.body ~f:(eval_instr update_count ~target info) in
+      let body =
+        List.concat_map
+          block.body
+          ~f:(eval_instr update_count inline_constant ~target info)
+      in
       let branch = eval_branch update_branch info block.branch in
       { block with Code.body; Code.branch })
     blocks
@@ -768,17 +783,28 @@ let f info p =
   let previous_p = p in
   let update_count = ref 0 in
   let update_branch = ref 0 in
+  let inline_constant = ref 0 in
   let drop_count = ref 0 in
   let t = Timer.make () in
-  let blocks = eval update_count update_branch ~target:(Config.target ()) info p.blocks in
+  let blocks =
+    eval
+      update_count
+      update_branch
+      inline_constant
+      ~target:(Config.target ())
+      info
+      p.blocks
+  in
   let blocks = drop_exception_handler drop_count blocks in
   let p = { p with blocks } in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;
   if stats ()
   then
     Format.eprintf
-      "Stats - eval: %d optimizations, %d dropped exception handlers, %d branch updated@."
+      "Stats - eval: %d optimizations, %d inlined cst, %d dropped exception handlers, %d \
+       branch updated@."
       !update_count
+      !inline_constant
       !drop_count
       !update_branch;
   if debug_stats ()
@@ -787,5 +813,5 @@ let f info p =
       ~name:"eval"
       previous_p
       p
-      ~updates:(!update_count + !drop_count + !update_branch);
+      ~updates:(!update_count + !inline_constant + !drop_count + !update_branch);
   p
