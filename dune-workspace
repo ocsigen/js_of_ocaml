@@ -6,4 +6,6 @@
    (enabled_if %{env:WASM_OF_OCAML=false})
    (runtest_alias runtest-wasm))
   (js_of_ocaml
+;; enable for debugging
+;; (flags (:standard --debug stats-debug))
    (runtest_alias runtest-js))))
