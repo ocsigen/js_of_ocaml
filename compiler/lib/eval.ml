@@ -675,19 +675,14 @@ let the_cond_of info x =
 let eval_branch update_branch info l =
   match l with
   | Cond (x, ftrue, ffalse) as b -> (
-      if cont_equal ftrue ffalse
-      then (
-        incr update_branch;
-        Branch ftrue)
-      else
-        match the_cond_of info x with
-        | Zero ->
-            incr update_branch;
-            Branch ffalse
-        | Non_zero ->
-            incr update_branch;
-            Branch ftrue
-        | Unknown -> b)
+      match the_cond_of info x with
+      | Zero ->
+          incr update_branch;
+          Branch ffalse
+      | Non_zero ->
+          incr update_branch;
+          Branch ftrue
+      | Unknown -> b)
   | Switch (x, a) as b -> (
       match the_cont_of info x a with
       | Some cont ->
