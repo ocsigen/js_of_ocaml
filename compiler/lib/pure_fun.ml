@@ -50,6 +50,7 @@ let rec traverse blocks pc visited pure_blocks funs =
   then BitSet.mem pure_blocks pc
   else (
     BitSet.set visited pc;
+    let pure = block blocks pc visited pure_blocks funs in
     let pure =
       fold_children
         blocks
@@ -57,18 +58,17 @@ let rec traverse blocks pc visited pure_blocks funs =
         (fun pc pure ->
           let pure' = traverse blocks pc visited pure_blocks funs in
           pure && pure')
-        true
+        pure
     in
-    let pure = block blocks pc pure visited pure_blocks funs in
     if pure then BitSet.set pure_blocks pc;
     pure)
 
-and block blocks pc pure visited pure_blocks funs =
+and block blocks pc visited pure_blocks funs =
   let b = Addr.Map.find pc blocks in
   let pure =
     match b.branch with
     | Raise _ -> false
-    | _ -> pure
+    | _ -> true
   in
   List.fold_left b.body ~init:pure ~f:(fun pure i ->
       (match i with
