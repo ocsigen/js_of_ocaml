@@ -49,6 +49,7 @@ type t =
   ; mutable deleted_instrs : int
   ; mutable deleted_blocks : int
   ; mutable deleted_params : int
+  ; mutable block_shortcut : int
   }
 
 (****)
@@ -186,6 +187,7 @@ let annot st pc xi =
 (****)
 
 let remove_unused_blocks p =
+  let count = ref 0 in
   let visited = BitSet.create' p.free_pc in
   let rec mark_used pc =
     if not (BitSet.mem visited pc)
@@ -201,7 +203,15 @@ let remove_unused_blocks p =
       Code.fold_children p.blocks pc (fun pc' () -> mark_used pc') ())
   in
   mark_used p.start;
-  { p with blocks = Addr.Map.filter (fun pc _ -> BitSet.mem visited pc) p.blocks }
+  let blocks =
+    Addr.Map.filter
+      (fun pc _ ->
+        let b = BitSet.mem visited pc in
+        if not b then incr count;
+        b)
+      p.blocks
+  in
+  { p with blocks }, !count
 
 (****)
 
@@ -223,10 +233,7 @@ let empty_body b =
   | [] | [ Event _ ] -> true
   | _ -> false
 
-let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
-  let previous_p = p in
-  let t = Timer.make () in
-  let count = ref 0 in
+let remove_empty_blocks st (p : Code.program) : Code.program =
   let shortcuts = Hashtbl.create 16 in
   let rec resolve_rec visited ((pc, args) as cont) =
     if Addr.Set.mem pc visited
@@ -234,13 +241,16 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
     else
       match Hashtbl.find_opt shortcuts pc with
       | Some (params, cont) ->
-          incr count;
           let pc', args' = resolve_rec (Addr.Set.add pc visited) cont in
           let s = Subst.from_map (Subst.build_mapping params args) in
           pc', List.map ~f:s args'
       | None -> cont
   in
-  let resolve cont = resolve_rec Addr.Set.empty cont in
+  let resolve cont =
+    let cont' = resolve_rec Addr.Set.empty cont in
+    if not (Code.cont_equal cont cont') then st.block_shortcut <- st.block_shortcut + 1;
+    cont'
+  in
   Addr.Map.iter
     (fun pc block ->
       match block with
@@ -255,7 +265,7 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
              used as argument to the continuation *)
           if
             List.for_all
-              ~f:(fun x -> live_vars.(Var.idx x) = 1 && Var.Set.mem x args)
+              ~f:(fun x -> st.live.(Var.idx x) = 1 && Var.Set.mem x args)
               params
           then Hashtbl.add shortcuts pc (params, cont)
       | _ -> ())
@@ -268,7 +278,12 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
             (let branch = block.branch in
              match branch with
              | Branch cont -> Branch (resolve cont)
-             | Cond (x, cont1, cont2) -> Cond (x, resolve cont1, resolve cont2)
+             | Cond (x, cont1, cont2) ->
+                 let cont1' = resolve cont1 in
+                 let cont2' = resolve cont2 in
+                 if Code.cont_equal cont1' cont2'
+                 then Branch cont1'
+                 else Cond (x, cont1', cont2')
              | Switch (x, a1) -> Switch (x, Array.map ~f:resolve a1)
              | Pushtrap (cont1, x, cont2) -> Pushtrap (resolve cont1, x, resolve cont2)
              | Poptrap cont -> Poptrap (resolve cont)
@@ -276,12 +291,7 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
         })
       p.blocks
   in
-  let p = remove_unused_blocks { p with blocks } in
-  if times () then Format.eprintf "  dead code elim. empty blocks: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - dead code empty blocks: %d@." !count;
-  if debug_stats ()
-  then Code.check_updates ~name:"emptyblock" previous_p p ~updates:!count;
-  p
+  { p with blocks }
 
 let f ({ blocks; _ } as p : Code.program) =
   let previous_p = p in
@@ -319,6 +329,7 @@ let f ({ blocks; _ } as p : Code.program) =
     ; deleted_instrs = 0
     ; deleted_blocks = 0
     ; deleted_params = 0
+    ; block_shortcut = 0
     }
   in
   mark_reachable st p.start;
@@ -352,19 +363,25 @@ let f ({ blocks; _ } as p : Code.program) =
       blocks
   in
   let p = { p with blocks } in
+  let p = remove_empty_blocks st p in
+  let p, deleted_blocks = remove_unused_blocks p in
+  st.deleted_blocks <- st.deleted_blocks + deleted_blocks;
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
   then
     Format.eprintf
-      "Stats - dead code: deleted %d instructions, %d blocks, %d parameters@."
+      "Stats - dead code: deleted %d instructions, %d blocks, %d parameters, %d \
+       branches@."
       st.deleted_instrs
       st.deleted_blocks
-      st.deleted_params;
+      st.deleted_params
+      st.block_shortcut;
   if debug_stats ()
   then
     Code.check_updates
       ~name:"deadcode"
       previous_p
       p
-      ~updates:(st.deleted_instrs + st.deleted_blocks + st.deleted_params);
+      ~updates:
+        (st.deleted_instrs + st.deleted_blocks + st.deleted_params + st.block_shortcut);
   p, st.live
