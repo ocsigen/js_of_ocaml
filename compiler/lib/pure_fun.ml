@@ -18,6 +18,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 open! Stdlib
+
+let times = Debug.find "times"
+
+let stats = Debug.find "stats"
+
 open Code
 
 (****)
@@ -74,8 +79,11 @@ and block blocks pc pure visited pure_blocks funs =
       pure && pure_instr !funs i)
 
 let f p =
+  let t = Timer.make () in
   let visited = BitSet.create' p.free_pc in
   let pure = BitSet.create' p.free_pc in
   let funs = ref Var.Set.empty in
   let _ = traverse p.blocks p.start visited pure funs in
+  if times () then Format.eprintf "    pure funs.: %a@." Timer.print t;
+  if stats () then Format.eprintf "Stats - pure functions: %d@." (Var.Set.cardinal !funs);
   !funs
