@@ -77,8 +77,8 @@ let fun2 () =
      {
       try{var i$1 = caml_call1(Stdlib_Random[5], 2);}
       catch(exn$0){
-       var exn = caml_wrap_exception(exn$0);
-       if(exn[1] !== A) throw caml_maybe_attach_backtrace(exn, 0);
+       var exn = caml_wrap_exception(exn$0), tag = exn[1];
+       if(tag !== A) throw caml_maybe_attach_backtrace(exn, 0);
        var i = exn[2];
        if(2 !== i) return i + 2 | 0;
        var i$0 = i;

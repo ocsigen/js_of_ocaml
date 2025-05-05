@@ -633,7 +633,8 @@ let ()  = M.run ()
       let odd$0 = odd, even$0 = even;
       var param$0 = even(i);
       for(;;){
-       if(759635106 <= param$0[1]) break;
+       var variant = param$0[1];
+       if(759635106 <= variant) break;
        var f = param$0[2];
        param$0 = f(0);
       }
