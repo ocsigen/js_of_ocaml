@@ -791,7 +791,7 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
   let accu = f None [] (start, []) None accu in
   visit blocks start f accu
 
-let eq p1 p2 =
+let equal p1 p2 =
   p1.start = p2.start
   && Addr.Map.equal
        (fun { params; body; branch } b ->
@@ -800,6 +800,40 @@ let eq p1 p2 =
          && List.equal ~eq:Poly.equal body b.body)
        p1.blocks
        p2.blocks
+
+let print_to_file p =
+  let file = Filename.temp_file "jsoo" "prog" in
+  let oc = open_out_bin file in
+  let f = Format.formatter_of_out_channel oc in
+  Print.program f (fun _ _ -> "") p;
+  close_out oc;
+  file
+
+let print_diff p1 p2 =
+  if equal p1 p2
+  then ()
+  else
+    let f1 = print_to_file p1 in
+    let f2 = print_to_file p2 in
+    ignore (Sys.command (Printf.sprintf "patdiff %s %s" f1 f2) : int)
+
+let check_updates ~name p1 p2 ~updates =
+  match equal p1 p2, updates = 0 with
+  | true, true -> ()
+  | false, false ->
+      if false (* useful for debugging *) && updates < 5 then print_diff p1 p2
+  | true, false ->
+      let file = print_to_file p1 in
+      Printf.eprintf
+        "CHECK_UPDATES: %s: %d updates declared, but program unchanged %s\n"
+        name
+        updates
+        file;
+      assert false
+  | false, true ->
+      Printf.eprintf "CHECK_UPDATES: %s: no update declared, but program differs.\n" name;
+      print_diff p1 p2;
+      assert false
 
 let with_invariant = Debug.find "invariant"
 

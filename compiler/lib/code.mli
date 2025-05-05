@@ -317,7 +317,11 @@ val empty : program
 
 val is_empty : program -> bool
 
-val eq : program -> program -> bool
+val equal : program -> program -> bool
+
+val print_diff : program -> program -> unit
+
+val check_updates : name:string -> program -> program -> updates:int -> unit
 
 val invariant : program -> unit
 

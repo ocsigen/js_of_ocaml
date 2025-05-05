@@ -26,6 +26,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 let specialize_instr opt_count ~target info i =
   match i, target with
   | Let (x, Prim (Extern "caml_format_int", [ y; z ])), `JavaScript -> (
@@ -394,11 +396,14 @@ let specialize_all_instrs ~target opt_count info p =
 (****)
 
 let f info p =
+  let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
   let p = specialize_all_instrs ~target:(Config.target ()) opt_count info p in
   if times () then Format.eprintf "  specialize_js: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - specialize_js: %d@." !opt_count;
+  if debug_stats ()
+  then Code.check_updates ~name:"specialize_js" previous_p p ~updates:!opt_count;
   p
 
 let f_once_before p =

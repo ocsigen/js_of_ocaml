@@ -25,6 +25,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 open Code
 
 type def =
@@ -202,6 +204,7 @@ let empty_body b =
   | _ -> false
 
 let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
+  let previous_p = p in
   let t = Timer.make () in
   let count = ref 0 in
   let shortcuts = Hashtbl.create 16 in
@@ -256,9 +259,12 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
   let p = { p with blocks } in
   if times () then Format.eprintf "  dead code elim. empty blocks: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - dead code empty blocks: %d@." !count;
+  if debug_stats ()
+  then Code.check_updates ~name:"emptyblock" previous_p p ~updates:!count;
   p
 
 let f ({ blocks; _ } as p : Code.program) =
+  let previous_p = p in
   let t = Timer.make () in
   let nv = Var.count () in
   let defs = Array.make nv [] in
@@ -334,4 +340,11 @@ let f ({ blocks; _ } as p : Code.program) =
       st.deleted_instrs
       st.deleted_blocks
       st.deleted_params;
+  if debug_stats ()
+  then
+    Code.check_updates
+      ~name:"deadcode"
+      previous_p
+      p
+      ~updates:(st.deleted_instrs + st.deleted_blocks + st.deleted_params);
   p, st.live

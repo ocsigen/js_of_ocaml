@@ -151,7 +151,7 @@ let rec loop max name round i (p : 'a) : 'a =
   then (
     if times () then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
     p')
-  else if Code.eq p' p
+  else if Code.equal p' p
   then (
     if times () then Format.eprintf "%s#%d: fix-point reached.@." name i;
     p')

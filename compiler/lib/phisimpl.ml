@@ -23,6 +23,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 open Code
 
 (****)
@@ -151,6 +153,7 @@ let solver1 vars deps defs =
       | None -> Var.of_idx idx)
 
 let f p =
+  let previous_p = p in
   let t = Timer.make () in
   let t' = Timer.make () in
   let vars, deps, defs = program_deps p in
@@ -160,15 +163,23 @@ let f p =
   if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
   Array.iteri subst ~f:(fun idx y ->
       if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
-  let p = Subst.Excluding_Binders.program (Subst.from_array subst) p in
-  if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
-  let updates =
-    lazy
-      (let count = ref 0 in
-       for i = 0 to Array.length subst - 1 do
-         if not (Var.equal (Var.of_idx i) subst.(i)) then incr count
-       done;
-       !count)
+  let need_stats = stats () || debug_stats () in
+  let count_uniq = ref 0 in
+  let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
+  let subst v1 =
+    let idx1 = Code.Var.idx v1 in
+    let v2 = subst.(idx1) in
+    if Code.Var.equal v1 v2
+    then v1
+    else (
+      if need_stats && not (BitSet.mem count_seen idx1)
+      then (
+        incr count_uniq;
+        BitSet.set count_seen idx1);
+      v2)
   in
-  if stats () then Format.eprintf "Stats - phi updates: %d@." (Lazy.force updates);
+  let p = Subst.Excluding_Binders.program subst p in
+  if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
+  if stats () then Format.eprintf "Stats - phi updates: %d@." !count_uniq;
+  if debug_stats () then Code.check_updates ~name:"phi" previous_p p ~updates:!count_uniq;
   p
