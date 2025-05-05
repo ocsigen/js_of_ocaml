@@ -306,7 +306,10 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 let f p live_vars =
+  let previous_p = p in
   let inline_count = ref 0 in
   Code.invariant p;
   let t = Timer.make () in
@@ -339,5 +342,7 @@ let f p live_vars =
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - inline: %d optimizations@." !inline_count;
+  if debug_stats ()
+  then Code.check_updates ~name:"inline" previous_p p ~updates:!inline_count;
   Code.invariant p;
   p

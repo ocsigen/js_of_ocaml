@@ -25,6 +25,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 open Code
 
 (****)
@@ -495,6 +497,7 @@ let build_subst (info : Info.t) vars =
 (****)
 
 let f p =
+  let previous_p = p in
   Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in
@@ -533,17 +536,25 @@ let f p =
     }
   in
   let s = build_subst info vars in
-  let p = Subst.Excluding_Binders.program (Subst.from_array s) p in
+  let need_stats = stats () || debug_stats () in
+  let count_uniq = ref 0 in
+  let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
+  let subst v1 =
+    let idx1 = Code.Var.idx v1 in
+    let v2 = s.(idx1) in
+    if Code.Var.equal v1 v2
+    then v1
+    else (
+      if need_stats && not (BitSet.mem count_seen idx1)
+      then (
+        incr count_uniq;
+        BitSet.set count_seen idx1);
+      v2)
+  in
+  let p = Subst.Excluding_Binders.program subst p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
-  let updates =
-    lazy
-      (let count = ref 0 in
-       for i = 0 to Array.length s - 1 do
-         if not (Var.equal (Var.of_idx i) s.(i)) then incr count
-       done;
-       !count)
-  in
-  if stats () then Format.eprintf "Stats - flow updates: %d@." (Lazy.force updates);
+  if stats () then Format.eprintf "Stats - flow updates: %d@." !count_uniq;
+  if debug_stats () then Code.check_updates ~name:"flow" previous_p p ~updates:!count_uniq;
   Code.invariant p;
   p, info

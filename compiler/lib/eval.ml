@@ -25,6 +25,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 let static_env = Hashtbl.create 17
 
 let clear_static_env () = Hashtbl.clear static_env
@@ -763,6 +765,7 @@ let eval update_count update_branch ~target info blocks =
     blocks
 
 let f info p =
+  let previous_p = p in
   let update_count = ref 0 in
   let update_branch = ref 0 in
   let drop_count = ref 0 in
@@ -778,4 +781,11 @@ let f info p =
       !update_count
       !drop_count
       !update_branch;
+  if debug_stats ()
+  then
+    Code.check_updates
+      ~name:"eval"
+      previous_p
+      p
+      ~updates:(!update_count + !drop_count + !update_branch);
   p

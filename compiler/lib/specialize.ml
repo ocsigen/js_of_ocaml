@@ -25,6 +25,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 let function_arity info x =
   let rec arity info x acc =
     get_approx
@@ -124,11 +126,14 @@ let specialize_instrs ~function_arity opt_count p =
   { p with blocks; free_pc }
 
 let f ~function_arity p =
+  let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
   let p = specialize_instrs ~function_arity opt_count p in
   if times () then Format.eprintf "  optcall: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - optcall: %d@." !opt_count;
+  if debug_stats ()
+  then Code.check_updates ~name:"optcall" previous_p p ~updates:!opt_count;
   p
 
 (***)
@@ -163,6 +168,7 @@ let find_outlier_index arr =
           | `Distinguished _ -> `Many_cases))
 
 let switches p =
+  let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
   let p =
@@ -237,4 +243,6 @@ let switches p =
   in
   if times () then Format.eprintf "  switches: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - switches: %d@." !opt_count;
+  if debug_stats ()
+  then Code.check_updates ~name:"switches" previous_p p ~updates:!opt_count;
   p

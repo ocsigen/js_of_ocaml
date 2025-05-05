@@ -25,6 +25,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 open Code
 
 (* FIX: it should be possible to deal with tail-recursion in exception
@@ -89,6 +91,7 @@ let rec traverse update_count f pc visited blocks =
   else visited, blocks
 
 let f p =
+  let previous_p = p in
   let free_pc = ref p.free_pc in
   let blocks = ref p.blocks in
   let update_count = ref 0 in
@@ -147,4 +150,6 @@ let f p =
   let p = { p with blocks = !blocks; free_pc = !free_pc } in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
+  if debug_stats ()
+  then Code.check_updates ~name:"tailcall" previous_p p ~updates:!update_count;
   p
