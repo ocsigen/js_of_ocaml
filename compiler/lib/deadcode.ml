@@ -45,7 +45,7 @@ type t =
   ; live : variable_uses
   ; defs : def list array
   ; reachable_blocks : BitSet.t
-  ; pure_funs : Var.Set.t
+  ; pure_funs : Pure_fun.t
   ; mutable deleted_instrs : int
   ; mutable deleted_blocks : int
   ; mutable deleted_params : int

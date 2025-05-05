@@ -18,8 +18,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val pure_expr : Code.Var.Set.t -> Code.expr -> bool
+type t
 
-val pure_instr : Code.Var.Set.t -> Code.instr -> bool
+val pure_expr : t -> Code.expr -> bool
 
-val f : Code.program -> Code.Var.Set.t
+val pure_instr : t -> Code.instr -> bool
+
+val f : Code.program -> t
