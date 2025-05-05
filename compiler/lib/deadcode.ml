@@ -219,9 +219,8 @@ let rec add_arg_dep defs params args =
   | _ -> assert false
 
 let add_cont_dep blocks defs (pc, args) =
-  match try Some (Addr.Map.find pc blocks) with Not_found -> None with
-  | Some block -> add_arg_dep defs block.params args
-  | None -> () (* Dead continuation *)
+  let block = Addr.Map.find pc blocks in
+  add_arg_dep defs block.params args
 
 let empty_body b =
   match b with
@@ -329,35 +328,37 @@ let f ({ blocks; _ } as p : Code.program) =
   in
   mark_reachable st p.start;
   if debug () then Print.program Format.err_formatter (fun pc xi -> annot st pc xi) p;
-  let all_blocks = blocks in
-  let blocks =
-    Addr.Map.filter_map
-      (fun pc block ->
-        if not (BitSet.mem st.reachable_blocks pc)
-        then (
-          st.deleted_blocks <- st.deleted_blocks + 1;
-          None)
-        else
-          Some
-            { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
-            ; body =
-                List.fold_left block.body ~init:[] ~f:(fun acc i ->
-                    match i, acc with
-                    | Event _, Event _ :: prev ->
-                        (* Avoid consecutive events (keep just the last one) *)
-                        i :: prev
-                    | _ ->
-                        if live_instr st i
-                        then filter_closure all_blocks st i :: acc
-                        else (
-                          st.deleted_instrs <- st.deleted_instrs + 1;
-                          acc))
-                |> List.rev
-            ; branch = filter_live_last all_blocks st block.branch
-            })
-      blocks
+  let p =
+    let all_blocks = blocks in
+    let blocks =
+      Addr.Map.filter_map
+        (fun pc block ->
+          if not (BitSet.mem st.reachable_blocks pc)
+          then (
+            st.deleted_blocks <- st.deleted_blocks + 1;
+            None)
+          else
+            Some
+              { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
+              ; body =
+                  List.fold_left block.body ~init:[] ~f:(fun acc i ->
+                      match i, acc with
+                      | Event _, Event _ :: prev ->
+                          (* Avoid consecutive events (keep just the last one) *)
+                          i :: prev
+                      | _ ->
+                          if live_instr st i
+                          then filter_closure all_blocks st i :: acc
+                          else (
+                            st.deleted_instrs <- st.deleted_instrs + 1;
+                            acc))
+                  |> List.rev
+              ; branch = filter_live_last all_blocks st block.branch
+              })
+        blocks
+    in
+    { p with blocks }
   in
-  let p = { p with blocks } in
   let p = remove_empty_blocks st p in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
