@@ -880,7 +880,8 @@ let rec compile_block blocks debug_data code pc state : unit =
       let last =
         match last with
         | Branch (pc, _) -> Branch (mk_cont pc)
-        | Cond (x, (pc1, _), (pc2, _)) -> Cond (x, mk_cont pc1, mk_cont pc2)
+        | Cond (x, (pc1, _), (pc2, _)) ->
+            if pc1 = pc2 then Branch (mk_cont pc1) else Cond (x, mk_cont pc1, mk_cont pc2)
         | Poptrap (pc, _) -> Poptrap (mk_cont pc)
         | Switch (x, a) -> Switch (x, Array.map a ~f:(fun (pc, _) -> mk_cont pc))
         | Raise _ | Return _ | Stop -> last
