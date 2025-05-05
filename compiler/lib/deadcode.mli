@@ -23,4 +23,4 @@ type variable_uses =
 
 val f : Code.program -> Code.program * variable_uses
 
-val remove_unused_blocks : Code.program -> Code.program * int
+val remove_unused_blocks : Code.program -> Code.program

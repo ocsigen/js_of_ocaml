@@ -340,9 +340,11 @@ let f p live_vars =
             closures, p)
       (closures, p)
   in
+  (* Inlining a raising function can result in empty blocks *)
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - inline: %d optimizations@." !inline_count;
   if debug_stats ()
   then Code.check_updates ~name:"inline" previous_p p ~updates:!inline_count;
+  let p = Deadcode.remove_unused_blocks p in
   Code.invariant p;
   p

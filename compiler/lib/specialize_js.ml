@@ -475,5 +475,5 @@ let f_once_after p =
         (fun block -> { block with Code.body = List.map block.body ~f })
         p.blocks
     in
-    { p with blocks }
+    Deadcode.remove_unused_blocks { p with blocks }
   else p

@@ -839,7 +839,25 @@ let with_invariant = Debug.find "invariant"
 
 let check_defs = false
 
-let invariant { blocks; start; _ } =
+let used_blocks p =
+  let visited = BitSet.create' p.free_pc in
+  let rec mark_used pc =
+    if not (BitSet.mem visited pc)
+    then (
+      BitSet.set visited pc;
+      let block = Addr.Map.find pc p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, Closure (_, (pc', _), _)) -> mark_used pc'
+          | _ -> ())
+        block.body;
+      fold_children p.blocks pc (fun pc' () -> mark_used pc') ())
+  in
+  mark_used p.start;
+  visited
+
+let invariant ({ blocks; start; _ } as p) =
   if with_invariant ()
   then (
     assert (Addr.Map.mem start blocks);
@@ -897,8 +915,10 @@ let invariant { blocks; start; _ } =
           check_cont cont2
       | Poptrap cont -> check_cont cont
     in
+    let visited = used_blocks p in
     Addr.Map.iter
-      (fun _pc block ->
+      (fun pc block ->
+        assert (BitSet.mem visited pc);
         List.iter block.params ~f:define;
         List.iter block.body ~f:check_instr;
         check_events block.body;
