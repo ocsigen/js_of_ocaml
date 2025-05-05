@@ -142,16 +142,19 @@ let print p =
   if debug () then Code.Print.program Format.err_formatter (fun _ _ -> "") p;
   p
 
+let stats = Debug.find "stats"
+
 let rec loop max name round i (p : 'a) : 'a =
-  if times () then Format.eprintf "%s#%d...@." name i;
+  let debug = times () || stats () in
+  if debug then Format.eprintf "%s#%d...@." name i;
   let p' = round p in
   if i >= max
   then (
-    if times () then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
+    if debug then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
     p')
   else if Code.equal p' p
   then (
-    if times () then Format.eprintf "%s#%d: fix-point reached.@." name i;
+    if debug then Format.eprintf "%s#%d: fix-point reached.@." name i;
     p')
   else loop max name round (i + 1) p'
 
