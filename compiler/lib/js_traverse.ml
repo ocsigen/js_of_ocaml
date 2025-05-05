@@ -1702,23 +1702,23 @@ class simpl =
 
     method expression e =
       let e = super#expression e in
-      let is_zero x =
-        match Num.to_string x with
-        | "0" | "0." -> true
-        | _ -> false
-      in
       match e with
       | EBin (Plus, e1, e2) -> (
           match e1, e2 with
-          | _, ENum n when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
-          | ENum n, _ when Num.is_neg n -> EBin (Minus, e2, ENum (Num.neg n))
-          | ENum zero, (ENum _ as x) when is_zero zero -> x
-          | (ENum _ as x), ENum zero when is_zero zero -> x
+          | ENum n1, ENum n2 when Num.is_int n1 && Num.is_int n2 -> ENum (Num.add n1 n2)
+          | _, ENum n when Num.is_neg n ->
+              m#expression (EBin (Minus, e1, ENum (Num.neg n)))
+          | ENum n, _ when Num.is_neg n ->
+              m#expression (EBin (Minus, e2, ENum (Num.neg n)))
+          | ENum zero, x when Num.is_zero zero -> x
+          | x, ENum zero when Num.is_zero zero -> x
           | _ -> e)
       | EBin (Minus, e1, e2) -> (
           match e1, e2 with
+          | EBin (Minus, e0, ENum n1), ENum n2 when Num.is_int n1 && Num.is_int n2 ->
+              EBin (Minus, e0, ENum (Num.add n1 n2))
           | _, ENum n when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
-          | (ENum _ as x), ENum zero when is_zero zero -> x
+          | (ENum _ as x), ENum zero when Num.is_zero zero -> x
           | _ -> e)
       | EFun
           (None, (({ generator = false; async = true | false }, _, body, _) as fun_decl))

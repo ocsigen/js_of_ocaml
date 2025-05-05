@@ -42,10 +42,11 @@ module M1 = struct
   let%expect_test "executed code" =
     compile_and_run code;
     [%expect {|
-    10
-    10
-    14
-    25 |}]
+      10
+      10
+      14
+      25
+      |}]
 
   let%expect_test "generated code" =
     let generated = compile_and_parse code in
@@ -148,5 +149,6 @@ module M2 = struct
       15
       20
       15
-      20 |}]
+      20
+      |}]
 end

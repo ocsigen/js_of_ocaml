@@ -176,6 +176,7 @@ module Fragment = struct
     ; has_macro : bool
     ; version_constraint_ok : bool
     ; weakdef : bool
+    ; inline : bool
     ; always : bool
     ; code : Javascript.program pack
     ; conditions : bool StringMap.t
@@ -267,6 +268,7 @@ module Fragment = struct
                 ; requires = []
                 ; version_constraint_ok = true
                 ; weakdef = false
+                ; inline = false
                 ; always = false
                 ; has_macro = false
                 ; code = Ok code
@@ -301,6 +303,7 @@ module Fragment = struct
                             fragment.version_constraint_ok && version_match l
                         }
                     | `Weakdef -> { fragment with weakdef = true }
+                    | `Inline -> { fragment with inline = true }
                     | `Always -> { fragment with always = true }
                     | `Alias name ->
                         { fragment with aliases = StringSet.add name fragment.aliases }
@@ -425,6 +428,7 @@ type provided =
   ; pi : Parse_info.t
   ; filename : string
   ; weakdef : bool
+  ; inline : bool
   ; target_env : Target_env.t
   ; aliases : StringSet.t
   }
@@ -442,8 +446,7 @@ let reset () =
   Hashtbl.clear provided;
   Hashtbl.clear provided_rev;
   Hashtbl.clear code_pieces;
-  Primitive.reset ();
-  Generate.init ()
+  Primitive.reset ()
 
 let list_all ?from () =
   let include_ =
@@ -480,6 +483,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
       ; requires
       ; version_constraint_ok
       ; weakdef
+      ; inline
       ; always
       ; code
       ; fragment_target
@@ -572,7 +576,14 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               Hashtbl.add
                 provided
                 name
-                { id; pi; filename; weakdef; target_env = fragment_target; aliases };
+                { id
+                ; pi
+                ; filename
+                ; weakdef
+                ; inline
+                ; target_env = fragment_target
+                ; aliases
+                };
               Hashtbl.add provided_rev id (name, pi);
               Hashtbl.add code_pieces id (code, has_macro, requires, deprecated);
               StringSet.iter (fun alias -> Primitive.alias alias name) aliases;
@@ -777,3 +788,15 @@ let deprecated ~name =
     let _, _, _, deprecated = Hashtbl.find code_pieces x.id in
     Option.is_some deprecated
   with Not_found -> false
+
+let inline ~name =
+  match Hashtbl.find provided (Primitive.resolve name) with
+  | exception Not_found -> None
+  | { id; inline; _ } ->
+      if inline
+      then
+        let code, _has_macro, req, _deprecated = Hashtbl.find code_pieces id in
+        match unpack code with
+        | [ (Function_declaration (_, f), _) ] -> Some (req, Javascript.EFun (None, f))
+        | _ -> None
+      else None

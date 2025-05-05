@@ -149,7 +149,7 @@ let%expect_test "Unix.read" =
   [%expect {|
     write failed
     bad file descriptor
- |}]
+    |}]
 
 let%expect_test "Unix.getenv" =
   Printf.printf "%s\n" (Sys.getenv "FOO");

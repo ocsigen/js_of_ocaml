@@ -38,6 +38,13 @@ function caml_alloc_dummy_infix() {
   };
 }
 
+//Provides: caml_alloc_dummy const
+//Alias: caml_alloc_dummy_float
+//Inline
+function caml_alloc_dummy(_unit) {
+  return [];
+}
+
 //Provides: caml_obj_tag
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
@@ -47,6 +54,13 @@ function caml_obj_tag(x) {
   else if (x instanceof Function || typeof x === "function") return 247;
   else if (x?.caml_custom) return 255;
   else return 1000;
+}
+
+//Provides: caml_obj_tag_direct const
+//Alias: %direct_obj_tag
+//Inline
+function caml_obj_tag_direct(b) {
+  return b[0];
 }
 
 //Provides: caml_obj_set_tag (mutable, const)
