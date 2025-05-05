@@ -78,6 +78,8 @@ and block blocks pc visited pure_blocks funs =
       | _ -> ());
       pure && pure_instr !funs i)
 
+type t = Var.Set.t
+
 let f p =
   let t = Timer.make () in
   let visited = BitSet.create' p.free_pc in
