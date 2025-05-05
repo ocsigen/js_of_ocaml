@@ -157,38 +157,20 @@ let rec loop max name round i (p : 'a) : 'a =
     p')
   else loop max name round (i + 1) p'
 
+let round : 'a -> 'a =
+  print +> tailcall +> phi +> flow +> specialize +> eval +> inline +> deadcode
+
 (* o1 *)
 
-let o1 : 'a -> 'a =
-  print
-  +> tailcall
-  +> flow
-  +> specialize
-  +> eval
-  +> inline (* inlining may reveal new tailcall opt *)
-  +> deadcode
-  +> tailcall
-  +> phi
-  +> flow
-  +> specialize
-  +> eval
-  +> inline
-  +> deadcode
-  +> print
-  +> flow
-  +> specialize
-  +> eval
-  +> inline
-  +> deadcode
-  +> phi
+let o1 = loop 2 "round" round 1 +> phi +> flow +> specialize +> eval +> print
 
 (* o2 *)
 
-let o2 = loop 10 "o1" o1 1 +> print
+let o2 = loop 10 "round" round 1 +> print
 
 (* o3 *)
 
-let o3 = loop 10 "o1" o1 1 +> print
+let o3 = loop 30 "round" round 1 +> print
 
 let generate
     ~exported_runtime
