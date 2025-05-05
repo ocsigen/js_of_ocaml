@@ -40,39 +40,42 @@ let pure_instr pure_funs i =
 
 (****)
 
-let rec traverse blocks pc visited funs =
-  try Addr.Map.find pc visited, visited, funs
-  with Not_found ->
-    let visited = Addr.Map.add pc false visited in
-    let pure, visited, funs =
+let rec traverse blocks pc visited pure_blocks funs =
+  if BitSet.mem visited pc
+  then BitSet.mem pure_blocks pc
+  else (
+    BitSet.set visited pc;
+    let pure =
       fold_children
         blocks
         pc
-        (fun pc (pure, visited, funs) ->
-          let pure', visited, funs = traverse blocks pc visited funs in
-          pure && pure', visited, funs)
-        (true, visited, funs)
+        (fun pc pure ->
+          let pure' = traverse blocks pc visited pure_blocks funs in
+          pure && pure')
+        true
     in
-    let pure, visited, funs = block blocks pc pure visited funs in
-    pure, Addr.Map.add pc pure visited, funs
+    let pure = block blocks pc pure visited pure_blocks funs in
+    if pure then BitSet.set pure_blocks pc;
+    pure)
 
-and block blocks pc pure visited funs =
+and block blocks pc pure visited pure_blocks funs =
   let b = Addr.Map.find pc blocks in
   let pure =
     match b.branch with
     | Raise _ -> false
     | _ -> pure
   in
-  List.fold_left b.body ~init:(pure, visited, funs) ~f:(fun (pure, visited, funs) i ->
-      let visited, funs =
-        match i with
-        | Let (x, Closure (_, (pc, _), _)) ->
-            let pure, visited, funs = traverse blocks pc visited funs in
-            visited, if pure then Var.Set.add x funs else funs
-        | _ -> visited, funs
-      in
-      pure && pure_instr funs i, visited, funs)
+  List.fold_left b.body ~init:pure ~f:(fun pure i ->
+      (match i with
+      | Let (x, Closure (_, (pc, _), _)) ->
+          let pure = traverse blocks pc visited pure_blocks funs in
+          if pure then funs := Var.Set.add x !funs
+      | _ -> ());
+      pure && pure_instr !funs i)
 
 let f p =
-  let _, _, funs = traverse p.blocks p.start Addr.Map.empty Var.Set.empty in
-  funs
+  let visited = BitSet.create' p.free_pc in
+  let pure = BitSet.create' p.free_pc in
+  let funs = ref Var.Set.empty in
+  let _ = traverse p.blocks p.start visited pure funs in
+  !funs

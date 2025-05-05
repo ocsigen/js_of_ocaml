@@ -44,7 +44,7 @@ type t =
   { blocks : block Addr.Map.t
   ; live : variable_uses
   ; defs : def list array
-  ; mutable reachable_blocks : Addr.Set.t
+  ; reachable_blocks : BitSet.t
   ; pure_funs : Var.Set.t
   ; mutable deleted_instrs : int
   ; mutable deleted_blocks : int
@@ -90,9 +90,9 @@ and mark_expr st e =
 and mark_cont_reachable st (pc, _param) = mark_reachable st pc
 
 and mark_reachable st pc =
-  if not (Addr.Set.mem pc st.reachable_blocks)
+  if not (BitSet.mem st.reachable_blocks pc)
   then (
-    st.reachable_blocks <- Addr.Set.add pc st.reachable_blocks;
+    BitSet.set st.reachable_blocks pc;
     let block = Addr.Map.find pc st.blocks in
     List.iter block.body ~f:(fun i ->
         match i with
@@ -174,7 +174,7 @@ let ref_count st i =
   | _ -> 0
 
 let annot st pc xi =
-  if not (Addr.Set.mem pc st.reachable_blocks)
+  if not (BitSet.mem st.reachable_blocks pc)
   then "x"
   else
     match (xi : Code.Print.xinstr) with
@@ -294,7 +294,7 @@ let f ({ blocks; _ } as p : Code.program) =
     { live
     ; defs
     ; blocks
-    ; reachable_blocks = Addr.Set.empty
+    ; reachable_blocks = BitSet.create' p.free_pc
     ; pure_funs
     ; deleted_instrs = 0
     ; deleted_blocks = 0
@@ -307,7 +307,7 @@ let f ({ blocks; _ } as p : Code.program) =
   let blocks =
     Addr.Map.filter_map
       (fun pc block ->
-        if not (Addr.Set.mem pc st.reachable_blocks)
+        if not (BitSet.mem st.reachable_blocks pc)
         then (
           st.deleted_blocks <- st.deleted_blocks + 1;
           None)
