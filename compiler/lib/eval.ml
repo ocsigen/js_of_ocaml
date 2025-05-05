@@ -796,7 +796,7 @@ let f info p =
       p.blocks
   in
   let blocks = drop_exception_handler drop_count blocks in
-  let p = { p with blocks } in
+  let p = Deadcode.remove_unused_blocks { p with blocks } in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;
   if stats ()
   then

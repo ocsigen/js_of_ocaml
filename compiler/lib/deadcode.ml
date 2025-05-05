@@ -185,6 +185,26 @@ let annot st pc xi =
 
 (****)
 
+let remove_unused_blocks p =
+  let visited = BitSet.create' p.free_pc in
+  let rec mark_used pc =
+    if not (BitSet.mem visited pc)
+    then (
+      BitSet.set visited pc;
+      let block = Addr.Map.find pc p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, Closure (_, (pc', _), _)) -> mark_used pc'
+          | _ -> ())
+        block.body;
+      Code.fold_children p.blocks pc (fun pc' () -> mark_used pc') ())
+  in
+  mark_used p.start;
+  { p with blocks = Addr.Map.filter (fun pc _ -> BitSet.mem visited pc) p.blocks }
+
+(****)
+
 let rec add_arg_dep defs params args =
   match params, args with
   | x :: params, y :: args ->
@@ -256,7 +276,7 @@ let remove_empty_blocks ~live_vars (p : Code.program) : Code.program =
         })
       p.blocks
   in
-  let p = { p with blocks } in
+  let p = remove_unused_blocks { p with blocks } in
   if times () then Format.eprintf "  dead code elim. empty blocks: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - dead code empty blocks: %d@." !count;
   if debug_stats ()
