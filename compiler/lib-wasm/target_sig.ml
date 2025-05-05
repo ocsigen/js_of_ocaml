@@ -96,9 +96,18 @@ module type S = sig
     val unbox_nativeint : expression -> expression
   end
 
-  module Value : sig
+  module Type : sig
     val value : Wasm_ast.value_type
 
+    val func_type : ?ret:Wasm_ast.value_type -> int -> Wasm_ast.func_type
+
+    val primitive_type : int -> Wasm_ast.func_type
+
+    val function_type :
+      cps:bool -> ?ret:Wasm_ast.value_type -> int -> Wasm_ast.var Code_generation.t
+  end
+
+  module Value : sig
     val unit : expression
 
     val val_int : expression -> expression
@@ -271,7 +280,7 @@ module type S = sig
        param_names:Wasm_ast.var list
     -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
     -> Wasm_ast.instruction list
-    -> Wasm_ast.instruction list
+    -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
 
   val entry_point :
        toplevel_fun:Wasm_ast.var
