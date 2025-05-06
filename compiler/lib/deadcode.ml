@@ -238,23 +238,23 @@ let merge_blocks p =
     Array.init nv ~f:(fun i -> Var.of_idx i)
   in
   let () =
-    let makr_cont (pc', _) = preds.(pc') <- preds.(pc') + 1 in
+    let mark_cont (pc', _) = preds.(pc') <- preds.(pc') + 1 in
     Addr.Map.iter
       (fun _ { body; branch; _ } ->
         List.iter body ~f:(function
-          | Let (_, Closure (_, cont, _)) -> makr_cont cont
+          | Let (_, Closure (_, cont, _)) -> mark_cont cont
           | Assign (x, _) -> assigned := Var.Set.add x !assigned
           | _ -> ());
         match branch with
-        | Branch cont -> makr_cont cont
+        | Branch cont -> mark_cont cont
         | Cond (_, cont1, cont2) ->
-            makr_cont cont1;
-            makr_cont cont2
-        | Switch (_, a1) -> Array.iter ~f:makr_cont a1
+            mark_cont cont1;
+            mark_cont cont2
+        | Switch (_, a1) -> Array.iter ~f:mark_cont a1
         | Pushtrap (cont1, _, cont2) ->
-            makr_cont cont1;
-            makr_cont cont2
-        | Poptrap cont -> makr_cont cont
+            mark_cont cont1;
+            mark_cont cont2
+        | Poptrap cont -> mark_cont cont
         | Return _ | Raise _ | Stop -> ())
       p.blocks
   in
@@ -298,20 +298,8 @@ let merge_blocks p =
       then blocks
       else
         let () = BitSet.set visited pc in
-        let block, blocks = process_branch pc blocks in
-        match block.branch with
-        | Return _ | Raise _ | Stop -> blocks
-        | Branch (pc', _) | Poptrap (pc', _) -> traverse pc' blocks
-        | Pushtrap ((pc', _), _, (pc_h, _)) ->
-            let blocks = traverse pc' blocks in
-            let blocks = traverse pc_h blocks in
-            blocks
-        | Cond (_, (pc1, _), (pc2, _)) ->
-            let blocks = traverse pc1 blocks in
-            let blocks = traverse pc2 blocks in
-            blocks
-        | Switch (_, a1) ->
-            Array.fold_right ~init:blocks ~f:(fun (pc, _) blocks -> traverse pc blocks) a1
+        let _block, blocks = process_branch pc blocks in
+        Code.fold_children blocks pc traverse blocks
     in
     let blocks =
       Code.fold_closures p (fun _ _ (pc, _) _ blocks -> traverse pc blocks) p.blocks
