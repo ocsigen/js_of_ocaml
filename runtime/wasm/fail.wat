@@ -74,7 +74,7 @@
    (@string $index_out_of_bounds "index out of bounds")
 
    (func (export "caml_bound_error")
-      (return_call $caml_invalid_argument (global.get $index_out_of_bounds)))
+      (call $caml_invalid_argument (global.get $index_out_of_bounds)))
 
    (global $END_OF_FILE_EXN i32 (i32.const 4))
 
