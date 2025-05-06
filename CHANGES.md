@@ -29,6 +29,7 @@
 * Compiler: improve debug/sourcemap location of closures (#1947)
 * Compiler: improve tailcall optimization (#1943)
 * Runtime: use Dataview to convert between floats and bit representation
+* Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
