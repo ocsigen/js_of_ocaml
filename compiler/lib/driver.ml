@@ -53,6 +53,7 @@ let deadcode' p =
 let deadcode p =
   let p, _ = deadcode' p in
   let p = Deadcode.merge_blocks p in
+  let p = Code.compact p in
   p
 
 let inline p =

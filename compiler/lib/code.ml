@@ -19,11 +19,14 @@
  *)
 open! Stdlib
 
+let stats = Debug.find "stats"
+
 module Addr = struct
   type t = int
 
   module Set = Set.Make (Int)
   module Map = Map.Make (Int)
+  module Hashtbl = Hashtbl.Make (Int)
 
   let to_string = string_of_int
 
@@ -826,6 +829,50 @@ let cont_compare (pc, args) (pc', args') =
 let with_invariant = Debug.find "invariant"
 
 let check_defs = false
+
+let do_compact { blocks; start; free_pc = _ } =
+  let remap =
+    Addr.Map.to_seq blocks |> Seq.mapi (fun i (k, _) -> k, i) |> Addr.Hashtbl.of_seq
+  in
+  let rewrite_cont remap (pc, args) = Addr.Hashtbl.find remap pc, args in
+  let rewrite remap block =
+    let body =
+      List.map block.body ~f:(function
+        | Let (x, Closure (params, cont, loc)) ->
+            Let (x, Closure (params, rewrite_cont remap cont, loc))
+        | i -> i)
+    in
+    let branch =
+      match block.branch with
+      | (Return _ | Raise _ | Stop) as b -> b
+      | Branch c -> Branch (rewrite_cont remap c)
+      | Poptrap c -> Poptrap (rewrite_cont remap c)
+      | Cond (x, c1, c2) -> Cond (x, rewrite_cont remap c1, rewrite_cont remap c2)
+      | Switch (x, a) -> Switch (x, Array.map a ~f:(rewrite_cont remap))
+      | Pushtrap (c1, x, c2) -> Pushtrap (rewrite_cont remap c1, x, rewrite_cont remap c2)
+    in
+    { block with body; branch }
+  in
+  let blocks =
+    Addr.Map.to_seq blocks
+    |> Seq.mapi (fun i (_, b) -> i, rewrite remap b)
+    |> Addr.Map.of_seq
+  in
+  let free_pc = (Addr.Map.max_binding blocks |> fst) + 1 in
+  let start = Addr.Hashtbl.find remap start in
+  { blocks; start; free_pc }
+
+let compact p =
+  let card = Addr.Map.cardinal p.blocks in
+  let max = Addr.Map.max_binding p.blocks |> fst in
+  let ratio = float card /. float max *. 100. in
+  (if stats ()
+   then
+     let card = Addr.Map.cardinal p.blocks in
+     let max = Addr.Map.max_binding p.blocks |> fst in
+     let ratio = float card /. float max *. 100. in
+     Format.eprintf "Stats - compact: %d/%d = %.2f%%@." card max ratio);
+  if Float.(ratio < 70.) then do_compact p else p
 
 let used_blocks p =
   let visited = BitSet.create' p.free_pc in

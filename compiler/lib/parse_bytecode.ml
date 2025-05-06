@@ -2525,13 +2525,13 @@ let parse_bytecode code globals debug_data =
             })
           !compiled_blocks
       in
-      let free_pc = String.length code / 4 in
+      let free_pc = (Addr.Map.max_binding blocks |> fst) + 1 in
       { start; blocks; free_pc })
     else Code.empty
   in
   compiled_blocks := Addr.Map.empty;
   tagged_blocks := Addr.Map.empty;
-  p
+  Code.compact p
 
 module Toc : sig
   type t

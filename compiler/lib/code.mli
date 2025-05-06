@@ -307,6 +307,8 @@ val prepend : program -> instr list -> program
 
 val empty : program
 
+val compact : program -> program
+
 val is_empty : program -> bool
 
 val equal : program -> program -> bool
