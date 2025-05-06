@@ -61,7 +61,7 @@ let rec odd n' = function
            for(;;){
             if(0 === c) return [0, d, 0];
             if(1 === c) return [0, d, 1];
-            [d, c] = [(c - 1 | 0) - 1 | 0, (d - 1 | 0) - 1 | 0];
+            [c, d] = [(d - 1 | 0) - 1 | 0, (c - 1 | 0) - 1 | 0];
            }}],
          "Test");
        return;})

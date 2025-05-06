@@ -43,8 +43,7 @@ let wrap f =
      catch(exn$1){
       var exn = caml_wrap_exception(exn$1);
       for(;;){
-       var tag = exn[1];
-       if(tag !== Nested) throw caml_maybe_attach_backtrace(exn, 1);
+       if(exn[1] !== Nested) throw caml_maybe_attach_backtrace(exn, 1);
        var exn$0 = exn[2];
        exn = exn$0;
       }
@@ -53,8 +52,7 @@ let wrap f =
     //end
     function wrap$1(f, cont){
      function _b_(exn$1){
-      var tag = exn$1[1];
-      if(tag === Nested){
+      if(exn$1[1] === Nested){
        var exn$0 = exn$1[2];
        return caml_exact_trampoline_call1(_b_, exn$0);
       }

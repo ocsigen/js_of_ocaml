@@ -58,8 +58,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     function exceptions$0(s){
      try{var _p_ = caml_int_of_string(s), n = _p_;}
      catch(exn$0){
-      var exn = caml_wrap_exception(exn$0), tag = exn[1];
-      if(tag !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
+      var exn = caml_wrap_exception(exn$0);
+      if(exn[1] !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
       var n = 0;
      }
      try{
@@ -88,8 +88,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     function exceptions$1(s, cont){
      try{var _l_ = caml_int_of_string(s), n = _l_;}
      catch(exn){
-      var exn$2 = caml_wrap_exception(exn), tag = exn$2[1];
-      if(tag !== Stdlib[7]){
+      var exn$2 = caml_wrap_exception(exn);
+      if(exn$2[1] !== Stdlib[7]){
        var
         raise$1 = caml_pop_trap(),
         exn$0 = caml_maybe_attach_backtrace(exn$2, 0);
@@ -136,8 +136,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      catch(exn$0){
       var l$0 = l;
       for(;;){
-       var match = caml_call1(g, l$0), variant = match[1];
-       if(72330306 > variant){
+       var match = caml_call1(g, l$0);
+       if(72330306 > match[1]){
         var exn = match[2];
         throw caml_maybe_attach_backtrace(exn, 1);
        }
@@ -155,8 +155,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                  (g,
                   l,
                   function(match){
-                   var variant = match[1];
-                   if(72330306 <= variant){
+                   if(72330306 <= match[1]){
                     var l = match[2];
                     return caml_exact_trampoline_call1(_h_, l);
                    }
