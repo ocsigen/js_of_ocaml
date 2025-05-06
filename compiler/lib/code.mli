@@ -35,16 +35,6 @@ module Addr : sig
   module Map : Map.S with type key = t
 end
 
-module DebugAddr : sig
-  type t = private int
-
-  val of_addr : Addr.t -> t
-
-  val to_addr : t -> Addr.t
-
-  val no : t
-end
-
 module Var : sig
   type t [@@ocaml.immediate]
 
