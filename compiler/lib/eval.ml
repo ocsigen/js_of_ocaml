@@ -467,10 +467,32 @@ let constant_js_equal a b =
   | Tuple _, _
   | _, Tuple _ -> None
 
+(* [eval_prim] does not distinguish the two constants *)
+let constant_equal a b =
+  match a, b with
+  | Int i, Int j -> Targetint.equal i j
+  | Float a, Float b -> Int64.equal a b
+  | NativeString a, NativeString b -> Native_string.equal a b
+  | String a, String b -> String.equal a b
+  | Int32 a, Int32 b -> Int32.equal a b
+  | NativeInt a, NativeInt b -> Int32.equal a b
+  | Int64 a, Int64 b -> Int64.equal a b
+  (* We don't need to compare other constants, so let's just return false. *)
+  | Tuple _, Tuple _ -> false
+  | Float_array _, Float_array _ -> false
+  | (Int _ | Float _ | Int64 _ | Int32 _ | NativeInt _), _ -> false
+  | (String _ | NativeString _), _ -> false
+  | (Float_array _ | Tuple _), _ -> false
+
 let eval_instr update_count inline_constant ~target info i =
   match i with
   | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) -> (
-      match the_const_of ~target info y, the_const_of ~target info z with
+      let eq e1 e2 =
+        match Code.Constant.ocaml_equal e1 e2 with
+        | None -> false
+        | Some e -> e
+      in
+      match the_const_of ~eq info y, the_const_of ~eq info z with
       | Some e1, Some e2 -> (
           match Code.Constant.ocaml_equal e1 e2 with
           | None -> [ i ]
@@ -487,7 +509,12 @@ let eval_instr update_count inline_constant ~target info i =
               [ Let (x, c) ])
       | _ -> [ i ])
   | Let (x, Prim (Extern ("caml_js_equals" | "caml_js_strict_equals"), [ y; z ])) -> (
-      match the_const_of ~target info y, the_const_of ~target info z with
+      let eq e1 e2 =
+        match constant_js_equal e1 e2 with
+        | None -> false
+        | Some e -> e
+      in
+      match the_const_of ~eq info y, the_const_of ~eq info z with
       | Some e1, Some e2 -> (
           match constant_js_equal e1 e2 with
           | None -> [ i ]
@@ -586,7 +613,9 @@ let eval_instr update_count inline_constant ~target info i =
   | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
   | Let (x, Prim (prim, prim_args)) -> (
-      let prim_args' = List.map prim_args ~f:(fun x -> the_const_of ~target info x) in
+      let prim_args' =
+        List.map prim_args ~f:(fun x -> the_const_of ~eq:constant_equal info x)
+      in
       let res =
         if
           List.for_all prim_args' ~f:(function

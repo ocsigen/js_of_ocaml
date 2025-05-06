@@ -5,7 +5,7 @@
 * Compiler: use a Wasm text files preprocessor (#1822)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
 * Compiler: optimize compilation of switches
-* Compiler: evaluate statically more primitives (#1915)
+* Compiler: evaluate statically more primitives (#1912, #1915, #1965)
 * Runtime: use es6 class (#1840)
 * Runtime: support more Unix functions (#1829)
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
@@ -24,7 +24,6 @@
 * Ppx: allow "function" in object literals (#1897)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
 * Compiler: add the `--empty-sourcemap` flag
-* Compiler: static evaluation of more primitives (#1912)
 * Compiler: faster compilation by stopping sooner when optimizations become unproductive (#1939)
 * Compiler: improve debug/sourcemap location of closures (#1947)
 * Compiler: improve tailcall optimization (#1943)
