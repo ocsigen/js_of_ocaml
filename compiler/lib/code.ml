@@ -34,24 +34,6 @@ module Addr = struct
   let succ = succ
 end
 
-module DebugAddr : sig
-  type t = private Addr.t
-
-  val of_addr : Addr.t -> t
-
-  val to_addr : t -> Addr.t
-
-  val no : t
-end = struct
-  type t = int
-
-  let of_addr (x : Addr.t) : t = x
-
-  let no = 0
-
-  let to_addr (x : t) : Addr.t = x
-end
-
 module Var : sig
   type t [@@ocaml.immediate]
 
