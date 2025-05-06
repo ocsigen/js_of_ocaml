@@ -22,6 +22,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
    (tag $ocaml_exception (export "ocaml_exception") (param (ref eq)))
    (export "javascript_exception" (tag $javascript_exception))
@@ -60,7 +61,7 @@
        (return_call $caml_raise_with_arg
            (array.get $block (global.get $caml_global_data)
               (global.get $FAILURE_EXN))
-           (local.get 0)))
+           (local.get $arg)))
 
    (global $INVALID_EXN i32 (i32.const 3))
 

@@ -25,6 +25,7 @@
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
    (func (export "caml_get_exception_raw_backtrace")
       (param (ref eq)) (result (ref eq))
