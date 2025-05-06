@@ -153,7 +153,11 @@ let eval_prim x =
       | "%int_sub", _ -> int_binop l Targetint.sub
       | ("%int_mul" | "%direct_int_mul"), _ -> int_binop l Targetint.mul
       | "%direct_int_div", _ -> int_binop l Targetint.div
+      | "%int_div", [ _; Int i ] when not (Targetint.is_zero i) ->
+          int_binop l Targetint.div
       | "%direct_int_mod", _ -> int_binop l Targetint.rem
+      | "%int_mod", [ _; Int i ] when not (Targetint.is_zero i) ->
+          int_binop l Targetint.rem
       | "%int_and", _ -> int_binop l Targetint.logand
       | "%int_or", _ -> int_binop l Targetint.logor
       | "%int_xor", _ -> int_binop l Targetint.logxor
