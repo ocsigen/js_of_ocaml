@@ -269,10 +269,10 @@ let merge_blocks p =
           then block, blocks
           else (
             incr merged;
+            let to_inline, blocks = process_branch pc_ blocks in
             List.iter2 args to_inline.params ~f:(fun arg param ->
                 Code.Var.propagate_name param arg;
                 subst.(Code.Var.idx param) <- arg);
-            let to_inline, blocks = process_branch pc_ blocks in
             let block =
               { params = block.params
               ; branch = to_inline.branch
