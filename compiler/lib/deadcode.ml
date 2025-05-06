@@ -227,6 +227,113 @@ let empty_body b =
   | [] | [ Event _ ] -> true
   | _ -> false
 
+let merge_blocks p =
+  let previous_p = p in
+  let t = Timer.make () in
+  let preds = Array.make p.free_pc 0 in
+  let assigned = ref Var.Set.empty in
+  let merged = ref 0 in
+  let subst =
+    let nv = Var.count () in
+    Array.init nv ~f:(fun i -> Var.of_idx i)
+  in
+  let () =
+    let makr_cont (pc', _) = preds.(pc') <- preds.(pc') + 1 in
+    Addr.Map.iter
+      (fun _ { body; branch; _ } ->
+        List.iter body ~f:(function
+          | Let (_, Closure (_, cont, _)) -> makr_cont cont
+          | Assign (x, _) -> assigned := Var.Set.add x !assigned
+          | _ -> ());
+        match branch with
+        | Branch cont -> makr_cont cont
+        | Cond (_, cont1, cont2) ->
+            makr_cont cont1;
+            makr_cont cont2
+        | Switch (_, a1) -> Array.iter ~f:makr_cont a1
+        | Pushtrap (cont1, _, cont2) ->
+            makr_cont cont1;
+            makr_cont cont2
+        | Poptrap cont -> makr_cont cont
+        | Return _ | Raise _ | Stop -> ())
+      p.blocks
+  in
+  let p =
+    let visited = BitSet.create' p.free_pc in
+    let rec process_branch pc blocks =
+      let block = Addr.Map.find pc blocks in
+      match block.branch with
+      | Branch (pc_, args) when preds.(pc_) = 1 ->
+          let to_inline = Addr.Map.find pc_ blocks in
+          if List.exists to_inline.params ~f:(fun x -> Var.Set.mem x !assigned)
+          then block, blocks
+          else (
+            incr merged;
+            List.iter2 args to_inline.params ~f:(fun arg param ->
+                Code.Var.propagate_name param arg;
+                subst.(Code.Var.idx param) <- arg);
+            let to_inline, blocks = process_branch pc_ blocks in
+            let block =
+              { params = block.params
+              ; branch = to_inline.branch
+              ; body =
+                  (let[@tail_mod_cons] rec aux = function
+                     | [ (Event _ as ev) ] -> (
+                         match to_inline.body with
+                         | Event _ :: _ -> to_inline.body
+                         | _ -> ev :: to_inline.body)
+                     | [] -> to_inline.body
+                     | x :: rest -> x :: aux rest
+                   in
+                   aux block.body)
+              }
+            in
+            let blocks = Addr.Map.remove pc_ blocks in
+            let blocks = Addr.Map.add pc block blocks in
+            block, blocks)
+      | _ -> block, blocks
+    in
+    let rec traverse pc blocks =
+      if BitSet.mem visited pc
+      then blocks
+      else
+        let () = BitSet.set visited pc in
+        let block, blocks = process_branch pc blocks in
+        match block.branch with
+        | Return _ | Raise _ | Stop -> blocks
+        | Branch (pc', _) | Poptrap (pc', _) -> traverse pc' blocks
+        | Pushtrap ((pc', _), _, (pc_h, _)) ->
+            let blocks = traverse pc' blocks in
+            let blocks = traverse pc_h blocks in
+            blocks
+        | Cond (_, (pc1, _), (pc2, _)) ->
+            let blocks = traverse pc1 blocks in
+            let blocks = traverse pc2 blocks in
+            blocks
+        | Switch (_, a1) ->
+            Array.fold_right ~init:blocks ~f:(fun (pc, _) blocks -> traverse pc blocks) a1
+    in
+    let blocks =
+      Code.fold_closures p (fun _ _ (pc, _) _ blocks -> traverse pc blocks) p.blocks
+    in
+    { p with blocks }
+  in
+  let p =
+    if !merged = 0
+    then p
+    else
+      let rec rename x =
+        let y = subst.(Code.Var.idx x) in
+        if Code.Var.equal x y then y else rename y
+      in
+      Subst.Excluding_Binders.program rename p
+  in
+  if times () then Format.eprintf "  merge block: %a@." Timer.print t;
+  if stats () then Format.eprintf "Stats - merge block: merged %d@." !merged;
+  if debug_stats ()
+  then Code.check_updates ~name:"merge block" previous_p p ~updates:!merged;
+  p
+
 let remove_empty_blocks st (p : Code.program) : Code.program =
   let shortcuts = Hashtbl.create 16 in
   let rec resolve_rec visited ((pc, args) as cont) =
