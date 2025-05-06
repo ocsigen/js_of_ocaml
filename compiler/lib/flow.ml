@@ -352,7 +352,7 @@ let the_def_of info x =
           match info.info_defs.(Var.idx x) with
           | Expr (Constant (Float _ | Int _ | NativeString _) as e) -> Some e
           | Expr (Constant (Int32 _ | NativeInt _) as e) -> Some e
-          | Expr (Constant (String _) as e) when Config.Flag.safe_string () -> Some e
+          | Expr (Constant _ as e) when Config.Flag.safe_string () -> Some e
           | Expr e -> if Var.ISet.mem info.info_possibly_mutable x then None else Some e
           | _ -> None)
         None
@@ -369,11 +369,16 @@ let the_const_of ~eq info x =
           match info.info_defs.(Var.idx x) with
           | Expr
               (Constant
-                 ((Float _ | Int _ | Int32 _ | Int64 _ | NativeInt _ | NativeString _) as
-                  c)) -> Some c
-          | Expr (Constant c)
-            when Config.Flag.safe_string ()
-                 || not (Var.ISet.mem info.info_possibly_mutable x) -> Some c
+                 (( Float _
+                  | Int _
+                  | Int32 _
+                  | Int64 _
+                  | NativeInt _
+                  | NativeString _
+                  | Float_array _ ) as c)) -> Some c
+          | Expr (Constant (String _ as c))
+            when not (Var.ISet.mem info.info_possibly_mutable x) -> Some c
+          | Expr (Constant c) when Config.Flag.safe_string () -> Some c
           | _ -> None)
         None
         (fun u v ->
@@ -401,13 +406,20 @@ let the_int info x =
   | Pc (Int c) -> Some c
   | Pc _ -> None
 
+let string_equal a b =
+  match a, b with
+  | NativeString a, NativeString b -> Native_string.equal a b
+  | String a, String b -> String.equal a b
+  (* We don't need to compare other constants, so let's just return false. *)
+  | _ -> false
+
 let the_string_of info x =
-  match the_const_of ~eq:(fun _ _ -> false) info x with
+  match the_const_of ~eq:string_equal info x with
   | Some (String i) -> Some i
   | _ -> None
 
 let the_native_string_of info x =
-  match the_const_of ~eq:(fun _ _ -> false) info x with
+  match the_const_of ~eq:string_equal info x with
   | Some (NativeString i) -> Some i
   | Some (String i) ->
       (* This function is used to optimize the primitives that access
