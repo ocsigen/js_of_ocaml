@@ -27,6 +27,7 @@
 * Compiler: faster compilation by stopping sooner when optimizations become unproductive (#1939)
 * Compiler: improve debug/sourcemap location of closures (#1947)
 * Compiler: improve tailcall optimization (#1943)
+* Compiler: improve deadcode optimization (#1963, #1962, #1967)
 * Runtime: use Dataview to convert between floats and bit representation
 * Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962)
 

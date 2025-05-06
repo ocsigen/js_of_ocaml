@@ -51,8 +51,9 @@ let deadcode' p =
   Deadcode.f p
 
 let deadcode p =
-  let r, _ = deadcode' p in
-  r
+  let p, _ = deadcode' p in
+  let p = Deadcode.merge_blocks p in
+  p
 
 let inline p =
   if Config.Flag.inline () && Config.Flag.deadcode ()
