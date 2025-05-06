@@ -45,10 +45,13 @@ let rewrite refs block m =
   in
   m, List.rev l
 
-let rewrite_cont relevant_vars vars (pc', args) =
+let additional_args relevant_vars vars pc' =
   let refs, _ = Int.Hashtbl.find relevant_vars pc' in
   let vars = Var.Map.filter (fun x _ -> Var.Set.mem x refs) vars in
-  pc', List.map ~f:snd (Var.Map.bindings vars) @ args
+  List.map ~f:snd (Var.Map.bindings vars)
+
+let rewrite_cont relevant_vars vars (pc', args) =
+  pc', additional_args relevant_vars vars pc' @ args
 
 let rewrite_function p variables pc =
   let relevant_vars = Int.Hashtbl.create 16 in
@@ -89,6 +92,13 @@ let rewrite_function p variables pc =
       | Switch (x, a) ->
           Switch (x, Array.map ~f:(fun cont -> rewrite_cont relevant_vars vars cont) a)
       | Pushtrap (cont, x, cont') ->
+          (*
+Insert block
+- use vars to get the block parameters
+- we pass args as arguments to the block
+- block parameters as additional arguments to cont'
+- add assignments within the scope of the exception handler
+*)
           Pushtrap
             ( rewrite_cont relevant_vars vars cont
             , x
