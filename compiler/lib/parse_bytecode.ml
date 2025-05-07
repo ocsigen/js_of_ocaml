@@ -47,8 +47,6 @@ module Debug : sig
 
   val dbg_section_needed : t -> bool
 
-  val propagate : Code.Var.t list -> Code.Var.t list -> unit
-
   val find : t -> Code.Addr.t -> (int * Ident.t) list * Env.summary
 
   val find_rec : t -> Code.Addr.t -> (int * Ident.t) list
@@ -308,14 +306,6 @@ end = struct
     | [] -> None
     | (source, event) :: _ -> Some (event_location ~position ~source ~event)
 
-  let rec propagate l1 l2 =
-    match l1, l2 with
-    | v1 :: r1, v2 :: r2 ->
-        Var.propagate_name v1 v2;
-        propagate r1 r2
-    | [], [] -> ()
-    | _ -> assert false
-
   type summary =
     { is_empty : bool
     ; units : (string * string option, ml_unit) Hashtbl.t
@@ -342,7 +332,7 @@ end
 module Blocks : sig
   type t
 
-  val analyse : bytecode -> t
+  val analyse : bytecode -> t * Addr.Set.t
 
   val next : t -> int -> int
 
@@ -352,45 +342,68 @@ end = struct
 
   let add blocks pc = Addr.Set.add pc blocks
 
-  let rec scan blocks code pc len =
+  let rec scan blocks starts repeats code pc len =
     if pc < len
     then
       match (get_instr_exn code pc).kind with
-      | KNullary -> scan blocks code (pc + 1) len
-      | KUnary -> scan blocks code (pc + 2) len
-      | KBinary -> scan blocks code (pc + 3) len
-      | KNullaryCall -> scan blocks code (pc + 1) len
-      | KUnaryCall -> scan blocks code (pc + 2) len
-      | KBinaryCall -> scan blocks code (pc + 3) len
+      | KNullary -> scan blocks starts repeats code (pc + 1) len
+      | KUnary -> scan blocks starts repeats code (pc + 2) len
+      | KBinary -> scan blocks starts repeats code (pc + 3) len
+      | KNullaryCall -> scan blocks starts repeats code (pc + 1) len
+      | KUnaryCall -> scan blocks starts repeats code (pc + 2) len
+      | KBinaryCall -> scan blocks starts repeats code (pc + 3) len
       | KJump ->
           let offset = gets code (pc + 1) in
-          let blocks = Addr.Set.add (pc + offset + 1) blocks in
-          scan blocks code (pc + 2) len
+          let pc' = pc + offset + 1 in
+          let repeats =
+            if Addr.Set.mem pc' blocks then Addr.Set.add pc' repeats else repeats
+          in
+          let blocks = Addr.Set.add pc' blocks in
+          let pc'' = pc + 2 in
+          let starts = Addr.Set.add pc'' starts in
+          scan blocks starts repeats code pc'' len
       | KCond_jump ->
           let offset = gets code (pc + 1) in
-          let blocks = Addr.Set.add (pc + offset + 1) blocks in
-          scan blocks code (pc + 2) len
+          let pc' = pc + offset + 1 in
+          let repeats =
+            if Addr.Set.mem pc' blocks then Addr.Set.add pc' repeats else repeats
+          in
+          let blocks = Addr.Set.add pc' blocks in
+          scan blocks starts repeats code (pc + 2) len
       | KCmp_jump ->
           let offset = gets code (pc + 2) in
-          let blocks = Addr.Set.add (pc + offset + 2) blocks in
-          scan blocks code (pc + 3) len
+          let pc' = pc + offset + 2 in
+          let repeats =
+            if Addr.Set.mem pc' blocks then Addr.Set.add pc' repeats else repeats
+          in
+          let blocks = Addr.Set.add pc' blocks in
+          scan blocks starts repeats code (pc + 3) len
       | KSwitch ->
           let sz = getu code (pc + 1) in
+          let repeats = ref repeats in
           let blocks = ref blocks in
-          for i = 0 to (sz land 0xffff) + (sz lsr 16) - 1 do
+          let count = (sz land 0xffff) + (sz lsr 16) in
+          for i = 0 to count - 1 do
             let offset = gets code (pc + 2 + i) in
-            blocks := Addr.Set.add (pc + offset + 2) !blocks
+            let pc' = pc + offset + 2 in
+            if Addr.Set.mem pc' !blocks then repeats := Addr.Set.add pc' !repeats;
+            blocks := Addr.Set.add pc' !blocks
           done;
-          scan !blocks code (pc + 2 + (sz land 0xffff) + (sz lsr 16)) len
+          let pc'' = pc + 2 + count in
+          let starts = Addr.Set.add pc'' starts in
+          scan !blocks starts !repeats code pc'' len
       | KClosurerec ->
           let nfuncs = getu code (pc + 1) in
-          scan blocks code (pc + nfuncs + 3) len
-      | KClosure -> scan blocks code (pc + 3) len
-      | KStop n -> scan blocks code (pc + n + 1) len
+          scan blocks starts repeats code (pc + nfuncs + 3) len
+      | KClosure -> scan blocks starts repeats code (pc + 3) len
+      | KStop n ->
+          let pc'' = pc + n + 1 in
+          let starts = Addr.Set.add pc'' starts in
+          scan blocks starts repeats code pc'' len
       | K_will_not_happen -> assert false
     else (
       assert (pc = len);
-      blocks)
+      blocks, starts, repeats)
 
   (* invariant: a.(i) <= x < a.(j) *)
   let rec find a i j x =
@@ -406,12 +419,14 @@ end = struct
   let is_empty x = Array.length x <= 1
 
   let analyse code =
-    let blocks = Addr.Set.empty in
     let len = String.length code / 4 in
+    let blocks, starts, repeats =
+      scan Addr.Set.empty Addr.Set.empty Addr.Set.empty code 0 len
+    in
+    let joins = Addr.Set.union repeats (Addr.Set.diff blocks starts) in
     let blocks = add blocks 0 in
     let blocks = add blocks len in
-    let blocks = scan blocks code 0 len in
-    Array.of_list (Addr.Set.elements blocks)
+    Array.of_list (Addr.Set.elements blocks), joins
 end
 
 (* Parse constants *)
@@ -803,6 +818,7 @@ let clo_offset_3 = 3
 
 type compile_info =
   { blocks : Blocks.t
+  ; joins : Addr.Set.t
   ; code : string
   ; limit : int
   ; debug : Debug.t
@@ -828,7 +844,7 @@ let string_of_addr debug_data addr =
       in
       Printf.sprintf "%s:%s-%s %s" file (pos loc.loc_start) (pos loc.loc_end) kind)
 
-let rec compile_block blocks debug_data code pc state : unit =
+let rec compile_block blocks joins debug_data code pc state : unit =
   match Addr.Map.find_opt pc !tagged_blocks with
   | Some old_state -> (
       (* Check that the shape of the stack is compatible with the one used to compile the block *)
@@ -857,10 +873,10 @@ let rec compile_block blocks debug_data code pc state : unit =
       let limit = Blocks.next blocks pc in
       assert (limit > pc);
       if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
-      let state = State.start_block pc state in
+      let state = if Addr.Set.mem pc joins then State.start_block pc state else state in
       tagged_blocks := Addr.Map.add pc state !tagged_blocks;
       let instr, last, state' =
-        compile { blocks; code; limit; debug = debug_data } pc state []
+        compile { blocks; joins; code; limit; debug = debug_data } pc state []
       in
       assert (not (Addr.Map.mem pc !compiled_blocks));
       (* When jumping to a block that was already visited and the
@@ -873,26 +889,36 @@ let rec compile_block blocks debug_data code pc state : unit =
             State.clear_accu state'
         | _, _ -> state'
       in
-      let mk_cont pc =
-        let state = adjust_state pc in
-        pc, State.stack_vars state
+      let mk_cont ((pc, _) as cont) =
+        if Addr.Set.mem pc joins
+        then
+          let state = adjust_state pc in
+          pc, State.stack_vars state
+        else cont
       in
       let last =
         match last with
-        | Branch (pc, _) -> Branch (mk_cont pc)
-        | Cond (x, (pc1, _), (pc2, _)) ->
-            if pc1 = pc2 then Branch (mk_cont pc1) else Cond (x, mk_cont pc1, mk_cont pc2)
-        | Poptrap (pc, _) -> Poptrap (mk_cont pc)
-        | Switch (x, a) -> Switch (x, Array.map a ~f:(fun (pc, _) -> mk_cont pc))
+        | Branch cont -> Branch (mk_cont cont)
+        | Cond (x, cont1, cont2) ->
+            if cont_equal cont1 cont2
+            then Branch (mk_cont cont1)
+            else Cond (x, mk_cont cont1, mk_cont cont2)
+        | Poptrap cont -> Poptrap (mk_cont cont)
+        | Switch (x, a) -> Switch (x, Array.map a ~f:mk_cont)
         | Raise _ | Return _ | Stop -> last
         | Pushtrap _ -> assert false
       in
-      compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
+      compiled_blocks :=
+        Addr.Map.add
+          pc
+          ((if Addr.Set.mem pc joins then Some state else None), List.rev instr, last)
+          !compiled_blocks;
       match last with
-      | Branch (pc', _) -> compile_block blocks debug_data code pc' (adjust_state pc')
+      | Branch (pc', _) ->
+          compile_block blocks joins debug_data code pc' (adjust_state pc')
       | Cond (_, (pc1, _), (pc2, _)) ->
-          compile_block blocks debug_data code pc1 (adjust_state pc1);
-          compile_block blocks debug_data code pc2 (adjust_state pc2)
+          compile_block blocks joins debug_data code pc1 (adjust_state pc1);
+          compile_block blocks joins debug_data code pc2 (adjust_state pc2)
       | Poptrap (_, _) -> ()
       | Switch (_, _) -> ()
       | Raise _ | Return _ | Stop -> ()
@@ -1219,11 +1245,8 @@ and compile infos pc state (instrs : instr list) =
         let params, state' = State.make_stack nparams state' in
         if debug_parser () then Format.printf ") {@.";
         let state' = State.clear_accu state' in
-        compile_block infos.blocks infos.debug code addr state';
+        compile_block infos.blocks infos.joins infos.debug code addr state';
         if debug_parser () then Format.printf "}@.";
-        let args = State.stack_vars state' in
-        let state'', _, _ = Addr.Map.find addr !compiled_blocks in
-        Debug.propagate (State.stack_vars state'') args;
         compile
           infos
           (pc + 3)
@@ -1232,7 +1255,7 @@ and compile infos pc state (instrs : instr list) =
              ( x
              , Closure
                  ( List.rev params
-                 , (addr, args)
+                 , (addr, [])
                  , Debug.find_loc infos.debug ~position:After addr ) )
           :: instrs)
     | CLOSUREREC ->
@@ -1280,16 +1303,13 @@ and compile infos pc state (instrs : instr list) =
               let params, state' = State.make_stack nparams state' in
               if debug_parser () then Format.printf ") {@.";
               let state' = State.clear_accu state' in
-              compile_block infos.blocks infos.debug code addr state';
+              compile_block infos.blocks infos.joins infos.debug code addr state';
               if debug_parser () then Format.printf "}@.";
-              let args = State.stack_vars state' in
-              let state'', _, _ = Addr.Map.find addr !compiled_blocks in
-              Debug.propagate (State.stack_vars state'') args;
               Let
                 ( x
                 , Closure
                     ( List.rev params
-                    , (addr, args)
+                    , (addr, [])
                     , Debug.find_loc infos.debug ~position:After addr ) )
               :: instr)
         in
@@ -1694,9 +1714,9 @@ and compile infos pc state (instrs : instr list) =
         let it = Array.init isize ~f:(fun i -> base + gets code (base + i)) in
         let bt = Array.init bsize ~f:(fun i -> base + gets code (base + isize + i)) in
         Array.iter it ~f:(fun pc' ->
-            compile_block infos.blocks infos.debug code pc' state);
+            compile_block infos.blocks infos.joins infos.debug code pc' state);
         Array.iter bt ~f:(fun pc' ->
-            compile_block infos.blocks infos.debug code pc' state);
+            compile_block infos.blocks infos.joins infos.debug code pc' state);
         match isize, bsize with
         | _, 0 -> instrs, Switch (x, Array.map it ~f:(fun pc -> pc, [])), state
         | 0, _ ->
@@ -1710,24 +1730,32 @@ and compile infos pc state (instrs : instr list) =
             let isblock_branch = pc + 2 in
             let () =
               tagged_blocks := Addr.Map.add isint_branch state !tagged_blocks;
-              let i_state = State.start_block isint_branch state in
-              let i_args = State.stack_vars i_state in
+              let i_args = State.stack_vars state in
               compiled_blocks :=
                 Addr.Map.add
                   isint_branch
-                  (i_state, [], Switch (x, Array.map it ~f:(fun pc -> pc, i_args)))
+                  ( None
+                  , []
+                  , Switch
+                      ( x
+                      , Array.map it ~f:(fun pc ->
+                            pc, if Addr.Set.mem pc infos.joins then i_args else []) ) )
                   !compiled_blocks
             in
             let () =
               tagged_blocks := Addr.Map.add isblock_branch state !tagged_blocks;
               let x_tag = Var.fresh () in
-              let b_state = State.start_block isblock_branch state in
-              let b_args = State.stack_vars b_state in
+              let b_args = State.stack_vars state in
               let instrs = [ Let (x_tag, Prim (Extern "%direct_obj_tag", [ Pv x ])) ] in
               compiled_blocks :=
                 Addr.Map.add
                   isblock_branch
-                  (b_state, instrs, Switch (x_tag, Array.map bt ~f:(fun pc -> pc, b_args)))
+                  ( None
+                  , instrs
+                  , Switch
+                      ( x_tag
+                      , Array.map bt ~f:(fun pc ->
+                            pc, if Addr.Set.mem pc infos.joins then b_args else []) ) )
                   !compiled_blocks
             in
             let isint_var = Var.fresh () in
@@ -1753,16 +1781,12 @@ and compile infos pc state (instrs : instr list) =
         compiled_blocks :=
           Addr.Map.add
             interm_addr
-            ( handler_ctx_state
-            , []
-            , Pushtrap
-                ( (body_addr, State.stack_vars state)
-                , x
-                , (handler_addr, State.stack_vars handler_state) ) )
+            (Some handler_ctx_state, [], Pushtrap ((body_addr, []), x, (handler_addr, [])))
             !compiled_blocks;
-        compile_block infos.blocks infos.debug code handler_addr handler_state;
+        compile_block infos.blocks infos.joins infos.debug code handler_addr handler_state;
         compile_block
           infos.blocks
+          infos.joins
           infos.debug
           code
           body_addr
@@ -1775,11 +1799,12 @@ and compile infos pc state (instrs : instr list) =
               :: State.Dummy "pushtrap(extra_args)"
               :: state.State.stack
           };
-        instrs, Branch (interm_addr, []), state
+        instrs, Branch (interm_addr, State.stack_vars state), state
     | POPTRAP ->
         let addr = pc + 1 in
         compile_block
           infos.blocks
+          infos.joins
           infos.debug
           code
           addr
@@ -2482,16 +2507,22 @@ type one =
 let parse_bytecode code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
-  let blocks' = Blocks.analyse code in
+  let blocks', joins = Blocks.analyse code in
   let p =
     if not (Blocks.is_empty blocks')
     then (
       let start = 0 in
-      compile_block blocks' debug_data code start state;
+      compile_block blocks' joins debug_data code start state;
       let blocks =
         Addr.Map.mapi
           (fun _ (state, instr, last) ->
-            { params = State.stack_vars state; body = instr; branch = last })
+            { params =
+                (match state with
+                | Some state -> State.stack_vars state
+                | None -> [])
+            ; body = instr
+            ; branch = last
+            })
           !compiled_blocks
       in
       let free_pc = String.length code / 4 in

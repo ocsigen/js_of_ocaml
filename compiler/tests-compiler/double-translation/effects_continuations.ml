@@ -103,8 +103,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     function exceptions$0(s){
      try{var _C_ = caml_int_of_string(s), n = _C_;}
      catch(exn$0){
-      var exn = caml_wrap_exception(exn$0);
-      if(exn[1] !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
+      var exn = caml_wrap_exception(exn$0), tag = exn[1];
+      if(tag !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
       var n = 0;
      }
      try{
@@ -133,8 +133,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     function exceptions$1(s, cont){
      try{var _y_ = caml_int_of_string(s), n = _y_;}
      catch(exn){
-      var exn$2 = caml_wrap_exception(exn);
-      if(exn$2[1] !== Stdlib[7]){
+      var exn$2 = caml_wrap_exception(exn), tag = exn$2[1];
+      if(tag !== Stdlib[7]){
        var
         raise$1 = caml_pop_trap(),
         exn$0 = caml_maybe_attach_backtrace(exn$2, 0);

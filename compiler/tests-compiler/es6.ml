@@ -61,12 +61,13 @@ let rec odd n' = function
            for(;;){
             if(0 === c) return [0, d, 0];
             if(1 === c) return [0, d, 1];
-            [c, d] = [(d - 1 | 0) - 1 | 0, (c - 1 | 0) - 1 | 0];
+            [d, c] = [(c - 1 | 0) - 1 | 0, (d - 1 | 0) - 1 | 0];
            }}],
          "Test");
        return;})
      (globalThis);
-    //end |}];
+    //end
+    |}];
   let program = Util.compile_and_parse ?effects:None ~pretty:false ~flags:[] prog in
   Util.print_program program;
   [%expect
