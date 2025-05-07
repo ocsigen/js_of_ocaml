@@ -104,8 +104,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     function exceptions(s, cont){
      try{var _y_ = runtime.caml_int_of_string(s), n = _y_;}
      catch(exn$0){
-      var exn = caml_wrap_exception(exn$0);
-      if(exn[1] !== Stdlib[7]){
+      var exn = caml_wrap_exception(exn$0), tag = exn[1];
+      if(tag !== Stdlib[7]){
        var raise$1 = caml_pop_trap(), exn$2 = caml_maybe_attach_backtrace(exn, 0);
        return raise$1(exn$2);
       }

@@ -154,12 +154,12 @@ let ()  = M.myfun M.x
   Util.print_fun_decl program (Some "myfun");
   [%expect
     {|
-    function myfun(x){
-     var x$0 = x;
+    function myfun(x$0){
+     var x = x$0;
      for(;;){
-      if(! x$0) return 0;
+      if(! x) return 0;
       var
-       next = x$0[1],
+       next = x[1],
        sort =
          function(n, l){
           if(2 === n){
@@ -332,7 +332,7 @@ let ()  = M.myfun M.x
        len = len$0;
        param = l$0;
       }
-      if(2 <= len){sort(len, l); x$0 = next;} else x$0 = next;
+      if(2 <= len){sort(len, l); x = next;} else x = next;
      }
     }
     //end
@@ -633,7 +633,8 @@ let ()  = M.run ()
       let odd$0 = odd, even$0 = even;
       var param$0 = even(i);
       for(;;){
-       if(759635106 <= param$0[1]) break;
+       var variant = param$0[1];
+       if(759635106 <= variant) break;
        var f = param$0[2];
        param$0 = f(0);
       }
@@ -646,4 +647,5 @@ let ()  = M.run ()
               function(f){return caml_call1(f, 0);},
               caml_call1(list_rev, delayed[1]));
     }
-    //end |}]
+    //end
+    |}]
