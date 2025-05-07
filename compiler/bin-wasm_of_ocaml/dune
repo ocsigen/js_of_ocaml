@@ -17,9 +17,7 @@
    (-> findlib_support.empty.ml)))
  (modes
   byte
-  (best exe))
- (flags
-  (:standard -safe-string)))
+  (best exe)))
 
 (rule
  (target runtime_files.ml)

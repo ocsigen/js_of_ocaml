@@ -9,7 +9,7 @@
   sedlex
   yojson)
  (flags
-  (:standard -w -7-37 -safe-string))
+  (:standard -w -7-37))
  (preprocess
   (pps ppx_optcomp_light sedlex.ppx)))
 

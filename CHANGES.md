@@ -32,6 +32,7 @@
 * Compiler: more efficient code generation from bytecode (#1972)
 * Runtime: use Dataview to convert between floats and bit representation
 * Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962)
+* Compiler: assuming and require safe-string
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)

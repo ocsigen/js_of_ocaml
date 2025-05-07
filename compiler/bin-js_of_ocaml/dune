@@ -16,9 +16,7 @@
    (-> findlib_support.empty.ml)))
  (modes
   byte
-  (best exe))
- (flags
-  (:standard -safe-string)))
+  (best exe)))
 
 (rule
  (targets js_of_ocaml.1)

@@ -6,7 +6,7 @@
   js
   (best exe))
  (flags
-  (:standard -linkall -w -3-7-33-35-37 -safe-string -no-strict-sequence)))
+  (:standard -linkall -w -3-7-33-35-37 -no-strict-sequence)))
 
 (rule
  (target main.expected)

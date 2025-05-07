@@ -64,8 +64,6 @@ module Flag : sig
 
   val inline_callgen : unit -> bool
 
-  val safe_string : unit -> bool
-
   val use_js_string : unit -> bool
 
   val check_magic : unit -> bool

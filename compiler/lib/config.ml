@@ -88,8 +88,6 @@ module Flag = struct
 
   let inline_callgen = o ~name:"callgen" ~default:false
 
-  let safe_string = o ~name:"safestring" ~default:true
-
   let use_js_string = o ~name:"use-js-string" ~default:true
 
   let check_magic = o ~name:"check-magic-number" ~default:true

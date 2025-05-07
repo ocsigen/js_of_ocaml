@@ -313,7 +313,7 @@ let eval_prim x =
       (* others *)
       | ("caml_string_get" | "caml_string_unsafe_get"), [ String s; Int pos ] ->
           let pos = Targetint.to_int_exn pos in
-          if Config.Flag.safe_string () && pos >= 0 && pos < String.length s
+          if pos >= 0 && pos < String.length s
           then Some (Int (Targetint.of_int_exn (Char.code s.[pos])))
           else None
       | "caml_string_equal", [ String s1; String s2 ] -> bool (String.equal s1 s2)

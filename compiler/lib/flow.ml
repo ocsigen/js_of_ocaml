@@ -350,9 +350,7 @@ let the_def_of info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Constant (Float _ | Int _ | NativeString _) as e) -> Some e
-          | Expr (Constant (Int32 _ | NativeInt _) as e) -> Some e
-          | Expr (Constant _ as e) when Config.Flag.safe_string () -> Some e
+          | Expr (Constant _ as e) -> Some e
           | Expr e -> if Var.ISet.mem info.info_possibly_mutable x then None else Some e
           | _ -> None)
         None
@@ -367,18 +365,7 @@ let the_const_of ~eq info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr
-              (Constant
-                 (( Float _
-                  | Int _
-                  | Int32 _
-                  | Int64 _
-                  | NativeInt _
-                  | NativeString _
-                  | Float_array _ ) as c)) -> Some c
-          | Expr (Constant (String _ as c))
-            when not (Var.ISet.mem info.info_possibly_mutable x) -> Some c
-          | Expr (Constant c) when Config.Flag.safe_string () -> Some c
+          | Expr (Constant (_ as c)) -> Some c
           | _ -> None)
         None
         (fun u v ->

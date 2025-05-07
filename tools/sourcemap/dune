@@ -3,6 +3,4 @@
  (libraries
   js_of_ocaml-compiler
   compiler-libs.common
-  js_of_ocaml-compiler.findlib-support)
- (flags
-  (:standard -safe-string)))
+  js_of_ocaml-compiler.findlib-support))
