@@ -34,7 +34,7 @@ module type Strategy = sig
 
   val record_block : t -> Js_traverse.t -> Js_traverse.block -> unit
 
-  val allocate_variables : t -> count:int Javascript.IdentMap.t -> string array
+  val allocate_variables : t -> count:int array -> string array
 end
 
 module Min : Strategy = struct
@@ -117,7 +117,7 @@ while compiling the OCaml toplevel:
   let create nv = { constr = Array.make nv []; parameters = [| [] |]; constraints = [] }
 
   let allocate_variables t ~count =
-    let weight v = try IdentMap.find (V (Var.of_idx v)) count with Not_found -> 0 in
+    let weight v = count.(v) in
     let constr = t.constr in
     let len = Array.length constr in
     let idx = Array.make len 0 in
@@ -383,7 +383,17 @@ let program' (module Strategy : Strategy) p =
   in
   let has_free_var = IdentSet.cardinal free <> 0 in
   let unallocated_names = ref Var.Set.empty in
-  let names = Strategy.allocate_variables state ~count:mapper#get_count in
+  let count =
+    let a = Array.make nv 0 in
+    Javascript.IdentMap.iter
+      (fun k i ->
+        match k with
+        | S _ -> ()
+        | V v -> a.(Var.idx v) <- i)
+      mapper#get_count;
+    a
+  in
+  let names = Strategy.allocate_variables state ~count in
   (* ignore the choosen name for escaping/free [V _] variables *)
   IdentSet.iter
     (function
