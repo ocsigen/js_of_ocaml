@@ -28,6 +28,7 @@
 * Compiler: improve debug/sourcemap location of closures (#1947)
 * Compiler: improve tailcall optimization (#1943)
 * Compiler: improve deadcode optimization (#1963, #1962, #1967)
+* Compiler: improve coloring optimization (#1971)
 * Runtime: use Dataview to convert between floats and bit representation
 * Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962)
 
