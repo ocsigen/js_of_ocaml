@@ -474,4 +474,13 @@ let f ({ blocks; _ } as p : Code.program) =
       ~updates:
         (st.deleted_instrs + st.deleted_blocks + st.deleted_params + st.block_shortcut);
   let p = remove_unused_blocks p in
+  if stats ()
+  then (
+    let live = ref 0 in
+    Array.iter st.live ~f:(function
+      | 0 -> ()
+      | _ -> incr live);
+    let total = Var.count () in
+    let ratio = float !live /. float total *. 100. in
+    Format.eprintf "Stats - live variables: %d/%d = %.1f%%@." !live total ratio);
   p, st.live
