@@ -577,7 +577,8 @@ module State = struct
     ; env_offset : int
     ; handlers : handler list
     ; globals : globals
-    ; immutable : Code.Var.Set.t ref
+    ; immutable : unit Code.Var.Hashtbl.t
+    ; module_or_not : Ocaml_compiler.module_or_not Ident.Tbl.t
     ; includes : string list
     }
 
@@ -671,6 +672,7 @@ module State = struct
     ; handlers = []
     ; globals = g
     ; immutable
+    ; module_or_not = Ident.Tbl.create 0
     ; includes
     }
 
@@ -695,12 +697,27 @@ module State = struct
       print_env
       st.env
 
+  let maybe_module ident =
+    match (Ident.name ident).[0] with
+    | 'A' .. 'Z' -> true
+    | _ -> false
+
   let rec name_rec debug st i l s summary =
     match l, s with
     | [], _ -> ()
     | (j, ident) :: lrem, Var v :: srem when i = j ->
-        if Ocaml_compiler.is_module_in_summary ident summary
-        then st.immutable := Code.Var.Set.add v !(st.immutable);
+        (if maybe_module ident && not (Code.Var.Hashtbl.mem st.immutable v)
+         then
+           match Ident.Tbl.find st.module_or_not ident with
+           | Module -> Code.Var.Hashtbl.add st.immutable v ()
+           | Not_module -> ()
+           | (exception Not_found) | Unknown -> (
+               match Ocaml_compiler.is_module_in_summary ident summary with
+               | Module ->
+                   Ident.Tbl.add st.module_or_not ident Module;
+                   Code.Var.Hashtbl.add st.immutable v ()
+               | Not_module -> Ident.Tbl.add st.module_or_not ident Not_module
+               | Unknown -> ()));
         Var.name v (Ident.name ident);
         name_rec debug st (i + 1) lrem srem summary
     | (j, _) :: _, _ :: srem when i < j -> name_rec debug st (i + 1) l srem summary
@@ -1393,7 +1410,7 @@ and compile infos pc state (instrs : instr list) =
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         let instrs = register_global g i instrs in
-        state.immutable := Code.Var.Set.add (access_global g i) !(state.immutable);
+        Code.Var.Hashtbl.add state.immutable (access_global g i) ();
         compile infos (pc + 2) state (Let (x, const 0) :: instrs)
     | ATOM0 ->
         let x, state = State.fresh_var state in
@@ -2526,7 +2543,7 @@ type one =
   }
 
 let parse_bytecode ~includes code globals debug_data =
-  let immutable = ref Code.Var.Set.empty in
+  let immutable = Code.Var.Hashtbl.create 0 in
   let state = State.initial includes globals immutable in
   Code.Var.reset ();
   let blocks', joins = Blocks.analyse code in
@@ -2537,14 +2554,13 @@ let parse_bytecode ~includes code globals debug_data =
       let start = 0 in
 
       compile_block blocks' joins debug_data code start state;
-      let immutable = !immutable in
       let blocks =
         Addr.Map.mapi
           (fun _ (state, instr, last) ->
             let instr =
               List.map instr ~f:(function
                 | Let (x, Block (tag, args, k, Maybe_mutable))
-                  when Code.Var.Set.mem x immutable ->
+                  when Code.Var.Hashtbl.mem immutable x ->
                     Let (x, Block (tag, args, k, Immutable))
                 | x -> x)
             in
