@@ -637,6 +637,7 @@ type info =
   }
 
 let f ~fast p =
+  Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in
   let rets = return_values p in
