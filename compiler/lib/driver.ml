@@ -153,7 +153,7 @@ let rec loop max name round i (p : 'a) : 'a =
     p')
   else loop max name round (i + 1) p'
 
-let round ~first : 'a -> 'a =
+let round ~deadcode_sentinal ~first : 'a -> 'a =
   print
   +> tailcall
   +> (if first then Fun.id else phi)
@@ -161,19 +161,28 @@ let round ~first : 'a -> 'a =
   +> specialize
   +> eval
   +> inline
+  +> (fun p ->
+  let info = Global_flow.f ~fast:true p in
+  Global_deadcode.f p ~deadcode_sentinal info)
   +> deadcode
 
 (* o1 *)
 
-let o1 = loop 2 "round" round 1 +> phi +> flow +> specialize +> eval +> print
+let o1 ~deadcode_sentinal =
+  loop 2 "round" (round ~deadcode_sentinal) 1
+  +> phi
+  +> flow
+  +> specialize
+  +> eval
+  +> print
 
 (* o2 *)
 
-let o2 = loop 10 "round" round 1 +> print
+let o2 ~deadcode_sentinal = loop 10 "round" (round ~deadcode_sentinal) 1 +> print
 
 (* o3 *)
 
-let o3 = loop 30 "round" round 1 +> print
+let o3 ~deadcode_sentinal = loop 30 "round" (round ~deadcode_sentinal) 1 +> print
 
 let generate
     ~exported_runtime
@@ -632,6 +641,7 @@ let optimize ~profile p =
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
+         ~deadcode_sentinal
     +> specialize_js_once_after
     +> exact_calls ~deadcode_sentinal profile
     +> effects ~deadcode_sentinal
