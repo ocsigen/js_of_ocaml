@@ -69,7 +69,7 @@ let inline p =
 
 let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
-  let return_values = Code.return_values p in
+  let return_values = Code.Var.Map.empty in
   Specialize.f
     ~function_arity:(fun f -> Specialize.function_arity ~return_values info f)
     p
