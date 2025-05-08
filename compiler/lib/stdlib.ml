@@ -1100,6 +1100,18 @@ module In_channel = struct
 end
 [@@if ocaml_version >= (4, 14, 0)]
 
+module Seq = struct
+  include Seq
+
+  let rec mapi_aux f i xs () =
+    match xs () with
+    | Nil -> Nil
+    | Cons (x, xs) -> Cons (f i x, mapi_aux f (i + 1) xs)
+
+  (* Available since OCaml 4.14 *)
+  let[@inline] mapi f xs = mapi_aux f 0 xs
+end
+
 let split_lines s =
   if String.equal s ""
   then []

@@ -19,6 +19,10 @@
  *)
 open! Stdlib
 
+let stats = Debug.find "stats"
+
+let times = Debug.find "times"
+
 module Addr = struct
   type t = int
 
@@ -826,6 +830,65 @@ let cont_compare (pc, args) (pc', args') =
 let with_invariant = Debug.find "invariant"
 
 let check_defs = false
+
+let do_compact { blocks; start; free_pc = _ } =
+  let remap =
+    let max = fst (Addr.Map.max_binding blocks) in
+    let a = Array.make (max + 1) 0 in
+    let i = ref 0 in
+    Addr.Map.iter
+      (fun pc _ ->
+        a.(pc) <- !i;
+        incr i)
+      blocks;
+    a
+  in
+  let rewrite_cont remap (pc, args) = remap.(pc), args in
+  let rewrite remap block =
+    let body =
+      List.map block.body ~f:(function
+        | Let (x, Closure (params, cont, loc)) ->
+            Let (x, Closure (params, rewrite_cont remap cont, loc))
+        | i -> i)
+    in
+    let branch =
+      match block.branch with
+      | (Return _ | Raise _ | Stop) as b -> b
+      | Branch c -> Branch (rewrite_cont remap c)
+      | Poptrap c -> Poptrap (rewrite_cont remap c)
+      | Cond (x, c1, c2) -> Cond (x, rewrite_cont remap c1, rewrite_cont remap c2)
+      | Switch (x, a) -> Switch (x, Array.map a ~f:(rewrite_cont remap))
+      | Pushtrap (c1, x, c2) -> Pushtrap (rewrite_cont remap c1, x, rewrite_cont remap c2)
+    in
+    { block with body; branch }
+  in
+  let blocks =
+    Addr.Map.fold
+      (fun pc b blocks -> Addr.Map.add remap.(pc) (rewrite remap b) blocks)
+      blocks
+      Addr.Map.empty
+  in
+  let free_pc = (Addr.Map.max_binding blocks |> fst) + 1 in
+  let start = remap.(start) in
+  { blocks; start; free_pc }
+
+let compact p =
+  let t = Timer.make () in
+  let card = Addr.Map.cardinal p.blocks in
+  let max = Addr.Map.max_binding p.blocks |> fst in
+  let ratio = float card /. float max *. 100. in
+  let do_it = Float.(ratio < 70.) in
+  let p = if do_it then do_compact p else p in
+  if times () then Format.eprintf "  compact: %a@." Timer.print t;
+  if stats ()
+  then
+    Format.eprintf
+      "Stats - compact: %d/%d = %.2f%%%s@."
+      card
+      max
+      ratio
+      (if not do_it then " - ignored" else "");
+  p
 
 let used_blocks p =
   let visited = BitSet.create' p.free_pc in
