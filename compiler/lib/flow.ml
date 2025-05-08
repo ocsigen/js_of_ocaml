@@ -478,7 +478,7 @@ let the_shape_of ~return_values ~pure info x =
     | Function _, Block _ | Block _, Function _ -> Shape.Top "merge block/fun"
   in
   let rec loop info x acc : Shape.t =
-    if List.mem x ~set:acc
+    if Var.Set.mem x acc
     then Top "loop"
     else
       get_approx
@@ -495,21 +495,18 @@ let the_shape_of ~return_values ~pure info x =
                   let res =
                     match Var.Map.find x return_values with
                     | exception Not_found -> Shape.Top "not return_values found"
-                    | set -> (
-                        match
+                    | set ->
+                        let set = Var.Set.remove x set in
+                        if Var.Set.is_empty set
+                        then Shape.Top "not return_values found"
+                        else
+                          let first = Var.Set.choose set in
                           Var.Set.fold
-                            (fun x res ->
+                            (fun x s1 ->
                               let s2 = loop info x acc in
-                              match res with
-                              | None -> Some s2
-                              | Some s1 -> Some (merge s1 s2))
+                              merge s1 s2)
                             set
-                            None
-                        with
-                        | None ->
-                            assert (Var.Set.is_empty set);
-                            Shape.Top "no return"
-                        | Some res -> res)
+                            (loop info first acc)
                   in
                   Shape.Function { arity = List.length l; pure; res }
               | Expr (Special (Alias_prim name)) -> (
@@ -519,7 +516,7 @@ let the_shape_of ~return_values ~pure info x =
                     Shape.Function { arity; pure; res = Top "unk" }
                   with _ -> Top "other")
               | Expr (Apply { f; args; _ }) -> (
-                  match loop info f (f :: acc) with
+                  match loop info f (Var.Set.add f acc) with
                   | Shape.Function { arity = n; pure; res } ->
                       let diff = n - List.length args in
                       if diff > 0
@@ -533,7 +530,7 @@ let the_shape_of ~return_values ~pure info x =
         (fun u v -> merge u v)
         x
   in
-  loop info x []
+  loop info x Var.Set.empty
 
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in
