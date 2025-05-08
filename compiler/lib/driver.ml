@@ -657,6 +657,7 @@ let simplify_js js =
   js
 
 let collects_shapes p =
+  let t = Timer.make () in
   let _, info = Flow.f p in
   let pure = Pure_fun.f p in
   let return_values = Code.return_values p in
@@ -679,6 +680,7 @@ let collects_shapes p =
               l := StringMap.add name shape !l
           | _ -> ()))
     p.blocks;
+  if times () then Format.eprintf "  shapes: %a@." Timer.print t;
   !l
 
 let configure formatter =
