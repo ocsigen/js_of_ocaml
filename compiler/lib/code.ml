@@ -887,7 +887,7 @@ let compact p =
       card
       max
       ratio
-      (if not do_it then "- ignored" else "");
+      (if not do_it then " - ignored" else "");
   p
 
 let used_blocks p =
