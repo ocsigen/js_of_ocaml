@@ -636,7 +636,7 @@ type info =
   ; info_return_vals : Var.Set.t Var.Map.t
   }
 
-let f ~fast p =
+let f' ~fast p =
   let t = Timer.make () in
   let t1 = Timer.make () in
   let rets = return_values p in
@@ -715,12 +715,15 @@ let f ~fast p =
       | Escape_constant | Escape -> Var.ISet.add info_may_escape (Var.of_idx i)
       | No -> ())
     may_escape;
-  { info_defs = defs
-  ; info_approximation = approximation
-  ; info_variable_may_escape
-  ; info_may_escape
-  ; info_return_vals = rets
-  }
+  ( st
+  , { info_defs = defs
+    ; info_approximation = approximation
+    ; info_variable_may_escape
+    ; info_may_escape
+    ; info_return_vals = rets
+    } )
+
+let f ~fast p = snd (f' ~fast p)
 
 let exact_call info f n =
   match Var.Tbl.get info.info_approximation f with
