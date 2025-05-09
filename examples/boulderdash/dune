@@ -3,7 +3,8 @@
  (libraries js_of_ocaml-lwt)
  (modes js wasm)
  (js_of_ocaml
-  (flags :standard --file %{dep:maps.txt} --file maps))
+  (compilation_mode separate)
+  (build_runtime_flags :standard --file %{dep:maps.txt} --file maps))
  (link_deps
   (glob_files maps/*.map))
  (preprocess
