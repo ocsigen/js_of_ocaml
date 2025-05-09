@@ -156,7 +156,7 @@ let propagate1 deps defs st x =
       | Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _ ->
           Var.Set.singleton x
       | Field (y, n, _) ->
-          if Option.is_some (Shape.State.get x)
+          if Shape.State.mem x
           then Var.Set.singleton x
           else
             var_set_lift
@@ -304,7 +304,7 @@ let propagate2 defs known_origins possibly_mutable st x =
       match e with
       | Constant _ | Closure _ | Apply _ | Prim _ | Block _ | Special _ -> false
       | Field (y, n, _) ->
-          Option.is_none (Shape.State.get x)
+          (not (Shape.State.mem x))
           && (Var.Tbl.get st y
              || Var.Set.exists
                   (fun z ->
