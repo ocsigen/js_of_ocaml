@@ -24,7 +24,7 @@ let rec check = function
 let min_depth = 4
 
 let max_depth =
-  let n = try int_of_string Sys.argv.(1) with _ -> 10 in
+  let n = try int_of_string Sys.argv.(1) with _ -> 17 in
   max (min_depth + 2) n
 
 let stretch_depth = max_depth + 1
@@ -38,25 +38,26 @@ let () =
 
 let long_lived_tree = make 0 max_depth
 
-let loop_depths d =
-  for i = 0 to ((max_depth - d) / 2) + 1 - 1 do
-    let d = d + (i * 2) in
-    let niter = 1 lsl (max_depth - d + min_depth) in
+let rec loop_depths depth max_depth =
+  if depth <= max_depth
+  then (
+    let niter = 1 lsl (max_depth - depth + min_depth) in
     let c = ref 0 in
     for i = 1 to niter do
-      c := !c + check (make i d) + check (make (-i) d)
+      c := !c + check (make i depth) + check (make (-i) depth)
     done;
     ( (*
       Printf.printf "%i\t trees of depth %i\t check: %i\n" (2 * niter) d !c;
- *) )
-  done
+ *) );
+    loop_depths (depth + 2) max_depth)
 
 let () =
   (*
   flush stdout;
 *)
-  loop_depths min_depth;
-  ( (*
-  Printf.printf "long lived tree of depth %i\t check: %i\n"
-    max_depth (check long_lived_tree)
- *) )
+  loop_depths min_depth max_depth
+(* Printf.printf
+    "long lived tree of depth %i\t check: %i\n"
+    max_depth
+    (check long_lived_tree)
+   *)
