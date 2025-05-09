@@ -829,7 +829,7 @@ let cont_compare (pc, args) (pc', args') =
 
 let with_invariant = Debug.find "invariant"
 
-let check_defs = false
+let check_defs = true
 
 let do_compact { blocks; start; free_pc = _ } =
   let remap =

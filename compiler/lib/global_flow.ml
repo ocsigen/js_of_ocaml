@@ -133,7 +133,10 @@ let add_assign_def st x y =
 let add_param_def st x =
   add_var st x;
   let idx = Var.idx x in
-  assert (is_undefined st.defs.(idx));
+  if not (is_undefined st.defs.(idx))
+  then (
+    Format.eprintf "%a is wrong@." Code.Var.print x;
+    assert false);
   if st.fast then st.defs.(idx) <- Phi { known = Var.Set.empty; others = true }
 
 let rec arg_deps st ?ignore params args =
@@ -637,6 +640,7 @@ type info =
   }
 
 let f ~fast p =
+  if debug () then Code.Print.program Format.err_formatter (fun _ _ -> "") p;
   Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in

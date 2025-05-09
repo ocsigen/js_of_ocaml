@@ -506,6 +506,9 @@ let run
                     failwith "use [-o dirname/] or remove [--keep-unit-names]"
               in
               let t1 = Timer.make () in
+              if times ()
+              then
+                Format.eprintf "Start parsing %s@." (Ocaml_compiler.Cmo_format.name cmo);
               let code =
                 Parse_bytecode.from_cmo
                   ~includes:include_dirs
@@ -541,6 +544,11 @@ let run
             let source_map_units =
               List.map cma.lib_units ~f:(fun cmo ->
                   let t1 = Timer.make () in
+                  if times ()
+                  then
+                    Format.eprintf
+                      "Start parsing %s@."
+                      (Ocaml_compiler.Cmo_format.name cmo);
                   let code =
                     Parse_bytecode.from_cmo
                       ~includes:include_dirs

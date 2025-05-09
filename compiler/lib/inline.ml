@@ -346,5 +346,6 @@ let f p live_vars =
   if debug_stats ()
   then Code.check_updates ~name:"inline" previous_p p ~updates:!inline_count;
   let p = Deadcode.remove_unused_blocks p in
+  let p, _ = Deadcode.f p in
   Code.invariant p;
   p
