@@ -55,8 +55,9 @@ let () =
   (*
   flush stdout;
 *)
-  loop_depths min_depth max_depth;
-  Printf.printf
+  loop_depths min_depth max_depth
+(* Printf.printf
     "long lived tree of depth %i\t check: %i\n"
     max_depth
     (check long_lived_tree)
+   *)
