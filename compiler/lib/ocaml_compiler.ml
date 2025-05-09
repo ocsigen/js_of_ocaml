@@ -37,6 +37,54 @@ let rec constant_of_const c : Code.constant =
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
 
+type module_or_not =
+  | Module
+  | Not_module
+  | Unknown
+
+let rec is_module_in_summary deep ident' summary =
+  match summary with
+  | Env.Env_empty -> deep, Unknown
+  | Env.Env_module (summary, ident, _, _) ->
+      if Ident.same ident ident'
+      then deep, Module
+      else is_module_in_summary (deep + 1) ident' summary
+  | Env.Env_extension (summary, ident, _) ->
+      if Ident.same ident ident'
+      then deep, Not_module
+      else is_module_in_summary (deep + 1) ident' summary
+  | Env.Env_functor_arg (summary, ident) ->
+      if Ident.same ident ident'
+      then deep, Module
+      else is_module_in_summary (deep + 1) ident' summary
+  | Env.Env_value (summary, _, _)
+  | Env.Env_type (summary, _, _)
+  | Env.Env_modtype (summary, _, _)
+  | Env.Env_class (summary, _, _)
+  | Env.Env_cltype (summary, _, _)
+  | Env.Env_open (summary, _)
+  | Env.Env_constraints (summary, _)
+  | ((Env.Env_copy_types (summary, _)) [@if ocaml_version < (4, 10, 0)])
+  | ((Env.Env_copy_types summary) [@if ocaml_version >= (4, 10, 0)])
+  | Env.Env_persistent (summary, _)
+  | ((Env.Env_value_unbound (summary, _, _)) [@if ocaml_version >= (4, 10, 0)])
+  | ((Env.Env_module_unbound (summary, _, _)) [@if ocaml_version >= (4, 10, 0)]) ->
+      is_module_in_summary (deep + 1) ident' summary
+
+let is_module_in_summary ident summary =
+  let deep, b = is_module_in_summary 0 ident summary in
+  if false
+  then
+    Format.eprintf
+      "is_module_in_summary:  %s %s %d@."
+      (match b with
+      | Module -> "Module"
+      | Not_module -> "N"
+      | Unknown -> "U")
+      (Ident.name ident)
+      deep;
+  b
+
 module Symtable = struct
   (* Copied from ocaml/bytecomp/symtable.ml *)
   module Num_tbl (M : Map.S) = struct

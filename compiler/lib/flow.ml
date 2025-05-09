@@ -156,15 +156,18 @@ let propagate1 deps defs st x =
       | Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _ ->
           Var.Set.singleton x
       | Field (y, n, _) ->
-          var_set_lift
-            (fun z ->
-              match defs.(Var.idx z) with
-              | Expr (Block (_, a, _, _)) when n < Array.length a ->
-                  let t = a.(n) in
-                  add_dep deps x t;
-                  Var.Tbl.get st t
-              | Phi _ | Param | Expr _ -> Var.Set.empty)
-            (Var.Tbl.get st y))
+          if Shape.State.mem x
+          then Var.Set.singleton x
+          else
+            var_set_lift
+              (fun z ->
+                match defs.(Var.idx z) with
+                | Expr (Block (_, a, _, _)) when n < Array.length a ->
+                    let t = a.(n) in
+                    add_dep deps x t;
+                    Var.Tbl.get st t
+                | Phi _ | Param | Expr _ -> Var.Set.empty)
+              (Var.Tbl.get st y))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -301,16 +304,17 @@ let propagate2 defs known_origins possibly_mutable st x =
       match e with
       | Constant _ | Closure _ | Apply _ | Prim _ | Block _ | Special _ -> false
       | Field (y, n, _) ->
-          Var.Tbl.get st y
-          || Var.Set.exists
-               (fun z ->
-                 match defs.(Var.idx z) with
-                 | Expr (Block (_, a, _, _)) ->
-                     n >= Array.length a
-                     || Var.ISet.mem possibly_mutable z
-                     || Var.Tbl.get st a.(n)
-                 | Phi _ | Param | Expr _ -> true)
-               (Var.Tbl.get known_origins y))
+          (not (Shape.State.mem x))
+          && (Var.Tbl.get st y
+             || Var.Set.exists
+                  (fun z ->
+                    match defs.(Var.idx z) with
+                    | Expr (Block (_, a, _, _)) ->
+                        n >= Array.length a
+                        || Var.ISet.mem possibly_mutable z
+                        || Var.Tbl.get st a.(n)
+                    | Phi _ | Param | Expr _ -> true)
+                  (Var.Tbl.get known_origins y)))
 
 module Domain2 = struct
   type t = bool
@@ -457,6 +461,76 @@ let direct_approx (info : Info.t) x =
           | _ -> None)
         y
   | _ -> None
+
+let the_shape_of ~return_values ~pure info x =
+  let rec merge (u : Shape.t) (v : Shape.t) =
+    match u, v with
+    | ( Function { arity = a1; pure = p1; res = r1 }
+      , Function { arity = a2; pure = p2; res = r2 } ) ->
+        if a1 = a2
+        then Shape.Function { arity = a1; pure = p1 && p2; res = merge r1 r2 }
+        else Shape.Top "merge"
+    | Block b1, Block b2 ->
+        if List.length b1 = List.length b2
+        then Block (List.map2 b1 b2 ~f:merge)
+        else Top "merge block"
+    | (Top _ as a), _ | _, (Top _ as a) -> a
+    | Function _, Block _ | Block _, Function _ -> Shape.Top "merge block/fun"
+  in
+  let rec loop info x acc : Shape.t =
+    if Var.Set.mem x acc
+    then Top "loop"
+    else
+      get_approx
+        info
+        (fun x ->
+          match Shape.State.get x with
+          | Some shape -> shape
+          | None -> (
+              match info.info_defs.(Var.idx x) with
+              | Expr (Block (_, a, _, Immutable)) ->
+                  Shape.Block (List.map ~f:(fun x -> loop info x acc) (Array.to_list a))
+              | Expr (Closure (l, _, _)) ->
+                  let pure = Pure_fun.pure pure x in
+                  let res =
+                    match Var.Map.find x return_values with
+                    | exception Not_found -> Shape.Top "not return_values found"
+                    | set ->
+                        let set = Var.Set.remove x set in
+                        if Var.Set.is_empty set
+                        then Shape.Top "not return_values found"
+                        else
+                          let first = Var.Set.choose set in
+                          Var.Set.fold
+                            (fun x s1 ->
+                              let s2 = loop info x acc in
+                              merge s1 s2)
+                            set
+                            (loop info first acc)
+                  in
+                  Shape.Function { arity = List.length l; pure; res }
+              | Expr (Special (Alias_prim name)) -> (
+                  try
+                    let arity = Primitive.arity name in
+                    let pure = Primitive.is_pure name in
+                    Shape.Function { arity; pure; res = Top "unk" }
+                  with _ -> Top "other")
+              | Expr (Apply { f; args; _ }) -> (
+                  match loop info f (Var.Set.add f acc) with
+                  | Shape.Function { arity = n; pure; res } ->
+                      let diff = n - List.length args in
+                      if diff > 0
+                      then Shape.Function { arity = diff; pure; res }
+                      else if diff = 0
+                      then res
+                      else Shape.Top "apply"
+                  | Shape.Block _ | Shape.Top _ -> Shape.Top "apply2")
+              | _ -> Shape.Top "other"))
+        (Top "init")
+        (fun u v -> merge u v)
+        x
+  in
+  loop info x Var.Set.empty
 
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in

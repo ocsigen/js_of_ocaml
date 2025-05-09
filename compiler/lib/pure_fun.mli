@@ -24,4 +24,8 @@ val pure_expr : t -> Code.expr -> bool
 
 val pure_instr : t -> Code.instr -> bool
 
+val pure : t -> Code.Var.t -> bool
+
+val empty : t
+
 val f : Code.program -> t

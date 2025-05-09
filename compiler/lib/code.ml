@@ -515,13 +515,17 @@ module Print = struct
         if exact
         then Format.fprintf f "%a!(%a)" Var.print g var_list args
         else Format.fprintf f "%a(%a)" Var.print g var_list args
-    | Block (t, a, _, mut) ->
+    | Block (t, a, k, mut) ->
         Format.fprintf
           f
-          "%s{tag=%d"
+          "{%s%s:tag=%d"
           (match mut with
           | Immutable -> "imm"
           | Maybe_mutable -> "")
+          (match k with
+          | Array -> "A"
+          | NotArray -> "NA"
+          | Unknown -> "U")
           t;
         for i = 0 to Array.length a - 1 do
           Format.fprintf f "; %d = %a" i Var.print a.(i)
@@ -776,6 +780,30 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
   in
   let accu = f None [] (start, []) None accu in
   visit blocks start f accu
+
+(* Compute the list of variables containing the return values of each
+   function *)
+let return_values p =
+  fold_closures
+    p
+    (fun name_opt _ (pc, _) _ rets ->
+      match name_opt with
+      | None -> rets
+      | Some name ->
+          let s =
+            traverse
+              { fold = fold_children }
+              (fun pc s ->
+                let block = Addr.Map.find pc p.blocks in
+                match block.branch with
+                | Return x -> Var.Set.add x s
+                | _ -> s)
+              pc
+              p.blocks
+              Var.Set.empty
+          in
+          Var.Map.add name s rets)
+    Var.Map.empty
 
 let equal p1 p2 =
   p1.start = p2.start
