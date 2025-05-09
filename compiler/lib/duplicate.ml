@@ -19,29 +19,65 @@
 open! Stdlib
 open Code
 
-let closure p ~bound_vars ~f ~params ~cont:(pc, args) =
-  let s =
-    Subst.from_map
-      (Var.Set.fold (fun x s -> Var.Map.add x (Var.fork x) s) bound_vars Var.Map.empty)
-  in
-  let free_pc, m =
+let bound_variables { blocks; _ } ~f ~params ~cont:(pc, _) =
+  let bound_vars = ref Var.Map.empty in
+  let add_var x = bound_vars := Var.Map.add x (Var.fork x) !bound_vars in
+  List.iter ~f:add_var (f :: params);
+  let rec traverse blocks pc =
     Code.traverse
-      { fold = Code.fold_children }
-      (fun pc (pc', m) -> pc' + 1, Addr.Map.add pc pc' m)
+      { fold = fold_children }
+      (fun pc _ ->
+        let block = Addr.Map.find pc blocks in
+        Freevars.iter_block_bound_vars add_var block;
+        List.iter
+          ~f:(fun i ->
+            match i with
+            | Let (_, Closure (params, (pc', _), _)) ->
+                List.iter ~f:add_var params;
+                traverse blocks pc'
+            | _ -> ())
+          block.body)
       pc
-      p.blocks
-      (p.free_pc, Addr.Map.empty)
+      blocks
+      ()
+  in
+  traverse blocks pc;
+  !bound_vars
+
+let rec blocks_to_rename p pc lst =
+  Code.traverse
+    { fold = Code.fold_children }
+    (fun pc lst ->
+      let block = Addr.Map.find pc p.blocks in
+      List.fold_left
+        ~f:(fun lst i ->
+          match i with
+          | Let (_, Closure (_, (pc', _), _)) -> blocks_to_rename p pc' lst
+          | _ -> lst)
+        ~init:(pc :: lst)
+        block.body)
+    pc
+    p.blocks
+    lst
+
+let closure p ~f ~params ~cont =
+  let s = Subst.from_map (bound_variables p ~f ~params ~cont) in
+  let pc, args = cont in
+  let blocks = blocks_to_rename p pc [] in
+  let free_pc, m =
+    List.fold_left
+      ~f:(fun (pc', m) pc -> pc' + 1, Addr.Map.add pc pc' m)
+      ~init:(p.free_pc, Addr.Map.empty)
+      blocks
   in
   let blocks =
-    Code.traverse
-      { fold = Code.fold_children }
-      (fun pc blocks ->
+    List.fold_left
+      ~f:(fun blocks pc ->
         let b = Addr.Map.find pc blocks in
         let b = Subst.Including_Binders.And_Continuations.block m s b in
         Addr.Map.add (Addr.Map.find pc m) b blocks)
-      pc
-      p.blocks
-      p.blocks
+      ~init:p.blocks
+      blocks
   in
   let p = { p with blocks; free_pc } in
   p, s f, List.map ~f:s params, (Addr.Map.find pc m, List.map ~f:s args)

@@ -104,7 +104,7 @@ jobs:
       - name: Set-up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: latest
+          node-version: 23
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
