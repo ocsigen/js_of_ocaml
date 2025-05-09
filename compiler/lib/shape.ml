@@ -145,7 +145,7 @@ module State = struct
   module T = Hashtbl.Make (struct
     type t = key
 
-    let equal a b = Poly.equal a b
+    let equal a b = Code.Var.equal a b
 
     let hash = Code.Var.idx
   end)
@@ -169,7 +169,7 @@ module State = struct
 
   let get x = T.find_opt t.tbl x
 
-  let mem x = BitSet.mem t.cache x
+  let mem x = BitSet.mem t.cache (Code.Var.idx x)
 
   let is_pure_fun x =
     match T.find_opt t.tbl x with
