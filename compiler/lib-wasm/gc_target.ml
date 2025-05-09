@@ -202,8 +202,10 @@ module Type = struct
                 ]
           })
 
-  let func_type n =
-    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> value); result = [ value ] }
+  let primitive_type n =
+    { W.params = List.init ~len:n ~f:(fun _ -> value); result = [ value ] }
+
+  let func_type n = primitive_type (n + 1)
 
   let function_type ~cps n =
     let n = if cps then n + 1 else n in
@@ -423,8 +425,6 @@ module Type = struct
 end
 
 module Value = struct
-  let value = Type.value
-
   let block_type =
     let* t = Type.block_type in
     return (W.Ref { nullable = false; typ = Type t })
@@ -528,6 +528,7 @@ module Value = struct
     | Call_ref _
     | Br_on_cast _
     | Br_on_cast_fail _
+    | Br_on_null _
     | Try _ -> false
     | IfExpr (_, e1, e2, e3) -> effect_free e1 && effect_free e2 && effect_free e3
     | ArrayNewFixed (_, l) | StructNew (_, l) -> List.for_all ~f:effect_free l
@@ -743,13 +744,13 @@ module Memory = struct
     let a = Code.Var.fresh_n "a" in
     let i = Code.Var.fresh_n "i" in
     block_expr
-      { params = []; result = [ Value.value ] }
+      { params = []; result = [ Type.value ] }
       (let* () = store a e in
        let* () = store ~typ:I32 i (Value.int_val e') in
        let* () =
          drop
            (block_expr
-              { params = []; result = [ Value.value ] }
+              { params = []; result = [ Type.value ] }
               (let* block = Type.block_type in
                let* a = load a in
                let* e =
@@ -779,7 +780,7 @@ module Memory = struct
       (let* () =
          drop
            (block_expr
-              { params = []; result = [ Value.value ] }
+              { params = []; result = [ Type.value ] }
               (let* block = Type.block_type in
                let* a = load a in
                let* () =
@@ -840,7 +841,7 @@ module Memory = struct
     let* () =
       drop
         (block_expr
-           { params = []; result = [ Value.value ] }
+           { params = []; result = [ Type.value ] }
            (let* e =
               if_match
                 ~typ:(Some (W.Ref { nullable = false; typ = Type fun_ty }))
@@ -1406,7 +1407,7 @@ let internal_primitives =
     let arity = List.length args in
     (* [Type.func_type] counts one additional argument for the closure environment (absent
        here) *)
-    let* f = register_import ~name (Fun (Type.func_type (arity - 1))) in
+    let* f = register_import ~name (Fun (Type.primitive_type arity)) in
     let args = List.map ~f:transl_prim_arg args in
     let* args = expression_list Fun.id args in
     return (W.Call (f, args))
@@ -1675,11 +1676,11 @@ let externref = W.Ref { nullable = true; typ = Extern }
 
 let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
   let* js_tag = register_import ~name:"javascript_exception" (Tag externref) in
-  let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Value.value) in
+  let* ocaml_tag = register_import ~name:"ocaml_exception" (Tag Type.value) in
   let* f =
     register_import
       ~name:"caml_wrap_exception"
-      (Fun { params = [ externref ]; result = [ Value.value ] })
+      (Fun { params = [ externref ]; result = [ Type.value ] })
   in
   block
     { params = []; result = result_typ }
@@ -1687,7 +1688,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
        store
          x
          (block_expr
-            { params = []; result = [ Value.value ] }
+            { params = []; result = [ Type.value ] }
             (let* exn =
                block_expr
                  { params = []; result = [ externref ] }
@@ -1698,7 +1699,7 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
                          ~result_typ:[ externref ]
                          ~fall_through:`Skip
                          ~context:(`Skip :: `Skip :: `Catch :: context))
-                      [ ocaml_tag, 1, Value.value; js_tag, 0, externref ]
+                      [ ocaml_tag, 1, Type.value; js_tag, 0, externref ]
                   in
                   instr (W.Push e))
              in

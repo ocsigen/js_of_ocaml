@@ -29,7 +29,6 @@
       (func $caml_cps_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
 ))
 
-
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
