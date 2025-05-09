@@ -14,7 +14,8 @@
    dot_graph
    dot_render))
  (js_of_ocaml
-  (flags :standard --file %{dep:scene.json}))
+  (compilation_mode separate)
+  (build_runtime_flags :standard --file %{dep:scene.json}))
  (preprocess
   (pps js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json)))
 
