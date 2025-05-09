@@ -150,34 +150,27 @@ module State = struct
     let hash = Code.Var.idx
   end)
 
-  type nonrec t =
-    { tbl : t T.t
-    ; cache : BitSet.t
-    }
+  type nonrec t = t T.t
 
-  let t = { tbl = T.create 17; cache = BitSet.create () }
+  let t : t = T.create 17
 
-  let assign x shape =
-    BitSet.set t.cache (Code.Var.idx x);
-    T.replace t.tbl x shape
+  let assign x shape = T.replace t x shape
 
   let propagate x offset target =
-    match T.find_opt t.tbl x with
+    match T.find_opt t x with
     | None -> ()
     | Some (Top _ | Function _) -> ()
     | Some (Block l) -> assign target (List.nth l offset)
 
-  let get x = T.find_opt t.tbl x
+  let get x = T.find_opt t x
 
-  let mem x = BitSet.mem t.cache (Code.Var.idx x)
+  let mem x = T.mem t x
 
   let is_pure_fun x =
-    match T.find_opt t.tbl x with
+    match T.find_opt t x with
     | None -> false
     | Some (Top _ | Block _) -> false
     | Some (Function { pure; _ }) -> pure
 
-  let reset () =
-    T.clear t.tbl;
-    BitSet.clear t.cache
+  let reset () = T.clear t
 end
