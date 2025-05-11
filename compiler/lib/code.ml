@@ -835,8 +835,6 @@ let cont_compare (pc, args) (pc', args') =
 
 let with_invariant = Debug.find "invariant"
 
-let check_defs = false
-
 let do_compact { blocks; start; free_pc = _ } =
   let remap =
     let max = fst (Addr.Map.max_binding blocks) in
@@ -913,6 +911,8 @@ let used_blocks p =
   in
   mark_used p.start;
   visited
+
+let check_defs = true
 
 let invariant ({ blocks; start; _ } as p) =
   if with_invariant ()
