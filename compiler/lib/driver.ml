@@ -142,7 +142,7 @@ let stats = Debug.find "stats"
 let rec loop max name round i (p : 'a) : 'a =
   let debug = times () || stats () in
   if debug then Format.eprintf "%s#%d...@." name i;
-  let p' = round ~first:(i = 1) p in
+  let p' = round p in
   if i >= max
   then (
     if debug then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
@@ -153,15 +153,8 @@ let rec loop max name round i (p : 'a) : 'a =
     p')
   else loop max name round (i + 1) p'
 
-let round ~first : 'a -> 'a =
-  print
-  +> tailcall
-  +> (if first then Fun.id else phi)
-  +> flow
-  +> specialize
-  +> eval
-  +> inline
-  +> deadcode
+let round : 'a -> 'a =
+  print +> tailcall +> phi +> flow +> specialize +> eval +> inline +> deadcode
 
 (* o1 *)
 

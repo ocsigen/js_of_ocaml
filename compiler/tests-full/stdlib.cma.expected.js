@@ -22329,7 +22329,7 @@
         /*<<printexc.ml:352:9>>*/ caml_call1(Stdlib[103], 0);
       }
       catch(exn){}
-       /*<<printexc.ml:353:4>>*/ try{
+       /*<<printexc.ml:352:4>>*/ try{
        var
         _v_ =
            /*<<printexc.ml:354:6>>*/ caml_call2
@@ -25006,7 +25006,7 @@
      old_trav =  /*<<hashtbl.ml:196:17>>*/ ongoing_traversal(h);
      /*<<hashtbl.ml:197:2>>*/ if(1 - old_trav)
       /*<<hashtbl.ml:197:23>>*/ flip_ongoing_traversal(h);
-     /*<<hashtbl.ml:198:2>>*/ try{
+     /*<<hashtbl.ml:197:2>>*/ try{
      var _p_ = d.length - 2 | 0, _r_ = 0;
      if(_p_ >= 0){
       var i = _r_;

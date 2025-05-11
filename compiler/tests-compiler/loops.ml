@@ -131,14 +131,12 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
-      for(;;)
-       if(10 <= runtime.caml_mul(k, j)){
-        var _b_ = j + 1 | 0;
-        if(10 === j) break;
-        j = _b_;
-       }
-       else
-        id[1]++;
+      for(;;){
+       for(;;){if(10 <= runtime.caml_mul(k, j)) break; id[1]++;}
+       var _b_ = j + 1 | 0;
+       if(10 === j) break;
+       j = _b_;
+      }
       var _a_ = k + 1 | 0;
       if(10 === k) return 0;
       k = _a_;
@@ -170,17 +168,17 @@ let for_for_while () =
      var k = 1;
      for(;;){
       var j = 1;
-      for(;;)
-       if(10 <= caml_div(k, j)){
-        var _b_ = j + 1 | 0;
-        if(10 === j) break;
-        j = _b_;
-       }
-       else{
+      for(;;){
+       for(;;){
+        if(10 <= caml_div(k, j)) break;
         try{caml_div(k, j);}
         catch(exn){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
         id[1]++;
        }
+       var _b_ = j + 1 | 0;
+       if(10 === j) break;
+       j = _b_;
+      }
       var _a_ = k + 1 | 0;
       if(10 === k) return 0;
       k = _a_;
