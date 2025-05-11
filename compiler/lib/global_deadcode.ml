@@ -558,7 +558,11 @@ let f p ~deadcode_sentinal global_info =
   Code.invariant p;
   let t = Timer.make () in
   (* Add sentinal variable *)
-  let p = add_sentinal p deadcode_sentinal in
+  let p =
+    match global_info.Global_flow.info_defs.(Var.idx deadcode_sentinal) with
+    | Expr _ -> p
+    | _ -> add_sentinal p deadcode_sentinal
+  in
   (* Compute definitions *)
   let defs = definitions p in
   (* Compute initial liveness *)
@@ -583,4 +587,5 @@ let f p ~deadcode_sentinal global_info =
     Format.eprintf "After Zeroing:@.";
     Code.Print.program Format.err_formatter (fun _ _ -> "") p);
   if times () then Format.eprintf "  global dead code elim.: %a@." Timer.print t;
+  Code.invariant p;
   p
