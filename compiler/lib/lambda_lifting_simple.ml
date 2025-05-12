@@ -147,41 +147,61 @@ and rewrite_body
       let s =
         Var.Set.fold (fun x m -> Var.Map.add x (Var.fork x) m) free_vars Var.Map.empty
       in
-      let program = Subst.Excluding_Binders.cont (Subst.from_map s) pc' program in
-      let f' = try Var.Map.find f s with Not_found -> Var.fork f in
-      let s = Var.Map.bindings (Var.Map.remove f s) in
-      let f'' = Var.fork f in
-      if debug ()
-      then
-        Format.eprintf
-          "LIFT %s (depth:%d free_vars:%d inner_depth:%d)@."
-          (Code.Var.to_string f'')
-          depth
-          (Var.Set.cardinal free_vars)
-          (compute_depth program pc');
-      let pc'' = program.free_pc in
-      let bl = { params = []; body = [ Let (f', cl) ]; branch = Return f' } in
-      let program =
-        { program with free_pc = pc'' + 1; blocks = Addr.Map.add pc'' bl program.blocks }
-      in
-      (* Add to returned list of lifter functions definitions *)
-      let functions =
-        Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions
-      in
-      let lifters = Var.Map.add f f' lifters in
-      rewrite_body
-        ~to_lift
-        ~inside_lifted
-        ~current_contiguous:[]
-        ~st:(program, functions, lifters)
-        ~var_depth
-        ~acc_instr:
-          (* Replace closure with application of the lifter function *)
-          (Let (f, Apply { f = f''; args = List.map ~f:fst s; exact = true }) :: acc_instr)
-        ~depth
-        rem
+      if not Var.Map.(is_empty (remove f s))
+      then (
+        let program = Subst.Excluding_Binders.cont (Subst.from_map s) pc' program in
+        let f' = try Var.Map.find f s with Not_found -> Var.fork f in
+        let f'' = Var.fork f in
+        let s = Var.Map.bindings (Var.Map.remove f s) in
+        if debug ()
+        then
+          Format.eprintf
+            "LIFT %s (depth:%d free_vars:%d inner_depth:%d)@."
+            (Code.Var.to_string f'')
+            depth
+            (Var.Set.cardinal free_vars)
+            (compute_depth program pc');
+        let pc'' = program.free_pc in
+        let bl = { params = []; body = [ Let (f', cl) ]; branch = Return f' } in
+        let program =
+          { program with
+            free_pc = pc'' + 1
+          ; blocks = Addr.Map.add pc'' bl program.blocks
+          }
+        in
+        (* Add to returned list of lifter functions definitions *)
+        let functions =
+          Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions in
+        let lifters = Var.Map.add f f' lifters in
+        rewrite_body
+          ~to_lift
+          ~inside_lifted
+          ~current_contiguous:[]
+          ~st:(program, functions, lifters)
+          ~var_depth
+          ~acc_instr:
+            (* Replace closure with application of the lifter function *)
+            (Let (f, Apply { f = f''; args = List.map ~f:fst s; exact = true })
+            :: acc_instr)
+          ~depth
+          rem)
+      else
+        (* The closure doesn't have free variables, and thus doesn't need a lifter
+           function. Just make sure it's a top-level function. *)
+        let functions = Let (f, cl) :: functions in
+        rewrite_body
+          ~to_lift
+          ~inside_lifted
+          ~var_depth
+          ~current_contiguous:[]
+          ~st:(program, functions, lifters)
+          ~acc_instr
+          ~depth
+          rem
   | Let (cname, Closure (params, (pc', args), cloc)) :: rem ->
-      (* More closure definitions follow: accumulate and lift later *)
+      (* We do not lift an isolated closure: either more closure definitions follow, or
+         the closure doesn't need to be lifted. In both cases, we accumulate it and will
+         lift (or not) later. *)
       let st =
         rewrite_blocks
           ~to_lift
