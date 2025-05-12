@@ -184,7 +184,8 @@
             (field $ba_kind i8) ;; kind
             (field $ba_layout i8)))) ;; layout
 
-   (func $double_to_float16 (param $f f64) (result i32)
+   (func $double_to_float16 (export "caml_double_to_float16")
+      (param $f f64) (result i32)
       (local $x i32) (local $sign i32) (local $o i32)
       (local.set $x (i32.reinterpret_f32 (f32.demote_f64 (local.get $f))))
       (local.set $sign (i32.and (local.get $x) (i32.const 0x80000000)))
@@ -214,7 +215,8 @@
                         (i32.const 13)))))))
       (i32.or (local.get $o) (i32.shr_u (local.get $sign) (i32.const 16))))
 
-   (func $float16_to_double (param $d i32) (result f64)
+   (func $float16_to_double (export "caml_float16_to_double")
+      (param $d i32) (result f64)
       (local $f f32)
       (local.set $f
          (f32.mul
