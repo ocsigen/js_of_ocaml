@@ -44,6 +44,82 @@ type boxed_status =
   | Boxed
   | Unboxed
 
+module Bigarray = struct
+  type kind =
+    | Float16
+    | Float32
+    | Float64
+    | Int8_signed
+    | Int8_unsigned
+    | Int16_signed
+    | Int16_unsigned
+    | Int32
+    | Int64
+    | Int
+    | Nativeint
+    | Complex32
+    | Complex64
+
+  type layout =
+    | C
+    | Fortran
+
+  type t =
+    { kind : kind
+    ; layout : layout
+    }
+
+  let make ~kind ~layout =
+    { kind =
+        (match kind with
+        | 0 -> Float32
+        | 1 -> Float64
+        | 2 -> Int8_signed
+        | 3 -> Int8_unsigned
+        | 4 -> Int16_signed
+        | 5 -> Int16_unsigned
+        | 6 -> Int32
+        | 7 -> Int64
+        | 8 -> Int
+        | 9 -> Nativeint
+        | 10 -> Complex32
+        | 11 -> Complex64
+        | 12 -> Int8_unsigned
+        | 13 -> Float16
+        | _ -> assert false)
+    ; layout =
+        (match layout with
+        | 0 -> C
+        | 1 -> Fortran
+        | _ -> assert false)
+    }
+
+  let print f { kind; layout } =
+    Format.fprintf
+      f
+      "bigarray{%s,%s}"
+      (match kind with
+      | Float32 -> "float32"
+      | Float64 -> "float64"
+      | Int8_signed -> "sint8"
+      | Int8_unsigned -> "uint8"
+      | Int16_signed -> "sint16"
+      | Int16_unsigned -> "uint16"
+      | Int32 -> "int32"
+      | Int64 -> "int64"
+      | Int -> "int"
+      | Nativeint -> "nativeint"
+      | Complex32 -> "complex32"
+      | Complex64 -> "complex64"
+      | Float16 -> "float16")
+      (match layout with
+      | C -> "C"
+      | Fortran -> "Fortran")
+
+  let equal { kind; layout } { kind = kind'; layout = layout' } =
+    phys_equal kind kind' && phys_equal layout layout'
+end
+
 type typ =
   | Top
   | Int of Integer.kind
@@ -52,6 +128,7 @@ type typ =
       (** This value is a block or an integer; if it's an integer, an
           overapproximation of the possible values of each of its
           fields is given by the array of types *)
+  | Bigarray of Bigarray.t
   | Bot
 
 module Domain = struct
@@ -81,8 +158,9 @@ module Domain = struct
                  if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
     | Int _, Tuple _ -> t'
     | Tuple _, Int _ -> t
+    | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
     | Top, _ | _, Top -> Top
-    | (Int _ | Number _ | Tuple _), _ -> Top
+    | (Int _ | Number _ | Tuple _ | Bigarray _), _ -> Top
 
   let join_set ?(others = false) f s =
     if others then Top else Var.Set.fold (fun x a -> join (f x) a) s Bot
@@ -94,7 +172,8 @@ module Domain = struct
     | Number (t, b), Number (t', b') -> Poly.equal t t' && Poly.equal b b'
     | Tuple t, Tuple t' ->
         Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
-    | (Top | Tuple _ | Int _ | Number _ | Bot), _ -> false
+    | Bigarray b, Bigarray b' -> Bigarray.equal b b'
+    | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Bot), _ -> false
 
   let bot = Bot
 
@@ -102,12 +181,12 @@ module Domain = struct
 
   let rec depth t =
     match t with
-    | Top | Bot | Number _ | Int _ -> 0
+    | Top | Bot | Number _ | Int _ | Bigarray _ -> 0
     | Tuple l -> 1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
 
   let rec truncate depth t =
     match t with
-    | Top | Bot | Number _ | Int _ -> t
+    | Top | Bot | Number _ | Int _ | Bigarray _ -> t
     | Tuple l ->
         if depth = 0
         then Top
@@ -145,6 +224,7 @@ module Domain = struct
           (match b with
           | Boxed -> "boxed"
           | Unboxed -> "unboxed")
+    | Bigarray b -> Bigarray.print f b
     | Tuple t ->
         Format.fprintf
           f
@@ -160,7 +240,18 @@ let update_deps st { blocks; _ } =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, Block (_, lst, _, _)) -> Array.iter ~f:(fun y -> add_dep st x y) lst
-          | Let (x, Prim (Extern ("%int_and" | "%int_or" | "%int_xor"), lst)) ->
+          | Let
+              ( x
+              , Prim
+                  ( Extern
+                      ( "%int_and"
+                      | "%int_or"
+                      | "%int_xor"
+                      | "caml_ba_get_1"
+                      | "caml_ba_get_2"
+                      | "caml_ba_get_3"
+                      | "caml_ba_get_generic" )
+                  , lst ) ) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
                 ~f:(fun p ->
@@ -206,7 +297,23 @@ let arg_type ~approx arg =
   | Pc c -> constant_type c
   | Pv x -> Var.Tbl.get approx x
 
-let prim_type ~approx prim args =
+let bigarray_element_type (kind : Bigarray.kind) =
+  match kind with
+  | Float16 | Float32 | Float64 -> Number (Float, Unboxed)
+  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
+  | Int -> Int Unnormalized
+  | Int32 -> Number (Int32, Unboxed)
+  | Int64 -> Number (Int64, Unboxed)
+  | Nativeint -> Number (Nativeint, Unboxed)
+  | Complex32 | Complex64 -> Tuple [| Number (Float, Boxed); Number (Float, Boxed) |]
+
+let bigarray_type ~approx ba =
+  match arg_type ~approx ba with
+  | Bot -> Bot
+  | Bigarray { kind; _ } -> bigarray_element_type kind
+  | _ -> Top
+
+let prim_type ~st ~approx prim args =
   match prim with
   | "%int_add" | "%int_sub" | "%int_mul" | "%direct_int_mul" | "%int_lsl" | "%int_neg" ->
       Int Unnormalized
@@ -366,6 +473,25 @@ let prim_type ~approx prim args =
   | "caml_nativeint_to_int" -> Int Unnormalized
   | "caml_nativeint_of_int" -> Number (Nativeint, Unboxed)
   | "caml_int_compare" -> Int Normalized
+  | "caml_ba_create" -> (
+      match args with
+      | [ Pc (Int kind); Pc (Int layout); _ ] ->
+          Bigarray
+            (Bigarray.make
+               ~kind:(Targetint.to_int_exn kind)
+               ~layout:(Targetint.to_int_exn layout))
+      | _ -> Top)
+  | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
+      match args with
+      | ba :: _ -> bigarray_type ~approx ba
+      | [] -> Top)
+  | "caml_ba_get_generic" -> (
+      match args with
+      | ba :: Pv indices :: _ -> (
+          match st.global_flow_state.defs.(Var.idx indices) with
+          | Expr (Block _) -> bigarray_type ~approx ba
+          | _ -> Top)
+      | [] | [ _ ] | _ :: Pc _ :: _ -> Top)
   | _ -> Top
 
 let propagate st approx x : Domain.t =
@@ -424,7 +550,7 @@ let propagate st approx x : Domain.t =
           | Top -> Top)
       | Prim (Array_get, _) -> Top
       | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
-      | Prim (Extern prim, args) -> prim_type ~approx prim args
+      | Prim (Extern prim, args) -> prim_type ~st ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.global_flow_info.info_approximation f with
@@ -437,7 +563,35 @@ let propagate st approx x : Domain.t =
                     when List.length args = List.length params ->
                       let res =
                         Domain.join_set
-                          (fun y -> Var.Tbl.get approx y)
+                          (fun y ->
+                            match st.global_flow_state.defs.(Var.idx y) with
+                            | Expr
+                                (Prim (Extern "caml_ba_create", [ Pv kind; Pv layout; _ ]))
+                              -> (
+                                let m =
+                                  List.fold_left2
+                                    ~f:(fun m p a -> Var.Map.add p a m)
+                                    ~init:Var.Map.empty
+                                    params
+                                    args
+                                in
+                                try
+                                  match
+                                    ( st.global_flow_state.defs.(Var.idx
+                                                                   (Var.Map.find kind m))
+                                    , st.global_flow_state.defs.(Var.idx
+                                                                   (Var.Map.find layout m))
+                                    )
+                                  with
+                                  | ( Expr (Constant (Int kind))
+                                    , Expr (Constant (Int layout)) ) ->
+                                      Bigarray
+                                        (Bigarray.make
+                                           ~kind:(Targetint.to_int_exn kind)
+                                           ~layout:(Targetint.to_int_exn layout))
+                                  | _ -> raise Not_found
+                                with Not_found -> Var.Tbl.get approx y)
+                            | _ -> Var.Tbl.get approx y)
                           (Var.Map.find g st.global_flow_state.return_values)
                       in
                       if can_unbox_return_value st.fun_info g then res else Domain.box res
@@ -590,7 +744,7 @@ let primitives_with_unboxed_parameters =
     ];
   h
 
-let type_specialized_primitive types name args =
+let type_specialized_primitive types global_flow_state name args =
   match name with
   | "caml_greaterthan"
   | "caml_greaterequal"
@@ -605,6 +759,25 @@ let type_specialized_primitive types name args =
       | [ Number (Int64, _); Number (Int64, _) ]
       | [ Number (Nativeint, _); Number (Nativeint, _) ]
       | [ Number (Float, _); Number (Float, _) ] -> true
+      | _ -> false)
+  | "caml_ba_get_1"
+  | "caml_ba_get_2"
+  | "caml_ba_get_3"
+  | "caml_ba_set_1"
+  | "caml_ba_set_2"
+  | "caml_ba_set_3" -> (
+      match args with
+      | Pv x :: _ -> (
+          match Var.Tbl.get types x with
+          | Bigarray _ -> true
+          | _ -> false)
+      | _ -> false)
+  | "caml_ba_get_generic" | "caml_ba_set_generic" -> (
+      match args with
+      | Pv x :: Pv indices :: _ -> (
+          match Var.Tbl.get types x, global_flow_state.defs.(Var.idx indices) with
+          | Bigarray _, Expr (Block _) -> true
+          | _ -> false)
       | _ -> false)
   | _ -> false
 
@@ -632,7 +805,7 @@ let box_numbers p st types =
                     Var.Set.iter box s)
           | Expr _ -> ()
           | Phi { known; _ } -> Var.Set.iter box known)
-      | Number (_, Boxed) | Int _ | Tuple _ | Bot -> ())
+      | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Bot -> ())
   in
   Code.fold_closures
     p
@@ -656,7 +829,7 @@ let box_numbers p st types =
                   | Prim (Extern s, args) ->
                       if
                         (not (String.Hashtbl.mem primitives_with_unboxed_parameters s))
-                        || type_specialized_primitive types s args
+                        || type_specialized_primitive types st.global_flow_state s args
                       then
                         List.iter
                           ~f:(fun a ->
@@ -687,9 +860,10 @@ let box_numbers p st types =
         ())
     ()
 
-let print_opt typ f e =
+let print_opt types global_flow_state f e =
   match e with
-  | Prim (Extern name, args) when type_specialized_primitive typ name args ->
+  | Prim (Extern name, args)
+    when type_specialized_primitive types global_flow_state name args ->
       Format.fprintf f " OPT"
   | _ -> ()
 
@@ -727,7 +901,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
               "{%a}%a"
               Domain.print
               (Var.Tbl.get types x)
-              (print_opt types)
+              (print_opt types global_flow_state)
               e
         | _ -> "")
       p);
