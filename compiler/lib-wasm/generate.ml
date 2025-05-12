@@ -237,7 +237,8 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
-    | (Int _ | Number _ | Tuple _), _ | _, (Int _ | Number _ | Tuple _) ->
+    | (Int _ | Number _ | Tuple _ | Bigarray _), _
+    | _, (Int _ | Number _ | Tuple _ | Bigarray _) ->
         (* Only Top may contain JavaScript values *)
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
@@ -900,7 +901,207 @@ module Generate (Target : Target_sig.S) = struct
                 let* x' = x' in
                 let* y' = y' in
                 return (W.Call (f, [ x'; y' ])))
-        | _ -> invalid_arity "caml_compare" l ~expected:2)
+        | _ -> invalid_arity "caml_compare" l ~expected:2);
+    register_prim "caml_ba_get_1" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i ] -> (
+            let ta' = transl_prim_arg ctx ta in
+            match get_type ctx ta with
+            | Bigarray { kind; layout = C } ->
+                let i' = Var.fresh () in
+                let dim0 = Var.fresh () in
+                seq
+                  (let* () =
+                     store ~typ:I32 i' (transl_prim_arg ctx ~typ:(Int Normalized) i)
+                   in
+                   let* () = store dim0 ~typ:I32 (Bigarray.dim 0 ta') in
+                   let* cond = Arith.uge (load i') (load dim0) in
+                   instr (W.Br_if (label_index context bound_error_pc, cond)))
+                  (Bigarray.get ~kind ta' (load i'))
+            | _ ->
+                let* f =
+                  register_import ~name:"caml_ba_get_1" (Fun (Type.primitive_type 2))
+                in
+                let* ta' = ta' in
+                let* i' = transl_prim_arg ctx i in
+                return (W.Call (f, [ ta'; i' ])))
+        | _ -> invalid_arity "caml_ba_get_1" l ~expected:2);
+    register_prim "caml_ba_get_2" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j ] -> (
+            let ta' = transl_prim_arg ctx ta in
+            match get_type ctx ta with
+            | Bigarray { kind; layout = C } ->
+                let i' = Var.fresh () in
+                let j' = Var.fresh () in
+                let dim0 = Var.fresh () in
+                let dim1 = Var.fresh () in
+                seq
+                  (let* () =
+                     store ~typ:I32 i' (transl_prim_arg ctx ~typ:(Int Normalized) i)
+                   in
+                   let* () =
+                     store ~typ:I32 j' (transl_prim_arg ctx ~typ:(Int Normalized) j)
+                   in
+                   let* () = store dim0 ~typ:I32 (Bigarray.dim 0 ta') in
+                   let* () = store dim1 ~typ:I32 (Bigarray.dim 1 ta') in
+                   let* cond = Arith.uge (load i') (load dim0) in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   let* cond = Arith.uge (load j') (load dim1) in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   return ())
+                  (Bigarray.get ~kind ta' Arith.((load i' * load dim1) + load j'))
+            | _ ->
+                let* f =
+                  register_import ~name:"caml_ba_get_2" (Fun (Type.primitive_type 3))
+                in
+                let* ta' = ta' in
+                let* i' = transl_prim_arg ctx i in
+                let* j' = transl_prim_arg ctx j in
+                return (W.Call (f, [ ta'; i'; j' ])))
+        | _ -> invalid_arity "caml_ba_get_1" l ~expected:3);
+    register_prim "caml_ba_set_1" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; v ] -> (
+            let ta' = transl_prim_arg ctx ta in
+            match get_type ctx ta with
+            | Bigarray { kind; layout = C } ->
+                let i' = Var.fresh () in
+                let dim0 = Var.fresh () in
+                let v' =
+                  transl_prim_arg
+                    ctx
+                    ?typ:
+                      (match kind with
+                      | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned | Char
+                        -> Some (Int Unnormalized)
+                      | Int -> Some (Int Normalized)
+                      | _ -> None)
+                    v
+                in
+                seq
+                  (let* () =
+                     store ~typ:I32 i' (transl_prim_arg ctx ~typ:(Int Normalized) i)
+                   in
+                   let* () = store dim0 ~typ:I32 (Bigarray.dim 0 ta') in
+                   let* cond = Arith.uge (load i') (load dim0) in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   Bigarray.set ~kind ta' (load i') v')
+                  Value.unit
+            | _ ->
+                let* f =
+                  register_import ~name:"caml_ba_set_1" (Fun (Type.primitive_type 3))
+                in
+                let* ta' = ta' in
+                let* i' = transl_prim_arg ctx i in
+                let* v' = transl_prim_arg ctx v in
+                return (W.Call (f, [ ta'; i'; v' ])))
+        | _ -> invalid_arity "caml_ba_set_1" l ~expected:3);
+    register_prim "caml_ba_set_2" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j; v ] -> (
+            let ta' = transl_prim_arg ctx ta in
+            match get_type ctx ta with
+            | Bigarray { kind; layout = C } ->
+                let i' = Var.fresh () in
+                let j' = Var.fresh () in
+                let dim0 = Var.fresh () in
+                let dim1 = Var.fresh () in
+                let v' =
+                  transl_prim_arg
+                    ctx
+                    ?typ:
+                      (match kind with
+                      | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned | Char
+                        -> Some (Int Unnormalized)
+                      | Int -> Some (Int Normalized)
+                      | _ -> None)
+                    v
+                in
+                seq
+                  (let* () =
+                     store ~typ:I32 i' (transl_prim_arg ctx ~typ:(Int Normalized) i)
+                   in
+                   let* () =
+                     store ~typ:I32 j' (transl_prim_arg ctx ~typ:(Int Normalized) j)
+                   in
+                   let* () = store dim0 ~typ:I32 (Bigarray.dim 0 ta') in
+                   let* () = store dim1 ~typ:I32 (Bigarray.dim 1 ta') in
+                   let* cond = Arith.uge (load i') (load dim0) in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   let* cond = Arith.uge (load j') (load dim1) in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   Bigarray.set ~kind ta' Arith.((load i' * load dim1) + load j') v')
+                  Value.unit
+            | _ ->
+                let* f =
+                  register_import ~name:"caml_ba_set_2" (Fun (Type.primitive_type 4))
+                in
+                let* ta' = ta' in
+                let* i' = transl_prim_arg ctx i in
+                let* j' = transl_prim_arg ctx j in
+                let* v' = transl_prim_arg ctx v in
+                return (W.Call (f, [ ta'; i'; j'; v' ])))
+        | _ -> invalid_arity "caml_ba_set_2" l ~expected:4);
+    register_prim "caml_ba_set_3" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j; k; v ] -> (
+            let ta' = transl_prim_arg ctx ta in
+            match get_type ctx ta with
+            | Bigarray { kind; layout = C } ->
+                let i' = Var.fresh () in
+                let j' = Var.fresh () in
+                let k' = Var.fresh () in
+                let dim0 = Var.fresh () in
+                let dim1 = Var.fresh () in
+                let dim2 = Var.fresh () in
+                let v' =
+                  transl_prim_arg
+                    ctx
+                    ?typ:
+                      (match kind with
+                      | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned | Char
+                        -> Some (Int Unnormalized)
+                      | Int -> Some (Int Normalized)
+                      | _ -> None)
+                    v
+                in
+                seq
+                  (let* () =
+                     store ~typ:I32 i' (transl_prim_arg ctx ~typ:(Int Normalized) i)
+                   in
+                   let* () =
+                     store ~typ:I32 j' (transl_prim_arg ctx ~typ:(Int Normalized) j)
+                   in
+                   let* () =
+                     store ~typ:I32 k' (transl_prim_arg ctx ~typ:(Int Normalized) k)
+                   in
+                   let* () = store dim0 ~typ:I32 (Bigarray.dim 0 ta') in
+                   let* () = store dim1 ~typ:I32 (Bigarray.dim 1 ta') in
+                   let* () = store dim2 ~typ:I32 (Bigarray.dim 2 ta') in
+                   let* cond = Arith.uge (load i') (load dim0) in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   let* cond = Arith.uge (load j') (load dim1) in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   let* cond = Arith.uge (load k') (load dim2) in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   Bigarray.set
+                     ~kind
+                     ta'
+                     Arith.((((load i' * load dim1) + load j') * load dim2) + load k')
+                     v')
+                  Value.unit
+            | _ ->
+                let* f =
+                  register_import ~name:"caml_ba_set_3" (Fun (Type.primitive_type 5))
+                in
+                let* ta' = ta' in
+                let* i' = transl_prim_arg ctx i in
+                let* j' = transl_prim_arg ctx j in
+                let* k' = transl_prim_arg ctx k in
+                let* v' = transl_prim_arg ctx v in
+                return (W.Call (f, [ ta'; i'; j'; k'; v' ])))
+        | _ -> invalid_arity "caml_ba_set_3" l ~expected:5)
 
   let rec translate_expr ctx context x e =
     match e with
@@ -1174,7 +1375,13 @@ module Generate (Target : Target_sig.S) = struct
                         | "caml_bytes_set"
                         | "caml_check_bound"
                         | "caml_check_bound_gen"
-                        | "caml_check_bound_float" )
+                        | "caml_check_bound_float"
+                        | "caml_ba_get_1"
+                        | "caml_ba_get_2"
+                        | "caml_ba_get_3"
+                        | "caml_ba_set_1"
+                        | "caml_ba_set_2"
+                        | "caml_ba_set_3" )
                     , _ ) ) -> fst n, true
             | Let
                 ( _
