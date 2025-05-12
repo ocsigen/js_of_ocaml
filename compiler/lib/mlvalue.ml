@@ -60,6 +60,6 @@ module Array = struct
         J.EAccess (e, ANormal, adjusted)
     | J.EUn (J.Neg, _) -> failwith "Negative field indexes are not allowed"
     | _ ->
-        let adjusted = J.EBin (J.Plus, one, i) in
+        let adjusted = J.EBin (J.Plus, i, one) in
         J.EAccess (e, ANormal, adjusted)
 end

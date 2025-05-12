@@ -342,7 +342,7 @@ end
     122:       var
     123:        match =
     124:           /*<<test.ml:70:38>>*/  /*<<test.ml:70:14>>*/ format_backtrace_slot
-    125:           (i,  /*<<test.ml:70:38>>*/ runtime.caml_check_bound(a, i)[1 + i]);
+    125:           (i,  /*<<test.ml:70:38>>*/ runtime.caml_check_bound(a, i)[i + 1]);
     126:        /*<<test.ml:70:43>>*/ if(match){
     127:        var str = match[1];
     128:         /*<<test.ml:72:24>>*/ caml_call3(Stdlib_Printf[1], outchan, _c_, str);
