@@ -197,6 +197,7 @@ let inline inline_count live_vars closures pc (outer, p) =
                      make this code unoptimized. (wrt to Jit compilers) *)
               && f_size < Config.Param.inlining_limit ()
             then (
+              live_vars.(Var.idx f) <- 0;
               let blocks, cont_pc, free_pc =
                 match rem, branch with
                 | [], Return y when Var.compare x y = 0 ->
@@ -298,6 +299,48 @@ let stats = Debug.find "stats"
 
 let debug_stats = Debug.find "stats-debug"
 
+(* Inlining a function used only once will leave an unused closure
+   with an initial continuation pointing to a block belonging to
+   another function. This removes these closures. *)
+
+let remove_dead_closures_from_block ~live_vars p pc block =
+  let is_dead_closure i =
+    match i with
+    | Let (f, Closure _) ->
+        let f = Var.idx f in
+        f < Array.length live_vars && live_vars.(f) = 0
+    | _ -> false
+  in
+  if List.exists ~f:is_dead_closure block.body
+  then
+    { p with
+      blocks =
+        Addr.Map.add
+          pc
+          { block with
+            body =
+              List.fold_left block.body ~init:[] ~f:(fun acc i ->
+                  match i, acc with
+                  | Event _, Event _ :: prev ->
+                      (* Avoid consecutive events (keep just the last one) *)
+                      i :: prev
+                  | _ -> if is_dead_closure i then acc else i :: acc)
+              |> List.rev
+          }
+          p.blocks
+    }
+  else p
+
+let remove_dead_closures ~live_vars p pc =
+  Code.traverse
+    { fold = fold_children }
+    (fun pc p ->
+      let block = Addr.Map.find pc p.blocks in
+      remove_dead_closures_from_block ~live_vars p pc block)
+    pc
+    p.blocks
+    p
+
 let f p live_vars =
   let previous_p = p in
   let inline_count = ref 0 in
@@ -309,12 +352,16 @@ let f p live_vars =
       p
       (fun name cl_params (pc, _) _ (closures, p) ->
         let traverse outer =
-          Code.traverse
-            { fold = Code.fold_children }
-            (inline inline_count live_vars closures)
-            pc
-            p.blocks
-            (outer, p)
+          let outer, p =
+            Code.traverse
+              { fold = Code.fold_children }
+              (inline inline_count live_vars closures)
+              pc
+              p.blocks
+              (outer, p)
+          in
+          let p = remove_dead_closures ~live_vars p pc in
+          outer, p
         in
         match name with
         | None ->
@@ -333,8 +380,8 @@ let f p live_vars =
   (* Inlining a raising function can result in empty blocks *)
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - inline: %d optimizations@." !inline_count;
+  let p = Deadcode.remove_unused_blocks p in
   if debug_stats ()
   then Code.check_updates ~name:"inline" previous_p p ~updates:!inline_count;
-  let p = Deadcode.remove_unused_blocks p in
   Code.invariant p;
   p
