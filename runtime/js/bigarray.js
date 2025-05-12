@@ -979,7 +979,7 @@ function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims) {
 
 //Provides: caml_ba_hash const
 //Requires: caml_ba_get_size, caml_hash_mix_int, caml_hash_mix_float
-//Requires: caml_unpackFloat16, caml_hash_mix_float16
+//Requires: caml_unpackFloat16, caml_hash_mix_float16, caml_hash_mix_float32
 function caml_ba_hash(ba) {
   var num_elts = caml_ba_get_size(ba.dims);
   var h = 0;
@@ -990,11 +990,11 @@ function caml_ba_hash(ba) {
       if (num_elts > 256) num_elts = 256;
       var w = 0,
         i = 0;
-      for (i = 0; i + 4 <= ba.data.length; i += 4) {
+      for (i = 0; i + 4 <= num_elts; i += 4) {
         w =
-          ba.data[i + 0] |
-          (ba.data[i + 1] << 8) |
-          (ba.data[i + 2] << 16) |
+          (ba.data[i + 0] & 0xff) |
+          ((ba.data[i + 1] & 0xff) << 8) |
+          ((ba.data[i + 2] & 0xff) << 16) |
           (ba.data[i + 3] << 24);
         h = caml_hash_mix_int(h, w);
       }
@@ -1018,8 +1018,8 @@ function caml_ba_hash(ba) {
       if (num_elts > 128) num_elts = 128;
       var w = 0,
         i = 0;
-      for (i = 0; i + 2 <= ba.data.length; i += 2) {
-        w = ba.data[i + 0] | (ba.data[i + 1] << 16);
+      for (i = 0; i + 2 <= num_elts; i += 2) {
+        w = (ba.data[i + 0] & 0xffff) | (ba.data[i + 1] << 16);
         h = caml_hash_mix_int(h, w);
       }
       if ((num_elts & 1) !== 0) h = caml_hash_mix_int(h, ba.data[i]);
@@ -1046,7 +1046,8 @@ function caml_ba_hash(ba) {
     // fallthrough
     case 0: // Float32Array
       if (num_elts > 64) num_elts = 64;
-      for (var i = 0; i < num_elts; i++) h = caml_hash_mix_float(h, ba.data[i]);
+      for (var i = 0; i < num_elts; i++)
+        h = caml_hash_mix_float32(h, ba.data[i]);
       break;
     case 11: // Float64Array (complex64)
       // biome-ignore lint/suspicious/noFallthroughSwitchClause:
@@ -1077,6 +1078,24 @@ function caml_hash_mix_float16(hash, d) {
     d = 0;
   }
   return caml_hash_mix_int(hash, d);
+}
+
+//Provides: caml_hash_mix_float32
+//Requires: caml_int32_bits_of_float
+//Requires: caml_hash_mix_int
+function caml_hash_mix_float32(hash, v) {
+  var i = caml_int32_bits_of_float(v);
+  /* Normalize NaNs */
+  if ((i & 0x7f800000) === 0x7f800000 && (i & 0x7fffff) !== 0) {
+    i = 0x7f800001;
+  } else if (i === (0x80000000 | 0)) {
+    /* Normalize -0 into +0 */
+    // This code path is not used by caml_hash because 0 and -0 look
+    // like integers
+    i = 0;
+  }
+  hash = caml_hash_mix_int(hash, i);
+  return hash;
 }
 
 //Provides: caml_ba_to_typed_array mutable

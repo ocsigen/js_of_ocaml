@@ -263,8 +263,8 @@
                        (br $loop))))
               (return (local.get $h)))
              ;; int64
-             (if (i32.gt_u (local.get $len) (i32.const 32))
-                (then (local.set $len (i32.const 32))))
+             (if (i32.gt_u (local.get $len) (i32.const 64))
+                (then (local.set $len (i32.const 64))))
              (loop $loop
                 (if (i32.lt_u (local.get $i) (local.get $len))
                    (then
@@ -328,7 +328,9 @@
                       (call $caml_hash_mix_int
                          (local.get $h)
                          (i32.or
-                            (call $ta_get_i16 (local.get $data) (local.get $i))
+                            (i32.and (i32.const 0xFFFF)
+                               (call $ta_get_i16 (local.get $data)
+                                  (local.get $i)))
                             (i32.shl (call $ta_get_i16 (local.get $data)
                                         (i32.add (local.get $i) (i32.const 1)))
                                      (i32.const 16)))))
@@ -386,14 +388,19 @@
                        (local.get $h)
                        (i32.or
                           (i32.or
-                             (call $ta_get_i8 (local.get $data) (local.get $i))
-                             (i32.shl (call $ta_get_i8 (local.get $data)
-                                         (i32.add (local.get $i) (i32.const 1)))
-                                      (i32.const 8)))
+                             (i32.and (i32.const 0xFF)
+                              (call $ta_get_i8 (local.get $data) (local.get $i)))
+                             (i32.shl
+                                (i32.and (i32.const 0xFF)
+                                   (call $ta_get_i8 (local.get $data)
+                                      (i32.add (local.get $i) (i32.const 1))))
+                                (i32.const 8)))
                           (i32.or
-                             (i32.shl (call $ta_get_i8 (local.get $data)
-                                         (i32.add (local.get $i) (i32.const 2)))
-                                      (i32.const 16))
+                             (i32.shl
+                                (i32.and (i32.const 0xFF)
+                                   (call $ta_get_i8 (local.get $data)
+                                      (i32.add (local.get $i) (i32.const 2))))
+                                (i32.const 16))
                              (i32.shl (call $ta_get_i8 (local.get $data)
                                          (i32.add (local.get $i) (i32.const 3)))
                                       (i32.const 24))))))
