@@ -26,29 +26,34 @@ module Flag = struct
 
   let o ~name ~default =
     let state =
-      try List.assoc name !optims
-      with Not_found ->
-        let state = ref default in
-        optims := (name, state) :: !optims;
-        state
+      match List.string_assoc name !optims with
+      | Some x -> x
+      | None ->
+          let state = ref default in
+          optims := (name, state) :: !optims;
+          state
     in
     fun () -> !state
 
   let find s =
-    try !(List.assoc s !optims)
-    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    match List.string_assoc s !optims with
+    | Some x -> !x
+    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let set s b =
-    try List.assoc s !optims := b
-    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    match List.string_assoc s !optims with
+    | Some s -> s := b
+    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let disable s =
-    try List.assoc s !optims := false
-    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    match List.string_assoc s !optims with
+    | Some s -> s := false
+    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let enable s =
-    try List.assoc s !optims := true
-    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    match List.string_assoc s !optims with
+    | Some s -> s := true
+    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let pretty = o ~name:"pretty" ~default:false
 
@@ -107,13 +112,18 @@ module Param = struct
   let int default = default, int_of_string
 
   let enum : (string * 'a) list -> _ = function
-    | (_, v) :: _ as l -> v, fun x -> List.assoc x l
+    | (_, v) :: _ as l -> (
+        ( v
+        , fun x ->
+            match List.string_assoc x l with
+            | Some x -> x
+            | None -> assert false ))
     | _ -> assert false
 
   let params : (string * _) list ref = ref []
 
   let p ~name ~desc (default, convert) =
-    assert (not (List.mem_assoc name ~map:!params));
+    assert (Option.is_none (List.string_assoc name !params));
     let state = ref default in
     let set : string -> unit =
      fun v ->
@@ -124,8 +134,9 @@ module Param = struct
     fun () -> !state
 
   let set s v =
-    try fst (List.assoc s !params) v
-    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    match List.string_assoc s !params with
+    | Some (f, _) -> f v
+    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let all () = List.map !params ~f:(fun (n, (_, d)) -> n, d)
 

@@ -2055,7 +2055,7 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
                   J.N
               in
               let instrs, queue =
-                if List.mem x ~set:(snd e1)
+                if List.mem ~eq:Var.equal x (snd e1)
                 then (
                   assert (n = 1);
                   enqueue [] const_p x wrapped_exn J.U None [])
@@ -2128,7 +2128,9 @@ and compile_argument_passing ctx loc queue (pc, args) back_edge continuation =
     parallel_renaming ctx loc back_edge block.params args continuation queue
 
 and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bool * _ =
-  let scope = List.assoc_opt pc scope_stack in
+  let scope =
+    List.find_map ~f:(fun (pc', x) -> if pc = pc' then Some x else None) scope_stack
+  in
   let back_edge =
     List.exists
       ~f:(function

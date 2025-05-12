@@ -96,7 +96,9 @@ let t =
           let enable = if debuginfo then "debuginfo" :: enable else enable in
           let disable = if noinline then "inline" :: disable else disable in
           let disable_if_pretty name disable =
-            if pretty && not (List.mem name ~set:enable) then name :: disable else disable
+            if pretty && not (List.mem ~eq:String.equal name enable)
+            then name :: disable
+            else disable
           in
           let disable = disable_if_pretty "shortvar" disable in
           let disable = disable_if_pretty "share" disable in

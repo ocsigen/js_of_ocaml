@@ -187,7 +187,7 @@ struct
         match nodes with
         | [] -> assert false
         | [ node ] ->
-            ( (if List.mem node ~set:integer_graph.(node)
+            ( (if List.mem ~eq:Int.equal node integer_graph.(node)
                then Has_loop [ numbering.forth.(node) ]
                else No_loop numbering.forth.(node))
             , component_edges.(component) )

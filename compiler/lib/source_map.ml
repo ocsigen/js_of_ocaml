@@ -304,46 +304,42 @@ let int_of_intlit (`Intlit s) =
   | _ -> invalid ()
 
 let stringlit name rest : [ `Stringlit of string ] option =
-  try
-    match List.assoc name rest with
-    | `Stringlit _ as s -> Some s
-    | `Null -> None
-    | _ -> invalid ()
-  with Not_found -> None
+  match List.string_assoc name rest with
+  | Some (`Stringlit _ as s) -> Some s
+  | Some `Null -> None
+  | Some _ -> invalid ()
+  | None -> None
 
 let list_stringlit name rest =
-  try
-    match List.assoc name rest with
-    | `List l ->
-        Some
-          (List.map l ~f:(function
-            | `Stringlit _ as s -> s
-            | _ -> invalid ()))
-    | _ -> invalid ()
-  with Not_found -> None
+  match List.string_assoc name rest with
+  | Some (`List l) ->
+      Some
+        (List.map l ~f:(function
+          | `Stringlit _ as s -> s
+          | _ -> invalid ()))
+  | Some _ -> invalid ()
+  | None -> None
 
 let list_stringlit_opt name rest =
-  try
-    match List.assoc name rest with
-    | `List l ->
-        Some
-          (List.map l ~f:(function
-            | `Stringlit _ as s -> Some s
-            | `Null -> None
-            | _ -> invalid ()))
-    | _ -> invalid ()
-  with Not_found -> None
+  match List.string_assoc name rest with
+  | Some (`List l) ->
+      Some
+        (List.map l ~f:(function
+          | `Stringlit _ as s -> Some s
+          | `Null -> None
+          | _ -> invalid ()))
+  | Some _ -> invalid ()
+  | None -> None
 
 let list_intlit name rest =
-  try
-    match List.assoc name rest with
-    | `List l ->
-        Some
-          (List.map l ~f:(function
-            | `Intlit _ as s -> s
-            | _ -> invalid ()))
-    | _ -> invalid ()
-  with Not_found -> None
+  match List.string_assoc name rest with
+  | Some (`List l) ->
+      Some
+        (List.map l ~f:(function
+          | `Intlit _ as s -> s
+          | _ -> invalid ()))
+  | Some _ -> invalid ()
+  | None -> None
 
 module Standard = struct
   type t =
@@ -652,16 +648,15 @@ module Index = struct
          ])
 
   let intlit ~errmsg name json =
-    match List.assoc name json with
-    | `Intlit i -> int_of_string i
-    | _ -> invalid_arg errmsg
-    | exception Not_found -> invalid_arg errmsg
+    match List.string_assoc name json with
+    | Some (`Intlit i) -> int_of_string i
+    | Some _ | None -> invalid_arg errmsg
 
   let section_of_json ?tmp_buf : Yojson.Raw.t -> section = function
     | `Assoc json ->
         let offset =
-          match List.assoc "offset" json with
-          | `Assoc fields ->
+          match List.string_assoc "offset" json with
+          | Some (`Assoc fields) ->
               let gen_line =
                 intlit
                   "line"
@@ -679,18 +674,21 @@ module Index = struct
                      section"
               in
               { Offset.gen_line; gen_column }
-          | _ -> invalid_arg "Source_map.Index.of_json: 'offset' field of unexpected type"
+          | Some _ | None ->
+              invalid_arg "Source_map.Index.of_json: 'offset' field of unexpected type"
         in
-        (match List.assoc "url" json with
-        | _ ->
+        (match List.string_assoc "url" json with
+        | Some _ ->
             invalid_arg
               "Source_map.Index.of_json: URLs in index maps are not currently supported"
-        | exception Not_found -> ());
+        | None -> ());
         let map =
-          try Standard.of_json ?tmp_buf (List.assoc "map" json) with
-          | Not_found -> invalid_arg "Source_map.Index.of_json: field 'map' absent"
-          | Invalid_argument _ ->
-              invalid_arg "Source_map.Index.of_json: invalid sub-map object"
+          match List.string_assoc "map" json with
+          | Some json -> (
+              try Standard.of_json ?tmp_buf json
+              with Invalid_argument _ ->
+                invalid_arg "Source_map.Index.of_json: invalid sub-map object")
+          | None -> invalid_arg "Source_map.Index.of_json: field 'map' absent"
         in
         { offset; map }
     | _ -> invalid_arg "Source_map.Index.of_json: section of unexpected type"
@@ -700,13 +698,12 @@ module Index = struct
       when version_is_valid (int_of_string version) -> (
         let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
         let file = string "file" fields in
-        match List.assoc "sections" fields with
-        | `List sections ->
+        match List.string_assoc "sections" fields with
+        | Some (`List sections) ->
             let sections = List.map ~f:(section_of_json ?tmp_buf) sections in
             { version = int_of_string version; file; sections }
-        | _ -> invalid_arg "Source_map.Index.of_json: `sections` is not an array"
-        | exception Not_found ->
-            invalid_arg "Source_map.Index.of_json: no `sections` field")
+        | Some _ -> invalid_arg "Source_map.Index.of_json: `sections` is not an array"
+        | None -> invalid_arg "Source_map.Index.of_json: no `sections` field")
     | _ -> invalid_arg "Source_map.Index.of_json"
 
   let rewrite_paths m =
@@ -746,9 +743,9 @@ type t =
 
 let of_json ?tmp_buf = function
   | `Assoc fields as json -> (
-      match List.assoc "sections" fields with
-      | _ -> Index (Index.of_json ?tmp_buf json)
-      | exception Not_found -> Standard (Standard.of_json ?tmp_buf json))
+      match List.string_assoc "sections" fields with
+      | Some _ -> Index (Index.of_json ?tmp_buf json)
+      | None -> Standard (Standard.of_json ?tmp_buf json))
   | _ -> invalid_arg "Source_map.of_json: map is not an object"
 
 let of_string ?tmp_buf s = of_json ?tmp_buf (Yojson.Raw.from_string ?buf:tmp_buf s)

@@ -196,7 +196,7 @@ let run
   let runtime_files =
     if (not no_runtime) && (toplevel || dynlink)
     then
-      let add_if_absent x l = if List.mem x ~set:l then l else x :: l in
+      let add_if_absent x l = if List.mem ~eq:String.equal x l then l else x :: l in
       runtime_files_from_cmdline
       |> add_if_absent "+toplevel.js"
       |> add_if_absent "+dynlink.js"
