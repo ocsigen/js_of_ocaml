@@ -373,6 +373,7 @@ module Arith = struct
       (match e, e' with
       | W.Const (I32 n), W.Const (I32 n') when Int32.(n' < 31l) ->
           W.Const (I32 (Int32.shift_left n (Int32.to_int n')))
+      | _, W.Const (I32 0l) -> e
       | _ -> W.BinOp (I32 Shl, e, e'))
 
   let ( lsr ) = binary (Shr U)
