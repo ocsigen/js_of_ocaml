@@ -1105,6 +1105,7 @@ let split_blocks ~cps_needed (p : Code.program) =
 (****)
 
 let f ~flow_info ~live_vars p =
+  Code.invariant p;
   let t = Timer.make () in
   let cps_needed = Partial_cps_analysis.f p flow_info in
   let p, cps_needed =

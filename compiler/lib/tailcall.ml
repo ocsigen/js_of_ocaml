@@ -92,6 +92,7 @@ let rec traverse update_count f pc visited blocks =
 
 let f p =
   let previous_p = p in
+  Code.invariant p;
   let free_pc = ref p.free_pc in
   let blocks = ref p.blocks in
   let update_count = ref 0 in
@@ -152,4 +153,5 @@ let f p =
   if stats () then Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
   if debug_stats ()
   then Code.check_updates ~name:"tailcall" previous_p p ~updates:!update_count;
+  Code.invariant p;
   p

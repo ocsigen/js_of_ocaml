@@ -808,6 +808,7 @@ let eval update_count update_branch inline_constant ~target info blocks =
     blocks
 
 let f info p =
+  Code.invariant p;
   let previous_p = p in
   let update_count = ref 0 in
   let update_branch = ref 0 in
@@ -843,4 +844,5 @@ let f info p =
       p
       ~updates:(!update_count + !inline_constant + !drop_count + !update_branch);
   let p = Deadcode.remove_unused_blocks p in
+  Code.invariant p;
   p

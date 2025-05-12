@@ -384,6 +384,7 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
 
 let f ({ blocks; _ } as p : Code.program) =
   let previous_p = p in
+  Code.invariant p;
   let t = Timer.make () in
   let nv = Var.count () in
   let defs = Array.make nv [] in
@@ -483,4 +484,5 @@ let f ({ blocks; _ } as p : Code.program) =
     let total = Var.count () in
     let ratio = float !live /. float total *. 100. in
     Format.eprintf "Stats - live variables: %d/%d = %.1f%%@." !live total ratio);
+  Code.invariant p;
   p, st.live
