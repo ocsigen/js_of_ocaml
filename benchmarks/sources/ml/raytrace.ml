@@ -510,6 +510,6 @@ let render_scene () =
   Engine.render_scene engine scene None
 
 let _ =
-  for _ = 0 to 99 do
+  for _ = 1 to 2000 do
     render_scene ()
   done
