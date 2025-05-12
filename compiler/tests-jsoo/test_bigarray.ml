@@ -265,3 +265,57 @@ let%expect_test "blit bytes-ba" =
     {|
     \000\001\002\003\004\005\006\007\008\009
     \255\255\255\255\255\255\003\004\005\255 |}]
+
+let%expect_test "hash" =
+  let test_hash nm kind conv sz =
+    let a = Array1.create kind c_layout sz in
+    for i = 0 to sz - 1 do
+      a.{i} <- conv (i - 10)
+    done;
+    Printf.printf "%08x %s %d\n" (Hashtbl.hash a) nm sz
+  in
+  let test nm kind conv =
+    test_hash nm kind conv 20;
+    test_hash nm kind conv 300
+  in
+  test "float16" float16 float;
+  test "float32" float32 float;
+  test "float64" float64 float;
+  test "complex32" complex32 (fun i -> { Complex.re = float i; im = float i +. 0.5 });
+  test "complex64" complex64 (fun i -> { Complex.re = float i; im = float i +. 0.5 });
+  test "int8_signed" int8_signed Fun.id;
+  test "int8_unsigned" int8_unsigned Fun.id;
+  test "int16_signed" int16_signed Fun.id;
+  test "int16_unsigned" int16_unsigned Fun.id;
+  test "int" int Fun.id;
+  test "int32" int32 Int32.of_int;
+  test "int64" int64 Int64.of_int;
+  test "nativeint" nativeint Nativeint.of_int;
+  [%expect
+    {|
+    25078b88 float16 20
+    2343870b float16 300
+    302739c9 float32 20
+    11498d5d float32 300
+    15f7508d float64 20
+    09855d61 float64 300
+    20854307 complex32 20
+    283a36fa complex32 300
+    26f9c576 complex64 20
+    26f9c576 complex64 300
+    31a28c90 int8_signed 20
+    350c179a int8_signed 300
+    31a28c90 int8_unsigned 20
+    350c179a int8_unsigned 300
+    16a15c12 int16_signed 20
+    31ebf1b2 int16_signed 300
+    16a15c12 int16_unsigned 20
+    31ebf1b2 int16_unsigned 300
+    1e14ef2b int 20
+    314148ee int 300
+    1e14ef2b int32 20
+    314148ee int32 300
+    00b18db2 int64 20
+    1c259f64 int64 300
+    1e14ef2b nativeint 20
+    314148ee nativeint 300 |}]
