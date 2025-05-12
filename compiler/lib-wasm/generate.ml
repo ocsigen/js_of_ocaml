@@ -875,7 +875,48 @@ module Generate (Target : Target_sig.S) = struct
                 let* x' = x' in
                 let* y' = y' in
                 return (W.Call (f, [ x'; y' ])))
-        | _ -> invalid_arity "caml_compare" l ~expected:2)
+        | _ -> invalid_arity "caml_compare" l ~expected:2);
+    register_prim "caml_ba_get_1" `Mutator (fun ctx context l ->
+        match l with
+        | [ x; y ] -> (
+            let x' = transl_prim_arg ctx x in
+            let y' = transl_prim_arg ctx y in
+            match get_type ctx x with
+            | Bigarray { kind = (Int8_unsigned | Char) as kind; layout = C } ->
+                seq
+                  (let* cond = Arith.uge (Value.int_val y') (Bigarray.dim1 x') in
+                   instr (W.Br_if (label_index context bound_error_pc, cond)))
+                  (Bigarray.get ~kind x' y')
+            | _ ->
+                let* f =
+                  register_import ~name:"caml_ba_get_1" (Fun (Type.primitive_type 2))
+                in
+                let* x' = x' in
+                let* y' = y' in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity "caml_ba_get_1" l ~expected:2);
+    register_prim "caml_ba_set_1" `Mutator (fun ctx context l ->
+        match l with
+        | [ x; y; z ] -> (
+            let x' = transl_prim_arg ctx x in
+            let y' = transl_prim_arg ctx y in
+            let z' = transl_prim_arg ctx z in
+            match get_type ctx x with
+            | Bigarray { kind = (Int8_unsigned | Char) as kind; layout = C } ->
+                seq
+                  (let* cond = Arith.uge (Value.int_val y') (Bigarray.dim1 x') in
+                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
+                   Bigarray.set ~kind x' y' z')
+                  Value.unit
+            | _ ->
+                let* f =
+                  register_import ~name:"caml_ba_set_1" (Fun (Type.primitive_type 3))
+                in
+                let* x' = x' in
+                let* y' = y' in
+                let* z' = z' in
+                return (W.Call (f, [ x'; y'; z' ])))
+        | _ -> invalid_arity "caml_ba_set_1" l ~expected:3)
 
   let rec translate_expr ctx context x e =
     match e with
@@ -1139,7 +1180,9 @@ module Generate (Target : Target_sig.S) = struct
                         | "caml_bytes_set"
                         | "caml_check_bound"
                         | "caml_check_bound_gen"
-                        | "caml_check_bound_float" )
+                        | "caml_check_bound_float"
+                        | "caml_ba_get_1"
+                        | "caml_ba_set_1" )
                     , _ ) ) -> fst n, true
             | Let
                 ( _

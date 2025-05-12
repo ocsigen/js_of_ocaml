@@ -31,11 +31,90 @@ type boxed_number =
   | Nativeint
   | Float
 
+module Bigarray = struct
+  type kind =
+    | Float32
+    | Float64
+    | Int8_signed
+    | Int8_unsigned
+    | Int16_signed
+    | Int16_unsigned
+    | Int32
+    | Int64
+    | Int
+    | Nativeint
+    | Complex32
+    | Complex64
+    | Char
+    | Float16
+
+  type layout =
+    | C
+    | Fortran
+
+  type t =
+    { kind : kind
+    ; layout : layout
+    }
+
+  let make ~kind ~layout =
+    { kind =
+        (match kind with
+        | 0 -> Float32
+        | 1 -> Float64
+        | 2 -> Int8_signed
+        | 3 -> Int8_unsigned
+        | 4 -> Int16_signed
+        | 5 -> Int16_unsigned
+        | 6 -> Int32
+        | 7 -> Int64
+        | 8 -> Int
+        | 9 -> Nativeint
+        | 10 -> Complex32
+        | 11 -> Complex64
+        | 12 -> Char
+        | 13 -> Float16
+        | _ -> assert false)
+    ; layout =
+        (match layout with
+        | 0 -> C
+        | 1 -> Fortran
+        | _ -> assert false)
+    }
+
+  let print f { kind; layout } =
+    Format.fprintf
+      f
+      "bigarray{%s,%s}"
+      (match kind with
+      | Float32 -> "float32"
+      | Float64 -> "float64"
+      | Int8_signed -> "sint8"
+      | Int8_unsigned -> "uint8"
+      | Int16_signed -> "sint16"
+      | Int16_unsigned -> "uint16"
+      | Int32 -> "int32"
+      | Int64 -> "int64"
+      | Int -> "int"
+      | Nativeint -> "nativeint"
+      | Complex32 -> "complex32"
+      | Complex64 -> "complex64"
+      | Char -> "char"
+      | Float16 -> "float16")
+      (match layout with
+      | C -> "C"
+      | Fortran -> "Fortran")
+
+  let equal { kind; layout } { kind = kind'; layout = layout' } =
+    phys_equal kind kind' && phys_equal layout layout'
+end
+
 type typ =
   | Top
   | Int of Integer.kind
   | Number of boxed_number
   | Tuple of typ array
+  | Bigarray of Bigarray.t
   | Bot
 
 module Domain = struct
@@ -55,8 +134,9 @@ module Domain = struct
            else
              Array.init (max l l') ~f:(fun i ->
                  if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
+    | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
     | Top, _ | _, Top -> Top
-    | (Int _ | Number _ | Tuple _), _ -> Top
+    | (Int _ | Number _ | Tuple _ | Bigarray _), _ -> Top
 
   let join_set ?(others = false) f s =
     if others then Top else Var.Set.fold (fun x a -> join (f x) a) s Bot
@@ -68,7 +148,8 @@ module Domain = struct
     | Number t, Number t' -> Poly.equal t t'
     | Tuple t, Tuple t' ->
         Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
-    | (Top | Tuple _ | Int _ | Number _ | Bot), _ -> false
+    | Bigarray b, Bigarray b' -> Bigarray.equal b b'
+    | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Bot), _ -> false
 
   let rec sub t t' =
     match t, t' with
@@ -83,7 +164,8 @@ module Domain = struct
           i = l || (sub t.(i) t'.(i) && compare t t' (i + 1) l)
         in
         compare t t' 0 (Array.length t)
-    | (Int _ | Number _ | Tuple _), _ -> false
+    | Bigarray b, Bigarray b' -> Bigarray.equal b b'
+    | (Int _ | Number _ | Tuple _ | Bigarray _), _ -> false
 
   let bot = Bot
 
@@ -91,12 +173,12 @@ module Domain = struct
 
   let rec depth t =
     match t with
-    | Top | Bot | Number _ | Int _ -> 0
+    | Top | Bot | Number _ | Int _ | Bigarray _ -> 0
     | Tuple l -> 1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
 
   let rec truncate depth t =
     match t with
-    | Top | Bot | Number _ | Int _ -> t
+    | Top | Bot | Number _ | Int _ | Bigarray _ -> t
     | Tuple l ->
         if depth = 0
         then Top
@@ -125,6 +207,7 @@ module Domain = struct
     | Number Int64 -> Format.fprintf f "int64"
     | Number Nativeint -> Format.fprintf f "nativeint"
     | Number Float -> Format.fprintf f "float"
+    | Bigarray b -> Bigarray.print f b
     | Tuple t ->
         Format.fprintf
           f
@@ -411,7 +494,32 @@ let propagate st approx x : Domain.t =
                     when List.length args = List.length params ->
                       Domain.box
                         (Domain.join_set
-                           (fun y -> Var.Tbl.get approx y)
+                           (fun y ->
+                             match st.state.defs.(Var.idx y) with
+                             | Expr
+                                 (Prim (Extern "caml_ba_create", [ Pv kind; Pv layout; _ ]))
+                               -> (
+                                 let m =
+                                   List.fold_left2
+                                     ~f:(fun m p a -> Var.Map.add p a m)
+                                     ~init:Var.Map.empty
+                                     params
+                                     args
+                                 in
+                                 try
+                                   match
+                                     ( st.state.defs.(Var.idx (Var.Map.find kind m))
+                                     , st.state.defs.(Var.idx (Var.Map.find layout m)) )
+                                   with
+                                   | ( Expr (Constant (Int kind))
+                                     , Expr (Constant (Int layout)) ) ->
+                                       Bigarray
+                                         (Bigarray.make
+                                            ~kind:(Targetint.to_int_exn kind)
+                                            ~layout:(Targetint.to_int_exn layout))
+                                   | _ -> raise Not_found
+                                 with Not_found -> Var.Tbl.get approx y)
+                             | _ -> Var.Tbl.get approx y)
                            (Var.Map.find g st.state.return_values))
                   | Expr (Closure (_, _, _)) ->
                       (* The function is partially applied or over applied *)
@@ -470,6 +578,10 @@ let print_opt typ f e =
           ; Number Float
           ]
       then Format.fprintf f " OPT"
+  | Prim (Extern ("caml_ba_get_1" | "caml_ba_set_1"), Pv x :: _) -> (
+      match Var.Tbl.get typ x with
+      | Bigarray _ -> Format.fprintf f " OPT"
+      | _ -> ())
   | _ -> ()
 
 let f ~state ~info p =
