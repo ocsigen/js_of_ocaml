@@ -325,7 +325,6 @@ let f p : Code.program =
       p.blocks
       (p.blocks, p.free_pc)
   in
-  (* Code.invariant (pc, blocks, free_pc); *)
   let p = { p with blocks; free_pc } in
   Code.invariant p;
   p

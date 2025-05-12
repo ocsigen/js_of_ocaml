@@ -154,6 +154,7 @@ let solver1 vars deps defs =
 
 let f p =
   let previous_p = p in
+  Code.invariant p;
   let t = Timer.make () in
   let t' = Timer.make () in
   let vars, deps, defs = program_deps p in
@@ -182,4 +183,5 @@ let f p =
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - phi updates: %d@." !count_uniq;
   if debug_stats () then Code.check_updates ~name:"phi" previous_p p ~updates:!count_uniq;
+  Code.invariant p;
   p

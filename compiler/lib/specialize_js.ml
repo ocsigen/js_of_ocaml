@@ -396,6 +396,7 @@ let specialize_all_instrs ~target opt_count info p =
 (****)
 
 let f info p =
+  Code.invariant p;
   let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
@@ -404,6 +405,7 @@ let f info p =
   if stats () then Format.eprintf "Stats - specialize_js: %d@." !opt_count;
   if debug_stats ()
   then Code.check_updates ~name:"specialize_js" previous_p p ~updates:!opt_count;
+  Code.invariant p;
   p
 
 let f_once_before p =
