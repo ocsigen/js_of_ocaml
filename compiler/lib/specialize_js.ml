@@ -275,6 +275,14 @@ let specialize_string_concat opt_count l =
          ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv str ]))
          ])
 
+let idx_equal (v1, c1) (v2, c2) =
+  Code.Var.equal v1 v2
+  &&
+  match c1, c2 with
+  | `Cst a, `Cst b -> Targetint.equal a b
+  | `Var a, `Var b -> Code.Var.equal a b
+  | `Cst _, `Var _ | `Var _, `Cst _ -> false
+
 let specialize_instrs ~target opt_count info l =
   let rec aux info checks l acc =
     match l with
@@ -293,11 +301,14 @@ let specialize_instrs ~target opt_count info l =
                      | "caml_array_get_float"
                      | "caml_floatarray_get"
                      | "caml_array_get_addr" ) as prim)
-                , [ y; z ] ) ) ->
+                , [ Pv y; z ] ) ) ->
             let idx =
               match the_int info z with
               | Some idx -> `Cst idx
-              | None -> `Var z
+              | None -> (
+                  match z with
+                  | Pv z -> `Var z
+                  | Pc _ -> assert false)
             in
             let instr y =
               let prim =
@@ -308,9 +319,9 @@ let specialize_instrs ~target opt_count info l =
                 | "caml_array_get_addr" -> Array_get
                 | _ -> assert false
               in
-              Let (x, Prim (prim, [ y; z ]))
+              Let (x, Prim (prim, [ Pv y; z ]))
             in
-            if List.mem (y, idx) ~set:checks
+            if List.mem ~eq:idx_equal (y, idx) checks
             then (
               incr opt_count;
               let acc = instr y :: acc in
@@ -326,7 +337,7 @@ let specialize_instrs ~target opt_count info l =
               in
               let y' = Code.Var.fresh () in
               incr opt_count;
-              let acc = instr (Pv y') :: Let (y', Prim (Extern check, [ y; z ])) :: acc in
+              let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
               aux info ((y, idx) :: checks) r acc
         | Let
             ( x
@@ -336,11 +347,14 @@ let specialize_instrs ~target opt_count info l =
                      | "caml_array_set_float"
                      | "caml_floatarray_set"
                      | "caml_array_set_addr" ) as prim)
-                , [ y; z; t ] ) ) ->
+                , [ Pv y; z; t ] ) ) ->
             let idx =
               match the_int info z with
               | Some idx -> `Cst idx
-              | None -> `Var z
+              | None -> (
+                  match z with
+                  | Pv z -> `Var z
+                  | Pc _ -> assert false)
             in
             let instr y =
               let prim =
@@ -351,9 +365,9 @@ let specialize_instrs ~target opt_count info l =
                 | "caml_array_set_addr" -> "caml_array_unsafe_set_addr"
                 | _ -> assert false
               in
-              Let (x, Prim (Extern prim, [ y; z; t ]))
+              Let (x, Prim (Extern prim, [ Pv y; z; t ]))
             in
-            if List.mem (y, idx) ~set:checks
+            if List.mem ~eq:idx_equal (y, idx) checks
             then (
               incr opt_count;
               let acc = instr y :: acc in
@@ -368,7 +382,7 @@ let specialize_instrs ~target opt_count info l =
                 | _ -> assert false
               in
               let y' = Code.Var.fresh () in
-              let acc = instr (Pv y') :: Let (y', Prim (Extern check, [ y; z ])) :: acc in
+              let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
               incr opt_count;
               aux info ((y, idx) :: checks) r acc
         | _ ->

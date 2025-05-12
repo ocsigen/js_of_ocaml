@@ -441,7 +441,7 @@ let propagate st ~update approx x =
                     when n < Array.length a
                          &&
                          match tags with
-                         | Some tags -> List.memq t ~set:tags
+                         | Some tags -> List.mem ~eq:Int.equal t tags
                          | None -> true ->
                       let t = a.(n) in
                       let m = Var.ISet.mem st.possibly_mutable z in

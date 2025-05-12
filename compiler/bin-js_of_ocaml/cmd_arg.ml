@@ -45,7 +45,7 @@ let normalize_effects (effects : [ `Cps | `Double_translation ] option) common :
   | None ->
       (* For backward compatibility, consider that [--enable effects] alone means
          [--effects cps] *)
-      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
+      if List.mem ~eq:String.equal "effects" common.Jsoo_cmdline.Arg.optim.enable
       then `Cps
       else `Disabled
   | Some ((`Cps | `Double_translation) as e) -> (e :> Config.effects_backend)

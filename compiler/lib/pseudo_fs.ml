@@ -33,8 +33,8 @@ let expand_path exts real virt =
             let b = Filename.basename realfile in
             let i = String.rindex b '.' in
             let e = String.sub b ~pos:(i + 1) ~len:(String.length b - i - 1) in
-            List.mem e ~set:exts
-          with Not_found -> List.mem "" ~set:exts
+            List.mem ~eq:String.equal e exts
+          with Not_found -> List.mem ~eq:String.equal "" exts
         in
         if List.is_empty exts || exmatch then (virtfile, realfile) :: acc else acc
       with exc ->

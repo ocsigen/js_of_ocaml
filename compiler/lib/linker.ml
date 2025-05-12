@@ -449,7 +449,7 @@ let list_all ?from () =
   let include_ =
     match from with
     | None -> fun _ _ -> true
-    | Some l -> fun fn _nm -> List.mem fn ~set:l
+    | Some l -> fun fn _nm -> List.mem ~eq:String.equal fn l
   in
   Hashtbl.fold
     (fun nm p set -> if include_ p.filename nm then StringSet.add nm set else set)
@@ -460,7 +460,7 @@ let list_all_with_aliases ?from () =
   let include_ =
     match from with
     | None -> fun _ _ -> true
-    | Some l -> fun fn _nm -> List.mem fn ~set:l
+    | Some l -> fun fn _nm -> List.mem ~eq:String.equal fn l
   in
   Hashtbl.fold
     (fun nm p map ->
@@ -638,7 +638,7 @@ let rec resolve_dep_name_rev state path nm =
 and resolve_dep_id_rev state path id =
   if IntSet.mem id state.ids
   then (
-    if List.memq id ~set:path
+    if List.mem ~eq:Int.equal id path
     then
       error
         "circular dependency: %s"
@@ -669,7 +669,7 @@ let init ?from () =
   let include_ =
     match from with
     | None -> fun _ -> true
-    | Some l -> fun fn -> List.mem fn ~set:l
+    | Some l -> fun fn -> List.mem ~eq:String.equal fn l
   in
   { ids = IntSet.empty
   ; always_required_codes =

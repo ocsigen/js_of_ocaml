@@ -37,7 +37,7 @@ let function_arity info x =
         | Some (Special (Alias_prim prim)) -> (
             try Some (Primitive.arity prim) with Not_found -> None)
         | Some (Apply { f; args; _ }) -> (
-            if List.mem f ~set:acc
+            if List.mem ~eq:Var.equal f acc
             then None
             else
               match arity info f (f :: acc) with

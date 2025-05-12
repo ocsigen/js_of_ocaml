@@ -736,4 +736,4 @@ let from_string ~prims ~debug s formatter =
 
 let profiles = [ 1, O1; 2, O2; 3, O3 ]
 
-let profile i = try Some (List.assoc i profiles) with Not_found -> None
+let profile i = List.find_map ~f:(fun (i', p) -> if i = i' then Some p else None) profiles

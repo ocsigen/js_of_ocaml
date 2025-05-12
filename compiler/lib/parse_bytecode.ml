@@ -2644,7 +2644,7 @@ let from_exe
       true
     with Not_found -> (
       match exported_unit with
-      | Some l -> List.mem s ~set:l
+      | Some l -> List.mem ~eq:String.equal s l
       | None -> true)
   in
   let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in

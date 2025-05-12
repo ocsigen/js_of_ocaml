@@ -92,6 +92,23 @@ let raise_ exn =
 module List = struct
   include ListLabels
 
+  let (mem_assoc [@deprecated "use List.exists"]) = List.mem
+
+  let (assoc [@deprecated "use List.find_map"]) = List.assoc
+
+  let (assoc_opt [@deprecated "use List.find_map"]) = List.assoc_opt
+
+  let (remove_assoc [@deprecated "use List.filter"]) = List.remove_assoc
+
+  let rec mem ~eq x = function
+    | [] -> false
+    | a :: l -> eq a x || mem ~eq x l
+
+  let string_assoc name l =
+    List.find_map
+      (fun (name', state) -> if String.equal name name' then Some state else None)
+      l
+
   let rec rev_append_map ~f l acc =
     match l with
     | [] -> acc

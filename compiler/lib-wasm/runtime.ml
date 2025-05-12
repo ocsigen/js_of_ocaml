@@ -24,7 +24,7 @@ let build ~allowed_imports ~link_options ~opt_options ~variables ~inputs ~output
       let missing_imports =
         List.filter
           ~f:(fun { Link.Wasm_binary.module_; _ } ->
-            not (List.mem module_ ~set:allowed_imports))
+            not (List.mem ~eq:String.equal module_ allowed_imports))
           imports
       in
       if not (List.is_empty missing_imports)
