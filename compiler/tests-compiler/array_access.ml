@@ -40,3 +40,40 @@ let%expect_test "array_set" =
 let%expect_test "array_set" =
   compile_and_run array_set;
   [%expect {| |}]
+
+let%expect_test "array_get bounds" =
+  let program =
+    compile_and_parse {|
+   let sum a i = a.(i + 0) +  a.(i + 1) + a.(i + 2) |}
+  in
+  print_fun_decl program (Some "sum");
+  [%expect
+    {|
+    function sum(a, i){
+     var _a_ = i + 2 | 0, _b_ = runtime.caml_check_bound(a, _a_)[_a_ + 1];
+     return (a[(i | 0) + 1] + a[(i + 1 | 0) + 1] | 0) + _b_ | 0;
+    }
+    //end
+    |}]
+
+let%expect_test "array_set bounds" =
+  let program =
+    compile_and_parse
+      {|
+    let reset a i =
+      a.(i + 2 ) <- 0;
+      a.(i + 1) <- 0;
+      a.(i + 0) <- 0  |}
+  in
+  print_fun_decl program (Some "reset");
+  [%expect
+    {|
+    function reset(a, i){
+     var _a_ = i + 2 | 0;
+     runtime.caml_check_bound(a, _a_)[_a_ + 1] = 0;
+     a[(i + 1 | 0) + 1] = 0;
+     a[(i | 0) + 1] = 0;
+     return 0;
+    }
+    //end
+    |}]

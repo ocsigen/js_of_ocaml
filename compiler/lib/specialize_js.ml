@@ -275,16 +275,28 @@ let specialize_string_concat opt_count l =
          ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv str ]))
          ])
 
-let idx_equal (v1, c1) (v2, c2) =
-  Code.Var.equal v1 v2
-  &&
-  match c1, c2 with
-  | `Cst a, `Cst b -> Targetint.equal a b
-  | `Var a, `Var b -> Code.Var.equal a b
-  | `Cst _, `Var _ | `Var _, `Cst _ -> false
+type idx =
+  | Cst of Targetint.t
+  | Offset of Var.t * Targetint.t
+
+let idx_checked a ~checked =
+  match a, checked with
+  | Offset (a, ao), Offset (b, bo) -> Var.equal a b && Targetint.(ao <= bo)
+  | Cst a, Cst checked -> Targetint.(a <= checked) && Targetint.(a >= zero)
+  | Offset _, Cst _ -> false
+  | Cst _, Offset _ -> false
+
+let unsafe = function
+  | "caml_array_set" -> Extern "caml_array_unsafe_set"
+  | "caml_array_set_float" | "caml_floatarray_set" -> Extern "caml_floatarray_unsafe_set"
+  | "caml_array_set_addr" -> Extern "caml_array_unsafe_set_addr"
+  | "caml_array_get" -> Extern "caml_array_unsafe_get"
+  | "caml_array_get_float" | "caml_floatarray_get" -> Extern "caml_floatarray_unsafe_get"
+  | "caml_array_get_addr" -> Array_get
+  | _ -> assert false
 
 let specialize_instrs ~target opt_count info l =
-  let rec aux info checks l acc =
+  let rec aux info checked l acc =
     match l with
     | [] -> List.rev acc
     | i :: r -> (
@@ -303,42 +315,24 @@ let specialize_instrs ~target opt_count info l =
                      | "caml_array_get_addr" ) as prim)
                 , [ Pv y; z ] ) ) ->
             let idx =
-              match the_int info z with
-              | Some idx -> `Cst idx
-              | None -> (
+              match the_def_of info z with
+              | Some (Constant (Int idx)) -> Cst idx
+              | Some (Prim (Extern "%int_add", [ Pc (Int c); Pv a ])) -> Offset (a, c)
+              | Some (Prim (Extern "%int_add", [ Pv a; Pc (Int c) ])) -> Offset (a, c)
+              | Some _ | None -> (
                   match z with
-                  | Pv z -> `Var z
+                  | Pv z -> Offset (z, Targetint.zero)
                   | Pc _ -> assert false)
             in
-            let instr y =
-              let prim =
-                match prim with
-                | "caml_array_get" -> Extern "caml_array_unsafe_get"
-                | "caml_array_get_float" | "caml_floatarray_get" ->
-                    Extern "caml_floatarray_unsafe_get"
-                | "caml_array_get_addr" -> Array_get
-                | _ -> assert false
-              in
-              Let (x, Prim (prim, [ Pv y; z ]))
-            in
-            if List.mem ~eq:idx_equal (y, idx) checks
+            if
+              List.exists
+                ~f:(fun (y', idx') -> Var.equal y y' && idx_checked ~checked:idx' idx)
+                checked
             then (
               incr opt_count;
-              let acc = instr y :: acc in
-              aux info checks r acc)
-            else
-              let check =
-                match prim with
-                | "caml_array_get" -> "caml_check_bound_gen"
-                | "caml_array_get_float" | "caml_floatarray_get" ->
-                    "caml_check_bound_float"
-                | "caml_array_get_addr" -> "caml_check_bound"
-                | _ -> assert false
-              in
-              let y' = Code.Var.fresh () in
-              incr opt_count;
-              let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
-              aux info ((y, idx) :: checks) r acc
+              let acc = Let (x, Prim (unsafe prim, [ Pv y; z ])) :: acc in
+              aux info checked r acc)
+            else aux info ((y, idx) :: checked) r (i :: acc)
         | Let
             ( x
             , Prim
@@ -349,45 +343,27 @@ let specialize_instrs ~target opt_count info l =
                      | "caml_array_set_addr" ) as prim)
                 , [ Pv y; z; t ] ) ) ->
             let idx =
-              match the_int info z with
-              | Some idx -> `Cst idx
-              | None -> (
+              match the_def_of info z with
+              | Some (Constant (Int idx)) -> Cst idx
+              | Some (Prim (Extern "%int_add", [ Pc (Int c); Pv a ])) -> Offset (a, c)
+              | Some (Prim (Extern "%int_add", [ Pv a; Pc (Int c) ])) -> Offset (a, c)
+              | Some _ | None -> (
                   match z with
-                  | Pv z -> `Var z
+                  | Pv z -> Offset (z, Targetint.zero)
                   | Pc _ -> assert false)
             in
-            let instr y =
-              let prim =
-                match prim with
-                | "caml_array_set" -> "caml_array_unsafe_set"
-                | "caml_array_set_float" | "caml_floatarray_set" ->
-                    "caml_floatarray_unsafe_set"
-                | "caml_array_set_addr" -> "caml_array_unsafe_set_addr"
-                | _ -> assert false
-              in
-              Let (x, Prim (Extern prim, [ Pv y; z; t ]))
-            in
-            if List.mem ~eq:idx_equal (y, idx) checks
+            if
+              List.exists
+                ~f:(fun (y', idx') -> Var.equal y y' && idx_checked ~checked:idx' idx)
+                checked
             then (
               incr opt_count;
-              let acc = instr y :: acc in
-              aux info checks r acc)
-            else
-              let check =
-                match prim with
-                | "caml_array_set" -> "caml_check_bound_gen"
-                | "caml_array_set_float" | "caml_floatarray_set" ->
-                    "caml_check_bound_float"
-                | "caml_array_set_addr" -> "caml_check_bound"
-                | _ -> assert false
-              in
-              let y' = Code.Var.fresh () in
-              let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
-              incr opt_count;
-              aux info ((y, idx) :: checks) r acc
+              let acc = Let (x, Prim (unsafe prim, [ Pv y; z; t ])) :: acc in
+              aux info checked r acc)
+            else aux info checked r (i :: acc)
         | _ ->
             let i = specialize_instr ~target opt_count info i in
-            aux info checks r (i :: acc))
+            aux info checked r (i :: acc))
   in
   aux info [] l []
 
@@ -456,9 +432,106 @@ let rec args_equal xs ys =
   | x :: xs, Pv y :: ys -> Code.Var.compare x y = 0 && args_equal xs ys
   | _ -> false
 
+let specialize_instrs_after opt_count info l =
+  let rec aux info checked l acc =
+    match l with
+    | [] -> List.rev acc
+    | i :: r -> (
+        (* We make bound checking explicit. Then, we can remove duplicated
+           bound checks. Also, it appears to be more efficient to inline
+           the array access. The bound checking function returns the array,
+           which allows to produce more compact code. *)
+        match i with
+        | Let
+            ( x
+            , Prim
+                ( Extern
+                    (( "caml_array_get"
+                     | "caml_array_get_float"
+                     | "caml_floatarray_get"
+                     | "caml_array_get_addr" ) as prim)
+                , [ Pv y; z ] ) ) ->
+            let idx =
+              match the_def_of info z with
+              | Some (Constant (Int idx)) -> Cst idx
+              | Some (Prim (Extern "%int_add", [ Pc (Int c); Pv a ])) -> Offset (a, c)
+              | Some (Prim (Extern "%int_add", [ Pv a; Pc (Int c) ])) -> Offset (a, c)
+              | Some _ | None -> (
+                  match z with
+                  | Pv z -> Offset (z, Targetint.zero)
+                  | Pc _ -> assert false)
+            in
+            let instr y = Let (x, Prim (unsafe prim, [ Pv y; z ])) in
+            if
+              List.exists
+                ~f:(fun (y', idx') -> Var.equal y y' && idx_checked ~checked:idx' idx)
+                checked
+            then (
+              incr opt_count;
+              let acc = instr y :: acc in
+              aux info checked r acc)
+            else
+              let check =
+                match prim with
+                | "caml_array_get" -> "caml_check_bound_gen"
+                | "caml_array_get_float" | "caml_floatarray_get" ->
+                    "caml_check_bound_float"
+                | "caml_array_get_addr" -> "caml_check_bound"
+                | _ -> assert false
+              in
+              let y' = Code.Var.fresh () in
+              incr opt_count;
+              let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
+              aux info ((y, idx) :: checked) r acc
+        | Let
+            ( x
+            , Prim
+                ( Extern
+                    (( "caml_array_set"
+                     | "caml_array_set_float"
+                     | "caml_floatarray_set"
+                     | "caml_array_set_addr" ) as prim)
+                , [ Pv y; z; t ] ) ) ->
+            let idx =
+              match the_def_of info z with
+              | Some (Constant (Int idx)) -> Cst idx
+              | Some (Prim (Extern "%int_add", [ Pc (Int c); Pv a ])) -> Offset (a, c)
+              | Some (Prim (Extern "%int_add", [ Pv a; Pc (Int c) ])) -> Offset (a, c)
+              | Some _ | None -> (
+                  match z with
+                  | Pv z -> Offset (z, Targetint.zero)
+                  | Pc _ -> assert false)
+            in
+            let instr y = Let (x, Prim (unsafe prim, [ Pv y; z; t ])) in
+            if
+              List.exists
+                ~f:(fun (y', idx') -> Var.equal y y' && idx_checked ~checked:idx' idx)
+                checked
+            then (
+              incr opt_count;
+              let acc = instr y :: acc in
+              aux info checked r acc)
+            else
+              let check =
+                match prim with
+                | "caml_array_set" -> "caml_check_bound_gen"
+                | "caml_array_set_float" | "caml_floatarray_set" ->
+                    "caml_check_bound_float"
+                | "caml_array_set_addr" -> "caml_check_bound"
+                | _ -> assert false
+              in
+              let y' = Code.Var.fresh () in
+              let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
+              incr opt_count;
+              aux info ((y, idx) :: checked) r acc
+        | _ -> aux info checked r (i :: acc))
+  in
+  aux info [] l []
+
 let f_once_after p =
+  let target = Config.target () in
   let first_class_primitives =
-    match Config.target (), Config.effects () with
+    match target, Config.effects () with
     | `JavaScript, `Disabled -> true
     | `JavaScript, (`Cps | `Double_translation) | `Wasm, _ -> false
     | `JavaScript, `Jspi -> assert false
@@ -484,12 +557,25 @@ let f_once_after p =
         | _ -> i)
     | i -> i
   in
-  if first_class_primitives
-  then
-    let blocks =
-      Addr.Map.map
-        (fun block -> { block with Code.body = List.map block.body ~f })
-        p.blocks
-    in
-    Deadcode.remove_unused_blocks { p with blocks }
-  else p
+  let p =
+    if first_class_primitives
+    then
+      let blocks =
+        Addr.Map.map
+          (fun block -> { block with Code.body = List.map block.body ~f })
+          p.blocks
+      in
+      Deadcode.remove_unused_blocks { p with blocks }
+    else p
+  in
+  let p =
+    let p, info = Flow.f p in
+    { p with
+      blocks =
+        Addr.Map.map
+          (fun block ->
+            { block with Code.body = specialize_instrs_after (ref 0) info block.body })
+          p.blocks
+    }
+  in
+  p
