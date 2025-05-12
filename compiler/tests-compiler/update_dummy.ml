@@ -14,10 +14,8 @@ let%expect_test "deadcode elimination of cyclic values" =
   [%expect
     {|
     function f(param){
-     var x = [];
-     caml_update_dummy(x, [0, 1, x]);
      var y = [];
-     caml_update_dummy(y, [0, 1, y]);
+     runtime.caml_update_dummy(y, [0, 1, y]);
      return y;
     }
     //end |}]

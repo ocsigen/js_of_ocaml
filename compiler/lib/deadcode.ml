@@ -97,6 +97,14 @@ and mark_reachable st pc =
     let block = Addr.Map.find pc st.blocks in
     List.iter block.body ~f:(fun i ->
         match i with
+        | Let (_, Prim (Extern "caml_update_dummy", [ Pv x; Pv y ])) ->
+            if st.live.(Var.idx x) = 0
+            then
+              (* We will keep this instruction only if x is live *)
+              add_def st.defs x (Field_update y)
+            else (
+              mark_var st x;
+              mark_var st y)
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
         | Event _ | Assign _ -> ()
         | Set_field (x, _, _, y) -> (
@@ -131,6 +139,7 @@ and mark_reachable st pc =
 
 let live_instr st i =
   match i with
+  | Let (_, Prim (Extern "caml_update_dummy", [ Pv x; Pv _ ])) -> st.live.(Var.idx x) > 0
   | Let (x, e) -> st.live.(Var.idx x) > 0 || not (pure_expr st.pure_funs e)
   | Assign (x, _) | Set_field (x, _, _, _) -> st.live.(Var.idx x) > 0
   | Event _ | Offset_ref _ | Array_set _ -> true
