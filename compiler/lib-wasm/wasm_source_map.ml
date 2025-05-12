@@ -153,7 +153,7 @@ let insert_source_contents' (sm : Source_map.Standard.t) i f =
   in
   let sm = { sm with sources_content = Some contents } in
   let sm =
-    if List.mem blackbox_filename ~set:sm.sources
+    if List.mem ~eq:String.equal blackbox_filename sm.sources
     then { sm with ignore_list = [ blackbox_filename ] }
     else sm
   in

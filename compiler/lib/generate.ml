@@ -535,11 +535,16 @@ type queue_elt =
   ; deps : Code.Var.Set.t
   }
 
+let rec remove_assoc_var x = function
+  | [] -> []
+  | ((a, _) as pair) :: l -> if Var.equal a x then l else pair :: remove_assoc_var x l
+
 let access_queue queue x =
-  try
-    let elt = List.assoc x queue in
-    ((elt.prop, elt.deps), elt.ce, elt.loc), List.remove_assoc x queue
-  with Not_found -> ((fst const_p, Code.Var.Set.singleton x), var x, None), queue
+  match
+    List.find_map ~f:(fun (x', elt) -> if Var.equal x x' then Some elt else None) queue
+  with
+  | Some elt -> ((elt.prop, elt.deps), elt.ce, elt.loc), remove_assoc_var x queue
+  | None -> ((fst const_p, Var.Set.singleton x), var x, None), queue
 
 let access_queue_loc queue loc' x =
   let (prop, c, loc), queue = access_queue queue x in
@@ -2041,7 +2046,7 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
                   J.N
               in
               let instrs, queue =
-                if List.mem x ~set:(snd e1)
+                if List.mem ~eq:Var.equal x (snd e1)
                 then (
                   assert (n = 1);
                   enqueue [] const_p x wrapped_exn J.U None [])
@@ -2110,7 +2115,9 @@ and compile_argument_passing ctx loc queue (pc, args) back_edge continuation =
     parallel_renaming loc back_edge block.params args continuation queue
 
 and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bool * _ =
-  let scope = List.assoc_opt pc scope_stack in
+  let scope =
+    List.find_map ~f:(fun (pc', x) -> if pc = pc' then Some x else None) scope_stack
+  in
   let back_edge =
     List.exists
       ~f:(function

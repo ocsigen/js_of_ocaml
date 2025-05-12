@@ -1084,7 +1084,7 @@ module Closure = struct
         (List.exists
            ~f:(fun x -> Code.Var.Set.mem x context.globalized_variables)
            free_variables));
-    let arity = List.assoc f info.functions in
+    let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
     let arity = if cps then arity - 1 else arity in
     let* curry_fun = if arity > 1 then need_curry_fun ~cps ~arity else return f in
     if List.is_empty free_variables
@@ -1199,7 +1199,7 @@ module Closure = struct
       let* _ = add_var (Code.Var.fresh ()) in
       return ()
     else
-      let arity = List.assoc f info.functions in
+      let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
       let arity = if cps then arity - 1 else arity in
       let offset = Memory.env_start arity in
       match info.Closure_conversion.functions with

@@ -1259,20 +1259,26 @@ let fix_switch_branches p =
         then
           l.(i) <-
             ( (let l = try Addr.Map.find pc !updates with Not_found -> [] in
-               try List.assoc args l
-               with Not_found ->
-                 let pc' = !p'.free_pc in
-                 p' :=
-                   { !p' with
-                     blocks =
-                       Addr.Map.add
-                         pc'
-                         { params = []; body = []; branch = Branch cont }
-                         !p'.blocks
-                   ; free_pc = pc' + 1
-                   };
-                 updates := Addr.Map.add pc ((args, pc') :: l) !updates;
-                 pc')
+               match
+                 List.find_map
+                   ~f:(fun (args', pc') ->
+                     if List.equal ~eq:Var.equal args' args then Some pc' else None)
+                   l
+               with
+               | Some x -> x
+               | None ->
+                   let pc' = !p'.free_pc in
+                   p' :=
+                     { !p' with
+                       blocks =
+                         Addr.Map.add
+                           pc'
+                           { params = []; body = []; branch = Branch cont }
+                           !p'.blocks
+                     ; free_pc = pc' + 1
+                     };
+                   updates := Addr.Map.add pc ((args, pc') :: l) !updates;
+                   pc')
             , [] ))
       l
   in

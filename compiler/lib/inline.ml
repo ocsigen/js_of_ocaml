@@ -70,7 +70,7 @@ let simple_function blocks size name params pc =
             | None -> ()
             | Some (Let (y, Apply { f; _ })) ->
                 (* track if some params are called in tail position *)
-                if Code.Var.equal x y && List.mem f ~set:params
+                if Code.Var.equal x y && List.mem ~eq:Var.equal f params
                 then tc := Var.Set.add f !tc
             | Some _ -> ())
         | Branch _ | Cond _ | Switch _ -> ());

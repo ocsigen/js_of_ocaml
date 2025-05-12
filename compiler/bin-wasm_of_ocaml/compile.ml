@@ -58,7 +58,11 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
       ; sourceroot =
           (if Option.is_some sourcemap_root then sourcemap_root else source_map.sourceroot)
       ; ignore_list =
-          (if List.mem Wasm_source_map.blackbox_filename ~set:source_map.sources
+          (if
+             List.mem
+               ~eq:String.equal
+               Wasm_source_map.blackbox_filename
+               source_map.sources
            then [ Wasm_source_map.blackbox_filename ]
            else [])
       }
