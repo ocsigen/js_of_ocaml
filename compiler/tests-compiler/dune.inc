@@ -870,6 +870,21 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/update_dummy.ml
+ (name update_dummy_15)
+ (enabled_if true)
+ (modules update_dummy)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/variable_declaration_output.ml
  (name variable_declaration_output_15)
  (enabled_if true)
