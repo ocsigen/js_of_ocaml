@@ -219,7 +219,8 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
-    | (Int _ | Number _ | Tuple _), _ | _, (Int _ | Number _ | Tuple _) ->
+    | (Int _ | Number _ | Tuple _ | Bigarray _), _
+    | _, (Int _ | Number _ | Tuple _ | Bigarray _) ->
         (* Only Top may contain JavaScript values *)
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
@@ -1194,7 +1195,139 @@ module Generate (Target : Target_sig.S) = struct
                 let* x' = transl_prim_arg ctx x in
                 let* y' = transl_prim_arg ctx y in
                 return (W.Call (f, [ x'; y' ])))
-        | _ -> invalid_arity "caml_compare" l ~expected:2)
+        | _ -> invalid_arity "caml_compare" l ~expected:2);
+    let bigarray_generic_access ~ctx ta indices =
+      match
+        ( get_type ctx ta
+        , match indices with
+          | Pv indices -> Some (indices, ctx.global_flow_info.info_defs.(Var.idx indices))
+          | Pc _ -> None )
+      with
+      | Bigarray { kind; layout }, Some (indices, Expr (Block (_, l, _, _))) ->
+          Some
+            ( kind
+            , layout
+            , List.mapi
+                ~f:(fun i _ ->
+                  Value.int_val
+                    (Memory.array_get (load indices) (Arith.const (Int32.of_int (i + 1)))))
+                (Array.to_list l) )
+      | _, None | _, Some (_, (Expr _ | Phi _)) -> None
+    in
+    let caml_ba_get ~ctx ~context ~kind ~layout ta indices =
+      let ta' = transl_prim_arg ctx ta in
+      Bigarray.get
+        ~bound_error_index:(label_index context bound_error_pc)
+        ~kind
+        ~layout
+        ta'
+        ~indices
+    in
+    let caml_ba_get_n ~ctx ~context ta indices =
+      match get_type ctx ta with
+      | Bigarray { kind; layout } ->
+          let indices =
+            List.map ~f:(fun i -> transl_prim_arg ctx ~typ:(Int Normalized) i) indices
+          in
+          caml_ba_get ~ctx ~context ~kind ~layout ta indices
+      | _ ->
+          let n = List.length indices in
+          let* f =
+            register_import
+              ~name:(Printf.sprintf "caml_ba_get_%d" n)
+              (Fun (Type.primitive_type (n + 1)))
+          in
+          let* ta' = transl_prim_arg ctx ta in
+          let* indices' = expression_list (transl_prim_arg ctx) indices in
+          return (W.Call (f, ta' :: indices'))
+    in
+    register_prim "caml_ba_get_1" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i ] -> caml_ba_get_n ~ctx ~context ta [ i ]
+        | _ -> invalid_arity "caml_ba_get_1" l ~expected:2);
+    register_prim "caml_ba_get_2" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j ] -> caml_ba_get_n ~ctx ~context ta [ i; j ]
+        | _ -> invalid_arity "caml_ba_get_2" l ~expected:3);
+    register_prim "caml_ba_get_3" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j; k ] -> caml_ba_get_n ~ctx ~context ta [ i; j; k ]
+        | _ -> invalid_arity "caml_ba_get_3" l ~expected:4);
+    register_prim "caml_ba_get_generic" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; indices ] -> (
+            match bigarray_generic_access ~ctx ta indices with
+            | Some (kind, layout, indices) ->
+                caml_ba_get ~ctx ~context ~kind ~layout ta indices
+            | _ ->
+                let* f =
+                  register_import
+                    ~name:"caml_ba_get_generic"
+                    (Fun (Type.primitive_type 2))
+                in
+                let* ta' = transl_prim_arg ctx ta in
+                let* indices' = transl_prim_arg ctx indices in
+                return (W.Call (f, [ ta'; indices' ])))
+        | _ -> invalid_arity "caml_ba_get_generic" l ~expected:2);
+    let caml_ba_set ~ctx ~context ~kind ~layout ta indices v =
+      let ta' = transl_prim_arg ctx ta in
+      let v' = transl_prim_arg ctx ~typ:(Typing.bigarray_element_type kind) v in
+      Bigarray.set
+        ~bound_error_index:(label_index context bound_error_pc)
+        ~kind
+        ~layout
+        ta'
+        ~indices
+        v'
+    in
+    let caml_ba_set_n ~ctx ~context ta indices v =
+      match get_type ctx ta with
+      | Bigarray { kind; layout } ->
+          let indices =
+            List.map ~f:(fun i -> transl_prim_arg ctx ~typ:(Int Normalized) i) indices
+          in
+          caml_ba_set ~ctx ~context ~kind ~layout ta indices v
+      | _ ->
+          let n = List.length indices in
+          let* f =
+            register_import
+              ~name:(Printf.sprintf "caml_ba_set_%d" n)
+              (Fun (Type.primitive_type (n + 2)))
+          in
+          let* ta' = transl_prim_arg ctx ta in
+          let* indices' = expression_list (transl_prim_arg ctx) indices in
+          let* v' = transl_prim_arg ctx v in
+          return (W.Call (f, ta' :: (indices' @ [ v' ])))
+    in
+    register_prim "caml_ba_set_1" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; v ] -> caml_ba_set_n ~ctx ~context ta [ i ] v
+        | _ -> invalid_arity "caml_ba_set_1" l ~expected:3);
+    register_prim "caml_ba_set_2" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j; v ] -> caml_ba_set_n ~ctx ~context ta [ i; j ] v
+        | _ -> invalid_arity "caml_ba_set_2" l ~expected:4);
+    register_prim "caml_ba_set_3" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j; k; v ] -> caml_ba_set_n ~ctx ~context ta [ i; j; k ] v
+        | _ -> invalid_arity "caml_ba_set_3" l ~expected:5);
+    register_prim "caml_ba_set_generic" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; indices; v ] -> (
+            match bigarray_generic_access ~ctx ta indices with
+            | Some (kind, layout, indices) ->
+                caml_ba_set ~ctx ~context ~kind ~layout ta indices v
+            | _ ->
+                let* f =
+                  register_import
+                    ~name:"caml_ba_set_generic"
+                    (Fun (Type.primitive_type 3))
+                in
+                let* ta' = transl_prim_arg ctx ta in
+                let* indices' = transl_prim_arg ctx indices in
+                let* v' = transl_prim_arg ctx v in
+                return (W.Call (f, [ ta'; indices'; v' ])))
+        | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3)
 
   let unboxed_type ty : W.value_type option =
     match ty with
@@ -1516,7 +1649,15 @@ module Generate (Target : Target_sig.S) = struct
                         | "caml_bytes_set"
                         | "caml_check_bound"
                         | "caml_check_bound_gen"
-                        | "caml_check_bound_float" )
+                        | "caml_check_bound_float"
+                        | "caml_ba_get_1"
+                        | "caml_ba_get_2"
+                        | "caml_ba_get_3"
+                        | "caml_ba_get_generic"
+                        | "caml_ba_set_1"
+                        | "caml_ba_set_2"
+                        | "caml_ba_set_3"
+                        | "caml_ba_set_generic" )
                     , _ ) ) -> fst n, true
             | Let
                 ( _
