@@ -275,13 +275,17 @@ let specialize_string_concat opt_count l =
          ; Let (bytes, Prim (Extern "caml_bytes_of_string", [ Pv str ]))
          ])
 
-let idx_equal (v1, c1) (v2, c2) =
+type idx =
+  | Cst of Targetint.t
+  | Var of Code.Var.t
+
+let idx_equal (v1, (c1 : idx)) (v2, (c2 : idx)) =
   Code.Var.equal v1 v2
   &&
   match c1, c2 with
-  | `Cst a, `Cst b -> Targetint.equal a b
-  | `Var a, `Var b -> Code.Var.equal a b
-  | `Cst _, `Var _ | `Var _, `Cst _ -> false
+  | Cst a, Cst b -> Targetint.equal a b
+  | Var a, Var b -> Code.Var.equal a b
+  | Cst _, Var _ | Var _, Cst _ -> false
 
 let specialize_instrs ~target opt_count info l =
   let rec aux info checks l acc =
@@ -304,10 +308,10 @@ let specialize_instrs ~target opt_count info l =
                 , [ Pv y; z ] ) ) ->
             let idx =
               match the_int info z with
-              | Some idx -> `Cst idx
+              | Some idx -> Cst idx
               | None -> (
                   match z with
-                  | Pv z -> `Var z
+                  | Pv z -> Var z
                   | Pc _ -> assert false)
             in
             let instr y =
@@ -350,10 +354,10 @@ let specialize_instrs ~target opt_count info l =
                 , [ Pv y; z; t ] ) ) ->
             let idx =
               match the_int info z with
-              | Some idx -> `Cst idx
+              | Some idx -> Cst idx
               | None -> (
                   match z with
-                  | Pv z -> `Var z
+                  | Pv z -> Var z
                   | Pc _ -> assert false)
             in
             let instr y =

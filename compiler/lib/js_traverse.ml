@@ -812,14 +812,21 @@ class replace_expr f =
     method expression e = try EVar (f e) with Not_found -> super#expression e
   end
 
-let expression_equal (a : expression) b = Poly.equal a b
+let expression_equal (a : expression) b =
+  match a, b with
+  | ENum a, ENum b -> Javascript.Num.equal a b
+  | EStr (Utf8 a), EStr (Utf8 b) -> String.equal a b
+  | _, _ -> Poly.equal a b
 
 (* this optimisation should be done at the lowest common scope *)
 
 module ExprTbl = Hashtbl.Make (struct
   type t = expression
 
-  let hash = Hashtbl.hash
+  let hash = function
+    | ENum a -> Javascript.Num.hash a
+    | EStr (Utf8 a) -> String.hash a
+    | x -> Hashtbl.hash x
 
   let equal = expression_equal
 end)
@@ -834,8 +841,9 @@ class share_constant =
       let e =
         match e with
         | EStr _ | ENum _ ->
-            let n = try ExprTbl.find count e with Not_found -> 0 in
-            ExprTbl.replace count e (n + 1);
+            (match ExprTbl.find count e with
+            | n -> ExprTbl.replace count e (1 + n)
+            | exception Not_found -> ExprTbl.add count e 1);
             e
         | _ -> e
       in
@@ -867,7 +875,10 @@ class share_constant =
       if ExprTbl.length all = 0
       then p
       else
-        let f = ExprTbl.find all in
+        let f = function
+          | (ENum _ | EStr _) as e -> ExprTbl.find all e
+          | _ -> raise Not_found
+        in
         let p = (new replace_expr f)#program p in
         let all =
           ExprTbl.fold (fun e v acc -> DeclIdent (v, Some (e, N)) :: acc) all []

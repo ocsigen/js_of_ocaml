@@ -34,6 +34,8 @@ module Num : sig
 
   val to_targetint : t -> Targetint.t
 
+  val hash : t -> int
+
   (** Predicates *)
 
   val is_zero : t -> bool
@@ -42,6 +44,7 @@ module Num : sig
 
   val is_neg : t -> bool
 
+  val equal : t -> t -> bool
   (** Arithmetic *)
 
   val add : t -> t -> t
@@ -53,6 +56,10 @@ end = struct
   let of_string_unsafe s = s
 
   let to_string s = s
+
+  let equal a b = String.equal a b
+
+  let hash a = String.hash a
 
   let to_targetint s =
     if

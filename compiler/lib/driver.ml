@@ -424,8 +424,10 @@ let check_js js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Checks...@.";
   let traverse = new Js_traverse.free in
+  let t' = Timer.make () in
   let js = traverse#program js in
   let free = traverse#get_free in
+  if times () then Format.eprintf "    free vars: %a@." Timer.print t';
   let free : StringSet.t =
     Javascript.IdentSet.fold
       (fun x acc ->

@@ -35,6 +35,8 @@ module Num : sig
 
   val to_targetint : t -> Targetint.t
 
+  val hash : t -> int
+
   (** Predicates *)
 
   val is_zero : t -> bool
@@ -48,6 +50,8 @@ module Num : sig
   val add : t -> t -> t
 
   val neg : t -> t
+
+  val equal : t -> t -> bool
 end
 
 module Label : sig
