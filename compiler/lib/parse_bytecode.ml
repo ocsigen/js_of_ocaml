@@ -63,7 +63,7 @@ module Debug : sig
 
   val read_event :
        paths:string list
-    -> crcs:(string, string option) Hashtbl.t
+    -> crcs:string option String.Hashtbl.t
     -> orig:int
     -> t
     -> Instruct.debug_event
@@ -109,11 +109,17 @@ end = struct
     ; source : path option
     }
 
-  module Int_table = Hashtbl.Make (Int)
+  module UnitTable = Hashtbl.Make (struct
+    type t = string * string option
+
+    let hash = Hashtbl.hash
+
+    let equal (a, b) (c, d) = String.equal a c && Option.equal String.equal b d
+  end)
 
   type t =
-    { events_by_pc : event_and_source Int_table.t
-    ; units : (string * string option, ml_unit) Hashtbl.t
+    { events_by_pc : event_and_source Int.Hashtbl.t
+    ; units : ml_unit UnitTable.t
     ; names : bool
     ; enabled : bool
     ; include_cmis : bool
@@ -133,8 +139,8 @@ end = struct
 
   let create ~include_cmis enabled =
     let names = enabled || Config.Flag.pretty () in
-    { events_by_pc = Int_table.create 17
-    ; units = Hashtbl.create 17
+    { events_by_pc = Int.Hashtbl.create 17
+    ; units = UnitTable.create 17
     ; names
     ; enabled
     ; include_cmis
@@ -159,9 +165,9 @@ end = struct
     in
     let ev_module = ev.ev_module in
     let unit =
-      try Hashtbl.find units (ev_module, pos_fname)
+      try UnitTable.find units (ev_module, pos_fname)
       with Not_found ->
-        let crc = try Hashtbl.find crcs ev_module with Not_found -> None in
+        let crc = try String.Hashtbl.find crcs ev_module with Not_found -> None in
         let source : path option =
           (* First search the source based on [pos_fname] because the
              filename of the source might be unreleased to the
@@ -195,12 +201,12 @@ end = struct
             | None -> "NONE"
             | Some x -> x);
         let u = { module_name = ev_module; crc; source; paths } in
-        Hashtbl.add units (ev_module, pos_fname) u;
+        UnitTable.add units (ev_module, pos_fname) u;
         u
     in
     relocate_event orig ev;
     if enabled || names
-    then Int_table.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
+    then Int.Hashtbl.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
     ()
 
   let read_event_list =
@@ -215,8 +221,8 @@ end = struct
     let read_paths ic : string list = List.map (input_value ic) ~f:rewrite_path in
     fun debug ~crcs ~includes ~orig ic ->
       let crcs =
-        let t = Hashtbl.create 17 in
-        List.iter crcs ~f:(fun (m, crc) -> Hashtbl.add t m crc);
+        let t = String.Hashtbl.create 17 in
+        List.iter crcs ~f:(fun (m, crc) -> String.Hashtbl.add t m crc);
         t
       in
       let evl : debug_event list = input_value ic in
@@ -232,7 +238,7 @@ end = struct
 
   let find { events_by_pc; _ } pc =
     try
-      let { event; _ } = Int_table.find events_by_pc pc in
+      let { event; _ } = Int.Hashtbl.find events_by_pc pc in
       let l =
         Ident.fold_name
           (fun ident i acc -> (event.ev_stacksize - i, ident) :: acc)
@@ -246,7 +252,7 @@ end = struct
 
   let find_rec { events_by_pc; _ } pc =
     try
-      let { event; _ } = Int_table.find events_by_pc pc in
+      let { event; _ } = Int.Hashtbl.find events_by_pc pc in
       let env = event.ev_compenv in
       let names =
         Ident.fold_name (fun ident i acc -> (i / 3, ident) :: acc) env.ce_rec []
@@ -258,7 +264,7 @@ end = struct
 
   let find_rec { events_by_pc; _ } pc =
     try
-      let { event; _ } = Int_table.find events_by_pc pc in
+      let { event; _ } = Int.Hashtbl.find events_by_pc pc in
       let env = event.ev_compenv in
       let names =
         match env.ce_closure with
@@ -290,7 +296,7 @@ end = struct
      in the expected order: first after the function call, then before
      the continuation. *)
   let find_locs { events_by_pc; _ } pc =
-    List.filter_map (Int_table.find_all events_by_pc pc) ~f:(fun { event; source } ->
+    List.filter_map (Int.Hashtbl.find_all events_by_pc pc) ~f:(fun { event; source } ->
         if dummy_location event.ev_loc then None else Some (source, event))
 
   let event_location ~position ~source ~event =
@@ -308,18 +314,18 @@ end = struct
 
   type summary =
     { is_empty : bool
-    ; units : (string * string option, ml_unit) Hashtbl.t
+    ; units : ml_unit UnitTable.t
     }
 
-  let default_summary = { is_empty = true; units = Hashtbl.create 0 }
+  let default_summary = { is_empty = true; units = UnitTable.create 0 }
 
-  let summarize t = { is_empty = Int_table.length t.events_by_pc = 0; units = t.units }
+  let summarize t = { is_empty = Int.Hashtbl.length t.events_by_pc = 0; units = t.units }
 
   let is_empty t = t.is_empty
 
   let paths (s : summary) ~units =
     let paths =
-      Hashtbl.fold
+      UnitTable.fold
         (fun _ u acc -> if StringSet.mem u.module_name units then u.paths :: acc else acc)
         s.units
         []
@@ -2632,20 +2638,20 @@ let from_exe
   let init_data = Array.map ~f:Constants.parse init_data in
   let orig_symbols = Toc.read_symb toc ic in
   let orig_crcs = Toc.read_crcs toc ic in
-  let keeps =
-    let t = Hashtbl.create 17 in
-    List.iter ~f:(fun (_, s) -> Hashtbl.add t s ()) predefined_exceptions;
-    List.iter ~f:(fun s -> Hashtbl.add t s ()) [ "Outcometree"; "Topdirs"; "Toploop" ];
-    t
-  in
-  let keep s =
-    try
-      Hashtbl.find keeps s;
-      true
-    with Not_found -> (
-      match exported_unit with
-      | Some l -> List.mem ~eq:String.equal s l
-      | None -> true)
+  let keep =
+    match exported_unit with
+    | None -> fun _ -> true
+    | Some exported_unit ->
+        let keeps =
+          let t = String.Hashtbl.create 17 in
+          List.iter ~f:(fun (_, s) -> String.Hashtbl.add t s ()) predefined_exceptions;
+          List.iter
+            ~f:(fun s -> String.Hashtbl.add t s ())
+            [ "Outcometree"; "Topdirs"; "Toploop" ];
+          List.iter exported_unit ~f:(fun s -> String.Hashtbl.add t s ());
+          t
+        in
+        String.Hashtbl.mem keeps
   in
   let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
   let symbols =
@@ -2789,15 +2795,20 @@ let from_bytes ~prims ~debug (code : bytecode) =
   then
     Array.iter debug ~f:(fun l ->
         List.iter l ~f:(fun ev ->
-            Debug.read_event ~paths:[] ~crcs:(Hashtbl.create 17) ~orig:0 debug_data ev));
+            Debug.read_event
+              ~paths:[]
+              ~crcs:(String.Hashtbl.create 17)
+              ~orig:0
+              debug_data
+              ev));
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
   let ident_table =
-    let t = Hashtbl.create 17 in
+    let t = Int.Hashtbl.create 17 in
     if Debug.names debug_data
     then
       Ocaml_compiler.Symtable.GlobalMap.iter
         (Ocaml_compiler.Symtable.current_state ())
-        ~f:(fun id pos' -> Hashtbl.add t pos' id);
+        ~f:(fun id pos' -> Int.Hashtbl.add t pos' id);
     t
   in
   let globals = make_globals 0 [||] prims in
@@ -2810,7 +2821,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
     if tag = Obj.string_tag
     then Some ("cst_" ^ Obj.magic value : string)
     else
-      match Hashtbl.find ident_table i with
+      match Int.Hashtbl.find ident_table i with
       | exception Not_found -> None
       | glob -> Some (Ocaml_compiler.Symtable.Global.name glob)
   in
@@ -2847,8 +2858,8 @@ module Reloc = struct
     { mutable pos : int
     ; mutable constants : Code.constant list
     ; mutable step2_started : bool
-    ; names : (string, int) Hashtbl.t
-    ; primitives : (string, int) Hashtbl.t
+    ; names : int String.Hashtbl.t
+    ; primitives : int String.Hashtbl.t
     }
 
   let create () =
@@ -2856,8 +2867,8 @@ module Reloc = struct
     { pos = List.length constants
     ; constants
     ; step2_started = false
-    ; names = Hashtbl.create 17
-    ; primitives = Hashtbl.create 17
+    ; names = String.Hashtbl.create 17
+    ; primitives = String.Hashtbl.create 17
     }
 
   let constant_of_const x = Ocaml_compiler.constant_of_const x
@@ -2870,7 +2881,7 @@ module Reloc = struct
     if t.step2_started then assert false;
     let open Cmo_format in
     List.iter compunit.cu_primitives ~f:(fun name ->
-        Hashtbl.add t.primitives name (Hashtbl.length t.primitives));
+        String.Hashtbl.add t.primitives name (String.Hashtbl.length t.primitives));
     let slot_for_literal sc =
       t.constants <- constant_of_const sc :: t.constants;
       let pos = t.pos in
@@ -2878,10 +2889,10 @@ module Reloc = struct
       pos
     in
     let num_of_prim name =
-      try Hashtbl.find t.primitives name
+      try String.Hashtbl.find t.primitives name
       with Not_found ->
-        let i = Hashtbl.length t.primitives in
-        Hashtbl.add t.primitives name i;
+        let i = String.Hashtbl.length t.primitives in
+        String.Hashtbl.add t.primitives name i;
         i
     in
     List.iter compunit.cu_reloc ~f:(function
@@ -2893,11 +2904,11 @@ module Reloc = struct
     t.step2_started <- true;
     let open Cmo_format in
     let next name =
-      try Hashtbl.find t.names name
+      try String.Hashtbl.find t.names name
       with Not_found ->
         let pos = t.pos in
         t.pos <- succ t.pos;
-        Hashtbl.add t.names name pos;
+        String.Hashtbl.add t.names name pos;
         pos
     in
     let slot_for_global id = next id in
@@ -2917,9 +2928,9 @@ module Reloc = struct
         | _ -> ())
 
   let primitives t =
-    let l = Hashtbl.length t.primitives in
+    let l = String.Hashtbl.length t.primitives in
     let a = Array.make l "" in
-    Hashtbl.iter (fun name i -> a.(i) <- name) t.primitives;
+    String.Hashtbl.iter (fun name i -> a.(i) <- name) t.primitives;
     a
 
   let constants t = Array.of_list (List.rev t.constants)
@@ -2929,7 +2940,7 @@ module Reloc = struct
     let constants = constants t in
     let globals = make_globals (Array.length constants) constants primitives in
     resize_globals globals t.pos;
-    Hashtbl.iter (fun name i -> globals.named_value.(i) <- Some name) t.names;
+    String.Hashtbl.iter (fun name i -> globals.named_value.(i) <- Some name) t.names;
     globals
 end
 

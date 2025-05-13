@@ -37,13 +37,13 @@ type constant_global =
   }
 
 type context =
-  { constants : (Var.t, W.expression) Hashtbl.t
+  { constants : W.expression Var.Hashtbl.t
   ; mutable data_segments : string Var.Map.t
   ; mutable constant_globals : constant_global Var.Map.t
   ; mutable other_fields : W.module_field list
   ; mutable imports : (Var.t * Wasm_ast.import_desc) StringMap.t StringMap.t
-  ; type_names : (string, Var.t) Hashtbl.t
-  ; types : (Var.t, Wasm_ast.type_field) Hashtbl.t
+  ; type_names : Var.t String.Hashtbl.t
+  ; types : Wasm_ast.type_field Var.Hashtbl.t
   ; mutable closure_envs : Var.t Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Var.t IntMap.t
@@ -63,13 +63,13 @@ type context =
   }
 
 let make_context ~value_type =
-  { constants = Hashtbl.create 128
+  { constants = Var.Hashtbl.create 128
   ; data_segments = Var.Map.empty
   ; constant_globals = Var.Map.empty
   ; other_fields = []
   ; imports = StringMap.empty
-  ; type_names = Hashtbl.create 128
-  ; types = Hashtbl.create 128
+  ; type_names = String.Hashtbl.create 128
+  ; types = Var.Hashtbl.create 128
   ; closure_envs = Var.Map.empty
   ; apply_funs = IntMap.empty
   ; cps_apply_funs = IntMap.empty
@@ -126,7 +126,7 @@ let register_data_segment x v st =
 let get_context st = st.context, st
 
 let register_constant x e st =
-  Hashtbl.add st.context.constants x e;
+  Var.Hashtbl.add st.context.constants x e;
   (), st
 
 type type_def =
@@ -138,13 +138,13 @@ type type_def =
 let register_type nm gen_typ st =
   let context = st.context in
   let { supertype; final; typ }, st = gen_typ () st in
-  ( (try Hashtbl.find context.type_names nm
+  ( (try String.Hashtbl.find context.type_names nm
      with Not_found ->
        let name = Var.fresh_n nm in
        let type_field = { Wasm_ast.name; typ; supertype; final } in
        context.other_fields <- Type [ type_field ] :: context.other_fields;
-       Hashtbl.add context.type_names nm name;
-       Hashtbl.add context.types name type_field;
+       String.Hashtbl.add context.type_names nm name;
+       Var.Hashtbl.add context.types name type_field;
        name)
   , st )
 
@@ -152,7 +152,7 @@ let rec type_index_sub ty ty' st =
   if Var.equal ty ty'
   then true, st
   else
-    let type_field = Hashtbl.find st.context.types ty in
+    let type_field = Var.Hashtbl.find st.context.types ty in
     match type_field.supertype with
     | None -> false, st
     | Some ty -> type_index_sub ty ty' st
@@ -168,20 +168,20 @@ let heap_type_sub (ty : W.heap_type) (ty' : W.heap_type) st =
   | (None_ | I31), I31 -> true, st
   | None_, None_ -> true, st
   | Type t, Struct ->
-      ( (let type_field = Hashtbl.find st.context.types t in
+      ( (let type_field = Var.Hashtbl.find st.context.types t in
          match type_field.typ with
          | Struct _ -> true
          | Array _ | Func _ -> false)
       , st )
   | Type t, Array ->
-      ( (let type_field = Hashtbl.find st.context.types t in
+      ( (let type_field = Var.Hashtbl.find st.context.types t in
          match type_field.typ with
          | Array _ -> true
          | Struct _ | Func _ -> false)
       , st )
   | Type t, Type t' -> type_index_sub t t' st
   | None_, Type t ->
-      ( (let type_field = Hashtbl.find st.context.types t in
+      ( (let type_field = Var.Hashtbl.find st.context.types t in
          match type_field.typ with
          | Struct _ | Array _ -> true
          | Func _ -> false)
@@ -282,7 +282,7 @@ let unit_name st = st.context.unit_name, st
 
 let var x st =
   try Var.Map.find x st.vars, st
-  with Not_found -> Expr (return (Hashtbl.find st.context.constants x)), st
+  with Not_found -> Expr (return (Var.Hashtbl.find st.context.constants x)), st
 
 let add_var ?typ x ({ var_count; vars; _ } as st) =
   match Var.Map.find_opt x vars with

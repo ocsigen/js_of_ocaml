@@ -19,9 +19,9 @@
  *)
 open! Stdlib
 
-let aliases_ = Hashtbl.create 17
+let aliases_ = String.Hashtbl.create 17
 
-let rec resolve nm = try resolve (Hashtbl.find aliases_ nm) with Not_found -> nm
+let rec resolve nm = try resolve (String.Hashtbl.find aliases_ nm) with Not_found -> nm
 
 (****)
 
@@ -61,20 +61,21 @@ let string_of_kind = function
   | `Mutable -> "mutable"
   | `Mutator -> "mutator"
 
-let kinds = Hashtbl.create 37
+let kinds = String.Hashtbl.create 37
 
-let kind_args_tbl = Hashtbl.create 37
+let kind_args_tbl = String.Hashtbl.create 37
 
-let arities = Hashtbl.create 37
+let arities = String.Hashtbl.create 37
 
-let kind nm = try Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
+let kind nm = try String.Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
 
 let kind_args nm =
-  try Some (Hashtbl.find kind_args_tbl (resolve nm)) with Not_found -> None
+  try Some (String.Hashtbl.find kind_args_tbl (resolve nm)) with Not_found -> None
 
-let arity nm = Hashtbl.find arities (resolve nm)
+let arity nm = String.Hashtbl.find arities (resolve nm)
 
-let has_arity nm a = try Hashtbl.find arities (resolve nm) = a with Not_found -> false
+let has_arity nm a =
+  try String.Hashtbl.find arities (resolve nm) = a with Not_found -> false
 
 let is_pure nm =
   match nm with
@@ -84,7 +85,7 @@ let is_pure nm =
       | `Mutator -> false
       | `Mutable | `Pure -> true)
 
-let exists p = Hashtbl.mem kinds p
+let exists p = String.Hashtbl.mem kinds p
 
 let externals = ref StringSet.empty
 
@@ -93,7 +94,7 @@ let add_external name = externals := StringSet.add name !externals
 let get_external () = !externals
 
 let register p k kargs arity =
-  (match Hashtbl.find kinds (resolve p) with
+  (match String.Hashtbl.find kinds (resolve p) with
   | exception Not_found -> ()
   | k' when kind_equal k k' -> ()
   | k' ->
@@ -104,19 +105,19 @@ let register p k kargs arity =
         (string_of_kind k));
   add_external p;
   (match arity with
-  | Some a -> Hashtbl.replace arities p a
+  | Some a -> String.Hashtbl.replace arities p a
   | _ -> ());
   (match kargs with
-  | Some k -> Hashtbl.replace kind_args_tbl p k
+  | Some k -> String.Hashtbl.replace kind_args_tbl p k
   | _ -> ());
-  Hashtbl.replace kinds p k
+  String.Hashtbl.replace kinds p k
 
 let alias nm nm' =
   add_external nm';
   add_external nm;
-  Hashtbl.replace aliases_ nm nm'
+  String.Hashtbl.replace aliases_ nm nm'
 
-let aliases () = Hashtbl.to_seq aliases_ |> List.of_seq
+let aliases () = String.Hashtbl.to_seq aliases_ |> List.of_seq
 
 let named_values = ref StringSet.empty
 
@@ -125,8 +126,8 @@ let need_named_value s = StringSet.mem s !named_values
 let register_named_value s = named_values := StringSet.add s !named_values
 
 let reset () =
-  Hashtbl.clear kinds;
-  Hashtbl.clear kind_args_tbl;
-  Hashtbl.clear arities;
-  Hashtbl.clear aliases_;
+  String.Hashtbl.clear kinds;
+  String.Hashtbl.clear kind_args_tbl;
+  String.Hashtbl.clear arities;
+  String.Hashtbl.clear aliases_;
   named_values := StringSet.empty

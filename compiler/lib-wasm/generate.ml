@@ -98,9 +98,9 @@ module Generate (Target : Target_sig.S) = struct
     | Int64 -> Memory.unbox_int64 e
 
   let specialized_primitives =
-    let h = Hashtbl.create 18 in
+    let h = String.Hashtbl.create 18 in
     List.iter
-      ~f:(fun (nm, typ) -> Hashtbl.add h nm typ)
+      ~f:(fun (nm, typ) -> String.Hashtbl.add h nm typ)
       [ "caml_int32_bswap", (`Pure, [ Int32 ], Int32)
       ; "caml_nativeint_bswap", (`Pure, [ Nativeint ], Nativeint)
       ; "caml_int64_bswap", (`Pure, [ Int64 ], Int64)
@@ -182,14 +182,14 @@ module Generate (Target : Target_sig.S) = struct
     | Pc c -> Constant.translate c
 
   let internal_primitives =
-    let h = Hashtbl.create 128 in
+    let h = String.Hashtbl.create 128 in
     List.iter
       ~f:(fun (nm, k, f) ->
-        Hashtbl.add h nm (k, fun _ _ transl_prim_arg l -> f transl_prim_arg l))
+        String.Hashtbl.add h nm (k, fun _ _ transl_prim_arg l -> f transl_prim_arg l))
       internal_primitives;
     h
 
-  let register_prim name k f = Hashtbl.add internal_primitives name (k, f)
+  let register_prim name k f = String.Hashtbl.add internal_primitives name (k, f)
 
   let invalid_arity name l ~expected =
     failwith
@@ -698,15 +698,20 @@ module Generate (Target : Target_sig.S) = struct
           Value.unit
     | Prim (p, l) -> (
         match p with
-        | Extern name when Hashtbl.mem internal_primitives name ->
-            snd (Hashtbl.find internal_primitives name) ctx context transl_prim_arg l
+        | Extern name when String.Hashtbl.mem internal_primitives name ->
+            snd
+              (String.Hashtbl.find internal_primitives name)
+              ctx
+              context
+              transl_prim_arg
+              l
         | _ -> (
             let l = List.map ~f:transl_prim_arg l in
             match p, l with
             | Extern name, l -> (
                 try
                   let ((_, arg_typ, res_typ) as typ) =
-                    Hashtbl.find specialized_primitives name
+                    String.Hashtbl.find specialized_primitives name
                   in
                   let* f = register_import ~name (Fun (specialized_primitive_type typ)) in
                   let rec loop acc arg_typ l =
@@ -1243,10 +1248,10 @@ module Generate (Target : Target_sig.S) = struct
   let init () =
     Primitive.register "caml_make_array" `Mutable None None;
     Primitive.register "caml_array_of_uniform_array" `Mutable None None;
-    Hashtbl.iter
+    String.Hashtbl.iter
       (fun name (k, _) -> Primitive.register name k None None)
       internal_primitives;
-    Hashtbl.iter
+    String.Hashtbl.iter
       (fun name (k, _, _) -> Primitive.register name k None None)
       specialized_primitives
 end

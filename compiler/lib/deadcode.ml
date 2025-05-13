@@ -332,12 +332,12 @@ let merge_blocks p =
   p
 
 let remove_empty_blocks st (p : Code.program) : Code.program =
-  let shortcuts = Hashtbl.create 16 in
+  let shortcuts = Addr.Hashtbl.create 16 in
   let rec resolve_rec visited ((pc, args) as cont) =
     if Addr.Set.mem pc visited
     then cont
     else
-      match Hashtbl.find_opt shortcuts pc with
+      match Addr.Hashtbl.find_opt shortcuts pc with
       | Some (params, cont) ->
           let pc', args' = resolve_rec (Addr.Set.add pc visited) cont in
           let s = Subst.from_map (Subst.build_mapping params args) in
@@ -365,7 +365,7 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
             List.for_all
               ~f:(fun x -> st.live.(Var.idx x) = 1 && Var.Set.mem x args)
               params
-          then Hashtbl.add shortcuts pc (params, cont)
+          then Addr.Hashtbl.add shortcuts pc (params, cont)
       | _ -> ())
     p.blocks;
   let blocks =

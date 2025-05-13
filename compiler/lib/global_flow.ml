@@ -31,6 +31,14 @@ let times = Debug.find "times"
 
 open Code
 
+module VarPairTbl = Hashtbl.Make (struct
+  type t = Var.t * Var.t
+
+  let hash (a, b) = Var.idx a + Var.idx b
+
+  let equal (a, b) (c, d) = Var.equal a c && Var.equal b d
+end)
+
 let associated_list h x = try Var.Hashtbl.find h x with Not_found -> []
 
 let add_to_list h x v = Var.Hashtbl.replace h x (v :: associated_list h x)
@@ -103,7 +111,7 @@ type state =
         (* Possible tags for a block after a [switch]. This is used to
            get a more precise approximation of the effect of a field
            access [Field] *)
-  ; applied_functions : (Var.t * Var.t, unit) Hashtbl.t
+  ; applied_functions : unit VarPairTbl.t
         (* Functions that have been already considered at a call site.
            This is to avoid repeated computations *)
   ; function_call_sites : Var.t list Var.Hashtbl.t
@@ -230,7 +238,7 @@ let expr_deps blocks st x e =
          significantly. *)
       match st.defs.(Var.idx f) with
       | Expr (Closure (params, _, _)) when List.compare_lengths args params = 0 ->
-          Hashtbl.add st.applied_functions (x, f) ();
+          VarPairTbl.add st.applied_functions (x, f) ();
           add_to_list st.function_call_sites f x;
           if st.fast
           then List.iter ~f:(fun a -> do_escape st Escape a) args
@@ -280,13 +288,13 @@ let program_deps st { start; blocks; _ } =
                increasing order *)
             match st.defs.(Code.Var.idx x) with
             | Expr (Prim (Extern "%direct_obj_tag", [ Pv b ])) ->
-                let h = Hashtbl.create 16 in
+                let h = Addr.Hashtbl.create 16 in
                 Array.iteri a1 ~f:(fun i (pc, _) ->
-                    Hashtbl.replace
+                    Addr.Hashtbl.replace
                       h
                       pc
-                      (i :: (try Hashtbl.find h pc with Not_found -> [])));
-                Hashtbl.iter
+                      (i :: (try Addr.Hashtbl.find h pc with Not_found -> [])));
+                Addr.Hashtbl.iter
                   (fun pc tags ->
                     let block = Addr.Map.find pc blocks in
                     List.iter
@@ -511,9 +519,9 @@ let propagate st ~update approx x =
                   match st.defs.(Var.idx g) with
                   | Expr (Closure (params, _, _))
                     when List.compare_lengths args params = 0 ->
-                      if not (Hashtbl.mem st.applied_functions (x, g))
+                      if not (VarPairTbl.mem st.applied_functions (x, g))
                       then (
-                        Hashtbl.add st.applied_functions (x, g) ();
+                        VarPairTbl.add st.applied_functions (x, g) ();
                         add_to_list st.function_call_sites g x;
                         if st.fast
                         then
@@ -663,7 +671,7 @@ let f ~fast p =
     ; may_escape
     ; possibly_mutable
     ; known_cases = Var.Hashtbl.create 16
-    ; applied_functions = Hashtbl.create 16
+    ; applied_functions = VarPairTbl.create 16
     ; fast
     ; function_call_sites = Var.Hashtbl.create 128
     }

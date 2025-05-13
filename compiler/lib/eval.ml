@@ -27,13 +27,14 @@ let stats = Debug.find "stats"
 
 let debug_stats = Debug.find "stats-debug"
 
-let static_env = Hashtbl.create 17
+let static_env = String.Hashtbl.create 17
 
-let clear_static_env () = Hashtbl.clear static_env
+let clear_static_env () = String.Hashtbl.clear static_env
 
-let set_static_env s value = Hashtbl.add static_env s value
+let set_static_env s value = String.Hashtbl.add static_env s value
 
-let get_static_env s = try Some (Hashtbl.find static_env s) with Not_found -> None
+let get_static_env s =
+  try Some (String.Hashtbl.find static_env s) with Not_found -> None
 
 let int_unop l f =
   match l with

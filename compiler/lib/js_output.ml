@@ -2063,7 +2063,7 @@ let need_space a b =
   | _, _ -> false
 
 let hashtbl_to_list htb =
-  Hashtbl.fold (fun k v l -> (k, v) :: l) htb []
+  String.Hashtbl.fold (fun k v l -> (k, v) :: l) htb []
   |> List.sort ~cmp:(fun (_, a) (_, b) -> compare a b)
   |> List.map ~f:fst
 
@@ -2071,21 +2071,21 @@ let blackbox_filename = "/builtin/blackbox.ml"
 
 let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
   let temp_mappings = ref [] in
-  let files = Hashtbl.create 17 in
-  let names = Hashtbl.create 17 in
+  let files = String.Hashtbl.create 17 in
+  let names = String.Hashtbl.create 17 in
   let push_mapping, get_file_index, get_name_index =
     ( (fun pos m -> temp_mappings := (pos, m) :: !temp_mappings)
     , (fun file ->
-        try Hashtbl.find files file
+        try String.Hashtbl.find files file
         with Not_found ->
-          let pos = Hashtbl.length files in
-          Hashtbl.add files file pos;
+          let pos = String.Hashtbl.length files in
+          String.Hashtbl.add files file pos;
           pos)
     , fun name ->
-        try Hashtbl.find names name
+        try String.Hashtbl.find names name
         with Not_found ->
-          let pos = Hashtbl.length names in
-          Hashtbl.add names name pos;
+          let pos = String.Hashtbl.length names in
+          String.Hashtbl.add names name pos;
           pos )
   in
   let hidden_location =

@@ -36,6 +36,8 @@ module Poly = struct
   external compare : 'a -> 'a -> int = "%compare"
 
   external equal : 'a -> 'a -> bool = "%equal"
+
+  module Hashtbl = Hashtbl
 end
 
 module Int_replace_polymorphic_compare = struct
@@ -505,7 +507,13 @@ module Bytes = BytesLabels
 module String = struct
   include StringLabels
 
-  let hash (a : string) = Hashtbl.hash a
+  let hash (a : string) = Hashtbl.hash a [@@if ocaml_version < (5, 0, 0)]
+
+  module Hashtbl = Hashtbl.Make (struct
+    include String
+
+    let hash = hash
+  end)
 
   let is_empty = function
     | "" -> true
@@ -833,7 +841,13 @@ end
 module Int = struct
   include Int
 
-  let hash (x : t) = Hashtbl.hash x
+  let hash (x : t) = x
+
+  module Hashtbl = Hashtbl.Make (struct
+    include Int
+
+    let hash x = x
+  end)
 end
 
 module IntSet = Set.Make (Int)
@@ -1171,3 +1185,15 @@ let file_lines_text file =
 let generated_name = function
   | "param" | "match" | "switcher" -> true
   | s -> String.starts_with ~prefix:"cst_" s
+
+module Hashtbl = struct
+  include Hashtbl
+
+  let (create [@deprecated "Use Int.Hashtbl, String.Hashtbl, Var.Hashtbl, Addr.Hashtbl"])
+      =
+    Hashtbl.create
+
+  let (of_seq [@deprecated "Use Int.Hashtbl, String.Hashtbl, Var.Hashtbl, Addr.Hashtbl"])
+      =
+    Hashtbl.of_seq
+end

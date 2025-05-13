@@ -19,6 +19,14 @@
 
 open! Stdlib
 
+module IntPairTbl = Hashtbl.Make (struct
+  type t = int * int
+
+  let hash (a, b) = a + b
+
+  let equal (a, b) (c, d) = a = c && b = d
+end)
+
 module Alphabet = struct
   type t =
     { c1 : string
@@ -55,16 +63,16 @@ module Alphabet = struct
 end
 
 type t =
-  { names : (int, string) Hashtbl.t
-  ; known : (int, string) Hashtbl.t
-  ; cache : (int * int, string) Hashtbl.t
+  { names : string Int.Hashtbl.t
+  ; known : string Int.Hashtbl.t
+  ; cache : string IntPairTbl.t
   ; alphabet : Alphabet.t
   ; mutable last : int
   ; mutable pretty : bool
   ; mutable stable : bool
   }
 
-let name_raw t v nm = Hashtbl.replace t.names v nm
+let name_raw t v nm = Int.Hashtbl.replace t.names v nm
 
 let merge_name n1 n2 =
   match n1, n2 with
@@ -81,8 +89,8 @@ let merge_name n1 n2 =
 
 let propagate_name t v v' =
   try
-    let name = Hashtbl.find t.names v in
-    match Hashtbl.find t.names v' with
+    let name = Int.Hashtbl.find t.names v in
+    match Int.Hashtbl.find t.names v' with
     | exception Not_found -> name_raw t v' name
     | name' -> name_raw t v' (merge_name name name')
   with Not_found -> ()
@@ -125,7 +133,7 @@ let name t v nm_orig =
     in
     name_raw t v str)
 
-let get_name t v = try Some (Hashtbl.find t.names v) with Not_found -> None
+let get_name t v = try Some (Int.Hashtbl.find t.names v) with Not_found -> None
 
 let format_var t i x =
   let s = Alphabet.to_string t.alphabet x in
@@ -151,10 +159,10 @@ let rec to_string t ?origin i =
     | Some i when t.pretty -> i
     | _ -> i
   in
-  try Hashtbl.find t.cache (i, origin)
+  try IntPairTbl.find t.cache (i, origin)
   with Not_found ->
     let name =
-      try Hashtbl.find t.known i
+      try Int.Hashtbl.find t.known i
       with Not_found ->
         t.last <- t.last + 1;
         let j = t.last in
@@ -162,19 +170,19 @@ let rec to_string t ?origin i =
         if is_reserved s
         then to_string t i
         else (
-          Hashtbl.add t.known i s;
+          Int.Hashtbl.add t.known i s;
           s)
     in
     let name =
       if t.pretty
       then
         try
-          let nm = Hashtbl.find t.names origin in
+          let nm = Int.Hashtbl.find t.names origin in
           nm ^ name
         with Not_found -> name
       else name
     in
-    Hashtbl.add t.cache (i, origin) name;
+    IntPairTbl.add t.cache (i, origin) name;
     name
 
 let set_pretty t b = t.pretty <- b
@@ -182,16 +190,16 @@ let set_pretty t b = t.pretty <- b
 let set_stable t b = t.stable <- b
 
 let reset t =
-  Hashtbl.clear t.names;
-  Hashtbl.clear t.known;
-  Hashtbl.clear t.cache;
+  Int.Hashtbl.clear t.names;
+  Int.Hashtbl.clear t.known;
+  IntPairTbl.clear t.cache;
   t.last <- -1
 
 let create ?(pretty = false) ?(stable = false) alphabet =
   let t =
-    { names = Hashtbl.create 107
-    ; known = Hashtbl.create 1001
-    ; cache = Hashtbl.create 1001
+    { names = Int.Hashtbl.create 107
+    ; known = Int.Hashtbl.create 1001
+    ; cache = IntPairTbl.create 1001
     ; alphabet
     ; last = -1
     ; pretty

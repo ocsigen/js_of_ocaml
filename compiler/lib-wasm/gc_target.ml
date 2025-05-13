@@ -1068,7 +1068,7 @@ end
 module Closure = struct
   let get_free_variables ~context info =
     List.filter
-      ~f:(fun x -> not (Hashtbl.mem context.constants x))
+      ~f:(fun x -> not (Code.Var.Hashtbl.mem context.constants x))
       info.Closure_conversion.free_variables
 
   let rec is_last_fun l f =

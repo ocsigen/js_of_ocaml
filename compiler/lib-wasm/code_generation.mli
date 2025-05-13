@@ -21,13 +21,13 @@ open Stdlib
 type constant_global
 
 type context =
-  { constants : (Code.Var.t, Wasm_ast.expression) Hashtbl.t
+  { constants : Wasm_ast.expression Code.Var.Hashtbl.t
   ; mutable data_segments : string Code.Var.Map.t
   ; mutable constant_globals : constant_global Code.Var.Map.t
   ; mutable other_fields : Wasm_ast.module_field list
   ; mutable imports : (Code.Var.t * Wasm_ast.import_desc) StringMap.t StringMap.t
-  ; type_names : (string, Code.Var.t) Hashtbl.t
-  ; types : (Code.Var.t, Wasm_ast.type_field) Hashtbl.t
+  ; type_names : Code.Var.t String.Hashtbl.t
+  ; types : Wasm_ast.type_field Code.Var.Hashtbl.t
   ; mutable closure_envs : Code.Var.t Code.Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
   ; mutable apply_funs : Code.Var.t Stdlib.IntMap.t

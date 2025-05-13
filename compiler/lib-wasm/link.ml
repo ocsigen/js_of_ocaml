@@ -617,7 +617,7 @@ let link_to_directory ~files_to_link ~files ~enable_source_maps ~dir =
   runtime :: prelude :: List.map ~f:fst lst, (runtime_intf, List.map ~f:snd lst)
 
 let compute_dependencies ~files_to_link ~files =
-  let h = Hashtbl.create 128 in
+  let h = String.Hashtbl.create 128 in
   let i = ref 2 in
   List.filter_map
     ~f:(fun (file, (_, units)) ->
@@ -628,13 +628,13 @@ let compute_dependencies ~files_to_link ~files =
             ~f:(fun s { unit_info; _ } ->
               StringSet.fold
                 (fun unit_name s ->
-                  try IntSet.add (Hashtbl.find h unit_name) s with Not_found -> s)
+                  try IntSet.add (String.Hashtbl.find h unit_name) s with Not_found -> s)
                 unit_info.requires
                 s)
             ~init:IntSet.empty
             units
         in
-        List.iter ~f:(fun { unit_name; _ } -> Hashtbl.add h unit_name !i) units;
+        List.iter ~f:(fun { unit_name; _ } -> String.Hashtbl.add h unit_name !i) units;
         incr i;
         Some (Some (IntSet.elements s)))
       else None)
