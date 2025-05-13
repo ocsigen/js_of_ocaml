@@ -903,4 +903,4 @@ function renderScene(){
   raytracer.renderScene(scene, null, 0);
 }
 
-for (var i = 1; i <= 100; i++) { renderScene(); };
+for (var i = 1; i <= 2000; i++) { renderScene(); };
