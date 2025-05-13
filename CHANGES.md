@@ -46,6 +46,7 @@
 * Runtime: fix initialization of standard streams under Windows (#1849)
 * Runtime: fix Int64.of_string overflow check (#1874)
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
+* Runtime: consistent bigarray hashing across all architectures (#1977)
 * Tools: fix jsoo_mktop and jsoo_mkcmis (#1877)
 
 # 6.0.1 (2025-02-07) - Lille
