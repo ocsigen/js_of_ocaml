@@ -345,7 +345,7 @@ class traverse_idents_and_labels ~idents ~labels =
       function
       | Labelled_statement (L l, (s, _)) ->
           let m = {<ldepth = ldepth + 1>} in
-          Hashtbl.add labels l ldepth;
+          Var.Hashtbl.add labels l ldepth;
           m#statement s
       | s -> super#statement s
 
@@ -373,7 +373,7 @@ class name ident label =
 let program' (module Strategy : Strategy) p =
   let nv = Var.count () in
   let state = Strategy.create nv in
-  let labels = Hashtbl.create 20 in
+  let labels = Var.Hashtbl.create 20 in
   let mapper = new traverse (Strategy.record_block state) in
   let p = mapper#program p in
   let count = Array.make nv 0 in
@@ -413,14 +413,14 @@ let program' (module Strategy : Strategy) p =
     | x -> x
   in
   let label_printer = Var_printer.create Var_printer.Alphabet.javascript in
-  let max_label_depth = Hashtbl.fold (fun _ d acc -> max d acc) labels 0 in
+  let max_label_depth = Var.Hashtbl.fold (fun _ d acc -> max d acc) labels 0 in
   let lname_per_depth =
     Array.init (max_label_depth + 1) ~f:(fun i -> Var_printer.to_string label_printer i)
   in
   let label = function
     | Label.S _ as l -> l
     | L v ->
-        let i = Hashtbl.find labels v in
+        let i = Var.Hashtbl.find labels v in
         S (Utf8_string.of_string_exn lname_per_depth.(i))
   in
   let p = (new name ident label)#program p in

@@ -34,16 +34,16 @@ module File = struct
   let create ~name ~content = { name; content; fragments = None }
 end
 
-let tbl = Hashtbl.create 17
+let tbl = String.Hashtbl.create 17
 
 let register ~name ~content ~fragments =
   let name = "+" ^ name in
   let t = { File.name; content; fragments } in
-  if Hashtbl.mem tbl name
+  if String.Hashtbl.mem tbl name
   then warn "The builtin runtime file %S was registered multiple time" name;
-  Hashtbl.add tbl name t;
+  String.Hashtbl.add tbl name t;
   t
 
-let find name = try Some (Hashtbl.find tbl name) with Not_found -> None
+let find name = try Some (String.Hashtbl.find tbl name) with Not_found -> None
 
-let all () = Hashtbl.fold (fun _ v acc -> v :: acc) tbl []
+let all () = String.Hashtbl.fold (fun _ v acc -> v :: acc) tbl []

@@ -1058,16 +1058,16 @@ let apply_fun ctx f params exact trampolined in_cps loc =
 
 (****)
 
-let internal_primitives = Hashtbl.create 31
+let internal_primitives = String.Hashtbl.create 31
 
 let internal_prim name =
   try
-    let _, f = Hashtbl.find internal_primitives name in
+    let _, f = String.Hashtbl.find internal_primitives name in
     Some f
   with Not_found -> None
 
 let register_prims names k (f : string -> _ list -> _ -> _ -> _) =
-  List.iter names ~f:(fun name -> Hashtbl.add internal_primitives name (k, f))
+  List.iter names ~f:(fun name -> String.Hashtbl.add internal_primitives name (k, f))
 
 let invalid_arity name l ~loc ~expected =
   failwith
@@ -2310,6 +2310,6 @@ let f
   p
 
 let init () =
-  Hashtbl.iter
+  String.Hashtbl.iter
     (fun name (k, _) -> Primitive.register name k None None)
     internal_primitives

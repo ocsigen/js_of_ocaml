@@ -183,15 +183,15 @@ let run
         if not (Sys.file_exists file)
         then failwith (Printf.sprintf "export file %S does not exist" file);
         let ic = open_in_text file in
-        let t = Hashtbl.create 17 in
+        let t = String.Hashtbl.create 17 in
         (try
            while true do
-             Hashtbl.add t (String.trim (In_channel.input_line_exn ic)) ()
+             String.Hashtbl.add t (String.trim (In_channel.input_line_exn ic)) ()
            done;
            assert false
          with End_of_file -> ());
         close_in ic;
-        Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
+        Some (String.Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
   let runtime_files =
     if (not no_runtime) && (toplevel || dynlink)

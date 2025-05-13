@@ -431,17 +431,17 @@ type provided =
 
 let always_included = ref []
 
-let provided = Hashtbl.create 31
+let provided = String.Hashtbl.create 31
 
-let provided_rev = Hashtbl.create 31
+let provided_rev = Int.Hashtbl.create 31
 
-let code_pieces = Hashtbl.create 31
+let code_pieces = Int.Hashtbl.create 31
 
 let reset () =
   always_included := [];
-  Hashtbl.clear provided;
-  Hashtbl.clear provided_rev;
-  Hashtbl.clear code_pieces;
+  String.Hashtbl.clear provided;
+  Int.Hashtbl.clear provided_rev;
+  Int.Hashtbl.clear code_pieces;
   Primitive.reset ();
   Generate.init ()
 
@@ -451,7 +451,7 @@ let list_all ?from () =
     | None -> fun _ _ -> true
     | Some l -> fun fn _nm -> List.mem ~eq:String.equal fn l
   in
-  Hashtbl.fold
+  String.Hashtbl.fold
     (fun nm p set -> if include_ p.filename nm then StringSet.add nm set else set)
     provided
     StringSet.empty
@@ -462,7 +462,7 @@ let list_all_with_aliases ?from () =
     | None -> fun _ _ -> true
     | Some l -> fun fn _nm -> List.mem ~eq:String.equal fn l
   in
-  Hashtbl.fold
+  String.Hashtbl.fold
     (fun nm p map ->
       if include_ p.filename nm then StringMap.add nm p.aliases map else map)
     provided
@@ -521,7 +521,7 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               Option.value ~default:Target_env.Isomorphic fragment_target
             in
             let exists =
-              try `Exists (Hashtbl.find provided name) with Not_found -> `New
+              try `Exists (String.Hashtbl.find provided name) with Not_found -> `New
             in
             let is_updating =
               match
@@ -566,21 +566,21 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
             then `Ignored
             else
               let () = () in
-              let id = Hashtbl.length provided in
+              let id = String.Hashtbl.length provided in
               Primitive.register name kind ka arity;
               StringSet.iter Primitive.register_named_value named_values;
-              Hashtbl.add
+              String.Hashtbl.add
                 provided
                 name
                 { id; pi; filename; weakdef; target_env = fragment_target; aliases };
-              Hashtbl.add provided_rev id (name, pi);
-              Hashtbl.add code_pieces id (code, has_macro, requires, deprecated);
+              Int.Hashtbl.add provided_rev id (name, pi);
+              Int.Hashtbl.add code_pieces id (code, has_macro, requires, deprecated);
               StringSet.iter (fun alias -> Primitive.alias alias name) aliases;
               `Ok)
 
 let check_deps () =
   let provided = list_all () in
-  Hashtbl.iter
+  Int.Hashtbl.iter
     (fun id (code, _has_macro, requires, _deprecated) ->
       match code with
       | Ok code -> (
@@ -595,7 +595,7 @@ let check_deps () =
           if not (StringSet.is_empty missing)
           then
             try
-              let name, ploc = Hashtbl.find provided_rev id in
+              let name, ploc = Int.Hashtbl.find provided_rev id in
               warn
                 "code providing %s (%s) may miss dependencies: %s\n"
                 name
@@ -628,7 +628,7 @@ let load_files ~target_env l =
 
 (* resolve *)
 let rec resolve_dep_name_rev state path nm =
-  match Hashtbl.find provided nm with
+  match String.Hashtbl.find provided nm with
   | x ->
       if state.include_ x.filename
       then resolve_dep_id_rev state path x.id
@@ -644,11 +644,11 @@ and resolve_dep_id_rev state path id =
         "circular dependency: %s"
         (String.concat
            ~sep:", "
-           (List.map path ~f:(fun id -> fst (Hashtbl.find provided_rev id))));
+           (List.map path ~f:(fun id -> fst (Int.Hashtbl.find provided_rev id))));
     state)
   else
     let path = id :: path in
-    let code, has_macro, req, deprecated = Hashtbl.find code_pieces id in
+    let code, has_macro, req, deprecated = Int.Hashtbl.find code_pieces id in
     let state = { state with ids = IntSet.add id state.ids } in
     let state =
       List.fold_left req ~init:state ~f:(fun state nm ->
@@ -691,7 +691,7 @@ let resolve_deps ?(check_missing = true) state used =
   let missing, state =
     StringSet.fold
       (fun nm (missing, visited) ->
-        if Hashtbl.mem provided nm
+        if String.Hashtbl.mem provided nm
         then missing, resolve_dep_name_rev visited [] nm
         else StringSet.add nm missing, visited)
       used
@@ -724,15 +724,15 @@ let link ?(check_missing = true) program (state : state) =
       | [ x ] ->
           if false
           then
-            let name = fst (Hashtbl.find provided_rev x) in
+            let name = fst (Int.Hashtbl.find provided_rev x) in
             warn "The runtime primitive [%s] is deprecated. %s\n" name txt
       | x :: path ->
-          let name = fst (Hashtbl.find provided_rev x) in
+          let name = fst (Int.Hashtbl.find provided_rev x) in
           let path =
             String.concat
               ~sep:"\n"
               (List.map path ~f:(fun id ->
-                   let nm, loc = Hashtbl.find provided_rev id in
+                   let nm, loc = Int.Hashtbl.find provided_rev id in
                    Printf.sprintf "-> %s:%s" nm (Parse_info.to_string loc)))
           in
           warn
@@ -757,7 +757,7 @@ let all state =
   IntSet.fold
     (fun id acc ->
       try
-        let name, _ = Hashtbl.find provided_rev id in
+        let name, _ = Int.Hashtbl.find provided_rev id in
         name :: acc
       with Not_found -> acc)
     state.ids
@@ -767,13 +767,13 @@ let missing state = StringSet.elements state.missing
 
 let origin ~name =
   try
-    let x = Hashtbl.find provided name in
+    let x = String.Hashtbl.find provided name in
     x.pi.Parse_info.src
   with Not_found -> None
 
 let deprecated ~name =
   try
-    let x = Hashtbl.find provided name in
-    let _, _, _, deprecated = Hashtbl.find code_pieces x.id in
+    let x = String.Hashtbl.find provided name in
+    let _, _, _, deprecated = Int.Hashtbl.find code_pieces x.id in
     Option.is_some deprecated
   with Not_found -> false

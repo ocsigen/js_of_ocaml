@@ -34,6 +34,6 @@ let to_string = function
   | Isomorphic -> "isomorphic"
 
 let of_string =
-  let t = Hashtbl.create 17 in
-  List.iter all ~f:(fun x -> Hashtbl.add t (to_string x) x);
-  fun name -> try Some (Hashtbl.find t name) with Not_found -> None
+  let t = String.Hashtbl.create 17 in
+  List.iter all ~f:(fun x -> String.Hashtbl.add t (to_string x) x);
+  fun name -> try Some (String.Hashtbl.find t name) with Not_found -> None

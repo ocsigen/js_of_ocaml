@@ -19,15 +19,15 @@
 open! Stdlib
 open Wasm_ast
 
-let assign_names ?(reversed = true) f names =
+let assign_names ?(reversed = true) (f : Code.Var.t -> string option) names =
   let used = ref StringSet.empty in
-  let counts = Hashtbl.create 101 in
+  let counts = String.Hashtbl.create 101 in
   let rec find_available_name used name =
     let i =
-      try Hashtbl.find counts name
+      try String.Hashtbl.find counts name
       with Not_found ->
         let i = ref 0 in
-        Hashtbl.replace counts name i;
+        String.Hashtbl.replace counts name i;
         i
     in
     incr i;
@@ -55,10 +55,10 @@ let assign_names ?(reversed = true) f names =
     incr i;
     if StringSet.mem nm !used then first_available_name () else nm
   in
-  let tbl = Hashtbl.create 16 in
+  let tbl = Code.Var.Hashtbl.create 16 in
   List.iter
     ~f:(fun (x, nm) ->
-      Hashtbl.add
+      Code.Var.Hashtbl.add
         tbl
         x
         (match nm with
@@ -68,12 +68,12 @@ let assign_names ?(reversed = true) f names =
   tbl
 
 type st =
-  { type_names : (var, string) Hashtbl.t
-  ; func_names : (var, string) Hashtbl.t
-  ; global_names : (var, string) Hashtbl.t
-  ; data_names : (var, string) Hashtbl.t
-  ; tag_names : (var, string) Hashtbl.t
-  ; local_names : (var, string) Hashtbl.t
+  { type_names : string Code.Var.Hashtbl.t
+  ; func_names : string Code.Var.Hashtbl.t
+  ; global_names : string Code.Var.Hashtbl.t
+  ; data_names : string Code.Var.Hashtbl.t
+  ; tag_names : string Code.Var.Hashtbl.t
+  ; local_names : string Code.Var.Hashtbl.t
   }
 
 let build_name_tables fields =
@@ -103,7 +103,7 @@ let build_name_tables fields =
   ; global_names = assign_names index !global_names
   ; data_names = assign_names index !data_names
   ; tag_names = assign_names index !tag_names
-  ; local_names = Hashtbl.create 1
+  ; local_names = Code.Var.Hashtbl.create 1
   }
 
 type sexp =
@@ -142,7 +142,7 @@ let rec format_sexp f s =
       Format.fprintf f ")@]"
   | Comment s -> Format.fprintf f ";;%s" s
 
-let index tbl x = Atom ("$" ^ Hashtbl.find tbl x)
+let index tbl x = Atom ("$" ^ Code.Var.Hashtbl.find tbl x)
 
 let heap_type st (ty : heap_type) =
   match ty with

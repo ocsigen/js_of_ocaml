@@ -812,19 +812,30 @@ class replace_expr f =
     method expression e = try EVar (f e) with Not_found -> super#expression e
   end
 
+let expression_equal (a : expression) b = Poly.equal a b
+
 (* this optimisation should be done at the lowest common scope *)
+
+module ExprTbl = Hashtbl.Make (struct
+  type t = expression
+
+  let hash = Hashtbl.hash
+
+  let equal = expression_equal
+end)
+
 class share_constant =
   object
     inherit map_for_share_constant as super
 
-    val count = Hashtbl.create 17
+    val count = ExprTbl.create 17
 
     method expression e =
       let e =
         match e with
         | EStr _ | ENum _ ->
-            let n = try Hashtbl.find count e with Not_found -> 0 in
-            Hashtbl.replace count e (n + 1);
+            let n = try ExprTbl.find count e with Not_found -> 0 in
+            ExprTbl.replace count e (n + 1);
             e
         | _ -> e
       in
@@ -832,8 +843,8 @@ class share_constant =
 
     method program p =
       let p = super#program p in
-      let all = Hashtbl.create 17 in
-      Hashtbl.iter
+      let all = ExprTbl.create 17 in
+      ExprTbl.iter
         (fun x n ->
           let shareit =
             match x with
@@ -850,16 +861,16 @@ class share_constant =
           match shareit with
           | Some name ->
               let v = Code.Var.fresh_n name in
-              Hashtbl.add all x (V v)
+              ExprTbl.add all x (V v)
           | _ -> ())
         count;
-      if Hashtbl.length all = 0
+      if ExprTbl.length all = 0
       then p
       else
-        let f = Hashtbl.find all in
+        let f = ExprTbl.find all in
         let p = (new replace_expr f)#program p in
         let all =
-          Hashtbl.fold (fun e v acc -> DeclIdent (v, Some (e, N)) :: acc) all []
+          ExprTbl.fold (fun e v acc -> DeclIdent (v, Some (e, N)) :: acc) all []
         in
         (Variable_statement (Var, all), N) :: p
   end
@@ -1659,8 +1670,6 @@ let use_fun_context l =
       l;
     false
   with True -> true
-
-let expression_equal (a : expression) b = Poly.equal a b
 
 (* - Split variable_statement *)
 (* - rewrite assign_op *)

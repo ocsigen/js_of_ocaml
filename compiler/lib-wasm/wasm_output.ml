@@ -183,7 +183,7 @@ end = struct
     | I31 -> output_byte ch 0x6C
     | Struct -> output_byte ch 0x6B
     | Array -> output_byte ch 0x6A
-    | Type nm -> output_sint ch (Hashtbl.find type_names nm)
+    | Type nm -> output_sint ch (Code.Var.Hashtbl.find type_names nm)
 
   let output_valtype type_names ch (typ : value_type) =
     match typ with
@@ -232,21 +232,21 @@ end = struct
 
   let output_types ch fields =
     let count =
-      let func_types = Hashtbl.create 16 in
+      let func_types = Poly.Hashtbl.create 16 in
       fold_types
         (fun count typ ->
-          if Hashtbl.mem func_types typ
+          if Poly.Hashtbl.mem func_types typ
           then count
           else (
-            Hashtbl.add func_types typ ();
+            Poly.Hashtbl.add func_types typ ();
             count + 1))
         (fun count _ -> count + 1)
         0
         fields
     in
     output_uint ch count;
-    let func_types = Hashtbl.create 16 in
-    let type_names = Hashtbl.create 16 in
+    let func_types = Poly.Hashtbl.create 16 in
+    let type_names = Code.Var.Hashtbl.create 16 in
     let _idx =
       fold_types
         (fun idx typ ->
@@ -264,7 +264,7 @@ end = struct
             output_uint ch len);
           List.fold_left
             ~f:(fun idx { name; typ; supertype; final } ->
-              Hashtbl.add type_names name idx;
+              Code.Var.Hashtbl.add type_names name idx;
               (match supertype, final with
               | None, true -> ()
               | None, false ->
@@ -273,7 +273,7 @@ end = struct
               | Some supertype, _ ->
                   output_byte ch (if final then 0X4F else 0x50);
                   output_byte ch 1;
-                  output_uint ch (Hashtbl.find type_names supertype));
+                  output_uint ch (Code.Var.Hashtbl.find type_names supertype));
               (match typ with
               | Array field_type ->
                   output_byte ch 0x5E;
@@ -302,11 +302,11 @@ end = struct
     in
     output_uint ch count;
     let func_idx = ref 0 in
-    let func_names = Hashtbl.create 16 in
+    let func_names = Code.Var.Hashtbl.create 16 in
     let global_idx = ref 0 in
-    let global_names = Hashtbl.create 16 in
+    let global_names = Code.Var.Hashtbl.create 16 in
     let tag_idx = ref 0 in
-    let tag_names = Hashtbl.create 16 in
+    let tag_names = Code.Var.Hashtbl.create 16 in
     List.iter
       ~f:(fun field ->
         match field with
@@ -318,20 +318,20 @@ end = struct
             | Fun typ ->
                 output_byte ch 0x00;
                 output_uint ch (Hashtbl.find func_types typ);
-                Hashtbl.add func_names name !func_idx;
+                Code.Var.Hashtbl.add func_names name !func_idx;
                 incr func_idx
             | Global typ ->
                 if typ.mut then Feature.require mutable_globals;
                 output_byte ch 0x03;
                 output_globaltype type_names ch typ;
-                Hashtbl.add global_names name !global_idx;
+                Code.Var.Hashtbl.add global_names name !global_idx;
                 incr global_idx
             | Tag typ ->
                 Feature.require exception_handling;
                 output_byte ch 0x04;
                 output_byte ch 0x00;
                 output_uint ch (Hashtbl.find func_types { params = [ typ ]; result = [] });
-                Hashtbl.add tag_names name !tag_idx;
+                Code.Var.Hashtbl.add tag_names name !tag_idx;
                 incr tag_idx))
       fields;
     !func_idx, func_names, !global_idx, global_names, !tag_idx, tag_names
@@ -351,7 +351,7 @@ end = struct
         ~f:(fun idx field ->
           match field with
           | Function { name; _ } ->
-              Hashtbl.add func_names name idx;
+              Code.Var.Hashtbl.add func_names name idx;
               idx + 1
           | Type _ | Import _ | Data _ | Global _ | Tag _ -> idx)
         ~init:func_idx
@@ -451,13 +451,13 @@ end = struct
     | _ -> assert false
 
   type st =
-    { type_names : (var, int) Hashtbl.t
-    ; func_names : (var, int) Hashtbl.t
-    ; global_names : (var, int) Hashtbl.t
-    ; data_names : (var, int) Hashtbl.t
-    ; tag_names : (var, int) Hashtbl.t
-    ; local_names : (var, (var, int) Hashtbl.t) Hashtbl.t
-    ; current_local_names : (var, int) Hashtbl.t
+    { type_names : int Code.Var.Hashtbl.t
+    ; func_names : int Code.Var.Hashtbl.t
+    ; global_names : int Code.Var.Hashtbl.t
+    ; data_names : int Code.Var.Hashtbl.t
+    ; tag_names : int Code.Var.Hashtbl.t
+    ; local_names : int Code.Var.Hashtbl.t Code.Var.Hashtbl.t
+    ; current_local_names : int Code.Var.Hashtbl.t
     }
 
   let rec output_expression st ch e =
@@ -508,14 +508,14 @@ end = struct
         output_byte ch 0xBB
     | LocalGet i ->
         output_byte ch 0x20;
-        output_uint ch (Hashtbl.find st.current_local_names i)
+        output_uint ch (Code.Var.Hashtbl.find st.current_local_names i)
     | LocalTee (i, e') ->
         output_expression st ch e';
         output_byte ch 0x22;
-        output_uint ch (Hashtbl.find st.current_local_names i)
+        output_uint ch (Code.Var.Hashtbl.find st.current_local_names i)
     | GlobalGet g ->
         output_byte ch 0x23;
-        output_uint ch (Hashtbl.find st.global_names g)
+        output_uint ch (Code.Var.Hashtbl.find st.global_names g)
     | BlockExpr (typ, l) ->
         output_byte ch 0x02;
         output_blocktype st.type_names ch typ;
@@ -524,19 +524,19 @@ end = struct
     | Call (f, l) ->
         List.iter ~f:(fun e' -> output_expression st ch e') l;
         output_byte ch 0x10;
-        output_uint ch (Hashtbl.find st.func_names f)
+        output_uint ch (Code.Var.Hashtbl.find st.func_names f)
     | Seq _ -> assert false
     | Pop _ -> ()
     | RefFunc f ->
         Feature.require reference_types;
         output_byte ch 0xD2;
-        output_uint ch (Hashtbl.find st.func_names f)
+        output_uint ch (Code.Var.Hashtbl.find st.func_names f)
     | Call_ref (typ, e', l) ->
         Feature.require gc;
         List.iter ~f:(fun e' -> output_expression st ch e') l;
         output_expression st ch e';
         output_byte ch 0x14;
-        output_uint ch (Hashtbl.find st.type_names typ)
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ)
     | RefI31 e' ->
         Feature.require gc;
         output_expression st ch e';
@@ -555,13 +555,13 @@ end = struct
         output_expression st ch e'';
         output_byte ch 0xFB;
         output_byte ch 6;
-        output_uint ch (Hashtbl.find st.type_names typ)
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ)
     | ArrayNewFixed (typ, l) ->
         Feature.require gc;
         List.iter ~f:(fun e' -> output_expression st ch e') l;
         output_byte ch 0xFB;
         output_byte ch 8;
-        output_uint ch (Hashtbl.find st.type_names typ);
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ);
         output_uint ch (List.length l)
     | ArrayNewData (typ, data, e', e'') ->
         Feature.require gc;
@@ -569,8 +569,8 @@ end = struct
         output_expression st ch e'';
         output_byte ch 0xFB;
         output_byte ch 9;
-        output_uint ch (Hashtbl.find st.type_names typ);
-        output_uint ch (Hashtbl.find st.data_names data)
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ);
+        output_uint ch (Code.Var.Hashtbl.find st.data_names data)
     | ArrayGet (signage, typ, e', e'') ->
         Feature.require gc;
         output_expression st ch e';
@@ -582,7 +582,7 @@ end = struct
           | None -> 0x0B
           | Some S -> 0x0C
           | Some U -> 0x0D);
-        output_uint ch (Hashtbl.find st.type_names typ)
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ)
     | ArrayLen e' ->
         Feature.require gc;
         output_expression st ch e';
@@ -593,7 +593,7 @@ end = struct
         List.iter ~f:(fun e' -> output_expression st ch e') l;
         output_byte ch 0xFB;
         output_byte ch 0;
-        output_uint ch (Hashtbl.find st.type_names typ)
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ)
     | StructGet (signage, typ, idx, e') ->
         Feature.require gc;
         output_expression st ch e';
@@ -604,7 +604,7 @@ end = struct
           | None -> 0x02
           | Some S -> 0x03
           | Some U -> 0x04);
-        output_uint ch (Hashtbl.find st.type_names typ);
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ);
         output_uint ch idx
     | RefCast ({ typ; nullable }, e') ->
         Feature.require gc;
@@ -666,7 +666,7 @@ end = struct
         List.iter
           ~f:(fun (tag, l, ty) ->
             output_byte ch 0x07;
-            output_uint ch (Hashtbl.find st.tag_names tag);
+            output_uint ch (Code.Var.Hashtbl.find st.tag_names tag);
             output_instruction st ch (Br (l + 1, Some (Pop ty))))
           catches;
         output_byte ch 0X0B
@@ -684,11 +684,11 @@ end = struct
     | LocalSet (i, e) ->
         output_expression st ch e;
         output_byte ch 0x21;
-        output_uint ch (Hashtbl.find st.current_local_names i)
+        output_uint ch (Code.Var.Hashtbl.find st.current_local_names i)
     | GlobalSet (g, e) ->
         output_expression st ch e;
         output_byte ch 0x24;
-        output_uint ch (Hashtbl.find st.global_names g)
+        output_uint ch (Code.Var.Hashtbl.find st.global_names g)
     | Loop (typ, l) ->
         output_byte ch 0x03;
         output_blocktype st.type_names ch typ;
@@ -732,14 +732,14 @@ end = struct
     | CallInstr (f, l) ->
         List.iter ~f:(fun e -> output_expression st ch e) l;
         output_byte ch 0x10;
-        output_uint ch (Hashtbl.find st.func_names f)
+        output_uint ch (Code.Var.Hashtbl.find st.func_names f)
     | Nop -> ()
     | Push e -> output_expression st ch e
     | Throw (tag, e) ->
         Feature.require exception_handling;
         output_expression st ch e;
         output_byte ch 0x08;
-        output_uint ch (Hashtbl.find st.tag_names tag)
+        output_uint ch (Code.Var.Hashtbl.find st.tag_names tag)
     | Rethrow i ->
         Feature.require exception_handling;
         output_byte ch 0x09;
@@ -751,26 +751,26 @@ end = struct
         output_expression st ch e3;
         output_byte ch 0xFB;
         output_byte ch 0x0E;
-        output_uint ch (Hashtbl.find st.type_names typ)
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ)
     | StructSet (typ, idx, e1, e2) ->
         Feature.require gc;
         output_expression st ch e1;
         output_expression st ch e2;
         output_byte ch 0xFB;
         output_byte ch 0x05;
-        output_uint ch (Hashtbl.find st.type_names typ);
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ);
         output_uint ch idx
     | Return_call (f, l) ->
         Feature.require tail_call;
         List.iter ~f:(fun e -> output_expression st ch e) l;
         output_byte ch 0x12;
-        output_uint ch (Hashtbl.find st.func_names f)
+        output_uint ch (Code.Var.Hashtbl.find st.func_names f)
     | Return_call_ref (typ, e', l) ->
         Feature.require tail_call;
         List.iter ~f:(fun e' -> output_expression st ch e') l;
         output_expression st ch e';
         output_byte ch 0x15;
-        output_uint ch (Hashtbl.find st.type_names typ)
+        output_uint ch (Code.Var.Hashtbl.find st.type_names typ)
     | Unreachable -> output_byte ch 0x00
     | Event _ -> ()
 
@@ -790,7 +790,7 @@ end = struct
         ~f:(fun idx field ->
           match field with
           | Global { name; typ; init; _ } ->
-              Hashtbl.add st.global_names name idx;
+              Code.Var.Hashtbl.add st.global_names name idx;
               output_globaltype st.type_names ch typ;
               output_expression st ch init;
               output_byte ch 0x0B;
@@ -825,12 +825,12 @@ end = struct
         | Function { name; exported_name = Some exported_name; _ } ->
             output_name ch exported_name;
             output_byte ch 0x00;
-            output_uint ch (Hashtbl.find func_names name)
+            output_uint ch (Code.Var.Hashtbl.find func_names name)
         | Global { name; exported_name = Some exported_name; typ; _ } ->
             if typ.mut then Feature.require mutable_globals;
             output_name ch exported_name;
             output_byte ch 0x03;
-            output_uint ch (Hashtbl.find global_names name))
+            output_uint ch (Code.Var.Hashtbl.find global_names name))
       fields
 
   let compute_data_names fields =
@@ -843,13 +843,13 @@ end = struct
         ~init:0
         fields
     in
-    let data_names = Hashtbl.create 16 in
+    let data_names = Code.Var.Hashtbl.create 16 in
     let _idx =
       List.fold_left
         ~f:(fun idx field ->
           match field with
           | Data { name; _ } ->
-              Hashtbl.add data_names name idx;
+              Code.Var.Hashtbl.add data_names name idx;
               idx + 1
           | Function _ | Type _ | Import _ | Global _ | Tag _ -> idx)
         ~init:0
@@ -974,7 +974,10 @@ end = struct
     output_byte ch (* func *) 3;
     output_byte ch 0x00;
     let refs = Code.Var.Set.elements refs in
-    output_vec (fun ch f -> output_uint ch (Hashtbl.find st.func_names f)) ch refs
+    output_vec
+      (fun ch f -> output_uint ch (Code.Var.Hashtbl.find st.func_names f))
+      ch
+      refs
 
   let coalesce_locals l =
     let rec loop acc n t l =
@@ -1000,11 +1003,11 @@ end = struct
     in
     output_vec
       (with_size (fun ch (name, param_names, locals, body) ->
-           let current_local_names = Hashtbl.create 8 in
+           let current_local_names = Code.Var.Hashtbl.create 8 in
            let idx =
              List.fold_left
                ~f:(fun idx x ->
-                 Hashtbl.add current_local_names x idx;
+                 Code.Var.Hashtbl.add current_local_names x idx;
                  idx + 1)
                ~init:0
                param_names
@@ -1012,12 +1015,12 @@ end = struct
            let _ =
              List.fold_left
                ~f:(fun idx (x, _) ->
-                 Hashtbl.add current_local_names x idx;
+                 Code.Var.Hashtbl.add current_local_names x idx;
                  idx + 1)
                ~init:idx
                locals
            in
-           Hashtbl.add st.local_names name current_local_names;
+           Code.Var.Hashtbl.add st.local_names name current_local_names;
            let st = { st with current_local_names } in
            output_vec
              (fun ch (n, typ) ->
@@ -1040,16 +1043,16 @@ end = struct
     with_size f ch x
 
   let assign_names f tbl =
-    let names = Hashtbl.fold (fun name idx rem -> (idx, name) :: rem) tbl [] in
+    let names = Code.Var.Hashtbl.fold (fun name idx rem -> (idx, name) :: rem) tbl [] in
     let names = List.sort ~cmp:(fun (idx, _) (idx', _) -> compare idx idx') names in
     let used = ref StringSet.empty in
-    let counts = Hashtbl.create 101 in
+    let counts = String.Hashtbl.create 101 in
     let rec find_available_name used name =
       let i =
-        try Hashtbl.find counts name
+        try String.Hashtbl.find counts name
         with Not_found ->
           let i = ref 0 in
-          Hashtbl.replace counts name i;
+          String.Hashtbl.replace counts name i;
           i
       in
       incr i;
@@ -1099,8 +1102,8 @@ end = struct
           names
     in
     let locals =
-      Hashtbl.fold
-        (fun name tbl rem -> (Hashtbl.find st.func_names name, tbl) :: rem)
+      Code.Var.Hashtbl.fold
+        (fun name tbl rem -> (Code.Var.Hashtbl.find st.func_names name, tbl) :: rem)
         st.local_names
         []
       |> List.sort ~cmp:(fun (idx, _) (idx', _) -> compare idx idx')
@@ -1144,10 +1147,10 @@ end = struct
       { type_names
       ; func_names
       ; global_names
-      ; data_names = Hashtbl.create 1
+      ; data_names = Code.Var.Hashtbl.create 1
       ; tag_names
-      ; local_names = Hashtbl.create 8
-      ; current_local_names = Hashtbl.create 8
+      ; local_names = Code.Var.Hashtbl.create 8
+      ; current_local_names = Code.Var.Hashtbl.create 8
       }
     in
     output_section 6 output_globals ch (st, global_idx, fields);

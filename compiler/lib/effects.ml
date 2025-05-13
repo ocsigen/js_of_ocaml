@@ -47,96 +47,96 @@ let double_translate () =
 let debug_print fmt =
   if debug () then Format.(eprintf (fmt ^^ "%!")) else Format.(ifprintf err_formatter fmt)
 
-let get_edges g src = try Hashtbl.find g src with Not_found -> Addr.Set.empty
+let get_edges g src = try Addr.Hashtbl.find g src with Not_found -> Addr.Set.empty
 
-let add_edge g src dst = Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
+let add_edge g src dst = Addr.Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
 
 let reverse_graph g =
-  let g' = Hashtbl.create 16 in
-  Hashtbl.iter
+  let g' = Addr.Hashtbl.create 16 in
+  Addr.Hashtbl.iter
     (fun child parents -> Addr.Set.iter (fun parent -> add_edge g' parent child) parents)
     g;
   g'
 
 type control_flow_graph =
-  { succs : (Addr.t, Addr.Set.t) Hashtbl.t
-  ; preds : (Addr.t, Addr.Set.t) Hashtbl.t
+  { succs : Addr.Set.t Addr.Hashtbl.t
+  ; preds : Addr.Set.t Addr.Hashtbl.t
   ; reverse_post_order : Addr.t list
-  ; block_order : (Addr.t, int) Hashtbl.t
+  ; block_order : int Addr.Hashtbl.t
   }
 
 let build_graph blocks pc =
-  let succs = Hashtbl.create 16 in
+  let succs = Addr.Hashtbl.create 16 in
   let l = ref [] in
-  let visited = Hashtbl.create 16 in
+  let visited = Addr.Hashtbl.create 16 in
   let rec traverse pc =
-    if not (Hashtbl.mem visited pc)
+    if not (Addr.Hashtbl.mem visited pc)
     then (
-      Hashtbl.add visited pc ();
+      Addr.Hashtbl.add visited pc ();
       let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
-      Hashtbl.add succs pc successors;
+      Addr.Hashtbl.add succs pc successors;
       Addr.Set.iter traverse successors;
       l := pc :: !l)
   in
   traverse pc;
-  let block_order = Hashtbl.create 16 in
-  List.iteri !l ~f:(fun i pc -> Hashtbl.add block_order pc i);
+  let block_order = Addr.Hashtbl.create 16 in
+  List.iteri !l ~f:(fun i pc -> Addr.Hashtbl.add block_order pc i);
   let preds = reverse_graph succs in
   { succs; preds; reverse_post_order = !l; block_order }
 
 let dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
      Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy *)
-  let dom = Hashtbl.create 16 in
+  let dom = Addr.Hashtbl.create 16 in
   let rec inter pc pc' =
     (* Compute closest common ancestor *)
     if pc = pc'
     then pc
-    else if Hashtbl.find g.block_order pc < Hashtbl.find g.block_order pc'
-    then inter pc (Hashtbl.find dom pc')
-    else inter (Hashtbl.find dom pc) pc'
+    else if Addr.Hashtbl.find g.block_order pc < Addr.Hashtbl.find g.block_order pc'
+    then inter pc (Addr.Hashtbl.find dom pc')
+    else inter (Addr.Hashtbl.find dom pc) pc'
   in
   List.iter g.reverse_post_order ~f:(fun pc ->
-      let l = Hashtbl.find g.succs pc in
+      let l = Addr.Hashtbl.find g.succs pc in
       Addr.Set.iter
         (fun pc' ->
-          let d = try inter pc (Hashtbl.find dom pc') with Not_found -> pc in
-          Hashtbl.replace dom pc' d)
+          let d = try inter pc (Addr.Hashtbl.find dom pc') with Not_found -> pc in
+          Addr.Hashtbl.replace dom pc' d)
         l);
   (* Check we have reached a fixed point (reducible graph) *)
   List.iter g.reverse_post_order ~f:(fun pc ->
-      let l = Hashtbl.find g.succs pc in
+      let l = Addr.Hashtbl.find g.succs pc in
       Addr.Set.iter
         (fun pc' ->
-          let d = Hashtbl.find dom pc' in
+          let d = Addr.Hashtbl.find dom pc' in
           assert (inter pc d = d))
         l);
   dom
 
 (* pc has at least two forward edges moving into it *)
 let is_merge_node g pc =
-  let s = try Hashtbl.find g.preds pc with Not_found -> assert false in
-  let o = Hashtbl.find g.block_order pc in
+  let s = try Addr.Hashtbl.find g.preds pc with Not_found -> assert false in
+  let o = Addr.Hashtbl.find g.block_order pc in
   let n =
     Addr.Set.fold
-      (fun pc' n -> if Hashtbl.find g.block_order pc' < o then n + 1 else n)
+      (fun pc' n -> if Addr.Hashtbl.find g.block_order pc' < o then n + 1 else n)
       s
       0
   in
   n > 1
 
 let dominance_frontier g idom =
-  let frontiers = Hashtbl.create 16 in
-  Hashtbl.iter
+  let frontiers = Addr.Hashtbl.create 16 in
+  Addr.Hashtbl.iter
     (fun pc preds ->
       if Addr.Set.cardinal preds > 1
       then
-        let dom = Hashtbl.find idom pc in
+        let dom = Addr.Hashtbl.find idom pc in
         let rec loop runner =
           if runner <> dom
           then (
             add_edge frontiers runner pc;
-            loop (Hashtbl.find idom runner))
+            loop (Addr.Hashtbl.find idom runner))
         in
         Addr.Set.iter loop preds)
     g.preds;
@@ -177,8 +177,8 @@ associated to each Poptrap, and possibly Raise.
 let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
   let frontiers = dominance_frontier cfg idom in
   let transformation_needed = ref Addr.Set.empty in
-  let matching_exn_handler = Hashtbl.create 16 in
-  let is_continuation = Hashtbl.create 16 in
+  let matching_exn_handler = Addr.Hashtbl.create 16 in
+  let is_continuation = Addr.Hashtbl.create 16 in
   let rec mark_needed pc =
     (* If a block is transformed, all the blocks in its dominance
        frontier needs to be transformed as well. *)
@@ -188,9 +188,9 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
       Addr.Set.iter mark_needed (get_edges frontiers pc))
   in
   let mark_continuation pc x =
-    if not (Hashtbl.mem is_continuation pc)
+    if not (Addr.Hashtbl.mem is_continuation pc)
     then
-      Hashtbl.add
+      Addr.Hashtbl.add
         is_continuation
         pc
         (if Addr.Set.mem pc (get_edges frontiers pc) then `Loop else `Param x)
@@ -218,7 +218,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
       | Pushtrap (_, x, (handler_pc, _)) -> mark_continuation handler_pc x
       | Poptrap _ | Raise _ -> (
           match englobing_exn_handlers with
-          | handler_pc :: _ -> Hashtbl.add matching_exn_handler pc handler_pc
+          | handler_pc :: _ -> Addr.Hashtbl.add matching_exn_handler pc handler_pc
           | _ -> ())
       | _ -> ());
       Code.fold_children
@@ -254,7 +254,7 @@ type jump_closures =
   }
 
 let jump_closures blocks_to_transform idom : jump_closures =
-  Hashtbl.fold
+  Addr.Hashtbl.fold
     (fun node idom_node jc ->
       match Addr.Set.mem node blocks_to_transform with
       | false -> jc
@@ -283,18 +283,18 @@ type st =
   ; blocks : Code.block Addr.Map.t
   ; cfg : control_flow_graph
   ; jc : jump_closures
-  ; closure_info : (Addr.t, Var.t list * (Addr.t * Var.t list)) Hashtbl.t
+  ; closure_info : (Var.t list * (Addr.t * Var.t list)) Addr.Hashtbl.t
         (* Associates a function's address with its CPS parameters and CPS continuation *)
   ; cps_needed : Var.Set.t
   ; blocks_to_transform : Addr.Set.t
-  ; is_continuation : (Addr.t, [ `Param of Var.t | `Loop ]) Hashtbl.t
-  ; matching_exn_handler : (Addr.t, Addr.t) Hashtbl.t
-  ; block_order : (Addr.t, int) Hashtbl.t
+  ; is_continuation : [ `Param of Var.t | `Loop ] Addr.Hashtbl.t
+  ; matching_exn_handler : Addr.t Addr.Hashtbl.t
+  ; block_order : int Addr.Hashtbl.t
   ; live_vars : Deadcode.variable_uses
   ; flow_info : Global_flow.info
   ; trampolined_calls : trampolined_calls ref (* Call sites that require trampolining *)
   ; in_cps : in_cps ref (* Call sites whose callee must have a CPS component *)
-  ; cps_pc_of_direct : (int, int) Hashtbl.t
+  ; cps_pc_of_direct : int Addr.Hashtbl.t
         (* Mapping from direct-style to CPS addresses of functions (used when
            double translation is enabled) *)
   }
@@ -309,11 +309,11 @@ let add_block st block =
 let mk_cps_pc_of_direct ~st pc =
   if double_translate ()
   then (
-    try Hashtbl.find st.cps_pc_of_direct pc
+    try Addr.Hashtbl.find st.cps_pc_of_direct pc
     with Not_found ->
       let free_pc = st.free_pc in
       st.free_pc <- free_pc + 1;
-      Hashtbl.add st.cps_pc_of_direct pc free_pc;
+      Addr.Hashtbl.add st.cps_pc_of_direct pc free_pc;
       free_pc)
   else pc
 
@@ -341,7 +341,7 @@ let cps_branch ~st ~src (pc, args) =
   | false -> [], Branch (mk_cps_pc_of_direct ~st pc, args)
   | true ->
       let args, instrs =
-        if List.is_empty args && Hashtbl.mem st.is_continuation pc
+        if List.is_empty args && Addr.Hashtbl.mem st.is_continuation pc
         then
           (* We are jumping to a block that is also used as a continuation.
              We pass it a dummy argument. *)
@@ -351,7 +351,9 @@ let cps_branch ~st ~src (pc, args) =
       in
       (* We check the stack depth only for backward edges (so, at
          least once per loop iteration) *)
-      let check = Hashtbl.find st.block_order src >= Hashtbl.find st.block_order pc in
+      let check =
+        Addr.Hashtbl.find st.block_order src >= Addr.Hashtbl.find st.block_order pc
+      in
       tail_call
         ~st
         ~instrs
@@ -391,7 +393,7 @@ let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x dire
     | [ x' ] -> Var.equal x x'
     | _ -> false)
     &&
-    match Hashtbl.find st.is_continuation direct_pc with
+    match Addr.Hashtbl.find st.is_continuation direct_pc with
     | `Param _ -> true
     | `Loop -> List.compare_length_with args ~len:st.live_vars.(Var.idx x) = 0
   then alloc_jump_closures, closure_of_pc ~st direct_pc
@@ -430,7 +432,7 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
       tail_call ~st ~exact:true ~in_cps:false ~check:false ~f:k [ x ]
   | Raise (x, rmode) -> (
       assert (List.is_empty alloc_jump_closures);
-      match Hashtbl.find_opt st.matching_exn_handler pc with
+      match Addr.Hashtbl.find_opt st.matching_exn_handler pc with
       | Some pc when not (Addr.Set.mem pc st.blocks_to_transform) ->
           (* We are within a try ... with which is not
              transformed. We should raise an exception normally *)
@@ -482,7 +484,7 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
       let cps_jump_cont = Fun.memoize (fun x -> cps_jump_cont ~st ~src:pc x) in
       alloc_jump_closures, Switch (x, Array.map c1 ~f:cps_jump_cont)
   | Pushtrap (body_cont, exn, ((handler_pc, _) as handler_cont)) -> (
-      assert (Hashtbl.mem st.is_continuation handler_pc);
+      assert (Addr.Hashtbl.mem st.is_continuation handler_pc);
       match Addr.Set.mem handler_pc st.blocks_to_transform with
       | false ->
           let body_cont = cps_cont_of_direct ~st body_cont in
@@ -506,7 +508,7 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
           constr_cont @ (push_trap :: body), branch)
   | Poptrap cont -> (
       match
-        Addr.Set.mem (Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
+        Addr.Set.mem (Addr.Hashtbl.find st.matching_exn_handler pc) st.blocks_to_transform
       with
       | false -> alloc_jump_closures, Poptrap (cps_jump_cont ~st ~src:pc cont)
       | true ->
@@ -524,7 +526,7 @@ let rewrite_instr ~st (instr : instr) : instr =
       assert (not (double_translate ()));
       (* Add the continuation parameter, and change the initial block if
          needed *)
-      let cps_params, cps_cont = Hashtbl.find st.closure_info pc in
+      let cps_params, cps_cont = Addr.Hashtbl.find st.closure_info pc in
       st.in_cps := Var.Set.add x !(st.in_cps);
       Let (x, Closure (cps_params, cps_cont, None))
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
@@ -588,7 +590,9 @@ let cps_block ~st ~k ~orig_pc block =
               (* For a function to be used as a continuation, it needs
                  exactly one parameter. So, we add a parameter if
                  needed. *)
-              if List.is_empty jump_block.params && Hashtbl.mem st.is_continuation jump_pc
+              if
+                List.is_empty jump_block.params
+                && Addr.Hashtbl.mem st.is_continuation jump_pc
               then
                 (* We reuse the name of the value of the tail call of
                    one a the previous blocks. When there is a single
@@ -601,7 +605,7 @@ let cps_block ~st ~k ~orig_pc block =
                    additional closure to bind it, and we have to use a
                    fresh variable here *)
                 let x =
-                  match Hashtbl.find st.is_continuation jump_pc with
+                  match Addr.Hashtbl.find st.is_continuation jump_pc with
                   | `Param x -> x
                   | `Loop -> Var.fresh ()
                 in
@@ -714,7 +718,7 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
         ->
           let direct_c = Var.fork x in
           let cps_c = Var.fork x in
-          let cps_params, cps_cont = Hashtbl.find closure_info pc in
+          let cps_params, cps_cont = Addr.Hashtbl.find closure_info pc in
           [ Let (direct_c, Closure (params, cont, cloc))
           ; Let (cps_c, Closure (cps_params, cps_cont, None))
           ; Let (x, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
@@ -761,10 +765,10 @@ let subst_bound_in_blocks blocks s =
 let subst_add_fresh array v = array.(Var.idx v) <- Var.fork v
 
 let cps_transform ~live_vars ~flow_info ~cps_needed p =
-  let closure_info = Hashtbl.create 16 in
+  let closure_info = Addr.Hashtbl.create 16 in
   let trampolined_calls = ref Var.Set.empty in
   let in_cps = ref Var.Set.empty in
-  let cps_pc_of_direct = Hashtbl.create 512 in
+  let cps_pc_of_direct = Addr.Hashtbl.create 512 in
   let cloned_vars = Array.init (Var.count ()) ~f:Var.of_idx in
   let cloned_subst = Subst.from_array cloned_vars in
   let p =
@@ -805,7 +809,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               ~cps_needed
               ~blocks:blocks'
               ~start:start'
-          else Addr.Set.empty, Hashtbl.create 1, Hashtbl.create 1
+          else Addr.Set.empty, Addr.Hashtbl.create 1, Addr.Hashtbl.create 1
         in
         let closure_jc = jump_closures blocks_to_transform idom in
         let start, args, blocks, free_pc =
@@ -877,7 +881,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               List.iter ~f:(subst_add_fresh cloned_vars) params;
               let params' = List.map ~f:cloned_subst params in
               let cps_args = List.map ~f:cloned_subst args in
-              Hashtbl.add
+              Addr.Hashtbl.add
                 st.closure_info
                 initial_start
                 (params' @ [ k ], (cps_start, cps_args));
@@ -893,7 +897,10 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             else if function_needs_cps && not (double_translate ())
             then (
               let k = Var.fresh_n "cont" in
-              Hashtbl.add st.closure_info initial_start (params @ [ k ], (start, args));
+              Addr.Hashtbl.add
+                st.closure_info
+                initial_start
+                (params @ [ k ], (start, args));
               fun pc block -> cps_block ~st ~k ~orig_pc:pc block, None)
             else
               fun pc block ->
@@ -950,7 +957,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
     if double_translate ()
     then p
     else
-      match Hashtbl.find_opt closure_info p.start with
+      match Addr.Hashtbl.find_opt closure_info p.start with
       | None -> p
       | Some (cps_params, cps_cont) ->
           (* Call [caml_cps_trampoline] to set up the execution context. *)
