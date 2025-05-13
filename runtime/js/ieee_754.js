@@ -214,6 +214,162 @@ function caml_float_compare(x, y) {
   return 0;
 }
 
+//Provides: caml_eq_float const
+//Inline
+function caml_eq_float(a, b) {
+  return a === b ? 1 : 0;
+}
+
+//Provides: caml_neq_float const
+//Inline
+function caml_neq_float(a, b) {
+  return a !== b ? 1 : 0;
+}
+
+//Provides: caml_ge_float const
+//Inline
+function caml_ge_float(a, b) {
+  return a >= b ? 1 : 0;
+}
+
+//Provides: caml_le_float const
+//Inline
+function caml_le_float(a, b) {
+  return a <= b ? 1 : 0;
+}
+
+//Provides: caml_gt_float const
+//Inline
+function caml_gt_float(a, b) {
+  return a > b ? 1 : 0;
+}
+
+//Provides: caml_lt_float const
+//Inline
+function caml_lt_float(a, b) {
+  return a < b ? 1 : 0;
+}
+
+//Provides: caml_add_float const
+//Inline
+function caml_add_float(a, b) {
+  return a + b;
+}
+
+//Provides: caml_sub_float const
+//Inline
+function caml_sub_float(a, b) {
+  return a - b;
+}
+
+//Provides: caml_mul_float const
+//Inline
+function caml_mul_float(a, b) {
+  return a * b;
+}
+
+//Provides: caml_div_float const
+//Inline
+function caml_div_float(a, b) {
+  return a / b;
+}
+
+//Provides: caml_neg_float const
+//Inline
+function caml_neg_float(a) {
+  return -a;
+}
+
+//Provides: caml_fmod_float const
+//Inline
+function caml_fmod_float(a, b) {
+  return a % b;
+}
+
+//Provides: caml_abs_float const
+//Inline
+function caml_abs_float(a) {
+  return Math.abs(a);
+}
+
+//Provides: caml_acos_float const
+//Inline
+function caml_acos_float(a) {
+  return Math.acos(a);
+}
+
+//Provides: caml_asin_float const
+//Inline
+function caml_asin_float(a) {
+  return Math.asin(a);
+}
+
+//Provides: caml_atan_float const
+//Inline
+function caml_atan_float(a) {
+  return Math.atan(a);
+}
+
+//Provides: caml_atan2_float const
+//Inline
+function caml_atan2_float(a, b) {
+  return Math.atan2(a, b);
+}
+
+//Provides: caml_ceil_float const
+//Inline
+function caml_ceil_float(a) {
+  return Math.ceil(a);
+}
+
+//Provides: caml_cos_float const
+//Inline
+function caml_cos_float(a) {
+  return Math.cos(a);
+}
+
+//Provides: caml_exp_float const
+//Inline
+function caml_exp_float(a) {
+  return Math.exp(a);
+}
+
+//Provides: caml_floor_float const
+//Inline
+function caml_floor_float(a) {
+  return Math.floor(a);
+}
+
+//Provides: caml_log_float const
+//Inline
+function caml_log_float(a) {
+  return Math.log(a);
+}
+
+//Provides: caml_power_float const
+//Inline
+function caml_power_float(a, b) {
+  return Math.pow(a, b);
+}
+
+//Provides: caml_sin_float const
+//Inline
+function caml_sin_float(a) {
+  return Math.sin(a);
+}
+
+//Provides: caml_sqrt_float const
+//Inline
+function caml_sqrt_float(a) {
+  return Math.sqrt(a);
+}
+
+//Provides: caml_tan_float const
+//Inline
+function caml_tan_float(a) {
+  return Math.tan(a);
+}
+
 //Provides: caml_copysign_float const
 function caml_copysign_float(x, y) {
   if (y === 0) y = 1 / y;

@@ -1,4 +1,13 @@
 let () =
+  Printexc.register_printer (fun x ->
+      match Js_of_ocaml.Js_error.of_exn x with
+      | None -> None
+      | Some e ->
+          if true
+          then Js_of_ocaml.Js_error.raise_ e
+          else Some (Js_of_ocaml.Js_error.message e))
+
+let () =
   let content =
     {|
 let () = print_endline "hello";;

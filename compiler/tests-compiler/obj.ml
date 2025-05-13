@@ -52,8 +52,7 @@ let%expect_test "static eval of string get" =
     //end
     function my_size(x){return x.length - 1;}
     //end
-    function my_field(x, i){return x[i + 1];}
-    //end
+    not found
     function my_set_field(x, i, o){x[i + 1] = o; return 0;}
     //end
     function my_new_block(x, l){return runtime.caml_obj_block(x + 1 | 0, 3);}

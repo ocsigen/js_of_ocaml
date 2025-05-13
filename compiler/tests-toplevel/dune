@@ -1,6 +1,6 @@
 (executables
  (names test_toplevel)
- (libraries js_of_ocaml-compiler.dynlink compiler-libs.toplevel)
+ (libraries js_of_ocaml js_of_ocaml-compiler.dynlink compiler-libs.toplevel)
  (flags
   (:standard -linkall))
  (js_of_ocaml
