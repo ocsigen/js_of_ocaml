@@ -422,6 +422,37 @@ module Type = struct
                     }
                   ])
           })
+
+  let int_array_type =
+    register_type "int_array" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Array { mut = true; typ = Value I32 }
+          })
+
+  let bigarray_type =
+    register_type "bigarray" (fun () ->
+        let* custom_operations = custom_operations_type in
+        let* int_array = int_array_type in
+        let* custom = custom_type in
+        return
+          { supertype = Some custom
+          ; final = true
+          ; typ =
+              W.Struct
+                [ { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type custom_operations })
+                  }
+                ; { mut = true; typ = Value (Ref { nullable = false; typ = Extern }) }
+                ; { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type int_array })
+                  }
+                ; { mut = false; typ = Packed I8 }
+                ; { mut = false; typ = Packed I8 }
+                ; { mut = false; typ = Packed I8 }
+                ]
+          })
 end
 
 module Value = struct
@@ -1365,6 +1396,56 @@ module Math = struct
     return (W.Call (f, [ x ]))
 
   let exp2 x = power (return (W.Const (F64 2.))) x
+end
+
+module Bigarray = struct
+  let dim1 a =
+    let* ty = Type.bigarray_type in
+    Memory.wasm_array_get
+      ~ty:Type.int_array_type
+      (Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 2)
+      (Arith.const 0l)
+
+  let get ~kind a i =
+    match kind with
+    | Typing.Bigarray.Int8_unsigned | Char ->
+        let* f =
+          register_import
+            ~import_module:"bindings"
+            ~name:"ta_get_ui8"
+            (Fun
+               { W.params = [ Ref { nullable = false; typ = Extern }; I32 ]
+               ; result = [ I32 ]
+               })
+        in
+        let* ty = Type.bigarray_type in
+        let* ta = Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 1 in
+        let* i = Value.int_val i in
+        Value.val_int (return (W.Call (f, [ ta; i ])))
+    | _ -> assert false
+
+  let set ~kind a i v =
+    match kind with
+    | Typing.Bigarray.Int8_unsigned | Char ->
+        let* f =
+          register_import
+            ~import_module:"bindings"
+            ~name:"ta_set_ui8"
+            (Fun
+               { W.params =
+                   [ Ref { nullable = false; typ = Extern }
+                   ; I32
+                   ; Ref { nullable = false; typ = I31 }
+                   ]
+               ; result = []
+               })
+        in
+        let* ty = Type.bigarray_type in
+        let* ta = Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 1 in
+        let* i = Value.int_val i in
+        let* v = cast I31 v in
+        instr (W.CallInstr (f, [ ta; i; v ]))
+    | _ -> assert false
 end
 
 module JavaScript = struct
