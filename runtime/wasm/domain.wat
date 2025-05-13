@@ -23,8 +23,6 @@
       (func $caml_ml_mutex_unlock (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
 
    (func (export "caml_atomic_cas")
       (param $ref (ref eq)) (param $o (ref eq)) (param $n (ref eq))

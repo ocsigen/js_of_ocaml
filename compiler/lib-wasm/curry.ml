@@ -24,11 +24,6 @@ open Code_generation
 module Make (Target : Target_sig.S) = struct
   open Target
 
-  let func_type n =
-    { W.params = List.init ~len:(n + 1) ~f:(fun _ -> Value.value)
-    ; result = [ Value.value ]
-    }
-
   let bind_parameters l =
     List.fold_left
       ~f:(fun l x ->
@@ -105,7 +100,7 @@ module Make (Target : Target_sig.S) = struct
       { name
       ; exported_name = None
       ; typ = None
-      ; signature = func_type 1
+      ; signature = Type.func_type 1
       ; param_names
       ; locals
       ; body
@@ -140,7 +135,7 @@ module Make (Target : Target_sig.S) = struct
       { name
       ; exported_name = None
       ; typ = None
-      ; signature = func_type 1
+      ; signature = Type.func_type 1
       ; param_names
       ; locals
       ; body
@@ -191,7 +186,7 @@ module Make (Target : Target_sig.S) = struct
       { name
       ; exported_name = None
       ; typ = None
-      ; signature = func_type 2
+      ; signature = Type.func_type 2
       ; param_names
       ; locals
       ; body
@@ -230,7 +225,7 @@ module Make (Target : Target_sig.S) = struct
       { name
       ; exported_name = None
       ; typ = None
-      ; signature = func_type 2
+      ; signature = Type.func_type 2
       ; param_names
       ; locals
       ; body
@@ -274,7 +269,7 @@ module Make (Target : Target_sig.S) = struct
       { name
       ; exported_name = None
       ; typ = None
-      ; signature = func_type arity
+      ; signature = Type.primitive_type (arity + 1)
       ; param_names
       ; locals
       ; body
@@ -306,7 +301,7 @@ module Make (Target : Target_sig.S) = struct
              (List.map ~f:(fun x -> `Var x) (List.tl l))
          in
          let* make_iterator =
-           register_import ~name:"caml_apply_continuation" (Fun (func_type 0))
+           register_import ~name:"caml_apply_continuation" (Fun (Type.primitive_type 1))
          in
          let iterate = Var.fresh_n "iterate" in
          let* () = store iterate (return (W.Call (make_iterator, [ args ]))) in
@@ -321,7 +316,7 @@ module Make (Target : Target_sig.S) = struct
       { name
       ; exported_name = None
       ; typ = None
-      ; signature = func_type arity
+      ; signature = Type.primitive_type (arity + 1)
       ; param_names
       ; locals
       ; body
@@ -356,7 +351,7 @@ module Make (Target : Target_sig.S) = struct
       { name
       ; exported_name = None
       ; typ = None
-      ; signature = func_type arity
+      ; signature = Type.func_type arity
       ; param_names
       ; locals
       ; body

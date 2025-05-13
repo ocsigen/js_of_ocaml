@@ -452,6 +452,8 @@ let expression_or_instructions ctx st in_function =
             :: ref_type st ty'
             :: expression e)
         ]
+    | Br_on_null (i, e) ->
+        [ List (Atom "br_on_null" :: Atom (string_of_int i) :: expression e) ]
     | IfExpr (ty, cond, ift, iff) ->
         [ List
             ((Atom "if" :: block_type st { params = []; result = [ ty ] })

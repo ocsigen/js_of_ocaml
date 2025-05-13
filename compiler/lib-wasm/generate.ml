@@ -72,13 +72,13 @@ module Generate (Target : Target_sig.S) = struct
 
   let repr_type r =
     match r with
-    | Value -> Value.value
+    | Value -> Type.value
     | Float -> F64
     | Int32 -> I32
     | Nativeint -> I32
     | Int64 -> I64
 
-  let specialized_func_type (_, params, result) =
+  let specialized_primitive_type (_, params, result) =
     { W.params = List.map ~f:repr_type params; result = [ repr_type result ] }
 
   let box_value r e =
@@ -126,9 +126,6 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_float_compare", (`Pure, [ Float; Float ], Value)
       ];
     h
-
-  let func_type n =
-    { W.params = List.init ~len:n ~f:(fun _ -> Value.value); result = [ Value.value ] }
 
   let float_bin_op' op f g =
     Memory.box_float (op (Memory.unbox_float f) (Memory.unbox_float g))
@@ -711,7 +708,7 @@ module Generate (Target : Target_sig.S) = struct
                   let ((_, arg_typ, res_typ) as typ) =
                     Hashtbl.find specialized_primitives name
                   in
-                  let* f = register_import ~name (Fun (specialized_func_type typ)) in
+                  let* f = register_import ~name (Fun (specialized_primitive_type typ)) in
                   let rec loop acc arg_typ l =
                     match arg_typ, l with
                     | [], [] -> box_value res_typ (return (W.Call (f, List.rev acc)))
@@ -722,7 +719,9 @@ module Generate (Target : Target_sig.S) = struct
                   in
                   loop [] arg_typ l
                 with Not_found ->
-                  let* f = register_import ~name (Fun (func_type (List.length l))) in
+                  let* f =
+                    register_import ~name (Fun (Type.primitive_type (List.length l)))
+                  in
                   let rec loop acc l =
                     match l with
                     | [] -> return (W.Call (f, List.rev acc))
@@ -921,6 +920,8 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> Structure.is_merge_node g pc'
       in
       let code ~context =
+        let block = Addr.Map.find pc ctx.blocks in
+        let* () = translate_instrs ctx context block.body in
         translate_node_within
           ~result_typ
           ~fall_through
@@ -965,7 +966,6 @@ module Generate (Target : Target_sig.S) = struct
           translate_tree result_typ fall_through pc' context
       | [] -> (
           let block = Addr.Map.find pc ctx.blocks in
-          let* () = translate_instrs ctx context block.body in
           let branch = block.branch in
           match branch with
           | Branch cont -> translate_branch result_typ fall_through pc cont context
@@ -997,7 +997,7 @@ module Generate (Target : Target_sig.S) = struct
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
               let* e = load x in
-              let* tag = register_import ~name:exception_name (Tag Value.value) in
+              let* tag = register_import ~name:exception_name (Tag Type.value) in
               match fall_through with
               | `Catch -> instr (Push e)
               | `Block _ | `Return | `Skip -> (
@@ -1082,7 +1082,7 @@ module Generate (Target : Target_sig.S) = struct
              wrap_with_handlers
                p
                pc
-               ~result_typ:[ Value.value ]
+               ~result_typ:[ Type.value ]
                ~fall_through:`Return
                ~context:[]
                (fun ~result_typ ~fall_through ~context ->
@@ -1103,7 +1103,10 @@ module Generate (Target : Target_sig.S) = struct
           | None -> Option.map ~f:(fun name -> name ^ ".init") unit_name
           | Some _ -> None)
       ; typ = None
-      ; signature = func_type param_count
+      ; signature =
+          (match name_opt with
+          | None -> Type.primitive_type param_count
+          | Some _ -> Type.func_type (param_count - 1))
       ; param_names
       ; locals
       ; body
@@ -1112,7 +1115,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let init_function ~context ~to_link =
     let name = Code.Var.fresh_n "initialize" in
-    let signature = { W.params = []; result = [ Value.value ] } in
+    let signature = { W.params = []; result = [ Type.value ] } in
     let locals, body =
       function_body
         ~context
@@ -1288,7 +1291,7 @@ module G = Generate (Gc_target)
 
 let init = G.init
 
-let start () = make_context ~value_type:Gc_target.Value.value
+let start () = make_context ~value_type:Gc_target.Type.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal =
   let t = Timer.make () in

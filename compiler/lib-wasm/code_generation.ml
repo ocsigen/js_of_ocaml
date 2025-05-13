@@ -474,6 +474,7 @@ let rec is_smi e =
   | RefNull _
   | Br_on_cast _
   | Br_on_cast_fail _
+  | Br_on_null _
   | Try _
   | ExternConvertAny _ -> false
   | BinOp ((F32 _ | F64 _), _, _) | RefTest _ | RefEq _ -> true
