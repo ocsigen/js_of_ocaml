@@ -540,7 +540,8 @@ let rec remove_assoc_var x = function
   | ((a, _) as pair) :: l -> if Var.equal a x then l else pair :: remove_assoc_var x l
 
 let access_queue live queue x =
-  if live.(Var.idx x) <> 1
+  let idx = Var.idx x in
+  if idx < Array.length live && live.(idx) <> 1
   then ((fst const_p, Var.Set.singleton x), var x, None), queue
   else
     match
