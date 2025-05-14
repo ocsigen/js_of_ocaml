@@ -152,8 +152,6 @@ class type freevar = object ('a)
 
   method state : t
 
-  method get_count : int IdentMap.t
-
   method get_free : IdentSet.t
 
   method get_def : IdentSet.t

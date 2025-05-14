@@ -46,7 +46,7 @@ let%expect_test _ =
     {|
     Function parameter properly assigned: 5/5
     short variable count: 12/12
-    short variable occurrences: 26/26
+    short variable occurrences: 23/23
     (function(a){
        "use strict";
        var f = a.jsoo_runtime;
@@ -62,4 +62,5 @@ let%expect_test _ =
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]
