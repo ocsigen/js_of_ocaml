@@ -896,8 +896,6 @@ class type freevar = object ('a)
 
   method use_var : Javascript.ident -> unit
 
-  method get_count : int Javascript.IdentMap.t
-
   method get_free : IdentSet.t
 
   method get_def : IdentSet.t
@@ -913,11 +911,7 @@ class free =
 
     val mutable state_ : t = empty
 
-    val count = ref Javascript.IdentMap.empty
-
     method state = state_
-
-    method get_count = !count
 
     method get_free =
       IdentSet.diff m#state.use (IdentSet.union m#state.def_var m#state.def_local)
@@ -942,34 +936,11 @@ class free =
         ; def_local = state_.def_local
         }
 
-    method use_var x =
-      count :=
-        IdentMap.update
-          x
-          (function
-            | None -> Some 1
-            | Some n -> Some (succ n))
-          !count;
-      state_ <- { state_ with use = IdentSet.add x state_.use }
+    method use_var x = state_ <- { state_ with use = IdentSet.add x state_.use }
 
-    method def_var x =
-      count :=
-        IdentMap.update
-          x
-          (function
-            | None -> Some 1
-            | Some n -> Some (succ n))
-          !count;
-      state_ <- { state_ with def_var = IdentSet.add x state_.def_var }
+    method def_var x = state_ <- { state_ with def_var = IdentSet.add x state_.def_var }
 
     method def_local x =
-      count :=
-        IdentMap.update
-          x
-          (function
-            | None -> Some 1
-            | Some n -> Some (succ n))
-          !count;
       state_ <- { state_ with def_local = IdentSet.add x state_.def_local }
 
     method fun_decl (k, params, body, nid) =

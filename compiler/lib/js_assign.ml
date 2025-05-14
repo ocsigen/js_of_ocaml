@@ -331,7 +331,7 @@ class traverse record_block =
       super#record_block b
   end
 
-class traverse_labels h =
+class traverse_idents_and_labels ~idents ~labels =
   object
     inherit Js_traverse.iter as super
 
@@ -345,9 +345,16 @@ class traverse_labels h =
       function
       | Labelled_statement (L l, (s, _)) ->
           let m = {<ldepth = ldepth + 1>} in
-          Hashtbl.add h l ldepth;
+          Hashtbl.add labels l ldepth;
           m#statement s
       | s -> super#statement s
+
+    method ident i =
+      match i with
+      | S _ -> ()
+      | V v ->
+          let idx = Code.Var.idx v in
+          idents.(idx) <- idents.(idx) + 1
   end
 
 class name ident label =
@@ -369,8 +376,9 @@ let program' (module Strategy : Strategy) p =
   let labels = Hashtbl.create 20 in
   let mapper = new traverse (Strategy.record_block state) in
   let p = mapper#program p in
+  let count = Array.make nv 0 in
   let () =
-    let o = new traverse_labels labels in
+    let o = new traverse_idents_and_labels ~idents:count ~labels in
     o#program p
   in
   mapper#record_block Normal;
@@ -383,16 +391,6 @@ let program' (module Strategy : Strategy) p =
   in
   let has_free_var = IdentSet.cardinal free <> 0 in
   let unallocated_names = ref Var.Set.empty in
-  let count =
-    let a = Array.make nv 0 in
-    Javascript.IdentMap.iter
-      (fun k i ->
-        match k with
-        | S _ -> ()
-        | V v -> a.(Var.idx v) <- i)
-      mapper#get_count;
-    a
-  in
   let names = Strategy.allocate_variables state ~count in
   (* ignore the choosen name for escaping/free [V _] variables *)
   IdentSet.iter
