@@ -48,6 +48,11 @@ let wasm_file file =
 
 let common_args file argv = environment_args () @ (wasm_file file :: List.tl argv)
 
+let shell_cmd cmd argv =
+  let script = List.hd argv in
+  Unix.chdir (Filename.dirname script);
+  cmd, Filename.basename script :: "--" :: List.tl argv
+
 let exe, args =
   match Array.to_list Sys.argv with
   | exe :: argv ->
@@ -59,6 +64,7 @@ let exe, args =
             | "wizard-fast" -> "wizeng.x86-64-linux", wizard_args @ common_args file argv
             | "wasmtime" -> "wasmtime", wasmtime_args @ common_args file argv
             | "wasmedge" -> "wasmedge", wasmedge_args @ common_args file argv
+            | ("jsc" | "d8" | "sm") as cmd -> shell_cmd cmd argv
             | _ -> "node", extra_args_for_wasoo @ argv)
         | _ -> "node", extra_args_for_jsoo @ argv
       in
