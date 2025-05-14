@@ -24,6 +24,8 @@ let debug_shortvar = Debug.find "shortvar"
 
 let debug = Debug.find "js_assign"
 
+let times = Debug.find "times"
+
 module S = Code.Var.Set
 module Var = Code.Var
 
@@ -105,16 +107,11 @@ while compiling the OCaml toplevel:
   let mark_allocated l i = List.iter l ~f:(fun a -> allocate a i)
 
   type t =
-    { constr : alloc list array
-    ; (* Constraints on variables *)
-      mutable parameters : Var.t list array
-    ; (* Function parameters *)
-      mutable constraints : S.t list
+    { constr : alloc list array (* Constraints on variables *)
+    ; mutable parameters : Var.t list array (* Function parameters *)
     }
 
-  (* For debugging *)
-
-  let create nv = { constr = Array.make nv []; parameters = [| [] |]; constraints = [] }
+  let create nv = { constr = Array.make nv []; parameters = [| [] |] }
 
   let allocate_variables t ~count =
     let weight v = count.(v) in
@@ -206,8 +203,7 @@ while compiling the OCaml toplevel:
       match params.(i) with
       | V x -> global.parameters.(i + offset) <- x :: global.parameters.(i + offset)
       | _ -> ()
-    done;
-    global.constraints <- u :: global.constraints
+    done
 
   let record_block state scope (block : Js_traverse.block) =
     let all =
@@ -372,16 +368,20 @@ class name ident label =
 
 let program' (module Strategy : Strategy) p =
   let nv = Var.count () in
-  let state = Strategy.create nv in
   let labels = Var.Hashtbl.create 20 in
+  let t' = Timer.make () in
+  let state = Strategy.create nv in
   let mapper = new traverse (Strategy.record_block state) in
   let p = mapper#program p in
+  mapper#record_block Normal;
+  if times () then Format.eprintf "    record scopes: %a@." Timer.print t';
+  let t' = Timer.make () in
   let count = Array.make nv 0 in
   let () =
     let o = new traverse_idents_and_labels ~idents:count ~labels in
     o#program p
   in
-  mapper#record_block Normal;
+  if times () then Format.eprintf "    idents_and_labels: %a@." Timer.print t';
   let free =
     IdentSet.filter
       (function
@@ -391,7 +391,9 @@ let program' (module Strategy : Strategy) p =
   in
   let has_free_var = IdentSet.cardinal free <> 0 in
   let unallocated_names = ref Var.Set.empty in
+  let t' = Timer.make () in
   let names = Strategy.allocate_variables state ~count in
+  if times () then Format.eprintf "    allocate_variables: %a@." Timer.print t';
   (* ignore the choosen name for escaping/free [V _] variables *)
   IdentSet.iter
     (function
@@ -412,6 +414,7 @@ let program' (module Strategy : Strategy) p =
           | _ -> ident ~var:v (Utf8_string.of_string_exn name))
     | x -> x
   in
+  let t' = Timer.make () in
   let label_printer = Var_printer.create Var_printer.Alphabet.javascript in
   let max_label_depth = Var.Hashtbl.fold (fun _ d acc -> max d acc) labels 0 in
   let lname_per_depth =
@@ -424,6 +427,7 @@ let program' (module Strategy : Strategy) p =
         S (Utf8_string.of_string_exn lname_per_depth.(i))
   in
   let p = (new name ident label)#program p in
+  if times () then Format.eprintf "    rewrite: %a@." Timer.print t';
   (if has_free_var || Var.Set.cardinal !unallocated_names > 0
    then
      let () =
