@@ -173,7 +173,7 @@ class rename_variable : esm:bool -> object ('a)
   method update_state : scope -> Javascript.ident list -> Javascript.statement_list -> 'a
 end
 
-class share_constant : mapper
+val share_constant : Javascript.program -> Javascript.program
 
 class compact_vardecl : object ('a)
   inherit map

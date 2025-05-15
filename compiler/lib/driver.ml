@@ -502,7 +502,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
     if Config.Flag.share_constant ()
     then (
       let t1 = Timer.make () in
-      let js = (new Js_traverse.share_constant)#program js in
+      let js = Js_traverse.share_constant js in
       if times () then Format.eprintf "    share constant: %a@." Timer.print t1;
       js)
     else js

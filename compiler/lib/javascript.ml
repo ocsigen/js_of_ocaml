@@ -34,6 +34,8 @@ module Num : sig
 
   val to_targetint : t -> Targetint.t
 
+  val hash : t -> int
+
   (** Predicates *)
 
   val is_zero : t -> bool
@@ -41,6 +43,8 @@ module Num : sig
   val is_one : t -> bool
 
   val is_neg : t -> bool
+
+  val equal : t -> t -> bool
 
   (** Arithmetic *)
 
@@ -133,6 +137,10 @@ end = struct
   let is_one s = String.equal s "1"
 
   let is_neg s = Char.equal s.[0] '-'
+
+  let equal a b = String.equal a b
+
+  let hash a = String.hash a
 
   let neg s =
     match String.drop_prefix s ~prefix:"-" with
