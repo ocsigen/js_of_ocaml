@@ -67,17 +67,6 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
         try p @ Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi
       else p
     in
-    let free = new Js_traverse.free in
-    let (_ : Javascript.program) = free#program p in
-    let toplevel_def_and_use =
-      let state = free#state in
-      Javascript.IdentSet.union state.def_var state.use
-    in
-    Javascript.IdentSet.iter
-      (function
-        | V _ -> ()
-        | S { name = Utf8_string.Utf8 x; _ } -> Var_printer.add_reserved x)
-      toplevel_def_and_use;
     let true_ () = true in
     let open Config in
     let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
