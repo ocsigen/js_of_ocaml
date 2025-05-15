@@ -79,6 +79,8 @@ class type iterator = object
 
   method class_decl : Javascript.class_declaration -> unit
 
+  method class_element : Javascript.class_element -> unit
+
   method early_error : Javascript.early_error -> unit
 
   method expression : Javascript.expression -> unit
@@ -104,6 +106,8 @@ class type iterator = object
   method statement_o : (Javascript.statement * Javascript.location) option -> unit
 
   method statements : Javascript.statement_list -> unit
+
+  method formal_parameter_list : Javascript.formal_parameter_list -> unit
 
   method ident : Javascript.ident -> unit
 
@@ -160,6 +164,10 @@ class type freevar = object ('a)
 end
 
 class free : freevar
+
+val declared_names : program -> StringSet.t
+
+class fast_freevar : (string -> unit) -> iterator
 
 type scope =
   | Module

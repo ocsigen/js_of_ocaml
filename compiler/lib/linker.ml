@@ -121,13 +121,18 @@ module Check = struct
     end
 
   let primitive ~name pi ~code ~requires ~has_flags =
-    let free =
+    let freename =
       if Config.Flag.warn_unused ()
-      then new check_and_warn name pi
-      else new Js_traverse.free
+      then
+        let o = new check_and_warn name pi in
+        let _code = o#program code in
+        to_stringset o#get_free
+      else
+        let free = ref StringSet.empty in
+        let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+        o#program code;
+        !free
     in
-    let _code = free#program code in
-    let freename = to_stringset free#get_free in
     let freename =
       List.fold_left requires ~init:freename ~f:(fun freename x ->
           StringSet.remove x freename)
@@ -147,8 +152,7 @@ module Check = struct
          instead@."
         (loc pi);
     let freename = StringSet.remove Global_constant.old_global_object freename in
-    let defname = to_stringset free#get_def in
-    if not (StringSet.mem name defname)
+    if not (StringSet.mem name (Js_traverse.declared_names code))
     then
       warn
         "warning: primitive code does not define value with the expected name: %s (%s)@."
@@ -584,9 +588,12 @@ let check_deps () =
     (fun id (code, _has_macro, requires, _deprecated) ->
       match code with
       | Ok code -> (
-          let traverse = new Js_traverse.free in
-          let _js = traverse#program code in
-          let free = to_stringset traverse#get_free in
+          let free = ref StringSet.empty in
+          let traverse =
+            new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free)
+          in
+          traverse#program code;
+          let free = !free in
           let requires =
             List.fold_right requires ~init:StringSet.empty ~f:StringSet.add
           in

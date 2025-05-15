@@ -291,8 +291,6 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
     let check_missing = standalone in
     let t = Timer.make () in
     if times () then Format.eprintf "Start Linking...@.";
-    let traverse = new Js_traverse.free in
-    let js = traverse#program js in
     let js =
       if mark_start_of_generated_code ()
       then
@@ -311,20 +309,10 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
       | `All_from from -> Linker.list_all ~from ()
       | `No -> StringSet.empty
       | `Needed ->
-          let free = traverse#get_free in
-          let free : StringSet.t =
-            Javascript.IdentSet.fold
-              (fun x acc ->
-                match x with
-                | V _ ->
-                    (* This is an error. We don't complain here as we want
-                       to be able to name other variable to make it
-                       easier to spot the problematic ones *)
-                    acc
-                | S { name = Utf8 x; _ } -> StringSet.add x acc)
-              free
-              StringSet.empty
-          in
+          let free = ref StringSet.empty in
+          let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+          o#program js;
+          let free = !free in
           let prim = Primitive.get_external () in
           let all_external = StringSet.union prim all_provided in
           StringSet.inter free all_external
@@ -423,18 +411,10 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
 let check_js js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Checks...@.";
-  let traverse = new Js_traverse.free in
-  let js = traverse#program js in
-  let free = traverse#get_free in
-  let free : StringSet.t =
-    Javascript.IdentSet.fold
-      (fun x acc ->
-        match x with
-        | V _ -> assert false
-        | S { name = Utf8 x; _ } -> StringSet.add x acc)
-      free
-      StringSet.empty
-  in
+  let free = ref StringSet.empty in
+  let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+  o#program js;
+  let free = !free in
   let prim = Primitive.get_external () in
   let prov = Linker.list_all () in
   let all_external = StringSet.union prim prov in
@@ -469,19 +449,8 @@ let name_variables js =
       js)
     else js
   in
-  let traverse = new Js_traverse.free in
-  let js = traverse#program js in
-  let free = traverse#get_free in
-  Javascript.IdentSet.iter
-    (fun x ->
-      match x with
-      | V _ ->
-          (* This is an error. We don't complain here as we want
-             to be able to name other variable to make it
-             easier to spot the problematic ones *)
-          ()
-      | S { name = Utf8 x; _ } -> Var_printer.add_reserved x)
-    free;
+  let o = new Js_traverse.fast_freevar (fun s -> Var_printer.add_reserved s) in
+  o#program js;
   let js = Js_assign.program js in
   if times () then Format.eprintf "  coloring: %a@." Timer.print t;
   js
@@ -520,13 +489,12 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
   let wrap_in_iife ~use_strict js =
     let var ident e = J.variable_declaration [ J.ident ident, (e, J.N) ], J.N in
     let expr e = J.Expression_statement e, J.N in
-    let freenames =
-      let o = new Js_traverse.free in
-      let (_ : J.program) = o#program js in
-      o#get_free
-    in
+    let free = ref StringSet.empty in
+    let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+    o#program js;
+    let freenames = !free in
     let export_shim js =
-      if J.IdentSet.mem (J.ident Global_constant.exports_) freenames
+      if StringSet.mem Global_constant.exports freenames
       then
         if should_export wrap_with_fun
         then var Global_constant.exports_ (J.EObj []) :: js
@@ -544,7 +512,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       else js
     in
     let old_global_object_shim js =
-      if J.IdentSet.mem (J.ident Global_constant.old_global_object_) freenames
+      if StringSet.mem Global_constant.old_global_object freenames
       then
         var
           Global_constant.old_global_object_

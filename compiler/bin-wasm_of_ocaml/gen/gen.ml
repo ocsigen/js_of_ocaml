@@ -1,15 +1,6 @@
 open Js_of_ocaml_compiler
 open Js_of_ocaml_compiler.Stdlib
 
-let to_stringset utf8_string_set =
-  Javascript.IdentSet.fold
-    (fun x acc ->
-      match x with
-      | S { name = Utf8 x; _ } -> StringSet.add x acc
-      | V _ -> acc)
-    utf8_string_set
-    StringSet.empty
-
 let check_js_file fname =
   let c = Fs.read_file fname in
   let p =
@@ -17,9 +8,11 @@ let check_js_file fname =
     with Parse_js.Parsing_error pi ->
       failwith (Printf.sprintf "cannot parse file %S (l:%d, c:%d)@." fname pi.line pi.col)
   in
-  let traverse = new Js_traverse.free in
-  let _js = traverse#program p in
-  let freenames = to_stringset traverse#get_free in
+
+  let free = ref StringSet.empty in
+  let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+  o#program p;
+  let freenames = !free in
   let freenames = StringSet.diff freenames Reserved.keyword in
   let freenames = StringSet.diff freenames Reserved.provided in
   if not (StringSet.is_empty freenames)
