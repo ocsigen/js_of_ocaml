@@ -56,7 +56,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function exceptions(s, cont){
-     try{var _j_ = runtime.caml_int_of_string(s), n = _j_;}
+     try{var c = runtime.caml_int_of_string(s), n = c;}
      catch(exn$0){
       var exn = caml_wrap_exception(exn$0), tag = exn[1];
       if(tag !== Stdlib[7]){
@@ -68,7 +68,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _i_ = 7, m = _i_;
+      var b = 7, m = b;
      }
      catch(exn){
       var exn$0 = caml_wrap_exception(exn);
@@ -90,9 +90,9 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       return caml_trampoline_cps_call2
               (Stdlib[79],
                cst_toto,
-               function(_k_){caml_pop_trap(); return cont([0, [0, _k_, n, m]]);});
-     var _h_ = Stdlib[8], raise = caml_pop_trap();
-     return raise(caml_maybe_attach_backtrace(_h_, 1));
+               function(a){caml_pop_trap(); return cont([0, [0, a, n, m]]);});
+     var a = Stdlib[8], raise = caml_pop_trap();
+     return raise(caml_maybe_attach_backtrace(a, 1));
     }
     //end
     |}];
@@ -102,7 +102,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     function handler_is_loop(f, g, l, cont){
      caml_push_trap
       (function(exn){
-        function _g_(l){
+        function a(l){
          return caml_trampoline_cps_call2
                  (g,
                   l,
@@ -110,7 +110,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                    var variant = match[1];
                    if(72330306 <= variant){
                     var l = match[2];
-                    return caml_exact_trampoline_call1(_g_, l);
+                    return caml_exact_trampoline_call1(a, l);
                    }
                    var
                     exn = match[2],
@@ -119,10 +119,10 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                    return raise(exn$0);
                   });
         }
-        return _g_(l);
+        return a(l);
        });
      return caml_trampoline_cps_call2
-             (f, 0, function(_f_){caml_pop_trap(); return cont(_f_);});
+             (f, 0, function(a){caml_pop_trap(); return cont(a);});
     }
     //end
     |}];
@@ -130,12 +130,12 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function handler_is_merge_node(g, cont){
-     function _d_(s){
+     function a(s){
       return caml_trampoline_cps_call3(Stdlib[28], s, cst_aaa, cont);
      }
-     caml_push_trap(function(exn){return _d_(cst$1);});
+     caml_push_trap(function(exn){return a(cst$1);});
      return caml_trampoline_cps_call2
-             (g, 0, function(_e_){caml_pop_trap(); return _d_(_e_);});
+             (g, 0, function(b){caml_pop_trap(); return a(b);});
     }
     //end
     |}]

@@ -29,11 +29,11 @@ Printf.printf "%d\n" (f 3)
        function h(x, y){function h(z){return (x + y | 0) + z | 0;} return h;}
        function g(x){function g(y){var h$0 = h(x, y); return h$0(7);} return g;}
        function f(x){var g$0 = g(x); return g$0(5);}
-       var _d_ = f(3);
+       var a = f(3);
        runtime.caml_callback
         (Stdlib_Printf[2],
          [[0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")],
-          _d_]);
+          a]);
        var Test = [0];
        runtime.caml_register_global(2, Test, "Test");
        return;

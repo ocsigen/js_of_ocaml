@@ -53,13 +53,11 @@ let fff () =
                         ? cont([0, function(k, cont){return cont(11);}])
                         : cont(0);
                }],
-              function(_f_){
+              function(b){
                return caml_trampoline_cps_call2
                        (Stdlib_Printf[2],
-                        _e_,
-                        function(_g_){
-                         return caml_trampoline_cps_call2(_g_, _f_, cont);
-                        });
+                        a,
+                        function(a){return caml_trampoline_cps_call2(a, b, cont);});
               });
     }
     //end

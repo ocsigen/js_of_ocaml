@@ -129,7 +129,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        var
         dummy = 0,
         global_data = runtime.caml_get_global_data(),
-        _z_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
+        a = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
         cst_a$0 = caml_string_of_jsbytes("a"),
         cst_a = caml_string_of_jsbytes("a"),
         Stdlib = global_data.Stdlib,
@@ -161,46 +161,41 @@ let%expect_test "direct calls with --effects=double-translation" =
             return raise(e);
            });
          return caml_exact_trampoline_cps_call
-                 (g, x, function(_K_){caml_pop_trap(); return cont();});
+                 (g, x, function(a){caml_pop_trap(); return cont();});
         }
         var f = caml_cps_closure(f$0, f$1);
         return f;
        }
-       function _h_(){return function(x){};}
-       function _j_(){
+       function b(){return function(x){};}
+       function c(){
         return caml_cps_closure
                 (function(x){return caml_call2(Stdlib[28], x, cst_a$0);},
                  function(x, cont){
                   return caml_trampoline_cps_call3(Stdlib[28], x, cst_a$0, cont);
                  });
        }
-       function test2$0(param){
-        var f = f$0();
-        f(_h_(), 7);
-        f(_j_(), cst_a);
-        return 0;
-       }
+       function test2$0(param){var f = f$0(); f(b(), 7); f(c(), cst_a); return 0;}
        function test2$1(param, cont){
         var f = f$0();
         return caml_exact_trampoline_cps_call$0
                 (f,
-                 _h_(),
+                 b(),
                  7,
-                 function(_I_){
+                 function(a){
                   return caml_exact_trampoline_cps_call$0
-                          (f, _j_(), cst_a, function(_J_){return cont(0);});
+                          (f, c(), cst_a, function(a){return cont(0);});
                  });
        }
        var test2 = caml_cps_closure(test2$0, test2$1);
        function test3(x){
         function F(symbol){function f(x){return x + 1 | 0;} return [0, f];}
-        var M1 = F(), M2 = F(), _H_ = caml_call1(M2[1], 2);
-        return [0, caml_call1(M1[1], 1), _H_];
+        var M1 = F(), M2 = F(), a = caml_call1(M2[1], 2);
+        return [0, caml_call1(M1[1], 1), a];
        }
        function f(){
-        function f$0(x){return caml_call2(Stdlib_Printf[2], _z_, x);}
+        function f$0(x){return caml_call2(Stdlib_Printf[2], a, x);}
         function f$1(x, cont){
-         return caml_trampoline_cps_call3(Stdlib_Printf[2], _z_, x, cont);
+         return caml_trampoline_cps_call3(Stdlib_Printf[2], a, x, cont);
         }
         var f = caml_cps_closure(f$0, f$1);
         return f;
@@ -216,7 +211,7 @@ let%expect_test "direct calls with --effects=double-translation" =
         return caml_exact_trampoline_cps_call
                 (M1[1],
                  1,
-                 function(_G_){
+                 function(a){
                   return caml_exact_trampoline_cps_call(M2[1], 2, cont);
                  });
        }
@@ -233,18 +228,18 @@ let%expect_test "direct calls with --effects=double-translation" =
           tuple = recfuncs(x),
           f = tuple[2],
           h = tuple[1],
-          _E_ = h(100),
-          _F_ = f(12) + _E_ | 0;
-         return caml_call1(Stdlib[44], _F_);
+          a = h(100),
+          b = f(12) + a | 0;
+         return caml_call1(Stdlib[44], b);
         }
         function g$1(x, cont){
          var
           tuple = recfuncs(x),
           f = tuple[2],
           h = tuple[1],
-          _C_ = h(100),
-          _D_ = f(12) + _C_ | 0;
-         return caml_trampoline_cps_call2(Stdlib[44], _D_, cont);
+          a = h(100),
+          b = f(12) + a | 0;
+         return caml_trampoline_cps_call2(Stdlib[44], b, cont);
         }
         var g = caml_cps_closure(g$0, g$1);
         return g;
@@ -255,9 +250,9 @@ let%expect_test "direct calls with --effects=double-translation" =
         return caml_exact_trampoline_cps_call
                 (g$0,
                  42,
-                 function(_A_){
+                 function(a){
                   return caml_exact_trampoline_cps_call
-                          (g$0, - 5, function(_B_){return cont(0);});
+                          (g$0, - 5, function(a){return cont(0);});
                  });
        }
        var

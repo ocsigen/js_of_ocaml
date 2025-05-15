@@ -64,17 +64,17 @@ let%expect_test "let rec" =
        var
         global_data = runtime.caml_get_global_data(),
         Stdlib_Hashtbl = global_data.Stdlib__Hashtbl,
-        a = function _d_(_c_){return _d_.fun(_c_);},
-        b = function _b_(_a_){return _b_.fun(_a_);},
+        a = function b(a){return b.fun(a);},
+        b = function b(a){return b.fun(a);},
         c = [],
         d = runtime.caml_make_vect(5, 0),
-        default$0 = 42;
+        default$ = 42;
        caml_update_dummy(a, function(x){return caml_call1(b, x);});
        var tbl = caml_call2(Stdlib_Hashtbl[1], 0, 17);
        caml_update_dummy
         (b, function(x){return [0, 84, [0, tbl, c, caml_call1(a, 0)]];});
-       caml_update_dummy(c, [0, [0, d, default$0]]);
-       var Test = [0, a, b, c, d, default$0];
+       caml_update_dummy(c, [0, [0, d, default$]]);
+       var Test = [0, a, b, c, d, default$];
        runtime.caml_register_global(1, Test, "Test");
        return;
       }
