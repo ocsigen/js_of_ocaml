@@ -769,111 +769,133 @@ class subst sub =
     method ident x = sub x
   end
 
-class map_for_share_constant =
-  object (m)
-    inherit map as super
-
-    method expression e =
-      match e with
-      (* JavaScript engines recognize the pattern
-         'typeof x==="number"'; if the string is shared,
-         less efficient code is generated. *)
-      | EBin (op, EUn (Typeof, e1), (EStr _ as e2)) ->
-          EBin (op, EUn (Typeof, super#expression e1), e2)
-      | EBin (op, (EStr _ as e1), EUn (Typeof, e2)) ->
-          EBin (op, e1, EUn (Typeof, super#expression e2))
-      (* Some js bundler get confused when the argument
-         of 'require' is not a literal *)
-      | ECall
-          ( EVar (S { var = None; name = Utf8 "requires"; _ })
-          , (ANormal | ANullish)
-          , [ Arg (EStr _) ]
-          , _ ) -> e
-      | _ -> super#expression e
-
-    (* do not replace constant in switch case *)
-    method switch_case e =
-      match e with
-      | ENum _ | EStr _ -> e
-      | _ -> m#expression e
-
-    method statements l =
-      match l with
-      | [] -> []
-      | ((Expression_statement (EStr _), _) as prolog) :: rest ->
-          prolog :: List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
-      | rest -> List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
-  end
-
-class replace_expr f =
-  object
-    inherit map_for_share_constant as super
-
-    method expression e = try EVar (f e) with Not_found -> super#expression e
-  end
-
-let expression_equal (a : expression) b = Poly.equal a b
+let expression_equal (a : expression) b =
+  match a, b with
+  | ENum a, ENum b -> Javascript.Num.equal a b
+  | EStr (Utf8 a), EStr (Utf8 b) -> String.equal a b
+  | a, b -> Poly.equal a b
 
 (* this optimisation should be done at the lowest common scope *)
 
 module ExprTbl = Hashtbl.Make (struct
   type t = expression
 
-  let hash = Hashtbl.hash
+  let hash = function
+    | ENum n -> Javascript.Num.hash n
+    | EStr (Utf8 s) -> String.hash s
+    | e -> Hashtbl.hash e
 
   let equal = expression_equal
 end)
 
-class share_constant =
-  object
-    inherit map_for_share_constant as super
+let share_constant js =
+  let count = ExprTbl.create 17 in
+  let o =
+    object (m)
+      inherit iter as super
 
-    val count = ExprTbl.create 17
-
-    method expression e =
-      let e =
+      method expression e =
         match e with
-        | EStr _ | ENum _ ->
-            let n = try ExprTbl.find count e with Not_found -> 0 in
-            ExprTbl.replace count e (n + 1);
-            e
-        | _ -> e
-      in
-      super#expression e
+        (* JavaScript engines recognize the pattern
+         'typeof x==="number"'; if the string is shared,
+         less efficient code is generated. *)
+        | EBin (_, EUn (Typeof, e1), EStr _) -> super#expression e1
+        | EBin (_, EStr _, EUn (Typeof, e2)) -> super#expression e2
+        (* Some js bundler get confused when the argument
+         of 'require' is not a literal *)
+        | ECall
+            ( EVar (S { var = None; name = Utf8 "requires"; _ })
+            , (ANormal | ANullish)
+            , [ Arg (EStr _) ]
+            , _ ) -> ()
+        | EStr _ | ENum _ -> (
+            match ExprTbl.find count e with
+            | n -> ExprTbl.replace count e (n + 1)
+            | exception Not_found -> ExprTbl.add count e 1)
+        | _ -> super#expression e
 
-    method program p =
-      let p = super#program p in
-      let all = ExprTbl.create 17 in
-      ExprTbl.iter
-        (fun x n ->
-          let shareit =
-            match x with
-            | EStr (Utf8 s) when n > 1 ->
-                if String.length s < 20
-                then Some ("str_" ^ s)
-                else Some ("str_" ^ String.sub s ~pos:0 ~len:16 ^ "_abr")
-            | ENum s when n > 1 ->
-                let s = Javascript.Num.to_string s in
-                let l = String.length s in
-                if l > 2 then Some ("num_" ^ s) else None
-            | _ -> None
-          in
-          match shareit with
-          | Some name ->
-              let v = Code.Var.fresh_n name in
-              ExprTbl.add all x (V v)
-          | _ -> ())
-        count;
-      if ExprTbl.length all = 0
-      then p
-      else
-        let f = ExprTbl.find all in
-        let p = (new replace_expr f)#program p in
-        let all =
-          ExprTbl.fold (fun e v acc -> DeclIdent (v, Some (e, N)) :: acc) all []
-        in
-        (Variable_statement (Var, all), N) :: p
-  end
+      (* do not replace constant in switch case *)
+      method switch_case e =
+        match e with
+        | ENum _ | EStr _ -> ()
+        | _ -> m#expression e
+
+      method statements l =
+        match l with
+        | [] -> ()
+        | (Expression_statement (EStr _), _) :: rest ->
+            List.iter rest ~f:(fun (x, _) -> m#statement x)
+        | rest -> List.iter rest ~f:(fun (x, _) -> m#statement x)
+    end
+  in
+  o#program js;
+  let all = ExprTbl.create 17 in
+  ExprTbl.iter
+    (fun x n ->
+      let shareit =
+        match x with
+        | EStr (Utf8 s) when n > 1 ->
+            if String.length s < 20
+            then Some ("str_" ^ s)
+            else Some ("str_" ^ String.sub s ~pos:0 ~len:16 ^ "_abr")
+        | ENum s when n > 1 ->
+            let s = Javascript.Num.to_string s in
+            let l = String.length s in
+            if l > 2 then Some ("num_" ^ s) else None
+        | _ -> None
+      in
+      match shareit with
+      | Some name ->
+          let v = Code.Var.fresh_n name in
+          ExprTbl.add all x (V v)
+      | _ -> ())
+    count;
+  if ExprTbl.length all = 0
+  then js
+  else
+    let o =
+      object (m)
+        inherit map as super
+
+        method expression e =
+          match e with
+          (* JavaScript engines recognize the pattern
+                   'typeof x==="number"'; if the string is shared,
+                   less efficient code is generated. *)
+          | EBin (op, EUn (Typeof, e1), (EStr _ as e2)) ->
+              EBin (op, EUn (Typeof, super#expression e1), e2)
+          | EBin (op, (EStr _ as e1), EUn (Typeof, e2)) ->
+              EBin (op, e1, EUn (Typeof, super#expression e2))
+          (* Some js bundler get confused when the argument
+                   of 'require' is not a literal *)
+          | ECall
+              ( EVar (S { var = None; name = Utf8 "requires"; _ })
+              , (ANormal | ANullish)
+              , [ Arg (EStr _) ]
+              , _ ) -> e
+          | (EStr _ | ENum _) as x -> (
+              match ExprTbl.find_opt all x with
+              | None -> super#expression x
+              | Some v -> EVar v)
+          | _ -> super#expression e
+
+        (* do not replace constant in switch case *)
+        method switch_case e =
+          match e with
+          | ENum _ | EStr _ -> e
+          | _ -> m#expression e
+
+        method statements l =
+          match l with
+          | [] -> []
+          | ((Expression_statement (EStr _), _) as prolog) :: rest ->
+              prolog :: List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
+          | rest -> List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
+      end
+    in
+    let js = o#program js in
+    let all = ExprTbl.fold (fun e v acc -> DeclIdent (v, Some (e, N)) :: acc) all [] in
+    (Variable_statement (Var, all), N) :: js
 
 type t =
   { use : IdentSet.t

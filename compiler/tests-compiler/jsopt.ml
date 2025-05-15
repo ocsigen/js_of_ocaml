@@ -346,10 +346,10 @@ let%expect_test "string sharing" =
     (function(globalThis){
        "use strict";
        var
-        str_npi_xcf_x80 = "npi\xcf\x80",
-        str_abcdef = "abcdef",
         str_abc_def = "abc\\def",
         str_npi = "npiπ",
+        str_abcdef = "abcdef",
+        str_npi_xcf_x80 = "npi\xcf\x80",
         runtime = globalThis.jsoo_runtime,
         s3 = str_abcdef,
         s6 = str_npi_xcf_x80,
@@ -395,7 +395,8 @@ let%expect_test "string sharing" =
        return;
       }
       (globalThis));
-    //end |}];
+    //end
+    |}];
   print_program (program ~share:false ~js_string:true);
   [%expect
     {|
@@ -459,10 +460,10 @@ let%expect_test "string sharing" =
     (function(globalThis){
        "use strict";
        var
-        str_npi_xcf_x80 = "npi\xcf\x80",
-        str_abcdef = "abcdef",
         str_abc_def = "abc\\def",
         str_npi = "npiπ",
+        str_abcdef = "abcdef",
+        str_npi_xcf_x80 = "npi\xcf\x80",
         runtime = globalThis.jsoo_runtime,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         s3 = caml_string_of_jsbytes(str_abcdef),
@@ -509,7 +510,8 @@ let%expect_test "string sharing" =
        return;
       }
       (globalThis));
-    //end |}];
+    //end
+    |}];
   print_program (program ~share:false ~js_string:false);
   [%expect
     {|
