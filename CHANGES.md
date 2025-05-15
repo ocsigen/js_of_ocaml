@@ -37,6 +37,7 @@
 * Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962, #2001)
 * Compiler: deadcode elimination of cyclic values (#1978)
 * Compiler: directly write Wasm binary modules (#2000, #2003)
+* Compiler: rewrote inlining pass (#1935)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
