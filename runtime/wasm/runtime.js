@@ -552,12 +552,12 @@
     },
     map_set: (m, x, v) => m.set(x, v),
     map_delete: (m, x) => m.delete(x),
+    hash_string,
     log: (x) => console.log(x),
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
     compare: (s1, s2) => (s1 < s2 ? -1 : +(s1 > s2)),
-    hash: hash_string,
     decodeStringFromUTF8Array: () => "",
     encodeStringToUTF8Array: () => 0,
     fromCharCodeArray: () => "",
