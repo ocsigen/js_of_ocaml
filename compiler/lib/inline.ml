@@ -164,6 +164,10 @@ let blocks_in_loop p pc =
 
 type 'a cache = 'a option ref
 
+(* Information about a function candidate for inlining. Some
+   information / statistics about this function are computed lazily
+   and stored there. *)
+
 type info =
   { f : Var.t
   ; params : Var.t list
@@ -180,16 +184,18 @@ type info =
   }
 
 type context =
-  { profile : Profile.t
+  { profile : Profile.t  (** Aggressive inlining? *)
   ; p : program
-  ; live_vars : int array
-  ; inline_count : int ref
-  ; env : info Var.Map.t
-  ; in_loop : bool
-  ; has_closures : bool ref
-  ; current_function : Var.t option
+  ; live_vars : int array  (** Occurence count of all variables *)
+  ; inline_count : int ref  (** Inlining statistics *)
+  ; env : info Var.Map.t  (** Functions that are candidate for inlining *)
+  ; in_loop : bool  (** Whether the current block is in a loop *)
+  ; has_closures : bool ref  (** Whether the current function contains closures *)
+  ; current_function : Var.t option  (** Name of the current function *)
   ; enclosing_function : Var.t option
+        (** Name of the function enclosing the current function *)
   }
+(** Current context into which we consider inlining some functions. *)
 
 let cache ~info:{ cont = pc, _; _ } ref f =
   match !ref with
@@ -199,6 +205,7 @@ let cache ~info:{ cont = pc, _; _ } ref f =
       ref := Some v;
       v
 
+(** Does the function contain a loop? *)
 let contains_loop ~context info =
   cache ~info info.loops (fun pc ->
       let rec traverse pc ((visited, loop) as accu) : _ * bool =
@@ -244,8 +251,10 @@ let rec block_size ~recurse ~context { branch; body; _ } =
 
 and size ~recurse ~context = sum ~context (block_size ~recurse ~context)
 
+(** Size of the function body *)
 let body_size ~context info = cache ~info info.body_size (size ~recurse:false ~context)
 
+(** Size of the function, including the size of the closures it contains *)
 let full_size ~context info = cache ~info info.full_size (size ~recurse:true ~context)
 
 let closure_count_uncached ~context =
@@ -258,9 +267,12 @@ let closure_count_uncached ~context =
         ~init:0
         body)
 
+(** Number of closures contained in the function *)
 let closure_count ~context info =
   cache ~info info.closure_count (closure_count_uncached ~context)
 
+(** Number of instructions in the function which look like
+    initialization code. *)
 let count_init_code ~context info =
   cache
     ~info
@@ -276,6 +288,7 @@ let count_init_code ~context info =
       ~init:0
       body)
 
+(** Whether the function returns a block. *)
 let returns_a_block ~context info =
   cache ~info info.returns_a_block (fun pc ->
       let blocks = context.p.blocks in
@@ -295,6 +308,8 @@ let returns_a_block ~context info =
         blocks
         true)
 
+(** List of parameters that corresponds to functions called once in
+    the function body. *)
 let interesting_parameters ~context info =
   let params = info.params in
   cache ~info info.interesting_params (fun pc ->
@@ -334,7 +349,10 @@ let functor_like ~context info =
   && (not (contains_loop ~context info))
   && returns_a_block ~context info
   && count_init_code ~context info * 2 > body_size ~context info
-  && full_size ~context info - body_size ~context info <= 20 * closure_count ~context info
+  (* A large portion of the body is initialization code *)
+  &&
+  (* The closures defined in this function are small on average *)
+  full_size ~context info - body_size ~context info <= 20 * closure_count ~context info
 
 let trivial_function ~context info =
   body_size ~context info <= 1 && closure_count ~context info = 0
@@ -373,13 +391,16 @@ let rec small_function ~context info args =
   with Exit -> true
 
 and should_inline ~context info args =
-  (* A closure contains a pointer to (recursively) the contexts of its
-     enclosing functions. The context of a function contains the
-     variables bound in this function which are referred to from one
-     of the enclosed function. To limit the risk of memory leaks, we
-     don't inline functions containing closure if this makes these
-     closures capture additional contexts shared with other
-     closures. *)
+  (* Typically, in JavaScript implementations, a closure contains a
+     pointer to (recursively) the contexts of its enclosing functions.
+     The context of a function contains the variables bound in this
+     function which are referred to from one of the enclosed function.
+     To limit the risk of memory leaks, we try to avoid inlining functions
+     containing closures if this makes these closures capture
+     additional contexts shared with other closures.
+     We still inline into toplevel functions ([Option.is_none
+     context.enclosing_function]) since this results in significant
+     performance improvements. *)
   (match Config.target (), Config.effects () with
   | `JavaScript, (`Disabled | `Cps) ->
       closure_count ~context info = 0
@@ -394,8 +415,8 @@ and should_inline ~context info args =
         &&
         match Config.target () with
         | `Wasm when context.in_loop ->
-            (* Avoid inlining in loop since, if the loop is not hot, the
-               code might never get optimized *)
+            (* Avoid inlining in a loop since, if the loop is not hot,
+               the code might never get optimized *)
             body_size ~context info < 30 && not (contains_loop ~context info)
         | `JavaScript
           when Option.is_none context.current_function && contains_loop ~context info ->
