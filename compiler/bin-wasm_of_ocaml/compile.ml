@@ -74,10 +74,7 @@ let opt_with action x f =
   | None -> f None
   | Some x -> action x (fun y -> f (Some y))
 
-let output_gen output_file f =
-  Code.Var.set_pretty true;
-  Code.Var.set_stable (Config.Flag.stable_var ());
-  Filename.gen_file output_file f
+let output_gen output_file f = Filename.gen_file output_file f
 
 let with_runtime_files ~runtime_wasm_files f =
   let inputs =

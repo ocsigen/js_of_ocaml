@@ -695,7 +695,7 @@ module State = struct
     match l, s with
     | [], _ -> ()
     | (j, ident) :: lrem, Var v :: srem when i = j ->
-        Var.name v (Ident.name ident);
+        Var.set_name v (Ident.name ident);
         name_rec debug (i + 1) lrem srem summary
     | (j, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary
     | _ -> assert false
@@ -743,7 +743,7 @@ let register_global ?(force = false) g i rem =
         | None -> assert false
         | Some name -> name
       in
-      Code.Var.name (access_global g i) name;
+      Var.set_name (access_global g i) name;
       Let
         ( Var.fresh ()
         , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ]) )
@@ -755,7 +755,7 @@ let register_global ?(force = false) g i rem =
         match g.named_value.(i) with
         | None -> []
         | Some name ->
-            Code.Var.name (access_global g i) name;
+            Var.set_name (access_global g i) name;
             [ Pc
                 (match target with
                 | `JavaScript -> NativeString (Native_string.of_string name)
@@ -1278,7 +1278,7 @@ and compile infos pc state (instrs : instr list) =
           (match !rec_names with
           | (j, ident) :: rest ->
               assert (j = i);
-              Var.name x (Ident.name ident);
+              Var.set_name x (Ident.name ident);
               rec_names := rest
           | [] -> ());
           vars := (i, x) :: !vars;
@@ -2833,7 +2833,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
              then
                match find_name i with
                | None -> ()
-               | Some name -> Code.Var.name x name);
+               | Some name -> Code.Var.set_name x name);
             need_gdata := true;
             Let (x, Field (gdata, i, Non_float)) :: l
         | _ -> l)
@@ -2965,11 +2965,11 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
                 let l = register_global globals i l in
                 let cst = globals.constants.(i) in
                 (match cst, Code.Var.get_name x with
-                | String str, None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
+                | String str, None -> Var.set_name x (Printf.sprintf "cst_%s" str)
                 | _ -> ());
                 Let (x, Constant cst) :: l
             | Some name ->
-                Var.name x name;
+                Var.set_name x name;
                 need_gdata := true;
                 Let
                   ( x

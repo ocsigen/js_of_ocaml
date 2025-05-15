@@ -429,19 +429,24 @@ let program' (module Strategy : Strategy) p =
   let names = Strategy.allocate_variables state ~count in
   (* ignore the choosen name for escaping/free [V _] variables *)
   Var.Set.iter (fun x -> names.(Var.idx x) <- "") freevar;
-  let ident = function
-    | V v as x -> (
-        if Config.Flag.stable_var ()
-        then
-          ident ~var:v (Utf8_string.of_string_exn (Printf.sprintf "v%d" (Code.Var.idx v)))
-        else
+  let ident =
+    if Config.Flag.stable_var ()
+    then
+      function
+      | S _ as x -> x
+      | V v ->
+          let name = Printf.sprintf "v%d" (Code.Var.idx v) in
+          ident ~var:v (Utf8_string.of_string_exn name)
+    else
+      function
+      | S _ as x -> x
+      | V v as x -> (
           let name = names.(Var.idx v) in
           match name with
           | "" ->
               unallocated_names := Var.Set.add v !unallocated_names;
               x
           | _ -> ident ~var:v (Utf8_string.of_string_exn name))
-    | S _ as x -> x
   in
   let label_printer = Var_printer.create Var_printer.Alphabet.javascript in
   let max_label_depth = Var.Hashtbl.fold (fun _ d acc -> max d acc) labels 0 in

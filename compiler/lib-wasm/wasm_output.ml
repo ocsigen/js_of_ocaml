@@ -1182,6 +1182,4 @@ let f ch fields =
 
     let string = output_string
   end) in
-  Code.Var.set_pretty true;
-  Code.Var.set_stable (Config.Flag.stable_var ());
   O.output_module ch fields

@@ -48,8 +48,6 @@ module Var : sig
 
   val of_idx : int -> t
 
-  val to_string : ?origin:t -> t -> string
-
   val fresh : unit -> t
 
   val fresh_n : string -> t
@@ -62,15 +60,11 @@ module Var : sig
 
   val get_name : t -> string option
 
-  val name : t -> string -> unit
+  val set_name : t -> string -> unit
 
   val propagate_name : t -> t -> unit
 
   val reset : unit -> unit
-
-  val set_pretty : bool -> unit
-
-  val set_stable : bool -> unit
 
   module Set : Set.S with type elt = t
 

@@ -50,8 +50,6 @@ module Var : sig
 
   val of_idx : int -> t
 
-  val to_string : ?origin:t -> t -> string
-
   val fresh : unit -> t
 
   val fresh_n : string -> t
@@ -62,17 +60,13 @@ module Var : sig
 
   val compare : t -> t -> int
 
-  val name : t -> string -> unit
+  val set_name : t -> string -> unit
 
   val get_name : t -> string option
 
   val propagate_name : t -> t -> unit
 
   val reset : unit -> unit
-
-  val set_pretty : bool -> unit
-
-  val set_stable : bool -> unit
 
   module Set : Set.S with type elt = t
 
@@ -130,24 +124,98 @@ end = struct
 
   let printer = Var_printer.create Var_printer.Alphabet.javascript
 
+  module Name = struct
+    let names = Int.Hashtbl.create 100
+
+    let reset () = Int.Hashtbl.clear names
+
+    let reserved = String.Hashtbl.create 100
+
+    let () = StringSet.iter (fun s -> String.Hashtbl.add reserved s ()) Reserved.keyword
+
+    let is_reserved s = String.Hashtbl.mem reserved s
+
+    let merge n1 n2 =
+      match n1, n2 with
+      | "", n2 -> n2
+      | n1, "" -> n1
+      | n1, n2 ->
+          if generated_name n1
+          then n2
+          else if generated_name n2
+          then n1
+          else if String.length n1 > String.length n2
+          then n1
+          else n2
+
+    let set_raw v nm = Int.Hashtbl.replace names v nm
+
+    let propagate v v' =
+      try
+        let name = Int.Hashtbl.find names v in
+        match Int.Hashtbl.find names v' with
+        | exception Not_found -> set_raw v' name
+        | name' -> set_raw v' (merge name name')
+      with Not_found -> ()
+
+    let set v nm_orig =
+      let len = String.length nm_orig in
+      if len > 0
+      then (
+        let buf = Buffer.create (String.length nm_orig) in
+        let idx = ref 0 in
+        while !idx < len && not (Char.is_letter nm_orig.[!idx]) do
+          incr idx
+        done;
+        let pending = ref false in
+        if !idx >= len
+        then (
+          pending := true;
+          idx := 0);
+        for i = !idx to len - 1 do
+          if Char.is_letter nm_orig.[i] || Char.is_digit nm_orig.[i]
+          then (
+            if !pending then Buffer.add_char buf '_';
+            Buffer.add_char buf nm_orig.[i];
+            pending := false)
+          else pending := true
+        done;
+        let str = Buffer.contents buf in
+        let str =
+          match str, nm_orig with
+          | "", ">>=" -> "symbol_bind"
+          | "", ">>|" -> "symbol_map"
+          | "", "^" -> "symbol_concat"
+          | "", _ -> "symbol"
+          | str, _ -> if is_reserved str then str ^ "$" else str
+        in
+        (* protect against large names *)
+        let max_len = 30 in
+        let str =
+          if String.length str > max_len then String.sub str ~pos:0 ~len:max_len else str
+        in
+        set_raw v str)
+
+    let get v = try Some (Int.Hashtbl.find names v) with Not_found -> None
+  end
+
   let last_var = ref 0
 
   let reset () =
     last_var := 0;
-    Var_printer.reset printer
-
-  let to_string ?origin i = Var_printer.to_string printer ?origin i
+    Var_printer.reset printer;
+    Name.reset ()
 
   let print f x =
     Format.fprintf
       f
       "v%d%s"
       x
-      (match Var_printer.get_name printer x with
+      (match Name.get x with
       | None -> ""
       | Some nm -> "{" ^ nm ^ "}")
 
-  let name i nm = Var_printer.name printer i nm
+  let set_name i nm = Name.set i nm
 
   let fresh () =
     incr last_var;
@@ -155,7 +223,7 @@ end = struct
 
   let fresh_n nm =
     incr last_var;
-    name !last_var nm;
+    set_name !last_var nm;
     !last_var
 
   let count () = !last_var + 1
@@ -164,13 +232,9 @@ end = struct
 
   let of_idx v = v
 
-  let get_name i = Var_printer.get_name printer i
+  let get_name i = Name.get i
 
-  let propagate_name i j = Var_printer.propagate_name printer i j
-
-  let set_pretty b = Var_printer.set_pretty printer b
-
-  let set_stable b = Var_printer.set_stable printer b
+  let propagate_name i j = Name.propagate i j
 
   let fork o =
     let n = fresh () in
