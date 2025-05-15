@@ -242,7 +242,7 @@ struct
     | S { name = Utf8 name; var = None; _ } -> PP.string f name
     | V v ->
         assert accept_unnamed_var;
-        PP.string f ("<" ^ Code.Var.to_string v ^ ">")
+        PP.string f (Format.asprintf "<%a>" Code.Var.print v)
 
   let opt_identifier f ~kind i =
     match i with

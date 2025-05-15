@@ -463,8 +463,6 @@ let check_js js =
   let missing = StringSet.inter free all_external in
   let missing = StringSet.diff missing Reserved.provided in
   let other = StringSet.diff free missing in
-  let res = Var_printer.get_reserved () in
-  let other = StringSet.diff other res in
   if not (StringSet.is_empty missing) then report_missing_primitives missing;
   let probably_prov = StringSet.inter other Reserved.provided in
   let other = StringSet.diff other probably_prov in
@@ -493,17 +491,6 @@ let name_variables js =
   in
   let traverse = new Js_traverse.free in
   let js = traverse#program js in
-  let free = traverse#get_free in
-  Javascript.IdentSet.iter
-    (fun x ->
-      match x with
-      | V _ ->
-          (* This is an error. We don't complain here as we want
-             to be able to name other variable to make it
-             easier to spot the problematic ones *)
-          ()
-      | S { name = Utf8 x; _ } -> Var_printer.add_reserved x)
-    free;
   let js = Js_assign.program js in
   if times () then Format.eprintf "  coloring: %a@." Timer.print t;
   js
@@ -672,9 +659,7 @@ let simplify_js js =
 
 let configure formatter =
   let pretty = Config.Flag.pretty () in
-  Pretty_print.set_compact formatter (not pretty);
-  Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
-  Code.Var.set_stable (Config.Flag.stable_var ())
+  Pretty_print.set_compact formatter (not pretty)
 
 let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
   let export_runtime =

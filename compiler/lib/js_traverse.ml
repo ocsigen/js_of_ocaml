@@ -761,14 +761,6 @@ class iter : iterator =
     method function_body x = m#statements x
   end
 
-(* var substitution *)
-class subst sub =
-  object
-    inherit map
-
-    method ident x = sub x
-  end
-
 class map_for_share_constant =
   object (m)
     inherit map as super
