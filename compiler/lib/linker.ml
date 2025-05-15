@@ -88,44 +88,42 @@ end = struct
 end
 
 module Check = struct
-  class check_and_warn name pi =
+  class check_and_warn ~do_warn name pi =
     object
       inherit Js_traverse.free as super
 
       method merge_info from =
-        let def = from#get_def in
-        let use = from#get_use in
-        let diff = Javascript.IdentSet.diff def use in
-        let diff =
-          Javascript.IdentSet.fold
-            (fun x acc ->
-              match x with
-              | S { name = Utf8_string.Utf8 s; _ } ->
-                  if String.starts_with s ~prefix:"_" || String.equal s name
-                  then acc
-                  else s :: acc
-              | V _ -> acc)
-            diff
-            []
-        in
+        (if do_warn
+         then
+           let def = from#get_def in
+           let use = from#get_use in
+           let diff = Javascript.IdentSet.diff def use in
+           let diff =
+             Javascript.IdentSet.fold
+               (fun x acc ->
+                 match x with
+                 | S { name = Utf8_string.Utf8 s; _ } ->
+                     if String.starts_with s ~prefix:"_" || String.equal s name
+                     then acc
+                     else s :: acc
+                 | V _ -> acc)
+               diff
+               []
+           in
 
-        (match diff with
-        | [] -> ()
-        | l ->
-            warn
-              "WARN unused for primitive %s at %s:@. %s@."
-              name
-              (loc pi)
-              (String.concat ~sep:", " l));
+           match diff with
+           | [] -> ()
+           | l ->
+               warn
+                 "WARN unused for primitive %s at %s:@. %s@."
+                 name
+                 (loc pi)
+                 (String.concat ~sep:", " l));
         super#merge_info from
     end
 
   let primitive ~name pi ~code ~requires ~has_flags =
-    let free =
-      if Config.Flag.warn_unused ()
-      then new check_and_warn name pi
-      else new Js_traverse.free
-    in
+    let free = new check_and_warn ~do_warn:(Config.Flag.warn_unused ()) name pi in
     let _code = free#program code in
     let freename = to_stringset free#get_free in
     let freename =

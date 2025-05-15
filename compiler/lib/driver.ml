@@ -291,8 +291,6 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
     let check_missing = standalone in
     let t = Timer.make () in
     if times () then Format.eprintf "Start Linking...@.";
-    let traverse = new Js_traverse.free in
-    let js = traverse#program js in
     let js =
       if mark_start_of_generated_code ()
       then
@@ -311,23 +309,25 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
       | `All_from from -> Linker.list_all ~from ()
       | `No -> StringSet.empty
       | `Needed ->
-          let free = traverse#get_free in
-          let free : StringSet.t =
-            Javascript.IdentSet.fold
-              (fun x acc ->
-                match x with
-                | V _ ->
-                    (* This is an error. We don't complain here as we want
-                       to be able to name other variable to make it
-                       easier to spot the problematic ones *)
-                    acc
-                | S { name = Utf8 x; _ } -> StringSet.add x acc)
-              free
-              StringSet.empty
-          in
           let prim = Primitive.get_external () in
           let all_external = StringSet.union prim all_provided in
-          StringSet.inter free all_external
+          (* We should ideally use free variables here, but it's much
+            faster to use an over-approximation looking at all variables. *)
+          let used = ref StringSet.empty in
+          let o =
+            object
+              inherit Js_traverse.iter
+
+              method ident =
+                function
+                | V _ -> ()
+                | S { name = Utf8 name; _ } ->
+                    if StringSet.mem name all_external
+                    then used := StringSet.add name !used
+            end
+          in
+          o#program js;
+          !used
     in
     let linkinfos =
       let from =
@@ -493,6 +493,40 @@ let output formatter ~source_map () js =
   if times () then Format.eprintf "  write: %a@." Timer.print t;
   sm
 
+let globalThis_shim =
+  lazy
+    (let s =
+       {|
+(function (Object) {
+  typeof globalThis !== 'object' && (
+    this ?
+      get() :
+      (Object.defineProperty(Object.prototype, '_T_', {
+        configurable: true,
+        get: get
+      }), _T_)
+  );
+  function get() {
+    var global = this || self;
+    global.globalThis = global;
+    delete Object.prototype._T_;
+  }
+}(Object));
+|}
+     in
+     let lex = Parse_js.Lexer.of_string s in
+     Parse_js.parse lex)
+
+let export_node =
+  lazy
+    (let s =
+       Printf.sprintf
+         {|((typeof module === 'object' && module.exports) || %s)|}
+         Global_constant.global_object
+     in
+     let lex = Parse_js.Lexer.of_string s in
+     Parse_js.parse_expr lex)
+
 let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_codes } =
   let module J = Javascript in
   let t = Timer.make () in
@@ -520,31 +554,37 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
   let wrap_in_iife ~use_strict js =
     let var ident e = J.variable_declaration [ J.ident ident, (e, J.N) ], J.N in
     let expr e = J.Expression_statement e, J.N in
-    let freenames =
-      let o = new Js_traverse.free in
-      let (_ : J.program) = o#program js in
-      o#get_free
+    let used =
+      (* We should ideally use free variables here, but it's much
+         faster to use an over-approximation looking at all variables. *)
+      let used = ref StringSet.empty in
+      let o =
+        object
+          inherit Js_traverse.iter
+
+          method ident =
+            function
+            | V _ -> ()
+            | S { name = Utf8 name; _ } ->
+                if
+                  String.equal name Global_constant.exports
+                  || String.equal name Global_constant.old_global_object
+                then used := StringSet.add name !used
+        end
+      in
+      o#program js;
+      !used
     in
     let export_shim js =
-      if J.IdentSet.mem (J.ident Global_constant.exports_) freenames
+      if StringSet.mem Global_constant.exports used
       then
         if should_export wrap_with_fun
         then var Global_constant.exports_ (J.EObj []) :: js
-        else
-          let export_node =
-            let s =
-              Printf.sprintf
-                {|((typeof module === 'object' && module.exports) || %s)|}
-                Global_constant.global_object
-            in
-            let lex = Parse_js.Lexer.of_string s in
-            Parse_js.parse_expr lex
-          in
-          var Global_constant.exports_ export_node :: js
+        else var Global_constant.exports_ (Lazy.force export_node) :: js
       else js
     in
     let old_global_object_shim js =
-      if J.IdentSet.mem (J.ident Global_constant.old_global_object_) freenames
+      if StringSet.mem Global_constant.old_global_object used
       then
         var
           Global_constant.old_global_object_
@@ -552,19 +592,16 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
         :: js
       else js
     in
-
+    let js = export_shim js in
+    let js = old_global_object_shim js in
+    let js =
+      if use_strict
+      then expr (J.EStr (Utf8_string.of_string_exn "use strict")) :: js
+      else js
+    in
     let efun args body = J.EFun (None, J.fun_ args body J.U) in
     let sfun name args body = J.Function_declaration (name, J.fun_ args body J.U), J.U in
-    let mk f =
-      let js = export_shim js in
-      let js = old_global_object_shim js in
-      let js =
-        if use_strict
-        then expr (J.EStr (Utf8_string.of_string_exn "use strict")) :: js
-        else js
-      in
-      f [ J.ident Global_constant.global_object_ ] js
-    in
+    let mk f = f [ J.ident Global_constant.global_object_ ] js in
     match wrap_with_fun with
     | `Anonymous -> expr (mk efun)
     | `Named name ->
@@ -607,31 +644,7 @@ if (typeof module === 'object' && module.exports) {
         js @ export_node
     | `Anonymous, _ -> js
     | `Iife, false -> js
-    | `Iife, true ->
-        let e =
-          let s =
-            {|
-(function (Object) {
-  typeof globalThis !== 'object' && (
-    this ?
-      get() :
-      (Object.defineProperty(Object.prototype, '_T_', {
-        configurable: true,
-        get: get
-      }), _T_)
-  );
-  function get() {
-    var global = this || self;
-    global.globalThis = global;
-    delete Object.prototype._T_;
-  }
-}(Object));
-|}
-          in
-          let lex = Parse_js.Lexer.of_string s in
-          Parse_js.parse lex
-        in
-        e @ js
+    | `Iife, true -> Lazy.force globalThis_shim @ js
   in
   if times () then Format.eprintf "  packing: %a@." Timer.print t;
   js
