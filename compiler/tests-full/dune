@@ -8,6 +8,8 @@
   (run
    %{bin:js_of_ocaml}
    --pretty
+   --debug
+   var
    --debuginfo
    %{lib:stdlib:stdlib.cma}
    -o
