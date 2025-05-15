@@ -20,8 +20,6 @@
       (func $compare_strings (param externref externref) (result i32)))
    (import "wasm:js-string" "test"
       (func $is_string (param externref) (result i32)))
-   (import "wasm:js-string" "hash"
-      (func $hash_string (param i32) (param anyref) (result i32)))
    (import "wasm:js-string" "fromCharCodeArray"
       (func $fromCharCodeArray
          (param (ref null $wstring)) (param i32) (param i32)
@@ -35,6 +33,8 @@
       (func $encodeStringToUTF8Array
          (param externref) (result (ref $bytes))))
 
+   (import "bindings" "hash_string"
+      (func $hash_string (param i32) (param anyref) (result i32)))
    (import "bindings" "read_string"
       (func $read_string (param i32) (result anyref)))
    (import "bindings" "read_string_stream"
