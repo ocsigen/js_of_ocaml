@@ -489,8 +489,6 @@ let name_variables js =
       js)
     else js
   in
-  let traverse = new Js_traverse.free in
-  let js = traverse#program js in
   let js = Js_assign.program js in
   if times () then Format.eprintf "  coloring: %a@." Timer.print t;
   js
