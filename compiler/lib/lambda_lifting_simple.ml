@@ -127,8 +127,7 @@ and rewrite_body
          && (inside_lifted || Var.Set.mem f to_lift)
          && not (starts_with_closure rem) ->
       (* We lift an isolated closure *)
-      if debug ()
-      then Format.eprintf "@[<v>lifting isolated closure %s@,@]" (Var.to_string f);
+      if debug () then Format.eprintf "@[<v>lifting isolated closure %a@,@]" Var.print f;
       let program, functions, lifters =
         rewrite_blocks
           ~to_lift
@@ -142,7 +141,7 @@ and rewrite_body
       if debug ()
       then (
         Format.eprintf "@[<v>free variables:@,";
-        free_vars |> Var.Set.iter (fun v -> Format.eprintf "%s,@ " (Var.to_string v));
+        free_vars |> Var.Set.iter (fun v -> Format.eprintf "%a,@ " Var.print v);
         Format.eprintf "@]");
       let s =
         Var.Set.fold (fun x m -> Var.Map.add x (Var.fork x) m) free_vars Var.Map.empty
@@ -154,8 +153,9 @@ and rewrite_body
       if debug ()
       then
         Format.eprintf
-          "LIFT %s (depth:%d free_vars:%d inner_depth:%d)@."
-          (Code.Var.to_string f'')
+          "LIFT %a (depth:%d free_vars:%d inner_depth:%d)@."
+          Code.Var.print
+          f''
           depth
           (Var.Set.cardinal free_vars)
           (compute_depth program pc');
@@ -252,10 +252,11 @@ and rewrite_body
              then
                Format.(
                  eprintf
-                   "LIFT %a in tuple %s (depth:%d free_vars:%d)@,"
-                   (pp_print_list ~pp_sep:pp_print_space pp_print_string)
-                   (List.map ~f:Code.Var.to_string f's)
-                   (Code.Var.to_string f_tuple)
+                   "LIFT %a in tuple %a (depth:%d free_vars:%d)@,"
+                   (pp_print_list ~pp_sep:pp_print_space Code.Var.print)
+                   f's
+                   Code.Var.print
+                   f_tuple
                    depth
                    (Var.Set.cardinal free_vars)));
             let pc_tuple = program.free_pc in
