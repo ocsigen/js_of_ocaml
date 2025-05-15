@@ -179,14 +179,14 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var _d_ = l[2];
-           if(_d_){
-            var match$2 = _d_[2];
+           var b = l[2];
+           if(b){
+            var match$2 = b[2];
             if(match$2){
              var
               tl$1 = match$2[2],
               x3 = match$2[1],
-              x2$0 = _d_[1],
+              x2$0 = b[1],
               x1$0 = l[1],
               s$0 =
                 0 < caml_int_compare(x1$0, x2$0)
@@ -235,11 +235,11 @@ let ()  = M.myfun M.x
              accu = accu$1;
              continue;
             }
-            var _c_ = rev_append(l1, accu);
+            var a = rev_append(l1, accu);
            }
            else
-            var _c_ = rev_append(l2, accu);
-           return [0, _c_, tl$0];
+            var a = rev_append(l2, accu);
+           return [0, a, tl$0];
           }
          },
        rev_sort =
@@ -261,14 +261,14 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var _b_ = l[2];
-           if(_b_){
-            var match$2 = _b_[2];
+           var b = l[2];
+           if(b){
+            var match$2 = b[2];
             if(match$2){
              var
               tl$1 = match$2[2],
               x3 = match$2[1],
-              x2$0 = _b_[1],
+              x2$0 = b[1],
               x1$0 = l[1],
               s$0 =
                 0 < caml_int_compare(x1$0, x2$0)
@@ -317,11 +317,11 @@ let ()  = M.myfun M.x
              accu = accu$1;
              continue;
             }
-            var _a_ = rev_append(l1, accu);
+            var a = rev_append(l1, accu);
            }
            else
-            var _a_ = rev_append(l2, accu);
-           return [0, _a_, tl$0];
+            var a = rev_append(l2, accu);
+           return [0, a, tl$0];
           }
          };
       let sort$0 = sort, rev_sort$0 = rev_sort;
@@ -400,12 +400,13 @@ let ()  = M.run ()
          };
       let odd$0 = odd, even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
-      var _a_ = i + 1 | 0;
+      var a = i + 1 | 0;
       if(4 === i) return 0;
-      i = _a_;
+      i = a;
      }
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let prog =
@@ -480,7 +481,7 @@ let ()  = M.run ()
           switch(n){
             case 0:
              var
-              f = function(param){return caml_call2(Stdlib_Printf[2], _a_, i$0);};
+              f = function(param){return caml_call2(Stdlib_Printf[2], a, i$0);};
              delayed[1] = [0, f, delayed[1]];
              f(0);
              return 0;
@@ -495,7 +496,7 @@ let ()  = M.run ()
           switch(n){
             case 0:
              var
-              f = function(param){return caml_call2(Stdlib_Printf[2], _b_, i$0);};
+              f = function(param){return caml_call2(Stdlib_Printf[2], b, i$0);};
              delayed[1] = [0, f, delayed[1]];
              f(0);
              return 1;
@@ -506,16 +507,17 @@ let ()  = M.run ()
          };
       let odd$0 = odd, even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
-      var _c_ = i + 1 | 0;
+      var c = i + 1 | 0;
       if(4 === i) break;
-      i = _c_;
+      i = c;
      }
      return caml_call2
              (list_iter,
               function(f){return caml_call1(f, 0);},
               caml_call1(list_rev, delayed[1]));
     }
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let prog =
@@ -598,11 +600,11 @@ let ()  = M.run ()
                      748545554,
                      function(param){
                       function f(param){
-                       return caml_call2(Stdlib_Printf[2], _a_, i$0);
+                       return caml_call2(Stdlib_Printf[2], a, i$0);
                       }
                       delayed[1] = [0, f, delayed[1]];
                       f(0);
-                      return _b_;
+                      return b;
                      }];
             case 1:
              return [0, 748545554, function(param){return even$0(0);}];
@@ -619,11 +621,11 @@ let ()  = M.run ()
                      748545554,
                      function(param){
                       function f(param){
-                       return caml_call2(Stdlib_Printf[2], _c_, i$0);
+                       return caml_call2(Stdlib_Printf[2], c, i$0);
                       }
                       delayed[1] = [0, f, delayed[1]];
                       f(0);
-                      return _d_;
+                      return d;
                      }];
             case 1:
              return [0, 748545554, function(param){return odd$0(0);}];
@@ -638,9 +640,9 @@ let ()  = M.run ()
        var f = param$0[2];
        param$0 = f(0);
       }
-      var _e_ = i + 1 | 0;
+      var e = i + 1 | 0;
       if(4 === i) break;
-      i = _e_;
+      i = e;
      }
      return caml_call2
              (list_iter,

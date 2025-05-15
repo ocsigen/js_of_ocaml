@@ -94,20 +94,20 @@ let () = my_ref := 2
          let t$1 = t;
          var
           this_will_be_undefined =
-            function(param){var _c_ = 1 === t$1[1] ? 1 : 0; return _c_ ? 1 : 2;},
+            function(param){var a = 1 === t$1[1] ? 1 : 0; return a ? 1 : 2;},
           i = t[1];
-         if(0 === i){var _a_ = this_will_be_undefined(0); break a;}
+         if(0 === i){var a = this_will_be_undefined(0); break a;}
          if(1 === i) break;
          t = t$0;
         }
         var
-         _a_ =
+         a =
            caml_call2(Stdlib_Int[8], nesting, 0)
             ? nesting
             : this_will_be_undefined(0);
        }
-       var _b_ = caml_call1(Stdlib_Int[12], _a_);
-       caml_call1(Stdlib[46], _b_);
+       var b = caml_call1(Stdlib_Int[12], a);
+       caml_call1(Stdlib[46], b);
        my_ref[1] = 2;
        var Test = [0, my_ref];
        runtime.caml_register_global(4, Test, "Test");
@@ -202,7 +202,7 @@ let () = my_ref := 2
           let t$1 = t;
           var
            this_will_be_undefined =
-             function(param){var _e_ = 1 === t$1[1] ? 1 : 0; return _e_ ? 1 : 2;},
+             function(param){var a = 1 === t$1[1] ? 1 : 0; return a ? 1 : 2;},
            i = t[1];
           if(0 === i) break;
           if(1 === i) break b;
@@ -210,12 +210,12 @@ let () = my_ref := 2
          }
          var
           g = function(param){return 2 + this_will_be_undefined(0) | 0;},
-          _a_ = g(0),
-          _c_ = g(0) + _a_ | 0;
+          a = g(0),
+          c = g(0) + a | 0;
          break a;
         }
         if(caml_call2(Stdlib_Int[8], nesting, 0))
-         var _c_ = nesting;
+         var c = nesting;
         else
          var
           g$0 =
@@ -224,11 +224,11 @@ let () = my_ref := 2
                      ? 2 + this_will_be_undefined(0) | 0
                      : 1;
             },
-          _b_ = g$0(0),
-          _c_ = g$0(0) + _b_ | 0;
+          b = g$0(0),
+          c = g$0(0) + b | 0;
        }
-       var _d_ = caml_call1(Stdlib_Int[12], _c_);
-       caml_call1(Stdlib[46], _d_);
+       var d = caml_call1(Stdlib_Int[12], c);
+       caml_call1(Stdlib[46], d);
        my_ref[1] = 2;
        var Test = [0, my_ref];
        runtime.caml_register_global(5, Test, "Test");

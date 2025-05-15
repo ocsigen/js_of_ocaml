@@ -88,19 +88,19 @@ console.log("xx =", xx);
       run_javascript js_min_file |> print_endline;
       [%expect
         {|
-    $ cat "test.min.js"
-      1: var
-      2: xx=1;function
-      3: f(){a=2;try{throw 1}catch(a){var
-      4: a=3}return a}function
-      5: g(){var
-      6: b=2;return b}console.log("xx =",xx);console.log("f() =",f());console.log("xx =",xx);console.log("g() =",g());console.log("xx =",xx);
-    xx = 1
-    f() = 2
-    xx = 1
-    g() = 2
-    xx = 1
- |}])
+        $ cat "test.min.js"
+          1: var
+          2: xx=1;function
+          3: f(){f=2;try{throw 1}catch(f){var
+          4: f=3}return f}function
+          5: g(){var
+          6: a=2;return a}console.log("xx =",xx);console.log("f() =",f());console.log("xx =",xx);console.log("g() =",g());console.log("xx =",xx);
+        xx = 1
+        f() = 2
+        xx = 1
+        g() = 2
+        xx = 1
+        |}])
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->
@@ -150,7 +150,8 @@ try { throw 1; } catch (xx) { a(0) }
           2: a = function () { return 0 }
           3: try { throw 1; } catch (xx) { a(0) }
         $ cat "test.min.js"
-          1: a=function(){return 0};try{throw 1}catch(b){a(0)} |}])
+          1: a=function(){return 0};try{throw 1}catch(f){a(0)}
+        |}])
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->
@@ -175,9 +176,10 @@ try { var xxxxx = 3; var bbb = 2; throw 1; } catch (xx) { const bbb = a(0) } }
           2: a = function (yyyy) {
           3: try { var xxxxx = 3; var bbb = 2; throw 1; } catch (xx) { const bbb = a(0) } }
         $ cat "test.min.js"
-          1: a=function(b){try{var
-          2: e=3,d=2;throw 1}catch(c){const
-          3: b=a(0)}}; |}])
+          1: a=function(d){try{var
+          2: c=3,b=2;throw 1}catch(f){const
+          3: b=a(0)}};
+        |}])
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->
@@ -206,10 +208,11 @@ a = function (aaa,b,c,yyy) {
           4:         else { let xxx = 3; let aaa = xxx; return xxx * yyy }
           5:         }
         $ cat "test.min.js"
-          1: a=function(b,c,d,e){if(true){let
-          2: b=2;var
-          3: f=3;return b+b}else{let
-          4: b=3,c=b;return b*e}}; |}])
+          1: a=function(a,b,c,d){if(true){let
+          2: a=2;var
+          3: e=3;return a+a}else{let
+          4: a=3,b=a;return a*d}};
+        |}])
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->

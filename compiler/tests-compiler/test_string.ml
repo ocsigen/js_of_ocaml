@@ -59,12 +59,13 @@ let (_ : string) = here ()
         Test =
           [0,
            caml_string_concat,
-           function(_a_){return cst_a + cst_a + cst_b + cst_b;}];
+           function(a){return cst_a + cst_a + cst_b + cst_b;}];
        runtime.caml_register_global(2, Test, "Test");
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let program =
@@ -108,7 +109,7 @@ let (_ : string) = here ()
         Test =
           [0,
            caml_string_concat,
-           function(_a_){
+           function(a){
             return caml_string_concat
                     (cst_a,
                      caml_string_concat(cst_a, caml_string_concat(cst_b, cst_b)));
@@ -117,4 +118,5 @@ let (_ : string) = here ()
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

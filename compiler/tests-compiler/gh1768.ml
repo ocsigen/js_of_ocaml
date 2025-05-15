@@ -54,20 +54,20 @@ let () =
         dummy = 0,
         global_data = runtime.caml_get_global_data(),
         Assert_failure = global_data.Assert_failure,
-        _a_ = [0, caml_string_of_jsbytes("test.ml"), 4, 27];
+        a = [0, caml_string_of_jsbytes("test.ml"), 4, 27];
        function h(x){x[1] = function(x, y){return x + y | 0;};}
        function f(param){
         return [0,
                 function(param){
-                 throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+                 throw caml_maybe_attach_backtrace([0, Assert_failure, a], 1);
                 }];
        }
        var x = f();
        function g(param){return caml_call1(x[1], 7);}
        h(x);
-       var _b_ = [0, caml_string_of_jsbytes("test.ml"), 8, 2];
+       var b = [0, caml_string_of_jsbytes("test.ml"), 8, 2];
        if(10 !== caml_call1(g(), 3))
-        throw caml_maybe_attach_backtrace([0, Assert_failure, _b_], 1);
+        throw caml_maybe_attach_backtrace([0, Assert_failure, b], 1);
        var Test = [0];
        runtime.caml_register_global(3, Test, "Test");
        return;
