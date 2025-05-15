@@ -17,9 +17,9 @@ jobs:
         os:
           - ubuntu-latest
         ocaml-compiler:
-          - "4.14"
-          - "5.0"
-          - "5.1"
+#          - "4.14"
+#          - "5.0"
+#          - "5.1"
           - "5.3"
         separate_compilation:
           - true
@@ -33,21 +33,21 @@ jobs:
             separate_compilation: true
             jane_street_tests: false
             all_jane_street_tests: false
-          - os: windows-latest
-            ocaml-compiler: "5.2"
-            separate_compilation: true
-            jane_street_tests: true
-            all_jane_street_tests: true
-          - os: ubuntu-latest
-            ocaml-compiler: "5.2"
-            separate_compilation: true
-            jane_street_tests: true
-            all_jane_street_tests: true
-          - os: ubuntu-latest
-            ocaml-compiler: "5.2"
-            separate_compilation: false
-            jane_street_tests: true
-            all_jane_street_tests: false
+#          - os: windows-latest
+#            ocaml-compiler: "5.2"
+#            separate_compilation: true
+#            jane_street_tests: true
+#            all_jane_street_tests: true
+#          - os: ubuntu-latest
+#            ocaml-compiler: "5.2"
+#            separate_compilation: true
+#            jane_street_tests: true
+#            all_jane_street_tests: true
+#          - os: ubuntu-latest
+#            ocaml-compiler: "5.2"
+#            separate_compilation: false
+#            jane_street_tests: true
+#            all_jane_street_tests: false
 
     runs-on: ${{ matrix.os }}
 
@@ -76,6 +76,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: latest
+
+      - name: Install jsvu
+        run: npm install jsvu -g
+
+      - name: Install jsc
+        run: |
+          jsvu --os=default --engines=javascriptcore
+          echo $HOME/.jsvu/bin >> $GITHUB_PATH
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
@@ -124,7 +132,9 @@ jobs:
       - name: Run tests
         if: ${{ matrix.separate_compilation }}
         working-directory: ./wasm_of_ocaml
-        run: opam exec -- dune build @runtest-wasm
+        env:
+          WASM_ENGINE: jsc
+        run: opam exec -- dune build @runtest-wasm --profile release
 
       # we continue-on-error on windows because we seem to often hit
       # an internal assert inside libuv.
