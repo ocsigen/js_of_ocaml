@@ -23,6 +23,8 @@ module Alphabet : sig
   type t
 
   val javascript : t
+
+  val to_string : t -> int -> string
 end
 
 type t
