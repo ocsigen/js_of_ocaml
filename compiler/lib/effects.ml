@@ -775,8 +775,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
     Code.fold_closures_innermost_first
       p
       (fun name_opt params (start, args) _cloc ({ Code.blocks; free_pc; _ } as p) ->
-        Option.iter name_opt ~f:(fun v ->
-            debug_print "@[<v>cname = %s@,@]" @@ Var.to_string v);
+        Option.iter name_opt ~f:(fun v -> debug_print "@[<v>cname = %a@,@]" Var.print v);
         (* We speculatively add a block at the beginning of the
            function. In case of tail-recursion optimization, the
            function implementing the loop body may have to be placed
@@ -1128,7 +1127,7 @@ let f ~flow_info ~live_vars p =
       then (
         debug_print "@]";
         debug_print "@[<v>cps_needed (after lifting) = @[<hov 2>";
-        Var.Set.iter (fun v -> debug_print "%s,@ " (Var.to_string v)) cps_needed;
+        Var.Set.iter (fun v -> debug_print "%a,@ " Var.print v) cps_needed;
         debug_print "@]@,@]";
         debug_print "@[<v>After lambda lifting...@,";
         Code.Print.program Format.err_formatter (fun _ _ -> "") p;

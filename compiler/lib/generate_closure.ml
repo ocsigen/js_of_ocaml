@@ -169,8 +169,11 @@ module Trampoline = struct
         then (
           Format.eprintf "Detect cycles of size (%d).\n%!" (List.length all);
           Format.eprintf
-            "%s\n%!"
-            (String.concat ~sep:", " (List.map all ~f:(fun x -> Var.to_string x))));
+            "%a\n%!"
+            (Format.pp_print_list
+               ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
+               Var.print)
+            all);
         let tailcall_max_depth = Config.Param.tailcall_max_depth () in
         let all =
           List.map all ~f:(fun id ->
@@ -183,7 +186,7 @@ module Trampoline = struct
             ~init:(blocks, free_pc, [])
             ~f:(fun (blocks, free_pc, closures) (counter, ci) ->
               if debug_tc ()
-              then Format.eprintf "Rewriting for %s\n%!" (Var.to_string ci.f_name);
+              then Format.eprintf "Rewriting for %a\n%!" Var.print ci.f_name;
               let new_f = Code.Var.fork ci.f_name in
               let new_args = List.map ci.args ~f:Code.Var.fork in
               let wrapper_pc = free_pc in

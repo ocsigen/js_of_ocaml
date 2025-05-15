@@ -183,8 +183,9 @@ let rec traverse var_depth (program, functions) pc depth limit =
                 if debug ()
                 then
                   Format.eprintf
-                    "LIFT %s (depth:%d free_vars:%d inner_depth:%d)@."
-                    (Code.Var.to_string f'')
+                    "LIFT %a (depth:%d free_vars:%d inner_depth:%d)@."
+                    Code.Var.print
+                    f''
                     depth
                     (Var.Set.cardinal free_vars)
                     (compute_depth program pc');
