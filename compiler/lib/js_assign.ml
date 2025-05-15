@@ -292,8 +292,19 @@ module Preserve : Strategy = struct
     in
     t.scopes <- (defs, all) :: t.scopes
 
+  let uniq_var = Debug.find "var"
+
   let allocate_variables t ~count:_ =
     let names = Array.make t.size "" in
+    let uniq_var = uniq_var () in
+    let unamed = ref 0 in
+    let create_unamed =
+      if uniq_var
+      then
+        fun i ->
+          "_" ^ Var_printer.Alphabet.to_string Var_printer.Alphabet.javascript i ^ "_"
+      else fun i -> Var_printer.Alphabet.to_string Var_printer.Alphabet.javascript i
+    in
     List.iter t.scopes ~f:(fun (defs, all) ->
         let reserved =
           IdentSet.fold
@@ -306,7 +317,7 @@ module Preserve : Strategy = struct
             all
             StringSet.empty
         in
-        let unamed = ref 0 in
+        if not uniq_var then unamed := 0;
         let _reserved =
           S.fold
             (fun var reserved ->
@@ -333,16 +344,12 @@ module Preserve : Strategy = struct
                       Printf.sprintf "%s%d" expected_name !i
                 | None ->
                     while
-                      let name =
-                        Var_printer.Alphabet.to_string
-                          Var_printer.Alphabet.javascript
-                          !unamed
-                      in
+                      let name = create_unamed !unamed in
                       StringSet.mem name reserved || StringSet.mem name Reserved.keyword
                     do
                       incr unamed
                     done;
-                    Var_printer.Alphabet.to_string Var_printer.Alphabet.javascript !unamed
+                    create_unamed !unamed
               in
               names.(Var.idx var) <- name;
               StringSet.add name reserved)
