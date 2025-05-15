@@ -115,7 +115,7 @@ type sexp =
 
 let rec format_sexp f s =
   match s with
-  | Atom s -> Format.fprintf f "%s" s
+  | Atom s -> Format.pp_print_string f s
   | List l ->
       let has_comment =
         List.exists l ~f:(function
@@ -124,23 +124,28 @@ let rec format_sexp f s =
       in
       if has_comment
       then (* Ensure comments are on their own line *)
-        Format.fprintf f "@[<v 2>("
-      else Format.fprintf f "@[<2>(";
-      Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f "@ ") format_sexp f l;
+        Format.pp_open_vbox f 2
+      else Format.pp_open_box f 2;
+      Format.pp_print_string f "(";
+      Format.pp_print_list
+        ~pp_sep:(fun f () -> Format.pp_print_space f ())
+        format_sexp
+        f
+        l;
       if
         has_comment
-        && List.fold_left
-             ~f:(fun _ i ->
-               match i with
-               | Comment _ -> true
-               | _ -> false)
-             ~init:false
-             l
+        &&
+        match List.last l with
+        | Some (Comment _) -> true
+        | Some _ | None -> false
       then
         (* Make sure there is a newline when a comment is at the very end. *)
-        Format.fprintf f "@ ";
-      Format.fprintf f ")@]"
-  | Comment s -> Format.fprintf f ";;%s" s
+        Format.pp_print_space f ();
+      Format.pp_print_string f ")";
+      Format.pp_close_box f ()
+  | Comment s ->
+      Format.pp_print_string f ";;";
+      Format.pp_print_string f s
 
 let index tbl x = Atom ("$" ^ Code.Var.Hashtbl.find tbl x)
 
