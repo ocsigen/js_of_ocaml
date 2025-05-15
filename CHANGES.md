@@ -29,6 +29,7 @@
 * Compiler: improve tailcall optimization (#1943)
 * Compiler: improve deadcode optimization (#1963, #1962, #1967)
 * Compiler: improve coloring optimization (#1971, #1984)
+* Compiler: faster constant sharing (#1988)
 * Compiler: more efficient code generation from bytecode (#1972)
 * Runtime: use Dataview to convert between floats and bit representation
 * Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962)
