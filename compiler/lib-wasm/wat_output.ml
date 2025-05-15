@@ -462,19 +462,23 @@ let expression_or_instructions ctx st in_function =
             @ [ List (Atom "else" :: expression iff) ])
         ]
     | Try (ty, body, catches) ->
-        [ List
-            (Atom "try"
-            :: (block_type st ty
-               @ List (Atom "do" :: instructions body)
-                 :: List.map
-                      ~f:(fun (tag, i, ty) ->
-                        List
-                          (Atom "catch"
-                          :: index st.tag_names tag
-                          :: (instruction (Wasm_ast.Event Code_generation.hidden_location)
-                             @ instruction (Wasm_ast.Br (i + 1, Some (Pop ty))))))
-                      catches))
-        ]
+        if Config.Flag.trap_on_exception ()
+        then [ List (Atom "block" :: (block_type st ty @ instructions body)) ]
+        else
+          [ List
+              (Atom "try"
+              :: (block_type st ty
+                 @ List (Atom "do" :: instructions body)
+                   :: List.map
+                        ~f:(fun (tag, i, ty) ->
+                          List
+                            (Atom "catch"
+                            :: index st.tag_names tag
+                            :: (instruction
+                                  (Wasm_ast.Event Code_generation.hidden_location)
+                               @ instruction (Wasm_ast.Br (i + 1, Some (Pop ty))))))
+                        catches))
+          ]
     | ExternConvertAny e' -> [ List (Atom "extern.convert_any" :: expression e') ]
   and instruction i =
     match i with
@@ -518,8 +522,14 @@ let expression_or_instructions ctx st in_function =
             | None -> []
             | Some e -> expression e))
         ]
-    | Throw (tag, e) -> [ List (Atom "throw" :: index st.tag_names tag :: expression e) ]
-    | Rethrow i -> [ List [ Atom "rethrow"; Atom (string_of_int i) ] ]
+    | Throw (tag, e) ->
+        if Config.Flag.trap_on_exception ()
+        then [ List [ Atom "unreachable" ] ]
+        else [ List (Atom "throw" :: index st.tag_names tag :: expression e) ]
+    | Rethrow i ->
+        if Config.Flag.trap_on_exception ()
+        then [ List [ Atom "unreachable" ] ]
+        else [ List [ Atom "rethrow"; Atom (string_of_int i) ] ]
     | CallInstr (f, l) ->
         [ List
             (Atom "call"

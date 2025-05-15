@@ -16,6 +16,8 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+(@if (not wasi)
+(@then
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "caml_js_global"
@@ -56,4 +58,5 @@
             (call $caml_js_global (ref.i31 (i32.const 0)))
             (global.get $XMLHttpRequest))
          (array.new_fixed $block 1 (ref.i31 (i32.const 0)))))
+))
 )
