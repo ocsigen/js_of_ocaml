@@ -614,9 +614,7 @@ let simplify_js js =
 
 let configure formatter =
   let pretty = Config.Flag.pretty () in
-  Pretty_print.set_compact formatter (not pretty);
-  Code.Var.set_pretty (pretty && not (Config.Flag.shortvar ()));
-  Code.Var.set_stable (Config.Flag.stable_var ())
+  Pretty_print.set_compact formatter (not pretty)
 
 let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p =
   let export_runtime =

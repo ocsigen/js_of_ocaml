@@ -45,7 +45,6 @@ let f { Cmd_arg.common; output_file; use_stdin; files } =
   let gen pp =
     let pretty = Config.Flag.pretty () in
     Pretty_print.set_compact pp (not pretty);
-    Code.Var.set_pretty pretty;
     let error_of_pi pi =
       match pi with
       | { Parse_info.name = Some src; line; col; _ }

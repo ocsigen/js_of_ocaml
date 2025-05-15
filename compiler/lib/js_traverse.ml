@@ -765,14 +765,6 @@ class iter : iterator =
     method function_body x = m#statements x
   end
 
-(* var substitution *)
-class subst sub =
-  object
-    inherit map
-
-    method ident x = sub x
-  end
-
 let expression_equal (a : expression) b =
   match a, b with
   | ENum a, ENum b -> Javascript.Num.equal a b

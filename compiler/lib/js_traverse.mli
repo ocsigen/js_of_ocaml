@@ -124,10 +124,6 @@ class map : mapper
 
 class iter : iterator
 
-class subst : (ident -> ident) -> object
-  inherit mapper
-end
-
 type t =
   { use : IdentSet.t
   ; def_var : IdentSet.t
