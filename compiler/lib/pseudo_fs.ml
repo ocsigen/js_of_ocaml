@@ -110,7 +110,15 @@ let f ~prim ~cmis ~files ~paths =
       (fun s (acc, missing) ->
         match find_cmi paths s with
         | Some (name, filename) -> (name, Fs.read_file filename) :: acc, missing
-        | None -> acc, s :: missing)
+        | None -> (
+            match s with
+            (* HACK: here a list of known "hidden" cmi from the OCaml distribution. *)
+            | "Dynlink_config"
+            | "Dynlink_types"
+            | "Dynlink_platform_intf"
+            | "Dynlink_common"
+            | "Dynlink_symtable" -> acc, missing
+            | _ -> acc, s :: missing))
       cmis
       ([], [])
   in

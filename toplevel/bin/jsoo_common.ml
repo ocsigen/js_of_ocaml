@@ -49,13 +49,21 @@ let read_cmi ~dir cmi =
   try with_name (Js_of_ocaml_compiler.Stdlib.String.uncapitalize_ascii cmi)
   with Not_found -> (
     try with_name (Js_of_ocaml_compiler.Stdlib.String.capitalize_ascii cmi)
-    with Not_found ->
-      Format.eprintf
-        "Could not find cmi %s or %s in %s@."
-        (Js_of_ocaml_compiler.Stdlib.String.capitalize_ascii cmi)
-        (Js_of_ocaml_compiler.Stdlib.String.uncapitalize_ascii cmi)
-        dir;
-      raise Not_found)
+    with Not_found -> (
+      match cmi with
+      (* HACK: here a list of known "hidden" cmi from the OCaml distribution. *)
+      | "dynlink_config.cmi"
+      | "dynlink_types.cmi"
+      | "dynlink_platform_intf.cmi"
+      | "dynlink_common.cmi"
+      | "dynlink_symtable.cmi" -> raise Not_found
+      | cmi ->
+          Format.eprintf
+            "Could not find cmi %s or %s in %s@."
+            (Js_of_ocaml_compiler.Stdlib.String.capitalize_ascii cmi)
+            (Js_of_ocaml_compiler.Stdlib.String.uncapitalize_ascii cmi)
+            dir;
+          raise Not_found))
 
 let cmis_of_cma ~dir cma_path =
   let cma_path =
