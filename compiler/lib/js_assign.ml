@@ -294,7 +294,7 @@ module Preserve : Strategy = struct
 
   let uniq_var = Debug.find "var"
 
-  let allocate_variables t ~count:_ =
+  let allocate_variables t ~count =
     let names = Array.make t.size "" in
     let uniq_var = uniq_var () in
     let unamed = ref 0 in
@@ -317,16 +317,16 @@ module Preserve : Strategy = struct
             all
             StringSet.empty
         in
-        if not uniq_var then unamed := 0;
-        let _reserved =
+        (* We first allocate variable that have a name *)
+        let reserved, others =
           S.fold
-            (fun var reserved ->
+            (fun var (reserved, others) ->
               assert (String.is_empty names.(Var.idx var));
-              let name =
-                match Var.get_name var with
-                | Some expected_name ->
-                    assert (not (String.is_empty expected_name));
-                    assert (not (StringSet.mem expected_name Reserved.keyword));
+              match Var.get_name var with
+              | Some expected_name ->
+                  assert (not (String.is_empty expected_name));
+                  assert (not (StringSet.mem expected_name Reserved.keyword));
+                  let name =
                     if not (StringSet.mem expected_name reserved)
                     then expected_name
                     else
@@ -342,19 +342,33 @@ module Preserve : Strategy = struct
                         incr i
                       done;
                       Printf.sprintf "%s%d" expected_name !i
-                | None ->
-                    while
-                      let name = create_unamed !unamed in
-                      StringSet.mem name reserved || StringSet.mem name Reserved.keyword
-                    do
-                      incr unamed
-                    done;
-                    create_unamed !unamed
-              in
-              names.(Var.idx var) <- name;
-              StringSet.add name reserved)
+                  in
+                  names.(Var.idx var) <- name;
+                  StringSet.add name reserved, others
+              | None -> reserved, var :: others)
             defs
-            reserved
+            (reserved, [])
+        in
+        (* We then allocate variables without names *)
+        if not uniq_var then unamed := 0;
+        let _reserved =
+          let weight v = count.(Var.idx v) in
+          List.stable_sort others ~cmp:(fun i j ->
+              match compare (weight j) (weight i) with
+              | 0 -> Var.compare i j
+              | c -> c)
+          |> List.fold_left ~init:reserved ~f:(fun reserved var ->
+                 let name =
+                   while
+                     let name = create_unamed !unamed in
+                     StringSet.mem name reserved || StringSet.mem name Reserved.keyword
+                   do
+                     incr unamed
+                   done;
+                   create_unamed !unamed
+                 in
+                 names.(Var.idx var) <- name;
+                 StringSet.add name reserved)
         in
         ());
     names
