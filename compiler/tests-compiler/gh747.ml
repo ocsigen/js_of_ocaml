@@ -333,10 +333,10 @@ end
     113:       /*<<test.ml:66:6>>*/ return caml_call2(Stdlib_Printf[1], outchan, d) /*<<test.ml:73:10>>*/ ;
     114:     var
     115:      a =  /*<<test.ml:64:2>>*/ backtrace[1],
-    116:      e =  /*<<test.ml:69:6>>*/ a.length - 2 | 0,
-    117:      b = 0;
-    118:     if(e >= 0){
-    119:      var i = b;
+    116:      b =  /*<<test.ml:69:6>>*/ a.length - 2 | 0,
+    117:      e = 0;
+    118:     if(b >= 0){
+    119:      var i = e;
     120:      for(;;){
     121:       var
     122:        match =
@@ -347,7 +347,7 @@ end
     127:         /*<<test.ml:72:24>>*/ caml_call3(Stdlib_Printf[1], outchan, c, str);
     128:       }
     129:       var f =  /*<<test.ml:70:43>>*/ i + 1 | 0;
-    130:       if(e === i) break;
+    130:       if(b === i) break;
     131:       i = f;
     132:      }
     133:     }

@@ -179,14 +179,14 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var b = l[2];
-           if(b){
-            var match$2 = b[2];
+           var a = l[2];
+           if(a){
+            var match$2 = a[2];
             if(match$2){
              var
               tl$1 = match$2[2],
               x3 = match$2[1],
-              x2$0 = b[1],
+              x2$0 = a[1],
               x1$0 = l[1],
               s$0 =
                 0 < caml_int_compare(x1$0, x2$0)
@@ -235,11 +235,11 @@ let ()  = M.myfun M.x
              accu = accu$1;
              continue;
             }
-            var a = rev_append(l1, accu);
+            var b = rev_append(l1, accu);
            }
            else
-            var a = rev_append(l2, accu);
-           return [0, a, tl$0];
+            var b = rev_append(l2, accu);
+           return [0, b, tl$0];
           }
          },
        rev_sort =
@@ -261,14 +261,14 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var b = l[2];
-           if(b){
-            var match$2 = b[2];
+           var a = l[2];
+           if(a){
+            var match$2 = a[2];
             if(match$2){
              var
               tl$1 = match$2[2],
               x3 = match$2[1],
-              x2$0 = b[1],
+              x2$0 = a[1],
               x1$0 = l[1],
               s$0 =
                 0 < caml_int_compare(x1$0, x2$0)
@@ -317,11 +317,11 @@ let ()  = M.myfun M.x
              accu = accu$1;
              continue;
             }
-            var a = rev_append(l1, accu);
+            var b = rev_append(l1, accu);
            }
            else
-            var a = rev_append(l2, accu);
-           return [0, a, tl$0];
+            var b = rev_append(l2, accu);
+           return [0, b, tl$0];
           }
          };
       let sort$0 = sort, rev_sort$0 = rev_sort;
