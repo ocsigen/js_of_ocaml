@@ -19,6 +19,7 @@
 type link_input =
   { module_name : string  (** Name under which the module is imported in other modules *)
   ; file : string  (** File containing the Wasm module *)
+  ; source_map_file : string option
   }
 
 val link :
