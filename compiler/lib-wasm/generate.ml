@@ -1318,11 +1318,13 @@ let add_init_function = G.add_init_function
 let output ch ~context =
   let t = Timer.make () in
   let fields = G.output ~context in
+  if times () then Format.eprintf "    fields: %a@." Timer.print t;
   Wat_output.f ch fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t
 
 let wasm_output ch ~opt_source_map_file ~context =
   let t = Timer.make () in
   let fields = G.output ~context in
+  if times () then Format.eprintf "    fields: %a@." Timer.print t;
   Wasm_output.f ch ~opt_source_map_file fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t

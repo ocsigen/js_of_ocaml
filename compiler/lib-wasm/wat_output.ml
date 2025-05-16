@@ -666,10 +666,13 @@ let field ctx st f =
   | Type [ t ] -> [ type_field st t ]
   | Type l -> [ List (Atom "rec" :: List.map ~f:(type_field st) l) ]
 
+let times = Debug.find "times"
+
 let f ch fields =
+  let t = Timer.make () in
   let st = build_name_tables fields in
   let ctx = { function_refs = Code.Var.Set.empty } in
-  let other_fields = List.concat (List.map ~f:(fun f -> field ctx st f) fields) in
+  let other_fields = List.concat_map ~f:(fun f -> field ctx st f) fields in
   let funct_decl =
     let functions = Code.Var.Set.elements ctx.function_refs in
     if List.is_empty functions
@@ -682,12 +685,9 @@ let f ch fields =
           :: List.map ~f:(index st.func_names) functions)
       ]
   in
-  Format.fprintf
-    (Format.formatter_of_out_channel ch)
-    "%a@."
-    format_sexp
-    (List
-       (Atom "module"
-       :: (List.concat (List.map ~f:(fun i -> import st i) fields)
-          @ funct_decl
-          @ other_fields)))
+  let imports = List.concat_map ~f:(fun i -> import st i) fields in
+  let sexp = List (Atom "module" :: List.concat [ imports; funct_decl; other_fields ]) in
+  if times () then Format.eprintf "    prepare: %a@." Timer.print t;
+  let t = Timer.make () in
+  Format.fprintf (Format.formatter_of_out_channel ch) "%a@." format_sexp sexp;
+  if times () then Format.eprintf "    format: %a@." Timer.print t
