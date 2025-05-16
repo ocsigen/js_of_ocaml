@@ -344,7 +344,8 @@ let functor_like ~context info =
   (match Config.target (), context.profile with
   | `Wasm, (O2 | O3) -> true
   | `Wasm, O1 -> body_size ~context info <= 15
-  | `JavaScript, (O1 | O2 | O3) -> body_size ~context info <= 15)
+  | `JavaScript, (O1 | O2) -> false
+  | `JavaScript, O3 -> body_size ~context info <= 15)
   && (not info.recursive)
   && (not (contains_loop ~context info))
   && returns_a_block ~context info
