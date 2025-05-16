@@ -20,7 +20,7 @@ open Stdlib
 
 let debug = Debug.find "binaryen"
 
-let times = Debug.find "times"
+let times = Debug.find "binaryen-times"
 
 let command cmdline =
   let cmdline = String.concat ~sep:" " cmdline in
@@ -41,7 +41,7 @@ let common_options () =
     ]
   in
   let l = if Config.Flag.pretty () then "-g" :: l else l in
-  let l = if false then "--no-validation" :: l else l in
+  let l = if times () then "--no-validation" :: l else l in
   l
 
 let opt_flag flag v =
