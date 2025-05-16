@@ -10,9 +10,8 @@ bench:
 	$(MAKE) perform COMPILER=wasm_of_ocaml EXTRA_ARGS="" KIND=wasm
 	@date -u +"%FT%TZ - $(NAME): done"
 
-# Add --source-map back once we support source-map in wasm binary file.
 perform: bedrock2_fiat_crypto.byte
-	/usr/bin/time -f "%E %R" $(COMPILER) --debug times $(EXTRA_ARGS) $< -o out.js 2>&1 | \
+	/usr/bin/time -f "%E %R" $(COMPILER) --debug times --source-map $(EXTRA_ARGS) $< -o out.js 2>&1 | \
 	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) $(NAME) out.js | \
 	sh ../utils/aggregate.sh $(KIND)
 
