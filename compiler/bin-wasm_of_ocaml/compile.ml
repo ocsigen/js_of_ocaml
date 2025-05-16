@@ -22,6 +22,8 @@ open Wasm_of_ocaml_compiler
 
 let times = Debug.find "times"
 
+let binaryen_times = Debug.find "binaryen-times"
+
 let debug_mem = Debug.find "mem"
 
 let debug_wat = Debug.find "wat"
@@ -159,6 +161,7 @@ let link_and_optimize
   @@ fun opt_temp_sourcemap ->
   (with_runtime_files ~runtime_wasm_files
   @@ fun runtime_inputs ->
+  let t = Timer.make ~get_time:Unix.time () in
   Binaryen.link
     ~inputs:
       ({ Binaryen.module_name = "env"; file = runtime_file; source_map_file = None }
@@ -169,13 +172,16 @@ let link_and_optimize
           wat_files)
     ~opt_output_sourcemap:opt_temp_sourcemap
     ~output_file:temp_file
-    ());
+    ();
+  if binaryen_times () then Format.eprintf "  binaryen link: %a@." Timer.print t);
+
   Fs.with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
   @@ fun temp_file' ->
   opt_with
     Fs.with_intermediate_file
     (if enable_source_maps then Some (Filename.temp_file "wasm-dce" ".wasm.map") else None)
   @@ fun opt_temp_sourcemap' ->
+  let t = Timer.make ~get_time:Unix.time () in
   let primitives =
     Binaryen.dead_code_elimination
       ~dependencies:Runtime_files.dependencies
@@ -184,6 +190,8 @@ let link_and_optimize
       ~input_file:temp_file
       ~output_file:temp_file'
   in
+  if binaryen_times () then Format.eprintf "  binaryen dce: %a@." Timer.print t;
+  let t = Timer.make ~get_time:Unix.time () in
   Binaryen.optimize
     ~profile
     ~opt_input_sourcemap:opt_temp_sourcemap'
@@ -191,6 +199,7 @@ let link_and_optimize
     ~input_file:temp_file'
     ~output_file
     ();
+  if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t;
   Option.iter
     ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
     opt_sourcemap_file;
@@ -533,6 +542,7 @@ let run
              ~opt_source_map_file
          in
          let tmp_wasm_file = Filename.concat tmp_dir "code.wasm" in
+         let t2 = Timer.make ~get_time:Unix.time () in
          let primitives =
            link_and_optimize
              ~profile
@@ -543,6 +553,8 @@ let run
              [ input_wasm_file, opt_source_map_file ]
              tmp_wasm_file
          in
+         if binaryen_times ()
+         then Format.eprintf " link_and_optimize: %a@." Timer.print t2;
          let wasm_name =
            Printf.sprintf
              "code-%s"
@@ -556,6 +568,7 @@ let run
            Link.Wasm_binary.append_source_map_section
              ~file:tmp_wasm_file'
              ~url:(wasm_name ^ ".wasm.map"));
+         if times () then Format.eprintf "Start building js runtime@.";
          let js_runtime =
            let missing_primitives =
              let l = Link.Wasm_binary.read_imports ~file:tmp_wasm_file' in

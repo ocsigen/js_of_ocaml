@@ -9,6 +9,7 @@
   compiler-libs.common
   js_of_ocaml-compiler.runtime-files
   yojson
+  unix
   (select
    findlib_support.ml
    from
