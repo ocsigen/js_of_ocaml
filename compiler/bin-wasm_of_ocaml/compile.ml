@@ -93,9 +93,12 @@ let build_runtime ~runtime_file =
     [ ( "effects"
       , Wat_preprocess.String
           (match Config.effects () with
+          | `Disabled -> "disabled"
           | `Jspi -> "jspi"
           | `Cps -> "cps"
-          | `Disabled | `Double_translation -> assert false) )
+          | `Double_translation -> assert false) )
+    ; "wasi", Wat_preprocess.Bool (Config.Flag.wasi ())
+    ; "trap-on-exception", Wat_preprocess.Bool (Config.Flag.trap_on_exception ())
     ]
   in
   match
@@ -117,7 +120,9 @@ let build_runtime ~runtime_file =
             ; file = module_name ^ ".wat"
             ; source = Contents contents
             })
-          Runtime_files.wat_files
+          (if Config.Flag.wasi ()
+           then ("libc", Runtime_files.wasi_libc) :: Runtime_files.wat_files
+           else Runtime_files.wat_files)
       in
       Runtime.build
         ~link_options:[ "-g" ]
@@ -179,7 +184,10 @@ let link_and_optimize
   @@ fun opt_temp_sourcemap' ->
   let primitives =
     Binaryen.dead_code_elimination
-      ~dependencies:Runtime_files.dependencies
+      ~dependencies:
+        (if Config.Flag.wasi ()
+         then Runtime_files.wasi_dependencies
+         else Runtime_files.dependencies)
       ~opt_input_sourcemap:opt_temp_sourcemap
       ~opt_output_sourcemap:opt_temp_sourcemap'
       ~input_file:temp_file
@@ -297,7 +305,13 @@ let build_js_runtime ~primitives ?runtime_arguments () =
     | _ -> assert false
   in
   let init_fun =
-    match Parse_js.parse (Parse_js.Lexer.of_string Runtime_files.js_runtime) with
+    match
+      Parse_js.parse
+        (Parse_js.Lexer.of_string
+           (if Config.Flag.wasi ()
+            then Runtime_files.js_wasi_launcher
+            else Runtime_files.js_launcher))
+    with
     | [ (Expression_statement f, _) ] -> f
     | _ -> assert false
   in
@@ -534,9 +548,12 @@ let run
              tmp_wasm_file
          in
          let wasm_name =
-           Printf.sprintf
-             "code-%s"
-             (String.sub (Digest.to_hex (Digest.file tmp_wasm_file)) ~pos:0 ~len:20)
+           if Config.Flag.wasi ()
+           then "code"
+           else
+             Printf.sprintf
+               "code-%s"
+               (String.sub (Digest.to_hex (Digest.file tmp_wasm_file)) ~pos:0 ~len:20)
          in
          let tmp_wasm_file' = Filename.concat tmp_dir (wasm_name ^ ".wasm") in
          Sys.rename tmp_wasm_file tmp_wasm_file';

@@ -341,7 +341,7 @@ let remove_dead_closures ~live_vars p pc =
     p.blocks
     p
 
-let f p live_vars =
+let f p (live_vars : Deadcode.variable_uses) =
   let previous_p = p in
   let inline_count = ref 0 in
   Code.invariant p;
