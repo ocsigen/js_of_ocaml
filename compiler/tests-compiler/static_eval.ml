@@ -142,11 +142,11 @@ let%expect_test "static eval of string get" =
       key = param[1],
       data = param[2],
       next = param[3],
-      r = [0, key, data, next],
-      prec = r,
+      prec$1 = [0, key, data, next],
+      prec = prec$1,
       param$0 = next;
      for(;;){
-      if(! param$0) return r;
+      if(! param$0) return prec$1;
       var
        key$0 = param$0[1],
        data$0 = param$0[2],

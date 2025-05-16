@@ -43,19 +43,18 @@ let deadcode' p =
   if debug () then Format.eprintf "Dead-code...@.";
   Deadcode.f p
 
-let deadcode p =
-  let p, _ = deadcode' p in
+let deadcode_and_inline p =
+  let p, live_vars = deadcode' p in
+  let p =
+    if Config.Flag.inline () && Config.Flag.deadcode ()
+    then (
+      if debug () then Format.eprintf "Inlining...@.";
+      Inline.f p live_vars)
+    else p
+  in
   let p = Deadcode.merge_blocks p in
   let p = Code.compact p in
   p
-
-let inline p =
-  if Config.Flag.inline () && Config.Flag.deadcode ()
-  then (
-    let p, live_vars = deadcode' p in
-    if debug () then Format.eprintf "Inlining...@.";
-    Inline.f p live_vars)
-  else p
 
 let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
@@ -160,8 +159,7 @@ let round ~first : 'a -> 'a =
   +> flow
   +> specialize
   +> eval
-  +> inline
-  +> deadcode
+  +> deadcode_and_inline
 
 (* o1 *)
 
