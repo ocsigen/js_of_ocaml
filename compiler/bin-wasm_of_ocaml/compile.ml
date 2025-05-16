@@ -246,23 +246,14 @@ let generate_prelude ~out_file =
       ~deadcode_sentinal
       program
   in
-  Generate.output ch ~context;
+  Generate.wasm_output ch ~context;
   uinfo.provides
 
 let build_prelude z =
   Fs.with_intermediate_file (Filename.temp_file "prelude" ".wasm")
   @@ fun prelude_file ->
-  Fs.with_intermediate_file (Filename.temp_file "prelude_file" ".wasm")
-  @@ fun tmp_prelude_file ->
   let predefined_exceptions = generate_prelude ~out_file:prelude_file in
-  Binaryen.optimize
-    ~profile:Profile.O1
-    ~input_file:prelude_file
-    ~output_file:tmp_prelude_file
-    ~opt_input_sourcemap:None
-    ~opt_output_sourcemap:None
-    ();
-  Zip.add_file z ~name:"prelude.wasm" ~file:tmp_prelude_file;
+  Zip.add_file z ~name:"prelude.wasm" ~file:prelude_file;
   predefined_exceptions
 
 let build_js_runtime ~primitives ?runtime_arguments () =
@@ -408,7 +399,7 @@ let run
         program
     in
     if standalone then Generate.add_start_function ~context toplevel_name;
-    Generate.output ch ~context;
+    Generate.output ch ~enable_source_maps ~context;
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
     generated_js
   in

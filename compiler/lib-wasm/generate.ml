@@ -1315,10 +1315,12 @@ let add_start_function = G.add_start_function
 
 let add_init_function = G.add_init_function
 
-let output ch ~context =
+let output ch ~enable_source_maps ~context =
   let t = Timer.make () in
   let fields = G.output ~context in
-  Wat_output.f ch fields;
+  if enable_source_maps || Debug.find "wat" ()
+  then Wat_output.f ch fields
+  else Wasm_output.f ch fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t
 
 let wasm_output ch ~context =
