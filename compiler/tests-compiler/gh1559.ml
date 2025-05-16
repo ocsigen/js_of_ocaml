@@ -210,12 +210,12 @@ let () = my_ref := 2
          }
          var
           g = function(param){return 2 + this_will_be_undefined(0) | 0;},
-          a = g(0),
-          c = g(0) + a | 0;
+          b = g(0),
+          a = g(0) + b | 0;
          break a;
         }
         if(caml_call2(Stdlib_Int[8], nesting, 0))
-         var c = nesting;
+         var a = nesting;
         else
          var
           g$0 =
@@ -224,10 +224,10 @@ let () = my_ref := 2
                      ? 2 + this_will_be_undefined(0) | 0
                      : 1;
             },
-          b = g$0(0),
-          c = g$0(0) + b | 0;
+          c = g$0(0),
+          a = g$0(0) + c | 0;
        }
-       var d = caml_call1(Stdlib_Int[12], c);
+       var d = caml_call1(Stdlib_Int[12], a);
        caml_call1(Stdlib[46], d);
        my_ref[1] = 2;
        var Test = [0, my_ref];

@@ -267,18 +267,18 @@ let f t x =
         catch(exn$0){
          var exn = caml_wrap_exception(exn$0);
          if(exn !== Stdlib[3]) throw caml_maybe_attach_backtrace(exn, 0);
-         var b = 0;
+         var a = 0;
          break a;
         }
         if(val && ! val[2]){
-         var y = val[1], a = y === (x$0 + 1 | 0) ? 1 : 0;
-         if(a){var b = a; break a;}
+         var y = val[1], b = y === (x$0 + 1 | 0) ? 1 : 0;
+         if(b){var a = b; break a;}
          x$0 = y;
          continue;
         }
-        var b = 0;
+        var a = 0;
        }
-       return b ? 1 : 2;
+       return a ? 1 : 2;
       }
      }
      return - 2;
