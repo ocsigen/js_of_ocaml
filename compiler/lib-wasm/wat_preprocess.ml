@@ -626,7 +626,7 @@ let with_preprocessed_files ~variables ~inputs action =
             if Link.Wasm_binary.check_file ~file then None else Some (Fs.read_file file)
         | Contents contents -> Some contents
       with
-      | None -> cont ({ Binaryen.module_name; file } :: inputs)
+      | None -> cont ({ Binaryen.module_name; file; source_map_file = None } :: inputs)
       | Some contents ->
           let source_file = file in
           Fs.with_intermediate_file (Filename.temp_file module_name ".wat")
@@ -637,7 +637,7 @@ let with_preprocessed_files ~variables ~inputs action =
               (if Link.Wasm_binary.check ~contents
                then contents
                else f ~variables ~filename:source_file ~contents);
-          cont ({ Binaryen.module_name; file } :: inputs))
+          cont ({ Binaryen.module_name; file; source_map_file = None } :: inputs))
     ~init:action
     inputs
     []

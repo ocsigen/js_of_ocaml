@@ -48,6 +48,7 @@ let opt_flag flag v =
 type link_input =
   { module_name : string
   ; file : string
+  ; source_map_file : string option
   }
 
 let link ?options ~inputs ~opt_output_sourcemap ~output_file () =
@@ -57,7 +58,13 @@ let link ?options ~inputs ~opt_output_sourcemap ~output_file () =
        @ Option.value ~default:[] options
        @ List.flatten
            (List.map
-              ~f:(fun { file; module_name } -> [ Filename.quote file; module_name ])
+              ~f:(fun { file; module_name; source_map_file } ->
+                Filename.quote file
+                :: module_name
+                ::
+                (match source_map_file with
+                | None -> []
+                | Some file -> [ "--input-source-map"; Filename.quote file ]))
               inputs)
        @ [ "-o"; Filename.quote output_file ]
        @ opt_flag "--output-source-map" opt_output_sourcemap))

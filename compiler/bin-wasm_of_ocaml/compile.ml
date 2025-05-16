@@ -74,8 +74,6 @@ let opt_with action x f =
   | None -> f None
   | Some x -> action x (fun y -> f (Some y))
 
-let output_gen output_file f = Filename.gen_file output_file f
-
 let with_runtime_files ~runtime_wasm_files f =
   let inputs =
     List.map
@@ -163,8 +161,12 @@ let link_and_optimize
   @@ fun runtime_inputs ->
   Binaryen.link
     ~inputs:
-      (({ Binaryen.module_name = "env"; file = runtime_file } :: runtime_inputs)
-      @ List.map ~f:(fun file -> { Binaryen.module_name = "OCaml"; file }) wat_files)
+      ({ Binaryen.module_name = "env"; file = runtime_file; source_map_file = None }
+       :: runtime_inputs
+      @ List.map
+          ~f:(fun (file, source_map_file) ->
+            { Binaryen.module_name = "OCaml"; file; source_map_file })
+          wat_files)
     ~opt_output_sourcemap:opt_temp_sourcemap
     ~output_file:temp_file
     ());
@@ -223,7 +225,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
       ~opt_output_sourcemap:None
       ~inputs:
         (List.map
-           ~f:(fun file -> { Binaryen.module_name = "env"; file })
+           ~f:(fun file -> { Binaryen.module_name = "env"; file; source_map_file = None })
            [ runtime_file; extra_runtime ])
       ~output_file
       ()
@@ -381,7 +383,7 @@ let run
     | Some p -> p
     | None -> Profile.O1
   in
-  let output (one : Parse_bytecode.one) ~unit_name ch =
+  let output (one : Parse_bytecode.one) ~unit_name ~wat_file ~file ~opt_source_map_file =
     check_debug one;
     let code = one.code in
     let standalone = Option.is_none unit_name in
@@ -399,7 +401,14 @@ let run
         program
     in
     if standalone then Generate.add_start_function ~context toplevel_name;
-    Generate.output ch ~enable_source_maps ~context;
+    let ch = open_out_bin file in
+    Generate.wasm_output ch ~opt_source_map_file ~context;
+    close_out ch;
+    if debug_wat ()
+    then (
+      let ch = open_out_bin wat_file in
+      Generate.output ch ~context;
+      close_out ch);
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
     generated_js
   in
@@ -458,20 +467,28 @@ let run
           else None)
        @@ fun opt_tmp_map_file ->
        let unit_data =
-         (if debug_wat ()
-          then
-            fun f ->
-              f (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
-          else Fs.with_intermediate_file (Filename.temp_file unit_name ".wat"))
-         @@ fun wat_file ->
+         Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
+         @@ fun input_file ->
+         opt_with
+           Fs.with_intermediate_file
+           (if enable_source_maps
+            then Some (Filename.temp_file unit_name ".wasm.map")
+            else None)
+         @@ fun opt_input_sourcemap ->
          let strings, fragments =
-           output_gen wat_file (output code ~unit_name:(Some unit_name))
+           output
+             code
+             ~wat_file:
+               (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+             ~unit_name:(Some unit_name)
+             ~file:input_file
+             ~opt_source_map_file:opt_input_sourcemap
          in
          Binaryen.optimize
            ~profile
-           ~opt_input_sourcemap:None
+           ~opt_input_sourcemap
            ~opt_output_sourcemap:opt_tmp_map_file
-           ~input_file:wat_file
+           ~input_file
            ~output_file:tmp_wasm_file
            ();
          { Link.unit_name; unit_info; strings; fragments }
@@ -491,10 +508,8 @@ let run
              ic
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-         (if debug_wat ()
-          then fun f -> f (Filename.chop_extension output_file ^ ".wat")
-          else Fs.with_intermediate_file (Filename.temp_file "code" ".wat"))
-         @@ fun wat_file ->
+         Fs.with_intermediate_file (Filename.temp_file "code" ".wasm")
+         @@ fun input_wasm_file ->
          let dir = Filename.chop_extension output_file ^ ".assets" in
          Link.gen_dir dir
          @@ fun tmp_dir ->
@@ -504,7 +519,19 @@ let run
            then Some (Filename.concat tmp_dir "code.wasm.map")
            else None
          in
-         let generated_js = output_gen wat_file (output code ~unit_name:None) in
+         let opt_source_map_file =
+           if enable_source_maps
+           then Some (Filename.temp_file "code" ".wasm.map")
+           else None
+         in
+         let generated_js =
+           output
+             code
+             ~unit_name:None
+             ~wat_file:(Filename.chop_extension output_file ^ ".wat")
+             ~file:input_wasm_file
+             ~opt_source_map_file
+         in
          let tmp_wasm_file = Filename.concat tmp_dir "code.wasm" in
          let primitives =
            link_and_optimize
@@ -513,7 +540,7 @@ let run
              ~sourcemap_don't_inline_content
              ~opt_sourcemap
              runtime_wasm_files
-             [ wat_file ]
+             [ input_wasm_file, opt_source_map_file ]
              tmp_wasm_file
          in
          let wasm_name =
