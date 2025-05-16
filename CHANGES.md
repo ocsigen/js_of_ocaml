@@ -49,6 +49,7 @@
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
 * Runtime: consistent bigarray hashing across all architectures (#1977)
 * Tools: fix jsoo_mktop and jsoo_mkcmis (#1877)
+* Toplevel: fix for when use-js-strings is disabled (#1997)
 
 # 6.0.1 (2025-02-07) - Lille
 
