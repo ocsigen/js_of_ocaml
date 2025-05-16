@@ -267,6 +267,7 @@ let compile_to_javascript
     ?(flags = [])
     ?(use_js_string = false)
     ?(effects = `Disabled)
+    ?(werror = true)
     ~pretty
     ~sourcemap
     file =
@@ -283,6 +284,7 @@ let compile_to_javascript
          then [ "--enable=use-js-string" ]
          else [ "--disable=use-js-string" ])
       ; flags
+      ; (if werror then [ "--Werror" ] else [])
       ]
   in
   let extra_args = String.concat ~sep:" " extra_args in
@@ -324,9 +326,10 @@ let compile_bc_to_javascript
     ?use_js_string
     ?(pretty = true)
     ?(sourcemap = true)
+    ?werror
     file =
   Filetype.path_of_bc_file file
-  |> compile_to_javascript ?flags ?effects ?use_js_string ~pretty ~sourcemap
+  |> compile_to_javascript ?flags ?effects ?use_js_string ?werror ~pretty ~sourcemap
 
 let compile_cmo_to_javascript
     ?(flags = [])
@@ -334,11 +337,13 @@ let compile_cmo_to_javascript
     ?use_js_string
     ?(pretty = true)
     ?(sourcemap = true)
+    ?werror
     file =
   Filetype.path_of_cmo_file file
   |> compile_to_javascript
        ?effects
        ?use_js_string
+       ?werror
        ~flags:([ "--disable"; "header" ] @ flags)
        ~pretty
        ~sourcemap
@@ -546,7 +551,7 @@ let compile_and_run_bytecode ?unix s =
       |> run_bytecode
       |> print_endline)
 
-let compile_and_run ?debug ?pretty ?(flags = []) ?effects ?use_js_string ?unix s =
+let compile_and_run ?debug ?pretty ?(flags = []) ?effects ?use_js_string ?unix ?werror s =
   with_temp_dir ~f:(fun () ->
       let bytecode_file =
         s
@@ -561,6 +566,7 @@ let compile_and_run ?debug ?pretty ?(flags = []) ?effects ?use_js_string ?unix s
           ?effects
           ?use_js_string
           ?sourcemap:debug
+          ?werror
           bytecode_file
         |> run_javascript
       in
@@ -573,22 +579,35 @@ let compile_and_parse_whole_program
     ?effects
     ?use_js_string
     ?unix
+    ?werror
     s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_bc ?unix ~debug
-      |> compile_bc_to_javascript ?pretty ?flags ?effects ?use_js_string ~sourcemap:debug
+      |> compile_bc_to_javascript
+           ?pretty
+           ?flags
+           ?effects
+           ?use_js_string
+           ?werror
+           ~sourcemap:debug
       |> parse_js)
 
-let compile_and_parse ?(debug = true) ?pretty ?flags ?effects ?use_js_string s =
+let compile_and_parse ?(debug = true) ?pretty ?flags ?effects ?use_js_string ?werror s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
       |> Filetype.write_ocaml ~name:"test.ml"
       |> compile_ocaml_to_cmo ~debug
-      |> compile_cmo_to_javascript ?pretty ?flags ?effects ?use_js_string ~sourcemap:debug
+      |> compile_cmo_to_javascript
+           ?pretty
+           ?flags
+           ?effects
+           ?use_js_string
+           ?werror
+           ~sourcemap:debug
       |> parse_js)
 
 let normalize_path s =
