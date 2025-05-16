@@ -56,7 +56,8 @@ let read_cmi ~dir cmi =
       | "dynlink_types.cmi"
       | "dynlink_platform_intf.cmi"
       | "dynlink_common.cmi"
-      | "dynlink_symtable.cmi" -> raise Not_found
+      | "dynlink_symtable.cmi"
+      | "dynlink_compilerlibs.cmi" -> raise Not_found
       | cmi ->
           Format.eprintf
             "Could not find cmi %s or %s in %s@."

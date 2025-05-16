@@ -117,7 +117,8 @@ let f ~prim ~cmis ~files ~paths =
             | "Dynlink_types"
             | "Dynlink_platform_intf"
             | "Dynlink_common"
-            | "Dynlink_symtable" -> acc, missing
+            | "Dynlink_symtable"
+            | "Dynlink_compilerlibs" -> acc, missing
             | _ -> acc, s :: missing))
       cmis
       ([], [])
