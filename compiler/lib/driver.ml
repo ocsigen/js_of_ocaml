@@ -39,18 +39,25 @@ let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p
 
-let deadcode' p =
+let deadcode p =
   if debug () then Format.eprintf "Dead-code...@.";
   Deadcode.f p
 
-let deadcode_and_inline p =
-  let p, live_vars = deadcode' p in
+let deadcode_and_inline (profile : Profile.t) p =
+  let p, live_vars = deadcode p in
   let p =
     if Config.Flag.inline () && Config.Flag.deadcode ()
     then (
       if debug () then Format.eprintf "Inlining...@.";
       Inline.f p live_vars)
     else p
+  in
+  let p =
+    match profile with
+    | O1 -> p
+    | O2 | O3 ->
+        let p, _ = deadcode p in
+        p
   in
   let p = Deadcode.merge_blocks p in
   let p = Code.compact p in
@@ -95,13 +102,13 @@ let effects ~deadcode_sentinal p =
   match Config.effects () with
   | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
-      let p, live_vars = Deadcode.f p in
+      let p, live_vars = deadcode p in
       let info = Global_flow.f ~fast:false p in
       let p, live_vars =
         if Config.Flag.globaldeadcode ()
         then
           let p = Global_deadcode.f p ~deadcode_sentinal info in
-          Deadcode.f p
+          deadcode p
         else p, live_vars
       in
       p
@@ -152,26 +159,26 @@ let rec loop max name round i (p : 'a) : 'a =
     p')
   else loop max name round (i + 1) p'
 
-let round ~first : 'a -> 'a =
+let round (profile : Profile.t) ~first : 'a -> 'a =
   print
   +> tailcall
   +> (if first then Fun.id else phi)
   +> flow
   +> specialize
   +> eval
-  +> deadcode_and_inline
+  +> deadcode_and_inline profile
 
 (* o1 *)
 
-let o1 = loop 2 "round" round 1 +> phi +> flow +> specialize +> eval +> print
+let o1 = loop 2 "round" (round O1) 1 +> phi +> flow +> specialize +> eval +> print
 
 (* o2 *)
 
-let o2 = loop 10 "round" round 1 +> print
+let o2 = loop 10 "round" (round O2) 1 +> print
 
 (* o3 *)
 
-let o3 = loop 30 "round" round 1 +> print
+let o3 = loop 30 "round" (round O3) 1 +> print
 
 let generate
     ~exported_runtime
@@ -638,7 +645,7 @@ let optimize ~profile p =
          | `JavaScript, `Disabled -> Generate_closure.f
          | `JavaScript, (`Cps | `Double_translation) | `Wasm, (`Jspi | `Cps) -> Fun.id
          | `JavaScript, `Jspi | `Wasm, (`Disabled | `Double_translation) -> assert false)
-    +> map_fst deadcode'
+    +> map_fst deadcode
   in
   if times () then Format.eprintf "Start Optimizing...@.";
   let t = Timer.make () in
