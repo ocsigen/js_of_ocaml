@@ -18,7 +18,7 @@
 
 type t
 
-val make : unit -> t
+val make : ?get_time:(unit -> float) -> unit -> t
 
 val get : t -> float
 
