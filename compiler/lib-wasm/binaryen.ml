@@ -20,10 +20,12 @@ open Stdlib
 
 let debug = Debug.find "binaryen"
 
+let times = Debug.find "times"
+
 let command cmdline =
   let cmdline = String.concat ~sep:" " cmdline in
   if debug () then Format.eprintf "+ %s@." cmdline;
-  let res = Sys.command cmdline in
+  let res = Sys.command ((if times () then "BINARYEN_PASS_DEBUG=1 " else "") ^ cmdline) in
   if res <> 0 then failwith ("the following command terminated unsuccessfully: " ^ cmdline)
 
 let common_options () =
@@ -38,7 +40,9 @@ let common_options () =
     ; "--enable-strings"
     ]
   in
-  if Config.Flag.pretty () then "-g" :: l else l
+  let l = if Config.Flag.pretty () then "-g" :: l else l in
+  let l = if false then "--no-validation" :: l else l in
+  l
 
 let opt_flag flag v =
   match v with
