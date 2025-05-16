@@ -214,6 +214,14 @@ module List = struct
 
   let append l1 l2 = count_append l1 l2 0 [@@if ocaml_version < (5, 1, 0)]
 
+  let find_index p =
+    let rec aux i = function
+      | [] -> None
+      | a :: l -> if p a then Some i else aux (i + 1) l
+    in
+    aux 0
+  [@@if ocaml_version < (5, 1, 0)]
+
   let group l ~f =
     let rec loop (l : 'a list) (this_group : 'a list) (acc : 'a list list) : 'a list list
         =

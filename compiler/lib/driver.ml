@@ -167,6 +167,7 @@ let round ~first : 'a -> 'a =
   +> flow
   +> specialize
   +> eval
+  +> Unboxing.f
   +> inline
   +> deadcode
 
