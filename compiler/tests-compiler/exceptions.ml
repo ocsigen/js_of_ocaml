@@ -45,16 +45,16 @@ let prevent_inline = some_name
   print_fun_decl (program ~debug:false) None;
   [%expect
     {|
-    function a(c){
+    function _a_(_c_){
      try{
       try{throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
-      catch(a){var b = caml_wrap_exception(a);}
+      catch(_c_){var _b_ = caml_wrap_exception(_c_);}
      }
-     catch(b){
-      var a = caml_wrap_exception(b);
-      throw caml_maybe_attach_backtrace(a, 1);
+     catch(_c_){
+      var _a_ = caml_wrap_exception(_c_);
+      throw caml_maybe_attach_backtrace(_a_, 1);
      }
-     throw caml_maybe_attach_backtrace(b, 1);
+     throw caml_maybe_attach_backtrace(_b_, 1);
     }
     //end
     |}]

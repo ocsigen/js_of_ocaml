@@ -59,7 +59,7 @@ let (_ : string) = here ()
         Test =
           [0,
            caml_string_concat,
-           function(a){return cst_a + cst_a + cst_b + cst_b;}];
+           function(_a_){return cst_a + cst_a + cst_b + cst_b;}];
        runtime.caml_register_global(2, Test, "Test");
        return;
       }
@@ -109,7 +109,7 @@ let (_ : string) = here ()
         Test =
           [0,
            caml_string_concat,
-           function(a){
+           function(_a_){
             return caml_string_concat
                     (cst_a,
                      caml_string_concat(cst_a, caml_string_concat(cst_b, cst_b)));

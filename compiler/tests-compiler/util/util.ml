@@ -273,7 +273,7 @@ let compile_to_javascript
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
     List.flatten
-      [ (if pretty then [ "--pretty" ] else [])
+      [ (if pretty then [ "--pretty"; "--debug"; "var" ] else [])
       ; (if sourcemap then [ "--sourcemap" ] else [])
       ; (match effects with
         | `Double_translation -> [ "--effects=double-translation" ]

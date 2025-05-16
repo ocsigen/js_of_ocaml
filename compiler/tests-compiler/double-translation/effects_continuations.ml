@@ -101,7 +101,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function exceptions$0(s){
-     try{var c = caml_int_of_string(s), n = c;}
+     try{var _k_ = caml_int_of_string(s), n = _k_;}
      catch(exn$0){
       var exn = caml_wrap_exception(exn$0), tag = exn[1];
       if(tag !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
@@ -110,7 +110,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var b = 7, m = b;
+      var _j_ = 7, m = _j_;
      }
      catch(exn){
       var exn$0 = caml_wrap_exception(exn);
@@ -120,8 +120,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{
       if(caml_string_equal(s, cst))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var a = [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
-      return a;
+      var _i_ = [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
+      return _i_;
      }
      catch(exn){
       var exn$1 = caml_wrap_exception(exn);
@@ -131,7 +131,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function exceptions$1(s, cont){
-     try{var c = caml_int_of_string(s), n = c;}
+     try{var _i_ = caml_int_of_string(s), n = _i_;}
      catch(exn){
       var exn$2 = caml_wrap_exception(exn), tag = exn$2[1];
       if(tag !== Stdlib[7]){
@@ -145,7 +145,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var b = 7, m = b;
+      var _h_ = 7, m = _h_;
      }
      catch(exn$0){
       var exn$1 = caml_wrap_exception(exn$0);
@@ -165,9 +165,9 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       return caml_trampoline_cps_call2
               (Stdlib[79],
                cst_toto,
-               function(a){caml_pop_trap(); return cont([0, [0, a, n, m]]);});
-     var a = Stdlib[8], raise = caml_pop_trap();
-     return raise(caml_maybe_attach_backtrace(a, 1));
+               function(_i_){caml_pop_trap(); return cont([0, [0, _i_, n, m]]);});
+     var _g_ = Stdlib[8], raise = caml_pop_trap();
+     return raise(caml_maybe_attach_backtrace(_g_, 1));
     }
     //end
     var exceptions = caml_cps_closure(exceptions$0, exceptions$1);
@@ -180,43 +180,43 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function cond1$1(b, cont){
-     function a(ic){return cont([0, ic, 7]);}
+     function _g_(ic){return cont([0, ic, 7]);}
      return b
-             ? caml_trampoline_cps_call2(Stdlib[79], cst_toto$0, a)
-             : caml_trampoline_cps_call2(Stdlib[79], cst_titi, a);
+             ? caml_trampoline_cps_call2(Stdlib[79], cst_toto$0, _g_)
+             : caml_trampoline_cps_call2(Stdlib[79], cst_titi, _g_);
     }
     //end
     var cond1 = caml_cps_closure(cond1$0, cond1$1);
     //end
-    function cond2$0(b$0){
-     if(b$0)
-      caml_call1(Stdlib_Printf[3], a);
+    function cond2$0(b){
+     if(b)
+      caml_call1(Stdlib_Printf[3], _a_);
      else
-      caml_call1(Stdlib_Printf[3], b);
+      caml_call1(Stdlib_Printf[3], _b_);
      return 7;
     }
     //end
-    function cond2$1(b$0, cont){
-     function c(a){return cont(7);}
-     return b$0
-             ? caml_trampoline_cps_call2(Stdlib_Printf[3], a, c)
-             : caml_trampoline_cps_call2(Stdlib_Printf[3], b, c);
+    function cond2$1(b, cont){
+     function _g_(_g_){return cont(7);}
+     return b
+             ? caml_trampoline_cps_call2(Stdlib_Printf[3], _a_, _g_)
+             : caml_trampoline_cps_call2(Stdlib_Printf[3], _b_, _g_);
     }
     //end
     var cond2 = caml_cps_closure(cond2$0, cond2$1);
     //end
     function cond3$0(b){
      var x = [0, 0];
-     if(b) x[1] = 1; else caml_call1(Stdlib_Printf[3], c);
+     if(b) x[1] = 1; else caml_call1(Stdlib_Printf[3], _c_);
      return x[1];
     }
     //end
     function cond3$1(b, cont){
      var x = [0, 0];
-     function a(a){return cont(x[1]);}
+     function _g_(_g_){return cont(x[1]);}
      return b
-             ? (x[1] = 1, a(0))
-             : caml_trampoline_cps_call2(Stdlib_Printf[3], c, a);
+             ? (x[1] = 1, _g_(0))
+             : caml_trampoline_cps_call2(Stdlib_Printf[3], _c_, _g_);
     }
     //end
     var cond3 = caml_cps_closure(cond3$0, cond3$1);
@@ -234,17 +234,17 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
              (Stdlib[79],
               cst_static_examples_ml,
               function(ic){
-               function a(c){
+               function _f_(_g_){
                 return caml_trampoline_cps_call2
                         (Stdlib[83],
                          ic,
                          function(line){
                           return b
-                                  ? caml_trampoline_cps_call2(Stdlib[53], line, a)
-                                  : caml_exact_trampoline_call1(a, 0);
+                                  ? caml_trampoline_cps_call2(Stdlib[53], line, _f_)
+                                  : caml_exact_trampoline_call1(_f_, 0);
                          });
                }
-               return a(0);
+               return _f_(0);
               });
     }
     //end
@@ -252,7 +252,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     //end
     function loop2$0(param){
      var ic = caml_call1(Stdlib[79], cst_static_examples_ml$0);
-     caml_call1(Stdlib_Printf[3], d);
+     caml_call1(Stdlib_Printf[3], _d_);
      for(;;){var line = caml_call1(Stdlib[83], ic); caml_call1(Stdlib[53], line);}
     }
     //end
@@ -261,36 +261,36 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
              (Stdlib[79],
               cst_static_examples_ml$0,
               function(ic){
-               function a(b){
+               function _e_(_f_){
                 return caml_trampoline_cps_call2
                         (Stdlib[83],
                          ic,
                          function(line){
-                          return caml_trampoline_cps_call2(Stdlib[53], line, a);
+                          return caml_trampoline_cps_call2(Stdlib[53], line, _e_);
                          });
                }
-               return caml_trampoline_cps_call2(Stdlib_Printf[3], d, a);
+               return caml_trampoline_cps_call2(Stdlib_Printf[3], _d_, _e_);
               });
     }
     //end
     var loop2 = caml_cps_closure(loop2$0, loop2$1);
     //end
     function loop3$0(param){
-     var l = caml_call1(list_rev, e), x = l;
+     var l = caml_call1(list_rev, _e_), x = l;
      for(;;){if(! x) return l; var r = x[2]; x = r;}
     }
     //end
     function loop3$1(param, cont){
      return caml_trampoline_cps_call2
              (list_rev,
-              e,
+              _e_,
               function(l){
-               function a(x){
+               function _e_(x){
                 if(! x) return cont(l);
                 var r = x[2];
-                return caml_exact_trampoline_call1(a, r);
+                return caml_exact_trampoline_call1(_e_, r);
                }
-               return a(l);
+               return _e_(l);
               });
     }
     //end

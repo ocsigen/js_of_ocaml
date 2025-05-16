@@ -39,7 +39,7 @@ let wrap f =
   [%expect
     {|
     function wrap$0(f){
-     try{var a = caml_call1(f, 0); return a;}
+     try{var _a_ = caml_call1(f, 0); return _a_;}
      catch(exn$1){
       var exn = caml_wrap_exception(exn$1);
       for(;;){
@@ -52,18 +52,18 @@ let wrap f =
     }
     //end
     function wrap$1(f, cont){
-     function a(exn$1){
+     function _a_(exn$1){
       var tag = exn$1[1];
       if(tag === Nested){
        var exn$0 = exn$1[2];
-       return caml_exact_trampoline_call1(a, exn$0);
+       return caml_exact_trampoline_call1(_a_, exn$0);
       }
       var raise = caml_pop_trap(), exn = caml_maybe_attach_backtrace(exn$1, 1);
       return raise(exn);
      }
-     runtime.caml_push_trap(a);
+     runtime.caml_push_trap(_a_);
      return caml_trampoline_cps_call2
-             (f, 0, function(a){caml_pop_trap(); return cont(a);});
+             (f, 0, function(_a_){caml_pop_trap(); return cont(_a_);});
     }
     //end
     var wrap = runtime.caml_cps_closure(wrap$0, wrap$1);
