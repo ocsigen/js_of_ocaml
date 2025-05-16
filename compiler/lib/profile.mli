@@ -1,5 +1,6 @@
-(* Wasm_of_ocaml compiler
+(* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2025 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -15,25 +16,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
-open Js_of_ocaml_compiler
-
 type t =
-  { common : Jsoo_cmdline.Arg.t
-  ; (* compile option *)
-    profile : Profile.t option
-  ; runtime_files : string list
-  ; runtime_only : bool
-  ; output_file : string * bool
-  ; input_file : string option
-  ; enable_source_maps : bool
-  ; sourcemap_root : string option
-  ; sourcemap_don't_inline_content : bool
-  ; params : (string * string) list
-  ; include_dirs : string list
-  ; effects : Config.effects_backend
-  }
+  | O1
+  | O2
+  | O3
 
-val options : unit -> t Cmdliner.Term.t
+val all : t list
 
-val options_runtime_only : unit -> t Cmdliner.Term.t
+val of_int : int -> t option
+
+val to_int : t -> int
+
+val equal : t -> t -> bool

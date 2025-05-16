@@ -232,11 +232,7 @@ let generate_prelude ~out_file =
   Filename.gen_file out_file
   @@ fun ch ->
   let code, uinfo = Parse_bytecode.predefined_exceptions () in
-  let profile =
-    match Driver.profile 1 with
-    | Some p -> p
-    | None -> assert false
-  in
+  let profile = Profile.O1 in
   let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
     Driver.optimize ~profile code
   in
@@ -260,7 +256,7 @@ let build_prelude z =
   @@ fun tmp_prelude_file ->
   let predefined_exceptions = generate_prelude ~out_file:prelude_file in
   Binaryen.optimize
-    ~profile:(Driver.profile 1)
+    ~profile:Profile.O1
     ~input_file:prelude_file
     ~output_file:tmp_prelude_file
     ~opt_input_sourcemap:None
@@ -389,16 +385,15 @@ let run
          Warning: Consider passing '-g' option to ocamlc.\n\
          %!"
   in
+  let profile =
+    match profile with
+    | Some p -> p
+    | None -> Profile.O1
+  in
   let output (one : Parse_bytecode.one) ~unit_name ch =
     check_debug one;
     let code = one.code in
     let standalone = Option.is_none unit_name in
-    let profile =
-      match profile, Driver.profile 1 with
-      | Some p, _ -> p
-      | None, Some p -> p
-      | None, None -> assert false
-    in
     let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
       Driver.optimize ~profile code
     in

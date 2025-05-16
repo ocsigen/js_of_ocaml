@@ -22,7 +22,7 @@ open Js_of_ocaml_compiler
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
-    profile : Driver.profile option
+    profile : Profile.t option
   ; source_map : Source_map.Encoding_spec.t option
   ; runtime_files : string list
   ; no_runtime : bool

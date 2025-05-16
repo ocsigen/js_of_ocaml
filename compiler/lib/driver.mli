@@ -18,10 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type profile
-
-val profile_equal : profile -> profile -> bool
-
 type optimized_result =
   { program : Code.program
   ; variable_uses : Deadcode.variable_uses
@@ -30,12 +26,12 @@ type optimized_result =
   ; deadcode_sentinal : Code.Var.t
   }
 
-val optimize : profile:profile -> Code.program -> optimized_result
+val optimize : profile:Profile.t -> Code.program -> optimized_result
 
 val f :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
-  -> ?profile:profile
+  -> ?profile:Profile.t
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> source_map:bool
   -> formatter:Pretty_print.t
@@ -45,7 +41,7 @@ val f :
 val f' :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
-  -> ?profile:profile
+  -> ?profile:Profile.t
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> Pretty_print.t
   -> Code.program
@@ -70,7 +66,3 @@ val simplify_js : Javascript.statement_list -> Javascript.statement_list
 val name_variables : Javascript.statement_list -> Javascript.statement_list
 
 val configure : Pretty_print.t -> unit
-
-val profiles : (int * profile) list
-
-val profile : int -> profile option
