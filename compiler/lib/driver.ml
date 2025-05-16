@@ -160,6 +160,7 @@ let round ~first : 'a -> 'a =
   +> flow
   +> specialize
   +> eval
+  +> Ref_unboxing.f
   +> inline
   +> deadcode
 
