@@ -115,9 +115,9 @@ let dead_code_elimination
   filter_unused_primitives primitives usage_file
 
 let optimization_options : Profile.t -> _ = function
-  | O1 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-  | O2 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-  | O3 -> [ "-O3"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+  | O1 -> [ "-O1"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+  | O2 -> [ "-O1"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+  | O3 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
 
 let optimize
     ~profile
