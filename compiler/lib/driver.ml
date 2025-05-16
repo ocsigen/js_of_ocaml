@@ -31,13 +31,6 @@ type optimized_result =
   ; deadcode_sentinal : Code.Var.t
   }
 
-type profile =
-  | O1
-  | O2
-  | O3
-
-let profile_equal (a : profile) b = Poly.equal a b
-
 let should_export = function
   | `Iife -> false
   | `Named _ | `Anonymous -> true
@@ -123,7 +116,7 @@ let effects ~deadcode_sentinal p =
       , (Code.Var.Set.empty : Effects.trampolined_calls)
       , (Code.Var.Set.empty : Effects.in_cps) )
 
-let exact_calls profile ~deadcode_sentinal p =
+let exact_calls (profile : Profile.t) ~deadcode_sentinal p =
   match Config.effects () with
   | `Disabled | `Jspi ->
       let fast =
@@ -635,7 +628,7 @@ let optimize ~profile p =
   let opt =
     Specialize.switches
     +> specialize_js_once_before
-    +> (match profile with
+    +> (match (profile : Profile.t) with
        | O1 -> o1
        | O2 -> o2
        | O3 -> o3)
@@ -676,14 +669,20 @@ let full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link p =
 let f
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
-    ?(profile = O1)
+    ?(profile = Profile.O1)
     ~link
     ~source_map
     ~formatter
     p =
   full ~standalone ~wrap_with_fun ~profile ~link ~source_map ~formatter p
 
-let f' ?(standalone = true) ?(wrap_with_fun = `Iife) ?(profile = O1) ~link formatter p =
+let f'
+    ?(standalone = true)
+    ?(wrap_with_fun = `Iife)
+    ?(profile = Profile.O1)
+    ~link
+    formatter
+    p =
   full_no_source_map ~formatter ~standalone ~wrap_with_fun ~profile ~link p
 
 let from_string ~prims ~debug s formatter =
@@ -695,7 +694,3 @@ let from_string ~prims ~debug s formatter =
     ~profile:O1
     ~link:`No
     p
-
-let profiles = [ 1, O1; 2, O2; 3, O3 ]
-
-let profile i = List.find_map ~f:(fun (i', p) -> if i = i' then Some p else None) profiles

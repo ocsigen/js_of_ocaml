@@ -12,7 +12,7 @@ let build ~allowed_imports ~link_options ~opt_options ~variables ~inputs ~output
     ~output_file:merge_file
     ());
   Binaryen.optimize
-    ~profile:None
+    ~profile:Profile.O1
     ~options:opt_options
     ~opt_input_sourcemap:None
     ~input_file:merge_file

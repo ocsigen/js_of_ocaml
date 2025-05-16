@@ -53,7 +53,7 @@ let normalize_effects (effects : [ `Cps | `Double_translation ] option) common :
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
-    profile : Driver.profile option
+    profile : Profile.t option
   ; source_map : Source_map.Encoding_spec.t option
   ; runtime_files : string list
   ; no_runtime : bool
@@ -127,7 +127,9 @@ let options =
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
-    let profile = List.map Driver.profiles ~f:(fun (i, p) -> string_of_int i, p) in
+    let profile =
+      List.map Profile.all ~f:(fun p -> string_of_int (Profile.to_int p), p)
+    in
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
   let noruntime =

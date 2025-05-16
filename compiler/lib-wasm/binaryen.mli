@@ -38,7 +38,7 @@ val dead_code_elimination :
   -> Stdlib.StringSet.t
 
 val optimize :
-     profile:Driver.profile option
+     profile:Profile.t
   -> ?options:string list
   -> opt_input_sourcemap:string option
   -> input_file:string
