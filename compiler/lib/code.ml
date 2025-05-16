@@ -122,8 +122,6 @@ end = struct
 
   include T
 
-  let printer = Var_printer.create Var_printer.Alphabet.javascript
-
   module Name = struct
     let names = Int.Hashtbl.create 100
 
@@ -203,7 +201,6 @@ end = struct
 
   let reset () =
     last_var := 0;
-    Var_printer.reset printer;
     Name.reset ()
 
   let print f x =

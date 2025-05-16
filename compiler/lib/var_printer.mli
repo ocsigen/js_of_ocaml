@@ -31,6 +31,4 @@ type t
 
 val create : Alphabet.t -> t
 
-val reset : t -> unit
-
 val to_string : t -> int -> string

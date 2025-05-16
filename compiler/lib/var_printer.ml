@@ -81,8 +81,4 @@ let to_string t i =
       in
       loop t i (t.last + 1)
 
-let reset t =
-  Int.Hashtbl.clear t.known;
-  t.last <- -1
-
 let create alphabet = { known = Int.Hashtbl.create 1001; alphabet; last = -1 }
