@@ -27,6 +27,6 @@
  (flags
   (:standard -linkall))
  (js_of_ocaml
-  (flags :standard --toplevel)
+  (flags (:standard \ --Werror) --toplevel)
   (compilation_mode whole_program))
  (modes js))

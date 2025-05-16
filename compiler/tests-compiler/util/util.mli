@@ -38,6 +38,7 @@ val compile_cmo_to_javascript :
   -> ?use_js_string:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
+  -> ?werror:bool
   -> Filetype.cmo_file
   -> Filetype.js_file
 
@@ -47,6 +48,7 @@ val compile_bc_to_javascript :
   -> ?use_js_string:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
+  -> ?werror:bool
   -> Filetype.bc_file
   -> Filetype.js_file
 
@@ -85,6 +87,7 @@ val compile_and_run :
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
   -> ?unix:bool
+  -> ?werror:bool
   -> string
   -> unit
 
@@ -96,6 +99,7 @@ val compile_and_parse :
   -> ?flags:string list
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
+  -> ?werror:bool
   -> string
   -> Javascript.program
 
@@ -106,6 +110,7 @@ val compile_and_parse_whole_program :
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
   -> ?unix:bool
+  -> ?werror:bool
   -> string
   -> Javascript.program
 

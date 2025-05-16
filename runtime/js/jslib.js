@@ -134,8 +134,9 @@ function caml_jsoo_flags_use_js_string(unit) {
 }
 
 //Provides: caml_jsoo_flags_effects
+//Requires: caml_string_of_jsstring
 function caml_jsoo_flags_effects(unit) {
-  return CONFIG("effects");
+  return caml_string_of_jsstring(CONFIG("effects"));
 }
 
 //Provides: caml_wrap_exception const (mutable)
