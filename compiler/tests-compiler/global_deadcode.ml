@@ -41,30 +41,30 @@ let%expect_test "Eliminates unused functions from functor" =
     function create(l, v, r){
      if(l) var h = l[4], hl = h; else var hl = 0;
      if(r) var h$0 = r[4], hr = h$0; else var hr = 0;
-     var a = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
-     return [0, l, v, r, a];
+     var _j_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
+     return [0, l, v, r, _j_];
     }
     function bal(l, v, r){
      if(l) var h = l[4], hl = h; else var hl = 0;
      if(r) var h$0 = r[4], hr = h$0; else var hr = 0;
      if((hr + 2 | 0) < hl){
-      if(! l) return invalid_arg(c);
-      var lr = l[3], lv = l[2], ll = l[1], a = height(lr);
-      if(a <= height(ll)) return create(ll, lv, create(lr, v, r));
-      if(! lr) return invalid_arg(b);
-      var lrr = lr[3], lrv = lr[2], lrl = lr[1], f = create(lrr, v, r);
-      return create(create(ll, lv, lrl), lrv, f);
+      if(! l) return invalid_arg(_c_);
+      var lr = l[3], lv = l[2], ll = l[1], _f_ = height(lr);
+      if(_f_ <= height(ll)) return create(ll, lv, create(lr, v, r));
+      if(! lr) return invalid_arg(_b_);
+      var lrr = lr[3], lrv = lr[2], lrl = lr[1], _g_ = create(lrr, v, r);
+      return create(create(ll, lv, lrl), lrv, _g_);
      }
      if((hl + 2 | 0) >= hr){
-      var j = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
-      return [0, l, v, r, j];
+      var _j_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
+      return [0, l, v, r, _j_];
      }
-     if(! r) return invalid_arg(e);
-     var rr = r[3], rv = r[2], rl = r[1], g = height(rl);
-     if(g <= height(rr)) return create(create(l, v, rl), rv, rr);
-     if(! rl) return invalid_arg(d);
-     var rlr = rl[3], rlv = rl[2], rll = rl[1], i = create(rlr, rv, rr);
-     return create(create(l, v, rll), rlv, i);
+     if(! r) return invalid_arg(_e_);
+     var rr = r[3], rv = r[2], rl = r[1], _h_ = height(rl);
+     if(_h_ <= height(rr)) return create(create(l, v, rl), rv, rr);
+     if(! rl) return invalid_arg(_d_);
+     var rlr = rl[3], rlv = rl[2], rll = rl[1], _i_ = create(rlr, rv, rr);
+     return create(create(l, v, rll), rlv, _i_);
     }
     function add(x, t){
      if(! t) return [0, 0, x, 0, 1];

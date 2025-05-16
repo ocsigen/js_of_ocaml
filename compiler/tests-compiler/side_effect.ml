@@ -79,23 +79,23 @@ let%expect_test _ =
             [0,
              [11, caml_string_of_jsbytes("Failure! "), [2, 0, 0]],
              caml_string_of_jsbytes("Failure! %s")]),
-        a =
+        _a_ =
           [0,
            [11,
             caml_string_of_jsbytes("Side effect: "),
             [2, 0, [12, 10, [10, 0]]]],
            caml_string_of_jsbytes("Side effect: %s\n%!")];
        function side_effect(yes, label){
-        if(yes){caml_call2(Stdlib_Printf[2], a, label); i[1]++;}
+        if(yes){caml_call2(Stdlib_Printf[2], _a_, label); i[1]++;}
         return 0;
        }
        side_effect(0, caml_string_of_jsbytes("this is only to avoid inlining"));
        var
-        b =
+        _b_ =
           [0,
            [11, caml_string_of_jsbytes("Or this\n"), [10, 0]],
            caml_string_of_jsbytes("Or this\n%!")],
-        c =
+        _c_ =
           [0,
            [11,
             caml_string_of_jsbytes("Please don't optimize this away\n"),
@@ -108,8 +108,8 @@ let%expect_test _ =
            <
             side_effect(1, caml_string_of_jsbytes("Should only see this once"))
             >>> 0
-           ? caml_call1(Stdlib_Printf[2], b)
-           : caml_call1(Stdlib_Printf[2], c);
+           ? caml_call1(Stdlib_Printf[2], _b_)
+           : caml_call1(Stdlib_Printf[2], _c_);
        if(1 === i[1])
         log_success(0);
        else

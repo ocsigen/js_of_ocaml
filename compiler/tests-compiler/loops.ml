@@ -89,13 +89,18 @@ let rec fun_with_loop acc = function
        var a$0 = [0, acc], i$0 = 0;
        for(;;){
         a$0[1] = [0, 1, a$0[1]];
-        var c = i$0 + 1 | 0;
+        var _b_ = i$0 + 1 | 0;
         if(10 === i$0) return a$0[1];
-        i$0 = c;
+        i$0 = _b_;
        }
       }
       var xs = param[2], a = [0, acc], i = 0;
-      for(;;){a[1] = [0, 1, a[1]]; var b = i + 1 | 0; if(10 === i) break; i = b;}
+      for(;;){
+       a[1] = [0, 1, a[1]];
+       var _a_ = i + 1 | 0;
+       if(10 === i) break;
+       i = _a_;
+      }
       var acc$0 = [0, x, a[1]];
       acc = acc$0;
       param = xs;
@@ -128,15 +133,15 @@ let for_for_while () =
       var j = 1;
       for(;;)
        if(10 <= runtime.caml_mul(k, j)){
-        var b = j + 1 | 0;
+        var _b_ = j + 1 | 0;
         if(10 === j) break;
-        j = b;
+        j = _b_;
        }
        else
         id[1]++;
-      var a = k + 1 | 0;
+      var _a_ = k + 1 | 0;
       if(10 === k) return 0;
-      k = a;
+      k = _a_;
      }
     }
     //end
@@ -167,18 +172,18 @@ let for_for_while () =
       var j = 1;
       for(;;)
        if(10 <= caml_div(k, j)){
-        var b = j + 1 | 0;
+        var _b_ = j + 1 | 0;
         if(10 === j) break;
-        j = b;
+        j = _b_;
        }
        else{
         try{caml_div(k, j);}
         catch(exn){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
         id[1]++;
        }
-      var a = k + 1 | 0;
+      var _a_ = k + 1 | 0;
       if(10 === k) return 0;
-      k = a;
+      k = _a_;
      }
     }
     //end
@@ -267,18 +272,18 @@ let f t x =
         catch(exn$0){
          var exn = caml_wrap_exception(exn$0);
          if(exn !== Stdlib[3]) throw caml_maybe_attach_backtrace(exn, 0);
-         var a = 0;
+         var _a_ = 0;
          break a;
         }
         if(val && ! val[2]){
-         var y = val[1], b = y === (x$0 + 1 | 0) ? 1 : 0;
-         if(b){var a = b; break a;}
+         var y = val[1], _b_ = y === (x$0 + 1 | 0) ? 1 : 0;
+         if(_b_){var _a_ = _b_; break a;}
          x$0 = y;
          continue;
         }
-        var a = 0;
+        var _a_ = 0;
        }
-       return a ? 1 : 2;
+       return _a_ ? 1 : 2;
       }
      }
      return - 2;
@@ -324,15 +329,15 @@ in loop x
        if(3 >= x$0 >>> 0)
         switch(x$0){
           case 0:
-           var a = 1; break a;
+           var _a_ = 1; break a;
           case 2:
-           var n = caml_call1(Stdlib_Random[5], 2), a = n + n | 0; break a;
+           var n = caml_call1(Stdlib_Random[5], 2), _a_ = n + n | 0; break a;
           case 3:
            var n$0 = caml_call1(Stdlib_Random[5], 2); x$0 = n$0; continue;
         }
-       var a = 2;
+       var _a_ = 2;
       }
-      return a + 2 | 0;
+      return _a_ + 2 | 0;
      }
     }
     //end
@@ -439,8 +444,8 @@ let add_substitute =
      var lim$1 = caml_ml_string_length(s), previous = 32, i$4 = 0;
      for(;;){
       if(i$4 >= lim$1){
-       var c = 92 === previous ? 1 : 0;
-       return c ? caml_call2(add_char, b, previous) : c;
+       var _b_ = 92 === previous ? 1 : 0;
+       return _b_ ? caml_call2(add_char, b, previous) : _b_;
       }
       var previous$0 = caml_string_get(s, i$4);
       if(36 === previous$0)
@@ -487,7 +492,7 @@ let add_substitute =
           var closing = 41;
          else{
           if(123 !== opening)
-           throw caml_maybe_attach_backtrace([0, Assert_failure, a], 1);
+           throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
           var closing = 125;
          }
          var lim = caml_ml_string_length(s), k = k$2, stop = new_start;

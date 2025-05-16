@@ -125,47 +125,47 @@ let%expect_test _ =
        f$0 =
          function(counter, n){
           if(- 1 === n){
-           var a = - 2;
-           if(counter >= 50) return caml_trampoline_return(g$0, [0, a]);
+           var _d_ = - 2;
+           if(counter >= 50) return caml_trampoline_return(g$0, [0, _d_]);
            var counter$1 = counter + 1 | 0;
-           return g$0(counter$1, a);
+           return g$0(counter$1, _d_);
           }
           if(0 === n) return i$0;
-          var b = n - 1 | 0;
-          if(counter >= 50) return caml_trampoline_return(g$0, [0, b]);
+          var _e_ = n - 1 | 0;
+          if(counter >= 50) return caml_trampoline_return(g$0, [0, _e_]);
           var counter$0 = counter + 1 | 0;
-          return g$0(counter$0, b);
+          return g$0(counter$0, _e_);
          },
        f = function(n){return caml_trampoline(f$1(0, n));},
        g =
          function(counter, n){
           if(- 1 === n){
-           var a = - 2;
-           if(counter >= 50) return caml_trampoline_return(f$1, [0, a]);
+           var _c_ = - 2;
+           if(counter >= 50) return caml_trampoline_return(f$1, [0, _c_]);
            var counter$1 = counter + 1 | 0;
-           return f$1(counter$1, a);
+           return f$1(counter$1, _c_);
           }
           if(0 === n) return i$0;
-          var b = n - 1 | 0;
-          if(counter >= 50) return caml_trampoline_return(f$1, [0, b]);
+          var _d_ = n - 1 | 0;
+          if(counter >= 50) return caml_trampoline_return(f$1, [0, _d_]);
           var counter$0 = counter + 1 | 0;
-          return f$1(counter$0, b);
+          return f$1(counter$0, _d_);
          };
       let f$1 = f$0, g$0 = g;
-      var b = direct[1];
-      direct[1] = [0, f(i), b];
+      var _b_ = direct[1];
+      direct[1] = [0, f(i), _b_];
       let f$2 = f;
       indirect[1] = [0, function(param){return f$2(i$0);}, indirect[1]];
-      var c = i + 1 | 0;
+      var _c_ = i + 1 | 0;
       if(3 === i) break;
-      i = c;
+      i = _c_;
      }
      var
       indirect$0 =
         caml_call2(list_map, function(f){return caml_call1(f, 0);}, indirect[1]),
       direct$0 = direct[1];
      if(runtime.caml_equal(indirect$0, direct$0)) return 0;
-     throw caml_maybe_attach_backtrace([0, Assert_failure, a], 1);
+     throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
     }
     //end
     |}]

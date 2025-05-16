@@ -64,8 +64,8 @@ let%expect_test "let rec" =
        var
         global_data = runtime.caml_get_global_data(),
         Stdlib_Hashtbl = global_data.Stdlib__Hashtbl,
-        a = function b(a){return b.fun(a);},
-        b = function b(a){return b.fun(a);},
+        a = function _b_(_c_){return _b_.fun(_c_);},
+        b = function _a_(_b_){return _a_.fun(_b_);},
         c = [],
         d = runtime.caml_make_vect(5, 0),
         default$ = 42;

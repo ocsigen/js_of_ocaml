@@ -59,14 +59,15 @@ with Exit ->
         global_data = runtime.caml_get_global_data(),
         Stdlib = global_data.Stdlib,
         Stdlib_Printf = global_data.Stdlib__Printf,
-        a = 0,
-        b = a,
-        d = [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")];
-       try{0; b = a + 1 | 0; throw caml_maybe_attach_backtrace(Stdlib[3], 1);}
-       catch(a){
-        var c = caml_wrap_exception(a);
-        if(c !== Stdlib[3]) throw caml_maybe_attach_backtrace(c, 0);
-        caml_call2(Stdlib_Printf[3], d, b | 0);
+        _a_ = 0,
+        _b_ = _a_,
+        _d_ =
+          [0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")];
+       try{0; _b_ = _a_ + 1 | 0; throw caml_maybe_attach_backtrace(Stdlib[3], 1);}
+       catch(_e_){
+        var _c_ = caml_wrap_exception(_e_);
+        if(_c_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_c_, 0);
+        caml_call2(Stdlib_Printf[3], _d_, _b_ | 0);
         var Test = [0];
         runtime.caml_register_global(3, Test, "Test");
         0;
@@ -123,38 +124,38 @@ with Exit ->
         global_data = runtime.caml_get_global_data(),
         Stdlib = global_data.Stdlib,
         Stdlib_Printf = global_data.Stdlib__Printf,
-        c = 0,
-        d = 0,
-        a = c,
-        i =
+        _c_ = 0,
+        _d_ = 0,
+        _a_ = _c_,
+        _i_ =
           [0,
            [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
            caml_string_of_jsbytes("%d %d\n")],
-        h =
+        _h_ =
           [0,
            [4, 0, 0, 0, [12, 32, [4, 0, 0, 0, [12, 10, 0]]]],
            caml_string_of_jsbytes("%d %d\n")];
        try{
-        var b = c + 1 | 0;
+        var _b_ = _c_ + 1 | 0;
         0;
-        a = b;
-        var f = b;
+        _a_ = _b_;
+        var _f_ = _b_;
         try{
-         var g = b + 1 | 0;
+         var _g_ = _b_ + 1 | 0;
          0;
-         f = g;
-         a = g;
+         _f_ = _g_;
+         _a_ = _g_;
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
-        catch(a){
-         caml_call3(Stdlib_Printf[3], i, f | 0, d);
+        catch(_j_){
+         caml_call3(Stdlib_Printf[3], _i_, _f_ | 0, _d_);
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
        }
-       catch(b){
-        var e = caml_wrap_exception(b);
-        if(e !== Stdlib[3]) throw caml_maybe_attach_backtrace(e, 0);
-        caml_call3(Stdlib_Printf[3], h, a | 0, d);
+       catch(_i_){
+        var _e_ = caml_wrap_exception(_i_);
+        if(_e_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_e_, 0);
+        caml_call3(Stdlib_Printf[3], _h_, _a_ | 0, _d_);
         var Test = [0];
         runtime.caml_register_global(4, Test, "Test");
         0;
@@ -210,28 +211,28 @@ with Exit ->
         global_data = runtime.caml_get_global_data(),
         Stdlib = global_data.Stdlib,
         Stdlib_Printf = global_data.Stdlib__Printf,
-        a = 0,
-        b = a,
-        g = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")],
-        f = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")];
+        _a_ = 0,
+        _b_ = _a_,
+        _g_ = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")],
+        _f_ = [0, [4, 0, 0, 0, [12, 10, 0]], caml_string_of_jsbytes("%d\n")];
        try{
-        var d = a;
+        var _d_ = _a_;
         try{
-         var e = a + 1 | 0;
+         var _e_ = _a_ + 1 | 0;
          0;
-         d = e;
-         b = e;
+         _d_ = _e_;
+         _b_ = _e_;
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
-        catch(a){
-         caml_call2(Stdlib_Printf[3], g, d);
+        catch(_h_){
+         caml_call2(Stdlib_Printf[3], _g_, _d_);
          throw caml_maybe_attach_backtrace(Stdlib[3], 1);
         }
        }
-       catch(a){
-        var c = caml_wrap_exception(a);
-        if(c !== Stdlib[3]) throw caml_maybe_attach_backtrace(c, 0);
-        caml_call2(Stdlib_Printf[3], f, b);
+       catch(_g_){
+        var _c_ = caml_wrap_exception(_g_);
+        if(_c_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_c_, 0);
+        caml_call2(Stdlib_Printf[3], _f_, _b_);
         var Test = [0];
         runtime.caml_register_global(4, Test, "Test");
         0;
