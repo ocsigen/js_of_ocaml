@@ -78,7 +78,7 @@ let specialize (p, info) =
   let p = specialize_js (p, info) in
   p, info
 
-let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p else p
+let eval (p, info) = if Config.Flag.staticeval () then Eval.f info p, info else p, info
 
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
@@ -142,7 +142,7 @@ let stats = Debug.find "stats"
 let rec loop max name round i (p : 'a) : 'a =
   let debug = times () || stats () in
   if debug then Format.eprintf "%s#%d...@." name i;
-  let p' = round ~first:(i = 1) p in
+  let p' = round p in
   if i >= max
   then (
     if debug then Format.eprintf "%s#%d: couldn't reach fix point.@." name i;
@@ -153,19 +153,12 @@ let rec loop max name round i (p : 'a) : 'a =
     p')
   else loop max name round (i + 1) p'
 
-let round ~first : 'a -> 'a =
-  print
-  +> tailcall
-  +> (if first then Fun.id else phi)
-  +> flow
-  +> specialize
-  +> eval
-  +> inline
-  +> deadcode
+let round : 'a -> 'a =
+  print +> tailcall +> (flow +> specialize +> eval +> fst) +> inline +> phi +> deadcode
 
 (* o1 *)
 
-let o1 = loop 2 "round" round 1 +> phi +> flow +> specialize +> eval +> print
+let o1 = loop 2 "round" round 1 +> (flow +> specialize +> eval +> fst) +> print
 
 (* o2 *)
 
