@@ -402,7 +402,7 @@ let generate_start_function ~to_link ~out_file =
   @@ fun ch ->
   let context = Generate.start () in
   Generate.add_init_function ~context ~to_link:("prelude" :: to_link);
-  Generate.wasm_output ch ~context;
+  Generate.wasm_output ch ~opt_source_map_file:None ~context;
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
 
 let output_js js =

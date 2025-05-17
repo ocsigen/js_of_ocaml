@@ -574,7 +574,8 @@ module Standard = struct
 
   let to_string m = Yojson.Raw.to_string (json (rewrite_paths m))
 
-  let to_file m file = Yojson.Raw.to_file file (json (rewrite_paths m))
+  let to_file ?rewrite_paths:(rewrite = true) m file =
+    Yojson.Raw.to_file file (json (if rewrite then rewrite_paths m else m))
 
   let invariant
       { version
@@ -715,7 +716,8 @@ module Index = struct
 
   let to_string m = Yojson.Raw.to_string (json (rewrite_paths m))
 
-  let to_file m file = Yojson.Raw.to_file file (json (rewrite_paths m))
+  let to_file ?rewrite_paths:(rewrite = true) m file =
+    Yojson.Raw.to_file file (json (if rewrite then rewrite_paths m else m))
 
   let invariant { version; file = _; sections } =
     if not (version_is_valid version)
@@ -756,10 +758,10 @@ let to_string = function
   | Standard m -> Standard.to_string m
   | Index i -> Index.to_string i
 
-let to_file x f =
+let to_file ?rewrite_paths x f =
   match x with
-  | Standard m -> Standard.to_file m f
-  | Index i -> Index.to_file i f
+  | Standard m -> Standard.to_file ?rewrite_paths m f
+  | Index i -> Index.to_file ?rewrite_paths i f
 
 let invariant = function
   | Standard m -> Standard.invariant m

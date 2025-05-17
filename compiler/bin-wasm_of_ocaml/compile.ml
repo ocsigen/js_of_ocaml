@@ -246,7 +246,7 @@ let generate_prelude ~out_file =
       ~deadcode_sentinal
       program
   in
-  Generate.wasm_output ch ~context;
+  Generate.wasm_output ch ~opt_source_map_file:None ~context;
   uinfo.provides
 
 let build_prelude z =
