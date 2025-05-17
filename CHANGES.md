@@ -34,6 +34,7 @@
 * Runtime: use Dataview to convert between floats and bit representation
 * Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962)
 * Compiler: deadcode elimination of cyclic values (#1978)
+* Compiler: directly write Wasm binary modules (#2000, #2003)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
