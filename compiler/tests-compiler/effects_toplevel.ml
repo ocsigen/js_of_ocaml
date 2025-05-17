@@ -61,35 +61,35 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                 ? f(a0, a1)
                 : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
-       return caml_callback
-               (function(cont){
-                 var
-                  dummy = 0,
-                  global_data = runtime.caml_get_global_data(),
-                  Stdlib_Printf = global_data.Stdlib__Printf,
-                  _b_ =
-                    [0,
-                     [11, caml_string_of_jsbytes("abc"), 0],
-                     caml_string_of_jsbytes("abc")];
-                 function g(param, cont){
-                  return caml_trampoline_cps_call2(Stdlib_Printf[2], _b_, cont);
-                 }
-                 caml_callback(g, [dummy]);
-                 function _a_(i){
-                  return caml_exact_trampoline_cps_call
-                          (g,
-                           dummy,
-                           function(_c_){
-                            var _b_ = i + 1 | 0;
-                            if(5 !== i) return caml_exact_trampoline_call1(_a_, _b_);
-                            caml_callback(g, [dummy]);
-                            var Test = [0];
-                            runtime.caml_register_global(2, Test, "Test");
-                           });
-                 }
-                 return _a_(1);
-                },
-                []);
+       var
+        dummy = 0,
+        global_data = runtime.caml_get_global_data(),
+        Stdlib_Printf = global_data.Stdlib__Printf,
+        _a_ =
+          [0,
+           [11, caml_string_of_jsbytes("abc"), 0],
+           caml_string_of_jsbytes("abc")];
+       function g(param, cont){
+        return caml_trampoline_cps_call2(Stdlib_Printf[2], _a_, cont);
+       }
+       function f(param, cont){
+        function _a_(i){
+         return caml_exact_trampoline_cps_call
+                 (g,
+                  dummy,
+                  function(_c_){
+                   var _b_ = i + 1 | 0;
+                   return 5 !== i ? caml_exact_trampoline_call1(_a_, _b_) : cont();
+                  });
+        }
+        return _a_(1);
+       }
+       caml_callback(g, [dummy]);
+       caml_callback(f, [dummy]);
+       caml_callback(g, [dummy]);
+       var Test = [0];
+       runtime.caml_register_global(2, Test, "Test");
+       return;
       }
       (globalThis));
     //end

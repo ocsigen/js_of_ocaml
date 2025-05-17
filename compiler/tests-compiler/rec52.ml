@@ -70,7 +70,7 @@ let%expect_test "let rec" =
         default$ = 42;
        function a(x){return b(x);}
        function b(x){
-        var _a_ = b(0);
+        var _a_ = a(0);
         return [0, 84, [0, letrec_function_context[1], c, _a_]];
        }
        var tbl = caml_call2(Stdlib_Hashtbl[1], 0, 17);

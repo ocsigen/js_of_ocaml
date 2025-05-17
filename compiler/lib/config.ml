@@ -146,7 +146,7 @@ module Param = struct
     p ~name:"switch_size" ~desc:"set the maximum number of case in a switch" (int 60)
 
   let inlining_limit =
-    p ~name:"inlining-limit" ~desc:"set the size limit for inlining" (int 200)
+    p ~name:"inlining-limit" ~desc:"set the size limit for inlining" (int 150)
 
   let tailcall_max_depth =
     p
