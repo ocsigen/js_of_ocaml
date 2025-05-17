@@ -264,25 +264,30 @@ end = struct
             output_uint ch len);
           List.fold_left
             ~f:(fun idx { name; typ; supertype; final } ->
-              Code.Var.Hashtbl.add type_names name idx;
-              (match supertype, final with
-              | None, true -> ()
-              | None, false ->
-                  output_byte ch 0x50;
-                  output_byte ch 0
-              | Some supertype, _ ->
-                  output_byte ch (if final then 0X4F else 0x50);
-                  output_byte ch 1;
-                  output_uint ch (Code.Var.Hashtbl.find type_names supertype));
-              (match typ with
-              | Array field_type ->
-                  output_byte ch 0x5E;
-                  output_fieldtype type_names ch field_type
-              | Struct l ->
-                  output_byte ch 0x5F;
-                  output_vec (output_fieldtype type_names) ch l
-              | Func typ -> output_functype type_names ch typ);
-              idx + 1)
+              match typ, supertype, final, len with
+              | Func typ, None, true, 1 when Hashtbl.mem func_types typ ->
+                  Code.Var.Hashtbl.add type_names name (Hashtbl.find func_types typ);
+                  idx
+              | _ ->
+                  Code.Var.Hashtbl.add type_names name idx;
+                  (match supertype, final with
+                  | None, true -> ()
+                  | None, false ->
+                      output_byte ch 0x50;
+                      output_byte ch 0
+                  | Some supertype, _ ->
+                      output_byte ch (if final then 0X4F else 0x50);
+                      output_byte ch 1;
+                      output_uint ch (Code.Var.Hashtbl.find type_names supertype));
+                  (match typ with
+                  | Array field_type ->
+                      output_byte ch 0x5E;
+                      output_fieldtype type_names ch field_type
+                  | Struct l ->
+                      output_byte ch 0x5F;
+                      output_vec (output_fieldtype type_names) ch l
+                  | Func typ -> output_functype type_names ch typ);
+                  idx + 1)
             ~init:idx
             l)
         0
