@@ -477,9 +477,7 @@ module Standard = struct
            , match t.sourceroot with
              | None -> None
              | Some s -> Some (stringlit s) )
-         ; "names", Some (`List (List.map t.names ~f:(fun s -> stringlit s)))
          ; "sources", Some (`List (List.map t.sources ~f:(fun s -> stringlit s)))
-         ; "mappings", Some (stringlit (Mappings.to_string t.mappings))
          ; ( "sourcesContent"
            , match t.sources_content with
              | None -> None
@@ -489,6 +487,8 @@ module Standard = struct
                       (List.map l ~f:(function
                         | None -> `Null
                         | Some x -> Source_content.to_json x))) )
+         ; "names", Some (`List (List.map t.names ~f:(fun s -> stringlit s)))
+         ; "mappings", Some (stringlit (Mappings.to_string t.mappings))
          ; ( "ignoreList"
            , match t.ignore_list with
              | [] -> None

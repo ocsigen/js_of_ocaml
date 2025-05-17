@@ -8,13 +8,13 @@ Build object files and executable with --empty-sourcemap:
 
   $ dune exec -- js_of_ocaml --sourcemap --empty-sourcemap a.cmo -o a.js
   $ cat a.map
-  {"version":3,"file":"a.js","names":[],"sources":[],"mappings":"","sourcesContent":[]}
+  {"version":3,"file":"a.js","sources":[],"sourcesContent":[],"names":[],"mappings":""}
   $ dune exec -- js_of_ocaml --sourcemap --empty-sourcemap b.cmo -o b.js
   $ cat b.map
-  {"version":3,"file":"b.js","names":[],"sources":[],"mappings":"","sourcesContent":[]}
+  {"version":3,"file":"b.js","sources":[],"sourcesContent":[],"names":[],"mappings":""}
   $ dune exec -- js_of_ocaml --sourcemap --empty-sourcemap test.bc -o test.js
   $ cat test.map
-  {"version":3,"file":"test.js","names":[],"sources":[],"mappings":"","sourcesContent":[]}
+  {"version":3,"file":"test.js","sources":[],"sourcesContent":[],"names":[],"mappings":""}
 
 Build object files with sourcemap and link with --empty-sourcemap:
 
