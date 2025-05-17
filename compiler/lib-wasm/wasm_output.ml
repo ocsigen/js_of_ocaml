@@ -62,6 +62,10 @@ module Make (Output : sig
   val byte : t -> int -> unit
 
   val string : t -> string -> unit
+
+  val push_mapping : Source_map.map -> unit
+
+  val get_file_index : string -> int
 end) : sig
   val output_module : Output.t -> module_field list -> unit
 end = struct
@@ -460,6 +464,29 @@ end = struct
     ; current_local_names : int Code.Var.Hashtbl.t
     }
 
+  let last_event = ref None
+
+  let push_no_event ch =
+    if Option.is_some !last_event
+    then (
+      Output.push_mapping (Source_map.Gen { gen_line = 1; gen_col = position ch });
+      last_event := None)
+
+  let push_event ch ~src ~line ~col =
+    match !last_event with
+    | Some (src', line', col') when col = col' && line = line' && String.equal src src' ->
+        ()
+    | _ ->
+        Output.push_mapping
+          (Source_map.Gen_Ori
+             { gen_line = 1
+             ; gen_col = position ch
+             ; ori_source = Output.get_file_index src
+             ; ori_line = line
+             ; ori_col = col
+             });
+        last_event := Some (src, line, col)
+
   let rec output_expression st ch e =
     match e with
     | Const c -> (
@@ -772,7 +799,8 @@ end = struct
         output_byte ch 0x15;
         output_uint ch (Code.Var.Hashtbl.find st.type_names typ)
     | Unreachable -> output_byte ch 0x00
-    | Event _ -> ()
+    | Event Parse_info.{ src = None | Some ""; _ } -> push_no_event ch
+    | Event Parse_info.{ src = Some src; line; col; _ } -> push_event ch ~src ~line ~col
 
   let output_globals ch (st, global_idx, fields) =
     let count =
@@ -1034,7 +1062,8 @@ end = struct
               prerr_endline (Printexc.to_string e);
               prerr_endline backtrace;
               assert false);
-           output_byte ch 0x0B))
+           output_byte ch 0x0B;
+           push_no_event ch))
       ch
       (List.rev l)
 
@@ -1170,7 +1199,9 @@ end = struct
     output_section 0 output_features ch ()
 end
 
-let f ch fields =
+let f ~opt_source_map_file ch fields =
+  let mappings = ref [] in
+  let files = String.Hashtbl.create 16 in
   let module O = Make (struct
     type t = out_channel
 
@@ -1181,5 +1212,27 @@ let f ch fields =
     let byte = output_byte
 
     let string = output_string
+
+    let push_mapping m = mappings := m :: !mappings
+
+    let get_file_index file =
+      try String.Hashtbl.find files file
+      with Not_found ->
+        let pos = String.Hashtbl.length files in
+        String.Hashtbl.add files file pos;
+        pos
   end) in
-  O.output_module ch fields
+  O.output_module ch fields;
+  Option.iter opt_source_map_file ~f:(fun source_map_file ->
+      let hashtbl_to_list htb =
+        String.Hashtbl.fold (fun k v l -> (k, v) :: l) htb []
+        |> List.sort ~cmp:(fun (_, a) (_, b) -> compare a b)
+        |> List.map ~f:fst
+      in
+      let sm =
+        { (Source_map.Standard.empty ~inline_source_content:false) with
+          sources = hashtbl_to_list files
+        ; mappings = Source_map.Mappings.encode (List.rev !mappings)
+        }
+      in
+      Source_map.to_file ~rewrite_paths:false (Standard sm) source_map_file)

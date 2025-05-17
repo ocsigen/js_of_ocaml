@@ -36,4 +36,8 @@ val add_init_function : context:Code_generation.context -> to_link:string list -
 val output :
   out_channel -> enable_source_maps:bool -> context:Code_generation.context -> unit
 
-val wasm_output : out_channel -> context:Code_generation.context -> unit
+val wasm_output :
+     out_channel
+  -> opt_source_map_file:string option
+  -> context:Code_generation.context
+  -> unit

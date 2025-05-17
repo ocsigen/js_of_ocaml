@@ -141,7 +141,7 @@ type t =
 
 val to_string : t -> string
 
-val to_file : t -> string -> unit
+val to_file : ?rewrite_paths:bool -> t -> string -> unit
 
 val of_string : ?tmp_buf:Buffer.t -> string -> t
 
