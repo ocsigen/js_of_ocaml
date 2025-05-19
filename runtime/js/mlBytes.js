@@ -97,14 +97,14 @@ function caml_utf8_of_utf16(s) {
     if (c < 0x800) {
       t += String.fromCharCode(0xc0 | (c >> 6));
       t += String.fromCharCode(0x80 | (c & 0x3f));
-    } else if (c < 0xd800 || c >= 0xdfff) {
+    } else if (c < 0xd800 || c > 0xdfff) {
       t += String.fromCharCode(
         0xe0 | (c >> 12),
         0x80 | ((c >> 6) & 0x3f),
         0x80 | (c & 0x3f),
       );
     } else if (
-      c >= 0xdbff ||
+      c > 0xdbff ||
       i + 1 === l ||
       (d = s.charCodeAt(i + 1)) < 0xdc00 ||
       d > 0xdfff
@@ -157,7 +157,7 @@ function caml_utf16_of_utf8(s) {
           c = c2 + (c << 6);
           if (c1 < 0xf0) {
             v = c - 0xe2080;
-            if (v < 0x800 || (v >= 0xd7ff && v < 0xe000)) v = 2;
+            if (v < 0x800 || (v > 0xd7ff && v < 0xe000)) v = 2;
           } else {
             v = 3;
             if (
