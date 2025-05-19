@@ -271,6 +271,8 @@ module Js = struct
 
     method charCodeAt : int -> number t meth
 
+    method codePointAt : int -> number t optdef meth
+
     (* This may return NaN... *)
     method concat : js_string t -> js_string t meth
 
