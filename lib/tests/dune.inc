@@ -100,6 +100,16 @@
   (pps ppx_js_internal ppx_expect)))
 
 (library
+ ;; lib/tests/test_string.ml
+ (name test_string_75)
+ (enabled_if true)
+ (modules test_string)
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js wasm))
+ (preprocess
+  (pps ppx_js_internal ppx_expect)))
+
+(library
  ;; lib/tests/test_sys.ml
  (name test_sys_75)
  (enabled_if (>= %{ocaml_version} 5))
