@@ -879,12 +879,16 @@ module BitSet : sig
   val next_free : t -> int -> int
 
   val next_mem : t -> int -> int
+
+  val clear : t -> unit
 end = struct
   type t = { mutable arr : int array }
 
   let create () = { arr = Array.make 1 0 }
 
   let create' n = { arr = Array.make ((n / Sys.int_size) + 1) 0 }
+
+  let clear t = Array.fill t.arr 0 (Array.length t.arr) 0
 
   let size t = Array.length t.arr * Sys.int_size
 
