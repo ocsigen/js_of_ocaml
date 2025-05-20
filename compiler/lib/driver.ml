@@ -68,6 +68,7 @@ let specialize_1 (p, info) =
   let return_values = Code.Var.Map.empty in
   Specialize.f
     ~function_arity:(fun f -> Specialize.function_arity ~return_values info f)
+    ~update_def:(fun x expr -> Flow.Info.update_def info x expr)
     p
 
 let specialize_js (p, info) =
@@ -177,7 +178,10 @@ let effects_and_exact_calls
       p, trampolined_calls, in_cps, None, shapes
   | `Disabled | `Jspi ->
       let p =
-        Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+        Specialize.f
+          ~function_arity:(fun f -> Global_flow.function_arity info f)
+          ~update_def:(fun x expr -> Global_flow.update_def info x expr)
+          p
       in
       let shapes = collects_shapes ~shapes p in
       ( p

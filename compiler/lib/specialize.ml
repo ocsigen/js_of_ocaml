@@ -40,7 +40,7 @@ let unknown_apply = function
   | Let (_, Apply { f = _; args = _; exact = false }) -> true
   | _ -> false
 
-let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
+let specialize_apply opt_count function_arity update_def ((acc, free_pc, extra), loc) i =
   match i with
   | Let (x, Apply { f; args; exact = false }) -> (
       let n' = List.length args in
@@ -74,13 +74,13 @@ let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
             ; branch = Return return'
             }
           in
-          ( Let (x, Closure (missing, (free_pc, missing), None)) :: acc
-          , free_pc + 1
-          , (free_pc, block) :: extra )
+          let expr = Closure (missing, (free_pc, missing), None) in
+          update_def x expr;
+          Let (x, expr) :: acc, free_pc + 1, (free_pc, block) :: extra
       | Some _ -> assert false)
   | _ -> i :: acc, free_pc, extra
 
-let specialize_instrs ~function_arity opt_count p =
+let specialize_instrs ~function_arity ~update_def opt_count p =
   let blocks, free_pc =
     Addr.Map.fold
       (fun pc block (blocks, free_pc) ->
@@ -95,7 +95,7 @@ let specialize_instrs ~function_arity opt_count p =
                 | Event loc ->
                     let (body, free_pc, extra), _ = acc in
                     (i :: body, free_pc, extra), Some loc
-                | _ -> specialize_apply opt_count function_arity acc i, None)
+                | _ -> specialize_apply opt_count function_arity update_def acc i, None)
           in
           let blocks =
             List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->
@@ -108,13 +108,15 @@ let specialize_instrs ~function_arity opt_count p =
   in
   { p with blocks; free_pc }
 
-let f ~function_arity p =
+let f ~function_arity ~update_def p =
   Code.invariant p;
   let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
   let p =
-    if Config.Flag.optcall () then specialize_instrs ~function_arity opt_count p else p
+    if Config.Flag.optcall ()
+    then specialize_instrs ~function_arity ~update_def opt_count p
+    else p
   in
   if times () then Format.eprintf "  optcall: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - optcall: %d@." !opt_count;
