@@ -21,6 +21,10 @@
 val function_arity :
   return_values:Code.Var.Set.t Code.Var.Map.t -> Flow.Info.t -> Code.Var.t -> int option
 
-val f : function_arity:(Code.Var.t -> int option) -> Code.program -> Code.program
+val f :
+     function_arity:(Code.Var.t -> int option)
+  -> update_def:(Code.Var.t -> Code.expr -> unit)
+  -> Code.program
+  -> Code.program
 
 val switches : Code.program -> Code.program
