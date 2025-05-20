@@ -246,7 +246,7 @@ let generate_prelude ~out_file =
   let code, uinfo = Parse_bytecode.predefined_exceptions () in
   let profile = Profile.O1 in
   let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ }, global_flow_data =
-    Driver.optimize_for_wasm ~profile code
+    Driver.optimize_for_wasm ~profile ~shapes:false code
   in
   let context = Generate.start () in
   let _ =
@@ -400,7 +400,7 @@ let run
     let standalone = Option.is_none unit_name in
     let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ }, global_flow_data
         =
-      Driver.optimize_for_wasm ~profile code
+      Driver.optimize_for_wasm ~profile ~shapes:false code
     in
     let context = Generate.start () in
     let toplevel_name, generated_js =
