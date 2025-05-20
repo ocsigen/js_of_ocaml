@@ -716,6 +716,10 @@ let exact_call info f n =
           | Expr _ | Phi _ -> assert false)
         known
 
+let update_def info x expr =
+  let idx = Code.Var.idx x in
+  info.info_defs.(idx) <- Expr expr
+
 let function_arity info f =
   match Var.Tbl.get info.info_approximation f with
   | Top | Values { others = true; _ } -> None

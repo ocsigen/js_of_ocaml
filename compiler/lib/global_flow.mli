@@ -44,6 +44,8 @@ type info =
   ; info_return_vals : Var.Set.t Var.Map.t
   }
 
+val update_def : info -> Code.Var.t -> Code.expr -> unit
+
 val f : fast:bool -> Code.program -> info
 
 val exact_call : info -> Var.t -> int -> bool
