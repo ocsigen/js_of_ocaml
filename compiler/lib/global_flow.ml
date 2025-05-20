@@ -45,32 +45,6 @@ let add_to_list h x v = Var.Hashtbl.replace h x (v :: associated_list h x)
 
 (****)
 
-(* Compute the list of variables containing the return values of each
-   function *)
-let return_values p =
-  Code.fold_closures
-    p
-    (fun name_opt _ (pc, _) _ rets ->
-      match name_opt with
-      | None -> rets
-      | Some name ->
-          let s =
-            Code.traverse
-              { fold = fold_children }
-              (fun pc s ->
-                let block = Addr.Map.find pc p.blocks in
-                match block.branch with
-                | Return x -> Var.Set.add x s
-                | _ -> s)
-              pc
-              p.blocks
-              Var.Set.empty
-          in
-          Var.Map.add name s rets)
-    Var.Map.empty
-
-(****)
-
 (* A variable is either let-bound, or a parameter, to which we
    associate a set of possible arguments.
 *)
