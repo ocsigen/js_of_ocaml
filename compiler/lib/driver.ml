@@ -65,7 +65,10 @@ let inline profile p =
 
 let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
-  Specialize.f ~function_arity:(fun f -> Specialize.function_arity info f) p
+  let return_values = Code.Var.Map.empty in
+  Specialize.f
+    ~function_arity:(fun f -> Specialize.function_arity ~return_values info f)
+    p
 
 let specialize_js (p, info) =
   if debug () then Format.eprintf "Specialize js...@.";
