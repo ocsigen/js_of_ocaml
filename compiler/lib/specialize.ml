@@ -19,7 +19,6 @@
  *)
 open! Stdlib
 open Code
-open Flow
 
 let times = Debug.find "times"
 
@@ -27,33 +26,10 @@ let stats = Debug.find "stats"
 
 let debug_stats = Debug.find "stats-debug"
 
-let function_arity info x =
-  let rec arity info x acc =
-    get_approx
-      info
-      (fun x ->
-        match Flow.Info.def info x with
-        | Some (Closure (l, _, _)) -> Some (List.length l)
-        | Some (Special (Alias_prim prim)) -> (
-            try Some (Primitive.arity prim) with Not_found -> None)
-        | Some (Apply { f; args; _ }) -> (
-            if List.mem ~eq:Var.equal f acc
-            then None
-            else
-              match arity info f (f :: acc) with
-              | Some n ->
-                  let diff = n - List.length args in
-                  if diff > 0 then Some diff else None
-              | None -> None)
-        | _ -> None)
-      None
-      (fun u v ->
-        match u, v with
-        | Some n, Some m when n = m -> u
-        | _ -> None)
-      x
-  in
-  arity info x []
+let function_arity ~return_values info x =
+  match Flow.the_shape_of ~return_values ~pure:Pure_fun.empty info x with
+  | Top | Block _ -> None
+  | Function { arity; _ } -> Some arity
 
 let add_event loc instrs =
   match loc with
