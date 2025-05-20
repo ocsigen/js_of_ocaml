@@ -845,6 +845,30 @@ let rec last_instr l =
   | [ i ] | [ i; Event _ ] -> Some i
   | _ :: rem -> last_instr rem
 
+(* Compute the list of variables containing the return values of each
+   function *)
+let return_values p =
+  fold_closures
+    p
+    (fun name_opt _ (pc, _) _ rets ->
+      match name_opt with
+      | None -> rets
+      | Some name ->
+          let s =
+            traverse
+              { fold = fold_children }
+              (fun pc s ->
+                let block = Addr.Map.find pc p.blocks in
+                match block.branch with
+                | Return x -> Var.Set.add x s
+                | _ -> s)
+              pc
+              p.blocks
+              Var.Set.empty
+          in
+          Var.Map.add name s rets)
+    Var.Map.empty
+
 let equal p1 p2 =
   p1.start = p2.start
   && Addr.Map.equal
