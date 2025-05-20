@@ -18,6 +18,13 @@
 
 val constant_of_const : Lambda.structured_constant -> Code.constant
 
+type module_or_not =
+  | Module
+  | Not_module
+  | Unknown
+
+val is_module_in_summary : Ident.t -> Env.summary -> module_or_not
+
 module Symtable : sig
   module Global : sig
     type t =

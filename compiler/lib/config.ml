@@ -106,6 +106,8 @@ module Flag = struct
   let auto_link = o ~name:"auto-link" ~default:true
 
   let es6 = o ~name:"es6" ~default:false
+
+  let load_shapes_auto = o ~name:"load-shapes-auto" ~default:false
 end
 
 module Param = struct
