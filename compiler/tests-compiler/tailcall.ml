@@ -111,3 +111,55 @@ let%expect_test _ =
     }
     //end
     |}]
+
+let%expect_test "global-deadcode-bug" =
+  let prog =
+    {|
+     let log_success () = print_endline "Success!"
+     type t = { a : bool; b : bool }
+     let fun1 () =
+     let g f = if f.b then true else false in
+     let f x = print_endline "here"; g { a = true; b = false} in
+     let _ = (f 5000) in
+     log_success ()
+     let () = fun1 ()
+    |}
+  in
+  Util.compile_and_run ~flags:[ "--disable"; "inline" ] prog;
+  [%expect
+    {|
+    /tmp/build_b5b39e_dune/jsoo-test3c37fc/test.js:1787
+         throw err;
+         ^
+
+    TypeError: Cannot read properties of undefined (reading '2')
+        at g (/tmp/build_b5b39e_dune/jsoo-test3c37fc/test.js:1878:23)
+        at f (/tmp/build_b5b39e_dune/jsoo-test3c37fc/test.js:1879:46)
+        at fun1 (/tmp/build_b5b39e_dune/jsoo-test3c37fc/test.js:1880:5)
+        at /tmp/build_b5b39e_dune/jsoo-test3c37fc/test.js:1883:4
+        at Object.<anonymous> (/tmp/build_b5b39e_dune/jsoo-test3c37fc/test.js:1887:3)
+        at Module._compile (node:internal/modules/cjs/loader:1734:14)
+        at Object..js (node:internal/modules/cjs/loader:1899:10)
+        at Module.load (node:internal/modules/cjs/loader:1469:32)
+        at Function._load (node:internal/modules/cjs/loader:1286:12)
+        at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+
+    Node.js v23.11.0
+
+    here
+
+    process exited with error code 7
+     node test.js
+    |}];
+  let program = Util.compile_and_parse ~flags:[ "--disable"; "inline" ] prog in
+  Util.print_fun_decl program (Some "fun1");
+  [%expect
+    {|
+    function fun1(param){
+     function g(f){if(f[2]) return;}
+     function f(x){caml_call1(Stdlib[46], cst_here); return g();}
+     f(5000);
+     return log_success(0);
+    }
+    //end
+    |}]
