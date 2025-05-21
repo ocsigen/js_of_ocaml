@@ -659,5 +659,6 @@ let f ~profile p live_vars =
   if stats () then Format.eprintf "Stats - inlining: %d inlined functions@." !inline_count;
   if debug_stats ()
   then Code.check_updates ~name:"inline" previous_p p ~updates:!inline_count;
+  let p = Deadcode.remove_unused_blocks p in
   Code.invariant p;
   p
