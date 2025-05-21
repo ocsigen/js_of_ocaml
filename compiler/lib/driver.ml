@@ -67,7 +67,7 @@ let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
   let return_values = Code.Var.Map.empty in
   Specialize.f
-    ~function_arity:(fun f -> Specialize.function_arity ~return_values info f)
+    ~shape:(fun f -> Flow.the_shape_of ~return_values ~pure:Pure_fun.empty info f)
     ~update_def:(fun x expr -> Flow.Info.update_def info x expr)
     p
 
@@ -171,10 +171,13 @@ let effects_and_exact_calls ~deadcode_sentinal ~shapes (profile : Profile.t) p =
       p, tramp, cps, shapes
   | `Disabled | `Jspi ->
       let p =
-        Specialize.f
-          ~function_arity:(fun f -> Global_flow.function_arity info f)
-          ~update_def:(fun x expr -> Global_flow.update_def info x expr)
-          p
+      Specialize.f
+        ~shape:(fun f ->
+          match Global_flow.function_arity info f with
+          | None -> Shape.Top
+          | Some arity -> Shape.Function { arity; pure = false; res = Top })
+        ~update_def:(fun x expr -> Global_flow.update_def info x expr)
+        p
       in
       let shapes = collects_shapes ~shapes p in
       ( p
