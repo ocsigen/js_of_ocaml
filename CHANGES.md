@@ -44,6 +44,7 @@
 * Compiler: minifier fix (#1867)
 * Compiler: fix assert failure with double translation (#1870)
 * Compiler: fix path rewriting of Wasm source maps (#1882)
+* Compiler: fix global dead code in presence of dead tailcall (#2010)
 * Compiler/wasm: fix bound check for empty float array (#1904)
 * Lib: fix Dom_html.Keyboard_code.of_event (#1878)
 * Runtime: fix path normalization (#1848)
