@@ -242,8 +242,13 @@ let rec block_size ~recurse ~context { branch; body; _ } =
     ~f:(fun n i ->
       match i with
       | Event _ -> n
-      | Let (_, Closure (_, (pc, _), _)) ->
-          if recurse then size ~recurse ~context pc + n + 1 else n + 1
+      | Let (f, Closure (_, (pc, _), _)) ->
+          if recurse
+          then
+            match Var.Map.find f context.env with
+            | exception Not_found -> size ~recurse ~context pc + n + 1
+            | info -> cache ~info info.full_size (size ~recurse:true ~context) + n + 1
+          else n + 1
       | _ -> n + 1)
     ~init:
       (match branch with
