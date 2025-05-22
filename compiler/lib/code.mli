@@ -238,10 +238,9 @@ module Print : sig
 
   val instr : Format.formatter -> instr -> unit
 
-  val block :
-    Format.formatter -> (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
+  val block : Format.formatter -> (Addr.t -> xinstr -> string) -> int -> block -> unit
 
-  val program : Format.formatter -> (Addr.Map.key -> xinstr -> string) -> program -> unit
+  val program : Format.formatter -> (Addr.t -> xinstr -> string) -> program -> unit
 
   val last : Format.formatter -> last -> unit
 
