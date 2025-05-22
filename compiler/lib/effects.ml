@@ -44,9 +44,6 @@ let double_translate () =
   | `Cps -> false
   | `Double_translation -> true
 
-let debug_print fmt =
-  if debug () then Format.(eprintf (fmt ^^ "%!")) else Format.(ifprintf err_formatter fmt)
-
 let get_edges g src = try Addr.Hashtbl.find g src with Not_found -> Addr.Set.empty
 
 let add_edge g src dst = Addr.Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
@@ -323,7 +320,8 @@ let closure_of_pc ~st pc =
   try Addr.Map.find pc st.jc.closure_of_jump with Not_found -> assert false
 
 let allocate_closure ~st ~params ~body ~branch =
-  debug_print "@[<v>allocate_closure ~branch:(%a)@,@]" Code.Print.last branch;
+  if debug ()
+  then Format.eprintf "@[<v>allocate_closure ~branch:(%a)@]%@." Code.Print.last branch;
   let block = { params = []; body; branch } in
   let pc = add_block st block in
   let name = Var.fresh () in
@@ -374,10 +372,12 @@ let cps_jump_cont ~st ~src ((pc, _) as cont) =
       call_block, []
 
 let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x direct_cont =
-  debug_print
-    "@[<v>allocate_continuation ~src_pc:%d ~cont:(%d,@ _)@,@]"
-    src_pc
-    (fst direct_cont);
+  if debug ()
+  then
+    Format.eprintf
+      "@[<v>allocate_continuation ~src_pc:%d ~cont:(%d, _)@]@."
+      src_pc
+      (fst direct_cont);
   (* We need to allocate an additional closure if [cont]
      does not correspond to a continuation that binds [x].
      This closure binds the return value [x], allocates
@@ -579,8 +579,10 @@ let cps_instr ~st (instr : instr) : instr list =
   | _ -> [ rewrite_instr ~st instr ]
 
 let cps_block ~st ~k ~orig_pc block =
-  debug_print "cps_block %d\n" orig_pc;
-  debug_print "cps pc evaluates to %d\n" (mk_cps_pc_of_direct ~st orig_pc);
+  if debug ()
+  then (
+    Format.eprintf "cps_block %d@." orig_pc;
+    Format.eprintf "cps pc evaluates to %d@." (mk_cps_pc_of_direct ~st orig_pc));
   let alloc_jump_closures =
     match Addr.Map.find orig_pc st.jc.closures_of_alloc_site with
     | to_allocate ->
@@ -710,7 +712,7 @@ let cps_block ~st ~k ~orig_pc block =
    If not double-translating, then just add continuation arguments to function
    definitions, and mark as exact all non-CPS calls. *)
 let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
-  debug_print "@[<v>rewrite_direct_block %d@,@]" pc;
+  if debug () then Format.eprintf "@[<v>rewrite_direct_block %d@,@]@." pc;
   if double_translate ()
   then
     let rewrite_instr = function
@@ -750,15 +752,15 @@ let subst_bound_in_blocks blocks s =
     (fun pc block ->
       if debug ()
       then (
-        debug_print "@[<v>block before first subst: @,";
+        Format.eprintf "@[<v>block before first subst: @,";
         Code.Print.block Format.err_formatter (fun _ _ -> "") pc block;
-        debug_print "@]");
+        Format.eprintf "@]@.");
       let res = Subst.Including_Binders.block s block in
       if debug ()
       then (
-        debug_print "@[<v>block after first subst: @,";
+        Format.eprintf "@[<v>block after first subst: @,";
         Code.Print.block Format.err_formatter (fun _ _ -> "") pc res;
-        debug_print "@]");
+        Format.eprintf "@]@.");
       res)
     blocks
 
@@ -775,7 +777,6 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
     Code.fold_closures_innermost_first
       p
       (fun name_opt params (start, args) _cloc ({ Code.blocks; free_pc; _ } as p) ->
-        Option.iter name_opt ~f:(fun v -> debug_print "@[<v>cname = %a@,@]" Var.print v);
         (* We speculatively add a block at the beginning of the
            function. In case of tail-recursion optimization, the
            function implementing the loop body may have to be placed
@@ -850,7 +851,8 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
         in
         if debug ()
         then (
-          Format.eprintf "======== %b@." function_needs_cps;
+          Format.eprintf "======== Need cps: %b@." function_needs_cps;
+          Option.iter name_opt ~f:(fun v -> Format.eprintf "cname = %a@." Var.print v);
           Code.preorder_traverse
             { fold = Code.fold_children }
             (fun pc _ ->
@@ -946,6 +948,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           else st.new_blocks
         in
         let blocks = Addr.Map.fold Addr.Map.add new_blocks blocks in
+        if debug () then Format.eprintf "@.";
         { p with blocks; free_pc = st.free_pc })
       p
   in
@@ -1125,13 +1128,14 @@ let f ~flow_info ~live_vars p =
       in
       if debug ()
       then (
-        debug_print "@]";
-        debug_print "@[<v>cps_needed (after lifting) = @[<hov 2>";
-        Var.Set.iter (fun v -> debug_print "%a,@ " Var.print v) cps_needed;
-        debug_print "@]@,@]";
-        debug_print "@[<v>After lambda lifting...@,";
-        Code.Print.program Format.err_formatter (fun _ _ -> "") p;
-        debug_print "@]");
+        let annot _ (i : Code.Print.xinstr) =
+          match i with
+          | Instr (Let (x, _)) when Var.Set.mem x cps_needed -> "CPS"
+          | Instr _ | Last _ -> ""
+        in
+        Format.eprintf "@[<v>After lambda lifting:@,";
+        Code.Print.program Format.err_formatter annot p;
+        Format.eprintf "@]");
       p, cps_needed)
     else
       let p, cps_needed = rewrite_toplevel ~cps_needed p in
@@ -1143,7 +1147,7 @@ let f ~flow_info ~live_vars p =
   Code.invariant p;
   if debug ()
   then (
-    debug_print "@[<v>After CPS transform:@,";
+    Format.eprintf "@[<v>After CPS transform:@,";
     Code.Print.program Format.err_formatter (fun _ _ -> "") p;
-    debug_print "@]");
+    Format.eprintf "@]");
   p, trampolined_calls, in_cps
