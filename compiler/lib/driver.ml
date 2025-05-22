@@ -92,46 +92,36 @@ let ( +> ) f g x = g (f x)
 
 let map_fst f (x, y, z) = f x, y, z
 
-let effects ~deadcode_sentinal p =
+let effects_and_exact_calls ~deadcode_sentinal (profile : Profile.t) p =
+  let fast =
+    match Config.effects (), profile with
+    | (`Cps | `Double_translation), _ -> false
+    | _, (O2 | O3) -> false
+    | _, O1 -> true
+  in
+  let info = Global_flow.f ~fast p in
+  let p, live_vars =
+    if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
+    then
+      let p = Global_deadcode.f p ~deadcode_sentinal info in
+      Deadcode.f p
+    else Deadcode.f p
+  in
   match Config.effects () with
   | `Cps | `Double_translation ->
       if debug () then Format.eprintf "Effects...@.";
-      let p, live_vars = Deadcode.f p in
-      let info = Global_flow.f ~fast:false p in
-      let p, live_vars =
-        if Config.Flag.globaldeadcode ()
-        then
-          let p = Global_deadcode.f p ~deadcode_sentinal info in
-          Deadcode.f p
-        else p, live_vars
-      in
-      p
-      |> Effects.f ~flow_info:info ~live_vars
+      Effects.f ~flow_info:info ~live_vars p
       |> map_fst
            (match Config.target () with
            | `Wasm -> Fun.id
            | `JavaScript -> Lambda_lifting.f)
   | `Disabled | `Jspi ->
+      let p =
+        Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
+      in
       ( p
       , (Code.Var.Set.empty : Effects.trampolined_calls)
       , (Code.Var.Set.empty : Effects.in_cps) )
-
-let exact_calls (profile : Profile.t) ~deadcode_sentinal p =
-  match Config.effects () with
-  | `Disabled | `Jspi ->
-      let fast =
-        match profile with
-        | O2 | O3 -> false
-        | O1 -> true
-      in
-      let info = Global_flow.f ~fast p in
-      let p =
-        if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
-        then Global_deadcode.f p ~deadcode_sentinal info
-        else p
-      in
-      Specialize.f ~function_arity:(fun f -> Global_flow.function_arity info f) p
-  | `Cps | `Double_translation -> p
 
 let print p =
   if debug () then Code.Print.program Format.err_formatter (fun _ _ -> "") p;
@@ -632,8 +622,7 @@ let optimize ~profile p =
        | O2 -> o2
        | O3 -> o3)
     +> specialize_js_once_after
-    +> exact_calls ~deadcode_sentinal profile
-    +> effects ~deadcode_sentinal
+    +> effects_and_exact_calls ~deadcode_sentinal profile
     +> map_fst
          (match Config.target (), Config.effects () with
          | `JavaScript, `Disabled -> Generate_closure.f
