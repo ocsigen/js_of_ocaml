@@ -483,16 +483,17 @@ let zero prog pure_funs sentinal live_table =
       (* Zero out return values in last instruction, otherwise do nothing. *)
       match block.branch with
       | Return x ->
-          let tc =
-            (* We don't want to break tailcalls. *)
+          let live_tc =
+            (* Don't break tailcalls, it's needed for generate_closure
+               and effects passes.  If the (tail)call is dead, it will
+               be eliminated later by the deadcode pass, don't make it live again by
+               returning its result. *)
             match List.last body with
-            | Some (Let (x', (Apply _ as e))) when Code.Var.equal x' x ->
-                if (not (is_live x')) && Pure_fun.pure_expr pure_funs e
-                then false (* we don't want to stop deadcode *)
-                else true
+            | Some (Let (x', (Apply _ as e))) ->
+                Code.Var.equal x x' && (is_live x' || not (Pure_fun.pure_expr pure_funs e))
             | Some _ | None -> false
           in
-          if tc then Return x else Return (zero_var x)
+          if live_tc then Return x else Return (zero_var x)
       | Raise (_, _)
       | Stop | Branch _
       | Cond (_, _, _)
