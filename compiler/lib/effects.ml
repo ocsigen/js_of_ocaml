@@ -1144,6 +1144,7 @@ let f ~flow_info ~live_vars p =
   let p = split_blocks ~cps_needed p in
   let p, trampolined_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
+  let p = Deadcode.remove_unused_blocks p in
   Code.invariant p;
   if debug ()
   then (

@@ -988,7 +988,11 @@ let invariant ({ blocks; start; _ } as p) =
     let define x =
       if check_defs
       then (
-        assert (not (Var.ISet.mem defs x));
+        if Var.ISet.mem defs x
+        then (
+          Format.eprintf "%a already defined@." Var.print x;
+          Print.program Format.err_formatter (fun _ _ -> "") p;
+          assert false);
         Var.ISet.add defs x)
     in
     let check_expr = function
@@ -1038,7 +1042,10 @@ let invariant ({ blocks; start; _ } as p) =
     let visited = used_blocks p in
     Addr.Map.iter
       (fun pc block ->
-        assert (BitSet.mem visited pc);
+        if not (BitSet.mem visited pc)
+        then (
+          Format.eprintf "%d is dead@." pc;
+          assert false);
         List.iter block.params ~f:define;
         List.iter block.body ~f:check_instr;
         check_events block.body;
