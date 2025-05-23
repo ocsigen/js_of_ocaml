@@ -1,5 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2024 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -15,39 +16,48 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Code
 
-type def =
-  | Expr of Code.expr
-  | Phi of
-      { known : Var.Set.t (* Known arguments *)
-      ; others : bool (* Can there be other arguments *)
-      }
-
-type approx =
+type t =
   | Top
-  | Values of
-      { known : Var.Set.t (* List of possible values *)
-      ; others : bool (* Whether other values are possible *)
+  | Block of t list
+  | Function of
+      { arity : int
+      ; pure : bool
+      ; res : t
       }
 
-type escape_status =
-  | Escape
-  | Escape_constant (* Escapes but we know the value is not modified *)
-  | No
+val to_string : t -> string
 
-type info =
-  { info_defs : def array
-  ; info_approximation : approx Var.Tbl.t
-  ; info_may_escape : Var.ISet.t
-  ; info_variable_may_escape : escape_status array
-  ; info_return_vals : Var.Set.t Var.Map.t
-  }
+val equal : t -> t -> bool
 
-val update_def : info -> Code.Var.t -> Code.expr -> unit
+val merge : t -> t -> t
 
-val f : fast:bool -> Code.program -> info
+module Store : sig
+  val ext : string
 
-val exact_call : info -> Var.t -> int -> bool
+  val set : name:string -> t -> unit
 
-val function_arity : info -> Var.t -> int option
+  val get : name:string -> t option
+
+  val load' : string -> unit
+
+  val load : name:string -> paths:string list -> t option
+
+  val save : name:string -> dir:string -> unit
+
+  val save' : string -> (string * t) list -> unit
+end
+
+module State : sig
+  val propagate : Code.Var.t -> int -> Code.Var.t -> unit
+
+  val assign : Code.Var.t -> t -> unit
+
+  val get : Code.Var.t -> t option
+
+  val mem : Code.Var.t -> bool
+
+  val is_pure_fun : Code.Var.t -> bool
+
+  val reset : unit -> unit
+end

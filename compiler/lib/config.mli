@@ -76,6 +76,8 @@ module Flag : sig
 
   val es6 : unit -> bool
 
+  val load_shapes_auto : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit
