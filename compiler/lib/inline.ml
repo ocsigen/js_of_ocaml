@@ -39,7 +39,7 @@ We try to find a good order to traverse the code:
   first
 *)
 
-let collect_closures p =
+let collect_closures closures_position p =
   let closures = Var.Hashtbl.create 128 in
   let rec traverse p enclosing pc =
     Code.traverse
@@ -51,6 +51,7 @@ let collect_closures p =
             match i with
             | Let (f, Closure (params, ((pc', _) as cont), _)) ->
                 Var.Hashtbl.add closures f (params, cont, enclosing);
+                Var.Hashtbl.add closures_position f pc;
                 traverse p (Some f) pc'
             | _ -> ())
           block.body)
@@ -91,8 +92,8 @@ let collect_deps p closures =
 
 module Var_SCC = Strongly_connected_components.Make (Var)
 
-let visit_closures p ~live_vars f acc =
-  let closures = collect_closures p in
+let visit_closures p closures_position ~live_vars f acc =
+  let closures = collect_closures closures_position p in
   let deps = collect_deps p closures in
   let scc = Var_SCC.connected_components_sorted_from_roots_to_leaf deps in
   let f' recursive acc g =
@@ -185,6 +186,7 @@ type info =
 
 type context =
   { profile : Profile.t  (** Aggressive inlining? *)
+  ; closures_position : Addr.t Var.Hashtbl.t
   ; p : program
   ; live_vars : int array  (** Occurence count of all variables *)
   ; inline_count : int ref  (** Inlining statistics *)
@@ -409,7 +411,8 @@ and should_inline ~context info args =
       || Option.equal Var.equal info.enclosing_function context.current_function
       || (not !(context.has_closures))
          && Option.equal Var.equal info.enclosing_function context.enclosing_function
-  | `Wasm, _ | `JavaScript, `Double_translation -> true
+  | `JavaScript, `Double_translation -> true
+  | `Wasm, _ -> true
   | `JavaScript, `Jspi -> assert false)
   && (functor_like ~context info
      || (context.live_vars.(Var.idx info.f) = 1
@@ -461,7 +464,7 @@ let trace_inlining ~context info x args =
    with an initial continuation pointing to a block belonging to
    another function. This removes these closures. *)
 
-let remove_dead_closures_from_block ~live_vars p pc block =
+let remove_dead_closures_from_block ~live_vars block =
   let is_dead_closure i =
     match i with
     | Let (f, Closure _) ->
@@ -469,35 +472,17 @@ let remove_dead_closures_from_block ~live_vars p pc block =
         f < Array.length live_vars && live_vars.(f) = 0
     | _ -> false
   in
-  if List.exists ~f:is_dead_closure block.body
-  then
-    { p with
-      blocks =
-        Addr.Map.add
-          pc
-          { block with
-            body =
-              List.fold_left block.body ~init:[] ~f:(fun acc i ->
-                  match i, acc with
-                  | Event _, Event _ :: prev ->
-                      (* Avoid consecutive events (keep just the last one) *)
-                      i :: prev
-                  | _ -> if is_dead_closure i then acc else i :: acc)
-              |> List.rev
-          }
-          p.blocks
-    }
-  else p
-
-let remove_dead_closures ~live_vars p pc =
-  Code.traverse
-    { fold = fold_children }
-    (fun pc p ->
-      let block = Addr.Map.find pc p.blocks in
-      remove_dead_closures_from_block ~live_vars p pc block)
-    pc
-    p.blocks
-    p
+  assert (List.exists ~f:is_dead_closure block.body);
+  { block with
+    body =
+      List.fold_left block.body ~init:[] ~f:(fun acc i ->
+          match i, acc with
+          | Event _, Event _ :: prev ->
+              (* Avoid consecutive events (keep just the last one) *)
+              i :: prev
+          | _ -> if is_dead_closure i then acc else i :: acc)
+      |> List.rev
+  }
 
 (****)
 
@@ -518,7 +503,7 @@ let rewrite_closure blocks cont_pc clos_pc =
     blocks
     blocks
 
-let inline_function p rem branch x params cont args =
+let inline_function closures_position p rem branch x params cont args =
   let blocks, cont_pc, free_pc =
     match rem, branch with
     | [], Return y when Var.equal x y ->
@@ -527,6 +512,9 @@ let inline_function p rem branch x params cont args =
     | _ ->
         let fresh_addr = p.free_pc in
         let free_pc = fresh_addr + 1 in
+        List.iter rem ~f:(function
+          | Let (x, Closure _) -> Var.Hashtbl.replace closures_position x fresh_addr
+          | _ -> ());
         ( Addr.Map.add fresh_addr { params = [ x ]; body = rem; branch } p.blocks
         , Some fresh_addr
         , free_pc )
@@ -543,7 +531,7 @@ let inline_function p rem branch x params cont args =
   in
   [], (Branch (fresh_addr, args), { p with blocks; free_pc })
 
-let inline_in_block ~context pc block p =
+let inline_in_block ~context pc block p inlined =
   let body, (branch, p) =
     List.fold_right
       ~f:(fun i (rem, state) ->
@@ -556,13 +544,15 @@ let inline_in_block ~context pc block p =
             then (
               let branch, p = state in
               incr context.inline_count;
+              inlined := Var.Set.add f !inlined;
               if closure_count ~context info > 0 then context.has_closures := true;
               context.live_vars.(Var.idx f) <- context.live_vars.(Var.idx f) - 1;
               if context.live_vars.(Var.idx f) > 0
               then
                 let p, _, params, cont = Duplicate.closure p ~f ~params ~cont in
-                inline_function p rem branch x params cont args
-              else inline_function p rem branch x params cont args)
+                inline_function context.closures_position p rem branch x params cont args
+              else
+                inline_function context.closures_position p rem branch x params cont args)
             else i :: rem, state
         | _ -> i :: rem, state)
       ~init:([], (block.branch, p))
@@ -571,9 +561,11 @@ let inline_in_block ~context pc block p =
   { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
 
 let inline ~profile ~inline_count p ~live_vars =
+  let closures_position = Var.Hashtbl.create 18 in
   if debug () then Format.eprintf "====== inlining ======@.";
   (visit_closures
      p
+     closures_position
      ~live_vars
      (fun ~recursive
           ~enclosing_function
@@ -588,6 +580,7 @@ let inline ~profile ~inline_count p ~live_vars =
        let context =
          { context with has_closures; enclosing_function; current_function }
        in
+       let inlined = ref Var.Set.empty in
        let p =
          Code.traverse
            { fold = Code.fold_children }
@@ -607,12 +600,34 @@ let inline ~profile ~inline_count p ~live_vars =
                  ~context:{ context with in_loop = Addr.Set.mem pc in_loop }
                  pc
                  block
-                 p)
+                 p
+                 inlined)
            pc
            p.blocks
            p
        in
-       let p = remove_dead_closures ~live_vars p pc in
+       let blocks_to_clean =
+         Var.Set.fold
+           (fun f acc ->
+             let f_idx = Var.idx f in
+             if f_idx < Array.length live_vars && live_vars.(f_idx) = 0
+             then
+               let pc = Var.Hashtbl.find closures_position f in
+               Addr.Set.add pc acc
+             else acc)
+           !inlined
+           Addr.Set.empty
+       in
+       let blocks =
+         Addr.Set.fold
+           (fun pc blocks ->
+             let block = Addr.Map.find pc blocks in
+             let block = remove_dead_closures_from_block ~live_vars block in
+             Addr.Map.add pc block blocks)
+           blocks_to_clean
+           p.blocks
+       in
+       let p = { p with blocks } in
        let env =
          match current_function with
          | Some f ->
@@ -636,6 +651,7 @@ let inline ~profile ~inline_count p ~live_vars =
        in
        { context with p; env })
      { profile
+     ; closures_position
      ; p
      ; live_vars
      ; inline_count

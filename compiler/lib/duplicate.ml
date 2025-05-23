@@ -61,7 +61,8 @@ let rec blocks_to_rename p pc lst =
     lst
 
 let closure p ~f ~params ~cont =
-  let s = Subst.from_map (bound_variables p ~f ~params ~cont) in
+  let bounded = bound_variables p ~f ~params ~cont in
+  let s = Subst.from_map bounded in
   let pc, args = cont in
   let blocks = blocks_to_rename p pc [] in
   let free_pc, m =
