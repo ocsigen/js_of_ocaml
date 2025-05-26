@@ -113,9 +113,9 @@ let program_deps ~info ~vars ~tail_deps ~deps p =
       traverse
         { fold = Code.fold_children }
         (fun pc () ->
-          block_deps ~info ~vars ~tail_deps ~deps ~blocks:p.blocks ~fun_name pc)
+          block_deps ~info ~vars ~tail_deps ~deps ~blocks:(Code.blocks p) ~fun_name pc)
         pc
-        p.blocks
+        p
         ())
     ()
 

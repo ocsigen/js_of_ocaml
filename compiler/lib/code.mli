@@ -219,11 +219,25 @@ type block =
   ; branch : last
   }
 
-type program =
-  { start : Addr.t
-  ; blocks : block Addr.Map.t
-  ; free_pc : Addr.t
-  }
+type program
+
+val start : program -> Addr.t
+
+val blocks : program -> block Addr.Map.t
+
+val block : Addr.t -> program -> block
+
+val add_block : Addr.t -> block -> program -> program
+
+val remove_block : Addr.t -> program -> program
+
+val update_block : Addr.t -> program -> f:(block -> block) -> program
+
+val program : Addr.t -> block Addr.Map.t -> program
+
+val map_blocks : f:(block -> block) -> program -> program
+
+val free_pc : program -> Addr.t
 
 module Print : sig
   type xinstr =
@@ -247,7 +261,7 @@ module Print : sig
   val cont : Format.formatter -> cont -> unit
 end
 
-type 'c fold_blocs = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
+type 'c fold_blocs = program -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
 
 type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
 
@@ -288,13 +302,12 @@ val fold_children : 'c fold_blocs
 
 val fold_children_skip_try_body : 'c fold_blocs
 
-val poptraps : block Addr.Map.t -> Addr.t -> Addr.Set.t
+val poptraps : program -> Addr.t -> Addr.Set.t
 
-val traverse :
-  fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
+val traverse : fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> program -> 'c -> 'c
 
 val preorder_traverse :
-  fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
+  fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> program -> 'c -> 'c
 
 val last_instr : instr list -> instr option
 (** Last instruction of a block body, ignoring events *)

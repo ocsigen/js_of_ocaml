@@ -45,7 +45,7 @@ let collect_closures p =
     Code.traverse
       { fold = Code.fold_children }
       (fun pc () ->
-        let block = Addr.Map.find pc p.blocks in
+        let block = Code.block pc p in
         List.iter
           ~f:(fun i ->
             match i with
@@ -55,10 +55,10 @@ let collect_closures p =
             | _ -> ())
           block.body)
       pc
-      p.blocks
+      p
       ()
   in
-  traverse p None p.start;
+  traverse p None (Code.start p);
   closures
 
 let collect_deps p closures =
@@ -74,7 +74,7 @@ let collect_deps p closures =
     Code.traverse
       { fold = Code.fold_children }
       (fun pc () ->
-        let block = Addr.Map.find pc p.blocks in
+        let block = Code.block pc p in
         Freevars.iter_block_free_vars add_dep block;
         List.iter
           ~f:(fun i ->
@@ -83,7 +83,7 @@ let collect_deps p closures =
             | _ -> ())
           block.body)
       pc
-      p.blocks
+      p
       ()
   in
   Var.Hashtbl.iter (fun f (_, (pc, _), _) -> traverse p f pc) closures;
@@ -137,7 +137,7 @@ let visit_closures p ~live_vars f acc =
     ~enclosing_function:None
     ~current_function:None
     ~params:[]
-    ~cont:(p.start, [])
+    ~cont:(Code.start p, [])
     acc
 
 (****)
@@ -149,9 +149,9 @@ let blocks_in_loop p pc =
     Code.traverse
       { fold = Code.fold_children }
       (fun pc g ->
-        Addr.Map.add pc (Code.fold_children p.blocks pc Addr.Set.add Addr.Set.empty) g)
+        Addr.Map.add pc (Code.fold_children p pc Addr.Set.add Addr.Set.empty) g)
       pc
-      p.blocks
+      p
       Addr.Map.empty
   in
   let scc = SCC.component_graph g in
@@ -218,23 +218,18 @@ let contains_loop ~context info =
         then visited, Addr.Map.find pc visited
         else
           let visited, loop =
-            Code.fold_children
-              context.p.blocks
-              pc
-              traverse
-              (Addr.Map.add pc true visited, false)
+            Code.fold_children context.p pc traverse (Addr.Map.add pc true visited, false)
           in
           Addr.Map.add pc false visited, loop
       in
       snd (traverse pc (Addr.Map.empty, false)))
 
 let sum ~context f pc =
-  let blocks = context.p.blocks in
   Code.traverse
     { fold = fold_children }
-    (fun pc acc -> f (Addr.Map.find pc blocks) + acc)
+    (fun pc acc -> f (Code.block pc context.p) + acc)
     pc
-    blocks
+    context.p
     0
 
 let rec block_size ~recurse ~context { branch; body; _ } =
@@ -294,13 +289,12 @@ let count_init_code ~context info =
 (** Whether the function returns a block. *)
 let returns_a_block ~context info =
   cache ~info info.returns_a_block (fun pc ->
-      let blocks = context.p.blocks in
       Code.traverse
         { fold = fold_children }
         (fun pc acc ->
           acc
           &&
-          let block = Addr.Map.find pc blocks in
+          let block = Code.block pc context.p in
           match block.branch with
           | Return x -> (
               match Code.last_instr block.body with
@@ -308,7 +302,7 @@ let returns_a_block ~context info =
               | _ -> false)
           | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> true)
         pc
-        blocks
+        context.p
         true)
 
 (** List of parameters that corresponds to functions called once in
@@ -320,11 +314,10 @@ let interesting_parameters ~context info =
       if List.is_empty params
       then []
       else
-        let blocks = context.p.blocks in
         Code.traverse
           { fold = fold_children }
           (fun pc lst ->
-            let block = Addr.Map.find pc blocks in
+            let block = Code.block pc context.p in
             List.fold_left
               ~f:(fun lst i ->
                 match i with
@@ -334,7 +327,7 @@ let interesting_parameters ~context info =
               ~init:lst
               block.body)
           pc
-          blocks
+          context.p
           [])
 
 (*
@@ -480,77 +473,66 @@ let remove_dead_closures_from_block ~live_vars p pc block =
   in
   if List.exists ~f:is_dead_closure block.body
   then
-    { p with
-      blocks =
-        Addr.Map.add
-          pc
-          { block with
-            body =
-              List.fold_left block.body ~init:[] ~f:(fun acc i ->
-                  match i, acc with
-                  | Event _, Event _ :: prev ->
-                      (* Avoid consecutive events (keep just the last one) *)
-                      i :: prev
-                  | _ -> if is_dead_closure i then acc else i :: acc)
-              |> List.rev
-          }
-          p.blocks
-    }
+    Code.add_block
+      pc
+      { block with
+        body =
+          List.fold_left block.body ~init:[] ~f:(fun acc i ->
+              match i, acc with
+              | Event _, Event _ :: prev ->
+                  (* Avoid consecutive events (keep just the last one) *)
+                  i :: prev
+              | _ -> if is_dead_closure i then acc else i :: acc)
+          |> List.rev
+      }
+      p
   else p
 
 let remove_dead_closures ~live_vars p pc =
   Code.traverse
     { fold = fold_children }
     (fun pc p ->
-      let block = Addr.Map.find pc p.blocks in
+      let block = Code.block pc p in
       remove_dead_closures_from_block ~live_vars p pc block)
     pc
-    p.blocks
+    p
     p
 
 (****)
 
-let rewrite_block pc' pc blocks =
-  let block = Addr.Map.find pc blocks in
-  let block =
-    match block.branch, pc' with
-    | Return y, Some pc' -> { block with branch = Branch (pc', [ y ]) }
-    | _ -> block
-  in
-  Addr.Map.add pc block blocks
+let rewrite_block pc' pc p =
+  let block = Code.block pc p in
+  match block.branch, pc' with
+  | Return y, Some pc' -> Code.add_block pc { block with branch = Branch (pc', [ y ]) } p
+  | _ -> p
 
-let rewrite_closure blocks cont_pc clos_pc =
+let rewrite_closure p cont_pc clos_pc =
   Code.traverse
     { fold = Code.fold_children_skip_try_body }
     (rewrite_block cont_pc)
     clos_pc
-    blocks
-    blocks
+    p
+    p
 
 let rewrite_inlined_function p rem branch x params cont args =
-  let blocks, cont_pc, free_pc =
+  let p, cont_pc =
     match rem, branch with
     | [], Return y when Var.equal x y ->
         (* We do not need a continuation block for tail calls *)
-        p.blocks, None, p.free_pc
+        p, None
     | _ ->
-        let fresh_addr = p.free_pc in
-        let free_pc = fresh_addr + 1 in
-        ( Addr.Map.add fresh_addr { params = [ x ]; body = rem; branch } p.blocks
-        , Some fresh_addr
-        , free_pc )
+        let fresh_addr = Code.free_pc p in
+        ( Code.add_block fresh_addr { params = [ x ]; body = rem; branch } p
+        , Some fresh_addr )
   in
-  let blocks = rewrite_closure blocks cont_pc (fst cont) in
+  let p = rewrite_closure p cont_pc (fst cont) in
   (* We do not really need this intermediate block.
      It just avoids the need to find which function
      parameters are used in the function body. *)
-  let fresh_addr = free_pc in
-  let free_pc = fresh_addr + 1 in
+  let fresh_addr = Code.free_pc p in
   assert (List.compare_lengths args params = 0);
-  let blocks =
-    Addr.Map.add fresh_addr { params; body = []; branch = Branch cont } blocks
-  in
-  [], (Branch (fresh_addr, args), { p with blocks; free_pc })
+  let p = Code.add_block fresh_addr { params; body = []; branch = Branch cont } p in
+  [], (Branch (fresh_addr, args), p)
 
 let rec inline_recursively ~context ~info p params (pc, _) args =
   let relevant_args = relevant_arguments ~context info args in
@@ -570,7 +552,7 @@ let rec inline_recursively ~context ~info p params (pc, _) args =
     Code.traverse
       { fold = Code.fold_children }
       (fun pc p ->
-        let block = Addr.Map.find pc p.blocks in
+        let block = Code.block pc p in
         let body, (branch, p) =
           List.fold_right
             ~f:(fun i (rem, state) ->
@@ -590,9 +572,9 @@ let rec inline_recursively ~context ~info p params (pc, _) args =
             ~init:([], (block.branch, p))
             block.body
         in
-        { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks })
+        Code.add_block pc { block with body; branch } p)
       pc
-      p.blocks
+      p
       p
 
 and inline_function ~context i x f args rem state =
@@ -627,7 +609,7 @@ let inline_in_block ~context pc block p =
       ~init:([], (block.branch, p))
       block.body
   in
-  { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
+  Code.add_block pc { block with body; branch } p
 
 let inline ~profile ~inline_count p ~live_vars =
   if debug () then Format.eprintf "====== inlining ======@.";
@@ -651,7 +633,7 @@ let inline ~profile ~inline_count p ~live_vars =
          Code.traverse
            { fold = Code.fold_children }
            (fun pc p ->
-             let block = Addr.Map.find pc p.blocks in
+             let block = Code.block pc p in
              if
                (* Skip blocks with no call of known function *)
                List.for_all
@@ -669,7 +651,7 @@ let inline ~profile ~inline_count p ~live_vars =
                  block
                  p)
            pc
-           p.blocks
+           p
            p
        in
        let p = remove_dead_closures ~live_vars p pc in

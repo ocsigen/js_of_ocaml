@@ -58,12 +58,12 @@ let return_values p =
             Code.traverse
               { fold = fold_children }
               (fun pc s ->
-                let block = Addr.Map.find pc p.blocks in
+                let block = Code.block pc p in
                 match block.branch with
                 | Return x -> Var.Set.add x s
                 | _ -> s)
               pc
-              p.blocks
+              p
               Var.Set.empty
           in
           Var.Map.add name s rets)
@@ -156,8 +156,8 @@ let rec arg_deps st ?ignore params args =
   | [], [] -> ()
   | _ -> assert false
 
-let cont_deps blocks st ?ignore (pc, args) =
-  let block = Addr.Map.find pc blocks in
+let cont_deps p st ?ignore (pc, args) =
+  let block = Code.block pc p in
   arg_deps st ?ignore block.params args
 
 let do_escape st level x = st.variable_may_escape.(Var.idx x) <- level
@@ -249,15 +249,15 @@ let expr_deps blocks st x e =
       cont_deps blocks st cont
   | Field (y, _, _) -> add_dep st x y
 
-let program_deps st { start; blocks; _ } =
+let program_deps st p =
   Code.traverse
     { Code.fold = Code.fold_children }
     (fun pc () ->
-      match Addr.Map.find pc blocks with
+      match Code.block pc p with
       | { branch = Return x; _ } -> do_escape st Escape x
       | _ -> ())
-    start
-    blocks
+    (Code.start p)
+    p
     ();
   Addr.Map.iter
     (fun _ block ->
@@ -265,7 +265,7 @@ let program_deps st { start; blocks; _ } =
           match i with
           | Let (x, e) ->
               add_expr_def st x e;
-              expr_deps blocks st x e
+              expr_deps p st x e
           | Assign (x, y) -> add_assign_def st x y
           | Set_field (x, _, _, y) | Array_set (x, _, y) ->
               possibly_mutable st x;
@@ -274,12 +274,12 @@ let program_deps st { start; blocks; _ } =
       match block.branch with
       | Return _ | Stop -> ()
       | Raise (x, _) -> do_escape st Escape x
-      | Branch cont | Poptrap cont -> cont_deps blocks st cont
+      | Branch cont | Poptrap cont -> cont_deps p st cont
       | Cond (x, cont1, cont2) ->
-          cont_deps blocks st cont1;
-          cont_deps blocks st ~ignore:x cont2
+          cont_deps p st cont1;
+          cont_deps p st ~ignore:x cont2
       | Switch (x, a1) -> (
-          Array.iter a1 ~f:(fun cont -> cont_deps blocks st cont);
+          Array.iter a1 ~f:(fun cont -> cont_deps p st cont);
           if not st.fast
           then
             (* looking up the def of x is fine here, because the tag
@@ -296,7 +296,7 @@ let program_deps st { start; blocks; _ } =
                       (i :: (try Addr.Hashtbl.find h pc with Not_found -> [])));
                 Addr.Hashtbl.iter
                   (fun pc tags ->
-                    let block = Addr.Map.find pc blocks in
+                    let block = Code.block pc p in
                     List.iter
                       ~f:(fun i ->
                         match i with
@@ -309,9 +309,9 @@ let program_deps st { start; blocks; _ } =
       | Pushtrap (cont, x, cont_h) ->
           add_var st x;
           st.defs.(Var.idx x) <- Phi { known = Var.Set.empty; others = true };
-          cont_deps blocks st cont_h;
-          cont_deps blocks st cont)
-    blocks
+          cont_deps p st cont_h;
+          cont_deps p st cont)
+    (Code.blocks p)
 
 (* For each variable, we keep track of which values, function or
    block, it may contain. Other kinds of values are not relevant and

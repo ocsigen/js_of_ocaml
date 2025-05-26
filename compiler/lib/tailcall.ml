@@ -45,8 +45,8 @@ let rec tail_call x f l =
     -> Some args
   | _ :: rem -> tail_call x f rem
 
-let rewrite_block update_count (f, f_params, f_pc, used) pc blocks =
-  let block = Addr.Map.find pc blocks in
+let rewrite_block update_count (f, f_params, f_pc, used) pc p =
+  let block = Code.block pc p in
   match block.branch with
   | Return x -> (
       match tail_call x f block.body with
@@ -57,98 +57,91 @@ let rewrite_block update_count (f, f_params, f_pc, used) pc blocks =
             List.iter2 f_params f_args ~f:(fun p a -> Code.Var.propagate_name p a);
             used := true;
             Some
-              (Addr.Map.add
+              (Code.add_block
                  pc
                  { params = block.params
                  ; body = remove_last block.body
                  ; branch = Branch (f_pc, f_args)
                  }
-                 blocks))
+                 p))
           else None
       | None -> None)
   | _ -> None
 
-let rec traverse update_count f pc visited blocks =
+let rec traverse update_count f pc visited p =
   if not (Addr.Set.mem pc visited)
   then
     let visited = Addr.Set.add pc visited in
-    match rewrite_block update_count f pc blocks with
-    | Some blocks ->
+    match rewrite_block update_count f pc p with
+    | Some p ->
         (* The block was rewritten with a branch to the top of the function.
            No need to visit children. *)
-        visited, blocks
+        visited, p
     | None ->
-        let visited, blocks =
-          Code.fold_children_skip_try_body
-            blocks
-            pc
-            (fun pc (visited, blocks) ->
-              let visited, blocks = traverse update_count f pc visited blocks in
-              visited, blocks)
-            (visited, blocks)
-        in
-        visited, blocks
-  else visited, blocks
+        Code.fold_children_skip_try_body
+          p
+          pc
+          (fun pc (visited, p) -> traverse update_count f pc visited p)
+          (visited, p)
+  else visited, p
 
 let f p =
   let previous_p = p in
   Code.invariant p;
-  let free_pc = ref p.free_pc in
-  let blocks = ref p.blocks in
+  let p = ref p in
   let update_count = ref 0 in
   let t = Timer.make () in
   Addr.Map.iter
     (fun pc _ ->
-      let block = Addr.Map.find pc !blocks in
+      let block = Code.block pc !p in
       let rewrite_body = ref false in
       let body =
         List.map block.body ~f:(function
           | Let (f, Closure (params, (pc_head, args), cloc)) as i ->
               if List.equal ~eq:Code.Var.equal params args
               then (
-                blocks :=
+                p :=
                   snd
                     (traverse
                        update_count
                        (f, params, pc_head, ref false)
                        pc_head
                        Addr.Set.empty
-                       !blocks);
+                       !p);
                 i)
               else
-                let intermediate_pc = !free_pc in
+                let intermediate_pc = Code.free_pc !p in
                 let need_to_create_intermediate_block = ref false in
-                blocks :=
+                p :=
                   snd
                     (traverse
                        update_count
                        (f, params, intermediate_pc, need_to_create_intermediate_block)
                        pc_head
                        Addr.Set.empty
-                       !blocks);
+                       !p);
                 if !need_to_create_intermediate_block
                 then (
-                  incr free_pc;
                   let new_params = List.map params ~f:Code.Var.fork in
                   let body =
                     (* duplicate the debug event before the loop header. *)
-                    match (Addr.Map.find pc_head !blocks).body with
+                    match (Code.block pc_head !p).body with
                     | (Event _ as e) :: _ -> [ e ]
                     | _ -> []
                   in
-                  blocks :=
-                    Addr.Map.add
+                  p :=
+                    Code.add_block
                       intermediate_pc
                       { params; body; branch = Branch (pc_head, args) }
-                      !blocks;
+                      !p;
                   rewrite_body := true;
                   Let (f, Closure (new_params, (intermediate_pc, new_params), cloc)))
                 else i
           | i -> i)
       in
-      if !rewrite_body then blocks := Addr.Map.add pc { block with body } !blocks)
-    p.blocks;
-  let p = { p with blocks = !blocks; free_pc = !free_pc } in
+      if !rewrite_body then p := Code.add_block pc { block with body } !p)
+    (Code.blocks !p);
+  let p = !p in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
   if debug_stats ()

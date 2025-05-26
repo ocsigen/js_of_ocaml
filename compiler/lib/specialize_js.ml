@@ -392,20 +392,15 @@ let specialize_instrs ~target opt_count info l =
   aux info [] l []
 
 let specialize_all_instrs ~target opt_count info p =
-  let blocks =
-    Addr.Map.map
-      (fun block ->
-        { block with
-          Code.body =
-            specialize_instrs
-              ~target
-              opt_count
-              info
-              (specialize_string_concat opt_count block.body)
-        })
-      p.blocks
-  in
-  { p with blocks }
+  Code.map_blocks p ~f:(fun block ->
+      { block with
+        Code.body =
+          specialize_instrs
+            ~target
+            opt_count
+            info
+            (specialize_string_concat opt_count block.body)
+      })
 
 (****)
 
@@ -445,10 +440,9 @@ let f_once_before p =
             loop acc r
         | _ -> loop (i :: acc) r)
   in
-  let blocks =
-    Addr.Map.map (fun block -> { block with Code.body = loop [] block.body }) p.blocks
+  let p =
+    Code.map_blocks p ~f:(fun block -> { block with Code.body = loop [] block.body })
   in
-  let p = { p with blocks } in
   Code.invariant p;
   p
 
@@ -467,7 +461,7 @@ let f_once_after p =
   in
   let f = function
     | Let (x, Closure (l, (pc, []), _)) as i -> (
-        let block = Addr.Map.find pc p.blocks in
+        let block = Code.block pc p in
         match block with
         | { body =
               ( [ Let (y, Prim (Extern prim, args)) ]
@@ -488,12 +482,11 @@ let f_once_after p =
   in
   if first_class_primitives
   then (
-    let blocks =
-      Addr.Map.map
-        (fun block -> { block with Code.body = List.map block.body ~f })
-        p.blocks
+    let p =
+      Code.map_blocks p ~f:(fun block ->
+          { block with Code.body = List.map block.body ~f })
     in
-    let p = Deadcode.remove_unused_blocks { p with blocks } in
+    let p = Deadcode.remove_unused_blocks p in
     Code.invariant p;
     p)
   else p

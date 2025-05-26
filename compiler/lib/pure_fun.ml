@@ -45,26 +45,26 @@ let pure_instr pure_funs i =
 
 (****)
 
-let rec traverse blocks pc visited pure_blocks funs =
+let rec traverse p pc visited pure_blocks funs =
   if BitSet.mem visited pc
   then BitSet.mem pure_blocks pc
   else (
     BitSet.set visited pc;
-    let pure = block blocks pc visited pure_blocks funs in
+    let pure = block p pc visited pure_blocks funs in
     let pure =
       fold_children
-        blocks
+        p
         pc
         (fun pc pure ->
-          let pure' = traverse blocks pc visited pure_blocks funs in
+          let pure' = traverse p pc visited pure_blocks funs in
           pure && pure')
         pure
     in
     if pure then BitSet.set pure_blocks pc;
     pure)
 
-and block blocks pc visited pure_blocks funs =
-  let b = Addr.Map.find pc blocks in
+and block p pc visited pure_blocks funs =
+  let b = Code.block pc p in
   let pure =
     match b.branch with
     | Raise _ -> false
@@ -73,7 +73,7 @@ and block blocks pc visited pure_blocks funs =
   List.fold_left b.body ~init:pure ~f:(fun pure i ->
       (match i with
       | Let (x, Closure (_, (pc, _), _)) ->
-          let pure = traverse blocks pc visited pure_blocks funs in
+          let pure = traverse p pc visited pure_blocks funs in
           if pure then funs := Var.Set.add x !funs
       | _ -> ());
       pure && pure_instr !funs i)
@@ -82,10 +82,10 @@ type t = Var.Set.t
 
 let f p =
   let t = Timer.make () in
-  let visited = BitSet.create' p.free_pc in
-  let pure = BitSet.create' p.free_pc in
+  let visited = BitSet.create' (Code.free_pc p) in
+  let pure = BitSet.create' (Code.free_pc p) in
   let funs = ref Var.Set.empty in
-  let _ = traverse p.blocks p.start visited pure funs in
+  let _ = traverse p (Code.start p) visited pure funs in
   if times () then Format.eprintf "    pure funs.: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - pure functions: %d@." (Var.Set.cardinal !funs);
   !funs

@@ -36,7 +36,7 @@ module Generate (Target : Target_sig.S) = struct
     { live : int array
     ; in_cps : Effects.in_cps
     ; deadcode_sentinal : Var.t
-    ; blocks : block Addr.Map.t
+    ; p : program
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
     }
@@ -830,7 +830,7 @@ module Generate (Target : Target_sig.S) = struct
     Code.traverse
       { fold = fold_children_skip_try_body }
       (fun pc n ->
-        let block = Addr.Map.find pc p.blocks in
+        let block = Code.block pc p in
         List.fold_left
           ~f:(fun n i ->
             match i with
@@ -863,7 +863,7 @@ module Generate (Target : Target_sig.S) = struct
           ~init:n
           block.body)
       pc
-      p.blocks
+      p
       (false, false)
 
   let wrap_with_handler needed pc handler ~result_typ ~fall_through ~context body =
@@ -914,10 +914,10 @@ module Generate (Target : Target_sig.S) = struct
       ((pc, _) as cont)
       cloc
       acc =
-    let g = Structure.build_graph ctx.blocks pc in
+    let g = Structure.build_graph ctx.p pc in
     let dom = Structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
-      let block = Addr.Map.find pc ctx.blocks in
+      let block = Code.block pc ctx.p in
       let keep_ouside pc' =
         match block.branch with
         | Switch _ -> true
@@ -925,7 +925,7 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> Structure.is_merge_node g pc'
       in
       let code ~context =
-        let block = Addr.Map.find pc ctx.blocks in
+        let block = Code.block pc ctx.p in
         let* () = translate_instrs ctx context block.body in
         translate_node_within
           ~result_typ
@@ -960,7 +960,7 @@ module Generate (Target : Target_sig.S) = struct
             if
               (not (List.is_empty rem))
               ||
-              let block = Addr.Map.find pc ctx.blocks in
+              let block = Code.block pc ctx.p in
               match block.branch with
               | Cond _ | Pushtrap _ -> false (*ZZZ also some Switch*)
               | _ -> true
@@ -970,7 +970,7 @@ module Generate (Target : Target_sig.S) = struct
           in
           translate_tree result_typ fall_through pc' context
       | [] -> (
-          let block = Addr.Map.find pc ctx.blocks in
+          let block = Code.block pc ctx.p in
           let branch = block.branch in
           match branch with
           | Branch cont -> translate_branch result_typ fall_through pc cont context
@@ -1028,7 +1028,7 @@ module Generate (Target : Target_sig.S) = struct
         if List.is_empty args
         then return ()
         else
-          let block = Addr.Map.find dst ctx.blocks in
+          let block = Code.block dst ctx.p in
           parallel_renaming block.params args
       in
       match fall_through with
@@ -1077,7 +1077,7 @@ module Generate (Target : Target_sig.S) = struct
         ~param_names
         ~body:
           (let* () =
-             let block = Addr.Map.find pc ctx.blocks in
+             let block = Code.block pc ctx.p in
              match block.body with
              | Event start_loc :: _ -> event start_loc
              | _ -> no_event
@@ -1190,13 +1190,7 @@ module Generate (Target : Target_sig.S) = struct
   Code.Print.program (fun _ _ -> "") p;
 *)
     let ctx =
-      { live = live_vars
-      ; in_cps
-      ; deadcode_sentinal
-      ; blocks = p.blocks
-      ; closures
-      ; global_context
-      }
+      { live = live_vars; in_cps; deadcode_sentinal; p; closures; global_context }
     in
     let toplevel_name = Var.fresh_n "toplevel" in
     let functions =
@@ -1275,16 +1269,12 @@ let fix_switch_branches p =
                with
                | Some x -> x
                | None ->
-                   let pc' = !p'.free_pc in
+                   let pc' = Code.free_pc !p' in
                    p' :=
-                     { !p' with
-                       blocks =
-                         Addr.Map.add
-                           pc'
-                           { params = []; body = []; branch = Branch cont }
-                           !p'.blocks
-                     ; free_pc = pc' + 1
-                     };
+                     Code.add_block
+                       pc'
+                       { params = []; body = []; branch = Branch cont }
+                       !p';
                    updates := Addr.Map.add pc ((args, pc') :: l) !updates;
                    pc')
             , [] ))
@@ -1295,7 +1285,7 @@ let fix_switch_branches p =
       match block.branch with
       | Switch (_, l) -> fix_branches l
       | _ -> ())
-    p.blocks;
+    (Code.blocks p);
   !p'
 
 module G = Generate (Gc_target)

@@ -37,13 +37,6 @@ module Excluding_Binders : sig
   val last : (Var.t -> Var.t) -> last -> last
 
   val cont : (Var.t -> Var.t) -> int -> program -> program
-
-  val cont' :
-       (Var.t -> Var.t)
-    -> int
-    -> block Addr.Map.t
-    -> Addr.Set.t
-    -> block Addr.Map.t * Addr.Set.t
 end
 
 val from_array : Var.t array -> Var.t -> Var.t
