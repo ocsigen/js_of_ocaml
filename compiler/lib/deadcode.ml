@@ -391,14 +391,13 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
   in
   { p with blocks }
 
-let f ({ blocks; _ } as p : Code.program) =
+let f pure_funs ({ blocks; _ } as p : Code.program) =
   let previous_p = p in
   Code.invariant p;
   let t = Timer.make () in
   let nv = Var.count () in
   let defs = Array.make nv [] in
   let live = Array.make nv 0 in
-  let pure_funs = Pure_fun.f p in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->

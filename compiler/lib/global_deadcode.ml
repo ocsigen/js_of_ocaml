@@ -558,7 +558,7 @@ let add_sentinal p sentinal =
   Code.prepend p [ instr ]
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
-let f p ~deadcode_sentinal global_info =
+let f pure_funs p ~deadcode_sentinal global_info =
   Code.invariant p;
   let t = Timer.make () in
   (* Add sentinal variable *)
@@ -570,7 +570,6 @@ let f p ~deadcode_sentinal global_info =
   (* Compute definitions *)
   let defs = definitions p in
   (* Compute initial liveness *)
-  let pure_funs = Pure_fun.f p in
   let live_table, scoped_live_vars = liveness p pure_funs global_info in
   (* Compute usages *)
   let uses = usages p global_info scoped_live_vars in
