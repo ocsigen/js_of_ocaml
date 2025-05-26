@@ -160,12 +160,7 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
       true
   | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> false
 
-module SCC = Strongly_connected_components.Make (struct
-  type t = Var.t
-
-  module Set = Var.Set
-  module Map = Var.Map
-end)
+module SCC = Strongly_connected_components.Make (Var)
 
 let find_mutually_recursive_calls tail_deps =
   let scc = SCC.component_graph !tail_deps in
