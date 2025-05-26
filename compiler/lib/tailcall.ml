@@ -93,8 +93,8 @@ let rec traverse update_count f pc visited blocks =
 let f p =
   let previous_p = p in
   Code.invariant p;
-  let free_pc = ref p.free_pc in
-  let blocks = ref p.blocks in
+  let free_pc = ref (Code.free_pc p) in
+  let blocks = ref (Code.blocks p) in
   let update_count = ref 0 in
   let t = Timer.make () in
   Addr.Map.iter
@@ -147,8 +147,8 @@ let f p =
           | i -> i)
       in
       if !rewrite_body then blocks := Addr.Map.add pc { block with body } !blocks)
-    p.blocks;
-  let p = { p with blocks = !blocks; free_pc = !free_pc } in
+    (Code.blocks p);
+  let p = Code.program (Code.start p) !blocks in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
   if debug_stats ()

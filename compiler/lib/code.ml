@@ -472,6 +472,31 @@ type program =
   ; free_pc : Addr.t
   }
 
+let start p = p.start
+
+let blocks p = p.blocks
+
+let block pc p = Addr.Map.find pc p.blocks
+
+let add_block pc block p =
+  { p with
+    blocks = Addr.Map.add pc block p.blocks
+  ; free_pc = (if pc > p.free_pc then pc + 1 else p.free_pc)
+  }
+
+let free_pc p = p.free_pc
+
+let program start blocks =
+  { start
+  ; blocks
+  ; free_pc =
+      (match Addr.Map.max_binding_opt blocks with
+      | None -> start + 1
+      | Some (pc, _) -> pc + 1)
+  }
+
+let map_blocks ~f p = { p with blocks = Addr.Map.map f p.blocks }
+
 let noloc = No
 
 let location_of_pc pc = Before pc

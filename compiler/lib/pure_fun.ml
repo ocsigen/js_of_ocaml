@@ -82,10 +82,10 @@ type t = Var.Set.t
 
 let f p =
   let t = Timer.make () in
-  let visited = BitSet.create' p.free_pc in
-  let pure = BitSet.create' p.free_pc in
+  let visited = BitSet.create' (Code.free_pc p) in
+  let pure = BitSet.create' (Code.free_pc p) in
   let funs = ref Var.Set.empty in
-  let _ = traverse p.blocks p.start visited pure funs in
+  let _ = traverse (Code.blocks p) (Code.start p) visited pure funs in
   if times () then Format.eprintf "    pure funs.: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - pure functions: %d@." (Var.Set.cardinal !funs);
   !funs

@@ -204,9 +204,9 @@ let remove_unused_blocks' p =
         let b = BitSet.mem used pc in
         if not b then incr count;
         b)
-      p.blocks
+      (Code.blocks p)
   in
-  { p with blocks }, !count
+  Code.program (Code.start p) blocks, !count
 
 let remove_unused_blocks p =
   let previous_p = p in
@@ -227,8 +227,8 @@ let rec add_arg_dep defs params args =
   | [], [] -> ()
   | _ -> assert false
 
-let add_cont_dep blocks defs (pc, args) =
-  let block = Addr.Map.find pc blocks in
+let add_cont_dep p defs (pc, args) =
+  let block = Code.block pc p in
   add_arg_dep defs block.params args
 
 let empty_body b =
@@ -239,7 +239,7 @@ let empty_body b =
 let merge_blocks p =
   let previous_p = p in
   let t = Timer.make () in
-  let preds = Array.make p.free_pc 0 in
+  let preds = Array.make (Code.free_pc p) 0 in
   let assigned = ref Var.Set.empty in
   let merged = ref 0 in
   let subst =
@@ -265,10 +265,10 @@ let merge_blocks p =
             mark_cont cont2
         | Poptrap cont -> mark_cont cont
         | Return _ | Raise _ | Stop -> ())
-      p.blocks
+      (Code.blocks p)
   in
   let p =
-    let visited = BitSet.create' p.free_pc in
+    let visited = BitSet.create' (Code.free_pc p) in
     let rec process_branch pc blocks =
       let block = Addr.Map.find pc blocks in
       match block.branch with
@@ -311,9 +311,12 @@ let merge_blocks p =
         Code.fold_children blocks pc traverse blocks
     in
     let blocks =
-      Code.fold_closures p (fun _ _ (pc, _) _ blocks -> traverse pc blocks) p.blocks
+      Code.fold_closures
+        p
+        (fun _ _ (pc, _) _ blocks -> traverse pc blocks)
+        (Code.blocks p)
     in
-    { p with blocks }
+    Code.program (Code.start p) blocks
   in
   let p =
     if !merged = 0
@@ -367,31 +370,26 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
               params
           then Addr.Hashtbl.add shortcuts pc (params, cont)
       | _ -> ())
-    p.blocks;
-  let blocks =
-    Addr.Map.map
-      (fun block ->
-        { block with
-          branch =
-            (let branch = block.branch in
-             match branch with
-             | Branch cont -> Branch (resolve cont)
-             | Cond (x, cont1, cont2) ->
-                 let cont1' = resolve cont1 in
-                 let cont2' = resolve cont2 in
-                 if Code.cont_equal cont1' cont2'
-                 then Branch cont1'
-                 else Cond (x, cont1', cont2')
-             | Switch (x, a1) -> Switch (x, Array.map ~f:resolve a1)
-             | Pushtrap (cont1, x, cont2) -> Pushtrap (resolve cont1, x, resolve cont2)
-             | Poptrap cont -> Poptrap (resolve cont)
-             | Return _ | Raise _ | Stop -> branch)
-        })
-      p.blocks
-  in
-  { p with blocks }
+    (Code.blocks p);
+  Code.map_blocks p ~f:(fun block ->
+      { block with
+        branch =
+          (let branch = block.branch in
+           match branch with
+           | Branch cont -> Branch (resolve cont)
+           | Cond (x, cont1, cont2) ->
+               let cont1' = resolve cont1 in
+               let cont2' = resolve cont2 in
+               if Code.cont_equal cont1' cont2'
+               then Branch cont1'
+               else Cond (x, cont1', cont2')
+           | Switch (x, a1) -> Switch (x, Array.map ~f:resolve a1)
+           | Pushtrap (cont1, x, cont2) -> Pushtrap (resolve cont1, x, resolve cont2)
+           | Poptrap cont -> Poptrap (resolve cont)
+           | Return _ | Raise _ | Stop -> branch)
+      })
 
-let f pure_funs ({ blocks; _ } as p : Code.program) =
+let f pure_funs (p : Code.program) =
   let previous_p = p in
   Code.invariant p;
   let t = Timer.make () in
@@ -408,21 +406,21 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
               ());
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
-      | Branch cont -> add_cont_dep blocks defs cont
+      | Branch cont -> add_cont_dep p defs cont
       | Cond (_, cont1, cont2) ->
-          add_cont_dep blocks defs cont1;
-          add_cont_dep blocks defs cont2
-      | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> add_cont_dep blocks defs cont)
+          add_cont_dep p defs cont1;
+          add_cont_dep p defs cont2
+      | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> add_cont_dep p defs cont)
       | Pushtrap (cont, _, cont_h) ->
-          add_cont_dep blocks defs cont_h;
-          add_cont_dep blocks defs cont
-      | Poptrap cont -> add_cont_dep blocks defs cont)
-    blocks;
+          add_cont_dep p defs cont_h;
+          add_cont_dep p defs cont
+      | Poptrap cont -> add_cont_dep p defs cont)
+    (Code.blocks p);
   let st =
     { live
     ; defs
-    ; blocks
-    ; reachable_blocks = BitSet.create' p.free_pc
+    ; blocks = Code.blocks p
+    ; reachable_blocks = BitSet.create' (Code.free_pc p)
     ; pure_funs
     ; deleted_instrs = 0
     ; deleted_blocks = 0
@@ -430,10 +428,10 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
     ; block_shortcut = 0
     }
   in
-  mark_reachable st p.start;
+  mark_reachable st (Code.start p);
   if debug () then Print.program Format.err_formatter (fun pc xi -> annot st pc xi) p;
   let p =
-    let all_blocks = blocks in
+    let all_blocks = Code.blocks p in
     let blocks =
       Addr.Map.filter_map
         (fun pc block ->
@@ -459,9 +457,9 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
                   |> List.rev
               ; branch = filter_live_last all_blocks st block.branch
               })
-        blocks
+        all_blocks
     in
-    { p with blocks }
+    Code.program (Code.start p) blocks
   in
   let p = remove_empty_blocks st p in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;

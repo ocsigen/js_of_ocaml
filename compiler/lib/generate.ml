@@ -155,7 +155,8 @@ module Share = struct
       ?alias_strings
       ?(alias_prims = false)
       ?(alias_apply = true)
-      { blocks; _ } : t =
+      p : t =
+    let blocks = Code.blocks p in
     let alias_strings =
       match alias_strings with
       | None -> Config.Flag.use_js_string () && not (Config.Flag.share_constant ())
@@ -2300,12 +2301,12 @@ let f
       ~mutated_vars
       ~freevars
       ~in_cps
-      p.blocks
+      (Code.blocks p)
       live_vars
       trampolined_calls
       share
   in
-  let p = compile_program ctx p.start in
+  let p = compile_program ctx (Code.start p) in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
   p
 

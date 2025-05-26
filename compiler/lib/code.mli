@@ -219,11 +219,21 @@ type block =
   ; branch : last
   }
 
-type program =
-  { start : Addr.t
-  ; blocks : block Addr.Map.t
-  ; free_pc : Addr.t
-  }
+type program
+
+val start : program -> Addr.t
+
+val blocks : program -> block Addr.Map.t
+
+val block : Addr.t -> program -> block
+
+val add_block : Addr.t -> block -> program -> program
+
+val program : Addr.t -> block Addr.Map.t -> program
+
+val map_blocks : f:(block -> block) -> program -> program
+
+val free_pc : program -> Addr.t
 
 module Print : sig
   type xinstr =
