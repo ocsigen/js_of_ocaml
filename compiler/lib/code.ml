@@ -469,7 +469,6 @@ type block =
 type program =
   { start : Addr.t
   ; blocks : block Addr.Map.t
-  ; free_pc : Addr.t
   }
 
 let start p = p.start
@@ -498,14 +497,7 @@ let free_pc p =
   | None -> p.start + 1
   | Some (pc, _) -> pc + 1
 
-let program start blocks =
-  { start
-  ; blocks
-  ; free_pc =
-      (match Addr.Map.max_binding_opt blocks with
-      | None -> start + 1
-      | Some (pc, _) -> pc + 1)
-  }
+let program start blocks = { start; blocks }
 
 let map_blocks ~f p = { p with blocks = Addr.Map.map f p.blocks }
 
@@ -694,7 +686,7 @@ let fold_closures p f accu =
 
 (****)
 
-let prepend ({ start; blocks; free_pc } as p) body =
+let prepend ({ start; blocks } as p) body =
   match body with
   | [] -> p
   | _ -> (
@@ -702,21 +694,13 @@ let prepend ({ start; blocks; free_pc } as p) body =
       | block ->
           { p with
             blocks = Addr.Map.add start { block with body = body @ block.body } blocks
-          }
-      | exception Not_found ->
-          let new_start = free_pc in
-          let blocks =
-            Addr.Map.add new_start { params = []; body; branch = Stop } blocks
-          in
-          let free_pc = free_pc + 1 in
-          { start = new_start; blocks; free_pc })
+          })
 
 let empty_block = { params = []; body = []; branch = Stop }
 
 let empty =
   let start = 0 in
-  let blocks = Addr.Map.singleton start empty_block in
-  { start; blocks; free_pc = start + 1 }
+  program start (Addr.Map.singleton start empty_block)
 
 let is_empty p =
   match Addr.Map.cardinal p.blocks with
@@ -934,7 +918,7 @@ let cont_compare (pc, args) (pc', args') =
 
 let with_invariant = Debug.find "invariant"
 
-let do_compact { blocks; start; free_pc = _ } =
+let do_compact { blocks; start } =
   let remap =
     let max = fst (Addr.Map.max_binding blocks) in
     let a = Array.make (max + 1) 0 in
@@ -971,9 +955,8 @@ let do_compact { blocks; start; free_pc = _ } =
       blocks
       Addr.Map.empty
   in
-  let free_pc = (Addr.Map.max_binding blocks |> fst) + 1 in
   let start = remap.(start) in
-  { blocks; start; free_pc }
+  program start blocks
 
 let compact p =
   let t = Timer.make () in
@@ -994,7 +977,7 @@ let compact p =
   p
 
 let used_blocks p =
-  let visited = BitSet.create' p.free_pc in
+  let visited = BitSet.create' (free_pc p) in
   let rec mark_used pc =
     if not (BitSet.mem visited pc)
     then (
