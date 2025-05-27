@@ -37,9 +37,6 @@ type context =
   ; mutable dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable cps_dummy_funs : Code.Var.t Stdlib.IntMap.t
   ; mutable init_code : Wasm_ast.instruction list
-  ; mutable string_count : int
-  ; mutable strings : string list
-  ; mutable string_index : int StringMap.t
   ; mutable fragments : Javascript.expression StringMap.t
   ; mutable globalized_variables : Code.Var.Set.t
   ; value_type : Wasm_ast.value_type
@@ -177,8 +174,6 @@ val register_data_segment : Code.Var.t -> string -> unit t
 val register_init_code : unit t -> unit t
 
 val init_code : context -> unit t
-
-val register_string : string -> int t
 
 val register_fragment : string -> (unit -> Javascript.expression) -> unit t
 

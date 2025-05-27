@@ -19,6 +19,7 @@
 * Runtime/wasm: support jsoo_env and keep track of backtrace status (#1881)
 * Runtime/wasm: support unmarshaling compressed data (#1898)
 * Runtime/wasm: make resuming a continuation more efficient in Wasm (#1892)
+* Runtime/wasm: use imported string constants for JavaScript strings (#2022)
 * Compiler: improve performance of Javascript linking
 * Compiler: remove empty blocks (#1934)
 * Ppx: explicitly disallow polymorphic method (#1897)
