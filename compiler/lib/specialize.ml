@@ -99,7 +99,6 @@ let specialize_apply opt_count function_arity ((acc, p), loc) i =
           in
           let free_pc = Code.free_pc p in
           ( Let (x, Closure (missing, (free_pc, missing), None)) :: acc
-          
           , Code.add_block free_pc block p )
       | Some _ -> assert false)
   | _ -> i :: acc, p
