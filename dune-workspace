@@ -7,5 +7,5 @@
    (runtest_alias runtest-wasm))
   (js_of_ocaml
 ;; enable for debugging
-;; (flags (:standard --debug stats-debug --debug invariant))
+   (flags (:standard --debug stats-debug --debug invariant))
    (runtest_alias runtest-js))))
