@@ -70,29 +70,29 @@ module Excluding_Binders = struct
     let blocks = Addr.Map.map (fun b -> block s b) (Code.blocks p) in
     Code.program (Code.start p) blocks
 
-  let rec cont' s pc blocks visited =
+  let rec cont' s pc p visited =
     if Addr.Set.mem pc visited
-    then blocks, visited
+    then p, visited
     else
       let visited = Addr.Set.add pc visited in
-      let b = Addr.Map.find pc blocks in
+      let b = Code.block pc p in
       let b = block s b in
-      let blocks = Addr.Map.add pc b blocks in
-      let blocks, visited =
-        List.fold_left b.body ~init:(blocks, visited) ~f:(fun (blocks, visited) instr ->
+      let p = Code.add_block pc b p in
+      let p, visited =
+        List.fold_left b.body ~init:(p, visited) ~f:(fun (p, visited) instr ->
             match instr with
-            | Let (_, Closure (_, (pc, _), _)) -> cont' s pc blocks visited
-            | _ -> blocks, visited)
+            | Let (_, Closure (_, (pc, _), _)) -> cont' s pc p visited
+            | _ -> p, visited)
       in
       Code.fold_children
-        blocks
+        (Code.blocks p)
         pc
-        (fun pc (blocks, visited) -> cont' s pc blocks visited)
-        (blocks, visited)
+        (fun pc (p, visited) -> cont' s pc p visited)
+        (p, visited)
 
   let cont s addr p =
-    let blocks, _ = cont' s addr (Code.blocks p) Addr.Set.empty in
-    Code.program (Code.start p) blocks
+    let p, _ = cont' s addr p Addr.Set.empty in
+    p
 end
 
 (****)

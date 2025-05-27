@@ -1711,14 +1711,11 @@ and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
         then ctx
         else
           let subst = Subst.from_map muts_map in
-          let p, _visited =
-            List.fold_left
-              pcs
-              ~init:(ctx.blocks, Addr.Set.empty)
-              ~f:(fun (blocks, visited) pc ->
-                Subst.Excluding_Binders.cont' subst pc blocks visited)
+          let p =
+            List.fold_left pcs ~init:(Code.program 0 ctx.blocks) ~f:(fun p pc ->
+                Subst.Excluding_Binders.cont subst pc p)
           in
-          { ctx with blocks = p }
+          { ctx with blocks = Code.blocks p }
       in
       let vd kind = function
         | [] -> []

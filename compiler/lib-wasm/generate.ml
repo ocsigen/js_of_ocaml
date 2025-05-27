@@ -830,7 +830,7 @@ module Generate (Target : Target_sig.S) = struct
     Code.traverse
       { fold = fold_children_skip_try_body }
       (fun pc n ->
-        let block = Addr.Map.find pc p.blocks in
+        let block = Code.block pc p in
         List.fold_left
           ~f:(fun n i ->
             match i with
@@ -863,7 +863,7 @@ module Generate (Target : Target_sig.S) = struct
           ~init:n
           block.body)
       pc
-      p.blocks
+      (Code.blocks p)
       (false, false)
 
   let wrap_with_handler needed pc handler ~result_typ ~fall_through ~context body =
@@ -1193,7 +1193,7 @@ module Generate (Target : Target_sig.S) = struct
       { live = live_vars
       ; in_cps
       ; deadcode_sentinal
-      ; blocks = p.blocks
+      ; blocks = Code.blocks p
       ; closures
       ; global_context
       }
@@ -1275,16 +1275,12 @@ let fix_switch_branches p =
                with
                | Some x -> x
                | None ->
-                   let pc' = !p'.free_pc in
+                   let pc' = Code.free_pc !p' in
                    p' :=
-                     { !p' with
-                       blocks =
-                         Addr.Map.add
-                           pc'
-                           { params = []; body = []; branch = Branch cont }
-                           !p'.blocks
-                     ; free_pc = pc' + 1
-                     };
+                     Code.add_block
+                       pc'
+                       { params = []; body = []; branch = Branch cont }
+                       !p';
                    updates := Addr.Map.add pc ((args, pc') :: l) !updates;
                    pc')
             , [] ))
@@ -1295,7 +1291,7 @@ let fix_switch_branches p =
       match block.branch with
       | Switch (_, l) -> fix_branches l
       | _ -> ())
-    p.blocks;
+    (Code.blocks p);
   !p'
 
 module G = Generate (Gc_target)

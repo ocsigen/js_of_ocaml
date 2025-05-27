@@ -1088,20 +1088,20 @@ let split_blocks ~cps_needed (p : Code.program) =
           && Var.Set.mem x cps_needed
       | _ -> false
     in
-    let rec split (p : Code.program) pc block accu l branch =
+    let rec split (p : Code.program) free_pc pc block accu l branch =
       match l with
       | [] ->
           let block = { block with body = List.rev accu } in
           Code.add_block pc block p
       | (Let (x, e) as i) :: r when is_split_point i r branch ->
-          let pc' = Code.free_pc p in
+          let pc' = free_pc in
           let block' = { params = []; body = []; branch = block.branch } in
           let block =
             { block with body = List.rev (Let (x, e) :: accu); branch = Branch (pc', []) }
           in
           let p = Code.add_block pc block p in
-          split p pc' block' [] r branch
-      | i :: r -> split p pc block (i :: accu) r branch
+          split p (free_pc + 1) pc' block' [] r branch
+      | i :: r -> split p free_pc pc block (i :: accu) r branch
     in
     let rec should_split l branch =
       match l with
@@ -1109,7 +1109,7 @@ let split_blocks ~cps_needed (p : Code.program) =
       | i :: r -> is_split_point i r branch || should_split r branch
     in
     if should_split block.body block.branch
-    then split p pc block [] block.body block.branch
+    then split p (Code.free_pc p) pc block [] block.body block.branch
     else p
   in
   Addr.Map.fold split_block (Code.blocks p) p
@@ -1126,6 +1126,7 @@ let f ~flow_info ~live_vars p =
     if double_translate ()
     then (
       let p, liftings = Lambda_lifting_simple.f ~to_lift:cps_needed p in
+      Code.invariant p;
       let cps_needed =
         Var.Set.map
           (fun f -> try Subst.from_map liftings f with Not_found -> f)
@@ -1147,6 +1148,7 @@ let f ~flow_info ~live_vars p =
       p, cps_needed
   in
   let p = split_blocks ~cps_needed p in
+  Code.invariant p;
   let p, trampolined_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
   Code.invariant p;
