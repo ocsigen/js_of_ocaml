@@ -100,13 +100,13 @@ let traverse_instruction st i =
   | Event _ -> st
 
 let traverse_block p st pc =
-  let b = Code.Addr.Map.find pc p.Code.blocks in
+  let b = Code.block pc p in
   let st = List.fold_left ~f:(fun st x -> declare x st) ~init:st b.Code.params in
   List.fold_left ~f:(fun st i -> traverse_instruction st i) ~init:st b.Code.body
 
 let f p g closures =
   let l = Structure.blocks_in_reverse_post_order g in
-  let in_loop = Freevars.find_loops_in_closure p p.Code.start in
+  let in_loop = Freevars.find_loops_in_closure p (Code.start p) in
   let st =
     List.fold_left
       ~f:(fun st pc ->

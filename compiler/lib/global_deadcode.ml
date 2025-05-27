@@ -99,9 +99,9 @@ let iter_with_scope prog f =
     (fun scope _ (pc, _) _ () ->
       Code.traverse
         { fold = fold_children }
-        (fun pc () -> f scope (Addr.Map.find pc prog.blocks))
+        (fun pc () -> f scope (Code.block pc prog))
         pc
-        prog.blocks
+        prog
         ())
     ()
 
@@ -119,7 +119,7 @@ let definitions prog =
           | Event _ | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) ->
               ())
         block.body)
-    prog.blocks;
+    (Code.blocks prog);
   defs
 
 let variable_may_escape x (global_info : Global_flow.info) =
@@ -158,9 +158,9 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
     List.iter2 ~f:(fun x y -> add_use (Propagate { scope = []; src = x }) x y) params args
   in
   let add_cont_deps (pc, args) =
-    match try Some (Addr.Map.find pc prog.blocks) with Not_found -> None with
-    | Some block -> add_arg_dep block.params args
-    | None -> () (* Dead continuation *)
+    match Code.block pc prog with
+    | block -> add_arg_dep block.params args
+    | exception Not_found -> () (* Dead continuation *)
   in
   let add_expr_uses scope x e : unit =
     match e with
@@ -503,8 +503,7 @@ let zero prog pure_funs sentinal live_table =
     in
     { block with body; branch }
   in
-  let blocks = prog.blocks |> Addr.Map.map zero_block in
-  { prog with blocks }
+  Code.map_blocks ~f:zero_block prog
 
 module Print = struct
   let rec live_to_string = function
@@ -558,7 +557,7 @@ let add_sentinal p sentinal =
   Code.prepend p [ instr ]
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
-let f p ~deadcode_sentinal global_info =
+let f pure_funs p ~deadcode_sentinal global_info =
   Code.invariant p;
   let t = Timer.make () in
   (* Add sentinal variable *)
@@ -570,7 +569,6 @@ let f p ~deadcode_sentinal global_info =
   (* Compute definitions *)
   let defs = definitions p in
   (* Compute initial liveness *)
-  let pure_funs = Pure_fun.f p in
   let live_table, scoped_live_vars = liveness p pure_funs global_info in
   (* Compute usages *)
   let uses = usages p global_info scoped_live_vars in

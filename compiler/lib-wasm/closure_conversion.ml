@@ -60,7 +60,7 @@ let collect_free_vars program var_depth depth pc closures =
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc () ->
-      let block = Code.Addr.Map.find pc program.blocks in
+      let block = Code.block pc program in
       Freevars.iter_block_free_vars add_if_free_variable block;
       List.iter block.body ~f:(fun i ->
           match i with
@@ -71,7 +71,7 @@ let collect_free_vars program var_depth depth pc closures =
               | Some _ | None -> ())
           | _ -> ()))
     pc
-    program.blocks
+    program
     ();
   !vars
 
@@ -87,7 +87,7 @@ let rec traverse var_depth closures program pc depth =
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc (program : Code.program) ->
-      let block = Code.Addr.Map.find pc program.blocks in
+      let block = Code.block pc program in
       mark_bound_variables var_depth block depth;
       let program =
         List.fold_left
@@ -151,9 +151,9 @@ let rec traverse var_depth closures program pc depth =
             in
             List.concat (List.rev (Array.to_list l)))
       in
-      { program with blocks = Code.Addr.Map.add pc { block with body } program.blocks })
+      Code.add_block pc { block with body } program)
     pc
-    program.blocks
+    program
     program
 
 let f p =
@@ -161,6 +161,6 @@ let f p =
   let nv = Var.count () in
   let var_depth = Array.make nv (-1) in
   let closures = ref Var.Map.empty in
-  let p = traverse var_depth closures p p.start 0 in
+  let p = traverse var_depth closures p (Code.start p) 0 in
   if Debug.find "times" () then Format.eprintf "  closure conversion: %a@." Timer.print t;
   p, !closures

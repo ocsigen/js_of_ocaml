@@ -727,12 +727,12 @@ let eval_branch update_branch info l =
 
 exception May_raise
 
-let rec do_not_raise pc visited rewrite blocks =
+let rec do_not_raise pc visited rewrite p =
   if Addr.Set.mem pc visited
   then visited, rewrite
   else
     let visited = Addr.Set.add pc visited in
-    let b = Addr.Map.find pc blocks in
+    let b = Code.block pc p in
     List.iter b.body ~f:(fun i ->
         match i with
         | Event _
@@ -752,53 +752,45 @@ let rec do_not_raise pc visited rewrite blocks =
     | Raise _ -> raise May_raise
     | Stop | Return _ -> visited, rewrite
     | Poptrap _ -> visited, pc :: rewrite
-    | Branch (pc, _) -> do_not_raise pc visited rewrite blocks
+    | Branch (pc, _) -> do_not_raise pc visited rewrite p
     | Cond (_, (pc1, _), (pc2, _)) ->
-        let visited, rewrite = do_not_raise pc1 visited rewrite blocks in
-        let visited, rewrite = do_not_raise pc2 visited rewrite blocks in
+        let visited, rewrite = do_not_raise pc1 visited rewrite p in
+        let visited, rewrite = do_not_raise pc2 visited rewrite p in
         visited, rewrite
     | Switch (_, a1) ->
         let visited, rewrite =
           Array.fold_left
             a1
             ~init:(visited, rewrite)
-            ~f:(fun (visited, rewrite) (pc, _) -> do_not_raise pc visited rewrite blocks)
+            ~f:(fun (visited, rewrite) (pc, _) -> do_not_raise pc visited rewrite p)
         in
         visited, rewrite
     | Pushtrap _ -> raise May_raise
 
-let drop_exception_handler drop_count blocks =
+let drop_exception_handler drop_count p =
   Addr.Map.fold
-    (fun pc _ blocks ->
-      match Addr.Map.find pc blocks with
+    (fun pc _ p ->
+      match Code.block pc p with
       | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2); _ } as b -> (
-          match do_not_raise addr Addr.Set.empty [] blocks with
-          | exception May_raise -> blocks
+          match do_not_raise addr Addr.Set.empty [] p with
+          | exception May_raise -> p
           | _visited, rewrite ->
               incr drop_count;
               let b = { b with branch = Branch cont1 } in
-              let blocks = Addr.Map.add pc b blocks in
-              let blocks =
-                List.fold_left
-                  ~f:(fun blocks pc2 ->
-                    Addr.Map.update
-                      pc2
-                      (function
-                        | Some ({ branch = Poptrap cont; _ } as b) ->
-                            Some { b with branch = Branch cont }
-                        | None | Some _ -> assert false)
-                      blocks)
-                  rewrite
-                  ~init:blocks
-              in
-              blocks)
-      | _ -> blocks)
-    blocks
-    blocks
+              let p = Code.add_block pc b p in
+              List.fold_left
+                ~f:(fun p pc2 ->
+                  Code.update_block pc2 p ~f:(function
+                    | { branch = Poptrap cont; _ } as b -> { b with branch = Branch cont }
+                    | _ -> assert false))
+                rewrite
+                ~init:p)
+      | _ -> p)
+    (Code.blocks p)
+    p
 
-let eval update_count update_branch inline_constant ~target info blocks =
-  Addr.Map.map
-    (fun block ->
+let eval update_count update_branch inline_constant ~target info p =
+  Code.map_blocks p ~f:(fun block ->
       let body =
         List.concat_map
           block.body
@@ -806,7 +798,6 @@ let eval update_count update_branch inline_constant ~target info blocks =
       in
       let branch = eval_branch update_branch info block.branch in
       { block with Code.body; Code.branch })
-    blocks
 
 let f info p =
   Code.invariant p;
@@ -816,17 +807,10 @@ let f info p =
   let inline_constant = ref 0 in
   let drop_count = ref 0 in
   let t = Timer.make () in
-  let blocks =
-    eval
-      update_count
-      update_branch
-      inline_constant
-      ~target:(Config.target ())
-      info
-      p.blocks
+  let p =
+    eval update_count update_branch inline_constant ~target:(Config.target ()) info p
   in
-  let blocks = drop_exception_handler drop_count blocks in
-  let p = { p with blocks } in
+  let p = drop_exception_handler drop_count p in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;
   if stats ()
   then

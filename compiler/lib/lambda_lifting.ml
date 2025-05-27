@@ -73,7 +73,7 @@ let rec compute_depth program pc =
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc d ->
-      let block = Code.Addr.Map.find pc program.blocks in
+      let block = Code.block pc program in
       List.fold_left block.body ~init:d ~f:(fun d i ->
           match i with
           | Let (_, Closure (_, (pc', _), _)) ->
@@ -81,7 +81,7 @@ let rec compute_depth program pc =
               max d (d' + 1)
           | _ -> d))
     pc
-    program.blocks
+    program
     0
 
 let collect_free_vars program var_depth depth pc =
@@ -91,7 +91,7 @@ let collect_free_vars program var_depth depth pc =
     Code.preorder_traverse
       { fold = Code.fold_children }
       (fun pc () ->
-        let block = Code.Addr.Map.find pc program.blocks in
+        let block = Code.block pc program in
         Freevars.iter_block_free_vars
           (fun x ->
             let idx = Var.idx x in
@@ -106,7 +106,7 @@ let collect_free_vars program var_depth depth pc =
             | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
             | _ -> ()))
       pc
-      program.blocks
+      program
       ()
   in
   traverse pc;
@@ -125,7 +125,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc (program, functions) ->
-      let block = Code.Addr.Map.find pc program.blocks in
+      let block = Code.block pc program in
       mark_bound_variables var_depth block depth;
       if depth = baseline
       then (
@@ -140,7 +140,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
                   program, List.rev_append functions (i :: rem)
               | i -> program, i :: rem)
         in
-        { program with blocks = Addr.Map.add pc { block with body } program.blocks }, [])
+        Code.add_block pc { block with body } program, [])
       else if depth < limit
       then
         List.fold_left block.body ~init:(program, functions) ~f:(fun st i ->
@@ -189,14 +189,9 @@ let rec traverse var_depth (program, functions) pc depth limit =
                     depth
                     (Var.Set.cardinal free_vars)
                     (compute_depth program pc');
-                let pc'' = program.free_pc in
+                let pc'' = Code.free_pc program in
                 let bl = { params = []; body = [ Let (f', cl) ]; branch = Return f' } in
-                let program =
-                  { program with
-                    free_pc = pc'' + 1
-                  ; blocks = Addr.Map.add pc'' bl program.blocks
-                  }
-                in
+                let program = Code.add_block pc'' bl program in
                 let functions =
                   Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions
                 in
@@ -219,10 +214,9 @@ let rec traverse var_depth (program, functions) pc depth limit =
         let body, (program, functions) =
           rewrite_body true (program, functions) block.body
         in
-        ( { program with blocks = Addr.Map.add pc { block with body } program.blocks }
-        , functions ))
+        Code.add_block pc { block with body } program, functions)
     pc
-    program.blocks
+    program
     (program, functions)
 
 let f p =
@@ -232,7 +226,7 @@ let f p =
   let p, functions =
     let threshold = Config.Param.lambda_lifting_threshold () in
     let baseline = Config.Param.lambda_lifting_baseline () in
-    traverse var_depth (p, []) p.start 0 (baseline + threshold)
+    traverse var_depth (p, []) (Code.start p) 0 (baseline + threshold)
   in
   assert (List.is_empty functions);
   if Debug.find "times" () then Format.eprintf "  lambda lifting: %a@." Timer.print t;

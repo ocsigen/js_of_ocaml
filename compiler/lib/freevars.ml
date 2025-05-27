@@ -112,7 +112,7 @@ let find_loops p in_loop pc =
     incr index;
     Stack.push pc stack;
     Code.fold_children
-      p.blocks
+      p
       pc
       (fun pc' () ->
         try
@@ -155,12 +155,12 @@ let find_all_loops p =
 
 let mark_variables in_loop p =
   let vars = Var.Tbl.make () (-1) in
-  let visited = BitSet.create' p.free_pc in
+  let visited = BitSet.create' (Code.free_pc p) in
   let rec traverse pc =
     if not (BitSet.mem visited pc)
     then (
       BitSet.set visited pc;
-      let block = Addr.Map.find pc p.blocks in
+      let block = Code.block pc p in
       (try
          let pc' = Addr.Map.find pc in_loop in
          iter_block_bound_vars (fun x -> Var.Tbl.set vars x pc') block
@@ -169,20 +169,20 @@ let mark_variables in_loop p =
           match i with
           | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
           | _ -> ());
-      Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
+      Code.fold_children p pc (fun pc' () -> traverse pc') ())
   in
-  traverse p.start;
+  traverse (Code.start p);
   vars
 
 let free_variables vars in_loop p =
   let all_freevars = ref Addr.Map.empty in
   let freevars = ref Addr.Map.empty in
-  let visited = BitSet.create' p.free_pc in
+  let visited = BitSet.create' (Code.free_pc p) in
   let rec traverse pc =
     if not (BitSet.mem visited pc)
     then (
       BitSet.set visited pc;
-      let block = Addr.Map.find pc p.blocks in
+      let block = Code.block pc p in
       iter_block_free_vars
         (fun x ->
           let pc' = Var.Tbl.get vars x in
@@ -211,16 +211,16 @@ let free_variables vars in_loop p =
                 all_freevars := Addr.Map.remove pc'' !all_freevars
               with Not_found -> freevars := Addr.Map.add pc' Var.Set.empty !freevars)
           | _ -> ());
-      Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
+      Code.fold_children p pc (fun pc' () -> traverse pc') ())
   in
-  traverse p.start;
+  traverse (Code.start p);
   !freevars
 
 let f p =
   Code.invariant p;
   let t = Timer.make () in
   let bound = Code.Var.ISet.empty () in
-  let visited = BitSet.create' p.free_pc in
+  let visited = BitSet.create' (Code.free_pc p) in
   let free_vars =
     Code.fold_closures_innermost_first
       p
@@ -233,14 +233,14 @@ let f p =
           if not (BitSet.mem visited pc)
           then (
             BitSet.set visited pc;
-            let block = Addr.Map.find pc p.blocks in
+            let block = Code.block pc p in
             iter_block_bound_vars (fun x -> Code.Var.ISet.add bound x) block;
             iter_block_free_vars using block;
             List.iter block.body ~f:(function
               | Let (_, Closure (_, (pc_clo, _), _)) ->
                   Code.Var.Set.iter using (Code.Addr.Map.find pc_clo acc)
               | _ -> ());
-            Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
+            Code.fold_children p pc (fun pc' () -> traverse pc') ())
         in
         List.iter params ~f:(fun x -> Code.Var.ISet.add bound x);
         List.iter args ~f:using;

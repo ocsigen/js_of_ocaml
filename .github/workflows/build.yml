@@ -111,11 +111,6 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
-      # Pin Dune to a version which supports the new --effects flag
-      # (https://github.com/ocaml/dune/pull/11222).
-      - name: Pin Dune
-        run: opam pin add --no-action dune https://github.com/hhugo/dune.git#jsoo-effects
-
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
       # packages that implicitly depend on mingw-w64-shims.

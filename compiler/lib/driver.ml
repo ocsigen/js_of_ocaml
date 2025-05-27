@@ -41,7 +41,8 @@ let tailcall p =
 
 let deadcode' p =
   if debug () then Format.eprintf "Dead-code...@.";
-  Deadcode.f p
+  let pure_fun = Pure_fun.f p in
+  Deadcode.f pure_fun p
 
 let deadcode p =
   let p, _ = deadcode' p in
@@ -100,12 +101,13 @@ let effects_and_exact_calls ~deadcode_sentinal (profile : Profile.t) p =
     | _, O1 -> true
   in
   let info = Global_flow.f ~fast p in
+  let pure_fun = Pure_fun.f p in
   let p, live_vars =
     if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
     then
-      let p = Global_deadcode.f p ~deadcode_sentinal info in
-      Deadcode.f p
-    else Deadcode.f p
+      let p = Global_deadcode.f pure_fun p ~deadcode_sentinal info in
+      Deadcode.f pure_fun p
+    else Deadcode.f pure_fun p
   in
   match Config.effects () with
   | `Cps | `Double_translation ->

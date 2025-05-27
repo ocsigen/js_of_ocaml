@@ -21,7 +21,7 @@
 type variable_uses =
   int array (* For each variable, indicates how many times it is used. *)
 
-val f : Code.program -> Code.program * variable_uses
+val f : Pure_fun.t -> Code.program -> Code.program * variable_uses
 
 val remove_unused_blocks : Code.program -> Code.program
 

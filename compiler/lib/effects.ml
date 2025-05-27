@@ -62,7 +62,7 @@ type control_flow_graph =
   ; block_order : int Addr.Hashtbl.t
   }
 
-let build_graph blocks pc =
+let build_graph p pc =
   let succs = Addr.Hashtbl.create 16 in
   let l = ref [] in
   let visited = Addr.Hashtbl.create 16 in
@@ -70,7 +70,7 @@ let build_graph blocks pc =
     if not (Addr.Hashtbl.mem visited pc)
     then (
       Addr.Hashtbl.add visited pc ();
-      let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
+      let successors = Code.fold_children p pc Addr.Set.add Addr.Set.empty in
       Addr.Hashtbl.add succs pc successors;
       Addr.Set.iter traverse successors;
       l := pc :: !l)
@@ -171,7 +171,7 @@ also mark blocks that correspond to function continuations or
 exception handlers. And we keep track of the exception handler
 associated to each Poptrap, and possibly Raise.
 *)
-let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
+let compute_needed_transformations ~cfg ~idom ~cps_needed p start =
   let frontiers = dominance_frontier cfg idom in
   let transformation_needed = ref Addr.Set.empty in
   let matching_exn_handler = Addr.Hashtbl.create 16 in
@@ -197,7 +197,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
     then visited
     else
       let visited = Addr.Set.add pc visited in
-      let block = Addr.Map.find pc blocks in
+      let block = Code.block pc p in
       (match block.branch with
       | Branch (dst, _) -> (
           match Code.last_instr block.body with
@@ -219,7 +219,7 @@ let compute_needed_transformations ~cfg ~idom ~cps_needed ~blocks ~start =
           | _ -> ())
       | _ -> ());
       Code.fold_children
-        blocks
+        p
         pc
         (fun pc visited ->
           let englobing_exn_handlers =
@@ -277,7 +277,7 @@ type in_cps = Var.Set.t
 type st =
   { mutable new_blocks : Code.block Addr.Map.t
   ; mutable free_pc : Code.Addr.t
-  ; blocks : Code.block Addr.Map.t
+  ; p : program
   ; cfg : control_flow_graph
   ; jc : jump_closures
   ; closure_info : (Var.t list * (Addr.t * Var.t list)) Addr.Hashtbl.t
@@ -588,7 +588,7 @@ let cps_block ~st ~k ~orig_pc block =
     | to_allocate ->
         List.map to_allocate ~f:(fun (cname, jump_pc) ->
             let params =
-              let jump_block = Addr.Map.find jump_pc st.blocks in
+              let jump_block = Code.block jump_pc st.p in
               (* For a function to be used as a continuation, it needs
                  exactly one parameter. So, we add a parameter if
                  needed. *)
@@ -776,20 +776,22 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
   let p =
     Code.fold_closures_innermost_first
       p
-      (fun name_opt params (start, args) _cloc ({ Code.blocks; free_pc; _ } as p) ->
+      (fun name_opt params (start, args) _cloc p ->
         (* We speculatively add a block at the beginning of the
            function. In case of tail-recursion optimization, the
            function implementing the loop body may have to be placed
            there. *)
         let initial_start = start in
-        let start', blocks' =
-          ( free_pc
-          , Addr.Map.add
-              free_pc
+        let p', start' =
+          let free_pc = Code.free_pc p in
+          let new_start = free_pc in
+          ( Code.add_block
+              new_start
               { params = []; body = []; branch = Branch (start, args) }
-              blocks )
+              p
+          , new_start )
         in
-        let cfg = build_graph blocks' start' in
+        let cfg = build_graph p' start' in
         let idom = dominator_tree cfg in
         let should_compute_needed_transformations =
           match name_opt with
@@ -802,28 +804,22 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
         in
         let blocks_to_transform, matching_exn_handler, is_continuation =
           if should_compute_needed_transformations
-          then
-            compute_needed_transformations
-              ~cfg
-              ~idom
-              ~cps_needed
-              ~blocks:blocks'
-              ~start:start'
+          then compute_needed_transformations ~cfg ~idom ~cps_needed p' start'
           else Addr.Set.empty, Addr.Hashtbl.create 1, Addr.Hashtbl.create 1
         in
         let closure_jc = jump_closures blocks_to_transform idom in
-        let start, args, blocks, free_pc =
+        let start, args, p =
           (* Insert an initial block if needed. *)
           if
             should_compute_needed_transformations
             && Addr.Map.mem start' closure_jc.closures_of_alloc_site
-          then start', [], blocks', free_pc + 1
-          else start, args, blocks, free_pc
+          then start', [], p'
+          else start, args, p
         in
         let st =
           { new_blocks = Addr.Map.empty
-          ; free_pc
-          ; blocks
+          ; free_pc = Code.free_pc p + 1
+          ; p
           ; cfg
           ; jc = closure_jc
           ; closure_info
@@ -857,16 +853,16 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             { fold = Code.fold_children }
             (fun pc _ ->
               if Addr.Set.mem pc blocks_to_transform then Format.eprintf "CPS@.";
-              let block = Addr.Map.find pc blocks in
+              let block = Code.block pc p in
               Code.Print.block
                 Format.err_formatter
                 (fun _ xi -> Partial_cps_analysis.annot cps_needed xi)
                 pc
                 block)
             start
-            blocks
+            p
             ());
-        let blocks =
+        let p =
           (* For every block in the closure,
              1. CPS-translate it if needed. If we double-translate, add its CPS
                 translation to the block map at a fresh address. Otherwise,
@@ -915,18 +911,18 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
           in
           Code.traverse
             { fold = Code.fold_children }
-            (fun pc blocks ->
-              let block, cps_block_opt = transform_block pc (Addr.Map.find pc blocks) in
-              let blocks = Addr.Map.add pc block blocks in
+            (fun pc p ->
+              let block, cps_block_opt = transform_block pc (Code.block pc p) in
+              let p = Code.add_block pc block p in
               match cps_block_opt with
-              | None -> blocks
+              | None -> p
               | Some b ->
                   let cps_pc = mk_cps_pc_of_direct ~st pc in
                   st.new_blocks <- Addr.Map.add cps_pc b st.new_blocks;
-                  Addr.Map.add cps_pc b blocks)
+                  Code.add_block cps_pc b p)
             start
-            st.blocks
-            st.blocks
+            st.p
+            st.p
         in
         (* If double-translating, all variables bound in the CPS version will have to be
              subst with fresh ones to avoid clashing with the definitions in the original
@@ -937,25 +933,25 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             Code.traverse
               Code.{ fold = fold_children }
               (fun pc () ->
-                let block = Addr.Map.find pc p.blocks in
+                let block = Code.block pc p in
                 Freevars.iter_block_bound_vars
                   (fun v -> subst_add_fresh cloned_vars v)
                   block)
               initial_start
-              p.blocks
+              p
               ();
             subst_bound_in_blocks st.new_blocks cloned_subst)
           else st.new_blocks
         in
-        let blocks =
+        let p =
           (* Remove the initial block added only for the CPS transformation *)
           if double_translate () && start <> initial_start
-          then Addr.Map.remove start blocks
-          else blocks
+          then Code.remove_block start p
+          else p
         in
-        let blocks = Addr.Map.fold Addr.Map.add new_blocks blocks in
+        let p = Addr.Map.fold Code.add_block new_blocks p in
         if debug () then Format.eprintf "@.";
-        { p with blocks; free_pc = st.free_pc })
+        p)
       p
   in
   (* Also apply our substitution to the sets of trampolined calls, and cps call sites *)
@@ -965,11 +961,11 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
     if double_translate ()
     then p
     else
-      match Addr.Hashtbl.find_opt closure_info p.start with
+      match Addr.Hashtbl.find_opt closure_info (Code.start p) with
       | None -> p
       | Some (cps_params, cps_cont) ->
           (* Call [caml_cps_trampoline] to set up the execution context. *)
-          let new_start = p.free_pc in
+          let new_start = Code.free_pc p in
           let blocks =
             let main = Var.fresh () in
             let args = Var.fresh () in
@@ -984,9 +980,9 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
                   ]
               ; branch = Return res
               }
-              p.blocks
+              (Code.blocks p)
           in
-          { start = new_start; blocks; free_pc = new_start + 1 }
+          Code.program new_start blocks
   in
   p, !trampolined_calls, !in_cps
 
@@ -1011,16 +1007,12 @@ let wrap_call ~cps_needed p x f args accu =
 
 let wrap_primitive ~cps_needed (p : program) x e accu =
   let f = Var.fresh () in
-  let closure_pc = p.free_pc in
-  ( { p with
-      free_pc = p.free_pc + 1
-    ; blocks =
-        Addr.Map.add
-          closure_pc
-          (let y = Var.fresh () in
-           { params = []; body = [ Let (y, e) ]; branch = Return y })
-          p.blocks
-    }
+  let closure_pc = Code.free_pc p in
+  ( Code.add_block
+      closure_pc
+      (let y = Var.fresh () in
+       { params = []; body = [ Let (y, e) ]; branch = Return y })
+      p
   , Var.Set.remove x (Var.Set.add f cps_needed)
   , let args = Var.fresh () in
     [ Let (f, Closure ([], (closure_pc, []), None))
@@ -1041,8 +1033,8 @@ let rewrite_toplevel_instr (p, cps_needed, accu) instr =
    unncessary function nestings. This is not done inside loops since
    using repeatedly [caml_cps_trampoline] can be costly. *)
 let rewrite_toplevel ~cps_needed p =
-  let { start; blocks; _ } = p in
-  let cfg = build_graph blocks start in
+  let start = Code.start p in
+  let cfg = build_graph p start in
   let idom = dominator_tree cfg in
   let frontiers = dominance_frontier cfg idom in
   let rec traverse visited (p : Code.program) cps_needed in_loop pc =
@@ -1054,16 +1046,16 @@ let rewrite_toplevel ~cps_needed p =
       let p, cps_needed =
         if Option.is_none in_loop
         then
-          let block = Addr.Map.find pc p.blocks in
+          let block = Code.block pc p in
           let p, cps_needed, body_rev =
             List.fold_left ~f:rewrite_toplevel_instr ~init:(p, cps_needed, []) block.body
           in
           let body = List.concat @@ List.rev body_rev in
-          { p with blocks = Addr.Map.add pc { block with body } p.blocks }, cps_needed
+          Code.add_block pc { block with body } p, cps_needed
         else p, cps_needed
       in
       Code.fold_children
-        blocks
+        p
         pc
         (fun pc (visited, p, cps_needed) -> traverse visited p cps_needed in_loop pc)
         (visited, p, cps_needed)
@@ -1089,20 +1081,20 @@ let split_blocks ~cps_needed (p : Code.program) =
           && Var.Set.mem x cps_needed
       | _ -> false
     in
-    let rec split (p : Code.program) pc block accu l branch =
+    let rec split (p : Code.program) free_pc pc block accu l branch =
       match l with
       | [] ->
           let block = { block with body = List.rev accu } in
-          { p with blocks = Addr.Map.add pc block p.blocks }
+          Code.add_block pc block p
       | (Let (x, e) as i) :: r when is_split_point i r branch ->
-          let pc' = p.free_pc in
+          let pc' = free_pc in
           let block' = { params = []; body = []; branch = block.branch } in
           let block =
             { block with body = List.rev (Let (x, e) :: accu); branch = Branch (pc', []) }
           in
-          let p = { p with blocks = Addr.Map.add pc block p.blocks; free_pc = pc' + 1 } in
-          split p pc' block' [] r branch
-      | i :: r -> split p pc block (i :: accu) r branch
+          let p = Code.add_block pc block p in
+          split p (free_pc + 1) pc' block' [] r branch
+      | i :: r -> split p free_pc pc block (i :: accu) r branch
     in
     let rec should_split l branch =
       match l with
@@ -1110,10 +1102,10 @@ let split_blocks ~cps_needed (p : Code.program) =
       | i :: r -> is_split_point i r branch || should_split r branch
     in
     if should_split block.body block.branch
-    then split p pc block [] block.body block.branch
+    then split p (Code.free_pc p) pc block [] block.body block.branch
     else p
   in
-  Addr.Map.fold split_block p.blocks p
+  Addr.Map.fold split_block (Code.blocks p) p
 
 (****)
 
@@ -1127,6 +1119,7 @@ let f ~flow_info ~live_vars p =
     if double_translate ()
     then (
       let p, liftings = Lambda_lifting_simple.f ~to_lift:cps_needed p in
+      Code.invariant p;
       let cps_needed =
         Var.Set.map
           (fun f -> try Subst.from_map liftings f with Not_found -> f)
@@ -1148,6 +1141,7 @@ let f ~flow_info ~live_vars p =
       p, cps_needed
   in
   let p = split_blocks ~cps_needed p in
+  Code.invariant p;
   let p, trampolined_calls, in_cps = cps_transform ~live_vars ~flow_info ~cps_needed p in
   if Debug.find "times" () then Format.eprintf "  effects: %a@." Timer.print t;
   Code.invariant p;

@@ -11,7 +11,7 @@ val is_backward : t -> Addr.t -> Addr.t -> bool
 
 val is_forward : t -> Addr.t -> Addr.t -> bool
 
-val build_graph : block Addr.Map.t -> Addr.t -> t
+val build_graph : program -> Addr.t -> t
 
 val dominator_tree : t -> graph
 

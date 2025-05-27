@@ -27,7 +27,7 @@ let rec compute_depth program pc =
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc d ->
-      let block = Code.Addr.Map.find pc program.blocks in
+      let block = Code.block pc program in
       List.fold_left block.body ~init:d ~f:(fun d i ->
           match i with
           | Let (_, Closure (_, (pc', _), _)) ->
@@ -35,7 +35,7 @@ let rec compute_depth program pc =
               max d (d' + 1)
           | _ -> d))
     pc
-    program.blocks
+    program
     0
 
 let collect_free_vars program var_depth depth pc =
@@ -44,7 +44,7 @@ let collect_free_vars program var_depth depth pc =
     Code.preorder_traverse
       { fold = Code.fold_children }
       (fun pc () ->
-        let block = Code.Addr.Map.find pc program.blocks in
+        let block = Code.block pc program in
         Freevars.iter_block_free_vars
           (fun x ->
             let idx = Var.idx x in
@@ -59,7 +59,7 @@ let collect_free_vars program var_depth depth pc =
             | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
             | _ -> ()))
       pc
-      program.blocks
+      program
       ()
   in
   traverse pc;
@@ -90,7 +90,7 @@ let rec rewrite_blocks
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc (program, functions, lifters) ->
-      let block = Code.Addr.Map.find pc program.blocks in
+      let block = Code.block pc program in
       mark_bound_variables var_depth block depth;
       let body, (program, functions, lifters) =
         rewrite_body
@@ -103,11 +103,9 @@ let rec rewrite_blocks
           ~acc_instr:[]
           block.body
       in
-      ( { program with blocks = Addr.Map.add pc { block with body } program.blocks }
-      , functions
-      , lifters ))
+      Code.add_block pc { block with body } program, functions, lifters)
     pc
-    program.blocks
+    program
     (program, functions, lifters)
 
 and rewrite_body
@@ -159,11 +157,9 @@ and rewrite_body
           depth
           (Var.Set.cardinal free_vars)
           (compute_depth program pc');
-      let pc'' = program.free_pc in
+      let pc'' = Code.free_pc program in
       let bl = { params = []; body = [ Let (f', cl) ]; branch = Return f' } in
-      let program =
-        { program with free_pc = pc'' + 1; blocks = Addr.Map.add pc'' bl program.blocks }
-      in
+      let program = Code.add_block pc'' bl program in
       (* Add to returned list of lifter functions definitions *)
       let functions =
         Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions
@@ -259,7 +255,7 @@ and rewrite_body
                    f_tuple
                    depth
                    (Var.Set.cardinal free_vars)));
-            let pc_tuple = program.free_pc in
+            let pc_tuple = Code.free_pc program in
             let lifted_block =
               let tuple = Var.fresh_n "tuple" in
               { params = []
@@ -273,12 +269,7 @@ and rewrite_body
               ; branch = Return tuple
               }
             in
-            let program =
-              { program with
-                free_pc = pc_tuple + 1
-              ; blocks = Addr.Map.add pc_tuple lifted_block program.blocks
-              }
-            in
+            let program = Code.add_block pc_tuple lifted_block program in
             let functions =
               Let (f_tuple, Closure (List.map s ~f:snd, (pc_tuple, []), None))
               :: functions
@@ -328,7 +319,7 @@ let lift ~to_lift ~pc program : program * Var.t Var.Map.t =
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc (program, lifter_map) ->
-      let block = Code.Addr.Map.find pc program.blocks in
+      let block = Code.block pc program in
       mark_bound_variables var_depth block 0;
       let program, body, lifter_map' =
         List.fold_right
@@ -349,10 +340,10 @@ let lift ~to_lift ~pc program : program * Var.t Var.Map.t =
                 program, List.rev_append functions (i :: rem), lifters
             | i -> program, i :: rem, lifters)
       in
-      ( { program with blocks = Addr.Map.add pc { block with body } program.blocks }
+      ( Code.add_block pc { block with body } program
       , Var.Map.union (fun _ _ -> assert false) lifter_map lifter_map' ))
     pc
-    program.blocks
+    program
     (program, Var.Map.empty)
 
 let f ~to_lift program =
@@ -362,6 +353,6 @@ let f ~to_lift program =
     Code.Print.program Format.err_formatter (fun _ _ -> "") program;
     Format.eprintf "@]");
   let t = Timer.make () in
-  let program, liftings = lift ~to_lift ~pc:program.start program in
+  let program, liftings = lift ~to_lift ~pc:(Code.start program) program in
   if Debug.find "times" () then Format.eprintf "  lambda lifting: %a@." Timer.print t;
   program, liftings
