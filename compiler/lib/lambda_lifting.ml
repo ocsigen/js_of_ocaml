@@ -225,15 +225,16 @@ let rec traverse var_depth (program, functions) pc depth limit =
     program.blocks
     (program, functions)
 
-let f program =
+let f p =
   let t = Timer.make () in
   let nv = Var.count () in
   let var_depth = Array.make nv (-1) in
-  let program, functions =
+  let p, functions =
     let threshold = Config.Param.lambda_lifting_threshold () in
     let baseline = Config.Param.lambda_lifting_baseline () in
-    traverse var_depth (program, []) program.start 0 (baseline + threshold)
+    traverse var_depth (p, []) p.start 0 (baseline + threshold)
   in
   assert (List.is_empty functions);
   if Debug.find "times" () then Format.eprintf "  lambda lifting: %a@." Timer.print t;
-  program
+  Code.invariant p;
+  p
