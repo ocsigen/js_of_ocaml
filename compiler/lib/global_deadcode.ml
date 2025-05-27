@@ -101,7 +101,7 @@ let iter_with_scope prog f =
         { fold = fold_children }
         (fun pc () -> f scope (Code.block pc prog))
         pc
-        (Code.blocks prog)
+        prog
         ())
     ()
 

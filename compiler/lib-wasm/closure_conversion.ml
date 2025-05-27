@@ -71,7 +71,7 @@ let collect_free_vars program var_depth depth pc closures =
               | Some _ | None -> ())
           | _ -> ()))
     pc
-    (Code.blocks program)
+    program
     ();
   !vars
 
@@ -153,7 +153,7 @@ let rec traverse var_depth closures program pc depth =
       in
       Code.add_block pc { block with body } program)
     pc
-    (Code.blocks program)
+    program
     program
 
 let f p =

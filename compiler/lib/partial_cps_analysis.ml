@@ -115,7 +115,7 @@ let program_deps ~info ~vars ~tail_deps ~deps p =
         (fun pc () ->
           block_deps ~info ~vars ~tail_deps ~deps ~blocks:(Code.blocks p) ~fun_name pc)
         pc
-        (Code.blocks p)
+        p
         ())
     ()
 

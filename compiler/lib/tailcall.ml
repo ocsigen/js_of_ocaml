@@ -79,7 +79,7 @@ let rec traverse update_count f pc visited p =
         visited, p
     | None ->
         Code.fold_children_skip_try_body
-          (Code.blocks p)
+          p
           pc
           (fun pc (visited, p) -> traverse update_count f pc visited p)
           (visited, p)

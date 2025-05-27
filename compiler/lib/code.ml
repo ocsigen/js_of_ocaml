@@ -480,6 +480,8 @@ let block pc p = Addr.Map.find pc p.blocks
 
 let add_block pc block p = { p with blocks = Addr.Map.add pc block p.blocks }
 
+let remove_block pc p = { p with blocks = Addr.Map.remove pc p.blocks }
+
 let free_pc p =
   match Addr.Map.max_binding_opt p.blocks with
   | None -> p.start + 1
@@ -718,41 +720,41 @@ let is_empty p =
       | _ -> false)
   | _ -> false
 
-let poptraps blocks pc =
-  let rec loop blocks pc visited depth acc =
+let poptraps p pc =
+  let rec loop p pc visited depth acc =
     if Addr.Set.mem pc visited
     then acc, visited
     else
       let visited = Addr.Set.add pc visited in
-      let block = Addr.Map.find pc blocks in
+      let block = block pc p in
       match block.branch with
       | Return _ | Raise _ | Stop -> acc, visited
-      | Branch (pc', _) -> loop blocks pc' visited depth acc
+      | Branch (pc', _) -> loop p pc' visited depth acc
       | Poptrap (pc', _) ->
           if depth = 0
           then Addr.Set.add pc' acc, visited
-          else loop blocks pc' visited (depth - 1) acc
+          else loop p pc' visited (depth - 1) acc
       | Pushtrap ((pc', _), _, (pc_h, _)) ->
-          let acc, visited = loop blocks pc' visited (depth + 1) acc in
-          let acc, visited = loop blocks pc_h visited depth acc in
+          let acc, visited = loop p pc' visited (depth + 1) acc in
+          let acc, visited = loop p pc_h visited depth acc in
           acc, visited
       | Cond (_, (pc1, _), (pc2, _)) ->
-          let acc, visited = loop blocks pc1 visited depth acc in
-          let acc, visited = loop blocks pc2 visited depth acc in
+          let acc, visited = loop p pc1 visited depth acc in
+          let acc, visited = loop p pc2 visited depth acc in
           acc, visited
       | Switch (_, a) ->
           let acc, visited =
             Array.fold_right
               ~init:(acc, visited)
-              ~f:(fun (pc, _) (acc, visited) -> loop blocks pc visited depth acc)
+              ~f:(fun (pc, _) (acc, visited) -> loop p pc visited depth acc)
               a
           in
           acc, visited
   in
-  loop blocks pc Addr.Set.empty 0 Addr.Set.empty |> fst
+  loop p pc Addr.Set.empty 0 Addr.Set.empty |> fst
 
-let fold_children blocks pc f accu =
-  let block = Addr.Map.find pc blocks in
+let fold_children p pc f accu =
+  let block = block pc p in
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
@@ -768,13 +770,13 @@ let fold_children blocks pc f accu =
       let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a1 in
       accu
 
-let fold_children_skip_try_body blocks pc f accu =
-  let block = Addr.Map.find pc blocks in
+let fold_children_skip_try_body p pc f accu =
+  let block = block pc p in
   match block.branch with
   | Return _ | Raise _ | Stop -> accu
   | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
   | Pushtrap ((pc', _), _, (pc_h, _)) ->
-      let accu = Addr.Set.fold f (poptraps blocks pc') accu in
+      let accu = Addr.Set.fold f (poptraps p pc') accu in
       let accu = f pc_h accu in
       accu
   | Cond (_, (pc1, _), (pc2, _)) ->
@@ -785,7 +787,7 @@ let fold_children_skip_try_body blocks pc f accu =
       let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a1 in
       accu
 
-type 'c fold_blocs = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
+type 'c fold_blocs = program -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
 
 type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
 
@@ -825,43 +827,43 @@ let rec preorder_traverse' { fold } f pc visited blocks acc =
 let preorder_traverse fold f pc blocks acc =
   snd (preorder_traverse' fold f pc Addr.Set.empty blocks acc)
 
-let fold_closures_innermost_first { start; blocks; _ } f accu =
-  let rec visit blocks pc f accu =
+let fold_closures_innermost_first p f accu =
+  let rec visit p pc f accu =
     traverse
       { fold = fold_children }
       (fun pc accu ->
-        let block = Addr.Map.find pc blocks in
+        let block = block pc p in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
             | Let (x, Closure (params, cont, cloc)) ->
-                let accu = visit blocks (fst cont) f accu in
+                let accu = visit p (fst cont) f accu in
                 f (Some x) params cont cloc accu
             | _ -> accu))
       pc
-      blocks
+      p
       accu
   in
-  let accu = visit blocks start f accu in
-  f None [] (start, []) None accu
+  let accu = visit p p.start f accu in
+  f None [] (p.start, []) None accu
 
-let fold_closures_outermost_first { start; blocks; _ } f accu =
-  let rec visit blocks pc f accu =
+let fold_closures_outermost_first p f accu =
+  let rec visit p pc f accu =
     traverse
       { fold = fold_children }
       (fun pc accu ->
-        let block = Addr.Map.find pc blocks in
+        let block = block pc p in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
             | Let (x, Closure (params, cont, cloc)) ->
                 let accu = f (Some x) params cont cloc accu in
-                visit blocks (fst cont) f accu
+                visit p (fst cont) f accu
             | _ -> accu))
       pc
-      blocks
+      p
       accu
   in
-  let accu = f None [] (start, []) None accu in
-  visit blocks start f accu
+  let accu = f None [] (p.start, []) None accu in
+  visit p p.start f accu
 
 let rec last_instr l =
   match l with
@@ -986,14 +988,14 @@ let used_blocks p =
     if not (BitSet.mem visited pc)
     then (
       BitSet.set visited pc;
-      let block = Addr.Map.find pc p.blocks in
+      let block = block pc p in
       List.iter
         ~f:(fun i ->
           match i with
           | Let (_, Closure (_, (pc', _), _)) -> mark_used pc'
           | _ -> ())
         block.body;
-      fold_children p.blocks pc (fun pc' () -> mark_used pc') ())
+      fold_children p pc (fun pc' () -> mark_used pc') ())
   in
   mark_used p.start;
   visited

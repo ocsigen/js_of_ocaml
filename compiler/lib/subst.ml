@@ -84,11 +84,7 @@ module Excluding_Binders = struct
             | Let (_, Closure (_, (pc, _), _)) -> cont' s pc p visited
             | _ -> p, visited)
       in
-      Code.fold_children
-        (Code.blocks p)
-        pc
-        (fun pc (p, visited) -> cont' s pc p visited)
-        (p, visited)
+      Code.fold_children p pc (fun pc (p, visited) -> cont' s pc p visited) (p, visited)
 
   let cont s addr p =
     let p, _ = cont' s addr p Addr.Set.empty in

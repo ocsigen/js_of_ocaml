@@ -55,7 +55,7 @@ let collect_closures p =
             | _ -> ())
           block.body)
       pc
-      (Code.blocks p)
+      p
       ()
   in
   traverse p None (Code.start p);
@@ -83,7 +83,7 @@ let collect_deps p closures =
             | _ -> ())
           block.body)
       pc
-      (Code.blocks p)
+      p
       ()
   in
   Var.Hashtbl.iter (fun f (_, (pc, _), _) -> traverse p f pc) closures;
@@ -149,12 +149,9 @@ let blocks_in_loop p pc =
     Code.traverse
       { fold = Code.fold_children }
       (fun pc g ->
-        Addr.Map.add
-          pc
-          (Code.fold_children (Code.blocks p) pc Addr.Set.add Addr.Set.empty)
-          g)
+        Addr.Map.add pc (Code.fold_children p pc Addr.Set.add Addr.Set.empty) g)
       pc
-      (Code.blocks p)
+      p
       Addr.Map.empty
   in
   let scc = SCC.component_graph g in
@@ -221,11 +218,7 @@ let contains_loop ~context info =
         then visited, Addr.Map.find pc visited
         else
           let visited, loop =
-            Code.fold_children
-              (Code.blocks context.p)
-              pc
-              traverse
-              (Addr.Map.add pc true visited, false)
+            Code.fold_children context.p pc traverse (Addr.Map.add pc true visited, false)
           in
           Addr.Map.add pc false visited, loop
       in
@@ -236,7 +229,7 @@ let sum ~context f pc =
     { fold = fold_children }
     (fun pc acc -> f (Code.block pc context.p) + acc)
     pc
-    (Code.blocks context.p)
+    context.p
     0
 
 let rec block_size ~recurse ~context { branch; body; _ } =
@@ -309,7 +302,7 @@ let returns_a_block ~context info =
               | _ -> false)
           | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> true)
         pc
-        (Code.blocks context.p)
+        context.p
         true)
 
 (** List of parameters that corresponds to functions called once in
@@ -334,7 +327,7 @@ let interesting_parameters ~context info =
               ~init:lst
               block.body)
           pc
-          (Code.blocks context.p)
+          context.p
           [])
 
 (*
@@ -496,7 +489,7 @@ let remove_dead_closures ~live_vars p pc =
       let block = Code.block pc p in
       remove_dead_closures_from_block ~live_vars p pc block)
     pc
-    (Code.blocks p)
+    p
     p
 
 (****)
@@ -512,7 +505,7 @@ let rewrite_closure p cont_pc clos_pc =
     { fold = Code.fold_children_skip_try_body }
     (rewrite_block cont_pc)
     clos_pc
-    (Code.blocks p)
+    p
     p
 
 let inline_function p rem branch x params cont args =
@@ -601,7 +594,7 @@ let inline ~profile ~inline_count p ~live_vars =
                  block
                  p)
            pc
-           (Code.blocks p)
+           p
            p
        in
        let p = remove_dead_closures ~live_vars p pc in

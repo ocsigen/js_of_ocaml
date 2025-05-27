@@ -38,7 +38,7 @@ let bound_variables p ~f ~params ~cont:(pc, _) =
             | _ -> ())
           block.body)
       pc
-      (Code.blocks p)
+      p
       ()
   in
   traverse pc;
@@ -57,7 +57,7 @@ let rec blocks_to_rename p pc lst =
         ~init:(pc :: lst)
         block.body)
     pc
-    (Code.blocks p)
+    p
     lst
 
 let closure p ~f ~params ~cont =

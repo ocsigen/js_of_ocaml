@@ -35,7 +35,7 @@ let rec compute_depth program pc =
               max d (d' + 1)
           | _ -> d))
     pc
-    (Code.blocks program)
+    program
     0
 
 let collect_free_vars program var_depth depth pc =
@@ -59,7 +59,7 @@ let collect_free_vars program var_depth depth pc =
             | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
             | _ -> ()))
       pc
-      (Code.blocks program)
+      program
       ()
   in
   traverse pc;
@@ -105,7 +105,7 @@ let rec rewrite_blocks
       in
       Code.add_block pc { block with body } program, functions, lifters)
     pc
-    (Code.blocks program)
+    program
     (program, functions, lifters)
 
 and rewrite_body
@@ -343,7 +343,7 @@ let lift ~to_lift ~pc program : program * Var.t Var.Map.t =
       ( Code.add_block pc { block with body } program
       , Var.Map.union (fun _ _ -> assert false) lifter_map lifter_map' ))
     pc
-    (Code.blocks program)
+    program
     (program, Var.Map.empty)
 
 let f ~to_lift program =

@@ -37,12 +37,12 @@ let add_multi k v map =
   let set = try Var.Map.find k map with Not_found -> Addr.Set.empty in
   Var.Map.add k (Addr.Set.add v set) map
 
-let rec collect_apply pc blocks visited tc =
+let rec collect_apply pc p visited tc =
   if Addr.Set.mem pc visited
   then visited, tc
   else
     let visited = Addr.Set.add pc visited in
-    let block = Addr.Map.find pc blocks in
+    let block = Code.block pc p in
     let tc_opt =
       match block.branch with
       | Return x -> (
@@ -57,16 +57,16 @@ let rec collect_apply pc blocks visited tc =
     | Some tc -> visited, tc
     | None ->
         Code.fold_children
-          blocks
+          p
           pc
-          (fun pc (visited, tc) -> collect_apply pc blocks visited tc)
+          (fun pc (visited, tc) -> collect_apply pc p visited tc)
           (visited, tc)
 
-let rec collect_closures blocks l pos =
+let rec collect_closures p l pos =
   match l with
   | Let (f_name, Closure (args, ((pc, _) as cont), cloc)) :: rem ->
-      let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
-      let l, rem = collect_closures blocks rem (succ pos) in
+      let _, tc = collect_apply pc p Addr.Set.empty Var.Map.empty in
+      let l, rem = collect_closures p rem (succ pos) in
       { f_name; args; cont; tc; pos; cloc } :: l, rem
   | rem -> [], rem
 
@@ -270,7 +270,7 @@ end
 let rec rewrite_closures p body : _ * _ list =
   match body with
   | Let (_, Closure _) :: _ ->
-      let closures, rem = collect_closures (Code.blocks p) body 0 in
+      let closures, rem = collect_closures p body 0 in
       let closures_map =
         List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
             Var.Map.add x.f_name x closures_map)

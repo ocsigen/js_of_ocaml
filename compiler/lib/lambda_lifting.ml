@@ -81,7 +81,7 @@ let rec compute_depth program pc =
               max d (d' + 1)
           | _ -> d))
     pc
-    (Code.blocks program)
+    program
     0
 
 let collect_free_vars program var_depth depth pc =
@@ -106,7 +106,7 @@ let collect_free_vars program var_depth depth pc =
             | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
             | _ -> ()))
       pc
-      (Code.blocks program)
+      program
       ()
   in
   traverse pc;
@@ -216,7 +216,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
         in
         Code.add_block pc { block with body } program, functions)
     pc
-    (Code.blocks program)
+    program
     (program, functions)
 
 let f p =

@@ -41,7 +41,7 @@ let add_def defs x i =
 type variable_uses = int array
 
 type t =
-  { blocks : block Addr.Map.t
+  { p : program
   ; live : variable_uses
   ; defs : def list array
   ; reachable_blocks : BitSet.t
@@ -94,7 +94,7 @@ and mark_reachable st pc =
   if not (BitSet.mem st.reachable_blocks pc)
   then (
     BitSet.set st.reachable_blocks pc;
-    let block = Addr.Map.find pc st.blocks in
+    let block = Code.block pc st.p in
     List.iter block.body ~f:(fun i ->
         match i with
         | Let (_, Prim (Extern "caml_update_dummy", [ Pv x; Pv y ])) ->
@@ -155,26 +155,24 @@ let rec filter_args st pl al =
   | [], [] -> []
   | _ -> assert false
 
-let filter_cont blocks st (pc, args) =
-  let params = (Addr.Map.find pc blocks).params in
+let filter_cont p st (pc, args) =
+  let params = (Code.block pc p).params in
   pc, filter_args st params args
 
-let filter_closure blocks st i =
+let filter_closure p st i =
   match i with
-  | Let (x, Closure (l, cont, gloc)) ->
-      Let (x, Closure (l, filter_cont blocks st cont, gloc))
+  | Let (x, Closure (l, cont, gloc)) -> Let (x, Closure (l, filter_cont p st cont, gloc))
   | _ -> i
 
-let filter_live_last blocks st l =
+let filter_live_last p st l =
   match l with
   | Return _ | Raise _ | Stop -> l
-  | Branch cont -> Branch (filter_cont blocks st cont)
-  | Cond (x, cont1, cont2) ->
-      Cond (x, filter_cont blocks st cont1, filter_cont blocks st cont2)
-  | Switch (x, a1) -> Switch (x, Array.map a1 ~f:(fun cont -> filter_cont blocks st cont))
+  | Branch cont -> Branch (filter_cont p st cont)
+  | Cond (x, cont1, cont2) -> Cond (x, filter_cont p st cont1, filter_cont p st cont2)
+  | Switch (x, a1) -> Switch (x, Array.map a1 ~f:(fun cont -> filter_cont p st cont))
   | Pushtrap (cont1, x, cont2) ->
-      Pushtrap (filter_cont blocks st cont1, x, filter_cont blocks st cont2)
-  | Poptrap cont -> Poptrap (filter_cont blocks st cont)
+      Pushtrap (filter_cont p st cont1, x, filter_cont p st cont2)
+  | Poptrap cont -> Poptrap (filter_cont p st cont)
 
 (****)
 
@@ -269,16 +267,16 @@ let merge_blocks p =
   in
   let p =
     let visited = BitSet.create' (Code.free_pc p) in
-    let rec process_branch pc blocks =
-      let block = Addr.Map.find pc blocks in
+    let rec process_branch pc p =
+      let block = Code.block pc p in
       match block.branch with
       | Branch (pc_, args) when preds.(pc_) = 1 ->
-          let to_inline = Addr.Map.find pc_ blocks in
+          let to_inline = Code.block pc_ p in
           if List.exists to_inline.params ~f:(fun x -> Var.Set.mem x !assigned)
-          then block, blocks
+          then block, p
           else (
             incr merged;
-            let to_inline, blocks = process_branch pc_ blocks in
+            let to_inline, p = process_branch pc_ p in
             List.iter2 args to_inline.params ~f:(fun arg param ->
                 Code.Var.propagate_name param arg;
                 subst.(Code.Var.idx param) <- arg);
@@ -297,26 +295,20 @@ let merge_blocks p =
                    aux block.body)
               }
             in
-            let blocks = Addr.Map.remove pc_ blocks in
-            let blocks = Addr.Map.add pc block blocks in
-            block, blocks)
-      | _ -> block, blocks
+            let p = Code.remove_block pc_ p in
+            let p = Code.add_block pc block p in
+            block, p)
+      | _ -> block, p
     in
-    let rec traverse pc blocks =
+    let rec traverse pc p =
       if BitSet.mem visited pc
-      then blocks
+      then p
       else
         let () = BitSet.set visited pc in
-        let _block, blocks = process_branch pc blocks in
-        Code.fold_children blocks pc traverse blocks
+        let _block, p = process_branch pc p in
+        Code.fold_children p pc traverse p
     in
-    let blocks =
-      Code.fold_closures
-        p
-        (fun _ _ (pc, _) _ blocks -> traverse pc blocks)
-        (Code.blocks p)
-    in
-    Code.program (Code.start p) blocks
+    Code.fold_closures p (fun _ _ (pc, _) _ p -> traverse pc p) p
   in
   let p =
     if !merged = 0
@@ -419,7 +411,7 @@ let f pure_funs (p : Code.program) =
   let st =
     { live
     ; defs
-    ; blocks = Code.blocks p
+    ; p
     ; reachable_blocks = BitSet.create' (Code.free_pc p)
     ; pure_funs
     ; deleted_instrs = 0
@@ -431,7 +423,6 @@ let f pure_funs (p : Code.program) =
   mark_reachable st (Code.start p);
   if debug () then Print.program Format.err_formatter (fun pc xi -> annot st pc xi) p;
   let p =
-    let all_blocks = Code.blocks p in
     let blocks =
       Addr.Map.filter_map
         (fun pc block ->
@@ -450,14 +441,14 @@ let f pure_funs (p : Code.program) =
                           i :: prev
                       | _ ->
                           if live_instr st i
-                          then filter_closure all_blocks st i :: acc
+                          then filter_closure p st i :: acc
                           else (
                             st.deleted_instrs <- st.deleted_instrs + 1;
                             acc))
                   |> List.rev
-              ; branch = filter_live_last all_blocks st block.branch
+              ; branch = filter_live_last p st block.branch
               })
-        all_blocks
+        (Code.blocks p)
     in
     Code.program (Code.start p) blocks
   in

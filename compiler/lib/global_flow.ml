@@ -63,7 +63,7 @@ let return_values p =
                 | Return x -> Var.Set.add x s
                 | _ -> s)
               pc
-              (Code.blocks p)
+              p
               Var.Set.empty
           in
           Var.Map.add name s rets)
@@ -257,7 +257,7 @@ let program_deps st p =
       | { branch = Return x; _ } -> do_escape st Escape x
       | _ -> ())
     (Code.start p)
-    (Code.blocks p)
+    p
     ();
   Addr.Map.iter
     (fun _ block ->
