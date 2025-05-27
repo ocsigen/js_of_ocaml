@@ -583,6 +583,8 @@ module State = struct
     ; env_offset : int
     ; handlers : handler list
     ; globals : globals
+    ; immutable : unit Code.Var.Hashtbl.t
+    ; module_or_not : Ocaml_compiler.module_or_not Ident.Tbl.t
     }
 
   let fresh_var state =
@@ -667,8 +669,16 @@ module State = struct
 
   let pop_handler state = { state with handlers = List.tl state.handlers }
 
-  let initial g =
-    { accu = Unset; stack = []; env = [||]; env_offset = 0; handlers = []; globals = g }
+  let initial g immutable =
+    { accu = Unset
+    ; stack = []
+    ; env = [||]
+    ; env_offset = 0
+    ; handlers = []
+    ; globals = g
+    ; immutable
+    ; module_or_not = Ident.Tbl.create 0
+    }
 
   let rec print_stack f l =
     match l with
@@ -691,20 +701,37 @@ module State = struct
       print_env
       st.env
 
-  let rec name_rec debug i l s summary =
+  let maybe_module ident =
+    match (Ident.name ident).[0] with
+    | 'A' .. 'Z' -> true
+    | _ -> false
+
+  let rec name_rec debug st i l s summary =
     match l, s with
     | [], _ -> ()
     | (j, ident) :: lrem, Var v :: srem when i = j ->
+        (if maybe_module ident && not (Code.Var.Hashtbl.mem st.immutable v)
+         then
+           match Ident.Tbl.find st.module_or_not ident with
+           | Module -> Code.Var.Hashtbl.add st.immutable v ()
+           | Not_module -> ()
+           | (exception Not_found) | Unknown -> (
+               match Ocaml_compiler.is_module_in_summary ident summary with
+               | Module ->
+                   Ident.Tbl.add st.module_or_not ident Module;
+                   Code.Var.Hashtbl.add st.immutable v ()
+               | Not_module -> Ident.Tbl.add st.module_or_not ident Not_module
+               | Unknown -> ()));
         Var.set_name v (Ident.name ident);
-        name_rec debug (i + 1) lrem srem summary
-    | (j, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary
+        name_rec debug st (i + 1) lrem srem summary
+    | (j, _) :: _, _ :: srem when i < j -> name_rec debug st (i + 1) l srem summary
     | _ -> assert false
 
   let name_vars st debug pc =
     if Debug.names debug
     then
       let l, summary = Debug.find debug pc in
-      name_rec debug 0 l st.stack summary
+      name_rec debug st 0 l st.stack summary
 
   let rec make_stack i state =
     if i = 0
@@ -849,6 +876,8 @@ let string_of_addr debug_data addr =
         | Event_pseudo -> "(pseudo)"
       in
       Printf.sprintf "%s:%s-%s %s" file (pos loc.loc_start) (pos loc.loc_end) kind)
+
+let is_immutable _instr _infos _pc = (* We don't know yet *) Maybe_mutable
 
 let rec compile_block blocks joins debug_data code pc state : unit =
   match Addr.Map.find_opt pc !tagged_blocks with
@@ -1377,47 +1406,36 @@ and compile infos pc state (instrs : instr list) =
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
         let instrs = register_global g i instrs in
+        Code.Var.Hashtbl.add state.immutable (access_global g i) ();
         compile infos (pc + 2) state (Let (x, const 0) :: instrs)
     | ATOM0 ->
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile
-          infos
-          (pc + 1)
-          state
-          (Let (x, Block (0, [||], Unknown, Maybe_mutable)) :: instrs)
+        let imm = is_immutable instr infos pc in
+        compile infos (pc + 1) state (Let (x, Block (0, [||], Unknown, imm)) :: instrs)
     | ATOM ->
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile
-          infos
-          (pc + 2)
-          state
-          (Let (x, Block (i, [||], Unknown, Maybe_mutable)) :: instrs)
+        let imm = is_immutable instr infos pc in
+        compile infos (pc + 2) state (Let (x, Block (i, [||], Unknown, imm)) :: instrs)
     | PUSHATOM0 ->
         let state = State.push state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile
-          infos
-          (pc + 1)
-          state
-          (Let (x, Block (0, [||], Unknown, Maybe_mutable)) :: instrs)
+        let imm = is_immutable instr infos pc in
+        compile infos (pc + 1) state (Let (x, Block (0, [||], Unknown, imm)) :: instrs)
     | PUSHATOM ->
         let state = State.push state in
 
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile
-          infos
-          (pc + 2)
-          state
-          (Let (x, Block (i, [||], Unknown, Maybe_mutable)) :: instrs)
+        let imm = is_immutable instr infos pc in
+        compile infos (pc + 2) state (Let (x, Block (i, [||], Unknown, imm)) :: instrs)
     | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
@@ -1432,22 +1450,24 @@ and compile infos pc state (instrs : instr list) =
             Format.printf "%d = %a; " i Var.print (List.nth contents i)
           done;
           Format.printf "}@.");
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 3)
           state
-          (Let (x, Block (tag, Array.of_list contents, Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (tag, Array.of_list contents, Unknown, imm)) :: instrs)
     | MAKEBLOCK1 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
         let x, state = State.fresh_var state in
 
         if debug_parser () then Format.printf "%a = { 0 = %a; }@." Var.print x Var.print y;
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 2)
           state
-          (Let (x, Block (tag, [| y |], Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (tag, [| y |], Unknown, imm)) :: instrs)
     | MAKEBLOCK2 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1457,11 +1477,12 @@ and compile infos pc state (instrs : instr list) =
         if debug_parser ()
         then
           Format.printf "%a = { 0 = %a; 1 = %a; }@." Var.print x Var.print y Var.print z;
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 2)
           (State.pop 1 state)
-          (Let (x, Block (tag, [| y; z |], Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (tag, [| y; z |], Unknown, imm)) :: instrs)
     | MAKEBLOCK3 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1481,11 +1502,12 @@ and compile infos pc state (instrs : instr list) =
             z
             Var.print
             t;
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 2)
           (State.pop 2 state)
-          (Let (x, Block (tag, [| y; z; t |], Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (tag, [| y; z; t |], Unknown, imm)) :: instrs)
     | MAKEFLOATBLOCK ->
         let size = getu code (pc + 1) in
         let state = State.push state in
@@ -1499,11 +1521,12 @@ and compile infos pc state (instrs : instr list) =
             Format.printf "%d = %a; " i Var.print (List.nth contents i)
           done;
           Format.printf "}@.");
+        let imm = is_immutable instr infos pc in
         compile
           infos
           (pc + 2)
           state
-          (Let (x, Block (254, Array.of_list contents, Unknown, Maybe_mutable)) :: instrs)
+          (Let (x, Block (254, Array.of_list contents, Unknown, imm)) :: instrs)
     | GETFIELD0 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
@@ -2511,17 +2534,26 @@ type one =
   }
 
 let parse_bytecode code globals debug_data =
-  let state = State.initial globals in
+  let immutable = Code.Var.Hashtbl.create 0 in
+  let state = State.initial globals immutable in
   Code.Var.reset ();
   let blocks', joins = Blocks.analyse code in
   let p =
     if not (Blocks.is_empty blocks')
     then (
       let start = 0 in
+
       compile_block blocks' joins debug_data code start state;
       let blocks =
         Addr.Map.mapi
           (fun _ (state, instr, last) ->
+            let instr =
+              List.map instr ~f:(function
+                | Let (x, Block (tag, args, k, Maybe_mutable))
+                  when Code.Var.Hashtbl.mem immutable x ->
+                    Let (x, Block (tag, args, k, Immutable))
+                | x -> x)
+            in
             { params =
                 (match state with
                 | Some state -> State.stack_vars state
