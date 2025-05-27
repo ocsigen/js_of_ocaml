@@ -947,6 +947,12 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
             subst_bound_in_blocks st.new_blocks cloned_subst)
           else st.new_blocks
         in
+        let blocks =
+          (* Remove the initial block added only for the CPS transformation *)
+          if double_translate () && start <> initial_start
+          then Addr.Map.remove start blocks
+          else blocks
+        in
         let blocks = Addr.Map.fold Addr.Map.add new_blocks blocks in
         if debug () then Format.eprintf "@.";
         { p with blocks; free_pc = st.free_pc })
