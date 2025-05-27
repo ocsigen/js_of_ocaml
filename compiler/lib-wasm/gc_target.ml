@@ -514,7 +514,8 @@ module Value = struct
     | StructGet (_, _, _, e')
     | RefCast (_, e')
     | RefTest (_, e')
-    | ExternConvertAny e' -> effect_free e'
+    | ExternConvertAny e'
+    | AnyConvertExtern e' -> effect_free e'
     | BinOp (_, e1, e2)
     | ArrayNew (_, e1, e2)
     | ArrayNewData (_, _, e1, e2)
