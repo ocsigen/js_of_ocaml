@@ -481,6 +481,7 @@ let expression_or_instructions ctx st in_function =
                       catches))
         ]
     | ExternConvertAny e' -> [ List (Atom "extern.convert_any" :: expression e') ]
+    | AnyConvertExtern e' -> [ List (Atom "any.convert_extern" :: expression e') ]
   and instruction i =
     match i with
     | Drop e -> [ List (Atom "drop" :: expression e) ]

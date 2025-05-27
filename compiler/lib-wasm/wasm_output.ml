@@ -702,6 +702,11 @@ end = struct
         output_expression st ch e';
         output_byte ch 0xFB;
         output_byte ch 0x1B
+    | AnyConvertExtern e' ->
+        Feature.require gc;
+        output_expression st ch e';
+        output_byte ch 0xFB;
+        output_byte ch 0x1A
 
   and output_instruction st ch i =
     match i with
@@ -918,8 +923,9 @@ end = struct
     | RefTest (_, e')
     | Br_on_cast (_, _, _, e')
     | Br_on_cast_fail (_, _, _, e')
-    | Br_on_null (_, e') -> expr_function_references e' set
-    | ExternConvertAny e' -> expr_function_references e' set
+    | Br_on_null (_, e')
+    | ExternConvertAny e'
+    | AnyConvertExtern e' -> expr_function_references e' set
     | BinOp (_, e', e'')
     | ArrayNew (_, e', e'')
     | ArrayNewData (_, _, e', e'')
