@@ -106,6 +106,10 @@ module Flag = struct
   let auto_link = o ~name:"auto-link" ~default:true
 
   let es6 = o ~name:"es6" ~default:false
+
+  let wasi = o ~name:"wasi" ~default:false
+
+  let trap_on_exception = o ~name:"trap-on-exception" ~default:false
 end
 
 module Param = struct
