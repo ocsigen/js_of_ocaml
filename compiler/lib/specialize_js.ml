@@ -486,7 +486,7 @@ let f_once_after p =
       Code.map_blocks p ~f:(fun block ->
           { block with Code.body = List.map block.body ~f })
     in
-    let p = Deadcode.remove_unused_blocks { p with blocks } in
+    let p = Deadcode.remove_unused_blocks p in
     Code.invariant p;
     p)
   else p
