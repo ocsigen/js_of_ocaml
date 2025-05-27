@@ -20,29 +20,28 @@ open! Stdlib
 open Code
 
 let bound_variables p ~f ~params ~cont:(pc, _) =
-  let blocks = Code.blocks p in
   let bound_vars = ref Var.Map.empty in
   let add_var x = bound_vars := Var.Map.add x (Var.fork x) !bound_vars in
   List.iter ~f:add_var (f :: params);
-  let rec traverse blocks pc =
+  let rec traverse pc =
     Code.traverse
       { fold = fold_children }
       (fun pc _ ->
-        let block = Addr.Map.find pc blocks in
+        let block = Code.block pc p in
         Freevars.iter_block_bound_vars add_var block;
         List.iter
           ~f:(fun i ->
             match i with
             | Let (_, Closure (params, (pc', _), _)) ->
                 List.iter ~f:add_var params;
-                traverse blocks pc'
+                traverse pc'
             | _ -> ())
           block.body)
       pc
-      blocks
+      (Code.blocks p)
       ()
   in
-  traverse blocks pc;
+  traverse pc;
   !bound_vars
 
 let rec blocks_to_rename p pc lst =
@@ -71,14 +70,12 @@ let closure p ~f ~params ~cont =
       ~init:(Code.free_pc p, Addr.Map.empty)
       blocks
   in
-  let blocks =
+  let p =
     List.fold_left
-      ~f:(fun blocks pc ->
-        let b = Addr.Map.find pc blocks in
-        let b = Subst.Including_Binders.And_Continuations.block m s b in
-        Addr.Map.add (Addr.Map.find pc m) b blocks)
-      ~init:(Code.blocks p)
+      ~f:(fun p pc ->
+        let b = Subst.Including_Binders.And_Continuations.block m s (Code.block pc p) in
+        Code.add_block (Addr.Map.find pc m) b p)
+      ~init:p
       blocks
   in
-  let p = Code.program (Code.start p) blocks in
   p, s f, List.map ~f:s params, (Addr.Map.find pc m, List.map ~f:s args)

@@ -232,12 +232,11 @@ let contains_loop ~context info =
       snd (traverse pc (Addr.Map.empty, false)))
 
 let sum ~context f pc =
-  let blocks = Code.blocks context.p in
   Code.traverse
     { fold = fold_children }
-    (fun pc acc -> f (Addr.Map.find pc blocks) + acc)
+    (fun pc acc -> f (Code.block pc context.p) + acc)
     pc
-    blocks
+    (Code.blocks context.p)
     0
 
 let rec block_size ~recurse ~context { branch; body; _ } =
@@ -297,13 +296,12 @@ let count_init_code ~context info =
 (** Whether the function returns a block. *)
 let returns_a_block ~context info =
   cache ~info info.returns_a_block (fun pc ->
-      let blocks = Code.blocks context.p in
       Code.traverse
         { fold = fold_children }
         (fun pc acc ->
           acc
           &&
-          let block = Addr.Map.find pc blocks in
+          let block = Code.block pc context.p in
           match block.branch with
           | Return x -> (
               match Code.last_instr block.body with
@@ -311,7 +309,7 @@ let returns_a_block ~context info =
               | _ -> false)
           | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> true)
         pc
-        blocks
+        (Code.blocks context.p)
         true)
 
 (** List of parameters that corresponds to functions called once in
@@ -323,11 +321,10 @@ let interesting_parameters ~context info =
       if List.is_empty params
       then []
       else
-        let blocks = Code.blocks context.p in
         Code.traverse
           { fold = fold_children }
           (fun pc lst ->
-            let block = Addr.Map.find pc blocks in
+            let block = Code.block pc context.p in
             List.fold_left
               ~f:(fun lst i ->
                 match i with
@@ -337,7 +334,7 @@ let interesting_parameters ~context info =
               ~init:lst
               block.body)
           pc
-          blocks
+          (Code.blocks context.p)
           [])
 
 (*

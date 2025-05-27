@@ -478,13 +478,12 @@ let blocks p = p.blocks
 
 let block pc p = Addr.Map.find pc p.blocks
 
-let add_block pc block p =
-  { p with
-    blocks = Addr.Map.add pc block p.blocks
-  ; free_pc = (if pc > p.free_pc then pc + 1 else p.free_pc)
-  }
+let add_block pc block p = { p with blocks = Addr.Map.add pc block p.blocks }
 
-let free_pc p = p.free_pc
+let free_pc p =
+  match Addr.Map.max_binding_opt p.blocks with
+  | None -> p.start + 1
+  | Some (pc, _) -> pc + 1
 
 let program start blocks =
   { start

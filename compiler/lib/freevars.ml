@@ -160,7 +160,7 @@ let mark_variables in_loop p =
     if not (BitSet.mem visited pc)
     then (
       BitSet.set visited pc;
-      let block = Addr.Map.find pc (Code.blocks p) in
+      let block = Code.block pc p in
       (try
          let pc' = Addr.Map.find pc in_loop in
          iter_block_bound_vars (fun x -> Var.Tbl.set vars x pc') block

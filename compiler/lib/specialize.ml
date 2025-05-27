@@ -64,15 +64,15 @@ let unknown_apply = function
   | Let (_, Apply { f = _; args = _; exact = false }) -> true
   | _ -> false
 
-let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
+let specialize_apply opt_count function_arity ((acc, p), loc) i =
   match i with
   | Let (x, Apply { f; args; exact = false }) -> (
       let n' = List.length args in
       match function_arity f with
-      | None -> i :: acc, free_pc, extra
+      | None -> i :: acc, p
       | Some n when n = n' ->
           incr opt_count;
-          Let (x, Apply { f; args; exact = true }) :: acc, free_pc, extra
+          Let (x, Apply { f; args; exact = true }) :: acc, p
       | Some n when n < n' ->
           incr opt_count;
           let v = Code.Var.fresh () in
@@ -80,8 +80,7 @@ let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
           ( (* Reversed *)
             Let (x, Apply { f = v; args = rest; exact = false })
             :: add_event loc (Let (v, Apply { f; args; exact = true }) :: acc)
-          , free_pc
-          , extra )
+          , p )
       | Some n when n > n' ->
           incr opt_count;
           let missing = Array.init (n - n') ~f:(fun _ -> Code.Var.fresh ()) in
@@ -98,30 +97,28 @@ let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
             ; branch = Return return'
             }
           in
+          let free_pc = Code.free_pc p in
           ( Let (x, Closure (missing, (free_pc, missing), None)) :: acc
-          , free_pc + 1
-          , (free_pc, block) :: extra )
+          
+          , Code.add_block free_pc block p )
       | Some _ -> assert false)
-  | _ -> i :: acc, free_pc, extra
+  | _ -> i :: acc, p
 
 let specialize_instrs ~function_arity opt_count p =
   Addr.Map.fold
     (fun pc block p ->
       if List.exists ~f:unknown_apply block.body
       then
-        let (body, _free_pc, extra), _ =
+        let (body, p), _ =
           List.fold_left
             block.body
-            ~init:(([], Code.free_pc p, []), None)
+            ~init:(([], p), None)
             ~f:(fun acc i ->
               match i with
               | Event loc ->
-                  let (body, free_pc, extra), _ = acc in
-                  (i :: body, free_pc, extra), Some loc
+                  let (body, p), _ = acc in
+                  (i :: body, p), Some loc
               | _ -> specialize_apply opt_count function_arity acc i, None)
-        in
-        let p =
-          List.fold_left extra ~init:p ~f:(fun p (pc, b) -> Code.add_block pc b p)
         in
         Code.add_block pc { block with Code.body = List.rev body } p
       else p)
