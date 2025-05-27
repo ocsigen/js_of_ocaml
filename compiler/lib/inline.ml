@@ -94,17 +94,17 @@ module Var_SCC = Strongly_connected_components.Make (Var)
 let visit_closures p ~live_vars f acc =
   let closures = collect_closures p in
   let deps = collect_deps p closures in
-  let scc = Var_SCC.connected_components_sorted_from_roots_to_leaf deps in
-  let f' recursive acc g =
+  let f' ~recursive acc g =
     let params, cont, enclosing_function = Var.Hashtbl.find closures g in
     f ~recursive ~enclosing_function ~current_function:(Some g) ~params ~cont acc
   in
-  let acc =
+  let rec visit ~recursive deps acc =
+    let scc = Var_SCC.connected_components_sorted_from_roots_to_leaf deps in
     Array.fold_left
       scc
       ~f:(fun acc group ->
         match group with
-        | Var_SCC.No_loop g -> f' false acc g
+        | Var_SCC.No_loop g -> f' ~recursive acc g
         | Has_loop l ->
             let set = Var.Set.of_list l in
             let deps' =
@@ -112,23 +112,26 @@ let visit_closures p ~live_vars f acc =
                 ~f:(fun deps' g ->
                   Var.Map.add
                     g
-                    (if live_vars.(Var.idx g) > 1
-                     then Var.Set.empty
-                     else Var.Set.inter (Var.Map.find g deps) set)
+                    (Var.Set.inter
+                       (if recursive || live_vars.(Var.idx g) > 1
+                        then
+                          (* Make sure that inner closures are
+                             processed before their enclosing
+                             closure *)
+                          let _, _, enclosing = Var.Hashtbl.find closures g in
+                          match enclosing with
+                          | None -> Var.Set.empty
+                          | Some enclosing -> Var.Set.singleton enclosing
+                        else Var.Map.find g deps)
+                       set)
                     deps')
                 ~init:Var.Map.empty
                 l
             in
-            let scc = Var_SCC.connected_components_sorted_from_roots_to_leaf deps' in
-            Array.fold_left
-              scc
-              ~f:(fun acc group ->
-                match group with
-                | Var_SCC.No_loop g -> f' true acc g
-                | Has_loop l -> List.fold_left ~f:(fun acc g -> f' true acc g) ~init:acc l)
-              ~init:acc)
+            visit ~recursive:true deps' acc)
       ~init:acc
   in
+  let acc = visit ~recursive:false deps acc in
   f
     ~recursive:false
     ~enclosing_function:None
