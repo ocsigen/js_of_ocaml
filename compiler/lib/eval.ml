@@ -778,20 +778,13 @@ let drop_exception_handler drop_count p =
               incr drop_count;
               let b = { b with branch = Branch cont1 } in
               let p = Code.add_block pc b p in
-              let blocks =
-                List.fold_left
-                  ~f:(fun blocks pc2 ->
-                    Addr.Map.update
-                      pc2
-                      (function
-                        | Some ({ branch = Poptrap cont; _ } as b) ->
-                            Some { b with branch = Branch cont }
-                        | None | Some _ -> assert false)
-                      blocks)
-                  rewrite
-                  ~init:(Code.blocks p)
-              in
-              Code.program (Code.start p) blocks)
+              List.fold_left
+                ~f:(fun p pc2 ->
+                  Code.update_block pc2 p ~f:(function
+                    | { branch = Poptrap cont; _ } as b -> { b with branch = Branch cont }
+                    | _ -> assert false))
+                rewrite
+                ~init:p)
       | _ -> p)
     (Code.blocks p)
     p

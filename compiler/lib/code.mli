@@ -231,6 +231,8 @@ val add_block : Addr.t -> block -> program -> program
 
 val remove_block : Addr.t -> program -> program
 
+val update_block : Addr.t -> program -> f:(block -> block) -> program
+
 val program : Addr.t -> block Addr.Map.t -> program
 
 val map_blocks : f:(block -> block) -> program -> program

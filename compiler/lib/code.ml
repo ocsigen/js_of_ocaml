@@ -480,6 +480,17 @@ let block pc p = Addr.Map.find pc p.blocks
 
 let add_block pc block p = { p with blocks = Addr.Map.add pc block p.blocks }
 
+let update_block pc p ~f =
+  { p with
+    blocks =
+      Addr.Map.update
+        pc
+        (function
+          | None -> raise Not_found
+          | Some b -> Some (f b))
+        p.blocks
+  }
+
 let remove_block pc p = { p with blocks = Addr.Map.remove pc p.blocks }
 
 let free_pc p =

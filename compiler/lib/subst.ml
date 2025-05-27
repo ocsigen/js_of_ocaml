@@ -66,9 +66,7 @@ module Excluding_Binders = struct
   let block s block =
     { params = block.params; body = instrs s block.body; branch = last s block.branch }
 
-  let program s p =
-    let blocks = Addr.Map.map (fun b -> block s b) (Code.blocks p) in
-    Code.program (Code.start p) blocks
+  let program s p = Code.map_blocks p ~f:(fun b -> block s b)
 
   let rec cont' s pc p visited =
     if Addr.Set.mem pc visited
