@@ -2,6 +2,10 @@
  (dev
   (flags
    (:standard -w +a-4-40-41-42-44-48-58-66-70))
+  (js_of_ocaml
+   (flags
+    (:include ci.flags)
+    (:standard)))
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
@@ -9,6 +13,7 @@
   (js_of_ocaml
    (compilation_mode separate)
    (flags
+    (:include ci.flags)
     (:standard --effects cps)))
   (wasm_of_ocaml
    (compilation_mode separate)
@@ -21,6 +26,7 @@
   (js_of_ocaml
    (compilation_mode separate)
    (flags
+    (:include ci.flags)
     (:standard --effects double-translation))
    (build_runtime_flags
     (:standard --effects double-translation)))
@@ -54,6 +60,23 @@
     %{dep:tools/version/gen/gen.exe}
     %{dep:VERSION}
     %{dep:tools/version/GIT-VERSION}))))
+
+(rule
+ (target ci.flags)
+ (enabled_if
+  (not %{env:CI=false}))
+ (action
+  (with-stdout-to
+   %{target}
+   (echo "()"))))
+
+(rule
+ (target ci.flags)
+ (enabled_if %{env:CI=false})
+ (action
+  (with-stdout-to
+   %{target}
+   (echo "(--debug invariant)"))))
 
 (data_only_dirs _wikidoc doc-dev janestreet)
 
