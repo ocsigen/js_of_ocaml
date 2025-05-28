@@ -147,6 +147,16 @@ let rec format_sexp f s =
       Format.pp_print_string f ";;";
       Format.pp_print_string f s
 
+let escape_string s =
+  let b = Buffer.create (String.length s + 2) in
+  for i = 0 to String.length s - 1 do
+    let c = s.[i] in
+    if Char.(c >= ' ' && c <= '~' && c <> '"' && c <> '\\')
+    then Buffer.add_char b c
+    else Printf.bprintf b "\\%02x" (Char.code c)
+  done;
+  Buffer.contents b
+
 let index tbl x = Atom ("$" ^ Code.Var.Hashtbl.find tbl x)
 
 let heap_type st (ty : heap_type) =
@@ -215,7 +225,7 @@ let str_type st typ =
 
 let block_type = func_type
 
-let quoted_name name = Atom ("\"" ^ name ^ "\"")
+let quoted_name name = Atom ("\"" ^ escape_string name ^ "\"")
 
 let export name =
   match name with
@@ -481,6 +491,7 @@ let expression_or_instructions ctx st in_function =
                       catches))
         ]
     | ExternConvertAny e' -> [ List (Atom "extern.convert_any" :: expression e') ]
+    | AnyConvertExtern e' -> [ List (Atom "any.convert_extern" :: expression e') ]
   and instruction i =
     match i with
     | Drop e -> [ List (Atom "drop" :: expression e) ]
@@ -611,16 +622,6 @@ let import st f =
                   ])
           ]
       ]
-
-let escape_string s =
-  let b = Buffer.create (String.length s + 2) in
-  for i = 0 to String.length s - 1 do
-    let c = s.[i] in
-    if Char.(c >= ' ' && c <= '~' && c <> '"' && c <> '\\')
-    then Buffer.add_char b c
-    else Printf.bprintf b "\\%02x" (Char.code c)
-  done;
-  Buffer.contents b
 
 let type_field st { name; typ; supertype; final } =
   if final && Option.is_none supertype

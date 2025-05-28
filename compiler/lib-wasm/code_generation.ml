@@ -53,9 +53,6 @@ type context =
   ; mutable dummy_funs : Var.t IntMap.t
   ; mutable cps_dummy_funs : Var.t IntMap.t
   ; mutable init_code : W.instruction list
-  ; mutable string_count : int
-  ; mutable strings : string list
-  ; mutable string_index : int StringMap.t
   ; mutable fragments : Javascript.expression StringMap.t
   ; mutable globalized_variables : Var.Set.t
   ; value_type : W.value_type
@@ -78,9 +75,6 @@ let make_context ~value_type =
   ; dummy_funs = IntMap.empty
   ; cps_dummy_funs = IntMap.empty
   ; init_code = []
-  ; string_count = 0
-  ; strings = []
-  ; string_index = StringMap.empty
   ; fragments = StringMap.empty
   ; globalized_variables = Var.Set.empty
   ; value_type
@@ -253,16 +247,6 @@ let register_init_code code st =
   let (), st' = code st' in
   st.context.init_code <- st'.instrs @ st.context.init_code;
   (), st
-
-let register_string s st =
-  let context = st.context in
-  try StringMap.find s context.string_index, st
-  with Not_found ->
-    let n = context.string_count in
-    context.string_count <- 1 + context.string_count;
-    context.strings <- s :: context.strings;
-    context.string_index <- StringMap.add s n context.string_index;
-    n, st
 
 let register_fragment name f st =
   let context = st.context in
@@ -476,7 +460,8 @@ let rec is_smi e =
   | Br_on_cast_fail _
   | Br_on_null _
   | Try _
-  | ExternConvertAny _ -> false
+  | ExternConvertAny _
+  | AnyConvertExtern _ -> false
   | BinOp ((F32 _ | F64 _), _, _) | RefTest _ | RefEq _ -> true
   | IfExpr (_, _, ift, iff) -> is_smi ift && is_smi iff
 
