@@ -252,6 +252,19 @@ module type S = sig
     val round : expression -> expression
   end
 
+  module Bigarray : sig
+    val dim1 : expression -> expression
+
+    val get : kind:Typing.Bigarray.kind -> expression -> expression -> expression
+
+    val set :
+         kind:Typing.Bigarray.kind
+      -> expression
+      -> expression
+      -> expression
+      -> unit Code_generation.t
+  end
+
   val internal_primitives :
     (string
     * Primitive.kind
