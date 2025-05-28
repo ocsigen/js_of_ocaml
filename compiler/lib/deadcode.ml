@@ -369,24 +369,38 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
       | _ -> ())
     p.blocks;
   let blocks =
-    Addr.Map.map
-      (fun block ->
-        { block with
-          branch =
-            (let branch = block.branch in
-             match branch with
-             | Branch cont -> Branch (resolve cont)
-             | Cond (x, cont1, cont2) ->
-                 let cont1' = resolve cont1 in
-                 let cont2' = resolve cont2 in
-                 if Code.cont_equal cont1' cont2'
-                 then Branch cont1'
-                 else Cond (x, cont1', cont2')
-             | Switch (x, a1) -> Switch (x, Array.map ~f:resolve a1)
-             | Pushtrap (cont1, x, cont2) -> Pushtrap (resolve cont1, x, resolve cont2)
-             | Poptrap cont -> Poptrap (resolve cont)
-             | Return _ | Raise _ | Stop -> branch)
-        })
+    Addr.Map.fold
+      (fun pc block blocks ->
+        if
+          match block.branch with
+          | Branch (pc, _) | Poptrap (pc, _) -> not (Addr.Hashtbl.mem shortcuts pc)
+          | Cond (_, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _)) ->
+              not (Addr.Hashtbl.mem shortcuts pc1 || Addr.Hashtbl.mem shortcuts pc2)
+          | Switch (_, a) ->
+              not (Array.exists ~f:(fun (pc, _) -> Addr.Hashtbl.mem shortcuts pc) a)
+          | Return _ | Raise _ | Stop -> true
+        then blocks
+        else
+          Addr.Map.add
+            pc
+            { block with
+              branch =
+                (let branch = block.branch in
+                 match branch with
+                 | Branch cont -> Branch (resolve cont)
+                 | Cond (x, cont1, cont2) ->
+                     let cont1' = resolve cont1 in
+                     let cont2' = resolve cont2 in
+                     if Code.cont_equal cont1' cont2'
+                     then Branch cont1'
+                     else Cond (x, cont1', cont2')
+                 | Switch (x, a1) -> Switch (x, Array.map ~f:resolve a1)
+                 | Pushtrap (cont1, x, cont2) -> Pushtrap (resolve cont1, x, resolve cont2)
+                 | Poptrap cont -> Poptrap (resolve cont)
+                 | Return _ | Raise _ | Stop -> assert false)
+            }
+            blocks)
+      p.blocks
       p.blocks
   in
   { p with blocks }
