@@ -45,17 +45,19 @@ let deadcode' p =
   Deadcode.f pure_fun p
 
 let deadcode p =
-  let p, _ = deadcode' p in
   let p = Deadcode.merge_blocks p in
   let p = Code.compact p in
   p
 
 let inline profile p =
-  if Config.Flag.inline () && Config.Flag.deadcode ()
-  then (
+  if Config.Flag.deadcode ()
+  then
     let p, live_vars = deadcode' p in
-    if debug () then Format.eprintf "Inlining...@.";
-    Inline.f ~profile p live_vars)
+    if Config.Flag.inline ()
+    then (
+      if debug () then Format.eprintf "Inlining...@.";
+      Inline.f ~profile p live_vars)
+    else p
   else p
 
 let specialize_1 (p, info) =
