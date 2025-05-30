@@ -90,9 +90,9 @@ let build_runtime ~runtime_file =
     [ ( "effects"
       , Wat_preprocess.String
           (match Config.effects () with
-          | `Jspi -> "jspi"
+          | `Disabled | `Jspi -> "jspi"
           | `Cps -> "cps"
-          | `Disabled | `Double_translation -> assert false) )
+          | `Double_translation -> assert false) )
     ]
   in
   match

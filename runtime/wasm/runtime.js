@@ -18,7 +18,7 @@
 (js) => async (args) => {
   // biome-ignore lint/suspicious/noRedundantUseStrict:
   "use strict";
-  const { link, src, generated } = args;
+  const { link, src, generated, disable_effects } = args;
 
   const isNode = globalThis.process?.versions?.node;
 
@@ -124,7 +124,9 @@
     return WebAssembly?.Suspending ? new WebAssembly.Suspending(f) : f;
   }
   function make_promising(f) {
-    return WebAssembly?.promising && f ? WebAssembly.promising(f) : f;
+    return !disable_effects && WebAssembly?.promising && f
+      ? WebAssembly.promising(f)
+      : f;
   }
 
   const decoder = new TextDecoder("utf-8", { ignoreBOM: 1 });
