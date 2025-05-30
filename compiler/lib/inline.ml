@@ -371,28 +371,31 @@ let rec small_function ~context info args =
   && body_size ~context info <= 15
   && closure_count ~context info = 0
   && (not (List.is_empty args))
-  &&
+  && not (Var.Map.is_empty (relevant_arguments ~context info args))
+
+and relevant_arguments ~context info args =
   let relevant_params = interesting_parameters ~context info in
-  try
-    List.iter2 args info.params ~f:(fun arg param ->
+  List.fold_left2
+    args
+    info.params
+    ~f:(fun m arg param ->
+      if
+        Var.Map.mem arg context.env
+        && List.exists ~f:(fun (p, _) -> Var.equal p param) relevant_params
+      then
+        let info' = Var.Map.find arg context.env in
+        let _, arity = List.find ~f:(fun (p, _) -> Var.equal p param) relevant_params in
         if
-          Var.Map.mem arg context.env
-          && List.exists ~f:(fun (p, _) -> Var.equal p param) relevant_params
-        then
-          let info' = Var.Map.find arg context.env in
-          let _, arity = List.find ~f:(fun (p, _) -> Var.equal p param) relevant_params in
-          if
-            List.compare_length_with info'.params ~len:arity = 0
-            && should_inline
-                 ~context:
-                   { context with
-                     in_loop = context.in_loop || contains_loop ~context info
-                   }
-                 info'
-                 []
-          then raise Exit);
-    false
-  with Exit -> true
+          List.compare_length_with info'.params ~len:arity = 0
+          && should_inline
+               ~context:
+                 { context with in_loop = context.in_loop || contains_loop ~context info }
+               info'
+               []
+        then Var.Map.add param arg m
+        else m
+      else m)
+    ~init:Var.Map.empty
 
 and should_inline ~context info args =
   (* Typically, in JavaScript implementations, a closure contains a
@@ -521,7 +524,7 @@ let rewrite_closure blocks cont_pc clos_pc =
     blocks
     blocks
 
-let inline_function p rem branch x params cont args =
+let rewrite_inlined_function p rem branch x params cont args =
   let blocks, cont_pc, free_pc =
     match rem, branch with
     | [], Return y when Var.equal x y ->
@@ -546,27 +549,77 @@ let inline_function p rem branch x params cont args =
   in
   [], (Branch (fresh_addr, args), { p with blocks; free_pc })
 
+let rec inline_recursively ~context ~info p params (pc, _) args =
+  let relevant_args = relevant_arguments ~context info args in
+  if Var.Map.is_empty relevant_args
+  then p
+  else
+    let subst =
+      List.fold_left2
+        params
+        info.params
+        ~f:(fun m param param' ->
+          if Var.Map.mem param' relevant_args
+          then Var.Map.add param (Var.Map.find param' relevant_args) m
+          else m)
+        ~init:Var.Map.empty
+    in
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc p ->
+        let block = Addr.Map.find pc p.blocks in
+        let body, (branch, p) =
+          List.fold_right
+            ~f:(fun i (rem, state) ->
+              match i with
+              | Let (x, Apply { f; args; _ }) when Var.Map.mem f subst ->
+                  (* The [exact] field might not be accurate since it
+                     considers all possible values of [f], before the
+                     current function is inlined, not just the one
+                     called after inlining. We have checked in
+                     [relevant_arguments] that the call was exact.
+                     We have also checked that it made sense to inline
+                     this call. In particular, this function is
+                     applied only once. *)
+                  let f = Var.Map.find f subst in
+                  inline_function ~context i x f args rem state
+              | _ -> i :: rem, state)
+            ~init:([], (block.branch, p))
+            block.body
+        in
+        { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks })
+      pc
+      p.blocks
+      p
+
+and inline_function ~context i x f args rem state =
+  let info = Var.Map.find f context.env in
+  let { params; cont; _ } = info in
+  trace_inlining ~context info x args;
+  if should_inline ~context info args
+  then (
+    let branch, p = state in
+    incr context.inline_count;
+    if closure_count ~context info > 0 then context.has_closures := true;
+    context.live_vars.(Var.idx f) <- context.live_vars.(Var.idx f) - 1;
+    let p, params, cont =
+      if context.live_vars.(Var.idx f) > 0
+      then
+        let p, _, params, cont = Duplicate.closure p ~f ~params ~cont in
+        p, params, cont
+      else p, params, cont
+    in
+    let p = inline_recursively ~context ~info p params cont args in
+    rewrite_inlined_function p rem branch x params cont args)
+  else i :: rem, state
+
 let inline_in_block ~context pc block p =
   let body, (branch, p) =
     List.fold_right
       ~f:(fun i (rem, state) ->
         match i with
         | Let (x, Apply { f; args; exact = true; _ }) when Var.Map.mem f context.env ->
-            let info = Var.Map.find f context.env in
-            let { params; cont; _ } = info in
-            trace_inlining ~context info x args;
-            if should_inline ~context info args
-            then (
-              let branch, p = state in
-              incr context.inline_count;
-              if closure_count ~context info > 0 then context.has_closures := true;
-              context.live_vars.(Var.idx f) <- context.live_vars.(Var.idx f) - 1;
-              if context.live_vars.(Var.idx f) > 0
-              then
-                let p, _, params, cont = Duplicate.closure p ~f ~params ~cont in
-                inline_function p rem branch x params cont args
-              else inline_function p rem branch x params cont args)
-            else i :: rem, state
+            inline_function ~context i x f args rem state
         | _ -> i :: rem, state)
       ~init:([], (block.branch, p))
       block.body
