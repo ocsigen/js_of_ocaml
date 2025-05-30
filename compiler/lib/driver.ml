@@ -45,7 +45,6 @@ let deadcode' p =
   Deadcode.f pure_fun p
 
 let deadcode p =
-  let p, _ = deadcode' p in
   let p = Deadcode.merge_blocks p in
   let p = Code.compact p in
   p
