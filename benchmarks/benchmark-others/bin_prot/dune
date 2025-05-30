@@ -1,0 +1,10 @@
+(executables
+ (names bench)
+ (modes js wasm)
+ (js_of_ocaml
+  (flags --opt 2))
+ (wasm_of_ocaml
+  (flags --opt 2))
+ (preprocess
+  (pps ppx_bin_prot))
+ (libraries unix))
