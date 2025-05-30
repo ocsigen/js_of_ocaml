@@ -22,6 +22,7 @@ bench:
 	$(MAKE) -C benchmark-ocamlc bench
 	$(MAKE) -C benchmark-partial-render-table bench
 	$(MAKE) -C benchmark-camlboy bench
+	$(MAKE) -C benchmark-others bench
 
 microbenchmarks:
 	@date -u +"%FT%TZ - Microbenchmarks: starting"

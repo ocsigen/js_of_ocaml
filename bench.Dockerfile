@@ -47,6 +47,10 @@ RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
  && opam remove js_of_ocaml-compiler ojs \
  && opam clean
 
+# Bin_prot packages
+RUN opam pin add -n https://github.com/ocaml-wasm/bin_prot.git#wasm-v0.18 \
+ && opam install ppx_bin_prot
+
 # Copy sources
 COPY --chown=opam:opam . ./
 
