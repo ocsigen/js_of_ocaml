@@ -533,7 +533,7 @@ let build_runtime_arguments
         [ EVar (Javascript.ident Global_constant.global_object_) ]
         N
   in
-  obj
+  let props : (string * Javascript.expression) list =
     [ ( "link"
       , EArr
           (List.map
@@ -559,6 +559,14 @@ let build_runtime_arguments
     ; "generated", generated_js
     ; "src", EStr (Utf8_string.of_string_exn (Filename.basename wasm_dir))
     ]
+  in
+  let props =
+    match Config.effects () with
+    | `Disabled -> ("disable_effects", Javascript.EBool true) :: props
+    | `Jspi | `Cps -> props
+    | `Double_translation -> assert false
+  in
+  obj props
 
 let source_name i j file =
   let prefix =

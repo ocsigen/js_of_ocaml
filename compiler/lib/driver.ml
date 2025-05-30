@@ -628,8 +628,9 @@ let optimize ~profile p =
     +> map_fst
          (match Config.target (), Config.effects () with
          | `JavaScript, `Disabled -> Generate_closure.f
-         | `JavaScript, (`Cps | `Double_translation) | `Wasm, (`Jspi | `Cps) -> Fun.id
-         | `JavaScript, `Jspi | `Wasm, (`Disabled | `Double_translation) -> assert false)
+         | `JavaScript, (`Cps | `Double_translation) | `Wasm, (`Disabled | `Jspi | `Cps)
+           -> Fun.id
+         | `JavaScript, `Jspi | `Wasm, `Double_translation -> assert false)
     +> map_fst deadcode'
   in
   if times () then Format.eprintf "Start Optimizing...@.";
