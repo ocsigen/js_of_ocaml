@@ -35,10 +35,10 @@
 * Compiler: faster js code generation (#1985)
 * Compiler: more efficient code generation from bytecode (#1972)
 * Runtime: use Dataview to convert between floats and bit representation
-* Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962, #2001, #2012)
+* Compiler: speed-up compilation by improving the scheduling of optimization passes (#1962, #2001, #2012, #2027)
 * Compiler: deadcode elimination of cyclic values (#1978)
 * Compiler: directly write Wasm binary modules (#2000, #2003)
-* Compiler: rewrote inlining pass (#1935, #2018)
+* Compiler: rewrote inlining pass (#1935, #2018, #2027)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
