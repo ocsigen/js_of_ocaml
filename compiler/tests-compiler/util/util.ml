@@ -279,7 +279,7 @@ let compile_to_javascript
       ; (match effects with
         | `Double_translation -> [ "--effects=double-translation" ]
         | `Cps -> [ "--effects=cps" ]
-        | `Disabled -> [])
+        | `Disabled -> [ "--effects=disabled" ])
       ; (if use_js_string
          then [ "--enable=use-js-string" ]
          else [ "--disable=use-js-string" ])

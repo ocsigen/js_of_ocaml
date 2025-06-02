@@ -248,7 +248,7 @@ let _ =
          "js_of_ocaml -q --target-env browser --debug mark-runtime-gen %s %s"
          opts
          (match effects with
-         | `None -> ""
+         | `None -> "--effects=disabled"
          | `Cps -> "--effects=cps"
          | `Double_translation -> "--effects=double-translation"))
   in

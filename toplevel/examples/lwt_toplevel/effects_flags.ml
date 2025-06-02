@@ -5,7 +5,7 @@ let () =
     | [ "with-effects-double-translation" ], true -> [ "--effects"; "double-translation" ]
     | [ "with-effects" ], true -> [ "--effects"; "cps" ]
     | _, true -> [ "--effects"; "cps" ]
-    | _, false -> []
+    | _, false -> [ "--effects"; "disabled" ]
   in
   match Sys.argv |> Array.to_list |> List.tl with
   | "txt" :: rest -> List.iter print_endline (effects_flags rest)
