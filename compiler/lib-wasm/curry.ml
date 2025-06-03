@@ -298,6 +298,7 @@ module Make (Target : Target_sig.S) = struct
            Memory.allocate
              ~tag:0
              ~deadcode_sentinal:(Code.Var.fresh ())
+             ~load
              (List.map ~f:(fun x -> `Var x) (List.tl l))
          in
          let* make_iterator =
