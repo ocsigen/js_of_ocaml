@@ -31,6 +31,7 @@ let forked_packages =
     ; "bonsai_web_test"
     ; "virtual_dom" (* Compatibility with effect syntax *)
     ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
+    ; "zarith_stubs_js"
     ]
 
 let dune_workspace =
@@ -95,7 +96,7 @@ index c6d09fb..61b1e5b 100644
 @@ -3,6 +3,11 @@ open! Expect_test_helpers_core
  open Bignum
  open Bignum.For_testing
- 
+
 +module Zarith = struct
 +  module Q = Q
 +  module Z = Z
@@ -211,7 +212,7 @@ index 5fd0ddc..4833923 100644
 +    [%expect {| ((hash d937e61f530ab9c27544e392922d286d) (uniqueness_rate 42.96875)) |}]
    ;;
  end
- 
+
 @@ -102,7 +102,7 @@ module Ml_z_hamdist = struct
        ();
      (* Compression rate is low because our quickcheck implementation generates
@@ -220,7 +221,7 @@ index 5fd0ddc..4833923 100644
 +    [%expect {| ((hash 0d36530b39292e2c31f13d10ec004a38) (uniqueness_rate 33.284457)) |}]
    ;;
  end
- 
+
 diff --git a/test/dune b/test/dune
 index 7996514..d0b463a 100644
 --- a/test/dune
@@ -235,14 +236,14 @@ index 7996514..d0b463a 100644
 + (modules (:standard \ zarith))
   (preprocess
    (pps ppx_jane)))
- 
+
 @@ -35,10 +37,16 @@
   (deps implemented_externals.txt tested_externals.txt)
   (action
    (bash "diff %{deps}"))
 - (alias runtest))
 + (alias runtest-))
- 
+
  (rule
   (deps implemented_externals.txt zarith_externals.txt)
   (action
@@ -399,7 +400,13 @@ let () =
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
-      let branch = if is_forked nm then Some "wasm-latest" else None in
+      let branch =
+        if is_forked nm then
+          match nm with
+          | "zarith_stubs_js" -> Some "js-strings"
+          | _ -> Some "wasm-latest"
+        else None
+      in
       let commit =
         if is_forked nm
         then None
