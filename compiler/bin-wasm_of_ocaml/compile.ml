@@ -76,25 +76,26 @@ let opt_with action x f =
   | None -> f None
   | Some x -> action x (fun y -> f (Some y))
 
+let preprocessor_variables () =
+  (* Keep this variables in sync with gen/gen.ml *)
+  [ ( "effects"
+    , Wat_preprocess.String
+        (match Config.effects () with
+        | `Disabled | `Jspi -> "jspi"
+        | `Cps -> "cps"
+        | `Double_translation -> assert false) )
+  ]
+
 let with_runtime_files ~runtime_wasm_files f =
   let inputs =
     List.map
       ~f:(fun file -> { Wat_preprocess.module_name = "env"; file; source = File })
       runtime_wasm_files
   in
-  Wat_preprocess.with_preprocessed_files ~variables:[] ~inputs f
+  Wat_preprocess.with_preprocessed_files ~variables:(preprocessor_variables ()) ~inputs f
 
 let build_runtime ~runtime_file =
-  (* Keep this variables in sync with gen/gen.ml *)
-  let variables =
-    [ ( "effects"
-      , Wat_preprocess.String
-          (match Config.effects () with
-          | `Disabled | `Jspi -> "jspi"
-          | `Cps -> "cps"
-          | `Double_translation -> assert false) )
-    ]
-  in
+  let variables = preprocessor_variables () in
   match
     List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
         assert (List.length flags = List.length variables);
