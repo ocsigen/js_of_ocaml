@@ -79,26 +79,27 @@ let output_gen output_file f =
   Code.Var.set_stable (Config.Flag.stable_var ());
   Filename.gen_file output_file f
 
+let preprocessor_variables () =
+  (* Keep this variables in sync with gen/gen.ml *)
+  [ ( "effects"
+    , Wat_preprocess.String
+        (match Config.effects () with
+        | `Jspi -> "jspi"
+        | `Cps -> "cps"
+        | `Disabled | `Double_translation -> assert false) )
+  ; "use-js-string", Wat_preprocess.Bool (Config.Flag.use_js_string ())
+  ]
+
 let with_runtime_files ~runtime_wasm_files f =
   let inputs =
     List.map
       ~f:(fun file -> { Wat_preprocess.module_name = "env"; file; source = File })
       runtime_wasm_files
   in
-  Wat_preprocess.with_preprocessed_files ~variables:[] ~inputs f
+  Wat_preprocess.with_preprocessed_files ~variables:(preprocessor_variables ()) ~inputs f
 
 let build_runtime ~runtime_file =
-  (* Keep this variables in sync with gen/gen.ml *)
-  let variables =
-    [ ( "effects"
-      , Wat_preprocess.String
-          (match Config.effects () with
-          | `Jspi -> "jspi"
-          | `Cps -> "cps"
-          | `Disabled | `Double_translation -> assert false) )
-    ; "use-js-string", Wat_preprocess.Bool (Config.Flag.use_js_string ())
-    ]
-  in
+  let variables = preprocessor_variables () in
   match
     List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
         assert (List.length flags = List.length variables);
