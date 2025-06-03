@@ -357,7 +357,13 @@ let () =
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
-      let branch = if is_forked nm then Some "wasm-v0.18" else None in
+      let branch =
+        if is_forked nm then
+          match nm with
+          | "zarith_stubs_js" -> Some "js-strings"
+          | _ -> Some "wasm-v0.18"
+        else None
+      in
       let commit =
         if is_forked nm
         then None
