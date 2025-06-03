@@ -987,7 +987,7 @@ module Constant = struct
         in
         let* x =
           register_import
-            ~import_module:""
+            ~import_module:"str"
             ~name:s
             (Global { mut = false; typ = Ref { nullable = false; typ = Extern } })
         in
