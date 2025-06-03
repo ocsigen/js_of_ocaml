@@ -42,6 +42,7 @@
 * Compiler: deadcode elimination of cyclic values (#1978)
 * Compiler: directly write Wasm binary modules (#2000, #2003)
 * Compiler: rewrote inlining pass (#1935, #2018, #2027)
+* Compiler/wasm: optimize integer operations (#2032)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)

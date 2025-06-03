@@ -4,6 +4,19 @@ open Global_flow
 
 let debug = Debug.find "typing"
 
+module Integer = struct
+  type kind =
+    | Ref
+    | Normalized
+    | Unnormalized
+
+  let join r r' =
+    match r, r' with
+    | Unnormalized, _ | _, Unnormalized -> Unnormalized
+    | Ref, Ref -> Ref
+    | _ -> Normalized
+end
+
 type boxed_number =
   | Int32
   | Int64
@@ -12,7 +25,7 @@ type boxed_number =
 
 type typ =
   | Top
-  | Int
+  | Int of Integer.kind
   | Number of boxed_number
   | Tuple of typ array
   | Bot
@@ -23,7 +36,7 @@ module Domain = struct
   let rec join t t' =
     match t, t' with
     | Bot, t | t, Bot -> t
-    | Int, Int -> t
+    | Int r, Int r' -> Int (Integer.join r r')
     | Number n, Number n' -> if Poly.equal n n' then t else Top
     | Tuple t, Tuple t' ->
         let l = Array.length t in
@@ -35,7 +48,7 @@ module Domain = struct
              Array.init (max l l') ~f:(fun i ->
                  if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
     | Top, _ | _, Top -> Top
-    | (Int | Number _ | Tuple _), _ -> Top
+    | (Int _ | Number _ | Tuple _), _ -> Top
 
   let join_set ?(others = false) f s =
     if others then Top else Var.Set.fold (fun x a -> join (f x) a) s Bot
@@ -43,11 +56,11 @@ module Domain = struct
   let rec equal t t' =
     match t, t' with
     | Top, Top | Bot, Bot -> true
-    | Int, Int -> true
+    | Int t, Int t' -> Poly.equal t t'
     | Number t, Number t' -> Poly.equal t t'
     | Tuple t, Tuple t' ->
         Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
-    | (Top | Tuple _ | Int | Number _ | Bot), _ -> false
+    | (Top | Tuple _ | Int _ | Number _ | Bot), _ -> false
 
   let bot = Bot
 
@@ -55,12 +68,12 @@ module Domain = struct
 
   let rec depth t =
     match t with
-    | Top | Bot | Number _ | Int -> 0
+    | Top | Bot | Number _ | Int _ -> 0
     | Tuple l -> 1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
 
   let rec truncate depth t =
     match t with
-    | Top | Bot | Number _ | Int -> t
+    | Top | Bot | Number _ | Int _ -> t
     | Tuple l ->
         if depth = 0
         then Top
@@ -68,11 +81,23 @@ module Domain = struct
 
   let limit t = if depth t > depth_treshold then truncate depth_treshold t else t
 
+  let box t =
+    match t with
+    | Int _ -> Int Ref
+    | _ -> t
+
   let rec print f t =
     match t with
     | Top -> Format.fprintf f "top"
     | Bot -> Format.fprintf f "bot"
-    | Int -> Format.fprintf f "int"
+    | Int k ->
+        Format.fprintf
+          f
+          "int{%s}"
+          (match k with
+          | Ref -> "ref"
+          | Normalized -> "normalized"
+          | Unnormalized -> "unnormalized")
     | Number Int32 -> Format.fprintf f "int32"
     | Number Int64 -> Format.fprintf f "int64"
     | Number Nativeint -> Format.fprintf f "nativeint"
@@ -92,51 +117,80 @@ let update_deps st { blocks; _ } =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, Block (_, lst, _, _)) -> Array.iter ~f:(fun y -> add_dep st x y) lst
+          | Let (x, Prim (Extern ("%int_and" | "%int_or" | "%int_xor"), lst)) ->
+              (* The return type of these primitives depend on the input type *)
+              List.iter
+                ~f:(fun p ->
+                  match p with
+                  | Pc _ -> ()
+                  | Pv y -> add_dep st x y)
+                lst
           | _ -> ()))
     blocks
+
+let mark_function_parameters { blocks; _ } =
+  let function_parameters = Var.Tbl.make () false in
+  let set x = Var.Tbl.set function_parameters x true in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (_, Closure (params, _, _)) -> List.iter ~f:set params
+          | _ -> ()))
+    blocks;
+  function_parameters
 
 type st =
   { state : state
   ; info : info
+  ; function_parameters : bool Var.Tbl.t
   }
 
 let rec constant_type (c : constant) =
   match c with
-  | Int _ -> Int
+  | Int _ -> Int Normalized
   | Int32 _ -> Number Int32
   | Int64 _ -> Number Int64
   | NativeInt _ -> Number Nativeint
   | Float _ -> Number Float
-  | Tuple (_, a, _) -> Tuple (Array.map ~f:constant_type a)
+  | Tuple (_, a, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
   | _ -> Top
 
-let prim_type prim =
+let arg_type ~approx arg =
+  match arg with
+  | Pc c -> constant_type c
+  | Pv x -> Var.Tbl.get approx x
+
+let prim_type ~approx prim args =
   match prim with
-  | "%int_add"
-  | "%int_sub"
-  | "%int_mul"
-  | "%int_div"
-  | "%int_mod"
-  | "%direct_int_mul"
-  | "%direct_int_div"
-  | "%direct_int_mod"
-  | "%int_and"
-  | "%int_or"
-  | "%int_xor"
-  | "%int_lsl"
+  | "%int_add" | "%int_sub" | "%int_mul" | "%direct_int_mul" | "%int_lsl" | "%int_neg" ->
+      Int Unnormalized
+  | "%int_and" -> (
+      match List.map ~f:(fun x -> arg_type ~approx x) args with
+      | [ (Bot | Int (Ref | Normalized)); _ ] | [ _; (Bot | Int (Ref | Normalized)) ] ->
+          Int Normalized
+      | _ -> Int Unnormalized)
+  | "%int_or" | "%int_xor" -> (
+      match List.map ~f:(fun x -> arg_type ~approx x) args with
+      | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
+          Int Normalized
+      | _ -> Int Unnormalized)
   | "%int_lsr"
   | "%int_asr"
-  | "%int_neg"
+  | "%int_div"
+  | "%int_mod"
+  | "%direct_int_div"
+  | "%direct_int_mod" -> Int Normalized
   | "caml_greaterthan"
   | "caml_greaterequal"
   | "caml_lessthan"
   | "caml_lessequal"
   | "caml_equal"
-  | "caml_compare" -> Int
+  | "caml_compare" -> Int Ref
   | "caml_int32_bswap" -> Number Int32
   | "caml_nativeint_bswap" -> Number Nativeint
   | "caml_int64_bswap" -> Number Int64
-  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" -> Int
+  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" -> Int Ref
   | "caml_string_get32" -> Number Int32
   | "caml_string_get64" -> Number Int64
   | "caml_bytes_get32" -> Number Int32
@@ -145,23 +199,23 @@ let prim_type prim =
   | "caml_ba_uint8_get32" -> Number Int32
   | "caml_ba_uint8_get64" -> Number Int64
   | "caml_nextafter_float" -> Number Float
-  | "caml_classify_float" -> Int
+  | "caml_classify_float" -> Int Ref
   | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number Float
-  | "caml_float_compare" -> Int
+  | "caml_float_compare" -> Int Ref
   | "caml_floatarray_unsafe_get" -> Number Float
   | "caml_bytes_unsafe_get"
   | "caml_string_unsafe_get"
   | "caml_bytes_get"
   | "caml_string_get"
   | "caml_ml_string_length"
-  | "caml_ml_bytes_length"
-  | "%direct_obj_tag" -> Int
+  | "caml_ml_bytes_length" -> Int Normalized
+  | "%direct_obj_tag" -> Int Ref
   | "caml_add_float"
   | "caml_sub_float"
   | "caml_mul_float"
   | "caml_div_float"
   | "caml_copysign_float" -> Number Float
-  | "caml_signbit_float" -> Int
+  | "caml_signbit_float" -> Int Normalized
   | "caml_neg_float"
   | "caml_abs_float"
   | "caml_ceil_float"
@@ -175,7 +229,7 @@ let prim_type prim =
   | "caml_le_float"
   | "caml_gt_float"
   | "caml_lt_float"
-  | "caml_int_of_float" -> Int
+  | "caml_int_of_float" -> Int Unnormalized
   | "caml_float_of_int"
   | "caml_cos_float"
   | "caml_sin_float"
@@ -217,7 +271,7 @@ let prim_type prim =
   | "caml_int32_shift_left"
   | "caml_int32_shift_right"
   | "caml_int32_shift_right_unsigned" -> Number Int32
-  | "caml_int32_to_int" -> Int
+  | "caml_int32_to_int" -> Int Unnormalized
   | "caml_int32_of_int" -> Number Int32
   | "caml_nativeint_of_int32" -> Number Nativeint
   | "caml_nativeint_to_int32" -> Number Int32
@@ -237,7 +291,7 @@ let prim_type prim =
   | "caml_int64_shift_left"
   | "caml_int64_shift_right"
   | "caml_int64_shift_right_unsigned" -> Number Int64
-  | "caml_int64_to_int" -> Int
+  | "caml_int64_to_int" -> Int Unnormalized
   | "caml_int64_of_int" -> Number Int64
   | "caml_int64_to_int32" -> Number Int32
   | "caml_int64_of_int32" -> Number Int64
@@ -259,16 +313,17 @@ let prim_type prim =
   | "caml_nativeint_shift_left"
   | "caml_nativeint_shift_right"
   | "caml_nativeint_shift_right_unsigned" -> Number Nativeint
-  | "caml_nativeint_to_int" -> Int
+  | "caml_nativeint_to_int" -> Int Unnormalized
   | "caml_nativeint_of_int" -> Number Nativeint
-  | "caml_int_compare" -> Int
+  | "caml_int_compare" -> Int Normalized
   | _ -> Top
 
 let propagate st approx x : Domain.t =
   match st.state.defs.(Var.idx x) with
   | Phi { known; others; unit } ->
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
-      if unit then Domain.join Int res else res
+      let res = if unit then Domain.join (Int Unnormalized) res else res in
+      if Var.Tbl.get st.function_parameters x then Domain.box res else res
   | Expr e -> (
       match e with
       | Constant c -> constant_type c
@@ -280,7 +335,8 @@ let propagate st approx x : Domain.t =
                  match st.state.mutable_fields.(Var.idx x) with
                  | All_fields -> Top
                  | Some_fields s when IntSet.mem i s -> Top
-                 | Some_fields _ | No_field -> Domain.limit (Var.Tbl.get approx y))
+                 | Some_fields _ | No_field ->
+                     Domain.limit (Domain.box (Var.Tbl.get approx y)))
                lst)
       | Field (_, _, Float) -> Number Float
       | Field (y, n, Non_float) -> (
@@ -307,17 +363,18 @@ let propagate st approx x : Domain.t =
                       if m
                       then Top
                       else
-                        Array.fold_left
-                          ~f:(fun acc t -> Domain.join (Var.Tbl.get approx t) acc)
-                          ~init:Domain.bot
-                          lst
+                        Domain.box
+                          (Array.fold_left
+                             ~f:(fun acc t -> Domain.join (Var.Tbl.get approx t) acc)
+                             ~init:Domain.bot
+                             lst)
                   | Expr (Closure _) -> Bot
                   | Phi _ | Expr _ -> assert false)
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int
-      | Prim (Extern prim, _) -> prim_type prim
+      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
+      | Prim (Extern prim, args) -> prim_type ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.info.info_approximation f with
@@ -328,9 +385,10 @@ let propagate st approx x : Domain.t =
                   match st.state.defs.(Var.idx g) with
                   | Expr (Closure (params, _, _))
                     when List.length args = List.length params ->
-                      Domain.join_set
-                        (fun y -> Var.Tbl.get approx y)
-                        (Var.Map.find g st.state.return_values)
+                      Domain.box
+                        (Domain.join_set
+                           (fun y -> Var.Tbl.get approx y)
+                           (Var.Map.find g st.state.return_values))
                   | Expr (Closure (_, _, _)) ->
                       (* The function is partially applied or over applied *)
                       Top
@@ -358,8 +416,9 @@ let solver st =
 
 let f ~state ~info ~deadcode_sentinal p =
   update_deps state p;
-  let typ = solver { state; info } in
-  Var.Tbl.set typ deadcode_sentinal Int;
+  let function_parameters = mark_function_parameters p in
+  let typ = solver { state; info; function_parameters } in
+  Var.Tbl.set typ deadcode_sentinal (Int Normalized);
   if debug ()
   then (
     Var.ISet.iter
