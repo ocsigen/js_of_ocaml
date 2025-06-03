@@ -192,8 +192,8 @@ type context =
   ; live_vars : int array  (** Occurence count of all variables *)
   ; inline_count : int ref  (** Inlining statistics *)
   ; env : info Var.Map.t  (** Functions that are candidate for inlining *)
-  ; in_loop : bool  (** Whether the current block is in a loop *)
-  ; has_closures : bool ref  (** Whether the current function contains closures *)
+  ; in_loop : bool Lazy.t  (** Whether the current block is in a loop *)
+  ; has_closures : bool Lazy.t ref  (** Whether the current function contains closures *)
   ; current_function : Var.t option  (** Name of the current function *)
   ; enclosing_function : Var.t option
         (** Name of the function enclosing the current function *)
@@ -389,7 +389,10 @@ and relevant_arguments ~context info args =
           List.compare_length_with info'.params ~len:arity = 0
           && should_inline
                ~context:
-                 { context with in_loop = context.in_loop || contains_loop ~context info }
+                 { context with
+                   in_loop =
+                     lazy (Lazy.force context.in_loop || contains_loop ~context info)
+                 }
                info'
                []
         then Var.Map.add param arg m
@@ -413,7 +416,7 @@ and should_inline ~context info args =
       closure_count ~context info = 0
       || Option.is_none context.enclosing_function
       || Option.equal Var.equal info.enclosing_function context.current_function
-      || (not !(context.has_closures))
+      || (not (Lazy.force !(context.has_closures)))
          && Option.equal Var.equal info.enclosing_function context.enclosing_function
   | `Wasm, _ | `JavaScript, `Double_translation -> true
   | `JavaScript, `Jspi -> assert false)
@@ -421,7 +424,7 @@ and should_inline ~context info args =
      || (context.live_vars.(Var.idx info.f) = 1
         &&
         match Config.target () with
-        | `Wasm when context.in_loop ->
+        | `Wasm when Lazy.force context.in_loop ->
             (* Avoid inlining in a loop since, if the loop is not hot,
                the code might never get optimized *)
             body_size ~context info < 30 && not (contains_loop ~context info)
@@ -600,7 +603,7 @@ and inline_function ~context i x f args rem state =
   then (
     let branch, p = state in
     incr context.inline_count;
-    if closure_count ~context info > 0 then context.has_closures := true;
+    if closure_count ~context info > 0 then context.has_closures := lazy true;
     context.live_vars.(Var.idx f) <- context.live_vars.(Var.idx f) - 1;
     let p, params, cont =
       if context.live_vars.(Var.idx f) > 0
@@ -639,8 +642,8 @@ let inline ~profile ~inline_count p ~live_vars =
           (context : context)
         ->
        let p = context.p in
-       let has_closures = ref (closure_count_uncached ~context pc > 0) in
-       let in_loop = blocks_in_loop p pc in
+       let has_closures = ref (lazy (closure_count_uncached ~context pc > 0)) in
+       let in_loop = lazy (blocks_in_loop p pc) in
        let context =
          { context with has_closures; enclosing_function; current_function }
        in
@@ -660,7 +663,8 @@ let inline ~profile ~inline_count p ~live_vars =
              then p
              else
                inline_in_block
-                 ~context:{ context with in_loop = Addr.Set.mem pc in_loop }
+                 ~context:
+                   { context with in_loop = lazy (Addr.Set.mem pc (Lazy.force in_loop)) }
                  pc
                  block
                  p)
@@ -696,8 +700,8 @@ let inline ~profile ~inline_count p ~live_vars =
      ; live_vars
      ; inline_count
      ; env = Var.Map.empty
-     ; in_loop = false
-     ; has_closures = ref false
+     ; in_loop = lazy false
+     ; has_closures = ref (lazy false)
      ; current_function = None
      ; enclosing_function = None
      })
