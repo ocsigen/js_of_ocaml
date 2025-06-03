@@ -42,7 +42,8 @@ RUN opam install -y --deps-only ./js_of_ocaml-compiler.opam \
 # Prepare partial render table benchmark
 COPY --chown=opam:opam dune-project ./
 COPY --chown=opam:opam tools ./tools
-RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
+RUN opam pin add -n zarith_stubs_js 'git+https://github.com/OlivierNicole/zarith_stubs_js.git#js-strings' \
+ && opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
  && opam exec -- dune build --root ../janestreet --profile release lib/bonsai_web_components/partial_render_table/bench/bin/main.bc-for-jsoo \
  && opam remove js_of_ocaml-compiler ojs \
  && opam clean
