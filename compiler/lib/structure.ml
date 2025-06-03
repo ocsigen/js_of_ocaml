@@ -67,17 +67,17 @@ let empty_body body =
       | _ -> false)
     body
 
-let rec leave_try_body block_order preds blocks pc =
+let rec leave_try_body block_order preds p pc =
   if is_merge_node' block_order preds pc
   then false
   else
-    match Addr.Map.find pc blocks with
+    match Code.block pc p with
     | { body; branch = Return _ | Stop; _ } when empty_body body -> false
     | { body; branch = Branch (pc', _); _ } when empty_body body ->
-        leave_try_body block_order preds blocks pc'
+        leave_try_body block_order preds p pc'
     | _ -> true
 
-let build_graph blocks pc =
+let build_graph p pc =
   let succs = Addr.Hashtbl.create 16 in
   let l = ref [] in
   let visited = Addr.Hashtbl.create 16 in
@@ -86,9 +86,9 @@ let build_graph blocks pc =
     if not (Addr.Hashtbl.mem visited pc)
     then (
       Addr.Hashtbl.add visited pc ();
-      let successors = Code.fold_children blocks pc Addr.Set.add Addr.Set.empty in
+      let successors = Code.fold_children p pc Addr.Set.add Addr.Set.empty in
       Addr.Hashtbl.add succs pc successors;
-      let block = Addr.Map.find pc blocks in
+      let block = Code.block pc p in
       Addr.Set.iter
         (fun pc' ->
           let englobing_exn_handlers =
@@ -112,7 +112,7 @@ let build_graph blocks pc =
   List.iteri !l ~f:(fun i pc -> Addr.Hashtbl.add block_order pc i);
   let preds = reverse_graph succs in
   List.iter !poptraps ~f:(fun (enter_pc, leave_pc) ->
-      if leave_try_body block_order preds blocks leave_pc
+      if leave_try_body block_order preds p leave_pc
       then (
         (* Add an edge to limit the [try] body *)
         Addr.Hashtbl.replace
@@ -210,11 +210,11 @@ let mark_loops g =
     g.preds;
   in_loop
 
-let rec measure blocks g pc limit =
+let rec measure p g pc limit =
   if is_loop_header g pc
   then -1
   else
-    let b = Addr.Map.find pc blocks in
+    let b = Code.block pc p in
     let limit =
       List.fold_left b.body ~init:limit ~f:(fun acc x ->
           match x with
@@ -227,13 +227,13 @@ let rec measure blocks g pc limit =
     then limit
     else
       Addr.Set.fold
-        (fun pc limit -> if limit < 0 then limit else measure blocks g pc limit)
+        (fun pc limit -> if limit < 0 then limit else measure p g pc limit)
         (get_edges g.succs pc)
         limit
 
-let is_small blocks g pc = measure blocks g pc 20 >= 0
+let is_small p g pc = measure p g pc 20 >= 0
 
-let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
+let shrink_loops p ({ succs; preds; reverse_post_order; _ } as g) =
   let add_edge pred succ =
     Addr.Hashtbl.replace succs pred (Addr.Set.add succ (Addr.Hashtbl.find succs pred));
     Addr.Hashtbl.replace preds succ (Addr.Set.add pred (Addr.Hashtbl.find preds succ))
@@ -244,7 +244,7 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
   let rec traverse ignored pc =
     let succs = get_edges dom pc in
     let loops = get_edges in_loop pc in
-    let block = Addr.Map.find pc blocks in
+    let block = Code.block pc p in
     Addr.Set.iter
       (fun pc' ->
         (* Whatever is in the scope of an exception handler should not be
@@ -260,7 +260,7 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
         (* If we leave a loop, we add an edge from predecessors of
            the loop header to the current block, so that it is
            considered outside of the loop. *)
-        if not (Addr.Set.is_empty left_loops || is_small blocks g pc')
+        if not (Addr.Set.is_empty left_loops || is_small p g pc')
         then
           Addr.Set.iter
             (fun pc0 ->
@@ -273,7 +273,7 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
   in
   traverse Addr.Set.empty root
 
-let build_graph blocks pc =
-  let g = build_graph blocks pc in
-  shrink_loops blocks g;
+let build_graph p pc =
+  let g = build_graph p pc in
+  shrink_loops p g;
   g

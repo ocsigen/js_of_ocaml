@@ -2531,8 +2531,7 @@ let parse_bytecode code globals debug_data =
             })
           !compiled_blocks
       in
-      let free_pc = (Addr.Map.max_binding blocks |> fst) + 1 in
-      { start; blocks; free_pc })
+      Code.program start blocks)
     else Code.empty
   in
   compiled_blocks := Addr.Map.empty;
@@ -3130,7 +3129,7 @@ let predefined_exceptions () =
     ; aliases = []
     }
   in
-  { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
+  Code.program 0 (Addr.Map.singleton 0 block), unit_info
 
 let link_info ~symbols ~primitives ~crcs =
   let gdata = Code.Var.fresh_n "global_data" in
@@ -3172,4 +3171,4 @@ let link_info ~symbols ~primitives ~crcs =
     Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
   in
   let block = { params = []; body; branch = Stop } in
-  { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }
+  Code.program 0 (Addr.Map.singleton 0 block)

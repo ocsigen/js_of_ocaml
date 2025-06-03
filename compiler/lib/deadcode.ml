@@ -41,7 +41,7 @@ let add_def defs x i =
 type variable_uses = int array
 
 type t =
-  { blocks : block Addr.Map.t
+  { p : program
   ; live : variable_uses
   ; defs : def list array
   ; reachable_blocks : BitSet.t
@@ -94,7 +94,7 @@ and mark_reachable st pc =
   if not (BitSet.mem st.reachable_blocks pc)
   then (
     BitSet.set st.reachable_blocks pc;
-    let block = Addr.Map.find pc st.blocks in
+    let block = Code.block pc st.p in
     List.iter block.body ~f:(fun i ->
         match i with
         | Let (_, Prim (Extern "caml_update_dummy", [ Pv x; Pv y ])) ->
@@ -155,26 +155,24 @@ let rec filter_args st pl al =
   | [], [] -> []
   | _ -> assert false
 
-let filter_cont blocks st (pc, args) =
-  let params = (Addr.Map.find pc blocks).params in
+let filter_cont p st (pc, args) =
+  let params = (Code.block pc p).params in
   pc, filter_args st params args
 
-let filter_closure blocks st i =
+let filter_closure p st i =
   match i with
-  | Let (x, Closure (l, cont, gloc)) ->
-      Let (x, Closure (l, filter_cont blocks st cont, gloc))
+  | Let (x, Closure (l, cont, gloc)) -> Let (x, Closure (l, filter_cont p st cont, gloc))
   | _ -> i
 
-let filter_live_last blocks st l =
+let filter_live_last p st l =
   match l with
   | Return _ | Raise _ | Stop -> l
-  | Branch cont -> Branch (filter_cont blocks st cont)
-  | Cond (x, cont1, cont2) ->
-      Cond (x, filter_cont blocks st cont1, filter_cont blocks st cont2)
-  | Switch (x, a1) -> Switch (x, Array.map a1 ~f:(fun cont -> filter_cont blocks st cont))
+  | Branch cont -> Branch (filter_cont p st cont)
+  | Cond (x, cont1, cont2) -> Cond (x, filter_cont p st cont1, filter_cont p st cont2)
+  | Switch (x, a1) -> Switch (x, Array.map a1 ~f:(fun cont -> filter_cont p st cont))
   | Pushtrap (cont1, x, cont2) ->
-      Pushtrap (filter_cont blocks st cont1, x, filter_cont blocks st cont2)
-  | Poptrap cont -> Poptrap (filter_cont blocks st cont)
+      Pushtrap (filter_cont p st cont1, x, filter_cont p st cont2)
+  | Poptrap cont -> Poptrap (filter_cont p st cont)
 
 (****)
 
@@ -204,9 +202,9 @@ let remove_unused_blocks' p =
         let b = BitSet.mem used pc in
         if not b then incr count;
         b)
-      p.blocks
+      (Code.blocks p)
   in
-  { p with blocks }, !count
+  Code.program (Code.start p) blocks, !count
 
 let remove_unused_blocks p =
   let previous_p = p in
@@ -227,8 +225,8 @@ let rec add_arg_dep defs params args =
   | [], [] -> ()
   | _ -> assert false
 
-let add_cont_dep blocks defs (pc, args) =
-  let block = Addr.Map.find pc blocks in
+let add_cont_dep p defs (pc, args) =
+  let block = Code.block pc p in
   add_arg_dep defs block.params args
 
 let empty_body b =
@@ -239,7 +237,7 @@ let empty_body b =
 let merge_blocks p =
   let previous_p = p in
   let t = Timer.make () in
-  let preds = Array.make p.free_pc 0 in
+  let preds = Array.make (Code.free_pc p) 0 in
   let assigned = ref Var.Set.empty in
   let merged = ref 0 in
   let subst =
@@ -265,20 +263,20 @@ let merge_blocks p =
             mark_cont cont2
         | Poptrap cont -> mark_cont cont
         | Return _ | Raise _ | Stop -> ())
-      p.blocks
+      (Code.blocks p)
   in
   let p =
-    let visited = BitSet.create' p.free_pc in
-    let rec process_branch pc blocks =
-      let block = Addr.Map.find pc blocks in
+    let visited = BitSet.create' (Code.free_pc p) in
+    let rec process_branch pc p =
+      let block = Code.block pc p in
       match block.branch with
       | Branch (pc_, args) when preds.(pc_) = 1 ->
-          let to_inline = Addr.Map.find pc_ blocks in
+          let to_inline = Code.block pc_ p in
           if List.exists to_inline.params ~f:(fun x -> Var.Set.mem x !assigned)
-          then block, blocks
+          then block, p
           else (
             incr merged;
-            let to_inline, blocks = process_branch pc_ blocks in
+            let to_inline, p = process_branch pc_ p in
             List.iter2 args to_inline.params ~f:(fun arg param ->
                 Code.Var.propagate_name param arg;
                 subst.(Code.Var.idx param) <- arg);
@@ -297,23 +295,20 @@ let merge_blocks p =
                    aux block.body)
               }
             in
-            let blocks = Addr.Map.remove pc_ blocks in
-            let blocks = Addr.Map.add pc block blocks in
-            block, blocks)
-      | _ -> block, blocks
+            let p = Code.remove_block pc_ p in
+            let p = Code.add_block pc block p in
+            block, p)
+      | _ -> block, p
     in
-    let rec traverse pc blocks =
+    let rec traverse pc p =
       if BitSet.mem visited pc
-      then blocks
+      then p
       else
         let () = BitSet.set visited pc in
-        let _block, blocks = process_branch pc blocks in
-        Code.fold_children blocks pc traverse blocks
+        let _block, p = process_branch pc p in
+        Code.fold_children p pc traverse p
     in
-    let blocks =
-      Code.fold_closures p (fun _ _ (pc, _) _ blocks -> traverse pc blocks) p.blocks
-    in
-    { p with blocks }
+    Code.fold_closures p (fun _ _ (pc, _) _ p -> traverse pc p) p
   in
   let p =
     if !merged = 0
@@ -364,72 +359,69 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
         then Addr.Hashtbl.add shortcuts pc (params, cont)
     | _ -> ()
   in
-  Addr.Map.iter register_block_if_empty p.blocks;
-  let blocks =
-    (* We are relying on the fact that forward branches target blocks
-       with higher addresses in the code generated by the OCaml
-       compiler. By processing the blocks in descending address order,
-       simplifying a branch can make it possible to simplify earlier
-       branches. *)
-    Seq.fold_left
-      (fun blocks (pc, block) ->
-        if
-          match block.branch with
-          | Branch (pc, _) | Poptrap (pc, _) -> not (Addr.Hashtbl.mem shortcuts pc)
-          | Cond (_, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _)) ->
-              not (Addr.Hashtbl.mem shortcuts pc1 || Addr.Hashtbl.mem shortcuts pc2)
-          | Switch (_, a) ->
-              not (Array.exists ~f:(fun (pc, _) -> Addr.Hashtbl.mem shortcuts pc) a)
-          | Return _ | Raise _ | Stop -> true
-        then blocks
-        else
-          Addr.Map.add
-            pc
-            (match block with
-            | { body; branch = Cond (x, cont1, cont2); _ } ->
-                let cont1' = resolve cont1 in
-                let cont2' = resolve cont2 in
-                if Code.cont_equal cont1' cont2'
-                then (
-                  let decr_usage x = st.live.(Var.idx x) <- st.live.(Var.idx x) - 1 in
-                  decr_usage x;
-                  let body =
-                    List.fold_right
-                      ~f:(fun i rem ->
-                        if live_instr st i
-                        then
-                          match i, rem with
-                          | Event _, Event _ :: _ -> rem
-                          | _ -> i :: rem
-                        else (
-                          Freevars.iter_instr_free_vars decr_usage i;
-                          rem))
-                      body
-                      ~init:[]
-                  in
-                  let block = { block with body; branch = Branch cont1' } in
-                  register_block_if_empty pc block;
-                  block)
-                else { block with branch = Cond (x, cont1', cont2') }
-            | _ ->
-                { block with
-                  branch =
-                    (let branch = block.branch in
-                     match branch with
-                     | Branch cont -> Branch (resolve cont)
-                     | Switch (x, a1) -> Switch (x, Array.map ~f:resolve a1)
-                     | Pushtrap (cont1, x, cont2) ->
-                         Pushtrap (resolve cont1, x, resolve cont2)
-                     | Poptrap cont -> Poptrap (resolve cont)
-                     | Cond _ | Return _ | Raise _ | Stop -> assert false)
-                })
-            blocks)
-      p.blocks
-      (Addr.Map.to_rev_seq p.blocks)
-  in
-  { p with blocks }
+  Addr.Map.iter register_block_if_empty (Code.blocks p);
+  (* We are relying on the fact that forward branches target blocks
+     with higher addresses in the code generated by the OCaml
+     compiler. By processing the blocks in descending address order,
+     simplifying a branch can make it possible to simplify earlier
+     branches. *)
+  Seq.fold_left
+    (fun p (pc, block) ->
+      if
+        match block.branch with
+        | Branch (pc, _) | Poptrap (pc, _) -> not (Addr.Hashtbl.mem shortcuts pc)
+        | Cond (_, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _)) ->
+            not (Addr.Hashtbl.mem shortcuts pc1 || Addr.Hashtbl.mem shortcuts pc2)
+        | Switch (_, a) ->
+            not (Array.exists ~f:(fun (pc, _) -> Addr.Hashtbl.mem shortcuts pc) a)
+        | Return _ | Raise _ | Stop -> true
+      then p
+      else
+        Code.add_block
+          pc
+          (match block with
+          | { body; branch = Cond (x, cont1, cont2); _ } ->
+              let cont1' = resolve cont1 in
+              let cont2' = resolve cont2 in
+              if Code.cont_equal cont1' cont2'
+              then (
+                let decr_usage x = st.live.(Var.idx x) <- st.live.(Var.idx x) - 1 in
+                decr_usage x;
+                let body =
+                  List.fold_right
+                    ~f:(fun i rem ->
+                      if live_instr st i
+                      then
+                        match i, rem with
+                        | Event _, Event _ :: _ -> rem
+                        | _ -> i :: rem
+                      else (
+                        Freevars.iter_instr_free_vars decr_usage i;
+                        rem))
+                    body
+                    ~init:[]
+                in
+                let block = { block with body; branch = Branch cont1' } in
+                register_block_if_empty pc block;
+                block)
+              else { block with branch = Cond (x, cont1', cont2') }
+          | _ ->
+              { block with
+                branch =
+                  (let branch = block.branch in
+                   match branch with
+                   | Branch cont -> Branch (resolve cont)
+                   | Switch (x, a1) -> Switch (x, Array.map ~f:resolve a1)
+                   | Pushtrap (cont1, x, cont2) ->
+                       Pushtrap (resolve cont1, x, resolve cont2)
+                   | Poptrap cont -> Poptrap (resolve cont)
+                   | Cond _ | Return _ | Raise _ | Stop -> assert false)
+              })
+          p)
+    p
+    (Addr.Map.to_rev_seq (Code.blocks p))
 
-let f pure_funs ({ blocks; _ } as p : Code.program) =
+let f pure_funs (p : Code.program) =
   let previous_p = p in
   Code.invariant p;
   let t = Timer.make () in
@@ -446,21 +438,21 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
               ());
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
-      | Branch cont -> add_cont_dep blocks defs cont
+      | Branch cont -> add_cont_dep p defs cont
       | Cond (_, cont1, cont2) ->
-          add_cont_dep blocks defs cont1;
-          add_cont_dep blocks defs cont2
-      | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> add_cont_dep blocks defs cont)
+          add_cont_dep p defs cont1;
+          add_cont_dep p defs cont2
+      | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> add_cont_dep p defs cont)
       | Pushtrap (cont, _, cont_h) ->
-          add_cont_dep blocks defs cont_h;
-          add_cont_dep blocks defs cont
-      | Poptrap cont -> add_cont_dep blocks defs cont)
-    blocks;
+          add_cont_dep p defs cont_h;
+          add_cont_dep p defs cont
+      | Poptrap cont -> add_cont_dep p defs cont)
+    (Code.blocks p);
   let st =
     { live
     ; defs
-    ; blocks
-    ; reachable_blocks = BitSet.create' p.free_pc
+    ; p
+    ; reachable_blocks = BitSet.create' (Code.free_pc p)
     ; pure_funs
     ; deleted_instrs = 0
     ; deleted_blocks = 0
@@ -468,10 +460,9 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
     ; block_shortcut = 0
     }
   in
-  mark_reachable st p.start;
+  mark_reachable st (Code.start p);
   if debug () then Print.program Format.err_formatter (fun pc xi -> annot st pc xi) p;
   let p =
-    let all_blocks = blocks in
     let blocks =
       Addr.Map.filter_map
         (fun pc block ->
@@ -490,16 +481,16 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
                           i :: prev
                       | _ ->
                           if live_instr st i
-                          then filter_closure all_blocks st i :: acc
+                          then filter_closure p st i :: acc
                           else (
                             st.deleted_instrs <- st.deleted_instrs + 1;
                             acc))
                   |> List.rev
-              ; branch = filter_live_last all_blocks st block.branch
+              ; branch = filter_live_last p st block.branch
               })
-        blocks
+        (Code.blocks p)
     in
-    { p with blocks }
+    Code.program (Code.start p) blocks
   in
   let p = remove_empty_blocks st p in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;

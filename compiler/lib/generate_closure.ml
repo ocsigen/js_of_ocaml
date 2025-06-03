@@ -37,12 +37,12 @@ let add_multi k v map =
   let set = try Var.Map.find k map with Not_found -> Addr.Set.empty in
   Var.Map.add k (Addr.Set.add v set) map
 
-let rec collect_apply pc blocks visited tc =
+let rec collect_apply pc p visited tc =
   if Addr.Set.mem pc visited
   then visited, tc
   else
     let visited = Addr.Set.add pc visited in
-    let block = Addr.Map.find pc blocks in
+    let block = Code.block pc p in
     let tc_opt =
       match block.branch with
       | Return x -> (
@@ -57,16 +57,16 @@ let rec collect_apply pc blocks visited tc =
     | Some tc -> visited, tc
     | None ->
         Code.fold_children
-          blocks
+          p
           pc
-          (fun pc (visited, tc) -> collect_apply pc blocks visited tc)
+          (fun pc (visited, tc) -> collect_apply pc p visited tc)
           (visited, tc)
 
-let rec collect_closures blocks l pos =
+let rec collect_closures p l pos =
   match l with
   | Let (f_name, Closure (args, ((pc, _) as cont), cloc)) :: rem ->
-      let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
-      let l, rem = collect_closures blocks rem (succ pos) in
+      let _, tc = collect_apply pc p Addr.Set.empty Var.Map.empty in
+      let l, rem = collect_closures p rem (succ pos) in
       { f_name; args; cont; tc; pos; cloc } :: l, rem
   | rem -> [], rem
 
@@ -158,12 +158,12 @@ module Trampoline = struct
 
   let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
 
-  let f free_pc blocks closures_map component =
+  let f p closures_map component =
     match component with
     | SCC.No_loop id ->
         let ci = Var.Map.find id closures_map in
         let instr = Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) in
-        free_pc, blocks, [ One { name = ci.f_name; code = instr } ]
+        p, [ One { name = ci.f_name; code = instr } ]
     | SCC.Has_loop all ->
         if debug_tc ()
         then (
@@ -180,20 +180,16 @@ module Trampoline = struct
               ( (if tailcall_max_depth = 0 then None else Some (Code.Var.fresh_n "counter"))
               , Var.Map.find id closures_map ))
         in
-        let blocks, free_pc, closures =
-          List.fold_left
-            all
-            ~init:(blocks, free_pc, [])
-            ~f:(fun (blocks, free_pc, closures) (counter, ci) ->
+        let p, closures =
+          List.fold_left all ~init:(p, []) ~f:(fun (p, closures) (counter, ci) ->
               if debug_tc ()
               then Format.eprintf "Rewriting for %a\n%!" Var.print ci.f_name;
               let new_f = Code.Var.fork ci.f_name in
               let new_args = List.map ci.args ~f:Code.Var.fork in
-              let wrapper_pc = free_pc in
-              let free_pc = free_pc + 1 in
+              let wrapper_pc = Code.free_pc p in
               let new_counter = Option.map counter ~f:Code.Var.fork in
               let start_loc =
-                let block = Addr.Map.find (fst ci.cont) blocks in
+                let block = Code.block (fst ci.cont) p in
                 match block.body with
                 | Event loc :: _ -> loc
                 | _ -> Parse_info.zero
@@ -201,7 +197,7 @@ module Trampoline = struct
               let wrapper_block =
                 wrapper_block new_f ~args:new_args ~counter:new_counter start_loc
               in
-              let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
+              let p = Code.add_block wrapper_pc wrapper_block p in
               let instr_wrapper =
                 Let (ci.f_name, wrapper_closure wrapper_pc new_args ci.cloc)
               in
@@ -218,30 +214,26 @@ module Trampoline = struct
                       List.map pcs ~f:(fun x -> counter, x) @ acc
                     with Not_found -> acc)
               in
-              let blocks, free_pc =
-                List.fold_left
-                  counter_and_pc
-                  ~init:(blocks, free_pc)
-                  ~f:(fun (blocks, free_pc) (counter, pc) ->
+              let p =
+                List.fold_left counter_and_pc ~init:p ~f:(fun p (counter, pc) ->
                     if debug_tc () then Format.eprintf "Rewriting tc in %d\n%!" pc;
-                    let block = Addr.Map.find pc blocks in
-                    let direct_call_pc = free_pc in
-                    let bounce_call_pc = free_pc + 1 in
-                    let free_pc = free_pc + 2 in
+                    let block = Code.block pc p in
+                    let direct_call_pc = Code.free_pc p in
+                    let bounce_call_pc = direct_call_pc + 1 in
                     match List.rev block.body with
                     | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
                         assert (Var.equal f ci.f_name);
-                        let blocks =
-                          Addr.Map.add
+                        let p =
+                          Code.add_block
                             direct_call_pc
                             (direct_call_block ~counter ~x ~f:new_f ~args)
-                            blocks
+                            p
                         in
-                        let blocks =
-                          Addr.Map.add
+                        let p =
+                          Code.add_block
                             bounce_call_pc
                             (bounce_call_block ~x ~f:new_f ~args)
-                            blocks
+                            p
                         in
                         let block =
                           match counter with
@@ -265,37 +257,30 @@ module Trampoline = struct
                               in
                               { block with body = List.rev (last :: rem_rev); branch }
                         in
-                        let blocks = Addr.Map.remove pc blocks in
-                        Addr.Map.add pc block blocks, free_pc
+                        Code.add_block pc block p
                     | _ -> assert false)
               in
-              ( blocks
-              , free_pc
+              ( p
               , Wrapper { name = ci.f_name; code = instr_real; wrapper = instr_wrapper }
                 :: closures ))
         in
-        free_pc, blocks, closures
+        p, closures
 end
 
-let rec rewrite_closures free_pc blocks body : int * _ * _ list =
+let rec rewrite_closures p body : _ * _ list =
   match body with
   | Let (_, Closure _) :: _ ->
-      let closures, rem = collect_closures blocks body 0 in
+      let closures, rem = collect_closures p body 0 in
       let closures_map =
         List.fold_left closures ~init:Var.Map.empty ~f:(fun closures_map x ->
             Var.Map.add x.f_name x closures_map)
       in
       let components = group_closures closures_map in
-      let free_pc, blocks, closures =
-        List.fold_left
-          components
-          ~init:(free_pc, blocks, [])
-          ~f:(fun (free_pc, blocks, acc) component ->
-            let free_pc, blocks, closures =
-              Trampoline.f free_pc blocks closures_map component
-            in
+      let p, closures =
+        List.fold_left components ~init:(p, []) ~f:(fun (p, acc) component ->
+            let p, closures = Trampoline.f p closures_map component in
             let intrs = closures :: acc in
-            free_pc, blocks, intrs)
+            p, intrs)
       in
       let closures =
         let pos_of_var x = (Var.Map.find x closures_map).pos in
@@ -309,26 +294,25 @@ let rec rewrite_closures free_pc blocks body : int * _ * _ list =
              | One { code; _ } -> [ code ]
              | Wrapper { code; wrapper; _ } -> [ code; wrapper ])
       in
-      let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
-      free_pc, blocks, closures @ rem
+      let p, rem = rewrite_closures p rem in
+      p, closures @ rem
   | i :: rem ->
-      let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
-      free_pc, blocks, i :: rem
-  | [] -> free_pc, blocks, []
+      let p, rem = rewrite_closures p rem in
+      p, i :: rem
+  | [] -> p, []
 
 let f p : Code.program =
   Code.invariant p;
-  let blocks, free_pc =
+  let p =
     Addr.Map.fold
-      (fun pc _ (blocks, free_pc) ->
+      (fun pc _ p ->
         (* make sure we have the latest version *)
-        let block = Addr.Map.find pc blocks in
-        let free_pc, blocks, body = rewrite_closures free_pc blocks block.body in
-        Addr.Map.add pc { block with body } blocks, free_pc)
-      p.blocks
-      (p.blocks, p.free_pc)
+        let block = Code.block pc p in
+        let p, body = rewrite_closures p block.body in
+        Code.add_block pc { block with body } p)
+      (Code.blocks p)
+      p
   in
-  let p = { p with blocks; free_pc } in
   Code.invariant p;
   p
 

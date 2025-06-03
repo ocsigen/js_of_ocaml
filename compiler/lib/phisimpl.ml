@@ -60,7 +60,7 @@ let expr_deps blocks vars deps defs x e =
   | Block (_, a, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _, _) -> add_dep deps x y
 
-let program_deps { blocks; _ } =
+let program_deps blocks =
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
   let deps = Array.make nv Var.Set.empty in
@@ -157,7 +157,8 @@ let f p =
   Code.invariant p;
   let t = Timer.make () in
   let t' = Timer.make () in
-  let vars, deps, defs = program_deps p in
+  let blocks = Code.blocks p in
+  let vars, deps, defs = program_deps blocks in
   if times () then Format.eprintf "    phi-simpl. 1: %a@." Timer.print t';
   let t' = Timer.make () in
   let subst = solver1 vars deps defs in

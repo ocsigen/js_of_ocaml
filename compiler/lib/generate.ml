@@ -155,7 +155,7 @@ module Share = struct
       ?alias_strings
       ?(alias_prims = false)
       ?(alias_apply = true)
-      { blocks; _ } : t =
+      p : t =
     let alias_strings =
       match alias_strings with
       | None -> Config.Flag.use_js_string () && not (Config.Flag.share_constant ())
@@ -190,7 +190,7 @@ module Share = struct
                   add_args args share
               | Let (_, Prim (_, args)) -> add_args args share
               | _ -> share))
-        blocks
+        (Code.blocks p)
         empty_aux
     in
     let count =
@@ -293,7 +293,7 @@ end
 
 module Ctx = struct
   type t =
-    { blocks : block Addr.Map.t
+    { p : program
     ; live : Deadcode.variable_uses
     ; share : Share.t
     ; exported_runtime : (Code.Var.t * bool ref) option
@@ -314,11 +314,11 @@ module Ctx = struct
       ~mutated_vars
       ~freevars
       ~in_cps
-      blocks
+      p
       live
       trampolined_calls
       share =
-    { blocks
+    { p
     ; live
     ; share
     ; exported_runtime
@@ -831,7 +831,7 @@ end
 
 let build_graph ctx pc cloc =
   let visited_blocks = ref Addr.Set.empty in
-  let structure = Structure.build_graph ctx.Ctx.blocks pc in
+  let structure = Structure.build_graph ctx.Ctx.p pc in
   let dom = Structure.dominator_tree structure in
   { visited_blocks; structure; dom; ctx; cloc }
 
@@ -1710,14 +1710,11 @@ and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
         then ctx
         else
           let subst = Subst.from_map muts_map in
-          let p, _visited =
-            List.fold_left
-              pcs
-              ~init:(ctx.blocks, Addr.Set.empty)
-              ~f:(fun (blocks, visited) pc ->
-                Subst.Excluding_Binders.cont' subst pc blocks visited)
+          let p =
+            List.fold_left pcs ~init:ctx.p ~f:(fun p pc ->
+                Subst.Excluding_Binders.cont subst pc p)
           in
-          { ctx with blocks = p }
+          { ctx with p }
       in
       let vd kind = function
         | [] -> []
@@ -1852,7 +1849,7 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
     assert false);
   if debug () then Format.eprintf "Compiling block %d@;" pc;
   st.visited_blocks := Addr.Set.add pc !(st.visited_blocks);
-  let block = Addr.Map.find pc st.ctx.blocks in
+  let block = Code.block pc st.ctx.p in
   let loc, seq, queue = translate_instrs st.ctx loc queue block.body in
   let nbbranch =
     match block.branch with
@@ -2124,7 +2121,7 @@ and compile_argument_passing ctx loc queue (pc, args) back_edge continuation =
   if List.is_empty args
   then continuation queue
   else
-    let block = Addr.Map.find pc ctx.Ctx.blocks in
+    let block = Code.block pc ctx.Ctx.p in
     parallel_renaming ctx loc back_edge block.params args continuation queue
 
 and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bool * _ =
@@ -2207,7 +2204,7 @@ and compile_closure ctx (pc, args) (cloc : Parse_info.t option) =
   if debug () then Format.eprintf "@[<hv 2>closure {@;";
   let scope_stack = [] in
   let start_loc =
-    let block = Addr.Map.find pc ctx.Ctx.blocks in
+    let block = Code.block pc ctx.Ctx.p in
     match block.body with
     | Event loc :: _ -> J.Pi loc
     | _ -> J.U
@@ -2300,12 +2297,12 @@ let f
       ~mutated_vars
       ~freevars
       ~in_cps
-      p.blocks
+      p
       live_vars
       trampolined_calls
       share
   in
-  let p = compile_program ctx p.start in
+  let p = compile_program ctx (Code.start p) in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
   p
 

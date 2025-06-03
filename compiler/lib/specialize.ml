@@ -64,15 +64,15 @@ let unknown_apply = function
   | Let (_, Apply { f = _; args = _; exact = false }) -> true
   | _ -> false
 
-let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
+let specialize_apply opt_count function_arity ((acc, p), loc) i =
   match i with
   | Let (x, Apply { f; args; exact = false }) -> (
       let n' = List.length args in
       match function_arity f with
-      | None -> i :: acc, free_pc, extra
+      | None -> i :: acc, p
       | Some n when n = n' ->
           incr opt_count;
-          Let (x, Apply { f; args; exact = true }) :: acc, free_pc, extra
+          Let (x, Apply { f; args; exact = true }) :: acc, p
       | Some n when n < n' ->
           incr opt_count;
           let v = Code.Var.fresh () in
@@ -80,8 +80,7 @@ let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
           ( (* Reversed *)
             Let (x, Apply { f = v; args = rest; exact = false })
             :: add_event loc (Let (v, Apply { f; args; exact = true }) :: acc)
-          , free_pc
-          , extra )
+          , p )
       | Some n when n > n' ->
           incr opt_count;
           let missing = Array.init (n - n') ~f:(fun _ -> Code.Var.fresh ()) in
@@ -98,39 +97,32 @@ let specialize_apply opt_count function_arity ((acc, free_pc, extra), loc) i =
             ; branch = Return return'
             }
           in
+          let free_pc = Code.free_pc p in
           ( Let (x, Closure (missing, (free_pc, missing), None)) :: acc
-          , free_pc + 1
-          , (free_pc, block) :: extra )
+          , Code.add_block free_pc block p )
       | Some _ -> assert false)
-  | _ -> i :: acc, free_pc, extra
+  | _ -> i :: acc, p
 
 let specialize_instrs ~function_arity opt_count p =
-  let blocks, free_pc =
-    Addr.Map.fold
-      (fun pc block (blocks, free_pc) ->
-        if List.exists ~f:unknown_apply block.body
-        then
-          let (body, free_pc, extra), _ =
-            List.fold_left
-              block.body
-              ~init:(([], free_pc, []), None)
-              ~f:(fun acc i ->
-                match i with
-                | Event loc ->
-                    let (body, free_pc, extra), _ = acc in
-                    (i :: body, free_pc, extra), Some loc
-                | _ -> specialize_apply opt_count function_arity acc i, None)
-          in
-          let blocks =
-            List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->
-                Addr.Map.add pc b blocks)
-          in
-          Addr.Map.add pc { block with Code.body = List.rev body } blocks, free_pc
-        else blocks, free_pc)
-      p.blocks
-      (p.blocks, p.free_pc)
-  in
-  { p with blocks; free_pc }
+  Addr.Map.fold
+    (fun pc block p ->
+      if List.exists ~f:unknown_apply block.body
+      then
+        let (body, p), _ =
+          List.fold_left
+            block.body
+            ~init:(([], p), None)
+            ~f:(fun acc i ->
+              match i with
+              | Event loc ->
+                  let (body, p), _ = acc in
+                  (i :: body, p), Some loc
+              | _ -> specialize_apply opt_count function_arity acc i, None)
+        in
+        Code.add_block pc { block with Code.body = List.rev body } p
+      else p)
+    (Code.blocks p)
+    p
 
 let f ~function_arity p =
   Code.invariant p;
@@ -183,74 +175,68 @@ let switches p =
   let t = Timer.make () in
   let opt_count = ref 0 in
   let p =
-    { p with
-      blocks =
-        Addr.Map.fold
-          (fun pc block blocks ->
-            match block.branch with
-            | Switch (x, l) -> (
-                match find_outlier_index l with
-                | `All_equals ->
-                    incr opt_count;
-                    Addr.Map.add pc { block with branch = Branch l.(0) } blocks
-                | `Distinguished i ->
-                    incr opt_count;
-                    let block =
-                      let c = Var.fresh () in
-                      { block with
-                        body =
-                          block.body
-                          @ [ Let
-                                (c, Prim (Eq, [ Pc (Int (Targetint.of_int_exn i)); Pv x ]))
-                            ]
-                      ; branch = Cond (c, l.(i), l.((i + 1) mod Array.length l))
-                      }
-                    in
-                    Addr.Map.add pc block blocks
-                | `Splitted i ->
-                    incr opt_count;
-                    let block =
-                      let c = Var.fresh () in
-                      { block with
-                        body =
-                          block.body
-                          @ [ Let
-                                (c, Prim (Lt, [ Pv x; Pc (Int (Targetint.of_int_exn i)) ]))
-                            ]
-                      ; branch = Cond (c, l.(i - 1), l.(i))
-                      }
-                    in
-                    Addr.Map.add pc block blocks
-                | `Splitted_shifted (i, j) ->
-                    incr opt_count;
-                    let block =
-                      let shifted = Var.fresh () in
-                      let c = Var.fresh () in
-                      { block with
-                        body =
-                          block.body
-                          @ [ Let
-                                ( shifted
-                                , Prim
-                                    ( Extern "%int_sub"
-                                    , [ Pv x; Pc (Int (Targetint.of_int_exn i)) ] ) )
-                            ; Let
-                                ( c
-                                , Prim
-                                    ( Ult
-                                    , [ Pv shifted
-                                      ; Pc (Int (Targetint.of_int_exn (j - i)))
-                                      ] ) )
-                            ]
-                      ; branch = Cond (c, l.(i), l.(j))
-                      }
-                    in
-                    Addr.Map.add pc block blocks
-                | `Many_cases -> blocks)
-            | _ -> blocks)
-          p.blocks
-          p.blocks
-    }
+    Addr.Map.fold
+      (fun pc block p ->
+        match block.branch with
+        | Switch (x, l) -> (
+            match find_outlier_index l with
+            | `All_equals ->
+                incr opt_count;
+                Code.add_block pc { block with branch = Branch l.(0) } p
+            | `Distinguished i ->
+                incr opt_count;
+                let block =
+                  let c = Var.fresh () in
+                  { block with
+                    body =
+                      block.body
+                      @ [ Let (c, Prim (Eq, [ Pc (Int (Targetint.of_int_exn i)); Pv x ]))
+                        ]
+                  ; branch = Cond (c, l.(i), l.((i + 1) mod Array.length l))
+                  }
+                in
+                Code.add_block pc block p
+            | `Splitted i ->
+                incr opt_count;
+                let block =
+                  let c = Var.fresh () in
+                  { block with
+                    body =
+                      block.body
+                      @ [ Let (c, Prim (Lt, [ Pv x; Pc (Int (Targetint.of_int_exn i)) ]))
+                        ]
+                  ; branch = Cond (c, l.(i - 1), l.(i))
+                  }
+                in
+                Code.add_block pc block p
+            | `Splitted_shifted (i, j) ->
+                incr opt_count;
+                let block =
+                  let shifted = Var.fresh () in
+                  let c = Var.fresh () in
+                  { block with
+                    body =
+                      block.body
+                      @ [ Let
+                            ( shifted
+                            , Prim
+                                ( Extern "%int_sub"
+                                , [ Pv x; Pc (Int (Targetint.of_int_exn i)) ] ) )
+                        ; Let
+                            ( c
+                            , Prim
+                                ( Ult
+                                , [ Pv shifted; Pc (Int (Targetint.of_int_exn (j - i))) ]
+                                ) )
+                        ]
+                  ; branch = Cond (c, l.(i), l.(j))
+                  }
+                in
+                Code.add_block pc block p
+            | `Many_cases -> p)
+        | _ -> p)
+      (Code.blocks p)
+      p
   in
   if times () then Format.eprintf "  switches: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - switches: %d@." !opt_count;

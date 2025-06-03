@@ -113,7 +113,7 @@ let expr_deps blocks vars deps defs x e =
   | Block (_, a, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _, _) -> add_dep deps x y
 
-let program_deps { blocks; _ } =
+let program_deps blocks =
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
   let deps = Array.make nv Var.Set.empty in
@@ -266,7 +266,7 @@ let expr_escape st _x e =
       in
       loop l ka
 
-let program_escape defs known_origins { blocks; _ } =
+let program_escape defs known_origins blocks =
   let may_escape = Var.ISet.empty () in
   let possibly_mutable = Var.ISet.empty () in
   let st = { defs; known_origins; may_escape; possibly_mutable } in
@@ -485,13 +485,14 @@ let f p =
   Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in
-  let vars, deps, defs = program_deps p in
+  let blocks = Code.blocks p in
+  let vars, deps, defs = program_deps blocks in
   if times () then Format.eprintf "    flow analysis 1: %a@." Timer.print t1;
   let t2 = Timer.make () in
   let known_origins = solver1 vars deps defs in
   if times () then Format.eprintf "    flow analysis 2: %a@." Timer.print t2;
   let t3 = Timer.make () in
-  let possibly_mutable = program_escape defs known_origins p in
+  let possibly_mutable = program_escape defs known_origins blocks in
   if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
   let t4 = Timer.make () in
   let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
