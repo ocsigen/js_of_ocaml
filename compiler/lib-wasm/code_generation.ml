@@ -34,6 +34,7 @@ https://github.com/llvm/llvm-project/issues/58438
 type constant_global =
   { init : W.expression option
   ; constant : bool
+  ; typ : W.value_type
   }
 
 type context =
@@ -46,6 +47,7 @@ type context =
   ; types : Wasm_ast.type_field Var.Hashtbl.t
   ; mutable closure_envs : Var.t Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
+  ; closure_types : (W.value_type option list, int) Hashtbl.t
   ; mutable apply_funs : Var.t IntMap.t
   ; mutable cps_apply_funs : Var.t IntMap.t
   ; mutable curry_funs : Var.t IntMap.t
@@ -68,6 +70,7 @@ let make_context ~value_type =
   ; type_names = String.Hashtbl.create 128
   ; types = Var.Hashtbl.create 128
   ; closure_envs = Var.Map.empty
+  ; closure_types = Poly.Hashtbl.create 128
   ; apply_funs = IntMap.empty
   ; cps_apply_funs = IntMap.empty
   ; curry_funs = IntMap.empty
@@ -198,6 +201,7 @@ let register_global name ?exported_name ?(constant = false) typ init st =
       name
       { init = (if not typ.mut then Some init else None)
       ; constant = (not typ.mut) || constant
+      ; typ = typ.typ
       }
       st.context.constant_globals;
   (), st
@@ -483,6 +487,68 @@ let load x =
   match x with
   | Local (_, x, _) -> return (W.LocalGet x)
   | Expr e -> e
+
+let rec variable_type x st =
+  match Var.Map.find_opt x st.vars with
+  | Some (Local (_, _, typ)) -> typ, st
+  | Some (Expr e) ->
+      (let* e = e in
+       expression_type e)
+        st
+  | None -> None, st
+
+and expression_type (e : W.expression) st =
+  match e with
+  | Const _
+  | UnOp _
+  | BinOp _
+  | I32WrapI64 _
+  | I64ExtendI32 _
+  | F32DemoteF64 _
+  | F64PromoteF32 _
+  | BlockExpr _
+  | Call _
+  | RefFunc _
+  | Call_ref _
+  | I31Get _
+  | ArrayGet _
+  | ArrayLen _
+  | RefTest _
+  | RefEq _
+  | RefNull _
+  | Try _
+  | Br_on_null _ -> None, st
+  | LocalGet x | LocalTee (x, _) -> variable_type x st
+  | GlobalGet x ->
+      ( (try
+           let typ = (Var.Map.find x st.context.constant_globals).typ in
+           if Poly.equal typ st.context.value_type
+           then None
+           else
+             Some
+               (match typ with
+               | Ref { typ; nullable = true } -> Ref { typ; nullable = false }
+               | _ -> typ)
+         with Not_found -> None)
+      , st )
+  | Seq (_, e') -> expression_type e' st
+  | Pop typ -> Some typ, st
+  | RefI31 _ -> Some (Ref { nullable = false; typ = I31 }), st
+  | ArrayNew (ty, _, _)
+  | ArrayNewFixed (ty, _)
+  | ArrayNewData (ty, _, _, _)
+  | StructNew (ty, _) -> Some (Ref { nullable = false; typ = Type ty }), st
+  | StructGet (_, ty, i, _) -> (
+      match (Var.Hashtbl.find st.context.types ty).typ with
+      | Struct l -> (
+          match (List.nth l i).typ with
+          | Value typ ->
+              (if Poly.equal typ st.context.value_type then None else Some typ), st
+          | Packed _ -> assert false)
+      | Array _ | Func _ -> assert false)
+  | RefCast (typ, _) | Br_on_cast (_, _, typ, _) | Br_on_cast_fail (_, typ, _, _) ->
+      Some (Ref typ), st
+  | IfExpr (_, _, _, _) | ExternConvertAny _ | AnyConvertExtern _ -> None, st
 
 let tee ?typ x e =
   let* e = e in
