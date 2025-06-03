@@ -1,3 +1,10 @@
+module Integer : sig
+  type kind =
+    | Ref
+    | Normalized
+    | Unnormalized
+end
+
 type boxed_number =
   | Int32
   | Int64
@@ -6,7 +13,7 @@ type boxed_number =
 
 type typ =
   | Top
-  | Int
+  | Int of Integer.kind
   | Number of boxed_number
   | Tuple of typ array
   | Bot

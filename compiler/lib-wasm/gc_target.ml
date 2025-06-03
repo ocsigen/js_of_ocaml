@@ -455,13 +455,11 @@ module Value = struct
     let* i = i in
     return (W.RefTest ({ nullable = false; typ = I31 }, i))
 
-  let not i = val_int (Arith.eqz (int_val i))
+  let not i = Arith.eqz i
 
-  let binop op i i' = val_int (op (int_val i) (int_val i'))
+  let lt = Arith.( < )
 
-  let lt = binop Arith.( < )
-
-  let le = binop Arith.( <= )
+  let le = Arith.( <= )
 
   let ref_eq i i' =
     let* i = i in
@@ -571,41 +569,41 @@ module Value = struct
       (let* () = store xv x in
        let* () = store yv y in
        return ())
-      (val_int (if negate then Arith.eqz n else n))
+      (if negate then Arith.eqz n else n)
 
   let eq x y = eq_gen ~negate:false x y
 
   let neq x y = eq_gen ~negate:true x y
 
-  let ult = binop Arith.(ult)
+  let ult = Arith.ult
 
   let is_int i =
     let* i = i in
-    val_int (return (W.RefTest ({ nullable = false; typ = I31 }, i)))
+    return (W.RefTest ({ nullable = false; typ = I31 }, i))
 
-  let int_add = binop Arith.( + )
+  let int_add = Arith.( + )
 
-  let int_sub = binop Arith.( - )
+  let int_sub = Arith.( - )
 
-  let int_mul = binop Arith.( * )
+  let int_mul = Arith.( * )
 
-  let int_div = binop Arith.( / )
+  let int_div = Arith.( / )
 
-  let int_mod = binop Arith.( mod )
+  let int_mod = Arith.( mod )
 
-  let int_neg i = val_int Arith.(const 0l - int_val i)
+  let int_neg i = Arith.(const 0l - i)
 
-  let int_or = binop Arith.( lor )
+  let int_or = Arith.( lor )
 
-  let int_and = binop Arith.( land )
+  let int_and = Arith.( land )
 
-  let int_xor = binop Arith.( lxor )
+  let int_xor = Arith.( lxor )
 
-  let int_lsl = binop Arith.( lsl )
+  let int_lsl = Arith.( lsl )
 
-  let int_lsr i i' = val_int Arith.((int_val i land const 0x7fffffffl) lsr int_val i')
+  let int_lsr i i' = Arith.((i land const 0x7fffffffl) lsr i')
 
-  let int_asr = binop Arith.( asr )
+  let int_asr = Arith.( asr )
 end
 
 module Memory = struct
@@ -657,7 +655,7 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
-  let allocate ~tag ~deadcode_sentinal l =
+  let allocate ~tag ~deadcode_sentinal ~load l =
     if tag = 254
     then
       let* l =
@@ -728,15 +726,14 @@ module Memory = struct
        let* e = float_array_length (load a) in
        instr (W.Push e))
 
-  let array_get e e' = wasm_array_get e Arith.(Value.int_val e' + const 1l)
+  let array_get e e' = wasm_array_get e Arith.(e' + const 1l)
 
-  let array_set e e' e'' = wasm_array_set e Arith.(Value.int_val e' + const 1l) e''
+  let array_set e e' e'' = wasm_array_set e Arith.(e' + const 1l) e''
 
-  let float_array_get e e' =
-    box_float (wasm_array_get ~ty:Type.float_array_type e (Value.int_val e'))
+  let float_array_get e e' = box_float (wasm_array_get ~ty:Type.float_array_type e e')
 
   let float_array_set e e' e'' =
-    wasm_array_set ~ty:Type.float_array_type e (Value.int_val e') (unbox_float e'')
+    wasm_array_set ~ty:Type.float_array_type e e' (unbox_float e'')
 
   let gen_array_get e e' =
     let a = Code.Var.fresh_n "a" in
@@ -744,7 +741,7 @@ module Memory = struct
     block_expr
       { params = []; result = [ Type.value ] }
       (let* () = store a e in
-       let* () = store ~typ:I32 i (Value.int_val e') in
+       let* () = store ~typ:I32 i e' in
        let* () =
          drop
            (block_expr
@@ -771,7 +768,7 @@ module Memory = struct
     let i = Code.Var.fresh_n "i" in
     let v = Code.Var.fresh_n "v" in
     let* () = store a e in
-    let* () = store ~typ:I32 i (Value.int_val e') in
+    let* () = store ~typ:I32 i e' in
     let* () = store v e'' in
     block
       { params = []; result = [] }
@@ -801,11 +798,9 @@ module Memory = struct
     let* e = wasm_cast ty e in
     return (W.ArrayLen e)
 
-  let bytes_get e e' =
-    Value.val_int (wasm_array_get ~ty:Type.string_type e (Value.int_val e'))
+  let bytes_get e e' = wasm_array_get ~ty:Type.string_type e e'
 
-  let bytes_set e e' e'' =
-    wasm_array_set ~ty:Type.string_type e (Value.int_val e') (Value.int_val e'')
+  let bytes_set e e' e'' = wasm_array_set ~ty:Type.string_type e e' e''
 
   let field e idx = wasm_array_get e (Arith.const (Int32.of_int (idx + 1)))
 
@@ -1032,23 +1027,26 @@ module Constant = struct
         return (Const, e)
 
   let translate c =
-    let* const, c = translate_rec c in
-    match const with
-    | Const ->
-        let* b = is_small_constant c in
-        if b then return c else store_in_global c
-    | Const_named name -> store_in_global ~name c
-    | Mutated ->
-        let name = Code.Var.fresh_n "const" in
-        let* () =
-          register_global
-            ~constant:true
-            name
-            { mut = true; typ = Type.value }
-            (W.RefI31 (Const (I32 0l)))
-        in
-        let* () = register_init_code (instr (W.GlobalSet (name, c))) in
-        return (W.GlobalGet name)
+    match c with
+    | Code.Int i -> return (W.Const (I32 (Targetint.to_int32 i)))
+    | _ -> (
+        let* const, c = translate_rec c in
+        match const with
+        | Const ->
+            let* b = is_small_constant c in
+            if b then return c else store_in_global c
+        | Const_named name -> store_in_global ~name c
+        | Mutated ->
+            let name = Code.Var.fresh_n "const" in
+            let* () =
+              register_global
+                ~constant:true
+                name
+                { mut = true; typ = Type.value }
+                (W.RefI31 (Const (I32 0l)))
+            in
+            let* () = register_init_code (instr (W.GlobalSet (name, c))) in
+            return (W.GlobalGet name))
 end
 
 module Closure = struct
