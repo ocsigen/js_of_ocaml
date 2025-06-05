@@ -314,7 +314,6 @@ let trim_semi s =
 type unit_data =
   { unit_name : string
   ; unit_info : Unit_info.t
-  ; strings : string list
   ; fragments : (string * Javascript.expression) list
   }
 
@@ -322,14 +321,10 @@ let info_to_sexp ~predefined_exceptions ~build_info ~unit_data =
   let add nm skip v rem = if skip then rem else Sexp.List (Atom nm :: v) :: rem in
   let units =
     List.map
-      ~f:(fun { unit_name; unit_info; strings; fragments } ->
+      ~f:(fun { unit_name; unit_info; fragments } ->
         Sexp.List
           (Unit_info.to_sexp unit_info
           |> add "name" false [ Atom unit_name ]
-          |> add
-               "strings"
-               (List.is_empty strings)
-               (List.map ~f:(fun s -> Sexp.Atom s) strings)
           |> add
                "fragments"
                (List.is_empty fragments)
@@ -366,9 +361,6 @@ let info_from_sexp info =
            let unit_name =
              u |> member "name" |> Option.value ~default:[] |> single string
            in
-           let strings =
-             u |> member "strings" |> Option.value ~default:[] |> List.map ~f:string
-           in
            let fragments =
              u
              |> member "fragments"
@@ -383,7 +375,7 @@ let info_from_sexp info =
                                   , let lex = Parse_js.Lexer.of_string (to_string e) in
                                     Parse_js.parse_expr lex ))*)
            in
-           { unit_name; unit_info; strings; fragments })
+           { unit_name; unit_info; fragments })
   in
   build_info, predefined_exceptions, unit_data
 
@@ -444,28 +436,13 @@ let build_runtime_arguments
   let generated_js =
     List.concat
     @@ List.map
-         ~f:(fun (unit_name, (strings, fragments)) ->
+         ~f:(fun (unit_name, fragments) ->
            let name s =
              match unit_name with
              | None -> s
              | Some nm -> nm ^ "." ^ s
            in
-           let strings =
-             if List.is_empty strings
-             then []
-             else
-               [ ( name "strings"
-                 , Javascript.EArr
-                     (List.map
-                        ~f:(fun s ->
-                          Javascript.Element (EStr (Utf8_string.of_string_exn s)))
-                        strings) )
-               ]
-           in
-           let fragments =
-             if List.is_empty fragments then [] else [ name "fragments", obj fragments ]
-           in
-           strings @ fragments)
+           if List.is_empty fragments then [] else [ name "fragments", obj fragments ])
          generated_js
   in
   let generated_js =
@@ -821,8 +798,8 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   let generated_js =
     List.concat
     @@ List.map files ~f:(fun (_, (_, units)) ->
-           List.map units ~f:(fun { unit_name; strings; fragments; _ } ->
-               Some unit_name, (strings, fragments)))
+           List.map units ~f:(fun { unit_name; fragments; _ } ->
+               Some unit_name, fragments))
   in
   let runtime_args =
     let js =

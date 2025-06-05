@@ -484,7 +484,7 @@ let run
             then Some (Filename.temp_file unit_name ".wasm.map")
             else None)
          @@ fun opt_input_sourcemap ->
-         let strings, fragments =
+         let fragments =
            output
              code
              ~wat_file:
@@ -500,7 +500,7 @@ let run
            ~input_file
            ~output_file:tmp_wasm_file
            ();
-         { Link.unit_name; unit_info; strings; fragments }
+         { Link.unit_name; unit_info; fragments }
        in
        cont unit_data unit_name tmp_wasm_file opt_tmp_map_file
      in

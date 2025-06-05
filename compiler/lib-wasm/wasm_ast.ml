@@ -171,6 +171,7 @@ type expression =
   | IfExpr of value_type * expression * expression * expression
   | Try of func_type * instruction list * (var * int * value_type) list
   | ExternConvertAny of expression
+  | AnyConvertExtern of expression
 
 and instruction =
   | Drop of expression

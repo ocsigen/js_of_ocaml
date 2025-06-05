@@ -1217,12 +1217,7 @@ module Generate (Target : Target_sig.S) = struct
     in
     global_context.init_code <- [];
     global_context.other_fields <- List.rev_append functions global_context.other_fields;
-    let js_code =
-      List.rev global_context.strings, StringMap.bindings global_context.fragments
-    in
-    global_context.string_count <- 0;
-    global_context.strings <- [];
-    global_context.string_index <- StringMap.empty;
+    let js_code = StringMap.bindings global_context.fragments in
     global_context.fragments <- StringMap.empty;
     toplevel_name, js_code
 

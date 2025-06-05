@@ -514,7 +514,8 @@ module Value = struct
     | StructGet (_, _, _, e')
     | RefCast (_, e')
     | RefTest (_, e')
-    | ExternConvertAny e' -> effect_free e'
+    | ExternConvertAny e'
+    | AnyConvertExtern e' -> effect_free e'
     | BinOp (_, e1, e2)
     | ArrayNew (_, e1, e2)
     | ArrayNewData (_, _, e1, e2)
@@ -912,20 +913,12 @@ module Constant = struct
     let* () = register_global name { mut = false; typ = Type.value } c in
     return (W.GlobalGet name)
 
-  let str_js_utf8 s =
+  let byte_string s =
     let b = Buffer.create (String.length s) in
     String.iter s ~f:(function
-      | '\\' -> Buffer.add_string b "\\\\"
-      | c -> Buffer.add_char b c);
-    Buffer.contents b
-
-  let str_js_byte s =
-    let b = Buffer.create (String.length s) in
-    String.iter s ~f:(function
-      | '\\' -> Buffer.add_string b "\\\\"
       | '\128' .. '\255' as c ->
-          Buffer.add_string b "\\x";
-          Buffer.add_char_hex b c
+          Buffer.add_char b (Char.chr (0xC2 lor (Char.code c lsr 6)));
+          Buffer.add_char b (Char.chr (0x80 lor (Char.code c land 0x3F)))
       | c -> Buffer.add_char b c);
     Buffer.contents b
 
@@ -989,22 +982,18 @@ module Constant = struct
     | NativeString s ->
         let s =
           match s with
-          | Utf (Utf8 s) -> str_js_utf8 s
-          | Byte s -> str_js_byte s
+          | Utf (Utf8 s) -> s
+          | Byte s -> byte_string s
         in
-        let* i = register_string s in
         let* x =
-          let* name = unit_name in
           register_import
-            ~import_module:
-              (match name with
-              | None -> "strings"
-              | Some name -> name ^ ".strings")
-            ~name:(string_of_int i)
-            (Global { mut = false; typ = Ref { nullable = false; typ = Any } })
+            ~import_module:"str"
+            ~name:s
+            (Global { mut = false; typ = Ref { nullable = false; typ = Extern } })
         in
         let* ty = Type.js_type in
-        return (Const_named ("str_" ^ s), W.StructNew (ty, [ GlobalGet x ]))
+        return
+          (Const_named ("str_" ^ s), W.StructNew (ty, [ AnyConvertExtern (GlobalGet x) ]))
     | String s ->
         let* ty = Type.string_type in
         if String.length s >= string_length_threshold
