@@ -78,6 +78,18 @@
             (call $caml_raise_not_found)))
       (return_call $caml_string_of_jsstring (call $wrap (local.get $res))))
 
+   (func (export "caml_sys_getenv_opt")
+      (param (ref eq)) (result (ref eq))
+      (local $res anyref)
+      (local.set $res
+         (call $getenv
+            (call $unwrap (call $caml_jsstring_of_string (local.get 0)))))
+      (if (i32.eqz (call $jsstring_test (local.get $res)))
+         (then
+            (return (ref.i31 (i32.const 0)))))
+      (array.new_fixed $block 2 (ref.i31 (i32.const 0))
+         (call $caml_string_of_jsstring (call $wrap (local.get $res)))))
+
    (func (export "caml_sys_argv") (param (ref eq)) (result (ref eq))
       ;; ZZZ
       (call $caml_js_to_string_array (call $argv)))
@@ -178,6 +190,14 @@
    (func (export "caml_install_signal_handler")
       (param (ref eq) (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_sys_convert_signal_number")
+      (param $signo (ref eq)) (result (ref eq))
+      (local.get $signo))
+
+   (func (export "caml_sys_rev_convert_signal_number")
+      (param $signo (ref eq)) (result (ref eq))
+      (local.get $signo))
 
    (global $caml_runtime_warnings (mut i32) (i32.const 0))
 

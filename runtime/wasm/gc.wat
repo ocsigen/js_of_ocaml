@@ -16,6 +16,10 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "obj" "caml_callback_1"
+      (func $caml_callback_1
+         (param (ref eq)) (param (ref eq)) (result (ref eq))))
+
    (type $float (struct (field f64)))
    (type $block (array (mut (ref eq))))
 
@@ -117,5 +121,13 @@
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_eventlog_resume") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ml_gc_ramp_up") (param $f (ref eq)) (result (ref eq))
+      (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+         (call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0)))
+         (ref.i31 (i32.const 0))))
+
+   (func (export "caml_ml_gc_ramp_down") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 )
