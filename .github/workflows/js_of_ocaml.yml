@@ -152,6 +152,9 @@ jobs:
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
 
+      - name: pin dune
+        run: opam pin add dune https://github.com/hhugo/dune.git#jsoo-shape2
+
       - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
 
