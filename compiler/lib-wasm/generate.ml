@@ -613,7 +613,12 @@ module Generate (Target : Target_sig.S) = struct
           | [] -> (
               let arity = List.length args in
               let funct = Var.fresh () in
-              let* closure = tee funct (load f) in
+              let* closure =
+                Memory.cast_closure
+                  ~cps:(Var.Set.mem x ctx.in_cps)
+                  ~arity
+                  (tee funct (load f))
+              in
               let* ty, funct =
                 Memory.load_function_pointer
                   ~cps:(Var.Set.mem x ctx.in_cps)
@@ -629,7 +634,7 @@ module Generate (Target : Target_sig.S) = struct
                     (* Functions with constant closures ignore their
                        environment. In case of partial application, we
                        still need the closure. *)
-                    let* cl = if exact then Value.unit else return closure in
+                    let* cl = if exact then Value.dummy_closure else return closure in
                     return (W.Call (g, List.rev (cl :: acc)))
                 | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc))))
           | x :: r ->
