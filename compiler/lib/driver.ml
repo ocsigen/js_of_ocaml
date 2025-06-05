@@ -171,13 +171,13 @@ let effects_and_exact_calls ~deadcode_sentinal ~shapes (profile : Profile.t) p =
       p, tramp, cps, shapes
   | `Disabled | `Jspi ->
       let p =
-      Specialize.f
-        ~shape:(fun f ->
-          match Global_flow.function_arity info f with
-          | None -> Shape.Top
-          | Some arity -> Shape.Function { arity; pure = false; res = Top })
-        ~update_def:(fun x expr -> Global_flow.update_def info x expr)
-        p
+        Specialize.f
+          ~shape:(fun f ->
+            match Global_flow.function_arity info f with
+            | None -> Shape.Top
+            | Some arity -> Shape.Function { arity; pure = false; res = Top })
+          ~update_def:(fun x expr -> Global_flow.update_def info x expr)
+          p
       in
       let shapes = collects_shapes ~shapes p in
       ( p
