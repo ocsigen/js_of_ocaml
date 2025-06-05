@@ -223,7 +223,17 @@ let update_deps st { blocks; _ } =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, Block (_, lst, _, _)) -> Array.iter ~f:(fun y -> add_dep st x y) lst
-          | Let (x, Prim (Extern ("%int_and" | "%int_or" | "%int_xor"), lst)) ->
+          | Let
+              ( x
+              , Prim
+                  ( Extern
+                      ( "%int_and"
+                      | "%int_or"
+                      | "%int_xor"
+                      | "caml_ba_get_1"
+                      | "caml_ba_get_2"
+                      | "caml_ba_get_3" )
+                  , lst ) ) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
                 ~f:(fun p ->
@@ -423,6 +433,33 @@ let prim_type ~approx prim args =
   | "caml_nativeint_to_int" -> Int Unnormalized
   | "caml_nativeint_of_int" -> Number Nativeint
   | "caml_int_compare" -> Int Normalized
+  | "caml_ba_create" -> (
+      match args with
+      | [ Pc (Int kind); Pc (Int layout); _ ] ->
+          Bigarray
+            (Bigarray.make
+               ~kind:(Targetint.to_int_exn kind)
+               ~layout:(Targetint.to_int_exn layout))
+      | _ -> Top)
+  (*ZZZ
+  | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
+      match args with
+      | ba :: _ -> (
+          match arg_type ~approx ba with
+          | Bot -> Bot
+          | Bigarray { kind; _ } -> (
+              match kind with
+              | Float16 | Float32 | Float64 -> Number Float
+              | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned | Char ->
+                  Int Normalized
+              | Int -> Int Unnormalized
+              | Int32 -> Number Int32
+              | Int64 -> Number Int64
+              | Nativeint -> Number Nativeint
+              | Complex32 | Complex64 -> Top)
+          | _ -> Top)
+      | [] -> Top)
+*)
   | _ -> Top
 
 let propagate st approx x : Domain.t =
