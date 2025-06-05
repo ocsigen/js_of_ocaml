@@ -558,6 +558,10 @@ let eval_instr update_count inline_constant ~target info i =
            in Specialize_js, which would make the call to [the_const_of]
            below fail. *)
       [ i ]
+  | Let (x, Prim (Extern "caml_atomic_load_field", [ Pv o; f ])) -> (
+      match the_int info f with
+      | None -> [ i ]
+      | Some i -> [ Let (x, Field (o, Targetint.to_int_exn i, Non_float)) ])
   | Let (x, Prim (IsInt, [ y ])) -> (
       match is_int info y with
       | Unknown -> [ i ]
