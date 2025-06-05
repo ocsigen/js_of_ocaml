@@ -281,11 +281,19 @@ module Type = struct
                     ])
             })
 
-  let env_type ~cps ~arity n =
+  let make_env_type env_type =
+    List.map
+      ~f:(fun typ ->
+        { W.mut = false
+        ; typ = W.Value (Option.value ~default:(W.Ref { nullable = false; typ = Eq }) typ)
+        })
+      env_type
+
+  let env_type ~cps ~arity ~env_type_id ~env_type =
     register_type
       (if cps
-       then Printf.sprintf "cps_env_%d_%d" arity n
-       else Printf.sprintf "env_%d_%d" arity n)
+       then Printf.sprintf "cps_env_%d_%d" arity env_type_id
+       else Printf.sprintf "env_%d_%d" arity env_type_id)
       (fun () ->
         let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
         let* common = closure_common_fields ~cps in
@@ -309,18 +317,11 @@ module Type = struct
                         ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
                         }
                       ])
-                @ List.init
-                    ~f:(fun _ ->
-                      { W.mut = false
-                      ; typ = W.Value (Ref { nullable = false; typ = Eq })
-                      })
-                    ~len:n)
+                @ make_env_type env_type)
           })
 
-  let rec_env_type ~function_count ~free_variable_count =
-    register_type
-      (Printf.sprintf "rec_env_%d_%d" function_count free_variable_count)
-      (fun () ->
+  let rec_env_type ~function_count ~env_type_id ~env_type =
+    register_type (Printf.sprintf "rec_env_%d_%d" function_count env_type_id) (fun () ->
         return
           { supertype = None
           ; final = true
@@ -331,24 +332,20 @@ module Type = struct
                      { W.mut = i < function_count
                      ; typ = W.Value (Ref { nullable = false; typ = Eq })
                      })
-                   ~len:(function_count + free_variable_count))
+                   ~len:function_count
+                @ make_env_type env_type)
           })
 
-  let rec_closure_type ~cps ~arity ~function_count ~free_variable_count =
+  let rec_closure_type ~cps ~arity ~function_count ~env_type_id ~env_type =
     register_type
       (if cps
-       then
-         Printf.sprintf
-           "cps_closure_rec_%d_%d_%d"
-           arity
-           function_count
-           free_variable_count
-       else Printf.sprintf "closure_rec_%d_%d_%d" arity function_count free_variable_count)
+       then Printf.sprintf "cps_closure_rec_%d_%d_%d" arity function_count env_type_id
+       else Printf.sprintf "closure_rec_%d_%d_%d" arity function_count env_type_id)
       (fun () ->
         let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
         let* common = closure_common_fields ~cps in
         let* fun_ty' = function_type ~cps arity in
-        let* env_ty = rec_env_type ~function_count ~free_variable_count in
+        let* env_ty = rec_env_type ~function_count ~env_type_id ~env_type in
         return
           { supertype = Some cl_typ
           ; final = true
@@ -1099,11 +1096,19 @@ module Closure = struct
       in
       return (W.GlobalGet name)
     else
-      let free_variable_count = List.length free_variables in
+      let* env_type = expression_list variable_type free_variables in
+      let env_type_id =
+        try Hashtbl.find context.closure_types env_type
+        with Not_found ->
+          let id = Hashtbl.length context.closure_types in
+          Hashtbl.add context.closure_types env_type id;
+          id
+      in
+      info.id <- Some env_type_id;
       match info.Closure_conversion.functions with
       | [] -> assert false
       | [ _ ] ->
-          let* typ = Type.env_type ~cps ~arity free_variable_count in
+          let* typ = Type.env_type ~cps ~arity ~env_type_id ~env_type in
           let* l = expression_list load free_variables in
           return
             (W.StructNew
@@ -1122,7 +1127,7 @@ module Closure = struct
                  @ l ))
       | (g, _) :: _ as functions ->
           let function_count = List.length functions in
-          let* env_typ = Type.rec_env_type ~function_count ~free_variable_count in
+          let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type in
           let env =
             if Code.Var.equal f g
             then
@@ -1144,7 +1149,7 @@ module Closure = struct
               load env
           in
           let* typ =
-            Type.rec_closure_type ~cps ~arity ~function_count ~free_variable_count
+            Type.rec_closure_type ~cps ~arity ~function_count ~env_type_id ~env_type
           in
           let res =
             let* env = env in
@@ -1189,12 +1194,13 @@ module Closure = struct
       let* _ = add_var (Code.Var.fresh ()) in
       return ()
     else
+      let env_type_id = Option.value ~default:(-1) info.id in
       let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
       let arity = if cps then arity - 1 else arity in
       let offset = Memory.env_start arity in
       match info.Closure_conversion.functions with
       | [ _ ] ->
-          let* typ = Type.env_type ~cps ~arity free_variable_count in
+          let* typ = Type.env_type ~cps ~arity ~env_type_id ~env_type:[] in
           let* _ = add_var f in
           let env = Code.Var.fresh_n "env" in
           let* () =
@@ -1214,11 +1220,11 @@ module Closure = struct
       | functions ->
           let function_count = List.length functions in
           let* typ =
-            Type.rec_closure_type ~cps ~arity ~function_count ~free_variable_count
+            Type.rec_closure_type ~cps ~arity ~function_count ~env_type_id ~env_type:[]
           in
           let* _ = add_var f in
           let env = Code.Var.fresh_n "env" in
-          let* env_typ = Type.rec_env_type ~function_count ~free_variable_count in
+          let* env_typ = Type.rec_env_type ~function_count ~env_type_id ~env_type:[] in
           let* () =
             store
               ~typ:(W.Ref { nullable = false; typ = Type env_typ })
