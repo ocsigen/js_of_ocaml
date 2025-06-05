@@ -38,8 +38,30 @@
          (else
             (ref.i31 (i32.const 0)))))
 
+   (func (export "caml_atomic_cas_field")
+      (param $ref (ref eq)) (param $i (ref eq)) (param $o (ref eq))
+      (param $n (ref eq)) (result (ref eq))
+      (local $b (ref $block))
+      (local $j i32)
+      (local.set $j
+         (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1)))
+      (local.set $b (ref.cast (ref $block) (local.get $ref)))
+      (if (result (ref eq))
+         (ref.eq (array.get $block (local.get $b) (local.get $j))
+                 (local.get $o))
+         (then
+            (array.set $block (local.get $b) (local.get $j) (local.get $n))
+            (ref.i31 (i32.const 1)))
+         (else
+            (ref.i31 (i32.const 0)))))
+
    (func (export "caml_atomic_load") (param (ref eq)) (result (ref eq))
       (array.get $block (ref.cast (ref $block) (local.get 0)) (i32.const 1)))
+
+   (func (export "caml_atomic_load_field")
+      (param $b (ref eq)) (param $i (ref eq)) (result (ref eq))
+      (array.get $block (ref.cast (ref $block) (local.get $b))
+        (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1))))
 
    (func (export "caml_atomic_fetch_add")
       (param $ref (ref eq)) (param $i (ref eq)) (result (ref eq))
@@ -52,6 +74,21 @@
                            (i31.get_s (ref.cast (ref i31) (local.get $i))))))
       (local.get $old))
 
+   (func (export "caml_atomic_fetch_add_field")
+      (param $ref (ref eq)) (param $i (ref eq)) (param $n (ref eq))
+      (result (ref eq))
+      (local $b (ref $block))
+      (local $old (ref eq))
+      (local $j i32)
+      (local.set $j
+         (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1)))
+      (local.set $b (ref.cast (ref $block) (local.get $ref)))
+      (local.set $old (array.get $block (local.get $b) (local.get $j)))
+      (array.set $block (local.get $b) (local.get $j)
+         (ref.i31 (i32.add (i31.get_s (ref.cast (ref i31) (local.get $old)))
+                           (i31.get_s (ref.cast (ref i31) (local.get $n))))))
+      (local.get $old))
+
    (func (export "caml_atomic_exchange")
       (param $ref (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $b (ref $block))
@@ -59,6 +96,19 @@
       (local.set $b (ref.cast (ref $block) (local.get $ref)))
       (local.set $r (array.get $block (local.get $b) (i32.const 1)))
       (array.set $block (local.get $b) (i32.const 1) (local.get $v))
+      (local.get $r))
+
+   (func (export "caml_atomic_exchange_field")
+      (param $ref (ref eq)) (param $i (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (local $b (ref $block))
+      (local $r (ref eq))
+      (local $j i32)
+      (local.set $j
+         (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1)))
+      (local.set $b (ref.cast (ref $block) (local.get $ref)))
+      (local.set $r (array.get $block (local.get $b) (local.get $j)))
+      (array.set $block (local.get $b) (local.get $j) (local.get $v))
       (local.get $r))
 
    (func (export "caml_atomic_make_contended")

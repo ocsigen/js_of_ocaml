@@ -16,11 +16,13 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "bindings" "on_windows" (global $on_windows i32))
    (import "bindings" "getcwd" (func $getcwd (result anyref)))
    (import "bindings" "chdir" (func $chdir (param anyref)))
    (import "bindings" "mkdir" (func $mkdir (param anyref) (param i32)))
    (import "bindings" "rmdir" (func $rmdir (param anyref)))
    (import "bindings" "unlink" (func $unlink (param anyref)))
+   (import "bindings" "tmpdir" (func $tmpdir (result anyref)))
    (import "bindings" "read_dir"
       (func $read_dir (param anyref) (result (ref extern))))
    (import "bindings" "file_exists"
@@ -171,6 +173,12 @@
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))
             (return (ref.i31 (i32.const 0))))))
+
+   (func (export "caml_sys_temp_dir_name") (param (ref eq)) (result (ref eq))
+      (if (global.get $on_windows)
+         (then
+            (return_call $caml_string_of_jsstring (call $wrap (call $tmpdir)))))
+      (@string ""))
 
    (func (export "caml_mount_autoload")
       (param (ref eq) (ref eq)) (result (ref eq))

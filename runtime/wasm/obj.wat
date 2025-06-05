@@ -176,6 +176,26 @@
          (return (ref.i31 (i32.const 0)))))
       (unreachable))
 
+   (func (export "caml_alloc_dummy_lazy") (param (ref eq)) (result (ref eq))
+      (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0))))
+
+   (func (export "caml_update_dummy_lazy")
+      (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
+      (local $tag i32)
+      (local $b (ref $block))
+      (local.set $tag
+         (i31.get_s (ref.cast (ref i31) (call $caml_obj_tag (local.get $newval)))))
+      (block $update
+         (br_if $update (i32.eq (local.get $tag) (global.get $lazy_tag)))
+         (br_if $update (i32.eq (local.get $tag) (global.get $forcing_tag)))
+         (br_if $update (i32.eq (local.get $tag) (global.get $forward_tag)))
+         (local.set $b (ref.cast (ref $block) (local.get $dummy)))
+         (array.set $block (local.get $b) (i32.const 0)
+            (ref.i31 (global.get $forward_tag)))
+         (array.set $block (local.get $b) (i32.const 1) (local.get $newval))
+         (return (ref.i31 (i32.const 0))))
+     (return_call $caml_update_dummy (local.get $dummy) (local.get $newval)))
+
    (func $caml_obj_dup (export "caml_obj_dup")
       (param (ref eq)) (result (ref eq))
       (local $orig (ref $block)) (local $res (ref $block))

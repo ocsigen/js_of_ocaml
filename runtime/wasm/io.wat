@@ -260,6 +260,9 @@
             (call $caml_handle_sys_error (pop externref))))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_sys_io_buffer_size") (param (ref eq)) (result (ref eq))
+      (ref.i31 (global.get $IO_BUFFER_SIZE)))
+
    (func (export "caml_ml_set_channel_name")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))

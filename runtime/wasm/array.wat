@@ -315,6 +315,90 @@
                    (br $fill))))
             (local.get $a))))
 
+   (func (export "caml_float_array_concat") (param (ref eq)) (result (ref eq))
+      (local $i i32) (local $len i32)
+      (local $l (ref eq)) (local $v (ref eq))
+      (local $b (ref $block))
+      (local $fa (ref $float_array)) (local $fa' (ref $float_array))
+      (local.set $l (local.get 0))
+      (local.set $len (i32.const 0))
+      (loop $compute_length
+         (drop (block $exit (result (ref eq))
+            (local.set $b
+               (br_on_cast_fail $exit (ref eq) (ref $block) (local.get $l)))
+            (local.set $v (array.get $block (local.get $b) (i32.const 1)))
+            (local.set $len
+               (i32.add (local.get $len)
+                  (array.len (ref.cast (ref $float_array) (local.get $v)))))
+            (local.set $l (array.get $block (local.get $b) (i32.const 2)))
+            (br $compute_length))))
+      (local.set $fa
+         (array.new $float_array (f64.const 0) (local.get $len)))
+      (local.set $l (local.get 0))
+      (local.set $i (i32.const 0))
+      (loop $fill
+         (drop (block $exit (result (ref eq))
+             (local.set $b
+                (br_on_cast_fail $exit (ref eq) (ref $block)
+                   (local.get $l)))
+             (local.set $l (array.get $block (local.get $b) (i32.const 2)))
+             (drop (block $not_float (result (ref eq))
+                (local.set $fa'
+                   (br_on_cast_fail $not_float (ref eq) (ref $float_array)
+                      (array.get $block (local.get $b) (i32.const 1))))
+                (local.set $len (array.len (local.get $fa')))
+                (array.copy $float_array $float_array
+                   (local.get $fa) (local.get $i)
+                   (local.get $fa') (i32.const 0)
+                   (local.get $len))
+                (local.set $i (i32.add (local.get $i) (local.get $len)))
+                (br $fill)))
+             (br $fill))))
+      (local.get $fa))
+
+   (func (export "caml_uniform_array_concat") (param (ref eq)) (result (ref eq))
+      (local $i i32) (local $len i32)
+      (local $l (ref eq)) (local $v (ref eq))
+      (local $b (ref $block))
+      (local $a (ref $block)) (local $a' (ref $block))
+      (local.set $l (local.get 0))
+      (local.set $len (i32.const 0))
+      (loop $compute_length
+         (drop (block $exit (result (ref eq))
+            (local.set $b
+               (br_on_cast_fail $exit (ref eq) (ref $block) (local.get $l)))
+            (local.set $v (array.get $block (local.get $b) (i32.const 1)))
+            (local.set $len
+               (i32.add (local.get $len)
+                  (i32.sub
+                     (array.len (ref.cast (ref $block) (local.get $v)))
+                     (i32.const 1))))
+            (local.set $l (array.get $block (local.get $b) (i32.const 2)))
+            (br $compute_length))))
+      (local.set $a
+         (array.new $block (ref.i31 (i32.const 0))
+            (i32.add (local.get $len) (i32.const 1))))
+      (local.set $l (local.get 0))
+      (local.set $i (i32.const 1))
+      (loop $fill
+         (drop (block $exit (result (ref eq))
+             (local.set $b
+                (br_on_cast_fail $exit (ref eq) (ref $block)
+                   (local.get $l)))
+             (local.set $a'
+                (ref.cast (ref $block)
+                   (array.get $block (local.get $b) (i32.const 1))))
+             (local.set $len
+                (i32.sub (array.len (local.get $a')) (i32.const 1)))
+             (array.copy $block $block
+                (local.get $a) (local.get $i)
+                (local.get $a') (i32.const 1)
+                (local.get $len))
+             (local.set $i (i32.add (local.get $i) (local.get $len)))
+             (local.set $l (array.get $block (local.get $b) (i32.const 2)))
+             (br $fill))))
+      (local.get $a))
+
    (func $caml_floatarray_blit (export "caml_floatarray_blit")
       (param $a1 (ref eq)) (param $i1 (ref eq))
       (param $a2 (ref eq)) (param $i2 (ref eq))
