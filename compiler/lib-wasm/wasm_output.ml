@@ -340,12 +340,13 @@ end = struct
       fields;
     !func_idx, func_names, !global_idx, global_names, !tag_idx, tag_names
 
-  let output_functions ch (func_idx, func_names, func_types, fields) =
+  let output_functions ch (type_names, func_idx, func_names, func_types, fields) =
     let l =
       List.fold_left
         ~f:(fun acc field ->
           match field with
-          | Function { signature; _ } -> signature :: acc
+          | Function { typ = Some typ; _ } -> Code.Var.Hashtbl.find type_names typ :: acc
+          | Function { signature; _ } -> Hashtbl.find func_types signature :: acc
           | Type _ | Import _ | Data _ | Global _ | Tag _ -> acc)
         ~init:[]
         fields
@@ -361,10 +362,7 @@ end = struct
         ~init:func_idx
         fields
     in
-    output_vec
-      (fun ch typ -> output_uint ch (Hashtbl.find func_types typ))
-      ch
-      (List.rev l)
+    output_vec (fun ch typ -> output_uint ch typ) ch (List.rev l)
 
   let int_un_op (arith, comp, trunc, reinterpret) ch op =
     match op with
@@ -1177,7 +1175,11 @@ end = struct
     let func_idx, func_names, global_idx, global_names, _, tag_names =
       output_section 2 output_imports ch (func_types, type_names, fields)
     in
-    output_section 3 output_functions ch (func_idx, func_names, func_types, fields);
+    output_section
+      3
+      output_functions
+      ch
+      (type_names, func_idx, func_names, func_types, fields);
     let st =
       { type_names
       ; func_names
