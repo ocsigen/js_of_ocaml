@@ -585,6 +585,27 @@ let placeholder_value typ f =
 
 let array_placeholder typ = placeholder_value typ (fun typ -> ArrayNewFixed (typ, []))
 
+let default_value val_typ st =
+  match val_typ with
+  | W.Ref { typ = I31 | Eq | Any; _ } -> (W.RefI31 (Const (I32 0l)), val_typ, None), st
+  | W.Ref { typ = Type typ; nullable = false } -> (
+      match (Var.Hashtbl.find st.context.types typ).typ with
+      | Array _ ->
+          (let* placeholder = array_placeholder typ in
+           return (placeholder, val_typ, None))
+            st
+      | Struct _ | Func _ ->
+          ( ( W.RefNull (Type typ)
+            , W.Ref { typ = Type typ; nullable = true }
+            , Some { W.typ = Type typ; nullable = false } )
+          , st ))
+  | I32 -> (Const (I32 0l), val_typ, None), st
+  | F32 -> (Const (F32 0.), val_typ, None), st
+  | I64 -> (Const (I64 0L), val_typ, None), st
+  | F64 -> (Const (F64 0.), val_typ, None), st
+  | W.Ref { nullable = true; _ }
+  | W.Ref { typ = Func | Extern | Struct | Array | None_; _ } -> assert false
+
 let rec store ?(always = false) ?typ x e =
   let* e = e in
   match e with
@@ -599,23 +620,26 @@ let rec store ?(always = false) ?typ x e =
         let* b = should_make_global x in
         if b
         then
-          let* typ =
-            match typ with
-            | Some typ -> return typ
-            | None -> value_type
-          in
           let* () =
             let* b = global_is_registered x in
             if b
             then return ()
             else
-              register_global
-                ~constant:true
-                x
-                { mut = true; typ }
-                (W.RefI31 (Const (I32 0l)))
+              let* typ =
+                match typ with
+                | Some typ -> return typ
+                | None -> value_type
+              in
+              let* default, typ', cast = default_value typ in
+              let* () =
+                register_constant
+                  x
+                  (match cast with
+                  | Some typ -> W.RefCast (typ, W.GlobalGet x)
+                  | None -> W.GlobalGet x)
+              in
+              register_global ~constant:true x { mut = true; typ = typ' } default
           in
-          let* () = register_constant x (W.GlobalGet x) in
           instr (GlobalSet (x, e))
         else
           let* i = add_var ?typ x in
