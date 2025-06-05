@@ -139,8 +139,6 @@ val define_var : Wasm_ast.var -> expression -> unit t
 
 val is_small_constant : Wasm_ast.expression -> bool t
 
-val get_i31_value : Wasm_ast.var -> Wasm_ast.var option t
-
 val event : Parse_info.t -> unit t
 
 val no_event : unit t
