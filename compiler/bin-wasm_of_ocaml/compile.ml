@@ -246,7 +246,7 @@ let generate_prelude ~out_file =
   let code, uinfo = Parse_bytecode.predefined_exceptions () in
   let profile = Profile.O1 in
   let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
-    Driver.optimize ~profile code
+    Driver.optimize ~profile ~shapes:false code
   in
   let context = Generate.start () in
   let _ =
@@ -398,7 +398,7 @@ let run
     let code = one.code in
     let standalone = Option.is_none unit_name in
     let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
-      Driver.optimize ~profile code
+      Driver.optimize ~profile ~shapes:false code
     in
     let context = Generate.start () in
     let toplevel_name, generated_js =

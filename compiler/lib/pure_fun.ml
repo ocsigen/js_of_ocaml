@@ -27,11 +27,16 @@ open Code
 
 (****)
 
+let pure pure_funs x = Var.Set.mem x pure_funs
+
+let empty = Var.Set.empty
+
 let pure_expr pure_funs e =
   match e with
   | Block _ | Field _ | Closure _ | Constant _ -> true
   | Special (Alias_prim _) -> true
-  | Apply { f; exact; _ } -> exact && Var.Set.mem f pure_funs
+  | Apply { f; exact; _ } ->
+      exact && (Var.Set.mem f pure_funs || Shape.State.is_pure_fun f)
   | Prim (p, _l) -> (
       match p with
       | Extern f -> Primitive.is_pure f
