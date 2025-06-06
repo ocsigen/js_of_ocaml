@@ -387,14 +387,18 @@
             (global.set $method_cache (local.get $a))))
       (local.set $ofs
          (array.get $int_array (global.get $method_cache) (local.get $cacheid)))
-      (if (i32.eq (local.get $tag)
-             (i31.get_s
-                (ref.cast (ref i31)
-                   (array.get $block (local.get $meths) (local.get $ofs)))))
+      (if (i32.lt_u (local.get $ofs) (array.len (local.get $meths)))
          (then
-            (return
-               (array.get $block
-                  (local.get $meths) (i32.sub (local.get $ofs) (i32.const 1))))))
+            (if (i32.eq (local.get $tag)
+                   (i31.get_s
+                      (ref.cast (ref i31)
+                         (array.get $block (local.get $meths)
+                            (local.get $ofs)))))
+               (then
+                  (return
+                     (array.get $block
+                        (local.get $meths)
+                        (i32.sub (local.get $ofs) (i32.const 1))))))))
       (local.set $li (i32.const 3))
       (local.set $hi
          (i32.add
