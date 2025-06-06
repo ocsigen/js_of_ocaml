@@ -80,6 +80,30 @@ function caml_array_concat(l) {
   return a;
 }
 
+//Provides: caml_floatarray_concat mutable
+//Version: >= 5.4
+function caml_floatarray_concat(l) {
+  var a = [0];
+  while (l !== 0) {
+    var b = l[1];
+    for (var i = 1; i < b.length; i++) a.push(b[i]);
+    l = l[2];
+  }
+  return a;
+}
+
+//Provides: caml_uniform_array_concat mutable
+//Version: >= 5.4
+function caml_uniform_array_concat(l) {
+  var a = [0];
+  while (l !== 0) {
+    var b = l[1];
+    for (var i = 1; i < b.length; i++) a.push(b[i]);
+    l = l[2];
+  }
+  return a;
+}
+
 //Provides: caml_array_blit
 function caml_array_blit(a1, i1, a2, i2, len) {
   if (i2 <= i1) {

@@ -194,6 +194,7 @@ function caml_ml_out_channels_list() {
 //Requires: caml_ml_channels, caml_sys_fds
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
+//Requires: caml_io_buffer_size
 function caml_ml_open_descriptor_out(fd) {
   var fd_desc = caml_sys_fds[fd];
   if (fd_desc === undefined)
@@ -208,7 +209,7 @@ function caml_ml_open_descriptor_out(fd) {
     opened: true,
     out: true,
     buffer_curr: 0,
-    buffer: new Uint8Array(65536),
+    buffer: new Uint8Array(caml_io_buffer_size),
     buffered: buffered,
   };
   caml_ml_channels.set(chanid, channel);
@@ -219,6 +220,7 @@ function caml_ml_open_descriptor_out(fd) {
 //Requires: caml_ml_channels, caml_sys_fds
 //Requires: caml_raise_sys_error
 //Requires: caml_sys_open
+//Requires: caml_io_buffer_size
 function caml_ml_open_descriptor_in(fd) {
   var fd_desc = caml_sys_fds[fd];
   if (fd_desc === undefined)
@@ -234,7 +236,7 @@ function caml_ml_open_descriptor_in(fd) {
     out: false,
     buffer_curr: 0,
     buffer_max: 0,
-    buffer: new Uint8Array(65536),
+    buffer: new Uint8Array(caml_io_buffer_size),
     refill: refill,
   };
   caml_ml_channels.set(chanid, channel);
