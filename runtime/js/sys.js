@@ -377,8 +377,8 @@ function caml_sys_io_buffer_size(_unit) {
 //Requires: caml_string_of_jsstring
 //Version: >= 5.4
 function caml_sys_temp_dir_name(_unit) {
-  if (os_type === "Win32" && require("node:os").tmpdir) {
-    return caml_string_of_jsstring(globalThis.os.tmpdir());
+  if (os_type === "Win32") {
+    return caml_string_of_jsstring(require("node:os").tmpdir());
   } else {
     return caml_string_of_jsstring("");
   }
