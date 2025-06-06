@@ -333,7 +333,7 @@ class type event_listener_options = object
   method passive : bool t writeonly_prop
 end
 
-let addEventListenerWithOptions (e : (< .. > as 'a) t) typ ?capture ?once ?passive h =
+let addEventListenerWithOptions (e : < .. > t) typ ?capture ?once ?passive h =
   if not (Js.Optdef.test (Js.Unsafe.coerce e)##.addEventListener)
   then
     let ev = (Js.string "on")##concat typ in
@@ -353,7 +353,7 @@ let addEventListenerWithOptions (e : (< .. > as 'a) t) typ ?capture ?once ?passi
     let () = (Js.Unsafe.coerce e)##addEventListener typ h opts in
     fun () -> (Js.Unsafe.coerce e)##removeEventListener typ h opts
 
-let addEventListener (e : (< .. > as 'a) t) typ h capt =
+let addEventListener (e : < .. > t) typ h capt =
   addEventListenerWithOptions e typ ~capture:capt h
 
 let removeEventListener id = id ()

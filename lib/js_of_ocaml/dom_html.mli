@@ -2593,7 +2593,7 @@ val removeEventListener : event_listener_id -> unit
 (** Remove the given event listener. *)
 
 val addMousewheelEventListenerWithOptions :
-     (#eventTarget t as 'a)
+     #eventTarget t
   -> ?capture:bool t
   -> ?once:bool t
   -> ?passive:bool t
@@ -2605,7 +2605,7 @@ val addMousewheelEventListenerWithOptions :
       means down / right. *)
 
 val addMousewheelEventListener :
-     (#eventTarget t as 'a)
+     #eventTarget t
   -> (mouseEvent t -> dx:int -> dy:int -> bool t)
   -> bool t
   -> event_listener_id
