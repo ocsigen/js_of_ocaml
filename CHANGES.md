@@ -27,6 +27,7 @@
 * Compiler: remove empty blocks (#1934)
 * Ppx: explicitly disallow polymorphic method (#1897)
 * Ppx: allow "function" in object literals (#1897)
+* Lib: add Dom_html.window.matchMedia & Dom_html.mediaQueryList (#2017)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
 * Compiler: add the `--empty-sourcemap` flag
 * Compiler: faster compilation by stopping sooner when optimizations become unproductive (#1939)
