@@ -477,6 +477,14 @@ and toggleEvent = object
   method oldState : js_string t readonly_prop
 end
 
+and mediaQueryListEvent = object
+  inherit event
+
+  method matches : js_string t readonly_prop
+
+  method media : bool t readonly_prop
+end
+
 and dataTransfer = object
   method dropEffect : js_string t prop
 
@@ -2164,6 +2172,16 @@ class type _URL = object
   method revokeObjectURL : js_string t -> unit meth
 end
 
+class type mediaQueryList = object
+  method media : js_string t prop
+
+  method matches : bool readonly_prop
+
+  method onchange : (mediaQueryList t, mediaQueryListEvent t) event_listener prop
+
+  inherit eventTarget
+end
+
 (** Specification of window objects *)
 class type window = object
   inherit eventTarget
@@ -2285,6 +2303,8 @@ class type window = object
   method _URL : _URL t readonly_prop
 
   method devicePixelRatio : number_t readonly_prop
+
+  method matchMedia : js_string t -> mediaQueryList t meth
 end
 
 val window : window t
