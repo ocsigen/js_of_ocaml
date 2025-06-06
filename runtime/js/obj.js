@@ -32,10 +32,36 @@ function caml_update_dummy(x, y) {
 
 //Provides: caml_alloc_dummy_infix
 //Requires: caml_call_gen
+//Version: < 5.4
 function caml_alloc_dummy_infix() {
   return function f(x) {
     return caml_call_gen(f.fun, [x]);
   };
+}
+
+//Provides: caml_alloc_dummy_lazy
+//Version: >= 5.4
+function caml_alloc_dummy_lazy(_unit) {
+  return [0, 0];
+}
+
+//Provides: caml_update_dummy_lazy
+//Requires: caml_obj_tag
+//Requires: caml_update_dummy
+//Version: >= 5.4
+function caml_update_dummy_lazy(dummy, newval) {
+  switch (caml_obj_tag(newval)) {
+    case 246: // Lazy
+    case 244: // Forcing
+    case 250: // Forward
+      caml_update_dummy(dummy, newval);
+      break;
+    default:
+      dummy[1] = newval;
+      dummy[0] = 250;
+      break;
+  }
+  return 0;
 }
 
 //Provides: caml_obj_tag
@@ -243,4 +269,19 @@ function caml_is_continuation_tag(t) {
 //Requires: caml_string_of_jsstring
 function caml_custom_identifier(o) {
   return caml_string_of_jsstring(o.caml_custom);
+}
+
+//Provides: caml_ml_gc_ramp_up
+//Requires: caml_callback
+//Version: >= 5.4
+function caml_ml_gc_ramp_up(f) {
+  var a = caml_callback(f, [0]);
+  var suspended = 0;
+  return [0, a, suspended];
+}
+
+//Provides: caml_ml_gc_ramp_down
+//Version: >= 5.4
+function caml_ml_gc_ramp_down(_suspended_collection_work) {
+  return 0;
 }
