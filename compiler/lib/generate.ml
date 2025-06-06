@@ -1497,6 +1497,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* fields = build_fields fields in
             return (J.EObj fields)
         | Extern "caml_alloc_dummy_function", [ _; size ] ->
+            (* Removed in Ocaml 5.2 *)
             let* i =
               let* cx = access' ~ctx size in
               return

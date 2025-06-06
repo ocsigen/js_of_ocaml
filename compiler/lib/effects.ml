@@ -530,6 +530,7 @@ let rewrite_instr ~st (instr : instr) : instr =
       st.in_cps := Var.Set.add x !(st.in_cps);
       Let (x, Closure (cps_params, cps_cont, None))
   | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
+      (* Removed in OCaml 5.2 *)
       match arity with
       | Pc (Int a) ->
           Let

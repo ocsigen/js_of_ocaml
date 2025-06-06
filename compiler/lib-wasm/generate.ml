@@ -663,6 +663,7 @@ module Generate (Target : Target_sig.S) = struct
     | Constant c -> Constant.translate c
     | Special (Alias_prim _) -> assert false
     | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ]) ->
+        (* Removed in OCaml 5.2 *)
         Closure.dummy ~cps:(effects_cps ()) ~arity:(Targetint.to_int_exn arity)
     | Prim (Extern "caml_alloc_dummy_infix", _) ->
         Closure.dummy ~cps:(effects_cps ()) ~arity:1
