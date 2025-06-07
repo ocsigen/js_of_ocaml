@@ -23,6 +23,7 @@ module type S = sig
     val allocate :
          tag:int
       -> deadcode_sentinal:Code.Var.t
+      -> load:(Code.Var.t -> expression)
       -> [ `Expr of Wasm_ast.expression | `Var of Wasm_ast.var ] list
       -> expression
 

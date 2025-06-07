@@ -34,6 +34,7 @@ https://github.com/llvm/llvm-project/issues/58438
 type constant_global =
   { init : W.expression option
   ; constant : bool
+  ; typ : W.value_type
   }
 
 type context =
@@ -46,6 +47,7 @@ type context =
   ; types : Wasm_ast.type_field Var.Hashtbl.t
   ; mutable closure_envs : Var.t Var.Map.t
         (** GC: mapping of recursive functions to their shared environment *)
+  ; closure_types : (W.value_type option list, int) Hashtbl.t
   ; mutable apply_funs : Var.t IntMap.t
   ; mutable cps_apply_funs : Var.t IntMap.t
   ; mutable curry_funs : Var.t IntMap.t
@@ -68,6 +70,7 @@ let make_context ~value_type =
   ; type_names = String.Hashtbl.create 128
   ; types = Var.Hashtbl.create 128
   ; closure_envs = Var.Map.empty
+  ; closure_types = Poly.Hashtbl.create 128
   ; apply_funs = IntMap.empty
   ; cps_apply_funs = IntMap.empty
   ; curry_funs = IntMap.empty
@@ -198,6 +201,7 @@ let register_global name ?exported_name ?(constant = false) typ init st =
       name
       { init = (if not typ.mut then Some init else None)
       ; constant = (not typ.mut) || constant
+      ; typ = typ.typ
       }
       st.context.constant_globals;
   (), st
@@ -413,76 +417,73 @@ let is_small_constant e =
   | W.GlobalGet name -> global_is_constant name
   | _ -> return false
 
-let un_op_is_smi op =
-  match op with
-  | W.Clz | Ctz | Popcnt | Eqz -> true
-  | TruncSatF64 _ | ReinterpretF -> false
-
-let bin_op_is_smi (op : W.int_bin_op) =
-  match op with
-  | W.Add | Sub | Mul | Div _ | Rem _ | And | Or | Xor | Shl | Shr _ | Rotl | Rotr ->
-      false
-  | Eq | Ne | Lt _ | Gt _ | Le _ | Ge _ -> true
-
-let rec is_smi e =
-  match e with
-  | W.Const (I32 i) -> Int32.equal (Arith.wrap31 i) i
-  | UnOp ((I32 op | I64 op), _) -> un_op_is_smi op
-  | BinOp ((I32 op | I64 op), _, _) -> bin_op_is_smi op
-  | I31Get (S, _) -> true
-  | I31Get (U, _)
-  | Const (I64 _ | F32 _ | F64 _)
-  | UnOp ((F32 _ | F64 _), _)
-  | I32WrapI64 _
-  | I64ExtendI32 _
-  | F32DemoteF64 _
-  | F64PromoteF32 _
-  | LocalGet _
-  | LocalTee _
-  | GlobalGet _
-  | BlockExpr _
-  | Call _
-  | Seq _
-  | Pop _
-  | RefFunc _
-  | Call_ref _
-  | RefI31 _
-  | ArrayNew _
-  | ArrayNewFixed _
-  | ArrayNewData _
-  | ArrayGet _
-  | ArrayLen _
-  | StructNew _
-  | StructGet _
-  | RefCast _
-  | RefNull _
-  | Br_on_cast _
-  | Br_on_cast_fail _
-  | Br_on_null _
-  | Try _
-  | ExternConvertAny _
-  | AnyConvertExtern _ -> false
-  | BinOp ((F32 _ | F64 _), _, _) | RefTest _ | RefEq _ -> true
-  | IfExpr (_, _, ift, iff) -> is_smi ift && is_smi iff
-
-let get_i31_value x st =
-  match st.instrs with
-  | LocalSet (x', RefI31 e) :: rem when Code.Var.equal x x' && is_smi e ->
-      let x = Var.fresh () in
-      let x, st = add_var ~typ:I32 x st in
-      Some x, { st with instrs = LocalSet (x', RefI31 (LocalTee (x, e))) :: rem }
-  | Event loc :: LocalSet (x', RefI31 e) :: rem when Code.Var.equal x x' && is_smi e ->
-      let x = Var.fresh () in
-      let x, st = add_var ~typ:I32 x st in
-      ( Some x
-      , { st with instrs = Event loc :: LocalSet (x', RefI31 (LocalTee (x, e))) :: rem } )
-  | _ -> None, st
-
 let load x =
   let* x = var x in
   match x with
   | Local (_, x, _) -> return (W.LocalGet x)
   | Expr e -> e
+
+let rec variable_type x st =
+  match Var.Map.find_opt x st.vars with
+  | Some (Local (_, _, typ)) -> typ, st
+  | Some (Expr e) ->
+      (let* e = e in
+       expression_type e)
+        st
+  | None -> None, st
+
+and expression_type (e : W.expression) st =
+  match e with
+  | Const _
+  | UnOp _
+  | BinOp _
+  | I32WrapI64 _
+  | I64ExtendI32 _
+  | F32DemoteF64 _
+  | F64PromoteF32 _
+  | BlockExpr _
+  | Call _
+  | RefFunc _
+  | Call_ref _
+  | I31Get _
+  | ArrayGet _
+  | ArrayLen _
+  | RefTest _
+  | RefEq _
+  | RefNull _
+  | Try _
+  | Br_on_null _ -> None, st
+  | LocalGet x | LocalTee (x, _) -> variable_type x st
+  | GlobalGet x ->
+      ( (try
+           let typ = (Var.Map.find x st.context.constant_globals).typ in
+           if Poly.equal typ st.context.value_type
+           then None
+           else
+             Some
+               (match typ with
+               | Ref { typ; nullable = true } -> Ref { typ; nullable = false }
+               | _ -> typ)
+         with Not_found -> None)
+      , st )
+  | Seq (_, e') -> expression_type e' st
+  | Pop typ -> Some typ, st
+  | RefI31 _ -> Some (Ref { nullable = false; typ = I31 }), st
+  | ArrayNew (ty, _, _)
+  | ArrayNewFixed (ty, _)
+  | ArrayNewData (ty, _, _, _)
+  | StructNew (ty, _) -> Some (Ref { nullable = false; typ = Type ty }), st
+  | StructGet (_, ty, i, _) -> (
+      match (Var.Hashtbl.find st.context.types ty).typ with
+      | Struct l -> (
+          match (List.nth l i).typ with
+          | Value typ ->
+              (if Poly.equal typ st.context.value_type then None else Some typ), st
+          | Packed _ -> assert false)
+      | Array _ | Func _ -> assert false)
+  | RefCast (typ, _) | Br_on_cast (_, _, typ, _) | Br_on_cast_fail (_, typ, _, _) ->
+      Some (Ref typ), st
+  | IfExpr (_, _, _, _) | ExternConvertAny _ | AnyConvertExtern _ -> None, st
 
 let tee ?typ x e =
   let* e = e in
@@ -499,6 +500,47 @@ let should_make_global x st = Var.Set.mem x st.context.globalized_variables, st
 
 let value_type st = st.context.value_type, st
 
+let get_constant x st = Var.Hashtbl.find_opt st.context.constants x, st
+
+let placeholder_value typ f =
+  let* c = get_constant typ in
+  match c with
+  | None ->
+      let x = Var.fresh () in
+      let* () = register_constant typ (W.GlobalGet x) in
+      let* () =
+        register_global
+          ~constant:true
+          x
+          { mut = false; typ = Ref { nullable = false; typ = Type typ } }
+          (f typ)
+      in
+      return (W.GlobalGet x)
+  | Some c -> return c
+
+let array_placeholder typ = placeholder_value typ (fun typ -> ArrayNewFixed (typ, []))
+
+let default_value val_typ st =
+  match val_typ with
+  | W.Ref { typ = I31 | Eq | Any; _ } -> (W.RefI31 (Const (I32 0l)), val_typ, None), st
+  | W.Ref { typ = Type typ; nullable = false } -> (
+      match (Var.Hashtbl.find st.context.types typ).typ with
+      | Array _ ->
+          (let* placeholder = array_placeholder typ in
+           return (placeholder, val_typ, None))
+            st
+      | Struct _ | Func _ ->
+          ( ( W.RefNull (Type typ)
+            , W.Ref { typ = Type typ; nullable = true }
+            , Some { W.typ = Type typ; nullable = false } )
+          , st ))
+  | I32 -> (Const (I32 0l), val_typ, None), st
+  | F32 -> (Const (F32 0.), val_typ, None), st
+  | I64 -> (Const (I64 0L), val_typ, None), st
+  | F64 -> (Const (F64 0.), val_typ, None), st
+  | W.Ref { nullable = true; _ }
+  | W.Ref { typ = Func | Extern | Struct | Array | None_; _ } -> assert false
+
 let rec store ?(always = false) ?typ x e =
   let* e = e in
   match e with
@@ -513,23 +555,26 @@ let rec store ?(always = false) ?typ x e =
         let* b = should_make_global x in
         if b
         then
-          let* typ =
-            match typ with
-            | Some typ -> return typ
-            | None -> value_type
-          in
           let* () =
             let* b = global_is_registered x in
             if b
             then return ()
             else
-              register_global
-                ~constant:true
-                x
-                { mut = true; typ }
-                (W.RefI31 (Const (I32 0l)))
+              let* typ =
+                match typ with
+                | Some typ -> return typ
+                | None -> value_type
+              in
+              let* default, typ', cast = default_value typ in
+              let* () =
+                register_constant
+                  x
+                  (match cast with
+                  | Some typ -> W.RefCast (typ, W.GlobalGet x)
+                  | None -> W.GlobalGet x)
+              in
+              register_global ~constant:true x { mut = true; typ = typ' } default
           in
-          let* () = register_constant x (W.GlobalGet x) in
           instr (GlobalSet (x, e))
         else
           let* i = add_var ?typ x in
