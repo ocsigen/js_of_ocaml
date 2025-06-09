@@ -82,4 +82,6 @@ val f : fast:bool -> Code.program -> state * info
 
 val exact_call : info -> Var.t -> int -> bool
 
+val get_unique_closure : info -> Var.t -> Var.t option
+
 val function_arity : info -> Var.t -> int option
