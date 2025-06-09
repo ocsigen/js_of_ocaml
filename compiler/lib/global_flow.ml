@@ -805,6 +805,31 @@ let exact_call info f n =
           | Expr _ | Phi _ -> assert false)
         known
 
+let get_unique_closure info f =
+  (* The specialize pass can create knew functions *)
+  if Var.idx f >= Var.Tbl.length info.info_approximation
+  then None
+  else
+    match Var.Tbl.get info.info_approximation f with
+    | Top | Values { others = true; _ } -> None
+    | Values { known; others = false } -> (
+        match
+          Var.Set.fold
+            (fun g acc ->
+              match info.info_defs.(Var.idx g) with
+              | Expr (Closure _) -> (
+                  match acc with
+                  | None -> Some (Some g)
+                  | Some (Some _) -> Some None
+                  | Some None -> acc)
+              | Expr (Block _) -> acc
+              | Expr _ | Phi _ -> assert false)
+            known
+            None
+        with
+        | None -> None
+        | Some kind -> kind)
+
 let function_arity info f =
   match Var.Tbl.get info.info_approximation f with
   | Top | Values { others = true; _ } -> None
