@@ -42,7 +42,9 @@
 (rule
  (targets shapes.cma.js)
  (enabled_if
-  (= %{ocaml_version} "5.2.0"))
+  (and
+   (>= %{ocaml_version} "5.3")
+   (< %{ocaml_version} "5.4")))
  (action
   (run
    %{bin:js_of_ocaml}
@@ -55,7 +57,9 @@
 (rule
  (targets shapes.cma.output.js)
  (enabled_if
-  (= %{ocaml_version} "5.2.0"))
+  (and
+   (>= %{ocaml_version} "5.3")
+   (< %{ocaml_version} "5.4")))
  (action
   (with-stdout-to
    %{targets}
@@ -64,7 +68,9 @@
 (rule
  (alias runtest)
  (enabled_if
-  (= %{ocaml_version} "5.2.0"))
+  (and
+   (>= %{ocaml_version} "5.3")
+   (< %{ocaml_version} "5.4")))
  (action
   (diff shapes.cma.expected.js shapes.cma.output.js)))
 
