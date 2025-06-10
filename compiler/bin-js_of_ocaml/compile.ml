@@ -54,15 +54,7 @@ let output_gen
     Driver.configure fmt;
     if standalone then header ~custom_header fmt;
     if Config.Flag.header () then jsoo_header fmt build_info;
-    let sm, shapes = f ~standalone ~shapes:write_shape ~source_map (k, fmt) in
-    (if write_shape
-     then
-       match output_file with
-       | `Stdout -> ()
-       | `Name name ->
-           Shape.Store.save'
-             (Filename.remove_extension name ^ Shape.Store.ext)
-             (StringMap.bindings shapes));
+    let sm = f ~standalone ~shapes:write_shape ~source_map (k, fmt) in
     match source_map, sm with
     | None, _ | _, None -> ()
     | Some { output_file = output; source_map; keep_empty }, Some sm ->
@@ -140,11 +132,6 @@ let sourcemap_of_infos ~base l =
 
 let sourcemap_of_info ~base info = sourcemap_of_infos ~base [ info ]
 
-let map_fst f (x, y) = f x, y
-
-let merge_shape a b =
-  StringMap.union (fun _name s1 s2 -> if Shape.equal s1 s2 then Some s1 else None) a b
-
 let run
     { Cmd_arg.common
     ; profile
@@ -170,7 +157,6 @@ let run
     ; include_runtime
     ; effects
     ; shape_files
-    ; write_shape
     } =
   let source_map_base =
     Option.map ~f:(fun spec -> spec.Source_map.Encoding_spec.source_map) source_map
@@ -273,7 +259,7 @@ let run
       output_file =
     if check_sourcemap then check_debug one;
     let init_pseudo_fs = fs_external && standalone in
-    let sm =
+    let sm, shapes =
       match output_file with
       | `Stdout, formatter ->
           let instr =
@@ -326,6 +312,7 @@ let run
                   Driver.f' ~standalone ~link:`Needed ?profile ~wrap_with_fun pfs_fmt code));
           res
     in
+    StringMap.iter (fun name shape -> Shape.Store.set ~name shape) shapes;
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
     sm
   in
@@ -398,7 +385,7 @@ let run
         { code; cmis = StringSet.empty; debug = Parse_bytecode.Debug.default_summary }
       in
       output_gen
-        ~write_shape
+        ~write_shape:false
         ~standalone:true
         ~custom_header
         ~build_info:(Build_info.create `Runtime)
@@ -415,7 +402,7 @@ let run
             ~shapes
             ~link:`All
             output_file
-          |> map_fst (sourcemap_of_info ~base:source_map_base))
+          |> sourcemap_of_info ~base:source_map_base)
   | (`Stdin | `File _) as bytecode ->
       let kind, ic, close_ic, include_dirs =
         match bytecode with
@@ -448,7 +435,7 @@ let run
           in
           if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
           output_gen
-            ~write_shape
+            ~write_shape:false
             ~standalone:true
             ~custom_header
             ~build_info:(Build_info.create `Exe)
@@ -463,7 +450,7 @@ let run
                 ~source_map
                 ~link:(if linkall then `All else `Needed)
                 output_file
-              |> map_fst (sourcemap_of_info ~base:source_map_base))
+              |> sourcemap_of_info ~base:source_map_base)
       | `Cmo cmo ->
           let output_file =
             match output_file, keep_unit_names with
@@ -488,7 +475,7 @@ let run
           in
           if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
           output_gen
-            ~write_shape
+            ~write_shape:true
             ~standalone:false
             ~custom_header
             ~build_info:(Build_info.create `Cmo)
@@ -497,17 +484,16 @@ let run
             (fun ~standalone ~shapes ~source_map output ->
               match include_runtime with
               | true ->
-                  let sm1, sh1 =
+                  let sm1 =
                     output_partial_runtime ~standalone ~shapes ~source_map output
                   in
-                  let sm2, sh2 =
+                  let sm2 =
                     output_partial cmo code ~standalone ~shapes ~source_map output
                   in
-                  ( sourcemap_of_infos ~base:source_map_base [ sm1; sm2 ]
-                  , merge_shape sh1 sh2 )
+                  sourcemap_of_infos ~base:source_map_base [ sm1; sm2 ]
               | false ->
                   output_partial cmo code ~standalone ~shapes ~source_map output
-                  |> map_fst (sourcemap_of_info ~base:source_map_base))
+                  |> sourcemap_of_info ~base:source_map_base)
       | `Cma cma when keep_unit_names ->
           (if include_runtime
            then
@@ -523,7 +509,7 @@ let run
                    failwith "use [-o dirname/] or remove [--keep-unit-names]"
              in
              output_gen
-               ~write_shape
+               ~write_shape:false
                ~standalone:false
                ~custom_header
                ~build_info:(Build_info.create `Runtime)
@@ -531,7 +517,7 @@ let run
                (`Name output_file)
                (fun ~standalone ~shapes ~source_map output ->
                  output_partial_runtime ~standalone ~shapes ~source_map output
-                 |> map_fst (sourcemap_of_info ~base:source_map_base)));
+                 |> sourcemap_of_info ~base:source_map_base));
           List.iter cma.lib_units ~f:(fun cmo ->
               let output_file =
                 match output_file with
@@ -560,7 +546,7 @@ let run
                   t1
                   (Ocaml_compiler.Cmo_format.name cmo);
               output_gen
-                ~write_shape
+                ~write_shape:true
                 ~standalone:false
                 ~custom_header
                 ~build_info:(Build_info.create `Cma)
@@ -568,7 +554,7 @@ let run
                 (`Name output_file)
                 (fun ~standalone ~shapes ~source_map output ->
                   output_partial ~standalone ~shapes ~source_map cmo code output
-                  |> map_fst (sourcemap_of_info ~base:source_map_base)))
+                  |> sourcemap_of_info ~base:source_map_base))
       | `Cma cma ->
           let f ~standalone ~shapes ~source_map output =
             (* Always compute shapes because it can be used by other units of the cma *)
@@ -599,20 +585,15 @@ let run
                       (Ocaml_compiler.Cmo_format.name cmo);
                   output_partial ~standalone ~shapes ~source_map cmo code output)
             in
-            let sm_and_shapes =
+            let sm =
               match runtime with
               | None -> units
               | Some x -> x :: units
             in
-            let shapes =
-              List.fold_left sm_and_shapes ~init:StringMap.empty ~f:(fun acc (_, s) ->
-                  merge_shape s acc)
-            in
-            ( sourcemap_of_infos ~base:source_map_base (List.map sm_and_shapes ~f:fst)
-            , shapes )
+            sourcemap_of_infos ~base:source_map_base sm
           in
           output_gen
-            ~write_shape
+            ~write_shape:true
             ~standalone:false
             ~custom_header
             ~build_info:(Build_info.create `Cma)
