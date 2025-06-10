@@ -730,7 +730,6 @@ let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatte
   let shapes_v = optimized_code.shapes in
   StringMap.iter
     (fun name shape ->
-      Shape.Store.set ~name shape;
       if shapes
       then
         Pretty_print.string
