@@ -35,19 +35,13 @@ val equal : t -> t -> bool
 val merge : t -> t -> t
 
 module Store : sig
-  val ext : string
-
   val set : name:string -> t -> unit
 
   val get : name:string -> t option
 
   val load' : string -> unit
 
-  val load : name:string -> paths:string list -> t option
-
-  val save : name:string -> dir:string -> unit
-
-  val save' : string -> (string * t) list -> unit
+  val load : name:string -> t option
 end
 
 module State : sig

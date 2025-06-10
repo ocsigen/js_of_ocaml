@@ -28,8 +28,6 @@ type t =
       ; res : t
       }
 
-type shape = t
-
 let rec equal a b =
   match a, b with
   | Top, Top -> true
@@ -132,89 +130,23 @@ let of_string (s : string) =
   parse_shape ()
 
 module Store = struct
-  let ext = ".jsoo-shape"
-
-  let filename ~dir ~name = Filename.concat dir (name ^ ext)
-
   let t = String.Hashtbl.create 17
-
-  let loaded = String.Hashtbl.create 17
 
   let set ~name shape = String.Hashtbl.replace t name shape
 
   let get ~name = String.Hashtbl.find_opt t name
 
-  let magic = "JsooShape000"
-
   let load' fn =
-    let ic = open_in_bin fn in
-    let m = really_input_string ic (String.length magic) in
-    if String.equal m magic
-    then (
-      let shapes : (string * shape) list = Marshal.from_channel ic in
-      close_in ic;
-      List.iter shapes ~f:(fun (name, shape) -> set ~name shape))
-    else (
-      close_in ic;
-      let l = file_lines_bin fn in
-      List.iter l ~f:(fun s ->
-          match String.drop_prefix ~prefix:"//#shape: " s with
-          | None -> ()
-          | Some name_n_shape -> (
-              match String.lsplit2 name_n_shape ~on:':' with
-              | None -> ()
-              | Some (name, shape) -> set ~name (of_string shape))))
+    let l = file_lines_bin fn in
+    List.iter l ~f:(fun s ->
+        match String.drop_prefix ~prefix:"//#shape: " s with
+        | None -> ()
+        | Some name_n_shape -> (
+            match String.lsplit2 name_n_shape ~on:':' with
+            | None -> ()
+            | Some (name, shape) -> set ~name (of_string shape)))
 
-  let load ~name ~paths =
-    if String.Hashtbl.mem t name
-    then get ~name
-    else if not (Config.Flag.load_shapes_auto ())
-    then None
-    else
-      match Fs.find_in_path paths (filename ~dir:"." ~name) with
-      | Some f ->
-          load' f;
-          get ~name
-      | None ->
-          let rec scan : _ -> shape option = function
-            | [] -> None
-            | dir :: xs -> (
-                let l =
-                  Sys.readdir dir
-                  |> Array.to_list
-                  |> List.sort ~cmp:String.compare
-                  |> List.map ~f:(fun n -> Filename.concat dir n)
-                in
-                match
-                  List.find_map l ~f:(fun s ->
-                      if Filename.check_suffix s ext && not (String.Hashtbl.mem loaded s)
-                      then (
-                        load' s;
-                        String.Hashtbl.add loaded s ();
-                        match get ~name with
-                        | None -> None
-                        | Some shape -> Some (s, shape))
-                      else None)
-                with
-                | None -> scan xs
-                | Some (fn, shape) ->
-                    Format.eprintf "Shape: %s loaded from %s\n" name fn;
-                    Some shape)
-          in
-          scan paths
-
-  let save' fn (l : (string * shape) list) =
-    let oc = open_out_bin fn in
-    output_string oc magic;
-    Marshal.to_channel oc l [];
-    close_out oc
-
-  let save ~name ~dir =
-    match get ~name with
-    | None -> failwith (Printf.sprintf "Don't know any shape for %s" name)
-    | Some shape ->
-        let fn = filename ~dir ~name in
-        save' fn [ name, shape ]
+  let load ~name = if String.Hashtbl.mem t name then get ~name else None
 end
 
 module State = struct
