@@ -23,8 +23,6 @@ let debug = Debug.find "main"
 
 let times = Debug.find "times"
 
-let debug_shapes = Debug.find "shapes"
-
 type optimized_result =
   { program : Code.program
   ; variable_uses : Deadcode.variable_uses
@@ -103,7 +101,7 @@ let ( +> ) f g x = g (f x)
 let map_fst5 f (x, y, z, t, u) = f x, y, z, t, u
 
 let collects_shapes ~shapes (p : Code.program) =
-  if debug_shapes () || shapes
+  if shapes
   then (
     let t = Timer.make () in
     let shapes = ref StringMap.empty in
@@ -729,17 +727,17 @@ let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatte
     +> name_variables
     +> output formatter ~source_map ()
   in
-  let shapes = optimized_code.shapes in
+  let shapes_v = optimized_code.shapes in
   StringMap.iter
     (fun name shape ->
       Shape.Store.set ~name shape;
-      if debug_shapes ()
+      if shapes
       then
         Pretty_print.string
           formatter
           (Printf.sprintf "//# shape: %s:%s\n" name (Shape.to_string shape)))
-    shapes;
-  emit formatter optimized_code, shapes
+    shapes_v;
+  emit formatter optimized_code, shapes_v
 
 let full_no_source_map ~formatter ~shapes ~standalone ~wrap_with_fun ~profile ~link p =
   let (_ : Source_map.info * _) =
