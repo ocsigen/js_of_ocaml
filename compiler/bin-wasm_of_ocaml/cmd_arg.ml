@@ -63,6 +63,7 @@ type t =
   ; params : (string * string) list
   ; include_dirs : string list
   ; effects : Config.effects_backend
+  ; shape_files : string list
   }
 
 let options () =
@@ -77,6 +78,10 @@ let options () =
   let input_file =
     let doc = "Compile the bytecode program [$(docv)]. " in
     Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM" ~doc)
+  in
+  let shape_files =
+    let doc = "load shape file [$(docv)]." in
+    Arg.(value & opt_all string [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
@@ -140,7 +145,8 @@ let options () =
       output_file
       input_file
       runtime_files
-      effects =
+      effects
+      shape_files =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let output_file =
       let ext =
@@ -172,6 +178,7 @@ let options () =
       ; sourcemap_root
       ; sourcemap_don't_inline_content
       ; effects
+      ; shape_files
       }
   in
   let t =
@@ -189,7 +196,8 @@ let options () =
       $ output_file
       $ input_file
       $ runtime_files
-      $ effects)
+      $ effects
+      $ shape_files)
   in
   Term.ret t
 
@@ -270,6 +278,7 @@ let options_runtime_only () =
       ; sourcemap_root
       ; sourcemap_don't_inline_content
       ; effects
+      ; shape_files = []
       }
   in
   let t =

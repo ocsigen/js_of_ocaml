@@ -844,6 +844,9 @@ let get_global state instrs i =
                 let x, state = State.fresh_var state in
                 if debug_parser ()
                 then Format.printf "%a = get_global(%s)@." Var.print x name;
+                (match Shape.Store.load ~name with
+                | None -> ()
+                | Some shape -> Shape.State.assign x shape);
                 ( x
                 , state
                 , Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])) :: instrs
