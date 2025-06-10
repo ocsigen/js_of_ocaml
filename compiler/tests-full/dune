@@ -11,8 +11,6 @@
    --debug
    var
    --debuginfo
-   --debug
-   shapes
    %{lib:stdlib:stdlib.cma}
    -o
    %{targets})))
@@ -50,8 +48,6 @@
    %{bin:js_of_ocaml}
    --pretty
    --debuginfo
-   --debug
-   shapes
    %{dep:shapes.cma}
    -o
    %{targets})))

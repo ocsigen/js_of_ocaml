@@ -64,6 +64,73 @@ let rec to_string (shape : t) =
         | Top -> ""
         | _ -> "->" ^ to_string res)
 
+let of_string (s : string) =
+  let pos = ref 0 in
+  let current () = s.[!pos] in
+  let next () = incr pos in
+  let parse_char c =
+    let c' = current () in
+    if Char.equal c c' then next () else assert false
+  in
+  let parse_char_opt c =
+    let c' = current () in
+    if Char.equal c c'
+    then (
+      next ();
+      true)
+    else false
+  in
+  let rec parse_int acc =
+    match current () with
+    | '0' .. '9' as c ->
+        let d = Char.code c - Char.code '0' in
+        let acc = (acc * 10) + d in
+        next ();
+        parse_int acc
+    | _ -> acc
+  in
+  let rec parse_shape () =
+    match current () with
+    | '[' ->
+        next ();
+        parse_block []
+    | 'N' ->
+        next ();
+        Top
+    | 'F' ->
+        next ();
+        parse_fun ()
+    | _ -> assert false
+  and parse_block acc =
+    match current () with
+    | ']' ->
+        next ();
+        Block (List.rev acc)
+    | _ -> (
+        let x = parse_shape () in
+        match current () with
+        | ',' ->
+            next ();
+            parse_block (x :: acc)
+        | ']' ->
+            next ();
+            Block (List.rev (x :: acc))
+        | _ -> assert false)
+  and parse_fun () =
+    let () = parse_char '(' in
+    let arity = parse_int 0 in
+    let () = parse_char ')' in
+    let pure = parse_char_opt '*' in
+    match current () with
+    | '-' ->
+        next ();
+        parse_char '>';
+        let res = parse_shape () in
+        Function { arity; pure; res }
+    | _ -> Function { arity; pure; res = Top }
+  in
+  parse_shape ()
+
 module Store = struct
   let ext = ".jsoo-shape"
 
@@ -82,11 +149,21 @@ module Store = struct
   let load' fn =
     let ic = open_in_bin fn in
     let m = really_input_string ic (String.length magic) in
-    if not (String.equal m magic)
-    then failwith (Printf.sprintf "Invalid magic number for shape file %s" fn);
-    let shapes : (string * shape) list = Marshal.from_channel ic in
-    close_in ic;
-    List.iter shapes ~f:(fun (name, shape) -> set ~name shape)
+    if String.equal m magic
+    then (
+      let shapes : (string * shape) list = Marshal.from_channel ic in
+      close_in ic;
+      List.iter shapes ~f:(fun (name, shape) -> set ~name shape))
+    else (
+      close_in ic;
+      let l = file_lines_bin fn in
+      List.iter l ~f:(fun s ->
+          match String.drop_prefix ~prefix:"//#shape: " s with
+          | None -> ()
+          | Some name_n_shape -> (
+              match String.lsplit2 name_n_shape ~on:':' with
+              | None -> ()
+              | Some (name, shape) -> set ~name (of_string shape))))
 
   let load ~name ~paths =
     if String.Hashtbl.mem t name
