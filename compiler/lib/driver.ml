@@ -120,6 +120,8 @@ let collects_shapes ~shapes (p : Code.program) =
                   | Utf (Utf8 s) -> s
                 in
                 shapes := StringMap.add name block !shapes
+            | Code.Let (_, Prim (Extern "caml_set_global", [ Pc (String name); Pv block ]))
+              -> shapes := StringMap.add name block !shapes
             | _ -> ()))
       p.blocks;
     let map =
