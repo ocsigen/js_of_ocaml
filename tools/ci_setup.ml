@@ -222,6 +222,23 @@ index 164c393..6cf4835 100644
    return ptr_to_offset(haystack, v_haystack_pos, result);
 |}
     )
+  ; ( "ppx_css"
+    , {|
+diff --git a/vendor/css_parser/src/lexer.ml b/vendor/css_parser/src/lexer.ml
+index 4834742..36495bd 100644
+--- a/vendor/css_parser/src/lexer.ml
++++ b/vendor/css_parser/src/lexer.ml
+@@ -94,7 +94,7 @@ let white_space = [%sedlex.regexp? " " | '\t' | newline]
+ let ws = [%sedlex.regexp? Star white_space]
+ let hex_digit = [%sedlex.regexp? '0' .. '9' | 'a' .. 'f' | 'A' .. 'F']
+ let digit = [%sedlex.regexp? '0' .. '9']
+-let non_ascii = [%sedlex.regexp? '\160' .. '\255']
++let non_ascii = [%sedlex.regexp? Latin1 '\160' .. '\255']
+ let up_to_6_hex_digits = [%sedlex.regexp? Rep (hex_digit, 1 .. 6)]
+ let unicode = [%sedlex.regexp? '\\', up_to_6_hex_digits, Opt white_space]
+ 
+|}
+    )
   ]
 
 let removes =
