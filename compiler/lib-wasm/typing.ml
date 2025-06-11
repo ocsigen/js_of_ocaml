@@ -28,6 +28,9 @@ type typ =
   | Int of Integer.kind
   | Number of boxed_number
   | Tuple of typ array
+      (** This value is a block or an integer; if it's an integer, an
+          overapproximation of the possible values of each of its
+          fields is given by the array of types *)
   | Bot
 
 module Domain = struct
@@ -47,6 +50,8 @@ module Domain = struct
            else
              Array.init (max l l') ~f:(fun i ->
                  if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
+    | Int _, Tuple _ -> t'
+    | Tuple _, Int _ -> t
     | Top, _ | _, Top -> Top
     | (Int _ | Number _ | Tuple _), _ -> Top
 
