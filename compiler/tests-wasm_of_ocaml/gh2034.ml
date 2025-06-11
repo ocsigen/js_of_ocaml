@@ -12,6 +12,30 @@ let o2 =
     method b = ()
   end
 
+let g x = x#d
+
+let o3 =
+  object
+    method a = ()
+
+    method b = ()
+
+    method c = ()
+
+    method d = ()
+  end
+
+let o4 =
+  object
+    method b = ()
+
+    method c = ()
+
+    method d = ()
+  end
+
 let () =
   f o1;
-  f o2
+  f o2;
+  g o3;
+  g o4
