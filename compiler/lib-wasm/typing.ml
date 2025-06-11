@@ -134,6 +134,8 @@ module Domain = struct
            else
              Array.init (max l l') ~f:(fun i ->
                  if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
+    | Int _, Tuple _ -> t'
+    | Tuple _, Int _ -> t
     | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
     | Top, _ | _, Top -> Top
     | (Int _ | Number _ | Tuple _ | Bigarray _), _ -> Top
@@ -164,6 +166,7 @@ module Domain = struct
           i = l || (sub t.(i) t'.(i) && compare t t' (i + 1) l)
         in
         compare t t' 0 (Array.length t)
+    | Int _, Tuple _ -> true
     | Bigarray b, Bigarray b' -> Bigarray.equal b b'
     | (Int _ | Number _ | Tuple _ | Bigarray _), _ -> false
 
