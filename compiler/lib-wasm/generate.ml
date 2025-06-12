@@ -226,16 +226,18 @@ module Generate (Target : Target_sig.S) = struct
           Arith.(transl_prim_arg ctx ~typ:(Int Unnormalized) x lsl const 1l)
           Arith.(transl_prim_arg ctx ~typ:(Int Unnormalized) y lsl const 1l)
     | Top, Top ->
-        (if negate then Value.phys_neq else Value.phys_eq)
-          ~relaxed:true
+        Value.js_eqeqeq
+          ~negate
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
-    | Int (Normalized | Unnormalized), (Int Ref | Top | Bot | Number _ | Tuple _)
-    | (Int Ref | Top | Bot | Number _ | Tuple _), Int (Normalized | Unnormalized)
-    | ( (Int Ref | Top | Bot | Number _ | Tuple _)
-      , (Int Ref | Top | Bot | Number _ | Tuple _) ) ->
+    | Bot, _ | _, Bot ->
+        (* this is deadcode *)
         (if negate then Value.phys_neq else Value.phys_eq)
-          ~relaxed:false
+          (transl_prim_arg ctx ~typ:Top x)
+          (transl_prim_arg ctx ~typ:Top y)
+    | (Int _ | Number _ | Tuple _), _ | _, (Int _ | Number _ | Tuple _) ->
+        (* Only Top may contain JavaScript values *)
+        (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
 
