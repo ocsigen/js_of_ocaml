@@ -124,9 +124,11 @@ module type S = sig
 
     val le : expression -> expression -> expression
 
-    val eq : expression -> expression -> expression
+    val js_eqeqeq : negate:bool -> expression -> expression -> expression
 
-    val neq : expression -> expression -> expression
+    val phys_eq : expression -> expression -> expression
+
+    val phys_neq : expression -> expression -> expression
 
     val ult : expression -> expression -> expression
 

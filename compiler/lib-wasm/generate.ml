@@ -215,15 +215,31 @@ module Generate (Target : Target_sig.S) = struct
           (transl_prim_arg ctx ~typ:(Int Normalized) x)
           (transl_prim_arg ctx ~typ:(Int Normalized) y)
 
-  let translate_int_equality ctx op op' x y =
+  let translate_int_equality ctx ~negate x y =
     match get_type ctx x, get_type ctx y with
     | (Int Normalized as typ), Int Normalized ->
-        op (transl_prim_arg ctx ~typ x) (transl_prim_arg ctx ~typ y)
+        (if negate then Arith.( <> ) else Arith.( = ))
+          (transl_prim_arg ctx ~typ x)
+          (transl_prim_arg ctx ~typ y)
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) ->
-        op
+        (if negate then Arith.( <> ) else Arith.( = ))
           Arith.(transl_prim_arg ctx ~typ:(Int Unnormalized) x lsl const 1l)
           Arith.(transl_prim_arg ctx ~typ:(Int Unnormalized) y lsl const 1l)
-    | _ -> op' (transl_prim_arg ctx ~typ:Top x) (transl_prim_arg ctx ~typ:Top y)
+    | Top, Top ->
+        Value.js_eqeqeq
+          ~negate
+          (transl_prim_arg ctx ~typ:Top x)
+          (transl_prim_arg ctx ~typ:Top y)
+    | Bot, _ | _, Bot ->
+        (* this is deadcode *)
+        (if negate then Value.phys_neq else Value.phys_eq)
+          (transl_prim_arg ctx ~typ:Top x)
+          (transl_prim_arg ctx ~typ:Top y)
+    | (Int _ | Number _ | Tuple _), _ | _, (Int _ | Number _ | Tuple _) ->
+        (* Only Top may contain JavaScript values *)
+        (if negate then Value.phys_neq else Value.phys_eq)
+          (transl_prim_arg ctx ~typ:Top x)
+          (transl_prim_arg ctx ~typ:Top y)
 
   let internal_primitives =
     let h = String.Hashtbl.create 128 in
@@ -864,8 +880,8 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (Lt, [ x; y ]) -> translate_int_comparison ctx Arith.( < ) x y
     | Prim (Le, [ x; y ]) -> translate_int_comparison ctx Arith.( <= ) x y
     | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx Arith.ult x y
-    | Prim (Eq, [ x; y ]) -> translate_int_equality ctx Arith.( = ) Value.eq x y
-    | Prim (Neq, [ x; y ]) -> translate_int_equality ctx Arith.( <> ) Value.neq x y
+    | Prim (Eq, [ x; y ]) -> translate_int_equality ctx ~negate:false x y
+    | Prim (Neq, [ x; y ]) -> translate_int_equality ctx ~negate:true x y
     | Prim (Array_get, [ x; y ]) ->
         Memory.array_get
           (transl_prim_arg ctx x)

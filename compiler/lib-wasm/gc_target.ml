@@ -540,7 +540,7 @@ module Value = struct
 
   let ( >>| ) x f = map f x
 
-  let eq_gen ~negate x y =
+  let js_eqeqeq ~negate x y =
     let xv = Code.Var.fresh () in
     let yv = Code.Var.fresh () in
     let* js = Type.js_type in
@@ -565,9 +565,15 @@ module Value = struct
        return ())
       (if negate then Arith.eqz n else n)
 
-  let eq x y = eq_gen ~negate:false x y
+  let phys_eq x y =
+    let* x = x in
+    let* y = y in
+    return (W.RefEq (x, y))
 
-  let neq x y = eq_gen ~negate:true x y
+  let phys_neq x y =
+    let* x = x in
+    let* y = y in
+    Arith.eqz (return (W.RefEq (x, y)))
 
   let ult = Arith.ult
 
