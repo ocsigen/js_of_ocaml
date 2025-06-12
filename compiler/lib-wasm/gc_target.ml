@@ -565,9 +565,21 @@ module Value = struct
        return ())
       (if negate then Arith.eqz n else n)
 
-  let eq x y = eq_gen ~negate:false x y
+  let phys_eq ~relaxed x y =
+    if relaxed
+    then eq_gen ~negate:false x y
+    else
+      let* x = x in
+      let* y = y in
+      return (W.RefEq (x, y))
 
-  let neq x y = eq_gen ~negate:true x y
+  let phys_neq ~relaxed x y =
+    if relaxed
+    then eq_gen ~negate:true x y
+    else
+      let* x = x in
+      let* y = y in
+      Arith.eqz (return (W.RefEq (x, y)))
 
   let ult = Arith.ult
 

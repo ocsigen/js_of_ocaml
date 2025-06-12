@@ -124,9 +124,11 @@ module type S = sig
 
     val le : expression -> expression -> expression
 
-    val eq : expression -> expression -> expression
+    (* Relaxed means using JavaScript strict equality to compare
+       JavaScript values *)
+    val phys_eq : relaxed:bool -> expression -> expression -> expression
 
-    val neq : expression -> expression -> expression
+    val phys_neq : relaxed:bool -> expression -> expression -> expression
 
     val ult : expression -> expression -> expression
 
