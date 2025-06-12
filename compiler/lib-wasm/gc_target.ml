@@ -1064,7 +1064,7 @@ module Constant = struct
         translate_js_string s
     | String s ->
         if Config.Flag.use_js_string ()
-        then translate_js_string (str_js_byte s)
+        then translate_js_string (byte_string s)
         else
           let* ty = Type.string_type in
           if String.length s >= string_length_threshold

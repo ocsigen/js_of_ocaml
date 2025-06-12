@@ -484,7 +484,7 @@ let run
      let z = Zip.open_out tmp_output_file in
      Zip.add_file z ~name:"runtime.wasm" ~file:tmp_wasm_file;
      Zip.add_entry z ~name:"runtime.js" ~contents:js_runtime;
-     let predefined_exceptions, (strings, fragments) = build_prelude z in
+     let predefined_exceptions, fragments = build_prelude z in
      Link.add_info
        z
        ~predefined_exceptions
@@ -492,7 +492,6 @@ let run
        ~unit_data:
          [ { Link.unit_name = "wasmoo_prelude"
            ; unit_info = Unit_info.empty
-           ; strings
            ; fragments
            }
          ]
