@@ -142,18 +142,25 @@ function caml_lazy_make_forward(v) {
   return [250, v];
 }
 
+//Provides: caml_method_cache
+var caml_method_cache = [];
+
+//Provides: caml_oo_cache_id const
+//Requires: caml_method_cache
+function caml_oo_cache_id() {
+  var cacheid = caml_method_cache.length;
+  caml_method_cache[cacheid] = 0;
+  cacheid;
+}
+
 ///////////// CamlinternalOO
 //Provides: caml_get_public_method const
-var caml_method_cache = [];
+//Requires: caml_method_cache
 function caml_get_public_method(obj, tag, cacheid) {
   var meths = obj[1];
   var ofs = caml_method_cache[cacheid];
-  if (ofs === undefined) {
-    // Make sure the array is not sparse
-    for (var i = caml_method_cache.length; i < cacheid; i++)
-      caml_method_cache[i] = 0;
-  } else if (meths[ofs] === tag) {
-    return meths[ofs - 1];
+  if (meths[ofs + 4] === tag) {
+    return meths[ofs + 3];
   }
   var li = 3,
     hi = meths[1] * 2 + 1,
@@ -163,7 +170,22 @@ function caml_get_public_method(obj, tag, cacheid) {
     if (tag < meths[mi + 1]) hi = mi - 2;
     else li = mi;
   }
-  caml_method_cache[cacheid] = li + 1;
+  caml_method_cache[cacheid] = li - 3;
+  /* return 0 if tag is not there */
+  return tag === meths[li + 1] ? meths[li] : 0;
+}
+
+//Provides: caml_get_dyn_method const
+function caml_get_dyn_method(obj, tag) {
+  var meths = obj[1];
+  var li = 3,
+    hi = meths[1] * 2 + 1,
+    mi;
+  while (li < hi) {
+    mi = ((li + hi) >> 1) | 1;
+    if (tag < meths[mi + 1]) hi = mi - 2;
+    else li = mi;
+  }
   /* return 0 if tag is not there */
   return tag === meths[li + 1] ? meths[li] : 0;
 }

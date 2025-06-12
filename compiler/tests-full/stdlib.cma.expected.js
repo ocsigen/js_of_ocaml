@@ -30802,7 +30802,7 @@
     caml_array_make = runtime.caml_array_make,
     caml_check_bound = runtime.caml_check_bound,
     caml_div = runtime.caml_div,
-    caml_get_public_method = runtime.caml_get_public_method,
+    caml_get_dyn_method = runtime.caml_get_dyn_method,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_obj_block = runtime.caml_obj_block,
     caml_set_oo_id = runtime.caml_set_oo_id,
@@ -31666,7 +31666,7 @@
          /*<<camlinternalOO.ml:587:57>>*/ new_cache(table);
          /*<<camlinternalOO.ml:492:2>>*/ return function(obj){
           /*<<camlinternalOO.ml:492:18>>*/ return caml_call1
-                 (caml_get_public_method(x$9, m$2, 0), x$9) /*<<camlinternalOO.ml:492:58>>*/ ;} /*<<camlinternalOO.ml:492:2>>*/ ;
+                 (caml_get_dyn_method(x$9, m$2), x$9) /*<<camlinternalOO.ml:492:58>>*/ ;} /*<<camlinternalOO.ml:492:2>>*/ ;
        case 21:
         var
          m$3 =  /*<<camlinternalOO.ml:589:14>>*/ next(0),
@@ -31674,7 +31674,7 @@
          /*<<camlinternalOO.ml:589:56>>*/ new_cache(table);
          /*<<camlinternalOO.ml:494:2>>*/ return function(obj){
          var _g_ =  /*<<camlinternalOO.ml:495:4>>*/ obj[n$16 + 1];
-         return caml_call1(caml_get_public_method(_g_, m$3, 0), _g_) /*<<camlinternalOO.ml:496:32>>*/ ;} /*<<camlinternalOO.ml:494:2>>*/ ;
+         return caml_call1(caml_get_dyn_method(_g_, m$3), _g_) /*<<camlinternalOO.ml:496:32>>*/ ;} /*<<camlinternalOO.ml:494:2>>*/ ;
        case 22:
         var
          m$4 =  /*<<camlinternalOO.ml:591:14>>*/ next(0),
@@ -31683,7 +31683,7 @@
          /*<<camlinternalOO.ml:592:21>>*/ new_cache(table);
          /*<<camlinternalOO.ml:498:2>>*/ return function(obj){
          var _g_ =  /*<<camlinternalOO.ml:499:4>>*/ obj[e$4 + 1][n$17 + 1];
-         return caml_call1(caml_get_public_method(_g_, m$4, 0), _g_) /*<<camlinternalOO.ml:502:34>>*/ ;} /*<<camlinternalOO.ml:498:2>>*/ ;
+         return caml_call1(caml_get_dyn_method(_g_, m$4), _g_) /*<<camlinternalOO.ml:502:34>>*/ ;} /*<<camlinternalOO.ml:498:2>>*/ ;
        default:
         var
          m$5 =  /*<<camlinternalOO.ml:594:14>>*/ next(0),
@@ -31695,7 +31695,7 @@
              /*<<camlinternalOO.ml:505:14>>*/ caml_call1
              (obj[1][n$18 + 1], obj);
           /*<<camlinternalOO.ml:505:30>>*/ return caml_call1
-                 (caml_get_public_method(_g_, m$5, 0), _g_) /*<<camlinternalOO.ml:505:59>>*/ ;} /*<<camlinternalOO.ml:504:2>>*/ ;
+                 (caml_get_dyn_method(_g_, m$5), _g_) /*<<camlinternalOO.ml:505:59>>*/ ;} /*<<camlinternalOO.ml:504:2>>*/ ;
      }
      /*<<camlinternalOO.ml:595:24>>*/ return clo;
     /*<<camlinternalOO.ml:595:37>>*/ }

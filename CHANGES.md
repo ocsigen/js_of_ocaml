@@ -59,7 +59,7 @@
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
 * Runtime: consistent bigarray hashing across all architectures (#1977)
 * Runtime: fix caml_utf8_of_utf16 bug in high surrogate case (#2008)
-* Runtime/wasm: fix method lookup (#2034, #2038)
+* Runtime/wasm/js: fix method lookup (#2034, #2038, #2039)
 * Tools: fix jsoo_mktop and jsoo_mkcmis (#1877)
 * Toplevel: fix for when use-js-strings is disabled (#1997)
 

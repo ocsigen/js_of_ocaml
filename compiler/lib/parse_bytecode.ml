@@ -532,6 +532,7 @@ type globals =
   ; mutable is_const : bool array
   ; mutable is_exported : bool array
   ; mutable named_value : string option array
+  ; mutable cache_ids : Var.t list
   ; constants : Code.constant array
   ; primitives : string array
   }
@@ -541,6 +542,7 @@ let make_globals size constants primitives =
   ; is_const = Array.make size false
   ; is_exported = Array.make size false
   ; named_value = Array.make size None
+  ; cache_ids = []
   ; constants
   ; primitives
   }
@@ -817,8 +819,6 @@ let get_global state instrs i =
 let tagged_blocks = ref Addr.Map.empty
 
 let compiled_blocks : (_ * instr list * last) Addr.Map.t ref = ref Addr.Map.empty
-
-let method_cache_id = ref 1
 
 let clo_offset_3 = 3
 
@@ -2353,24 +2353,20 @@ and compile infos pc state (instrs : instr list) =
           (Let (x, Prim (Ult, [ Pv z; Pv y ])) :: instrs)
     | GETPUBMET ->
         let n = gets32 code (pc + 1) in
-        let cache = !method_cache_id in
-        incr method_cache_id;
         let obj = State.accu state in
         let state = State.push state in
-        let tag, state = State.fresh_var state in
+        let cache_id = Var.fresh_n "cache_id" in
+        state.globals.cache_ids <- cache_id :: state.globals.cache_ids;
         let m, state = State.fresh_var state in
-
-        if debug_parser () then Format.printf "%a = %ld@." Var.print tag n;
         if debug_parser ()
         then
           Format.printf
-            "%a = caml_get_public_method(%a, %a)@."
+            "%a = caml_get_public_method(%a, %ld)@."
             Var.print
             m
             Var.print
             obj
-            Var.print
-            tag;
+            n;
         compile
           infos
           (pc + 3)
@@ -2379,8 +2375,7 @@ and compile infos pc state (instrs : instr list) =
              ( m
              , Prim
                  ( Extern "caml_get_public_method"
-                 , [ Pv obj; Pv tag; Pc (Int (Targetint.of_int_exn cache)) ] ) )
-          :: Let (tag, const32 n)
+                 , [ Pv obj; Pc (Int (Targetint.of_int32_exn n)); Pv cache_id ] ) )
           :: instrs)
     | GETDYNMET ->
         let tag = State.accu state in
@@ -2390,7 +2385,7 @@ and compile infos pc state (instrs : instr list) =
         if debug_parser ()
         then
           Format.printf
-            "%a = caml_get_public_method(%a, %a)@."
+            "%a = caml_get_dyn_method(%a, %a)@."
             Var.print
             m
             Var.print
@@ -2401,12 +2396,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           state
-          (Let
-             ( m
-             , Prim
-                 ( Extern "caml_get_public_method"
-                 , [ Pv obj; Pv tag; Pc (Int Targetint.zero) ] ) )
-          :: instrs)
+          (Let (m, Prim (Extern "caml_get_dyn_method", [ Pv obj; Pv tag ])) :: instrs)
     | GETMETHOD ->
         let lab = State.accu state in
         let obj = State.peek 0 state in
@@ -2537,7 +2527,12 @@ let parse_bytecode code globals debug_data =
   in
   compiled_blocks := Addr.Map.empty;
   tagged_blocks := Addr.Map.empty;
-  Code.compact p
+  let p = Code.compact p in
+  let body =
+    List.fold_left globals.cache_ids ~init:[] ~f:(fun body cache_id ->
+        Let (cache_id, Prim (Extern "caml_oo_cache_id", [])) :: body)
+  in
+  Code.prepend p body
 
 module Toc : sig
   type t
