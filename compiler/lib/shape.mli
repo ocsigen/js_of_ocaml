@@ -1,7 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2024 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,10 +17,43 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f :
-     shape:(Code.Var.t -> Shape.t)
-  -> update_def:(Code.Var.t -> Code.expr -> unit)
-  -> Code.program
-  -> Code.program
+type t =
+  | Top
+  | Block of t list
+  | Function of
+      { arity : int
+      ; pure : bool
+      ; res : t
+      }
 
-val switches : Code.program -> Code.program
+val to_string : t -> string
+
+val of_string : string -> t
+
+val equal : t -> t -> bool
+
+val merge : t -> t -> t
+
+module Store : sig
+  val set : name:string -> t -> unit
+
+  val get : name:string -> t option
+
+  val load' : string -> unit
+
+  val load : name:string -> t option
+end
+
+module State : sig
+  val propagate : Code.Var.t -> int -> Code.Var.t -> unit
+
+  val assign : Code.Var.t -> t -> unit
+
+  val get : Code.Var.t -> t option
+
+  val mem : Code.Var.t -> bool
+
+  val is_pure_fun : Code.Var.t -> bool
+
+  val reset : unit -> unit
+end
