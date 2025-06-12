@@ -48,7 +48,7 @@ let%expect_test _ =
     var cache_id = runtime.caml_oo_cache_id();
     //end
     function f(o){
-     return caml_call1(runtime.caml_get_public_method(o, 97, cache_id), o);
+     return caml_call1(runtime.caml_get_cached_method(o, 97, cache_id), o);
     }
     //end
     |}]

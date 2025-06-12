@@ -404,7 +404,7 @@
             (global.set $method_cache (local.get $a))))
        (ref.i31 (local.get $cacheid)))
 
-   (func (export "caml_get_public_method")
+   (func (export "caml_get_cached_method")
       (param $obj (ref eq)) (param $vtag (ref eq)) (param (ref eq))
       (result (ref eq))
       (local $meths (ref $block))
@@ -466,7 +466,7 @@
          (else
             (ref.i31 (i32.const 0)))))
 
-   (func (export "caml_get_dyn_method")
+   (func (export "caml_get_public_method")
       (param $obj (ref eq)) (param $vtag (ref eq))
       (result (ref eq))
       (local $meths (ref $block))

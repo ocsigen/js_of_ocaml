@@ -154,9 +154,9 @@ function caml_oo_cache_id() {
 }
 
 ///////////// CamlinternalOO
-//Provides: caml_get_public_method const
+//Provides: caml_get_cached_method const
 //Requires: caml_method_cache
-function caml_get_public_method(obj, tag, cacheid) {
+function caml_get_cached_method(obj, tag, cacheid) {
   var meths = obj[1];
   var ofs = caml_method_cache[cacheid];
   if (meths[ofs + 4] === tag) {
@@ -175,8 +175,8 @@ function caml_get_public_method(obj, tag, cacheid) {
   return tag === meths[li + 1] ? meths[li] : 0;
 }
 
-//Provides: caml_get_dyn_method const
-function caml_get_dyn_method(obj, tag) {
+//Provides: caml_get_public_method const
+function caml_get_public_method(obj, tag) {
   var meths = obj[1];
   var li = 3,
     hi = meths[1] * 2 + 1,

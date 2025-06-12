@@ -112,7 +112,7 @@ let f (runtime_files, bytecode, target_env) =
       ; "caml_get_global_data"
       ; "caml_oo_cache_id"
       ; "caml_get_public_method"
-      ; "caml_get_dyn_method"
+      ; "caml_get_cached_method"
       ]
   in
   let from_runtime1 = Linker.list_all () in

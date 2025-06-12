@@ -2361,7 +2361,7 @@ and compile infos pc state (instrs : instr list) =
         if debug_parser ()
         then
           Format.printf
-            "%a = caml_get_public_method(%a, %ld)@."
+            "%a = caml_get_cached_method(%a, %ld)@."
             Var.print
             m
             Var.print
@@ -2374,7 +2374,7 @@ and compile infos pc state (instrs : instr list) =
           (Let
              ( m
              , Prim
-                 ( Extern "caml_get_public_method"
+                 ( Extern "caml_get_cached_method"
                  , [ Pv obj; Pc (Int (Targetint.of_int32_exn n)); Pv cache_id ] ) )
           :: instrs)
     | GETDYNMET ->
@@ -2385,7 +2385,7 @@ and compile infos pc state (instrs : instr list) =
         if debug_parser ()
         then
           Format.printf
-            "%a = caml_get_dyn_method(%a, %a)@."
+            "%a = caml_get_public_method(%a, %a)@."
             Var.print
             m
             Var.print
@@ -2396,7 +2396,7 @@ and compile infos pc state (instrs : instr list) =
           infos
           (pc + 1)
           state
-          (Let (m, Prim (Extern "caml_get_dyn_method", [ Pv obj; Pv tag ])) :: instrs)
+          (Let (m, Prim (Extern "caml_get_public_method", [ Pv obj; Pv tag ])) :: instrs)
     | GETMETHOD ->
         let lab = State.accu state in
         let obj = State.peek 0 state in
