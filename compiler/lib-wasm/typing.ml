@@ -226,6 +226,7 @@ let prim_type ~approx prim args =
   | "caml_bytes_get32" -> Number (Int32, Unboxed)
   | "caml_bytes_get64" -> Number (Int64, Unboxed)
   | "caml_lxm_next" -> Number (Int64, Unboxed)
+  | "caml_ba_uint8_get16" -> Int Normalized
   | "caml_ba_uint8_get32" -> Number (Int32, Unboxed)
   | "caml_ba_uint8_get64" -> Number (Int64, Unboxed)
   | "caml_nextafter_float" -> Number (Float, Unboxed)
