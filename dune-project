@@ -21,7 +21,7 @@
   (ocaml (and (>= 4.13) (< 5.4)))
   (num :with-test)
   (ppx_expect (and (>= v0.16.1) :with-test))
-  (ppxlib (>= 0.15))
+  (ppxlib (>= 0.35))
   (re :with-test)
   (cmdliner (>= 1.1.0))
   (sedlex (>= 3.3))
@@ -49,7 +49,6 @@
   (lwt (>= 2.4.4))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (and (>= 0.36) :with-test))
   (re (and (>= 1.9.0) :with-test)))
  (depopts
   graphics
@@ -64,7 +63,7 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
-  (ppxlib (>= 0.15))
+  (ppxlib (>= 0.35))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
@@ -78,8 +77,7 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
-  (ppxlib (>= 0.15))
-  (ppxlib (and (>= 0.36) :with-test))
+  (ppxlib (>= 0.35))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
@@ -98,7 +96,6 @@
   (graphics :with-test)
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (>= 0.15))
   (re (and (>= 1.9.0) :with-test))
 ))
 
@@ -116,7 +113,6 @@
   (tyxml (>= 4.6))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (and (>= 0.36) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
 
@@ -128,7 +124,6 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml-compiler (= :version))
-  (ppxlib (>= 0.15))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
@@ -144,7 +139,7 @@
   (js_of_ocaml (= :version))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (>= 0.15))
+  (ppxlib (>= 0.35))
   (re :with-test)
   (cmdliner (>= 1.1.0))
   (opam-format :with-test)
