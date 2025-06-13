@@ -80,6 +80,26 @@ type t =
   ; effects : Config.effects_backend
   }
 
+let set_param =
+  let doc = "Set compiler options." in
+  let all = List.map (Config.Param.all ()) ~f:(fun (x, _, _) -> x, x) in
+  let pair = Arg.(pair ~sep:'=' (enum all) string) in
+  let parser s =
+    match Arg.conv_parser pair s with
+    | Ok (k, v) -> (
+        match
+          List.find ~f:(fun (k', _, _) -> String.equal k k') (Config.Param.all ())
+        with
+        | _, _, valid -> (
+            match valid v with
+            | Ok () -> Ok (k, v)
+            | Error msg -> Error (`Msg ("Unexpected VALUE after [=], " ^ msg))))
+    | Error _ as e -> e
+  in
+  let printer = Arg.conv_printer pair in
+  let c = Arg.conv (parser, printer) in
+  Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
+
 let wrap_with_fun_conv =
   let conv s =
     if String.equal s ""
@@ -179,14 +199,6 @@ let options =
        with the global object."
     in
     Arg.(value & opt wrap_with_fun_conv `Iife & info [ "wrap-with-fun" ] ~doc)
-  in
-  let set_param =
-    let doc = "Set compiler options." in
-    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
-    Arg.(
-      value
-      & opt_all (list (pair ~sep:'=' (enum all) string)) []
-      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let set_env =
     let doc = "Set environment variable statically." in
@@ -501,14 +513,6 @@ let options_runtime_only =
        with the global object."
     in
     Arg.(value & opt wrap_with_fun_conv `Iife & info [ "wrap-with-fun" ] ~doc)
-  in
-  let set_param =
-    let doc = "Set compiler options." in
-    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
-    Arg.(
-      value
-      & opt_all (list (pair ~sep:'=' (enum all) string)) []
-      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let set_env =
     let doc = "Set environment variable statically." in

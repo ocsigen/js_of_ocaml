@@ -57,7 +57,7 @@ let find ?(even_if_quiet = false) s =
   in
   fun () ->
     if String.equal s "times" then take_snapshot ();
-    (even_if_quiet || not !quiet) && !state
+    (even_if_quiet || not !Warning.quiet) && !state
 
 let enable s =
   match List.string_assoc s !debugs with

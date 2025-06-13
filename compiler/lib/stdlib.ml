@@ -70,19 +70,6 @@ let ( != ) = `use_phys_equal
 
 include Int_replace_polymorphic_compare
 
-let quiet = ref false
-
-let werror = ref false
-
-let warnings = ref 0
-
-let warn fmt =
-  Format.ksprintf
-    (fun s ->
-      incr warnings;
-      if not !quiet then Format.eprintf "%s%!" s)
-    fmt
-
 let fail = ref true
 
 let failwith_ fmt =
@@ -276,9 +263,9 @@ module Int32 = struct
   external ( >= ) : int32 -> int32 -> bool = "%greaterequal"
 
   let warn_overflow name ~to_dec ~to_hex i i32 =
-    warn
-      "Warning: integer overflow: %s 0x%s (%s) truncated to 0x%lx (%ld); the generated \
-       code might be incorrect.@."
+    Warning.warn
+      `Integer_overflow
+      "%s 0x%s (%s) truncated to 0x%lx (%ld); the generated code might be incorrect.@."
       name
       (to_hex i)
       (to_dec i)

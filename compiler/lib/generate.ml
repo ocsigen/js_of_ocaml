@@ -1522,8 +1522,9 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             assert (not (cps_transform ()));
             if not !(ctx.effect_warning)
             then (
-              warn
-                "Warning: your program contains effect handlers; you should probably run \
+              Warning.warn
+                `Effect_handlers_without_effect_backend
+                "your program contains effect handlers; you should probably run \
                  js_of_ocaml with option '--effects=cps'@.";
               ctx.effect_warning := true);
             let name = "jsoo_effect_not_supported" in

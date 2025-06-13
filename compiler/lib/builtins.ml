@@ -40,7 +40,9 @@ let register ~name ~content ~fragments =
   let name = "+" ^ name in
   let t = { File.name; content; fragments } in
   if String.Hashtbl.mem tbl name
-  then warn "The builtin runtime file %S was registered multiple time" name;
+  then
+    failwith
+      (Printf.sprintf "The builtin runtime file %S was registered multiple time" name);
   String.Hashtbl.add tbl name t;
   t
 

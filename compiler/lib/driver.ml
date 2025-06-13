@@ -267,7 +267,7 @@ let extra_js_files =
            (name, ss) :: acc
          with _ -> acc))
 
-let report_missing_primitives missing =
+let report_missing_primitives fmt missing =
   let missing =
     List.fold_left
       (Lazy.force extra_js_files)
@@ -276,15 +276,15 @@ let report_missing_primitives missing =
         let d = StringSet.inter missing pro in
         if not (StringSet.is_empty d)
         then (
-          warn "Missing primitives provided by %s:@." file;
-          StringSet.iter (fun nm -> warn "  %s@." nm) d;
+          Format.fprintf fmt "Missing primitives provided by %s:@." file;
+          StringSet.iter (fun nm -> Format.fprintf fmt "  %s@." nm) d;
           StringSet.diff missing pro)
         else missing)
   in
   if not (StringSet.is_empty missing)
   then (
-    warn "Missing primitives:@.";
-    StringSet.iter (fun nm -> warn "  %s@." nm) missing)
+    Format.fprintf fmt "Missing primitives:@.";
+    StringSet.iter (fun nm -> Format.fprintf fmt "  %s@." nm) missing)
 
 let gen_missing js missing =
   let open Javascript in
@@ -324,13 +324,17 @@ let gen_missing js missing =
       []
   in
   if not (StringSet.is_empty missing)
-  then (
-    warn "There are some missing primitives@.";
-    warn "Dummy implementations (raising 'Failure' exception) ";
-    warn "will be used if they are not available at runtime.@.";
-    warn "You can prevent the generation of dummy implementations with ";
-    warn "the commandline option '--disable genprim'@.";
-    report_missing_primitives missing);
+  then
+    Warning.warn
+      `Missing_primitive
+      "There are some missing primitives.\n\
+       Dummy implementations (raising 'Failure' exception) will be used if they are not \
+       available at runtime.\n\
+       You can prevent the generation of dummy implementations with the commandline \
+       option '--disable genprim'\n\
+       %a"
+      report_missing_primitives
+      missing;
   (variable_declaration miss, N) :: js
 
 let mark_start_of_generated_code = Debug.find ~even_if_quiet:true "mark-runtime-gen"
@@ -356,18 +360,25 @@ let link' ~export_runtime ~standalone ~link (js : Javascript.statement_list) :
     in
     let used =
       let all_provided = Linker.list_all () in
+      let free =
+        lazy
+          (let free = ref StringSet.empty in
+           let o =
+             new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free)
+           in
+           o#program js;
+           !free)
+      in
       match link with
-      | `All -> all_provided
+      | `All ->
+          let prim = Primitive.get_external () in
+          StringSet.union (StringSet.inter prim (Lazy.force free)) all_provided
       | `All_from from -> Linker.list_all ~from ()
       | `No -> StringSet.empty
       | `Needed ->
-          let free = ref StringSet.empty in
-          let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
-          o#program js;
-          let free = !free in
           let prim = Primitive.get_external () in
           let all_external = StringSet.union prim all_provided in
-          StringSet.inter free all_external
+          StringSet.inter (Lazy.force free) all_external
     in
     let linkinfos =
       let from =
@@ -473,17 +484,23 @@ let check_js js =
   let missing = StringSet.inter free all_external in
   let missing = StringSet.diff missing Reserved.provided in
   let other = StringSet.diff free missing in
-  if not (StringSet.is_empty missing) then report_missing_primitives missing;
+  if not (StringSet.is_empty missing)
+  then
+    Warning.warn
+      `Missing_primitive
+      "There are some missing primitives.\n%a"
+      report_missing_primitives
+      missing;
   let probably_prov = StringSet.inter other Reserved.provided in
   let other = StringSet.diff other probably_prov in
   if (not (StringSet.is_empty other)) && debug_linker ()
   then (
-    warn "Missing variables:@.";
-    StringSet.iter (fun nm -> warn "  %s@." nm) other);
+    Format.eprintf "Missing variables:@.";
+    StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other);
   if (not (StringSet.is_empty probably_prov)) && debug_linker ()
   then (
-    warn "Variables provided by the browser:@.";
-    StringSet.iter (fun nm -> warn "  %s@." nm) probably_prov);
+    Format.eprintf "Variables provided by the browser:@.";
+    StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov);
   if times () then Format.eprintf "  checks: %a@." Timer.print t;
   js
 

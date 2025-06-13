@@ -24,6 +24,8 @@
    %{bin:js_of_ocaml}
    --linkall
    %{read-strings:effects_flags.txt}
+   -w
+   no-missing-effects-backend
    -o
    %{target}
    %{dep:main.bc})))

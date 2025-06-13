@@ -226,10 +226,11 @@ let run
   let check_debug (one : Parse_bytecode.one) =
     if Option.is_some source_map && Parse_bytecode.Debug.is_empty one.debug
     then
-      warn
-        "Warning: '--source-map' is enabled but the bytecode program was compiled with \
-         no debugging information.\n\
-         Warning: Consider passing '-g' option to ocamlc.\n\
+      Warning.warn
+        `Missing_debug_event
+        "'--source-map' is enabled but the bytecode program was compiled with no \
+         debugging information.\n\
+         Consider passing '-g' option to ocamlc.\n\
          %!"
   in
   let pseudo_fs_instr prim debug cmis =

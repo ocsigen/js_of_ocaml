@@ -409,12 +409,15 @@ let output_js js =
 
 let report_missing_primitives missing =
   if not (List.is_empty missing)
-  then (
-    warn "There are some missing Wasm primitives@.";
-    warn "Dummy implementations (raising an exception) ";
-    warn "will be provided.@.";
-    warn "Missing primitives:@.";
-    List.iter ~f:(fun nm -> warn "  %s@." nm) missing)
+  then
+    Warning.warn
+      `Missing_primitive
+      "There are some missing Wasm primitives\n\
+       Dummy implementations (raising an exception) will be provided.\n\
+       Missing primitives:\n\
+       %a"
+      (Format.pp_print_list Format.pp_print_string)
+      missing
 
 let build_runtime_arguments
     ~link_spec
