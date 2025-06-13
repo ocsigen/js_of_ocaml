@@ -1983,7 +1983,9 @@ and compile infos pc state (instrs : instr list) =
           | "caml_bytes_get32"
           | "caml_bytes_get64" ->
               let hints = Hints.find infos.hints pc in
-              if List.mem Hints.Hint_unsafe ~set:hints then prim ^ "u" else prim
+              if List.mem ~eq:Hints.equal Hints.Hint_unsafe hints
+              then prim ^ "u"
+              else prim
           | _ -> prim
         in
         if debug_parser ()
@@ -2043,7 +2045,9 @@ and compile infos pc state (instrs : instr list) =
           | "caml_bytes_set32"
           | "caml_bytes_set64" ->
               let hints = Hints.find infos.hints pc in
-              if List.mem Hints.Hint_unsafe ~set:hints then prim ^ "u" else prim
+              if List.mem ~eq:Hints.equal Hints.Hint_unsafe hints
+              then prim ^ "u"
+              else prim
           | _ -> prim
         in
         if debug_parser ()
