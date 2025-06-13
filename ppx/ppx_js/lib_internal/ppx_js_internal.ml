@@ -282,7 +282,20 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
   let local_types =
     make_str res :: List.map (extra_types @ arguments) ~f:(fun x -> make_str (Arg.name x))
   in
-  let result = List.fold_right local_types ~init:invoker ~f:Exp.newtype in
+  let result =
+    match invoker.pexp_desc with
+    | ((Pexp_function (params, c, b)) [@if ast_version >= 502]) ->
+        { invoker with
+          pexp_desc =
+            Pexp_function
+              ( List.map local_types ~f:(fun t ->
+                    { pparam_desc = Pparam_newtype t; pparam_loc = Location.none })
+                @ params
+              , c
+              , b )
+        }
+    | _ -> List.fold_right local_types ~init:invoker ~f:Exp.newtype
+  in
   default_loc := default_loc';
   result
 
@@ -703,8 +716,8 @@ let literal_object self_id (fields : field_desc list) =
                 body
             in
             match e.pexp_desc with
-            | Pexp_function (params, None, b) ->
-                { e with pexp_desc = Pexp_function (params, Some (Pconstraint ty), b) }
+            | Pexp_function ([ param ], None, b) ->
+                { e with pexp_desc = Pexp_function ([ param ], Some (Pconstraint ty), b) }
             | _ -> assert false)
         | ((_, Some ty) [@if ast_version < 502]) ->
             Exp.fun_
