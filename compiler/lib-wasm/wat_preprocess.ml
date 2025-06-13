@@ -520,7 +520,7 @@ and rewrite st elt =
       then (
         Printf.bprintf
           st.head_buf
-          "(import \"\" %s (global %s$string externref)) "
+          "(import \"str\" %s (global %s$string externref)) "
           value
           name;
         insert
@@ -555,7 +555,7 @@ and rewrite st elt =
       then (
         Printf.bprintf
           st.head_buf
-          "(import \"\" %s (global %s$string externref)) "
+          "(import \"str\" %s (global %s$string externref)) "
           value
           name;
         insert

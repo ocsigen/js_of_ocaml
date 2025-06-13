@@ -331,7 +331,7 @@ module Generate (Target : Target_sig.S) = struct
       (fun x y z -> seq (Memory.bytes_set x y z) Value.unit);
     let string_get context x y =
       seq
-        (let* cond = Arith.uge (Value.int_val y) (Memory.string_length x) in
+        (let* cond = Arith.uge y (Memory.string_length x) in
          instr (W.Br_if (label_index context bound_error_pc, cond)))
         (Memory.string_get x y)
     in

@@ -861,8 +861,8 @@ module Memory = struct
              })
       in
       let* e = string_value e in
-      let* e' = Value.int_val e' in
-      Value.val_int (return (W.Call (f, [ e; e' ])))
+      let* e' = e' in
+      return (W.Call (f, [ e; e' ]))
     else bytes_get e e'
 
   let field e idx = wasm_array_get e (Arith.const (Int32.of_int (idx + 1)))
