@@ -2714,9 +2714,10 @@ let from_exe
      with Not_found ->
        if Debug.enabled debug_data || include_cmis
        then
-         warn
-           "Warning: Program not linked with -g, original variable names and locations \
-            not available.@.");
+         Warning.warn
+           `Missing_debug_event
+           "Program not linked with -g, original variable names and locations not \
+            available.@.");
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
 
   let globals = make_globals (Array.length init_data) init_data primitive_table in

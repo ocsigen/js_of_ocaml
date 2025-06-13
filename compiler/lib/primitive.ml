@@ -98,8 +98,9 @@ let register p k kargs arity =
   | exception Not_found -> ()
   | k' when kind_equal k k' -> ()
   | k' ->
-      warn
-        "Warning: overriding the purity of the primitive %s: %s -> %s@."
+      Warning.warn
+        `Overriding_primitive_purity
+        "overriding the purity of the primitive %s: %s -> %s@."
         p
         (string_of_kind k')
         (string_of_kind k));

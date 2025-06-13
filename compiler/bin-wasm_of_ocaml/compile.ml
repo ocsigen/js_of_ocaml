@@ -414,9 +414,10 @@ let run
       && Parse_bytecode.Debug.is_empty one.debug
       && not (Code.is_empty one.code)
     then
-      warn
-        "Warning: '--source-map' is enabled but the bytecode program was compiled with \
-         no debugging information.\n\
+      Warning.warn
+        `Missing_debug_event
+        "'--source-map' is enabled but the bytecode program was compiled with no \
+         debugging information.\n\
          Warning: Consider passing '-g' option to ocamlc.\n\
          %!"
   in

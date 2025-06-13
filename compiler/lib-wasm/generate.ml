@@ -1397,7 +1397,6 @@ module Generate (Target : Target_sig.S) = struct
       ~live_vars
       ~in_cps (*
     ~should_export
-    ~warn_on_unhandled_effect
 *)
       ~deadcode_sentinal
       ~global_flow_info

@@ -27,6 +27,7 @@ type t =
   ; optim : string list on_off
   ; quiet : bool
   ; werror : bool
+  ; warnings : (bool * Js_of_ocaml_compiler.Warning.t) list
   ; custom_header : string option
   }
 

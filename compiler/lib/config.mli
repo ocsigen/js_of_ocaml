@@ -60,8 +60,6 @@ module Flag : sig
 
   val improved_stacktrace : unit -> bool
 
-  val warn_unused : unit -> bool
-
   val inline_callgen : unit -> bool
 
   val safe_string : unit -> bool
@@ -87,7 +85,7 @@ end
 module Param : sig
   val set : string -> string -> unit
 
-  val all : unit -> (string * string) list
+  val all : unit -> (string * string * (string -> (unit, string) Result.t)) list
 
   val switch_max_case : unit -> int
 

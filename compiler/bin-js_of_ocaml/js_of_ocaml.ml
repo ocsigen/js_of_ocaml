@@ -23,7 +23,7 @@ open Js_of_ocaml_compiler
 
 let () =
   Sys.catch_break true;
-  let argv = Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv in
+  let argv = Sys.argv in
   let argv =
     let like_arg x = String.length x > 0 && Char.equal x.[0] '-' in
     let like_command x =
@@ -59,11 +59,8 @@ let () =
            ])
     with
     | Ok (`Ok () | `Help | `Version) ->
-        if !warnings > 0 && !werror
-        then (
-          Format.eprintf "%s: all warnings being treated as errors@." Sys.argv.(0);
-          exit 1)
-        else exit 0
+        Warning.process_warnings ();
+        exit 0
     | Error `Term -> exit 1
     | Error `Parse -> exit Cmdliner.Cmd.Exit.cli_error
     | Error `Exn -> ()

@@ -10,7 +10,14 @@
 (rule
  (targets test_toplevel.js)
  (action
-  (run %{bin:js_of_ocaml} --toplevel %{dep:test_toplevel.bc} -o %{targets})))
+  (run
+   %{bin:js_of_ocaml}
+   --toplevel
+   -w
+   no-missing-effects-backend
+   %{dep:test_toplevel.bc}
+   -o
+   %{targets})))
 
 (rule
  (target test_toplevel.bc.js.actual)

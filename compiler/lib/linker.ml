@@ -112,8 +112,9 @@ module Check = struct
         (match diff with
         | [] -> ()
         | l ->
-            warn
-              "WARN unused for primitive %s at %s:@. %s@."
+            Warning.warn
+              `Unused_js_variable
+              "unused variable for primitive %s at %s:@. %s@."
               name
               (loc pi)
               (String.concat ~sep:", " l));
@@ -122,7 +123,7 @@ module Check = struct
 
   let primitive ~name pi ~code ~requires ~has_flags =
     let freename =
-      if Config.Flag.warn_unused ()
+      if Warning.enabled `Unused_js_variable
       then
         let o = new check_and_warn name pi in
         let _code = o#program code in
@@ -147,21 +148,29 @@ module Check = struct
     in
     if StringSet.mem Global_constant.old_global_object freename
     then
-      warn
-        "warning: %s: 'joo_global_object' is being deprecated, please use `globalThis` \
-         instead@."
+      Warning.warn
+        `Deprecated_joo_global_object
+        "%s: 'joo_global_object' is being deprecated, please use `globalThis` instead@."
         (loc pi);
     let freename = StringSet.remove Global_constant.old_global_object freename in
     if not (StringSet.mem name (Js_traverse.declared_names code))
     then
-      warn
-        "warning: primitive code does not define value with the expected name: %s (%s)@."
+      Warning.warn
+        `Missing_define
+        "primitive code does not define value with the expected name: %s (%s)@."
         name
         (loc pi);
     if not (StringSet.is_empty freename)
-    then (
-      warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
-      warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)))
+    then
+      Warning.warn
+        `Free_variables_in_primitive
+        "free variables in primitive code %S (%s)@.vars: %a@."
+        name
+        (loc pi)
+        (Format.pp_print_list
+           ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
+           Format.pp_print_string)
+        (StringSet.elements freename)
 end
 
 module Fragment = struct
@@ -559,8 +568,9 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
                   if p.weakdef
                   then true
                   else (
-                    warn
-                      "warning: overriding primitive %S\n  old: %s\n  new: %s@."
+                    Warning.warn
+                      `Overriding_primitive
+                      "overriding primitive %S\n  old: %s\n  new: %s@."
                       name
                       (loc p.pi)
                       (loc pi);
@@ -603,7 +613,8 @@ let check_deps () =
           then
             try
               let name, ploc = Int.Hashtbl.find provided_rev id in
-              warn
+              Warning.warn
+                `Missing_deps
                 "code providing %s (%s) may miss dependencies: %s\n"
                 name
                 (loc ploc)
@@ -732,7 +743,11 @@ let link ?(check_missing = true) program (state : state) =
           if false
           then
             let name = fst (Int.Hashtbl.find provided_rev x) in
-            warn "The runtime primitive [%s] is deprecated. %s\n" name txt
+            Warning.warn
+              `Deprecated_primitive
+              "The runtime primitive [%s] is deprecated. %s\n"
+              name
+              txt
       | x :: path ->
           let name = fst (Int.Hashtbl.find provided_rev x) in
           let path =
@@ -742,7 +757,8 @@ let link ?(check_missing = true) program (state : state) =
                    let nm, loc = Int.Hashtbl.find provided_rev id in
                    Printf.sprintf "-> %s:%s" nm (Parse_info.to_string loc)))
           in
-          warn
+          Warning.warn
+            `Deprecated_primitive
             "The runtime primitive [%s] is deprecated. %s.  Used by:\n%s\n"
             name
             txt
