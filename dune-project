@@ -96,6 +96,7 @@
   (graphics :with-test)
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
+  (ppxlib (>= 0.35))
   (re (and (>= 1.9.0) :with-test))
 ))
 
@@ -126,6 +127,7 @@
   (js_of_ocaml-compiler (= :version))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
+  (ppxlib (>= 0.35))
   (re (and (>= 1.9.0) :with-test))
 ))
 
