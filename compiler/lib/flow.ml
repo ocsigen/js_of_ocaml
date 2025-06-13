@@ -467,6 +467,7 @@ let the_shape_of ~return_values ~pure info x =
     if Var.Set.mem x acc
     then Top
     else
+      let acc = Var.Set.add x acc in
       get_approx
         info
         (fun x ->
