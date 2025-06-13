@@ -116,10 +116,12 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_bytes_set32", (`Mutator, [ Value; Value; Int32 ], Value)
       ; "caml_bytes_set64", (`Mutator, [ Value; Value; Int64 ], Value)
       ; "caml_lxm_next", (`Pure, [ Value ], Int64)
-      ; "caml_ba_uint8_get32", (`Mutator, [ Value; Value ], Int32)
-      ; "caml_ba_uint8_get64", (`Mutator, [ Value; Value ], Int64)
-      ; "caml_ba_uint8_set32", (`Mutator, [ Value; Value; Int32 ], Value)
-      ; "caml_ba_uint8_set64", (`Mutator, [ Value; Value; Int64 ], Value)
+      ; "caml_ba_uint8_get16", (`Mutator, [ Value; Int ], Int)
+      ; "caml_ba_uint8_get32", (`Mutator, [ Value; Int ], Int32)
+      ; "caml_ba_uint8_get64", (`Mutator, [ Value; Int ], Int64)
+      ; "caml_ba_uint8_set16", (`Mutator, [ Value; Int; Int ], Value)
+      ; "caml_ba_uint8_set32", (`Mutator, [ Value; Int; Int32 ], Value)
+      ; "caml_ba_uint8_set64", (`Mutator, [ Value; Int; Int64 ], Value)
       ; "caml_nextafter_float", (`Pure, [ Float; Float ], Float)
       ; "caml_classify_float", (`Pure, [ Float ], Value)
       ; "caml_ldexp_float", (`Pure, [ Float; Value ], Float)
@@ -1018,36 +1020,45 @@ module Generate (Target : Target_sig.S) = struct
         match p with
         | Extern name when String.Hashtbl.mem internal_primitives name ->
             snd (String.Hashtbl.find internal_primitives name) ctx context l
+        | Extern name when String.Hashtbl.mem specialized_primitives name ->
+            let ((_, arg_typ, res_typ) as typ) =
+              String.Hashtbl.find specialized_primitives name
+            in
+            let* f = register_import ~name (Fun (specialized_primitive_type typ)) in
+            let rec loop acc arg_typ l =
+              match arg_typ, l with
+              | [], [] -> box_value res_typ (return (W.Call (f, List.rev acc)))
+              | repr :: rem, x :: r ->
+                  let* x =
+                    unbox_value
+                      repr
+                      (transl_prim_arg
+                         ctx
+                         ?typ:
+                           (match repr with
+                           | Int -> Some (Int Normalized)
+                           | _ -> None)
+                         x)
+                  in
+                  loop (x :: acc) rem r
+              | [], _ :: _ | _ :: _, [] -> assert false
+            in
+            loop [] arg_typ l
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
             match p, l with
-            | Extern name, l -> (
-                try
-                  let ((_, arg_typ, res_typ) as typ) =
-                    String.Hashtbl.find specialized_primitives name
-                  in
-                  let* f = register_import ~name (Fun (specialized_primitive_type typ)) in
-                  let rec loop acc arg_typ l =
-                    match arg_typ, l with
-                    | [], [] -> box_value res_typ (return (W.Call (f, List.rev acc)))
-                    | repr :: rem, x :: r ->
-                        let* x = unbox_value repr x in
-                        loop (x :: acc) rem r
-                    | [], _ :: _ | _ :: _, [] -> assert false
-                  in
-                  loop [] arg_typ l
-                with Not_found ->
-                  let* f =
-                    register_import ~name (Fun (Type.primitive_type (List.length l)))
-                  in
-                  let rec loop acc l =
-                    match l with
-                    | [] -> return (W.Call (f, List.rev acc))
-                    | x :: r ->
-                        let* x = x in
-                        loop (x :: acc) r
-                  in
-                  loop [] l)
+            | Extern name, l ->
+                let* f =
+                  register_import ~name (Fun (Type.primitive_type (List.length l)))
+                in
+                let rec loop acc l =
+                  match l with
+                  | [] -> return (W.Call (f, List.rev acc))
+                  | x :: r ->
+                      let* x = x in
+                      loop (x :: acc) r
+                in
+                loop [] l
             | IsInt, [ x ] -> Value.is_int x
             | Vectlength, [ x ] -> Memory.gen_array_length x
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
