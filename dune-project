@@ -49,7 +49,7 @@
   (lwt (>= 2.4.4))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (and (>= 0.22.0) :with-test))
+  (ppxlib (and (>= 0.36) :with-test))
   (re (and (>= 1.9.0) :with-test)))
  (depopts
   graphics
@@ -79,7 +79,7 @@
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
   (ppxlib (>= 0.15))
-  (ppxlib (and (< 0.36) :with-test))
+  (ppxlib (and (>= 0.36) :with-test))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
@@ -116,7 +116,7 @@
   (tyxml (>= 4.6))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (and (>= 0.22.0) :with-test))
+  (ppxlib (and (>= 0.36) :with-test))
   (re (and (>= 1.9.0) :with-test))
 ))
 
