@@ -1049,12 +1049,6 @@ module Generate (Target : Target_sig.S) = struct
             let ta' = transl_prim_arg ctx ta in
             match get_type ctx ta with
             | Bigarray { kind; layout = C } ->
-                let i' = Var.fresh () in
-                let j' = Var.fresh () in
-                let k' = Var.fresh () in
-                let dim0 = Var.fresh () in
-                let dim1 = Var.fresh () in
-                let dim2 = Var.fresh () in
                 let v' =
                   transl_prim_arg
                     ctx
@@ -1066,30 +1060,53 @@ module Generate (Target : Target_sig.S) = struct
                       | _ -> None)
                     v
                 in
+                let indices = [ i; j; k ] in
+                let ba_offset i dim =
+                  match i, dim with
+                  | i0 :: irem, _ :: dim_rem ->
+                      List.fold_left2
+                        ~f:(fun acc i dim -> Arith.((acc * load dim) + load i))
+                        ~init:(load i0)
+                        irem
+                        dim_rem
+                  | _ -> assert false
+                in
+                let index_vars = List.map ~f:(fun _ -> Var.fresh ()) indices in
+                let bound_vars = List.map ~f:(fun _ -> Var.fresh ()) indices in
                 seq
                   (let* () =
-                     store ~typ:I32 i' (transl_prim_arg ctx ~typ:(Int Normalized) i)
+                     List.fold_right2
+                       ~f:(fun i' i rem ->
+                         let* () =
+                           store ~typ:I32 i' (transl_prim_arg ctx ~typ:(Int Normalized) i)
+                         in
+                         rem)
+                       ~init:(return ())
+                       index_vars
+                       indices
                    in
                    let* () =
-                     store ~typ:I32 j' (transl_prim_arg ctx ~typ:(Int Normalized) j)
+                     List.fold_right2
+                       ~f:(fun dim pos rem ->
+                         let* () = store ~typ:I32 dim (Bigarray.dim pos ta') in
+                         rem)
+                       ~init:(return ())
+                       bound_vars
+                       (List.mapi ~f:(fun i _ -> i) indices)
                    in
                    let* () =
-                     store ~typ:I32 k' (transl_prim_arg ctx ~typ:(Int Normalized) k)
+                     List.fold_right2
+                       ~f:(fun i' dim rem ->
+                         let* cond = Arith.uge (load i') (load dim) in
+                         let* () =
+                           instr (W.Br_if (label_index context bound_error_pc, cond))
+                         in
+                         rem)
+                       ~init:(return ())
+                       index_vars
+                       bound_vars
                    in
-                   let* () = store dim0 ~typ:I32 (Bigarray.dim 0 ta') in
-                   let* () = store dim1 ~typ:I32 (Bigarray.dim 1 ta') in
-                   let* () = store dim2 ~typ:I32 (Bigarray.dim 2 ta') in
-                   let* cond = Arith.uge (load i') (load dim0) in
-                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
-                   let* cond = Arith.uge (load j') (load dim1) in
-                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
-                   let* cond = Arith.uge (load k') (load dim2) in
-                   let* () = instr (W.Br_if (label_index context bound_error_pc, cond)) in
-                   Bigarray.set
-                     ~kind
-                     ta'
-                     Arith.((((load i' * load dim1) + load j') * load dim2) + load k')
-                     v')
+                   Bigarray.set ~kind ta' (ba_offset index_vars bound_vars) v')
                   Value.unit
             | _ ->
                 let* f =
