@@ -17,12 +17,12 @@ bench:
 	@date -u +"%FT%TZ - Installing dependencies"
 	opam pin -yn --with-version=dev ..
 	opam install -y wasm_of_ocaml-compiler js_of_ocaml-ppx gen_js_api brr
-	$(MAKE) microbenchmarks
-	$(MAKE) -C benchmark-fiat-crypto bench
-	$(MAKE) -C benchmark-ocamlc bench
+	#$(MAKE) microbenchmarks
+	#$(MAKE) -C benchmark-fiat-crypto bench
+	#$(MAKE) -C benchmark-ocamlc bench
 	$(MAKE) -C benchmark-partial-render-table bench
-	$(MAKE) -C benchmark-camlboy bench
-	$(MAKE) -C benchmark-others bench
+	#$(MAKE) -C benchmark-camlboy bench
+	#$(MAKE) -C benchmark-others bench # To try later!
 
 microbenchmarks:
 	@date -u +"%FT%TZ - Microbenchmarks: starting"
