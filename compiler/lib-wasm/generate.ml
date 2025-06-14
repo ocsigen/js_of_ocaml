@@ -36,6 +36,7 @@ module Generate (Target : Target_sig.S) = struct
     { live : int array
     ; in_cps : Effects.in_cps
     ; deadcode_sentinal : Var.t
+    ; global_flow_info : Global_flow.info
     ; types : Typing.typ Var.Tbl.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
@@ -784,44 +785,53 @@ module Generate (Target : Target_sig.S) = struct
 
   let rec translate_expr ctx context x e =
     match e with
-    | Apply { f; args; exact }
-      when exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1 ->
-        let rec loop acc l =
-          match l with
-          | [] -> (
-              let arity = List.length args in
-              let funct = Var.fresh () in
-              let* closure = tee funct (load f) in
-              let* ty, funct =
-                Memory.load_function_pointer
-                  ~cps:(Var.Set.mem x ctx.in_cps)
-                  ~arity
-                  (load funct)
-              in
-              let* b = is_closure f in
-              if b
-              then return (W.Call (f, List.rev (closure :: acc)))
-              else
-                match funct with
-                | W.RefFunc g ->
-                    (* Functions with constant closures ignore their
+    | Apply { f; args; exact; _ } ->
+        if exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1
+        then
+          let rec loop acc l =
+            match l with
+            | [] -> (
+                let arity = List.length args in
+                let funct = Var.fresh () in
+                let* closure = tee funct (load f) in
+                let* ty, funct =
+                  Memory.load_function_pointer
+                    ~cps:(Var.Set.mem x ctx.in_cps)
+                    ~arity
+                    (load funct)
+                in
+                let* b = is_closure f in
+                if b
+                then return (W.Call (f, List.rev (closure :: acc)))
+                else
+                  match funct with
+                  | W.RefFunc g ->
+                      (* Functions with constant closures ignore their
                        environment. In case of partial application, we
                        still need the closure. *)
-                    let* cl = if exact then Value.unit else return closure in
-                    return (W.Call (g, List.rev (cl :: acc)))
-                | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc))))
-          | x :: r ->
-              let* x = load_and_box ctx x in
-              loop (x :: acc) r
-        in
-        loop [] args
-    | Apply { f; args; _ } ->
-        let* apply =
-          need_apply_fun ~cps:(Var.Set.mem x ctx.in_cps) ~arity:(List.length args)
-        in
-        let* args = expression_list (fun x -> load_and_box ctx x) args in
-        let* closure = load f in
-        return (W.Call (apply, args @ [ closure ]))
+                      let* cl = if exact then Value.unit else return closure in
+                      return (W.Call (g, List.rev (cl :: acc)))
+                  | _ -> (
+                      match
+                        if exact
+                        then Global_flow.get_unique_closure ctx.global_flow_info f
+                        else None
+                      with
+                      | Some g -> return (W.Call (g, List.rev (closure :: acc)))
+                      | None -> return (W.Call_ref (ty, funct, List.rev (closure :: acc)))
+                      ))
+            | x :: r ->
+                let* x = load_and_box ctx x in
+                loop (x :: acc) r
+          in
+          loop [] args
+        else
+          let* apply =
+            need_apply_fun ~cps:(Var.Set.mem x ctx.in_cps) ~arity:(List.length args)
+          in
+          let* args = expression_list (fun x -> load_and_box ctx x) args in
+          let* closure = load f in
+          return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
         Memory.allocate
           ~deadcode_sentinal:ctx.deadcode_sentinal
@@ -1390,6 +1400,7 @@ module Generate (Target : Target_sig.S) = struct
     ~warn_on_unhandled_effect
 *)
       ~deadcode_sentinal
+      ~global_flow_info
       ~types =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
@@ -1400,6 +1411,7 @@ module Generate (Target : Target_sig.S) = struct
       { live = live_vars
       ; in_cps
       ; deadcode_sentinal
+      ; global_flow_info
       ; types
       ; blocks = p.blocks
       ; closures
@@ -1512,7 +1524,17 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_d
   let types = Typing.f ~state ~info ~deadcode_sentinal p in
   let t = Timer.make () in
   let p = fix_switch_branches p in
-  let res = G.f ~context ~unit_name ~live_vars ~in_cps ~deadcode_sentinal ~types p in
+  let res =
+    G.f
+      ~context
+      ~unit_name
+      ~live_vars
+      ~in_cps
+      ~deadcode_sentinal
+      ~global_flow_info:info
+      ~types
+      p
+  in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
 
