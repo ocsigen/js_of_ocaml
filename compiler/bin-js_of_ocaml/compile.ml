@@ -42,6 +42,7 @@ let source_map_enabled : Source_map.Encoding_spec.t option -> bool = function
   | Some _ -> true
 
 let output_gen
+    ~write_shape
     ~standalone
     ~custom_header
     ~build_info
@@ -53,7 +54,7 @@ let output_gen
     Driver.configure fmt;
     if standalone then header ~custom_header fmt;
     if Config.Flag.header () then jsoo_header fmt build_info;
-    let sm = f ~standalone ~source_map (k, fmt) in
+    let sm = f ~standalone ~shapes:write_shape ~source_map (k, fmt) in
     match source_map, sm with
     | None, _ | _, None -> ()
     | Some { output_file = output; source_map; keep_empty }, Some sm ->
@@ -71,7 +72,6 @@ let output_gen
         Pretty_print.newline fmt;
         Pretty_print.string fmt (Printf.sprintf "//# sourceMappingURL=%s\n" urlData)
   in
-
   match output_file with
   | `Stdout -> f stdout `Stdout
   | `Name name -> Filename.gen_file name (fun chan -> f chan `File)
@@ -156,6 +156,7 @@ let run
     ; keep_unit_names
     ; include_runtime
     ; effects
+    ; shape_files
     } =
   let source_map_base =
     Option.map ~f:(fun spec -> spec.Source_map.Encoding_spec.source_map) source_map
@@ -172,6 +173,7 @@ let run
   | `Name _, _ -> ());
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
+  List.iter shape_files ~f:(fun fn -> Shape.Store.load' fn);
   let t = Timer.make () in
   let include_dirs =
     List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
@@ -251,12 +253,13 @@ let run
       (one : Parse_bytecode.one)
       ~check_sourcemap
       ~standalone
+      ~shapes
       ~(source_map : Source_map.Encoding_spec.t option)
       ~link
       output_file =
     if check_sourcemap then check_debug one;
     let init_pseudo_fs = fs_external && standalone in
-    let sm =
+    let sm, shapes =
       match output_file with
       | `Stdout, formatter ->
           let instr =
@@ -269,6 +272,7 @@ let run
           let code = Code.prepend one.code instr in
           Driver.f
             ~standalone
+            ~shapes
             ?profile
             ~link
             ~wrap_with_fun
@@ -292,6 +296,7 @@ let run
           let res =
             Driver.f
               ~standalone
+              ~shapes
               ?profile
               ~link
               ~wrap_with_fun
@@ -307,12 +312,14 @@ let run
                   Driver.f' ~standalone ~link:`Needed ?profile ~wrap_with_fun pfs_fmt code));
           res
     in
+    StringMap.iter (fun name shape -> Shape.Store.set ~name shape) shapes;
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
     sm
   in
   let output_partial
       (cmo : Cmo_format.compilation_unit)
       ~standalone
+      ~shapes
       ~source_map
       code
       ((_, fmt) as output_file) =
@@ -320,7 +327,14 @@ let run
     let uinfo = Unit_info.of_cmo cmo in
     Pretty_print.string fmt "\n";
     Pretty_print.string fmt (Unit_info.to_string uinfo);
-    output code ~check_sourcemap:true ~source_map ~standalone ~link:`No output_file
+    output
+      code
+      ~check_sourcemap:true
+      ~source_map
+      ~standalone
+      ~shapes
+      ~link:`No
+      output_file
   in
   let output_partial_runtime ~standalone ~source_map ((_, fmt) as output_file) =
     assert (not standalone);
@@ -371,12 +385,13 @@ let run
         { code; cmis = StringSet.empty; debug = Parse_bytecode.Debug.default_summary }
       in
       output_gen
+        ~write_shape:false
         ~standalone:true
         ~custom_header
         ~build_info:(Build_info.create `Runtime)
         ~source_map
         (fst output_file)
-        (fun ~standalone ~source_map ((_, fmt) as output_file) ->
+        (fun ~standalone ~shapes ~source_map ((_, fmt) as output_file) ->
           Pretty_print.string fmt "\n";
           Pretty_print.string fmt (Unit_info.to_string uinfo);
           output
@@ -384,6 +399,7 @@ let run
             ~check_sourcemap:false
             ~source_map
             ~standalone
+            ~shapes
             ~link:`All
             output_file
           |> sourcemap_of_info ~base:source_map_base)
@@ -419,16 +435,18 @@ let run
           in
           if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
           output_gen
+            ~write_shape:false
             ~standalone:true
             ~custom_header
             ~build_info:(Build_info.create `Exe)
             ~source_map
             (fst output_file)
-            (fun ~standalone ~source_map output_file ->
+            (fun ~standalone ~shapes ~source_map output_file ->
               output
                 code
                 ~check_sourcemap:true
                 ~standalone
+                ~shapes
                 ~source_map
                 ~link:(if linkall then `All else `Needed)
                 output_file
@@ -457,19 +475,24 @@ let run
           in
           if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
           output_gen
+            ~write_shape:true
             ~standalone:false
             ~custom_header
             ~build_info:(Build_info.create `Cmo)
             ~source_map
             output_file
-            (fun ~standalone ~source_map output ->
+            (fun ~standalone ~shapes ~source_map output ->
               match include_runtime with
               | true ->
-                  let sm1 = output_partial_runtime ~standalone ~source_map output in
-                  let sm2 = output_partial cmo code ~standalone ~source_map output in
+                  let sm1 =
+                    output_partial_runtime ~standalone ~shapes ~source_map output
+                  in
+                  let sm2 =
+                    output_partial cmo code ~standalone ~shapes ~source_map output
+                  in
                   sourcemap_of_infos ~base:source_map_base [ sm1; sm2 ]
               | false ->
-                  output_partial cmo code ~standalone ~source_map output
+                  output_partial cmo code ~standalone ~shapes ~source_map output
                   |> sourcemap_of_info ~base:source_map_base)
       | `Cma cma when keep_unit_names ->
           (if include_runtime
@@ -486,13 +509,14 @@ let run
                    failwith "use [-o dirname/] or remove [--keep-unit-names]"
              in
              output_gen
+               ~write_shape:false
                ~standalone:false
                ~custom_header
                ~build_info:(Build_info.create `Runtime)
                ~source_map
                (`Name output_file)
-               (fun ~standalone ~source_map output ->
-                 output_partial_runtime ~standalone ~source_map output
+               (fun ~standalone ~shapes ~source_map output ->
+                 output_partial_runtime ~standalone ~shapes ~source_map output
                  |> sourcemap_of_info ~base:source_map_base));
           List.iter cma.lib_units ~f:(fun cmo ->
               let output_file =
@@ -522,23 +546,26 @@ let run
                   t1
                   (Ocaml_compiler.Cmo_format.name cmo);
               output_gen
+                ~write_shape:true
                 ~standalone:false
                 ~custom_header
                 ~build_info:(Build_info.create `Cma)
                 ~source_map
                 (`Name output_file)
-                (fun ~standalone ~source_map output ->
-                  output_partial ~standalone ~source_map cmo code output
+                (fun ~standalone ~shapes ~source_map output ->
+                  output_partial ~standalone ~shapes ~source_map cmo code output
                   |> sourcemap_of_info ~base:source_map_base))
       | `Cma cma ->
-          let f ~standalone ~source_map output =
-            let source_map_runtime =
+          let f ~standalone ~shapes ~source_map output =
+            (* Always compute shapes because it can be used by other units of the cma *)
+            let shapes = shapes || true in
+            let runtime =
               if not include_runtime
               then None
-              else Some (output_partial_runtime ~standalone ~source_map output)
+              else Some (output_partial_runtime ~standalone ~shapes ~source_map output)
             in
 
-            let source_map_units =
+            let units =
               List.map cma.lib_units ~f:(fun cmo ->
                   let t1 = Timer.make () in
                   let code =
@@ -556,16 +583,17 @@ let run
                       Timer.print
                       t1
                       (Ocaml_compiler.Cmo_format.name cmo);
-                  output_partial ~standalone ~source_map cmo code output)
+                  output_partial ~standalone ~shapes ~source_map cmo code output)
             in
             let sm =
-              match source_map_runtime with
-              | None -> source_map_units
-              | Some x -> x :: source_map_units
+              match runtime with
+              | None -> units
+              | Some x -> x :: units
             in
             sourcemap_of_infos ~base:source_map_base sm
           in
           output_gen
+            ~write_shape:true
             ~standalone:false
             ~custom_header
             ~build_info:(Build_info.create `Cma)
