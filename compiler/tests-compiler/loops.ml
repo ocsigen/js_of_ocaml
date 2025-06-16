@@ -522,7 +522,7 @@ let add_substitute =
         previous = 32;
         i$4 = next_i;
        }
-      else if(92 === previous){
+      else if(previous === 92){
        caml_call2(add_char, b, 92);
        caml_call2(add_char, b, previous$0);
        var i$6 = i$4 + 1 | 0;
