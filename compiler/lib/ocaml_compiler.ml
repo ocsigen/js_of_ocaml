@@ -284,5 +284,11 @@ module Cmo_format = struct
 
   let force_link (t : t) = t.cu_force_link
 
-  let hints_pos (t : t) = t.cu_hint
+  let hints_pos (t : t) = t.cu_hint [@@if ocaml_version >= (5, 3, 1)]
+
+  let hints_size (t : t) = t.cu_hintsize [@@if ocaml_version >= (5, 3, 1)]
+
+  let hints_size _ = 0 [@@if ocaml_version < (5, 3, 1)]
+
+  let hints_pos _ = 0 [@@if ocaml_version < (5, 3, 1)]
 end
