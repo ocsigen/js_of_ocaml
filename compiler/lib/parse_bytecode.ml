@@ -3134,7 +3134,7 @@ let from_cmo ?(includes = []) ?(include_cmis = false) ?(debug = false) compunit 
     Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
   let hints = Hints.create () in
-  if Ocaml_compiler.Cmo_format.hints_pos compunit <> 0
+  if Ocaml_compiler.Cmo_format.hints_size compunit > 0
   then (
     seek_in ic (Ocaml_compiler.Cmo_format.hints_pos compunit);
     Hints.read hints ~orig:0 ic);
@@ -3159,7 +3159,7 @@ let from_cma ?(includes = []) ?(include_cmis = false) ?(debug = false) lib ic =
         then (
           seek_in ic compunit.Cmo_format.cu_debug;
           Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
-        if Ocaml_compiler.Cmo_format.hints_pos compunit <> 0
+        if Ocaml_compiler.Cmo_format.hints_size compunit > 0
         then (
           seek_in ic (Ocaml_compiler.Cmo_format.hints_pos compunit);
           Hints.read hints ~orig:!orig ic);
