@@ -28,10 +28,10 @@ fmt:
 	git diff --exit-code
 
 fmt-js:
-	npx @biomejs/biome format --write
+	npx @biomejs/biome@1.9 format --write
 
 lint-js:
-	npx @biomejs/biome lint
+	npx @biomejs/biome@1.9 lint
 
 clean:
 	dune clean
