@@ -171,8 +171,7 @@ function caml_get_cached_method(obj, tag, cacheid) {
     else li = mi;
   }
   caml_method_cache[cacheid] = li - 3;
-  /* return 0 if tag is not there */
-  return tag === meths[li + 1] ? meths[li] : 0;
+  return meths[li];
 }
 
 //Provides: caml_get_public_method const
