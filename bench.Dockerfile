@@ -29,7 +29,7 @@ RUN mkdir janestreet \
  && cd janestreet \
  && git clone --depth 20 https://github.com/janestreet/opam-repository \
  && cd opam-repository \
- && git checkout 41c89c7824533f6b63cc5b6d75e6ddb1441d1520 \
+ && git checkout 2819773f29b6f6c14b918eae3cb40c8ff6b22d0e \
  && opam remote add js .
 
 # Install dependencies
@@ -48,7 +48,7 @@ RUN opam exec -- dune exec tools/ci_setup.exe ../janestreet . \
  && opam clean
 
 # Bin_prot packages
-RUN opam pin add -n https://github.com/ocaml-wasm/bin_prot.git#wasm-v0.18 \
+RUN opam pin add -n https://github.com/janestreet/bin_prot.git#125e336faacd2e2e8c7a1fed2231bde1cebfebdd \
  && opam install ppx_bin_prot
 
 # Copy sources
