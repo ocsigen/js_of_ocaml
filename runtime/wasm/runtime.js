@@ -21,6 +21,7 @@
   const { link, src, generated, disable_effects } = args;
 
   const isNode = globalThis.process?.versions?.node;
+  const isShell = !globalThis.TextDecoder;
 
   const math = {
     cos: Math.cos,
@@ -129,8 +130,8 @@
       : f;
   }
 
-  const decoder = new TextDecoder("utf-8", { ignoreBOM: 1 });
-  const encoder = new TextEncoder();
+  const decoder = isShell || new TextDecoder("utf-8", { ignoreBOM: 1 });
+  const encoder = isShell || new TextEncoder();
 
   function hash_int(h, d) {
     d = Math.imul(d, 0xcc9e2d51 | 0);
@@ -224,11 +225,21 @@
     array_length: (a) => a.length,
     array_get: (a, i) => a[i],
     array_set: (a, i, v) => (a[i] = v),
-    read_string: (l) => decoder.decode(new Uint8Array(buffer, 0, l)),
+    read_string: (l) =>
+      isShell
+        ? decodeURIComponent(
+            escape(String.fromCharCode(...new Uint8Array(buffer, 0, l))),
+          )
+        : decoder.decode(new Uint8Array(buffer, 0, l)),
     read_string_stream: (l, stream) =>
       decoder.decode(new Uint8Array(buffer, 0, l), { stream }),
     append_string: (s1, s2) => s1 + s2,
     write_string: (s) => {
+      if (isShell) {
+        s = unescape(encodeURIComponent(s));
+        for (let i = 0; i < s.length; ++i) out_buffer[i] = s.charCodeAt(i);
+        return s.length;
+      }
       var start = 0,
         len = s.length;
       for (;;) {
@@ -437,7 +448,8 @@
     },
     mktime: (year, month, day, h, m, s) =>
       new Date(year, month, day, h, m, s).getTime(),
-    random_seed: () => crypto.getRandomValues(new Int32Array(12)),
+    random_seed: () =>
+      isShell ? new Int32Array(12) : crypto.getRandomValues(new Int32Array(12)),
     access: (p, flags) =>
       fs.accessSync(
         p,
@@ -453,8 +465,14 @@
     write: (fd, b, o, l, p) =>
       fs
         ? fs.writeSync(fd, b, o, l, p === null ? p : Number(p))
-        : (console[fd === 2 ? "error" : "log"](
-            typeof b === "string" ? b : decoder.decode(b.slice(o, o + l)),
+        : ((isShell ? globalThis.print : console[fd === 2 ? "error" : "log"])(
+            typeof b === "string"
+              ? b
+              : isShell
+                ? decodeURIComponent(
+                    escape(String.fromCharCode(...b.slice(o, o + l))),
+                  )
+                : decoder.decode(b.slice(o, o + l)),
           ),
           l),
     read: (fd, b, o, l, p) => fs.readSync(fd, b, o, l, p),
@@ -464,7 +482,12 @@
     unregister_channel,
     channel_list,
     exit: (n) => isNode && globalThis.process.exit(n),
-    argv: () => (isNode ? globalThis.process.argv.slice(1) : ["a.out"]),
+    argv: () =>
+      isNode
+        ? globalThis.process.argv.slice(1)
+        : isShell
+          ? ["a.out"].concat(globalThis.arguments)
+          : ["a.out"],
     on_windows: +on_windows,
     getenv,
     backtrace_status: () => record_backtrace_flag,
@@ -499,7 +522,7 @@
     fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
     chmod: (p, perms) => fs.chmodSync(p, perms),
     fchmod: (p, perms) => fs.fchmodSync(p, perms),
-    file_exists: (p) => +fs.existsSync(p),
+    file_exists: (p) => (isShell ? 0 : +fs.existsSync(p)),
     is_directory: (p) => +fs.lstatSync(p).isDirectory(),
     is_file: (p) => +fs.lstatSync(p).isFile(),
     utimes: (p, a, m) => fs.utimesSync(p, a, m),
@@ -593,9 +616,13 @@
     const url = fetchBase ? new URL(src, fetchBase) : src;
     return fetch(url);
   }
-  const loadCode = isNode ? loadRelative : fetchRelative;
+  const loadCode = isNode
+    ? loadRelative
+    : isShell
+      ? (s) => globalThis.read(s, "binary")
+      : fetchRelative;
   async function instantiateModule(code) {
-    return isNode
+    return isNode || isShell
       ? WebAssembly.instantiate(await code, imports, options)
       : WebAssembly.instantiateStreaming(code, imports, options);
   }
