@@ -43,5 +43,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Set-up Biome
         uses: biomejs/setup-biome@v2
+        with:
+          version: 1.9.4
       - name: Run biome
         run: biome ci
