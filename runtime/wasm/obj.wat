@@ -457,14 +457,8 @@
                (br $loop))))
       (array.set $int_array (global.get $method_cache) (local.get $cacheid)
          (i32.add (local.get $li) (i32.const 1)))
-      (if (result (ref eq))
-          (ref.eq (local.get $vtag)
-             (array.get $block (local.get $meths)
-                (i32.add (local.get $li) (i32.const 1))))
-         (then
-            (array.get $block (local.get $meths) (local.get $li)))
-         (else
-            (ref.i31 (i32.const 0)))))
+      (array.get $block (local.get $meths) (local.get $li))
+      )
 
    (func (export "caml_get_public_method")
       (param $obj (ref eq)) (param $vtag (ref eq))
