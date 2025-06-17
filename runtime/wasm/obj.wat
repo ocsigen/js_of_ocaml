@@ -381,18 +381,15 @@
    (global $method_cache (mut (ref $int_array))
       (array.new $int_array (i32.const 4) (i32.const 8)))
 
-   (func (export "caml_get_public_method")
-      (param $obj (ref eq)) (param $vtag (ref eq)) (param (ref eq))
-      (result (ref eq))
-      (local $meths (ref $block))
-      (local $tag i32) (local $cacheid i32) (local $ofs i32)
-      (local $li i32) (local $mi i32) (local $hi i32)
-      (local $a (ref $int_array)) (local $len i32)
-      (local.set $meths
-         (ref.cast (ref $block)
-            (array.get $block
-               (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
-      (local.set $cacheid (i31.get_u (ref.cast (ref i31) (local.get 2))))
+
+   (global $caml_oo_cache_id_last (mut i32) (i32.const 0))
+
+   (func (export "caml_oo_cache_id") (result (ref eq))
+      (local $cacheid i32)
+      (local $a (ref $int_array))
+      (local $len i32)
+      (local.set $cacheid (global.get $caml_oo_cache_id_last))
+      (global.set $caml_oo_cache_id_last (i32.add (local.get $cacheid) (i32.const 1)))
       (local.set $len (array.len (global.get $method_cache)))
       (if (i32.ge_s (local.get $cacheid) (local.get $len))
          (then
@@ -405,6 +402,19 @@
                (global.get $method_cache) (i32.const 0)
                (array.len (global.get $method_cache)))
             (global.set $method_cache (local.get $a))))
+       (ref.i31 (local.get $cacheid)))
+
+   (func (export "caml_get_cached_method")
+      (param $obj (ref eq)) (param $vtag (ref eq)) (param (ref eq))
+      (result (ref eq))
+      (local $meths (ref $block))
+      (local $tag i32) (local $cacheid i32) (local $ofs i32)
+      (local $li i32) (local $mi i32) (local $hi i32)
+      (local.set $meths
+         (ref.cast (ref $block)
+            (array.get $block
+               (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
+      (local.set $cacheid (i31.get_u (ref.cast (ref i31) (local.get 2))))
       (local.set $ofs
          (array.get $int_array (global.get $method_cache) (local.get $cacheid)))
       (if (i32.lt_u (local.get $ofs) (array.len (local.get $meths)))
@@ -447,6 +457,48 @@
                (br $loop))))
       (array.set $int_array (global.get $method_cache) (local.get $cacheid)
          (i32.add (local.get $li) (i32.const 1)))
+      (array.get $block (local.get $meths) (local.get $li))
+      )
+
+   (func (export "caml_get_public_method")
+      (param $obj (ref eq)) (param $vtag (ref eq))
+      (result (ref eq))
+      (local $meths (ref $block))
+      (local $tag i32) (local $ofs i32)
+      (local $li i32) (local $mi i32) (local $hi i32)
+      (local.set $meths
+         (ref.cast (ref $block)
+            (array.get $block
+               (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
+      (local.set $tag (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
+      (local.set $li (i32.const 3))
+      (local.set $hi
+         (i32.add
+            (i32.shl
+               (i31.get_u
+                  (ref.cast (ref i31)
+                     (array.get $block (local.get $meths) (i32.const 1))))
+               (i32.const 1))
+            (i32.const 1)))
+      (loop $loop
+         (if (i32.lt_u (local.get $li) (local.get $hi))
+            (then
+               (local.set $mi
+                  (i32.or (i32.shr_u (i32.add (local.get $li) (local.get $hi))
+                                     (i32.const 1))
+                          (i32.const 1)))
+               (if (i32.lt_s
+                      (local.get $tag)
+                      (i31.get_s
+                         (ref.cast (ref i31)
+                            (array.get $block
+                               (local.get $meths)
+                               (i32.add (local.get $mi) (i32.const 1))))))
+                  (then
+                     (local.set $hi (i32.sub (local.get $mi) (i32.const 2))))
+                  (else
+                     (local.set $li (local.get $mi))))
+               (br $loop))))
       (if (result (ref eq))
           (ref.eq (local.get $vtag)
              (array.get $block (local.get $meths)

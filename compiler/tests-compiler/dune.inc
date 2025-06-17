@@ -690,6 +690,21 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/oo.ml
+ (name oo_15)
+ (enabled_if true)
+ (modules oo)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/rec.ml
  (name rec_15)
  (enabled_if true)
