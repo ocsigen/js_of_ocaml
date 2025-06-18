@@ -16,6 +16,8 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+        os-name:
+           - Ubuntu
         ocaml-compiler:
           - "4.14"
           - "5.0"
@@ -29,28 +31,35 @@ jobs:
           - false
         include:
           - os: macos-latest
+            os-name: MacOS
             ocaml-compiler: "5.3"
             separate_compilation: true
             jane_street_tests: false
             all_jane_street_tests: false
           - os: windows-latest
+            os-name: Windows
             ocaml-compiler: "5.3"
             separate_compilation: true
             # Jane Street tests disabled for now (basement only works on Linux)
             jane_street_tests: false
             all_jane_street_tests: false
           - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "5.3"
             separate_compilation: true
             jane_street_tests: true
             all_jane_street_tests: true
           - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "5.3"
             separate_compilation: false
             jane_street_tests: true
             all_jane_street_tests: false
 
     runs-on: ${{ matrix.os }}
+
+    name:
+       ${{ (! matrix.separate_compilation) && 'Whole program / ' || ''}}${{ matrix.ocaml-compiler }} / ${{ matrix.os-name }}${{ matrix.all_jane_street_tests && ' / Jane Street tests' || ''}}
 
     steps:
       - name: Set git to use LF
