@@ -17,5 +17,5 @@
  *)
 
 module Make (_ : Target_sig.S) : sig
-  val f : context:Code_generation.context -> unit
+  val f : context:Code_generation.context -> Code_generation.context
 end
