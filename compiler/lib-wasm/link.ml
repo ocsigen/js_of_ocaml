@@ -345,7 +345,6 @@ let info_from_sexp info =
   let build_info =
     info |> member "build_info" |> mandatory (single Build_info.from_sexp)
   in
-
   let predefined_exceptions =
     info
     |> member "predefined_exceptions"

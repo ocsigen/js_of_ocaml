@@ -45,7 +45,7 @@ let rec merge (u : t) (v : t) =
     , Function { arity = a2; pure = p2; res = r2 } ) ->
       if a1 = a2 then Function { arity = a1; pure = p1 && p2; res = merge r1 r2 } else Top
   | Block b1, Block b2 ->
-      if List.length b1 = List.length b2 then Block (List.map2 b1 b2 ~f:merge) else Top
+      if List.compare_lengths b1 b2 = 0 then Block (List.map2 b1 b2 ~f:merge) else Top
   | Top, _ | _, Top -> Top
   | Function _, Block _ | Block _, Function _ -> Top
 
