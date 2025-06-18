@@ -37,6 +37,7 @@ let forked_packages =
     ; "bonsai_web_test"
     ; "core"
     ; "core_kernel"
+    ; "core_unix"
     ; "ocaml_intrinsics_kernel"
     ; "ppx_expect"
     ; "ppx_inline_test"
@@ -360,7 +361,14 @@ let () =
       let branch =
         if is_forked nm then
           match nm with
-          | "zarith_stubs_js" -> Some "js-strings"
+          | "async_js"
+          | "base"
+          | "core"
+          | "core_kernel"
+          | "core_unix"
+          | "time_now"
+          | "zarith_stubs_js" ->
+              Some "js-strings"
           | _ -> Some "wasm-v0.18"
         else None
       in

@@ -69,7 +69,14 @@ let options =
   in
   let build_t input_modules output_file variables allowed_imports common opt merge =
     let allowed_imports =
-      if List.is_empty allowed_imports then None else Some (List.concat allowed_imports)
+      match allowed_imports with
+      | [] -> Some [ "str" ]
+      | _ :: _ as l ->
+          let l = List.concat l in
+          if List.mem ~eq:String.equal "str" l then
+            Some l
+          else
+            Some ("str" :: l)
     in
     `Ok
       { input_modules

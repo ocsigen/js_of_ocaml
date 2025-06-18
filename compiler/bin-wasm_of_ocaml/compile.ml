@@ -127,6 +127,7 @@ let build_runtime ~runtime_file =
              [ "bindings"
              ; "Math"
              ; "js"
+             ; "str"
              ; "wasm:js-string"
              ; "wasm:text-encoder"
              ; "wasm:text-decoder"
