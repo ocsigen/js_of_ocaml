@@ -3,7 +3,7 @@
 export NAME=Others
 export SUBNAME=lexifi-g2pp
 
-SHELL=/bin/bash -o pipefail
+SHELL=/usr/bin/env bash -o pipefail
 
 bench:
 	@date -u +"%FT%TZ - $(NAME)/$(SUBNAME): starting"
@@ -13,6 +13,6 @@ bench:
 	@date -u +"%FT%TZ - $(NAME)/$(SUBNAME): done"
 
 perform:
-	/usr/bin/time -f '{"compiler": "$(COMPILER)", "time":"%E"}' node $(SCRIPT) 2>&1 1> /dev/null | \
+	env time -f '{"compiler": "$(COMPILER)", "time":"%E"}' node $(SCRIPT) 2>&1 1> /dev/null | \
 	sh ../../utils/format_metrics.sh exec | \
 	sh ../../utils/aggregate.sh $(KIND)

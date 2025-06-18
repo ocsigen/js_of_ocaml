@@ -297,12 +297,29 @@ let sync_exec f l =
   let l = List.map f l in
   List.iter (fun f -> f ()) l
 
+let org_branch nm =
+  if is_forked nm then
+    ( "ocaml-wasm"
+    , match nm with
+      | "async_js"
+      | "base"
+      | "core"
+      | "core_kernel"
+      | "core_unix"
+      | "time_now"
+      | "zarith_stubs_js" -> Some "js-strings"
+      | _ -> Some "wasm-v0.18" )
+  else
+    "janestreet", None
+
 let pin nm =
+  let _, branch = org_branch nm in
   exec_async
     (Printf.sprintf
-       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-v0.18"
+       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git%s"
        nm
-       nm)
+       nm
+       (match branch with Some b -> "#" ^ b | None -> ""))
 
 let pin_packages () = sync_exec pin (StringSet.elements do_pin)
 
@@ -358,20 +375,7 @@ let () =
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
-      let branch =
-        if is_forked nm then
-          match nm with
-          | "async_js"
-          | "base"
-          | "core"
-          | "core_kernel"
-          | "core_unix"
-          | "time_now"
-          | "zarith_stubs_js" ->
-              Some "js-strings"
-          | _ -> Some "wasm-v0.18"
-        else None
-      in
+      let org, branch = org_branch nm in
       let commit =
         if is_forked nm
         then None
@@ -388,7 +392,7 @@ let () =
         nm
         (Printf.sprintf
            "https://github.com/%s/%s"
-           (if is_forked nm then "ocaml-wasm" else "janestreet")
+           org
            nm))
     (StringSet.elements (StringSet.diff js omitted_js))
 
