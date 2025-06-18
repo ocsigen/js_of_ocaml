@@ -22,15 +22,19 @@ let do_pin =
 
 let forked_packages =
   StringSet.of_list
-    [ "base"
+    [ "async_js"
+    ; "base"
     ; "core"
+    ; "core_kernel"
+    ; "core_unix"
     ; "bonsai" (* Compatibility with effect syntax *)
     ; "bonsai_test"
     ; "bonsai_web" (* Compatibility with effect syntax *)
     ; "bonsai_web_components"
     ; "bonsai_web_test"
-    ; "virtual_dom" (* Compatibility with effect syntax *)
+    ; "time_now"
     ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
+    ; "virtual_dom" (* Compatibility with effect syntax *)
     ; "zarith_stubs_js"
     ]
 
@@ -403,7 +407,14 @@ let () =
       let branch =
         if is_forked nm then
           match nm with
-          | "zarith_stubs_js" -> Some "js-strings"
+          | "async_js"
+          | "base"
+          | "core"
+          | "core_kernel"
+          | "core_unix"
+          | "time_now"
+          | "zarith_stubs_js" ->
+              Some "js-strings"
           | _ -> Some "wasm-latest"
         else None
       in

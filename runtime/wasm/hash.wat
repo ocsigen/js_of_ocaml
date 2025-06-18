@@ -180,7 +180,6 @@
       (return_call $jsstring_hash
          (local.get $h) (struct.get $js 0 (local.get $s))))
 
-(;
 (@if use-js-string
 (@then
    (export "caml_hash_mix_string" (func $caml_hash_mix_string))
@@ -188,8 +187,6 @@
 (@else
    (export "caml_hash_mix_string" (func $caml_hash_mix_bytes))
 ))
-;)
-   (export "caml_hash_mix_string" (func $caml_hash_mix_bytes)) ;; ZZZ Fix base
 
    (global $HASH_QUEUE_SIZE i32 (i32.const 256))
    (global $MAX_FORWARD_DEREFERENCE i32 (i32.const 1000))
