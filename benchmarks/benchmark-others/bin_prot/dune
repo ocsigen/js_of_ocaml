@@ -4,7 +4,7 @@
  (js_of_ocaml
   (flags --opt 2))
  (wasm_of_ocaml
-  (flags --opt 2))
+  (flags --opt 2 --enable use-js-string))
  (preprocess
   (pps ppx_bin_prot))
  (libraries unix))
