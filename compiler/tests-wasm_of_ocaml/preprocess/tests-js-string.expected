@@ -1,4 +1,4 @@
-(import "" "abcd" (global $s$string externref)) (import "" "abcd" (global $js$string$0$$string externref)) (import "" "\\\'\28\n" (global $js$string$1$$string externref)) (import "" "abcd" (global $js$string$2$$string externref)) (import "" "abcd" (global $js$string$3$$string externref)) (import "" "0" (global $js$string$4$$string externref)) (import "" "\n" (global $js$string$5$$string externref)) ;; conditional
+(import "str" "abcd" (global $s$string externref)) (import "str" "abcd" (global $js$string$0$$string externref)) (import "str" "\\\'\28\n" (global $js$string$1$$string externref)) (import "str" "abcd" (global $js$string$2$$string externref)) (import "str" "abcd" (global $js$string$3$$string externref)) (import "str" "0" (global $js$string$4$$string externref)) (import "str" "\n" (global $js$string$5$$string externref)) ;; conditional
               a is true                     
                                 b is false  
               a is true  
