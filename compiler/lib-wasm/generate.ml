@@ -812,7 +812,24 @@ module Generate (Target : Target_sig.S) = struct
                         | GlobalGet _ -> Value.unit
                         | _ -> return closure
                       in
-                      return (W.Call (g, List.rev (cl :: acc)))
+                      let params =
+                        match ctx.global_flow_info.info_defs.(Var.idx g) with
+                        | Expr (Closure (params, _, _)) -> params
+                        | _ -> assert false
+                      in
+                      let* args =
+                        expression_list
+                          Fun.id
+                          (List.map2
+                             ~f:(fun a p ->
+                               convert
+                                 ~from:(get_var_type ctx a)
+                                 ~into:(get_var_type ctx p)
+                                 (load a))
+                             args
+                             params)
+                      in
+                      return (W.Call (g, List.rev (cl :: List.rev args)))
                   | None -> (
                       let arity = List.length args in
                       let funct = Var.fresh () in
@@ -1341,7 +1358,23 @@ module Generate (Target : Target_sig.S) = struct
       ; signature =
           (match name_opt with
           | None -> Type.primitive_type param_count
-          | Some _ -> Type.func_type (param_count - 1))
+          | Some f ->
+              if
+                Var.Hashtbl.mem
+                  ctx.fun_info.Call_graph_analysis.unambiguous_non_escaping
+                  f
+              then
+                { W.params =
+                    List.map
+                      ~f:(fun x : W.value_type ->
+                        match get_var_type ctx x with
+                        | Int (Unnormalized | Normalized) -> I32
+                        | _ -> Type.value)
+                      params
+                    @ [ Type.value ]
+                ; result = [ Type.value ]
+                }
+              else Type.func_type (param_count - 1))
       ; param_names
       ; locals
       ; body
@@ -1536,9 +1569,11 @@ let init = G.init
 let start () = make_context ~value_type:Gc_target.Type.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_data =
-  let state, info = global_flow_data in
-  let fun_info = Call_graph_analysis.f p info in
-  let types = Typing.f ~state ~info ~deadcode_sentinal p in
+  let global_flow_state, global_flow_info = global_flow_data in
+  let fun_info = Call_graph_analysis.f p global_flow_info in
+  let types =
+    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p
+  in
   let t = Timer.make () in
   let p = fix_switch_branches p in
   let res =
@@ -1548,7 +1583,7 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_d
       ~live_vars
       ~in_cps
       ~deadcode_sentinal
-      ~global_flow_info:info
+      ~global_flow_info
       ~fun_info
       ~types
       p
