@@ -1439,10 +1439,10 @@ module Generate (Target : Target_sig.S) = struct
     global_context.other_fields <- List.rev_append functions global_context.other_fields;
     let js_code = StringMap.bindings global_context.fragments in
     global_context.fragments <- StringMap.empty;
+    Curry.f ~context:global_context;
     toplevel_name, js_code
 
   let output ~context =
-    Curry.f ~context;
     let imports =
       List.concat
         (List.map
