@@ -240,18 +240,7 @@ module Type = struct
     then
       register_type
         (if cps then "cps_closure_0" else "closure_0")
-        (fun () ->
-          let* fun_ty' = function_type ~cps arity in
-          return
-            { supertype = None
-            ; final = false
-            ; typ =
-                W.Struct
-                  [ { mut = false
-                    ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                    }
-                  ]
-            })
+        (fun () -> return { supertype = None; final = false; typ = W.Struct [] })
     else
       register_type
         (if cps
@@ -287,30 +276,29 @@ module Type = struct
        then Printf.sprintf "cps_env_%d_%d" arity env_type_id
        else Printf.sprintf "env_%d_%d" arity env_type_id)
       (fun () ->
-        let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
-        let* common = closure_common_fields ~cps in
-        let* fun_ty' = function_type ~cps arity in
-        return
-          { supertype = Some cl_typ
-          ; final = true
-          ; typ =
-              W.Struct
-                ((if arity = 1
-                  then common
-                  else if arity = 0
-                  then
-                    [ { mut = false
-                      ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                      }
-                    ]
-                  else
-                    common
-                    @ [ { mut = false
-                        ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                        }
-                      ])
-                @ make_env_type env_type)
-          })
+        if arity = 0
+        then
+          return
+            { supertype = None; final = true; typ = W.Struct (make_env_type env_type) }
+        else
+          let* common = closure_common_fields ~cps in
+          let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
+          let* fun_ty' = function_type ~cps arity in
+          return
+            { supertype = Some cl_typ
+            ; final = true
+            ; typ =
+                W.Struct
+                  ((if arity = 1
+                    then common
+                    else
+                      common
+                      @ [ { mut = false
+                          ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
+                          }
+                        ])
+                  @ make_env_type env_type)
+            })
 
   let rec_env_type ~function_count ~env_type_id ~env_type =
     register_type (Printf.sprintf "rec_env_%d_%d" function_count env_type_id) (fun () ->
@@ -334,28 +322,41 @@ module Type = struct
        then Printf.sprintf "cps_closure_rec_%d_%d_%d" arity function_count env_type_id
        else Printf.sprintf "closure_rec_%d_%d_%d" arity function_count env_type_id)
       (fun () ->
-        let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
-        let* common = closure_common_fields ~cps in
-        let* fun_ty' = function_type ~cps arity in
         let* env_ty = rec_env_type ~function_count ~env_type_id ~env_type in
-        return
-          { supertype = Some cl_typ
-          ; final = true
-          ; typ =
-              W.Struct
-                ((if arity = 1
-                  then common
-                  else
-                    common
-                    @ [ { mut = false
-                        ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
-                        }
-                      ])
-                @ [ { W.mut = false
+        if arity = 0
+        then
+          return
+            { supertype = None
+            ; final = true
+            ; typ =
+                W.Struct
+                  [ { W.mut = false
                     ; typ = W.Value (Ref { nullable = false; typ = Type env_ty })
                     }
-                  ])
-          })
+                  ]
+            }
+        else
+          let* cl_typ = closure_type ~usage:`Alloc ~cps arity in
+          let* common = closure_common_fields ~cps in
+          let* fun_ty' = function_type ~cps arity in
+          return
+            { supertype = Some cl_typ
+            ; final = true
+            ; typ =
+                W.Struct
+                  ((if arity = 1
+                    then common
+                    else
+                      common
+                      @ [ { mut = false
+                          ; typ = Value (Ref { nullable = false; typ = Type fun_ty' })
+                          }
+                        ])
+                  @ [ { W.mut = false
+                      ; typ = W.Value (Ref { nullable = false; typ = Type env_ty })
+                      }
+                    ])
+            })
 
   let rec curry_type ~cps arity m =
     register_type
@@ -800,7 +801,8 @@ module Memory = struct
 
   let env_start arity =
     match arity with
-    | 0 | 1 -> 1
+    | 0 -> 0
+    | 1 -> 1
     | _ -> 2
 
   let load_function_pointer ~cps ~arity ?(skip_cast = false) closure =
@@ -1053,7 +1055,7 @@ module Closure = struct
     | [ (g, _) ] -> Code.Var.equal f g
     | _ :: r -> is_last_fun r f
 
-  let translate ~context ~closures ~cps f =
+  let translate ~context ~closures ~cps ~need_pointer f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     assert (
@@ -1062,7 +1064,7 @@ module Closure = struct
            ~f:(fun x -> Code.Var.Set.mem x context.globalized_variables)
            free_variables));
     let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
-    let arity = if cps then arity - 1 else arity in
+    let arity = if need_pointer then if cps then arity - 1 else arity else 0 in
     let* curry_fun = if arity > 1 then need_curry_fun ~cps ~arity else return f in
     if List.is_empty free_variables
     then
@@ -1075,7 +1077,8 @@ module Closure = struct
           (W.StructNew
              ( typ
              , match arity with
-               | 0 | 1 -> [ W.RefFunc f ]
+               | 0 -> []
+               | 1 -> [ W.RefFunc f ]
                | _ -> [ RefFunc curry_fun; RefFunc f ] ))
       in
       return (W.GlobalGet name)
@@ -1098,7 +1101,8 @@ module Closure = struct
             (W.StructNew
                ( typ
                , (match arity with
-                 | 0 | 1 -> [ W.RefFunc f ]
+                 | 0 -> []
+                 | 1 -> [ W.RefFunc f ]
                  | _ -> [ RefFunc curry_fun; RefFunc f ])
                  @ l ))
       | (g, _) :: _ as functions ->
@@ -1132,9 +1136,10 @@ module Closure = struct
             return
               (W.StructNew
                  ( typ
-                 , (if arity = 1
-                    then [ W.RefFunc f ]
-                    else [ RefFunc curry_fun; RefFunc f ])
+                 , (match arity with
+                   | 0 -> []
+                   | 1 -> [ W.RefFunc f ]
+                   | _ -> [ RefFunc curry_fun; RefFunc f ])
                    @ [ env ] ))
           in
           if is_last_fun functions f
@@ -1155,7 +1160,7 @@ module Closure = struct
               (load f)
           else res
 
-  let bind_environment ~context ~closures ~cps f =
+  let bind_environment ~context ~closures ~cps ~need_pointer f =
     let info = Code.Var.Map.find f closures in
     let free_variables = get_free_variables ~context info in
     let free_variable_count = List.length free_variables in
@@ -1167,7 +1172,7 @@ module Closure = struct
     else
       let env_type_id = Option.value ~default:(-1) info.id in
       let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
-      let arity = if cps then arity - 1 else arity in
+      let arity = if need_pointer then if cps then arity - 1 else arity else 0 in
       let offset = Memory.env_start arity in
       match info.Closure_conversion.functions with
       | [ _ ] ->
