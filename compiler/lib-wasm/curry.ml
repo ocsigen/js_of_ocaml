@@ -359,7 +359,6 @@ module Make (Target : Target_sig.S) = struct
       }
 
   let f ~context =
-    let context = { context with other_fields = context.other_fields } in
     IntMap.iter
       (fun arity name ->
         let f = apply ~context ~arity ~name in
@@ -389,6 +388,5 @@ module Make (Target : Target_sig.S) = struct
       (fun arity name ->
         let f = dummy ~context ~cps:true ~arity ~name in
         context.other_fields <- f :: context.other_fields)
-      context.cps_dummy_funs;
-    context
+      context.cps_dummy_funs
 end
