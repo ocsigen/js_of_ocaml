@@ -174,6 +174,7 @@ module type S = sig
          context:Code_generation.context
       -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
+      -> no_code_pointer:bool
       -> Code.Var.t
       -> expression
 
@@ -181,6 +182,7 @@ module type S = sig
          context:Code_generation.context
       -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
+      -> no_code_pointer:bool
       -> Code.Var.t
       -> unit Code_generation.t
 
