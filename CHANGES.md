@@ -1,3 +1,8 @@
+#dev
+
+## Features/Changes
+* Compiler/wasm: omit code pointer from closures when not used (#2059)
+
 # 6.2.0 (2025-07-30) - Lille
 
 ## Features/Changes
