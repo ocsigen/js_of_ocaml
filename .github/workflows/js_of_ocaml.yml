@@ -1,4 +1,4 @@
-name: build
+name: js_of_ocaml
 
 on:
   pull_request:
