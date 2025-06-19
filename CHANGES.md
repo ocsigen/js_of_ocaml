@@ -4,6 +4,7 @@
 * Compiler: exit-loop-early in more cases (#2077)
 * Runtime: support rename in fake filesystem (#2080)
 * Compiler: remove reserved keyword in ecmascript 3
+* Compiler/wasm: omit code pointer from closures when not used (#2059)
 
 ## Bug fixes
 * Compiler: Fix inlining. do not inline recursive functions (#2084)
