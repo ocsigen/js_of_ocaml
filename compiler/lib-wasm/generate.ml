@@ -1442,7 +1442,7 @@ module Generate (Target : Target_sig.S) = struct
     toplevel_name, js_code
 
   let output ~context =
-    let context = Curry.f ~context in
+    Curry.f ~context;
     let imports =
       List.concat
         (List.map
