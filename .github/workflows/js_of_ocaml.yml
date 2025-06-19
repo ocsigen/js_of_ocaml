@@ -16,6 +16,10 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+        os-name:
+          - Ubuntu
+        ocaml-name:
+          - ""
         ocaml-compiler:
           - "4.13"
           - "5.0"
@@ -29,53 +33,68 @@ jobs:
           - true
         include:
           - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "4.14"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-name: "4.12.2+32bit"
             ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: macos-latest
+            os-name: Macos
             ocaml-compiler: "4.14"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
+            os-name: Windows
             ocaml-compiler: "4.14"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "5.3"
             skip-effects: false
             skip-test: false
             skip-doc: false
           - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "5.1"
             skip-effects: false
             skip-test: false
             skip-doc: true
             # Note this OCaml compiler is bytecode only
           - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-name: "5.3.0+32bit"
             ocaml-compiler: "ocaml-variants.5.3.0+options,ocaml-option-32bit"
             skip-effects: true # disabled for the same reason than `skip-test`
             skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
             skip-doc: true
           - os: macos-latest
+            os-name: MacOS
             ocaml-compiler: "5.3"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
+            os-name: Windows
             ocaml-compiler: "5.3"
             skip-effects: false
             skip-test: false
             skip-doc: true
 
     runs-on: ${{ matrix.os }}
+
+    name:
+       ${{ matrix.ocaml-name != '' && matrix.ocaml-name || matrix.ocaml-compiler}} / ${{ matrix.os-name }}${{ ! matrix.skip-test && ' / Tests' || ''}}${{ ! matrix.skip-effects && ' / Effects' || ''}}${{ ! matrix.skip-doc && ' / Docs' || ''}}
+
 
     steps:
       - name: Set git to use LF
