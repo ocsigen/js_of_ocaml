@@ -792,57 +792,51 @@ module Generate (Target : Target_sig.S) = struct
           let rec loop acc l =
             match l with
             | [] -> (
-                let* b = is_closure f in
-                if b
-                then
-                  let* closure = load f in
-                  return (W.Call (f, List.rev (closure :: acc)))
-                else
-                  match
-                    if exact
-                    then Global_flow.get_unique_closure ctx.global_flow_info f
-                    else None
-                  with
-                  | Some g ->
-                      let* closure = load f in
-                      let* cl =
-                        (* Functions with constant closures ignore their
+                match
+                  if exact
+                  then Global_flow.get_unique_closure ctx.global_flow_info f
+                  else None
+                with
+                | Some g ->
+                    let* closure = load f in
+                    let* cl =
+                      (* Functions with constant closures ignore their
                            environment. *)
-                        match closure with
-                        | GlobalGet _ -> Value.unit
-                        | _ -> return closure
-                      in
-                      let params =
-                        match ctx.global_flow_info.info_defs.(Var.idx g) with
-                        | Expr (Closure (params, _, _)) -> params
-                        | _ -> assert false
-                      in
-                      let* args =
-                        expression_list
-                          Fun.id
-                          (List.map2
-                             ~f:(fun a p ->
-                               convert
-                                 ~from:(get_var_type ctx a)
-                                 ~into:(get_var_type ctx p)
-                                 (load a))
-                             args
-                             params)
-                      in
-                      return (W.Call (g, List.rev (cl :: List.rev args)))
-                  | None -> (
-                      let arity = List.length args in
-                      let funct = Var.fresh () in
-                      let* closure = tee funct (load f) in
-                      let* ty, funct =
-                        Memory.load_function_pointer
-                          ~cps:(Var.Set.mem x ctx.in_cps)
-                          ~arity
-                          (load funct)
-                      in
-                      match funct with
-                      | W.RefFunc g -> return (W.Call (g, List.rev (closure :: acc)))
-                      | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc)))))
+                      match closure with
+                      | GlobalGet _ -> Value.unit
+                      | _ -> return closure
+                    in
+                    let params =
+                      match ctx.global_flow_info.info_defs.(Var.idx g) with
+                      | Expr (Closure (params, _, _)) -> params
+                      | _ -> assert false
+                    in
+                    let* args =
+                      expression_list
+                        Fun.id
+                        (List.map2
+                           ~f:(fun a p ->
+                             convert
+                               ~from:(get_var_type ctx a)
+                               ~into:(get_var_type ctx p)
+                               (load a))
+                           args
+                           params)
+                    in
+                    return (W.Call (g, List.rev (cl :: List.rev args)))
+                | None -> (
+                    let arity = List.length args in
+                    let funct = Var.fresh () in
+                    let* closure = tee funct (load f) in
+                    let* ty, funct =
+                      Memory.load_function_pointer
+                        ~cps:(Var.Set.mem x ctx.in_cps)
+                        ~arity
+                        (load funct)
+                    in
+                    match funct with
+                    | W.RefFunc g -> return (W.Call (g, List.rev (closure :: acc)))
+                    | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc)))))
             | x :: r ->
                 let* x = load_and_box ctx x in
                 loop (x :: acc) r
@@ -1286,7 +1280,14 @@ module Generate (Target : Target_sig.S) = struct
       List.fold_left
         ~f:(fun l x ->
           let* _ = l in
-          let* _ = add_var x in
+          let* _ =
+            add_var
+              ?typ:
+                (match get_var_type ctx x with
+                | Typing.Int (Normalized | Unnormalized) -> Some I32
+                | _ -> None)
+              x
+          in
           return ())
         ~init:(return ())
         params
