@@ -2,6 +2,7 @@
 
 ## Features/Changes
 * Compiler: exit-loop-early in more cases (#2077)
+* Compiler/wasm: omit code pointer from closures when not used (#2059)
 
 # 6.1.1 (2025-07-07) - Lille
 
