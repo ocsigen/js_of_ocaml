@@ -803,7 +803,7 @@ module Generate (Target : Target_sig.S) = struct
                       (* Functions with constant closures ignore their
                            environment. *)
                       match closure with
-                      | GlobalGet _ -> Value.unit
+                      | GlobalGet _ -> return closure (*Value.unit*)
                       | _ -> return closure
                     in
                     let params =

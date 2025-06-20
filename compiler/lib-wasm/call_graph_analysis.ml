@@ -29,7 +29,9 @@ let block_deps ~info ~non_escaping ~unambiguous ~ambiguous ~blocks pc =
               if Var.Set.cardinal known = 1 && (not others) && Var.Set.mem x known
               then (
                 let may_escape = Var.ISet.mem info.Global_flow.info_may_escape x in
-                if debug () then Format.eprintf "CLOSURE may-escape:%b@." may_escape;
+                if debug ()
+                then
+                  Format.eprintf "CLOSURE %a may-escape:%b@." Code.Var.print x may_escape;
                 if not may_escape then Var.Hashtbl.replace non_escaping x ()))
       | Let (_, (Prim _ | Block _ | Constant _ | Field _ | Special _))
       | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ())
