@@ -37,6 +37,7 @@ module Generate (Target : Target_sig.S) = struct
     ; in_cps : Effects.in_cps
     ; deadcode_sentinal : Var.t
     ; global_flow_info : Global_flow.info
+    ; fun_info : Call_graph_analysis.t
     ; types : Typing.typ Var.Tbl.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
@@ -791,35 +792,51 @@ module Generate (Target : Target_sig.S) = struct
           let rec loop acc l =
             match l with
             | [] -> (
-                let arity = List.length args in
-                let funct = Var.fresh () in
-                let* closure = tee funct (load f) in
-                let* ty, funct =
-                  Memory.load_function_pointer
-                    ~cps:(Var.Set.mem x ctx.in_cps)
-                    ~arity
-                    (load funct)
-                in
-                let* b = is_closure f in
-                if b
-                then return (W.Call (f, List.rev (closure :: acc)))
-                else
-                  match funct with
-                  | W.RefFunc g ->
+                match
+                  if exact
+                  then Global_flow.get_unique_closure ctx.global_flow_info f
+                  else None
+                with
+                | Some g ->
+                    let* closure = load f in
+                    let* cl =
                       (* Functions with constant closures ignore their
-                       environment. In case of partial application, we
-                       still need the closure. *)
-                      let* cl = if exact then Value.unit else return closure in
-                      return (W.Call (g, List.rev (cl :: acc)))
-                  | _ -> (
-                      match
-                        if exact
-                        then Global_flow.get_unique_closure ctx.global_flow_info f
-                        else None
-                      with
-                      | Some g -> return (W.Call (g, List.rev (closure :: acc)))
-                      | None -> return (W.Call_ref (ty, funct, List.rev (closure :: acc)))
-                      ))
+                           environment. *)
+                      match closure with
+                      | GlobalGet _ -> return closure (*Value.unit*)
+                      | _ -> return closure
+                    in
+                    let params =
+                      match ctx.global_flow_info.info_defs.(Var.idx g) with
+                      | Expr (Closure (params, _, _)) -> params
+                      | _ -> assert false
+                    in
+                    let* args =
+                      expression_list
+                        Fun.id
+                        (List.map2
+                           ~f:(fun a p ->
+                             convert
+                               ~from:(get_var_type ctx a)
+                               ~into:(get_var_type ctx p)
+                               (load a))
+                           args
+                           params)
+                    in
+                    return (W.Call (g, List.rev (cl :: List.rev args)))
+                | None -> (
+                    let arity = List.length args in
+                    let funct = Var.fresh () in
+                    let* closure = tee funct (load f) in
+                    let* ty, funct =
+                      Memory.load_function_pointer
+                        ~cps:(Var.Set.mem x ctx.in_cps)
+                        ~arity
+                        (load funct)
+                    in
+                    match funct with
+                    | W.RefFunc g -> return (W.Call (g, List.rev (closure :: acc)))
+                    | _ -> return (W.Call_ref (ty, funct, List.rev (closure :: acc)))))
             | x :: r ->
                 let* x = load_and_box ctx x in
                 loop (x :: acc) r
@@ -848,6 +865,10 @@ module Generate (Target : Target_sig.S) = struct
           ~context:ctx.global_context
           ~closures:ctx.closures
           ~cps:(Var.Set.mem x ctx.in_cps)
+          ~need_pointer:
+            (not
+               (Config.Flag.optcall ()
+               && Var.Hashtbl.mem ctx.fun_info.unambiguous_non_escaping x))
           x
     | Constant c -> Constant.translate c
     | Special (Alias_prim _) -> assert false
@@ -1259,7 +1280,14 @@ module Generate (Target : Target_sig.S) = struct
       List.fold_left
         ~f:(fun l x ->
           let* _ = l in
-          let* _ = add_var x in
+          let* _ =
+            add_var
+              ?typ:
+                (match get_var_type ctx x with
+                | Typing.Int (Normalized | Unnormalized) -> Some I32
+                | _ -> None)
+              x
+          in
           return ())
         ~init:(return ())
         params
@@ -1272,6 +1300,10 @@ module Generate (Target : Target_sig.S) = struct
             ~context:ctx.global_context
             ~closures:ctx.closures
             ~cps:(Var.Set.mem f ctx.in_cps)
+            ~need_pointer:
+              (not
+                 (Config.Flag.optcall ()
+                 && Var.Hashtbl.mem ctx.fun_info.unambiguous_non_escaping f))
             f
       | None -> return ()
     in
@@ -1327,7 +1359,23 @@ module Generate (Target : Target_sig.S) = struct
       ; signature =
           (match name_opt with
           | None -> Type.primitive_type param_count
-          | Some _ -> Type.func_type (param_count - 1))
+          | Some f ->
+              if
+                Var.Hashtbl.mem
+                  ctx.fun_info.Call_graph_analysis.unambiguous_non_escaping
+                  f
+              then
+                { W.params =
+                    List.map
+                      ~f:(fun x : W.value_type ->
+                        match get_var_type ctx x with
+                        | Int (Unnormalized | Normalized) -> I32
+                        | _ -> Type.value)
+                      params
+                    @ [ Type.value ]
+                ; result = [ Type.value ]
+                }
+              else Type.func_type (param_count - 1))
       ; param_names
       ; locals
       ; body
@@ -1401,6 +1449,7 @@ module Generate (Target : Target_sig.S) = struct
 *)
       ~deadcode_sentinal
       ~global_flow_info
+      ~fun_info
       ~types =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
@@ -1412,6 +1461,7 @@ module Generate (Target : Target_sig.S) = struct
       ; in_cps
       ; deadcode_sentinal
       ; global_flow_info
+      ; fun_info
       ; types
       ; blocks = p.blocks
       ; closures
@@ -1520,8 +1570,11 @@ let init = G.init
 let start () = make_context ~value_type:Gc_target.Type.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_data =
-  let state, info = global_flow_data in
-  let types = Typing.f ~state ~info ~deadcode_sentinal p in
+  let global_flow_state, global_flow_info = global_flow_data in
+  let fun_info = Call_graph_analysis.f p global_flow_info in
+  let types =
+    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p
+  in
   let t = Timer.make () in
   let p = fix_switch_branches p in
   let res =
@@ -1531,7 +1584,8 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_d
       ~live_vars
       ~in_cps
       ~deadcode_sentinal
-      ~global_flow_info:info
+      ~global_flow_info
+      ~fun_info
       ~types
       p
   in

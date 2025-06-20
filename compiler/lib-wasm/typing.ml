@@ -128,22 +128,27 @@ let update_deps st { blocks; _ } =
           | _ -> ()))
     blocks
 
-let mark_function_parameters { blocks; _ } =
-  let function_parameters = Var.Tbl.make () false in
-  let set x = Var.Tbl.set function_parameters x true in
+let mark_function_parameters ~fun_info { blocks; _ } =
+  let boxed_function_parameters = Var.Tbl.make () false in
+  let set x = Var.Tbl.set boxed_function_parameters x true in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (_, Closure (params, _, _)) -> List.iter ~f:set params
+          | Let (x, Closure (params, _, _))
+            when not
+                   (Var.Hashtbl.mem
+                      fun_info.Call_graph_analysis.unambiguous_non_escaping
+                      x) -> List.iter ~f:set params
           | _ -> ()))
     blocks;
-  function_parameters
+  boxed_function_parameters
 
 type st =
-  { state : state
-  ; info : info
-  ; function_parameters : bool Var.Tbl.t
+  { global_flow_state : state
+  ; global_flow_info : info
+  ; boxed_function_parameters : bool Var.Tbl.t
+  ; fun_info : Call_graph_analysis.t
   }
 
 let rec constant_type (c : constant) =
@@ -319,11 +324,11 @@ let prim_type ~approx prim args =
   | _ -> Top
 
 let propagate st approx x : Domain.t =
-  match st.state.defs.(Var.idx x) with
+  match st.global_flow_state.defs.(Var.idx x) with
   | Phi { known; others; unit } ->
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
       let res = if unit then Domain.join (Int Unnormalized) res else res in
-      if Var.Tbl.get st.function_parameters x then Domain.box res else res
+      if Var.Tbl.get st.boxed_function_parameters x then Domain.box res else res
   | Expr e -> (
       match e with
       | Constant c -> constant_type c
@@ -332,7 +337,7 @@ let propagate st approx x : Domain.t =
           Tuple
             (Array.mapi
                ~f:(fun i y ->
-                 match st.state.mutable_fields.(Var.idx x) with
+                 match st.global_flow_state.mutable_fields.(Var.idx x) with
                  | All_fields -> Top
                  | Some_fields s when IntSet.mem i s -> Top
                  | Some_fields _ | No_field ->
@@ -348,15 +353,15 @@ let propagate st approx x : Domain.t =
           ( Extern ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
       | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
-          match Var.Tbl.get st.info.info_approximation y with
+          match Var.Tbl.get st.global_flow_info.info_approximation y with
           | Values { known; others } ->
               Domain.join_set
                 ~others
                 (fun z ->
-                  match st.state.defs.(Var.idx z) with
+                  match st.global_flow_state.defs.(Var.idx z) with
                   | Expr (Block (_, lst, _, _)) ->
                       let m =
-                        match st.state.mutable_fields.(Var.idx z) with
+                        match st.global_flow_state.mutable_fields.(Var.idx z) with
                         | No_field -> false
                         | Some_fields _ | All_fields -> true
                       in
@@ -377,18 +382,22 @@ let propagate st approx x : Domain.t =
       | Prim (Extern prim, args) -> prim_type ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
-          match Var.Tbl.get st.info.info_approximation f with
+          match Var.Tbl.get st.global_flow_info.info_approximation f with
           | Values { known; others } ->
               Domain.join_set
                 ~others
                 (fun g ->
-                  match st.state.defs.(Var.idx g) with
+                  match st.global_flow_state.defs.(Var.idx g) with
                   | Expr (Closure (params, _, _))
                     when List.length args = List.length params ->
-                      Domain.box
-                        (Domain.join_set
-                           (fun y -> Var.Tbl.get approx y)
-                           (Var.Map.find g st.state.return_values))
+                      let res =
+                        Domain.join_set
+                          (fun y -> Var.Tbl.get approx y)
+                          (Var.Map.find g st.global_flow_state.return_values)
+                      in
+                      if false && Var.Hashtbl.mem st.fun_info.unambiguous_non_escaping g
+                      then res
+                      else Domain.box res
                   | Expr (Closure (_, _, _)) ->
                       (* The function is partially applied or over applied *)
                       Top
@@ -403,33 +412,36 @@ module Solver = G.Solver (Domain)
 let solver st =
   let associated_list h x = try Var.Hashtbl.find h x with Not_found -> [] in
   let g =
-    { G.domain = st.state.vars
+    { G.domain = st.global_flow_state.vars
     ; G.iter_children =
         (fun f x ->
-          List.iter ~f (Var.Tbl.get st.state.deps x);
+          List.iter ~f (Var.Tbl.get st.global_flow_state.deps x);
           List.iter
-            ~f:(fun g -> List.iter ~f (associated_list st.state.function_call_sites g))
-            (associated_list st.state.functions_from_returned_value x))
+            ~f:(fun g ->
+              List.iter ~f (associated_list st.global_flow_state.function_call_sites g))
+            (associated_list st.global_flow_state.functions_from_returned_value x))
     }
   in
   Solver.f () g (propagate st)
 
-let f ~state ~info ~deadcode_sentinal p =
-  update_deps state p;
-  let function_parameters = mark_function_parameters p in
-  let typ = solver { state; info; function_parameters } in
+let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
+  update_deps global_flow_state p;
+  let boxed_function_parameters = mark_function_parameters ~fun_info p in
+  let typ =
+    solver { global_flow_state; global_flow_info; fun_info; boxed_function_parameters }
+  in
   Var.Tbl.set typ deadcode_sentinal (Int Normalized);
   if debug ()
   then (
     Var.ISet.iter
       (fun x ->
-        match state.defs.(Var.idx x) with
+        match global_flow_state.defs.(Var.idx x) with
         | Expr _ -> ()
         | Phi _ ->
             let t = Var.Tbl.get typ x in
             if not (Domain.equal t Top)
             then Format.eprintf "%a: %a@." Var.print x Domain.print t)
-      state.vars;
+      global_flow_state.vars;
     Print.program
       Format.err_formatter
       (fun _ i ->
