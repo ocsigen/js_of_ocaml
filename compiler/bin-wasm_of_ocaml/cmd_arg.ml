@@ -66,6 +66,26 @@ type t =
   ; shape_files : string list
   }
 
+let set_param =
+  let doc = "Set compiler options." in
+  let all = List.map (Config.Param.all ()) ~f:(fun (x, _, _) -> x, x) in
+  let pair = Arg.(pair ~sep:'=' (enum all) string) in
+  let parser s =
+    match Arg.conv_parser pair s with
+    | Ok (k, v) -> (
+        match
+          List.find ~f:(fun (k', _, _) -> String.equal k k') (Config.Param.all ())
+        with
+        | _, _, valid -> (
+            match valid v with
+            | Ok () -> Ok (k, v)
+            | Error msg -> Error (`Msg ("Unexpected VALUE after [=], " ^ msg))))
+    | Error _ as e -> e
+  in
+  let printer = Arg.conv_printer pair in
+  let c = Arg.conv (parser, printer) in
+  Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
+
 let options () =
   let runtime_files =
     let doc = "Link JavaScript and WebAssembly files [$(docv)]. " in
@@ -109,14 +129,6 @@ let options () =
   let sourcemap_root =
     let doc = "root dir for source map." in
     Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
-  in
-  let set_param =
-    let doc = "Set compiler options." in
-    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
-    Arg.(
-      value
-      & opt_all (list (pair ~sep:'=' (enum all) string)) []
-      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
@@ -231,14 +243,6 @@ let options_runtime_only () =
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
-  in
-  let set_param =
-    let doc = "Set compiler options." in
-    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
-    Arg.(
-      value
-      & opt_all (list (pair ~sep:'=' (enum all) string)) []
-      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let effects =
     let doc =

@@ -92,12 +92,7 @@ let main =
   Cmdliner.Cmd.v Cmd_arg.info t
 
 let (_ : int) =
-  try
-    Cmdliner.Cmd.eval
-      ~catch:false
-      ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
-      main
-  with
+  try Cmdliner.Cmd.eval ~catch:false ~argv:Sys.argv main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in
       Format.eprintf

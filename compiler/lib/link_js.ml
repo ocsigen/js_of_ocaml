@@ -345,9 +345,10 @@ let link
                   if u.effects_without_cps && not !warn_effects
                   then (
                     warn_effects := true;
-                    warn
-                      "Warning: your program contains effect handlers; you should \
-                       probably run js_of_ocaml with option '--effects=cps'@.");
+                    Warning.warn
+                      `Effect_handlers_without_effect_backend
+                      "your program contains effect handlers; you should probably run \
+                       js_of_ocaml with option '--effects=cps'@.");
                   (if mklib
                    then
                      let u = if linkall then { u with force_link = true } else u in

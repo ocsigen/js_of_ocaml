@@ -17,7 +17,7 @@ let check_js_file fname =
   let freenames = StringSet.diff freenames Reserved.provided in
   if not (StringSet.is_empty freenames)
   then (
-    Format.eprintf "warning: free variables in %S@." fname;
+    Format.eprintf "Warning: free variables in %S@." fname;
     Format.eprintf "vars: %s@." (String.concat ~sep:", " (StringSet.elements freenames));
     exit 2);
   ()

@@ -20,12 +20,7 @@
 open Js_of_ocaml_compiler.Stdlib
 
 let (_ : int) =
-  try
-    Cmdliner.Cmd.eval
-      ~catch:false
-      ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
-      Link_wasm.command
-  with
+  try Cmdliner.Cmd.eval ~catch:false ~argv:Sys.argv Link_wasm.command with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in
       Format.eprintf

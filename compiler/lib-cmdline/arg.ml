@@ -31,6 +31,7 @@ type t =
   ; optim : string list on_off
   ; quiet : bool
   ; werror : bool
+  ; warnings : (bool * Warning.t) list
   ; custom_header : string option
   }
 
@@ -60,6 +61,35 @@ let disable =
        Arg.(value & opt_all (list (enum all)) [] & info [ "disable" ] ~docv:"OPT" ~doc)
      in
      Term.(const List.flatten $ arg))
+
+let parse_warning s =
+  let err s = `Msg (Printf.sprintf "Unknown warning %s" s) in
+  if String.is_empty s
+  then Error (err s)
+  else
+    match Warning.parse s with
+    | Some n -> Ok (true, n)
+    | None -> (
+        match String.drop_prefix ~prefix:"no-" s with
+        | Some n -> (
+            match Warning.parse n with
+            | Some n -> Ok (false, n)
+            | None -> Error (err n))
+        | None -> Error (err s))
+
+let print_warning fmt (b, w) =
+  Format.fprintf
+    fmt
+    "%s%s"
+    (match b with
+    | true -> ""
+    | false -> "")
+    (Warning.name w)
+
+let warnings : (bool * Warning.t) list Term.t =
+  let doc = "Enable or disable the warnings specified by the argument [$(docv)]." in
+  let c : 'a Arg.conv = Arg.conv ~docv:"" (parse_warning, print_warning) in
+  Arg.(value & opt_all c [] & info [ "w" ] ~docv:"WARN" ~doc)
 
 let pretty =
   let doc = "Pretty print the output." in
@@ -91,7 +121,19 @@ let custom_header =
 let t =
   lazy
     Term.(
-      const (fun debug enable disable pretty debuginfo noinline quiet werror c_header ->
+      const
+        (fun
+          debug
+          enable
+          disable
+          pretty
+          debuginfo
+          noinline
+          quiet
+          (warnings : (bool * Warning.t) list)
+          werror
+          c_header
+        ->
           let enable = if pretty then "pretty" :: enable else enable in
           let enable = if debuginfo then "debuginfo" :: enable else enable in
           let disable = if noinline then "inline" :: disable else disable in
@@ -104,6 +146,7 @@ let t =
           let disable = disable_if_pretty "share" disable in
           { debug = { enable = debug; disable = [] }
           ; optim = { enable; disable }
+          ; warnings
           ; quiet
           ; werror
           ; custom_header = c_header
@@ -115,6 +158,7 @@ let t =
       $ debuginfo
       $ noinline
       $ is_quiet
+      $ warnings
       $ is_werror
       $ custom_header)
 
@@ -125,5 +169,8 @@ let on_off on off t =
 let eval t =
   Config.Flag.(on_off enable disable t.optim);
   Debug.(on_off enable disable t.debug);
-  quiet := t.quiet;
-  werror := t.werror
+  List.iter t.warnings ~f:(function
+    | true, w -> Warning.enable w
+    | false, w -> Warning.disable w);
+  Warning.quiet := t.quiet;
+  Warning.werror := t.werror

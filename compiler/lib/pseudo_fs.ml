@@ -27,19 +27,15 @@ let expand_path exts real virt =
       List.fold_left l ~init:acc ~f:(fun acc s ->
           loop (Filename.concat realfile s) (Filename.concat virtfile s) acc)
     else
-      try
-        let exmatch =
-          try
-            let b = Filename.basename realfile in
-            let i = String.rindex b '.' in
-            let e = String.sub b ~pos:(i + 1) ~len:(String.length b - i - 1) in
-            List.mem ~eq:String.equal e exts
-          with Not_found -> List.mem ~eq:String.equal "" exts
-        in
-        if List.is_empty exts || exmatch then (virtfile, realfile) :: acc else acc
-      with exc ->
-        warn "ignoring %s: %s@." realfile (Printexc.to_string exc);
-        acc
+      let exmatch =
+        try
+          let b = Filename.basename realfile in
+          let i = String.rindex b '.' in
+          let e = String.sub b ~pos:(i + 1) ~len:(String.length b - i - 1) in
+          List.mem ~eq:String.equal e exts
+        with Not_found -> List.mem ~eq:String.equal "" exts
+      in
+      if List.is_empty exts || exmatch then (virtfile, realfile) :: acc else acc
   in
   loop real virt []
 
@@ -124,11 +120,15 @@ let f ~prim ~cmis ~files ~paths =
       ([], [])
   in
   if not (List.is_empty missing_cmis)
-  then (
-    warn "Some OCaml interface files were not found.@.";
-    warn "Use [-I dir_of_cmis] option to bring them into scope@.";
-    (* [`ocamlc -where`/expunge in.byte out.byte moduleA moduleB ... moduleN] *)
-    List.iter missing_cmis ~f:(fun nm -> warn "  %s@." nm));
+  then
+    Warning.warn
+      `Missing_cmi
+      "Some OCaml interface files were not found.\n\
+       Use [-I dir_of_cmis] option to bring them into scope\n\
+       %a"
+      (Format.pp_print_list Format.pp_print_string)
+      missing_cmis;
+  (* [`ocamlc -where`/expunge in.byte out.byte moduleA moduleB ... moduleN] *)
   let other_files =
     List.map files ~f:(fun f ->
         List.map (list_files f paths) ~f:(fun (name, filename) ->

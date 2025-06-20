@@ -52,12 +52,12 @@ let read_cmi ~dir cmi =
     with Not_found -> (
       match cmi with
       (* HACK: here a list of known "hidden" cmi from the OCaml distribution. *)
-      | "dynlink_config.cmi"
-      | "dynlink_types.cmi"
-      | "dynlink_platform_intf.cmi"
-      | "dynlink_common.cmi"
-      | "dynlink_symtable.cmi"
-      | "dynlink_compilerlibs.cmi" -> raise Not_found
+      | "Dynlink_config.cmi"
+      | "Dynlink_types.cmi"
+      | "Dynlink_platform_intf.cmi"
+      | "Dynlink_common.cmi"
+      | "Dynlink_symtable.cmi"
+      | "Dynlink_compilerlibs.cmi" -> raise Not_found
       | cmi ->
           Format.eprintf
             "Could not find cmi %s or %s in %s@."
