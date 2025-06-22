@@ -1095,13 +1095,12 @@ module Generate (Target : Target_sig.S) = struct
     match e with
     | Apply { f; args; exact; _ } ->
         let* closure = load f in
-        let* args = expression_list (fun x -> load_and_box ctx x) args in
         if exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1
         then
           match
             if exact then Global_flow.get_unique_closure ctx.global_flow_info f else None
           with
-          | Some g ->
+          | Some (g, params) ->
               let* cl =
                 (* Functions with constant closures ignore their environment. *)
                 match closure with
@@ -1109,6 +1108,18 @@ module Generate (Target : Target_sig.S) = struct
                     let* init = get_global global in
                     if Option.is_some init then Value.unit else return closure
                 | _ -> return closure
+              in
+              let* args =
+                expression_list
+                  Fun.id
+                  (List.map2
+                     ~f:(fun a p ->
+                       convert
+                         ~from:(get_var_type ctx a)
+                         ~into:(get_var_type ctx p)
+                         (load a))
+                     args
+                     params)
               in
               return (W.Call (g, args @ [ cl ]))
           | None -> (
@@ -1120,6 +1131,7 @@ module Generate (Target : Target_sig.S) = struct
                   ~arity:(List.length args)
                   (load funct)
               in
+              let* args = expression_list (fun x -> load_and_box ctx x) args in
               match funct with
               | W.RefFunc g -> return (W.Call (g, args @ [ closure ]))
               | _ -> return (W.Call_ref (ty, funct, args @ [ closure ])))
@@ -1127,6 +1139,7 @@ module Generate (Target : Target_sig.S) = struct
           let* apply =
             need_apply_fun ~cps:(Var.Set.mem x ctx.in_cps) ~arity:(List.length args)
           in
+          let* args = expression_list (fun x -> load_and_box ctx x) args in
           return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
         if tag = 254
@@ -1574,7 +1587,14 @@ module Generate (Target : Target_sig.S) = struct
       List.fold_left
         ~f:(fun l x ->
           let* _ = l in
-          let* _ = add_var x in
+          let* _ =
+            add_var
+              ?typ:
+                (match get_var_type ctx x with
+                | Typing.Int (Normalized | Unnormalized) -> Some I32
+                | _ -> None)
+              x
+          in
           return ())
         ~init:(return ())
         params
@@ -1643,7 +1663,20 @@ module Generate (Target : Target_sig.S) = struct
       ; signature =
           (match name_opt with
           | None -> Type.primitive_type param_count
-          | Some _ -> Type.func_type (param_count - 1))
+          | Some f ->
+              if Typing.can_unbox_parameters ctx.fun_info f
+              then
+                { W.params =
+                    List.map
+                      ~f:(fun x : W.value_type ->
+                        Option.value
+                          ~default:Type.value
+                          (unboxed_type (get_var_type ctx x)))
+                      params
+                    @ [ Type.value ]
+                ; result = [ Type.value ]
+                }
+              else Type.func_type (param_count - 1))
       ; param_names
       ; locals
       ; body
@@ -1837,9 +1870,11 @@ let init = G.init
 let start () = make_context ~value_type:Gc_target.Type.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_data =
-  let state, info = global_flow_data in
-  let fun_info = Call_graph_analysis.f p info in
-  let types = Typing.f ~state ~info ~deadcode_sentinal p in
+  let global_flow_state, global_flow_info = global_flow_data in
+  let fun_info = Call_graph_analysis.f p global_flow_info in
+  let types =
+    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p
+  in
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in
@@ -1850,7 +1885,7 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_d
       ~live_vars
       ~in_cps
       ~deadcode_sentinal
-      ~global_flow_info:info
+      ~global_flow_info
       ~fun_info
       ~types
       p
