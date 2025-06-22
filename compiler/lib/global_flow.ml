@@ -791,9 +791,9 @@ let get_unique_closure info f =
           Var.Set.fold
             (fun g acc ->
               match info.info_defs.(Var.idx g) with
-              | Expr (Closure _) -> (
+              | Expr (Closure (params, _, _)) -> (
                   match acc with
-                  | None -> Some (Some g)
+                  | None -> Some (Some (g, params))
                   | Some (Some _) -> Some None
                   | Some None -> acc)
               | Expr (Block _) -> acc
