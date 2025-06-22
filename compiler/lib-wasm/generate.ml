@@ -1137,7 +1137,10 @@ module Generate (Target : Target_sig.S) = struct
                      args
                      params)
               in
-              return (W.Call (g, args @ [ cl ]))
+              convert
+                ~from:(Typing.return_type ctx.types g)
+                ~into:(Typing.var_type ctx.types x)
+                (return (W.Call (g, args @ [ cl ])))
           | None -> (
               let funct = Var.fresh () in
               let* closure = tee funct (return closure) in
@@ -1445,7 +1448,7 @@ module Generate (Target : Target_sig.S) = struct
       then handler
       else
         let* () = handler in
-        instr (W.Return (Some (RefI31 (Const (I32 0l)))))
+        instr W.Unreachable
     else body ~result_typ ~fall_through ~context
 
   let wrap_with_handlers p pc ~result_typ ~fall_through ~context body =
@@ -1481,6 +1484,11 @@ module Generate (Target : Target_sig.S) = struct
       ((pc, _) as cont)
       cloc
       acc =
+    let return_type =
+      match name_opt with
+      | Some f -> Typing.return_type ctx.types f
+      | _ -> Typing.Top
+    in
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
@@ -1542,7 +1550,9 @@ module Generate (Target : Target_sig.S) = struct
           match branch with
           | Branch cont -> translate_branch result_typ fall_through pc cont context
           | Return x -> (
-              let* e = load_and_box ctx x in
+              let* e =
+                convert ~from:(Typing.var_type ctx.types x) ~into:return_type (load x)
+              in
               match fall_through with
               | `Return -> instr (Push e)
               | `Block _ | `Catch | `Skip -> instr (Return (Some e)))
@@ -1663,7 +1673,7 @@ module Generate (Target : Target_sig.S) = struct
              wrap_with_handlers
                p
                pc
-               ~result_typ:[ Type.value ]
+               ~result_typ:[ Option.value ~default:Type.value (unboxed_type return_type) ]
                ~fall_through:`Return
                ~context:[]
                (fun ~result_typ ~fall_through ~context ->
@@ -1698,7 +1708,7 @@ module Generate (Target : Target_sig.S) = struct
                           (unboxed_type (Typing.var_type ctx.types x)))
                       params
                     @ [ Type.value ]
-                ; result = [ Type.value ]
+                ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
                 }
               else Type.func_type (param_count - 1))
       ; param_names
