@@ -15,6 +15,12 @@ let can_unbox_parameters fun_info f =
      have the same signature. *)
   Call_graph_analysis.direct_calls_only fun_info f
 
+let can_unbox_return_value fun_info f =
+  (* Unboxing return values can unoptimize a tail call. Since we are
+     never unboxing then reboxing a value, this can only happen once
+     in a sequence of tail calls, so this is not an issue. *)
+  Call_graph_analysis.direct_calls_only fun_info f
+
 module Integer = struct
   type kind =
     | Ref
@@ -429,10 +435,12 @@ let propagate st approx x : Domain.t =
                   match st.global_flow_state.defs.(Var.idx g) with
                   | Expr (Closure (params, _, _))
                     when List.length args = List.length params ->
-                      Domain.box
-                        (Domain.join_set
-                           (fun y -> Var.Tbl.get approx y)
-                           (Var.Map.find g st.global_flow_state.return_values))
+                      let res =
+                        Domain.join_set
+                          (fun y -> Var.Tbl.get approx y)
+                          (Var.Map.find g st.global_flow_state.return_values)
+                      in
+                      if can_unbox_return_value st.fun_info g then res else Domain.box res
                   | Expr (Closure (_, _, _)) ->
                       (* The function is partially applied or over applied *)
                       Top
@@ -596,52 +604,73 @@ let box_numbers p st types =
       match typ with
       | Number (_, Unboxed) | Top -> (
           match st.global_flow_state.defs.(Var.idx y) with
+          | Expr (Apply { f; _ }) -> (
+              match Global_flow.get_unique_closure st.global_flow_info f with
+              | None -> ()
+              | Some (g, _) ->
+                  if can_unbox_return_value st.fun_info g
+                  then
+                    let s = Var.Map.find g st.global_flow_info.info_return_vals in
+                    Var.Set.iter box s)
           | Expr _ -> ()
           | Phi { known; _ } -> Var.Set.iter box known)
       | Number (_, Boxed) | Int _ | Tuple _ | Bot -> ())
   in
-  Addr.Map.iter
-    (fun _ b ->
-      List.iter
-        ~f:(fun i ->
-          match i with
-          | Let (_, e) -> (
-              match e with
-              | Apply { f; args; _ } ->
-                  if
-                    match Global_flow.get_unique_closure st.global_flow_info f with
-                    | None -> true
-                    | Some (g, _) ->
-                        not (Call_graph_analysis.direct_calls_only st.fun_info g)
-                  then List.iter ~f:box args
-              | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
-              | Prim (Extern s, args) ->
-                  if not (String.Hashtbl.mem primitives_with_unboxed_parameters s)
-                  then
-                    List.iter
-                      ~f:(fun a ->
-                        match a with
-                        | Pv y -> box y
-                        | Pc _ -> ())
-                      args
-              | Prim ((Eq | Neq), args) ->
-                  List.iter
-                    ~f:(fun a ->
-                      match a with
-                      | Pv y -> box y
-                      | Pc _ -> ())
-                    args
-              | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult), _)
-              | Field _ | Closure _ | Constant _ | Special _ -> ())
-          | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
-          | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
-        b.body;
-      match b.branch with
-      | Return y -> box y
-      | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
-    p.blocks
+  Code.fold_closures
+    p
+    (fun name_opt _ (pc, _) _ () ->
+      traverse
+        { fold = Code.fold_children }
+        (fun pc () ->
+          let b = Addr.Map.find pc p.blocks in
+          List.iter
+            ~f:(fun i ->
+              match i with
+              | Let (_, e) -> (
+                  match e with
+                  | Apply { f; args; _ } ->
+                      if
+                        match Global_flow.get_unique_closure st.global_flow_info f with
+                        | None -> true
+                        | Some (g, _) -> not (can_unbox_parameters st.fun_info g)
+                      then List.iter ~f:box args
+                  | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
+                  | Prim (Extern s, args) ->
+                      if not (String.Hashtbl.mem primitives_with_unboxed_parameters s)
+                      then
+                        List.iter
+                          ~f:(fun a ->
+                            match a with
+                            | Pv y -> box y
+                            | Pc _ -> ())
+                          args
+                  | Prim ((Eq | Neq), args) ->
+                      List.iter
+                        ~f:(fun a ->
+                          match a with
+                          | Pv y -> box y
+                          | Pc _ -> ())
+                        args
+                  | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult), _)
+                  | Field _ | Closure _ | Constant _ | Special _ -> ())
+              | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
+              | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
+            b.body;
+          match b.branch with
+          | Return y ->
+              Option.iter
+                ~f:(fun g -> if not (can_unbox_return_value st.fun_info g) then box y)
+                name_opt
+          | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
+        pc
+        p.blocks
+        ())
+    ()
 
-type t = { types : typ Var.Tbl.t }
+type t =
+  { types : typ Var.Tbl.t
+  ; return_types : typ Var.Hashtbl.t
+  }
 
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
   let t = Timer.make () in
@@ -670,6 +699,23 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
         | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get types x)
         | _ -> "")
       p);
-  { types }
+  let return_types = Var.Hashtbl.create 128 in
+  Code.fold_closures
+    p
+    (fun name_opt _ _ _ () ->
+      Option.iter
+        ~f:(fun f ->
+          if can_unbox_return_value fun_info f
+          then
+            let s = Var.Map.find f global_flow_info.info_return_vals in
+            Var.Hashtbl.replace
+              return_types
+              f
+              (Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot))
+        name_opt)
+    ();
+  { types; return_types }
 
 let var_type info x = Var.Tbl.get info.types x
+
+let return_type info f = try Var.Hashtbl.find info.return_types f with Not_found -> Top
