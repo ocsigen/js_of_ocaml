@@ -6,6 +6,15 @@ let debug = Debug.find "typing"
 
 let times = Debug.find "times"
 
+let can_unbox_parameters fun_info f =
+  (* We can unbox the parameters of a function when all its call sites
+     are known, and only this function is called there. It would be
+     more robust to deal with more cases by using an intermediate
+     function that unbox the parameters. When several functions can be
+     call from the same call site, one could enforce somehow that they
+     have the same signature. *)
+  Call_graph_analysis.direct_calls_only fun_info f
+
 module Integer = struct
   type kind =
     | Ref
@@ -156,22 +165,23 @@ let update_deps st { blocks; _ } =
           | _ -> ()))
     blocks
 
-let mark_function_parameters { blocks; _ } =
-  let function_parameters = Var.ISet.empty () in
-  let set x = Var.ISet.add function_parameters x in
+let mark_boxed_function_parameters ~fun_info { blocks; _ } =
+  let boxed_function_parameters = Var.ISet.empty () in
+  let set x = Var.ISet.add boxed_function_parameters x in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
           match i with
-          | Let (_, Closure (params, _, _)) -> List.iter ~f:set params
+          | Let (x, Closure (params, _, _)) when not (can_unbox_parameters fun_info x) ->
+              List.iter ~f:set params
           | _ -> ()))
     blocks;
-  function_parameters
+  boxed_function_parameters
 
 type st =
   { global_flow_state : Global_flow.state
   ; global_flow_info : Global_flow.info
-  ; function_parameters : Var.ISet.t
+  ; boxed_function_parameters : Var.ISet.t
   }
 
 let rec constant_type (c : constant) =
@@ -356,7 +366,7 @@ let propagate st approx x : Domain.t =
   | Phi { known; others; unit } ->
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
       let res = if unit then Domain.join (Int Unnormalized) res else res in
-      if Var.ISet.mem st.function_parameters x then Domain.box res else res
+      if Var.ISet.mem st.boxed_function_parameters x then Domain.box res else res
   | Expr e -> (
       match e with
       | Constant c -> constant_type c
@@ -626,11 +636,11 @@ let box_numbers p st types =
 
 type t = { types : typ Var.Tbl.t }
 
-let f ~global_flow_state ~global_flow_info ~deadcode_sentinal p =
+let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
   let t = Timer.make () in
   update_deps global_flow_state p;
-  let function_parameters = mark_function_parameters p in
-  let st = { global_flow_state; global_flow_info; function_parameters } in
+  let boxed_function_parameters = mark_boxed_function_parameters ~fun_info p in
+  let st = { global_flow_state; global_flow_info; boxed_function_parameters } in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinal (Int Normalized);
   box_numbers p st types;
