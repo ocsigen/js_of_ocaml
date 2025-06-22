@@ -30,6 +30,8 @@ type t
 
 val var_type : t -> Code.Var.t -> typ
 
+val return_type : t -> Code.Var.t -> typ
+
 val f :
      global_flow_state:Global_flow.state
   -> global_flow_info:Global_flow.info
