@@ -54,6 +54,7 @@ let effects_backends = [ `Effects `Disabled; `Effects `Cps; `Effects `Double_tra
 
 let () =
   Js_of_ocaml_compiler.Warning.werror := true;
+  Js_of_ocaml_compiler.Warning.enable `Unused_js_variable;
   Js_of_ocaml_compiler.Config.set_target `JavaScript;
   let () = set_binary_mode_out stdout true in
   match Array.to_list Sys.argv with
