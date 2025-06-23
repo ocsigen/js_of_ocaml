@@ -723,7 +723,7 @@ var caml_decompress_input = zstd_decompress;
 //Requires: caml_decompress_input
 //Requires: zstd_decompress
 //Version: >= 5.1.1
-function caml_zstd_initialize(unit) {
+function caml_zstd_initialize(_unit) {
   caml_decompress_input = zstd_decompress;
   return 1;
 }

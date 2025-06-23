@@ -177,13 +177,13 @@ var caml_executable_name = caml_argv[1];
 
 //Provides: caml_sys_get_argv
 //Requires: caml_argv
-function caml_sys_get_argv(a) {
+function caml_sys_get_argv(_unit) {
   return [0, caml_argv[1], caml_argv];
 }
 
 //Provides: caml_sys_argv
 //Requires: caml_argv
-function caml_sys_argv(a) {
+function caml_sys_argv(_unit) {
   return caml_argv;
 }
 
@@ -196,7 +196,7 @@ function caml_sys_modify_argv(arg) {
 
 //Provides: caml_sys_executable_name const
 //Requires: caml_executable_name
-function caml_sys_executable_name(a) {
+function caml_sys_executable_name(_unit) {
   return caml_executable_name;
 }
 

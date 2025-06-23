@@ -725,7 +725,7 @@ function caml_unix_outchannel_of_filedescr(fd) {
 
 //Provides: caml_unix_getuid
 //Alias: unix_getuid
-function caml_unix_getuid(unit) {
+function caml_unix_getuid(_unit) {
   if (globalThis.process?.getuid) {
     return globalThis.process.getuid();
   }
@@ -734,7 +734,7 @@ function caml_unix_getuid(unit) {
 
 //Provides: caml_unix_geteuid
 //Alias: unix_geteuid
-function caml_unix_geteuid(unit) {
+function caml_unix_geteuid(_unit) {
   if (globalThis.process?.geteuid) {
     return globalThis.process.geteuid();
   }
@@ -743,7 +743,7 @@ function caml_unix_geteuid(unit) {
 
 //Provides: caml_unix_getgid
 //Alias: unix_getgid
-function caml_unix_getgid(unit) {
+function caml_unix_getgid(_unit) {
   if (globalThis.process?.getgid) {
     return globalThis.process.getgid();
   }
@@ -752,7 +752,7 @@ function caml_unix_getgid(unit) {
 
 //Provides: caml_unix_getegid
 //Alias: unix_getegid
-function caml_unix_getegid(unit) {
+function caml_unix_getegid(_unit) {
   if (globalThis.process?.getegid) {
     return globalThis.process.getegid();
   }
@@ -768,14 +768,14 @@ function caml_unix_getegid(unit) {
 //Alias: unix_getgrnam
 //Alias: caml_unix_getgrgid
 //Alias: unix_getgrgid
-function caml_unix_getpwnam(unit) {
+function caml_unix_getpwnam(_unit) {
   caml_raise_not_found();
 }
 
 //Provides: caml_unix_has_symlink
 //Requires: fs_node_supported
 //Alias: unix_has_symlink
-function caml_unix_has_symlink(unit) {
+function caml_unix_has_symlink(_unit) {
   return fs_node_supported() ? 1 : 0;
 }
 
