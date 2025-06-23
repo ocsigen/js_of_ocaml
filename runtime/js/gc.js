@@ -1,38 +1,38 @@
 //Provides: caml_gc_minor
-function caml_gc_minor(unit) {
+function caml_gc_minor(_unit) {
   //available with [node --expose-gc]
   if (typeof globalThis.gc === "function") globalThis.gc(true);
   return 0;
 }
 //Provides: caml_gc_major
-function caml_gc_major(unit) {
+function caml_gc_major(_unit) {
   //available with [node --expose-gc]
   if (typeof globalThis.gc === "function") globalThis.gc();
   return 0;
 }
 //Provides: caml_gc_full_major
-function caml_gc_full_major(unit) {
+function caml_gc_full_major(_unit) {
   //available with [node --expose-gc]
   if (typeof globalThis.gc === "function") globalThis.gc();
   return 0;
 }
 //Provides: caml_gc_compaction
-function caml_gc_compaction() {
+function caml_gc_compaction(_unit) {
   return 0;
 }
 //Provides: caml_gc_counters
-function caml_gc_counters() {
+function caml_gc_counters(_unit) {
   return [254, 0, 0, 0];
 }
 //Provides: caml_gc_quick_stat
-function caml_gc_quick_stat() {
+function caml_gc_quick_stat(_unit) {
   return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 }
 
 //Provides: caml_gc_stat
 //Requires: caml_gc_quick_stat
-function caml_gc_stat() {
-  return caml_gc_quick_stat();
+function caml_gc_stat(unit) {
+  return caml_gc_quick_stat(unit);
 }
 
 //Provides: caml_gc_set
@@ -41,7 +41,7 @@ function caml_gc_set(_control) {
 }
 
 //Provides: caml_gc_get
-function caml_gc_get() {
+function caml_gc_get(_unit) {
   return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 }
 
@@ -66,7 +66,7 @@ function caml_final_register_called_without_value(cb, a) {
 }
 
 //Provides: caml_final_release const
-function caml_final_release() {
+function caml_final_release(_unit) {
   return 0;
 }
 
@@ -76,7 +76,7 @@ function caml_memprof_start(rate, stack_size, tracker) {
 }
 
 //Provides: caml_memprof_stop
-function caml_memprof_stop(unit) {
+function caml_memprof_stop(_unit) {
   return 0;
 }
 
@@ -88,19 +88,19 @@ function caml_memprof_discard(t) {
 
 //Provides: caml_eventlog_resume
 //Version: < 5.0
-function caml_eventlog_resume(unit) {
+function caml_eventlog_resume(_unit) {
   return 0;
 }
 
 //Provides: caml_eventlog_pause
 //Version: < 5.0
-function caml_eventlog_pause(unit) {
+function caml_eventlog_pause(_unit) {
   return 0;
 }
 
 //Provides: caml_gc_huge_fallback_count
 //Version: < 5.0
-function caml_gc_huge_fallback_count(unit) {
+function caml_gc_huge_fallback_count(_unit) {
   return 0;
 }
 
@@ -110,12 +110,12 @@ function caml_gc_major_slice(work) {
 }
 
 //Provides: caml_gc_minor_words
-function caml_gc_minor_words(unit) {
+function caml_gc_minor_words(_unit) {
   return 0;
 }
 
 //Provides: caml_get_minor_free
-function caml_get_minor_free(unit) {
+function caml_get_minor_free(_unit) {
   return 0;
 }
 

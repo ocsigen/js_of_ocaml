@@ -274,7 +274,7 @@ function caml_get_continuation_callstack() {
 
 //Provides: caml_ml_condition_new
 //Version: >= 5.0
-function caml_ml_condition_new(unit) {
+function caml_ml_condition_new(_unit) {
   return { condition: 1 };
 }
 

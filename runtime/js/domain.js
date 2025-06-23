@@ -21,7 +21,7 @@ function caml_domain_dls_compare_and_set(old, n) {
 //Provides: caml_domain_dls_get
 //Requires: caml_domain_dls
 //Version: >= 5
-function caml_domain_dls_get(unit) {
+function caml_domain_dls_get(_unit) {
   return caml_domain_dls;
 }
 
@@ -98,20 +98,20 @@ function caml_atomic_make_contended(a) {
 //Provides: caml_ml_domain_unique_token
 //Version: >= 5.0, < 5.2
 var caml_ml_domain_unique_token_ = [0];
-function caml_ml_domain_unique_token(unit) {
+function caml_ml_domain_unique_token(_unit) {
   return caml_ml_domain_unique_token_;
 }
 
 //Provides: caml_recommended_domain_count
 //Version: >= 5
-function caml_recommended_domain_count(unit) {
+function caml_recommended_domain_count(_unit) {
   return 1;
 }
 
 //Provides: caml_ml_domain_index
 //Requires: caml_domain_id
 //Version: >= 5.03
-function caml_ml_domain_index(unit) {
+function caml_ml_domain_index(_unit) {
   return caml_domain_id;
 }
 
@@ -156,12 +156,12 @@ function caml_domain_spawn(f, mutex) {
 //Provides: caml_ml_domain_id
 //Requires: caml_domain_id
 //Version: >= 5.0
-function caml_ml_domain_id(unit) {
+function caml_ml_domain_id(_unit) {
   return caml_domain_id;
 }
 
 //Provides: caml_ml_domain_cpu_relax
 //Version: >= 5
-function caml_ml_domain_cpu_relax(unit) {
+function caml_ml_domain_cpu_relax(_unit) {
   return 0;
 }
