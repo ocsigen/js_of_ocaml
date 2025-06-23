@@ -22183,7 +22183,7 @@
        register_printer,
        use_printers,
        raw_backtrace_entries,
-       function(_r_){ /*<<?>>*/ return caml_get_exception_raw_backtra(_r_);},
+       caml_get_exception_raw_backtra,
        print_raw_backtrace,
        raw_backtrace_to_string,
        default_uncaught_exception_han,
@@ -22197,14 +22197,13 @@
         backtrace_slot_defname,
         format_backtrace_slot],
        raw_backtrace_length,
-       function(_r_, _q_){return runtime.caml_raw_backtrace_slot(_r_, _q_);},
-       function(_q_){return runtime.caml_convert_raw_backtrace_slot(_q_);},
-       function(_q_){return runtime.caml_raw_backtrace_next_slot(_q_);},
+       runtime.caml_raw_backtrace_slot,
+       runtime.caml_convert_raw_backtrace_slot,
+       runtime.caml_raw_backtrace_next_slot,
        exn_slot_id,
        exn_slot_name,
        string_of_extension_constructo];
-    /*<<printexc.ml:382:29>>*/ runtime.caml_register_global
-    (43, Stdlib_Printexc, "Stdlib__Printexc");
+   runtime.caml_register_global(43, Stdlib_Printexc, "Stdlib__Printexc");
    return;
    /*<<?>>*/ }
   (globalThis));
@@ -22500,9 +22499,9 @@
        /*<<?>>*/ [0,
        print_stat,
        allocated_bytes,
-       function(_v_, _u_){return runtime.caml_final_register(_v_, _u_);},
+       runtime.caml_final_register,
        runtime.caml_final_register_called_without_value,
-       function(_u_){return runtime.caml_final_release(_u_);},
+       runtime.caml_final_release,
        create_alarm,
        delete_alarm,
        eventlog_pause,

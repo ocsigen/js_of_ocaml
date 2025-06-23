@@ -52,7 +52,7 @@ function caml_get_exception_backtrace() {
   return 0;
 }
 //Provides: caml_get_exception_raw_backtrace const
-function caml_get_exception_raw_backtrace() {
+function caml_get_exception_raw_backtrace(_unit) {
   return [0];
 }
 //Provides: caml_record_backtrace
@@ -70,12 +70,12 @@ function caml_raw_backtrace_length() {
   return 0;
 }
 //Provides: caml_raw_backtrace_next_slot
-function caml_raw_backtrace_next_slot() {
+function caml_raw_backtrace_next_slot(_slot) {
   return 0;
 }
 //Provides: caml_raw_backtrace_slot
 //Requires: caml_invalid_argument
-function caml_raw_backtrace_slot() {
+function caml_raw_backtrace_slot(_bt, _idx) {
   caml_invalid_argument("Printexc.get_raw_backtrace_slot: index out of bounds");
 }
 //Provides: caml_restore_raw_backtrace
@@ -89,6 +89,6 @@ function caml_get_current_callstack() {
 
 //Provides: caml_convert_raw_backtrace_slot
 //Requires: caml_failwith
-function caml_convert_raw_backtrace_slot() {
+function caml_convert_raw_backtrace_slot(_rbt) {
   caml_failwith("caml_convert_raw_backtrace_slot");
 }
