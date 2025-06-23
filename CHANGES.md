@@ -7,7 +7,7 @@
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
 * Compiler: add the `--empty-sourcemap` flag
 * Compiler: improve debug/sourcemap location of closures (#1947)
-* Compiler: optimize compilation of switches
+* Compiler: optimize compilation of switches (#1921, #2057)
 * Compiler: evaluate statically more primitives (#1912, #1915, #1965, #1969)
 * Compiler: rewrote inlining pass (#1935, #2018, #2027)
 * Compiler: improve tailcall optimization (#1943)

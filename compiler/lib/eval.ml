@@ -710,7 +710,96 @@ let the_cond_of info x =
       | _ -> Unknown)
     x
 
-let eval_branch update_branch info l =
+module Simple_block : sig
+  type t
+
+  val hash : t -> int
+
+  val equal : t -> t -> bool
+
+  val make : block -> t
+end = struct
+  type t = block
+
+  let subst_cont s (pc, arg) = pc, List.map arg ~f:s
+
+  let expr s e =
+    match e with
+    | Constant _ -> e
+    | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
+    | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
+    | Field (x, n, typ) -> Field (s x, n, typ)
+    | Closure (l, pc, loc) -> Closure (l, subst_cont s pc, loc)
+    | Special _ -> e
+    | Prim (p, l) ->
+        Prim
+          ( p
+          , List.map l ~f:(fun x ->
+                match x with
+                | Pv x -> Pv (s x)
+                | Pc _ -> x) )
+
+  let instr s d i =
+    match i with
+    | Let (x, e) ->
+        let x = d x in
+        Let (x, expr s e)
+    | Assign (x, y) -> Assign (s x, s y)
+    | Set_field (x, n, typ, y) -> Set_field (s x, n, typ, s y)
+    | Offset_ref (x, n) -> Offset_ref (s x, n)
+    | Array_set (x, y, z) -> Array_set (s x, s y, s z)
+    | Event _ -> Event Parse_info.zero
+
+  let instrs s d l = List.map l ~f:(fun i -> instr s d i)
+
+  let last s l =
+    match l with
+    | Stop -> l
+    | Branch cont -> Branch (subst_cont s cont)
+    | Pushtrap (cont1, x, cont2) -> Pushtrap (subst_cont s cont1, s x, subst_cont s cont2)
+    | Return x -> Return (s x)
+    | Raise (x, k) -> Raise (s x, k)
+    | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
+    | Switch (x, conts) -> Switch (s x, Array.map conts ~f:(fun cont -> subst_cont s cont))
+    | Poptrap cont -> Poptrap (subst_cont s cont)
+
+  let block s d block =
+    let params = List.map block.params ~f:s in
+    let body = instrs s d block.body in
+    let branch = last s block.branch in
+    { params; body; branch }
+
+  let make blk =
+    let t = Var.Hashtbl.create 17 in
+    let s x =
+      match Var.Hashtbl.find_opt t x with
+      | None -> x
+      | Some x -> x
+    in
+    let d x =
+      let v = Var.of_idx (-Var.Hashtbl.length t) in
+      Var.Hashtbl.add t x v;
+      v
+    in
+    block s d blk
+
+  let instr_equal a b =
+    match a, b with
+    | Event _, Event _ -> true
+    | Event _, _ | _, Event _ -> false
+    | a, b -> Poly.equal a b
+
+  let equal a b =
+    List.equal ~eq:Var.equal a.params b.params
+    && List.equal ~eq:instr_equal a.body b.body
+    && Poly.equal a.branch b.branch
+
+  let hash (x : block) = Hashtbl.hash x
+end
+
+module SBT = Hashtbl.Make (Simple_block)
+
+let eval_branch blocks update_branch info l =
   match l with
   | Cond (x, ftrue, ffalse) as b -> (
       match the_cond_of info x with
@@ -721,13 +810,30 @@ let eval_branch update_branch info l =
           incr update_branch;
           Branch ftrue
       | Unknown -> b)
-  | Switch (x, a) as b -> (
+  | Switch (x, a) -> (
       match the_cont_of info x a with
       | Some cont ->
           incr update_branch;
           Branch cont
-      | None -> b)
-  | _ as b -> b
+      | None ->
+          let t = SBT.create 0 in
+          let seen_pc = Addr.Hashtbl.create 0 in
+          Switch
+            ( x
+            , Array.map a ~f:(function
+                | pc, [] when not (Addr.Hashtbl.mem seen_pc pc) -> (
+                    let block = Code.Addr.Map.find pc blocks in
+                    let sb = Simple_block.make block in
+                    match SBT.find_opt t sb with
+                    | Some pc' when pc' <> pc ->
+                        incr update_branch;
+                        pc', []
+                    | Some _ | None ->
+                        SBT.add t sb pc;
+                        Addr.Hashtbl.add seen_pc pc ();
+                        pc, [])
+                | cont -> cont) ))
+  | cont -> cont
 
 exception May_raise
 
@@ -808,7 +914,7 @@ let eval update_count update_branch inline_constant ~target info blocks =
           block.body
           ~f:(eval_instr update_count inline_constant ~target info)
       in
-      let branch = eval_branch update_branch info block.branch in
+      let branch = eval_branch blocks update_branch info block.branch in
       { block with Code.body; Code.branch })
     blocks
 
