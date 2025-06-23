@@ -15,7 +15,7 @@ From +array.js:
 caml_check_bound
 
 From +bigarray.js:
-caml_ba_create_from
+caml_ba_create_from (deprecated)
 caml_ba_init
 
 From +bigstring.js:
