@@ -3,7 +3,7 @@
 ## Features/Changes
 * Misc: drop support for OCaml 4.12 and bellow
 * Misc: switch to dune.3.19
-* Misc: initial support for ocaml 5.4 (#2030)
+* Misc: initial support for ocaml 5.4 (#2030, #2058)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
 * Compiler: add the `--empty-sourcemap` flag
 * Compiler: improve debug/sourcemap location of closures (#1947)

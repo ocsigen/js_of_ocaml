@@ -89,6 +89,13 @@ jobs:
             skip-effects: false
             skip-test: false
             skip-doc: true
+          - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-name: "5.4-alpha1"
+            ocaml-compiler: "ocaml-compiler.5.4.0~alpha1"
+            skip-effects: true
+            skip-test: true
+            skip-doc: true
 
     runs-on: ${{ matrix.os }}
 
