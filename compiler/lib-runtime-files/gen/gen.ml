@@ -53,6 +53,7 @@ let bool = [ `Bool true; `Bool false ]
 let effects_backends = [ `Effects `Disabled; `Effects `Cps; `Effects `Double_translation ]
 
 let () =
+  Js_of_ocaml_compiler.Warning.werror := true;
   Js_of_ocaml_compiler.Config.set_target `JavaScript;
   let () = set_binary_mode_out stdout true in
   match Array.to_list Sys.argv with
@@ -82,6 +83,7 @@ let () =
               in
               Js_of_ocaml_compiler.Linker.check_deps ();
               assert (StringSet.is_empty missing)));
+      Js_of_ocaml_compiler.Warning.process_warnings ();
       (* generation *)
       List.iter fragments ~f:(fun (f, _fragments) ->
           let name = Filename.basename f in
