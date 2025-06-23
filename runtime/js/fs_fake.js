@@ -81,7 +81,7 @@ class MlFakeDevice {
     }
   }
 
-  mkdir(name, mode, raise_unix) {
+  mkdir(name, _mode, raise_unix) {
     if (this.exists(name))
       caml_raise_system_error(
         raise_unix,
@@ -217,8 +217,7 @@ class MlFakeDevice {
     return 0;
   }
 
-  access(name, f, raise_unix) {
-    var file;
+  access(name, _flags, raise_unix) {
     this.lookup(name);
     if (this.content[name]) {
       if (this.is_dir(name))

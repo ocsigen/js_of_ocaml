@@ -232,7 +232,7 @@ function caml_sys_time() {
 
 //Provides: caml_sys_time_include_children
 //Requires: caml_sys_time
-function caml_sys_time_include_children(b) {
+function caml_sys_time_include_children(_b) {
   return caml_sys_time();
 }
 

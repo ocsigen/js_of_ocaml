@@ -262,7 +262,7 @@ function caml_int64_ult(x, y) {
 }
 
 //Provides: caml_int64_compare const
-function caml_int64_compare(x, y, total) {
+function caml_int64_compare(x, y, _total) {
   return x.compare(y);
 }
 
