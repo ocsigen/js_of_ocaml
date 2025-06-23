@@ -50,6 +50,9 @@
 * Compiler/wasm: optimize calls to statically known function (#2044)
 * Compiler: Propagate arity between compilation units (#1594)
 * Compiler: Add flags to enable/disable warnings (#2052)
+* Runtime: optimize Str.search_forward/search_backward (#2056)
+* Runtime: deprecate caml_ba_create_from (#2056)
+* Runtime: check for unused variable in the runtime (#2056)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
