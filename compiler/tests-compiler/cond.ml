@@ -67,3 +67,48 @@ let%expect_test "conditional" =
     }
     //end
     |}]
+
+let%expect_test "conditional" =
+  let program =
+    compile_and_parse
+      {|
+type rip_relative_kind =
+| Explicitly_rip_relative
+| Implicitly_rip_relative
+| Not_rip_relative
+
+(** val rip_relative_kind_beq :
+    rip_relative_kind -> rip_relative_kind -> bool **)
+
+let rip_relative_kind_beq x y =
+  match x with
+  | Explicitly_rip_relative ->
+    (match y with
+     | Explicitly_rip_relative -> true
+     | Implicitly_rip_relative -> false
+     | Not_rip_relative -> false)
+  | Implicitly_rip_relative ->
+    (match y with
+     | Explicitly_rip_relative -> false
+     | Implicitly_rip_relative -> true
+     | Not_rip_relative -> false)
+  | Not_rip_relative ->
+    (match y with
+     | Explicitly_rip_relative -> false
+     | Implicitly_rip_relative -> false
+     | Not_rip_relative -> true)
+       |}
+  in
+  print_fun_decl program (Some "rip_relative_kind_beq");
+  [%expect {|
+    function rip_relative_kind_beq(x, y){
+     switch(x){
+       case 0:
+        switch(y){case 0: return 1;case 1: return 0;default: return 0;}
+       case 1:
+        switch(y){case 0: return 0;case 1: return 1;default: return 0;}
+       default: switch(y){case 0: return 0;case 1: return 0;default: return 1;}
+     }
+    }
+    //end
+    |}]
