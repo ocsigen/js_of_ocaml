@@ -965,10 +965,10 @@ function caml_ba_deserialize(reader, sz, name) {
   return caml_ba_create_unsafe(kind, layout, dims, data);
 }
 
-//Deprecated
 //Provides: caml_ba_create_from
 //Requires: caml_ba_create_unsafe, caml_invalid_argument, caml_ba_get_size_per_element
-function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims) {
+//Deprecated: Use [caml_ba_create_unsafe] instead
+function caml_ba_create_from(data1, data2, _jstyp, kind, layout, dims) {
   if (data2 || caml_ba_get_size_per_element(kind) === 2) {
     caml_invalid_argument(
       "caml_ba_create_from: use return caml_ba_create_unsafe",
