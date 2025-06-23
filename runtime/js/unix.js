@@ -112,7 +112,7 @@ function caml_unix_isatty(fd) {
 //Provides: caml_unix_isatty
 //Alias: unix_isatty
 //If: browser
-function caml_unix_isatty(fileDescriptor) {
+function caml_unix_isatty(_fileDescriptor) {
   return 0;
 }
 

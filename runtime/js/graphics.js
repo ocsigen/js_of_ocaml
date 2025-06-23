@@ -526,18 +526,18 @@ function caml_gr_display_mode() {
 
 //Provides: caml_gr_window_id
 //Requires: caml_failwith
-function caml_gr_window_id(a) {
+function caml_gr_window_id(_a) {
   caml_failwith("caml_gr_window_id not Implemented");
 }
 
 //Provides: caml_gr_open_subwindow
 //Requires: caml_failwith
-function caml_gr_open_subwindow(a, b, c, d) {
+function caml_gr_open_subwindow(_a, _b, _c, _d) {
   caml_failwith("caml_gr_open_subwindow not Implemented");
 }
 
 //Provides: caml_gr_close_subwindow
 //Requires: caml_failwith
-function caml_gr_close_subwindow(a) {
+function caml_gr_close_subwindow(_a) {
   caml_failwith("caml_gr_close_subwindow not Implemented");
 }

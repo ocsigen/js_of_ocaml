@@ -371,7 +371,7 @@ class MlFakeFile extends MlFile {
 class MlFakeFd_out extends MlFakeFile {
   constructor(fd, flags) {
     super(caml_create_bytes(0));
-    this.log = function (s) {
+    this.log = function (_s) {
       return 0;
     };
     if (fd === 1 && typeof console.log === "function") this.log = console.log;
@@ -385,7 +385,7 @@ class MlFakeFd_out extends MlFakeFile {
     return 0;
   }
 
-  truncate(len, raise_unix) {
+  truncate(_len, raise_unix) {
     caml_raise_system_error(
       raise_unix,
       "EINVAL",
@@ -419,11 +419,11 @@ class MlFakeFd_out extends MlFakeFile {
     );
   }
 
-  read(buf, pos, len, raise_unix) {
+  read(_buf, _pos, _len, raise_unix) {
     caml_raise_system_error(raise_unix, "EBADF", "read", "bad file descriptor");
   }
 
-  seek(len, whence, raise_unix) {
+  seek(_len, _whence, raise_unix) {
     caml_raise_system_error(raise_unix, "ESPIPE", "lseek", "illegal seek");
   }
 
@@ -431,7 +431,7 @@ class MlFakeFd_out extends MlFakeFile {
     this.log = undefined;
   }
 
-  check_stream_semantics(cmd) {}
+  check_stream_semantics(_cmd) {}
 }
 
 //Provides: MlFakeFd

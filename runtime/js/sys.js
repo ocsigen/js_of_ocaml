@@ -219,7 +219,7 @@ function caml_sys_system_command(cmd) {
 //Provides: caml_sys_system_command
 //Requires: caml_jsstring_of_string
 //If: browser
-function caml_sys_system_command(cmd) {
+function caml_sys_system_command(_cmd) {
   return 127;
 }
 

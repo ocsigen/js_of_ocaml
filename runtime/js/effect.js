@@ -236,7 +236,7 @@ function caml_alloc_stack(hv, hx, hf) {
 //Provides: caml_alloc_stack
 //If: !effects
 //Version: >= 5.0
-function caml_alloc_stack(hv, hx, hf) {
+function caml_alloc_stack(_hv, _hx, _hf) {
   return 0;
 }
 
@@ -280,19 +280,19 @@ function caml_ml_condition_new(_unit) {
 
 //Provides: caml_ml_condition_wait
 //Version: >= 5.0
-function caml_ml_condition_wait(t, mutext) {
+function caml_ml_condition_wait(_t, _mutext) {
   return 0;
 }
 
 //Provides: caml_ml_condition_broadcast
 //Version: >= 5.0
-function caml_ml_condition_broadcast(t) {
+function caml_ml_condition_broadcast(_t) {
   return 0;
 }
 
 //Provides: caml_ml_condition_signal
 //Version: >= 5.0
-function caml_ml_condition_signal(t) {
+function caml_ml_condition_signal(_t) {
   return 0;
 }
 

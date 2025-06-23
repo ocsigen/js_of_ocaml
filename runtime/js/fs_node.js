@@ -561,7 +561,7 @@ function caml_sys_open_for_node(fd, flags) {
 
 //Provides: caml_sys_open_for_node
 //If: browser
-function caml_sys_open_for_node(fd, flags) {
+function caml_sys_open_for_node(_fd, _flags) {
   return null;
 }
 

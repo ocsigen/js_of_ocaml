@@ -218,7 +218,7 @@ function caml_bytes_get(s, i) {
 //Provides: caml_string_set
 //Requires: caml_failwith
 //If: js-string
-function caml_string_set(s, i, c) {
+function caml_string_set(_s, _i, _c) {
   caml_failwith("caml_string_set");
 }
 
@@ -384,7 +384,7 @@ function caml_create_string(len) {
 //Provides: caml_create_string const
 //Requires: caml_invalid_argument
 //If: js-string
-function caml_create_string(len) {
+function caml_create_string(_len) {
   caml_invalid_argument("String.create");
 }
 

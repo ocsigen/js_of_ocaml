@@ -216,13 +216,13 @@ function caml_obj_set_raw_field(o, i, v) {
 }
 
 //Provides: caml_obj_reachable_words
-function caml_obj_reachable_words(o) {
+function caml_obj_reachable_words(_o) {
   return 0;
 }
 
 //Provides: caml_obj_add_offset
 //Requires: caml_failwith
-function caml_obj_add_offset(v, offset) {
+function caml_obj_add_offset(_v, _offset) {
   caml_failwith("Obj.add_offset is not supported");
 }
 
