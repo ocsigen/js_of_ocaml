@@ -46,7 +46,7 @@ function caml_gc_get(_unit) {
 }
 
 //Provides: caml_final_register const
-function caml_final_register() {
+function caml_final_register(_f, _x) {
   return 0;
 }
 
@@ -71,7 +71,7 @@ function caml_final_release(_unit) {
 }
 
 //Provides: caml_memprof_start
-function caml_memprof_start(rate, stack_size, tracker) {
+function caml_memprof_start(_rate, _stack_size, _tracker) {
   return 0;
 }
 
@@ -82,7 +82,7 @@ function caml_memprof_stop(_unit) {
 
 //Provides: caml_memprof_discard
 //Version: >= 5.2
-function caml_memprof_discard(t) {
+function caml_memprof_discard(_t) {
   return 0;
 }
 
@@ -105,7 +105,7 @@ function caml_gc_huge_fallback_count(_unit) {
 }
 
 //Provides: caml_gc_major_slice
-function caml_gc_major_slice(work) {
+function caml_gc_major_slice(_work) {
   return 0;
 }
 
@@ -121,12 +121,12 @@ function caml_get_minor_free(_unit) {
 
 //Provides: caml_get_major_bucket
 //Version: < 5.0
-function caml_get_major_bucket(n) {
+function caml_get_major_bucket(_n) {
   return 0;
 }
 
 //Provides: caml_get_major_credit
 //Version: < 5.0
-function caml_get_major_credit(n) {
+function caml_get_major_credit(_n) {
   return 0;
 }

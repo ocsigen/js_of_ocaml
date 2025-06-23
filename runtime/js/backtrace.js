@@ -79,7 +79,7 @@ function caml_raw_backtrace_slot() {
   caml_invalid_argument("Printexc.get_raw_backtrace_slot: index out of bounds");
 }
 //Provides: caml_restore_raw_backtrace
-function caml_restore_raw_backtrace(exn, bt) {
+function caml_restore_raw_backtrace(_exn, _bt) {
   return 0;
 }
 //Provides: caml_get_current_callstack const
