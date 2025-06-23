@@ -1,25 +1,75 @@
 open Js_of_ocaml_compiler
 open Js_of_ocaml_compiler.Stdlib
 
+class check_and_warn =
+  object
+    inherit Js_traverse.free as super
+
+    method! merge_info from =
+      let def = from#get_def in
+      let use = from#get_use in
+      let diff = Javascript.IdentSet.diff def use in
+      let diff =
+        Javascript.IdentSet.fold
+          (fun x acc ->
+            match x with
+            | S { name = Utf8_string.Utf8 s; _ } ->
+                if String.starts_with s ~prefix:"_" then acc else s :: acc
+            | V _ -> acc)
+          diff
+          []
+      in
+      (match diff with
+      | [] -> ()
+      | l ->
+          Warning.warn
+            `Unused_js_variable
+            "unused variable:@. %s@."
+            (String.concat ~sep:", " l));
+      super#merge_info from
+  end
+
+let free_variable code =
+  if Warning.enabled `Unused_js_variable
+  then
+    let o = new check_and_warn in
+    let _code = o#program code in
+    Javascript.IdentSet.fold
+      (fun x acc ->
+        match x with
+        | S { name = Utf8 x; _ } -> StringSet.add x acc
+        | V _ -> acc)
+      o#get_free
+      StringSet.empty
+  else
+    let free = ref StringSet.empty in
+    let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
+    o#program code;
+    !free
+
 let check_js_file fname =
+  Warning.werror := true;
+  Warning.enable `Unused_js_variable;
   let c = Fs.read_file fname in
   let p =
     try Parse_js.parse (Parse_js.Lexer.of_string ~filename:fname c)
     with Parse_js.Parsing_error pi ->
       failwith (Printf.sprintf "cannot parse file %S (l:%d, c:%d)@." fname pi.line pi.col)
   in
-
-  let free = ref StringSet.empty in
-  let o = new Js_traverse.fast_freevar (fun s -> free := StringSet.add s !free) in
-  o#program p;
-  let freenames = !free in
+  let freenames = free_variable p in
   let freenames = StringSet.diff freenames Reserved.keyword in
   let freenames = StringSet.diff freenames Reserved.provided in
   if not (StringSet.is_empty freenames)
-  then (
-    Format.eprintf "Warning: free variables in %S@." fname;
-    Format.eprintf "vars: %s@." (String.concat ~sep:", " (StringSet.elements freenames));
-    exit 2);
+  then
+    Warning.warn
+      `Free_variables_in_primitive
+      "free variables in %S@.vars: %a@."
+      fname
+      (Format.pp_print_list
+         ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
+         Format.pp_print_string)
+      (StringSet.elements freenames);
+  Warning.process_warnings ();
   ()
 
 (* Keep the two variables below in sync with function build_runtime in
