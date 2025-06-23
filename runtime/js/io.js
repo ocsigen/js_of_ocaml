@@ -467,10 +467,8 @@ function caml_ml_input_char(chanid) {
 }
 
 //Provides: caml_ml_input_int
-//Requires: caml_raise_end_of_file
-//Requires: caml_ml_input_char, caml_ml_channel_get
+//Requires: caml_ml_input_char
 function caml_ml_input_int(chanid) {
-  var chan = caml_ml_channel_get(chanid);
   var res = 0;
   for (var i = 0; i < 4; i++) {
     res = ((res << 8) + caml_ml_input_char(chanid)) | 0;
