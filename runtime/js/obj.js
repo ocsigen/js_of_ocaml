@@ -133,7 +133,7 @@ function caml_obj_compare_and_swap(x, i, old, n) {
 
 //Provides: caml_obj_is_shared
 //Version: >= 5.0
-function caml_obj_is_shared(x) {
+function caml_obj_is_shared(_x) {
   return 1;
 }
 
@@ -276,7 +276,7 @@ function caml_lazy_read_result(o) {
 
 //Provides: caml_is_continuation_tag
 //Version: < 5
-function caml_is_continuation_tag(t) {
+function caml_is_continuation_tag(_t) {
   return 0;
 }
 
