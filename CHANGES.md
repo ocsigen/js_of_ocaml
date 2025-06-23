@@ -49,6 +49,7 @@
 * Compiler/wasm: use more precise environment types (#2041)
 * Compiler/wasm: optimize calls to statically known function (#2044)
 * Compiler: Propagate arity between compilation units (#1594)
+* Compiler: Add flags to enable/disable warnings (#2052)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
