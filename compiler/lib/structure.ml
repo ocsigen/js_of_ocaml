@@ -125,7 +125,7 @@ let build_graph blocks pc =
           (Addr.Set.add enter_pc (Addr.Hashtbl.find preds leave_pc))));
   { succs; preds; reverse_post_order = !l; block_order }
 
-let dominator_tree g =
+let reversed_dominator_tree g =
   (* A Simple, Fast Dominance Algorithm
      Keith D. Cooper, Timothy J. Harvey, and Ken Kennedy *)
   let dom = Addr.Hashtbl.create 16 in
@@ -156,7 +156,12 @@ let dominator_tree g =
             let d = Addr.Hashtbl.find dom pc' in
             assert (inter pc d = d))
         l);
-  reverse_tree dom
+
+  dom
+
+let dominator_tree g =
+  let idom = reversed_dominator_tree g in
+  reverse_tree idom
 
 (* pc has at least two forward edges moving into it *)
 let is_merge_node g pc = is_merge_node' g.block_order g.preds pc
@@ -171,12 +176,11 @@ let sort_in_post_order t l =
 
 let blocks_in_reverse_post_order g = g.reverse_post_order
 
-(*
-
 (* pc dominates pc' *)
 let rec dominates g idom pc pc' =
   pc = pc' || (is_forward g pc pc' && dominates g idom pc (Addr.Hashtbl.find idom pc'))
 
+(*
 let dominance_frontier g idom =
   let frontiers = Addr.Hashtbl.create 16 in
   Addr.Hashtbl.iter
@@ -210,8 +214,10 @@ let mark_loops g =
     g.preds;
   in_loop
 
-let rec measure blocks g pc limit =
-  if is_loop_header g pc
+let rec measure blocks g ~idom ~root pc limit =
+  if not (dominates g idom root pc)
+  then limit
+  else if is_loop_header g pc
   then -1
   else
     let b = Addr.Map.find pc blocks in
@@ -227,11 +233,12 @@ let rec measure blocks g pc limit =
     then limit
     else
       Addr.Set.fold
-        (fun pc limit -> if limit < 0 then limit else measure blocks g pc limit)
+        (fun pc limit ->
+          if limit < 0 then limit else measure blocks g ~idom ~root pc limit)
         (get_edges g.succs pc)
         limit
 
-let is_small blocks g pc = measure blocks g pc 20 >= 0
+let is_small blocks g ~idom ~root pc = measure blocks g ~idom ~root pc 20 >= 0
 
 let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
   let add_edge pred succ =
@@ -239,7 +246,8 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
     Addr.Hashtbl.replace preds succ (Addr.Set.add pred (Addr.Hashtbl.find preds succ))
   in
   let in_loop = mark_loops g in
-  let dom = dominator_tree g in
+  let idom = reversed_dominator_tree g in
+  let dom = reverse_tree idom in
   let root = List.hd reverse_post_order in
   let rec traverse ignored pc =
     let succs = get_edges dom pc in
@@ -260,14 +268,14 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
         (* If we leave a loop, we add an edge from predecessors of
            the loop header to the current block, so that it is
            considered outside of the loop. *)
-        if not (Addr.Set.is_empty left_loops || is_small blocks g pc')
-        then
-          Addr.Set.iter
-            (fun pc0 ->
+        Addr.Set.iter
+          (fun pc0 ->
+            if not (is_small blocks g ~idom ~root:pc0 pc')
+            then
               Addr.Set.iter
                 (fun pc -> if is_forward g pc pc0 then add_edge pc pc')
                 (get_edges g.preds pc0))
-            left_loops;
+          left_loops;
         traverse ignored pc')
       succs
   in

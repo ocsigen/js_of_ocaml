@@ -327,12 +327,11 @@ let ()  = M.myfun M.x
       let sort$0 = sort, rev_sort$0 = rev_sort;
       var len = 0, param = l;
       for(;;){
-       if(! param) break;
+       if(! param){if(2 <= len){sort(len, l); x = next; break;} x = next; break;}
        var l$0 = param[2], len$0 = len + 1 | 0;
        len = len$0;
        param = l$0;
       }
-      if(2 <= len){sort(len, l); x = next;} else x = next;
      }
     }
     //end

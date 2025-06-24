@@ -3942,9 +3942,23 @@
     for(;;){
      var dst =  /*<<list.ml:288:2>>*/ dst$1, offset = offset$0, ys$2 = ys$4;
      for(;;){
-      if(! ys$2) break;
+      if(! ys$2){
+        /*<<list.ml:284:35>>*/ if(xs$1){
+        var
+         xs$0 = xs$1[2],
+         x$0 = xs$1[1],
+         ys$0 =  /*<<list.ml:286:32>>*/ caml_call1(f, x$0);
+         /*<<list.ml:286:37>>*/ xs$1 = xs$0;
+        ys$4 = ys$0;
+        offset$0 = offset;
+        dst$1 = dst;
+        break;
+       }
+        /*<<list.ml:285:10>>*/ dst[offset + 1] = 0;
+        /*<<list.ml:290:46>>*/ return block;
+      }
       var
-       ys$3 = ys$2[2],
+       ys$3 =  /*<<list.ml:288:2>>*/ ys$2[2],
        y$0 = ys$2[1],
        dst$0 =  /*<<list.ml:290:15>>*/ [0, y$0, 24029];
       dst[offset + 1] = dst$0;
@@ -3952,18 +3966,6 @@
       offset = 1;
       ys$2 = ys$3;
      }
-      /*<<list.ml:284:35>>*/ if(! xs$1){
-       /*<<list.ml:285:10>>*/ dst[offset + 1] = 0;
-       /*<<list.ml:290:46>>*/ return block;
-     }
-     var
-      xs$0 =  /*<<list.ml:284:35>>*/ xs$1[2],
-      x$0 = xs$1[1],
-      ys$0 =  /*<<list.ml:286:32>>*/ caml_call1(f, x$0);
-      /*<<list.ml:286:37>>*/ xs$1 = xs$0;
-     ys$4 = ys$0;
-     offset$0 = offset;
-     dst$1 = dst;
     }
     /*<<list.ml:286:42>>*/ }
    function take(n, l){
@@ -7639,33 +7641,28 @@
      var i$6 = _u_;
      for(;;){
       var e$1 =  /*<<array.ml:378:50>>*/ caml_check_bound(a, i$6)[i$6 + 1];
-      a:
-      {
-        /*<<array.ml:360:22>>*/ try{
-        var i = i$6;
-        for(;;){
-         var j =  /*<<array.ml:352:12>>*/ maxson(l, i);
-          /*<<array.ml:353:11>>*/ if
-          (0
-           >=
-             /*<<array.ml:353:7>>*/ caml_call2
-             (cmp,
-               /*<<array.ml:353:11>>*/ caml_check_bound(a, j)[j + 1],
-              e$1))
-          break;
-         var _y_ =  /*<<array.ml:354:14>>*/ caml_check_bound(a, j)[j + 1];
-          /*<<array.ml:354:6>>*/ caml_check_bound(a, i)[i + 1] = _y_;
-          /*<<array.ml:354:23>>*/ i = j;
+       /*<<array.ml:360:22>>*/ try{
+       var i = i$6;
+       for(;;){
+        var j =  /*<<array.ml:352:12>>*/ maxson(l, i);
+         /*<<array.ml:353:11>>*/ if
+         (0
+          >=
+            /*<<array.ml:353:7>>*/ caml_call2
+            (cmp,  /*<<array.ml:353:11>>*/ caml_check_bound(a, j)[j + 1], e$1)){
+          /*<<array.ml:356:13>>*/ caml_check_bound(a, i)[i + 1] = e$1;
+         break;
         }
+        var _y_ =  /*<<array.ml:354:14>>*/ caml_check_bound(a, j)[j + 1];
+         /*<<array.ml:354:6>>*/ caml_check_bound(a, i)[i + 1] = _y_;
+         /*<<array.ml:354:23>>*/ i = j;
        }
-       catch(exn$0){
-        var exn =  /*<<?>>*/ caml_wrap_exception(exn$0), tag = exn[1];
-        if(tag !== Bottom) throw caml_maybe_attach_backtrace(exn, 0);
-        var i$0 = exn[2];
-         /*<<array.ml:360:61>>*/ caml_check_bound(a, i$0)[i$0 + 1] = e$1;
-        break a;
-       }
-        /*<<array.ml:356:13>>*/ caml_check_bound(a, i)[i + 1] = e$1;
+      }
+      catch(exn$0){
+       var exn =  /*<<?>>*/ caml_wrap_exception(exn$0), tag = exn[1];
+       if(tag !== Bottom) throw caml_maybe_attach_backtrace(exn, 0);
+       var i$0 = exn[2];
+        /*<<array.ml:360:61>>*/ caml_check_bound(a, i$0)[i$0 + 1] = e$1;
       }
       var _C_ =  /*<<array.ml:378:59>>*/ i$6 - 1 | 0;
       if(0 === i$6) break;
@@ -7675,6 +7672,7 @@
     var _v_ =  /*<<array.ml:379:2>>*/ l - 1 | 0;
     if(_v_ >= 2){
      var i$4 = _v_;
+     a:
      for(;;){
       var e$0 =  /*<<array.ml:380:12>>*/ caml_check_bound(a, i$4)[i$4 + 1];
        /*<<array.ml:381:12>>*/ a[i$4 + 1] = caml_check_bound(a, 0)[1];
@@ -7692,40 +7690,32 @@
       catch(exn){
        var exn$0 =  /*<<?>>*/ caml_wrap_exception(exn), tag$0 = exn$0[1];
        if(tag$0 !== Bottom) throw caml_maybe_attach_backtrace(exn$0, 0);
-       var i$2 = exn$0[2];
-       a:
-       {
-        b:
-        {
-         var i$3 =  /*<<array.ml:382:4>>*/ i$2;
-         for(;;){
-          var father =  /*<<array.ml:368:4>>*/ (i$3 - 1 | 0) / 3 | 0;
-           /*<<array.ml:369:4>>*/ if(i$3 === father)
-           throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
-           /*<<array.ml:370:11>>*/ if
-           (0
-            <=
-              /*<<array.ml:370:7>>*/ caml_call2
-              (cmp,
-                /*<<array.ml:370:11>>*/ caml_check_bound(a, father)
-                [father + 1],
-               e$0))
-           break;
-          var
-           _A_ =
-              /*<<array.ml:371:14>>*/ caml_check_bound(a, father)[father + 1];
-           /*<<array.ml:371:6>>*/ caml_check_bound(a, i$3)[i$3 + 1] = _A_;
-           /*<<array.ml:371:28>>*/ if(0 >= father) break b;
-          i$3 = father;
-         }
+       var i$2 = exn$0[2], i$3 =  /*<<array.ml:382:4>>*/ i$2;
+       for(;;){
+        var father =  /*<<array.ml:368:4>>*/ (i$3 - 1 | 0) / 3 | 0;
+         /*<<array.ml:369:4>>*/ if(i$3 === father)
+         throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+         /*<<array.ml:370:11>>*/ if
+         (0
+          <=
+            /*<<array.ml:370:7>>*/ caml_call2
+            (cmp,
+              /*<<array.ml:370:11>>*/ caml_check_bound(a, father)[father + 1],
+             e$0))
           /*<<array.ml:373:13>>*/ caml_check_bound(a, i$3)[i$3 + 1] = e$0;
-         break a;
+        else{
+         var
+          _A_ =
+             /*<<array.ml:371:14>>*/ caml_check_bound(a, father)[father + 1];
+          /*<<array.ml:371:6>>*/ caml_check_bound(a, i$3)[i$3 + 1] = _A_;
+          /*<<array.ml:371:28>>*/ if(0 < father){i$3 = father; continue;}
+          /*<<array.ml:372:49>>*/ caml_check_bound(a, 0)[1] = e$0;
         }
-         /*<<array.ml:372:49>>*/ caml_check_bound(a, 0)[1] = e$0;
+        var _B_ =  /*<<array.ml:382:28>>*/ i$4 - 1 | 0;
+        if(2 === i$4) break a;
+        i$4 = _B_;
+        break;
        }
-       var _B_ =  /*<<array.ml:382:28>>*/ i$4 - 1 | 0;
-       if(2 === i$4) break;
-       i$4 = _B_;
       }
      }
     }
@@ -7786,34 +7776,38 @@
      var _m_ =  /*<<array.ml:410:4>>*/ len - 1 | 0, _s_ = 0;
      if(_m_ >= 0){
       var i = _s_;
+      a:
       for(;;){
        var
         _n_ =  /*<<array.ml:411:6>>*/ srcofs + i | 0,
         e =  /*<<array.ml:411:14>>*/ caml_check_bound(a, _n_)[_n_ + 1],
         j =  /*<<array.ml:412:6>>*/ [0, (dstofs + i | 0) - 1 | 0];
         /*<<array.ml:413:6>>*/ for(;;){
-        if(dstofs > j[1]) break;
-        var _o_ = j[1];
-         /*<<array.ml:413:33>>*/ if
-         (0
-          >=
-            /*<<array.ml:413:29>>*/ caml_call2
-            (cmp,
-              /*<<array.ml:413:33>>*/ caml_check_bound(dst, _o_)[_o_ + 1],
-             e))
-         break;
-        var
-         _p_ =  /*<<array.ml:414:8>>*/ j[1],
-         _t_ =  /*<<array.ml:414:25>>*/ caml_check_bound(dst, _p_)[_p_ + 1],
-         _q_ =  /*<<array.ml:414:37>>*/ j[1] + 1 | 0;
-         /*<<array.ml:414:8>>*/ caml_check_bound(dst, _q_)[_q_ + 1] = _t_;
-         /*<<array.ml:414:37>>*/ j[1]--;
+        if(dstofs <= j[1]){
+         var _o_ = j[1];
+          /*<<array.ml:413:33>>*/ if
+          (0
+           <
+             /*<<array.ml:413:29>>*/ caml_call2
+             (cmp,
+               /*<<array.ml:413:33>>*/ caml_check_bound(dst, _o_)[_o_ + 1],
+              e)){
+          var
+           _p_ =  /*<<array.ml:414:8>>*/ j[1],
+           _t_ =  /*<<array.ml:414:25>>*/ caml_check_bound(dst, _p_)[_p_ + 1],
+           _q_ =  /*<<array.ml:414:37>>*/ j[1] + 1 | 0;
+           /*<<array.ml:414:8>>*/ caml_check_bound(dst, _q_)[_q_ + 1] = _t_;
+           /*<<array.ml:414:37>>*/ j[1]--;
+          continue;
+         }
+        }
+        var _r_ =  /*<<array.ml:417:6>>*/ j[1] + 1 | 0;
+        caml_check_bound(dst, _r_)[_r_ + 1] = e;
+        var _u_ =  /*<<array.ml:417:24>>*/ i + 1 | 0;
+        if(_m_ === i) break a;
+        i = _u_;
+        break;
        }
-       var _r_ =  /*<<array.ml:417:6>>*/ j[1] + 1 | 0;
-       caml_check_bound(dst, _r_)[_r_ + 1] = e;
-       var _u_ =  /*<<array.ml:417:24>>*/ i + 1 | 0;
-       if(_m_ === i) break;
-       i = _u_;
       }
      }
       /*<<array.ml:410:4>>*/ return 0;
@@ -8647,33 +8641,28 @@
      var i$6 = _y_;
      for(;;){
       var e$1 =  /*<<float.ml:492:52>>*/ caml_check_bound(a, i$6)[i$6 + 1];
-      a:
-      {
-        /*<<float.ml:474:24>>*/ try{
-        var i = i$6;
-        for(;;){
-         var j =  /*<<float.ml:466:14>>*/ maxson(l, i);
-          /*<<float.ml:467:13>>*/ if
-          (0
-           >=
-             /*<<float.ml:467:9>>*/ caml_call2
-             (cmp,
-               /*<<float.ml:467:13>>*/ caml_check_bound(a, j)[j + 1],
-              e$1))
-          break;
-         var _C_ =  /*<<float.ml:468:16>>*/ caml_check_bound(a, j)[j + 1];
-          /*<<float.ml:468:8>>*/ caml_check_bound(a, i)[i + 1] = _C_;
-          /*<<float.ml:468:25>>*/ i = j;
+       /*<<float.ml:474:24>>*/ try{
+       var i = i$6;
+       for(;;){
+        var j =  /*<<float.ml:466:14>>*/ maxson(l, i);
+         /*<<float.ml:467:13>>*/ if
+         (0
+          >=
+            /*<<float.ml:467:9>>*/ caml_call2
+            (cmp,  /*<<float.ml:467:13>>*/ caml_check_bound(a, j)[j + 1], e$1)){
+          /*<<float.ml:470:15>>*/ caml_check_bound(a, i)[i + 1] = e$1;
+         break;
         }
+        var _C_ =  /*<<float.ml:468:16>>*/ caml_check_bound(a, j)[j + 1];
+         /*<<float.ml:468:8>>*/ caml_check_bound(a, i)[i + 1] = _C_;
+         /*<<float.ml:468:25>>*/ i = j;
        }
-       catch(exn$0){
-        var exn =  /*<<?>>*/ caml_wrap_exception(exn$0), tag = exn[1];
-        if(tag !== Bottom) throw caml_maybe_attach_backtrace(exn, 0);
-        var i$0 = exn[2];
-         /*<<float.ml:474:63>>*/ caml_check_bound(a, i$0)[i$0 + 1] = e$1;
-        break a;
-       }
-        /*<<float.ml:470:15>>*/ caml_check_bound(a, i)[i + 1] = e$1;
+      }
+      catch(exn$0){
+       var exn =  /*<<?>>*/ caml_wrap_exception(exn$0), tag = exn[1];
+       if(tag !== Bottom) throw caml_maybe_attach_backtrace(exn, 0);
+       var i$0 = exn[2];
+        /*<<float.ml:474:63>>*/ caml_check_bound(a, i$0)[i$0 + 1] = e$1;
       }
       var _G_ =  /*<<float.ml:492:61>>*/ i$6 - 1 | 0;
       if(0 === i$6) break;
@@ -8683,6 +8672,7 @@
     var _z_ =  /*<<float.ml:493:4>>*/ l - 1 | 0;
     if(_z_ >= 2){
      var i$4 = _z_;
+     a:
      for(;;){
       var e$0 =  /*<<float.ml:494:14>>*/ caml_check_bound(a, i$4)[i$4 + 1];
        /*<<float.ml:495:14>>*/ a[i$4 + 1] = caml_check_bound(a, 0)[1];
@@ -8700,40 +8690,32 @@
       catch(exn){
        var exn$0 =  /*<<?>>*/ caml_wrap_exception(exn), tag$0 = exn$0[1];
        if(tag$0 !== Bottom) throw caml_maybe_attach_backtrace(exn$0, 0);
-       var i$2 = exn$0[2];
-       a:
-       {
-        b:
-        {
-         var i$3 =  /*<<float.ml:496:6>>*/ i$2;
-         for(;;){
-          var father =  /*<<float.ml:482:6>>*/ (i$3 - 1 | 0) / 3 | 0;
-           /*<<float.ml:483:6>>*/ if(i$3 === father)
-           throw caml_maybe_attach_backtrace([0, Assert_failure, _b_], 1);
-           /*<<float.ml:484:13>>*/ if
-           (0
-            <=
-              /*<<float.ml:484:9>>*/ caml_call2
-              (cmp,
-                /*<<float.ml:484:13>>*/ caml_check_bound(a, father)
-                [father + 1],
-               e$0))
-           break;
-          var
-           _E_ =
-              /*<<float.ml:485:16>>*/ caml_check_bound(a, father)[father + 1];
-           /*<<float.ml:485:8>>*/ caml_check_bound(a, i$3)[i$3 + 1] = _E_;
-           /*<<float.ml:485:30>>*/ if(0 >= father) break b;
-          i$3 = father;
-         }
+       var i$2 = exn$0[2], i$3 =  /*<<float.ml:496:6>>*/ i$2;
+       for(;;){
+        var father =  /*<<float.ml:482:6>>*/ (i$3 - 1 | 0) / 3 | 0;
+         /*<<float.ml:483:6>>*/ if(i$3 === father)
+         throw caml_maybe_attach_backtrace([0, Assert_failure, _b_], 1);
+         /*<<float.ml:484:13>>*/ if
+         (0
+          <=
+            /*<<float.ml:484:9>>*/ caml_call2
+            (cmp,
+              /*<<float.ml:484:13>>*/ caml_check_bound(a, father)[father + 1],
+             e$0))
           /*<<float.ml:487:15>>*/ caml_check_bound(a, i$3)[i$3 + 1] = e$0;
-         break a;
+        else{
+         var
+          _E_ =
+             /*<<float.ml:485:16>>*/ caml_check_bound(a, father)[father + 1];
+          /*<<float.ml:485:8>>*/ caml_check_bound(a, i$3)[i$3 + 1] = _E_;
+          /*<<float.ml:485:30>>*/ if(0 < father){i$3 = father; continue;}
+          /*<<float.ml:486:51>>*/ caml_check_bound(a, 0)[1] = e$0;
         }
-         /*<<float.ml:486:51>>*/ caml_check_bound(a, 0)[1] = e$0;
+        var _F_ =  /*<<float.ml:496:30>>*/ i$4 - 1 | 0;
+        if(2 === i$4) break a;
+        i$4 = _F_;
+        break;
        }
-       var _F_ =  /*<<float.ml:496:30>>*/ i$4 - 1 | 0;
-       if(2 === i$4) break;
-       i$4 = _F_;
       }
      }
     }
@@ -8794,34 +8776,38 @@
      var _q_ =  /*<<float.ml:524:6>>*/ len - 1 | 0, _w_ = 0;
      if(_q_ >= 0){
       var i = _w_;
+      a:
       for(;;){
        var
         _r_ =  /*<<float.ml:525:8>>*/ srcofs + i | 0,
         e =  /*<<float.ml:525:16>>*/ caml_check_bound(a, _r_)[_r_ + 1],
         j =  /*<<float.ml:526:8>>*/ [0, (dstofs + i | 0) - 1 | 0];
         /*<<float.ml:527:8>>*/ for(;;){
-        if(dstofs > j[1]) break;
-        var _s_ = j[1];
-         /*<<float.ml:527:35>>*/ if
-         (0
-          >=
-            /*<<float.ml:527:31>>*/ caml_call2
-            (cmp,
-              /*<<float.ml:527:35>>*/ caml_check_bound(dst, _s_)[_s_ + 1],
-             e))
-         break;
-        var
-         _t_ =  /*<<float.ml:528:10>>*/ j[1],
-         _x_ =  /*<<float.ml:528:27>>*/ caml_check_bound(dst, _t_)[_t_ + 1],
-         _u_ =  /*<<float.ml:528:39>>*/ j[1] + 1 | 0;
-         /*<<float.ml:528:10>>*/ caml_check_bound(dst, _u_)[_u_ + 1] = _x_;
-         /*<<float.ml:528:39>>*/ j[1]--;
+        if(dstofs <= j[1]){
+         var _s_ = j[1];
+          /*<<float.ml:527:35>>*/ if
+          (0
+           <
+             /*<<float.ml:527:31>>*/ caml_call2
+             (cmp,
+               /*<<float.ml:527:35>>*/ caml_check_bound(dst, _s_)[_s_ + 1],
+              e)){
+          var
+           _t_ =  /*<<float.ml:528:10>>*/ j[1],
+           _x_ =  /*<<float.ml:528:27>>*/ caml_check_bound(dst, _t_)[_t_ + 1],
+           _u_ =  /*<<float.ml:528:39>>*/ j[1] + 1 | 0;
+           /*<<float.ml:528:10>>*/ caml_check_bound(dst, _u_)[_u_ + 1] = _x_;
+           /*<<float.ml:528:39>>*/ j[1]--;
+          continue;
+         }
+        }
+        var _v_ =  /*<<float.ml:531:8>>*/ j[1] + 1 | 0;
+        caml_check_bound(dst, _v_)[_v_ + 1] = e;
+        var _y_ =  /*<<float.ml:531:26>>*/ i + 1 | 0;
+        if(_q_ === i) break a;
+        i = _y_;
+        break;
        }
-       var _v_ =  /*<<float.ml:531:8>>*/ j[1] + 1 | 0;
-       caml_check_bound(dst, _v_)[_v_ + 1] = e;
-       var _y_ =  /*<<float.ml:531:26>>*/ i + 1 | 0;
-       if(_q_ === i) break;
-       i = _y_;
       }
      }
       /*<<float.ml:524:6>>*/ return 0;
@@ -12785,35 +12771,38 @@
            lim$0 =  /*<<buffer.ml:243:2>>*/ caml_ml_string_length(s),
            i$2 = start;
           for(;;){
-            /*<<buffer.ml:239:4>>*/ if(lim$0 <= i$2){
-            var stop$0 = lim$0;
-            break;
-           }
-           var match =  /*<<buffer.ml:240:10>>*/ caml_string_get(s, i$2);
-            /*<<buffer.ml:240:15>>*/ if(91 <= match){
-            if(97 <= match){
-             if(123 <= match){var stop$0 = i$2; break;}
+           b:
+           {
+             /*<<buffer.ml:239:4>>*/ if(lim$0 > i$2){
+             var match =  /*<<buffer.ml:240:10>>*/ caml_string_get(s, i$2);
+              /*<<buffer.ml:240:15>>*/ if(91 <= match){
+              if(97 <= match){
+               if(123 <= match){var stop$0 = i$2; break b;}
+              }
+              else if(95 !== match){var stop$0 = i$2; break b;}
+             }
+             else
+              if(58 <= match){
+               if(65 > match){var stop$0 = i$2; break b;}
+              }
+              else if(48 > match){var stop$0 = i$2; break b;}
+             var i$3 =  /*<<buffer.ml:241:52>>*/ i$2 + 1 | 0;
+             i$2 = i$3;
+             continue;
             }
-            else if(95 !== match){var stop$0 = i$2; break;}
+            var stop$0 =  /*<<buffer.ml:239:4>>*/ lim$0;
            }
-           else
-            if(58 <= match){
-             if(65 > match){var stop$0 = i$2; break;}
-            }
-            else if(48 > match){var stop$0 = i$2; break;}
-           var i$3 =  /*<<buffer.ml:241:52>>*/ i$2 + 1 | 0;
-           i$2 = i$3;
+            /*<<buffer.ml:257:5>>*/ if(stop$0 === start)
+             /*<<buffer.ml:257:26>>*/ throw caml_maybe_attach_backtrace
+                   (Stdlib[8], 1);
+           var
+            val =
+               /*<<buffer.ml:258:38>>*/ [0,
+                /*<<buffer.ml:258:5>>*/ Stdlib_String[16].call
+                (null, s, start, stop$0 - start | 0),
+               stop$0];
+           break a;
           }
-           /*<<buffer.ml:257:5>>*/ if(stop$0 === start)
-            /*<<buffer.ml:257:26>>*/ throw caml_maybe_attach_backtrace
-                  (Stdlib[8], 1);
-          var
-           val =
-              /*<<buffer.ml:258:38>>*/ [0,
-               /*<<buffer.ml:258:5>>*/ Stdlib_String[16].call
-               (null, s, start, stop$0 - start | 0),
-              stop$0];
-          break a;
          }
          var
           new_start =  /*<<buffer.ml:251:5>>*/ start + 1 | 0,
@@ -12841,19 +12830,21 @@
           }
           else if
            ( /*<<buffer.ml:232:7>>*/ caml_string_get(s, stop) === closing){
-            /*<<buffer.ml:233:6>>*/ if(0 === k) break;
+            /*<<buffer.ml:233:6>>*/ if(0 === k){
+            var
+             val =
+                /*<<buffer.ml:253:46>>*/ [0,
+                 /*<<buffer.ml:253:5>>*/ Stdlib_String[16].call
+                 (null, s, new_start, (stop - start | 0) - 1 | 0),
+                stop + 1 | 0];
+            break;
+           }
            var i$0 =  /*<<buffer.ml:233:27>>*/ stop + 1 | 0, k$1 = k - 1 | 0;
            k = k$1;
            stop = i$0;
           }
           else{var i$1 =  /*<<buffer.ml:234:9>>*/ stop + 1 | 0; stop = i$1;}
          }
-         var
-          val =
-             /*<<buffer.ml:253:46>>*/ [0,
-              /*<<buffer.ml:253:5>>*/ Stdlib_String[16].call
-              (null, s, new_start, (stop - start | 0) - 1 | 0),
-             stop + 1 | 0];
         }
        }
        catch(exn$0){
@@ -13318,15 +13309,18 @@
        /*<<domain.ml:122:21>>*/ return st;
      var new_sz =  /*<<domain.ml:122:4>>*/ sz;
      for(;;){
-       /*<<domain.ml:125:8>>*/ if(idx < new_sz) break;
+       /*<<domain.ml:125:8>>*/ if(idx < new_sz){
+       var new_st =  /*<<domain.ml:128:19>>*/ caml_array_make(new_sz, none);
+        /*<<domain.ml:129:6>>*/ Stdlib_Array[9].call
+        (null, st, 0, new_st, 0, sz);
+        /*<<domain.ml:136:9>>*/ if
+        (runtime.caml_domain_dls_compare_and_set(st, new_st))
+         /*<<domain.ml:137:11>>*/ return new_st;
+       break;
+      }
       var s =  /*<<domain.ml:125:31>>*/ 2 * new_sz | 0;
       new_sz = s;
      }
-     var new_st =  /*<<domain.ml:128:19>>*/ caml_array_make(new_sz, none);
-      /*<<domain.ml:129:6>>*/ Stdlib_Array[9].call(null, st, 0, new_st, 0, sz);
-      /*<<domain.ml:136:9>>*/ if
-      (runtime.caml_domain_dls_compare_and_set(st, new_st))
-       /*<<domain.ml:137:11>>*/ return new_st;
     }
     /*<<domain.ml:139:7>>*/ }
    function set(param, x){
@@ -13948,8 +13942,9 @@
      /*<<camlinternalFormat.ml:319:7>>*/ if(is_alone(93))
       /*<<camlinternalFormat.ml:319:25>>*/ buffer_add_char(buf, 93);
     var i =  /*<<camlinternalFormat.ml:323:4>>*/ 1;
+    a:
     for(;;){
-     a:
+     b:
      if(i < 256){
        /*<<camlinternalFormat.ml:324:28>>*/ if
        (!
@@ -13966,7 +13961,7 @@
        /*<<camlinternalFormat.ml:327:23>>*/ if(48 < switcher >>> 0){
        if(210 <= switcher){
          /*<<camlinternalFormat.ml:328:16>>*/ print_char(buf, 255);
-        break a;
+        break b;
        }
       }
       else if(46 < switcher - 1 >>> 0){
@@ -13993,7 +13988,7 @@
        if(210 <= switcher$0){
          /*<<camlinternalFormat.ml:335:8>>*/ print_char(buf, 254);
          /*<<camlinternalFormat.ml:335:26>>*/ print_char(buf, 255);
-        break a;
+        break b;
        }
       }
       else if
@@ -14026,23 +14021,23 @@
        i$3 = i$1 - 1 | 0,
        j$0 = j;
       for(;;){
-        /*<<camlinternalFormat.ml:351:4>>*/ if(256 === j$0) break;
-        /*<<camlinternalFormat.ml:351:42>>*/ if
-        (!
-          /*<<camlinternalFormat.ml:351:22>>*/ is_in_char_set
-          (set,
-            /*<<camlinternalFormat.ml:351:42>>*/ Stdlib[29].call(null, j$0)))
-        break;
-       var j$1 =  /*<<camlinternalFormat.ml:357:6>>*/ j$0 + 1 | 0;
-       j$0 = j$1;
-      }
-       /*<<camlinternalFormat.ml:352:6>>*/ print_char(buf, i$3);
-       /*<<camlinternalFormat.ml:353:6>>*/ print_char(buf, 45);
-       /*<<camlinternalFormat.ml:354:6>>*/ print_char(buf, j$0 - 1 | 0);
-       /*<<camlinternalFormat.ml:354:28>>*/ if(j$0 < 256){
+        /*<<camlinternalFormat.ml:351:4>>*/ if
+        (256 !== j$0
+         &&
+           /*<<camlinternalFormat.ml:351:22>>*/ is_in_char_set
+           (set,
+             /*<<camlinternalFormat.ml:351:42>>*/ Stdlib[29].call(null, j$0))){
+        var j$1 =  /*<<camlinternalFormat.ml:357:6>>*/ j$0 + 1 | 0;
+        j$0 = j$1;
+        continue;
+       }
+        /*<<camlinternalFormat.ml:352:6>>*/ print_char(buf, i$3);
+        /*<<camlinternalFormat.ml:353:6>>*/ print_char(buf, 45);
+        /*<<camlinternalFormat.ml:354:6>>*/ print_char(buf, j$0 - 1 | 0);
+        /*<<camlinternalFormat.ml:354:28>>*/ if(j$0 >= 256) break;
        var i$7 =  /*<<camlinternalFormat.ml:355:22>>*/ j$0 + 1 | 0;
        i = i$7;
-       continue;
+       continue a;
       }
      }
       /*<<camlinternalFormat.ml:321:7>>*/ if(is_alone(45))
@@ -24543,15 +24538,21 @@
      _F_ = 0;
     if(_C_ >= 0){
      var i$0 = _F_;
+     a:
      for(;;){
       var
        cell$1 =
           /*<<hashtbl.ml:136:18>>*/ caml_check_bound(odata, i$0)[i$0 + 1],
        cell =  /*<<hashtbl.ml:136:4>>*/ cell$1;
       for(;;){
-        /*<<hashtbl.ml:120:26>>*/ if(! cell) break;
+        /*<<hashtbl.ml:120:26>>*/ if(! cell){
+        var _I_ =  /*<<hashtbl.ml:136:27>>*/ i$0 + 1 | 0;
+        if(_C_ === i$0) break a;
+        i$0 = _I_;
+        break;
+       }
        var
-        key = cell[1],
+        key =  /*<<hashtbl.ml:120:26>>*/ cell[1],
         data = cell[2],
         next = cell[3],
         cell$0 =  /*<<hashtbl.ml:123:8>>*/ inplace ? cell : [0, key, data, 0],
@@ -24567,9 +24568,6 @@
        = cell$0;
         /*<<hashtbl.ml:132:33>>*/ cell = next;
       }
-      var _I_ =  /*<<hashtbl.ml:136:27>>*/ i$0 + 1 | 0;
-      if(_C_ === i$0) break;
-      i$0 = _I_;
      }
     }
      /*<<hashtbl.ml:138:2>>*/ if(inplace){
@@ -24618,6 +24616,7 @@
      var d = h[2], _y_ =  /*<<hashtbl.ml:166:4>>*/ d.length - 2 | 0, _A_ = 0;
      if(_y_ >= 0){
       var i = _A_;
+      a:
       for(;;){
        var
         param =
@@ -24625,14 +24624,19 @@
             (d, i)
            [i + 1];
         /*<<hashtbl.ml:167:6>>*/ for(;;){
-         /*<<hashtbl.ml:157:22>>*/ if(! param) break;
-        var key = param[1], data = param[2], next = param[3];
+         /*<<hashtbl.ml:157:22>>*/ if(! param){
+         var _C_ =  /*<<hashtbl.ml:167:21>>*/ i + 1 | 0;
+         if(_y_ === i) break a;
+         i = _C_;
+         break;
+        }
+        var
+         key =  /*<<hashtbl.ml:157:22>>*/ param[1],
+         data = param[2],
+         next = param[3];
          /*<<hashtbl.ml:161:8>>*/ caml_call2(f, key, data);
          /*<<hashtbl.ml:161:18>>*/ param = next;
        }
-       var _C_ =  /*<<hashtbl.ml:167:21>>*/ i + 1 | 0;
-       if(_y_ === i) break;
-       i = _C_;
       }
      }
      var
@@ -24658,15 +24662,25 @@
      var _u_ = d.length - 2 | 0, _w_ = 0;
      if(_u_ >= 0){
       var i = _w_;
+      a:
       for(;;){
        var
         slot$0 =  /*<<hashtbl.ml:200:44>>*/ caml_check_bound(h[2], i)[i + 1],
         prec =  /*<<hashtbl.ml:200:6>>*/ 0,
         slot = slot$0;
        for(;;){
-         /*<<hashtbl.ml:174:34>>*/ if(! slot) break;
+         /*<<hashtbl.ml:174:34>>*/ if(! slot){
+          /*<<hashtbl.ml:176:6>>*/ if(prec)
+           /*<<hashtbl.ml:178:18>>*/ prec[3] = 0;
+         else
+           /*<<hashtbl.ml:177:17>>*/ caml_check_bound(h[2], i)[i + 1] = 0;
+         var _y_ =  /*<<hashtbl.ml:200:54>>*/ i + 1 | 0;
+         if(_u_ === i) break a;
+         i = _y_;
+         break;
+        }
         var
-         key = slot[1],
+         key =  /*<<hashtbl.ml:174:34>>*/ slot[1],
          data = slot[2],
          next = slot[3],
          match =  /*<<hashtbl.ml:181:18>>*/ caml_call2(f, key, data);
@@ -24685,13 +24699,6 @@
           /*<<hashtbl.ml:184:10>>*/ slot = next;
         }
        }
-        /*<<hashtbl.ml:176:6>>*/ if(prec)
-         /*<<hashtbl.ml:178:18>>*/ prec[3] = 0;
-       else
-         /*<<hashtbl.ml:177:17>>*/ caml_check_bound(h[2], i)[i + 1] = 0;
-       var _y_ =  /*<<hashtbl.ml:200:54>>*/ i + 1 | 0;
-       if(_u_ === i) break;
-       i = _y_;
       }
      }
      var
@@ -24719,6 +24726,7 @@
       _s_ = 0;
      if(_r_ >= 0){
       var i = _s_;
+      a:
       for(;;){
        var
         accu$2 =  /*<<hashtbl.ml:220:6>>*/ accu$1[1],
@@ -24726,19 +24734,21 @@
         b =  /*<<hashtbl.ml:220:14>>*/ b$0,
         accu = accu$2;
        for(;;){
-         /*<<hashtbl.ml:209:4>>*/ if(! b) break;
+         /*<<hashtbl.ml:209:4>>*/ if(! b){
+          /*<<hashtbl.ml:220:35>>*/ accu$1[1] = accu;
+         var _u_ = i + 1 | 0;
+         if(_r_ === i) break a;
+         i = _u_;
+         break;
+        }
         var
-         key = b[1],
+         key =  /*<<hashtbl.ml:209:4>>*/ b[1],
          data = b[2],
          next = b[3],
          accu$0 =  /*<<hashtbl.ml:213:23>>*/ caml_call3(f, key, data, accu);
          /*<<hashtbl.ml:213:40>>*/ b = next;
         accu = accu$0;
        }
-        /*<<hashtbl.ml:220:35>>*/ accu$1[1] = accu;
-       var _u_ = i + 1 | 0;
-       if(_r_ === i) break;
-       i = _u_;
       }
      }
       /*<<hashtbl.ml:222:4>>*/ if(1 - old_trav)
@@ -31107,7 +31117,16 @@
        /*<<camlinternalOO.ml:412:14>>*/ if(! tables$1)
         /*<<camlinternalOO.ml:413:13>>*/ throw caml_maybe_attach_backtrace
               ([0, Assert_failure, _d_], 1);
-       /*<<camlinternalOO.ml:435:21>>*/ if(tables$1[1] === key) break;
+       /*<<camlinternalOO.ml:435:21>>*/ if(tables$1[1] === key){
+       var tables_data =  /*<<camlinternalOO.ml:436:12>>*/ get_data(tables$1);
+        /*<<camlinternalOO.ml:436:27>>*/ if(! tables_data)
+         /*<<camlinternalOO.ml:437:17>>*/ throw caml_maybe_attach_backtrace
+               ([0, Assert_failure, _g_], 1);
+       var i$0 =  /*<<camlinternalOO.ml:439:10>>*/ i - 1 | 0;
+       i = i$0;
+       tables$0 = tables_data;
+       break;
+      }
        /*<<camlinternalOO.ml:418:15>>*/ if(! tables$1)
         /*<<camlinternalOO.ml:419:13>>*/ throw caml_maybe_attach_backtrace
               ([0, Assert_failure, _f_], 1);
@@ -31123,13 +31142,6 @@
       }
        /*<<camlinternalOO.ml:441:27>>*/ tables$1 = tables;
      }
-     var tables_data =  /*<<camlinternalOO.ml:436:12>>*/ get_data(tables$1);
-      /*<<camlinternalOO.ml:436:27>>*/ if(! tables_data)
-       /*<<camlinternalOO.ml:437:17>>*/ throw caml_maybe_attach_backtrace
-             ([0, Assert_failure, _g_], 1);
-     var i$0 =  /*<<camlinternalOO.ml:439:10>>*/ i - 1 | 0;
-     i = i$0;
-     tables$0 = tables_data;
     }
     /*<<camlinternalOO.ml:455:48>>*/ }
    function new_cache(table){
