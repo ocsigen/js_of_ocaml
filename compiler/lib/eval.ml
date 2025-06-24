@@ -816,22 +816,25 @@ let eval_branch blocks update_branch info l =
           incr update_branch;
           Branch cont
       | None ->
-          let t = SBT.create 0 in
-          let seen_pc = Addr.Hashtbl.create 0 in
+          let t = lazy (SBT.create 0) in
+          let seen_pc = ref IntSet.empty in
           Switch
             ( x
             , Array.map a ~f:(function
-                | pc, [] when not (Addr.Hashtbl.mem seen_pc pc) -> (
+                | (pc, []) as cont when not (IntSet.mem pc !seen_pc) ->
                     let block = Code.Addr.Map.find pc blocks in
-                    let sb = Simple_block.make block in
-                    match SBT.find_opt t sb with
-                    | Some pc' when pc' <> pc ->
-                        incr update_branch;
-                        pc', []
-                    | Some _ | None ->
-                        SBT.add t sb pc;
-                        Addr.Hashtbl.add seen_pc pc ();
-                        pc, [])
+                    if List.compare_length_with block.body ~len:7 <= 0
+                    then (
+                      let sb = Simple_block.make block in
+                      match SBT.find_opt (Lazy.force t) sb with
+                      | Some pc' when pc' <> pc ->
+                          incr update_branch;
+                          pc', []
+                      | Some _ | None ->
+                          SBT.add (Lazy.force t) sb pc;
+                          seen_pc := IntSet.add pc !seen_pc;
+                          pc, [])
+                    else cont
                 | cont -> cont) ))
   | cont -> cont
 
