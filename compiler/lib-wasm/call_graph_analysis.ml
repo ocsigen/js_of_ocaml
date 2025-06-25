@@ -1,0 +1,66 @@
+open! Stdlib
+open Code
+
+let debug = Debug.find "call-graph"
+
+let block_deps ~info ~non_escaping ~unambiguous ~ambiguous ~blocks pc =
+  let block = Addr.Map.find pc blocks in
+  List.iter block.body ~f:(fun i ->
+      match i with
+      | Let (_, Apply { f; _ }) -> (
+          try
+            match Var.Tbl.get info.Global_flow.info_approximation f with
+            | Top -> ()
+            | Values { known; others } ->
+                if others || Var.Set.cardinal known > 1
+                then Var.Set.iter (fun x -> Var.Hashtbl.replace ambiguous x ()) known
+                else Var.Set.iter (fun x -> Var.Hashtbl.replace unambiguous x ()) known;
+                if debug ()
+                then
+                  Format.eprintf
+                    "CALL others:%b known:%d@."
+                    others
+                    (Var.Set.cardinal known)
+          with Invalid_argument _ -> ())
+      | Let (x, Closure _) -> (
+          match Var.Tbl.get info.Global_flow.info_approximation x with
+          | Top -> ()
+          | Values { known; others } ->
+              if Var.Set.cardinal known = 1 && (not others) && Var.Set.mem x known
+              then (
+                let may_escape = Var.ISet.mem info.Global_flow.info_may_escape x in
+                if debug () then Format.eprintf "CLOSURE may-escape:%b@." may_escape;
+                if not may_escape then Var.Hashtbl.replace non_escaping x ()))
+      | Let (_, (Prim _ | Block _ | Constant _ | Field _ | Special _))
+      | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ())
+
+type t = { unambiguous_non_escaping : unit Var.Hashtbl.t }
+
+let direct_calls_only info f =
+  Config.Flag.optcall () && Var.Hashtbl.mem info.unambiguous_non_escaping f
+
+let f p info =
+  let non_escaping = Var.Hashtbl.create 128 in
+  let ambiguous = Var.Hashtbl.create 128 in
+  let unambiguous = Var.Hashtbl.create 128 in
+  fold_closures
+    p
+    (fun _ _ (pc, _) _ () ->
+      traverse
+        { fold = Code.fold_children }
+        (fun pc () ->
+          block_deps ~info ~non_escaping ~unambiguous ~ambiguous ~blocks:p.blocks pc)
+        pc
+        p.blocks
+        ())
+    ();
+  if debug ()
+  then
+    Format.eprintf
+      "SUMMARY non-escaping:%d unambiguous:%d"
+      (Var.Hashtbl.length non_escaping)
+      (Var.Hashtbl.length unambiguous);
+  Var.Hashtbl.iter (fun x () -> Var.Hashtbl.remove non_escaping x) ambiguous;
+  if debug ()
+  then Format.eprintf " unambiguous-non-escaping:%d@." (Var.Hashtbl.length non_escaping);
+  { unambiguous_non_escaping = non_escaping }
