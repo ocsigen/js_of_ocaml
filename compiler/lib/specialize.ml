@@ -357,4 +357,4 @@ let switches p =
   if stats () then Format.eprintf "Stats - switches: %d@." !opt_count;
   if debug_stats ()
   then Code.check_updates ~name:"switches" previous_p p ~updates:!opt_count;
-  p
+  Deadcode.remove_unused_blocks p
