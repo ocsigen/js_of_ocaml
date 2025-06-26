@@ -40,7 +40,7 @@ jobs:
             skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
-            ocaml-name: "4.12.2+32bit"
+            ocaml-name: "4.14.2+32bit"
             ocaml-compiler: "ocaml-variants.4.14.2+options,ocaml-option-32bit"
             skip-effects: true
             skip-test: false
