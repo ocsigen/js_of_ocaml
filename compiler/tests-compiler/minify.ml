@@ -504,12 +504,12 @@ function f () {
 |};
       [%expect
         {|
-      $ cat "test.min.js"
-        1: function
-        2: f(){var
-        3: a=0;let
-        4: b=0;switch(a){case
-        5: 1:let
-        6: b=1;return b;case
-        7: 2:[b]=a}}
-      |}])
+        $ cat "test.min.js"
+          1: function
+          2: f(){var
+          3: a=0;let
+          4: b=0;switch(a){case
+          5: 1:let
+          6: c=1;return c;case
+          7: 2:[b]=a}}
+        |}])

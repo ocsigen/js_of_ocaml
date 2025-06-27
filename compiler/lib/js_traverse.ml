@@ -239,7 +239,14 @@ class map : mapper =
           match m#statement (Class_declaration (id, f)) with
           | Class_declaration (id, f) -> ExportClass (id, f)
           | _ -> assert false)
-      | ExportNames l -> ExportNames (List.map ~f:(fun (id, s) -> m#ident id, s) l)
+      | ExportNames l ->
+          ExportNames
+            (List.map
+               ~f:(fun (id, s) ->
+                 match m#expression (EVar id) with
+                 | EVar id -> id, s
+                 | _ -> assert false)
+               l)
       | ExportDefaultFun (Some id, decl) -> (
           match m#statement (Function_declaration (id, decl)) with
           | Function_declaration (id, decl) -> ExportDefaultFun (Some id, decl)
@@ -1020,6 +1027,20 @@ class free =
           cbody#record_block Normal;
           m#merge_block_info cbody;
           EClass (ident_o, cl_decl)
+      | EAssignTarget (ArrayTarget l) ->
+          List.iter l ~f:(function
+            | TargetElementHole -> ()
+            | TargetElementId (i, _) -> m#use_var i
+            | TargetElement _ -> ()
+            | TargetElementSpread _ -> ());
+          super#expression x
+      | EAssignTarget (ObjectTarget l) ->
+          List.iter l ~f:(function
+            | TargetPropertyId (Prop_and_ident i, _) -> m#use_var i
+            | TargetProperty _ -> ()
+            | TargetPropertyMethod _ -> ()
+            | TargetPropertySpread _ -> ());
+          super#expression x
       | _ -> super#expression x
 
     method record_block _ = ()
