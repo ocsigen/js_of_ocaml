@@ -57,6 +57,7 @@
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
 * Compiler: minifier fix (#1867)
+* Compiler: fix shortvar with --enable es6 (AssignTarget was not properly handled)  
 * Compiler: fix assert failure with double translation (#1870)
 * Compiler: fix path rewriting of Wasm source maps (#1882)
 * Compiler: fix global dead code in presence of dead tailcall (#2010)
