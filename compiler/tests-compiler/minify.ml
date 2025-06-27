@@ -486,4 +486,30 @@ function h(f) {
         {|
         $ cat "test.min.js"
           1: function
-          2: h(a){var{toto:b}=a();console.log({toto:b})} |}])
+          2: h(a){var{toto:b}=a();console.log({toto:b})}
+        |}];
+      minify
+        {|
+function f () {
+  var x = 0;
+  let z = 0;
+  switch(x) {
+    case 1:
+      let y = 1;
+      return y
+    case 2:
+      [z] = x;
+  }
+}
+|};
+      [%expect
+        {|
+      $ cat "test.min.js"
+        1: function
+        2: f(){var
+        3: a=0;let
+        4: b=0;switch(a){case
+        5: 1:let
+        6: b=1;return b;case
+        7: 2:[b]=a}}
+      |}])
