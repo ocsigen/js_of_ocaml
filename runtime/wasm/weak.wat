@@ -34,6 +34,7 @@
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $js (struct (field anyref)))
 
    ;; A weak array is a an abstract value composed of possibly some

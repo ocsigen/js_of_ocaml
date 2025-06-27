@@ -50,6 +50,7 @@
       (func $caml_string_concat (param (ref eq) (ref eq)) (result (ref eq))))
 
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
 
    (func (export "caml_sys_getcwd")
       (param (ref eq)) (result (ref eq))
