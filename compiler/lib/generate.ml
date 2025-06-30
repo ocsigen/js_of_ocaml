@@ -535,6 +535,10 @@ type queue_elt =
   ; deps : Code.Var.Set.t
   }
 
+let[@tail_mod_cons] rec clean_queue x = function
+  | [] -> []
+  | ((v, _) as hd) :: rem -> if Code.Var.equal v x then rem else hd :: clean_queue x rem
+
 let access_queue ~live queue x =
   let idx = Var.idx x in
   if idx < Array.length live && Array.unsafe_get live idx = 1
@@ -543,12 +547,7 @@ let access_queue ~live queue x =
       List.find_map queue ~f:(fun (x', elt) ->
           if Code.Var.equal x x' then Some elt else None)
     with
-    | Some elt ->
-        let[@tail_mod_cons] rec clean x = function
-          | [] -> []
-          | ((v, _) as hd) :: rem -> if Code.Var.equal v x then rem else hd :: clean x rem
-        in
-        ((elt.prop, elt.deps), elt.ce, elt.loc), clean x queue
+    | Some elt -> ((elt.prop, elt.deps), elt.ce, elt.loc), clean_queue x queue
     | None -> ((fst const_p, Code.Var.Set.singleton x), var x, None), queue
   else ((fst const_p, Code.Var.Set.singleton x), var x, None), queue
 
@@ -1329,6 +1328,16 @@ let remove_unused_tail_args ctx exact trampolined args =
     else args
   else args
 
+let keep_name x =
+  match Code.Var.get_name x with
+  | None -> false
+  | Some "" -> false
+  | Some s ->
+      (* "switcher" is emitted by the OCaml compiler when compiling
+        pattern matching, it does not help much to keep it in the
+        generated js, let's drop it *)
+      (not (generated_name s)) && not (String.starts_with s ~prefix:"jsoo_")
+
 let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t =
   let open Expr_builder in
   match e with
@@ -1603,16 +1612,6 @@ and translate_instr ctx expr_queue loc instr =
          return [ J.Expression_statement (J.EBin (J.Eq, J.EVar (J.V x), cy)), loc ])
   | Let (x, e) -> (
       let e' = translate_expr ctx loc x e 0 in
-      let keep_name x =
-        match Code.Var.get_name x with
-        | None -> false
-        | Some "" -> false
-        | Some s ->
-            (* "switcher" is emitted by the OCaml compiler when compiling
-               pattern matching, it does not help much to keep it in the
-               generated js, let's drop it *)
-            (not (generated_name s)) && not (String.starts_with s ~prefix:"jsoo_")
-      in
       match ctx.Ctx.live.(Var.idx x), e with
       | 0, _ ->
           (* deadcode is off *)
