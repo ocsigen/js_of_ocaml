@@ -1188,3 +1188,19 @@ module Hashtbl = struct
       =
     Hashtbl.of_seq
 end
+
+module Lexing = struct
+  include Lexing
+
+  let range_to_string (pos1, pos2) =
+    if phys_equal pos1 dummy_pos || phys_equal pos2 dummy_pos
+    then "At an unknown location:\n"
+    else
+      let file = pos1.pos_fname in
+      let line = pos1.pos_lnum in
+      let char1 = pos1.pos_cnum - pos1.pos_bol in
+      let char2 = pos2.pos_cnum - pos1.pos_bol in
+      (* yes, [pos1.pos_bol] *)
+      Printf.sprintf "File \"%s\", line %d, characters %d-%d:\n" file line char1 char2
+  (* use [char1 + 1] and [char2 + 1] if *not* using Caml mode *)
+end
