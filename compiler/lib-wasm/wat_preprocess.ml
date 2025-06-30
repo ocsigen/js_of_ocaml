@@ -3,7 +3,7 @@ open Stdlib
 exception Error of (Lexing.position * Lexing.position) * string
 
 let report_error loc msg =
-  let location = MenhirLib.LexerUtil.range loc in
+  let location = Lexing.range_to_string loc in
   Format.eprintf "%s%s%!" location msg;
   exit 1
 
