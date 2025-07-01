@@ -2,7 +2,6 @@
 (using menhir 3.0)
 (name js_of_ocaml)
 (generate_opam_files true)
-(subst disabled)
 (executables_implicit_empty_intf true)
 
 (authors "Ocsigen team <dev@ocsigen.org>")
