@@ -358,7 +358,7 @@ let branch nm =
     None
 
 let pin nm =
-  let branch = Option.value ~default:"wasm-v0.18" (branch nm) in
+  let branch = Option.value ~default:"wasm-latest" (branch nm) in
   exec_async
     (Printf.sprintf
        "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#%s"
