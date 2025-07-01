@@ -1,4 +1,4 @@
-# dev
+# 6.1.0 (2025-07-01) - Lille
 
 ## Features/Changes
 * Misc: drop support for OCaml 4.12 and bellow
