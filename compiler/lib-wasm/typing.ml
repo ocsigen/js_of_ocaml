@@ -25,10 +25,14 @@ type boxed_number =
   | Nativeint
   | Float
 
+type boxed_status =
+  | Boxed
+  | Unboxed
+
 type typ =
   | Top
   | Int of Integer.kind
-  | Number of boxed_number
+  | Number of boxed_number * boxed_status
   | Tuple of typ array
       (** This value is a block or an integer; if it's an integer, an
           overapproximation of the possible values of each of its
@@ -42,7 +46,15 @@ module Domain = struct
     match t, t' with
     | Bot, t | t, Bot -> t
     | Int r, Int r' -> Int (Integer.join r r')
-    | Number n, Number n' -> if Poly.equal n n' then t else Top
+    | Number (n, b), Number (n', b') ->
+        if Poly.equal n n'
+        then
+          Number
+            ( n
+            , match b, b' with
+              | Unboxed, _ | _, Unboxed -> Unboxed
+              | Boxed, Boxed -> Boxed )
+        else Top
     | Tuple t, Tuple t' ->
         let l = Array.length t in
         let l' = Array.length t' in
@@ -64,7 +76,7 @@ module Domain = struct
     match t, t' with
     | Top, Top | Bot, Bot -> true
     | Int t, Int t' -> Poly.equal t t'
-    | Number t, Number t' -> Poly.equal t t'
+    | Number (t, b), Number (t', b') -> Poly.equal t t' && Poly.equal b b'
     | Tuple t, Tuple t' ->
         Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
     | (Top | Tuple _ | Int _ | Number _ | Bot), _ -> false
@@ -91,6 +103,7 @@ module Domain = struct
   let box t =
     match t with
     | Int _ -> Int Ref
+    | Number (n, _) -> Number (n, Boxed)
     | _ -> t
 
   let rec print f t =
@@ -105,10 +118,18 @@ module Domain = struct
           | Ref -> "ref"
           | Normalized -> "normalized"
           | Unnormalized -> "unnormalized")
-    | Number Int32 -> Format.fprintf f "int32"
-    | Number Int64 -> Format.fprintf f "int64"
-    | Number Nativeint -> Format.fprintf f "nativeint"
-    | Number Float -> Format.fprintf f "float"
+    | Number (n, b) ->
+        Format.fprintf
+          f
+          "%s{%s}"
+          (match n with
+          | Int32 -> "int32"
+          | Int64 -> "int64"
+          | Nativeint -> "nativeint"
+          | Float -> "float")
+          (match b with
+          | Boxed -> "boxed"
+          | Unboxed -> "unboxed")
     | Tuple t ->
         Format.fprintf
           f
@@ -156,10 +177,10 @@ type st =
 let rec constant_type (c : constant) =
   match c with
   | Int _ -> Int Normalized
-  | Int32 _ -> Number Int32
-  | Int64 _ -> Number Int64
-  | NativeInt _ -> Number Nativeint
-  | Float _ -> Number Float
+  | Int32 _ -> Number (Int32, Unboxed)
+  | Int64 _ -> Number (Int64, Unboxed)
+  | NativeInt _ -> Number (Nativeint, Unboxed)
+  | Float _ -> Number (Float, Unboxed)
   | Tuple (_, a, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
   | _ -> Top
 
@@ -194,22 +215,22 @@ let prim_type ~approx prim args =
   | "caml_lessequal"
   | "caml_equal"
   | "caml_compare" -> Int Ref
-  | "caml_int32_bswap" -> Number Int32
-  | "caml_nativeint_bswap" -> Number Nativeint
-  | "caml_int64_bswap" -> Number Int64
+  | "caml_int32_bswap" -> Number (Int32, Unboxed)
+  | "caml_nativeint_bswap" -> Number (Nativeint, Unboxed)
+  | "caml_int64_bswap" -> Number (Int64, Unboxed)
   | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" -> Int Ref
-  | "caml_string_get32" -> Number Int32
-  | "caml_string_get64" -> Number Int64
-  | "caml_bytes_get32" -> Number Int32
-  | "caml_bytes_get64" -> Number Int64
-  | "caml_lxm_next" -> Number Int64
-  | "caml_ba_uint8_get32" -> Number Int32
-  | "caml_ba_uint8_get64" -> Number Int64
-  | "caml_nextafter_float" -> Number Float
+  | "caml_string_get32" -> Number (Int32, Unboxed)
+  | "caml_string_get64" -> Number (Int64, Unboxed)
+  | "caml_bytes_get32" -> Number (Int32, Unboxed)
+  | "caml_bytes_get64" -> Number (Int64, Unboxed)
+  | "caml_lxm_next" -> Number (Int64, Unboxed)
+  | "caml_ba_uint8_get32" -> Number (Int32, Unboxed)
+  | "caml_ba_uint8_get64" -> Number (Int64, Unboxed)
+  | "caml_nextafter_float" -> Number (Float, Unboxed)
   | "caml_classify_float" -> Int Ref
-  | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number Float
+  | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number (Float, Unboxed)
   | "caml_float_compare" -> Int Ref
-  | "caml_floatarray_unsafe_get" -> Number Float
+  | "caml_floatarray_unsafe_get" -> Number (Float, Unboxed)
   | "caml_bytes_unsafe_get"
   | "caml_string_unsafe_get"
   | "caml_bytes_get"
@@ -221,7 +242,7 @@ let prim_type ~approx prim args =
   | "caml_sub_float"
   | "caml_mul_float"
   | "caml_div_float"
-  | "caml_copysign_float" -> Number Float
+  | "caml_copysign_float" -> Number (Float, Unboxed)
   | "caml_signbit_float" -> Int Normalized
   | "caml_neg_float"
   | "caml_abs_float"
@@ -229,7 +250,7 @@ let prim_type ~approx prim args =
   | "caml_floor_float"
   | "caml_trunc_float"
   | "caml_round_float"
-  | "caml_sqrt_float" -> Number Float
+  | "caml_sqrt_float" -> Number (Float, Unboxed)
   | "caml_eq_float"
   | "caml_neq_float"
   | "caml_ge_float"
@@ -261,11 +282,11 @@ let prim_type ~approx prim args =
   | "caml_log10_float"
   | "caml_power_float"
   | "caml_hypot_float"
-  | "caml_fmod_float" -> Number Float
-  | "caml_int32_bits_of_float" -> Number Int32
-  | "caml_int32_float_of_bits" -> Number Float
-  | "caml_int32_of_float" -> Number Int32
-  | "caml_int32_to_float" -> Number Float
+  | "caml_fmod_float" -> Number (Float, Unboxed)
+  | "caml_int32_bits_of_float" -> Number (Int32, Unboxed)
+  | "caml_int32_float_of_bits" -> Number (Float, Unboxed)
+  | "caml_int32_of_float" -> Number (Int32, Unboxed)
+  | "caml_int32_to_float" -> Number (Float, Unboxed)
   | "caml_int32_neg"
   | "caml_int32_add"
   | "caml_int32_sub"
@@ -277,15 +298,15 @@ let prim_type ~approx prim args =
   | "caml_int32_mod"
   | "caml_int32_shift_left"
   | "caml_int32_shift_right"
-  | "caml_int32_shift_right_unsigned" -> Number Int32
+  | "caml_int32_shift_right_unsigned" -> Number (Int32, Unboxed)
   | "caml_int32_to_int" -> Int Unnormalized
-  | "caml_int32_of_int" -> Number Int32
-  | "caml_nativeint_of_int32" -> Number Nativeint
-  | "caml_nativeint_to_int32" -> Number Int32
-  | "caml_int64_bits_of_float" -> Number Int64
-  | "caml_int64_float_of_bits" -> Number Float
-  | "caml_int64_of_float" -> Number Int64
-  | "caml_int64_to_float" -> Number Float
+  | "caml_int32_of_int" -> Number (Int32, Unboxed)
+  | "caml_nativeint_of_int32" -> Number (Nativeint, Unboxed)
+  | "caml_nativeint_to_int32" -> Number (Int32, Unboxed)
+  | "caml_int64_bits_of_float" -> Number (Int64, Unboxed)
+  | "caml_int64_float_of_bits" -> Number (Float, Unboxed)
+  | "caml_int64_of_float" -> Number (Int64, Unboxed)
+  | "caml_int64_to_float" -> Number (Float, Unboxed)
   | "caml_int64_neg"
   | "caml_int64_add"
   | "caml_int64_sub"
@@ -297,17 +318,17 @@ let prim_type ~approx prim args =
   | "caml_int64_mod"
   | "caml_int64_shift_left"
   | "caml_int64_shift_right"
-  | "caml_int64_shift_right_unsigned" -> Number Int64
+  | "caml_int64_shift_right_unsigned" -> Number (Int64, Unboxed)
   | "caml_int64_to_int" -> Int Unnormalized
-  | "caml_int64_of_int" -> Number Int64
-  | "caml_int64_to_int32" -> Number Int32
-  | "caml_int64_of_int32" -> Number Int64
-  | "caml_int64_to_nativeint" -> Number Nativeint
-  | "caml_int64_of_nativeint" -> Number Int64
-  | "caml_nativeint_bits_of_float" -> Number Nativeint
-  | "caml_nativeint_float_of_bits" -> Number Float
-  | "caml_nativeint_of_float" -> Number Nativeint
-  | "caml_nativeint_to_float" -> Number Float
+  | "caml_int64_of_int" -> Number (Int64, Unboxed)
+  | "caml_int64_to_int32" -> Number (Int32, Unboxed)
+  | "caml_int64_of_int32" -> Number (Int64, Unboxed)
+  | "caml_int64_to_nativeint" -> Number (Nativeint, Unboxed)
+  | "caml_int64_of_nativeint" -> Number (Int64, Unboxed)
+  | "caml_nativeint_bits_of_float" -> Number (Nativeint, Unboxed)
+  | "caml_nativeint_float_of_bits" -> Number (Float, Unboxed)
+  | "caml_nativeint_of_float" -> Number (Nativeint, Unboxed)
+  | "caml_nativeint_to_float" -> Number (Float, Unboxed)
   | "caml_nativeint_neg"
   | "caml_nativeint_add"
   | "caml_nativeint_sub"
@@ -319,9 +340,9 @@ let prim_type ~approx prim args =
   | "caml_nativeint_mod"
   | "caml_nativeint_shift_left"
   | "caml_nativeint_shift_right"
-  | "caml_nativeint_shift_right_unsigned" -> Number Nativeint
+  | "caml_nativeint_shift_right_unsigned" -> Number (Nativeint, Unboxed)
   | "caml_nativeint_to_int" -> Int Unnormalized
-  | "caml_nativeint_of_int" -> Number Nativeint
+  | "caml_nativeint_of_int" -> Number (Nativeint, Unboxed)
   | "caml_int_compare" -> Int Normalized
   | _ -> Top
 
@@ -345,7 +366,7 @@ let propagate st approx x : Domain.t =
                  | Some_fields _ | No_field ->
                      Domain.limit (Domain.box (Var.Tbl.get approx y)))
                lst)
-      | Field (_, _, Float) -> Number Float
+      | Field (_, _, Float) -> Number (Float, Unboxed)
       | Field (y, n, Non_float) -> (
           match Var.Tbl.get approx y with
           | Tuple t -> if n < Array.length t then t.(n) else Bot
@@ -421,12 +442,190 @@ let solver st =
   in
   Solver.f () g (propagate st)
 
+(* These are primitives which are handled internally by the compiler,
+   plus the specialized primitives listed in Generate. *)
+let primitives_with_unboxed_parameters =
+  let h = String.Hashtbl.create 256 in
+  List.iter
+    ~f:(fun s -> String.Hashtbl.add h s ())
+    [ "caml_int32_bswap"
+    ; "caml_nativeint_bswap"
+    ; "caml_int64_bswap"
+    ; "caml_int32_compare"
+    ; "caml_nativeint_compare"
+    ; "caml_int64_compare"
+    ; "caml_nextafter_float"
+    ; "caml_classify_float"
+    ; "caml_ldexp_float"
+    ; "caml_erf_float"
+    ; "caml_erfc_float"
+    ; "caml_float_compare"
+    ; "caml_add_float"
+    ; "caml_sub_float"
+    ; "caml_mul_float"
+    ; "caml_div_float"
+    ; "caml_copysign_float"
+    ; "caml_signbit_float"
+    ; "caml_neg_float"
+    ; "caml_abs_float"
+    ; "caml_ceil_float"
+    ; "caml_floor_float"
+    ; "caml_trunc_float"
+    ; "caml_round_float"
+    ; "caml_sqrt_float"
+    ; "caml_eq_float"
+    ; "caml_neq_float"
+    ; "caml_ge_float"
+    ; "caml_le_float"
+    ; "caml_gt_float"
+    ; "caml_lt_float"
+    ; "caml_int_of_float"
+    ; "caml_cos_float"
+    ; "caml_sin_float"
+    ; "caml_tan_float"
+    ; "caml_acos_float"
+    ; "caml_asin_float"
+    ; "caml_atan_float"
+    ; "caml_atan2_float"
+    ; "caml_cosh_float"
+    ; "caml_sinh_float"
+    ; "caml_tanh_float"
+    ; "caml_acosh_float"
+    ; "caml_asinh_float"
+    ; "caml_atanh_float"
+    ; "caml_cbrt_float"
+    ; "caml_exp_float"
+    ; "caml_exp2_float"
+    ; "caml_log_float"
+    ; "caml_expm1_float"
+    ; "caml_log1p_float"
+    ; "caml_log2_float"
+    ; "caml_log10_float"
+    ; "caml_power_float"
+    ; "caml_hypot_float"
+    ; "caml_fmod_float"
+    ; "caml_int32_bits_of_float"
+    ; "caml_int32_float_of_bits"
+    ; "caml_int32_of_float"
+    ; "caml_int32_to_float"
+    ; "caml_int32_neg"
+    ; "caml_int32_add"
+    ; "caml_int32_sub"
+    ; "caml_int32_mul"
+    ; "caml_int32_and"
+    ; "caml_int32_or"
+    ; "caml_int32_xor"
+    ; "caml_int32_div"
+    ; "caml_int32_mod"
+    ; "caml_int32_shift_left"
+    ; "caml_int32_shift_right"
+    ; "caml_int32_shift_right_unsigned"
+    ; "caml_int32_to_int"
+    ; "caml_nativeint_of_int32"
+    ; "caml_nativeint_to_int32"
+    ; "caml_int64_bits_of_float"
+    ; "caml_int64_float_of_bits"
+    ; "caml_int64_of_float"
+    ; "caml_int64_to_float"
+    ; "caml_int64_neg"
+    ; "caml_int64_add"
+    ; "caml_int64_sub"
+    ; "caml_int64_mul"
+    ; "caml_int64_and"
+    ; "caml_int64_or"
+    ; "caml_int64_xor"
+    ; "caml_int64_div"
+    ; "caml_int64_mod"
+    ; "caml_int64_shift_left"
+    ; "caml_int64_shift_right"
+    ; "caml_int64_shift_right_unsigned"
+    ; "caml_int64_to_int"
+    ; "caml_int64_to_int32"
+    ; "caml_int64_of_int32"
+    ; "caml_int64_to_nativeint"
+    ; "caml_int64_of_nativeint"
+    ; "caml_nativeint_bits_of_float"
+    ; "caml_nativeint_float_of_bits"
+    ; "caml_nativeint_of_float"
+    ; "caml_nativeint_to_float"
+    ; "caml_nativeint_neg"
+    ; "caml_nativeint_add"
+    ; "caml_nativeint_sub"
+    ; "caml_nativeint_mul"
+    ; "caml_nativeint_and"
+    ; "caml_nativeint_or"
+    ; "caml_nativeint_xor"
+    ; "caml_nativeint_div"
+    ; "caml_nativeint_mod"
+    ; "caml_nativeint_shift_left"
+    ; "caml_nativeint_shift_right"
+    ; "caml_nativeint_shift_right_unsigned"
+    ; "caml_nativeint_to_int"
+    ; "caml_floatarray_unsafe_set"
+    ];
+  h
+
+let box_numbers p st types =
+  (* We box numbers eagerly if the boxed value is ever used. *)
+  let should_box = Var.ISet.empty () in
+  let rec box y =
+    if not (Var.ISet.mem should_box y)
+    then (
+      Var.ISet.add should_box y;
+      let typ = Var.Tbl.get types y in
+      (match typ with
+      | Number (n, Unboxed) -> Var.Tbl.set types y (Number (n, Boxed))
+      | _ -> ());
+      match typ with
+      | Number (_, Unboxed) | Top -> (
+          match st.state.defs.(Var.idx y) with
+          | Expr _ -> ()
+          | Phi { known; _ } -> Var.Set.iter box known)
+      | Number (_, Boxed) | Int _ | Tuple _ | Bot -> ())
+  in
+  Addr.Map.iter
+    (fun _ b ->
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, e) -> (
+              match e with
+              | Apply { args; _ } -> List.iter ~f:box args
+              | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
+              | Prim (Extern s, args) ->
+                  if not (String.Hashtbl.mem primitives_with_unboxed_parameters s)
+                  then
+                    List.iter
+                      ~f:(fun a ->
+                        match a with
+                        | Pv y -> box y
+                        | Pc _ -> ())
+                      args
+              | Prim ((Eq | Neq), args) ->
+                  List.iter
+                    ~f:(fun a ->
+                      match a with
+                      | Pv y -> box y
+                      | Pc _ -> ())
+                    args
+              | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult), _)
+              | Field _ | Closure _ | Constant _ | Special _ -> ())
+          | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
+          | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
+        b.body;
+      match b.branch with
+      | Return y -> box y
+      | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
+    p.blocks
+
 let f ~state ~info ~deadcode_sentinal p =
   let t = Timer.make () in
   update_deps state p;
   let function_parameters = mark_function_parameters p in
-  let typ = solver { state; info; function_parameters } in
+  let st = { state; info; function_parameters } in
+  let typ = solver st in
   Var.Tbl.set typ deadcode_sentinal (Int Normalized);
+  box_numbers p st typ;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
