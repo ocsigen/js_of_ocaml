@@ -589,9 +589,10 @@ end = struct
   type queue =
     { map : elt Var.Map.t
     ; muts : Var.Set.t
+    ; rank : int
     }
 
-  let empty = { map = Var.Map.empty; muts = Var.Set.empty }
+  let empty = { map = Var.Map.empty; muts = Var.Set.empty; rank = 0 }
 
   let is_empty t = Var.Map.is_empty t.map
 
@@ -608,6 +609,7 @@ end = struct
                 (match prop with
                 | Const -> queue.muts
                 | _ -> Var.Set.remove x queue.muts)
+            ; rank = queue.rank
             } )
     else ((Const, Code.Var.Set.singleton x), var x, None), queue
 
@@ -615,54 +617,56 @@ end = struct
     let (prop, c, loc), queue = access_queue ~live:ctx.Ctx.live queue x in
     (prop, c, Option.value ~default:loc' loc), queue
 
-  let flush_queue expr_queue prop loc (l : J.statement_list) =
-    let instrs, expr_queue =
+  let flush_queue queue prop loc (l : J.statement_list) =
+    let instrs, queue =
       let prop = fst prop in
       match prop with
-      | Const -> [], expr_queue
-      | Flush -> Var.Map.bindings expr_queue.map, empty
+      | Const -> [], queue
+      | Flush -> Var.Map.bindings queue.map, empty
       | Mutable ->
           let flush = ref [] in
           let muts =
             Var.Set.filter
               (fun x ->
-                let elt = Var.Map.find x expr_queue.map in
+                let elt = Var.Map.find x queue.map in
                 match elt.prop with
                 | Mutator | Flush ->
                     flush := (x, elt) :: !flush;
                     false
                 | _ -> true)
-              expr_queue.muts
+              queue.muts
           in
           ( !flush
           , { muts
             ; map =
-                List.fold_left !flush ~init:expr_queue.map ~f:(fun acc (x, _) ->
+                List.fold_left !flush ~init:queue.map ~f:(fun acc (x, _) ->
                     Var.Map.remove x acc)
+            ; rank = queue.rank
             } )
       | Mutator ->
           let flush = ref [] in
           let muts =
             Var.Set.filter
               (fun x ->
-                let elt = Var.Map.find x expr_queue.map in
+                let elt = Var.Map.find x queue.map in
                 match elt.prop with
                 | Mutator | Mutable | Flush ->
                     flush := (x, elt) :: !flush;
                     false
                 | _ -> true)
-              expr_queue.muts
+              queue.muts
           in
           ( !flush
           , { muts
             ; map =
-                List.fold_left !flush ~init:expr_queue.map ~f:(fun acc (x, _) ->
+                List.fold_left !flush ~init:queue.map ~f:(fun acc (x, _) ->
                     Var.Map.remove x acc)
+            ; rank = queue.rank
             } )
     in
     let instrs =
       List.stable_sort
-        ~cmp:(fun (_, { rank = a; _ }) (_, { rank = b; _ }) -> compare b a)
+        ~cmp:(fun (_, ({ rank = a; _ } : elt)) (_, { rank = b; _ }) -> compare b a)
         instrs
     in
     let instrs =
@@ -670,39 +674,28 @@ end = struct
           let loc = Option.value ~default:loc elt.loc in
           J.variable_declaration [ J.V x, (elt.ce, loc) ], loc)
     in
-    List.rev_append instrs l, expr_queue
+    List.rev_append instrs l, queue
 
-  let flush_all expr_queue loc l = fst (flush_queue expr_queue flush_p loc l)
+  let flush_all queue loc l = fst (flush_queue queue flush_p loc l)
 
-  let rank_r = ref 0
-
-  let enqueue expr_queue prop x ce flush_loc expr_loc acc =
-    let instrs, expr_queue =
+  let enqueue queue prop x ce flush_loc expr_loc acc =
+    let instrs, queue =
       if Config.Flag.compact ()
       then
         match fst prop with
-        | Mutable | Mutator | Flush -> flush_queue expr_queue prop flush_loc acc
-        | Const -> acc, expr_queue
-      else flush_queue expr_queue flush_p flush_loc acc
+        | Mutable | Mutator | Flush -> flush_queue queue prop flush_loc acc
+        | Const -> acc, queue
+      else flush_queue queue flush_p flush_loc acc
     in
+    let rank = queue.rank in
     let prop, deps = prop in
     ( instrs
-    , { map =
-          Var.Map.add
-            x
-            { prop
-            ; deps
-            ; ce
-            ; loc = expr_loc
-            ; rank =
-                (incr rank_r;
-                 !rank_r)
-            }
-            expr_queue.map
+    , { map = Var.Map.add x { prop; deps; ce; loc = expr_loc; rank } queue.map
       ; muts =
           (match prop with
-          | Const -> expr_queue.muts
-          | _ -> Var.Set.add x expr_queue.muts)
+          | Const -> queue.muts
+          | _ -> Var.Set.add x queue.muts)
+      ; rank = rank + 1
       } )
 end
 
