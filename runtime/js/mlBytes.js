@@ -79,6 +79,115 @@ function caml_sub_uint8_array_to_jsbytes(a, i, len) {
   return s;
 }
 
+//Provides: caml_utf8_of_utf16
+function caml_utf8_of_utf16(s) {
+  for (var b = "", t = b, c, d, i = 0, l = s.length; i < l; i++) {
+    c = s.charCodeAt(i);
+    if (c < 0x80) {
+      for (var j = i + 1; j < l && (c = s.charCodeAt(j)) < 0x80; j++);
+      if (j - i > 512) {
+        t.slice(0, 1);
+        b += t;
+        t = "";
+        b += s.slice(i, j);
+      } else t += s.slice(i, j);
+      if (j === l) break;
+      i = j;
+    }
+    if (c < 0x800) {
+      t += String.fromCharCode(0xc0 | (c >> 6));
+      t += String.fromCharCode(0x80 | (c & 0x3f));
+    } else if (c < 0xd800 || c > 0xdfff) {
+      t += String.fromCharCode(
+        0xe0 | (c >> 12),
+        0x80 | ((c >> 6) & 0x3f),
+        0x80 | (c & 0x3f),
+      );
+    } else if (
+      c > 0xdbff ||
+      i + 1 === l ||
+      (d = s.charCodeAt(i + 1)) < 0xdc00 ||
+      d > 0xdfff
+    ) {
+      // Unmatched surrogate pair, replaced by \ufffd (replacement character)
+      t += "\xef\xbf\xbd";
+    } else {
+      i++;
+      c = (c << 10) + d - 0x35fdc00;
+      t += String.fromCharCode(
+        0xf0 | (c >> 18),
+        0x80 | ((c >> 12) & 0x3f),
+        0x80 | ((c >> 6) & 0x3f),
+        0x80 | (c & 0x3f),
+      );
+    }
+    if (t.length > 1024) {
+      t.slice(0, 1);
+      b += t;
+      t = "";
+    }
+  }
+  return b + t;
+}
+
+//Provides: caml_utf16_of_utf8
+function caml_utf16_of_utf8(s) {
+  for (var b = "", t = "", c, c1, c2, v, i = 0, l = s.length; i < l; i++) {
+    c1 = s.charCodeAt(i);
+    if (c1 < 0x80) {
+      for (var j = i + 1; j < l && (c1 = s.charCodeAt(j)) < 0x80; j++);
+      if (j - i > 512) {
+        t.slice(0, 1);
+        b += t;
+        t = "";
+        b += s.slice(i, j);
+      } else t += s.slice(i, j);
+      if (j === l) break;
+      i = j;
+    }
+    v = 1;
+    if (++i < l && ((c2 = s.charCodeAt(i)) & -64) === 128) {
+      c = c2 + (c1 << 6);
+      if (c1 < 0xe0) {
+        v = c - 0x3080;
+        if (v < 0x80) v = 1;
+      } else {
+        v = 2;
+        if (++i < l && ((c2 = s.charCodeAt(i)) & -64) === 128) {
+          c = c2 + (c << 6);
+          if (c1 < 0xf0) {
+            v = c - 0xe2080;
+            if (v < 0x800 || (v > 0xd7ff && v < 0xe000)) v = 2;
+          } else {
+            v = 3;
+            if (
+              ++i < l &&
+              ((c2 = s.charCodeAt(i)) & -64) === 128 &&
+              c1 < 0xf5
+            ) {
+              v = c2 - 0x3c82080 + (c << 6);
+              if (v < 0x10000 || v > 0x10ffff) v = 3;
+            }
+          }
+        }
+      }
+    }
+    if (v < 4) {
+      // Invalid sequence
+      i -= v;
+      t += "\ufffd";
+    } else if (v > 0xffff)
+      t += String.fromCharCode(0xd7c0 + (v >> 10), 0xdc00 + (v & 0x3ff));
+    else t += String.fromCharCode(v);
+    if (t.length > 1024) {
+      t.slice(0, 1);
+      b += t;
+      t = "";
+    }
+  }
+  return b + t;
+}
+
 //Provides: jsoo_is_ascii
 function jsoo_is_ascii(s) {
   // The regular expression gets better at around this point for all browsers
