@@ -16,7 +16,7 @@
 * Compiler: remove empty blocks (#1934)
 * Compiler: improve coloring optimization (#1971, #1984, #1986, #1989)
 * Compiler: faster constant sharing (#1988)
-* Compiler: faster js code generation (#1985)
+* Compiler: faster js code generation (#1985, #2066)
 * Compiler: improve performance of Javascript linking
 * Compiler: more efficient code generation from bytecode (#1972)
 * Compiler: faster compilation by improving the scheduling of optimization passes (#1962, #2001, #2012, #2027)
