@@ -15,8 +15,10 @@ ARGS=ml/*.ml ml/*.ml ml/*.ml ml/*.ml ml/*.ml ml/*.ml ml/*.ml ml/*.ml
 
 perform:
 	env time -f "%E %R" $(COMPILER) --debug times --opt 2 --pretty `which ocamlc.byte` -o $(SCRIPT) 2>&1 | \
+  tee /dev/stderr | \
 	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) $(NAME) $(SCRIPT) | \
 	sh ../utils/aggregate.sh $(KIND)
 	env time -f '{"compiler": "$(COMPILER)", "time":"%E"}' node $(SCRIPT) -c $(ARGS) 2>&1 | \
+  tee /dev/stderr | \
 	sh ../utils/format_metrics.sh exec | \
 	sh ../utils/aggregate.sh $(KIND)
