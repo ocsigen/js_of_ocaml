@@ -11,10 +11,14 @@ type boxed_number =
   | Nativeint
   | Float
 
+type boxed_status =
+  | Boxed
+  | Unboxed
+
 type typ =
   | Top
   | Int of Integer.kind
-  | Number of boxed_number
+  | Number of boxed_number * boxed_status
   | Tuple of typ array
   | Bot
 
