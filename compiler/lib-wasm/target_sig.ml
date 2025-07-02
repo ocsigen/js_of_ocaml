@@ -167,7 +167,7 @@ module type S = sig
   end
 
   module Constant : sig
-    val translate : Code.constant -> expression
+    val translate : unboxed:bool -> Code.constant -> expression
   end
 
   module Closure : sig
