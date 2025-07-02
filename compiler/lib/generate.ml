@@ -645,22 +645,19 @@ end = struct
             } )
       | Mutator ->
           let flush = ref [] in
-          let muts =
-            Var.Set.filter
-              (fun x ->
-                let elt = Var.Map.find x queue.map in
+          let muts = Var.Set.empty in
+          Var.Set.iter
+            (fun x ->
+              let elt = Var.Map.find x queue.map in
+              assert (
                 match elt.prop with
-                | Mutator | Mutable | Flush ->
-                    flush := (x, elt) :: !flush;
-                    false
-                | _ -> true)
-              queue.muts
-          in
+                | Mutator | Mutable | Flush -> true
+                | Const -> false);
+              flush := (x, elt) :: !flush)
+            queue.muts;
           ( !flush
           , { muts
-            ; map =
-                List.fold_left !flush ~init:queue.map ~f:(fun acc (x, _) ->
-                    Var.Map.remove x acc)
+            ; map = Var.Set.fold (fun x acc -> Var.Map.remove x acc) queue.muts queue.map
             ; rank = queue.rank
             } )
     in
