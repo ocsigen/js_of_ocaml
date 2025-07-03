@@ -348,6 +348,7 @@ let branch nm =
     match nm with
     | "async_js"
     | "base"
+    | "bigstringaf"
     | "core"
     | "core_kernel"
     | "core_unix"
