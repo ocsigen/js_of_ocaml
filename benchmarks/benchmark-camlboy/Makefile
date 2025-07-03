@@ -2,7 +2,7 @@
 
 export NAME=Camlboy
 
-SHELL=/bin/bash -o pipefail
+SHELL=/usr/bin/env bash -o pipefail
 
 DIR=CAMLBOY
 SCRIPT=$(DIR)/_build/default/bin/web/bench_node.bc
