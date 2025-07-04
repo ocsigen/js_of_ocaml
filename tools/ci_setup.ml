@@ -24,6 +24,7 @@ let forked_packages =
   StringSet.of_list
     [ "async_js"
     ; "base"
+    ; "basement"
     ; "core"
     ; "core_kernel"
     ; "core_unix"
@@ -32,6 +33,7 @@ let forked_packages =
     ; "bonsai_web" (* Compatibility with effect syntax *)
     ; "bonsai_web_components"
     ; "bonsai_web_test"
+    ; "ppx_hash"
     ; "time_now"
     ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
     ; "virtual_dom" (* Compatibility with effect syntax *)
@@ -348,10 +350,12 @@ let branch nm =
     match nm with
     | "async_js"
     | "base"
+    | "basement"
     | "bigstringaf"
     | "core"
     | "core_kernel"
     | "core_unix"
+    | "ppx_hash"
     | "time_now"
     | "zarith_stubs_js" -> Some "js-strings"
     | _ -> Some "wasm-latest"

@@ -180,6 +180,7 @@
       (return_call $jsstring_hash
          (local.get $h) (struct.get $js 0 (local.get $s))))
 
+   (export "caml_hash_mix_bytes" (func $caml_hash_mix_bytes))
 (@if use-js-string
 (@then
    (export "caml_hash_mix_string" (func $caml_hash_mix_string))
