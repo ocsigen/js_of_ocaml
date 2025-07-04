@@ -25,6 +25,7 @@ let forked_packages =
     [ "async_js"
     ; "base"
     ; "basement"
+    ; "bigstringaf"
     ; "core"
     ; "core_kernel"
     ; "core_unix"
