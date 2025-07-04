@@ -346,9 +346,16 @@ then (
       (intl##._PluralRules##supportedLocalesOf
          (jas [| "ban"; "id-u-co-pinyin"; "de-ID" |])
          (def options))
+
+    let options = Intl.RelativeTimeFormat.options () in
+    let () = options##.numeric := def (string "auto") in
+    let () = options##.style := def (string "short") in
+    let th_rtf = new%js Intl.relativeTimeFormat_constr (def (jas [| "th-TH" |])) (def options) in
+    fc (th_rtf##.format -1 "day");
   with Error err -> Console.console##debug (string (string_of_error err)))
 else Console.console##debug (string "Intl is not supported!")
 ]}
+
     @see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl> for API documentation.
     @see <https://www.ecma-international.org/ecma-402/1.0/> for the ECMAScript specification. *)
 
