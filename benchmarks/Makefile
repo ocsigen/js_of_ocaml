@@ -20,7 +20,7 @@ bench:
 	$(MAKE) microbenchmarks
 	$(MAKE) -C benchmark-fiat-crypto bench
 	$(MAKE) -C benchmark-ocamlc bench
-	#$(MAKE) -C benchmark-partial-render-table bench
+	$(MAKE) -C benchmark-partial-render-table bench
 	$(MAKE) -C benchmark-camlboy bench
 	$(MAKE) -C benchmark-others bench # To try later!
 
