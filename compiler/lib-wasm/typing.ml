@@ -134,8 +134,8 @@ let update_deps st { blocks; _ } =
     blocks
 
 let mark_function_parameters { blocks; _ } =
-  let function_parameters = Var.Tbl.make () false in
-  let set x = Var.Tbl.set function_parameters x true in
+  let function_parameters = Var.ISet.empty () in
+  let set x = Var.ISet.add function_parameters x in
   Addr.Map.iter
     (fun _ block ->
       List.iter block.body ~f:(fun i ->
@@ -148,7 +148,7 @@ let mark_function_parameters { blocks; _ } =
 type st =
   { state : state
   ; info : info
-  ; function_parameters : bool Var.Tbl.t
+  ; function_parameters : Var.ISet.t
   }
 
 let rec constant_type (c : constant) =
@@ -328,7 +328,7 @@ let propagate st approx x : Domain.t =
   | Phi { known; others; unit } ->
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
       let res = if unit then Domain.join (Int Unnormalized) res else res in
-      if Var.Tbl.get st.function_parameters x then Domain.box res else res
+      if Var.ISet.mem st.function_parameters x then Domain.box res else res
   | Expr e -> (
       match e with
       | Constant c -> constant_type c
