@@ -666,33 +666,23 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
-  let allocate ~tag ~deadcode_sentinal ~load l =
-    if tag = 254
-    then
-      let* l =
-        expression_list
-          (fun v ->
-            match v with
-            | `Var y ->
-                if Code.Var.equal y deadcode_sentinal
-                then return (W.Const (F64 0.))
-                else unbox_float (load y)
-            | `Expr e -> unbox_float (return e))
-          l
-      in
-      let* ty = Type.float_array_type in
-      return (W.ArrayNewFixed (ty, l))
-    else
-      let* l =
-        expression_list
-          (fun v ->
-            match v with
-            | `Var y -> load y
-            | `Expr e -> return e)
-          l
-      in
-      let* ty = Type.block_type in
-      return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+  let allocate ~tag l =
+    assert (tag <> 254);
+    let* l = l in
+    let* ty = Type.block_type in
+    return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+
+  let allocate_float_array ~deadcode_sentinal ~load l =
+    let* l =
+      expression_list
+        (fun y ->
+          if Code.Var.equal y deadcode_sentinal
+          then return (W.Const (F64 0.))
+          else unbox_float (load y))
+        l
+    in
+    let* ty = Type.float_array_type in
+    return (W.ArrayNewFixed (ty, l))
 
   let tag e = wasm_array_get e (Arith.const 0l)
 
