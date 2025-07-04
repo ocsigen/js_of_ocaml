@@ -550,7 +550,9 @@ end = struct
         List.iter ~f:(fun e' -> output_expression st ch e') l;
         output_byte ch 0x10;
         output_uint ch (Code.Var.Hashtbl.find st.func_names f)
-    | Seq _ -> assert false
+    | Seq (l, e') ->
+        List.iter ~f:(fun i' -> output_instruction st ch i') l;
+        output_expression st ch e'
     | Pop _ -> ()
     | RefFunc f ->
         Feature.require reference_types;
@@ -939,7 +941,9 @@ end = struct
         List.fold_left ~f:(fun set i -> instr_function_references i set) ~init:set l
     | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) ->
         List.fold_left ~f:(fun set i -> expr_function_references i set) ~init:set l
-    | Seq _ -> assert false
+    | Seq (l, e) ->
+        List.fold_left ~f:(fun set i -> instr_function_references i set) ~init:set l
+        |> expr_function_references e
     | RefFunc f -> Code.Var.Set.add f set
     | Call_ref (_, e', l) ->
         List.fold_left
