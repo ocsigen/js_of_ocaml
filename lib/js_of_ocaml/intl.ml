@@ -413,6 +413,56 @@ module PluralRules = struct
   end
 end
 
+module RelativeTimeFormat = struct
+  include Shared
+
+  class type resolved_options = object
+    method locale : Js.js_string Js.t Js.readonly_prop
+
+    method style : Js.js_string Js.t Js.readonly_prop
+
+    method numberingSystem : Js.js_string Js.t Js.readonly_prop
+
+    method numeric : Js.js_string Js.t Js.readonly_prop
+  end
+
+  class type options = object
+    method localeMatcher : Js.js_string Js.t Js.prop
+
+    method numberingSystem : Js.js_string Js.t Js.optdef Js.prop
+
+    method style : Js.js_string Js.t Js.optdef Js.prop
+
+    method numeric : Js.js_string Js.t Js.optdef Js.prop
+  end
+
+  let options () : options Js.t =
+    object%js
+      val mutable localeMatcher = Js.string "best fit"
+
+      val mutable style = Js.undefined
+
+      val mutable numberingSystem = Js.undefined
+
+      val mutable numeric = Js.undefined
+    end
+
+  class type format_part = object
+    method _type : Js.js_string Js.t Js.readonly_prop
+
+    method _value : Js.js_string Js.t Js.readonly_prop
+  end
+
+  class type t = object
+    method format : (Js.number Js.t -> Js.js_string Js.t -> Js.js_string Js.t) Js.meth
+
+    method formatToParts :
+      Js.number Js.t -> Js.js_string Js.t -> format_part Js.t Js.js_array Js.t Js.meth
+
+    method resolvedOptions : unit -> resolved_options Js.t Js.meth
+  end
+end
+
 class type intl = object
   method _Collator : Collator._object Js.t Js.readonly_prop
 
@@ -421,6 +471,8 @@ class type intl = object
   method _NumberFormat : NumberFormat._object Js.t Js.readonly_prop
 
   method _PluralRules : PluralRules._object Js.t Js.readonly_prop
+
+  method _RelativeTimeFormat : RelativeTimeFormat._object Js.t Js.readonly_prop
 
   method getCanonicalLocales :
     Js.js_string Js.t Js.js_array Js.t -> Js.js_string Js.t Js.js_array Js.t Js.meth
@@ -435,5 +487,7 @@ let dateTimeFormat_constr = Js.Unsafe.global##._Intl##._DateTimeFormat
 let numberFormat_constr = Js.Unsafe.global##._Intl##._NumberFormat
 
 let pluralRules_constr = Js.Unsafe.global##._Intl##._PluralRules
+
+let relativeTimeFormat_constr = Js.Unsafe.global##._Intl##._RelativeTimeFormat
 
 let is_supported () = Js.Optdef.test intl

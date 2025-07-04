@@ -627,6 +627,47 @@ module PluralRules : sig
   end
 end
 
+module RelativeTimeFormat : sig
+  include Shared
+
+  class type resolved_options = object
+    method locale : Js.js_string Js.t Js.readonly_prop
+
+    method style : Js.js_string Js.t Js.readonly_prop
+
+    method numberingSystem : Js.js_string Js.t Js.readonly_prop
+
+    method numeric : Js.js_string Js.t Js.readonly_prop
+  end
+
+  class type options = object
+    method localeMatcher : Js.js_string Js.t Js.prop
+
+    method numberingSystem : Js.js_string Js.t Js.optdef Js.prop
+
+    method style : Js.js_string Js.t Js.optdef Js.prop
+
+    method numeric : Js.js_string Js.t Js.optdef Js.prop
+  end
+
+  val options : unit -> options Js.t
+
+  class type format_part = object
+    method _type : Js.js_string Js.t Js.readonly_prop
+
+    method _value : Js.js_string Js.t Js.readonly_prop
+  end
+
+  class type t = object
+    method format : (Js.number Js.t -> Js.js_string Js.t -> Js.js_string Js.t) Js.meth
+
+    method formatToParts :
+      Js.number Js.t -> Js.js_string Js.t -> format_part Js.t Js.js_array Js.t Js.meth
+
+    method resolvedOptions : unit -> resolved_options Js.t Js.meth
+  end
+end
+
 class type intl = object
   method _Collator : Collator._object Js.t Js.readonly_prop
 
@@ -635,6 +676,8 @@ class type intl = object
   method _NumberFormat : NumberFormat._object Js.t Js.readonly_prop
 
   method _PluralRules : PluralRules._object Js.t Js.readonly_prop
+
+  method _RelativeTimeFormat : RelativeTimeFormat._object Js.t Js.readonly_prop
 
   method getCanonicalLocales :
     Js.js_string Js.t Js.js_array Js.t -> Js.js_string Js.t Js.js_array Js.t Js.meth
@@ -664,6 +707,12 @@ val pluralRules_constr :
   (   Js.js_string Js.t Js.js_array Js.t Js.optdef
    -> PluralRules.options Js.t Js.optdef
    -> PluralRules.t Js.t)
+  Js.constr
+
+val relativeTimeFormat_constr :
+  (   Js.js_string Js.t Js.js_array Js.t Js.optdef
+   -> RelativeTimeFormat.options Js.t Js.optdef
+   -> RelativeTimeFormat.t Js.t)
   Js.constr
 
 val is_supported : unit -> bool
