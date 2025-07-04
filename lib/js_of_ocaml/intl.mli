@@ -345,13 +345,13 @@ then (
     fc
       (intl##._PluralRules##supportedLocalesOf
          (jas [| "ban"; "id-u-co-pinyin"; "de-ID" |])
-         (def options))
+         (def options));
 
     let options = Intl.RelativeTimeFormat.options () in
     let () = options##.numeric := def (string "auto") in
     let () = options##.style := def (string "short") in
     let th_rtf = new%js Intl.relativeTimeFormat_constr (def (jas [| "th-TH" |])) (def options) in
-    fc (th_rtf##.format -1 "day");
+    fc (th_rtf##format (number_of_float (-1.)) (string "day"));
   with Error err -> Console.console##debug (string (string_of_error err)))
 else Console.console##debug (string "Intl is not supported!")
 ]}
@@ -666,7 +666,7 @@ module RelativeTimeFormat : sig
   end
 
   class type t = object
-    method format : (Js.number Js.t -> Js.js_string Js.t -> Js.js_string Js.t) Js.meth
+    method format : Js.number Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
 
     method formatToParts :
       Js.number Js.t -> Js.js_string Js.t -> format_part Js.t Js.js_array Js.t Js.meth

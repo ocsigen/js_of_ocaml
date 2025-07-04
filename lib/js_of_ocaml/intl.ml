@@ -454,7 +454,7 @@ module RelativeTimeFormat = struct
   end
 
   class type t = object
-    method format : (Js.number Js.t -> Js.js_string Js.t -> Js.js_string Js.t) Js.meth
+    method format : Js.number Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
 
     method formatToParts :
       Js.number Js.t -> Js.js_string Js.t -> format_part Js.t Js.js_array Js.t Js.meth
@@ -463,6 +463,10 @@ module RelativeTimeFormat = struct
   end
 end
 
+(* Only a subset of the ECMAScript Internationalization API is bound here.
+   The following constructors are not (yet) exposed: [Intl.DisplayNames],
+   [Intl.DurationFormat], [Intl.ListFormat], [Intl.Locale] and
+   [Intl.Segmenter]. *)
 class type intl = object
   method _Collator : Collator._object Js.t Js.readonly_prop
 
@@ -500,6 +504,6 @@ let numberFormat_constr = intl_get "NumberFormat"
 
 let pluralRules_constr = intl_get "PluralRules"
 
-let relativeTimeFormat_constr = Js.Unsafe.global##._Intl##._RelativeTimeFormat
+let relativeTimeFormat_constr = intl_get "RelativeTimeFormat"
 
 let is_supported () = Js.Optdef.test intl
