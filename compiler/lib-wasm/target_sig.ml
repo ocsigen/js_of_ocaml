@@ -20,11 +20,12 @@ module type S = sig
   type expression = Code_generation.expression
 
   module Memory : sig
-    val allocate :
-         tag:int
-      -> deadcode_sentinal:Code.Var.t
+    val allocate : tag:int -> Wasm_ast.expression list Code_generation.t -> expression
+
+    val allocate_float_array :
+         deadcode_sentinal:Code.Var.t
       -> load:(Code.Var.t -> expression)
-      -> [ `Expr of Wasm_ast.expression | `Var of Wasm_ast.var ] list
+      -> Wasm_ast.var list
       -> expression
 
     val load_function_pointer :
