@@ -773,16 +773,7 @@ module Generate (Target : Target_sig.S) = struct
       ~ty:(Int Normalized)
       (fun i j -> Arith.((j < i) - (i < j)));
     register_prim "%js_array" `Pure (fun ctx _ l ->
-        let* l =
-          List.fold_right
-            ~f:(fun x acc ->
-              let* x = transl_prim_arg ctx x in
-              let* acc = acc in
-              return (`Expr x :: acc))
-            l
-            ~init:(return [])
-        in
-        Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal ~load l)
+        Memory.allocate ~tag:0 (expression_list (fun x -> transl_prim_arg ctx x) l))
 
   let rec translate_expr ctx context x e =
     match e with
@@ -822,11 +813,16 @@ module Generate (Target : Target_sig.S) = struct
           in
           return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
-        Memory.allocate
-          ~deadcode_sentinal:ctx.deadcode_sentinal
-          ~tag
-          ~load:(fun x -> load_and_box ctx x)
-          (List.map ~f:(fun x -> `Var x) (Array.to_list a))
+        if tag = 254
+        then
+          Memory.allocate_float_array
+            ~deadcode_sentinal:ctx.deadcode_sentinal
+            ~load
+            (Array.to_list a)
+        else
+          Memory.allocate
+            ~tag
+            (expression_list (fun x -> load_and_box ctx x) (Array.to_list a))
     | Field (x, n, Non_float) -> Memory.field (load_and_box ctx x) n
     | Field (x, n, Float) ->
         Memory.float_array_get
