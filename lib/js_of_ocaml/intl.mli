@@ -349,6 +349,13 @@ then (
   with Error err -> Console.console##debug (string (string_of_error err)))
 else Console.console##debug (string "Intl is not supported!")
 ]}
+
+    let options = Intl.RelativeTimeFormat.options () in
+    let () = options##.numeric := "auto" in
+    let () = options##.style := "short" in
+    let th_rtf = new%js Intl.relativeTimeFormat_constr (def (jas [| "th-TH" |])) options in
+    fc (th_rtf.format -1 "day");
+
     @see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl> for API documentation.
     @see <https://www.ecma-international.org/ecma-402/1.0/> for the ECMAScript specification. *)
 
