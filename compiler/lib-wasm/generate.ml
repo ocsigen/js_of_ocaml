@@ -1601,6 +1601,9 @@ module Generate (Target : Target_sig.S) = struct
               ?typ:
                 (match get_var_type ctx x with
                 | Typing.Int (Normalized | Unnormalized) -> Some I32
+                | Number ((Int32 | Nativeint), Unboxed) -> Some I32
+                | Number (Int64, Unboxed) -> Some I64
+                | Number (Float, Unboxed) -> Some F64
                 | _ -> None)
               x
           in
