@@ -35,7 +35,6 @@ module Generate (Target : Target_sig.S) = struct
   type ctx =
     { live : int array
     ; in_cps : Effects.in_cps
-    ; deadcode_sentinal : Var.t
     ; global_flow_info : Global_flow.info
     ; fun_info : Call_graph_analysis.t
     ; types : Typing.t
@@ -164,6 +163,13 @@ module Generate (Target : Target_sig.S) = struct
     match from, into with
     | Int Unnormalized, Int Normalized -> Arith.((e lsl const 1l) asr const 1l)
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
+    (* Dummy value *)
+    | Int (Unnormalized | Normalized), Number ((Int32 | Nativeint), Unboxed) ->
+        return (W.Const (I32 0l))
+    | Int (Unnormalized | Normalized), Number (Int64, Unboxed) ->
+        return (W.Const (I64 0L))
+    | Int (Unnormalized | Normalized), Number (Float, Unboxed) ->
+        return (W.Const (F64 0.))
     | _, Int (Normalized | Unnormalized) -> Value.int_val e
     | Int (Unnormalized | Normalized), _ -> Value.val_int e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
@@ -1142,13 +1148,13 @@ module Generate (Target : Target_sig.S) = struct
         if tag = 254
         then
           Memory.allocate_float_array
-            ~deadcode_sentinal:ctx.deadcode_sentinal
-            ~load:(fun x ->
-              convert
-                ~from:(Typing.var_type ctx.types x)
-                ~into:(Number (Float, Unboxed))
-                (load x))
-            (Array.to_list a)
+            (expression_list
+               (fun x ->
+                 convert
+                   ~from:(Typing.var_type ctx.types x)
+                   ~into:(Number (Float, Unboxed))
+                   (load x))
+               (Array.to_list a))
         else
           Memory.allocate
             ~tag
@@ -1739,7 +1745,6 @@ module Generate (Target : Target_sig.S) = struct
       ~in_cps (*
     ~should_export
 *)
-      ~deadcode_sentinal
       ~global_flow_info
       ~fun_info
       ~types =
@@ -1751,7 +1756,6 @@ module Generate (Target : Target_sig.S) = struct
     let ctx =
       { live = live_vars
       ; in_cps
-      ; deadcode_sentinal
       ; global_flow_info
       ; fun_info
       ; types
@@ -1869,16 +1873,7 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_d
   let p = Structure.norm p in
   let p = fix_switch_branches p in
   let res =
-    G.f
-      ~context
-      ~unit_name
-      ~live_vars
-      ~in_cps
-      ~deadcode_sentinal
-      ~global_flow_info
-      ~fun_info
-      ~types
-      p
+    G.f ~context ~unit_name ~live_vars ~in_cps ~global_flow_info ~fun_info ~types p
   in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
