@@ -233,7 +233,7 @@ let prim_type ~approx prim args =
   | "caml_ge_float"
   | "caml_le_float"
   | "caml_gt_float"
-  | "caml_lt_float"
+  | "caml_lt_float" -> Int Normalized
   | "caml_int_of_float" -> Int Unnormalized
   | "caml_float_of_int"
   | "caml_cos_float"
