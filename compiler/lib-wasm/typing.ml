@@ -603,7 +603,13 @@ let box_numbers p st types =
           match i with
           | Let (_, e) -> (
               match e with
-              | Apply { args; _ } -> List.iter ~f:box args
+              | Apply { f; args; _ } ->
+                  if
+                    match Global_flow.get_unique_closure st.global_flow_info f with
+                    | None -> true
+                    | Some (g, _) ->
+                        not (Call_graph_analysis.direct_calls_only st.fun_info g)
+                  then List.iter ~f:box args
               | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
               | Prim (Extern s, args) ->
                   if not (String.Hashtbl.mem primitives_with_unboxed_parameters s)
