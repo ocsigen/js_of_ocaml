@@ -672,13 +672,8 @@ module Memory = struct
     let* ty = Type.block_type in
     return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
 
-  let allocate_float_array ~deadcode_sentinal ~load l =
-    let* l =
-      expression_list
-        (fun y ->
-          if Code.Var.equal y deadcode_sentinal then return (W.Const (F64 0.)) else load y)
-        l
-    in
+  let allocate_float_array l =
+    let* l = l in
     let* ty = Type.float_array_type in
     return (W.ArrayNewFixed (ty, l))
 
