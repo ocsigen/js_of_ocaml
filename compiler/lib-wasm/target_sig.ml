@@ -22,11 +22,7 @@ module type S = sig
   module Memory : sig
     val allocate : tag:int -> Wasm_ast.expression list Code_generation.t -> expression
 
-    val allocate_float_array :
-         deadcode_sentinal:Code.Var.t
-      -> load:(Code.Var.t -> expression)
-      -> Wasm_ast.var list
-      -> expression
+    val allocate_float_array : Wasm_ast.expression list Code_generation.t -> expression
 
     val load_function_pointer :
          cps:bool
