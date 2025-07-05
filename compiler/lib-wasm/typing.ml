@@ -182,6 +182,7 @@ type st =
   { global_flow_state : Global_flow.state
   ; global_flow_info : Global_flow.info
   ; boxed_function_parameters : Var.ISet.t
+  ; fun_info : Call_graph_analysis.t
   }
 
 let rec constant_type (c : constant) =
@@ -606,7 +607,13 @@ let box_numbers p st types =
           match i with
           | Let (_, e) -> (
               match e with
-              | Apply { args; _ } -> List.iter ~f:box args
+              | Apply { f; args; _ } ->
+                  if
+                    match Global_flow.get_unique_closure st.global_flow_info f with
+                    | None -> true
+                    | Some (g, _) ->
+                        not (Call_graph_analysis.direct_calls_only st.fun_info g)
+                  then List.iter ~f:box args
               | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
               | Prim (Extern s, args) ->
                   if not (String.Hashtbl.mem primitives_with_unboxed_parameters s)
@@ -640,7 +647,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
   let t = Timer.make () in
   update_deps global_flow_state p;
   let boxed_function_parameters = mark_function_parameters ~fun_info p in
-  let st = { global_flow_state; global_flow_info; boxed_function_parameters } in
+  let st = { global_flow_state; global_flow_info; boxed_function_parameters; fun_info } in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinal (Int Normalized);
   box_numbers p st types;
