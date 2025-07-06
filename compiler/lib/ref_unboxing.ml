@@ -39,6 +39,10 @@ let rewrite refs block m =
                     , [ Pv (Var.Map.find x m); Pc (Int (Targetint.of_int_exn n)) ] ) )
               :: rem )
         | Set_field (x, _, Non_float, y) when Var.Map.mem x m -> Var.Map.add x y m, rem
+        | Event _
+          when match rem with
+               | Event _ :: _ -> true
+               | _ -> false -> m, rem
         | _ -> m, i :: rem)
       block.body
       ~init:(m, [])
