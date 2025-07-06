@@ -37,6 +37,7 @@ WORKDIR /bench-dir/js_of_ocaml
 COPY --chown=opam:opam js_of_ocaml-compiler.opam .
 RUN opam install -y --deps-only ./js_of_ocaml-compiler.opam \
  && opam install opam-format stringext uucp cstruct \
+ && opam pin add ppxlib -n 0.35.0 \
  && opam clean
 
 # Prepare partial render table benchmark
