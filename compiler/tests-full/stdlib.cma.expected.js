@@ -7864,16 +7864,16 @@
        _l_ = _g_ ? j <= i ? 1 : 0 : _g_;
       if(1 - _l_){
        var
-        int$ =  /*<<array.ml:443:2>>*/ Stdlib[33],
+        int =  /*<<array.ml:443:2>>*/ Stdlib[33],
         _h_ =
            /*<<array.ml:447:36>>*/ [0,
            cst_out_of_expected_range_0,
-           [0, int$(i), _b_]],
-        _i_ =  /*<<array.ml:446:19>>*/ [0, cst_returned, [0, int$(j), _h_]],
+           [0, int(i), _b_]],
+        _i_ =  /*<<array.ml:446:19>>*/ [0, cst_returned, [0, int(j), _h_]],
         _j_ =
            /*<<array.ml:445:29>>*/ [0,
            cst_Array_shuffle_rand,
-           [0, int$(i + 1 | 0), _i_]],
+           [0, int(i + 1 | 0), _i_]],
         _k_ =  /*<<array.ml:444:2>>*/ Stdlib_String[7].call(null, cst, _j_);
         /*<<array.ml:448:3>>*/ Stdlib[1].call(null, _k_);
       }
@@ -21596,13 +21596,13 @@
       /*<<printexc.ml:71:22>>*/ return cst_Stack_overflow;
     var tag =  /*<<printexc.ml:69:24>>*/ x[1];
     if(tag === Stdlib[4]){
-     var match = x[2], char$ = match[3], line = match[2], file = match[1];
+     var match = x[2], char = match[3], line = match[2], file = match[1];
       /*<<printexc.ml:73:6>>*/ return caml_call5
              (Stdlib_Printf[4].call(null, locfmt),
               file,
               line,
-              char$,
-              char$ + 5 | 0,
+              char,
+              char + 5 | 0,
               cst_Pattern_matching_failed) /*<<printexc.ml:79:50>>*/ ;
     }
     var tag$0 =  /*<<printexc.ml:69:24>>*/ x[1];
@@ -23908,7 +23908,7 @@
        /*<<random.ml:148:55>>*/ return v;
     }
     /*<<random.ml:148:56>>*/ }
-   function int$(s, bound){
+   function int(s, bound){
      /*<<random.ml:154:4>>*/ if(1073741823 >= bound && 0 < bound)
       /*<<random.ml:156:9>>*/ return int_aux(s, bound, max_int31) /*<<random.ml:156:34>>*/ ;
      /*<<random.ml:155:9>>*/ return Stdlib[1].call(null, cst_Random_int) /*<<random.ml:156:34>>*/ ;
@@ -24082,7 +24082,7 @@
                      /*<<random.ml:311:13>>*/ caml_int64_of_int32(min),
                      /*<<random.ml:311:43>>*/ caml_int64_of_int32(max))) /*<<random.ml:311:68>>*/ ;
         };
-   function float$(s, bound){
+   function float(s, bound){
      /*<<random.ml:316:12>>*/ for(;;){
      var
       b = caml_lxm_next(s),
@@ -24117,7 +24117,7 @@
               (Stdlib_Domain[11][2], random_key)) /*<<random.ml:343:52>>*/ ;
    }
    function int$0(bound){
-     /*<<random.ml:344:26>>*/ return  /*<<random.ml:344:53>>*/ int$
+     /*<<random.ml:344:26>>*/ return  /*<<random.ml:344:53>>*/ int
             ( /*<<random.ml:344:26>>*/ caml_call1
               (Stdlib_Domain[11][2], random_key),
              bound) /*<<random.ml:344:59>>*/ ;
@@ -24175,7 +24175,7 @@
              max) /*<<random.ml:356:60>>*/ ;
    }
    function float$0(scale){
-     /*<<random.ml:357:30>>*/ return  /*<<random.ml:357:57>>*/ float$
+     /*<<random.ml:357:30>>*/ return  /*<<random.ml:357:57>>*/ float
             ( /*<<random.ml:357:30>>*/ caml_call1
               (Stdlib_Domain[11][2], random_key),
              scale) /*<<random.ml:357:63>>*/ ;
@@ -24256,7 +24256,7 @@
         make_self_init,
         copy,
         bits,
-        int$,
+        int,
         full_int,
         int_in_range,
         int32,
@@ -24265,7 +24265,7 @@
         nativeint_in_range,
         int64,
         int64_in_range,
-        float$,
+        float,
         bool,
         bits32,
         bits64,
