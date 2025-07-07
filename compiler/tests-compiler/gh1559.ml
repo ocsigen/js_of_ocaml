@@ -195,37 +195,36 @@ let () = my_ref := 2
         my_ref = [0, 1],
         nesting = 1;
        function handle_state(t$1){
-        var t$0 = t$1;
-        for(;;){
-         let t$1 = t$0;
-         var
-          this_will_be_undefined =
-            function(param){
-             a:
-             {if(t$1 && 1 === t$1[1]){var _c_ = 1; break a;} var _c_ = 0;}
-             return _c_ ? 1 : 2;
-            };
-         if(t$0) var i = t$0[1], match = i; else var match = - 1;
-         if(0 === match){
+        a:
+        {
+         var t$0 = t$1;
+         for(;;){
+          let t$1 = t$0;
           var
-           g = function(param){return 2 + this_will_be_undefined(0) | 0;},
-           _b_ = g(0);
-          return g(0) + _b_ | 0;
-         }
-         if(1 === match){
-          if(caml_call2(Stdlib_Int[8], nesting, 0)) return nesting;
-          var
-           g$0 =
+           this_will_be_undefined =
              function(param){
-              return 1 < caml_call1(Stdlib_Random[5], 3)
-                      ? 2 + this_will_be_undefined(0) | 0
-                      : 1;
-             },
-           _c_ = g$0(0);
-          return g$0(0) + _c_ | 0;
+              a:
+              {if(t$1 && 1 === t$1[1]){var _c_ = 1; break a;} var _c_ = 0;}
+              return _c_ ? 1 : 2;
+             };
+          if(t$0) var i = t$0[1], match = i; else var match = - 1;
+          if(0 === match) break;
+          if(1 === match) break a;
+          t$0 = t;
          }
-         t$0 = t;
+         var
+          g = function(param){return 2 + this_will_be_undefined(0) | 0;},
+          _b_ = g(0);
+         return g(0) + _b_ | 0;
         }
+        if(caml_call2(Stdlib_Int[8], nesting, 0)) return nesting;
+        function g$0(param){
+         return 1 < caml_call1(Stdlib_Random[5], 3)
+                 ? 2 + this_will_be_undefined(0) | 0
+                 : 1;
+        }
+        var _c_ = g$0(0);
+        return g$0(0) + _c_ | 0;
        }
        var _a_ = handle_state(init), _b_ = caml_call1(Stdlib_Int[12], _a_);
        caml_call1(Stdlib[46], _b_);

@@ -85,15 +85,7 @@ let rec fun_with_loop acc = function
        return caml_call1
                (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc)));
       var x = param[1];
-      if(1 === x && ! param[2]){
-       var a$0 = [0, acc], i$0 = 0;
-       for(;;){
-        a$0[1] = [0, 1, a$0[1]];
-        var _b_ = i$0 + 1 | 0;
-        if(10 === i$0) return a$0[1];
-        i$0 = _b_;
-       }
-      }
+      if(1 === x && ! param[2]) break;
       var xs = param[2], a = [0, acc], i = 0;
       for(;;){
        a[1] = [0, 1, a[1]];
@@ -104,6 +96,13 @@ let rec fun_with_loop acc = function
       var acc$0 = [0, x, a[1]];
       acc = acc$0;
       param = xs;
+     }
+     var a$0 = [0, acc], i$0 = 0;
+     for(;;){
+      a$0[1] = [0, 1, a$0[1]];
+      var _b_ = i$0 + 1 | 0;
+      if(10 === i$0) return a$0[1];
+      i$0 = _b_;
      }
     }
     //end

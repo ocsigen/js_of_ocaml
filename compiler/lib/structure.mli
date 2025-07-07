@@ -24,3 +24,5 @@ val sort_in_post_order : t -> Addr.t list -> Addr.t list
 val blocks_in_reverse_post_order : t -> Code.Addr.t list
 
 val get_nodes : t -> Addr.Set.t
+
+val norm : program -> program
