@@ -29,6 +29,8 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   --load-shape
+   %{dep:stdlib.cma.js}
    --pretty
    --source-map
    %{dep:lib1.cma}
@@ -40,6 +42,8 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   --load-shape
+   %{dep:stdlib.cma.js}
    --pretty
    --source-map
    %{dep:module1.cmo}
@@ -51,6 +55,12 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   --load-shape
+   %{dep:stdlib.cma.js}
+   --load-shape
+   %{dep:lib1.cma.js}
+   --load-shape
+   %{dep:module1.js}
    --pretty
    --source-map
    %{dep:module2.cmo}
@@ -73,6 +83,8 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   --load-shape
+   %{dep:stdlib.cma.js}
    --pretty
    --source-map
    %{lib:stdlib:std_exit.cmo}
