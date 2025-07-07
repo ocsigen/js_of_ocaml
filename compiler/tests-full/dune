@@ -48,6 +48,7 @@
  (action
   (run
    %{bin:js_of_ocaml}
+   --load-shape %{dep:stdlib.cma.js}
    --pretty
    --debuginfo
    %{dep:shapes.cma}
