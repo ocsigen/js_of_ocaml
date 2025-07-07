@@ -1,0 +1,58 @@
+= Wasm_of_ocaml =
+
+== Overview ==
+
+Wasm_of_ocaml is a compiler from OCaml bytecode programs to WebAssembly.
+It provides an alternative way to run pure OCaml programs in JavaScript environments like browsers and Node.js.
+
+The compiler is provided by the wasm_of_ocaml-compiler package. The <<a_manual chapter="overview" |Js_of_ocaml libraries>> are compatible with this compiler.
+
+== Installation
+
+The easiest way to install wasm_of_ocaml is to use opam.
+{{{opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt}}}
+
+== Usage ==
+
+Your program must first be compiled using the OCaml bytecode compiler
+{{{ocamlc}}}.  JavaScript bindings are provided by the {{{js_of_ocaml}}}
+package and the syntax extension by the {{{js_of_ocaml-ppx}}} package.
+{{{
+      ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx \
+          -linkpkg -o cubes.byte cubes.ml
+}}}
+Then, run the {{{wasm_of_ocaml}}} compiler to produce Wasm code:
+{{{
+      wasm_of_ocaml cubes.byte
+}}}
+This produces a Javascript loading script {{{cube.js}} and a directory
+{{{cube.assets}} containing the Wasm code.
+
+=== with dune ===
+  Dune has native support for wasm_of_ocaml (starting with dune 3.17.0).
+  It supports both standard and separate compilation. See https://dune.readthedocs.io/en/latest/wasmoo.html
+
+== Supported features ==
+
+Most of the OCaml standard library is supported. However,
+  * Most of Sys module is not supported.
+
+Extra libraries distributed with Ocaml (such as Thread) are not
+supported in general. However,
+  * Bigarray: bigarrays are supported using Typed Arrays
+  * Str: supported
+  * Graphics: partially supported using canvas (see also js_of_ocaml-lwt.graphics)
+  * Unix: time related functions are supported
+
+Compared to Js_of_ocaml, dynlink is not supported, and it is not possible to build an OCaml toplevel. The virtual filesystem is not implemented either.
+
+OCaml 5.x code using effect handlers can be compiled in two different ways:
+one can enable the CPS transformation from {{{js_of_ocaml}}} by passing the
+{{{--effects=cps}}} flag. Without the flag {{{wasm_of_ocaml}}} will instead default to
+{{{--effects=jspi}}} and emit code utilizing
+ [[https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md|the JavaScript-Promise Integration extension]].
+The CPS transformation is not the default since the generated code is slower, larger and less readable. On the other hand, the JSPI extension is not yet enabled by default in Web browsers, and performing effects is slower when using this extension.
+
+== Binding with Javascript libraries ==
+
+Js_of_ocaml lets the user bind their code with Javascript libraries by linking in {{{.js}}} files. Similarly, wasm_of_ocaml allows to link in Wasm modules ({{{.wasm}}} or {{{.wat}}} files): see [[wasm_runtime|Writing Wasm primitives]]. If a js_of_ocaml projects uses some {{{external}}} primitives defined in companion {{{.js}}} files, it will need the same primitives to be implemented in Wasm module in order to be build with wasm_of_ocaml.

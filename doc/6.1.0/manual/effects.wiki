@@ -1,0 +1,54 @@
+== Effect handlers ==
+
+Js_of_ocaml supports effect handlers with the {{{--enable=effects}}}
+flag. This is based on partially transforming the program to
+continuation-passing style.
+As a consequence, [[tailcall|tail calls]] could be fully optimized (if CPS transformed).
+This is not the default for now since the generated code can be slower,
+larger and less readable.
+The transformation is based on an analysis to detect parts of the code that cannot involves effects and keep it in direct style.
+The analysis is especially effective on monomorphic code. It is not so effective when higher-order functions are heavily used ({{{Lwt}}}, {{{Async}}}, {{{incremental}}}).
+We hope to improve on this by trying alternative compilation
+strategies.
+
+An alternative CPS transform is provided under the {{{--effects=double-translation}}} option. It keeps a direct-style version of the transformed functions in addition to the CPS version. The choice of running the CPS version is delayed to run time. Since CPS code is usually slower, this can avoid degradations. In addition, one can ensure that some code is run in direct style by using {{{Jsoo_runtime.Effect.assume_no_perform}}}.
+
+=== Dune integration ===
+
+Dune is aware of the {{{--enable effects}}} option. So, you can just add it to the Js_of_ocaml flags {{{(js_of_ocaml (flags ...))}}} wherever you want to use it.
+
+We're still working on dune support for the {{{--effects}}} option. For now, here are two possible setups.
+
+=== Whole dune workspace setup ===
+
+Put the following in a {{{dune}}} (or {{{dune-workspace}}}) file at the root of the workspace
+{{{
+(env
+ (_
+  (js_of_ocaml
+   (flags (:standard --effects=double-translation))
+   (build_runtime_flags (:standard --effects=double-translation)))))
+}}}
+
+With this setup, one can use both separate and whole program compilation.
+
+
+=== Sub directory setup ===
+
+If you want to enable effect handlers for some binaries only, you'll
+have to give-up separate compilation for now using:
+{{{
+(executable
+  (name main)
+  (js_of_ocaml
+   (compilation_mode whole_program)
+   (flags (:standard --effects=double-translation)))
+)
+}}}
+
+Trying to use separate compilation would result in a error while attempting to link the final js file.
+{{{
+js_of_ocaml: Error: Incompatible build info detected while linking.
+ - test6.bc.runtime.js: effects=disabled
+ - .cmphash.eobjs/byte/dune__exe.cmo.js: effects=double-translation
+}}}

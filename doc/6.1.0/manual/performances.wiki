@@ -1,0 +1,42 @@
+== Performances of Js_of_ocaml compiled programs ==
+
+We have compared the running time of OCaml programs executed natively, interpreted by the bytecode interpreter, and executed by a Javascript engine after compilation by Js_of_ocaml.
+With a state of the art Javascript engine (such as Google's V8 and Mozilla's SpiderMonkey), programs often run faster when compiled to JavaScript than with the OCaml bytecode interpreter.
+Benchmarks were run in November 2022 with engines available in Ubuntu 22.04 (V8 : 8.4.371.19-node.16, SpiderMonkey: JavaScript-C91.10.0)
+
+Exceptions are very expansive preventing some benchmarks to finish in resonable times.
+String operations are also slow (splay), as OCaml strings cannot be mapped directly to Javascript immutable UTF-16 strings.
+Memory allocation might also be less efficient (splay, taku).
+
+<<a_img src="performances/time.png" | Relative execution times >>
+
+Most of the time, the generated Javascript code is smaller than the bytecode file.  The benchmarks are all small programs that does not make much use of any library.  The generated code remains smaller than the bytecode file for large programs (ocamlc, js_of_ocaml).
+The size gain can be much larger for programs that rely more on external libraries, thanks to dead code elimination.
+
+<<a_img src="performances/size.png" | Relative size >>
+
+
+Comparing execution times between handwritten JavaScript and generated one shows that results are very implementation dependent.
+
+<<a_img src="performances/nativejs.png" | Relative execution times >>
+
+See how various js_of_ocaml options affect the generated size and execution times.
+
+<<a_img src="performances/size-optim.png" | Relative size >>
+<<a_img src="performances/time-optim.png" | Relative execution times >>
+
+We show the performance impact of supporting effect handlers. The code
+is about 20% larger. The impact on compressed code is actually much
+lower since we are adding a lot of function definitions, which are
+rather verbose in JavaScript but compress well: the compressed code
+size hardly increases for large files compressed with {{{bzip2}}}.
+Code that heavily uses {{{Lwt}}}, {{{Async}}} or {{{Incremental}}} can
+see a larger size increase (up to 45% larger, or 7% larger when
+compressed). There is almost no speed impact for small monomorphic
+programs. We estimate that the slowdown will usually be below 30%,
+though it can be larger for code that heavily use higher-order
+functions and polymorphism ({{{Lwt}}} code, for instance).
+
+<<a_img src="performances/size-effects.png" | Relative size >>
+<<a_img src="performances/size-bzip2-effects.png" | Relative size (compressed with bzip2) >>
+<<a_img src="performances/time-effects.png" | Relative execution times >>

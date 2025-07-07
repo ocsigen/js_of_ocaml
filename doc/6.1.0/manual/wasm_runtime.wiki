@@ -1,0 +1,92 @@
+= Writing Wasm primitives
+
+User-defined primitives can be implemented by writing Wasm modules.
+This modules (".wat" extension for text modules and ".wasm" extension
+for binary modules) can be passed on the command-line.
+With dune, you can use the option
+{{{(wasm_of_ocaml (wasm_files ...))}}} to specify these runtime files.
+
+It still makes sense to link JavaScript files to specify the possible
+side-effects of some primitives (see <<a_manual chapter="linker" |Link
+with JavaScript code>>), or to implement some functionalities in
+JavaScript.
+With dune, you can use the option
+{{{(wasm_of_ocaml (javascript_files ...))}}} to specify these files.
+
+== Data representation ==
+
+The type {{{(ref eq)}}} is used for all OCaml values.
+Integers, chars, booleans and constant constructors are mapped to
+{{{(ref i31)}}}.
+
+We use the following types for blocks, strings (and bytes), floats,
+float arrays, and Javascript values. The first field of a block is its
+tag, of type {{{(ref i31)}}}.
+{{{
+(type $block (array (mut (ref eq))))
+(type $bytes (array (mut i8)))
+(type $float (struct (field f64)))
+(type $float_array (array (mut f64)))
+(type $js (struct (ref null any)))
+}}}
+
+You can import the following functions to access or allocate integers of type int32, int64, and nativeint.
+{{{
+(import "env" "Int32_val"
+   (func $Int32_val (param (ref eq)) (result i32)))
+(import "env" "caml_copy_int32"
+   (func $caml_copy_int32 (param i32) (result (ref eq))))
+(import "env" "Nativeint_val"
+   (func $Nativeint_val (param (ref eq)) (result i32)))
+(import "env" "caml_copy_nativeint"
+   (func $caml_copy_int32 (param i32) (result (ref eq))))
+(import "env" "Int64_val"
+   (func $Int64_val (param (ref eq)) (result i64)))
+(import "env" "caml_copy_int64"
+   (func $caml_copy_int64 (param i64) (result (ref eq))))
+}}}
+
+== Preprocessor ==
+
+The Wasm text files are passed through a preprocessor. You can run the processor manually: {{{wasm_of_ocaml pp test.wasm}}}.
+
+This preprocessing step allows optional compilations of pieces of code depending on the version of the compiler.
+{{{
+(@if (>= ocaml_version  (5 2 0))
+   (@then ...)
+   (@else ...))
+}}}
+To form conditional expressions, the following operators are available:
+- comparisons: {{{=}}}, {{{>}}}, {{{>=}}}, {{{<}}}, {{{<=}}}, {{{<>}}};
+- boolean operators: {{{and}}}, {{{or}}}, {{{not}}}
+
+It also provides some syntactic sugar for strings and ASCII characters. The expression {{{(@string "ab")}}} is expanded into {{{(array.new_fixed $bytes 2 (i32.const 97) (i32.const 98))}}}. The statement {{{(@string $s "ab")}}} is an abbreviation for {{{(global $s (ref eq) (@string "ab"))}}}. The expression {{{(@char "a")}}} is expanded to {{{(i32.const 92)}}}.
+
+To provide a better debugging experience, the function export name is used to name functions with no explicit id: {{{(func (export "foo") ...)}}}} is expanded into {{{(func $foo (export "foo") ...)}}}}.
+
+== Implementing primitives ==
+
+You define a primitive by exporting a Wasm function with parameters and return value of type {{{(ref eq)}}}.
+{{{
+(func (export "input") (param $channel (ref eq)) (param $buffer (ref eq)) (param $offset (ref eq)) (param $length (ref eq)) (result (ref eq))
+  ...
+)
+}}}
+
+== Linking with JavaScript code ==
+
+If you need to use JavaScript functions to implement your Wasm primitives, you can import them using the {{{"js"}}} namespace:
+{{{
+(import "js" "add" (func $add (param f64) (param f64) (result f64)))
+}}}
+The <<a_manual chapter="linker" |Js_of_ocaml linker>> is used include them in the generated code.
+
+== Interfacing with JavaScript ==
+
+You can use functions defined in `runtime/wasm/jslib.wat` for conversions between JavaScript values and OCaml values (for instance, the function {{{caml_js_to_float}}} converts a JavaScript to an OCaml float) and to perform various JavaScript operations such as property access (function {{{caml_js_get}}} below) or function call.
+{{{
+(import "env" "caml_js_to_float"
+   (func $caml_js_to_float (param (ref eq)) (result (ref eq))))
+(import "env" "caml_js_get"
+   (func $caml_js_get (param (ref eq)) (param (ref eq)) (result (ref eq))))
+}}}
