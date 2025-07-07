@@ -1,3 +1,8 @@
+# 6.1.dev
+
+## Bug fixes
+* Compiler: Fix shape loading (#2074)
+
 # 6.1.0 (2025-07-01) - Lille
 
 ## Features/Changes
