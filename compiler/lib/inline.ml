@@ -237,17 +237,39 @@ let sum ~context f pc =
     blocks
     0
 
-let rec block_size ~recurse ~context { branch; body; _ } =
+let rec block_size ~inline_comparisons ~recurse ~context { branch; body; _ } =
   List.fold_left
     ~f:(fun n i ->
       match i with
       | Event _ -> n
+      | Let
+          ( _
+          , Prim
+              ( Extern
+                  ( "caml_lessthan"
+                  | "caml_lessequal"
+                  | "caml_greaterthan"
+                  | "caml_greaterequal"
+                  | "caml_equal"
+                  | "caml_notequal" )
+              , _ ) )
+        when inline_comparisons ->
+          (* Bias toward inlining functions containing polymorphic
+             comparisons, such as min and max, in the hope that
+             polymorphic comparisons can be specialized. *)
+          n - 1
       | Let (f, Closure (_, (pc, _), _)) ->
           if recurse
           then
             match Var.Map.find f context.env with
-            | exception Not_found -> size ~recurse ~context pc + n + 1
-            | info -> cache ~info info.full_size (size ~recurse:true ~context) + n + 1
+            | exception Not_found -> size ~inline_comparisons ~recurse ~context pc + n + 1
+            | info ->
+                cache
+                  ~info
+                  info.full_size
+                  (size ~inline_comparisons ~recurse:true ~context)
+                + n
+                + 1
           else n + 1
       | _ -> n + 1)
     ~init:
@@ -257,13 +279,21 @@ let rec block_size ~recurse ~context { branch; body; _ } =
       | _ -> 0)
     body
 
-and size ~recurse ~context = sum ~context (block_size ~recurse ~context)
+and size ~inline_comparisons ~recurse ~context =
+  sum ~context (block_size ~inline_comparisons ~recurse ~context)
 
 (** Size of the function body *)
-let body_size ~context info = cache ~info info.body_size (size ~recurse:false ~context)
+let body_size ~context info =
+  let inline_comparisons =
+    match Config.target () with
+    | `JavaScript -> false
+    | `Wasm -> true
+  in
+  cache ~info info.body_size (size ~inline_comparisons ~recurse:false ~context)
 
 (** Size of the function, including the size of the closures it contains *)
-let full_size ~context info = cache ~info info.full_size (size ~recurse:true ~context)
+let full_size ~context info =
+  cache ~info info.full_size (size ~inline_comparisons:false ~recurse:true ~context)
 
 let closure_count_uncached ~context =
   sum ~context (fun { body; _ } ->
