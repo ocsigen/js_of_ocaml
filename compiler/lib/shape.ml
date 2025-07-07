@@ -139,7 +139,7 @@ module Store = struct
   let load' fn =
     let l = file_lines_bin fn in
     List.iter l ~f:(fun s ->
-        match String.drop_prefix ~prefix:"//#shape: " s with
+        match String.drop_prefix ~prefix:"//# shape: " s with
         | None -> ()
         | Some name_n_shape -> (
             match String.lsplit2 name_n_shape ~on:':' with
