@@ -10,6 +10,8 @@ jobs:
   lint-opam:
     runs-on: ubuntu-latest
     steps:
+      - name: Update apt cache
+        run: sudo apt-get update
       - name: Checkout tree
         uses: actions/checkout@v4
       - name: Set-up OCaml
