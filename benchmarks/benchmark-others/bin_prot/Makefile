@@ -7,10 +7,13 @@ SHELL=/usr/bin/env bash -o pipefail
 
 bench:
 	@date -u +"%FT%TZ - $(NAME)/$(SUBNAME): starting"
-	dune build --profile release --root .
-	node _build/default/bench.bc.js 400000
-	$(MAKE) perform COMPILER=js_of_ocaml SCRIPT=_build/default/bench.bc.js KIND=js
-	$(MAKE) perform COMPILER=wasm_of_ocaml SCRIPT=_build/default/bench.bc.wasm.js KIND=wasm
+	mkdir -p ../../../../janestreet/bench/bin_prot/
+	cp -f dune bench.ml ../../../../janestreet/bench/bin_prot/
+	cd ../../../../janestreet/bench/bin_prot && dune build --root ../.. --profile release bench/bin_prot/bench.bc.js bench/bin_prot/bench.bc.wasm.js
+	cp -rf ../../../../janestreet/_build/default/bench/bin_prot/bench.bc* .
+	node bench.bc.js 400000
+	$(MAKE) perform COMPILER=js_of_ocaml SCRIPT=bench.bc.js KIND=js
+	$(MAKE) perform COMPILER=wasm_of_ocaml SCRIPT=bench.bc.wasm.js KIND=wasm
 	@date -u +"%FT%TZ - $(NAME)/$(SUBNAME): done"
 
 perform:
