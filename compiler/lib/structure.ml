@@ -277,3 +277,67 @@ let build_graph blocks pc =
   let g = build_graph blocks pc in
   shrink_loops blocks g;
   g
+
+(* Ensure that all loops have a predecessor block. Function
+   shrink_loops assumes this. *)
+let norm p =
+  let free_pc = ref p.free_pc in
+  let visited = BitSet.create' p.free_pc in
+  let rec mark_used ~function_start pc =
+    if not (BitSet.mem visited pc)
+    then (
+      if not function_start then BitSet.set visited pc;
+      let block = Addr.Map.find pc p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, Closure (_, (pc', _), _)) -> mark_used ~function_start:true pc'
+          | _ -> ())
+        block.body;
+      fold_children p.blocks pc (fun pc' () -> mark_used ~function_start:false pc') ())
+  in
+  mark_used ~function_start:true p.start;
+  let closure_need_update = function
+    | Let (_, Closure (_, (pc, _), _)) -> BitSet.mem visited pc
+    | _ -> false
+  in
+  let rewrite_cont cont blocks =
+    let npc = !free_pc in
+    incr free_pc;
+    let body =
+      let b = Addr.Map.find (fst cont) blocks in
+      match b.body with
+      | (Event _ as e) :: _ -> [ e ]
+      | _ -> []
+    in
+    let blocks = Addr.Map.add npc { body; params = []; branch = Branch cont } blocks in
+    (npc, []), blocks
+  in
+  let blocks =
+    Addr.Map.fold
+      (fun pc block blocks ->
+        if List.exists block.body ~f:closure_need_update
+        then
+          let blocks = ref blocks in
+          let body =
+            List.map block.body ~f:(function
+              | Let (x, Closure (params, cont, loc)) as i when closure_need_update i ->
+                  let cont', blocks' = rewrite_cont cont !blocks in
+                  blocks := blocks';
+                  Let (x, Closure (params, cont', loc))
+              | i -> i)
+          in
+          Addr.Map.add pc { block with body } !blocks
+        else blocks)
+      p.blocks
+      p.blocks
+  in
+  if BitSet.mem visited p.start
+  then (
+    let npc = !free_pc in
+    incr free_pc;
+    let blocks =
+      Addr.Map.add npc { body = []; params = []; branch = Branch (p.start, []) } blocks
+    in
+    { blocks; free_pc = !free_pc; start = npc })
+  else { blocks; free_pc = !free_pc; start = p.start }

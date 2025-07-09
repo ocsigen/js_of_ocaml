@@ -2399,6 +2399,7 @@ let f
     ~should_export
     ~warn_on_unhandled_effect
     ~deadcode_sentinal =
+  let p = Structure.norm p in
   let mutated_vars = Freevars.f_mutable p in
   let freevars = Freevars.f p in
   let t' = Timer.make () in
