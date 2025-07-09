@@ -374,6 +374,8 @@ let plus_int x y =
 
 let bool e = J.ECond (e, one, zero)
 
+let bool_not e = J.ECond (e, zero, one)
+
 (****)
 
 let source_location loc =
@@ -1666,6 +1668,24 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               | _ -> J.EBin (J.Plus, ca, cb)
             in
             return (add ca cb)
+        | Extern "%phys_equal", [ x; y ] ->
+            let* cx = access' ~ctx x in
+            let* cy = access' ~ctx y in
+            return
+              (bool
+                 (J.call
+                    (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                    [ cx; cy ]
+                    loc))
+        | Extern "%not_phys_equal", [ x; y ] ->
+            let* cx = access' ~ctx x in
+            let* cy = access' ~ctx y in
+            return
+              (bool_not
+                 (J.call
+                    (J.dot (s_var "Object") (Utf8_string.of_string_exn "is"))
+                    [ cx; cy ]
+                    loc))
         | Extern name_orig, l -> (
             let name = Primitive.resolve name_orig in
             match internal_prim name with

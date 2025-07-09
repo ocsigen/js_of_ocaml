@@ -3656,7 +3656,7 @@
      var
       l =  /*<<list.ml:194:13>>*/ param[2],
       a = param[1],
-      _e_ =  /*<<list.ml:196:12>>*/ a === x ? 1 : 0;
+      _e_ =  /*<<list.ml:196:12>>*/ Object.is(a, x) ? 1 : 0;
      if(_e_) return _e_;
      param = l;
     }
@@ -3700,7 +3700,8 @@
       match = param[1],
       b = match[2],
       a = match[1];
-      /*<<list.ml:208:16>>*/ if(a === x)  /*<<list.ml:208:31>>*/ return b;
+      /*<<list.ml:208:16>>*/ if(Object.is(a, x))
+       /*<<list.ml:208:31>>*/ return b;
       /*<<list.ml:208:16>>*/ param = l;
     }
     /*<<list.ml:208:46>>*/ }
@@ -3713,7 +3714,7 @@
       match = param[1],
       b = match[2],
       a = match[1];
-      /*<<list.ml:212:16>>*/ if(a === x)
+      /*<<list.ml:212:16>>*/ if(Object.is(a, x))
        /*<<list.ml:212:31>>*/ return [0, b];
       /*<<list.ml:212:16>>*/ param = l;
     }
@@ -3737,7 +3738,7 @@
      var
       l =  /*<<list.ml:218:17>>*/ param[2],
       a = param[1][1],
-      _e_ =  /*<<list.ml:220:19>>*/ a === x ? 1 : 0;
+      _e_ =  /*<<list.ml:220:19>>*/ Object.is(a, x) ? 1 : 0;
      if(_e_) return _e_;
      param = l;
     }
@@ -3752,7 +3753,7 @@
    function remove_assq(x, param){
      /*<<list.ml:227:20>>*/ if(! param)  /*<<list.ml:228:10>>*/ return 0;
     var l =  /*<<list.ml:227:20>>*/ param[2], pair = param[1], a = pair[1];
-     /*<<list.ml:229:27>>*/ return a === x
+     /*<<list.ml:229:27>>*/ return Object.is(a, x)
             ? l
             : [0, pair,  /*<<list.ml:229:57>>*/ remove_assq(x, l)] /*<<list.ml:229:72>>*/ ;
    }
@@ -6582,7 +6583,7 @@
     var
      b =  /*<<string.ml:108:10>>*/ bos(s),
      b$0 =  /*<<string.ml:111:11>>*/ Stdlib_Bytes[87].call(null, b);
-     /*<<string.ml:115:2>>*/ return b === b$0
+     /*<<string.ml:115:2>>*/ return Object.is(b, b$0)
             ? s
             :  /*<<string.ml:115:25>>*/ bts(b$0) /*<<string.ml:115:31>>*/ ;
    }
@@ -7486,7 +7487,7 @@
      i =  /*<<array.ml:266:2>>*/ 0;
     for(;;){
       /*<<array.ml:263:4>>*/ if(i === n)  /*<<array.ml:263:18>>*/ return 0;
-      /*<<array.ml:264:33>>*/ if(x === a[i + 1])
+      /*<<array.ml:264:33>>*/ if(Object.is(x, a[i + 1]))
        /*<<array.ml:264:39>>*/ return 1;
      var i$0 =  /*<<array.ml:265:9>>*/ i + 1 | 0;
      i = i$0;
@@ -9506,7 +9507,7 @@
 
 //# unitInfo: Provides: Stdlib__Lexing
 //# unitInfo: Requires: Stdlib, Stdlib__Bytes, Stdlib__Int, Stdlib__Sys
-//# shape: Stdlib__Lexing:[N,F(2)*,F(2),F(2)*,F(2),F(2),F(1)*,F(1),F(2),F(1)*,F(1)*,F(1)*,F(1)*,F(1),F(1),F(3),F(3),F(2),F(2),F(3),F(3)]
+//# shape: Stdlib__Lexing:[N,F(2)*,F(2),F(2)*,F(2),F(2),F(1),F(1),F(2),F(1)*,F(1)*,F(1)*,F(1)*,F(1),F(1),F(3),F(3),F(2),F(2),F(3),F(3)]
 (function
   (globalThis){
    "use strict";
@@ -9536,7 +9537,7 @@
      result =
         /*<<lexing.ml:65:15>>*/ runtime.caml_lex_engine(tbl, state, buf),
      _i_ =  /*<<lexing.ml:66:2>>*/ 0 <= result ? 1 : 0,
-     _j_ = _i_ ? buf[12] !== dummy_pos ? 1 : 0 : _i_;
+     _j_ = _i_ ? Object.is(buf[12], dummy_pos) ? 0 : 1 : _i_;
     if(_j_){
       /*<<lexing.ml:66:53>>*/ buf[11] = buf[12];
      var _h_ =  /*<<lexing.ml:68:4>>*/ buf[12];
@@ -9549,7 +9550,7 @@
      result =
         /*<<lexing.ml:75:15>>*/ runtime.caml_new_lex_engine(tbl, state, buf),
      _g_ =  /*<<lexing.ml:76:2>>*/ 0 <= result ? 1 : 0,
-     _h_ = _g_ ? buf[12] !== dummy_pos ? 1 : 0 : _g_;
+     _h_ = _g_ ? Object.is(buf[12], dummy_pos) ? 0 : 1 : _g_;
     if(_h_){
       /*<<lexing.ml:76:53>>*/ buf[11] = buf[12];
      var _f_ =  /*<<lexing.ml:78:4>>*/ buf[12];
@@ -9692,7 +9693,7 @@
     return 0;
     /*<<lexing.ml:189:65>>*/ }
    function with_positions(lexbuf){
-     /*<<lexing.ml:191:28>>*/ return lexbuf[12] !== dummy_pos ? 1 : 0;
+     /*<<lexing.ml:191:28>>*/ return Object.is(lexbuf[12], dummy_pos) ? 0 : 1;
     /*<<lexing.ml:191:58>>*/ }
    function lexeme(lexbuf){
     var len =  /*<<lexing.ml:194:2>>*/ lexbuf[6] - lexbuf[5] | 0;
@@ -9737,7 +9738,7 @@
    function new_line(lexbuf){
     var
      lcp =  /*<<lexing.ml:228:2>>*/ lexbuf[12],
-     _a_ =  /*<<lexing.ml:229:2>>*/ lcp !== dummy_pos ? 1 : 0,
+     _a_ =  /*<<lexing.ml:229:2>>*/ Object.is(lcp, dummy_pos) ? 0 : 1,
      _b_ =
        _a_
         ? (lexbuf[12] = [0, lcp[1], lcp[2] + 1 | 0, lcp[4], lcp[4]], 0)
@@ -9748,7 +9749,7 @@
      /*<<lexing.ml:241:2>>*/ lb[6] = 0;
      /*<<lexing.ml:242:2>>*/ lb[4] = 0;
     var lcp =  /*<<lexing.ml:243:2>>*/ lb[12];
-     /*<<lexing.ml:244:2>>*/ if(lcp !== dummy_pos)
+     /*<<lexing.ml:244:2>>*/ if(! Object.is(lcp, dummy_pos))
       /*<<lexing.ml:245:4>>*/ lb[12] =
       [0, lcp[1], zero_pos[2], zero_pos[3], zero_pos[4]];
      /*<<lexing.ml:246:2>>*/ lb[3] = 0;
@@ -10150,12 +10151,12 @@
           /*<<set.ml:136:10>>*/ if(0 === c)  /*<<set.ml:136:24>>*/ return t;
           /*<<set.ml:137:10>>*/ if(0 <= c){
           var rr =  /*<<set.ml:141:21>>*/ add(x, r);
-           /*<<set.ml:142:12>>*/ return r === rr
+           /*<<set.ml:142:12>>*/ return Object.is(r, rr)
                   ? t
                   :  /*<<set.ml:142:35>>*/ bal(l, v, rr) /*<<set.ml:142:45>>*/ ;
          }
          var ll =  /*<<set.ml:138:21>>*/ add(x, l);
-          /*<<set.ml:139:12>>*/ return l === ll
+          /*<<set.ml:139:12>>*/ return Object.is(l, ll)
                  ? t
                  :  /*<<set.ml:139:35>>*/ bal(ll, v, r) /*<<set.ml:142:45>>*/ ;
         }
@@ -10325,12 +10326,12 @@
          }
           /*<<set.ml:259:12>>*/ if(0 <= c){
           var rr =  /*<<set.ml:264:23>>*/ remove(x, t2);
-           /*<<set.ml:265:14>>*/ return t2 === rr
+           /*<<set.ml:265:14>>*/ return Object.is(t2, rr)
                   ? t
                   :  /*<<set.ml:266:19>>*/ bal(t1, v, rr) /*<<set.ml:266:29>>*/ ;
          }
          var ll =  /*<<set.ml:260:23>>*/ remove(x, t1);
-          /*<<set.ml:261:14>>*/ return t1 === ll
+          /*<<set.ml:261:14>>*/ return Object.is(t1, ll)
                  ? t
                  :  /*<<set.ml:262:19>>*/ bal(ll, v, t2) /*<<set.ml:266:29>>*/ ;
         }
@@ -10421,7 +10422,7 @@
          for(;;){
           if(s1 && s2){
            var r1 = s1[3], v1 = s1[2], l1 = s1[1];
-            /*<<set.ml:322:10>>*/ if(s1 === s2)
+            /*<<set.ml:322:10>>*/ if(Object.is(s1, s2))
              /*<<set.ml:322:27>>*/ return 0;
            var match =  /*<<set.ml:323:21>>*/ split_bis(v1, s2);
             /*<<set.ml:323:36>>*/ if(! match)  /*<<set.ml:325:23>>*/ return 0;
@@ -10605,7 +10606,7 @@
           r$0 =  /*<<set.ml:400:19>>*/ filter(p, r);
           /*<<set.ml:401:10>>*/ if(! pv)
            /*<<set.ml:403:15>>*/ return concat(l$0, r$0) /*<<set.ml:403:27>>*/ ;
-          /*<<set.ml:402:12>>*/ if(l === l$0 && r === r$0)
+          /*<<set.ml:402:12>>*/ if(Object.is(l, l$0) && Object.is(r, r$0))
            /*<<set.ml:402:35>>*/ return t;
           /*<<set.ml:402:42>>*/ return join(l$0, v, r$0) /*<<set.ml:403:27>>*/ ;
         }
@@ -10827,7 +10828,8 @@
           l$0 =  /*<<set.ml:530:18>>*/ map(f, l),
           v$0 =  /*<<set.ml:531:18>>*/ caml_call1(f, v),
           r$0 =  /*<<set.ml:532:18>>*/ map(f, r);
-          /*<<set.ml:533:9>>*/ if(l === l$0 && v === v$0 && r === r$0)
+          /*<<set.ml:533:9>>*/ if
+          (Object.is(l, l$0) && Object.is(v, v$0) && Object.is(r, r$0))
            /*<<set.ml:533:47>>*/ return t;
           /*<<set.ml:534:14>>*/ return try_join(l$0, v$0, r$0) /*<<set.ml:534:31>>*/ ;
         }
@@ -10842,7 +10844,8 @@
           t2 =  /*<<set.ml:548:18>>*/ filter_map(f, r);
           /*<<set.ml:549:9>>*/ if(v$0){
           var v$1 = v$0[1];
-           /*<<set.ml:551:14>>*/ if(l === t1 && v === v$1 && r === t2)
+           /*<<set.ml:551:14>>*/ if
+           (Object.is(l, t1) && Object.is(v, v$1) && Object.is(r, t2))
             /*<<set.ml:551:52>>*/ return t;
            /*<<set.ml:552:19>>*/ return try_join(t1, v$1, t2) /*<<set.ml:555:12>>*/ ;
          }
@@ -11218,15 +11221,17 @@
           l = m[1],
           c =  /*<<map.ml:129:18>>*/ caml_call2(Ord[1], x, v);
           /*<<map.ml:130:10>>*/ if(0 === c)
-           /*<<map.ml:131:12>>*/ return d === data ? m : [0, l, x, data, r, h] /*<<map.ml:137:47>>*/ ;
+           /*<<map.ml:131:12>>*/ return Object.is(d, data)
+                  ? m
+                  : [0, l, x, data, r, h] /*<<map.ml:137:47>>*/ ;
           /*<<map.ml:132:15>>*/ if(0 <= c){
           var rr =  /*<<map.ml:136:21>>*/ add(x, data, r);
-           /*<<map.ml:137:12>>*/ return r === rr
+           /*<<map.ml:137:12>>*/ return Object.is(r, rr)
                   ? m
                   :  /*<<map.ml:137:35>>*/ bal(l, v, d, rr) /*<<map.ml:137:47>>*/ ;
          }
          var ll =  /*<<map.ml:133:21>>*/ add(x, data, l);
-          /*<<map.ml:134:12>>*/ return l === ll
+          /*<<map.ml:134:12>>*/ return Object.is(l, ll)
                  ? m
                  :  /*<<map.ml:134:35>>*/ bal(ll, v, d, r) /*<<map.ml:137:47>>*/ ;
         }
@@ -11494,12 +11499,12 @@
            /*<<map.ml:272:24>>*/ return _d_(l, r) /*<<map.ml:276:70>>*/ ;
           /*<<map.ml:273:15>>*/ if(0 <= c){
           var rr =  /*<<map.ml:276:21>>*/ remove(x, r);
-           /*<<map.ml:276:35>>*/ return r === rr
+           /*<<map.ml:276:35>>*/ return Object.is(r, rr)
                   ? m
                   :  /*<<map.ml:276:58>>*/ bal(l, v, d, rr) /*<<map.ml:276:70>>*/ ;
          }
          var ll =  /*<<map.ml:274:21>>*/ remove(x, l);
-          /*<<map.ml:274:35>>*/ return l === ll
+          /*<<map.ml:274:35>>*/ return Object.is(l, ll)
                  ? m
                  :  /*<<map.ml:274:58>>*/ bal(ll, v, d, r) /*<<map.ml:276:70>>*/ ;
         }
@@ -11523,16 +11528,18 @@
            /*<<map.ml:287:28>>*/ if(! match)
             /*<<map.ml:288:22>>*/ return _d_(l, r) /*<<map.ml:296:47>>*/ ;
           var data =  /*<<map.ml:287:28>>*/ match[1];
-           /*<<map.ml:290:16>>*/ return d === data ? m : [0, l, x, data, r, h] /*<<map.ml:296:47>>*/ ;
+           /*<<map.ml:290:16>>*/ return Object.is(d, data)
+                  ? m
+                  : [0, l, x, data, r, h] /*<<map.ml:296:47>>*/ ;
          }
           /*<<map.ml:291:19>>*/ if(0 <= c){
           var rr =  /*<<map.ml:295:21>>*/ update(x, f, r);
-           /*<<map.ml:296:12>>*/ return r === rr
+           /*<<map.ml:296:12>>*/ return Object.is(r, rr)
                   ? m
                   :  /*<<map.ml:296:35>>*/ bal(l, v, d, rr) /*<<map.ml:296:47>>*/ ;
          }
          var ll =  /*<<map.ml:292:21>>*/ update(x, f, l);
-          /*<<map.ml:293:12>>*/ return l === ll
+          /*<<map.ml:293:12>>*/ return Object.is(l, ll)
                  ? m
                  :  /*<<map.ml:293:35>>*/ bal(ll, v, d, r) /*<<map.ml:296:47>>*/ ;
         }
@@ -11829,7 +11836,7 @@
           r$0 =  /*<<map.ml:434:19>>*/ filter(p, r);
           /*<<map.ml:435:10>>*/ if(! pvd)
            /*<<map.ml:436:15>>*/ return concat(l$0, r$0) /*<<map.ml:436:27>>*/ ;
-          /*<<map.ml:435:22>>*/ if(l === l$0 && r === r$0)
+          /*<<map.ml:435:22>>*/ if(Object.is(l, l$0) && Object.is(r, r$0))
            /*<<map.ml:435:45>>*/ return m;
           /*<<map.ml:435:52>>*/ return join(l$0, v, d, r$0) /*<<map.ml:436:27>>*/ ;
         }
@@ -13347,14 +13354,15 @@
      idx = param[1],
      st =  /*<<domain.ml:159:13>>*/ maybe_grow(idx),
      oldval =  /*<<domain.ml:160:14>>*/ caml_check_bound(st, idx)[idx + 1];
-     /*<<domain.ml:161:26>>*/ if(oldval !== none)
+     /*<<domain.ml:161:26>>*/ if
+     (!  /*<<domain.ml:74:22>>*/ Object.is(oldval, none))
       /*<<domain.ml:75:25>>*/ return oldval;
     var
      new_obj =  /*<<domain.ml:164:18>>*/ caml_call1(init, 0),
      st$0 =  /*<<domain.ml:175:6>>*/ caml_domain_dls_get(0),
      curval =  /*<<domain.ml:152:17>>*/ caml_check_bound(st$0, idx)[idx + 1],
      _b_ =
-        /*<<domain.ml:153:4>>*/ curval === oldval
+        /*<<domain.ml:153:4>>*/ Object.is(curval, oldval)
         ? (st$0[idx + 1] = new_obj, 1)
         : 0;
      /*<<domain.ml:176:49>>*/ if(_b_)
@@ -13362,7 +13370,8 @@
     var
      updated_obj =
         /*<<domain.ml:181:26>>*/ caml_check_bound(st$0, idx)[idx + 1];
-     /*<<domain.ml:182:38>>*/ if(updated_obj !== none)
+     /*<<domain.ml:182:38>>*/ if
+     (!  /*<<domain.ml:74:22>>*/ Object.is(updated_obj, none))
       /*<<domain.ml:75:25>>*/ return updated_obj;
      /*<<domain.ml:184:13>>*/ throw caml_maybe_attach_backtrace
            ([0, Assert_failure, _a_], 1);
@@ -26101,9 +26110,10 @@
        case 4:
         var
          _ah_ =
-            /*<<format.ml:393:4>>*/ state[10] !== (state[6] - state[9] | 0)
-            ? 1
-            : 0;
+            /*<<format.ml:393:4>>*/ Object.is
+             (state[10], state[6] - state[9] | 0)
+            ? 0
+            : 1;
         if(! _ah_) return _ah_;
         var
          match$1 =
@@ -30517,7 +30527,7 @@
     }
     /*<<camlinternalOO.ml:189:41>>*/ }
    function to_list(arr){
-     /*<<camlinternalOO.ml:192:2>>*/ return arr === 0
+     /*<<camlinternalOO.ml:192:2>>*/ return Object.is(arr, 0)
             ? 0
             :  /*<<camlinternalOO.ml:192:37>>*/ Stdlib_Array
                [10].call
@@ -30749,7 +30759,7 @@
     return 0;
     /*<<camlinternalOO.ml:285:45>>*/ }
    function create_table(public_methods){
-     /*<<camlinternalOO.ml:299:2>>*/ if(public_methods === 0)
+     /*<<camlinternalOO.ml:299:2>>*/ if(Object.is(public_methods, 0))
       /*<<camlinternalOO.ml:299:40>>*/ return new_table([0]) /*<<camlinternalOO.ml:309:7>>*/ ;
     var
      tags =
@@ -30948,7 +30958,7 @@
        /*<<camlinternalOO.ml:412:14>>*/ if(! tables$1)
         /*<<camlinternalOO.ml:413:13>>*/ throw caml_maybe_attach_backtrace
               ([0, Assert_failure, _d_], 1);
-       /*<<camlinternalOO.ml:435:21>>*/ if(tables$1[1] === key) break;
+       /*<<camlinternalOO.ml:435:21>>*/ if(Object.is(tables$1[1], key)) break;
        /*<<camlinternalOO.ml:418:15>>*/ if(! tables$1)
         /*<<camlinternalOO.ml:419:13>>*/ throw caml_maybe_attach_backtrace
               ([0, Assert_failure, _f_], 1);
@@ -31323,7 +31333,7 @@
            fn =
              function(x){
               var fn =  /*<<camlinternalMod.ml:28:38>>*/ modu[i$1 + 1];
-               /*<<camlinternalMod.ml:29:9>>*/ if(fn$0 === fn)
+               /*<<camlinternalMod.ml:29:9>>*/ if(Object.is(fn$0, fn))
                 /*<<camlinternalMod.ml:30:11>>*/ throw caml_maybe_attach_backtrace
                       ([0, Stdlib[15], loc], 1);
                /*<<camlinternalMod.ml:32:11>>*/ return caml_call1(fn, x) /*<<camlinternalMod.ml:32:16>>*/ ;
@@ -31339,7 +31349,7 @@
             [246,
              function(param){
               var l =  /*<<camlinternalMod.ml:37:28>>*/ modu[i$0 + 1];
-               /*<<camlinternalMod.ml:38:11>>*/ if(l$0 === l)
+               /*<<camlinternalMod.ml:38:11>>*/ if(Object.is(l$0, l))
                 /*<<camlinternalMod.ml:39:13>>*/ throw caml_maybe_attach_backtrace
                       ([0, Stdlib[15], loc], 1);
               var _h_ =  /*<<camlinternalMod.ml:41:13>>*/ caml_obj_tag(l);
@@ -31758,7 +31768,8 @@
    }
    function unsafe_get(arr, dummy, i, length){
     var v =  /*<<dynarray.ml:438:10>>*/ arr[i + 1];
-     /*<<dynarray.ml:439:27>>*/ return v === dummy
+     /*<<dynarray.ml:439:27>>*/ return  /*<<dynarray.ml:229:23>>*/ Object.is
+             (v, dummy)
             ?  /*<<dynarray.ml:440:7>>*/ missing_element(i, length)
             : v /*<<dynarray.ml:441:25>>*/ ;
    }
@@ -31804,7 +31815,8 @@
     var
      v =  /*<<dynarray.ml:479:10>>*/ caml_check_bound(param[2], i)[i + 1],
      dummy =  /*<<dynarray.ml:480:2>>*/ param[3];
-     /*<<dynarray.ml:480:29>>*/ if(v !== dummy)
+     /*<<dynarray.ml:480:29>>*/ if
+     (!  /*<<dynarray.ml:229:23>>*/ Object.is(v, dummy))
       /*<<dynarray.ml:232:4>>*/ return v;
     var length =  /*<<dynarray.ml:481:7>>*/ param[1];
      /*<<dynarray.ml:404:4>>*/ return i < length
@@ -32044,7 +32056,7 @@
      /*<<dynarray.ml:704:56>>*/ if(dst_length < (dst_pos + blit_length | 0))
       /*<<dynarray.ml:705:45>>*/ dst[1] = dst_pos + blit_length | 0;
     var dst_dummy =  /*<<dynarray.ml:710:2>>*/ dst[3], src_dummy = src[3];
-     /*<<dynarray.ml:279:6>>*/ if(src_dummy === dst_dummy)
+     /*<<dynarray.ml:279:6>>*/ if(Object.is(src_dummy, dst_dummy))
       /*<<dynarray.ml:280:8>>*/ return Stdlib_Array[9].call
              (null, src_arr, src_pos, dst_arr, dst_pos, blit_length) /*<<dynarray.ml:713:20>>*/ ;
     var _Q_ =  /*<<dynarray.ml:281:11>>*/ blit_length < 0 ? 1 : 0;
@@ -32078,7 +32090,7 @@
     if(_P_)
       /*<<dynarray.ml:289:13>>*/ throw caml_maybe_attach_backtrace
             ([0, Assert_failure, _d_], 1);
-     /*<<dynarray.ml:299:8>>*/ if(src_arr === dst_arr)
+     /*<<dynarray.ml:299:8>>*/ if(Object.is(src_arr, dst_arr))
      throw caml_maybe_attach_backtrace([0, Assert_failure, _e_], 1);
     var _R_ =  /*<<dynarray.ml:303:8>>*/ blit_length - 1 | 0, _W_ = 0;
     if(_R_ >= 0){
@@ -32409,7 +32421,10 @@
       /*<<dynarray.ml:996:4>>*/ if(i === length)
       var res =  /*<<dynarray.ml:996:23>>*/ 0;
      else{
-       /*<<dynarray.ml:997:12>>*/ if(unsafe_get(arr, dummy, i, length) !== x){
+       /*<<dynarray.ml:997:12>>*/ if
+       (!
+         /*<<dynarray.ml:997:46>>*/ Object.is
+         ( /*<<dynarray.ml:997:12>>*/ unsafe_get(arr, dummy, i, length), x)){
        var i$0 =  /*<<dynarray.ml:999:9>>*/ i + 1 | 0;
        i = i$0;
        continue;
@@ -33321,7 +33336,7 @@
      /*<<ephemeron.ml:411:21>>*/ if(! match)
       /*<<ephemeron.ml:412:14>>*/ return 0;
     var k =  /*<<ephemeron.ml:411:21>>*/ match[1];
-     /*<<ephemeron.ml:413:18>>*/ return k === key
+     /*<<ephemeron.ml:413:18>>*/ return Object.is(k, key)
             ?  /*<<ephemeron.ml:413:30>>*/ get_data(eph)
             : 0 /*<<ephemeron.ml:414:20>>*/ ;
    }
@@ -33418,7 +33433,7 @@
     var match =  /*<<ephemeron.ml:463:12>>*/ get_key(e);
      /*<<ephemeron.ml:463:21>>*/ if(match){
      var x = match[1];
-      /*<<ephemeron.ml:464:20>>*/ if(x === k)
+      /*<<ephemeron.ml:464:20>>*/ if(Object.is(x, k))
        /*<<ephemeron.ml:464:30>>*/ return 1;
     }
      /*<<ephemeron.ml:465:13>>*/ return 0;
@@ -33495,13 +33510,13 @@
      /*<<ephemeron.ml:517:22>>*/ if(! match)
       /*<<ephemeron.ml:518:14>>*/ return 0;
     var k =  /*<<ephemeron.ml:517:22>>*/ match[1];
-     /*<<ephemeron.ml:519:18>>*/ if(k !== key1)
+     /*<<ephemeron.ml:519:18>>*/ if(! Object.is(k, key1))
       /*<<ephemeron.ml:525:16>>*/ return 0;
     var match$0 =  /*<<ephemeron.ml:520:20>>*/ get_key2(eph);
      /*<<ephemeron.ml:520:32>>*/ if(! match$0)
       /*<<ephemeron.ml:521:18>>*/ return 0;
     var k$0 =  /*<<ephemeron.ml:520:32>>*/ match$0[1];
-     /*<<ephemeron.ml:522:22>>*/ return k$0 === key2
+     /*<<ephemeron.ml:522:22>>*/ return Object.is(k$0, key2)
             ?  /*<<ephemeron.ml:522:35>>*/ get_data$0(eph)
             : 0 /*<<ephemeron.ml:525:20>>*/ ;
    }
@@ -33635,7 +33650,7 @@
      match$0 =  /*<<ephemeron.ml:583:24>>*/ get_key2(e);
      /*<<ephemeron.ml:583:34>>*/ if(match && match$0){
      var x2 = match$0[1], x1 = match[1];
-      /*<<ephemeron.ml:584:30>>*/ if(x1 === k1 && x2 === k2)
+      /*<<ephemeron.ml:584:30>>*/ if(Object.is(x1, k1) && Object.is(x2, k2))
        /*<<ephemeron.ml:584:54>>*/ return 1;
     }
      /*<<ephemeron.ml:585:13>>*/ return 0;
@@ -33731,7 +33746,10 @@
          /*<<ephemeron.ml:636:18>>*/ throw caml_maybe_attach_backtrace
                (Stdlib[3], 1);
        var k =  /*<<ephemeron.ml:635:27>>*/ match[1];
-        /*<<ephemeron.ml:637:27>>*/ if(k !== caml_check_bound(keys, i)[i + 1])
+        /*<<ephemeron.ml:637:27>>*/ if
+        (!
+          /*<<ephemeron.ml:637:35>>*/ Object.is
+          (k,  /*<<ephemeron.ml:637:27>>*/ caml_check_bound(keys, i)[i + 1]))
          /*<<ephemeron.ml:638:20>>*/ throw caml_maybe_attach_backtrace
                (Stdlib[3], 1);
        var _s_ =  /*<<ephemeron.ml:637:35>>*/ i + 1 | 0;
@@ -33789,7 +33807,7 @@
      var
       len =  /*<<ephemeron.ml:661:8>>*/ k.length - 1,
       len$0 =  /*<<ephemeron.ml:662:19>>*/ length$1(c);
-      /*<<ephemeron.ml:663:8>>*/ if(len !== len$0)
+      /*<<ephemeron.ml:663:8>>*/ if(! Object.is(len, len$0))
        /*<<ephemeron.ml:663:28>>*/ return 1;
      var i$1 =  /*<<ephemeron.ml:675:10>>*/ len - 1 | 0, i = i$1;
      for(;;){
@@ -33924,7 +33942,9 @@
        var match =  /*<<ephemeron.ml:714:16>>*/ get_key$0(e, i);
         /*<<ephemeron.ml:714:27>>*/ if(match){
         var x = match[1];
-         /*<<ephemeron.ml:715:29>>*/ if(x === caml_check_bound(k, i)[i + 1]){
+         /*<<ephemeron.ml:715:29>>*/ if
+         ( /*<<ephemeron.ml:715:34>>*/ Object.is
+           (x,  /*<<ephemeron.ml:715:29>>*/ caml_check_bound(k, i)[i + 1])){
          var _f_ =  /*<<ephemeron.ml:715:34>>*/ i + 1 | 0;
          if(_c_ === i) break;
          i = _f_;
