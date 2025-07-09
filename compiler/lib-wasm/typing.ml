@@ -4,6 +4,8 @@ open Global_flow
 
 let debug = Debug.find "typing"
 
+let times = Debug.find "times"
+
 module Integer = struct
   type kind =
     | Ref
@@ -420,10 +422,12 @@ let solver st =
   Solver.f () g (propagate st)
 
 let f ~state ~info ~deadcode_sentinal p =
+  let t = Timer.make () in
   update_deps state p;
   let function_parameters = mark_function_parameters p in
   let typ = solver { state; info; function_parameters } in
   Var.Tbl.set typ deadcode_sentinal (Int Normalized);
+  if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
     Var.ISet.iter

@@ -3,6 +3,8 @@ open Code
 
 let debug = Debug.find "call-graph"
 
+let times = Debug.find "times"
+
 let get_approx info x =
   (* Specialization can add some variables *)
   if Var.idx x < Var.Tbl.length info.Global_flow.info_approximation
@@ -41,6 +43,7 @@ let direct_calls_only info f =
   Config.Flag.optcall () && Var.Hashtbl.mem info.unambiguous_non_escaping f
 
 let f p info =
+  let t = Timer.make () in
   let non_escaping = Var.Hashtbl.create 128 in
   let ambiguous = Var.Hashtbl.create 128 in
   fold_closures
@@ -58,4 +61,5 @@ let f p info =
   Var.Hashtbl.iter (fun x () -> Var.Hashtbl.remove non_escaping x) ambiguous;
   if debug ()
   then Format.eprintf " unambiguous-non-escaping:%d@." (Var.Hashtbl.length non_escaping);
+  if times () then Format.eprintf "  call graph analysis: %a@." Timer.print t;
   { unambiguous_non_escaping = non_escaping }
