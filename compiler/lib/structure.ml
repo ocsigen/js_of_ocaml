@@ -278,6 +278,8 @@ let build_graph blocks pc =
   shrink_loops blocks g;
   g
 
+(* Ensure that all loops have a predecessor block. Function
+   shrink_loops assumes this. *)
 let norm p =
   let free_pc = ref p.free_pc in
   let visited = BitSet.create' p.free_pc in
