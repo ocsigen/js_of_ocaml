@@ -115,7 +115,7 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_bytes_get64", (`Mutator, [ Value; Value ], Int64)
       ; "caml_bytes_set32", (`Mutator, [ Value; Value; Int32 ], Value)
       ; "caml_bytes_set64", (`Mutator, [ Value; Value; Int64 ], Value)
-      ; "caml_lxm_next", (`Pure, [ Value ], Int64)
+      ; "caml_lxm_next", (`Mutable, [ Value ], Int64)
       ; "caml_ba_uint8_get32", (`Mutator, [ Value; Value ], Int32)
       ; "caml_ba_uint8_get64", (`Mutator, [ Value; Value ], Int64)
       ; "caml_ba_uint8_set32", (`Mutator, [ Value; Value; Int32 ], Value)
