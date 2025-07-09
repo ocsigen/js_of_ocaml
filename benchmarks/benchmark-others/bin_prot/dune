@@ -2,6 +2,7 @@
  (names bench)
  (modes js wasm)
  (js_of_ocaml
+  (enabled_if true)
   (flags --opt 2))
  (wasm_of_ocaml
   (flags --opt 2 --enable use-js-string))
