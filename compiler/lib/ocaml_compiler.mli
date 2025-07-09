@@ -73,4 +73,8 @@ module Cmo_format : sig
   val force_link : t -> bool
 
   val imports : t -> (string * string option) list
+
+  val hints_pos : t -> int
+
+  val hints_size : t -> int
 end

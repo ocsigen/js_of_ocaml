@@ -548,6 +548,14 @@ function caml_ba_get_generic(ba, i) {
   return ba.get(ofs);
 }
 
+
+//Provides: caml_ba_uint8_get16u
+function caml_ba_uint8_get16u(ba, i0) {
+  var ofs = ba.offset(i0);
+  var b1 = ba.get(ofs);
+  var b2 = ba.get(ofs + 1);
+  return b1 | (b2 << 8);
+}
 //Provides: caml_ba_uint8_get16
 //Requires: caml_array_bound_error
 function caml_ba_uint8_get16(ba, i0) {
@@ -556,6 +564,16 @@ function caml_ba_uint8_get16(ba, i0) {
   var b1 = ba.get(ofs);
   var b2 = ba.get(ofs + 1);
   return b1 | (b2 << 8);
+}
+
+//Provides: caml_ba_uint8_get32u
+function caml_ba_uint8_get32u(ba, i0) {
+  var ofs = ba.offset(i0);
+  var b1 = ba.get(ofs + 0);
+  var b2 = ba.get(ofs + 1);
+  var b3 = ba.get(ofs + 2);
+  var b4 = ba.get(ofs + 3);
+  return (b1 << 0) | (b2 << 8) | (b3 << 16) | (b4 << 24);
 }
 
 //Provides: caml_ba_uint8_get32
@@ -568,6 +586,21 @@ function caml_ba_uint8_get32(ba, i0) {
   var b3 = ba.get(ofs + 2);
   var b4 = ba.get(ofs + 3);
   return (b1 << 0) | (b2 << 8) | (b3 << 16) | (b4 << 24);
+}
+
+//Provides: caml_ba_uint8_get64u
+//Requires: caml_int64_of_bytes
+function caml_ba_uint8_get64u(ba, i0) {
+  var ofs = ba.offset(i0);
+  var b1 = ba.get(ofs + 0);
+  var b2 = ba.get(ofs + 1);
+  var b3 = ba.get(ofs + 2);
+  var b4 = ba.get(ofs + 3);
+  var b5 = ba.get(ofs + 4);
+  var b6 = ba.get(ofs + 5);
+  var b7 = ba.get(ofs + 6);
+  var b8 = ba.get(ofs + 7);
+  return caml_int64_of_bytes([b8, b7, b6, b5, b4, b3, b2, b1]);
 }
 
 //Provides: caml_ba_uint8_get64
@@ -608,6 +641,14 @@ function caml_ba_set_generic(ba, i, v) {
   return 0;
 }
 
+//Provides: caml_ba_uint8_set16u
+function caml_ba_uint8_set16u(ba, i0, v) {
+  var ofs = ba.offset(i0);
+  ba.set(ofs + 0, v & 0xff);
+  ba.set(ofs + 1, (v >>> 8) & 0xff);
+  return 0;
+}
+
 //Provides: caml_ba_uint8_set16
 //Requires: caml_array_bound_error
 function caml_ba_uint8_set16(ba, i0, v) {
@@ -618,6 +659,15 @@ function caml_ba_uint8_set16(ba, i0, v) {
   return 0;
 }
 
+//Provides: caml_ba_uint8_set32u
+function caml_ba_uint8_set32u(ba, i0, v) {
+  var ofs = ba.offset(i0);
+  ba.set(ofs + 0, v & 0xff);
+  ba.set(ofs + 1, (v >>> 8) & 0xff);
+  ba.set(ofs + 2, (v >>> 16) & 0xff);
+  ba.set(ofs + 3, (v >>> 24) & 0xff);
+  return 0;
+}
 //Provides: caml_ba_uint8_set32
 //Requires: caml_array_bound_error
 function caml_ba_uint8_set32(ba, i0, v) {
@@ -627,6 +677,15 @@ function caml_ba_uint8_set32(ba, i0, v) {
   ba.set(ofs + 1, (v >>> 8) & 0xff);
   ba.set(ofs + 2, (v >>> 16) & 0xff);
   ba.set(ofs + 3, (v >>> 24) & 0xff);
+  return 0;
+}
+
+//Provides: caml_ba_uint8_set64u
+//Requires: caml_int64_to_bytes
+function caml_ba_uint8_set64u(ba, i0, v) {
+  var ofs = ba.offset(i0);
+  var v = caml_int64_to_bytes(v);
+  for (var i = 0; i < 8; i++) ba.set(ofs + i, v[7 - i]);
   return 0;
 }
 
