@@ -26,10 +26,14 @@ val constant_type : Code.constant -> typ
 
 val can_unbox_parameters : Call_graph_analysis.t -> Code.Var.t -> bool
 
+type t
+
+val var_type : t -> Code.Var.t -> typ
+
 val f :
      global_flow_state:Global_flow.state
   -> global_flow_info:Global_flow.info
   -> fun_info:Call_graph_analysis.t
   -> deadcode_sentinal:Code.Var.t
   -> Code.program
-  -> typ Code.Var.Tbl.t
+  -> t

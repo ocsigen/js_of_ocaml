@@ -638,14 +638,16 @@ let box_numbers p st types =
       | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
     p.blocks
 
+type t = { types : typ Var.Tbl.t }
+
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
   let t = Timer.make () in
   update_deps global_flow_state p;
   let boxed_function_parameters = mark_function_parameters ~fun_info p in
   let st = { global_flow_state; global_flow_info; boxed_function_parameters; fun_info } in
-  let typ = solver st in
-  Var.Tbl.set typ deadcode_sentinal (Int Normalized);
-  box_numbers p st typ;
+  let types = solver st in
+  Var.Tbl.set types deadcode_sentinal (Int Normalized);
+  box_numbers p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
@@ -654,7 +656,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
         match global_flow_state.defs.(Var.idx x) with
         | Expr _ -> ()
         | Phi _ ->
-            let t = Var.Tbl.get typ x in
+            let t = Var.Tbl.get types x in
             if not (Domain.equal t Top)
             then Format.eprintf "%a: %a@." Var.print x Domain.print t)
       global_flow_state.vars;
@@ -662,7 +664,9 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
       Format.err_formatter
       (fun _ i ->
         match i with
-        | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get typ x)
+        | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get types x)
         | _ -> "")
       p);
-  typ
+  { types }
+
+let var_type info x = Var.Tbl.get info.types x
