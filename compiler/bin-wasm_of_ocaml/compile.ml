@@ -318,7 +318,13 @@ let add_source_map sourcemap_don't_inline_content z opt_source_map =
       Zip.add_entry z ~name:"source_map.map" ~contents:(Source_map.to_string sm);
       if not sourcemap_don't_inline_content
       then
+        let rewrite =
+          match Build_path_prefix_map.get_build_path_prefix_map () with
+          | Some map -> let map = Build_path_prefix_map.flip map in (fun path -> Build_path_prefix_map.rewrite map path)
+          | None -> Fun.id
+        in
         Wasm_source_map.iter_sources sm (fun i j file ->
+            let file = rewrite file in
             if Sys.file_exists file && not (Sys.is_directory file)
             then
               let sm = Fs.read_file file in
