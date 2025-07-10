@@ -24,9 +24,13 @@ type typ =
 
 val constant_type : Code.constant -> typ
 
+type t
+
+val var_type : t -> Code.Var.t -> typ
+
 val f :
      state:Global_flow.state
   -> info:Global_flow.info
   -> deadcode_sentinal:Code.Var.t
   -> Code.program
-  -> typ Code.Var.Tbl.t
+  -> t
