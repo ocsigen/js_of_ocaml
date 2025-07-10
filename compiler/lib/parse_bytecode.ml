@@ -2599,8 +2599,10 @@ end = struct
 
   let read_crcs toc ic =
     ignore (seek_section toc ic "CRCS");
-    let orig_crcs : (string * Digest.t option) list = input_value ic in
-    orig_crcs
+    let orig_crcs : Import_info.t array = input_value ic in
+    List.map (Array.to_list orig_crcs) ~f:(fun import ->
+      Import_info.name import |> Compilation_unit.Name.to_string,
+      Import_info.crc import)
 
   let read_prim toc ic =
     let prim_size = seek_section toc ic "PRIM" in
@@ -3053,7 +3055,7 @@ let from_channel ic =
           then raise Magic_number.(Bad_magic_version magic);
           let compunit_pos = input_binary_int ic in
           seek_in ic compunit_pos;
-          let compunit : Cmo_format.compilation_unit = input_value ic in
+          let compunit : Cmo_format.compilation_unit_descr = input_value ic in
           `Cmo compunit
       | `Cma ->
           if

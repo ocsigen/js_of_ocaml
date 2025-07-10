@@ -208,16 +208,16 @@ module Symtable = struct
 end
 
 module Cmo_format = struct
-  type t = Cmo_format.compilation_unit
+  type t = Cmo_format.compilation_unit_descr
 
-  let name (t : t) = t.cu_name [@@if ocaml_version < (5, 2, 0)]
+  let name (t : t) = t.cu_name |> Compilation_unit.name_as_string [@@if ocaml_version < (5, 2, 0)]
 
   let name (t : t) =
     let (Compunit name) = t.cu_name in
     name
   [@@if ocaml_version >= (5, 2, 0)]
 
-  let requires (t : t) = List.map ~f:Ident.name t.cu_required_globals
+  let requires (t : t) = List.map ~f:Compilation_unit.name_as_string t.cu_required_globals
   [@@if ocaml_version < (5, 2, 0)]
 
   let requires (t : t) = List.map t.cu_required_compunits ~f:(fun (Compunit u) -> u)
