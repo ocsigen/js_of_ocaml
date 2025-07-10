@@ -269,6 +269,12 @@ function caml_uniform_array_make(len, init) {
   return caml_array_make(len, init);
 }
 
+//Provides: caml_floatarray_create_local const (const)
+//Requires: caml_floatarray_create
+function caml_floatarray_create_local(x) {
+  return caml_floatarray_create(x);
+}
+
 // Provides: caml_iarray_of_array const
 function caml_iarray_of_array(a) {
   return a;
