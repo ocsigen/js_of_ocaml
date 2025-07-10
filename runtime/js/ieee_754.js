@@ -17,27 +17,74 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-//Provides: jsoo_dataview
-var jsoo_dataview = new DataView(new ArrayBuffer(8));
+//Provides: jsoo_floor_log2
+var log2_ok = Math.log2 && Math.log2(1.1235582092889474e307) === 1020;
+function jsoo_floor_log2(x) {
+  if (log2_ok) return Math.floor(Math.log2(x));
+  var i = 0;
+  if (x === 0) return Number.NEGATIVE_INFINITY;
+  if (x >= 1) {
+    while (x >= 2) {
+      x /= 2;
+      i++;
+    }
+  } else {
+    while (x < 1) {
+      x *= 2;
+      i--;
+    }
+  }
+  return i;
+}
 
 //Provides: caml_int64_bits_of_float const
-//Requires: caml_int64_create_lo_mi_hi
-//Requires: jsoo_dataview
+//Requires: jsoo_floor_log2, caml_int64_create_lo_mi_hi
 function caml_int64_bits_of_float(x) {
-  jsoo_dataview.setFloat64(0, x, true);
-  var lo32 = jsoo_dataview.getUint32(0, true);
-  var hi32 = jsoo_dataview.getUint32(4, true);
-  var r1 = lo32 & 0xffffff;
-  var r2 = (lo32 >>> 24) | ((hi32 << 8) & 0xffffff);
-  var r3 = (hi32 >>> 16) & 0xffff;
+  if (!Number.isFinite(x)) {
+    if (Number.isNaN(x)) return caml_int64_create_lo_mi_hi(1, 0, 0x7ff0);
+    if (x > 0) return caml_int64_create_lo_mi_hi(0, 0, 0x7ff0);
+    else return caml_int64_create_lo_mi_hi(0, 0, 0xfff0);
+  }
+  var sign =
+    x === 0 && 1 / x === Number.NEGATIVE_INFINITY
+      ? 0x8000
+      : x >= 0
+        ? 0
+        : 0x8000;
+  if (sign) x = -x;
+  // Int64.bits_of_float 1.1235582092889474E+307 = 0x7fb0000000000000L
+  // using Math.LOG2E*Math.log(x) in place of Math.log2 result in precision lost
+  var exp = jsoo_floor_log2(x) + 1023;
+  if (exp <= 0) {
+    exp = 0;
+    x /= Math.pow(2, -1026);
+  } else {
+    x /= Math.pow(2, exp - 1027);
+    if (x < 16) {
+      x *= 2;
+      exp -= 1;
+    }
+    if (exp === 0) {
+      x /= 2;
+    }
+  }
+  var k = Math.pow(2, 24);
+  var r3 = x | 0;
+  x = (x - r3) * k;
+  var r2 = x | 0;
+  x = (x - r2) * k;
+  var r1 = x | 0;
+  r3 = (r3 & 0xf) | sign | (exp << 4);
   return caml_int64_create_lo_mi_hi(r1, r2, r3);
 }
 
 //Provides: caml_int32_bits_of_float const
-//Requires: jsoo_dataview
+//Requires: jsoo_floor_log2
 function caml_int32_bits_of_float(x) {
-  jsoo_dataview.setFloat32(0, x, true);
-  return jsoo_dataview.getUint32(0, true) | 0;
+  var float32a = new Float32Array(1);
+  float32a[0] = x;
+  var int32a = new Int32Array(float32a.buffer);
+  return int32a[0] | 0;
 }
 
 //FP literals can be written using the hexadecimal
@@ -103,14 +150,24 @@ function caml_hexstring_of_float(x, prec, style) {
 }
 
 //Provides: caml_int64_float_of_bits const
-//Requires: jsoo_dataview
 function caml_int64_float_of_bits(x) {
   var lo = x.lo;
   var mi = x.mi;
   var hi = x.hi;
-  jsoo_dataview.setUint32(0, lo | (mi << 24), true);
-  jsoo_dataview.setUint32(4, (mi >>> 8) | (hi << 16), true);
-  return jsoo_dataview.getFloat64(0, true);
+  var exp = (hi & 0x7fff) >> 4;
+  if (exp === 2047) {
+    if ((lo | mi | (hi & 0xf)) === 0)
+      return hi & 0x8000 ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
+    else return Number.NaN;
+  }
+  var k = Math.pow(2, -24);
+  var res = (lo * k + mi) * k + (hi & 0xf);
+  if (exp > 0) {
+    res += 16;
+    res *= Math.pow(2, exp - 1027);
+  } else res *= Math.pow(2, -1026);
+  if (hi & 0x8000) res = -res;
+  return res;
 }
 
 //Provides: caml_nextafter_float const
@@ -135,10 +192,11 @@ function caml_trunc_float(x) {
 }
 
 //Provides: caml_int32_float_of_bits const
-//Requires: jsoo_dataview
 function caml_int32_float_of_bits(x) {
-  jsoo_dataview.setUint32(0, x, true);
-  return jsoo_dataview.getFloat32(0, true);
+  var int32a = new Int32Array(1);
+  int32a[0] = x;
+  var float32a = new Float32Array(int32a.buffer);
+  return float32a[0];
 }
 
 //Provides: caml_classify_float const
@@ -186,11 +244,12 @@ function caml_ldexp_float(x, exp) {
   return x;
 }
 //Provides: caml_frexp_float const
+//Requires: jsoo_floor_log2
 function caml_frexp_float(x) {
   if (x === 0 || !Number.isFinite(x)) return [0, x, 0];
   var neg = x < 0;
   if (neg) x = -x;
-  var exp = Math.max(-1023, Math.floor(Math.log2(x)) + 1);
+  var exp = Math.max(-1023, jsoo_floor_log2(x) + 1);
   x *= Math.pow(2, -exp);
   while (x < 0.5) {
     x *= 2;
