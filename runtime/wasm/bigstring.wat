@@ -229,6 +229,48 @@
                (br $loop))))
       (ref.i31 (i32.const -1)))
 
+   (func (export "caml_bigstring_strncmp")
+      (param $vs1 (ref eq))
+      (param $vpos1 (ref eq))
+      (param $vs2 (ref eq))
+      (param $vpos2 (ref eq))
+      (param $vlen (ref eq))
+      (result (ref eq))
+
+      (local $v1 (ref extern))
+      (local $v2 (ref extern))
+      (local $pos1 i32)
+      (local $pos2 i32)
+      (local $len i32)
+
+      (local $i i32)
+      (local $c1 i32)
+      (local $c2 i32)
+
+      (local.set $v1 (call $caml_ba_get_view (local.get $vs1)))
+      (local.set $v2 (call $caml_ba_get_view (local.get $vs2)))
+      (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
+      (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
+      (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (local.get $len))
+            (then
+               (local.set $c1
+                  (call $dv_get_ui8 (local.get $v1)
+                     (i32.add (local.get $pos1) (local.get $i))))
+               (local.set $c2
+                  (call $dv_get_ui8 (local.get $v2)
+                     (i32.add (local.get $pos2) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (if (i32.lt_u (local.get $c1) (local.get $c2))
+                  (then (return (ref.i31 (i32.const -1)))))
+               (if (i32.gt_u (local.get $c1) (local.get $c2))
+                  (then (return (ref.i31 (i32.const 1)))))
+               (if (i32.eq (local.get $c1) (i32.const 0))
+                  (then (return (ref.i31 (i32.const 0)))))
+               (br $loop))))
+      (ref.i31 (i32.const 0)))
+
    (export "caml_bigstring_blit_string_to_ba"
       (func $caml_bigstring_blit_bytes_to_ba))
    (func $caml_bigstring_blit_bytes_to_ba
