@@ -262,3 +262,13 @@ function caml_floatarray_make_unboxed(len, init) {
 function caml_uniform_array_make(len, init) {
   return caml_array_make(len, init);
 }
+
+// Provides: caml_iarray_of_array const
+function caml_iarray_of_array(a) {
+  return a;
+}
+
+// Provides: caml_array_of_iarray const
+function caml_array_of_iarray(a) {
+  return a;
+}
