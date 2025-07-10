@@ -45,6 +45,8 @@ module Info : sig
   val update_def : t -> Code.Var.t -> Code.expr -> unit
 
   val possibly_mutable : t -> Code.Var.t -> bool
+
+  val info_defs_length : t -> int
 end
 
 val get_approx :

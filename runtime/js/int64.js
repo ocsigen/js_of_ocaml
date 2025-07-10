@@ -352,6 +352,27 @@ function caml_int64_to_int32(x) {
   return x.toInt();
 }
 
+//Provides: caml_checked_int64_to_int const
+//Requires: caml_int64_of_int32, caml_failwith
+function caml_checked_int64_to_int (x) {
+  if (x.compare(caml_int64_of_int32(0x7FFFFFFF)) == 1
+    || x.compare(caml_int64_of_int32(0x80000000)) == -1)
+    caml_failwith("error while converting from int64")
+  return x.toInt()
+}
+
+//Provides: caml_array_unsafe_get_indexed_by_int64 (mutable, const)
+//Requires: caml_int64_to_int32, caml_array_get
+function caml_array_unsafe_get_indexed_by_int64 (array, index) {
+  return caml_array_get(array, caml_int64_to_int32(index));
+}
+
+//Provides: caml_array_unsafe_set_indexed_by_int64 (mutable, const, mutable)
+//Requires: caml_int64_to_int32, caml_array_set
+function caml_array_unsafe_set_indexed_by_int64 (array, index, newval) {
+  return caml_array_set(array, caml_int64_to_int32(index), newval)
+}
+
 //Provides: caml_int64_to_float const
 function caml_int64_to_float(x) {
   return x.toFloat();

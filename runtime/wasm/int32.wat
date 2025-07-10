@@ -124,6 +124,21 @@
          (call $parse_int
             (local.get $v) (i32.const 32) (global.get $INT32_ERRMSG))))
 
+   (data $integer_conversion_error "error while converting from int32")
+
+   (func $caml_checked_int32_to_int (export "caml_checked_int32_to_int")
+      (param i32) (result (ref eq))
+      (if (i32.or (i32.gt_s (local.get 0) (i32.const  0x3FFFFFFF))
+                  (i32.lt_s (local.get 0) (i32.const -0x40000000)))
+          (then (call $caml_failwith
+                      (array.new_data $bytes $integer_conversion_error
+                                      (i32.const 0) (i32.const 33)))))
+      (ref.i31 (local.get 0)))
+
+   (func $caml_checked_nativeint_to_int (export "caml_checked_nativeint_to_int")
+      (param i32) (result (ref eq))
+      (call $caml_checked_int32_to_int (local.get 0)))
+
    (export "caml_nativeint_compare" (func $caml_int32_compare))
    (func $caml_int32_compare (export "caml_int32_compare")
       (param $i1 i32) (param $i2 i32) (result (ref eq))
@@ -177,4 +192,6 @@
       (return_call $format_int (local.get 0)
          (struct.get $int32 1
             (ref.cast (ref $int32) (local.get 1))) (i32.const 0)))
+
+
 )

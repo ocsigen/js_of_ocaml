@@ -317,4 +317,19 @@
                               (local.get $uppercase)))))))))
       (local.get $s))
 
+   (data $integer_conversion_error "error while converting from int64")
+
+   (func $caml_checked_int64_to_int (export "caml_checked_int64_to_int")
+      (param (ref eq)) (result (ref eq))
+      (local $i i64)
+      (local.set $i
+         (struct.get $int64 1 (ref.cast (ref $int64) (local.get 0))))
+      (if (i32.or (i64.gt_s (local.get $i) (i64.const  0x3FFFFFFF))
+                  (i64.lt_s (local.get $i) (i64.const -0x40000000)))
+          (then (call $caml_failwith
+                      (array.new_data $bytes $integer_conversion_error
+                                      (i32.const 0) (i32.const 33)))))
+      (ref.i31 (i32.wrap_i64 (local.get $i))))
+
+
 )

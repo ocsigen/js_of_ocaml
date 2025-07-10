@@ -281,6 +281,8 @@ let eval_prim x =
       | "caml_nativeint_compare", [ NativeInt i; NativeInt j ] ->
           Some (Int (Targetint.of_int_exn (Int32.compare i j)))
       | "caml_nativeint_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
+      | "caml_checked_nativeint_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
+      | "caml_checked_int32_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
       | "caml_nativeint_of_int", [ Int i ] -> nativeint (Targetint.to_int32 i)
       (* int64 *)
       | "caml_int64_bits_of_float", [ Float f ] -> int64 f
@@ -639,7 +641,7 @@ let eval_instr update_count inline_constant ~target info i =
         else None
       in
       match res with
-      | Some c ->
+      | Some c when Var.idx x < Info.info_defs_length info ->
           let c = Constant c in
           Flow.Info.update_def info x c;
           incr update_count;
