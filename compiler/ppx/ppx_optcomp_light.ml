@@ -148,7 +148,8 @@ let keep loc (attrs : attributes) =
   | [] -> true
   | _ -> (
       try
-        let keep_one { attr_payload; attr_loc; _ } =
+        let keep_one ({ attr_payload; attr_loc; _ } as attr) =
+          Ppxlib.Attribute.mark_as_handled_manually attr;
           let e =
             match attr_payload with
             | PStr [ { pstr_desc = Pstr_eval (e, []); _ } ] -> e
