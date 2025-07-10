@@ -53,7 +53,7 @@ module Symtable : sig
 end
 
 module Cmo_format : sig
-  type t = Cmo_format.compilation_unit
+  type t = Cmo_format.compilation_unit_descr
 
   val name : t -> string
 
@@ -65,5 +65,5 @@ module Cmo_format : sig
 
   val force_link : t -> bool
 
-  val imports : t -> (string * string option) list
+  val imports : t -> Import_info.t array
 end
