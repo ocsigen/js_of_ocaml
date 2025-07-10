@@ -79,7 +79,7 @@ module Symtable = struct
       let name = Ident.name id in
       if Ident.is_predef id
       then Some (Glob_predef name)
-      else if Ident.global id
+      else if Ident.is_global id
       then Some (Glob_compunit name)
       else None
 
