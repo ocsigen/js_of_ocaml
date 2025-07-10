@@ -21,6 +21,7 @@ let%expect_test _ =
     +dynlink.js
     +effect.js
     +fail.js
+    +float32.js
     +format.js
     +fs.js
     +fs_fake.js
@@ -64,6 +65,7 @@ let%expect_test _ =
     +domain.js
     +effect.js
     +fail.js
+    +float32.js
     +format.js
     +fs.js
     +fs_fake.js

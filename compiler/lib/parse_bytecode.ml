@@ -487,6 +487,8 @@ end = struct
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
+        | Some name when same_ident name ident_f32 ->
+          Float32 (Int64.bits_of_float ((Obj.magic x : float32) |> Float32.to_float))
         | Some name when same_ident name ident_32 ->
             let i : int32 = Obj.magic x in
             Int32 i
@@ -512,6 +514,7 @@ end = struct
     match c with
     | String _ | NativeString _ -> false
     | Float _ -> true
+    | Float32 _ -> true
     | Float_array _ -> false
     | Int64 _ -> false
     | Tuple _ -> false

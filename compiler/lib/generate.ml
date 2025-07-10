@@ -466,6 +466,7 @@ let rec constant_rec ~ctx x level instrs =
       | Byte x -> Share.get_byte_string str_js_byte x ctx.Ctx.share, instrs
       | Utf (Utf8 x) -> Share.get_utf_string str_js_utf8 x ctx.Ctx.share, instrs)
   | Float f -> float_const f, instrs
+  | Float32 f -> float_const f, instrs
   | Float_array a ->
       ( Mlvalue.Array.make
           ~tag:Obj.double_array_tag
@@ -1231,6 +1232,13 @@ let _ =
   register_bin_prim "caml_le_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cx, cy)));
   register_bin_prim "caml_gt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cy, cx)));
   register_bin_prim "caml_lt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cx, cy)));
+  register_bin_prim "caml_eq_float32" `Pure (fun cx cy _ -> bool (J.EBin (J.EqEq, cx, cy)));
+  register_bin_prim "caml_neq_float32" `Pure (fun cx cy _ ->
+      bool (J.EBin (J.NotEq, cx, cy)));
+  register_bin_prim "caml_ge_float32" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cy, cx)));
+  register_bin_prim "caml_le_float32" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cx, cy)));
+  register_bin_prim "caml_gt_float32" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cy, cx)));
+  register_bin_prim "caml_lt_float32" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cx, cy)));
   register_bin_prim "caml_add_float" `Pure (fun cx cy _ -> J.EBin (J.Plus, cx, cy));
   register_bin_prim "caml_sub_float" `Pure (fun cx cy _ -> J.EBin (J.Minus, cx, cy));
   register_bin_prim "caml_mul_float" `Pure (fun cx cy _ -> J.EBin (J.Mul, cx, cy));
