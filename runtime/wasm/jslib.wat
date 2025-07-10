@@ -22,6 +22,7 @@
    (import "bindings" "identity" (func $to_int32 (param anyref) (result i32)))
    (import "bindings" "identity" (func $from_int32 (param i32) (result anyref)))
    (import "bindings" "from_bool" (func $from_bool (param i32) (result anyref)))
+   (import "bindings" "eval" (func $eval (param anyref) (result anyref)))
    (import "bindings" "get"
       (func $get (param (ref extern)) (param anyref) (result anyref)))
    (import "bindings" "set"
@@ -127,6 +128,18 @@
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (call $strict_equals
                   (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))))
+
+   (export "caml_pure_js_expr" (func $caml_js_expr))
+   (export "caml_js_var" (func $caml_js_expr))
+   (export "caml_js_eval_string" (func $caml_js_expr))
+   (func $caml_js_expr (export "caml_js_expr")
+      (param (ref eq)) (result (ref eq))
+      (local $s (ref $bytes))
+      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (return_call $wrap
+         (call $eval
+             (call $jsstring_of_bytes
+                (local.get $s)))))
 
    (func (export "caml_js_global") (param (ref eq)) (result (ref eq))
       (call $wrap (global.get $global_this)))
