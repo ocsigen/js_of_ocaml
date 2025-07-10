@@ -84,6 +84,8 @@
       (func $Int64_val (param (ref eq)) (result i64)))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
+   (import "fail" "caml_invalid_argument"
+      (func $caml_invalid_argument (param (ref eq))))
    (import "sys" "caml_handle_sys_error"
       (func $caml_handle_sys_error (param externref)))
    (import "bigarray" "caml_ba_get_data"
@@ -1010,4 +1012,12 @@
       (ref.i31
          (call $caml_getblock_typed_array
             (local.get $ch) (local.get $d) (local.get $pos) (local.get $len))))
+
+   (@string $caml_ml_set_channel_refill "caml_ml_set_channel_refill not implemented")
+
+   (func (export "caml_ml_set_channel_refill")
+      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (call $caml_invalid_argument
+         (global.get $caml_ml_set_channel_refill))
+      (ref.i31 (i32.const 0)))
 )
