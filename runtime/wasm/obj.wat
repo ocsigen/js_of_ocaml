@@ -402,7 +402,8 @@
       (array.new $int_array (i32.const 0) (i32.const 8)))
 
    (func (export "caml_get_public_method")
-      (param $obj (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param $obj (ref eq)) (param $vtag (ref eq)) (param (ref eq))
+      (result (ref eq))
       (local $meths (ref $block))
       (local $tag i32) (local $cacheid i32) (local $ofs i32)
       (local $li i32) (local $mi i32) (local $hi i32)
@@ -411,7 +412,6 @@
          (ref.cast (ref $block)
             (array.get $block
                (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
-      (local.set $tag (i31.get_s (ref.cast (ref i31) (local.get 1))))
       (local.set $cacheid (i31.get_u (ref.cast (ref i31) (local.get 2))))
       (local.set $len (array.len (global.get $method_cache)))
       (if (i32.ge_s (local.get $cacheid) (local.get $len))
@@ -429,16 +429,14 @@
          (array.get $int_array (global.get $method_cache) (local.get $cacheid)))
       (if (i32.lt_u (local.get $ofs) (array.len (local.get $meths)))
          (then
-            (if (i32.eq (local.get $tag)
-                   (i31.get_s
-                      (ref.cast (ref i31)
-                         (array.get $block (local.get $meths)
-                            (local.get $ofs)))))
+            (if (ref.eq (local.get $vtag)
+                   (array.get $block (local.get $meths) (local.get $ofs)))
                (then
                   (return
                      (array.get $block
                         (local.get $meths)
                         (i32.sub (local.get $ofs) (i32.const 1))))))))
+      (local.set $tag (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
       (local.set $li (i32.const 3))
       (local.set $hi
          (i32.add
@@ -470,11 +468,9 @@
       (array.set $int_array (global.get $method_cache) (local.get $cacheid)
          (i32.add (local.get $li) (i32.const 1)))
       (if (result (ref eq))
-          (i32.eq (local.get $tag)
-             (i31.get_s
-                (ref.cast (ref i31)
-                   (array.get $block (local.get $meths)
-                      (i32.add (local.get $li) (i32.const 1))))))
+          (ref.eq (local.get $vtag)
+             (array.get $block (local.get $meths)
+                (i32.add (local.get $li) (i32.const 1))))
          (then
             (array.get $block (local.get $meths) (local.get $li)))
          (else
