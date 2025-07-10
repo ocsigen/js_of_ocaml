@@ -147,6 +147,7 @@ type typ =
           overapproximation of the possible values of each of its
           fields is given by the array of types *)
   | Bigarray of Bigarray.t
+  | Null
   | Bot
 
 module Domain = struct
@@ -174,11 +175,12 @@ module Domain = struct
            else
              Array.init (max l l') ~f:(fun i ->
                  if i < l then if i < l' then join t.(i) t'.(i) else t.(i) else t'.(i)))
-    | Int _, Tuple _ -> t'
-    | Tuple _, Int _ -> t
+    | (Int _ | Null), Tuple _ -> t'
+    | Tuple _, (Int _ | Null) -> t
     | Bigarray b, Bigarray b' when Bigarray.equal b b' -> t
+    | Null, Null -> Null
     | Top, _ | _, Top -> Top
-    | (Int _ | Number _ | Tuple _ | Bigarray _), _ -> Top
+    | (Int _ | Number _ | Tuple _ | Bigarray _ | Null), _ -> Top
 
   let join_set ?(others = false) f s =
     if others then Top else Var.Set.fold (fun x a -> join (f x) a) s Bot
@@ -191,7 +193,8 @@ module Domain = struct
     | Tuple t, Tuple t' ->
         Array.length t = Array.length t' && Array.for_all2 ~f:equal t t'
     | Bigarray b, Bigarray b' -> Bigarray.equal b b'
-    | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Bot), _ -> false
+    | Null, Null -> true
+    | (Top | Tuple _ | Int _ | Number _ | Bigarray _ | Null | Bot), _ -> false
 
   let bot = Bot
 
@@ -199,12 +202,12 @@ module Domain = struct
 
   let rec depth t =
     match t with
-    | Top | Bot | Number _ | Int _ | Bigarray _ -> 0
+    | Top | Bot | Number _ | Int _ | Bigarray _ | Null -> 0
     | Tuple l -> 1 + Array.fold_left ~f:(fun acc t' -> max (depth t') acc) l ~init:0
 
   let rec truncate depth t =
     match t with
-    | Top | Bot | Number _ | Int _ | Bigarray _ -> t
+    | Top | Bot | Number _ | Int _ | Bigarray _ | Null -> t
     | Tuple l ->
         if depth = 0
         then Top
@@ -243,6 +246,7 @@ module Domain = struct
           | Boxed -> "boxed"
           | Unboxed -> "unboxed")
     | Bigarray b -> Bigarray.print f b
+    | Null -> Format.fprintf f "null"
     | Tuple t ->
         Format.fprintf
           f
@@ -308,6 +312,7 @@ let rec constant_type (c : constant) =
   | NativeInt _ -> Number (Nativeint, Unboxed)
   | Float _ -> Number (Float, Unboxed)
   | Tuple (_, a, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
+  | Null_ -> Null
   | _ -> Top
 
 let arg_type ~approx arg =
@@ -561,7 +566,7 @@ let box_numbers p st types =
                     Var.Set.iter box s)
           | Expr _ -> ()
           | Phi { known; _ } -> Var.Set.iter box known)
-      | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Bot -> ())
+      | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Null | Bot -> ())
   in
   Code.fold_closures
     p
