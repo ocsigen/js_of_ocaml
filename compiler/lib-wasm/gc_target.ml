@@ -1060,6 +1060,11 @@ module Constant = struct
     | NativeInt i ->
         let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
         return (Const, e)
+    | Null_ ->
+        let* var =
+          register_import ~name:"null" (Global { mut = false; typ = Type.value })
+        in
+        return (Const, W.GlobalGet var)
 
   let translate ~unboxed c =
     match c with
