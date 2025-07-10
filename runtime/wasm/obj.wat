@@ -99,6 +99,22 @@
    (global $double_array_tag (export "double_array_tag") i32 (i32.const 254))
    (global $custom_tag i32 (i32.const 255))
 
+   (func (export "caml_obj_is_stack")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_succ_scannable_prefix_len")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (@string $unique_words_unsupported
+      "Obj.uniquely_reachable_words is not available in wasm.")
+
+   (func (export "caml_obj_uniquely_reachable_words")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_failwith (global.get $unique_words_unsupported))
+      (ref.i31 (i32.const 0)))
+
    (func $caml_is_closure (export "caml_is_closure")
       (param $v (ref eq)) (result i32)
       (i32.or (ref.test (ref $closure) (local.get $v))
