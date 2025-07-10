@@ -64,6 +64,22 @@ function caml_update_dummy_lazy(dummy, newval) {
   return 0;
 }
 
+//Provides: caml_obj_is_stack
+function caml_obj_is_stack(x) {
+  return 0;
+}
+
+//Provides: caml_succ_scannable_prefix_len
+function caml_succ_scannable_prefix_len(x) {
+  return 0;
+}
+
+//Provides: caml_obj_uniquely_reachable_words
+//Requires: caml_failwith
+function caml_obj_uniquely_reachable_words(x) {
+  caml_failwith("Obj.uniquely_reachable_words is not available in javascript.");
+}
+
 //Provides: caml_obj_tag
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
