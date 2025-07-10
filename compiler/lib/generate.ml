@@ -536,6 +536,7 @@ let rec constant_rec ~ctx x level instrs =
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> targetint i, instrs
   | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
+  | Null -> s_var "null", instrs
 
 let constant ~ctx x level =
   let expr, instr = constant_rec ~ctx x level [] in
@@ -1390,7 +1391,8 @@ let _ =
       bool (J.EBin (J.EqEqEq, cx, cy)));
   register_bin_prim "caml_js_instanceof" `Mutator (fun cx cy _ ->
       bool (J.EBin (J.InstanceOf, cx, cy)));
-  register_un_prim "caml_js_typeof" `Mutator (fun cx _ -> J.EUn (J.Typeof, cx))
+  register_un_prim "caml_js_typeof" `Mutator (fun cx _ -> J.EUn (J.Typeof, cx));
+  register_un_prim "caml_is_null" `Pure (fun cx _ -> J.EBin (EqEqEq, cx, s_var "null"))
 
 (****)
 (* when raising ocaml exception and [improved_stacktrace] is enabled,
