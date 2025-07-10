@@ -551,6 +551,7 @@ let rec constant_rec ~ctx x level instrs =
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> targetint i, instrs
   | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
+  | Null_ -> s_var "null", instrs
 
 let constant ~ctx x level =
   let expr, instr = constant_rec ~ctx x level [] in
@@ -1706,6 +1707,9 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Lt, cx, cy)))
+        | Extern "caml_is_null", [ a ] ->
+            let* cx = access' ~ctx a in
+            return (maybe_bool ctx x (J.EBin (EqEqEq, cx, s_var "null")))
         | Extern "caml_js_equals", [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
@@ -2496,6 +2500,7 @@ let init () =
     ; "caml_le_float"
     ; "caml_gt_float"
     ; "caml_lt_float"
+    ; "caml_is_null"
     ]
     ~f:(fun name -> Primitive.register name `Pure None None);
   List.iter [ "caml_js_equals"; "caml_js_strict_equals" ] ~f:(fun name ->

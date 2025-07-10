@@ -65,6 +65,7 @@ type typ =
   | Number of boxed_number * boxed_status
   | Tuple of typ array
   | Bigarray of Bigarray.t
+  | Null
   | Bot
 
 val constant_type : Code.constant -> typ
