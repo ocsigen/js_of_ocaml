@@ -267,7 +267,8 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
           | _ -> c, b
         in
         { expr with pexp_desc = Pexp_function (params, c, b) }
-    | _ -> Exp.fun_ label None (Pat.constraint_ pat typ) expr
+    | _ -> 
+      Ppxlib_jane.Ast_builder.Default.add_fun_param ~loc:!Ppxlib.Ast_helper.default_loc label None (Pat.constraint_ pat typ) expr
   in
   let invoker =
     List.fold_right2
@@ -326,10 +327,10 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
   in
   Exp.apply
     ~loc:apply_loc
-    { invoker with pexp_attributes = [ merlin_hide ] }
+    { invoker with pexp_attributes = invoker.pexp_attributes @ [ merlin_hide ] }
     ((app_arg obj :: args)
     @ [ app_arg
-          (Exp.fun_
+          (Ppxlib_jane.Ast_builder.Default.add_fun_param
              ~loc:gloc
              nolabel
              None
@@ -372,7 +373,7 @@ let prop_get ~loc obj prop =
     invoker
     [ app_arg obj
     ; app_arg
-        (Exp.fun_
+        (Ppxlib_jane.Ast_builder.Default.add_fun_param
            ~loc:gloc
            nolabel
            None
@@ -396,9 +397,8 @@ let prop_get ~loc obj prop =
 let prop_set ~loc ~prop_loc obj prop value =
   let gloc = { obj.pexp_loc with Location.loc_ghost = true } in
   let obj =
-    { (Exp.constraint_ ~loc:gloc obj (open_t gloc)) with
-      pexp_attributes = [ merlin_hide ]
-    }
+    let body = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
+    { body with pexp_attributes = body.pexp_attributes @ [ merlin_hide ] }
   in
   let invoker =
     invoker
@@ -426,7 +426,7 @@ let prop_set ~loc ~prop_loc obj prop value =
     [ app_arg obj
     ; app_arg value
     ; app_arg
-        (Exp.fun_
+        (Ppxlib_jane.Ast_builder.Default.add_fun_param
            ~loc:{ loc with loc_ghost = true }
            nolabel
            None
@@ -935,3 +935,5 @@ let mapper =
     |> Ppxlib_ast.Selected_ast.to_ocaml Expression
   in
   { Ocaml_ast_mapper.default_mapper with expr }
+
+
