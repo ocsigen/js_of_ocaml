@@ -1297,7 +1297,13 @@ module Math = struct
     { W.params = List.init ~len:n ~f:(fun _ : W.value_type -> F64); result = [ F64 ] }
 
   let unary name x =
-    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 1)) in
+    let* f =
+      register_import
+        ~allow_tail_call:false
+        ~import_module:"Math"
+        ~name
+        (Fun (float_func_type 1))
+    in
     let* x = x in
     return (W.Call (f, [ x ]))
 
@@ -1340,7 +1346,13 @@ module Math = struct
   let log10 f = unary "log10" f
 
   let binary name x y =
-    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 2)) in
+    let* f =
+      register_import
+        ~allow_tail_call:false
+        ~import_module:"Math"
+        ~name
+        (Fun (float_func_type 2))
+    in
     let* x = x in
     let* y = y in
     return (W.Call (f, [ x; y ]))
