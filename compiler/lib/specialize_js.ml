@@ -30,6 +30,12 @@ let debug_stats = Debug.find "stats-debug"
 
 let specialize_instr opt_count ~target info i =
   match i, target with
+  | Let (x, Prim (Extern "caml_make_unboxed_int32_vect_bytecode", [y])), _ ->
+      Let (x, Prim (Extern "caml_make_vect", [y; Pc (Int32 0l)]))
+  | Let (x, Prim (Extern "caml_make_unboxed_int64_vect_bytecode", [y])), _ ->
+      Let (x, Prim (Extern "caml_make_vect", [y; Pc (Int64 0L)]))
+  | Let (x, Prim (Extern "caml_make_unboxed_nativeint_vect_bytecode", [y])), _ ->
+      Let (x, Prim (Extern "caml_make_vect", [y; Pc (NativeInt 0l)]))
   | Let (x, Prim (Extern "caml_format_int", [ y; z ])), `JavaScript -> (
       (* We can implement the special case where the format string is "%s" in JavaScript
          in a concise and efficient way with [""+x]. It does not make as much sense in
