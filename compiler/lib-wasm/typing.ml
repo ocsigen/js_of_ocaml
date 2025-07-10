@@ -169,8 +169,8 @@ let mark_function_parameters { blocks; _ } =
   function_parameters
 
 type st =
-  { state : state
-  ; info : info
+  { global_flow_state : Global_flow.state
+  ; global_flow_info : Global_flow.info
   ; function_parameters : Var.ISet.t
   }
 
@@ -352,7 +352,7 @@ let prim_type ~approx prim args =
   | _ -> Top
 
 let propagate st approx x : Domain.t =
-  match st.state.defs.(Var.idx x) with
+  match st.global_flow_state.defs.(Var.idx x) with
   | Phi { known; others; unit } ->
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
       let res = if unit then Domain.join (Int Unnormalized) res else res in
@@ -365,7 +365,7 @@ let propagate st approx x : Domain.t =
           Tuple
             (Array.mapi
                ~f:(fun i y ->
-                 match st.state.mutable_fields.(Var.idx x) with
+                 match st.global_flow_state.mutable_fields.(Var.idx x) with
                  | All_fields -> Top
                  | Some_fields s when IntSet.mem i s -> Top
                  | Some_fields _ | No_field ->
@@ -381,15 +381,15 @@ let propagate st approx x : Domain.t =
           ( Extern ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
       | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
-          match Var.Tbl.get st.info.info_approximation y with
+          match Var.Tbl.get st.global_flow_info.info_approximation y with
           | Values { known; others } ->
               Domain.join_set
                 ~others
                 (fun z ->
-                  match st.state.defs.(Var.idx z) with
+                  match st.global_flow_state.defs.(Var.idx z) with
                   | Expr (Block (_, lst, _, _)) ->
                       let m =
-                        match st.state.mutable_fields.(Var.idx z) with
+                        match st.global_flow_state.mutable_fields.(Var.idx z) with
                         | No_field -> false
                         | Some_fields _ | All_fields -> true
                       in
@@ -410,18 +410,18 @@ let propagate st approx x : Domain.t =
       | Prim (Extern prim, args) -> prim_type ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
-          match Var.Tbl.get st.info.info_approximation f with
+          match Var.Tbl.get st.global_flow_info.info_approximation f with
           | Values { known; others } ->
               Domain.join_set
                 ~others
                 (fun g ->
-                  match st.state.defs.(Var.idx g) with
+                  match st.global_flow_state.defs.(Var.idx g) with
                   | Expr (Closure (params, _, _))
                     when List.length args = List.length params ->
                       Domain.box
                         (Domain.join_set
                            (fun y -> Var.Tbl.get approx y)
-                           (Var.Map.find g st.state.return_values))
+                           (Var.Map.find g st.global_flow_state.return_values))
                   | Expr (Closure (_, _, _)) ->
                       (* The function is partially applied or over applied *)
                       Top
@@ -436,13 +436,14 @@ module Solver = G.Solver (Domain)
 let solver st =
   let associated_list h x = try Var.Hashtbl.find h x with Not_found -> [] in
   let g =
-    { G.domain = st.state.vars
+    { G.domain = st.global_flow_state.vars
     ; G.iter_children =
         (fun f x ->
-          List.iter ~f (Var.Tbl.get st.state.deps x);
+          List.iter ~f (Var.Tbl.get st.global_flow_state.deps x);
           List.iter
-            ~f:(fun g -> List.iter ~f (associated_list st.state.function_call_sites g))
-            (associated_list st.state.functions_from_returned_value x))
+            ~f:(fun g ->
+              List.iter ~f (associated_list st.global_flow_state.function_call_sites g))
+            (associated_list st.global_flow_state.functions_from_returned_value x))
     }
   in
   Solver.f () g (propagate st)
@@ -583,7 +584,7 @@ let box_numbers p st types =
       | _ -> ());
       match typ with
       | Number (_, Unboxed) | Top -> (
-          match st.state.defs.(Var.idx y) with
+          match st.global_flow_state.defs.(Var.idx y) with
           | Expr _ -> ()
           | Phi { known; _ } -> Var.Set.iter box known)
       | Number (_, Boxed) | Int _ | Tuple _ | Bot -> ())
@@ -623,31 +624,35 @@ let box_numbers p st types =
       | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ -> ())
     p.blocks
 
-let f ~state ~info ~deadcode_sentinal p =
+type t = { types : typ Var.Tbl.t }
+
+let f ~global_flow_state ~global_flow_info ~deadcode_sentinal p =
   let t = Timer.make () in
-  update_deps state p;
+  update_deps global_flow_state p;
   let function_parameters = mark_function_parameters p in
-  let st = { state; info; function_parameters } in
-  let typ = solver st in
-  Var.Tbl.set typ deadcode_sentinal (Int Normalized);
-  box_numbers p st typ;
+  let st = { global_flow_state; global_flow_info; function_parameters } in
+  let types = solver st in
+  Var.Tbl.set types deadcode_sentinal (Int Normalized);
+  box_numbers p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
     Var.ISet.iter
       (fun x ->
-        match state.defs.(Var.idx x) with
+        match global_flow_state.defs.(Var.idx x) with
         | Expr _ -> ()
         | Phi _ ->
-            let t = Var.Tbl.get typ x in
+            let t = Var.Tbl.get types x in
             if not (Domain.equal t Top)
             then Format.eprintf "%a: %a@." Var.print x Domain.print t)
-      state.vars;
+      global_flow_state.vars;
     Print.program
       Format.err_formatter
       (fun _ i ->
         match i with
-        | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get typ x)
+        | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get types x)
         | _ -> "")
       p);
-  typ
+  { types }
+
+let var_type info x = Var.Tbl.get info.types x
