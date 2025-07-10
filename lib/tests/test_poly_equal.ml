@@ -24,7 +24,7 @@ let%expect_test "poly equal" =
   assert (obj1 = obj2);
   assert (not (obj1 = obj2));
   ()
-[@@expect.uncaught_exn {| "Assert_failure lib/tests/test_poly_equal.ml:24:2" |}]
+[@@expect.uncaught_exn {| "Assert_failure test_poly_equal.ml:24:2" |}]
 
 let%expect_test "poly equal neg" =
   let obj1 = Js.Unsafe.obj [||] in
