@@ -15,7 +15,7 @@ let%expect_test "parsing" =
   test "a";
   [%expect {|
     input: "a"
-    Stdlib.Parsing.Parse_error
+    Stdlib__Parsing.Parse_error
     failure |}];
   test "aa";
   [%expect {|
@@ -25,7 +25,7 @@ let%expect_test "parsing" =
   test "aaa";
   [%expect {|
     input: "aaa"
-    Stdlib.Parsing.Parse_error
+    Stdlib__Parsing.Parse_error
     failure |}];
   let (_ : bool) = Parsing.set_trace old in
   ()
