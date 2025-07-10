@@ -26,26 +26,6 @@ let%expect_test _ =
   Printf.printf "%g\n" (1. /. z);
   [%expect {|-inf|}]
 
-module Float = struct
-  include Float
-
-  external acosh : float -> float = "caml_acosh_float"
-
-  external asinh : float -> float = "caml_asinh_float"
-
-  external atanh : float -> float = "caml_atanh_float"
-
-  external erf : float -> float = "caml_erf_float"
-
-  external erfc : float -> float = "caml_erfc_float"
-
-  external cbrt : float -> float = "caml_cbrt_float"
-
-  external exp2 : float -> float = "caml_exp2_float"
-
-  external log2 : float -> float = "caml_log2_float"
-end
-
 let print f =
   match Float.classify_float f with
   | FP_nan -> print_endline "nan"
