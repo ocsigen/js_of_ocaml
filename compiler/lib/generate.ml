@@ -1282,7 +1282,9 @@ let _ =
       bool (J.EBin (J.EqEqEq, cx, cy)));
   register_bin_prim "caml_js_instanceof" `Mutator (fun cx cy _ ->
       bool (J.EBin (J.InstanceOf, cx, cy)));
-  register_un_prim "caml_js_typeof" `Mutator (fun cx _ -> J.EUn (J.Typeof, cx))
+  register_un_prim "caml_js_typeof" `Mutator (fun cx _ -> J.EUn (J.Typeof, cx));
+  register_un_prim "caml_with_async_exns" `Mutator (fun closure loc ->
+      J.call closure [int 0] loc)
 
 (****)
 (* when raising ocaml exception and [improved_stacktrace] is enabled,

@@ -93,10 +93,11 @@ let main =
 
 let (_ : int) =
   try
-    Cmdliner.Cmd.eval
-      ~catch:false
-      ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
-      main
+    Sys.with_async_exns (fun () ->
+      Cmdliner.Cmd.eval
+        ~catch:false
+        ~argv:(Jsoo_cmdline.normalize_argv ~warn:(warn "%s") Sys.argv)
+        main)
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in

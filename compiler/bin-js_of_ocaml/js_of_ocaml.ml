@@ -43,31 +43,32 @@ let () =
     | _ -> argv
   in
   try
-    match
-      Cmdliner.Cmd.eval_value
-        ~catch:false
-        ~argv
-        (Cmdliner.Cmd.group
-           ~default:Compile.term
-           (Compile.info "js_of_ocaml")
-           [ Link.command
-           ; Build_fs.command
-           ; Build_runtime.command
-           ; Print_runtime.command
-           ; Check_runtime.command
-           ; Compile.command
-           ])
-    with
-    | Ok (`Ok () | `Help | `Version) ->
-        if !warnings > 0 && !werror
-        then (
-          Format.eprintf "%s: all warnings being treated as errors@." Sys.argv.(0);
-          exit 1)
-        else exit 0
-    | Error `Term -> exit 1
-    | Error `Parse -> exit Cmdliner.Cmd.Exit.cli_error
-    | Error `Exn -> ()
-    (* should not happen *)
+    Sys.with_async_exns (fun () ->
+      match
+        Cmdliner.Cmd.eval_value
+          ~catch:false
+          ~argv
+          (Cmdliner.Cmd.group
+             ~default:Compile.term
+             (Compile.info "js_of_ocaml")
+             [ Link.command
+             ; Build_fs.command
+             ; Build_runtime.command
+             ; Print_runtime.command
+             ; Check_runtime.command
+             ; Compile.command
+             ])
+      with
+      | Ok (`Ok () | `Help | `Version) ->
+          if !warnings > 0 && !werror
+          then (
+            Format.eprintf "%s: all warnings being treated as errors@." Sys.argv.(0);
+            exit 1)
+          else exit 0
+      | Error `Term -> exit 1
+      | Error `Parse -> exit Cmdliner.Cmd.Exit.cli_error
+      | Error `Exn -> ()
+      (* should not happen *))
   with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in
