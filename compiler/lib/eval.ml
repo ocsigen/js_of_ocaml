@@ -285,7 +285,8 @@ let eval_prim x =
       | "caml_checked_int32_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
       | "caml_nativeint_of_int", [ Int i ] -> nativeint (Targetint.to_int32 i)
       (* int64 *)
-      | "caml_int64_bits_of_float", [ Float f ] -> int64 f
+
+      (* | "caml_int64_bits_of_float", [ Float f ] -> int64 f *)
       | "caml_int64_float_of_bits", [ Int64 i ] -> Some (Float i)
       | "caml_int64_of_float", [ Float f ] ->
           int64 (Int64.of_float (Int64.float_of_bits f))
