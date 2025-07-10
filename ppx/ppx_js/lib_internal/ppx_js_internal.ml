@@ -537,14 +537,6 @@ let filter_map f l =
 
 let rec create_meth_ty exp =
   match exp.pexp_desc with
-  | Pexp_fun (label, _, _, body) -> label :: create_meth_ty body
-  | Pexp_function _ -> [ nolabel ]
-  | Pexp_newtype (_, body) -> create_meth_ty body
-  | _ -> []
-[@@if ast_version < 502]
-
-let rec create_meth_ty exp =
-  match exp.pexp_desc with
   | Pexp_function (params, _, body) -> (
       List.filter_map params ~f:(function
         | { pparam_desc = Pparam_newtype _; _ } -> None
@@ -556,7 +548,6 @@ let rec create_meth_ty exp =
           (* TODO: should we recurse or not ? *)
           create_meth_ty e)
   | _ -> []
-[@@if ast_version >= 502]
 
 let preprocess_literal_object mappper fields :
     [ `Fields of field_desc list | `Error of _ ] =
@@ -685,7 +676,7 @@ let literal_object self_id (fields : field_desc list) =
     | Val (_, _, _, body) -> body
     | Meth (_, _, _, (body, ty), _) -> (
         match body.pexp_desc, ty with
-        | ((Pexp_function (params, c, b), None) [@if ast_version >= 502]) ->
+        | ((Pexp_function (params, c, b), None)) ->
             let params =
               { pparam_desc = Pparam_val (nolabel, None, self_id)
               ; pparam_loc = { body.pexp_loc with loc_ghost = true }
@@ -693,9 +684,9 @@ let literal_object self_id (fields : field_desc list) =
               :: params
             in
             { body with pexp_desc = Pexp_function (params, c, b) }
-        | ((_, Some ty) [@if ast_version >= 502]) -> (
+        | ((_, Some ty)) -> (
             let e =
-              Exp.fun_
+              Ppxlib_jane.Ast_builder.Default.add_fun_param
                 ~loc:{ body.pexp_loc with loc_ghost = true }
                 Nolabel
                 None
@@ -703,18 +694,13 @@ let literal_object self_id (fields : field_desc list) =
                 body
             in
             match e.pexp_desc with
-            | Pexp_function (params, None, b) ->
-                { e with pexp_desc = Pexp_function (params, Some (Pconstraint ty), b) }
+            | Pexp_function (params, ({ ret_type_constraint = None ; _ } as function_constraint), b) ->
+                let ret_type_constraint = Some (Pconstraint ty) in
+                let function_constraint = { function_constraint with ret_type_constraint } in
+                { e with pexp_desc = Pexp_function (params, function_constraint , b) }
             | _ -> assert false)
-        | ((_, Some ty) [@if ast_version < 502]) ->
-            Exp.fun_
-              ~loc:{ body.pexp_loc with loc_ghost = true }
-              Nolabel
-              None
-              self_id
-              (Exp.constraint_ body ty)
         | _, None ->
-            Exp.fun_
+          Ppxlib_jane.Ast_builder.Default.add_fun_param
               ~loc:{ body.pexp_loc with loc_ghost = true }
               Nolabel
               None
@@ -818,7 +804,7 @@ let literal_object self_id (fields : field_desc list) =
                      in
                      { fun_ with pexp_desc = Pexp_function (params, c, b) }
                  | _ ->
-                     Exp.fun_
+                     Ppxlib_jane.Ast_builder.Default.add_fun_param
                        ~loc:gloc
                        nolabel
                        None
