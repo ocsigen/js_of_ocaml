@@ -32,7 +32,7 @@ let rec constant_of_const c : Code.constant =
   | Const_float_array sl | Const_float_block sl ->
       let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
       Float_array (Array.of_list l)
-  | Const_block (tag, l) ->
+  | Const_mixed_block (tag, _, l) | Const_block (tag, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
 
