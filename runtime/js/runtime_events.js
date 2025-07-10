@@ -83,7 +83,8 @@ function caml_runtime_events_read_poll(_cursor, _callbacks, _num) {
 }
 
 //Provides: caml_ml_runtime_events_path const
-//Version: >= 5.3
+//Version: >= 5.2
+//Since 5.3 in OCaml mainstream, but also available in OxCaml
 function caml_ml_runtime_events_path(_unit) {
   return 0;
 }
