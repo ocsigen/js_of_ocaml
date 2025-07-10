@@ -89,6 +89,9 @@
             (field (ref $function_2))
             (field (mut (ref null $cps_closure))))))
 
+   (type $null (struct))
+   (global $null (export "null") (ref eq) (struct.new $null))
+
    (global $forcing_tag i32 (i32.const 244))
    (global $cont_tag (export "cont_tag") i32 (i32.const 245))
    (global $lazy_tag (export "lazy_tag") i32 (i32.const 246))
@@ -263,6 +266,8 @@
       (local.get $res))
 
    (func (export "caml_obj_tag") (param $v (ref eq)) (result (ref eq))
+      (if (ref.eq (local.get $v) (global.get $null))
+         (then (return (ref.i31 (i32.const 1010)))))
       (if (ref.test (ref i31) (local.get $v))
          (then (return (ref.i31 (i32.const 1000)))))
       (drop (block $not_block (result (ref eq))
@@ -515,4 +520,22 @@
          (call $caml_callback_1 (local.get $f) (local.get $x))
          (local.get $y)))
 ))
+
+   (func (export "caml_is_null") (param $x (ref eq)) (result (ref eq))
+      (if (result (ref eq)) (ref.eq (local.get $x) (global.get $null))
+        (then (ref.i31 (i32.const 1)))
+        (else (ref.i31 (i32.const 0)))))
+
+   (data $int_as_pointer_not_implemented "caml_int_as_pointer is not supported")
+
+   (func (export "caml_int_as_pointer") (param $x (ref eq)) (result (ref eq))
+      (if (result (ref eq))
+         (i32.eq (i31.get_s (ref.cast (ref i31) (local.get $x))) (i32.const 0))
+         (then (global.get $null))
+         (else
+          (call $caml_failwith
+            (array.new_data $bytes $int_as_pointer_not_implemented
+              (i32.const 0) (i32.const 35)))
+           (ref.i31 (i32.const 0)))))
+
 )

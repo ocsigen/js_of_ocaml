@@ -44,6 +44,7 @@ var caml_marshal_constants = {
   CODE_CUSTOM: 0x12,
   CODE_CUSTOM_LEN: 0x18,
   CODE_CUSTOM_FIXED: 0x19,
+  CODE_NULL: 0x1f
 };
 
 //Provides: UInt8ArrayReader
@@ -492,6 +493,8 @@ function caml_input_value_from_reader(reader) {
             }
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
+          case 0x1f: //cst.CODE_NULL:
+            return null;
           default:
             caml_failwith("input_value: ill-formed message");
         }
@@ -684,7 +687,9 @@ var caml_output_val = (function () {
     }
 
     function extern_rec(v) {
-      if (v.caml_custom) {
+      if (v === null) {
+        writer.write(8, 0x1f /*cst.CODE_NULL*/);
+      } else if (v.caml_custom) {
         if (memo(v)) return;
         var name = v.caml_custom;
         var ops = caml_custom_ops[name];

@@ -25,6 +25,7 @@
       (func $caml_obj_tag (param (ref eq)) (result (ref eq))))
    (import "obj" "caml_is_closure"
       (func $caml_is_closure (param (ref eq)) (result i32)))
+   (import "obj" "null" (global $null (ref eq)))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param (ref eq))))
    (import "effect" "caml_is_continuation"
@@ -238,6 +239,13 @@
             (if (local.get $total)
                (then
                   (br_if $next_item (ref.eq (local.get $v1) (local.get $v2)))))
+            (if (ref.eq (local.get $v1) (global.get $null))
+               (then
+                  (if (ref.eq (local.get $v2) (global.get $null))
+                     (then (return (i32.const 0)))
+                     (else (return (i32.const -1))))))
+            (if (ref.eq (local.get $v2) (global.get $null))
+               (then (return (i32.const 1))))
             (drop (block $v1_is_not_int (result (ref eq))
                (local.set $i1
                   (br_on_cast_fail $v1_is_not_int (ref eq) (ref i31)

@@ -471,8 +471,16 @@ end = struct
 
   let ident_native = ident_of_custom (Obj.repr 0n)
 
+  let ident_f32 = ident_of_custom (Obj.repr 0.s)
+
+  external is_null : Obj.t -> bool = "%is_null"
+
+  let is_null obj = is_null (Sys.opaque_identity obj)
+
   let rec parse x =
-    if Obj.is_block x
+    if is_null x then
+      Null
+    else if Obj.is_block x
     then
       let tag = Obj.tag x in
       if tag = Obj.string_tag
@@ -523,6 +531,7 @@ end = struct
         match target with
         | `JavaScript -> true
         | `Wasm -> false)
+    | Null -> true
 end
 
 let const32 i = Constant (Int (Targetint.of_int32_exn i))
@@ -2877,9 +2886,6 @@ module Reloc = struct
     }
 
   let constant_of_const x = Ocaml_compiler.constant_of_const x
-  [@@if ocaml_version < (5, 1, 0)]
-
-  let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
 
   (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =

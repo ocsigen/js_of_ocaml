@@ -57,6 +57,13 @@ function caml_atomic_cas_field(b, i, o, n) {
   return 0;
 }
 
+//Provides: caml_atomic_compare_exchange
+function caml_atomic_compare_exchange(ref, o, n) {
+  var old = ref[1];
+  if (old === o) ref[1] = n;
+  return old;
+}
+
 //Provides: caml_atomic_fetch_add
 //Version: >= 5
 function caml_atomic_fetch_add(ref, i) {
@@ -71,6 +78,41 @@ function caml_atomic_fetch_add_field(b, i, n) {
   var old = b[i + 1];
   b[i + 1] += n;
   return old;
+}
+
+//Provides: caml_atomic_add
+function caml_atomic_add(ref, i) {
+  var old = ref[1];
+  ref[1] += i;
+  return 0;
+}
+
+//Provides: caml_atomic_sub
+function caml_atomic_sub(ref, i) {
+  var old = ref[1];
+  ref[1] -= i;
+  return 0;
+}
+
+//Provides: caml_atomic_land
+function caml_atomic_land(ref, i) {
+  var old = ref[1];
+  ref[1] &= i;
+  return 0;
+}
+
+//Provides: caml_atomic_lor
+function caml_atomic_lor(ref, i) {
+  var old = ref[1];
+  ref[1] |= i;
+  return 0;
+}
+
+//Provides: caml_atomic_lxor
+function caml_atomic_lxor(ref, i) {
+  var old = ref[1];
+  ref[1] ^= i;
+  return 0;
 }
 
 //Provides: caml_atomic_exchange
