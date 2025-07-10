@@ -37,7 +37,7 @@ module Generate (Target : Target_sig.S) = struct
     ; in_cps : Effects.in_cps
     ; global_flow_info : Global_flow.info
     ; fun_info : Call_graph_analysis.t
-    ; types : Typing.typ Var.Tbl.t
+    ; types : Typing.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -142,11 +142,9 @@ module Generate (Target : Target_sig.S) = struct
     let* g = g in
     return (W.BinOp (I32 op, f, g))
 
-  let get_var_type ctx x = Var.Tbl.get ctx.types x
-
   let get_type ctx p =
     match p with
-    | Pv x -> get_var_type ctx x
+    | Pv x -> Typing.var_type ctx.types x
     | Pc c -> Typing.constant_type c
 
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
@@ -173,7 +171,7 @@ module Generate (Target : Target_sig.S) = struct
     | Number (Float, Unboxed), _ -> Memory.box_float e
     | _ -> e
 
-  let load_and_box ctx x = convert ~from:(get_var_type ctx x) ~into:Top (load x)
+  let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
   let transl_prim_arg ctx ?(typ = Typing.Top) x =
     convert
@@ -1093,7 +1091,7 @@ module Generate (Target : Target_sig.S) = struct
     | _ -> None
 
   let box_number_if_needed ctx x e =
-    match get_var_type ctx x with
+    match Typing.var_type ctx.types x with
     | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
     | _ -> e
 
@@ -1121,8 +1119,8 @@ module Generate (Target : Target_sig.S) = struct
                   (List.map2
                      ~f:(fun a p ->
                        convert
-                         ~from:(get_var_type ctx a)
-                         ~into:(get_var_type ctx p)
+                         ~from:(Typing.var_type ctx.types a)
+                         ~into:(Typing.var_type ctx.types p)
                          (load a))
                      args
                      params)
@@ -1154,7 +1152,7 @@ module Generate (Target : Target_sig.S) = struct
             (expression_list
                (fun x ->
                  convert
-                   ~from:(get_var_type ctx x)
+                   ~from:(Typing.var_type ctx.types x)
                    ~into:(Number (Float, Unboxed))
                    (load x))
                (Array.to_list a))
@@ -1178,7 +1176,7 @@ module Generate (Target : Target_sig.S) = struct
     | Constant c ->
         Constant.translate
           ~unboxed:
-            (match get_var_type ctx x with
+            (match Typing.var_type ctx.types x with
             | Number (_, Unboxed) -> true
             | _ -> false)
           c
@@ -1285,13 +1283,18 @@ module Generate (Target : Target_sig.S) = struct
   and translate_instr ctx context i =
     match i with
     | Assign (x, y) ->
-        assign x (convert ~from:(get_var_type ctx y) ~into:(get_var_type ctx x) (load y))
+        assign
+          x
+          (convert
+             ~from:(Typing.var_type ctx.types y)
+             ~into:(Typing.var_type ctx.types x)
+             (load y))
     | Let (x, e) ->
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
         else
           store
-            ?typ:(unboxed_type (get_var_type ctx x))
+            ?typ:(unboxed_type (Typing.var_type ctx.types x))
             x
             (translate_expr ctx context x e)
     | Set_field (x, n, Non_float, y) ->
@@ -1300,7 +1303,10 @@ module Generate (Target : Target_sig.S) = struct
         Memory.float_array_set
           (load_and_box ctx x)
           (return (W.Const (I32 (Int32.of_int n))))
-          (convert ~from:(get_var_type ctx y) ~into:(Number (Float, Unboxed)) (load y))
+          (convert
+             ~from:(Typing.var_type ctx.types y)
+             ~into:(Number (Float, Unboxed))
+             (load y))
     | Offset_ref (x, n) ->
         Memory.set_field
           (load x)
@@ -1310,7 +1316,7 @@ module Generate (Target : Target_sig.S) = struct
     | Array_set (x, y, z) ->
         Memory.array_set
           (load x)
-          (convert ~from:(get_var_type ctx y) ~into:(Int Normalized) (load y))
+          (convert ~from:(Typing.var_type ctx.types y) ~into:(Int Normalized) (load y))
           (load_and_box ctx z)
     | Event loc -> event loc
 
@@ -1330,8 +1336,8 @@ module Generate (Target : Target_sig.S) = struct
         if Code.Var.compare x y = 0
         then visited, None, l
         else
-          let tx = get_var_type ctx x in
-          let ty = get_var_type ctx y in
+          let tx = Typing.var_type ctx.types x in
+          let ty = Typing.var_type ctx.types y in
           if Var.Set.mem y prev
           then
             let t = Code.Var.fresh () in
@@ -1531,7 +1537,7 @@ module Generate (Target : Target_sig.S) = struct
               let context' = extend_context fall_through context in
               if_
                 { params = []; result = result_typ }
-                (match get_var_type ctx x with
+                (match Typing.var_type ctx.types x with
                 | Int Normalized -> load x
                 | Int Unnormalized -> Arith.(load x lsl const 1l)
                 | _ -> Value.check_is_not_zero (load x))
@@ -1550,7 +1556,10 @@ module Generate (Target : Target_sig.S) = struct
                 label_index context pc
               in
               let* e =
-                convert ~from:(get_var_type ctx x) ~into:(Int Normalized) (load x)
+                convert
+                  ~from:(Typing.var_type ctx.types x)
+                  ~into:(Int Normalized)
+                  (load x)
               in
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
@@ -1599,7 +1608,7 @@ module Generate (Target : Target_sig.S) = struct
           let* _ =
             add_var
               ?typ:
-                (match get_var_type ctx x with
+                (match Typing.var_type ctx.types x with
                 | Typing.Int (Normalized | Unnormalized) -> Some I32
                 | Number ((Int32 | Nativeint), Unboxed) -> Some I32
                 | Number (Int64, Unboxed) -> Some I64
@@ -1683,7 +1692,7 @@ module Generate (Target : Target_sig.S) = struct
                       ~f:(fun x : W.value_type ->
                         Option.value
                           ~default:Type.value
-                          (unboxed_type (get_var_type ctx x)))
+                          (unboxed_type (Typing.var_type ctx.types x)))
                       params
                     @ [ Type.value ]
                 ; result = [ Type.value ]
