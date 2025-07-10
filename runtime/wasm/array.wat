@@ -110,7 +110,8 @@
          (struct.get $float 0 (ref.cast (ref $float) (local.get $v))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_array_sub")
+   (export "caml_array_sub_local" (func $caml_array_sub))
+   (func $caml_array_sub (export "caml_array_sub")
       (param $a (ref eq)) (param $i (ref eq)) (param $vlen (ref eq))
       (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $len i32)
