@@ -2921,12 +2921,12 @@ module Reloc = struct
             patch (slot_for_global (Ident.name id))
         | ((Reloc_setglobal id) [@if ocaml_version < (5, 2, 0)]) ->
             patch (slot_for_global (Ident.name id))
-        | ((Reloc_getcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global id)
+        | ((Reloc_getcompunit id) [@if ocaml_version >= (5, 2, 0)]) ->
+            patch (slot_for_global (Compilation_unit.name_as_string id))
         | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
             patch (slot_for_global id)
-        | ((Reloc_setcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global id)
+        | ((Reloc_setcompunit id) [@if ocaml_version >= (5, 2, 0)]) ->
+            patch (slot_for_global (Compilation_unit.name_as_string id))
         | _ -> ())
 
   let primitives t =
