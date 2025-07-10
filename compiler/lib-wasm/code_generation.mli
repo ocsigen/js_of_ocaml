@@ -42,6 +42,7 @@ type context =
   ; mutable globalized_variables : Code.Var.Set.t
   ; value_type : Wasm_ast.value_type
   ; mutable unit_name : string option
+  ; mutable no_tail_call : unit Code.Var.Hashtbl.t
   }
 
 val make_context : value_type:Wasm_ast.value_type -> context
@@ -156,7 +157,11 @@ val register_type : string -> (unit -> type_def t) -> Wasm_ast.var t
 val heap_type_sub : Wasm_ast.heap_type -> Wasm_ast.heap_type -> bool t
 
 val register_import :
-  ?import_module:string -> name:string -> Wasm_ast.import_desc -> Wasm_ast.var t
+     ?allow_tail_call:bool
+  -> ?import_module:string
+  -> name:string
+  -> Wasm_ast.import_desc
+  -> Wasm_ast.var t
 
 val register_global :
      Wasm_ast.var
