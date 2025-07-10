@@ -165,7 +165,8 @@
          (local.get $len))
       (local.get $a'))
 
-   (func (export "caml_array_append")
+   (export "caml_array_append_local" (func $caml_array_append))
+   (func $caml_array_append (export "caml_array_append")
       (param $va1 (ref eq)) (param $va2 (ref eq)) (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $a (ref $block))
       (local $fa1 (ref $float_array)) (local $fa2 (ref $float_array))
