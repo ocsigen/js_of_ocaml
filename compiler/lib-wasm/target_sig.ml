@@ -20,12 +20,9 @@ module type S = sig
   type expression = Code_generation.expression
 
   module Memory : sig
-    val allocate :
-         tag:int
-      -> deadcode_sentinal:Code.Var.t
-      -> load:(Code.Var.t -> expression)
-      -> [ `Expr of Wasm_ast.expression | `Var of Wasm_ast.var ] list
-      -> expression
+    val allocate : tag:int -> Wasm_ast.expression list Code_generation.t -> expression
+
+    val allocate_float_array : Wasm_ast.expression list Code_generation.t -> expression
 
     val load_function_pointer :
          cps:bool
@@ -166,7 +163,7 @@ module type S = sig
   end
 
   module Constant : sig
-    val translate : Code.constant -> expression
+    val translate : unboxed:bool -> Code.constant -> expression
   end
 
   module Closure : sig
@@ -174,6 +171,7 @@ module type S = sig
          context:Code_generation.context
       -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
+      -> no_code_pointer:bool
       -> Code.Var.t
       -> expression
 
@@ -181,6 +179,7 @@ module type S = sig
          context:Code_generation.context
       -> closures:Closure_conversion.closure Code.Var.Map.t
       -> cps:bool
+      -> no_code_pointer:bool
       -> Code.Var.t
       -> unit Code_generation.t
 
@@ -253,6 +252,25 @@ module type S = sig
     val fmod : expression -> expression -> expression
 
     val round : expression -> expression
+  end
+
+  module Bigarray : sig
+    val get :
+         bound_error_index:int
+      -> kind:Typing.Bigarray.kind
+      -> layout:Typing.Bigarray.layout
+      -> expression
+      -> indices:expression list
+      -> expression
+
+    val set :
+         bound_error_index:int
+      -> kind:Typing.Bigarray.kind
+      -> layout:Typing.Bigarray.layout
+      -> expression
+      -> indices:expression list
+      -> expression
+      -> expression
   end
 
   val internal_primitives :
