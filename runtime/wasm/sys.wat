@@ -166,6 +166,10 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_sys_const_runtime5")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
    (@string $Unix "Unix")
    (@string $Win32 "Win32")
 
