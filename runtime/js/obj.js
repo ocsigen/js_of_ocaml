@@ -64,6 +64,28 @@ function caml_update_dummy_lazy(dummy, newval) {
   return 0;
 }
 
+//Provides: caml_obj_is_stack
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_obj_is_stack(_x) {
+  return 0;
+}
+
+//Provides: caml_succ_scannable_prefix_len
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_succ_scannable_prefix_len(_x) {
+  return 0;
+}
+
+//Provides: caml_obj_uniquely_reachable_words
+//Requires: caml_failwith
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_obj_uniquely_reachable_words(_x) {
+  caml_failwith("Obj.uniquely_reachable_words is not available in javascript.");
+}
+
 //Provides: caml_obj_tag
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
