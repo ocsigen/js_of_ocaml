@@ -86,7 +86,7 @@ module Symtable = struct
     let to_ident = function
       | Glob_compunit x -> Ident.create_persistent x
       | Glob_predef x -> Ident.create_predef x
-    [@@ocaml.warning "-32"]
+    [@@if ocaml_version < (5, 2, 0)]
   end
 
   module GlobalMap = struct
@@ -122,11 +122,13 @@ module Symtable = struct
     include GlobalMap
 
     let to_local = function
-      | Symtable.Global.Glob_compunit (Compunit x) -> Global.Glob_compunit x
+      | Symtable.Global.Glob_compunit x ->
+          Global.Glob_compunit (Compilation_unit.name_as_string x)
       | Symtable.Global.Glob_predef (Predef_exn x) -> Global.Glob_predef x
 
     let of_local = function
-      | Global.Glob_compunit x -> Symtable.Global.Glob_compunit (Compunit x)
+      | Global.Glob_compunit x ->
+          Symtable.Global.Glob_compunit (Compilation_unit.of_string x)
       | Global.Glob_predef x -> Symtable.Global.Glob_predef (Predef_exn x)
 
     let filter (p : Global.t -> bool) (gmap : t) =
@@ -153,10 +155,10 @@ module Symtable = struct
   let reloc_set_of_string name = Cmo_format.Reloc_setglobal (Ident.create_persistent name)
   [@@if ocaml_version < (5, 2, 0)]
 
-  let reloc_get_of_string name = Cmo_format.Reloc_getcompunit (Compunit name)
+  let reloc_get_of_string name = Cmo_format.Reloc_getcompunit (Compilation_unit.of_string name)
   [@@if ocaml_version >= (5, 2, 0)]
 
-  let reloc_set_of_string name = Cmo_format.Reloc_setcompunit (Compunit name)
+  let reloc_set_of_string name = Cmo_format.Reloc_setcompunit (Compilation_unit.of_string name)
   [@@if ocaml_version >= (5, 2, 0)]
 
   let reloc_ident name =
@@ -214,14 +216,13 @@ module Cmo_format = struct
   let name (t : t) = t.cu_name |> Compilation_unit.name_as_string [@@if ocaml_version < (5, 2, 0)]
 
   let name (t : t) =
-    let (Compunit name) = t.cu_name in
-    name
+    Compilation_unit.name_as_string t.cu_name
   [@@if ocaml_version >= (5, 2, 0)]
 
   let requires (t : t) = List.map ~f:Compilation_unit.name_as_string t.cu_required_globals
   [@@if ocaml_version < (5, 2, 0)]
 
-  let requires (t : t) = List.map t.cu_required_compunits ~f:(fun (Compunit u) -> u)
+  let requires (t : t) = List.map t.cu_required_compunits ~f:Compilation_unit.name_as_string
   [@@if ocaml_version >= (5, 2, 0)]
 
   let provides (t : t) =
@@ -234,7 +235,7 @@ module Cmo_format = struct
   let provides (t : t) =
     List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
         match reloc with
-        | Reloc_setcompunit (Compunit u) -> Some u
+        | Reloc_setcompunit u -> Some (Compilation_unit.name_as_string u)
         | Reloc_getcompunit _ | Reloc_getpredef _ | Reloc_literal _ | Reloc_primitive _ ->
             None)
   [@@if ocaml_version >= (5, 2, 0)]
