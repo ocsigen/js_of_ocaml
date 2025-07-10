@@ -408,3 +408,7 @@ let get_instr_exn code pc =
   | K_will_not_happen -> raise (Bad_instruction i)
   | _ -> ());
   ins
+
+let get_instr_name i =
+  if i < 0 || i >= Array.length ops then raise (Bad_instruction i);
+  ops.(i).name
