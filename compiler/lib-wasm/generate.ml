@@ -317,6 +317,12 @@ module Generate (Target : Target_sig.S) = struct
         | [ x ] -> f (transl_prim_arg ctx ?typ x)
         | l -> invalid_arity name l ~expected:1)
 
+  let register_un_prim_ctx name ?typ ?ret_typ f =
+    register_prim name `Mutator ~unbox:(is_unboxed typ) ?ret_typ (fun ctx context l ->
+        match l with
+        | [ x ] -> f context (transl_prim_arg ctx ?typ x)
+        | l -> invalid_arity name l ~expected:1)
+
   let register_bin_prim name k ?tx ?ty ?ret_typ f =
     let unbox = is_unboxed tx || is_unboxed ty in
     register_prim name k ~unbox ?ret_typ (fun ctx _ l ->
@@ -415,12 +421,44 @@ module Generate (Target : Target_sig.S) = struct
       ~ty:int_n
       ~ret_typ:float_u
       Memory.float_array_get;
+    register_bin_prim
+      "caml_array_unsafe_get_indexed_by_int32"
+      `Mutable
+      ~ty:int32_u
+      (fun x y -> Memory.gen_array_get x y);
+    register_bin_prim
+      "caml_array_unsafe_get_indexed_by_int64"
+      `Mutable
+      ~ty:int64_u
+      (fun x y ->
+        let y =
+          let* y = y in
+          return (W.I32WrapI64 y)
+        in
+        Memory.gen_array_get x y);
+    register_bin_prim
+      "caml_array_unsafe_get_indexed_by_nativeint"
+      `Mutable
+      ~ty:nativeint_u
+      (fun x y -> Memory.gen_array_get x y);
     register_tern_prim "caml_array_unsafe_set" ~ty:int_n (fun x y z ->
         seq (Memory.gen_array_set x y z) Value.unit);
     register_tern_prim "caml_array_unsafe_set_addr" ~ty:int_n (fun x y z ->
         seq (Memory.array_set x y z) Value.unit);
     register_tern_prim "caml_floatarray_unsafe_set" ~ty:int_n ~tz:float_u (fun x y z ->
         seq (Memory.float_array_set x y z) Value.unit);
+    register_tern_prim "caml_array_unsafe_set_indexed_by_int32" ~ty:int32_u (fun x y z ->
+        seq (Memory.gen_array_set x y z) Value.unit);
+    register_tern_prim "caml_array_unsafe_set_indexed_by_int64" ~ty:int64_u (fun x y z ->
+        let y =
+          let* y = y in
+          return (W.I32WrapI64 y)
+        in
+        seq (Memory.gen_array_set x y z) Value.unit);
+    register_tern_prim
+      "caml_array_unsafe_set_indexed_by_nativeint"
+      ~ty:nativeint_u
+      (fun x y z -> seq (Memory.gen_array_set x y z) Value.unit);
     register_bin_prim
       "caml_string_unsafe_get"
       `Pure
@@ -514,6 +552,50 @@ module Generate (Target : Target_sig.S) = struct
            let* cond = Arith.uge y (Memory.float_array_length (load a)) in
            instr (W.Br_if (label, cond)))
           x);
+    register_un_prim_ctx
+      "caml_checked_int32_to_int"
+      ~typ:int32_u
+      ~ret_typ:int_n
+      (fun context x ->
+        let y = Code.Var.fresh () in
+        seq
+          (let* () = store y x in
+           let label = label_index context bound_error_pc in
+           let* cond = Arith.((load y lsl const 1l) asr const 1l <> load y) in
+           instr (W.Br_if (label, cond)))
+          (load y));
+    register_un_prim_ctx
+      "caml_checked_nativeint_to_int"
+      ~typ:nativeint_u
+      ~ret_typ:int_n
+      (fun context x ->
+        let y = Code.Var.fresh () in
+        seq
+          (let* () = store y x in
+           let label = label_index context bound_error_pc in
+           let* cond = Arith.((load y lsl const 1l) asr const 1l <> load y) in
+           instr (W.Br_if (label, cond)))
+          (load y));
+    register_un_prim_ctx
+      "caml_checked_int64_to_int"
+      ~typ:int64_u
+      ~ret_typ:int_n
+      (fun context x ->
+        let y = Code.Var.fresh () in
+        seq
+          (let* () = store y x in
+           let* y = load y in
+           let label = label_index context bound_error_pc in
+           let cond =
+             W.BinOp
+               ( I64 Ne
+               , y
+               , BinOp (I64 (Shr U), BinOp (I64 Shl, y, Const (I64 33L)), Const (I64 33L))
+               )
+           in
+           instr (W.Br_if (label, cond)))
+          (let* y = load y in
+           return (W.I32WrapI64 y)));
     register_arith_bin_prim "caml_add_float" `Pure ~typ:float_u (fun f g ->
         float_bin_op Add f g);
     register_arith_bin_prim "caml_sub_float" ~typ:float_u `Pure (fun f g ->
@@ -1883,6 +1965,9 @@ module Generate (Target : Target_sig.S) = struct
                         | "caml_check_bound"
                         | "caml_check_bound_gen"
                         | "caml_check_bound_float"
+                        | "caml_checked_int32_to_int"
+                        | "caml_checked_nativeint_to_int"
+                        | "caml_checked_int64_to_int"
                         | "caml_ba_get_1"
                         | "caml_ba_get_2"
                         | "caml_ba_get_3"
