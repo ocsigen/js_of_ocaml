@@ -329,6 +329,7 @@ type constant =
   | Int64 of Int64.t
   | NativeInt of Int32.t (* Native int are 32bit on all known backend *)
   | Tuple of int * constant array * array_or_not
+  | Null
 
 module Constant = struct
   type t = constant
@@ -361,6 +362,9 @@ module Constant = struct
              b)
     | Float a, Float b ->
         Some (Float.ieee_equal (Int64.float_of_bits a) (Int64.float_of_bits b))
+    | Float32 a, Float32 b ->
+        Some (Float.ieee_equal (Int64.float_of_bits a) (Int64.float_of_bits b))
+    | Null, Null -> Some true
     | String _, NativeString _ | NativeString _, String _ -> None
     | Int _, Float _ | Float _, Int _ -> None
     | Int _, Float32 _ | Float32 _, Int _ -> None
@@ -409,6 +413,7 @@ module Constant = struct
     | ( (Int _ | Int32 _ | NativeInt _)
       , (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ) ->
         Some false
+    | (Null, _) | (_, Null) -> Some false
     (* Note: the following cases should not occur when compiling to Javascript *)
     | Int _, (Int32 _ | NativeInt _)
     | Int32 _, (Int _ | NativeInt _)
@@ -529,6 +534,7 @@ module Print = struct
               constant f a.(i)
             done;
             Format.fprintf f ")")
+    | Null -> Format.fprintf f "null"
 
   let arg f a =
     match a with

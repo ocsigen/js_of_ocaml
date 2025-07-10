@@ -18,6 +18,7 @@
 //Provides: caml_compare_val_tag
 //Requires: caml_is_ml_string, caml_is_ml_bytes
 function caml_compare_val_tag(a) {
+  if (a === null) return 1010; // null_tag
   if (typeof a === "number")
     return 1000; // int_tag (we use it for all numbers)
   else if (caml_is_ml_bytes(a))
@@ -93,6 +94,13 @@ function caml_compare_val(a, b, total) {
 
       // tags are different
       if (tag_a !== tag_b) {
+        if (tag_a === 1010) {
+          // Null is less than anything else
+          return -1;
+        }
+        if (tag_b === 1010) {
+          return 1;
+        }
         if (tag_a === 1000) {
           if (tag_b === 1255) {
             //immediate can compare against custom
@@ -193,6 +201,8 @@ function caml_compare_val(a, b, total) {
             if (!Number.isNaN(b)) return -1;
           }
           break;
+        case 1010: // Null pointer
+          return 0;
         case 1001: // The rest
           // Here we can be in the following cases:
           // 1. JavaScript primitive types

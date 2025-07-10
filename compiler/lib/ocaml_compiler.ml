@@ -36,9 +36,7 @@ let rec constant_of_const c : Code.constant =
   | Const_mixed_block (tag, _, l) | Const_block (tag, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-  | Const_null ->
-
-    failwith "[Const_null] not supported in JavaScript yet."
+  | Const_null -> Null
 
 module Symtable = struct
   (* Copied from ocaml/bytecomp/symtable.ml *)
