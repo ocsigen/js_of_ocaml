@@ -477,6 +477,7 @@ let constant_js_equal a b =
       Some (Float.ieee_equal (Int64.float_of_bits a) (Int64.float_of_bits b))
   | NativeString a, NativeString b -> Some (Native_string.equal a b)
   | String a, String b when Config.Flag.use_js_string () -> Some (String.equal a b)
+  | Null_, Null_ -> Some true
   | Int _, Float _ | Float _, Int _ -> None
   (* All other values may be distinct objects and thus different by [caml_js_equals]. *)
   | String _, _
@@ -492,7 +493,9 @@ let constant_js_equal a b =
   | NativeInt _, _
   | _, NativeInt _
   | Tuple _, _
-  | _, Tuple _ -> None
+  | _, Tuple _
+  | Null_, _
+  | _, Null_ -> None
 
 (* [eval_prim] does not distinguish the two constants *)
 let constant_equal a b =
@@ -504,10 +507,11 @@ let constant_equal a b =
   | Int32 a, Int32 b -> Int32.equal a b
   | NativeInt a, NativeInt b -> Int32.equal a b
   | Int64 a, Int64 b -> Int64.equal a b
+  | Null_, Null_ -> true
   (* We don't need to compare other constants, so let's just return false. *)
   | Tuple _, Tuple _ -> false
   | Float_array _, Float_array _ -> false
-  | (Int _ | Float _ | Int64 _ | Int32 _ | NativeInt _), _ -> false
+  | (Int _ | Float _ | Int64 _ | Int32 _ | NativeInt _ | Null_), _ -> false
   | (String _ | NativeString _), _ -> false
   | (Float_array _ | Tuple _), _ -> false
 
@@ -712,6 +716,7 @@ let the_cond_of info x =
     (fun x ->
       match Flow.Info.def info x with
       | Some (Constant (Int x)) -> if Targetint.is_zero x then Zero else Non_zero
+      | Some (Constant Null_) -> Zero
       | Some
           (Constant
              ( Int32 _
