@@ -144,7 +144,6 @@ let provided =
     ; "require" (* only available in node *)
     ; "Symbol"
     ; "ArrayBuffer"
-    ; "DataView"
     ; "Float32Array"
     ; "Float64Array"
     ; "Int16Array"
