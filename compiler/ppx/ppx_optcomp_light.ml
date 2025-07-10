@@ -166,7 +166,7 @@ let keep loc (attrs : attributes) =
                 Bool false
             | { pexp_desc = Pexp_constant (Pconst_integer (d, None)); _ } ->
                 Int (int_of_string d)
-            | { pexp_desc = Pexp_tuple l; _ } -> Tuple (List.map l ~f:eval)
+            | { pexp_desc = Pexp_tuple l; _ } -> Tuple (List.map l ~f:(fun (_label, l) -> eval l))
             | { pexp_desc = Pexp_apply (op, [ (Nolabel, a); (Nolabel, b) ]); pexp_loc; _ }
               -> (
                 let op = get_bin_op op in
