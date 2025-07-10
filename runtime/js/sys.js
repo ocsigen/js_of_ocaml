@@ -311,6 +311,11 @@ function caml_sys_isatty(_chan) {
   return 0;
 }
 
+//Provides: caml_sys_const_runtime5 const
+function caml_sys_const_runtime5(_unit) {
+    return 0;
+}
+
 //Provides: caml_runtime_variant
 //Requires: caml_string_of_jsbytes
 function caml_runtime_variant(_unit) {
