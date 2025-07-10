@@ -27,6 +27,12 @@ function caml_array_sub(a, i, len) {
   return a2;
 }
 
+//Provides: caml_array_sub_local mutable
+//Requires: caml_array_sub
+function caml_array_sub_local(a, i, len) {
+  return caml_array_sub(a, i, len);
+}
+
 //Provides: caml_floatarray_sub mutable
 //Requires: caml_array_sub
 //Version: >= 5.3
