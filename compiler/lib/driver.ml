@@ -737,6 +737,7 @@ let optimize_for_wasm ~shapes ~profile p =
     | None -> Global_flow.f ~fast:false optimized_code.program )
 
 let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p =
+  let p = Share.f p in
   let optimized_code, _ = optimize ~shapes ~profile ~keep_flow_data:false p in
   let exported_runtime = not standalone in
   let emit formatter =
