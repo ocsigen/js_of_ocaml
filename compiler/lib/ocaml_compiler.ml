@@ -24,7 +24,8 @@ let rec constant_of_const c : Code.constant =
   | Const_base (Const_int i) -> Int (Targetint.of_int_warning_on_overflow i)
   | Const_base (Const_char c) -> Int (Targetint.of_int_exn (Char.code c))
   | Const_base (Const_string (s, _, _)) -> String s
-  | Const_base (Const_float32 s | Const_unboxed_float32 s | Const_float s | Const_unboxed_float s) -> Float (Int64.bits_of_float (float_of_string s))
+  | Const_base (Const_float s | Const_unboxed_float s) -> Float (Int64.bits_of_float (float_of_string s))
+  | Const_base (Const_float32 s | Const_unboxed_float32 s) -> Float32 (Int64.bits_of_float (Float32.of_string s |> Float32.to_float))
   | Const_base (Const_int32 i | Const_unboxed_int32 i) -> Int32 i
   | Const_base (Const_int64 i | Const_unboxed_int64 i) -> Int64 i
   | Const_base (Const_nativeint i | Const_unboxed_nativeint i) -> NativeInt (Int32.of_nativeint_warning_on_overflow i)

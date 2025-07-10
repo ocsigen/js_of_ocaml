@@ -369,6 +369,17 @@ module Float = struct
   external ( >= ) : t -> t -> bool = "%greaterequal"
 end
 
+module Float32 = struct
+  type t = float32
+
+  external of_float : float -> t = "%float32offloat"
+  external to_float : t -> float = "%floatoffloat32"
+
+  (* In javascript/wasm, we define float32 parsing as rounding the 64-bit result.
+     This is not equivalent to native code, which parses to 32 bits directly. *)
+  let of_string s = float_of_string s |> of_float
+end
+
 module Bool = struct
   include Bool
 

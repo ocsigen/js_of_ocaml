@@ -16,6 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "float32" "float32_ops" (global $float32_ops (ref $custom_operations)))
    (import "int32" "int32_ops" (global $int32_ops (ref $custom_operations)))
    (import "int32" "nativeint_ops"
       (global $nativeint_ops (ref $custom_operations)))
@@ -137,6 +138,7 @@
       (call $caml_register_custom_operations (global.get $nativeint_ops))
       (call $caml_register_custom_operations (global.get $int64_ops))
       (call $caml_register_custom_operations (global.get $bigarray_ops))
+      (call $caml_register_custom_operations (global.get $float32_ops))
       (global.set $initialized (i32.const 1)))
 
   (func (export "caml_custom_identifier") (param $v (ref eq)) (result (ref eq))

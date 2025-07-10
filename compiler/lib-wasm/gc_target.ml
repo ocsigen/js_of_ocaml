@@ -170,6 +170,22 @@ module Type = struct
                 ]
           })
 
+  let float32_type =
+    register_type "float32" (fun () ->
+        let* custom_operations = custom_operations_type in
+        let* custom = custom_type in
+        return
+          { supertype = Some custom
+          ; final = true
+          ; typ =
+              W.Struct
+                [ { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type custom_operations })
+                  }
+                ; { mut = false; typ = Value F32 }
+                ]
+          })
+
   let int32_type =
     register_type "int32" (fun () ->
         let* custom_operations = custom_operations_type in
@@ -854,6 +870,18 @@ module Memory = struct
     in
     if_mismatch
 
+  let make_float32 e =
+    let* custom_operations = Type.custom_operations_type in
+    let* float32_ops =
+      register_import
+        ~name:"float32_ops"
+        (Global
+           { mut = false; typ = Ref { nullable = false; typ = Type custom_operations } })
+    in
+    let* ty = Type.float32_type in
+    let* e = e in
+    return (W.StructNew (ty, [ GlobalGet float32_ops; e ]))
+
   let make_int32 ~kind e =
     let* custom_operations = Type.custom_operations_type in
     let* int32_ops =
@@ -1013,6 +1041,9 @@ module Constant = struct
     | Float f ->
         let* ty = Type.float_type in
         return (Const, W.StructNew (ty, [ Const (F64 (Int64.float_of_bits f)) ]))
+    | Float32 f ->
+        let* e = Memory.make_float32 (return (W.Const (F32 (Int64.float_of_bits f)))) in
+        return (Const, e)
     | Float_array l ->
         let l = Array.to_list l in
         let* ty = Type.float_array_type in
