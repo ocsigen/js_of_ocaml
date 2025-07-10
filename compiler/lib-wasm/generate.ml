@@ -105,6 +105,8 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_nativeint_bswap", (`Pure, [ Nativeint ], Nativeint)
       ; "caml_int64_bswap", (`Pure, [ Int64 ], Int64)
       ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Value)
+      ; "caml_checked_int32_to_int", (`Pure, [ Int32 ], Value)
+      ; "caml_checked_nativeint_to_int", (`Pure, [ Int32 ], Value)
       ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Value)
       ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Value)
       ; "caml_string_get32", (`Mutator, [ Value; Value ], Int32)
@@ -233,8 +235,42 @@ module Generate (Target : Target_sig.S) = struct
   let () =
     register_bin_prim "caml_array_unsafe_get" `Mutable Memory.gen_array_get;
     register_bin_prim "caml_floatarray_unsafe_get" `Mutable Memory.float_array_get;
+    register_bin_prim "caml_array_unsafe_get_indexed_by_int32" `Mutable (fun x y ->
+      let conv = Memory.unbox_int32 in
+      Memory.gen_array_get x (Value.val_int (conv y))
+    );
+
+    register_bin_prim "caml_array_unsafe_get_indexed_by_int64" `Mutator (fun x y ->
+      let conv i =
+        let* i = Memory.unbox_int64 i in
+        return (W.I32WrapI64 i)
+      in
+      Memory.gen_array_get x (Value.val_int (conv y))
+    );
+    register_bin_prim "caml_array_unsafe_get_indexed_by_nativeint" `Mutable (fun x y ->
+      let conv = Memory.unbox_nativeint in
+      Memory.gen_array_get x (Value.val_int (conv y))
+    );
     register_tern_prim "caml_array_unsafe_set" (fun x y z ->
         seq (Memory.gen_array_set x y z) Value.unit);
+    let unboxed_indexed_array_access conv x y z =
+      seq (Memory.gen_array_set x (Value.val_int (conv y)) z) Value.unit
+    in
+    register_tern_prim "caml_array_unsafe_set_indexed_by_int32" (fun x y z ->
+      let conv = Memory.unbox_int32 in
+      unboxed_indexed_array_access conv x y z
+    );
+    register_tern_prim "caml_array_unsafe_set_indexed_by_int64" (fun x y z ->
+      let conv i = 
+        let* i = Memory.unbox_int64 i in
+        return (W.I32WrapI64 i)
+      in
+      unboxed_indexed_array_access conv x y z
+    );
+    register_tern_prim "caml_array_unsafe_set_indexed_by_nativeint" (fun x y z ->
+      let conv = Memory.unbox_nativeint in
+      unboxed_indexed_array_access conv x y z
+    );
     register_tern_prim "caml_array_unsafe_set_addr" (fun x y z ->
         seq (Memory.array_set x y z) Value.unit);
     register_tern_prim "caml_floatarray_unsafe_set" (fun x y z ->

@@ -1141,6 +1141,7 @@ let register_bin_math_prim name prim =
       J.call (J.dot (s_var "Math") prim) [ cx; cy ] loc)
 
 let _ =
+  register_un_prim "%identity" `Pure (fun cx _ -> cx);
   register_un_prim_ctx "%caml_format_int_special" `Pure (fun ctx cx loc ->
       let s = J.EBin (J.Plus, str_js_utf8 "", cx) in
       ocaml_string ~ctx ~loc s);
@@ -1149,6 +1150,8 @@ let _ =
     [ "caml_array_unsafe_get"
     ; "caml_array_unsafe_get_float"
     ; "caml_floatarray_unsafe_get"
+    ; "caml_array_unsafe_get_indexed_by_int32"
+    ; "caml_array_unsafe_get_indexed_by_nativeint"
     ]
     `Mutable
     (fun cx cy _ -> Mlvalue.Array.field cx cy);
@@ -1158,6 +1161,8 @@ let _ =
     ; "caml_int32_to_float"
     ; "caml_nativeint_of_int"
     ; "caml_nativeint_to_int"
+    ; "caml_checked_nativeint_to_int"
+    ; "caml_checked_int32_to_int"
     ; "caml_nativeint_to_int32"
     ; "caml_nativeint_of_int32"
     ; "caml_nativeint_to_float"
@@ -1237,6 +1242,8 @@ let _ =
     ; "caml_array_unsafe_set_float"
     ; "caml_floatarray_unsafe_set"
     ; "caml_array_unsafe_set_addr"
+    ; "caml_array_unsafe_set_indexed_by_int32"
+    ; "caml_array_unsafe_set_indexed_by_nativeint"
     ]
     `Mutator
     (fun cx cy cz _ -> J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));

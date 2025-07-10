@@ -56,6 +56,9 @@ module Info = struct
   let update_def { info_defs; _ } x exp =
     let idx = Code.Var.idx x in
     info_defs.(idx) <- Expr exp
+  ;;
+
+  let info_defs_length { info_defs; _ } = Array.length info_defs
 end
 
 let undefined = Phi Var.Set.empty
@@ -363,6 +366,13 @@ let the_def_of info x =
 let the_const_of ~eq info x =
   match x with
   | Pv x ->
+
+      (* If this variable was minted after we constructed the info table, conservatively
+         assume we know nothing. Transformations of array-access primitives in
+         [specialize_js.ml] mint variables in this way. *)
+      if Var.idx x >= Array.length info.Info.info_defs
+      then None
+      else (
       get_approx
         info
         (fun x ->
@@ -386,11 +396,15 @@ let the_const_of ~eq info x =
           | Some i, Some j when eq i j -> u
           | _ -> None)
         x
+    )
   | Pc c -> Some c
 
 let the_int info x =
   match x with
   | Pv x ->
+      if Var.idx x >= Array.length info.Info.info_defs
+      then None
+      else (
       get_approx
         info
         (fun x ->
@@ -403,6 +417,7 @@ let the_int info x =
           | Some i, Some j when Targetint.equal i j -> u
           | _ -> None)
         x
+    )
   | Pc (Int c) -> Some c
   | Pc _ -> None
 
