@@ -59,7 +59,7 @@ let rec constant_of_const c : Code.constant =
       Tuple (tag, l, Unknown)
   | ((Const_base (Const_float32 _ | Const_unboxed_float32 _)) [@if oxcaml]) ->
       failwith "Float32 unsupported"
-  | (Const_null [@if oxcaml]) -> failwith "Null unsupported"
+  | (Const_null [@if oxcaml]) -> Null_
 
 type module_or_not =
   | Module

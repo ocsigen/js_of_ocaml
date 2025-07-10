@@ -152,6 +152,7 @@ type constant =
   | Int64 of Int64.t
   | NativeInt of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Tuple of int * constant array * array_or_not
+  | Null_
 
 module Constant : sig
   type t = constant

@@ -235,8 +235,8 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
-    | (Int _ | Number _ | Tuple _ | Bigarray _), _
-    | _, (Int _ | Number _ | Tuple _ | Bigarray _) ->
+    | (Int _ | Number _ | Tuple _ | Bigarray _ | Null), _
+    | _, (Int _ | Number _ | Tuple _ | Bigarray _ | Null) ->
         (* Only Top may contain JavaScript values *)
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
@@ -1132,7 +1132,13 @@ module Generate (Target : Target_sig.S) = struct
                 let* indices' = transl_prim_arg ctx indices in
                 let* v' = transl_prim_arg ctx v in
                 return (W.Call (f, [ ta'; indices'; v' ])))
-        | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3)
+        | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3);
+    register_un_prim "caml_is_null" `Pure ~ret_typ:int_n (fun x ->
+        let* x = x in
+        let* null =
+          register_import ~name:"null" (Global { mut = false; typ = Type.value })
+        in
+        return (W.RefEq (x, GlobalGet null)))
 
   let unboxed_type ty : W.value_type option =
     match ty with

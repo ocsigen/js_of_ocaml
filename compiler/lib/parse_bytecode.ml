@@ -479,8 +479,16 @@ end = struct
 
   let ident_native = ident_of_custom (Obj.repr 0n)
 
+  external is_null : Obj.t -> bool = "%is_null" [@@if oxcaml]
+
+  let is_null obj = is_null (Sys.opaque_identity obj) [@@if oxcaml]
+
+  let is_null _ = false [@@if not oxcaml]
+
   let rec parse x =
-    if Obj.is_block x
+    if is_null x
+    then Null_
+    else if Obj.is_block x
     then
       let tag = Obj.tag x in
       if tag = Obj.string_tag
@@ -528,6 +536,7 @@ end = struct
         match target with
         | `JavaScript -> true
         | `Wasm -> false)
+    | Null_ -> true
 end
 
 let const32 i = Constant (Int (Targetint.of_int32_exn i))

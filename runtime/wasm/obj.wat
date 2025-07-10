@@ -283,6 +283,8 @@
       (local.get $res))
 
    (func (export "caml_obj_tag") (param $v (ref eq)) (result (ref eq))
+      (if (ref.eq (local.get $v) (global.get $null))
+         (then (return (ref.i31 (i32.const 1010)))))
       (if (ref.test (ref i31) (local.get $v))
          (then (return (ref.i31 (i32.const 1000)))))
       (drop (block $not_block (result (ref eq))
@@ -583,4 +585,16 @@
          (call $caml_callback_1 (local.get $f) (local.get $x))
          (local.get $y)))
 ))
+
+   (type $null (struct))
+   (global $null (export "null") (ref eq) (struct.new $null))
+
+   (@string $int_as_pointer_not_implemented
+      "caml_int_as_pointer is not supported")
+
+   (func (export "caml_int_as_pointer") (param $x (ref eq)) (result (ref eq))
+      (if (i32.eqz (ref.eq (local.get $x) (ref.i31 (i32.const 0))))
+         (then
+            (call $caml_failwith (global.get $int_as_pointer_not_implemented))))
+      (global.get $null))
 )
