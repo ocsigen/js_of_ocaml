@@ -11,6 +11,7 @@
 * Compiler: js-parser: support 'using X = E' for resource management (#2143)
 * Runtime: improved handling of NaNs (#2110)
 * Lib: allow to reference values from the runtime (#2086)
+* Runtime/wasm: provide access to JavaScript eval function (#2108)
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)
