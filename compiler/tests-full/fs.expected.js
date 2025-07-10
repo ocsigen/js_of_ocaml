@@ -18,6 +18,8 @@
    function a(a, b){
     if(c.jsoo_create_file)
      c.jsoo_create_file(a, b);
+    else if(c.caml_create_file)
+     c.caml_create_file(a, b);
     else{
      if(! c.jsoo_fs_tmp) c.jsoo_fs_tmp = [];
      c.jsoo_fs_tmp.push({name: a, content: b});

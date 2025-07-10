@@ -324,7 +324,7 @@ function jsoo_create_file_extern(name, content) {
 //Provides: caml_fs_init
 //Requires: jsoo_create_file
 function caml_fs_init() {
-  var tmp = globalThis.jsoo_fs_tmp;
+  var tmp = [].concat(globalThis.jsoo_fs_tmp || [], globalThis.caml_fs_tmp || []);
   if (tmp) {
     for (var i = 0; i < tmp.length; i++) {
       jsoo_create_file(tmp[i].name, tmp[i].content);
@@ -332,6 +332,7 @@ function caml_fs_init() {
   }
   globalThis.jsoo_create_file = jsoo_create_file;
   globalThis.jsoo_fs_tmp = [];
+  globalThis.caml_fs_tmp = [];
   return 0;
 }
 
