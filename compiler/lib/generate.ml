@@ -1284,6 +1284,8 @@ let _ =
     [ "caml_array_unsafe_get"
     ; "caml_array_unsafe_get_float"
     ; "caml_floatarray_unsafe_get"
+    ; "caml_array_unsafe_get_indexed_by_int32"
+    ; "caml_array_unsafe_get_indexed_by_nativeint"
     ]
     `Mutable
     (fun cx cy _ -> Mlvalue.Array.field cx cy);
@@ -1299,6 +1301,10 @@ let _ =
     ; "caml_float_of_int"
     ]
     `Pure
+    (fun cx _ -> cx);
+  register_un_prims
+    [ "caml_checked_nativeint_to_int"; "caml_checked_int32_to_int" ]
+    `Mutator
     (fun cx _ -> cx);
   register_bin_prims
     [ "%int_add"; "caml_int32_add"; "caml_nativeint_add" ]
@@ -1364,6 +1370,8 @@ let _ =
     ; "caml_array_unsafe_set_float"
     ; "caml_floatarray_unsafe_set"
     ; "caml_array_unsafe_set_addr"
+    ; "caml_array_unsafe_set_indexed_by_int32"
+    ; "caml_array_unsafe_set_indexed_by_nativeint"
     ]
     `Mutator
     (fun cx cy cz _ -> J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
