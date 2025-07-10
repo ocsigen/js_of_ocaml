@@ -61,6 +61,12 @@ function caml_array_append(a1, a2) {
   return a;
 }
 
+//Provides: caml_array_append_local mutable
+//Requires: caml_array_append
+function caml_array_append_local(a1, a2) {
+  return caml_array_append(a1, a2);
+}
+
 //Provides: caml_floatarray_append mutable
 //Requires: caml_array_append
 //Version: >= 5.3
