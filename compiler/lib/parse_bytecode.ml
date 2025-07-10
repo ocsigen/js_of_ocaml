@@ -1418,7 +1418,7 @@ and compile infos pc state (instrs : instr list) =
           (pc + 2)
           state
           (Let (x, Block (i, [||], Unknown, Maybe_mutable)) :: instrs)
-    | MAKEBLOCK ->
+    | MAKE_FAUX_MIXEDBLOCK | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
         let state = State.push state in
