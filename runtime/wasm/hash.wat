@@ -174,7 +174,7 @@
    (global $caml_hash_queue (ref $block)
       (array.new $block (ref.i31 (i32.const 0)) (global.get $HASH_QUEUE_SIZE)))
 
-   (func (export "caml_hash")
+   (func (export "caml_hash_exn")
       (param $count (ref eq)) (param $limit (ref eq)) (param $seed (ref eq))
       (param $obj (ref eq)) (result (ref eq))
       (local $sz i32) (local $num i32) (local $h i32)
