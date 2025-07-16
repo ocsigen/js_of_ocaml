@@ -4,6 +4,9 @@
 * Compiler: exit-loop-early in more cases (#2077)
 * Compiler/wasm: omit code pointer from closures when not used (#2059)
 
+## Bug fixes
+* Runtime/wasm: add back legacy function caml_string_of_array (#2081)
+
 # 6.1.1 (2025-07-07) - Lille
 
 ## Bug fixes
