@@ -717,7 +717,8 @@
       (array.new_fixed $block 3 (ref.i31 (i32.const 0))
          (struct.new $float (local.get $f)) (struct.new $float (local.get $i))))
 
-   (func $ldexp (param $x f64) (param $n i32) (result f64)
+   (func $ldexp (export "caml_ldexp_float")
+      (param $x f64) (param $n i32) (result f64)
       (if (i32.gt_s (local.get $n) (i32.const 1023))
          (then
             (local.set $x (f64.mul (local.get $x) (f64.const 0x1p1023)))
@@ -746,12 +747,6 @@
             (i64.shl (i64.add (i64.extend_i32_s (local.get $n))
                               (i64.const 0x3ff))
                      (i64.const 52)))))
-
-   (func (export "caml_ldexp_float")
-      (param $x f64) (param $i (ref eq)) (result f64)
-      (call $ldexp
-         (local.get $x)
-         (i31.get_s (ref.cast (ref i31) (local.get $i)))))
 
    (func $frexp (param $x f64) (result f64 i32)
       (local $y i64)
