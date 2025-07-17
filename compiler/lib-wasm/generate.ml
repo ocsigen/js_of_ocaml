@@ -112,7 +112,7 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_ba_uint8_set64", (`Mutator, [ Value; Int; Int64 ], Value)
       ; "caml_nextafter_float", (`Pure, [ Float; Float ], Float)
       ; "caml_classify_float", (`Pure, [ Float ], Value)
-      ; "caml_ldexp_float", (`Pure, [ Float; Value ], Float)
+      ; "caml_ldexp_float", (`Pure, [ Float; Int ], Float)
       ; "caml_erf_float", (`Pure, [ Float ], Float)
       ; "caml_erfc_float", (`Pure, [ Float ], Float)
       ; "caml_float_compare", (`Pure, [ Float; Float ], Int)
