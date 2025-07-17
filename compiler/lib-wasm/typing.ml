@@ -221,8 +221,10 @@ let prim_type ~approx prim args =
   | "caml_int64_bswap" -> Number (Int64, Unboxed)
   | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" ->
       Int Normalized
+  | "caml_string_get16" -> Int Normalized
   | "caml_string_get32" -> Number (Int32, Unboxed)
   | "caml_string_get64" -> Number (Int64, Unboxed)
+  | "caml_bytes_get16" -> Int Normalized
   | "caml_bytes_get32" -> Number (Int32, Unboxed)
   | "caml_bytes_get64" -> Number (Int64, Unboxed)
   | "caml_lxm_next" -> Number (Int64, Unboxed)
