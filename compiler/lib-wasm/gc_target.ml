@@ -1425,7 +1425,7 @@ module Bigarray = struct
               return (W.F64PromoteF32 x) )
       | Float64 -> "dv_get_f64", F64, 3, Fun.id
       | Int8_signed -> "dv_get_i8", I32, 0, Fun.id
-      | Int8_unsigned | Char -> "dv_get_ui8", I32, 0, Fun.id
+      | Int8_unsigned -> "dv_get_ui8", I32, 0, Fun.id
       | Int16_signed -> "dv_get_i16", I32, 1, Fun.id
       | Int16_unsigned -> "dv_get_ui16", I32, 1, Fun.id
       | Int32 -> "dv_get_i32", I32, 2, Fun.id
@@ -1485,7 +1485,6 @@ module Bigarray = struct
     | Int64
     | Int
     | Nativeint
-    | Char
     | Float16 ->
         box
           (return
@@ -1510,7 +1509,7 @@ module Bigarray = struct
               let* x = x in
               return (W.F32DemoteF64 x) )
       | Float64 -> "dv_set_f64", F64, 3, Fun.id
-      | Int8_signed | Int8_unsigned | Char -> "dv_set_i8", I32, 0, Fun.id
+      | Int8_signed | Int8_unsigned -> "dv_set_i8", I32, 0, Fun.id
       | Int16_signed | Int16_unsigned -> "dv_set_i16", I32, 1, Fun.id
       | Int32 -> "dv_set_i32", I32, 2, Fun.id
       | Nativeint -> "dv_set_i32", I32, 2, Fun.id
@@ -1570,7 +1569,6 @@ module Bigarray = struct
     | Int64
     | Int
     | Nativeint
-    | Char
     | Float16 ->
         let* v = unbox v in
         instr

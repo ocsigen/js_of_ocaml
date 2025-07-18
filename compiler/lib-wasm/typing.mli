@@ -17,6 +17,7 @@ type boxed_status =
 
 module Bigarray : sig
   type kind =
+    | Float16
     | Float32
     | Float64
     | Int8_signed
@@ -29,8 +30,6 @@ module Bigarray : sig
     | Nativeint
     | Complex32
     | Complex64
-    | Char
-    | Float16
 
   type layout =
     | C

@@ -47,6 +47,7 @@ type boxed_status =
 
 module Bigarray = struct
   type kind =
+    | Float16
     | Float32
     | Float64
     | Int8_signed
@@ -59,8 +60,6 @@ module Bigarray = struct
     | Nativeint
     | Complex32
     | Complex64
-    | Char
-    | Float16
 
   type layout =
     | C
@@ -86,7 +85,7 @@ module Bigarray = struct
         | 9 -> Nativeint
         | 10 -> Complex32
         | 11 -> Complex64
-        | 12 -> Char
+        | 12 -> Int8_unsigned
         | 13 -> Float16
         | _ -> assert false)
     ; layout =
@@ -113,7 +112,6 @@ module Bigarray = struct
       | Nativeint -> "nativeint"
       | Complex32 -> "complex32"
       | Complex64 -> "complex64"
-      | Char -> "char"
       | Float16 -> "float16")
       (match layout with
       | C -> "C"
@@ -303,7 +301,7 @@ let arg_type ~approx arg =
 let bigarray_element_type (kind : Bigarray.kind) =
   match kind with
   | Float16 | Float32 | Float64 -> Number (Float, Unboxed)
-  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned | Char -> Int Normalized
+  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
   | Int -> Int Unnormalized
   | Int32 -> Number (Int32, Unboxed)
   | Int64 -> Number (Int64, Unboxed)
