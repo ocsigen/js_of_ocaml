@@ -1542,7 +1542,17 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 loop [] l
             | IsInt, [ x ] -> Value.is_int x
-            | Vectlength _, [ x ] -> Memory.gen_array_length x
+            | Vectlength kind, [ x ] -> (
+                match kind with
+                | Generic -> Memory.gen_array_length x
+                | Value -> Memory.array_length x
+                | Float ->
+                    (* We use a generic array for empty float arrays. *)
+                    let y = Var.fresh () in
+                    let* cond = Memory.check_is_float_array (tee y x) in
+                    let* ift = Memory.float_array_length (load y) in
+                    let* iff = Arith.const 0l in
+                    return (W.IfExpr (I32, cond, ift, iff)))
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
                 assert false))
 
