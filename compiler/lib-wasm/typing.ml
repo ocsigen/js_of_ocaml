@@ -124,7 +124,7 @@ let update_deps st { blocks; _ } =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, Block (_, lst, _, _)) -> Array.iter ~f:(fun y -> add_dep st x y) lst
-          | Let (x, Prim (Extern ("%int_and" | "%int_or" | "%int_xor"), lst)) ->
+          | Let (x, Prim (Extern (("%int_and" | "%int_or" | "%int_xor"), _), lst)) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
                 ~f:(fun p ->
@@ -352,9 +352,10 @@ let propagate st approx x : Domain.t =
           | Top -> Top
           | _ -> Bot)
       | Prim
-          ( Extern ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
+          ( Extern
+              (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
-      | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
+      | Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           match Var.Tbl.get st.info.info_approximation y with
           | Values { known; others } ->
               Domain.join_set
@@ -380,8 +381,9 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
-      | Prim (Extern prim, args) -> prim_type ~approx prim args
+      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+          Int Normalized
+      | Prim (Extern (prim, _), args) -> prim_type ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.info.info_approximation f with

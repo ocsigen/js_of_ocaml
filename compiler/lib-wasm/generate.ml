@@ -851,12 +851,12 @@ module Generate (Target : Target_sig.S) = struct
           x
     | Constant c -> Constant.translate c
     | Special (Alias_prim _) -> assert false
-    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ]) ->
+    | Prim (Extern ("caml_alloc_dummy_function", _), [ _; Pc (Int arity) ]) ->
         (* Removed in OCaml 5.2 *)
         Closure.dummy ~cps:(effects_cps ()) ~arity:(Targetint.to_int_exn arity)
-    | Prim (Extern "caml_alloc_dummy_infix", _) ->
+    | Prim (Extern ("caml_alloc_dummy_infix", _), _) ->
         Closure.dummy ~cps:(effects_cps ()) ~arity:1
-    | Prim (Extern "caml_get_global", [ Pc (String name) ]) ->
+    | Prim (Extern ("caml_get_global", _), [ Pc (String name) ]) ->
         let* x =
           let* context = get_context in
           match
@@ -874,7 +874,7 @@ module Generate (Target : Target_sig.S) = struct
               register_import ~import_module:"OCaml" ~name (Global { mut = true; typ })
         in
         return (W.GlobalGet x)
-    | Prim (Extern "caml_set_global", [ Pc (String name); v ]) ->
+    | Prim (Extern ("caml_set_global", _), [ Pc (String name); v ]) ->
         let v = transl_prim_arg ctx v in
         let x = Var.fresh_n name in
         let* () =
@@ -898,12 +898,12 @@ module Generate (Target : Target_sig.S) = struct
           (transl_prim_arg ctx ~typ:(Int Normalized) y)
     | Prim (p, l) -> (
         match p with
-        | Extern name when String.Hashtbl.mem internal_primitives name ->
+        | Extern (name, _) when String.Hashtbl.mem internal_primitives name ->
             snd (String.Hashtbl.find internal_primitives name) ctx context l
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
             match p, l with
-            | Extern name, l -> (
+            | Extern (name, _), l -> (
                 try
                   let ((_, arg_typ, res_typ) as typ) =
                     String.Hashtbl.find specialized_primitives name
@@ -931,8 +931,8 @@ module Generate (Target : Target_sig.S) = struct
                   in
                   loop [] l)
             | IsInt, [ x ] -> Value.is_int x
-            | Vectlength, [ x ] -> Memory.gen_array_length x
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
+            | Vectlength _, [ x ] -> Memory.gen_array_length x
+            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
                 assert false))
 
   and translate_instr ctx context i =
@@ -1049,26 +1049,28 @@ module Generate (Target : Target_sig.S) = struct
                 ( _
                 , Prim
                     ( Extern
-                        ( "caml_string_get"
-                        | "caml_bytes_get"
-                        | "caml_string_set"
-                        | "caml_bytes_set"
-                        | "caml_check_bound"
-                        | "caml_check_bound_gen"
-                        | "caml_check_bound_float" )
+                        ( ( "caml_string_get"
+                          | "caml_bytes_get"
+                          | "caml_string_set"
+                          | "caml_bytes_set"
+                          | "caml_check_bound"
+                          | "caml_check_bound_gen"
+                          | "caml_check_bound_float" )
+                        , _ )
                     , _ ) ) -> fst n, true
             | Let
                 ( _
                 , Prim
                     ( Extern
-                        ( "%int_div"
-                        | "%int_mod"
-                        | "caml_int32_div"
-                        | "caml_int32_mod"
-                        | "caml_int64_div"
-                        | "caml_int64_mod"
-                        | "caml_nativeint_div"
-                        | "caml_nativeint_mod" )
+                        ( ( "%int_div"
+                          | "%int_mod"
+                          | "caml_int32_div"
+                          | "caml_int32_mod"
+                          | "caml_int64_div"
+                          | "caml_int64_mod"
+                          | "caml_nativeint_div"
+                          | "caml_nativeint_mod" )
+                        , _ )
                     , _ ) ) -> true, snd n
             | _ -> n)
           ~init:n

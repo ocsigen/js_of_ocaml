@@ -280,7 +280,9 @@ let optimize_switch_to_cond block x l (opt : switch_to_cond) =
           block.body
           @ [ Let
                 ( shifted
-                , Prim (Extern "%int_sub", [ Pv x; Pc (Int (Targetint.of_int_exn i)) ]) )
+                , Prim
+                    ( Extern ("%int_sub", None)
+                    , [ Pv x; Pc (Int (Targetint.of_int_exn i)) ] ) )
             ; Let (c, Prim (Ult, [ Pv shifted; Pc (Int (Targetint.of_int_exn (j - i))) ]))
             ]
       ; branch = Cond (c, l.(i), l.(j))
