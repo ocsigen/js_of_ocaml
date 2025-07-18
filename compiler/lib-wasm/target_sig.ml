@@ -255,6 +255,7 @@ module type S = sig
   module Bigarray : sig
     val get :
          bound_error_index:int
+      -> unsafe:bool
       -> kind:Optimization_hint.Bigarray.kind
       -> layout:Optimization_hint.Bigarray.layout
       -> expression
@@ -263,6 +264,7 @@ module type S = sig
 
     val set :
          bound_error_index:int
+      -> unsafe:bool
       -> kind:Optimization_hint.Bigarray.kind
       -> layout:Optimization_hint.Bigarray.layout
       -> expression

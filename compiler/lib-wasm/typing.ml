@@ -313,7 +313,7 @@ let bigarray_type ~approx ba =
 
 let primitive_types = String.Hashtbl.create 16
 
-let prim_type ~st ~approx prim args =
+let prim_type ~st ~approx prim hint args =
   match prim with
   | "%int_and" -> (
       match List.map ~f:(fun x -> arg_type ~approx x) args with
@@ -334,9 +334,11 @@ let prim_type ~st ~approx prim args =
                ~layout:(Targetint.to_int_exn layout))
       | _ -> Top)
   | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
-      match args with
-      | ba :: _ -> bigarray_type ~approx ba
-      | [] -> Top)
+      match hint, args with
+      | Some (Optimization_hint.Hint_bigarray { kind; _ }), _ ->
+          bigarray_element_type kind
+      | _, ba :: _ -> bigarray_type ~approx ba
+      | _, [] -> Top)
   | "caml_ba_get_generic" -> (
       match args with
       | ba :: Pv indices :: _ -> (
@@ -411,7 +413,7 @@ let propagate st approx x : Domain.t =
       | Prim (Array_get, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           Int Normalized
-      | Prim (Extern (prim, _), args) -> prim_type ~st ~approx prim args
+      | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.global_flow_info.info_approximation f with

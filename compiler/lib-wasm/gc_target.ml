@@ -1580,8 +1580,12 @@ module Bigarray = struct
         let* y = unbox (Memory.wasm_array_get ~ty v (Arith.const 1l)) in
         instr (W.CallInstr (f, [ ta; ofs'; y; W.GlobalGet little_endian ]))
 
-  let offset ~bound_error_index ~(layout : Optimization_hint.Bigarray.layout) ta ~indices
-      =
+  let offset
+      ~bound_error_index
+      ~unsafe
+      ~(layout : Optimization_hint.Bigarray.layout)
+      ta
+      ~indices =
     let l =
       List.mapi
         ~f:(fun pos i ->
@@ -1594,8 +1598,11 @@ module Bigarray = struct
           let dim = Code.Var.fresh () in
           ( (let* () = store ~typ:I32 i' i in
              let* () = store ~typ:I32 dim (dimension pos ta) in
-             let* cond = Arith.uge (load i') (load dim) in
-             instr (W.Br_if (bound_error_index, cond)))
+             if unsafe
+             then return ()
+             else
+               let* cond = Arith.uge (load i') (load dim) in
+               instr (W.Br_if (bound_error_index, cond)))
           , i'
           , dim ))
         indices
@@ -1618,12 +1625,12 @@ module Bigarray = struct
           rem
     | [] -> return (), Arith.const 0l
 
-  let get ~bound_error_index ~kind ~layout ta ~indices =
-    let instrs, ofs = offset ~bound_error_index ~layout ta ~indices in
+  let get ~bound_error_index ~unsafe ~kind ~layout ta ~indices =
+    let instrs, ofs = offset ~bound_error_index ~unsafe ~layout ta ~indices in
     seq instrs (get_at_offset ~kind ta ofs)
 
-  let set ~bound_error_index ~kind ~layout ta ~indices v =
-    let instrs, ofs = offset ~bound_error_index ~layout ta ~indices in
+  let set ~bound_error_index ~unsafe ~kind ~layout ta ~indices v =
+    let instrs, ofs = offset ~bound_error_index ~unsafe ~layout ta ~indices in
     seq
       (let* () = instrs in
        set_at_offset ~kind ta ofs v)
