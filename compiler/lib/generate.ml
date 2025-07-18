@@ -182,7 +182,7 @@ module Share = struct
                     if Primitive.exists name then add_prim name share else share
                   in
                   share
-              | Let (_, Prim (Extern name, args)) ->
+              | Let (_, Prim (Extern (name, _), args)) ->
                   let name = Primitive.resolve name in
                   let share =
                     if Primitive.exists name then add_prim name share else share
@@ -1499,7 +1499,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
   | Special (Alias_prim name) ->
       let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
       return (prim, [])
-  | Prim (Extern "debugger", _) ->
+  | Prim (Extern ("debugger", _), _) ->
       let ins =
         if Config.Flag.debugger () then J.Debugger_statement else J.Empty_statement
       in
@@ -1507,7 +1507,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
   | Prim (p, l) ->
       let* res =
         match p, l with
-        | Vectlength, [ x ] ->
+        | Vectlength _, [ x ] ->
             let* cx = access' ~ctx x in
             return (Mlvalue.Array.length cx)
         | Array_get, [ x; y ] ->
@@ -1515,8 +1515,8 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cy = access' ~ctx y in
             let* () = info mutable_p in
             return (Mlvalue.Array.field cx cy)
-        | Extern "caml_js_var", [ Pc (String nm) ]
-        | Extern ("caml_js_expr" | "caml_pure_js_expr"), [ Pc (String nm) ] -> (
+        | Extern ("caml_js_var", _), [ Pc (String nm) ]
+        | Extern (("caml_js_expr" | "caml_pure_js_expr"), _), [ Pc (String nm) ] -> (
             try
               let pos =
                 match loc with
@@ -1547,27 +1547,27 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
                    | Some s -> Printf.sprintf ", file %S" s)
                    pi.Parse_info.line
                    pi.Parse_info.col))
-        | Extern "%js_array", l ->
+        | Extern ("%js_array", _), l ->
             let* args = list_map (fun x -> access' ~ctx x) l in
             return (J.array args)
-        | Extern "%caml_js_opt_call", f :: o :: l ->
+        | Extern ("%caml_js_opt_call", _), f :: o :: l ->
             let* () = info ~need_loc:true mutator_p in
             let* cf = access' ~ctx f in
             let* co = access' ~ctx o in
             let* args = list_map (fun x -> access' ~ctx x) l in
             return (J.call (J.dot cf (Utf8_string.of_string_exn "call")) (co :: args) loc)
-        | Extern "%caml_js_opt_fun_call", f :: l ->
+        | Extern ("%caml_js_opt_fun_call", _), f :: l ->
             let* () = info ~need_loc:true mutator_p in
             let* cf = access' ~ctx f in
             let* args = list_map (fun x -> access' ~ctx x) l in
             return (J.call cf args loc)
-        | Extern "%caml_js_opt_meth_call", o :: Pc (NativeString (Utf m)) :: l ->
+        | Extern ("%caml_js_opt_meth_call", _), o :: Pc (NativeString (Utf m)) :: l ->
             let* () = info ~need_loc:true mutator_p in
             let* co = access' ~ctx o in
             let* args = list_map (fun x -> access' ~ctx x) l in
             return (J.call (J.dot co m) args loc)
-        | Extern "%caml_js_opt_meth_call", _ -> assert false
-        | Extern "%caml_js_opt_new", c :: l ->
+        | Extern ("%caml_js_opt_meth_call", _), _ -> assert false
+        | Extern ("%caml_js_opt_new", _), c :: l ->
             let* () = info ~need_loc:true mutator_p in
             let* cc = access' ~ctx c in
             let* args =
@@ -1578,18 +1578,19 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
                 l
             in
             return (J.ENew (cc, (if List.is_empty args then None else Some args), loc))
-        | Extern "caml_js_get", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident' f ->
+        | Extern ("caml_js_get", _), [ Pv o; Pc (NativeString (Utf f)) ]
+          when J.is_ident' f ->
             let* co = access ~ctx o in
             let* () = info mutable_p in
             return (J.dot co f)
-        | Extern "caml_js_set", [ Pv o; Pc (NativeString (Utf f)); v ] when J.is_ident' f
-          ->
+        | Extern ("caml_js_set", _), [ Pv o; Pc (NativeString (Utf f)); v ]
+          when J.is_ident' f ->
             let* co = access ~ctx o in
             let* cv = access' ~ctx v in
             let* () = info mutator_p in
             return (J.EBin (J.Eq, J.dot co f, cv))
-        | Extern "caml_js_delete", [ Pv o; Pc (NativeString (Utf f)) ] when J.is_ident' f
-          ->
+        | Extern ("caml_js_delete", _), [ Pv o; Pc (NativeString (Utf f)) ]
+          when J.is_ident' f ->
             let* co = access ~ctx o in
             let* () = info mutator_p in
             return (J.EUn (J.Delete, J.dot co f))
@@ -1601,7 +1602,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
            | Extern "caml_js_delete", [ _; Pc (String _) ] -> assert false
            ]}
         *)
-        | Extern "%caml_js_opt_object", fields ->
+        | Extern ("%caml_js_opt_object", _), fields ->
             let rec build_fields l =
               match l with
               | [] -> return []
@@ -1614,7 +1615,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             in
             let* fields = build_fields fields in
             return (J.EObj fields)
-        | Extern "caml_alloc_dummy_function", [ _; size ] ->
+        | Extern ("caml_alloc_dummy_function", _), [ _; size ] ->
             (* Removed in Ocaml 5.2 *)
             let* i =
               let* cx = access' ~ctx size in
@@ -1635,8 +1636,8 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               J.EFun (Some f, J.fun_ args [ J.Return_statement (Some call, J.N), J.N ] J.N)
             in
             return e
-        | Extern "caml_alloc_dummy_function", _ -> assert false
-        | Extern ("%resume" | "%perform" | "%reperform"), _ ->
+        | Extern ("caml_alloc_dummy_function", _), _ -> assert false
+        | Extern (("%resume" | "%perform" | "%reperform"), _), _ ->
             assert (not (cps_transform ()));
             if not !(ctx.effect_warning)
             then (
@@ -1649,15 +1650,16 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
             let* () = info ~need_loc:true (kind (Primitive.kind name)) in
             return (J.call prim [] loc)
-        | Extern "caml_string_notequal", [ a; b ] when Config.Flag.use_js_string () ->
+        | Extern ("caml_string_notequal", _), [ a; b ] when Config.Flag.use_js_string ()
+          ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (bool (J.EBin (J.NotEqEq, cx, cy)))
-        | Extern "caml_string_equal", [ a; b ] when Config.Flag.use_js_string () ->
+        | Extern ("caml_string_equal", _), [ a; b ] when Config.Flag.use_js_string () ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (bool (J.EBin (J.EqEqEq, cx, cy)))
-        | Extern "caml_string_concat", [ a; b ] when Config.Flag.use_js_string () ->
+        | Extern ("caml_string_concat", _), [ a; b ] when Config.Flag.use_js_string () ->
             let* ca = access' ~ctx a in
             let* cb = access' ~ctx b in
             let rec add ca cb =
@@ -1666,7 +1668,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               | _ -> J.EBin (J.Plus, ca, cb)
             in
             return (add ca cb)
-        | Extern name_orig, l -> (
+        | Extern (name_orig, _), l -> (
             let name = Primitive.resolve name_orig in
             match internal_prim name with
             | Some f -> f name l ctx loc
@@ -1703,7 +1705,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cx = access' ~ctx x in
             let* cy = access' ~ctx y in
             return (bool (J.EBin (J.LtInt, unsigned cx, unsigned cy)))
-        | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
+        | (Vectlength _ | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
             assert false
       in
       return (res, [])

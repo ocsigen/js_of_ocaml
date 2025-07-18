@@ -162,16 +162,18 @@ let field_possibly_mutable st x n =
 
 let expr_deps blocks st x e =
   match e with
-  | Constant _ | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) | Block _
-    -> ()
+  | Constant _
+  | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _)
+  | Block _ -> ()
   | Special _ -> ()
   | Prim
       ( ( Extern
-            ( "caml_check_bound"
-            | "caml_check_bound_float"
-            | "caml_check_bound_gen"
-            | "caml_array_unsafe_get"
-            | "caml_floatarray_unsafe_get" )
+            ( ( "caml_check_bound"
+              | "caml_check_bound_float"
+              | "caml_check_bound_gen"
+              | "caml_array_unsafe_get"
+              | "caml_floatarray_unsafe_get" )
+            , _ )
         | Array_get )
       , l ) ->
       (* The analysis knowns about these primitives, and will compute
@@ -189,7 +191,7 @@ let expr_deps blocks st x e =
           | Pc _ -> ()
           | Pv y -> add_dep st x y)
         l
-  | Prim (Extern name, l) ->
+  | Prim (Extern (name, _), l) ->
       (* Set the escape status of the arguments *)
       let ka =
         match Primitive.kind_args name with
@@ -286,7 +288,7 @@ let program_deps st { start; blocks; _ } =
                parse_bytecode.ml) and [Addr.Map.iter] iterate in
                increasing order *)
             match st.defs.(Code.Var.idx x) with
-            | Expr (Prim (Extern "%direct_obj_tag", [ Pv b ])) ->
+            | Expr (Prim (Extern ("%direct_obj_tag", _), [ Pv b ])) ->
                 let h = Addr.Hashtbl.create 16 in
                 Array.iteri a1 ~f:(fun i (pc, _) ->
                     Addr.Hashtbl.replace
@@ -478,10 +480,12 @@ let propagate st ~update approx x =
                 known
           | Top -> Top)
       | Prim
-          ( Extern ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
+          ( Extern
+              (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
       | Prim
-          ( (Array_get | Extern ("caml_array_unsafe_get" | "caml_floatarray_unsafe_get"))
+          ( ( Array_get
+            | Extern (("caml_array_unsafe_get" | "caml_floatarray_unsafe_get"), _) )
           , [ Pv y; _ ] ) -> (
           if st.fast
           then Domain.others
@@ -516,7 +520,7 @@ let propagate st ~update approx x =
                   known
             | Top -> Top)
       | Prim (Array_get, _) -> Domain.others
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           (* The result of these primitive is neither a function nor a
              block *)
           Domain.bot

@@ -157,7 +157,7 @@ let empty_body b =
 (****)
 
 let effect_primitive_or_application = function
-  | Prim (Extern ("%resume" | "%perform" | "%reperform"), _) | Apply _ -> true
+  | Prim (Extern (("%resume" | "%perform" | "%reperform"), _), _) | Apply _ -> true
   | Block (_, _, _, _)
   | Field (_, _, _)
   | Closure (_, _, _)
@@ -453,7 +453,7 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
                   [ Let
                       ( x'
                       , Prim
-                          ( Extern "caml_maybe_attach_backtrace"
+                          ( Extern ("caml_maybe_attach_backtrace", None)
                           , [ Pv x
                             ; Pc (Int (if force then Targetint.one else Targetint.zero))
                             ] ) )
@@ -463,7 +463,8 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
           in
           tail_call
             ~st
-            ~instrs:(Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: instrs)
+            ~instrs:
+              (Let (exn_handler, Prim (Extern ("caml_pop_trap", None), [])) :: instrs)
             ~exact:true
             ~in_cps:false
             ~check:false
@@ -502,7 +503,7 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
               handler_cont
           in
           let push_trap =
-            Let (Var.fresh (), Prim (Extern "caml_push_trap", [ Pv exn_handler ]))
+            Let (Var.fresh (), Prim (Extern ("caml_push_trap", None), [ Pv exn_handler ]))
           in
           let body, branch = cps_branch ~st ~src:pc body_cont in
           constr_cont @ (push_trap :: body), branch)
@@ -515,7 +516,7 @@ let cps_last ~st ~alloc_jump_closures pc (last : last) ~k : instr list * last =
           let exn_handler = Var.fresh () in
           let body, branch = cps_branch ~st ~src:pc cont in
           ( alloc_jump_closures
-            @ (Let (exn_handler, Prim (Extern "caml_pop_trap", [])) :: body)
+            @ (Let (exn_handler, Prim (Extern ("caml_pop_trap", None), [])) :: body)
           , branch ))
 
 let rewrite_instr ~st (instr : instr) : instr =
@@ -529,15 +530,15 @@ let rewrite_instr ~st (instr : instr) : instr =
       let cps_params, cps_cont = Addr.Hashtbl.find st.closure_info pc in
       st.in_cps := Var.Set.add x !(st.in_cps);
       Let (x, Closure (cps_params, cps_cont, None))
-  | Let (x, Prim (Extern "caml_alloc_dummy_function", [ size; arity ])) -> (
+  | Let (x, Prim (Extern ("caml_alloc_dummy_function", _), [ size; arity ])) -> (
       (* Removed in OCaml 5.2 *)
       match arity with
       | Pc (Int a) ->
           Let
             ( x
             , Prim
-                (Extern "caml_alloc_dummy_function", [ size; Pc (Int (Targetint.succ a)) ])
-            )
+                ( Extern ("caml_alloc_dummy_function", None)
+                , [ size; Pc (Int (Targetint.succ a)) ] ) )
       | _ -> assert false)
   | Let (x, Apply { f; args; exact }) when not (Var.Set.mem x st.cps_needed) ->
       if double_translate ()
@@ -570,7 +571,8 @@ let call_exact flow_info (f : Var.t) nargs : bool =
 
 let cps_instr ~st (instr : instr) : instr list =
   match instr with
-  | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) when double_translate () ->
+  | Let (x, Prim (Extern ("caml_assume_no_perform", _), [ Pv f ]))
+    when double_translate () ->
       (* When double translation is enabled, we just call [f] in direct style.
          Otherwise, the runtime primitive is used. *)
       let unit = Var.fresh_n "unit" in
@@ -626,10 +628,10 @@ let cps_block ~st ~k ~orig_pc block =
         (fun ~k ->
           let e =
             match continuation_and_tail with
-            | None -> Prim (Extern "caml_perform_effect", [ Pv effect_; Pv k ])
+            | None -> Prim (Extern ("caml_perform_effect", None), [ Pv effect_; Pv k ])
             | Some (continuation, tail) ->
                 Prim
-                  ( Extern "caml_reperform_effect"
+                  ( Extern ("caml_reperform_effect", None)
                   , [ Pv effect_; continuation; tail; Pv k ] )
           in
           let x = Var.fresh () in
@@ -641,21 +643,25 @@ let cps_block ~st ~k ~orig_pc block =
           (fun ~k ->
             let exact = exact || call_exact st.flow_info f (List.length args) in
             tail_call ~st ~exact ~in_cps:true ~check:true ~f (args @ [ k ]))
-    | Prim (Extern "%resume", [ Pv stack; Pv f; Pv arg; tail ]) ->
+    | Prim (Extern ("%resume", _), [ Pv stack; Pv f; Pv arg; tail ]) ->
         Some
           (fun ~k ->
             let k' = Var.fresh_n "cont" in
             tail_call
               ~st
               ~instrs:
-                [ Let (k', Prim (Extern "caml_resume_stack", [ Pv stack; tail; Pv k ])) ]
+                [ Let
+                    ( k'
+                    , Prim (Extern ("caml_resume_stack", None), [ Pv stack; tail; Pv k ])
+                    )
+                ]
               ~exact:(call_exact st.flow_info f 1)
               ~in_cps:true
               ~check:true
               ~f
               [ arg; k' ])
-    | Prim (Extern "%perform", [ Pv effect_ ]) -> perform_effect ~effect_ None
-    | Prim (Extern "%reperform", [ Pv effect_; continuation; tail ]) ->
+    | Prim (Extern ("%perform", _), [ Pv effect_ ]) -> perform_effect ~effect_ None
+    | Prim (Extern ("%reperform", _), [ Pv effect_; continuation; tail ]) ->
         perform_effect ~effect_ (Some (continuation, tail))
     | _ -> None
   in
@@ -724,17 +730,17 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           let cps_params, cps_cont = Addr.Hashtbl.find closure_info pc in
           [ Let (direct_c, Closure (params, cont, cloc))
           ; Let (cps_c, Closure (cps_params, cps_cont, None))
-          ; Let (x, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
+          ; Let (x, Prim (Extern ("caml_cps_closure", None), [ Pv direct_c; Pv cps_c ]))
           ]
-      | Let (x, Prim (Extern "%resume", [ stack; f; arg; tail ])) ->
-          [ Let (x, Prim (Extern "caml_resume", [ f; arg; stack; tail ])) ]
-      | Let (x, Prim (Extern "%perform", [ effect_ ])) ->
+      | Let (x, Prim (Extern ("%resume", _), [ stack; f; arg; tail ])) ->
+          [ Let (x, Prim (Extern ("caml_resume", None), [ f; arg; stack; tail ])) ]
+      | Let (x, Prim (Extern ("%perform", _), [ effect_ ])) ->
           (* In direct-style code, we just raise [Effect.Unhandled]. *)
-          [ Let (x, Prim (Extern "caml_raise_unhandled", [ effect_ ])) ]
-      | Let (x, Prim (Extern "%reperform", [ effect_; _continuation; _tail ])) ->
+          [ Let (x, Prim (Extern ("caml_raise_unhandled", None), [ effect_ ])) ]
+      | Let (x, Prim (Extern ("%reperform", _), [ effect_; _continuation; _tail ])) ->
           (* Similar to previous case *)
-          [ Let (x, Prim (Extern "caml_raise_unhandled", [ effect_ ])) ]
-      | Let (x, Prim (Extern "caml_assume_no_perform", [ Pv f ])) ->
+          [ Let (x, Prim (Extern ("caml_raise_unhandled", None), [ effect_ ])) ]
+      | Let (x, Prim (Extern ("caml_assume_no_perform", _), [ Pv f ])) ->
           (* We just need to call [f] in direct style. *)
           let unit = Var.fresh_n "unit" in
           let unit_val = Int Targetint.zero in
@@ -980,8 +986,11 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               { params = []
               ; body =
                   [ Let (main, Closure (cps_params, cps_cont, None))
-                  ; Let (args, Prim (Extern "%js_array", []))
-                  ; Let (res, Prim (Extern "caml_cps_trampoline", [ Pv main; Pv args ]))
+                  ; Let (args, Prim (Extern ("%js_array", None), []))
+                  ; Let
+                      ( res
+                      , Prim (Extern ("caml_cps_trampoline", None), [ Pv main; Pv args ])
+                      )
                   ]
               ; branch = Return res
               }
@@ -1005,8 +1014,8 @@ let wrap_call ~cps_needed p x f args accu =
   let arg_array = Var.fresh () in
   ( p
   , Var.Set.remove x cps_needed
-  , [ Let (arg_array, Prim (Extern "%js_array", List.map ~f:(fun y -> Pv y) args))
-    ; Let (x, Prim (Extern "caml_cps_trampoline", [ Pv f; Pv arg_array ]))
+  , [ Let (arg_array, Prim (Extern ("%js_array", None), List.map ~f:(fun y -> Pv y) args))
+    ; Let (x, Prim (Extern ("caml_cps_trampoline", None), [ Pv f; Pv arg_array ]))
     ]
     :: accu )
 
@@ -1025,8 +1034,8 @@ let wrap_primitive ~cps_needed (p : program) x e accu =
   , Var.Set.remove x (Var.Set.add f cps_needed)
   , let args = Var.fresh () in
     [ Let (f, Closure ([], (closure_pc, []), None))
-    ; Let (args, Prim (Extern "%js_array", []))
-    ; Let (x, Prim (Extern "caml_cps_trampoline", [ Pv f; Pv args ]))
+    ; Let (args, Prim (Extern ("%js_array", None), []))
+    ; Let (x, Prim (Extern ("caml_cps_trampoline", None), [ Pv f; Pv args ]))
     ]
     :: accu )
 
@@ -1034,7 +1043,7 @@ let rewrite_toplevel_instr (p, cps_needed, accu) instr =
   match instr with
   | Let (x, Apply { f; args; _ }) when Var.Set.mem x cps_needed ->
       wrap_call ~cps_needed p x f args accu
-  | Let (x, (Prim (Extern ("%resume" | "%perform" | "%reperform"), _) as e)) ->
+  | Let (x, (Prim (Extern (("%resume" | "%perform" | "%reperform"), _), _) as e)) ->
       wrap_primitive ~cps_needed p x e accu
   | _ -> p, cps_needed, [ instr ] :: accu
 
