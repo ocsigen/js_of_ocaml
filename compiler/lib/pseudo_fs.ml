@@ -90,7 +90,7 @@ let instr_of_name_content prim ~name ~content =
   Let
     ( Var.fresh ()
     , Prim
-        ( Extern prim
+        ( Extern (prim, None)
         , [ Pc (NativeString (Code.Native_string.of_string name))
           ; Pc (NativeString (Code.Native_string.of_bytestring content))
           ] ) )
@@ -98,7 +98,7 @@ let instr_of_name_content prim ~name ~content =
 let embed_file ~name ~filename =
   instr_of_name_content `create_file_extern ~name ~content:(Fs.read_file filename)
 
-let init () = Code.(Let (Var.fresh (), Prim (Extern "caml_fs_init", [])))
+let init () = Code.(Let (Var.fresh (), Prim (Extern ("caml_fs_init", None), [])))
 
 let f ~prim ~cmis ~files ~paths =
   let cmi_files, missing_cmis =
