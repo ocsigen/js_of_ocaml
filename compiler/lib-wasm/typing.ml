@@ -45,32 +45,9 @@ type boxed_status =
   | Unboxed
 
 module Bigarray = struct
-  type kind =
-    | Float16
-    | Float32
-    | Float64
-    | Int8_signed
-    | Int8_unsigned
-    | Int16_signed
-    | Int16_unsigned
-    | Int32
-    | Int64
-    | Int
-    | Nativeint
-    | Complex32
-    | Complex64
-
-  type layout =
-    | C
-    | Fortran
-
-  type t =
-    { kind : kind
-    ; layout : layout
-    }
-
-  let make ~kind ~layout =
-    { kind =
+  let make ~kind ~layout : Optimization_hint.Bigarray.t =
+    { unsafe = false
+    ; kind =
         (match kind with
         | 0 -> Float32
         | 1 -> Float64
@@ -94,7 +71,7 @@ module Bigarray = struct
         | _ -> assert false)
     }
 
-  let print f { kind; layout } =
+  let print f { Optimization_hint.Bigarray.kind; layout; _ } =
     Format.fprintf
       f
       "bigarray{%s,%s}"
@@ -116,8 +93,10 @@ module Bigarray = struct
       | C -> "C"
       | Fortran -> "Fortran")
 
-  let equal { kind; layout } { kind = kind'; layout = layout' } =
-    phys_equal kind kind' && phys_equal layout layout'
+  let equal
+      { Optimization_hint.Bigarray.unsafe; kind; layout }
+      { Optimization_hint.Bigarray.unsafe = unsafe'; kind = kind'; layout = layout' } =
+    Bool.equal unsafe unsafe' && phys_equal kind kind' && phys_equal layout layout'
 end
 
 type typ =
@@ -128,7 +107,7 @@ type typ =
       (** This value is a block or an integer; if it's an integer, an
           overapproximation of the possible values of each of its
           fields is given by the array of types *)
-  | Bigarray of Bigarray.t
+  | Bigarray of Optimization_hint.Bigarray.t
   | Bot
 
 module Domain = struct
@@ -298,7 +277,7 @@ let arg_type ~approx arg =
   | Pc c -> constant_type c
   | Pv x -> Var.Tbl.get approx x
 
-let bigarray_element_type (kind : Bigarray.kind) =
+let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
   match kind with
   | Float16 | Float32 | Float64 -> Number (Float, Unboxed)
   | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
@@ -314,7 +293,7 @@ let bigarray_type ~approx ba =
   | Bigarray { kind; _ } -> bigarray_element_type kind
   | _ -> Top
 
-let prim_type ~st ~approx prim args =
+let prim_type ~st ~approx prim hint args =
   match prim with
   | "%int_add" | "%int_sub" | "%int_mul" | "%direct_int_mul" | "%int_lsl" | "%int_neg" ->
       Int Unnormalized
@@ -483,9 +462,11 @@ let prim_type ~st ~approx prim args =
                ~layout:(Targetint.to_int_exn layout))
       | _ -> Top)
   | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
-      match args with
-      | ba :: _ -> bigarray_type ~approx ba
-      | [] -> Top)
+      match hint, args with
+      | Some (Optimization_hint.Hint_bigarray { kind; _ }), _ ->
+          bigarray_element_type kind
+      | _, ba :: _ -> bigarray_type ~approx ba
+      | _, [] -> Top)
   | "caml_ba_get_generic" -> (
       match args with
       | ba :: Pv indices :: _ -> (
@@ -553,7 +534,7 @@ let propagate st approx x : Domain.t =
       | Prim (Array_get, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           Int Normalized
-      | Prim (Extern (prim, _), args) -> prim_type ~st ~approx prim args
+      | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.global_flow_info.info_approximation f with

@@ -1413,7 +1413,7 @@ module Bigarray = struct
       (Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 3)
       (Arith.const (Int32.of_int n))
 
-  let get_at_offset ~(kind : Typing.Bigarray.kind) a i =
+  let get_at_offset ~(kind : Optimization_hint.Bigarray.kind) a i =
     let name, (typ : Wasm_ast.value_type), size, box =
       match kind with
       | Float32 ->
@@ -1500,7 +1500,7 @@ module Bigarray = struct
 
   let set_at_offset ~kind a i v =
     let name, (typ : Wasm_ast.value_type), size, unbox =
-      match (kind : Typing.Bigarray.kind) with
+      match (kind : Optimization_hint.Bigarray.kind) with
       | Float32 ->
           ( "dv_set_f32"
           , F32
@@ -1585,7 +1585,12 @@ module Bigarray = struct
         let* y = unbox (Memory.wasm_array_get ~ty v (Arith.const 1l)) in
         instr (W.CallInstr (f, [ ta; ofs'; y; W.GlobalGet little_endian ]))
 
-  let offset ~bound_error_index ~(layout : Typing.Bigarray.layout) ta ~indices =
+  let offset
+      ~bound_error_index
+      ~unsafe
+      ~(layout : Optimization_hint.Bigarray.layout)
+      ta
+      ~indices =
     let l =
       List.mapi
         ~f:(fun pos i ->
@@ -1598,8 +1603,11 @@ module Bigarray = struct
           let dim = Code.Var.fresh () in
           ( (let* () = store ~typ:I32 i' i in
              let* () = store ~typ:I32 dim (dimension pos ta) in
-             let* cond = Arith.uge (load i') (load dim) in
-             instr (W.Br_if (bound_error_index, cond)))
+             if unsafe
+             then return ()
+             else
+               let* cond = Arith.uge (load i') (load dim) in
+               instr (W.Br_if (bound_error_index, cond)))
           , i'
           , dim ))
         indices
@@ -1622,12 +1630,12 @@ module Bigarray = struct
           rem
     | [] -> return (), Arith.const 0l
 
-  let get ~bound_error_index ~kind ~layout ta ~indices =
-    let instrs, ofs = offset ~bound_error_index ~layout ta ~indices in
+  let get ~bound_error_index ~unsafe ~kind ~layout ta ~indices =
+    let instrs, ofs = offset ~bound_error_index ~unsafe ~layout ta ~indices in
     seq instrs (get_at_offset ~kind ta ofs)
 
-  let set ~bound_error_index ~kind ~layout ta ~indices v =
-    let instrs, ofs = offset ~bound_error_index ~layout ta ~indices in
+  let set ~bound_error_index ~unsafe ~kind ~layout ta ~indices v =
+    let instrs, ofs = offset ~bound_error_index ~unsafe ~layout ta ~indices in
     seq
       (let* () = instrs in
        set_at_offset ~kind ta ofs v)
