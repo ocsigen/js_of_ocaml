@@ -244,13 +244,14 @@ let update_deps st { blocks; _ } =
               ( x
               , Prim
                   ( Extern
-                      ( "%int_and"
-                      | "%int_or"
-                      | "%int_xor"
-                      | "caml_ba_get_1"
-                      | "caml_ba_get_2"
-                      | "caml_ba_get_3"
-                      | "caml_ba_get_generic" )
+                      ( ( "%int_and"
+                        | "%int_or"
+                        | "%int_xor"
+                        | "caml_ba_get_1"
+                        | "caml_ba_get_2"
+                        | "caml_ba_get_3"
+                        | "caml_ba_get_generic" )
+                      , _ )
                   , lst ) ) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
@@ -521,9 +522,10 @@ let propagate st approx x : Domain.t =
           | Top -> Top
           | _ -> Bot)
       | Prim
-          ( Extern ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
+          ( Extern
+              (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
-      | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
+      | Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           match Var.Tbl.get st.global_flow_info.info_approximation y with
           | Values { known; others } ->
               Domain.join_set
@@ -549,8 +551,9 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
-      | Prim (Extern prim, args) -> prim_type ~st ~approx prim args
+      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+          Int Normalized
+      | Prim (Extern (prim, _), args) -> prim_type ~st ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.global_flow_info.info_approximation f with
@@ -566,8 +569,9 @@ let propagate st approx x : Domain.t =
                           (fun y ->
                             match st.global_flow_state.defs.(Var.idx y) with
                             | Expr
-                                (Prim (Extern "caml_ba_create", [ Pv kind; Pv layout; _ ]))
-                              -> (
+                                (Prim
+                                   ( Extern ("caml_ba_create", _)
+                                   , [ Pv kind; Pv layout; _ ] )) -> (
                                 let m =
                                   List.fold_left2
                                     ~f:(fun m p a -> Var.Map.add p a m)
@@ -826,7 +830,7 @@ let box_numbers p st types =
                         | Some (g, _) -> not (can_unbox_parameters st.fun_info g)
                       then List.iter ~f:box args
                   | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
-                  | Prim (Extern s, args) ->
+                  | Prim (Extern (s, _), args) ->
                       if
                         not
                           (String.Hashtbl.mem primitives_with_unboxed_parameters s
@@ -846,7 +850,7 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult), _)
+                  | Prim ((Vectlength _ | Array_get | Not | IsInt | Lt | Le | Ult), _)
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
               | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
@@ -864,7 +868,7 @@ let box_numbers p st types =
 
 let print_opt types global_flow_state f e =
   match e with
-  | Prim (Extern name, args)
+  | Prim (Extern (name, _), args)
     when type_specialized_primitive types global_flow_state name args ->
       Format.fprintf f " OPT"
   | _ -> ()

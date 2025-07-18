@@ -53,7 +53,7 @@ let rewrite_body unboxed_refs body ref_contents subst =
             , Let
                 ( y
                 , Prim
-                    ( Extern "%int_add"
+                    ( Extern ("%int_add", None)
                     , [ Pv (Var.Map.find x ref_contents)
                       ; Pc (Int (Targetint.of_int_exn n))
                       ] ) )
