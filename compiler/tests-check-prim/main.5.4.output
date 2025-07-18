@@ -18,6 +18,8 @@ caml_check_bound
 From +bigarray.js:
 caml_ba_create_from (deprecated)
 caml_ba_init
+caml_ba_uint8_get32u
+caml_ba_uint8_set32u
 
 From +bigstring.js:
 caml_bigstring_blit_ba_to_ba
