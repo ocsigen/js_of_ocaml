@@ -124,7 +124,18 @@ let update_deps st { blocks; _ } =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, Block (_, lst, _, _)) -> Array.iter ~f:(fun y -> add_dep st x y) lst
-          | Let (x, Prim (Extern (("%int_and" | "%int_or" | "%int_xor"), _), lst)) ->
+          | Let
+              ( x
+              , Prim
+                  ( Extern
+                      ( ( "%int_and"
+                        | "%int_or"
+                        | "%int_xor"
+                        | "caml_ba_get_1"
+                        | "caml_ba_get_2"
+                        | "caml_ba_get_3" )
+                      , _ )
+                  , lst ) ) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
                 ~f:(fun p ->
@@ -168,7 +179,17 @@ let arg_type ~approx arg =
   | Pc c -> constant_type c
   | Pv x -> Var.Tbl.get approx x
 
-let prim_type ~approx prim args =
+let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
+  match kind with
+  | Float16 | Float32 | Float64 -> Number Float
+  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
+  | Int32 -> Number Int32
+  | Int64 -> Number Int64
+  | Int -> Int Unnormalized
+  | Nativeint -> Number Nativeint
+  | Complex32 | Complex64 -> Tuple [| Number Float; Number Float |]
+
+let prim_type ~approx prim hint args =
   match prim with
   | "%int_add" | "%int_sub" | "%int_mul" | "%direct_int_mul" | "%int_lsl" | "%int_neg" ->
       Int Unnormalized
@@ -323,6 +344,10 @@ let prim_type ~approx prim args =
   | "caml_nativeint_to_int" -> Int Unnormalized
   | "caml_nativeint_of_int" -> Number Nativeint
   | "caml_int_compare" -> Int Normalized
+  | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
+      match hint with
+      | Some (Optimization_hint.Hint_bigarray { kind; _ }) -> bigarray_element_type kind
+      | _ -> Top)
   | _ -> Top
 
 let propagate st approx x : Domain.t =
@@ -383,7 +408,7 @@ let propagate st approx x : Domain.t =
       | Prim (Array_get, _) -> Top
       | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
           Int Normalized
-      | Prim (Extern (prim, _), args) -> prim_type ~approx prim args
+      | Prim (Extern (prim, hint), args) -> prim_type ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.info.info_approximation f with

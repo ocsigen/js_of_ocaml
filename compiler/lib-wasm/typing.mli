@@ -20,6 +20,8 @@ type typ =
 
 val constant_type : Code.constant -> typ
 
+val bigarray_element_type : Optimization_hint.Bigarray.kind -> typ
+
 val f :
      state:Global_flow.state
   -> info:Global_flow.info
