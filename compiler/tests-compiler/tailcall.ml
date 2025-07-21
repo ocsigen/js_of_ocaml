@@ -141,3 +141,74 @@ let%expect_test "global-deadcode-bug" =
     }
     //end
     |}]
+
+let%expect_test "_" =
+  let prog =
+    {|
+type t =
+  | Zero
+  | Succ of t
+
+let rules (rules : t -> t) : t -> t =
+  function
+  | Zero -> Succ Zero
+  | Succ n -> Succ (rules n)
+
+let rec step n =
+  rules step n
+
+let rec grow (iters : int) (n : t) : t =
+  if iters < 0 then n else
+    (grow [@tailcall]) (iters - 1) (step n)
+|}
+  in
+  let program = Util.compile_and_parse ~flags:[ "--debug"; "js_assign" ] prog in
+  Util.print_fun_decl program (Some "grow");
+  [%expect.unreachable]
+[@@expect.uncaught_exn {|
+  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
+     This is strongly discouraged as backtraces are fragile.
+     Please change this test to not include a backtrace. *)
+  (Failure "non-zero exit code")
+  Raised at Stdlib__Buffer.add_channel in file "buffer.ml", line 213, characters 18-35
+  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string.loop in file "compiler/tests-compiler/util/util.ml", line 169, characters 4-52
+  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string in file "compiler/tests-compiler/util/util.ml", line 172, characters 7-14
+
+  Trailing output
+  ---------------
+  (function(globalThis){
+     "use strict";
+     var runtime = globalThis.jsoo_runtime;
+     function caml_call1(f, a0){
+      return (f.l >= 0 ? f.l : f.l = f.length) === 1
+              ? f(a0)
+              : runtime.caml_call_gen(f, [a0]);
+     }
+     var _a_ = [0, 0];
+     function rules(rules, param){
+      if(! param) return _a_;
+      var n = param[1];
+      return [0, caml_call1(rules, n)];
+     }
+     function step(n){return rules(step, n);}
+     function grow(iters$1, n$0){
+      var iters = iters$1, n = n$0;
+      for(;;){
+       if(0 > iters) return n;
+       var n$1 = rules(<v26{step}>, n), iters$0 = iters - 1 | 0;
+       iters = iters$0;
+       n = n$1;
+      }
+     }
+     var Test = [0, rules, step, grow];
+     runtime.caml_register_global(1, Test, "Test");
+     return;
+    }
+    (globalThis));
+  Some variables escaped: <v26{step}>
+  /home/hugo/js_of_ocaml/_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.exe: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :
+  Error: File "compiler/lib/js_assign.ml", line 503, characters 5-11: Assertion failed
+
+  process exited with error code 125
+   /home/hugo/js_of_ocaml/_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.exe --pretty --debug var --sourcemap --effects=disabled --disable=use-js-string --disable header --debug js_assign --Werror test.cmo -o test.js
+  |}]
