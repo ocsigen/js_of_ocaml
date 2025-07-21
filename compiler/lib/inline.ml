@@ -364,7 +364,7 @@ let functor_like ~context info =
   full_size ~context info - body_size ~context info <= 20 * closure_count ~context info
 
 let trivial_function ~context info =
-  body_size ~context info <= 1 && closure_count ~context info = 0
+  (not info.recursive) && body_size ~context info <= 1 && closure_count ~context info = 0
 
 (*
   We inline small functions which are simple (no closure, no
