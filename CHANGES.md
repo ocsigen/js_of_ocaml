@@ -3,6 +3,9 @@
 ## Features/Changes
 * Compiler: exit-loop-early in more cases (#2077)
 
+## Bug fixes
+* Compiler: Fix inlining. do not inline recursive functions (#2084)
+
 # 6.1.1 (2025-07-07) - Lille
 
 ## Bug fixes
