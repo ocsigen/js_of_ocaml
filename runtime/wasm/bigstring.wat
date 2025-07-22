@@ -58,10 +58,31 @@
       (func $ta_blit_to_bytes
          (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
          (param i32)))
+   (import "bindings" "ta_blit_from_string"
+      (func $ta_blit_from_string
+         (param anyref) (param i32) (param (ref extern)) (param i32)
+         (param i32)))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
 
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
+   (type $js (struct (field anyref)))
+
+(@if use-js-string
+(@then
+   (import "wasm:js-string" "charCodeAt"
+      (func $string_get (param externref i32) (result i32)))
+   (func $string_val (param $s (ref eq)) (result externref)
+      (extern.convert_any
+         (struct.get $string 0 (ref.cast (ref $string) (local.get $s)))))
+)
+(@else
+   (func $string_get (param $s (ref $bytes)) (param $i i32) (result i32)
+      (array.get $bytes (local.get $s) (local.get $i)))
+   (func $string_val (param $s (ref eq)) (result (ref $bytes))
+      (ref.cast (ref $bytes) (local.get $s)))
+))
 
    (func (export "caml_hash_mix_bigstring")
       (param $h i32) (param $b (ref eq)) (result i32)
@@ -103,7 +124,7 @@
          (local.set $h (call $caml_hash_mix_int (local.get $h) (local.get $w))))
       (i32.xor (local.get $h) (local.get $len)))
 
-   (@string $buffer "buffer")
+   (@jsstring $buffer "buffer")
 
    (func (export "bigstring_to_array_buffer")
       (param $bs (ref eq)) (result (ref eq))
@@ -164,10 +185,16 @@
       (local $i i32) (local $pos1 i32) (local $pos2 i32) (local $len i32)
       (local $c1 i32) (local $c2 i32)
       (local $v1 (ref extern))
+(@if use-js-string
+(@then
+      (local $s2 externref)
+)
+(@else
       (local $s2 (ref $bytes))
+))
       (local.set $v1 (call $caml_ba_get_view (local.get $s1)))
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
-      (local.set $s2 (ref.cast (ref $bytes) (local.get $vs2)))
+      (local.set $s2 (call $string_val (local.get $vs2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
       (loop $loop
@@ -177,7 +204,7 @@
                   (call $dv_get_ui8 (local.get $v1)
                      (i32.add (local.get $pos1) (local.get $i))))
                (local.set $c2
-                  (array.get_u $bytes (local.get $s2)
+                  (call $string_get (local.get $s2)
                      (i32.add (local.get $pos2) (local.get $i))))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop (i32.eq (local.get $c1) (local.get $c2)))
@@ -271,8 +298,32 @@
                (br $loop))))
       (ref.i31 (i32.const 0)))
 
+(@if use-js-string
+(@then
+   (func (export "caml_bigstring_blit_string_to_ba")
+      (param $str1 (ref eq)) (param $vpos1 (ref eq))
+      (param $ba2 (ref eq)) (param $vpos2 (ref eq))
+      (param $vlen (ref eq)) (result (ref eq))
+      (local $pos1 i32) (local $pos2 i32) (local $len i32)
+      (local $s1 anyref)
+      (local $d2 (ref extern))
+      (local.set $s1
+         (struct.get $string 0 (ref.cast (ref $string) (local.get $str1))))
+      (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
+      (local.set $d2 (call $caml_ba_get_data (local.get $ba2)))
+      (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
+      (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      (call $ta_blit_from_string
+         (local.get $s1) (local.get $pos1)
+         (local.get $d2) (local.get $pos2)
+         (local.get $len))
+      (ref.i31 (i32.const 0)))
+)
+(@else
    (export "caml_bigstring_blit_string_to_ba"
       (func $caml_bigstring_blit_bytes_to_ba))
+))
+
    (func $caml_bigstring_blit_bytes_to_ba
       (export "caml_bigstring_blit_bytes_to_ba")
       (param $str1 (ref eq)) (param $vpos1 (ref eq))
