@@ -612,9 +612,11 @@ and inline_function ~context i x f args rem state =
     context.live_vars.(Var.idx f) <- context.live_vars.(Var.idx f) - 1;
     let p, params, cont =
       if context.live_vars.(Var.idx f) > 0
-      then
-        let p, _, params, cont = Duplicate.closure p ~f ~params ~cont in
-        p, params, cont
+      then (
+        let p, _f, params, cont = Duplicate.closure p ~f ~params ~cont in
+        (* It's ok to ignore the [_f] because the function is not recursive *)
+        assert (not info.recursive);
+        p, params, cont)
       else p, params, cont
     in
     let p = inline_recursively ~context ~info p params cont args in
