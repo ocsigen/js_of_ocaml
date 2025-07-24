@@ -1,10 +1,12 @@
-# dev
+# 6.2.0 (2025-07-24) - Lille
 
 ## Features/Changes
 * Compiler: exit-loop-early in more cases (#2077)
+* Compiler: remove reserved keyword in ecmascript 3
 
 ## Bug fixes
 * Compiler: Fix inlining. do not inline recursive functions (#2084)
+* Compiler: fix purity of caml_compare and caml_lxm_next
 
 # 6.1.1 (2025-07-07) - Lille
 
