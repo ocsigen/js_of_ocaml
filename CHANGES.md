@@ -2,6 +2,7 @@
 
 ## Features/Changes
 * Compiler: exit-loop-early in more cases (#2077)
+* Compiler/wasm: omit code pointer from closures when not used (#2059)
 
 ## Bug fixes
 * Compiler: Fix inlining. do not inline recursive functions (#2084)
