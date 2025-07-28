@@ -97,9 +97,9 @@ class MlFakeDevice {
     var old_slash = this.slash(oldname);
     var new_slash = this.slash(newname);
     this.create_dir_if_needed(new_slash);
-    this.readdir(oldname).forEach((f) => {
+    for(const f of this.readdir(oldname)) {
       this.rename(old_slash + f, new_slash + f);
-    });
+    }
     delete this.content[old_slash];
   }
 
