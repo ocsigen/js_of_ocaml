@@ -19,7 +19,7 @@
 
 open Util
 
-let%expect_test _ =
+let%expect_test "readdir fails on non-existing directory and existing files" =
   compile_and_run
     {|
 let f () =
@@ -31,15 +31,19 @@ let f () =
   | e -> print_endline (Printexc.to_string e));
   (try ignore(Sys.readdir "aaa/bbb") with
   | Sys_error _ -> ()
-  | e -> print_endline (Printexc.to_string e));
+     | e -> print_endline (Printexc.to_string e));
+  Array.iter print_endline (Sys.readdir "aaa");
   Sys.remove "aaa/bbb";
   Sys.rmdir "aaa"
 in
 f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {| |}]
+  [%expect {|
+    bbb
+    bbb
+    |}]
 
-let%expect_test _ =
+let%expect_test "rmdir work on empty directory only" =
   compile_and_run
     {|
 let f () =
@@ -48,7 +52,7 @@ let f () =
   let l = Sys.readdir "aaa" |> Array.to_list in
   List.iter print_endline l;
   (match Sys.rmdir "aaa" with
-  | exception _ -> ()
+  | exception _ -> print_endline "EXPECTED ERROR"
   | _ -> print_endline "BUG");
   Sys.rmdir "aaa/bbb";
   Sys.rmdir "aaa"
@@ -57,10 +61,12 @@ f (); Sys.chdir "/static"; f ()
   |};
   [%expect {|
     bbb
-    bbb|}]
+    EXPECTED ERROR
+    bbb
+    EXPECTED ERROR
+    |}]
 
-let%expect_test _ =
-  (* Check we can rename a directory *)
+let%expect_test "Rename a directory" =
   compile_and_run
     {|
 let f () =
@@ -88,8 +94,7 @@ f (); Sys.chdir "/static"; f ()
     new file contents: Hello world
     |}]
 
-let%expect_test _ =
-  (* Check we can rename a directory over another directory *)
+let%expect_test "Rename a directory over another (empty) directory" =
   compile_and_run
     {|
 let f () =
@@ -118,8 +123,7 @@ f (); Sys.chdir "/static"; f ()
     new file contents: Hello world
     |}]
 
-let%expect_test _ =
-  (* Check we can't rename a directory over another non-empty directory *)
+let%expect_test "Can't rename a directory over another non-empty directory" =
   compile_and_run
     {|
 let f () =
@@ -134,7 +138,7 @@ let f () =
   Printf.fprintf oc "Hello world\n";
   close_out oc;
   (match Sys.rename "aaa/bbb" "aaa/bbb2" with
-  | exception Sys_error _ -> ()
+  | exception Sys_error _ -> print_endline "EXPECTED ERROR"
   | _ -> failwith "BUG: rename should have failed");
   Sys.remove "aaa/bbb/ccc/ddd";
   Sys.rmdir "aaa/bbb/ccc";
@@ -145,10 +149,12 @@ let f () =
 in
 f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {| |}]
+  [%expect {|
+    EXPECTED ERROR
+    EXPECTED ERROR
+    |}]
 
-let%expect_test _ =
-  (* Check we can rename a file to a pre-existing file *)
+let%expect_test "Rename a file to a pre-existing file" =
   compile_and_run
     {|
 let f () =
@@ -166,18 +172,20 @@ let f () =
   Printf.printf "contents of 'bbb': %s\n%!" line;
   Sys.remove "bbb";
   (match Sys.remove "aaa" with
-  | exception _ -> ()
+  | exception _ -> print_endline "EXPECTED ERROR"
   | _ -> print_endline "BUG")
 in
 f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {|
+  [%expect
+    {|
     contents of 'bbb': aaa
+    EXPECTED ERROR
     contents of 'bbb': aaa
+    EXPECTED ERROR
     |}]
 
-let%expect_test _ =
-  (* Check we can't rename a directory over a file *)
+let%expect_test "Can't rename a directory over a file" =
   compile_and_run
     {|
 let f () =
@@ -189,11 +197,11 @@ let f () =
   close_out oc;
   let oc = open_out "aaa/bbb2" in
   Printf.fprintf oc "Hello world\n";
-  close_out oc;  
+  close_out oc;
   (match Sys.rename "aaa/bbb" "aaa/bbb2"
-   with 
+   with
    | () -> failwith "BUG: rename should have failed"
-   | exception Sys_error _ -> ());
+   | exception Sys_error _ -> print_endline "EXPECTED ERROR");
   Sys.remove "aaa/bbb/ccc/ddd";
   Sys.rmdir "aaa/bbb/ccc";
   Sys.rmdir "aaa/bbb";
@@ -202,10 +210,12 @@ let f () =
 in
 f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {| |}]
+  [%expect {|
+    EXPECTED ERROR
+    EXPECTED ERROR
+    |}]
 
-let%expect_test _ =
-  (* Check we can't rename a file over a directory *)
+let%expect_test "Can't rename a file over a directory" =
   compile_and_run
     {|
 let f () =
@@ -217,9 +227,9 @@ let f () =
   close_out oc;
   let oc = open_out "aaa/bbb2" in
   Printf.fprintf oc "Hello world\n";
-  close_out oc;  
+  close_out oc;
   (match Sys.rename "aaa/bbb2" "aaa/bbb" with
-   | exception Sys_error _ -> ()
+   | exception Sys_error _ -> print_endline "EXPECTED ERROR"
    | _ -> failwith "BUG: rename should have failed");
   Sys.remove "aaa/bbb/ccc/ddd";
   Sys.rmdir "aaa/bbb/ccc";
@@ -229,24 +239,39 @@ let f () =
 in
 f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {| |}]
+  [%expect {|
+    EXPECTED ERROR
+    EXPECTED ERROR
+    |}]
 
-let%expect_test _ =
+let%expect_test "mkdir in non-existing directory" =
   compile_and_run
     {|
-  (match Sys.mkdir "/not/exists" 0o777 with
+let f () =
+  (match Sys.mkdir "not/exists" 0o777 with
   | exception Sys_error path -> print_endline "EXPECTED ERROR"
   | exception err -> print_endline (Printexc.to_string err)
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "BUG")
+in
+f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {|EXPECTED ERROR|}]
+  [%expect {|
+    EXPECTED ERROR
+    EXPECTED ERROR
+    |}]
 
-let%expect_test _ =
+let%expect_test "rmdir non-existing directory" =
   compile_and_run
     {|
-  (match Sys.rmdir "/not/exists" with
+let f () =
+  (match Sys.rmdir "not/exists" with
   | exception Sys_error path -> print_endline "EXPECTED ERROR"
   | exception err -> print_endline (Printexc.to_string err)
-  | _ -> print_endline "BUG");
+  | _ -> print_endline "BUG")
+in
+f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {|EXPECTED ERROR|}]
+  [%expect {|
+    EXPECTED ERROR
+    EXPECTED ERROR
+    |}]
