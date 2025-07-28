@@ -60,6 +60,63 @@ f (); Sys.chdir "/static"; f ()
     bbb|}]
 
 let%expect_test _ =
+  (* Check we can rename a directory *)
+  compile_and_run
+    {|
+let f () =
+  Sys.mkdir "aaa" 0o777;
+  Sys.mkdir "aaa/bbb" 0o777;
+  Sys.mkdir "aaa/bbb/ccc" 0o777;
+  let oc = open_out "aaa/bbb/ccc/ddd" in
+  Printf.fprintf oc "Hello world\n";
+  close_out oc;
+  Sys.rename "aaa/bbb" "aaa/bbb2";
+  let ic = open_in "aaa/bbb2/ccc/ddd" in
+  let line = input_line ic in
+  close_in ic;
+  Printf.printf "new file contents: %s\n%!" line;
+  Sys.remove "aaa/bbb2/ccc/ddd";
+  Sys.rmdir "aaa/bbb2/ccc";
+  Sys.rmdir "aaa/bbb2";
+  Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
+  |};
+  [%expect {|
+    new file contents: Hello world
+    new file contents: Hello world
+    |}]
+
+let%expect_test _ =
+  (* Check we can rename a file to a pre-existing file *)
+  compile_and_run
+    {|
+let f () =
+  let mk f content =
+    let oc = open_out f in
+    Printf.fprintf oc "%s\n" content;
+    close_out oc
+  in
+  mk "aaa" "aaa";
+  mk "bbb" "bbb";
+  Sys.rename "aaa" "bbb";
+  let ic = open_in "bbb" in
+  let line = input_line ic in
+  close_in ic;
+  Printf.printf "contents of 'bbb': %s\n%!" line;
+  Sys.remove "bbb";
+  (match Sys.remove "aaa" with
+  | exception _ -> ()
+  | _ -> print_endline "BUG")
+in
+f (); Sys.chdir "/static"; f ()
+  |};
+  [%expect {|
+    contents of 'bbb': aaa
+    contents of 'bbb': aaa
+    |}]
+
+let%expect_test _ =
   compile_and_run
     {|
   (match Sys.mkdir "/not/exists" 0o777 with
