@@ -288,6 +288,35 @@ let specialize_instrs ~target opt_count info l =
     match l with
     | [] -> List.rev acc
     | i :: r -> (
+        let i =
+          match i with
+          | Let (x, Apply { f; args; exact = false }) -> (
+              match Info.def info f with
+              | None -> i
+              | Some (Prim (Extern "caml_jsoo_runtime", [ name ])) -> (
+                  let name =
+                    match name with
+                    | Pc (String name) -> Some name
+                    | Pc _ -> None
+                    | Pv x -> (
+                        match Info.def info x with
+                        | Some (Constant (String name)) -> Some name
+                        | Some _ | None -> None)
+                  in
+                  match name with
+                  | None -> i
+                  | Some name -> (
+                      let name = Primitive.resolve name in
+                      match Primitive.arity name with
+                      | exception Not_found -> i
+                      | n ->
+                          if List.compare_length_with args ~len:n = 0
+                          then
+                            Let (x, Prim (Extern name, List.map args ~f:(fun x -> Pv x)))
+                          else i))
+              | Some _ -> i)
+          | _ -> i
+        in
         (* We make bound checking explicit. Then, we can remove duplicated
            bound checks. Also, it appears to be more efficient to inline
            the array access. The bound checking function returns the array,
