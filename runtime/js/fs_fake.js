@@ -89,15 +89,13 @@ class MlFakeDevice {
         );
       }
       if (this.readdir(newname).length > 0) {
-        caml_raise_sys_error(
-          this.nm(newname) + " : directory not empty",
-        );
+        caml_raise_sys_error(this.nm(newname) + " : directory not empty");
       }
     }
     var old_slash = this.slash(oldname);
     var new_slash = this.slash(newname);
     this.create_dir_if_needed(new_slash);
-    for(const f of this.readdir(oldname)) {
+    for (const f of this.readdir(oldname)) {
       this.rename(old_slash + f, new_slash + f);
     }
     delete this.content[old_slash];

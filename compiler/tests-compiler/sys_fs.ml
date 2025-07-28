@@ -82,7 +82,8 @@ let f () =
 in
 f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {|
+  [%expect
+    {|
     new file contents: Hello world
     new file contents: Hello world
     |}]
@@ -111,7 +112,8 @@ let f () =
 in
 f (); Sys.chdir "/static"; f ()
   |};
-  [%expect {|
+  [%expect
+    {|
     new file contents: Hello world
     new file contents: Hello world
     |}]
@@ -173,7 +175,6 @@ f (); Sys.chdir "/static"; f ()
     contents of 'bbb': aaa
     contents of 'bbb': aaa
     |}]
-
 
 let%expect_test _ =
   (* Check we can't rename a directory over a file *)
