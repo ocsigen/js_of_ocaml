@@ -48,6 +48,7 @@
    test_bigarray
    test_marshal_compressed
    test_parsing
+   test_custom
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -65,6 +66,16 @@
   (>= %{ocaml_version} 5.2))
  (modules test_float16 test_bigarray)
  (modes js wasm native))
+
+(test
+ (name test_custom)
+ (modules test_custom)
+ (libraries js_of_ocaml)
+ (js_of_ocaml
+  (javascript_files custom.js))
+ (wasm_of_ocaml
+  (javascript_files custom.js custom.wat))
+ (modes js wasm))
 
 (ocamlyacc calc_parser)
 
