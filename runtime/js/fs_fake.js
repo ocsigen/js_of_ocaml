@@ -82,6 +82,18 @@ class MlFakeDevice {
   }
 
   rename_dir(oldname, newname) {
+    if (this.exists(newname)) {
+      if (!this.is_dir(newname)) {
+        caml_raise_sys_error(
+          this.nm(newname) + " : file already exists and is not a directory",
+        );
+      }
+      if (this.readdir(newname).length > 0) {
+        caml_raise_sys_error(
+          this.nm(newname) + " : directory not empty",
+        );
+      }
+    }
     var old_slash = this.slash(oldname);
     var new_slash = this.slash(newname);
     this.create_dir_if_needed(new_slash);
@@ -97,6 +109,11 @@ class MlFakeDevice {
     if (this.is_dir(oldname)) {
       this.rename_dir(oldname, newname);
     } else {
+      if (this.exists(newname) && this.is_dir(newname)) {
+        caml_raise_sys_error(
+          this.nm(newname) + " : file already exists and is a directory",
+        );
+      }
       this.content[newname] = this.content[oldname];
       delete this.content[oldname];
     }
