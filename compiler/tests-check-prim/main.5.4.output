@@ -5,6 +5,7 @@ From main.bc:
 caml_assume_no_perform
 caml_continuation_use
 caml_int_as_pointer
+caml_jsoo_runtime_value
 caml_reset_afl_instrumentation
 debugger
 

@@ -94,6 +94,9 @@ module Js = struct
 
   external wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
     = "caml_js_wrap_meth_callback"
+
+  external runtime_value : string -> 'a = "caml_jsoo_runtime_value"
+  (** [runtime_value "FOO"] returns the JavaScript value FOO provided by the JavaScript runtime (with '//Provides: FOO'). The string argument must be a string literal. *)
 end
 
 module Sys = struct
