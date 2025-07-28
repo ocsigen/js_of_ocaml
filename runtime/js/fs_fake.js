@@ -81,15 +81,25 @@ class MlFakeDevice {
     }
   }
 
+  rename_dir(oldname, newname) {
+    var old_slash = this.slash(oldname);
+    var new_slash = this.slash(newname);
+    this.create_dir_if_needed(new_slash);
+    this.readdir(oldname).forEach((f) => {
+      this.rename(old_slash + f, new_slash + f);
+    });
+    delete this.content[old_slash];
+  }
+
   rename(oldname, newname) {
-    if (this.exists(newname))
-      caml_raise_sys_error(this.nm(newname) + " : file already exists");
     if (!this.exists(oldname))
       caml_raise_sys_error(this.nm(oldname) + " : no such file or directory");
-    if (this.is_dir(oldname))
-      caml_raise_sys_error(this.nm(oldname) + " : not a file");
-    this.content[newname] = this.content[oldname];
-    delete this.content[oldname];
+    if (this.is_dir(oldname)) {
+      this.rename_dir(oldname, newname);
+    } else {
+      this.content[newname] = this.content[oldname];
+      delete this.content[oldname];
+    }
   }
 
   mkdir(name, _mode, raise_unix) {
