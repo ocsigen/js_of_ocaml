@@ -88,6 +88,64 @@ f (); Sys.chdir "/static"; f ()
     |}]
 
 let%expect_test _ =
+  (* Check we can rename a directory over another directory *)
+  compile_and_run
+    {|
+let f () =
+  Sys.mkdir "aaa" 0o777;
+  Sys.mkdir "aaa/bbb" 0o777;
+  Sys.mkdir "aaa/bbb/ccc" 0o777;
+  let oc = open_out "aaa/bbb/ccc/ddd" in
+  Printf.fprintf oc "Hello world\n";
+  close_out oc;
+  Sys.mkdir "aaa/bbb2" 0o777;
+  Sys.rename "aaa/bbb" "aaa/bbb2";
+  let ic = open_in "aaa/bbb2/ccc/ddd" in
+  let line = input_line ic in
+  close_in ic;
+  Printf.printf "new file contents: %s\n%!" line;
+  Sys.remove "aaa/bbb2/ccc/ddd";
+  Sys.rmdir "aaa/bbb2/ccc";
+  Sys.rmdir "aaa/bbb2";
+  Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
+  |};
+  [%expect {|
+    new file contents: Hello world
+    new file contents: Hello world
+    |}]
+
+let%expect_test _ =
+  (* Check we can't rename a directory over another non-empty directory *)
+  compile_and_run
+    {|
+let f () =
+  Sys.mkdir "aaa" 0o777;
+  Sys.mkdir "aaa/bbb" 0o777;
+  Sys.mkdir "aaa/bbb/ccc" 0o777;
+  let oc = open_out "aaa/bbb/ccc/ddd" in
+  Printf.fprintf oc "Hello world\n";
+  close_out oc;
+  Sys.mkdir "aaa/bbb2" 0o777;
+  let oc = open_out "aaa/bbb2/ccc" in
+  Printf.fprintf oc "Hello world\n";
+  close_out oc;
+  (match Sys.rename "aaa/bbb" "aaa/bbb2" with
+  | exception Sys_error _ -> ()
+  | _ -> failwith "BUG: rename should have failed");
+  Sys.remove "aaa/bbb/ccc/ddd";
+  Sys.rmdir "aaa/bbb/ccc";
+  Sys.rmdir "aaa/bbb";
+  Sys.remove "aaa/bbb2/ccc";
+  Sys.rmdir "aaa/bbb2";
+  Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
+  |};
+  [%expect {| |}]
+
+let%expect_test _ =
   (* Check we can rename a file to a pre-existing file *)
   compile_and_run
     {|
@@ -115,6 +173,62 @@ f (); Sys.chdir "/static"; f ()
     contents of 'bbb': aaa
     contents of 'bbb': aaa
     |}]
+
+
+let%expect_test _ =
+  (* Check we can't rename a directory over a file *)
+  compile_and_run
+    {|
+let f () =
+  Sys.mkdir "aaa" 0o777;
+  Sys.mkdir "aaa/bbb" 0o777;
+  Sys.mkdir "aaa/bbb/ccc" 0o777;
+  let oc = open_out "aaa/bbb/ccc/ddd" in
+  Printf.fprintf oc "Hello world\n";
+  close_out oc;
+  let oc = open_out "aaa/bbb2" in
+  Printf.fprintf oc "Hello world\n";
+  close_out oc;  
+  (match Sys.rename "aaa/bbb" "aaa/bbb2"
+   with 
+   | () -> failwith "BUG: rename should have failed"
+   | exception Sys_error _ -> ());
+  Sys.remove "aaa/bbb/ccc/ddd";
+  Sys.rmdir "aaa/bbb/ccc";
+  Sys.rmdir "aaa/bbb";
+  Sys.remove "aaa/bbb2";
+  Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
+  |};
+  [%expect {| |}]
+
+let%expect_test _ =
+  (* Check we can't rename a file over a directory *)
+  compile_and_run
+    {|
+let f () =
+  Sys.mkdir "aaa" 0o777;
+  Sys.mkdir "aaa/bbb" 0o777;
+  Sys.mkdir "aaa/bbb/ccc" 0o777;
+  let oc = open_out "aaa/bbb/ccc/ddd" in
+  Printf.fprintf oc "Hello world\n";
+  close_out oc;
+  let oc = open_out "aaa/bbb2" in
+  Printf.fprintf oc "Hello world\n";
+  close_out oc;  
+  (match Sys.rename "aaa/bbb2" "aaa/bbb" with
+   | exception Sys_error _ -> ()
+   | _ -> failwith "BUG: rename should have failed");
+  Sys.remove "aaa/bbb/ccc/ddd";
+  Sys.rmdir "aaa/bbb/ccc";
+  Sys.rmdir "aaa/bbb";
+  Sys.remove "aaa/bbb2";
+  Sys.rmdir "aaa"
+in
+f (); Sys.chdir "/static"; f ()
+  |};
+  [%expect {| |}]
 
 let%expect_test _ =
   compile_and_run
