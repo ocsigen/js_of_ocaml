@@ -205,6 +205,10 @@ class MlNodeDevice {
     }
   }
 
+  slash(name) {
+    return /\/$/.test(name) ? name : name + "/";
+  }
+
   rename(o, n, raise_unix) {
     if (globalThis.process?.platform === "win32") {
       try {
@@ -221,7 +225,7 @@ class MlNodeDevice {
           source_stats.isDirectory()
         ) {
           if (target_stats.isDirectory()) {
-            if (!target.startsWith(source))
+            if (!this.slash(target).startsWith(this.slash(source)))
               try {
                 this.fs.rmdirSync(target);
               } catch {}
