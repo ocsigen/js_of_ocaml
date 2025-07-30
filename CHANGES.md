@@ -1,4 +1,4 @@
-# 6.2.0 (2025-07-24) - Lille
+# 6.2.0 (2025-07-30) - Lille
 
 ## Features/Changes
 * Compiler: exit-loop-early in more cases (#2077)
