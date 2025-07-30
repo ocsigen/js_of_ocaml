@@ -1,0 +1,40 @@
+= Link with JavaScript code
+The Js_of_ocaml compiler accepts JavaScript files provided on the command-line.
+The main purpose is to provide (external) primitives needed by the bytecode program.
+
+Most of the primitives from the standard library are already implemented and loaded by default.
+
+== Command-line
+Pass the JavaScript file (must have a ".js" extension)
+<<code |
+js_of_ocaml jsfile.js a.byte
+>>
+
+See the <<a_manual chapter="runtime-files" |runtime files>> chapter for how to
+discover runtime files.
+
+== Provide your own JavaScript
+You may need to provide extra JavaScript files to provide missing primitives or to override existing ones.
+Primitive code must be annotated with the primitive name and primitive requirements.
+The linker uses these information to only include the primitive actually used in the program and to perform better deadcode elimination.
+
+===Syntax
+{{{
+//Provides: primitive_name [const|mutable]
+//Requires: primitive_name[,primitive_name]*
+//Version: version_constraint[,version_constraint]*
+
+function primitive_name(..){
+ ... JavaScript code ...
+}
+}}}
+ * **{{{//Provides}}}** is used to declare a primitive; an annotation
+   can be used to specify the possible side-effects of the primitive:
+   **const** means no side-effect; **mutable** indicates that the
+   primitive has no side-effect but that other primitives might affect
+   the returned value of the primitive; when no annotation is provided,
+   the linker assumes that the primitive may have side-effects.
+ * **{{{//Requires}}}** is used if other primitives need to be loaded first
+ * **version_constraint** looks like {{{< 4.12.0}}}
+ * **{{{//Version}}}** is optional and is rarely used
+All JavaScript code following a **{{{//Provides}}}** annotation is associated to this annotation, until the next **{{{//Provides}}}** annotation.

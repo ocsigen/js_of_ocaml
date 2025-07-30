@@ -1,0 +1,10 @@
+= Environment variables
+
+To resolve an environment variable, js_of_ocaml will perform the
+following steps, in the given order:
+
+* If the variable was set at compile time with the {{{--setenv VAR}}} flag, return it.
+* If running nodejs and the variable is set in the process environment ({{{process.env}}}), return it.
+* If the variable is set in {{{globalThis.jsoo_env}}}, return it. This can be used
+  to set an environment variable inside a web-browser.
+* Return Not_found

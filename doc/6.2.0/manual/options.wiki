@@ -1,0 +1,50 @@
+= Main Command-Line options
+
+|= Option name               |= Description                           |
+| {{{--version}}}            | Display the version of the compiler    |
+| {{{-o <file>}}}            | Set the output filename to <file>      |
+| {{{--source-map}}}         | Generate sourcemap                     |
+| {{{--opt {1,2,3} }}}       | Set the compilation profile
+                               (default 1). See **Optimization**
+                                section below.                        |
+| {{{--pretty}}}             | Pretty print javascript output         |
+| {{{--target-env}}}         | Build javascript for the requested
+                               environment (default {{{isomorphic}}}).
+                               Isomorphic javascript runs in both the
+                               browser & nodejs. {{{nodejs}}} & {{{browser}}}
+                               options bundle less javascript, but
+                               drop support for APIs incompatible with
+                               the selected runtime.                  |
+| {{{--no-inline}}}          | Disable code inlining                  |
+| {{{--debug-info}}}         | Output debug information               |
+| {{{-I dir}}}               | Add <dir> to the list of
+                               include directories                    |
+| {{{--file file[:target]}}} | Register <file> to the pseudo filesystem
+                               and choose the destination <target>. The
+                               <target> can be a directory or a file
+                               (default /static/)                     |
+| {{{--enable <option>}}}    | Enable option <option>                 |
+| {{{--disable <option>}}}   | Disable option <option>                |
+
+=Optimizations
+ * For Debugging: {{{--pretty --no-inline --debug-info}}} + eventually {{{--disable staticeval --disable share}}}
+ * For Production: {{{--opt 3}}}. It minimize the generated javascript by applying
+   various optimizations until a fix-point is reached
+==List of option to {{{--disable}}} or {{{--enable}}}
+
+|= Option name   |= Default |= Description                           |
+| pretty         | false    | Pretty print the javascript output     |
+| effects        | false    | Enable support for effect handlers     |
+| debuginfo      | false    | Output debug information (location)    |
+| deadcode       | true     | Deadcode elimination                   |
+| globaldeadcode | true     | Global deadcode elimination            |
+| inline         | true     | Code inlining                          |
+| shortvar       | true     | Shorten variable names                 |
+| staticeval     | true     | Static evaluation of constants         |
+| share          | true     | Share string and number constants      |
+| strict         | true     | Enable strict mode                     |
+| debugger       | true     | Keep debugger statements.
+                              Stripped otherwise                     |
+| genprim        | true     | Generate dummy primitives when missing |
+| excwrap        | true     | Wrap js exception into ocaml ones      |
+| optcall        | true     | Javascript optimizations               |
