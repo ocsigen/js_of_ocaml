@@ -727,7 +727,7 @@ let check_vs_string s toks =
     then ()
     else
       match s.[a] with
-      | ' ' | '\n' | '\t' -> space (succ a) b
+      | ' ' | '\n' | '\t' | '\r' -> space (succ a) b
       | c -> Printf.printf "pos:%d, expecting space until %d, found %C\n" a b c
   in
   let text pos str =
