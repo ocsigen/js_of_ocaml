@@ -813,6 +813,11 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
         | true -> Printf.printf "\n%2d: " pos.Parse_info.line
         | false -> ());
         if pos.Parse_info.line <> 0 then prev := pos.Parse_info.line;
+        let s =
+          match tok with
+          | T_STRING _ -> Str.global_replace (Str.regexp {|\\r\\n|}) {|\n|} s
+          | _ -> s
+        in
         Printf.printf "%d:%s, " pos.Parse_info.col s;
         loop xs
   in
