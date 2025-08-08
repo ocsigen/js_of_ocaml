@@ -813,11 +813,6 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
         | true -> Printf.printf "\n%2d: " pos.Parse_info.line
         | false -> ());
         if pos.Parse_info.line <> 0 then prev := pos.Parse_info.line;
-        let s =
-          match tok with
-          | T_STRING _ -> Str.global_replace (Str.regexp {|\\r\\n|}) {|\n|} s
-          | _ -> s
-        in
         Printf.printf "%d:%s, " pos.Parse_info.col s;
         loop xs
   in
@@ -878,12 +873,13 @@ let%expect_test "string" =
     5: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;, |}]
 
 let%expect_test "multiline string" =
-  parse_print_token ~invalid:true {|
+  let clean s = Str.global_replace (Str.regexp "\n") "\n" s in
+  parse_print_token ~invalid:true (clean {|
     42;
     "
     ";
     42
-|};
+|});
   [%expect
     {|
      2: 4:42, 6:;,
@@ -891,24 +887,24 @@ let%expect_test "multiline string" =
      4: 5:;,
      5: 4:42, 0:;,
     Lexer error: fake:3:5: Unexpected token ILLEGAL |}];
-  parse_print_token {|
+  parse_print_token (clean {|
     42;
     "\
     ";
     42
-|};
+|});
   [%expect {|
     2: 4:42, 6:;,
     3: 4:"    ",
     4: 5:;,
     5: 4:42, 0:;, |}];
-  parse_print_token ~invalid:true {|
+  parse_print_token ~invalid:true (clean {|
     42;
     "
 
     ";
     42
-|};
+|});
   [%expect
     {|
      2: 4:42, 6:;,
