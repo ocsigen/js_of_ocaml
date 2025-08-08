@@ -873,7 +873,7 @@ let%expect_test "string" =
     5: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;, |}]
 
 let%expect_test "multiline string" =
-  let clean s = Str.global_replace (Str.regexp "\n") "\n" s in
+  let clean s = Str.global_replace (Str.regexp "\r\n") "\n" s in
   parse_print_token ~invalid:true (clean {|
     42;
     "
