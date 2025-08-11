@@ -74,13 +74,13 @@ jobs:
           git config --global core.ignorecase false
 
       - name: Checkout tree
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: wasm_of_ocaml
 
       - name: Checkout Jane Street opam repository
         if: matrix.jane_street_tests
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: janestreet/opam-repository
           ref: 2819773f29b6f6c14b918eae3cb40c8ff6b22d0e
