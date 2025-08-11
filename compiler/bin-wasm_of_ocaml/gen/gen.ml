@@ -77,7 +77,12 @@ let check_js_file fname =
 
 let default_flags = []
 
-let interesting_runtimes = [ [ "effects", `S "jspi" ]; [ "effects", `S "cps" ] ]
+let interesting_runtimes =
+  [ [ "effects", `S "jspi"; "use-js-string", `B false ]
+  ; [ "effects", `S "cps"; "use-js-string", `B false ]
+  ; [ "effects", `S "jspi"; "use-js-string", `B true ]
+  ; [ "effects", `S "cps"; "use-js-string", `B true ]
+  ]
 
 let name_runtime standard l =
   let flags =
