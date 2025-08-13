@@ -108,13 +108,6 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: sudo apt-get update
 
-      - name: Set git to use LF
-        if: ${{ matrix.os == 'windows-latest' && matrix.ocaml-compiler < 5.2 }}
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global core.ignorecase false
-
       - name: Checkout tree
         uses: actions/checkout@v5
 
@@ -155,6 +148,9 @@ jobs:
       - name: Install faked binaryen-bin package
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
+
+      - run: opam pin add ppx_expect https://github.com/hhugo/ppx_expect.git#v16-win
+        if: contains( matrix.ocaml-compiler, '4.14')
 
       - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
