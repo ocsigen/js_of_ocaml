@@ -666,33 +666,21 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
-  let allocate ~tag ~deadcode_sentinal ~load l =
-    if tag = 254
-    then
-      let* l =
-        expression_list
-          (fun v ->
-            match v with
-            | `Var y ->
-                if Code.Var.equal y deadcode_sentinal
-                then return (W.Const (F64 0.))
-                else unbox_float (load y)
-            | `Expr e -> unbox_float (return e))
-          l
-      in
-      let* ty = Type.float_array_type in
-      return (W.ArrayNewFixed (ty, l))
-    else
-      let* l =
-        expression_list
-          (fun v ->
-            match v with
-            | `Var y -> load y
-            | `Expr e -> return e)
-          l
-      in
-      let* ty = Type.block_type in
-      return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+  let allocate ~tag l =
+    assert (tag <> 254);
+    let* l = l in
+    let* ty = Type.block_type in
+    return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+
+  let allocate_float_array ~deadcode_sentinal ~load l =
+    let* l =
+      expression_list
+        (fun y ->
+          if Code.Var.equal y deadcode_sentinal then return (W.Const (F64 0.)) else load y)
+        l
+    in
+    let* ty = Type.float_array_type in
+    return (W.ArrayNewFixed (ty, l))
 
   let tag e = wasm_array_get e (Arith.const 0l)
 
@@ -741,10 +729,9 @@ module Memory = struct
 
   let array_set e e' e'' = wasm_array_set e Arith.(e' + const 1l) e''
 
-  let float_array_get e e' = box_float (wasm_array_get ~ty:Type.float_array_type e e')
+  let float_array_get e e' = wasm_array_get ~ty:Type.float_array_type e e'
 
-  let float_array_set e e' e'' =
-    wasm_array_set ~ty:Type.float_array_type e e' (unbox_float e'')
+  let float_array_set e e' e'' = wasm_array_set ~ty:Type.float_array_type e e' e''
 
   let gen_array_get e e' =
     let a = Code.Var.fresh_n "a" in
@@ -1047,9 +1034,12 @@ module Constant = struct
         let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
         return (Const, e)
 
-  let translate c =
+  let translate ~unboxed c =
     match c with
     | Code.Int i -> return (W.Const (I32 (Targetint.to_int32 i)))
+    | Float f when unboxed -> return (W.Const (F64 (Int64.float_of_bits f)))
+    | Int64 i when unboxed -> return (W.Const (I64 i))
+    | (Int32 i | NativeInt i) when unboxed -> return (W.Const (I32 i))
     | _ -> (
         let* const, c = translate_rec c in
         match const with
