@@ -172,7 +172,8 @@
             (field $ba_kind i8) ;; kind
             (field $ba_layout i8)))) ;; layout
 
-   (func $double_to_float16 (param $f f64) (result i32)
+   (func $double_to_float16 (export "caml_double_to_float16")
+      (param $f f64) (result i32)
       (local $x i32) (local $sign i32) (local $o i32)
       (local.set $x (i32.reinterpret_f32 (f32.demote_f64 (local.get $f))))
       (local.set $sign (i32.and (local.get $x) (i32.const 0x80000000)))
@@ -202,7 +203,8 @@
                         (i32.const 13)))))))
       (i32.or (local.get $o) (i32.shr_u (local.get $sign) (i32.const 16))))
 
-   (func $float16_to_double (param $d i32) (result f64)
+   (func $float16_to_double (export "caml_float16_to_double")
+      (param $d i32) (result f64)
       (local $f f32)
       (local.set $f
          (f32.mul
@@ -1940,6 +1942,17 @@
       (ref.i31
          (call $dv_get_ui16 (local.get $view) (local.get $p) (i32.const 1))))
 
+   (func (export "caml_ba_uint8_get16u")
+      (param $vba (ref eq)) (param $i (ref eq)) (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local $p i32)
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (ref.i31
+         (call $dv_get_ui16 (local.get $view) (local.get $p) (i32.const 1))))
+
    (func (export "caml_ba_uint8_get32")
       (param $vba (ref eq)) (param $i (ref eq)) (result i32)
       (local $ba (ref $bigarray))
@@ -1957,6 +1970,16 @@
          (then (call $caml_bound_error)))
       (return_call $dv_get_i32 (local.get $view) (local.get $p) (i32.const 1)))
 
+   (func (export "caml_ba_uint8_get32u")
+      (param $vba (ref eq)) (param $i (ref eq)) (result i32)
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local $p i32)
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (return_call $dv_get_i32 (local.get $view) (local.get $p) (i32.const 1)))
+
    (func (export "caml_ba_uint8_get64")
       (param $vba (ref eq)) (param $i (ref eq)) (result i64)
       (local $ba (ref $bigarray))
@@ -1972,6 +1995,17 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
+      (call $dv_get_i64
+         (local.get $view) (local.get $p) (i32.const 1)))
+
+   (func (export "caml_ba_uint8_get64u")
+      (param $vba (ref eq)) (param $i (ref eq)) (result i64)
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local $p i32)
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
       (call $dv_get_i64
          (local.get $view) (local.get $p) (i32.const 1)))
 
@@ -1996,6 +2030,20 @@
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_ba_uint8_set16u")
+      (param $vba (ref eq)) (param $i (ref eq)) (param $v (ref eq))
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local $p i32) (local $d i32)
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (local.set $d (i31.get_s (ref.cast (ref i31) (local.get $v))))
+      (call $dv_set_i16
+         (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_ba_uint8_set32")
       (param $vba (ref eq)) (param $i (ref eq)) (param $d i32)
       (result (ref eq))
@@ -2016,6 +2064,19 @@
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_ba_uint8_set32u")
+      (param $vba (ref eq)) (param $i (ref eq)) (param $d i32)
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local $p i32)
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
+      (call $dv_set_i32
+         (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_ba_uint8_set64")
       (param $vba (ref eq)) (param $i (ref eq)) (param $d i64)
       (result (ref eq))
@@ -2032,6 +2093,19 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
+      (call $dv_set_i64
+         (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ba_uint8_set64u")
+      (param $vba (ref eq)) (param $i (ref eq)) (param $d i64)
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local $p i32)
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (local.set $p (i31.get_s (ref.cast (ref i31) (local.get $i))))
       (call $dv_set_i64
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))

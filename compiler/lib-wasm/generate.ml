@@ -69,6 +69,7 @@ module Generate (Target : Target_sig.S) = struct
   type repr =
     | Value
     | Float
+    | Int
     | Int32
     | Nativeint
     | Int64
@@ -77,8 +78,7 @@ module Generate (Target : Target_sig.S) = struct
     match r with
     | Value -> Type.value
     | Float -> F64
-    | Int32 -> I32
-    | Nativeint -> I32
+    | Int | Int32 | Nativeint -> I32
     | Int64 -> I64
 
   let specialized_primitive_type (_, params, result) =
@@ -86,7 +86,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let box_value r e =
     match r with
-    | Value -> e
+    | Value | Int -> e
     | Float -> Memory.box_float e
     | Int32 -> Memory.box_int32 e
     | Nativeint -> Memory.box_nativeint e
@@ -94,7 +94,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let unbox_value r e =
     match r with
-    | Value -> e
+    | Value | Int -> e
     | Float -> Memory.unbox_float e
     | Int32 -> Memory.unbox_int32 e
     | Nativeint -> Memory.unbox_nativeint e
@@ -107,26 +107,36 @@ module Generate (Target : Target_sig.S) = struct
       [ "caml_int32_bswap", (`Pure, [ Int32 ], Int32)
       ; "caml_nativeint_bswap", (`Pure, [ Nativeint ], Nativeint)
       ; "caml_int64_bswap", (`Pure, [ Int64 ], Int64)
-      ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Value)
-      ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Value)
-      ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Value)
+      ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Int)
+      ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Int)
+      ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Int)
       ; "caml_string_get32", (`Mutator, [ Value; Value ], Int32)
+      ; "caml_string_get32u", (`Mutator, [ Value; Value ], Int32)
       ; "caml_string_get64", (`Mutator, [ Value; Value ], Int64)
+      ; "caml_string_get64u", (`Mutator, [ Value; Value ], Int64)
       ; "caml_bytes_get32", (`Mutator, [ Value; Value ], Int32)
+      ; "caml_bytes_get32u", (`Mutator, [ Value; Value ], Int32)
       ; "caml_bytes_get64", (`Mutator, [ Value; Value ], Int64)
+      ; "caml_bytes_get64u", (`Mutator, [ Value; Value ], Int64)
       ; "caml_bytes_set32", (`Mutator, [ Value; Value; Int32 ], Value)
+      ; "caml_bytes_set32u", (`Mutator, [ Value; Value; Int32 ], Value)
       ; "caml_bytes_set64", (`Mutator, [ Value; Value; Int64 ], Value)
+      ; "caml_bytes_set64u", (`Mutator, [ Value; Value; Int64 ], Value)
       ; "caml_lxm_next", (`Mutable, [ Value ], Int64)
       ; "caml_ba_uint8_get32", (`Mutator, [ Value; Value ], Int32)
+      ; "caml_ba_uint8_get32u", (`Mutator, [ Value; Value ], Int32)
       ; "caml_ba_uint8_get64", (`Mutator, [ Value; Value ], Int64)
+      ; "caml_ba_uint8_get64u", (`Mutator, [ Value; Value ], Int64)
       ; "caml_ba_uint8_set32", (`Mutator, [ Value; Value; Int32 ], Value)
+      ; "caml_ba_uint8_set32u", (`Mutator, [ Value; Value; Int32 ], Value)
       ; "caml_ba_uint8_set64", (`Mutator, [ Value; Value; Int64 ], Value)
+      ; "caml_ba_uint8_set64u", (`Mutator, [ Value; Value; Int64 ], Value)
       ; "caml_nextafter_float", (`Pure, [ Float; Float ], Float)
       ; "caml_classify_float", (`Pure, [ Float ], Value)
       ; "caml_ldexp_float", (`Pure, [ Float; Value ], Float)
       ; "caml_erf_float", (`Pure, [ Float ], Float)
       ; "caml_erfc_float", (`Pure, [ Float ], Float)
-      ; "caml_float_compare", (`Pure, [ Float; Float ], Value)
+      ; "caml_float_compare", (`Pure, [ Float; Float ], Int)
       ];
     h
 
@@ -247,7 +257,7 @@ module Generate (Target : Target_sig.S) = struct
     let h = String.Hashtbl.create 128 in
     List.iter
       ~f:(fun (nm, k, f) ->
-        String.Hashtbl.add h nm (k, fun ctx _ l -> f (fun x -> transl_prim_arg ctx x) l))
+        String.Hashtbl.add h nm (k, fun ctx _ _ l -> f (fun x -> transl_prim_arg ctx x) l))
       internal_primitives;
     h
 
@@ -262,26 +272,26 @@ module Generate (Target : Target_sig.S) = struct
          (List.length l))
 
   let register_un_prim name k ?typ f =
-    register_prim name k (fun ctx _ l ->
+    register_prim name k (fun ctx _ _ l ->
         match l with
         | [ x ] -> f (transl_prim_arg ctx ?typ x)
         | l -> invalid_arity name l ~expected:1)
 
   let register_bin_prim name k ?tx ?ty f =
-    register_prim name k (fun ctx _ l ->
+    register_prim name k (fun ctx _ _ l ->
         match l with
         | [ x; y ] -> f (transl_prim_arg ctx ?typ:tx x) (transl_prim_arg ctx ?typ:ty y)
         | _ -> invalid_arity name l ~expected:2)
 
   let register_bin_prim_ctx name ?tx ?ty f =
-    register_prim name `Mutator (fun ctx context l ->
+    register_prim name `Mutator (fun ctx context _ l ->
         match l with
         | [ x; y ] ->
             f context (transl_prim_arg ctx ?typ:tx x) (transl_prim_arg ctx ?typ:ty y)
         | _ -> invalid_arity name l ~expected:2)
 
   let register_tern_prim name ?ty ?tz f =
-    register_prim name `Mutator (fun ctx _ l ->
+    register_prim name `Mutator (fun ctx _ _ l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -291,7 +301,7 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> invalid_arity name l ~expected:3)
 
   let register_tern_prim_ctx name ?ty ?tz f =
-    register_prim name `Mutator (fun ctx context l ->
+    register_prim name `Mutator (fun ctx context _ l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -300,6 +310,38 @@ module Generate (Target : Target_sig.S) = struct
               (transl_prim_arg ctx ?typ:ty y)
               (transl_prim_arg ctx ?typ:tz z)
         | _ -> invalid_arity name l ~expected:3)
+
+  let register_comparison name cmp_int cmp_boxed_int cmp_float =
+    register_prim name `Mutable (fun ctx _ (hint : Optimization_hint.t option) l ->
+        match l with
+        | [ x; y ] -> (
+            let x' = transl_prim_arg ctx x in
+            let y' = transl_prim_arg ctx y in
+            match hint, get_type ctx x, get_type ctx y with
+            | _, Int _, Int _ -> cmp_int ctx x y
+            | Some (Hint_int Int32), _, _ | _, Number Int32, Number Int32 ->
+                let* x' = Memory.unbox_int32 x' in
+                let* y' = Memory.unbox_int32 y' in
+                return (W.BinOp (I32 cmp_boxed_int, x', y'))
+            | Some (Hint_int Nativeint), _, _ | _, Number Nativeint, Number Nativeint ->
+                let* x' = Memory.unbox_nativeint x' in
+                let* y' = Memory.unbox_nativeint y' in
+                return (W.BinOp (I32 cmp_boxed_int, x', y'))
+            | Some (Hint_int Int64), _, _ | _, Number Int64, Number Int64 ->
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.BinOp (I64 cmp_boxed_int, x', y'))
+            | _, Number Float, Number Float -> float_comparison cmp_float x' y'
+            | _ ->
+                let* f =
+                  register_import
+                    ~name
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = x' in
+                let* y' = y' in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity name l ~expected:2)
 
   let () =
     register_bin_prim
@@ -772,7 +814,7 @@ module Generate (Target : Target_sig.S) = struct
       ~tx:(Int Normalized)
       ~ty:(Int Normalized)
       (fun i j -> Arith.((j < i) - (i < j)));
-    register_prim "%js_array" `Pure (fun ctx _ l ->
+    register_prim "%js_array" `Pure (fun ctx _ _ l ->
         let* l =
           List.fold_right
             ~f:(fun x acc ->
@@ -782,7 +824,175 @@ module Generate (Target : Target_sig.S) = struct
             l
             ~init:(return [])
         in
-        Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal ~load l)
+        Memory.allocate ~tag:0 ~deadcode_sentinal:ctx.deadcode_sentinal ~load l);
+    register_comparison
+      "caml_greaterthan"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x < y)) x y)
+      (Gt S)
+      Gt;
+    register_comparison
+      "caml_greaterequal"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x <= y)) x y)
+      (Ge S)
+      Ge;
+    register_comparison
+      "caml_lessthan"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( < ) x y)
+      (Lt S)
+      Lt;
+    register_comparison
+      "caml_lessequal"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( <= ) x y)
+      (Le S)
+      Le;
+    register_comparison
+      "caml_equal"
+      (fun ctx x y -> translate_int_equality ctx ~negate:false x y)
+      Eq
+      Eq;
+    register_comparison
+      "caml_notequal"
+      (fun ctx x y -> translate_int_equality ctx ~negate:true x y)
+      Ne
+      Ne;
+    register_prim "caml_compare" `Mutable (fun ctx _ _ l ->
+        match l with
+        | [ x; y ] -> (
+            let x' = transl_prim_arg ctx x in
+            let y' = transl_prim_arg ctx y in
+            match get_type ctx x, get_type ctx y with
+            | Int _, Int _ ->
+                Arith.(
+                  (Value.int_val y' < Value.int_val x')
+                  - (Value.int_val x' < Value.int_val y'))
+            | Number Int32, Number Int32 ->
+                let* f =
+                  register_import
+                    ~name:"caml_int32_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = Memory.unbox_int32 x' in
+                let* y' = Memory.unbox_int32 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Nativeint, Number Nativeint ->
+                let* f =
+                  register_import
+                    ~name:"caml_nativeint_compare"
+                    (Fun (Type.primitive_type 2))
+                in
+                let* x' = Memory.unbox_nativeint x' in
+                let* y' = Memory.unbox_nativeint y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Int64, Number Int64 ->
+                let* f =
+                  register_import
+                    ~name:"caml_int64_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | Number Float, Number Float ->
+                let* f =
+                  register_import
+                    ~name:"caml_float_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = Memory.unbox_int64 x' in
+                let* y' = Memory.unbox_int64 y' in
+                return (W.Call (f, [ x'; y' ]))
+            | _ ->
+                let* f =
+                  register_import
+                    ~name:"caml_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = x' in
+                let* y' = y' in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity "caml_compare" l ~expected:2);
+    let caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices =
+      let ta' = transl_prim_arg ctx ta in
+      Bigarray.get
+        ~bound_error_index:(label_index context bound_error_pc)
+        ~unsafe
+        ~kind
+        ~layout
+        ta'
+        ~indices
+    in
+    let caml_ba_get_n ~ctx ~context ~hint ta indices =
+      match hint with
+      | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }) ->
+          let indices =
+            List.map ~f:(fun i -> transl_prim_arg ctx ~typ:(Int Normalized) i) indices
+          in
+          caml_ba_get ~ctx ~context ~unsafe ~kind ~layout ta indices
+      | _ ->
+          let n = List.length indices in
+          let* f =
+            register_import
+              ~name:(Printf.sprintf "caml_ba_get_%d" n)
+              (Fun (Type.primitive_type (n + 1)))
+          in
+          let* ta' = transl_prim_arg ctx ta in
+          let* indices' = expression_list (transl_prim_arg ctx) indices in
+          return (W.Call (f, ta' :: indices'))
+    in
+    register_prim "caml_ba_get_1" `Mutator (fun ctx context hint l ->
+        match l with
+        | [ ta; i ] -> caml_ba_get_n ~ctx ~context ~hint ta [ i ]
+        | _ -> invalid_arity "caml_ba_get_1" l ~expected:2);
+    register_prim "caml_ba_get_2" `Mutator (fun ctx context hint l ->
+        match l with
+        | [ ta; i; j ] -> caml_ba_get_n ~ctx ~context ~hint ta [ i; j ]
+        | _ -> invalid_arity "caml_ba_get_2" l ~expected:3);
+    register_prim "caml_ba_get_3" `Mutator (fun ctx context hint l ->
+        match l with
+        | [ ta; i; j; k ] -> caml_ba_get_n ~ctx ~context ~hint ta [ i; j; k ]
+        | _ -> invalid_arity "caml_ba_get_3" l ~expected:4);
+    let caml_ba_set ~ctx ~context ~kind ~layout ta indices v =
+      let ta' = transl_prim_arg ctx ta in
+      let v' = transl_prim_arg ctx ~typ:(Typing.bigarray_element_type kind) v in
+      Bigarray.set
+        ~bound_error_index:(label_index context bound_error_pc)
+        ~kind
+        ~layout
+        ta'
+        ~indices
+        v'
+    in
+    let caml_ba_set_n ~ctx ~context ~hint ta indices v =
+      match hint with
+      | Some (Optimization_hint.Hint_bigarray { unsafe; kind; layout }) ->
+          let indices =
+            List.map ~f:(fun i -> transl_prim_arg ctx ~typ:(Int Normalized) i) indices
+          in
+          caml_ba_set ~ctx ~context ~unsafe ~kind ~layout ta indices v
+      | _ ->
+          let n = List.length indices in
+          let* f =
+            register_import
+              ~name:(Printf.sprintf "caml_ba_set_%d" n)
+              (Fun (Type.primitive_type (n + 2)))
+          in
+          let* ta' = transl_prim_arg ctx ta in
+          let* indices' = expression_list (transl_prim_arg ctx) indices in
+          let* v' = transl_prim_arg ctx v in
+          return (W.Call (f, ta' :: (indices' @ [ v' ])))
+    in
+    register_prim "caml_ba_set_1" `Mutator (fun ctx context hint l ->
+        match l with
+        | [ ta; i; v ] -> caml_ba_set_n ~ctx ~context ~hint ta [ i ] v
+        | _ -> invalid_arity "caml_ba_set_1" l ~expected:3);
+    register_prim "caml_ba_set_2" `Mutator (fun ctx context hint l ->
+        match l with
+        | [ ta; i; j; v ] -> caml_ba_set_n ~ctx ~context ~hint ta [ i; j ] v
+        | _ -> invalid_arity "caml_ba_set_2" l ~expected:4);
+    register_prim "caml_ba_set_3" `Mutator (fun ctx context hint l ->
+        match l with
+        | [ ta; i; j; k; v ] -> caml_ba_set_n ~ctx ~context ~hint ta [ i; j; k ] v
+        | _ -> invalid_arity "caml_ba_set_3" l ~expected:5)
 
   let rec translate_expr ctx context x e =
     match e with
@@ -841,12 +1051,12 @@ module Generate (Target : Target_sig.S) = struct
           x
     | Constant c -> Constant.translate c
     | Special (Alias_prim _) -> assert false
-    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ]) ->
+    | Prim (Extern ("caml_alloc_dummy_function", _), [ _; Pc (Int arity) ]) ->
         (* Removed in OCaml 5.2 *)
         Closure.dummy ~cps:(effects_cps ()) ~arity:(Targetint.to_int_exn arity)
-    | Prim (Extern "caml_alloc_dummy_infix", _) ->
+    | Prim (Extern ("caml_alloc_dummy_infix", _), _) ->
         Closure.dummy ~cps:(effects_cps ()) ~arity:1
-    | Prim (Extern "caml_get_global", [ Pc (String name) ]) ->
+    | Prim (Extern ("caml_get_global", _), [ Pc (String name) ]) ->
         let* x =
           let* context = get_context in
           match
@@ -864,7 +1074,7 @@ module Generate (Target : Target_sig.S) = struct
               register_import ~import_module:"OCaml" ~name (Global { mut = true; typ })
         in
         return (W.GlobalGet x)
-    | Prim (Extern "caml_set_global", [ Pc (String name); v ]) ->
+    | Prim (Extern ("caml_set_global", _), [ Pc (String name); v ]) ->
         let v = transl_prim_arg ctx v in
         let x = Var.fresh_n name in
         let* () =
@@ -888,12 +1098,12 @@ module Generate (Target : Target_sig.S) = struct
           (transl_prim_arg ctx ~typ:(Int Normalized) y)
     | Prim (p, l) -> (
         match p with
-        | Extern name when String.Hashtbl.mem internal_primitives name ->
-            snd (String.Hashtbl.find internal_primitives name) ctx context l
+        | Extern (name, hint) when String.Hashtbl.mem internal_primitives name ->
+            snd (String.Hashtbl.find internal_primitives name) ctx context hint l
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
             match p, l with
-            | Extern name, l -> (
+            | Extern (name, _), l -> (
                 try
                   let ((_, arg_typ, res_typ) as typ) =
                     String.Hashtbl.find specialized_primitives name
@@ -921,8 +1131,18 @@ module Generate (Target : Target_sig.S) = struct
                   in
                   loop [] l)
             | IsInt, [ x ] -> Value.is_int x
-            | Vectlength, [ x ] -> Memory.gen_array_length x
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
+            | Vectlength kind, [ x ] -> (
+                match kind with
+                | Generic -> Memory.gen_array_length x
+                | Value -> Memory.array_length x
+                | Float ->
+                    (* We use a generic array for empty float arrays. *)
+                    let y = Var.fresh () in
+                    let* cond = Memory.check_is_float_array (tee y x) in
+                    let* ift = Memory.gen_array_length (load y) in
+                    let* iff = Arith.const 0l in
+                    return (W.IfExpr (I32, cond, ift, iff)))
+            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
                 assert false))
 
   and translate_instr ctx context i =
@@ -1039,26 +1259,34 @@ module Generate (Target : Target_sig.S) = struct
                 ( _
                 , Prim
                     ( Extern
-                        ( "caml_string_get"
-                        | "caml_bytes_get"
-                        | "caml_string_set"
-                        | "caml_bytes_set"
-                        | "caml_check_bound"
-                        | "caml_check_bound_gen"
-                        | "caml_check_bound_float" )
+                        ( ( "caml_string_get"
+                          | "caml_bytes_get"
+                          | "caml_string_set"
+                          | "caml_bytes_set"
+                          | "caml_check_bound"
+                          | "caml_check_bound_gen"
+                          | "caml_check_bound_float"
+                          | "caml_ba_get_1"
+                          | "caml_ba_get_2"
+                          | "caml_ba_get_3"
+                          | "caml_ba_set_1"
+                          | "caml_ba_set_2"
+                          | "caml_ba_set_3" )
+                        , _ )
                     , _ ) ) -> fst n, true
             | Let
                 ( _
                 , Prim
                     ( Extern
-                        ( "%int_div"
-                        | "%int_mod"
-                        | "caml_int32_div"
-                        | "caml_int32_mod"
-                        | "caml_int64_div"
-                        | "caml_int64_mod"
-                        | "caml_nativeint_div"
-                        | "caml_nativeint_mod" )
+                        ( ( "%int_div"
+                          | "%int_mod"
+                          | "caml_int32_div"
+                          | "caml_int32_mod"
+                          | "caml_int64_div"
+                          | "caml_int64_mod"
+                          | "caml_nativeint_div"
+                          | "caml_nativeint_mod" )
+                        , _ )
                     , _ ) ) -> true, snd n
             | _ -> n)
           ~init:n

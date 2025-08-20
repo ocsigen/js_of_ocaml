@@ -257,6 +257,27 @@ module type S = sig
     val round : expression -> expression
   end
 
+  module Bigarray : sig
+    val get :
+         bound_error_index:int
+      -> unsafe:bool
+      -> kind:Optimization_hint.Bigarray.kind
+      -> layout:Optimization_hint.Bigarray.layout
+      -> expression
+      -> indices:expression list
+      -> expression
+
+    val set :
+         bound_error_index:int
+      -> unsafe:bool
+      -> kind:Optimization_hint.Bigarray.kind
+      -> layout:Optimization_hint.Bigarray.layout
+      -> expression
+      -> indices:expression list
+      -> expression
+      -> expression
+  end
+
   val internal_primitives :
     (string
     * Primitive.kind

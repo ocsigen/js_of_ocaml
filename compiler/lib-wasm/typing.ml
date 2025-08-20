@@ -124,7 +124,18 @@ let update_deps st { blocks; _ } =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, Block (_, lst, _, _)) -> Array.iter ~f:(fun y -> add_dep st x y) lst
-          | Let (x, Prim (Extern ("%int_and" | "%int_or" | "%int_xor"), lst)) ->
+          | Let
+              ( x
+              , Prim
+                  ( Extern
+                      ( ( "%int_and"
+                        | "%int_or"
+                        | "%int_xor"
+                        | "caml_ba_get_1"
+                        | "caml_ba_get_2"
+                        | "caml_ba_get_3" )
+                      , _ )
+                  , lst ) ) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
                 ~f:(fun p ->
@@ -168,7 +179,17 @@ let arg_type ~approx arg =
   | Pc c -> constant_type c
   | Pv x -> Var.Tbl.get approx x
 
-let prim_type ~approx prim args =
+let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
+  match kind with
+  | Float16 | Float32 | Float64 -> Number Float
+  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
+  | Int32 -> Number Int32
+  | Int64 -> Number Int64
+  | Int -> Int Unnormalized
+  | Nativeint -> Number Nativeint
+  | Complex32 | Complex64 -> Tuple [| Number Float; Number Float |]
+
+let prim_type ~approx prim hint args =
   match prim with
   | "%int_add" | "%int_sub" | "%int_mul" | "%direct_int_mul" | "%int_lsl" | "%int_neg" ->
       Int Unnormalized
@@ -193,11 +214,13 @@ let prim_type ~approx prim args =
   | "caml_lessthan"
   | "caml_lessequal"
   | "caml_equal"
-  | "caml_compare" -> Int Ref
+  | "caml_notequal"
+  | "caml_compare" -> Int Normalized
   | "caml_int32_bswap" -> Number Int32
   | "caml_nativeint_bswap" -> Number Nativeint
   | "caml_int64_bswap" -> Number Int64
-  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" -> Int Ref
+  | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" ->
+      Int Normalized
   | "caml_string_get32" -> Number Int32
   | "caml_string_get64" -> Number Int64
   | "caml_bytes_get32" -> Number Int32
@@ -208,7 +231,7 @@ let prim_type ~approx prim args =
   | "caml_nextafter_float" -> Number Float
   | "caml_classify_float" -> Int Ref
   | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number Float
-  | "caml_float_compare" -> Int Ref
+  | "caml_float_compare" -> Int Normalized
   | "caml_floatarray_unsafe_get" -> Number Float
   | "caml_bytes_unsafe_get"
   | "caml_string_unsafe_get"
@@ -323,6 +346,10 @@ let prim_type ~approx prim args =
   | "caml_nativeint_to_int" -> Int Unnormalized
   | "caml_nativeint_of_int" -> Number Nativeint
   | "caml_int_compare" -> Int Normalized
+  | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
+      match hint with
+      | Some (Optimization_hint.Hint_bigarray { kind; _ }) -> bigarray_element_type kind
+      | _ -> Top)
   | _ -> Top
 
 let propagate st approx x : Domain.t =
@@ -352,9 +379,10 @@ let propagate st approx x : Domain.t =
           | Top -> Top
           | _ -> Bot)
       | Prim
-          ( Extern ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
+          ( Extern
+              (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
-      | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
+      | Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           match Var.Tbl.get st.info.info_approximation y with
           | Values { known; others } ->
               Domain.join_set
@@ -380,8 +408,9 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
-      | Prim (Extern prim, args) -> prim_type ~approx prim args
+      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+          Int Normalized
+      | Prim (Extern (prim, hint), args) -> prim_type ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.info.info_approximation f with
@@ -421,6 +450,27 @@ let solver st =
   in
   Solver.f () g (propagate st)
 
+let print_opt typ f e =
+  match e with
+  | Prim
+      ( Extern
+          ( ( "caml_greaterthan"
+            | "caml_greaterequal"
+            | "caml_lessthan"
+            | "caml_lessequal"
+            | "caml_equal"
+            | "caml_compare" )
+          , _ )
+      , l ) -> (
+      match List.map ~f:(arg_type ~approx:typ) l with
+      | [ Int _; Int _ ]
+      | [ Number Int32; Number Int32 ]
+      | [ Number Int64; Number Int64 ]
+      | [ Number Nativeint; Number Nativeint ]
+      | [ Number Float; Number Float ] -> Format.fprintf f " OPT"
+      | _ -> ())
+  | _ -> ()
+
 let f ~state ~info ~deadcode_sentinal p =
   let t = Timer.make () in
   update_deps state p;
@@ -443,7 +493,8 @@ let f ~state ~info ~deadcode_sentinal p =
       Format.err_formatter
       (fun _ i ->
         match i with
-        | Instr (Let (x, _)) -> Format.asprintf "{%a}" Domain.print (Var.Tbl.get typ x)
+        | Instr (Let (x, e)) ->
+            Format.asprintf "{%a}%a" Domain.print (Var.Tbl.get typ x) (print_opt typ) e
         | _ -> "")
       p);
   typ

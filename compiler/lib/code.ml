@@ -286,9 +286,9 @@ end
 type cont = Addr.t * Var.t list
 
 type prim =
-  | Vectlength
+  | Vectlength of Optimization_hint.array_kind
   | Array_get
-  | Extern of string
+  | Extern of string * Optimization_hint.t option
   | Not
   | IsInt
   | Eq
@@ -547,17 +547,23 @@ module Print = struct
     | "%int_neg" -> "-"
     | _ -> raise Not_found
 
+  let hint f h =
+    match h with
+    | None -> ()
+    | Some h -> Format.fprintf f " [hint:%a]" Optimization_hint.print h
+
   let prim f p l =
     match p, l with
-    | Vectlength, [ x ] -> Format.fprintf f "%a.length" arg x
+    | Vectlength k, [ x ] ->
+        Format.fprintf f "%a.length%a" arg x hint (Some (Optimization_hint.Hint_array k))
     | Array_get, [ x; y ] -> Format.fprintf f "%a[%a]" arg x arg y
-    | Extern s, [ x; y ] -> (
-        try Format.fprintf f "%a %s %a" arg x (binop s) arg y
-        with Not_found -> Format.fprintf f "\"%s\"(%a)" s (list arg) l)
-    | Extern s, [ x ] -> (
-        try Format.fprintf f "%s %a" (unop s) arg x
-        with Not_found -> Format.fprintf f "\"%s\"(%a)" s (list arg) l)
-    | Extern s, _ -> Format.fprintf f "\"%s\"(%a)" s (list arg) l
+    | Extern (s, h), [ x; y ] -> (
+        try Format.fprintf f "%a %s %a%a" arg x (binop s) arg y hint h
+        with Not_found -> Format.fprintf f "\"%s\"(%a)%a" s (list arg) l hint h)
+    | Extern (s, h), [ x ] -> (
+        try Format.fprintf f "%s %a%a" (unop s) arg x hint h
+        with Not_found -> Format.fprintf f "\"%s\"(%a) %a" s (list arg) l hint h)
+    | Extern (s, h), _ -> Format.fprintf f "\"%s\"(%a) %a" s (list arg) l hint h
     | Not, [ x ] -> Format.fprintf f "!%a" arg x
     | IsInt, [ x ] -> Format.fprintf f "is_int(%a)" arg x
     | Eq, [ x; y ] -> Format.fprintf f "%a === %a" arg x arg y
@@ -689,7 +695,8 @@ let is_empty p =
       match v with
       | { body; branch = Stop; params = _ } -> (
           match body with
-          | ([] | [ Let (_, Prim (Extern "caml_get_global_data", _)) ]) when true -> true
+          | ([] | [ Let (_, Prim (Extern ("caml_get_global_data", None), _)) ]) when true
+            -> true
           | _ -> false)
       | _ -> false)
   | _ -> false
