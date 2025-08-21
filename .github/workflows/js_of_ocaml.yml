@@ -141,6 +141,9 @@ jobs:
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
 
+      - name: Pin dune
+        run: opam pin add dune -n 3.19.1
+
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
       # packages that implicitly depend on mingw-w64-shims.
