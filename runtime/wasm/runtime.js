@@ -392,7 +392,7 @@
         return caml_alloc_times(t.user / 1e6, t.system / 1e6);
       } else {
         var t = performance.now() / 1000;
-        return caml_alloc_times(t, t);
+        return caml_alloc_times(t, 0);
       }
     },
     gmtime: (t) => {
