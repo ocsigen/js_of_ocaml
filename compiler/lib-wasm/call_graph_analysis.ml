@@ -15,11 +15,11 @@ let block_deps ~info ~non_escaping ~ambiguous ~blocks pc =
   let block = Addr.Map.find pc blocks in
   List.iter block.body ~f:(fun i ->
       match i with
-      | Let (_, Apply { f; _ }) -> (
+      | Let (_, Apply { f; exact; _ }) -> (
           match get_approx info f with
           | Top -> ()
           | Values { known; others } ->
-              if others || Var.Set.cardinal known > 1
+              if (not exact) || others || Var.Set.cardinal known > 1
               then Var.Set.iter (fun x -> Var.Hashtbl.replace ambiguous x ()) known;
               if debug ()
               then
