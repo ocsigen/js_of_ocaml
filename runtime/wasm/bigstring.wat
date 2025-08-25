@@ -38,7 +38,7 @@
    (import "bindings" "ta_create"
       (func $ta_create (param i32) (param anyref) (result anyref)))
    (import "bindings" "dv_get_i32"
-      (func $dv_get_i32 (param externref i32 i32) (result i32)))
+      (func $dv_get_i32_unaligned (param externref i32 i32) (result i32)))
    (import "bindings" "dv_get_ui8"
       (func $dv_get_ui8 (param externref i32) (result i32)))
    (import "bindings" "dv_set_i8"
@@ -77,7 +77,8 @@
                (local.set $h
                   (call $caml_hash_mix_int
                      (local.get $h)
-                     (call $dv_get_i32 (local.get $view) (local.get $i)
+                     (call $dv_get_i32_unaligned
+                        (local.get $view) (local.get $i)
                         (i32.const 1))))
                (local.set $i (i32.add (local.get $i) (i32.const 4)))
                (br $loop))))

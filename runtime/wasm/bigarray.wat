@@ -120,6 +120,18 @@
       (func $dv_set_i16 (param externref i32 i32 i32)))
    (import "bindings" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
+   (import "bindings" "dv_get_i64"
+      (func $dv_get_i64_unaligned (param externref i32 i32) (result i64)))
+   (import "bindings" "dv_get_i32"
+      (func $dv_get_i32_unaligned (param externref i32 i32) (result i32)))
+   (import "bindings" "dv_get_ui16"
+      (func $dv_get_ui16_unaligned (param externref i32 i32) (result i32)))
+   (import "bindings" "dv_set_i64"
+      (func $dv_set_i64_unaligned (param externref i32 i64 i32)))
+   (import "bindings" "dv_set_i32"
+      (func $dv_set_i32_unaligned (param externref i32 i32 i32)))
+   (import "bindings" "dv_set_i16"
+      (func $dv_set_i16_unaligned (param externref i32 i32 i32)))
    (import "bindings" "littleEndian" (global $littleEndian i32))
 
    (type $block (array (mut (ref eq))))
@@ -2018,7 +2030,8 @@
                 (i32.const 0)))
          (then (call $caml_bound_error)))
       (ref.i31
-         (call $dv_get_ui16 (local.get $view) (local.get $p) (i32.const 1))))
+         (call $dv_get_ui16_unaligned
+            (local.get $view) (local.get $p) (i32.const 1))))
 
    (func (export "caml_ba_uint8_get32")
       (param $vba (ref eq)) (param $i (ref eq)) (result i32)
@@ -2035,7 +2048,8 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (return_call $dv_get_i32 (local.get $view) (local.get $p) (i32.const 1)))
+      (return_call $dv_get_i32_unaligned
+         (local.get $view) (local.get $p) (i32.const 1)))
 
    (func (export "caml_ba_uint8_get64")
       (param $vba (ref eq)) (param $i (ref eq)) (result i64)
@@ -2052,7 +2066,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_get_i64
+      (call $dv_get_i64_unaligned
          (local.get $view) (local.get $p) (i32.const 1)))
 
    (func (export "caml_ba_uint8_set16")
@@ -2072,7 +2086,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i16
+      (call $dv_set_i16_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
@@ -2092,7 +2106,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i32
+      (call $dv_set_i32_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
@@ -2112,7 +2126,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i64
+      (call $dv_set_i64_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
