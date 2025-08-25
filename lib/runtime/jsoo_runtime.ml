@@ -124,6 +124,8 @@ module Sys = struct
   external restore_channel : out_channel -> redirection -> unit
     = "caml_ml_channel_restore"
 
+  external external_ : string -> 'a = "caml_jsoo_runtime"
+
   module Config = struct
     external use_js_string : unit -> bool = "caml_jsoo_flags_use_js_string"
 
