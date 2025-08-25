@@ -51,6 +51,7 @@ type t =
   ; fs_external : bool
   ; keep_unit_names : bool
   ; effects : Config.effects_backend
+  ; lambda_lift_all : bool
   }
 
 val options : t Cmdliner.Term.t
