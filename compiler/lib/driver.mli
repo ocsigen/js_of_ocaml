@@ -43,6 +43,7 @@ val f :
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> source_map:bool
   -> formatter:Pretty_print.t
+  -> lambda_lift_all:bool
   -> Code.program
   -> Source_map.info * Shape.t StringMap.t
 
@@ -50,6 +51,7 @@ val f' :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
   -> ?profile:Profile.t
+  -> ?lambda_lift_all:bool
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> Pretty_print.t
   -> Code.program

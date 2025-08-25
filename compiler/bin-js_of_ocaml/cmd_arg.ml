@@ -79,6 +79,7 @@ type t =
   ; effects : Config.effects_backend
   ; build_config : bool
   ; apply_build_config : string option
+  ; lambda_lift_all : bool
   }
 
 let wrap_with_fun_conv =
@@ -283,6 +284,14 @@ let options =
       & opt (some (enum Build_info.effects_backends_javascript)) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
+  let lambda_lift_all =
+    let doc =
+      "Lambda-lift all functions in the compilation result. This can improve the \
+       performance of some programs on some engines (such as V8). Ignored when effects \
+       are enabled."
+    in
+    Arg.(value & flag & info [ "lambda-lift-all" ] ~doc)
+  in
   let build_t
       common
       set_param
@@ -312,6 +321,7 @@ let options =
       js_files
       keep_unit_names
       effects
+      lambda_lift_all
       shape_files
       build_config
       apply_build_config =
@@ -397,6 +407,7 @@ let options =
           ; source_map
           ; keep_unit_names
           ; effects
+          ; lambda_lift_all
           ; shape_files
           ; build_config
           ; apply_build_config
@@ -433,6 +444,7 @@ let options =
       $ js_files
       $ keep_unit_names
       $ effects
+      $ lambda_lift_all
       $ shape_files
       $ build_config
       $ apply_build_config)
@@ -663,6 +675,7 @@ let options_runtime_only =
       ; keep_unit_names = false
       ; effects
       ; shape_files = []
+      ; lambda_lift_all = false
       ; build_config
       ; apply_build_config
       }

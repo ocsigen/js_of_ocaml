@@ -52,6 +52,7 @@ type t =
   ; effects : Config.effects_backend
   ; build_config : bool
   ; apply_build_config : string option
+  ; lambda_lift_all : bool
   }
 
 val options : t Cmdliner.Term.t
