@@ -80,6 +80,7 @@ function jsoo_create_file_extern(name,content){
           ~standalone:true
           ~wrap_with_fun:`Iife
           ~link:`Needed
+          ~lambda_lift_all:false
           ~formatter:pfs_fmt
           ~source_map:false
           code
