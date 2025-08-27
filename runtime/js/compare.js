@@ -251,7 +251,7 @@ function caml_compare_val(a, b, total) {
     b = b[i];
   }
 }
-//Provides: caml_compare mutable (const, const)
+//Provides: caml_compare (const, const)
 //Requires: caml_compare_val
 function caml_compare(a, b) {
   return caml_compare_val(a, b, true);
