@@ -251,6 +251,8 @@ function caml_compare_val(a, b, total) {
     b = b[i];
   }
 }
+
+// May raise
 //Provides: caml_compare (const, const)
 //Requires: caml_compare_val
 function caml_compare(a, b) {
@@ -265,32 +267,44 @@ function caml_int_compare(a, b) {
   if (a === b) return 0;
   return 1;
 }
-//Provides: caml_equal mutable (const, const)
+
+// May raise
+//Provides: caml_equal (const, const)
 //Requires: caml_compare_val
 function caml_equal(x, y) {
   return +(caml_compare_val(x, y, false) === 0);
 }
-//Provides: caml_notequal mutable (const, const)
+
+// May raise
+//Provides: caml_notequal (const, const)
 //Requires: caml_compare_val
 function caml_notequal(x, y) {
   return +(caml_compare_val(x, y, false) !== 0);
 }
-//Provides: caml_greaterequal mutable (const, const)
+
+// May raise
+//Provides: caml_greaterequal (const, const)
 //Requires: caml_compare_val
 function caml_greaterequal(x, y) {
   return +(caml_compare_val(x, y, false) >= 0);
 }
-//Provides: caml_greaterthan mutable (const, const)
+
+// May raise
+//Provides: caml_greaterthan (const, const)
 //Requires: caml_compare_val
 function caml_greaterthan(x, y) {
   return +(caml_compare_val(x, y, false) > 0);
 }
-//Provides: caml_lessequal mutable (const, const)
+
+// May raise
+//Provides: caml_lessequal (const, const)
 //Requires: caml_compare_val
 function caml_lessequal(x, y) {
   return +(caml_compare_val(x, y, false) <= 0);
 }
-//Provides: caml_lessthan mutable (const, const)
+
+// May raise
+//Provides: caml_lessthan (const, const)
 //Requires: caml_compare_val
 function caml_lessthan(x, y) {
   return +(caml_compare_val(x, y, false) < 0);
