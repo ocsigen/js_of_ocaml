@@ -115,6 +115,9 @@ jobs:
         working-directory: ./wasm_of_ocaml
         run: opam pin . -n --with-version dev
 
+      - name: Pin dune
+        run: opam pin add dune 3.19.1
+
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests
         run: |
