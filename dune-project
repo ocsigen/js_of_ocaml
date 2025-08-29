@@ -45,7 +45,7 @@
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
   (js_of_ocaml-ppx (= :version))
-  (lwt (>= 2.4.4))
+  (lwt (and (>= 2.4.4) (<> 5.9.2)))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test)))
