@@ -5,6 +5,7 @@
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)
+* Compiler/wasm: unbox numbers within functions (#2069)
 
 # 6.2.0 (2025-07-30) - Lille
 
