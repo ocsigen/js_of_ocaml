@@ -116,7 +116,7 @@ jobs:
         run: opam pin . -n --with-version dev
 
       - name: Pin dune
-        run: opam pin add dune 3.19.1
+        run: opam pin add dune https://github.com/ocaml/dune.git
 
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests
