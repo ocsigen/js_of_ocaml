@@ -47,6 +47,80 @@ let direct_calls_only info f =
 
 let has_tail_calls info f = Var.Hashtbl.mem info.has_tail_calls f
 
+let function_do_raise p pc =
+  Code.traverse
+    { fold = Code.fold_children_skip_try_body }
+    (fun pc do_raise ->
+      let block = Addr.Map.find pc p.blocks in
+      do_raise
+      ||
+      match block.branch with
+      | Raise _ -> true
+      | _ -> false)
+    pc
+    p.blocks
+    false
+
+let raising_functions p under_handler info =
+  Code.fold_closures
+    p
+    (fun name_opt _params (pc, _) _ () ->
+      match name_opt with
+      | None -> ()
+      | Some name ->
+          if direct_calls_only info name && function_do_raise p pc
+          then
+            Format.eprintf
+              "ZZZ %a %b@."
+              Var.print
+              name
+              (Var.Hashtbl.mem under_handler name))
+    ()
+
+let call_graph p info call_info =
+  let under_handler = Var.Hashtbl.create 16 in
+  let rec traverse pc visited nesting =
+    if not (Addr.Set.mem pc visited)
+    then (
+      let visited = Addr.Set.add pc visited in
+      let block = Addr.Map.find pc p.blocks in
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (_, Apply { f; exact; _ }) -> (
+              match get_approx info f with
+              | Top -> ()
+              | Values { known; others } ->
+                  if
+                    exact
+                    && (not others)
+                    && Var.Set.for_all (fun f -> direct_calls_only call_info f) known
+                    && nesting > 0
+                  then
+                    Var.Set.iter
+                      (fun f ->
+                        Format.eprintf "BBB %a@." Code.Var.print f;
+                        Var.Hashtbl.replace under_handler f ())
+                      known)
+          | Let (_, (Closure _ | Prim _ | Block _ | Constant _ | Field _ | Special _))
+          | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ());
+
+      Code.fold_children
+        p.blocks
+        pc
+        (fun pc' visited ->
+          let nesting =
+            match block.branch with
+            | Pushtrap ((body_pc, _), _, _) when pc' = body_pc -> nesting + 1
+            | Poptrap _ -> nesting - 1
+            | _ -> nesting
+          in
+          traverse pc' visited nesting)
+        visited)
+    else visited
+  in
+  fold_closures p (fun _ _ (pc, _) _ () -> ignore (traverse pc Addr.Set.empty 0)) ();
+  under_handler
+
 let f p info =
   let t = Timer.make () in
   let non_escaping = Var.Hashtbl.create 128 in
@@ -85,4 +159,24 @@ let f p info =
   if debug ()
   then Format.eprintf " unambiguous-non-escaping:%d@." (Var.Hashtbl.length non_escaping);
   if times () then Format.eprintf "  call graph analysis: %a@." Timer.print t;
-  { unambiguous_non_escaping = non_escaping; has_tail_calls }
+  Var.Hashtbl.iter (fun f _ -> Format.eprintf "AAA %a@." Code.Var.print f) non_escaping;
+  let call_info = { unambiguous_non_escaping = non_escaping; has_tail_calls } in
+  let under_handler = call_graph p info call_info in
+  raising_functions p under_handler call_info;
+  call_info
+
+(*
+- Find non-ambiguous functions that raises
+  => there is a throw not in the scope of an exception handler
+  => does not return an unboxed value
+- Adjust calling conventions
+  Callee
+  ==> return type is nullable
+  ==> throw
+  Caller
+  ==> jump to exception handler on throw
+
+Later:
+- deal with tail calls
+- transformation only if useful (exception catched by caller)
+*)
