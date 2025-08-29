@@ -33,13 +33,30 @@ module Type = struct
           ; typ = W.Array { mut = true; typ = Value value }
           })
 
-  let string_type =
-    register_type "string" (fun () ->
+  let bytes_type =
+    register_type "bytes" (fun () ->
         return
           { supertype = None
           ; final = true
           ; typ = W.Array { mut = true; typ = Packed I8 }
           })
+
+  let string_type =
+    register_type "string" (fun () ->
+        return
+          (if Config.Flag.use_js_string ()
+           then
+             { supertype = None
+             ; final = true
+             ; typ =
+                 W.Struct
+                   [ { mut = false; typ = Value (Ref { nullable = true; typ = Any }) } ]
+             }
+           else
+             { supertype = None
+             ; final = true
+             ; typ = W.Array { mut = true; typ = Packed I8 }
+             }))
 
   let float_type =
     register_type "float" (fun () ->
@@ -805,13 +822,48 @@ module Memory = struct
        wasm_array_set ~ty:Type.float_array_type (load a) (load i) (unbox_float (load v)))
 
   let bytes_length e =
-    let* ty = Type.string_type in
+    let* ty = Type.bytes_type in
     let* e = wasm_cast ty e in
     return (W.ArrayLen e)
 
-  let bytes_get e e' = wasm_array_get ~ty:Type.string_type e e'
+  let bytes_get e e' = wasm_array_get ~ty:Type.bytes_type e e'
 
-  let bytes_set e e' e'' = wasm_array_set ~ty:Type.string_type e e' e''
+  let bytes_set e e' e'' = wasm_array_set ~ty:Type.bytes_type e e' e''
+
+  let string_value e =
+    let* string = Type.string_type in
+    let* e = wasm_struct_get string (wasm_cast string e) 0 in
+    return (W.ExternConvertAny e)
+
+  let string_length e =
+    if Config.Flag.use_js_string ()
+    then
+      let* f =
+        register_import
+          ~import_module:"wasm:js-string"
+          ~name:"length"
+          (Fun { W.params = [ Ref { nullable = true; typ = Extern } ]; result = [ I32 ] })
+      in
+      let* e = string_value e in
+      return (W.Call (f, [ e ]))
+    else bytes_length e
+
+  let string_get e e' =
+    if Config.Flag.use_js_string ()
+    then
+      let* f =
+        register_import
+          ~import_module:"wasm:js-string"
+          ~name:"charCodeAt"
+          (Fun
+             { W.params = [ Ref { nullable = true; typ = Extern }; I32 ]
+             ; result = [ I32 ]
+             })
+      in
+      let* e = string_value e in
+      let* e' = e' in
+      return (W.Call (f, [ e; e' ]))
+    else bytes_get e e'
 
   let field e idx = wasm_array_get e (Arith.const (Int32.of_int (idx + 1)))
 
@@ -940,6 +992,17 @@ module Constant = struct
     | Const_named of string
     | Mutated
 
+  let translate_js_string s =
+    let* x =
+      register_import
+        ~import_module:"str"
+        ~name:s
+        (Global { mut = false; typ = Ref { nullable = false; typ = Extern } })
+    in
+    let* ty = Type.js_type in
+    return
+      (Const_named ("str_" ^ s), W.StructNew (ty, [ AnyConvertExtern (GlobalGet x) ]))
+
   let rec translate_rec c =
     match c with
     | Code.Int i -> return (Const, W.RefI31 (Const (I32 (Targetint.to_int32 i))))
@@ -998,34 +1061,29 @@ module Constant = struct
           | Utf (Utf8 s) -> s
           | Byte s -> byte_string s
         in
-        let* x =
-          register_import
-            ~import_module:"str"
-            ~name:s
-            (Global { mut = false; typ = Ref { nullable = false; typ = Extern } })
-        in
-        let* ty = Type.js_type in
-        return
-          (Const_named ("str_" ^ s), W.StructNew (ty, [ AnyConvertExtern (GlobalGet x) ]))
+        translate_js_string s
     | String s ->
-        let* ty = Type.string_type in
-        if String.length s >= string_length_threshold
-        then
-          let name = Code.Var.fresh_n "string" in
-          let* () = register_data_segment name s in
-          return
-            ( Mutated
-            , W.ArrayNewData
-                (ty, name, Const (I32 0l), Const (I32 (Int32.of_int (String.length s))))
-            )
+        if Config.Flag.use_js_string ()
+        then translate_js_string (byte_string s)
         else
-          let l =
-            String.fold_right
-              ~f:(fun c r -> W.Const (I32 (Int32.of_int (Char.code c))) :: r)
-              s
-              ~init:[]
-          in
-          return (Const_named ("str_" ^ s), W.ArrayNewFixed (ty, l))
+          let* ty = Type.string_type in
+          if String.length s >= string_length_threshold
+          then
+            let name = Code.Var.fresh_n "string" in
+            let* () = register_data_segment name s in
+            return
+              ( Mutated
+              , W.ArrayNewData
+                  (ty, name, Const (I32 0l), Const (I32 (Int32.of_int (String.length s))))
+              )
+          else
+            let l =
+              String.fold_right
+                ~f:(fun c r -> W.Const (I32 (Int32.of_int (Char.code c))) :: r)
+                s
+                ~init:[]
+            in
+            return (Const_named ("str_" ^ s), W.ArrayNewFixed (ty, l))
     | Float f ->
         let* ty = Type.float_type in
         return (Const, W.StructNew (ty, [ Const (F64 (Int64.float_of_bits f)) ]))

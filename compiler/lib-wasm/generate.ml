@@ -318,29 +318,30 @@ module Generate (Target : Target_sig.S) = struct
         seq (Memory.array_set x y z) Value.unit);
     register_tern_prim "caml_floatarray_unsafe_set" ~ty:(Int Normalized) (fun x y z ->
         seq (Memory.float_array_set x y z) Value.unit);
-    register_bin_prim "caml_string_unsafe_get" `Pure ~ty:(Int Normalized) Memory.bytes_get;
+    register_bin_prim "caml_string_unsafe_get" `Pure ~ty:(Int Normalized) Memory.string_get;
     register_bin_prim
       "caml_bytes_unsafe_get"
       `Mutable
       ~ty:(Int Normalized)
       Memory.bytes_get;
     register_tern_prim
-      "caml_string_unsafe_set"
-      ~ty:(Int Normalized)
-      ~tz:(Int Unnormalized)
-      (fun x y z -> seq (Memory.bytes_set x y z) Value.unit);
-    register_tern_prim
       "caml_bytes_unsafe_set"
       ~ty:(Int Normalized)
       ~tz:(Int Unnormalized)
       (fun x y z -> seq (Memory.bytes_set x y z) Value.unit);
+    let string_get context x y =
+      seq
+        (let* cond = Arith.uge y (Memory.string_length x) in
+         instr (W.Br_if (label_index context bound_error_pc, cond)))
+        (Memory.string_get x y)
+    in
+    register_bin_prim_ctx "caml_string_get" ~ty:(Int Normalized) string_get;
     let bytes_get context x y =
       seq
         (let* cond = Arith.uge y (Memory.bytes_length x) in
          instr (W.Br_if (label_index context bound_error_pc, cond)))
         (Memory.bytes_get x y)
     in
-    register_bin_prim_ctx "caml_string_get" ~ty:(Int Normalized) bytes_get;
     register_bin_prim_ctx "caml_bytes_get" ~ty:(Int Normalized) bytes_get;
     let bytes_set context x y z =
       seq
@@ -350,16 +351,11 @@ module Generate (Target : Target_sig.S) = struct
         Value.unit
     in
     register_tern_prim_ctx
-      "caml_string_set"
-      ~ty:(Int Normalized)
-      ~tz:(Int Unnormalized)
-      bytes_set;
-    register_tern_prim_ctx
       "caml_bytes_set"
       ~ty:(Int Normalized)
       ~tz:(Int Unnormalized)
       bytes_set;
-    register_un_prim "caml_ml_string_length" `Pure (fun x -> Memory.bytes_length x);
+    register_un_prim "caml_ml_string_length" `Pure (fun x -> Memory.string_length x);
     register_un_prim "caml_ml_bytes_length" `Pure (fun x -> Memory.bytes_length x);
     register_bin_prim
       "%int_add"
@@ -1041,7 +1037,6 @@ module Generate (Target : Target_sig.S) = struct
                     ( Extern
                         ( "caml_string_get"
                         | "caml_bytes_get"
-                        | "caml_string_set"
                         | "caml_bytes_set"
                         | "caml_check_bound"
                         | "caml_check_bound_gen"

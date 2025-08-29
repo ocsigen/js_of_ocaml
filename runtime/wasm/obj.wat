@@ -29,8 +29,13 @@
       (func $caml_cps_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
 ))
 
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param anyref) (result i32)))
+
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
+   (type $js (struct (field anyref)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
@@ -237,6 +242,8 @@
                (struct.get $float 0
                   (br_on_cast_fail $not_float (ref eq) (ref $float)
                      (local.get 0)))))))
+      (if (ref.test (ref $js) (local.get 0))
+         (then (return (local.get 0))))
       (call $caml_dup_custom (local.get 0)))
 
    (func (export "caml_obj_with_tag")
@@ -280,6 +287,13 @@
          (then (return (ref.i31 (global.get $closure_tag)))))
       (if (call $caml_is_continuation (local.get $v))
          (then (return (ref.i31 (global.get $cont_tag)))))
+      (drop (block $not_string (result (ref eq))
+         (if (call $jsstring_test
+                (struct.get $js 0
+                   (br_on_cast_fail $not_string (ref eq) (ref $js)
+                      (local.get $v))))
+            (then (return (ref.i31 (global.get $string_tag)))))
+         (ref.i31 (i32.const 0))))
       (ref.i31 (global.get $abstract_tag)))
 
    (func (export "caml_obj_make_forward")
