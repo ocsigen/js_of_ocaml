@@ -16,6 +16,55 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "fail" "caml_bound_error" (func $caml_bound_error))
+   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
+   (import "fail" "caml_invalid_argument"
+      (func $caml_invalid_argument (param (ref eq))))
+   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "int32" "caml_copy_int32"
+      (func $caml_copy_int32 (param i32) (result (ref eq))))
+   (import "int32" "Int32_val"
+      (func $Int32_val (param (ref eq)) (result i32)))
+   (import "int32" "caml_copy_nativeint"
+      (func $caml_copy_nativeint (param i32) (result (ref eq))))
+   (import "int64" "caml_copy_int64"
+      (func $caml_copy_int64 (param i64) (result (ref eq))))
+   (import "int64" "Int64_val"
+      (func $Int64_val (param (ref eq)) (result i64)))
+   (import "obj" "double_array_tag" (global $double_array_tag i32))
+   (import "compare" "unordered" (global $unordered i32))
+   (import "hash" "caml_hash_mix_int"
+      (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
+   (import "hash" "caml_hash_mix_int64"
+      (func $caml_hash_mix_int64 (param i32) (param i64) (result i32)))
+   (import "hash" "caml_hash_mix_double"
+      (func $caml_hash_mix_double (param i32) (param f64) (result i32)))
+   (import "hash" "caml_hash_mix_float"
+      (func $caml_hash_mix_float (param i32) (param f32) (result i32)))
+   (import "hash" "caml_hash_mix_float16"
+      (func $caml_hash_mix_float16 (param i32) (param i32) (result i32)))
+   (import "marshal" "caml_serialize_int_1"
+      (func $caml_serialize_int_1 (param (ref eq)) (param i32)))
+   (import "marshal" "caml_serialize_int_2"
+      (func $caml_serialize_int_2 (param (ref eq)) (param i32)))
+   (import "marshal" "caml_serialize_int_4"
+      (func $caml_serialize_int_4 (param (ref eq)) (param i32)))
+   (import "marshal" "caml_serialize_int_8"
+      (func $caml_serialize_int_8 (param (ref eq)) (param i64)))
+   (import "marshal" "caml_deserialize_uint_1"
+      (func $caml_deserialize_uint_1 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_sint_1"
+      (func $caml_deserialize_sint_1 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_uint_2"
+      (func $caml_deserialize_uint_2 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_sint_2"
+      (func $caml_deserialize_sint_2 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_int_4"
+      (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
+   (import "marshal" "caml_deserialize_int_8"
+      (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
    (import "bindings" "ta_create"
       (func $ta_create (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_normalize"
@@ -71,56 +120,19 @@
       (func $dv_set_i16 (param externref i32 i32 i32)))
    (import "bindings" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
+   (import "bindings" "dv_get_i64"
+      (func $dv_get_i64_unaligned (param externref i32 i32) (result i64)))
+   (import "bindings" "dv_get_i32"
+      (func $dv_get_i32_unaligned (param externref i32 i32) (result i32)))
+   (import "bindings" "dv_get_ui16"
+      (func $dv_get_ui16_unaligned (param externref i32 i32) (result i32)))
+   (import "bindings" "dv_set_i64"
+      (func $dv_set_i64_unaligned (param externref i32 i64 i32)))
+   (import "bindings" "dv_set_i32"
+      (func $dv_set_i32_unaligned (param externref i32 i32 i32)))
+   (import "bindings" "dv_set_i16"
+      (func $dv_set_i16_unaligned (param externref i32 i32 i32)))
    (import "bindings" "littleEndian" (global $littleEndian i32))
-   (import "fail" "caml_bound_error" (func $caml_bound_error))
-   (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
-   (import "fail" "caml_invalid_argument"
-      (func $caml_invalid_argument (param (ref eq))))
-   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
-   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
-   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
-   (import "int32" "caml_copy_int32"
-      (func $caml_copy_int32 (param i32) (result (ref eq))))
-   (import "int32" "Int32_val"
-      (func $Int32_val (param (ref eq)) (result i32)))
-   (import "int32" "caml_copy_nativeint"
-      (func $caml_copy_nativeint (param i32) (result (ref eq))))
-   (import "int64" "caml_copy_int64"
-      (func $caml_copy_int64 (param i64) (result (ref eq))))
-   (import "int64" "Int64_val"
-      (func $Int64_val (param (ref eq)) (result i64)))
-   (import "obj" "double_array_tag" (global $double_array_tag i32))
-   (import "compare" "unordered" (global $unordered i32))
-   (import "hash" "caml_hash_mix_int"
-      (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
-   (import "hash" "caml_hash_mix_int64"
-      (func $caml_hash_mix_int64 (param i32) (param i64) (result i32)))
-   (import "hash" "caml_hash_mix_double"
-      (func $caml_hash_mix_double (param i32) (param f64) (result i32)))
-   (import "hash" "caml_hash_mix_float"
-      (func $caml_hash_mix_float (param i32) (param f32) (result i32)))
-   (import "hash" "caml_hash_mix_float16"
-      (func $caml_hash_mix_float16 (param i32) (param i32) (result i32)))
-   (import "marshal" "caml_serialize_int_1"
-      (func $caml_serialize_int_1 (param (ref eq)) (param i32)))
-   (import "marshal" "caml_serialize_int_2"
-      (func $caml_serialize_int_2 (param (ref eq)) (param i32)))
-   (import "marshal" "caml_serialize_int_4"
-      (func $caml_serialize_int_4 (param (ref eq)) (param i32)))
-   (import "marshal" "caml_serialize_int_8"
-      (func $caml_serialize_int_8 (param (ref eq)) (param i64)))
-   (import "marshal" "caml_deserialize_uint_1"
-      (func $caml_deserialize_uint_1 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_sint_1"
-      (func $caml_deserialize_sint_1 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_uint_2"
-      (func $caml_deserialize_uint_2 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_sint_2"
-      (func $caml_deserialize_sint_2 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_int_4"
-      (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
-   (import "marshal" "caml_deserialize_int_8"
-      (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -225,6 +237,25 @@
                (i32.shl (i32.and (local.get $d) (i32.const 0x8000))
                   (i32.const 16))))))
 
+   (func $caml_ba_num_elts (export "caml_ba_num_elts")
+      (param $b (ref eq)) (result i32)
+      (local $dim (ref $int_array))
+      (local $i i32)
+      (local $num_elts i32)
+      (local.set $dim
+         (struct.get $bigarray $ba_dim
+            (ref.cast (ref $bigarray) (local.get $b))))
+      (local.set $num_elts (i32.const 1))
+      (loop $loop
+         (if (i32.lt_u (local.get $i) (array.len (local.get $dim)))
+            (then
+               (local.set $num_elts
+                  (i32.mul (local.get $num_elts)
+                     (array.get $int_array (local.get $dim) (local.get $i))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))
+               (br $loop))))
+      (local.get $num_elts))
+
    (func $bigarray_hash (param (ref eq)) (result i32)
       (local $b (ref $bigarray))
       (local $h i32) (local $len i32) (local $i i32) (local $w i32)
@@ -233,148 +264,156 @@
       (local.set $b (ref.cast (ref $bigarray) (local.get 0)))
       (local.set $data (struct.get $bigarray $ba_data (local.get $b)))
       (local.set $view (struct.get $bigarray $ba_view (local.get $b)))
-      (local.set $len (call $ta_length (local.get $data)))
+      (local.set $len (call $caml_ba_num_elts (local.get $b)))
       (block $float64
-       (block $float32
-        (block $int8
-         (block $int16
-          (block $int32
-           (block $int64
-            (block $float16
-             (br_table $float32 $float64 $int8 $int8 $int16 $int16
-                       $int32 $int64 $int32 $int32
-                       $float32 $float64 $int8 $float16
-                (struct.get $bigarray $ba_kind (local.get $b))))
-            ;; float16
-            (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+       (block $complex64
+        (block $float32
+         (block $complex32
+          (block $int8
+           (block $int16
+            (block $int32
+             (block $int64
+              (block $float16
+               (br_table $float32 $float64 $int8 $int8 $int16 $int16
+                         $int32 $int64 $int32 $int32
+                         $complex32 $complex64 $int8 $float16
+                  (struct.get $bigarray $ba_kind (local.get $b))))
+              ;; float16
+              (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+              (if (i32.gt_u (local.get $len) (i32.const 256))
+                 (then (local.set $len (i32.const 256))))
+              (loop $loop
+                 (if (i32.lt_u (local.get $i) (local.get $len))
+                    (then
+                       (local.set $h
+                          (call $caml_hash_mix_float16 (local.get $h)
+                             (call $dv_get_ui16
+                                (local.get $view)
+                                (local.get $i)
+                                (global.get $littleEndian))))
+                       (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                       (br $loop))))
+              (return (local.get $h)))
+             ;; int64
+             (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+             (if (i32.gt_u (local.get $len) (i32.const 256))
+                (then (local.set $len (i32.const 256))))
+             (loop $loop
+                (if (i32.lt_u (local.get $i) (local.get $len))
+                   (then
+                      (local.set $h
+                         (call $caml_hash_mix_int64 (local.get $h)
+                            (call $dv_get_i64
+                               (local.get $view)
+                               (local.get $i)
+                               (global.get $littleEndian))))
+                      (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                      (br $loop))))
+             (return (local.get $h)))
+            ;; int32
+            (local.set $len (i32.shl (local.get $len) (i32.const 2)))
             (if (i32.gt_u (local.get $len) (i32.const 256))
                (then (local.set $len (i32.const 256))))
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (local.set $h
-                        (call $caml_hash_mix_float16 (local.get $h)
-                           (call $dv_get_ui16
+                        (call $caml_hash_mix_int (local.get $h)
+                           (call $dv_get_i32
                               (local.get $view)
                               (local.get $i)
                               (global.get $littleEndian))))
-                     (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                     (local.set $i (i32.add (local.get $i) (i32.const 4)))
                      (br $loop))))
             (return (local.get $h)))
-           ;; int64
-           (local.set $len (i32.shl (local.get $len) (i32.const 2)))
+           ;; int16 / uint16
+           (local.set $len (i32.shl (local.get $len) (i32.const 1)))
            (if (i32.gt_u (local.get $len) (i32.const 256))
               (then (local.set $len (i32.const 256))))
            (loop $loop
-              (if (i32.lt_u (local.get $i) (local.get $len))
+              (if (i32.le_u (i32.add (local.get $i) (i32.const 4))
+                     (local.get $len))
                  (then
                     (local.set $h
-                       (call $caml_hash_mix_int64 (local.get $h)
-                          (call $dv_get_i64
-                             (local.get $view)
-                             (local.get $i)
-                             (global.get $littleEndian))))
-                    (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                       (call $caml_hash_mix_int
+                          (local.get $h)
+                          (i32.or
+                             (call $dv_get_ui16
+                                (local.get $view)
+                                (local.get $i)
+                                (global.get $littleEndian))
+                             (i32.shl
+                                (call $dv_get_ui16
+                                   (local.get $view)
+                                   (i32.add (local.get $i) (i32.const 2))
+                                   (global.get $littleEndian))
+                                (i32.const 16)))))
+                    (local.set $i (i32.add (local.get $i) (i32.const 4)))
                     (br $loop))))
+           (if (i32.and (local.get $len) (i32.const 2))
+              (then
+                 (local.set $h
+                    (call $caml_hash_mix_int (local.get $h)
+                       (call $dv_get_ui16
+                          (local.get $view)
+                          (local.get $i)
+                          (global.get $littleEndian))))))
            (return (local.get $h)))
-          ;; int32
-          (local.set $len (i32.shl (local.get $len) (i32.const 2)))
+          ;; int8 / uint8
           (if (i32.gt_u (local.get $len) (i32.const 256))
              (then (local.set $len (i32.const 256))))
           (loop $loop
-             (if (i32.lt_u (local.get $i) (local.get $len))
+             (if (i32.le_u (i32.add (local.get $i) (i32.const 4)) (local.get $len))
                 (then
                    (local.set $h
-                      (call $caml_hash_mix_int (local.get $h)
+                      (call $caml_hash_mix_int
+                         (local.get $h)
                          (call $dv_get_i32
-                            (local.get $view)
-                            (local.get $i)
-                            (global.get $littleEndian))))
+                            (local.get $view) (local.get $i) (i32.const 1))))
                    (local.set $i (i32.add (local.get $i) (i32.const 4)))
                    (br $loop))))
+          (local.set $w (i32.const 0))
+          (block $0_bytes
+             (block $1_byte
+                (block $2_bytes
+                   (block $3_bytes
+                      (br_table $0_bytes $1_byte $2_bytes $3_bytes
+                         (i32.and (local.get $len) (i32.const 3))))
+                   (local.set $w
+                      (i32.shl (call $dv_get_ui8 (local.get $view)
+                                  (i32.add (local.get $i) (i32.const 2)))
+                               (i32.const 16))))
+                (local.set $w
+                   (i32.or (local.get $w)
+                      (i32.shl (call $dv_get_ui8 (local.get $view)
+                                  (i32.add (local.get $i) (i32.const 1)))
+                               (i32.const 8)))))
+             (local.set $w
+                (i32.or (local.get $w)
+                   (call $dv_get_i8 (local.get $view) (local.get $i))))
+             (local.set $h
+                (call $caml_hash_mix_int (local.get $h) (local.get $w))))
           (return (local.get $h)))
-         ;; int16 / uint16
-         (local.set $len (i32.shl (local.get $len) (i32.const 1)))
-         (if (i32.gt_u (local.get $len) (i32.const 256))
-            (then (local.set $len (i32.const 256))))
-         (loop $loop
-            (if (i32.le_u (i32.add (local.get $i) (i32.const 4))
-                   (local.get $len))
-               (then
-                  (local.set $h
-                     (call $caml_hash_mix_int
-                        (local.get $h)
-                        (i32.or
-                           (call $dv_get_ui16
-                              (local.get $view)
-                              (local.get $i)
-                              (global.get $littleEndian))
-                           (i32.shl
-                              (call $dv_get_ui16
-                                 (local.get $view)
-                                 (i32.add (local.get $i) (i32.const 2))
-                                 (global.get $littleEndian))
-                              (i32.const 16)))))
-                  (local.set $i (i32.add (local.get $i) (i32.const 4)))
-                  (br $loop))))
-         (if (i32.and (local.get $len) (i32.const 2))
-            (then
-               (local.set $h
-                  (call $caml_hash_mix_int (local.get $h)
-                     (call $dv_get_ui16
-                        (local.get $view)
-                        (local.get $i)
-                        (global.get $littleEndian))))))
-         (return (local.get $h)))
-        ;; int8 / uint8
+         ;; complex32
+         (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+         ;; fallthrough
+        ;; float32
+        (local.set $len (i32.shl (local.get $len) (i32.const 2)))
         (if (i32.gt_u (local.get $len) (i32.const 256))
            (then (local.set $len (i32.const 256))))
         (loop $loop
-           (if (i32.le_u (i32.add (local.get $i) (i32.const 4)) (local.get $len))
+           (if (i32.lt_u (local.get $i) (local.get $len))
               (then
                  (local.set $h
-                    (call $caml_hash_mix_int
-                       (local.get $h)
-                       (call $dv_get_i32
-                          (local.get $view) (local.get $i) (i32.const 1))))
+                    (call $caml_hash_mix_float (local.get $h)
+                       (call $dv_get_f32 (local.get $view) (local.get $i)
+                          (global.get $littleEndian))))
                  (local.set $i (i32.add (local.get $i) (i32.const 4)))
                  (br $loop))))
-        (local.set $w (i32.const 0))
-        (block $0_bytes
-           (block $1_byte
-              (block $2_bytes
-                 (block $3_bytes
-                    (br_table $0_bytes $1_byte $2_bytes $3_bytes
-                       (i32.and (local.get $len) (i32.const 3))))
-                 (local.set $w
-                    (i32.shl (call $dv_get_ui8 (local.get $view)
-                                (i32.add (local.get $i) (i32.const 2)))
-                             (i32.const 16))))
-              (local.set $w
-                 (i32.or (local.get $w)
-                    (i32.shl (call $dv_get_ui8 (local.get $view)
-                                (i32.add (local.get $i) (i32.const 1)))
-                             (i32.const 8)))))
-           (local.set $w
-              (i32.or (local.get $w)
-                 (call $dv_get_i8 (local.get $view) (local.get $i))))
-           (local.set $h
-              (call $caml_hash_mix_int (local.get $h) (local.get $w))))
         (return (local.get $h)))
-       ;; float32
-       (local.set $len (i32.shl (local.get $len) (i32.const 2)))
-       (if (i32.gt_u (local.get $len) (i32.const 256))
-          (then (local.set $len (i32.const 256))))
-       (loop $loop
-          (if (i32.lt_u (local.get $i) (local.get $len))
-             (then
-                (local.set $h
-                   (call $caml_hash_mix_float (local.get $h)
-                      (call $dv_get_f32 (local.get $view) (local.get $i)
-                         (global.get $littleEndian))))
-                (local.set $i (i32.add (local.get $i) (i32.const 4)))
-                (br $loop))))
-       (return (local.get $h)))
+       ;; complex64
+       (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+       ;; fallthrough
       ;; float64
       (local.set $len (i32.shl (local.get $len) (i32.const 3)))
       (if (i32.gt_u (local.get $len) (i32.const 256))
@@ -424,72 +463,96 @@
       (block $done
        (local.set $data (struct.get $bigarray $ba_data (local.get $b)))
        (local.set $view (struct.get $bigarray $ba_view (local.get $b)))
-       (local.set $len (call $ta_length (local.get $data)))
+       (local.set $len (call $caml_ba_num_elts (local.get $b)))
        (local.set $i (i32.const 0))
-       (block $float64
-        (block $int8
-         (block $int16
-          (block $int32
-           (block $int
-            (block $int64
-             (br_table $int32 $float64 $int8 $int8 $int16 $int16
-                       $int32 $int64 $int $int
-                       $int32 $float64 $int8 $int16
-                (struct.get $bigarray $ba_kind (local.get $b))))
-            ;; int64
+       (block $int8
+        (block $int16
+         (block $int32
+          (block $int
+           (block $int64
+            (block $float32
+             (block $complex32
+              (block $float64
+               (block $complex64
+                (br_table $float32 $float64 $int8 $int8 $int16 $int16
+                          $int32 $int64 $int $int
+                          $complex32 $complex64 $int8 $int16
+                   (struct.get $bigarray $ba_kind (local.get $b))))
+               ;; complex64
+               (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+               ;; fallthrough
+              ;; float64
+              (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+              (loop $loop
+                 (if (i32.lt_u (local.get $i) (local.get $len))
+                    (then
+                       (call $caml_serialize_int_8 (local.get $s)
+                          (i64.reinterpret_f64
+                             (call $dv_get_f64 (local.get $view)
+                                (local.get $i)
+                                (global.get $littleEndian))))
+                       (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                       (br $loop))))
+              (br $done))
+             ;; complex32
+             (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+             ;; fallthrough
+            ;; float32
             (local.set $len (i32.shl (local.get $len) (i32.const 2)))
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
-                     (call $caml_serialize_int_8 (local.get $s)
-                        (call $dv_get_i64 (local.get $view)
-                           (local.get $i)
-                           (global.get $littleEndian)))
-                     (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                     (call $caml_serialize_int_4 (local.get $s)
+                        (i32.reinterpret_f32
+                           (call $dv_get_f32 (local.get $view) (local.get $i)
+                              (global.get $littleEndian))))
+                     (local.set $i (i32.add (local.get $i) (i32.const 4)))
                      (br $loop))))
             (br $done))
-           ;; int
-           (call $caml_serialize_int_1 (local.get $s) (i32.const 0)))
-          ;; int32 / float32
-          (local.set $len (i32.shl (local.get $len) (i32.const 2)))
-          (loop $loop
-             (if (i32.lt_u (local.get $i) (local.get $len))
-                (then
-                   (call $caml_serialize_int_4 (local.get $s)
-                      (call $dv_get_i32 (local.get $view) (local.get $i)
-                         (global.get $littleEndian)))
-                   (local.set $i (i32.add (local.get $i) (i32.const 4)))
-                   (br $loop))))
-          (br $done))
-          ;; int16 / uint16 / float16
-          (local.set $len (i32.shl (local.get $len) (i32.const 1)))
-          (loop $loop
-             (if (i32.lt_u (local.get $i) (local.get $len))
-                (then
-                   (call $caml_serialize_int_2 (local.get $s)
-                      (call $dv_get_i16 (local.get $view) (local.get $i)
-                         (global.get $littleEndian)))
-                   (local.set $i (i32.add (local.get $i) (i32.const 2)))
-                   (br $loop))))
-          (br $done))
-        ;; int8 / uint8
+           ;; int64
+           (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+           (loop $loop
+              (if (i32.lt_u (local.get $i) (local.get $len))
+                 (then
+                    (call $caml_serialize_int_8 (local.get $s)
+                       (call $dv_get_i64 (local.get $view)
+                          (local.get $i)
+                          (global.get $littleEndian)))
+                    (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                    (br $loop))))
+           (br $done))
+          ;; int
+          (call $caml_serialize_int_1 (local.get $s) (i32.const 0)))
+          ;; fallthrough
+         ;; int32
+         (local.set $len (i32.shl (local.get $len) (i32.const 2)))
+         (loop $loop
+            (if (i32.lt_u (local.get $i) (local.get $len))
+               (then
+                  (call $caml_serialize_int_4 (local.get $s)
+                     (call $dv_get_i32 (local.get $view) (local.get $i)
+                        (global.get $littleEndian)))
+                  (local.set $i (i32.add (local.get $i) (i32.const 4)))
+                  (br $loop))))
+         (br $done))
+        ;; int16 / uint16 / float16
+        (local.set $len (i32.shl (local.get $len) (i32.const 1)))
         (loop $loop
            (if (i32.lt_u (local.get $i) (local.get $len))
               (then
-                 (call $caml_serialize_int_1 (local.get $s)
-                    (call $dv_get_i8 (local.get $view) (local.get $i)))
-                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                 (call $caml_serialize_int_2 (local.get $s)
+                    (call $dv_get_i16 (local.get $view) (local.get $i)
+                       (global.get $littleEndian)))
+                 (local.set $i (i32.add (local.get $i) (i32.const 2)))
                  (br $loop))))
         (br $done))
-       ;; float64
-       (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+       ;; int8 / uint8
        (loop $loop
           (if (i32.lt_u (local.get $i) (local.get $len))
              (then
-                (call $caml_serialize_int_8 (local.get $s)
-                   (call $dv_get_i64 (local.get $view) (local.get $i)
-                      (global.get $littleEndian)))
-                (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                (call $caml_serialize_int_1 (local.get $s)
+                   (call $dv_get_i8 (local.get $view) (local.get $i)))
+                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop)))))
       (tuple.make 2
          (i32.mul (i32.add (i32.const 4) (local.get $num_dims)) (i32.const 4))
@@ -526,9 +589,9 @@
                   (local.get $len))
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br $loop))))
+      (local.set $len (call $caml_ba_get_size (local.get $dim)))
       (local.set $data
-         (call $caml_ba_create_buffer (local.get $kind)
-            (call $caml_ba_get_size (local.get $dim))))
+         (call $caml_ba_create_buffer (local.get $kind) (local.get $len)))
       (local.set $view (call $dv_make (local.get $data)))
       (local.set $b
          (struct.new $bigarray
@@ -540,72 +603,94 @@
             (local.get $kind)
             (i32.shr_u (local.get $flags) (i32.const 8))))
       (block $done
-       (local.set $len (call $ta_length (local.get $data)))
        (local.set $i (i32.const 0))
-       (block $float64
-        (block $int8
-         (block $int16
-          (block $int32
-           (block $int
-            (block $int64
-             (br_table $int32 $float64 $int8 $int8 $int16 $int16
-                       $int32 $int64 $int $int
-                       $int32 $float64 $int8 $int16
-                (struct.get $bigarray $ba_kind (local.get $b))))
-            ;; int64
+       (block $int8
+        (block $int16
+         (block $int32
+          (block $int
+           (block $int64
+            (block $float32
+             (block $complex32
+              (block $float64
+               (block $complex64
+                (br_table $float32 $float64 $int8 $int8 $int16 $int16
+                          $int32 $int64 $int $int
+                          $complex32 $complex64 $int8 $int16
+                   (struct.get $bigarray $ba_kind (local.get $b))))
+               ;; complex64
+               (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+               ;; fallthrough
+              ;; float64
+              (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+              (loop $loop
+                 (if (i32.lt_u (local.get $i) (local.get $len))
+                    (then
+                       (call $dv_set_f64 (local.get $view) (local.get $i)
+                          (f64.reinterpret_i64
+                             (call $caml_deserialize_int_8 (local.get $s)))
+                          (global.get $littleEndian))
+                       (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                       (br $loop))))
+              (br $done))
+             ;; complex32
+             (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+             ;; fallthrough
+            ;; float32
             (local.set $len (i32.shl (local.get $len) (i32.const 2)))
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
-                     (call $dv_set_i64 (local.get $view) (local.get $i)
-                        (call $caml_deserialize_int_8 (local.get $s))
+                     (call $dv_set_f32 (local.get $view) (local.get $i)
+                        (f32.reinterpret_i32
+                           (call $caml_deserialize_int_4 (local.get $s)))
                         (global.get $littleEndian))
-                     (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                     (local.set $i (i32.add (local.get $i) (i32.const 4)))
                      (br $loop))))
             (br $done))
-           ;; int
-           (if (call $caml_deserialize_uint_1 (local.get $s))
-              (then (call $caml_failwith (global.get $intern_overflow)))))
-          ;; int32 / float32
-          (local.set $len (i32.shl (local.get $len) (i32.const 2)))
-          (loop $loop
-             (if (i32.lt_u (local.get $i) (local.get $len))
-                (then
-                   (call $dv_set_i32 (local.get $view) (local.get $i)
-                      (call $caml_deserialize_int_4 (local.get $s))
-                      (global.get $littleEndian))
-                   (local.set $i (i32.add (local.get $i) (i32.const 4)))
-                   (br $loop))))
-          (br $done))
-         ;; int16 / uint16 / float16
-         (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+           ;; int64
+           (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+           (loop $loop
+              (if (i32.lt_u (local.get $i) (local.get $len))
+                 (then
+                    (call $dv_set_i64 (local.get $view) (local.get $i)
+                       (call $caml_deserialize_int_8 (local.get $s))
+                       (global.get $littleEndian))
+                    (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                    (br $loop))))
+           (br $done))
+          ;; int
+          (if (call $caml_deserialize_uint_1 (local.get $s))
+             (then (call $caml_failwith (global.get $intern_overflow)))))
+          ;; fallthrough
+         ;; int32
+         (local.set $len (i32.shl (local.get $len) (i32.const 2)))
          (loop $loop
             (if (i32.lt_u (local.get $i) (local.get $len))
                (then
-                  (call $dv_set_i16 (local.get $view) (local.get $i)
-                     (call $caml_deserialize_sint_2 (local.get $s))
+                  (call $dv_set_i32 (local.get $view) (local.get $i)
+                     (call $caml_deserialize_int_4 (local.get $s))
                      (global.get $littleEndian))
-                  (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                  (local.set $i (i32.add (local.get $i) (i32.const 4)))
                   (br $loop))))
          (br $done))
-        ;; int8 / uint8
+        ;; int16 / uint16 / float16
+        (local.set $len (i32.shl (local.get $len) (i32.const 1)))
         (loop $loop
            (if (i32.lt_u (local.get $i) (local.get $len))
               (then
-                 (call $dv_set_i8 (local.get $view) (local.get $i)
-                    (call $caml_deserialize_sint_1 (local.get $s)))
-                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                 (call $dv_set_i16 (local.get $view) (local.get $i)
+                    (call $caml_deserialize_sint_2 (local.get $s))
+                    (global.get $littleEndian))
+                 (local.set $i (i32.add (local.get $i) (i32.const 2)))
                  (br $loop))))
         (br $done))
-       ;; float64
-       (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+       ;; int8 / uint8
        (loop $loop
           (if (i32.lt_u (local.get $i) (local.get $len))
              (then
-                (call $dv_set_i64 (local.get $view) (local.get $i)
-                   (call $caml_deserialize_int_8 (local.get $s))
-                   (global.get $littleEndian))
-                (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                (call $dv_set_i8 (local.get $view) (local.get $i)
+                   (call $caml_deserialize_sint_1 (local.get $s)))
+                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                 (br $loop)))))
       (tuple.make 2
          (local.get $b)
@@ -1465,7 +1550,7 @@
             ;; complex64
             (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
             (local.set $len
-               (i32.shl (call $ta_length (local.get $data)) (i32.const 3)))
+               (i32.shl (call $caml_ba_num_elts (local.get $ba)) (i32.const 4)))
             (local.set $b (ref.cast (ref $float_array) (local.get $v)))
             (local.set $f1
                (array.get $float_array (local.get $b) (i32.const 0)))
@@ -1487,7 +1572,7 @@
            ;; complex32
            (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
            (local.set $len
-              (i32.shl (call $ta_length (local.get $data)) (i32.const 2)))
+              (i32.shl (call $caml_ba_num_elts (local.get $ba)) (i32.const 3)))
            (local.set $b (ref.cast (ref $float_array) (local.get $v)))
            (local.set $f1'
               (f32.demote_f64
@@ -1511,8 +1596,7 @@
           ;; int64
           (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
           (local.set $len
-             ;; we currently use an Int32Array, so multiply by just 4
-             (i32.shl (call $ta_length (local.get $data)) (i32.const 2)))
+             (i32.shl (call $caml_ba_num_elts (local.get $ba)) (i32.const 3)))
           (local.set $l (call $Int64_val (local.get $v)))
           (loop $loop
              (if (i32.lt_u (local.get $i) (local.get $len))
@@ -1722,179 +1806,187 @@
       (local.set $view1 (struct.get $bigarray $ba_view (local.get $b1)))
       (local.set $d2 (struct.get $bigarray $ba_data (local.get $b2)))
       (local.set $view2 (struct.get $bigarray $ba_view (local.get $b2)))
-      (local.set $len (call $ta_length (local.get $d1)))
+      (local.set $len (call $caml_ba_num_elts (local.get $b1)))
       (local.set $i (i32.const 0))
       (block $float32
-       (block $float64
-        (block $int8
-         (block $uint8
-          (block $int16
-           (block $uint16
-            (block $int32
-             (block $int64
-              (block $float16
-               (br_table $float32 $float64 $int8 $uint8 $int16 $uint16
-                         $int32 $int64 $int32 $int32
-                         $float32 $float64 $uint8 $float16
-                  (struct.get $bigarray $ba_kind (local.get $b1))))
-              ;; float16
-              (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+       (block $complex32
+        (block $float64
+         (block $complex64
+          (block $int8
+           (block $uint8
+            (block $int16
+             (block $uint16
+              (block $int32
+               (block $int64
+                (block $float16
+                 (br_table $float32 $float64 $int8 $uint8 $int16 $uint16
+                           $int32 $int64 $int32 $int32
+                           $complex32 $complex64 $uint8 $float16
+                    (struct.get $bigarray $ba_kind (local.get $b1))))
+                ;; float16
+                (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+                (loop $loop
+                   (if (i32.lt_u (local.get $i) (local.get $len))
+                      (then
+                         (local.set $f1
+                            (call $float16_to_double
+                               (call $dv_get_ui16 (local.get $view1) (local.get $i)
+                                  (global.get $littleEndian))))
+                         (local.set $f2
+                            (call $float16_to_double
+                               (call $dv_get_ui16 (local.get $view2) (local.get $i)
+                                  (global.get $littleEndian))))
+                         (if (f64.lt (local.get $f1) (local.get $f2))
+                            (then (return (i32.const -1))))
+                         (if (f64.gt (local.get $f1) (local.get $f2))
+                            (then (return (i32.const 1))))
+                         (if (f64.ne (local.get $f1) (local.get $f2))
+                            (then
+                               (if (i32.eqz (local.get $total))
+                                  (then (return (global.get $unordered))))
+                               (if (f64.eq (local.get $f1) (local.get $f1))
+                                  (then (return (i32.const 1))))
+                               (if (f64.eq (local.get $f2) (local.get $f2))
+                                  (then (return (i32.const -1))))))
+                         (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                         (br $loop))))
+                (return (i32.const 0)))
+               ;; int64
+               (local.set $len (i32.shl (local.get $len) (i32.const 3)))
+               (loop $loop
+                  (if (i32.lt_u (local.get $i) (local.get $len))
+                     (then
+                        (local.set $l1
+                           (call $dv_get_i64 (local.get $view1)
+                              (local.get $i)
+                              (global.get $littleEndian)))
+                        (local.set $l2
+                           (call $dv_get_i64 (local.get $view2)
+                              (local.get $i)
+                              (global.get $littleEndian)))
+                        (if (i64.lt_s (local.get $l1) (local.get $l2))
+                           (then (return (i32.const -1))))
+                        (if (i64.gt_s (local.get $l1) (local.get $l2))
+                           (then (return (i32.const 1))))
+                        (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                        (br $loop))))
+               (return (i32.const 0)))
+              ;; int32
+              (local.set $len (i32.shl (local.get $len) (i32.const 2)))
               (loop $loop
                  (if (i32.lt_u (local.get $i) (local.get $len))
                     (then
-                       (local.set $f1
-                          (call $float16_to_double
-                             (call $dv_get_ui16 (local.get $view1) (local.get $i)
-                                (global.get $littleEndian))))
-                       (local.set $f2
-                          (call $float16_to_double
-                             (call $dv_get_ui16 (local.get $view2) (local.get $i)
-                                (global.get $littleEndian))))
-                       (if (f64.lt (local.get $f1) (local.get $f2))
+                       (local.set $i1
+                          (call $dv_get_i32 (local.get $view1) (local.get $i)
+                             (global.get $littleEndian)))
+                       (local.set $i2
+                          (call $dv_get_i32 (local.get $view2) (local.get $i)
+                             (global.get $littleEndian)))
+                       (if (i32.lt_s (local.get $i1) (local.get $i2))
                           (then (return (i32.const -1))))
-                       (if (f64.gt (local.get $f1) (local.get $f2))
+                       (if (i32.gt_s (local.get $i1) (local.get $i2))
                           (then (return (i32.const 1))))
-                       (if (f64.ne (local.get $f1) (local.get $f2))
-                          (then
-                             (if (i32.eqz (local.get $total))
-                                (then (return (global.get $unordered))))
-                             (if (f64.eq (local.get $f1) (local.get $f1))
-                                (then (return (i32.const 1))))
-                             (if (f64.eq (local.get $f2) (local.get $f2))
-                                (then (return (i32.const -1))))))
-                       (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                       (local.set $i (i32.add (local.get $i) (i32.const 4)))
                        (br $loop))))
               (return (i32.const 0)))
-             ;; int64
-             (local.set $len (i32.shl (local.get $len) (i32.const 2)))
+             ;; uint16
+             (local.set $len (i32.shl (local.get $len) (i32.const 1)))
              (loop $loop
                 (if (i32.lt_u (local.get $i) (local.get $len))
                    (then
-                      (local.set $l1
-                         (call $dv_get_i64 (local.get $view1)
-                            (local.get $i)
+                      (local.set $i1
+                         (call $dv_get_ui16 (local.get $view1) (local.get $i)
                             (global.get $littleEndian)))
-                      (local.set $l2
-                         (call $dv_get_i64 (local.get $view2)
-                            (local.get $i)
+                      (local.set $i2
+                         (call $dv_get_ui16 (local.get $view2) (local.get $i)
                             (global.get $littleEndian)))
-                      (if (i64.lt_s (local.get $l1) (local.get $l2))
+                      (if (i32.lt_s (local.get $i1) (local.get $i2))
                          (then (return (i32.const -1))))
-                      (if (i64.gt_s (local.get $l1) (local.get $l2))
+                      (if (i32.gt_s (local.get $i1) (local.get $i2))
                          (then (return (i32.const 1))))
-                      (local.set $i (i32.add (local.get $i) (i32.const 8)))
+                      (local.set $i (i32.add (local.get $i) (i32.const 2)))
                       (br $loop))))
              (return (i32.const 0)))
-            ;; int32
-            (local.set $len (i32.shl (local.get $len) (i32.const 2)))
+            ;; int16
+            (local.set $len (i32.shl (local.get $len) (i32.const 1)))
             (loop $loop
                (if (i32.lt_u (local.get $i) (local.get $len))
                   (then
                      (local.set $i1
-                        (call $dv_get_i32 (local.get $view1) (local.get $i)
+                        (call $dv_get_i16 (local.get $view1) (local.get $i)
                            (global.get $littleEndian)))
                      (local.set $i2
-                        (call $dv_get_i32 (local.get $view2) (local.get $i)
+                        (call $dv_get_i16 (local.get $view2) (local.get $i)
                            (global.get $littleEndian)))
                      (if (i32.lt_s (local.get $i1) (local.get $i2))
                         (then (return (i32.const -1))))
                      (if (i32.gt_s (local.get $i1) (local.get $i2))
                         (then (return (i32.const 1))))
-                     (local.set $i (i32.add (local.get $i) (i32.const 4)))
+                     (local.set $i (i32.add (local.get $i) (i32.const 2)))
                      (br $loop))))
             (return (i32.const 0)))
-           ;; uint16
-           (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+           ;; uint8
            (loop $loop
               (if (i32.lt_u (local.get $i) (local.get $len))
                  (then
                     (local.set $i1
-                       (call $dv_get_ui16 (local.get $view1) (local.get $i)
-                          (global.get $littleEndian)))
+                       (call $dv_get_ui8 (local.get $view1) (local.get $i)))
                     (local.set $i2
-                       (call $dv_get_ui16 (local.get $view2) (local.get $i)
-                          (global.get $littleEndian)))
+                       (call $dv_get_ui8 (local.get $view2) (local.get $i)))
                     (if (i32.lt_s (local.get $i1) (local.get $i2))
                        (then (return (i32.const -1))))
                     (if (i32.gt_s (local.get $i1) (local.get $i2))
                        (then (return (i32.const 1))))
-                    (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                    (local.set $i (i32.add (local.get $i) (i32.const 1)))
                     (br $loop))))
            (return (i32.const 0)))
-          ;; int16
-          (local.set $len (i32.shl (local.get $len) (i32.const 1)))
+          ;; int8
           (loop $loop
              (if (i32.lt_u (local.get $i) (local.get $len))
                 (then
                    (local.set $i1
-                      (call $dv_get_i16 (local.get $view1) (local.get $i)
-                         (global.get $littleEndian)))
+                      (call $dv_get_i8 (local.get $view1) (local.get $i)))
                    (local.set $i2
-                      (call $dv_get_i16 (local.get $view2) (local.get $i)
-                         (global.get $littleEndian)))
+                      (call $dv_get_i8 (local.get $view2) (local.get $i)))
                    (if (i32.lt_s (local.get $i1) (local.get $i2))
                       (then (return (i32.const -1))))
                    (if (i32.gt_s (local.get $i1) (local.get $i2))
                       (then (return (i32.const 1))))
-                   (local.set $i (i32.add (local.get $i) (i32.const 2)))
+                   (local.set $i (i32.add (local.get $i) (i32.const 1)))
                    (br $loop))))
           (return (i32.const 0)))
-         ;; uint8
-         (loop $loop
-            (if (i32.lt_u (local.get $i) (local.get $len))
-               (then
-                  (local.set $i1
-                     (call $dv_get_ui8 (local.get $view1) (local.get $i)))
-                  (local.set $i2
-                     (call $dv_get_ui8 (local.get $view2) (local.get $i)))
-                  (if (i32.lt_s (local.get $i1) (local.get $i2))
-                     (then (return (i32.const -1))))
-                  (if (i32.gt_s (local.get $i1) (local.get $i2))
-                     (then (return (i32.const 1))))
-                  (local.set $i (i32.add (local.get $i) (i32.const 1)))
-                  (br $loop))))
-         (return (i32.const 0)))
-        ;; int8
+         ;; complex64
+         (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+         ;; fallthrough
+        ;; float64
+        (local.set $len (i32.shl (local.get $len) (i32.const 3)))
         (loop $loop
            (if (i32.lt_u (local.get $i) (local.get $len))
               (then
-                 (local.set $i1
-                    (call $dv_get_i8 (local.get $view1) (local.get $i)))
-                 (local.set $i2
-                    (call $dv_get_i8 (local.get $view2) (local.get $i)))
-                 (if (i32.lt_s (local.get $i1) (local.get $i2))
+                 (local.set $f1
+                    (call $dv_get_f64 (local.get $view1) (local.get $i)
+                       (global.get $littleEndian)))
+                 (local.set $f2
+                    (call $dv_get_f64 (local.get $view2) (local.get $i)
+                       (global.get $littleEndian)))
+                 (if (f64.lt (local.get $f1) (local.get $f2))
                     (then (return (i32.const -1))))
-                 (if (i32.gt_s (local.get $i1) (local.get $i2))
+                 (if (f64.gt (local.get $f1) (local.get $f2))
                     (then (return (i32.const 1))))
-                 (local.set $i (i32.add (local.get $i) (i32.const 1)))
+                 (if (f64.ne (local.get $f1) (local.get $f2))
+                    (then
+                       (if (i32.eqz (local.get $total))
+                          (then (return (global.get $unordered))))
+                       (if (f64.eq (local.get $f1) (local.get $f1))
+                          (then (return (i32.const 1))))
+                       (if (f64.eq (local.get $f2) (local.get $f2))
+                          (then (return (i32.const -1))))))
+                 (local.set $i (i32.add (local.get $i) (i32.const 8)))
                  (br $loop))))
         (return (i32.const 0)))
-       ;; float64
-       (local.set $len (i32.shl (local.get $len) (i32.const 3)))
-       (loop $loop
-          (if (i32.lt_u (local.get $i) (local.get $len))
-             (then
-                (local.set $f1
-                   (call $dv_get_f64 (local.get $view1) (local.get $i)
-                      (global.get $littleEndian)))
-                (local.set $f2
-                   (call $dv_get_f64 (local.get $view2) (local.get $i)
-                      (global.get $littleEndian)))
-                (if (f64.lt (local.get $f1) (local.get $f2))
-                   (then (return (i32.const -1))))
-                (if (f64.gt (local.get $f1) (local.get $f2))
-                   (then (return (i32.const 1))))
-                (if (f64.ne (local.get $f1) (local.get $f2))
-                   (then
-                      (if (i32.eqz (local.get $total))
-                         (then (return (global.get $unordered))))
-                      (if (f64.eq (local.get $f1) (local.get $f1))
-                         (then (return (i32.const 1))))
-                      (if (f64.eq (local.get $f2) (local.get $f2))
-                         (then (return (i32.const -1))))))
-                (local.set $i (i32.add (local.get $i) (i32.const 8)))
-                (br $loop))))
-       (return (i32.const 0)))
+       ;; complex32
+       (local.set $len (i32.shl (local.get $len) (i32.const 1))))
+       ;; fallthrough
       ;; float32
       (local.set $len (i32.shl (local.get $len) (i32.const 2)))
       (loop $loop
@@ -1938,7 +2030,8 @@
                 (i32.const 0)))
          (then (call $caml_bound_error)))
       (ref.i31
-         (call $dv_get_ui16 (local.get $view) (local.get $p) (i32.const 1))))
+         (call $dv_get_ui16_unaligned
+            (local.get $view) (local.get $p) (i32.const 1))))
 
    (func (export "caml_ba_uint8_get32")
       (param $vba (ref eq)) (param $i (ref eq)) (result i32)
@@ -1955,7 +2048,8 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (return_call $dv_get_i32 (local.get $view) (local.get $p) (i32.const 1)))
+      (return_call $dv_get_i32_unaligned
+         (local.get $view) (local.get $p) (i32.const 1)))
 
    (func (export "caml_ba_uint8_get64")
       (param $vba (ref eq)) (param $i (ref eq)) (result i64)
@@ -1972,7 +2066,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_get_i64
+      (call $dv_get_i64_unaligned
          (local.get $view) (local.get $p) (i32.const 1)))
 
    (func (export "caml_ba_uint8_set16")
@@ -1992,7 +2086,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i16
+      (call $dv_set_i16_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
@@ -2012,7 +2106,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i32
+      (call $dv_set_i32_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
@@ -2032,7 +2126,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (call $dv_set_i64
+      (call $dv_set_i64_unaligned
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
