@@ -76,6 +76,10 @@ module Flag : sig
 
   val load_shapes_auto : unit -> bool
 
+  val exnref : unit -> bool
+
+  val wasi : unit -> bool
+
   val enable : string -> unit
 
   val disable : string -> unit
