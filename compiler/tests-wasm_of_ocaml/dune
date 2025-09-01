@@ -5,3 +5,12 @@
   (flags :standard --disable optcall --no-inline))
  (wasm_of_ocaml
   (flags :standard --disable optcall --no-inline)))
+
+(tests
+ (names gh2093)
+ (modes wasm)
+ (enabled_if
+  (>= %{ocaml_version} 5))
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags :standard)))
