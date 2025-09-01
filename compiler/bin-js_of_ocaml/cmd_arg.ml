@@ -78,7 +78,6 @@ type t =
   ; fs_external : bool
   ; keep_unit_names : bool
   ; effects : Config.effects_backend
-  ; lambda_lift_all : bool
   }
 
 let set_param =
@@ -307,14 +306,6 @@ let options =
           None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
-  let lambda_lift_all =
-    let doc =
-      "Lambda-lift all functions in the compilation result. This can improve the \
-       performance of some programs on some engines (such as V8). Ignored when effects \
-       are enabled."
-    in
-    Arg.(value & flag & info [ "lambda-lift-all" ] ~doc)
-  in
   let build_t
       common
       set_param
@@ -344,7 +335,6 @@ let options =
       js_files
       keep_unit_names
       effects
-      lambda_lift_all
       shape_files =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
@@ -416,7 +406,6 @@ let options =
       ; source_map
       ; keep_unit_names
       ; effects
-      ; lambda_lift_all
       ; shape_files
       }
   in
@@ -451,7 +440,6 @@ let options =
       $ js_files
       $ keep_unit_names
       $ effects
-      $ lambda_lift_all
       $ shape_files)
   in
   Term.ret t
@@ -674,7 +662,6 @@ let options_runtime_only =
       ; keep_unit_names = false
       ; effects
       ; shape_files = []
-      ; lambda_lift_all = false
       }
   in
   let t =
