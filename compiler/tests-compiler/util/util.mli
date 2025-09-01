@@ -36,6 +36,7 @@ val compile_cmo_to_javascript :
      ?flags:string list
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
+  -> ?lambda_lift_all:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
   -> ?werror:bool
@@ -46,6 +47,7 @@ val compile_bc_to_javascript :
      ?flags:string list
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
+  -> ?lambda_lift_all:bool
   -> ?pretty:bool
   -> ?sourcemap:bool
   -> ?werror:bool
@@ -99,6 +101,7 @@ val compile_and_parse :
   -> ?flags:string list
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
+  -> ?lambda_lift_all:bool
   -> ?werror:bool
   -> string
   -> Javascript.program
@@ -109,6 +112,7 @@ val compile_and_parse_whole_program :
   -> ?flags:string list
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
+  -> ?lambda_lift_all:bool
   -> ?unix:bool
   -> ?werror:bool
   -> string
