@@ -156,7 +156,6 @@ let run
     ; keep_unit_names
     ; include_runtime
     ; effects
-    ; lambda_lift_all
     ; shape_files
     ; build_config
     ; apply_build_config
@@ -289,7 +288,6 @@ let run
             ~wrap_with_fun
             ~source_map:(source_map_enabled source_map)
             ~formatter
-            ~lambda_lift_all
             code
       | `File, formatter ->
           let fs_instr1, fs_instr2 =
@@ -311,7 +309,6 @@ let run
               ~shapes
               ?profile
               ~link
-              ~lambda_lift_all
               ~wrap_with_fun
               ~source_map:(source_map_enabled source_map)
               ~formatter

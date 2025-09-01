@@ -161,7 +161,6 @@ let effects_and_exact_calls
     ~keep_flow_data
     ~deadcode_sentinel
     ~shapes
-    ~lambda_lift_all
     (profile : Profile.t)
     p =
   let fast =
@@ -182,7 +181,7 @@ let effects_and_exact_calls
     else Deadcode.f pure_fun p
   in
   let p =
-    match lambda_lift_all, Config.target (), Config.effects () with
+    match Config.(Flag.lambda_lift_all (), target (), effects ()) with
     | true, `JavaScript, `Disabled ->
         let to_lift = all_functions p in
         let p, _ = Lambda_lifting_simple.f ~to_lift p in
@@ -724,7 +723,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> pack ~wrap_with_fun ~standalone
   |> check_js
 
-let optimize ~shapes ~profile ~keep_flow_data ~lambda_lift_all p =
+let optimize ~shapes ~profile ~keep_flow_data p =
   let deadcode_sentinel =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "dummy"
@@ -737,12 +736,7 @@ let optimize ~shapes ~profile ~keep_flow_data ~lambda_lift_all p =
       | O2 -> o2
       | O3 -> o3)
     +> specialize_js_once_after
-    +> effects_and_exact_calls
-         ~keep_flow_data
-         ~deadcode_sentinel
-         ~shapes
-         ~lambda_lift_all
-         profile
+    +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> map_fst5
          (match Config.target (), Config.effects () with
          | `JavaScript, (`Disabled | `Double_translation) -> Generate_closure.f
@@ -761,26 +755,15 @@ let optimize ~shapes ~profile ~keep_flow_data ~lambda_lift_all p =
 
 let optimize_for_wasm ~shapes ~profile p =
   let optimized_code, global_flow_data =
-    optimize ~shapes ~profile ~keep_flow_data:true ~lambda_lift_all:false p
+    optimize ~shapes ~profile ~keep_flow_data:true p
   in
   ( optimized_code
   , match global_flow_data with
     | Some data -> data
     | None -> Global_flow.f ~fast:false optimized_code.program )
 
-let full
-    ~standalone
-    ~wrap_with_fun
-    ~shapes
-    ~profile
-    ~link
-    ~source_map
-    ~formatter
-    ~lambda_lift_all
-    p =
-  let optimized_code, _ =
-    optimize ~shapes ~profile ~keep_flow_data:false ~lambda_lift_all p
-  in
+let full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p =
+  let optimized_code, _ = optimize ~shapes ~profile ~keep_flow_data:false p in
   let exported_runtime = not standalone in
   let emit formatter =
     generate ~exported_runtime ~wrap_with_fun ~warn_on_unhandled_effect:standalone
@@ -800,26 +783,9 @@ let full
     shapes_v;
   emit formatter optimized_code, shapes_v
 
-let full_no_source_map
-    ~formatter
-    ~shapes
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~link
-    ~lambda_lift_all
-    p =
+let full_no_source_map ~formatter ~shapes ~standalone ~wrap_with_fun ~profile ~link p =
   let (_ : Source_map.info * _) =
-    full
-      ~shapes
-      ~standalone
-      ~wrap_with_fun
-      ~profile
-      ~link
-      ~source_map:false
-      ~formatter
-      ~lambda_lift_all
-      p
+    full ~shapes ~standalone ~wrap_with_fun ~profile ~link ~source_map:false ~formatter p
   in
   ()
 
@@ -831,36 +797,17 @@ let f
     ~link
     ~source_map
     ~formatter
-    ~lambda_lift_all
     p =
-  full
-    ~standalone
-    ~wrap_with_fun
-    ~shapes
-    ~profile
-    ~link
-    ~source_map
-    ~formatter
-    ~lambda_lift_all
-    p
+  full ~standalone ~wrap_with_fun ~shapes ~profile ~link ~source_map ~formatter p
 
 let f'
     ?(standalone = true)
     ?(wrap_with_fun = `Iife)
     ?(profile = Profile.O1)
-    ?(lambda_lift_all = false)
     ~link
     formatter
     p =
-  full_no_source_map
-    ~formatter
-    ~shapes:false
-    ~standalone
-    ~wrap_with_fun
-    ~profile
-    ~link
-    ~lambda_lift_all
-    p
+  full_no_source_map ~formatter ~shapes:false ~standalone ~wrap_with_fun ~profile ~link p
 
 let from_string ~prims ~debug s formatter =
   let p = Parse_bytecode.from_string ~prims ~debug s in
@@ -871,5 +818,4 @@ let from_string ~prims ~debug s formatter =
     ~wrap_with_fun:`Anonymous
     ~profile:O1
     ~link:`No
-    ~lambda_lift_all:false
     p
