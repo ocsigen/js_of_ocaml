@@ -283,6 +283,7 @@ let extract_sourcemap file =
 let compile_to_javascript
     ?(flags = [])
     ?(use_js_string = false)
+    ?(lambda_lift_all = false)
     ?(effects = `Disabled)
     ?(werror = true)
     ~pretty
@@ -310,6 +311,9 @@ let compile_to_javascript
            [compile_and_run] invokes [js_of_ocaml.exe] as a subprocess
            and bypasses that, so pass it explicitly. *)
         (if is_qjs then [ "+fs_quickjs.js" ] else [])
+      ; (if lambda_lift_all
+         then [ "--enable=lambda-lift-all" ]
+         else [ "--disable=lambda-lift-all" ])
       ; flags
       ; (if werror then [ "--Werror" ] else [])
       ]
@@ -351,17 +355,26 @@ let compile_bc_to_javascript
     ?flags
     ?effects
     ?use_js_string
+    ?lambda_lift_all
     ?(pretty = true)
     ?(sourcemap = true)
     ?werror
     file =
   Filetype.path_of_bc_file file
-  |> compile_to_javascript ?flags ?effects ?use_js_string ?werror ~pretty ~sourcemap
+  |> compile_to_javascript
+       ?flags
+       ?effects
+       ?use_js_string
+       ?lambda_lift_all
+       ?werror
+       ~pretty
+       ~sourcemap
 
 let compile_cmo_to_javascript
     ?(flags = [])
     ?effects
     ?use_js_string
+    ?lambda_lift_all
     ?(pretty = true)
     ?(sourcemap = true)
     ?werror
@@ -370,6 +383,7 @@ let compile_cmo_to_javascript
   |> compile_to_javascript
        ?effects
        ?use_js_string
+       ?lambda_lift_all
        ?werror
        ~flags:([ "--disable"; "header" ] @ flags)
        ~pretty
@@ -615,6 +629,7 @@ let compile_and_parse_whole_program
     ?flags
     ?effects
     ?use_js_string
+    ?lambda_lift_all
     ?unix
     ?werror
     s =
@@ -628,11 +643,20 @@ let compile_and_parse_whole_program
            ?flags
            ?effects
            ?use_js_string
+           ?lambda_lift_all
            ?werror
            ~sourcemap:debug
       |> parse_js)
 
-let compile_and_parse ?(debug = true) ?pretty ?flags ?effects ?use_js_string ?werror s =
+let compile_and_parse
+    ?(debug = true)
+    ?pretty
+    ?flags
+    ?effects
+    ?use_js_string
+    ?lambda_lift_all
+    ?werror
+    s =
   with_temp_dir ~f:(fun () ->
       s
       |> Filetype.ocaml_text_of_string
@@ -643,6 +667,7 @@ let compile_and_parse ?(debug = true) ?pretty ?flags ?effects ?use_js_string ?we
            ?flags
            ?effects
            ?use_js_string
+           ?lambda_lift_all
            ?werror
            ~sourcemap:debug
       |> parse_js)
