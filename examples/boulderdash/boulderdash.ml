@@ -510,4 +510,12 @@ let start _ =
   Dom.appendChild body div;
   Lwt.return ()
 
-let () = Lwt.async start
+let () =
+  let p : Js.js_string Js.t = Jsoo_runtime.Sys.external_ "process" in
+  let o : _ Js.t = Jsoo_runtime.Sys.external_ "obj" in
+  let del : 'a -> Jsoo_runtime.Js.t -> unit =
+    Jsoo_runtime.Sys.external_ "caml_js_delete"
+  in
+  del o (Jsoo_runtime.Js.string "process");
+  print_endline (Js.to_string p);
+  Lwt.async start
