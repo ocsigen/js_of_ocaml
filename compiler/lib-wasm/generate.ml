@@ -1733,6 +1733,11 @@ module Generate (Target : Target_sig.S) = struct
       | Some f -> Typing.return_type ctx.types f
       | _ -> Typing.Top
     in
+    let return_exn =
+      match name_opt with
+      | Some f -> Var.Hashtbl.mem ctx.raising_funcs f
+      | _ -> false
+    in
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
@@ -1831,13 +1836,27 @@ module Generate (Target : Target_sig.S) = struct
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
               let* e = load x in
-              let* tag = register_import ~name:exception_name (Tag Type.value) in
               match fall_through with
               | `Catch -> instr (Push e)
               | `Block _ | `Return | `Skip -> (
                   match catch_index context with
                   | Some i -> instr (Br (i, Some e))
-                  | None -> instr (Throw (tag, e))))
+                  | None ->
+                      if return_exn
+                      then
+                        let* exn =
+                          register_import
+                            ~import_module:"env"
+                            ~name:"caml_exception"
+                            (Global { mut = true; typ = Type.value })
+                        in
+                        let* () = instr (GlobalSet (exn, e)) in
+                        instr (Return (Some (RefNull Any)))
+                      else
+                        let* tag =
+                          register_import ~name:exception_name (Tag Type.value)
+                        in
+                        instr (Throw (tag, e))))
           | Pushtrap (cont, x, cont') ->
               handle_exceptions
                 ~result_typ
@@ -1962,7 +1981,11 @@ module Generate (Target : Target_sig.S) = struct
                           (unboxed_type (Typing.var_type ctx.types x)))
                       params
                     @ [ Type.value ]
-                ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
+                ; result =
+                    [ Option.value
+                        ~default:(if return_exn then Type.value_or_exn else Type.value)
+                        (unboxed_type return_type)
+                    ]
                 }
               else Type.func_type (param_count - 1))
       ; param_names
