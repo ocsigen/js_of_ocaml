@@ -49,7 +49,9 @@ let has_tail_calls info f = Var.Hashtbl.mem info.has_tail_calls f
 
 let call_graph p info call_info =
   let under_handler = Var.Hashtbl.create 16 in
-  let rec traverse pc visited nesting =
+  let callees = Var.Hashtbl.create 16 in
+  let callers = Var.Hashtbl.create 16 in
+  let rec traverse name_opt pc visited nesting =
     if not (Addr.Set.mem pc visited)
     then (
       let visited = Addr.Set.add pc visited in
@@ -64,16 +66,25 @@ let call_graph p info call_info =
                     exact
                     && (not others)
                     && Var.Set.for_all (fun f -> direct_calls_only call_info f) known
-                    && nesting > 0
                   then
-                    Var.Set.iter
-                      (fun f ->
-                        (*                        Format.eprintf "BBB %a@." Code.Var.print f; *)
-                        Var.Hashtbl.replace under_handler f ())
-                      known)
+                    if nesting > 0
+                    then
+                      Var.Set.iter
+                        (fun f ->
+                          (*                        Format.eprintf "BBB %a@." Code.Var.print f; *)
+                          Var.Hashtbl.replace under_handler f ())
+                        known
+                    else
+                      Option.iter
+                        ~f:(fun f ->
+                          Var.Set.iter
+                            (fun g ->
+                              Var.Hashtbl.add callees f g;
+                              Var.Hashtbl.add callers g f)
+                            known)
+                        name_opt)
           | Let (_, (Closure _ | Prim _ | Block _ | Constant _ | Field _ | Special _))
           | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ());
-
       Code.fold_children
         p.blocks
         pc
@@ -84,12 +95,15 @@ let call_graph p info call_info =
             | Poptrap _ -> nesting - 1
             | _ -> nesting
           in
-          traverse pc' visited nesting)
+          traverse name_opt pc' visited nesting)
         visited)
     else visited
   in
-  fold_closures p (fun _ _ (pc, _) _ () -> ignore (traverse pc Addr.Set.empty 0)) ();
-  under_handler
+  fold_closures
+    p
+    (fun name_opt _ (pc, _) _ () -> ignore (traverse name_opt pc Addr.Set.empty 0))
+    ();
+  under_handler, callers, callees
 
 let function_do_raise p pc =
   Code.traverse
@@ -105,8 +119,21 @@ let function_do_raise p pc =
     p.blocks
     false
 
+let propagate nodes edges eligible =
+  let rec propagate n =
+    List.iter
+      ~f:(fun n' ->
+        if (not (Var.Hashtbl.mem nodes n')) && eligible n'
+        then (
+          Var.Hashtbl.add nodes n' ();
+          propagate n'))
+      (Var.Hashtbl.find_all edges n)
+  in
+  Var.Hashtbl.iter (fun n () -> propagate n) nodes
+
 let raising_functions p info call_info eligible =
-  let under_handler = call_graph p info call_info in
+  let under_handler, callers, callees = call_graph p info call_info in
+  propagate under_handler callees eligible;
   let h = Var.Hashtbl.create 16 in
   Code.fold_closures
     p
@@ -114,17 +141,20 @@ let raising_functions p info call_info eligible =
       match name_opt with
       | None -> ()
       | Some name ->
-          if direct_calls_only call_info name && eligible name && function_do_raise p pc
-          then (
-            if Var.Hashtbl.mem under_handler name then Var.Hashtbl.add h name ();
-            if false
-            then
-              Format.eprintf
-                "ZZZ %a %b@."
-                Var.print
-                name
-                (Var.Hashtbl.mem under_handler name)))
+          if
+            direct_calls_only call_info name
+            && eligible name
+            && function_do_raise p pc
+            && Var.Hashtbl.mem under_handler name
+          then Var.Hashtbl.add h name ())
     ();
+  propagate h callers (fun f -> eligible f && Var.Hashtbl.mem under_handler f);
+  if false
+  then
+    Var.Hashtbl.iter
+      (fun name () ->
+        Format.eprintf "ZZZ %a %b@." Var.print name (Var.Hashtbl.mem under_handler name))
+      h;
   h
 
 let f p info =
