@@ -116,7 +116,7 @@ let raising_functions p info call_info =
       | Some name ->
           if direct_calls_only call_info name && function_do_raise p pc
           then (
-            Var.Hashtbl.add h name ();
+            if Var.Hashtbl.mem under_handler name then Var.Hashtbl.add h name ();
             Format.eprintf
               "ZZZ %a %b@."
               Var.print
