@@ -175,14 +175,11 @@ let f p info =
 - Find non-ambiguous functions that raises
   => there is a throw not in the scope of an exception handler
   => does not return an unboxed value
-- Adjust calling conventions
-  Callee
-  ==> return type is nullable
-  ==> throw
-  Caller
-  ==> jump to exception handler on throw
 
 Later:
 - deal with tail calls
 - transformation only if useful (exception catched by caller)
+  ==> unambigous functions in the scope of an exception handler
+      and may raise
+      (propagate information in both directions)
 *)
