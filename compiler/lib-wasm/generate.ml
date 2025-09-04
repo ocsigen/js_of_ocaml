@@ -2223,7 +2223,12 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_d
   let types =
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p
   in
-  let raising_funcs = Call_graph_analysis.raising_functions p global_flow_info fun_info in
+  let raising_funcs =
+    Call_graph_analysis.raising_functions p global_flow_info fun_info (fun f ->
+        match Typing.return_type types f with
+        | Int (Normalized | Unnormalized) | Number (_, Unboxed) -> false
+        | Int Ref | Number (_, Boxed) | Top | Bot | Tuple _ | Bigarray _ -> true)
+  in
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in

@@ -68,7 +68,7 @@ let call_graph p info call_info =
                   then
                     Var.Set.iter
                       (fun f ->
-                        Format.eprintf "BBB %a@." Code.Var.print f;
+                        (*                        Format.eprintf "BBB %a@." Code.Var.print f; *)
                         Var.Hashtbl.replace under_handler f ())
                       known)
           | Let (_, (Closure _ | Prim _ | Block _ | Constant _ | Field _ | Special _))
@@ -105,7 +105,7 @@ let function_do_raise p pc =
     p.blocks
     false
 
-let raising_functions p info call_info =
+let raising_functions p info call_info eligible =
   let under_handler = call_graph p info call_info in
   let h = Var.Hashtbl.create 16 in
   Code.fold_closures
@@ -114,14 +114,16 @@ let raising_functions p info call_info =
       match name_opt with
       | None -> ()
       | Some name ->
-          if direct_calls_only call_info name && function_do_raise p pc
+          if direct_calls_only call_info name && eligible name && function_do_raise p pc
           then (
             if Var.Hashtbl.mem under_handler name then Var.Hashtbl.add h name ();
-            Format.eprintf
-              "ZZZ %a %b@."
-              Var.print
-              name
-              (Var.Hashtbl.mem under_handler name)))
+            if false
+            then
+              Format.eprintf
+                "ZZZ %a %b@."
+                Var.print
+                name
+                (Var.Hashtbl.mem under_handler name)))
     ();
   h
 
@@ -163,7 +165,9 @@ let f p info =
   if debug ()
   then Format.eprintf " unambiguous-non-escaping:%d@." (Var.Hashtbl.length non_escaping);
   if times () then Format.eprintf "  call graph analysis: %a@." Timer.print t;
+  (*
   Var.Hashtbl.iter (fun f _ -> Format.eprintf "AAA %a@." Code.Var.print f) non_escaping;
+*)
   let call_info = { unambiguous_non_escaping = non_escaping; has_tail_calls } in
   call_info
 
