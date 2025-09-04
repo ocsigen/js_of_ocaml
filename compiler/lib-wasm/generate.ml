@@ -38,6 +38,7 @@ module Generate (Target : Target_sig.S) = struct
     ; global_flow_info : Global_flow.info
     ; fun_info : Call_graph_analysis.t
     ; types : Typing.t
+    ; raising_funcs : unit Var.Hashtbl.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -2036,7 +2037,8 @@ module Generate (Target : Target_sig.S) = struct
 *)
       ~global_flow_info
       ~fun_info
-      ~types =
+      ~types
+      ~raising_funcs =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
     (*
@@ -2048,6 +2050,7 @@ module Generate (Target : Target_sig.S) = struct
       ; global_flow_info
       ; fun_info
       ; types
+      ; raising_funcs
       ; blocks = p.blocks
       ; closures
       ; global_context
@@ -2160,11 +2163,21 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_d
   let types =
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p
   in
+  let raising_funcs = Call_graph_analysis.raising_functions p global_flow_info fun_info in
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in
   let res =
-    G.f ~context ~unit_name ~live_vars ~in_cps ~global_flow_info ~fun_info ~types p
+    G.f
+      ~context
+      ~unit_name
+      ~live_vars
+      ~in_cps
+      ~global_flow_info
+      ~fun_info
+      ~types
+      ~raising_funcs
+      p
   in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res

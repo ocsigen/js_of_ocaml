@@ -4,4 +4,6 @@ val direct_calls_only : t -> Code.Var.t -> bool
 
 val has_tail_calls : t -> Code.Var.t -> bool
 
+val raising_functions : Code.program -> Global_flow.info -> t -> unit Code.Var.Hashtbl.t
+
 val f : Code.program -> Global_flow.info -> t

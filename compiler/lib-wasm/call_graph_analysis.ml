@@ -47,36 +47,6 @@ let direct_calls_only info f =
 
 let has_tail_calls info f = Var.Hashtbl.mem info.has_tail_calls f
 
-let function_do_raise p pc =
-  Code.traverse
-    { fold = Code.fold_children_skip_try_body }
-    (fun pc do_raise ->
-      let block = Addr.Map.find pc p.blocks in
-      do_raise
-      ||
-      match block.branch with
-      | Raise _ -> true
-      | _ -> false)
-    pc
-    p.blocks
-    false
-
-let raising_functions p under_handler info =
-  Code.fold_closures
-    p
-    (fun name_opt _params (pc, _) _ () ->
-      match name_opt with
-      | None -> ()
-      | Some name ->
-          if direct_calls_only info name && function_do_raise p pc
-          then
-            Format.eprintf
-              "ZZZ %a %b@."
-              Var.print
-              name
-              (Var.Hashtbl.mem under_handler name))
-    ()
-
 let call_graph p info call_info =
   let under_handler = Var.Hashtbl.create 16 in
   let rec traverse pc visited nesting =
@@ -121,6 +91,40 @@ let call_graph p info call_info =
   fold_closures p (fun _ _ (pc, _) _ () -> ignore (traverse pc Addr.Set.empty 0)) ();
   under_handler
 
+let function_do_raise p pc =
+  Code.traverse
+    { fold = Code.fold_children_skip_try_body }
+    (fun pc do_raise ->
+      let block = Addr.Map.find pc p.blocks in
+      do_raise
+      ||
+      match block.branch with
+      | Raise _ -> true
+      | _ -> false)
+    pc
+    p.blocks
+    false
+
+let raising_functions p info call_info =
+  let under_handler = call_graph p info call_info in
+  let h = Var.Hashtbl.create 16 in
+  Code.fold_closures
+    p
+    (fun name_opt _params (pc, _) _ () ->
+      match name_opt with
+      | None -> ()
+      | Some name ->
+          if direct_calls_only call_info name && function_do_raise p pc
+          then (
+            Var.Hashtbl.add h name ();
+            Format.eprintf
+              "ZZZ %a %b@."
+              Var.print
+              name
+              (Var.Hashtbl.mem under_handler name)))
+    ();
+  h
+
 let f p info =
   let t = Timer.make () in
   let non_escaping = Var.Hashtbl.create 128 in
@@ -161,8 +165,6 @@ let f p info =
   if times () then Format.eprintf "  call graph analysis: %a@." Timer.print t;
   Var.Hashtbl.iter (fun f _ -> Format.eprintf "AAA %a@." Code.Var.print f) non_escaping;
   let call_info = { unambiguous_non_escaping = non_escaping; has_tail_calls } in
-  let under_handler = call_graph p info call_info in
-  raising_functions p under_handler call_info;
   call_info
 
 (*
