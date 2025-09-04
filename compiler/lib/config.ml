@@ -106,6 +106,8 @@ module Flag = struct
   let es6 = o ~name:"es6" ~default:false
 
   let load_shapes_auto = o ~name:"load-shapes-auto" ~default:false
+
+  let lambda_lift_all = o ~name:"lambda-lift-all" ~default:false
 end
 
 module Param = struct

@@ -2,6 +2,7 @@
 
 ## Features/Changes
 * Compiler/wasm: omit code pointer from closures when not used (#2059, #2093)
+* Compiler: add optional full lambda lifting for the Javascript compiler (#1886)
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)

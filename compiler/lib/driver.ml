@@ -142,6 +142,16 @@ let collects_shapes ~shapes (p : Code.program) =
     map)
   else StringMap.empty
 
+let all_functions p =
+  let open Code in
+  fold_closures
+    p
+    (fun name _ _ _ acc ->
+      match name with
+      | Some name -> Var.Set.add name acc
+      | None -> acc)
+    Var.Set.empty
+
 let effects_and_exact_calls
     ~keep_flow_data
     ~deadcode_sentinal
@@ -164,6 +174,14 @@ let effects_and_exact_calls
       let p = Global_deadcode.f pure_fun p ~deadcode_sentinal info in
       Deadcode.f pure_fun p
     else Deadcode.f pure_fun p
+  in
+  let p =
+    match Config.(Flag.lambda_lift_all (), target (), effects ()) with
+    | true, `JavaScript, `Disabled ->
+        let to_lift = all_functions p in
+        let p, _ = Lambda_lifting_simple.f ~to_lift p in
+        p
+    | _ -> p
   in
   match Config.effects () with
   | `Cps | `Double_translation ->
