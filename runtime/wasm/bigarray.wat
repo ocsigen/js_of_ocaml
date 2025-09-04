@@ -72,6 +72,12 @@
    (import "bindings" "dv_set_i8"
       (func $dv_set_i8 (param externref i32 i32)))
    (import "bindings" "littleEndian" (global $littleEndian i32))
+   (import "bindings" "ta_blit_from_string"
+      (func $ta_blit_from_string
+         (param anyref) (param i32) (param (ref extern)) (param i32)
+         (param i32)))
+   (import "bindings" "ta_to_string"
+      (func $ta_to_string (param (ref extern)) (result (ref any))))
    (import "fail" "caml_bound_error" (func $caml_bound_error))
    (import "fail" "caml_raise_out_of_memory" (func $caml_raise_out_of_memory))
    (import "fail" "caml_invalid_argument"
@@ -121,9 +127,12 @@
       (func $caml_deserialize_int_4 (param (ref eq)) (result i32)))
    (import "marshal" "caml_deserialize_int_8"
       (func $caml_deserialize_int_8 (param (ref eq)) (result i64)))
+   (import "jsstring" "jsstring_length"
+      (func $jsstring_length (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
+   (type $string (struct (field anyref)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
 
@@ -138,7 +147,13 @@
    (type $dup (func (param (ref eq)) (result (ref eq))))
    (type $custom_operations
       (struct
+(@if use-js-string
+(@then
+         (field $id (ref $string))
+)
+(@else
          (field $id (ref $bytes))
+))
          (field $compare (ref null $compare))
          (field $compare_ext (ref null $compare))
          (field $hash (ref null $hash))
@@ -2036,10 +2051,23 @@
          (local.get $view) (local.get $p) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
-   (export "caml_bytes_of_uint8_array" (func $caml_string_of_uint8_array))
-   (func $caml_string_of_uint8_array (export "caml_string_of_uint8_array")
+(@if use-js-string
+(@then
+   (func (export "caml_string_of_uint8_array")
       (param (ref eq)) (result (ref eq))
       ;; used to convert a typed array to a string
+      (local $a (ref extern))
+      (local.set $a
+         (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
+      (struct.new $string (call $ta_to_string (local.get $a))))
+)
+(@else
+   (export "caml_string_of_uint8_array" (func $caml_bytes_of_uint8_array))
+))
+
+   (func $caml_bytes_of_uint8_array (export "caml_bytes_of_uint8_array")
+      (param (ref eq)) (result (ref eq))
+      ;; used to convert a typed array to bytes
       (local $a (ref extern)) (local $len i32)
       (local $s (ref $bytes))
       (local.set $a
@@ -2051,8 +2079,30 @@
          (local.get $len))
       (local.get $s))
 
-   (export "caml_uint8_array_of_bytes" (func $caml_uint8_array_of_string))
-   (func $caml_uint8_array_of_string (export "caml_uint8_array_of_string")
+(@if use-js-string
+(@then
+   (func (export "caml_uint8_array_of_string")
+      (param (ref eq)) (result (ref eq))
+      ;; Convert a string to a typed array
+      (local $ta (ref extern)) (local $len i32)
+      (local $s anyref)
+      (local.set $s
+         (struct.get $string 0 (ref.cast (ref $string) (local.get 0))))
+      (local.set $len (call $jsstring_length (local.get $s)))
+      (local.set $ta
+         (call $ta_create
+            (i32.const 3) ;; Uint8Array
+            (local.get $len)))
+      (call $ta_blit_from_string
+         (local.get $s) (i32.const 0) (local.get $ta) (i32.const 0)
+         (local.get $len))
+      (call $wrap (any.convert_extern (local.get $ta))))
+)
+(@else
+   (export "caml_uint8_array_of_string" (func $caml_uint8_array_of_bytes))
+))
+
+   (func $caml_uint8_array_of_bytes (export "caml_uint8_array_of_bytes")
       (param (ref eq)) (result (ref eq))
       ;; Convert bytes to a typed array
       (local $ta (ref extern)) (local $len i32)

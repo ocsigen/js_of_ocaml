@@ -22,15 +22,23 @@ let do_pin =
 
 let forked_packages =
   StringSet.of_list
-    [ "base"
+    [ "async_js"
+    ; "base"
+    ; "basement"
+    ; "bigstringaf"
     ; "core"
+    ; "core_kernel"
+    ; "core_unix"
     ; "bonsai" (* Compatibility with effect syntax *)
     ; "bonsai_test"
     ; "bonsai_web" (* Compatibility with effect syntax *)
     ; "bonsai_web_components"
     ; "bonsai_web_test"
-    ; "virtual_dom" (* Compatibility with effect syntax *)
+    ; "ppx_hash"
+    ; "time_now"
     ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
+    ; "virtual_dom" (* Compatibility with effect syntax *)
+    ; "zarith_stubs_js"
     ]
 
 let dune_workspace =
@@ -39,6 +47,9 @@ let dune_workspace =
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
   (js_of_ocaml (enabled_if false))
+  (wasm_of_ocaml
+   (flags
+    (:standard --enable use-js-string)))
   (flags :standard -alert -all -warn-error -7-8-27-30-32-34-37-49-52-55 -w -7-27-30-32-34-37-49-52-55-56-58-67-69)))
 |}
 
@@ -92,7 +103,7 @@ index c6d09fb..61b1e5b 100644
 @@ -3,6 +3,11 @@ open! Expect_test_helpers_core
  open Bignum
  open Bignum.For_testing
- 
+
 +module Zarith = struct
 +  module Q = Q
 +  module Z = Z
@@ -208,7 +219,7 @@ index 5fd0ddc..4833923 100644
 +    [%expect {| ((hash d937e61f530ab9c27544e392922d286d) (uniqueness_rate 42.96875)) |}]
    ;;
  end
- 
+
 @@ -102,7 +102,7 @@ module Ml_z_hamdist = struct
        ();
      (* Compression rate is low because our quickcheck implementation generates
@@ -217,7 +228,7 @@ index 5fd0ddc..4833923 100644
 +    [%expect {| ((hash 0d36530b39292e2c31f13d10ec004a38) (uniqueness_rate 33.284457)) |}]
    ;;
  end
- 
+
 diff --git a/test/dune b/test/dune
 index 7996514..d0b463a 100644
 --- a/test/dune
@@ -232,14 +243,14 @@ index 7996514..d0b463a 100644
 + (modules (:standard \ zarith))
   (preprocess
    (pps ppx_jane)))
- 
+
 @@ -35,10 +37,16 @@
   (deps implemented_externals.txt tested_externals.txt)
   (action
    (bash "diff %{deps}"))
 - (alias runtest))
 + (alias runtest-))
- 
+
  (rule
   (deps implemented_externals.txt zarith_externals.txt)
   (action
@@ -335,12 +346,31 @@ let sync_exec f l =
   let l = List.map f l in
   List.iter (fun f -> f ()) l
 
+let branch nm =
+  if is_forked nm then
+    match nm with
+    | "async_js"
+    | "base"
+    | "basement"
+    | "bigstringaf"
+    | "core"
+    | "core_kernel"
+    | "core_unix"
+    | "ppx_hash"
+    | "time_now"
+    | "zarith_stubs_js" -> Some "js-strings"
+    | _ -> Some "wasm-latest"
+  else
+    None
+
 let pin nm =
+  let branch = Option.value ~default:"wasm-latest" (branch nm) in
   exec_async
     (Printf.sprintf
-       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-latest"
+       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#%s"
        nm
-       nm)
+       nm
+       branch)
 
 let pin_packages () = sync_exec pin (StringSet.elements do_pin)
 
@@ -396,7 +426,7 @@ let () =
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
-      let branch = if is_forked nm then Some "wasm-latest" else None in
+      let branch = branch nm in
       let commit =
         if is_forked nm
         then None

@@ -84,6 +84,7 @@ let preprocessor_variables () =
         | `Disabled | `Jspi -> "jspi"
         | `Cps -> "cps"
         | `Double_translation -> assert false) )
+  ; "use-js-string", Wat_preprocess.Bool (Config.Flag.use_js_string ())
   ]
 
 let with_runtime_files ~runtime_wasm_files f =
@@ -126,6 +127,7 @@ let build_runtime ~runtime_file =
              [ "bindings"
              ; "Math"
              ; "js"
+             ; "str"
              ; "wasm:js-string"
              ; "wasm:text-encoder"
              ; "wasm:text-decoder"
@@ -257,10 +259,10 @@ let generate_prelude ~out_file =
     Driver.optimize_for_wasm ~profile ~shapes:false code
   in
   let context = Generate.start () in
-  let _ =
+  let _, generated_js =
     Generate.f
       ~context
-      ~unit_name:(Some "prelude")
+      ~unit_name:(Some "wasmoo_prelude")
       ~live_vars:variable_uses
       ~in_cps
       ~deadcode_sentinal
@@ -268,14 +270,14 @@ let generate_prelude ~out_file =
       program
   in
   Generate.wasm_output ch ~opt_source_map_file:None ~context;
-  uinfo.provides
+  uinfo.provides, generated_js
 
 let build_prelude z =
   Fs.with_intermediate_file (Filename.temp_file "prelude" ".wasm")
   @@ fun prelude_file ->
-  let predefined_exceptions = generate_prelude ~out_file:prelude_file in
+  let info = generate_prelude ~out_file:prelude_file in
   Zip.add_file z ~name:"prelude.wasm" ~file:prelude_file;
-  predefined_exceptions
+  info
 
 let build_js_runtime ~primitives ?runtime_arguments () =
   let always_required_js, primitives =
@@ -483,12 +485,17 @@ let run
      let z = Zip.open_out tmp_output_file in
      Zip.add_file z ~name:"runtime.wasm" ~file:tmp_wasm_file;
      Zip.add_entry z ~name:"runtime.js" ~contents:js_runtime;
-     let predefined_exceptions = build_prelude z in
+     let predefined_exceptions, fragments = build_prelude z in
      Link.add_info
        z
        ~predefined_exceptions
        ~build_info:(Build_info.create `Runtime)
-       ~unit_data:[]
+       ~unit_data:
+         [ { Link.unit_name = "wasmoo_prelude"
+           ; unit_info = Unit_info.empty
+           ; fragments
+           }
+         ]
        ();
      Zip.close_out z)
    else

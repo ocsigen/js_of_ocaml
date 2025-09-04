@@ -8,7 +8,10 @@
     (:standard)))
   (binaries
    (tools/node_wrapper.exe as node)
-   (tools/node_wrapper.exe as node.exe)))
+   (tools/node_wrapper.exe as node.exe))
+  (wasm_of_ocaml
+   (flags
+    (:standard --enable use-js-string))))
  (with-effects
   (js_of_ocaml
    (compilation_mode separate)

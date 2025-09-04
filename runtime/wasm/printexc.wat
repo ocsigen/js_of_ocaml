@@ -21,8 +21,19 @@
    (import "ints" "caml_format_int"
       (func $caml_format_int
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_string_length"
+      (func $caml_string_length (param (ref eq)) (result i32)))
+   (import "string" "caml_string_of_bytes"
+      (func $caml_string_of_bytes (param (ref eq)) (result (ref eq))))
+   (import "string" "caml_blit_string"
+      (func $caml_blit_string
+         (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
+         (result (ref eq))))
+   (import "jsstring" "jsstring_test"
+      (func $jsstring_test (param anyref) (result i32)))
 
    (type $block (array (mut (ref eq))))
+   (type $string (struct (field anyref)))
    (type $bytes (array (mut i8)))
 
    (type $buffer
@@ -41,25 +52,40 @@
             (struct.set $buffer 0 (local.get $buf)
                (i32.add (local.get $pos) (i32.const 1))))))
 
-   (func $add_string (param $buf (ref $buffer)) (param $v (ref eq))
+   (func $add_string (param $buf (ref $buffer)) (param $s (ref eq))
       (local $pos i32) (local $len i32)
       (local $data (ref $bytes))
-      (local $s (ref $bytes))
       (local.set $pos (struct.get $buffer 0 (local.get $buf)))
       (local.set $data (struct.get $buffer 1 (local.get $buf)))
-      (local.set $s (ref.cast (ref $bytes) (local.get $v)))
-      (local.set $len (array.len (local.get $s)))
+      (local.set $len (call $caml_string_length (local.get $s)))
       (if (i32.gt_u (i32.add (local.get $pos) (local.get $len))
                     (array.len (local.get $data)))
          (then
             (local.set $len
                 (i32.sub (array.len (local.get $data)) (local.get $pos)))))
-      (array.copy $bytes $bytes
-         (local.get $data) (local.get $pos)
-         (local.get $s) (i32.const 0)
-         (local.get $len))
+      (drop (call $caml_blit_string
+         (local.get $s) (ref.i31 (i32.const 0))
+         (local.get $data) (ref.i31 (local.get $pos))
+         (ref.i31 (local.get $len))))
       (struct.set $buffer 0 (local.get $buf)
          (i32.add (local.get $pos) (local.get $len))))
+
+(@if use-js-string
+(@then
+   (func $is_string (param $v (ref eq)) (result i32)
+      (drop (block $not_string (result (ref eq))
+         (return_call $jsstring_test
+            (struct.get $string 0
+               (br_on_cast_fail $not_string (ref eq) (ref $string)
+                  (local.get $v))))))
+      (i32.const 0))
+)
+(@else
+   (func $is_string (param $v (ref eq)) (result i32)
+      (ref.test (ref $bytes) (local.get $v)))
+))
+
+   (@string $int_format "%d")
 
    (func (export "caml_format_exception") (param (ref eq)) (result (ref eq))
       (local $exn (ref $block))
@@ -119,7 +145,7 @@
                               (call $caml_format_int
                                   (@string "%d")
                                   (ref.cast (ref i31) (local.get $v)))))
-                    (else (if (ref.test (ref $bytes) (local.get $v))
+                    (else (if (call $is_string (local.get $v))
                        (then
                           (call $add_char (local.get $buf) (@char "\""))
                           (call $add_string (local.get $buf) (local.get $v))
@@ -140,7 +166,7 @@
                (local.get $s) (i32.const 0)
                (struct.get $buffer 1 (local.get $buf)) (i32.const 0)
                (struct.get $buffer 0 (local.get $buf)))
-            (local.get $s))
+            (call $caml_string_of_bytes (local.get $s)))
          (else
             (array.get $block (local.get $exn) (i32.const 1)))))
 )

@@ -89,7 +89,7 @@ jobs:
       - name: Set-up Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: latest
+          node-version: 'v24.0.0-v8-canary202412116884e26428'
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3

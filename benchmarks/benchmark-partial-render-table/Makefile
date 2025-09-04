@@ -2,7 +2,7 @@
 
 export NAME=Partial Render Table
 
-SHELL=/bin/bash -o pipefail
+SHELL=/usr/bin/env bash -o pipefail
 
 bench:
 	@date -u +"%FT%TZ - $(NAME): starting"
@@ -14,7 +14,7 @@ bench:
 	@date -u +"%FT%TZ - $(NAME): done"
 
 perform:
-	/usr/bin/time -f "%E %R" $(COMPILER) --debug times --opt 2 --pretty main.bc-for-jsoo -o out.js 2>&1 | \
+	env time -f "%E %R" $(COMPILER) --debug times --opt 2 --pretty --enable use-js-string main.bc-for-jsoo -o out.js 2>&1 | \
 	tee /dev/stderr | \
 	ocaml -I +str str.cma ../utils/compilation_metrics.ml $(COMPILER) "$(NAME)" out.js | \
 	sh ../utils/aggregate.sh $(KIND)
