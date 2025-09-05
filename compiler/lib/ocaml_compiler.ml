@@ -30,12 +30,21 @@ let rec constant_of_const c : Code.constant =
   | Const_base (Const_int64 i) -> Int64 i
   | Const_base (Const_nativeint i) -> NativeInt (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
-  | Const_float_array sl ->
+  | Const_float_array sl | Const_float_block sl ->
       let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
       Float_array (Array.of_list l)
   | Const_block (tag, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
+  | Const_base
+      ( Const_float32 _
+      | Const_unboxed_float _
+      | Const_unboxed_float32 _
+      | Const_unboxed_int32 _
+      | Const_unboxed_int64 _
+      | Const_unboxed_nativeint _ ) -> assert false (*ZZZ*)
+  | Const_null -> assert false (*ZZZ*)
+  | Const_mixed_block (_, _, _) -> assert false (*ZZZ*)
 
 type module_or_not =
   | Module
@@ -59,7 +68,7 @@ let rec is_module_in_summary deep ident' summary =
       then deep, Not_module
       else is_module_in_summary (deep + 1) ident' summary
   (* Lowercase ident *)
-  | Env.Env_value (summary, ident, _)
+  | Env.Env_value (summary, ident, _, _)
   | Env.Env_type (summary, ident, _)
   | Env.Env_class (summary, ident, _)
   | Env.Env_cltype (summary, ident, _) ->
@@ -120,7 +129,7 @@ module Symtable = struct
       let name = Ident.name id in
       if Ident.is_predef id
       then Some (Glob_predef name)
-      else if Ident.global id
+      else if Ident.is_global id
       then Some (Glob_compunit name)
       else None
 
@@ -196,10 +205,12 @@ module Symtable = struct
   let reloc_set_of_string name = Cmo_format.Reloc_setglobal (Ident.create_persistent name)
   [@@if ocaml_version < (5, 2, 0)]
 
-  let reloc_get_of_string name = Cmo_format.Reloc_getcompunit (Compilation_unit.of_string name)
+  let reloc_get_of_string name =
+    Cmo_format.Reloc_getcompunit (Compilation_unit.of_string name)
   [@@if ocaml_version >= (5, 2, 0)]
 
-  let reloc_set_of_string name = Cmo_format.Reloc_setcompunit (Compilation_unit.of_string name)
+  let reloc_set_of_string name =
+    Cmo_format.Reloc_setcompunit (Compilation_unit.of_string name)
   [@@if ocaml_version >= (5, 2, 0)]
 
   let reloc_ident name =
@@ -212,7 +223,7 @@ module Symtable = struct
     let get i = Char.code (Bytes.get buf i) in
     let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
     n
-  [@@if ocaml_version < (5, 2, 0)]
+  (*  [@@if ocaml_version < (5, 2, 0)]
 
   let reloc_ident name =
     let buf = Bigarray.(Array1.create char c_layout 4) in
@@ -225,6 +236,7 @@ module Symtable = struct
     let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
     n
   [@@if ocaml_version >= (5, 2, 0)]
+*)
 
   let current_state () : GlobalMap.t =
     let x : Symtable.global_map = Symtable.current_state () in
@@ -252,16 +264,17 @@ end
 module Cmo_format = struct
   type t = Cmo_format.compilation_unit_descr
 
-  let name (t : t) = t.cu_name |> Compilation_unit.name_as_string [@@if ocaml_version < (5, 2, 0)]
+  let name (t : t) = t.cu_name |> Compilation_unit.name_as_string
+  [@@if ocaml_version < (5, 2, 0)]
 
-  let name (t : t) =
-    Compilation_unit.name_as_string t.cu_name
+  let name (t : t) = Compilation_unit.name_as_string t.cu_name
   [@@if ocaml_version >= (5, 2, 0)]
 
   let requires (t : t) = List.map ~f:Compilation_unit.name_as_string t.cu_required_globals
   [@@if ocaml_version < (5, 2, 0)]
 
-  let requires (t : t) = List.map t.cu_required_compunits ~f:Compilation_unit.name_as_string
+  let requires (t : t) =
+    List.map t.cu_required_compunits ~f:Compilation_unit.name_as_string
   [@@if ocaml_version >= (5, 2, 0)]
 
   let provides (t : t) =

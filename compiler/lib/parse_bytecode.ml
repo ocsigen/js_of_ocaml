@@ -2645,8 +2645,7 @@ end = struct
     ignore (seek_section toc ic "CRCS");
     let orig_crcs : Import_info.t array = input_value ic in
     List.map (Array.to_list orig_crcs) ~f:(fun import ->
-      Import_info.name import |> Compilation_unit.Name.to_string,
-      Import_info.crc import)
+        Import_info.name import |> Compilation_unit.Name.to_string, Import_info.crc import)
 
   let read_prim toc ic =
     let prim_size = seek_section toc ic "PRIM" in
@@ -2919,9 +2918,11 @@ module Reloc = struct
     }
 
   let constant_of_const x = Ocaml_compiler.constant_of_const x
+  (*
   [@@if ocaml_version < (5, 1, 0)]
 
   let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
+*)
 
   (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =
