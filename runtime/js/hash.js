@@ -221,6 +221,10 @@ function caml_hash(count, limit, seed, obj) {
   return h & 0x3fffffff;
 }
 
+//Provides: caml_hash_exn
+//Requires: caml_hash
+var caml_hash_exn = caml_hash
+
 //Provides: caml_string_hash
 //Requires: caml_hash_mix_final, caml_hash_mix_string
 //Version: >= 5.0

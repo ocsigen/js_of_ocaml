@@ -81,8 +81,18 @@ module Compilation_unit : sig
 end
 [@@if oxcaml]
 
-module Cmo_format : sig
+module Compilation_unit_descr : sig
   type t = Cmo_format.compilation_unit
+end
+[@@if not oxcaml]
+
+module Compilation_unit_descr : sig
+  type t = Cmo_format.compilation_unit_descr
+end
+[@@if oxcaml]
+
+module Cmo_format : sig
+  type t = Compilation_unit_descr.t
 
   val name : t -> string
 
