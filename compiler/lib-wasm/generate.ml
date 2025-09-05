@@ -69,6 +69,7 @@ module Generate (Target : Target_sig.S) = struct
   type repr =
     | Value
     | Float
+    | Int
     | Int32
     | Nativeint
     | Int64
@@ -77,8 +78,7 @@ module Generate (Target : Target_sig.S) = struct
     match r with
     | Value -> Type.value
     | Float -> F64
-    | Int32 -> I32
-    | Nativeint -> I32
+    | Int | Int32 | Nativeint -> I32
     | Int64 -> I64
 
   let specialized_primitive_type (_, params, result) =
@@ -91,26 +91,38 @@ module Generate (Target : Target_sig.S) = struct
       [ "caml_int32_bswap", (`Pure, [ Int32 ], Int32)
       ; "caml_nativeint_bswap", (`Pure, [ Nativeint ], Nativeint)
       ; "caml_int64_bswap", (`Pure, [ Int64 ], Int64)
-      ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Value)
-      ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Value)
-      ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Value)
-      ; "caml_string_get32", (`Mutator, [ Value; Value ], Int32)
-      ; "caml_string_get64", (`Mutator, [ Value; Value ], Int64)
-      ; "caml_bytes_get32", (`Mutator, [ Value; Value ], Int32)
-      ; "caml_bytes_get64", (`Mutator, [ Value; Value ], Int64)
-      ; "caml_bytes_set32", (`Mutator, [ Value; Value; Int32 ], Value)
-      ; "caml_bytes_set64", (`Mutator, [ Value; Value; Int64 ], Value)
+      ; "caml_int32_compare", (`Pure, [ Int32; Int32 ], Int)
+      ; "caml_nativeint_compare", (`Pure, [ Nativeint; Nativeint ], Int)
+      ; "caml_int64_compare", (`Pure, [ Int64; Int64 ], Int)
+      ; "caml_string_get16", (`Mutator, [ Value; Int ], Int)
+      ; "caml_string_get32", (`Mutator, [ Value; Int ], Int32)
+      ; "caml_string_get64", (`Mutator, [ Value; Int ], Int64)
+      ; "caml_bytes_get16", (`Mutator, [ Value; Int ], Int)
+      ; "caml_bytes_get32", (`Mutator, [ Value; Int ], Int32)
+      ; "caml_bytes_get64", (`Mutator, [ Value; Int ], Int64)
+      ; "caml_bytes_set16", (`Mutator, [ Value; Int; Int ], Value)
+      ; "caml_bytes_set32", (`Mutator, [ Value; Int; Int32 ], Value)
+      ; "caml_bytes_set64", (`Mutator, [ Value; Int; Int64 ], Value)
       ; "caml_lxm_next", (`Mutable, [ Value ], Int64)
-      ; "caml_ba_uint8_get32", (`Mutator, [ Value; Value ], Int32)
-      ; "caml_ba_uint8_get64", (`Mutator, [ Value; Value ], Int64)
-      ; "caml_ba_uint8_set32", (`Mutator, [ Value; Value; Int32 ], Value)
-      ; "caml_ba_uint8_set64", (`Mutator, [ Value; Value; Int64 ], Value)
+      ; "caml_ba_uint8_get16", (`Mutator, [ Value; Int ], Int)
+      ; "caml_ba_uint8_get32", (`Mutator, [ Value; Int ], Int32)
+      ; "caml_ba_uint8_get64", (`Mutator, [ Value; Int ], Int64)
+      ; "caml_ba_uint8_set16", (`Mutator, [ Value; Int; Int ], Value)
+      ; "caml_ba_uint8_set32", (`Mutator, [ Value; Int; Int32 ], Value)
+      ; "caml_ba_uint8_set64", (`Mutator, [ Value; Int; Int64 ], Value)
       ; "caml_nextafter_float", (`Pure, [ Float; Float ], Float)
       ; "caml_classify_float", (`Pure, [ Float ], Value)
-      ; "caml_ldexp_float", (`Pure, [ Float; Value ], Float)
+      ; "caml_ldexp_float", (`Pure, [ Float; Int ], Float)
       ; "caml_erf_float", (`Pure, [ Float ], Float)
       ; "caml_erfc_float", (`Pure, [ Float ], Float)
-      ; "caml_float_compare", (`Pure, [ Float; Float ], Value)
+      ; "caml_float_compare", (`Pure, [ Float; Float ], Int)
+      ; "caml_greaterthan", (`Mutator, [ Value; Value ], Int)
+      ; "caml_greaterequal", (`Mutator, [ Value; Value ], Int)
+      ; "caml_lessthan", (`Mutator, [ Value; Value ], Int)
+      ; "caml_lessequal", (`Mutator, [ Value; Value ], Int)
+      ; "caml_equal", (`Mutator, [ Value; Value ], Int)
+      ; "caml_notequal", (`Mutator, [ Value; Value ], Int)
+      ; "caml_compare", (`Mutator, [ Value; Value ], Int)
       ];
     h
 
@@ -1231,6 +1243,7 @@ module Generate (Target : Target_sig.S) = struct
                         (match repr with
                         | Value -> None
                         | Float -> Some (Number (Float, Unboxed))
+                        | Int -> Some (Int Normalized)
                         | Int32 -> Some (Number (Int32, Unboxed))
                         | Nativeint -> Some (Number (Nativeint, Unboxed))
                         | Int64 -> Some (Number (Int64, Unboxed)))
