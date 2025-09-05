@@ -174,6 +174,10 @@
       (param $ch (ref eq)) (result (ref eq))
       (return_call $isatty (call $caml_channel_descriptor (local.get $ch))))
 
+   (func (export "caml_sys_const_runtime5")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
       (@string ""))
 
