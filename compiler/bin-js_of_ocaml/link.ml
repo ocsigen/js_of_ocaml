@@ -23,7 +23,7 @@ open Cmdliner
 
 type t =
   { common : Jsoo_cmdline.Arg.t
-  ; source_map : Source_map.Encoding_spec.t option
+  ; source_map : (string option * Source_map.Standard.t) option
   ; js_files : string list
   ; output_file : string option
   ; resolve_sourcemap_url : bool
@@ -50,10 +50,6 @@ let options =
   let sourcemap_inline_in_js =
     let doc = "Inline sourcemap in the generated JavaScript." in
     Arg.(value & flag & info [ "source-map-inline" ] ~doc)
-  in
-  let sourcemap_empty =
-    let doc = "Always generate empty source maps." in
-    Arg.(value & flag & info [ "empty-sourcemap"; "empty-source-map" ] ~doc)
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
@@ -87,7 +83,6 @@ let options =
       no_sourcemap
       sourcemap
       sourcemap_inline_in_js
-      sourcemap_empty
       sourcemap_root
       output_file
       resolve_sourcemap_url
@@ -105,19 +100,12 @@ let options =
           | Some file -> Some file, Some (chop_extension file ^ ".map")
           | None -> None, None
         in
-        let source_map =
-          { (Source_map.Standard.empty ~inline_source_content:true) with
-            file
-          ; sourceroot = sourcemap_root
-          }
-        in
-        let spec =
-          { Source_map.Encoding_spec.output_file = sm_output_file
-          ; source_map
-          ; keep_empty = sourcemap_empty
-          }
-        in
-        Some spec
+        Some
+          ( sm_output_file
+          , { (Source_map.Standard.empty ~inline_source_content:true) with
+              file
+            ; sourceroot = sourcemap_root
+            } )
       else None
     in
     `Ok
@@ -138,7 +126,6 @@ let options =
       $ no_sourcemap
       $ sourcemap
       $ sourcemap_inline_in_js
-      $ sourcemap_empty
       $ sourcemap_root
       $ output_file
       $ resolve_sourcemap_url

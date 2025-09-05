@@ -5,11 +5,6 @@ void jsoo_get_bytecode_sections () {
   exit(1);
 }
 
-void jsoo_get_runtime_aliases () {
-  fprintf(stderr, "Unimplemented Javascript primitive jsoo_get_runtime_aliases!\n");
-  exit(1);
-}
-
 void jsoo_toplevel_init_compile () {
   fprintf(stderr, "Unimplemented Javascript primitive jsoo_toplevel_init_compile!\n");
   exit(1);

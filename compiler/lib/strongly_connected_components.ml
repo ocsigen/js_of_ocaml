@@ -16,6 +16,12 @@
 
 open! Stdlib
 
+module IntSet = Set.Make (struct
+  type t = int
+
+  let compare = compare
+end)
+
 module Kosaraju : sig
   type component_graph =
     { sorted_connected_components : int list array
@@ -141,6 +147,12 @@ struct
     | Has_loop of Id.t list
     | No_loop of Id.t
 
+  type numbering =
+    { back : int Id.Map.t
+    ; forth : Id.t array
+    }
+  [@@ocaml.warning "-unused-field"]
+
   let number graph =
     let size = Id.Map.cardinal graph in
     let bindings = Id.Map.bindings graph in
@@ -163,10 +175,10 @@ struct
             dests
             [])
     in
-    forth, integer_graph
+    { back; forth }, integer_graph
 
   let component_graph graph =
-    let forth, integer_graph = number graph in
+    let numbering, integer_graph = number graph in
     let { Kosaraju.sorted_connected_components; component_edges } =
       Kosaraju.component_graph integer_graph
     in
@@ -175,12 +187,12 @@ struct
         match nodes with
         | [] -> assert false
         | [ node ] ->
-            ( (if List.mem ~eq:Int.equal node integer_graph.(node)
-               then Has_loop [ forth.(node) ]
-               else No_loop forth.(node))
+            ( (if List.mem node ~set:integer_graph.(node)
+               then Has_loop [ numbering.forth.(node) ]
+               else No_loop numbering.forth.(node))
             , component_edges.(component) )
         | _ :: _ ->
-            ( Has_loop (List.map ~f:(fun node -> forth.(node)) nodes)
+            ( Has_loop (List.map ~f:(fun node -> numbering.forth.(node)) nodes)
             , component_edges.(component) ))
       sorted_connected_components
 

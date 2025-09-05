@@ -55,30 +55,147 @@ module Alphabet = struct
 end
 
 type t =
-  { known : string Int.Hashtbl.t
+  { names : (int, string) Hashtbl.t
+  ; known : (int, string) Hashtbl.t
+  ; cache : (int * int, string) Hashtbl.t
   ; alphabet : Alphabet.t
   ; mutable last : int
+  ; mutable pretty : bool
+  ; mutable stable : bool
   }
 
-let reserved = String.Hashtbl.create 100
+let name_raw t v nm = Hashtbl.replace t.names v nm
 
-let () = StringSet.iter (fun s -> String.Hashtbl.add reserved s ()) Reserved.keyword
+let merge_name n1 n2 =
+  match n1, n2 with
+  | "", n2 -> n2
+  | n1, "" -> n1
+  | n1, n2 ->
+      if generated_name n1
+      then n2
+      else if generated_name n2
+      then n1
+      else if String.length n1 > String.length n2
+      then n1
+      else n2
 
-let is_reserved s = String.Hashtbl.mem reserved s
+let propagate_name t v v' =
+  try
+    let name = Hashtbl.find t.names v in
+    match Hashtbl.find t.names v' with
+    | exception Not_found -> name_raw t v' name
+    | name' -> name_raw t v' (merge_name name name')
+  with Not_found -> ()
 
-let to_string t i =
-  match Int.Hashtbl.find t.known i with
-  | name -> name
-  | exception Not_found ->
-      let rec loop t i j =
-        let s = Alphabet.to_string t.alphabet j in
+let name t v nm_orig =
+  let len = String.length nm_orig in
+  if len > 0
+  then (
+    let buf = Buffer.create (String.length nm_orig) in
+    let idx = ref 0 in
+    while !idx < len && not (Char.is_letter nm_orig.[!idx]) do
+      incr idx
+    done;
+    let pending = ref false in
+    if !idx >= len
+    then (
+      pending := true;
+      idx := 0);
+    for i = !idx to len - 1 do
+      if Char.is_letter nm_orig.[i] || Char.is_digit nm_orig.[i]
+      then (
+        if !pending then Buffer.add_char buf '_';
+        Buffer.add_char buf nm_orig.[i];
+        pending := false)
+      else pending := true
+    done;
+    let str = Buffer.contents buf in
+    let str =
+      match str, nm_orig with
+      | "", ">>=" -> "symbol_bind"
+      | "", ">>|" -> "symbol_map"
+      | "", "^" -> "symbol_concat"
+      | "", _ -> "symbol"
+      | str, _ -> str
+    in
+    (* protect against large names *)
+    let max_len = 30 in
+    let str =
+      if String.length str > max_len then String.sub str ~pos:0 ~len:max_len else str
+    in
+    name_raw t v str)
+
+let get_name t v = try Some (Hashtbl.find t.names v) with Not_found -> None
+
+let format_var t i x =
+  let s = Alphabet.to_string t.alphabet x in
+  if t.stable
+  then Format.sprintf "v%d" i
+  else if t.pretty
+  then Format.sprintf "_%s_" s
+  else s
+
+let reserved = ref StringSet.empty
+
+let add_reserved s = reserved := StringSet.add s !reserved
+
+let _ = reserved := StringSet.union !reserved Reserved.keyword
+
+let get_reserved () = !reserved
+
+let is_reserved s = StringSet.mem s !reserved
+
+let rec to_string t ?origin i =
+  let origin =
+    match origin with
+    | Some i when t.pretty -> i
+    | _ -> i
+  in
+  try Hashtbl.find t.cache (i, origin)
+  with Not_found ->
+    let name =
+      try Hashtbl.find t.known i
+      with Not_found ->
+        t.last <- t.last + 1;
+        let j = t.last in
+        let s = format_var t i j in
         if is_reserved s
-        then loop t i (j + 1)
+        then to_string t i
         else (
-          Int.Hashtbl.add t.known i s;
-          t.last <- j;
+          Hashtbl.add t.known i s;
           s)
-      in
-      loop t i (t.last + 1)
+    in
+    let name =
+      if t.pretty
+      then
+        try
+          let nm = Hashtbl.find t.names origin in
+          nm ^ name
+        with Not_found -> name
+      else name
+    in
+    Hashtbl.add t.cache (i, origin) name;
+    name
 
-let create alphabet = { known = Int.Hashtbl.create 1001; alphabet; last = -1 }
+let set_pretty t b = t.pretty <- b
+
+let set_stable t b = t.stable <- b
+
+let reset t =
+  Hashtbl.clear t.names;
+  Hashtbl.clear t.known;
+  Hashtbl.clear t.cache;
+  t.last <- -1
+
+let create ?(pretty = false) ?(stable = false) alphabet =
+  let t =
+    { names = Hashtbl.create 107
+    ; known = Hashtbl.create 1001
+    ; cache = Hashtbl.create 1001
+    ; alphabet
+    ; last = -1
+    ; pretty
+    ; stable
+    }
+  in
+  t

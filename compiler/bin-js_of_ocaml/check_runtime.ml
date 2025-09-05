@@ -23,10 +23,10 @@ open Js_of_ocaml_compiler
 let group_by_snd l =
   l
   |> List.sort_uniq ~cmp:(fun (n1, l1) (n2, l2) ->
-         match List.compare ~cmp:String.compare l1 l2 with
+         match Poly.compare l1 l2 with
          | 0 -> String.compare n1 n2
          | c -> c)
-  |> List.group ~f:(fun (_, g1) (_, g2) -> List.equal ~eq:String.equal g1 g2)
+  |> List.group ~f:(fun (_, g1) (_, g2) -> Poly.equal g1 g2)
 
 let print_groups output l =
   List.iter l ~f:(fun group ->
@@ -91,28 +91,14 @@ let f (runtime_files, bytecode, target_env) =
   in
   let needed = StringSet.of_list (List.map ~f:fst needed) in
   let needed =
+    (* this list was copied from parse_bytecode *)
     List.fold_left
       ~f:(fun acc x -> StringSet.remove x acc)
       ~init:needed
-      [ (* this list was copied from parse_bytecode *)
-        "caml_ensure_stack_capacity"
+      [ "caml_ensure_stack_capacity"
       ; "caml_process_pending_actions_with_root"
       ; "caml_make_array"
       ; "caml_array_of_uniform_array"
-      ]
-  in
-  let needed =
-    (* internal primitives *)
-    List.fold_left
-      ~f:(fun acc x -> StringSet.add x acc)
-      ~init:needed
-      [ "caml_register_global"
-      ; "caml_js_set"
-      ; "caml_js_get"
-      ; "caml_get_global_data"
-      ; "caml_oo_cache_id"
-      ; "caml_get_public_method"
-      ; "caml_get_cached_method"
       ]
   in
   let from_runtime1 = Linker.list_all () in

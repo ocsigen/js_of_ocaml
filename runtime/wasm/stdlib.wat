@@ -31,6 +31,7 @@
    (import "obj" "caml_callback_2"
       (func $caml_callback_2
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
+   (import "bindings" "write" (func $write (param i32) (param anyref)))
    (import "string" "caml_string_concat"
       (func $caml_string_concat
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -40,7 +41,6 @@
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
-   (import "bindings" "write" (func $write (param i32) (param anyref)))
    (import "bindings" "exit" (func $exit (param i32)))
 
    (type $block (array (mut (ref eq))))
@@ -197,7 +197,6 @@
 
    (func $caml_main (export "caml_main") (param $start (ref func))
       (local $exn (ref eq))
-      (local $msg (ref eq))
       (try
          (do
             (drop (call_ref $func (ref.cast (ref $func) (local.get $start)))))
@@ -224,14 +223,13 @@
                         (br_on_null $null
                            (call $caml_named_value (global.get $do_at_exit)))
                         (ref.i31 (i32.const 0)))))
-               (local.set $msg
-                  (call $caml_string_concat
-                     (global.get $fatal_error)
-                     (call $caml_string_concat
-                        (call $caml_format_exception (local.get $exn))
-                        (@string "\n"))))
                (call $write (i32.const 2)
                   (call $unwrap
-                     (call $caml_jsstring_of_string (local.get $msg)))))
+                     (call $caml_jsstring_of_string
+                        (call $caml_string_concat
+                           (global.get $fatal_error)
+                           (call $caml_string_concat
+                              (call $caml_format_exception (local.get $exn))
+                              (@string "\n")))))))
             (call $exit (i32.const 2)))))
 )

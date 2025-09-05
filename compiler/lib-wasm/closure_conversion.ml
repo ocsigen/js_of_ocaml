@@ -22,7 +22,6 @@ open Code
 type closure =
   { functions : (Var.t * int) list
   ; free_variables : Var.t list
-  ; mutable id : int option
   }
 
 module SCC = Strongly_connected_components.Make (Var)
@@ -36,15 +35,15 @@ let iter_closures ~f instrs =
         let l = f clos_acc in
         List.rev_map
           ~f:(fun g ->
-            let params, cont, cloc = Var.Map.find g clos_acc in
-            Let (g, Closure (params, cont, cloc)))
+            let params, cont = Var.Map.find g clos_acc in
+            Let (g, Closure (params, cont)))
           l
         @ instr_acc
     in
     match instrs with
     | [] -> List.rev (push_closures clos_acc instr_acc)
-    | Let (g, Closure (params, cont, cloc)) :: rem ->
-        iter_closures_rec f instr_acc (Var.Map.add g (params, cont, cloc) clos_acc) rem
+    | Let (g, Closure (params, cont)) :: rem ->
+        iter_closures_rec f instr_acc (Var.Map.add g (params, cont) clos_acc) rem
     | i :: rem ->
         iter_closures_rec f (i :: push_closures clos_acc instr_acc) Var.Map.empty rem
   in
@@ -80,7 +79,7 @@ let mark_bound_variables var_depth block depth =
   Freevars.iter_block_bound_vars (fun x -> var_depth.(Var.idx x) <- depth) block;
   List.iter block.body ~f:(fun i ->
       match i with
-      | Let (_, Closure (params, _, _)) ->
+      | Let (_, Closure (params, _)) ->
           List.iter params ~f:(fun x -> var_depth.(Var.idx x) <- depth + 1)
       | _ -> ())
 
@@ -94,7 +93,7 @@ let rec traverse var_depth closures program pc depth =
         List.fold_left
           ~f:(fun program i ->
             match i with
-            | Let (_, Closure (_, (pc', _), _)) ->
+            | Let (_, Closure (_, (pc', _))) ->
                 traverse var_depth closures program pc' (depth + 1)
             | _ -> program)
           ~init:program
@@ -104,7 +103,7 @@ let rec traverse var_depth closures program pc depth =
         iter_closures block.body ~f:(fun l ->
             let free_vars =
               Var.Map.fold
-                (fun f (_, (pc', _), _) free_vars ->
+                (fun f (_, (pc', _)) free_vars ->
                   Var.Map.add
                     f
                     (collect_free_vars program var_depth (depth + 1) pc' !closures)
@@ -137,7 +136,7 @@ let rec traverse var_depth closures program pc depth =
                   let functions =
                     let arities =
                       Var.Map.fold
-                        (fun f (params, _, _) m -> Var.Map.add f (List.length params) m)
+                        (fun f (params, _) m -> Var.Map.add f (List.length params) m)
                         l
                         Var.Map.empty
                     in
@@ -145,8 +144,7 @@ let rec traverse var_depth closures program pc depth =
                   in
                   List.iter
                     ~f:(fun (f, _) ->
-                      closures :=
-                        Var.Map.add f { functions; free_variables; id = None } !closures)
+                      closures := Var.Map.add f { functions; free_variables } !closures)
                     functions;
                   fun_lst)
                 components

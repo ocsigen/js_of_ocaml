@@ -107,23 +107,6 @@ type exportable =
   | Global
   | Tag
 
-let heaptype_eq t1 t2 =
-  Stdlib.phys_equal t1 t2
-  ||
-  match t1, t2 with
-  | Type i1, Type i2 -> i1 = i2
-  | _ -> false
-
-let reftype_eq { nullable = n1; typ = t1 } { nullable = n2; typ = t2 } =
-  Bool.(n1 = n2) && heaptype_eq t1 t2
-
-let valtype_eq t1 t2 =
-  Stdlib.phys_equal t1 t2
-  ||
-  match t1, t2 with
-  | Ref t1, Ref t2 -> reftype_eq t1 t2
-  | _ -> false
-
 let rec output_uint ch i =
   if i < 128
   then output_byte ch i
@@ -439,8 +422,8 @@ module Read = struct
     }
 
   type index =
-    { sections : section Int.Hashtbl.t
-    ; custom_sections : section String.Hashtbl.t
+    { sections : (int, section) Hashtbl.t
+    ; custom_sections : (string, section) Hashtbl.t
     }
 
   let next_section ch =
@@ -454,16 +437,14 @@ module Read = struct
   let skip_section ch { pos; size; _ } = seek_in ch (pos + size)
 
   let index ch =
-    let index =
-      { sections = Int.Hashtbl.create 16; custom_sections = String.Hashtbl.create 16 }
-    in
+    let index = { sections = Hashtbl.create 16; custom_sections = Hashtbl.create 16 } in
     let rec loop () =
       match next_section ch with
       | None -> index
       | Some sect ->
           if sect.id = 0
-          then String.Hashtbl.add index.custom_sections (name ch) sect
-          else Int.Hashtbl.add index.sections sect.id sect;
+          then Hashtbl.add index.custom_sections (name ch) sect
+          else Hashtbl.add index.sections sect.id sect;
           skip_section ch sect;
           loop ()
     in
@@ -482,14 +463,14 @@ module Read = struct
     { ch; type_mapping = [||]; type_index_count = 0; index = index ch }
 
   let find_section contents n =
-    match Int.Hashtbl.find contents.index.sections n with
+    match Hashtbl.find contents.index.sections n with
     | { pos; _ } ->
         seek_in contents.ch pos;
         true
     | exception Not_found -> false
 
   let get_custom_section contents name =
-    String.Hashtbl.find_opt contents.index.custom_sections name
+    Hashtbl.find_opt contents.index.custom_sections name
 
   let focus_on_custom_section contents section =
     let pos, limit =
@@ -507,6 +488,23 @@ module Read = struct
     let hash t =
       (* We have large structs, that tend to hash to the same value *)
       Hashtbl.hash_param 15 100 t
+
+    let heaptype_eq t1 t2 =
+      Stdlib.phys_equal t1 t2
+      ||
+      match t1, t2 with
+      | Type i1, Type i2 -> i1 = i2
+      | _ -> false
+
+    let reftype_eq { nullable = n1; typ = t1 } { nullable = n2; typ = t2 } =
+      Bool.(n1 = n2) && heaptype_eq t1 t2
+
+    let valtype_eq t1 t2 =
+      Stdlib.phys_equal t1 t2
+      ||
+      match t1, t2 with
+      | Ref t1, Ref t2 -> reftype_eq t1 t2
+      | _ -> false
 
     let storagetype_eq t1 t2 =
       match t1, t2 with
@@ -1585,11 +1583,11 @@ let check_export_import_types ~subtyping_info ~files i (desc : importdesc) i' im
     match desc, import.desc with
     | Func t, Func t' -> subtype subtyping_info t t'
     | Table { limits; typ }, Table { limits = limits'; typ = typ' } ->
-        check_limits limits limits' && reftype_eq typ typ'
+        check_limits limits limits' && Poly.(typ = typ')
     | Mem limits, Mem limits' -> check_limits limits limits'
     | Global { mut; typ }, Global { mut = mut'; typ = typ' } ->
         Bool.(mut = mut')
-        && if mut then valtype_eq typ typ' else val_subtype subtyping_info typ typ'
+        && if mut then Poly.(typ = typ') else val_subtype subtyping_info typ typ'
     | Tag t, Tag t' -> t = t'
     | _ -> false
   in
@@ -1868,7 +1866,7 @@ let rec resolve
     ~kind
     i
     ({ module_; name; _ } as import) =
-  let i', index = Poly.Hashtbl.find exports (module_, name) in
+  let i', index = Hashtbl.find exports (module_, name) in
   let imports = get_exportable_info intfs.(i').Read.imports kind in
   if index < Array.length imports
   then (
@@ -1913,7 +1911,7 @@ let f files ~output_file =
   add_section out_ch ~id:1 buf;
 
   (* 2: import *)
-  let exports = init_exportable_info (fun _ -> Poly.Hashtbl.create 128) in
+  let exports = init_exportable_info (fun _ -> Hashtbl.create 128) in
   Array.iteri
     ~f:(fun i intf ->
       iter_exportable_info
@@ -1921,14 +1919,14 @@ let f files ~output_file =
           let h = get_exportable_info exports kind in
           List.iter
             ~f:(fun (name, index) ->
-              Poly.Hashtbl.add h (files.(i).module_name, name) (i, index))
+              Hashtbl.add h (files.(i).module_name, name) (i, index))
             lst)
         intf.Read.exports)
     intfs;
   let import_list = ref [] in
   let unresolved_imports = make_exportable_info 0 in
   let resolved_imports =
-    let tbl = Poly.Hashtbl.create 128 in
+    let tbl = Hashtbl.create 128 in
     Array.mapi
       ~f:(fun i intf ->
         map_exportable_info
@@ -1939,12 +1937,12 @@ let f files ~output_file =
                 match resolve 0 ~files ~intfs ~subtyping_info ~exports ~kind i import with
                 | i', idx -> Resolved (i', idx)
                 | exception Not_found -> (
-                    match Poly.Hashtbl.find tbl import with
+                    match Hashtbl.find tbl import with
                     | status -> status
                     | exception Not_found ->
                         let idx = get_exportable_info unresolved_imports kind in
                         let status = Unresolved idx in
-                        Poly.Hashtbl.replace tbl import status;
+                        Hashtbl.replace tbl import status;
                         set_exportable_info unresolved_imports kind (1 + idx);
                         import_list := import :: !import_list;
                         status))
@@ -2151,7 +2149,7 @@ let f files ~output_file =
       intfs
   in
   Write.uint buf export_count;
-  let exports = String.Hashtbl.create 128 in
+  let exports = Hashtbl.create 128 in
   Array.iteri
     ~f:(fun i intf ->
       iter_exportable_info
@@ -2166,7 +2164,7 @@ let f files ~output_file =
           in
           List.iter
             ~f:(fun (name, idx) ->
-              match String.Hashtbl.find exports name with
+              match Hashtbl.find exports name with
               | i' ->
                   failwith
                     (Printf.sprintf
@@ -2175,7 +2173,7 @@ let f files ~output_file =
                        files.(i').file
                        files.(i).file)
               | exception Not_found ->
-                  String.Hashtbl.add exports name i;
+                  Hashtbl.add exports name i;
                   Write.export buf kind name map.(idx))
             lst)
         intf.Read.exports)

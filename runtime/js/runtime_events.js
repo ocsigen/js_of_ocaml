@@ -12,7 +12,7 @@ function caml_runtime_events_user_register(event_name, event_tag, event_type) {
 
 //Provides: caml_runtime_events_user_write
 //Version: >= 5.1
-function caml_runtime_events_user_write(_event, _event_content) {
+function caml_runtime_events_user_write(event, event_content) {
   return 0;
 }
 
@@ -66,19 +66,19 @@ function caml_ml_runtime_events_resume() {
 
 //Provides: caml_runtime_events_create_cursor
 //Version: >= 5.0
-function caml_runtime_events_create_cursor(_target) {
+function caml_runtime_events_create_cursor(target) {
   return {};
 }
 
 //Provides: caml_runtime_events_free_cursor
 //Version: >= 5.0
-function caml_runtime_events_free_cursor(_cursor) {
+function caml_runtime_events_free_cursor(cursor) {
   return 0;
 }
 
 //Provides: caml_runtime_events_read_poll
 //Version: >= 5.0
-function caml_runtime_events_read_poll(_cursor, _callbacks, _num) {
+function caml_runtime_events_read_poll(cursor, callbacks, num) {
   return 0;
 }
 

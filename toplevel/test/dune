@@ -27,8 +27,6 @@
    --toplevel
    --disable
    shortvar
-   -w
-   no-missing-effects-backend
    %{dep:test_toplevel1.bc}
    -o
    %{targets})))
@@ -42,8 +40,6 @@
    --no-cmis
    --disable
    shortvar
-   -w
-   no-missing-effects-backend
    %{dep:test_toplevel2.bc}
    -o
    %{targets})))

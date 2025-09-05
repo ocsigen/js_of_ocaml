@@ -31,17 +31,31 @@ let times = Debug.find "times"
 
 open Code
 
-module VarPairTbl = Hashtbl.Make (struct
-  type t = Var.t * Var.t
+(****)
 
-  let hash (a, b) = Var.idx a + Var.idx b
-
-  let equal (a, b) (c, d) = Var.equal a c && Var.equal b d
-end)
-
-let associated_list h x = try Var.Hashtbl.find h x with Not_found -> []
-
-let add_to_list h x v = Var.Hashtbl.replace h x (v :: associated_list h x)
+(* Compute the list of variables containing the return values of each
+   function *)
+let return_values p =
+  Code.fold_closures
+    p
+    (fun name_opt _ (pc, _) rets ->
+      match name_opt with
+      | None -> rets
+      | Some name ->
+          let s =
+            Code.traverse
+              { fold = fold_children }
+              (fun pc s ->
+                let block = Addr.Map.find pc p.blocks in
+                match block.branch with
+                | Return x -> Var.Set.add x s
+                | _ -> s)
+              pc
+              p.blocks
+              Var.Set.empty
+          in
+          Var.Map.add name s rets)
+    Var.Map.empty
 
 (****)
 
@@ -53,56 +67,46 @@ type def =
   | Phi of
       { known : Var.Set.t (* Known arguments *)
       ; others : bool (* Can there be other arguments *)
-      ; unit : bool (* Whether we are propagating unit (used for typing) *)
       }
 
-let undefined = Phi { known = Var.Set.empty; others = false; unit = false }
+let undefined = Phi { known = Var.Set.empty; others = false }
 
 let is_undefined d =
   match d with
   | Expr _ -> false
-  | Phi { known; others; unit } -> Var.Set.is_empty known && (not others) && not unit
+  | Phi { known; others } -> Var.Set.is_empty known && not others
 
 type escape_status =
   | Escape
   | Escape_constant (* Escapes but we know the value is not modified *)
   | No
 
-type mutable_fields =
-  | No_field
-  | Some_fields of IntSet.t
-  | All_fields
-
 type state =
   { vars : Var.ISet.t (* Set of all veriables considered *)
-  ; deps : Var.t list Var.Tbl.t (* Dependency between variables *)
+  ; deps : Var.t Var.Tbl.DataSet.t Var.Tbl.t (* Dependency between variables *)
   ; defs : def array (* Definition of each variable *)
   ; variable_may_escape : escape_status array
         (* Any value bound to this variable may escape *)
-  ; variable_mutable_fields : mutable_fields array
+  ; variable_possibly_mutable : Var.ISet.t
         (* Any value bound to this variable may be mutable *)
   ; may_escape : escape_status array (* This value may escape *)
-  ; mutable_fields : mutable_fields array (* This value may be mutable *)
+  ; possibly_mutable : Var.ISet.t (* This value may be mutable *)
   ; return_values : Var.Set.t Var.Map.t
         (* Set of variables holding return values of each function *)
-  ; functions_from_returned_value : Var.t list Var.Hashtbl.t
-        (* Functions associated to each return value *)
-  ; known_cases : int list Var.Hashtbl.t
+  ; known_cases : (Var.t, int list) Hashtbl.t
         (* Possible tags for a block after a [switch]. This is used to
            get a more precise approximation of the effect of a field
            access [Field] *)
-  ; applied_functions : unit VarPairTbl.t
+  ; applied_functions : (Var.t * Var.t, unit) Hashtbl.t
         (* Functions that have been already considered at a call site.
            This is to avoid repeated computations *)
-  ; function_call_sites : Var.t list Var.Hashtbl.t
-        (* Known call sites of each functions *)
   ; fast : bool
   }
 
 let add_var st x = Var.ISet.add st.vars x
 
 (* x depends on y *)
-let add_dep st x y = Var.Tbl.set st.deps y (x :: Var.Tbl.get st.deps y)
+let add_dep st x y = Var.Tbl.add_set st.deps y x
 
 let add_expr_def st x e =
   add_var st x;
@@ -116,22 +120,13 @@ let add_assign_def st x y =
   let idx = Var.idx x in
   match st.defs.(idx) with
   | Expr _ -> assert false
-  | Phi { known; others; unit } ->
-      st.defs.(idx) <- Phi { known = Var.Set.add y known; others; unit }
-
-let add_unit_def st x =
-  add_var st x;
-  let idx = Var.idx x in
-  match st.defs.(idx) with
-  | Expr _ -> assert false
-  | Phi { known; others; _ } -> st.defs.(idx) <- Phi { known; others; unit = true }
+  | Phi { known; others } -> st.defs.(idx) <- Phi { known = Var.Set.add y known; others }
 
 let add_param_def st x =
   add_var st x;
   let idx = Var.idx x in
   assert (is_undefined st.defs.(idx));
-  if st.fast
-  then st.defs.(idx) <- Phi { known = Var.Set.empty; others = true; unit = false }
+  if st.fast then st.defs.(idx) <- Phi { known = Var.Set.empty; others = true }
 
 let rec arg_deps st ?ignore params args =
   match params, args with
@@ -139,7 +134,7 @@ let rec arg_deps st ?ignore params args =
       (* This is to deal with the [else] clause of a conditional,
          where we know that the value of the tested variable is 0. *)
       (match ignore with
-      | Some y' when Var.equal y y' -> add_unit_def st x
+      | Some y' when Var.equal y y' -> ()
       | _ -> add_assign_def st x y);
       arg_deps st params args
   | [], [] -> ()
@@ -151,14 +146,7 @@ let cont_deps blocks st ?ignore (pc, args) =
 
 let do_escape st level x = st.variable_may_escape.(Var.idx x) <- level
 
-let possibly_mutable st x = st.variable_mutable_fields.(Var.idx x) <- All_fields
-
-let field_possibly_mutable st x n =
-  match st.variable_mutable_fields.(Var.idx x) with
-  | No_field -> st.variable_mutable_fields.(Var.idx x) <- Some_fields (IntSet.singleton n)
-  | Some_fields s ->
-      st.variable_mutable_fields.(Var.idx x) <- Some_fields (IntSet.add n s)
-  | All_fields -> ()
+let possibly_mutable st x = Var.ISet.add st.variable_possibly_mutable x
 
 let expr_deps blocks st x e =
   match e with
@@ -233,14 +221,14 @@ let expr_deps blocks st x e =
          dependencies right now. This speeds up the analysis
          significantly. *)
       match st.defs.(Var.idx f) with
-      | Expr (Closure (params, _, _)) when List.compare_lengths args params = 0 ->
-          VarPairTbl.add st.applied_functions (x, f) ();
-          add_to_list st.function_call_sites f x;
+      | Expr (Closure (params, _)) when List.length args = List.length params ->
+          Hashtbl.add st.applied_functions (x, f) ();
           if st.fast
           then List.iter ~f:(fun a -> do_escape st Escape a) args
-          else List.iter2 ~f:(fun p a -> add_assign_def st p a) params args
+          else List.iter2 ~f:(fun p a -> add_assign_def st p a) params args;
+          Var.Set.iter (fun y -> add_dep st x y) (Var.Map.find f st.return_values)
       | _ -> ())
-  | Closure (l, cont, _) ->
+  | Closure (l, cont) ->
       List.iter l ~f:(fun x -> add_param_def st x);
       cont_deps blocks st cont
   | Field (y, _, _) -> add_dep st x y
@@ -263,10 +251,7 @@ let program_deps st { start; blocks; _ } =
               add_expr_def st x e;
               expr_deps blocks st x e
           | Assign (x, y) -> add_assign_def st x y
-          | Set_field (x, n, _, y) ->
-              field_possibly_mutable st x n;
-              do_escape st Escape y
-          | Array_set (x, _, y) ->
+          | Set_field (x, _, _, y) | Array_set (x, _, y) ->
               possibly_mutable st x;
               do_escape st Escape y
           | Event _ | Offset_ref _ -> ());
@@ -287,28 +272,27 @@ let program_deps st { start; blocks; _ } =
                increasing order *)
             match st.defs.(Code.Var.idx x) with
             | Expr (Prim (Extern "%direct_obj_tag", [ Pv b ])) ->
-                let h = Addr.Hashtbl.create 16 in
+                let h = Hashtbl.create 16 in
                 Array.iteri a1 ~f:(fun i (pc, _) ->
-                    Addr.Hashtbl.replace
+                    Hashtbl.replace
                       h
                       pc
-                      (i :: (try Addr.Hashtbl.find h pc with Not_found -> [])));
-                Addr.Hashtbl.iter
+                      (i :: (try Hashtbl.find h pc with Not_found -> [])));
+                Hashtbl.iter
                   (fun pc tags ->
                     let block = Addr.Map.find pc blocks in
                     List.iter
                       ~f:(fun i ->
                         match i with
                         | Let (y, Field (x', _, _)) when Var.equal b x' ->
-                            Var.Hashtbl.add st.known_cases y tags
+                            Hashtbl.add st.known_cases y tags
                         | _ -> ())
                       block.body)
                   h
             | Expr _ | Phi _ -> ())
       | Pushtrap (cont, x, cont_h) ->
           add_var st x;
-          st.defs.(Var.idx x) <-
-            Phi { known = Var.Set.empty; others = true; unit = false };
+          st.defs.(Var.idx x) <- Phi { known = Var.Set.empty; others = true };
           cont_deps blocks st cont_h;
           cont_deps blocks st cont)
     blocks
@@ -360,15 +344,14 @@ module Domain = struct
           Array.iter ~f:(fun y -> variable_escape ~update ~st ~approx s y) a;
           match s, mut with
           | Escape, Maybe_mutable ->
-              st.mutable_fields.(Var.idx x) <- All_fields;
+              Var.ISet.add st.possibly_mutable x;
               update ~children:true x
           | (Escape_constant | No), _ | Escape, Immutable -> ())
-      | Expr (Closure (params, _, _)) ->
+      | Expr (Closure (params, _)) ->
           List.iter
             ~f:(fun y ->
               (match st.defs.(Var.idx y) with
-              | Phi { known; _ } ->
-                  st.defs.(Var.idx y) <- Phi { known; others = true; unit = false }
+              | Phi { known; _ } -> st.defs.(Var.idx y) <- Phi { known; others = true }
               | Expr _ -> assert false);
               update ~children:false y)
             params;
@@ -406,28 +389,18 @@ module Domain = struct
       s
       (if o then others else bot)
 
-  let mark_mutable ~update ~st a mutable_fields =
+  let mark_mutable ~update ~st a =
     match a with
     | Top -> ()
     | Values { known; _ } ->
         Var.Set.iter
           (fun x ->
             match st.defs.(Var.idx x) with
-            | Expr (Block (_, _, _, Maybe_mutable)) -> (
-                match st.mutable_fields.(Var.idx x), mutable_fields with
-                | _, No_field -> ()
-                | No_field, _ ->
-                    st.mutable_fields.(Var.idx x) <- mutable_fields;
-                    update ~children:true x
-                | Some_fields s, Some_fields s' ->
-                    if IntSet.exists (fun i -> not (IntSet.mem i s)) s'
-                    then (
-                      st.mutable_fields.(Var.idx x) <- Some_fields (IntSet.union s s');
-                      update ~children:true x)
-                | Some_fields _, All_fields ->
-                    st.mutable_fields.(Var.idx x) <- All_fields;
-                    update ~children:true x
-                | All_fields, _ -> ())
+            | Expr (Block (_, _, _, Maybe_mutable)) ->
+                if not (Var.ISet.mem st.possibly_mutable x)
+                then (
+                  Var.ISet.add st.possibly_mutable x;
+                  update ~children:true x)
             | Expr (Block (_, _, _, Immutable)) | Expr (Closure _) -> ()
             | Phi _ | Expr _ -> assert false)
           known
@@ -435,7 +408,7 @@ end
 
 let propagate st ~update approx x =
   match st.defs.(Var.idx x) with
-  | Phi { known; others; _ } ->
+  | Phi { known; others } ->
       Domain.join_set ~update ~st ~approx ~others (fun y -> Var.Tbl.get approx y) known
   | Expr e -> (
       match e with
@@ -447,7 +420,7 @@ let propagate st ~update approx x =
           match Var.Tbl.get approx y with
           | Values { known; others } ->
               let tags =
-                try Some (Var.Hashtbl.find st.known_cases x) with Not_found -> None
+                try Some (Hashtbl.find st.known_cases x) with Not_found -> None
               in
               Domain.join_set
                 ~others
@@ -460,15 +433,10 @@ let propagate st ~update approx x =
                     when n < Array.length a
                          &&
                          match tags with
-                         | Some tags -> List.mem ~eq:Int.equal t tags
+                         | Some tags -> List.memq t ~set:tags
                          | None -> true ->
                       let t = a.(n) in
-                      let m =
-                        match st.mutable_fields.(Var.idx z) with
-                        | No_field -> false
-                        | Some_fields s -> IntSet.mem n s
-                        | All_fields -> true
-                      in
+                      let m = Var.ISet.mem st.possibly_mutable z in
                       if not m then add_dep st x z;
                       add_dep st x t;
                       let a = Var.Tbl.get approx t in
@@ -496,11 +464,7 @@ let propagate st ~update approx x =
                   (fun z ->
                     match st.defs.(Var.idx z) with
                     | Expr (Block (_, lst, _, _)) ->
-                        let m =
-                          match st.mutable_fields.(Var.idx z) with
-                          | No_field -> false
-                          | Some_fields _ | All_fields -> true
-                        in
+                        let m = Var.ISet.mem st.possibly_mutable z in
                         if not m then add_dep st x z;
                         Array.iter ~f:(fun t -> add_dep st x t) lst;
                         let a =
@@ -537,12 +501,11 @@ let propagate st ~update approx x =
                 ~others
                 (fun g ->
                   match st.defs.(Var.idx g) with
-                  | Expr (Closure (params, _, _))
-                    when List.compare_lengths args params = 0 ->
-                      if not (VarPairTbl.mem st.applied_functions (x, g))
+                  | Expr (Closure (params, _)) when List.length args = List.length params
+                    ->
+                      if not (Hashtbl.mem st.applied_functions (x, g))
                       then (
-                        VarPairTbl.add st.applied_functions (x, g) ();
-                        add_to_list st.function_call_sites g x;
+                        Hashtbl.add st.applied_functions (x, g) ();
                         if st.fast
                         then
                           List.iter
@@ -555,15 +518,18 @@ let propagate st ~update approx x =
                               add_assign_def st p a;
                               update ~children:false p)
                             params
-                            args);
+                            args;
+                        Var.Set.iter
+                          (fun y -> add_dep st x y)
+                          (Var.Map.find g st.return_values));
                       Domain.join_set
                         ~update
                         ~st
                         ~approx
                         (fun y -> Var.Tbl.get approx y)
                         (Var.Map.find g st.return_values)
-                  | Expr (Closure (_, _, _)) ->
-                      (* The function is partially applied or over applied *)
+                  | Expr (Closure (_, _)) ->
+                      (* The funciton is partially applied or over applied *)
                       List.iter
                         ~f:(fun y -> Domain.variable_escape ~update ~st ~approx Escape y)
                         args;
@@ -594,9 +560,8 @@ let propagate st ~update approx x =
       (match st.variable_may_escape.(Var.idx x) with
       | (Escape | Escape_constant) as s -> Domain.approx_escape ~update ~st ~approx s res
       | No -> ());
-      (match st.variable_mutable_fields.(Var.idx x) with
-      | No_field -> ()
-      | (Some_fields _ | All_fields) as s -> Domain.mark_mutable ~update ~st res s);
+      if Var.ISet.mem st.variable_possibly_mutable x
+      then Domain.mark_mutable ~update ~st res;
       res
   | Top -> Top
 
@@ -634,11 +599,7 @@ let solver st =
   let g =
     { G.domain = st.vars
     ; G.iter_children =
-        (fun f x ->
-          List.iter ~f (Var.Tbl.get st.deps x);
-          List.iter
-            ~f:(fun g -> List.iter ~f (associated_list st.function_call_sites g))
-            (associated_list st.functions_from_returned_value x))
+        (fun f x -> Var.Tbl.DataSet.iter (fun k -> f k) (Var.Tbl.get st.deps x))
     }
   in
   let res = Solver.f' () g (propagate st) in
@@ -671,30 +632,24 @@ let f ~fast p =
   let rets = return_values p in
   let nv = Var.count () in
   let vars = Var.ISet.empty () in
-  let deps = Var.Tbl.make () [] in
+  let deps = Var.Tbl.make_set () in
   let defs = Array.make nv undefined in
   let variable_may_escape = Array.make nv No in
-  let variable_mutable_fields = Array.make nv No_field in
+  let variable_possibly_mutable = Var.ISet.empty () in
   let may_escape = Array.make nv No in
-  let mutable_fields = Array.make nv No_field in
-  let functions_from_returned_value = Var.Hashtbl.create 128 in
-  Var.Map.iter
-    (fun f s -> Var.Set.iter (fun x -> add_to_list functions_from_returned_value x f) s)
-    rets;
+  let possibly_mutable = Var.ISet.empty () in
   let st =
     { vars
     ; deps
     ; defs
     ; return_values = rets
-    ; functions_from_returned_value
     ; variable_may_escape
-    ; variable_mutable_fields
+    ; variable_possibly_mutable
     ; may_escape
-    ; mutable_fields
-    ; known_cases = Var.Hashtbl.create 16
-    ; applied_functions = VarPairTbl.create 16
+    ; possibly_mutable
+    ; known_cases = Hashtbl.create 16
+    ; applied_functions = Hashtbl.create 16
     ; fast
-    ; function_call_sites = Var.Hashtbl.create 128
     }
   in
   program_deps st p;
@@ -719,28 +674,13 @@ let f ~fast p =
               match a with
               | Top -> Format.fprintf f "top"
               | Values _ ->
-                  let print_mutable_fields f s =
-                    match s with
-                    | No_field -> Format.fprintf f "no"
-                    | Some_fields s ->
-                        Format.fprintf
-                          f
-                          "{%a}"
-                          (Format.pp_print_list
-                             ~pp_sep:(fun f () -> Format.fprintf f ", ")
-                             (fun f i -> Format.fprintf f "%d" i))
-                          (IntSet.elements s)
-                    | All_fields -> Format.fprintf f "yes"
-                  in
                   Format.fprintf
                     f
-                    "%a mut:%a vmut:%a vesc:%s esc:%s"
+                    "%a mut:%b vmut:%b vesc:%s esc:%s"
                     (print_approx st)
                     a
-                    print_mutable_fields
-                    st.mutable_fields.(Var.idx x)
-                    print_mutable_fields
-                    st.variable_mutable_fields.(Var.idx x)
+                    (Var.ISet.mem st.possibly_mutable x)
+                    (Var.ISet.mem st.variable_possibly_mutable x)
                     (match st.variable_may_escape.(Var.idx x) with
                     | Escape -> "Y"
                     | Escape_constant -> "y"
@@ -754,18 +694,14 @@ let f ~fast p =
   let info_variable_may_escape = variable_may_escape in
   let info_may_escape = Var.ISet.empty () in
   Array.iteri
-    ~f:(fun i s ->
-      match s with
-      | Escape_constant | Escape -> Var.ISet.add info_may_escape (Var.of_idx i)
-      | No -> ())
+    ~f:(fun i s -> if Poly.(s <> No) then Var.ISet.add info_may_escape (Var.of_idx i))
     may_escape;
-  ( st
-  , { info_defs = defs
-    ; info_approximation = approximation
-    ; info_variable_may_escape
-    ; info_may_escape
-    ; info_return_vals = rets
-    } )
+  { info_defs = defs
+  ; info_approximation = approximation
+  ; info_variable_may_escape
+  ; info_may_escape
+  ; info_return_vals = rets
+  }
 
 let exact_call info f n =
   match Var.Tbl.get info.info_approximation f with
@@ -774,39 +710,10 @@ let exact_call info f n =
       Var.Set.for_all
         (fun g ->
           match info.info_defs.(Var.idx g) with
-          | Expr (Closure (params, _, _)) -> List.compare_length_with params ~len:n = 0
+          | Expr (Closure (params, _)) -> List.length params = n
           | Expr (Block _) -> true
           | Expr _ | Phi _ -> assert false)
         known
-
-let get_unique_closure info f =
-  (* The specialize pass can create knew functions *)
-  if Var.idx f >= Var.Tbl.length info.info_approximation
-  then None
-  else
-    match Var.Tbl.get info.info_approximation f with
-    | Top | Values { others = true; _ } -> None
-    | Values { known; others = false } -> (
-        match
-          Var.Set.fold
-            (fun g acc ->
-              match info.info_defs.(Var.idx g) with
-              | Expr (Closure _) -> (
-                  match acc with
-                  | None -> Some (Some g)
-                  | Some (Some _) -> Some None
-                  | Some None -> acc)
-              | Expr (Block _) -> acc
-              | Expr _ | Phi _ -> assert false)
-            known
-            None
-        with
-        | None -> None
-        | Some kind -> kind)
-
-let update_def info x expr =
-  let idx = Code.Var.idx x in
-  info.info_defs.(idx) <- Expr expr
 
 let function_arity info f =
   match Var.Tbl.get info.info_approximation f with
@@ -816,7 +723,7 @@ let function_arity info f =
         Var.Set.fold
           (fun g acc ->
             match info.info_defs.(Var.idx g) with
-            | Expr (Closure (params, _, _)) -> (
+            | Expr (Closure (params, _)) -> (
                 let n = List.length params in
                 match acc with
                 | None -> Some (Some n)

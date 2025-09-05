@@ -141,7 +141,7 @@ type t =
 
 val to_string : t -> string
 
-val to_file : ?rewrite_paths:bool -> t -> string -> unit
+val to_file : t -> string -> unit
 
 val of_string : ?tmp_buf:Buffer.t -> string -> t
 
@@ -156,12 +156,3 @@ type info =
   ; sources : string list
   ; names : string list
   }
-
-module Encoding_spec : sig
-  type t =
-    { output_file : string option  (** Source map file ([None] means generate inline. *)
-    ; source_map : Standard.t  (** Source map to extend. *)
-    ; keep_empty : bool
-          (** Don't add anything to the source map (for js_of_ocaml's "empty sourcemap" option. *)
-    }
-end

@@ -3,8 +3,7 @@
  (libraries js_of_ocaml-lwt)
  (modes js wasm)
  (js_of_ocaml
-  (compilation_mode separate)
-  (build_runtime_flags
+  (flags
    :standard
    --file
    %{dep:image_info.json}

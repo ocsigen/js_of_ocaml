@@ -34,8 +34,6 @@ module Num : sig
 
   val to_targetint : t -> Targetint.t
 
-  val hash : t -> int
-
   (** Predicates *)
 
   val is_zero : t -> bool
@@ -43,8 +41,6 @@ module Num : sig
   val is_one : t -> bool
 
   val is_neg : t -> bool
-
-  val equal : t -> t -> bool
 
   (** Arithmetic *)
 
@@ -138,10 +134,6 @@ end = struct
 
   let is_neg s = Char.equal s.[0] '-'
 
-  let equal a b = String.equal a b
-
-  let hash a = String.hash a
-
   let neg s =
     match String.drop_prefix s ~prefix:"-" with
     | None -> "-" ^ s
@@ -158,12 +150,6 @@ module Label = struct
   let fresh () = L (Code.Var.fresh ())
 
   let of_string s = S s
-
-  let equal a b =
-    match a, b with
-    | L x, L y -> Code.Var.equal x y
-    | S s, S t -> Utf8_string.equal s t
-    | L _, S _ | S _, L _ -> false
 end
 
 type location =
@@ -523,8 +509,6 @@ let ident ?(loc = N) ?var (Utf8_string.Utf8 n as name) =
   if not (is_ident' name) then failwith (Printf.sprintf "%s not a valid ident" n);
   S { name; var; loc }
 
-let ident_equal (a : ident) b = Poly.equal a b
-
 let param' id = BindingIdent id, None
 
 let param ?loc ?var name = param' (ident ?loc ?var name)
@@ -635,5 +619,3 @@ and assignment_target_of_expr op x =
   match op with
   | None | Some Eq -> assignment_target_of_expr' x
   | _ -> x
-
-let location_equal (a : location) b = Poly.equal a b

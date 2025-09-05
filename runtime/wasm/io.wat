@@ -53,6 +53,10 @@
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
    (import "bindings" "ta_copy"
       (func $ta_copy (param (ref extern)) (param i32) (param i32) (param i32)))
+   (import "bindings" "ta_set_ui8"
+      (func $ta_set_ui8 (param (ref extern)) (param i32) (param i32))) ;; ZZZ ??
+   (import "bindings" "ta_get_ui8"
+      (func $ta_get_ui8 (param (ref extern)) (param i32) (result i32)))
    (import "bindings" "ta_blit_from_bytes"
       (func $ta_blit_from_bytes
          (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
@@ -66,16 +70,6 @@
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
    (import "bindings" "ta_set"
       (func $ta_set (param (ref extern)) (param (ref extern)) (param i32)))
-   (import "bindings" "dv_make"
-      (func $dv_make (param (ref extern)) (result (ref extern))))
-   (import "bindings" "dv_get_ui8"
-      (func $dv_get_ui8 (param externref i32) (result i32)))
-   (import "bindings" "dv_set_i8"
-      (func $dv_set_i8 (param externref i32 i32)))
-   (import "fail" "javascript_exception"
-      (tag $javascript_exception (param externref)))
-   (import "sys" "caml_handle_sys_error"
-      (func $caml_handle_sys_error (param externref)))
    (import "custom" "custom_compare_id"
       (func $custom_compare_id
         (param (ref eq)) (param (ref eq)) (param i32) (result i32)))
@@ -86,6 +80,10 @@
       (func $caml_copy_int64 (param i64) (result (ref eq))))
    (import "int64" "Int64_val"
       (func $Int64_val (param (ref eq)) (result i64)))
+   (import "fail" "javascript_exception"
+      (tag $javascript_exception (param externref)))
+   (import "sys" "caml_handle_sys_error"
+      (func $caml_handle_sys_error (param externref)))
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
 
@@ -98,25 +96,6 @@
          (param (ref extern)) (param i32) (param (ref $fd_offset))))
    (import "bindings" "map_delete"
       (func $map_delete (param (ref extern)) (param i32)))
-
-   (func $ta_blit_from_buffer
-      (param $buf (ref extern)) (param $i i32)
-      (param $ta (ref extern)) (param $j i32)
-      (param $len i32)
-      (call $ta_set
-         (local.get $ta)
-         (call $ta_subarray (local.get $buf) (local.get $i)
-            (i32.add (local.get $i) (local.get $len)))
-         (local.get $j)))
-
-   (func $ta_blit_to_buffer
-      (param $ta (ref extern)) (param $i i32)
-      (param $buf (ref extern)) (param $j i32)
-      (param $len i32)
-      (call $ta_set (local.get $buf)
-         (call $ta_subarray (local.get $ta) (local.get $i)
-            (i32.add (local.get $i) (local.get $len)))
-         (local.get $j)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -166,7 +145,6 @@
             (field i64)
             (field $fd (mut i32))
             (field $buffer (mut (ref extern)))
-            (field $buffer_view (mut (ref extern)))
             (field $curr (mut i32))
             (field $max (mut i32))
             (field $size (mut i32))
@@ -282,9 +260,6 @@
             (call $caml_handle_sys_error (pop externref))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_sys_io_buffer_size") (param (ref eq)) (result (ref eq))
-      (ref.i31 (global.get $IO_BUFFER_SIZE)))
-
    (func (export "caml_ml_set_channel_name")
       (param (ref eq)) (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
@@ -295,14 +270,11 @@
 
    (func (export "caml_ml_open_descriptor_in")
       (param $fd (ref eq)) (result (ref eq))
-      (local $buffer (ref extern))
-      (local.set $buffer (call $ta_new (global.get $IO_BUFFER_SIZE)))
       (struct.new $channel
          (global.get $channel_ops)
          (call $custom_next_id)
          (i31.get_u (ref.cast (ref i31) (local.get $fd)))
-         (local.get $buffer)
-         (call $dv_make (local.get $buffer))
+         (call $ta_new (global.get $IO_BUFFER_SIZE))
          (i32.const 0)
          (i32.const 0)
          (global.get $IO_BUFFER_SIZE)
@@ -314,15 +286,12 @@
    (func (export "caml_ml_open_descriptor_out")
       (param $fd (ref eq)) (result (ref eq))
       (local $res (ref eq))
-      (local $buffer (ref extern))
-      (local.set $buffer (call $ta_new (global.get $IO_BUFFER_SIZE)))
       (local.set $res
          (struct.new $channel
             (global.get $channel_ops)
             (call $custom_next_id)
             (i31.get_u (ref.cast (ref i31) (local.get $fd)))
-            (local.get $buffer)
-            (call $dv_make (local.get $buffer))
+            (call $ta_new (global.get $IO_BUFFER_SIZE))
             (i32.const 0)
             (i32.const -1)
             (global.get $IO_BUFFER_SIZE)
@@ -413,8 +382,8 @@
 
    (func $caml_refill (param $ch (ref $channel)) (result i32)
       (local $n i32)
-      (local $view (ref extern))
-      (local.set $view (struct.get $channel $buffer_view (local.get $ch)))
+      (local $buf (ref extern))
+      (local.set $buf (struct.get $channel $buffer (local.get $ch)))
       (local.set $n
          (call $caml_do_read (local.get $ch)
             (i32.const 0) (struct.get $channel $size (local.get $ch))))
@@ -422,7 +391,7 @@
          (then (call $caml_raise_end_of_file)))
       (struct.set $channel $max (local.get $ch) (local.get $n))
       (struct.set $channel $curr (local.get $ch) (i32.const 1))
-      (return (call $dv_get_ui8 (local.get $view) (i32.const 0))))
+      (return (call $ta_get_ui8 (local.get $buf) (i32.const 0))))
 
    (func $caml_getblock (export "caml_getblock")
       (param $vch (ref eq)) (param $s (ref $bytes))
@@ -481,12 +450,12 @@
          (then
             (if (i32.gt_u (local.get $len) (local.get $avail))
                (then (local.set $len (local.get $avail))))
-            (call $ta_blit_from_buffer
-               (struct.get $channel $buffer (local.get $ch))
-               (struct.get $channel $curr (local.get $ch))
-               (local.get $d)
-               (local.get $pos)
-               (local.get $len))
+            (call $ta_set (local.get $d)
+               (call $ta_subarray (struct.get $channel $buffer (local.get $ch))
+                  (struct.get $channel $curr (local.get $ch))
+                  (i32.add (struct.get $channel $curr (local.get $ch))
+                     (local.get $len)))
+               (local.get $pos))
             (struct.set $channel $curr (local.get $ch)
                (i32.add (struct.get $channel $curr (local.get $ch))
                   (local.get $len)))
@@ -497,12 +466,10 @@
       (struct.set $channel $max (local.get $ch) (local.get $nread))
       (if (i32.gt_u (local.get $len) (local.get $nread))
          (then (local.set $len (local.get $nread))))
-      (call $ta_blit_from_buffer
-         (struct.get $channel $buffer (local.get $ch))
-         (i32.const 0)
-         (local.get $d)
-         (local.get $pos)
-         (local.get $len))
+      (call $ta_set (local.get $d)
+         (call $ta_subarray (struct.get $channel $buffer (local.get $ch))
+            (i32.const 0) (local.get $len))
+         (local.get $pos))
       (struct.set $channel $curr (local.get $ch) (local.get $len))
       (local.get $len))
 
@@ -568,8 +535,8 @@
          (then (return_call $caml_refill (local.get $ch))))
       (struct.set $channel $curr (local.get $ch)
          (i32.add (local.get $curr) (i32.const 1)))
-      (return_call $dv_get_ui8
-         (struct.get $channel $buffer_view (local.get $ch))
+      (return_call $ta_get_ui8
+         (struct.get $channel $buffer (local.get $ch))
          (local.get $curr)))
 
    (func (export "caml_ml_input_char")
@@ -597,7 +564,10 @@
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (ref.i31
          (i32.sub
-            (i32.wrap_i64 (call $caml_ml_get_channel_offset (local.get $ch)))
+            (i32.wrap_i64
+               (struct.get $fd_offset $offset
+                  (call $get_fd_offset
+                     (struct.get $channel $fd (local.get $ch)))))
             (i32.sub
               (struct.get $channel $max (local.get $ch))
               (struct.get $channel $curr (local.get $ch))))))
@@ -607,7 +577,10 @@
       (local $ch (ref $channel))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_copy_int64
-         (i64.sub (call $caml_ml_get_channel_offset (local.get $ch))
+         (i64.sub
+            (struct.get $fd_offset $offset
+               (call $get_fd_offset
+                  (struct.get $channel $fd (local.get $ch))))
             (i64.extend_i32_s
                (i32.sub
                   (struct.get $channel $max (local.get $ch))
@@ -619,7 +592,10 @@
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (ref.i31
          (i32.add
-            (i32.wrap_i64 (call $caml_ml_get_channel_offset (local.get $ch)))
+            (i32.wrap_i64
+               (struct.get $fd_offset $offset
+                  (call $get_fd_offset
+                     (struct.get $channel $fd (local.get $ch)))))
             (struct.get $channel $curr (local.get $ch)))))
 
    (func (export "caml_ml_pos_out_64")
@@ -627,7 +603,10 @@
       (local $ch (ref $channel))
       (local.set $ch (ref.cast (ref $channel) (local.get $vch)))
       (call $caml_copy_int64
-         (i64.add (call $caml_ml_get_channel_offset (local.get $ch))
+         (i64.add
+            (struct.get $fd_offset $offset
+               (call $get_fd_offset
+                  (struct.get $channel $fd (local.get $ch))))
             (i64.extend_i32_s (struct.get $channel $curr (local.get $ch))))))
 
    (func $caml_seek_in
@@ -750,8 +729,7 @@
                    (i32.add (struct.get $channel $max (local.get $ch))
                       (local.get $n)))))
          (if (i32.eq (i32.const 10) ;; '\n'
-               (call $dv_get_ui8
-                  (struct.get $channel $buffer_view (local.get $ch))
+               (call $ta_get_ui8 (struct.get $channel $buffer (local.get $ch))
                   (local.get $p)))
             (then
                (return
@@ -859,10 +837,10 @@
       (if (i32.ge_u (local.get $len) (local.get $free))
          (then (local.set $len (local.get $free))))
       (local.set $buf (struct.get $channel $buffer (local.get $ch)))
-      (call $ta_blit_to_buffer
-         (local.get $d) (local.get $pos)
-         (local.get $buf) (local.get $curr)
-         (local.get $len))
+      (call $ta_set (local.get $buf)
+         (call $ta_subarray (local.get $d)
+            (local.get $pos) (i32.add (local.get $pos) (local.get $len)))
+         (local.get $curr))
       (struct.set $channel $curr (local.get $ch)
          (i32.add (local.get $curr) (local.get $len)))
       (if (i32.ge_u (local.get $len) (local.get $free))
@@ -925,7 +903,7 @@
          (then
             (drop (call $caml_flush_partial (local.get $ch)))))
      (local.set $curr (struct.get $channel $curr (local.get $ch)))
-     (call $dv_set_i8 (struct.get $channel $buffer_view (local.get $ch))
+     (call $ta_set_ui8 (struct.get $channel $buffer (local.get $ch))
         (local.get $curr) (local.get $c))
      (struct.set $channel $curr (local.get $ch)
         (i32.add (local.get $curr) (i32.const 1))))
@@ -989,8 +967,7 @@
       (struct.set $channel $fd
          (ref.cast (ref $channel) (local.get 0)) (local.get 1)))
 
-   (func $caml_ml_get_channel_offset (export "caml_ml_get_channel_offset")
-      (param $ch (ref eq)) (result i64)
+   (func (export "caml_ml_get_channel_offset") (param $ch (ref eq)) (result i64)
       (struct.get $fd_offset $offset
          (call $get_fd_offset
             (struct.get $channel $fd

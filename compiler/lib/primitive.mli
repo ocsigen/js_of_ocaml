@@ -64,8 +64,6 @@ val has_arity : string -> int -> bool
 
 val alias : string -> string -> unit
 
-val aliases : unit -> (string * string) list
-
 val resolve : string -> string
 
 val add_external : string -> unit

@@ -19,7 +19,6 @@
 type link_input =
   { module_name : string  (** Name under which the module is imported in other modules *)
   ; file : string  (** File containing the Wasm module *)
-  ; source_map_file : string option
   }
 
 val link :
@@ -39,7 +38,7 @@ val dead_code_elimination :
   -> Stdlib.StringSet.t
 
 val optimize :
-     profile:Profile.t
+     profile:Driver.profile option
   -> ?options:string list
   -> opt_input_sourcemap:string option
   -> input_file:string

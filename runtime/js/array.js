@@ -80,30 +80,6 @@ function caml_array_concat(l) {
   return a;
 }
 
-//Provides: caml_floatarray_concat mutable
-//Version: >= 5.4
-function caml_floatarray_concat(l) {
-  var a = [0];
-  while (l !== 0) {
-    var b = l[1];
-    for (var i = 1; i < b.length; i++) a.push(b[i]);
-    l = l[2];
-  }
-  return a;
-}
-
-//Provides: caml_uniform_array_concat mutable
-//Version: >= 5.4
-function caml_uniform_array_concat(l) {
-  var a = [0];
-  while (l !== 0) {
-    var b = l[1];
-    for (var i = 1; i < b.length; i++) a.push(b[i]);
-    l = l[2];
-  }
-  return a;
-}
-
 //Provides: caml_array_blit
 function caml_array_blit(a1, i1, a2, i2, len) {
   if (i2 <= i1) {
@@ -130,9 +106,6 @@ function caml_uniform_array_blit(a1, i1, a2, i2, len) {
 ///////////// Pervasive
 //Provides: caml_array_set (mutable, const, mutable)
 //Requires: caml_array_bound_error
-//Alias: caml_array_set_float
-//Alias: caml_floatarray_set
-//Alias: caml_array_set_addr
 function caml_array_set(array, index, newval) {
   if (index < 0 || index >= array.length - 1) caml_array_bound_error();
   array[index + 1] = newval;
@@ -141,9 +114,6 @@ function caml_array_set(array, index, newval) {
 
 //Provides: caml_array_get mutable (mutable, const)
 //Requires: caml_array_bound_error
-//Alias: caml_array_get_float
-//Alias: caml_floatarray_get
-//Alias: caml_array_get_addr
 function caml_array_get(array, index) {
   if (index < 0 || index >= array.length - 1) caml_array_bound_error();
   return array[index + 1];
@@ -180,8 +150,6 @@ function caml_uniform_array_fill(array, ofs, len, v) {
 
 //Provides: caml_check_bound (mutable, const)
 //Requires: caml_array_bound_error
-//Alias: caml_check_bound_gen
-//Alias: caml_check_bound_float
 function caml_check_bound(array, index) {
   if (index >>> 0 >= array.length - 1) caml_array_bound_error();
   return array;

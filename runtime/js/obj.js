@@ -32,36 +32,10 @@ function caml_update_dummy(x, y) {
 
 //Provides: caml_alloc_dummy_infix
 //Requires: caml_call_gen
-//Version: < 5.4
 function caml_alloc_dummy_infix() {
   return function f(x) {
     return caml_call_gen(f.fun, [x]);
   };
-}
-
-//Provides: caml_alloc_dummy_lazy
-//Version: >= 5.4
-function caml_alloc_dummy_lazy(_unit) {
-  return [0, 0];
-}
-
-//Provides: caml_update_dummy_lazy
-//Requires: caml_obj_tag
-//Requires: caml_update_dummy
-//Version: >= 5.4
-function caml_update_dummy_lazy(dummy, newval) {
-  switch (caml_obj_tag(newval)) {
-    case 246: // Lazy
-    case 244: // Forcing
-    case 250: // Forward
-      caml_update_dummy(dummy, newval);
-      break;
-    default:
-      dummy[1] = newval;
-      dummy[0] = 250;
-      break;
-  }
-  return 0;
 }
 
 //Provides: caml_obj_tag
@@ -133,7 +107,7 @@ function caml_obj_compare_and_swap(x, i, old, n) {
 
 //Provides: caml_obj_is_shared
 //Version: >= 5.0
-function caml_obj_is_shared(_x) {
+function caml_obj_is_shared(x) {
   return 1;
 }
 
@@ -142,25 +116,18 @@ function caml_lazy_make_forward(v) {
   return [250, v];
 }
 
-//Provides: caml_method_cache
-var caml_method_cache = [];
-
-//Provides: caml_oo_cache_id const
-//Requires: caml_method_cache
-function caml_oo_cache_id() {
-  var cacheid = caml_method_cache.length;
-  caml_method_cache[cacheid] = 0;
-  cacheid;
-}
-
 ///////////// CamlinternalOO
-//Provides: caml_get_cached_method const
-//Requires: caml_method_cache
-function caml_get_cached_method(obj, tag, cacheid) {
+//Provides: caml_get_public_method const
+var caml_method_cache = [];
+function caml_get_public_method(obj, tag, cacheid) {
   var meths = obj[1];
   var ofs = caml_method_cache[cacheid];
-  if (meths[ofs + 4] === tag) {
-    return meths[ofs + 3];
+  if (ofs === undefined) {
+    // Make sure the array is not sparse
+    for (var i = caml_method_cache.length; i < cacheid; i++)
+      caml_method_cache[i] = 0;
+  } else if (meths[ofs] === tag) {
+    return meths[ofs - 1];
   }
   var li = 3,
     hi = meths[1] * 2 + 1,
@@ -170,21 +137,7 @@ function caml_get_cached_method(obj, tag, cacheid) {
     if (tag < meths[mi + 1]) hi = mi - 2;
     else li = mi;
   }
-  caml_method_cache[cacheid] = li - 3;
-  return meths[li];
-}
-
-//Provides: caml_get_public_method const
-function caml_get_public_method(obj, tag) {
-  var meths = obj[1];
-  var li = 3,
-    hi = meths[1] * 2 + 1,
-    mi;
-  while (li < hi) {
-    mi = ((li + hi) >> 1) | 1;
-    if (tag < meths[mi + 1]) hi = mi - 2;
-    else li = mi;
-  }
+  caml_method_cache[cacheid] = li + 1;
   /* return 0 if tag is not there */
   return tag === meths[li + 1] ? meths[li] : 0;
 }
@@ -216,13 +169,13 @@ function caml_obj_set_raw_field(o, i, v) {
 }
 
 //Provides: caml_obj_reachable_words
-function caml_obj_reachable_words(_o) {
+function caml_obj_reachable_words(o) {
   return 0;
 }
 
 //Provides: caml_obj_add_offset
 //Requires: caml_failwith
-function caml_obj_add_offset(_v, _offset) {
+function caml_obj_add_offset(v, offset) {
   caml_failwith("Obj.add_offset is not supported");
 }
 
@@ -276,7 +229,7 @@ function caml_lazy_read_result(o) {
 
 //Provides: caml_is_continuation_tag
 //Version: < 5
-function caml_is_continuation_tag(_t) {
+function caml_is_continuation_tag(t) {
   return 0;
 }
 
@@ -290,19 +243,4 @@ function caml_is_continuation_tag(t) {
 //Requires: caml_string_of_jsstring
 function caml_custom_identifier(o) {
   return caml_string_of_jsstring(o.caml_custom);
-}
-
-//Provides: caml_ml_gc_ramp_up
-//Requires: caml_callback
-//Version: >= 5.4
-function caml_ml_gc_ramp_up(f) {
-  var a = caml_callback(f, [0]);
-  var suspended = 0;
-  return [0, a, suspended];
-}
-
-//Provides: caml_ml_gc_ramp_down
-//Version: >= 5.4
-function caml_ml_gc_ramp_down(_suspended_collection_work) {
-  return 0;
 }

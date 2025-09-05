@@ -33,8 +33,16 @@ module Addr : sig
   module Set : Set.S with type elt = t
 
   module Map : Map.S with type key = t
+end
 
-  module Hashtbl : Hashtbl.S with type key = t
+module DebugAddr : sig
+  type t = private int
+
+  val of_addr : Addr.t -> t
+
+  val to_addr : t -> Addr.t
+
+  val no : t
 end
 
 module Var : sig
@@ -48,6 +56,8 @@ module Var : sig
 
   val of_idx : int -> t
 
+  val to_string : ?origin:t -> t -> string
+
   val fresh : unit -> t
 
   val fresh_n : string -> t
@@ -60,11 +70,15 @@ module Var : sig
 
   val get_name : t -> string option
 
-  val set_name : t -> string -> unit
+  val name : t -> string -> unit
 
   val propagate_name : t -> t -> unit
 
   val reset : unit -> unit
+
+  val set_pretty : bool -> unit
+
+  val set_stable : bool -> unit
 
   module Set : Set.S with type elt = t
 
@@ -74,6 +88,14 @@ module Var : sig
 
   module Tbl : sig
     type key = t
+
+    module DataSet : sig
+      type 'a t
+
+      val iter : ('a -> unit) -> 'a t -> unit
+
+      val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+    end
 
     type 'a t
 
@@ -86,6 +108,10 @@ module Var : sig
     val length : 'a t -> int
 
     val make : size -> 'a -> 'a t
+
+    val make_set : size -> 'a DataSet.t t
+
+    val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
@@ -143,8 +169,8 @@ end
 type constant =
   | String of string
   | NativeString of Native_string.t
-  | Float of Int64.t
-  | Float_array of Int64.t array
+  | Float of float
+  | Float_array of float array
   | Int of Targetint.t
   | Int32 of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Int64 of Int64.t
@@ -156,7 +182,7 @@ module Constant : sig
 
   val ocaml_equal : t -> t -> bool option
   (** Guaranteed equality in terms of OCaml [(=)]: if [constant_equal a b =
-    Some v], then [Poly.equal a b = v]. This is used for optimization purposes. *)
+    Some v], then [Poly.(=) a b = v]. This is used for optimization purposes. *)
 end
 
 type loc =
@@ -190,7 +216,7 @@ type expr =
       }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type
-  | Closure of Var.t list * cont * Parse_info.t option
+  | Closure of Var.t list * cont
   | Constant of constant
   | Prim of prim * prim_arg list
   | Special of special
@@ -238,9 +264,9 @@ module Print : sig
 
   val instr : Format.formatter -> instr -> unit
 
-  val block : Format.formatter -> (Addr.t -> xinstr -> string) -> int -> block -> unit
+  val block : (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
 
-  val program : Format.formatter -> (Addr.t -> xinstr -> string) -> program -> unit
+  val program : (Addr.Map.key -> xinstr -> string) -> program -> unit
 
   val last : Format.formatter -> last -> unit
 
@@ -252,34 +278,24 @@ type 'c fold_blocs = block Addr.Map.t -> Addr.t -> (Addr.t -> 'c -> 'c) -> 'c ->
 type fold_blocs_poly = { fold : 'a. 'a fold_blocs } [@@unboxed]
 
 val fold_closures :
-     program
-  -> (Var.t option -> Var.t list -> cont -> Parse_info.t option -> 'd -> 'd)
-  -> 'd
-  -> 'd
+  program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 (** [fold_closures p f init] folds [f] over all closures in the program [p],
     starting from the initial value [init]. For each closure, [f] is called
     with the following arguments: the closure name (enclosed in
     {!Stdlib.Some}), its parameter list, the address and parameter instantiation
-    of its first block, the optional closure location and the current accumulator.
-    In addition, [f] is called on the initial block [p.start], with
-    [None] as the closure name.  All closures in all blocks of [p] are
-    included in the fold, not only the ones reachable from
-    [p.start]. *)
+    of its first block, and the current accumulator. In addition, [f] is called
+    on the initial block [p.start], with [None] as the closure name.
+    All closures in all blocks of [p] are included in the fold, not only the
+    ones reachable from [p.start]. *)
 
 val fold_closures_innermost_first :
-     program
-  -> (Var.t option -> Var.t list -> cont -> Parse_info.t option -> 'd -> 'd)
-  -> 'd
-  -> 'd
+  program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 (** Similar to {!fold_closures}, but applies the fold function to the
     innermost closures first. Unlike with {!fold_closures}, only the closures
     reachable from [p.start] are considered. *)
 
 val fold_closures_outermost_first :
-     program
-  -> (Var.t option -> Var.t list -> cont -> Parse_info.t option -> 'd -> 'd)
-  -> 'd
-  -> 'd
+  program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 (** Similar to {!fold_closures}, but applies the fold function to the
     outermost closures first. Unlike with {!fold_closures}, only the closures
     reachable from [p.start] are considered. *)
@@ -290,35 +306,18 @@ val fold_children_skip_try_body : 'c fold_blocs
 
 val poptraps : block Addr.Map.t -> Addr.t -> Addr.Set.t
 
-val return_values : program -> Var.Set.t Var.Map.t
-
 val traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
 val preorder_traverse :
   fold_blocs_poly -> (Addr.t -> 'c -> 'c) -> Addr.t -> block Addr.Map.t -> 'c -> 'c
 
-val last_instr : instr list -> instr option
-(** Last instruction of a block body, ignoring events *)
-
-val used_blocks : program -> BitSet.t
-
 val prepend : program -> instr list -> program
 
 val empty : program
 
-val compact : program -> program
-
 val is_empty : program -> bool
 
-val equal : program -> program -> bool
-
-val print_diff : program -> program -> unit
-
-val check_updates : name:string -> program -> program -> updates:int -> unit
+val eq : program -> program -> bool
 
 val invariant : program -> unit
-
-val cont_equal : cont -> cont -> bool
-
-val cont_compare : cont -> cont -> int

@@ -24,7 +24,3 @@ val sort_in_post_order : t -> Addr.t list -> Addr.t list
 val blocks_in_reverse_post_order : t -> Code.Addr.t list
 
 val get_nodes : t -> Addr.Set.t
-
-val norm : program -> program
-(** [norm p] normalizes a program [p] to accommodate [Structure.build_graph] logic.
-    In practice, it ensures that all loops have a predecessor block and allows to exit loops early. *)

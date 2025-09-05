@@ -52,7 +52,6 @@ let keyword =
     ; "with"
     ; (* reserved in ECMAScript 5 *)
       "class"
-    ; "const"
     ; "enum"
     ; "export"
     ; "extends"
@@ -73,9 +72,28 @@ let keyword =
     ; "false"
     ; "NaN"
     ; "undefined"
+    ; "this"
     ; (* Unexpected eval or arguments in strict mode *)
       "eval"
     ; "arguments"
+    ; (* also reserved in ECMAScript 3 *)
+      "abstract"
+    ; "boolean"
+    ; "byte"
+    ; "char"
+    ; "const"
+    ; "double"
+    ; "final"
+    ; "float"
+    ; "goto"
+    ; "int"
+    ; "long"
+    ; "native"
+    ; "short"
+    ; "synchronized"
+    ; "throws"
+    ; "transient"
+    ; "volatile"
     ; (* also reserved in ECMAScript 6 *)
       "await"
     ]
@@ -126,7 +144,6 @@ let provided =
     ; "require" (* only available in node *)
     ; "Symbol"
     ; "ArrayBuffer"
-    ; "DataView"
     ; "Float32Array"
     ; "Float64Array"
     ; "Int16Array"

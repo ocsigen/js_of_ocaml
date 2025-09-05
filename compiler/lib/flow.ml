@@ -23,10 +23,6 @@ let debug = Debug.find "flow"
 
 let times = Debug.find "times"
 
-let stats = Debug.find "stats"
-
-let debug_stats = Debug.find "stats-debug"
-
 open Code
 
 (****)
@@ -80,10 +76,7 @@ let add_assign_def vars defs x y =
 let add_param_def vars defs x =
   add_var vars x;
   let idx = Var.idx x in
-  assert (
-    match defs.(idx) with
-    | Param -> true
-    | x -> is_undefined x);
+  assert (is_undefined defs.(idx) || Poly.(defs.(idx) = Param));
   defs.(idx) <- Param
 
 (* x depends on y *)
@@ -107,7 +100,7 @@ let cont_deps blocks vars deps defs (pc, args) =
 let expr_deps blocks vars deps defs x e =
   match e with
   | Constant _ | Apply _ | Prim _ | Special _ -> ()
-  | Closure (l, cont, _) ->
+  | Closure (l, cont) ->
       List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
   | Block (_, a, _, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
@@ -156,18 +149,15 @@ let propagate1 deps defs st x =
       | Constant _ | Apply _ | Prim _ | Special _ | Closure _ | Block _ ->
           Var.Set.singleton x
       | Field (y, n, _) ->
-          if Shape.State.mem x
-          then Var.Set.singleton x
-          else
-            var_set_lift
-              (fun z ->
-                match defs.(Var.idx z) with
-                | Expr (Block (_, a, _, _)) when n < Array.length a ->
-                    let t = a.(n) in
-                    add_dep deps x t;
-                    Var.Tbl.get st t
-                | Phi _ | Param | Expr _ -> Var.Set.empty)
-              (Var.Tbl.get st y))
+          var_set_lift
+            (fun z ->
+              match defs.(Var.idx z) with
+              | Expr (Block (_, a, _, _)) when n < Array.length a ->
+                  let t = a.(n) in
+                  add_dep deps x t;
+                  Var.Tbl.get st t
+              | Phi _ | Param | Expr _ -> Var.Set.empty)
+            (Var.Tbl.get st y))
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
@@ -296,25 +286,24 @@ let program_escape defs known_origins { blocks; _ } =
 
 (****)
 
-let propagate2 defs known_origins possibly_mutable st x =
+let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
   match defs.(Var.idx x) with
-  | Param -> false
+  | Param -> skip_param
   | Phi s -> Var.Set.exists (fun y -> Var.Tbl.get st y) s
   | Expr e -> (
       match e with
       | Constant _ | Closure _ | Apply _ | Prim _ | Block _ | Special _ -> false
       | Field (y, n, _) ->
-          (not (Shape.State.mem x))
-          && (Var.Tbl.get st y
-             || Var.Set.exists
-                  (fun z ->
-                    match defs.(Var.idx z) with
-                    | Expr (Block (_, a, _, _)) ->
-                        n >= Array.length a
-                        || Var.ISet.mem possibly_mutable z
-                        || Var.Tbl.get st a.(n)
-                    | Phi _ | Param | Expr _ -> true)
-                  (Var.Tbl.get known_origins y)))
+          Var.Tbl.get st y
+          || Var.Set.exists
+               (fun z ->
+                 match defs.(Var.idx z) with
+                 | Expr (Block (_, a, _, _)) ->
+                     n >= Array.length a
+                     || Var.ISet.mem possibly_mutable z
+                     || Var.Tbl.get st a.(n)
+                 | Phi _ | Param | Expr _ -> true)
+               (Var.Tbl.get known_origins y))
 
 module Domain2 = struct
   type t = bool
@@ -326,11 +315,11 @@ end
 
 module Solver2 = G.Solver (Domain2)
 
-let solver2 vars deps defs known_origins possibly_mutable =
+let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
   let g =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
-  Solver2.f () g (propagate2 defs known_origins possibly_mutable)
+  Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
 
 let get_approx
     { Info.info_defs = _; info_known_origins; info_maybe_unknown; _ }
@@ -355,8 +344,7 @@ let the_def_of info x =
         (fun x ->
           match info.info_defs.(Var.idx x) with
           | Expr (Constant (Float _ | Int _ | NativeString _) as e) -> Some e
-          | Expr (Constant (Int32 _ | NativeInt _) as e) -> Some e
-          | Expr (Constant _ as e) when Config.Flag.safe_string () -> Some e
+          | Expr (Constant (String _) as e) when Config.Flag.safe_string () -> Some e
           | Expr e -> if Var.ISet.mem info.info_possibly_mutable x then None else Some e
           | _ -> None)
         None
@@ -364,66 +352,68 @@ let the_def_of info x =
         x
   | Pc c -> Some (Constant c)
 
-let the_const_of ~eq info x =
+(* If [constant_identical a b = true], then the two values cannot be
+   distinguished, i.e., they are not different objects (and [caml_js_equals a b
+   = true]) and if both are floats, they are bitwise equal. *)
+let constant_identical ~(target : [ `JavaScript | `Wasm ]) a b =
+  match a, b, target with
+  | Int i, Int j, _ -> Targetint.equal i j
+  | Float a, Float b, `JavaScript -> Float.bitwise_equal a b
+  | Float _, Float _, `Wasm -> false
+  | NativeString a, NativeString b, `JavaScript -> Native_string.equal a b
+  | NativeString _, NativeString _, `Wasm ->
+      false
+      (* Native strings are boxed (JavaScript objects) in Wasm and are
+          possibly different objects *)
+  | String a, String b, `JavaScript -> Config.Flag.use_js_string () && String.equal a b
+  | String _, String _, `Wasm ->
+      false (* Strings are boxed in Wasm and are possibly different objects *)
+  | Int32 _, Int32 _, `Wasm ->
+      false (* [Int32]s are boxed in Wasm and are possibly different objects *)
+  | Int32 _, Int32 _, `JavaScript -> assert false
+  | NativeInt _, NativeInt _, `Wasm ->
+      false (* [NativeInt]s are boxed in Wasm and are possibly different objects *)
+  | NativeInt _, NativeInt _, `JavaScript -> assert false
+  (* All other values may be distinct objects and thus different by [caml_js_equals]. *)
+  | Int64 _, Int64 _, _ -> false
+  | Tuple _, Tuple _, _ -> false
+  | Float_array _, Float_array _, _ -> false
+  | (Int _ | Float _ | Int64 _ | Int32 _ | NativeInt _), _, _ -> false
+  | (String _ | NativeString _), _, _ -> false
+  | (Float_array _ | Tuple _), _, _ -> false
+
+let the_const_of ~target info x =
   match x with
   | Pv x ->
       get_approx
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr
-              (Constant
-                 (( Float _
-                  | Int _
-                  | Int32 _
-                  | Int64 _
-                  | NativeInt _
-                  | NativeString _
-                  | Float_array _ ) as c)) -> Some c
-          | Expr (Constant (String _ as c))
-            when not (Var.ISet.mem info.info_possibly_mutable x) -> Some c
-          | Expr (Constant c) when Config.Flag.safe_string () -> Some c
+          | Expr (Constant ((Float _ | Int _ | NativeString _) as c)) -> Some c
+          | Expr (Constant (String _ as c)) when Config.Flag.safe_string () -> Some c
+          | Expr (Constant c) ->
+              if Var.ISet.mem info.info_possibly_mutable x then None else Some c
           | _ -> None)
         None
         (fun u v ->
           match u, v with
-          | Some i, Some j when eq i j -> u
+          | Some i, Some j when constant_identical ~target i j -> u
           | _ -> None)
         x
   | Pc c -> Some c
 
-let the_int info x =
-  match x with
-  | Pv x ->
-      get_approx
-        info
-        (fun x ->
-          match info.info_defs.(Var.idx x) with
-          | Expr (Constant (Int c)) -> Some c
-          | _ -> None)
-        None
-        (fun u v ->
-          match u, v with
-          | Some i, Some j when Targetint.equal i j -> u
-          | _ -> None)
-        x
-  | Pc (Int c) -> Some c
-  | Pc _ -> None
+let the_int ~target info x =
+  match the_const_of ~target info x with
+  | Some (Int i) -> Some i
+  | _ -> None
 
-let string_equal a b =
-  match a, b with
-  | NativeString a, NativeString b -> Native_string.equal a b
-  | String a, String b -> String.equal a b
-  (* We don't need to compare other constants, so let's just return false. *)
-  | _ -> false
-
-let the_string_of info x =
-  match the_const_of ~eq:string_equal info x with
+let the_string_of ~target info x =
+  match the_const_of info ~target x with
   | Some (String i) -> Some i
   | _ -> None
 
-let the_native_string_of info x =
-  match the_const_of ~eq:string_equal info x with
+let the_native_string_of ~target info x =
+  match the_const_of ~target info x with
   | Some (NativeString i) -> Some i
   | Some (String i) ->
       (* This function is used to optimize the primitives that access
@@ -462,66 +452,6 @@ let direct_approx (info : Info.t) x =
         y
   | _ -> None
 
-let the_shape_of ~return_values ~pure info x =
-  let rec loop info x acc : Shape.t =
-    if Var.Set.mem x acc
-    then Top
-    else
-      let acc = Var.Set.add x acc in
-      get_approx
-        info
-        (fun x ->
-          match Shape.State.get x with
-          | Some shape -> shape
-          | None -> (
-              match info.info_defs.(Var.idx x) with
-              | Expr (Block (_, a, _, Immutable)) ->
-                  Shape.Block (List.map ~f:(fun x -> loop info x acc) (Array.to_list a))
-              | Expr (Closure (l, _, _)) ->
-                  let pure = Pure_fun.pure pure x in
-                  let res =
-                    match Var.Map.find x return_values with
-                    | exception Not_found -> Shape.Top
-                    | set ->
-                        let set = Var.Set.remove x set in
-                        if Var.Set.is_empty set
-                        then Shape.Top
-                        else
-                          let first = Var.Set.choose set in
-                          Var.Set.fold
-                            (fun x s1 ->
-                              let s2 = loop info x acc in
-                              Shape.merge s1 s2)
-                            set
-                            (loop info first acc)
-                  in
-                  Shape.Function { arity = List.length l; pure; res }
-              | Expr (Special (Alias_prim name)) -> (
-                  try
-                    let arity = Primitive.arity name in
-                    let pure = Primitive.is_pure name in
-                    Shape.Function { arity; pure; res = Top }
-                  with _ -> Top)
-              | Expr (Apply { f; args; _ }) ->
-                  let shape = loop info f (Var.Set.add f acc) in
-                  let rec loop n' shape =
-                    match shape with
-                    | Shape.Function { arity = n; pure; res } ->
-                        if n = n'
-                        then res
-                        else if n' < n
-                        then Shape.Function { arity = n - n'; pure; res }
-                        else loop (n' - n) res
-                    | Shape.Block _ | Shape.Top -> Shape.Top
-                  in
-                  loop (List.length args) shape
-              | _ -> Shape.Top))
-        Top
-        (fun u v -> Shape.merge u v)
-        x
-  in
-  loop info x Var.Set.empty
-
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in
   let subst = Array.init nv ~f:(fun i -> Var.of_idx i) in
@@ -544,8 +474,7 @@ let build_subst (info : Info.t) vars =
 
 (****)
 
-let f p =
-  let previous_p = p in
+let f ?skip_param p =
   Code.invariant p;
   let t = Timer.make () in
   let t1 = Timer.make () in
@@ -558,7 +487,7 @@ let f p =
   let possibly_mutable = program_escape defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
   let t4 = Timer.make () in
-  let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
+  let maybe_unknown = solver2 ?skip_param vars deps defs known_origins possibly_mutable in
   if times () then Format.eprintf "    flow analysis 4: %a@." Timer.print t4;
   if debug ()
   then
@@ -584,25 +513,8 @@ let f p =
     }
   in
   let s = build_subst info vars in
-  let need_stats = stats () || debug_stats () in
-  let count_uniq = ref 0 in
-  let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
-  let subst v1 =
-    let idx1 = Code.Var.idx v1 in
-    let v2 = s.(idx1) in
-    if Code.Var.equal v1 v2
-    then v1
-    else (
-      if need_stats && not (BitSet.mem count_seen idx1)
-      then (
-        incr count_uniq;
-        BitSet.set count_seen idx1);
-      v2)
-  in
-  let p = Subst.Excluding_Binders.program subst p in
+  let p = Subst.Excluding_Binders.program (Subst.from_array s) p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - flow updates: %d@." !count_uniq;
-  if debug_stats () then Code.check_updates ~name:"flow" previous_p p ~updates:!count_uniq;
   Code.invariant p;
   p, info

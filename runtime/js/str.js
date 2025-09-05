@@ -70,7 +70,8 @@ var re_match = (function () {
       cpool = caml_js_from_array(re[2]),
       normtable = caml_jsbytes_of_string(re[3]),
       numgroups = re[4] | 0,
-      numregisters = re[5] | 0;
+      numregisters = re[5] | 0,
+      startchars = re[6] | 0;
 
     var s = caml_uint8_array_of_string(s);
 
@@ -292,62 +293,29 @@ var re_match = (function () {
 
 //Provides: re_search_forward
 //Requires: re_match, caml_ml_string_length, caml_invalid_argument
-//Requires: caml_string_get
 function re_search_forward(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.search_forward");
-  var startchars = re[6] | 0;
-  var len = caml_ml_string_length(s);
-  if (startchars >= 0) {
-    startchars = re[2][startchars + 1];
-    do {
-      while (
-        pos < len &&
-        caml_string_get(startchars, caml_string_get(s, pos)) === 0
-      )
-        pos++;
-      var res = re_match(re, s, pos, 0);
-      if (res) return res;
-      pos++;
-    } while (pos <= len);
-  } else {
-    do {
-      var res = re_match(re, s, pos, 0);
-      if (res) return res;
-      pos++;
-    } while (pos <= len);
+  while (pos <= caml_ml_string_length(s)) {
+    var res = re_match(re, s, pos, 0);
+    if (res) return res;
+    pos++;
   }
+
   return [0]; /* [||] : int array */
 }
 
 //Provides: re_search_backward
 //Requires: re_match, caml_ml_string_length, caml_invalid_argument
-//Requires: caml_string_get
 function re_search_backward(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.search_backward");
-  var startchars = re[6] | 0;
-  if (startchars >= 0) {
-    startchars = re[2][startchars + 1];
-    var len = caml_ml_string_length(s);
-    do {
-      while (
-        pos > 0 &&
-        pos < len &&
-        caml_string_get(startchars, caml_string_get(s, pos)) === 0
-      )
-        pos--;
-      var res = re_match(re, s, pos, 0);
-      if (res) return res;
-      pos--;
-    } while (pos >= 0);
-  } else {
-    do {
-      var res = re_match(re, s, pos, 0);
-      if (res) return res;
-      pos--;
-    } while (pos >= 0);
+  while (pos >= 0) {
+    var res = re_match(re, s, pos, 0);
+    if (res) return res;
+    pos--;
   }
+
   return [0]; /* [||] : int array */
 }
 

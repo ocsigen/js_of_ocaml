@@ -31,7 +31,7 @@ module Excluding_Binders = struct
         Apply { f = s f; args = List.map args ~f:(fun x -> s x); exact }
     | Block (n, a, k, mut) -> Block (n, Array.map a ~f:(fun x -> s x), k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
-    | Closure (l, pc, loc) -> Closure (l, subst_cont s pc, loc)
+    | Closure (l, pc) -> Closure (l, subst_cont s pc)
     | Special _ -> e
     | Prim (p, l) ->
         Prim
@@ -81,7 +81,7 @@ module Excluding_Binders = struct
       let blocks, visited =
         List.fold_left b.body ~init:(blocks, visited) ~f:(fun (blocks, visited) instr ->
             match instr with
-            | Let (_, Closure (_, (pc, _), _)) -> cont' s pc blocks visited
+            | Let (_, Closure (_, (pc, _))) -> cont' s pc blocks visited
             | _ -> blocks, visited)
       in
       Code.fold_children
@@ -118,7 +118,7 @@ module Including_Binders = struct
     | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
     | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
     | Field (x, n, typ) -> Field (s x, n, typ)
-    | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont s pc, loc)
+    | Closure (l, pc) -> Closure (List.map l ~f:s, subst_cont s pc)
     | Special _ -> e
     | Prim (p, l) ->
         Prim
@@ -159,33 +159,6 @@ module Including_Binders = struct
   module And_Continuations = struct
     let subst_cont m s (pc, arg) = Addr.Map.find pc m, List.map arg ~f:s
 
-    let expr m s e =
-      match e with
-      | Constant _ -> e
-      | Apply { f; args; exact } -> Apply { f = s f; args = List.map args ~f:s; exact }
-      | Block (n, a, k, mut) -> Block (n, Array.map a ~f:s, k, mut)
-      | Field (x, n, typ) -> Field (s x, n, typ)
-      | Closure (l, pc, loc) -> Closure (List.map l ~f:s, subst_cont m s pc, loc)
-      | Special _ -> e
-      | Prim (p, l) ->
-          Prim
-            ( p
-            , List.map l ~f:(fun x ->
-                  match x with
-                  | Pv x -> Pv (s x)
-                  | Pc _ -> x) )
-
-    let instr m s i =
-      match i with
-      | Let (x, e) -> Let (s x, expr m s e)
-      | Assign (x, y) -> Assign (s x, s y)
-      | Set_field (x, n, typ, y) -> Set_field (s x, n, typ, s y)
-      | Offset_ref (x, n) -> Offset_ref (s x, n)
-      | Array_set (x, y, z) -> Array_set (s x, s y, s z)
-      | Event _ -> i
-
-    let instrs m s l = List.map l ~f:(fun i -> instr m s i)
-
     let last m s l =
       match l with
       | Stop -> l
@@ -200,7 +173,7 @@ module Including_Binders = struct
 
     let block m s block =
       { params = List.map ~f:s block.params
-      ; body = instrs m s block.body
+      ; body = instrs s block.body
       ; branch = last m s block.branch
       }
   end

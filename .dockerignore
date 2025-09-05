@@ -4,4 +4,3 @@ _build
 compiler/tests-*
 manual
 examples
-benchmarks/build

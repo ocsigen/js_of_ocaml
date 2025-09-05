@@ -22,7 +22,6 @@ type def =
   | Phi of
       { known : Var.Set.t (* Known arguments *)
       ; others : bool (* Can there be other arguments *)
-      ; unit : bool (* Whether we are propagating unit (used for typing) *)
       }
 
 type approx =
@@ -45,45 +44,8 @@ type info =
   ; info_return_vals : Var.Set.t Var.Map.t
   }
 
-type mutable_fields =
-  | No_field
-  | Some_fields of Stdlib.IntSet.t
-  | All_fields
-
-module VarPairTbl : Hashtbl.S with type key = Var.t * Var.t
-
-type state =
-  { vars : Var.ISet.t (* Set of all veriables considered *)
-  ; deps : Var.t list Var.Tbl.t (* Dependency between variables *)
-  ; defs : def array (* Definition of each variable *)
-  ; variable_may_escape : escape_status array
-        (* Any value bound to this variable may escape *)
-  ; variable_mutable_fields : mutable_fields array
-        (* Any value bound to this variable may be mutable *)
-  ; may_escape : escape_status array (* This value may escape *)
-  ; mutable_fields : mutable_fields array (* This value may be mutable *)
-  ; return_values : Var.Set.t Var.Map.t
-        (* Set of variables holding return values of each function *)
-  ; functions_from_returned_value : Var.t list Var.Hashtbl.t
-        (* Functions associated to each return value *)
-  ; known_cases : int list Var.Hashtbl.t
-        (* Possible tags for a block after a [switch]. This is used to
-           get a more precise approximation of the effect of a field
-           access [Field] *)
-  ; applied_functions : unit VarPairTbl.t
-        (* Functions that have been already considered at a call site.
-           This is to avoid repeated computations *)
-  ; function_call_sites : Var.t list Var.Hashtbl.t
-        (* Known call sites of each functions *)
-  ; fast : bool
-  }
-
-val f : fast:bool -> Code.program -> state * info
-
-val update_def : info -> Code.Var.t -> Code.expr -> unit
+val f : fast:bool -> Code.program -> info
 
 val exact_call : info -> Var.t -> int -> bool
-
-val get_unique_closure : info -> Var.t -> Var.t option
 
 val function_arity : info -> Var.t -> int option

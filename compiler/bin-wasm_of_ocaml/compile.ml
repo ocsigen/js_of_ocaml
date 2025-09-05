@@ -22,8 +22,6 @@ open Wasm_of_ocaml_compiler
 
 let times = Debug.find "times"
 
-let binaryen_times = Debug.find "binaryen-times"
-
 let debug_mem = Debug.find "mem"
 
 let debug_wat = Debug.find "wat"
@@ -60,11 +58,7 @@ let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_f
       ; sourceroot =
           (if Option.is_some sourcemap_root then sourcemap_root else source_map.sourceroot)
       ; ignore_list =
-          (if
-             List.mem
-               ~eq:String.equal
-               Wasm_source_map.blackbox_filename
-               source_map.sources
+          (if List.mem Wasm_source_map.blackbox_filename ~set:source_map.sources
            then [ Wasm_source_map.blackbox_filename ]
            else [])
       }
@@ -76,15 +70,10 @@ let opt_with action x f =
   | None -> f None
   | Some x -> action x (fun y -> f (Some y))
 
-let preprocessor_variables () =
-  (* Keep this variables in sync with gen/gen.ml *)
-  [ ( "effects"
-    , Wat_preprocess.String
-        (match Config.effects () with
-        | `Disabled | `Jspi -> "jspi"
-        | `Cps -> "cps"
-        | `Double_translation -> assert false) )
-  ]
+let output_gen output_file f =
+  Code.Var.set_pretty true;
+  Code.Var.set_stable (Config.Flag.stable_var ());
+  Filename.gen_file output_file f
 
 let with_runtime_files ~runtime_wasm_files f =
   let inputs =
@@ -92,19 +81,25 @@ let with_runtime_files ~runtime_wasm_files f =
       ~f:(fun file -> { Wat_preprocess.module_name = "env"; file; source = File })
       runtime_wasm_files
   in
-  Wat_preprocess.with_preprocessed_files ~variables:(preprocessor_variables ()) ~inputs f
+  Wat_preprocess.with_preprocessed_files ~variables:[] ~inputs f
 
 let build_runtime ~runtime_file =
-  let variables = preprocessor_variables () in
+  (* Keep this variables in sync with gen/gen.ml *)
+  let variables =
+    [ ( "effects"
+      , Wat_preprocess.String
+          (match Config.effects () with
+          | `Disabled | `Jspi -> "jspi"
+          | `Cps -> "cps"
+          | `Double_translation -> assert false) )
+    ]
+  in
   match
     List.find_opt Runtime_files.precompiled_runtimes ~f:(fun (flags, _) ->
-        assert (List.length flags = List.length variables);
-        List.equal
-          ~eq:(fun (k1, v1) (k2, v2) ->
-            assert (String.equal k1 k2);
-            Wat_preprocess.value_equal v1 v2)
-          flags
-          variables)
+        assert (
+          List.length flags = List.length variables
+          && List.for_all2 ~f:(fun (k, _) (k', _) -> String.equal k k') flags variables);
+        Poly.equal flags variables)
   with
   | Some (_, contents) -> Fs.write_file ~name:runtime_file ~contents
   | None ->
@@ -121,15 +116,6 @@ let build_runtime ~runtime_file =
         ~link_options:[ "-g" ]
         ~opt_options:[ "-g"; "-O2" ]
         ~variables
-        ~allowed_imports:
-          (Some
-             [ "bindings"
-             ; "Math"
-             ; "js"
-             ; "wasm:js-string"
-             ; "wasm:text-encoder"
-             ; "wasm:text-decoder"
-             ])
         ~inputs
         ~output_file:runtime_file
 
@@ -162,27 +148,19 @@ let link_and_optimize
   @@ fun opt_temp_sourcemap ->
   (with_runtime_files ~runtime_wasm_files
   @@ fun runtime_inputs ->
-  let t = Timer.make ~get_time:Unix.time () in
   Binaryen.link
     ~inputs:
-      ({ Binaryen.module_name = "env"; file = runtime_file; source_map_file = None }
-       :: runtime_inputs
-      @ List.map
-          ~f:(fun (file, source_map_file) ->
-            { Binaryen.module_name = "OCaml"; file; source_map_file })
-          wat_files)
+      (({ Binaryen.module_name = "env"; file = runtime_file } :: runtime_inputs)
+      @ List.map ~f:(fun file -> { Binaryen.module_name = "OCaml"; file }) wat_files)
     ~opt_output_sourcemap:opt_temp_sourcemap
     ~output_file:temp_file
-    ();
-  if binaryen_times () then Format.eprintf "  binaryen link: %a@." Timer.print t);
-
+    ());
   Fs.with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
   @@ fun temp_file' ->
   opt_with
     Fs.with_intermediate_file
     (if enable_source_maps then Some (Filename.temp_file "wasm-dce" ".wasm.map") else None)
   @@ fun opt_temp_sourcemap' ->
-  let t = Timer.make ~get_time:Unix.time () in
   let primitives =
     Binaryen.dead_code_elimination
       ~dependencies:Runtime_files.dependencies
@@ -191,8 +169,6 @@ let link_and_optimize
       ~input_file:temp_file
       ~output_file:temp_file'
   in
-  if binaryen_times () then Format.eprintf "  binaryen dce: %a@." Timer.print t;
-  let t = Timer.make ~get_time:Unix.time () in
   Binaryen.optimize
     ~profile
     ~opt_input_sourcemap:opt_temp_sourcemap'
@@ -200,7 +176,6 @@ let link_and_optimize
     ~input_file:temp_file'
     ~output_file
     ();
-  if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t;
   Option.iter
     ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
     opt_sourcemap_file;
@@ -235,7 +210,7 @@ let link_runtime ~profile runtime_wasm_files output_file =
       ~opt_output_sourcemap:None
       ~inputs:
         (List.map
-           ~f:(fun file -> { Binaryen.module_name = "env"; file; source_map_file = None })
+           ~f:(fun file -> { Binaryen.module_name = "env"; file })
            [ runtime_file; extra_runtime ])
       ~output_file
       ()
@@ -244,19 +219,16 @@ let generate_prelude ~out_file =
   Filename.gen_file out_file
   @@ fun ch ->
   let code, uinfo = Parse_bytecode.predefined_exceptions () in
-  let profile = Profile.O1 in
-  let ( Driver.
-          { program
-          ; variable_uses
-          ; in_cps
-          ; deadcode_sentinal
-          ; shapes = _
-          ; trampolined_calls = _
-          }
-      , global_flow_data ) =
-    Driver.optimize_for_wasm ~profile ~shapes:false code
+  let profile =
+    match Driver.profile 1 with
+    | Some p -> p
+    | None -> assert false
+  in
+  let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
+    Driver.optimize ~profile code
   in
   let context = Generate.start () in
+  let debug = Parse_bytecode.Debug.create ~include_cmis:false false in
   let _ =
     Generate.f
       ~context
@@ -264,17 +236,26 @@ let generate_prelude ~out_file =
       ~live_vars:variable_uses
       ~in_cps
       ~deadcode_sentinal
-      ~global_flow_data
+      ~debug
       program
   in
-  Generate.wasm_output ch ~opt_source_map_file:None ~context;
+  Generate.output ch ~context;
   uinfo.provides
 
 let build_prelude z =
   Fs.with_intermediate_file (Filename.temp_file "prelude" ".wasm")
   @@ fun prelude_file ->
+  Fs.with_intermediate_file (Filename.temp_file "prelude_file" ".wasm")
+  @@ fun tmp_prelude_file ->
   let predefined_exceptions = generate_prelude ~out_file:prelude_file in
-  Zip.add_file z ~name:"prelude.wasm" ~file:prelude_file;
+  Binaryen.optimize
+    ~profile:(Driver.profile 1)
+    ~input_file:prelude_file
+    ~output_file:tmp_prelude_file
+    ~opt_input_sourcemap:None
+    ~opt_output_sourcemap:None
+    ();
+  Zip.add_file z ~name:"prelude.wasm" ~file:tmp_prelude_file;
   predefined_exceptions
 
 let build_js_runtime ~primitives ?runtime_arguments () =
@@ -336,16 +317,6 @@ let add_source_map sourcemap_don't_inline_content z opt_source_map =
                 ~name:(Link.source_name i j file)
                 ~contents:(Yojson.Basic.to_string (`String sm))))
 
-let merge_shape a b =
-  StringMap.union (fun _name s1 s2 -> if Shape.equal s1 s2 then Some s1 else None) a b
-
-let sexp_of_shapes s =
-  StringMap.bindings s
-  |> List.map ~f:(fun (name, shape) ->
-         Sexp.List [ Atom name; Atom (Shape.to_string shape) ])
-
-let string_of_shapes s = Sexp.List (sexp_of_shapes s) |> Sexp.to_string
-
 let run
     { Cmd_arg.common
     ; profile
@@ -359,24 +330,11 @@ let run
     ; sourcemap_root
     ; sourcemap_don't_inline_content
     ; effects
-    ; shape_files
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
   Generate.init ();
-  List.iter shape_files ~f:(fun s ->
-      let z = Zip.open_in s in
-      if Zip.has_entry z ~name:"shapes.sexp"
-      then
-        let s = Zip.read_entry z ~name:"shapes.sexp" in
-        match Sexp.from_string s with
-        | List l ->
-            List.iter l ~f:(function
-              | Sexp.List [ Atom name; Atom shape ] ->
-                  Shape.Store.set ~name (Shape.of_string shape)
-              | _ -> ())
-        | _ -> ());
   let output_file = fst output_file in
   if debug_mem () then Debug.start_profiling output_file;
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
@@ -414,35 +372,27 @@ let run
       && Parse_bytecode.Debug.is_empty one.debug
       && not (Code.is_empty one.code)
     then
-      Warning.warn
-        `Missing_debug_event
-        "'--source-map' is enabled but the bytecode program was compiled with no \
-         debugging information.\n\
+      warn
+        "Warning: '--source-map' is enabled but the bytecode program was compiled with \
+         no debugging information.\n\
          Warning: Consider passing '-g' option to ocamlc.\n\
          %!"
   in
-  let profile =
-    match profile with
-    | Some p -> p
-    | None -> Profile.O1
-  in
-  let output (one : Parse_bytecode.one) ~unit_name ~wat_file ~file ~opt_source_map_file =
+  let output (one : Parse_bytecode.one) ~unit_name ch =
     check_debug one;
     let code = one.code in
     let standalone = Option.is_none unit_name in
-    let ( Driver.
-            { program
-            ; variable_uses
-            ; in_cps
-            ; deadcode_sentinal
-            ; shapes
-            ; trampolined_calls = _
-            }
-        , global_flow_data ) =
-      Driver.optimize_for_wasm ~profile ~shapes:true code
+    let profile =
+      match profile, Driver.profile 1 with
+      | Some p, _ -> p
+      | None, Some p -> p
+      | None, None -> assert false
     in
-    StringMap.iter (fun name shape -> Shape.Store.set ~name shape) shapes;
+    let Driver.{ program; variable_uses; in_cps; deadcode_sentinal; _ } =
+      Driver.optimize ~profile code
+    in
     let context = Generate.start () in
+    let debug = one.debug in
     let toplevel_name, generated_js =
       Generate.f
         ~context
@@ -450,20 +400,13 @@ let run
         ~live_vars:variable_uses
         ~in_cps
         ~deadcode_sentinal
-        ~global_flow_data
+        ~debug
         program
     in
     if standalone then Generate.add_start_function ~context toplevel_name;
-    let ch = open_out_bin file in
-    Generate.wasm_output ch ~opt_source_map_file ~context;
-    close_out ch;
-    if debug_wat ()
-    then (
-      let ch = open_out_bin wat_file in
-      Generate.output ch ~context;
-      close_out ch);
+    Generate.output ch ~context;
     if times () then Format.eprintf "compilation: %a@." Timer.print t;
-    generated_js, shapes
+    generated_js
   in
   (if runtime_only
    then (
@@ -519,34 +462,26 @@ let run
           then Some (Filename.temp_file unit_name ".wasm.map")
           else None)
        @@ fun opt_tmp_map_file ->
-       let unit_data, shapes =
-         Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
-         @@ fun input_file ->
-         opt_with
-           Fs.with_intermediate_file
-           (if enable_source_maps
-            then Some (Filename.temp_file unit_name ".wasm.map")
-            else None)
-         @@ fun opt_input_sourcemap ->
-         let fragments, shapes =
-           output
-             code
-             ~wat_file:
-               (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
-             ~unit_name:(Some unit_name)
-             ~file:input_file
-             ~opt_source_map_file:opt_input_sourcemap
+       let unit_data =
+         (if debug_wat ()
+          then
+            fun f ->
+              f (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+          else Fs.with_intermediate_file (Filename.temp_file unit_name ".wat"))
+         @@ fun wat_file ->
+         let strings, fragments =
+           output_gen wat_file (output code ~unit_name:(Some unit_name))
          in
          Binaryen.optimize
            ~profile
-           ~opt_input_sourcemap
+           ~opt_input_sourcemap:None
            ~opt_output_sourcemap:opt_tmp_map_file
-           ~input_file
+           ~input_file:wat_file
            ~output_file:tmp_wasm_file
            ();
-         { Link.unit_name; unit_info; fragments }, shapes
+         { Link.unit_name; unit_info; strings; fragments }
        in
-       cont unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes
+       cont unit_data unit_name tmp_wasm_file opt_tmp_map_file
      in
      (match kind with
      | `Exe ->
@@ -561,8 +496,10 @@ let run
              ic
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-         Fs.with_intermediate_file (Filename.temp_file "code" ".wasm")
-         @@ fun input_wasm_file ->
+         (if debug_wat ()
+          then fun f -> f (Filename.chop_extension output_file ^ ".wat")
+          else Fs.with_intermediate_file (Filename.temp_file "code" ".wat"))
+         @@ fun wat_file ->
          let dir = Filename.chop_extension output_file ^ ".assets" in
          Link.gen_dir dir
          @@ fun tmp_dir ->
@@ -572,21 +509,8 @@ let run
            then Some (Filename.concat tmp_dir "code.wasm.map")
            else None
          in
-         let opt_source_map_file =
-           if enable_source_maps
-           then Some (Filename.temp_file "code" ".wasm.map")
-           else None
-         in
-         let generated_js, _shapes =
-           output
-             code
-             ~unit_name:None
-             ~wat_file:(Filename.chop_extension output_file ^ ".wat")
-             ~file:input_wasm_file
-             ~opt_source_map_file
-         in
+         let generated_js = output_gen wat_file (output code ~unit_name:None) in
          let tmp_wasm_file = Filename.concat tmp_dir "code.wasm" in
-         let t2 = Timer.make ~get_time:Unix.time () in
          let primitives =
            link_and_optimize
              ~profile
@@ -594,11 +518,9 @@ let run
              ~sourcemap_don't_inline_content
              ~opt_sourcemap
              runtime_wasm_files
-             [ input_wasm_file, opt_source_map_file ]
+             [ wat_file ]
              tmp_wasm_file
          in
-         if binaryen_times ()
-         then Format.eprintf " link_and_optimize: %a@." Timer.print t2;
          let wasm_name =
            Printf.sprintf
              "code-%s"
@@ -612,7 +534,6 @@ let run
            Link.Wasm_binary.append_source_map_section
              ~file:tmp_wasm_file'
              ~url:(wasm_name ^ ".wasm.map"));
-         if times () then Format.eprintf "Start building js runtime@.";
          let js_runtime =
            let missing_primitives =
              let l = Link.Wasm_binary.read_imports ~file:tmp_wasm_file' in
@@ -641,9 +562,8 @@ let run
          @@ fun tmp_output_file ->
          let z = Zip.open_out tmp_output_file in
          let compile_cmo' z cmo =
-           compile_cmo cmo (fun unit_data _ tmp_wasm_file opt_tmp_map_file shapes ->
+           compile_cmo cmo (fun unit_data _ tmp_wasm_file opt_tmp_map_file ->
                Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
-               Zip.add_entry z ~name:"shapes.sexp" ~contents:(string_of_shapes shapes);
                add_source_map sourcemap_don't_inline_content z (`File opt_tmp_map_file);
                unit_data)
          in
@@ -659,8 +579,8 @@ let run
            List.fold_right
              ~f:(fun cmo cont l ->
                compile_cmo cmo
-               @@ fun unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes ->
-               cont ((unit_data, unit_name, tmp_wasm_file, opt_tmp_map_file, shapes) :: l))
+               @@ fun unit_data unit_name tmp_wasm_file opt_tmp_map_file ->
+               cont ((unit_data, unit_name, tmp_wasm_file, opt_tmp_map_file) :: l))
              cma.lib_units
              ~init:(fun l ->
                Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
@@ -669,7 +589,7 @@ let run
                let source_map =
                  Wasm_link.f
                    (List.map
-                      ~f:(fun (_, _, file, opt_source_map, _) ->
+                      ~f:(fun (_, _, file, opt_source_map) ->
                         { Wasm_link.module_name = "OCaml"
                         ; file
                         ; code = None
@@ -682,17 +602,10 @@ let run
                    ~output_file:tmp_wasm_file
                in
                Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
-               let shapes =
-                 List.fold_left
-                   ~init:StringMap.empty
-                   ~f:(fun acc (_, _, _, _, shapes) -> merge_shape acc shapes)
-                   l
-               in
-               Zip.add_entry z ~name:"shapes.sexp" ~contents:(string_of_shapes shapes);
                if enable_source_maps
                then
                  add_source_map sourcemap_don't_inline_content z (`Source_map source_map);
-               List.map ~f:(fun (unit_data, _, _, _, _) -> unit_data) l)
+               List.map ~f:(fun (unit_data, _, _, _) -> unit_data) l)
              []
          in
          Link.add_info z ~build_info:(Build_info.create `Cma) ~unit_data ();

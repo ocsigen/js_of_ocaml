@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+type profile
 
 type optimized_result =
   { program : Code.program
@@ -26,32 +26,28 @@ type optimized_result =
   ; trampolined_calls : Effects.trampolined_calls
   ; in_cps : Effects.in_cps
   ; deadcode_sentinal : Code.Var.t
-  ; shapes : Shape.t StringMap.t
   }
 
-val optimize_for_wasm :
-     shapes:bool
-  -> profile:Profile.t
-  -> Code.program
-  -> optimized_result * (Global_flow.state * Global_flow.info)
+val optimize : profile:profile -> Code.program -> optimized_result
 
 val f :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
-  -> ?profile:Profile.t
-  -> ?shapes:bool
+  -> ?profile:profile
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> source_map:bool
   -> formatter:Pretty_print.t
+  -> Parse_bytecode.Debug.t
   -> Code.program
-  -> Source_map.info * Shape.t StringMap.t
+  -> Source_map.info
 
 val f' :
      ?standalone:bool
   -> ?wrap_with_fun:[ `Iife | `Anonymous | `Named of string ]
-  -> ?profile:Profile.t
+  -> ?profile:profile
   -> link:[ `All | `All_from of string list | `Needed | `No ]
   -> Pretty_print.t
+  -> Parse_bytecode.Debug.t
   -> Code.program
   -> unit
 
@@ -74,3 +70,7 @@ val simplify_js : Javascript.statement_list -> Javascript.statement_list
 val name_variables : Javascript.statement_list -> Javascript.statement_list
 
 val configure : Pretty_print.t -> unit
+
+val profiles : (int * profile) list
+
+val profile : int -> profile option

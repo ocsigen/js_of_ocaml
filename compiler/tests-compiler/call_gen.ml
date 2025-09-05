@@ -63,7 +63,7 @@ module M1 = struct
       function f(g){return caml_call2(f_prime(g), 3, 4);}
       //end
       function f_prime(g){
-       try{var _g_ = caml_call2(g, 1, 2); return _g_;}
+       try{var _i_ = caml_call2(g, 1, 2); return _i_;}
        catch(e$0){
         var e = caml_wrap_exception(e$0);
         throw caml_maybe_attach_backtrace(e, 0);
@@ -88,7 +88,7 @@ module M1 = struct
        return caml_call1(Stdlib[44], ((a + b | 0) + c | 0) + d | 0);
       }
       //end
-      function l(_f_, _g_){return k(_b_, _a_, _f_, _g_);}
+      function l(_g_, _h_){return k(_b_, _a_, _g_, _h_);}
       //end
       function m(_e_, _f_){return k(_d_, _c_, _e_, _f_);}
       //end

@@ -133,17 +133,6 @@ function caml_sys_getenv(name) {
   return caml_string_of_jsstring(r);
 }
 
-//Provides: caml_sys_getenv_opt (const)
-//Requires: caml_string_of_jsstring
-//Requires: caml_jsstring_of_string
-//Requires: jsoo_sys_getenv
-//Version: >= 5.4
-function caml_sys_getenv_opt(name) {
-  var r = jsoo_sys_getenv(caml_jsstring_of_string(name));
-  if (r === undefined) return 0;
-  return [0, caml_string_of_jsstring(r)];
-}
-
 //Provides: caml_sys_unsafe_getenv
 //Requires: caml_sys_getenv
 function caml_sys_unsafe_getenv(name) {
@@ -177,13 +166,13 @@ var caml_executable_name = caml_argv[1];
 
 //Provides: caml_sys_get_argv
 //Requires: caml_argv
-function caml_sys_get_argv(_unit) {
+function caml_sys_get_argv(a) {
   return [0, caml_argv[1], caml_argv];
 }
 
 //Provides: caml_sys_argv
 //Requires: caml_argv
-function caml_sys_argv(_unit) {
+function caml_sys_argv(a) {
   return caml_argv;
 }
 
@@ -196,7 +185,7 @@ function caml_sys_modify_argv(arg) {
 
 //Provides: caml_sys_executable_name const
 //Requires: caml_executable_name
-function caml_sys_executable_name(_unit) {
+function caml_sys_executable_name(a) {
   return caml_executable_name;
 }
 
@@ -219,7 +208,7 @@ function caml_sys_system_command(cmd) {
 //Provides: caml_sys_system_command
 //Requires: caml_jsstring_of_string
 //If: browser
-function caml_sys_system_command(_cmd) {
+function caml_sys_system_command(cmd) {
   return 127;
 }
 
@@ -232,7 +221,7 @@ function caml_sys_time() {
 
 //Provides: caml_sys_time_include_children
 //Requires: caml_sys_time
-function caml_sys_time_include_children(_b) {
+function caml_sys_time_include_children(b) {
   return caml_sys_time();
 }
 
@@ -361,41 +350,6 @@ function caml_sys_is_regular_file(name) {
   var root = resolve_fs_device(name);
   return root.device.isFile(root.rest);
 }
-
-//Provides: caml_io_buffer_size
-var caml_io_buffer_size = 65536;
-
-//Provides: caml_sys_io_buffer_size
-//Requires: caml_io_buffer_size
-//Version: >= 5.4
-function caml_sys_io_buffer_size(_unit) {
-  return caml_io_buffer_size;
-}
-
-//Provides: caml_sys_temp_dir_name
-//Requires: os_type
-//Requires: caml_string_of_jsstring
-//Version: >= 5.4
-function caml_sys_temp_dir_name(_unit) {
-  if (os_type === "Win32") {
-    return caml_string_of_jsstring(require("node:os").tmpdir());
-  } else {
-    return caml_string_of_jsstring("");
-  }
-}
-
-//Provides: caml_sys_convert_signal_number
-//Version: >= 5.4
-function caml_sys_convert_signal_number(signo) {
-  return signo;
-}
-
-//Provides: caml_sys_rev_convert_signal_number
-//Version: >= 5.4
-function caml_sys_rev_convert_signal_number(signo) {
-  return signo;
-}
-
 //Always
 //Requires: caml_fatal_uncaught_exception
 //If: !wasm

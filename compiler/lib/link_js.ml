@@ -224,14 +224,7 @@ end = struct
     build_info, units
 end
 
-let link
-    ~output
-    ~linkall
-    ~mklib
-    ~toplevel
-    ~files
-    ~resolve_sourcemap_url
-    ~(source_map : Source_map.Encoding_spec.t option) =
+let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source_map =
   (* we currently don't do anything with [toplevel]. It could be used
      to conditionally include link_info ?*)
   ignore (toplevel : bool);
@@ -322,12 +315,13 @@ let link
         match Line_reader.peek ic with
         | None -> ()
         | Some line ->
-            let drop_source_map =
-              match source_map with
-              | None | Some { keep_empty = true; _ } -> true
-              | Some { keep_empty = false; _ } -> false
-            in
-            (match action ~resolve_sourcemap_url ~drop_source_map file line with
+            (match
+               action
+                 ~resolve_sourcemap_url
+                 ~drop_source_map:Poly.(source_map = None)
+                 file
+                 line
+             with
             | Keep -> copy ic oc
             | Build_info bi ->
                 skip ic;
@@ -345,10 +339,9 @@ let link
                   if u.effects_without_cps && not !warn_effects
                   then (
                     warn_effects := true;
-                    Warning.warn
-                      `Effect_handlers_without_effect_backend
-                      "your program contains effect handlers; you should probably run \
-                       js_of_ocaml with option '--effects=cps'@.");
+                    warn
+                      "Warning: your program contains effect handlers; you should \
+                       probably run js_of_ocaml with option '--effects=cps'@.");
                   (if mklib
                    then
                      let u = if linkall then { u with force_link = true } else u in
@@ -419,14 +412,19 @@ let link
           Build_info.configure bi;
           let primitives =
             List.fold_left units ~init:StringSet.empty ~f:(fun acc (u : Unit_info.t) ->
-                List.iter u.aliases ~f:(fun (a, b) -> Primitive.alias a b);
                 StringSet.union acc (StringSet.of_list u.primitives))
           in
           let code = Parse_bytecode.link_info ~symbols:!sym ~primitives ~crcs:[] in
           let b = Buffer.create 100 in
           let fmt = Pretty_print.to_buffer b in
           Driver.configure fmt;
-          Driver.f' ~standalone:false ~link:`No ~wrap_with_fun:`Iife fmt code;
+          Driver.f'
+            ~standalone:false
+            ~link:`No
+            ~wrap_with_fun:`Iife
+            fmt
+            (Parse_bytecode.Debug.create ~include_cmis:false false)
+            code;
           let content = Buffer.contents b in
           Line_writer.write_lines oc content;
           Line_writer.write oc "");
@@ -444,7 +442,7 @@ let link
   let t = Timer.make () in
   match source_map with
   | None -> ()
-  | Some { output_file = file; source_map = init_sm; keep_empty = _ } ->
+  | Some (file, init_sm) ->
       let sections =
         List.rev_map !sm ~f:(fun (sm, reloc, _offset) ->
             let sm =

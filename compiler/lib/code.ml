@@ -19,16 +19,11 @@
  *)
 open! Stdlib
 
-let stats = Debug.find "stats"
-
-let times = Debug.find "times"
-
 module Addr = struct
   type t = int
 
   module Set = Set.Make (Int)
   module Map = Map.Make (Int)
-  module Hashtbl = Int.Hashtbl
 
   let to_string = string_of_int
 
@@ -37,6 +32,24 @@ module Addr = struct
   let pred = pred
 
   let succ = succ
+end
+
+module DebugAddr : sig
+  type t = private Addr.t
+
+  val of_addr : Addr.t -> t
+
+  val to_addr : t -> Addr.t
+
+  val no : t
+end = struct
+  type t = int
+
+  let of_addr (x : Addr.t) : t = x
+
+  let no = 0
+
+  let to_addr (x : t) : Addr.t = x
 end
 
 module Var : sig
@@ -50,6 +63,8 @@ module Var : sig
 
   val of_idx : int -> t
 
+  val to_string : ?origin:t -> t -> string
+
   val fresh : unit -> t
 
   val fresh_n : string -> t
@@ -60,13 +75,17 @@ module Var : sig
 
   val compare : t -> t -> int
 
-  val set_name : t -> string -> unit
+  val name : t -> string -> unit
 
   val get_name : t -> string option
 
   val propagate_name : t -> t -> unit
 
   val reset : unit -> unit
+
+  val set_pretty : bool -> unit
+
+  val set_stable : bool -> unit
 
   module Set : Set.S with type elt = t
 
@@ -79,6 +98,14 @@ module Var : sig
 
     type 'a t
 
+    module DataSet : sig
+      type 'a t
+
+      val iter : ('a -> unit) -> 'a t -> unit
+
+      val fold : ('a -> 'acc -> 'acc) -> 'a t -> 'acc -> 'acc
+    end
+
     type size = unit
 
     val get : 'a t -> key -> 'a
@@ -88,6 +115,10 @@ module Var : sig
     val length : 'a t -> int
 
     val make : size -> 'a -> 'a t
+
+    val make_set : size -> 'a DataSet.t t
+
+    val add_set : 'a DataSet.t t -> key -> 'a -> unit
 
     val iter : (key -> 'a -> unit) -> 'a t -> unit
   end
@@ -122,97 +153,21 @@ end = struct
 
   include T
 
-  module Name = struct
-    let names = Int.Hashtbl.create 100
-
-    let reset () = Int.Hashtbl.clear names
-
-    let reserved = String.Hashtbl.create 100
-
-    let () = StringSet.iter (fun s -> String.Hashtbl.add reserved s ()) Reserved.keyword
-
-    let is_reserved s = String.Hashtbl.mem reserved s
-
-    let merge n1 n2 =
-      match n1, n2 with
-      | "", n2 -> n2
-      | n1, "" -> n1
-      | n1, n2 ->
-          if generated_name n1
-          then n2
-          else if generated_name n2
-          then n1
-          else if String.length n1 > String.length n2
-          then n1
-          else n2
-
-    let set_raw v nm = Int.Hashtbl.replace names v nm
-
-    let propagate v v' =
-      try
-        let name = Int.Hashtbl.find names v in
-        match Int.Hashtbl.find names v' with
-        | exception Not_found -> set_raw v' name
-        | name' -> set_raw v' (merge name name')
-      with Not_found -> ()
-
-    let set v nm_orig =
-      let len = String.length nm_orig in
-      if len > 0
-      then (
-        let buf = Buffer.create (String.length nm_orig) in
-        let idx = ref 0 in
-        while !idx < len && not (Char.is_letter nm_orig.[!idx]) do
-          incr idx
-        done;
-        let pending = ref false in
-        if !idx >= len
-        then (
-          pending := true;
-          idx := 0);
-        for i = !idx to len - 1 do
-          if Char.is_letter nm_orig.[i] || Char.is_digit nm_orig.[i]
-          then (
-            if !pending then Buffer.add_char buf '_';
-            Buffer.add_char buf nm_orig.[i];
-            pending := false)
-          else pending := true
-        done;
-        let str = Buffer.contents buf in
-        let str =
-          match str, nm_orig with
-          | "", ">>=" -> "symbol_bind"
-          | "", ">>|" -> "symbol_map"
-          | "", "^" -> "symbol_concat"
-          | "", _ -> "symbol"
-          | str, _ -> if is_reserved str then str ^ "$" else str
-        in
-        (* protect against large names *)
-        let max_len = 30 in
-        let str =
-          if String.length str > max_len then String.sub str ~pos:0 ~len:max_len else str
-        in
-        set_raw v str)
-
-    let get v = try Some (Int.Hashtbl.find names v) with Not_found -> None
-  end
+  let printer = Var_printer.create Var_printer.Alphabet.javascript
 
   let last_var = ref 0
 
   let reset () =
     last_var := 0;
-    Name.reset ()
+    Var_printer.reset printer
 
-  let print f x =
-    Format.fprintf
-      f
-      "v%d%s"
-      x
-      (match Name.get x with
-      | None -> ""
-      | Some nm -> "{" ^ nm ^ "}")
+  let to_string ?origin i = Var_printer.to_string printer ?origin i
 
-  let set_name i nm = Name.set i nm
+  let print f x = Format.fprintf f "v%d" x
+
+  (* Format.fprintf f "%s" (to_string x) *)
+
+  let name i nm = Var_printer.name printer i nm
 
   let fresh () =
     incr last_var;
@@ -220,7 +175,7 @@ end = struct
 
   let fresh_n nm =
     incr last_var;
-    set_name !last_var nm;
+    name !last_var nm;
     !last_var
 
   let count () = !last_var + 1
@@ -229,9 +184,13 @@ end = struct
 
   let of_idx v = v
 
-  let get_name i = Name.get i
+  let get_name i = Var_printer.get_name printer i
 
-  let propagate_name i j = Name.propagate i j
+  let propagate_name i j = Var_printer.propagate_name printer i j
+
+  let set_pretty b = Var_printer.set_pretty printer b
+
+  let set_stable b = Var_printer.set_stable printer b
 
   let fork o =
     let n = fresh () in
@@ -244,6 +203,24 @@ end = struct
   module Tbl = struct
     type 'a t = 'a array
 
+    module DataSet = struct
+      type 'a t =
+        | Empty
+        | One of 'a
+        | Many of ('a, unit) Hashtbl.t
+
+      let iter f = function
+        | Empty -> ()
+        | One a -> f a
+        | Many t -> Hashtbl.iter (fun k () -> f k) t
+
+      let fold f t acc =
+        match t with
+        | Empty -> acc
+        | One a -> f a acc
+        | Many t -> Hashtbl.fold (fun k () acc -> f k acc) t acc
+    end
+
     type key = T.t
 
     type size = unit
@@ -255,6 +232,18 @@ end = struct
     let length t = Array.length t
 
     let make () v = Array.make (count ()) v
+
+    let make_set () = Array.make (count ()) DataSet.Empty
+
+    let add_set t x k =
+      match t.(x) with
+      | DataSet.Empty -> t.(x) <- One k
+      | One k' ->
+          let tbl = Hashtbl.create 0 in
+          Hashtbl.replace tbl k' ();
+          Hashtbl.replace tbl k ();
+          t.(x) <- Many tbl
+      | Many tbl -> Hashtbl.replace tbl k ()
 
     let iter f t =
       for i = 0 to Array.length t - 1 do
@@ -321,8 +310,8 @@ end
 type constant =
   | String of string
   | NativeString of Native_string.t
-  | Float of Int64.t
-  | Float_array of Int64.t array
+  | Float of float
+  | Float_array of float array
   | Int of Targetint.t
   | Int32 of Int32.t
   | Int64 of Int64.t
@@ -352,14 +341,8 @@ module Constant = struct
     | Int32 a, Int32 b -> Some (Int32.equal a b)
     | Int64 a, Int64 b -> Some (Int64.equal a b)
     | NativeInt a, NativeInt b -> Some (Int32.equal a b)
-    | Float_array a, Float_array b ->
-        Some
-          (Array.equal
-             (fun f g -> Float.ieee_equal (Int64.float_of_bits f) (Int64.float_of_bits g))
-             a
-             b)
-    | Float a, Float b ->
-        Some (Float.ieee_equal (Int64.float_of_bits a) (Int64.float_of_bits b))
+    | Float_array a, Float_array b -> Some (Array.equal Float.ieee_equal a b)
+    | Float a, Float b -> Some (Float.ieee_equal a b)
     | String _, NativeString _ | NativeString _, String _ -> None
     | Int _, Float _ | Float _, Int _ -> None
     | Tuple ((0 | 254), _, _), Float_array _ -> None
@@ -437,7 +420,7 @@ type expr =
       }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type
-  | Closure of Var.t list * cont * Parse_info.t option
+  | Closure of Var.t list * cont
   | Constant of constant
   | Prim of prim * prim_arg list
   | Special of special
@@ -493,12 +476,12 @@ module Print = struct
     | String s -> Format.fprintf f "%S" s
     | NativeString (Byte s) -> Format.fprintf f "%Sj" s
     | NativeString (Utf (Utf8 s)) -> Format.fprintf f "%Sj" s
-    | Float fl -> Format.fprintf f "%.12g" (Int64.float_of_bits fl)
+    | Float fl -> Format.fprintf f "%.12g" fl
     | Float_array a ->
         Format.fprintf f "[|";
         for i = 0 to Array.length a - 1 do
           if i > 0 then Format.fprintf f ", ";
-          Format.fprintf f "%.12g" (Int64.float_of_bits a.(i))
+          Format.fprintf f "%.12g" a.(i)
         done;
         Format.fprintf f "|]"
     | Int i -> Format.fprintf f "%s" (Targetint.to_string i)
@@ -591,7 +574,7 @@ module Print = struct
         Format.fprintf f "}"
     | Field (x, i, Non_float) -> Format.fprintf f "%a[%d]" Var.print x i
     | Field (x, i, Float) -> Format.fprintf f "FLOAT{%a[%d]}" Var.print x i
-    | Closure (l, c, _) -> Format.fprintf f "fun(%a){%a}" var_list l cont c
+    | Closure (l, c) -> Format.fprintf f "fun(%a){%a}" var_list l cont c
     | Constant c -> Format.fprintf f "CONST{%a}" constant c
     | Prim (p, l) -> prim f p l
     | Special s -> special f s
@@ -631,16 +614,16 @@ module Print = struct
     | Instr of instr
     | Last of last
 
-  let block f annot pc block =
-    Format.fprintf f "==== %d (%a) ====@." pc var_list block.params;
+  let block annot pc block =
+    Format.eprintf "==== %d (%a) ====@." pc var_list block.params;
     List.iter block.body ~f:(fun i ->
-        Format.fprintf f " %s %a@." (annot pc (Instr i)) instr i);
-    Format.fprintf f " %s %a@." (annot pc (Last block.branch)) last block.branch;
-    Format.fprintf f "@."
+        Format.eprintf " %s %a@." (annot pc (Instr i)) instr i);
+    Format.eprintf " %s %a@." (annot pc (Last block.branch)) last block.branch;
+    Format.eprintf "@."
 
-  let program f annot { start; blocks; _ } =
-    Format.fprintf f "Entry point: %d@.@." start;
-    Addr.Map.iter (block f annot) blocks
+  let program annot { start; blocks; _ } =
+    Format.eprintf "Entry point: %d@.@." start;
+    Addr.Map.iter (block annot) blocks
 end
 
 (****)
@@ -650,10 +633,10 @@ let fold_closures p f accu =
     (fun _ block accu ->
       List.fold_left block.body ~init:accu ~f:(fun accu i ->
           match i with
-          | Let (x, Closure (params, cont, cloc)) -> f (Some x) params cont cloc accu
+          | Let (x, Closure (params, cont)) -> f (Some x) params cont accu
           | _ -> accu))
     p.blocks
-    (f None [] (p.start, []) None accu)
+    (f None [] (p.start, []) accu)
 
 (****)
 
@@ -809,16 +792,16 @@ let fold_closures_innermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont, cloc)) ->
+            | Let (x, Closure (params, cont)) ->
                 let accu = visit blocks (fst cont) f accu in
-                f (Some x) params cont cloc accu
+                f (Some x) params cont accu
             | _ -> accu))
       pc
       blocks
       accu
   in
   let accu = visit blocks start f accu in
-  f None [] (start, []) None accu
+  f None [] (start, []) accu
 
 let fold_closures_outermost_first { start; blocks; _ } f accu =
   let rec visit blocks pc f accu =
@@ -828,186 +811,46 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont, cloc)) ->
-                let accu = f (Some x) params cont cloc accu in
+            | Let (x, Closure (params, cont)) ->
+                let accu = f (Some x) params cont accu in
                 visit blocks (fst cont) f accu
             | _ -> accu))
       pc
       blocks
       accu
   in
-  let accu = f None [] (start, []) None accu in
+  let accu = f None [] (start, []) accu in
   visit blocks start f accu
 
-let rec last_instr l =
-  match l with
-  | [] | [ Event _ ] -> None
-  | [ i ] | [ i; Event _ ] -> Some i
-  | _ :: rem -> last_instr rem
-
-(* Compute the list of variables containing the return values of each
-   function *)
-let return_values p =
-  fold_closures
-    p
-    (fun name_opt _ (pc, _) _ rets ->
-      match name_opt with
-      | None -> rets
-      | Some name ->
-          let s =
-            traverse
-              { fold = fold_children }
-              (fun pc s ->
-                let block = Addr.Map.find pc p.blocks in
-                match block.branch with
-                | Return x -> Var.Set.add x s
-                | _ -> s)
-              pc
-              p.blocks
-              Var.Set.empty
-          in
-          Var.Map.add name s rets)
-    Var.Map.empty
-
-let equal p1 p2 =
+let eq p1 p2 =
   p1.start = p2.start
-  && Addr.Map.equal
-       (fun { params; body; branch } b ->
-         List.equal ~eq:Var.equal params b.params
-         && Poly.equal branch b.branch
-         && List.equal ~eq:Poly.equal body b.body)
+  && Addr.Map.cardinal p1.blocks = Addr.Map.cardinal p2.blocks
+  && Addr.Map.fold
+       (fun pc block1 b ->
+         b
+         &&
+         try
+           let block2 = Addr.Map.find pc p2.blocks in
+           Poly.(block1.params = block2.params)
+           && Poly.(block1.branch = block2.branch)
+           && Poly.(block1.body = block2.body)
+         with Not_found -> false)
        p1.blocks
-       p2.blocks
-
-let print_to_file p =
-  let file = Filename.temp_file "jsoo" "prog" in
-  let oc = open_out_bin file in
-  let f = Format.formatter_of_out_channel oc in
-  Print.program f (fun _ _ -> "") p;
-  close_out oc;
-  file
-
-let print_diff p1 p2 =
-  if equal p1 p2
-  then ()
-  else
-    let f1 = print_to_file p1 in
-    let f2 = print_to_file p2 in
-    ignore (Sys.command (Printf.sprintf "patdiff %s %s" f1 f2) : int)
-
-let check_updates ~name p1 p2 ~updates =
-  match equal p1 p2, updates = 0 with
-  | true, true -> ()
-  | false, false ->
-      if false (* useful for debugging *) && updates < 5 then print_diff p1 p2
-  | true, false ->
-      let file = print_to_file p1 in
-      Printf.eprintf
-        "CHECK_UPDATES: %s: %d updates declared, but program unchanged %s\n"
-        name
-        updates
-        file;
-      assert false
-  | false, true ->
-      Printf.eprintf "CHECK_UPDATES: %s: no update declared, but program differs.\n" name;
-      print_diff p1 p2;
-      assert false
-
-let cont_equal (pc, args) (pc', args') = pc = pc' && List.equal ~eq:Var.equal args args'
-
-let cont_compare (pc, args) (pc', args') =
-  let c = compare pc pc' in
-  if c <> 0 then c else List.compare ~cmp:Var.compare args args'
+       true
 
 let with_invariant = Debug.find "invariant"
 
-let do_compact { blocks; start; free_pc = _ } =
-  let remap =
-    let max = fst (Addr.Map.max_binding blocks) in
-    let a = Array.make (max + 1) 0 in
-    let i = ref 0 in
-    Addr.Map.iter
-      (fun pc _ ->
-        a.(pc) <- !i;
-        incr i)
-      blocks;
-    a
-  in
-  let rewrite_cont remap (pc, args) = remap.(pc), args in
-  let rewrite remap block =
-    let body =
-      List.map block.body ~f:(function
-        | Let (x, Closure (params, cont, loc)) ->
-            Let (x, Closure (params, rewrite_cont remap cont, loc))
-        | i -> i)
-    in
-    let branch =
-      match block.branch with
-      | (Return _ | Raise _ | Stop) as b -> b
-      | Branch c -> Branch (rewrite_cont remap c)
-      | Poptrap c -> Poptrap (rewrite_cont remap c)
-      | Cond (x, c1, c2) -> Cond (x, rewrite_cont remap c1, rewrite_cont remap c2)
-      | Switch (x, a) -> Switch (x, Array.map a ~f:(rewrite_cont remap))
-      | Pushtrap (c1, x, c2) -> Pushtrap (rewrite_cont remap c1, x, rewrite_cont remap c2)
-    in
-    { block with body; branch }
-  in
-  let blocks =
-    Addr.Map.fold
-      (fun pc b blocks -> Addr.Map.add remap.(pc) (rewrite remap b) blocks)
-      blocks
-      Addr.Map.empty
-  in
-  let free_pc = (Addr.Map.max_binding blocks |> fst) + 1 in
-  let start = remap.(start) in
-  { blocks; start; free_pc }
+let check_defs = false
 
-let compact p =
-  let t = Timer.make () in
-  let card = Addr.Map.cardinal p.blocks in
-  let max = Addr.Map.max_binding p.blocks |> fst in
-  let ratio = float card /. float max *. 100. in
-  let do_it = Float.(ratio < 70.) in
-  let p = if do_it then do_compact p else p in
-  if times () then Format.eprintf "  compact: %a@." Timer.print t;
-  if stats ()
-  then
-    Format.eprintf
-      "Stats - compact: %d/%d = %.2f%%%s@."
-      card
-      max
-      ratio
-      (if not do_it then " - ignored" else "");
-  p
-
-let used_blocks p =
-  let visited = BitSet.create' p.free_pc in
-  let rec mark_used pc =
-    if not (BitSet.mem visited pc)
-    then (
-      BitSet.set visited pc;
-      let block = Addr.Map.find pc p.blocks in
-      List.iter
-        ~f:(fun i ->
-          match i with
-          | Let (_, Closure (_, (pc', _), _)) -> mark_used pc'
-          | _ -> ())
-        block.body;
-      fold_children p.blocks pc (fun pc' () -> mark_used pc') ())
-  in
-  mark_used p.start;
-  visited
-
-let check_defs = true
-
-let invariant ({ blocks; start; _ } as p) =
+let invariant { blocks; start; _ } =
+  let target = Config.target () in
   if with_invariant ()
   then (
     assert (Addr.Map.mem start blocks);
     let defs = Var.ISet.empty () in
     let check_cont (cont, args) =
       let b = Addr.Map.find cont blocks in
-      assert (List.compare_lengths args b.params = 0)
+      assert (List.length args = List.length b.params)
     in
     let define x =
       if check_defs
@@ -1015,15 +858,28 @@ let invariant ({ blocks; start; _ } as p) =
         assert (not (Var.ISet.mem defs x));
         Var.ISet.add defs x)
     in
+    let check_constant = function
+      | NativeInt _ | Int32 _ ->
+          assert (
+            match target with
+            | `Wasm -> true
+            | _ -> false)
+      | String _ | NativeString _ | Float _ | Float_array _ | Int _ | Int64 _
+      | Tuple (_, _, _) -> ()
+    in
+    let check_prim_arg = function
+      | Pc c -> check_constant c
+      | Pv _ -> ()
+    in
     let check_expr = function
       | Apply _ -> ()
       | Block (_, _, _, _) -> ()
       | Field (_, _, _) -> ()
-      | Closure (l, cont, _) ->
+      | Closure (l, cont) ->
           List.iter l ~f:define;
           check_cont cont
-      | Constant _ -> ()
-      | Prim (_, _) -> ()
+      | Constant c -> check_constant c
+      | Prim (_, args) -> List.iter ~f:check_prim_arg args
       | Special _ -> ()
     in
     let check_instr i =
@@ -1050,7 +906,6 @@ let invariant ({ blocks; start; _ } as p) =
       | Stop -> ()
       | Branch cont -> check_cont cont
       | Cond (_x, cont1, cont2) ->
-          assert (not (cont_equal cont1 cont2));
           check_cont cont1;
           check_cont cont2
       | Switch (_x, a1) -> Array.iteri a1 ~f:(fun _ cont -> check_cont cont)
@@ -1059,10 +914,8 @@ let invariant ({ blocks; start; _ } as p) =
           check_cont cont2
       | Poptrap cont -> check_cont cont
     in
-    let visited = used_blocks p in
     Addr.Map.iter
-      (fun pc block ->
-        assert (BitSet.mem visited pc);
+      (fun _pc block ->
         List.iter block.params ~f:define;
         List.iter block.body ~f:check_instr;
         check_events block.body;

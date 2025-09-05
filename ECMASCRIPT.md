@@ -56,10 +56,6 @@ Features are grouped by ECMAScript version.
 
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/WeakMap#browser_compatibility)
 
-### DataView
-
-- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView#browser_compatibility)
-
 ## ECMAScript 2016
 
 ### async function

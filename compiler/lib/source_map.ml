@@ -304,42 +304,46 @@ let int_of_intlit (`Intlit s) =
   | _ -> invalid ()
 
 let stringlit name rest : [ `Stringlit of string ] option =
-  match List.string_assoc name rest with
-  | Some (`Stringlit _ as s) -> Some s
-  | Some `Null -> None
-  | Some _ -> invalid ()
-  | None -> None
+  try
+    match List.assoc name rest with
+    | `Stringlit _ as s -> Some s
+    | `Null -> None
+    | _ -> invalid ()
+  with Not_found -> None
 
 let list_stringlit name rest =
-  match List.string_assoc name rest with
-  | Some (`List l) ->
-      Some
-        (List.map l ~f:(function
-          | `Stringlit _ as s -> s
-          | _ -> invalid ()))
-  | Some _ -> invalid ()
-  | None -> None
+  try
+    match List.assoc name rest with
+    | `List l ->
+        Some
+          (List.map l ~f:(function
+            | `Stringlit _ as s -> s
+            | _ -> invalid ()))
+    | _ -> invalid ()
+  with Not_found -> None
 
 let list_stringlit_opt name rest =
-  match List.string_assoc name rest with
-  | Some (`List l) ->
-      Some
-        (List.map l ~f:(function
-          | `Stringlit _ as s -> Some s
-          | `Null -> None
-          | _ -> invalid ()))
-  | Some _ -> invalid ()
-  | None -> None
+  try
+    match List.assoc name rest with
+    | `List l ->
+        Some
+          (List.map l ~f:(function
+            | `Stringlit _ as s -> Some s
+            | `Null -> None
+            | _ -> invalid ()))
+    | _ -> invalid ()
+  with Not_found -> None
 
 let list_intlit name rest =
-  match List.string_assoc name rest with
-  | Some (`List l) ->
-      Some
-        (List.map l ~f:(function
-          | `Intlit _ as s -> s
-          | _ -> invalid ()))
-  | Some _ -> invalid ()
-  | None -> None
+  try
+    match List.assoc name rest with
+    | `List l ->
+        Some
+          (List.map l ~f:(function
+            | `Intlit _ as s -> s
+            | _ -> invalid ()))
+    | _ -> invalid ()
+  with Not_found -> None
 
 module Standard = struct
   type t =
@@ -429,7 +433,7 @@ module Standard = struct
                           let contents =
                             match sm.sources_content with
                             | Some x ->
-                                assert (List.compare_lengths x sm.sources = 0);
+                                assert (List.length x = List.length sm.sources);
                                 x
                             | None -> List.map sm.sources ~f:(fun _ -> None)
                           in
@@ -477,7 +481,9 @@ module Standard = struct
            , match t.sourceroot with
              | None -> None
              | Some s -> Some (stringlit s) )
+         ; "names", Some (`List (List.map t.names ~f:(fun s -> stringlit s)))
          ; "sources", Some (`List (List.map t.sources ~f:(fun s -> stringlit s)))
+         ; "mappings", Some (stringlit (Mappings.to_string t.mappings))
          ; ( "sourcesContent"
            , match t.sources_content with
              | None -> None
@@ -487,8 +493,6 @@ module Standard = struct
                       (List.map l ~f:(function
                         | None -> `Null
                         | Some x -> Source_content.to_json x))) )
-         ; "names", Some (`List (List.map t.names ~f:(fun s -> stringlit s)))
-         ; "mappings", Some (stringlit (Mappings.to_string t.mappings))
          ; ( "ignoreList"
            , match t.ignore_list with
              | [] -> None
@@ -574,8 +578,7 @@ module Standard = struct
 
   let to_string m = Yojson.Raw.to_string (json (rewrite_paths m))
 
-  let to_file ?rewrite_paths:(rewrite = true) m file =
-    Yojson.Raw.to_file file (json (if rewrite then rewrite_paths m else m))
+  let to_file m file = Yojson.Raw.to_file file (json (rewrite_paths m))
 
   let invariant
       { version
@@ -599,7 +602,7 @@ module Standard = struct
     match sources_content with
     | None -> ()
     | Some x ->
-        if List.compare_lengths sources x <> 0
+        if not (List.length sources = List.length x)
         then
           invalid_arg
             "Source_map.Standard.invariant: sources and sourcesContent must have the \
@@ -649,15 +652,16 @@ module Index = struct
          ])
 
   let intlit ~errmsg name json =
-    match List.string_assoc name json with
-    | Some (`Intlit i) -> int_of_string i
-    | Some _ | None -> invalid_arg errmsg
+    match List.assoc name json with
+    | `Intlit i -> int_of_string i
+    | _ -> invalid_arg errmsg
+    | exception Not_found -> invalid_arg errmsg
 
   let section_of_json ?tmp_buf : Yojson.Raw.t -> section = function
     | `Assoc json ->
         let offset =
-          match List.string_assoc "offset" json with
-          | Some (`Assoc fields) ->
+          match List.assoc "offset" json with
+          | `Assoc fields ->
               let gen_line =
                 intlit
                   "line"
@@ -675,21 +679,18 @@ module Index = struct
                      section"
               in
               { Offset.gen_line; gen_column }
-          | Some _ | None ->
-              invalid_arg "Source_map.Index.of_json: 'offset' field of unexpected type"
+          | _ -> invalid_arg "Source_map.Index.of_json: 'offset' field of unexpected type"
         in
-        (match List.string_assoc "url" json with
-        | Some _ ->
+        (match List.assoc "url" json with
+        | _ ->
             invalid_arg
               "Source_map.Index.of_json: URLs in index maps are not currently supported"
-        | None -> ());
+        | exception Not_found -> ());
         let map =
-          match List.string_assoc "map" json with
-          | Some json -> (
-              try Standard.of_json ?tmp_buf json
-              with Invalid_argument _ ->
-                invalid_arg "Source_map.Index.of_json: invalid sub-map object")
-          | None -> invalid_arg "Source_map.Index.of_json: field 'map' absent"
+          try Standard.of_json ?tmp_buf (List.assoc "map" json) with
+          | Not_found -> invalid_arg "Source_map.Index.of_json: field 'map' absent"
+          | Invalid_argument _ ->
+              invalid_arg "Source_map.Index.of_json: invalid sub-map object"
         in
         { offset; map }
     | _ -> invalid_arg "Source_map.Index.of_json: section of unexpected type"
@@ -699,12 +700,13 @@ module Index = struct
       when version_is_valid (int_of_string version) -> (
         let string name json = Option.map ~f:string_of_stringlit (stringlit name json) in
         let file = string "file" fields in
-        match List.string_assoc "sections" fields with
-        | Some (`List sections) ->
+        match List.assoc "sections" fields with
+        | `List sections ->
             let sections = List.map ~f:(section_of_json ?tmp_buf) sections in
             { version = int_of_string version; file; sections }
-        | Some _ -> invalid_arg "Source_map.Index.of_json: `sections` is not an array"
-        | None -> invalid_arg "Source_map.Index.of_json: no `sections` field")
+        | _ -> invalid_arg "Source_map.Index.of_json: `sections` is not an array"
+        | exception Not_found ->
+            invalid_arg "Source_map.Index.of_json: no `sections` field")
     | _ -> invalid_arg "Source_map.Index.of_json"
 
   let rewrite_paths m =
@@ -716,8 +718,7 @@ module Index = struct
 
   let to_string m = Yojson.Raw.to_string (json (rewrite_paths m))
 
-  let to_file ?rewrite_paths:(rewrite = true) m file =
-    Yojson.Raw.to_file file (json (if rewrite then rewrite_paths m else m))
+  let to_file m file = Yojson.Raw.to_file file (json (rewrite_paths m))
 
   let invariant { version; file = _; sections } =
     if not (version_is_valid version)
@@ -745,9 +746,9 @@ type t =
 
 let of_json ?tmp_buf = function
   | `Assoc fields as json -> (
-      match List.string_assoc "sections" fields with
-      | Some _ -> Index (Index.of_json ?tmp_buf json)
-      | None -> Standard (Standard.of_json ?tmp_buf json))
+      match List.assoc "sections" fields with
+      | _ -> Index (Index.of_json ?tmp_buf json)
+      | exception Not_found -> Standard (Standard.of_json ?tmp_buf json))
   | _ -> invalid_arg "Source_map.of_json: map is not an object"
 
 let of_string ?tmp_buf s = of_json ?tmp_buf (Yojson.Raw.from_string ?buf:tmp_buf s)
@@ -758,10 +759,10 @@ let to_string = function
   | Standard m -> Standard.to_string m
   | Index i -> Index.to_string i
 
-let to_file ?rewrite_paths x f =
+let to_file x f =
   match x with
-  | Standard m -> Standard.to_file ?rewrite_paths m f
-  | Index i -> Index.to_file ?rewrite_paths i f
+  | Standard m -> Standard.to_file m f
+  | Index i -> Index.to_file i f
 
 let invariant = function
   | Standard m -> Standard.invariant m
@@ -791,12 +792,3 @@ let find_in_js_file file =
       in
       Some (of_string content)
   | _ -> None
-
-module Encoding_spec = struct
-  type t =
-    { output_file : string option  (** Source map file ([None] means generate inline. *)
-    ; source_map : Standard.t  (** Source map to extend. *)
-    ; keep_empty : bool
-          (** Don't add anything to the source map (for js_of_ocaml's "empty sourcemap" option. *)
-    }
-end

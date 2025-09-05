@@ -71,7 +71,7 @@ function caml_js_get_console() {
 //Provides: caml_xmlhttprequest_create
 //Requires: caml_failwith
 //Weakdef
-function caml_xmlhttprequest_create(_unit) {
+function caml_xmlhttprequest_create(unit) {
   if (typeof XMLHttpRequest === "undefined") {
     caml_failwith("XMLHttpRequest is not available");
   }

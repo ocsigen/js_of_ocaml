@@ -21,7 +21,7 @@ open Js_of_ocaml_compiler
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
-    profile : Profile.t option
+    profile : Driver.profile option
   ; runtime_files : string list
   ; runtime_only : bool
   ; output_file : string * bool
@@ -32,7 +32,6 @@ type t =
   ; params : (string * string) list
   ; include_dirs : string list
   ; effects : Config.effects_backend
-  ; shape_files : string list
   }
 
 val options : unit -> t Cmdliner.Term.t

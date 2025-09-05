@@ -28,7 +28,6 @@ type closure_info =
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
   ; pos : int
-  ; cloc : Parse_info.t option
   }
 
 module SCC = Strongly_connected_components.Make (Var)
@@ -64,10 +63,10 @@ let rec collect_apply pc blocks visited tc =
 
 let rec collect_closures blocks l pos =
   match l with
-  | Let (f_name, Closure (args, ((pc, _) as cont), cloc)) :: rem ->
+  | Let (f_name, Closure (args, ((pc, _) as cont))) :: rem ->
       let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
       let l, rem = collect_closures blocks rem (succ pos) in
-      { f_name; args; cont; tc; pos; cloc } :: l, rem
+      { f_name; args; cont; tc; pos } :: l, rem
   | rem -> [], rem
 
 let group_closures closures_map =
@@ -156,24 +155,21 @@ module Trampoline = struct
     in
     block
 
-  let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
+  let wrapper_closure pc args = Closure (args, (pc, []))
 
   let f free_pc blocks closures_map component =
     match component with
     | SCC.No_loop id ->
         let ci = Var.Map.find id closures_map in
-        let instr = Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) in
+        let instr = Let (ci.f_name, Closure (ci.args, ci.cont)) in
         free_pc, blocks, [ One { name = ci.f_name; code = instr } ]
     | SCC.Has_loop all ->
         if debug_tc ()
         then (
           Format.eprintf "Detect cycles of size (%d).\n%!" (List.length all);
           Format.eprintf
-            "%a\n%!"
-            (Format.pp_print_list
-               ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
-               Var.print)
-            all);
+            "%s\n%!"
+            (String.concat ~sep:", " (List.map all ~f:(fun x -> Var.to_string x))));
         let tailcall_max_depth = Config.Param.tailcall_max_depth () in
         let all =
           List.map all ~f:(fun id ->
@@ -186,7 +182,7 @@ module Trampoline = struct
             ~init:(blocks, free_pc, [])
             ~f:(fun (blocks, free_pc, closures) (counter, ci) ->
               if debug_tc ()
-              then Format.eprintf "Rewriting for %a\n%!" Var.print ci.f_name;
+              then Format.eprintf "Rewriting for %s\n%!" (Var.to_string ci.f_name);
               let new_f = Code.Var.fork ci.f_name in
               let new_args = List.map ci.args ~f:Code.Var.fork in
               let wrapper_pc = free_pc in
@@ -202,14 +198,11 @@ module Trampoline = struct
                 wrapper_block new_f ~args:new_args ~counter:new_counter start_loc
               in
               let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
-              let instr_wrapper =
-                Let (ci.f_name, wrapper_closure wrapper_pc new_args ci.cloc)
-              in
+              let instr_wrapper = Let (ci.f_name, wrapper_closure wrapper_pc new_args) in
               let instr_real =
                 match counter with
-                | None -> Let (new_f, Closure (ci.args, ci.cont, ci.cloc))
-                | Some counter ->
-                    Let (new_f, Closure (counter :: ci.args, ci.cont, ci.cloc))
+                | None -> Let (new_f, Closure (ci.args, ci.cont))
+                | Some counter -> Let (new_f, Closure (counter :: ci.args, ci.cont))
               in
               let counter_and_pc =
                 List.fold_left all ~init:[] ~f:(fun acc (counter, ci2) ->
@@ -328,6 +321,7 @@ let f p : Code.program =
       p.blocks
       (p.blocks, p.free_pc)
   in
+  (* Code.invariant (pc, blocks, free_pc); *)
   let p = { p with blocks; free_pc } in
   Code.invariant p;
   p

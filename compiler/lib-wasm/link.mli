@@ -38,6 +38,7 @@ end
 type unit_data =
   { unit_name : string
   ; unit_info : Unit_info.t
+  ; strings : string list
   ; fragments : (string * Javascript.expression) list
   }
 
@@ -54,7 +55,8 @@ val build_runtime_arguments :
   -> separate_compilation:bool
   -> missing_primitives:string list
   -> wasm_dir:string
-  -> generated_js:(string option * (string * Javascript.expression) list) list
+  -> generated_js:
+       (string option * (string list * (string * Javascript.expression) list)) list
   -> unit
   -> Javascript.expression
 

@@ -19,15 +19,15 @@
 open! Stdlib
 open Wasm_ast
 
-let assign_names ?(reversed = true) (f : Code.Var.t -> string option) names =
+let assign_names ?(reversed = true) f names =
   let used = ref StringSet.empty in
-  let counts = String.Hashtbl.create 101 in
+  let counts = Hashtbl.create 101 in
   let rec find_available_name used name =
     let i =
-      try String.Hashtbl.find counts name
+      try Hashtbl.find counts name
       with Not_found ->
         let i = ref 0 in
-        String.Hashtbl.replace counts name i;
+        Hashtbl.replace counts name i;
         i
     in
     incr i;
@@ -55,10 +55,10 @@ let assign_names ?(reversed = true) (f : Code.Var.t -> string option) names =
     incr i;
     if StringSet.mem nm !used then first_available_name () else nm
   in
-  let tbl = Code.Var.Hashtbl.create 16 in
+  let tbl = Hashtbl.create 16 in
   List.iter
     ~f:(fun (x, nm) ->
-      Code.Var.Hashtbl.add
+      Hashtbl.add
         tbl
         x
         (match nm with
@@ -68,12 +68,12 @@ let assign_names ?(reversed = true) (f : Code.Var.t -> string option) names =
   tbl
 
 type st =
-  { type_names : string Code.Var.Hashtbl.t
-  ; func_names : string Code.Var.Hashtbl.t
-  ; global_names : string Code.Var.Hashtbl.t
-  ; data_names : string Code.Var.Hashtbl.t
-  ; tag_names : string Code.Var.Hashtbl.t
-  ; local_names : string Code.Var.Hashtbl.t
+  { type_names : (var, string) Hashtbl.t
+  ; func_names : (var, string) Hashtbl.t
+  ; global_names : (var, string) Hashtbl.t
+  ; data_names : (var, string) Hashtbl.t
+  ; tag_names : (var, string) Hashtbl.t
+  ; local_names : (var, string) Hashtbl.t
   }
 
 let build_name_tables fields =
@@ -103,7 +103,7 @@ let build_name_tables fields =
   ; global_names = assign_names index !global_names
   ; data_names = assign_names index !data_names
   ; tag_names = assign_names index !tag_names
-  ; local_names = Code.Var.Hashtbl.create 1
+  ; local_names = Hashtbl.create 1
   }
 
 type sexp =
@@ -115,7 +115,7 @@ type sexp =
 
 let rec format_sexp f s =
   match s with
-  | Atom s -> Format.pp_print_string f s
+  | Atom s -> Format.fprintf f "%s" s
   | List l ->
       let has_comment =
         List.exists l ~f:(function
@@ -124,40 +124,25 @@ let rec format_sexp f s =
       in
       if has_comment
       then (* Ensure comments are on their own line *)
-        Format.pp_open_vbox f 2
-      else Format.pp_open_box f 2;
-      Format.pp_print_string f "(";
-      Format.pp_print_list
-        ~pp_sep:(fun f () -> Format.pp_print_space f ())
-        format_sexp
-        f
-        l;
+        Format.fprintf f "@[<v 2>("
+      else Format.fprintf f "@[<2>(";
+      Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f "@ ") format_sexp f l;
       if
         has_comment
-        &&
-        match List.last l with
-        | Some (Comment _) -> true
-        | Some _ | None -> false
+        && List.fold_left
+             ~f:(fun _ i ->
+               match i with
+               | Comment _ -> true
+               | _ -> false)
+             ~init:false
+             l
       then
         (* Make sure there is a newline when a comment is at the very end. *)
-        Format.pp_print_space f ();
-      Format.pp_print_string f ")";
-      Format.pp_close_box f ()
-  | Comment s ->
-      Format.pp_print_string f ";;";
-      Format.pp_print_string f s
+        Format.fprintf f "@ ";
+      Format.fprintf f ")@]"
+  | Comment s -> Format.fprintf f ";;%s" s
 
-let escape_string s =
-  let b = Buffer.create (String.length s + 2) in
-  for i = 0 to String.length s - 1 do
-    let c = s.[i] in
-    if Char.(c >= ' ' && c <= '~' && c <> '"' && c <> '\\')
-    then Buffer.add_char b c
-    else Printf.bprintf b "\\%02x" (Char.code c)
-  done;
-  Buffer.contents b
-
-let index tbl x = Atom ("$" ^ Code.Var.Hashtbl.find tbl x)
+let index tbl x = Atom ("$" ^ Hashtbl.find tbl x)
 
 let heap_type st (ty : heap_type) =
   match ty with
@@ -225,7 +210,7 @@ let str_type st typ =
 
 let block_type = func_type
 
-let quoted_name name = Atom ("\"" ^ escape_string name ^ "\"")
+let quoted_name name = Atom ("\"" ^ name ^ "\"")
 
 let export name =
   match name with
@@ -317,29 +302,16 @@ type ctx = { mutable function_refs : Code.Var.Set.t }
 
 let reference_function ctx f = ctx.function_refs <- Code.Var.Set.add f ctx.function_refs
 
-let remove_nops l =
-  List.filter
-    ~f:(function
-      | Nop -> false
-      | _ -> true)
-    l
+let remove_nops l = List.filter ~f:(fun i -> not (Poly.equal i Nop)) l
 
 let float64 _ f =
   match classify_float f with
-  | FP_normal | FP_subnormal | FP_zero -> Printf.sprintf "%h" f
-  | FP_nan ->
-      Printf.sprintf
-        "nan:0x%Lx"
-        Int64.(logand (bits_of_float f) (of_int ((1 lsl 52) - 1)))
+  | FP_normal | FP_subnormal | FP_zero | FP_nan -> Printf.sprintf "%h" f
   | FP_infinite -> if Float.(f > 0.) then "inf" else "-inf"
 
 let float32 _ f =
   match classify_float f with
-  | FP_normal | FP_subnormal | FP_zero -> Printf.sprintf "%h" f
-  | FP_nan ->
-      Printf.sprintf
-        "nan:0x%lx"
-        Int32.(logand (bits_of_float f) (of_int ((1 lsl 23) - 1)))
+  | FP_normal | FP_subnormal | FP_zero | FP_nan -> Printf.sprintf "%h" f
   | FP_infinite -> if Float.(f > 0.) then "inf" else "-inf"
 
 let expression_or_instructions ctx st in_function =
@@ -467,8 +439,6 @@ let expression_or_instructions ctx st in_function =
             :: ref_type st ty'
             :: expression e)
         ]
-    | Br_on_null (i, e) ->
-        [ List (Atom "br_on_null" :: Atom (string_of_int i) :: expression e) ]
     | IfExpr (ty, cond, ift, iff) ->
         [ List
             ((Atom "if" :: block_type st { params = []; result = [ ty ] })
@@ -491,7 +461,6 @@ let expression_or_instructions ctx st in_function =
                       catches))
         ]
     | ExternConvertAny e' -> [ List (Atom "extern.convert_any" :: expression e') ]
-    | AnyConvertExtern e' -> [ List (Atom "any.convert_extern" :: expression e') ]
   and instruction i =
     match i with
     | Drop e -> [ List (Atom "drop" :: expression e) ]
@@ -623,6 +592,16 @@ let import st f =
           ]
       ]
 
+let escape_string s =
+  let b = Buffer.create (String.length s + 2) in
+  for i = 0 to String.length s - 1 do
+    let c = s.[i] in
+    if Poly.(c >= ' ' && c <= '~' && c <> '"' && c <> '\\')
+    then Buffer.add_char b c
+    else Printf.bprintf b "\\%02x" (Char.code c)
+  done;
+  Buffer.contents b
+
 let type_field st { name; typ; supertype; final } =
   if final && Option.is_none supertype
   then List [ Atom "type"; index st.type_names name; str_type st typ ]
@@ -667,13 +646,10 @@ let field ctx st f =
   | Type [ t ] -> [ type_field st t ]
   | Type l -> [ List (Atom "rec" :: List.map ~f:(type_field st) l) ]
 
-let times = Debug.find "times"
-
 let f ch fields =
-  let t = Timer.make () in
   let st = build_name_tables fields in
   let ctx = { function_refs = Code.Var.Set.empty } in
-  let other_fields = List.concat_map ~f:(fun f -> field ctx st f) fields in
+  let other_fields = List.concat (List.map ~f:(fun f -> field ctx st f) fields) in
   let funct_decl =
     let functions = Code.Var.Set.elements ctx.function_refs in
     if List.is_empty functions
@@ -686,9 +662,12 @@ let f ch fields =
           :: List.map ~f:(index st.func_names) functions)
       ]
   in
-  let imports = List.concat_map ~f:(fun i -> import st i) fields in
-  let sexp = List (Atom "module" :: List.concat [ imports; funct_decl; other_fields ]) in
-  if times () then Format.eprintf "    prepare: %a@." Timer.print t;
-  let t = Timer.make () in
-  Format.fprintf (Format.formatter_of_out_channel ch) "%a@." format_sexp sexp;
-  if times () then Format.eprintf "    format: %a@." Timer.print t
+  Format.fprintf
+    (Format.formatter_of_out_channel ch)
+    "%a@."
+    format_sexp
+    (List
+       (Atom "module"
+       :: (List.concat (List.map ~f:(fun i -> import st i) fields)
+          @ funct_decl
+          @ other_fields)))

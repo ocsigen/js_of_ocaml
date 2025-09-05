@@ -24,7 +24,7 @@ From +array.js:
 caml_check_bound
 
 From +bigarray.js:
-caml_ba_create_from (deprecated)
+caml_ba_create_from
 caml_ba_init
 
 From +bigstring.js:
@@ -91,9 +91,6 @@ caml_gr_text_size
 caml_gr_wait_event
 caml_gr_window_id
 
-From +hash.js:
-caml_hash_mix_int64
-
 From +ints.js:
 caml_div
 caml_mod
@@ -116,8 +113,11 @@ caml_string_concat
 caml_to_js_string (deprecated)
 
 From +stdlib.js:
+caml_build_symbols
 caml_is_printable
 caml_maybe_print_stats
+caml_register_global
+jsoo_toplevel_reloc
 
 From +sync.js:
 MlMutex
@@ -134,7 +134,6 @@ caml_set_static_env
 
 From +toplevel.js:
 caml_dynlink_get_bytecode_sections
-jsoo_get_runtime_aliases
 jsoo_toplevel_init_compile
 jsoo_toplevel_init_reloc
 

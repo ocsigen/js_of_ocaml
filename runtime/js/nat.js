@@ -145,7 +145,7 @@ function is_digit_zero(nat, ofs) {
 }
 
 //Provides: is_digit_normalized
-function is_digit_normalized(_nat, _ofs) {
+function is_digit_normalized(nat, ofs) {
   return 1;
 }
 

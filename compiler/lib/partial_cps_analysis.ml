@@ -109,7 +109,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
 let program_deps ~info ~vars ~tail_deps ~deps p =
   fold_closures
     p
-    (fun fun_name _ (pc, _) _ () ->
+    (fun fun_name _ (pc, _) _ ->
       traverse
         { fold = Code.fold_children }
         (fun pc () ->
@@ -160,7 +160,12 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
       true
   | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> false
 
-module SCC = Strongly_connected_components.Make (Var)
+module SCC = Strongly_connected_components.Make (struct
+  type t = Var.t
+
+  module Set = Var.Set
+  module Map = Var.Map
+end)
 
 let find_mutually_recursive_calls tail_deps =
   let scc = SCC.component_graph !tail_deps in

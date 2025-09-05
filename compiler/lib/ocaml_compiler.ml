@@ -25,57 +25,23 @@ let rec constant_of_const c : Code.constant =
   | Const_base (Const_int i) -> Int (Targetint.of_int_warning_on_overflow i)
   | Const_base (Const_char c) -> Int (Targetint.of_int_exn (Char.code c))
   | Const_base (Const_string (s, _, _)) -> String s
-  | Const_base (Const_float s) -> Float (Int64.bits_of_float (float_of_string s))
-  | Const_base (Const_int32 i) -> Int32 i
+  | Const_base (Const_float s) -> Float (float_of_string s)
+  | Const_base (Const_int32 i) -> (
+      match Config.target () with
+      | `JavaScript -> Int (Targetint.of_int32_warning_on_overflow i)
+      | `Wasm -> Int32 i)
   | Const_base (Const_int64 i) -> Int64 i
-  | Const_base (Const_nativeint i) -> NativeInt (Int32.of_nativeint_warning_on_overflow i)
+  | Const_base (Const_nativeint i) -> (
+      match Config.target () with
+      | `JavaScript -> Int (Targetint.of_nativeint_warning_on_overflow i)
+      | `Wasm -> NativeInt (Int32.of_nativeint_warning_on_overflow i))
   | Const_immstring s -> String s
   | Const_float_array sl ->
-      let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
+      let l = List.map ~f:(fun f -> float_of_string f) sl in
       Float_array (Array.of_list l)
   | Const_block (tag, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-
-type module_or_not =
-  | Module
-  | Not_module
-  | Unknown
-
-let rec is_module_in_summary deep ident' summary =
-  match summary with
-  (* Unknown *)
-  | Env.Env_empty -> deep, Unknown
-  (* Module *)
-  | Env.Env_module (summary, ident, _, _)
-  | Env.Env_functor_arg (summary, ident)
-  | Env.Env_persistent (summary, ident) ->
-      if Ident.same ident ident'
-      then deep, Module
-      else is_module_in_summary (deep + 1) ident' summary
-  (* Not_module *)
-  | Env.Env_modtype (summary, ident, _) | Env.Env_extension (summary, ident, _) ->
-      if Ident.same ident ident'
-      then deep, Not_module
-      else is_module_in_summary (deep + 1) ident' summary
-  (* Lowercase ident *)
-  | Env.Env_value (summary, ident, _)
-  | Env.Env_type (summary, ident, _)
-  | Env.Env_class (summary, ident, _)
-  | Env.Env_cltype (summary, ident, _) ->
-      ignore (ident : Ident.t);
-      is_module_in_summary (deep + 1) ident' summary
-  (* Other, no ident *)
-  | Env.Env_open (summary, _)
-  | Env.Env_constraints (summary, _)
-  | Env.Env_copy_types summary
-  | Env.Env_value_unbound (summary, _, _)
-  | Env.Env_module_unbound (summary, _, _) ->
-      is_module_in_summary (deep + 1) ident' summary
-
-let is_module_in_summary ident summary =
-  let _deep, b = is_module_in_summary 0 ident summary in
-  b
 
 module Symtable = struct
   (* Copied from ocaml/bytecomp/symtable.ml *)

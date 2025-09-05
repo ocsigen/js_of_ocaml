@@ -287,7 +287,7 @@ function caml_register_global(n, v, name_opt) {
 
 //Provides: caml_get_global_data mutable
 //Requires: caml_global_data
-function caml_get_global_data(_unit) {
+function caml_get_global_data() {
   return caml_global_data;
 }
 
@@ -297,6 +297,6 @@ function caml_is_printable(c) {
 }
 
 //Provides: caml_maybe_print_stats
-function caml_maybe_print_stats(_unit) {
+function caml_maybe_print_stats(unit) {
   return 0;
 }

@@ -174,12 +174,7 @@ let poly_fun_of_type_decl type_decl expr =
   fold_right_type_decl
     (fun name expr ->
       let name = name.txt in
-      Ppxlib.Ast_builder.Default.pexp_fun
-        ~loc:Location.none
-        nolabel
-        None
-        (pvar ("poly_" ^ name))
-        expr)
+      Exp.fun_ nolabel None (pvar ("poly_" ^ name)) expr)
     type_decl
     expr
 

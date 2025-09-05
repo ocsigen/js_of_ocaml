@@ -154,12 +154,12 @@ let ()  = M.myfun M.x
   Util.print_fun_decl program (Some "myfun");
   [%expect
     {|
-    function myfun(x$0){
-     var x = x$0;
+    function myfun(x){
+     var x$0 = x;
      for(;;){
-      if(! x) return 0;
+      if(! x$0) return 0;
       var
-       next = x[1],
+       next = x$0[1],
        sort =
          function(n, l){
           if(2 === n){
@@ -179,14 +179,14 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var _b_ = l[2];
-           if(_b_){
-            var match$2 = _b_[2];
+           var _d_ = l[2];
+           if(_d_){
+            var match$2 = _d_[2];
             if(match$2){
              var
               tl$1 = match$2[2],
               x3 = match$2[1],
-              x2$0 = _b_[1],
+              x2$0 = _d_[1],
               x1$0 = l[1],
               s$0 =
                 0 < caml_int_compare(x1$0, x2$0)
@@ -261,14 +261,14 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var _a_ = l[2];
-           if(_a_){
-            var match$2 = _a_[2];
+           var _b_ = l[2];
+           if(_b_){
+            var match$2 = _b_[2];
             if(match$2){
              var
               tl$1 = match$2[2],
               x3 = match$2[1],
-              x2$0 = _a_[1],
+              x2$0 = _b_[1],
               x1$0 = l[1],
               s$0 =
                 0 < caml_int_compare(x1$0, x2$0)
@@ -317,25 +317,26 @@ let ()  = M.myfun M.x
              accu = accu$1;
              continue;
             }
-            var _b_ = rev_append(l1, accu);
+            var _a_ = rev_append(l1, accu);
            }
            else
-            var _b_ = rev_append(l2, accu);
-           return [0, _b_, tl$0];
+            var _a_ = rev_append(l2, accu);
+           return [0, _a_, tl$0];
           }
          };
       let sort$0 = sort, rev_sort$0 = rev_sort;
       var len = 0, param = l;
       for(;;){
-       if(! param){if(2 <= len){sort(len, l); x = next; break;} x = next; break;}
+       if(! param) break;
        var l$0 = param[2], len$0 = len + 1 | 0;
        len = len$0;
        param = l$0;
       }
+      if(2 <= len) sort(len, l);
+      x$0 = next;
      }
     }
-    //end
-    |}]
+    //end |}]
 
 let%expect_test _ =
   let prog =
@@ -404,8 +405,7 @@ let ()  = M.run ()
       i = _a_;
      }
     }
-    //end
-    |}]
+    //end |}]
 
 let%expect_test _ =
   let prog =
@@ -515,8 +515,7 @@ let ()  = M.run ()
               function(f){return caml_call1(f, 0);},
               caml_call1(list_rev, delayed[1]));
     }
-    //end
-    |}]
+    //end |}]
 
 let%expect_test _ =
   let prog =
@@ -634,8 +633,7 @@ let ()  = M.run ()
       let odd$0 = odd, even$0 = even;
       var param$0 = even(i);
       for(;;){
-       var variant = param$0[1];
-       if(759635106 <= variant) break;
+       if(759635106 <= param$0[1]) break;
        var f = param$0[2];
        param$0 = f(0);
       }
@@ -648,5 +646,4 @@ let ()  = M.run ()
               function(f){return caml_call1(f, 0);},
               caml_call1(list_rev, delayed[1]));
     }
-    //end
-    |}]
+    //end |}]

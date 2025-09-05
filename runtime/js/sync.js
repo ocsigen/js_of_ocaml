@@ -7,7 +7,7 @@ class MlMutex {
 
 //Provides: caml_ml_mutex_new
 //Requires: MlMutex
-function caml_ml_mutex_new(_unit) {
+function caml_ml_mutex_new(unit) {
   return new MlMutex();
 }
 

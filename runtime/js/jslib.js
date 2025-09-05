@@ -86,7 +86,6 @@ var caml_callback = caml_call_gen;
 //If: !doubletranslate
 //Requires: caml_stack_depth, caml_call_gen, caml_wrap_exception
 //Requires: caml_current_stack
-//Alias: caml_cps_trampoline
 function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;
@@ -129,14 +128,13 @@ function caml_is_js() {
 }
 
 //Provides: caml_jsoo_flags_use_js_string
-function caml_jsoo_flags_use_js_string(_unit) {
+function caml_jsoo_flags_use_js_string(unit) {
   return FLAG("use-js-string");
 }
 
 //Provides: caml_jsoo_flags_effects
-//Requires: caml_string_of_jsstring
-function caml_jsoo_flags_effects(_unit) {
-  return caml_string_of_jsstring(CONFIG("effects"));
+function caml_jsoo_flags_effects(unit) {
+  return CONFIG("effects");
 }
 
 //Provides: caml_wrap_exception const (mutable)

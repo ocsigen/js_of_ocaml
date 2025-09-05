@@ -194,12 +194,6 @@ and depth_class_block b =
       | J.CEField _ -> acc
       | J.CEStaticBLock b -> depth_block b + 2)
 
-let expression_equal (a : J.expression) b = Poly.equal a b
-
-let binding_pattern_equal (a : J.binding_pattern) b = Poly.equal a b
-
-let statement_equal (a : J.statement * J.location) b = Poly.equal a b
-
 let rec if_statement_2 ~function_end e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in
   match fst iftrue, fst iffalse with
@@ -217,16 +211,15 @@ let rec if_statement_2 ~function_end e loc iftrue truestop iffalse falsestop =
         let vd1 = assignment_of_statement iftrue in
         let vd2 = assignment_of_statement iffalse in
         match vd1, vd2 with
-        | DeclIdent (x1, Some (e1, _)), DeclIdent (x2, Some (e2, _))
-          when J.ident_equal x1 x2 ->
+        | DeclIdent (x1, Some (e1, _)), DeclIdent (x2, Some (e2, _)) when Poly.(x1 = x2)
+          ->
             let exp =
-              if expression_equal e1 e then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2)
+              if Poly.(e1 = e) then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2)
             in
             [ J.Variable_statement (Var, [ DeclIdent (x1, Some (exp, loc)) ]), loc ]
-        | DeclPattern (p1, (e1, _)), DeclPattern (p2, (e2, _))
-          when binding_pattern_equal p1 p2 ->
+        | DeclPattern (p1, (e1, _)), DeclPattern (p2, (e2, _)) when Poly.(p1 = p2) ->
             let exp =
-              if expression_equal e1 e then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2)
+              if Poly.(e1 = e) then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2)
             in
             [ J.Variable_statement (Var, [ DeclPattern (p1, (exp, loc)) ]), loc ]
         | _ -> raise Not_assignment
@@ -260,8 +253,7 @@ let if_statement ~function_end e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in
   match iftrue, iffalse with
   (* Shared statements *)
-  | (J.If_statement (e', iftrue', iffalse'), _), _
-    when statement_equal iffalse (unopt iffalse') ->
+  | (J.If_statement (e', iftrue', iffalse'), _), _ when Poly.(iffalse = unopt iffalse') ->
       if_statement_2
         ~function_end
         (J.EBin (J.And, e, e'))
@@ -270,7 +262,7 @@ let if_statement ~function_end e loc iftrue truestop iffalse falsestop =
         truestop
         iffalse
         falsestop
-  | (J.If_statement (e', iftrue', iffalse'), _), _ when statement_equal iffalse iftrue' ->
+  | (J.If_statement (e', iftrue', iffalse'), _), _ when Poly.(iffalse = iftrue') ->
       if_statement_2
         ~function_end
         (J.EBin (J.And, e, J.EUn (J.Not, e')))
@@ -279,7 +271,7 @@ let if_statement ~function_end e loc iftrue truestop iffalse falsestop =
         truestop
         iffalse
         falsestop
-  | _, (J.If_statement (e', iftrue', iffalse'), _) when statement_equal iftrue iftrue' ->
+  | _, (J.If_statement (e', iftrue', iffalse'), _) when Poly.(iftrue = iftrue') ->
       if_statement_2
         ~function_end
         (J.EBin (J.Or, e, e'))
@@ -288,8 +280,7 @@ let if_statement ~function_end e loc iftrue truestop iffalse falsestop =
         truestop
         (unopt iffalse')
         falsestop
-  | _, (J.If_statement (e', iftrue', iffalse'), _)
-    when statement_equal iftrue (unopt iffalse') ->
+  | _, (J.If_statement (e', iftrue', iffalse'), _) when Poly.(iftrue = unopt iffalse') ->
       if_statement_2
         ~function_end
         (J.EBin (J.Or, e, J.EUn (J.Not, e')))

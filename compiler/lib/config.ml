@@ -26,34 +26,29 @@ module Flag = struct
 
   let o ~name ~default =
     let state =
-      match List.string_assoc name !optims with
-      | Some x -> x
-      | None ->
-          let state = ref default in
-          optims := (name, state) :: !optims;
-          state
+      try List.assoc name !optims
+      with Not_found ->
+        let state = ref default in
+        optims := (name, state) :: !optims;
+        state
     in
     fun () -> !state
 
   let find s =
-    match List.string_assoc s !optims with
-    | Some x -> !x
-    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    try !(List.assoc s !optims)
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let set s b =
-    match List.string_assoc s !optims with
-    | Some s -> s := b
-    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    try List.assoc s !optims := b
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let disable s =
-    match List.string_assoc s !optims with
-    | Some s -> s := false
-    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    try List.assoc s !optims := false
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let enable s =
-    match List.string_assoc s !optims with
-    | Some s -> s := true
-    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    try List.assoc s !optims := true
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let pretty = o ~name:"pretty" ~default:false
 
@@ -89,6 +84,8 @@ module Flag = struct
 
   let improved_stacktrace = o ~name:"with-js-error" ~default:false
 
+  let warn_unused = o ~name:"warn-unused" ~default:false
+
   let inline_callgen = o ~name:"callgen" ~default:false
 
   let safe_string = o ~name:"safestring" ~default:true
@@ -104,56 +101,33 @@ module Flag = struct
   let auto_link = o ~name:"auto-link" ~default:true
 
   let es6 = o ~name:"es6" ~default:false
-
-  let load_shapes_auto = o ~name:"load-shapes-auto" ~default:false
 end
 
 module Param = struct
-  let int default =
-    ( default
-    , int_of_string
-    , fun s ->
-        try
-          ignore (int_of_string s : int);
-          Ok ()
-        with _ -> Error "expecting an integer" )
+  let int default = default, int_of_string
 
   let enum : (string * 'a) list -> _ = function
-    | (_, v) :: _ as l ->
-        ( v
-        , (fun x ->
-            match List.string_assoc x l with
-            | Some x -> x
-            | None -> assert false)
-        , fun x ->
-            if List.exists ~f:(fun (y, _) -> String.equal x y) l
-            then Ok ()
-            else
-              Error
-                (Printf.sprintf
-                   "expecting one of %s"
-                   (String.concat ~sep:", " (List.map l ~f:fst))) )
+    | (_, v) :: _ as l -> v, fun x -> List.assoc x l
     | _ -> assert false
 
   let params : (string * _) list ref = ref []
 
-  let p ~name ~desc (default, convert, valid) =
-    assert (Option.is_none (List.string_assoc name !params));
+  let p ~name ~desc (default, convert) =
+    assert (not (List.mem_assoc name ~map:!params));
     let state = ref default in
     let set : string -> unit =
      fun v ->
       try state := convert v
-      with _ -> failwith (Printf.sprintf "malformed option %s=%s." name v)
+      with _ -> warn "Warning: malformed option %s=%s. IGNORE@." name v
     in
-    params := (name, (set, desc, valid)) :: !params;
+    params := (name, (set, desc)) :: !params;
     fun () -> !state
 
   let set s v =
-    match List.string_assoc s !params with
-    | Some (f, _, _) -> f v
-    | None -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    try fst (List.assoc s !params) v
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
-  let all () = List.map !params ~f:(fun (n, (_, d, valid)) -> n, d, valid)
+  let all () = List.map !params ~f:(fun (n, (_, d)) -> n, d)
 
   (* V8 "optimize" switches with less than 128 case.
      60 seams to perform well. *)
@@ -161,7 +135,7 @@ module Param = struct
     p ~name:"switch_size" ~desc:"set the maximum number of case in a switch" (int 60)
 
   let inlining_limit =
-    p ~name:"inlining-limit" ~desc:"set the size limit for inlining" (int 150)
+    p ~name:"inlining-limit" ~desc:"set the size limit for inlining" (int 200)
 
   let tailcall_max_depth =
     p
@@ -179,15 +153,12 @@ module Param = struct
     | TcNone
     | TcTrampoline
 
-  let tc_equal (a : tc) b = Poly.equal a b
-
   (* | TcWhile *)
 
   let tc_default = TcTrampoline
 
   let _tc_all =
-    tc_default
-    :: List.filter [ TcNone; TcTrampoline ] ~f:(fun x -> not (tc_equal tc_default x))
+    tc_default :: List.filter [ TcNone; TcTrampoline ] ~f:(Poly.( <> ) tc_default)
 
   let tailcall_optim =
     p

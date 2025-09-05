@@ -21,19 +21,25 @@
 open Stdlib
 
 module Debug : sig
-  type summary
+  type t
 
-  val is_empty : summary -> bool
+  type position =
+    | Before
+    | After
 
-  val default_summary : summary
+  val create : include_cmis:bool -> bool -> t
 
-  val paths : summary -> units:StringSet.t -> StringSet.t
+  val find_loc : t -> position:position -> Code.Addr.t -> Parse_info.t option
+
+  val is_empty : t -> bool
+
+  val paths : t -> units:StringSet.t -> StringSet.t
 end
 
 type one =
   { code : Code.program
   ; cmis : StringSet.t
-  ; debug : Debug.summary
+  ; debug : Debug.t
   }
 
 module Toc : sig
@@ -75,7 +81,10 @@ val from_channel :
   -> [ `Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe ]
 
 val from_string :
-  prims:string array -> debug:Instruct.debug_event list array -> string -> Code.program
+     prims:string array
+  -> debug:Instruct.debug_event list array
+  -> string
+  -> Code.program * Debug.t
 
 val predefined_exceptions : unit -> Code.program * Unit_info.t
 

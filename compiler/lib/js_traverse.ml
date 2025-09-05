@@ -239,14 +239,7 @@ class map : mapper =
           match m#statement (Class_declaration (id, f)) with
           | Class_declaration (id, f) -> ExportClass (id, f)
           | _ -> assert false)
-      | ExportNames l ->
-          ExportNames
-            (List.map
-               ~f:(fun (id, s) ->
-                 match m#expression (EVar id) with
-                 | EVar id -> id, s
-                 | _ -> assert false)
-               l)
+      | ExportNames l -> ExportNames (List.map ~f:(fun (id, s) -> m#ident id, s) l)
       | ExportDefaultFun (Some id, decl) -> (
           match m#statement (Function_declaration (id, decl)) with
           | Function_declaration (id, decl) -> ExportDefaultFun (Some id, decl)
@@ -413,8 +406,6 @@ class type iterator = object
 
   method class_decl : Javascript.class_declaration -> unit
 
-  method class_element : Javascript.class_element -> unit
-
   method early_error : Javascript.early_error -> unit
 
   method expression : Javascript.expression -> unit
@@ -440,8 +431,6 @@ class type iterator = object
   method statement_o : (Javascript.statement * Javascript.location) option -> unit
 
   method statements : Javascript.statement_list -> unit
-
-  method formal_parameter_list : Javascript.formal_parameter_list -> unit
 
   method ident : Javascript.ident -> unit
 
@@ -476,7 +465,7 @@ class iter : iterator =
 
     method for_binding _ x = m#binding x
 
-    method formal_parameter_list { list; rest } =
+    method private formal_parameter_list { list; rest } =
       List.iter list ~f:m#param;
       Option.iter rest ~f:m#binding
 
@@ -493,7 +482,7 @@ class iter : iterator =
       Option.iter x.extends ~f:m#expression;
       List.iter x.body ~f:m#class_element
 
-    method class_element x =
+    method private class_element x =
       match x with
       | CEMethod (_static, name, x) ->
           m#class_element_name name;
@@ -772,133 +761,108 @@ class iter : iterator =
     method function_body x = m#statements x
   end
 
-let expression_equal (a : expression) b =
-  match a, b with
-  | ENum a, ENum b -> Javascript.Num.equal a b
-  | EStr (Utf8 a), EStr (Utf8 b) -> String.equal a b
-  | a, b -> Poly.equal a b
+(* var substitution *)
+class subst sub =
+  object
+    inherit map
 
-(* this optimisation should be done at the lowest common scope *)
+    method ident x = sub x
+  end
 
-module ExprTbl = Hashtbl.Make (struct
-  type t = expression
+class map_for_share_constant =
+  object (m)
+    inherit map as super
 
-  let hash = function
-    | ENum n -> Javascript.Num.hash n
-    | EStr (Utf8 s) -> String.hash s
-    | e -> Hashtbl.hash e
-
-  let equal = expression_equal
-end)
-
-let share_constant js =
-  let count = ExprTbl.create 17 in
-  let o =
-    object (m)
-      inherit iter as super
-
-      method expression e =
-        match e with
-        (* JavaScript engines recognize the pattern
+    method expression e =
+      match e with
+      (* JavaScript engines recognize the pattern
          'typeof x==="number"'; if the string is shared,
          less efficient code is generated. *)
-        | EBin (_, EUn (Typeof, e1), EStr _) -> super#expression e1
-        | EBin (_, EStr _, EUn (Typeof, e2)) -> super#expression e2
-        (* Some js bundler get confused when the argument
+      | EBin (op, EUn (Typeof, e1), (EStr _ as e2)) ->
+          EBin (op, EUn (Typeof, super#expression e1), e2)
+      | EBin (op, (EStr _ as e1), EUn (Typeof, e2)) ->
+          EBin (op, e1, EUn (Typeof, super#expression e2))
+      (* Some js bundler get confused when the argument
          of 'require' is not a literal *)
-        | ECall
-            ( EVar (S { var = None; name = Utf8 "requires"; _ })
-            , (ANormal | ANullish)
-            , [ Arg (EStr _) ]
-            , _ ) -> ()
-        | EStr _ | ENum _ -> (
-            match ExprTbl.find count e with
-            | n -> ExprTbl.replace count e (n + 1)
-            | exception Not_found -> ExprTbl.add count e 1)
-        | _ -> super#expression e
+      | ECall
+          ( EVar (S { var = None; name = Utf8 "requires"; _ })
+          , (ANormal | ANullish)
+          , [ Arg (EStr _) ]
+          , _ ) -> e
+      | _ -> super#expression e
 
-      (* do not replace constant in switch case *)
-      method switch_case e =
+    (* do not replace constant in switch case *)
+    method switch_case e =
+      match e with
+      | ENum _ | EStr _ -> e
+      | _ -> m#expression e
+
+    method statements l =
+      match l with
+      | [] -> []
+      | ((Expression_statement (EStr _), _) as prolog) :: rest ->
+          prolog :: List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
+      | rest -> List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
+  end
+
+class replace_expr f =
+  object
+    inherit map_for_share_constant as super
+
+    method expression e = try EVar (f e) with Not_found -> super#expression e
+  end
+
+(* this optimisation should be done at the lowest common scope *)
+class share_constant =
+  object
+    inherit map_for_share_constant as super
+
+    val count = Hashtbl.create 17
+
+    method expression e =
+      let e =
         match e with
-        | ENum _ | EStr _ -> ()
-        | _ -> m#expression e
-
-      method statements l =
-        match l with
-        | [] -> ()
-        | (Expression_statement (EStr _), _) :: rest ->
-            List.iter rest ~f:(fun (x, _) -> m#statement x)
-        | rest -> List.iter rest ~f:(fun (x, _) -> m#statement x)
-    end
-  in
-  o#program js;
-  let all = ExprTbl.create 17 in
-  ExprTbl.iter
-    (fun x n ->
-      let shareit =
-        match x with
-        | EStr (Utf8 s) when n > 1 ->
-            if String.length s < 20
-            then Some ("str_" ^ s)
-            else Some ("str_" ^ String.sub s ~pos:0 ~len:16 ^ "_abr")
-        | ENum s when n > 1 ->
-            let s = Javascript.Num.to_string s in
-            let l = String.length s in
-            if l > 2 then Some ("num_" ^ s) else None
-        | _ -> None
+        | EStr _ | ENum _ ->
+            let n = try Hashtbl.find count e with Not_found -> 0 in
+            Hashtbl.replace count e (n + 1);
+            e
+        | _ -> e
       in
-      match shareit with
-      | Some name ->
-          let v = Code.Var.fresh_n name in
-          ExprTbl.add all x (V v)
-      | _ -> ())
-    count;
-  if ExprTbl.length all = 0
-  then js
-  else
-    let o =
-      object (m)
-        inherit map as super
+      super#expression e
 
-        method expression e =
-          match e with
-          (* JavaScript engines recognize the pattern
-                   'typeof x==="number"'; if the string is shared,
-                   less efficient code is generated. *)
-          | EBin (op, EUn (Typeof, e1), (EStr _ as e2)) ->
-              EBin (op, EUn (Typeof, super#expression e1), e2)
-          | EBin (op, (EStr _ as e1), EUn (Typeof, e2)) ->
-              EBin (op, e1, EUn (Typeof, super#expression e2))
-          (* Some js bundler get confused when the argument
-                   of 'require' is not a literal *)
-          | ECall
-              ( EVar (S { var = None; name = Utf8 "requires"; _ })
-              , (ANormal | ANullish)
-              , [ Arg (EStr _) ]
-              , _ ) -> e
-          | (EStr _ | ENum _) as x -> (
-              match ExprTbl.find_opt all x with
-              | None -> super#expression x
-              | Some v -> EVar v)
-          | _ -> super#expression e
-
-        (* do not replace constant in switch case *)
-        method switch_case e =
-          match e with
-          | ENum _ | EStr _ -> e
-          | _ -> m#expression e
-
-        method statements l =
-          match l with
-          | [] -> []
-          | ((Expression_statement (EStr _), _) as prolog) :: rest ->
-              prolog :: List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
-          | rest -> List.map rest ~f:(fun (x, loc) -> m#statement x, loc)
-      end
-    in
-    let js = o#program js in
-    let all = ExprTbl.fold (fun e v acc -> DeclIdent (v, Some (e, N)) :: acc) all [] in
-    (Variable_statement (Var, all), N) :: js
+    method program p =
+      let p = super#program p in
+      let all = Hashtbl.create 17 in
+      Hashtbl.iter
+        (fun x n ->
+          let shareit =
+            match x with
+            | EStr (Utf8 s) when n > 1 ->
+                if String.length s < 20
+                then Some ("str_" ^ s)
+                else Some ("str_" ^ String.sub s ~pos:0 ~len:16 ^ "_abr")
+            | ENum s when n > 1 ->
+                let s = Javascript.Num.to_string s in
+                let l = String.length s in
+                if l > 2 then Some ("num_" ^ s) else None
+            | _ -> None
+          in
+          match shareit with
+          | Some name ->
+              let v = Code.Var.fresh_n name in
+              Hashtbl.add all x (V v)
+          | _ -> ())
+        count;
+      if Hashtbl.length all = 0
+      then p
+      else
+        let f = Hashtbl.find all in
+        let p = (new replace_expr f)#program p in
+        let all =
+          Hashtbl.fold (fun e v acc -> DeclIdent (v, Some (e, N)) :: acc) all []
+        in
+        (Variable_statement (Var, all), N) :: p
+  end
 
 type t =
   { use : IdentSet.t
@@ -932,6 +896,8 @@ class type freevar = object ('a)
 
   method use_var : Javascript.ident -> unit
 
+  method get_count : int Javascript.IdentMap.t
+
   method get_free : IdentSet.t
 
   method get_def : IdentSet.t
@@ -947,7 +913,11 @@ class free =
 
     val mutable state_ : t = empty
 
+    val count = ref Javascript.IdentMap.empty
+
     method state = state_
+
+    method get_count = !count
 
     method get_free =
       IdentSet.diff m#state.use (IdentSet.union m#state.def_var m#state.def_local)
@@ -972,11 +942,34 @@ class free =
         ; def_local = state_.def_local
         }
 
-    method use_var x = state_ <- { state_ with use = IdentSet.add x state_.use }
+    method use_var x =
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
+      state_ <- { state_ with use = IdentSet.add x state_.use }
 
-    method def_var x = state_ <- { state_ with def_var = IdentSet.add x state_.def_var }
+    method def_var x =
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
+      state_ <- { state_ with def_var = IdentSet.add x state_.def_var }
 
     method def_local x =
+      count :=
+        IdentMap.update
+          x
+          (function
+            | None -> Some 1
+            | Some n -> Some (succ n))
+          !count;
       state_ <- { state_ with def_local = IdentSet.add x state_.def_local }
 
     method fun_decl (k, params, body, nid) =
@@ -1027,20 +1020,6 @@ class free =
           cbody#record_block Normal;
           m#merge_block_info cbody;
           EClass (ident_o, cl_decl)
-      | EAssignTarget (ArrayTarget l) ->
-          List.iter l ~f:(function
-            | TargetElementHole -> ()
-            | TargetElementId (i, _) -> m#use_var i
-            | TargetElement _ -> ()
-            | TargetElementSpread _ -> ());
-          super#expression x
-      | EAssignTarget (ObjectTarget l) ->
-          List.iter l ~f:(function
-            | TargetPropertyId (Prop_and_ident i, _) -> m#use_var i
-            | TargetProperty _ -> ()
-            | TargetPropertyMethod _ -> ()
-            | TargetPropertySpread _ -> ());
-          super#expression x
       | _ -> super#expression x
 
     method record_block _ = ()
@@ -1209,265 +1188,128 @@ type scope =
   | Lexical_block
   | Fun_block of ident option
 
-let declared scope params body =
-  let declared_names = ref StringSet.empty in
-  let decl_var x =
-    match x with
-    | S { name = Utf8 name; _ } -> declared_names := StringSet.add name !declared_names
-    | _ -> ()
-  in
-  (match scope with
-  | Module -> ()
-  | Script -> ()
-  | Lexical_block -> ()
-  | Fun_block None -> ()
-  | Fun_block (Some x) -> decl_var x);
-  List.iter params ~f:(fun x -> decl_var x);
-  (object (self)
-     val depth = 0
+class rename_variable ~esm =
+  let declared scope params body =
+    let declared_names = ref StringSet.empty in
+    let decl_var x =
+      match x with
+      | S { name = Utf8 name; _ } -> declared_names := StringSet.add name !declared_names
+      | _ -> ()
+    in
+    (match scope with
+    | Module -> ()
+    | Script -> ()
+    | Lexical_block -> ()
+    | Fun_block None -> ()
+    | Fun_block (Some x) -> decl_var x);
+    List.iter params ~f:(fun x -> decl_var x);
+    (object (self)
+       val depth = 0
 
-     inherit iter as super
+       inherit iter as super
 
-     method expression _ = ()
+       method expression _ = ()
 
-     method fun_decl _ = ()
+       method fun_decl _ = ()
 
-     method class_decl _ = ()
+       method class_decl _ = ()
 
-     method statement x =
-       match scope, x with
-       | (Lexical_block | Fun_block _ | Module), Function_declaration (id, fd) ->
-           if depth = 0 then decl_var id;
-           self#fun_decl fd
-       | Script, Function_declaration (_, fd) ->
-           (* ECMAScript 8.2.10: At the top level of a function or
+       method statement x =
+         match scope, x with
+         | (Lexical_block | Fun_block _ | Module), Function_declaration (id, fd) ->
+             if depth = 0 then decl_var id;
+             self#fun_decl fd
+         | Script, Function_declaration (_, fd) ->
+             (* ECMAScript 8.2.10: At the top level of a function or
                 script, inner function declarations are treated like
                 var declarations *)
-           self#fun_decl fd
-       | (Lexical_block | Fun_block _ | Module | Script), Class_declaration (id, cl_decl)
-         ->
-           if depth = 0 then decl_var id;
-           self#class_decl cl_decl
-       | _, For_statement (Right (((Const | Let) as k), l), _e1, _e2, (st, _loc)) ->
-           let m = {<depth = depth + 1>} in
-           List.iter ~f:(m#variable_declaration k) l;
-           m#statement st
-       | _, ForOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
-           let m = {<depth = depth + 1>} in
-           m#for_binding k l;
-           m#statement st
-       | _, ForAwaitOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
-           let m = {<depth = depth + 1>} in
-           m#for_binding k l;
-           m#statement st
-       | _, ForIn_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
-           let m = {<depth = depth + 1>} in
-           m#for_binding k l;
-           m#statement st
-       | _, Switch_statement (_, l, def, l') ->
-           let m = {<depth = depth + 1>} in
-           List.iter l ~f:(fun (_, s) -> m#statements s);
-           Option.iter def ~f:(fun l -> m#statements l);
-           List.iter l' ~f:(fun (_, s) -> m#statements s)
-       | _, Import ({ kind; from = _ }, _loc) -> (
-           match kind with
-           | Namespace (iopt, i) ->
-               Option.iter ~f:decl_var iopt;
-               decl_var i
-           | Named (iopt, l) ->
-               Option.iter ~f:decl_var iopt;
-               List.iter ~f:(fun (_, id) -> decl_var id) l
-           | Default import_default -> decl_var import_default
-           | SideEffect -> ())
-       | (Fun_block _ | Lexical_block | Module | Script), _ -> super#statement x
+             self#fun_decl fd
+         | (Lexical_block | Fun_block _ | Module | Script), Class_declaration (id, cl_decl)
+           ->
+             if depth = 0 then decl_var id;
+             self#class_decl cl_decl
+         | _, For_statement (Right (((Const | Let) as k), l), _e1, _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             List.iter ~f:(m#variable_declaration k) l;
+             m#statement st
+         | _, ForOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             m#for_binding k l;
+             m#statement st
+         | _, ForAwaitOf_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             m#for_binding k l;
+             m#statement st
+         | _, ForIn_statement (Right (((Const | Let) as k), l), _e2, (st, _loc)) ->
+             let m = {<depth = depth + 1>} in
+             m#for_binding k l;
+             m#statement st
+         | _, Switch_statement (_, l, def, l') ->
+             let m = {<depth = depth + 1>} in
+             List.iter l ~f:(fun (_, s) -> m#statements s);
+             Option.iter def ~f:(fun l -> m#statements l);
+             List.iter l' ~f:(fun (_, s) -> m#statements s)
+         | _, Import ({ kind; from = _ }, _loc) -> (
+             match kind with
+             | Namespace (iopt, i) ->
+                 Option.iter ~f:decl_var iopt;
+                 decl_var i
+             | Named (iopt, l) ->
+                 Option.iter ~f:decl_var iopt;
+                 List.iter ~f:(fun (_, id) -> decl_var id) l
+             | Default import_default -> decl_var import_default
+             | SideEffect -> ())
+         | (Fun_block _ | Lexical_block | Module | Script), _ -> super#statement x
 
-     method export e =
-       match e with
-       | ExportVar (_k, _l) -> ()
-       | ExportFun (_id, _f) -> ()
-       | ExportClass (_id, _f) -> ()
-       | ExportNames l -> List.iter ~f:(fun (id, _) -> self#ident id) l
-       | ExportDefaultFun (Some id, decl) ->
-           if depth = 0 then decl_var id;
-           self#fun_decl decl
-       | ExportDefaultClass (Some id, decl) ->
-           if depth = 0 then decl_var id;
-           self#class_decl decl
-       | ExportDefaultFun (None, decl) -> self#fun_decl decl
-       | ExportDefaultClass (None, decl) -> self#class_decl decl
-       | ExportDefaultExpression e -> self#expression e
-       | ExportFrom { from = _; kind = _ } -> ()
-       | CoverExportFrom _ -> ()
+       method export e =
+         match e with
+         | ExportVar (_k, _l) -> ()
+         | ExportFun (_id, _f) -> ()
+         | ExportClass (_id, _f) -> ()
+         | ExportNames l -> List.iter ~f:(fun (id, _) -> self#ident id) l
+         | ExportDefaultFun (Some id, decl) ->
+             if depth = 0 then decl_var id;
+             self#fun_decl decl
+         | ExportDefaultClass (Some id, decl) ->
+             if depth = 0 then decl_var id;
+             self#class_decl decl
+         | ExportDefaultFun (None, decl) -> self#fun_decl decl
+         | ExportDefaultClass (None, decl) -> self#class_decl decl
+         | ExportDefaultExpression e -> self#expression e
+         | ExportFrom { from = _; kind = _ } -> ()
+         | CoverExportFrom _ -> ()
 
-     method variable_declaration k l =
-       if
-         match scope, k with
-         | (Lexical_block | Fun_block _ | Module | Script), (Let | Const) -> depth = 0
-         | (Lexical_block | Script), Var -> false
-         | (Fun_block _ | Module), Var -> true
-       then
-         let ids = bound_idents_of_variable_declaration l in
-         List.iter ids ~f:decl_var
+       method variable_declaration k l =
+         if
+           match scope, k with
+           | (Lexical_block | Fun_block _ | Module | Script), (Let | Const) -> depth = 0
+           | (Lexical_block | Script), Var -> false
+           | (Fun_block _ | Module), Var -> true
+         then
+           let ids = bound_idents_of_variable_declaration l in
+           List.iter ids ~f:decl_var
 
-     method block l =
-       let m = {<depth = depth + 1>} in
-       m#statements l
+       method block l =
+         let m = {<depth = depth + 1>} in
+         m#statements l
 
-     method for_binding k p =
-       if
-         match scope, k with
-         | (Lexical_block | Fun_block _ | Module | Script), (Let | Const) -> depth = 0
-         | (Lexical_block | Script), Var -> false
-         | (Fun_block _ | Module), Var -> true
-       then
-         match p with
-         | BindingIdent i -> decl_var i
-         | BindingPattern p ->
-             let ids = bound_idents_of_pattern p in
-             List.iter ids ~f:decl_var
-  end)
-    #statements
-    body;
-  !declared_names
-
-let declared_names p = declared Module [] p
-
-class fast_freevar f =
-  object (m)
-    inherit iter as super
-
-    val decl = StringSet.empty
-
-    method private update_state scope params iter_body =
-      let declared_names = StringSet.union decl (declared scope params iter_body) in
-      {<decl = declared_names>}
-
-    method ident x : unit =
-      match x with
-      | V _ -> ()
-      | S { name = Utf8 name; _ } -> if not (StringSet.mem name decl) then f name
-
-    method class_element x =
-      match x with
-      | CEStaticBLock l ->
-          let m' = m#update_state (Fun_block None) [] l in
-          m'#statements l
-      | _ -> super#class_element x
-
-    method fun_decl (_k, params, body, _nid) =
-      let ids = bound_idents_of_params params in
-      let m' = m#update_state (Fun_block None) ids body in
-      m'#formal_parameter_list params;
-      m'#function_body body
-
-    method program p =
-      let m' = m#update_state Module [] p in
-      m'#statements p
-
-    method expression e =
-      match e with
-      | EFun (ident, (_k, params, body, _nid)) ->
-          let ids = bound_idents_of_params params in
-          let m' = m#update_state (Fun_block ident) ids body in
-          Option.iter ident ~f:m'#ident;
-          m'#formal_parameter_list params;
-          m'#function_body body
-      | EClass (Some id, cl_decl) ->
-          let m' = m#update_state Lexical_block [ id ] [] in
-          m'#ident id;
-          m'#class_decl cl_decl
-      | _ -> super#expression e
-
-    method statement s =
-      match s with
-      | Function_declaration (id, (_k, params, body, _nid)) ->
-          let ids = bound_idents_of_params params in
-          let m' = m#update_state (Fun_block None) ids body in
-          m#ident id;
-          m'#formal_parameter_list params;
-          m'#function_body body
-      | For_statement (Right (((Const | Let) as k), l), e1, e2, (st, _loc)) ->
-          let ids = List.concat_map ~f:bound_idents_of_variable_declaration l in
-          let m' = m#update_state Lexical_block ids [] in
-          List.iter ~f:(m'#variable_declaration k) l;
-          Option.iter ~f:m'#expression e1;
-          Option.iter ~f:m'#expression e2;
-          m'#statement st
-      | ForOf_statement (Right (((Const | Let) as k), l), e2, (st, _loc)) ->
-          let ids = bound_idents_of_binding l in
-          let m' = m#update_state Lexical_block ids [] in
-          m'#for_binding k l;
-          m'#expression e2;
-          m'#statement st
-      | ForAwaitOf_statement (Right (((Const | Let) as k), l), e2, (st, _loc)) ->
-          let ids = bound_idents_of_binding l in
-          let m' = m#update_state Lexical_block ids [] in
-          m'#for_binding k l;
-          m'#expression e2;
-          m'#statement st
-      | ForIn_statement (Right (((Const | Let) as k), l), e2, (st, _loc)) ->
-          let ids = bound_idents_of_binding l in
-          let m' = m#update_state Lexical_block ids [] in
-          m'#for_binding k l;
-          m'#expression e2;
-          m'#statement st
-      | Block l ->
-          let m' = m#update_state Lexical_block [] l in
-          m'#statements l
-      | Try_statement (block, catch, final) ->
-          let () =
-            let m' = m#update_state Lexical_block [] block in
-            m'#statements block
-          in
-          let () =
-            match final with
-            | None -> ()
-            | Some final ->
-                let m' = m#update_state Lexical_block [] final in
-                m'#statements final
-          in
-          let () =
-            match catch with
-            | None -> ()
-            | Some (i, catch) ->
-                let i, l =
-                  match i with
-                  | None -> None, []
-                  | Some ((pat, _) as p) ->
-                      let ids = bound_idents_of_binding pat in
-                      let l =
-                        List.filter ids ~f:(function
-                          | S { name = Utf8 name; _ } -> not (StringSet.mem name decl)
-                          | V _ -> false)
-                      in
-                      Some p, l
-                in
-                let m' = m#update_state Lexical_block l catch in
-                Option.iter i ~f:(fun i -> m'#formal_parameter_list (list [ i ]));
-                m'#statements catch
-          in
-          ()
-      | Switch_statement (e, l, def, l') ->
-          let all =
-            let r = ref [] in
-            Option.iter def ~f:(fun l -> r := List.rev_append l !r);
-            List.iter l ~f:(fun (_, s) -> r := List.rev_append s !r);
-            List.iter l' ~f:(fun (_, s) -> r := List.rev_append s !r);
-            !r
-          in
-          let m' = m#update_state Lexical_block [] all in
-          m#expression e;
-          List.iter l ~f:(fun (e, s) ->
-              m'#switch_case e;
-              m'#statements s);
-          Option.iter def ~f:(fun l -> m'#statements l);
-          List.iter l' ~f:(fun (e, s) ->
-              m'#switch_case e;
-              m'#statements s)
-      | _ -> super#statement s
-  end
-
-class rename_variable ~esm =
+       method for_binding k p =
+         if
+           match scope, k with
+           | (Lexical_block | Fun_block _ | Module | Script), (Let | Const) -> depth = 0
+           | (Lexical_block | Script), Var -> false
+           | (Fun_block _ | Module), Var -> true
+         then
+           match p with
+           | BindingIdent i -> decl_var i
+           | BindingPattern p ->
+               let ids = bound_idents_of_pattern p in
+               List.iter ids ~f:decl_var
+    end)
+      #statements
+      body;
+    !declared_names
+  in
   object (m)
     inherit map as super
 
@@ -1759,14 +1601,8 @@ class clean =
         | _ -> true)
       |> List.group ~f:(fun (x, _) (prev, _) ->
              match prev, x with
-             | Variable_statement (k1, _), Variable_statement (k2, _) -> (
-                 match k1, k2 with
-                 | Let, Let -> true
-                 | Var, Var -> true
-                 | Const, Const -> true
-                 | Let, _ -> false
-                 | Var, _ -> false
-                 | Const, _ -> false)
+             | Variable_statement (k1, _), Variable_statement (k2, _) when Poly.(k1 = k2)
+               -> true
              | _, _ -> false)
       |> List.map ~f:(function
            | (Variable_statement (k1, _), _) :: _ as l ->
@@ -1865,15 +1701,15 @@ class simpl =
       in
       match e with
       | EBin (Plus, e1, e2) -> (
-          match e1, e2 with
-          | _, ENum n when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
-          | ENum n, _ when Num.is_neg n -> EBin (Minus, e2, ENum (Num.neg n))
+          match e2, e1 with
+          | ENum n, _ when Num.is_neg n -> EBin (Minus, e1, ENum (Num.neg n))
+          | _, ENum n when Num.is_neg n -> EBin (Minus, e2, ENum (Num.neg n))
           | ENum zero, (ENum _ as x) when is_zero zero -> x
           | (ENum _ as x), ENum zero when is_zero zero -> x
           | _ -> e)
       | EBin (Minus, e1, e2) -> (
-          match e1, e2 with
-          | _, ENum n when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
+          match e2, e1 with
+          | ENum n, _ when Num.is_neg n -> EBin (Plus, e1, ENum (Num.neg n))
           | (ENum _ as x), ENum zero when is_zero zero -> x
           | _ -> e)
       | EFun
@@ -1939,7 +1775,7 @@ class simpl =
               ( cond
               , (Expression_statement (EBin (Eq, v1, e1)), _)
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
-            when expression_equal v1 v2 ->
+            when Poly.(v1 = v2) ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
           (* The following optimizations cause the generated JS to compress less.
              (* if (e1) e2 else e3 --> e1 ? e2 : e3 *)

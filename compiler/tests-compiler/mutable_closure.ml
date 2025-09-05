@@ -125,31 +125,31 @@ let%expect_test _ =
        f$0 =
          function(counter, n){
           if(- 1 === n){
-           var _d_ = - 2;
-           if(counter >= 50) return caml_trampoline_return(g$0, [0, _d_]);
+           var _f_ = - 2;
+           if(counter >= 50) return caml_trampoline_return(g$0, [0, _f_]);
            var counter$1 = counter + 1 | 0;
-           return g$0(counter$1, _d_);
+           return g$0(counter$1, _f_);
           }
           if(0 === n) return i$0;
-          var _e_ = n - 1 | 0;
-          if(counter >= 50) return caml_trampoline_return(g$0, [0, _e_]);
+          var _g_ = n - 1 | 0;
+          if(counter >= 50) return caml_trampoline_return(g$0, [0, _g_]);
           var counter$0 = counter + 1 | 0;
-          return g$0(counter$0, _e_);
+          return g$0(counter$0, _g_);
          },
        f = function(n){return caml_trampoline(f$1(0, n));},
        g =
          function(counter, n){
           if(- 1 === n){
-           var _c_ = - 2;
-           if(counter >= 50) return caml_trampoline_return(f$1, [0, _c_]);
+           var _d_ = - 2;
+           if(counter >= 50) return caml_trampoline_return(f$1, [0, _d_]);
            var counter$1 = counter + 1 | 0;
-           return f$1(counter$1, _c_);
+           return f$1(counter$1, _d_);
           }
           if(0 === n) return i$0;
-          var _d_ = n - 1 | 0;
-          if(counter >= 50) return caml_trampoline_return(f$1, [0, _d_]);
+          var _e_ = n - 1 | 0;
+          if(counter >= 50) return caml_trampoline_return(f$1, [0, _e_]);
           var counter$0 = counter + 1 | 0;
-          return f$1(counter$0, _d_);
+          return f$1(counter$0, _e_);
          };
       let f$1 = f$0, g$0 = g;
       var _b_ = direct[1];
@@ -167,8 +167,7 @@ let%expect_test _ =
      if(runtime.caml_equal(indirect$0, direct$0)) return 0;
      throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
     }
-    //end
-    |}]
+    //end|}]
 
 let%expect_test _ =
   let prog = {|

@@ -33,11 +33,21 @@ end
 include Deprecated
 
 module Poly = struct
+  external ( < ) : 'a -> 'a -> bool = "%lessthan"
+
+  external ( <= ) : 'a -> 'a -> bool = "%lessequal"
+
+  external ( <> ) : 'a -> 'a -> bool = "%notequal"
+
+  external ( = ) : 'a -> 'a -> bool = "%equal"
+
+  external ( > ) : 'a -> 'a -> bool = "%greaterthan"
+
+  external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
+
   external compare : 'a -> 'a -> int = "%compare"
 
   external equal : 'a -> 'a -> bool = "%equal"
-
-  module Hashtbl = Hashtbl
 end
 
 module Int_replace_polymorphic_compare = struct
@@ -70,6 +80,19 @@ let ( != ) = `use_phys_equal
 
 include Int_replace_polymorphic_compare
 
+let quiet = ref false
+
+let werror = ref false
+
+let warnings = ref 0
+
+let warn fmt =
+  Format.ksprintf
+    (fun s ->
+      incr warnings;
+      if not !quiet then Format.eprintf "%s%!" s)
+    fmt
+
 let fail = ref true
 
 let failwith_ fmt =
@@ -80,23 +103,6 @@ let raise_ exn =
 
 module List = struct
   include ListLabels
-
-  let (mem_assoc [@deprecated "use List.exists"]) = List.mem
-
-  let (assoc [@deprecated "use List.find_map"]) = List.assoc
-
-  let (assoc_opt [@deprecated "use List.find_map"]) = List.assoc_opt
-
-  let (remove_assoc [@deprecated "use List.filter"]) = List.remove_assoc
-
-  let rec mem ~eq x = function
-    | [] -> false
-    | a :: l -> eq a x || mem ~eq x l
-
-  let string_assoc name l =
-    List.find_map
-      (fun (name', state) -> if String.equal name name' then Some state else None)
-      l
 
   let rec rev_append_map ~f l acc =
     match l with
@@ -263,9 +269,9 @@ module Int32 = struct
   external ( >= ) : int32 -> int32 -> bool = "%greaterequal"
 
   let warn_overflow name ~to_dec ~to_hex i i32 =
-    Warning.warn
-      `Integer_overflow
-      "%s 0x%s (%s) truncated to 0x%lx (%ld); the generated code might be incorrect.@."
+    warn
+      "Warning: integer overflow: %s 0x%s (%s) truncated to 0x%lx (%ld); the generated \
+       code might be incorrect.@."
       name
       (to_hex i)
       (to_dec i)
@@ -287,22 +293,6 @@ module Int32 = struct
       ~to_dec:(Printf.sprintf "%nd")
       ~to_hex:(Printf.sprintf "%nx")
       n
-end
-
-module Int64 = struct
-  include Int64
-
-  external ( < ) : int64 -> int64 -> bool = "%lessthan"
-
-  external ( <= ) : int64 -> int64 -> bool = "%lessequal"
-
-  external ( <> ) : int64 -> int64 -> bool = "%notequal"
-
-  external ( = ) : int64 -> int64 -> bool = "%equal"
-
-  external ( > ) : int64 -> int64 -> bool = "%greaterthan"
-
-  external ( >= ) : int64 -> int64 -> bool = "%greaterequal"
 end
 
 module Option = struct
@@ -494,13 +484,7 @@ module Bytes = BytesLabels
 module String = struct
   include StringLabels
 
-  let hash (a : string) = Hashtbl.hash a [@@if ocaml_version < (5, 0, 0)]
-
-  module Hashtbl = Hashtbl.Make (struct
-    include String
-
-    let hash = hash
-  end)
+  let hash (a : string) = Hashtbl.hash a
 
   let is_empty = function
     | "" -> true
@@ -828,13 +812,7 @@ end
 module Int = struct
   include Int
 
-  let hash (x : t) = x
-
-  module Hashtbl = Hashtbl.Make (struct
-    include Int
-
-    let hash x = x
-  end)
+  let hash (x : t) = Hashtbl.hash x
 end
 
 module IntSet = Set.Make (Int)
@@ -866,16 +844,12 @@ module BitSet : sig
   val next_free : t -> int -> int
 
   val next_mem : t -> int -> int
-
-  val clear : t -> unit
 end = struct
   type t = { mutable arr : int array }
 
   let create () = { arr = Array.make 1 0 }
 
   let create' n = { arr = Array.make ((n / Sys.int_size) + 1) 0 }
-
-  let clear t = Array.fill t.arr 0 (Array.length t.arr) 0
 
   let size t = Array.length t.arr * Sys.int_size
 
@@ -1122,18 +1096,6 @@ module In_channel = struct
 end
 [@@if ocaml_version >= (4, 14, 0)]
 
-module Seq = struct
-  include Seq
-
-  let rec mapi_aux f i xs () =
-    match xs () with
-    | Nil -> Nil
-    | Cons (x, xs) -> Cons (f i x, mapi_aux f (i + 1) xs)
-
-  (* Available since OCaml 4.14 *)
-  let[@inline] mapi f xs = mapi_aux f 0 xs
-end
-
 let split_lines s =
   if String.equal s ""
   then []
@@ -1176,31 +1138,3 @@ let file_lines_text file =
 let generated_name = function
   | "param" | "match" | "switcher" -> true
   | s -> String.starts_with ~prefix:"cst_" s
-
-module Hashtbl = struct
-  include Hashtbl
-
-  let (create [@deprecated "Use Int.Hashtbl, String.Hashtbl, Var.Hashtbl, Addr.Hashtbl"])
-      =
-    Hashtbl.create
-
-  let (of_seq [@deprecated "Use Int.Hashtbl, String.Hashtbl, Var.Hashtbl, Addr.Hashtbl"])
-      =
-    Hashtbl.of_seq
-end
-
-module Lexing = struct
-  include Lexing
-
-  let range_to_string (pos1, pos2) =
-    if phys_equal pos1 dummy_pos || phys_equal pos2 dummy_pos
-    then "At an unknown location:\n"
-    else
-      let file = pos1.pos_fname in
-      let line = pos1.pos_lnum in
-      let char1 = pos1.pos_cnum - pos1.pos_bol in
-      let char2 = pos2.pos_cnum - pos1.pos_bol in
-      (* yes, [pos1.pos_bol] *)
-      Printf.sprintf "File \"%s\", line %d, characters %d-%d:\n" file line char1 char2
-  (* use [char1 + 1] and [char2 + 1] if *not* using Caml mode *)
-end

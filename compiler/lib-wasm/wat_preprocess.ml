@@ -3,7 +3,7 @@ open Stdlib
 exception Error of (Lexing.position * Lexing.position) * string
 
 let report_error loc msg =
-  let location = Lexing.range_to_string loc in
+  let location = MenhirLib.LexerUtil.range loc in
   Format.eprintf "%s%s%!" location msg;
   exit 1
 
@@ -277,10 +277,6 @@ type value =
   | String of string
   | Version of int * int * int
 
-let value_equal (a : value) b = Poly.equal a b
-
-let value_compare (a : value) b = Poly.compare a b
-
 type st =
   { text : string
   ; mutable pos : pos
@@ -309,7 +305,7 @@ let check_type ?typ expr actual_typ =
   match typ with
   | None -> ()
   | Some typ ->
-      if not (Poly.equal actual_typ typ)
+      if Poly.(actual_typ <> typ)
       then
         raise
           (Error
@@ -371,17 +367,15 @@ and bin_op st ?typ loc op args =
       let v = eval st expr in
       let v' = eval ~typ:(value_type v) st expr' in
       Bool
-        (let op =
-           match op with
-           | "=" -> ( = )
-           | "<" -> ( < )
-           | ">" -> ( > )
-           | "<=" -> ( <= )
-           | ">=" -> ( >= )
-           | "<>" -> ( <> )
-           | _ -> assert false
-         in
-         op (value_compare v v') 0)
+        Poly.(
+          match op with
+          | "=" -> v = v'
+          | "<" -> v < v'
+          | ">" -> v > v'
+          | "<=" -> v <= v'
+          | ">=" -> v >= v'
+          | "<>" -> v <> v'
+          | _ -> assert false)
   | _ -> raise (Error (position_of_loc loc, Printf.sprintf "Syntax error.\n"))
 
 (****)
@@ -626,7 +620,7 @@ let with_preprocessed_files ~variables ~inputs action =
             if Link.Wasm_binary.check_file ~file then None else Some (Fs.read_file file)
         | Contents contents -> Some contents
       with
-      | None -> cont ({ Binaryen.module_name; file; source_map_file = None } :: inputs)
+      | None -> cont ({ Binaryen.module_name; file } :: inputs)
       | Some contents ->
           let source_file = file in
           Fs.with_intermediate_file (Filename.temp_file module_name ".wat")
@@ -637,7 +631,7 @@ let with_preprocessed_files ~variables ~inputs action =
               (if Link.Wasm_binary.check ~contents
                then contents
                else f ~variables ~filename:source_file ~contents);
-          cont ({ Binaryen.module_name; file; source_map_file = None } :: inputs))
+          cont ({ Binaryen.module_name; file } :: inputs))
     ~init:action
     inputs
     []

@@ -55,17 +55,15 @@ let (_ : string) = here ()
         runtime = globalThis.jsoo_runtime,
         cst_a = "a",
         cst_b = "b",
-        caml_string_concat = runtime.caml_string_concat,
-        Test =
-          [0,
-           caml_string_concat,
-           function(_a_){return cst_a + cst_a + cst_b + cst_b;}];
+        caml_string_concat = runtime.caml_string_concat;
+       function _a_(_b_){return cst_a + cst_a + cst_b + cst_b;}
+       _a_(0);
+       var Test = [0, caml_string_concat, _a_];
        runtime.caml_register_global(2, Test, "Test");
        return;
       }
       (globalThis));
-    //end
-    |}]
+    //end |}]
 
 let%expect_test _ =
   let program =
@@ -105,18 +103,16 @@ let (_ : string) = here ()
         caml_string_concat = runtime.caml_string_concat,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         cst_a = caml_string_of_jsbytes("a"),
-        cst_b = caml_string_of_jsbytes("b"),
-        Test =
-          [0,
-           caml_string_concat,
-           function(_a_){
-            return caml_string_concat
-                    (cst_a,
-                     caml_string_concat(cst_a, caml_string_concat(cst_b, cst_b)));
-           }];
+        cst_b = caml_string_of_jsbytes("b");
+       function _a_(_b_){
+        return caml_string_concat
+                (cst_a,
+                 caml_string_concat(cst_a, caml_string_concat(cst_b, cst_b)));
+       }
+       _a_(0);
+       var Test = [0, caml_string_concat, _a_];
        runtime.caml_register_global(2, Test, "Test");
        return;
       }
       (globalThis));
-    //end
-    |}]
+    //end |}]

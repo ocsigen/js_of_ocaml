@@ -300,15 +300,14 @@ function caml_sys_rmdir(name) {
 
 //Provides: caml_ba_map_file
 //Requires: caml_failwith
-function caml_ba_map_file(_vfd, _kind, _layout, _shared, _dims, _pos) {
+function caml_ba_map_file(vfd, kind, layout, shared, dims, pos) {
   // var data = caml_sys_fds[vfd];
   caml_failwith("caml_ba_map_file not implemented");
 }
 
 //Provides: caml_ba_map_file_bytecode
 //Requires: caml_ba_map_file
-function caml_ba_map_file_bytecode(argv, _argn) {
-  // argn === 6
+function caml_ba_map_file_bytecode(argv, argn) {
   return caml_ba_map_file(argv[0], argv[1], argv[2], argv[3], argv[4], argv[5]);
 }
 

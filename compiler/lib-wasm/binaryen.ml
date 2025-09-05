@@ -20,12 +20,10 @@ open Stdlib
 
 let debug = Debug.find "binaryen"
 
-let times = Debug.find "binaryen-times"
-
 let command cmdline =
   let cmdline = String.concat ~sep:" " cmdline in
   if debug () then Format.eprintf "+ %s@." cmdline;
-  let res = Sys.command ((if times () then "BINARYEN_PASS_DEBUG=1 " else "") ^ cmdline) in
+  let res = Sys.command cmdline in
   if res <> 0 then failwith ("the following command terminated unsuccessfully: " ^ cmdline)
 
 let common_options () =
@@ -40,9 +38,7 @@ let common_options () =
     ; "--enable-strings"
     ]
   in
-  let l = if Config.Flag.pretty () then "-g" :: l else l in
-  let l = if times () then "--no-validation" :: l else l in
-  l
+  if Config.Flag.pretty () then "-g" :: l else l
 
 let opt_flag flag v =
   match v with
@@ -52,7 +48,6 @@ let opt_flag flag v =
 type link_input =
   { module_name : string
   ; file : string
-  ; source_map_file : string option
   }
 
 let link ?options ~inputs ~opt_output_sourcemap ~output_file () =
@@ -62,13 +57,7 @@ let link ?options ~inputs ~opt_output_sourcemap ~output_file () =
        @ Option.value ~default:[] options
        @ List.flatten
            (List.map
-              ~f:(fun { file; module_name; source_map_file } ->
-                Filename.quote file
-                :: module_name
-                ::
-                (match source_map_file with
-                | None -> []
-                | Some file -> [ "--input-source-map"; Filename.quote file ]))
+              ~f:(fun { file; module_name } -> [ Filename.quote file; module_name ])
               inputs)
        @ [ "-o"; Filename.quote output_file ]
        @ opt_flag "--output-source-map" opt_output_sourcemap))
@@ -121,10 +110,11 @@ let dead_code_elimination
        @ [ ">"; Filename.quote usage_file ]));
   filter_unused_primitives primitives usage_file
 
-let optimization_options : Profile.t -> _ = function
-  | O1 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-  | O2 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
-  | O3 -> [ "-O3"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+let optimization_options =
+  [| [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+   ; [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+   ; [ "-O3"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]
+  |]
 
 let optimize
     ~profile
@@ -134,12 +124,15 @@ let optimize
     ~opt_output_sourcemap
     ~output_file
     () =
+  let level =
+    match profile with
+    | None -> 1
+    | Some p -> fst (List.find ~f:(fun (_, p') -> Poly.equal p p') Driver.profiles)
+  in
   command
     ("wasm-opt"
      :: (common_options ()
-        @ (match options with
-          | Some o -> o
-          | None -> optimization_options profile)
+        @ Option.value ~default:optimization_options.(level - 1) options
         @ [ Filename.quote input_file; "-o"; Filename.quote output_file ])
     @ opt_flag "--input-source-map" opt_input_sourcemap
     @ opt_flag "--output-source-map" opt_output_sourcemap)

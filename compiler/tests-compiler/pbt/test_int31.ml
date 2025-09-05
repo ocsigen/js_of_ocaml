@@ -68,7 +68,7 @@ let%expect_test _ =
   let output = [%expect.output] in
   let expected =
     Format.sprintf
-      "Warning [integer-overflow]: int32 0x%lx (%ld) truncated to 0x%lx (%ld); the \
+      "Warning: integer overflow: int32 0x%lx (%ld) truncated to 0x%lx (%ld); the \
        generated code might be incorrect.@."
       i
       i
@@ -86,7 +86,7 @@ let%expect_test _ =
   let output = [%expect.output] in
   let expected =
     Format.sprintf
-      "Warning [integer-overflow]: integer 0x%x (%d) truncated to 0x%lx (%ld); the \
+      "Warning: integer overflow: integer 0x%x (%d) truncated to 0x%lx (%ld); the \
        generated code might be incorrect.@."
       i
       i
@@ -104,7 +104,7 @@ let%expect_test _ =
   let output = [%expect.output] in
   let expected =
     Format.sprintf
-      "Warning [integer-overflow]: native integer 0x%nx (%nd) truncated to 0x%lx (%ld); \
+      "Warning: integer overflow: native integer 0x%nx (%nd) truncated to 0x%lx (%ld); \
        the generated code might be incorrect.@."
       i
       i

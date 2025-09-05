@@ -1,62 +1,9 @@
-#dev
-
-## Features/Changes
-* Compiler/wasm: omit code pointer from closures when not used (#2059, #2093)
-
-## Bug fixes
-* Compiler: fix purity of comparison functions (again) (#2092)
-* Runtime/wasm: fix Unix.times (#2096)
-
-# 6.2.0 (2025-07-30) - Lille
-
-## Features/Changes
-* Compiler: exit-loop-early in more cases (#2077)
-* Runtime: support rename in fake filesystem (#2080)
-* Compiler: remove reserved keyword in ecmascript 3
-* Compiler/wasm: omit code pointer from closures when not used (#2059)
-
-## Bug fixes
-* Compiler: Fix inlining. do not inline recursive functions (#2084)
-* Compiler: fix purity of caml_compare and caml_lxm_next
-* Runtime: fix Sys.rename for directories on windows
-
-# 6.1.1 (2025-07-07) - Lille
-
-## Bug fixes
-* Compiler: Fix shape loading (#2074)
-
-# 6.1.0 (2025-07-01) - Lille
+# dev
 
 ## Features/Changes
 * Misc: drop support for OCaml 4.12 and bellow
-* Misc: switch to dune.3.19
-* Misc: initial support for ocaml 5.4 (#2030, #2058)
+* Compiler: use a Wasm text files preprocessor (#1822)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
-* Compiler: add the `--empty-sourcemap` flag
-* Compiler: improve debug/sourcemap location of closures (#1947)
-* Compiler: optimize compilation of switches (#1921, #2057)
-* Compiler: evaluate statically more primitives (#1912, #1915, #1965, #1969)
-* Compiler: rewrote inlining pass (#1935, #2018, #2027)
-* Compiler: improve tailcall optimization (#1943)
-* Compiler: improve deadcode optimization (#1963, #1962, #1967)
-* Compiler: deadcode elimination of cyclic values (#1978)
-* Compiler: remove empty blocks (#1934)
-* Compiler: improve coloring optimization (#1971, #1984, #1986, #1989)
-* Compiler: faster constant sharing (#1988)
-* Compiler: faster js code generation (#1985, #2066)
-* Compiler: improve performance of Javascript linking
-* Compiler: more efficient code generation from bytecode (#1972)
-* Compiler: faster compilation by improving the scheduling of optimization passes (#1962, #2001, #2012, #2027)
-* Compiler: faster compilation by stopping sooner when optimizations become unproductive (#1939)
-* Compiler: Propagate arity between compilation units (#1594)
-* Compiler: Add flags to enable/disable warnings (#2052)
-* Compiler/wasm: directly write Wasm binary modules (#2000, #2003)
-* Compiler/wasm: faster wat output (#1992)
-* Compiler/wasm: use a Wasm text files preprocessor (#1822)
-* Compiler/wasm: optimize integer operations (#2032)
-* Compiler/wasm: use type analysis to remove some unnecessary uses of JavasScript strict equality (#2040)
-* Compiler/wasm: use more precise environment types (#2041)
-* Compiler/wasm: optimize calls to statically known function (#2044)
 * Runtime: use es6 class (#1840)
 * Runtime: support more Unix functions (#1829)
 * Runtime: remove polyfill for Map to simplify MlObjectTable implementation (#1846)
@@ -65,41 +12,28 @@
 * Runtime: make Obj.dup work with floats and boxed numbers (#1871)
 * Runtime: delete BigStringReader, one should use UInt8ArrayReader instead
 * Runtime: less conversion during un-marshalling (#1889)
-* Runtime: use TextEncoder/TextDecoder for utf8-utf16 conversions
-* Runtime: use Dataview to convert between floats and bit representation
-* Runtime: optimize Str.search_forward/search_backward (#2056)
-* Runtime: deprecate caml_ba_create_from (#2056)
-* Runtime: check for unused variable in the runtime (#2056)
 * Runtime/wasm: implement BLAKE2b primitives for Wasm (#1873)
 * Runtime/wasm: support jsoo_env and keep track of backtrace status (#1881)
 * Runtime/wasm: support unmarshaling compressed data (#1898)
 * Runtime/wasm: make resuming a continuation more efficient in Wasm (#1892)
-* Runtime/wasm: use imported string constants for JavaScript strings (#2022)
-* Runtime/wasm: use DataView primitives to implement bigarrays (#1979)
+* Compiler: improve performance of Javascript linking
 * Ppx: explicitly disallow polymorphic method (#1897)
 * Ppx: allow "function" in object literals (#1897)
-* Lib: add Dom_html.window.matchMedia & Dom_html.mediaQueryList (#2017)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
 * Compiler: minifier fix (#1867)
-* Compiler: fix shortvar with --enable es6 (AssignTarget was not properly handled)  
 * Compiler: fix assert failure with double translation (#1870)
 * Compiler: fix path rewriting of Wasm source maps (#1882)
-* Compiler: fix global dead code in presence of dead tailcall (#2010)
 * Compiler/wasm: fix bound check for empty float array (#1904)
+* Lib: fix Dom_html.Keyboard_code.of_event (#1878)
 * Runtime: fix path normalization (#1848)
 * Runtime: fix reading from the pseudo-filesystem (#1859)
 * Runtime: fix initialization of standard streams under Windows (#1849)
 * Runtime: fix Int64.of_string overflow check (#1874)
 * Runtime: fix caml_string_concat when not using JS strings (#1874)
-* Runtime: consistent bigarray hashing across all architectures (#1977)
-* Runtime: fix caml_utf8_of_utf16 bug in high surrogate case (#2008)
-* Runtime: fix method lookup (#2034, #2038, #2039)
-* Lib: fix Dom_html.Keyboard_code.of_event (#1878)
 * Tools: fix jsoo_mktop and jsoo_mkcmis (#1877)
-* Toplevel: fix for when use-js-strings is disabled (#1997)
 
 # 6.0.1 (2025-02-07) - Lille
 

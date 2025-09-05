@@ -164,7 +164,7 @@ struct
     match loc with
     | N -> ()
     | _ ->
-        let location_changed = not (location_equal loc !current_loc) in
+        let location_changed = Poly.(loc <> !current_loc) in
         (if source_map_enabled && (!last_mapping_has_a_name || location_changed)
          then
            match loc with
@@ -242,7 +242,7 @@ struct
     | S { name = Utf8 name; var = None; _ } -> PP.string f name
     | V v ->
         assert accept_unnamed_var;
-        PP.string f (Format.asprintf "<%a>" Code.Var.print v)
+        PP.string f ("<" ^ Code.Var.to_string v ^ ">")
 
   let opt_identifier f ~kind i =
     match i with
@@ -467,12 +467,7 @@ struct
       | EAssignTarget (ArrayTarget _) -> false
       | EBin (op, e1, e2) ->
           let out, lft, rght = op_prec op in
-          Prec.(l <= out)
-          && ((match op with
-              | In -> in_
-              | _ -> false)
-             || traverse lft e1
-             || traverse rght e2)
+          Prec.(l <= out) && (Poly.(op = In && in_) || traverse lft e1 || traverse rght e2)
       | EUn ((IncrA | DecrA | IncrB | DecrB), e) ->
           Prec.(l <= UpdateExpression) && traverse LeftHandSideExpression e
       | EUn (_, e) -> Prec.(l <= UnaryExpression) && traverse UnaryExpression e
@@ -770,10 +765,7 @@ struct
         then (
           PP.start_group f 1;
           PP.string f "(");
-        (match op with
-        | IncrB -> PP.string f "++"
-        | DecrB -> PP.string f "--"
-        | _ -> assert false);
+        if Poly.(op = IncrB) then PP.string f "++" else PP.string f "--";
         expression UnaryExpression f e;
         if Prec.(l > p)
         then (
@@ -786,10 +778,7 @@ struct
           PP.start_group f 1;
           PP.string f "(");
         expression LeftHandSideExpression f e;
-        (match op with
-        | IncrA -> PP.string f "++"
-        | DecrA -> PP.string f "--"
-        | _ -> assert false);
+        if Poly.(op = IncrA) then PP.string f "++" else PP.string f "--";
         if Prec.(l > p)
         then (
           PP.string f ")";
@@ -2063,7 +2052,7 @@ let need_space a b =
   | _, _ -> false
 
 let hashtbl_to_list htb =
-  String.Hashtbl.fold (fun k v l -> (k, v) :: l) htb []
+  Hashtbl.fold (fun k v l -> (k, v) :: l) htb []
   |> List.sort ~cmp:(fun (_, a) (_, b) -> compare a b)
   |> List.map ~f:fst
 
@@ -2071,21 +2060,21 @@ let blackbox_filename = "/builtin/blackbox.ml"
 
 let program ?(accept_unnamed_var = false) ?(source_map = false) f p =
   let temp_mappings = ref [] in
-  let files = String.Hashtbl.create 17 in
-  let names = String.Hashtbl.create 17 in
+  let files = Hashtbl.create 17 in
+  let names = Hashtbl.create 17 in
   let push_mapping, get_file_index, get_name_index =
     ( (fun pos m -> temp_mappings := (pos, m) :: !temp_mappings)
     , (fun file ->
-        try String.Hashtbl.find files file
+        try Hashtbl.find files file
         with Not_found ->
-          let pos = String.Hashtbl.length files in
-          String.Hashtbl.add files file pos;
+          let pos = Hashtbl.length files in
+          Hashtbl.add files file pos;
           pos)
     , fun name ->
-        try String.Hashtbl.find names name
+        try Hashtbl.find names name
         with Not_found ->
-          let pos = String.Hashtbl.length names in
-          String.Hashtbl.add names name pos;
+          let pos = Hashtbl.length names in
+          Hashtbl.add names name pos;
           pos )
   in
   let hidden_location =

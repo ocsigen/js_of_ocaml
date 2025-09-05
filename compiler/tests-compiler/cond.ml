@@ -45,11 +45,12 @@ let%expect_test "conditional" =
     function f(a, b, c, d, e, f){
      a:
      {
+      b:
       if(a){
        if(! b && ! c && ! d && ! e && ! f){var x = 1; break a;}
       }
       else if(b){
-       if(! c && ! d && ! e && ! f){var x = 2; break a;}
+       if(! c && ! d){if(e) break b; if(f) break b; var x = 2; break a;}
       }
       else if(c){
        if(! d && ! e && ! f){var x = 3; break a;}
@@ -65,99 +66,4 @@ let%expect_test "conditional" =
      }
      return x + 2 | 0;
     }
-    //end
-    |}]
-
-let%expect_test "conditional" =
-  let program =
-    compile_and_parse
-      {|
-type rip_relative_kind =
-| Explicitly_rip_relative
-| Implicitly_rip_relative
-| Not_rip_relative
-
-(** val rip_relative_kind_beq :
-    rip_relative_kind -> rip_relative_kind -> bool **)
-
-let rip_relative_kind_beq x y =
-  match x with
-  | Explicitly_rip_relative ->
-    (match y with
-     | Explicitly_rip_relative -> true
-     | Implicitly_rip_relative -> false
-     | Not_rip_relative -> false)
-  | Implicitly_rip_relative ->
-    (match y with
-     | Explicitly_rip_relative -> false
-     | Implicitly_rip_relative -> true
-     | Not_rip_relative -> false)
-  | Not_rip_relative ->
-    (match y with
-     | Explicitly_rip_relative -> false
-     | Implicitly_rip_relative -> false
-     | Not_rip_relative -> true)
-       |}
-  in
-  print_fun_decl program (Some "rip_relative_kind_beq");
-  [%expect
-    {|
-    function rip_relative_kind_beq(x, y){
-     switch(x){
-       case 0:
-        return 0 === y ? 1 : 0;
-       case 1:
-        return 1 === y ? 1 : 0;
-       default: return 2 === y ? 1 : 0;
-     }
-    }
-    //end
-    |}]
-
-let%expect_test "conditional" =
-  let program =
-    compile_and_parse
-      {|
-type rip_relative_kind =
-| Explicitly_rip_relative
-| Implicitly_rip_relative
-| Not_rip_relative
-
-(** val rip_relative_kind_beq :
-    rip_relative_kind -> rip_relative_kind -> bool **)
-
-let rip_relative_kind_beq x y =
-  let i = match x with
-  | Explicitly_rip_relative ->
-    (match y with
-     | Explicitly_rip_relative -> 1
-     | Implicitly_rip_relative -> 2
-     | Not_rip_relative -> 2)
-  | Implicitly_rip_relative ->
-    (match y with
-     | Explicitly_rip_relative -> 2
-     | Implicitly_rip_relative -> 1
-     | Not_rip_relative -> 2)
-  | Not_rip_relative ->
-    (match y with
-     | Explicitly_rip_relative -> 2
-     | Implicitly_rip_relative -> 2
-       | Not_rip_relative -> 1)
-   in print_int i
-       |}
-  in
-  print_fun_decl program (Some "rip_relative_kind_beq");
-  [%expect
-    {|
-    function rip_relative_kind_beq(x, y){
-     switch(x){
-       case 0:
-        var i = 0 === y ? 1 : 2; break;
-       case 1:
-        var i = 1 === y ? 1 : 2; break;
-       default: var i = 2 === y ? 1 : 2;
-     }
-     return caml_call1(Stdlib[44], i);
-    }
-    //end
-    |}]
+    //end |}]

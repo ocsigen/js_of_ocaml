@@ -142,8 +142,7 @@ let%expect_test _ =
      }
      return 1;
     }
-    //end
-    |}];
+    //end |}];
   with_temp_dir ~f:(fun () -> print_fun_decl (program ~enable:false) (Some "match_expr"));
   [%expect
     {|
@@ -165,5 +164,4 @@ let%expect_test _ =
      }
      return 1;
     }
-    //end
-    |}]
+    //end |}]

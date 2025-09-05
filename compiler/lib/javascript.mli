@@ -35,8 +35,6 @@ module Num : sig
 
   val to_targetint : t -> Targetint.t
 
-  val hash : t -> int
-
   (** Predicates *)
 
   val is_zero : t -> bool
@@ -44,8 +42,6 @@ module Num : sig
   val is_one : t -> bool
 
   val is_neg : t -> bool
-
-  val equal : t -> t -> bool
 
   (** Arithmetic *)
 
@@ -62,8 +58,6 @@ module Label : sig
   val fresh : unit -> t
 
   val of_string : Utf8_string.t -> t
-
-  val equal : t -> t -> bool
 end
 
 type location =
@@ -419,8 +413,6 @@ val is_ident : string -> bool
 
 val is_ident' : Utf8_string.t -> bool
 
-val ident_equal : ident -> ident -> bool
-
 val ident : ?loc:location -> ?var:Code.Var.t -> identifier -> ident
 
 val param : ?loc:location -> ?var:Code.Var.t -> identifier -> formal_parameter
@@ -457,5 +449,3 @@ val early_error : ?reason:string -> Parse_info.t -> early_error
 val fun_ : ident list -> statement_list -> location -> function_declaration
 
 val assignment_target_of_expr : binop option -> expression -> expression
-
-val location_equal : location -> location -> bool

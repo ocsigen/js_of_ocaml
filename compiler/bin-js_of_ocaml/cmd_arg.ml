@@ -45,7 +45,7 @@ let normalize_effects (effects : [ `Disabled | `Cps | `Double_translation ] opti
   | None ->
       (* For backward compatibility, consider that [--enable effects] alone means
          [--effects cps] *)
-      if List.mem ~eq:String.equal "effects" common.Jsoo_cmdline.Arg.optim.enable
+      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable
       then `Cps
       else `Disabled
   | Some ((`Disabled | `Cps | `Double_translation) as e) -> e
@@ -53,8 +53,8 @@ let normalize_effects (effects : [ `Disabled | `Cps | `Double_translation ] opti
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
-    profile : Profile.t option
-  ; source_map : Source_map.Encoding_spec.t option
+    profile : Driver.profile option
+  ; source_map : (string option * Source_map.Standard.t) option
   ; runtime_files : string list
   ; no_runtime : bool
   ; include_runtime : bool
@@ -64,7 +64,6 @@ type t =
   ; static_env : (string * string) list
   ; wrap_with_fun : [ `Iife | `Named of string | `Anonymous ]
   ; target_env : Target_env.t
-  ; shape_files : string list
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool
@@ -79,26 +78,6 @@ type t =
   ; keep_unit_names : bool
   ; effects : Config.effects_backend
   }
-
-let set_param =
-  let doc = "Set compiler options." in
-  let all = List.map (Config.Param.all ()) ~f:(fun (x, _, _) -> x, x) in
-  let pair = Arg.(pair ~sep:'=' (enum all) string) in
-  let parser s =
-    match Arg.conv_parser pair s with
-    | Ok (k, v) -> (
-        match
-          List.find ~f:(fun (k', _, _) -> String.equal k k') (Config.Param.all ())
-        with
-        | _, _, valid -> (
-            match valid v with
-            | Ok () -> Ok (k, v)
-            | Error msg -> Error (`Msg ("Unexpected VALUE after [=], " ^ msg))))
-    | Error _ as e -> e
-  in
-  let printer = Arg.conv_printer pair in
-  let c = Arg.conv (parser, printer) in
-  Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
 
 let wrap_with_fun_conv =
   let conv s =
@@ -135,10 +114,6 @@ let options =
     let doc = "Set output file name to [$(docv)]." in
     Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
-  let shape_files =
-    let doc = "load shape file [$(docv)]." in
-    Arg.(value & opt_all string [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
-  in
   let input_file =
     let doc =
       "Compile the bytecode program [$(docv)]. "
@@ -152,9 +127,7 @@ let options =
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
-    let profile =
-      List.map Profile.all ~f:(fun p -> string_of_int (Profile.to_int p), p)
-    in
+    let profile = List.map Driver.profiles ~f:(fun (i, p) -> string_of_int i, p) in
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
   let noruntime =
@@ -185,10 +158,6 @@ let options =
     let doc = "Do not inline sources in source map." in
     Arg.(value & flag & info [ "source-map-no-source" ] ~doc)
   in
-  let sourcemap_empty =
-    let doc = "Always generate empty source maps." in
-    Arg.(value & flag & info [ "empty-sourcemap"; "empty-source-map" ] ~doc)
-  in
   let sourcemap_root =
     let doc = "root dir for source map." in
     Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
@@ -199,6 +168,14 @@ let options =
        with the global object."
     in
     Arg.(value & opt wrap_with_fun_conv `Iife & info [ "wrap-with-fun" ] ~doc)
+  in
+  let set_param =
+    let doc = "Set compiler options." in
+    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
+    Arg.(
+      value
+      & opt_all (list (pair ~sep:'=' (enum all) string)) []
+      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let set_env =
     let doc = "Set environment variable statically." in
@@ -327,15 +304,13 @@ let options =
       sourcemap
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
-      sourcemap_empty
       sourcemap_root
       target_env
       output_file
       input_file
       js_files
       keep_unit_names
-      effects
-      shape_files =
+      effects =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
@@ -363,19 +338,12 @@ let options =
           | `Name file, _ -> Some file, Some (chop_extension file ^ ".map")
           | `Stdout, _ -> None, None
         in
-        let source_map =
-          { (Source_map.Standard.empty ~inline_source_content) with
-            file
-          ; sourceroot = sourcemap_root
-          }
-        in
-        let spec =
-          { Source_map.Encoding_spec.output_file = sm_output_file
-          ; source_map
-          ; keep_empty = sourcemap_empty
-          }
-        in
-        Some spec
+        Some
+          ( sm_output_file
+          , { (Source_map.Standard.empty ~inline_source_content) with
+              file
+            ; sourceroot = sourcemap_root
+            } )
       else None
     in
     let params : (string * string) list = List.flatten set_param in
@@ -406,7 +374,6 @@ let options =
       ; source_map
       ; keep_unit_names
       ; effects
-      ; shape_files
       }
   in
   let t =
@@ -432,15 +399,13 @@ let options =
       $ sourcemap
       $ sourcemap_inline_in_js
       $ sourcemap_don't_inline_content
-      $ sourcemap_empty
       $ sourcemap_root
       $ target_env
       $ output_file
       $ input_file
       $ js_files
       $ keep_unit_names
-      $ effects
-      $ shape_files)
+      $ effects)
   in
   Term.ret t
 
@@ -480,10 +445,6 @@ let options_runtime_only =
     let doc = "Do not inline sources in source map." in
     Arg.(value & flag & info [ "source-map-no-source" ] ~doc)
   in
-  let sourcemap_empty =
-    let doc = "Always generate empty source maps." in
-    Arg.(value & flag & info [ "empty-sourcemap"; "empty-source-map" ] ~doc)
-  in
   let sourcemap_root =
     let doc = "root dir for source map." in
     Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
@@ -513,6 +474,14 @@ let options_runtime_only =
        with the global object."
     in
     Arg.(value & opt wrap_with_fun_conv `Iife & info [ "wrap-with-fun" ] ~doc)
+  in
+  let set_param =
+    let doc = "Set compiler options." in
+    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
+    Arg.(
+      value
+      & opt_all (list (pair ~sep:'=' (enum all) string)) []
+      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let set_env =
     let doc = "Set environment variable statically." in
@@ -595,7 +564,6 @@ let options_runtime_only =
       sourcemap
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
-      sourcemap_empty
       sourcemap_root
       target_env
       output_file
@@ -618,19 +586,12 @@ let options_runtime_only =
           | `Name file, _ -> Some file, Some (chop_extension file ^ ".map")
           | `Stdout, _ -> None, None
         in
-        let source_map =
-          { (Source_map.Standard.empty ~inline_source_content) with
-            file
-          ; sourceroot = sourcemap_root
-          }
-        in
-        let spec =
-          { Source_map.Encoding_spec.output_file = sm_output_file
-          ; source_map
-          ; keep_empty = sourcemap_empty
-          }
-        in
-        Some spec
+        Some
+          ( sm_output_file
+          , { (Source_map.Standard.empty ~inline_source_content) with
+              file
+            ; sourceroot = sourcemap_root
+            } )
       else None
     in
     let params : (string * string) list = List.flatten set_param in
@@ -661,7 +622,6 @@ let options_runtime_only =
       ; source_map
       ; keep_unit_names = false
       ; effects
-      ; shape_files = []
       }
   in
   let t =
@@ -682,7 +642,6 @@ let options_runtime_only =
       $ sourcemap
       $ sourcemap_inline_in_js
       $ sourcemap_don't_inline_content
-      $ sourcemap_empty
       $ sourcemap_root
       $ target_env
       $ output_file

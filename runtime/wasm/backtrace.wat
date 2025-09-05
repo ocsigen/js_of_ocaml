@@ -16,12 +16,12 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-   (import "fail" "caml_invalid_argument"
-      (func $caml_invalid_argument (param (ref eq))))
    (import "bindings" "backtrace_status"
       (func $backtrace_status (result (ref eq))))
    (import "bindings" "record_backtrace"
       (func $record_backtrace (param (ref eq))))
+   (import "fail" "caml_invalid_argument"
+      (func $caml_invalid_argument (param (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))

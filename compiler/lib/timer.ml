@@ -18,13 +18,12 @@
 
 open! Stdlib
 
-type t =
-  { get_time : unit -> float
-  ; start : float
-  }
+type t = float
 
-let make ?(get_time = Sys.time) () = { get_time; start = get_time () }
+let timer = Sys.time
 
-let get t = t.get_time () -. t.start
+let make () = timer ()
+
+let get t = timer () -. t
 
 let print f t = Format.fprintf f "%.2f" (get t)

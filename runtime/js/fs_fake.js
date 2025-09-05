@@ -81,43 +81,7 @@ class MlFakeDevice {
     }
   }
 
-  rename_dir(oldname, newname) {
-    if (this.exists(newname)) {
-      if (!this.is_dir(newname)) {
-        caml_raise_sys_error(
-          this.nm(newname) + " : file already exists and is not a directory",
-        );
-      }
-      if (this.readdir(newname).length > 0) {
-        caml_raise_sys_error(this.nm(newname) + " : directory not empty");
-      }
-    }
-    var old_slash = this.slash(oldname);
-    var new_slash = this.slash(newname);
-    this.create_dir_if_needed(new_slash);
-    for (const f of this.readdir(oldname)) {
-      this.rename(old_slash + f, new_slash + f);
-    }
-    delete this.content[old_slash];
-  }
-
-  rename(oldname, newname) {
-    if (!this.exists(oldname))
-      caml_raise_sys_error(this.nm(oldname) + " : no such file or directory");
-    if (this.is_dir(oldname)) {
-      this.rename_dir(oldname, newname);
-    } else {
-      if (this.exists(newname) && this.is_dir(newname)) {
-        caml_raise_sys_error(
-          this.nm(newname) + " : file already exists and is a directory",
-        );
-      }
-      this.content[newname] = this.content[oldname];
-      delete this.content[oldname];
-    }
-  }
-
-  mkdir(name, _mode, raise_unix) {
+  mkdir(name, mode, raise_unix) {
     if (this.exists(name))
       caml_raise_system_error(
         raise_unix,
@@ -253,7 +217,8 @@ class MlFakeDevice {
     return 0;
   }
 
-  access(name, _flags, raise_unix) {
+  access(name, f, raise_unix) {
+    var file;
     this.lookup(name);
     if (this.content[name]) {
       if (this.is_dir(name))
@@ -406,7 +371,7 @@ class MlFakeFile extends MlFile {
 class MlFakeFd_out extends MlFakeFile {
   constructor(fd, flags) {
     super(caml_create_bytes(0));
-    this.log = function (_s) {
+    this.log = function (s) {
       return 0;
     };
     if (fd === 1 && typeof console.log === "function") this.log = console.log;
@@ -420,7 +385,7 @@ class MlFakeFd_out extends MlFakeFile {
     return 0;
   }
 
-  truncate(_len, raise_unix) {
+  truncate(len, raise_unix) {
     caml_raise_system_error(
       raise_unix,
       "EINVAL",
@@ -454,11 +419,11 @@ class MlFakeFd_out extends MlFakeFile {
     );
   }
 
-  read(_buf, _pos, _len, raise_unix) {
+  read(buf, pos, len, raise_unix) {
     caml_raise_system_error(raise_unix, "EBADF", "read", "bad file descriptor");
   }
 
-  seek(_len, _whence, raise_unix) {
+  seek(len, whence, raise_unix) {
     caml_raise_system_error(raise_unix, "ESPIPE", "lseek", "illegal seek");
   }
 
@@ -466,7 +431,7 @@ class MlFakeFd_out extends MlFakeFile {
     this.log = undefined;
   }
 
-  check_stream_semantics(_cmd) {}
+  check_stream_semantics(cmd) {}
 }
 
 //Provides: MlFakeFd

@@ -205,10 +205,6 @@ class MlNodeDevice {
     }
   }
 
-  slash(name) {
-    return /\/$/.test(name) ? name : name + "/";
-  }
-
   rename(o, n, raise_unix) {
     if (globalThis.process?.platform === "win32") {
       try {
@@ -225,7 +221,7 @@ class MlNodeDevice {
           source_stats.isDirectory()
         ) {
           if (target_stats.isDirectory()) {
-            if (!this.slash(target).startsWith(this.slash(source)))
+            if (!target.startsWith(source))
               try {
                 this.fs.rmdirSync(target);
               } catch {}
@@ -565,7 +561,7 @@ function caml_sys_open_for_node(fd, flags) {
 
 //Provides: caml_sys_open_for_node
 //If: browser
-function caml_sys_open_for_node(_fd, _flags) {
+function caml_sys_open_for_node(fd, flags) {
   return null;
 }
 

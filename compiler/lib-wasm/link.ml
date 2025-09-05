@@ -89,7 +89,6 @@ end = struct
     { provides = t |> member "provides" |> set empty.provides
     ; requires = t |> member "requires" |> set empty.requires
     ; primitives = t |> member "primitives" |> list empty.primitives
-    ; aliases = []
     ; force_link = t |> member "force_link" |> bool empty.force_link
     ; effects_without_cps =
         t |> member "effects_without_cps" |> bool empty.effects_without_cps
@@ -314,6 +313,7 @@ let trim_semi s =
 type unit_data =
   { unit_name : string
   ; unit_info : Unit_info.t
+  ; strings : string list
   ; fragments : (string * Javascript.expression) list
   }
 
@@ -321,10 +321,14 @@ let info_to_sexp ~predefined_exceptions ~build_info ~unit_data =
   let add nm skip v rem = if skip then rem else Sexp.List (Atom nm :: v) :: rem in
   let units =
     List.map
-      ~f:(fun { unit_name; unit_info; fragments } ->
+      ~f:(fun { unit_name; unit_info; strings; fragments } ->
         Sexp.List
           (Unit_info.to_sexp unit_info
           |> add "name" false [ Atom unit_name ]
+          |> add
+               "strings"
+               (List.is_empty strings)
+               (List.map ~f:(fun s -> Sexp.Atom s) strings)
           |> add
                "fragments"
                (List.is_empty fragments)
@@ -361,6 +365,9 @@ let info_from_sexp info =
            let unit_name =
              u |> member "name" |> Option.value ~default:[] |> single string
            in
+           let strings =
+             u |> member "strings" |> Option.value ~default:[] |> List.map ~f:string
+           in
            let fragments =
              u
              |> member "fragments"
@@ -375,7 +382,7 @@ let info_from_sexp info =
                                   , let lex = Parse_js.Lexer.of_string (to_string e) in
                                     Parse_js.parse_expr lex ))*)
            in
-           { unit_name; unit_info; fragments })
+           { unit_name; unit_info; strings; fragments })
   in
   build_info, predefined_exceptions, unit_data
 
@@ -394,7 +401,7 @@ let generate_start_function ~to_link ~out_file =
   @@ fun ch ->
   let context = Generate.start () in
   Generate.add_init_function ~context ~to_link:("prelude" :: to_link);
-  Generate.wasm_output ch ~opt_source_map_file:None ~context;
+  Generate.wasm_output ch ~context;
   if times () then Format.eprintf "    generate start: %a@." Timer.print t1
 
 let output_js js =
@@ -409,15 +416,12 @@ let output_js js =
 
 let report_missing_primitives missing =
   if not (List.is_empty missing)
-  then
-    Warning.warn
-      `Missing_primitive
-      "There are some missing Wasm primitives\n\
-       Dummy implementations (raising an exception) will be provided.\n\
-       Missing primitives:\n\
-       %a"
-      (Format.pp_print_list Format.pp_print_string)
-      missing
+  then (
+    warn "There are some missing Wasm primitives@.";
+    warn "Dummy implementations (raising an exception) ";
+    warn "will be provided.@.";
+    warn "Missing primitives:@.";
+    List.iter ~f:(fun nm -> warn "  %s@." nm) missing)
 
 let build_runtime_arguments
     ~link_spec
@@ -439,13 +443,28 @@ let build_runtime_arguments
   let generated_js =
     List.concat
     @@ List.map
-         ~f:(fun (unit_name, fragments) ->
+         ~f:(fun (unit_name, (strings, fragments)) ->
            let name s =
              match unit_name with
              | None -> s
              | Some nm -> nm ^ "." ^ s
            in
-           if List.is_empty fragments then [] else [ name "fragments", obj fragments ])
+           let strings =
+             if List.is_empty strings
+             then []
+             else
+               [ ( name "strings"
+                 , Javascript.EArr
+                     (List.map
+                        ~f:(fun s ->
+                          Javascript.Element (EStr (Utf8_string.of_string_exn s)))
+                        strings) )
+               ]
+           in
+           let fragments =
+             if List.is_empty fragments then [] else [ name "fragments", obj fragments ]
+           in
+           strings @ fragments)
          generated_js
   in
   let generated_js =
@@ -605,7 +624,7 @@ let link_to_directory ~files_to_link ~files ~enable_source_maps ~dir =
   runtime :: prelude :: List.map ~f:fst lst, (runtime_intf, List.map ~f:snd lst)
 
 let compute_dependencies ~files_to_link ~files =
-  let h = String.Hashtbl.create 128 in
+  let h = Hashtbl.create 128 in
   let i = ref 2 in
   List.filter_map
     ~f:(fun (file, (_, units)) ->
@@ -616,13 +635,13 @@ let compute_dependencies ~files_to_link ~files =
             ~f:(fun s { unit_info; _ } ->
               StringSet.fold
                 (fun unit_name s ->
-                  try IntSet.add (String.Hashtbl.find h unit_name) s with Not_found -> s)
+                  try IntSet.add (Hashtbl.find h unit_name) s with Not_found -> s)
                 unit_info.requires
                 s)
             ~init:IntSet.empty
             units
         in
-        List.iter ~f:(fun { unit_name; _ } -> String.Hashtbl.add h unit_name !i) units;
+        List.iter ~f:(fun { unit_name; _ } -> Hashtbl.add h unit_name !i) units;
         incr i;
         Some (Some (IntSet.elements s)))
       else None)
@@ -801,8 +820,8 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   let generated_js =
     List.concat
     @@ List.map files ~f:(fun (_, (_, units)) ->
-           List.map units ~f:(fun { unit_name; fragments; _ } ->
-               Some unit_name, fragments))
+           List.map units ~f:(fun { unit_name; strings; fragments; _ } ->
+               Some unit_name, (strings, fragments)))
   in
   let runtime_args =
     let js =
@@ -856,7 +875,7 @@ let add_source_map files z sm =
   Wasm_source_map.iter_sources sm (fun i j file ->
       let z', files =
         match !st with
-        | Some (i', st) when Option.equal ( = ) i i' -> st
+        | Some (i', st) when Poly.equal i i' -> st
         | _ ->
             let st' = get_source_map_files ~tmp_buf files src_index in
             finalize ();

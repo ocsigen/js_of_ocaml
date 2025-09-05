@@ -35,26 +35,24 @@ let prevent_inline = some_name
     function some_name(param){
      try{
       try{throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
-      catch(x$0){var x = caml_wrap_exception(x$0), i = x;}
+      catch(x$0){var x = caml_wrap_exception(x$0), i$0 = x;}
      }
-     catch(i$0){var i = caml_wrap_exception(i$0);}
-     throw caml_maybe_attach_backtrace(i, 1);
+     catch(i$1){var i = caml_wrap_exception(i$1), i$0 = i;}
+     throw caml_maybe_attach_backtrace(i$0, 1);
     }
-    //end
-    |}];
+    //end |}];
   print_fun_decl (program ~debug:false) None;
   [%expect
     {|
-    function _a_(_c_){
+    function _a_(_b_){
      try{
       try{throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
-      catch(_c_){var _b_ = caml_wrap_exception(_c_);}
+      catch(_f_){var _d_ = caml_wrap_exception(_f_);}
      }
-     catch(_c_){
-      var _a_ = caml_wrap_exception(_c_);
-      throw caml_maybe_attach_backtrace(_a_, 1);
+     catch(_e_){
+      var _c_ = caml_wrap_exception(_e_);
+      throw caml_maybe_attach_backtrace(_c_, 1);
      }
-     throw caml_maybe_attach_backtrace(_b_, 1);
+     throw caml_maybe_attach_backtrace(_d_, 1);
     }
-    //end
-    |}]
+    //end |}]

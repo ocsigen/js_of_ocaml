@@ -79,8 +79,6 @@ class type iterator = object
 
   method class_decl : Javascript.class_declaration -> unit
 
-  method class_element : Javascript.class_element -> unit
-
   method early_error : Javascript.early_error -> unit
 
   method expression : Javascript.expression -> unit
@@ -107,8 +105,6 @@ class type iterator = object
 
   method statements : Javascript.statement_list -> unit
 
-  method formal_parameter_list : Javascript.formal_parameter_list -> unit
-
   method ident : Javascript.ident -> unit
 
   method program : Javascript.program -> unit
@@ -123,6 +119,10 @@ end
 class map : mapper
 
 class iter : iterator
+
+class subst : (ident -> ident) -> object
+  inherit mapper
+end
 
 type t =
   { use : IdentSet.t
@@ -152,6 +152,8 @@ class type freevar = object ('a)
 
   method state : t
 
+  method get_count : int IdentMap.t
+
   method get_free : IdentSet.t
 
   method get_def : IdentSet.t
@@ -160,10 +162,6 @@ class type freevar = object ('a)
 end
 
 class free : freevar
-
-val declared_names : program -> StringSet.t
-
-class fast_freevar : (string -> unit) -> iterator
 
 type scope =
   | Module
@@ -177,7 +175,7 @@ class rename_variable : esm:bool -> object ('a)
   method update_state : scope -> Javascript.ident list -> Javascript.statement_list -> 'a
 end
 
-val share_constant : Javascript.program -> Javascript.program
+class share_constant : mapper
 
 class compact_vardecl : object ('a)
   inherit map

@@ -3,11 +3,3 @@
  (deps
   index.html
   (glob_files *.{png})))
-
-(env
- (_
-  (js_of_ocaml
-   (build_runtime_flags
-    (:standard --Werror))
-   (flags
-    (:standard --Werror)))))

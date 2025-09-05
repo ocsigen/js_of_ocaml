@@ -42,8 +42,6 @@ module Domain : sig
 
   val top : t
 
-  val live_block : t
-
   val live_field : int -> t -> t
 
   val join : t -> t -> t
@@ -76,8 +74,6 @@ end = struct
 
   let depth_treshold = 4
 
-  let live_block = Live IntMap.empty
-
   let live_field i l =
     (* We need to limit the depth of the liveness information,
        otherwise the information can get more and more precise without
@@ -100,7 +96,7 @@ end
 let iter_with_scope prog f =
   Code.fold_closures
     prog
-    (fun scope _ (pc, _) _ () ->
+    (fun scope _ (pc, _) () ->
       Code.traverse
         { fold = fold_children }
         (fun pc () -> f scope (Addr.Map.find pc prog.blocks))
@@ -177,7 +173,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
                 (* 1. Look at return values, and add edge between x and these values. *)
                 (* 2. Add an edge pairwise between the parameters and arguments *)
                 match global_info.info_defs.(Var.idx k) with
-                | Expr (Closure (params, _, _)) ->
+                | Expr (Closure (params, _)) ->
                     (* If the function is under/over-applied then global flow will mark arguments and return value as escaping.
                        So we only need to consider the case when there is an exact application. *)
                     if List.compare_lengths params args = 0
@@ -202,7 +198,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
     | Field (z, _, _) -> add_use Compute x z
     | Constant _ -> ()
     | Special _ -> ()
-    | Closure (_, cont, _) -> add_cont_deps cont
+    | Closure (_, cont) -> add_cont_deps cont
     | Prim (_, args) ->
         List.iter
           ~f:(fun arg ->
@@ -269,7 +265,7 @@ let expr_vars e =
   (* We can ignore closures. We want the set of previously defined variables used
      in the expression, so not parameters. The continuation may use some variables
      but we will add these when we visit the body *)
-  | Constant _ | Closure (_, _, _) | Special _ -> vars
+  | Constant _ | Closure (_, _) | Special _ -> vars
 
 (** Compute the initial liveness of each variable in the program.
 
@@ -326,7 +322,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
                 args
           | Block (_, _, _, _)
           | Field (_, _, _)
-          | Closure (_, _, _)
+          | Closure (_, _)
           | Constant _
           | Prim (_, _)
           | Special _ ->
@@ -389,13 +385,11 @@ let propagate defs scoped_live_vars ~state ~dep:y ~target:x ~action:usage_kind =
                 vars;
               !live
           | Expr (Field (_, i, _)) -> Domain.live_field i l
-          | Expr (Prim (IsInt, _)) -> Domain.live_block
           | _ -> Domain.top)
       (* If y is top and y is a field access, x depends only on that field *)
       | Top -> (
           match Var.Tbl.get defs y with
           | Expr (Field (_, i, _)) -> Domain.live_field i Domain.top
-          | Expr (Prim (IsInt, _)) -> Domain.live_block
           | _ -> Domain.top))
   (* If x is used as an argument for parameter y, then contribution is liveness of y *)
   | Propagate { scope; src } ->
@@ -440,7 +434,7 @@ let solver vars uses defs live_vars scoped_live_vars =
     + They are returned; or
     + They are applied to a function.
  *)
-let zero prog pure_funs sentinal live_table =
+let zero prog sentinal live_table =
   let compact_vars vars =
     let i = ref (Array.length vars - 1) in
     while !i >= 0 && Var.equal vars.(!i) sentinal do
@@ -473,8 +467,8 @@ let zero prog pure_funs sentinal live_table =
         | Apply ap ->
             let args = List.map ~f:zero_var ap.args in
             Let (x, Apply { ap with args })
-        | Field (_, _, _) | Closure (_, _, _) | Constant _ | Prim (_, _) | Special _ ->
-            instr)
+        | Field (_, _, _) | Closure (_, _) | Constant _ | Prim (_, _) | Special _ -> instr
+        )
     | Event _
     | Assign (_, _)
     | Set_field (_, _, _, _)
@@ -489,17 +483,13 @@ let zero prog pure_funs sentinal live_table =
       (* Zero out return values in last instruction, otherwise do nothing. *)
       match block.branch with
       | Return x ->
-          let live_tc =
-            (* Don't break tailcalls, it's needed for generate_closure
-               and effects passes.  If the (tail)call is dead, it will
-               be eliminated later by the deadcode pass, don't make it live again by
-               returning its result. *)
+          let tc =
+            (* We don't want to break tailcalls. *)
             match List.last body with
-            | Some (Let (x', (Apply _ as e))) ->
-                Code.Var.equal x x' && (is_live x' || not (Pure_fun.pure_expr pure_funs e))
+            | Some (Let (x', Apply _)) when Code.Var.equal x' x -> true
             | Some _ | None -> false
           in
-          if live_tc then Return x else Return (zero_var x)
+          if tc then Return x else Return (zero_var x)
       | Raise (_, _)
       | Stop | Branch _
       | Cond (_, _, _)
@@ -564,18 +554,15 @@ let add_sentinal p sentinal =
   Code.prepend p [ instr ]
 
 (** Run the liveness analysis and replace dead variables with the given sentinal. *)
-let f pure_funs p ~deadcode_sentinal global_info =
+let f p ~deadcode_sentinal global_info =
   Code.invariant p;
   let t = Timer.make () in
   (* Add sentinal variable *)
-  let p =
-    match global_info.Global_flow.info_defs.(Var.idx deadcode_sentinal) with
-    | Expr _ -> p
-    | _ -> add_sentinal p deadcode_sentinal
-  in
+  let p = add_sentinal p deadcode_sentinal in
   (* Compute definitions *)
   let defs = definitions p in
   (* Compute initial liveness *)
+  let pure_funs = Pure_fun.f p in
   let live_table, scoped_live_vars = liveness p pure_funs global_info in
   (* Compute usages *)
   let uses = usages p global_info scoped_live_vars in
@@ -586,15 +573,14 @@ let f pure_funs p ~deadcode_sentinal global_info =
   if debug ()
   then (
     Format.eprintf "Before Zeroing:@.";
-    Code.Print.program Format.err_formatter (fun _ _ -> "") p;
+    Code.Print.program (fun _ _ -> "") p;
     Print.print_uses uses;
     Print.print_live_tbl live_table);
   (* Zero out dead fields *)
-  let p = zero p pure_funs deadcode_sentinal live_table in
+  let p = zero p deadcode_sentinal live_table in
   if debug ()
   then (
     Format.eprintf "After Zeroing:@.";
-    Code.Print.program Format.err_formatter (fun _ _ -> "") p);
+    Code.Print.program (fun _ _ -> "") p);
   if times () then Format.eprintf "  global dead code elim.: %a@." Timer.print t;
-  Code.invariant p;
   p

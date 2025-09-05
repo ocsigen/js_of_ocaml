@@ -194,9 +194,6 @@
 
   const on_windows = isNode && globalThis.process.platform === "win32";
 
-  const call = Function.prototype.call;
-  const DV = DataView.prototype;
-
   const bindings = {
     jstag:
       WebAssembly.JSTag ||
@@ -249,7 +246,33 @@
         : a,
     ta_kind: (a) => typed_arrays.findIndex((c) => a instanceof c),
     ta_length: (a) => a.length,
+    ta_get_f64: (a, i) => a[i],
+    ta_get_f32: (a, i) => a[i],
     ta_get_i32: (a, i) => a[i],
+    ta_get_i16: (a, i) => a[i],
+    ta_get_ui16: (a, i) => a[i],
+    ta_get_i8: (a, i) => a[i],
+    ta_get_ui8: (a, i) => a[i],
+    ta_get16_ui8: (a, i) => a[i] | (a[i + 1] << 8),
+    ta_get32_ui8: (a, i) =>
+      a[i] | (a[i + 1] << 8) | (a[i + 2] << 16) | (a[i + 3] << 24),
+    ta_set_f64: (a, i, v) => (a[i] = v),
+    ta_set_f32: (a, i, v) => (a[i] = v),
+    ta_set_i32: (a, i, v) => (a[i] = v),
+    ta_set_i16: (a, i, v) => (a[i] = v),
+    ta_set_ui16: (a, i, v) => (a[i] = v),
+    ta_set_i8: (a, i, v) => (a[i] = v),
+    ta_set_ui8: (a, i, v) => (a[i] = v),
+    ta_set16_ui8: (a, i, v) => {
+      a[i] = v;
+      a[i + 1] = v >> 8;
+    },
+    ta_set32_ui8: (a, i, v) => {
+      a[i] = v;
+      a[i + 1] = v >> 8;
+      a[i + 2] = v >> 16;
+      a[i + 3] = v >> 24;
+    },
     ta_fill: (a, v) => a.fill(v),
     ta_blit: (s, d) => d.set(s),
     ta_subarray: (a, i, j) => a.subarray(i, j),
@@ -264,22 +287,6 @@
     ta_blit_to_bytes: (a, p1, s, p2, l) => {
       for (let i = 0; i < l; i++) bytes_set(s, p2 + i, a[p1 + i]);
     },
-    dv_make: (a) => new DataView(a.buffer, a.byteOffset, a.byteLength),
-    dv_get_f64: call.bind(DV.getFloat64),
-    dv_get_f32: call.bind(DV.getFloat32),
-    dv_get_i64: call.bind(DV.getBigInt64),
-    dv_get_i32: call.bind(DV.getInt32),
-    dv_get_i16: call.bind(DV.getInt16),
-    dv_get_ui16: call.bind(DV.getUint16),
-    dv_get_i8: call.bind(DV.getInt8),
-    dv_get_ui8: call.bind(DV.getUint8),
-    dv_set_f64: call.bind(DV.setFloat64),
-    dv_set_f32: call.bind(DV.setFloat32),
-    dv_set_i64: call.bind(DV.setBigInt64),
-    dv_set_i32: call.bind(DV.setInt32),
-    dv_set_i16: call.bind(DV.setInt16),
-    dv_set_i8: call.bind(DV.setInt8),
-    littleEndian: new Uint8Array(new Uint32Array([1]).buffer)[0],
     wrap_callback: (f) =>
       function (...args) {
         if (args.length === 0) {
@@ -392,7 +399,7 @@
         return caml_alloc_times(t.user / 1e6, t.system / 1e6);
       } else {
         var t = performance.now() / 1000;
-        return caml_alloc_times(t, 0);
+        return caml_alloc_times(t, t);
       }
     },
     gmtime: (t) => {
@@ -531,7 +538,6 @@
       }
       fs.renameSync(o, n);
     },
-    tmpdir: () => require("node:os").tmpdir(),
     start_fiber: (x) => start_fiber(x),
     suspend_fiber: make_suspending((f, env) => new Promise((k) => f(k, env))),
     resume_fiber: (k, v) => k(v),
@@ -548,12 +554,12 @@
     },
     map_set: (m, x, v) => m.set(x, v),
     map_delete: (m, x) => m.delete(x),
-    hash_string,
     log: (x) => console.log(x),
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
     compare: (s1, s2) => (s1 < s2 ? -1 : +(s1 > s2)),
+    hash: hash_string,
     decodeStringFromUTF8Array: () => "",
     encodeStringToUTF8Array: () => 0,
     fromCharCodeArray: () => "",
@@ -566,22 +572,11 @@
       "wasm:js-string": string_ops,
       "wasm:text-decoder": string_ops,
       "wasm:text-encoder": string_ops,
-      str: new globalThis.Proxy(
-        {},
-        {
-          get(_, prop) {
-            return prop;
-          },
-        },
-      ),
       env: {},
     },
     generated,
   );
-  const options = {
-    builtins: ["js-string", "text-decoder", "text-encoder"],
-    importedStringConstants: "str",
-  };
+  const options = { builtins: ["js-string", "text-decoder", "text-encoder"] };
 
   function loadRelative(src) {
     const path = require("node:path");
@@ -654,7 +649,7 @@
   start_fiber = make_promising(caml_start_fiber);
   var _initialize = make_promising(_initialize);
   if (globalThis.process?.on) {
-    globalThis.process.on("uncaughtException", (err, _origin) =>
+    globalThis.process.on("uncaughtException", (err, origin) =>
       caml_handle_uncaught_exception(err),
     );
   } else if (globalThis.addEventListener) {

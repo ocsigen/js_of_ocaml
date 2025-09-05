@@ -25,18 +25,21 @@
       (func $caml_is_continuation (param (ref eq)) (result i32)))
 (@if (= effects "cps")
 (@then
-   (import "effect" "caml_cps_trampoline"
-      (func $caml_cps_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
+   (import "effect" "caml_trampoline"
+      (func $caml_trampoline (param (ref eq) (ref eq)) (result (ref eq))))
 ))
+
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
-   (type $closure (sub (struct (field (ref $function_1)))))
-   (type $closure_last_arg (sub $closure (struct (field (ref $function_1)))))
-   (type $function_2 (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+   (type $closure (sub (struct (;(field i32);) (field (ref $function_1)))))
+   (type $closure_last_arg
+      (sub $closure (struct (;(field i32);) (field (ref $function_1)))))
+   (type $function_2
+      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
    (type $cps_closure (sub (struct (field (ref $function_2)))))
    (type $cps_closure_last_arg
       (sub $cps_closure (struct (field (ref $function_2)))))
@@ -173,26 +176,6 @@
             (ref.cast (ref $cps_closure) (local.get $newval)))
          (return (ref.i31 (i32.const 0)))))
       (unreachable))
-
-   (func (export "caml_alloc_dummy_lazy") (param (ref eq)) (result (ref eq))
-      (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (ref.i31 (i32.const 0))))
-
-   (func (export "caml_update_dummy_lazy")
-      (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
-      (local $tag i32)
-      (local $b (ref $block))
-      (local.set $tag
-         (i31.get_s (ref.cast (ref i31) (call $caml_obj_tag (local.get $newval)))))
-      (block $update
-         (br_if $update (i32.eq (local.get $tag) (global.get $lazy_tag)))
-         (br_if $update (i32.eq (local.get $tag) (global.get $forcing_tag)))
-         (br_if $update (i32.eq (local.get $tag) (global.get $forward_tag)))
-         (local.set $b (ref.cast (ref $block) (local.get $dummy)))
-         (array.set $block (local.get $b) (i32.const 0)
-            (ref.i31 (global.get $forward_tag)))
-         (array.set $block (local.get $b) (i32.const 1) (local.get $newval))
-         (return (ref.i31 (i32.const 0))))
-     (return_call $caml_update_dummy (local.get $dummy) (local.get $newval)))
 
    (func $caml_obj_dup (export "caml_obj_dup")
       (param (ref eq)) (result (ref eq))
@@ -377,54 +360,42 @@
       (ref.i31 (i32.const 0)))
 
    (global $method_cache (mut (ref $int_array))
-      (array.new $int_array (i32.const 4) (i32.const 8)))
+      (array.new $int_array (i32.const 0) (i32.const 8)))
 
-
-   (global $caml_oo_cache_id_last (mut i32) (i32.const 0))
-
-   (func (export "caml_oo_cache_id") (result (ref eq))
-      (local $cacheid i32)
-      (local $a (ref $int_array))
-      (local $len i32)
-      (local.set $cacheid (global.get $caml_oo_cache_id_last))
-      (global.set $caml_oo_cache_id_last (i32.add (local.get $cacheid) (i32.const 1)))
+   (func (export "caml_get_public_method")
+      (param $obj (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (local $meths (ref $block))
+      (local $tag i32) (local $cacheid i32) (local $ofs i32)
+      (local $li i32) (local $mi i32) (local $hi i32)
+      (local $a (ref $int_array)) (local $len i32)
+      (local.set $meths
+         (ref.cast (ref $block)
+            (array.get $block
+               (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
+      (local.set $tag (i31.get_s (ref.cast (ref i31) (local.get 1))))
+      (local.set $cacheid (i31.get_u (ref.cast (ref i31) (local.get 2))))
       (local.set $len (array.len (global.get $method_cache)))
       (if (i32.ge_s (local.get $cacheid) (local.get $len))
          (then
             (loop $size
                (local.set $len (i32.shl (local.get $len) (i32.const 1)))
                (br_if $size (i32.ge_s (local.get $cacheid) (local.get $len))))
-            (local.set $a (array.new $int_array (i32.const 4) (local.get $len)))
+            (local.set $a (array.new $int_array (i32.const 0) (local.get $len)))
             (array.copy $int_array $int_array
                (local.get $a) (i32.const 0)
                (global.get $method_cache) (i32.const 0)
                (array.len (global.get $method_cache)))
             (global.set $method_cache (local.get $a))))
-       (ref.i31 (local.get $cacheid)))
-
-   (func (export "caml_get_cached_method")
-      (param $obj (ref eq)) (param $vtag (ref eq)) (param (ref eq))
-      (result (ref eq))
-      (local $meths (ref $block))
-      (local $tag i32) (local $cacheid i32) (local $ofs i32)
-      (local $li i32) (local $mi i32) (local $hi i32)
-      (local.set $meths
-         (ref.cast (ref $block)
-            (array.get $block
-               (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
-      (local.set $cacheid (i31.get_u (ref.cast (ref i31) (local.get 2))))
       (local.set $ofs
          (array.get $int_array (global.get $method_cache) (local.get $cacheid)))
-      (if (i32.lt_u (local.get $ofs) (array.len (local.get $meths)))
+      (if (i32.eq (local.get $tag)
+             (i31.get_s
+                (ref.cast (ref i31)
+                   (array.get $block (local.get $meths) (local.get $ofs)))))
          (then
-            (if (ref.eq (local.get $vtag)
-                   (array.get $block (local.get $meths) (local.get $ofs)))
-               (then
-                  (return
-                     (array.get $block
-                        (local.get $meths)
-                        (i32.sub (local.get $ofs) (i32.const 1))))))))
-      (local.set $tag (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
+            (return
+               (array.get $block
+                  (local.get $meths) (i32.sub (local.get $ofs) (i32.const 1))))))
       (local.set $li (i32.const 3))
       (local.set $hi
          (i32.add
@@ -455,52 +426,12 @@
                (br $loop))))
       (array.set $int_array (global.get $method_cache) (local.get $cacheid)
          (i32.add (local.get $li) (i32.const 1)))
-      (array.get $block (local.get $meths) (local.get $li))
-      )
-
-   (func (export "caml_get_public_method")
-      (param $obj (ref eq)) (param $vtag (ref eq))
-      (result (ref eq))
-      (local $meths (ref $block))
-      (local $tag i32) (local $ofs i32)
-      (local $li i32) (local $mi i32) (local $hi i32)
-      (local.set $meths
-         (ref.cast (ref $block)
-            (array.get $block
-               (ref.cast (ref $block) (local.get $obj)) (i32.const 1))))
-      (local.set $tag (i31.get_s (ref.cast (ref i31) (local.get $vtag))))
-      (local.set $li (i32.const 3))
-      (local.set $hi
-         (i32.add
-            (i32.shl
-               (i31.get_u
-                  (ref.cast (ref i31)
-                     (array.get $block (local.get $meths) (i32.const 1))))
-               (i32.const 1))
-            (i32.const 1)))
-      (loop $loop
-         (if (i32.lt_u (local.get $li) (local.get $hi))
-            (then
-               (local.set $mi
-                  (i32.or (i32.shr_u (i32.add (local.get $li) (local.get $hi))
-                                     (i32.const 1))
-                          (i32.const 1)))
-               (if (i32.lt_s
-                      (local.get $tag)
-                      (i31.get_s
-                         (ref.cast (ref i31)
-                            (array.get $block
-                               (local.get $meths)
-                               (i32.add (local.get $mi) (i32.const 1))))))
-                  (then
-                     (local.set $hi (i32.sub (local.get $mi) (i32.const 2))))
-                  (else
-                     (local.set $li (local.get $mi))))
-               (br $loop))))
       (if (result (ref eq))
-          (ref.eq (local.get $vtag)
-             (array.get $block (local.get $meths)
-                (i32.add (local.get $li) (i32.const 1))))
+          (i32.eq (local.get $tag)
+             (i31.get_s
+                (ref.cast (ref i31)
+                   (array.get $block (local.get $meths)
+                      (i32.add (local.get $li) (i32.const 1))))))
          (then
             (array.get $block (local.get $meths) (local.get $li)))
          (else
@@ -529,14 +460,14 @@
 (@then
    (func $caml_callback_1 (export "caml_callback_1")
       (param $f (ref eq)) (param $x (ref eq)) (result (ref eq))
-      (return_call $caml_cps_trampoline
+      (return_call $caml_trampoline
          (local.get $f)
          (array.new_fixed $block 2 (ref.i31 (i32.const 0)) (local.get $x))))
 
    (func (export "caml_callback_2")
       (param $f (ref eq)) (param $x (ref eq)) (param $y (ref eq))
       (result (ref eq))
-      (return_call $caml_cps_trampoline
+      (return_call $caml_trampoline
          (local.get $f)
          (array.new_fixed $block 3 (ref.i31 (i32.const 0))
            (local.get $x) (local.get $y))))

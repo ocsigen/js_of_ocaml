@@ -35,15 +35,14 @@ let%expect_test "static eval of string get" =
     {|
     function do_the_lazy_rec(n){
      if(0 === n) return 0;
-     var _c_ = do_the_lazy_rec(n - 1 | 0), _a_ = runtime.caml_obj_tag(lz);
+     var _b_ = do_the_lazy_rec(n - 1 | 0), _c_ = runtime.caml_obj_tag(lz);
      a:
-     if(250 === _a_)
-      var _b_ = lz[1];
+     if(250 === _c_)
+      var _d_ = lz[1];
      else{
-      if(246 !== _a_ && 244 !== _a_){var _b_ = lz; break a;}
-      var _b_ = caml_call1(CamlinternalLazy[2], lz);
+      if(246 !== _c_ && 244 !== _c_){var _d_ = lz; break a;}
+      var _d_ = caml_call1(CamlinternalLazy[2], lz);
      }
-     return [0, _b_, _c_];
+     return [0, _d_, _b_];
     }
-    //end
-    |}]
+    //end |}]

@@ -44,15 +44,13 @@ let normalize_effects (effects : [ `Disabled | `Cps | `Jspi ] option) common :
   | None ->
       (* For backward compatibility, consider that [--enable effects] alone means
         [--effects cps] *)
-      if List.mem ~eq:String.equal "effects" common.Jsoo_cmdline.Arg.optim.enable
-      then `Cps
-      else `Jspi
+      if List.mem "effects" ~set:common.Jsoo_cmdline.Arg.optim.enable then `Cps else `Jspi
   | Some ((`Disabled | `Cps | `Jspi) as e) -> e
 
 type t =
   { common : Jsoo_cmdline.Arg.t
   ; (* compile option *)
-    profile : Profile.t option
+    profile : Driver.profile option
   ; runtime_files : string list
   ; runtime_only : bool
   ; output_file : string * bool
@@ -63,28 +61,7 @@ type t =
   ; params : (string * string) list
   ; include_dirs : string list
   ; effects : Config.effects_backend
-  ; shape_files : string list
   }
-
-let set_param =
-  let doc = "Set compiler options." in
-  let all = List.map (Config.Param.all ()) ~f:(fun (x, _, _) -> x, x) in
-  let pair = Arg.(pair ~sep:'=' (enum all) string) in
-  let parser s =
-    match Arg.conv_parser pair s with
-    | Ok (k, v) -> (
-        match
-          List.find ~f:(fun (k', _, _) -> String.equal k k') (Config.Param.all ())
-        with
-        | _, _, valid -> (
-            match valid v with
-            | Ok () -> Ok (k, v)
-            | Error msg -> Error (`Msg ("Unexpected VALUE after [=], " ^ msg))))
-    | Error _ as e -> e
-  in
-  let printer = Arg.conv_printer pair in
-  let c = Arg.conv (parser, printer) in
-  Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
 
 let options () =
   let runtime_files =
@@ -99,15 +76,9 @@ let options () =
     let doc = "Compile the bytecode program [$(docv)]. " in
     Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM" ~doc)
   in
-  let shape_files =
-    let doc = "load shape file [$(docv)]." in
-    Arg.(value & opt_all string [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
-  in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
-    let profile =
-      List.map Profile.all ~f:(fun p -> string_of_int (Profile.to_int p), p)
-    in
+    let profile = List.map Driver.profiles ~f:(fun (i, p) -> string_of_int i, p) in
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
   let linkall =
@@ -129,6 +100,14 @@ let options () =
   let sourcemap_root =
     let doc = "root dir for source map." in
     Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+  in
+  let set_param =
+    let doc = "Set compiler options." in
+    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
+    Arg.(
+      value
+      & opt_all (list (pair ~sep:'=' (enum all) string)) []
+      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
@@ -157,8 +136,7 @@ let options () =
       output_file
       input_file
       runtime_files
-      effects
-      shape_files =
+      effects =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let output_file =
       let ext =
@@ -190,7 +168,6 @@ let options () =
       ; sourcemap_root
       ; sourcemap_don't_inline_content
       ; effects
-      ; shape_files
       }
   in
   let t =
@@ -208,8 +185,7 @@ let options () =
       $ output_file
       $ input_file
       $ runtime_files
-      $ effects
-      $ shape_files)
+      $ effects)
   in
   Term.ret t
 
@@ -243,6 +219,14 @@ let options_runtime_only () =
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
+  in
+  let set_param =
+    let doc = "Set compiler options." in
+    let all = List.map (Config.Param.all ()) ~f:(fun (x, _) -> x, x) in
+    Arg.(
+      value
+      & opt_all (list (pair ~sep:'=' (enum all) string)) []
+      & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
   in
   let effects =
     let doc =
@@ -282,7 +266,6 @@ let options_runtime_only () =
       ; sourcemap_root
       ; sourcemap_don't_inline_content
       ; effects
-      ; shape_files = []
       }
   in
   let t =

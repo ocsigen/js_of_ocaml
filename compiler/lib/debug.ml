@@ -48,23 +48,20 @@ let available () = List.map !debugs ~f:fst
 
 let find ?(even_if_quiet = false) s =
   let state =
-    match List.string_assoc s !debugs with
-    | Some s -> s
-    | None ->
-        let state = ref false in
-        debugs := (s, state) :: !debugs;
-        state
+    try List.assoc s !debugs
+    with Not_found ->
+      let state = ref false in
+      debugs := (s, state) :: !debugs;
+      state
   in
   fun () ->
     if String.equal s "times" then take_snapshot ();
-    (even_if_quiet || not !Warning.quiet) && !state
+    (even_if_quiet || not !quiet) && !state
 
 let enable s =
-  match List.string_assoc s !debugs with
-  | Some s -> s := true
-  | None -> failwith (Printf.sprintf "The debug named %S doesn't exist" s)
+  try List.assoc s !debugs := true
+  with Not_found -> failwith (Printf.sprintf "The debug named %S doesn't exist" s)
 
 let disable s =
-  match List.string_assoc s !debugs with
-  | Some s -> s := false
-  | None -> failwith (Printf.sprintf "The debug named %S doesn't exist" s)
+  try List.assoc s !debugs := false
+  with Not_found -> failwith (Printf.sprintf "The debug named %S doesn't exist" s)

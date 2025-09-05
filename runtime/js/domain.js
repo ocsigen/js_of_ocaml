@@ -21,7 +21,7 @@ function caml_domain_dls_compare_and_set(old, n) {
 //Provides: caml_domain_dls_get
 //Requires: caml_domain_dls
 //Version: >= 5
-function caml_domain_dls_get(_unit) {
+function caml_domain_dls_get(unit) {
   return caml_domain_dls;
 }
 
@@ -31,27 +31,11 @@ function caml_atomic_load(ref) {
   return ref[1];
 }
 
-//Provides: caml_atomic_load_field
-//Version: >= 5.4
-function caml_atomic_load_field(b, i) {
-  return b[i + 1];
-}
-
 //Provides: caml_atomic_cas
 //Version: >= 5
 function caml_atomic_cas(ref, o, n) {
   if (ref[1] === o) {
     ref[1] = n;
-    return 1;
-  }
-  return 0;
-}
-
-//Provides: caml_atomic_cas_field
-//Version: >= 5.4
-function caml_atomic_cas_field(b, i, o, n) {
-  if (b[i + 1] === o) {
-    b[i + 1] = n;
     return 1;
   }
   return 0;
@@ -65,27 +49,11 @@ function caml_atomic_fetch_add(ref, i) {
   return old;
 }
 
-//Provides: caml_atomic_fetch_add_field
-//Version: >= 5.4
-function caml_atomic_fetch_add_field(b, i, n) {
-  var old = b[i + 1];
-  b[i + 1] += n;
-  return old;
-}
-
 //Provides: caml_atomic_exchange
 //Version: >= 5
 function caml_atomic_exchange(ref, v) {
   var r = ref[1];
   ref[1] = v;
-  return r;
-}
-
-//Provides: caml_atomic_exchange_field
-//Version: >= 5.4
-function caml_atomic_exchange_field(b, i, v) {
-  var r = b[i + 1];
-  b[i + 1] = v;
   return r;
 }
 
@@ -98,20 +66,20 @@ function caml_atomic_make_contended(a) {
 //Provides: caml_ml_domain_unique_token
 //Version: >= 5.0, < 5.2
 var caml_ml_domain_unique_token_ = [0];
-function caml_ml_domain_unique_token(_unit) {
+function caml_ml_domain_unique_token(unit) {
   return caml_ml_domain_unique_token_;
 }
 
 //Provides: caml_recommended_domain_count
 //Version: >= 5
-function caml_recommended_domain_count(_unit) {
+function caml_recommended_domain_count(unit) {
   return 1;
 }
 
 //Provides: caml_ml_domain_index
 //Requires: caml_domain_id
 //Version: >= 5.03
-function caml_ml_domain_index(_unit) {
+function caml_ml_domain_index(unit) {
   return caml_domain_id;
 }
 
@@ -147,7 +115,7 @@ function caml_domain_spawn(f, mutex) {
   var id = caml_domain_latest_idx++;
   var old = caml_domain_id;
   caml_domain_id = id;
-  var _res = caml_callback(f, [0]);
+  var res = caml_callback(f, [0]);
   caml_domain_id = old;
   caml_ml_mutex_unlock(mutex);
   return id;
@@ -156,12 +124,12 @@ function caml_domain_spawn(f, mutex) {
 //Provides: caml_ml_domain_id
 //Requires: caml_domain_id
 //Version: >= 5.0
-function caml_ml_domain_id(_unit) {
+function caml_ml_domain_id(unit) {
   return caml_domain_id;
 }
 
 //Provides: caml_ml_domain_cpu_relax
 //Version: >= 5
-function caml_ml_domain_cpu_relax(_unit) {
+function caml_ml_domain_cpu_relax(unit) {
   return 0;
 }

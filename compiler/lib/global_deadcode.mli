@@ -34,9 +34,4 @@ variables that are then removed by [deadcode.ml]. In particular it
 allows for the elimination of unused functions defined in functors,
 which the original deadcode elimination cannot.  *)
 
-val f :
-     Pure_fun.t
-  -> Code.program
-  -> deadcode_sentinal:Code.Var.t
-  -> Global_flow.info
-  -> Code.program
+val f : Code.program -> deadcode_sentinal:Code.Var.t -> Global_flow.info -> Code.program

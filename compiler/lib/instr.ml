@@ -175,8 +175,6 @@ type t =
   | REPERFORMTERM
   | FIRST_UNIMPLEMENTED_OP
 
-let equal (a : t) b = Poly.equal a b
-
 type kind =
   | KNullary
   | KUnary
@@ -369,7 +367,7 @@ let ops =
   ops
 
 let find i =
-  match Array.find_opt ~f:(fun { code; _ } -> equal i code) ops with
+  match Array.find_opt ~f:(fun { code; _ } -> Poly.(i = code)) ops with
   | None -> assert false
   | Some x -> x
 
@@ -402,7 +400,5 @@ let get_instr_exn code pc =
   let i = getu code pc in
   if i < 0 || i >= Array.length ops then raise (Bad_instruction i);
   let ins = ops.(i) in
-  (match ins.kind with
-  | K_will_not_happen -> raise (Bad_instruction i)
-  | _ -> ());
+  if Poly.(ins.kind = K_will_not_happen) then raise (Bad_instruction i);
   ins

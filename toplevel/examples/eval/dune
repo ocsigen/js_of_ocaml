@@ -22,8 +22,6 @@
    %{dep:export.txt}
    --toplevel
    --pretty
-   -w
-   no-missing-effects-backend
    %{dep:eval.bc}
    -o
    %{targets})))

@@ -30,7 +30,7 @@ let rec compute_depth program pc =
       let block = Code.Addr.Map.find pc program.blocks in
       List.fold_left block.body ~init:d ~f:(fun d i ->
           match i with
-          | Let (_, Closure (_, (pc', _), _)) ->
+          | Let (_, Closure (_, (pc', _))) ->
               let d' = compute_depth program pc' in
               max d (d' + 1)
           | _ -> d))
@@ -56,7 +56,7 @@ let collect_free_vars program var_depth depth pc =
           block;
         List.iter block.body ~f:(fun i ->
             match i with
-            | Let (_, Closure (_, (pc', _), _)) -> traverse pc'
+            | Let (_, Closure (_, (pc', _))) -> traverse pc'
             | _ -> ()))
       pc
       program.blocks
@@ -69,7 +69,7 @@ let mark_bound_variables var_depth block depth =
   Freevars.iter_block_bound_vars (fun x -> var_depth.(Var.idx x) <- depth) block;
   List.iter block.body ~f:(fun i ->
       match i with
-      | Let (_, Closure (params, _, _)) ->
+      | Let (_, Closure (params, _)) ->
           List.iter params ~f:(fun x -> var_depth.(Var.idx x) <- depth + 1)
       | _ -> ())
 
@@ -122,12 +122,13 @@ and rewrite_body
   (* We lift possibly mutually recursive closures (that are created by contiguous
      statements) together. Isolated closures are lambda-lifted normally. *)
   match body with
-  | Let (f, (Closure (_, (pc', _), _) as cl)) :: rem
+  | Let (f, (Closure (_, (pc', _)) as cl)) :: rem
     when List.is_empty current_contiguous
          && (inside_lifted || Var.Set.mem f to_lift)
          && not (starts_with_closure rem) ->
       (* We lift an isolated closure *)
-      if debug () then Format.eprintf "@[<v>lifting isolated closure %a@,@]" Var.print f;
+      if debug ()
+      then Format.eprintf "@[<v>lifting isolated closure %s@,@]" (Var.to_string f);
       let program, functions, lifters =
         rewrite_blocks
           ~to_lift
@@ -141,7 +142,7 @@ and rewrite_body
       if debug ()
       then (
         Format.eprintf "@[<v>free variables:@,";
-        free_vars |> Var.Set.iter (fun v -> Format.eprintf "%a,@ " Var.print v);
+        free_vars |> Var.Set.iter (fun v -> Format.eprintf "%s,@ " (Var.to_string v));
         Format.eprintf "@]");
       let s =
         Var.Set.fold (fun x m -> Var.Map.add x (Var.fork x) m) free_vars Var.Map.empty
@@ -153,9 +154,8 @@ and rewrite_body
       if debug ()
       then
         Format.eprintf
-          "LIFT %a (depth:%d free_vars:%d inner_depth:%d)@."
-          Code.Var.print
-          f''
+          "LIFT %s (depth:%d free_vars:%d inner_depth:%d)@."
+          (Code.Var.to_string f'')
           depth
           (Var.Set.cardinal free_vars)
           (compute_depth program pc');
@@ -165,9 +165,7 @@ and rewrite_body
         { program with free_pc = pc'' + 1; blocks = Addr.Map.add pc'' bl program.blocks }
       in
       (* Add to returned list of lifter functions definitions *)
-      let functions =
-        Let (f'', Closure (List.map s ~f:snd, (pc'', []), None)) :: functions
-      in
+      let functions = Let (f'', Closure (List.map s ~f:snd, (pc'', []))) :: functions in
       let lifters = Var.Map.add f f' lifters in
       rewrite_body
         ~to_lift
@@ -180,7 +178,7 @@ and rewrite_body
           (Let (f, Apply { f = f''; args = List.map ~f:fst s; exact = true }) :: acc_instr)
         ~depth
         rem
-  | Let (cname, Closure (params, (pc', args), cloc)) :: rem ->
+  | Let (cname, Closure (params, (pc', args))) :: rem ->
       (* More closure definitions follow: accumulate and lift later *)
       let st =
         rewrite_blocks
@@ -195,7 +193,7 @@ and rewrite_body
         ~to_lift
         ~inside_lifted
         ~var_depth
-        ~current_contiguous:((cname, params, pc', args, cloc) :: current_contiguous)
+        ~current_contiguous:((cname, params, pc', args) :: current_contiguous)
         ~st
         ~acc_instr
         ~depth
@@ -204,7 +202,7 @@ and rewrite_body
       (* Process the accumulated closure definitions *)
       assert (
         match current_contiguous with
-        | [ (f, _, _, _, _) ] -> not (Var.Set.mem f to_lift)
+        | [ (f, _, _, _) ] -> not (Var.Set.mem f to_lift)
         | _ -> true);
       let st, acc_instr =
         match current_contiguous with
@@ -212,14 +210,14 @@ and rewrite_body
         | _ :: _
           when inside_lifted
                || List.exists
-                    ~f:(fun (f, _, _, _, _) -> Var.Set.mem f to_lift)
+                    ~f:(fun (f, _, _, _) -> Var.Set.mem f to_lift)
                     current_contiguous ->
             (* Lift several closures at once *)
             let program, functions, lifters = st in
             let free_vars =
               List.fold_left
                 current_contiguous
-                ~f:(fun acc (_, _, pc, _, _) ->
+                ~f:(fun acc (_, _, pc, _) ->
                   Var.Set.union acc @@ collect_free_vars program var_depth (depth + 1) pc)
                 ~init:Var.Set.empty
             in
@@ -232,18 +230,18 @@ and rewrite_body
             let program =
               List.fold_left
                 current_contiguous
-                ~f:(fun program (_, _, pc, _, _) ->
+                ~f:(fun program (_, _, pc, _) ->
                   Subst.Excluding_Binders.cont (Subst.from_map s) pc program)
                 ~init:program
             in
             let f's =
-              List.map current_contiguous ~f:(fun (f, _, _, _, _) ->
+              List.map current_contiguous ~f:(fun (f, _, _, _) ->
                   Var.(try Map.find f s with Not_found -> fork f))
             in
             let s =
               List.fold_left
                 current_contiguous
-                ~f:(fun s (f, _, _, _, _) -> Var.Map.remove f s)
+                ~f:(fun s (f, _, _, _) -> Var.Map.remove f s)
                 ~init:s
               |> Var.Map.bindings
             in
@@ -252,11 +250,10 @@ and rewrite_body
              then
                Format.(
                  eprintf
-                   "LIFT %a in tuple %a (depth:%d free_vars:%d)@,"
-                   (pp_print_list ~pp_sep:pp_print_space Code.Var.print)
-                   f's
-                   Code.Var.print
-                   f_tuple
+                   "LIFT %a in tuple %s (depth:%d free_vars:%d)@,"
+                   (pp_print_list ~pp_sep:pp_print_space pp_print_string)
+                   (List.map ~f:Code.Var.to_string f's)
+                   (Code.Var.to_string f_tuple)
                    depth
                    (Var.Set.cardinal free_vars)));
             let pc_tuple = program.free_pc in
@@ -264,11 +261,8 @@ and rewrite_body
               let tuple = Var.fresh_n "tuple" in
               { params = []
               ; body =
-                  List.rev_map2
-                    f's
-                    current_contiguous
-                    ~f:(fun f' (_, params, pc, args, cloc) ->
-                      Let (f', Closure (params, (pc, args), cloc)))
+                  List.rev_map2 f's current_contiguous ~f:(fun f' (_, params, pc, args) ->
+                      Let (f', Closure (params, (pc, args))))
                   @ [ Let (tuple, Block (0, Array.of_list f's, NotArray, Immutable)) ]
               ; branch = Return tuple
               }
@@ -280,20 +274,19 @@ and rewrite_body
               }
             in
             let functions =
-              Let (f_tuple, Closure (List.map s ~f:snd, (pc_tuple, []), None))
-              :: functions
+              Let (f_tuple, Closure (List.map s ~f:snd, (pc_tuple, []))) :: functions
             in
             let lifters =
               Var.Map.add_seq
                 (List.to_seq
                 @@ List.combine
-                     (List.map current_contiguous ~f:(fun (f, _, _, _, _) -> f))
+                     (List.map current_contiguous ~f:(fun (f, _, _, _) -> f))
                      f's)
                 lifters
             in
             let tuple = Var.fresh_n "tuple" in
             let rev_decl =
-              List.mapi current_contiguous ~f:(fun i (f, _, _, _, _) ->
+              List.mapi current_contiguous ~f:(fun i (f, _, _, _) ->
                   Let (f, Field (tuple, i, Non_float)))
             in
             ( (program, functions, lifters)
@@ -304,8 +297,8 @@ and rewrite_body
             (* No need to lift the accumulated closures: just keep their definitions
                unchanged *)
             let rev_decls =
-              List.map current_contiguous ~f:(fun (f, params, pc, args, cloc) ->
-                  Let (f, Closure (params, (pc, args), cloc)))
+              List.map current_contiguous ~f:(fun (f, params, pc, args) ->
+                  Let (f, Closure (params, (pc, args))))
             in
             st, rev_decls @ acc_instr
       in
@@ -336,7 +329,7 @@ let lift ~to_lift ~pc program : program * Var.t Var.Map.t =
           ~init:(program, [], Var.Map.empty)
           ~f:(fun i (program, rem, lifters) ->
             match i with
-            | Let (f, Closure (_, (pc', _), _)) as i ->
+            | Let (f, Closure (_, (pc', _))) as i ->
                 let program, functions, lifters =
                   rewrite_blocks
                     ~to_lift
@@ -359,7 +352,7 @@ let f ~to_lift program =
   if debug ()
   then (
     Format.eprintf "@[<v>Program before lambda lifting:@,";
-    Code.Print.program Format.err_formatter (fun _ _ -> "") program;
+    Code.Print.program (fun _ _ -> "") program;
     Format.eprintf "@]");
   let t = Timer.make () in
   let program, liftings = lift ~to_lift ~pc:program.start program in

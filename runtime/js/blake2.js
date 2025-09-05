@@ -318,8 +318,7 @@ function caml_blake2_create(hashlen, key) {
 //Requires: caml_string_of_uint8_array
 //Requires: blake2b
 //Version: >= 5.2
-function caml_blake2_final(ctx, _hashlen) {
-  // ctx.outlen === hashlen
+function caml_blake2_final(ctx, hashlen) {
   var r = blake2b.Final(ctx);
   return caml_string_of_uint8_array(r);
 }
