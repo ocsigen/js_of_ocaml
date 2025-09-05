@@ -163,6 +163,12 @@ let keep loc (attrs : attributes) =
                  >>| (fun () -> Version Version.current)
                  ||| (pexp_ident (lident (string "ast_version"))
                      >>| fun () -> Int Ppxlib.Selected_ast.version)
+                 ||| (pexp_ident (lident (string "oxcaml"))
+                     >>| fun () ->
+                     Bool
+                       (match Sys.ocaml_release with
+                       | { extra = Some (Plus, "ox"); _ } -> true
+                       | _ -> false))
                  ||| (pexp_construct (lident (string "true")) drop >>| fun () -> Bool true)
                  ||| (pexp_constant (pconst_integer __ none)
                      >>| fun () d -> Int (int_of_string d))
