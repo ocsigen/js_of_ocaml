@@ -176,7 +176,7 @@
 
    (func (export "caml_sys_const_runtime5")
       (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.const 0)))
+      (ref.i31 (i32.const 1)))
 
    (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
       (@string ""))
