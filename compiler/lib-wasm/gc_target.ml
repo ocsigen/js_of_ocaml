@@ -430,6 +430,38 @@ module Type = struct
                     }
                   ])
           })
+
+  let int_array_type =
+    register_type "int_array" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Array { mut = true; typ = Value I32 }
+          })
+
+  let bigarray_type =
+    register_type "bigarray" (fun () ->
+        let* custom_operations = custom_operations_type in
+        let* int_array = int_array_type in
+        let* custom = custom_type in
+        return
+          { supertype = Some custom
+          ; final = true
+          ; typ =
+              W.Struct
+                [ { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type custom_operations })
+                  }
+                ; { mut = true; typ = Value (Ref { nullable = false; typ = Extern }) }
+                ; { mut = true; typ = Value (Ref { nullable = false; typ = Extern }) }
+                ; { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type int_array })
+                  }
+                ; { mut = false; typ = Packed I8 }
+                ; { mut = false; typ = Packed I8 }
+                ; { mut = false; typ = Packed I8 }
+                ]
+          })
 end
 
 module Value = struct
@@ -666,33 +698,16 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
-  let allocate ~tag ~deadcode_sentinal ~load l =
-    if tag = 254
-    then
-      let* l =
-        expression_list
-          (fun v ->
-            match v with
-            | `Var y ->
-                if Code.Var.equal y deadcode_sentinal
-                then return (W.Const (F64 0.))
-                else unbox_float (load y)
-            | `Expr e -> unbox_float (return e))
-          l
-      in
-      let* ty = Type.float_array_type in
-      return (W.ArrayNewFixed (ty, l))
-    else
-      let* l =
-        expression_list
-          (fun v ->
-            match v with
-            | `Var y -> load y
-            | `Expr e -> return e)
-          l
-      in
-      let* ty = Type.block_type in
-      return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+  let allocate ~tag l =
+    assert (tag <> 254);
+    let* l = l in
+    let* ty = Type.block_type in
+    return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+
+  let allocate_float_array l =
+    let* l = l in
+    let* ty = Type.float_array_type in
+    return (W.ArrayNewFixed (ty, l))
 
   let tag e = wasm_array_get e (Arith.const 0l)
 
@@ -741,10 +756,9 @@ module Memory = struct
 
   let array_set e e' e'' = wasm_array_set e Arith.(e' + const 1l) e''
 
-  let float_array_get e e' = box_float (wasm_array_get ~ty:Type.float_array_type e e')
+  let float_array_get e e' = wasm_array_get ~ty:Type.float_array_type e e'
 
-  let float_array_set e e' e'' =
-    wasm_array_set ~ty:Type.float_array_type e e' (unbox_float e'')
+  let float_array_set e e' e'' = wasm_array_set ~ty:Type.float_array_type e e' e''
 
   let gen_array_get e e' =
     let a = Code.Var.fresh_n "a" in
@@ -1047,9 +1061,12 @@ module Constant = struct
         let* e = Memory.make_int32 ~kind:`Nativeint (return (W.Const (I32 i))) in
         return (Const, e)
 
-  let translate c =
+  let translate ~unboxed c =
     match c with
     | Code.Int i -> return (W.Const (I32 (Targetint.to_int32 i)))
+    | Float f when unboxed -> return (W.Const (F64 (Int64.float_of_bits f)))
+    | Int64 i when unboxed -> return (W.Const (I64 i))
+    | (Int32 i | NativeInt i) when unboxed -> return (W.Const (I32 i))
     | _ -> (
         let* const, c = translate_rec c in
         match const with
@@ -1312,7 +1329,13 @@ module Math = struct
     { W.params = List.init ~len:n ~f:(fun _ : W.value_type -> F64); result = [ F64 ] }
 
   let unary name x =
-    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 1)) in
+    let* f =
+      register_import
+        ~allow_tail_call:false
+        ~import_module:"Math"
+        ~name
+        (Fun (float_func_type 1))
+    in
     let* x = x in
     return (W.Call (f, [ x ]))
 
@@ -1355,7 +1378,13 @@ module Math = struct
   let log10 f = unary "log10" f
 
   let binary name x y =
-    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 2)) in
+    let* f =
+      register_import
+        ~allow_tail_call:false
+        ~import_module:"Math"
+        ~name
+        (Fun (float_func_type 2))
+    in
     let* x = x in
     let* y = y in
     return (W.Call (f, [ x; y ]))
@@ -1374,6 +1403,235 @@ module Math = struct
     return (W.Call (f, [ x ]))
 
   let exp2 x = power (return (W.Const (F64 2.))) x
+end
+
+module Bigarray = struct
+  let dimension n a =
+    let* ty = Type.bigarray_type in
+    Memory.wasm_array_get
+      ~ty:Type.int_array_type
+      (Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 3)
+      (Arith.const (Int32.of_int n))
+
+  let get_at_offset ~(kind : Typing.Bigarray.kind) a i =
+    let name, (typ : Wasm_ast.value_type), size, box =
+      match kind with
+      | Float32 ->
+          ( "dv_get_f32"
+          , F32
+          , 2
+          , fun x ->
+              let* x = x in
+              return (W.F64PromoteF32 x) )
+      | Float64 -> "dv_get_f64", F64, 3, Fun.id
+      | Int8_signed -> "dv_get_i8", I32, 0, Fun.id
+      | Int8_unsigned -> "dv_get_ui8", I32, 0, Fun.id
+      | Int16_signed -> "dv_get_i16", I32, 1, Fun.id
+      | Int16_unsigned -> "dv_get_ui16", I32, 1, Fun.id
+      | Int32 -> "dv_get_i32", I32, 2, Fun.id
+      | Nativeint -> "dv_get_i32", I32, 2, Fun.id
+      | Int64 -> "dv_get_i64", I64, 3, Fun.id
+      | Int -> "dv_get_i32", I32, 2, Fun.id
+      | Float16 ->
+          ( "dv_get_i16"
+          , I32
+          , 1
+          , fun x ->
+              let* conv =
+                register_import
+                  ~name:"caml_float16_to_double"
+                  (Fun { W.params = [ I32 ]; result = [ F64 ] })
+              in
+              let* x = x in
+              return (W.Call (conv, [ x ])) )
+      | Complex32 ->
+          ( "dv_get_f32"
+          , F32
+          , 3
+          , fun x ->
+              let* x = x in
+              return (W.F64PromoteF32 x) )
+      | Complex64 -> "dv_get_f64", F64, 4, Fun.id
+    in
+    let* little_endian =
+      register_import
+        ~import_module:"bindings"
+        ~name:"littleEndian"
+        (Global { mut = false; typ = I32 })
+    in
+    let* f =
+      register_import
+        ~import_module:"bindings"
+        ~name
+        (Fun
+           { W.params =
+               Ref { nullable = true; typ = Extern }
+               :: I32
+               :: (if size = 0 then [] else [ I32 ])
+           ; result = [ typ ]
+           })
+    in
+    let* ty = Type.bigarray_type in
+    let* ta = Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 2 in
+    let* ofs = Arith.(i lsl const (Int32.of_int size)) in
+    match kind with
+    | Float32
+    | Float64
+    | Int8_signed
+    | Int8_unsigned
+    | Int16_signed
+    | Int16_unsigned
+    | Int32
+    | Int64
+    | Int
+    | Nativeint
+    | Float16 ->
+        box
+          (return
+             (W.Call
+                (f, ta :: ofs :: (if size = 0 then [] else [ W.GlobalGet little_endian ]))))
+    | Complex32 | Complex64 ->
+        let delta = Int32.shift_left 1l (size - 1) in
+        let* ofs' = Arith.(return ofs + const delta) in
+        let* x = box (return (W.Call (f, [ ta; ofs; W.GlobalGet little_endian ]))) in
+        let* y = box (return (W.Call (f, [ ta; ofs'; W.GlobalGet little_endian ]))) in
+        let* ty = Type.float_array_type in
+        return (W.ArrayNewFixed (ty, [ x; y ]))
+
+  let set_at_offset ~kind a i v =
+    let name, (typ : Wasm_ast.value_type), size, unbox =
+      match (kind : Typing.Bigarray.kind) with
+      | Float32 ->
+          ( "dv_set_f32"
+          , F32
+          , 2
+          , fun x ->
+              let* x = x in
+              return (W.F32DemoteF64 x) )
+      | Float64 -> "dv_set_f64", F64, 3, Fun.id
+      | Int8_signed | Int8_unsigned -> "dv_set_i8", I32, 0, Fun.id
+      | Int16_signed | Int16_unsigned -> "dv_set_i16", I32, 1, Fun.id
+      | Int32 -> "dv_set_i32", I32, 2, Fun.id
+      | Nativeint -> "dv_set_i32", I32, 2, Fun.id
+      | Int64 -> "dv_set_i64", I64, 3, Fun.id
+      | Int -> "dv_set_i32", I32, 2, Fun.id
+      | Float16 ->
+          ( "dv_set_i16"
+          , I32
+          , 1
+          , fun x ->
+              let* conv =
+                register_import
+                  ~name:"caml_double_to_float16"
+                  (Fun { W.params = [ F64 ]; result = [ I32 ] })
+              in
+              let* x = Fun.id x in
+              return (W.Call (conv, [ x ])) )
+      | Complex32 ->
+          ( "dv_set_f32"
+          , F32
+          , 3
+          , fun x ->
+              let* x = x in
+              return (W.F32DemoteF64 x) )
+      | Complex64 -> "dv_set_f64", F64, 4, Fun.id
+    in
+    let* ty = Type.bigarray_type in
+    let* ta = Memory.wasm_struct_get ty (Memory.wasm_cast ty a) 2 in
+    let* ofs = Arith.(i lsl const (Int32.of_int size)) in
+    let* little_endian =
+      register_import
+        ~import_module:"bindings"
+        ~name:"littleEndian"
+        (Global { mut = false; typ = I32 })
+    in
+    let* f =
+      register_import
+        ~import_module:"bindings"
+        ~name
+        (Fun
+           { W.params =
+               Ref { nullable = true; typ = Extern }
+               :: I32
+               :: typ
+               :: (if size = 0 then [] else [ I32 ])
+           ; result = []
+           })
+    in
+    match kind with
+    | Float32
+    | Float64
+    | Int8_signed
+    | Int8_unsigned
+    | Int16_signed
+    | Int16_unsigned
+    | Int32
+    | Int64
+    | Int
+    | Nativeint
+    | Float16 ->
+        let* v = unbox v in
+        instr
+          (W.CallInstr
+             ( f
+             , ta :: ofs :: v :: (if size = 0 then [] else [ W.GlobalGet little_endian ])
+             ))
+    | Complex32 | Complex64 ->
+        let delta = Int32.shift_left 1l (size - 1) in
+        let* ofs' = Arith.(return ofs + const delta) in
+        let ty = Type.float_array_type in
+        let* x = unbox (Memory.wasm_array_get ~ty v (Arith.const 0l)) in
+        let* () = instr (W.CallInstr (f, [ ta; ofs; x; W.GlobalGet little_endian ])) in
+        let* y = unbox (Memory.wasm_array_get ~ty v (Arith.const 1l)) in
+        instr (W.CallInstr (f, [ ta; ofs'; y; W.GlobalGet little_endian ]))
+
+  let offset ~bound_error_index ~(layout : Typing.Bigarray.layout) ta ~indices =
+    let l =
+      List.mapi
+        ~f:(fun pos i ->
+          let i =
+            match layout with
+            | C -> i
+            | Fortran -> Arith.(i - const 1l)
+          in
+          let i' = Code.Var.fresh () in
+          let dim = Code.Var.fresh () in
+          ( (let* () = store ~typ:I32 i' i in
+             let* () = store ~typ:I32 dim (dimension pos ta) in
+             let* cond = Arith.uge (load i') (load dim) in
+             instr (W.Br_if (bound_error_index, cond)))
+          , i'
+          , dim ))
+        indices
+    in
+    let l =
+      match layout with
+      | C -> l
+      | Fortran -> List.rev l
+    in
+    match l with
+    | (instrs, i', _) :: rem ->
+        List.fold_left
+          ~f:(fun (instrs, ofs) (instrs', i', dim) ->
+            let ofs' = Code.Var.fresh () in
+            ( (let* () = instrs in
+               let* () = instrs' in
+               store ~typ:I32 ofs' Arith.((ofs * load dim) + load i'))
+            , load ofs' ))
+          ~init:(instrs, load i')
+          rem
+    | [] -> return (), Arith.const 0l
+
+  let get ~bound_error_index ~kind ~layout ta ~indices =
+    let instrs, ofs = offset ~bound_error_index ~layout ta ~indices in
+    seq instrs (get_at_offset ~kind ta ofs)
+
+  let set ~bound_error_index ~kind ~layout ta ~indices v =
+    let instrs, ofs = offset ~bound_error_index ~layout ta ~indices in
+    seq
+      (let* () = instrs in
+       set_at_offset ~kind ta ofs v)
+      Value.unit
 end
 
 module JavaScript = struct
