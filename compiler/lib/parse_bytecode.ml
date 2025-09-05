@@ -70,11 +70,15 @@ module Debug : sig
     -> unit
 
   val read :
-    t -> crcs:(string * string option) list -> includes:string list -> in_channel -> unit
+       t
+    -> crcs:Ocaml_compiler.Import_info.t list
+    -> includes:string list
+    -> in_channel
+    -> unit
 
   val read_event_list :
        t
-    -> crcs:(string * string option) list
+    -> crcs:Ocaml_compiler.Import_info.t list
     -> includes:string list
     -> orig:int
     -> in_channel
@@ -222,7 +226,11 @@ end = struct
     fun debug ~crcs ~includes ~orig ic ->
       let crcs =
         let t = String.Hashtbl.create 17 in
-        List.iter crcs ~f:(fun (m, crc) -> String.Hashtbl.add t m crc);
+        List.iter crcs ~f:(fun info ->
+            String.Hashtbl.add
+              t
+              (Ocaml_compiler.Import_info.name info)
+              (Ocaml_compiler.Import_info.crc info));
         t
       in
       let evl : debug_event list = input_value ic in
@@ -2594,7 +2602,7 @@ module Toc : sig
 
   val read_data : t -> in_channel -> Obj.t array
 
-  val read_crcs : t -> in_channel -> (string * Digest.t option) list
+  val read_crcs : t -> in_channel -> Ocaml_compiler.Import_info.t list
 
   val read_prim : t -> in_channel -> string
 
@@ -2643,9 +2651,8 @@ end = struct
 
   let read_crcs toc ic =
     ignore (seek_section toc ic "CRCS");
-    let orig_crcs : Ocaml_compiler.Import_info.t array = input_value ic in
-    List.map (Array.to_list orig_crcs) ~f:(fun import ->
-        Ocaml_compiler.Import_info.name import, Ocaml_compiler.Import_info.crc import)
+    let orig_crcs : Ocaml_compiler.Import_info.table = input_value ic in
+    Ocaml_compiler.Import_info.to_list orig_crcs
 
   let read_prim toc ic =
     let prim_size = seek_section toc ic "PRIM" in
@@ -2660,7 +2667,7 @@ let read_primitives toc ic =
 
 type bytesections =
   { symb : Ocaml_compiler.Symtable.GlobalMap.t
-  ; crcs : (string * Digest.t option) list
+  ; crcs : Ocaml_compiler.Import_info.table
   ; prim : string list
   ; dlpt : string list
   }
@@ -2698,7 +2705,9 @@ let from_exe
         in
         String.Hashtbl.mem keeps
   in
-  let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
+  let crcs =
+    List.filter ~f:(fun info -> keep (Ocaml_compiler.Import_info.name info)) orig_crcs
+  in
   let symbols =
     Ocaml_compiler.Symtable.GlobalMap.filter
       (function
@@ -2756,7 +2765,13 @@ let from_exe
         |> Array.of_list
       in
       (* Include linking information *)
-      let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
+      let sections =
+        { symb = symbols
+        ; crcs = Ocaml_compiler.Import_info.of_list crcs
+        ; prim = primitives
+        ; dlpt = []
+        }
+      in
       let gdata = Var.fresh () in
       let need_gdata = ref false in
       let aliases = Primitive.aliases () in
@@ -3195,7 +3210,13 @@ let link_info ~symbols ~primitives ~crcs =
   let body = [] in
   let body =
     (* Include linking information *)
-    let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
+    let sections =
+      { symb = symbols
+      ; crcs = Ocaml_compiler.Import_info.of_list crcs
+      ; prim = primitives
+      ; dlpt = []
+      }
+    in
     let aliases = Primitive.aliases () in
     let infos =
       [ "sections", Constants.parse (Obj.repr sections)

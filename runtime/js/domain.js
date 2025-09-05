@@ -73,6 +73,18 @@ function caml_atomic_fetch_add_field(b, i, n) {
   return old;
 }
 
+//Provides: caml_atomic_add
+function caml_atomic_add(ref, i) {
+  ref[1] += i;
+  return 0;
+}
+
+//Provides: caml_atomic_sub
+function caml_atomic_sub(ref, i) {
+  ref[1] -= i;
+  return 0;
+}
+
 //Provides: caml_atomic_exchange
 //Version: >= 5
 function caml_atomic_exchange(ref, v) {

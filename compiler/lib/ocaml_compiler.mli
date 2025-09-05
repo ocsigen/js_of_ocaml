@@ -62,6 +62,12 @@ end
 module Import_info : sig
   type t
 
+  type table
+
+  val to_list : table -> t list
+
+  val of_list : t list -> table
+
   val name : t -> string
 
   val crc : t -> Digest.t option

@@ -550,9 +550,10 @@ let filter_map f l =
 
 let rec create_meth_ty exp =
   match exp.pexp_desc with
-  | Pexp_fun (label, _, _, body) -> label :: create_meth_ty body
+  | ((Pexp_fun (label, _, _, body)) [@if not oxcaml]) -> label :: create_meth_ty body
   | Pexp_function _ -> [ nolabel ]
-  | Pexp_newtype (_, body) -> create_meth_ty body
+  | ((Pexp_newtype (_, body)) [@if not oxcaml]) -> create_meth_ty body
+  | ((Pexp_newtype (_, _, body)) [@if oxcaml]) -> create_meth_ty body
   | _ -> []
 [@@if ast_version < 502]
 

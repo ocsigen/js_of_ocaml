@@ -287,6 +287,12 @@ end
 module Import_info = struct
   type t = string * Digest.t option
 
+  type table = t list
+
+  let to_list l = l
+
+  let of_list l = l
+
   let name (n, _) = n
 
   let crc (_, c) = c
@@ -295,6 +301,12 @@ end
 
 module Import_info = struct
   type t = Import_info.t
+
+  type table = t array
+
+  let to_list = Array.to_list
+
+  let of_list = Array.of_list
 
   let name i = Import_info.name i |> Compilation_unit.Name.to_string
 
