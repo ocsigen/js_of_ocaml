@@ -9,43 +9,28 @@ let jane_root, wasmoo_root =
 
 let repo = Filename.concat jane_root "opam-repository/packages"
 
-let roots = [ "bonsai_web_components"; "string_dict"; "ppx_html"; "bonsai_bench" ]
+let roots =
+  [ "bonsai_web_components"; "string_dict"; "ppx_html"; "bonsai_bench"; "float_array" ]
 
 let omitted_others = StringSet.of_list []
 
-let omitted_js = StringSet.of_list [ "sexplib0" ]
+let omitted_js = StringSet.of_list [ "basement"; "sexplib0" ]
 
 let do_pin =
   StringSet.of_list
-    [ "base"
-    ; "ppx_expect"
-    ; "ppx_inline_test"
-    ; "time_now"
-    ; "ocaml_intrinsics_kernel"
-    ; "bigstringaf"
-    ]
+    [ "basement" (* https://github.com/janestreet/basement/pull/3 *); "bigstringaf" ]
 
 let forked_packages =
   StringSet.of_list
-    [ "async_js"
-    ; "base"
-    ; "base_bigstring"
-    ; "bin_prot"
-    ; "bonsai"
+    [ "base"
+    ; "core"
+    ; "bonsai" (* Compatibility with effect syntax *)
     ; "bonsai_test"
+    ; "bonsai_web" (* Compatibility with effect syntax *)
     ; "bonsai_web_components"
     ; "bonsai_web_test"
-    ; "core"
-    ; "core_kernel"
-    ; "ocaml_intrinsics_kernel"
-    ; "ppx_expect"
-    ; "ppx_inline_test"
-    ; "ppx_module_timer"
-    ; "string_dict"
-    ; "time_now"
-    ; "virtual_dom"
-    ; "virtual_dom_toplayer"
-    ; "zarith_stubs_js"
+    ; "virtual_dom" (* Compatibility with effect syntax *)
+    ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
     ]
 
 let dune_workspace =
@@ -54,7 +39,7 @@ let dune_workspace =
  (_
   (env-vars (TESTING_FRAMEWORK inline-test))
   (js_of_ocaml (enabled_if false))
-  (flags :standard -alert -all -warn-error -7-8-27-30-32-34-37-49-52-55 -w -7-27-30-32-34-37-49-52-55-58-67-69)))
+  (flags :standard -alert -all -warn-error -7-8-27-30-32-34-37-49-52-55 -w -7-27-30-32-34-37-49-52-55-56-58-67-69)))
 |}
 
 let node_wrapper =
@@ -89,20 +74,13 @@ index 91933ec..849e4d7 100644
     )
   ; ( "bignum"
     , {bignum|
-diff --git a/dune-project b/dune-project
-index e563d7e..b87e356 100644
---- a/dune-project
-+++ b/dune-project
-@@ -1 +1 @@
--(lang dune 3.11)
-+(lang dune 3.17)
 diff --git a/test/src/dune b/test/src/dune
 index f93ae3f..3f00557 100644
 --- a/test/src/dune
 +++ b/test/src/dune
 @@ -2,5 +2,6 @@
   (name bignum_test)
-  (libraries bigint bignum core expect_test_helpers_core
+  (libraries bigint bignum core expect_test_helpers_core expectable
     sexp_grammar_validation zarith)
 + (inline_tests (flags -drop-tag no-js -drop-tag no-wasm -drop-tag 64-bits-only) (modes js wasm))
   (preprocess
@@ -126,100 +104,171 @@ index c6d09fb..61b1e5b 100644
 |bignum}
     )
   ; ( "bin_prot"
-    , {|
+    , {bp|
 diff --git a/test/dune b/test/dune
-index 6c0ef2f..9968f59 100644
+index bd88b8d..29b3604 100644
 --- a/test/dune
 +++ b/test/dune
-@@ -5,11 +5,3 @@
+@@ -1,15 +1,8 @@
+ (library
+  (name bin_prot_test)
+  (libraries base base_bigstring bin_prot
+-   expect_test_helpers_core.expect_test_helpers_base expect_test_patterns
++   expect_test_helpers_core.expect_test_helpers_base ; expect_test_patterns
     float_array base.md5 sexplib splittable_random stdio)
++ (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag 32-bits-only -drop-tag no-wasm) (modes js wasm))
   (preprocess
    (pps ppx_jane)))
 -
 -(rule
-- (alias runtest)
 - (deps core/blob_stability_tests.ml integers_repr_tests_64bit.ml
 -   integers_repr_tests_js.ml integers_repr_tests_wasm.ml)
 - (action
 -  (bash
--    "diff <(\necho '869e6b3143f14201f406eac9c05c4cdb  core/blob_stability_tests.ml'\necho '2db396dfced6ae8d095f308acb4c80eb  integers_repr_tests_64bit.ml'\necho '9f7b6332177a4ae9547d37d17008d7ef  integers_repr_tests_js.ml'\necho '22f653bfba79ce30c22fe378c596df54  integers_repr_tests_wasm.ml'\n  ) <(md5sum %{deps})")))
-    |}
+-    "diff <(\necho '869e6b3143f14201f406eac9c05c4cdb  core/blob_stability_tests.ml'\necho 'a9ed028fa16f307982c196f647d05afa  integers_repr_tests_64bit.ml'\necho 'a17ffcd3bf1e15dbca0ee54ec5b95c58  integers_repr_tests_js.ml'\necho 'e747bd85320575c771fc62a0d3085d29  integers_repr_tests_wasm.ml'\n  ) <(md5sum %{deps})"))
+- (alias runtest))
+diff --git a/test/non_integers_repr.ml b/test/non_integers_repr.ml
+index cbb9bd5..b5b5a03 100644
+--- a/test/non_integers_repr.ml
++++ b/test/non_integers_repr.ml
+@@ -811,11 +811,12 @@ let%expect_test "Non-integer bin_prot size tests" =
+     00 00 00 00 00 00 00 00 -> 0
+     |}];
+   gen_tests Tests.float_nan;
++  [%expect
++    {| 7f f8 00 00 00 00 00 01 -> NAN |}];
++(*
+   Expect_test_patterns.require_match
+     [%here]
+-    {|
+-    7f f{8,0} 00 00 00 00 00 01 -> NAN (glob)
+-    |};
++*)
+   gen_tests Tests.vec;
+   [%expect
+     {|
+    |bp}
     )
   ; ( "base_bigstring"
     , {|
-diff --git a/src/base_bigstring_stubs.c b/src/base_bigstring_stubs.c
-index 164c393..6cf4835 100644
---- a/src/base_bigstring_stubs.c
-+++ b/src/base_bigstring_stubs.c
-@@ -17,6 +17,50 @@
- #include <assert.h>
- #include <stdint.h>
+diff --git a/test/dune b/test/dune
+index 8d23f86..21e83ba 100644
+--- a/test/dune
++++ b/test/dune
+@@ -2,5 +2,6 @@
+  (name base_bigstring_test)
+  (libraries base_bigstring core.base_for_tests core expect_test_helpers_core
+    stdio)
++ (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
+  (preprocess
+   (pps ppx_jane)))
+|}
+    )
+  ; ( "core_kernel"
+    , {|
+diff --git a/version_util/src/dune b/version_util/src/dune
+index 4b2b8bb..f7eb7ba 100644
+--- a/version_util/src/dune
++++ b/version_util/src/dune
+@@ -10,4 +10,5 @@
+  (preprocess
+   (pps ppx_jane))
+  (wasm_of_ocaml
+-  (javascript_files version_util.js)))
++  (javascript_files version_util.js)
++  (wasm_files version_util.wat)))
+|}
+    )
+  ; ( "string_dict"
+    , {|
+diff --git a/test/dune b/test/dune
+index b145cb3..e5fc412 100644
+--- a/test/dune
++++ b/test/dune
+@@ -1,5 +1,6 @@
+ (library
+  (name string_dict_test)
+  (libraries base core expect_test_helpers_core string_dict)
++ (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
+  (preprocess
+   (pps ppx_jane)))
+|}
+    )
+  ; ( "zarith_stubs_js"
+    , {zs|
+diff --git a/test/bitwise.ml b/test/bitwise.ml
+index 5fd0ddc..4833923 100644
+--- a/test/bitwise.ml
++++ b/test/bitwise.ml
+@@ -86,7 +86,7 @@ module Ml_z_popcount = struct
+     Static.quickcheck ~f:(fun x -> [%message (x : t) (popcount x : int)]) ();
+     (* Compression rate is low because our quickcheck implementation generates
+        integers with a bounded bitcount. *)
+-    [%expect {| ((hash 1e429706c701b111d98b6e6e858bbea4) (uniqueness_rate 42.96875)) |}]
++    [%expect {| ((hash d937e61f530ab9c27544e392922d286d) (uniqueness_rate 42.96875)) |}]
+   ;;
+ end
  
-+
-+static inline void * mymemrchr(const void * s, int c, size_t n)
-+{
-+  const unsigned char * p = (const unsigned char *)s + n;
-+
-+  while (n--) {
-+    if (*(--p) == (unsigned char) c) {
-+      return (void *)p;
-+    }
-+  }
-+
-+  return NULL;
-+}
-+static inline void *mymemmem(const void *haystack, size_t haystack_len,
-+                const void *needle, size_t needle_len)
-+{
-+	const char *begin = haystack;
-+	const char *last_possible = begin + haystack_len - needle_len;
-+	const char *tail = needle;
-+	char point;
-+
-+	/*
-+	 * The first occurrence of the empty string is deemed to occur at
-+	 * the beginning of the string.
-+	 */
-+	if (needle_len == 0)
-+		return (void *)begin;
-+
-+	/*
-+	 * Sanity check, otherwise the loop might search through the whole
-+	 * memory.
-+	 */
-+	if (haystack_len < needle_len)
-+		return NULL;
-+
-+	point = *tail++;
-+	for (; begin <= last_possible; begin++) {
-+		if (*begin == point && !memcmp(begin + 1, tail, needle_len - 1))
-+			return (void *)begin;
-+	}
-+
-+	return NULL;
-+}
-+
- #ifdef __APPLE__
- #include <libkern/OSByteOrder.h>
- #define bswap_16 OSSwapInt16
-@@ -239,7 +283,7 @@ CAMLprim value bigstring_rfind(value v_str, value v_needle,
-   char *start, *r;
+@@ -102,7 +102,7 @@ module Ml_z_hamdist = struct
+       ();
+     (* Compression rate is low because our quickcheck implementation generates
+        integers with a bounded bitcount. *)
+-    [%expect {| ((hash 0a270232628736ee7d47c8b403250989) (uniqueness_rate 33.284457)) |}]
++    [%expect {| ((hash 0d36530b39292e2c31f13d10ec004a38) (uniqueness_rate 33.284457)) |}]
+   ;;
+ end
  
-   start = get_bstr(v_str, v_pos);
--  r = (char*) memrchr(start, Int_val(v_needle), Long_val(v_len));
-+  r = (char*) mymemrchr(start, Int_val(v_needle), Long_val(v_len));
+diff --git a/test/dune b/test/dune
+index 7996514..d0b463a 100644
+--- a/test/dune
++++ b/test/dune
+@@ -1,7 +1,9 @@
+ (library
+  (name zarith_stubs_js_test)
+- (libraries zarith core base.md5 zarith_stubs_js)
++ (libraries zarith_wrapper core base.md5 zarith_stubs_js)
+  (flags :standard -w -60)
++ (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
++ (modules (:standard \ zarith))
+  (preprocess
+   (pps ppx_jane)))
  
-   return ptr_to_offset(start, v_pos, r);
- }
-@@ -250,7 +294,7 @@ CAMLprim value bigstring_memmem(value v_haystack, value v_needle,
- {
-   const char *haystack = get_bstr(v_haystack, v_haystack_pos);
-   const char *needle = get_bstr(v_needle, v_needle_pos);
--  const char *result = memmem(haystack, Long_val(v_haystack_len),
-+  const char *result = mymemmem(haystack, Long_val(v_haystack_len),
-                               needle, Long_val(v_needle_len));
+@@ -35,10 +37,16 @@
+  (deps implemented_externals.txt tested_externals.txt)
+  (action
+   (bash "diff %{deps}"))
+- (alias runtest))
++ (alias runtest-))
  
-   return ptr_to_offset(haystack, v_haystack_pos, result);
+ (rule
+  (deps implemented_externals.txt zarith_externals.txt)
+  (action
+   (bash "diff %{deps}"))
+- (alias runtest))
++ (alias runtest-))
++
++(subdir zarith
++ (copy_files (files ../zarith.ml))
++ (library (name zarith_wrapper)
++  (wrapped false)
++  (libraries zarith)))
+|zs}
+    )
+  ; ( "ppx_css"
+    , {|
+diff --git a/css_parser/lexer/ident.ml b/css_parser/lexer/ident.ml
+index fdf9926..d0ccf6a 100644
+--- a/css_parser/lexer/ident.ml
++++ b/css_parser/lexer/ident.ml
+@@ -6,7 +6,7 @@ let css_newline_single_char = [%sedlex.regexp? '\n' | '\r' | "\u{000C}"]
+ let css_newline = [%sedlex.regexp? "\r\n" | css_newline_single_char]
+ let css_whitespace = [%sedlex.regexp? css_newline | '\t' | " "]
+ let css_whitespace_single_char = [%sedlex.regexp? css_newline_single_char | '\t' | " "]
+-let ascii = [%sedlex.regexp? '\000' .. '\177']
++let ascii = [%sedlex.regexp? Latin1 '\000' .. '\177']
+ let non_ascii = [%sedlex.regexp? Compl ascii]
+ let ident_start_code_point = [%sedlex.regexp? 'a' .. 'z' | 'A' .. 'Z' | '_' | non_ascii]
+ let ident_code_point = [%sedlex.regexp? ident_start_code_point | '0' .. '9' | '-']
 |}
     )
   ]
@@ -251,7 +300,17 @@ let packages =
   repo
   |> Sys.readdir
   |> Array.to_list
-  |> List.map (fun s -> String.sub s 0 (String.index s '.'), read_opam_file s)
+  |> List.map (fun s ->
+         if String.contains s '.'
+         then String.sub s 0 (String.index s '.'), read_opam_file s
+         else
+           ( s
+           , read_opam_file
+               (Filename.concat
+                  s
+                  (List.find
+                     (fun f -> String.starts_with ~prefix:s f)
+                     (Array.to_list (Sys.readdir (Filename.concat repo s))))) ))
 
 let rec traverse visited p =
   if StringSet.mem p visited
@@ -279,7 +338,7 @@ let sync_exec f l =
 let pin nm =
   exec_async
     (Printf.sprintf
-       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-v0.18"
+       "opam pin add -n %s https://github.com/ocaml-wasm/%s.git#wasm-latest"
        nm
        nm)
 
@@ -337,7 +396,7 @@ let () =
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
-      let branch = if is_forked nm then Some "wasm-v0.18" else None in
+      let branch = if is_forked nm then Some "wasm-latest" else None in
       let commit =
         if is_forked nm
         then None
