@@ -2643,9 +2643,9 @@ end = struct
 
   let read_crcs toc ic =
     ignore (seek_section toc ic "CRCS");
-    let orig_crcs : Import_info.t array = input_value ic in
+    let orig_crcs : Ocaml_compiler.Import_info.t array = input_value ic in
     List.map (Array.to_list orig_crcs) ~f:(fun import ->
-        Import_info.name import |> Compilation_unit.Name.to_string, Import_info.crc import)
+        Ocaml_compiler.Import_info.name import, Ocaml_compiler.Import_info.crc import)
 
   let read_prim toc ic =
     let prim_size = seek_section toc ic "PRIM" in
@@ -2918,11 +2918,10 @@ module Reloc = struct
     }
 
   let constant_of_const x = Ocaml_compiler.constant_of_const x
-  (*
-  [@@if ocaml_version < (5, 1, 0)]
+  [@@if oxcaml || ocaml_version < (5, 1, 0)]
 
-  let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
-*)
+  let constant_of_const x = Constants.parse x
+  [@@if (not oxcaml) && ocaml_version >= (5, 1, 0)]
 
   (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =
@@ -2968,11 +2967,11 @@ module Reloc = struct
         | ((Reloc_setglobal id) [@if ocaml_version < (5, 2, 0)]) ->
             patch (slot_for_global (Ident.name id))
         | ((Reloc_getcompunit id) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global (Compilation_unit.name_as_string id))
+            patch (slot_for_global (Ocaml_compiler.Compilation_unit.name_as_string id))
         | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
             patch (slot_for_global id)
         | ((Reloc_setcompunit id) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global (Compilation_unit.name_as_string id))
+            patch (slot_for_global (Ocaml_compiler.Compilation_unit.name_as_string id))
         | _ -> ())
 
   let primitives t =
@@ -3101,7 +3100,7 @@ let from_channel ic =
           then raise Magic_number.(Bad_magic_version magic);
           let compunit_pos = input_binary_int ic in
           seek_in ic compunit_pos;
-          let compunit : Cmo_format.compilation_unit_descr = input_value ic in
+          let compunit : Ocaml_compiler.Cmo_format.t = input_value ic in
           `Cmo compunit
       | `Cma ->
           if

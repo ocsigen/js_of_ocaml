@@ -301,7 +301,20 @@ let traverse =
             | Some pattern -> Some { case with pc_lhs = pattern })
       in
       super#cases cases
+
+    method! signature items =
+      let items =
+        filter_map items ~f:(fun item ->
+            match item.psig_desc with
+            | Psig_module { pmd_attributes; pmd_loc; _ } ->
+                if keep pmd_loc pmd_attributes then Some item else None
+            | _ -> Some item)
+      in
+      super#signature items
   end
 
 let () =
-  Ppxlib.Driver.register_transformation ~impl:traverse#structure "ppx_optcomp_light"
+  Ppxlib.Driver.register_transformation
+    ~impl:traverse#structure
+    ~intf:traverse#signature
+    "ppx_optcomp_light"

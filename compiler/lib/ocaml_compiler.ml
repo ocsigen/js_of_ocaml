@@ -30,21 +30,25 @@ let rec constant_of_const c : Code.constant =
   | Const_base (Const_int64 i) -> Int64 i
   | Const_base (Const_nativeint i) -> NativeInt (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
-  | Const_float_array sl | Const_float_block sl ->
+  | Const_float_array sl ->
+      let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
+      Float_array (Array.of_list l)
+  | ((Const_float_block sl) [@if oxcaml]) ->
       let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
       Float_array (Array.of_list l)
   | Const_block (tag, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-  | Const_base
-      ( Const_float32 _
-      | Const_unboxed_float _
-      | Const_unboxed_float32 _
-      | Const_unboxed_int32 _
-      | Const_unboxed_int64 _
-      | Const_unboxed_nativeint _ ) -> assert false (*ZZZ*)
-  | Const_null -> assert false (*ZZZ*)
-  | Const_mixed_block (_, _, _) -> assert false (*ZZZ*)
+  | ((Const_base
+        ( Const_float32 _
+        | Const_unboxed_float _
+        | Const_unboxed_float32 _
+        | Const_unboxed_int32 _
+        | Const_unboxed_int64 _
+        | Const_unboxed_nativeint _ ))
+     [@if oxcaml]) -> assert false (*ZZZ*)
+  | (Const_null [@if oxcaml]) -> assert false (*ZZZ*)
+  | ((Const_mixed_block (_, _, _)) [@if oxcaml]) -> assert false (*ZZZ*)
 
 type module_or_not =
   | Module
@@ -68,10 +72,15 @@ let rec is_module_in_summary deep ident' summary =
       then deep, Not_module
       else is_module_in_summary (deep + 1) ident' summary
   (* Lowercase ident *)
-  | Env.Env_value (summary, ident, _, _)
   | Env.Env_type (summary, ident, _)
   | Env.Env_class (summary, ident, _)
   | Env.Env_cltype (summary, ident, _) ->
+      ignore (ident : Ident.t);
+      is_module_in_summary (deep + 1) ident' summary
+  | ((Env.Env_value (summary, ident, _)) [@if not oxcaml]) ->
+      ignore (ident : Ident.t);
+      is_module_in_summary (deep + 1) ident' summary
+  | ((Env.Env_value (summary, ident, _)) [@if oxcaml]) ->
       ignore (ident : Ident.t);
       is_module_in_summary (deep + 1) ident' summary
   (* Other, no ident *)
@@ -85,6 +94,17 @@ let rec is_module_in_summary deep ident' summary =
 let is_module_in_summary ident summary =
   let _deep, b = is_module_in_summary 0 ident summary in
   b
+
+module Compilation_unit = struct
+  type t = Cmo_format.compunit
+
+  let name_as_string (Compunit x : t) = x
+
+  let of_string x : t = Compunit x
+end
+[@@if not oxcaml]
+
+module Compilation_unit = Compilation_unit [@@if oxcaml]
 
 module Symtable = struct
   (* Copied from ocaml/bytecomp/symtable.ml *)
@@ -125,11 +145,15 @@ module Symtable = struct
       | Glob_compunit cu -> cu
       | Glob_predef exn -> exn
 
+    let is_global = Ident.global [@@if not oxcaml]
+
+    let is_global = Ident.is_global [@@if oxcaml]
+
     let of_ident id =
       let name = Ident.name id in
       if Ident.is_predef id
       then Some (Glob_predef name)
-      else if Ident.is_global id
+      else if is_global id
       then Some (Glob_compunit name)
       else None
 
@@ -223,7 +247,7 @@ module Symtable = struct
     let get i = Char.code (Bytes.get buf i) in
     let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
     n
-  (*  [@@if ocaml_version < (5, 2, 0)]
+  [@@if oxcaml || ocaml_version < (5, 2, 0)]
 
   let reloc_ident name =
     let buf = Bigarray.(Array1.create char c_layout 4) in
@@ -235,8 +259,7 @@ module Symtable = struct
     let get i = Char.code (Bigarray.Array1.get buf i) in
     let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
     n
-  [@@if ocaml_version >= (5, 2, 0)]
-*)
+  [@@if (not oxcaml) && ocaml_version >= (5, 2, 0)]
 
   let current_state () : GlobalMap.t =
     let x : Symtable.global_map = Symtable.current_state () in
@@ -261,20 +284,38 @@ module Symtable = struct
   [@@if ocaml_version >= (5, 2)]
 end
 
+module Import_info = struct
+  type t = string * Digest.t option
+
+  let name (n, _) = n
+
+  let crc (_, c) = c
+end
+[@@if not oxcaml]
+
+module Import_info = struct
+  type t = Import_info.t
+
+  let name i = Import_info.name import |> Compilation_unit.Name.to_string
+
+  let crc = Import_info.crc
+end
+[@@if oxcaml]
+
 module Cmo_format = struct
-  type t = Cmo_format.compilation_unit_descr
+  type t = Cmo_format.compilation_unit
 
-  let name (t : t) = t.cu_name |> Compilation_unit.name_as_string
-  [@@if ocaml_version < (5, 2, 0)]
+  let name (t : t) = t.cu_name [@@if ocaml_version < (5, 2, 0)]
 
-  let name (t : t) = Compilation_unit.name_as_string t.cu_name
+  let name (t : t) =
+    let (Compunit name) = t.cu_name in
+    name
   [@@if ocaml_version >= (5, 2, 0)]
 
-  let requires (t : t) = List.map ~f:Compilation_unit.name_as_string t.cu_required_globals
+  let requires (t : t) = List.map ~f:Ident.name t.cu_required_globals
   [@@if ocaml_version < (5, 2, 0)]
 
-  let requires (t : t) =
-    List.map t.cu_required_compunits ~f:Compilation_unit.name_as_string
+  let requires (t : t) = List.map t.cu_required_compunits ~f:(fun (Compunit u) -> u)
   [@@if ocaml_version >= (5, 2, 0)]
 
   let provides (t : t) =
@@ -287,7 +328,7 @@ module Cmo_format = struct
   let provides (t : t) =
     List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
         match reloc with
-        | Reloc_setcompunit u -> Some (Compilation_unit.name_as_string u)
+        | Reloc_setcompunit (Compunit u) -> Some u
         | Reloc_getcompunit _ | Reloc_getpredef _ | Reloc_literal _ | Reloc_primitive _ ->
             None)
   [@@if ocaml_version >= (5, 2, 0)]
@@ -298,3 +339,27 @@ module Cmo_format = struct
 
   let force_link (t : t) = t.cu_force_link
 end
+[@@if not oxcaml]
+
+module Cmo_format = struct
+  type t = Cmo_format.compilation_unit_descr
+
+  let name (t : t) = Compilation_unit.name_as_string t.cu_name
+
+  let requires (t : t) =
+    List.map t.cu_required_compunits ~f:Compilation_unit.name_as_string
+
+  let provides (t : t) =
+    List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
+        match reloc with
+        | Reloc_setcompunit u -> Some (Compilation_unit.name_as_string u)
+        | Reloc_getcompunit _ | Reloc_getpredef _ | Reloc_literal _ | Reloc_primitive _ ->
+            None)
+
+  let primitives (t : t) = t.cu_primitives
+
+  let imports (t : t) = Array.to_list t.cu_imports
+
+  let force_link (t : t) = t.cu_force_link
+end
+[@@if oxcaml]

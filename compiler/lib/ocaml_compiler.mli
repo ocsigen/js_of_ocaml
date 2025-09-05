@@ -59,8 +59,30 @@ module Symtable : sig
   val all_primitives : unit -> string list
 end
 
+module Import_info : sig
+  type t
+
+  val name : t -> string
+
+  val crc : t -> Digest.t option
+end
+
+module Compilation_unit : sig
+  type t = Cmo_format.compunit
+
+  val name_as_string : t -> string
+end
+[@@if not oxcaml]
+
+module Compilation_unit : sig
+  type t = Compilation_unit.t
+
+  val name_as_string : t -> string
+end
+[@@if oxcaml]
+
 module Cmo_format : sig
-  type t = Cmo_format.compilation_unit_descr
+  type t = Cmo_format.compilation_unit
 
   val name : t -> string
 
@@ -72,5 +94,5 @@ module Cmo_format : sig
 
   val force_link : t -> bool
 
-  val imports : t -> Import_info.t array
+  val imports : t -> Import_info.t list
 end
