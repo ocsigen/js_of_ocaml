@@ -80,7 +80,7 @@ let rec is_module_in_summary deep ident' summary =
   | ((Env.Env_value (summary, ident, _)) [@if not oxcaml]) ->
       ignore (ident : Ident.t);
       is_module_in_summary (deep + 1) ident' summary
-  | ((Env.Env_value (summary, ident, _)) [@if oxcaml]) ->
+  | ((Env.Env_value (summary, ident, _, _)) [@if oxcaml]) ->
       ignore (ident : Ident.t);
       is_module_in_summary (deep + 1) ident' summary
   (* Other, no ident *)
@@ -296,7 +296,7 @@ end
 module Import_info = struct
   type t = Import_info.t
 
-  let name i = Import_info.name import |> Compilation_unit.Name.to_string
+  let name i = Import_info.name i |> Compilation_unit.Name.to_string
 
   let crc = Import_info.crc
 end
