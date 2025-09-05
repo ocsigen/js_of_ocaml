@@ -1,0 +1,7 @@
+(executable
+ (name main)
+ (js_of_ocaml
+  (flags --opt 2))
+ (wasm_of_ocaml
+  (flags --opt 2))
+ (modes js wasm))

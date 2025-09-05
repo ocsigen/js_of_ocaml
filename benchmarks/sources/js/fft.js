@@ -174,4 +174,4 @@ function test (np) {
   if (Math.abs( zr) <= 1e-8 && Math.abs( zi) <= 1e-8) {} else throw "ERROR";
 }
 
-var np = 16; for (var i = 1; i<= 16; i++) { test (np); np = np*2; }
+var np = 16; for (var i = 1; i<= 19; i++) { test (np); np = np*2; }

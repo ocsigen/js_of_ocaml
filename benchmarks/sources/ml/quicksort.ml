@@ -102,8 +102,8 @@ let test_sort sort_fun size =
 (*print_string "failed"; print_newline()*)
 
 let main () =
-  test_sort qsort 500000;
-  test_sort qsort2 500000
+  test_sort qsort 2_000_000;
+  test_sort qsort2 2_000_000
 
 let _ = main ()
 
