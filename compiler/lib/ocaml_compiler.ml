@@ -26,9 +26,15 @@ let rec constant_of_const c : Code.constant =
   | Const_base (Const_char c) -> Int (Targetint.of_int_exn (Char.code c))
   | Const_base (Const_string (s, _, _)) -> String s
   | Const_base (Const_float s) -> Float (Int64.bits_of_float (float_of_string s))
+  | ((Const_base (Const_unboxed_float s)) [@if oxcaml]) ->
+      Float (Int64.bits_of_float (float_of_string s))
   | Const_base (Const_int32 i) -> Int32 i
+  | ((Const_base (Const_unboxed_int32 i)) [@if oxcaml]) -> Int32 i
   | Const_base (Const_int64 i) -> Int64 i
+  | ((Const_base (Const_unboxed_int64 i)) [@if oxcaml]) -> Int64 i
   | Const_base (Const_nativeint i) -> NativeInt (Int32.of_nativeint_warning_on_overflow i)
+  | ((Const_base (Const_unboxed_nativeint i)) [@if oxcaml]) ->
+      NativeInt (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
       let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
@@ -39,16 +45,12 @@ let rec constant_of_const c : Code.constant =
   | Const_block (tag, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-  | ((Const_base
-        ( Const_float32 _
-        | Const_unboxed_float _
-        | Const_unboxed_float32 _
-        | Const_unboxed_int32 _
-        | Const_unboxed_int64 _
-        | Const_unboxed_nativeint _ ))
-     [@if oxcaml]) -> assert false (*ZZZ*)
-  | (Const_null [@if oxcaml]) -> assert false (*ZZZ*)
-  | ((Const_mixed_block (_, _, _)) [@if oxcaml]) -> assert false (*ZZZ*)
+  | ((Const_mixed_block (tag, _, l)) [@if oxcaml]) ->
+      let l = Array.of_list (List.map l ~f:constant_of_const) in
+      Tuple (tag, l, Unknown)
+  | ((Const_base (Const_float32 _ | Const_unboxed_float32 _)) [@if oxcaml]) ->
+      failwith "Float32 unsupported"
+  | (Const_null [@if oxcaml]) -> failwith "Null unsupported"
 
 type module_or_not =
   | Module
