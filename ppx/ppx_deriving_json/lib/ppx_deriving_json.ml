@@ -23,6 +23,8 @@ open Ppxlib.Ast
 open Ppxlib.Ast_helper
 open Ppxlib.Parsetree
 
+[@@@ocaml.alert "-prefer_jane_syntax"]
+
 let nolabel = Nolabel
 
 let unflatten l =
@@ -343,7 +345,7 @@ and write_body_of_type y ~(arg : string) ~poly =
   | ({ Parsetree.ptyp_desc = Ptyp_tuple l; _ } [@if not oxcaml]) ->
       write_body_of_tuple_type l ~arg ~poly ~tag:0
   | ({ Parsetree.ptyp_desc = Ptyp_tuple l; _ } [@if oxcaml]) ->
-      write_body_of_tuple_type (List.map snd l) ~arg ~poly ~tag:0
+      write_body_of_tuple_type (List.map ~f:snd l) ~arg ~poly ~tag:0
   | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); _ } ->
       Exp.match_ arg (List.map ~f:(write_poly_case ~arg:arg' ~poly) l)
   | { Parsetree.ptyp_desc = Ptyp_constr (lid, l); _ } ->
