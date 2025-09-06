@@ -9,6 +9,8 @@
  }
 *)
 
+[@@@ocaml.alert "-unsafe_multidomain-unsafe_parallelism"]
+
 (* Test for output_value / input_value *)
 
 let test_size =

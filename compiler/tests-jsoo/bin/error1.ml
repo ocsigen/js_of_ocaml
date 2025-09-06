@@ -8,7 +8,7 @@ let () =
 exception D of int * string * Int64.t
 
 let _ =
-  Printexc.register_printer (function
+  (Printexc.register_printer [@ocaml.alert "-unsafe_multidomain"]) (function
     | D _ -> Some "custom printer"
     | _ -> None)
 

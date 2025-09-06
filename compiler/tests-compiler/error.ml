@@ -46,7 +46,9 @@ let%expect_test "uncaugh error" =
   let prog =
     {|
 let null = Array.unsafe_get [|1|] 1
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
 exception C
 let _ = raise C |}
   in
@@ -61,7 +63,9 @@ let _ = raise C |}
   let prog =
     {|
 let null = Array.unsafe_get [|1|] 1
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
 exception D of int * string * Int64.t
 let _ = raise (D(2,"test",43L))
               |}
@@ -77,7 +81,9 @@ let _ = raise (D(2,"test",43L))
   let prog =
     {|
 let null = Array.unsafe_get [|1|] 1
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
 let _ = assert false |}
   in
   compile_and_run prog;
@@ -91,7 +97,9 @@ let _ = assert false |}
   let prog =
     {|
 let null = Array.unsafe_get [|1|] 1
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
  [@@@ocaml.warning "-8"] let _ = match 3 with 2 -> () |}
   in
   compile_and_run prog;
@@ -107,7 +115,9 @@ let () = Callback.register "Printexc.handle_uncaught_exception" null
   let prog =
     {|
 let null : _ -> _ -> _ = Array.unsafe_get [||] 0
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
 exception D of int * string * Int64.t
 let _ = null 1 2
              |}

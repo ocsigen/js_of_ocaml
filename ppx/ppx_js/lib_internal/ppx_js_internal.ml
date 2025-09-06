@@ -23,6 +23,8 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
+[@@@ocaml.alert "-prefer_jane_syntax"]
+
 let nolabel = Nolabel
 
 exception Syntax_error of Location.Error.t

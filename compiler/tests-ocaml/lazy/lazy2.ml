@@ -3,6 +3,7 @@
 *)
 
 open Domain
+[@@@ocaml.alert "-unsafe_multidomain-unsafe_parallelism"]
 
 let () =
   let l = lazy (print_string "Lazy Forced\n") in
