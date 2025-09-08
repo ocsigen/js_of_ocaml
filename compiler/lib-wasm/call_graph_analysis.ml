@@ -42,10 +42,35 @@ type t = { unambiguous_non_escaping : unit Var.Hashtbl.t }
 let direct_calls_only info f =
   Config.Flag.optcall () && Var.Hashtbl.mem info.unambiguous_non_escaping f
 
-let call_graph p info call_info =
+let callee_if_known info call_info exact f =
+  match get_approx info f with
+  | Top -> None
+  | Values { known; others } ->
+      if
+        exact
+        && (not others)
+        && Var.Set.for_all (fun f -> direct_calls_only call_info f) known
+      then Some (Var.Set.choose known)
+      else None
+
+let propagate nodes edges eligible =
+  let rec propagate n =
+    List.iter
+      ~f:(fun n' ->
+        if (not (Var.Hashtbl.mem nodes n')) && eligible n'
+        then (
+          Var.Hashtbl.add nodes n' ();
+          propagate n'))
+      (Var.Hashtbl.find_all edges n)
+  in
+  Var.Hashtbl.iter (fun n () -> propagate n) nodes
+
+let call_graph p info call_info eligible =
   let under_handler = Var.Hashtbl.create 16 in
   let callees = Var.Hashtbl.create 16 in
   let callers = Var.Hashtbl.create 16 in
+  let has_tail_calls = Var.Hashtbl.create 16 in
+  let tail_callers = Var.Hashtbl.create 16 in
   let rec traverse name_opt pc visited nesting =
     if not (Addr.Set.mem pc visited)
     then (
@@ -80,6 +105,28 @@ let call_graph p info call_info =
                         name_opt)
           | Let (_, (Closure _ | Prim _ | Block _ | Constant _ | Field _ | Special _))
           | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ());
+      if nesting = 0
+      then
+        Option.iter
+          ~f:(fun f ->
+            Code.traverse
+              { fold = Code.fold_children }
+              (fun pc () ->
+                let block = Addr.Map.find pc p.blocks in
+                match block.branch with
+                | Return x -> (
+                    match last_instr block.body with
+                    | Some (Let (x', Apply { f = g; exact; _ })) when Code.Var.equal x x'
+                      -> (
+                        match callee_if_known info call_info exact g with
+                        | None -> Var.Hashtbl.replace has_tail_calls f ()
+                        | Some g -> Var.Hashtbl.add tail_callers g f)
+                    | _ -> ())
+                | _ -> ())
+              pc
+              p.blocks
+              ())
+          name_opt;
       Code.fold_children
         p.blocks
         pc
@@ -98,7 +145,8 @@ let call_graph p info call_info =
     p
     (fun name_opt _ (pc, _) _ () -> ignore (traverse name_opt pc Addr.Set.empty 0))
     ();
-  under_handler, callers, callees
+  propagate has_tail_calls tail_callers eligible;
+  under_handler, callers, callees, has_tail_calls
 
 let function_do_raise p pc =
   Code.traverse
@@ -114,36 +162,28 @@ let function_do_raise p pc =
     p.blocks
     false
 
-let propagate nodes edges eligible =
-  let rec propagate n =
-    List.iter
-      ~f:(fun n' ->
-        if (not (Var.Hashtbl.mem nodes n')) && eligible n'
-        then (
-          Var.Hashtbl.add nodes n' ();
-          propagate n'))
-      (Var.Hashtbl.find_all edges n)
-  in
-  Var.Hashtbl.iter (fun n () -> propagate n) nodes
-
 let raising_functions p info call_info eligible =
-  let under_handler, callers, callees = call_graph p info call_info in
-  propagate under_handler callees eligible;
+  let under_handler, callers, callees, has_tail_calls =
+    call_graph p info call_info eligible
+  in
+  propagate under_handler callees (fun f ->
+      eligible f && not (Var.Hashtbl.mem has_tail_calls f));
   let h = Var.Hashtbl.create 16 in
+  let eligible f =
+    eligible f
+    && Var.Hashtbl.mem under_handler f
+    && not (Var.Hashtbl.mem has_tail_calls f)
+  in
   Code.fold_closures
     p
     (fun name_opt _params (pc, _) _ () ->
       match name_opt with
       | None -> ()
       | Some name ->
-          if
-            direct_calls_only call_info name
-            && eligible name
-            && function_do_raise p pc
-            && Var.Hashtbl.mem under_handler name
+          if direct_calls_only call_info name && eligible name && function_do_raise p pc
           then Var.Hashtbl.add h name ())
     ();
-  propagate h callers (fun f -> eligible f && Var.Hashtbl.mem under_handler f);
+  propagate h callers eligible;
   if false
   then
     Var.Hashtbl.iter
@@ -180,5 +220,4 @@ let f p info =
 
 (*
 - Optimize tail-calls
-- Cannot change calling convention if the function has tail-calls
 *)
