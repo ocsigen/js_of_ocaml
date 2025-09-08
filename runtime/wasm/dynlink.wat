@@ -16,4 +16,29 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+
+   (type $bytes (array (mut i8)))
+
+(@if (>= ocaml_version (5 1 0))
+(@then
+   (func (export "caml_dynlink_open_lib") (param (ref eq)) (result (ref eq))
+      (call $caml_failwith (@string "Dll.dll_open is not supported"))
+      (ref.i31 (i32.const 0)))
+)
+(@else
+   (func (export "caml_dynlink_open_lib")
+      (param (ref eq) (ref eq)) (result (ref eq))
+      (call $caml_failwith (@string "Dll.dll_open is not supported"))
+      (ref.i31 (i32.const 0)))
+))
+
+   (func (export "caml_dynlink_close_lib") (param (ref eq)) (result (ref eq))
+      (call $caml_failwith (@string "Dll.dll_close is not supported"))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_dynlink_lookup_symbol")
+      (param (ref eq) (ref eq)) (result (ref eq))
+      (call $caml_failwith (@string "Dll.dll_sym is not supported"))
+      (ref.i31 (i32.const 0)))
 )
