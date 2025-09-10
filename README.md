@@ -1,6 +1,7 @@
 # Js_of_ocaml (jsoo)
 
-[![Build Status](https://github.com/ocsigen/js_of_ocaml/workflows/build/badge.svg?branch=master)](https://github.com/ocsigen/js_of_ocaml/actions)
+[![Build js_of_ocaml](https://github.com/ocsigen/js_of_ocaml/actions/workflows/js_of_ocaml.yml/badge.svg)](https://github.com/ocsigen/js_of_ocaml/actions/workflows/js_of_ocaml.yml)
+[![Build wasm_of_ocaml](https://github.com/ocsigen/js_of_ocaml/actions/workflows/wasm_of_ocaml.yml/badge.svg)](https://github.com/ocsigen/js_of_ocaml/actions/workflows/wasm_of_ocaml.yml)
 [![Update Web site - build](https://github.com/ocsigen/js_of_ocaml/actions/workflows/siteupdate.yml/badge.svg)](https://github.com/ocsigen/js_of_ocaml/actions/workflows/siteupdate.yml)
 [![Update Web site - deploy](https://github.com/ocsigen/js_of_ocaml/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/ocsigen/js_of_ocaml/actions/workflows/pages/pages-build-deployment)
 
