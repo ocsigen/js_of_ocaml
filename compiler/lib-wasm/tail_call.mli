@@ -17,6 +17,7 @@
  *)
 
 val f :
-     no_tail_call:unit Code.Var.Hashtbl.t
+     return_exn:bool
+  -> no_tail_call:unit Code.Var.Hashtbl.t
   -> Wasm_ast.instruction list
   -> Wasm_ast.instruction list
