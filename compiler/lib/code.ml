@@ -873,6 +873,19 @@ let rec preorder_traverse' { fold } f pc visited blocks acc =
 let preorder_traverse fold f pc blocks acc =
   snd (preorder_traverse' fold f pc Addr.Set.empty blocks acc)
 
+let raises_outside_handlers blocks pc =
+  traverse
+    { fold = fold_children_skip_try_body }
+    (fun pc b ->
+      b
+      ||
+      match (Addr.Map.find pc blocks).branch with
+      | Raise _ -> true
+      | _ -> false)
+    pc
+    blocks
+    false
+
 let fold_closures_innermost_first { start; blocks; _ } f accu =
   let rec visit blocks pc f accu =
     traverse

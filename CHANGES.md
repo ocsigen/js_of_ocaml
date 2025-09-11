@@ -67,6 +67,8 @@
   searches and `output_value` sharing detection (with WASI, `output_value`
   now shares boxed numbers with equal contents); single bound check in
   fixed-width `Bytes` accesses (#2470, #2505)
+* Compiler/wasm: functions called under an exception handler signal an
+  exception by returning null rather than throwing, which is much cheaper (#2098)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new
