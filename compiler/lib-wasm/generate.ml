@@ -1734,6 +1734,32 @@ module Generate (Target : Target_sig.S) = struct
 
   let exception_handler_pc = -3
 
+  let caml_exception_global =
+    register_import
+      ~import_module:"env"
+      ~name:"caml_exception"
+      (Global { mut = true; typ = Type.value })
+
+  (* Read the pending exception and clear the global, so that the
+     exception does not remain reachable. *)
+  let take_exception =
+    let* exn = caml_exception_global in
+    let x = Var.fresh () in
+    let* () = store ~always:true x (return (W.GlobalGet exn)) in
+    let* unit = Value.unit in
+    let* () = instr (GlobalSet (exn, unit)) in
+    load x
+
+  let may_call_raising_function ctx f =
+    Var.Hashtbl.length ctx.raising_funcs > 0
+    (* Specialization can add some variables *)
+    && Var.idx f < Var.Tbl.length ctx.global_flow_info.info_approximation
+    &&
+    match Var.Tbl.get ctx.global_flow_info.info_approximation f with
+    | Top -> false
+    | Values { known; _ } ->
+        Var.Set.exists (fun g -> Var.Hashtbl.mem ctx.raising_funcs g) known
+
   let direct_call ctx context f args closure =
     let e = W.Call (f, args @ [ closure ]) in
     let e =
@@ -2083,7 +2109,7 @@ module Generate (Target : Target_sig.S) = struct
   (* Walk the dominator subtree of [pc] (the structural region of the
      loop body, try body, or function body that the wrap covers),
      skipping any nested try body since it carries its own wrap. *)
-  let needed_handlers (p : program) ~dom pc =
+  let needed_handlers ctx (p : program) ~dom pc =
     let fold : 'c. _ -> _ -> (Addr.t -> 'c -> 'c) -> 'c -> 'c =
      fun _blocks pc' f accu ->
       let block = Addr.Map.find pc' p.blocks in
@@ -2136,7 +2162,9 @@ module Generate (Target : Target_sig.S) = struct
                           | "caml_ba_float32_set_2"
                           | "caml_ba_float32_set_3" )
                         , _ )
-                    , _ ) ) -> fst n, true
+                    , _ ) ) ->
+                let zero_divide, _, exn = n in
+                zero_divide, true, exn
             | Let
                 ( _
                 , Prim
@@ -2150,13 +2178,18 @@ module Generate (Target : Target_sig.S) = struct
                           | "caml_nativeint_div"
                           | "caml_nativeint_mod" )
                         , _ )
-                    , _ ) ) -> true, snd n
+                    , _ ) ) ->
+                let _, bound_error, exn = n in
+                true, bound_error, exn
+            | Let (_, Apply { f; _ }) when may_call_raising_function ctx f ->
+                let zero_divide, bound_error, _ = n in
+                zero_divide, bound_error, true
             | _ -> n)
           ~init:n
           block.body)
       pc
       p.blocks
-      (false, false)
+      (false, false, false)
 
   let wrap_with_handler needed pc handler ~result_typ ~fall_through ~context body =
     if needed
@@ -2173,30 +2206,25 @@ module Generate (Target : Target_sig.S) = struct
         instr W.Unreachable
     else body ~result_typ ~fall_through ~context
 
-  let wrap_with_handlers ~location p ~dom pc ~result_typ ~fall_through ~context body =
-    let need_zero_divide_handler, need_bound_error_handler = needed_handlers p ~dom pc in
+  let wrap_with_handlers ~location ctx p ~dom pc ~result_typ ~fall_through ~context body =
+    let need_zero_divide_handler, need_bound_error_handler, need_exception_handler =
+      needed_handlers ctx p ~dom pc
+    in
     wrap_with_handler
-      true
+      need_exception_handler
       exception_handler_pc
       (match location with
       | `Toplevel ->
-          let* exn =
-            register_import
-              ~import_module:"env"
-              ~name:"caml_exception"
-              (Global { mut = true; typ = Type.value })
-          in
+          let* exn = take_exception in
           let* tag = register_import ~name:exception_name (Tag Type.value) in
-          instr (Throw (tag, GlobalGet exn))
-      | `Exception_handler ->
-          let* exn =
-            register_import
-              ~import_module:"env"
-              ~name:"caml_exception"
-              (Global { mut = true; typ = Type.value })
-          in
-          instr (Br (2, Some (GlobalGet exn)))
-      | `Function -> instr (Return (Some (RefNull Any))))
+          instr (Throw (tag, exn))
+      | `Exception_handler -> (
+          match catch_index context with
+          | Some i ->
+              let* exn = take_exception in
+              instr (Br (i, Some exn))
+          | None -> assert false)
+      | `Function -> instr (Return (Some (RefNull Eq))))
       (wrap_with_handler
          need_bound_error_handler
          bound_error_pc
@@ -2339,14 +2367,9 @@ module Generate (Target : Target_sig.S) = struct
                   | None ->
                       if return_exn
                       then
-                        let* exn =
-                          register_import
-                            ~import_module:"env"
-                            ~name:"caml_exception"
-                            (Global { mut = true; typ = Type.value })
-                        in
+                        let* exn = caml_exception_global in
                         let* () = instr (GlobalSet (exn, e)) in
-                        instr (Return (Some (RefNull Any)))
+                        instr (Return (Some (RefNull Eq)))
                       else
                         let* tag =
                           register_import ~name:exception_name (Tag Type.value)
@@ -2359,6 +2382,7 @@ module Generate (Target : Target_sig.S) = struct
                 ~context:(extend_context fall_through context)
                 (wrap_with_handlers
                    ~location:`Exception_handler
+                   ctx
                    p
                    ~dom
                    (fst cont)
@@ -2420,6 +2444,7 @@ module Generate (Target : Target_sig.S) = struct
     let locals, body =
       function_body
         ~context:ctx.global_context
+        ~return_exn
         ~param_names
         ~body:
           (let* () =
@@ -2432,6 +2457,7 @@ module Generate (Target : Target_sig.S) = struct
            let* () =
              wrap_with_handlers
                ~location:(if return_exn then `Function else `Toplevel)
+               ctx
                p
                ~dom
                pc
@@ -2489,6 +2515,7 @@ module Generate (Target : Target_sig.S) = struct
     let locals, body =
       function_body
         ~context
+        ~return_exn:false
         ~param_names:[]
         ~body:
           (List.fold_right
@@ -2524,6 +2551,7 @@ module Generate (Target : Target_sig.S) = struct
         let locals, body =
           function_body
             ~context
+            ~return_exn:false
             ~param_names:[]
             ~body:
               (let* failwith =
@@ -2551,7 +2579,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let entry_point context toplevel_fun entry_name =
     let signature, param_names, body = entry_point ~toplevel_fun in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, body = function_body ~context ~return_exn:false ~param_names ~body in
     W.Function
       { name = Var.fresh_n "entry_point"
       ; exported_name = Some entry_name
