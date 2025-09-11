@@ -20,4 +20,12 @@ type t
 
 val direct_calls_only : t -> Code.Var.t -> bool
 
+val known_callee : Global_flow.info -> t -> bool -> Code.Var.t -> Code.Var.t option
+(** [known_callee info t exact f] is the function called at a call
+    site [Apply { f; exact; _ }] when it is the only possible callee
+    and it is only called directly. *)
+
+val raising_functions :
+  Code.program -> Global_flow.info -> t -> (Code.Var.t -> bool) -> unit Code.Var.Hashtbl.t
+
 val f : Code.program -> Global_flow.info -> t

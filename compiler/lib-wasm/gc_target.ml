@@ -37,6 +37,8 @@ let double_translation () =
 module Type = struct
   let value = W.Ref { nullable = false; typ = Eq }
 
+  let value_or_exn = W.Ref { nullable = true; typ = Eq }
+
   let block_type =
     register_type "block" (fun () ->
         return
