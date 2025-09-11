@@ -1969,6 +1969,7 @@ module Generate (Target : Target_sig.S) = struct
     let locals, body =
       function_body
         ~context:ctx.global_context
+        ~return_exn
         ~param_names
         ~body:
           (let* () =
@@ -2037,6 +2038,7 @@ module Generate (Target : Target_sig.S) = struct
     let locals, body =
       function_body
         ~context
+        ~return_exn:false
         ~param_names:[]
         ~body:
           (List.fold_right
@@ -2067,7 +2069,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let entry_point context toplevel_fun entry_name =
     let signature, param_names, body = entry_point ~toplevel_fun in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, body = function_body ~context ~return_exn:false ~param_names ~body in
     W.Function
       { name = Var.fresh_n "entry_point"
       ; exported_name = Some entry_name
