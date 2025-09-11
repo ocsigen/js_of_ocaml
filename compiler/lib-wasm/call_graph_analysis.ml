@@ -71,6 +71,139 @@ type t = { unambiguous_non_escaping : unit Var.Hashtbl.t }
 let direct_calls_only info f =
   Config.Flag.optcall () && Var.Hashtbl.mem info.unambiguous_non_escaping f
 
+(* The function called at a call site, when it is known and only
+   called directly. A function only called directly is never one of
+   several possible callees: such call sites are ambiguous (see
+   [block_deps]). *)
+let known_callee info call_info exact f =
+  match get_approx info f with
+  | Top -> None
+  | Values { known; others } ->
+      if exact && (not others) && Var.Set.compare_cardinal_with known 1 = 0
+      then
+        let g = Var.Set.choose known in
+        if direct_calls_only call_info g then Some g else None
+      else None
+
+let propagate nodes edges eligible =
+  let rec propagate n =
+    List.iter
+      ~f:(fun n' ->
+        if (not (Var.Hashtbl.mem nodes n')) && eligible n'
+        then (
+          Var.Hashtbl.add nodes n' ();
+          propagate n'))
+      (Var.Hashtbl.find_all edges n)
+  in
+  (* [nodes] is extended during the propagation: iterate over a copy *)
+  List.iter ~f:propagate (Var.Hashtbl.fold (fun n () l -> n :: l) nodes [])
+
+let call_graph p info call_info eligible =
+  let under_handler = Var.Hashtbl.create 16 in
+  let callees = Var.Hashtbl.create 16 in
+  let callers = Var.Hashtbl.create 16 in
+  let has_tail_calls = Var.Hashtbl.create 16 in
+  let tail_callers = Var.Hashtbl.create 16 in
+  let rec traverse name_opt pc visited nesting =
+    if not (Addr.Set.mem pc visited)
+    then (
+      let visited = Addr.Set.add pc visited in
+      let block = Addr.Map.find pc p.blocks in
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (_, Apply { f; exact; _ }) -> (
+              match known_callee info call_info exact f with
+              | None -> ()
+              | Some g ->
+                  if nesting > 0
+                  then Var.Hashtbl.replace under_handler g ()
+                  else
+                    Option.iter
+                      ~f:(fun f ->
+                        Var.Hashtbl.add callees f g;
+                        Var.Hashtbl.add callers g f)
+                      name_opt)
+          | Let (_, (Closure _ | Prim _ | Block _ | Constant _ | Field _ | Special _))
+          | Event _ | Assign _ | Set_field _ | Offset_ref _ | Array_set _ -> ());
+      Code.fold_children
+        p.blocks
+        pc
+        (fun pc' visited ->
+          let nesting =
+            match block.branch with
+            | Pushtrap ((body_pc, _), _, _) when pc' = body_pc -> nesting + 1
+            | Poptrap _ -> nesting - 1
+            | _ -> nesting
+          in
+          traverse name_opt pc' visited nesting)
+        visited)
+    else visited
+  in
+  let find_tail_calls f pc =
+    Code.traverse
+      { fold = Code.fold_children }
+      (fun pc () ->
+        let block = Addr.Map.find pc p.blocks in
+        match block.branch with
+        | Return x -> (
+            match last_instr block.body with
+            | Some (Let (x', Apply { f = g; exact; _ })) when Code.Var.equal x x' -> (
+                match known_callee info call_info exact g with
+                | None -> Var.Hashtbl.replace has_tail_calls f ()
+                | Some g -> Var.Hashtbl.add tail_callers g f)
+            | _ -> ())
+        | _ -> ())
+      pc
+      p.blocks
+      ()
+  in
+  fold_closures
+    p
+    (fun name_opt _ (pc, _) _ () ->
+      Option.iter ~f:(fun f -> find_tail_calls f pc) name_opt;
+      ignore (traverse name_opt pc Addr.Set.empty 0))
+    ();
+  propagate has_tail_calls tail_callers eligible;
+  under_handler, callers, callees, has_tail_calls
+
+(* Raising functions return null instead of throwing an exception.
+   A tail call from a non-raising function to a raising function is
+   thus not a tail call anymore, since the null value needs to be
+   turned into an exception. This only adds a bounded overhead, as
+   such a call is never part of a cycle of tail calls: along a cycle,
+   all functions have the same return type (hence are all eligible or
+   not), [has_tail_calls] is propagated to all functions (through
+   [tail_callers]), [under_handler] as well (through [callees]) if no
+   function has unknown tail calls, and finally the raising property
+   (through [callers]). *)
+let raising_functions p info call_info eligible =
+  let under_handler, callers, callees, has_tail_calls =
+    call_graph p info call_info eligible
+  in
+  propagate under_handler callees (fun f ->
+      eligible f && not (Var.Hashtbl.mem has_tail_calls f));
+  let h = Var.Hashtbl.create 16 in
+  let eligible f =
+    eligible f
+    && Var.Hashtbl.mem under_handler f
+    && not (Var.Hashtbl.mem has_tail_calls f)
+  in
+  Code.fold_closures
+    p
+    (fun name_opt _params (pc, _) _ () ->
+      match name_opt with
+      | None -> ()
+      | Some name ->
+          if
+            direct_calls_only call_info name
+            && eligible name
+            && Code.raises_outside_handlers p.blocks pc
+          then Var.Hashtbl.add h name ())
+    ();
+  propagate h callers eligible;
+  if debug () then Format.eprintf " raising functions:%d@." (Var.Hashtbl.length h);
+  h
+
 let f p info =
   let t = Timer.make () in
   let non_escaping = Var.Hashtbl.create 128 in
