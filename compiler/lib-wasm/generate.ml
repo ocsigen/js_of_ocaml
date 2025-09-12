@@ -35,10 +35,9 @@ module Generate (Target : Target_sig.S) = struct
   type ctx =
     { live : int array
     ; in_cps : Effects.in_cps
-    ; deadcode_sentinal : Var.t
     ; global_flow_info : Global_flow.info
     ; fun_info : Call_graph_analysis.t
-    ; types : Typing.typ Var.Tbl.t
+    ; types : Typing.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -155,17 +154,22 @@ module Generate (Target : Target_sig.S) = struct
     let* g = g in
     return (W.BinOp (I32 op, f, g))
 
-  let get_var_type ctx x = Var.Tbl.get ctx.types x
-
   let get_type ctx p =
     match p with
-    | Pv x -> get_var_type ctx x
+    | Pv x -> Typing.var_type ctx.types x
     | Pc c -> Typing.constant_type c
 
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
     | Int Unnormalized, Int Normalized -> Arith.((e lsl const 1l) asr const 1l)
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
+    (* Dummy value *)
+    | Int (Unnormalized | Normalized), Number ((Int32 | Nativeint), Unboxed) ->
+        return (W.Const (I32 0l))
+    | Int (Unnormalized | Normalized), Number (Int64, Unboxed) ->
+        return (W.Const (I64 0L))
+    | Int (Unnormalized | Normalized), Number (Float, Unboxed) ->
+        return (W.Const (F64 0.))
     | _, Int (Normalized | Unnormalized) -> Value.int_val e
     | Int (Unnormalized | Normalized), _ -> Value.val_int e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
@@ -179,7 +183,7 @@ module Generate (Target : Target_sig.S) = struct
     | Number (Float, Unboxed), _ -> Memory.box_float e
     | _ -> e
 
-  let load_and_box ctx x = convert ~from:(get_var_type ctx x) ~into:Top (load x)
+  let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
   let transl_prim_arg ctx ?(typ = Typing.Top) x =
     convert
@@ -1099,7 +1103,7 @@ module Generate (Target : Target_sig.S) = struct
     | _ -> None
 
   let box_number_if_needed ctx x e =
-    match get_var_type ctx x with
+    match Typing.var_type ctx.types x with
     | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
     | _ -> e
 
@@ -1107,13 +1111,12 @@ module Generate (Target : Target_sig.S) = struct
     match e with
     | Apply { f; args; exact; _ } ->
         let* closure = load f in
-        let* args = expression_list (fun x -> load_and_box ctx x) args in
         if exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1
         then
           match
             if exact then Global_flow.get_unique_closure ctx.global_flow_info f else None
           with
-          | Some g ->
+          | Some (g, params) ->
               let* cl =
                 (* Functions with constant closures ignore their environment. *)
                 match closure with
@@ -1122,7 +1125,22 @@ module Generate (Target : Target_sig.S) = struct
                     if Option.is_some init then Value.unit else return closure
                 | _ -> return closure
               in
-              return (W.Call (g, args @ [ cl ]))
+              let* args =
+                expression_list
+                  Fun.id
+                  (List.map2
+                     ~f:(fun a p ->
+                       convert
+                         ~from:(Typing.var_type ctx.types a)
+                         ~into:(Typing.var_type ctx.types p)
+                         (load a))
+                     args
+                     params)
+              in
+              convert
+                ~from:(Typing.return_type ctx.types g)
+                ~into:(Typing.var_type ctx.types x)
+                (return (W.Call (g, args @ [ cl ])))
           | None -> (
               let funct = Var.fresh () in
               let* closure = tee funct (return closure) in
@@ -1132,6 +1150,7 @@ module Generate (Target : Target_sig.S) = struct
                   ~arity:(List.length args)
                   (load funct)
               in
+              let* args = expression_list (fun x -> load_and_box ctx x) args in
               match funct with
               | W.RefFunc g -> return (W.Call (g, args @ [ closure ]))
               | _ -> return (W.Call_ref (ty, funct, args @ [ closure ])))
@@ -1139,15 +1158,19 @@ module Generate (Target : Target_sig.S) = struct
           let* apply =
             need_apply_fun ~cps:(Var.Set.mem x ctx.in_cps) ~arity:(List.length args)
           in
+          let* args = expression_list (fun x -> load_and_box ctx x) args in
           return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
         if tag = 254
         then
           Memory.allocate_float_array
-            ~deadcode_sentinal:ctx.deadcode_sentinal
-            ~load:(fun x ->
-              convert ~from:(get_var_type ctx x) ~into:(Number (Float, Unboxed)) (load x))
-            (Array.to_list a)
+            (expression_list
+               (fun x ->
+                 convert
+                   ~from:(Typing.var_type ctx.types x)
+                   ~into:(Number (Float, Unboxed))
+                   (load x))
+               (Array.to_list a))
         else
           Memory.allocate
             ~tag
@@ -1168,7 +1191,7 @@ module Generate (Target : Target_sig.S) = struct
     | Constant c ->
         Constant.translate
           ~unboxed:
-            (match get_var_type ctx x with
+            (match Typing.var_type ctx.types x with
             | Number (_, Unboxed) -> true
             | _ -> false)
           c
@@ -1276,13 +1299,18 @@ module Generate (Target : Target_sig.S) = struct
   and translate_instr ctx context i =
     match i with
     | Assign (x, y) ->
-        assign x (convert ~from:(get_var_type ctx y) ~into:(get_var_type ctx x) (load y))
+        assign
+          x
+          (convert
+             ~from:(Typing.var_type ctx.types y)
+             ~into:(Typing.var_type ctx.types x)
+             (load y))
     | Let (x, e) ->
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
         else
           store
-            ?typ:(unboxed_type (get_var_type ctx x))
+            ?typ:(unboxed_type (Typing.var_type ctx.types x))
             x
             (translate_expr ctx context x e)
     | Set_field (x, n, Non_float, y) ->
@@ -1291,7 +1319,10 @@ module Generate (Target : Target_sig.S) = struct
         Memory.float_array_set
           (load_and_box ctx x)
           (return (W.Const (I32 (Int32.of_int n))))
-          (convert ~from:(get_var_type ctx y) ~into:(Number (Float, Unboxed)) (load y))
+          (convert
+             ~from:(Typing.var_type ctx.types y)
+             ~into:(Number (Float, Unboxed))
+             (load y))
     | Offset_ref (x, n) ->
         Memory.set_field
           (load x)
@@ -1301,7 +1332,7 @@ module Generate (Target : Target_sig.S) = struct
     | Array_set (x, y, z) ->
         Memory.array_set
           (load x)
-          (convert ~from:(get_var_type ctx y) ~into:(Int Normalized) (load y))
+          (convert ~from:(Typing.var_type ctx.types y) ~into:(Int Normalized) (load y))
           (load_and_box ctx z)
     | Event loc -> event loc
 
@@ -1321,8 +1352,8 @@ module Generate (Target : Target_sig.S) = struct
         if Code.Var.compare x y = 0
         then visited, None, l
         else
-          let tx = get_var_type ctx x in
-          let ty = get_var_type ctx y in
+          let tx = Typing.var_type ctx.types x in
+          let ty = Typing.var_type ctx.types y in
           if Var.Set.mem y prev
           then
             let t = Code.Var.fresh () in
@@ -1417,7 +1448,7 @@ module Generate (Target : Target_sig.S) = struct
       then handler
       else
         let* () = handler in
-        instr (W.Return (Some (RefI31 (Const (I32 0l)))))
+        instr W.Unreachable
     else body ~result_typ ~fall_through ~context
 
   let wrap_with_handlers p pc ~result_typ ~fall_through ~context body =
@@ -1453,6 +1484,11 @@ module Generate (Target : Target_sig.S) = struct
       ((pc, _) as cont)
       cloc
       acc =
+    let return_type =
+      match name_opt with
+      | Some f -> Typing.return_type ctx.types f
+      | _ -> Typing.Top
+    in
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
@@ -1514,7 +1550,9 @@ module Generate (Target : Target_sig.S) = struct
           match branch with
           | Branch cont -> translate_branch result_typ fall_through pc cont context
           | Return x -> (
-              let* e = load_and_box ctx x in
+              let* e =
+                convert ~from:(Typing.var_type ctx.types x) ~into:return_type (load x)
+              in
               match fall_through with
               | `Return -> instr (Push e)
               | `Block _ | `Catch | `Skip -> instr (Return (Some e)))
@@ -1522,7 +1560,7 @@ module Generate (Target : Target_sig.S) = struct
               let context' = extend_context fall_through context in
               if_
                 { params = []; result = result_typ }
-                (match get_var_type ctx x with
+                (match Typing.var_type ctx.types x with
                 | Int Normalized -> load x
                 | Int Unnormalized -> Arith.(load x lsl const 1l)
                 | _ -> Value.check_is_not_zero (load x))
@@ -1541,7 +1579,10 @@ module Generate (Target : Target_sig.S) = struct
                 label_index context pc
               in
               let* e =
-                convert ~from:(get_var_type ctx x) ~into:(Int Normalized) (load x)
+                convert
+                  ~from:(Typing.var_type ctx.types x)
+                  ~into:(Int Normalized)
+                  (load x)
               in
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
@@ -1587,7 +1628,17 @@ module Generate (Target : Target_sig.S) = struct
       List.fold_left
         ~f:(fun l x ->
           let* _ = l in
-          let* _ = add_var x in
+          let* _ =
+            add_var
+              ?typ:
+                (match Typing.var_type ctx.types x with
+                | Typing.Int (Normalized | Unnormalized) -> Some I32
+                | Number ((Int32 | Nativeint), Unboxed) -> Some I32
+                | Number (Int64, Unboxed) -> Some I64
+                | Number (Float, Unboxed) -> Some F64
+                | _ -> None)
+              x
+          in
           return ())
         ~init:(return ())
         params
@@ -1632,7 +1683,7 @@ module Generate (Target : Target_sig.S) = struct
              wrap_with_handlers
                p
                pc
-               ~result_typ:[ Type.value ]
+               ~result_typ:[ Option.value ~default:Type.value (unboxed_type return_type) ]
                ~fall_through:`Return
                ~context:[]
                (fun ~result_typ ~fall_through ~context ->
@@ -1656,7 +1707,20 @@ module Generate (Target : Target_sig.S) = struct
       ; signature =
           (match name_opt with
           | None -> Type.primitive_type param_count
-          | Some _ -> Type.func_type (param_count - 1))
+          | Some f ->
+              if Typing.can_unbox_parameters ctx.fun_info f
+              then
+                { W.params =
+                    List.map
+                      ~f:(fun x : W.value_type ->
+                        Option.value
+                          ~default:Type.value
+                          (unboxed_type (Typing.var_type ctx.types x)))
+                      params
+                    @ [ Type.value ]
+                ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
+                }
+              else Type.func_type (param_count - 1))
       ; param_names
       ; locals
       ; body
@@ -1727,7 +1791,6 @@ module Generate (Target : Target_sig.S) = struct
       ~in_cps (*
     ~should_export
 *)
-      ~deadcode_sentinal
       ~global_flow_info
       ~fun_info
       ~types =
@@ -1739,7 +1802,6 @@ module Generate (Target : Target_sig.S) = struct
     let ctx =
       { live = live_vars
       ; in_cps
-      ; deadcode_sentinal
       ; global_flow_info
       ; fun_info
       ; types
@@ -1850,23 +1912,16 @@ let init = G.init
 let start () = make_context ~value_type:Gc_target.Type.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_data =
-  let state, info = global_flow_data in
-  let fun_info = Call_graph_analysis.f p info in
-  let types = Typing.f ~state ~info ~deadcode_sentinal p in
+  let global_flow_state, global_flow_info = global_flow_data in
+  let fun_info = Call_graph_analysis.f p global_flow_info in
+  let types =
+    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p
+  in
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in
   let res =
-    G.f
-      ~context
-      ~unit_name
-      ~live_vars
-      ~in_cps
-      ~deadcode_sentinal
-      ~global_flow_info:info
-      ~fun_info
-      ~types
-      p
+    G.f ~context ~unit_name ~live_vars ~in_cps ~global_flow_info ~fun_info ~types p
   in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res

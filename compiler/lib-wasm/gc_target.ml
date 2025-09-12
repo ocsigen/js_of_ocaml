@@ -672,13 +672,8 @@ module Memory = struct
     let* ty = Type.block_type in
     return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
 
-  let allocate_float_array ~deadcode_sentinal ~load l =
-    let* l =
-      expression_list
-        (fun y ->
-          if Code.Var.equal y deadcode_sentinal then return (W.Const (F64 0.)) else load y)
-        l
-    in
+  let allocate_float_array l =
+    let* l = l in
     let* ty = Type.float_array_type in
     return (W.ArrayNewFixed (ty, l))
 
@@ -1302,7 +1297,13 @@ module Math = struct
     { W.params = List.init ~len:n ~f:(fun _ : W.value_type -> F64); result = [ F64 ] }
 
   let unary name x =
-    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 1)) in
+    let* f =
+      register_import
+        ~allow_tail_call:false
+        ~import_module:"Math"
+        ~name
+        (Fun (float_func_type 1))
+    in
     let* x = x in
     return (W.Call (f, [ x ]))
 
@@ -1345,7 +1346,13 @@ module Math = struct
   let log10 f = unary "log10" f
 
   let binary name x y =
-    let* f = register_import ~import_module:"Math" ~name (Fun (float_func_type 2)) in
+    let* f =
+      register_import
+        ~allow_tail_call:false
+        ~import_module:"Math"
+        ~name
+        (Fun (float_func_type 2))
+    in
     let* x = x in
     let* y = y in
     return (W.Call (f, [ x; y ]))
