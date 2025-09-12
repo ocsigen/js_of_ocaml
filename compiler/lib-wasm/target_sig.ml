@@ -22,11 +22,7 @@ module type S = sig
   module Memory : sig
     val allocate : tag:int -> Wasm_ast.expression list Code_generation.t -> expression
 
-    val allocate_float_array :
-         deadcode_sentinal:Code.Var.t
-      -> load:(Code.Var.t -> expression)
-      -> Wasm_ast.var list
-      -> expression
+    val allocate_float_array : Wasm_ast.expression list Code_generation.t -> expression
 
     val load_function_pointer :
          cps:bool
@@ -100,6 +96,8 @@ module type S = sig
 
   module Type : sig
     val value : Wasm_ast.value_type
+
+    val value_or_exn : Wasm_ast.value_type
 
     val func_type : int -> Wasm_ast.func_type
 
@@ -256,6 +254,25 @@ module type S = sig
     val fmod : expression -> expression -> expression
 
     val round : expression -> expression
+  end
+
+  module Bigarray : sig
+    val get :
+         bound_error_index:int
+      -> kind:Typing.Bigarray.kind
+      -> layout:Typing.Bigarray.layout
+      -> expression
+      -> indices:expression list
+      -> expression
+
+    val set :
+         bound_error_index:int
+      -> kind:Typing.Bigarray.kind
+      -> layout:Typing.Bigarray.layout
+      -> expression
+      -> indices:expression list
+      -> expression
+      -> expression
   end
 
   val internal_primitives :

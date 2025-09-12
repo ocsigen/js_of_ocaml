@@ -59,6 +59,7 @@ type context =
   ; mutable globalized_variables : Var.Set.t
   ; value_type : W.value_type
   ; mutable unit_name : string option
+  ; mutable no_tail_call : unit Var.Hashtbl.t
   }
 
 let make_context ~value_type =
@@ -82,6 +83,7 @@ let make_context ~value_type =
   ; globalized_variables = Var.Set.empty
   ; value_type
   ; unit_name = None
+  ; no_tail_call = Var.Hashtbl.create 16
   }
 
 type var =
@@ -224,27 +226,30 @@ let get_global name =
     | Some { init; _ } -> init
     | _ -> None)
 
-let register_import ?(import_module = "env") ~name typ st =
-  ( (try
-       let x, typ' =
-         StringMap.find name (StringMap.find import_module st.context.imports)
-       in
-       (*ZZZ error message*)
-       assert (Poly.equal typ typ');
-       x
-     with Not_found ->
-       let x = Var.fresh_n name in
-       st.context.imports <-
-         StringMap.update
-           import_module
-           (fun m ->
-             Some
-               (match m with
-               | None -> StringMap.singleton name (x, typ)
-               | Some m -> StringMap.add name (x, typ) m))
-           st.context.imports;
-       x)
-  , st )
+let register_import ?(allow_tail_call = true) ?(import_module = "env") ~name typ st =
+  let x =
+    try
+      let x, typ' =
+        StringMap.find name (StringMap.find import_module st.context.imports)
+      in
+      (*ZZZ error message*)
+      assert (Poly.equal typ typ');
+      x
+    with Not_found ->
+      let x = Var.fresh_n name in
+      st.context.imports <-
+        StringMap.update
+          import_module
+          (fun m ->
+            Some
+              (match m with
+              | None -> StringMap.singleton name (x, typ)
+              | Some m -> StringMap.add name (x, typ) m))
+          st.context.imports;
+      x
+  in
+  if not allow_tail_call then Var.Hashtbl.replace st.context.no_tail_call x ();
+  x, st
 
 let register_init_code code st =
   let st' = { var_count = 0; vars = Var.Map.empty; instrs = []; context = st.context } in
@@ -368,6 +373,7 @@ module Arith = struct
       (match e, e' with
       | W.Const (I32 n), W.Const (I32 n') when Int32.(n' < 31l) ->
           W.Const (I32 (Int32.shift_left n (Int32.to_int n')))
+      | _, W.Const (I32 0l) -> e
       | _ -> W.BinOp (I32 Shl, e, e'))
 
   let ( lsr ) = binary (Shr U)
@@ -703,7 +709,7 @@ let need_dummy_fun ~cps ~arity st =
 
 let init_code context = instrs context.init_code
 
-let function_body ~context ~param_names ~body =
+let function_body ~context ~return_exn ~param_names ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
   let (), st = body st in
   let local_count, body = st.var_count, List.rev st.instrs in
@@ -715,7 +721,7 @@ let function_body ~context ~param_names ~body =
       | Local (i, x, typ) -> local_types.(i) <- x, typ
       | Expr _ -> ())
     st.vars;
-  let body = Tail_call.f body in
+  let body = Tail_call.f ~return_exn ~no_tail_call:context.no_tail_call body in
   let param_count = List.length param_names in
   let locals =
     local_types

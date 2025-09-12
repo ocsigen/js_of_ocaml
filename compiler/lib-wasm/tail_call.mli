@@ -16,4 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f : Wasm_ast.instruction list -> Wasm_ast.instruction list
+val f :
+     return_exn:bool
+  -> no_tail_call:unit Code.Var.Hashtbl.t
+  -> Wasm_ast.instruction list
+  -> Wasm_ast.instruction list

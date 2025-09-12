@@ -24,25 +24,46 @@ let get_return ~tail i =
   | Push (LocalGet y) when tail -> Some y
   | _ -> None
 
-let rewrite_tail_call ~y i =
+let rewrite_tail_call ~return_exn ~no_tail_call ~y i =
   match i with
-  | Wasm_ast.LocalSet (x, Call (symb, l)) when Code.Var.equal x y ->
+  | Wasm_ast.LocalSet (x, Call (symb, l))
+    when Code.Var.equal x y && not (Code.Var.Hashtbl.mem no_tail_call symb) ->
       Some (Wasm_ast.Return_call (symb, l))
   | LocalSet (x, Call_ref (ty, e, l)) when Code.Var.equal x y ->
       Some (Return_call_ref (ty, e, l))
+  | LocalSet (x, Br_on_null (_, Call (symb, l))) when return_exn && Code.Var.equal x y ->
+      Some (Wasm_ast.Return_call (symb, l))
+  | LocalSet (x, Br_on_null (_, Call_ref (ty, e, l)))
+    when return_exn && Code.Var.equal x y -> Some (Return_call_ref (ty, e, l))
   | _ -> None
 
-let rec instruction ~tail i =
+let rec instruction ~return_exn ~no_tail_call ~tail i =
   match i with
-  | Wasm_ast.Loop (ty, l) -> Wasm_ast.Loop (ty, instructions ~tail l)
-  | Block (ty, l) -> Block (ty, instructions ~tail l)
-  | If (ty, e, l1, l2) -> If (ty, e, instructions ~tail l1, instructions ~tail l2)
-  | Return (Some (Call (symb, l))) -> Return_call (symb, l)
+  | Wasm_ast.Loop (ty, l) ->
+      Wasm_ast.Loop (ty, instructions ~return_exn ~no_tail_call ~tail l)
+  | Block (ty, l) -> Block (ty, instructions ~return_exn ~no_tail_call ~tail l)
+  | If (ty, e, l1, l2) ->
+      If
+        ( ty
+        , e
+        , instructions ~return_exn ~no_tail_call ~tail l1
+        , instructions ~return_exn ~no_tail_call ~tail l2 )
+  | Return (Some (Call (symb, l))) when not (Code.Var.Hashtbl.mem no_tail_call symb) ->
+      Return_call (symb, l)
   | Return (Some (Call_ref (ty, e, l))) -> Return_call_ref (ty, e, l)
-  | Push (Call (symb, l)) when tail -> Return_call (symb, l)
+  | Push (Call (symb, l)) when tail && not (Code.Var.Hashtbl.mem no_tail_call symb) ->
+      Return_call (symb, l)
   | Push (Call_ref (ty, e, l)) when tail -> Return_call_ref (ty, e, l)
   | Push (Call_ref _) -> i
-  | Drop (BlockExpr (typ, l)) -> Drop (BlockExpr (typ, instructions ~tail:false l))
+  | Return (Some (Br_on_null (_, Call (symb, l)))) when return_exn -> Return_call (symb, l)
+  | Return (Some (Br_on_null (_, Call_ref (ty, e, l)))) when return_exn ->
+      Return_call_ref (ty, e, l)
+  | Push (Br_on_null (_, Call (symb, l))) when return_exn && tail -> Return_call (symb, l)
+  | Push (Br_on_null (_, Call_ref (ty, e, l))) when return_exn && tail ->
+      Return_call_ref (ty, e, l)
+  | Push (Br_on_null (_, Call_ref _)) when return_exn -> i
+  | Drop (BlockExpr (typ, l)) ->
+      Drop (BlockExpr (typ, instructions ~return_exn ~no_tail_call ~tail:false l))
   | Drop _
   | LocalSet _
   | GlobalSet _
@@ -62,21 +83,29 @@ let rec instruction ~tail i =
   | Unreachable
   | Event _ -> i
 
-and instructions ~tail l =
+and instructions ~return_exn ~no_tail_call ~tail l =
   match l with
   | [] -> []
-  | [ i ] -> [ instruction ~tail i ]
-  | i :: Nop :: rem -> instructions ~tail (i :: rem)
-  | i :: i' :: Nop :: rem -> instructions ~tail (i :: i' :: rem)
+  | [ i ] -> [ instruction ~return_exn ~no_tail_call ~tail i ]
+  | i :: Nop :: rem -> instructions ~return_exn ~no_tail_call ~tail (i :: rem)
+  | i :: i' :: Nop :: rem -> instructions ~return_exn ~no_tail_call ~tail (i :: i' :: rem)
   | i :: i' :: (([] | [ Event _ ]) as event_opt) -> (
       (* There can be an event at the end of the function, which we
          should keep. *)
       match get_return ~tail i' with
-      | None -> instruction ~tail:false i :: instruction ~tail i' :: event_opt
+      | None ->
+          instruction ~return_exn ~no_tail_call ~tail:false i
+          :: instruction ~return_exn ~no_tail_call ~tail i'
+          :: event_opt
       | Some y -> (
-          match rewrite_tail_call ~y i with
-          | None -> instruction ~tail:false i :: instruction ~tail i' :: event_opt
+          match rewrite_tail_call ~return_exn ~no_tail_call ~y i with
+          | None ->
+              instruction ~return_exn ~no_tail_call ~tail:false i
+              :: instruction ~return_exn ~no_tail_call ~tail i'
+              :: event_opt
           | Some i'' -> i'' :: event_opt))
-  | i :: rem -> instruction ~tail:false i :: instructions ~tail rem
+  | i :: rem ->
+      instruction ~return_exn ~no_tail_call ~tail:false i
+      :: instructions ~return_exn ~no_tail_call ~tail rem
 
-let f l = instructions ~tail:true l
+let f ~return_exn ~no_tail_call l = instructions ~return_exn ~no_tail_call ~tail:true l
