@@ -35,10 +35,9 @@ module Generate (Target : Target_sig.S) = struct
   type ctx =
     { live : int array
     ; in_cps : Effects.in_cps
-    ; deadcode_sentinal : Var.t
     ; global_flow_info : Global_flow.info
     ; fun_info : Call_graph_analysis.t
-    ; types : Typing.typ Var.Tbl.t
+    ; types : Typing.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -116,13 +115,6 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_erf_float", (`Pure, [ Float ], Float)
       ; "caml_erfc_float", (`Pure, [ Float ], Float)
       ; "caml_float_compare", (`Pure, [ Float; Float ], Int)
-      ; "caml_greaterthan", (`Mutator, [ Value; Value ], Int)
-      ; "caml_greaterequal", (`Mutator, [ Value; Value ], Int)
-      ; "caml_lessthan", (`Mutator, [ Value; Value ], Int)
-      ; "caml_lessequal", (`Mutator, [ Value; Value ], Int)
-      ; "caml_equal", (`Mutator, [ Value; Value ], Int)
-      ; "caml_notequal", (`Mutator, [ Value; Value ], Int)
-      ; "caml_compare", (`Mutator, [ Value; Value ], Int)
       ];
     h
 
@@ -155,17 +147,22 @@ module Generate (Target : Target_sig.S) = struct
     let* g = g in
     return (W.BinOp (I32 op, f, g))
 
-  let get_var_type ctx x = Var.Tbl.get ctx.types x
-
   let get_type ctx p =
     match p with
-    | Pv x -> get_var_type ctx x
+    | Pv x -> Typing.var_type ctx.types x
     | Pc c -> Typing.constant_type c
 
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
     | Int Unnormalized, Int Normalized -> Arith.((e lsl const 1l) asr const 1l)
     | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> e
+    (* Dummy value *)
+    | Int (Unnormalized | Normalized), Number ((Int32 | Nativeint), Unboxed) ->
+        return (W.Const (I32 0l))
+    | Int (Unnormalized | Normalized), Number (Int64, Unboxed) ->
+        return (W.Const (I64 0L))
+    | Int (Unnormalized | Normalized), Number (Float, Unboxed) ->
+        return (W.Const (F64 0.))
     | _, Int (Normalized | Unnormalized) -> Value.int_val e
     | Int (Unnormalized | Normalized), _ -> Value.val_int e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
@@ -179,7 +176,7 @@ module Generate (Target : Target_sig.S) = struct
     | Number (Float, Unboxed), _ -> Memory.box_float e
     | _ -> e
 
-  let load_and_box ctx x = convert ~from:(get_var_type ctx x) ~into:Top (load x)
+  let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
   let transl_prim_arg ctx ?(typ = Typing.Top) x =
     convert
@@ -222,7 +219,8 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
-    | (Int _ | Number _ | Tuple _), _ | _, (Int _ | Number _ | Tuple _) ->
+    | (Int _ | Number _ | Tuple _ | Bigarray _), _
+    | _, (Int _ | Number _ | Tuple _ | Bigarray _) ->
         (* Only Top may contain JavaScript values *)
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
@@ -285,6 +283,39 @@ module Generate (Target : Target_sig.S) = struct
               (transl_prim_arg ctx ?typ:ty y)
               (transl_prim_arg ctx ?typ:tz z)
         | _ -> invalid_arity name l ~expected:3)
+
+  let register_comparison name cmp_int cmp_boxed_int cmp_float =
+    register_prim name `Mutator (fun ctx _ l ->
+        match l with
+        | [ x; y ] -> (
+            match get_type ctx x, get_type ctx y with
+            | Int _, Int _ -> cmp_int ctx x y
+            | Number (Int32, _), Number (Int32, _) ->
+                let x = transl_prim_arg ctx ~typ:(Number (Int32, Unboxed)) x in
+                let y = transl_prim_arg ctx ~typ:(Number (Int32, Unboxed)) y in
+                int32_bin_op cmp_boxed_int x y
+            | Number (Nativeint, _), Number (Nativeint, _) ->
+                let x = transl_prim_arg ctx ~typ:(Number (Nativeint, Unboxed)) x in
+                let y = transl_prim_arg ctx ~typ:(Number (Nativeint, Unboxed)) y in
+                nativeint_bin_op cmp_boxed_int x y
+            | Number (Int64, _), Number (Int64, _) ->
+                let x = transl_prim_arg ctx ~typ:(Number (Int64, Unboxed)) x in
+                let y = transl_prim_arg ctx ~typ:(Number (Int64, Unboxed)) y in
+                int64_bin_op cmp_boxed_int x y
+            | Number (Float, _), Number (Float, _) ->
+                let x = transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) x in
+                let y = transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) y in
+                float_bin_op cmp_float x y
+            | _ ->
+                let* f =
+                  register_import
+                    ~name
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x = transl_prim_arg ctx x in
+                let* y = transl_prim_arg ctx y in
+                return (W.Call (f, [ x; y ])))
+        | _ -> invalid_arity name l ~expected:2)
 
   let () =
     register_bin_prim
@@ -1088,7 +1119,215 @@ module Generate (Target : Target_sig.S) = struct
       ~ty:(Int Normalized)
       (fun i j -> Arith.((j < i) - (i < j)));
     register_prim "%js_array" `Pure (fun ctx _ l ->
-        Memory.allocate ~tag:0 (expression_list (fun x -> transl_prim_arg ctx x) l))
+        Memory.allocate ~tag:0 (expression_list (fun x -> transl_prim_arg ctx x) l));
+    register_comparison
+      "caml_greaterthan"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x < y)) x y)
+      (Gt S)
+      Gt;
+    register_comparison
+      "caml_greaterequal"
+      (fun ctx x y -> translate_int_comparison ctx (fun y x -> Arith.(x <= y)) x y)
+      (Ge S)
+      Ge;
+    register_comparison
+      "caml_lessthan"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( < ) x y)
+      (Lt S)
+      Lt;
+    register_comparison
+      "caml_lessequal"
+      (fun ctx x y -> translate_int_comparison ctx Arith.( <= ) x y)
+      (Le S)
+      Le;
+    register_comparison
+      "caml_equal"
+      (fun ctx x y -> translate_int_equality ctx ~negate:false x y)
+      Eq
+      Eq;
+    register_comparison
+      "caml_notequal"
+      (fun ctx x y -> translate_int_equality ctx ~negate:true x y)
+      Ne
+      Ne;
+    register_prim "caml_compare" `Mutator (fun ctx _ l ->
+        match l with
+        | [ x; y ] -> (
+            match get_type ctx x, get_type ctx y with
+            | Int _, Int _ ->
+                let x' = transl_prim_arg ctx ~typ:(Int Normalized) x in
+                let y' = transl_prim_arg ctx ~typ:(Int Normalized) y in
+                Arith.((y' < x') - (x' < y'))
+            | Number (Int32, _), Number (Int32, _)
+            | Number (Nativeint, _), Number (Nativeint, _) ->
+                let* f =
+                  register_import
+                    ~name:"caml_int32_compare"
+                    (Fun { W.params = [ I32; I32 ]; result = [ I32 ] })
+                in
+                let* x' = transl_prim_arg ctx ~typ:(Number (Int32, Unboxed)) x in
+                let* y' = transl_prim_arg ctx ~typ:(Number (Int32, Unboxed)) y in
+                return (W.Call (f, [ x'; y' ]))
+            | Number (Int64, _), Number (Int64, _) ->
+                let* f =
+                  register_import
+                    ~name:"caml_int64_compare"
+                    (Fun { W.params = [ I64; I64 ]; result = [ I32 ] })
+                in
+                let* x' = transl_prim_arg ctx ~typ:(Number (Int64, Unboxed)) x in
+                let* y' = transl_prim_arg ctx ~typ:(Number (Int64, Unboxed)) y in
+                return (W.Call (f, [ x'; y' ]))
+            | Number (Float, _), Number (Float, _) ->
+                let* f =
+                  register_import
+                    ~name:"caml_float_compare"
+                    (Fun { W.params = [ F64; F64 ]; result = [ I32 ] })
+                in
+                let* x' = transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) x in
+                let* y' = transl_prim_arg ctx ~typ:(Number (Float, Unboxed)) y in
+                return (W.Call (f, [ x'; y' ]))
+            | _ ->
+                let* f =
+                  register_import
+                    ~name:"caml_compare"
+                    (Fun { W.params = [ Type.value; Type.value ]; result = [ I32 ] })
+                in
+                let* x' = transl_prim_arg ctx x in
+                let* y' = transl_prim_arg ctx y in
+                return (W.Call (f, [ x'; y' ])))
+        | _ -> invalid_arity "caml_compare" l ~expected:2);
+    let bigarray_generic_access ~ctx ta indices =
+      match
+        ( get_type ctx ta
+        , match indices with
+          | Pv indices -> Some (indices, ctx.global_flow_info.info_defs.(Var.idx indices))
+          | Pc _ -> None )
+      with
+      | Bigarray { kind; layout }, Some (indices, Expr (Block (_, l, _, _))) ->
+          Some
+            ( kind
+            , layout
+            , List.mapi
+                ~f:(fun i _ ->
+                  Value.int_val
+                    (Memory.array_get (load indices) (Arith.const (Int32.of_int (i + 1)))))
+                (Array.to_list l) )
+      | _, None | _, Some (_, (Expr _ | Phi _)) -> None
+    in
+    let caml_ba_get ~ctx ~context ~kind ~layout ta indices =
+      let ta' = transl_prim_arg ctx ta in
+      Bigarray.get
+        ~bound_error_index:(label_index context bound_error_pc)
+        ~kind
+        ~layout
+        ta'
+        ~indices
+    in
+    let caml_ba_get_n ~ctx ~context ta indices =
+      match get_type ctx ta with
+      | Bigarray { kind; layout } ->
+          let indices =
+            List.map ~f:(fun i -> transl_prim_arg ctx ~typ:(Int Normalized) i) indices
+          in
+          caml_ba_get ~ctx ~context ~kind ~layout ta indices
+      | _ ->
+          let n = List.length indices in
+          let* f =
+            register_import
+              ~name:(Printf.sprintf "caml_ba_get_%d" n)
+              (Fun (Type.primitive_type (n + 1)))
+          in
+          let* ta' = transl_prim_arg ctx ta in
+          let* indices' = expression_list (transl_prim_arg ctx) indices in
+          return (W.Call (f, ta' :: indices'))
+    in
+    register_prim "caml_ba_get_1" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i ] -> caml_ba_get_n ~ctx ~context ta [ i ]
+        | _ -> invalid_arity "caml_ba_get_1" l ~expected:2);
+    register_prim "caml_ba_get_2" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j ] -> caml_ba_get_n ~ctx ~context ta [ i; j ]
+        | _ -> invalid_arity "caml_ba_get_2" l ~expected:3);
+    register_prim "caml_ba_get_3" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j; k ] -> caml_ba_get_n ~ctx ~context ta [ i; j; k ]
+        | _ -> invalid_arity "caml_ba_get_3" l ~expected:4);
+    register_prim "caml_ba_get_generic" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; indices ] -> (
+            match bigarray_generic_access ~ctx ta indices with
+            | Some (kind, layout, indices) ->
+                caml_ba_get ~ctx ~context ~kind ~layout ta indices
+            | _ ->
+                let* f =
+                  register_import
+                    ~name:"caml_ba_get_generic"
+                    (Fun (Type.primitive_type 2))
+                in
+                let* ta' = transl_prim_arg ctx ta in
+                let* indices' = transl_prim_arg ctx indices in
+                return (W.Call (f, [ ta'; indices' ])))
+        | _ -> invalid_arity "caml_ba_get_generic" l ~expected:2);
+    let caml_ba_set ~ctx ~context ~kind ~layout ta indices v =
+      let ta' = transl_prim_arg ctx ta in
+      let v' = transl_prim_arg ctx ~typ:(Typing.bigarray_element_type kind) v in
+      Bigarray.set
+        ~bound_error_index:(label_index context bound_error_pc)
+        ~kind
+        ~layout
+        ta'
+        ~indices
+        v'
+    in
+    let caml_ba_set_n ~ctx ~context ta indices v =
+      match get_type ctx ta with
+      | Bigarray { kind; layout } ->
+          let indices =
+            List.map ~f:(fun i -> transl_prim_arg ctx ~typ:(Int Normalized) i) indices
+          in
+          caml_ba_set ~ctx ~context ~kind ~layout ta indices v
+      | _ ->
+          let n = List.length indices in
+          let* f =
+            register_import
+              ~name:(Printf.sprintf "caml_ba_set_%d" n)
+              (Fun (Type.primitive_type (n + 2)))
+          in
+          let* ta' = transl_prim_arg ctx ta in
+          let* indices' = expression_list (transl_prim_arg ctx) indices in
+          let* v' = transl_prim_arg ctx v in
+          return (W.Call (f, ta' :: (indices' @ [ v' ])))
+    in
+    register_prim "caml_ba_set_1" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; v ] -> caml_ba_set_n ~ctx ~context ta [ i ] v
+        | _ -> invalid_arity "caml_ba_set_1" l ~expected:3);
+    register_prim "caml_ba_set_2" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j; v ] -> caml_ba_set_n ~ctx ~context ta [ i; j ] v
+        | _ -> invalid_arity "caml_ba_set_2" l ~expected:4);
+    register_prim "caml_ba_set_3" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; i; j; k; v ] -> caml_ba_set_n ~ctx ~context ta [ i; j; k ] v
+        | _ -> invalid_arity "caml_ba_set_3" l ~expected:5);
+    register_prim "caml_ba_set_generic" `Mutator (fun ctx context l ->
+        match l with
+        | [ ta; indices; v ] -> (
+            match bigarray_generic_access ~ctx ta indices with
+            | Some (kind, layout, indices) ->
+                caml_ba_set ~ctx ~context ~kind ~layout ta indices v
+            | _ ->
+                let* f =
+                  register_import
+                    ~name:"caml_ba_set_generic"
+                    (Fun (Type.primitive_type 3))
+                in
+                let* ta' = transl_prim_arg ctx ta in
+                let* indices' = transl_prim_arg ctx indices in
+                let* v' = transl_prim_arg ctx v in
+                return (W.Call (f, [ ta'; indices'; v' ])))
+        | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3)
 
   let unboxed_type ty : W.value_type option =
     match ty with
@@ -1099,7 +1338,7 @@ module Generate (Target : Target_sig.S) = struct
     | _ -> None
 
   let box_number_if_needed ctx x e =
-    match get_var_type ctx x with
+    match Typing.var_type ctx.types x with
     | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
     | _ -> e
 
@@ -1107,13 +1346,12 @@ module Generate (Target : Target_sig.S) = struct
     match e with
     | Apply { f; args; exact; _ } ->
         let* closure = load f in
-        let* args = expression_list (fun x -> load_and_box ctx x) args in
         if exact || List.length args = if Var.Set.mem x ctx.in_cps then 2 else 1
         then
           match
             if exact then Global_flow.get_unique_closure ctx.global_flow_info f else None
           with
-          | Some g ->
+          | Some (g, params) ->
               let* cl =
                 (* Functions with constant closures ignore their environment. *)
                 match closure with
@@ -1122,7 +1360,22 @@ module Generate (Target : Target_sig.S) = struct
                     if Option.is_some init then Value.unit else return closure
                 | _ -> return closure
               in
-              return (W.Call (g, args @ [ cl ]))
+              let* args =
+                expression_list
+                  Fun.id
+                  (List.map2
+                     ~f:(fun a p ->
+                       convert
+                         ~from:(Typing.var_type ctx.types a)
+                         ~into:(Typing.var_type ctx.types p)
+                         (load a))
+                     args
+                     params)
+              in
+              convert
+                ~from:(Typing.return_type ctx.types g)
+                ~into:(Typing.var_type ctx.types x)
+                (return (W.Call (g, args @ [ cl ])))
           | None -> (
               let funct = Var.fresh () in
               let* closure = tee funct (return closure) in
@@ -1132,6 +1385,7 @@ module Generate (Target : Target_sig.S) = struct
                   ~arity:(List.length args)
                   (load funct)
               in
+              let* args = expression_list (fun x -> load_and_box ctx x) args in
               match funct with
               | W.RefFunc g -> return (W.Call (g, args @ [ closure ]))
               | _ -> return (W.Call_ref (ty, funct, args @ [ closure ])))
@@ -1139,15 +1393,19 @@ module Generate (Target : Target_sig.S) = struct
           let* apply =
             need_apply_fun ~cps:(Var.Set.mem x ctx.in_cps) ~arity:(List.length args)
           in
+          let* args = expression_list (fun x -> load_and_box ctx x) args in
           return (W.Call (apply, args @ [ closure ]))
     | Block (tag, a, _, _) ->
         if tag = 254
         then
           Memory.allocate_float_array
-            ~deadcode_sentinal:ctx.deadcode_sentinal
-            ~load:(fun x ->
-              convert ~from:(get_var_type ctx x) ~into:(Number (Float, Unboxed)) (load x))
-            (Array.to_list a)
+            (expression_list
+               (fun x ->
+                 convert
+                   ~from:(Typing.var_type ctx.types x)
+                   ~into:(Number (Float, Unboxed))
+                   (load x))
+               (Array.to_list a))
         else
           Memory.allocate
             ~tag
@@ -1168,7 +1426,7 @@ module Generate (Target : Target_sig.S) = struct
     | Constant c ->
         Constant.translate
           ~unboxed:
-            (match get_var_type ctx x with
+            (match Typing.var_type ctx.types x with
             | Number (_, Unboxed) -> true
             | _ -> false)
           c
@@ -1276,13 +1534,18 @@ module Generate (Target : Target_sig.S) = struct
   and translate_instr ctx context i =
     match i with
     | Assign (x, y) ->
-        assign x (convert ~from:(get_var_type ctx y) ~into:(get_var_type ctx x) (load y))
+        assign
+          x
+          (convert
+             ~from:(Typing.var_type ctx.types y)
+             ~into:(Typing.var_type ctx.types x)
+             (load y))
     | Let (x, e) ->
         if ctx.live.(Var.idx x) = 0
         then drop (translate_expr ctx context x e)
         else
           store
-            ?typ:(unboxed_type (get_var_type ctx x))
+            ?typ:(unboxed_type (Typing.var_type ctx.types x))
             x
             (translate_expr ctx context x e)
     | Set_field (x, n, Non_float, y) ->
@@ -1291,7 +1554,10 @@ module Generate (Target : Target_sig.S) = struct
         Memory.float_array_set
           (load_and_box ctx x)
           (return (W.Const (I32 (Int32.of_int n))))
-          (convert ~from:(get_var_type ctx y) ~into:(Number (Float, Unboxed)) (load y))
+          (convert
+             ~from:(Typing.var_type ctx.types y)
+             ~into:(Number (Float, Unboxed))
+             (load y))
     | Offset_ref (x, n) ->
         Memory.set_field
           (load x)
@@ -1301,7 +1567,7 @@ module Generate (Target : Target_sig.S) = struct
     | Array_set (x, y, z) ->
         Memory.array_set
           (load x)
-          (convert ~from:(get_var_type ctx y) ~into:(Int Normalized) (load y))
+          (convert ~from:(Typing.var_type ctx.types y) ~into:(Int Normalized) (load y))
           (load_and_box ctx z)
     | Event loc -> event loc
 
@@ -1321,8 +1587,8 @@ module Generate (Target : Target_sig.S) = struct
         if Code.Var.compare x y = 0
         then visited, None, l
         else
-          let tx = get_var_type ctx x in
-          let ty = get_var_type ctx y in
+          let tx = Typing.var_type ctx.types x in
+          let ty = Typing.var_type ctx.types y in
           if Var.Set.mem y prev
           then
             let t = Code.Var.fresh () in
@@ -1383,7 +1649,15 @@ module Generate (Target : Target_sig.S) = struct
                         | "caml_bytes_set"
                         | "caml_check_bound"
                         | "caml_check_bound_gen"
-                        | "caml_check_bound_float" )
+                        | "caml_check_bound_float"
+                        | "caml_ba_get_1"
+                        | "caml_ba_get_2"
+                        | "caml_ba_get_3"
+                        | "caml_ba_get_generic"
+                        | "caml_ba_set_1"
+                        | "caml_ba_set_2"
+                        | "caml_ba_set_3"
+                        | "caml_ba_set_generic" )
                     , _ ) ) -> fst n, true
             | Let
                 ( _
@@ -1417,7 +1691,7 @@ module Generate (Target : Target_sig.S) = struct
       then handler
       else
         let* () = handler in
-        instr (W.Return (Some (RefI31 (Const (I32 0l)))))
+        instr W.Unreachable
     else body ~result_typ ~fall_through ~context
 
   let wrap_with_handlers p pc ~result_typ ~fall_through ~context body =
@@ -1453,6 +1727,11 @@ module Generate (Target : Target_sig.S) = struct
       ((pc, _) as cont)
       cloc
       acc =
+    let return_type =
+      match name_opt with
+      | Some f -> Typing.return_type ctx.types f
+      | _ -> Typing.Top
+    in
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
     let rec translate_tree result_typ fall_through pc context =
@@ -1514,7 +1793,9 @@ module Generate (Target : Target_sig.S) = struct
           match branch with
           | Branch cont -> translate_branch result_typ fall_through pc cont context
           | Return x -> (
-              let* e = load_and_box ctx x in
+              let* e =
+                convert ~from:(Typing.var_type ctx.types x) ~into:return_type (load x)
+              in
               match fall_through with
               | `Return -> instr (Push e)
               | `Block _ | `Catch | `Skip -> instr (Return (Some e)))
@@ -1522,7 +1803,7 @@ module Generate (Target : Target_sig.S) = struct
               let context' = extend_context fall_through context in
               if_
                 { params = []; result = result_typ }
-                (match get_var_type ctx x with
+                (match Typing.var_type ctx.types x with
                 | Int Normalized -> load x
                 | Int Unnormalized -> Arith.(load x lsl const 1l)
                 | _ -> Value.check_is_not_zero (load x))
@@ -1541,7 +1822,10 @@ module Generate (Target : Target_sig.S) = struct
                 label_index context pc
               in
               let* e =
-                convert ~from:(get_var_type ctx x) ~into:(Int Normalized) (load x)
+                convert
+                  ~from:(Typing.var_type ctx.types x)
+                  ~into:(Int Normalized)
+                  (load x)
               in
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
@@ -1587,7 +1871,17 @@ module Generate (Target : Target_sig.S) = struct
       List.fold_left
         ~f:(fun l x ->
           let* _ = l in
-          let* _ = add_var x in
+          let* _ =
+            add_var
+              ?typ:
+                (match Typing.var_type ctx.types x with
+                | Typing.Int (Normalized | Unnormalized) -> Some I32
+                | Number ((Int32 | Nativeint), Unboxed) -> Some I32
+                | Number (Int64, Unboxed) -> Some I64
+                | Number (Float, Unboxed) -> Some F64
+                | _ -> None)
+              x
+          in
           return ())
         ~init:(return ())
         params
@@ -1632,7 +1926,7 @@ module Generate (Target : Target_sig.S) = struct
              wrap_with_handlers
                p
                pc
-               ~result_typ:[ Type.value ]
+               ~result_typ:[ Option.value ~default:Type.value (unboxed_type return_type) ]
                ~fall_through:`Return
                ~context:[]
                (fun ~result_typ ~fall_through ~context ->
@@ -1656,7 +1950,20 @@ module Generate (Target : Target_sig.S) = struct
       ; signature =
           (match name_opt with
           | None -> Type.primitive_type param_count
-          | Some _ -> Type.func_type (param_count - 1))
+          | Some f ->
+              if Typing.can_unbox_parameters ctx.fun_info f
+              then
+                { W.params =
+                    List.map
+                      ~f:(fun x : W.value_type ->
+                        Option.value
+                          ~default:Type.value
+                          (unboxed_type (Typing.var_type ctx.types x)))
+                      params
+                    @ [ Type.value ]
+                ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
+                }
+              else Type.func_type (param_count - 1))
       ; param_names
       ; locals
       ; body
@@ -1727,7 +2034,6 @@ module Generate (Target : Target_sig.S) = struct
       ~in_cps (*
     ~should_export
 *)
-      ~deadcode_sentinal
       ~global_flow_info
       ~fun_info
       ~types =
@@ -1739,7 +2045,6 @@ module Generate (Target : Target_sig.S) = struct
     let ctx =
       { live = live_vars
       ; in_cps
-      ; deadcode_sentinal
       ; global_flow_info
       ; fun_info
       ; types
@@ -1850,23 +2155,16 @@ let init = G.init
 let start () = make_context ~value_type:Gc_target.Type.value
 
 let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_data =
-  let state, info = global_flow_data in
-  let fun_info = Call_graph_analysis.f p info in
-  let types = Typing.f ~state ~info ~deadcode_sentinal p in
+  let global_flow_state, global_flow_info = global_flow_data in
+  let fun_info = Call_graph_analysis.f p global_flow_info in
+  let types =
+    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p
+  in
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in
   let res =
-    G.f
-      ~context
-      ~unit_name
-      ~live_vars
-      ~in_cps
-      ~deadcode_sentinal
-      ~global_flow_info:info
-      ~fun_info
-      ~types
-      p
+    G.f ~context ~unit_name ~live_vars ~in_cps ~global_flow_info ~fun_info ~types p
   in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
