@@ -146,7 +146,10 @@ let%expect_test "Bug fix in PR #1681" =
           x.a <- 1; (* This has to be handled after [x] is returned *)
           {a = 3; b = 4}
         )
-      let g = ref (fun _ -> assert false)
+      let g =
+        (* Make sure the reference is not optimized away *)
+        let rec h n = if n = 0 then ref else h (n - 1) in
+        h 0 (fun _ -> assert false)
       let _ =
         (* We should not track that [f] is used below *)
         g := f; prerr_int ((!g true).b + (!g false).b)

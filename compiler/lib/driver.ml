@@ -216,6 +216,7 @@ let rec loop max name round i (p : 'a) : 'a =
 let round profile : 'a -> 'a =
   print
   +> tailcall
+  +> Ref_unboxing.f
   +> (flow +> specialize +> eval +> fst)
   +> inline profile
   +> phi
