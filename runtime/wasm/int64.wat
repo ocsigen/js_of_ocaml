@@ -124,9 +124,9 @@
                       (i64.const 8)))))
 
    (func (export "caml_int64_compare")
-      (param $i1 i64) (param $i2 i64) (result (ref eq))
-      (ref.i31 (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
-                        (i64.lt_s (local.get $i1) (local.get $i2)))))
+      (param $i1 i64) (param $i2 i64) (result i32)
+      (i32.sub (i64.gt_s (local.get $i1) (local.get $i2))
+               (i64.lt_s (local.get $i1) (local.get $i2))))
 
    (@string $INT64_ERRMSG "Int64.of_string")
 
