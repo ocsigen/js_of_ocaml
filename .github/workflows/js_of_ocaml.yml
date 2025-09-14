@@ -25,6 +25,7 @@ jobs:
           - "5.0"
           - "5.1"
           - "5.2"
+          - "5.3"
         skip-test:
           - true
         skip-doc:
@@ -59,7 +60,7 @@ jobs:
             skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
-            ocaml-compiler: "5.3"
+            ocaml-compiler: "5.4"
             skip-effects: false
             skip-test: false
             skip-doc: false
@@ -72,31 +73,24 @@ jobs:
             # Note this OCaml compiler is bytecode only
           - os: ubuntu-latest
             os-name: Ubuntu
-            ocaml-name: "5.3.0+32bit"
-            ocaml-compiler: "ocaml-variants.5.3.0+options,ocaml-option-32bit"
+            ocaml-name: "5.4.0+32bit"
+            ocaml-compiler: "ocaml-variants.5.4.0+options,ocaml-option-32bit"
             skip-effects: true # disabled for the same reason than `skip-test`
             skip-test: true # the `time_now.0.17` package is pulled and doesn't work in 32 bits :(
             skip-doc: true
           - os: macos-latest
             os-name: MacOS
-            ocaml-compiler: "5.3"
+            ocaml-compiler: "5.4"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
             os-name: Windows
-            ocaml-compiler: "5.3"
+            ocaml-compiler: "5.4"
             skip-effects: false
             skip-test: false
             skip-doc: true
-          - os: ubuntu-latest
-            os-name: Ubuntu
-            ocaml-name: "5.4-alpha1"
-            ocaml-compiler: "ocaml-compiler.5.4.0~alpha1"
-            skip-effects: true
-            skip-test: true
-            skip-doc: true
-
+ 
     runs-on: ${{ matrix.os }}
 
     name:
