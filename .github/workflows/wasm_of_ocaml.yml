@@ -26,6 +26,7 @@ jobs:
           - "5.0"
           - "5.1"
           - "5.2"
+          - "5.4"
         separate_compilation:
           - true
         jane_street_tests:
@@ -116,7 +117,6 @@ jobs:
         run: |
           opam repo add js janestreet/opam-repository
           opam install opam-format
-          opam pin add ppxlib -n 0.35.0
           opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe
 
       - name: Pin Jane Street packages
