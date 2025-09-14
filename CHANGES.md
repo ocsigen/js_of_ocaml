@@ -3,6 +3,7 @@
 ## Features/Changes
 * Compiler/wasm: omit code pointer from closures when not used (#2059, #2093)
 * Compiler/wasm: unbox numbers within functions (#2069)
+* Compiler/wasm: make the type of some Wasm primitives more precise (#2100)
 * Compiler: reference unboxing (#1958)
 
 ## Bug fixes
