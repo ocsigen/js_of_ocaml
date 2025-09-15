@@ -2,6 +2,7 @@
 
 ## Features/Changes
 * Compiler/wasm: omit code pointer from closures when not used (#2059, #2093)
+* Compiler: add optional full lambda lifting for the Javascript compiler (#1886)
 * Compiler/wasm: unbox numbers within functions (#2069)
 * Compiler/wasm: make the type of some Wasm primitives more precise (#2100)
 * Compiler: reference unboxing (#1958)
@@ -87,7 +88,7 @@
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
 * Compiler: minifier fix (#1867)
-* Compiler: fix shortvar with --enable es6 (AssignTarget was not properly handled)  
+* Compiler: fix shortvar with --enable es6 (AssignTarget was not properly handled)
 * Compiler: fix assert failure with double translation (#1870)
 * Compiler: fix path rewriting of Wasm source maps (#1882)
 * Compiler: fix global dead code in presence of dead tailcall (#2010)
