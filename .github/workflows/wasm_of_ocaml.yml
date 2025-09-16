@@ -123,7 +123,7 @@ jobs:
         run: |
           opam repo add js janestreet/opam-repository
           opam install opam-format
-          opam pin add ppxlib -n 0.35.0
+          opam pin add ppxlib -n 0.37.0~5.4preview
           opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe
 
       - name: Pin Jane Street packages
