@@ -255,6 +255,7 @@ let value_type_lub (ty : W.value_type) (ty' : W.value_type) =
   | Ref { nullable; typ }, Ref { nullable = nullable'; typ = typ' } ->
       let* typ = heap_type_lub typ typ' in
       return (W.Ref { nullable = nullable || nullable'; typ })
+  | I32, I32 | I64, I64 | F32, F32 | F64, F64 -> return ty
   | _ -> assert false
 
 let register_global name ?exported_name ?(constant = false) typ init st =
