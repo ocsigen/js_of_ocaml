@@ -325,16 +325,16 @@ let prim_type ~st ~approx prim hint args =
   | "caml_int64_bswap" -> Number (Int64, Unboxed)
   | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" ->
       Int Normalized
-  | "caml_string_get16" -> Int Normalized
-  | "caml_string_get32" -> Number (Int32, Unboxed)
-  | "caml_string_get64" -> Number (Int64, Unboxed)
-  | "caml_bytes_get16" -> Int Normalized
-  | "caml_bytes_get32" -> Number (Int32, Unboxed)
-  | "caml_bytes_get64" -> Number (Int64, Unboxed)
+  | "caml_string_get16" | "caml_string_get16u" -> Int Normalized
+  | "caml_string_get32" | "caml_string_get32u" -> Number (Int32, Unboxed)
+  | "caml_string_get64" | "caml_string_get64u" -> Number (Int64, Unboxed)
+  | "caml_bytes_get16" | "caml_bytes_get16u" -> Int Normalized
+  | "caml_bytes_get32" | "caml_bytes_get32u" -> Number (Int32, Unboxed)
+  | "caml_bytes_get64" | "caml_bytes_get64u" -> Number (Int64, Unboxed)
   | "caml_lxm_next" -> Number (Int64, Unboxed)
-  | "caml_ba_uint8_get16" -> Int Normalized
-  | "caml_ba_uint8_get32" -> Number (Int32, Unboxed)
-  | "caml_ba_uint8_get64" -> Number (Int64, Unboxed)
+  | "caml_ba_uint8_get16" | "caml_ba_uint8_get16u" -> Int Normalized
+  | "caml_ba_uint8_get32" | "caml_ba_uint8_get32u" -> Number (Int32, Unboxed)
+  | "caml_ba_uint8_get64" | "caml_ba_uint8_get64u" -> Number (Int64, Unboxed)
   | "caml_nextafter_float" -> Number (Float, Unboxed)
   | "caml_classify_float" -> Int Ref
   | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number (Float, Unboxed)
