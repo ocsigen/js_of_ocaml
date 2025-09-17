@@ -15,45 +15,19 @@ type boxed_status =
   | Boxed
   | Unboxed
 
-module Bigarray : sig
-  type kind =
-    | Float16
-    | Float32
-    | Float64
-    | Int8_signed
-    | Int8_unsigned
-    | Int16_signed
-    | Int16_unsigned
-    | Int32
-    | Int64
-    | Int
-    | Nativeint
-    | Complex32
-    | Complex64
-
-  type layout =
-    | C
-    | Fortran
-
-  type t =
-    { kind : kind
-    ; layout : layout
-    }
-end
-
 type typ =
   | Top
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
   | Tuple of typ array
-  | Bigarray of Bigarray.t
+  | Bigarray of Optimization_hint.Bigarray.t
   | Bot
 
 val constant_type : Code.constant -> typ
 
 val can_unbox_parameters : Call_graph_analysis.t -> Code.Var.t -> bool
 
-val bigarray_element_type : Bigarray.kind -> typ
+val bigarray_element_type : Optimization_hint.Bigarray.kind -> typ
 
 type t
 

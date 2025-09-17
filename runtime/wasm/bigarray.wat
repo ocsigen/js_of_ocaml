@@ -2032,6 +2032,15 @@
       (call $dv_get_ui16_unaligned
          (local.get $view) (local.get $i) (i32.const 1)))
 
+   (func (export "caml_ba_uint8_get16u")
+      (param $vba (ref eq)) (param $i i32) (result i32)
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (return_call $dv_get_ui16_unaligned
+         (local.get $view) (local.get $i) (i32.const 1)))
+
    (func (export "caml_ba_uint8_get32")
       (param $vba (ref eq)) (param $i i32) (result i32)
       (local $ba (ref $bigarray))
@@ -2045,6 +2054,15 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
+      (return_call $dv_get_i32_unaligned
+         (local.get $view) (local.get $i) (i32.const 1)))
+
+   (func (export "caml_ba_uint8_get32u")
+      (param $vba (ref eq)) (param $i i32) (result i32)
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
       (return_call $dv_get_i32_unaligned
          (local.get $view) (local.get $i) (i32.const 1)))
 
@@ -2064,6 +2082,15 @@
       (call $dv_get_i64_unaligned
          (local.get $view) (local.get $i) (i32.const 1)))
 
+   (func (export "caml_ba_uint8_get64u")
+      (param $vba (ref eq)) (param $i i32) (result i64)
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (call $dv_get_i64_unaligned
+         (local.get $view) (local.get $i) (i32.const 1)))
+
    (func (export "caml_ba_uint8_set16")
       (param $vba (ref eq)) (param $i i32) (param $d i32)
       (result (ref eq))
@@ -2078,6 +2105,17 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
+      (call $dv_set_i16_unaligned
+         (local.get $view) (local.get $i) (local.get $d) (i32.const 1))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ba_uint8_set16u")
+      (param $vba (ref eq)) (param $i i32) (param $d i32)
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
       (call $dv_set_i16_unaligned
          (local.get $view) (local.get $i) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
@@ -2100,6 +2138,17 @@
          (local.get $view) (local.get $i) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_ba_uint8_set32u")
+      (param $vba (ref eq)) (param $i i32) (param $d i32)
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (call $dv_set_i32_unaligned
+         (local.get $view) (local.get $i) (local.get $d) (i32.const 1))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_ba_uint8_set64")
       (param $vba (ref eq)) (param $i i32) (param $d i64)
       (result (ref eq))
@@ -2114,6 +2163,17 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
+      (call $dv_set_i64_unaligned
+         (local.get $view) (local.get $i) (local.get $d) (i32.const 1))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ba_uint8_set64u")
+      (param $vba (ref eq)) (param $i i32) (param $d i64)
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $view (ref extern))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
       (call $dv_set_i64_unaligned
          (local.get $view) (local.get $i) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))

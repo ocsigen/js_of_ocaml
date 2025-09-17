@@ -147,7 +147,7 @@ let eval_prim x =
   | Eq, [ Int i; Int j ] -> bool Targetint.(i = j)
   | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
   | Ult, [ Int i; Int j ] -> bool (Targetint.unsigned_lt i j)
-  | Extern name, l -> (
+  | Extern (name, _), l -> (
       match name, l with
       (* int *)
       | "%int_add", _ -> int_binop l Targetint.add
@@ -338,8 +338,8 @@ let the_length_of info x =
     (fun x ->
       match Flow.Info.def info x with
       | Some (Constant (String s)) -> Some (Targetint.of_int_exn (String.length s))
-      | Some (Prim (Extern "caml_create_string", [ arg ]))
-      | Some (Prim (Extern "caml_create_bytes", [ arg ])) -> the_int info arg
+      | Some (Prim (Extern ("caml_create_string", _), [ arg ]))
+      | Some (Prim (Extern ("caml_create_bytes", _), [ arg ])) -> the_int info arg
       | None | Some _ -> None)
     None
     (fun u v ->
@@ -410,7 +410,8 @@ let the_cont_of info x (a : cont array) =
     info
     (fun x ->
       match Flow.Info.def info x with
-      | Some (Prim (Extern "%direct_obj_tag", [ b ])) -> the_tag_of info b get cont_equal
+      | Some (Prim (Extern ("%direct_obj_tag", _), [ b ])) ->
+          the_tag_of info b get cont_equal
       | Some (Constant (Int j)) -> get (Targetint.to_int_exn j)
       | None | Some _ -> None)
     None
@@ -432,11 +433,11 @@ let rec int_predicate deep info pred x (i : Targetint.t) =
       info
       (fun x ->
         match Flow.Info.def info x with
-        | Some (Prim (Extern "%direct_obj_tag", [ b ])) ->
+        | Some (Prim (Extern ("%direct_obj_tag", _), [ b ])) ->
             the_tag_of info b (fun j -> Some (pred (Targetint.of_int_exn j) i)) Bool.equal
-        | Some (Prim (Extern "%int_sub", [ Pv a; Pc (Int b) ])) ->
+        | Some (Prim (Extern ("%int_sub", _), [ Pv a; Pc (Int b) ])) ->
             int_predicate (deep + 1) info (fun x y -> pred (Targetint.sub x b) y) a i
-        | Some (Prim (Extern "%int_add", [ Pv a; Pc (Int b) ])) ->
+        | Some (Prim (Extern ("%int_add", _), [ Pv a; Pc (Int b) ])) ->
             int_predicate (deep + 1) info (fun x y -> pred (Targetint.add x b) y) a i
         | Some (Constant (Int j)) -> Some (pred j i)
         | None | Some _ -> None)
@@ -491,7 +492,7 @@ let constant_equal a b =
 
 let eval_instr update_count inline_constant ~target info i =
   match i with
-  | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) -> (
+  | Let (x, Prim (Extern ((("caml_equal" | "caml_notequal") as prim), _), [ y; z ])) -> (
       let eq e1 e2 =
         match Code.Constant.ocaml_equal e1 e2 with
         | None -> false
@@ -513,7 +514,8 @@ let eval_instr update_count inline_constant ~target info i =
               incr update_count;
               [ Let (x, c) ])
       | _ -> [ i ])
-  | Let (x, Prim (Extern ("caml_js_equals" | "caml_js_strict_equals"), [ y; z ])) -> (
+  | Let (x, Prim (Extern (("caml_js_equals" | "caml_js_strict_equals"), _), [ y; z ]))
+    -> (
       let eq e1 e2 =
         match constant_js_equal e1 e2 with
         | None -> false
@@ -529,7 +531,7 @@ let eval_instr update_count inline_constant ~target info i =
               incr update_count;
               [ Let (x, c) ])
       | _ -> [ i ])
-  | Let (x, Prim (Extern "caml_ml_string_length", [ s ])) -> (
+  | Let (x, Prim (Extern ("caml_ml_string_length", _), [ s ])) -> (
       let c =
         match s with
         | Pc (String s) -> Some (Targetint.of_int_exn (String.length s))
@@ -547,18 +549,19 @@ let eval_instr update_count inline_constant ~target info i =
       ( _
       , Prim
           ( ( Extern
-                ( "caml_array_unsafe_get"
-                | "caml_array_unsafe_set"
-                | "caml_floatarray_unsafe_get"
-                | "caml_floatarray_unsafe_set"
-                | "caml_array_unsafe_set_addr" )
+                ( ( "caml_array_unsafe_get"
+                  | "caml_array_unsafe_set"
+                  | "caml_floatarray_unsafe_get"
+                  | "caml_floatarray_unsafe_set"
+                  | "caml_array_unsafe_set_addr" )
+                , _ )
             | Array_get )
           , _ ) ) ->
       (* Fresh parameters can be introduced for these primitives
            in Specialize_js, which would make the call to [the_const_of]
            below fail. *)
       [ i ]
-  | Let (x, Prim (Extern "caml_atomic_load_field", [ Pv o; f ])) -> (
+  | Let (x, Prim (Extern ("caml_atomic_load_field", _), [ Pv o; f ])) -> (
       match the_int info f with
       | None -> [ i ]
       | Some i -> [ Let (x, Field (o, Targetint.to_int_exn i, Non_float)) ])
@@ -600,7 +603,7 @@ let eval_instr update_count inline_constant ~target info i =
           incr update_count;
           [ Let (x, c) ]
       | None -> [ i ])
-  | Let (x, Prim (Extern "%direct_obj_tag", [ y ])) -> (
+  | Let (x, Prim (Extern ("%direct_obj_tag", _), [ y ])) -> (
       match the_tag_of info y (fun x -> Some x) ( = ) with
       | Some tag ->
           let c = Constant (Int (Targetint.of_int_exn tag)) in
@@ -608,7 +611,7 @@ let eval_instr update_count inline_constant ~target info i =
           incr update_count;
           [ Let (x, c) ]
       | None -> [ i ])
-  | Let (x, Prim (Extern "caml_sys_const_backend_type", [ _ ])) ->
+  | Let (x, Prim (Extern ("caml_sys_const_backend_type", _), [ _ ])) ->
       let jsoo = Code.Var.fresh () in
       let backend_name =
         match target with
@@ -619,7 +622,7 @@ let eval_instr update_count inline_constant ~target info i =
       [ Let (jsoo, Constant (String backend_name))
       ; Let (x, Block (0, [| jsoo |], NotArray, Immutable))
       ]
-  | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
+  | Let (_, Prim (Extern (("%resume" | "%perform" | "%reperform"), _), _)) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
   | Let (x, Prim (prim, prim_args)) -> (
       let prim_args' =
@@ -749,7 +752,7 @@ let rec do_not_raise pc visited rewrite blocks =
             | Block (_, _, _, _) | Field (_, _, _) | Constant _ | Closure _ -> ()
             | Apply _ -> raise May_raise
             | Special _ -> ()
-            | Prim (Extern name, _) when Primitive.is_pure name -> ()
+            | Prim (Extern (name, _), _) when Primitive.is_pure name -> ()
             | Prim (Extern _, _) -> raise May_raise
             | Prim (_, _) -> ()));
     match b.branch with

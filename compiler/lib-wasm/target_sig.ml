@@ -257,16 +257,18 @@ module type S = sig
   module Bigarray : sig
     val get :
          bound_error_index:int
-      -> kind:Typing.Bigarray.kind
-      -> layout:Typing.Bigarray.layout
+      -> unsafe:bool
+      -> kind:Optimization_hint.Bigarray.kind
+      -> layout:Optimization_hint.Bigarray.layout
       -> expression
       -> indices:expression list
       -> expression
 
     val set :
          bound_error_index:int
-      -> kind:Typing.Bigarray.kind
-      -> layout:Typing.Bigarray.layout
+      -> unsafe:bool
+      -> kind:Optimization_hint.Bigarray.kind
+      -> layout:Optimization_hint.Bigarray.layout
       -> expression
       -> indices:expression list
       -> expression
