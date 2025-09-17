@@ -27,6 +27,7 @@ let append () =
   Unix.close fd
 
 let () =
+  (try Unix.unlink "append.txt" with Unix.(Unix_error (ENOENT, _, _)) -> ());
   append ();
   append ();
   let fd = Unix.openfile "append.txt" [ Unix.O_RDONLY ] 0o644 in
