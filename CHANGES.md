@@ -15,6 +15,7 @@
 * Put more values into global variables (#2211)
 * Runtime: intial support for quickjs-ng
 * Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
+* Compiler/wasm: WASI 0.1 support (#1831)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
