@@ -26,6 +26,7 @@
 * Lib: add `Fetch` and `Abort` modules — Fetch API binding with a typed
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 * Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
+* Compiler/wasm: WASI 0.1 support (#1831)
 * Lib: implement popover API (#1734)
 * Lib: add Intl.RelativeTimeFormat (#2070)
 
