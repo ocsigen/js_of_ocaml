@@ -21,6 +21,19 @@
       (func $caml_obj_dup (param (ref eq)) (result (ref eq))))
    (import "fail" "caml_invalid_argument"
       (func $caml_invalid_argument (param $arg (ref eq))))
+
+(@if wasi
+(@then
+   (func $wrap (param (ref eq)) (result (ref eq))
+      (local.get 0))
+   (func $unwrap (param (ref eq)) (result (ref eq))
+      (local.get 0))
+   (func $weak_new (param $v (ref eq)) (result (ref eq))
+      (local.get $v))
+   (func $weak_deref (param $r (ref eq)) (result (ref eq))
+      (local.get $r))
+)
+(@else
    (import "bindings" "weak_new"
       (func $weak_new (param (ref eq)) (result anyref)))
    (import "bindings" "weak_deref"
@@ -32,6 +45,8 @@
       (func $map_set (param (ref any)) (param (ref eq)) (param (ref any))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+))
+
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
    (type $js (struct (field anyref)))
@@ -62,6 +77,8 @@
          (block $released
             (br_if $no_data
                (ref.eq (local.get $d) (global.get $caml_ephe_none)))
+(@if (not wasi)
+(@then
             (local.set $i (global.get $caml_ephe_key_offset))
             (local.set $len (array.len (local.get $x)))
             (local.set $m (ref.as_non_null (call $unwrap (local.get $d))))
@@ -82,6 +99,7 @@
                            (call $map_get (local.get $m) (local.get $v))))
                      (br $loop))))
             (local.set $d (ref.cast (ref eq) (local.get $m)))
+))
             (return
               (array.new_fixed $block 2 (ref.i31 (i32.const 0))
                  (local.get $d))))
@@ -111,6 +129,8 @@
       (local $m (ref any)) (local $m' (ref any))
       (local $i i32)
       (local.set $x (ref.cast (ref $block) (local.get $vx)))
+(@if (not wasi)
+(@then
       (local.set $i (array.len (local.get $x)))
       (local.set $m (local.get $data))
       (loop $loop
@@ -135,6 +155,7 @@
                   (global.get $caml_ephe_none))
                (br $loop))))
       (local.set $data (call $wrap (local.get $m)))
+))
       (array.set $block (local.get $x) (global.get $caml_ephe_data_offset)
          (local.get $data))
       (ref.i31 (i32.const 0)))
