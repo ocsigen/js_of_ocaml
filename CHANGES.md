@@ -1,3 +1,9 @@
+#dev
+
+## Features/Changes
+* Compiler/wasm: WASI 0.1 support (#1831)
+
+
 # 6.3.0 (2026-02-06) - Lille
 
 ## Features/Changes
@@ -17,7 +23,6 @@
 * Lib: add `Dom_html.onload` for WASM-safe load handling (#1948)
 * Runtime: make eval functions more robust (#2108)
 * Compiler: added a constant sinking pass (#2167)
-
 
 ## Bug fixes
 * Compiler: fix `Global_flow.do_escape` monotonicity
