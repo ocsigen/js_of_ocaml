@@ -85,6 +85,53 @@ runtime with support for the WasmFX extension (currently available, behind the
 {{{--experimental-wasm-wasmfx}}} flag, in Chrome 148 or higher, or in a recent
 Node.js canary release (V8 version 14.7.100 or higher)).
 
+==@@id="wasi"@@ WASI support
+
+You can produce a WASI binary by running {{{wasm_of_ocaml}}} with the
+{{{--enable wasi}}} flag. At the moment, {{{wasm_of_ocaml}}} supports
+WASI 0.1. Features from the Sys and Unix modules are available
+whenever they're supported by the WASI API.
+
+The binaries produced by {{{wasm_of_ocaml}}} require the GC and
+exception-handling proposals, which are supported by Node.js, Wasmtime
+(with the {{{-W=all-proposals=y}}} flag), and the Wizard engine.
+Wasmtime does not support the legacy Wasm exception-handling
+instructions, so when {{{--enable wasi}}} is used the compiler emits
+the new {{{exnref}}}-based instructions instead.
+
+When native effect handlers are used ({{{--effects native}}}), the
+binaries additionally require the stack-switching proposal. It is
+supported by Node.js and by the Wizard engine (with the
+{{{--ext:stack-switching}}} flag), but not by Wasmtime.
+
+For now, the output remains the same as without the {{{--enable
+wasi}}} flag: a JavaScript file {{{foo.js}}} and a directory
+{{{foo.assets}}} containing the Wasm code {{{code.wasm}}}. The
+JavaScript file can be used to run the WASI binary with {{{node}}},
+while the Wasm code can be run directly by other Wasm engines.
+
+===@@id="wasi-limitations"@@ Limitations
+
+The WASI target currently has the following limitations:
+
+* **No JavaScript interoperability** - the JavaScript binding layer
+  is not available, so the {{{js_of_ocaml}}} library ({{{Js}}},
+  {{{Js.Unsafe}}}, the DOM bindings, {{{XMLHttpRequest}}}, ...) cannot
+  be used.
+* **Weak references and ephemerons are not weak** - values reachable
+  through a {{{Weak}}} array or an {{{Ephemeron}}} are kept alive and
+  never reclaimed by the garbage collector.
+* **Marshalling is quadratic** - sharing is detected with a linear
+  scan, so {{{Marshal}}} and {{{output_value}}} run in time quadratic
+  in the number of heap blocks serialised.
+* **No dynamic linking** - the {{{Dynlink}}} library is not supported.
+* **Limited system interface** - only the operations exposed by WASI
+  0.1 are available. In particular, there is no networking or sockets,
+  no process control ({{{fork}}}, {{{exec}}}, ...) and no signals;
+  {{{Sys.command}}} and {{{Unix.rewinddir}}} are not implemented. File
+  system access is restricted to the directories preopened by the host
+  (the {{{node}}} launcher preopens {{{.}}} and {{{/tmp}}}).
+
 ==@@id="js-bindings"@@ Binding with JavaScript libraries
 
 Js_of_ocaml lets you bind code with JavaScript libraries by linking {{{.js}}} files.
