@@ -88,18 +88,13 @@ let rec fun_with_loop acc = function
        var a$0 = [0, acc$0], i$0 = 0;
        for(;;){
         a$0[1] = [0, 1, a$0[1]];
-        var _b_ = i$0 + 1 | 0;
+        var c = i$0 + 1 | 0;
         if(10 === i$0) return a$0[1];
-        i$0 = _b_;
+        i$0 = c;
        }
       }
       var xs = param$0[2], a = [0, acc$0], i = 0;
-      for(;;){
-       a[1] = [0, 1, a[1]];
-       var _a_ = i + 1 | 0;
-       if(10 === i) break;
-       i = _a_;
-      }
+      for(;;){a[1] = [0, 1, a[1]]; var b = i + 1 | 0; if(10 === i) break; i = b;}
       var acc$1 = [0, x, a[1]];
       acc$0 = acc$1;
       param$0 = xs;
@@ -132,13 +127,13 @@ let for_for_while () =
       var j = 1;
       for(;;){
        for(;;){if(10 <= runtime.caml_mul(k, j)) break; id[1]++;}
-       var _b_ = j + 1 | 0;
+       var b = j + 1 | 0;
        if(10 === j) break;
-       j = _b_;
+       j = b;
       }
-      var _a_ = k + 1 | 0;
+      var a = k + 1 | 0;
       if(10 === k) return 0;
-      k = _a_;
+      k = a;
      }
     }
     //end |}]
@@ -170,16 +165,16 @@ let for_for_while () =
        for(;;){
         if(10 <= caml_div(k, j)) break;
         try{caml_div(k, j);}
-        catch(_c_){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
+        catch(a){throw caml_maybe_attach_backtrace(Stdlib[8], 1);}
         id[1]++;
        }
-       var _b_ = j + 1 | 0;
+       var b = j + 1 | 0;
        if(10 === j) break;
-       j = _b_;
+       j = b;
       }
-      var _a_ = k + 1 | 0;
+      var a = k + 1 | 0;
       if(10 === k) return 0;
-      k = _a_;
+      k = a;
      }
     }
     //end |}]
@@ -252,10 +247,10 @@ let f t x =
     {|
     function f(t, x){
      try{var val$0 = caml_call2(Stdlib_Hashtbl[6], t, x);}
-     catch(_f_){
-      var _c_ = caml_wrap_exception(_f_);
-      if(_c_ === Stdlib[8]) return - 1;
-      throw caml_maybe_attach_backtrace(_c_, 0);
+     catch(a){
+      var d = caml_wrap_exception(a);
+      if(d === Stdlib[8]) return - 1;
+      throw caml_maybe_attach_backtrace(d, 0);
      }
      if(val$0 && ! val$0[2]){
       var x$1 = val$0[1], x$0 = x$1;
@@ -263,21 +258,21 @@ let f t x =
        a:
        {
         try{var val = caml_call2(Stdlib_Hashtbl[6], t, x$0);}
-        catch(_e_){
-         var _a_ = caml_wrap_exception(_e_);
-         if(_a_ !== Stdlib[3]) throw caml_maybe_attach_backtrace(_a_, 0);
-         var _d_ = 0;
+        catch(c){
+         var b = caml_wrap_exception(c);
+         if(b !== Stdlib[3]) throw caml_maybe_attach_backtrace(b, 0);
+         var a = 0;
          break a;
         }
         if(val && ! val[2]){
-         var y = val[1], _b_ = y === (x$0 + 1 | 0) ? 1 : 0;
-         if(_b_){var _d_ = _b_; break a;}
+         var y = val[1], c = y === (x$0 + 1 | 0) ? 1 : 0;
+         if(c){var a = c; break a;}
          x$0 = y;
          continue;
         }
-        var _d_ = 0;
+        var a = 0;
        }
-       return _d_ ? 1 : 2;
+       return a ? 1 : 2;
       }
      }
      return - 2;
@@ -322,15 +317,15 @@ in loop x
        if(3 >= x$0 >>> 0)
         switch(x$0){
           case 0:
-           var _a_ = 1; break a;
+           var a = 1; break a;
           case 2:
-           var n = caml_call1(Stdlib_Random[5], 2), _a_ = n + n | 0; break a;
+           var n = caml_call1(Stdlib_Random[5], 2), a = n + n | 0; break a;
           case 3:
            var n$0 = caml_call1(Stdlib_Random[5], 2); x$0 = n$0; continue;
         }
-       var _a_ = 2;
+       var a = 2;
       }
-      return _a_ + 2 | 0;
+      return a + 2 | 0;
      }
     }
     //end |}]
@@ -436,8 +431,8 @@ let add_substitute =
      var lim$1 = caml_ml_string_length(s), previous = 32, i$4 = 0;
      for(;;){
       if(i$4 >= lim$1){
-       var _b_ = 92 === previous ? 1 : 0;
-       return _b_ ? caml_call2(add_char, b, previous) : _b_;
+       var c = 92 === previous ? 1 : 0;
+       return c ? caml_call2(add_char, b, previous) : c;
       }
       var previous$0 = caml_string_get(s, i$4);
       if(36 === previous$0)
@@ -494,7 +489,7 @@ let add_substitute =
           var closing = 41;
          else{
           if(123 !== opening)
-           throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
+           throw caml_maybe_attach_backtrace([0, Assert_failure, a], 1);
           var closing = 125;
          }
          var lim = caml_ml_string_length(s), k = k$2, stop = new_start;

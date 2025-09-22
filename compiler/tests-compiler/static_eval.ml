@@ -192,14 +192,11 @@ let%expect_test "static eval of tags" =
        var
         global_data = runtime.caml_get_global_data(),
         Stdlib_Random = global_data.Stdlib__Random,
-        _a_ = [0, [1, 0]],
-        _b_ = [1, 0],
-        x = 1 < caml_call1(Stdlib_Random[5], 3) ? _a_ : _b_;
+        a = [0, [1, 0]],
+        b = [1, 0],
+        x = 1 < caml_call1(Stdlib_Random[5], 3) ? a : b;
        x[0];
-       var
-        foobar = 3,
-        export$0 = [0, foobar, foobar],
-        Test = [0, foobar, export$0];
+       var foobar = 3, export$ = [0, foobar, foobar], Test = [0, foobar, export$];
        runtime.caml_register_global(3, Test, "Test");
        return;
       }

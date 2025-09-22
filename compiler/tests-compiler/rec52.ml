@@ -67,16 +67,16 @@ let%expect_test "let rec" =
         letrec_function_context = [],
         c = [],
         d = runtime.caml_array_make(5, 0),
-        default$0 = 42;
+        default$ = 42;
        function a(x){return b(x);}
        function b(x){
-        var _a_ = b(0);
-        return [0, 84, [0, letrec_function_context[1], c, _a_]];
+        var a = b(0);
+        return [0, 84, [0, letrec_function_context[1], c, a]];
        }
        var tbl = caml_call2(Stdlib_Hashtbl[1], 0, 17);
        caml_update_dummy(letrec_function_context, [0, tbl]);
-       caml_update_dummy(c, [0, [0, d, default$0]]);
-       var Test = [0, a, b, c, d, default$0];
+       caml_update_dummy(c, [0, [0, d, default$]]);
+       var Test = [0, a, b, c, d, default$];
        runtime.caml_register_global(1, Test, "Test");
        return;
       }

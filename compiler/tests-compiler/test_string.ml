@@ -56,9 +56,9 @@ let (_ : string) = here ()
         cst_a = "a",
         cst_b = "b",
         caml_string_concat = runtime.caml_string_concat;
-       function _a_(_b_){return cst_a + cst_a + cst_b + cst_b;}
-       _a_(0);
-       var Test = [0, caml_string_concat, _a_];
+       function a(a){return cst_a + cst_a + cst_b + cst_b;}
+       a(0);
+       var Test = [0, caml_string_concat, a];
        runtime.caml_register_global(2, Test, "Test");
        return;
       }
@@ -104,13 +104,13 @@ let (_ : string) = here ()
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
         cst_a = caml_string_of_jsbytes("a"),
         cst_b = caml_string_of_jsbytes("b");
-       function _a_(_b_){
+       function a(a){
         return caml_string_concat
                 (cst_a,
                  caml_string_concat(cst_a, caml_string_concat(cst_b, cst_b)));
        }
-       _a_(0);
-       var Test = [0, caml_string_concat, _a_];
+       a(0);
+       var Test = [0, caml_string_concat, a];
        runtime.caml_register_global(2, Test, "Test");
        return;
       }

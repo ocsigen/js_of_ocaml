@@ -63,28 +63,28 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        var
         dummy = 0,
         global_data = runtime.caml_get_global_data(),
-        _b_ =
+        a =
           [0,
            [11, caml_string_of_jsbytes("abc"), 0],
            caml_string_of_jsbytes("abc")],
         Stdlib_Printf = global_data.Stdlib__Printf;
-       function g$0(param){return caml_call1(Stdlib_Printf[2], _b_);}
+       function g$0(param){return caml_call1(Stdlib_Printf[2], a);}
        function g$1(param, cont){
-        return caml_trampoline_cps_call2(Stdlib_Printf[2], _b_, cont);
+        return caml_trampoline_cps_call2(Stdlib_Printf[2], a, cont);
        }
        var g = runtime.caml_cps_closure(g$0, g$1);
        g();
        var i = 1;
        for(;;){
         g();
-        var _c_ = i + 1 | 0;
+        var b = i + 1 | 0;
         if(5 === i){
          g();
          var Test = [0];
          runtime.caml_register_global(2, Test, "Test");
          return;
         }
-        i = _c_;
+        i = b;
        }
       }
       (globalThis));
