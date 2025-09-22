@@ -77,6 +77,27 @@ The CPS transformation is not the default since the generated code is slower,
 larger, and less readable. However, the JSPI extension is not yet enabled by
 default in web browsers, and performing effects is slower when using it.
 
+==@@id="wasi"@@ WASI support
+
+You can produce a WASI binary by running {{{wasm_of_ocaml}}} with the
+{{{--enable wasi}}} flag. At the moment, {{wasm_of_ocaml}} supports
+WASI 0.1. Features from the Sys and Unix modules are available
+whenever they're supported by the WASI API.
+
+The binaries produced by {{{wasm_of_ocaml}}} require the GC and
+exception-handling proposals, which are supported by Node.js, Wasmtime
+(with the {{{-W=all-proposals=y}}} flag), and the Wizard engine (with
+the {{{--ext:gc --ext:exception-handling --ext:legacy-eh}}} flags).
+Wasmtime does not support the legacy Wasm exception-handling
+instructions. To generate a binary that runs with Wasmtime, add the
+{{{--enable exnref}}} flag.
+
+For now, the output remains the same as without the {{{--enable
+wasi}}} flag: a JavaScript file {{{foo.js}}} and a directory
+{{{foo.assets}}} containing the Wasm code {{{code.wasm}}}. The
+JavaScript file can be used to run the WASI binary with {{{node}}},
+while the Wasm code can be run directly by other Wasm engines.
+
 ==@@id="js-bindings"@@ Binding with JavaScript libraries
 
 Js_of_ocaml lets you bind code with JavaScript libraries by linking {{{.js}}} files.
