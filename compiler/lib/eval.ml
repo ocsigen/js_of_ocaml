@@ -24,6 +24,7 @@ Static evaluation
 - Cannot return a static boxed constant
   (`return x` where x is a constant global variable (not in env),
    or a parameter from the initial call)
+- Deal with constant tuples (see one_ulp / lower_bound_for_int)
 *)
 
 open! Stdlib
@@ -360,6 +361,10 @@ let eval_prim ~target x =
           Some (Int (Targetint.of_int_exn (Targetint.num_bits ())))
       | "caml_sys_const_big_endian", [ _ ] -> Some (Int Targetint.zero)
       | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int Targetint.zero)
+      | "caml_obj_dup", [ x ] -> (
+          match x with
+          | NativeString _ | Float _ | Int _ | Int32 _ | Int64 _ | NativeInt _ -> Some x
+          | String _ | Float_array _ | Tuple _ -> None)
       | _ -> None)
   | _ -> None
 
@@ -535,8 +540,9 @@ let rec eval_block ~info ~blocks ~env pc args =
   match eval_block_body ~info ~blocks ~env block.body with
   | None -> None
   | Some env -> (
+      Format.eprintf "instr %a@." Code.Print.last block.branch;
       match block.branch with
-      | Return x -> Var.Map.find_opt x env
+      | Return x -> resolve ~info ~env (Pv x)
       | Branch (pc', args') -> eval_block ~info ~blocks ~env pc' args'
       | Cond (x, (pc1, args1), (pc2, args2)) -> (
           match resolve ~info ~env (Pv x) with
@@ -553,19 +559,42 @@ let rec eval_block ~info ~blocks ~env pc args =
           | _ -> None)
       | Raise _ | Stop | Pushtrap _ | Poptrap _ -> None)
 
-and resolve ~info ~env a =
+and resolve ~info ~env ?(eq = constant_equal) a =
   match
     match a with
     | Pv x -> Var.Map.find_opt x env
     | _ -> None
   with
   | Some _ as c -> c
-  | None -> the_const_of ~eq:constant_equal info a
+  | None -> the_const_of ~eq info a
 
 and eval_block_body ~info ~blocks ~env instrs =
+  (match instrs with
+  | i :: _ -> Format.eprintf "instr %a@." Code.Print.instr i
+  | [] -> ());
   match instrs with
   | [] -> Some env
   | Event _ :: rem -> eval_block_body ~info ~blocks ~env rem
+  | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) :: rem
+    -> (
+      let eq e1 e2 =
+        match Code.Constant.ocaml_equal e1 e2 with
+        | None -> false
+        | Some e -> e
+      in
+      match resolve ~info ~env ~eq y, resolve ~info ~env ~eq z with
+      | Some e1, Some e2 -> (
+          match Code.Constant.ocaml_equal e1 e2 with
+          | None -> None
+          | Some c ->
+              let c =
+                match prim with
+                | "caml_equal" -> c
+                | "caml_notequal" -> not c
+                | _ -> assert false
+              in
+              eval_block_body ~info ~blocks ~env:(Var.Map.add x (bool' c) env) rem)
+      | _ -> None)
   | Let (x, Prim (IsInt, [ y ])) :: rem -> (
       let res =
         match is_int info y with
@@ -586,7 +615,15 @@ and eval_block_body ~info ~blocks ~env instrs =
         List.exists prim_args' ~f:(function
           | Some _ -> false
           | None -> true)
-      then None
+      then (
+        List.iter prim_args' ~f:(fun x ->
+            Format.eprintf
+              "%s"
+              (match x with
+              | Some _ -> "x"
+              | None -> "?"));
+        Format.eprintf "@.";
+        None)
       else
         let res =
           eval_prim
@@ -609,9 +646,7 @@ and eval_block_body ~info ~blocks ~env instrs =
       match get_approx info (fun g -> Flow.Info.def info g) None (fun _ _ -> None) f with
       | Some (Closure (params, (pc, args'), _)) when List.compare_lengths args params = 0
         ->
-          let args =
-            List.map args ~f:(fun x -> the_const_of ~eq:constant_equal info (Pv x))
-          in
+          let args = List.map args ~f:(fun x -> resolve ~info ~env (Pv x)) in
           if
             List.for_all args ~f:(fun x ->
                 match x with
@@ -623,7 +658,7 @@ and eval_block_body ~info ~blocks ~env instrs =
                 ~f:(fun s x v -> Var.Map.add x (Option.get v) s)
                 params
                 args
-                ~init:Var.Map.empty
+                ~init:env
             in
             let res = eval_block ~info ~blocks ~env pc args' in
             match res with
