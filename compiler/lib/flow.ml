@@ -338,14 +338,17 @@ let get_approx
     top
     join
     x =
-  let s = Var.Tbl.get info_known_origins x in
-  if Var.Tbl.get info_maybe_unknown x
+  if Var.Tbl.length info_known_origins <= Var.idx x
   then top
   else
-    match Var.Set.cardinal s with
-    | 0 -> top
-    | 1 -> f (Var.Set.choose s)
-    | _ -> Var.Set.fold (fun x u -> join (f x) u) s (f (Var.Set.choose s))
+    let s = Var.Tbl.get info_known_origins x in
+    if Var.Tbl.get info_maybe_unknown x
+    then top
+    else
+      match Var.Set.cardinal s with
+      | 0 -> top
+      | 1 -> f (Var.Set.choose s)
+      | _ -> Var.Set.fold (fun x u -> join (f x) u) s (f (Var.Set.choose s))
 
 let the_def_of info x =
   match x with
