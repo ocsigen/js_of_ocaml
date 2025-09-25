@@ -70,11 +70,15 @@ module Debug : sig
     -> unit
 
   val read :
-    t -> crcs:(string * string option) list -> includes:string list -> in_channel -> unit
+       t
+    -> crcs:Ocaml_compiler.Import_info.t list
+    -> includes:string list
+    -> in_channel
+    -> unit
 
   val read_event_list :
        t
-    -> crcs:(string * string option) list
+    -> crcs:Ocaml_compiler.Import_info.t list
     -> includes:string list
     -> orig:int
     -> in_channel
@@ -222,7 +226,11 @@ end = struct
     fun debug ~crcs ~includes ~orig ic ->
       let crcs =
         let t = String.Hashtbl.create 17 in
-        List.iter crcs ~f:(fun (m, crc) -> String.Hashtbl.add t m crc);
+        List.iter crcs ~f:(fun info ->
+            String.Hashtbl.add
+              t
+              (Ocaml_compiler.Import_info.name info)
+              (Ocaml_compiler.Import_info.crc info));
         t
       in
       let evl : debug_event list = input_value ic in
@@ -1482,7 +1490,7 @@ and compile infos pc state (instrs : instr list) =
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
         let imm = is_immutable instr infos pc in
         compile infos (pc + 2) state (Let (x, Block (i, [||], Unknown, imm)) :: instrs)
-    | MAKEBLOCK ->
+    | MAKE_FAUX_MIXEDBLOCK | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
         let state = State.push state in
@@ -2629,7 +2637,7 @@ module Toc : sig
 
   val read_data : t -> in_channel -> Obj.t array
 
-  val read_crcs : t -> in_channel -> (string * Digest.t option) list
+  val read_crcs : t -> in_channel -> Ocaml_compiler.Import_info.t list
 
   val read_prim : t -> in_channel -> string
 
@@ -2678,8 +2686,8 @@ end = struct
 
   let read_crcs toc ic =
     ignore (seek_section toc ic "CRCS");
-    let orig_crcs : (string * Digest.t option) list = input_value ic in
-    orig_crcs
+    let orig_crcs : Ocaml_compiler.Import_info.table = input_value ic in
+    Ocaml_compiler.Import_info.to_list orig_crcs
 
   let read_prim toc ic =
     let prim_size = seek_section toc ic "PRIM" in
@@ -2698,7 +2706,7 @@ let read_crcs ic =
 
 type bytesections =
   { symb : Ocaml_compiler.Symtable.GlobalMap.t
-  ; crcs : (string * Digest.t option) list
+  ; crcs : Ocaml_compiler.Import_info.table
   ; prim : string list
   ; dlpt : string list
   }
@@ -2723,7 +2731,13 @@ let emit_link_info ~symbols ~primitives ~crcs ~num_globals body =
     |> Array.of_list
   in
 
-  let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
+  let sections =
+    { symb = symbols
+    ; crcs = Ocaml_compiler.Import_info.of_list crcs
+    ; prim = primitives
+    ; dlpt = []
+    }
+  in
   let aliases = Primitive.aliases () in
   let info =
     { sections; symbols = symbols_array; prim_count = List.length primitives; aliases }
@@ -2776,7 +2790,9 @@ let from_exe
         in
         String.Hashtbl.mem keeps
   in
-  let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
+  let crcs =
+    List.filter ~f:(fun info -> keep (Ocaml_compiler.Import_info.name info)) orig_crcs
+  in
   let symbols =
     Ocaml_compiler.Symtable.GlobalMap.filter
       (function
@@ -2978,9 +2994,10 @@ module Reloc = struct
     }
 
   let constant_of_const x = Ocaml_compiler.constant_of_const x
-  [@@if ocaml_version < (5, 1, 0)]
+  [@@if oxcaml || ocaml_version < (5, 1, 0)]
 
-  let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
+  let constant_of_const x = Constants.parse x
+  [@@if (not oxcaml) && ocaml_version >= (5, 1, 0)]
 
   (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =
@@ -3029,12 +3046,24 @@ module Reloc = struct
             patch (next gn)
         | ((Reloc_setglobal id) [@if ocaml_version < (5, 2, 0)]) ->
             patch (next (Glob_compunit (Compunit (Ident.name id))))
-        | ((Reloc_getcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
+        | ((Reloc_getcompunit (Compunit id))
+           [@if (not oxcaml) && ocaml_version >= (5, 2, 0)]) ->
             patch (next (Glob_compunit (Compunit id)))
+        | ((Reloc_getcompunit id) [@if oxcaml]) ->
+            patch
+              (next
+                 (Glob_compunit
+                    (Compunit (Ocaml_compiler.Compilation_unit.name_as_string id))))
         | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
             patch (next (Glob_predef (Predef id)))
-        | ((Reloc_setcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
+        | ((Reloc_setcompunit (Compunit id))
+           [@if (not oxcaml) && ocaml_version >= (5, 2, 0)]) ->
             patch (next (Glob_compunit (Compunit id)))
+        | ((Reloc_setcompunit id) [@if oxcaml]) ->
+            patch
+              (next
+                 (Glob_compunit
+                    (Compunit (Ocaml_compiler.Compilation_unit.name_as_string id))))
         | _ -> ())
 
   let primitives t =
@@ -3165,7 +3194,7 @@ let from_channel ic =
           then raise Magic_number.(Bad_magic_version magic);
           let compunit_pos = input_binary_int ic in
           seek_in ic compunit_pos;
-          let compunit : Cmo_format.compilation_unit = input_value ic in
+          let compunit : Ocaml_compiler.Cmo_format.t = input_value ic in
           `Cmo compunit
       | `Cma ->
           if
