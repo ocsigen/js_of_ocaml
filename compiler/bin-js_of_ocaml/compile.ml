@@ -318,7 +318,7 @@ let run
     sm
   in
   let output_partial
-      (cmo : Cmo_format.compilation_unit)
+      (cmo : Ocaml_compiler.Cmo_format.t)
       ~standalone
       ~shapes
       ~source_map

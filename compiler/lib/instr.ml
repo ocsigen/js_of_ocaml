@@ -173,6 +173,7 @@ type t =
   | RESUME
   | RESUMETERM
   | REPERFORMTERM
+  | MAKE_FAUX_MIXEDBLOCK
   | FIRST_UNIMPLEMENTED_OP
 
 let equal (a : t) b = Poly.equal a b
@@ -360,6 +361,7 @@ let ops =
      ; RESUME, if_v500 KNullaryCall, "RESUME"
      ; RESUMETERM, if_v500 (KStop 1), "RESUMETERM"
      ; REPERFORMTERM, if_v500 (KStop 1), "REPERFORMTERM"
+     ; MAKE_FAUX_MIXEDBLOCK, KBinary, "MAKE_FAUX_MIXEDBLOCK"
      ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"
     |]
   in
