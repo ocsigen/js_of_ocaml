@@ -23,6 +23,8 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
+[@@@ocaml.alert "-prefer_jane_syntax"]
+
 let nolabel = Nolabel
 
 exception Syntax_error of Location.Error.t
@@ -215,7 +217,7 @@ end = struct
   let args l = List.map ~f:(fun x -> label x, typ x) l
 end
 
-let lift_function_body_constraint expr = expr [@@if ast_version < 502]
+let lift_function_body_constraint expr = expr [@@if ast_version < 502 && not oxcaml]
 
 let lift_function_body_constraint expr =
   match expr.pexp_desc with
@@ -229,6 +231,27 @@ let lift_function_body_constraint expr =
       }
   | _ -> expr
 [@@if ast_version >= 502]
+
+let lift_function_body_constraint expr =
+  match expr.pexp_desc with
+  | Pexp_function
+      ( params
+      , ({ ret_type_constraint = None; ret_mode_annotations = []; _ } as
+         function_constraint)
+      , Pfunction_body
+          { pexp_desc = Pexp_constraint (body, ty, modes); pexp_attributes = []; _ } ) ->
+      { expr with
+        pexp_desc =
+          Pexp_function
+            ( params
+            , { function_constraint with
+                ret_type_constraint = Option.map (fun ty -> Pconstraint ty) ty
+              ; ret_mode_annotations = modes
+              }
+            , Pfunction_body body )
+      }
+  | _ -> expr
+[@@if oxcaml]
 
 let js_dot_t_the_first_arg args =
   match args with
@@ -294,6 +317,16 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
             Pexp_function
               ( List.map local_types ~f:(fun t ->
                     { pparam_desc = Pparam_newtype t; pparam_loc = Location.none })
+                @ params
+              , c
+              , b )
+        }
+    | ((Pexp_function (params, c, b)) [@if oxcaml]) ->
+        { invoker with
+          pexp_desc =
+            Pexp_function
+              ( List.map local_types ~f:(fun t ->
+                    { pparam_desc = Pparam_newtype (t, None); pparam_loc = Location.none })
                 @ params
               , c
               , b )
@@ -554,7 +587,7 @@ let rec create_meth_ty exp =
   | Pexp_function _ -> [ nolabel ]
   | Pexp_newtype (_, body) -> create_meth_ty body
   | _ -> []
-[@@if ast_version < 502]
+[@@if ast_version < 502 && not oxcaml]
 
 let rec create_meth_ty exp =
   match exp.pexp_desc with
@@ -569,7 +602,7 @@ let rec create_meth_ty exp =
           (* TODO: should we recurse or not ? *)
           create_meth_ty e)
   | _ -> []
-[@@if ast_version >= 502]
+[@@if ast_version >= 502 || oxcaml]
 
 let preprocess_literal_object mappper fields :
     [ `Fields of field_desc list | `Error of _ ] =
