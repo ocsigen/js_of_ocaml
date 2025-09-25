@@ -24,7 +24,8 @@
     ]}
     on module (Pstr_module),
     toplevel bindings (Pstr_value, Pstr_primitive)
-    and pattern in case (pc_lhs)
+    pattern in case (pc_lhs)
+    and module in signature (Psig_module)
 *)
 
 open StdLabels
@@ -296,7 +297,21 @@ let traverse =
             | Some pattern -> Some { case with pc_lhs = pattern })
       in
       super#cases cases
+
+    method! signature_item item =
+      match item.psig_desc with
+      | Psig_module { pmd_attributes; pmd_loc; _ } ->
+          if keep pmd_loc pmd_attributes
+          then item
+          else
+            let open Ppxlib.Ast_builder.Default in
+            let loc = Location.none in
+            psig_include ~loc (include_infos ~loc (pmty_signature ~loc []))
+      | _ -> item
   end
 
 let () =
-  Ppxlib.Driver.register_transformation ~impl:traverse#structure "ppx_optcomp_light"
+  Ppxlib.Driver.register_transformation
+    ~impl:traverse#structure
+    ~intf:traverse#signature
+    "ppx_optcomp_light"
