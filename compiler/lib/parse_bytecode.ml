@@ -1889,6 +1889,8 @@ and compile infos pc state (instrs : instr list) =
           | "%identity", _ -> true
           | "caml_ensure_stack_capacity", _ -> true
           | "caml_process_pending_actions_with_root", _ -> true
+          | "caml_array_of_iarray", _ -> true
+          | "caml_iarray_of_array", _ -> true
           | "caml_make_array", `JavaScript -> true
           | "caml_array_of_uniform_array", `JavaScript -> true
           | "caml_js_from_float", `JavaScript -> true
