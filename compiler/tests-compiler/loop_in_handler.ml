@@ -7,13 +7,15 @@ let%expect_test "loop at the start of an the exception handler" =
 type buf = {mutable pos : int; str : string}
 let string_sub = String.sub
 let read_line buf =
+  let nl = '\n' in
+  let cr = '\r' in
   let start = buf.pos in
   try
-    while buf.str.[buf.pos] != '\n' do
+    while buf.str.[buf.pos] != nl do
       buf.pos <- buf.pos + 1
     done;
     let l =
-      if buf.pos > 0 && buf.str.[buf.pos - 1] = '\r' then buf.pos - start - 1
+      if buf.pos > 0 && buf.str.[buf.pos - 1] = cr then buf.pos - start - 1
       else buf.pos - start
     in
     let s = string_sub buf.str start l in
@@ -31,10 +33,10 @@ let read_line buf =
      var start = buf[1];
      try{
       for(;;){
-       if(10 === caml_string_get(buf[2], buf[1])){
+       if(caml_string_get(buf[2], buf[1]) === 10){
         a:
         {
-         if(0 < buf[1] && 13 === caml_string_get(buf[2], buf[1] - 1 | 0)){var l = (buf[1] - start | 0) - 1 | 0; break a;}
+         if(0 < buf[1] && caml_string_get(buf[2], buf[1] - 1 | 0) === 13){var l = (buf[1] - start | 0) - 1 | 0; break a;}
          var l = buf[1] - start | 0;
         }
         var s = caml_call3(string_sub, buf[2], start, l);
