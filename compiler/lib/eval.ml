@@ -149,6 +149,16 @@ let nativeint_shiftop (l : constant list) (f : int32 -> int -> int32) : constant
   | [ NativeInt i; Int j ] -> Some (NativeInt (f i (Targetint.to_int_exn j)))
   | _ -> None
 
+let eval_comparison op args =
+  match args with
+  | [ Int i; Int j ] -> bool (op (Targetint.compare i j) 0)
+  | [ Int32 i; Int32 j ] -> bool (op (Int32.compare i j) 0)
+  | [ Int64 i; Int64 j ] -> bool (op (Int64.compare i j) 0)
+  | [ NativeInt i; NativeInt j ] -> bool (op (Int32.compare i j) 0)
+  | [ Float f; Float g ] ->
+      bool (op (Float.compare (Int64.float_of_bits f) (Int64.float_of_bits g)) 0)
+  | _ -> None
+
 let quiet_nan n = Int64.logor n 0x00_08_00_00_00_00_00_00L
 
 let eval_prim ~target x =
@@ -365,6 +375,10 @@ let eval_prim ~target x =
           match x with
           | NativeString _ | Float _ | Int _ | Int32 _ | Int64 _ | NativeInt _ -> Some x
           | String _ | Float_array _ | Tuple _ -> None)
+      | "caml_greaterthan", args -> eval_comparison ( > ) args
+      | "caml_greaterequal", args -> eval_comparison ( >= ) args
+      | "caml_lessthan", args -> eval_comparison ( < ) args
+      | "caml_lessequal", args -> eval_comparison ( <= ) args
       | _ -> None)
   | _ -> None
 
@@ -525,7 +539,7 @@ let constant_equal a b =
   | (String _ | NativeString _), _ -> false
   | (Float_array _ | Tuple _), _ -> false
 
-let rec eval_block ~info ~blocks ~env pc args =
+let rec eval_block ~info ~blocks ~target ~env pc args =
   let block = Addr.Map.find pc blocks in
   let env =
     List.fold_left2
@@ -537,25 +551,25 @@ let rec eval_block ~info ~blocks ~env pc args =
       args
       ~init:env
   in
-  match eval_block_body ~info ~blocks ~env block.body with
+  match eval_block_body ~info ~blocks ~target ~env block.body with
   | None -> None
   | Some env -> (
       Format.eprintf "instr %a@." Code.Print.last block.branch;
       match block.branch with
       | Return x -> resolve ~info ~env (Pv x)
-      | Branch (pc', args') -> eval_block ~info ~blocks ~env pc' args'
+      | Branch (pc', args') -> eval_block ~info ~blocks ~target ~env pc' args'
       | Cond (x, (pc1, args1), (pc2, args2)) -> (
           match resolve ~info ~env (Pv x) with
           | Some (Int i) when Targetint.is_zero i ->
-              eval_block ~info ~blocks ~env pc2 args2
-          | Some (Int _ | Tuple _) -> eval_block ~info ~blocks ~env pc1 args1
+              eval_block ~info ~blocks ~target ~env pc2 args2
+          | Some (Int _ | Tuple _) -> eval_block ~info ~blocks ~target ~env pc1 args1
           | Some _ -> assert false
           | None -> None)
       | Switch (x, conts) -> (
           match resolve ~info ~env (Pv x) with
           | Some (Int i) ->
               let pc', args' = conts.(Targetint.to_int_exn i) in
-              eval_block ~info ~blocks ~env pc' args'
+              eval_block ~info ~blocks ~target ~env pc' args'
           | _ -> None)
       | Raise _ | Stop | Pushtrap _ | Poptrap _ -> None)
 
@@ -568,13 +582,13 @@ and resolve ~info ~env ?(eq = constant_equal) a =
   | Some _ as c -> c
   | None -> the_const_of ~eq info a
 
-and eval_block_body ~info ~blocks ~env instrs =
+and eval_block_body ~info ~blocks ~target ~env instrs =
   (match instrs with
   | i :: _ -> Format.eprintf "instr %a@." Code.Print.instr i
   | [] -> ());
   match instrs with
   | [] -> Some env
-  | Event _ :: rem -> eval_block_body ~info ~blocks ~env rem
+  | Event _ :: rem -> eval_block_body ~info ~blocks ~target ~env rem
   | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) :: rem
     -> (
       let eq e1 e2 =
@@ -593,7 +607,8 @@ and eval_block_body ~info ~blocks ~env instrs =
                 | "caml_notequal" -> not c
                 | _ -> assert false
               in
-              eval_block_body ~info ~blocks ~env:(Var.Map.add x (bool' c) env) rem)
+              eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x (bool' c) env) rem
+          )
       | _ -> None)
   | Let (x, Prim (IsInt, [ y ])) :: rem -> (
       let res =
@@ -608,7 +623,8 @@ and eval_block_body ~info ~blocks ~env instrs =
       in
       match res with
       | None -> None
-      | Some b -> eval_block_body ~info ~blocks ~env:(Var.Map.add x (bool' b) env) rem)
+      | Some b ->
+          eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x (bool' b) env) rem)
   | (Let (x, Prim (prim, prim_args)) as i) :: rem -> (
       let prim_args' = List.map prim_args ~f:(fun a -> resolve ~info ~env a) in
       if
@@ -627,6 +643,7 @@ and eval_block_body ~info ~blocks ~env instrs =
       else
         let res =
           eval_prim
+            ~target
             ( prim
             , List.map prim_args' ~f:(function
                 | Some c -> c
@@ -636,11 +653,11 @@ and eval_block_body ~info ~blocks ~env instrs =
         | None ->
             Format.eprintf "INSTR %a@." Code.Print.instr i;
             None
-        | Some c -> eval_block_body ~info ~blocks ~env:(Var.Map.add x c env) rem)
+        | Some c -> eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x c env) rem)
   | Let (x, Constant c) :: rem -> (
       match c with
       | Float _ | Int _ | Int32 _ | Int64 _ | NativeInt _ | NativeString _ | Float_array _
-        -> eval_block_body ~info ~blocks ~env:(Var.Map.add x c env) rem
+        -> eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x c env) rem
       | String _ (*ZZZ*) | Tuple _ -> None)
   | Let (x, Apply { f; args; _ }) :: rem -> (
       match get_approx info (fun g -> Flow.Info.def info g) None (fun _ _ -> None) f with
@@ -660,13 +677,38 @@ and eval_block_body ~info ~blocks ~env instrs =
                 args
                 ~init:env
             in
-            let res = eval_block ~info ~blocks ~env pc args' in
+            let res = eval_block ~info ~blocks ~target ~env pc args' in
             match res with
-            | Some c -> eval_block_body ~info ~blocks ~env:(Var.Map.add x c env) rem
+            | Some c ->
+                eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x c env) rem
             | None -> None
           else None
       | _ -> None)
-  | ( Let (_, (Block _ | Field _ | Closure _ | Special _))
+  | Let (x, Block (tag, fields, _, _)) :: rem ->
+      let fields = Array.map fields ~f:(fun x -> resolve ~info ~env (Pv x)) in
+      if
+        Array.exists fields ~f:(function
+          | Some _ -> false
+          | None -> true)
+      then None
+      else
+        let fields =
+          Array.map fields ~f:(function
+            | Some c -> c
+            | None -> assert false)
+        in
+        eval_block_body
+          ~info
+          ~blocks
+          ~target
+          ~env:(Var.Map.add x (Tuple (tag, fields, Unknown)) env)
+          rem
+  | Let (x, Field (y, i, _)) :: rem -> (
+      match resolve ~info ~env (Pv y) with
+      | Some (Tuple (_, fields, _)) when i < Array.length fields ->
+          eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x fields.(i) env) rem
+      | _ -> None)
+  | ( Let (_, (Closure _ | Special _))
     | Assign _ | Set_field _ | Offset_ref _ | Array_set _ )
     :: _ -> None
 
@@ -889,7 +931,7 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
                 args
                 ~init:Var.Map.empty
             in
-            let res = eval_block ~info ~blocks ~env pc args' in
+            let res = eval_block ~info ~blocks ~target ~env pc args' in
             match res with
             | Some c ->
                 Format.eprintf "===> STATIC@.";
