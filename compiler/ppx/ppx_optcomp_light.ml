@@ -155,61 +155,71 @@ let keep loc (attrs : attributes) =
             | PStr [ { pstr_desc = Pstr_eval (e, []); _ } ] -> e
             | _ -> raise (Invalid attr_loc)
           in
-          let loc = e.pexp_loc in
-          let rec eval = function
-            | { pexp_desc = Pexp_ident { txt = Lident "ocaml_version"; _ }; _ } ->
-                Version Version.current
-            | { pexp_desc = Pexp_ident { txt = Lident "ast_version"; _ }; _ } ->
-                Int Ppxlib.Selected_ast.version
-            | { pexp_desc = Pexp_construct ({ txt = Lident "true"; _ }, None); _ } ->
-                Bool true
-            | { pexp_desc = Pexp_construct ({ txt = Lident "false"; _ }, None); _ } ->
-                Bool false
-            | { pexp_desc = Pexp_constant (Pconst_integer (d, None)); _ } ->
-                Int (int_of_string d)
-            | { pexp_desc = Pexp_tuple l; _ } -> Tuple (List.map l ~f:eval)
-            | { pexp_desc = Pexp_apply (op, [ (Nolabel, a); (Nolabel, b) ]); pexp_loc; _ }
-              -> (
-                let op = get_bin_op op in
-                let a = eval a in
-                let b = eval b in
-                match op with
-                | LE | GE | LT | GT | NEQ | EQ ->
-                    let comp =
-                      match a, b with
-                      | Version _, _ | _, Version _ ->
-                          Version.compare (version a) (version b)
-                      | Int a, Int b -> compare a b
-                      | _ -> raise (Invalid pexp_loc)
-                    in
-                    let op =
-                      match op with
-                      | LE -> ( <= )
-                      | GE -> ( >= )
-                      | LT -> ( < )
-                      | GT -> ( > )
-                      | EQ -> ( = )
-                      | NEQ -> ( <> )
-                      | _ -> assert false
-                    in
-                    Bool (op comp 0)
-                | AND -> (
-                    match a, b with
-                    | Bool a, Bool b -> Bool (a && b)
-                    | _ -> raise (Invalid loc))
-                | OR -> (
-                    match a, b with
-                    | Bool a, Bool b -> Bool (a || b)
-                    | _ -> raise (Invalid loc))
-                | NOT -> raise (Invalid loc))
-            | { pexp_desc = Pexp_apply (op, [ (Nolabel, a) ]); _ } -> (
-                let op = get_un_op op in
-                let a = eval a in
-                match op, a with
-                | NOT, Bool b -> Bool (not b)
-                | NOT, _ -> raise (Invalid loc)
-                | _ -> raise (Invalid loc))
-            | _ -> raise (Invalid loc)
+          let rec eval e =
+            let open Ppxlib.Ast_pattern in
+            let loc = e.pexp_loc in
+            match
+              (parse_res
+                 (pexp_ident (lident (string "ocaml_version"))
+                 >>| (fun () -> Version Version.current)
+                 ||| (pexp_ident (lident (string "ast_version"))
+                     >>| fun () -> Int Ppxlib.Selected_ast.version)
+                 ||| (pexp_construct (lident (string "true")) drop >>| fun () -> Bool true)
+                 ||| (pexp_construct (lident (string "false")) drop
+                     >>| fun () -> Bool false)
+                 ||| (pexp_constant (pconst_integer __ none)
+                     >>| fun () d -> Int (int_of_string d))
+                 ||| (pexp_tuple __ >>| fun () l -> Tuple (List.map l ~f:eval))
+                 ||| (pexp_apply __ __
+                     >>| fun () op l ->
+                     match l with
+                     | [ (Nolabel, a); (Nolabel, b) ] -> (
+                         let op = get_bin_op op in
+                         let a = eval a in
+                         let b = eval b in
+                         match op with
+                         | LE | GE | LT | GT | NEQ | EQ ->
+                             let comp =
+                               match a, b with
+                               | Version _, _ | _, Version _ ->
+                                   Version.compare (version a) (version b)
+                               | Int a, Int b -> compare a b
+                               | _ -> raise (Invalid loc)
+                             in
+                             let op =
+                               match op with
+                               | LE -> ( <= )
+                               | GE -> ( >= )
+                               | LT -> ( < )
+                               | GT -> ( > )
+                               | EQ -> ( = )
+                               | NEQ -> ( <> )
+                               | _ -> assert false
+                             in
+                             Bool (op comp 0)
+                         | AND -> (
+                             match a, b with
+                             | Bool a, Bool b -> Bool (a && b)
+                             | _ -> raise (Invalid loc))
+                         | OR -> (
+                             match a, b with
+                             | Bool a, Bool b -> Bool (a || b)
+                             | _ -> raise (Invalid loc))
+                         | NOT -> raise (Invalid loc))
+                     | [ (Nolabel, a) ] -> (
+                         let op = get_un_op op in
+                         let a = eval a in
+                         match op, a with
+                         | NOT, Bool b -> Bool (not b)
+                         | NOT, _ -> raise (Invalid loc)
+                         | _ -> raise (Invalid loc))
+                     | _ -> raise (Invalid loc))))
+                loc
+                e
+                ()
+            with
+            | Ok res -> res
+            | Error _ -> raise (Invalid loc)
           in
           match eval e with
           | Bool b -> b
