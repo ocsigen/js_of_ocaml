@@ -58,7 +58,7 @@ val from_cmo :
      ?includes:string list
   -> ?include_cmis:bool
   -> ?debug:bool
-  -> Cmo_format.compilation_unit
+  -> Ocaml_compiler.Cmo_format.t
   -> in_channel
   -> one
 
@@ -72,7 +72,7 @@ val from_cma :
 
 val from_channel :
      in_channel
-  -> [ `Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe ]
+  -> [ `Cmo of Ocaml_compiler.Cmo_format.t | `Cma of Cmo_format.library | `Exe ]
 
 val from_string :
   prims:string array -> debug:Instruct.debug_event list array -> string -> Code.program
@@ -82,5 +82,5 @@ val predefined_exceptions : unit -> Code.program * Unit_info.t
 val link_info :
      symbols:Ocaml_compiler.Symtable.GlobalMap.t
   -> primitives:StringSet.t
-  -> crcs:(string * Digest.t option) list
+  -> crcs:Ocaml_compiler.Import_info.t list
   -> Code.program
