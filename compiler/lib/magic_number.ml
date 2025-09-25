@@ -64,6 +64,8 @@ let compare (p1, n1) (p2, n2) =
 
 let equal a b = compare a b = 0
 
+let v = snd (of_string Config_main.exec_magic_number) [@@if oxcaml]
+
 let v =
   let current = Ocaml_version.current in
   match current with
@@ -80,6 +82,7 @@ let v =
       else (
         assert (Ocaml_version.compare current [ 5; 5 ] >= 0);
         failwith "OCaml version unsupported. Upgrade js_of_ocaml.")
+[@@if not oxcaml]
 
 let current_exe = "Caml1999X", v
 
