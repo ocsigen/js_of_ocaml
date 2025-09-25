@@ -149,6 +149,16 @@ let nativeint_shiftop (l : constant list) (f : int32 -> int -> int32) : constant
   | [ NativeInt i; Int j ] -> Some (NativeInt (f i (Targetint.to_int_exn j)))
   | _ -> None
 
+let eval_comparison op args =
+  match args with
+  | [ Int i; Int j ] -> bool (op (Targetint.compare i j) 0)
+  | [ Int32 i; Int32 j ] -> bool (op (Int32.compare i j) 0)
+  | [ Int64 i; Int64 j ] -> bool (op (Int64.compare i j) 0)
+  | [ NativeInt i; NativeInt j ] -> bool (op (Int32.compare i j) 0)
+  | [ Float f; Float g ] ->
+      bool (op (Float.compare (Int64.float_of_bits f) (Int64.float_of_bits g)) 0)
+  | _ -> None
+
 let eval_prim x =
   match x with
   | Not, [ Int i ] -> bool (Targetint.is_zero i)
@@ -343,6 +353,10 @@ let eval_prim x =
           match x with
           | NativeString _ | Float _ | Int _ | Int32 _ | Int64 _ | NativeInt _ -> Some x
           | String _ | Float_array _ | Tuple _ -> None)
+      | "caml_greaterthan", args -> eval_comparison ( > ) args
+      | "caml_greaterequal", args -> eval_comparison ( >= ) args
+      | "caml_lessthan", args -> eval_comparison ( < ) args
+      | "caml_lessequal", args -> eval_comparison ( <= ) args
       | _ -> None)
   | _ -> None
 
@@ -644,7 +658,30 @@ and eval_block_body ~info ~blocks ~env instrs =
             | None -> None
           else None
       | _ -> None)
-  | ( Let (_, (Block _ | Field _ | Closure _ | Special _))
+  | Let (x, Block (tag, fields, _, _)) :: rem ->
+      let fields = Array.map fields ~f:(fun x -> resolve ~info ~env (Pv x)) in
+      if
+        Array.exists fields ~f:(function
+          | Some _ -> false
+          | None -> true)
+      then None
+      else
+        let fields =
+          Array.map fields ~f:(function
+            | Some c -> c
+            | None -> assert false)
+        in
+        eval_block_body
+          ~info
+          ~blocks
+          ~env:(Var.Map.add x (Tuple (tag, fields, Unknown)) env)
+          rem
+  | Let (x, Field (y, i, _)) :: rem -> (
+      match resolve ~info ~env (Pv y) with
+      | Some (Tuple (_, fields, _)) when i < Array.length fields ->
+          eval_block_body ~info ~blocks ~env:(Var.Map.add x fields.(i) env) rem
+      | _ -> None)
+  | ( Let (_, (Closure _ | Special _))
     | Assign _ | Set_field _ | Offset_ref _ | Array_set _ )
     :: _ -> None
 
