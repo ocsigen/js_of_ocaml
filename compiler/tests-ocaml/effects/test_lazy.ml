@@ -1,5 +1,8 @@
 (* TEST *)
 
+[@@@ocaml.alert
+"-unsafe_parallelism-unsafe_multidomain-do_not_spawn_domains"]
+
 open Effect
 open Effect.Deep
 

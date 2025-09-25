@@ -366,7 +366,7 @@ let compile_ocaml_to_cmo ?(debug = true) file =
   print_string stdout;
   Filetype.cmo_file_of_path out_file
 
-let compile_ocaml_to_bc ?(debug = true) ?(unix = false) file =
+let compile_ocaml_to_bc ?(debug = true) ?(unix = false) ?(ocaml_flags = []) file =
   let file = Filetype.path_of_ocaml_file file in
   let out_file = swap_extention file ~ext:"bc" in
   let (stdout : string) =
@@ -374,10 +374,11 @@ let compile_ocaml_to_bc ?(debug = true) ?(unix = false) file =
       ~fail:true
       ~cmd:
         (Format.sprintf
-           "%s -no-check-prims %s %s %s -o %s"
+           "%s -no-check-prims %s %s %s %s -o %s"
            ocamlc
            (if debug then "-g" else "")
            (if unix then "-I +unix unix.cma" else "")
+           (String.concat ~sep:" " ocaml_flags)
            file
            out_file)
       ()
@@ -551,13 +552,22 @@ let compile_and_run_bytecode ?unix s =
       |> run_bytecode
       |> print_endline)
 
-let compile_and_run ?debug ?pretty ?(flags = []) ?effects ?use_js_string ?unix ?werror s =
+let compile_and_run
+    ?debug
+    ?pretty
+    ?(flags = [])
+    ?(ocaml_flags = [])
+    ?effects
+    ?use_js_string
+    ?unix
+    ?werror
+    s =
   with_temp_dir ~f:(fun () ->
       let bytecode_file =
         s
         |> Filetype.ocaml_text_of_string
         |> Filetype.write_ocaml ~name:"test.ml"
-        |> compile_ocaml_to_bc ?debug ?unix
+        |> compile_ocaml_to_bc ?debug ?unix ~ocaml_flags
       in
       let output =
         compile_bc_to_javascript

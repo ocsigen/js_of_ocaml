@@ -1,3 +1,5 @@
+[@@@ocaml.alert "-unsafe_multidomain"]
+
 external unregister : string -> unit = "caml_unregister_named_value"
 
 let () =
