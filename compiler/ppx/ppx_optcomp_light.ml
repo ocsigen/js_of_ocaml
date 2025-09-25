@@ -39,6 +39,12 @@ module Version : sig
   val compare : t -> t -> int
 
   val current : t
+
+  type extra_prefix =
+    | Plus
+    | Tilde
+
+  val extra : (extra_prefix * string) option
 end = struct
   type t = int list
 
@@ -87,6 +93,26 @@ end = struct
         match compint x y with
         | 0 -> compare xs ys
         | n -> n)
+
+  type extra_prefix =
+    | Plus
+    | Tilde
+
+  type release_info = { extra : (extra_prefix * string) option }
+
+  let extra =
+    (* Sys.ocaml_release is only available since OCaml 4.14. For older
+       version of OCaml, [ocaml_release.extra] will evaluate to
+       [None]. *)
+    let ocaml_release = { extra = None } in
+    ignore ocaml_release.extra;
+    match
+      let open! Sys in
+      ocaml_release.extra
+    with
+    | None -> None
+    | Some (Plus, tag) -> Some (Plus, tag)
+    | Some (Tilde, tag) -> Some (Tilde, tag)
 end
 
 exception Invalid of Location.t
@@ -165,6 +191,12 @@ let keep loc (attrs : attributes) =
                  >>| (fun () -> Version Version.current)
                  ||| (pexp_ident (lident (string "ast_version"))
                      >>| fun () -> Int Ppxlib.Selected_ast.version)
+                 ||| (pexp_ident (lident (string "oxcaml"))
+                     >>| fun () ->
+                     Bool
+                       (match Version.extra with
+                       | Some (Plus, "ox") -> true
+                       | _ -> false))
                  ||| (pexp_construct (lident (string "true")) drop >>| fun () -> Bool true)
                  ||| (pexp_construct (lident (string "false")) drop
                      >>| fun () -> Bool false)
