@@ -1,3 +1,5 @@
+[@@@ocaml.alert "-unsafe_parallelism-unsafe_multidomain-do_not_spawn_domains"]
+
 let%expect_test _ =
   let d = Domain.spawn (fun () -> 1 + 2) in
   print_int (Domain.join d);

@@ -175,7 +175,10 @@ end = struct
 
   exception Exn of t
 
-  let _ = Callback.register_exception "jsError" (Exn (Obj.magic [||]))
+  let _ =
+    (Callback.register_exception [@ocaml.alert "-unsafe_multidomain"])
+      "jsError"
+      (Exn (Obj.magic [||]))
 
   external raise_ : t -> 'a = "caml_throw_js_exception"
 
