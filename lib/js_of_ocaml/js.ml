@@ -813,7 +813,7 @@ let parseFloat (s : js_string t) : number_t =
   if isNaN s then failwith "parseFloat" else s
 
 let _ =
-  Printexc.register_printer (fun e ->
+  (Printexc.register_printer [@ocaml.alert "-unsafe_multidomain"]) (fun e ->
       if instanceof (Obj.magic e : < .. > t) error_constr
       then
         let e = Js_error.of_error (Obj.magic e : error t) in

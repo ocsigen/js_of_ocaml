@@ -6,7 +6,7 @@
 exception My_exception
 
 let () =
-  Printexc.set_uncaught_exception_handler (fun exn bt ->
+  (Printexc.set_uncaught_exception_handler [@ocaml.alert "-unsafe_multidomain"]) (fun exn bt ->
     match exn with
     | My_exception -> print_endline "Caught"; exit 0
     | _ -> print_endline "Unexpected uncaught exception");
