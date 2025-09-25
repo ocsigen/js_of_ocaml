@@ -1,6 +1,7 @@
-(lang dune 3.19)
+(lang dune 3.20)
 (using menhir 3.0)
 (using directory-targets 0.1)
+(using oxcaml 0.1)
 (name js_of_ocaml)
 (generate_opam_files true)
 (executables_implicit_empty_intf true)
