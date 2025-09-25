@@ -3,6 +3,8 @@
 open Effect
 open Effect.Deep
 
+[@@@ocaml.alert "-unsafe_parallelism-unsafe_multidomain"]
+
 type _ t += Stop : unit t
 
 let f count =
