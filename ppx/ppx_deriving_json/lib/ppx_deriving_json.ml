@@ -23,6 +23,8 @@ open Ppxlib.Ast
 open Ppxlib.Ast_helper
 open Ppxlib.Parsetree
 
+[@@@ocaml.alert "-prefer_jane_syntax"]
+
 let nolabel = Nolabel
 
 let unflatten l =
@@ -132,30 +134,28 @@ let core_type_of_type_decl { ptype_name = name; ptype_params; _ } =
   let name = mkloc (Longident.Lident name.txt) name.loc in
   Typ.constr name (List.map ~f:fst ptype_params)
 
+let wrap fn =
+ fun (param, _) accum ->
+  match param with
+  | ({ ptyp_desc = Ptyp_any; _ } [@if not oxcaml]) -> accum
+  | ({ ptyp_desc = Ptyp_any _; _ } [@if oxcaml]) -> accum
+  | ({ ptyp_desc = Ptyp_var name; _ } [@if not oxcaml]) ->
+      let name = mkloc name param.ptyp_loc in
+      fn name accum
+  | ({ ptyp_desc = Ptyp_var (name, _); _ } [@if oxcaml]) ->
+      let name = mkloc name param.ptyp_loc in
+      fn name accum
+  | _ -> assert false
+
 let fold_right_type_params fn params accum =
-  List.fold_right
-    ~f:(fun (param, _) accum ->
-      match param with
-      | { ptyp_desc = Ptyp_any; _ } -> accum
-      | { ptyp_desc = Ptyp_var name; _ } ->
-          let name = mkloc name param.ptyp_loc in
-          fn name accum
-      | _ -> assert false)
-    params
-    ~init:accum
+  List.fold_right ~f:(wrap fn) params ~init:accum
 
 let fold_right_type_decl fn { ptype_params; _ } accum =
   fold_right_type_params fn ptype_params accum
 
 let fold_left_type_params fn accum params =
   List.fold_left
-    ~f:(fun accum (param, _) ->
-      match param with
-      | { ptyp_desc = Ptyp_any; _ } -> accum
-      | { ptyp_desc = Ptyp_var name; _ } ->
-          let name = mkloc name param.ptyp_loc in
-          fn accum name
-      | _ -> assert false)
+    ~f:(fun accum param -> wrap (fun accum name -> fn name accum) param accum)
     ~init:accum
     params
 
@@ -338,10 +338,14 @@ and write_body_of_type y ~(arg : string) ~poly =
   | [%type: [%t? y] array] ->
       let e = write_of_type y ~poly in
       [%expr [%e rt "write_array"] [%e e] buf [%e arg]]
-  | { Parsetree.ptyp_desc = Ptyp_var v; _ } when poly ->
+  | ({ Parsetree.ptyp_desc = Ptyp_var v; _ } [@if not oxcaml]) when poly ->
       [%expr [%e evar ("poly_" ^ v)] buf [%e arg]]
-  | { Parsetree.ptyp_desc = Ptyp_tuple l; _ } ->
+  | ({ Parsetree.ptyp_desc = Ptyp_var (v, _); _ } [@if oxcaml]) when poly ->
+      [%expr [%e evar ("poly_" ^ v)] buf [%e arg]]
+  | ({ Parsetree.ptyp_desc = Ptyp_tuple l; _ } [@if not oxcaml]) ->
       write_body_of_tuple_type l ~arg ~poly ~tag:0
+  | ({ Parsetree.ptyp_desc = Ptyp_tuple l; _ } [@if oxcaml]) ->
+      write_body_of_tuple_type (List.map ~f:snd l) ~arg ~poly ~tag:0
   | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); _ } ->
       Exp.match_ arg (List.map ~f:(write_poly_case ~arg:arg' ~poly) l)
   | { Parsetree.ptyp_desc = Ptyp_constr (lid, l); _ } ->
@@ -498,7 +502,10 @@ and read_body_of_type ?decl y =
   | [%type: [%t? y] ref] -> [%expr [%e rt "read_ref"] [%e read_of_type ?decl y] buf]
   | [%type: [%t? y] option] -> [%expr [%e rt "read_option"] [%e read_of_type ?decl y] buf]
   | [%type: [%t? y] array] -> [%expr [%e rt "read_array"] [%e read_of_type ?decl y] buf]
-  | { Parsetree.ptyp_desc = Ptyp_tuple l; _ } -> read_body_of_tuple_type l ?decl
+  | ({ Parsetree.ptyp_desc = Ptyp_tuple l; _ } [@if not oxcaml]) ->
+      read_body_of_tuple_type l ?decl
+  | ({ Parsetree.ptyp_desc = Ptyp_tuple l; _ } [@if oxcaml]) ->
+      read_body_of_tuple_type (List.map ~f:snd l) ?decl
   | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc; _ } ->
       let e =
         match decl with
@@ -513,7 +520,9 @@ and read_body_of_type ?decl y =
         | Some _ | None -> read_of_poly_variant l y ~loc
       and tag = [%expr [%e lexer "read_vcase"] buf] in
       [%expr [%e e] buf [%e tag]]
-  | { Parsetree.ptyp_desc = Ptyp_var v; _ } when poly ->
+  | ({ Parsetree.ptyp_desc = Ptyp_var v; _ } [@if not oxcaml]) when poly ->
+      [%expr [%e evar ("poly_" ^ v)] buf]
+  | ({ Parsetree.ptyp_desc = Ptyp_var (v, _); _ } [@if oxcaml]) when poly ->
       [%expr [%e evar ("poly_" ^ v)] buf]
   | { Parsetree.ptyp_desc = Ptyp_constr (lid, l); _ } ->
       let e = suffix_lid lid ~suffix:"of_json"

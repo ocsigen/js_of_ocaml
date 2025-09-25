@@ -6,4 +6,4 @@
  (ppx_runtime_libraries js_of_ocaml.deriving)
  (kind ppx_deriver)
  (preprocess
-  (pps ppxlib.metaquot)))
+  (pps ppx_optcomp_light ppxlib.metaquot)))
