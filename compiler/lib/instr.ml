@@ -173,6 +173,7 @@ type t =
   | RESUME
   | RESUMETERM
   | REPERFORMTERM
+  | MAKE_FAUX_MIXEDBLOCK
   | FIRST_UNIMPLEMENTED_OP
 
 let equal (a : t) b = Poly.equal a b
@@ -199,6 +200,10 @@ type desc =
   ; name : string
   ; opcode : int
   }
+
+let if_oxcaml k = k [@@if oxcaml]
+
+let if_oxcaml _ = K_will_not_happen [@@if not oxcaml]
 
 let ops =
   let if_v500 =
@@ -360,6 +365,7 @@ let ops =
      ; RESUME, if_v500 KNullaryCall, "RESUME"
      ; RESUMETERM, if_v500 (KStop 1), "RESUMETERM"
      ; REPERFORMTERM, if_v500 (KStop 1), "REPERFORMTERM"
+     ; MAKE_FAUX_MIXEDBLOCK, if_oxcaml KBinary, "MAKE_FAUX_MIXEDBLOCK"
      ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"
     |]
   in
