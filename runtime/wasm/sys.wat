@@ -37,6 +37,7 @@
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "bindings" "argv" (func $argv (result (ref extern))))
    (import "bindings" "on_windows" (global $on_windows i32))
+   (import "bindings" "on_arm64" (global $on_arm64 i32))
    (import "bindings" "isatty"
       (func $isatty (param (ref eq)) (result (ref eq))))
    (import "bindings" "system" (func $system (param anyref) (result (ref eq))))
@@ -159,6 +160,14 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
+   (func (export "caml_sys_const_arch_amd64")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.eqz (global.get $on_arm64))))
+
+   (func (export "caml_sys_const_arch_arm64")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (global.get $on_arm64)))
+
    (@string $Unix "Unix")
    (@string $Win32 "Win32")
 
@@ -173,6 +182,10 @@
    (func (export "caml_sys_isatty")
       (param $ch (ref eq)) (result (ref eq))
       (return_call $isatty (call $caml_channel_descriptor (local.get $ch))))
+
+   (func (export "caml_sys_const_runtime5")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
 
    (func (export "caml_runtime_variant") (param (ref eq)) (result (ref eq))
       (@string ""))

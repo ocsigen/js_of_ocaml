@@ -33,6 +33,7 @@ let runtime =
     ; graphics
     ; hash
     ; ieee_754
+    ; float32
     ; int64
     ; ints
     ; io

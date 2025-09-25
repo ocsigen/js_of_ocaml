@@ -194,6 +194,8 @@
 
   const on_windows = isNode && globalThis.process.platform === "win32";
 
+  const on_arm64 = globalThis.process?.arch === "arm64";
+
   const call = Function.prototype.call;
   const DV = DataView.prototype;
 
@@ -460,6 +462,7 @@
     exit: (n) => isNode && globalThis.process.exit(n),
     argv: () => (isNode ? globalThis.process.argv.slice(1) : ["a.out"]),
     on_windows: +on_windows,
+    on_arm64: +on_arm64,
     getenv,
     backtrace_status: () => record_backtrace_flag,
     record_backtrace: (b) => (record_backtrace_flag = b),
