@@ -20,7 +20,9 @@
  (modules test_marshal_compressed)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (enabled_if
-  (>= %{ocaml_version} 5.1.1))
+  (and
+   (>= %{ocaml_version} 5.1.1)
+   (not %{oxcaml_supported})))
  (inline_tests
   (modes js wasm best))
  (preprocess
