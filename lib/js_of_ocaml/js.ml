@@ -17,6 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+
+[@@@ocaml.alert "-unsafe_multidomain"]
+
 open! Import
 
 (* This local module [Js] is needed so that the ppx_js extension work within that file. *)

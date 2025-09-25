@@ -16,6 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+[@@@ocaml.alert "-unsafe_multidomain"]
+
 module Js = struct
   type t
 
