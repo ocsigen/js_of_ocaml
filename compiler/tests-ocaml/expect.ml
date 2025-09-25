@@ -1,3 +1,4 @@
+[@@@ocaml.alert "-unsafe_multidomain"]
 
 let () = Js_of_ocaml_toplevel.JsooTop.initialize ()
 
