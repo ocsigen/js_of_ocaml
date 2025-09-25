@@ -6,7 +6,6 @@ caml_alloc_dummy_function
 caml_assume_no_perform
 caml_continuation_use
 caml_drop_continuation
-caml_int_as_pointer
 caml_reset_afl_instrumentation
 caml_unix_accept
 caml_unix_alarm
@@ -107,6 +106,9 @@ caml_hash_mix_bigstring
 From +effect.js:
 jsoo_effect_not_supported
 
+From +float32.js:
+caml_is_boot_compiler
+
 From +fs.js:
 caml_ba_map_file
 caml_ba_map_file_bytecode
@@ -164,6 +166,7 @@ caml_gr_wait_event
 caml_gr_window_id
 
 From +hash.js:
+caml_hash_exn
 caml_hash_mix_int64
 
 From +ints.js:
@@ -203,6 +206,7 @@ caml_format_exception
 caml_is_special_exception
 caml_set_static_env
 caml_sys_const_naked_pointers_checked
+caml_sys_const_runtime5
 
 From +toplevel.js:
 caml_get_section_table
