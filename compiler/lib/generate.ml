@@ -494,6 +494,7 @@ let rec constant_rec ~ctx x level instrs =
       | Byte x -> Share.get_byte_string str_js_byte x ctx.Ctx.share, instrs
       | Utf (Utf8 x) -> Share.get_utf_string str_js_utf8 x ctx.Ctx.share, instrs)
   | Float f -> float_const f, instrs
+  | Float32 f -> float_const f, instrs
   | Float_array a ->
       ( Mlvalue.Array.make
           ~tag:Obj.double_array_tag
@@ -1683,27 +1684,27 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               | _ -> J.EBin (J.Plus, ca, cb)
             in
             return (add ca cb)
-        | Extern "caml_eq_float", [ a; b ] ->
+        | Extern ("caml_eq_float" | "caml_eq_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.EqEqEq, cx, cy)))
-        | Extern "caml_neq_float", [ a; b ] ->
+        | Extern ("caml_neq_float" | "caml_neq_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.NotEqEq, cx, cy)))
-        | Extern "caml_ge_float", [ a; b ] ->
+        | Extern ("caml_ge_float" | "caml_ge_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Le, cy, cx)))
-        | Extern "caml_le_float", [ a; b ] ->
+        | Extern ("caml_le_float" | "caml_le_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Le, cx, cy)))
-        | Extern "caml_gt_float", [ a; b ] ->
+        | Extern ("caml_gt_float" | "caml_gt_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Lt, cy, cx)))
-        | Extern "caml_lt_float", [ a; b ] ->
+        | Extern ("caml_lt_float" | "caml_lt_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Lt, cx, cy)))
@@ -2500,6 +2501,12 @@ let init () =
     ; "caml_le_float"
     ; "caml_gt_float"
     ; "caml_lt_float"
+    ; "caml_eq_float32"
+    ; "caml_neq_float32"
+    ; "caml_ge_float32"
+    ; "caml_le_float32"
+    ; "caml_gt_float32"
+    ; "caml_lt_float32"
     ; "caml_is_null"
     ]
     ~f:(fun name -> Primitive.register name `Pure None None);

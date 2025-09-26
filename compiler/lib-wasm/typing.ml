@@ -57,6 +57,7 @@ type boxed_number =
   | Int64
   | Nativeint
   | Float
+  | Float32
 
 type boxed_status =
   | Boxed
@@ -66,6 +67,7 @@ module Bigarray = struct
   type kind =
     | Float16
     | Float32
+    | Float32_t
     | Float64
     | Int8_signed
     | Int8_unsigned
@@ -118,6 +120,7 @@ module Bigarray = struct
       "bigarray{%s,%s}"
       (match kind with
       | Float32 -> "float32"
+      | Float32_t -> "float32_t"
       | Float64 -> "float64"
       | Int8_signed -> "sint8"
       | Int8_unsigned -> "uint8"
@@ -241,7 +244,8 @@ module Domain = struct
           | Int32 -> "int32"
           | Int64 -> "int64"
           | Nativeint -> "nativeint"
-          | Float -> "float")
+          | Float -> "float"
+          | Float32 -> "float32")
           (match b with
           | Boxed -> "boxed"
           | Unboxed -> "unboxed")
@@ -311,6 +315,7 @@ let rec constant_type (c : constant) =
   | Int64 _ -> Number (Int64, Unboxed)
   | NativeInt _ -> Number (Nativeint, Unboxed)
   | Float _ -> Number (Float, Unboxed)
+  | Float32 _ -> Number (Float32, Unboxed)
   | Tuple (_, a, _) -> Tuple (Array.map ~f:(fun c' -> Domain.box (constant_type c')) a)
   | Null_ -> Null
   | _ -> Top
@@ -323,6 +328,7 @@ let arg_type ~approx arg =
 let bigarray_element_type (kind : Bigarray.kind) =
   match kind with
   | Float16 | Float32 | Float64 -> Number (Float, Unboxed)
+  | Float32_t -> Number (Float32, Unboxed)
   | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
   | Int -> Int Unnormalized
   | Int32 -> Number (Int32, Unboxed)
@@ -519,7 +525,8 @@ let type_specialized_primitive types global_flow_state name args =
       | [ Number (Int32, _); Number (Int32, _) ]
       | [ Number (Int64, _); Number (Int64, _) ]
       | [ Number (Nativeint, _); Number (Nativeint, _) ]
-      | [ Number (Float, _); Number (Float, _) ] -> true
+      | [ Number (Float, _); Number (Float, _) ]
+      | [ Number (Float32, _); Number (Float32, _) ] -> true
       | _ -> false)
   | "caml_ba_get_1"
   | "caml_ba_get_2"
