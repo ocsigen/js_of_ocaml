@@ -343,6 +343,7 @@ type constant =
   | String of string
   | NativeString of Native_string.t
   | Float of Int64.t
+  | Float32 of Int64.t
   | Float_array of Int64.t array
   | Int of Targetint.t
   | Int32 of Int32.t
@@ -382,9 +383,12 @@ module Constant = struct
              b)
     | Float a, Float b ->
         Some (Float.ieee_equal (Int64.float_of_bits a) (Int64.float_of_bits b))
+    | Float32 a, Float32 b ->
+        Some (Float.ieee_equal (Int64.float_of_bits a) (Int64.float_of_bits b))
     | Null_, Null_ -> Some true
     | String _, NativeString _ | NativeString _, String _ -> None
     | Int _, Float _ | Float _, Int _ -> None
+    | Int _, Float32 _ | Float32 _, Int _ -> None
     | Tuple ((0 | 254), _, _), Float_array _ -> None
     | Float_array _, Tuple ((0 | 254), _, _) -> None
     | ( Tuple _
@@ -395,6 +399,7 @@ module Constant = struct
         | Int32 _
         | NativeInt _
         | Float _
+        | Float32 _
         | Float_array _ ) ) -> Some false
     | ( Float_array _
       , ( String _
@@ -404,13 +409,26 @@ module Constant = struct
         | Int32 _
         | NativeInt _
         | Float _
+        | Float32 _
         | Tuple _ ) ) -> Some false
     | ( String _
-      , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
-        Some false
+      , ( Int64 _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Float _
+        | Float32 _
+        | Tuple _
+        | Float_array _ ) ) -> Some false
     | ( NativeString _
-      , (Int64 _ | Int _ | Int32 _ | NativeInt _ | Float _ | Tuple _ | Float_array _) ) ->
-        Some false
+      , ( Int64 _
+        | Int _
+        | Int32 _
+        | NativeInt _
+        | Float _
+        | Float32 _
+        | Tuple _
+        | Float_array _ ) ) -> Some false
     | ( Int64 _
       , ( String _
         | NativeString _
@@ -418,10 +436,15 @@ module Constant = struct
         | Int32 _
         | NativeInt _
         | Float _
+        | Float32 _
         | Tuple _
         | Float_array _ ) ) -> Some false
-    | Float _, (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ->
-        Some false
+    | ( Float _
+      , (Float32 _ | String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _))
+      ) -> Some false
+    | ( Float32 _
+      , (Float _ | String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _))
+      ) -> Some false
     | ( (Int _ | Int32 _ | NativeInt _)
       , (String _ | NativeString _ | Float_array _ | Int64 _ | Tuple (_, _, _)) ) ->
         Some false
@@ -430,8 +453,8 @@ module Constant = struct
     | Int _, (Int32 _ | NativeInt _)
     | Int32 _, (Int _ | NativeInt _)
     | NativeInt _, (Int _ | Int32 _)
-    | (Int32 _ | NativeInt _), Float _
-    | Float _, (Int32 _ | NativeInt _) -> None
+    | (Int32 _ | NativeInt _), (Float _ | Float32 _)
+    | (Float _ | Float32 _), (Int32 _ | NativeInt _) -> None
 end
 
 type loc =
@@ -518,6 +541,7 @@ module Print = struct
     | NativeString (Byte s) -> Format.fprintf f "%Sj" s
     | NativeString (Utf (Utf8 s)) -> Format.fprintf f "%Sj" s
     | Float fl -> Format.fprintf f "%.12g" (Int64.float_of_bits fl)
+    | Float32 fl -> Format.fprintf f "%.9g" (Int64.float_of_bits fl)
     | Float_array a ->
         Format.fprintf f "[|";
         for i = 0 to Array.length a - 1 do
