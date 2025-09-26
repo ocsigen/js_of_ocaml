@@ -64,7 +64,7 @@ let compare (p1, n1) (p2, n2) =
 
 let equal a b = compare a b = 0
 
-let v = snd (of_string Config_main.exec_magic_number) [@@if oxcaml]
+let v = 561 [@@if oxcaml]
 
 let v =
   let current = Ocaml_version.current in
