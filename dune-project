@@ -20,7 +20,7 @@
   (ocaml (and (>= 4.13) (< 5.5)))
   (num :with-test)
   (ppx_expect (and (>= v0.16.1) :with-test))
-  (ppxlib (>= 0.35))
+  (ppxlib (>= 0.33))
   (ocaml-compiler-libs (>= v0.12.4))
   (re :with-test)
   (cmdliner (>= 1.1.0))
@@ -63,7 +63,7 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
-  (ppxlib (>= 0.35))
+  (ppxlib (>= 0.33))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
@@ -77,7 +77,7 @@
  (depends
   (ocaml (>= 4.13))
   (js_of_ocaml (= :version))
-  (ppxlib (>= 0.35))
+  (ppxlib (>= 0.33))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
@@ -96,7 +96,7 @@
   (graphics :with-test)
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (>= 0.35))
+  (ppxlib (>= 0.33))
   (re (and (>= 1.9.0) :with-test))
 ))
 
@@ -127,7 +127,7 @@
   (js_of_ocaml-compiler (= :version))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (>= 0.35))
+  (ppxlib (>= 0.33))
   (re (and (>= 1.9.0) :with-test))
 ))
 
@@ -141,7 +141,7 @@
   (js_of_ocaml (= :version))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (ppxlib (>= 0.35))
+  (ppxlib (>= 0.33))
   (re :with-test)
   (cmdliner (>= 1.1.0))
   (opam-format :with-test)
