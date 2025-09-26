@@ -11,6 +11,7 @@
   gc.js
   graphics.js
   ieee_754.js
+  float32.js
   int64.js
   io.js
   jslib.js
