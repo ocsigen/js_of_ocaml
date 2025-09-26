@@ -1,0 +1,136 @@
+(tests
+ (names atomics immediate_comparison optimized probe runtime segfault)
+ (libraries ocaml_testing)
+ (modes js wasm))
+
+(rule
+ (target basics.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:basics.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff basics.ml basics.ml.corrected)))
+
+(rule
+ (target containers.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:containers.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff containers.ml containers.ml.corrected)))
+
+(rule
+ (target immediate.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:immediate.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff immediate.ml immediate.ml.corrected)))
+
+(rule
+ (target non_float_array.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:non_float_array.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff non_float_array.ml non_float_array.ml.corrected)))
+
+(rule
+ (target non_float_array_no_separability.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:non_float_array_no_separability.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff non_float_array_no_separability.ml non_float_array_no_separability.ml.corrected)))
+
+(rule
+ (target reexport.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:reexport.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff reexport.ml reexport.ml.corrected)))
+
+(rule
+ (target separability.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:separability.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff separability.ml separability.ml.corrected)))
+
+(rule
+ (target separability_upstream_compatible.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:separability_upstream_compatible.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff separability_upstream_compatible.ml separability_upstream_compatible.ml.corrected)))
+
+(rule
+ (target stdlib_or_null.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:stdlib_or_null.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff stdlib_or_null.ml stdlib_or_null.ml.corrected)))
+
+(rule
+ (target test_or_null.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:test_or_null.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff test_or_null.ml test_or_null.ml.corrected)))
+
+(rule
+ (target variables.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:variables.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  %{oxcaml_supported})
+ (action
+  (diff variables.ml variables.ml.corrected)))

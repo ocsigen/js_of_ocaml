@@ -1,0 +1,133 @@
+Inline Test, 5 + 7 inlined: This 12
+Inline Test, 5 + 7 not inlined: This 12
+Inline Test, 6 * 8 inlined: This 48.00
+Inline Test, 6 * 8 not inlined: This 48.00
+Inline Test, 20 / 4 inlined: This 5
+Inline Test, 20 / 4 not inlined: This 5
+Inline Test, 5 + null inlined: Null
+Inline Test, null * 4 inlined: Null
+Inline Test, null / 4 inlined: Null
+Inline Test, 20 / 0 inlined: Null
+HO Test, double 5: This 10
+HO Test, square 5: This 25
+HO Test, double null: Null
+HO Test, double 5 or default: This 10
+HO Test, double null or default: This 42
+HO Test, 100/5: This 20
+HO Test, 100/0: Null
+HO Test, 100/null: Null
+HO Test, unwrap 5 or 10: 5
+HO Test, unwrap null or 10: 10
+HO Test, square(double(4)): This 64
+HO Test, compose double square 3: This 18
+HO Test, compose_never double square 3: This 18
+HO Test, compose double null: Null
+HO Test, compose_never double null: Null
+HO Test, map with opaque double 7: This 14
+HO Test, map with opaque double null: Null
+HO Test, apply_twice double 5: This 20
+HO Test, apply_twice_never double 5: This 20
+HO Test, apply_twice double null: Null
+HO Test, apply_twice_never double null: Null
+HO Test, apply_twice map_or_null double null: Null
+HO Test, complex chain with inlining: Null
+Closure Test, increment 10 by 5: This 15
+Closure Test, increment null by 5: Null
+Closure Test, increment 10 with null offset: Null
+Closure Test, accumulate 3 from 5: This 8
+Closure Test, accumulate 8 from 8: This 16
+Closure Test, accumulate null from 16: Null
+Closure Test, accumulate 3 from null: Null
+Closure Test, 100/4: This 25
+Closure Test, 25/5: This 5
+Closure Test, 5/0: Null
+Closure Test, null/5: Null
+Closure Test, float multi-arg all valid: This 80.00
+Closure Test, float multi-arg one null: Null
+Closure Test, float closure all valid: This 1300.00
+Closure Test, float closure one null: Null
+Closure Test, float partial multi-arg all valid: This 107.00
+Closure Test, float partial multi-arg one null: Null
+Closure Test, complex float function all valid: This 1268609.38
+Closure Test, complex float function one null: Null
+PA Test 1.1, add_ten(5.0): This 15.00
+PA Test 1.2, add_ten(Null): Null
+PA Test 1.3, opaque_add_ten(7.5): This 17.50
+PA Test 2.1, add_null(3.0): Null
+PA Test 3.1, compute_part1(This 30): This 32.50
+PA Test 3.2, compute_part1(Null): Null
+PA Test 3.3, opaque_compute(This 15): This 36.25
+PA Test 4.1, compute_part2(This 25): Null
+PA Test 5.1, weighted_adder full application: This 16.25
+PA Test 5.2, opaque_adder full application: This 18.00
+PA Test 5.3, adder_stage2 application: This 13.50
+PA Test 5.4, opaque_stage2 application: This 13.50
+PA Test 6.1, apply_twice add_five to 10.0: This 20.00
+PA Test 7.1, (add_five . add_seven)(3.0): This 15.00
+OA Test, This 6: This 6
+OA Test, Null: Null
+Method Test 1.1, add(5,7): This 12
+Method Test 1.2, add(null,7): Null
+Method Test 1.3, multiply(3,4): This 12
+Method Test 1.4, transform(9,square): This 81
+Method Test 1.5, transform(null,square): Null
+Method Test 2.1, opaque add(8,3): This 11
+Method Test 2.2, opaque multiply(6,7): This 42
+Method Test 3.1, recursive process: This base_suffix_suffix_suffix
+Method Test 3.2, recursive process null: Null
+Method Test 4.1, over apply 5: This 5
+Method Test 4.2, over apply null: Null
+Method Test 5.1, transform(add(3,4), double): This 14
+Method Test 5.2, multiply(transform(5,inc), 3): This 18
+Method Test 5.3, transform(multiply(4,5), half): This 10
+Method Test 5.4, opaque transform(add(6,7), triple): This 39
+Letop Test 1.1, This 10 -> This 15: This 15
+Letop Test 1.2, Null -> Null: Null
+Letop Test 2.1, chained operations on 7: This 17
+Letop Test 2.2, chain with Null: Null
+Letop Test 3.1, and* with 20/4: This 5
+Letop Test 3.2, and* with 20/0: Null
+Letop Test 3.3, and* with Null in second arg: Null
+Letop Test 3.4, and* with Null in first arg: Null
+Letop Test 4.1, combine 5 10 3: This 35
+Letop Test 5.1, complex nested ops: This 38
+Letop Test 6.1, sqrt 16: This 4.00
+Letop Test 6.2, sqrt -5: Null
+Local Cont Test 1.1, double This 5: This 10
+Local Cont Test 1.2, double Null: Null
+Local Cont Test 2.1, multiply 5 by 3: This 15
+Local Cont Test 2.2, multiply 3 by null: Null
+Local Cont Test 3.1, conditional true: This 25
+Local Cont Test 3.2, conditional false: This 20
+Local Cont Test 3.3, with null true: Null
+Loop Test 1, sum 1 to 5: This 15
+Loop Test 2, sum with null: Null
+Variant Test 1.1, A: This A
+Variant Test 1.2, B: This B
+Variant Test 1.3, C(42): This C(42)
+Variant Test 1.4, D(hello): This D(hello)
+Variant Test 1.5, E(3.14,2.71): This E(3.14,2.71)
+Variant Test 1.6, Null variant: Null
+Variant Test 2.1, transform A: This B
+Variant Test 2.2, transform C(42): This C(84)
+Variant Test 2.3, transform D(hello): This D(hellohello)
+Variant Test 2.4, transform E(3.14,2.71): This E(2.71,3.14)
+Variant Test 2.5, transform Null: Null
+Variant Test 3.1, transform_nonneg B: This A
+Variant Test 3.2, transform_nonneg C(42): This C(84)
+Variant Test 3.3, transform_nonneg C(-1): Null
+Variant Test 3.4, transform_nonneg D(hello): This D(hellohello)
+Variant Test 3.5, transform_nonneg E(3.14,2.71): This E(2.71,3.14)
+Variant Test 3.6, transform_nonneg E(-1.0,2.0): Null
+Variant Test 4.1, Some 42: This (Some 42)
+Variant Test 4.2, None: This None
+Variant Test 4.3, Null option: Null
+Variant Test 5.1, transform Some 42: This (Some 84)
+Variant Test 5.2, transform None: This (Some 0)
+Variant Test 5.3, transform Null: Null
+Variant Test 6.1, map C(42): This C(43)
+Variant Test 6.2, and_then C(42): This D(transformed)
+Variant Test 7.1, opaque A: This A
+Variant Test 7.2, transform opaque A: This B
+Variant Test 7.3, opaque C(42): This C(42)
+Variant Test 7.4, transform opaque C(42): This C(84)
