@@ -30,29 +30,15 @@ let dump_file file =
   in
   loop ()
 
-let split_on_char sep s =
-  let r = ref [] in
-  let j = ref (String.length s) in
-  for i = String.length s - 1 downto 0 do
-    if String.unsafe_get s i = sep
-    then (
-      r := String.sub s (i + 1) (!j - i - 1) :: !r;
-      j := i)
-  done;
-  String.sub s 0 !j :: !r
-
 let () =
-  let version = Sys.ocaml_version in
-  let maj, min =
-    match split_on_char '.' version with
-    | maj :: min :: _ -> int_of_string maj, int_of_string min
-    | _ -> assert false
-  in
-  match maj, min with
-  | 4, min ->
-      assert (min >= 11);
-      dump_file "toplevel_expect_test.ml-4.11"
-  | 5, 0 | 5, 1 | 5, 2 -> dump_file "toplevel_expect_test.ml-4.11"
-  | 5, 3 -> dump_file "toplevel_expect_test.ml-5.3"
-  | 5, 4 -> dump_file "toplevel_expect_test.ml-5.4"
-  | _ -> failwith ("unsupported version " ^ Sys.ocaml_version)
+  match Sys.ocaml_release with
+  | { extra = Some (Plus, "ox"); _ } -> dump_file "toplevel_expect_test.ml-oxcaml"
+  | { major; minor; _ } -> (
+      match major, minor with
+      | 4, min ->
+          assert (min >= 11);
+          dump_file "toplevel_expect_test.ml-4.11"
+      | 5, 0 | 5, 1 | 5, 2 -> dump_file "toplevel_expect_test.ml-4.11"
+      | 5, 3 -> dump_file "toplevel_expect_test.ml-5.3"
+      | 5, 4 -> dump_file "toplevel_expect_test.ml-5.4"
+      | _ -> failwith ("unsupported version " ^ Sys.ocaml_version))
