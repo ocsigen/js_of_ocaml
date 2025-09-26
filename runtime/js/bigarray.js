@@ -587,16 +587,19 @@ function caml_ba_uint8_get64(ba, i0) {
 }
 
 //Provides: caml_ba_get_1
+//Alias: caml_ba_float32_get_1
 function caml_ba_get_1(ba, i0) {
   return ba.get(ba.offset(i0));
 }
 
 //Provides: caml_ba_get_2
+//Alias: caml_ba_float32_get_2
 function caml_ba_get_2(ba, i0, i1) {
   return ba.get(ba.offset([i0, i1]));
 }
 
 //Provides: caml_ba_get_3
+//Alias: caml_ba_float32_get_3
 function caml_ba_get_3(ba, i0, i1, i2) {
   return ba.get(ba.offset([i0, i1, i2]));
 }
@@ -641,18 +644,21 @@ function caml_ba_uint8_set64(ba, i0, v) {
 }
 
 //Provides: caml_ba_set_1
+//Alias: caml_ba_float32_set_1
 function caml_ba_set_1(ba, i0, v) {
   ba.set(ba.offset(i0), v);
   return 0;
 }
 
 //Provides: caml_ba_set_2
+//Alias: caml_ba_float32_set_2
 function caml_ba_set_2(ba, i0, i1, v) {
   ba.set(ba.offset([i0, i1]), v);
   return 0;
 }
 
 //Provides: caml_ba_set_3
+//Alias: caml_ba_float32_set_3
 function caml_ba_set_3(ba, i0, i1, i2, v) {
   ba.set(ba.offset([i0, i1, i2]), v);
   return 0;

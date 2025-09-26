@@ -508,9 +508,9 @@ function caml_format_float(fmt, x) {
   return caml_finish_formatting(f, s);
 }
 
-//Provides: caml_float_of_string (const)
+//Provides: caml_parse_float
 //Requires: caml_failwith, caml_jsbytes_of_string
-function caml_float_of_string(s) {
+function caml_parse_float(s, err_msg) {
   var res;
   var r_float = /^ *[-+]?(?:\d*\.?\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?$/;
   s = caml_jsbytes_of_string(s);
@@ -532,5 +532,11 @@ function caml_float_of_string(s) {
   }
   if (/^\+?inf(inity)?$/i.test(s)) return Number.POSITIVE_INFINITY;
   if (/^-inf(inity)?$/i.test(s)) return Number.NEGATIVE_INFINITY;
-  caml_failwith("float_of_string");
+  caml_failwith(err_msg);
+}
+
+//Provides: caml_float_of_string (const)
+//Requires: caml_parse_float
+function caml_float_of_string(s) {
+  return caml_parse_float(s, "float_of_string");
 }

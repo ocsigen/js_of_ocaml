@@ -38,6 +38,26 @@
   (pps ppx_expect)))
 
 (library
+ (name jsoo_testsuite_float32_js)
+ (modules test_marshal_float32_js)
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (enabled_if %{oxcaml_supported})
+ (inline_tests
+  (modes js))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ (name jsoo_testsuite_float32)
+ (modules test_marshal_float32)
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (enabled_if %{oxcaml_supported})
+ (inline_tests
+  (modes wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  (name jsoo_testsuite)
  (modules
   (:standard
@@ -47,6 +67,8 @@
    test_float16
    test_bigarray
    test_marshal_compressed
+   test_marshal_float32
+   test_marshal_float32_js
    test_parsing
    test_runtime_value
    test_custom_name

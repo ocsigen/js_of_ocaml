@@ -37,6 +37,8 @@ let rec constant_of_const c : Code.constant =
   | Const_base (Const_float s) -> Float (Int64.bits_of_float (float_of_string s))
   | ((Const_base (Const_unboxed_float s)) [@if oxcaml]) ->
       Float (Int64.bits_of_float (float_of_string s))
+  | ((Const_base (Const_float32 s | Const_unboxed_float32 s)) [@if oxcaml]) ->
+      Float32 (Int64.bits_of_float (Float32.of_string s |> Float32.to_float))
   | Const_base (Const_int32 i) -> Int32 i
   | ((Const_base (Const_unboxed_int32 i)) [@if oxcaml]) -> Int32 i
   | Const_base (Const_int64 i) -> Int64 i
@@ -57,8 +59,6 @@ let rec constant_of_const c : Code.constant =
   | ((Const_mixed_block (tag, _, l)) [@if oxcaml]) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-  | ((Const_base (Const_float32 _ | Const_unboxed_float32 _)) [@if oxcaml]) ->
-      failwith "Float32 unsupported"
   | (Const_null [@if oxcaml]) -> Null_
 
 type module_or_not =

@@ -479,6 +479,8 @@ end = struct
 
   let ident_native = ident_of_custom (Obj.repr 0n)
 
+  let ident_f32 = ident_of_custom (Obj.repr 0.s) [@@if oxcaml]
+
   external is_null : Obj.t -> bool = "%is_null" [@@if oxcaml]
 
   let is_null obj = is_null (Sys.opaque_identity obj) [@@if oxcaml]
@@ -503,6 +505,8 @@ end = struct
       else if tag = Obj.custom_tag
       then
         match ident_of_custom x with
+        | ((Some name) [@if oxcaml]) when same_ident name ident_f32 ->
+            Float32 (Int64.bits_of_float ((Obj.magic x : float32) |> Float32.to_float))
         | Some name when same_ident name ident_32 ->
             let i : int32 = Obj.magic x in
             Int32 i
@@ -528,6 +532,7 @@ end = struct
     match c with
     | String _ | NativeString _ -> false
     | Float _ -> true
+    | Float32 _ -> true
     | Float_array _ -> false
     | Int64 _ -> false
     | Tuple _ -> false

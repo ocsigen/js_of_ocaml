@@ -168,6 +168,22 @@ module Type = struct
                 ]
           })
 
+  let float32_type =
+    register_type "float32" (fun () ->
+        let* custom_operations = custom_operations_type in
+        let* custom = custom_type in
+        return
+          { supertype = Some custom
+          ; final = true
+          ; typ =
+              W.Struct
+                [ { mut = false
+                  ; typ = Value (Ref { nullable = false; typ = Type custom_operations })
+                  }
+                ; { mut = false; typ = Value F32 }
+                ]
+          })
+
   let int32_type =
     register_type "int32" (fun () ->
         let* custom_operations = custom_operations_type in
@@ -884,6 +900,24 @@ module Memory = struct
     in
     if_mismatch
 
+  let make_float32 e =
+    let* custom_operations = Type.custom_operations_type in
+    let* float32_ops =
+      register_import
+        ~name:"float32_ops"
+        (Global
+           { mut = false; typ = Ref { nullable = false; typ = Type custom_operations } })
+    in
+    let* ty = Type.float32_type in
+    let* e = e in
+    return (W.StructNew (ty, [ GlobalGet float32_ops; e ]))
+
+  let box_float32 = make_float32
+
+  let unbox_float32 e =
+    let* ty = Type.float32_type in
+    wasm_struct_get ty (wasm_cast ty e) 1
+
   let make_int32 ~kind e =
     let* custom_operations = Type.custom_operations_type in
     let* int32_ops =
@@ -1043,6 +1077,9 @@ module Constant = struct
     | Float f ->
         let* ty = Type.float_type in
         return (Const, W.StructNew (ty, [ Const (F64 (Int64.float_of_bits f)) ]))
+    | Float32 f ->
+        let* e = Memory.make_float32 (return (W.Const (F32 (Int64.float_of_bits f)))) in
+        return (Const, e)
     | Float_array l ->
         let l = Array.to_list l in
         let* ty = Type.float_array_type in
@@ -1070,6 +1107,8 @@ module Constant = struct
     match c with
     | Code.Int i -> return (W.Const (I32 (Targetint.to_int32 i)))
     | Float f when unboxed -> return (W.Const (F64 (Int64.float_of_bits f)))
+    | ((Float32 f) [@if oxcaml]) when unboxed ->
+        return (W.Const (F32 (Int64.float_of_bits f)))
     | Int64 i when unboxed -> return (W.Const (I64 i))
     | (Int32 i | NativeInt i) when unboxed -> return (W.Const (I32 i))
     | _ -> (
@@ -1423,6 +1462,7 @@ module Bigarray = struct
           , fun x ->
               let* x = x in
               return (W.F64PromoteF32 x) )
+      | Float32_t -> "dv_get_f32", F32, 2, Fun.id
       | Float64 -> "dv_get_f64", F64, 3, Fun.id
       | Int8_signed -> "dv_get_i8", I32, 0, Fun.id
       | Int8_unsigned -> "dv_get_ui8", I32, 0, Fun.id
@@ -1476,6 +1516,7 @@ module Bigarray = struct
     let* ofs = Arith.(i lsl const (Int32.of_int size)) in
     match kind with
     | Float32
+    | Float32_t
     | Float64
     | Int8_signed
     | Int8_unsigned
@@ -1508,6 +1549,7 @@ module Bigarray = struct
           , fun x ->
               let* x = x in
               return (W.F32DemoteF64 x) )
+      | Float32_t -> "dv_set_f32", F32, 2, Fun.id
       | Float64 -> "dv_set_f64", F64, 3, Fun.id
       | Int8_signed | Int8_unsigned -> "dv_set_i8", I32, 0, Fun.id
       | Int16_signed | Int16_unsigned -> "dv_set_i16", I32, 1, Fun.id
@@ -1560,6 +1602,7 @@ module Bigarray = struct
     in
     match kind with
     | Float32
+    | Float32_t
     | Float64
     | Int8_signed
     | Int8_unsigned
