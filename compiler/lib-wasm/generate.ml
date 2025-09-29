@@ -479,8 +479,9 @@ module Generate (Target : Target_sig.S) = struct
         float_bin_op CopySign f g);
     register_un_prim "caml_signbit_float" `Pure ~typ:float_u ~ret_typ:int_n (fun f ->
         let* f = f in
-        let sign = W.BinOp (F64 CopySign, Const (F64 1.), f) in
-        return (W.BinOp (F64 Lt, sign, Const (F64 0.))));
+        return
+          (W.I32WrapI64
+             (BinOp (I64 (Shr U), W.UnOp (I64 ReinterpretF, f), W.Const (I64 63L)))));
     register_un_prim "caml_neg_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
         float_un_op Neg f);
     register_un_prim "caml_abs_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
