@@ -8,6 +8,19 @@
  (modules ci_setup)
  (libraries opam-format unix))
 
+(rule
+ (target ci_setup.ml)
+ (enabled_if
+  (not %{oxcaml_supported}))
+ (action
+  (copy ci_setup-mainstream.ml %{target})))
+
+(rule
+ (target ci_setup.ml)
+ (enabled_if %{oxcaml_supported})
+ (action
+  (copy ci_setup-oxcaml.ml %{target})))
+
 (executable
  (name sync_testsuite)
  (modules sync_testsuite)

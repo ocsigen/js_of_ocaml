@@ -90,7 +90,14 @@ jobs:
             skip-effects: false
             skip-test: false
             skip-doc: true
- 
+          - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-name: "OxCaml"
+            ocaml-compiler: "ocaml-variants.5.2.0+ox"
+            skip-effects: false
+            skip-test: false
+            skip-doc: true
+
     runs-on: ${{ matrix.os }}
 
     name:
@@ -127,6 +134,16 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+        if: matrix.ocaml-compiler != 'ocaml-variants.5.2.0+ox'
+
+      - name: Set-up OxCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          opam-repositories: |
+            default: https://github.com/ocaml/opam-repository.git
+            ox: https://github.com/oxcaml/opam-repository.git
+        if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
@@ -142,9 +159,20 @@ jobs:
       - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
 
+      - name: Pin specific packages for OxCaml
+        # With OxCaml fixes
+        run: |
+          opam pin add --with-version 1.0.3+ox -n https://github.com/vouillon/uutf.git#oxcaml
+          opam pin add -n lwt 6.0.0+ox
+        if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
+
       - run: opam install . --deps-only --with-test
         # Install the test dependencies
         if: ${{ !matrix.skip-test }}
+
+      - name: Pin js_of_ocaml
+        # OxCaml wants a precise version of Js_of_ocaml
+        run: opam pin . -n --with-version 6.0.1+ox
 
       - run: opam install .
         # Install the packages (without running the tests)
