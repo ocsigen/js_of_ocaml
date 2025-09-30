@@ -1133,7 +1133,7 @@
          (i32.sub (f64.eq (local.get $x) (local.get $x))
                   (f64.eq (local.get $y) (local.get $y)))))
 
-   (func (export "caml_round") (param $x f64) (result f64)
+   (func (export "caml_round_float") (param $x f64) (result f64)
       (local $y f64)
       (if (result f64) (f64.ge (local.get $x) (f64.const 0))
          (then

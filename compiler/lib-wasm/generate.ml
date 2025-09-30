@@ -124,6 +124,7 @@ module Generate (Target : Target_sig.S) = struct
         , (`Mutator, [ Value; Int Normalized; Int Unnormalized ], Value) )
       ; "caml_ba_uint8_set32", (`Mutator, [ Value; Int Normalized; Int32 ], Value)
       ; "caml_ba_uint8_set64", (`Mutator, [ Value; Int Normalized; Int64 ], Value)
+      ; "caml_round_float", (`Pure, [ Float ], Float)
       ; "caml_nextafter_float", (`Pure, [ Float; Float ], Float)
       ; "caml_classify_float", (`Pure, [ Float ], Int Normalized)
       ; "caml_ldexp_float", (`Pure, [ Float; Int Normalized ], Float)
@@ -490,7 +491,6 @@ module Generate (Target : Target_sig.S) = struct
         float_un_op Floor f);
     register_un_prim "caml_trunc_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
         float_un_op Trunc f);
-    register_un_prim "caml_round_float" `Pure ~typ:float_u ~ret_typ:float_u Math.round;
     register_un_prim "caml_sqrt_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
         float_un_op Sqrt f);
     register_bin_prim
