@@ -679,22 +679,21 @@
                (else (local.set $i (i64.sub (local.get $i) (i64.const 1)))))
             (return (f64.reinterpret_i64 (local.get $i))))))
 
-   (func (export "caml_classify_float") (param $x f64) (result (ref eq))
+   (func (export "caml_classify_float") (param $x f64) (result i32)
       (local $a f64)
       (local.set $a (f64.abs (local.get $x)))
-      (ref.i31
-         (if (result i32) (f64.ge (local.get $a) (f64.const 0x1p-1022))
-            (then
-               (if (result i32) (f64.lt (local.get $a) (f64.const inf))
-                  (then (i32.const 0)) ;; normal
-                  (else (i32.const 3)))) ;; infinity
-            (else
-               (if (result i32) (f64.eq (local.get $a) (f64.const 0))
-                  (then (i32.const 2)) ;; zero
-                  (else
-                     (if (result i32) (f64.eq (local.get $a) (local.get $a))
-                        (then (i32.const 1)) ;; subnormal
-                        (else (i32.const 4))))))))) ;; nan
+      (if (result i32) (f64.ge (local.get $a) (f64.const 0x1p-1022))
+         (then
+            (if (result i32) (f64.lt (local.get $a) (f64.const inf))
+               (then (i32.const 0)) ;; normal
+               (else (i32.const 3)))) ;; infinity
+         (else
+            (if (result i32) (f64.eq (local.get $a) (f64.const 0))
+               (then (i32.const 2)) ;; zero
+               (else
+                  (if (result i32) (f64.eq (local.get $a) (local.get $a))
+                     (then (i32.const 1)) ;; subnormal
+                     (else (i32.const 4)))))))) ;; nan
 
    (func (export "caml_modf_float") (param (ref eq)) (result (ref eq))
       (local $x f64) (local $a f64) (local $i f64) (local $f f64)

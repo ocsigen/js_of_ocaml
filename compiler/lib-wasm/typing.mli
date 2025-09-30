@@ -61,6 +61,10 @@ val var_type : t -> Code.Var.t -> typ
 
 val return_type : t -> Code.Var.t -> typ
 
+val reset : unit -> unit
+
+val register_prim : string -> unbox:bool -> typ -> unit
+
 val f :
      global_flow_state:Global_flow.state
   -> global_flow_info:Global_flow.info
