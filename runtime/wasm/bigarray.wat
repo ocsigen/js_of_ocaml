@@ -2045,7 +2045,7 @@
                 (struct.get $bigarray $ba_dim (local.get $ba))
                 (i32.const 0)))
          (then (call $caml_bound_error)))
-      (return_call $dv_get_i32_unaligned
+      (call $dv_get_i32_unaligned
          (local.get $view) (local.get $i) (i32.const 1)))
 
    (func (export "caml_ba_uint8_get64")
