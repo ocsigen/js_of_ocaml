@@ -231,6 +231,14 @@ jobs:
           WASI_FLAGS: --enable exnref
         run: opam exec -- dune build @runtest-wasm --profile wasi
 
+      - name: Run tests (WASI runtime - Wizard engine - SPC)
+        if: ${{ matrix.wasi }}
+        working-directory: ./wasm_of_ocaml
+        env:
+          WASM_ENGINE: wizard-spc
+          WASI_FLAGS: --enable exnref
+        run: opam exec -- dune build @runtest-wasm --profile wasi
+
       - name: Run Base tests
         if: matrix.all_jane_street_tests
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
