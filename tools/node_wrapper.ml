@@ -62,6 +62,9 @@ let exe, args =
             match Node_wrapper_per_engine.engine with
             | "wizard" -> "wizeng.x86-linux", wizard_args @ common_args file argv
             | "wizard-fast" -> "wizeng.x86-64-linux", wizard_args @ common_args file argv
+            | "wizard-spc" ->
+                ( "wizeng.x86-64-linux"
+                , ("--mode=jit" :: wizard_args) @ common_args file argv )
             | "wasmtime" -> "wasmtime", wasmtime_args @ common_args file argv
             | "wasmedge" -> "wasmedge", wasmedge_args @ common_args file argv
             | _ -> "node", extra_args_for_wasoo @ argv)
