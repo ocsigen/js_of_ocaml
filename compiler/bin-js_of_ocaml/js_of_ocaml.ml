@@ -43,6 +43,8 @@ let () =
     | _ -> argv
   in
   try
+    with_async_exns
+    @@ fun () ->
     match
       Cmdliner.Cmd.eval_value
         ~catch:false
