@@ -1329,3 +1329,7 @@ module Lexing = struct
       Printf.sprintf "File \"%s\", line %d, characters %d-%d:\n" file line char1 char2
   (* use [char1 + 1] and [char2 + 1] if *not* using Caml mode *)
 end
+
+let with_async_exns = Sys.with_async_exns [@@if oxcaml]
+
+let with_async_exns f = f () [@@if not oxcaml]
