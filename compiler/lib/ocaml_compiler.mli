@@ -78,3 +78,9 @@ module Cmo_format : sig
 
   val hints_size : t -> int
 end
+
+module Hint : sig
+  type t
+
+  val import : t -> Optimization_hint.t option
+end

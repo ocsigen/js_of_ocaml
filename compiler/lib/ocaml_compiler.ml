@@ -292,3 +292,79 @@ module Cmo_format = struct
 
   let hints_pos _ = 0 [@@if ocaml_version < (5, 3, 1)]
 end
+
+module Hint = struct
+  type t = Ocaml_bytecomp.Instruct.optimization_hint
+
+  let import (h : t) : Optimization_hint.t option =
+    match h with
+    | Hint_immutable -> Some Hint_immutable
+    | Hint_unsafe -> Some Hint_unsafe
+    | Hint_int kind ->
+        Some
+          (Hint_int
+             (match kind with
+             | Pnativeint -> Nativeint
+             | Pint32 -> Int32
+             | Pint64 -> Int64))
+    | Hint_array kind ->
+        Some
+          (Hint_array
+             (match kind with
+             | Pgenarray -> Generic
+             | Paddrarray | Pintarray -> Value
+             | Pfloatarray -> Float))
+    | Hint_bigarray { elt_kind = Pbigarray_unknown; _ }
+    | Hint_bigarray { layout = Pbigarray_unknown_layout; _ } -> None
+    | Hint_bigarray { unsafe; elt_kind; layout } ->
+        let kind : Optimization_hint.Bigarray.kind =
+          match elt_kind with
+          | Pbigarray_unknown -> assert false
+          | (Pbigarray_float16 [@if ocaml_version >= (5, 2, 0)]) -> Float16
+          | Pbigarray_float32 -> Float32
+          | Pbigarray_float64 -> Float64
+          | Pbigarray_sint8 -> Int8_signed
+          | Pbigarray_uint8 -> Int8_unsigned
+          | Pbigarray_sint16 -> Int16_signed
+          | Pbigarray_uint16 -> Int16_unsigned
+          | Pbigarray_int32 -> Int32
+          | Pbigarray_int64 -> Int64
+          | Pbigarray_caml_int -> Int
+          | Pbigarray_native_int -> Nativeint
+          | Pbigarray_complex32 -> Complex32
+          | Pbigarray_complex64 -> Complex64
+        in
+        let layout : Optimization_hint.Bigarray.layout =
+          match layout with
+          | Pbigarray_unknown_layout -> assert false
+          | Pbigarray_c_layout -> C
+          | Pbigarray_fortran_layout -> Fortran
+        in
+        Some (Hint_bigarray { unsafe; kind; layout })
+    | Hint_primitive { prim_native_name; prim_native_repr_args; prim_native_repr_res; _ }
+      ->
+        let repr (r : Ocaml_common.Primitive.native_repr) : Optimization_hint.repr =
+          match r with
+          | Same_as_ocaml_repr -> Value
+          | Unboxed_float -> Float
+          | Unboxed_integer Pint32 -> Int32
+          | Unboxed_integer Pnativeint -> Nativeint
+          | Unboxed_integer Pint64 -> Int64
+          | Untagged_immediate -> Int
+        in
+        Some
+          (Optimization_hint.Hint_primitive
+             { name = prim_native_name
+             ; args = List.map ~f:repr prim_native_repr_args
+             ; res = repr prim_native_repr_res
+             })
+    | Hint_phys_equal -> None
+end
+[@@if ocaml_version >= (5, 3, 1)]
+
+module Hint = struct
+  type t = unit
+
+  let import _ = None
+end
+[@@if ocaml_version < (5, 3, 1)]
