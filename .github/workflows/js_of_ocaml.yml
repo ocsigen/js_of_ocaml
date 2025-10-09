@@ -149,9 +149,6 @@ jobs:
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
 
-      - run: opam pin add ppx_expect https://github.com/hhugo/ppx_expect.git#v16-win
-        if: contains( matrix.ocaml-compiler, '4.14')
-
       - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
 

@@ -97,7 +97,7 @@ jobs:
         with:
           token: ${{ github.token }}
 
-      - name: Pin faked binaryen-bin package
+      - name: Install faked binaryen-bin package
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
 
