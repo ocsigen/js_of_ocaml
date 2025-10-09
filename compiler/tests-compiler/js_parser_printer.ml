@@ -727,7 +727,7 @@ let check_vs_string s toks =
     then ()
     else
       match s.[a] with
-      | ' ' | '\n' | '\t' -> space (succ a) b
+      | ' ' | '\n' | '\t' | '\r' -> space (succ a) b
       | c -> Printf.printf "pos:%d, expecting space until %d, found %C\n" a b c
   in
   let text pos str =
@@ -873,12 +873,13 @@ let%expect_test "string" =
     5: 4:var, 8:a, 10:=, 12:"munpi\207\128\207\128\207\128qtex", 26:;, |}]
 
 let%expect_test "multiline string" =
-  parse_print_token ~invalid:true {|
+  let clean s = Str.global_replace (Str.regexp "\r\n") "\n" s in
+  parse_print_token ~invalid:true (clean {|
     42;
     "
     ";
     42
-|};
+|});
   [%expect
     {|
      2: 4:42, 6:;,
@@ -886,24 +887,24 @@ let%expect_test "multiline string" =
      4: 5:;,
      5: 4:42, 0:;,
     Lexer error: fake:3:5: Unexpected token ILLEGAL |}];
-  parse_print_token {|
+  parse_print_token (clean {|
     42;
     "\
     ";
     42
-|};
+|});
   [%expect {|
     2: 4:42, 6:;,
     3: 4:"    ",
     4: 5:;,
     5: 4:42, 0:;, |}];
-  parse_print_token ~invalid:true {|
+  parse_print_token ~invalid:true (clean {|
     42;
     "
 
     ";
     42
-|};
+|});
   [%expect
     {|
      2: 4:42, 6:;,

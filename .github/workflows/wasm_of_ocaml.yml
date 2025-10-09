@@ -69,13 +69,6 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: sudo apt-get update
 
-      - name: Set git to use LF
-        if: ${{ matrix.os == 'windows-latest' && matrix.ocaml-compiler < 5.2 }}
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global core.ignorecase false
-
       - name: Checkout tree
         uses: actions/checkout@v5
         with:
@@ -104,7 +97,7 @@ jobs:
         with:
           token: ${{ github.token }}
 
-      - name: Pin faked binaryen-bin package
+      - name: Install faked binaryen-bin package
         # It's faster to use a cached version
         run: opam install --fake binaryen-bin
 
