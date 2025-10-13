@@ -6,6 +6,7 @@
 * Compiler/wasm: specialization of number comparisons and bigarray operations (#1954)
 * Compiler/wasm: make the type of some Wasm primitives more precise (#2100)
 * Compiler: reference unboxing (#1958)
+* Runtime: improved handling of NaNs (#2110)
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)
