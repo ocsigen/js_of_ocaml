@@ -60,8 +60,15 @@ let rec blocks_to_rename p pc lst =
     p.blocks
     lst
 
-let closure p ~f ~params ~cont =
-  let s = Subst.from_map (bound_variables p ~f ~params ~cont) in
+let closure p ~f ~params ~cont live_vars =
+  let s =
+    let map = bound_variables p ~f ~params ~cont in
+    fun x ->
+      try Var.Map.find x map
+      with Not_found ->
+        live_vars.(Var.idx x) <- live_vars.(Var.idx x) + 1;
+        x
+  in
   let pc, args = cont in
   let blocks = blocks_to_rename p pc [] in
   let free_pc, m =
