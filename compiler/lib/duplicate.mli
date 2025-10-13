@@ -21,6 +21,7 @@ val closure :
   -> f:Code.Var.t
   -> params:Code.Var.t list
   -> cont:int * Code.Var.t list
+  -> int Array.t
   -> Code.program * Code.Var.t * Code.Var.t list * (int * Code.Var.t list)
 (** Given a program and a closure [f] -- defined by its name,
     parameters, and its continuation --, return a program with a copy
