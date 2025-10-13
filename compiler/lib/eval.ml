@@ -139,7 +139,7 @@ let nativeint_shiftop (l : constant list) (f : int32 -> int -> int32) : constant
   | [ NativeInt i; Int j ] -> Some (NativeInt (f i (Targetint.to_int_exn j)))
   | _ -> None
 
-let eval_prim x =
+let eval_prim ~target x =
   match x with
   | Not, [ Int i ] -> bool (Targetint.is_zero i)
   | Lt, [ Int i; Int j ] -> bool Targetint.(i < j)
@@ -231,7 +231,13 @@ let eval_prim x =
       (* int32 *)
       | "caml_int32_bits_of_float", [ Float f ] ->
           int32 (Int32.bits_of_float (Int64.float_of_bits f))
-      | "caml_int32_float_of_bits", [ Int32 i ] -> Some (float (Int32.float_of_bits i))
+      | "caml_int32_float_of_bits", [ Int32 i ]
+        when match target with
+             | `JavaScript ->
+                 let f = Int32.float_of_bits i in
+                 (not (Float.is_nan f))
+                 || Int64.equal (Int64.bits_of_float f) (Int64.bits_of_float nan)
+             | `Wasm -> true -> Some (float (Int32.float_of_bits i))
       | "caml_int32_of_float", [ Float f ] ->
           int32 (Int32.of_float (Int64.float_of_bits f))
       | "caml_int32_to_float", [ Int32 i ] -> Some (float (Int32.to_float i))
@@ -258,8 +264,13 @@ let eval_prim x =
       (* nativeint *)
       | "caml_nativeint_bits_of_float", [ Float f ] ->
           nativeint (Int32.bits_of_float (Int64.float_of_bits f))
-      | "caml_nativeint_float_of_bits", [ NativeInt i ] ->
-          Some (float (Int32.float_of_bits i))
+      | "caml_nativeint_float_of_bits", [ NativeInt i ]
+        when match target with
+             | `JavaScript ->
+                 let f = Int32.float_of_bits i in
+                 (not (Float.is_nan f))
+                 || Int64.equal (Int64.bits_of_float f) (Int64.bits_of_float nan)
+             | `Wasm -> true -> Some (float (Int32.float_of_bits i))
       | "caml_nativeint_of_float", [ Float f ] ->
           nativeint (Int32.of_float (Int64.float_of_bits f))
       | "caml_nativeint_to_float", [ NativeInt i ] -> Some (float (Int32.to_float i))
@@ -284,7 +295,12 @@ let eval_prim x =
       | "caml_nativeint_of_int", [ Int i ] -> nativeint (Targetint.to_int32 i)
       (* int64 *)
       | "caml_int64_bits_of_float", [ Float f ] -> int64 f
-      | "caml_int64_float_of_bits", [ Int64 i ] -> Some (Float i)
+      | "caml_int64_float_of_bits", [ Int64 i ]
+        when match target with
+             | `JavaScript ->
+                 (not (Float.is_nan (Int64.float_of_bits i)))
+                 || Int64.equal i (Int64.bits_of_float nan)
+             | `Wasm -> true -> Some (Float i)
       | "caml_int64_of_float", [ Float f ] ->
           int64 (Int64.of_float (Int64.float_of_bits f))
       | "caml_int64_to_float", [ Int64 i ] -> Some (float (Int64.to_float i))
@@ -632,6 +648,7 @@ let eval_instr update_count inline_constant ~target info i =
             | _ -> false)
         then
           eval_prim
+            ~target
             ( prim
             , List.map prim_args' ~f:(function
                 | Some c -> c
