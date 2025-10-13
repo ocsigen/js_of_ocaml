@@ -9,6 +9,7 @@
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)
+* Compiler: fix inlining (#2107)
 * Runtime/wasm: fix Unix.times (#2096)
 
 # 6.2.0 (2025-07-30) - Lille
