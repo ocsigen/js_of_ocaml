@@ -8028,6 +8028,7 @@
     caml_floatarray_make = runtime.caml_floatarray_make,
     caml_floatarray_sub = runtime.caml_floatarray_sub,
     caml_hash = runtime.caml_hash,
+    caml_int64_create_lo_mi_hi = runtime.caml_int64_create_lo_mi_hi,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_nextafter_float = runtime.caml_nextafter_float,
     caml_signbit_float = runtime.caml_signbit_float,
@@ -8050,7 +8051,10 @@
     Stdlib = global_data.Stdlib,
     infinity = Stdlib[22],
     neg_infinity = Stdlib[23],
-    nan = Stdlib[24];
+    nan = Stdlib[24],
+    signaling_nan =
+       /*<<float.ml:38:20>>*/ runtime.caml_int64_float_of_bits
+       (caml_int64_create_lo_mi_hi(1, 0, 32752));
    function is_finite(x){
      /*<<float.ml:39:33>>*/ return x - x === 0. ? 1 : 0;
     /*<<float.ml:39:38>>*/ }
@@ -8983,7 +8987,7 @@
        infinity,
        neg_infinity,
        nan,
-       NaN,
+       signaling_nan,
        nan,
        3.141592653589793,
        max_float,

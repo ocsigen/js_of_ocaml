@@ -27,10 +27,14 @@ function caml_int64_bits_of_float(x) {
   jsoo_dataview.setFloat64(0, x, true);
   var lo32 = jsoo_dataview.getUint32(0, true);
   var hi32 = jsoo_dataview.getUint32(4, true);
-  var r1 = lo32 & 0xffffff;
-  var r2 = (lo32 >>> 24) | ((hi32 << 8) & 0xffffff);
-  var r3 = (hi32 >>> 16) & 0xffff;
-  return caml_int64_create_lo_mi_hi(r1, r2, r3);
+  var lo = lo32 & 0xffffff;
+  var mi = (lo32 >>> 24) | ((hi32 << 8) & 0xffffff);
+  var hi = (hi32 >>> 16) & 0xffff;
+  // V8 uses signaling NaNs as sentinal. So, NaNs are made quiet when
+  // they are stored in an array. Make them quiet here so that we get
+  // consistent results.
+  if ((hi & 0x7ff8) === 0x7ff0 && (mi | lo | (hi & 0xf)) !== 0) hi |= 8;
+  return caml_int64_create_lo_mi_hi(lo, mi, hi);
 }
 
 //Provides: caml_int32_bits_of_float const
@@ -108,6 +112,10 @@ function caml_int64_float_of_bits(x) {
   var lo = x.lo;
   var mi = x.mi;
   var hi = x.hi;
+  // V8 uses signaling NaNs as sentinal. So, NaNs are made quiet when
+  // they are stored in an array. Make them quiet here so that we get
+  // consistent results.
+  if ((hi & 0x7ff8) === 0x7ff0 && (mi | lo | (hi & 0xf)) !== 0) hi |= 8;
   jsoo_dataview.setUint32(0, lo | (mi << 24), true);
   jsoo_dataview.setUint32(4, (mi >>> 8) | (hi << 16), true);
   return jsoo_dataview.getFloat64(0, true);
