@@ -107,6 +107,9 @@ jobs:
       - run: opam install conf-pkg-config conf-mingw-w64-gcc-i686 conf-mingw-w64-g++-x86_64
         if: runner.os == 'Windows'
 
+      - name: pin dune
+        run: opam pin add dune https://github.com/hhugo/dune.git#jsoo-shape2
+
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
         run: opam pin . -n --with-version dev
