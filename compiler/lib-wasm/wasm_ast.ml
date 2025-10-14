@@ -83,7 +83,7 @@ type int_un_op =
   | Ctz
   | Popcnt
   | Eqz
-  | TruncSatF64 of signage
+  | TruncSat of [ `F32 | `F64 ] * signage
   | ReinterpretF
 
 type int_bin_op =
