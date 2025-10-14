@@ -45,32 +45,9 @@ type boxed_status =
   | Unboxed
 
 module Bigarray = struct
-  type kind =
-    | Float16
-    | Float32
-    | Float64
-    | Int8_signed
-    | Int8_unsigned
-    | Int16_signed
-    | Int16_unsigned
-    | Int32
-    | Int64
-    | Int
-    | Nativeint
-    | Complex32
-    | Complex64
-
-  type layout =
-    | C
-    | Fortran
-
-  type t =
-    { kind : kind
-    ; layout : layout
-    }
-
-  let make ~kind ~layout =
-    { kind =
+  let make ~kind ~layout : Optimization_hint.Bigarray.t =
+    { unsafe = false
+    ; kind =
         (match kind with
         | 0 -> Float32
         | 1 -> Float64
@@ -94,7 +71,7 @@ module Bigarray = struct
         | _ -> assert false)
     }
 
-  let print f { kind; layout } =
+  let print f { Optimization_hint.Bigarray.kind; layout; _ } =
     Format.fprintf
       f
       "bigarray{%s,%s}"
@@ -116,8 +93,10 @@ module Bigarray = struct
       | C -> "C"
       | Fortran -> "Fortran")
 
-  let equal { kind; layout } { kind = kind'; layout = layout' } =
-    phys_equal kind kind' && phys_equal layout layout'
+  let equal
+      { Optimization_hint.Bigarray.unsafe; kind; layout }
+      { Optimization_hint.Bigarray.unsafe = unsafe'; kind = kind'; layout = layout' } =
+    Bool.equal unsafe unsafe' && phys_equal kind kind' && phys_equal layout layout'
 end
 
 type typ =
@@ -128,7 +107,7 @@ type typ =
       (** This value is a block or an integer; if it's an integer, an
           overapproximation of the possible values of each of its
           fields is given by the array of types *)
-  | Bigarray of Bigarray.t
+  | Bigarray of Optimization_hint.Bigarray.t
   | Bot
 
 module Domain = struct
@@ -244,13 +223,14 @@ let update_deps st { blocks; _ } =
               ( x
               , Prim
                   ( Extern
-                      ( "%int_and"
-                      | "%int_or"
-                      | "%int_xor"
-                      | "caml_ba_get_1"
-                      | "caml_ba_get_2"
-                      | "caml_ba_get_3"
-                      | "caml_ba_get_generic" )
+                      ( ( "%int_and"
+                        | "%int_or"
+                        | "%int_xor"
+                        | "caml_ba_get_1"
+                        | "caml_ba_get_2"
+                        | "caml_ba_get_3"
+                        | "caml_ba_get_generic" )
+                      , _ )
                   , lst ) ) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
@@ -297,7 +277,7 @@ let arg_type ~approx arg =
   | Pc c -> constant_type c
   | Pv x -> Var.Tbl.get approx x
 
-let bigarray_element_type (kind : Bigarray.kind) =
+let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
   match kind with
   | Float16 | Float32 | Float64 -> Number (Float, Unboxed)
   | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
@@ -313,7 +293,7 @@ let bigarray_type ~approx ba =
   | Bigarray { kind; _ } -> bigarray_element_type kind
   | _ -> Top
 
-let prim_type ~st ~approx prim args =
+let prim_type ~st ~approx prim hint args =
   match prim with
   | "%int_add" | "%int_sub" | "%int_mul" | "%direct_int_mul" | "%int_lsl" | "%int_neg" ->
       Int Unnormalized
@@ -345,16 +325,16 @@ let prim_type ~st ~approx prim args =
   | "caml_int64_bswap" -> Number (Int64, Unboxed)
   | "caml_int32_compare" | "caml_nativeint_compare" | "caml_int64_compare" ->
       Int Normalized
-  | "caml_string_get16" -> Int Normalized
-  | "caml_string_get32" -> Number (Int32, Unboxed)
-  | "caml_string_get64" -> Number (Int64, Unboxed)
-  | "caml_bytes_get16" -> Int Normalized
-  | "caml_bytes_get32" -> Number (Int32, Unboxed)
-  | "caml_bytes_get64" -> Number (Int64, Unboxed)
+  | "caml_string_get16" | "caml_string_get16u" -> Int Normalized
+  | "caml_string_get32" | "caml_string_get32u" -> Number (Int32, Unboxed)
+  | "caml_string_get64" | "caml_string_get64u" -> Number (Int64, Unboxed)
+  | "caml_bytes_get16" | "caml_bytes_get16u" -> Int Normalized
+  | "caml_bytes_get32" | "caml_bytes_get32u" -> Number (Int32, Unboxed)
+  | "caml_bytes_get64" | "caml_bytes_get64u" -> Number (Int64, Unboxed)
   | "caml_lxm_next" -> Number (Int64, Unboxed)
-  | "caml_ba_uint8_get16" -> Int Normalized
-  | "caml_ba_uint8_get32" -> Number (Int32, Unboxed)
-  | "caml_ba_uint8_get64" -> Number (Int64, Unboxed)
+  | "caml_ba_uint8_get16" | "caml_ba_uint8_get16u" -> Int Normalized
+  | "caml_ba_uint8_get32" | "caml_ba_uint8_get32u" -> Number (Int32, Unboxed)
+  | "caml_ba_uint8_get64" | "caml_ba_uint8_get64u" -> Number (Int64, Unboxed)
   | "caml_nextafter_float" -> Number (Float, Unboxed)
   | "caml_classify_float" -> Int Ref
   | "caml_ldexp_float" | "caml_erf_float" | "caml_erfc_float" -> Number (Float, Unboxed)
@@ -482,9 +462,11 @@ let prim_type ~st ~approx prim args =
                ~layout:(Targetint.to_int_exn layout))
       | _ -> Top)
   | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
-      match args with
-      | ba :: _ -> bigarray_type ~approx ba
-      | [] -> Top)
+      match hint, args with
+      | Some (Optimization_hint.Hint_bigarray { kind; _ }), _ ->
+          bigarray_element_type kind
+      | _, ba :: _ -> bigarray_type ~approx ba
+      | _, [] -> Top)
   | "caml_ba_get_generic" -> (
       match args with
       | ba :: Pv indices :: _ -> (
@@ -521,9 +503,10 @@ let propagate st approx x : Domain.t =
           | Top -> Top
           | _ -> Bot)
       | Prim
-          ( Extern ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
+          ( Extern
+              (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
-      | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
+      | Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           match Var.Tbl.get st.global_flow_info.info_approximation y with
           | Values { known; others } ->
               Domain.join_set
@@ -549,8 +532,9 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
-      | Prim (Extern prim, args) -> prim_type ~st ~approx prim args
+      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+          Int Normalized
+      | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.global_flow_info.info_approximation f with
@@ -566,8 +550,9 @@ let propagate st approx x : Domain.t =
                           (fun y ->
                             match st.global_flow_state.defs.(Var.idx y) with
                             | Expr
-                                (Prim (Extern "caml_ba_create", [ Pv kind; Pv layout; _ ]))
-                              -> (
+                                (Prim
+                                   ( Extern ("caml_ba_create", _)
+                                   , [ Pv kind; Pv layout; _ ] )) -> (
                                 let m =
                                   List.fold_left2
                                     ~f:(fun m p a -> Var.Map.add p a m)
@@ -826,7 +811,7 @@ let box_numbers p st types =
                         | Some (g, _) -> not (can_unbox_parameters st.fun_info g)
                       then List.iter ~f:box args
                   | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
-                  | Prim (Extern s, args) ->
+                  | Prim (Extern (s, _), args) ->
                       if
                         not
                           (String.Hashtbl.mem primitives_with_unboxed_parameters s
@@ -846,7 +831,7 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult), _)
+                  | Prim ((Vectlength _ | Array_get | Not | IsInt | Lt | Le | Ult), _)
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
               | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
@@ -864,7 +849,7 @@ let box_numbers p st types =
 
 let print_opt types global_flow_state f e =
   match e with
-  | Prim (Extern name, args)
+  | Prim (Extern (name, _), args)
     when type_specialized_primitive types global_flow_state name args ->
       Format.fprintf f " OPT"
   | _ -> ()

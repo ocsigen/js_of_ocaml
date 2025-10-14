@@ -3,8 +3,8 @@
  (public_name js_of_ocaml-compiler)
  (synopsis "Js_of_ocaml compiler library")
  (libraries
-  compiler-libs.common
-  compiler-libs.bytecomp
+  ocaml-compiler-libs.common
+  ocaml-compiler-libs.bytecomp
   menhirLib
   sedlex
   yojson)

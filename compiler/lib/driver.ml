@@ -112,7 +112,7 @@ let collects_shapes ~shapes (p : Code.program) =
             | Code.Let
                 ( _
                 , Prim
-                    ( Extern "caml_register_global"
+                    ( Extern ("caml_register_global", _)
                     , [ _code; Pv block; Pc (NativeString name) ] ) ) ->
                 let name =
                   match name with
@@ -120,7 +120,8 @@ let collects_shapes ~shapes (p : Code.program) =
                   | Utf (Utf8 s) -> s
                 in
                 shapes := StringMap.add name block !shapes
-            | Code.Let (_, Prim (Extern "caml_set_global", [ Pc (String name); Pv block ]))
+            | Code.Let
+                (_, Prim (Extern ("caml_set_global", _), [ Pc (String name); Pv block ]))
               -> shapes := StringMap.add name block !shapes
             | _ -> ()))
       p.blocks;

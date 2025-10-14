@@ -59,7 +59,8 @@ jobs:
             skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
-            ocaml-compiler: "5.3"
+            ocaml-name: "5.3.1+pr"
+            ocaml-compiler: "ocaml-variants.5.3.1+trunk"
             skip-effects: false
             skip-test: false
             skip-doc: false
@@ -133,6 +134,10 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: patch compiler
+        if: matrix.ocaml-compiler == 'ocaml-variants.5.3.1+trunk'
+        run: opam pin ocaml-variants https://github.com/hhugo/ocaml.git#optimization-hints
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other

@@ -112,9 +112,9 @@ end
 type cont = Addr.t * Var.t list
 
 type prim =
-  | Vectlength
+  | Vectlength of Optimization_hint.array_kind
   | Array_get
-  | Extern of string
+  | Extern of string * Optimization_hint.t option
   | Not
   | IsInt
   | Eq

@@ -48,6 +48,12 @@ jobs:
             all_jane_street_tests: false
           - os: ubuntu-latest
             os-name: Ubuntu
+            ocaml-compiler: "ocaml-variants.5.3.1+trunk"
+            separate_compilation: true
+            jane_street_tests: true
+            all_jane_street_tests: true
+          - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "5.3"
             separate_compilation: true
             jane_street_tests: true
@@ -91,6 +97,10 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: patch compiler
+        if: matrix.ocaml-compiler == 'ocaml-variants.5.3.1+trunk'
+        run: opam pin ocaml-variants https://github.com/hhugo/ocaml.git#optimization-hints
 
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0

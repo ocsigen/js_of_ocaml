@@ -209,7 +209,8 @@ let rec block_escape st x =
             | Maybe_mutable -> Code.Var.ISet.add st.possibly_mutable y);
             Array.iter l ~f:(fun z -> block_escape st z)
         | Expr
-            (Prim (Extern ("caml_make_array" | "caml_array_of_uniform_array"), [ Pv y ]))
+            (Prim
+               (Extern (("caml_make_array" | "caml_array_of_uniform_array"), _), [ Pv y ]))
           -> block_escape st y
         | _ -> Code.Var.ISet.add st.possibly_mutable y))
     (Var.Tbl.get st.known_origins x)
@@ -219,9 +220,9 @@ let expr_escape st _x e =
   | Special _ | Constant _ | Closure _ | Block _ | Field _ -> ()
   | Apply { args; _ } -> List.iter args ~f:(fun x -> block_escape st x)
   | Prim (Array_get, [ Pv x; _ ]) -> block_escape st x
-  | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> ()
-  | Prim (Extern ("caml_make_array" | "caml_array_of_uniform_array"), [ Pv _ ]) -> ()
-  | Prim (Extern name, l) ->
+  | Prim ((Vectlength _ | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> ()
+  | Prim (Extern (("caml_make_array" | "caml_array_of_uniform_array"), _), [ Pv _ ]) -> ()
+  | Prim (Extern (name, _), l) ->
       let ka =
         match Primitive.kind_args name with
         | Some l -> l
@@ -247,7 +248,7 @@ let expr_escape st _x e =
                     Array.iter a ~f:(fun x -> block_escape st x)
                 | Expr
                     (Prim
-                       ( Extern ("caml_make_array" | "caml_array_of_uniform_array")
+                       ( Extern (("caml_make_array" | "caml_array_of_uniform_array"), _)
                        , [ Pv y ] )) -> (
                     match st.defs.(Var.idx y) with
                     | Expr (Block (_, a, _, _)) ->
@@ -435,7 +436,8 @@ let the_native_string_of info x =
 let the_block_contents_of info x =
   match the_def_of info x with
   | Some (Block (_, a, _, _)) -> Some a
-  | Some (Prim (Extern ("caml_make_array" | "caml_array_of_uniform_array"), [ x ])) -> (
+  | Some (Prim (Extern (("caml_make_array" | "caml_array_of_uniform_array"), _), [ x ]))
+    -> (
       match the_def_of info x with
       | Some (Block (_, a, _, _)) -> Some a
       | _ -> None)
