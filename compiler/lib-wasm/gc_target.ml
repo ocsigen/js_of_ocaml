@@ -1674,7 +1674,7 @@ let internal_primitives =
     let* args = expression_list Fun.id args in
     return (W.Call (f, args))
   in
-  let register_js_expr (prim_name, kind) =
+  let register_js_code ~expr (prim_name, kind) =
     register prim_name ~kind (fun transl_prim_arg l ->
         match l with
         | Code.[ Pc (String str) ] -> (
@@ -1697,24 +1697,26 @@ let internal_primitives =
                    pi.Parse_info.line
                    pi.Parse_info.col))
         | [ Pv _ ] ->
-            let* () =
-              register_fragment "eval" (fun () ->
-                  let lex = Parse_js.Lexer.of_string {|(x)=>eval("("+x+")")|} in
-                  Parse_js.parse_expr lex)
+            let eval name code =
+              let* () =
+                register_fragment name (fun () ->
+                    let lex = Parse_js.Lexer.of_string code in
+                    Parse_js.parse_expr lex)
+              in
+              JavaScript.invoke_fragment
+                name
+                [ call_prim ~transl_prim_arg "caml_jsstring_of_string" l ]
             in
-            JavaScript.invoke_fragment
-              "eval"
-              [ call_prim ~transl_prim_arg "caml_jsstring_of_string" l ]
+            if expr
+            then eval "eval_expr" {|(x)=>eval?.('"use strict";('+x+')')|}
+            else eval "eval_statement" {|(x)=>eval?.('"use strict";'+x)|}
         | [] | _ :: _ ->
             failwith (Printf.sprintf "Wrong number argument to primitive %s" prim_name))
   in
   List.iter
-    ~f:register_js_expr
-    [ "caml_js_expr", `Mutator
-    ; "caml_pure_js_expr", `Pure
-    ; "caml_js_var", `Mutable
-    ; "caml_js_eval_string", `Mutator
-    ];
+    ~f:(register_js_code ~expr:true)
+    [ "caml_js_expr", `Mutator; "caml_pure_js_expr", `Pure; "caml_js_var", `Mutable ];
+  register_js_code ~expr:false ("caml_js_eval_string", `Mutator);
   register "%caml_js_opt_call" (fun transl_prim_arg l ->
       let arity = List.length l - 2 in
       let name = Printf.sprintf "call_%d" arity in
