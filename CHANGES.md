@@ -13,6 +13,8 @@
 * Compiler: js-parser: support html-comments
 * Runtime: improved handling of NaNs (#2110)
 * Lib: allow to reference values from the runtime (#2086)
+* Runtime: make eval functions more robust (#2108)
+
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)

@@ -280,7 +280,7 @@ function caml_js_var(x) {
     //console.error("Js.Unsafe.eval_string")
   }
   // biome-ignore lint/security/noGlobalEval:
-  return eval(x);
+  return eval?.(x);
 }
 //Provides: caml_js_call (const, mutable, shallow)
 //Requires: caml_js_from_array
@@ -478,16 +478,24 @@ function caml_js_strict_equals(x, y) {
 //Provides: caml_js_eval_string (const)
 //Requires: caml_jsstring_of_string
 function caml_js_eval_string(s) {
+  // Uses an indirect eval through the optional chaining operator.
+  // (see https://mdn.dev/docs/Web/JavaScript/Reference/Global_Objects/eval)
+  // This is faster and avoid variable captures.
+  // Also prepends `"use strict"` directive since this is not inherited
+  // from the enclosing function with an indirect eval.
   // biome-ignore lint/security/noGlobalEval:
-  return eval(caml_jsstring_of_string(s));
+  return eval?.('"use strict";' + caml_jsstring_of_string(s));
 }
 
 //Provides: caml_js_expr (const)
 //Requires: caml_jsstring_of_string
 function caml_js_expr(s) {
   console.error("caml_js_expr: fallback to runtime evaluation\n");
+  // We add parentheses to avoid the ambiguity between expressions
+  // and statements. This means that we accept invalid inputs like
+  // "a)(b", but this is unlikely to be an issue in practice.
   // biome-ignore lint/security/noGlobalEval:
-  return eval(caml_jsstring_of_string(s));
+  return eval?.('"use strict";(' + caml_jsstring_of_string(s) + ")");
 }
 
 //Provides: caml_pure_js_expr const (const)
@@ -495,7 +503,7 @@ function caml_js_expr(s) {
 function caml_pure_js_expr(s) {
   console.error("caml_pure_js_expr: fallback to runtime evaluation\n");
   // biome-ignore lint/security/noGlobalEval:
-  return eval(caml_jsstring_of_string(s));
+  return eval?.('"use strict";(' + caml_jsstring_of_string(s) + ")");
 }
 
 //Provides: caml_js_object (object_literal)
