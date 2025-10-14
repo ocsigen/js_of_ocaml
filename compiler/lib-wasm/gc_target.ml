@@ -1397,11 +1397,6 @@ module Math = struct
 
   let fmod f g = binary "fmod" f g
 
-  let round x =
-    let* f = register_import ~name:"caml_round" (Fun (float_func_type 1)) in
-    let* x = x in
-    return (W.Call (f, [ x ]))
-
   let exp2 x = power (return (W.Const (F64 2.))) x
 end
 
