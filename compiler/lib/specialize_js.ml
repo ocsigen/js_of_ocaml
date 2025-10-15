@@ -328,6 +328,12 @@ let setters =
     ; "caml_ba_uint8_setf32"
     ]
 
+let make_vect x y constant acc =
+  let c = Var.fresh () in
+  Let (x, Prim (Extern "caml_make_vect", [ y; Pv c ]))
+  :: Let (c, Constant constant)
+  :: acc
+
 let specialize_instrs ~target opt_count info l =
   let rec aux info checks l acc =
     match l with
@@ -454,6 +460,14 @@ let specialize_instrs ~target opt_count info l =
               let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
               incr opt_count;
               aux info ((y, idx) :: checks) r acc
+        | Let (x, Prim (Extern "caml_make_unboxed_int32_vect_bytecode", [ y ])) ->
+            aux info checks r (make_vect x y (Int32 0l) acc)
+        | Let (x, Prim (Extern "caml_make_unboxed_int64_vect_bytecode", [ y ])) ->
+            aux info checks r (make_vect x y (Int64 0L) acc)
+        | Let (x, Prim (Extern "caml_make_unboxed_nativeint_vect_bytecode", [ y ])) ->
+            aux info checks r (make_vect x y (NativeInt 0l) acc)
+        | Let (x, Prim (Extern "caml_make_unboxed_float32_vect_bytecode", [ y ])) ->
+            aux info checks r (make_vect x y (Float32 0L) acc)
         | _ ->
             let i = specialize_instr ~target opt_count info i in
             aux info checks r (i :: acc))
