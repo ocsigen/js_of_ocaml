@@ -1564,7 +1564,7 @@ module Bigarray = struct
           , fun x ->
               let* conv =
                 register_import
-                  ~name:"caml_double_to_float16"
+                  ~name:"caml_float16_of_double"
                   (Fun { W.params = [ F64 ]; result = [ I32 ] })
               in
               let* x = x in
