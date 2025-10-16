@@ -1278,6 +1278,12 @@ module Generate (Target : Target_sig.S) = struct
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
     | Prim (Extern "caml_array_unsafe_get", [ x; y ]) ->
         Memory.gen_array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
+    | Prim (Extern "caml_csel_value", [ y; z; t ]) ->
+        let typ = Typing.var_type ctx.types x in
+        let* y = transl_prim_arg ctx ~typ:int_u y in
+        let* z = transl_prim_arg ctx ~typ z in
+        let* t = transl_prim_arg ctx ~typ t in
+        return (W.IfExpr (Option.value ~default:Type.value (unboxed_type typ), y, z, t))
     | Prim (p, l) -> (
         match p with
         | Extern name when String.Hashtbl.mem internal_primitives name ->
@@ -1867,6 +1873,7 @@ module Generate (Target : Target_sig.S) = struct
     Typing.reset ();
     Primitive.register "caml_make_array" `Mutable None None;
     Primitive.register "caml_array_of_uniform_array" `Mutable None None;
+    Typing.register_prim "caml_csel_value" ~unbox:true Top;
     String.Hashtbl.iter
       (fun name (k, unbox, typ, _) ->
         Primitive.register name k None None;

@@ -250,7 +250,8 @@ let update_deps st { blocks; _ } =
                       | "caml_ba_get_1"
                       | "caml_ba_get_2"
                       | "caml_ba_get_3"
-                      | "caml_ba_get_generic" )
+                      | "caml_ba_get_generic"
+                      | "caml_csel_value" )
                   , lst ) ) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
@@ -346,6 +347,10 @@ let prim_type ~st ~approx prim args =
           | Expr (Block _) -> bigarray_type ~approx ba
           | _ -> Top)
       | [] | [ _ ] | _ :: Pc _ :: _ -> Top)
+  | "caml_csel_value" -> (
+      match args with
+      | [ _; x; y ] -> Domain.join (arg_type ~approx x) (arg_type ~approx y)
+      | [] | [ _ ] | [ _; _ ] | _ :: _ :: _ :: _ :: _ -> Top)
   | _ -> ( try snd (String.Hashtbl.find primitive_types prim) with Not_found -> Top)
 
 let reset () = String.Hashtbl.reset primitive_types
@@ -538,6 +543,14 @@ let box_numbers p st types =
                   then
                     let s = Var.Map.find g st.global_flow_info.info_return_vals in
                     Var.Set.iter box s)
+          | Expr (Prim (Extern "caml_csel_value", [ _; y; z ])) ->
+              let box_arg arg =
+                match arg with
+                | Pv x -> box x
+                | Pc _ -> ()
+              in
+              box_arg y;
+              box_arg z
           | Expr _ -> ()
           | Phi { known; _ } -> Var.Set.iter box known)
       | Number (_, Boxed) | Int _ | Tuple _ | Bigarray _ | Bot -> ())
