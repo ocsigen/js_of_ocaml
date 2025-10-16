@@ -158,7 +158,7 @@
      "%+(jsoo_runtime)"
      -r
      js_of_ocaml-ppx.as-lib)
-    (run tr -d "\r")
+    (run tr -d \r)
     (with-accepted-exit-codes
      (or 0 1)
      (run grep -v ^$))))))
