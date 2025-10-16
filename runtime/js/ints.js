@@ -132,6 +132,63 @@ function caml_int_of_string(s) {
   return res | 0;
 }
 
+//Provides: caml_parse_small_int
+//Requires: caml_ml_string_length, caml_string_unsafe_get
+//Requires: caml_parse_sign_and_base, caml_parse_digit, caml_failwith
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_parse_small_int(err_msg, width, s) {
+  var r = caml_parse_sign_and_base(s);
+  var i = r[0],
+    sign = r[1],
+    base = r[2],
+    signedness = r[3];
+  var len = caml_ml_string_length(s);
+  var threshold = (1 << width) - 1;
+  var c = i < len ? caml_string_unsafe_get(s, i) : 0;
+  var d = caml_parse_digit(c);
+  if (d < 0 || d >= base) caml_failwith(err_msg);
+  var res = d;
+  for (i++; i < len; i++) {
+    c = caml_string_unsafe_get(s, i);
+    if (c === 95) continue;
+    d = caml_parse_digit(c);
+    if (d < 0 || d >= base) break;
+    res = base * res + d;
+    if (res > threshold) caml_failwith(err_msg);
+  }
+  if (i !== len) caml_failwith(err_msg);
+  // For base different from 10, we expect an unsigned representation,
+  // hence any value of 'res' (less than 'threshold') is acceptable.
+  // But we have to convert the result back to a signed integer.
+  if (signedness) {
+    threshold = 1 << (width - 1);
+    if (sign >= 0) {
+      if (res >= threshold) caml_failwith(err_msg);
+    } else {
+      if (res > threshold) caml_failwith(err_msg);
+    }
+  }
+  res = sign * res;
+  return (res << (32 - width)) >> (32 - width);
+}
+
+//Provides: caml_int8_of_string (const)
+//Requires: caml_parse_small_int
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_int8_of_string(s) {
+  return caml_parse_small_int("Int8.of_string", 8, s);
+}
+
+//Provides: caml_int16_of_string (const)
+//Requires: caml_parse_small_int
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_int16_of_string(s) {
+  return caml_parse_small_int("Int16.of_string", 16, s);
+}
+
 //Provides: caml_mul const
 //Alias: caml_int32_mul
 //Alias: caml_nativeint_mul

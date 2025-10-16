@@ -165,6 +165,24 @@
          (call $parse_int
             (local.get $v) (i32.const 31) (global.get $INT_ERRMSG))))
 
+   (@string $INT8_ERRMSG "Int8.of_string")
+
+   (func (export "caml_int8_of_string")
+      (param $v (ref eq)) (result (ref eq))
+      (ref.i31
+         (i32.extend8_s
+            (call $parse_int
+               (local.get $v) (i32.const 8) (global.get $INT8_ERRMSG)))))
+
+   (@string $INT16_ERRMSG "Int16.of_string")
+
+   (func (export "caml_int16_of_string")
+      (param $v (ref eq)) (result (ref eq))
+      (ref.i31
+         (i32.extend16_s
+            (call $parse_int
+               (local.get $v) (i32.const 16) (global.get $INT16_ERRMSG)))))
+
    (func (export "caml_bswap16") (param (ref eq)) (result (ref eq))
       (local $x i32)
       (local.set $x (i31.get_s (ref.cast (ref i31) (local.get 0))))
