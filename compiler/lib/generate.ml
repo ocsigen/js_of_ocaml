@@ -1365,8 +1365,10 @@ let _ =
     ]
     `Mutator
     (fun cx cy cz _ -> J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
-  register_un_prims [ "caml_alloc_dummy"; "caml_alloc_dummy_float" ] `Pure (fun _ _ ->
-      J.array []);
+  register_un_prims
+    [ "caml_alloc_dummy"; "caml_alloc_dummy_float"; "caml_alloc_dummy_mixed" ]
+    `Pure
+    (fun _ _ -> J.array []);
   register_un_prims
     [ "caml_int_of_float"
     ; "caml_int32_of_float"
