@@ -135,6 +135,12 @@
       (array.new $float_array (f64.const 0)
          (i31.get_u (ref.cast (ref i31) (local.get $size)))))
 
+   (func (export "caml_alloc_dummy_mixed")
+      (param $size (ref eq)) (param (ref eq)) (result (ref eq))
+      (array.new $block (ref.i31 (i32.const 0))
+                 (i32.add (i31.get_u (ref.cast (ref i31) (local.get $size)))
+                          (i32.const 1))))
+
    (func (export "caml_update_dummy")
       (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
       (local $i i32)
