@@ -125,7 +125,7 @@ jobs:
           sudo aptitude -o Acquire::Retries=30 install gcc-multilib g++-multilib pkg-config libgmp-dev libgmp-dev:i386 libx11-dev libx11-dev:i386 libxft-dev libxft-dev:i386 -y
 
       - name: Set-up Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: latest
 
