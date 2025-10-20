@@ -119,13 +119,21 @@ jobs:
           opam install opam-format
           opam exec -- dune exec --root wasm_of_ocaml tools/ci_setup.exe
 
-      - name: Pin Jane Street packages
-        if: ${{ ! matrix.jane_street_tests }}
+      - name: Pin Jane Street packages (v0.16)
+        if: contains(fromJson('["4.14","5.0","5.1","5.2"]'), matrix.ocaml-compiler)
         run: |
           opam pin add -n base.v0.16.1 https://github.com/ocaml-wasm/base.git#wasm
           opam pin add -n time_now.v0.16.1 https://github.com/ocaml-wasm/time_now.git#wasm
           opam pin add -n ppx_inline_test.v0.16.1 https://github.com/ocaml-wasm/ppx_inline_test.git#wasm
           opam pin add -n ppx_expect.v0.16.1 https://github.com/ocaml-wasm/ppx_expect.git#wasm
+
+      - name: Pin Jane Street packages (v0.17)
+        if: ${{ ! (matrix.jane_street_tests || contains(fromJson('["4.14","5.0","5.1","5.2"]'), matrix.ocaml-compiler)) }}
+        run: |
+          opam pin add -n base.v0.17.3 https://github.com/ocaml-wasm/base.git#wasm-v0.17
+          opam pin add -n time_now.v0.17.0 https://github.com/ocaml-wasm/time_now.git#wasm-v0.17
+          opam pin add -n ppx_inline_test.v0.17.1 https://github.com/ocaml-wasm/ppx_inline_test.git#wasm-v0.17
+          opam pin add -n ppx_expect.v0.17.3 https://github.com/ocaml-wasm/ppx_expect.git#wasm-v0.17
 
       - name: Install wasm_of_ocaml and its test dependencies
         working-directory: ./wasm_of_ocaml
