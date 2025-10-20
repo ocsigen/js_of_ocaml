@@ -315,7 +315,7 @@
                    (br $fill))))
             (local.get $a))))
 
-   (func (export "caml_float_array_concat") (param (ref eq)) (result (ref eq))
+   (func (export "caml_floatarray_concat") (param (ref eq)) (result (ref eq))
       (local $i i32) (local $len i32)
       (local $l (ref eq)) (local $v (ref eq))
       (local $b (ref $block))
@@ -327,9 +327,12 @@
             (local.set $b
                (br_on_cast_fail $exit (ref eq) (ref $block) (local.get $l)))
             (local.set $v (array.get $block (local.get $b) (i32.const 1)))
-            (local.set $len
-               (i32.add (local.get $len)
-                  (array.len (ref.cast (ref $float_array) (local.get $v)))))
+            (if (ref.test (ref $float_array) (local.get $v))
+               (then
+                  (local.set $len
+                     (i32.add (local.get $len)
+                        (array.len
+                           (ref.cast (ref $float_array) (local.get $v)))))))
             (local.set $l (array.get $block (local.get $b) (i32.const 2)))
             (br $compute_length))))
       (local.set $fa
