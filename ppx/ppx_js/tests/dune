@@ -8,8 +8,8 @@
  (targets ppx.mlt.corrected)
  (enabled_if
   (and
-   (>= %{ocaml_version} 5.3)
-   (< %{ocaml_version} 5.4)))
+   (>= %{ocaml_version} 5.4)
+   (< %{ocaml_version} 5.5)))
  (action
   (run %{exe:main.bc} %{dep:ppx.mlt})))
 
@@ -17,8 +17,8 @@
  (targets gen.mlt.corrected)
  (enabled_if
   (and
-   (>= %{ocaml_version} 5.3)
-   (< %{ocaml_version} 5.4)))
+   (>= %{ocaml_version} 5.4)
+   (< %{ocaml_version} 5.5)))
  (action
   (run %{exe:main.bc} %{dep:gen.mlt})))
 
@@ -27,8 +27,8 @@
  (package js_of_ocaml-ppx)
  (enabled_if
   (and
-   (>= %{ocaml_version} 5.3)
-   (< %{ocaml_version} 5.4)))
+   (>= %{ocaml_version} 5.4)
+   (< %{ocaml_version} 5.5)))
  (action
   (diff ppx.mlt ppx.mlt.corrected)))
 
@@ -37,7 +37,7 @@
  (package js_of_ocaml-ppx)
  (enabled_if
   (and
-   (>= %{ocaml_version} 5.3)
-   (< %{ocaml_version} 5.4)))
+   (>= %{ocaml_version} 5.4)
+   (< %{ocaml_version} 5.5)))
  (action
   (diff gen.mlt gen.mlt.corrected)))
