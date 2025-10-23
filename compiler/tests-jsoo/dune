@@ -74,7 +74,7 @@
  (js_of_ocaml
   (javascript_files custom.js))
  (wasm_of_ocaml
-  (javascript_files custom.js))
+  (javascript_files custom.js custom.wat))
  (modes js wasm))
 
 (ocamlyacc calc_parser)
