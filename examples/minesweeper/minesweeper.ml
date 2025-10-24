@@ -170,8 +170,8 @@ let disable_events d =
     for x = 0 to d.cf.nbcols - 1 do
       d.dom.(y).(x)##.onclick
       := Html.handler (fun _ ->
-             Html.window##alert (js "GAME OVER");
-             Js._false)
+          Html.window##alert (js "GAME OVER");
+          Js._false)
     done
   done
 

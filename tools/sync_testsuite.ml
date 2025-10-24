@@ -24,15 +24,15 @@ let readdir s =
   Sys.readdir s
   |> Array.to_seq
   |> Seq.filter_map (fun f ->
-         if Sys.is_directory (Filename.concat s f)
-         then Some (File.Dir f)
-         else if String.ends_with ~suffix:".ml" f
-         then Some (File.Ml f)
-         else if String.ends_with ~suffix:".expected" f
-         then Some (File.Expected (Filename.chop_suffix f ".expected"))
-         else if String.ends_with ~suffix:".reference" f
-         then Some (File.Expected (Filename.chop_suffix f ".reference"))
-         else None)
+      if Sys.is_directory (Filename.concat s f)
+      then Some (File.Dir f)
+      else if String.ends_with ~suffix:".ml" f
+      then Some (File.Ml f)
+      else if String.ends_with ~suffix:".expected" f
+      then Some (File.Expected (Filename.chop_suffix f ".expected"))
+      else if String.ends_with ~suffix:".reference" f
+      then Some (File.Expected (Filename.chop_suffix f ".reference"))
+      else None)
   |> FileSet.of_seq
 
 let split a b = FileSet.diff a b, FileSet.inter a b, FileSet.diff b a

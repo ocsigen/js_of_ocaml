@@ -301,16 +301,16 @@ let packages =
   |> Sys.readdir
   |> Array.to_list
   |> List.map (fun s ->
-         if String.contains s '.'
-         then String.sub s 0 (String.index s '.'), read_opam_file s
-         else
-           ( s
-           , read_opam_file
-               (Filename.concat
-                  s
-                  (List.find
-                     (fun f -> String.starts_with ~prefix:s f)
-                     (Array.to_list (Sys.readdir (Filename.concat repo s))))) ))
+      if String.contains s '.'
+      then String.sub s 0 (String.index s '.'), read_opam_file s
+      else
+        ( s
+        , read_opam_file
+            (Filename.concat
+               s
+               (List.find
+                  (fun f -> String.starts_with ~prefix:s f)
+                  (Array.to_list (Sys.readdir (Filename.concat repo s))))) ))
 
 let rec traverse visited p =
   if StringSet.mem p visited

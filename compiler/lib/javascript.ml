@@ -63,8 +63,8 @@ end = struct
       String.starts_with s ~prefix:"0"
       && String.length s > 1
       && String.for_all s ~f:(function
-           | '0' .. '7' -> true
-           | _ -> false)
+        | '0' .. '7' -> true
+        | _ -> false)
     then (* legacy octal notation *)
       Targetint.of_string_exn ("0o" ^ s)
     else Targetint.of_string_exn s
