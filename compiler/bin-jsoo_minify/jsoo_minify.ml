@@ -91,7 +91,7 @@ let main =
   let t = Cmdliner.Term.(const f $ Cmd_arg.options) in
   Cmdliner.Cmd.v Cmd_arg.info t
 
-let (_ : int) =
+let exit_code =
   try Cmdliner.Cmd.eval ~catch:false ~argv:Sys.argv main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in
@@ -108,3 +108,5 @@ let (_ : int) =
   | exc ->
       Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
       exit 1
+
+let () = exit exit_code

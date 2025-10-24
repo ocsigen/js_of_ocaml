@@ -19,7 +19,7 @@
 
 open Js_of_ocaml_compiler.Stdlib
 
-let (_ : int) =
+let exit_code =
   try Cmdliner.Cmd.eval ~catch:false ~argv:Sys.argv Link_wasm.command with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
       let backtrace = Printexc.get_backtrace () in
@@ -36,3 +36,5 @@ let (_ : int) =
   | exc ->
       Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
       exit 1
+
+let () = exit exit_code
