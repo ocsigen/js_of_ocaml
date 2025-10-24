@@ -85,7 +85,7 @@ let rule bc ocaml_version os_type =
     bc
 
 let () =
-  let versions : version list = [ `V4_14; `V5_2; `V5_3; `V5_4 ] in
+  let versions : version list = [ `V4_14; `V5_4 ] in
   set_binary_mode_out stdout true;
   List.iter
     (fun ocaml_version ->
