@@ -54,11 +54,11 @@ let of_cmo (cmo : Cmo_format.compilation_unit) =
   let requires = StringSet.diff requires provides in
   let effects_without_cps =
     (match Config.effects () with
-    | `Disabled | `Jspi -> true
-    | `Cps | `Double_translation -> false)
+      | `Disabled | `Jspi -> true
+      | `Cps | `Double_translation -> false)
     && List.exists (Cmo_format.primitives cmo) ~f:(function
-         | "%resume" | "%reperform" | "%perform" -> true
-         | _ -> false)
+      | "%resume" | "%reperform" | "%perform" -> true
+      | _ -> false)
   in
   let force_link = Cmo_format.force_link cmo in
   { provides; requires; aliases = []; primitives = []; force_link; effects_without_cps }
@@ -104,17 +104,17 @@ let to_string t =
      else [ prefix; "Effects_without_cps:"; string_of_bool t.effects_without_cps ])
   ]
   |> List.filter_map ~f:(function
-       | [] -> None
-       | l -> Some (String.concat ~sep:" " l))
+    | [] -> None
+    | l -> Some (String.concat ~sep:" " l))
   |> String.concat ~sep:"\n"
   |> fun x -> x ^ "\n"
 
 let parse_stringlist s =
   String.split_on_char ~sep:',' s
   |> List.filter_map ~f:(fun s ->
-         match String.trim s with
-         | "" -> None
-         | s -> Some s)
+      match String.trim s with
+      | "" -> None
+      | s -> Some s)
 
 let parse_stringset s = parse_stringlist s |> StringSet.of_list
 
@@ -141,9 +141,9 @@ let parse acc s =
           let x =
             parse_stringlist aliases
             |> List.map ~f:(fun s ->
-                   match String.lsplit2 s ~on:'=' with
-                   | None -> assert false
-                   | Some (a, b) -> a, b)
+                match String.lsplit2 s ~on:'=' with
+                | None -> assert false
+                | Some (a, b) -> a, b)
           in
           Some { acc with aliases = acc.aliases @ x }
       | Some ("Force_link", flink) ->

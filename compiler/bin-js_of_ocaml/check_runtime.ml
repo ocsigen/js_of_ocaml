@@ -23,9 +23,9 @@ open Js_of_ocaml_compiler
 let group_by_snd l =
   l
   |> List.sort_uniq ~cmp:(fun (n1, l1) (n2, l2) ->
-         match List.compare ~cmp:String.compare l1 l2 with
-         | 0 -> String.compare n1 n2
-         | c -> c)
+      match List.compare ~cmp:String.compare l1 l2 with
+      | 0 -> String.compare n1 n2
+      | c -> c)
   |> List.group ~f:(fun (_, g1) (_, g2) -> List.equal ~eq:String.equal g1 g2)
 
 let print_groups output l =
@@ -131,10 +131,10 @@ let f (runtime_files, bytecode, target_env) =
   let extra =
     extra
     |> List.map ~f:(fun name ->
-           ( (name ^ if Linker.deprecated ~name then " (deprecated)" else "")
-           , match Linker.origin ~name with
-             | None -> []
-             | Some x -> [ x ] ))
+        ( (name ^ if Linker.deprecated ~name then " (deprecated)" else "")
+        , match Linker.origin ~name with
+          | None -> []
+          | Some x -> [ x ] ))
     |> group_by_snd
   in
 

@@ -43,8 +43,8 @@ let prefix : string =
   loop "" (Sys.getcwd ())
   (* normalizatio for windows *)
   |> String.map ~f:(function
-       | '\\' -> '/'
-       | c -> c)
+    | '\\' -> '/'
+    | c -> c)
 
 type enabled_if =
   | GE5
@@ -63,9 +63,9 @@ let () =
   |> List.filter ~f:is_implem
   |> List.sort ~cmp:compare
   |> List.iter ~f:(fun f ->
-         let basename = Filename.chop_extension f in
-         Printf.printf
-           {|
+      let basename = Filename.chop_extension f in
+      Printf.printf
+        {|
 (library
  ;; %s%s.ml
  (name %s_%d)
@@ -76,16 +76,16 @@ let () =
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 |}
-           prefix
-           basename
-           basename
-           (Hashtbl.hash prefix mod 100)
-           (match enabled_if basename with
-           | Any | Not_wasm -> "true"
-           | GE5 -> "(>= %{ocaml_version} 5)"
-           | No_effects_not_wasm -> "(<> %{profile} with-effects)")
-           basename
-           (match enabled_if basename with
-           | Any -> " wasm"
-           | GE5 -> "" (* ZZZ /static not yet implemented *)
-           | Not_wasm | No_effects_not_wasm -> ""))
+        prefix
+        basename
+        basename
+        (Hashtbl.hash prefix mod 100)
+        (match enabled_if basename with
+        | Any | Not_wasm -> "true"
+        | GE5 -> "(>= %{ocaml_version} 5)"
+        | No_effects_not_wasm -> "(<> %{profile} with-effects)")
+        basename
+        (match enabled_if basename with
+        | Any -> " wasm"
+        | GE5 -> "" (* ZZZ /static not yet implemented *)
+        | Not_wasm | No_effects_not_wasm -> ""))

@@ -228,10 +228,10 @@ end = struct
     Sys.readdir dir
     |> Array.to_list
     |> List.filter ~f:(fun nm ->
-           let open Unix in
-           match stat (dir ^ "/" ^ nm) with
-           | { st_kind = S_REG | S_LNK; _ } -> true
-           | _ -> false)
+        let open Unix in
+        match stat (dir ^ "/" ^ nm) with
+        | { st_kind = S_REG | S_LNK; _ } -> true
+        | _ -> false)
     |> (if spec.ext = ""
         then fun x -> x
         else

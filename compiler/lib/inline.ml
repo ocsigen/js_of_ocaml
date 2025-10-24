@@ -380,10 +380,10 @@ let interesting_parameters ~context info =
 *)
 let functor_like ~context info =
   (match Config.target (), context.profile with
-  | `Wasm, (O2 | O3) -> true
-  | `Wasm, O1 -> body_size ~context info <= 15
-  | `JavaScript, (O1 | O2) -> false
-  | `JavaScript, O3 -> body_size ~context info <= 15)
+    | `Wasm, (O2 | O3) -> true
+    | `Wasm, O1 -> body_size ~context info <= 15
+    | `JavaScript, (O1 | O2) -> false
+    | `JavaScript, O3 -> body_size ~context info <= 15)
   && (not info.recursive)
   && (not (contains_loop ~context info))
   && returns_a_block ~context info
@@ -447,14 +447,14 @@ and should_inline ~context info args =
      context.enclosing_function]) since this results in significant
      performance improvements. *)
   (match Config.target (), Config.effects () with
-  | `JavaScript, (`Disabled | `Cps) ->
-      closure_count ~context info = 0
-      || Option.is_none context.enclosing_function
-      || Option.equal Var.equal info.enclosing_function context.current_function
-      || (not (Lazy.force !(context.has_closures)))
-         && Option.equal Var.equal info.enclosing_function context.enclosing_function
-  | `Wasm, _ | `JavaScript, `Double_translation -> true
-  | `JavaScript, `Jspi -> assert false)
+    | `JavaScript, (`Disabled | `Cps) ->
+        closure_count ~context info = 0
+        || Option.is_none context.enclosing_function
+        || Option.equal Var.equal info.enclosing_function context.current_function
+        || (not (Lazy.force !(context.has_closures)))
+           && Option.equal Var.equal info.enclosing_function context.enclosing_function
+    | `Wasm, _ | `JavaScript, `Double_translation -> true
+    | `JavaScript, `Jspi -> assert false)
   && (functor_like ~context info
      || (context.live_vars.(Var.idx info.f) = 1
         &&

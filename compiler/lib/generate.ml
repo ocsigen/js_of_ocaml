@@ -1805,10 +1805,10 @@ and translate_instrs_rev (ctx : Ctx.t) loc expr_queue instrs acc_rev muts_map =
       let muts_map_l =
         Code.Var.Set.elements muts
         |> List.map ~f:(fun x ->
-               ( x
-               , match Code.Var.Map.find_opt x old_muts_map with
-                 | None -> Code.Var.fork x
-                 | Some x' -> x' ))
+            ( x
+            , match Code.Var.Map.find_opt x old_muts_map with
+              | None -> Code.Var.fork x
+              | Some x' -> x' ))
       in
       let muts_map =
         List.fold_left muts_map_l ~init:old_muts_map ~f:(fun acc (x, x') ->
@@ -1980,7 +1980,7 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
     Structure.get_edges st.dom pc
     |> Addr.Set.elements
     |> List.filter ~f:(fun pc' ->
-           nbbranch pc' >= 2 || Structure.is_merge_node st.structure pc')
+        nbbranch pc' >= 2 || Structure.is_merge_node st.structure pc')
     |> Structure.sort_in_post_order st.structure
   in
   let rec loop ~scope_stack ~fall_through l =
@@ -2350,15 +2350,15 @@ let generate_shared_value ctx =
   let strings =
     ( J.variable_declaration
         ((match ctx.Ctx.exported_runtime with
-         | None -> []
-         | Some (_, { contents = false }) -> []
-         | Some (v, _) ->
-             [ ( J.V v
-               , ( J.dot
-                     (s_var Global_constant.global_object)
-                     (Utf8_string.of_string_exn "jsoo_runtime")
-                 , J.U ) )
-             ])
+           | None -> []
+           | Some (_, { contents = false }) -> []
+           | Some (v, _) ->
+               [ ( J.V v
+                 , ( J.dot
+                       (s_var Global_constant.global_object)
+                       (Utf8_string.of_string_exn "jsoo_runtime")
+                   , J.U ) )
+               ])
         @ List.map
             (StringMap.bindings ctx.Ctx.share.Share.vars.Share.byte_strings)
             ~f:(fun (s, v) -> v, (str_js_byte s, J.U))

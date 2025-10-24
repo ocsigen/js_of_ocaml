@@ -156,32 +156,26 @@ let () =
       in
       (createButton "link" "inserthtml")##.onclick
       := Html.handler (fun _ ->
-             let link = prompt "Enter a link" "http://google.ru" in
-             let desc = prompt "Enter description" "desc" in
-             let link =
-               String.concat
-                 ""
-                 [ "<a href=\""; link; "\" wysitype=\"global\">"; desc; "</a>" ]
-             in
-             iWin##alert (Js.string link);
-             iDoc##execCommand
-               (Js.string "inserthtml")
-               Js._false
-               (Js.some (Js.string link));
-             Js._true);
+          let link = prompt "Enter a link" "http://google.ru" in
+          let desc = prompt "Enter description" "desc" in
+          let link =
+            String.concat
+              ""
+              [ "<a href=\""; link; "\" wysitype=\"global\">"; desc; "</a>" ]
+          in
+          iWin##alert (Js.string link);
+          iDoc##execCommand (Js.string "inserthtml") Js._false (Js.some (Js.string link));
+          Js._true);
       (createButton "link2wiki" "inserthtml")##.onclick
       := Html.handler (fun _ ->
-             let link = prompt "Enter a wikipage" "lololo" in
-             let link =
-               [ "<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>" ]
-               |> String.concat ""
-             in
-             iWin##alert (Js.string link);
-             iDoc##execCommand
-               (Js.string "inserthtml")
-               Js._false
-               (Js.some (Js.string link));
-             Js._true);
+          let link = prompt "Enter a wikipage" "lololo" in
+          let link =
+            [ "<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>" ]
+            |> String.concat ""
+          in
+          iWin##alert (Js.string link);
+          iDoc##execCommand (Js.string "inserthtml") Js._false (Js.some (Js.string link));
+          Js._true);
       Dom.appendChild body (Html.createBr d);
       let preview = Html.createTextarea d in
       preview##.readOnly := Js._true;

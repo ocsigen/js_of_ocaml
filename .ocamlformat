@@ -11,5 +11,5 @@ dock-collection-brackets=false
 margin=90
 module-item-spacing=sparse
 parse-docstrings=false
-version=0.27.0
-ocaml-version=4.08.0
+version=0.28.1
+ocaml-version=4.13.0

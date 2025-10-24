@@ -229,14 +229,13 @@ let _ =
     | reports ->
         List.map reports ~f:read_report_config
         |> List.concat_map ~f:(fun l ->
-               List.concat_map l ~f:(fun l ->
-                   List.concat_map l ~f:(function
-                     | None -> []
-                     | Some (p1, p2, _measure, _) -> (
-                         match String.split_on_char ~sep:'/' p1 with
-                         | [ "results"; "times"; _host; interpreter ] ->
-                             [ interpreter, p2 ]
-                         | _ -> []))))
+            List.concat_map l ~f:(fun l ->
+                List.concat_map l ~f:(function
+                  | None -> []
+                  | Some (p1, p2, _measure, _) -> (
+                      match String.split_on_char ~sep:'/' p1 with
+                      | [ "results"; "times"; _host; interpreter ] -> [ interpreter, p2 ]
+                      | _ -> []))))
         |> List.sort_uniq ~cmp:compare
         |> fun required ->
         true, fun (interp, suite) -> List.mem (interp, Spec.name suite) ~set:required

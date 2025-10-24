@@ -342,7 +342,7 @@ let merge_shape a b =
 let sexp_of_shapes s =
   StringMap.bindings s
   |> List.map ~f:(fun (name, shape) ->
-         Sexp.List [ Atom name; Atom (Shape.to_string shape) ])
+      Sexp.List [ Atom name; Atom (Shape.to_string shape) ])
 
 let string_of_shapes s = Sexp.List (sexp_of_shapes s) |> Sexp.to_string
 
@@ -476,7 +476,7 @@ let run
        tmp_wasm_file
        |> (fun file -> Link.Wasm_binary.read_imports ~file)
        |> List.filter_map ~f:(fun { Link.Wasm_binary.module_; name; _ } ->
-              if String.equal module_ "js" then Some name else None)
+           if String.equal module_ "js" then Some name else None)
        |> StringSet.of_list
      in
      let js_runtime = build_js_runtime ~primitives () in

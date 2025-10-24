@@ -565,9 +565,9 @@ let write_str_wrap d e =
   let y =
     let y = core_type_of_type_decl d in
     (match d with
-    | { ptype_manifest = Some { ptyp_desc = Parsetree.Ptyp_variant (_, _, _); _ }; _ } ->
-        [%type: [> [%t y] ]]
-    | _ -> y)
+      | { ptype_manifest = Some { ptyp_desc = Parsetree.Ptyp_variant (_, _, _); _ }; _ }
+        -> [%type: [> [%t y] ]]
+      | _ -> y)
     |> f
   in
   fun_str_wrap d e y ~f ~suffix

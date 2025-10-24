@@ -263,8 +263,8 @@ let jump_closures blocks_to_transform idom : jump_closures =
                 idom_node
                 ((cname, node)
                 ::
-                (try Addr.Map.find idom_node jc.closures_of_alloc_site
-                 with Not_found -> []))
+                  (try Addr.Map.find idom_node jc.closures_of_alloc_site
+                   with Not_found -> []))
                 jc.closures_of_alloc_site
           })
     idom
@@ -389,9 +389,9 @@ let allocate_continuation ~st ~alloc_jump_closures ~split_closures src_pc x dire
   let direct_pc, args = direct_cont in
   if
     (match args with
-    | [] -> true
-    | [ x' ] -> Var.equal x x'
-    | _ -> false)
+      | [] -> true
+      | [ x' ] -> Var.equal x x'
+      | _ -> false)
     &&
     match Addr.Hashtbl.find st.is_continuation direct_pc with
     | `Param _ -> true

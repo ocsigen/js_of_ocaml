@@ -1758,36 +1758,36 @@ class clean =
         | (Empty_statement | Expression_statement (EVar _)), _ -> false
         | _ -> true)
       |> List.group ~f:(fun (x, _) (prev, _) ->
-             match prev, x with
-             | Variable_statement (k1, _), Variable_statement (k2, _) -> (
-                 match k1, k2 with
-                 | Let, Let -> true
-                 | Var, Var -> true
-                 | Const, Const -> true
-                 | Let, _ -> false
-                 | Var, _ -> false
-                 | Const, _ -> false)
-             | _, _ -> false)
+          match prev, x with
+          | Variable_statement (k1, _), Variable_statement (k2, _) -> (
+              match k1, k2 with
+              | Let, Let -> true
+              | Var, Var -> true
+              | Const, Const -> true
+              | Let, _ -> false
+              | Var, _ -> false
+              | Const, _ -> false)
+          | _, _ -> false)
       |> List.map ~f:(function
-           | (Variable_statement (k1, _), _) :: _ as l ->
-               let loc =
-                 List.find_map l ~f:(fun (_, loc) ->
-                     match loc with
-                     | N | U -> None
-                     | Pi _ -> Some loc)
-                 |> function
-                 | None -> N
-                 | Some x -> x
-               in
+        | (Variable_statement (k1, _), _) :: _ as l ->
+            let loc =
+              List.find_map l ~f:(fun (_, loc) ->
+                  match loc with
+                  | N | U -> None
+                  | Pi _ -> Some loc)
+              |> function
+              | None -> N
+              | Some x -> x
+            in
 
-               ( Variable_statement
-                   ( k1
-                   , List.concat_map l ~f:(function
-                       | Variable_statement (_, l), _ -> l
-                       | _ -> assert false) )
-               , loc )
-           | [ x ] -> x
-           | [] | _ :: _ :: _ -> assert false)
+            ( Variable_statement
+                ( k1
+                , List.concat_map l ~f:(function
+                    | Variable_statement (_, l), _ -> l
+                    | _ -> assert false) )
+            , loc )
+        | [ x ] -> x
+        | [] | _ :: _ :: _ -> assert false)
 
     method statement s =
       let s = super#statement s in
