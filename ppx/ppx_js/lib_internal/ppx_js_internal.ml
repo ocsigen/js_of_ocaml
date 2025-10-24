@@ -23,6 +23,8 @@ open Ast_helper
 open Asttypes
 open Parsetree
 
+[@@@ocaml.alert "-prefer_jane_syntax"]
+
 let nolabel = Nolabel
 
 exception Syntax_error of Location.Error.t
@@ -339,7 +341,7 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
   in
   Exp.apply
     ~loc:apply_loc
-    { invoker with pexp_attributes = [ merlin_hide ] }
+    { invoker with pexp_attributes = invoker.pexp_attributes @ [ merlin_hide ] }
     ((app_arg obj :: args)
     @ [ app_arg
           (Exp.fun_
@@ -550,9 +552,10 @@ let filter_map f l =
 
 let rec create_meth_ty exp =
   match exp.pexp_desc with
-  | Pexp_fun (label, _, _, body) -> label :: create_meth_ty body
+  | ((Pexp_fun (label, _, _, body)) [@if not oxcaml]) -> label :: create_meth_ty body
   | Pexp_function _ -> [ nolabel ]
-  | Pexp_newtype (_, body) -> create_meth_ty body
+  | ((Pexp_newtype (_, body)) [@if not oxcaml]) -> create_meth_ty body
+  | ((Pexp_newtype (_, _, body)) [@if oxcaml]) -> create_meth_ty body
   | _ -> []
 [@@if ast_version < 502]
 

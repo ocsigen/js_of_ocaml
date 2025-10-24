@@ -422,9 +422,7 @@ let%expect_test _ =
   let f = Js.wrap_callback (fun s -> print_endline s) in
   Js.export "f" f;
   let () =
-    Js.Unsafe.fun_call
-      (Js.Unsafe.pure_js_expr "jsoo_exports")##.f
-      [| Js.Unsafe.coerce (Js.string "hello") |]
+    Js.Unsafe.fun_call (Js.Unsafe.pure_js_expr "jsoo_exports")##.f [| Obj.magic "hello" |]
   in
   ();
   [%expect {| hello |}]
