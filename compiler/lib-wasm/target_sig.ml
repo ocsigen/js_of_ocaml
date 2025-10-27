@@ -97,6 +97,8 @@ module type S = sig
   module Type : sig
     val value : Wasm_ast.value_type
 
+    val value_or_exn : Wasm_ast.value_type
+
     val func_type : int -> Wasm_ast.func_type
 
     val primitive_type : int -> Wasm_ast.func_type
