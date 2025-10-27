@@ -215,6 +215,21 @@ end = struct
   let args l = List.map ~f:(fun x -> label x, typ x) l
 end
 
+let lift_function_body_constraint expr = expr [@@if ast_version < 502]
+
+let lift_function_body_constraint expr =
+  match expr.pexp_desc with
+  | Pexp_function
+      ( params
+      , None
+      , Pfunction_body { pexp_desc = Pexp_constraint (body, ty); pexp_attributes = []; _ }
+      ) ->
+      { expr with
+        pexp_desc = Pexp_function (params, Some (Pconstraint ty), Pfunction_body body)
+      }
+  | _ -> expr
+[@@if ast_version >= 502]
+
 let js_dot_t_the_first_arg args =
   match args with
   | [] -> assert false
@@ -250,31 +265,20 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
   in
   let make_fun (label, pat) (label', typ) expr =
     assert (label' = label);
-    match expr.pexp_desc with
-    | ((Pexp_function (params, c, b)) [@if ast_version >= 502]) ->
-        let params =
-          { pparam_desc = Pparam_val (nolabel, None, Pat.constraint_ pat typ)
-          ; pparam_loc = { expr.pexp_loc with loc_ghost = true }
-          }
-          :: params
-        in
-        let c, b =
-          match c, b with
-          | ( None
-            , Pfunction_body
-                { pexp_desc = Pexp_constraint (e, ty); pexp_attributes = []; _ } ) ->
-              Some (Pconstraint ty), Pfunction_body e
-          | _ -> c, b
-        in
-        { expr with pexp_desc = Pexp_function (params, c, b) }
-    | _ -> Exp.fun_ label None (Pat.constraint_ pat typ) expr
+    Ast_builder.Default.pexp_fun
+      ~loc:!Ast_helper.default_loc
+      label
+      None
+      (Pat.constraint_ pat typ)
+      expr
   in
   let invoker =
-    List.fold_right2
-      labels_and_pats
-      tfunc_args
-      ~f:make_fun
-      ~init:(make_fun (nolabel, Pat.any ()) (nolabel, twrap) annotated_ebody)
+    lift_function_body_constraint
+      (List.fold_right2
+         labels_and_pats
+         tfunc_args
+         ~f:make_fun
+         ~init:(make_fun (nolabel, Pat.any ()) (nolabel, twrap) annotated_ebody))
   in
   (* Introduce all local types:
      {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
@@ -342,7 +346,7 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
     { invoker with pexp_attributes = merlin_hide :: invoker.pexp_attributes }
     ((app_arg obj :: args)
     @ [ app_arg
-          (Exp.fun_
+          (Ast_builder.Default.pexp_fun
              ~loc:gloc
              nolabel
              None
@@ -385,7 +389,7 @@ let prop_get ~loc obj prop =
     invoker
     [ app_arg obj
     ; app_arg
-        (Exp.fun_
+        (Ast_builder.Default.pexp_fun
            ~loc:gloc
            nolabel
            None
@@ -435,7 +439,7 @@ let prop_set ~loc ~prop_loc obj prop value =
     [ app_arg obj
     ; app_arg value
     ; app_arg
-        (Exp.fun_
+        (Ast_builder.Default.pexp_fun
            ~loc:{ loc with loc_ghost = true }
            nolabel
            None
@@ -530,7 +534,7 @@ type field_desc =
       string Asttypes.loc
       * Asttypes.private_flag
       * Asttypes.override_flag
-      * (Parsetree.expression * Parsetree.core_type option)
+      * Parsetree.expression
       * Arg.t list
   | Val of
       string Asttypes.loc * Prop_kind.t * Asttypes.override_flag * Parsetree.expression
@@ -636,10 +640,10 @@ let preprocess_literal_object mappper fields :
 
         let body =
           match body_ty with
-          | None -> body, None
+          | None -> body
           | Some { ptyp_desc = Ptyp_poly _; _ } ->
               raise_errorf ~loc:exp.pcf_loc "Polymorphic method not supported."
-          | Some ty -> body, Some ty
+          | Some ty -> Exp.constraint_ body ty
         in
         names, Meth (id, priv, bang, body, fun_ty) :: fields
     | _ ->
@@ -692,43 +696,14 @@ let literal_object self_id (fields : field_desc list) =
   in
   let body = function
     | Val (_, _, _, body) -> body
-    | Meth (_, _, _, (body, ty), _) -> (
-        match body.pexp_desc, ty with
-        | ((Pexp_function (params, c, b), None) [@if ast_version >= 502]) ->
-            let params =
-              { pparam_desc = Pparam_val (nolabel, None, self_id)
-              ; pparam_loc = { body.pexp_loc with loc_ghost = true }
-              }
-              :: params
-            in
-            { body with pexp_desc = Pexp_function (params, c, b) }
-        | ((_, Some ty) [@if ast_version >= 502]) -> (
-            let e =
-              Exp.fun_
-                ~loc:{ body.pexp_loc with loc_ghost = true }
-                Nolabel
-                None
-                self_id
-                body
-            in
-            match e.pexp_desc with
-            | Pexp_function ([ param ], None, b) ->
-                { e with pexp_desc = Pexp_function ([ param ], Some (Pconstraint ty), b) }
-            | _ -> assert false)
-        | ((_, Some ty) [@if ast_version < 502]) ->
-            Exp.fun_
-              ~loc:{ body.pexp_loc with loc_ghost = true }
-              Nolabel
-              None
-              self_id
-              (Exp.constraint_ body ty)
-        | _, None ->
-            Exp.fun_
-              ~loc:{ body.pexp_loc with loc_ghost = true }
-              Nolabel
-              None
-              self_id
-              body)
+    | Meth (_, _, _, body, _) ->
+        lift_function_body_constraint
+          (Ast_builder.Default.pexp_fun
+             ~loc:{ body.pexp_loc with loc_ghost = true }
+             Nolabel
+             None
+             self_id
+             body)
   in
   let extra_types =
     List.concat
@@ -816,23 +791,12 @@ let literal_object self_id (fields : field_desc list) =
                (self :: List.map fields ~f:(fun f -> (name f).txt))
                ~init:fake_object
                ~f:(fun name fun_ ->
-                 match fun_.pexp_desc with
-                 | ((Pexp_function (params, c, b)) [@if ast_version >= 502]) ->
-                     let params =
-                       { pparam_desc =
-                           Pparam_val (nolabel, None, Pat.var ~loc:gloc (mknoloc name))
-                       ; pparam_loc = { fun_.pexp_loc with loc_ghost = true }
-                       }
-                       :: params
-                     in
-                     { fun_ with pexp_desc = Pexp_function (params, c, b) }
-                 | _ ->
-                     Exp.fun_
-                       ~loc:gloc
-                       nolabel
-                       None
-                       (Pat.var ~loc:gloc (mknoloc name))
-                       fun_))
+                 Ast_builder.Default.pexp_fun
+                   ~loc:gloc
+                   nolabel
+                   None
+                   (Pat.var ~loc:gloc (mknoloc name))
+                   fun_))
             with
             pexp_attributes = [ merlin_hide ]
           }
