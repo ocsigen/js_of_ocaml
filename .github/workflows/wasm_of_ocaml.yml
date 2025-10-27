@@ -13,6 +13,7 @@ jobs:
   build:
     env:
       WASM_OF_OCAML: true
+      OXCAML_OPAM_REPO_REF: eeedfd918e54a8741d26af1a4ff2991b21c1045f
 
     strategy:
       fail-fast: false
@@ -94,6 +95,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: oxcaml/opam-repository
+          ref: ${{ env.OXCAML_OPAM_REPO_REF }}
           path: janestreet/opam-repository
 
       - name: Set-up Node.js
@@ -113,7 +115,7 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           opam-repositories: |
             default: https://github.com/ocaml/opam-repository.git
-            ox: https://github.com/oxcaml/opam-repository.git
+            ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
         if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
 
       - name: Set-up Binaryen
