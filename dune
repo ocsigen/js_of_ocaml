@@ -36,6 +36,21 @@
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
+ (wasi
+  (wasm_of_ocaml
+   (build_runtime_flags
+    (:standard --enable wasi))
+   (flags
+    (:standard
+     --pretty
+     --enable
+     wasi
+     (:include wasi_extra_flags)))
+   ; Wasmtime is slow on large binaries, so use whole program compilation
+   (compilation_mode whole_program))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
  (bench_no_debug
   (flags
    (:standard \ -g))
@@ -77,6 +92,13 @@
   (with-stdout-to
    %{target}
    (echo "(--debug invariant)"))))
+
+(rule
+ (targets wasi_extra_flags)
+ (action
+  (with-stdout-to
+   %{targets}
+   (echo "(%{env:WASI_FLAGS=})"))))
 
 (data_only_dirs _wikidoc doc-dev janestreet)
 
