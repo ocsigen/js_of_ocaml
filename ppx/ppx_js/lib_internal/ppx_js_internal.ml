@@ -339,7 +339,7 @@ let method_call ~loc ~apply_loc obj (meth, meth_loc) args =
   in
   Exp.apply
     ~loc:apply_loc
-    { invoker with pexp_attributes = [ merlin_hide ] }
+    { invoker with pexp_attributes = merlin_hide :: invoker.pexp_attributes }
     ((app_arg obj :: args)
     @ [ app_arg
           (Exp.fun_
@@ -408,11 +408,7 @@ let prop_get ~loc obj prop =
    ]} *)
 let prop_set ~loc ~prop_loc obj prop value =
   let gloc = { obj.pexp_loc with Location.loc_ghost = true } in
-  let obj =
-    { (Exp.constraint_ ~loc:gloc obj (open_t gloc)) with
-      pexp_attributes = [ merlin_hide ]
-    }
-  in
+  let obj = Exp.constraint_ ~attrs:[ merlin_hide ] ~loc:gloc obj (open_t gloc) in
   let invoker =
     invoker
       (fun args _tres ->
