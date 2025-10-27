@@ -234,4 +234,7 @@
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $msg)))))
             (call $exit (i32.const 2)))))
+
+   (func (export "caml_with_async_exns") (param $f (ref eq)) (result (ref eq))
+      (return_call $caml_callback_1 (local.get $f) (ref.i31 (i32.const 0))))
 )

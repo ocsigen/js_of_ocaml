@@ -40,8 +40,19 @@
 (rule
  (alias runtest-js)
  (enabled_if
-  (>= %{ocaml_version} 5.2))
+  (>= %{ocaml_version} 5.4))
  (action
   (progn
    (diff test_toplevel.expected test_toplevel.bc.js.actual)
    (diff test_toplevel.expected test_toplevel.js.actual))))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} 5.2)
+   (< %{ocaml_version} 5.3)))
+ (action
+  (progn
+   (diff test_toplevel-5.2.expected test_toplevel.bc.js.actual)
+   (diff test_toplevel-5.2.expected test_toplevel.js.actual))))

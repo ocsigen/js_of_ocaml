@@ -12,6 +12,8 @@
    var
    --debuginfo
    %{lib:stdlib:stdlib.cma}
+   --enable
+   use-js-string
    -o
    %{targets})))
 
@@ -53,6 +55,8 @@
    --pretty
    --debuginfo
    %{dep:shapes.cma}
+   --enable
+   use-js-string
    -o
    %{targets})))
 

@@ -5,6 +5,9 @@
   (js_of_ocaml
    (compilation_mode separate))
   (wasm_of_ocaml
+   ; dynlink not compiling
+   (enabled_if
+    (not %{oxcaml_supported}))
    (compilation_mode separate))))
 
 (test

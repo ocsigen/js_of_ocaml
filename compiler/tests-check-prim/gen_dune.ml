@@ -11,6 +11,11 @@ type version =
   | `V5_5
   ]
 
+type variant =
+  [ `Mainstream
+  | `OxCaml
+  ]
+
 let string_of_version : version -> string = function
   | `V4_13 -> "4.13"
   | `V4_14 -> "4.14"
@@ -39,7 +44,7 @@ let string_of_os_type = function
   | Unix -> "Unix"
   | Win32 -> "Win32"
 
-let rule bc ocaml_version os_type =
+let rule bc ocaml_version os_type ocaml_variant =
   let vl =
     [ Printf.sprintf "(>= %%{ocaml_version} %s)" (string_of_version ocaml_version) ]
   in
@@ -53,7 +58,13 @@ let rule bc ocaml_version os_type =
     | None -> []
     | Some os_type -> [ Printf.sprintf "(= %%{os_type} %s)" (string_of_os_type os_type) ]
   in
-  let enabled_if = Printf.sprintf "(and %s)" (String.concat "" (vl @ vu @ os)) in
+  let ox =
+    [ (match ocaml_variant with
+      | `Mainstream -> "(not %{oxcaml_supported})"
+      | `OxCaml -> "%{oxcaml_supported}")
+    ]
+  in
+  let enabled_if = Printf.sprintf "(and %s)" (String.concat "" (vl @ vu @ os @ ox)) in
 
   let target =
     Filename.chop_extension bc
@@ -62,6 +73,9 @@ let rule bc ocaml_version os_type =
       | Some os_type -> "-" ^ string_of_os_type os_type)
     ^ "."
     ^ string_of_version ocaml_version
+    ^ (match ocaml_variant with
+      | `Mainstream -> ""
+      | `OxCaml -> "+ox")
     ^ ".output"
   in
   Printf.sprintf
@@ -85,11 +99,13 @@ let rule bc ocaml_version os_type =
     bc
 
 let () =
-  let versions : version list = [ `V4_14; `V5_4 ] in
+  let versions : (version * variant) list =
+    [ `V4_14, `Mainstream; `V5_4, `Mainstream; `V5_2, `OxCaml ]
+  in
   set_binary_mode_out stdout true;
   List.iter
-    (fun ocaml_version ->
+    (fun (ocaml_version, ocaml_variant) ->
       List.iter
-        (fun (bc, os_type) -> print_endline (rule bc ocaml_version os_type))
+        (fun (bc, os_type) -> print_endline (rule bc ocaml_version os_type ocaml_variant))
         [ "main.bc", None; "unix.bc", Some Win32; "unix.bc", Some Unix ])
     versions
