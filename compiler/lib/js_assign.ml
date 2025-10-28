@@ -358,17 +358,17 @@ module Preserve : Strategy = struct
               | 0 -> Var.compare i j
               | c -> c)
           |> List.fold_left ~init:reserved ~f:(fun reserved var ->
-                 let name =
-                   while
-                     let name = create_unamed !unamed in
-                     StringSet.mem name reserved || StringSet.mem name Reserved.keyword
-                   do
-                     incr unamed
-                   done;
-                   create_unamed !unamed
-                 in
-                 names.(Var.idx var) <- name;
-                 StringSet.add name reserved)
+              let name =
+                while
+                  let name = create_unamed !unamed in
+                  StringSet.mem name reserved || StringSet.mem name Reserved.keyword
+                do
+                  incr unamed
+                done;
+                create_unamed !unamed
+              in
+              names.(Var.idx var) <- name;
+              StringSet.add name reserved)
         in
         ());
     names

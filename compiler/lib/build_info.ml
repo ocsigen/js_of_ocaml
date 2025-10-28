@@ -95,11 +95,11 @@ let parse s =
         |> String.split_on_char ~sep:','
         |> List.map ~f:String.trim
         |> List.map ~f:(fun s ->
-               match String.lsplit2 ~on:'=' s with
-               | None -> s, ""
-               | Some (k, v) -> k, v)
+            match String.lsplit2 ~on:'=' s with
+            | None -> s, ""
+            | Some (k, v) -> k, v)
         |> List.fold_left ~init:StringMap.empty ~f:(fun acc (k, v) ->
-               StringMap.add k v acc)
+            StringMap.add k v acc)
       in
       Some t
 

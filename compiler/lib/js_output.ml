@@ -469,8 +469,8 @@ struct
           let out, lft, rght = op_prec op in
           Prec.(l <= out)
           && ((match op with
-              | In -> in_
-              | _ -> false)
+                | In -> in_
+                | _ -> false)
              || traverse lft e1
              || traverse rght e2)
       | EUn ((IncrA | DecrA | IncrB | DecrB), e) ->

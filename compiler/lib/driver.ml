@@ -706,9 +706,9 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     Specialize.switches
     +> specialize_js_once_before
     +> (match (profile : Profile.t) with
-       | O1 -> o1
-       | O2 -> o2
-       | O3 -> o3)
+      | O1 -> o1
+      | O2 -> o2
+      | O3 -> o3)
     +> specialize_js_once_after
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinal ~shapes profile
     +> map_fst5

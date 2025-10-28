@@ -540,9 +540,9 @@ module Read = struct
         { final = f2; supertype = s2; typ = t2 } =
       Bool.(f1 = f2)
       && (match s1, s2 with
-         | Some _, None | None, Some _ -> false
-         | None, None -> true
-         | Some i1, Some i2 -> i1 = i2)
+        | Some _, None | None, Some _ -> false
+        | None, None -> true
+        | Some i1, Some i2 -> i1 = i2)
       && comptype_eq t1 t2
 
     let equal t1 t2 =

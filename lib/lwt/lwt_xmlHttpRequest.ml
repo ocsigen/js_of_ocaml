@@ -248,8 +248,8 @@ let perform_raw
   | Some upload_progress ->
       req##.upload##.onprogress
       := Dom.handler (fun e ->
-             upload_progress e##.loaded e##.total;
-             Js._true)
+          upload_progress e##.loaded e##.total;
+          Js._true)
   | None -> ());
   (match contents with
   | None -> req##send Js.null

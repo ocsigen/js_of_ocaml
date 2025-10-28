@@ -357,25 +357,23 @@ let info_from_sexp info =
     |> member "units"
     |> Option.value ~default:[]
     |> List.map ~f:(fun u ->
-           let unit_info = u |> Unit_info.from_sexp in
-           let unit_name =
-             u |> member "name" |> Option.value ~default:[] |> single string
-           in
-           let fragments =
-             u
-             |> member "fragments"
-             |> Option.map ~f:(single string)
-             |> Option.map ~f:(fun s -> Marshal.from_string (Base64.decode_exn s) 0)
-             |> Option.value ~default:[]
-             (*
+        let unit_info = u |> Unit_info.from_sexp in
+        let unit_name = u |> member "name" |> Option.value ~default:[] |> single string in
+        let fragments =
+          u
+          |> member "fragments"
+          |> Option.map ~f:(single string)
+          |> Option.map ~f:(fun s -> Marshal.from_string (Base64.decode_exn s) 0)
+          |> Option.value ~default:[]
+          (*
                            |> to_option to_assoc
                            |> Option.value ~default:[]
                            |> List.map ~f:(fun (nm, e) ->
                                   ( nm
                                   , let lex = Parse_js.Lexer.of_string (to_string e) in
                                     Parse_js.parse_expr lex ))*)
-           in
-           { unit_name; unit_info; fragments })
+        in
+        { unit_name; unit_info; fragments })
   in
   build_info, predefined_exceptions, unit_data
 
@@ -591,15 +589,15 @@ let link_to_directory ~files_to_link ~files ~enable_source_maps ~dir =
   let lst =
     List.tl files
     |> List.map ~f:(fun (file, _) ->
-           if StringSet.mem file files_to_link
-           then (
-             let z = Zip.open_in file in
-             let name' = file |> Filename.basename |> Filename.remove_extension in
-             let ((name', _) as res) = process_file z ~name:"code" ~name' in
-             if enable_source_maps then extract_source_map ~dir ~name:name' z;
-             Zip.close_in z;
-             Some res)
-           else None)
+        if StringSet.mem file files_to_link
+        then (
+          let z = Zip.open_in file in
+          let name' = file |> Filename.basename |> Filename.remove_extension in
+          let ((name', _) as res) = process_file z ~name:"code" ~name' in
+          if enable_source_maps then extract_source_map ~dir ~name:name' z;
+          Zip.close_in z;
+          Some res)
+        else None)
     |> List.filter_map ~f:(fun x -> x)
   in
   runtime :: prelude :: List.map ~f:fst lst, (runtime_intf, List.map ~f:snd lst)
@@ -653,10 +651,10 @@ let load_information files =
       ( predefined_exceptions
       , (runtime, (build_info, []))
         :: List.map other_files ~f:(fun file ->
-               let build_info, _predefined_exceptions, unit_data =
-                 Zip.with_open_in file read_info
-               in
-               file, (build_info, unit_data)) )
+            let build_info, _predefined_exceptions, unit_data =
+              Zip.with_open_in file read_info
+            in
+            file, (build_info, unit_data)) )
 
 let remove_directory path =
   try
@@ -801,8 +799,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
   let generated_js =
     List.concat
     @@ List.map files ~f:(fun (_, (_, units)) ->
-           List.map units ~f:(fun { unit_name; fragments; _ } ->
-               Some unit_name, fragments))
+        List.map units ~f:(fun { unit_name; fragments; _ } -> Some unit_name, fragments))
   in
   let runtime_args =
     let js =

@@ -1096,9 +1096,9 @@ let load_tree () =
   let node_names =
     node_names
     >> Array.map (fun (lang, tbl, about) ->
-           let h = Hashtbl.create 101 in
-           Array.iter (fun (k, v) -> Hashtbl.add h (Js.to_string k) (Js.to_string v)) tbl;
-           lang, (h, about))
+        let h = Hashtbl.create 101 in
+        Array.iter (fun (k, v) -> Hashtbl.add h (Js.to_string k) (Js.to_string v)) tbl;
+        lang, (h, about))
     >> Array.to_list
   in
   Lwt.return (tree_layout node_names tree, node_names)

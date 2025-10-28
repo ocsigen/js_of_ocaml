@@ -196,12 +196,13 @@ let value_type_list st name tl =
 
 let func_type st ?param_names { params; result } =
   (match param_names with
-  | None -> value_type_list st "param" params
-  | Some names ->
-      List.map2
-        ~f:(fun i typ -> List [ Atom "param"; index st.local_names i; value_type st typ ])
-        names
-        params)
+    | None -> value_type_list st "param" params
+    | Some names ->
+        List.map2
+          ~f:(fun i typ ->
+            List [ Atom "param"; index st.local_names i; value_type st typ ])
+          names
+          params)
   @ value_type_list st "result" result
 
 let storage_type st typ =
@@ -234,10 +235,10 @@ let export name =
 
 let type_prefix op nm =
   (match op with
-  | I32 _ -> "i32."
-  | I64 _ -> "i64."
-  | F32 _ -> "f32."
-  | F64 _ -> "f64.")
+    | I32 _ -> "i32."
+    | I64 _ -> "i64."
+    | F32 _ -> "f32."
+    | F64 _ -> "f64.")
   ^ nm
 
 let signage op (s : Wasm_ast.signage) =

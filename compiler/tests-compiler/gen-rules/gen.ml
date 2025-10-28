@@ -43,8 +43,8 @@ let prefix : string =
   loop "" (Sys.getcwd ())
   (* normalizatio for windows *)
   |> String.map ~f:(function
-       | '\\' -> '/'
-       | c -> c)
+    | '\\' -> '/'
+    | c -> c)
 
 type enabled_if =
   | GE5
@@ -77,9 +77,9 @@ let () =
   |> List.filter ~f:is_implem
   |> List.sort ~cmp:compare
   |> List.iter ~f:(fun f ->
-         let basename = Filename.chop_extension f in
-         Printf.printf
-           {|
+      let basename = Filename.chop_extension f in
+      Printf.printf
+        {|
 (library
  ;; %s%s.ml
  (name %s_%d)
@@ -95,10 +95,10 @@ let () =
  (preprocess
   (pps ppx_expect)))
 |}
-           prefix
-           basename
-           basename
-           (Hashtbl.hash prefix mod 100)
-           (enabled_if (lib_enabled_if basename))
-           basename
-           (enabled_if (test_enabled_if basename)))
+        prefix
+        basename
+        basename
+        (Hashtbl.hash prefix mod 100)
+        (enabled_if (lib_enabled_if basename))
+        basename
+        (enabled_if (test_enabled_if basename)))
