@@ -101,6 +101,8 @@
       (func $caml_copy_nativeint (param i32) (result (ref eq))))
    (import "int32" "Nativeint_val"
       (func $Nativeint_val (param (ref eq)) (result i32)))
+   (import "string" "caml_string_concat"
+      (func $caml_string_concat (param (ref eq) (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $float (struct (field f64)))
@@ -129,12 +131,21 @@
       (ref.i31 (call $strict_equals
                   (call $unwrap (local.get 0)) (call $unwrap (local.get 1)))))
 
-   (func (export "caml_js_expr") (export "caml_pure_js_expr")
-         (export "caml_js_var") (export "caml_js_eval_string")
-      (param (ref eq)) (result (ref eq))
+   (func $caml_js_eval_string (export "caml_js_eval_string")
+      (param $vs (ref eq)) (result (ref eq))
       (local $s (ref $bytes))
-      (local.set $s (ref.cast (ref $bytes) (local.get 0)))
+      (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
       (return_call $wrap (call $eval (call $jsstring_of_bytes (local.get $s)))))
+
+   (@string $rparen "(")
+   (@string $lparen ")")
+
+   (func (export "caml_js_expr") (export "caml_pure_js_expr")
+         (export "caml_js_var")
+      (param $s (ref eq)) (result (ref eq))
+      (return_call $caml_js_eval_string
+         (call $caml_string_concat (global.get $rparen)
+            (call $caml_string_concat (local.get $s) (global.get $lparen)))))
 
    (func (export "caml_js_global") (param (ref eq)) (result (ref eq))
       (call $wrap (global.get $global_this)))

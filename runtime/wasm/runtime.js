@@ -212,7 +212,7 @@
     // biome-ignore lint/suspicious/noDoubleEquals:
     equals: (x, y) => x == y,
     // biome-ignore lint/security/noGlobalEval:
-    eval: (x) => eval?.('"use strict";(' + x + ")"),
+    eval: (x) => eval?.('"use strict";' + x),
     strict_equals: (x, y) => x === y,
     fun_call: (f, o, args) => f.apply(o, args),
     meth_call: (o, f, args) => o[f].apply(o, args),
