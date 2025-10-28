@@ -1710,11 +1710,7 @@ let internal_primitives =
   in
   List.iter
     ~f:register_js_expr
-    [ "caml_js_expr", `Mutator
-    ; "caml_pure_js_expr", `Pure
-    ; "caml_js_var", `Mutable
-    ; "caml_js_eval_string", `Mutator
-    ];
+    [ "caml_js_expr", `Mutator; "caml_pure_js_expr", `Pure; "caml_js_var", `Mutable ];
   register "%caml_js_opt_call" (fun transl_prim_arg l ->
       let arity = List.length l - 2 in
       let name = Printf.sprintf "call_%d" arity in
