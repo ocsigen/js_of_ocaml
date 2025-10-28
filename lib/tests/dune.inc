@@ -30,6 +30,16 @@
   (pps ppx_js_internal ppx_expect)))
 
 (library
+ ;; lib/tests/test_eval.ml
+ (name test_eval_75)
+ (enabled_if true)
+ (modules test_eval)
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js wasm))
+ (preprocess
+  (pps ppx_js_internal ppx_expect)))
+
+(library
  ;; lib/tests/test_fun_call.ml
  (name test_fun_call_75)
  (enabled_if (<> %{profile} with-effects))
