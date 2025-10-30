@@ -39,4 +39,5 @@ let () =
   in
   f ();
   Unix.close fd;
+  Sys.remove "append.txt";
   assert (Buffer.contents buf = str ^ str)
