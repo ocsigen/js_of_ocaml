@@ -1,13 +1,11 @@
 (tests
- (names
-  append
-  channel_of
-  cmdline_prog
-  reflector
-  rename
-  truncate
-  uexit
-  utimes)
+ (names append)
+ (libraries ocaml_testing unix)
+ (locks append.txt)
+ (modes js wasm))
+
+(tests
+ (names channel_of cmdline_prog reflector rename truncate uexit utimes)
  (libraries ocaml_testing unix)
  (modes js wasm))
 
