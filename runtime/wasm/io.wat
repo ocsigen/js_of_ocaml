@@ -53,14 +53,6 @@
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
    (import "bindings" "ta_copy"
       (func $ta_copy (param (ref extern)) (param i32) (param i32) (param i32)))
-   (import "bindings" "ta_blit_from_bytes"
-      (func $ta_blit_from_bytes
-         (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
-         (param i32)))
-   (import "bindings" "ta_blit_to_bytes"
-      (func $ta_blit_to_bytes
-         (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
-         (param i32)))
    (import "bindings" "ta_subarray"
       (func $ta_subarray
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
@@ -86,6 +78,12 @@
       (func $caml_copy_int64 (param i64) (result (ref eq))))
    (import "int64" "Int64_val"
       (func $Int64_val (param (ref eq)) (result i64)))
+   (import "bigarray" "caml_blit_dataview_to_bytes"
+      (func $caml_blit_dataview_to_bytes
+         (param (ref extern) i32 (ref $bytes) i32 i32)))
+   (import "bigarray" "caml_blit_bytes_to_dataview"
+      (func $caml_blit_bytes_to_dataview
+         (param (ref $bytes) i32 (ref extern) i32 i32)))
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
 
@@ -441,8 +439,8 @@
          (then
             (if (i32.gt_u (local.get $len) (local.get $avail))
                (then (local.set $len (local.get $avail))))
-            (call $ta_blit_to_bytes
-               (struct.get $channel $buffer (local.get $ch))
+            (call $caml_blit_dataview_to_bytes
+               (struct.get $channel $buffer_view (local.get $ch))
                (struct.get $channel $curr (local.get $ch))
                (local.get $s) (local.get $pos)
                (local.get $len))
@@ -456,8 +454,8 @@
       (struct.set $channel $max (local.get $ch) (local.get $nread))
       (if (i32.gt_u (local.get $len) (local.get $nread))
          (then (local.set $len (local.get $nread))))
-      (call $ta_blit_to_bytes
-         (struct.get $channel $buffer (local.get $ch))
+      (call $caml_blit_dataview_to_bytes
+         (struct.get $channel $buffer_view (local.get $ch))
          (i32.const 0)
          (local.get $s) (local.get $pos)
          (local.get $len))
@@ -536,7 +534,7 @@
       (local.set $s (ref.cast (ref $bytes) (local.get $vs)))
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
-      (local.set $buf (struct.get $channel $buffer (local.get $ch)))
+      (local.set $buf (struct.get $channel $buffer_view (local.get $ch)))
       (local.set $curr (struct.get $channel $curr (local.get $ch)))
       (local.set $avail
          (i32.sub (struct.get $channel $max (local.get $ch)) (local.get $curr)))
@@ -554,7 +552,7 @@
                   (local.set $curr (i32.const 0))
                   (if (i32.gt_u (local.get $len) (local.get $nread))
                      (then (local.set $len (local.get $nread))))))))
-      (call $ta_blit_to_bytes
+      (call $caml_blit_dataview_to_bytes
          (local.get $buf) (local.get $curr)
          (local.get $s) (local.get $pos) (local.get $len))
       (struct.set $channel $curr (local.get $ch)
@@ -838,8 +836,8 @@
          (i32.sub (struct.get $channel $size (local.get $ch)) (local.get $curr)))
       (if (i32.ge_u (local.get $len) (local.get $free))
          (then (local.set $len (local.get $free))))
-      (local.set $buf (struct.get $channel $buffer (local.get $ch)))
-      (call $ta_blit_from_bytes
+      (local.set $buf (struct.get $channel $buffer_view (local.get $ch)))
+      (call $caml_blit_bytes_to_dataview
          (local.get $s) (local.get $pos)
          (local.get $buf) (local.get $curr) (local.get $len))
       (struct.set $channel $curr (local.get $ch)
