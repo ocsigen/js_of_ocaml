@@ -1547,13 +1547,13 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
                    | Some s -> Printf.sprintf ", file %S" s)
                    pi.Parse_info.line
                    pi.Parse_info.col))
-        | Extern "caml_jsoo_runtime", [ Pc (String nm) ] when J.is_ident nm ->
+        | Extern "caml_jsoo_runtime_value", [ Pc (String nm) ] when J.is_ident nm ->
             let prim = Share.get_prim (runtime_fun ctx) nm ctx.Ctx.share in
             return prim
-        | Extern "caml_jsoo_runtime", [ (Pc _ | Pv _) ] ->
+        | Extern "caml_jsoo_runtime_value", [ (Pc _ | Pv _) ] ->
             failwith
               (Printf.sprintf
-                 "%scaml_jsoo_runtime expects a string literal."
+                 "%sJsoo_runtime.Js.runtime_value expects a string literal."
                  (match (loc : J.location) with
                  | Pi { name = Some name; col; line; _ } ->
                      Printf.sprintf "%s:%d:%d: " name line col

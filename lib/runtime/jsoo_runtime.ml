@@ -94,6 +94,8 @@ module Js = struct
 
   external wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
     = "caml_js_wrap_meth_callback"
+
+  external runtime_value : string -> 'a = "caml_jsoo_runtime_value"
 end
 
 module Sys = struct
@@ -123,8 +125,6 @@ module Sys = struct
 
   external restore_channel : out_channel -> redirection -> unit
     = "caml_ml_channel_restore"
-
-  external external_ : string -> 'a = "caml_jsoo_runtime"
 
   module Config = struct
     external use_js_string : unit -> bool = "caml_jsoo_flags_use_js_string"
