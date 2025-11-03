@@ -102,14 +102,14 @@
    (import "io" "caml_ml_open_descriptor_out"
       (func $caml_ml_open_descriptor_out (param (ref eq)) (result (ref eq))))
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
-   (import "bindings" "ta_blit_from_bytes"
-      (func $ta_blit_from_bytes
-         (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
-         (param i32)))
-   (import "bindings" "ta_blit_to_bytes"
-      (func $ta_blit_to_bytes
-         (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
-         (param i32)))
+   (import "bindings" "dv_make"
+      (func $dv_make (param (ref extern)) (result (ref extern))))
+   (import "bigarray" "caml_blit_dataview_to_bytes"
+      (func $caml_blit_dataview_to_bytes
+         (param (ref extern) i32 (ref $bytes) i32 i32)))
+   (import "bigarray" "caml_blit_bytes_to_dataview"
+      (func $caml_blit_bytes_to_dataview
+         (param (ref $bytes) i32 (ref extern) i32 i32)))
    (import "bigarray" "caml_ba_get_data"
       (func $caml_ba_get_data (param (ref eq)) (result (ref extern))))
    (import "int64" "caml_copy_int64"
@@ -773,11 +773,15 @@
       (ref.i31 (local.get $fd)))
 
    (global $io_buffer (mut externref) (ref.null extern))
+   (global $io_buffer_view (mut externref) (ref.null extern))
 
    (func $get_io_buffer (result (ref extern))
+      (local $buf (ref extern))
       (if (ref.is_null (global.get $io_buffer))
          (then
-            (global.set $io_buffer (call $ta_new (global.get $IO_BUFFER_SIZE)))))
+            (local.set $buf (call $ta_new (global.get $IO_BUFFER_SIZE)))
+            (global.set $io_buffer (local.get $buf))
+            (global.set $io_buffer_view (call $dv_make (local.get $buf)))))
       (ref.as_non_null (global.get $io_buffer)))
 
    (func $get_fd_offset (param $fd i32) (result (ref $fd_offset))
@@ -789,7 +793,8 @@
    (func (export "unix_write") (export "caml_unix_write")
       (param $vfd (ref eq)) (param $vbuf (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
-      (local $fd i32) (local $s (ref $bytes)) (local $buf (ref extern))
+      (local $fd i32) (local $s (ref $bytes))
+      (local $buf (ref extern)) (local $buf_view (ref extern))
       (local $pos i32) (local $len i32) (local $numbytes i32)
       (local $written i32) (local $n i32)
       (local $fd_offset (ref $fd_offset))
@@ -799,6 +804,7 @@
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (local.set $buf (call $get_io_buffer))
+      (local.set $buf_view (ref.as_non_null (global.get $io_buffer_view)))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (local.set $offset
          (struct.get $fd_offset $offset (local.get $fd_offset)))
@@ -808,9 +814,9 @@
                (local.set $numbytes
                   (select (global.get $IO_BUFFER_SIZE) (local.get $len)
                      (i32.gt_u (local.get $len) (global.get $IO_BUFFER_SIZE))))
-               (call $ta_blit_from_bytes
+               (call $caml_blit_bytes_to_dataview
                   (local.get $s) (local.get $pos)
-                  (local.get $buf) (i32.const 0) (local.get $numbytes))
+                  (local.get $buf_view) (i32.const 0) (local.get $numbytes))
                (try
                   (do
                      (local.set $n
@@ -840,7 +846,8 @@
    (func (export "unix_single_write") (export "caml_unix_single_write")
       (param $vfd (ref eq)) (param $vbuf (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
-      (local $fd i32) (local $s (ref $bytes)) (local $buf (ref extern))
+      (local $fd i32) (local $s (ref $bytes))
+      (local $buf (ref extern)) (local $buf_view (ref extern))
       (local $pos i32) (local $len i32) (local $numbytes i32)
       (local $written i32) (local $n i32)
       (local $fd_offset (ref $fd_offset))
@@ -850,6 +857,7 @@
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (local.set $buf (call $get_io_buffer))
+      (local.set $buf_view (ref.as_non_null (global.get $io_buffer_view)))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (local.set $offset
          (struct.get $fd_offset $offset (local.get $fd_offset)))
@@ -858,9 +866,9 @@
             (local.set $numbytes
                (select (global.get $IO_BUFFER_SIZE) (local.get $len)
                   (i32.gt_u (local.get $len) (global.get $IO_BUFFER_SIZE))))
-            (call $ta_blit_from_bytes
+            (call $caml_blit_bytes_to_dataview
                (local.get $s) (local.get $pos)
-               (local.get $buf) (i32.const 0) (local.get $numbytes))
+               (local.get $buf_view) (i32.const 0) (local.get $numbytes))
             (try
                (do
                   (local.set $n
@@ -885,7 +893,8 @@
    (func (export "unix_read") (export "caml_unix_read")
       (param $vfd (ref eq)) (param $vbuf (ref eq)) (param $vpos (ref eq))
       (param $vlen (ref eq)) (result (ref eq))
-      (local $fd i32) (local $buf (ref extern))
+      (local $fd i32)
+      (local $buf (ref extern)) (local $buf_view (ref extern))
       (local $pos i32) (local $len i32) (local $n i32)
       (local $fd_offset (ref $fd_offset)) (local $offset i64)
       (local.set $fd (i31.get_u (ref.cast (ref i31) (local.get $vfd))))
@@ -895,6 +904,7 @@
          (then
             (local.set $len (global.get $IO_BUFFER_SIZE))))
       (local.set $buf (call $get_io_buffer))
+      (local.set $buf_view (ref.as_non_null (global.get $io_buffer_view)))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
       (try
          (do
@@ -909,8 +919,8 @@
                         (i32.const 0) (local.get $len) (ref.null extern))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
-      (call $ta_blit_to_bytes
-         (local.get $buf) (i32.const 0)
+      (call $caml_blit_dataview_to_bytes
+         (local.get $buf_view) (i32.const 0)
          (ref.cast (ref $bytes) (local.get $vbuf)) (local.get $pos)
          (local.get $n))
       (ref.i31 (local.get $n)))
