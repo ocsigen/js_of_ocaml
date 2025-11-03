@@ -19,14 +19,14 @@
 (@if (>= ocaml_version (5 1 0))
 (@then
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
-   (import "bindings" "ta_blit_from_bytes"
-      (func $ta_blit_from_bytes
-         (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
-         (param i32)))
-   (import "bindings" "ta_blit_to_bytes"
-      (func $ta_blit_to_bytes
-         (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
-         (param i32)))
+   (import "bindings" "dv_make"
+      (func $dv_make (param (ref extern)) (result (ref extern))))
+   (import "bigarray" "caml_blit_dataview_to_bytes"
+      (func $caml_blit_dataview_to_bytes
+         (param (ref extern) i32 (ref $bytes) i32 i32)))
+   (import "bigarray" "caml_blit_bytes_to_dataview"
+      (func $caml_blit_bytes_to_dataview
+         (param (ref $bytes) i32 (ref extern) i32 i32)))
    (import "marshal" "caml_intern_decompress_input"
       (global $caml_intern_decompress_input (mut (ref null $decompress))))
    (import "js" "zstd_decompress"
@@ -43,14 +43,14 @@
       (local $output (ref $bytes))
       (local.set $in_buf (call $ta_new (local.get $len)))
       (local.set $out_buf (call $ta_new (local.get $out_len)))
-      (call $ta_blit_from_bytes
+      (call $caml_blit_bytes_to_dataview
          (local.get $input) (local.get $pos)
-         (local.get $in_buf) (i32.const 0)
+         (call $dv_make (local.get $in_buf)) (i32.const 0)
          (local.get $len))
       (call $zstd_decompress (local.get $in_buf) (local.get $out_buf))
       (local.set $output (array.new $bytes (i32.const 0) (local.get $out_len)))
-      (call $ta_blit_to_bytes
-         (local.get $out_buf) (i32.const 0)
+      (call $caml_blit_dataview_to_bytes
+         (call $dv_make (local.get $out_buf)) (i32.const 0)
          (local.get $output) (i32.const 0)
          (array.len (local.get $output)))
       (local.get $output))
