@@ -265,29 +265,40 @@ let rec filter_pattern = function
   | { ppat_attributes; ppat_loc; _ } as p ->
       if keep ppat_loc ppat_attributes then Some p else None
 
+let drop_attr =
+  let attr =
+    { attr_name = Location.mknoloc "ppx_optcomp_light.dropped"
+    ; attr_loc = Location.none
+    ; attr_payload = PStr []
+    }
+  in
+  Ppxlib.Attribute.mark_as_handled_manually attr;
+  attr
+
+let drop_str loc = { pstr_desc = Pstr_attribute drop_attr; pstr_loc = loc }
+
+let drop_sig loc = { psig_desc = Psig_attribute drop_attr; psig_loc = loc }
+
 let traverse =
   object
     inherit Ppxlib.Ast_traverse.map as super
 
-    method! structure items =
-      let items =
-        filter_map items ~f:(fun item ->
-            match item.pstr_desc with
-            | Pstr_module { pmb_attributes; pmb_loc; _ } ->
-                if keep pmb_loc pmb_attributes then Some item else None
-            | Pstr_primitive { pval_attributes; pval_loc; _ } ->
-                if keep pval_loc pval_attributes then Some item else None
-            | Pstr_value (r, l) -> (
-                let l =
-                  filter_map l ~f:(fun b ->
-                      if keep b.pvb_loc b.pvb_attributes then Some b else None)
-                in
-                match l with
-                | [] -> None
-                | _ -> Some { item with pstr_desc = Pstr_value (r, l) })
-            | _ -> Some item)
-      in
-      super#structure items
+    method! structure_item item =
+      let item = super#structure_item item in
+      match item.pstr_desc with
+      | Pstr_module { pmb_attributes; pmb_loc; _ } ->
+          if keep pmb_loc pmb_attributes then item else drop_str pmb_loc
+      | Pstr_primitive { pval_attributes; pval_loc; _ } ->
+          if keep pval_loc pval_attributes then item else drop_str pval_loc
+      | Pstr_value (r, l) -> (
+          let l =
+            filter_map l ~f:(fun b ->
+                if keep b.pvb_loc b.pvb_attributes then Some b else None)
+          in
+          match l with
+          | [] -> drop_str Location.none
+          | _ -> { item with pstr_desc = Pstr_value (r, l) })
+      | _ -> item
 
     method! cases cases =
       let cases =
@@ -299,14 +310,10 @@ let traverse =
       super#cases cases
 
     method! signature_item item =
+      let item = super#signature_item item in
       match item.psig_desc with
       | Psig_module { pmd_attributes; pmd_loc; _ } ->
-          if keep pmd_loc pmd_attributes
-          then item
-          else
-            let open Ppxlib.Ast_builder.Default in
-            let loc = Location.none in
-            psig_include ~loc (include_infos ~loc (pmty_signature ~loc []))
+          if keep pmd_loc pmd_attributes then item else drop_sig pmd_loc
       | _ -> item
   end
 
