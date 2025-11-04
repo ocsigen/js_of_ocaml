@@ -64,10 +64,33 @@ function caml_update_dummy_lazy(dummy, newval) {
   return 0;
 }
 
+//Provides: caml_obj_is_stack
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_obj_is_stack(_x) {
+  return 0;
+}
+
+//Provides: caml_succ_scannable_prefix_len
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_succ_scannable_prefix_len(_x) {
+  return 0;
+}
+
+//Provides: caml_obj_uniquely_reachable_words
+//Requires: caml_failwith
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_obj_uniquely_reachable_words(_x) {
+  caml_failwith("Obj.uniquely_reachable_words is not available in javascript.");
+}
+
 //Provides: caml_obj_tag
 //Requires: caml_is_ml_bytes, caml_is_ml_string
 function caml_obj_tag(x) {
-  if (Array.isArray(x) && x[0] === x[0] >>> 0) return x[0];
+  if (x === null) return 1010;
+  else if (Array.isArray(x) && x[0] === x[0] >>> 0) return x[0];
   else if (caml_is_ml_bytes(x)) return 252;
   else if (caml_is_ml_string(x)) return 252;
   else if (x instanceof Function || typeof x === "function") return 247;
@@ -305,4 +328,14 @@ function caml_ml_gc_ramp_up(f) {
 //Version: >= 5.4
 function caml_ml_gc_ramp_down(_suspended_collection_work) {
   return 0;
+}
+
+//Provides: caml_int_as_pointer
+//Requires: caml_failwith
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_int_as_pointer(i) {
+  // Special-case null pointers for [or_null].
+  if (i === 0) return null;
+  caml_failwith("%int_as_pointer is not supported in javascript.");
 }

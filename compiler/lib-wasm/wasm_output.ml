@@ -370,12 +370,15 @@ end = struct
     | Ctz -> output_byte ch (arith + 1)
     | Popcnt -> output_byte ch (arith + 2)
     | Eqz -> output_byte ch comp
-    | TruncSatF64 signage ->
+    | TruncSat (size, signage) ->
         Feature.require nontrapping_fptoint;
         output_byte ch 0xFC;
         output_byte
           ch
           (trunc
+          + (match size with
+            | `F32 -> 0
+            | `F64 -> 2)
           +
           match signage with
           | S -> 0
@@ -504,8 +507,8 @@ end = struct
     | UnOp (op, e') -> (
         output_expression st ch e';
         match op with
-        | I32 op -> int_un_op (0x67, 0x45, 2, 0xBC) ch op
-        | I64 op -> int_un_op (0x79, 0x50, 6, 0xBD) ch op
+        | I32 op -> int_un_op (0x67, 0x45, 0, 0xBC) ch op
+        | I64 op -> int_un_op (0x79, 0x50, 4, 0xBD) ch op
         | F32 op -> output_byte ch (float_un_op (0x8B, 0xB2, 0xBE) op)
         | F64 op -> output_byte ch (float_un_op (0x99, 0xB7, 0xBF) op))
     | BinOp (op, e', e'') -> (

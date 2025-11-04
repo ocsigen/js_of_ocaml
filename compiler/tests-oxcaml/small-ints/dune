@@ -1,0 +1,11 @@
+(env
+ (_
+  (flags
+   (:standard
+    (-w -9-27-32)))))
+
+(tests
+ (names test_int8_u test_int16_u)
+ (build_if %{oxcaml_supported})
+ (libraries stdlib_stable stdlib_upstream_compatible)
+ (modes js wasm))

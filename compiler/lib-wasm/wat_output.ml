@@ -254,7 +254,8 @@ let int_un_op sz op =
   | Ctz -> "ctz"
   | Popcnt -> "popcnt"
   | Eqz -> "eqz"
-  | TruncSatF64 s -> signage "trunc_sat_f64" s
+  | TruncSat (`F64, s) -> signage "trunc_sat_f64" s
+  | TruncSat (`F32, s) -> signage "trunc_sat_f32" s
   | ReinterpretF -> "reinterpret_f" ^ sz
 
 let int_bin_op _ (op : int_bin_op) =

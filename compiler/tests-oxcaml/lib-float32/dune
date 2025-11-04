@@ -1,0 +1,5 @@
+(tests
+ (names test float32_lib)
+ (build_if %{oxcaml_supported})
+ (libraries stdlib_stable)
+ (modes byte js wasm))

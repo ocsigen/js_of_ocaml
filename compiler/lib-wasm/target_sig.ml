@@ -81,6 +81,10 @@ module type S = sig
 
     val unbox_float : expression -> expression
 
+    val box_float32 : expression -> expression
+
+    val unbox_float32 : expression -> expression
+
     val box_int32 : expression -> expression
 
     val unbox_int32 : expression -> expression

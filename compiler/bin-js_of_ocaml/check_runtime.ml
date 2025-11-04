@@ -43,6 +43,7 @@ let print_groups output l =
               output_string output (Printf.sprintf "%s\n" name)))
 
 let f (runtime_files, bytecode, target_env) =
+  Config.Flag.set "use-js-string" true;
   Config.set_target `JavaScript;
   Config.set_effects_backend `Disabled;
   Linker.reset ();

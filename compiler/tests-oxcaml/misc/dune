@@ -1,0 +1,10 @@
+(env
+ (_
+  (flags
+   (:standard
+    (-w -32-69)))))
+
+(tests
+ (names test)
+ (build_if %{oxcaml_supported})
+ (modes byte js wasm))

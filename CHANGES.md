@@ -7,11 +7,13 @@
 * Compiler/wasm: make the type of some Wasm primitives more precise (#2100)
 * Compiler: reference unboxing (#1958)
 * Runtime: improved handling of NaNs (#2110)
+* Runtime/wasm: provide access to JavaScript eval function (#2108)
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)
 * Compiler: fix inlining (#2107)
 * Runtime/wasm: fix Unix.times (#2096)
+* Wasm: fix Js.eval_string (#2108)
 
 # 6.2.0 (2025-07-30) - Lille
 
