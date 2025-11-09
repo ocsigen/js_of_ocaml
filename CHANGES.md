@@ -13,6 +13,7 @@
 * Compiler: fix inlining (#2107)
 * Runtime/wasm: fix Unix.times (#2096)
 * Ppx: disable spurious warning for unused "self" in object litteral (#2128)
+* Ppx: fix labelled arguments for methods (#2126)
 
 # 6.2.0 (2025-07-30) - Lille
 
