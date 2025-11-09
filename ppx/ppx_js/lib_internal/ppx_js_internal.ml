@@ -697,6 +697,21 @@ let literal_object self_id (fields : field_desc list) =
   let body = function
     | Val (_, _, _, body) -> body
     | Meth (_, _, _, body, _) ->
+        let body =
+          match self_id.ppat_desc with
+          | Ppat_var id ->
+              (* mark self as used to avoid spurious unused-var-strict warning, see gh#2125 *)
+              Ast_builder.Default.pexp_let
+                ~loc:Location.none
+                Nonrecursive
+                [ Ast_builder.Default.value_binding
+                    ~pat:(Ast_builder.Default.ppat_any ~loc:Location.none)
+                    ~loc:Location.none
+                    ~expr:(Ast_builder.Default.evar id.txt ~loc:Location.none)
+                ]
+                body
+          | _ -> body
+        in
         lift_function_body_constraint
           (Ast_builder.Default.pexp_fun
              ~loc:{ body.pexp_loc with loc_ghost = true }

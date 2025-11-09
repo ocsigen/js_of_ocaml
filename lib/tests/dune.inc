@@ -60,6 +60,16 @@
   (pps ppx_js_internal ppx_expect)))
 
 (library
+ ;; lib/tests/test_misc.ml
+ (name test_misc_75)
+ (enabled_if true)
+ (modules test_misc)
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js wasm))
+ (preprocess
+  (pps ppx_js_internal ppx_expect)))
+
+(library
  ;; lib/tests/test_nodejs_filesystem_errors.ml
  (name test_nodejs_filesystem_errors_75)
  (enabled_if true)
