@@ -384,6 +384,14 @@ function caml_sys_temp_dir_name(_unit) {
   }
 }
 
+//Provides: caml_sys_temp_dir_name
+//Requires: caml_string_of_jsstring
+//Version: >= 5.4
+//If: browser
+function caml_sys_temp_dir_name(_unit) {
+  return caml_string_of_jsstring("");
+}
+
 //Provides: caml_sys_convert_signal_number
 //Version: >= 5.4
 function caml_sys_convert_signal_number(signo) {
