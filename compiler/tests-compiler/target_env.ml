@@ -61,3 +61,46 @@ let () =
     without node filesystem
     Sys.readdir ok
     empty root |}]
+
+module Jsoo = Js_of_ocaml_compiler
+module StringSet = Set.Make (String)
+
+class find_require r =
+  object
+    inherit Jsoo.Js_traverse.iter as super
+
+    method! expression e =
+      (match e with
+      | ECall (EVar (Jsoo.Javascript.S { name = Utf8 "require"; loc; _ }), _, args, _)
+        -> (
+          match args with
+          | [ Arg name ] -> (
+              match name with
+              | EStr (Utf8 name) -> r := (name, loc) :: !r
+              | _ -> r := ("<Unknown>", loc) :: !r)
+          | _ -> assert false)
+      | _ -> ());
+      super#expression e
+  end
+
+(* Check target-env=browser doesn't use 'require("node:...")' *)
+let%expect_test _ =
+  let test flags =
+    let r = ref [] in
+    let o = new find_require r in
+    let p = compile_and_parse_whole_program ~flags "" in
+    o#program p;
+    let ss =
+      List.fold_left
+        (fun acc (x, _loc) ->
+          let x = if String.starts_with ~prefix:"node:" x then "node" else x in
+          StringSet.add x acc)
+        StringSet.empty
+        !r
+    in
+    StringSet.iter (fun name -> Printf.eprintf "%s\n" name) ss
+  in
+  test [ "--linkall" ];
+  [%expect {| node |}];
+  test [ "--linkall"; "--target-env=browser" ];
+  [%expect {| |}]

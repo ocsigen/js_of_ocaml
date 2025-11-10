@@ -14,6 +14,7 @@
 * Runtime/wasm: fix Unix.times (#2096)
 * Ppx: disable spurious warning for unused "self" in object litteral (#2128)
 * Ppx: fix labelled arguments for methods (#2126)
+* Runtime: runtime with target-env=browser should not rely on "require(..)" (#2129)
 
 # 6.2.0 (2025-07-30) - Lille
 

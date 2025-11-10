@@ -228,6 +228,14 @@ function caml_strerror(errno) {
   }
 }
 
+//Provides: caml_strerror
+//Requires: unix_error
+//If: browser
+function caml_strerror(errno) {
+  const code = unix_error[errno];
+  code || "Unknown error " + errno;
+}
+
 //Provides: unix_error_message
 //Alias: caml_unix_error_message
 //Requires: caml_strerror, caml_string_of_jsstring
