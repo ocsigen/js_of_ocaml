@@ -14,6 +14,7 @@ caml_int64_or_native
 caml_int64_sub_native
 caml_int64_xor_native
 caml_int_as_pointer
+caml_jsoo_runtime_value
 caml_reset_afl_instrumentation
 caml_unix_map_file_bytecode
 debugger

@@ -1932,6 +1932,22 @@ let internal_primitives =
       in
       let l = List.map ~f:transl_prim_arg vl in
       JavaScript.invoke_fragment name l);
+  register "caml_jsoo_runtime_value" (fun _ l ->
+      match l with
+      | [ Pc (String name) ] when J.is_ident name ->
+          let* x =
+            register_import
+              ~import_module:"js"
+              ~name
+              (Global { mut = false; typ = JavaScript.anyref })
+          in
+          let* wrap =
+            register_import
+              ~name:"wrap"
+              (Fun { params = [ JavaScript.anyref ]; result = [ Type.value ] })
+          in
+          return (W.Call (wrap, [ GlobalGet x ]))
+      | _ -> failwith "Jsoo_runtime.Js.runtime_value expects a string literal.");
   !l
 
 let externref = W.Ref { nullable = true; typ = Extern }
