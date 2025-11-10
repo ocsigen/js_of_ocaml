@@ -11,6 +11,8 @@
  (enabled_if
   (>= %{ocaml_version} 4.14))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
@@ -22,6 +24,8 @@
  (enabled_if
   (>= %{ocaml_version} 5.1.1))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
@@ -33,6 +37,22 @@
  (enabled_if
   (>= %{ocaml_version} 5.1.1))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ (name jsoo_testsuite_perms)
+ (modules test_unix_perms)
+ (libraries unix)
+ ;; WASI has no notion of file permissions (it uses capabilities instead)
+ (enabled_if
+  (<> %{profile} wasi))
+ (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
@@ -48,6 +68,7 @@
    test_bigarray
    test_marshal_compressed
    test_parsing
+   test_unix_perms
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -55,6 +76,8 @@
   (language c)
   (names bigarray_stubs jsoo_runtime_stubs))
  (inline_tests
+  (deps
+   (sandbox preserve_file_kind))
   (modes js wasm best))
  (preprocess
   (pps ppx_expect)))
