@@ -1,6 +1,6 @@
 = How to bind a JS library for OCaml
 
-==Accessing a JS variable, ex: {{{document}}}:
+== Accessing a JS variable, ex: {{{document}}}:
 Write in .ml:
 
 <<code language="ocaml"|
@@ -21,7 +21,7 @@ Be careful the function <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsa
 and the value <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.global>> are not typed.
 Verify the library documentation before writing the type.
 
-==Binding a JS function
+== Binding a JS function
 
 Example from the Js module:
 <<code language="ocaml"|
@@ -31,7 +31,7 @@ let decodeURI (s : js_string t) : js_string t =
 
 Have a look at the <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Unsafe>> module API.
 
-==Using a JS constructor, ex: {{{F}}}:
+== Using a JS constructor, ex: {{{F}}}:
 Write in .ml:
 
 <<code language="ocaml"|
@@ -50,7 +50,7 @@ val f_fromString : (js_string t -> ... Js.t) Js.constr
 val f_blah : (#Dom_html.element t -> js_string t -> ... Js.t) Js.constr
 >>
 
-==Accessing or modifying a JS property to an element
+== Accessing or modifying a JS property to an element
 
 When a property is missing in the OCaml interface of an element (for example
 it has been dynamically added by a library), you can access using unsafe
@@ -70,7 +70,7 @@ Here, {{{v}}} may be a JS value or an OCaml value.
 If you want to do that in type safe manner, just define new types for the
 extended elements, or wrap the unsafe functions inside a getter and setter.
 
-== Binding a JS object ==
+== Binding a JS object
 
 Write in .ml and in .mli:
 
@@ -107,7 +107,7 @@ class type my_js_type = object
 end
 >>
 
-===Example binding some constants:
+=== Example binding some constants:
 
 For example if the JS class is used to define three constants {{{thelib.Theclass.VALUEA}}}, {{{thelib.Theclass.VALUEB}}}, {{{thelib.Theclass.VALUEC}}},
 
@@ -137,7 +137,7 @@ and in .mli:
 val theclass : theclass t
 >>
 
-==Constructing JS objects manually
+== Constructing JS objects manually
 If you want to construct a JS object manually
 (without calling a function or a constructor), you can use
 the <<a_manual chapter="Ppx"|Ppx>> syntax extension.
