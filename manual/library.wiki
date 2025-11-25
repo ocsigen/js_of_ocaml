@@ -10,7 +10,7 @@ provided.
 
 |= OCaml values |= Ocaml type of Javascript values |= Actual Javascript type |
 | {{{int}}}     | {{{int}}}                        | Number                  |
-| {{{float}}}   | {{{float}}}                      | Number                  |
+| {{{float}}}   | {{{Js.number Js.t}}}             | Number                  |
 | {{{bool}}}    | {{{bool Js.t}}}                  | Boolean                 |
 | {{{string}}}  | {{{Js.js_string Js.t}}}          | String                  |
 | {{{array}}}   | {{{Js.js_array Js.t}}}           | Array                   |
@@ -45,11 +45,11 @@ instance, these three types correspond to the same Javascript method
 {{{drawImage}}}:
 {{{
     drawImage :
-        imageElement t -> float -> float -> unit meth
+        imageElement t -> number t -> number t -> unit meth
     drawImage_withSize :
-        imageElement t -> float -> float -> float -> float -> unit meth
+        imageElement t -> number t -> number t -> number t -> number t -> unit meth
     drawImage_fromCanvas :
-        canvasElement t -> float -> float -> unit meth
+        canvasElement t -> number t -> number t -> unit meth
 }}}
 This trick can also be used to refer to Javascript fields {{{type}}} or
 {{{Uppercase}}}, for instance as {{{_type}}} and {{{_Uppercase}}}.
