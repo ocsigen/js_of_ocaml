@@ -80,8 +80,8 @@ class type my_js_type = object
   (* read only property, read value with t##.prop1 *)
   method prop1 : int readonly_prop
 
-  (* write only property, write value with t##.prop2 := 3.14 *)
-  method prop2 : float writeonly_prop
+  (* write only property, write value with t##.prop2 := float 3.14 *)
+  method prop2 : number t writeonly_prop
 
   (* both read and write *)
   method prop3 : int prop
