@@ -28,6 +28,9 @@
   gen/gen.exe
   ../../runtime/wasm/runtime.js
   ../../runtime/wasm/deps.json
+  ../../runtime/wasm/runtime-wasi.js
+  ../../runtime/wasm/deps-wasi.json
+  ../../runtime/wasm/libc.wasm
   (glob_files ../../runtime/wasm/*.wat)
   (glob_files ../../runtime/wasm/runtime-*.wasm))
  (action

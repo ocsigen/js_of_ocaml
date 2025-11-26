@@ -17,6 +17,7 @@
    --binaryen=-g
    --binaryen-opt=-O3
    --set=effects=jspi
+   --disable=wasi
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
    %{read-lines:args})))
@@ -32,8 +33,44 @@
    --binaryen=-g
    --binaryen-opt=-O3
    --set=effects=cps
+   --disable=wasi
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
+   %{read-lines:args})))
+
+(rule
+ (target runtime-wasi.wasm)
+ (deps
+  args
+  (glob_files *.wat)
+  libc.wasm)
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --set=effects=disabled
+   --enable=wasi
+   --allowed-imports=wasi_snapshot_preview1,OCaml
+   %{target}
+   libc:libc.wasm
+   %{read-lines:args})))
+
+(rule
+ (target runtime-cps-wasi.wasm)
+ (deps
+  args
+  (glob_files *.wat)
+  libc.wasm)
+ (action
+  (run
+   ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
+   --binaryen=-g
+   --binaryen-opt=-O3
+   --set=effects=cps
+   --enable=wasi
+   %{target}
+   libc:libc.wasm
    %{read-lines:args})))
 
 (rule
@@ -45,3 +82,34 @@
   (with-stdout-to
    %{target}
    (run ocaml %{deps}))))
+
+(rule
+ (target libc.new.wasm)
+ (deps libc.c)
+ (enabled_if
+  (not %{env:CI=false}))
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{target}
+   (pipe-stdout
+    (run
+     docker
+     run
+     -v
+     .:/src
+     -w
+     /src
+     ghcr.io/webassembly/wasi-sdk
+     /opt/wasi-sdk/bin/clang
+     -O2
+     libc.c
+     -flto
+     -o
+     -)
+    (run wasm-opt -Oz --strip-debug --strip-dwarf - -o -)))))
+
+(rule
+ (alias recompile-libc)
+ (action
+  (cmp libc.wasm libc.new.wasm)))
