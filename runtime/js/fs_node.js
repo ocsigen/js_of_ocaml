@@ -487,6 +487,10 @@ class MlNodeFd extends MlFile {
     return this.offset;
   }
 
+  pos() {
+    return this.offset;
+  }
+
   stat(large) {
     try {
       var js_stats = this.fs.fstatSync(this.fd);
