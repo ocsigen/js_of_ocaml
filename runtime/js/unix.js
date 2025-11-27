@@ -230,7 +230,7 @@ function caml_strerror(errno) {
 //If: browser
 function caml_strerror(errno) {
   const code = unix_error[errno];
-  code || "Unknown error " + errno;
+  return code || "Unknown error " + errno;
 }
 
 //Provides: unix_error_message
