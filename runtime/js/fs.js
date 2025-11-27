@@ -278,7 +278,7 @@ function caml_sys_rename(o, n) {
   var n_root = resolve_fs_device(n);
   if (o_root.device !== n_root.device)
     caml_failwith("caml_sys_rename: cannot move file between two filesystem");
-  if (!o_root.device.rename) caml_failwith("caml_sys_rename: no implemented");
+  if (!o_root.device.rename) caml_failwith("caml_sys_rename: not implemented");
   o_root.device.rename(o_root.rest, n_root.rest);
 }
 
