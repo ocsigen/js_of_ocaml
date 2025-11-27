@@ -461,6 +461,9 @@ class MlFakeFd_out extends MlFakeFile {
   seek(_len, _whence, raise_unix) {
     caml_raise_system_error(raise_unix, "ESPIPE", "lseek", "illegal seek");
   }
+  pos() {
+    return -1;
+  }
 
   close() {
     this.log = undefined;
@@ -544,6 +547,11 @@ class MlFakeFd {
       );
     this.offset = offset;
     this.seeked = true;
+    return offset;
+  }
+
+  pos() {
+    return this.offset;
   }
 
   close() {
