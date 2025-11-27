@@ -421,6 +421,11 @@ class MlNodeFd extends MlFile {
     }
   }
 
+  isatty() {
+    var tty = require("node:tty");
+    return tty.isatty(this.fd) ? 1 : 0;
+  }
+
   length() {
     try {
       return this.fs.fstatSync(this.fd).size;

@@ -98,15 +98,12 @@ function caml_unix_filedescr_of_fd(x) {
 }
 
 //Provides: caml_unix_isatty
-//Requires: fs_node_supported, caml_unix_lookup_file
+//Requires: caml_unix_lookup_file
 //Alias: unix_isatty
 function caml_unix_isatty(fd) {
-  if (fs_node_supported()) {
-    var tty = require("node:tty");
-    return tty.isatty(caml_unix_lookup_file(fd).fd) ? 1 : 0;
-  } else {
-    return 0;
-  }
+  var file = caml_unix_lookup_file(fd);
+  if (!file.isatty) return 0;
+  return file.isatty();
 }
 
 //Provides: caml_unix_isatty
