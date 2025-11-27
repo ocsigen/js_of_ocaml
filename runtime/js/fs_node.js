@@ -17,6 +17,11 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+//Provides: jsoo_is_win32
+var jsoo_is_win32 =
+  globalThis.Deno?.build?.os === "windows" ||
+  globalThis.process?.platform === "win32";
+
 //Provides: fs_node_supported
 function fs_node_supported() {
   return globalThis.process?.versions?.node !== undefined;
@@ -30,6 +35,7 @@ function fs_node_supported() {
 //Provides: MlNodeDevice
 //Requires: MlNodeFd, caml_raise_sys_error, caml_string_of_jsstring
 //Requires: caml_raise_nodejs_error, fs_node_stats_from_js
+//Requires: jsoo_is_win32
 class MlNodeDevice {
   constructor(root) {
     this.fs = require("node:fs");
@@ -133,10 +139,7 @@ class MlNodeDevice {
           res |= consts.W_OK;
           break;
         case "x":
-          res |=
-            globalThis.process?.platform === "win32"
-              ? consts.R_OK
-              : consts.X_OK;
+          res |= jsoo_is_win32 ? consts.R_OK : consts.X_OK;
           break;
         case "f":
           res |= consts.F_OK;
@@ -210,7 +213,7 @@ class MlNodeDevice {
   }
 
   rename(o, n, raise_unix) {
-    if (globalThis.process?.platform === "win32") {
+    if (jsoo_is_win32) {
       try {
         var target = this.nm(n);
         var source = this.nm(o);

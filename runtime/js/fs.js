@@ -50,6 +50,7 @@ function MlFile() {}
 
 //Provides: path_is_absolute
 //Requires: fs_node_supported
+//Requires: jsoo_is_win32
 function make_path_is_absolute() {
   function posix(path) {
     if (path.charAt(0) === "/") return ["", path.slice(1)];
@@ -72,13 +73,7 @@ function make_path_is_absolute() {
     }
     return;
   }
-  if (
-    fs_node_supported() &&
-    globalThis.process &&
-    globalThis.process.platform
-  ) {
-    return globalThis.process.platform === "win32" ? win32 : posix;
-  } else return posix;
+  return jsoo_is_win32 ? win32 : posix;
 }
 var path_is_absolute = make_path_is_absolute();
 
