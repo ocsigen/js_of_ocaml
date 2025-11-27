@@ -34,7 +34,7 @@ function fs_node_supported() {
 
 //Provides: MlNodeDevice
 //Requires: MlNodeFd, caml_raise_sys_error, caml_string_of_jsstring
-//Requires: caml_raise_nodejs_error, fs_node_stats_from_js
+//Requires: caml_raise_nodejs_error, ocaml_stats_from_node_stats
 //Requires: jsoo_is_win32
 class MlNodeDevice {
   constructor(root) {
@@ -260,7 +260,7 @@ class MlNodeDevice {
   stat(name, large, raise_unix) {
     try {
       var js_stats = this.fs.statSync(this.nm(name));
-      return fs_node_stats_from_js(js_stats, large);
+      return ocaml_stats_from_node_stats(js_stats, large);
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
@@ -269,7 +269,7 @@ class MlNodeDevice {
   lstat(name, large, raise_unix) {
     try {
       var js_stats = this.fs.lstatSync(this.nm(name));
-      return fs_node_stats_from_js(js_stats, large);
+      return ocaml_stats_from_node_stats(js_stats, large);
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
@@ -324,9 +324,9 @@ class MlNodeDevice {
   }
 }
 
-//Provides: fs_node_stats_from_js
+//Provides: ocaml_stats_from_node_stats
 //Requires: caml_int64_of_float
-function fs_node_stats_from_js(js_stats, large) {
+function ocaml_stats_from_node_stats(js_stats, large) {
   /* ===Unix.file_kind===
    * type file_kind =
    *     S_REG                       (** Regular file *)
@@ -392,7 +392,7 @@ class MlNodeDevice {}
 
 //Provides: MlNodeFd
 //Requires: MlFile, caml_uint8_array_of_string, caml_uint8_array_of_bytes, caml_bytes_set, caml_raise_sys_error
-//Requires: caml_raise_nodejs_error, caml_raise_system_error, fs_node_stats_from_js
+//Requires: caml_raise_nodejs_error, caml_raise_system_error, ocaml_stats_from_node_stats
 class MlNodeFd extends MlFile {
   constructor(fd, flags) {
     super();
@@ -497,7 +497,7 @@ class MlNodeFd extends MlFile {
   stat(large) {
     try {
       var js_stats = this.fs.fstatSync(this.fd);
-      return fs_node_stats_from_js(js_stats, large);
+      return ocaml_stats_from_node_stats(js_stats, large);
     } catch (err) {
       caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
     }
