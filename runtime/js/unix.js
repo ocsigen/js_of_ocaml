@@ -331,7 +331,7 @@ function caml_unix_rename(o, n) {
   var n_root = resolve_fs_device(n);
   if (o_root.device !== n_root.device)
     caml_raise_system_error(/* raise Unix_error */ 1, "EXDEV", "rename");
-  if (!o_root.device.rename) caml_failwith("caml_sys_rename: no implemented");
+  if (!o_root.device.rename) caml_failwith("caml_sys_rename: not implemented");
   o_root.device.rename(o_root.rest, n_root.rest, /* raise Unix_error */ true);
 }
 
@@ -716,7 +716,7 @@ function caml_unix_close(fd) {
 //Alias: win_inchannel_of_filedescr
 //Requires: caml_unix_lookup_file, caml_ml_open_descriptor_in
 function caml_unix_inchannel_of_filedescr(fd) {
-  var file = caml_unix_lookup_file(fd, "out_channel_of_descr");
+  var file = caml_unix_lookup_file(fd, "in_channel_of_descr");
   file.check_stream_semantics("in_channel_of_descr");
   return caml_ml_open_descriptor_in(fd);
 }
