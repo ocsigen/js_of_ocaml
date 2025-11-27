@@ -298,7 +298,8 @@ function caml_sys_const_backend_type() {
 }
 
 //Provides: os_type
-var os_type = globalThis.process?.platform === "win32" ? "Win32" : "Unix";
+//Requires: jsoo_is_win32
+var os_type = jsoo_is_win32 ? "Win32" : "Unix";
 
 //Provides: caml_sys_get_config const
 //Requires: caml_string_of_jsbytes, os_type
