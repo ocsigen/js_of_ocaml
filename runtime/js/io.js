@@ -204,7 +204,7 @@ function caml_ml_open_descriptor_out(fd) {
   var buffered = file.flags.buffered !== undefined ? file.flags.buffered : 1;
   var channel = {
     file: file,
-    offset: file.offset,
+    offset: file.pos(),
     fd: fd,
     opened: true,
     out: true,
@@ -230,7 +230,7 @@ function caml_ml_open_descriptor_in(fd) {
   var refill = null;
   var channel = {
     file: file,
-    offset: file.offset,
+    offset: file.pos(),
     fd: fd,
     opened: true,
     out: false,
