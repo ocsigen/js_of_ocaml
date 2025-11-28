@@ -275,3 +275,36 @@ f (); Sys.chdir "/static"; f ()
     EXPECTED ERROR
     EXPECTED ERROR
     |}]
+
+let%expect_test "check fake filesystem with path containing special regex chars" =
+  compile_and_run
+    {|
+let f () =
+  let touch path =
+    let oc = open_out path in
+    close_out oc
+  in
+  Sys.mkdir "test.dir" 0o777;
+  Sys.mkdir "test_dir" 0o777;
+  touch "test.dir/dot";
+  touch "test_dir/underscore";
+  print_endline "test.dir:";
+  Array.iter print_endline (Sys.readdir "test.dir");
+  print_endline "test_dir:";
+  Array.iter print_endline (Sys.readdir "test_dir");
+  print_endline ""
+in
+f (); Sys.chdir "/static"; f ()
+  |};
+  [%expect
+    {|
+    test.dir:
+    dot
+    test_dir:
+    underscore
+
+    test.dir:
+    dot
+    test_dir:
+    underscore
+    |}]

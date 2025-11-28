@@ -149,7 +149,6 @@ class MlFakeDevice {
 
   rmdir(name, raise_unix) {
     var name_slash = name === "" ? "" : this.slash(name);
-    var r = new RegExp("^" + name_slash + "([^/]+)");
     if (!this.exists(name))
       caml_raise_system_error(
         raise_unix,
@@ -167,7 +166,7 @@ class MlFakeDevice {
         this.nm(name),
       );
     for (var n in this.content) {
-      if (n.match(r))
+      if (n.startsWith(name_slash) && n !== name_slash)
         caml_raise_system_error(
           raise_unix,
           "ENOTEMPTY",
@@ -187,14 +186,17 @@ class MlFakeDevice {
     if (!this.is_dir(name)) {
       caml_raise_sys_error(name + ": Not a directory");
     }
-    var r = new RegExp("^" + name_slash + "([^/]+)");
     var seen = {};
     var a = [];
     for (var n in this.content) {
-      var m = n.match(r);
-      if (m && !seen[m[1]]) {
-        seen[m[1]] = true;
-        a.push(m[1]);
+      if (n.startsWith(name_slash) && n !== name_slash) {
+        var last = n.indexOf("/", name_slash.length);
+        if (last < 0) last = undefined;
+        var m = n.slice(name_slash.length, last);
+        if (m && !seen[m]) {
+          seen[m] = true;
+          a.push(m);
+        }
       }
     }
     return a;
