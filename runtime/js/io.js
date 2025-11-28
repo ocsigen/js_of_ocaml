@@ -27,7 +27,7 @@ var caml_sys_fds = new Array(3);
 function caml_sys_close(fd) {
   var x = caml_sys_fds[fd];
   if (x) {
-    x.file.close();
+    x.file.close(false);
     delete caml_sys_fds[fd];
   }
   return 0;
@@ -360,6 +360,7 @@ function caml_refill(chan) {
       chan.buffer,
       chan.buffer_max,
       chan.buffer.length - chan.buffer_max,
+      false,
     );
     chan.offset += nread;
     chan.buffer_max += nread;
@@ -568,7 +569,7 @@ function caml_ml_flush(chanid) {
     );
   } else {
     for (var pos = 0; pos < chan.buffer_curr; ) {
-      pos += chan.file.write(chan.buffer, pos, chan.buffer_curr - pos);
+      pos += chan.file.write(chan.buffer, pos, chan.buffer_curr - pos, false);
     }
   }
   chan.offset += chan.buffer_curr;

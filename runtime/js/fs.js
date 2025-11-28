@@ -358,7 +358,7 @@ function caml_read_file_content(name) {
     var file = root.device.open(root.rest, { rdonly: 1 });
     var len = file.length();
     var buf = new Uint8Array(len);
-    file.read(buf, 0, len);
+    file.read(buf, 0, len, false);
     return caml_string_of_uint8_array(buf);
   }
   caml_raise_no_such_file(caml_jsstring_of_string(name));
