@@ -293,7 +293,7 @@ class MlFakeDevice {
           this.nm(name),
         );
       file = this.content[name];
-      if (f.truncate) file.truncate();
+      if (f.truncate) file.truncate(0);
     } else if (f.create) {
       this.create_dir_if_needed(name);
       this.content[name] = new MlFakeFile(caml_create_bytes(0));
@@ -362,8 +362,9 @@ class MlFakeFile extends MlFile {
 
   truncate(len) {
     var old = this.data;
+    var old_len = caml_ml_bytes_length(old);
     this.data = caml_create_bytes(len | 0);
-    caml_blit_bytes(old, 0, this.data, 0, len);
+    caml_blit_bytes(old, 0, this.data, 0, Math.min(len, old_len));
   }
 
   length() {
@@ -393,12 +394,13 @@ class MlFakeFile extends MlFile {
     if (offset + len >= clen) {
       len = clen - offset;
     }
-    if (len) {
+    if (len > 0) {
       var data = caml_create_bytes(len | 0);
       caml_blit_bytes(this.data, offset, data, 0, len);
       buf.set(caml_uint8_array_of_bytes(data), pos);
+      return len;
     }
-    return len;
+    return 0;
   }
 }
 
