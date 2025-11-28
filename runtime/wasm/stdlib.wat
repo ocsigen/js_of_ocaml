@@ -38,10 +38,25 @@
       (func $caml_format_exception (param (ref eq)) (result (ref eq))))
    (import "sys" "ocaml_exit" (tag $ocaml_exit))
    (import "fail" "ocaml_exception" (tag $ocaml_exception (param (ref eq))))
+(@if wasi
+(@then
+   (import "wasi_snapshot_preview1" "proc_exit" (func $exit (param i32)))
+   (import "wasi_snapshot_preview1" "fd_write"
+      (func $fd_write (param i32 i32 i32 i32) (result i32)))
+   (import "wasi_memory" "get_buffer" (func $get_buffer (result i32)))
+   (import "wasi_memory" "write_string_to_memory"
+      (func $write_string_to_memory (param i32 i32 (ref eq)) (result i32)))
+   (import "wasi_memory" "release_memory"
+      (func $release_memory (param i32 i32)))
+   (import "io" "IO_BUFFER_SIZE" (global $IO_BUFFER_SIZE i32))
+   (import "libc" "memory" (memory 2))
+)
+(@else
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
    (import "bindings" "write" (func $write (param i32) (param anyref)))
    (import "bindings" "exit" (func $exit (param i32)))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -187,6 +202,8 @@
 
    (global $uncaught_exception (mut externref) (ref.null extern))
 
+(@if (not wasi)
+(@then
    (func $reraise_exception (result (ref eq))
       (throw $javascript_exception (global.get $uncaught_exception))
       (ref.i31 (i32.const 0)))
@@ -194,12 +211,30 @@
    (func (export "caml_handle_uncaught_exception") (param $exn externref)
       (global.set $uncaught_exception (local.get $exn))
       (call $caml_main (ref.func $reraise_exception)))
+))
+
+   (type $wrapper_func (func (param (ref $func))))
+   (global $caml_main_wrapper (export "caml_main_wrapper")
+      (mut (ref null $wrapper_func))
+      (ref.null $wrapper_func))
 
    (func $caml_main (export "caml_main") (param $start (ref func))
       (local $exn (ref eq))
       (local $msg (ref eq))
+(@if wasi
+(@then
+      (local $buffer i32) (local $i i32) (local $len i32)
+      (local $buf i32) (local $remaining i32)
+      (local $iovs i32) (local $iovs_len i32) (local $nwritten i32)
+      (local $res i32)
+))
       (try
          (do
+            (block $fallback
+               (call_ref $wrapper_func
+                  (ref.cast (ref $func) (local.get $start))
+                  (br_on_null $fallback (global.get $caml_main_wrapper)))
+               (return))
             (drop (call_ref $func (ref.cast (ref $func) (local.get $start)))))
          (catch $ocaml_exit)
          (catch $ocaml_exception
@@ -230,8 +265,43 @@
                      (call $caml_string_concat
                         (call $caml_format_exception (local.get $exn))
                         (@string "\n"))))
+(@if wasi
+(@then
+               (local.set $len
+                  (array.len (ref.cast (ref $bytes) (local.get $msg))))
+               (local.set $buffer (call $get_buffer))
+               (local.set $nwritten (local.get $buffer))
+               (local.set $iovs (i32.add (local.get $buffer) (i32.const 4)))
+               (local.set $iovs_len (i32.const 1))
+               (local.set $buffer (i32.add (local.get $buffer) (i32.const 12)))
+               (local.set $buf
+                  (call $write_string_to_memory
+                     (local.get $buf) (global.get $IO_BUFFER_SIZE)
+                     (local.get $msg)))
+               (local.set $remaining (local.get $buf))
+               (loop $write
+                  (i32.store (local.get $iovs) (local.get $remaining))
+                  (i32.store offset=4 (local.get $iovs) (local.get $len))
+                  (local.set $res
+                     (call $fd_write
+                        (i32.const 2) (local.get $iovs) (local.get $iovs_len)
+                        (local.get $nwritten)))
+                  (if (i32.eqz (local.get $res))
+                     (then
+                        (local.set $len
+                           (i32.sub (local.get $len)
+                              (i32.load (local.get $nwritten))))
+                        (local.set $remaining
+                           (i32.add (local.get $remaining)
+                              (i32.load (local.get $nwritten))))
+                        (br_if $write (local.get $len)))))
+               (call $release_memory (local.get $buffer) (local.get $buf))
+)
+(@else
                (call $write (i32.const 2)
                   (call $unwrap
-                     (call $caml_jsstring_of_string (local.get $msg)))))
+                     (call $caml_jsstring_of_string (local.get $msg))))
+))
+            )
             (call $exit (i32.const 2)))))
 )

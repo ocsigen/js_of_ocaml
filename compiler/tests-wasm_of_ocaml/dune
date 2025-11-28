@@ -10,7 +10,9 @@
  (names gh2093)
  (modes wasm)
  (enabled_if
-  (>= %{ocaml_version} 5))
+  (and
+   (>= %{ocaml_version} 5)
+   (<> %{profile} wasi)))
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags :standard)))

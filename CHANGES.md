@@ -7,6 +7,7 @@
 * Compiler/wasm: make the type of some Wasm primitives more precise (#2100)
 * Compiler: reference unboxing (#1958)
 * Runtime: improved handling of NaNs (#2110)
+* Compiler/wasm: WASI 0.1 support (#1831)
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)
