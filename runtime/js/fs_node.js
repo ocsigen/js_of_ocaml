@@ -17,6 +17,11 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+//Provides: jsoo_is_win32
+var jsoo_is_win32 =
+  globalThis.Deno?.build?.os === "windows" ||
+  globalThis.process?.platform === "win32";
+
 //Provides: fs_node_supported
 function fs_node_supported() {
   return globalThis.process?.versions?.node !== undefined;
@@ -29,7 +34,8 @@ function fs_node_supported() {
 
 //Provides: MlNodeDevice
 //Requires: MlNodeFd, caml_raise_sys_error, caml_string_of_jsstring
-//Requires: caml_raise_nodejs_error, fs_node_stats_from_js
+//Requires: caml_raise_nodejs_error, ocaml_stats_from_node_stats
+//Requires: jsoo_is_win32
 class MlNodeDevice {
   constructor(root) {
     this.fs = require("node:fs");
@@ -122,7 +128,7 @@ class MlNodeDevice {
   }
 
   access(name, f, raise_unix) {
-    var consts = require("node:fs").constants;
+    var consts = this.fs.constants;
     var res = 0;
     for (var key in f) {
       switch (key) {
@@ -133,10 +139,7 @@ class MlNodeDevice {
           res |= consts.W_OK;
           break;
         case "x":
-          res |=
-            globalThis.process?.platform === "win32"
-              ? consts.R_OK
-              : consts.X_OK;
+          res |= jsoo_is_win32 ? consts.R_OK : consts.X_OK;
           break;
         case "f":
           res |= consts.F_OK;
@@ -152,7 +155,7 @@ class MlNodeDevice {
   }
 
   open(name, f, perms, raise_unix) {
-    var consts = require("node:fs").constants;
+    var consts = this.fs.constants;
     var res = 0;
     for (var key in f) {
       switch (key) {
@@ -210,7 +213,7 @@ class MlNodeDevice {
   }
 
   rename(o, n, raise_unix) {
-    if (globalThis.process?.platform === "win32") {
+    if (jsoo_is_win32) {
       try {
         var target = this.nm(n);
         var source = this.nm(o);
@@ -257,7 +260,7 @@ class MlNodeDevice {
   stat(name, large, raise_unix) {
     try {
       var js_stats = this.fs.statSync(this.nm(name));
-      return fs_node_stats_from_js(js_stats, large);
+      return ocaml_stats_from_node_stats(js_stats, large);
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
@@ -266,7 +269,7 @@ class MlNodeDevice {
   lstat(name, large, raise_unix) {
     try {
       var js_stats = this.fs.lstatSync(this.nm(name));
-      return fs_node_stats_from_js(js_stats, large);
+      return ocaml_stats_from_node_stats(js_stats, large);
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
@@ -321,9 +324,9 @@ class MlNodeDevice {
   }
 }
 
-//Provides: fs_node_stats_from_js
+//Provides: ocaml_stats_from_node_stats
 //Requires: caml_int64_of_float
-function fs_node_stats_from_js(js_stats, large) {
+function ocaml_stats_from_node_stats(js_stats, large) {
   /* ===Unix.file_kind===
    * type file_kind =
    *     S_REG                       (** Regular file *)
@@ -389,7 +392,7 @@ class MlNodeDevice {}
 
 //Provides: MlNodeFd
 //Requires: MlFile, caml_uint8_array_of_string, caml_uint8_array_of_bytes, caml_bytes_set, caml_raise_sys_error
-//Requires: caml_raise_nodejs_error, caml_raise_system_error, fs_node_stats_from_js
+//Requires: caml_raise_nodejs_error, caml_raise_system_error, ocaml_stats_from_node_stats
 class MlNodeFd extends MlFile {
   constructor(fd, flags) {
     super();
@@ -400,12 +403,13 @@ class MlNodeFd extends MlFile {
       var stats = this.fs.fstatSync(fd);
       flags.noSeek =
         stats.isCharacterDevice() || stats.isFIFO() || stats.isSocket();
+      this.offset = this.flags.append ? stats.size : 0;
     } catch (err) {
       // The fstat will fail on standard streams under Windows with node
       // 18 (and lower). See https://github.com/libuv/libuv/pull/3811.
       flags.noSeek = true;
+      this.offset = 0;
     }
-    this.offset = this.flags.append ? stats.size : 0;
     this.seeked = false;
   }
 
@@ -416,6 +420,11 @@ class MlNodeFd extends MlFile {
     } catch (err) {
       caml_raise_nodejs_error(err, raise_unix);
     }
+  }
+
+  isatty() {
+    var tty = require("node:tty");
+    return tty.isatty(this.fd) ? 1 : 0;
   }
 
   length() {
@@ -487,10 +496,14 @@ class MlNodeFd extends MlFile {
     return this.offset;
   }
 
+  pos() {
+    return this.offset;
+  }
+
   stat(large) {
     try {
       var js_stats = this.fs.fstatSync(this.fd);
-      return fs_node_stats_from_js(js_stats, large);
+      return ocaml_stats_from_node_stats(js_stats, large);
     } catch (err) {
       caml_raise_nodejs_error(err, /* raise Unix_error */ 1);
     }

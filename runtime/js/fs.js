@@ -50,6 +50,7 @@ function MlFile() {}
 
 //Provides: path_is_absolute
 //Requires: fs_node_supported
+//Requires: jsoo_is_win32
 function make_path_is_absolute() {
   function posix(path) {
     if (path.charAt(0) === "/") return ["", path.slice(1)];
@@ -72,13 +73,7 @@ function make_path_is_absolute() {
     }
     return;
   }
-  if (
-    fs_node_supported() &&
-    globalThis.process &&
-    globalThis.process.platform
-  ) {
-    return globalThis.process.platform === "win32" ? win32 : posix;
-  } else return posix;
+  return jsoo_is_win32 ? win32 : posix;
 }
 var path_is_absolute = make_path_is_absolute();
 
@@ -278,7 +273,7 @@ function caml_sys_rename(o, n) {
   var n_root = resolve_fs_device(n);
   if (o_root.device !== n_root.device)
     caml_failwith("caml_sys_rename: cannot move file between two filesystem");
-  if (!o_root.device.rename) caml_failwith("caml_sys_rename: no implemented");
+  if (!o_root.device.rename) caml_failwith("caml_sys_rename: not implemented");
   o_root.device.rename(o_root.rest, n_root.rest);
 }
 
@@ -363,7 +358,7 @@ function caml_read_file_content(name) {
     var file = root.device.open(root.rest, { rdonly: 1 });
     var len = file.length();
     var buf = new Uint8Array(len);
-    file.read(buf, 0, len);
+    file.read(buf, 0, len, false);
     return caml_string_of_uint8_array(buf);
   }
   caml_raise_no_such_file(caml_jsstring_of_string(name));
