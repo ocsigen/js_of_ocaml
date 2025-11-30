@@ -10,9 +10,9 @@ file and separate compilation that compiles individual compilation units
 Separate compilation improves the overall compilation times and gives
 (many) incremental build opportunities.
 
-Theses improvements come at the cost of bigger executable and slower
+These improvements come at the cost of bigger executable and slower
 runtime.  In particular, separate compilation will disable most cross
-module and cross library optimisations and make the dead-code
+module and cross library optimizations and make the dead-code
 elimination almost useless.
 
 
@@ -21,7 +21,7 @@ elimination almost useless.
 Js_of_ocaml separate compilation is somewhat similar to the OCaml
 separate compilation with some differences.
 
-The general idea is generate one JavaScript file containing the
+The general idea is to generate one JavaScript file containing the
 JavaScript runtime and JavaScript files for every compilation unit (or
 library) needed to run the program. One can then link all individual
 JavaScript files together, respecting the order induced by
@@ -34,7 +34,7 @@ To build a standalone runtime:
 js_of_ocaml build-runtime -o my-runtime.js
 }}}
 
-Additional runtime files are sometime needed and can be passed on the
+Additional runtime files are sometimes needed and can be passed on the
 command line.  In particular, some packages/libraries come with their
 own runtime file.
 
@@ -79,7 +79,7 @@ a list of JavaScript filename as input and concatenates them all
 (merging source-maps together if needed).
 
 {{{
-js_of_ocaml link my-runtime.js stdlib.js libname.js modname.js std_exit.js-o myexe.js
+js_of_ocaml link my-runtime.js stdlib.js libname.js modname.js std_exit.js -o myexe.js
 }}}
 
 Note that, unlike the ocaml compiler, the ocaml stdlib and std_exit need to be
@@ -91,7 +91,7 @@ passed explicitly (here, {stdlib.js} and {std_exit.js} are the result of compili
 Support for js_of_ocaml separate compilation has been added to dune
 (previously jbuilder). The separate compilation mode is selected when
 the build profile is dev, which is the default.  There is currently no
-other way to control this behaviour.
+other way to control this behavior.
 
 See [[https://dune.readthedocs.io/en/latest/jsoo.html|dune documentation]]
 

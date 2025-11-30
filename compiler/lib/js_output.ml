@@ -88,7 +88,7 @@ always uses this location.
     (0,f)(e)(e')
          ^  ^
 
-Usually, Chrome stops at the begining of statements.
+Usually, Chrome stops at the beginning of statements.
 
    if (e) { ... }
    ^

@@ -2,7 +2,7 @@
 
 == Use the right compiler flags
 === OCaml flags
-Make sure to use {{{-g}}} flags when compiling and linking ocaml bytecode.
+Make sure to use {{{-g}}} flags when compiling and linking OCaml bytecode.
 Js_of_ocaml will attempt to preserve variable names.
 
 === Js_of_ocaml flags
@@ -12,10 +12,10 @@ Js_of_ocaml will attempt to preserve variable names.
   * {{{--source-map}}} - enable source-map support
 
 == JavaScript stacktrace
-Js_of_ocaml can attach a JavaScript {{{Error}}} that embed the current
+Js_of_ocaml can attach a JavaScript {{{Error}}} that embeds the current
 stacktrace to an OCaml exception. The {{{Error}}} can be attached with
 {{{Js.Js_error.attach_js_backtrace}}} and extracted using
-{{{Js.Js_error.of_exn}}}. Un-handled OCaml exception will throw any
+{{{Js.Js_error.of_exn}}}. Un-handled OCaml exceptions will throw any
 JavaScript {{{Error}}} attached to them, allowing the JS engine to display
 the stacktrace nicely.
 
@@ -36,9 +36,9 @@ browsers will only stop at breakpoints when developers tools are in use.
 == Source map
 Source map is used to map the generated JavaScript code to original sources.
 After compiling with sourcemap enabled, using developers tools, one can set breakpoints,
-step through the code, and inspect variable directly in OCaml sources.
+step through the code, and inspect variables directly in OCaml sources.
 
 == About Chrome DevTools
-Useful setting Chrome DevTools:
+Useful settings for Chrome DevTools:
 * Display variable values inline while debugging
 * Resolve variable names (hidden DevTools Experiments, see http://islegend.com/development/how-to-enable-devtools-experiments-within-google-chrome)

@@ -12,7 +12,7 @@
 * Compiler: fix purity of comparison functions (again) (#2092)
 * Compiler: fix inlining (#2107)
 * Runtime/wasm: fix Unix.times (#2096)
-* Ppx: disable spurious warning for unused "self" in object litteral (#2128)
+* Ppx: disable spurious warning for unused "self" in object literal (#2128)
 * Ppx: fix labelled arguments for methods (#2126)
 * Runtime: runtime with target-env=browser should not rely on "require(..)" (#2129)
 
@@ -37,7 +37,7 @@
 # 6.1.0 (2025-07-01) - Lille
 
 ## Features/Changes
-* Misc: drop support for OCaml 4.12 and bellow
+* Misc: drop support for OCaml 4.12 and below
 * Misc: switch to dune.3.19
 * Misc: initial support for ocaml 5.4 (#2030, #2058)
 * Compiler: support for OCaml 4.14.3+trunk (#1844)
@@ -63,7 +63,7 @@
 * Compiler/wasm: faster wat output (#1992)
 * Compiler/wasm: use a Wasm text files preprocessor (#1822)
 * Compiler/wasm: optimize integer operations (#2032)
-* Compiler/wasm: use type analysis to remove some unnecessary uses of JavasScript strict equality (#2040)
+* Compiler/wasm: use type analysis to remove some unnecessary uses of JavaScript strict equality (#2040)
 * Compiler/wasm: use more precise environment types (#2041)
 * Compiler/wasm: optimize calls to statically known function (#2044)
 * Runtime: use es6 class (#1840)
@@ -142,12 +142,12 @@
 * Runtime: make sure [n / 0L] is not optimized away by DCE
 * Runtime: fix Unix.LargeFile.stat/lstat
 * Runtime: fix stat/lstat times
-* Runtime: fix reading from stdin in an interactive nodejs
+* Runtime: fix reading from stdin in an interactive Node.js
 
 # 5.9.1 (02-12-2024) - Lille
 
 ## Features/Changes
-* Compiler: add mechanism to deprecate runtime promitives
+* Compiler: add mechanism to deprecate runtime primitives
 * Runtime: re-introduce caml_new_string, marked as deprecated
 
 # 5.9.0 (2024-11-22) - Lille
@@ -209,7 +209,7 @@
 # 5.8.0 (2024-04-20) - Lille
 
 ## Features/Changes
-* Compiler: es6 now generate consise body
+* Compiler: es6 now generate concise body
 * Compiler: codegen: optimize Offset_ref for negative offsets
 * Compiler: codegen: change argument passing of back edges.
 * Compiler: codegen: use Array destruction to assign args of back
@@ -267,7 +267,7 @@
 # 5.6.0 (2024-01-02) - Lille
 
 ## Features/Changes
-* Compiler: try to preserve clorures ordering between ml and js
+* Compiler: try to preserve closures ordering between ml and js
 * Compiler: js-parser accept for await
 
 ## Bug fixes
@@ -328,7 +328,7 @@
 * Compiler: fix location for parsing errors when last token is a virtual semicolon
 * Compiler: fix variable renaming with nested const/let decl with identical names
 * Compiler: fix variable renaming inside js method
-* Compiler: consise body should allow any expression but object literals
+* Compiler: concise body should allow any expression but object literals
 * Compiler: preserve [new] without arguments [new C] (vs [new C()]
 * Compiler: remove invalid rewriting of js (#1471, #1469)
 * Runtime: fix int32 values returned from bigarrays when wrapping Uint32Array objects (#1472)
@@ -342,7 +342,7 @@
 * Compiler (js parser): fix parsing of js labels (fix #1440)
 * Compiler: fix simplification of js with let and const
 * Compiler: reduce memory consumption when parsing js
-* Compiler: parsing js can return a list of token, the list was sometime incorrect
+* Compiler: parsing js can return a list of token, the list was sometimes incorrect
 * Sourcemap: stop producing sourcemaps mappings with negative lines or columns
 * Runtime: fix marshalling with sharing and string (use-js-string)
 
@@ -371,7 +371,7 @@
 * Compiler: improve analysis for more direct call (#1397)
 * Compiler: change memory representation of OCaml strings to use js ones.
 * Toplevel: Enable separate compilation of toplevels
-* Runtime: js backtrace recording controled by OCAMLRUNPARAM
+* Runtime: js backtrace recording controlled by OCAMLRUNPARAM
 * Runtime: support for zstd decompression of marshalled data (ocaml.5.1) (#12006)
 * Runtime: stub out custom runtime events symbols for OCaml 5.1 (#1414)
 
@@ -398,12 +398,12 @@ Runtime: fix caml_read_file_content
 * Misc: fix and update benchmarks
 * Misc: upgrade CI
 * Toplevel: recover more names when generating code during toplevel evaluation
-* Runtime: wrapping exception or not is now controled in the runtime.
+* Runtime: wrapping exception or not is now controlled in the runtime.
 
 ## Bug fixes
-* Runime: Gc.finalise_last should not be eliminated
+* Runtime: Gc.finalise_last should not be eliminated
 * Tyxml: reactive dom needed a fix after #1268 (#1353)
-* Toplevel: Make sure the toplevel uses the correct memory representaion for strings
+* Toplevel: Make sure the toplevel uses the correct memory representation for strings
 * Compiler: fix minifier, missing constraint on try-catch blocks.
 * Compiler: Miscompilation of code involving references and exceptions (#1354, #1356)
 
@@ -432,7 +432,7 @@ Runtime: fix caml_read_file_content
 * Runtime: Implement Gc.finalise_last
 * Runtime: Implement buffer for in_channels
 * Runtime: add support for unix_opendir, unix_readdir, unix_closedir, win_findfirst, win_findnext, win_findclose
-* Runtime: Dont use require when target-env is browser
+* Runtime: Don't use require when target-env is browser
 * Runtime: Implements Parsing.set_trace (#1308)
 * Runtime: ocaml string are represented as javascript ones.
 * Test: track external used in the stdlib and unix
@@ -493,17 +493,17 @@ Runtime: fix caml_read_file_content
 * Compiler: setting tc_depth to 0 remove direct call from the tc optimization.
 * Lib: add hidden, onfullscreenchange and onwebkitfullscreenchange to document
 * Runtime: fixes for Windows, all tests pass
-* Runtime: make all windows drive available on nodejs.
+* Runtime: make all windows drive available on Node.js.
 * Runtime: add support for Sys.mkdir and Sys.rmdir
-* Runtime: make stdin work on nodejs
-* Runtime: add support for Unix(stat,lstat,mkdir,rmdir,symlink,readlink,unlink,getuid) on nodejs.
+* Runtime: make stdin work on Node.js
+* Runtime: add support for Unix(stat,lstat,mkdir,rmdir,symlink,readlink,unlink,getuid) on Node.js.
 * Runtime: add caml_raise_with_args
 
 ## Bug fixes
 * Compiler: fix toplevel generation (#1129, #1130, #1131)
 * Compiler: fix predefined exn id with separate compilation
 * Compiler: js stubs without 'Provides' should still allow 'Require'
-* Runtime: fix handling of uncaugh exceptions
+* Runtime: fix handling of uncaught exceptions
 * Runtime: fix error handling of Sys.readdir
 * Dune: make git version lookup more resilient
 
@@ -511,7 +511,7 @@ Runtime: fix caml_read_file_content
 ## Features/Changes
 * Compiler: add support for OCaml 4.13
 * Compiler: new tool to check for missing primitives
-* Compiler: drop support for OCaml 4.03 and bellow
+* Compiler: drop support for OCaml 4.03 and below
 * Lib: add offsetX and offsetY to Dom_html.mouseEvent
 * Lib: add innerText property for Dom_html
 * Runtime: add dummy implementation for many dummy primitives
@@ -597,7 +597,7 @@ Runtime: fix caml_read_file_content
 * Compiler: fix vardecl optim (#946)
 * Compiler: restore optimization when generating if statements
 * Compiler: fix javascript parser in the presence of line directives (#980)
-* Runtime: Catch nodejs errors and re-raise them as Sys_error
+* Runtime: Catch Node.js errors and re-raise them as Sys_error
 * Runtime: fix caml_parse_sign_and_base and unsigned syntax
 * Runtime: fix caml_js_wrap_meth_callback_strict (#996)
 * Runtime: fix over-application of javascript callback (#996)
@@ -688,14 +688,14 @@ Runtime: fix caml_read_file_content
 * Misc: dunify the build of the toplevel
 * Misc: support for OCaml 4.08
 * Lib: wrap js_of_ocaml-lwt, js_of_ocaml-tyxml, js_of_ocaml-toplevel, js_of_ocaml-compiler
-* Runtime: don't use deprecated [new Buffer] on nodejs (#726)
+* Runtime: don't use deprecated [new Buffer] on Node.js (#726)
 
 ## Bug fixes
 * Compiler: fix compilation of empty cma
 * Compiler: fix js parser with keyword as ident
 * Compiler, Runtime: make --setenv work with Sys.getenv_opt
 * Compiler: fix miscompilation of Obj.is_int with a match expression
-* Compiler: fix quadratic behaviour in findlib.ml
+* Compiler: fix quadratic behavior in findlib.ml
 * Compiler: prevent addition with a positively-signed number from being coalesced… (#764)
 * Compiler: Fix: static eval of String.get (#770)
 * Runtime: make obj_dup work on string/bytes
@@ -870,7 +870,7 @@ Runtime: fix caml_read_file_content
 * Lib: Support for Core_kernel and Async_kernel (32bit only).
 * Lib: Mutation observer.
 * Runtime: bigstring, caml_int32_bits_of_float, ..
-* Runtime: better nodejs integration
+* Runtime: better Node.js integration
 
 ## Misc
 * Support for OCaml 4.03
@@ -970,7 +970,7 @@ Runtime: fix caml_read_file_content
 * Compiler: generate js files with default permission, was 0o600
   (#182) (Daniel Bünzli)
 * Syntax: fix typing of method arguments
-* Runtime: fix behaviour of Sys.argv (Tomohiro Matsuyama)
+* Runtime: fix behavior of Sys.argv (Tomohiro Matsuyama)
 * Runtime: fix caml_js_meth_call
 * Compiler: fix assert false when deadcode is off
 * Compiler: fix compilation of Js.debugger
@@ -1013,7 +1013,7 @@ Runtime: fix caml_read_file_content
 * Compiler: allow to embed directory with -file dir_name=ext1,ext2:dest_path
 * Compiler: can now output embedded files in a different js file
 * Lib: js_of_ocaml.graphics
-* Lib: Js.Unsafe.expr to embed JavasScript expression
+* Lib: Js.Unsafe.expr to embed JavaScript expression
   to be used instead of Js.Unsafe.variable (or eval_string)
 * Lib: Sys_js.js_of_ocaml_version && Sys_js.file_content
 * OCamlbuild plugin: Add the OASIS support, document the API and add the tags
@@ -1022,7 +1022,7 @@ Runtime: fix caml_read_file_content
 
 ## BugFixes
 * Syntax: Better type constraint (#84)
-* Compiler: caml_failwith primitive was sometime missing (#147)
+* Compiler: caml_failwith primitive was sometimes missing (#147)
 * Compiler: variable names used outside a program were
   not marked as reserved (#146)
 * Lib: fix WebGl interface
@@ -1046,7 +1046,7 @@ Runtime: fix caml_read_file_content
   (by Hugo Heuzard)
 * Compiler: improve missing primitives & reserved name detection
   (by Hugo Heuzard)
-* Compiler: static evaluation of constant ("staticeval" optimisation)
+* Compiler: static evaluation of constant ("staticeval" optimization)
   (by Hugo Heuzard)
 * Compiler: share constants (by Hugo Heuzard)
 * Compiler: alias primitives (by Hugo Heuzard)

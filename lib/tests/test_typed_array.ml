@@ -116,11 +116,11 @@ let test : type a b c. (a, b, c) Setup.t -> b array -> unit =
   let a1 = ba_of_array setup a0 in
 
   let a2 = from_genarray (type_of_setup setup) a1 in
-  if not (array_of_ta setup a2 = a0) then print_endline "`a2` doesnt match `a0`";
+  if not (array_of_ta setup a2 = a0) then print_endline "`a2` doesn't match `a0`";
   if not (ta_type_is_correct setup a2) then print_endline "corrupted typedArray type";
 
   let a3 = to_genarray a2 in
-  if not (array_of_ba a3 = a0) then print_endline "`a3` doesnt match `a0`";
+  if not (array_of_ba a3 = a0) then print_endline "`a3` doesn't match `a0`";
   if not (kind_field_is_correct setup a3) then print_endline "corrupted `kind`";
   ()
 

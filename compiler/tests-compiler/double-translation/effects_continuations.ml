@@ -59,7 +59,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
 
          (* Two continuation functions are created. One to bind [ic] before
             entering the loop, and one for the loop. We use a dummy argument
-            to go back to the begining of the loop if [b] is false *)
+            to go back to the beginning of the loop if [b] is false *)
          let loop1 b =
            let all = ref [] in
            let ic = open_in "/static/examples.ml" in

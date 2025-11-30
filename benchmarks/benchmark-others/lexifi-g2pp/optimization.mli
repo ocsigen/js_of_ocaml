@@ -39,7 +39,7 @@ module DE:
     (** Implementation based on Differential Evolution - A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces,
         Rainer Storn and Kenneth Price.
         Implemented srategies is a mixture of DE/rand/1/bin and DE/best/1/bin. The mutatant is lambda *. DE/rand/1/bin +. (1. -. lambda) *. DE/best/1/bin
-        where lambda is randomly choosen for each generation.
+        where lambda is randomly chosen for each generation.
      *)
     sig
       type t
@@ -62,7 +62,7 @@ type 'a calibration_result =
     cr_calibrated_prices: float array;
   }
   (** General calibration result. It contains the model parameters of type ['a]
-  and some optional additional informations:
+  and some optional additional information:
 
    - [cr_parameters]. The optimal model parameter set
 

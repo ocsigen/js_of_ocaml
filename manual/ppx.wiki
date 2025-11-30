@@ -72,7 +72,7 @@ default semantic.
 Attributes can be one of [readwrite], [readonly], [writeonly],
 [optdef].
 
-[self] can be any identifier and will be bind
+[self] can be any identifier and will be bound
 to [this] in javascript.
 
 In this case, the object has the following type:

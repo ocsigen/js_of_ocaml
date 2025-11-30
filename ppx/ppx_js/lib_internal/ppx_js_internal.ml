@@ -605,7 +605,7 @@ let preprocess_literal_object mappper fields :
     | _, "readonly" -> Some `Readonly
     | _, "readwrite" -> Some `Readwrite
     | false, _ -> None
-    | true, _ -> Some (`Unkown x)
+    | true, _ -> Some (`Unknown x)
   in
   let jsoo_attributes =
     filter_map (fun { attr_name = { txt; _ }; attr_payload = _; attr_loc = _ } ->
@@ -624,8 +624,8 @@ let preprocess_literal_object mappper fields :
           | (Immutable | Mutable), [ `Optdef ] -> `Optdef
           | (Immutable | Mutable), [ `Writeonly ] -> `Writeonly
           | (Immutable | Mutable), [ `Readwrite ] -> `Readwrite
-          | (Immutable | Mutable), [ `Unkown s ] ->
-              raise_errorf ~loc:exp.pcf_loc "Unkown jsoo attribute ([@@%s])." s
+          | (Immutable | Mutable), [ `Unknown s ] ->
+              raise_errorf ~loc:exp.pcf_loc "Unknown jsoo attribute ([@@%s])." s
           | Mutable, [ `Readonly ] ->
               raise_errorf ~loc:exp.pcf_loc "A mutable field cannot be readonly."
           | _, _ :: _ :: _ -> raise_errorf ~loc:exp.pcf_loc "Too many attributes."

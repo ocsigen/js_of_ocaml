@@ -42,7 +42,7 @@ let register ~name ~content ~fragments =
   if String.Hashtbl.mem tbl name
   then
     failwith
-      (Printf.sprintf "The builtin runtime file %S was registered multiple time" name);
+      (Printf.sprintf "The builtin runtime file %S was registered multiple times" name);
   String.Hashtbl.add tbl name t;
   t
 

@@ -326,7 +326,7 @@ type constant =
   | Int of Targetint.t
   | Int32 of Int32.t
   | Int64 of Int64.t
-  | NativeInt of Int32.t (* Native int are 32bit on all known backend *)
+  | NativeInt of Int32.t (* Native ints are 32bit on all known backends *)
   | Tuple of int * constant array * array_or_not
 
 module Constant = struct

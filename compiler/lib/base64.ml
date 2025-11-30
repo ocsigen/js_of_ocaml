@@ -53,7 +53,7 @@ let none = -1
 let make_alphabet alphabet =
   if String.length alphabet <> 64 then invalid_arg "Length of alphabet must be 64";
   if String.contains alphabet '='
-  then invalid_arg "Alphabet can not contain padding character";
+  then invalid_arg "Alphabet cannot contain padding character";
   let emap = Array.init (String.length alphabet) ~f:(fun i -> Char.code alphabet.[i]) in
   let dmap = Array.make 256 none in
   String.iteri ~f:(fun idx chr -> dmap.(Char.code chr) <- idx) alphabet;
@@ -185,9 +185,9 @@ let decode_sub ?(pad = true) { dmap; _ } ?(off = 0) ?len input =
           with Out_of_bounds -> padding
     in
     let set_be_uint16 t off v =
-      (* can not write 2 bytes. *)
+      (* cannot write 2 bytes. *)
       if off < 0 || off + 1 > Bytes.length t
-      then () (* can not write 1 byte but can write 1 byte *)
+      then () (* cannot write 1 byte but can write 1 byte *)
       else if off < 0 || off + 2 > Bytes.length t
       then unsafe_set_uint8 t off (v lsr 8) (* can write 2 bytes. *)
       else unsafe_set_be_uint16 t off v

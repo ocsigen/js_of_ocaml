@@ -590,7 +590,7 @@ fun () ->
 
 [%%expect {|
 Line _, characters 5-37:
-Error: Unkown jsoo attribute ([@@jsoo.wrong]).
+Error: Unknown jsoo attribute ([@@jsoo.wrong]).
 |}]
 
 ;;

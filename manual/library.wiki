@@ -119,12 +119,12 @@ You can call this function as if it was an OCaml function, as the
 Javascript function is appropriately wrapped by the system.
 
 Refer to <<a_manual chapter="linker" |the linker manual>>
-to link your program with javascript stubs.
+to link your program with JavaScript stubs.
 
 == IO ==
 
-The <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Json>> module allows to marshal and unmarshal the
-javascript representation of OCaml values into the corresponding JSON
+The <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Json>> module allows one to marshal and unmarshal the
+JavaScript representation of OCaml values into the corresponding JSON
 string. The unmarshaling is unsafe in the same way the OCaml
 {{{Marshal.from_string}}} function is.
 
@@ -132,8 +132,8 @@ Type-safe unmarshaling may be achieved with the
 {{{deriving}}} library using either the optional {{{Json}}}
 class or the {{{Pickle}}} class.
 
-* The {{{Json}}} class use a Json as external representation and do
+* The {{{Json}}} class uses a Json as external representation and does
   not preserve potential sharings in the data representation. See
   <<a_api subproject="js_of_ocaml"|module Deriving_Json>> for more information.
-* The {{{Pickle}}} class use a binary format as external
-  representation and preserve sharings in the data representation.
+* The {{{Pickle}}} class uses a binary format as external
+  representation and preserves sharings in the data representation.

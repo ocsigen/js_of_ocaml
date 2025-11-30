@@ -88,7 +88,7 @@ class type my_js_type = object
 
   (* method or property starting with a capital letter can be prepend
      with an underscore. *)
-  method _Array : ... (* to access the JavasScript property or method Array *)
+  method _Array : ... (* to access the JavaScript property or method Array *)
 
   (* Define two methods with different types, that translate to
      the same JavaScript method. *)
@@ -111,7 +111,7 @@ end
 
 For example if the JS class is used to define three constants {{{thelib.Theclass.VALUEA}}}, {{{thelib.Theclass.VALUEB}}}, {{{thelib.Theclass.VALUEC}}},
 
-Since ocaml doesn't allows method name to start with capitalised letter, we can add an {{{_}}}
+Since OCaml doesn't allow method names to start with capitalized letters, we can add an {{{_}}}
 
 write in .ml and .mli:
 
@@ -197,7 +197,7 @@ let cast_node (x:dom_or_string Js.t) : Dom.node Js.t Js.opt =
 
 == Check availability of method
 
-It is frequent that some method are not to be implemented in some browser.
+It is frequent that some methods are not implemented in some browsers.
 
 To check the presence of method {{{met}}}:
 
