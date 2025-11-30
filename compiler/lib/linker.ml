@@ -323,7 +323,7 @@ module Fragment = struct
                         then Format.eprintf "Duplicated target_env in %s\n" (loc pi);
                         { fragment with fragment_target = Target_env.of_string name }
                     | (`Ifnot v | `If v) when not (StringMap.mem v allowed_flags) ->
-                        Format.eprintf "Unkown flag %S in %s\n" v (loc pi);
+                        Format.eprintf "Unknown flag %S in %s\n" v (loc pi);
                         fragment
                     | (`Ifnot v | `If v) as i ->
                         if StringMap.mem v fragment.conditions

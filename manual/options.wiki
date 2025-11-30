@@ -28,9 +28,9 @@
 
 =Optimizations
  * For Debugging: {{{--pretty --no-inline --debug-info}}} + eventually {{{--disable staticeval --disable share}}}
- * For Production: {{{--opt 3}}}. It minimize the generated javascript by applying
+ * For Production: {{{--opt 3}}}. It minimizes the generated javascript by applying
    various optimizations until a fix-point is reached
-==List of option to {{{--disable}}} or {{{--enable}}}
+==List of options to {{{--disable}}} or {{{--enable}}}
 
 |= Option name   |= Default |= Description                           |
 | pretty         | false    | Pretty print the javascript output     |

@@ -49,9 +49,9 @@ let%expect_test _ =
   let bt () = Printf.printf "IN\n" in
   let at () = Printf.printf "OUT\n" in
   let foo () =
-    Printf.printf "peform E\n";
+    Printf.printf "perform E\n";
     perform E;
-    Printf.printf "peform E\n";
+    Printf.printf "perform E\n";
     perform E;
     Printf.printf "done\n"
   in
@@ -71,11 +71,11 @@ let%expect_test _ =
   [%expect
     {|
     IN
-    peform E
+    perform E
     OUT
     handled E
     IN
-    peform E
+    perform E
     OUT
     handled E
     IN

@@ -189,7 +189,7 @@ type info =
 type context =
   { profile : Profile.t  (** Aggressive inlining? *)
   ; p : program
-  ; live_vars : int array  (** Occurence count of all variables *)
+  ; live_vars : int array  (** Occurrence count of all variables *)
   ; inline_count : int ref  (** Inlining statistics *)
   ; env : info Var.Map.t  (** Functions that are candidate for inlining *)
   ; in_loop : bool Lazy.t  (** Whether the current block is in a loop *)

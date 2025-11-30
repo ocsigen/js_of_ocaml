@@ -1,7 +1,7 @@
 = Writing Wasm primitives
 
 User-defined primitives can be implemented by writing Wasm modules.
-This modules (".wat" extension for text modules and ".wasm" extension
+These modules (".wat" extension for text modules and ".wasm" extension
 for binary modules) can be passed on the command-line.
 With dune, you can use the option
 {{{(wasm_of_ocaml (wasm_files ...))}}} to specify these runtime files.

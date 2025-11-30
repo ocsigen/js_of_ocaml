@@ -112,7 +112,7 @@ function caml_bytes_unsafe_set(s, i, c) {
   if (s.t !== 4 /* ARRAY */) {
     if (i === s.c.length) {
       s.c += String.fromCharCode(c);
-      if (i + 1 === s.l) s.t = 0; /*BYTES | UNKOWN*/
+      if (i + 1 === s.l) s.t = 0; /*BYTES | UNKNOWN*/
       return 0;
     }
     caml_convert_bytes_to_array(s);
@@ -314,7 +314,7 @@ class MlBytes {
         // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         caml_convert_string_to_bytes(this);
       // fallthrough
-      case 0 /*BYTES | UNKOWN*/:
+      case 0 /*BYTES | UNKNOWN*/:
         if (jsoo_is_ascii(this.c)) this.t = 9; /*BYTES | ASCII*/
         else this.t = 8; /*BYTES | NOT_ASCII*/
         return this.c;
@@ -339,7 +339,7 @@ function caml_convert_string_to_bytes(s) {
   /* Assumes not BYTES */
   if (s.t === 2 /* PARTIAL */) s.c += caml_str_repeat(s.l - s.c.length, "\0");
   else s.c = caml_sub_uint8_array_to_jsbytes(s.c, 0, s.c.length);
-  s.t = 0; /*BYTES | UNKOWN*/
+  s.t = 0; /*BYTES | UNKNOWN*/
 }
 
 //Provides: caml_convert_bytes_to_array
@@ -509,7 +509,7 @@ function caml_fill_bytes(s, i, l, c) {
         s.t = 2; /* PARTIAL */
       } else {
         s.c = caml_str_repeat(l, String.fromCharCode(c));
-        s.t = l === s.l ? 0 /* BYTES | UNKOWN */ : 2; /* PARTIAL */
+        s.t = l === s.l ? 0 /* BYTES | UNKNOWN */ : 2; /* PARTIAL */
       }
     } else {
       if (s.t !== 4 /* ARRAY */) caml_convert_bytes_to_array(s);
@@ -533,7 +533,7 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
         : i1 === 0 && s1.c.length === len
           ? s1.c
           : s1.c.slice(i1, i1 + len);
-    s2.t = s2.c.length === s2.l ? 0 /* BYTES | UNKOWN */ : 2; /* PARTIAL */
+    s2.t = s2.c.length === s2.l ? 0 /* BYTES | UNKNOWN */ : 2; /* PARTIAL */
   } else if (s2.t === 2 /* PARTIAL */ && i2 === s2.c.length) {
     s2.c +=
       s1.t === 4 /* ARRAY */
@@ -541,7 +541,7 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
         : i1 === 0 && s1.c.length === len
           ? s1.c
           : s1.c.slice(i1, i1 + len);
-    s2.t = s2.c.length === s2.l ? 0 /* BYTES | UNKOWN */ : 2; /* PARTIAL */
+    s2.t = s2.c.length === s2.l ? 0 /* BYTES | UNKNOWN */ : 2; /* PARTIAL */
   } else {
     if (s2.t !== 4 /* ARRAY */) caml_convert_bytes_to_array(s2);
     var c1 = s1.c,

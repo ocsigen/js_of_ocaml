@@ -448,7 +448,7 @@ let program' (module Strategy : Strategy) p =
   let has_free_var = not (Var.Set.is_empty freevar) in
   let unallocated_names = ref Var.Set.empty in
   let names = Strategy.allocate_variables state ~count in
-  (* ignore the choosen name for escaping/free [V _] variables *)
+  (* ignore the chosen name for escaping/free [V _] variables *)
   Var.Set.iter (fun x -> names.(Var.idx x) <- "") freevar;
   let ident =
     if Config.Flag.stable_var ()

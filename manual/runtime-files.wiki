@@ -1,6 +1,6 @@
 = Runtime files =
 
-For compiling a bytecode executable to JavaScript, one often need to pass
+For compiling a bytecode executable to JavaScript, one often needs to pass
 JavaScript runtime files for some OCaml libraries used by the
 executable. Tracking the required runtime files is done using the de-facto
 standard for library management in OCaml, Findlib.
@@ -23,7 +23,7 @@ For example, for **base** and **time_now**
   ~/.opam/4.14.0/lib/time_now/runtime.js
 }}}
 
-Here is minimal example of manually compiling a single ml file program:
+Here is a minimal example of manually compiling a single ml file program:
 {{{
   $ export LIBS=base,time_now
   $ ocamlfind ocamlc -package $LIBS -linkpkg main.ml -o main.byte
@@ -33,7 +33,7 @@ Here is minimal example of manually compiling a single ml file program:
 == Declaring runtime JavaScript files inside a META file
 
 The **jsoo_runtime** variable is used to declare one or more runtime files.
-Files must be coma-separated and should be plain names relative to the package directory.
+Files must be comma-separated and should be plain names relative to the package directory.
 
 For example, to declare that **mypackage.sublib** requires the file **mypackage/subdir/runtime.js**
 {{{
@@ -79,7 +79,7 @@ For example, for **base** and **time_now**
 === Declaring runtime JavaScript files inside META files
 
 The content of {{{linkopts(javascript)}}} is given directly to the
-js_of_ocaml compiler.  To be able reference files independently of the
+js_of_ocaml compiler.  To be able to reference files independently of the
 installation path, we rely on js_of_ocaml's findlib support (see Command-Line findlib support below).
 
 For example, to declare that **mypackage.sublib** requires the file **mypackage/subdir/runtime.js**
@@ -109,7 +109,7 @@ For example, if findlib install all libraries inside ${LIBDIR}:
 
 == Compatibility
 
-**dune** generate META files that are usable with the old deprecated
+**dune** generates META files that are usable with the old deprecated
 way.  However, it only uses **jsoo_runtime** to look up information.
 
 **js_of_ocaml-ocamlbuild** uses **jsoo_runtime** by default starting with version 5.0.

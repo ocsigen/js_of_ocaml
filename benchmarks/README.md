@@ -4,7 +4,7 @@ These benchmarks are used to generate charts such as the ones available at https
 
 ## Quick start
 ```
-# build/copy additionnal bytecode executable inside `./programs/`
+# build/copy additional bytecode executable inside `./programs/`
 # used when generating the size report.
 make copy-extra-bc
 

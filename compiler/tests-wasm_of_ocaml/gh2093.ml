@@ -49,9 +49,9 @@ let () =
   let bt () = Printf.printf "IN\n" in
   let at () = Printf.printf "OUT\n" in
   let foo () =
-    Printf.printf "peform E\n";
+    Printf.printf "perform E\n";
     perform E;
-    Printf.printf "peform E\n";
+    Printf.printf "perform E\n";
     perform E;
     Printf.printf "done\n"
   in

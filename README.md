@@ -12,7 +12,7 @@ Node.js.
 - It is easy to install and use as it works with an existing installation of
   OCaml, with no need to recompile any library.
 - It comes with bindings for a large part of the browser APIs.
-- According to our benchmarks, the generated programs runs typically faster than
+- According to our benchmarks, the generated programs run typically faster than
   with the OCaml bytecode interpreter.
 - We believe this compiler will prove much easier to maintain than a retargeted
   OCaml compiler, as the bytecode provides a very stable API.
@@ -24,8 +24,8 @@ Js_of_ocaml is composed of multiple packages:
 - js_of_ocaml-ppx_deriving_json
 - js_of_ocaml-lwt, lwt support.
 - js_of_ocaml-tyxml, tyxml support.
-- js_of_ocaml-toplevel, lib and tools to build an ocaml toplevel to
-  javascript.
+- js_of_ocaml-toplevel, lib and tools to build an OCaml toplevel to
+  JavaScript.
 - wasm_of_ocaml-compiler, [the Wasm_of_ocaml compiler](README_wasm_of_ocaml.md).
 
 ## Requirements
@@ -105,12 +105,12 @@ JavaScript, and floats are not boxed. As a consequence, marshalling, polymorphic
 comparison, and hashing functions can yield results different from usual:
 
 - marshalling floats might generate different output. Such output should not be
-  unmarshalled using the standard ocaml runtime (native or bytecode).
+  unmarshalled using the standard OCaml runtime (native or bytecode).
 - the polymorphic hash function will not give the same results on datastructures
   containing floats;
 - these functions may be more prone to stack overflow.
 
-| OCaml | javascript |
+| OCaml | JavaScript |
 | ------------- | ------------- |
 | int   | number (32bit int)  |
 | int32 | number (32bit int)  |
