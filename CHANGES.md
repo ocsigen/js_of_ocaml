@@ -11,10 +11,11 @@
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)
 * Compiler: fix inlining (#2107)
-* Runtime/wasm: fix Unix.times (#2096)
 * Ppx: disable spurious warning for unused "self" in object literal (#2128)
 * Ppx: fix labelled arguments for methods (#2126)
+* Runtime/wasm: fix Unix.times (#2096)
 * Runtime: runtime with target-env=browser should not rely on "require(..)" (#2129)
+* Runtime: fix fake filesystem with path containing special regexp chars. (#2132)   
 
 # 6.2.0 (2025-07-30) - Lille
 
