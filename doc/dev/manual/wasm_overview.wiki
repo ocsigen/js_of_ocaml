@@ -25,8 +25,8 @@ Then, run the {{{wasm_of_ocaml}}} compiler to produce Wasm code:
 {{{
       wasm_of_ocaml cubes.byte
 }}}
-This produces a Javascript loading script {{{cube.js}} and a directory
-{{{cube.assets}} containing the Wasm code.
+This produces a Javascript loading script {{{cubes.js}}} and a directory
+{{{cubes.assets}}} containing the Wasm code.
 
 === with dune ===
   Dune has native support for wasm_of_ocaml (starting with dune 3.17.0).
@@ -55,4 +55,4 @@ The CPS transformation is not the default since the generated code is slower, la
 
 == Binding with Javascript libraries ==
 
-Js_of_ocaml lets the user bind their code with Javascript libraries by linking in {{{.js}}} files. Similarly, wasm_of_ocaml allows to link in Wasm modules ({{{.wasm}}} or {{{.wat}}} files): see [[wasm_runtime|Writing Wasm primitives]]. If a js_of_ocaml projects uses some {{{external}}} primitives defined in companion {{{.js}}} files, it will need the same primitives to be implemented in Wasm module in order to be build with wasm_of_ocaml.
+Js_of_ocaml lets the user bind their code with Javascript libraries by linking in {{{.js}}} files. Similarly, wasm_of_ocaml allows one to link in Wasm modules ({{{.wasm}}} or {{{.wat}}} files): see [[wasm_runtime|Writing Wasm primitives]]. If a js_of_ocaml project uses some {{{external}}} primitives defined in companion {{{.js}}} files, it will need the same primitives to be implemented in Wasm modules in order to be built with wasm_of_ocaml.

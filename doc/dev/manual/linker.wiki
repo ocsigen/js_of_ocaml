@@ -16,7 +16,7 @@ discover runtime files.
 == Provide your own JavaScript
 You may need to provide extra JavaScript files to provide missing primitives or to override existing ones.
 Primitive code must be annotated with the primitive name and primitive requirements.
-The linker uses these information to only include the primitive actually used in the program and to perform better deadcode elimination.
+The linker uses this information to only include the primitives actually used in the program and to perform better deadcode elimination.
 
 ===Syntax
 {{{
@@ -37,4 +37,4 @@ function primitive_name(..){
  * **{{{//Requires}}}** is used if other primitives need to be loaded first
  * **version_constraint** looks like {{{< 4.12.0}}}
  * **{{{//Version}}}** is optional and is rarely used
-All JavaScript code following a **{{{//Provides}}}** annotation is associated to this annotation, until the next **{{{//Provides}}}** annotation.
+All JavaScript code following a **{{{//Provides}}}** annotation is associated with this annotation, until the next **{{{//Provides}}}** annotation.

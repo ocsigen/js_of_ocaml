@@ -6,7 +6,7 @@ Besides, all tail calls are optimized when you set the flag
 {{{--enable=effects}}}, at the cost of some performance degradation.
 
 === Self tail recursive
-Self tail recursive function are compiled into a loop.
+Self tail recursive functions are compiled into a loop.
 
 ==== OCaml
 <<code language="ocaml"|
@@ -74,7 +74,7 @@ function odd(n){return caml_trampoline(odd$0(0,n))}
 >>
 
 
-== Examples of pattern not optimized
+== Examples of patterns not optimized
 
 Recursive function where the tail call is made inside an intermediate function.
 <<code language="ocaml"|
@@ -94,6 +94,6 @@ let bind x f =
   | Some x -> f x
 >>
 
-Note that in the future, more tail call optimizations could be perform with function specialization and
+Note that in the future, more tail call optimizations could be performed with function specialization and
 better inlining.
 

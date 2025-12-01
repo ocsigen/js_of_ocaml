@@ -1,4 +1,4 @@
-= Ppx deriver for serializing OCaml value to Json
+= Ppx deriver for serializing OCaml values to Json
 
 The deriver is provided by the js_of_ocaml-ppx_deriving_json opam package.
 
