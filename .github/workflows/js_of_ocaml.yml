@@ -139,10 +139,6 @@ jobs:
         with:
           token: ${{ github.token }}
 
-      - name: Install faked binaryen-bin package
-        # It's faster to use a cached version
-        run: opam install --fake binaryen-bin
-
       - run: opam install . --best-effort --solver builtin-mccs+glpk
         if: ${{ matrix.skip-test }}
 
