@@ -150,7 +150,7 @@
   menhirLib
   menhirSdk
   (yojson (>= 2.1))
-  binaryen-bin)
+  conf-binaryen)
  (depopts
   ocamlfind)
  (conflicts

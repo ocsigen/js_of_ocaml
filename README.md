@@ -30,9 +30,11 @@ Js_of_ocaml is composed of multiple packages:
 
 ## Requirements
 
-See
+See the
 [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam)
-file for version constraints.
+files for version constraints.
+
+wasm_of_ocaml-compiler additionally depends on a system installation of binaryen (version 119 or later)
 
 ## Supported engines
 

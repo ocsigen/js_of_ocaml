@@ -22,7 +22,6 @@ ENV BINARYEN=binaryen-$BINARYEN_VERSION
 RUN curl -Lq https://github.com/WebAssembly/binaryen/releases/download/$BINARYEN_VERSION/$BINARYEN-x86_64-linux.tar.gz \
   | tar zxf -
 ENV PATH="/bench-dir/$BINARYEN/bin:$PATH"
-RUN opam install --fake binaryen-bin
 
 # Jane Street opam packages
 RUN mkdir janestreet \
