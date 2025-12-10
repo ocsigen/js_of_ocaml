@@ -127,6 +127,8 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          opam-repositories: |
+            default: https://github.com/hannesm/opam-repository.git#archival-20260101
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other

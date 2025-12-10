@@ -21,6 +21,8 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "5.2"
+          opam-repositories: |
+            default: https://github.com/hannesm/opam-repository.git#archival-20260101
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
         with:
@@ -39,6 +41,8 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "5.2"
+          opam-repositories: |
+            default: https://github.com/hannesm/opam-repository.git#archival-20260101
       - uses: ocaml/setup-ocaml/lint-fmt@v3
 
   lint-runtime:
