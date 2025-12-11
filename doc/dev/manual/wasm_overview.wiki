@@ -12,6 +12,9 @@ The compiler is provided by the wasm_of_ocaml-compiler package. The <<a_manual c
 The easiest way to install wasm_of_ocaml is to use opam.
 {{{opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt}}}
 
+Binaryen version 119 or later is required. The opam command above will
+install it automatically if needed.
+
 == Usage ==
 
 Your program must first be compiled using the OCaml bytecode compiler
