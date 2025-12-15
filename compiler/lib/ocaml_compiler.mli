@@ -76,14 +76,14 @@ end
 module Compilation_unit : sig
   type t = Cmo_format.compunit
 
-  val name_as_string : t -> string
+  val full_path_as_string : t -> string
 end
 [@@if (not oxcaml) && ocaml_version >= (5, 2, 0)]
 
 module Compilation_unit : sig
   type t = Compilation_unit.t
 
-  val name_as_string : t -> string
+  val full_path_as_string : t -> string
 end
 [@@if oxcaml]
 
