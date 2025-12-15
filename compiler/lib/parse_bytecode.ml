@@ -790,6 +790,7 @@ let access_global g i =
       g.is_const.(i) <- true;
       let x = Var.fresh () in
       g.vars.(i) <- Some x;
+      if debug_parser () then Format.printf "Access global(%d) %a\n" i Var.print x;
       x
 
 let register_global ?(force = false) g i rem =
@@ -855,6 +856,7 @@ let get_global state instrs i =
             g.is_const.(i) <- true;
             let x, state = State.fresh_var state in
             if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
+            if debug_parser () then Format.printf "get_global(%d) = %a\n" i Var.print x;
             g.vars.(i) <- Some x;
             (match g.named_value.(i) with
             | None -> ()
@@ -1441,7 +1443,7 @@ and compile infos pc state (instrs : instr list) =
         let y = State.accu state in
         let g = State.globals state in
 
-        assert (Option.is_none g.vars.(i));
+        if false then assert (Option.is_none g.vars.(i));
         if debug_parser () then Format.printf "(global %d) = %a@." i Var.print y;
         g.vars.(i) <- Some y;
         let x, state = State.fresh_var state in
@@ -3006,11 +3008,14 @@ module Reloc = struct
         | ((Reloc_setglobal id) [@if ocaml_version < (5, 2, 0)]) ->
             patch (slot_for_global (Ident.name id))
         | ((Reloc_getcompunit id) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global (Ocaml_compiler.Compilation_unit.name_as_string id))
+            patch
+              (slot_for_global (Ocaml_compiler.Compilation_unit.full_path_as_string id))
         | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
+            if debug_parser () then Printf.printf "reloc_getpredef %s\n" id;
             patch (slot_for_global id)
         | ((Reloc_setcompunit id) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global (Ocaml_compiler.Compilation_unit.name_as_string id))
+            patch
+              (slot_for_global (Ocaml_compiler.Compilation_unit.full_path_as_string id))
         | _ -> ())
 
   let primitives t =

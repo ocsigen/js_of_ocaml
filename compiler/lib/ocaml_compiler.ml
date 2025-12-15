@@ -115,7 +115,7 @@ let is_module_in_summary ident summary =
 module Compilation_unit = struct
   type t = Cmo_format.compunit
 
-  let name_as_string (Compunit x : t) = x
+  let full_path_as_string (Compunit x : t) = x
 
   let of_string x : t = Compunit x
 end
@@ -230,7 +230,7 @@ module Symtable = struct
 
     let to_local = function
       | Symtable.Global.Glob_compunit x ->
-          Global.Glob_compunit (Compilation_unit.name_as_string x)
+          Global.Glob_compunit (Compilation_unit.full_path_as_string x)
       | Symtable.Global.Glob_predef (Predef_exn x) -> Global.Glob_predef x
 
     let of_local = function
@@ -399,15 +399,15 @@ end
 module Cmo_format = struct
   type t = Cmo_format.compilation_unit_descr
 
-  let name (t : t) = Compilation_unit.name_as_string t.cu_name
+  let name (t : t) = Compilation_unit.full_path_as_string t.cu_name
 
   let requires (t : t) =
-    List.map t.cu_required_compunits ~f:Compilation_unit.name_as_string
+    List.map t.cu_required_compunits ~f:Compilation_unit.full_path_as_string
 
   let provides (t : t) =
     List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
         match reloc with
-        | Reloc_setcompunit u -> Some (Compilation_unit.name_as_string u)
+        | Reloc_setcompunit u -> Some (Compilation_unit.full_path_as_string u)
         | Reloc_getcompunit _ | Reloc_getpredef _ | Reloc_literal _ | Reloc_primitive _ ->
             None)
 
