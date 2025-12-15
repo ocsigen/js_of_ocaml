@@ -3069,7 +3069,7 @@ module Reloc = struct
             patch
               (next
                  (Glob_compunit
-                    (Compunit (Ocaml_compiler.Compilation_unit.name_as_string id))))
+                    (Compunit (Ocaml_compiler.Compilation_unit.full_path_as_string id))))
         | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
             patch (next (Glob_predef (Predef id)))
         | ((Reloc_setcompunit (Compunit id))
@@ -3079,7 +3079,7 @@ module Reloc = struct
             patch
               (next
                  (Glob_compunit
-                    (Compunit (Ocaml_compiler.Compilation_unit.name_as_string id))))
+                    (Compunit (Ocaml_compiler.Compilation_unit.full_path_as_string id))))
         | _ -> ())
 
   let primitives t =
