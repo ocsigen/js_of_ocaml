@@ -3006,11 +3006,13 @@ module Reloc = struct
         | ((Reloc_setglobal id) [@if ocaml_version < (5, 2, 0)]) ->
             patch (slot_for_global (Ident.name id))
         | ((Reloc_getcompunit id) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global (Ocaml_compiler.Compilation_unit.name_as_string id))
+            patch
+              (slot_for_global (Ocaml_compiler.Compilation_unit.full_path_as_string id))
         | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
             patch (slot_for_global id)
         | ((Reloc_setcompunit id) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global (Ocaml_compiler.Compilation_unit.name_as_string id))
+            patch
+              (slot_for_global (Ocaml_compiler.Compilation_unit.full_path_as_string id))
         | _ -> ())
 
   let primitives t =
