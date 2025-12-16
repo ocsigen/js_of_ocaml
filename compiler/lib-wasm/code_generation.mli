@@ -210,3 +210,5 @@ val array_placeholder : Code.Var.t -> expression
 val default_value :
      Wasm_ast.value_type
   -> (Wasm_ast.expression * Wasm_ast.value_type * Wasm_ast.ref_type option) t
+
+val empty_struct : expression
