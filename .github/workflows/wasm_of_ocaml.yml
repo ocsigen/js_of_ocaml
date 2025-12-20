@@ -33,6 +33,8 @@ jobs:
           - false
         all_jane_street_tests:
           - false
+        wasi:
+          - false
         include:
           - os: macos-latest
             os-name: MacOS
@@ -40,6 +42,7 @@ jobs:
             separate_compilation: true
             jane_street_tests: false
             all_jane_street_tests: false
+            wasi: false
           - os: windows-latest
             os-name: Windows
             ocaml-compiler: "5.3"
@@ -53,17 +56,26 @@ jobs:
             separate_compilation: true
             jane_street_tests: true
             all_jane_street_tests: true
+            wasi: false
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-compiler: "5.3"
             separate_compilation: false
             jane_street_tests: true
             all_jane_street_tests: false
+            wasi: false
+          - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-compiler: "5.3"
+            separate_compilation: true
+            jane_street_tests: false
+            all_jane_street_tests: false
+            wasi: true
 
     runs-on: ${{ matrix.os }}
 
     name:
-       ${{ (! matrix.separate_compilation) && 'Whole program / ' || ''}}${{ matrix.ocaml-compiler }} / ${{ matrix.os-name }}${{ matrix.all_jane_street_tests && ' / Jane Street tests' || ''}}
+       ${{ matrix.wasi && 'WASI / ' || '' }}${{ (! matrix.separate_compilation) && 'Whole program / ' || ''}}${{ matrix.ocaml-compiler }} / ${{ matrix.os-name }}${{ matrix.all_jane_street_tests && ' / Jane Street tests' || ''}}
 
     steps:
       - name: Update apt cache
@@ -87,6 +99,54 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: latest
+
+      - name: Set-up Rust toolchain
+        if: matrix.wasi
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Checkout Wasmtime
+        if: matrix.wasi
+        uses: actions/checkout@v4
+        with:
+          repository: bytecodealliance/wasmtime
+          path: wasmtime
+          submodules: true
+
+      - name: Build Wasmtime
+        if: matrix.wasi
+        working-directory: ./wasmtime
+        run: |
+          cargo build
+          echo `pwd`/target/debug >> "$GITHUB_PATH"
+
+      - name: Checkout Virgil
+        if: matrix.wasi
+        uses: actions/checkout@v4
+        with:
+          repository: titzer/virgil
+          path: virgil
+
+      - name: Build Virgil
+        if: matrix.wasi
+        working-directory: ./virgil
+        run: |
+          export PATH=$PATH:`pwd`/bin
+          echo `pwd`/bin >> "$GITHUB_PATH"
+          make
+
+      - name: Checkout Wizard engine
+        if: matrix.wasi
+        uses: actions/checkout@v4
+        with:
+          repository: titzer/wizard-engine
+          path: wizard-engine
+
+      - name: Build Wizard engine
+        if: matrix.wasi
+        working-directory: ./wizard-engine
+        run: |
+          make -j 4
+          echo `pwd`/bin >> "$GITHUB_PATH"
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
@@ -137,7 +197,7 @@ jobs:
           opam install . -t
 
       - name: Run tests
-        if: ${{ matrix.separate_compilation }}
+        if: ${{ matrix.separate_compilation && ! matrix.wasi }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm
 
@@ -146,10 +206,30 @@ jobs:
       # See https://github.com/libuv/libuv/issues/3622
 
       - name: Run tests with CPS effects
-        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
+        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation && ! matrix.wasi }}
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
+
+      - name: Run tests (WASI runtime - node)
+        if: ${{ matrix.wasi }}
+        working-directory: ./wasm_of_ocaml
+        run: opam exec -- dune build @runtest-wasm --profile wasi
+
+      - name: Run tests (WASI runtime - Wizard engine)
+        if: ${{ matrix.wasi }}
+        working-directory: ./wasm_of_ocaml
+        env:
+          WASM_ENGINE: wizard-fast
+        run: opam exec -- dune build @runtest-wasm --profile wasi
+
+      - name: Run tests (WASI runtime - wasmtime)
+        if: ${{ matrix.wasi }}
+        working-directory: ./wasm_of_ocaml
+        env:
+          WASM_ENGINE: wasmtime
+          WASI_FLAGS: --enable exnref
+        run: opam exec -- dune build @runtest-wasm --profile wasi
 
       - name: Run Base tests
         if: matrix.all_jane_street_tests

@@ -56,6 +56,27 @@ one can enable the CPS transformation from {{{js_of_ocaml}}} by passing the
  [[https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md|the JavaScript-Promise Integration extension]].
 The CPS transformation is not the default since the generated code is slower, larger and less readable. On the other hand, the JSPI extension is not yet enabled by default in Web browsers, and performing effects is slower when using this extension.
 
+== WASI support ==
+
+You can produce a WASI binary by running {{{wasm_of_ocaml}}} with the
+{{{--enable wasi}}} flag. At the moment, {{wasm_of_ocaml}} supports
+WASI 0.1. Features from the Sys and Unix modules are available
+whenever they're supported by the WASI API.
+
+The binaries produced by {{{wasm_of_ocaml}}} require the GC and
+exception-handling proposals, which are supported by Node.js, Wasmtime
+(with the {{{-W=all-proposals=y}}} flag), and the Wizard engine (with
+the {{{--ext:gc --ext:exception-handling --ext:legacy-eh}}} flags).
+Wasmtime does not support the legacy Wasm exception-handling
+instructions. To generate a binary that runs with Wasmtime, add the
+{{{--enable exnref}}} flag.
+
+For now, the output remains the same as without the {{{--enable
+wasi}}} flag: a JavaScript file {{{foo.js}}} and a directory
+{{{foo.assets}}} containing the Wasm code {{{code.wasm}}}. The
+JavaScript file can be used to run the WASI binary with {{{node}}},
+while the Wasm code can be run directly by other Wasm engines.
+
 == Binding with Javascript libraries ==
 
 Js_of_ocaml lets the user bind their code with Javascript libraries by linking in {{{.js}}} files. Similarly, wasm_of_ocaml allows one to link in Wasm modules ({{{.wasm}}} or {{{.wat}}} files): see [[wasm_runtime|Writing Wasm primitives]]. If a js_of_ocaml project uses some {{{external}}} primitives defined in companion {{{.js}}} files, it will need the same primitives to be implemented in Wasm modules in order to be built with wasm_of_ocaml.
