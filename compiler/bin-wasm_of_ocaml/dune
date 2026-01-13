@@ -34,15 +34,3 @@
   (with-stdout-to
    %{target}
    (run %{deps}))))
-
-(rule
- (targets wasm_of_ocaml.1)
- (action
-  (with-stdout-to
-   %{targets}
-   (run %{bin:wasm_of_ocaml} --help=groff))))
-
-(install
- (section man)
- (package wasm_of_ocaml-compiler)
- (files wasm_of_ocaml.1))
