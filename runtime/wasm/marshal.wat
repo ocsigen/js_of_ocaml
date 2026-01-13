@@ -804,7 +804,7 @@
    (func (export "caml_marshal_data_size")
       (param $buf (ref eq)) (param $ofs (ref eq)) (result (ref eq))
       (local $s (ref $intern_state))
-      (local $magic i32) (local $header_len i32)
+      (local $magic i32) (local $header_len i32) (local $data_len i32)
       (local.set $s
          (call $get_intern_state
             (ref.cast (ref $bytes) (local.get $buf))
@@ -814,13 +814,14 @@
          (then (call $too_large (global.get $marshal_data_size))))
       (if (i32.eq (local.get $magic) (global.get $Intext_magic_number_small))
          (then
-            (local.set $header_len (i32.const 20)))
+            (local.set $header_len (i32.const 20))
+            (local.set $data_len (call $read32 (local.get $s))))
       (else (if (i32.eq (local.get $magic)
                    (global.get $Intext_magic_number_compressed))
          (then
             (local.set $header_len
                (i32.and (call $read8u (local.get $s)) (i32.const 0x3F)))
-            (drop (call $readvlq (local.get $s)))
+            (local.set $data_len (call $readvlq (local.get $s)))
             (if (struct.get $intern_state $overflow (local.get $s))
                (then (call $too_large (global.get $marshal_data_size)))))
          (else
@@ -829,7 +830,7 @@
          (i32.add
             (i32.sub (local.get $header_len)
                (global.get $caml_marshal_header_size))
-            (call $read32 (local.get $s)))))
+            (local.get $data_len))))
 
    (type $output_block
       (struct

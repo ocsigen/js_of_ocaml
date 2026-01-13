@@ -17,7 +17,8 @@
 * Ppx: fix labelled arguments for methods (#2126)
 * Runtime/wasm: fix Unix.times (#2096)
 * Runtime: runtime with target-env=browser should not rely on "require(..)" (#2129)
-* Runtime: fix fake filesystem with path containing special regexp chars. (#2132)   
+* Runtime: fix fake filesystem with path containing special regexp chars. (#2132)
+* Runtime/wasm: fix unmarshalling of compressed data (#2141)
 
 # 6.2.0 (2025-07-30) - Lille
 
