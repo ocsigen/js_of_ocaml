@@ -46,4 +46,9 @@ build: [
     "@install"
     "@doc" {with-doc}
   ]
+  ["cmdliner" "install" "tool-support"
+              "--update-opam-install=%{_:name}%.install"
+              "_build/install/default/bin/js_of_ocaml" {os-family != "windows"}
+              "_build/install/default/bin/js_of_ocaml.exe" {os-family = "windows"}
+              "_build/cmdliner-install"]
 ]
