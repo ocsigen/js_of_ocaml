@@ -33,3 +33,22 @@
  (section lib)
  (package js_of_ocaml-compiler)
  (files runtime.js))
+
+(rule
+ (target
+  (dir cmdliner-support))
+ (deps js_of_ocaml.exe)
+ (action
+  (ignore-stdout
+   (run
+    cmdliner
+    install
+    tool-support
+    ./js_of_ocaml.exe:js_of_ocaml
+    cmdliner-support))))
+
+(install
+ (section share_root)
+ (package js_of_ocaml-compiler)
+ (dirs
+  (cmdliner-support/share as .)))
