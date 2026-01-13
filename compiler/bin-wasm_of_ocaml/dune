@@ -34,3 +34,22 @@
   (with-stdout-to
    %{target}
    (run %{deps}))))
+
+(rule
+ (target
+  (dir cmdliner-support))
+ (deps wasm_of_ocaml.exe)
+ (action
+  (ignore-stdout
+   (run
+    cmdliner
+    install
+    tool-support
+    ./wasm_of_ocaml.exe:wasm_of_ocaml
+    cmdliner-support))))
+
+(install
+ (section share_root)
+ (package wasm_of_ocaml-compiler)
+ (dirs
+  (cmdliner-support/share as .)))
