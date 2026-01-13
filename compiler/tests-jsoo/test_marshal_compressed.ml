@@ -24,7 +24,9 @@ let%expect_test _ =
   in
   let s =
     if Compression.compression_supported
-    then Marshal.from_string data 0
+    then (
+      assert (Marshal.data_size (Bytes.of_string data) 0 = 19);
+      Marshal.from_string data 0)
     else String.make 10000 'c'
   in
   Printf.printf "%s ... (%d)\n" (String.sub s 0 20) (String.length s);
