@@ -257,7 +257,7 @@ let options =
     let doc = "Register [$(docv)] to the pseudo filesystem." in
     Arg.(
       value
-      & opt_all filepath [] 
+      & opt_all filepath []
       & info [ "file" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let fs_external =

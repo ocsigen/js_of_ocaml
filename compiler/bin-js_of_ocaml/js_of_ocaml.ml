@@ -33,14 +33,23 @@ let () =
         | 'a' .. 'z' | 'A' .. 'Z' | '-' -> true
         | _ -> false)
     in
-    match Array.to_list argv with
-    | exe :: maybe_command :: rest ->
-        if like_command maybe_command || like_arg maybe_command
-        then argv
-        else
-          (* Keep compatibility with js_of_ocaml < 3.6.0 *)
-          Array.of_list (exe :: Cmdliner.Cmd.name Compile.command :: maybe_command :: rest)
-    | _ -> argv
+    let prefix, rest =
+      match Array.to_list argv with
+      | exe :: ("--__complete" as comp) :: rest -> [ exe; comp ], rest
+      | exe :: rest -> [ exe ], rest
+      | [] -> assert false
+    in
+    let argv =
+      match rest with
+      | maybe_command :: rest ->
+          if like_command maybe_command || like_arg maybe_command
+          then prefix @ (maybe_command :: rest)
+          else
+            (* Keep compatibility with js_of_ocaml < 3.6.0 *)
+            prefix @ (Cmdliner.Cmd.name Compile.command :: maybe_command :: rest)
+      | _ -> prefix @ rest
+    in
+    Array.of_list argv
   in
   try
     match
