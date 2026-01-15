@@ -89,19 +89,19 @@ let set_param =
 let options () =
   let runtime_files =
     let doc = "Link JavaScript and WebAssembly files [$(docv)]. " in
-    Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"RUNTIME_FILES" ~doc)
+    Arg.(value & pos_left ~rev:true 0 filepath [] & info [] ~docv:"RUNTIME_FILES" ~doc)
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+    Arg.(value & opt (some filepath) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let input_file =
     let doc = "Compile the bytecode program [$(docv)]. " in
-    Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM" ~doc)
+    Arg.(required & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
   in
   let shape_files =
     let doc = "load shape file [$(docv)]." in
-    Arg.(value & opt_all string [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
+    Arg.(value & opt_all filepath [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
@@ -128,11 +128,11 @@ let options () =
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
-    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+    Arg.(value & opt (some dirpath) None & info [ "source-map-root" ] ~doc)
   in
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
-    Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
+    Arg.(value & opt_all dirpath [] & info [ "I" ] ~docv:"DIR" ~doc)
   in
   let effects =
     let doc =
@@ -216,11 +216,11 @@ let options () =
 let options_runtime_only () =
   let runtime_files =
     let doc = "Link JavaScript and WebAssembly files [$(docv)]. " in
-    Arg.(value & pos_all string [] & info [] ~docv:"RUNTIME_FILES" ~doc)
+    Arg.(value & pos_all filepath [] & info [] ~docv:"RUNTIME_FILES" ~doc)
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(required & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+    Arg.(required & opt (some filepath) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let no_sourcemap =
     let doc =
@@ -238,11 +238,11 @@ let options_runtime_only () =
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
-    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+    Arg.(value & opt (some dirpath) None & info [ "source-map-root" ] ~doc)
   in
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
-    Arg.(value & opt_all string [] & info [ "I" ] ~docv:"DIR" ~doc)
+    Arg.(value & opt_all dirpath [] & info [ "I" ] ~docv:"DIR" ~doc)
   in
   let effects =
     let doc =

@@ -33,7 +33,7 @@ let options =
   let files = Arg.(value & pos_all file [] & info [] ~docv:"JS_FILES") in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+    Arg.(value & opt (some filepath) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let use_stdin =
     let doc = "Read from standard input." in

@@ -129,22 +129,22 @@ let options =
       ^ "One can refer to path relative to Findlib packages with "
       ^ "the syntax '+pkg_name/file.js'"
     in
-    Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"JS_FILES" ~doc)
+    Arg.(value & pos_left ~rev:true 0 filepath [] & info [] ~docv:"JS_FILES" ~doc)
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(value & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+    Arg.(value & opt (some filepath) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let shape_files =
     let doc = "load shape file [$(docv)]." in
-    Arg.(value & opt_all string [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
+    Arg.(value & opt_all filepath [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
   in
   let input_file =
     let doc =
       "Compile the bytecode program [$(docv)]. "
       ^ "Use '-' to read from the standard input instead."
     in
-    Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM" ~doc)
+    Arg.(required & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
   in
   let keep_unit_names =
     let doc = "Keep unit name" in
@@ -191,7 +191,7 @@ let options =
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
-    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+    Arg.(value & opt (some dirpath) None & info [ "source-map-root" ] ~doc)
   in
   let wrap_with_function =
     let doc =
@@ -227,7 +227,7 @@ let options =
       "File containing the list of unit to export in a toplevel, with Dynlink or with \
        --linkall. If absent, all units will be exported."
     in
-    Arg.(value & opt (some string) None & info [ "export" ] ~docs:toplevel_section ~doc)
+    Arg.(value & opt (some filepath) None & info [ "export" ] ~docs:toplevel_section ~doc)
   in
   let dynlink =
     let doc =
@@ -251,13 +251,13 @@ let options =
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(
-      value & opt_all string [] & info [ "I" ] ~docs:filesystem_section ~docv:"DIR" ~doc)
+      value & opt_all dirpath [] & info [ "I" ] ~docs:filesystem_section ~docv:"DIR" ~doc)
   in
   let fs_files =
     let doc = "Register [$(docv)] to the pseudo filesystem." in
     Arg.(
       value
-      & opt_all string []
+      & opt_all filepath [] 
       & info [ "file" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let fs_external =
@@ -285,7 +285,7 @@ let options =
     let doc = "Output the filesystem to [$(docv)]." in
     Arg.(
       value
-      & opt (some string) None
+      & opt (some filepath) None
       & info [ "ofs" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let effects =
@@ -452,11 +452,11 @@ let options_runtime_only =
       ^ "One can refer to path relative to Findlib packages with "
       ^ "the syntax '+pkg_name/file.js'"
     in
-    Arg.(value & pos_all string [] & info [] ~docv:"JS_FILES" ~doc)
+    Arg.(value & pos_all filepath [] & info [] ~docv:"JS_FILES" ~doc)
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
-    Arg.(required & opt (some string) None & info [ "o" ] ~docv:"FILE" ~doc)
+    Arg.(required & opt (some filepath) None & info [ "o" ] ~docv:"FILE" ~doc)
   in
   let noruntime =
     let doc = "Do not include the standard runtime." in
@@ -486,7 +486,7 @@ let options_runtime_only =
   in
   let sourcemap_root =
     let doc = "root dir for source map." in
-    Arg.(value & opt (some string) None & info [ "source-map-root" ] ~doc)
+    Arg.(value & opt (some dirpath) None & info [ "source-map-root" ] ~doc)
   in
   let toplevel =
     let doc =
@@ -524,13 +524,13 @@ let options_runtime_only =
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(
-      value & opt_all string [] & info [ "I" ] ~docs:filesystem_section ~docv:"DIR" ~doc)
+      value & opt_all dirpath [] & info [ "I" ] ~docs:filesystem_section ~docv:"DIR" ~doc)
   in
   let fs_files =
     let doc = "Register [$(docv)] to the pseudo filesystem." in
     Arg.(
       value
-      & opt_all string []
+      & opt_all filepath []
       & info [ "file" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let fs_external =
@@ -558,7 +558,7 @@ let options_runtime_only =
     let doc = "Output the filesystem to [$(docv)]." in
     Arg.(
       value
-      & opt (some string) None
+      & opt (some filepath) None
       & info [ "ofs" ] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let effects =
