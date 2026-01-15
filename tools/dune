@@ -12,3 +12,8 @@
  (name sync_testsuite)
  (modules sync_testsuite)
  (libraries))
+
+(executable
+ (name gen_install)
+ (modules gen_install)
+ (libraries))

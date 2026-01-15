@@ -7,13 +7,28 @@
   (:standard -safe-string)))
 
 (rule
- (targets jsoo_minify.1)
+ (target
+  (dir cmdliner-support))
+ (deps jsoo_minify.exe)
+ (action
+  (ignore-stdout
+   (run
+    cmdliner
+    install
+    tool-support
+    ./jsoo_minify.exe:jsoo_minify
+    cmdliner-support))))
+
+(rule
+ (target install-in-share.sexp)
+ (deps cmdliner-support/share)
  (action
   (with-stdout-to
-   %{targets}
-   (run %{bin:jsoo_minify} --help=groff))))
+   %{target}
+   (run ../../tools/gen_install.exe %{deps}))))
 
 (install
- (section man)
+ (section share_root)
  (package js_of_ocaml-compiler)
- (files jsoo_minify.1))
+ (files
+  (include install-in-share.sexp)))
