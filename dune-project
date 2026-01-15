@@ -24,7 +24,7 @@
   (ppxlib (>= 0.35))
   (ocaml-compiler-libs (>= v0.12.4))
   (re :with-test)
-  (cmdliner (>= 1.1.0))
+  (cmdliner (>= 2.0))
   (sedlex (>= 3.3))
   (qcheck :with-test)
   menhir
@@ -144,7 +144,7 @@
   (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (>= 0.35))
   (re :with-test)
-  (cmdliner (>= 1.1.0))
+  (cmdliner (>= 2.0))
   (opam-format :with-test)
   (sedlex (>= 2.3))
   menhir

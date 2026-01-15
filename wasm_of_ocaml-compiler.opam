@@ -19,7 +19,7 @@ depends: [
   "ppx_expect" {>= "v0.14.2" & with-test}
   "ppxlib" {>= "0.35"}
   "re" {with-test}
-  "cmdliner" {>= "1.1.0"}
+  "cmdliner" {>= "2.0"}
   "opam-format" {with-test}
   "sedlex" {>= "2.3"}
   "menhir"
