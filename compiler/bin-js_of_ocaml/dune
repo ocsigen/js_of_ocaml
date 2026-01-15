@@ -47,8 +47,16 @@
     ./js_of_ocaml.exe:js_of_ocaml
     cmdliner-support))))
 
+(rule
+ (target install-in-share.sexp)
+ (deps cmdliner-support/share)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ../../tools/gen_install.exe %{deps}))))
+
 (install
  (section share_root)
  (package js_of_ocaml-compiler)
- (dirs
-  (cmdliner-support/share as .)))
+ (files
+  (include install-in-share.sexp)))
