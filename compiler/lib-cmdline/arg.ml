@@ -35,12 +35,21 @@ type t =
   ; custom_header : string option
   }
 
+let enums all =
+  let conv = Arg.(list (enum all)) in
+  let complete _ctx ~token =
+    let l = List.filter ~f:(String.starts_with ~prefix:token) (List.map ~f:fst all) in
+    Ok (List.map ~f:Arg.Completion.string l)
+  in
+  let completion = Arg.Completion.make complete in
+  Arg.Conv.of_conv ~completion conv
+
 let debug =
   lazy
     (let doc = "enable debug [$(docv)]." in
      let all = List.map (Debug.available ()) ~f:(fun s -> s, s) in
      let arg =
-       Arg.(value & opt_all (list (enum all)) [] & info [ "debug" ] ~docv:"SECTION" ~doc)
+       Arg.(value & opt_all (enums all) [] & info [ "debug" ] ~docv:"SECTION" ~doc)
      in
      Term.(const List.flatten $ arg))
 
@@ -49,7 +58,7 @@ let enable =
     (let doc = "Enable optimization [$(docv)]." in
      let all = List.map (Config.Flag.available ()) ~f:(fun s -> s, s) in
      let arg =
-       Arg.(value & opt_all (list (enum all)) [] & info [ "enable" ] ~docv:"OPT" ~doc)
+       Arg.(value & opt_all (enums all) [] & info [ "enable" ] ~docv:"OPT" ~doc)
      in
      Term.(const List.flatten $ arg))
 
@@ -58,7 +67,7 @@ let disable =
     (let doc = "Disable optimization [$(docv)]." in
      let all = List.map (Config.Flag.available ()) ~f:(fun s -> s, s) in
      let arg =
-       Arg.(value & opt_all (list (enum all)) [] & info [ "disable" ] ~docv:"OPT" ~doc)
+       Arg.(value & opt_all (enums all) [] & info [ "disable" ] ~docv:"OPT" ~doc)
      in
      Term.(const List.flatten $ arg))
 
