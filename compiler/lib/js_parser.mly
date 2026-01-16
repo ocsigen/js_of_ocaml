@@ -110,7 +110,7 @@ let name_of_ident = function
 (*-----------------------------------------*)
 (* Keyword tokens *)
 (*-----------------------------------------*)
-(* coupling: if you add an element here, expand also ident_keyword_bis
+(* coupling: if you add an element here, expand also identifierKeyword
  * and also maybe the special hack for regexp in lexer_js.mll *)
 %token
 T_FUNCTION T_CONST T_VAR T_LET
@@ -274,16 +274,16 @@ optl(X):
 (* 12.6 Names and Keywords *)
 (*----------------------------*)
 
-(* used for entities, parameters, labels, etc. *)
-id:
+(* IdentifierName - used for entities, parameters, labels, etc. *)
+identifierName:
  | T_IDENTIFIER { fst $1 }
- | ident_semi_keyword { utf8_s (Js_token.to_string $1) }
+ | identifierSemiKeyword { utf8_s (Js_token.to_string $1) }
 
-ident:
- | id { var (p $symbolstartpos) $1 }
+identifier:
+ | identifierName { var (p $symbolstartpos) $1 }
 
 (* add here keywords which are not considered reserved by ECMA *)
-ident_semi_keyword:
+identifierSemiKeyword:
  (* TODO: would like to add T_IMPORT here, but cause conflicts *)
  | T_AS { T_AS }
  | T_ASYNC { T_ASYNC }
@@ -305,10 +305,10 @@ ident_semi_keyword:
 (* alt: use the _last_non_whitespace_like_token trick and look if
  * previous token was a period to return a T_ID
  *)
-ident_keyword:
- | ident_keyword_bis { utf8_s (Js_token.to_string $1) }
+identifierKeyword:
+ | identifierKeywordToken { utf8_s (Js_token.to_string $1) }
 
-ident_keyword_bis:
+identifierKeywordToken:
   | T_AWAIT { T_AWAIT }
   | T_BREAK { T_BREAK }
   | T_CASE { T_CASE }
@@ -351,38 +351,38 @@ ident_keyword_bis:
   | T_LET { T_LET }
   | T_STATIC { T_STATIC }
 
-field_name:
- | id            { $1 }
- | ident_keyword { $1 }
+fieldName:
+ | identifierName    { $1 }
+ | identifierKeyword { $1 }
 
-method_name:
- | id            { $1 }
- | ident_keyword { $1 }
+methodName:
+ | identifierName    { $1 }
+ | identifierKeyword { $1 }
 
-property_name:
- | i=id { PNI i }
- | i=ident_keyword { PNI i }
+propertyName:
+ | i=identifierName { PNI i }
+ | i=identifierKeyword { PNI i }
  | s=T_STRING         {
     let s, _len = s in PNS s }
- | n=numeric_literal  { PNN (Num.of_string_unsafe (n)) }
- | n=big_numeric_literal  { PNN (Num.of_string_unsafe (n)) }
- | "[" p=assignment_expr "]" { PComputed p }
+ | n=numericLiteral  { PNN (Num.of_string_unsafe (n)) }
+ | n=bigIntLiteral  { PNN (Num.of_string_unsafe (n)) }
+ | "[" p=assignmentExpression "]" { PComputed p }
 
-label:
-  | id { Label.of_string $1 }
+labelIdentifier:
+  | identifierName { Label.of_string $1 }
 
 (*----------------------------*)
 (* 12.8.1 Null Literals *)
 (*----------------------------*)
 
-null_literal:
+nullLiteral:
  | T_NULL { (EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "null"))) }
 
 (*----------------------------*)
 (* 12.8.2 Boolean Literals *)
 (*----------------------------*)
 
-boolean_literal:
+booleanLiteral:
  | T_TRUE  { (EBool true) }
  | T_FALSE { (EBool false) }
 
@@ -390,23 +390,23 @@ boolean_literal:
 (* 12.8.3 Numeric Literals *)
 (*----------------------------*)
 
-numeric_literal:
+numericLiteral:
  | T_NUMBER { let _,f = $1 in (f) }
 
-big_numeric_literal:
+bigIntLiteral:
  | T_BIGINT { let _,f = $1 in (f) }
 
 (*----------------------------*)
 (* 12.8.4 String Literals *)
 (*----------------------------*)
 
-string_literal: s=T_STRING { (EStr (fst s)) }
+stringLiteral: s=T_STRING { (EStr (fst s)) }
 
 (*----------------------------*)
 (* 12.8.5 Regular Expression Literals *)
 (*----------------------------*)
 
-regex_literal:
+regularExpressionLiteral:
  | r=T_REGEXP {
    let (Utf8 s, f) = r in
    (ERegexp (s, if String.equal f "" then None else Some f)) }
@@ -415,12 +415,11 @@ regex_literal:
 (* 12.8.6 Template Literal Lexical Components *)
 (*----------------------------*)
 
-(* templated string (a.k.a interpolated strings) *)
-template_literal: T_BACKQUOTE encaps* T_BACKQUOTE  { $2 }
+templateLiteral: T_BACKQUOTE templateSpan* T_BACKQUOTE  { $2 }
 
-encaps:
+templateSpan:
  | T_ENCAPSED_STRING        { TStr (Stdlib.Utf8_string.of_string_exn $1) }
- | T_DOLLARCURLY expr "}"   { TExp $2 }
+ | T_DOLLARCURLY expression "}"   { TExp $2 }
 
 (*************************************************************************)
 (* Section 13: ECMAScript Language: Expressions                         *)
@@ -430,97 +429,97 @@ encaps:
 (* 13.1 Identifiers *)
 (*----------------------------*)
 
-binding_id: ident { $1 }
+bindingIdentifier: identifier { $1 }
 
 (*----------------------------*)
 (* 13.2 Primary Expression *)
 (*----------------------------*)
 
-primary_expr(x):
- | e=primary_expr_no_braces
+primaryExpression(x):
+ | e=primaryExpressionNoBraces
  | e=x { e }
 
-d1: primary_with_stmt { $1 }
+d1: primaryExpressionWithStmt { $1 }
 
-primary_with_stmt:
- | object_literal      { $1 }
- | function_expr       { $1 }
- | class_expr          { $1 }
+primaryExpressionWithStmt:
+ | objectLiteral           { $1 }
+ | functionExpression      { $1 }
+ | classExpression         { $1 }
  (* es6: *)
- | generator_expr      { $1 }
+ | generatorExpression     { $1 }
  (* es7: *)
- | async_function_expr { $1 }
- | async_generator_expr{ $1 }
+ | asyncFunctionExpression { $1 }
+ | asyncGeneratorExpression{ $1 }
 
-primary_expr_no_braces:
+primaryExpressionNoBraces:
  | T_THIS                { EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "this")) }
- | i=ident               { EVar i }
- | T_POUND id            { EPrivName $2 }
- | n=null_literal        { n }
- | b=boolean_literal     { b }
- | n=numeric_literal     { ENum (Num.of_string_unsafe n) }
- | n=big_numeric_literal { ENum (Num.of_string_unsafe n) }
- | s=string_literal      { s }
- | t=template_literal    { ETemplate t }
- | r=regex_literal       { r }
- | a=array_literal       { a }
+ | i=identifier          { EVar i }
+ | T_POUND identifierName { EPrivName $2 }
+ | n=nullLiteral         { n }
+ | b=booleanLiteral      { b }
+ | n=numericLiteral      { ENum (Num.of_string_unsafe n) }
+ | n=bigIntLiteral       { ENum (Num.of_string_unsafe n) }
+ | s=stringLiteral       { s }
+ | t=templateLiteral     { ETemplate t }
+ | r=regularExpressionLiteral { r }
+ | a=arrayLiteral        { a }
  | e=coverParenthesizedExpressionAndArrowParameterList { e }
 
 coverParenthesizedExpressionAndArrowParameterList:
- | "(" e=expr ","? ")" { e }
+ | "(" e=expression ","? ")" { e }
  | "(" ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($2))) }
- | "(" "..." binding ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($2)) ) }
- | "(" expr "," "..." binding ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($4)) ) }
+ | "(" "..." bindingElement ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($2)) ) }
+ | "(" expression "," "..." bindingElement ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($4)) ) }
 
-(* no object_literal here *)
-primary_no_stmt: T_ERROR TComment { assert false }
+(* no objectLiteral here *)
+primaryExpressionNoStmt: T_ERROR TComment { assert false }
 
 (*----------------------------*)
-(* 13.2.4 Literals - Array Initializer *)
+(* 13.2.4 Array Initializer *)
 (*----------------------------*)
 
-array_literal:
-  | "[" l=listc_with_empty (element) "]"
+arrayLiteral:
+  | "[" l=listc_with_empty (arrayElement) "]"
     { (EArr (List.map (function None -> ElementHole | Some x -> x) l)) }
 
-element:
- | assignment_expr       { Element $1 }
- (* es6: spread operator: *)
- | "..." assignment_expr { ElementSpread $2 }
+arrayElement:
+ | assignmentExpression       { Element $1 }
+ (* es6: SpreadElement *)
+ | "..." assignmentExpression { ElementSpread $2 }
 
 (*----------------------------*)
 (* 13.2.5 Object Initializer *)
 (*----------------------------*)
 
-object_literal:
+objectLiteral:
  | "{" "}"                                      { EObj [] }
- | "{" listc(property_name_and_value) ","? "}"  { EObj $2 }
+ | "{" listc(propertyDefinition) ","? "}"       { EObj $2 }
 
-property_name_and_value:
- | property_name ":" assignment_expr    { Property ($1, $3) }
- (* es6: *)
- | id=id          { Property (PNI id, EVar (ident_unsafe id)) }
- | ident initializer_  { CoverInitializedName (early_error (pi $startpos($2)), $1, $2)  }
- (* es6: spread operator: *)
- | "..." assignment_expr                { PropertySpread($2) }
-  | method_definition(property_name)
+propertyDefinition:
+ | propertyName ":" assignmentExpression    { Property ($1, $3) }
+ (* es6: shorthand property *)
+ | i=identifierName          { Property (PNI i, EVar (ident_unsafe i)) }
+ | identifier initializer_  { CoverInitializedName (early_error (pi $startpos($2)), $1, $2)  }
+ (* es6: spread property *)
+ | "..." assignmentExpression                { PropertySpread($2) }
+  | methodDefinition(propertyName)
     { let n, m = $1 in PropertyMethod(n,m) }
 
 (*----------------------------*)
 (* 13.3 Left-Hand-Side Expressions *)
 (*----------------------------*)
 
-left_hand_side_expr: left_hand_side_expr_(d1) { $1 }
+leftHandSideExpression: leftHandSideExpression_(d1) { $1 }
 
-left_hand_side_expr_(x):
- | new_expr(x)  { $1 }
- | call_expr(x) { $1 }
+leftHandSideExpression_(x):
+ | newExpression(x)  { $1 }
+ | callExpression(x) { $1 }
 
 (*----------------------------*)
 (* 13.3.1 Static Semantics (Property Accessors) *)
 (*----------------------------*)
 
-access:
+optionalChainingPunctuator:
   | "." { ANormal }
   | T_PLING_PERIOD { ANullish }
 
@@ -528,216 +527,216 @@ access:
 (* 13.3.2 Property Accessors *)
 (*----------------------------*)
 
-member_expr(x):
- | e=primary_expr(x)
+memberExpression(x):
+ | e=primaryExpression(x)
     { e }
  | T_IMPORT "." T_META
     { EDot (vartok $startpos($1) T_IMPORT,ANormal,(Stdlib.Utf8_string.of_string_exn "meta")) }
- | e1=member_expr(x) "[" e2=expr "]"
+ | e1=memberExpression(x) "[" e2=expression "]"
      { (EAccess (e1,ANormal, e2)) }
- | e1=member_expr(x) T_PLING_PERIOD "[" e2=expr "]"
+ | e1=memberExpression(x) T_PLING_PERIOD "[" e2=expression "]"
      { (EAccess (e1,ANullish, e2)) }
- | e1=member_expr(x) ak=access i=field_name
+ | e1=memberExpression(x) ak=optionalChainingPunctuator i=fieldName
      { (EDot(e1,ak,i)) }
- | T_NEW e1=member_expr(d1) a=arguments
+ | T_NEW e1=memberExpression(d1) a=arguments
      { (ENew(e1, Some a, p $symbolstartpos)) }
- | e=member_expr(x) t=template_literal
+ | e=memberExpression(x) t=templateLiteral
      { ECallTemplate(e, t, p $symbolstartpos) }
- | T_SUPER "[" e=expr "]"
+ | T_SUPER "[" e=expression "]"
       { (EAccess (vartok $startpos($1) T_SUPER,ANormal, e)) }
- | T_SUPER ak=access i=field_name
+ | T_SUPER ak=optionalChainingPunctuator i=fieldName
      { (EDot(vartok $startpos($1) T_SUPER,ak,i)) }
   | T_NEW "." T_TARGET
      { (EDot(vartok $startpos($1) T_NEW,ANormal,Stdlib.Utf8_string.of_string_exn "target")) }
-  | e1=member_expr(x) a=access T_POUND i=field_name
+  | e1=memberExpression(x) a=optionalChainingPunctuator T_POUND i=fieldName
     { (EDotPrivate(e1,a,i)) }
 
 (*----------------------------*)
 (* 13.3.3 The new Operator *)
 (*----------------------------*)
 
-new_expr(x):
- | e=member_expr(x)    { e }
- | T_NEW e=new_expr(d1) { (ENew (e,None, p $symbolstartpos)) }
+newExpression(x):
+ | e=memberExpression(x)    { e }
+ | T_NEW e=newExpression(d1) { (ENew (e,None, p $symbolstartpos)) }
 
 (*----------------------------*)
 (* 13.3.4 Function Calls *)
 (*----------------------------*)
 
-call_expr(x):
+callExpression(x):
  | T_IMPORT a=arguments
      { (ECall(vartok $startpos($1) T_IMPORT, ANormal, a, p $symbolstartpos)) }
- | e=member_expr(x) a=arguments
+ | e=memberExpression(x) a=arguments
      { (ECall(e, ANormal, a, p $symbolstartpos)) }
- | e=member_expr(x) T_PLING_PERIOD a=arguments
+ | e=memberExpression(x) T_PLING_PERIOD a=arguments
      { (ECall(e, ANullish, a, p $symbolstartpos)) }
- | e=call_expr(x) a=arguments
+ | e=callExpression(x) a=arguments
      { (ECall(e, ANormal, a, p $symbolstartpos)) }
- | e=call_expr(x) T_PLING_PERIOD a=arguments
+ | e=callExpression(x) T_PLING_PERIOD a=arguments
      { (ECall(e, ANullish, a, p $symbolstartpos)) }
- | e=call_expr(x) "[" e2=expr "]"
+ | e=callExpression(x) "[" e2=expression "]"
      { (EAccess (e, ANormal,  e2)) }
- | e=call_expr(x) T_PLING_PERIOD "[" e2=expr "]"
+ | e=callExpression(x) T_PLING_PERIOD "[" e2=expression "]"
     { (EAccess (e, ANullish, e2)) }
- | e=call_expr(x) t=template_literal
+ | e=callExpression(x) t=templateLiteral
     { ECallTemplate(e, t,p $symbolstartpos) }
  | T_SUPER a=arguments { ECall(vartok $startpos($1) T_SUPER,ANormal, a, p $symbolstartpos) }
- | e=call_expr(x) a=access i=method_name
+ | e=callExpression(x) a=optionalChainingPunctuator i=methodName
     { EDot (e,a,i) }
- | e=call_expr(x) a=access T_POUND i=method_name
+ | e=callExpression(x) a=optionalChainingPunctuator T_POUND i=methodName
     { EDotPrivate (e,a,i) }
 
 (*----------------------------*)
 (* 13.3.5 Argument Lists *)
 (*----------------------------*)
 
-arguments: "(" argument_list_opt ")" { $2 }
+arguments: "(" argumentList ")" { $2 }
 
-argument_list_opt:
+argumentList:
  | (*empty*)   { [] }
- (* argument_list must be written in a left-recursive way(see conflicts.txt) *)
- | listc(argument) ","?  { $1  }
+ (* argumentList must be written in a left-recursive way(see conflicts.txt) *)
+ | listc(argumentListElement) ","?  { $1  }
 
-(* assignment_expr because expr supports sequence of exprs with ',' *)
-argument:
- | assignment_expr       { Arg $1 }
- (* es6: spread operator, allowed not only in last position *)
- | "..." assignment_expr { ArgSpread $2 }
+(* assignmentExpression because expression supports sequence of exprs with ',' *)
+argumentListElement:
+ | assignmentExpression       { Arg $1 }
+ (* es6: spread element, allowed not only in last position *)
+ | "..." assignmentExpression { ArgSpread $2 }
 
 (*----------------------------*)
 (* 13.4 Update Expressions *)
 (*----------------------------*)
 
-(* called unary_expr and update_expr in ECMA *)
-pre_in_expr(x):
- | left_hand_side_expr_(x)                     { $1 }
+(* called UnaryExpression and UpdateExpression in ECMA *)
+unaryExpression(x):
+ | leftHandSideExpression_(x)                     { $1 }
 
- | pre_in_expr(x) T_INCR_NB (* %prec p_POSTFIX*)
+ | unaryExpression(x) T_INCR_NB (* %prec p_POSTFIX*)
     { EUn (IncrA, $1) }
- | pre_in_expr(x) T_DECR_NB (* %prec p_POSTFIX*)
+ | unaryExpression(x) T_DECR_NB (* %prec p_POSTFIX*)
     { EUn (DecrA, $1) }
- | T_INCR pre_in_expr(d1)
+ | T_INCR unaryExpression(d1)
   { EUn (IncrB, $2) }
- | T_DECR pre_in_expr(d1)
+ | T_DECR unaryExpression(d1)
   { EUn (DecrB, $2) }
- | T_INCR_NB pre_in_expr(d1)
+ | T_INCR_NB unaryExpression(d1)
   { EUn (IncrB, $2) }
- | T_DECR_NB pre_in_expr(d1)
+ | T_DECR_NB unaryExpression(d1)
   { EUn (DecrB, $2) }
 
 (*----------------------------*)
 (* 13.5 Unary Operators *)
 (*----------------------------*)
 
- | T_DELETE pre_in_expr(d1)                    { EUn (Delete, $2) }
- | T_VOID pre_in_expr(d1)                      { EUn (Void, $2) }
-  | T_TYPEOF pre_in_expr(d1)                   { EUn (Typeof, $2) }
- | T_PLUS pre_in_expr(d1)                      { EUn (Pl, $2) }
- | T_MINUS pre_in_expr(d1)                     { EUn (Neg, $2)}
- | T_BIT_NOT pre_in_expr(d1)                   { EUn (Bnot, $2) }
- | T_NOT pre_in_expr(d1)                       { EUn (Not, $2) }
+ | T_DELETE unaryExpression(d1)                    { EUn (Delete, $2) }
+ | T_VOID unaryExpression(d1)                      { EUn (Void, $2) }
+  | T_TYPEOF unaryExpression(d1)                   { EUn (Typeof, $2) }
+ | T_PLUS unaryExpression(d1)                      { EUn (Pl, $2) }
+ | T_MINUS unaryExpression(d1)                     { EUn (Neg, $2)}
+ | T_BIT_NOT unaryExpression(d1)                   { EUn (Bnot, $2) }
+ | T_NOT unaryExpression(d1)                       { EUn (Not, $2) }
  (* es7: *)
- | T_AWAIT pre_in_expr(d1)                     { EUn (Await, $2) }
+ | T_AWAIT unaryExpression(d1)                     { EUn (Await, $2) }
 
 (*----------------------------*)
 (* 13.6 Exponentiation Operator *)
 (*----------------------------*)
 
  (* es7: *)
- | pre_in_expr(x) T_EXP pre_in_expr(d1) { EBin(Exp, $1, $3) }
+ | unaryExpression(x) T_EXP unaryExpression(d1) { EBin(Exp, $1, $3) }
 
 (*----------------------------*)
 (* 13.7 Multiplicative Operators *)
 (*----------------------------*)
 
- | pre_in_expr(x) "*" pre_in_expr(d1)       { EBin(Mul, $1, $3) }
- | pre_in_expr(x) T_DIV pre_in_expr(d1)     { EBin(Div, $1, $3) }
- | pre_in_expr(x) T_MOD pre_in_expr(d1)     { EBin(Mod, $1, $3) }
+ | unaryExpression(x) "*" unaryExpression(d1)       { EBin(Mul, $1, $3) }
+ | unaryExpression(x) T_DIV unaryExpression(d1)     { EBin(Div, $1, $3) }
+ | unaryExpression(x) T_MOD unaryExpression(d1)     { EBin(Mod, $1, $3) }
 
 (*----------------------------*)
 (* 13.8 Additive Operators *)
 (*----------------------------*)
 
- | pre_in_expr(x) T_PLUS pre_in_expr(d1)    { EBin(Plus, $1, $3) }
- | pre_in_expr(x) T_MINUS pre_in_expr(d1)   { EBin(Minus, $1, $3) }
+ | unaryExpression(x) T_PLUS unaryExpression(d1)    { EBin(Plus, $1, $3) }
+ | unaryExpression(x) T_MINUS unaryExpression(d1)   { EBin(Minus, $1, $3) }
 
 (*----------------------------*)
 (* 13.9 Bitwise Shift Operators *)
 (*----------------------------*)
 
- | pre_in_expr(x) T_LSHIFT pre_in_expr(d1)  { EBin(Lsl, $1, $3) }
- | pre_in_expr(x) T_RSHIFT pre_in_expr(d1)  { EBin(Asr, $1, $3) }
- | pre_in_expr(x) T_RSHIFT3 pre_in_expr(d1) { EBin(Lsr, $1, $3) }
+ | unaryExpression(x) T_LSHIFT unaryExpression(d1)  { EBin(Lsl, $1, $3) }
+ | unaryExpression(x) T_RSHIFT unaryExpression(d1)  { EBin(Asr, $1, $3) }
+ | unaryExpression(x) T_RSHIFT3 unaryExpression(d1) { EBin(Lsr, $1, $3) }
 
 (*----------------------------*)
 (* 13.10 Relational Operators *)
 (*----------------------------*)
 
-post_in_expr(x):
- | pre_in_expr(x) { $1 }
+relationalExpression(x):
+ | unaryExpression(x) { $1 }
 
- | post_in_expr(x) T_LESS_THAN post_in_expr(d1)          { EBin(Lt, $1, $3) }
- | post_in_expr(x) T_GREATER_THAN post_in_expr(d1)       { EBin(Gt, $1, $3) }
- | post_in_expr(x) T_LESS_THAN_EQUAL post_in_expr(d1)    { EBin(Le, $1, $3) }
- | post_in_expr(x) T_GREATER_THAN_EQUAL post_in_expr(d1) { EBin(Ge, $1, $3) }
- | post_in_expr(x) T_INSTANCEOF post_in_expr(d1)
+ | relationalExpression(x) T_LESS_THAN relationalExpression(d1)          { EBin(Lt, $1, $3) }
+ | relationalExpression(x) T_GREATER_THAN relationalExpression(d1)       { EBin(Gt, $1, $3) }
+ | relationalExpression(x) T_LESS_THAN_EQUAL relationalExpression(d1)    { EBin(Le, $1, $3) }
+ | relationalExpression(x) T_GREATER_THAN_EQUAL relationalExpression(d1) { EBin(Ge, $1, $3) }
+ | relationalExpression(x) T_INSTANCEOF relationalExpression(d1)
     { EBin (InstanceOf, $1, $3) }
 
  (* also T_IN! *)
- | post_in_expr(x) T_IN post_in_expr(d1)             { EBin (In, $1, $3) }
+ | relationalExpression(x) T_IN relationalExpression(d1)             { EBin (In, $1, $3) }
 
 (*----------------------------*)
 (* 13.11 Equality Operators *)
 (*----------------------------*)
 
- | post_in_expr(x) T_EQUAL post_in_expr(d1)          { EBin(EqEq, $1, $3) }
- | post_in_expr(x) T_NOT_EQUAL post_in_expr(d1)      { EBin(NotEq, $1, $3) }
- | post_in_expr(x) T_STRICT_EQUAL post_in_expr(d1)   { EBin(EqEqEq, $1, $3) }
- | post_in_expr(x) T_STRICT_NOT_EQUAL post_in_expr(d1)   { EBin(NotEqEq, $1, $3) }
+ | relationalExpression(x) T_EQUAL relationalExpression(d1)          { EBin(EqEq, $1, $3) }
+ | relationalExpression(x) T_NOT_EQUAL relationalExpression(d1)      { EBin(NotEq, $1, $3) }
+ | relationalExpression(x) T_STRICT_EQUAL relationalExpression(d1)   { EBin(EqEqEq, $1, $3) }
+ | relationalExpression(x) T_STRICT_NOT_EQUAL relationalExpression(d1)   { EBin(NotEqEq, $1, $3) }
 
 (*----------------------------*)
 (* 13.12 Binary Bitwise Operators *)
 (*----------------------------*)
 
- | post_in_expr(x) T_BIT_AND post_in_expr(d1)        { EBin(Band, $1, $3) }
- | post_in_expr(x) T_BIT_XOR post_in_expr(d1)        { EBin(Bxor, $1, $3) }
- | post_in_expr(x) T_BIT_OR post_in_expr(d1)         { EBin(Bor, $1, $3) }
+ | relationalExpression(x) T_BIT_AND relationalExpression(d1)        { EBin(Band, $1, $3) }
+ | relationalExpression(x) T_BIT_XOR relationalExpression(d1)        { EBin(Bxor, $1, $3) }
+ | relationalExpression(x) T_BIT_OR relationalExpression(d1)         { EBin(Bor, $1, $3) }
 
 (*----------------------------*)
 (* 13.13 Binary Logical Operators *)
 (*----------------------------*)
 
- | post_in_expr(x) T_AND post_in_expr(d1)            { EBin(And, $1, $3) }
- | post_in_expr(x) T_OR post_in_expr(d1)             { EBin(Or, $1, $3) }
- | post_in_expr(x) T_PLING_PLING post_in_expr(d1)    { EBin(Coalesce, $1, $3) }
+ | relationalExpression(x) T_AND relationalExpression(d1)            { EBin(And, $1, $3) }
+ | relationalExpression(x) T_OR relationalExpression(d1)             { EBin(Or, $1, $3) }
+ | relationalExpression(x) T_PLING_PLING relationalExpression(d1)    { EBin(Coalesce, $1, $3) }
 
 (*----------------------------*)
 (* 13.14 Conditional Operator ( ? : ) *)
 (*----------------------------*)
 
-conditional_expr(x):
- | post_in_expr(x) { $1 }
-  | c=post_in_expr (x) "?" a=assignment_expr ":" b=assignment_expr {
+conditionalExpression(x):
+ | relationalExpression(x) { $1 }
+  | c=relationalExpression (x) "?" a=assignmentExpression ":" b=assignmentExpression {
                          ECond (c, a, b)}
 
 (*----------------------------*)
 (* 13.15 Assignment Operators *)
 (*----------------------------*)
 
-assignment_expr:
- | conditional_expr(d1) { $1 }
- | e1=left_hand_side_expr_(d1) op=assignment_operator e2=assignment_expr
+assignmentExpression:
+ | conditionalExpression(d1) { $1 }
+ | e1=leftHandSideExpression_(d1) op=assignmentOperator e2=assignmentExpression
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
- | arrow_function { $1 }
- | async_arrow_function { $1 }
+ | arrowFunction { $1 }
+ | asyncArrowFunction { $1 }
  | T_YIELD { EYield { delegate= false; expr = None } }
- | T_YIELD e=assignment_expr { EYield {delegate=false; expr = (Some e) } }
- | T_YIELD "*" e=assignment_expr { EYield {delegate=true; expr = (Some e) } }
+ | T_YIELD e=assignmentExpression { EYield {delegate=false; expr = (Some e) } }
+ | T_YIELD "*" e=assignmentExpression { EYield {delegate=true; expr = (Some e) } }
 
-assignment_operator:
+assignmentOperator:
  | T_ASSIGN         { Eq }
  | T_MULT_ASSIGN    { StarEq }
  | T_EXP_ASSIGN     { ExpEq }
@@ -759,103 +758,103 @@ assignment_operator:
 (* 13.16 Comma Operator ( , ) *)
 (*----------------------------*)
 
-expr:
- | assignment_expr { $1 }
- | e1=expr "," e2=assignment_expr { ESeq (e1, e2) }
+expression:
+ | assignmentExpression { $1 }
+ | e1=expression "," e2=assignmentExpression { ESeq (e1, e2) }
 
 (*----------------------------*)
 (* Expression variants (no 'in' allowed) *)
 (*----------------------------*)
 
-expr_no_in:
- | assignment_expr_no_in { $1 }
- | e1=expr_no_in "," e2=assignment_expr_no_in { ESeq (e1, e2) }
+expressionNoIn:
+ | assignmentExpressionNoIn { $1 }
+ | e1=expressionNoIn "," e2=assignmentExpressionNoIn { ESeq (e1, e2) }
 
-assignment_expr_no_in:
- | conditional_expr_no_in { $1 }
- | e1=left_hand_side_expr_(d1) op=assignment_operator e2=assignment_expr_no_in
+assignmentExpressionNoIn:
+ | conditionalExpressionNoIn { $1 }
+ | e1=leftHandSideExpression_(d1) op=assignmentOperator e2=assignmentExpressionNoIn
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
 
-conditional_expr_no_in:
- | post_in_expr_no_in { $1 }
- | c=post_in_expr_no_in "?" a=assignment_expr_no_in ":" b=assignment_expr_no_in
+conditionalExpressionNoIn:
+ | relationalExpressionNoIn { $1 }
+ | c=relationalExpressionNoIn "?" a=assignmentExpressionNoIn ":" b=assignmentExpressionNoIn
    { ECond (c, a, b) }
 
-post_in_expr_no_in:
- | pre_in_expr(d1) { $1 }
- | post_in_expr_no_in T_LESS_THAN post_in_expr(d1)        { EBin (Lt, $1, $3) }
- | post_in_expr_no_in T_GREATER_THAN post_in_expr(d1)     { EBin (Gt, $1, $3) }
- | post_in_expr_no_in T_LESS_THAN_EQUAL post_in_expr(d1)  { EBin (Le, $1, $3) }
- | post_in_expr_no_in T_GREATER_THAN_EQUAL post_in_expr(d1) { EBin (Ge, $1, $3) }
- | post_in_expr_no_in T_INSTANCEOF post_in_expr(d1) { EBin(InstanceOf, $1, $3) }
+relationalExpressionNoIn:
+ | unaryExpression(d1) { $1 }
+ | relationalExpressionNoIn T_LESS_THAN relationalExpression(d1)        { EBin (Lt, $1, $3) }
+ | relationalExpressionNoIn T_GREATER_THAN relationalExpression(d1)     { EBin (Gt, $1, $3) }
+ | relationalExpressionNoIn T_LESS_THAN_EQUAL relationalExpression(d1)  { EBin (Le, $1, $3) }
+ | relationalExpressionNoIn T_GREATER_THAN_EQUAL relationalExpression(d1) { EBin (Ge, $1, $3) }
+ | relationalExpressionNoIn T_INSTANCEOF relationalExpression(d1) { EBin(InstanceOf, $1, $3) }
 
  (* no T_IN case *)
 
- | post_in_expr_no_in T_EQUAL post_in_expr(d1)         { EBin (EqEq, $1, $3) }
- | post_in_expr_no_in T_NOT_EQUAL post_in_expr(d1)     { EBin (NotEq, $1, $3) }
- | post_in_expr_no_in T_STRICT_EQUAL post_in_expr(d1)  { EBin (EqEqEq, $1, $3)}
- | post_in_expr_no_in T_STRICT_NOT_EQUAL post_in_expr(d1) { EBin (NotEqEq, $1, $3) }
- | post_in_expr_no_in T_BIT_AND post_in_expr(d1)       { EBin (Band, $1, $3)}
- | post_in_expr_no_in T_BIT_XOR post_in_expr(d1)       { EBin (Bxor, $1, $3)}
- | post_in_expr_no_in T_BIT_OR post_in_expr(d1)        { EBin (Bor, $1, $3) }
- | post_in_expr_no_in T_AND post_in_expr(d1)           { EBin (And, $1, $3) }
- | post_in_expr_no_in T_OR post_in_expr(d1)            { EBin (Or, $1, $3) }
- | post_in_expr_no_in T_PLING_PLING post_in_expr(d1)   { EBin (Coalesce, $1, $3) }
+ | relationalExpressionNoIn T_EQUAL relationalExpression(d1)         { EBin (EqEq, $1, $3) }
+ | relationalExpressionNoIn T_NOT_EQUAL relationalExpression(d1)     { EBin (NotEq, $1, $3) }
+ | relationalExpressionNoIn T_STRICT_EQUAL relationalExpression(d1)  { EBin (EqEqEq, $1, $3)}
+ | relationalExpressionNoIn T_STRICT_NOT_EQUAL relationalExpression(d1) { EBin (NotEqEq, $1, $3) }
+ | relationalExpressionNoIn T_BIT_AND relationalExpression(d1)       { EBin (Band, $1, $3)}
+ | relationalExpressionNoIn T_BIT_XOR relationalExpression(d1)       { EBin (Bxor, $1, $3)}
+ | relationalExpressionNoIn T_BIT_OR relationalExpression(d1)        { EBin (Bor, $1, $3) }
+ | relationalExpressionNoIn T_AND relationalExpression(d1)           { EBin (And, $1, $3) }
+ | relationalExpressionNoIn T_OR relationalExpression(d1)            { EBin (Or, $1, $3) }
+ | relationalExpressionNoIn T_PLING_PLING relationalExpression(d1)   { EBin (Coalesce, $1, $3) }
 
 (*----------------------------*)
 (* Expression variants (no statement-like constructs) *)
 (*----------------------------*)
 
-expr_no_stmt:
- | assignment_expr_no_stmt { $1 }
- | expr_no_stmt "," assignment_expr { ESeq ($1, $3) }
+expressionNoStmt:
+ | assignmentExpressionNoStmt { $1 }
+ | expressionNoStmt "," assignmentExpression { ESeq ($1, $3) }
 
-(* coupling: with assignment_expr *)
-assignment_expr_no_stmt:
- | conditional_expr(primary_no_stmt) { $1 }
- | e1=left_hand_side_expr_(primary_no_stmt) op=assignment_operator e2=assignment_expr
+(* coupling: with assignmentExpression *)
+assignmentExpressionNoStmt:
+ | conditionalExpression(primaryExpressionNoStmt) { $1 }
+ | e1=leftHandSideExpression_(primaryExpressionNoStmt) op=assignmentOperator e2=assignmentExpression
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
  (* es6: *)
- | arrow_function { $1 }
- | async_arrow_function { $1 }
+ | arrowFunction { $1 }
+ | asyncArrowFunction { $1 }
  (* es6: *)
  | T_YIELD { EYield {delegate = false; expr = None} }
- | T_YIELD e=assignment_expr { EYield {delegate = false; expr = Some e } }
- | T_YIELD "*" e=assignment_expr { EYield { delegate = true; expr = (Some e) } }
+ | T_YIELD e=assignmentExpression { EYield {delegate = false; expr = Some e } }
+ | T_YIELD "*" e=assignmentExpression { EYield { delegate = true; expr = (Some e) } }
 
 (*----------------------------*)
 (* Expression variants (for concise arrow body) *)
 (*----------------------------*)
 
-primary_for_consise_body:
- | function_expr       { $1 }
- | class_expr          { $1 }
+primaryExpressionForConciseBody:
+ | functionExpression       { $1 }
+ | classExpression          { $1 }
  (* es6: *)
- | generator_expr      { $1 }
+ | generatorExpression      { $1 }
  (* es7: *)
- | async_function_expr { $1 }
- | async_generator_expr{ $1 }
+ | asyncFunctionExpression { $1 }
+ | asyncGeneratorExpression{ $1 }
 
-assignment_expr_for_consise_body:
- | conditional_expr(primary_for_consise_body) { $1 }
- | e1=left_hand_side_expr_(primary_for_consise_body) op=assignment_operator e2=assignment_expr
+assignmentExpressionForConciseBody:
+ | conditionalExpression(primaryExpressionForConciseBody) { $1 }
+ | e1=leftHandSideExpression_(primaryExpressionForConciseBody) op=assignmentOperator e2=assignmentExpression
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
  (* es6: *)
- | arrow_function { $1 }
- | async_arrow_function { $1 }
+ | arrowFunction { $1 }
+ | asyncArrowFunction { $1 }
  (* es6: *)
  | T_YIELD { EYield { delegate = false; expr = None } }
- | T_YIELD e=assignment_expr { EYield {delegate = false; expr = (Some e) } }
- | T_YIELD "*" e=assignment_expr { EYield {delegate = true; expr = (Some e) } }
+ | T_YIELD e=assignmentExpression { EYield {delegate = false; expr = (Some e) } }
+ | T_YIELD "*" e=assignmentExpression { EYield {delegate = true; expr = (Some e) } }
 
 (*************************************************************************)
 (* Section 14: ECMAScript Language: Statements and Declarations         *)
@@ -866,271 +865,275 @@ assignment_expr_for_consise_body:
 (*----------------------------*)
 
 %inline
-stmt: s=stmt1 { s, p $symbolstartpos }
+statement: s=statementBody { s, p $symbolstartpos }
 
-stmt1:
- | block     { Block $1 }
- | variable_stmt   { $1 }
- | empty_stmt      { $1 }
- | expr_stmt       { $1 }
- | if_stmt         { $1 }
- | iteration_stmt  { $1 }
- | continue_stmt   { $1 }
- | break_stmt      { $1 }
- | return_stmt     { $1 }
- | labelled_stmt   { $1 }
- | switch_stmt     { $1 }
- | throw_stmt      { $1 }
- | try_stmt        { $1 }
- | with_stmt       { $1 }
- | debugger_stmt   { $1 }
+statementBody:
+ | block            { Block $1 }
+ | variableStatement     { $1 }
+ | emptyStatement        { $1 }
+ | expressionStatement   { $1 }
+ | ifStatement           { $1 }
+ | iterationStatement    { $1 }
+ | continueStatement     { $1 }
+ | breakStatement        { $1 }
+ | returnStatement       { $1 }
+ | labelledStatement     { $1 }
+ | switchStatement       { $1 }
+ | throwStatement        { $1 }
+ | tryStatement          { $1 }
+ | withStatement         { $1 }
+ | debuggerStatement     { $1 }
 
-item:
- | stmt { $1 }
- | decl { $1 }
+statementListItem:
+ | statement { $1 }
+ | declaration { $1 }
 
-decl:
- | function_decl
+declaration:
+ | functionDeclaration
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
- | generator_decl
+ | generatorDeclaration
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
- | async_generator_decl
+ | asyncGeneratorDeclaration
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
- | async_decl
+ | asyncFunctionDeclaration
    { let i,f = $1 in Function_declaration (i,f), p $symbolstartpos }
- | lexical_decl    { $1, p $symbolstartpos }
- | class_decl
+ | lexicalDeclaration    { $1, p $symbolstartpos }
+ | classDeclaration
    { let i,f = $1 in Class_declaration (i,f), p $symbolstartpos }
 
 (*----------------------------*)
 (* 14.2 Block *)
 (*----------------------------*)
 
-block: "{" l=optl(stmt_list) "}" { l }
+block: "{" l=optl(statementList) "}" { l }
 
-stmt_list: item+ { $1 }
+statementList: statementListItem+ { $1 }
 
 (*----------------------------*)
 (* 14.3 Declarations and the Variable Statement *)
 (*----------------------------*)
 
 (* 14.3.1 Let and Const Declarations *)
-lexical_decl:
+lexicalDeclaration:
  (* es6: *)
- | T_CONST l=listc(variable_decl) sc { Variable_statement (Const, l)}
- | T_LET l=listc(variable_decl) sc { Variable_statement (Let, l)}
+ | T_CONST l=listc(lexicalBinding) sc { Variable_statement (Const, l)}
+ | T_LET l=listc(lexicalBinding) sc { Variable_statement (Let, l)}
 
 (* 14.3.2 Variable Statement *)
-variable_stmt:
- | T_VAR l=listc(variable_decl) sc { Variable_statement (Var, l) }
+variableStatement:
+ | T_VAR l=listc(variableDeclaration) sc { Variable_statement (Var, l) }
 
-variable_decl:
- | i=ident e=initializer_?            { DeclIdent (i,e) }
- | p=binding_pattern e=initializer_   { DeclPattern (p, e) }
+variableDeclaration:
+ | i=identifier e=initializer_?            { DeclIdent (i,e) }
+ | p=bindingPattern e=initializer_   { DeclPattern (p, e) }
+
+lexicalBinding:
+ | i=identifier e=initializer_?            { DeclIdent (i,e) }
+ | p=bindingPattern e=initializer_   { DeclPattern (p, e) }
 
 initializer_:
- | "=" e=assignment_expr { e, p $symbolstartpos }
+ | "=" e=assignmentExpression { e, p $symbolstartpos }
 
-initializer_no_in:
- | "=" e=assignment_expr_no_in { e, p $symbolstartpos }
+initializerNoIn:
+ | "=" e=assignmentExpressionNoIn { e, p $symbolstartpos }
 
-for_variable_decl:
- | T_VAR l=listc(variable_decl_no_in)   { Var, l }
+forDeclaration:
+ | T_VAR l=listc(variableDeclarationNoIn)   { Var, l }
  (* es6: *)
- | T_CONST l=listc(variable_decl_no_in) { Const, l }
- | T_LET l=listc(variable_decl_no_in)   { Let, l }
+ | T_CONST l=listc(variableDeclarationNoIn) { Const, l }
+ | T_LET l=listc(variableDeclarationNoIn)   { Let, l }
 
-variable_decl_no_in:
- | i=ident e=initializer_no_in              { DeclIdent (i,Some e) }
- | i=ident                                  { DeclIdent (i, None) }
- | p=binding_pattern e=initializer_no_in { DeclPattern (p, e) }
+variableDeclarationNoIn:
+ | i=identifier e=initializerNoIn              { DeclIdent (i,Some e) }
+ | i=identifier                                  { DeclIdent (i, None) }
+ | p=bindingPattern e=initializerNoIn { DeclPattern (p, e) }
 
 (* 'for ... in' and 'for ... of' declare only one variable *)
-for_single_variable_decl:
- | T_VAR b=for_binding   { Var, b }
+forBinding:
+ | T_VAR b=forBindingElement   { Var, b }
  (* es6: *)
- | T_CONST b=for_binding { Const, b }
- | T_LET  b=for_binding  { Let, b }
+ | T_CONST b=forBindingElement { Const, b }
+ | T_LET  b=forBindingElement  { Let, b }
 
-for_binding:
- | binding               { $1 }
+forBindingElement:
+ | singleNameBinding               { $1 }
 
 (*----------------------------*)
 (* 14.3.3 Destructuring Binding Patterns *)
 (*----------------------------*)
 
-binding_pattern:
- | object_binding_pattern { $1 }
- | array_binding_pattern  { $1 }
+bindingPattern:
+ | objectBindingPattern { $1 }
+ | arrayBindingPattern  { $1 }
 
-binding:
- | binding_pattern { BindingPattern $1 }
- | ident           { BindingIdent $1 }
+singleNameBinding:
+ | bindingPattern { BindingPattern $1 }
+ | identifier           { BindingIdent $1 }
 
-object_binding_pattern:
+objectBindingPattern:
  | "{" "}"                                { ObjectBinding (list []) }
- | "{" r=binding_property_rest "}"         { ObjectBinding {list = []; rest = Some r } }
- | "{" l=listc(binding_property) ","? "}" { ObjectBinding (list l) }
- | "{" l=listc(binding_property) "," r=binding_property_rest "}"
+ | "{" r=bindingRestProperty "}"         { ObjectBinding {list = []; rest = Some r } }
+ | "{" l=listc(bindingProperty) ","? "}" { ObjectBinding (list l) }
+ | "{" l=listc(bindingProperty) "," r=bindingRestProperty "}"
     { ObjectBinding {list=l;rest= Some r} }
 
-binding_property:
-  | i=ident e=initializer_? { Prop_ident (Prop_and_ident i, e) }
-  | pn=property_name ":" e=binding_element { Prop_binding (pn, e) }
+bindingProperty:
+  | i=identifier e=initializer_? { Prop_ident (Prop_and_ident i, e) }
+  | pn=propertyName ":" e=bindingElement { Prop_binding (pn, e) }
 
-binding_property_rest:
- (* can appear only at the end of a binding_property_list in ECMA *)
- | "..." id=ident      { id }
+bindingRestProperty:
+ (* can appear only at the end of a bindingPropertyList in ECMA *)
+ | "..." id=identifier      { id }
 
 (* in theory used also for formal parameter as is *)
-binding_element:
- | b=binding e=initializer_? { b, e }
+bindingElement:
+ | b=singleNameBinding e=initializer_? { b, e }
 
 (* array destructuring *)
 
-array_binding_pattern:
-  | "[" l=listc_with_empty2(binding_element, binding_element_rest) "]" {
+arrayBindingPattern:
+  | "[" l=listc_with_empty2(bindingElement, bindingRestElement) "]" {
         ArrayBinding {list = fst l; rest = snd l }
   }
 
-binding_element_rest:
- (* can appear only at the end of a array_binding_pattern in ECMA *)
- | "..." binding            { $2 }
+bindingRestElement:
+ (* can appear only at the end of a arrayBindingPattern in ECMA *)
+ | "..." singleNameBinding            { $2 }
 
 (*----------------------------*)
 (* 14.4 Empty Statement *)
 (*----------------------------*)
 
-empty_stmt:
+emptyStatement:
  | T_SEMICOLON { Empty_statement }
 
 (*----------------------------*)
 (* 14.5 Expression Statement *)
 (*----------------------------*)
 
-expr_stmt:
- | expr_no_stmt sc { Expression_statement $1 }
+expressionStatement:
+ | expressionNoStmt sc { Expression_statement $1 }
 
 (*----------------------------*)
 (* 14.6 The if Statement *)
 (*----------------------------*)
 
-if_stmt:
- | T_IF "(" c=expr ")" t=stmt T_ELSE e=stmt
+ifStatement:
+ | T_IF "(" c=expression ")" t=statement T_ELSE e=statement
      { If_statement (c, t, Some e) }
- | T_IF "(" c=expr ")" t=stmt %prec p_IF
+ | T_IF "(" c=expression ")" t=statement %prec p_IF
      { If_statement (c, t, None) }
 
 (*----------------------------*)
 (* 14.7 Iteration Statements *)
 (*----------------------------*)
 
-iteration_stmt:
+iterationStatement:
  (* 14.7.2 The do-while Statement *)
- | T_DO body=stmt T_WHILE "(" condition=expr ")" endrule(sc | T_VIRTUAL_SEMICOLON_DO_WHILE { () } )
+ | T_DO body=statement T_WHILE "(" condition=expression ")" endrule(sc | T_VIRTUAL_SEMICOLON_DO_WHILE { () } )
     { Do_while_statement (body, condition) }
 
  (* 14.7.3 The while Statement *)
- | T_WHILE "(" condition=expr ")" body=stmt
+ | T_WHILE "(" condition=expression ")" body=statement
      { While_statement (condition, body) }
 
  (* 14.7.4 The for Statement *)
- | T_FOR "(" i=expr_no_in? ";" c=expr? ";" incr=expr? ")" st=stmt
+ | T_FOR "(" i=expressionNoIn? ";" c=expression? ";" incr=expression? ")" st=statement
    { For_statement (Left i, c, incr, st) }
- | T_FOR "(" l=for_variable_decl ";" c=expr? ";" incr=expr? ")" st=stmt
+ | T_FOR "(" l=forDeclaration ";" c=expression? ";" incr=expression? ")" st=statement
    { For_statement (Right l, c, incr, st) }
 
  (* 14.7.5 The for-in and for-of Statements *)
- | T_FOR "(" left=left_hand_side_expr T_IN right=expr ")" body=stmt
+ | T_FOR "(" left=leftHandSideExpression T_IN right=expression ")" body=statement
    { let left = assignment_target_of_expr None left in
      ForIn_statement (Left left, right, body) }
- | T_FOR "(" left=for_single_variable_decl T_IN right=expr ")" body=stmt
+ | T_FOR "(" left=forBinding T_IN right=expression ")" body=statement
    { ForIn_statement (Right left, right, body) }
 
- | T_FOR "(" left=left_hand_side_expr T_OF right=assignment_expr ")" body=stmt
+ | T_FOR "(" left=leftHandSideExpression T_OF right=assignmentExpression ")" body=statement
     { let left = assignment_target_of_expr None left in
       ForOf_statement (Left left, right, body) }
- | T_FOR "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
+ | T_FOR "(" left=forBinding T_OF right=assignmentExpression ")" body=statement
    { ForOf_statement (Right left, right, body) }
- | T_FOR T_AWAIT "(" left=left_hand_side_expr T_OF right=assignment_expr ")" body=stmt
+ | T_FOR T_AWAIT "(" left=leftHandSideExpression T_OF right=assignmentExpression ")" body=statement
     { let left = assignment_target_of_expr None left in
       ForAwaitOf_statement (Left left, right, body) }
- | T_FOR T_AWAIT "(" left=for_single_variable_decl T_OF right=assignment_expr ")" body=stmt
+ | T_FOR T_AWAIT "(" left=forBinding T_OF right=assignmentExpression ")" body=statement
    { ForAwaitOf_statement (Right left, right, body) }
 
 (*----------------------------*)
 (* 14.8 The continue Statement *)
 (*----------------------------*)
 
-continue_stmt:
- | T_CONTINUE l=label? sc { (Continue_statement (l)) }
+continueStatement:
+ | T_CONTINUE l=labelIdentifier? sc { (Continue_statement (l)) }
 
 (*----------------------------*)
 (* 14.9 The break Statement *)
 (*----------------------------*)
 
-break_stmt:
- | T_BREAK l=label? sc { (Break_statement (l)) }
+breakStatement:
+ | T_BREAK l=labelIdentifier? sc { (Break_statement (l)) }
 
 (*----------------------------*)
 (* 14.10 The return Statement *)
 (*----------------------------*)
 
-return_stmt:
- | T_RETURN e=expr? sc { (Return_statement (e, p $endpos(e))) }
+returnStatement:
+ | T_RETURN e=expression? sc { (Return_statement (e, p $endpos(e))) }
 
 (*----------------------------*)
 (* 14.11 The with Statement *)
 (*----------------------------*)
 
-with_stmt:
- | T_WITH "(" e=expr ")" s=stmt { (With_statement (e,s)) }
+withStatement:
+ | T_WITH "(" e=expression ")" s=statement { (With_statement (e,s)) }
 
 (*----------------------------*)
 (* 14.12 The switch Statement *)
 (*----------------------------*)
 
-switch_stmt:
- | T_SWITCH "(" subject=expr ")" cb=case_block
+switchStatement:
+ | T_SWITCH "(" subject=expression ")" cb=caseBlock
    { let c1, d, c2 = cb in
      Switch_statement (subject, c1, d, c2)
    }
 
-case_block:
- | "{" case_clause* "}" { $2, None, [] }
- | "{" case_clause* default_clause case_clause* "}" { $2, Some $3, $4 }
+caseBlock:
+ | "{" caseClause* "}" { $2, None, [] }
+ | "{" caseClause* defaultClause caseClause* "}" { $2, Some $3, $4 }
 
-case_clause:
- | T_CASE e=expr ":" s= optl(stmt_list) { e,s }
+caseClause:
+ | T_CASE e=expression ":" s= optl(statementList) { e,s }
 
-default_clause:
- | T_DEFAULT ":" list=optl(stmt_list) { list }
+defaultClause:
+ | T_DEFAULT ":" list=optl(statementList) { list }
 
 (*----------------------------*)
 (* 14.13 Labelled Statements *)
 (*----------------------------*)
 
-labelled_stmt:
- | l=label ":" s=stmt { Labelled_statement (l, s)}
+labelledStatement:
+ | l=labelIdentifier ":" s=statement { Labelled_statement (l, s)}
 
 (*----------------------------*)
 (* 14.14 The throw Statement *)
 (*----------------------------*)
 
-throw_stmt:
- | T_THROW e=expr sc { (Throw_statement e) }
+throwStatement:
+ | T_THROW e=expression sc { (Throw_statement e) }
 
 (*----------------------------*)
 (* 14.15 The try Statement *)
 (*----------------------------*)
 
-try_stmt:
+tryStatement:
  | T_TRY b=block c=catch { (Try_statement (b, Some c, None)) }
  | T_TRY b=block         f=finally { (Try_statement (b, None, Some f)) }
  | T_TRY b=block c=catch f=finally { (Try_statement (b, Some c, Some f)) }
 
 catch:
- | T_CATCH "(" p=formal_parameter ")" b=block { Some p,b }
+ | T_CATCH "(" p=formalParameter ")" b=block { Some p,b }
  | T_CATCH b=block { None,b }
 
 finally:
@@ -1140,7 +1143,7 @@ finally:
 (* 14.16 The debugger Statement *)
 (*----------------------------*)
 
-debugger_stmt:
+debuggerStatement:
  | T_DEBUGGER sc { Debugger_statement }
 
 (*************************************************************************)
@@ -1151,152 +1154,151 @@ debugger_stmt:
 (* 15.1 Parameter Lists *)
 (*----------------------------*)
 
-formal_parameter_list_opt:
+formalParameters:
  | (*empty*)                                     { list [] }
- | formal_parameter_list_rev ","?                    { list (List.rev $1) }
- | r=function_rest_param                           { { list = []; rest = Some r } }
- | formal_parameter_list_rev "," r=function_rest_param { { list = List.rev $1; rest = Some r } }
+ | formalParameterListRev ","?                    { list (List.rev $1) }
+ | r=functionRestParameter                           { { list = []; rest = Some r } }
+ | formalParameterListRev "," r=functionRestParameter { { list = List.rev $1; rest = Some r } }
 
-function_rest_param:
- | "..." binding { $2 }
+functionRestParameter:
+ | "..." singleNameBinding { $2 }
 
 (* must be written in a left-recursive way (see conflicts.txt) *)
-formal_parameter_list_rev:
- | formal_parameter_list_rev "," formal_parameter { $3::$1 }
- | formal_parameter                           { [$1] }
+formalParameterListRev:
+ | formalParameterListRev "," formalParameter { $3::$1 }
+ | formalParameter                           { [$1] }
 
 (* The ECMA and Typescript grammars imposes more restrictions
  * (some require_parameter, optional_parameter, rest_parameter)
  * but I've simplified.
- * We could also factorize with binding_element as done by ECMA.
+ * We could also factorize with bindingElement as done by ECMA.
  *)
-formal_parameter:
-  | binding initializer_? { $1, $2 }
+formalParameter:
+  | singleNameBinding initializer_? { $1, $2 }
 
-call_signature: "(" args=formal_parameter_list_opt ")"
+callSignature: "(" args=formalParameters ")"
   { args }
 
-function_body: optl(stmt_list) { $1 }
+functionBody: optl(statementList) { $1 }
 
 (*----------------------------*)
 (* 15.2 Function Definitions *)
 (*----------------------------*)
 
-function_decl:
- | T_FUNCTION name=ident args=call_signature "{" b=function_body "}"
+functionDeclaration:
+ | T_FUNCTION name=identifier args=callSignature "{" b=functionBody "}"
     { (name, ({async = false; generator = false}, args, b, p $startpos($6))) }
 
-function_expr:
- | T_FUNCTION name=ident? args=call_signature "{" b=function_body "}"
+functionExpression:
+ | T_FUNCTION name=identifier? args=callSignature "{" b=functionBody "}"
    { EFun (name, ({async = false; generator = false}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
 (* 15.3 Arrow Function Definitions *)
 (*----------------------------*)
 
-(* TODO conflict with as then in indent_keyword_bis *)
-arrow_function:
-  | i=ident T_ARROW b=arrow_body
+(* TODO conflict with as then in identifierKeyword *)
+arrowFunction:
+  | i=identifier T_ARROW b=conciseBody
     { let b,consise = b in
       EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
-  | T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
+  | T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody
     { let b,consise = b in
       EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
-(* was called consise body in spec *)
-arrow_body:
- | "{" b=function_body "}" { b, false }
- | e=assignment_expr_for_consise_body { [(Return_statement (Some e, p $endpos), p $symbolstartpos)], true }
+conciseBody:
+ | "{" b=functionBody "}" { b, false }
+ | e=assignmentExpressionForConciseBody { [(Return_statement (Some e, p $endpos), p $symbolstartpos)], true }
 
 (*----------------------------*)
 (* 15.4 Method Definitions *)
 (*----------------------------*)
 
-method_definition(name):
- | T_GET name=name args=call_signature "{" b=function_body "}" { name, MethodGet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
- | T_SET name=name args=call_signature "{" b=function_body "}" { name, MethodSet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
- | name=name args=call_signature "{" b=function_body "}" {
+methodDefinition(name):
+ | T_GET name=name args=callSignature "{" b=functionBody "}" { name, MethodGet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
+ | T_SET name=name args=callSignature "{" b=functionBody "}" { name, MethodSet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
+ | name=name args=callSignature "{" b=functionBody "}" {
       name, Method(({async = false; generator = false}, args, b, p $symbolstartpos)) }
- | T_ASYNC name=name args=call_signature "{" b=function_body "}" {
+ | T_ASYNC name=name args=callSignature "{" b=functionBody "}" {
       name, Method(({async = true; generator = false}, args, b, p $symbolstartpos)) }
- | "*" name=name args=call_signature "{" b=function_body "}" {
+ | "*" name=name args=callSignature "{" b=functionBody "}" {
       name, Method(({async = false; generator = true}, args, b, p $symbolstartpos)) }
- | T_ASYNC "*" name=name args=call_signature "{" b=function_body "}" {
+ | T_ASYNC "*" name=name args=callSignature "{" b=functionBody "}" {
       name, Method(({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
 (* 15.5 Generator Function Definitions *)
 (*----------------------------*)
 
-generator_decl:
- | T_FUNCTION "*" name=ident args=call_signature "{" b=function_body "}"
+generatorDeclaration:
+ | T_FUNCTION "*" name=identifier args=callSignature "{" b=functionBody "}"
    { (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
 
-generator_expr:
- | T_FUNCTION "*" name=ident? args=call_signature "{" b=function_body "}"
+generatorExpression:
+ | T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody "}"
    { EFun (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
 (* 15.6 Async Generator Function Definitions *)
 (*----------------------------*)
 
-async_generator_decl:
- | T_ASYNC T_FUNCTION "*" name=ident args=call_signature "{" b=function_body "}"
+asyncGeneratorDeclaration:
+ | T_ASYNC T_FUNCTION "*" name=identifier args=callSignature "{" b=functionBody "}"
    { (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
-async_generator_expr:
- | T_ASYNC T_FUNCTION "*" name=ident? args=call_signature "{" b=function_body "}"
+asyncGeneratorExpression:
+ | T_ASYNC T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody "}"
    { EFun (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
 (* 15.7 Class Definitions *)
 (*----------------------------*)
 
-class_decl: T_CLASS id=binding_id extends=extends_clause? body=class_body
+classDeclaration: T_CLASS id=bindingIdentifier extends=classHeritage? body=classBody
    { id, {extends; body}  }
 
-class_expr: T_CLASS i=binding_id? extends=extends_clause? body=class_body
+classExpression: T_CLASS i=bindingIdentifier? extends=classHeritage? body=classBody
    { EClass (i, {extends; body}) }
 
-extends_clause: T_EXTENDS left_hand_side_expr { $2 }
+classHeritage: T_EXTENDS leftHandSideExpression { $2 }
 
-class_body: "{" class_element* "}" { List.flatten $2 }
+classBody: "{" classElement* "}" { List.flatten $2 }
 
 (* can't factorize with static_opt, or access_modifier_opt; ambiguities  *)
-class_element:
- |          m=method_definition(class_property_name)
+classElement:
+ |          m=methodDefinition(classElementName)
     { let n,m = m in [ CEMethod (false, n, m) ] }
- | T_STATIC m=method_definition(class_property_name)
+ | T_STATIC m=methodDefinition(classElementName)
     { let n,m = m in [ CEMethod (true, n, m) ] }
 
- |          n=class_property_name i=initializer_? sc
+ |          n=classElementName i=initializer_? sc
     { [ CEField (false, n, i) ] }
- | T_STATIC n=class_property_name i=initializer_? sc
+ | T_STATIC n=classElementName i=initializer_? sc
     { [ CEField (true, n, i) ] }
  | T_STATIC b=block { [CEStaticBLock b] }
  | sc    { [] }
 
-class_property_name:
-  | property_name { PropName $1 }
-  | T_POUND id { PrivName $2 }
+classElementName:
+  | propertyName { PropName $1 }
+  | T_POUND identifierName { PrivName $2 }
 
 (*----------------------------*)
 (* 15.8 Async Function Definitions *)
 (*----------------------------*)
 
-async_decl:
- | T_ASYNC T_FUNCTION  name=ident args=call_signature "{" b=function_body "}"
+asyncFunctionDeclaration:
+ | T_ASYNC T_FUNCTION  name=identifier args=callSignature "{" b=functionBody "}"
    { (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
-async_function_expr:
- | T_ASYNC T_FUNCTION name=ident? args=call_signature "{" b=function_body "}"
+asyncFunctionExpression:
+ | T_ASYNC T_FUNCTION name=identifier? args=callSignature "{" b=functionBody "}"
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
-async_arrow_function:
-  | T_ASYNC i=ident T_ARROW b=arrow_body {
+asyncArrowFunction:
+  | T_ASYNC i=identifier T_ARROW b=conciseBody {
       let b,consise = b in
       EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
-  | T_ASYNC T_LPAREN_ARROW a=formal_parameter_list_opt ")" T_ARROW b=arrow_body
+  | T_ASYNC T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody
     { let b,consise = b in
       EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
@@ -1309,79 +1311,79 @@ async_arrow_function:
 (*----------------------------*)
 
 standalone_expression:
- | e=expr T_EOF { e }
+ | e=expression T_EOF { e }
 
 program:
- | l=module_item* T_EOF { l }
+ | l=moduleItem* T_EOF { l }
 
 (*----------------------------*)
 (* 16.2 Modules *)
 (*----------------------------*)
 
-module_item:
-  | item { $symbolstartpos, $1 }
-  | import_decl { $symbolstartpos, $1 }
-  | export_decl { $symbolstartpos, $1 }
+moduleItem:
+  | statementListItem { $symbolstartpos, $1 }
+  | importDeclaration { $symbolstartpos, $1 }
+  | exportDeclaration { $symbolstartpos, $1 }
 
 (*----------------------------*)
 (* 16.2.2 Imports *)
 (*----------------------------*)
 
-import_decl:
- | T_IMPORT kind=import_clause from=from_clause sc
+importDeclaration:
+ | T_IMPORT kind=importClause from=fromClause sc
     { let pos = $symbolstartpos in
       Import ({ from; kind }, pi pos), p pos }
- | T_IMPORT from=module_specifier sc
+ | T_IMPORT from=moduleSpecifier sc
     { let pos = $symbolstartpos in
       Import ({ from; kind = SideEffect }, pi pos), p pos }
 
-import_clause:
- | import_default                            { Default $1 }
- | import_default "," "*" T_AS id=binding_id { Namespace (Some $1, id) }
- | "*" T_AS id=binding_id                    { Namespace (None, id) }
- | import_default "," x=named_imports { Named (Some $1, x) }
- | x=named_imports                    { Named (None, x) }
+importClause:
+ | importedDefaultBinding                            { Default $1 }
+ | importedDefaultBinding "," "*" T_AS id=bindingIdentifier { Namespace (Some $1, id) }
+ | "*" T_AS id=bindingIdentifier                    { Namespace (None, id) }
+ | importedDefaultBinding "," x=namedImports { Named (Some $1, x) }
+ | x=namedImports                    { Named (None, x) }
 
-import_default: binding_id { $1 }
+importedDefaultBinding: bindingIdentifier { $1 }
 
-named_imports:
+namedImports:
  | "{" "}"                             { [] }
- | "{" listc(import_specifier) "}"     { $2 }
- | "{" listc(import_specifier) "," "}" { $2 }
+ | "{" listc(importSpecifier) "}"     { $2 }
+ | "{" listc(importSpecifier) "," "}" { $2 }
 
 (* also valid for export *)
-from_clause: T_FROM module_specifier {$2 }
+fromClause: T_FROM moduleSpecifier {$2 }
 
-import_specifier:
- | binding_id                 { (name_of_ident $1, $1) }
- | string_or_ident T_AS binding_id         {
+importSpecifier:
+ | bindingIdentifier                 { (name_of_ident $1, $1) }
+ | moduleExportName T_AS bindingIdentifier         {
    let (_,s,_) = $1 in
    (s, $3) }
 
-%inline string_or_ident:
+%inline moduleExportName:
  | T_STRING { `String, fst $1, $symbolstartpos }
- | id { `Ident, $1, $symbolstartpos }
- | ident_keyword { `Ident, $1, $symbolstartpos }
+ | identifierName { `Ident, $1, $symbolstartpos }
+ | identifierKeyword { `Ident, $1, $symbolstartpos }
 
-module_specifier:
+moduleSpecifier:
   | T_STRING { (fst $1) }
 
 (*----------------------------*)
 (* 16.2.3 Exports *)
 (*----------------------------*)
 
-export_fun_class:
- | function_expr       { $1 }
- | class_expr          { $1 }
+exportFunctionOrClass:
+ | functionExpression       { $1 }
+ | classExpression          { $1 }
  (* es6: *)
- | generator_expr      { $1 }
+ | generatorExpression      { $1 }
  (* es7: *)
- | async_function_expr { $1 }
- | async_generator_expr{ $1 }
+ | asyncFunctionExpression { $1 }
+ | asyncGeneratorExpression{ $1 }
 
 
-export_decl:
-  | T_EXPORT names=export_clause sc {
+exportDeclaration:
+  | T_EXPORT names=exportClause sc {
     let exception Invalid of Lexing.position in
     let k =
       try
@@ -1398,7 +1400,7 @@ export_decl:
     in
     let pos = $symbolstartpos in
     Export (k, pi pos), p pos }
- | T_EXPORT v=variable_stmt
+ | T_EXPORT v=variableStatement
     {
       let pos = $symbolstartpos in
       let k = match v with
@@ -1406,7 +1408,7 @@ export_decl:
         | _ -> assert false
       in
       Export (k, pi pos), p pos }
- | T_EXPORT d=decl
+ | T_EXPORT d=declaration
     { let k = match d with
         | Variable_statement (k,l),_ -> ExportVar (k,l)
         | Function_declaration (id, decl),_ -> ExportFun (id,decl)
@@ -1415,17 +1417,17 @@ export_decl:
       in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=assignment_expr_no_stmt sc
+ | T_EXPORT T_DEFAULT e=assignmentExpressionNoStmt sc
     {
       let k = ExportDefaultExpression e in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=object_literal sc
+ | T_EXPORT T_DEFAULT e=objectLiteral sc
     {
       let k = ExportDefaultExpression e in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=export_fun_class endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
+ | T_EXPORT T_DEFAULT e=exportFunctionOrClass endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
     {
       let k = match e with
       | EFun (id, decl) ->
@@ -1436,32 +1438,32 @@ export_decl:
       in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
-| T_EXPORT "*" T_FROM from=module_specifier sc {
+| T_EXPORT "*" T_FROM from=moduleSpecifier sc {
     let kind = Export_all None in
     let pos = $symbolstartpos in
     Export (ExportFrom ({from; kind}),pi pos), p pos
   }
- | T_EXPORT "*" T_AS id=string_or_ident T_FROM from=module_specifier sc {
+ | T_EXPORT "*" T_AS id=moduleExportName T_FROM from=moduleSpecifier sc {
     let (_,id,_) = id in
     let kind = Export_all (Some id) in
     let pos = $symbolstartpos in
     Export (ExportFrom ({from; kind}), pi pos), p pos
   }
-| T_EXPORT names=export_clause T_FROM from=module_specifier sc {
+| T_EXPORT names=exportClause T_FROM from=moduleSpecifier sc {
     let names = List.map (fun ((_,a,_), (_,b,_)) -> a, b) names in
     let kind = Export_names names in
     let pos = $symbolstartpos in
     Export (ExportFrom ({from; kind}), pi pos), p pos
   }
 
-export_specifier:
- | string_or_ident                       { ($1, $1) }
- | string_or_ident T_AS string_or_ident  { ($1, $3) }
+exportSpecifier:
+ | moduleExportName                       { ($1, $1) }
+ | moduleExportName T_AS moduleExportName  { ($1, $3) }
 
-export_clause:
+exportClause:
  | "{" "}"                              { [] }
- | "{" listc(export_specifier) "}"      { $2 }
- | "{" listc(export_specifier) ","  "}" { $2 }
+ | "{" listc(exportSpecifier) "}"      { $2 }
+ | "{" listc(exportSpecifier) ","  "}" { $2 }
 
 (*************************************************************************)
 (* Misc *)
