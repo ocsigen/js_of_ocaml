@@ -82,14 +82,6 @@
    (import "bindings" "ta_subarray"
       (func $ta_subarray
          (param (ref extern)) (param i32) (param i32) (result (ref extern))))
-   (import "bindings" "ta_blit_from_bytes"
-      (func $ta_blit_from_bytes
-         (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
-         (param i32)))
-   (import "bindings" "ta_blit_to_bytes"
-      (func $ta_blit_to_bytes
-         (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
-         (param i32)))
    (import "bindings" "dv_make"
       (func $dv_make (param (ref extern)) (result (ref extern))))
    (import "bindings" "dv_get_f64"
@@ -2118,6 +2110,200 @@
          (local.get $view) (local.get $i) (local.get $d) (i32.const 1))
       (ref.i31 (i32.const 0)))
 
+   (func $caml_blit_dataview_to_bytes (export "caml_blit_dataview_to_bytes")
+      (param $dv (ref extern)) (param $i i32)
+      (param $s (ref $bytes)) (param $j i32)
+      (param $len i32)
+      (local $k i32) (local $k' i32) (local $j' i32) (local $remaining i32)
+      (local $v i64) (local $v' i32)
+      (loop $loop
+         (local.set $k' (i32.add (local.get $k) (i32.const 8)))
+         (if (i32.le_u (local.get $k') (local.get $len))
+            (then
+               (local.set $j' (i32.add (local.get $j) (local.get $k)))
+               (local.set $v
+                  (call $dv_get_i64_unaligned (local.get $dv)
+                     (i32.add (local.get $i) (local.get $k))
+                     (i32.const 1)))
+               (array.set $bytes (local.get $s) (local.get $j')
+                  (i32.wrap_i64 (local.get $v)))
+               (array.set $bytes (local.get $s)
+                  (i32.add (local.get $j') (i32.const 1))
+                  (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 8))))
+               (array.set $bytes (local.get $s)
+                  (i32.add (local.get $j') (i32.const 2))
+                  (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 16))))
+               (array.set $bytes (local.get $s)
+                  (i32.add (local.get $j') (i32.const 3))
+                  (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 24))))
+               (array.set $bytes (local.get $s)
+                  (i32.add (local.get $j') (i32.const 4))
+                  (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 32))))
+               (array.set $bytes (local.get $s)
+                  (i32.add (local.get $j') (i32.const 5))
+                  (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 40))))
+               (array.set $bytes (local.get $s)
+                  (i32.add (local.get $j') (i32.const 6))
+                  (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 48))))
+               (array.set $bytes (local.get $s)
+                  (i32.add (local.get $j') (i32.const 7))
+                  (i32.wrap_i64 (i64.shr_u (local.get $v) (i64.const 56))))
+               (local.set $k (local.get $k'))
+               (br $loop))))
+      (local.set $remaining (i32.sub (local.get $len) (local.get $k)))
+      (if (i32.ge_u (local.get $remaining) (i32.const 4))
+         (then
+            (local.set $j' (i32.add (local.get $j) (local.get $k)))
+            (local.set $v'
+               (call $dv_get_i32_unaligned (local.get $dv)
+                  (i32.add (local.get $i) (local.get $k))
+                  (i32.const 1)))
+            (array.set $bytes (local.get $s) (local.get $j') (local.get $v'))
+            (array.set $bytes (local.get $s)
+               (i32.add (local.get $j') (i32.const 1))
+               (i32.shr_u (local.get $v') (i32.const 8)))
+            (array.set $bytes (local.get $s)
+               (i32.add (local.get $j') (i32.const 2))
+               (i32.shr_u (local.get $v') (i32.const 16)))
+            (array.set $bytes (local.get $s)
+               (i32.add (local.get $j') (i32.const 3))
+               (i32.shr_u (local.get $v') (i32.const 24)))
+            (local.set $k (i32.add (local.get $k) (i32.const 4)))
+            (local.set $remaining
+               (i32.sub (local.get $remaining) (i32.const 4)))))
+      (if (i32.ge_u (local.get $remaining) (i32.const 2))
+         (then
+            (local.set $j' (i32.add (local.get $j) (local.get $k)))
+            (local.set $v'
+               (call $dv_get_ui16_unaligned (local.get $dv)
+                  (i32.add (local.get $i) (local.get $k))
+                  (i32.const 1)))
+            (array.set $bytes (local.get $s) (local.get $j') (local.get $v'))
+            (array.set $bytes (local.get $s)
+               (i32.add (local.get $j') (i32.const 1))
+               (i32.shr_u (local.get $v') (i32.const 8)))
+            (local.set $k (i32.add (local.get $k) (i32.const 2)))
+            (local.set $remaining
+               (i32.sub (local.get $remaining) (i32.const 2)))))
+      (if (local.get $remaining)
+         (then
+            (array.set $bytes (local.get $s)
+               (i32.add (local.get $j) (local.get $k))
+               (call $dv_get_ui8 (local.get $dv)
+                  (i32.add (local.get $i) (local.get $k)))))))
+
+   (func $caml_blit_bytes_to_dataview (export "caml_blit_bytes_to_dataview")
+      (param $s (ref $bytes)) (param $i i32)
+      (param $dv (ref extern)) (param $j i32)
+      (param $len i32)
+      (local $k i32) (local $k' i32) (local $i' i32) (local $remaining i32)
+      (loop $loop
+         (local.set $k' (i32.add (local.get $k) (i32.const 8)))
+         (if (i32.le_u (local.get $k') (local.get $len))
+            (then
+               (local.set $i' (i32.add (local.get $i) (local.get $k)))
+               (call $dv_set_i64_unaligned
+                  (local.get $dv)
+                  (i32.add (local.get $j) (local.get $k))
+                  (i64.or
+                     (i64.or
+                        (i64.or
+                           (i64.extend_i32_u
+                              (array.get_u $bytes (local.get $s)
+                                 (local.get $i')))
+                          (i64.shl
+                              (i64.extend_i32_u
+                                 (array.get_u $bytes (local.get $s)
+                                    (i32.add (local.get $i') (i32.const 1))))
+                                 (i64.const 8)))
+                        (i64.or
+                           (i64.shl
+                              (i64.extend_i32_u
+                                 (array.get_u $bytes (local.get $s)
+                                    (i32.add (local.get $i') (i32.const 2))))
+                              (i64.const 16))
+                           (i64.shl
+                              (i64.extend_i32_u
+                                 (array.get_u $bytes (local.get $s)
+                                    (i32.add (local.get $i') (i32.const 3))))
+                              (i64.const 24))))
+                     (i64.or
+                        (i64.or
+                           (i64.shl
+                              (i64.extend_i32_u
+                                 (array.get_u $bytes (local.get $s)
+                                    (i32.add (local.get $i') (i32.const 4))))
+                              (i64.const 32))
+                           (i64.shl
+                              (i64.extend_i32_u
+                                 (array.get_u $bytes (local.get $s)
+                                    (i32.add (local.get $i') (i32.const 5))))
+                              (i64.const 40)))
+                        (i64.or
+                           (i64.shl
+                              (i64.extend_i32_u
+                                 (array.get_u $bytes (local.get $s)
+                                    (i32.add (local.get $i') (i32.const 6))))
+                              (i64.const 48))
+                           (i64.shl
+                              (i64.extend_i32_u
+                                 (array.get_u $bytes (local.get $s)
+                                    (i32.add (local.get $i') (i32.const 7))))
+                              (i64.const 56)))))
+                  (i32.const 1))
+               (local.set $k (local.get $k'))
+               (br $loop))))
+      (local.set $remaining (i32.sub (local.get $len) (local.get $k)))
+      (if (i32.ge_u (local.get $remaining) (i32.const 4))
+         (then
+            (local.set $i' (i32.add (local.get $i) (local.get $k)))
+            (call $dv_set_i32_unaligned
+               (local.get $dv)
+               (i32.add (local.get $j) (local.get $k))
+               (i32.or
+                  (i32.or
+                     (array.get_u $bytes (local.get $s) (local.get $i'))
+                     (i32.shl
+                        (array.get_u $bytes (local.get $s)
+                           (i32.add (local.get $i') (i32.const 1)))
+                        (i32.const 8)))
+                  (i32.or
+                     (i32.shl
+                        (array.get_u $bytes (local.get $s)
+                           (i32.add (local.get $i') (i32.const 2)))
+                        (i32.const 16))
+                     (i32.shl
+                        (array.get_u $bytes (local.get $s)
+                           (i32.add (local.get $i') (i32.const 3)))
+                        (i32.const 24))))
+               (i32.const 1))
+            (local.set $k (i32.add (local.get $k) (i32.const 4)))
+            (local.set $remaining
+               (i32.sub (local.get $remaining) (i32.const 4)))))
+      (if (i32.ge_u (local.get $remaining) (i32.const 2))
+         (then
+            (local.set $i' (i32.add (local.get $i) (local.get $k)))
+            (call $dv_set_i16_unaligned
+               (local.get $dv)
+               (i32.add (local.get $j) (local.get $k))
+               (i32.or
+                  (array.get_u $bytes (local.get $s) (local.get $i'))
+                  (i32.shl
+                     (array.get_u $bytes (local.get $s)
+                        (i32.add (local.get $i') (i32.const 1)))
+                     (i32.const 8)))
+               (i32.const 1))
+            (local.set $k (i32.add (local.get $k) (i32.const 2)))
+            (local.set $remaining
+               (i32.sub (local.get $remaining) (i32.const 2)))))
+      (if (local.get $remaining)
+         (then
+            (call $dv_set_i8
+               (local.get $dv)
+               (i32.add (local.get $j) (local.get $k))
+               (array.get_u $bytes (local.get $s)
+                  (i32.add (local.get $i) (local.get $k)))))))
+
    (export "caml_bytes_of_uint8_array" (func $caml_string_of_uint8_array))
    (func $caml_string_of_uint8_array (export "caml_string_of_uint8_array")
       (param (ref eq)) (result (ref eq))
@@ -2128,8 +2314,9 @@
          (ref.as_non_null (extern.convert_any (call $unwrap (local.get 0)))))
       (local.set $len (call $ta_length (local.get $a)))
       (local.set $s (array.new $bytes (i32.const 0) (local.get $len)))
-      (call $ta_blit_to_bytes
-         (local.get $a) (i32.const 0) (local.get $s) (i32.const 0)
+      (call $caml_blit_dataview_to_bytes
+         (call $dv_make (local.get $a)) (i32.const 0)
+         (local.get $s) (i32.const 0)
          (local.get $len))
       (local.get $s))
 
@@ -2145,8 +2332,9 @@
          (call $ta_create
             (i32.const 3) ;; Uint8Array
             (local.get $len)))
-      (call $ta_blit_from_bytes
-         (local.get $s) (i32.const 0) (local.get $ta) (i32.const 0)
+      (call $caml_blit_bytes_to_dataview
+         (local.get $s) (i32.const 0)
+         (call $dv_make (local.get $ta)) (i32.const 0)
          (local.get $len))
       (call $wrap (any.convert_extern (local.get $ta))))
 
@@ -2182,16 +2370,4 @@
          (local.get $num_dims)
          (local.get $kind)
          (local.get $layout)))
-
-   (func (export "bytes_set")
-      (param $s externref) (param $i i32) (param $v i32)
-      (array.set $bytes
-         (ref.cast (ref null $bytes) (any.convert_extern (local.get $s)))
-         (local.get $i) (local.get $v)))
-
-   (func (export "bytes_get")
-      (param $s externref) (param $i i32) (result i32)
-      (array.get $bytes
-         (ref.cast (ref null $bytes) (any.convert_extern (local.get $s)))
-         (local.get $i)))
 )
