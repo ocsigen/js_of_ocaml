@@ -17,12 +17,7 @@ let wasmedge_args =
   ; "--dir=/tmp"
   ]
 
-let extra_args_for_wasoo =
-  [ "--experimental-wasm-imported-strings"
-  ; "--experimental-wasm-stack-switching"
-  ; "--experimental-wasm-exnref"
-  ; "--stack-size=10000"
-  ]
+let extra_args_for_wasoo = [ "--experimental-wasm-wasmfx"; "--stack-size=10000" ]
 
 let extra_args_for_jsoo = []
 
