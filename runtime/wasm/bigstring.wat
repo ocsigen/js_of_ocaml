@@ -154,7 +154,8 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop (i32.eq (local.get $c1) (local.get $c2)))
                (return
-                  (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                  (select (result (ref eq))
+                     (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                      (i32.lt_u (local.get $c1) (local.get $c2)))))))
       (ref.i31 (i32.const 0)))
 
@@ -183,7 +184,8 @@
                (local.set $i (i32.add (local.get $i) (i32.const 1)))
                (br_if $loop (i32.eq (local.get $c1) (local.get $c2)))
                (return
-                  (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                  (select (result (ref eq))
+                     (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
                      (i32.lt_u (local.get $c1) (local.get $c2)))))))
       (ref.i31 (i32.const 0)))
 

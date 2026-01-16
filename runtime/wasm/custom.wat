@@ -110,7 +110,7 @@
 
    (func (export "caml_find_custom_operations")
       (param $id (ref $bytes)) (result (ref null $custom_operations))
-      (local $l (ref null $custom_operations_list))
+      (local $l (ref $custom_operations_list))
       (block $not_found
          (local.set $l (br_on_null $not_found (global.get $custom_operations)))
          (loop $loop
