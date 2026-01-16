@@ -59,6 +59,9 @@
  *  - Section 14: Statements and Declarations
  *  - Section 15: Functions and Classes
  *  - Section 16: Scripts and Modules
+ *
+ * Operator precedence is encoded directly in the grammar structure
+ * (no %left/%right annotations), following the ECMA specification.
  *)
 
 open Js_token
@@ -185,39 +188,12 @@ T_BACKQUOTE
 %token T_INCR_NB T_DECR_NB
 
 (*-----------------------------------------*)
-(* Priorities                              *)
+(* Priorities *)
 (*-----------------------------------------*)
 
-(* must be at the top so that it has the lowest priority *)
-(* %nonassoc LOW_PRIORITY_RULE *)
-
-(* Special if / else associativity*)
+(* Special if / else associativity for dangling else *)
 %nonassoc p_IF
 %nonassoc T_ELSE
-
-(* unused according to menhir:
-%nonassoc p_POSTFIX
-%right
- T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
- T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
- T_MULT_ASSIGN T_MINUS_ASSIGN T_PLUS_ASSIGN "="
-*)
-
-%left T_OR T_PLING_PLING
-%left T_AND
-%left T_BIT_OR
-%left T_BIT_XOR
-%left T_BIT_AND
-%left T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
-%left T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
-      T_IN T_INSTANCEOF
-%left T_LSHIFT T_RSHIFT T_RSHIFT3
-%left T_PLUS T_MINUS
-%left T_DIV T_MULT T_MOD
-
-%right T_EXP
-
-%right T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID T_AWAIT
 
 (*************************************************************************)
 (* Rules type decl                                                       *)
@@ -607,117 +583,194 @@ argumentListElement:
 (* 13.4 Update Expressions *)
 (*----------------------------*)
 
-(* called UnaryExpression and UpdateExpression in ECMA *)
-unaryExpression(x):
+updateExpression(x):
  | leftHandSideExpression_(x)                     { $1 }
-
- | unaryExpression(x) T_INCR_NB (* %prec p_POSTFIX*)
-    { EUn (IncrA, $1) }
- | unaryExpression(x) T_DECR_NB (* %prec p_POSTFIX*)
-    { EUn (DecrA, $1) }
- | T_INCR unaryExpression(d1)
-  { EUn (IncrB, $2) }
- | T_DECR unaryExpression(d1)
-  { EUn (DecrB, $2) }
- | T_INCR_NB unaryExpression(d1)
-  { EUn (IncrB, $2) }
- | T_DECR_NB unaryExpression(d1)
-  { EUn (DecrB, $2) }
+ | leftHandSideExpression_(x) T_INCR_NB           { EUn (IncrA, $1) }
+ | leftHandSideExpression_(x) T_DECR_NB           { EUn (DecrA, $1) }
+ | T_INCR unaryExpression(d1)                     { EUn (IncrB, $2) }
+ | T_DECR unaryExpression(d1)                     { EUn (DecrB, $2) }
+ | T_INCR_NB unaryExpression(d1)                  { EUn (IncrB, $2) }
+ | T_DECR_NB unaryExpression(d1)                  { EUn (DecrB, $2) }
 
 (*----------------------------*)
 (* 13.5 Unary Operators *)
 (*----------------------------*)
 
- | T_DELETE unaryExpression(d1)                    { EUn (Delete, $2) }
- | T_VOID unaryExpression(d1)                      { EUn (Void, $2) }
-  | T_TYPEOF unaryExpression(d1)                   { EUn (Typeof, $2) }
- | T_PLUS unaryExpression(d1)                      { EUn (Pl, $2) }
- | T_MINUS unaryExpression(d1)                     { EUn (Neg, $2)}
- | T_BIT_NOT unaryExpression(d1)                   { EUn (Bnot, $2) }
- | T_NOT unaryExpression(d1)                       { EUn (Not, $2) }
+unaryExpression(x):
+ | updateExpression(x)                            { $1 }
+ | T_DELETE unaryExpression(d1)                   { EUn (Delete, $2) }
+ | T_VOID unaryExpression(d1)                     { EUn (Void, $2) }
+ | T_TYPEOF unaryExpression(d1)                   { EUn (Typeof, $2) }
+ | T_PLUS unaryExpression(d1)                     { EUn (Pl, $2) }
+ | T_MINUS unaryExpression(d1)                    { EUn (Neg, $2)}
+ | T_BIT_NOT unaryExpression(d1)                  { EUn (Bnot, $2) }
+ | T_NOT unaryExpression(d1)                      { EUn (Not, $2) }
  (* es7: *)
- | T_AWAIT unaryExpression(d1)                     { EUn (Await, $2) }
+ | T_AWAIT unaryExpression(d1)                    { EUn (Await, $2) }
 
 (*----------------------------*)
 (* 13.6 Exponentiation Operator *)
 (*----------------------------*)
 
- (* es7: *)
- | unaryExpression(x) T_EXP unaryExpression(d1) { EBin(Exp, $1, $3) }
+(* Note: ** is right-associative *)
+exponentiationExpression(x):
+ | unaryExpression(x)                                           { $1 }
+ | updateExpression(x) T_EXP exponentiationExpression(d1)       { EBin(Exp, $1, $3) }
 
 (*----------------------------*)
 (* 13.7 Multiplicative Operators *)
 (*----------------------------*)
 
- | unaryExpression(x) "*" unaryExpression(d1)       { EBin(Mul, $1, $3) }
- | unaryExpression(x) T_DIV unaryExpression(d1)     { EBin(Div, $1, $3) }
- | unaryExpression(x) T_MOD unaryExpression(d1)     { EBin(Mod, $1, $3) }
+multiplicativeExpression(x):
+ | exponentiationExpression(x)                                  { $1 }
+ | multiplicativeExpression(x) "*" exponentiationExpression(d1) { EBin(Mul, $1, $3) }
+ | multiplicativeExpression(x) T_DIV exponentiationExpression(d1) { EBin(Div, $1, $3) }
+ | multiplicativeExpression(x) T_MOD exponentiationExpression(d1) { EBin(Mod, $1, $3) }
 
 (*----------------------------*)
 (* 13.8 Additive Operators *)
 (*----------------------------*)
 
- | unaryExpression(x) T_PLUS unaryExpression(d1)    { EBin(Plus, $1, $3) }
- | unaryExpression(x) T_MINUS unaryExpression(d1)   { EBin(Minus, $1, $3) }
+additiveExpression(x):
+ | multiplicativeExpression(x)                                  { $1 }
+ | additiveExpression(x) T_PLUS multiplicativeExpression(d1)    { EBin(Plus, $1, $3) }
+ | additiveExpression(x) T_MINUS multiplicativeExpression(d1)   { EBin(Minus, $1, $3) }
 
 (*----------------------------*)
 (* 13.9 Bitwise Shift Operators *)
 (*----------------------------*)
 
- | unaryExpression(x) T_LSHIFT unaryExpression(d1)  { EBin(Lsl, $1, $3) }
- | unaryExpression(x) T_RSHIFT unaryExpression(d1)  { EBin(Asr, $1, $3) }
- | unaryExpression(x) T_RSHIFT3 unaryExpression(d1) { EBin(Lsr, $1, $3) }
+shiftExpression(x):
+ | additiveExpression(x)                                        { $1 }
+ | shiftExpression(x) T_LSHIFT additiveExpression(d1)           { EBin(Lsl, $1, $3) }
+ | shiftExpression(x) T_RSHIFT additiveExpression(d1)           { EBin(Asr, $1, $3) }
+ | shiftExpression(x) T_RSHIFT3 additiveExpression(d1)          { EBin(Lsr, $1, $3) }
 
 (*----------------------------*)
 (* 13.10 Relational Operators *)
 (*----------------------------*)
 
 relationalExpression(x):
- | unaryExpression(x) { $1 }
+ | shiftExpression(x)                                           { $1 }
+ | relationalExpression(x) T_LESS_THAN shiftExpression(d1)      { EBin(Lt, $1, $3) }
+ | relationalExpression(x) T_GREATER_THAN shiftExpression(d1)   { EBin(Gt, $1, $3) }
+ | relationalExpression(x) T_LESS_THAN_EQUAL shiftExpression(d1) { EBin(Le, $1, $3) }
+ | relationalExpression(x) T_GREATER_THAN_EQUAL shiftExpression(d1) { EBin(Ge, $1, $3) }
+ | relationalExpression(x) T_INSTANCEOF shiftExpression(d1)     { EBin (InstanceOf, $1, $3) }
+ | relationalExpression(x) T_IN shiftExpression(d1)             { EBin (In, $1, $3) }
 
- | relationalExpression(x) T_LESS_THAN relationalExpression(d1)          { EBin(Lt, $1, $3) }
- | relationalExpression(x) T_GREATER_THAN relationalExpression(d1)       { EBin(Gt, $1, $3) }
- | relationalExpression(x) T_LESS_THAN_EQUAL relationalExpression(d1)    { EBin(Le, $1, $3) }
- | relationalExpression(x) T_GREATER_THAN_EQUAL relationalExpression(d1) { EBin(Ge, $1, $3) }
- | relationalExpression(x) T_INSTANCEOF relationalExpression(d1)
-    { EBin (InstanceOf, $1, $3) }
-
- (* also T_IN! *)
- | relationalExpression(x) T_IN relationalExpression(d1)             { EBin (In, $1, $3) }
+(* Variant without 'in' operator for for-loop initializers *)
+relationalExpressionNoIn(x):
+ | shiftExpression(x)                                           { $1 }
+ | relationalExpressionNoIn(x) T_LESS_THAN shiftExpression(d1)  { EBin(Lt, $1, $3) }
+ | relationalExpressionNoIn(x) T_GREATER_THAN shiftExpression(d1) { EBin(Gt, $1, $3) }
+ | relationalExpressionNoIn(x) T_LESS_THAN_EQUAL shiftExpression(d1) { EBin(Le, $1, $3) }
+ | relationalExpressionNoIn(x) T_GREATER_THAN_EQUAL shiftExpression(d1) { EBin(Ge, $1, $3) }
+ | relationalExpressionNoIn(x) T_INSTANCEOF shiftExpression(d1) { EBin (InstanceOf, $1, $3) }
 
 (*----------------------------*)
 (* 13.11 Equality Operators *)
 (*----------------------------*)
 
- | relationalExpression(x) T_EQUAL relationalExpression(d1)          { EBin(EqEq, $1, $3) }
- | relationalExpression(x) T_NOT_EQUAL relationalExpression(d1)      { EBin(NotEq, $1, $3) }
- | relationalExpression(x) T_STRICT_EQUAL relationalExpression(d1)   { EBin(EqEqEq, $1, $3) }
- | relationalExpression(x) T_STRICT_NOT_EQUAL relationalExpression(d1)   { EBin(NotEqEq, $1, $3) }
+equalityExpression(x):
+ | relationalExpression(x)                                      { $1 }
+ | equalityExpression(x) T_EQUAL relationalExpression(d1)       { EBin(EqEq, $1, $3) }
+ | equalityExpression(x) T_NOT_EQUAL relationalExpression(d1)   { EBin(NotEq, $1, $3) }
+ | equalityExpression(x) T_STRICT_EQUAL relationalExpression(d1) { EBin(EqEqEq, $1, $3) }
+ | equalityExpression(x) T_STRICT_NOT_EQUAL relationalExpression(d1) { EBin(NotEqEq, $1, $3) }
+
+equalityExpressionNoIn(x):
+ | relationalExpressionNoIn(x)                                  { $1 }
+ | equalityExpressionNoIn(x) T_EQUAL relationalExpressionNoIn(d1) { EBin(EqEq, $1, $3) }
+ | equalityExpressionNoIn(x) T_NOT_EQUAL relationalExpressionNoIn(d1) { EBin(NotEq, $1, $3) }
+ | equalityExpressionNoIn(x) T_STRICT_EQUAL relationalExpressionNoIn(d1) { EBin(EqEqEq, $1, $3) }
+ | equalityExpressionNoIn(x) T_STRICT_NOT_EQUAL relationalExpressionNoIn(d1) { EBin(NotEqEq, $1, $3) }
 
 (*----------------------------*)
 (* 13.12 Binary Bitwise Operators *)
 (*----------------------------*)
 
- | relationalExpression(x) T_BIT_AND relationalExpression(d1)        { EBin(Band, $1, $3) }
- | relationalExpression(x) T_BIT_XOR relationalExpression(d1)        { EBin(Bxor, $1, $3) }
- | relationalExpression(x) T_BIT_OR relationalExpression(d1)         { EBin(Bor, $1, $3) }
+bitwiseANDExpression(x):
+ | equalityExpression(x)                                        { $1 }
+ | bitwiseANDExpression(x) T_BIT_AND equalityExpression(d1)     { EBin(Band, $1, $3) }
+
+bitwiseANDExpressionNoIn(x):
+ | equalityExpressionNoIn(x)                                    { $1 }
+ | bitwiseANDExpressionNoIn(x) T_BIT_AND equalityExpressionNoIn(d1) { EBin(Band, $1, $3) }
+
+bitwiseXORExpression(x):
+ | bitwiseANDExpression(x)                                      { $1 }
+ | bitwiseXORExpression(x) T_BIT_XOR bitwiseANDExpression(d1)   { EBin(Bxor, $1, $3) }
+
+bitwiseXORExpressionNoIn(x):
+ | bitwiseANDExpressionNoIn(x)                                  { $1 }
+ | bitwiseXORExpressionNoIn(x) T_BIT_XOR bitwiseANDExpressionNoIn(d1) { EBin(Bxor, $1, $3) }
+
+bitwiseORExpression(x):
+ | bitwiseXORExpression(x)                                      { $1 }
+ | bitwiseORExpression(x) T_BIT_OR bitwiseXORExpression(d1)     { EBin(Bor, $1, $3) }
+
+bitwiseORExpressionNoIn(x):
+ | bitwiseXORExpressionNoIn(x)                                  { $1 }
+ | bitwiseORExpressionNoIn(x) T_BIT_OR bitwiseXORExpressionNoIn(d1) { EBin(Bor, $1, $3) }
 
 (*----------------------------*)
 (* 13.13 Binary Logical Operators *)
 (*----------------------------*)
 
- | relationalExpression(x) T_AND relationalExpression(d1)            { EBin(And, $1, $3) }
- | relationalExpression(x) T_OR relationalExpression(d1)             { EBin(Or, $1, $3) }
- | relationalExpression(x) T_PLING_PLING relationalExpression(d1)    { EBin(Coalesce, $1, $3) }
+logicalANDExpression(x):
+ | bitwiseORExpression(x)                                       { $1 }
+ | logicalANDExpression(x) T_AND bitwiseORExpression(d1)        { EBin(And, $1, $3) }
+
+logicalANDExpressionNoIn(x):
+ | bitwiseORExpressionNoIn(x)                                   { $1 }
+ | logicalANDExpressionNoIn(x) T_AND bitwiseORExpressionNoIn(d1) { EBin(And, $1, $3) }
+
+logicalORExpression(x):
+ | logicalANDExpression(x)                                      { $1 }
+ | logicalORExpression(x) T_OR logicalANDExpression(d1)         { EBin(Or, $1, $3) }
+
+logicalORExpressionNoIn(x):
+ | logicalANDExpressionNoIn(x)                                  { $1 }
+ | logicalORExpressionNoIn(x) T_OR logicalANDExpressionNoIn(d1) { EBin(Or, $1, $3) }
+
+(* Coalesce expression - can't mix with || or && without parens *)
+coalesceExpression(x):
+  | coalesceExpressionHead(x) T_PLING_PLING bitwiseORExpression(d1)  { EBin(Coalesce, $1, $3) }
+
+coalesceExpressionHead(x):
+  | coalesceExpression(x) { $1 }
+  | bitwiseORExpression(x)  { $1 }
+
+coalesceExpressionNoIn(x):
+ | coalesceExpressionHeadNoIn(x) T_PLING_PLING bitwiseORExpressionNoIn(d1) { EBin(Coalesce, $1, $3) }
+
+coalesceExpressionHeadNoIn(x):
+  | coalesceExpressionNoIn(x) { $1 }
+  | bitwiseORExpressionNoIn(x)  { $1 }
+
+(* ShortCircuitExpression: either logical OR chain or coalesce chain *)
+shortCircuitExpression(x):
+ | logicalORExpression(x)                                       { $1 }
+ | coalesceExpression(x)                                        { $1 }
+
+shortCircuitExpressionNoIn(x):
+ | logicalORExpressionNoIn(x)                                   { $1 }
+ | coalesceExpressionNoIn(x)                                    { $1 }
 
 (*----------------------------*)
 (* 13.14 Conditional Operator ( ? : ) *)
 (*----------------------------*)
 
 conditionalExpression(x):
- | relationalExpression(x) { $1 }
-  | c=relationalExpression (x) "?" a=assignmentExpression ":" b=assignmentExpression {
-                         ECond (c, a, b)}
+ | shortCircuitExpression(x)                                    { $1 }
+ | shortCircuitExpression(x) "?" assignmentExpression ":" assignmentExpression
+   { ECond ($1, $3, $5) }
+
+conditionalExpressionNoIn(x):
+ | shortCircuitExpressionNoIn(x)                                { $1 }
+ | shortCircuitExpressionNoIn(x) "?" assignmentExpressionNoIn ":" assignmentExpressionNoIn
+   { ECond ($1, $3, $5) }
 
 (*----------------------------*)
 (* 13.15 Assignment Operators *)
@@ -735,6 +788,14 @@ assignmentExpression:
  | T_YIELD { EYield { delegate= false; expr = None } }
  | T_YIELD e=assignmentExpression { EYield {delegate=false; expr = (Some e) } }
  | T_YIELD "*" e=assignmentExpression { EYield {delegate=true; expr = (Some e) } }
+
+assignmentExpressionNoIn:
+ | conditionalExpressionNoIn(d1) { $1 }
+ | e1=leftHandSideExpression_(d1) op=assignmentOperator e2=assignmentExpressionNoIn
+    {
+      let e1 = assignment_target_of_expr (Some op) e1 in
+      EBin (op, e1, e2)
+    }
 
 assignmentOperator:
  | T_ASSIGN         { Eq }
@@ -762,47 +823,9 @@ expression:
  | assignmentExpression { $1 }
  | e1=expression "," e2=assignmentExpression { ESeq (e1, e2) }
 
-(*----------------------------*)
-(* Expression variants (no 'in' allowed) *)
-(*----------------------------*)
-
 expressionNoIn:
  | assignmentExpressionNoIn { $1 }
  | e1=expressionNoIn "," e2=assignmentExpressionNoIn { ESeq (e1, e2) }
-
-assignmentExpressionNoIn:
- | conditionalExpressionNoIn { $1 }
- | e1=leftHandSideExpression_(d1) op=assignmentOperator e2=assignmentExpressionNoIn
-    {
-      let e1 = assignment_target_of_expr (Some op) e1 in
-      EBin (op, e1, e2)
-    }
-
-conditionalExpressionNoIn:
- | relationalExpressionNoIn { $1 }
- | c=relationalExpressionNoIn "?" a=assignmentExpressionNoIn ":" b=assignmentExpressionNoIn
-   { ECond (c, a, b) }
-
-relationalExpressionNoIn:
- | unaryExpression(d1) { $1 }
- | relationalExpressionNoIn T_LESS_THAN relationalExpression(d1)        { EBin (Lt, $1, $3) }
- | relationalExpressionNoIn T_GREATER_THAN relationalExpression(d1)     { EBin (Gt, $1, $3) }
- | relationalExpressionNoIn T_LESS_THAN_EQUAL relationalExpression(d1)  { EBin (Le, $1, $3) }
- | relationalExpressionNoIn T_GREATER_THAN_EQUAL relationalExpression(d1) { EBin (Ge, $1, $3) }
- | relationalExpressionNoIn T_INSTANCEOF relationalExpression(d1) { EBin(InstanceOf, $1, $3) }
-
- (* no T_IN case *)
-
- | relationalExpressionNoIn T_EQUAL relationalExpression(d1)         { EBin (EqEq, $1, $3) }
- | relationalExpressionNoIn T_NOT_EQUAL relationalExpression(d1)     { EBin (NotEq, $1, $3) }
- | relationalExpressionNoIn T_STRICT_EQUAL relationalExpression(d1)  { EBin (EqEqEq, $1, $3)}
- | relationalExpressionNoIn T_STRICT_NOT_EQUAL relationalExpression(d1) { EBin (NotEqEq, $1, $3) }
- | relationalExpressionNoIn T_BIT_AND relationalExpression(d1)       { EBin (Band, $1, $3)}
- | relationalExpressionNoIn T_BIT_XOR relationalExpression(d1)       { EBin (Bxor, $1, $3)}
- | relationalExpressionNoIn T_BIT_OR relationalExpression(d1)        { EBin (Bor, $1, $3) }
- | relationalExpressionNoIn T_AND relationalExpression(d1)           { EBin (And, $1, $3) }
- | relationalExpressionNoIn T_OR relationalExpression(d1)            { EBin (Or, $1, $3) }
- | relationalExpressionNoIn T_PLING_PLING relationalExpression(d1)   { EBin (Coalesce, $1, $3) }
 
 (*----------------------------*)
 (* Expression variants (no statement-like constructs) *)
@@ -868,7 +891,7 @@ assignmentExpressionForConciseBody:
 statement: s=statementBody { s, p $symbolstartpos }
 
 statementBody:
- | block            { Block $1 }
+ | block                 { Block $1 }
  | variableStatement     { $1 }
  | emptyStatement        { $1 }
  | expressionStatement   { $1 }
