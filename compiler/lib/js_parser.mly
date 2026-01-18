@@ -1113,9 +1113,9 @@ debuggerStatement:
 
 formalParameters:
  | (*empty*)                                     { list [] }
- | formalParameterListRev ","?                    { list (List.rev $1) }
+ | listc(formalParameter) ","?                    { list $1 }
  | r=functionRestParameter                           { { list = []; rest = Some r } }
- | formalParameterListRev "," r=functionRestParameter { { list = List.rev $1; rest = Some r } }
+ | listc(formalParameter) "," r=functionRestParameter { { list = $1; rest = Some r } }
 
 functionRestParameter:
  | "..." singleNameBinding { $2 }
