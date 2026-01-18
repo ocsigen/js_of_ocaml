@@ -480,6 +480,81 @@ let%expect_test "for loops" =
      /*<<fake:3:4>>*/ for(x of 3) ;
     async function f(x){ /*<<fake:5:4>>*/ for await(x of 3) ; /*<<fake:4:4>>*/ } |}]
 
+let%expect_test "for loop with async of" =
+  (* 'async' can be a for-of binding identifier *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+    for ((async) of collection); // for (async of collection) is a syntax error
+    for (let async of collection);
+ |};
+
+  [%expect
+    {|
+    /*<<fake:2:4>>*/ for((async) of collection) ;
+    /*<<fake:3:4>>*/ for(let async of collection) ;
+    |}]
+
+let%expect_test "in operator in arrow concise body" =
+  (* Per ECMAScript spec, [In] parameter propagates through:
+     ArrowFunction -> ConciseBody -> AssignmentExpression
+     In for-loop initializers, 'in' is disallowed in concise bodies *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+    for (let f = x => { return x in obj; }; ; );
+ |};
+  (* 'in' in block body is allowed because block body uses [+In] context *)
+  [%expect
+    {|
+     /*<<fake:2:4>>*/ for
+    (let
+      f =
+         /*<<fake:2:15>>*/ x=>{
+          /*<<fake:2:24>>*/ return x in obj /*<<fake:2:39>>*/ ; /*<<fake:2:17>>*/ };;)
+     ;
+    |}]
+
+let%expect_test "in operator in arrow concise body - parsing error" =
+  (* Per ECMAScript spec, 'in' is disallowed in arrow concise body within for-loop initializer *)
+  print
+    ~report:true
+    ~compact:false
+    ~invalid:true
+    {|
+    for (let f = x => x in obj; ; );
+ |};
+  (* This should be a parsing error per spec - 'in' in concise body inherits [~In] context *)
+  [%expect {| cannot parse js (from l:2, c:24)@. |}]
+
+let%expect_test "in operator in nested arrow concise body" =
+  (* Nested arrows also propagate [~In] context through concise bodies *)
+  print
+    ~report:true
+    ~compact:false
+    ~invalid:true
+    {|
+    for (let f = x => y => x in obj; ; );
+ |};
+  [%expect {| cannot parse js (from l:2, c:29)@. |}]
+
+let%expect_test "in operator in conditional within for-loop arrow" =
+  (* Per ECMAScript spec, the 'then' branch of ?: uses [+In] context *)
+  print ~report:true ~compact:false {|
+    for (let f = x => cond ? x in obj : x; ; );
+ |};
+  [%expect
+    {|
+     /*<<fake:2:4>>*/ for
+    (let
+      f =
+         /*<<fake:2:15>>*/ x=>
+            /*<<fake:2:22>>*/ cond ? x in obj : x /*<<fake:2:41>>*/ ;;)
+     ;
+    |}]
+
 let%expect_test "string template" =
   (* GH#1017 *)
   print
