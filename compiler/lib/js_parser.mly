@@ -744,9 +744,12 @@ assignmentExpression(in_):
     }
  | arrowFunction(in_) { $1 }
  | in_ asyncArrowFunction(in_) { $2 }  (* guarded: avoid conflict with 'for (async of ...)' *)
- | T_YIELD { EYield { delegate= false; expr = None } }
- | T_YIELD e=assignmentExpression(in_) { EYield {delegate=false; expr = (Some e) } }
- | T_YIELD "*" e=assignmentExpression(in_) { EYield {delegate=true; expr = (Some e) } }
+ | yieldExpression(in_) { $1 }
+
+yieldExpression(in_):
+ | T_YIELD { EYield { delegate = false; expr = None } }
+ | T_YIELD e=assignmentExpression(in_) { EYield { delegate = false; expr = Some e } }
+ | T_YIELD "*" e=assignmentExpression(in_) { EYield { delegate = true; expr = Some e } }
 
 assignmentOperator:
  | T_ASSIGN         { Eq }
@@ -794,9 +797,7 @@ assignmentExpressionNoStmt:
  | arrowFunction(in_allowed) { $1 }
  | asyncArrowFunction(in_allowed) { $1 }
  (* es6: *)
- | T_YIELD { EYield {delegate = false; expr = None} }
- | T_YIELD e=assignmentExpression(in_allowed) { EYield {delegate = false; expr = Some e } }
- | T_YIELD "*" e=assignmentExpression(in_allowed) { EYield { delegate = true; expr = (Some e) } }
+ | yieldExpression(in_allowed) { $1 }
 
 (*----------------------------*)
 (* Expression variants (for concise arrow body) *)
@@ -813,9 +814,7 @@ assignmentExpressionForConciseBody(in_):
  | arrowFunction(in_) { $1 }
  | asyncArrowFunction(in_) { $1 }
  (* es6: *)
- | T_YIELD { EYield { delegate = false; expr = None } }
- | T_YIELD e=assignmentExpression(in_) { EYield {delegate = false; expr = (Some e) } }
- | T_YIELD "*" e=assignmentExpression(in_) { EYield {delegate = true; expr = (Some e) } }
+ | yieldExpression(in_) { $1 }
 
 (*************************************************************************)
 (* Section 14: ECMAScript Language: Statements and Declarations         *)
