@@ -741,8 +741,8 @@ assignmentExpression(in_):
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
- | arrowFunction { $1 }
- | in_ asyncArrowFunction { $2 }  (* guarded: avoid conflict with 'for (async of ...)' *)
+ | arrowFunction(in_) { $1 }
+ | in_ asyncArrowFunction(in_) { $2 }  (* guarded: avoid conflict with 'for (async of ...)' *)
  | T_YIELD { EYield { delegate= false; expr = None } }
  | T_YIELD e=assignmentExpression(in_) { EYield {delegate=false; expr = (Some e) } }
  | T_YIELD "*" e=assignmentExpression(in_) { EYield {delegate=true; expr = (Some e) } }
@@ -790,8 +790,8 @@ assignmentExpressionNoStmt:
       EBin (op, e1, e2)
     }
  (* es6: *)
- | arrowFunction { $1 }
- | asyncArrowFunction { $1 }
+ | arrowFunction(in_allowed) { $1 }
+ | asyncArrowFunction(in_allowed) { $1 }
  (* es6: *)
  | T_YIELD { EYield {delegate = false; expr = None} }
  | T_YIELD e=assignmentExpression(in_allowed) { EYield {delegate = false; expr = Some e } }
@@ -810,20 +810,20 @@ primaryExpressionForConciseBody:
  | asyncFunctionExpression { $1 }
  | asyncGeneratorExpression{ $1 }
 
-assignmentExpressionForConciseBody:
- | conditionalExpression(primaryExpressionForConciseBody, in_allowed) { $1 }
- | e1=leftHandSideExpression_(primaryExpressionForConciseBody) op=assignmentOperator e2=assignmentExpression(in_allowed)
+assignmentExpressionForConciseBody(in_):
+ | conditionalExpression(primaryExpressionForConciseBody, in_) { $1 }
+ | e1=leftHandSideExpression_(primaryExpressionForConciseBody) op=assignmentOperator e2=assignmentExpression(in_)
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
  (* es6: *)
- | arrowFunction { $1 }
- | asyncArrowFunction { $1 }
+ | arrowFunction(in_) { $1 }
+ | asyncArrowFunction(in_) { $1 }
  (* es6: *)
  | T_YIELD { EYield { delegate = false; expr = None } }
- | T_YIELD e=assignmentExpression(in_allowed) { EYield {delegate = false; expr = (Some e) } }
- | T_YIELD "*" e=assignmentExpression(in_allowed) { EYield {delegate = true; expr = (Some e) } }
+ | T_YIELD e=assignmentExpression(in_) { EYield {delegate = false; expr = (Some e) } }
+ | T_YIELD "*" e=assignmentExpression(in_) { EYield {delegate = true; expr = (Some e) } }
 
 (*************************************************************************)
 (* Section 14: ECMAScript Language: Statements and Declarations         *)
@@ -1164,17 +1164,17 @@ functionExpression:
 (*----------------------------*)
 
 (* TODO conflict with as then in identifierKeyword *)
-arrowFunction:
-  | i=identifier T_ARROW b=conciseBody
+arrowFunction(in_):
+  | i=identifier T_ARROW b=conciseBody(in_)
     { let b,consise = b in
       EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
-  | T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody
+  | T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(in_)
     { let b,consise = b in
       EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
-conciseBody:
+conciseBody(in_):
  | "{" b=functionBody "}" { b, false }
- | e=assignmentExpressionForConciseBody { [(Return_statement (Some e, p $endpos), p $symbolstartpos)], true }
+ | e=assignmentExpressionForConciseBody(in_) { [(Return_statement (Some e, p $endpos), p $symbolstartpos)], true }
 
 (*----------------------------*)
 (* 15.4 Method Definitions *)
@@ -1260,11 +1260,11 @@ asyncFunctionExpression:
  | T_ASYNC T_FUNCTION name=identifier? args=callSignature "{" b=functionBody "}"
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
-asyncArrowFunction:
-  | T_ASYNC i=identifier T_ARROW b=conciseBody {
+asyncArrowFunction(in_):
+  | T_ASYNC i=identifier T_ARROW b=conciseBody(in_) {
       let b,consise = b in
       EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
-  | T_ASYNC T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody
+  | T_ASYNC T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(in_)
     { let b,consise = b in
       EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
