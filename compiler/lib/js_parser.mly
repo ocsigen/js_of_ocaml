@@ -422,10 +422,10 @@ primaryExpression(x):
  | e=x { e }
 
 d1:
- | primaryExpressionStmt { $1 }
+ | primaryExpressionFunClass { $1 }
  | objectLiteral           { $1 }
 
-primaryExpressionStmt:
+primaryExpressionFunClass:
  | functionExpression      { $1 }
  | classExpression         { $1 }
  (* es6: *)
@@ -804,8 +804,8 @@ assignmentExpressionNoStmt:
 (*----------------------------*)
 
 assignmentExpressionForConciseBody(in_):
- | conditionalExpression(primaryExpressionStmt, in_) { $1 }
- | e1=leftHandSideExpression_(primaryExpressionStmt) op=assignmentOperator e2=assignmentExpression(in_)
+ | conditionalExpression(primaryExpressionFunClass, in_) { $1 }
+ | e1=leftHandSideExpression_(primaryExpressionFunClass) op=assignmentOperator e2=assignmentExpression(in_)
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
@@ -1374,7 +1374,7 @@ exportDeclaration:
       let k = ExportDefaultExpression e in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=primaryExpressionStmt endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
+ | T_EXPORT T_DEFAULT e=primaryExpressionFunClass endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
     {
       let k = match e with
       | EFun (id, decl) ->
