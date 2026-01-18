@@ -727,7 +727,7 @@ shortCircuitExpression(x, in_):
 
 conditionalExpression(x, in_):
  | shortCircuitExpression(x, in_)                                    { $1 }
- | shortCircuitExpression(x, in_) "?" assignmentExpression(in_) ":" assignmentExpression(in_)
+ | shortCircuitExpression(x, in_) "?" assignmentExpression(in_allowed) ":" assignmentExpression(in_)
    { ECond ($1, $3, $5) }
 
 (*----------------------------*)
@@ -741,11 +741,11 @@ assignmentExpression(in_):
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
- | in_ arrowFunction { $2 }
- | in_ asyncArrowFunction { $2 }
- | in_ T_YIELD { EYield { delegate= false; expr = None } }
- | in_ T_YIELD e=assignmentExpression(in_) { EYield {delegate=false; expr = (Some e) } }
- | in_ T_YIELD "*" e=assignmentExpression(in_) { EYield {delegate=true; expr = (Some e) } }
+ | arrowFunction { $1 }
+ | asyncArrowFunction { $1 }
+ | T_YIELD { EYield { delegate= false; expr = None } }
+ | T_YIELD e=assignmentExpression(in_) { EYield {delegate=false; expr = (Some e) } }
+ | T_YIELD "*" e=assignmentExpression(in_) { EYield {delegate=true; expr = (Some e) } }
 
 assignmentOperator:
  | T_ASSIGN         { Eq }
