@@ -1,5 +1,5 @@
 (* Js_of_ocaml compiler *)
-(* Copyright (C) 2013 Hugo Heuzard *)
+(* Copyright (C) 2013-2025 Hugo Heuzard *)
 
 %{
 
@@ -11,46 +11,17 @@
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * version 2.1 as published by the Free Software Foundation, with the
- * special exception on linking described in file license.txt.
- *
- * This library is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
- * license.txt for more details.
+ * special exception on linking described in file LICENSE.
  *)
 
 (*************************************************************************)
 (* Prelude *)
 (*************************************************************************)
-(* This file contains a grammar for Javascript (ES6 and more), as well
- * as partial support for Typescript.
+(* This file contains a grammar for Javascript (ES6 and more).
  *
  * reference:
  *  - https://en.wikipedia.org/wiki/JavaScript_syntax
  *  - http://www.ecma-international.org/publications/standards/Ecma-262.htm
- *  - https://github.com/Microsoft/TypeScript/blob/master/doc/spec.md#A
- *
- * src: originally ocamlyacc-ified from Marcel Laverdet 'fbjs2' via Emacs
- * macros, itself extracted from the official ECMAscript specification at:
- * http://www.ecma-international.org/publications/standards/ecma-262.htm
- * back in the day (probably ES4 or ES3).
- *
- * I have heavily extended the grammar to provide the first parser for Flow.
- * I have extended it also to deal with many new Javascript features
- * (see cst_js.ml top comment).
- *
- * The grammar is close to the ECMA grammar but I've simplified a few things
- * when I could:
- *  - less intermediate grammar rules for advanced features
- *    (they are inlined in the original grammar rule)
- *  - by using my retagging-tokens technique (see parsing_hacks_js.ml)
- *    I could also get rid of some of the ugliness in the ECMA grammar
- *    that has to deal with ambiguous constructs
- *    (they conflate together expressions and arrow parameters, object
- *    values and object matching, etc.).
- *    Instead, in this grammar things are clearly separated.
- *  - I've used some macros to factorize rules, including some tricky
- *    macros to factorize expression rules.
  *
  * The grammar rules are organized to follow the structure of the
  * ECMAScript specification (ECMA-262):
@@ -577,7 +548,6 @@ arguments: "(" argumentList ")" { $2 }
 
 argumentList:
  | (*empty*)   { [] }
- (* argumentList must be written in a left-recursive way(see conflicts.txt) *)
  | listc(argumentListElement) ","?  { $1  }
 
 (* assignmentExpression because expression supports sequence of exprs with ',' *)
@@ -1120,16 +1090,6 @@ formalParameters:
 functionRestParameter:
  | "..." singleNameBinding { $2 }
 
-(* must be written in a left-recursive way (see conflicts.txt) *)
-formalParameterListRev:
- | formalParameterListRev "," formalParameter { $3::$1 }
- | formalParameter                           { [$1] }
-
-(* The ECMA and Typescript grammars imposes more restrictions
- * (some require_parameter, optional_parameter, rest_parameter)
- * but I've simplified.
- * We could also factorize with bindingElement as done by ECMA.
- *)
 formalParameter:
   | singleNameBinding initializer_(in_allowed)? { $1, $2 }
 
@@ -1221,7 +1181,6 @@ classHeritage: T_EXTENDS leftHandSideExpression { $2 }
 
 classBody: "{" classElement* "}" { List.flatten $2 }
 
-(* can't factorize with static_opt, or access_modifier_opt; ambiguities  *)
 classElement:
  |          m=methodDefinition(classElementName)
     { let n,m = m in [ CEMethod (false, n, m) ] }
