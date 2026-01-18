@@ -1385,18 +1385,18 @@ exportDeclaration:
       in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
-| T_EXPORT "*" T_FROM from=moduleSpecifier sc {
+| T_EXPORT "*" from=fromClause sc {
     let kind = Export_all None in
     let pos = $symbolstartpos in
     Export (ExportFrom ({from; kind}),pi pos), p pos
   }
- | T_EXPORT "*" T_AS id=moduleExportName T_FROM from=moduleSpecifier sc {
+ | T_EXPORT "*" T_AS id=moduleExportName from=fromClause sc {
     let (_,id,_) = id in
     let kind = Export_all (Some id) in
     let pos = $symbolstartpos in
     Export (ExportFrom ({from; kind}), pi pos), p pos
   }
-| T_EXPORT names=exportClause T_FROM from=moduleSpecifier sc {
+| T_EXPORT names=exportClause from=fromClause sc {
     let names = List.map (fun ((_,a,_), (_,b,_)) -> a, b) names in
     let kind = Export_names names in
     let pos = $symbolstartpos in
