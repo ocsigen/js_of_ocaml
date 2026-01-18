@@ -742,7 +742,7 @@ assignmentExpression(in_):
       EBin (op, e1, e2)
     }
  | arrowFunction { $1 }
- | asyncArrowFunction { $1 }
+ | in_ asyncArrowFunction { $2 }  (* guarded: avoid conflict with 'for (async of ...)' *)
  | T_YIELD { EYield { delegate= false; expr = None } }
  | T_YIELD e=assignmentExpression(in_) { EYield {delegate=false; expr = (Some e) } }
  | T_YIELD "*" e=assignmentExpression(in_) { EYield {delegate=true; expr = (Some e) } }
