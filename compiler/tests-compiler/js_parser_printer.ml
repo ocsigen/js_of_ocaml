@@ -496,6 +496,24 @@ let%expect_test "for loop with async of" =
     /*<<fake:3:4>>*/ for(let async of collection) ;
     |}]
 
+let%expect_test "arrow function in for loop initializer" =
+  (* GH#2139 *)
+  print
+    ~report:true
+    ~compact:false
+    {|
+    for (var t = () => 1; false; undefined) {
+      console.log("test");
+    }
+ |};
+  [%expect
+    {|
+     /*<<fake:2:4>>*/ for
+    (var t =  /*<<fake:2:15>>*/ ()=> /*<<fake:2:23>>*/ 1 /*<<fake:2:24>>*/ ;
+     false;
+     undefined){ /*<<fake:3:6>>*/ console.log("test");}
+    |}]
+
 let%expect_test "in operator in arrow concise body" =
   (* Per ECMAScript spec, [In] parameter propagates through:
      ArrowFunction -> ConciseBody -> AssignmentExpression
