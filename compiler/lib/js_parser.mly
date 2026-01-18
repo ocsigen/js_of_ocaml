@@ -421,10 +421,11 @@ primaryExpression(x):
  | e=primaryExpressionNoBraces
  | e=x { e }
 
-d1: primaryExpressionWithStmt { $1 }
-
-primaryExpressionWithStmt:
+d1:
+ | primaryExpressionStmt { $1 }
  | objectLiteral           { $1 }
+
+primaryExpressionStmt:
  | functionExpression      { $1 }
  | classExpression         { $1 }
  (* es6: *)
@@ -801,18 +802,9 @@ assignmentExpressionNoStmt:
 (* Expression variants (for concise arrow body) *)
 (*----------------------------*)
 
-primaryExpressionForConciseBody:
- | functionExpression       { $1 }
- | classExpression          { $1 }
- (* es6: *)
- | generatorExpression      { $1 }
- (* es7: *)
- | asyncFunctionExpression { $1 }
- | asyncGeneratorExpression{ $1 }
-
 assignmentExpressionForConciseBody(in_):
- | conditionalExpression(primaryExpressionForConciseBody, in_) { $1 }
- | e1=leftHandSideExpression_(primaryExpressionForConciseBody) op=assignmentOperator e2=assignmentExpression(in_)
+ | conditionalExpression(primaryExpressionStmt, in_) { $1 }
+ | e1=leftHandSideExpression_(primaryExpressionStmt) op=assignmentOperator e2=assignmentExpression(in_)
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
@@ -1338,16 +1330,6 @@ moduleSpecifier:
 (* 16.2.3 Exports *)
 (*----------------------------*)
 
-exportFunctionOrClass:
- | functionExpression       { $1 }
- | classExpression          { $1 }
- (* es6: *)
- | generatorExpression      { $1 }
- (* es7: *)
- | asyncFunctionExpression { $1 }
- | asyncGeneratorExpression{ $1 }
-
-
 exportDeclaration:
   | T_EXPORT names=exportClause sc {
     let exception Invalid of Lexing.position in
@@ -1393,7 +1375,7 @@ exportDeclaration:
       let k = ExportDefaultExpression e in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=exportFunctionOrClass endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
+ | T_EXPORT T_DEFAULT e=primaryExpressionStmt endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
     {
       let k = match e with
       | EFun (id, decl) ->
