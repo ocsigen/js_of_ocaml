@@ -1353,6 +1353,11 @@ struct
     | Var -> PP.string f "var"
     | Let -> PP.string f "let"
     | Const -> PP.string f "const"
+    | Using -> PP.string f "using"
+    | AwaitUsing ->
+        PP.string f "await";
+        PP.space f;
+        PP.string f "using"
 
   and variable_declaration_list ?in_ kind close f = function
     | [] -> ()

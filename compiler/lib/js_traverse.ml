@@ -1048,7 +1048,7 @@ class free =
     method variable_declaration k x =
       let ids = bound_idents_of_variable_declaration x in
       (match k with
-      | Let | Const -> List.iter ids ~f:m#def_local
+      | Let | Const | Using | AwaitUsing -> List.iter ids ~f:m#def_local
       | Var -> List.iter ids ~f:m#def_var);
       super#variable_declaration k x
 
@@ -1193,12 +1193,12 @@ class free =
       (match x with
       | BindingIdent x -> (
           match k with
-          | Let | Const -> m#def_local x
+          | Let | Const | Using | AwaitUsing -> m#def_local x
           | Var -> m#def_var x)
       | BindingPattern x -> (
           let ids = bound_idents_of_pattern x in
           match k with
-          | Let | Const -> List.iter ids ~f:m#def_local
+          | Let | Const | Using | AwaitUsing -> List.iter ids ~f:m#def_local
           | Var -> List.iter ids ~f:m#def_var));
       super#for_binding k x
   end
@@ -1302,7 +1302,8 @@ let declared scope params body =
      method variable_declaration k l =
        if
          match scope, k with
-         | (Lexical_block | Fun_block _ | Module | Script), (Let | Const) -> depth = 0
+         | (Lexical_block | Fun_block _ | Module | Script), (Let | Const | Using | AwaitUsing)
+           -> depth = 0
          | (Lexical_block | Script), Var -> false
          | (Fun_block _ | Module), Var -> true
        then
@@ -1316,7 +1317,8 @@ let declared scope params body =
      method for_binding k p =
        if
          match scope, k with
-         | (Lexical_block | Fun_block _ | Module | Script), (Let | Const) -> depth = 0
+         | (Lexical_block | Fun_block _ | Module | Script), (Let | Const | Using | AwaitUsing)
+           -> depth = 0
          | (Lexical_block | Script), Var -> false
          | (Fun_block _ | Module), Var -> true
        then
@@ -1764,9 +1766,9 @@ class clean =
               | Let, Let -> true
               | Var, Var -> true
               | Const, Const -> true
-              | Let, _ -> false
-              | Var, _ -> false
-              | Const, _ -> false)
+              | Using, Using -> true
+              | AwaitUsing, AwaitUsing -> true
+              | (Let | Var | Const | Using | AwaitUsing), _ -> false)
           | _, _ -> false)
       |> List.map ~f:(function
         | (Variable_statement (k1, _), _) :: _ as l ->

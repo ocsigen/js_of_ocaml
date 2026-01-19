@@ -104,7 +104,7 @@ T_ENUM
 T_PUBLIC T_PRIVATE T_PROTECTED
 T_PACKAGE
 T_DEBUGGER
-T_GET T_SET
+T_GET T_SET T_USING
 T_FROM
 T_AS
 T_TARGET
@@ -248,6 +248,7 @@ identifierSemiKeyword:
  | T_OF { T_OF }
  | T_SET { T_SET }
  | T_TARGET {T_TARGET }
+ | T_USING { T_USING }
 
   (* future reserved words in strict mode code. *)
   | T_IMPLEMENTS { T_IMPLEMENTS }
@@ -870,6 +871,9 @@ lexicalDeclaration:
  (* es6: *)
  | T_CONST l=listc(lexicalBinding) sc { Variable_statement (Const, l)}
  | T_LET l=listc(lexicalBinding) sc { Variable_statement (Let, l)}
+ (* Explicit Resource Management *)
+ | T_USING l=listc(usingBinding) sc { Variable_statement (Using, l)}
+ | T_AWAIT T_USING l=listc(usingBinding) sc { Variable_statement (AwaitUsing, l)}
 
 (* 14.3.2 Variable Statement *)
 variableStatement:
@@ -881,6 +885,11 @@ variableDeclaration(in_):
 
 lexicalBinding:
  | i=identifier e=initializer_(in_allowed)?            { DeclIdent (i,e) }
+ | p=bindingPattern e=initializer_(in_allowed)   { DeclPattern (p, e) }
+
+(* using bindings require an initializer *)
+usingBinding:
+ | i=identifier e=initializer_(in_allowed)       { DeclIdent (i, Some e) }
  | p=bindingPattern e=initializer_(in_allowed)   { DeclPattern (p, e) }
 
 initializer_(in_):
@@ -898,6 +907,9 @@ forBinding:
  (* es6: *)
  | T_CONST b=forBindingElement { Const, b }
  | T_LET  b=forBindingElement  { Let, b }
+ (* Explicit Resource Management *)
+ | T_USING b=forBindingElement { Using, b }
+ | T_AWAIT T_USING b=forBindingElement { AwaitUsing, b }
 
 forBindingElement:
  | singleNameBinding               { $1 }

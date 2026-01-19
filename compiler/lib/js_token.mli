@@ -94,6 +94,7 @@ type t =
   | T_AWAIT
   | T_GET
   | T_SET
+  | T_USING
   (* Operators *)
   | T_RSHIFT3_ASSIGN
   | T_RSHIFT_ASSIGN
