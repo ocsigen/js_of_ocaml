@@ -306,26 +306,6 @@ identifierKeywordToken:
   | T_LET { T_LET }
   | T_STATIC { T_STATIC }
 
-fieldName:
- | identifierName    { $1 }
- | identifierKeyword { $1 }
-
-methodName:
- | identifierName    { $1 }
- | identifierKeyword { $1 }
-
-propertyName:
- | i=identifierName { PNI i }
- | i=identifierKeyword { PNI i }
- | s=T_STRING         {
-    let s, _len = s in PNS s }
- | n=numericLiteral  { PNN (Num.of_string_unsafe (n)) }
- | n=bigIntLiteral  { PNN (Num.of_string_unsafe (n)) }
- | "[" p=assignmentExpression(in_allowed) "]" { PComputed p }
-
-labelIdentifier:
-  | identifierName { Label.of_string $1 }
-
 (*----------------------------*)
 (* 12.8.1 Null Literals *)
 (*----------------------------*)
@@ -449,6 +429,15 @@ arrayElement:
 (* 13.2.5 Object Initializer *)
 (*----------------------------*)
 
+propertyName:
+ | i=identifierName { PNI i }
+ | i=identifierKeyword { PNI i }
+ | s=T_STRING         {
+    let s, _len = s in PNS s }
+ | n=numericLiteral  { PNN (Num.of_string_unsafe (n)) }
+ | n=bigIntLiteral  { PNN (Num.of_string_unsafe (n)) }
+ | "[" p=assignmentExpression(in_allowed) "]" { PComputed p }
+
 objectLiteral:
  | "{" "}"                                      { EObj [] }
  | "{" listc(propertyDefinition) ","? "}"       { EObj $2 }
@@ -472,18 +461,15 @@ leftHandSideExpression: leftHandSideExpression_(d1) { $1 }
 leftHandSideExpression_(x):
  | newExpression(x)  { $1 }
  | callExpression(x) { $1 }
-
-(*----------------------------*)
-(* 13.3.1 Static Semantics (Property Accessors) *)
-(*----------------------------*)
-
-optionalChainingPunctuator:
-  | "." { ANormal }
-  | T_PLING_PERIOD { ANullish }
+ | optionalExpression(x) { $1 }
 
 (*----------------------------*)
 (* 13.3.2 Property Accessors *)
 (*----------------------------*)
+
+fieldName:
+ | identifierName    { $1 }
+ | identifierKeyword { $1 }
 
 memberExpression(x):
  | e=primaryExpression(x)
@@ -492,22 +478,20 @@ memberExpression(x):
     { EDot (vartok $startpos($1) T_IMPORT,ANormal,(Stdlib.Utf8_string.of_string_exn "meta")) }
  | e1=memberExpression(x) "[" e2=expression(in_allowed) "]"
      { (EAccess (e1,ANormal, e2)) }
- | e1=memberExpression(x) T_PLING_PERIOD "[" e2=expression(in_allowed) "]"
-     { (EAccess (e1,ANullish, e2)) }
- | e1=memberExpression(x) ak=optionalChainingPunctuator i=fieldName
-     { (EDot(e1,ak,i)) }
+ | e1=memberExpression(x) "." i=fieldName
+     { (EDot(e1,ANormal,i)) }
  | T_NEW e1=memberExpression(d1) a=arguments
      { (ENew(e1, Some a, p $symbolstartpos)) }
  | e=memberExpression(x) t=templateLiteral
      { ECallTemplate(e, t, p $symbolstartpos) }
  | T_SUPER "[" e=expression(in_allowed) "]"
       { (EAccess (vartok $startpos($1) T_SUPER,ANormal, e)) }
- | T_SUPER ak=optionalChainingPunctuator i=fieldName
-     { (EDot(vartok $startpos($1) T_SUPER,ak,i)) }
+ | T_SUPER "." i=fieldName
+     { (EDot(vartok $startpos($1) T_SUPER,ANormal,i)) }
   | T_NEW "." T_TARGET
      { (EDot(vartok $startpos($1) T_NEW,ANormal,Stdlib.Utf8_string.of_string_exn "target")) }
-  | e1=memberExpression(x) a=optionalChainingPunctuator T_POUND i=fieldName
-    { (EDotPrivate(e1,a,i)) }
+  | e1=memberExpression(x) "." T_POUND i=fieldName
+    { (EDotPrivate(e1,ANormal,i)) }
 
 (*----------------------------*)
 (* 13.3.3 The new Operator *)
@@ -526,29 +510,68 @@ callExpression(x):
      { (ECall(vartok $startpos($1) T_IMPORT, ANormal, a, p $symbolstartpos)) }
  | e=memberExpression(x) a=arguments
      { (ECall(e, ANormal, a, p $symbolstartpos)) }
- | e=memberExpression(x) T_PLING_PERIOD a=arguments
-     { (ECall(e, ANullish, a, p $symbolstartpos)) }
  | e=callExpression(x) a=arguments
      { (ECall(e, ANormal, a, p $symbolstartpos)) }
- | e=callExpression(x) T_PLING_PERIOD a=arguments
-     { (ECall(e, ANullish, a, p $symbolstartpos)) }
  | e=callExpression(x) "[" e2=expression(in_allowed) "]"
      { (EAccess (e, ANormal,  e2)) }
- | e=callExpression(x) T_PLING_PERIOD "[" e2=expression(in_allowed) "]"
-    { (EAccess (e, ANullish, e2)) }
  | e=callExpression(x) t=templateLiteral
     { ECallTemplate(e, t,p $symbolstartpos) }
  | T_SUPER a=arguments { ECall(vartok $startpos($1) T_SUPER,ANormal, a, p $symbolstartpos) }
- | e=callExpression(x) a=optionalChainingPunctuator i=methodName
-    { EDot (e,a,i) }
- | e=callExpression(x) a=optionalChainingPunctuator T_POUND i=methodName
-    { EDotPrivate (e,a,i) }
+ | e=callExpression(x) "." i=methodName
+    { EDot (e,ANormal,i) }
+ | e=callExpression(x) "." T_POUND i=methodName
+    { EDotPrivate (e,ANormal,i) }
 
 (*----------------------------*)
-(* 13.3.5 Argument Lists *)
+(* 13.3.5 Optional Chains *)
 (*----------------------------*)
 
-arguments: "(" argumentList ")" { $2 }
+optionalExpression(x):
+ | e=memberExpression(x) c=optionalChain
+    { c e }
+ | e=callExpression(x) c=optionalChain
+    { c e }
+ | e=optionalExpression(x) c=optionalChain
+    { c e }
+
+optionalChain:
+ (* ?. Arguments *)
+ | T_PLING_PERIOD a=arguments
+    { fun e -> ECall(e, ANullish, a, p $symbolstartpos) }
+ (* ?. [ Expression ] *)
+ | T_PLING_PERIOD "[" e2=expression(in_allowed) "]"
+    { fun e -> EAccess(e, ANullish, e2) }
+ (* ?. IdentifierName *)
+ | T_PLING_PERIOD i=fieldName
+    { fun e -> EDot(e, ANullish, i) }
+ (* ?. TemplateLiteral *)
+ | T_PLING_PERIOD t=templateLiteral
+    { fun e -> ECallTemplate(e, t, p $symbolstartpos) }
+ (* ?. PrivateIdentifier *)
+ | T_PLING_PERIOD T_POUND i=fieldName
+    { fun e -> EDotPrivate(e, ANullish, i) }
+ (* OptionalChain Arguments *)
+ | c=optionalChain a=arguments
+    { fun e -> ECall(c e, ANormal, a, p $symbolstartpos) }
+ (* OptionalChain [ Expression ] *)
+ | c=optionalChain "[" e2=expression(in_allowed) "]"
+    { fun e -> EAccess(c e, ANormal, e2) }
+ (* OptionalChain . IdentifierName *)
+ | c=optionalChain "." i=fieldName
+    { fun e -> EDot(c e, ANormal, i) }
+ (* OptionalChain TemplateLiteral *)
+ | c=optionalChain t=templateLiteral
+    { fun e -> ECallTemplate(c e, t, p $symbolstartpos) }
+ (* OptionalChain . PrivateIdentifier *)
+ | c=optionalChain "." T_POUND i=fieldName
+    { fun e -> EDotPrivate(c e, ANormal, i) }
+
+(*----------------------------*)
+(* 13.3.6 Argument Lists *)
+(*----------------------------*)
+
+arguments:
+ | "(" argumentList ")" { $2 }
 
 argumentList:
  | (*empty*)   { [] }
@@ -719,11 +742,6 @@ assignmentExpression(in_):
  | arrowFunction(in_) { $1 }
  | in_ e=asyncArrowFunction(in_) { e }  (* guarded: avoid conflict with 'for (async of ...)' *)
  | yieldExpression(in_) { $1 }
-
-yieldExpression(in_):
- | T_YIELD { EYield { delegate = false; expr = None } }
- | T_YIELD e=assignmentExpression(in_) { EYield { delegate = false; expr = Some e } }
- | T_YIELD "*" e=assignmentExpression(in_) { EYield { delegate = true; expr = Some e } }
 
 assignmentOperator:
  | T_ASSIGN         { Eq }
@@ -1039,6 +1057,9 @@ defaultClause:
 (* 14.13 Labelled Statements *)
 (*----------------------------*)
 
+labelIdentifier:
+  | identifierName { Label.of_string $1 }
+
 labelledStatement:
  | l=labelIdentifier ":" s=statement { Labelled_statement (l, s)}
 
@@ -1130,6 +1151,10 @@ conciseBody(in_):
 (* 15.4 Method Definitions *)
 (*----------------------------*)
 
+methodName:
+ | identifierName    { $1 }
+ | identifierKeyword { $1 }
+
 methodDefinition(name):
  | T_GET name=name args=callSignature "{" b=functionBody "}" { name, MethodGet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
  | T_SET name=name args=callSignature "{" b=functionBody "}" { name, MethodSet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
@@ -1153,6 +1178,11 @@ generatorDeclaration:
 generatorExpression:
  | T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody "}"
    { EFun (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
+
+yieldExpression(in_):
+ | T_YIELD { EYield { delegate = false; expr = None } }
+ | T_YIELD e=assignmentExpression(in_) { EYield { delegate = false; expr = Some e } }
+ | T_YIELD "*" e=assignmentExpression(in_) { EYield { delegate = true; expr = Some e } }
 
 (*----------------------------*)
 (* 15.6 Async Generator Function Definitions *)
@@ -1208,6 +1238,10 @@ asyncFunctionDeclaration:
 asyncFunctionExpression:
  | T_ASYNC T_FUNCTION name=identifier? args=callSignature "{" b=functionBody "}"
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
+
+(*----------------------------*)
+(* 15.9 Async Arrow Function Definitions *)
+(*----------------------------*)
 
 asyncArrowFunction(in_):
   | T_ASYNC i=identifier T_ARROW b=conciseBody(in_) {
