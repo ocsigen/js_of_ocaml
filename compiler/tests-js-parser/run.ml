@@ -100,6 +100,31 @@ let clean_loc = new clean_loc
 
 let clean_loc p = clean_loc#program p
 
+class normalize =
+  object (self)
+    inherit Js_traverse.map as super
+
+    method! expression e =
+      match e with
+      | EBin (Or, e1, e3) -> (
+          match self#expression e1 with
+          | EBin (Or, e1, e2) -> EBin (Or, e1, self#expression (EBin (Or, e2, e3)))
+          | e1 -> EBin (Or, e1, self#expression e3))
+      | EBin (And, e1, e3) -> (
+          match self#expression e1 with
+          | EBin (And, e1, e2) -> EBin (And, e1, self#expression (EBin (And, e2, e3)))
+          | e1 -> EBin (And, e1, self#expression e3))
+      | ESeq (e1, e3) -> (
+          match self#expression e1 with
+          | ESeq (e1, e2) -> ESeq (e1, self#expression (ESeq (e2, e3)))
+          | e1 -> ESeq (e1, self#expression e3))
+      | _ -> super#expression e
+  end
+
+let normalize = new normalize
+
+let normalize p = normalize#program p
+
 let p_to_string p =
   let buffer = Buffer.create 100 in
   let pp = Pretty_print.to_buffer buffer in
@@ -276,7 +301,8 @@ let () =
                   in
                   let p2 = List.concat_map p2 ~f:snd in
                   match
-                    Poly.equal (clean_loc p1) (clean_loc p2), check_toks toks1 [] toks2 []
+                    ( Poly.equal (clean_loc (normalize p1)) (clean_loc (normalize p2))
+                    , check_toks toks1 [] toks2 [] )
                   with
                   | true, Error s when false ->
                       fail := (Tok_missmatch s, filename) :: !fail
