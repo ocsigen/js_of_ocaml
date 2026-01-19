@@ -226,7 +226,7 @@ optl(X):
 (*************************************************************************)
 
 (*----------------------------*)
-(* 12.6 Names and Keywords *)
+(* 12.7 Names and Keywords *)
 (*----------------------------*)
 
 (* IdentifierName - used for entities, parameters, labels, etc. *)
@@ -307,14 +307,14 @@ identifierKeywordToken:
   | T_STATIC { T_STATIC }
 
 (*----------------------------*)
-(* 12.8.1 Null Literals *)
+(* 12.9.1 Null Literals *)
 (*----------------------------*)
 
 nullLiteral:
  | T_NULL { (EVar (var (p $symbolstartpos) (Stdlib.Utf8_string.of_string_exn "null"))) }
 
 (*----------------------------*)
-(* 12.8.2 Boolean Literals *)
+(* 12.9.2 Boolean Literals *)
 (*----------------------------*)
 
 booleanLiteral:
@@ -322,7 +322,7 @@ booleanLiteral:
  | T_FALSE { (EBool false) }
 
 (*----------------------------*)
-(* 12.8.3 Numeric Literals *)
+(* 12.9.3 Numeric Literals *)
 (*----------------------------*)
 
 numericLiteral:
@@ -332,13 +332,13 @@ bigIntLiteral:
  | T_BIGINT { let _,f = $1 in (f) }
 
 (*----------------------------*)
-(* 12.8.4 String Literals *)
+(* 12.9.4 String Literals *)
 (*----------------------------*)
 
 stringLiteral: s=T_STRING { (EStr (fst s)) }
 
 (*----------------------------*)
-(* 12.8.5 Regular Expression Literals *)
+(* 12.9.5 Regular Expression Literals *)
 (*----------------------------*)
 
 regularExpressionLiteral:
@@ -347,7 +347,7 @@ regularExpressionLiteral:
    (ERegexp (s, if String.equal f "" then None else Some f)) }
 
 (*----------------------------*)
-(* 12.8.6 Template Literal Lexical Components *)
+(* 12.9.6 Template Literal Lexical Components *)
 (*----------------------------*)
 
 templateLiteral: T_BACKQUOTE templateSpan* T_BACKQUOTE  { $2 }
@@ -523,6 +523,23 @@ callExpression(x):
     { EDotPrivate (e,ANormal,i) }
 
 (*----------------------------*)
+(* 13.3.8 Argument Lists *)
+(*----------------------------*)
+
+arguments:
+ | "(" argumentList ")" { $2 }
+
+argumentList:
+ | (*empty*)   { [] }
+ | listc(argumentListElement) ","?  { $1  }
+
+(* assignmentExpression because expression supports sequence of exprs with ',' *)
+argumentListElement:
+ | assignmentExpression(in_allowed)       { Arg $1 }
+ (* es6: spread element, allowed not only in last position *)
+ | "..." assignmentExpression(in_allowed) { ArgSpread $2 }
+
+(*----------------------------*)
 (* 13.3.9 Optional Chains *)
 (*----------------------------*)
 
@@ -565,23 +582,6 @@ optionalChain:
  (* OptionalChain . PrivateIdentifier *)
  | c=optionalChain "." T_POUND i=fieldName
     { fun e -> EDotPrivate(c e, ANormal, i) }
-
-(*----------------------------*)
-(* 13.3.8 Argument Lists *)
-(*----------------------------*)
-
-arguments:
- | "(" argumentList ")" { $2 }
-
-argumentList:
- | (*empty*)   { [] }
- | listc(argumentListElement) ","?  { $1  }
-
-(* assignmentExpression because expression supports sequence of exprs with ',' *)
-argumentListElement:
- | assignmentExpression(in_allowed)       { Arg $1 }
- (* es6: spread element, allowed not only in last position *)
- | "..." assignmentExpression(in_allowed) { ArgSpread $2 }
 
 (*----------------------------*)
 (* 13.4 Update Expressions *)
@@ -1027,14 +1027,14 @@ returnStatement:
  | T_RETURN e=expression(in_allowed)? sc { (Return_statement (e, p $endpos(e))) }
 
 (*----------------------------*)
-(* 14.15 The with Statement *)
+(* 14.11 The with Statement *)
 (*----------------------------*)
 
 withStatement:
  | T_WITH "(" e=expression(in_allowed) ")" s=statement { (With_statement (e,s)) }
 
 (*----------------------------*)
-(* 14.13 The switch Statement *)
+(* 14.12 The switch Statement *)
 (*----------------------------*)
 
 switchStatement:
