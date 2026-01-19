@@ -213,7 +213,7 @@ class map : mapper =
       | Import (import, loc) -> Import (m#import import, m#parse_info loc)
       | Export (export, loc) -> Export (m#export export, m#parse_info loc)
 
-    method import { from; kind } =
+    method import { from; kind; withClause } =
       let kind =
         match kind with
         | Namespace (iopt, i) -> Namespace (Option.map ~f:m#ident iopt, m#ident i)
@@ -223,7 +223,7 @@ class map : mapper =
         | Default import_default -> Default (m#ident import_default)
         | SideEffect -> SideEffect
       in
-      { from; kind }
+      { from; kind; withClause }
 
     method export e =
       match e with
@@ -589,7 +589,7 @@ class iter : iterator =
       | Import (x, _loc) -> m#import x
       | Export (x, _loc) -> m#export x
 
-    method import { from = _; kind } =
+    method import { from = _; kind; withClause = _ } =
       match kind with
       | Namespace (iopt, i) ->
           Option.iter ~f:m#ident iopt;
@@ -1176,7 +1176,7 @@ class free =
             | Some f -> Some (m#block f)
           in
           Try_statement (b, w, f)
-      | Import ({ from = _; kind }, _) ->
+      | Import ({ from = _; kind; withClause = _ }, _) ->
           (match kind with
           | Namespace (iopt, i) ->
               Option.iter ~f:m#def_local iopt;
@@ -1269,7 +1269,7 @@ let declared scope params body =
            List.iter l ~f:(fun (_, s) -> m#statements s);
            Option.iter def ~f:(fun l -> m#statements l);
            List.iter l' ~f:(fun (_, s) -> m#statements s)
-       | _, Import ({ kind; from = _ }, _loc) -> (
+       | _, Import ({ kind; from = _; withClause = _ }, _loc) -> (
            match kind with
            | Namespace (iopt, i) ->
                Option.iter ~f:decl_var iopt;

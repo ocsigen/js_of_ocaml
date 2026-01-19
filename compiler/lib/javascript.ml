@@ -487,7 +487,10 @@ and export_from_kind =
 and import =
   { from : Utf8_string.t
   ; kind : import_kind
+  ; withClause : withClause option
   }
+
+and withClause = (Utf8_string.t * Utf8_string.t) list
 
 and import_default = ident
 
