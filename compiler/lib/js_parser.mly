@@ -855,11 +855,11 @@ lexicalDeclaration:
 
 (* 14.3.2 Variable Statement *)
 variableStatement:
- | T_VAR l=listc(variableDeclaration) sc { Variable_statement (Var, l) }
+ | T_VAR l=listc(variableDeclaration(in_allowed)) sc { Variable_statement (Var, l) }
 
-variableDeclaration:
- | i=identifier e=initializer_(in_allowed)?            { DeclIdent (i,e) }
- | p=bindingPattern e=initializer_(in_allowed)   { DeclPattern (p, e) }
+variableDeclaration(in_):
+ | i=identifier e=initializer_(in_)?            { DeclIdent (i,e) }
+ | p=bindingPattern e=initializer_(in_)   { DeclPattern (p, e) }
 
 lexicalBinding:
  | i=identifier e=initializer_(in_allowed)?            { DeclIdent (i,e) }
@@ -869,15 +869,10 @@ initializer_(in_):
  | "=" e=assignmentExpression(in_) { e, p $symbolstartpos }
 
 forDeclaration:
- | T_VAR l=listc(variableDeclarationNoIn)   { Var, l }
+ | T_VAR l=listc(variableDeclaration(in_disallowed) )  { Var, l }
  (* es6: *)
- | T_CONST l=listc(variableDeclarationNoIn) { Const, l }
- | T_LET l=listc(variableDeclarationNoIn)   { Let, l }
-
-variableDeclarationNoIn:
- | i=identifier e=initializer_(in_disallowed)    { DeclIdent (i,Some e) }
- | i=identifier                                  { DeclIdent (i, None) }
- | p=bindingPattern e=initializer_(in_disallowed) { DeclPattern (p, e) }
+ | T_CONST l=listc(variableDeclaration(in_disallowed)) { Const, l }
+ | T_LET l=listc(variableDeclaration(in_disallowed))   { Let, l }
 
 (* 'for ... in' and 'for ... of' declare only one variable *)
 forBinding:
