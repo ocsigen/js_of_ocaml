@@ -219,6 +219,8 @@ optl(X):
 %inline in_allowed: { }
 %inline in_disallowed: T_EOF { }
 
+
+
 (*************************************************************************)
 (* Section 12: ECMAScript Language: Lexical Grammar                     *)
 (*************************************************************************)
@@ -393,10 +395,15 @@ primaryExpression(x):
  | e=x { e }
 
 d1:
- | primaryExpressionFunClass { $1 }
- | objectLiteral           { $1 }
+ | primaryExpression_FunClass { $1 }
+ | primaryExpression_Object   { $1 }
 
-primaryExpressionFunClass:
+primaryExpression_Object:
+ | objectLiteral { $1 }
+
+primaryExpression_Empty: T_ERROR TComment { assert false }
+
+primaryExpression_FunClass:
  | functionExpression      { $1 }
  | classExpression         { $1 }
  (* es6: *)
@@ -424,9 +431,6 @@ coverParenthesizedExpressionAndArrowParameterList:
  | "(" ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($2))) }
  | "(" "..." bindingElement ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($2)) ) }
  | "(" expression(in_allowed) "," "..." bindingElement ")" { CoverParenthesizedExpressionAndArrowParameterList (early_error (pi $startpos($4)) ) }
-
-(* no objectLiteral here *)
-primaryExpressionNoStmt: T_ERROR TComment { assert false }
 
 (*----------------------------*)
 (* 13.2.4 Array Initializer *)
@@ -752,13 +756,13 @@ expression(in_):
 (*----------------------------*)
 
 expressionNoStmt:
- | assignmentExpressionNoStmt { $1 }
+ | assignmentExpression_NoStmt { $1 }
  | expressionNoStmt "," assignmentExpression(in_allowed) { ESeq ($1, $3) }
 
 (* coupling: with assignmentExpression *)
-assignmentExpressionNoStmt:
- | conditionalExpression(primaryExpressionNoStmt, in_allowed) { $1 }
- | e1=leftHandSideExpression_(primaryExpressionNoStmt) op=assignmentOperator e2=assignmentExpression(in_allowed)
+assignmentExpression_NoStmt:
+ | conditionalExpression(primaryExpression_Empty, in_allowed) { $1 }
+ | e1=leftHandSideExpression_(primaryExpression_Empty) op=assignmentOperator e2=assignmentExpression(in_allowed)
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
@@ -774,8 +778,8 @@ assignmentExpressionNoStmt:
 (*----------------------------*)
 
 assignmentExpressionForConciseBody(in_):
- | conditionalExpression(primaryExpressionFunClass, in_) { $1 }
- | e1=leftHandSideExpression_(primaryExpressionFunClass) op=assignmentOperator e2=assignmentExpression(in_)
+ | conditionalExpression(primaryExpression_FunClass, in_) { $1 }
+ | e1=leftHandSideExpression_(primaryExpression_FunClass) op=assignmentOperator e2=assignmentExpression(in_)
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
@@ -1323,17 +1327,17 @@ exportDeclaration:
       in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=assignmentExpressionNoStmt sc
+ | T_EXPORT T_DEFAULT e=assignmentExpression_NoStmt sc
     {
       let k = ExportDefaultExpression e in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=objectLiteral sc
+ | T_EXPORT T_DEFAULT e=primaryExpression_Object sc
     {
       let k = ExportDefaultExpression e in
       let pos = $symbolstartpos in
       Export (k,pi pos), p pos }
- | T_EXPORT T_DEFAULT e=primaryExpressionFunClass endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
+ | T_EXPORT T_DEFAULT e=primaryExpression_FunClass endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
     {
       let k = match e with
       | EFun (id, decl) ->
