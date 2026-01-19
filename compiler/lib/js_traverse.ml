@@ -611,7 +611,7 @@ class iter : iterator =
       | ExportDefaultClass (Some id, decl) -> m#statement (Class_declaration (id, decl))
       | ExportDefaultClass (None, decl) -> m#expression (EClass (None, decl))
       | ExportDefaultExpression e -> m#expression e
-      | ExportFrom { from = _; kind = _ } -> ()
+      | ExportFrom { from = _; kind = _; withClause = _ } -> ()
       | CoverExportFrom e -> m#early_error e
 
     method statement_o x =
@@ -1296,7 +1296,7 @@ let declared scope params body =
        | ExportDefaultFun (None, decl) -> self#fun_decl decl
        | ExportDefaultClass (None, decl) -> self#class_decl decl
        | ExportDefaultExpression e -> self#expression e
-       | ExportFrom { from = _; kind = _ } -> ()
+       | ExportFrom { from = _; kind = _; withClause = _ } -> ()
        | CoverExportFrom _ -> ()
 
      method variable_declaration k l =
