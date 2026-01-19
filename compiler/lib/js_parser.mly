@@ -494,7 +494,7 @@ memberExpression(x):
     { (EDotPrivate(e1,ANormal,i)) }
 
 (*----------------------------*)
-(* 13.3.3 The new Operator *)
+(* 13.3.5 The new Operator *)
 (*----------------------------*)
 
 newExpression(x):
@@ -502,7 +502,7 @@ newExpression(x):
  | T_NEW e=newExpression(d1) { (ENew (e,None, p $symbolstartpos)) }
 
 (*----------------------------*)
-(* 13.3.4 Function Calls *)
+(* 13.3.6 Function Calls *)
 (*----------------------------*)
 
 callExpression(x):
@@ -523,7 +523,7 @@ callExpression(x):
     { EDotPrivate (e,ANormal,i) }
 
 (*----------------------------*)
-(* 13.3.5 Optional Chains *)
+(* 13.3.9 Optional Chains *)
 (*----------------------------*)
 
 optionalExpression(x):
@@ -567,7 +567,7 @@ optionalChain:
     { fun e -> EDotPrivate(c e, ANormal, i) }
 
 (*----------------------------*)
-(* 13.3.6 Argument Lists *)
+(* 13.3.8 Argument Lists *)
 (*----------------------------*)
 
 arguments:
@@ -1027,14 +1027,14 @@ returnStatement:
  | T_RETURN e=expression(in_allowed)? sc { (Return_statement (e, p $endpos(e))) }
 
 (*----------------------------*)
-(* 14.11 The with Statement *)
+(* 14.15 The with Statement *)
 (*----------------------------*)
 
 withStatement:
  | T_WITH "(" e=expression(in_allowed) ")" s=statement { (With_statement (e,s)) }
 
 (*----------------------------*)
-(* 14.12 The switch Statement *)
+(* 14.13 The switch Statement *)
 (*----------------------------*)
 
 switchStatement:
