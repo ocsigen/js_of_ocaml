@@ -54,8 +54,6 @@ let unsupported = ref []
 
 let negative = ref []
 
-let noStrict = ref []
-
 let fail = ref []
 
 let pass = ref []
@@ -150,7 +148,6 @@ let should_ignore_feature = function
   | _ -> false
 
 let should_ignore_flag = function
-  | "noStrict" -> true
   | _ -> false
 
 let token_equal : Js_token.t -> Js_token.t -> bool =
@@ -276,7 +273,6 @@ let () =
       in
       match mode with
       | `Negative -> negative := filename :: !negative
-      | `Unsupported "noStrict" -> noStrict := filename :: !noStrict
       | `Unsupported _ -> unsupported := (filename, content) :: !unsupported
       | `Ok -> (
           try
@@ -324,7 +320,6 @@ let () =
               Printf.eprintf "Unexpected error %s\n%s\n" filename (Printexc.to_string e)));
   Printf.printf "Summary:\n";
   Printf.printf "  invalid    : %d\n" (List.length !negative);
-  Printf.printf "  not scrict : %d\n" (List.length !noStrict);
   Printf.printf "  skip       : %d\n" (List.length !unsupported);
   Printf.printf "  fail       : %d\n" (List.length !fail);
   Printf.printf "  pass       : %d\n" (List.length !pass);
