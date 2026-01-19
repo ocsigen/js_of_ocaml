@@ -544,9 +544,9 @@ optionalChain:
  (* ?. IdentifierName *)
  | T_PLING_PERIOD i=fieldName
     { fun e -> EDot(e, ANullish, i) }
- (* ?. TemplateLiteral *)
- | T_PLING_PERIOD t=templateLiteral
-    { fun e -> ECallTemplate(e, t, p $symbolstartpos) }
+ (* ?. TemplateLiteral, node is unhappy about it *)
+(* | T_PLING_PERIOD t=templateLiteral
+    { fun e -> ECallTemplate(e, t, p $symbolstartpos) } *)
  (* ?. PrivateIdentifier *)
  | T_PLING_PERIOD T_POUND i=fieldName
     { fun e -> EDotPrivate(e, ANullish, i) }
