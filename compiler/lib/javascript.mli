@@ -386,6 +386,7 @@ and export =
   | ExportFrom of
       { kind : export_from_kind
       ; from : Utf8_string.t
+      ; withClause : withClause option
       }
   | CoverExportFrom of early_error
 

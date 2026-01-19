@@ -1864,7 +1864,7 @@ struct
               l;
             PP.space f;
             PP.string f "};"
-        | ExportFrom { kind; from } ->
+        | ExportFrom { kind; from; withClause } ->
             PP.space f;
             (match kind with
             | Export_all None -> PP.string f "*"
@@ -1891,6 +1891,25 @@ struct
             PP.string f "from";
             PP.space f;
             pp_string_lit f from;
+            (match withClause with
+            | None -> ()
+            | Some l ->
+                PP.space f;
+                PP.string f "with";
+                PP.space f;
+                PP.string f "{";
+                PP.space f;
+                comma_list
+                  ~force_last_comma:(fun _ -> false)
+                  f
+                  (fun f (i, s) ->
+                    pp_ident_or_string_lit f i;
+                    PP.string f " : ";
+                    pp_string_lit f s)
+                  l;
+                PP.space f;
+                PP.string f "}");
+
             PP.string f ";"
         | ExportDefaultExpression e ->
             PP.space f;

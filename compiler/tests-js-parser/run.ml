@@ -146,7 +146,7 @@ let accepted_by_node file =
   | WSIGNALED _ | WSTOPPED _ -> assert false
 
 let should_ignore_feature = function
-  | "import-assertions" | "import-attributes" | "decorators" -> true
+  | "decorators" -> true
   | _ -> false
 
 let should_ignore_flag = function
