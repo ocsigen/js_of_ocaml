@@ -1279,12 +1279,22 @@ moduleItem:
 (*----------------------------*)
 
 importDeclaration:
- | T_IMPORT kind=importClause from=fromClause sc
+ | T_IMPORT kind=importClause from=fromClause wc=withClause? sc
     { let pos = $symbolstartpos in
-      Import ({ from; kind }, pi pos), p pos }
- | T_IMPORT from=moduleSpecifier sc
+      Import ({ from; kind; withClause=wc }, pi pos), p pos }
+ | T_IMPORT from=moduleSpecifier wc=withClause? sc
     { let pos = $symbolstartpos in
-      Import ({ from; kind = SideEffect }, pi pos), p pos }
+      Import ({ from; kind = SideEffect; withClause=wc }, pi pos), p pos }
+
+withClause:
+ | T_WITH "{" "}" { [] }
+ | T_WITH "{" l = listc(withEntry) "}"     { l }
+ | T_WITH "{" l = listc(withEntry) "," "}" { l }
+
+withEntry:
+ | a=T_STRING ":" b=T_STRING { fst a, fst b  }
+ | a=identifierName ":" b=T_STRING { a, fst b }
+ | a=identifierKeyword ":" b=T_STRING { a, fst b }
 
 importClause:
  | importedDefaultBinding                            { Default $1 }

@@ -1773,7 +1773,7 @@ struct
         PP.break f;
         statement f s;
         PP.end_group f
-    | Import ({ kind; from }, _loc) ->
+    | Import ({ kind; from; withClause }, _loc) ->
         PP.start_group f 0;
         PP.string f "import";
         (match kind with
@@ -1820,6 +1820,24 @@ struct
             PP.string f "from");
         PP.space f;
         pp_string_lit f from;
+        (match withClause with
+        | None -> ()
+        | Some l ->
+            PP.space f;
+            PP.string f "with";
+            PP.space f;
+            PP.string f "{";
+            PP.space f;
+            comma_list
+              ~force_last_comma:(fun _ -> false)
+              f
+              (fun f (i, s) ->
+                pp_ident_or_string_lit f i;
+                PP.string f " : ";
+                pp_string_lit f s)
+              l;
+            PP.space f;
+            PP.string f "}");
         PP.string f ";";
         PP.end_group f
     | Export (e, _loc) ->
