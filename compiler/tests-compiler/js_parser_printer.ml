@@ -202,7 +202,8 @@ let%expect_test "ops" =
     /*<<fake:15:4>>*/ y = a?.b?.s?.[a] ?? c ?? d;
     /*<<fake:17:4>>*/ a?.b;
     /*<<fake:18:4>>*/ a?.[b];
-    /*<<fake:19:4>>*/ a?.(b); |}]
+    /*<<fake:19:4>>*/  /*<<fake:19:5>>*/ a?.(b);
+    |}]
 
 let%expect_test "arrow" =
   print
