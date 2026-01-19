@@ -717,7 +717,7 @@ assignmentExpression(in_):
       EBin (op, e1, e2)
     }
  | arrowFunction(in_) { $1 }
- | in_ asyncArrowFunction(in_) { $2 }  (* guarded: avoid conflict with 'for (async of ...)' *)
+ | in_ e=asyncArrowFunction(in_) { e }  (* guarded: avoid conflict with 'for (async of ...)' *)
  | yieldExpression(in_) { $1 }
 
 yieldExpression(in_):
