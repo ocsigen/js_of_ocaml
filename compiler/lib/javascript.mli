@@ -298,6 +298,8 @@ and variable_declaration_kind =
   | Var
   | Let
   | Const
+  | Using
+  | AwaitUsing
 
 and case_clause = expression * statement_list
 

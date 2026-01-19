@@ -95,6 +95,7 @@ type t =
   | T_AWAIT
   | T_GET
   | T_SET
+  | T_USING
   (* Operators *)
   | T_RSHIFT3_ASSIGN
   | T_RSHIFT_ASSIGN
@@ -292,6 +293,7 @@ let to_string = function
   | T_AWAIT -> "await"
   | T_GET -> "get"
   | T_SET -> "set"
+  | T_USING -> "using"
   | T_FROM -> "from"
   | T_TARGET -> "target"
   | T_META -> "meta"
@@ -380,6 +382,7 @@ let is_keyword s =
   | "yield" -> Some T_YIELD
   | "get" -> Some T_GET
   | "set" -> Some T_SET
+  | "using" -> Some T_USING
   | "from" -> Some T_FROM
   | "target" -> Some T_TARGET
   | "meta" -> Some T_META
