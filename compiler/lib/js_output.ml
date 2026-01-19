@@ -1078,33 +1078,32 @@ struct
         match opt with
         | None -> ()
         | Some o -> PP.string f o)
-    | EYield { delegate; expr = e } -> (
+    | EYield { delegate; expr = e } ->
         let kw =
           match delegate with
           | false -> "yield"
           | true -> "yield*"
         in
-        match e with
+        if Prec.(l > AssignementExpression)
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
+        (match e with
         | None -> PP.string f kw
         | Some e ->
-            if Prec.(l > AssignementExpression)
-            then (
-              PP.start_group f 1;
-              PP.string f "(");
             PP.start_group f 7;
             PP.string f kw;
             PP.non_breaking_space f;
             PP.start_group f 0;
             expression AssignementExpression f e;
             PP.end_group f;
-            PP.end_group f;
-            if Prec.(l > AssignementExpression)
-            then (
-              PP.end_group f;
-              PP.string f ")"
-              (* There MUST be a space between the yield and its
-                 argument. A line return will not work *))
-        )
+            PP.end_group f
+            (* There MUST be a space between the yield and its
+                 argument. A line return will not work *));
+        if Prec.(l > AssignementExpression)
+        then (
+          PP.end_group f;
+          PP.string f ")")
     | EPrivName (Utf8 i) ->
         PP.string f "#";
         PP.string f i
