@@ -8,6 +8,7 @@
 * Compiler/wasm: make the type of some Wasm primitives more precise (#2100)
 * Compiler: reference unboxing (#1958)
 * Compiler: js-parser: support import/export with attributes
+* Compiler: js-parser: support 'using X = E' for resource management (#2143)
 * Runtime: improved handling of NaNs (#2110)
 * Lib: allow to reference values from the runtime (#2086)
 
