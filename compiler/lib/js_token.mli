@@ -149,6 +149,7 @@ type t =
   | T_DOLLARCURLY
   | T_ENCAPSED_STRING of string
   | T_AS
+  | T_DEFER
   (* Extra tokens *)
   | T_ERROR of string
   | T_EOF

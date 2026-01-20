@@ -216,6 +216,7 @@ class map : mapper =
     method import { from; kind; withClause } =
       let kind =
         match kind with
+        | DeferNamespace i -> DeferNamespace (m#ident i)
         | Namespace (iopt, i) -> Namespace (Option.map ~f:m#ident iopt, m#ident i)
         | Named (iopt, l) ->
             Named
@@ -591,6 +592,7 @@ class iter : iterator =
 
     method import { from = _; kind; withClause = _ } =
       match kind with
+      | DeferNamespace i -> m#ident i
       | Namespace (iopt, i) ->
           Option.iter ~f:m#ident iopt;
           m#ident i
@@ -1178,6 +1180,7 @@ class free =
           Try_statement (b, w, f)
       | Import ({ from = _; kind; withClause = _ }, _) ->
           (match kind with
+          | DeferNamespace i -> m#def_local i
           | Namespace (iopt, i) ->
               Option.iter ~f:m#def_local iopt;
               m#def_local i
@@ -1271,6 +1274,7 @@ let declared scope params body =
            List.iter l' ~f:(fun (_, s) -> m#statements s)
        | _, Import ({ kind; from = _; withClause = _ }, _loc) -> (
            match kind with
+           | DeferNamespace i -> decl_var i
            | Namespace (iopt, i) ->
                Option.iter ~f:decl_var iopt;
                decl_var i
