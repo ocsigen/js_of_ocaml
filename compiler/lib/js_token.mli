@@ -44,57 +44,62 @@ type t =
   | T_AT
   | T_POUND
   (* Keywords *)
-  | T_FUNCTION
-  | T_IF
-  | T_IN
-  | T_INSTANCEOF
-  | T_RETURN
-  | T_SWITCH
-  | T_THIS
-  | T_THROW
-  | T_TRY
-  | T_VAR
-  | T_WHILE
-  | T_WITH
-  | T_CONST
-  | T_LET
-  | T_NULL
-  | T_FALSE
-  | T_TRUE
+  | T_AS
+  | T_ASYNC
+  | T_AWAIT
   | T_BREAK
   | T_CASE
   | T_CATCH
-  | T_CONTINUE
-  | T_DEFAULT
-  | T_DO
-  | T_FINALLY
-  | T_FOR
   | T_CLASS
-  | T_EXTENDS
-  | T_STATIC
-  | T_ELSE
-  | T_NEW
+  | T_CONST
+  | T_CONTINUE
+  | T_DEBUGGER
+  | T_DEFAULT
+  | T_DEFER
   | T_DELETE
-  | T_TYPEOF
-  | T_VOID
+  | T_DO
+  | T_ELSE
   | T_ENUM
   | T_EXPORT
-  | T_IMPORT
-  | T_SUPER
+  | T_EXTENDS
+  | T_FALSE
+  | T_FINALLY
+  | T_FOR
+  | T_FROM
+  | T_FUNCTION
+  | T_GET
+  | T_IF
   | T_IMPLEMENTS
+  | T_IMPORT
+  | T_IN
+  | T_INSTANCEOF
   | T_INTERFACE
+  | T_LET
+  | T_META
+  | T_NEW
+  | T_NULL
+  | T_OF
   | T_PACKAGE
   | T_PRIVATE
   | T_PROTECTED
   | T_PUBLIC
-  | T_YIELD
-  | T_DEBUGGER
-  | T_OF
-  | T_ASYNC
-  | T_AWAIT
-  | T_GET
+  | T_RETURN
   | T_SET
+  | T_STATIC
+  | T_SUPER
+  | T_SWITCH
+  | T_TARGET
+  | T_THIS
+  | T_THROW
+  | T_TRUE
+  | T_TRY
+  | T_TYPEOF
   | T_USING
+  | T_VAR
+  | T_VOID
+  | T_WHILE
+  | T_WITH
+  | T_YIELD
   (* Operators *)
   | T_RSHIFT3_ASSIGN
   | T_RSHIFT_ASSIGN
@@ -142,14 +147,9 @@ type t =
   | T_BIT_NOT
   | T_INCR
   | T_DECR
-  | T_FROM
-  | T_TARGET
-  | T_META
   | T_BACKQUOTE
   | T_DOLLARCURLY
   | T_ENCAPSED_STRING of string
-  | T_AS
-  | T_DEFER
   (* Extra tokens *)
   | T_ERROR of string
   | T_EOF
@@ -181,4 +181,8 @@ val to_string : t -> string
 
 val to_string_extra : t -> string
 
+val is_reserved : string -> t option
+
 val is_keyword : string -> t option
+
+val all_keywords : t list
