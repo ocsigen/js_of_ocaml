@@ -194,6 +194,9 @@
 
   const on_windows = isNode && globalThis.process.platform === "win32";
 
+  // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/stack
+  const isV8 = new Error().stack?.includes("\n    at ") ?? false;
+
   const call = Function.prototype.call;
   const DV = DataView.prototype;
 
@@ -262,7 +265,12 @@
     dv_get_f64: call.bind(DV.getFloat64),
     dv_get_f32: call.bind(DV.getFloat32),
     dv_get_i64: call.bind(DV.getBigInt64),
-    dv_get_i32: call.bind(DV.getInt32),
+    // 2026-03-16: using call.bind is faster in V8 which recognize the
+    // primitive and generate inlined call, but calling a JavaScript
+    // function is currently faster in other engines which does not
+    // have this optimization yet. Use benchmarks/bench_dv_getint32.js
+    // for performance comparisons.
+    dv_get_i32: isV8 ? call.bind(DV.getInt32) : (x, y, z) => x.getInt32(y, z),
     dv_get_i16: call.bind(DV.getInt16),
     dv_get_ui16: call.bind(DV.getUint16),
     dv_get_i8: call.bind(DV.getInt8),
