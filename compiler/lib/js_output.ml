@@ -1786,6 +1786,12 @@ struct
         | Default i ->
             PP.space f;
             ident f ~kind:`Binding i
+        | DeferNamespace i ->
+            PP.space f;
+            PP.string f "defer";
+            PP.space f;
+            PP.string f "* as ";
+            ident f ~kind:`Binding i
         | Namespace (def, i) ->
             Option.iter def ~f:(fun def ->
                 PP.space f;

@@ -127,6 +127,7 @@ T_PLING_PERIOD
 T_PLING "?"
 T_ARROW
 T_AT
+T_DEFER
 T_ELLIPSIS "..."
 T_POUND
 T_PLING_PLING
@@ -512,6 +513,8 @@ memberExpression(x):
     { e }
   | _import=T_IMPORT "." T_META
     { EDot (vartok $startpos(_import) T_IMPORT,ANormal,(utf8_s "meta")) }
+  | _import=T_IMPORT "." T_DEFER
+    { EDot (vartok $startpos(_import) T_IMPORT,ANormal,(utf8_s "defer")) }
   | e1=memberExpression(x) "[" e2=expression(in_allowed) "]"
     { (EAccess (e1,ANormal, e2)) }
   | e1=memberExpression(x) "." i=fieldName
@@ -1332,6 +1335,10 @@ importDeclaration:
     { let pos = $symbolstartpos in
       Import ({ from; kind = SideEffect; withClause=wc }, pi pos), p pos
     }
+  | T_IMPORT T_DEFER id=namespaceImport from=fromClause wc=withClause? sc
+    { let pos = $symbolstartpos in
+      Import ({ from; kind = DeferNamespace id; withClause=wc }, pi pos), p pos
+    }
 
 withClause:
   | T_WITH "{" "}"                          { [] }
@@ -1343,12 +1350,15 @@ withEntry:
   | a=identifierName ":" b=T_STRING    { a, fst b }
   | a=identifierKeyword ":" b=T_STRING { a, fst b }
 
+namespaceImport:
+  | "*" T_AS id=bindingIdentifier { id }
+
 importClause:
-  | b=importedDefaultBinding                                   { Default b }
-  | b=importedDefaultBinding "," "*" T_AS id=bindingIdentifier { Namespace (Some b, id) }
-  | "*" T_AS id=bindingIdentifier                              { Namespace (None, id) }
-  | b=importedDefaultBinding "," x=namedImports                { Named (Some b, x) }
-  | x=namedImports                                             { Named (None, x) }
+  | b=importedDefaultBinding                        { Default b }
+  | b=importedDefaultBinding "," id=namespaceImport { Namespace (Some b, id) }
+  | id=namespaceImport                              { Namespace (None, id) }
+  | b=importedDefaultBinding "," x=namedImports     { Named (Some b, x) }
+  | x=namedImports                                  { Named (None, x) }
 
 importedDefaultBinding: id=bindingIdentifier { id }
 
