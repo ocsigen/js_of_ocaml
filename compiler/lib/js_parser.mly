@@ -113,6 +113,7 @@ T_FROM
 T_AS
 T_TARGET
 T_META
+T_DEFER
 (*-----------------------------------------*)
 (* Punctuation tokens *)
 (*-----------------------------------------*)
@@ -127,7 +128,6 @@ T_PLING_PERIOD
 T_PLING "?"
 T_ARROW
 T_AT
-T_DEFER
 T_ELLIPSIS "..."
 T_POUND
 T_PLING_PLING
@@ -245,7 +245,6 @@ identifier:
 
 (* add here keywords which are not considered reserved by ECMA *)
 identifierSemiKeyword:
-  (* TODO: would like to add T_IMPORT here, but cause conflicts *)
   | T_AS { T_AS }
   | T_ASYNC { T_ASYNC }
   | T_FROM { T_FROM }
@@ -254,16 +253,9 @@ identifierSemiKeyword:
   | T_OF { T_OF }
   | T_SET { T_SET }
   | T_TARGET {T_TARGET }
+
   | T_USING { T_USING }
   | T_DEFER { T_DEFER }
-
-  (* future reserved words in strict mode code. *)
-  | T_IMPLEMENTS { T_IMPLEMENTS }
-  | T_INTERFACE { T_INTERFACE }
-  | T_PACKAGE { T_PACKAGE }
-  | T_PRIVATE { T_PRIVATE }
-  | T_PROTECTED {T_PROTECTED }
-  | T_PUBLIC { T_PUBLIC }
 
 (* Variant excluding T_OF used for 'using' bindings in for-in/of loops
    to resolve ambiguity in 'for (using of ...)' *)
@@ -279,13 +271,6 @@ identifierSemiKeywordNoOf:
   | T_USING { T_USING }
   | T_DEFER { T_DEFER }
 
-  | T_IMPLEMENTS { T_IMPLEMENTS }
-  | T_INTERFACE { T_INTERFACE }
-  | T_PACKAGE { T_PACKAGE }
-  | T_PRIVATE { T_PRIVATE }
-  | T_PROTECTED {T_PROTECTED }
-  | T_PUBLIC { T_PUBLIC }
-
 identifierNameNoOf:
   | id=T_IDENTIFIER              { fst id }
   | kw=identifierSemiKeywordNoOf { utf8_s (Js_token.to_string kw) }
@@ -293,14 +278,10 @@ identifierNameNoOf:
 identifierNoOf:
   | name=identifierNameNoOf { var (p $symbolstartpos) name }
 
-(* alt: use the _last_non_whitespace_like_token trick and look if
- * previous token was a period to return a T_ID
- *)
 identifierKeyword:
   | kw=identifierKeywordToken { utf8_s (Js_token.to_string kw) }
 
 identifierKeywordToken:
-  | T_AWAIT { T_AWAIT }
   | T_BREAK { T_BREAK }
   | T_CASE { T_CASE }
   | T_CATCH { T_CATCH }
@@ -337,10 +318,18 @@ identifierKeywordToken:
   | T_VOID { T_VOID }
   | T_WHILE { T_WHILE }
   | T_WITH { T_WITH }
+  (* *)
+  | T_AWAIT { T_AWAIT }
   | T_YIELD { T_YIELD }
   (* reserved words in strict mode code. *)
   | T_LET { T_LET }
   | T_STATIC { T_STATIC }
+  | T_IMPLEMENTS { T_IMPLEMENTS }
+  | T_INTERFACE { T_INTERFACE }
+  | T_PACKAGE { T_PACKAGE }
+  | T_PRIVATE { T_PRIVATE }
+  | T_PROTECTED { T_PROTECTED }
+  | T_PUBLIC { T_PUBLIC }
 
 (*----------------------------*)
 (* 12.9.1 Null Literals *)
@@ -816,7 +805,6 @@ expressionNoStmt:
   | e=assignmentExpression_NoStmt                               { e }
   | e1=expressionNoStmt "," e2=assignmentExpression(in_allowed) { ESeq (e1, e2) }
 
-(* coupling: with assignmentExpression *)
 assignmentExpression_NoStmt:
   | e=conditionalExpression(primaryExpression_Empty, in_allowed) { e }
   | e1=leftHandSideExpression_(primaryExpression_Empty) op=assignmentOperator e2=assignmentExpression(in_allowed)
@@ -1180,7 +1168,6 @@ functionExpression:
 (* 15.3 Arrow Function Definitions *)
 (*----------------------------*)
 
-(* TODO conflict with as then in identifierKeyword *)
 arrowFunction(in_):
   | i=identifier T_ARROW b=conciseBody(in_)
     { let b,consise = b in

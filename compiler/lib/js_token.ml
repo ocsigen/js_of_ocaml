@@ -45,57 +45,62 @@ type t =
   | T_AT
   | T_POUND
   (* Keywords *)
-  | T_FUNCTION
-  | T_IF
-  | T_IN
-  | T_INSTANCEOF
-  | T_RETURN
-  | T_SWITCH
-  | T_THIS
-  | T_THROW
-  | T_TRY
-  | T_VAR
-  | T_WHILE
-  | T_WITH
-  | T_CONST
-  | T_LET
-  | T_NULL
-  | T_FALSE
-  | T_TRUE
+  | T_AS
+  | T_ASYNC
+  | T_AWAIT
   | T_BREAK
   | T_CASE
   | T_CATCH
-  | T_CONTINUE
-  | T_DEFAULT
-  | T_DO
-  | T_FINALLY
-  | T_FOR
   | T_CLASS
-  | T_EXTENDS
-  | T_STATIC
-  | T_ELSE
-  | T_NEW
+  | T_CONST
+  | T_CONTINUE
+  | T_DEBUGGER
+  | T_DEFAULT
+  | T_DEFER
   | T_DELETE
-  | T_TYPEOF
-  | T_VOID
+  | T_DO
+  | T_ELSE
   | T_ENUM
   | T_EXPORT
-  | T_IMPORT
-  | T_SUPER
+  | T_EXTENDS
+  | T_FALSE
+  | T_FINALLY
+  | T_FOR
+  | T_FROM
+  | T_FUNCTION
+  | T_GET
+  | T_IF
   | T_IMPLEMENTS
+  | T_IMPORT
+  | T_IN
+  | T_INSTANCEOF
   | T_INTERFACE
+  | T_LET
+  | T_META
+  | T_NEW
+  | T_NULL
+  | T_OF
   | T_PACKAGE
   | T_PRIVATE
   | T_PROTECTED
   | T_PUBLIC
-  | T_YIELD
-  | T_DEBUGGER
-  | T_OF
-  | T_ASYNC
-  | T_AWAIT
-  | T_GET
+  | T_RETURN
   | T_SET
+  | T_STATIC
+  | T_SUPER
+  | T_SWITCH
+  | T_TARGET
+  | T_THIS
+  | T_THROW
+  | T_TRUE
+  | T_TRY
+  | T_TYPEOF
   | T_USING
+  | T_VAR
+  | T_VOID
+  | T_WHILE
+  | T_WITH
+  | T_YIELD
   (* Operators *)
   | T_RSHIFT3_ASSIGN
   | T_RSHIFT_ASSIGN
@@ -143,14 +148,9 @@ type t =
   | T_BIT_NOT
   | T_INCR
   | T_DECR
-  | T_FROM
-  | T_TARGET
-  | T_META
   | T_BACKQUOTE
   | T_DOLLARCURLY
   | T_ENCAPSED_STRING of string
-  | T_AS
-  | T_DEFER
   (* Extra tokens *)
   | T_ERROR of string
   | T_EOF
@@ -332,10 +332,66 @@ let to_string_extra x =
   | T_ENCAPSED_STRING _ -> "(encaps)"
   | _ -> ""
 
-let is_keyword s =
-  match s with
-  | "async" -> Some T_ASYNC
-  | "await" -> Some T_AWAIT
+let all_keywords =
+  [ T_AS
+  ; T_ASYNC
+  ; T_AWAIT
+  ; T_BREAK
+  ; T_CASE
+  ; T_CATCH
+  ; T_CLASS
+  ; T_CONST
+  ; T_CONTINUE
+  ; T_DEBUGGER
+  ; T_DEFAULT
+  ; T_DEFER
+  ; T_DELETE
+  ; T_DO
+  ; T_ELSE
+  ; T_ENUM
+  ; T_EXPORT
+  ; T_EXTENDS
+  ; T_FALSE
+  ; T_FINALLY
+  ; T_FOR
+  ; T_FROM
+  ; T_FUNCTION
+  ; T_GET
+  ; T_IF
+  ; T_IMPLEMENTS
+  ; T_IMPORT
+  ; T_IN
+  ; T_INSTANCEOF
+  ; T_INTERFACE
+  ; T_LET
+  ; T_META
+  ; T_NEW
+  ; T_NULL
+  ; T_OF
+  ; T_PACKAGE
+  ; T_PRIVATE
+  ; T_PROTECTED
+  ; T_PUBLIC
+  ; T_RETURN
+  ; T_SET
+  ; T_STATIC
+  ; T_SUPER
+  ; T_SWITCH
+  ; T_TARGET
+  ; T_THIS
+  ; T_THROW
+  ; T_TRUE
+  ; T_TRY
+  ; T_TYPEOF
+  ; T_USING
+  ; T_VAR
+  ; T_VOID
+  ; T_WHILE
+  ; T_WITH
+  ; T_YIELD
+  ]
+
+let is_reserved = function
   | "break" -> Some T_BREAK
   | "case" -> Some T_CASE
   | "catch" -> Some T_CATCH
@@ -355,21 +411,12 @@ let is_keyword s =
   | "for" -> Some T_FOR
   | "function" -> Some T_FUNCTION
   | "if" -> Some T_IF
-  | "implements" -> Some T_IMPLEMENTS
   | "import" -> Some T_IMPORT
   | "in" -> Some T_IN
   | "instanceof" -> Some T_INSTANCEOF
-  | "interface" -> Some T_INTERFACE
-  | "let" -> Some T_LET
   | "new" -> Some T_NEW
   | "null" -> Some T_NULL
-  | "of" -> Some T_OF
-  | "package" -> Some T_PACKAGE
-  | "private" -> Some T_PRIVATE
-  | "protected" -> Some T_PROTECTED
-  | "public" -> Some T_PUBLIC
   | "return" -> Some T_RETURN
-  | "static" -> Some T_STATIC
   | "super" -> Some T_SUPER
   | "switch" -> Some T_SWITCH
   | "this" -> Some T_THIS
@@ -381,13 +428,33 @@ let is_keyword s =
   | "void" -> Some T_VOID
   | "while" -> Some T_WHILE
   | "with" -> Some T_WITH
+  (* contextually allowed as identifiers *)
+  | "await" -> Some T_AWAIT
   | "yield" -> Some T_YIELD
-  | "get" -> Some T_GET
-  | "set" -> Some T_SET
-  | "using" -> Some T_USING
-  | "from" -> Some T_FROM
-  | "target" -> Some T_TARGET
-  | "meta" -> Some T_META
-  | "as" -> Some T_AS
-  | "defer" -> Some T_DEFER
+  (* contextually disallowed as identifiers, in strict mode code*)
+  (* reserved words in strict mode code. *)
+  | "let" -> Some T_LET
+  | "static" -> Some T_STATIC
+  (* future reserved words in strict mode code. *)
+  | "implements" -> Some T_IMPLEMENTS
+  | "interface" -> Some T_INTERFACE
+  | "package" -> Some T_PACKAGE
+  | "private" -> Some T_PRIVATE
+  | "protected" -> Some T_PROTECTED
+  | "public" -> Some T_PUBLIC
   | _ -> None
+
+let is_keyword = function
+  (* Always allowed as identifier *)
+  | "as" -> Some T_AS
+  | "async" -> Some T_ASYNC
+  | "from" -> Some T_FROM
+  | "get" -> Some T_GET
+  | "meta" -> Some T_META
+  | "of" -> Some T_OF
+  | "set" -> Some T_SET
+  | "target" -> Some T_TARGET
+  (* extentions *)
+  | "defer" -> Some T_DEFER
+  | "using" -> Some T_USING
+  | s -> is_reserved s
