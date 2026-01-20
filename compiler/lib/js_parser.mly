@@ -258,6 +258,32 @@ identifierSemiKeyword:
   | T_PROTECTED {T_PROTECTED }
   | T_PUBLIC { T_PUBLIC }
 
+(* Variant excluding T_OF, and T_USING - used for 'using' bindings in for-in/of loops
+   to resolve ambiguity in 'for (using of ...)' *)
+identifierSemiKeywordNoOf:
+ | T_AS { T_AS }
+ | T_ASYNC { T_ASYNC }
+ | T_FROM { T_FROM }
+ | T_GET { T_GET }
+ | T_META { T_META }
+ (* T_OF intentionally omitted to resolve 'for (using of ...)' ambiguity *)
+ | T_SET { T_SET }
+ | T_TARGET {T_TARGET }
+ | T_USING { T_USING }
+ | T_IMPLEMENTS { T_IMPLEMENTS }
+ | T_INTERFACE { T_INTERFACE }
+ | T_PACKAGE { T_PACKAGE }
+ | T_PRIVATE { T_PRIVATE }
+ | T_PROTECTED {T_PROTECTED }
+ | T_PUBLIC { T_PUBLIC }
+
+identifierNameNoOf:
+ | T_IDENTIFIER { fst $1 }
+ | identifierSemiKeywordNoOf { utf8_s (Js_token.to_string $1) }
+
+identifierNoOf:
+ | identifierNameNoOf { var (p $symbolstartpos) $1 }
+
 (* alt: use the _last_non_whitespace_like_token trick and look if
  * previous token was a period to return a T_ID
  *)
@@ -887,10 +913,9 @@ lexicalBinding:
  | i=identifier e=initializer_(in_allowed)?            { DeclIdent (i,e) }
  | p=bindingPattern e=initializer_(in_allowed)   { DeclPattern (p, e) }
 
-(* using bindings require an initializer *)
+(* using bindings require an initializer and only support BindingIdentifier per spec *)
 usingBinding:
  | i=identifier e=initializer_(in_allowed)       { DeclIdent (i, Some e) }
- | p=bindingPattern e=initializer_(in_allowed)   { DeclPattern (p, e) }
 
 initializer_(in_):
  | "=" e=assignmentExpression(in_) { e, p $symbolstartpos }
@@ -907,12 +932,17 @@ forBinding:
  (* es6: *)
  | T_CONST b=forBindingElement { Const, b }
  | T_LET  b=forBindingElement  { Let, b }
- (* Explicit Resource Management *)
- | T_USING b=forBindingElement { Using, b }
- | T_AWAIT T_USING b=forBindingElement { AwaitUsing, b }
+ (* Explicit Resource Management - uses restricted binding to resolve
+    'for (using of ...)' ambiguity: identifier cannot be 'of' *)
+ | T_USING b=forUsingBindingElement { Using, b }
+ | T_AWAIT T_USING b=forUsingBindingElement { AwaitUsing, b }
 
 forBindingElement:
  | singleNameBinding               { $1 }
+
+(* Restricted binding for 'using' in for-in/of: only identifier, no 'of' *)
+forUsingBindingElement:
+ | identifierNoOf { BindingIdent $1 }
 
 (*----------------------------*)
 (* 14.3.3 Destructuring Binding Patterns *)
