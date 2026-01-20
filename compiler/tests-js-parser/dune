@@ -10,8 +10,8 @@
  (action
   (run ./run.exe pass)))
 
-;; git submodule add test262 https://github.com/tc39/test262.git
-;; git checkout 6cbb6da9473c56d95358d8e679c5a6d2b4574efb
+;; git submodule add https://github.com/tc39/test262.git test262
+;; git checkout fff41f0522ede859d0880acbff066b09fc9c22a5
 
 (rule
  (alias runtest-parser)
