@@ -1,6 +1,6 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright Vasilis Papavasileiou 2015
+ * Copyright (C) 2015 Vasilis Papavasileiou
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
