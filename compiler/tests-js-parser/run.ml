@@ -148,6 +148,7 @@ let should_ignore_feature = function
   | _ -> false
 
 let should_ignore_flag = function
+  | "noStrict" -> true
   | _ -> false
 
 let token_equal : Js_token.t -> Js_token.t -> bool =
