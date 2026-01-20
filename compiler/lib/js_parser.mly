@@ -767,7 +767,7 @@ assignmentExpression(in_):
       EBin (op, e1, e2)
     }
  | arrowFunction(in_) { $1 }
- | in_ e=asyncArrowFunction(in_) { e }  (* guarded: avoid conflict with 'for (async of ...)' *)
+ | e=asyncArrowFunction(in_) { e }  (* guarded: avoid conflict with 'for (async of ...)' *)
  | yieldExpression(in_) { $1 }
 
 assignmentOperator:
@@ -1286,7 +1286,8 @@ asyncFunctionExpression:
 (*----------------------------*)
 
 asyncArrowFunction(in_):
-  | T_ASYNC i=identifier T_ARROW b=conciseBody(in_) {
+  (* Use identifierNoOf to resolve 'for (async of ...)' ambiguity *)
+  | T_ASYNC i=identifierNoOf T_ARROW b=conciseBody(in_) {
       let b,consise = b in
       EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
   | T_ASYNC T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(in_)

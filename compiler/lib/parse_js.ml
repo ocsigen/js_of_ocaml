@@ -365,11 +365,15 @@ let rec offer_one t (lexbuf : Lexer.t) =
          * restricted token. *)
         match State.Cursor.last_token h, tok with
         | ( Some
-              ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC | T_USING), _, _)
+              ( (T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC | T_USING)
+              , _
+              , _ )
           , ((T_SEMICOLON | T_VIRTUAL_SEMICOLON) as tok) ) -> tok, loc
-        | Some
-            ((T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC | T_USING), _, _)
-          , _
+        | ( Some
+              ( (T_RETURN | T_CONTINUE | T_BREAK | T_THROW | T_YIELD | T_ASYNC | T_USING)
+              , _
+              , _ )
+          , _ )
           when nl_separated h loc && acceptable t T_VIRTUAL_SEMICOLON ->
             (* restricted token can also appear as regular identifier such
                as in [x.return]. In such case, feeding a virtual semicolon
@@ -421,7 +425,7 @@ let recover error_checkpoint previous_checkpoint =
   | Some (offending_token, offending_loc, rest) -> (
       match State.Cursor.last_token rest with
       | None -> error_checkpoint
-      | Some (last_token, _, _) -> (
+      | Some (last_token, last_token_loc, last_token_prev) -> (
           match offending_token with
           | T_VIRTUAL_SEMICOLON -> error_checkpoint
           (* contextually allowed as identifiers, namely await and yield; *)
@@ -436,16 +440,22 @@ let recover error_checkpoint previous_checkpoint =
           | T_EOF when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
               State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
           | T_ARROW when not (nl_separated rest offending_loc) -> (
-              (* Restart parsing from the openning parens, patching the
-                 token to be T_LPAREN_ARROW to help the parser *)
               match last_token with
               | T_RPAREN -> (
+                  (* Restart parsing from the openning parens, patching the
+                     token to be T_LPAREN_ARROW to help the parser *)
                   match State.Cursor.rewind_block rest with
                   | Some (T_LPAREN, loc, prev) ->
                       State.Cursor.replace_token prev T_LPAREN_ARROW loc
                       |> State.try_recover
                   | Some _ -> assert false
                   | None -> error_checkpoint)
+              | T_OF ->
+                  State.Cursor.replace_token
+                    last_token_prev
+                    (token_to_ident T_OF)
+                    last_token_loc
+                  |> State.try_recover
               | _ -> error_checkpoint)
           | _ -> (
               match last_token with
