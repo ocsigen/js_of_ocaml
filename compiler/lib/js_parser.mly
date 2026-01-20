@@ -1,29 +1,31 @@
-(* Js_of_ocaml compiler *)
-(* Copyright (C) 2013-2025 Hugo Heuzard *)
-
-%{
-
-(* Yoann Padioleau
- *
+(* Js_of_ocaml compiler
+ * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2010-2014 Facebook
  * Copyright (C) 2019-2022 r2c
+ * Copyright (C) 2013-2025 Hugo Heuzard
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * version 2.1 as published by the Free Software Foundation, with the
- * special exception on linking described in file LICENSE.
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*************************************************************************)
-(* Prelude *)
-(*************************************************************************)
-(* This file contains a grammar for Javascript (ES6 and more).
- *
- * reference:
- *  - https://en.wikipedia.org/wiki/JavaScript_syntax
- *  - http://www.ecma-international.org/publications/standards/Ecma-262.htm
- *
- * The grammar rules are organized to follow the structure of the
+(* Originally adapted from
+- https://github.com/facebookarchive/pfff/blob/master/lang_js/parsing/parser_js.mly
+- https://github.com/semgrep/semgrep/blob/develop/languages/javascript/menhir/parser_js.mly
+The code was later largely rewritten but still contain pieces from its predecessors.
+*)
+
+(* The grammar rules are organized to follow the structure of the
  * ECMAScript specification (ECMA-262):
  *  - Section 12: Lexical Grammar (identifiers, literals)
  *  - Section 13: Expressions
@@ -34,6 +36,8 @@
  * Operator precedence is encoded directly in the grammar structure
  * (no %left/%right annotations), following the ECMA specification.
  *)
+
+%{
 
 open Js_token
 open Javascript
@@ -417,7 +421,6 @@ primaryExpression_FunClass:
   | e=functionExpression       { e }
   | e=classExpression          { e }
   | e=generatorExpression      { e }
-(* es7: *)
   | e=asyncFunctionExpression  { e }
   | e=asyncGeneratorExpression { e }
 
@@ -639,7 +642,6 @@ unaryExpression(x):
   | T_MINUS e=unaryExpression(d1)   { EUn (Neg, e)}
   | T_BIT_NOT e=unaryExpression(d1) { EUn (Bnot, e) }
   | T_NOT e=unaryExpression(d1)     { EUn (Not, e) }
-  (* es7: *)
   | T_AWAIT e=unaryExpression(d1)   { EUn (Await, e) }
 
 (*----------------------------*)
