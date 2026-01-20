@@ -330,7 +330,7 @@ identifierKeywordToken:
   | T_WHILE { T_WHILE }
   | T_WITH { T_WITH }
   | T_YIELD { T_YIELD }
-(* reserved words in strict mode code. *)
+  (* reserved words in strict mode code. *)
   | T_LET { T_LET }
   | T_STATIC { T_STATIC }
 
@@ -416,7 +416,6 @@ primaryExpression_Empty: T_ERROR TComment { assert false }
 primaryExpression_FunClass:
   | e=functionExpression       { e }
   | e=classExpression          { e }
-(* es6: *)
   | e=generatorExpression      { e }
 (* es7: *)
   | e=asyncFunctionExpression  { e }
@@ -453,7 +452,7 @@ arrayLiteral:
 
 arrayElement:
   | e=assignmentExpression(in_allowed)       { Element e }
-(* es6: SpreadElement *)
+  (* SpreadElement *)
   | "..." e=assignmentExpression(in_allowed) { ElementSpread e }
 
 (*----------------------------*)
@@ -475,12 +474,12 @@ objectLiteral:
 propertyDefinition:
   | name=propertyName ":" value=assignmentExpression(in_allowed)
     { Property (name, value) }
-  (* es6: shorthand property *)
+  (* shorthand property *)
   | i=identifierName
     { Property (PNI i, EVar (ident_unsafe i)) }
   | id=identifier init=initializer_(in_allowed)
     { CoverInitializedName (early_error (pi $startpos(init)), id, init)  }
-  (* es6: spread property *)
+  (* spread property *)
   | "..." e=assignmentExpression(in_allowed)
     { PropertySpread(e) }
   | m=methodDefinition(propertyName)
@@ -564,13 +563,13 @@ arguments:
   | "(" args=argumentList ")" { args }
 
 argumentList:
-  | (*empty*)   { [] }
+  | (* empty *)                           { [] }
   | args=listc(argumentListElement) ","?  { args  }
 
 (* assignmentExpression because expression supports sequence of exprs with ',' *)
 argumentListElement:
   | e=assignmentExpression(in_allowed)       { Arg e }
-  (* es6: spread element, allowed not only in last position *)
+  (* spread element, allowed not only in last position *)
   | "..." e=assignmentExpression(in_allowed) { ArgSpread e }
 
 (*----------------------------*)
@@ -817,10 +816,8 @@ assignmentExpression_NoStmt:
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
-  (* es6: *)
   | e=arrowFunction(in_allowed)      { e }
   | e=asyncArrowFunction(in_allowed) { e }
-  (* es6: *)
   | e=yieldExpression(in_allowed)    { e }
 
 (*----------------------------*)
@@ -834,10 +831,8 @@ assignmentExpressionForConciseBody(in_):
       let e1 = assignment_target_of_expr (Some op) e1 in
       EBin (op, e1, e2)
     }
-  (* es6: *)
   | e=arrowFunction(in_)      { e }
   | e=asyncArrowFunction(in_) { e }
-  (* es6: *)
   | e=yieldExpression(in_)    { e }
 
 (*************************************************************************)
@@ -900,7 +895,6 @@ statementList: l=statementListItem+ { l }
 
 (* 14.3.1 Let and Const Declarations *)
 lexicalDeclaration:
- (* es6: *)
   | T_CONST l=listc(lexicalBinding) sc       { Variable_statement (Const, l)}
   | T_LET l=listc(lexicalBinding) sc         { Variable_statement (Let, l)}
  (* Explicit Resource Management *)
@@ -928,14 +922,12 @@ initializer_(in_):
 
 forDeclaration:
   | T_VAR l=listc(variableDeclaration(in_disallowed) )  { Var, l }
- (* es6: *)
   | T_CONST l=listc(variableDeclaration(in_disallowed)) { Const, l }
   | T_LET l=listc(variableDeclaration(in_disallowed))   { Let, l }
 
 (* 'for ... in' and 'for ... of' declare only one variable *)
 forBinding:
   | T_VAR b=forBindingElement                { Var, b }
-  (* es6: *)
   | T_CONST b=forBindingElement              { Const, b }
   | T_LET  b=forBindingElement               { Let, b }
   (* Explicit Resource Management - uses restricted binding to resolve
@@ -1149,7 +1141,7 @@ debuggerStatement:
 (*----------------------------*)
 
 formalParameters:
-  | (*empty*)                                                 { list [] }
+  | (* empty *)                                               { list [] }
   | params=listc(formalParameter) ","?                        { list params }
   | r=functionRestParameter                                   { { list = []; rest = Some r } }
   | params=listc(formalParameter) "," r=functionRestParameter { { list = params; rest = Some r } }
