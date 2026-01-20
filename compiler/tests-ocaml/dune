@@ -30,5 +30,6 @@
   (flags
    (:standard \ --Werror)
    --toplevel)
+  (sourcemap no) ;; failure on 32bit
   (compilation_mode whole_program))
  (modes js))
