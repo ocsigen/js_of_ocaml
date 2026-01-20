@@ -255,6 +255,7 @@ identifierSemiKeyword:
   | T_SET { T_SET }
   | T_TARGET {T_TARGET }
   | T_USING { T_USING }
+  | T_DEFER { T_DEFER }
 
   (* future reserved words in strict mode code. *)
   | T_IMPLEMENTS { T_IMPLEMENTS }
@@ -264,7 +265,7 @@ identifierSemiKeyword:
   | T_PROTECTED {T_PROTECTED }
   | T_PUBLIC { T_PUBLIC }
 
-(* Variant excluding T_OF, and T_USING - used for 'using' bindings in for-in/of loops
+(* Variant excluding T_OF used for 'using' bindings in for-in/of loops
    to resolve ambiguity in 'for (using of ...)' *)
 identifierSemiKeywordNoOf:
   | T_AS { T_AS }
@@ -276,6 +277,8 @@ identifierSemiKeywordNoOf:
   | T_SET { T_SET }
   | T_TARGET {T_TARGET }
   | T_USING { T_USING }
+  | T_DEFER { T_DEFER }
+
   | T_IMPLEMENTS { T_IMPLEMENTS }
   | T_INTERFACE { T_INTERFACE }
   | T_PACKAGE { T_PACKAGE }
