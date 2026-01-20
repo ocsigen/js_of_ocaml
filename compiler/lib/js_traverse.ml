@@ -1302,8 +1302,8 @@ let declared scope params body =
      method variable_declaration k l =
        if
          match scope, k with
-         | (Lexical_block | Fun_block _ | Module | Script), (Let | Const | Using | AwaitUsing)
-           -> depth = 0
+         | ( (Lexical_block | Fun_block _ | Module | Script)
+           , (Let | Const | Using | AwaitUsing) ) -> depth = 0
          | (Lexical_block | Script), Var -> false
          | (Fun_block _ | Module), Var -> true
        then
@@ -1317,8 +1317,8 @@ let declared scope params body =
      method for_binding k p =
        if
          match scope, k with
-         | (Lexical_block | Fun_block _ | Module | Script), (Let | Const | Using | AwaitUsing)
-           -> depth = 0
+         | ( (Lexical_block | Fun_block _ | Module | Script)
+           , (Let | Const | Using | AwaitUsing) ) -> depth = 0
          | (Lexical_block | Script), Var -> false
          | (Fun_block _ | Module), Var -> true
        then
