@@ -14,7 +14,11 @@
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
  * license.txt for more details.
- *)
+*)
+
+let debug = Debug.find "js-parser"
+
+let debug () = debug ()
 
 open! Stdlib
 
@@ -118,8 +122,21 @@ let is_comment = function
   | Js_token.TComment _ | TAnnot _ | TCommentLineDirective _ -> true
   | _ -> false
 
+let token_to_ident t =
+  let name = Js_token.to_string t in
+  Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn name, name)
+
 module State : sig
   type token = Js_token.t * Loc.t
+
+  type yield_await_state =
+    { yield : bool
+    ; await : bool
+    }
+
+  type 'a checkpoint = 'a Js_parser.MenhirInterpreter.checkpoint * yield_await_state list
+
+  val normalize_token : 'a checkpoint -> Js_token.t -> Js_token.t
 
   module Cursor : sig
     type 'a t
@@ -137,9 +154,11 @@ module State : sig
 
   val save_checkpoint : 'a t -> 'a t
 
+  val pending : 'a t -> (token * 'a t) option
+
   val cursor : 'a t -> 'a Cursor.t
 
-  val checkpoint : 'a t -> 'a Js_parser.MenhirInterpreter.checkpoint
+  val checkpoint : 'a t -> 'a checkpoint
 
   val offer : 'a t -> Js_token.t -> Loc.t -> 'a t
 
@@ -147,13 +166,18 @@ module State : sig
 
   val try_recover : 'a Cursor.t -> 'a t
 
-  val create : 'a Js_parser.MenhirInterpreter.checkpoint -> 'a t
+  val create : 'a Js_parser.MenhirInterpreter.checkpoint -> yield_await_state -> 'a t
 
   val all_tokens : 'a t -> token list
 end = struct
   type token = Js_token.t * Loc.t
 
-  type 'a checkpoint = 'a Js_parser.MenhirInterpreter.checkpoint
+  type yield_await_state =
+    { yield : bool
+    ; await : bool
+    }
+
+  type 'a checkpoint = 'a Js_parser.MenhirInterpreter.checkpoint * yield_await_state list
 
   type 'a w =
     | Start of 'a checkpoint
@@ -212,36 +236,76 @@ end = struct
     ; next : token list
     }
 
+  let pending t =
+    match t.next with
+    | [] -> None
+    | x :: next -> Some (x, { t with next })
+
   let save_checkpoint { checkpoint; history; next } =
     { checkpoint; history = Checkpoint (checkpoint, history); next }
 
   let cursor { history; next; _ } = history, next
 
-  let rec advance t =
+  let rec advance (t, ya) =
     match (t : _ Js_parser.MenhirInterpreter.checkpoint) with
-    | Shifting _ | AboutToReduce _ -> advance (Js_parser.MenhirInterpreter.resume t)
-    | InputNeeded _ | Accepted _ | HandlingError _ | Rejected -> t
+    | Shifting _ -> advance (Js_parser.MenhirInterpreter.resume t, ya)
+    | AboutToReduce _ -> advance (Js_parser.MenhirInterpreter.resume t, ya)
+    | InputNeeded _ -> t, ya
+    | Accepted _ -> t, ya
+    | HandlingError _ -> t, ya
+    | Rejected -> t, ya
 
-  let create checkpoint = { checkpoint; history = Start checkpoint; next = [] }
+  let advance' (checkpoint, yield_await) token =
+    let checkpoint, yield_await =
+      advance (Js_parser.MenhirInterpreter.offer checkpoint token, yield_await)
+    in
+    let yield_await =
+      match token, yield_await with
+      | (T_YIELDOFF_AWAITOFF, _, _), ya -> { yield = false; await = false } :: ya
+      | (T_YIELDOFF_AWAITON, _, _), ya -> { yield = false; await = true } :: ya
+      | (T_YIELDON_AWAITOFF, _, _), ya -> { yield = true; await = false } :: ya
+      | (T_YIELDON_AWAITON, _, _), ya -> { yield = true; await = true } :: ya
+      | (T_YIELD_AWAIT_POP, _, _), [] -> assert false
+      | (T_YIELD_AWAIT_POP, _, _), _ :: xs -> xs
+      | _ -> yield_await
+    in
+    checkpoint, yield_await
+
+  let create checkpoint yield_await_state =
+    let checkpoint = checkpoint, [ yield_await_state ] in
+    { checkpoint; history = Start checkpoint; next = [] }
 
   let checkpoint { checkpoint; _ } = checkpoint
 
+  let normalize_token (_checkpoint, yield_await_state) (tok : Js_token.t) =
+    match yield_await_state with
+    | [] -> assert false
+    | yield_await :: _ -> (
+        match tok, yield_await with
+        | T_IDENTIFIER (_, "yield"), { yield = false; _ } -> tok
+        | T_YIELD, { yield = true; _ } -> tok
+        | T_IDENTIFIER (_, "await"), { await = false; _ } -> tok
+        | T_AWAIT, { await = true; _ } -> tok
+        | T_IDENTIFIER (_, "yield"), { yield = true; _ } -> T_YIELD
+        | T_IDENTIFIER (_, "await"), { await = true; _ } -> T_AWAIT
+        | T_YIELD, { yield = false; _ } | T_AWAIT, { await = false; _ } ->
+            token_to_ident tok
+        | _ -> tok)
+
   let offer { checkpoint; history; next } tok loc : _ t =
     match (checkpoint : _ checkpoint) with
-    | Accepted _ -> assert false
-    | Rejected | HandlingError _ -> { checkpoint; history; next = (tok, loc) :: next }
-    | Shifting _ | AboutToReduce _ -> assert false
-    | InputNeeded _ -> (
+    | Accepted _, _ -> assert false
+    | Rejected, _ | HandlingError _, _ -> assert false
+    | Shifting _, _ | AboutToReduce _, _ -> assert false
+    | InputNeeded _, _ -> (
         if is_comment tok
         then { checkpoint; history = Token (tok, loc, history); next }
         else
-          let new_checkpoint =
-            advance
-              (Js_parser.MenhirInterpreter.offer checkpoint (tok, Loc.p1 loc, Loc.p2 loc))
-          in
+          let tok = normalize_token checkpoint tok in
+          let new_checkpoint = advance' checkpoint (tok, Loc.p1 loc, Loc.p2 loc) in
           match (new_checkpoint : 'a checkpoint) with
-          | Shifting _ | AboutToReduce _ -> assert false
-          | Rejected | Accepted _ | InputNeeded _ ->
+          | Shifting _, _ | AboutToReduce _, _ -> assert false
+          | Rejected, _ | Accepted _, _ | InputNeeded _, _ ->
               let history =
                 match tok with
                 | T_VIRTUAL_SEMICOLON ->
@@ -257,7 +321,7 @@ end = struct
                 | _ -> Token (tok, loc, history)
               in
               { checkpoint = new_checkpoint; history; next }
-          | HandlingError _ ->
+          | HandlingError _, _ ->
               { checkpoint = new_checkpoint
               ; history = Token (tok, loc, Checkpoint (checkpoint, history))
               ; next
@@ -273,27 +337,21 @@ end = struct
           then compute t
           else
             match compute t with
-            | InputNeeded _ as checkpoint ->
-                advance
-                  (Js_parser.MenhirInterpreter.offer
-                     checkpoint
-                     (tok, Loc.p1 loc, Loc.p2 loc))
-            | Shifting _ | AboutToReduce _ -> assert false
-            | Accepted _ | Rejected | HandlingError _ -> assert false)
+            | (InputNeeded _, _) as checkpoint ->
+                advance' checkpoint (tok, Loc.p1 loc, Loc.p2 loc)
+            | Shifting _, _ | AboutToReduce _, _ -> assert false
+            | Accepted _, _ | Rejected, _ | HandlingError _, _ -> assert false)
     in
     let checkpoint = compute h in
-    List.fold_left
-      next
-      ~init:{ checkpoint; history = h; next = [] }
-      ~f:(fun t (tok, loc) -> offer t tok loc)
+    { checkpoint; history = h; next }
 
   let finalize_error { checkpoint; history; next } =
-    let rec loop (t : _ Js_parser.MenhirInterpreter.checkpoint) =
+    let rec loop ((t, ya) : _ checkpoint) =
       match t with
       | HandlingError _ | Shifting _ | AboutToReduce _ ->
-          loop (Js_parser.MenhirInterpreter.resume t)
+          loop (Js_parser.MenhirInterpreter.resume t, ya)
       | Accepted _ | InputNeeded _ -> assert false
-      | Rejected -> t
+      | Rejected -> t, ya
     in
     { checkpoint = loop checkpoint; history; next }
 
@@ -320,11 +378,19 @@ let rec nl_separated prev loc' =
   match State.Cursor.last_token prev with
   | None -> true
   | Some (T_VIRTUAL_SEMICOLON, _, prev) -> nl_separated prev loc'
+  | Some
+      ( ( T_YIELD_AWAIT_POP
+        | T_YIELDON_AWAITON
+        | T_YIELDON_AWAITOFF
+        | T_YIELDOFF_AWAITON
+        | T_YIELDOFF_AWAITOFF )
+      , _
+      , prev ) -> nl_separated prev loc'
   | Some (_, loc, _) -> Loc.line loc' <> Loc.line_end loc
 
-let acceptable checkpoint token =
+let acceptable state token =
   let module I = Js_parser.MenhirInterpreter in
-  let checkpoint = State.checkpoint checkpoint in
+  let checkpoint, _ = State.checkpoint state in
   I.acceptable checkpoint token Lexer.dummy_pos
 
 let semicolon = Js_token.T_VIRTUAL_SEMICOLON
@@ -346,6 +412,7 @@ let rec offer_one t (lexbuf : Lexer.t) =
       let t = State.offer t tok loc in
       offer_one t lexbuf
   | _ ->
+      let tok = State.normalize_token (State.checkpoint t) tok in
       let t =
         match tok with
         | T_LPAREN when acceptable t T_LPAREN_ARROW -> State.save_checkpoint t
@@ -398,14 +465,6 @@ let rec offer_one t (lexbuf : Lexer.t) =
       in
       State.offer t tok loc
 
-let dummy_ident =
-  let dummy = "<DUMMY>" in
-  Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn dummy, dummy)
-
-let token_to_ident t =
-  let name = Js_token.to_string t in
-  Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn name, name)
-
 let recover error_checkpoint previous_checkpoint =
   (* 7.9.1 - 1 *)
   (* When, as the program is parsed from left to right, a token (called the offending token)
@@ -422,87 +481,131 @@ let recover error_checkpoint previous_checkpoint =
   (* complete ECMAScript Program, then a semicolon is automatically inserted at the end *)
   match State.Cursor.last_token (State.cursor error_checkpoint) with
   | None -> error_checkpoint
-  | Some (offending_token, offending_loc, rest) -> (
-      match State.Cursor.last_token rest with
-      | None -> error_checkpoint
-      | Some (last_token, last_token_loc, last_token_prev) -> (
-          match offending_token with
-          | T_VIRTUAL_SEMICOLON -> error_checkpoint
-          (* contextually allowed as identifiers, namely await and yield; *)
-          | (T_YIELD | T_AWAIT) when acceptable previous_checkpoint dummy_ident ->
-              State.Cursor.replace_token
-                rest
-                (token_to_ident offending_token)
-                offending_loc
-              |> State.try_recover
-          | T_RCURLY when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
-              State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
-          | T_EOF when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
-              State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
-          | T_ARROW when not (nl_separated rest offending_loc) -> (
-              match last_token with
-              | T_RPAREN -> (
-                  (* Restart parsing from the openning parens, patching the
-                     token to be T_LPAREN_ARROW to help the parser *)
-                  match State.Cursor.rewind_block rest with
-                  | Some (T_LPAREN, loc, prev) ->
-                      State.Cursor.replace_token prev T_LPAREN_ARROW loc
-                      |> State.try_recover
-                  | Some _ -> assert false
-                  | None -> error_checkpoint)
-              | T_OF ->
-                  State.Cursor.replace_token
-                    last_token_prev
-                    (token_to_ident T_OF)
-                    last_token_loc
-                  |> State.try_recover
-              | _ -> error_checkpoint)
-          | _ -> (
-              match last_token with
-              | T_VIRTUAL_SEMICOLON -> error_checkpoint
-              | _
-                when nl_separated rest offending_loc
-                     && acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
-                  State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
-              | T_RPAREN
-                when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON_DO_WHILE
-                -> State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
-              | T_RCURLY
-                when acceptable
-                       previous_checkpoint
-                       Js_token.T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT ->
-                  State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
-              | _ -> error_checkpoint)))
+  | Some (offending_token, offending_loc, rest) ->
+      let checkpoint =
+        match State.Cursor.last_token rest with
+        | None -> error_checkpoint
+        | Some (last_token, last_token_loc, last_token_prev) -> (
+            match offending_token with
+            | T_VIRTUAL_SEMICOLON -> error_checkpoint
+            | T_RCURLY when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
+                State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+            | T_RCURLY when acceptable previous_checkpoint Js_token.T_YIELD_AWAIT_POP ->
+                State.Cursor.insert_token rest Js_token.T_YIELD_AWAIT_POP dummy_loc
+                |> State.try_recover
+            | T_EOF when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
+                State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+            | T_ARROW when not (nl_separated rest offending_loc) -> (
+                match last_token with
+                | T_RPAREN -> (
+                    (* Restart parsing from the openning parens, patching the
+                       token to be T_LPAREN_ARROW to help the parser *)
+                    match State.Cursor.rewind_block rest with
+                    | Some (T_LPAREN, loc, prev) ->
+                        State.Cursor.replace_token prev T_LPAREN_ARROW loc
+                        |> State.try_recover
+                    | Some _ -> assert false
+                    | None -> error_checkpoint)
+                | T_OF ->
+                    State.Cursor.replace_token
+                      last_token_prev
+                      (token_to_ident T_OF)
+                      last_token_loc
+                    |> State.try_recover
+                | _ -> error_checkpoint)
+            | _ -> (
+                match last_token with
+                | T_VIRTUAL_SEMICOLON -> error_checkpoint
+                | T_LCURLY when acceptable previous_checkpoint T_YIELDOFF_AWAITOFF ->
+                    State.Cursor.insert_token rest T_YIELDOFF_AWAITOFF dummy_loc
+                    |> State.try_recover
+                | T_LCURLY when acceptable previous_checkpoint T_YIELDON_AWAITOFF ->
+                    State.Cursor.insert_token rest T_YIELDON_AWAITOFF dummy_loc
+                    |> State.try_recover
+                | T_LCURLY when acceptable previous_checkpoint T_YIELDON_AWAITON ->
+                    State.Cursor.insert_token rest T_YIELDON_AWAITON dummy_loc
+                    |> State.try_recover
+                | T_LCURLY when acceptable previous_checkpoint T_YIELDOFF_AWAITON ->
+                    State.Cursor.insert_token rest T_YIELDOFF_AWAITON dummy_loc
+                    |> State.try_recover
+                | _
+                  when nl_separated rest offending_loc
+                       && acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
+                    State.Cursor.insert_token rest semicolon dummy_loc
+                    |> State.try_recover
+                | T_RPAREN
+                  when acceptable
+                         previous_checkpoint
+                         Js_token.T_VIRTUAL_SEMICOLON_DO_WHILE ->
+                    State.Cursor.insert_token rest semicolon dummy_loc
+                    |> State.try_recover
+                | T_RCURLY
+                  when acceptable
+                         previous_checkpoint
+                         Js_token.T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT ->
+                    State.Cursor.insert_token rest semicolon dummy_loc
+                    |> State.try_recover
+                | T_ARROW when acceptable previous_checkpoint T_YIELDOFF_AWAITOFF ->
+                    State.Cursor.insert_token rest Js_token.T_YIELDOFF_AWAITOFF dummy_loc
+                    |> State.try_recover
+                | T_ARROW when acceptable previous_checkpoint T_YIELDON_AWAITOFF ->
+                    State.Cursor.insert_token rest Js_token.T_YIELDON_AWAITOFF dummy_loc
+                    |> State.try_recover
+                | T_ARROW when acceptable previous_checkpoint T_YIELDON_AWAITON ->
+                    State.Cursor.insert_token rest Js_token.T_YIELDON_AWAITON dummy_loc
+                    |> State.try_recover
+                | T_ARROW when acceptable previous_checkpoint T_YIELDOFF_AWAITON ->
+                    State.Cursor.insert_token rest Js_token.T_YIELDOFF_AWAITON dummy_loc
+                    |> State.try_recover
+                | _ -> error_checkpoint))
+      in
+      if phys_equal checkpoint error_checkpoint
+      then
+        match State.Cursor.last_token rest with
+        | None -> checkpoint
+        | _ when acceptable previous_checkpoint T_YIELD_AWAIT_POP ->
+            State.Cursor.insert_token rest Js_token.T_YIELD_AWAIT_POP dummy_loc
+            |> State.try_recover
+        | _ -> checkpoint
+      else checkpoint
 
-let parse_aux the_parser (lexbuf : Lexer.t) =
+let parse_aux the_parser yield_await_state (lexbuf : Lexer.t) =
   let init = the_parser (Lexer.curr_pos lexbuf) in
   let rec loop_error checkpoint =
-    match (State.checkpoint checkpoint : _ Js_parser.MenhirInterpreter.checkpoint) with
-    | InputNeeded _ | Shifting _ | AboutToReduce _ | Accepted _ -> assert false
-    | Rejected -> `Error checkpoint
-    | HandlingError _ -> loop_error checkpoint
+    match State.checkpoint checkpoint with
+    | InputNeeded _, _ | Shifting _, _ | AboutToReduce _, _ | Accepted _, _ ->
+        assert false
+    | Rejected, _ -> `Error checkpoint
+    | HandlingError _, _ -> loop_error checkpoint
   in
   let rec loop checkpoint previous_checkpoint =
-    match (State.checkpoint checkpoint : _ Js_parser.MenhirInterpreter.checkpoint) with
-    | Shifting _ | AboutToReduce _ -> assert false
-    | Accepted v -> `Ok (v, checkpoint)
-    | Rejected -> loop_error checkpoint
-    | InputNeeded _env ->
-        let previous_checkpoint = checkpoint in
-        let new_checkpoint = offer_one checkpoint lexbuf in
-        loop new_checkpoint previous_checkpoint
-    | HandlingError _env -> (
+    match State.checkpoint checkpoint with
+    | Shifting _, _ | AboutToReduce _, _ -> assert false
+    | Accepted v, _ -> `Ok (v, checkpoint)
+    | Rejected, _ -> loop_error checkpoint
+    | InputNeeded _env, _ -> (
+        match State.pending checkpoint with
+        | None ->
+            let previous_checkpoint = checkpoint in
+
+            let new_checkpoint = offer_one checkpoint lexbuf in
+            loop new_checkpoint previous_checkpoint
+        | Some ((tok, loc), previous_checkpoint) ->
+            let previous_checkpoint = previous_checkpoint in
+            let new_checkpoint = State.offer previous_checkpoint tok loc in
+            loop new_checkpoint previous_checkpoint)
+    | HandlingError _, _ -> (
         let error_checkpoint = checkpoint in
         let new_checkpoint = recover error_checkpoint previous_checkpoint in
         match State.checkpoint new_checkpoint with
-        | HandlingError _ -> (
+        | HandlingError _, _ -> (
             let checkpoint = State.finalize_error new_checkpoint in
             match State.checkpoint checkpoint with
-            | Rejected -> `Error checkpoint
+            | Rejected, _ -> `Error checkpoint
             | _ -> assert false)
         | _ -> loop new_checkpoint new_checkpoint)
   in
-  let checkpoint = State.create init in
+  let checkpoint = State.create init yield_await_state in
   let res = loop checkpoint checkpoint in
   match res with
   | `Ok all -> all
@@ -510,10 +613,32 @@ let parse_aux the_parser (lexbuf : Lexer.t) =
       let rec last cursor =
         match State.Cursor.last_token cursor with
         | None -> assert false
-        | Some (T_VIRTUAL_SEMICOLON, _, cursor) -> last cursor
+        | Some
+            ( ( T_VIRTUAL_SEMICOLON
+              | T_YIELDOFF_AWAITOFF
+              | T_YIELDOFF_AWAITON
+              | T_YIELDON_AWAITOFF
+              | T_YIELDON_AWAITON
+              | T_YIELD_AWAIT_POP )
+            , _
+            , cursor ) -> last cursor
         | Some (_, loc, _) -> Loc.p1 loc
       in
       let p = last (State.cursor t) in
+      let rec lastn n acc cursor =
+        if n = 0
+        then acc
+        else
+          match State.Cursor.last_token cursor with
+          | None -> acc
+          | Some (tok, _, cursor) -> lastn (pred n) (tok :: acc) cursor
+      in
+      if debug ()
+      then
+        List.iter
+          (lastn 10 [] (State.cursor t))
+          ~f:(fun tok -> Printf.eprintf "%s " (Js_token.to_string_extra tok));
+      if debug () then Printf.eprintf "\n";
       raise (Parsing_error (Parse_info.t_of_pos p))
 
 let fail_early =
@@ -542,7 +667,9 @@ let fail_early =
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
 
 let parse' lex =
-  let p, toks = parse_aux Js_parser.Incremental.program lex in
+  let p, toks =
+    parse_aux Js_parser.Incremental.program { yield = false; await = true } lex
+  in
   check_program p;
   let toks = State.all_tokens toks in
   let take_annot_before =
@@ -577,11 +704,18 @@ let parse' lex =
   p, toks
 
 let parse lex =
-  let p, _ = parse_aux Js_parser.Incremental.program lex in
+  let p, _ =
+    parse_aux Js_parser.Incremental.program { yield = false; await = true } lex
+  in
   check_program p;
   List.map p ~f:(fun (_, x) -> x)
 
 let parse_expr lex =
-  let expr, _ = parse_aux Js_parser.Incremental.standalone_expression lex in
+  let expr, _ =
+    parse_aux
+      Js_parser.Incremental.standalone_expression
+      { yield = false; await = false }
+      lex
+  in
   fail_early#expression expr;
   expr

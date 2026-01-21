@@ -250,7 +250,7 @@ let%expect_test "arrow" =
     var
      a =
         /*<<fake:16:10>>*/ x=>
-           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/ ;
+           /*<<fake:16:17>>*/ y=> /*<<fake:16:22>>*/ x + y /*<<fake:16:27>>*/  /*<<?>>*/ ;
     var
      a =
         /*<<fake:17:10>>*/ x=>
@@ -260,7 +260,8 @@ let%expect_test "arrow" =
     var
      a =
         /*<<fake:20:10>>*/ async (a, b)=>
-           /*<<fake:20:27>>*/ a + b /*<<fake:20:32>>*/ ; |}]
+           /*<<fake:20:27>>*/ a + b /*<<fake:20:32>>*/ ;
+    |}]
 
 let%expect_test "trailing comma" =
   (* GH#989 *)
@@ -843,6 +844,14 @@ let check_vs_string s toks =
     | [] -> space pos (String.length s)
     | (Js_token.(T_VIRTUAL_SEMICOLON | T_VIRTUAL_SEMICOLON_DO_WHILE), _) :: rest ->
         loop offset pos rest
+    | ( Js_token.(
+          ( T_YIELDOFF_AWAITOFF
+          | T_YIELDOFF_AWAITON
+          | T_YIELDON_AWAITON
+          | T_YIELDON_AWAITOFF
+          | T_YIELD_AWAIT_POP ))
+      , _ )
+      :: rest -> loop offset pos rest
     | ((Js_token.T_STRING (_, codepoint_len) as x), loc) :: rest ->
         let p1 = Loc.p1 loc in
         let { Parse_info.idx = codepoint_idx; _ } = Parse_info.t_of_pos p1 in
@@ -899,6 +908,14 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   let rec loop tokens =
     match tokens with
     | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
+    | ( Js_token.(
+          ( T_YIELDOFF_AWAITOFF
+          | T_YIELDOFF_AWAITON
+          | T_YIELDON_AWAITON
+          | T_YIELDON_AWAITOFF
+          | T_YIELD_AWAIT_POP ))
+      , _ )
+      :: xs -> loop xs
     | (tok, loc) :: xs ->
         let p1 = Loc.p1 loc in
         let pos = Parse_info.t_of_pos p1 in
