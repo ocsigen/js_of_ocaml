@@ -160,6 +160,11 @@ type t =
   | T_DECR_NB
   | T_INCR_NB
   | T_LPAREN_ARROW
+  | T_YIELDOFF_AWAITOFF
+  | T_YIELDOFF_AWAITON
+  | T_YIELDON_AWAITOFF
+  | T_YIELDON_AWAITON
+  | T_YIELD_AWAIT_POP
   | TAnnot of Annot.t
   | TComment of string
   | TCommentLineDirective of string
@@ -179,6 +184,11 @@ and bigint_type =
 type token = t
 
 let to_string = function
+  | T_YIELDOFF_AWAITOFF -> ""
+  | T_YIELDOFF_AWAITON -> ""
+  | T_YIELDON_AWAITOFF -> ""
+  | T_YIELDON_AWAITON -> ""
+  | T_YIELD_AWAIT_POP -> ""
   | TAnnot (s, _) -> s
   | T_ERROR s -> s
   | TComment s -> s
@@ -330,6 +340,12 @@ let to_string_extra x =
   | T_ERROR _ -> "(error)"
   | T_LPAREN_ARROW -> "(arrow)"
   | T_ENCAPSED_STRING _ -> "(encaps)"
+  | T_YIELDOFF_AWAITOFF -> "(YIELDOFF_AWAITOFF)"
+  | T_YIELDOFF_AWAITON -> "(YIELDOFF_AWAITON)"
+  | T_YIELDON_AWAITOFF -> "(YIELDON_AWAITOFF)"
+  | T_YIELDON_AWAITON -> "(YIELDON_AWAITON)"
+  | T_YIELD_AWAIT_POP -> "(YIELD_AWAIT_POP)"
+  | T_EOF -> "(EOF)"
   | _ -> ""
 
 let all_keywords =

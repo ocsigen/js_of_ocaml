@@ -159,6 +159,11 @@ type t =
   | T_DECR_NB
   | T_INCR_NB
   | T_LPAREN_ARROW
+  | T_YIELDOFF_AWAITOFF
+  | T_YIELDOFF_AWAITON
+  | T_YIELDON_AWAITOFF
+  | T_YIELDON_AWAITON
+  | T_YIELD_AWAIT_POP
   | TAnnot of Annot.t
   | TComment of string
   | TCommentLineDirective of string

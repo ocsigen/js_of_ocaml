@@ -57,6 +57,8 @@ let name_of_ident = function
   | S { name; _} -> name
   | V _ -> assert false
 
+let fst3 (x,_,_) = x
+
 %}
 
 (*************************************************************************)
@@ -163,6 +165,10 @@ T_BACKQUOTE
 %token T_LPAREN_ARROW
 %token T_INCR_NB T_DECR_NB
 
+%token T_YIELDOFF_AWAITOFF T_YIELDOFF_AWAITON T_YIELDON_AWAITOFF T_YIELDON_AWAITON T_YIELD_AWAIT_POP
+
+
+
 (*-----------------------------------------*)
 (* Priorities *)
 (*-----------------------------------------*)
@@ -215,10 +221,6 @@ listc_with_empty2(X,Y):
   | y=Y                                  { [], Some y }
   | (* empty *)                          { [], None }
 
-optl(X):
-  | (* empty *) { [] }
-  | x=X         { x }
-
 (* Guard rules for 'in' operator - used to parameterize expression rules *)
 (* in_allowed: empty rule, allows the T_IN production *)
 (* in_disallowed: matches T_EOF which never appears mid-expression, effectively disabling the production *)
@@ -226,6 +228,17 @@ optl(X):
 %inline in_disallowed: T_EOF { }
 
 
+yieldOff_awaitOff(X):
+  | T_YIELDOFF_AWAITOFF x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
+
+yieldOff_awaitOn(X):
+  | T_YIELDOFF_AWAITON x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
+
+yieldOn_awaitOff(X):
+  | T_YIELDON_AWAITOFF x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
+
+yieldOn_awaitOn(X):
+  | T_YIELDON_AWAITON x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
 
 (*************************************************************************)
 (* Section 12: ECMAScript Language: Lexical Grammar                     *)
@@ -881,9 +894,12 @@ declaration:
 (* 14.2 Block *)
 (*----------------------------*)
 
-block: "{" l=optl(statementList) "}" { l }
+block: "{" l=statementList "}" { l }
 
-statementList: l=statementListItem+ { l }
+statementList_noneempty: l=statementListItem+ { l }
+statementList:
+  | l=statementList_noneempty { l }
+  | { [ ] }
 
 (*----------------------------*)
 (* 14.3 Declarations and the Variable Statement *)
@@ -1083,10 +1099,10 @@ caseBlock:
   | "{" before=caseClause* default=defaultClause after=caseClause* "}" { before, Some default, after }
 
 caseClause:
-  | T_CASE e=expression(in_allowed) ":" s= optl(statementList) { e,s }
+  | T_CASE e=expression(in_allowed) ":" s=statementList { e,s }
 
 defaultClause:
-  | T_DEFAULT ":" list=optl(statementList) { list }
+  | T_DEFAULT ":" list=statementList { list }
 
 (*----------------------------*)
 (* 14.13 Labelled Statements *)
@@ -1150,18 +1166,22 @@ formalParameter:
 
 callSignature: "(" args=formalParameters ")" { args }
 
-functionBody: body=optl(statementList) { body }
+%inline emptyl: { [] }
+
+functionBody(YA):
+  | body=YA(emptyl) {fst3 body}
+  | body=YA(statementList_noneempty) { fst3 body }
 
 (*----------------------------*)
 (* 15.2 Function Definitions *)
 (*----------------------------*)
 
 functionDeclaration:
-  | T_FUNCTION name=identifier args=callSignature "{" b=functionBody _rbrace="}"
+  | T_FUNCTION name=identifier args=callSignature "{" b=functionBody(yieldOff_awaitOff) _rbrace="}"
     { (name, ({async = false; generator = false}, args, b, p $startpos(_rbrace))) }
 
 functionExpression:
-  | T_FUNCTION name=identifier? args=callSignature "{" b=functionBody "}"
+  | T_FUNCTION name=identifier? args=callSignature "{" b=functionBody(yieldOff_awaitOff) "}"
     { EFun (name, ({async = false; generator = false}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
@@ -1169,16 +1189,20 @@ functionExpression:
 (*----------------------------*)
 
 arrowFunction(in_):
-  | i=identifier T_ARROW b=conciseBody(in_)
+  | i=identifier T_ARROW b=conciseBody(yieldOff_awaitOff,in_)
     { let b,consise = b in
       EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
-  | T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(in_)
+  | T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(yieldOff_awaitOff,in_)
     { let b,consise = b in
       EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
-conciseBody(in_):
-  | "{" b=functionBody "}" { b, false }
-  | e=assignmentExpressionForConciseBody(in_) { [(Return_statement (Some e, p $endpos), p $symbolstartpos)], true }
+conciseBody(f, in_):
+  | "{" b=functionBody(f) "}" { b, false }
+  | e=f(assignmentExpressionForConciseBody(in_))
+    {
+      let e, start, stop = e in
+      [(Return_statement (Some e, p stop), p start)], true
+    }
 
 (*----------------------------*)
 (* 15.4 Method Definitions *)
@@ -1189,17 +1213,17 @@ methodName:
   | kw=identifierKeyword { kw }
 
 methodDefinition(name):
-  | T_GET name=name args=callSignature "{" b=functionBody "}"
+  | T_GET name=name args=callSignature "{" b=functionBody(yieldOff_awaitOff) "}"
     { name, MethodGet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
-  | T_SET name=name args=callSignature "{" b=functionBody "}"
+  | T_SET name=name args=callSignature "{" b=functionBody(yieldOff_awaitOff) "}"
     { name, MethodSet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
-  | name=name args=callSignature "{" b=functionBody "}"
+  | name=name args=callSignature "{" b=functionBody(yieldOff_awaitOff) "}"
     { name, Method(({async = false; generator = false}, args, b, p $symbolstartpos)) }
-  | T_ASYNC name=name args=callSignature "{" b=functionBody "}"
+  | T_ASYNC name=name args=callSignature "{" b=functionBody(yieldOff_awaitOn) "}"
     { name, Method(({async = true; generator = false}, args, b, p $symbolstartpos)) }
-  | "*" name=name args=callSignature "{" b=functionBody "}"
+  | "*" name=name args=callSignature "{" b=functionBody(yieldOn_awaitOff) "}"
     { name, Method(({async = false; generator = true}, args, b, p $symbolstartpos)) }
-  | T_ASYNC "*" name=name args=callSignature "{" b=functionBody "}"
+  | T_ASYNC "*" name=name args=callSignature "{" b=functionBody(yieldOn_awaitOn) "}"
     { name, Method(({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
@@ -1207,11 +1231,11 @@ methodDefinition(name):
 (*----------------------------*)
 
 generatorDeclaration:
-  | T_FUNCTION "*" name=identifier args=callSignature "{" b=functionBody "}"
+  | T_FUNCTION "*" name=identifier args=callSignature "{" b=functionBody(yieldOn_awaitOff) "}"
     { (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
 
 generatorExpression:
-  | T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody "}"
+  | T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody(yieldOn_awaitOff) "}"
     { EFun (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
 
 yieldExpression(in_):
@@ -1224,11 +1248,11 @@ yieldExpression(in_):
 (*----------------------------*)
 
 asyncGeneratorDeclaration:
-  | T_ASYNC T_FUNCTION "*" name=identifier args=callSignature "{" b=functionBody "}"
+  | T_ASYNC T_FUNCTION "*" name=identifier args=callSignature "{" b=functionBody(yieldOn_awaitOn) "}"
     { (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 asyncGeneratorExpression:
-  | T_ASYNC T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody "}"
+  | T_ASYNC T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody(yieldOn_awaitOn) "}"
     { EFun (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
@@ -1254,7 +1278,7 @@ classElement:
     { [ CEField (false, n, i) ] }
   | T_STATIC n=classElementName i=initializer_(in_allowed)? sc
     { [ CEField (true, n, i) ] }
-  | T_STATIC b=block { [CEStaticBLock b] }
+  | T_STATIC "{" b=functionBody(yieldOff_awaitOn) "}" { [CEStaticBLock b] }
   | sc               { [] }
 
 classElementName:
@@ -1266,11 +1290,11 @@ classElementName:
 (*----------------------------*)
 
 asyncFunctionDeclaration:
-  | T_ASYNC T_FUNCTION  name=identifier args=callSignature "{" b=functionBody "}"
+  | T_ASYNC T_FUNCTION  name=identifier args=callSignature "{" b=functionBody(yieldOff_awaitOn) "}"
     { (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
 asyncFunctionExpression:
-  | T_ASYNC T_FUNCTION name=identifier? args=callSignature "{" b=functionBody "}"
+  | T_ASYNC T_FUNCTION name=identifier? args=callSignature "{" b=functionBody(yieldOff_awaitOn) "}"
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
@@ -1279,12 +1303,12 @@ asyncFunctionExpression:
 
 asyncArrowFunction(in_):
   (* Use identifierNoOf to resolve 'for (async of ...)' ambiguity *)
-  | T_ASYNC i=identifierNoOf T_ARROW b=conciseBody(in_)
+  | T_ASYNC i=identifierNoOf T_ARROW b=conciseBody(yieldOff_awaitOn,in_)
     {
       let b,consise = b in
       EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown)
     }
-  | T_ASYNC T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(in_)
+  | T_ASYNC T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(yieldOff_awaitOn,in_)
     { let b,consise = b in
       EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), consise, AUnknown)
     }
