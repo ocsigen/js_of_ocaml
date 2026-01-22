@@ -126,6 +126,21 @@ let token_to_ident t =
   let name = Js_token.to_string t in
   Js_token.T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn name, name)
 
+(* Handling contextual keywords [yield] and [await]:
+
+   In JavaScript, [yield] and [await] are contextual keywords - they act as
+   keywords inside generator/async functions but as regular identifiers outside.
+   Instead of parametrizing the parser with [yield] and [await] parameters (which
+   would significantly increase its size due to state explosion), we use virtual
+   tokens to feed information back to the lexer.
+
+   The parser emits virtual tokens (T_YIELDON_AWAITON, T_YIELDOFF_AWAITOFF, etc.)
+   when entering/exiting contexts where [yield] or [await] should be keywords.
+   These tokens update a [yield_await_state] stack that [normalize_token] uses
+   to convert tokens: when [yield=true], an identifier "yield" becomes T_YIELD;
+   when [yield=false], T_YIELD becomes an identifier. Same logic applies to [await].
+
+   The T_YIELD_AWAIT_POP token pops the state stack when exiting a scope. *)
 module State : sig
   type token = Js_token.t * Loc.t
 
@@ -488,13 +503,17 @@ let recover error_checkpoint previous_checkpoint =
         | Some (last_token, last_token_loc, last_token_prev) -> (
             match offending_token with
             | T_VIRTUAL_SEMICOLON -> error_checkpoint
+            (* ASI rule: insert semicolon before '}' *)
             | T_RCURLY when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
                 State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+            (* Exiting a function/arrow body: pop the yield/await state *)
             | T_RCURLY when acceptable previous_checkpoint Js_token.T_YIELD_AWAIT_POP ->
                 State.Cursor.insert_token rest Js_token.T_YIELD_AWAIT_POP dummy_loc
                 |> State.try_recover
+            (* ASI rule: insert semicolon at end of input *)
             | T_EOF when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
                 State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
+            (* Arrow function recovery: disambiguate '(params) =>' from parenthesized expr *)
             | T_ARROW when not (nl_separated rest offending_loc) -> (
                 match last_token with
                 | T_RPAREN -> (
@@ -506,6 +525,7 @@ let recover error_checkpoint previous_checkpoint =
                         |> State.try_recover
                     | Some _ -> assert false
                     | None -> error_checkpoint)
+                (* 'of' can be an identifier in arrow params: (of) => ... *)
                 | T_OF ->
                     State.Cursor.replace_token
                       last_token_prev
@@ -516,6 +536,9 @@ let recover error_checkpoint previous_checkpoint =
             | _ -> (
                 match last_token with
                 | T_VIRTUAL_SEMICOLON -> error_checkpoint
+                (* Entering function body after '{': push yield/await state.
+                   The appropriate state depends on the function kind
+                   (regular, generator, async, async generator). *)
                 | T_LCURLY when acceptable previous_checkpoint T_YIELDOFF_AWAITOFF ->
                     State.Cursor.insert_token rest T_YIELDOFF_AWAITOFF dummy_loc
                     |> State.try_recover
@@ -528,23 +551,29 @@ let recover error_checkpoint previous_checkpoint =
                 | T_LCURLY when acceptable previous_checkpoint T_YIELDOFF_AWAITON ->
                     State.Cursor.insert_token rest T_YIELDOFF_AWAITON dummy_loc
                     |> State.try_recover
+                (* ASI rule: insert semicolon when offending token is on a new line *)
                 | _
                   when nl_separated rest offending_loc
                        && acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
                     State.Cursor.insert_token rest semicolon dummy_loc
                     |> State.try_recover
+                (* Special ASI for do-while: 'do stmt while (expr)' needs no semicolon *)
                 | T_RPAREN
                   when acceptable
                          previous_checkpoint
                          Js_token.T_VIRTUAL_SEMICOLON_DO_WHILE ->
                     State.Cursor.insert_token rest semicolon dummy_loc
                     |> State.try_recover
+                (* Special ASI for 'export default function/class { }' *)
                 | T_RCURLY
                   when acceptable
                          previous_checkpoint
                          Js_token.T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT ->
                     State.Cursor.insert_token rest semicolon dummy_loc
                     |> State.try_recover
+                (* Entering arrow function body after '=>': push yield/await state.
+                   Arrow functions inherit [yield] from enclosing scope but
+                   [await] depends on whether it's an async arrow. *)
                 | T_ARROW when acceptable previous_checkpoint T_YIELDOFF_AWAITOFF ->
                     State.Cursor.insert_token rest Js_token.T_YIELDOFF_AWAITOFF dummy_loc
                     |> State.try_recover
@@ -559,6 +588,10 @@ let recover error_checkpoint previous_checkpoint =
                     |> State.try_recover
                 | _ -> error_checkpoint))
       in
+      (* If no recovery strategy worked above, try one last fallback:
+         pop the yield/await state stack. This can only happen inside
+         a concise body of an arrow function (e.g., 'x => x + 1' where
+         the body is an expression, not a block). *)
       if phys_equal checkpoint error_checkpoint
       then
         match State.Cursor.last_token rest with
