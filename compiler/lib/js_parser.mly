@@ -1169,7 +1169,7 @@ callSignature: "(" args=formalParameters ")" { args }
 %inline emptyl: { [] }
 
 functionBody(YA):
-  | body=YA(emptyl) {fst3 body}
+  | body=YA(emptyl) { fst3 body }
   | body=YA(statementList_noneempty) { fst3 body }
 
 (*----------------------------*)

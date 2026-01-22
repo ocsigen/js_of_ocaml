@@ -14,7 +14,7 @@
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
  * license.txt for more details.
-*)
+ *)
 
 let debug = Debug.find "js-parser"
 
@@ -517,7 +517,7 @@ let recover error_checkpoint previous_checkpoint =
             | T_ARROW when not (nl_separated rest offending_loc) -> (
                 match last_token with
                 | T_RPAREN -> (
-                    (* Restart parsing from the openning parens, patching the
+                    (* Restart parsing from the opening parens, patching the
                        token to be T_LPAREN_ARROW to help the parser *)
                     match State.Cursor.rewind_block rest with
                     | Some (T_LPAREN, loc, prev) ->
@@ -620,11 +620,9 @@ let parse_aux the_parser yield_await_state (lexbuf : Lexer.t) =
         match State.pending checkpoint with
         | None ->
             let previous_checkpoint = checkpoint in
-
             let new_checkpoint = offer_one checkpoint lexbuf in
             loop new_checkpoint previous_checkpoint
         | Some ((tok, loc), previous_checkpoint) ->
-            let previous_checkpoint = previous_checkpoint in
             let new_checkpoint = State.offer previous_checkpoint tok loc in
             loop new_checkpoint previous_checkpoint)
     | HandlingError _, _ -> (
