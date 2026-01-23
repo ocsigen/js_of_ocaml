@@ -415,6 +415,8 @@ let semicolon = Js_token.T_VIRTUAL_SEMICOLON
 
 let dummy_loc = Loc.create Lexer.dummy_pos Lexer.dummy_pos
 
+let dummy_ident = Js_token.T_IDENTIFIER (Utf8_string.of_string_exn "<DUMMY>", "<DUMMY>")
+
 let rec offer_one t (lexbuf : Lexer.t) =
   let tok, loc = Lexer.token lexbuf in
   match tok with
@@ -503,7 +505,7 @@ let recover error_checkpoint previous_checkpoint =
       let checkpoint =
         match State.Cursor.last_token rest with
         | None -> error_checkpoint
-        | Some (last_token, last_token_loc, last_token_prev) -> (
+        | Some (last_token, _, _) -> (
             match offending_token with
             | T_VIRTUAL_SEMICOLON -> error_checkpoint
             (* ASI rule: insert semicolon before '}' *)
@@ -524,14 +526,12 @@ let recover error_checkpoint previous_checkpoint =
                         |> State.try_recover
                     | Some _ -> assert false
                     | None -> error_checkpoint)
-                (* 'of' can be an identifier in arrow params: (of) => ... *)
-                | T_OF ->
-                    State.Cursor.replace_token
-                      last_token_prev
-                      (token_to_ident T_OF)
-                      last_token_loc
-                    |> State.try_recover
                 | _ -> error_checkpoint)
+            | T_OF
+              when Poly.equal last_token T_USING
+                   && acceptable previous_checkpoint dummy_ident ->
+                State.Cursor.replace_token rest (token_to_ident T_OF) offending_loc
+                |> State.try_recover
             | _ -> (
                 match last_token with
                 | T_VIRTUAL_SEMICOLON -> error_checkpoint
@@ -557,17 +557,25 @@ let recover error_checkpoint previous_checkpoint =
                     |> State.try_recover
                 | _ -> error_checkpoint))
       in
-      (* If no recovery strategy worked above, try one last fallback:
-         pop the yield/await state stack. This can only happen inside
-         a concise body of an arrow function (e.g., 'x => x + 1' where
-         the body is an expression, not a block). *)
       if phys_equal checkpoint error_checkpoint
       then
         match State.Cursor.last_token rest with
         | None -> checkpoint
+        | Some (T_OF, last_token_loc, last_token_prev)
+          when match last last_token_prev with
+               | T_USING | T_ASYNC -> true
+               | _ -> false ->
+            State.Cursor.replace_token
+              last_token_prev
+              (token_to_ident T_OF)
+              last_token_loc
+            |> State.try_recover
         (* Entering function body after '{': push yield/await state.
                    The appropriate state depends on the function kind
                    (regular, generator, async, async generator). *)
+        | _ when acceptable previous_checkpoint T_YIELD_AWAIT_POP ->
+            State.Cursor.insert_token rest T_YIELD_AWAIT_POP dummy_loc
+            |> State.try_recover
         | _ when acceptable previous_checkpoint T_YIELDOFF ->
             State.Cursor.insert_token rest T_YIELDOFF dummy_loc |> State.try_recover
         | _ when acceptable previous_checkpoint T_YIELDON ->
@@ -576,9 +584,6 @@ let recover error_checkpoint previous_checkpoint =
             State.Cursor.insert_token rest T_AWAITON dummy_loc |> State.try_recover
         | _ when acceptable previous_checkpoint T_AWAITOFF ->
             State.Cursor.insert_token rest T_AWAITOFF dummy_loc |> State.try_recover
-        | _ when acceptable previous_checkpoint T_YIELD_AWAIT_POP ->
-            State.Cursor.insert_token rest T_YIELD_AWAIT_POP dummy_loc
-            |> State.try_recover
         | _ -> checkpoint
       else checkpoint
 
