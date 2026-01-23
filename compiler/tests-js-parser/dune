@@ -6,6 +6,7 @@
  (alias runtest-parser)
  (deps
   (glob_files_rec pass/*.js)
+  simple.js
   package.json)
  (action
   (run ./run.exe pass)))
@@ -17,6 +18,7 @@
  (alias runtest-parser)
  (deps
   (glob_files_rec test262/test/language/*.js)
+  simple.js
   package.json)
  (action
   (run ./run.exe test262/test/language)))

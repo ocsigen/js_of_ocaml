@@ -892,7 +892,7 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   | true, _ -> ());
   let lex = Parse_js.Lexer.of_string ~filename:"fake" s in
   let _p, tokens =
-    try Parse_js.parse' lex
+    try Parse_js.parse' lex `Script
     with Parse_js.Parsing_error pi as e ->
       Printf.eprintf "cannot parse l:%d:%d@." pi.Parse_info.line pi.Parse_info.col;
       raise e
