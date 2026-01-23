@@ -6,7 +6,8 @@ let exe =
   | "Cygwin" | "Win32" -> fun x -> x ^ ".exe"
   | "Unix" | _ -> fun x -> x
 
-let node = try Sys.getenv "NODE" with Not_found -> exe "node"
+let node =
+  try Sys.getenv "NODE" with Not_found -> Printf.sprintf "%s --check" (exe "node")
 
 let failure_expected = ref false
 
@@ -129,15 +130,24 @@ let p_to_string p =
   let _ = Js_output.program pp p in
   Buffer.contents buffer
 
-let accepted_by_node file =
-  let ((ic, oc, ec) as ic_oc) =
-    Unix.open_process_full (Printf.sprintf "%s --check %s" node file) [||]
-  in
+let accepted_by_node ?(debug = false) file =
+  let cmd = Printf.sprintf "%s %s" node file in
+  let ((ic, oc, ec) as ic_oc) = Unix.open_process_full cmd (Unix.environment ()) in
   let pid = Unix.process_full_pid ic_oc in
   let _pid, status = Unix.waitpid [] pid in
   close_in ic;
   close_out oc;
   close_in ec;
+  if debug
+  then (
+    Printf.eprintf
+      "+ %s (%s)\n%!"
+      cmd
+      (match status with
+      | WEXITED n -> Printf.sprintf "exit %d" n
+      | WSIGNALED n -> Printf.sprintf "signal %d" n
+      | WSTOPPED n -> Printf.sprintf "stop %d" n);
+    flush_all ());
   match status with
   | WEXITED 0 -> true
   | WEXITED _ -> false
@@ -240,6 +250,14 @@ let () =
   let features_r = Str.regexp {|features: ?\[\([a-zA-Z. ,-]*\)\]|} in
   let flags_r = Str.regexp {|flags: ?\[\([a-zA-Z. ,-]*\)\]|} in
   let total = List.length files in
+  let () =
+    if not (accepted_by_node ~debug:true "./simple.js")
+    then
+      failwith
+        (Printf.sprintf
+           "%S doesn't seem to be a valid command to check javascript files"
+           node)
+  in
   List.iteri files ~f:(fun i filename ->
       let () = if !progress then Printf.eprintf "%d/%d\r%!" i total in
       let ic = open_in_bin filename in
