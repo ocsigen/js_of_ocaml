@@ -227,6 +227,8 @@ listc_with_empty2(X,Y):
 %inline in_allowed: { }
 %inline in_disallowed: T_EOF { }
 
+%inline using_disallowed: T_ERROR T_USING { }
+%inline using_allowed: { }
 
 yieldOff_awaitOff(X):
   | T_YIELDOFF_AWAITOFF x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
@@ -885,8 +887,8 @@ declaration:
     { let i,f = d in Function_declaration (i,f), p $symbolstartpos }
   | d=asyncFunctionDeclaration
     { let i,f = d in Function_declaration (i,f), p $symbolstartpos }
-  | d=lexicalDeclaration
-    { d, p $symbolstartpos }
+  | d=lexicalDeclaration(in_allowed)
+    { let k,l = d in Variable_statement (k, l), p $symbolstartpos }
   | d=classDeclaration
     { let i,f = d in Class_declaration (i,f), p $symbolstartpos }
 
@@ -906,12 +908,12 @@ statementList:
 (*----------------------------*)
 
 (* 14.3.1 Let and Const Declarations *)
-lexicalDeclaration:
-  | T_CONST l=listc(lexicalBinding) sc       { Variable_statement (Const, l)}
-  | T_LET l=listc(lexicalBinding) sc         { Variable_statement (Let, l)}
+lexicalDeclaration(in_):
+  | T_CONST l=listc(lexicalBinding(in_)) sc       { (Const, l)}
+  | T_LET l=listc(lexicalBinding(in_)) sc         { (Let, l)}
  (* Explicit Resource Management *)
-  | T_USING l=listc(usingBinding) sc         { Variable_statement (Using, l)}
-  | T_AWAIT T_USING l=listc(usingBinding) sc { Variable_statement (AwaitUsing, l)}
+  | T_USING l=listc(lexicalBinding_using(in_)) sc         { (Using, l)}
+  | T_AWAIT T_USING l=listc(lexicalBinding_using(in_)) sc { (AwaitUsing, l)}
 
 (* 14.3.2 Variable Statement *)
 variableStatement:
@@ -921,37 +923,28 @@ variableDeclaration(in_):
   | i=identifier e=initializer_(in_)?    { DeclIdent (i,e) }
   | p=bindingPattern e=initializer_(in_) { DeclPattern (p, e) }
 
-lexicalBinding:
-  | i=identifier e=initializer_(in_allowed)?    { DeclIdent (i,e) }
-  | p=bindingPattern e=initializer_(in_allowed) { DeclPattern (p, e) }
+lexicalBinding(in_):
+  | i=identifier e=initializer_(in_)?    { DeclIdent (i,e) }
+  | p=bindingPattern e=initializer_(in_) { DeclPattern (p, e) }
 
-(* using bindings require an initializer and only support BindingIdentifier per spec *)
-usingBinding:
-  | i=identifier e=initializer_(in_allowed) { DeclIdent (i, Some e) }
+lexicalBinding_using(in_):
+  | i=identifierNoOf e=initializer_(in_)?    { DeclIdent (i,e) }
 
 initializer_(in_):
   | "=" e=assignmentExpression(in_) { e, p $symbolstartpos }
 
-forDeclaration:
-  | T_VAR l=listc(variableDeclaration(in_disallowed) )  { Var, l }
-  | T_CONST l=listc(variableDeclaration(in_disallowed)) { Const, l }
-  | T_LET l=listc(variableDeclaration(in_disallowed))   { Let, l }
+forDeclaration(using_):
+  | T_CONST l=forBinding                   { Const, l }
+  | T_LET l=forBinding                     { Let, l }
+  | using_ T_USING l=forBinding_using         { Using, l }
+  | using_ T_AWAIT T_USING l=forBinding_using { AwaitUsing, l }
 
 (* 'for ... in' and 'for ... of' declare only one variable *)
 forBinding:
-  | T_VAR b=forBindingElement                { Var, b }
-  | T_CONST b=forBindingElement              { Const, b }
-  | T_LET  b=forBindingElement               { Let, b }
-  (* Explicit Resource Management - uses restricted binding to resolve
-    'for (using of ...)' ambiguity: identifier cannot be 'of' *)
-  | T_USING b=forUsingBindingElement         { Using, b }
-  | T_AWAIT T_USING b=forUsingBindingElement { AwaitUsing, b }
+  | p=bindingPattern { BindingPattern p }
+  | id=identifier    { BindingIdent id }
 
-forBindingElement:
-  | b=singleNameBinding               { b }
-
-(* Restricted binding for 'using' in for-in/of: only identifier, no 'of' *)
-forUsingBindingElement:
+forBinding_using:
   | id=identifierNoOf { BindingIdent id }
 
 (*----------------------------*)
@@ -1023,37 +1016,57 @@ ifStatement:
 (* 14.7 Iteration Statements *)
 (*----------------------------*)
 
+
 iterationStatement:
-  (* 14.7.2 The do-while Statement *)
+  | x = doWhileStatement { x }
+  | x = whileStatement { x }
+  | x = forStatement { x }
+  | x = forInOfStatement { x }
+
+(* 14.7.2 The do-while Statement *)
+doWhileStatement:
   | T_DO body=statement T_WHILE "(" condition=expression(in_allowed) ")" endrule(sc | T_VIRTUAL_SEMICOLON_DO_WHILE { () } )
     { Do_while_statement (body, condition) }
 
-  (* 14.7.3 The while Statement *)
+(* 14.7.3 The while Statement *)
+whileStatement:
   | T_WHILE "(" condition=expression(in_allowed) ")" body=statement
     { While_statement (condition, body) }
 
-  (* 14.7.4 The for Statement *)
+(* 14.7.4 The for Statement *)
+forStatement:
   | T_FOR "(" i=expression(in_disallowed)? ";" c=expression(in_allowed)? ";" incr=expression(in_allowed)? ")" st=statement
     { For_statement (Left i, c, incr, st) }
-  | T_FOR "(" l=forDeclaration ";" c=expression(in_allowed)? ";" incr=expression(in_allowed)? ")" st=statement
-    { For_statement (Right l, c, incr, st) }
+  | T_FOR "(" T_VAR l=listc(variableDeclaration(in_disallowed) ) ";" c=expression(in_allowed)? ";" incr=expression(in_allowed)? ")" st=statement
+    { For_statement (Right (Var, l), c, incr, st) }
+  | T_FOR "(" l=lexicalDeclaration(in_disallowed) c=expression(in_allowed)? ";" incr=expression(in_allowed)? ")" st=statement
+    { let m,l = l in
+      For_statement (Right (m,l), c, incr, st)
+    }
 
-  (* 14.7.5 The for-in and for-of Statements *)
+(* 14.7.5 The for-in and for-of Statements *)
+forInOfStatement:
   | T_FOR "(" left=leftHandSideExpression T_IN right=expression(in_allowed) ")" body=statement
     { let left = assignment_target_of_expr None left in
       ForIn_statement (Left left, right, body) }
-  | T_FOR "(" left=forBinding T_IN right=expression(in_allowed) ")" body=statement
+  | T_FOR "(" T_VAR left=forBinding T_IN right=expression(in_allowed) ")" body=statement
+    { ForIn_statement (Right (Var,left), right, body) }
+  | T_FOR "(" left=forDeclaration(using_disallowed) T_IN right=expression(in_allowed) ")" body=statement
     { ForIn_statement (Right left, right, body) }
 
   | T_FOR "(" left=leftHandSideExpression T_OF right=assignmentExpression(in_allowed) ")" body=statement
     { let left = assignment_target_of_expr None left in
       ForOf_statement (Left left, right, body) }
-  | T_FOR "(" left=forBinding T_OF right=assignmentExpression(in_allowed) ")" body=statement
+  | T_FOR "(" T_VAR left=forBinding T_OF right=assignmentExpression(in_allowed) ")" body=statement
+    { ForOf_statement (Right (Var, left), right, body) }
+  | T_FOR "(" left=forDeclaration(using_allowed) T_OF right=assignmentExpression(in_allowed) ")" body=statement
     { ForOf_statement (Right left, right, body) }
   | T_FOR T_AWAIT "(" left=leftHandSideExpression T_OF right=assignmentExpression(in_allowed) ")" body=statement
     { let left = assignment_target_of_expr None left in
       ForAwaitOf_statement (Left left, right, body) }
-  | T_FOR T_AWAIT "(" left=forBinding T_OF right=assignmentExpression(in_allowed) ")" body=statement
+  | T_FOR T_AWAIT "(" T_VAR left=forBinding T_OF right=assignmentExpression(in_allowed) ")" body=statement
+    { ForAwaitOf_statement (Right (Var, left), right, body) }
+  | T_FOR T_AWAIT "(" left=forDeclaration(using_allowed) T_OF right=assignmentExpression(in_allowed) ")" body=statement
     { ForAwaitOf_statement (Right left, right, body) }
 
 (*----------------------------*)
