@@ -512,10 +512,8 @@ fieldName:
 memberExpression(x):
   | e=primaryExpression(x)
     { e }
-  | _import=T_IMPORT "." T_META
-    { EDot (vartok $startpos(_import) T_IMPORT,ANormal,(utf8_s "meta")) }
-  | _import=T_IMPORT "." T_DEFER
-    { EDot (vartok $startpos(_import) T_IMPORT,ANormal,(utf8_s "defer")) }
+  | _import=T_IMPORT "." i=fieldName
+    { EDot (vartok $startpos(_import) T_IMPORT,ANormal,i) }
   | e1=memberExpression(x) "[" e2=expression(in_allowed) "]"
     { (EAccess (e1,ANormal, e2)) }
   | e1=memberExpression(x) "." i=fieldName
