@@ -277,12 +277,24 @@ let () =
       | `Unsupported _ -> unsupported := (filename, content) :: !unsupported
       | `Ok -> (
           try
-            let p1, toks1 =
-              Parse_js.Lexer.of_string
-                ~report_error:(fun e -> errors := e :: !errors)
-                ~filename
-                content
-              |> Parse_js.parse'
+            let (p1, toks1), mode =
+              try
+                let lex =
+                  Parse_js.Lexer.of_string
+                    ~report_error:(fun e -> errors := e :: !errors)
+                    ~filename
+                    content
+                in
+                Parse_js.parse' lex `Module, `Module
+              with Parse_js.Parsing_error _ ->
+                errors := [];
+                let lex =
+                  Parse_js.Lexer.of_string
+                    ~report_error:(fun e -> errors := e :: !errors)
+                    ~filename
+                    content
+                in
+                Parse_js.parse' lex `Script, `Script
             in
             let p1 = List.concat_map p1 ~f:snd in
             match List.rev !errors with
@@ -290,11 +302,13 @@ let () =
                 let s = p_to_string p1 in
                 try
                   let p2, toks2 =
-                    Parse_js.Lexer.of_string
-                      ~report_error:(fun e -> errors := e :: !errors)
-                      ~filename
-                      s
-                    |> Parse_js.parse'
+                    let lex =
+                      Parse_js.Lexer.of_string
+                        ~report_error:(fun e -> errors := e :: !errors)
+                        ~filename
+                        s
+                    in
+                    Parse_js.parse' lex mode
                   in
                   let p2 = List.concat_map p2 ~f:snd in
                   match

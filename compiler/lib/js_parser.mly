@@ -57,8 +57,6 @@ let name_of_ident = function
   | S { name; _} -> name
   | V _ -> assert false
 
-let fst3 (x,_,_) = x
-
 %}
 
 (*************************************************************************)
@@ -165,7 +163,7 @@ T_BACKQUOTE
 %token T_LPAREN_ARROW
 %token T_INCR_NB T_DECR_NB
 
-%token T_YIELDOFF_AWAITOFF T_YIELDOFF_AWAITON T_YIELDON_AWAITOFF T_YIELDON_AWAITON T_YIELD_AWAIT_POP
+%token T_YIELDOFF T_YIELDON T_AWAITOFF T_AWAITON T_YIELD_AWAIT_POP
 
 
 
@@ -221,6 +219,8 @@ listc_with_empty2(X,Y):
   | y=Y                                  { [], Some y }
   | (* empty *)                          { [], None }
 
+empty: { }
+
 (* Guard rules for 'in' operator - used to parameterize expression rules *)
 (* in_allowed: empty rule, allows the T_IN production *)
 (* in_disallowed: matches T_EOF which never appears mid-expression, effectively disabling the production *)
@@ -230,17 +230,11 @@ listc_with_empty2(X,Y):
 %inline using_disallowed: T_ERROR T_USING { }
 %inline using_allowed: { }
 
-yieldOff_awaitOff(X):
-  | T_YIELDOFF_AWAITOFF x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
-
-yieldOff_awaitOn(X):
-  | T_YIELDOFF_AWAITON x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
-
-yieldOn_awaitOff(X):
-  | T_YIELDON_AWAITOFF x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
-
-yieldOn_awaitOn(X):
-  | T_YIELDON_AWAITON x=X T_YIELD_AWAIT_POP { x, $startpos(x), $endpos(x) }
+%inline pop: T_YIELD_AWAIT_POP { }
+%inline yieldOff: T_YIELDOFF { }
+%inline yieldOn: T_YIELDON { }
+%inline awaitOff: T_AWAITOFF { }
+%inline awaitOn: T_AWAITON { }
 
 (*************************************************************************)
 (* Section 12: ECMAScript Language: Lexical Grammar                     *)
@@ -836,15 +830,15 @@ assignmentExpression_NoStmt:
 (*----------------------------*)
 
 assignmentExpressionForConciseBody(in_):
-  | e=conditionalExpression(primaryExpression_FunClass, in_) { e }
+  | e=conditionalExpression(primaryExpression_FunClass, in_) { e, $endpos }
   | e1=leftHandSideExpression_(primaryExpression_FunClass) op=assignmentOperator e2=assignmentExpression(in_)
     {
       let e1 = assignment_target_of_expr (Some op) e1 in
-      EBin (op, e1, e2)
+      EBin (op, e1, e2), $endpos
     }
-  | e=arrowFunction(in_)      { e }
-  | e=asyncArrowFunction(in_) { e }
-  | e=yieldExpression(in_)    { e }
+  | e=arrowFunction(in_)      { e, $endpos }
+  | e=asyncArrowFunction(in_) { e, $endpos }
+  | e=yieldExpression(in_)    { e, $endpos }
 
 (*************************************************************************)
 (* Section 14: ECMAScript Language: Statements and Declarations         *)
@@ -1177,24 +1171,22 @@ functionRestParameter:
 formalParameter:
   | b=singleNameBinding init=initializer_(in_allowed)? { b, init }
 
-callSignature: "(" args=formalParameters ")" { args }
+callSignature(y,a): "(" y a args=formalParameters ")" { args }
 
-%inline emptyl: { [] }
-
-functionBody(YA):
-  | body=YA(emptyl) { fst3 body }
-  | body=YA(statementList_noneempty) { fst3 body }
+functionBody:
+  | { [] }
+  | body=statementList_noneempty { body }
 
 (*----------------------------*)
 (* 15.2 Function Definitions *)
 (*----------------------------*)
 
 functionDeclaration:
-  | T_FUNCTION name=identifier args=callSignature "{" b=functionBody(yieldOff_awaitOff) _rbrace="}"
+  | T_FUNCTION name=identifier args=callSignature(yieldOff,awaitOff) "{" b=functionBody pop pop _rbrace="}"
     { (name, ({async = false; generator = false}, args, b, p $startpos(_rbrace))) }
 
 functionExpression:
-  | T_FUNCTION name=identifier? args=callSignature "{" b=functionBody(yieldOff_awaitOff) "}"
+  | T_FUNCTION yieldOff awaitOff name=identifier? args=callSignature(empty, empty) "{" b=functionBody pop pop "}"
     { EFun (name, ({async = false; generator = false}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
@@ -1202,19 +1194,19 @@ functionExpression:
 (*----------------------------*)
 
 arrowFunction(in_):
-  | i=identifier T_ARROW b=conciseBody(yieldOff_awaitOff,in_)
+  | i=identifier T_ARROW yieldOff awaitOff b=conciseBody(in_)
     { let b,consise = b in
       EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
-  | T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(yieldOff_awaitOff,in_)
+  | T_LPAREN_ARROW a=formalParameters ")" T_ARROW yieldOff awaitOff b=conciseBody(in_)
     { let b,consise = b in
       EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
 
-conciseBody(f, in_):
-  | "{" b=functionBody(f) "}" { b, false }
-  | e=f(assignmentExpressionForConciseBody(in_))
+conciseBody( in_):
+  | "{" b=functionBody pop pop "}" { b, false }
+  | e=assignmentExpressionForConciseBody(in_) pop pop
     {
-      let e, start, stop = e in
-      [(Return_statement (Some e, p stop), p start)], true
+      let e, stop = e in
+      [(Return_statement (Some e, p stop), p $symbolstartpos)], true
     }
 
 (*----------------------------*)
@@ -1226,17 +1218,17 @@ methodName:
   | kw=identifierKeyword { kw }
 
 methodDefinition(name):
-  | T_GET name=name args=callSignature "{" b=functionBody(yieldOff_awaitOff) "}"
+  | T_GET name=name args=callSignature(yieldOff, awaitOff) "{" b=functionBody pop pop "}"
     { name, MethodGet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
-  | T_SET name=name args=callSignature "{" b=functionBody(yieldOff_awaitOff) "}"
+  | T_SET name=name args=callSignature(yieldOff, awaitOff) "{" b=functionBody pop pop "}"
     { name, MethodSet(({async = false; generator = false}, args, b, p $symbolstartpos)) }
-  | name=name args=callSignature "{" b=functionBody(yieldOff_awaitOff) "}"
+  | name=name args=callSignature(yieldOff, awaitOff)"{" b=functionBody pop pop "}"
     { name, Method(({async = false; generator = false}, args, b, p $symbolstartpos)) }
-  | T_ASYNC name=name args=callSignature "{" b=functionBody(yieldOff_awaitOn) "}"
+  | T_ASYNC name=name args=callSignature(yieldOff, awaitOn) "{" b=functionBody pop pop "}"
     { name, Method(({async = true; generator = false}, args, b, p $symbolstartpos)) }
-  | "*" name=name args=callSignature "{" b=functionBody(yieldOn_awaitOff) "}"
+  | "*" name=name args=callSignature(yieldOn, awaitOff) "{" b=functionBody pop pop "}"
     { name, Method(({async = false; generator = true}, args, b, p $symbolstartpos)) }
-  | T_ASYNC "*" name=name args=callSignature "{" b=functionBody(yieldOn_awaitOn) "}"
+  | T_ASYNC "*" name=name args=callSignature(yieldOn, awaitOn) "{" b=functionBody pop pop "}"
     { name, Method(({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
@@ -1244,11 +1236,11 @@ methodDefinition(name):
 (*----------------------------*)
 
 generatorDeclaration:
-  | T_FUNCTION "*" name=identifier args=callSignature "{" b=functionBody(yieldOn_awaitOff) "}"
+  | T_FUNCTION "*" name=identifier args=callSignature(yieldOn, awaitOff) "{" b=functionBody pop pop "}"
     { (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
 
 generatorExpression:
-  | T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody(yieldOn_awaitOff) "}"
+  | T_FUNCTION "*" yieldOn awaitOff name=identifier? args=callSignature(empty,empty) "{" b=functionBody pop pop "}"
     { EFun (name, ({async = false; generator = true}, args, b, p $symbolstartpos)) }
 
 yieldExpression(in_):
@@ -1261,11 +1253,11 @@ yieldExpression(in_):
 (*----------------------------*)
 
 asyncGeneratorDeclaration:
-  | T_ASYNC T_FUNCTION "*" name=identifier args=callSignature "{" b=functionBody(yieldOn_awaitOn) "}"
+  | T_ASYNC T_FUNCTION "*" name=identifier args=callSignature(yieldOn, awaitOn) "{" b=functionBody pop pop "}"
     { (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 asyncGeneratorExpression:
-  | T_ASYNC T_FUNCTION "*" name=identifier? args=callSignature "{" b=functionBody(yieldOn_awaitOn) "}"
+  | T_ASYNC T_FUNCTION "*" yieldOn awaitOn name=identifier? args=callSignature(empty, empty) "{" b=functionBody pop pop "}"
     { EFun (name, ({async = true; generator = true}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
@@ -1291,7 +1283,7 @@ classElement:
     { [ CEField (false, n, i) ] }
   | T_STATIC n=classElementName i=initializer_(in_allowed)? sc
     { [ CEField (true, n, i) ] }
-  | T_STATIC "{" b=functionBody(yieldOff_awaitOn) "}" { [CEStaticBLock b] }
+  | T_STATIC "{" yieldOff awaitOn b=functionBody pop pop "}" { [CEStaticBLock b] }
   | sc               { [] }
 
 classElementName:
@@ -1303,11 +1295,11 @@ classElementName:
 (*----------------------------*)
 
 asyncFunctionDeclaration:
-  | T_ASYNC T_FUNCTION  name=identifier args=callSignature "{" b=functionBody(yieldOff_awaitOn) "}"
+  | T_ASYNC T_FUNCTION  name=identifier args=callSignature(yieldOff, awaitOn) "{" b=functionBody pop pop "}"
     { (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
 asyncFunctionExpression:
-  | T_ASYNC T_FUNCTION name=identifier? args=callSignature "{" b=functionBody(yieldOff_awaitOn) "}"
+  | T_ASYNC T_FUNCTION yieldOff awaitOn name=identifier? args=callSignature(empty, empty) "{" b=functionBody pop pop "}"
    { EFun (name, ({async = true; generator = false}, args, b, p $symbolstartpos)) }
 
 (*----------------------------*)
@@ -1316,15 +1308,16 @@ asyncFunctionExpression:
 
 asyncArrowFunction(in_):
   (* Use identifierNoOf to resolve 'for (async of ...)' ambiguity *)
-  | T_ASYNC i=identifierNoOf T_ARROW b=conciseBody(yieldOff_awaitOn,in_)
+  | T_ASYNC yieldOff awaitOn i=identifierNoOf T_ARROW b=conciseBody(in_)
     {
       let b,consise = b in
       EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown)
     }
-  | T_ASYNC T_LPAREN_ARROW a=formalParameters ")" T_ARROW b=conciseBody(yieldOff_awaitOn,in_)
+  | T_ASYNC T_LPAREN_ARROW yieldOff awaitOn a=formalParameters ")" T_ARROW b=conciseBody(in_)
     { let b,consise = b in
       EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), consise, AUnknown)
     }
+
 
 (*************************************************************************)
 (* Section 16: ECMAScript Language: Scripts and Modules                 *)

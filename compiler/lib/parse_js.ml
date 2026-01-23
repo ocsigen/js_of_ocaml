@@ -276,11 +276,12 @@ end = struct
     in
     let yield_await =
       match token, yield_await with
-      | (T_YIELDOFF_AWAITOFF, _, _), ya -> { yield = false; await = false } :: ya
-      | (T_YIELDOFF_AWAITON, _, _), ya -> { yield = false; await = true } :: ya
-      | (T_YIELDON_AWAITOFF, _, _), ya -> { yield = true; await = false } :: ya
-      | (T_YIELDON_AWAITON, _, _), ya -> { yield = true; await = true } :: ya
-      | (T_YIELD_AWAIT_POP, _, _), [] -> assert false
+      | ((T_YIELDOFF | T_YIELDON | T_AWAITOFF | T_AWAITON | T_YIELD_AWAIT_POP), _, _), []
+        -> assert false
+      | (T_YIELDOFF, _, _), ({ await; _ } :: _ as ya) -> { yield = false; await } :: ya
+      | (T_YIELDON, _, _), ({ await; _ } :: _ as ya) -> { yield = true; await } :: ya
+      | (T_AWAITOFF, _, _), ({ yield; _ } :: _ as ya) -> { yield; await = false } :: ya
+      | (T_AWAITON, _, _), ({ yield; _ } :: _ as ya) -> { yield; await = true } :: ya
       | (T_YIELD_AWAIT_POP, _, _), _ :: xs -> xs
       | _ -> yield_await
     in
@@ -393,15 +394,17 @@ let rec nl_separated prev loc' =
   match State.Cursor.last_token prev with
   | None -> true
   | Some (T_VIRTUAL_SEMICOLON, _, prev) -> nl_separated prev loc'
-  | Some
-      ( ( T_YIELD_AWAIT_POP
-        | T_YIELDON_AWAITON
-        | T_YIELDON_AWAITOFF
-        | T_YIELDOFF_AWAITON
-        | T_YIELDOFF_AWAITOFF )
-      , _
-      , prev ) -> nl_separated prev loc'
+  | Some ((T_YIELD_AWAIT_POP | T_AWAITON | T_AWAITOFF | T_YIELDOFF | T_YIELDON), _, prev)
+    -> nl_separated prev loc'
   | Some (_, loc, _) -> Loc.line loc' <> Loc.line_end loc
+
+let rec last prev =
+  match State.Cursor.last_token prev with
+  | None -> raise Not_found
+  | Some (T_VIRTUAL_SEMICOLON, _, prev) -> last prev
+  | Some ((T_YIELD_AWAIT_POP | T_AWAITON | T_AWAITOFF | T_YIELDOFF | T_YIELDON), _, prev)
+    -> last prev
+  | Some (tok, _, _) -> tok
 
 let acceptable state token =
   let module I = Js_parser.MenhirInterpreter in
@@ -506,16 +509,12 @@ let recover error_checkpoint previous_checkpoint =
             (* ASI rule: insert semicolon before '}' *)
             | T_RCURLY when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
                 State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
-            (* Exiting a function/arrow body: pop the yield/await state *)
-            | T_RCURLY when acceptable previous_checkpoint Js_token.T_YIELD_AWAIT_POP ->
-                State.Cursor.insert_token rest Js_token.T_YIELD_AWAIT_POP dummy_loc
-                |> State.try_recover
             (* ASI rule: insert semicolon at end of input *)
             | T_EOF when acceptable previous_checkpoint Js_token.T_VIRTUAL_SEMICOLON ->
                 State.Cursor.insert_token rest semicolon dummy_loc |> State.try_recover
             (* Arrow function recovery: disambiguate '(params) =>' from parenthesized expr *)
             | T_ARROW when not (nl_separated rest offending_loc) -> (
-                match last_token with
+                match last rest with
                 | T_RPAREN -> (
                     (* Restart parsing from the opening parens, patching the
                        token to be T_LPAREN_ARROW to help the parser *)
@@ -536,21 +535,6 @@ let recover error_checkpoint previous_checkpoint =
             | _ -> (
                 match last_token with
                 | T_VIRTUAL_SEMICOLON -> error_checkpoint
-                (* Entering function body after '{': push yield/await state.
-                   The appropriate state depends on the function kind
-                   (regular, generator, async, async generator). *)
-                | T_LCURLY when acceptable previous_checkpoint T_YIELDOFF_AWAITOFF ->
-                    State.Cursor.insert_token rest T_YIELDOFF_AWAITOFF dummy_loc
-                    |> State.try_recover
-                | T_LCURLY when acceptable previous_checkpoint T_YIELDON_AWAITOFF ->
-                    State.Cursor.insert_token rest T_YIELDON_AWAITOFF dummy_loc
-                    |> State.try_recover
-                | T_LCURLY when acceptable previous_checkpoint T_YIELDON_AWAITON ->
-                    State.Cursor.insert_token rest T_YIELDON_AWAITON dummy_loc
-                    |> State.try_recover
-                | T_LCURLY when acceptable previous_checkpoint T_YIELDOFF_AWAITON ->
-                    State.Cursor.insert_token rest T_YIELDOFF_AWAITON dummy_loc
-                    |> State.try_recover
                 (* ASI rule: insert semicolon when offending token is on a new line *)
                 | _
                   when nl_separated rest offending_loc
@@ -571,21 +555,6 @@ let recover error_checkpoint previous_checkpoint =
                          Js_token.T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT ->
                     State.Cursor.insert_token rest semicolon dummy_loc
                     |> State.try_recover
-                (* Entering arrow function body after '=>': push yield/await state.
-                   Arrow functions inherit [yield] from enclosing scope but
-                   [await] depends on whether it's an async arrow. *)
-                | T_ARROW when acceptable previous_checkpoint T_YIELDOFF_AWAITOFF ->
-                    State.Cursor.insert_token rest Js_token.T_YIELDOFF_AWAITOFF dummy_loc
-                    |> State.try_recover
-                | T_ARROW when acceptable previous_checkpoint T_YIELDON_AWAITOFF ->
-                    State.Cursor.insert_token rest Js_token.T_YIELDON_AWAITOFF dummy_loc
-                    |> State.try_recover
-                | T_ARROW when acceptable previous_checkpoint T_YIELDON_AWAITON ->
-                    State.Cursor.insert_token rest Js_token.T_YIELDON_AWAITON dummy_loc
-                    |> State.try_recover
-                | T_ARROW when acceptable previous_checkpoint T_YIELDOFF_AWAITON ->
-                    State.Cursor.insert_token rest Js_token.T_YIELDOFF_AWAITON dummy_loc
-                    |> State.try_recover
                 | _ -> error_checkpoint))
       in
       (* If no recovery strategy worked above, try one last fallback:
@@ -596,8 +565,19 @@ let recover error_checkpoint previous_checkpoint =
       then
         match State.Cursor.last_token rest with
         | None -> checkpoint
+        (* Entering function body after '{': push yield/await state.
+                   The appropriate state depends on the function kind
+                   (regular, generator, async, async generator). *)
+        | _ when acceptable previous_checkpoint T_YIELDOFF ->
+            State.Cursor.insert_token rest T_YIELDOFF dummy_loc |> State.try_recover
+        | _ when acceptable previous_checkpoint T_YIELDON ->
+            State.Cursor.insert_token rest T_YIELDON dummy_loc |> State.try_recover
+        | _ when acceptable previous_checkpoint T_AWAITON ->
+            State.Cursor.insert_token rest T_AWAITON dummy_loc |> State.try_recover
+        | _ when acceptable previous_checkpoint T_AWAITOFF ->
+            State.Cursor.insert_token rest T_AWAITOFF dummy_loc |> State.try_recover
         | _ when acceptable previous_checkpoint T_YIELD_AWAIT_POP ->
-            State.Cursor.insert_token rest Js_token.T_YIELD_AWAIT_POP dummy_loc
+            State.Cursor.insert_token rest T_YIELD_AWAIT_POP dummy_loc
             |> State.try_recover
         | _ -> checkpoint
       else checkpoint
@@ -646,10 +626,10 @@ let parse_aux the_parser yield_await_state (lexbuf : Lexer.t) =
         | None -> assert false
         | Some
             ( ( T_VIRTUAL_SEMICOLON
-              | T_YIELDOFF_AWAITOFF
-              | T_YIELDOFF_AWAITON
-              | T_YIELDON_AWAITOFF
-              | T_YIELDON_AWAITON
+              | T_AWAITOFF
+              | T_AWAITON
+              | T_YIELDON
+              | T_YIELDOFF
               | T_YIELD_AWAIT_POP )
             , _
             , cursor ) -> last cursor
@@ -697,9 +677,17 @@ let fail_early =
 
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
 
-let parse' lex =
+let parse' lex script_or_module =
   let p, toks =
-    parse_aux Js_parser.Incremental.program { yield = false; await = true } lex
+    parse_aux
+      Js_parser.Incremental.program
+      { yield = false
+      ; await =
+          (match script_or_module with
+          | `Script -> false
+          | `Module -> true)
+      }
+      lex
   in
   check_program p;
   let toks = State.all_tokens toks in
