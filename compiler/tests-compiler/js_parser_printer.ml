@@ -844,13 +844,7 @@ let check_vs_string s toks =
     | [] -> space pos (String.length s)
     | (Js_token.(T_VIRTUAL_SEMICOLON | T_VIRTUAL_SEMICOLON_DO_WHILE), _) :: rest ->
         loop offset pos rest
-    | ( Js_token.(
-          ( T_YIELDOFF_AWAITOFF
-          | T_YIELDOFF_AWAITON
-          | T_YIELDON_AWAITON
-          | T_YIELDON_AWAITOFF
-          | T_YIELD_AWAIT_POP ))
-      , _ )
+    | (Js_token.(T_YIELDOFF | T_AWAITOFF | T_YIELDON | T_AWAITON | T_YIELD_AWAIT_POP), _)
       :: rest -> loop offset pos rest
     | ((Js_token.T_STRING (_, codepoint_len) as x), loc) :: rest ->
         let p1 = Loc.p1 loc in
@@ -908,13 +902,7 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   let rec loop tokens =
     match tokens with
     | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
-    | ( Js_token.(
-          ( T_YIELDOFF_AWAITOFF
-          | T_YIELDOFF_AWAITON
-          | T_YIELDON_AWAITON
-          | T_YIELDON_AWAITOFF
-          | T_YIELD_AWAIT_POP ))
-      , _ )
+    | (Js_token.(T_YIELDOFF | T_AWAITOFF | T_AWAITON | T_YIELDON | T_YIELD_AWAIT_POP), _)
       :: xs -> loop xs
     | (tok, loc) :: xs ->
         let p1 = Loc.p1 loc in
