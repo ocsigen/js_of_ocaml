@@ -928,6 +928,8 @@ initializer_(in_):
 forDeclaration(using_):
   | T_CONST l=forBinding                   { Const, l }
   | T_LET l=forBinding                     { Let, l }
+  (* Explicit Resource Management - uses restricted binding to resolve
+    'for (using of ...)' ambiguity: identifier cannot be 'of' *)
   | using_ T_USING l=forBinding_using         { Using, l }
   | using_ T_AWAIT T_USING l=forBinding_using { AwaitUsing, l }
 

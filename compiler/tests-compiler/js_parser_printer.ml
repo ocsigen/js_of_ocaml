@@ -1268,3 +1268,18 @@ get:{of:{from:{async:{break async}break from}break of}break get}
 |};
   [%expect
     {| 2: 0:get, 3::, 4:{, 5:of, 7::, 8:{, 9:from, 13::, 14:{, 15:async, 20::, 21:{, 22:break, 28:async, 0:; (virtual), 33:}, 34:break, 40:from, 0:; (virtual), 44:}, 45:break, 51:of, 0:; (virtual), 53:}, 54:break, 60:get, 0:; (virtual), 63:}, |}]
+
+let%expect_test "using" =
+  parse_print_token
+    ~extra:true
+    {|
+async function f() {
+  for (await using of of []) { }
+}
+|};
+  [%expect
+    {|
+    2: 0:async, 6:function, 15:f (identifier), 16:(, 17:), 19:{,
+    3: 2:for, 6:(, 7:await, 13:using, 19:of (identifier), 22:of, 25:[, 26:], 27:), 29:{, 31:},
+    4: 0:},
+    |}]

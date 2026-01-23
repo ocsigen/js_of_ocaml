@@ -134,6 +134,16 @@ let accepted_by_node ?(debug = false) file =
   let cmd = Printf.sprintf "%s %s" node file in
   let ((ic, oc, ec) as ic_oc) = Unix.open_process_full cmd (Unix.environment ()) in
   let pid = Unix.process_full_pid ic_oc in
+  (if false
+   then
+     try
+       while
+         print_endline (input_line ic);
+         true
+       do
+         ()
+       done
+     with _ -> ());
   let _pid, status = Unix.waitpid [] pid in
   close_in ic;
   close_out oc;
