@@ -28,9 +28,7 @@
   --unused-token
   TCommentLineDirective
   --unused-token
-  T_ERROR
-  --unused-token
-  T_AT))
+  T_ERROR))
 
 (menhir
  (modules annot_parser))

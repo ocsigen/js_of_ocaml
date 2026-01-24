@@ -44,6 +44,7 @@ type t =
   | T_AT
   | T_POUND
   (* Keywords *)
+  | T_ACCESSOR
   | T_AS
   | T_ASYNC
   | T_AWAIT

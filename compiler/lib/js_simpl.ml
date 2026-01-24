@@ -192,6 +192,7 @@ and depth_class_block b =
       match s with
       | J.CEMethod _ -> acc
       | J.CEField _ -> acc
+      | J.CEAccessor _ -> acc
       | J.CEStaticBLock b -> depth_block b + 2)
 
 let expression_equal (a : J.expression) b = Poly.equal a b
