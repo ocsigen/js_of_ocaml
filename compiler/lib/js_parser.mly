@@ -108,7 +108,7 @@ T_ENUM
 T_PUBLIC T_PRIVATE T_PROTECTED
 T_PACKAGE
 T_DEBUGGER
-T_GET T_SET T_USING
+T_ACCESSOR T_GET T_SET T_USING
 T_FROM
 T_AS
 T_TARGET
@@ -254,6 +254,7 @@ identifier:
 
 (* add here keywords which are not considered reserved by ECMA *)
 identifierToken_SemiKeyword:
+  | T_ACCESSOR { T_ACCESSOR }
   | T_AS { T_AS }
   | T_ASYNC { T_ASYNC }
   | T_FROM { T_FROM }
@@ -269,6 +270,7 @@ identifierToken_SemiKeyword:
 (* Variant excluding T_OF used for 'using' bindings in for-in/of loops
    to resolve ambiguity in 'for (using of ...)' *)
 identifierToken_SemiKeywordNoOf:
+  | T_ACCESSOR { T_ACCESSOR }
   | T_AS { T_AS }
   | T_ASYNC { T_ASYNC }
   | T_FROM { T_FROM }
@@ -1264,25 +1266,32 @@ asyncGeneratorExpression:
 (* 15.7 Class Definitions *)
 (*----------------------------*)
 
-classDeclaration: T_CLASS id=bindingIdentifier extends=classHeritage? body=classBody
-    { id, {extends; body}  }
+classDeclaration:
+  | decorators=decoratorList T_CLASS id=bindingIdentifier extends=classHeritage? body=classBody
+    { id, {decorators; extends; body}  }
 
-classExpression: T_CLASS i=bindingIdentifier? extends=classHeritage? body=classBody
-    { EClass (i, {extends; body}) }
+classExpression:
+  | decorators=decoratorList T_CLASS i=bindingIdentifier? extends=classHeritage? body=classBody
+    { EClass (i, {decorators; extends; body}) }
 
 classHeritage: T_EXTENDS e=leftHandSideExpression { e }
 
 classBody: "{" elements=classElement* "}" { List.flatten elements }
 
 classElement:
-  | m=methodDefinition(classElementName)
-    { let n,m = m in [ CEMethod (false, n, m) ] }
-  | T_STATIC m=methodDefinition(classElementName)
-    { let n,m = m in [ CEMethod (true, n, m) ] }
-  | n=classElementName i=initializer_(in_allowed)? sc
-    { [ CEField (false, n, i) ] }
-  | T_STATIC n=classElementName i=initializer_(in_allowed)? sc
-    { [ CEField (true, n, i) ] }
+  | decorators=decoratorList m=methodDefinition(classElementName)
+    { let n,m = m in [ CEMethod (decorators, false, n, m) ] }
+  | decorators=decoratorList T_STATIC m=methodDefinition(classElementName)
+    { let n,m = m in [ CEMethod (decorators, true, n, m) ] }
+  | decorators=decoratorList n=classElementName i=initializer_(in_allowed)? sc
+    { [ CEField (decorators, false, n, i) ] }
+  | decorators=decoratorList T_STATIC n=classElementName i=initializer_(in_allowed)? sc
+    { [ CEField (decorators, true, n, i) ] }
+  (* Auto-accessors *)
+  | decorators=decoratorList T_ACCESSOR n=classElementName i=initializer_(in_allowed)? sc
+    { [ CEAccessor (decorators, false, n, i) ] }
+  | decorators=decoratorList T_STATIC T_ACCESSOR n=classElementName i=initializer_(in_allowed)? sc
+    { [ CEAccessor (decorators, true, n, i) ] }
   | T_STATIC "{" yieldOff awaitOn b=functionBody pop pop "}" { [CEStaticBLock b] }
   | sc               { [] }
 
@@ -1318,6 +1327,22 @@ asyncArrowFunction(in_):
       EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), concise, AUnknown)
     }
 
+(*----------------------------*)
+(* 15.10 Decorators *)
+(*----------------------------*)
+
+decorator:
+  | T_AT e=decoratorMemberExpression            { e }
+  | T_AT e=decoratorMemberExpression a=arguments { ECall(e, ANormal, a, p $symbolstartpos) }
+  | T_AT "(" e=expression(in_allowed) ")"       { e }
+
+decoratorMemberExpression:
+  | i=identifier                              { EVar i }
+  | e=decoratorMemberExpression "." i=fieldName { EDot(e, ANormal, i) }
+  | e=decoratorMemberExpression "." T_POUND i=fieldName { EDotPrivate(e, ANormal, i) }
+%inline decoratorList:
+  | (* empty *)        { [] }
+  | l=decorator+       { l }
 
 (*************************************************************************)
 (* Section 16: ECMAScript Language: Scripts and Modules                 *)
@@ -1408,6 +1433,18 @@ moduleSpecifier:
 (*----------------------------*)
 
 exportDeclaration:
+  (* Decorated class exports: @decorator export class Foo {} *)
+  | decorators=decorator+ T_EXPORT T_CLASS id=bindingIdentifier extends=classHeritage? body=classBody
+    { let decl = {decorators; extends; body} in
+      let pos = $symbolstartpos in
+      Export (ExportClass (id, decl), pi pos), p pos
+    }
+  (* Decorated default class exports: @decorator export default class Foo {} *)
+  | decorators=decorator+ T_EXPORT T_DEFAULT T_CLASS i=bindingIdentifier? extends=classHeritage? body=classBody endrule(sc | T_VIRTUAL_SEMICOLON_EXPORT_DEFAULT { () } )
+    { let decl = {decorators; extends; body} in
+      let pos = $symbolstartpos in
+      Export (ExportDefaultClass (i, decl), pi pos), p pos
+    }
   | T_EXPORT names=exportClause sc
     {
       let exception Invalid of Lexing.position in

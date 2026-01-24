@@ -45,6 +45,7 @@ type t =
   | T_AT
   | T_POUND
   (* Keywords *)
+  | T_ACCESSOR
   | T_AS
   | T_ASYNC
   | T_AWAIT
@@ -321,6 +322,7 @@ let to_string = function
   | T_BACKQUOTE -> "`"
   | T_DOLLARCURLY -> "${"
   | T_ENCAPSED_STRING s -> s
+  | T_ACCESSOR -> "accessor"
   | T_AS -> "as"
   | T_DEFER -> "defer"
 
@@ -349,7 +351,8 @@ let to_string_extra x =
   | _ -> ""
 
 let all_keywords =
-  [ T_AS
+  [ T_ACCESSOR
+  ; T_AS
   ; T_ASYNC
   ; T_AWAIT
   ; T_BREAK
@@ -462,6 +465,7 @@ let is_reserved = function
 
 let is_keyword = function
   (* Always allowed as identifier *)
+  | "accessor" -> Some T_ACCESSOR
   | "as" -> Some T_AS
   | "async" -> Some T_ASYNC
   | "from" -> Some T_FROM

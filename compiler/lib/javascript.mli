@@ -314,14 +314,20 @@ and function_kind =
   ; generator : bool
   }
 
+and decorator = expression
+
 and class_declaration =
-  { extends : expression option
+  { decorators : decorator list
+  ; extends : expression option
   ; body : class_element list
   }
 
 and class_element =
-  | CEMethod of bool (* static *) * class_element_name * method_
-  | CEField of bool (* static *) * class_element_name * initialiser option
+  | CEMethod of decorator list * bool (* static *) * class_element_name * method_
+  | CEField of
+      decorator list * bool (* static *) * class_element_name * initialiser option
+  | CEAccessor of
+      decorator list * bool (* static *) * class_element_name * initialiser option
   | CEStaticBLock of statement_list
 
 and class_element_name =

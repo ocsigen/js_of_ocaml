@@ -1853,6 +1853,17 @@ struct
         PP.end_group f
     | Export (e, _loc) ->
         PP.start_group f 0;
+        (* Print decorators before 'export' for decorated class exports *)
+        (match e with
+        | ExportClass (_, decl) | ExportDefaultClass (_, decl) ->
+            decorator_list f decl.decorators
+        | ExportVar _
+        | ExportFun _
+        | ExportNames _
+        | ExportDefaultFun _
+        | ExportDefaultExpression _
+        | ExportFrom _
+        | CoverExportFrom _ -> ());
         PP.string f "export";
         (match e with
         | ExportNames l ->
@@ -1944,13 +1955,15 @@ struct
             PP.space f;
             PP.string f "default";
             PP.space f;
-            class_declaration f id decl
+            (* Decorators already printed before 'export' *)
+            class_declaration f id { decl with decorators = [] }
         | ExportFun (id, decl) ->
             PP.space f;
             function_declaration' f (Some id) decl
         | ExportClass (id, decl) ->
             PP.space f;
-            class_declaration f (Some id) decl
+            (* Decorators already printed before 'export' *)
+            class_declaration f (Some id) { decl with decorators = [] }
         | ExportVar (k, l) ->
             PP.space f;
             variable_declaration_list k (not can_omit_semi) f l
@@ -2017,8 +2030,25 @@ struct
     in
     function_declaration f prefix (ident ~kind:`Binding) name l b loc'
 
+  and decorator f e =
+    PP.start_group f 2;
+    PP.string f "@";
+    expression LeftHandSideExpression f e;
+    PP.end_group f
+
+  and decorator_list f decorators =
+    match decorators with
+    | [] -> ()
+    | _ ->
+        PP.start_group f 0;
+        List.iter decorators ~f:(fun d ->
+            decorator f d;
+            PP.space f);
+        PP.end_group f
+
   and class_declaration f i x =
-    PP.start_group f 1;
+    PP.start_group f 0;
+    decorator_list f x.decorators;
     PP.start_group f 0;
     PP.start_group f 0;
     PP.string f "class";
@@ -2040,20 +2070,42 @@ struct
     PP.break f;
     List.iter_last x.body ~f:(fun last x ->
         (match x with
-        | CEMethod (static, n, m) ->
+        | CEMethod (decorators, static, n, m) ->
             PP.start_group f 0;
+            decorator_list f decorators;
             if static
             then (
               PP.string f "static";
               PP.space f);
             method_ f class_element_name n m;
             PP.end_group f
-        | CEField (static, n, i) ->
+        | CEField (decorators, static, n, i) ->
             PP.start_group f 0;
+            decorator_list f decorators;
             if static
             then (
               PP.string f "static";
               PP.space f);
+            class_element_name f n;
+            (match i with
+            | None -> ()
+            | Some (e, loc) ->
+                PP.space f;
+                PP.string f "=";
+                PP.space f;
+                output_debug_info f loc;
+                expression AssignementExpression f e);
+            PP.string f ";";
+            PP.end_group f
+        | CEAccessor (decorators, static, n, i) ->
+            PP.start_group f 0;
+            decorator_list f decorators;
+            if static
+            then (
+              PP.string f "static";
+              PP.space f);
+            PP.string f "accessor";
+            PP.space f;
             class_element_name f n;
             (match i with
             | None -> ()

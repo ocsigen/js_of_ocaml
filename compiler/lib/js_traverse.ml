@@ -120,14 +120,21 @@ class map : mapper =
       k, m#formal_parameter_list params, m#function_body body, m#loc nid
 
     method class_decl x =
-      { extends = Option.map x.extends ~f:m#expression
+      { decorators = List.map x.decorators ~f:m#expression
+      ; extends = Option.map x.extends ~f:m#expression
       ; body = List.map x.body ~f:m#class_element
       }
 
     method class_element x =
       match x with
-      | CEMethod (s, n, meth) -> CEMethod (s, m#class_element_name n, m#method_ meth)
-      | CEField (s, n, i) -> CEField (s, m#class_element_name n, m#initialiser_o i)
+      | CEMethod (d, s, n, meth) ->
+          CEMethod (List.map d ~f:m#expression, s, m#class_element_name n, m#method_ meth)
+      | CEField (d, s, n, i) ->
+          CEField
+            (List.map d ~f:m#expression, s, m#class_element_name n, m#initialiser_o i)
+      | CEAccessor (d, s, n, i) ->
+          CEAccessor
+            (List.map d ~f:m#expression, s, m#class_element_name n, m#initialiser_o i)
       | CEStaticBLock b -> CEStaticBLock (m#block b)
 
     method private class_element_name x =
@@ -491,15 +498,22 @@ class iter : iterator =
       m#function_body body
 
     method class_decl x =
+      List.iter x.decorators ~f:m#expression;
       Option.iter x.extends ~f:m#expression;
       List.iter x.body ~f:m#class_element
 
     method class_element x =
       match x with
-      | CEMethod (_static, name, x) ->
+      | CEMethod (decorators, _static, name, x) ->
+          List.iter decorators ~f:m#expression;
           m#class_element_name name;
           m#method_ x
-      | CEField (_static, n, i) ->
+      | CEField (decorators, _static, n, i) ->
+          List.iter decorators ~f:m#expression;
+          m#class_element_name n;
+          m#initialiser_o i
+      | CEAccessor (decorators, _static, n, i) ->
+          List.iter decorators ~f:m#expression;
           m#class_element_name n;
           m#initialiser_o i
       | CEStaticBLock b -> m#block b

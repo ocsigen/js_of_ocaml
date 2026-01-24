@@ -164,7 +164,6 @@ let accepted_by_node ?(debug = false) file =
   | WSIGNALED _ | WSTOPPED _ -> assert false
 
 let should_ignore_feature = function
-  | "decorators" -> true
   | _ -> false
 
 let should_ignore_flag = function
