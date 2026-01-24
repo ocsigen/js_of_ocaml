@@ -247,13 +247,13 @@ empty: { }
 (* IdentifierName - used for entities, parameters, labels, etc. *)
 identifierName:
   | id=T_IDENTIFIER          { fst id }
-  | kw=identifierSemiKeyword { utf8_s (Js_token.to_string kw) }
+  | kw=identifierToken_SemiKeyword { utf8_s (Js_token.to_string kw) }
 
 identifier:
   | name=identifierName { var (p $symbolstartpos) name }
 
 (* add here keywords which are not considered reserved by ECMA *)
-identifierSemiKeyword:
+identifierToken_SemiKeyword:
   | T_AS { T_AS }
   | T_ASYNC { T_ASYNC }
   | T_FROM { T_FROM }
@@ -268,7 +268,7 @@ identifierSemiKeyword:
 
 (* Variant excluding T_OF used for 'using' bindings in for-in/of loops
    to resolve ambiguity in 'for (using of ...)' *)
-identifierSemiKeywordNoOf:
+identifierToken_SemiKeywordNoOf:
   | T_AS { T_AS }
   | T_ASYNC { T_ASYNC }
   | T_FROM { T_FROM }
@@ -280,12 +280,12 @@ identifierSemiKeywordNoOf:
   | T_USING { T_USING }
   | T_DEFER { T_DEFER }
 
-identifierNameNoOf:
+identifierName_NoOf:
   | id=T_IDENTIFIER              { fst id }
-  | kw=identifierSemiKeywordNoOf { utf8_s (Js_token.to_string kw) }
+  | kw=identifierToken_SemiKeywordNoOf { utf8_s (Js_token.to_string kw) }
 
-identifierNoOf:
-  | name=identifierNameNoOf { var (p $symbolstartpos) name }
+identifier_NoOf:
+  | name=identifierName_NoOf { var (p $symbolstartpos) name }
 
 identifierKeyword:
   | kw=identifierKeywordToken { utf8_s (Js_token.to_string kw) }
@@ -401,6 +401,9 @@ templateSpan:
 (*----------------------------*)
 
 bindingIdentifier: id=identifier { id }
+
+labelIdentifier:
+  | name=identifierName { Label.of_string name }
 
 (*----------------------------*)
 (* 13.2 Primary Expression *)
@@ -808,9 +811,9 @@ expression(in_):
 (* Expression variants (no statement-like constructs) *)
 (*----------------------------*)
 
-expressionNoStmt:
+expression_NoStmt:
   | e=assignmentExpression_NoStmt                               { e }
-  | e1=expressionNoStmt "," e2=assignmentExpression(in_allowed) { ESeq (e1, e2) }
+  | e1=expression_NoStmt "," e2=assignmentExpression(in_allowed) { ESeq (e1, e2) }
 
 assignmentExpression_NoStmt:
   | e=conditionalExpression(primaryExpression_Empty, in_allowed) { e }
@@ -827,7 +830,7 @@ assignmentExpression_NoStmt:
 (* Expression variants (for concise arrow body) *)
 (*----------------------------*)
 
-assignmentExpressionForConciseBody(in_):
+assignmentExpression_ConciseBody(in_):
   | e=conditionalExpression(primaryExpression_FunClass, in_) { e, $endpos }
   | e1=leftHandSideExpression_(primaryExpression_FunClass) op=assignmentOperator e2=assignmentExpression(in_)
     {
@@ -920,7 +923,7 @@ lexicalBinding(in_):
   | p=bindingPattern e=initializer_(in_) { DeclPattern (p, e) }
 
 lexicalBinding_using(in_):
-  | i=identifierNoOf e=initializer_(in_)?    { DeclIdent (i,e) }
+  | i=identifier_NoOf e=initializer_(in_)?    { DeclIdent (i,e) }
 
 initializer_(in_):
   | "=" e=assignmentExpression(in_) { e, p $symbolstartpos }
@@ -939,7 +942,7 @@ forBinding:
   | id=identifier    { BindingIdent id }
 
 forBinding_using:
-  | id=identifierNoOf { BindingIdent id }
+  | id=identifier_NoOf { BindingIdent id }
 
 (*----------------------------*)
 (* 14.3.3 Destructuring Binding Patterns *)
@@ -994,7 +997,7 @@ emptyStatement:
 (*----------------------------*)
 
 expressionStatement:
-  | e=expressionNoStmt sc { Expression_statement e }
+  | e=expression_NoStmt sc { Expression_statement e }
 
 (*----------------------------*)
 (* 14.6 The if Statement *)
@@ -1115,9 +1118,6 @@ defaultClause:
 (* 14.13 Labelled Statements *)
 (*----------------------------*)
 
-labelIdentifier:
-  | name=identifierName { Label.of_string name }
-
 labelledStatement:
   | l=labelIdentifier ":" s=statement { Labelled_statement (l, s)}
 
@@ -1195,15 +1195,15 @@ functionExpression:
 
 arrowFunction(in_):
   | i=identifier T_ARROW yieldOff awaitOff b=conciseBody(in_)
-    { let b,consise = b in
-      EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown) }
+    { let b,concise = b in
+      EArrow (({async = false; generator = false}, list [param' i],b, p $symbolstartpos), concise, AUnknown) }
   | T_LPAREN_ARROW a=formalParameters ")" T_ARROW yieldOff awaitOff b=conciseBody(in_)
-    { let b,consise = b in
-      EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), consise, AUnknown) }
+    { let b,concise = b in
+      EArrow (({async = false; generator = false}, a,b, p $symbolstartpos), concise, AUnknown) }
 
 conciseBody( in_):
   | "{" b=functionBody pop pop "}" { b, false }
-  | e=assignmentExpressionForConciseBody(in_) pop pop
+  | e=assignmentExpression_ConciseBody(in_) pop pop
     {
       let e, stop = e in
       [(Return_statement (Some e, p stop), p $symbolstartpos)], true
@@ -1307,15 +1307,15 @@ asyncFunctionExpression:
 (*----------------------------*)
 
 asyncArrowFunction(in_):
-  (* Use identifierNoOf to resolve 'for (async of ...)' ambiguity *)
-  | T_ASYNC yieldOff awaitOn i=identifierNoOf T_ARROW b=conciseBody(in_)
+  (* Use identifier_NoOf to resolve 'for (async of ...)' ambiguity *)
+  | T_ASYNC yieldOff awaitOn i=identifier_NoOf T_ARROW b=conciseBody(in_)
     {
-      let b,consise = b in
-      EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), consise, AUnknown)
+      let b,concise = b in
+      EArrow(({async = true; generator = false}, list [param' i],b, p $symbolstartpos), concise, AUnknown)
     }
   | T_ASYNC T_LPAREN_ARROW yieldOff awaitOn a=formalParameters ")" T_ARROW b=conciseBody(in_)
-    { let b,consise = b in
-      EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), consise, AUnknown)
+    { let b,concise = b in
+      EArrow (({async = true; generator = false}, a,b, p $symbolstartpos), concise, AUnknown)
     }
 
 
