@@ -232,6 +232,14 @@ struct
                   ; ori_name = get_name_index nm
                   })
 
+  let identName f x =
+    match Js_token.is_reserved x with
+    | None -> PP.string f x
+    | Some _ ->
+        (* identName, that are reserved keyword, are escaped *)
+        let rest = String.sub x ~pos:1 ~len:(String.length x - 1) in
+        PP.string f (Printf.sprintf "\\u{%x}%s" (Char.code x.[0]) rest)
+
   let ident f ~kind = function
     | S { name = Utf8 name; var = Some v; _ } ->
         (match kind with
@@ -1626,7 +1634,7 @@ struct
     | Continue_statement (Some s) ->
         PP.string f "continue ";
         let (Utf8 l) = nane_of_label s in
-        PP.string f l;
+        identName f l;
         last_semi ()
     | Break_statement None ->
         PP.string f "break";
@@ -1634,7 +1642,7 @@ struct
     | Break_statement (Some s) ->
         PP.string f "break ";
         let (Utf8 l) = nane_of_label s in
-        PP.string f l;
+        identName f l;
         last_semi ()
     | Return_statement (e, loc) -> (
         match e with
@@ -1679,7 +1687,7 @@ struct
         )
     | Labelled_statement (i, s) ->
         let (Utf8 l) = nane_of_label i in
-        PP.string f l;
+        identName f l;
         PP.string f ":";
         PP.space f;
         statement ~last f s

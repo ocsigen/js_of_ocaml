@@ -298,12 +298,12 @@ end = struct
     | [] -> assert false
     | yield_await :: _ -> (
         match tok, yield_await with
-        | T_IDENTIFIER (Utf8 "yield", _), { yield = false; _ } -> tok
+        | T_IDENTIFIER (Utf8 _, "yield"), { yield = false; _ } -> tok
         | T_YIELD, { yield = true; _ } -> tok
-        | T_IDENTIFIER (Utf8 "await", _), { await = false; _ } -> tok
+        | T_IDENTIFIER (Utf8 _, "await"), { await = false; _ } -> tok
         | T_AWAIT, { await = true; _ } -> tok
-        | T_IDENTIFIER (Utf8 "yield", _), { yield = true; _ } -> T_YIELD
-        | T_IDENTIFIER (Utf8 "await", _), { await = true; _ } -> T_AWAIT
+        | T_IDENTIFIER (Utf8 _, "yield"), { yield = true; _ } -> T_YIELD
+        | T_IDENTIFIER (Utf8 _, "await"), { await = true; _ } -> T_AWAIT
         | T_YIELD, { yield = false; _ } | T_AWAIT, { await = false; _ } ->
             token_to_ident tok
         | _ -> tok)
