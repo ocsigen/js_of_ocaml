@@ -1,1 +1,4 @@
+/*
+  flags: [noStrict]
+*/
 var let;
