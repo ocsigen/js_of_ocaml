@@ -38,11 +38,11 @@ end
 
 exception Parsing_error of Parse_info.t
 
-val parse : Lexer.t -> Javascript.program
+val parse : [ `Script | `Module ] -> Lexer.t -> Javascript.program
 
 val parse' :
-     Lexer.t
-  -> [ `Script | `Module ]
+     [ `Script | `Module ]
+  -> Lexer.t
   -> ((Js_token.Annot.t * Parse_info.t) list * Javascript.program) list
      * (Js_token.t * Loc.t) list
 

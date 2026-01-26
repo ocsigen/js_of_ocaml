@@ -179,7 +179,8 @@ T_BACKQUOTE
 (* Rules type decl                                                       *)
 (*************************************************************************)
 
-%start <(Lexing.position * (Javascript.statement * Javascript.location)) list > program
+%start <(Lexing.position * (Javascript.statement * Javascript.location)) list > module_
+%start <(Lexing.position * (Javascript.statement * Javascript.location)) list > script
 %start <Javascript.expression> standalone_expression
 
 %%
@@ -1348,15 +1349,18 @@ decoratorMemberExpression:
 (* Section 16: ECMAScript Language: Scripts and Modules                 *)
 (*************************************************************************)
 
+standalone_expression:
+  | e=expression(in_allowed) T_EOF { e }
+
 (*----------------------------*)
 (* 16.1 Scripts *)
 (*----------------------------*)
 
-standalone_expression:
-  | e=expression(in_allowed) T_EOF { e }
+scriptItem:
+  | s=statementListItem { $symbolstartpos, s }
 
-program:
-  | l=moduleItem* T_EOF { l }
+script:
+  | l=scriptItem* T_EOF { l }
 
 (*----------------------------*)
 (* 16.2 Modules *)
@@ -1366,6 +1370,9 @@ moduleItem:
   | s=statementListItem { $symbolstartpos, s }
   | d=importDeclaration { $symbolstartpos, d }
   | d=exportDeclaration { $symbolstartpos, d }
+
+module_:
+  | l=moduleItem* T_EOF { l }
 
 (*----------------------------*)
 (* 16.2.2 Imports *)

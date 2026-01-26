@@ -48,13 +48,13 @@ let print ?(debuginfo = true) ?(report = false) ?(invalid = false) ~compact sour
   Pretty_print.set_compact pp compact;
   let lexed = Parse_js.Lexer.of_string ~filename:"fake" source in
   try
-    let parsed = Parse_js.parse lexed in
+    let parsed = Parse_js.parse `Module lexed in
     (if debuginfo then Config.Flag.enable else Config.Flag.disable) "debuginfo";
     let _ = Js_output.program pp parsed in
     let s = Buffer.contents buffer in
     print_endline s;
     (let lexed = Parse_js.Lexer.of_string ~filename:"fake" s in
-     let parsed2 = Parse_js.parse lexed in
+     let parsed2 = Parse_js.parse `Module lexed in
      let p1 = remove_loc parsed in
      let p2 = remove_loc parsed2 in
      if not (Poly.equal p1 p2) then print_endline "<roundtrip issue>");
@@ -893,7 +893,7 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   | true, _ -> ());
   let lex = Parse_js.Lexer.of_string ~filename:"fake" s in
   let _p, tokens =
-    try Parse_js.parse' lex `Script
+    try Parse_js.parse' `Module lex
     with Parse_js.Parsing_error pi as e ->
       Printf.eprintf "cannot parse l:%d:%d@." pi.Parse_info.line pi.Parse_info.col;
       raise e

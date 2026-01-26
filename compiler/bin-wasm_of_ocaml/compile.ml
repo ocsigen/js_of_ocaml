@@ -302,7 +302,7 @@ let build_js_runtime ~primitives ?runtime_arguments () =
     | _ -> assert false
   in
   let init_fun =
-    match Parse_js.parse (Parse_js.Lexer.of_string Runtime_files.js_runtime) with
+    match Parse_js.parse `Script (Parse_js.Lexer.of_string Runtime_files.js_runtime) with
     | [ (Expression_statement f, _) ] -> f
     | _ -> assert false
   in

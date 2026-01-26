@@ -321,7 +321,7 @@ let () =
                     ~filename
                     content
                 in
-                Parse_js.parse' lex `Module, `Module
+                Parse_js.parse' `Module lex, `Module
               with Parse_js.Parsing_error _ ->
                 errors := [];
                 let lex =
@@ -330,7 +330,7 @@ let () =
                     ~filename
                     content
                 in
-                Parse_js.parse' lex `Script, `Script
+                Parse_js.parse' `Script lex, `Script
             with
             | exception Parse_js.Parsing_error loc ->
                 if
@@ -350,7 +350,7 @@ let () =
                           ~filename
                           s
                       in
-                      Parse_js.parse' lex mode
+                      Parse_js.parse' mode lex
                     with
                     | p2, toks2 -> (
                         let p2 = List.concat_map p2 ~f:snd in
