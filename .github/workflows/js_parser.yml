@@ -1,0 +1,39 @@
+name: js-parser
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  schedule:
+    # Prime the caches every Monday
+    - cron: 0 1 * * MON
+
+jobs:
+  js-parser:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Update apt cache
+        run: sudo apt-get update
+      - name: Checkout tree
+        uses: actions/checkout@v6
+      - name: Checkout test262
+        uses: actions/checkout@v6
+        with:
+          repository: tc39/test262
+          path: compiler/tests-js-parser/test262
+      - name: Set-up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: latest
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 5.4
+      - name: Set-up Binaryen
+        uses: Aandreba/setup-binaryen@v1.0.0
+        with:
+          token: ${{ github.token }}
+      - run: opam install .
+      - run: opam exec -- dune build @runtest-parser
