@@ -249,9 +249,20 @@ empty: { }
 identifierName:
   | id=T_IDENTIFIER          { fst id }
   | kw=identifierToken_SemiKeyword { utf8_s (Js_token.to_string kw) }
+  | kw=identifierName_Reserved { kw }
+
+identifierName_NoReserved:
+  | id=T_IDENTIFIER          { fst id }
+  | kw=identifierToken_SemiKeyword { utf8_s (Js_token.to_string kw) }
+
+identifier_s:
+  | name=identifierName_NoReserved { name }
 
 identifier:
-  | name=identifierName { var (p $symbolstartpos) name }
+  | name=identifierName_NoReserved { var (p $symbolstartpos) name }
+
+privateIdentifier:
+  | T_POUND name=identifierName { name }
 
 (* add here keywords which are not considered reserved by ECMA *)
 identifierToken_SemiKeyword:
@@ -270,7 +281,7 @@ identifierToken_SemiKeyword:
 
 (* Variant excluding T_OF used for 'using' bindings in for-in/of loops
    to resolve ambiguity in 'for (using of ...)' *)
-identifierToken_SemiKeywordNoOf:
+identifierToken_SemiKeyword_NoOf:
   | T_ACCESSOR { T_ACCESSOR }
   | T_AS { T_AS }
   | T_ASYNC { T_ASYNC }
@@ -283,17 +294,17 @@ identifierToken_SemiKeywordNoOf:
   | T_USING { T_USING }
   | T_DEFER { T_DEFER }
 
-identifierName_NoOf:
+identifierName_NoReserved_NoOf:
   | id=T_IDENTIFIER              { fst id }
-  | kw=identifierToken_SemiKeywordNoOf { utf8_s (Js_token.to_string kw) }
+  | kw=identifierToken_SemiKeyword_NoOf { utf8_s (Js_token.to_string kw) }
 
 identifier_NoOf:
-  | name=identifierName_NoOf { var (p $symbolstartpos) name }
+  | name=identifierName_NoReserved_NoOf { var (p $symbolstartpos) name }
 
-identifierKeyword:
-  | kw=identifierKeywordToken { utf8_s (Js_token.to_string kw) }
+identifierName_Reserved:
+  | kw=identifierName_ReservedToken { utf8_s (Js_token.to_string kw) }
 
-identifierKeywordToken:
+identifierName_ReservedToken:
   | T_BREAK { T_BREAK }
   | T_CASE { T_CASE }
   | T_CATCH { T_CATCH }
@@ -403,10 +414,13 @@ templateSpan:
 (* 13.1 Identifiers *)
 (*----------------------------*)
 
-bindingIdentifier: id=identifier { id }
+bindingIdentifier:
+  | id=identifier { id }
+  | T_YIELD { var (p $symbolstartpos) (utf8_s (Js_token.to_string T_YIELD)) }
+  | T_AWAIT { var (p $symbolstartpos) (utf8_s (Js_token.to_string T_AWAIT)) }
 
 labelIdentifier:
-  | name=identifierName { Label.of_string name }
+  | name=identifier_s { Label.of_string name }
 
 (*----------------------------*)
 (* 13.2 Primary Expression *)
@@ -423,7 +437,7 @@ d1:
 primaryExpression_Object:
   | e=objectLiteral { e }
 
-primaryExpression_Empty: T_ERROR TComment { assert false }
+primaryExpression_Empty: TComment T_ERROR { assert false }
 
 primaryExpression_FunClass:
   | e=functionExpression       { e }
@@ -435,7 +449,7 @@ primaryExpression_FunClass:
 primaryExpressionNoBraces:
   | T_THIS                      { vartok $symbolstartpos T_THIS }
   | i=identifier                { EVar i }
-  | T_POUND name=identifierName { EPrivName name }
+  | name=privateIdentifier      { EPrivName name }
   | n=nullLiteral               { n }
   | b=booleanLiteral            { b }
   | n=numericLiteral            { ENum (Num.of_string_unsafe n) }
@@ -471,12 +485,14 @@ arrayElement:
 (*----------------------------*)
 
 propertyName:
-  | i=identifierName    { PNI i }
-  | i=identifierKeyword { PNI i }
-  | s=T_STRING          { let s, _len = s in PNS s }
-  | n=numericLiteral    { PNN (Num.of_string_unsafe (n)) }
-  | n=bigIntLiteral     { PNN (Num.of_string_unsafe (n)) }
+  | i=literalPropertyName { i }
   | "[" p=assignmentExpression(in_allowed) "]" { PComputed p }
+
+literalPropertyName:
+| i=identifierName { PNI i }
+| s=T_STRING       { let s, _len = s in PNS s }
+| n=numericLiteral { PNN (Num.of_string_unsafe (n)) }
+| n=bigIntLiteral  { PNN (Num.of_string_unsafe (n)) }
 
 objectLiteral:
   | "{" "}"                                      { EObj [] }
@@ -486,7 +502,7 @@ propertyDefinition:
   | name=propertyName ":" value=assignmentExpression(in_allowed)
     { Property (name, value) }
   (* shorthand property *)
-  | i=identifierName
+  | i=identifier_s
     { Property (PNI i, EVar (ident_unsafe i)) }
   | id=identifier init=initializer_(in_allowed)
     { CoverInitializedName (early_error (pi $startpos(init)), id, init)  }
@@ -513,7 +529,6 @@ leftHandSideExpression_(x):
 
 fieldName:
   | name=identifierName  { name }
-  | kw=identifierKeyword { kw }
 
 memberExpression(x):
   | e=primaryExpression(x)
@@ -534,7 +549,7 @@ memberExpression(x):
     { (EDot(vartok $startpos(_super) T_SUPER,ANormal,i)) }
   | _new=T_NEW "." T_TARGET
     { (EDot(vartok $startpos(_new) T_NEW,ANormal,utf8_s "target")) }
-  | e1=memberExpression(x) "." T_POUND i=fieldName
+  | e1=memberExpression(x) "." i=privateIdentifier
     { (EDotPrivate(e1,ANormal,i)) }
 
 (*----------------------------*)
@@ -563,7 +578,7 @@ callExpression(x):
   | _super=T_SUPER a=arguments { ECall(vartok $startpos(_super) T_SUPER,ANormal, a, p $symbolstartpos) }
   | e=callExpression(x) "." i=methodName
     { EDot (e,ANormal,i) }
-  | e=callExpression(x) "." T_POUND i=methodName
+  | e=callExpression(x) "." i=privateIdentifier
     { EDotPrivate (e,ANormal,i) }
 
 (*----------------------------*)
@@ -606,7 +621,7 @@ optionalChain:
   (* | T_PLING_PERIOD t=templateLiteral
     { fun e -> ECallTemplate(e, t, p $symbolstartpos) } *)
   (* ?. PrivateIdentifier *)
-  | T_PLING_PERIOD T_POUND i=fieldName
+  | T_PLING_PERIOD i=privateIdentifier
     { fun e -> EDotPrivate(e, ANullish, i) }
   (* OptionalChain Arguments *)
   | c=optionalChain a=arguments
@@ -621,7 +636,7 @@ optionalChain:
   | c=optionalChain t=templateLiteral
     { fun e -> ECallTemplate(c e, t, p $symbolstartpos) }
   (* OptionalChain . PrivateIdentifier *)
-  | c=optionalChain "." T_POUND i=fieldName
+  | c=optionalChain "." i=privateIdentifier
     { fun e -> EDotPrivate(c e, ANormal, i) }
 
 (*----------------------------*)
@@ -918,11 +933,11 @@ variableStatement:
   | T_VAR l=listc(variableDeclaration(in_allowed)) sc { Variable_statement (Var, l) }
 
 variableDeclaration(in_):
-  | i=identifier e=initializer_(in_)?    { DeclIdent (i,e) }
+  | i=identifier e=initializer_(in_)?   { DeclIdent (i,e) }
   | p=bindingPattern e=initializer_(in_) { DeclPattern (p, e) }
 
 lexicalBinding(in_):
-  | i=identifier e=initializer_(in_)?    { DeclIdent (i,e) }
+  | i=identifier e=initializer_(in_)?   { DeclIdent (i,e) }
   | p=bindingPattern e=initializer_(in_) { DeclPattern (p, e) }
 
 lexicalBinding_using(in_):
@@ -1218,7 +1233,6 @@ conciseBody( in_):
 
 methodName:
   | name=identifierName  { name }
-  | kw=identifierKeyword { kw }
 
 methodDefinition(name):
   | T_GET name=name args=callSignature(yieldOff, awaitOff) "{" b=functionBody pop pop "}"
@@ -1297,8 +1311,8 @@ classElement:
   | sc               { [] }
 
 classElementName:
-  | name=propertyName { PropName name }
-  | T_POUND name=identifierName { PrivName name }
+  | name=propertyName      { PropName name }
+  | name=privateIdentifier { PrivName name }
 
 (*----------------------------*)
 (* 15.8 Async Function Definitions *)
@@ -1338,7 +1352,7 @@ decorator:
   | T_AT "(" e=expression(in_allowed) ")"       { e }
 
 decoratorMemberExpression:
-  | i=identifier                              { EVar i }
+  | i=identifier                               { EVar i }
   | e=decoratorMemberExpression "." i=fieldName { EDot(e, ANormal, i) }
   | e=decoratorMemberExpression "." T_POUND i=fieldName { EDotPrivate(e, ANormal, i) }
 %inline decoratorList:
@@ -1400,7 +1414,6 @@ withClause:
 withEntry:
   | a=T_STRING ":" b=T_STRING          { fst a, fst b  }
   | a=identifierName ":" b=T_STRING    { a, fst b }
-  | a=identifierKeyword ":" b=T_STRING { a, fst b }
 
 namespaceImport:
   | "*" T_AS id=bindingIdentifier { id }
@@ -1430,7 +1443,6 @@ importSpecifier:
 %inline moduleExportName:
   | s=T_STRING           { `String, fst s, $symbolstartpos }
   | name=identifierName  { `Ident, name, $symbolstartpos }
-  | kw=identifierKeyword { `Ident, kw, $symbolstartpos }
 
 moduleSpecifier:
   | s=T_STRING { fst s }

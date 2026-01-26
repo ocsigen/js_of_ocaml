@@ -892,31 +892,32 @@ let parse_print_token ?(invalid = false) ?(extra = false) s =
   | true, "" -> print_endline "invalid file but node --check didn't complain"
   | true, _ -> ());
   let lex = Parse_js.Lexer.of_string ~filename:"fake" s in
-  let _p, tokens =
-    try Parse_js.parse' `Module lex
-    with Parse_js.Parsing_error pi as e ->
-      Printf.eprintf "cannot parse l:%d:%d@." pi.Parse_info.line pi.Parse_info.col;
-      raise e
-  in
-  check_vs_string s tokens;
-  let prev = ref 0 in
-  let rec loop tokens =
-    match tokens with
-    | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
-    | (Js_token.(T_YIELDOFF | T_AWAITOFF | T_AWAITON | T_YIELDON | T_YIELD_AWAIT_POP), _)
-      :: xs -> loop xs
-    | (tok, loc) :: xs ->
-        let p1 = Loc.p1 loc in
-        let pos = Parse_info.t_of_pos p1 in
-        let s = if extra then Js_token.to_string_extra tok else Js_token.to_string tok in
-        (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
-        | true -> Printf.printf "\n%2d: " pos.Parse_info.line
-        | false -> ());
-        if pos.Parse_info.line <> 0 then prev := pos.Parse_info.line;
-        Printf.printf "%d:%s, " pos.Parse_info.col s;
-        loop xs
-  in
-  loop tokens
+  match Parse_js.parse' `Module lex with
+  | exception Parse_js.Parsing_error pi ->
+      Printf.eprintf "cannot parse l:%d:%d@." pi.Parse_info.line pi.Parse_info.col
+  | _p, tokens ->
+      check_vs_string s tokens;
+      let prev = ref 0 in
+      let rec loop tokens =
+        match tokens with
+        | [ (Js_token.T_EOF, _) ] | [] -> Printf.printf "\n"
+        | ( Js_token.(T_YIELDOFF | T_AWAITOFF | T_AWAITON | T_YIELDON | T_YIELD_AWAIT_POP)
+          , _ )
+          :: xs -> loop xs
+        | (tok, loc) :: xs ->
+            let p1 = Loc.p1 loc in
+            let pos = Parse_info.t_of_pos p1 in
+            let s =
+              if extra then Js_token.to_string_extra tok else Js_token.to_string tok
+            in
+            (match !prev <> pos.Parse_info.line && pos.Parse_info.line <> 0 with
+            | true -> Printf.printf "\n%2d: " pos.Parse_info.line
+            | false -> ());
+            if pos.Parse_info.line <> 0 then prev := pos.Parse_info.line;
+            Printf.printf "%d:%s, " pos.Parse_info.col s;
+            loop xs
+      in
+      loop tokens
 
 let%expect_test "tokens" =
   parse_print_token
@@ -952,10 +953,10 @@ let%expect_test "invalid ident" =
 |};
   [%expect
     {|
-     2: 4:var, 8:\uD83B\uDE62, 21:=, 23:42, 25:;, 27:// invalid surrogate escape sequence,
-     3: 4:var, 8:\u{1F42B}, 18:=, 20:2, 21:;, 23:// U+1F42B is not a valid id,
     Lexer error: fake:2:8: Illegal Unicode escape
-    Lexer error: fake:3:8: Unexpected "\240\159\144\171" is not a valid identifier |}]
+    Lexer error: fake:3:8: Unexpected "\\u{1F42B}" (🐫) is not a valid identifier
+    cannot parse l:3:8@.
+    |}]
 
 let%expect_test "string" =
   parse_print_token

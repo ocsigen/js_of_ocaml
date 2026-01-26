@@ -718,26 +718,29 @@ let token (env : Lex_env.t) lexbuf : result =
       let raw = Sedlexing.Utf8.lexeme lexbuf in
       match Js_token.is_keyword raw with
       | Some t -> Token (env, t)
-      | None ->
+      | None -> (
           if is_basic_ident raw
           then Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn raw, raw))
           else
             let env, decoded = decode_identifier env (loc_of_lexbuf env lexbuf) raw in
-            let env =
-              match Js_token.is_keyword decoded with
-              | None -> (
-                  match is_valid_identifier_name decoded with
-                  | true -> env
-                  | false ->
+            match Js_token.is_keyword decoded with
+            | None -> (
+                match is_valid_identifier_name decoded with
+                | true ->
+                    Token
+                      (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded, raw))
+                | false ->
+                    let env =
                       illegal
                         env
                         (loc_of_lexbuf env lexbuf)
-                        (Printf.sprintf "%S is not a valid identifier" decoded))
-              | Some _ ->
-                  (* accept keyword as ident if escaped *)
-                  env
-            in
-            Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded, raw)))
+                        (Printf.sprintf "%S (%s) is not a valid identifier" raw decoded)
+                    in
+                    Token (env, T_ERROR raw))
+            | Some _ ->
+                (* accept keyword as ident if escaped *)
+                Token (env, T_IDENTIFIER (Stdlib.Utf8_string.of_string_exn decoded, raw)))
+      )
   | eof -> Token (env, T_EOF)
   | any ->
       let env = illegal env (loc_of_lexbuf env lexbuf) "" in

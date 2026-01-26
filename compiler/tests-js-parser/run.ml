@@ -15,6 +15,8 @@ let progress = ref false
 
 let verbose = ref false
 
+let skip_negative = true
+
 let flags, roots =
   Sys.argv
   |> Array.to_list
@@ -309,9 +311,9 @@ let () =
                 | None -> `Ok))
       in
       match mode with
-      | `Negative -> negative := filename :: !negative
+      | `Negative when skip_negative -> negative := filename :: !negative
       | `Unsupported _ -> unsupported := (filename, content) :: !unsupported
-      | `Ok -> (
+      | `Ok | `Negative -> (
           try
             match
               try
@@ -334,11 +336,14 @@ let () =
             with
             | exception Parse_js.Parsing_error loc ->
                 if
-                  String.starts_with ~prefix:"syntax-error" (Filename.basename filename)
+                  Poly.equal mode `Negative
+                  || String.starts_with
+                       ~prefix:"syntax-error"
+                       (Filename.basename filename)
                   || ((not (accepted_by_node filename)) && false)
                 then add unsupported
                 else fail := (Parse (loc, content), filename) :: !fail
-            | (p1, toks1), mode -> (
+            | (p1, toks1), lexing_mode -> (
                 let p1 = List.concat_map p1 ~f:snd in
                 match List.rev !errors with
                 | [] -> (
@@ -350,7 +355,7 @@ let () =
                           ~filename
                           s
                       in
-                      Parse_js.parse' mode lex
+                      Parse_js.parse' lexing_mode lex
                     with
                     | p2, toks2 -> (
                         let p2 = List.concat_map p2 ~f:snd in
@@ -362,11 +367,23 @@ let () =
                         with
                         | true, Error s when false ->
                             fail := (Tok_missmatch s, filename) :: !fail
-                        | true, _ -> add pass
+                        | true, _ ->
+                            if false
+                            then (
+                              let new_name = filename ^ ".jsoo.js" in
+                              let oc = open_out_bin new_name in
+                              output_string oc s;
+                              close_out oc;
+                              let ok = accepted_by_node filename in
+                              if ok then Sys.remove new_name);
+                            add pass
                         | false, _ -> fail := (Diff (p1, p2), filename) :: !fail)
                     | exception Parse_js.Parsing_error loc ->
                         fail := (Print_parse (loc, s), filename) :: !fail)
-                | l -> fail := (Parse_warning l, filename) :: !fail)
+                | l ->
+                    if Poly.equal mode `Negative
+                    then add unsupported
+                    else fail := (Parse_warning l, filename) :: !fail)
           with e ->
             Printf.eprintf "Unexpected error %s\n%s\n" filename (Printexc.to_string e)));
   Printf.printf "Summary:\n";
