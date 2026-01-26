@@ -38,6 +38,8 @@ module Lex_env = struct
     ; lex_state : lex_state
     ; lex_mode_stack : Lex_mode.t list
     ; lex_last_loc : Loc.t ref
+    ; lex_first_token_on_line : bool
+          (* true if no non-comment token has been seen on the current line *)
     }
   [@@ocaml.warning "-69"]
 
@@ -48,6 +50,7 @@ module Lex_env = struct
     ; lex_state = empty_lex_state
     ; lex_mode_stack = [ Lex_mode.NORMAL ]
     ; lex_last_loc = ref (Loc.create Lexing.dummy_pos Lexing.dummy_pos)
+    ; lex_first_token_on_line = true
     }
 end
 
@@ -488,7 +491,7 @@ let token (env : Lex_env.t) lexbuf : result =
   match%sedlex lexbuf with
   | line_terminator_sequence ->
       newline lexbuf;
-      Continue env
+      Continue { env with lex_first_token_on_line = true }
   | Plus whitespace -> Continue env
   | "/*" ->
       let buf = Buffer.create 127 in
@@ -500,6 +503,26 @@ let token (env : Lex_env.t) lexbuf : result =
       lexeme_to_buffer lexbuf buf;
       let env = line_comment env buf lexbuf in
       Comment (env, Buffer.contents buf)
+  (* HTML-like comments: <!-- is treated as a single-line comment *)
+  | "<!--" ->
+      let buf = Buffer.create 127 in
+      lexeme_to_buffer lexbuf buf;
+      let env = line_comment env buf lexbuf in
+      Comment (env, Buffer.contents buf)
+  (* HTML-like comments: --> is treated as a single-line comment
+   * Note: Per spec, --> is only a comment if it's the first non-comment token on the line *)
+  | "-->" ->
+      if env.Lex_env.lex_first_token_on_line
+      then (
+        let buf = Buffer.create 127 in
+        lexeme_to_buffer lexbuf buf;
+        let env = line_comment env buf lexbuf in
+        Comment (env, Buffer.contents buf))
+      else (
+        Sedlexing.rollback lexbuf;
+        match%sedlex lexbuf with
+        | "--" -> Token (env, T_DECR_NB)
+        | _ -> failwith "unreachable, expected ?")
   (* Support for the shebang at the beginning of a file. It is treated like a
    * comment at the beginning or an error elsewhere *)
   | "#!" ->
@@ -642,8 +665,13 @@ let token (env : Lex_env.t) lexbuf : result =
   | ">=" -> Token (env, T_GREATER_THAN_EQUAL)
   | "==" -> Token (env, T_EQUAL)
   | "!=" -> Token (env, T_NOT_EQUAL)
-  | "++" -> Token (env, T_INCR)
-  | "--" -> Token (env, T_DECR)
+  (* restricted productions rules have the following effect:
+   * When a ++ or -- token is encountered where the parser would treat it
+   * as a postfix operator, and at least one LineTerminator occurred between
+   * the preceding token and the ++ or -- token, then a semicolon is automatically
+   * inserted before the ++ or -- token. *)
+  | "++" -> Token (env, if env.lex_first_token_on_line then T_INCR else T_INCR_NB)
+  | "--" -> Token (env, if env.lex_first_token_on_line then T_DECR else T_DECR_NB)
   | "<<=" -> Token (env, T_LSHIFT_ASSIGN)
   | "<<" -> Token (env, T_LSHIFT)
   | ">>=" -> Token (env, T_RSHIFT_ASSIGN)
@@ -784,7 +812,7 @@ let regexp env lexbuf =
   | eof -> Token (env, T_EOF)
   | line_terminator_sequence ->
       newline lexbuf;
-      Continue env
+      Continue { env with lex_first_token_on_line = true }
   | Plus whitespace -> Continue env
   | "//" ->
       let buf = Buffer.create 127 in
@@ -843,6 +871,7 @@ let wrap f =
     match res with
     | Token (env, t) ->
         env.lex_last_loc := lex_loc;
+        let env = { env with Lex_env.lex_first_token_on_line = false } in
         let lex_token = t in
         let lex_errors_acc = env.lex_state.lex_errors_acc in
         if lex_errors_acc = []

@@ -1283,3 +1283,53 @@ async function f() {
     3: 2:for, 6:(, 7:await, 13:using, 19:of (identifier), 22:of, 25:[, 26:], 27:), 29:{, 31:},
     4: 0:},
     |}]
+
+let%expect_test "html comments" =
+  (* <!-- is always a single-line comment *)
+  parse_print_token
+    ~extra:true
+    {|
+var a = 1;
+<!-- html open comment
+c = 2<!-- html open comment
+var b = 2;
+|};
+  [%expect
+    {|
+    2: 0:var, 4:a (identifier), 6:=, 8:1, 9:;,
+    3: 0:<!-- html open comment,
+    4: 0:c (identifier), 2:=, 4:2, 0:; (virtual), 5:<!-- html open comment,
+    5: 0:var, 4:b (identifier), 6:=, 8:2, 9:;,
+    |}];
+  (* --> at start of line is a comment *)
+  parse_print_token
+    ~extra:true
+    {|
+var a = 1;
+--> html close comment
+     --> html close comment
+   /* asd */ --> html close comment
+var b = 2;
+    function f (x) { x-->x }
+
+|};
+  [%expect
+    {|
+    2: 0:var, 4:a (identifier), 6:=, 8:1, 9:;,
+    3: 0:--> html close comment,
+    4: 5:--> html close comment,
+    5: 3:/* asd */, 13:--> html close comment,
+    6: 0:var, 4:b (identifier), 6:=, 8:2, 9:;,
+    7: 4:function, 13:f (identifier), 15:(, 16:x (identifier), 17:), 19:{, 21:x (identifier), 22:-- (DECR_NB), 24:>, 25:x (identifier), 0:; (virtual), 27:},
+    |}];
+  (* --> after code on the same line is NOT a comment, it's -- then > *)
+  parse_print_token ~extra:true {|
+var x = a --> b;
+|};
+  [%expect
+    {|
+    2: 0:var, 4:x (identifier), 6:=, 8:a (identifier), 10:-- (DECR_NB), 12:>, 14:b (identifier), 15:;, |}];
+  print ~debuginfo:false ~compact:false ~report:true {|
+    a-->a
+    |};
+  [%expect {| a-- > a; |}]
