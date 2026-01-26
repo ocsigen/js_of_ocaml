@@ -97,9 +97,12 @@ module type S = sig
   module Type : sig
     val value : Wasm_ast.value_type
 
-    val func_type : int -> Wasm_ast.func_type
+    val func_type : ?ret:Wasm_ast.value_type -> int -> Wasm_ast.func_type
 
     val primitive_type : int -> Wasm_ast.func_type
+
+    val function_type :
+      cps:bool -> ?ret:Wasm_ast.value_type -> int -> Wasm_ast.var Code_generation.t
   end
 
   module Value : sig
