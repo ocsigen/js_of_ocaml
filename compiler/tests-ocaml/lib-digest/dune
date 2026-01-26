@@ -8,6 +8,8 @@
  (names digests)
  (libraries)
  (build_if
-  (>= %{ocaml_version} 5.2))
+  (and
+   (>= %{ocaml_version} 5.2)
+   (<> %{profile} wasi)))
  (modules digests)
  (modes js wasm))
