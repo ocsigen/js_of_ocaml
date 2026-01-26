@@ -9,6 +9,8 @@
 * Compiler: reference unboxing (#1958)
 * Compiler: js-parser: support import/export with attributes
 * Compiler: js-parser: support 'using X = E' for resource management (#2143)
+* Compiler: js-parser: support decorators
+* Compiler: js-parser: support html-comments
 * Runtime: improved handling of NaNs (#2110)
 * Lib: allow to reference values from the runtime (#2086)
 
