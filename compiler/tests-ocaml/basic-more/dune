@@ -4,7 +4,6 @@
   div_by_zero
   function_in_ref
   if_in_if
-  labels_evaluation_order
   morematch
   opaque_prim
   pr10294
@@ -23,4 +22,13 @@
  (libraries ocaml_testing)
  (build_if
   (>= %{ocaml_version} 5.2))
+ (modes js wasm))
+
+(tests
+ (names labels_evaluation_order)
+ (libraries ocaml_testing)
+ (build_if
+  (and
+   (>= %{ocaml_version} 5.2)
+   (not %{oxcaml_supported})))
  (modes js wasm))

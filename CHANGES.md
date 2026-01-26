@@ -13,6 +13,7 @@
 * Compiler: js-parser: support html-comments
 * Runtime: improved handling of NaNs (#2110)
 * Lib: allow to reference values from the runtime (#2086)
+* Runtime/wasm: provide access to JavaScript eval function (#2108)
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)
@@ -24,6 +25,7 @@
 * Runtime: runtime with target-env=browser should not rely on "require(..)" (#2129)
 * Runtime: fix fake filesystem with path containing special regexp chars. (#2132)
 * Runtime/wasm: fix unmarshalling of compressed data (#2141)
+* Wasm: fix Js.eval_string (#2108)
 
 # 6.2.0 (2025-07-30) - Lille
 

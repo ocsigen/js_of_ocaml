@@ -300,3 +300,11 @@ function caml_is_printable(c) {
 function caml_maybe_print_stats(_unit) {
   return 0;
 }
+
+//Provides: caml_with_async_exns
+//Requires: caml_callback
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_with_async_exns(body_callback) {
+  return caml_callback(body_callback, [0]);
+}

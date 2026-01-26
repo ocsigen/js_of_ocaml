@@ -12,11 +12,11 @@ homepage: "https://ocsigen.org/js_of_ocaml/latest/manual/overview"
 doc: "https://ocsigen.org/js_of_ocaml/latest/manual/overview"
 bug-reports: "https://github.com/ocsigen/js_of_ocaml/issues"
 depends: [
-  "dune" {>= "3.19"}
+  "dune" {>= "3.20"}
   "ocaml" {>= "4.13" & < "5.5"}
   "num" {with-test}
   "ppx_expect" {>= "v0.16.1" & with-test}
-  "ppxlib" {>= "0.35"}
+  "ppxlib" {>= "0.33"}
   "ocaml-compiler-libs" {>= "v0.12.4"}
   "re" {with-test}
   "cmdliner" {>= "2.0"}

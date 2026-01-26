@@ -1,0 +1,5 @@
+(tests
+ (names test more_tests)
+ (build_if %{oxcaml_supported})
+ (libraries stdlib_stable)
+ (modes js wasm))
