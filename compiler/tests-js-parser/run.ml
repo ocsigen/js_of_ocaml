@@ -15,7 +15,7 @@ let progress = ref false
 
 let verbose = ref false
 
-let flags, files =
+let flags, roots =
   Sys.argv
   |> Array.to_list
   |> List.tl
@@ -31,7 +31,7 @@ let rec ls_files path =
   | { st_kind = S_CHR | S_BLK | S_LNK | S_FIFO | S_SOCK; _ } -> []
 
 let files =
-  List.concat_map files ~f:(fun path ->
+  List.concat_map roots ~f:(fun path ->
       let l = ls_files path in
       List.filter l ~f:(fun name -> Filename.check_suffix name ".js"))
 
@@ -235,8 +235,10 @@ let to_file p =
   close_out oc;
   f
 
-let patdiff p1 p2 =
-  ignore (Sys.command (Printf.sprintf "patdiff %s %s" (to_file p1) (to_file p2)));
+let diff p1 p2 =
+  ignore
+    (Sys.command
+       (Printf.sprintf "git diff --no-index -- %s %s" (to_file p1) (to_file p2)));
   flush_all ()
 
 let print_loc_error (pi : Parse_info.t) c =
@@ -260,7 +262,7 @@ let () =
   let flags_r = Str.regexp {|flags: ?\[\([a-zA-Z. ,-]*\)\]|} in
   let total = List.length files in
   let () =
-    if not (accepted_by_node ~debug:true "./simple.js")
+    if not (accepted_by_node ~debug:false "./simple.js")
     then
       failwith
         (Printf.sprintf
@@ -304,7 +306,7 @@ let () =
       | `Unsupported _ -> unsupported := (filename, content) :: !unsupported
       | `Ok -> (
           try
-            let (p1, toks1), mode =
+            match
               try
                 let lex =
                   Parse_js.Lexer.of_string
@@ -322,45 +324,46 @@ let () =
                     content
                 in
                 Parse_js.parse' lex `Script, `Script
-            in
-            let p1 = List.concat_map p1 ~f:snd in
-            match List.rev !errors with
-            | [] -> (
-                let s = p_to_string p1 in
-                try
-                  let p2, toks2 =
-                    let lex =
-                      Parse_js.Lexer.of_string
-                        ~report_error:(fun e -> errors := e :: !errors)
-                        ~filename
-                        s
-                    in
-                    Parse_js.parse' lex mode
-                  in
-                  let p2 = List.concat_map p2 ~f:snd in
-                  match
-                    ( Poly.equal (clean_loc (normalize p1)) (clean_loc (normalize p2))
-                    , check_toks toks1 [] toks2 [] )
-                  with
-                  | true, Error s when false ->
-                      fail := (Tok_missmatch s, filename) :: !fail
-                  | true, _ -> add pass
-                  | false, _ -> fail := (Diff (p1, p2), filename) :: !fail
-                with Parse_js.Parsing_error loc ->
-                  if not (accepted_by_node filename)
-                  then add unsupported
-                  else fail := (Print_parse (loc, s), filename) :: !fail)
-            | l ->
-                if accepted_by_node filename
-                then fail := (Parse_warning l, filename) :: !fail
-          with
-          | Parse_js.Parsing_error loc ->
-              if not (accepted_by_node filename)
-              then add unsupported
-              else fail := (Parse (loc, content), filename) :: !fail
-          | e ->
-              Printf.eprintf "Unexpected error %s\n%s\n" filename (Printexc.to_string e)));
+            with
+            | exception Parse_js.Parsing_error loc ->
+                if not (accepted_by_node filename)
+                then add unsupported
+                else fail := (Parse (loc, content), filename) :: !fail
+            | (p1, toks1), mode -> (
+                let p1 = List.concat_map p1 ~f:snd in
+                match List.rev !errors with
+                | [] -> (
+                    let s = p_to_string p1 in
+                    match
+                      let lex =
+                        Parse_js.Lexer.of_string
+                          ~report_error:(fun e -> errors := e :: !errors)
+                          ~filename
+                          s
+                      in
+                      Parse_js.parse' lex mode
+                    with
+                    | p2, toks2 -> (
+                        let p2 = List.concat_map p2 ~f:snd in
+                        match
+                          ( Poly.equal
+                              (clean_loc (normalize p1))
+                              (clean_loc (normalize p2))
+                          , check_toks toks1 [] toks2 [] )
+                        with
+                        | true, Error s when false ->
+                            fail := (Tok_missmatch s, filename) :: !fail
+                        | true, _ -> add pass
+                        | false, _ -> fail := (Diff (p1, p2), filename) :: !fail)
+                    | exception Parse_js.Parsing_error loc ->
+                        fail := (Print_parse (loc, s), filename) :: !fail)
+                | l ->
+                    if accepted_by_node filename
+                    then fail := (Parse_warning l, filename) :: !fail)
+          with e ->
+            Printf.eprintf "Unexpected error %s\n%s\n" filename (Printexc.to_string e)));
   Printf.printf "Summary:\n";
+  Printf.printf "  paths      : %s\n" (String.concat ~sep:", " roots);
   Printf.printf "  invalid    : %d\n" (List.length !negative);
   Printf.printf "  skip       : %d\n" (List.length !unsupported);
   Printf.printf "  fail       : %d\n" (List.length !fail);
@@ -386,7 +389,7 @@ let () =
             print_loc_error pi content
         | Diff (p1, p2) ->
             Printf.eprintf "<ERROR>: Diff: %s\n%!" f;
-            patdiff p1 p2
+            diff p1 p2
         | Parse_warning l ->
             Printf.eprintf "<ERROR>: Lexer warning: %s\n" f;
             List.iter l ~f:Parse_js.Lexer.print_error
