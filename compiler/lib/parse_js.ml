@@ -468,13 +468,6 @@ let rec offer_one t (lexbuf : Lexer.t) =
                that a virtual semicolon is acceptable. *)
             Lexer.rollback lexbuf;
             semicolon, dummy_loc
-        (* The practical effect of these restricted productions is as follows:
-         * When a ++ or -- token is encountered where the parser would treat it
-         * as a postfix operator, and at least one LineTerminator occurred between
-         * the preceding token and the ++ or -- token, then a semicolon is automatically
-         * inserted before the ++ or -- token. *)
-        | _, T_DECR when not (nl_separated h loc) -> Js_token.T_DECR_NB, loc
-        | _, T_INCR when not (nl_separated h loc) -> Js_token.T_INCR_NB, loc
         | _, ((T_DIV | T_DIV_ASSIGN) as tok) ->
             if acceptable t tok
             then tok, loc

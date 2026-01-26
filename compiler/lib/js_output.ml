@@ -2159,6 +2159,9 @@ let need_space a b =
   (* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
   | '-', '-'
   | '+', '+' -> true
+  (* never emit html comments <!-- or --> *)
+  | '-', '>' -> true
+  | '<', '!' -> true
   | _, _ -> false
 
 let hashtbl_to_list htb =
