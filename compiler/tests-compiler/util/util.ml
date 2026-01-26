@@ -157,7 +157,7 @@ end
 let parse_js file =
   let content = file |> Filetype.read_js |> Filetype.string_of_js_text in
   let filename = Filetype.path_of_js_file file in
-  try Jsoo.Parse_js.Lexer.of_string ~filename content |> Jsoo.Parse_js.parse
+  try Jsoo.Parse_js.Lexer.of_string ~filename content |> Jsoo.Parse_js.parse `Module
   with Jsoo.Parse_js.Parsing_error pi as e ->
     Printf.eprintf "failed to parse %s:%d:%d\n%s\n" filename pi.line pi.col content;
     raise e

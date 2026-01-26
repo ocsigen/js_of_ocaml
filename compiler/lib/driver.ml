@@ -636,7 +636,7 @@ if (typeof module === 'object' && module.exports) {
               name
           in
           let lex = Parse_js.Lexer.of_string s in
-          Parse_js.parse lex
+          Parse_js.parse `Script lex
         in
         js @ export_node
     | `Anonymous, _ -> js
@@ -663,7 +663,7 @@ if (typeof module === 'object' && module.exports) {
 |}
           in
           let lex = Parse_js.Lexer.of_string s in
-          Parse_js.parse lex
+          Parse_js.parse `Script lex
         in
         e @ js
   in

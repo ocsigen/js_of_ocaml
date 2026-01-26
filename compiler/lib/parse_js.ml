@@ -675,17 +675,13 @@ let fail_early =
 
 let check_program p = List.iter p ~f:(function _, p -> fail_early#program [ p ])
 
-let parse' lex script_or_module =
+let parse' script_or_module lex =
   let p, toks =
-    parse_aux
-      Js_parser.Incremental.program
-      { yield = false
-      ; await =
-          (match script_or_module with
-          | `Script -> false
-          | `Module -> true)
-      }
-      lex
+    match script_or_module with
+    | `Script ->
+        parse_aux Js_parser.Incremental.script { yield = false; await = false } lex
+    | `Module ->
+        parse_aux Js_parser.Incremental.module_ { yield = false; await = true } lex
   in
   check_program p;
   let toks = State.all_tokens toks in
@@ -720,9 +716,13 @@ let parse' lex script_or_module =
   in
   p, toks
 
-let parse lex =
+let parse script_or_module lex =
   let p, _ =
-    parse_aux Js_parser.Incremental.program { yield = false; await = true } lex
+    match script_or_module with
+    | `Script ->
+        parse_aux Js_parser.Incremental.script { yield = false; await = false } lex
+    | `Module ->
+        parse_aux Js_parser.Incremental.module_ { yield = false; await = true } lex
   in
   check_program p;
   List.map p ~f:(fun (_, x) -> x)

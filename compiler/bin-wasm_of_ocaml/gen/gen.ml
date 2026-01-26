@@ -52,7 +52,7 @@ let check_js_file fname =
   Warning.enable `Unused_js_variable;
   let c = Fs.read_file fname in
   let p =
-    try Parse_js.parse (Parse_js.Lexer.of_string ~filename:fname c)
+    try Parse_js.parse `Script (Parse_js.Lexer.of_string ~filename:fname c)
     with Parse_js.Parsing_error pi ->
       failwith (Printf.sprintf "cannot parse file %S (l:%d, c:%d)@." fname pi.line pi.col)
   in

@@ -256,7 +256,7 @@ module Fragment = struct
 
   let parse_from_lex ~filename lex =
     let program, _ =
-      try Parse_js.parse' lex `Script
+      try Parse_js.parse' `Script lex
       with Parse_js.Parsing_error pi ->
         let name =
           match pi with
