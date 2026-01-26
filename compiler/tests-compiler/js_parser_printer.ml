@@ -672,22 +672,23 @@ class x extends p {
   [%expect
     {|
     class x extends p {
-       constructor(){ /*<<fake:4:6>>*/ super(a, b, c); /*<<fake:3:4>>*/ }
-       foo(){
-        var s =  /*<<fake:8:12>>*/ super[d];
-        var s =  /*<<fake:9:12>>*/ super.d;
-        /*<<fake:6:4>>*/ }
-       static
-       bar(){
-        var s =  /*<<fake:14:12>>*/ super[d];
-        var s =  /*<<fake:15:12>>*/ super.d;
-        /*<<fake:12:11>>*/ }
-       x =  /*<<fake:17:5>>*/ 3;
-       static y =  /*<<fake:19:12>>*/ 5;
-       #z =  /*<<fake:21:6>>*/ 6;
-       static #t =  /*<<fake:23:13>>*/ 2;
-       static {var x =  /*<<fake:25:18>>*/ 3;}
-     } |}]
+      constructor(){ /*<<fake:4:6>>*/ super(a, b, c); /*<<fake:3:4>>*/ }
+      foo(){
+       var s =  /*<<fake:8:12>>*/ super[d];
+       var s =  /*<<fake:9:12>>*/ super.d;
+       /*<<fake:6:4>>*/ }
+      static
+      bar(){
+       var s =  /*<<fake:14:12>>*/ super[d];
+       var s =  /*<<fake:15:12>>*/ super.d;
+       /*<<fake:12:11>>*/ }
+      x =  /*<<fake:17:5>>*/ 3;
+      static y =  /*<<fake:19:12>>*/ 5;
+      #z =  /*<<fake:21:6>>*/ 6;
+      static #t =  /*<<fake:23:13>>*/ 2;
+      static {var x =  /*<<fake:25:18>>*/ 3;}
+    }
+    |}]
 
 let%expect_test "ite" =
   print
