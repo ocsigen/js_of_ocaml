@@ -1350,28 +1350,33 @@ struct
 
   and variable_declaration_kind f kind =
     match kind with
-    | Var -> PP.string f "var"
-    | Let -> PP.string f "let"
-    | Const -> PP.string f "const"
-    | Using -> PP.string f "using"
+    | Var ->
+        PP.string f "var";
+        PP.space f
+    | Let ->
+        PP.string f "let";
+        PP.space f
+    | Const ->
+        PP.string f "const";
+        PP.space f
+    | Using ->
+        PP.string f "using";
+        PP.non_breaking_space f
     | AwaitUsing ->
-        PP.string f "await";
-        PP.space f;
-        PP.string f "using"
+        PP.string f "await using";
+        PP.non_breaking_space f
 
   and variable_declaration_list ?in_ kind close f = function
     | [] -> ()
     | [ x ] ->
         PP.start_group f 1;
         variable_declaration_kind f kind;
-        PP.space f;
         variable_declaration f ?in_ x;
         if close then PP.string f ";";
         PP.end_group f
     | l ->
         PP.start_group f 1;
         variable_declaration_kind f kind;
-        PP.space f;
         variable_declaration_list_aux f ?in_ l;
         if close then PP.string f ";";
         PP.end_group f
@@ -1403,7 +1408,6 @@ struct
 
   and for_binding f k v =
     variable_declaration_kind f k;
-    PP.space f;
     binding f v
 
   and statement1 ?last f s =
