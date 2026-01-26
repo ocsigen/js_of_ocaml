@@ -164,6 +164,7 @@ let accepted_by_node ?(debug = false) file =
   | WSIGNALED _ | WSTOPPED _ -> assert false
 
 let should_ignore_feature = function
+  | "import-source" -> true
   | _ -> false
 
 let should_ignore_flag = function
@@ -260,6 +261,7 @@ let () =
   let negative_r = Str.regexp_string "negative:" in
   let features_r = Str.regexp {|features: ?\[\([a-zA-Z. ,-]*\)\]|} in
   let flags_r = Str.regexp {|flags: ?\[\([a-zA-Z. ,-]*\)\]|} in
+  let import_source_r = Str.regexp {|import source|} in
   let total = List.length files in
   let () =
     if not (accepted_by_node ~debug:false "./simple.js")
@@ -294,6 +296,11 @@ let () =
                   |> List.map ~f:String.trim
               | exception Not_found -> []
             in
+            let features =
+              match Str.search_forward import_source_r content 0 with
+              | exception Not_found -> features
+              | _ -> "import-source" :: features
+            in
             match List.find_opt ~f:should_ignore_feature features with
             | Some f -> `Unsupported f
             | None -> (
@@ -326,7 +333,9 @@ let () =
                 Parse_js.parse' lex `Script, `Script
             with
             | exception Parse_js.Parsing_error loc ->
-                if not (accepted_by_node filename)
+                if
+                  String.starts_with ~prefix:"syntax-error" (Filename.basename filename)
+                  || ((not (accepted_by_node filename)) && false)
                 then add unsupported
                 else fail := (Parse (loc, content), filename) :: !fail
             | (p1, toks1), mode -> (
@@ -357,9 +366,7 @@ let () =
                         | false, _ -> fail := (Diff (p1, p2), filename) :: !fail)
                     | exception Parse_js.Parsing_error loc ->
                         fail := (Print_parse (loc, s), filename) :: !fail)
-                | l ->
-                    if accepted_by_node filename
-                    then fail := (Parse_warning l, filename) :: !fail)
+                | l -> fail := (Parse_warning l, filename) :: !fail)
           with e ->
             Printf.eprintf "Unexpected error %s\n%s\n" filename (Printexc.to_string e)));
   Printf.printf "Summary:\n";
