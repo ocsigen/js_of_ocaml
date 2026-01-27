@@ -13,6 +13,8 @@
 * Compiler: js-parser: support html-comments
 * Runtime: improved handling of NaNs (#2110)
 * Lib: allow to reference values from the runtime (#2086)
+* Runtime/wasm: faster copy between a Wasm string and an JavaScript array buffer (#2124)
+* Runtime/wasm: faster conversion of small JavaScript strings to Wasm (#2124)
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)

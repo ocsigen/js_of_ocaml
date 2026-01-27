@@ -35,6 +35,12 @@
       (func $caml_ba_get_view (param (ref eq)) (result (ref extern))))
    (import "bigarray" "caml_ba_num_elts"
       (func $caml_ba_num_elts (param (ref eq)) (result i32)))
+   (import "bigarray" "caml_blit_dataview_to_bytes"
+      (func $caml_blit_dataview_to_bytes
+         (param (ref extern) i32 (ref $bytes) i32 i32)))
+   (import "bigarray" "caml_blit_bytes_to_dataview"
+      (func $caml_blit_bytes_to_dataview
+         (param (ref $bytes) i32 (ref extern) i32 i32)))
    (import "bindings" "ta_create"
       (func $ta_create (param i32) (param anyref) (result anyref)))
    (import "bindings" "dv_get_i32"
@@ -50,14 +56,6 @@
       (func $ta_set (param (ref extern)) (param (ref extern)) (param i32)))
    (import "bindings" "ta_bytes"
       (func $ta_bytes (param anyref) (result anyref)))
-   (import "bindings" "ta_blit_from_bytes"
-      (func $ta_blit_from_bytes
-         (param (ref $bytes)) (param i32) (param (ref extern)) (param i32)
-         (param i32)))
-   (import "bindings" "ta_blit_to_bytes"
-      (func $ta_blit_to_bytes
-         (param (ref extern)) (param i32) (param (ref $bytes)) (param i32)
-         (param i32)))
    (import "hash" "caml_hash_mix_int"
       (func $caml_hash_mix_int (param i32) (param i32) (result i32)))
 
@@ -284,10 +282,10 @@
       (local $d2 (ref extern))
       (local.set $s1 (ref.cast (ref $bytes) (local.get $str1)))
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
-      (local.set $d2 (call $caml_ba_get_data (local.get $ba2)))
+      (local.set $d2 (call $caml_ba_get_view (local.get $ba2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (call $ta_blit_from_bytes
+      (call $caml_blit_bytes_to_dataview
          (local.get $s1) (local.get $pos1)
          (local.get $d2) (local.get $pos2)
          (local.get $len))
@@ -300,12 +298,12 @@
       (local $pos1 i32) (local $pos2 i32) (local $len i32)
       (local $d1 (ref extern))
       (local $s2 (ref $bytes))
-      (local.set $d1 (call $caml_ba_get_data (local.get $ba1)))
+      (local.set $d1 (call $caml_ba_get_view (local.get $ba1)))
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
       (local.set $s2 (ref.cast (ref $bytes) (local.get $str2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
-      (call $ta_blit_to_bytes
+      (call $caml_blit_dataview_to_bytes
          (local.get $d1) (local.get $pos1)
          (local.get $s2) (local.get $pos2)
          (local.get $len))
