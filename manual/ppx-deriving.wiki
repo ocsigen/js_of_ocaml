@@ -1,56 +1,61 @@
-= Ppx deriver for serializing OCaml values to Json
+= JSON derivation
 
-The deriver is provided by the js_of_ocaml-ppx_deriving_json opam package.
+The {{{js_of_ocaml-ppx_deriving_json}}} package provides a PPX deriver for
+serializing OCaml values to JSON.
 
-The serialisation format follows js_of_ocaml's internal memory
-representation of OCaml values. It is not meant to be used to interact
-with 3rd party system.  In practice, it can be used to exchange data
-between a js_of_ocaml program and a server side OCaml application.
+**Important**: The serialization format follows js_of_ocaml's
+<<a_manual chapter="runtime-representation"|internal representation>>.
+It is designed for communication between a js_of_ocaml program and a server-side
+OCaml application, not for interacting with third-party APIs.
 
-The serialisation format allows a js_of_ocaml program to encode/decode
-OCaml value efficiently by leveraging JavaScript native Json
-support. See [Js_of_ocaml.Json.output] and [Js_of_ocaml.Json.output].
+==@@id="installation"@@ Installation
 
-== Syntax
+{{{
+opam install js_of_ocaml-ppx_deriving_json
+}}}
 
-=== Generate serialisation from type definitions
+==@@id="usage"@@ Usage
 
-One can derive serialisation functions from type definitions using
-the {{{[@@deriving ..]}}} attribute.
-
-Note that for types named [t], we omit the "t_" prefix when naming
-generated functions.
+Add {{{[@@deriving json]}}} to your type definitions:
 
 <<code language="ocaml"|
-
-type t = A | B
+type person = {
+  name : string;
+  age : int;
+}
 [@@deriving json]
 
-val of_json : Deriving_Json_lexer.lexbuf -> t = <fun>
-val to_json : Buffer.t -> t -> unit = <fun>
-val json : t Deriving_Json.t = <abstr>
+(* Serialize to JSON *)
+let json_str = person_to_json { name = "Alice"; age = 30 }
 
-
-type u = A | B
-[@@deriving json]
-
-val u_of_json : Deriving_Json_lexer.lexbuf -> t = <fun>
-val u_to_json : Buffer.t -> t -> unit = <fun>
-val u_json : t Deriving_Json.t = <abstr>
-
+(* Deserialize from JSON *)
+let alice = person_of_json json_str
 >>
 
-=== Generate serialisation from types
+The {{{[@@deriving json]}}} attribute generates:
+* {{{person_of_json}}} — deserialize from JSON
+* {{{person_to_json}}} — serialize to JSON
+* {{{person_json}}} — a {{{Deriving_Json.t}}} witness
 
-One can generate an expression to serialise/deserialise value of an arbitrary type
-with the following syntax:
+**Note**: For types named {{{t}}}, the prefix is omitted (e.g., {{{of_json}}} instead of {{{t_of_json}}}).
+
+The {{{[%to_json: type]}}} and {{{[%of_json: type]}}} syntax also works with any type expression:
 
 <<code language="ocaml"|
-
-let (_ : t Deriving_json.t) = [%json: t]
-
-let (_ : string -> t) = [%of_json: t]
-
-let (_ : t -> string) = [%to_json: t]
-
+let json = [%to_json: int list] [1; 2; 3]
+let nums = [%of_json: int list] json
 >>
+
+==@@id="supported-types"@@ Supported types
+
+The deriver supports:
+* Basic types: {{{int}}}, {{{float}}}, {{{string}}}, {{{bool}}}
+* Options: {{{'a option}}}
+* Lists and arrays: {{{'a list}}}, {{{'a array}}}
+* Records and variants
+* Polymorphic variants
+* Recursive types
+
+== See also
+
+* <<a_manual chapter="javascript-interop" fragment="json"|JSON serialization>> — Direct JSON output

@@ -1,27 +1,40 @@
-== Effect handlers ==
+= Effect handlers
 
-Js_of_ocaml supports effect handlers with the {{{--enable=effects}}}
-flag. This is based on partially transforming the program to
-continuation-passing style.
-As a consequence, [[tailcall|tail calls]] could be fully optimized (if CPS transformed).
-This is not the default for now since the generated code can be slower,
-larger and less readable.
-The transformation is based on an analysis to detect parts of the code that cannot involve effects and keep it in direct style.
-The analysis is especially effective on monomorphic code. It is not so effective when higher-order functions are heavily used ({{{Lwt}}}, {{{Async}}}, {{{incremental}}}).
-We hope to improve on this by trying alternative compilation
-strategies.
+Js_of_ocaml supports effect handlers with the {{{--effects=cps}}} flag.
+This is based on partially transforming the program to continuation-passing style.
+As a consequence, <<a_manual chapter="tailcall"|tail calls>> can be fully optimized
+(when CPS transformed).
 
-An alternative CPS transform is provided under the {{{--effects=double-translation}}} option. It keeps a direct-style version of the transformed functions in addition to the CPS version. The choice of running the CPS version is delayed to run time. Since CPS code is usually slower, this can avoid degradations. In addition, one can ensure that some code is run in direct style by using {{{Jsoo_runtime.Effect.assume_no_perform}}}.
+This is not the default because the generated code can be slower, larger, and
+less readable. The transformation uses an analysis to detect parts of the code
+that cannot involve effects and keeps them in direct style. The analysis is
+especially effective on monomorphic code but less effective when higher-order
+functions are heavily used ({{{Lwt}}}, {{{Async}}}, {{{Incremental}}}).
 
-=== Dune integration ===
+==@@id="double-translation"@@ Double translation mode
 
-Dune is aware of the {{{--enable effects}}} option. So, you can just add it to the Js_of_ocaml flags {{{(js_of_ocaml (flags ...))}}} wherever you want to use it.
+An alternative CPS transform is provided with {{{--effects=double-translation}}}.
+It keeps a direct-style version of the transformed functions in addition to the
+CPS version. The choice of running the CPS version is delayed to run time.
 
-We're still working on dune support for the {{{--effects}}} option. For now, here are two possible setups.
+Since CPS code is usually slower, this can avoid performance degradations. You can
+also ensure that some code runs in direct style using
+<<a_api subproject="js_of_ocaml"|val Jsoo_runtime.Effect.assume_no_perform>>.
 
-=== Whole dune workspace setup ===
+==@@id="dune"@@ Dune integration
 
-Put the following in a {{{dune}}} (or {{{dune-workspace}}}) file at the root of the workspace
+Dune is aware of the {{{--effects}}} option. You can add it to the
+js_of_ocaml flags wherever you want to use it:
+
+{{{
+(js_of_ocaml (flags ...))
+}}}
+
+=== Whole workspace setup
+
+To enable effects for the entire workspace, add this to a {{{dune}}} or
+{{{dune-workspace}}} file at the root:
+
 {{{
 (env
  (_
@@ -30,25 +43,20 @@ Put the following in a {{{dune}}} (or {{{dune-workspace}}}) file at the root of 
    (build_runtime_flags (:standard --effects=double-translation)))))
 }}}
 
-With this setup, one can use both separate and whole program compilation.
+This setup supports both separate and whole program compilation.
 
+=== Per-executable setup
 
-=== Sub directory setup ===
+To enable effect handlers for specific executables:
 
-If you want to enable effect handlers for some binaries only, you'll
-have to give up separate compilation for now using:
 {{{
 (executable
-  (name main)
-  (js_of_ocaml
-   (compilation_mode whole_program)
-   (flags (:standard --effects=double-translation)))
-)
+ (name main)
+ (js_of_ocaml
+  (flags (:standard --effects=double-translation))))
 }}}
 
-Trying to use separate compilation would result in an error while attempting to link the final js file.
-{{{
-js_of_ocaml: Error: Incompatible build info detected while linking.
- - test6.bc.runtime.js: effects=disabled
- - .cmphash.eobjs/byte/dune__exe.cmo.js: effects=double-translation
-}}}
+== See also
+
+* <<a_manual chapter="options" fragment="effects"|Command line options>> - Full list of {{{--effects}}} modes
+* <<a_manual chapter="tailcall"|Tailcall optimization>> - How tail calls interact with effects

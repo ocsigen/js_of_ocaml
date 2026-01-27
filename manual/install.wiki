@@ -1,31 +1,64 @@
-= Installation =
-== Requirements =
-* dune
-* Cmdliner, ppxlib
+= Installation
 
-See opam files at the root of the repository for version constraints.
+==@@id="requirements"@@ Requirements
 
-Optional dependencies:
-  * tyxml, see https://github.com/ocsigen/tyxml
-  * reactiveData, see https://github.com/ocsigen/reactiveData
-  * yojson, see https://github.com/ocaml-community/yojson
+**OCaml**: 4.13 to 5.4
 
-== Install from opam
-{{{opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt}}}
+**Build tools**:
+* dune >= 3.19
+* menhir
 
-== Build and install from source
+**Libraries**:
+* cmdliner >= 2.0
+* ppxlib >= 0.35
+* sedlex >= 3.3
+* yojson >= 2.1
+
+==@@id="supported-environments"@@ Supported environments
+
+The generated JavaScript works with:
+* Node.js 16 or later
+* Any modern browser supporting ECMAScript 6 (ES2015)
+
+**Note**: {{{Stdlib.Weak}}} and {{{Stdlib.Ephemeron}}} require {{{WeakRef}}} support (ECMAScript 2021), available in all modern browsers and Node.js 14.6+.
+
+==@@id="opam"@@ Install from opam
+
+=== Basic installation
+
+For most users, install the compiler and ppx:
 {{{
-make
+opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx
 }}}
+
+=== With Lwt support
+
+For asynchronous programming with Lwt:
 {{{
-opam-installer js_of_ocaml-compiler
+opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx js_of_ocaml-lwt
 }}}
+
+=== All packages
+
+To install all available packages:
 {{{
-opam-installer js_of_ocaml
+opam install js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ppx \
+  js_of_ocaml-lwt js_of_ocaml-tyxml js_of_ocaml-toplevel \
+  js_of_ocaml-ppx_deriving_json
 }}}
+
+=== WebAssembly compiler
+
+To compile to WebAssembly instead of JavaScript:
 {{{
-opam-installer js_of_ocaml-ppx
+opam install wasm_of_ocaml-compiler
 }}}
-{{{
-opam-installer js_of_ocaml-lwt
-}}}
+
+**Additional requirement**: Binaryen 119 or later must be installed on your system. See [[https://github.com/WebAssembly/binaryen|Binaryen installation]].
+
+See <<a_manual chapter="wasm_overview"|wasm_of_ocaml>> for usage.
+
+== See also
+
+* <<a_manual chapter="quickstart"|Quick start>> — Get started with a simple example
+* <<a_manual chapter="overview"|Overview>> — Learn what js_of_ocaml can do

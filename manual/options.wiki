@@ -1,50 +1,244 @@
-= Main Command-Line options
+= Command-line options
 
-|= Option name               |= Description                           |
-| {{{--version}}}            | Display the version of the compiler    |
-| {{{-o <file>}}}            | Set the output filename to <file>      |
-| {{{--source-map}}}         | Generate sourcemap                     |
-| {{{--opt {1,2,3} }}}       | Set the compilation profile
-                               (default 1). See **Optimization**
-                                section below.                        |
-| {{{--pretty}}}             | Pretty print javascript output         |
-| {{{--target-env}}}         | Build javascript for the requested
-                               environment (default {{{isomorphic}}}).
-                               Isomorphic javascript runs in both the
-                               browser & nodejs. {{{nodejs}}} & {{{browser}}}
-                               options bundle less javascript, but
-                               drop support for APIs incompatible with
-                               the selected runtime.                  |
-| {{{--no-inline}}}          | Disable code inlining                  |
-| {{{--debug-info}}}         | Output debug information               |
-| {{{-I dir}}}               | Add <dir> to the list of
-                               include directories                    |
-| {{{--file file[:target]}}} | Register <file> to the pseudo filesystem
-                               and choose the destination <target>. The
-                               <target> can be a directory or a file
-                               (default /static/)                     |
-| {{{--enable <option>}}}    | Enable option <option>                 |
-| {{{--disable <option>}}}   | Disable option <option>                |
+This page documents the command-line options for the {{{js_of_ocaml}}} compiler.
 
-=Optimizations
- * For Debugging: {{{--pretty --no-inline --debug-info}}} + eventually {{{--disable staticeval --disable share}}}
- * For Production: {{{--opt 3}}}. It minimizes the generated javascript by applying
-   various optimizations until a fix-point is reached
-==List of options to {{{--disable}}} or {{{--enable}}}
+==@@id="general"@@ General options
 
-|= Option name   |= Default |= Description                           |
-| pretty         | false    | Pretty print the javascript output     |
-| effects        | false    | Enable support for effect handlers     |
-| debuginfo      | false    | Output debug information (location)    |
-| deadcode       | true     | Deadcode elimination                   |
-| globaldeadcode | true     | Global deadcode elimination            |
-| inline         | true     | Code inlining                          |
-| shortvar       | true     | Shorten variable names                 |
-| staticeval     | true     | Static evaluation of constants         |
-| share          | true     | Share string and number constants      |
-| strict         | true     | Enable strict mode                     |
-| debugger       | true     | Keep debugger statements.
-                              Stripped otherwise                     |
-| genprim        | true     | Generate dummy primitives when missing |
-| excwrap        | true     | Wrap js exception into ocaml ones      |
-| optcall        | true     | Javascript optimizations               |
+|= Option |= Description |
+| {{{--version}}} | Display the compiler version |
+| {{{-o <file>}}} | Set output filename |
+| {{{--opt {1,2,3}}}} | Set optimization profile (default: 1). See [[#optimizations|Optimizations]] |
+| {{{--enable <opt>}}} | Enable option. See [[#enable-disable|Enable/Disable options]] |
+| {{{--disable <opt>}}} | Disable option. See [[#enable-disable|Enable/Disable options]] |
+| {{{-I <dir>}}} | Add directory to the list of include directories |
+
+==@@id="debugging"@@ Debugging
+
+|= Option |= Description |
+| {{{--pretty}}} | Pretty print JavaScript output, preserve OCaml variable names |
+| {{{--no-inline}}} | Disable code inlining |
+| {{{--debug-info}}} | Output debug information (source locations) |
+| {{{--source-map}}} | Generate source map. See [[#source-maps|Source maps]] |
+
+==@@id="target-env"@@ Target environment
+
+|= Option |= Description |
+| {{{--target-env <env>}}} | Build for target environment (default: {{{isomorphic}}}) |
+
+Possible values:
+* **{{{isomorphic}}}** - Runs in both browser and Node.js (default)
+* **{{{browser}}}** - Browser-specific, smaller output
+* **{{{nodejs}}}** - Node.js-specific, smaller output
+
+==@@id="effects"@@ Effect handlers
+
+|= Option |= Description |
+| {{{--effects <mode>}}} | Select effect handler implementation (default: {{{disabled}}}) |
+
+Possible values:
+* **{{{disabled}}}** - No effect handler support (default)
+* **{{{cps}}}** - CPS transformation for effect support
+* **{{{double-translation}}}** - Keep both direct and CPS versions; choose at runtime
+
+See <<a_manual chapter="effects"|Effect handlers>> for details.
+
+==@@id="source-maps"@@ Source maps
+
+|= Option |= Description |
+| {{{--source-map}}} | Generate source map (separate file) |
+| {{{--no-source-map}}} | Don't generate source map |
+| {{{--source-map-inline}}} | Inline source map in the JavaScript output |
+| {{{--source-map-no-source}}} | Don't embed source code in source map |
+| {{{--source-map-root <dir>}}} | Set root directory for source map paths |
+
+==@@id="pseudo-fs"@@ Pseudo filesystem
+
+Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime.
+
+|= Option |= Description |
+| {{{--file <file>[:<target>]}}} | Register file to pseudo filesystem (default target: {{{/static/}}}) |
+| {{{--ofs <file>}}} | Write filesystem data to separate file |
+| {{{--extern-fs}}} | Allow registering files from outside at runtime (default) |
+| {{{--no-extern-fs}}} | Only allow files embedded at compile time |
+
+==@@id="env-vars"@@ Environment variables
+
+|= Option |= Description |
+| {{{--setenv <VAR>=<value>}}} | Set environment variable at compile time |
+
+=== Resolution order
+
+When OCaml code calls {{{Sys.getenv}}}, js_of_ocaml resolves variables in this order:
+
+# If the variable was set at compile time with {{{--setenv VAR=value}}}, return it
+# If running in Node.js, check {{{process.env}}}
+# Check {{{globalThis.jsoo_env}}} (useful for setting variables in browsers)
+# Raise {{{Not_found}}}
+
+=== Browser example
+
+<<code language="javascript"|
+// Set environment variables before loading the OCaml program
+globalThis.jsoo_env = {
+  DEBUG: "true",
+  API_URL: "https://api.example.com"
+};
+>>
+
+==@@id="toplevel"@@ Toplevel and dynamic linking
+
+|= Option |= Description |
+| {{{--toplevel}}} | Compile an OCaml toplevel (embeds necessary .cmi files) |
+| {{{--no-cmis}}} | Don't include .cmi files in toplevel |
+| {{{--dynlink}}} | Enable dynamic linking of bytecode |
+| {{{--export <file>}}} | File listing units to export for toplevel/dynlink |
+| {{{--linkall}}} | Link all compilation units and primitives |
+
+See <<a_manual chapter="build-toplevel"|Building a toplevel>> for details.
+
+==@@id="compilation-modes"@@ Compilation modes
+
+|= Option |= Description |
+| {{{--noruntime}}} | Don't include the standard runtime |
+| {{{--include-runtime}}} | Include partial runtime when compiling .cmo/.cma |
+| {{{--keep-unit-names}}} | Preserve unit names (for separate compilation) |
+| {{{--wrap-with-fun[=<name>]}}} | Wrap output in a function (default: IIFE) |
+| {{{--custom-header <text>}}} | Add custom header (e.g., {{{#!/usr/bin/env node}}}) |
+
+See <<a_manual chapter="compilation-modes"|Compilation modes>> for details.
+
+==@@id="optimizations"@@ Optimizations
+
+=== Optimization profiles
+
+Use {{{--opt <level>}}} to select a profile:
+
+* **{{{--opt 1}}}** - Basic optimizations (default)
+* **{{{--opt 2}}}** - Standard optimizations
+* **{{{--opt 3}}}** - Maximum optimizations (iterates until fix-point)
+
+=== Recommended settings
+
+For debugging:
+{{{
+js_of_ocaml --pretty --no-inline program.byte
+}}}
+
+For production:
+{{{
+js_of_ocaml --opt 3 program.byte
+}}}
+
+==@@id="enable-disable"@@ Enable/Disable options
+
+Use {{{--enable <opt>}}} or {{{--disable <opt>}}} to control these flags:
+
+=== Output formatting
+
+|= Option |= Default |= Description |
+| {{{pretty}}} | false | Pretty print JavaScript output |
+| {{{shortvar}}} | true | Use short variable names |
+| {{{strict}}} | true | Generate "use strict" |
+| {{{header}}} | true | Include compiler version header |
+| {{{es6}}} | false | Generate ES6 syntax |
+
+=== Optimizations
+
+|= Option |= Default |= Description |
+| {{{deadcode}}} | true | Dead code elimination |
+| {{{globaldeadcode}}} | true | Global dead code elimination |
+| {{{inline}}} | true | Function inlining |
+| {{{staticeval}}} | true | Static evaluation of constants |
+| {{{share}}} | true | Share string and number constants |
+| {{{optcall}}} | true | JavaScript call optimizations |
+
+=== Runtime behavior
+
+|= Option |= Default |= Description |
+| {{{effects}}} | false | Enable effect handlers |
+| {{{excwrap}}} | true | Wrap JavaScript exceptions in OCaml exceptions |
+| {{{with-js-error}}} | false | Attach JavaScript stack traces to OCaml exceptions |
+| {{{debugger}}} | true | Keep {{{debugger}}} statements (stripped if false) |
+| {{{genprim}}} | true | Generate dummy primitives when missing |
+| {{{use-js-string}}} | true | Use JavaScript strings internally |
+
+=== Internal debugging
+
+|= Option |= Default |= Description |
+| {{{debuginfo}}} | false | Include source location comments |
+| {{{stable_var}}} | false | Use stable (predictable) variable names |
+| {{{auto-link}}} | true | link required compilation units only |
+
+==@@id="parameters"@@ Compiler parameters
+
+Use {{{--set <param>=<value>}}} to tune compiler behavior:
+
+|= Parameter |= Default |= Description |
+| {{{switch_size}}} | 60 | Max cases before switch becomes if-else chain |
+| {{{inlining-limit}}} | 150 | Size threshold for function inlining |
+| {{{tc_depth}}} | 50 | Max tail-call depth before trampoline |
+| {{{tc}}} | trampoline | Tail-call mode: {{{trampoline}}} or {{{none}}} |
+
+==@@id="warnings"@@ Warnings
+
+|= Option |= Description |
+| {{{--quiet}}} / {{{-q}}} | Suppress non-error messages |
+| {{{--Werror}}} | Treat warnings as errors |
+| {{{-w <warning>}}} | Enable warning |
+| {{{-w no-<warning>}}} | Disable warning |
+
+Available warnings:
+
+|= Warning |= Default |= Description |
+| {{{missing-primitive}}} | on | Missing JavaScript primitive implementation |
+| {{{missing-cmi}}} | on | Missing .cmi file |
+| {{{missing-deps}}} | on | Missing dependencies |
+| {{{missing-effects-backend}}} | on | Using effects, but not backend was selected |
+| {{{integer-overflow}}} | on | Integer overflow in constant |
+| {{{overriding-primitive}}} | on | Overriding an existing primitive |
+| {{{deprecated-primitive}}} | on | Using deprecated primitive |
+| {{{free-variables}}} | on | Free variables in primitive code |
+
+==@@id="debug-output"@@ Debug output
+
+Use {{{--debug <section>}}} to enable debug output for compiler internals:
+
+{{{times}}}, {{{stats}}}, {{{deadcode}}}, {{{globaldeadcode}}}, {{{inlining}}},
+{{{gen}}}, {{{linker}}}, {{{sourcemap}}}, {{{flow}}}, {{{parser}}}
+
+==@@id="subcommands"@@ Subcommands
+
+The {{{js_of_ocaml}}} command has several subcommands:
+
+|= Command |= Description |
+| {{{js_of_ocaml compile}}} | Compile bytecode to JavaScript (default) |
+| {{{js_of_ocaml link}}} | Link JavaScript files together |
+| {{{js_of_ocaml build-runtime}}} | Build standalone runtime |
+| {{{js_of_ocaml build-fs}}} | Build pseudo filesystem |
+
+=== Link command
+
+{{{
+js_of_ocaml link -o output.js runtime.js lib1.js lib2.js main.js
+}}}
+
+Additional options:
+|= Option |= Description |
+| {{{-a}}} | Build a library (.cma.js) |
+| {{{--resolve-sourcemap-url}}} | Resolve source map URLs |
+
+=== Build-runtime command
+
+{{{
+js_of_ocaml build-runtime -o runtime.js
+}}}
+
+Accepts the same {{{--enable}}}/{{{--disable}}} options as the main command.
+
+=== Build-fs command
+
+{{{
+js_of_ocaml build-fs -o fs.js file1.txt file2.dat
+}}}
+
+Builds a JavaScript file containing filesystem data.

@@ -1,0 +1,153 @@
+= Error handling between OCaml and JavaScript
+
+This page explains how exceptions propagate between OCaml and JavaScript code,
+and how to properly handle errors in both directions.
+
+==@@id="catching-js-exceptions"@@ Catching JavaScript exceptions in OCaml
+
+When JavaScript code throws an exception and it propagates to OCaml code,
+it is wrapped in the {{{Js_error.Exn}}} exception, which holds a value of type
+{{{Js_error.t}}}:
+
+<<code language="ocaml"|
+open Js_of_ocaml
+
+let safe_parse json_str =
+  try
+    Some (Js._JSON##parse (Js.string json_str))
+  with Js_error.Exn err ->
+    (* err has type Js_error.t *)
+    Printf.eprintf "Parse error: %s\n" (Js_error.to_string err);
+    None
+>>
+
+=== Inspecting JavaScript errors
+
+The <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js_error>> module provides functions to inspect error details:
+
+<<code language="ocaml"|
+let handle_error err =
+  (* Error message *)
+  let msg = Js_error.message err in
+
+  (* Error name (e.g., "TypeError", "ReferenceError") *)
+  let name = Js_error.name err in
+
+  (* Stack trace (if available) *)
+  let stack = Js_error.stack err in
+
+  Printf.eprintf "Error [%s]: %s\n" name msg;
+  Option.iter (Printf.eprintf "Stack:\n%s\n") stack
+>>
+
+==@@id="raising-js-errors"@@ Raising JavaScript errors from OCaml
+
+To throw a JavaScript error that JavaScript code can catch:
+
+<<code language="ocaml"|
+let validate_positive n =
+  if n < 0 then
+    let err = new%js Js.error_constr (Js.string "Value must be positive") in
+    Js_error.raise_ (Js_error.of_error err)
+  else
+    n
+>>
+
+
+==@@id="exception-propagation"@@ Exception propagation in exported functions
+
+When you export OCaml functions to JavaScript, uncaught OCaml exceptions will
+propagate to JavaScript. However, OCaml exceptions are **not** JavaScript
+{{{Error}}} objects (see <<a_manual chapter="runtime-representation" fragment="exceptions"|runtime representation>>).
+
+<<code language="ocaml"|
+let divide x y =
+  if y = 0 then failwith "Division by zero"
+  else x / y
+
+let () = Js.export "divide" divide
+>>
+
+From JavaScript, you can catch the exception, but it won't be an {{{Error}}}:
+<<code language="javascript"|
+try {
+  divide(10, 0);
+} catch (e) {
+  // e is an array, not an Error object
+  // e.message is undefined
+  console.log(e);  // [0, [0, "Failure", ...], "Division by zero"]
+}
+>>
+
+For better JavaScript interoperability, raise JavaScript errors instead of
+OCaml exceptions
+
+==@@id="stack-traces"@@ Stack traces for OCaml exceptions
+
+By default, OCaml exceptions don't carry JavaScript stack traces. This makes
+debugging difficult since you can't see where an exception originated in
+browser DevTools or Node.js.
+
+The solution is to attach a JavaScript {{{Error}}} object to an OCaml exception.
+JavaScript {{{Error}}} objects capture the call stack at the point of creation,
+so attaching one to an OCaml exception preserves the stack trace for debugging.
+
+=== Manual attachment
+
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js_error.attach_js_backtrace>> to attach a JavaScript stack trace
+to an OCaml exception:
+
+<<code language="ocaml"|
+let process data =
+  try
+    do_something data
+  with exn ->
+    let exn = Js_error.attach_js_backtrace exn ~force:false in
+    (* Log or rethrow with JS backtrace attached *)
+    raise exn
+>>
+
+The {{{~force:false}}} parameter only attaches a new error if one isn't already
+present. Use {{{~force:true}}} to always attach a fresh stack trace.
+
+=== Extracting attached errors
+
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js_error.of_exn>> to extract the JavaScript error from an OCaml
+exception:
+
+<<code language="ocaml"|
+let log_with_backtrace exn =
+  match Js_error.of_exn exn with
+  | Some js_err ->
+      Printf.eprintf "JS Error: %s\n" (Js_error.to_string js_err);
+      Option.iter (Printf.eprintf "Stack:\n%s\n") (Js_error.stack js_err)
+  | None ->
+      Printf.eprintf "OCaml Error: %s\n" (Printexc.to_string exn)
+>>
+
+=== Automatic attachment
+
+Js_of_ocaml can automatically attach a JavaScript {{{Error}}} whenever an OCaml
+exception is raised. This is convenient but has a performance cost since creating
+{{{Error}}} objects is expensive.
+
+Automatic attachment is enabled when:
+
+# {{{Printexc.backtrace_status() = true}}}, **and**
+# Either:
+   * The environment variable {{{OCAMLRUNPARAM}}} contains {{{b=1}}}, or
+   * The program was compiled with {{{--enable with-js-error}}}
+
+Example with environment variable:
+{{{
+OCAMLRUNPARAM=b=1 node program.js
+}}}
+
+Example with compiler flag:
+{{{
+js_of_ocaml --enable with-js-error program.byte
+}}}
+
+When an unhandled OCaml exception has an attached JavaScript {{{Error}}}, it will
+be thrown as that error, allowing browsers and Node.js to display a proper stack
+trace.

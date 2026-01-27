@@ -1,0 +1,165 @@
+= Quick Start
+
+This guide walks you through creating your first js_of_ocaml application.
+
+==@@id="installation"@@ Installation
+
+{{{
+opam install js_of_ocaml js_of_ocaml-ppx
+}}}
+
+==@@id="project-setup"@@ Project setup
+
+Create a new directory and initialize a dune project:
+
+{{{
+mkdir hello_jsoo && cd hello_jsoo
+}}}
+
+Create the following files:
+
+=== dune-project
+
+{{{
+(lang dune 3.0)
+}}}
+
+=== dune
+
+{{{
+(executable
+ (name main)
+ (modes js)
+ (libraries js_of_ocaml)
+ (preprocess (pps js_of_ocaml-ppx)))
+}}}
+
+=== main.ml
+
+<<code language="ocaml"|
+open Js_of_ocaml
+
+let () =
+  let message = Js.string "Hello from OCaml!" in
+  Dom_html.window##alert message
+>>
+
+==@@id="build"@@ Build
+
+{{{
+dune build
+}}}
+
+This produces {{{_build/default/main.bc.js}}}.
+
+==@@id="run-browser"@@ Run in browser
+
+Create an HTML file to load the JavaScript:
+
+=== index.html
+
+{{{
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hello js_of_ocaml</title>
+</head>
+<body>
+  <script src="_build/default/main.bc.js"></script>
+</body>
+</html>
+}}}
+
+Open {{{index.html}}} in a browser. You should see an alert with "Hello from OCaml!".
+
+==@@id="run-nodejs"@@ Run in Node.js
+
+{{{
+node _build/default/main.bc.js
+}}}
+
+Note: {{{alert}}} is not available in Node.js. For Node.js, use:
+
+<<code language="ocaml"|
+let () = print_endline "Hello from OCaml!"
+>>
+
+==@@id="dom-example"@@ DOM manipulation example
+
+Here's a more complete example that manipulates the DOM:
+
+=== main.ml
+
+<<code language="ocaml"|
+open Js_of_ocaml
+
+let create_button text onclick =
+  let doc = Dom_html.document in
+  let button = Dom_html.createButton doc in
+  button##.textContent := Js.some (Js.string text);
+  button##.onclick := Dom_html.handler (fun _ ->
+    onclick ();
+    Js._true);
+  button
+
+let () =
+  let doc = Dom_html.document in
+  let body = doc##.body in
+
+  (* Create a counter display *)
+  let counter = ref 0 in
+  let display = Dom_html.createDiv doc in
+  let update_display () =
+    display##.textContent := Js.some (Js.string (string_of_int !counter))
+  in
+  update_display ();
+
+  (* Create buttons *)
+  let incr_btn = create_button "+" (fun () ->
+    incr counter;
+    update_display ()
+  ) in
+  let decr_btn = create_button "-" (fun () ->
+    decr counter;
+    update_display ()
+  ) in
+
+  (* Add to page *)
+  Dom.appendChild body decr_btn;
+  Dom.appendChild body display;
+  Dom.appendChild body incr_btn
+>>
+
+=== index.html
+
+{{{
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Counter</title>
+  <style>
+    button { font-size: 24px; margin: 10px; }
+    div { font-size: 48px; display: inline-block; min-width: 100px; text-align: center; }
+  </style>
+</head>
+<body>
+  <script src="_build/default/main.bc.js"></script>
+</body>
+</html>
+}}}
+
+==@@id="dev-workflow"@@ Development workflow
+
+For faster iteration during development, use:
+
+{{{
+dune build -w
+}}}
+
+This watches for file changes and rebuilds automatically.
+
+==@@id="next-steps"@@ Next steps
+
+* <<a_manual chapter="ppx"|PPX syntax>> - Learn the syntax for JavaScript interop
+* <<a_manual chapter="javascript-interop"|JavaScript interop>> - Use existing JavaScript libraries
+* <<a_manual chapter="rev-bindings"|Exporting to JS>> - Make OCaml code callable from JavaScript

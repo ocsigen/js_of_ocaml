@@ -1,0 +1,47 @@
+= Examples
+
+This page showcases js_of_ocaml projects, from simple demos to real-world applications.
+
+==@@id="demos"@@ Demos
+
+These demos are included in the js_of_ocaml repository:
+
+* <<a_file src="toplevel/index.html"|OCaml toplevel>> — Interactive OCaml REPL in the browser
+* <<a_file src="planet/index.html"|Planet>> — Animated 3D view of the Earth
+* <<a_file src="graph_viewer/index.html"|Graph viewer>> — Interactive graph visualization
+* <<a_file src="boulderdash/index.html"|Boulder Dash>> — Classic game remake
+* <<a_file src="wiki/index.html"|Wiki editor>> — Real-time collaborative wiki
+* <<a_file src="webgl/index.html"|WebGL>> — WebGL graphics demo
+* <<a_file src="minesweeper/index.html"|Minesweeper>> — Classic puzzle game
+* <<a_file src="hyperbolic/index.html"|Hyperbolic tree>> — Hyperbolic geometry visualization
+* <<a_file src="cubes/index.html"|Cubes>> — Random walk on lozenge tilings
+
+==@@id="in-the-wild"@@ In the wild
+
+Real-world projects built with js_of_ocaml:
+
+=== Emulators and games
+
+* [[https://github.com/linoscope/CAMLBOY|Camlboy]] — Game Boy emulator written in OCaml
+* [[https://ocsigen.org/graffiti/|Graffiti]] — Multi-user drawing application
+
+=== Development tools
+
+* [[https://try.ocaml.pro/|Try OCaml]] — Online OCaml REPL
+* [[https://sketch.sh/|Sketch.sh]] — Interactive OCaml notebook
+* [[https://github.com/jbdoderlein/BetterOCaml|BetterOCaml]] — Online OCaml editor with toplevel
+* [[https://github.com/hazelgrove/hazel|Hazel]] — Live functional programming environment
+
+=== Languages and compilers
+
+* [[https://flow.org/|Flow]] — Static type checker for JavaScript
+* [[https://grain-lang.org/|Grain]] — Functional programming language compiling to WebAssembly
+
+==@@id="tutorials"@@ Tutorials and learning resources
+
+* [[https://ocsigen.org/tuto/latest/manual/intro|Ocsigen tutorial]] — Build a web app with Eliom and js_of_ocaml
+* [[https://ocaml.org/docs/first-hour|OCaml.org]] — Getting started with OCaml
+
+==@@id="submit"@@ Submit your project
+
+Using js_of_ocaml in a project? Open a [[https://github.com/ocsigen/js_of_ocaml/issues|GitHub issue]] to have it listed here.

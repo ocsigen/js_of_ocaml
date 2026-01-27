@@ -1,45 +1,38 @@
-=Js_of_ocaml - Reference Manual
-==[[overview|Overview]]
-==[[install|Install]]
-==[[library|Library overview]]
-==[[bindings|Binding a JS library]]
-==[[rev-bindings|Export OCaml code to JavaScript]]
-==[[environment-variable|Environment variable]]
-==<<a_api subproject="js_of_ocaml" text="API"|index>>
+==Getting Started
+===[[overview|Overview]]
+===[[install|Installation]]
+===[[quickstart|Quick Start]]
 
-=Wasm_of_ocaml - Reference Manual
-==[[wasm_overview|Overview]]
-==[[wasm_runtime|Writing Wasm primitives]]
+==Programming Guide
+===[[javascript-interop|JavaScript interop]]
+===[[ppx|PPX syntax extension]]
+===[[ppx-deriving|JSON derivation]]
+===[[rev-bindings|Export OCaml code to JavaScript]]
+===[[errors|Error handling]]
+===<<a_api subproject="js_of_ocaml" text="API"|index>>
 
-=Js_of_ocaml_lwt - Reference Manual
-==[[lwt|Lwt support]]
-==<<a_api subproject="js_of_ocaml-lwt" text="API"|index>>
+==Lwt Support
+===[[lwt|Lwt support]]
+===<<a_api subproject="js_of_ocaml-lwt" text="API"|index>>
 
-=Syntaxes
-==[[ppx|Ppx syntax extension]]
-==[[ppx-deriving|Ppx deriving json]]
+==Compiler
+===[[options|Command line options]]
+===[[compilation-modes|Compilation modes]]
+===[[linker|JavaScript primitives]]
+===[[tailcall|Tailcall optimization]]
+===[[effects|Effect handlers]]
+===[[runtime-representation|Runtime representation]]
 
-=Compiler
-==[[options|Command line options]]
-==[[linker|Link javascript code]]
-==[[separate-compilation|Separate compilation]]
-==[[tailcall|About tailcall optimization]]
-==[[effects|Effect handlers]]
+==Wasm_of_ocaml
+===[[wasm_overview|Overview]]
+===[[wasm_runtime|Writing Wasm primitives]]
 
-=Misc
-==[[runtime-files|How to look up runtime files]]
-==[[build-toplevel|How to build a toplevel or use Dynlink]]
-==[[debug|How to debug a program]]
-==[[contribute|How to contribute]]
-==[[performances|Performances]]
+==How-to Guides
+===[[build-toplevel|Build a toplevel or use Dynlink]]
+===[[debug|Debug a program]]
+===[[performances|Performance]]
+===[[contribute|Contribute]]
 
-=Js_of_ocaml examples
-==<<a_file src="toplevel/index.html"|An OCaml toplevel running in the browser>>
-==<<a_file src="planet/index.html" |An animated 3D view of the Earth>>
-==<<a_file src="graph_viewer/index.html" |A graph viewer>>
-==<<a_file src="boulderdash/index.html" |A Boulder Dash game>>
-==<<a_file src="wiki/index.html" |A realtime wiki editor>>
-==<<a_file src="webgl/index.html" |A webgl demo>>
-==<<a_file src="minesweeper/index.html" |A Minesweeper game>>
-==<<a_file src="hyperbolic/index.html" |A hyperbolic tree viewer>>
-==<<a_file src="cubes/index.html" |A random walk on lozenge tiling configurations>>
+==Try it
+===<<a_file src="toplevel/index.html"|OCaml toplevel>>
+===[[examples|Examples and projects]]
