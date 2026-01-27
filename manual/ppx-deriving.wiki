@@ -9,9 +9,9 @@ between a js_of_ocaml program and a server side OCaml application.
 
 The serialisation format allows a js_of_ocaml program to encode/decode
 OCaml value efficiently by leveraging JavaScript native Json
-support. See [Js_of_ocaml.Json.output] and [Js_of_ocaml.Json.output].
+support. See <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Json.output>> and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Json.unsafe_input>>.
 
-== Syntax
+==@@id="syntax"@@ Syntax
 
 === Generate serialisation from type definitions
 

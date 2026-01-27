@@ -1,11 +1,11 @@
-= Separate compilation
+= Compilation modes
 
 The js_of_ocaml compiler supports two compilation modes.  Whole program
 compilation that compiles a bytecode executable to a single JavaScript
 file and separate compilation that compiles individual compilation units
 (.cmo) and libraries (.cma) to one or more javascript files.
 
-== Why use separate compilation
+==@@id="why-separate"@@ Why use separate compilation
 
 Separate compilation improves the overall compilation times and gives
 (many) incremental build opportunities.
@@ -16,7 +16,7 @@ module and cross library optimizations and make the dead-code
 elimination almost useless.
 
 
-== Compilation scheme
+==@@id="scheme"@@ Compilation scheme
 
 Js_of_ocaml separate compilation is somewhat similar to the OCaml
 separate compilation with some differences.
@@ -38,8 +38,8 @@ Additional runtime files are sometimes needed and can be passed on the
 command line.  In particular, some packages/libraries come with their
 own runtime file.
 
-See the <<a_manual chapter="runtime-files" |runtime files>> chapter for how to
-discover these files.
+See <<a_manual chapter="linker" fragment="finding-runtime"|Linking JavaScript code>> for how to discover
+these files.
 
 === 2. Build compilation units
 
@@ -86,7 +86,7 @@ Note that, unlike the ocaml compiler, the ocaml stdlib and std_exit need to be
 passed explicitly (here, {stdlib.js} and {std_exit.js} are the result of compiling
 {stdlib.cma} and {std_exit.cmo}).
 
-== Support in dune
+==@@id="dune"@@ Support in dune
 
 Support for js_of_ocaml separate compilation has been added to dune
 (previously jbuilder). The separate compilation mode is selected when
@@ -95,7 +95,7 @@ other way to control this behavior.
 
 See [[https://dune.readthedocs.io/en/latest/jsoo.html|dune documentation]]
 
-== Source-maps support
+==@@id="source-maps"@@ Source-maps support
 
 Separate compilation can be used together with source-map.  The
 recommended way is to build all individual javascript files with
@@ -104,8 +104,3 @@ inlined source-map by passing {{{--source-map-inline}}} to
 
 Note that other configurations have not been well tested and might
 require additional tuning.
-
-== Building Toplevel
-
-Building a toplevel using separate compilation is not supported / has
-not been tested yet.
