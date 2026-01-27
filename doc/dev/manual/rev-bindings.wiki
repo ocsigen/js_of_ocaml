@@ -1,44 +1,164 @@
 = Export OCaml code to JavaScript
 
-The easiest way to export OCaml values (e.g., functions) to JavaScript is to
-create a JavaScript object containing all values to export
-and to make the object reachable.
+This page explains how to make OCaml values (functions, objects, constants)
+accessible from JavaScript code.
+
+==@@id="basic-export"@@ Basic export with {{{Js.export}}}
+
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> to export a single named value:
 
 <<code language="ocaml"|
 open Js_of_ocaml
 
-let _ =
+let () =
   Js.export "myMathLib"
     (object%js
-       method add x y = x +. y
-       method abs x = abs_float x
-       val zero = 0.
+       method add x y = x + y
+       method abs x = abs x
+       val zero = 0
      end)
 >>
 
+From JavaScript:
 <<code language="javascript"|
-myMathLib.add(3,4)
+myMathLib.add(3, 4);    // 7
+myMathLib.abs(-5);      // 5
+myMathLib.zero;         // 0
 >>
 
-== Using the Node.js module system
-{{{Js.export}}} and {{{Js.export_all}}} will export a value to {{{module.exports}}} if it exists.
+==@@id="export-all"@@ Exporting multiple values with {{{Js.export_all}}}
 
-{{{
-# cat math.ml
-open Js_of_ocaml
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> to export all properties of an object as top-level
+exports:
 
-let _ =
+<<code language="ocaml"|
+let () =
   Js.export_all
     (object%js
-      method add x y = x +. y
-      method abs x = abs_float x
-      val zero = 0.
+       method add x y = x + y
+       method sub x y = x - y
+       val version = Js.string "1.0.0"
      end)
-# ocamlfind ocamlc -verbose \
-  -package js_of_ocaml -package js_of_ocaml-ppx \
-  -linkpkg math.ml -o math.byte
-# js_of_ocaml math.byte
-# node
-# > var math = require("./math.js");
-# > math.add(2,3)
+>>
+
+From JavaScript:
+<<code language="javascript"|
+add(3, 4);        // 7 (directly accessible)
+sub(5, 2);        // 3
+version;          // "1.0.0"
+>>
+
+==@@id="export-functions"@@ Exporting individual functions
+
+You can export plain OCaml functions. They are automatically wrapped for
+JavaScript:
+
+<<code language="ocaml"|
+let greet name =
+  "Hello, " ^ name ^ "!"
+
+let factorial n =
+  let rec aux acc = function
+    | 0 -> acc
+    | n -> aux (acc * n) (n - 1)
+  in aux 1 n
+
+let () =
+  Js.export "greet" greet;
+  Js.export "factorial" factorial
+>>
+
+From JavaScript:
+<<code language="javascript"|
+greet("World");    // "Hello, World!"
+factorial(5);      // 120
+>>
+
+==@@id="type-considerations"@@ Type considerations
+
+Exported functions are automatically wrapped with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_callback>>.
+However, you must convert OCaml values to their JavaScript equivalents (strings
+with {{{Js.string}}}, booleans with {{{Js.bool}}}, etc.). See
+<<a_manual chapter="javascript-interop" fragment="conversions"|type conversions>>
+for the full list.
+
+==@@id="callbacks"@@ Handling callbacks from JavaScript
+
+When JavaScript passes a callback to your OCaml code, you receive a JavaScript
+function. Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.fun_call>> to invoke it:
+
+<<code language="ocaml"|
+let () =
+  Js.export "utils"
+    (object%js
+       method forEach arr callback =
+         let len = arr##.length in
+         for i = 0 to len - 1 do
+           let item = Js.array_get arr i in
+           Js.Optdef.iter item (fun v ->
+             ignore (Js.Unsafe.fun_call callback [| Js.Unsafe.inject v |]))
+         done
+     end)
+>>
+
+From JavaScript:
+<<code language="javascript"|
+utils.forEach([1, 2, 3], function(x) { console.log(x); });
+>>
+
+==@@id="nodejs"@@ Using with Node.js
+
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> automatically use {{{module.exports}}}
+when running in Node.js:
+
+<<code language="ocaml"|
+(* math.ml *)
+open Js_of_ocaml
+
+let () =
+  Js.export_all
+    (object%js
+       method add x y = x + y
+       method mul x y = x * y
+     end)
+>>
+
+Build and use:
+{{{
+$ ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml-ppx \
+    -linkpkg math.ml -o math.byte
+$ js_of_ocaml math.byte -o math.js
+$ node
+> var math = require("./math.js");
+> math.add(2, 3)
+5
+> math.mul(4, 5)
+20
 }}}
+
+==@@id="browsers"@@ Using in browsers
+
+In browsers, exports are added to the global object ({{{window}}}):
+
+<<code language="html"|
+<script src="math.js"></script>
+<script>
+  console.log(myMathLib.add(2, 3));
+</script>
+>>
+
+To avoid polluting the global namespace, you can export a single namespace
+object:
+
+<<code language="ocaml"|
+let () =
+  Js.export "MyApp"
+    (object%js
+       val math = object%js
+         method add x y = x + y
+       end
+       val utils = object%js
+         method log msg = Console.console##log msg
+       end
+     end)
+>>

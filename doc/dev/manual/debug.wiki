@@ -1,44 +1,117 @@
-= How to debug an OCaml program compiled to JavaScript.
+= Debugging
 
-== Use the right compiler flags
+This page explains how to debug OCaml programs compiled to JavaScript.
+
+==@@id="compiler-flags"@@ Compiler flags
+
 === OCaml flags
-Make sure to use {{{-g}}} flags when compiling and linking OCaml bytecode.
-Js_of_ocaml will attempt to preserve variable names.
+
+Use {{{-g}}} when compiling and linking OCaml bytecode. Js_of_ocaml will
+attempt to preserve variable names.
 
 === Js_of_ocaml flags
-  * {{{--pretty}}}     - format the generated JavaScript in a readable way and try to keep OCaml variable names.
-  * {{{--no-inline}}}  - prevent function inlining.
-  * {{{--debug-info}}} - annotate the JavaScript file with locations from the OCaml sources.
-  * {{{--source-map}}} - enable source-map support
 
-== JavaScript stacktrace
-Js_of_ocaml can attach a JavaScript {{{Error}}} that embeds the current
-stacktrace to an OCaml exception. The {{{Error}}} can be attached with
-{{{Js.Js_error.attach_js_backtrace}}} and extracted using
-{{{Js.Js_error.of_exn}}}. Un-handled OCaml exceptions will throw any
-JavaScript {{{Error}}} attached to them, allowing the JS engine to display
-the stacktrace nicely.
+|= Flag |= Description |
+| {{{--pretty}}} | Format JavaScript readably, preserve OCaml variable names |
+| {{{--no-inline}}} | Prevent function inlining |
+| {{{--debug-info}}} | Add source location comments |
+| {{{--source-map}}} | Generate source map |
 
-Js_of_ocaml will attach an {{{Error}}} automatically when raising an OCaml
-exception (with {{{raise}}}, not with {{{raise_notrace}}}) if
-{{{Printexc.backtrace_status() = true}}} and either the environment
-variable {{{OCAMLRUNPARAM}}} is set with {{{b=1}}} or the program was compiled
-with {{{--enable with-js-error}}}.
+=== Dune configuration
 
-Note that creating JavaScript {{{Error}}}s is costly and can degrade performance a lot.
-This is the reason why such feature is not enabled by default.
+For development builds, add to your dune file:
 
-== Breakpoint
-One can set breakpoints using developers tools (see https://developer.chrome.com/devtools/docs/javascript-debugging).
-Alternatively, one can set breakpoints programmatically by calling {{{Js.debugger ()}}}. Note that
-browsers will only stop at breakpoints when developers tools are in use.
+{{{
+(executable
+ (name main)
+ (modes js)
+ (js_of_ocaml (flags --pretty --source-map)))
+}}}
 
-== Source map
-Source map is used to map the generated JavaScript code to original sources.
-After compiling with sourcemap enabled, using developers tools, one can set breakpoints,
-step through the code, and inspect variables directly in OCaml sources.
+==@@id="source-maps"@@ Source maps
 
-== About Chrome DevTools
-Useful settings for Chrome DevTools:
-* Display variable values inline while debugging
-* Resolve variable names (hidden DevTools Experiments, see http://islegend.com/development/how-to-enable-devtools-experiments-within-google-chrome)
+Source maps map generated JavaScript back to OCaml sources. With source maps
+enabled, you can set breakpoints, step through code, and inspect variables
+directly in your OCaml files.
+
+To enable source maps:
+
+{{{
+js_of_ocaml --source-map program.byte
+}}}
+
+This generates {{{program.js}}} and {{{program.js.map}}}.
+
+==@@id="breakpoints"@@ Breakpoints
+
+=== In browser developer tools
+
+Open browser developer tools (F12), navigate to the Sources panel, and set
+breakpoints in your OCaml files (when using source maps) or JavaScript files.
+
+See https://developer.chrome.com/docs/devtools/javascript for details.
+
+=== Programmatic breakpoints
+
+Insert breakpoints in your OCaml code using <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.debugger>>:
+
+<<code language="ocaml"|
+let my_function x =
+  Js_of_ocaml.Js.debugger ();  (* Breaks here when devtools are open *)
+  x + 1
+>>
+
+Note: Browsers only pause at {{{debugger}}} statements when developer tools are open.
+
+==@@id="nodejs"@@ Debugging in Node.js
+
+=== Using --inspect
+
+Run your program with Node.js inspector:
+
+{{{
+node --inspect _build/default/main.bc.js
+}}}
+
+This prints a URL like:
+
+{{{
+Debugger listening on ws://127.0.0.1:9229/...
+}}}
+
+=== Chrome DevTools for Node.js
+
+# Run {{{node --inspect}}} or {{{node --inspect-brk}}} (breaks on first line)
+# Open Chrome and navigate to {{{chrome://inspect}}}
+# Click "Open dedicated DevTools for Node"
+# Your program appears in the Sources panel
+
+==@@id="stack-traces"@@ Stack traces
+
+=== Attaching JavaScript backtraces
+
+To get JavaScript stack traces attached to OCaml exceptions:
+
+{{{
+OCAMLRUNPARAM=b=1 node program.js
+}}}
+
+Or compile with:
+
+{{{
+js_of_ocaml --enable with-js-error program.byte
+}}}
+
+See <<a_manual chapter="errors" fragment="stack-traces"|Error handling>> for details.
+
+==@@id="devtools-tips"@@ Chrome DevTools tips
+
+Useful settings in Chrome DevTools (Settings > Experiments):
+
+* **Display variable values inline while debugging** - Shows values next to variables
+* **Resolve variable names** - Maps minified names back to original names
+
+== See also
+
+* <<a_manual chapter="errors"|Error handling>> - Exception handling between OCaml and JavaScript
+* <<a_manual chapter="options"|Command line options>> - Full list of compiler flags

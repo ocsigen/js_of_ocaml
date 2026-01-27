@@ -1,0 +1,93 @@
+= Compilation modes
+
+Js_of_ocaml supports two compilation modes:
+
+* **Whole program compilation** — compiles a bytecode executable to a single JavaScript file
+* **Separate compilation** — compiles individual units ({{{.cmo}}}) and libraries ({{{.cma}}}) to JavaScript files, then links them together
+
+==@@id="comparison"@@ Choosing a mode
+
+|= |= Whole program |= Separate |
+| Build speed | Slower (recompiles everything) | Faster (incremental builds) |
+| Output size | Smaller (dead code elimination) | Larger |
+| Runtime speed | Faster (cross-module optimizations) | Slower |
+
+**Recommendation**: Use separate compilation during development for fast iteration,
+and whole program compilation for production releases.
+
+==@@id="whole-program"@@ Whole program compilation
+
+This is the simplest mode. Compile your bytecode executable directly:
+
+{{{
+js_of_ocaml program.byte -o program.js
+}}}
+
+Some libraries require additional runtime files. See
+<<a_manual chapter="linker" fragment="finding-runtime"|JavaScript primitives>> for how to discover them.
+
+The compiler performs global dead-code elimination and cross-module optimizations,
+producing smaller and faster output.
+
+==@@id="separate"@@ Separate compilation
+
+Separate compilation involves three steps: build the runtime, compile units, and link.
+
+=== 1. Build the runtime
+
+{{{
+js_of_ocaml build-runtime -o runtime.js
+}}}
+
+Some libraries require additional runtime files. See
+<<a_manual chapter="linker" fragment="finding-runtime"|JavaScript primitives>> for how to discover them.
+
+=== 2. Compile units and libraries
+
+{{{
+js_of_ocaml mymodule.cmo           # generates mymodule.js
+js_of_ocaml mylib.cma              # generates mylib.js
+js_of_ocaml mylib.cma -o lib.js    # generates lib.js
+}}}
+
+=== 3. Link
+
+Concatenate all JavaScript files in dependency order:
+
+{{{
+js_of_ocaml link runtime.js stdlib.js mylib.js mymodule.js std_exit.js -o program.js
+}}}
+
+**Note**: Unlike OCaml linking, you must explicitly include {{{stdlib.js}}} and {{{std_exit.js}}}.
+
+==@@id="dune"@@ Dune integration
+
+Dune handles compilation mode automatically based on the build profile:
+
+|= Profile |= Mode |
+| {{{dev}}} (default) | Separate compilation |
+| {{{release}}} | Whole program compilation |
+
+To build with a specific profile:
+{{{
+dune build --profile release
+}}}
+
+Or configure the default in {{{dune-project}}} or {{{dune-workspace}}}.
+
+See [[https://dune.readthedocs.io/en/latest/jsoo.html|dune documentation]] for details.
+
+==@@id="source-maps"@@ Source maps with separate compilation
+
+For source maps in separate compilation mode, use inline source maps:
+
+{{{
+js_of_ocaml --source-map-inline mymodule.cmo
+}}}
+
+The {{{link}}} command will merge source maps automatically.
+
+== See also
+
+* <<a_manual chapter="options"|Command-line options>> — Full list of compiler flags
+* <<a_manual chapter="linker"|JavaScript primitives>> — Runtime files and custom primitives
