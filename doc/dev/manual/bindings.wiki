@@ -1,206 +1,656 @@
 = How to bind a JS library for OCaml
 
-== Accessing a JS variable, ex: {{{document}}}:
-Write in .ml:
+== Accessing JavaScript properties
 
+=== Global variables
+
+Global JavaScript variables are properties of the global object. Use
+{{{Js.Unsafe.global}}} to access them ({{{window}}} in browsers,
+{{{globalThis}}} in Node.js):
+
+<<code language="ocaml"|
+(* Access document *)
+let doc : Dom_html.document Js.t = Js.Unsafe.global##.document
+
+(* Read and write a custom global *)
+let get_config () : config Js.t = Js.Unsafe.global##.myAppConfig
+let set_config (x : config Js.t) = Js.Unsafe.global##.myAppConfig := x
+>>
+
+You can also use {{{Js.Unsafe.js_expr}}} for any JavaScript expression:
 <<code language="ocaml"|
 let v = (Js.Unsafe.js_expr "window")##.document
 >>
-Alternatively, the global object can be used. In the browser, it refers to {{{window}}}.
-<<code language="ocaml"|
-let v = Js.Unsafe.global##.document
->>
 
-and in .mli:
+Be careful: both {{{Js.Unsafe.global}}} and {{{Js.Unsafe.js_expr}}} are untyped.
+Verify the library documentation before writing type annotations.
 
-<<code language="ocaml"|
-val v : ... Js.t
->>
+=== Untyped property access
 
-Be careful the function <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.js_expr>>
-and the value <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.global>> are not typed.
-Verify the library documentation before writing the type.
-
-== Binding a JS function
-
-Example from the Js module:
-<<code language="ocaml"|
-let decodeURI (s : js_string t) : js_string t =
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr "decodeURI") [|Js.Unsafe.inject s|]
->>
-
-Have a look at the <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Unsafe>> module API.
-
-== Using a JS constructor, ex: {{{F}}}:
-Write in .ml:
+When a property is missing from the OCaml interface (e.g., dynamically added
+by a library), use {{{Js.Unsafe.coerce}}} for untyped access:
 
 <<code language="ocaml"|
-let f = Js.Unsafe.global##._F
->>
-and in .mli:
+(* Read a property *)
+let value = (Js.Unsafe.coerce obj)##.someProp
 
-<<code language="ocaml"|
-val f : (... -> ... Js.t) Js.constr
->>
-
-and if you want to use JS overloading, do, for example:
-<<code language="ocaml"|
-val f_fromInt : (int -> ... Js.t) Js.constr
-val f_fromString : (js_string t -> ... Js.t) Js.constr
-val f_blah : (#Dom_html.element t -> js_string t -> ... Js.t) Js.constr
+(* Write a property *)
+(Js.Unsafe.coerce obj)##.someProp := v
 >>
 
-== Accessing or modifying a JS property to an element
-
-When a property is missing in the OCaml interface of an element (for example
-it has been dynamically added by a library), you can access using unsafe
-features:
-
-<<code language="ocaml"|
-(Js.Unsafe.coerce elt)##.blah
->>
-
-If you want to add yourself a new property:
-<<code language="ocaml"|
-(Js.Unsafe.coerce elt)##.blah := v
->>
-
-Here, {{{v}}} may be a JS value or an OCaml value.
-
-If you want to do that in type safe manner, just define new types for the
-extended elements, or wrap the unsafe functions inside a getter and setter.
+For type-safe access, define a class type for the extended object or wrap
+the unsafe access in getter/setter functions.
 
 == Binding a JS object
 
-Write in .ml and in .mli:
+Use OCaml class types to describe the shape of JavaScript objects. Each
+{{{method}}} declaration represents either a property or a method of the JS
+object.
 
+=== Property types
+
+|= Type |= Access |= OCaml usage |
+| {{{t readonly_prop}}} | read only | {{{obj##.prop}}} |
+| {{{t writeonly_prop}}} | write only | {{{obj##.prop := v}}} |
+| {{{t prop}}} | read/write | both |
+| {{{t1 -> t2 -> ... -> t meth}}} | method | {{{obj##meth arg1 arg2}}} |
+| {{{t optdef_prop}}} | optional read | {{{obj##.prop}}} returns {{{t Optdef.t}}} |
+
+=== Example
+
+Given a JavaScript object:
+<<code language="javascript"|
+{
+  name: "example",           // read-only string
+  count: 42,                 // read-write number
+  greet: function(x) { ... } // method
+}
+>>
+
+Bind it as:
 <<code language="ocaml"|
-class type my_js_type = object
-
-  (* read only property, read value with t##.prop1 *)
-  method prop1 : int readonly_prop
-
-  (* write only property, write value with t##.prop2 := float 3.14 *)
-  method prop2 : number t writeonly_prop
-
-  (* both read and write *)
-  method prop3 : int prop
-
-  (* method or property starting with a capital letter can be prepend
-     with an underscore. *)
-  method _Array : ... (* to access the JavaScript property or method Array *)
-
-  (* Define two methods with different types, that translate to
-     the same JavaScript method. *)
-  method my_fun_int : int -> unit meth
-  method my_fun_string : js_string t -> unit meth
-  (* Both will actually call the my_fun JavaScript method. *)
-
-  (* To call a javascript method starting with one underscore *)
-  method __hiddenfun : ..
-  method __hiddenfun_ : ..
-  method __hiddenfun_something : ..
-  (* This will call the _hiddenfun Javascript method *)
-
-  (* To call the javascript method '_' *)
-  method __ : ..
+class type myObj = object
+  method name : Js.js_string Js.t Js.readonly_prop
+  method count : int Js.prop
+  method greet : Js.js_string Js.t -> unit Js.meth
 end
 >>
 
-=== Example binding some constants:
+=== Method name mangling
 
-For example if the JS class is used to define three constants {{{thelib.Theclass.VALUEA}}}, {{{thelib.Theclass.VALUEB}}}, {{{thelib.Theclass.VALUEC}}},
+OCaml method names are transformed to JavaScript names using underscore
+conventions. This enables binding to capitalized names (use {{{_Foo}}} for
+{{{Foo}}}) and overloaded methods (use {{{foo_int}}} and {{{foo_string}}} for
+the same {{{foo}}} method).
 
-Since OCaml doesn't allow method names to start with capitalized letters, we can add an {{{_}}}
+See <<a_manual chapter="library"|the library documentation>> for the full
+naming rules and examples.
 
-write in .ml and .mli:
+=== Binding constants from a class
+
+For JavaScript constants like {{{SomeLib.SomeClass.VALUE_A}}}:
 
 <<code language="ocaml"|
-type thetype
-
-class type theclass = object
-  method _VALUEA : thetype readonly_prop
-  method _VALUEB : thetype readonly_prop
-  method _VALUEC : thetype readonly_prop
+(* Type definition *)
+class type someClass = object
+  method _VALUE_A : int Js.readonly_prop
+  method _VALUE_B : int Js.readonly_prop
 end
+
+(* Get the class object *)
+let someClass : someClass Js.t =
+  (Js.Unsafe.js_expr "SomeLib")##._SomeClass
+
+(* Access constants *)
+let value_a = someClass##._VALUE_A
 >>
 
-and in .ml:
+== Type conversions
+
+OCaml and JavaScript have different representations for basic types. Use
+these functions to convert between them.
+
+=== Strings
+
+OCaml strings and JavaScript strings have different encodings. Use {{{Js.string}}}
+and {{{Js.to_string}}} for UTF-8 encoded OCaml strings:
 
 <<code language="ocaml"|
-let theclass = (Js.Unsafe.js_expr "thelib")##._Theclass
+(* OCaml string -> JS string *)
+let js_str : Js.js_string Js.t = Js.string "Hello"
+
+(* JS string -> OCaml string *)
+let ocaml_str : string = Js.to_string js_str
 >>
 
-and in .mli:
+For binary data (bytes 0-255), use {{{Js.bytestring}}} and {{{Js.to_bytestring}}}:
 
 <<code language="ocaml"|
-val theclass : theclass t
+let js_bytes = Js.bytestring "\x00\x01\x02"
+let ocaml_bytes = Js.to_bytestring js_bytes
+>>
+
+=== Booleans
+
+JavaScript booleans are not OCaml booleans. Use {{{Js.bool}}} and {{{Js.to_bool}}}:
+
+<<code language="ocaml"|
+let js_true : bool Js.t = Js._true        (* or Js.bool true *)
+let js_false : bool Js.t = Js._false      (* or Js.bool false *)
+let ocaml_bool : bool = Js.to_bool js_true
+>>
+
+=== Numbers
+
+OCaml integers can be used directly. For floats, use {{{Js.float}}} and
+{{{Js.to_float}}}:
+
+<<code language="ocaml"|
+(* Integers work directly *)
+let count : int = obj##.count
+
+(* Floats need conversion *)
+let js_num : Js.number Js.t = Js.number_of_float 3.14
+let ocaml_float : float = Js.float_of_number js_num
+>>
+
+=== Arrays
+
+<<code language="ocaml"|
+(* OCaml array -> JS array *)
+let js_arr : int Js.js_array Js.t = Js.array [| 1; 2; 3 |]
+
+(* JS array -> OCaml array *)
+let ocaml_arr : int array = Js.to_array js_arr
+>>
+
+=== Summary table
+
+|= OCaml type |= JS type |= OCaml → JS |= JS → OCaml |
+| {{{string}}} | String | {{{Js.string}}} | {{{Js.to_string}}} |
+| {{{string}}} (bytes) | String | {{{Js.bytestring}}} | {{{Js.to_bytestring}}} |
+| {{{bool}}} | Boolean | {{{Js.bool}}} | {{{Js.to_bool}}} |
+| {{{int}}} | Number | (direct) | (direct) |
+| {{{float}}} | Number | {{{Js.float}}} | {{{Js.to_float}}} |
+| {{{'a array}}} | Array | {{{Js.array}}} | {{{Js.to_array}}} |
+
+== Handling null and undefined
+
+JavaScript has two "missing value" types: {{{null}}} and {{{undefined}}}.
+Js_of_ocaml represents these with distinct types.
+
+=== {{{Js.Opt}}} for nullable values ({{{null}}})
+
+Use {{{Js.Opt}}} for values that may be {{{null}}} (e.g., DOM methods that
+return {{{null}}} when an element is not found):
+
+<<code language="ocaml"|
+(* Check if null *)
+let is_present = Js.Opt.test value
+
+(* Convert to OCaml option *)
+let opt : element Js.t option = Js.Opt.to_option value
+
+(* Handle both cases *)
+let result = Js.Opt.case value
+  (fun () -> (* null *) "not found")
+  (fun v -> (* has value *) process v)
+
+(* Get value or raise exception *)
+let v = Js.Opt.get value (fun () -> failwith "was null")
+
+(* Create nullable values *)
+let some_val : element Js.t Js.opt = Js.some element
+let null_val : element Js.t Js.opt = Js.null
+>>
+
+=== {{{Js.Optdef}}} for optional values ({{{undefined}}})
+
+Use {{{Js.Optdef}}} for values that may be {{{undefined}}} (e.g., optional
+object properties, array access beyond bounds):
+
+<<code language="ocaml"|
+(* Check if defined *)
+let is_defined = Js.Optdef.test value
+
+(* Convert to OCaml option *)
+let opt : config Js.t option = Js.Optdef.to_option value
+
+(* Handle both cases *)
+let result = Js.Optdef.case value
+  (fun () -> (* undefined *) default_config)
+  (fun v -> (* defined *) v)
+
+(* Create optdef values *)
+let def_val : int Js.optdef = Js.def 42
+let undef_val : int Js.optdef = Js.undefined
+>>
+
+=== When to use which
+
+|= Scenario |= Type |= Example |
+| DOM lookup | {{{Js.Opt}}} | {{{getElementById}}} returns {{{null}}} if not found |
+| Optional property | {{{Js.Optdef}}} | Property may not exist on object |
+| Array access | {{{Js.Optdef}}} | {{{Js.array_get}}} returns {{{undefined}}} for missing index |
+| API returns null | {{{Js.Opt}}} | Many DOM APIs use {{{null}}} for "no value" |
+| Feature detection | {{{Js.Optdef}}} | Check if method/property exists |
+
+=== Combining with option types
+
+Both modules provide {{{to_option}}} for idiomatic OCaml code:
+
+<<code language="ocaml"|
+let find_element id =
+  Dom_html.getElementById_opt id
+  |> Js.Opt.to_option
+
+let () =
+  match find_element "myId" with
+  | Some el -> (* use element *)
+  | None -> (* not found *)
+>>
+
+== Calling JS functions
+
+There are three ways to call JavaScript functions, depending on how {{{this}}}
+should be bound.
+
+=== Standalone functions with {{{fun_call}}}
+
+Use {{{Js.Unsafe.fun_call}}} for functions where {{{this}}} doesn't matter:
+
+<<code language="ocaml"|
+(* Equivalent to: decodeURI(s) *)
+let decodeURI (s : Js.js_string Js.t) : Js.js_string Js.t =
+  Js.Unsafe.fun_call
+    (Js.Unsafe.js_expr "decodeURI")
+    [| Js.Unsafe.inject s |]
+
+(* Equivalent to: parseInt(s, 10) *)
+let parseInt (s : Js.js_string Js.t) : int =
+  Js.Unsafe.fun_call
+    (Js.Unsafe.js_expr "parseInt")
+    [| Js.Unsafe.inject s; Js.Unsafe.inject 10 |]
+>>
+
+=== Methods with {{{meth_call}}}
+
+Use {{{Js.Unsafe.meth_call}}} to call a method on an object ({{{this}}} is
+bound to the object):
+
+<<code language="ocaml"|
+(* Equivalent to: arr.slice(1, 3) *)
+let slice arr start stop =
+  Js.Unsafe.meth_call arr "slice"
+    [| Js.Unsafe.inject start; Js.Unsafe.inject stop |]
+>>
+
+=== Functions with explicit {{{this}}} binding
+
+Use {{{Js.Unsafe.call}}} when you need to explicitly set {{{this}}}:
+
+<<code language="ocaml"|
+(* Equivalent to: func.call(thisArg, arg1, arg2) *)
+let result =
+  Js.Unsafe.call func thisArg [| Js.Unsafe.inject arg1; Js.Unsafe.inject arg2 |]
+>>
+
+See the <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Unsafe>> module
+API for more details.
+
+== Passing OCaml functions to JavaScript
+
+When JavaScript code needs to call back into OCaml (e.g., event handlers,
+callbacks for async operations), you must wrap OCaml functions appropriately.
+
+=== Basic callbacks with {{{Js.wrap_callback}}}
+
+Use {{{Js.wrap_callback}}} to wrap an OCaml function for JavaScript:
+
+<<code language="ocaml"|
+(* setTimeout example *)
+let set_timeout f ms =
+  Js.Unsafe.global##setTimeout
+    (Js.wrap_callback f)
+    (Js.float ms)
+
+let () = set_timeout (fun () -> print_endline "Hello!") 1000.
+>>
+
+{{{Js.wrap_callback}}} handles partial application correctly: if JavaScript
+calls the function with fewer arguments than expected, the result is a
+partially applied function.
+
+=== Callbacks with {{{this}}} binding
+
+Use {{{Js.wrap_meth_callback}}} when the callback needs access to {{{this}}}:
+
+<<code language="ocaml"|
+(* The first parameter receives the 'this' value *)
+let callback = Js.wrap_meth_callback (fun this event ->
+  let target : Dom_html.element Js.t = this in
+  (* ... handle event ... *)
+  Js._true)
+>>
+
+=== Strict arity callbacks
+
+For performance-critical code, or when you don't need partial application
+support, use {{{Js.Unsafe.callback}}} or {{{Js.Unsafe.callback_with_arity}}}:
+
+<<code language="ocaml"|
+(* Strict callback - missing args become undefined, extra args are lost *)
+let strict_cb = Js.Unsafe.callback (fun x y -> x + y)
+
+(* Explicit arity - ensures exactly 2 arguments *)
+let arity_cb = Js.Unsafe.callback_with_arity 2 (fun x y -> x + y)
+>>
+
+=== DOM event handlers
+
+For DOM events, use {{{Dom.handler}}} or {{{Dom_html.handler}}} which
+automatically wraps the function and handles the return value (returning
+{{{Js._false}}} prevents the default action):
+
+<<code language="ocaml"|
+let button = Dom_html.getElementById "myButton"
+
+let handler = Dom_html.handler (fun event ->
+  Dom_html.window##alert (Js.string "Clicked!");
+  Js._true (* return false to prevent default *))
+
+button##.onclick := handler
+>>
+
+For handlers that need access to {{{this}}}, use {{{Dom.full_handler}}}:
+
+<<code language="ocaml"|
+let handler = Dom.full_handler (fun this event ->
+  let element : Dom_html.element Js.t = this in
+  (* ... *)
+  Js._true)
+>>
+
+=== Callbacks with variable arguments
+
+Use {{{Js.Unsafe.callback_with_arguments}}} when the callback receives a
+variable number of arguments:
+
+<<code language="ocaml"|
+let varargs_cb = Js.Unsafe.callback_with_arguments (fun args ->
+  let len = args##.length in
+  Printf.printf "Called with %d arguments\n" len)
+>>
+
+== Using a JS constructor
+
+To call a JavaScript constructor (i.e., {{{new F(...)}}}), first obtain the
+constructor (i.e. from the global object), then use {{{new%js}}} to instantiate it.
+
+=== Basic usage
+
+<<code language="ocaml"|
+(* In .ml: get the constructor *)
+let dateConstr : (int -> int -> int -> Js.date Js.t) Js.constr =
+  Js.Unsafe.global##._Date
+
+(* Create an instance using new%js *)
+let my_date = new%js dateConstr 2024 0 15
+>>
+
+This is equivalent to:
+<<code language="javascript"|
+new Date(2024, 0, 15)
+>>
+
+=== Handling overloaded constructors
+
+JavaScript constructors often accept different argument types. Since OCaml
+requires fixed types, define multiple bindings for each signature:
+
+<<code language="ocaml"|
+(* In .mli *)
+val dateConstr : (int -> int -> int -> Js.date Js.t) Js.constr
+val dateConstr_fromValue : (int -> Js.date Js.t) Js.constr
+val dateConstr_fromString : (Js.js_string Js.t -> Js.date Js.t) Js.constr
+
+(* In .ml - all point to the same JS constructor *)
+let dateConstr = Js.Unsafe.global##._Date
+let dateConstr_fromValue = Js.Unsafe.global##._Date
+let dateConstr_fromString = Js.Unsafe.global##._Date
+>>
+
+=== Constructors from nested objects
+
+For constructors not on the global object, bind them first:
+
+<<code language="ocaml"|
+let workerConstr : (Js.js_string Js.t -> worker Js.t) Js.constr =
+  Js.Unsafe.global##._Worker
+
+(* For nested: someLib.SomeClass *)
+let someClass = (Js.Unsafe.js_expr "someLib")##._SomeClass in
+new%js someClass arg1 arg2
 >>
 
 == Constructing JS objects manually
-If you want to construct a JS object manually
-(without calling a function or a constructor), you can use
-the <<a_manual chapter="Ppx"|Ppx>> syntax extension.
 
-For example:
+To construct a JS object without calling a constructor, use the
+<<a_manual chapter="Ppx"|Ppx>> syntax extension (recommended) or
+{{{Js.Unsafe.obj}}}.
+
+=== Using the PPX syntax (recommended)
+
 <<code language="ocaml"|
 let options = object%js
   val x = 3 (* read-only prop *)
   val mutable y = 4 (* read/write prop *)
+  method greet name = Js.string ("Hello " ^ Js.to_string name)
 end
 >>
 
-You can also use the unsafe <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.obj>>.
+This produces the equivalent of:
+<<code language="javascript"|
+{ x: 3, y: 4, greet: function(name) { return "Hello " + name; } }
+>>
 
-== Set/get variables
+See the <<a_manual chapter="Ppx"|Ppx documentation>> for more details.
 
-You can access every variable through the global javascript object ({{{window}}}):
+=== Using {{{Js.Unsafe.obj}}}
 
-If the variable {{{var}}} has type {{{t Js.t}}}
+For dynamic object construction, use {{{Js.Unsafe.obj}}} with an array of
+key-value pairs:
 
 <<code language="ocaml"|
-let set (x:t Js.t) = Js.Unsafe.global##.var := x
-let get x : t Js.t = Js.Unsafe.global##.var
+let options : < x: int Js.prop; y: int Js.prop > Js.t =
+  Js.Unsafe.obj [|
+    ("x", Js.Unsafe.inject 3);
+    ("y", Js.Unsafe.inject 4);
+  |]
+>>
+
+A common pattern is to create an empty object and set properties afterwards.
+This is useful when calling JavaScript functions that expect an options object
+with optional fields. Use {{{writeonly_prop}}} for the type to prevent reading
+unset properties (which would return {{{undefined}}}):
+
+<<code language="ocaml"|
+class type myOptions = object
+  method timeout : int Js.writeonly_prop
+  method retry : bool Js.t Js.writeonly_prop
+end
+
+let call_with_options () =
+  let options : myOptions Js.t = Js.Unsafe.obj [||] in
+  options##.timeout := 5000;
+  options##.retry := Js._true;
+  some_js_function options
+>>
+
+== Check availability of methods and properties
+
+JavaScript APIs vary across browsers and environments. A method or property
+may exist in one browser but not another, or may have been added in a recent
+version. Use {{{Js.Optdef}}} to safely check for and access optional members.
+
+=== Checking if a member exists
+
+<<code language="ocaml"|
+let has_method obj = Js.Optdef.test (Js.Unsafe.coerce obj)##.someMethod
+let has_prop obj = Js.Optdef.test (Js.Unsafe.coerce obj)##.someProp
+>>
+
+=== Safely accessing optional members
+
+Use {{{Js.Optdef.to_option}}} to convert to an OCaml option:
+
+<<code language="ocaml"|
+let get_optional_method obj =
+  Js.Optdef.to_option (Js.Unsafe.coerce obj)##.someMethod
+
+let () =
+  match get_optional_method my_obj with
+  | Some f -> (* use the method *)
+  | None -> (* fallback behavior *)
+>>
+
+Use {{{Js.Optdef.case}}} for inline handling:
+
+<<code language="ocaml"|
+let result =
+  Js.Optdef.case (Js.Unsafe.coerce obj)##.optionalMethod
+    (fun () -> (* not defined, use fallback *) default_value)
+    (fun m -> (* defined, use it *) m arg1 arg2)
+>>
+
+=== Example: feature detection
+
+<<code language="ocaml"|
+let supports_fetch () =
+  Js.Optdef.test Js.Unsafe.global##.fetch
+
+let supports_local_storage () =
+  Js.Optdef.test Js.Unsafe.global##.localStorage
 >>
 
 == Object property with multiple types
 
-If you want to read a property of an object which can have multiple types, you can define an intermediate type to do typesafe casting ex:
+JavaScript APIs often use union types where a property can hold values of
+different types (e.g., {{{string | Node}}} or {{{number | null}}}). Since OCaml
+requires a single type, use an opaque type with runtime type checking.
 
-Suppose the object {{{obj}}} has a property {{{prop}}} which can be either a string or a Dom node:
+=== Using {{{instanceof}}} for object types
+
+Use {{{Js.instanceof}}} to distinguish between different object types
+(e.g., DOM nodes, custom classes). Define an opaque type and cast functions:
 
 <<code language="ocaml"|
+(* Opaque type representing the union: Element | Text *)
+type element_or_text
 
-type dom_or_string
-
-class type obj = object
-  method prop : dom_or_string Js.t prop
+class type container = object
+  method child : element_or_text Js.t Js.prop
 end
 
-let obj : obj Js.t = Js.Unsafe.js_expr "obj"
-
-let string_constr : Js.js_string Js.t Js.constr = Js.Unsafe.global##._String
-
-let cast_string (x:dom_or_string Js.t) : Js.js_string Js.t Js.opt =
-  if Js.instanceof x string_constr
+(* Cast functions using instanceof *)
+let as_element (x : element_or_text Js.t) : Dom.element Js.t Js.opt =
+  if Js.instanceof x (Js.Unsafe.global##._Element)
   then Js.some (Js.Unsafe.coerce x)
   else Js.null
 
-let node_constr : Dom.node Js.t Js.constr = Js.Unsafe.global##._Node
-
-let cast_node (x:dom_or_string Js.t) : Dom.node Js.t Js.opt =
-  if Js.instanceof x node_constr
+let as_text (x : element_or_text Js.t) : Dom.text Js.t Js.opt =
+  if Js.instanceof x (Js.Unsafe.global##._Text)
   then Js.some (Js.Unsafe.coerce x)
   else Js.null
 
+(* Usage *)
+let handle_child (container : container Js.t) =
+  let child = container##.child in
+  Js.Opt.case (as_element child)
+    (fun () ->
+      Js.Opt.case (as_text child)
+        (fun () -> failwith "unexpected type")
+        (fun text -> (* handle text node *)))
+    (fun elem -> (* handle element *))
 >>
 
-== Check availability of method
+=== Using {{{typeof}}} for primitive types
 
-It is frequent that some methods are not implemented in some browsers.
-
-To check the presence of method {{{met}}}:
+For primitive types (string, number, boolean), use {{{Js.typeof}}}:
 
 <<code language="ocaml"|
-let check_met obj = Js.Optdef.test ((Js.Unsafe.coerce obj)##.met)
+type string_or_number
+
+let as_string (x : string_or_number Js.t) : Js.js_string Js.t Js.opt =
+  if Js.typeof x = Js.string "string"
+  then Js.some (Js.Unsafe.coerce x)
+  else Js.null
+
+let as_number (x : string_or_number Js.t) : Js.number Js.t Js.opt =
+  if Js.typeof x = Js.string "number"
+  then Js.some (Js.Unsafe.coerce x)
+  else Js.null
+>>
+
+=== Converting to OCaml variants
+
+For cleaner OCaml code, convert the union to a variant:
+
+<<code language="ocaml"|
+type child =
+  | Element of Dom.element Js.t
+  | Text of Dom.text Js.t
+
+let classify_child (x : element_or_text Js.t) : child =
+  if Js.instanceof x (Js.Unsafe.global##._Element)
+  then Element (Js.Unsafe.coerce x)
+  else Text (Js.Unsafe.coerce x)
+
+(* Now use pattern matching *)
+let handle container =
+  match classify_child container##.child with
+  | Element e -> (* work with element *)
+  | Text t -> (* work with text node *)
+>>
+
+== Accessing JavaScript runtime values
+
+The {{{Jsoo_runtime.Js.runtime_value}}} function allows direct access to JavaScript
+values provided by the runtime (declared with {{{//Provides:}}} directives in
+JavaScript files).
+
+<<code language="ocaml"|
+external runtime_value : string -> 'a = "caml_jsoo_runtime_value"
+>>
+
+This function is useful when you need to access JavaScript values defined by an external javascript package.
+and you don't want to polute the global object.
+
+**Important**: The argument must be a **string literal**, not a variable.
+The compiler will reject non-literal arguments.
+
+=== Example
+
+Given a JavaScript file {{{custom.js}}} linked with your program:
+
+<<code language="javascript"|
+//Provides: process
+var process = "my process value";
+
+//Provides: myConfig
+var myConfig = { debug: true, version: 42 };
+>>
+
+You can access these values from OCaml:
+
+<<code language="ocaml"|
+let process_str : Js.js_string Js.t = Jsoo_runtime.Js.runtime_value "process"
+
+let config : < debug : bool Js.t Js.prop; version : int Js.prop > Js.t =
+  Jsoo_runtime.Js.runtime_value "myConfig"
+
+let () =
+  print_endline (Js.to_string process_str);
+  if Js.to_bool config##.debug then
+    Printf.printf "Version: %d\n" config##.version
 >>

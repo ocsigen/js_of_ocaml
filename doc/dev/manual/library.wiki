@@ -1,5 +1,9 @@
 = The Js_of_ocaml library
 
+This page describes the core concepts of the Js_of_ocaml type system for
+representing JavaScript values in OCaml. For practical examples of binding
+JavaScript libraries, see <<a_manual chapter="bindings"|Binding a JS library>>.
+
 == Base types ==
 
 Base values are not represented the same way in OCaml and Javascript.
@@ -15,8 +19,9 @@ provided.
 | {{{string}}}  | {{{Js.js_string Js.t}}}          | String                  |
 | {{{array}}}   | {{{Js.js_array Js.t}}}           | Array                   |
 
-Integers and floats are implemented as Javascript numbers.  They can
-thus be directly passed to and from Javascript.
+Integers are implemented as Javascript numbers and can be passed directly.
+Other types require conversion functions. See <<a_manual chapter="bindings"|Type conversions>>
+for the full list of conversion functions and examples.
 
 == Typing Javascript objects ==
 
@@ -32,6 +37,21 @@ type:
 has a property {{{data}}} containing a Javascript string, and a method
 {{{appendData}}} taking a Javascript string as argument and returning
 no value.
+
+See <<a_manual chapter="bindings"|the bindings manual>>
+for practical examples of defining class types.
+
+== Nullable and optional values ==
+
+JavaScript has two "missing value" types: {{{null}}} and {{{undefined}}}.
+Js_of_ocaml represents these with distinct types:
+
+* **{{{Js.Opt}}}** - For values that may be {{{null}}} (e.g., DOM lookups)
+* **{{{Js.Optdef}}}** - For values that may be {{{undefined}}} (e.g., optional properties)
+
+Both modules provide similar functions: {{{test}}}, {{{to_option}}}, {{{case}}},
+{{{get}}}, {{{map}}}, {{{iter}}}, etc. See <<a_manual chapter="bindings"|Handling null and undefined>>
+for practical examples and guidance on when to use each type.
 
 === Method name and underscore
 
@@ -82,9 +102,9 @@ end
 
 == Syntax extension ==
 
-Two syntax extensions are provided: the <<a_manual chapter="ppx"|Ppx_js>>
-one and the <<a_manual chapter="camlp4"|Camlp4>> one. This manual is written
-using the ppx extension, which we advise.
+The <<a_manual chapter="ppx"|Ppx_js>> syntax extension provides convenient
+syntax for accessing properties, calling methods, and creating objects.
+See the PPX documentation for the full syntax reference.
 
 == OCaml and Javascript functions ==
 
@@ -98,10 +118,11 @@ an OCaml function, and conversely.
 
 === Calling Javascript functions ===
 
-At the moment, there is no syntactic sugar for calling Javascript
-functions.  You should use either {{{Js.Unsafe.call}}} or
-{{{Js.Unsafe.fun_call}}}, depending whether you want {{{this}}} to be
-bound to some particular object in the function body or not.
+Use {{{Js.Unsafe.fun_call}}} to call a JavaScript function, or
+{{{Js.Unsafe.call}}} if you need to bind {{{this}}} to a specific object.
+Use {{{Js.Unsafe.meth_call}}} to call a method on an object.
+
+See <<a_manual chapter="bindings"|the bindings manual>> for detailed examples.
 
 You can also refer to a Javascript function using an OCaml external
 declaration. Then, you need to write stub functions in C so that the

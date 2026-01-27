@@ -12,21 +12,10 @@ Js_of_ocaml will attempt to preserve variable names.
   * {{{--source-map}}} - enable source-map support
 
 == JavaScript stacktrace
-Js_of_ocaml can attach a JavaScript {{{Error}}} that embeds the current
-stacktrace to an OCaml exception. The {{{Error}}} can be attached with
-{{{Js.Js_error.attach_js_backtrace}}} and extracted using
-{{{Js.Js_error.of_exn}}}. Un-handled OCaml exceptions will throw any
-JavaScript {{{Error}}} attached to them, allowing the JS engine to display
-the stacktrace nicely.
 
-Js_of_ocaml will attach an {{{Error}}} automatically when raising an OCaml
-exception (with {{{raise}}}, not with {{{raise_notrace}}}) if
-{{{Printexc.backtrace_status() = true}}} and either the environment
-variable {{{OCAMLRUNPARAM}}} is set with {{{b=1}}} or the program was compiled
-with {{{--enable with-js-error}}}.
-
-Note that creating JavaScript {{{Error}}}s is costly and can degrade performance a lot.
-This is the reason why such feature is not enabled by default.
+See <<a_manual chapter="errors"|Error handling>> for details on attaching
+JavaScript stack traces to OCaml exceptions using {{{OCAMLRUNPARAM=b=1}}} or
+the {{{--enable with-js-error}}} compiler flag.
 
 == Breakpoint
 One can set breakpoints using developers tools (see https://developer.chrome.com/devtools/docs/javascript-debugging).
