@@ -5,7 +5,7 @@
 === Global variables
 
 Global JavaScript variables are properties of the global object. Use
-{{{Js.Unsafe.global}}} to access them ({{{window}}} in browsers,
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.global>> to access them ({{{window}}} in browsers,
 {{{globalThis}}} in Node.js):
 
 <<code language="ocaml"|
@@ -17,18 +17,18 @@ let get_config () : config Js.t = Js.Unsafe.global##.myAppConfig
 let set_config (x : config Js.t) = Js.Unsafe.global##.myAppConfig := x
 >>
 
-You can also use {{{Js.Unsafe.js_expr}}} for any JavaScript expression:
+You can also use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.js_expr>> for any JavaScript expression:
 <<code language="ocaml"|
 let v = (Js.Unsafe.js_expr "window")##.document
 >>
 
-Be careful: both {{{Js.Unsafe.global}}} and {{{Js.Unsafe.js_expr}}} are untyped.
+Be careful: both <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.global>> and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.js_expr>> are untyped.
 Verify the library documentation before writing type annotations.
 
 === Untyped property access
 
 When a property is missing from the OCaml interface (e.g., dynamically added
-by a library), use {{{Js.Unsafe.coerce}}} for untyped access:
+by a library), use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.coerce>> for untyped access:
 
 <<code language="ocaml"|
 (* Read a property *)
@@ -81,8 +81,8 @@ end
 OCaml method names are transformed to JavaScript names using underscore
 conventions. When accessing a field of an object, the name given in OCaml
 is transformed by:
-1. Removing a leading underscore (if present)
-2. Removing all characters starting from the last underscore
+# Removing a leading underscore (if present)
+# Removing all characters starting from the last underscore
 
 This enables:
 - **Capitalized names**: Use {{{_Foo}}} to refer to JavaScript's {{{Foo}}}
@@ -155,8 +155,8 @@ these functions to convert between them.
 
 === Strings
 
-OCaml strings and JavaScript strings have different encodings. Use {{{Js.string}}}
-and {{{Js.to_string}}} for UTF-8 encoded OCaml strings:
+OCaml strings and JavaScript strings have different encodings. Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.string>>
+and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.to_string>> for UTF-8 encoded OCaml strings:
 
 <<code language="ocaml"|
 (* OCaml string -> JS string *)
@@ -166,7 +166,7 @@ let js_str : Js.js_string Js.t = Js.string "Hello"
 let ocaml_str : string = Js.to_string js_str
 >>
 
-For binary data (bytes 0-255), use {{{Js.bytestring}}} and {{{Js.to_bytestring}}}:
+For binary data (bytes 0-255), use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.bytestring>> and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.to_bytestring>>:
 
 <<code language="ocaml"|
 let js_bytes = Js.bytestring "\x00\x01\x02"
@@ -175,7 +175,7 @@ let ocaml_bytes = Js.to_bytestring js_bytes
 
 === Booleans
 
-JavaScript booleans are not OCaml booleans. Use {{{Js.bool}}} and {{{Js.to_bool}}}:
+JavaScript booleans are not OCaml booleans. Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.bool>> and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.to_bool>>:
 
 <<code language="ocaml"|
 let js_true : bool Js.t = Js._true        (* or Js.bool true *)
@@ -185,8 +185,8 @@ let ocaml_bool : bool = Js.to_bool js_true
 
 === Numbers
 
-OCaml integers can be used directly. For floats, use {{{Js.float}}} and
-{{{Js.to_float}}}:
+OCaml integers can be used directly. For floats, use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.number_of_float>> and
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.float_of_number>>:
 
 <<code language="ocaml"|
 (* Integers work directly *)
@@ -222,9 +222,9 @@ let ocaml_arr : int array = Js.to_array js_arr
 JavaScript has two "missing value" types: {{{null}}} and {{{undefined}}}.
 Js_of_ocaml represents these with distinct types.
 
-=== {{{Js.Opt}}} for nullable values ({{{null}}})
+=== <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Opt>> for nullable values ({{{null}}})
 
-Use {{{Js.Opt}}} for values that may be {{{null}}} (e.g., DOM methods that
+Use <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Opt>> for values that may be {{{null}}} (e.g., DOM methods that
 return {{{null}}} when an element is not found):
 
 <<code language="ocaml"|
@@ -247,9 +247,9 @@ let some_val : element Js.t Js.opt = Js.some element
 let null_val : element Js.t Js.opt = Js.null
 >>
 
-=== {{{Js.Optdef}}} for optional values ({{{undefined}}})
+=== <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Optdef>> for optional values ({{{undefined}}})
 
-Use {{{Js.Optdef}}} for values that may be {{{undefined}}} (e.g., optional
+Use <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Optdef>> for values that may be {{{undefined}}} (e.g., optional
 object properties, array access beyond bounds):
 
 <<code language="ocaml"|
@@ -274,7 +274,7 @@ let undef_val : int Js.optdef = Js.undefined
 |= Scenario |= Type |= Example |
 | DOM lookup | {{{Js.Opt}}} | {{{getElementById}}} returns {{{null}}} if not found |
 | Optional property | {{{Js.Optdef}}} | Property may not exist on object |
-| Array access | {{{Js.Optdef}}} | {{{Js.array_get}}} returns {{{undefined}}} for missing index |
+| Array access | {{{Js.Optdef}}} | <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.array_get>> returns {{{undefined}}} for missing index |
 | API returns null | {{{Js.Opt}}} | Many DOM APIs use {{{null}}} for "no value" |
 | Feature detection | {{{Js.Optdef}}} | Check if method/property exists |
 
@@ -300,7 +300,7 @@ should be bound.
 
 === Standalone functions with {{{fun_call}}}
 
-Use {{{Js.Unsafe.fun_call}}} for functions where {{{this}}} doesn't matter:
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.fun_call>> for functions where {{{this}}} doesn't matter:
 
 <<code language="ocaml"|
 (* Equivalent to: decodeURI(s) *)
@@ -318,7 +318,7 @@ let parseInt (s : Js.js_string Js.t) : int =
 
 === Methods with {{{meth_call}}}
 
-Use {{{Js.Unsafe.meth_call}}} to call a method on an object ({{{this}}} is
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.meth_call>> to call a method on an object ({{{this}}} is
 bound to the object):
 
 <<code language="ocaml"|
@@ -330,7 +330,7 @@ let slice arr start stop =
 
 === Functions with explicit {{{this}}} binding
 
-Use {{{Js.Unsafe.call}}} when you need to explicitly set {{{this}}}:
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.call>> when you need to explicitly set {{{this}}}:
 
 <<code language="ocaml"|
 (* Equivalent to: func.call(thisArg, arg1, arg2) *)
@@ -346,9 +346,9 @@ API for more details.
 When JavaScript code needs to call back into OCaml (e.g., event handlers,
 callbacks for async operations), you must wrap OCaml functions appropriately.
 
-=== Basic callbacks with {{{Js.wrap_callback}}}
+=== Basic callbacks with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_callback>>
 
-Use {{{Js.wrap_callback}}} to wrap an OCaml function for JavaScript:
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_callback>> to wrap an OCaml function for JavaScript:
 
 <<code language="ocaml"|
 (* setTimeout example *)
@@ -360,13 +360,13 @@ let set_timeout f ms =
 let () = set_timeout (fun () -> print_endline "Hello!") 1000.
 >>
 
-{{{Js.wrap_callback}}} handles partial application correctly: if JavaScript
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_callback>> handles partial application correctly: if JavaScript
 calls the function with fewer arguments than expected, the result is a
 partially applied function.
 
 === Callbacks with {{{this}}} binding
 
-Use {{{Js.wrap_meth_callback}}} when the callback needs access to {{{this}}}:
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_meth_callback>> when the callback needs access to {{{this}}}:
 
 <<code language="ocaml"|
 (* The first parameter receives the 'this' value *)
@@ -379,7 +379,7 @@ let callback = Js.wrap_meth_callback (fun this event ->
 === Strict arity callbacks
 
 For performance-critical code, or when you don't need partial application
-support, use {{{Js.Unsafe.callback}}} or {{{Js.Unsafe.callback_with_arity}}}:
+support, use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.callback>> or <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.callback_with_arity>>:
 
 <<code language="ocaml"|
 (* Strict callback - missing args become undefined, extra args are lost *)
@@ -391,9 +391,9 @@ let arity_cb = Js.Unsafe.callback_with_arity 2 (fun x y -> x + y)
 
 === DOM event handlers
 
-For DOM events, use {{{Dom.handler}}} or {{{Dom_html.handler}}} which
+For DOM events, use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Dom.handler>> or <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Dom_html.handler>> which
 automatically wraps the function and handles the return value (returning
-{{{Js._false}}} prevents the default action):
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js._false>> prevents the default action):
 
 <<code language="ocaml"|
 let button = Dom_html.getElementById "myButton"
@@ -405,7 +405,7 @@ let handler = Dom_html.handler (fun event ->
 button##.onclick := handler
 >>
 
-For handlers that need access to {{{this}}}, use {{{Dom.full_handler}}}:
+For handlers that need access to {{{this}}}, use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Dom.full_handler>>:
 
 <<code language="ocaml"|
 let handler = Dom.full_handler (fun this event ->
@@ -416,7 +416,7 @@ let handler = Dom.full_handler (fun this event ->
 
 === Callbacks with variable arguments
 
-Use {{{Js.Unsafe.callback_with_arguments}}} when the callback receives a
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.callback_with_arguments>> when the callback receives a
 variable number of arguments:
 
 <<code language="ocaml"|
@@ -480,7 +480,7 @@ new%js someClass arg1 arg2
 
 To construct a JS object without calling a constructor, use the
 <<a_manual chapter="Ppx"|Ppx>> syntax extension (recommended) or
-{{{Js.Unsafe.obj}}}.
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.obj>>.
 
 === Using the PPX syntax (recommended)
 
@@ -499,9 +499,9 @@ This produces the equivalent of:
 
 See the <<a_manual chapter="Ppx"|Ppx documentation>> for more details.
 
-=== Using {{{Js.Unsafe.obj}}}
+=== Using <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.obj>>
 
-For dynamic object construction, use {{{Js.Unsafe.obj}}} with an array of
+For dynamic object construction, use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.obj>> with an array of
 key-value pairs:
 
 <<code language="ocaml"|
@@ -534,7 +534,7 @@ let call_with_options () =
 
 JavaScript APIs vary across browsers and environments. A method or property
 may exist in one browser but not another, or may have been added in a recent
-version. Use {{{Js.Optdef}}} to safely check for and access optional members.
+version. Use <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Optdef>> to safely check for and access optional members.
 
 === Checking if a member exists
 
@@ -545,7 +545,7 @@ let has_prop obj = Js.Optdef.test (Js.Unsafe.coerce obj)##.someProp
 
 === Safely accessing optional members
 
-Use {{{Js.Optdef.to_option}}} to convert to an OCaml option:
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Optdef.to_option>> to convert to an OCaml option:
 
 <<code language="ocaml"|
 let get_optional_method obj =
@@ -557,7 +557,7 @@ let () =
   | None -> (* fallback behavior *)
 >>
 
-Use {{{Js.Optdef.case}}} for inline handling:
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Optdef.case>> for inline handling:
 
 <<code language="ocaml"|
 let result =
@@ -584,7 +584,7 @@ requires a single type, use an opaque type with runtime type checking.
 
 === Using {{{instanceof}}} for object types
 
-Use {{{Js.instanceof}}} to distinguish between different object types
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.instanceof>> to distinguish between different object types
 (e.g., DOM nodes, custom classes). Define an opaque type and cast functions:
 
 <<code language="ocaml"|
@@ -619,7 +619,7 @@ let handle_child (container : container Js.t) =
 
 === Using {{{typeof}}} for primitive types
 
-For primitive types (string, number, boolean), use {{{Js.typeof}}}:
+For primitive types (string, number, boolean), use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.typeof>>:
 
 <<code language="ocaml"|
 type string_or_number
@@ -658,7 +658,7 @@ let handle container =
 
 == Accessing JavaScript runtime values
 
-The {{{Jsoo_runtime.Js.runtime_value}}} function allows direct access to JavaScript
+The <<a_api subproject="js_of_ocaml"|val Jsoo_runtime.Js.runtime_value>> function allows direct access to JavaScript
 values provided by the runtime (declared with {{{//Provides:}}} directives in
 JavaScript files).
 

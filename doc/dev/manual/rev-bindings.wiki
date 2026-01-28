@@ -3,9 +3,9 @@
 This page explains how to make OCaml values (functions, objects, constants)
 accessible from JavaScript code.
 
-== Basic export with {{{Js.export}}}
+== Basic export with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>>
 
-Use {{{Js.export}}} to export a single named value:
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> to export a single named value:
 
 <<code language="ocaml"|
 open Js_of_ocaml
@@ -26,9 +26,9 @@ myMathLib.abs(-5);      // 5
 myMathLib.zero;         // 0
 >>
 
-== Exporting multiple values with {{{Js.export_all}}}
+== Exporting multiple values with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>>
 
-Use {{{Js.export_all}}} to export all properties of an object as top-level
+Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> to export all properties of an object as top-level
 exports:
 
 <<code language="ocaml"|
@@ -80,7 +80,7 @@ factorial(5);      // 120
 
 Some types are automatically converted:
 - OCaml {{{int}}} works directly as JavaScript numbers
-- Exported functions are automatically wrapped with {{{Js.wrap_callback}}}
+- Exported functions are automatically wrapped with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_callback>>
 
 === Manual conversions needed
 
@@ -111,7 +111,7 @@ let () =
 == Handling callbacks from JavaScript
 
 When JavaScript passes a callback to your OCaml code, you receive a JavaScript
-function. Use {{{Js.Unsafe.fun_call}}} to invoke it:
+function. Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.fun_call>> to invoke it:
 
 <<code language="ocaml"|
 let () =
@@ -134,7 +134,7 @@ utils.forEach([1, 2, 3], function(x) { console.log(x); });
 
 == Using with Node.js
 
-{{{Js.export}}} and {{{Js.export_all}}} automatically use {{{module.exports}}}
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> automatically use {{{module.exports}}}
 when running in Node.js:
 
 <<code language="ocaml"|
@@ -184,7 +184,7 @@ let () =
          method add x y = x + y
        end
        val utils = object%js
-         method log msg = Firebug.console##log msg
+         method log msg = Console.console##log msg
        end
      end)
 >>

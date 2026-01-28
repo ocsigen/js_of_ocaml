@@ -53,7 +53,7 @@ See https://developer.chrome.com/docs/devtools/javascript for details.
 
 === Programmatic breakpoints
 
-Insert breakpoints in your OCaml code:
+Insert breakpoints in your OCaml code using <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.debugger>>:
 
 <<code language="ocaml"|
 let my_function x =
@@ -81,10 +81,10 @@ Debugger listening on ws://127.0.0.1:9229/...
 
 === Chrome DevTools for Node.js
 
-1. Run {{{node --inspect}}} or {{{node --inspect-brk}}} (breaks on first line)
-2. Open Chrome and navigate to {{{chrome://inspect}}}
-3. Click "Open dedicated DevTools for Node"
-4. Your program appears in the Sources panel
+# Run {{{node --inspect}}} or {{{node --inspect-brk}}} (breaks on first line)
+# Open Chrome and navigate to {{{chrome://inspect}}}
+# Click "Open dedicated DevTools for Node"
+# Your program appears in the Sources panel
 
 == Stack traces
 

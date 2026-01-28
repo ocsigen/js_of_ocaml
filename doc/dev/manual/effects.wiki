@@ -19,7 +19,7 @@ CPS version. The choice of running the CPS version is delayed to run time.
 
 Since CPS code is usually slower, this can avoid performance degradations. You can
 also ensure that some code runs in direct style using
-{{{Jsoo_runtime.Effect.assume_no_perform}}}.
+<<a_api subproject="js_of_ocaml"|val Jsoo_runtime.Effect.assume_no_perform>>.
 
 == Dune integration
 
@@ -47,24 +47,13 @@ This setup supports both separate and whole program compilation.
 
 === Per-executable setup
 
-To enable effect handlers for specific binaries only, you need to use whole
-program compilation:
+To enable effect handlers for specific executables:
 
 {{{
 (executable
  (name main)
  (js_of_ocaml
-  (compilation_mode whole_program)
   (flags (:standard --effects=double-translation))))
-}}}
-
-Using separate compilation with effects enabled only for some executables will
-result in a linking error:
-
-{{{
-js_of_ocaml: Error: Incompatible build info detected while linking.
- - test6.bc.runtime.js: effects=disabled
- - .cmphash.eobjs/byte/dune__exe.cmo.js: effects=double-translation
 }}}
 
 == See also

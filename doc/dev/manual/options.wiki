@@ -8,14 +8,17 @@ This page documents the command-line options for the {{{js_of_ocaml}}} compiler.
 | {{{--version}}} | Display the compiler version |
 | {{{-o <file>}}} | Set output filename |
 | {{{--opt {1,2,3}}}} | Set optimization profile (default: 1). See [[#optimizations|Optimizations]] |
-| {{{--pretty}}} | Pretty print JavaScript output |
-| {{{--no-inline}}} | Disable code inlining |
-| {{{--debug-info}}} | Output debug information (source locations) |
-| {{{-I <dir>}}} | Add directory to include path |
 | {{{--enable <opt>}}} | Enable option. See [[#enable-disable|Enable/Disable options]] |
 | {{{--disable <opt>}}} | Disable option. See [[#enable-disable|Enable/Disable options]] |
-| {{{--quiet}}} / {{{-q}}} | Suppress non-error messages |
-| {{{--Werror}}} | Treat warnings as errors |
+| {{{-I <dir>}}} | Add directory to the list of include directories |
+
+== Debugging
+
+|= Option |= Description |
+| {{{--pretty}}} | Pretty print JavaScript output, preserve OCaml variable names |
+| {{{--no-inline}}} | Disable code inlining |
+| {{{--debug-info}}} | Output debug information (source locations) |
+| {{{--source-map}}} | Generate source map. See [[#source-maps|Source maps]] |
 
 == Target environment
 
@@ -67,10 +70,10 @@ Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime
 
 When OCaml code calls {{{Sys.getenv}}}, js_of_ocaml resolves variables in this order:
 
-1. If the variable was set at compile time with {{{--setenv VAR=value}}}, return it
-2. If running in Node.js, check {{{process.env}}}
-3. Check {{{globalThis.jsoo_env}}} (useful for setting variables in browsers)
-4. Raise {{{Not_found}}}
+# If the variable was set at compile time with {{{--setenv VAR=value}}}, return it
+# If running in Node.js, check {{{process.env}}}
+# Check {{{globalThis.jsoo_env}}} (useful for setting variables in browsers)
+# Raise {{{Not_found}}}
 
 === Browser example
 
@@ -102,10 +105,9 @@ See <<a_manual chapter="build-toplevel"|Building a toplevel>> for details.
 | {{{--wrap-with-fun[=<name>]}}} | Wrap output in a function (default: IIFE) |
 | {{{--custom-header <text>}}} | Add custom header (e.g., {{{#!/usr/bin/env node}}}) |
 
-See <<a_manual chapter="separate-compilation"|Separate compilation>> for details.
+See <<a_manual chapter="compilation-modes"|Compilation modes>> for details.
 
-== Optimizations
-<<a_id optimizations>>
+==@@id="optimizations"@@ Optimizations
 
 === Optimization profiles
 
@@ -127,8 +129,7 @@ For production:
 js_of_ocaml --opt 3 program.byte
 }}}
 
-== Enable/Disable options
-<<a_id enable-disable>>
+==@@id="enable-disable"@@ Enable/Disable options
 
 Use {{{--enable <opt>}}} or {{{--disable <opt>}}} to control these flags:
 
@@ -176,7 +177,13 @@ Use {{{--set <param>=<value>}}} to tune compiler behavior:
 
 == Warnings
 
-Use {{{-w <warning>}}} to enable or {{{-w no-<warning>}}} to disable warnings:
+|= Option |= Description |
+| {{{--quiet}}} / {{{-q}}} | Suppress non-error messages |
+| {{{--Werror}}} | Treat warnings as errors |
+| {{{-w <warning>}}} | Enable warning |
+| {{{-w no-<warning>}}} | Disable warning |
+
+Available warnings:
 
 |= Warning |= Default |= Description |
 | {{{missing-primitive}}} | on | Missing JavaScript primitive implementation |

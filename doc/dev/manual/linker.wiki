@@ -21,8 +21,11 @@ js_of_ocaml myruntime.js program.byte
 
 == Finding runtime files
 
-OCaml libraries often require JavaScript runtime files. These are discovered
-using Findlib's {{{jsoo_runtime}}} variable.
+OCaml libraries often require JavaScript runtime files. The js_of_ocaml compiler
+does not automatically locate these files - this is the responsibility of your
+build system (dune) or you must pass them explicitly on the command line.
+
+Runtime files are discovered using Findlib's {{{jsoo_runtime}}} variable.
 
 === List required runtime files
 
@@ -73,11 +76,23 @@ function primitive_name(arg1, arg2) {
 **{{{//Provides: name [modifier]}}}** - Declares a primitive:
 * {{{const}}} - No side effects (pure function)
 * {{{mutable}}} - No side effects, but return value may be affected by other primitives
-* (no modifier) - May have side effects
+* {{{mutator}}} (or empty) - May have side effects
 
 **{{{//Requires: name1, name2}}}** - Lists primitives that must be loaded first
 
-**{{{//Version: < 4.12.0}}}** - Optional OCaml version constraint (rarely needed)
+**{{{//Version: < 4.12.0}}}** - OCaml version constraint
+
+**{{{//Alias: other_name}}}** - Makes this primitive an alias for another
+
+**{{{//Weakdef}}}** - Allows this primitive to be overridden by another definition
+
+**{{{//Always}}}** - Always include this code, even if not referenced
+
+**{{{//If: flag}}}** - Only include if flag is enabled (e.g., {{{//If: effects}}})
+
+**{{{//Ifnot: flag}}}** - Only include if flag is disabled
+
+**{{{//Deprecated: message}}}** - Mark primitive as deprecated
 
 All JavaScript code after a {{{//Provides}}} annotation belongs to that
 primitive, until the next {{{//Provides}}}.
@@ -168,5 +183,5 @@ uses {{{jsoo_runtime}}} internally.
 
 == See also
 
-* <<a_manual chapter="separate-compilation"|Separate compilation>>
+* <<a_manual chapter="compilation-modes"|Compilation modes>>
 * <<a_manual chapter="options"|Command-line options>>

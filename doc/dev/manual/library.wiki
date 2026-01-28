@@ -4,9 +4,9 @@ This page provides an overview of the Js_of_ocaml type system for representing
 JavaScript values in OCaml. For practical examples, see the
 <<a_manual chapter="bindings"|bindings guide>>.
 
-== Core concept: {{{Js.t}}}
+== Core concept: <<a_api subproject="js_of_ocaml"|type Js_of_ocaml.Js.t>>
 
-All JavaScript values in OCaml are wrapped in the {{{Js.t}}} type. This phantom
+All JavaScript values in OCaml are wrapped in the <<a_api subproject="js_of_ocaml"|type Js_of_ocaml.Js.t>> type. This phantom
 type ensures type safety when interacting with JavaScript.
 
 {{{
@@ -26,7 +26,7 @@ the correspondence:
 | {{{array}}} | {{{Js.js_array Js.t}}} | Array |
 
 Integers can be used directly. Other types require conversion functions
-like {{{Js.string}}}, {{{Js.bool}}}, etc. See
+like <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.string>>, <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.bool>>, etc. See
 <<a_manual chapter="bindings"|Type conversions>> for details and examples.
 
 == JavaScript objects
@@ -52,8 +52,8 @@ See <<a_manual chapter="bindings"|Binding a JS object>> for examples.
 
 JavaScript has {{{null}}} and {{{undefined}}}. Js_of_ocaml provides:
 
-* **{{{Js.Opt}}}** - For values that may be {{{null}}}
-* **{{{Js.Optdef}}}** - For values that may be {{{undefined}}}
+* <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Opt>> - For values that may be {{{null}}}
+* <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Optdef>> - For values that may be {{{undefined}}}
 
 See <<a_manual chapter="bindings"|Handling null and undefined>> for usage.
 
@@ -62,8 +62,8 @@ See <<a_manual chapter="bindings"|Handling null and undefined>> for usage.
 OCaml and JavaScript have different calling conventions (partial application
 vs. undefined for missing args). Use:
 
-* {{{Js.wrap_callback}}} - Wrap OCaml functions for JavaScript
-* {{{Js.Unsafe.fun_call}}} - Call JavaScript functions from OCaml
+* <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_callback>> - Wrap OCaml functions for JavaScript
+* <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.fun_call>> - Call JavaScript functions from OCaml
 
 See <<a_manual chapter="bindings"|Calling JS functions>> and
 <<a_manual chapter="bindings"|Passing OCaml functions to JavaScript>>.

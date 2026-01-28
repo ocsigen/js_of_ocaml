@@ -1,6 +1,6 @@
 = Building a toplevel
 
-First, initialize the toplevel using {{{Js_of_ocaml_toplevel.JsooTop.initialize}}}.
+First, initialize the toplevel using <<a_api subproject="js_of_ocaml-toplevel"|val Js_of_ocaml_toplevel.JsooTop.initialize>>.
 
 Then, build your bytecode program with debug enabled ({{{-g}}}) and linkall ({{{-linkall}}}). Link in all the libraries you want accessible in the final toplevel.
 
@@ -18,9 +18,9 @@ jsoo_listunits -o units.txt stdlib str
 
 OCaml supports dynlink of bytecode files using the {{{dynlink}}} library. To use it when compiled to JavaScript:
 
-1. Link {{{js_of_ocaml-compiler.dynlink}}} to initialize dynlink support (initialization is automatic via side-effect)
-2. Build your bytecode program with debug enabled ({{{-g}}}) and linkall ({{{-linkall}}})
-3. Compile your program to JavaScript passing the {{{--dynlink}}} flag
+# Link {{{js_of_ocaml-compiler.dynlink}}} to initialize dynlink support (initialization is automatic via side-effect)
+# Build your bytecode program with debug enabled ({{{-g}}}) and linkall ({{{-linkall}}})
+# Compile your program to JavaScript passing the {{{--dynlink}}} flag
 
 == Example
 

@@ -64,7 +64,7 @@ element##.style##.display := Js.string "none"
 
 (* Set event handler *)
 button##.onclick := Dom_html.handler (fun _ ->
-  Firebug.console##log (Js.string "Clicked!");
+  Console.console##log (Js.string "Clicked!");
   Js._true)
 >>
 
@@ -83,8 +83,8 @@ Use {{{##}}} (without a dot) to call a method:
 
 <<code language="ocaml"|
 (* Console logging *)
-Firebug.console##log (Js.string "Hello")
-Firebug.console##warn (Js.string "Warning!")
+Console.console##log (Js.string "Hello")
+Console.console##warn (Js.string "Warning!")
 
 (* DOM methods *)
 let element = Dom_html.document##getElementById (Js.string "myId")
@@ -97,7 +97,7 @@ let sub = js_string##substring 0 5
 (* Array methods *)
 js_array##push item
 js_array##forEach (Js.wrap_callback (fun x _idx _arr ->
-  Firebug.console##log x))
+  Console.console##log x))
 >>
 
 === Method chaining
@@ -208,7 +208,7 @@ end
 | {{{val x = v [@@readonly]}}} | {{{readonly_prop}}} | Yes | No |
 | {{{val x = v [@@readwrite]}}} | {{{prop}}} | Yes | Yes |
 | {{{val x = v [@@writeonly]}}} | {{{writeonly_prop}}} | No | Yes |
-| {{{val x = v [@@optdef]}}} | {{{optdef_prop}}} | Yes ({{{Optdef.t}}}) | Yes |
+| {{{val x = v [@@optdef]}}} | {{{optdef_prop}}} | Yes (<<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Optdef>>) | Yes |
 
 === Using {{{self}}}
 

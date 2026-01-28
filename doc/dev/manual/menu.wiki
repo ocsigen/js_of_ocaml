@@ -21,7 +21,7 @@
 ==Compiler
 ===[[options|Command line options]]
 ===[[linker|Linking JavaScript code]]
-===[[separate-compilation|Separate compilation]]
+===[[compilation-modes|Compilation modes]]
 ===[[tailcall|Tailcall optimization]]
 ===[[effects|Effect handlers]]
 
