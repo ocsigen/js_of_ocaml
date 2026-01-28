@@ -38,8 +38,8 @@ Additional runtime files are sometimes needed and can be passed on the
 command line.  In particular, some packages/libraries come with their
 own runtime file.
 
-See the <<a_manual chapter="runtime-files" |runtime files>> chapter for how to
-discover these files.
+See <<a_manual chapter="linker"|Linking JavaScript code>> for how to discover
+these files.
 
 === 2. Build compilation units
 

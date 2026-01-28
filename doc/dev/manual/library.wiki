@@ -1,160 +1,103 @@
 = The Js_of_ocaml library
 
-This page describes the core concepts of the Js_of_ocaml type system for
-representing JavaScript values in OCaml. For practical examples of binding
-JavaScript libraries, see <<a_manual chapter="bindings"|Binding a JS library>>.
+This page provides an overview of the Js_of_ocaml type system for representing
+JavaScript values in OCaml. For practical examples, see the
+<<a_manual chapter="bindings"|bindings guide>>.
 
-== Base types ==
+== Core concept: {{{Js.t}}}
 
-Base values are not represented the same way in OCaml and Javascript.
-In particular, OCaml strings are mutable arrays of bytes, while
-Javascript strings are constant arrays of UTF-16 code points.  We list
-here the correspondence between base types.  Conversion functions are
-provided.
+All JavaScript values in OCaml are wrapped in the {{{Js.t}}} type. This phantom
+type ensures type safety when interacting with JavaScript.
 
-|= OCaml values |= Ocaml type of Javascript values |= Actual Javascript type |
-| {{{int}}}     | {{{int}}}                        | Number                  |
-| {{{float}}}   | {{{Js.number Js.t}}}             | Number                  |
-| {{{bool}}}    | {{{bool Js.t}}}                  | Boolean                 |
-| {{{string}}}  | {{{Js.js_string Js.t}}}          | String                  |
-| {{{array}}}   | {{{Js.js_array Js.t}}}           | Array                   |
-
-Integers are implemented as Javascript numbers and can be passed directly.
-Other types require conversion functions. See <<a_manual chapter="bindings"|Type conversions>>
-for the full list of conversion functions and examples.
-
-== Typing Javascript objects ==
-
-Javascript objects are given types of the shape
-  {{{<m_1 : t_1; ...; m_n : t_n> Js.t}}},
-using a phantom object type.  The methods {{{m_i}}} stands for the
-field of the Javascript object.  For instance, a Javascript object of
-type:
 {{{
-   < data : js_string t Js.prop;
-     appendData : js_string t -> unit Js.meth> Js.t
+'a Js.t    (* An OCaml type representing a JavaScript value *)
 }}}
-has a property {{{data}}} containing a Javascript string, and a method
-{{{appendData}}} taking a Javascript string as argument and returning
-no value.
 
-See <<a_manual chapter="bindings"|the bindings manual>>
-for practical examples of defining class types.
+== Type mappings
 
-== Nullable and optional values ==
+OCaml and JavaScript represent values differently. The table below shows
+the correspondence:
 
-JavaScript has two "missing value" types: {{{null}}} and {{{undefined}}}.
-Js_of_ocaml represents these with distinct types:
+|= OCaml type |= Js_of_ocaml type |= JavaScript type |
+| {{{int}}} | {{{int}}} (direct) | Number |
+| {{{float}}} | {{{Js.number Js.t}}} | Number |
+| {{{bool}}} | {{{bool Js.t}}} | Boolean |
+| {{{string}}} | {{{Js.js_string Js.t}}} | String |
+| {{{array}}} | {{{Js.js_array Js.t}}} | Array |
 
-* **{{{Js.Opt}}}** - For values that may be {{{null}}} (e.g., DOM lookups)
-* **{{{Js.Optdef}}}** - For values that may be {{{undefined}}} (e.g., optional properties)
+Integers can be used directly. Other types require conversion functions
+like {{{Js.string}}}, {{{Js.bool}}}, etc. See
+<<a_manual chapter="bindings"|Type conversions>> for details and examples.
 
-Both modules provide similar functions: {{{test}}}, {{{to_option}}}, {{{case}}},
-{{{get}}}, {{{map}}}, {{{iter}}}, etc. See <<a_manual chapter="bindings"|Handling null and undefined>>
-for practical examples and guidance on when to use each type.
+== JavaScript objects
 
-=== Method name and underscore
+JavaScript objects are represented using OCaml's object types:
 
-Some overloading is possible using a syntactic trick: names
-{{{_foo}}}, {{{foo_abcd}}} and {{{foo}}} are all mapped to a same
-Javascript field name {{{foo}}}: when accessing a field of an object,
-the name given in the OCaml code is transformed by removing a leading
-underscore and then removing all characters starting from the last
-underscore; this yields the corresponding Javascript name.  For
-instance, these three types correspond to the same Javascript method
-{{{drawImage}}}:
 {{{
-    drawImage :
-        imageElement t -> number t -> number t -> unit meth
-    drawImage_withSize :
-        imageElement t -> number t -> number t -> number t -> number t -> unit meth
-    drawImage_fromCanvas :
-        canvasElement t -> number t -> number t -> unit meth
+< field1 : type1; field2 : type2; ... > Js.t
 }}}
-This trick can also be used to refer to Javascript fields {{{type}}} or
-{{{Uppercase}}}, for instance as {{{_type}}} and {{{_Uppercase}}}.
 
-==== Example
+Each "method" in the OCaml type represents a JavaScript property or method.
+The property type determines access:
+
+|= Type |= Meaning |
+| {{{t Js.readonly_prop}}} | Read-only property |
+| {{{t Js.writeonly_prop}}} | Write-only property |
+| {{{t Js.prop}}} | Read/write property |
+| {{{t1 -> ... -> tn -> t Js.meth}}} | Method |
+
+See <<a_manual chapter="bindings"|Binding a JS object>> for examples.
+
+== Nullable and optional values
+
+JavaScript has {{{null}}} and {{{undefined}}}. Js_of_ocaml provides:
+
+* **{{{Js.Opt}}}** - For values that may be {{{null}}}
+* **{{{Js.Optdef}}}** - For values that may be {{{undefined}}}
+
+See <<a_manual chapter="bindings"|Handling null and undefined>> for usage.
+
+== Functions
+
+OCaml and JavaScript have different calling conventions (partial application
+vs. undefined for missing args). Use:
+
+* {{{Js.wrap_callback}}} - Wrap OCaml functions for JavaScript
+* {{{Js.Unsafe.fun_call}}} - Call JavaScript functions from OCaml
+
+See <<a_manual chapter="bindings"|Calling JS functions>> and
+<<a_manual chapter="bindings"|Passing OCaml functions to JavaScript>>.
+
+== Syntax extension
+
+The <<a_manual chapter="ppx"|PPX syntax extension>> provides convenient syntax:
+
+{{{
+obj##.prop          (* Get property *)
+obj##.prop := v     (* Set property *)
+obj##meth arg       (* Call method *)
+new%js constr args  (* Call constructor *)
+object%js ... end   (* Create object literal *)
+}}}
+
+== JSON serialization
+
+The <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Json>> module provides
+marshaling between OCaml values and JSON strings:
 
 <<code language="ocaml"|
-class type .. = object
-  (* Refer to [meth] *)
-  method meth : ..
-  method meth_int : ..
-  method _meth_ : ..
-  method _meth_aa : ..
+(* OCaml value -> JSON string *)
+let json : Js.js_string Js.t = Json.output value
 
-  (* Refer to  [meth_a] *)
-  method meth_a_int : ..
-  method _meth_a_ : ..
-  method _meth_a_b : ..
-
-  (* Refer to [Meth] *)
-  method _Meth : ..
-
-  (* Refer to [_meth] *)
-  method __meth : ..
-
-  (* Refer to [_] *)
-  method __ : ..
-end
+(* JSON string -> OCaml value (unsafe, like Marshal) *)
+let value : 'a = Json.unsafe_input json
 >>
 
-== Syntax extension ==
+For type-safe JSON handling, use <<a_manual chapter="ppx-deriving"|ppx_deriving_json>>.
 
-The <<a_manual chapter="ppx"|Ppx_js>> syntax extension provides convenient
-syntax for accessing properties, calling methods, and creating objects.
-See the PPX documentation for the full syntax reference.
+== API reference
 
-== OCaml and Javascript functions ==
-
-OCaml and Javascript do not follow the same calling convention.  In
-OCaml, functions can be partially applied, returning a function
-closure.  In Javascript, when only some of the parameters are passed,
-the others are set to the {{{undefined}}} value.  As a consequence, it
-is not possible to call a Javascript function from OCaml as if it was
-an OCaml function, and conversely.
-
-
-=== Calling Javascript functions ===
-
-Use {{{Js.Unsafe.fun_call}}} to call a JavaScript function, or
-{{{Js.Unsafe.call}}} if you need to bind {{{this}}} to a specific object.
-Use {{{Js.Unsafe.meth_call}}} to call a method on an object.
-
-See <<a_manual chapter="bindings"|the bindings manual>> for detailed examples.
-
-You can also refer to a Javascript function using an OCaml external
-declaration. Then, you need to write stub functions in C so that the
-OCaml compiler accept the external declaration:
-
-{{{
-   Ocaml file:
-      external foo : t1 -> t2 = "foo"
-   C file:
-      #include <stdlib.h>
-      #define D(f) void f () { exit(1); }
-      D(foo)
-}}}
-You can call this function as if it was an OCaml function, as the
-Javascript function is appropriately wrapped by the system.
-
-Refer to <<a_manual chapter="linker" |the linker manual>>
-to link your program with JavaScript stubs.
-
-== IO ==
-
-The <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Json>> module allows one to marshal and unmarshal the
-JavaScript representation of OCaml values into the corresponding JSON
-string. The unmarshaling is unsafe in the same way the OCaml
-{{{Marshal.from_string}}} function is.
-
-Type-safe unmarshaling may be achieved with the
-{{{deriving}}} library using either the optional {{{Json}}}
-class or the {{{Pickle}}} class.
-
-* The {{{Json}}} class uses a Json as external representation and does
-  not preserve potential sharings in the data representation. See
-  <<a_api subproject="js_of_ocaml"|module Deriving_Json>> for more information.
-* The {{{Pickle}}} class uses a binary format as external
-  representation and preserves sharings in the data representation.
+* <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js>> - Core JavaScript bindings
+* <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Dom>> - DOM bindings
+* <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Dom_html>> - HTML DOM bindings
+* <<a_api subproject="js_of_ocaml"|index>> - Full API index

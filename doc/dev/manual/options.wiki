@@ -63,7 +63,24 @@ Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime
 |= Option |= Description |
 | {{{--setenv <VAR>=<value>}}} | Set environment variable at compile time |
 
-See <<a_manual chapter="environment-variable"|Environment variables>> for how variables are resolved at runtime.
+=== Resolution order
+
+When OCaml code calls {{{Sys.getenv}}}, js_of_ocaml resolves variables in this order:
+
+1. If the variable was set at compile time with {{{--setenv VAR=value}}}, return it
+2. If running in Node.js, check {{{process.env}}}
+3. Check {{{globalThis.jsoo_env}}} (useful for setting variables in browsers)
+4. Raise {{{Not_found}}}
+
+=== Browser example
+
+<<code language="javascript"|
+// Set environment variables before loading the OCaml program
+globalThis.jsoo_env = {
+  DEBUG: "true",
+  API_URL: "https://api.example.com"
+};
+>>
 
 == Toplevel and dynamic linking
 

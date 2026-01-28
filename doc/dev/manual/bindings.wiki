@@ -79,12 +79,55 @@ end
 === Method name mangling
 
 OCaml method names are transformed to JavaScript names using underscore
-conventions. This enables binding to capitalized names (use {{{_Foo}}} for
-{{{Foo}}}) and overloaded methods (use {{{foo_int}}} and {{{foo_string}}} for
-the same {{{foo}}} method).
+conventions. When accessing a field of an object, the name given in OCaml
+is transformed by:
+1. Removing a leading underscore (if present)
+2. Removing all characters starting from the last underscore
 
-See <<a_manual chapter="library"|the library documentation>> for the full
-naming rules and examples.
+This enables:
+- **Capitalized names**: Use {{{_Foo}}} to refer to JavaScript's {{{Foo}}}
+- **Reserved words**: Use {{{_type}}} to refer to JavaScript's {{{type}}}
+- **Method overloading**: Use {{{foo_int}}} and {{{foo_string}}} for the same {{{foo}}} method
+
+==== Examples
+
+<<code language="ocaml"|
+class type canvas = object
+  (* All three refer to the same JS method: drawImage *)
+  method drawImage :
+      imageElement Js.t -> int -> int -> unit Js.meth
+  method drawImage_withSize :
+      imageElement Js.t -> int -> int -> int -> int -> unit Js.meth
+  method drawImage_fromCanvas :
+      canvasElement Js.t -> int -> int -> unit Js.meth
+end
+>>
+
+==== Full naming rules
+
+<<code language="ocaml"|
+class type example = object
+  (* All of these refer to JS field [meth] *)
+  method meth : ..
+  method meth_int : ..
+  method _meth_ : ..
+  method _meth_aa : ..
+
+  (* All of these refer to JS field [meth_a] *)
+  method meth_a_int : ..
+  method _meth_a_ : ..
+  method _meth_a_b : ..
+
+  (* Refer to [Meth] (capitalized) *)
+  method _Meth : ..
+
+  (* Refer to [_meth] (leading underscore in JS) *)
+  method __meth : ..
+
+  (* Refer to [_] *)
+  method __ : ..
+end
+>>
 
 === Binding constants from a class
 
