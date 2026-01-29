@@ -52,8 +52,7 @@ program event handlers easily and concisely:
 </p><p>This module defines functions you can call on a DOM element to create
 an Lwt thread that will return when the event occurs.
 </p><p>Example:
-</p><pre class=""><code class="language-ocaml translatable">Lwt.ignore_result (Lwt_js_events.click target</code></pre><h1> handler)</h1><p>&gt;&gt;
-</p><p>The handler receives the JS event as parameter.
+</p><pre class=""><code class="language-ocaml translatable">Lwt.ignore_result (Lwt_js_events.click target &gt;&gt;= handler)</code></pre><p>The handler receives the JS event as parameter.
 </p><p>Each of these functions has a version (same name with an ending &quot;s&quot;)
 that loops when the handler terminates:
 </p><pre class=""><code class="language-ocaml translatable">Lwt.ignore_result (Lwt_js_events.clicks target handler)</code></pre><h2> Cancellation</h2><p>To remove an event handler, cancel the Lwt thread using <span class="teletype">Lwt.cancel</span>.
