@@ -137,9 +137,7 @@ Use {{{--enable <opt>}}} or {{{--disable <opt>}}} to control these flags:
 
 |= Option |= Default |= Description |
 | {{{pretty}}} | false | Pretty print JavaScript output |
-| {{{debuginfo}}} | false | Include source location comments |
 | {{{shortvar}}} | true | Use short variable names |
-| {{{stable_var}}} | false | Use stable (predictable) variable names |
 | {{{strict}}} | true | Generate "use strict" |
 | {{{header}}} | true | Include compiler version header |
 | {{{es6}}} | false | Generate ES6 syntax |
@@ -163,7 +161,13 @@ Use {{{--enable <opt>}}} or {{{--disable <opt>}}} to control these flags:
 | {{{debugger}}} | true | Keep {{{debugger}}} statements (stripped if false) |
 | {{{genprim}}} | true | Generate dummy primitives when missing |
 | {{{use-js-string}}} | true | Use JavaScript strings internally |
-| {{{auto-link}}} | true | Automatically link required runtime files |
+
+=== Internal debugging
+
+|= Option |= Default |= Description |
+| {{{debuginfo}}} | false | Include source location comments |
+| {{{stable_var}}} | false | Use stable (predictable) variable names |
+| {{{auto-link}}} | true | link required compilation units only |
 
 ==@@id="parameters"@@ Compiler parameters
 
@@ -189,7 +193,7 @@ Available warnings:
 | {{{missing-primitive}}} | on | Missing JavaScript primitive implementation |
 | {{{missing-cmi}}} | on | Missing .cmi file |
 | {{{missing-deps}}} | on | Missing dependencies |
-| {{{missing-effects-backend}}} | on | Using effects without {{{--effects}}} |
+| {{{missing-effects-backend}}} | on | Using effects, but not backend was selected |
 | {{{integer-overflow}}} | on | Integer overflow in constant |
 | {{{overriding-primitive}}} | on | Overriding an existing primitive |
 | {{{deprecated-primitive}}} | on | Using deprecated primitive |
