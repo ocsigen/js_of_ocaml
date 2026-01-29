@@ -84,29 +84,12 @@ let () =
   Js.export &quot;greet&quot; greet;
   Js.export &quot;factorial&quot; factorial</code></pre><p>From JavaScript:
 </p><pre class="manually-translated"><code class="language-javascript">greet(&quot;World&quot;);    // &quot;Hello, World!&quot;
-factorial(5);      // 120</code></pre><h2 id="type-considerations"> Type considerations <a class="backref" href="#type-considerations">&#182;</a></h2><h3> Automatic conversions</h3><p>Some types are automatically converted:
-- OCaml <span class="teletype">int</span> works directly as JavaScript numbers
-- Exported functions are automatically wrapped with <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-wrap_callback">Js_of_ocaml.Js.wrap_callback</a></span>
-</p><h3> Manual conversions needed</h3><p>Other types require explicit conversion:
-</p><pre class=""><code class="language-ocaml translatable">let () =
-  Js.export &quot;utils&quot;
-    (object%js
-       (* Strings: convert to JS strings *)
-       method concat a b = Js.string (Js.to_string a ^ Js.to_string b)
-
-       (* Booleans: convert to JS booleans *)
-       method isEven n = Js.bool (n mod 2 = 0)
-
-       (* Arrays: convert to JS arrays *)
-       method range n = Js.array (Array.init n Fun.id)
-
-       (* Return JS objects *)
-       method makePoint x y =
-         object%js
-           val x = x
-           val y = y
-         end
-     end)</code></pre><h2 id="callbacks"> Handling callbacks from JavaScript <a class="backref" href="#callbacks">&#182;</a></h2><p>When JavaScript passes a callback to your OCaml code, you receive a JavaScript
+factorial(5);      // 120</code></pre><h2 id="type-considerations"> Type considerations <a class="backref" href="#type-considerations">&#182;</a></h2><p>Exported functions are automatically wrapped with <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-wrap_callback">Js_of_ocaml.Js.wrap_callback</a></span>.
+However, you must convert OCaml values to their JavaScript equivalents (strings
+with <span class="teletype">Js.string</span>, booleans with <span class="teletype">Js.bool</span>, etc.). See
+<span><a href=".././manual/javascript-interop#conversions">type conversions</a></span>
+for the full list.
+</p><h2 id="callbacks"> Handling callbacks from JavaScript <a class="backref" href="#callbacks">&#182;</a></h2><p>When JavaScript passes a callback to your OCaml code, you receive a JavaScript
 function. Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-fun_call">Js_of_ocaml.Js.Unsafe.fun_call</a></span> to invoke it:
 </p><pre class=""><code class="language-ocaml translatable">let () =
   Js.export &quot;utils&quot;

@@ -55,11 +55,10 @@ the Js_of_ocaml library.
 </p><h3> Alternatives</h3><p>Other libraries for JavaScript interop:
 </p><ul><li> <a href="https://erratique.ch/software/brr" class="ocsimore_phrasing_link">Brr</a> — Alternative browser API bindings with a different design
 </li><li> <a href="https://github.com/LexiFi/gen_js_api" class="ocsimore_phrasing_link">gen_js_api</a> — Generates bindings from TypeScript definitions
-</li></ul><h2 id="js-t"> Core concept: {{'a Js.t}} <a class="backref" href="#js-t">&#182;</a></h2><p>All JavaScript values have type {{'a Js.t}}
-where the phantom type parameter {{'a}} encodes the shape of the JavaScript
+</li></ul><h2 id="js-t"> Core concept: <span class="teletype">'a Js.t</span> <a class="backref" href="#js-t">&#182;</a></h2><p>All JavaScript values have type <span class="teletype">'a Js.t</span>
+where the phantom type parameter <span class="teletype">'a</span> encodes the shape of the JavaScript
 value:
-</p><pre>'a Js.t    (* An OCaml type representing a JavaScript value *)
-</pre><p>For example, <span class="teletype">Js.js_string Js.t</span> represents a JavaScript string, and
+</p><p>For example, <span class="teletype">Js.js_string Js.t</span> represents a JavaScript string, and
 <span class="teletype">&lt; length : int Js.readonly_prop &gt; Js.t</span> represents an object with a
 <span class="teletype">length</span> property.
 </p><p>To work with these values (access properties, call methods), you need the
@@ -92,18 +91,18 @@ let ocaml_arr : int array = Js.to_array js_arr</code></pre><h2 id="describing-ob
 </pre><p>has a property <span class="teletype">data</span> containing a Javascript string, and a method
 <span class="teletype">appendData</span> taking a Javascript string as argument and returning
 no value.
-</p><h3> Property types</h3><table><tr><th> Type </th><th> Description </th></tr><tr><td> <span class="teletype">t Js.readonly_prop</span> </td><td> Read-only property </td></tr><tr><td> <span class="teletype">t Js.writeonly_prop</span> </td><td> Write-only property </td></tr><tr><td> <span class="teletype">t Js.prop</span> </td><td> Read/write property </td></tr><tr><td> <span class="teletype">t1 -&gt; ... -&gt; tn -&gt; t Js.meth</span> </td><td> Method taking n arguments </td></tr><tr><td> <span class="teletype">t Js.optdef_prop</span> </td><td> Optional property (may be <span class="teletype">undefined</span>) </td></tr></table><p>See <span><a href=".././manual/ppx">PPX syntax</a></span> for how to access these.
+</p><h3> Property types</h3><table><tr><th> Type </th><th> Description </th></tr><tr><td> <span class="teletype">'a Js.readonly_prop</span> </td><td> Read-only property </td></tr><tr><td> <span class="teletype">'a Js.writeonly_prop</span> </td><td> Write-only property </td></tr><tr><td> <span class="teletype">'a Js.prop</span> </td><td> Read/write property </td></tr><tr><td> <span class="teletype">t1 -&gt; ... -&gt; tn -&gt; t Js.meth</span> </td><td> Method taking n arguments </td></tr><tr><td> <span class="teletype">'a Js.optdef_prop</span> </td><td> Optional property (may be <span class="teletype">undefined</span>) </td></tr></table><p>See <span><a href=".././manual/ppx">PPX syntax</a></span> for how to access these.
 </p><h3> Example</h3><p>Given a JavaScript object:
 </p><pre class="manually-translated"><code class="language-javascript">{
   name: &quot;example&quot;,           // read-only string
   count: 42,                 // read-write number
   greet: function(x) { ... } // method
-}</code></pre><p>Its type could be {{myObj Js.t}}:
+}</code></pre><p>Its type could be {({myObj Js.t}}}:
 </p><pre class=""><code class="language-ocaml translatable">class type myObj = object
   method name : Js.js_string Js.t Js.readonly_prop
   method count : int Js.prop
   method greet : Js.js_string Js.t -&gt; unit Js.meth
-end</code></pre><h3> Method and property name mangling</h3><p>When accessing a field using the {{<span class="monospace">.}}/{{</span>}} syntax, the field name is transformed by:
+end</code></pre><h3> Method and property name mangling</h3><p>When accessing a field using the <span class="teletype">##.</span>/<span class="teletype">##</span> syntax, the field name is transformed by:
 </p><ol><li> Removing a leading underscore (if present)
 </li><li> Removing all characters starting from the last underscore
 </li></ol><p>This enables:
@@ -178,7 +177,7 @@ let value = (Js.Unsafe.coerce obj)##.someProp
 (* Write a property *)
 (Js.Unsafe.coerce obj)##.someProp := v</code></pre><h2 id="null-undefined"> Handling null and undefined <a class="backref" href="#null-undefined">&#182;</a></h2><p>JavaScript has two &quot;missing value&quot; types: <span class="teletype">null</span> and <span class="teletype">undefined</span>.
 Js_of_ocaml represents these with distinct types.
-</p><h3> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Opt/#module-Opt">Js_of_ocaml.Js.Opt</a></span> for nullable values (<span class="teletype">null</span>)</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Opt/#module-Opt">Js_of_ocaml.Js.Opt</a></span> for values that may be <span class="teletype">null</span> (e.g., DOM methods that
+</p><h3> Js.Opt for nullable values (<span class="teletype">null</span>)</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Opt/#module-Opt">Js_of_ocaml.Js.Opt</a></span> for values that may be <span class="teletype">null</span> (e.g., DOM methods that
 return <span class="teletype">null</span> when an element is not found):
 </p><pre class=""><code class="language-ocaml translatable">(* Check if null *)
 let is_present = Js.Opt.test value
@@ -196,7 +195,7 @@ let v = Js.Opt.get value (fun () -&gt; failwith &quot;was null&quot;)
 
 (* Create nullable values *)
 let some_val : element Js.t Js.opt = Js.some element
-let null_val : element Js.t Js.opt = Js.null</code></pre><h3> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Optdef/#module-Optdef">Js_of_ocaml.Js.Optdef</a></span> for optional values (<span class="teletype">undefined</span>)</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Optdef/#module-Optdef">Js_of_ocaml.Js.Optdef</a></span> for values that may be <span class="teletype">undefined</span> (e.g., optional
+let null_val : element Js.t Js.opt = Js.null</code></pre><h3> Js.Optdef for optional values (<span class="teletype">undefined</span>)</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Optdef/#module-Optdef">Js_of_ocaml.Js.Optdef</a></span> for values that may be <span class="teletype">undefined</span> (e.g., optional
 object properties, array access beyond bounds):
 </p><pre class=""><code class="language-ocaml translatable">(* Check if defined *)
 let is_defined = Js.Optdef.test value
@@ -331,8 +330,7 @@ let json : Js.js_string Js.t = Json.output value
 (* JSON string -&gt; OCaml value (unsafe, like Marshal) *)
 let value : 'a = Json.unsafe_input json</code></pre><p>For type-safe JSON handling, use <span><a href=".././manual/ppx-deriving">ppx_deriving_json</a></span>.
 </p><h2 id="runtime-values"> Accessing runtime values <a class="backref" href="#runtime-values">&#182;</a></h2><p><span><a href=".././api/js_of_ocaml/Jsoo_runtime/Js/#val-runtime_value">Jsoo_runtime.Js.runtime_value</a></span> provides direct access to JavaScript
-values declared with <span class="teletype">//Provides:</span> in runtime files, without polluting
-the global object. See <span><a href=".././manual/linker#writing-primitives">writing JavaScript primitives</a></span>
+values declared with <span class="teletype">//Provides:</span> in runtime files. See <span><a href=".././manual/linker#writing-primitives">writing JavaScript primitives</a></span>
 for more about the <span class="teletype">//Provides:</span> syntax.
 </p><p>Given a JavaScript file linked with your program:
 </p><pre class="manually-translated"><code class="language-javascript">//Provides: myConfig

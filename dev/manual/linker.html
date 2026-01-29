@@ -53,8 +53,7 @@ by default.
 </p><h2 id="passing-js-files"> Passing JavaScript files <a class="backref" href="#passing-js-files">&#182;</a></h2><p>Pass JavaScript files (must have &quot;.js&quot; extension) directly:
 </p><pre>js_of_ocaml myruntime.js program.byte
 </pre><h2 id="finding-runtime"> Finding runtime files <a class="backref" href="#finding-runtime">&#182;</a></h2><p>OCaml libraries often require JavaScript runtime files. The js_of_ocaml compiler
-does not automatically locate these files - this is the responsibility of your
-build system (dune) or you must pass them explicitly on the command line.
+does not automatically locate these files - They must be passed explicitly on the command line.
 </p><p>Runtime files are discovered using Findlib's <span class="teletype">jsoo_runtime</span> variable.
 </p><h3> List required runtime files</h3><p>To list all JavaScript runtime files for a set of libraries:
 </p><pre>ocamlfind query -format &quot;%+(jsoo_runtime)&quot; -r LIB1 LIB2 ... | grep -v &quot;^$&quot;
@@ -67,9 +66,10 @@ build system (dune) or you must pass them explicitly on the command line.
 $ ocamlfind ocamlc -package $LIBS -linkpkg main.ml -o main.byte
 $ js_of_ocaml $(ocamlfind query -format &quot;%+(jsoo_runtime)&quot; -r $LIBS | grep -v &quot;^$&quot;) main.byte
 </pre><p>With <strong>dune</strong>, this is handled automatically.
-</p><h2 id="writing-primitives"> Writing JavaScript primitives <a class="backref" href="#writing-primitives">&#182;</a></h2><p>To provide missing primitives or override existing ones, create a JavaScript
-file with annotated functions.
-</p><h3> Annotation syntax</h3><pre>//Provides: primitive_name [const|mutable]
+</p><h2 id="writing-primitives"> Writing JavaScript primitives <a class="backref" href="#writing-primitives">&#182;</a></h2><p>User-defined primitives need to be implemented in a separate javascript file.
+Javascript functions implementing primitives should be annoted with additional information.
+</p><h3> Annotation syntax</h3><p>Annotations are single line comments with the following syntax
+</p><pre>//Provides: primitive_name [const|mutable]
 //Requires: other_primitive[,another_primitive]*
 //Version: version_constraint[,version_constraint]*
 
@@ -99,13 +99,7 @@ function my_log_primitive(msg) {
 </pre><p>OCaml side:
 </p><pre class=""><code class="language-ocaml translatable">external my_log : string -&gt; unit = &quot;my_log_primitive&quot;
 
-let () = my_log &quot;Hello from OCaml!&quot;</code></pre><h3> Example: primitive with dependencies</h3><pre>//Provides: my_json_parse
-//Requires: caml_jsstring_of_string, caml_js_to_string
-function my_json_parse(str) {
-  var js_str = caml_jsstring_of_string(str);
-  return JSON.parse(js_str);
-}
-</pre><h2 id="declaring-runtime"> Declaring runtime files in packages <a class="backref" href="#declaring-runtime">&#182;</a></h2><h3> Using jsoo_runtime (recommended)</h3><p>In your package's META file, use the <span class="teletype">jsoo_runtime</span> variable:
+let () = my_log &quot;Hello from OCaml!&quot;</code></pre><h2 id="declaring-runtime"> Declaring runtime files in packages <a class="backref" href="#declaring-runtime">&#182;</a></h2><h3> Using jsoo_runtime</h3><p>In your package's META file, use the <span class="teletype">jsoo_runtime</span> variable:
 </p><pre># mypackage/META
 package &quot;sublib&quot; (
   directory = &quot;subdir&quot;
