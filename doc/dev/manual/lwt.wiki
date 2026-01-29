@@ -14,7 +14,7 @@ an Lwt thread that will return when the event occurs.
 Example:
 
 <<code language="ocaml"|
-Lwt.ignore_result (Lwt_js_events.click target >>= handler)
+Lwt.ignore_result (Lwt_js_events.click target ~>>= handler)
 >>
 
 The handler receives the JS event as parameter.
