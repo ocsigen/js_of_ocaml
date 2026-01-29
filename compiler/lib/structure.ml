@@ -260,7 +260,7 @@ let shrink_loops blocks ({ succs; preds; reverse_post_order; _ } as g) =
         let ignored =
           match block.branch with
           | Pushtrap ((body_pc, _), _, _) when pc' = body_pc ->
-              Addr.Set.union ignored loops
+              Addr.Set.add body_pc (Addr.Set.union ignored loops)
           | _ -> ignored
         in
         let loops' = get_edges in_loop pc' in

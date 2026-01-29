@@ -31,7 +31,16 @@ let read_line buf =
      var start = buf[1];
      try{
       for(;;){
-       if(10 === caml_string_get(buf[2], buf[1])) break;
+       if(10 === caml_string_get(buf[2], buf[1])){
+        a:
+        {
+         if(0 < buf[1] && 13 === caml_string_get(buf[2], buf[1] - 1 | 0)){var l = (buf[1] - start | 0) - 1 | 0; break a;}
+         var l = buf[1] - start | 0;
+        }
+        var s = caml_call3(string_sub, buf[2], start, l);
+        buf[1] = buf[1] + 1 | 0;
+        return s;
+       }
        buf[1] = buf[1] + 1 | 0;
       }
      }
@@ -39,14 +48,6 @@ let read_line buf =
       var len = runtime.caml_ml_string_length(buf[2]);
       return caml_call3(string_sub, buf[2], buf[1], len - buf[1] | 0);
      }
-     a:
-     {
-      if(0 < buf[1] && 13 === caml_string_get(buf[2], buf[1] - 1 | 0)){var l = (buf[1] - start | 0) - 1 | 0; break a;}
-      var l = buf[1] - start | 0;
-     }
-     var s = caml_call3(string_sub, buf[2], start, l);
-     buf[1] = buf[1] + 1 | 0;
-     return s;
     }
     //end
     |}]
