@@ -1,6 +1,6 @@
 = How to bind a JS library for OCaml
 
-== Accessing JavaScript properties
+==@@id="accessing-properties"@@ Accessing JavaScript properties
 
 === Global variables
 
@@ -41,7 +41,7 @@ let value = (Js.Unsafe.coerce obj)##.someProp
 For type-safe access, define a class type for the extended object or wrap
 the unsafe access in getter/setter functions.
 
-== Binding a JS object
+==@@id="binding-object"@@ Binding a JS object
 
 Use OCaml class types to describe the shape of JavaScript objects. Each
 {{{method}}} declaration represents either a property or a method of the JS
@@ -148,7 +148,7 @@ let someClass : someClass Js.t =
 let value_a = someClass##._VALUE_A
 >>
 
-== Type conversions
+==@@id="type-conversions"@@ Type conversions
 
 OCaml and JavaScript have different representations for basic types. Use
 these functions to convert between them.
@@ -217,7 +217,7 @@ let ocaml_arr : int array = Js.to_array js_arr
 | {{{float}}} | Number | {{{Js.float}}} | {{{Js.to_float}}} |
 | {{{'a array}}} | Array | {{{Js.array}}} | {{{Js.to_array}}} |
 
-== Handling null and undefined
+==@@id="null-undefined"@@ Handling null and undefined
 
 JavaScript has two "missing value" types: {{{null}}} and {{{undefined}}}.
 Js_of_ocaml represents these with distinct types.
@@ -293,7 +293,7 @@ let () =
   | None -> (* not found *)
 >>
 
-== Calling JS functions
+==@@id="calling-functions"@@ Calling JS functions
 
 There are three ways to call JavaScript functions, depending on how {{{this}}}
 should be bound.
@@ -341,7 +341,7 @@ let result =
 See the <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Unsafe>> module
 API for more details.
 
-== Passing OCaml functions to JavaScript
+==@@id="callbacks"@@ Passing OCaml functions to JavaScript
 
 When JavaScript code needs to call back into OCaml (e.g., event handlers,
 callbacks for async operations), you must wrap OCaml functions appropriately.
@@ -425,7 +425,7 @@ let varargs_cb = Js.Unsafe.callback_with_arguments (fun args ->
   Printf.printf "Called with %d arguments\n" len)
 >>
 
-== Using a JS constructor
+==@@id="constructors"@@ Using a JS constructor
 
 To call a JavaScript constructor (i.e., {{{new F(...)}}}), first obtain the
 constructor (i.e. from the global object), then use {{{new%js}}} to instantiate it.
@@ -476,7 +476,7 @@ let someClass = (Js.Unsafe.js_expr "someLib")##._SomeClass in
 new%js someClass arg1 arg2
 >>
 
-== Constructing JS objects manually
+==@@id="object-literals"@@ Constructing JS objects manually
 
 To construct a JS object without calling a constructor, use the
 <<a_manual chapter="Ppx"|Ppx>> syntax extension (recommended) or
@@ -530,7 +530,7 @@ let call_with_options () =
   some_js_function options
 >>
 
-== Check availability of methods and properties
+==@@id="feature-detection"@@ Check availability of methods and properties
 
 JavaScript APIs vary across browsers and environments. A method or property
 may exist in one browser but not another, or may have been added in a recent
@@ -576,7 +576,7 @@ let supports_local_storage () =
   Js.Optdef.test Js.Unsafe.global##.localStorage
 >>
 
-== Object property with multiple types
+==@@id="union-types"@@ Object property with multiple types
 
 JavaScript APIs often use union types where a property can hold values of
 different types (e.g., {{{string | Node}}} or {{{number | null}}}). Since OCaml
@@ -656,7 +656,7 @@ let handle container =
   | Text t -> (* work with text node *)
 >>
 
-== Accessing JavaScript runtime values
+==@@id="runtime-values"@@ Accessing JavaScript runtime values
 
 The <<a_api subproject="js_of_ocaml"|val Jsoo_runtime.Js.runtime_value>> function allows direct access to JavaScript
 values provided by the runtime (declared with {{{//Provides:}}} directives in

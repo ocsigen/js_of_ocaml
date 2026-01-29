@@ -3,7 +3,7 @@
 This page explains how exceptions propagate between OCaml and JavaScript code,
 and how to properly handle errors in both directions.
 
-== Catching JavaScript exceptions in OCaml
+==@@id="catching-js-exceptions"@@ Catching JavaScript exceptions in OCaml
 
 When JavaScript code throws an exception and it propagates to OCaml code,
 it is wrapped in the <<a_api subproject="js_of_ocaml"|exception Js_of_ocaml.Js_error.Exn>> exception.
@@ -38,7 +38,7 @@ let handle_error err =
   Option.iter (Printf.eprintf "Stack:\n%s\n") stack
 >>
 
-== Raising JavaScript errors from OCaml
+==@@id="raising-js-errors"@@ Raising JavaScript errors from OCaml
 
 To throw a JavaScript error that JavaScript code can catch:
 
@@ -52,7 +52,7 @@ let validate_positive n =
 >>
 
 
-== Exception propagation in exported functions
+==@@id="exception-propagation"@@ Exception propagation in exported functions
 
 When you export OCaml functions to JavaScript, uncaught OCaml exceptions will
 propagate to JavaScript. However, OCaml exceptions are **not** JavaScript
@@ -80,7 +80,7 @@ try {
 For better JavaScript interoperability, raise JavaScript errors instead of
 OCaml exceptions
 
-== Stack traces for OCaml exceptions
+==@@id="stack-traces"@@ Stack traces for OCaml exceptions
 
 By default, OCaml exceptions don't carry JavaScript stack traces. This makes
 debugging difficult since you can't see where an exception originated in

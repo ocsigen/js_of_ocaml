@@ -12,7 +12,7 @@ side-effects of some primitives (see <<a_manual chapter="linker"|Linking JavaScr
 or to implement some functionalities in JavaScript.
 With dune, use {{{(wasm_of_ocaml (javascript_files ...))}}} to specify these files.
 
-== Data representation
+==@@id="data-representation"@@ Data representation
 
 The type {{{(ref eq)}}} is used for all OCaml values.
 Integers, chars, booleans, and constant constructors are mapped to {{{(ref i31)}}}.
@@ -48,7 +48,7 @@ Import these functions to access or allocate integers:
    (func $caml_copy_int64 (param i64) (result (ref eq))))
 }}}
 
-== Preprocessor
+==@@id="preprocessor"@@ Preprocessor
 
 Wasm text files are passed through a preprocessor. You can run the
 preprocessor manually:
@@ -78,7 +78,7 @@ Available operators:
 * **Characters**: {{{(@char "a")}}} expands to {{{(i32.const 97)}}}
 * **Function naming**: {{{(func (export "foo") ...)}}} expands to {{{(func $foo (export "foo") ...)}}} for better debugging
 
-== Implementing primitives
+==@@id="implementing-primitives"@@ Implementing primitives
 
 Define a primitive by exporting a Wasm function with parameters and return
 value of type {{{(ref eq)}}}:
@@ -94,7 +94,7 @@ value of type {{{(ref eq)}}}:
 )
 }}}
 
-== Linking with JavaScript code
+==@@id="linking-js"@@ Linking with JavaScript code
 
 To use JavaScript functions in your Wasm primitives, import them using
 the {{{js}}} namespace:
@@ -106,7 +106,7 @@ the {{{js}}} namespace:
 The <<a_manual chapter="linker"|js_of_ocaml linker>> is used to include
 them in the generated code.
 
-== Interfacing with JavaScript
+==@@id="interfacing-js"@@ Interfacing with JavaScript
 
 Functions defined in {{{runtime/wasm/jslib.wat}}} provide conversions
 between JavaScript and OCaml values, as well as JavaScript operations

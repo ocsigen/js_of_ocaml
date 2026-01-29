@@ -22,7 +22,7 @@ OCaml supports dynlink of bytecode files using the {{{dynlink}}} library. To use
 # Build your bytecode program with debug enabled ({{{-g}}}) and linkall ({{{-linkall}}})
 # Compile your program to JavaScript passing the {{{--dynlink}}} flag
 
-== Example
+==@@id="example"@@ Example
 
 {{{
 # main.ml

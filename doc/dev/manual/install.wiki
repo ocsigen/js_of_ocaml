@@ -1,6 +1,6 @@
 = Installation
 
-== Requirements
+==@@id="requirements"@@ Requirements
 
 * dune
 * Cmdliner, ppxlib
@@ -12,13 +12,13 @@ Optional dependencies:
 * reactiveData - https://github.com/ocsigen/reactiveData
 * yojson - https://github.com/ocaml-community/yojson
 
-== Install from opam
+==@@id="opam"@@ Install from opam
 
 {{{
 opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 }}}
 
-== Build and install from source
+==@@id="from-source"@@ Build and install from source
 
 {{{
 make

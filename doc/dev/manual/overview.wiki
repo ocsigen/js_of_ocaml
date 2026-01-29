@@ -1,6 +1,6 @@
 = Js_of_ocaml
 
-== Overview
+==@@id="overview"@@ Overview
 
 Js_of_ocaml is a compiler from OCaml bytecode programs to JavaScript.
 It makes it possible to run pure OCaml programs in JavaScript environments
@@ -30,7 +30,7 @@ There is also a compiler targeting WebAssembly provided by the
 It is possible to use Js_of_ocaml purely as a compiler while using a
 different package (e.g., gen_js_api, brr) to provide bindings to the browser APIs.
 
-== Installation
+==@@id="installation"@@ Installation
 
 The easiest way to install js_of_ocaml is to use opam:
 
@@ -40,7 +40,7 @@ opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 
 For alternatives, see <<a_manual chapter="install"|Installation>>.
 
-== Usage
+==@@id="usage"@@ Usage
 
 Your program must first be compiled using the OCaml bytecode compiler {{{ocamlc}}}.
 JavaScript bindings are provided by the {{{js_of_ocaml}}} package and the
@@ -73,7 +73,7 @@ Js_of_ocaml provides an ocamlbuild plugin. See
 
 You can find an OCaml toplevel running in the browser <<a_file src="toplevel/index.html"|here>>.
 
-== Supported features
+==@@id="supported-features"@@ Supported features
 
 Most of the OCaml standard library is supported. However:
 * Most of the {{{Sys}}} module is not supported

@@ -1,6 +1,6 @@
 = Wasm_of_ocaml
 
-== Overview
+==@@id="overview"@@ Overview
 
 Wasm_of_ocaml is a compiler from OCaml bytecode programs to WebAssembly.
 It provides an alternative way to run pure OCaml programs in JavaScript
@@ -10,7 +10,7 @@ The compiler is provided by the {{{wasm_of_ocaml-compiler}}} package.
 The <<a_manual chapter="overview"|Js_of_ocaml libraries>> are compatible
 with this compiler.
 
-== Installation
+==@@id="installation"@@ Installation
 
 The easiest way to install wasm_of_ocaml is to use opam:
 
@@ -21,7 +21,7 @@ opam install wasm_of_ocaml-compiler js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt
 Binaryen version 119 or later is required. The opam command above will
 install it automatically if needed.
 
-== Usage
+==@@id="usage"@@ Usage
 
 Your program must first be compiled using the OCaml bytecode compiler {{{ocamlc}}}.
 JavaScript bindings are provided by the {{{js_of_ocaml}}} package and the
@@ -47,7 +47,7 @@ Dune has native support for wasm_of_ocaml (starting with dune 3.17.0).
 It supports both standard and separate compilation.
 See https://dune.readthedocs.io/en/latest/wasmoo.html
 
-== Supported features
+==@@id="supported-features"@@ Supported features
 
 Most of the OCaml standard library is supported. However:
 * Most of the {{{Sys}}} module is not supported
@@ -77,7 +77,7 @@ The CPS transformation is not the default since the generated code is slower,
 larger, and less readable. However, the JSPI extension is not yet enabled by
 default in web browsers, and performing effects is slower when using it.
 
-== Binding with JavaScript libraries
+==@@id="js-bindings"@@ Binding with JavaScript libraries
 
 Js_of_ocaml lets you bind code with JavaScript libraries by linking {{{.js}}} files.
 Similarly, wasm_of_ocaml allows linking Wasm modules ({{{.wasm}}} or {{{.wat}}} files).

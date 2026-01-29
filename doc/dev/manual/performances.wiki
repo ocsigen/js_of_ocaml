@@ -11,7 +11,7 @@ with the OCaml bytecode interpreter.
 Benchmarks were run in November 2022 with engines available in Ubuntu 22.04
 (V8: 8.4.371.19-node.16, SpiderMonkey: JavaScript-C91.10.0).
 
-== Execution time
+==@@id="execution-time"@@ Execution time
 
 <<a_img src="performances/time.png"|Relative execution times>>
 
@@ -20,7 +20,7 @@ Benchmarks were run in November 2022 with engines available in Ubuntu 22.04
 * String operations are slow (splay) because OCaml strings cannot be mapped directly to JavaScript's immutable UTF-16 strings
 * Memory allocation might be less efficient (splay, taku)
 
-== Code size
+==@@id="code-size"@@ Code size
 
 <<a_img src="performances/size.png"|Relative size>>
 
@@ -32,19 +32,19 @@ The generated code remains smaller than the bytecode file for large programs
 The size gain can be much larger for programs that rely on external libraries,
 thanks to dead code elimination.
 
-== Comparison with handwritten JavaScript
+==@@id="vs-handwritten"@@ Comparison with handwritten JavaScript
 
 <<a_img src="performances/nativejs.png"|Relative execution times>>
 
 Comparing execution times between handwritten JavaScript and generated code
 shows that results are implementation-dependent.
 
-== Compiler optimization levels
+==@@id="optimization-levels"@@ Compiler optimization levels
 
 <<a_img src="performances/size-optim.png"|Relative size>>
 <<a_img src="performances/time-optim.png"|Relative execution times>>
 
-== Effect handlers impact
+==@@id="effects-impact"@@ Effect handlers impact
 
 <<a_img src="performances/size-effects.png"|Relative size>>
 <<a_img src="performances/size-bzip2-effects.png"|Relative size (compressed with bzip2)>>

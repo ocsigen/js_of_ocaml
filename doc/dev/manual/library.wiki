@@ -4,7 +4,7 @@ This page provides an overview of the Js_of_ocaml type system for representing
 JavaScript values in OCaml. For practical examples, see the
 <<a_manual chapter="bindings"|bindings guide>>.
 
-== Core concept: <<a_api subproject="js_of_ocaml"|type Js_of_ocaml.Js.t>>
+==@@id="js-t"@@ Core concept: <<a_api subproject="js_of_ocaml"|type Js_of_ocaml.Js.t>>
 
 All JavaScript values in OCaml are wrapped in the <<a_api subproject="js_of_ocaml"|type Js_of_ocaml.Js.t>> type. This phantom
 type ensures type safety when interacting with JavaScript.
@@ -13,7 +13,7 @@ type ensures type safety when interacting with JavaScript.
 'a Js.t    (* An OCaml type representing a JavaScript value *)
 }}}
 
-== Type mappings
+==@@id="type-mappings"@@ Type mappings
 
 OCaml and JavaScript represent values differently. The table below shows
 the correspondence:
@@ -27,9 +27,9 @@ the correspondence:
 
 Integers can be used directly. Other types require conversion functions
 like <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.string>>, <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.bool>>, etc. See
-<<a_manual chapter="bindings"|Type conversions>> for details and examples.
+<<a_manual chapter="bindings" fragment="type-conversions"|Type conversions>> for details and examples.
 
-== JavaScript objects
+==@@id="js-objects"@@ JavaScript objects
 
 JavaScript objects are represented using OCaml's object types:
 
@@ -46,18 +46,18 @@ The property type determines access:
 | {{{t Js.prop}}} | Read/write property |
 | {{{t1 -> ... -> tn -> t Js.meth}}} | Method |
 
-See <<a_manual chapter="bindings"|Binding a JS object>> for examples.
+See <<a_manual chapter="bindings" fragment="binding-object"|Binding a JS object>> for examples.
 
-== Nullable and optional values
+==@@id="nullable-optional"@@ Nullable and optional values
 
 JavaScript has {{{null}}} and {{{undefined}}}. Js_of_ocaml provides:
 
 * <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Opt>> - For values that may be {{{null}}}
 * <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Optdef>> - For values that may be {{{undefined}}}
 
-See <<a_manual chapter="bindings"|Handling null and undefined>> for usage.
+See <<a_manual chapter="bindings" fragment="null-undefined"|Handling null and undefined>> for usage.
 
-== Functions
+==@@id="functions"@@ Functions
 
 OCaml and JavaScript have different calling conventions (partial application
 vs. undefined for missing args). Use:
@@ -65,10 +65,10 @@ vs. undefined for missing args). Use:
 * <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_callback>> - Wrap OCaml functions for JavaScript
 * <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.fun_call>> - Call JavaScript functions from OCaml
 
-See <<a_manual chapter="bindings"|Calling JS functions>> and
-<<a_manual chapter="bindings"|Passing OCaml functions to JavaScript>>.
+See <<a_manual chapter="bindings" fragment="calling-functions"|Calling JS functions>> and
+<<a_manual chapter="bindings" fragment="callbacks"|Passing OCaml functions to JavaScript>>.
 
-== Syntax extension
+==@@id="syntax-extension"@@ Syntax extension
 
 The <<a_manual chapter="ppx"|PPX syntax extension>> provides convenient syntax:
 
@@ -80,7 +80,7 @@ new%js constr args  (* Call constructor *)
 object%js ... end   (* Create object literal *)
 }}}
 
-== JSON serialization
+==@@id="json"@@ JSON serialization
 
 The <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Json>> module provides
 marshaling between OCaml values and JSON strings:
@@ -95,7 +95,7 @@ let value : 'a = Json.unsafe_input json
 
 For type-safe JSON handling, use <<a_manual chapter="ppx-deriving"|ppx_deriving_json>>.
 
-== API reference
+==@@id="api-reference"@@ API reference
 
 * <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js>> - Core JavaScript bindings
 * <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Dom>> - DOM bindings

@@ -1,6 +1,6 @@
 = Lwt support
 
-== Events
+==@@id="events"@@ Events
 
 Besides the functions provided by <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Dom_html>> to register event handlers
 (mainly <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Dom_html.addEventListener>>)
@@ -26,7 +26,7 @@ that loops when the handler terminates:
 Lwt.ignore_result (Lwt_js_events.clicks target handler)
 >>
 
-== Cancellation
+==@@id="cancellation"@@ Cancellation
 
 To remove an event handler, cancel the Lwt thread using {{{Lwt.cancel}}}.
 You can also use {{{Lwt.pick}}}. For example, the following code waits
@@ -43,7 +43,7 @@ Lwt.pick [
 other event listeners will not be cancelled until the handler terminates.
 It is better to return immediately after launching long-running handlers.
 
-== API reference
+==@@id="api-reference"@@ API reference
 
 See <<a_api subproject="js_of_ocaml-lwt"|module Js_of_ocaml_lwt.Lwt_js_events>>
 for the full API.

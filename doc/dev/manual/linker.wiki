@@ -3,7 +3,7 @@
 This page covers how to link JavaScript files with js_of_ocaml, including
 writing primitives and discovering runtime files.
 
-== Overview
+==@@id="overview"@@ Overview
 
 The js_of_ocaml compiler accepts JavaScript files on the command-line.
 The main purpose is to provide (external) primitives needed by the bytecode program.
@@ -11,7 +11,7 @@ The main purpose is to provide (external) primitives needed by the bytecode prog
 Most primitives from the standard library are already implemented and loaded
 by default.
 
-== Passing JavaScript files
+==@@id="passing-js-files"@@ Passing JavaScript files
 
 Pass JavaScript files (must have ".js" extension) directly:
 
@@ -19,7 +19,7 @@ Pass JavaScript files (must have ".js" extension) directly:
 js_of_ocaml myruntime.js program.byte
 }}}
 
-== Finding runtime files
+==@@id="finding-runtime"@@ Finding runtime files
 
 OCaml libraries often require JavaScript runtime files. The js_of_ocaml compiler
 does not automatically locate these files - this is the responsibility of your
@@ -54,7 +54,7 @@ $ js_of_ocaml $(ocamlfind query -format "%+(jsoo_runtime)" -r $LIBS | grep -v "^
 
 With **dune**, this is handled automatically.
 
-== Writing JavaScript primitives
+==@@id="writing-primitives"@@ Writing JavaScript primitives
 
 To provide missing primitives or override existing ones, create a JavaScript
 file with annotated functions.
@@ -126,7 +126,7 @@ function my_json_parse(str) {
 }
 }}}
 
-== Declaring runtime files in packages
+==@@id="declaring-runtime"@@ Declaring runtime files in packages
 
 === Using jsoo_runtime (recommended)
 
@@ -154,7 +154,7 @@ Dune automatically handles {{{jsoo_runtime}}} declarations. In your dune file:
   (javascript_files runtime.js)))
 }}}
 
-== Deprecated: linkopts(javascript)
+==@@id="linkopts-deprecated"@@ Deprecated: linkopts(javascript)
 
 Before dune's native js_of_ocaml support, the standard approach was to use
 {{{linkopts(javascript)}}} in META files:

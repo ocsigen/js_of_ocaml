@@ -1,6 +1,6 @@
 = Contributing to Js_of_ocaml
 
-== Reporting Issues
+==@@id="reporting-issues"@@ Reporting Issues
 
 If you encounter a problem when using js_of_ocaml or if you have any questions, please open a [[https://github.com/ocsigen/js_of_ocaml/issues/|GitHub issue]].
 
@@ -9,7 +9,7 @@ If you encounter a problem when using js_of_ocaml or if you have any questions, 
 # Describe the expected and actual behavior.
 # Do not unsubscribe from the issue until it is closed, the maintainers may ask for your feedback.
 
-== Pull Requests
+==@@id="pull-requests"@@ Pull Requests
 
 We actively welcome pull requests.
 

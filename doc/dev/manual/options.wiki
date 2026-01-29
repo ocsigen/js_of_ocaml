@@ -2,7 +2,7 @@
 
 This page documents the command-line options for the {{{js_of_ocaml}}} compiler.
 
-== General options
+==@@id="general"@@ General options
 
 |= Option |= Description |
 | {{{--version}}} | Display the compiler version |
@@ -12,7 +12,7 @@ This page documents the command-line options for the {{{js_of_ocaml}}} compiler.
 | {{{--disable <opt>}}} | Disable option. See [[#enable-disable|Enable/Disable options]] |
 | {{{-I <dir>}}} | Add directory to the list of include directories |
 
-== Debugging
+==@@id="debugging"@@ Debugging
 
 |= Option |= Description |
 | {{{--pretty}}} | Pretty print JavaScript output, preserve OCaml variable names |
@@ -20,7 +20,7 @@ This page documents the command-line options for the {{{js_of_ocaml}}} compiler.
 | {{{--debug-info}}} | Output debug information (source locations) |
 | {{{--source-map}}} | Generate source map. See [[#source-maps|Source maps]] |
 
-== Target environment
+==@@id="target-env"@@ Target environment
 
 |= Option |= Description |
 | {{{--target-env <env>}}} | Build for target environment (default: {{{isomorphic}}}) |
@@ -30,7 +30,7 @@ Possible values:
 * **{{{browser}}}** - Browser-specific, smaller output
 * **{{{nodejs}}}** - Node.js-specific, smaller output
 
-== Effect handlers
+==@@id="effects"@@ Effect handlers
 
 |= Option |= Description |
 | {{{--effects <mode>}}} | Select effect handler implementation (default: {{{disabled}}}) |
@@ -42,7 +42,7 @@ Possible values:
 
 See <<a_manual chapter="effects"|Effect handlers>> for details.
 
-== Source maps
+==@@id="source-maps"@@ Source maps
 
 |= Option |= Description |
 | {{{--source-map}}} | Generate source map (separate file) |
@@ -51,7 +51,7 @@ See <<a_manual chapter="effects"|Effect handlers>> for details.
 | {{{--source-map-no-source}}} | Don't embed source code in source map |
 | {{{--source-map-root <dir>}}} | Set root directory for source map paths |
 
-== Pseudo filesystem
+==@@id="pseudo-fs"@@ Pseudo filesystem
 
 Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime.
 
@@ -61,7 +61,7 @@ Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime
 | {{{--extern-fs}}} | Allow accessing files outside embedded fs (default) |
 | {{{--no-extern-fs}}} | Only allow embedded filesystem access |
 
-== Environment variables
+==@@id="env-vars"@@ Environment variables
 
 |= Option |= Description |
 | {{{--setenv <VAR>=<value>}}} | Set environment variable at compile time |
@@ -85,7 +85,7 @@ globalThis.jsoo_env = {
 };
 >>
 
-== Toplevel and dynamic linking
+==@@id="toplevel"@@ Toplevel and dynamic linking
 
 |= Option |= Description |
 | {{{--toplevel}}} | Compile an OCaml toplevel (embeds necessary .cmi files) |
@@ -96,7 +96,7 @@ globalThis.jsoo_env = {
 
 See <<a_manual chapter="build-toplevel"|Building a toplevel>> for details.
 
-== Compilation modes
+==@@id="compilation-modes"@@ Compilation modes
 
 |= Option |= Description |
 | {{{--noruntime}}} | Don't include the standard runtime |
@@ -165,7 +165,7 @@ Use {{{--enable <opt>}}} or {{{--disable <opt>}}} to control these flags:
 | {{{use-js-string}}} | true | Use JavaScript strings internally |
 | {{{auto-link}}} | true | Automatically link required runtime files |
 
-== Compiler parameters
+==@@id="parameters"@@ Compiler parameters
 
 Use {{{--set <param>=<value>}}} to tune compiler behavior:
 
@@ -175,7 +175,7 @@ Use {{{--set <param>=<value>}}} to tune compiler behavior:
 | {{{tc_depth}}} | 50 | Max tail-call depth before trampoline |
 | {{{tc}}} | trampoline | Tail-call mode: {{{trampoline}}} or {{{none}}} |
 
-== Warnings
+==@@id="warnings"@@ Warnings
 
 |= Option |= Description |
 | {{{--quiet}}} / {{{-q}}} | Suppress non-error messages |
@@ -195,14 +195,14 @@ Available warnings:
 | {{{deprecated-primitive}}} | on | Using deprecated primitive |
 | {{{free-variables}}} | on | Free variables in primitive code |
 
-== Debug output
+==@@id="debug-output"@@ Debug output
 
 Use {{{--debug <section>}}} to enable debug output for compiler internals:
 
 {{{times}}}, {{{stats}}}, {{{deadcode}}}, {{{globaldeadcode}}}, {{{inlining}}},
 {{{gen}}}, {{{linker}}}, {{{sourcemap}}}, {{{flow}}}, {{{parser}}}
 
-== Subcommands
+==@@id="subcommands"@@ Subcommands
 
 The {{{js_of_ocaml}}} command has several subcommands:
 

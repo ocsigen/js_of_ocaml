@@ -3,7 +3,7 @@
 This page explains how to make OCaml values (functions, objects, constants)
 accessible from JavaScript code.
 
-== Basic export with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>>
+==@@id="basic-export"@@ Basic export with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>>
 
 Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> to export a single named value:
 
@@ -26,7 +26,7 @@ myMathLib.abs(-5);      // 5
 myMathLib.zero;         // 0
 >>
 
-== Exporting multiple values with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>>
+==@@id="export-all"@@ Exporting multiple values with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>>
 
 Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> to export all properties of an object as top-level
 exports:
@@ -48,7 +48,7 @@ sub(5, 2);        // 3
 version;          // "1.0.0"
 >>
 
-== Exporting individual functions
+==@@id="export-functions"@@ Exporting individual functions
 
 You can export plain OCaml functions. They are automatically wrapped for
 JavaScript:
@@ -74,7 +74,7 @@ greet("World");    // "Hello, World!"
 factorial(5);      // 120
 >>
 
-== Type considerations
+==@@id="type-considerations"@@ Type considerations
 
 === Automatic conversions
 
@@ -108,7 +108,7 @@ let () =
      end)
 >>
 
-== Handling callbacks from JavaScript
+==@@id="callbacks"@@ Handling callbacks from JavaScript
 
 When JavaScript passes a callback to your OCaml code, you receive a JavaScript
 function. Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.fun_call>> to invoke it:
@@ -132,7 +132,7 @@ From JavaScript:
 utils.forEach([1, 2, 3], function(x) { console.log(x); });
 >>
 
-== Using with Node.js
+==@@id="nodejs"@@ Using with Node.js
 
 <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> automatically use {{{module.exports}}}
 when running in Node.js:
@@ -162,7 +162,7 @@ $ node
 20
 }}}
 
-== Using in browsers
+==@@id="browsers"@@ Using in browsers
 
 In browsers, exports are added to the global object ({{{window}}}):
 

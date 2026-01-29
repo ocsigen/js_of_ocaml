@@ -2,13 +2,13 @@
 
 This guide walks you through creating your first js_of_ocaml application.
 
-== Installation
+==@@id="installation"@@ Installation
 
 {{{
 opam install js_of_ocaml js_of_ocaml-ppx
 }}}
 
-== Project setup
+==@@id="project-setup"@@ Project setup
 
 Create a new directory and initialize a dune project:
 
@@ -43,7 +43,7 @@ let () =
   Dom_html.window##alert message
 >>
 
-== Build
+==@@id="build"@@ Build
 
 {{{
 dune build
@@ -51,7 +51,7 @@ dune build
 
 This produces {{{_build/default/main.bc.js}}}.
 
-== Run in browser
+==@@id="run-browser"@@ Run in browser
 
 Create an HTML file to load the JavaScript:
 
@@ -71,7 +71,7 @@ Create an HTML file to load the JavaScript:
 
 Open {{{index.html}}} in a browser. You should see an alert with "Hello from OCaml!".
 
-== Run in Node.js
+==@@id="run-nodejs"@@ Run in Node.js
 
 {{{
 node _build/default/main.bc.js
@@ -83,7 +83,7 @@ Note: {{{alert}}} is not available in Node.js. For Node.js, use:
 let () = print_endline "Hello from OCaml!"
 >>
 
-== DOM manipulation example
+==@@id="dom-example"@@ DOM manipulation example
 
 Here's a more complete example that manipulates the DOM:
 
@@ -147,7 +147,7 @@ let () =
 </html>
 }}}
 
-== Development workflow
+==@@id="dev-workflow"@@ Development workflow
 
 For faster iteration during development, use:
 
@@ -157,7 +157,7 @@ dune build -w
 
 This watches for file changes and rebuilds automatically.
 
-== Next steps
+==@@id="next-steps"@@ Next steps
 
 * <<a_manual chapter="ppx"|PPX syntax>> - Learn the syntax for JavaScript interop
 * <<a_manual chapter="bindings"|Binding JS libraries>> - Use existing JavaScript libraries

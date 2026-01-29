@@ -3,7 +3,7 @@
 The {{{js_of_ocaml-ppx}}} package provides convenient syntax for interacting
 with JavaScript objects from OCaml.
 
-== Installation
+==@@id="installation"@@ Installation
 
 {{{
 opam install js_of_ocaml-ppx
@@ -17,7 +17,7 @@ With dune, add the preprocessor to your library or executable:
  (preprocess (pps js_of_ocaml-ppx)))
 }}}
 
-== Quick reference
+==@@id="quick-reference"@@ Quick reference
 
 |= Syntax |= Description |= Example |
 | {{{obj##.prop}}} | Get property | {{{element##.innerHTML}}} |
@@ -26,7 +26,7 @@ With dune, add the preprocessor to your library or executable:
 | {{{new%js constr args}}} | Call constructor | {{{new%js array_constr 10}}} |
 | {{{object%js ... end}}} | Create object literal | See below |
 
-== Getting properties
+==@@id="getting-properties"@@ Getting properties
 
 Use {{{##.}}} (with a dot) to access a property:
 
@@ -50,7 +50,7 @@ obj : <prop : t Js.readonly_prop> Js.t
           obj##.prop : t
 }}}
 
-== Setting properties
+==@@id="setting-properties"@@ Setting properties
 
 Use {{{##.}}} with {{{:=}}} to set a property:
 
@@ -77,7 +77,7 @@ obj : <prop : t Js.prop> Js.t
   obj##.prop := value : unit
 }}}
 
-== Calling methods
+==@@id="calling-methods"@@ Calling methods
 
 Use {{{##}}} (without a dot) to call a method:
 
@@ -124,7 +124,7 @@ obj : <meth : t1 -> t2 -> ... -> tn -> u Js.meth> Js.t
 
 **Note**: Partial application is not allowed. You must provide all arguments.
 
-== Using constructors
+==@@id="constructors"@@ Using constructors
 
 Use {{{new%js}}} to call JavaScript constructors:
 
@@ -161,7 +161,7 @@ constr : (t1 -> ... -> tn -> u Js.t) Js.constr
        new%js constr args : u Js.t
 }}}
 
-== Creating object literals
+==@@id="object-literals"@@ Creating object literals
 
 Use {{{object%js ... end}}} to create JavaScript object literals:
 

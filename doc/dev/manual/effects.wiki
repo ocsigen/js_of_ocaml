@@ -11,7 +11,7 @@ that cannot involve effects and keeps them in direct style. The analysis is
 especially effective on monomorphic code but less effective when higher-order
 functions are heavily used ({{{Lwt}}}, {{{Async}}}, {{{Incremental}}}).
 
-== Double translation mode
+==@@id="double-translation"@@ Double translation mode
 
 An alternative CPS transform is provided with {{{--effects=double-translation}}}.
 It keeps a direct-style version of the transformed functions in addition to the
@@ -21,7 +21,7 @@ Since CPS code is usually slower, this can avoid performance degradations. You c
 also ensure that some code runs in direct style using
 <<a_api subproject="js_of_ocaml"|val Jsoo_runtime.Effect.assume_no_perform>>.
 
-== Dune integration
+==@@id="dune"@@ Dune integration
 
 Dune is aware of the {{{--effects}}} option. You can add it to the
 js_of_ocaml flags wherever you want to use it:
@@ -58,5 +58,5 @@ To enable effect handlers for specific executables:
 
 == See also
 
-* <<a_manual chapter="options"|Command line options>> - Full list of {{{--effects}}} modes
+* <<a_manual chapter="options" fragment="effects"|Command line options>> - Full list of {{{--effects}}} modes
 * <<a_manual chapter="tailcall"|Tailcall optimization>> - How tail calls interact with effects
