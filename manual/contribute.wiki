@@ -19,8 +19,6 @@ opam install --deps-only -t js_of_ocaml js_of_ocaml-lwt \
   js_of_ocaml-ppx_deriving_json js_of_ocaml-tyxml
 }}}
 
-TODO: install optional deps and test deps
-
 === Build
 
 {{{
@@ -65,6 +63,11 @@ make tests-wasm
 dune build @compiler/tests-jsoo/runtest
 dune build @compiler/tests-ocaml/runtest-js
 WASM_OF_OCAML=true dune build @compiler/tests-ocaml/runtest-wasm
+
+# Run javascript parser tests
+cd compiler/tests-js-parser
+git clone https://github.com/tc39/test262.git test262
+dune build @runtest-parser
 
 # Update expected test output after intentional changes
 dune promote
