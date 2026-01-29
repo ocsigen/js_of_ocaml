@@ -24,6 +24,7 @@
 * Runtime: runtime with target-env=browser should not rely on "require(..)" (#2129)
 * Runtime: fix fake filesystem with path containing special regexp chars. (#2132)
 * Runtime/wasm: fix unmarshalling of compressed data (#2141)
+* Runtime: fix compilation of loops at start of exception handlers (#2151)
 
 # 6.2.0 (2025-07-30) - Lille
 
