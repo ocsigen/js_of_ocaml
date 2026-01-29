@@ -92,7 +92,7 @@ function odd$0(counter,n){
   return caml_trampoline_return(even$0,[0,_d_])
 }
 function even(n){return caml_trampoline(even$0(0,n))}
-function odd(n){return caml_trampoline(odd$0(0,n))}</code></pre><h2> Examples of patterns not optimized</h2><p>Recursive function where the tail call is made inside an intermediate function.
+function odd(n){return caml_trampoline(odd$0(0,n))}</code></pre><h2 id="not-optimized"> Examples of patterns not optimized <a class="backref" href="#not-optimized">&#182;</a></h2><p>Recursive function where the tail call is made inside an intermediate function.
 </p><pre class=""><code class="language-ocaml translatable">let rec f x =
   let g delta = f (x - delta) in
   if x &lt; 0 then 0

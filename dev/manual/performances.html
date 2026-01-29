@@ -52,24 +52,24 @@ SpiderMonkey), programs often run faster when compiled to JavaScript than
 with the OCaml bytecode interpreter.
 </p><p>Benchmarks were run in November 2022 with engines available in Ubuntu 22.04
 (V8: 8.4.371.19-node.16, SpiderMonkey: JavaScript-C91.10.0).
-</p><h2> Execution time</h2><p><span><img src=".././manual/files/performances/time.png" alt="time.png"/></span>
+</p><h2 id="execution-time"> Execution time <a class="backref" href="#execution-time">&#182;</a></h2><p><span><img src=".././manual/files/performances/time.png" alt="time.png"/></span>
 </p><p><strong>Notes</strong>:
 </p><ul><li> Exceptions are very expensive, preventing some benchmarks from finishing in reasonable time
 </li><li> String operations are slow (splay) because OCaml strings cannot be mapped directly to JavaScript's immutable UTF-16 strings
 </li><li> Memory allocation might be less efficient (splay, taku)
-</li></ul><h2> Code size</h2><p><span><img src=".././manual/files/performances/size.png" alt="size.png"/></span>
+</li></ul><h2 id="code-size"> Code size <a class="backref" href="#code-size">&#182;</a></h2><p><span><img src=".././manual/files/performances/size.png" alt="size.png"/></span>
 </p><p>Most of the time, the generated JavaScript code is smaller than the bytecode file.
 The benchmarks are small programs that do not make much use of any library.
 The generated code remains smaller than the bytecode file for large programs
 (ocamlc, js_of_ocaml).
 </p><p>The size gain can be much larger for programs that rely on external libraries,
 thanks to dead code elimination.
-</p><h2> Comparison with handwritten JavaScript</h2><p><span><img src=".././manual/files/performances/nativejs.png" alt="nativejs.png"/></span>
+</p><h2 id="vs-handwritten"> Comparison with handwritten JavaScript <a class="backref" href="#vs-handwritten">&#182;</a></h2><p><span><img src=".././manual/files/performances/nativejs.png" alt="nativejs.png"/></span>
 </p><p>Comparing execution times between handwritten JavaScript and generated code
 shows that results are implementation-dependent.
-</p><h2> Compiler optimization levels</h2><p><span><img src=".././manual/files/performances/size-optim.png" alt="size-optim.png"/></span>
+</p><h2 id="optimization-levels"> Compiler optimization levels <a class="backref" href="#optimization-levels">&#182;</a></h2><p><span><img src=".././manual/files/performances/size-optim.png" alt="size-optim.png"/></span>
 <span><img src=".././manual/files/performances/time-optim.png" alt="time-optim.png"/></span>
-</p><h2> Effect handlers impact</h2><p><span><img src=".././manual/files/performances/size-effects.png" alt="size-effects.png"/></span>
+</p><h2 id="effects-impact"> Effect handlers impact <a class="backref" href="#effects-impact">&#182;</a></h2><p><span><img src=".././manual/files/performances/size-effects.png" alt="size-effects.png"/></span>
 <span><img src=".././manual/files/performances/size-bzip2-effects.png" alt="size-bzip2-effects.png"/></span>
 <span><img src=".././manual/files/performances/time-effects.png" alt="time-effects.png"/></span>
 </p><p>The performance impact of supporting effect handlers:

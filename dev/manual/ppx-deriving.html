@@ -52,7 +52,7 @@ between a js_of_ocaml program and a server side OCaml application.
 </p><p>The serialisation format allows a js_of_ocaml program to encode/decode
 OCaml value efficiently by leveraging JavaScript native Json
 support. See <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Json/#val-output">Js_of_ocaml.Json.output</a></span> and <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Json/#val-unsafe_input">Js_of_ocaml.Json.unsafe_input</a></span>.
-</p><h2> Syntax</h2><h3> Generate serialisation from type definitions</h3><p>One can derive serialisation functions from type definitions using
+</p><h2 id="syntax"> Syntax <a class="backref" href="#syntax">&#182;</a></h2><h3> Generate serialisation from type definitions</h3><p>One can derive serialisation functions from type definitions using
 the <span class="teletype">[@@deriving ..]</span> attribute.
 </p><p>Note that for types named [t], we omit the &quot;t_&quot; prefix when naming
 generated functions.

@@ -53,7 +53,7 @@ these runtime files.
 side-effects of some primitives (see <span><a href=".././manual/linker">Linking JavaScript code</a></span>),
 or to implement some functionalities in JavaScript.
 With dune, use <span class="teletype">(wasm_of_ocaml (javascript_files ...))</span> to specify these files.
-</p><h2> Data representation</h2><p>The type <span class="teletype">(ref eq)</span> is used for all OCaml values.
+</p><h2 id="data-representation"> Data representation <a class="backref" href="#data-representation">&#182;</a></h2><p>The type <span class="teletype">(ref eq)</span> is used for all OCaml values.
 Integers, chars, booleans, and constant constructors are mapped to <span class="teletype">(ref i31)</span>.
 </p><p>The following types are used for blocks, strings (and bytes), floats,
 float arrays, and JavaScript values. The first field of a block is its
@@ -76,7 +76,7 @@ tag, of type <span class="teletype">(ref i31)</span>.
    (func $Int64_val (param (ref eq)) (result i64)))
 (import &quot;env&quot; &quot;caml_copy_int64&quot;
    (func $caml_copy_int64 (param i64) (result (ref eq))))
-</pre><h2> Preprocessor</h2><p>Wasm text files are passed through a preprocessor. You can run the
+</pre><h2 id="preprocessor"> Preprocessor <a class="backref" href="#preprocessor">&#182;</a></h2><p>Wasm text files are passed through a preprocessor. You can run the
 preprocessor manually:
 </p><pre>wasm_of_ocaml pp test.wat
 </pre><h3> Conditional compilation</h3><p>The preprocessor allows optional compilation based on the OCaml version:
@@ -90,7 +90,7 @@ preprocessor manually:
 </li><li> <strong>String globals</strong>: <span class="teletype">(@string $s &quot;ab&quot;)</span> is short for <span class="teletype">(global $s (ref eq) (@string &quot;ab&quot;))</span>
 </li><li> <strong>Characters</strong>: <span class="teletype">(@char &quot;a&quot;)</span> expands to <span class="teletype">(i32.const 97)</span>
 </li><li> <strong>Function naming</strong>: <span class="teletype">(func (export &quot;foo&quot;) ...)</span> expands to <span class="teletype">(func $foo (export &quot;foo&quot;) ...)</span> for better debugging
-</li></ul><h2> Implementing primitives</h2><p>Define a primitive by exporting a Wasm function with parameters and return
+</li></ul><h2 id="implementing-primitives"> Implementing primitives <a class="backref" href="#implementing-primitives">&#182;</a></h2><p>Define a primitive by exporting a Wasm function with parameters and return
 value of type <span class="teletype">(ref eq)</span>:
 </p><pre>(func (export &quot;input&quot;)
   (param $channel (ref eq))
@@ -100,12 +100,12 @@ value of type <span class="teletype">(ref eq)</span>:
   (result (ref eq))
   ...
 )
-</pre><h2> Linking with JavaScript code</h2><p>To use JavaScript functions in your Wasm primitives, import them using
+</pre><h2 id="linking-js"> Linking with JavaScript code <a class="backref" href="#linking-js">&#182;</a></h2><p>To use JavaScript functions in your Wasm primitives, import them using
 the <span class="teletype">js</span> namespace:
 </p><pre>(import &quot;js&quot; &quot;add&quot; (func $add (param f64) (param f64) (result f64)))
 </pre><p>The <span><a href=".././manual/linker">js_of_ocaml linker</a></span> is used to include
 them in the generated code.
-</p><h2> Interfacing with JavaScript</h2><p>Functions defined in <span class="teletype">runtime/wasm/jslib.wat</span> provide conversions
+</p><h2 id="interfacing-js"> Interfacing with JavaScript <a class="backref" href="#interfacing-js">&#182;</a></h2><p>Functions defined in <span class="teletype">runtime/wasm/jslib.wat</span> provide conversions
 between JavaScript and OCaml values, as well as JavaScript operations
 like property access and function calls:
 </p><pre>(import &quot;env&quot; &quot;caml_js_to_float&quot;

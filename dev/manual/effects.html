@@ -53,13 +53,13 @@ less readable. The transformation uses an analysis to detect parts of the code
 that cannot involve effects and keeps them in direct style. The analysis is
 especially effective on monomorphic code but less effective when higher-order
 functions are heavily used (<span class="teletype">Lwt</span>, <span class="teletype">Async</span>, <span class="teletype">Incremental</span>).
-</p><h2> Double translation mode</h2><p>An alternative CPS transform is provided with <span class="teletype">--effects=double-translation</span>.
+</p><h2 id="double-translation"> Double translation mode <a class="backref" href="#double-translation">&#182;</a></h2><p>An alternative CPS transform is provided with <span class="teletype">--effects=double-translation</span>.
 It keeps a direct-style version of the transformed functions in addition to the
 CPS version. The choice of running the CPS version is delayed to run time.
 </p><p>Since CPS code is usually slower, this can avoid performance degradations. You can
 also ensure that some code runs in direct style using
 <span><a href=".././api/js_of_ocaml/Jsoo_runtime/Effect/#val-assume_no_perform">Jsoo_runtime.Effect.assume_no_perform</a></span>.
-</p><h2> Dune integration</h2><p>Dune is aware of the <span class="teletype">--effects</span> option. You can add it to the
+</p><h2 id="dune"> Dune integration <a class="backref" href="#dune">&#182;</a></h2><p>Dune is aware of the <span class="teletype">--effects</span> option. You can add it to the
 js_of_ocaml flags wherever you want to use it:
 </p><pre>(js_of_ocaml (flags ...))
 </pre><h3> Whole workspace setup</h3><p>To enable effects for the entire workspace, add this to a <span class="teletype">dune</span> or
@@ -75,5 +75,5 @@ js_of_ocaml flags wherever you want to use it:
  (name main)
  (js_of_ocaml
   (flags (:standard --effects=double-translation))))
-</pre><h2> See also</h2><ul><li> <span><a href=".././manual/options">Command line options</a></span> - Full list of <span class="teletype">--effects</span> modes
+</pre><h2> See also</h2><ul><li> <span><a href=".././manual/options#effects">Command line options</a></span> - Full list of <span class="teletype">--effects</span> modes
 </li><li> <span><a href=".././manual/tailcall">Tailcall optimization</a></span> - How tail calls interact with effects</li></ul></article></div></div></body></html>
