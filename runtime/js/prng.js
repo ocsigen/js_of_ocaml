@@ -1,32 +1,22 @@
+import { caml_ba_get_1, caml_ba_set_1 } from './bigarray.js';
+import { caml_int64_add, caml_int64_mul, caml_int64_of_string, caml_int64_or, caml_int64_shift_left, caml_int64_shift_right_unsigned, caml_int64_xor } from './int64.js';
+import { caml_string_of_jsstring } from './mlBytes.js';
+
 //Provides: caml_lxm_M
-//Requires: caml_int64_of_string
-//Requires: caml_string_of_jsstring
 //Version: >= 5
-var caml_lxm_M = caml_int64_of_string(
+export var caml_lxm_M = caml_int64_of_string(
   caml_string_of_jsstring("0xd1342543de82ef95"),
 );
 
 //Provides: caml_lxm_daba
-//Requires: caml_int64_of_string
-//Requires: caml_string_of_jsstring
 //Version: >= 5
-var caml_lxm_daba = caml_int64_of_string(
+export var caml_lxm_daba = caml_int64_of_string(
   caml_string_of_jsstring("0xdaba0b6eb09322e3"),
 );
 
 //Provides: caml_lxm_next mutable
-//Requires: caml_int64_shift_left
-//Requires: caml_int64_shift_right_unsigned
-//Requires: caml_int64_or
-//Requires: caml_int64_xor
-//Requires: caml_int64_add
-//Requires: caml_int64_mul
-//Requires: caml_ba_get_1
-//Requires: caml_ba_set_1
-//Requires: caml_lxm_M
-//Requires: caml_lxm_daba
 //Version: >= 5
-function caml_lxm_next(v) {
+export function caml_lxm_next(v) {
   function shift_l(x, k) {
     return caml_int64_shift_left(x, k);
   }

@@ -15,12 +15,15 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_failwith, caml_raise_zero_divide } from './fail.js';
+import { caml_finish_formatting, caml_parse_format } from './format.js';
+import { caml_int64_of_bytes, caml_int64_to_bytes } from './int64.js';
+import { caml_jsbytes_of_string, caml_ml_string_length, caml_str_repeat, caml_string_of_jsbytes, caml_string_unsafe_get } from './mlBytes.js';
+
 //Provides: caml_format_int const (const, const)
-//Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
-//Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 //Alias: caml_int32_format
 //Alias: caml_nativeint_format
-function caml_format_int(fmt, i) {
+export function caml_format_int(fmt, i) {
   if (caml_jsbytes_of_string(fmt) === "%d")
     return caml_string_of_jsbytes("" + i);
   var f = caml_parse_format(fmt);
@@ -40,8 +43,7 @@ function caml_format_int(fmt, i) {
 }
 
 //Provides: caml_parse_sign_and_base
-//Requires: caml_string_unsafe_get, caml_ml_string_length
-function caml_parse_sign_and_base(s) {
+export function caml_parse_sign_and_base(s) {
   var i = 0,
     len = caml_ml_string_length(s),
     base = 10,
@@ -89,7 +91,7 @@ function caml_parse_sign_and_base(s) {
 }
 
 //Provides: caml_parse_digit
-function caml_parse_digit(c) {
+export function caml_parse_digit(c) {
   if (c >= 48 && c <= 57) return c - 48;
   if (c >= 65 && c <= 90) return c - 55;
   if (c >= 97 && c <= 122) return c - 87;
@@ -97,11 +99,9 @@ function caml_parse_digit(c) {
 }
 
 //Provides: caml_int_of_string (const)
-//Requires: caml_ml_string_length, caml_string_unsafe_get
-//Requires: caml_parse_sign_and_base, caml_parse_digit, caml_failwith
 //Alias: caml_int32_of_string
 //Alias: caml_nativeint_of_string
-function caml_int_of_string(s) {
+export function caml_int_of_string(s) {
   var r = caml_parse_sign_and_base(s);
   var i = r[0],
     sign = r[1],
@@ -136,38 +136,36 @@ function caml_int_of_string(s) {
 //Alias: caml_int32_mul
 //Alias: caml_nativeint_mul
 //Alias: %int_mul
-function caml_mul(a, b) {
+export function caml_mul(a, b) {
   return Math.imul(a, b);
 }
 
 //Provides: caml_div
-//Requires: caml_raise_zero_divide
 //Alias: caml_int32_div
 //Alias: caml_nativeint_div
 //Alias: %int_div
-function caml_div(x, y) {
+export function caml_div(x, y) {
   if (y === 0) caml_raise_zero_divide();
   return (x / y) | 0;
 }
 
 //Provides: caml_mod
-//Requires: caml_raise_zero_divide
 //Alias: caml_int32_mod
 //Alias: caml_nativeint_mod
 //Alias: %int_mod
-function caml_mod(x, y) {
+export function caml_mod(x, y) {
   if (y === 0) caml_raise_zero_divide();
   return x % y;
 }
 
 //Provides: caml_bswap16 const
-function caml_bswap16(x) {
+export function caml_bswap16(x) {
   return ((x & 0x00ff) << 8) | ((x & 0xff00) >> 8);
 }
 
 //Provides: caml_int32_bswap const
 //Alias: caml_nativeint_bswap
-function caml_int32_bswap(x) {
+export function caml_int32_bswap(x) {
   return (
     ((x & 0x000000ff) << 24) |
     ((x & 0x0000ff00) << 8) |
@@ -176,8 +174,7 @@ function caml_int32_bswap(x) {
   );
 }
 //Provides: caml_int64_bswap const
-//Requires: caml_int64_to_bytes, caml_int64_of_bytes
-function caml_int64_bswap(x) {
+export function caml_int64_bswap(x) {
   var y = caml_int64_to_bytes(x);
   return caml_int64_of_bytes([y[7], y[6], y[5], y[4], y[3], y[2], y[1], y[0]]);
 }

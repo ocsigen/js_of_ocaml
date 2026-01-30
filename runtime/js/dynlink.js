@@ -16,6 +16,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_failwith } from './fail.js';
+import { caml_jsstring_of_string } from './mlBytes.js';
+import { caml_global_data } from './stdlib.js';
+
 //Provides: get_current_libs
 var current_libs;
 function get_current_libs() {
@@ -24,9 +28,7 @@ function get_current_libs() {
 }
 
 //Provides: caml_dynlink_open_lib
-//Requires: get_current_libs, caml_failwith
-//Requires: caml_jsstring_of_string
-function caml_dynlink_open_lib(_mode, file) {
+export function caml_dynlink_open_lib(_mode, file) {
   var name = caml_jsstring_of_string(file);
   console.log("Dynlink: try to open ", name);
   //caml_failwith("file not found: "+name)
@@ -36,17 +38,14 @@ function caml_dynlink_open_lib(_mode, file) {
 }
 
 //Provides: caml_dynlink_close_lib
-//Requires: get_current_libs
-function caml_dynlink_close_lib(idx) {
+export function caml_dynlink_close_lib(idx) {
   var current_libs = get_current_libs();
   current_libs[idx] = null;
   return 0;
 }
 
 //Provides: caml_dynlink_lookup_symbol
-//Requires: get_current_libs
-//Requires: caml_jsstring_of_string
-function caml_dynlink_lookup_symbol(idx, fun_name) {
+export function caml_dynlink_lookup_symbol(idx, fun_name) {
   var name = caml_jsstring_of_string(fun_name);
   console.log("Dynlink: looking for symbol", name);
   var current_libs = get_current_libs();
@@ -56,15 +55,13 @@ function caml_dynlink_lookup_symbol(idx, fun_name) {
 }
 
 //Provides: caml_dynlink_add_primitive
-//Requires: caml_global_data
-function caml_dynlink_add_primitive(dll_addr) {
+export function caml_dynlink_add_primitive(dll_addr) {
   globalThis.jsoo_runtime[dll_addr.name] = dll_addr.symbol;
   return caml_global_data.prim_count++;
 }
 
 //Provides: caml_dynlink_get_current_libs
-//Requires: get_current_libs
-function caml_dynlink_get_current_libs() {
+export function caml_dynlink_get_current_libs() {
   var current_libs = get_current_libs();
   var len = current_libs.length;
   var a = new Array(len);

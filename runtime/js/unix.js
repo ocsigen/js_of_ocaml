@@ -1,20 +1,28 @@
+import { caml_ba_to_typed_array } from './bigarray.js';
+import { caml_failwith, caml_raise_end_of_file, caml_raise_not_found, caml_raise_with_args } from './fail.js';
+import { fs_node_supported } from './fs_node.js';
+import { caml_sys_chdir, resolve_fs_device } from './fs.js';
+import { caml_int64_to_float } from './int64.js';
+import { MlChanid, caml_ml_open_descriptor_in, caml_ml_open_descriptor_out, caml_sys_fds } from './io.js';
+import { caml_jsstring_of_string, caml_string_of_jsstring, caml_uint8_array_of_bytes } from './mlBytes.js';
+import { caml_named_value } from './stdlib.js';
+import { caml_raise_sys_error } from './sys.js';
+
 //Provides: caml_unix_gettimeofday
 //Alias: unix_gettimeofday
-function caml_unix_gettimeofday() {
+export function caml_unix_gettimeofday() {
   return new Date().getTime() / 1000;
 }
 
 //Provides: caml_unix_time
-//Requires: caml_unix_gettimeofday
 //Alias: unix_time
-function caml_unix_time() {
+export function caml_unix_time() {
   return Math.floor(caml_unix_gettimeofday());
 }
 
 //Provides: caml_unix_times
-//Requires: caml_failwith
 //Alias: unix_times
-function caml_unix_times() {
+export function caml_unix_times() {
   if (globalThis.process?.cpuUsage) {
     var t = globalThis.process.cpuUsage();
     return BLOCK(0, t.user / 1e6, t.system / 1e6, 0, 0);
@@ -27,7 +35,7 @@ function caml_unix_times() {
 
 //Provides: caml_unix_gmtime
 //Alias: unix_gmtime
-function caml_unix_gmtime(t) {
+export function caml_unix_gmtime(t) {
   var d = new Date(t * 1000);
   var d_num = d.getTime();
   var januaryfirst = new Date(Date.UTC(d.getUTCFullYear(), 0, 1)).getTime();
@@ -48,7 +56,7 @@ function caml_unix_gmtime(t) {
 
 //Provides: caml_unix_localtime
 //Alias: unix_localtime
-function caml_unix_localtime(t) {
+export function caml_unix_localtime(t) {
   var d = new Date(t * 1000);
   var d_num = d.getTime();
   var januaryfirst = new Date(d.getFullYear(), 0, 1).getTime();
@@ -75,9 +83,8 @@ function caml_unix_localtime(t) {
 }
 
 //Provides: caml_unix_mktime
-//Requires: caml_unix_localtime
 //Alias: unix_mktime
-function caml_unix_mktime(tm) {
+export function caml_unix_mktime(tm) {
   var d = new Date(tm[6] + 1900, tm[5], tm[4], tm[3], tm[2], tm[1]).getTime();
   var t = Math.floor(d / 1000);
   var tm2 = caml_unix_localtime(t);
@@ -85,22 +92,21 @@ function caml_unix_mktime(tm) {
 }
 //Provides: caml_unix_startup const
 //Alias: win_startup
-function caml_unix_startup() {}
+export function caml_unix_startup() {}
 
 //Provides: caml_unix_cleanup const
 //Alias: win_cleanup
-function caml_unix_cleanup() {}
+export function caml_unix_cleanup() {}
 
 //Provides: caml_unix_filedescr_of_fd const
 //Alias: win_handle_fd
-function caml_unix_filedescr_of_fd(x) {
+export function caml_unix_filedescr_of_fd(x) {
   return x;
 }
 
 //Provides: caml_unix_isatty
-//Requires: caml_unix_lookup_file
 //Alias: unix_isatty
-function caml_unix_isatty(fd) {
+export function caml_unix_isatty(fd) {
   var file = caml_unix_lookup_file(fd);
   if (!file.isatty) return 0;
   return file.isatty();
@@ -109,12 +115,12 @@ function caml_unix_isatty(fd) {
 //Provides: caml_unix_isatty
 //Alias: unix_isatty
 //If: browser
-function caml_unix_isatty(_fileDescriptor) {
+export function caml_unix_isatty$browser(_fileDescriptor) {
   return 0;
 }
 
 //Provides: unix_error
-var unix_error = [
+export var unix_error = [
   /* ===Unix.error===
    *
    * This array is in order of the variant in OCaml
@@ -190,8 +196,7 @@ var unix_error = [
 ];
 
 //Provides: make_unix_err_args
-//Requires: unix_error, caml_string_of_jsstring
-function make_unix_err_args(code, syscall, path, errno) {
+export function make_unix_err_args(code, syscall, path, errno) {
   var variant = unix_error.indexOf(code);
   if (variant < 0) {
     // Default if undefined
@@ -211,8 +216,7 @@ function make_unix_err_args(code, syscall, path, errno) {
 }
 
 //Provides: caml_strerror
-//Requires: unix_error
-function caml_strerror(errno) {
+export function caml_strerror(errno) {
   const util = require("node:util");
   if (errno >= 0) {
     const code = unix_error[errno];
@@ -226,32 +230,28 @@ function caml_strerror(errno) {
 }
 
 //Provides: caml_strerror
-//Requires: unix_error
 //If: browser
-function caml_strerror(errno) {
+export function caml_strerror$browser(errno) {
   const code = unix_error[errno];
   return code || "Unknown error " + errno;
 }
 
 //Provides: unix_error_message
 //Alias: caml_unix_error_message
-//Requires: caml_strerror, caml_string_of_jsstring
-function unix_error_message(err) {
+export function unix_error_message(err) {
   const errno = typeof err === "number" ? err : -err[1];
   return caml_string_of_jsstring(caml_strerror(errno));
 }
 
 //Provides: caml_unix_chdir
-//Requires: caml_sys_chdir
 //Alias: unix_chdir
-function caml_unix_chdir(dir) {
+export function caml_unix_chdir(dir) {
   return caml_sys_chdir(dir, /* raise Unix_error */ true);
 }
 
 //Provides: caml_unix_stat
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_stat
-function caml_unix_stat(name) {
+export function caml_unix_stat(name) {
   var root = resolve_fs_device(name);
   if (!root.device.stat) {
     caml_failwith("caml_unix_stat: not implemented");
@@ -264,9 +264,8 @@ function caml_unix_stat(name) {
 }
 
 //Provides: caml_unix_stat_64
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_stat_64
-function caml_unix_stat_64(name) {
+export function caml_unix_stat_64(name) {
   var root = resolve_fs_device(name);
   if (!root.device.stat) {
     caml_failwith("caml_unix_stat_64: not implemented");
@@ -279,9 +278,8 @@ function caml_unix_stat_64(name) {
 }
 
 //Provides: caml_unix_lstat
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_lstat
-function caml_unix_lstat(name) {
+export function caml_unix_lstat(name) {
   var root = resolve_fs_device(name);
   if (!root.device.lstat) {
     caml_failwith("caml_unix_lstat: not implemented");
@@ -294,9 +292,8 @@ function caml_unix_lstat(name) {
 }
 
 //Provides: caml_unix_lstat_64
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_lstat_64
-function caml_unix_lstat_64(name) {
+export function caml_unix_lstat_64(name) {
   var root = resolve_fs_device(name);
   if (!root.device.lstat) {
     caml_failwith("caml_unix_lstat_64: not implemented");
@@ -309,9 +306,8 @@ function caml_unix_lstat_64(name) {
 }
 
 //Provides: caml_unix_chmod
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_chmod
-function caml_unix_chmod(name, perms) {
+export function caml_unix_chmod(name, perms) {
   var root = resolve_fs_device(name);
   if (!root.device.chmod) {
     caml_failwith("caml_unix_chmod: not implemented");
@@ -320,10 +316,8 @@ function caml_unix_chmod(name, perms) {
 }
 
 //Provides: caml_unix_rename
-//Requires: caml_failwith, resolve_fs_device
-//Requires: caml_raise_system_error
 //Alias: unix_rename
-function caml_unix_rename(o, n) {
+export function caml_unix_rename(o, n) {
   var o_root = resolve_fs_device(o);
   var n_root = resolve_fs_device(n);
   if (o_root.device !== n_root.device)
@@ -333,9 +327,8 @@ function caml_unix_rename(o, n) {
 }
 
 //Provides: caml_unix_mkdir
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_mkdir
-function caml_unix_mkdir(name, perm) {
+export function caml_unix_mkdir(name, perm) {
   var root = resolve_fs_device(name);
   if (!root.device.mkdir) {
     caml_failwith("caml_unix_mkdir: not implemented");
@@ -344,9 +337,8 @@ function caml_unix_mkdir(name, perm) {
 }
 
 //Provides: caml_unix_rmdir
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_rmdir
-function caml_unix_rmdir(name) {
+export function caml_unix_rmdir(name) {
   var root = resolve_fs_device(name);
   if (!root.device.rmdir) {
     caml_failwith("caml_unix_rmdir: not implemented");
@@ -355,9 +347,8 @@ function caml_unix_rmdir(name) {
 }
 
 //Provides: caml_unix_link
-//Requires: resolve_fs_device, caml_failwith, caml_raise_system_error
 //Alias: unix_link
-function caml_unix_link(follow, src, dst) {
+export function caml_unix_link(follow, src, dst) {
   var src_root = resolve_fs_device(src);
   var dst_root = resolve_fs_device(dst);
   if (!src_root.device.link) {
@@ -377,9 +368,8 @@ function caml_unix_link(follow, src, dst) {
 }
 
 //Provides: caml_unix_symlink
-//Requires: resolve_fs_device, caml_failwith, caml_jsstring_of_string
 //Alias: unix_symlink
-function caml_unix_symlink(to_dir, src, dst) {
+export function caml_unix_symlink(to_dir, src, dst) {
   var dst_root = resolve_fs_device(dst);
   if (!dst_root.device.symlink) {
     caml_failwith("caml_unix_symlink: not implemented");
@@ -393,9 +383,8 @@ function caml_unix_symlink(to_dir, src, dst) {
 }
 
 //Provides: caml_unix_readlink
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_readlink
-function caml_unix_readlink(name) {
+export function caml_unix_readlink(name) {
   var root = resolve_fs_device(name);
   if (!root.device.readlink) {
     caml_failwith("caml_unix_readlink: not implemented");
@@ -404,9 +393,8 @@ function caml_unix_readlink(name) {
 }
 
 //Provides: caml_unix_unlink
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_unlink
-function caml_unix_unlink(name) {
+export function caml_unix_unlink(name) {
   var root = resolve_fs_device(name);
   if (!root.device.unlink) {
     caml_failwith("caml_unix_unlink: not implemented");
@@ -416,9 +404,8 @@ function caml_unix_unlink(name) {
 }
 
 //Provides: caml_unix_utimes
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_utimes
-function caml_unix_utimes(name, atime, mtime) {
+export function caml_unix_utimes(name, atime, mtime) {
   var root = resolve_fs_device(name);
   if (!root.device.utimes) {
     caml_failwith("caml_unix_utimes: not implemented");
@@ -428,9 +415,8 @@ function caml_unix_utimes(name, atime, mtime) {
 }
 
 //Provides: caml_unix_truncate
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_truncate
-function caml_unix_truncate(name, len) {
+export function caml_unix_truncate(name, len) {
   var root = resolve_fs_device(name);
   if (!root.device.truncate) {
     caml_failwith("caml_unix_truncate: not implemented");
@@ -440,9 +426,8 @@ function caml_unix_truncate(name, len) {
 }
 
 //Provides: caml_unix_truncate_64
-//Requires: resolve_fs_device, caml_failwith, caml_int64_to_float
 //Alias: unix_truncate_64
-function caml_unix_truncate_64(name, len) {
+export function caml_unix_truncate_64(name, len) {
   var root = resolve_fs_device(name);
   if (!root.device.truncate) {
     caml_failwith("caml_unix_truncate_64: not implemented");
@@ -456,9 +441,8 @@ function caml_unix_truncate_64(name, len) {
 }
 
 //Provides: caml_unix_access
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_access
-function caml_unix_access(name, flags) {
+export function caml_unix_access(name, flags) {
   var f = {};
   while (flags) {
     switch (flags[1]) {
@@ -486,9 +470,8 @@ function caml_unix_access(name, flags) {
 }
 
 //Provides: caml_unix_open
-//Requires: resolve_fs_device, caml_sys_fds, MlChanid
 //Alias: unix_open
-function caml_unix_open(name, flags, perms) {
+export function caml_unix_open(name, flags, perms) {
   var f = {};
   while (flags) {
     switch (flags[1]) {
@@ -537,8 +520,7 @@ function caml_unix_open(name, flags, perms) {
 }
 
 //Provides: caml_unix_lookup_file
-//Requires: caml_sys_fds, caml_raise_system_error
-function caml_unix_lookup_file(fd, cmd) {
+export function caml_unix_lookup_file(fd, cmd) {
   var fd_desc = caml_sys_fds[fd];
   if (fd_desc === undefined)
     caml_raise_system_error(/* raise Unix_error */ 1, "EBADF", cmd);
@@ -547,8 +529,7 @@ function caml_unix_lookup_file(fd, cmd) {
 
 //Provides: caml_unix_fstat
 //Alias: unix_fstat
-//Requires: caml_unix_lookup_file, caml_failwith
-function caml_unix_fstat(fd) {
+export function caml_unix_fstat(fd) {
   var file = caml_unix_lookup_file(fd, "fstat");
   if (!file.stat) {
     caml_failwith("caml_unix_fstat: not implemented");
@@ -558,8 +539,7 @@ function caml_unix_fstat(fd) {
 
 //Provides: caml_unix_fstat_64
 //Alias: unix_fstat_64
-//Requires: caml_unix_lookup_file, caml_failwith
-function caml_unix_fstat_64(fd) {
+export function caml_unix_fstat_64(fd) {
   var file = caml_unix_lookup_file(fd, "fstat");
   if (!file.stat) {
     caml_failwith("caml_unix_fstat64: not implemented");
@@ -569,8 +549,7 @@ function caml_unix_fstat_64(fd) {
 
 //Provides: caml_unix_fchmod
 //Alias: unix_fchmod
-//Requires: caml_unix_lookup_file, caml_failwith
-function caml_unix_fchmod(fd, perms) {
+export function caml_unix_fchmod(fd, perms) {
   var file = caml_unix_lookup_file(fd, "fchmod");
   if (!file.chmod) {
     caml_failwith("caml_unix_fchmod: not implemented");
@@ -580,8 +559,7 @@ function caml_unix_fchmod(fd, perms) {
 
 //Provides: caml_unix_fsync
 //Alias: unix_fsync
-//Requires: caml_unix_lookup_file, caml_failwith
-function caml_unix_fsync(fd) {
+export function caml_unix_fsync(fd) {
   var file = caml_unix_lookup_file(fd, "fsync");
   if (!file.sync) {
     caml_failwith("caml_unix_fsync: not implemented");
@@ -591,8 +569,7 @@ function caml_unix_fsync(fd) {
 
 //Provides: caml_unix_write
 //Alias: unix_write
-//Requires: caml_unix_lookup_file, caml_uint8_array_of_bytes
-function caml_unix_write(fd, buf, pos, len) {
+export function caml_unix_write(fd, buf, pos, len) {
   var file = caml_unix_lookup_file(fd, "write");
   var a = caml_uint8_array_of_bytes(buf);
   var written = 0;
@@ -607,8 +584,7 @@ function caml_unix_write(fd, buf, pos, len) {
 
 //Provides: caml_unix_single_write
 //Alias: unix_single_write
-//Requires: caml_unix_lookup_file, caml_uint8_array_of_bytes
-function caml_unix_single_write(fd, buf, pos, len) {
+export function caml_unix_single_write(fd, buf, pos, len) {
   var file = caml_unix_lookup_file(fd, "write");
   if (len === 0) return 0;
   return file.write(
@@ -621,9 +597,8 @@ function caml_unix_single_write(fd, buf, pos, len) {
 
 //Provides: caml_unix_write_bigarray
 //Alias: caml_unix_lookup_file
-//Requires: caml_ba_to_typed_array, caml_unix_lookup_file
 //Version: >= 5.2
-function caml_unix_write_bigarray(fd, buf, pos, len) {
+export function caml_unix_write_bigarray$v5_2_plus(fd, buf, pos, len) {
   var a = caml_ba_to_typed_array(buf);
   var file = caml_unix_lookup_file(fd, "write");
   var written = 0;
@@ -638,8 +613,7 @@ function caml_unix_write_bigarray(fd, buf, pos, len) {
 
 //Provides: caml_unix_read
 //Alias: unix_read
-//Requires: caml_unix_lookup_file, caml_uint8_array_of_bytes
-function caml_unix_read(fd, buf, pos, len) {
+export function caml_unix_read(fd, buf, pos, len) {
   var file = caml_unix_lookup_file(fd, "read");
   return file.read(
     caml_uint8_array_of_bytes(buf),
@@ -651,9 +625,8 @@ function caml_unix_read(fd, buf, pos, len) {
 
 //Provides: caml_unix_read_bigarray
 //Alias: unix_read_bigarray
-//Requires: caml_ba_to_typed_array, caml_unix_lookup_file
 //Version: >= 5.2
-function caml_unix_read_bigarray(fd, buf, pos, len) {
+export function caml_unix_read_bigarray$v5_2_plus(fd, buf, pos, len) {
   var a = caml_ba_to_typed_array(buf);
   var file = caml_unix_lookup_file(fd, "read");
   return file.read(a, pos, len, /* raise unix_error */ 1);
@@ -661,24 +634,21 @@ function caml_unix_read_bigarray(fd, buf, pos, len) {
 
 //Provides: caml_unix_lseek
 //Alias: unix_lseek
-//Requires: caml_unix_lookup_file
-function caml_unix_lseek(fd, len, whence) {
+export function caml_unix_lseek(fd, len, whence) {
   var file = caml_unix_lookup_file(fd, "lseek");
   return file.seek(len, whence, /* raise unix_error */ 1);
 }
 
 //Provides: caml_unix_lseek_64
 //Alias: unix_lseek_64
-//Requires: caml_unix_lookup_file, caml_int64_to_float
-function caml_unix_lseek_64(fd, len, whence) {
+export function caml_unix_lseek_64(fd, len, whence) {
   var file = caml_unix_lookup_file(fd, "lseek");
   return file.seek(caml_int64_to_float(len), whence, /* raise unix_error */ 1);
 }
 
 //Provides: caml_unix_ftruncate
 //Alias: unix_ftruncate
-//Requires: caml_unix_lookup_file, caml_failwith
-function caml_unix_ftruncate(fd, len) {
+export function caml_unix_ftruncate(fd, len) {
   var file = caml_unix_lookup_file(fd, "ftruncate");
   if (!file.truncate) {
     caml_failwith("caml_unix_ftruncate: not implemented");
@@ -689,8 +659,7 @@ function caml_unix_ftruncate(fd, len) {
 
 //Provides: caml_unix_ftruncate_64
 //Alias: unix_ftruncate_64
-//Requires: caml_unix_lookup_file, caml_failwith, caml_int64_to_float
-function caml_unix_ftruncate_64(fd, len) {
+export function caml_unix_ftruncate_64(fd, len) {
   var file = caml_unix_lookup_file(fd, "ftruncate");
   if (!file.truncate) {
     caml_failwith("caml_unix_ftruncate_64: not implemented");
@@ -701,8 +670,7 @@ function caml_unix_ftruncate_64(fd, len) {
 
 //Provides: caml_unix_close
 //Alias: unix_close
-//Requires: caml_unix_lookup_file
-function caml_unix_close(fd) {
+export function caml_unix_close(fd) {
   var file = caml_unix_lookup_file(fd, "close");
   file.close(/* raise unix_error */ 1);
   return 0;
@@ -711,8 +679,7 @@ function caml_unix_close(fd) {
 //Provides: caml_unix_inchannel_of_filedescr
 //Alias: unix_inchannel_of_filedescr
 //Alias: win_inchannel_of_filedescr
-//Requires: caml_unix_lookup_file, caml_ml_open_descriptor_in
-function caml_unix_inchannel_of_filedescr(fd) {
+export function caml_unix_inchannel_of_filedescr(fd) {
   var file = caml_unix_lookup_file(fd, "in_channel_of_descr");
   file.check_stream_semantics("in_channel_of_descr");
   return caml_ml_open_descriptor_in(fd);
@@ -721,8 +688,7 @@ function caml_unix_inchannel_of_filedescr(fd) {
 //Provides: caml_unix_outchannel_of_filedescr
 //Alias: unix_outchannel_of_filedescr
 //Alias: win_outchannel_of_filedescr
-//Requires: caml_unix_lookup_file, caml_ml_open_descriptor_out
-function caml_unix_outchannel_of_filedescr(fd) {
+export function caml_unix_outchannel_of_filedescr(fd) {
   var file = caml_unix_lookup_file(fd, "out_channel_of_descr");
   file.check_stream_semantics("out_channel_of_descr");
   return caml_ml_open_descriptor_out(fd);
@@ -730,7 +696,7 @@ function caml_unix_outchannel_of_filedescr(fd) {
 
 //Provides: caml_unix_getuid
 //Alias: unix_getuid
-function caml_unix_getuid(_unit) {
+export function caml_unix_getuid(_unit) {
   if (globalThis.process?.getuid) {
     return globalThis.process.getuid();
   }
@@ -739,7 +705,7 @@ function caml_unix_getuid(_unit) {
 
 //Provides: caml_unix_geteuid
 //Alias: unix_geteuid
-function caml_unix_geteuid(_unit) {
+export function caml_unix_geteuid(_unit) {
   if (globalThis.process?.geteuid) {
     return globalThis.process.geteuid();
   }
@@ -748,7 +714,7 @@ function caml_unix_geteuid(_unit) {
 
 //Provides: caml_unix_getgid
 //Alias: unix_getgid
-function caml_unix_getgid(_unit) {
+export function caml_unix_getgid(_unit) {
   if (globalThis.process?.getgid) {
     return globalThis.process.getgid();
   }
@@ -757,7 +723,7 @@ function caml_unix_getgid(_unit) {
 
 //Provides: caml_unix_getegid
 //Alias: unix_getegid
-function caml_unix_getegid(_unit) {
+export function caml_unix_getegid(_unit) {
   if (globalThis.process?.getegid) {
     return globalThis.process.getegid();
   }
@@ -765,7 +731,6 @@ function caml_unix_getegid(_unit) {
 }
 
 //Provides: caml_unix_getpwnam
-//Requires: caml_raise_not_found
 //Alias: unix_getpwnam
 //Alias: caml_unix_getpwuid
 //Alias: unix_getpwuid
@@ -773,21 +738,19 @@ function caml_unix_getegid(_unit) {
 //Alias: unix_getgrnam
 //Alias: caml_unix_getgrgid
 //Alias: unix_getgrgid
-function caml_unix_getpwnam(_unit) {
+export function caml_unix_getpwnam(_unit) {
   caml_raise_not_found();
 }
 
 //Provides: caml_unix_has_symlink
-//Requires: fs_node_supported
 //Alias: unix_has_symlink
-function caml_unix_has_symlink(_unit) {
+export function caml_unix_has_symlink(_unit) {
   return fs_node_supported() ? 1 : 0;
 }
 
 //Provides: caml_unix_opendir
-//Requires: resolve_fs_device, caml_failwith
 //Alias: unix_opendir
-function caml_unix_opendir(path) {
+export function caml_unix_opendir(path) {
   var root = resolve_fs_device(path);
   if (!root.device.opendir) {
     caml_failwith("caml_unix_opendir: not implemented");
@@ -797,11 +760,8 @@ function caml_unix_opendir(path) {
 }
 
 //Provides: caml_unix_readdir
-//Requires: caml_raise_end_of_file
-//Requires: caml_string_of_jsstring
-//Requires: caml_raise_system_error
 //Alias: unix_readdir
-function caml_unix_readdir(dir_handle) {
+export function caml_unix_readdir(dir_handle) {
   var entry;
   try {
     entry = dir_handle.pointer.readSync();
@@ -816,9 +776,8 @@ function caml_unix_readdir(dir_handle) {
 }
 
 //Provides: caml_unix_closedir
-//Requires: caml_raise_system_error
 //Alias: unix_closedir
-function caml_unix_closedir(dir_handle) {
+export function caml_unix_closedir(dir_handle) {
   try {
     dir_handle.pointer.closeSync();
   } catch (e) {
@@ -827,9 +786,8 @@ function caml_unix_closedir(dir_handle) {
 }
 
 //Provides: caml_unix_rewinddir
-//Requires: caml_unix_closedir, caml_unix_opendir
 //Alias: unix_rewinddir
-function caml_unix_rewinddir(dir_handle) {
+export function caml_unix_rewinddir(dir_handle) {
   caml_unix_closedir(dir_handle);
   var new_dir_handle = caml_unix_opendir(dir_handle.path);
   dir_handle.pointer = new_dir_handle.pointer;
@@ -837,10 +795,8 @@ function caml_unix_rewinddir(dir_handle) {
 }
 
 //Provides: caml_unix_findfirst
-//Requires: caml_jsstring_of_string, caml_string_of_jsstring
-//Requires: caml_unix_opendir, caml_unix_readdir
 //Alias: win_findfirst
-function caml_unix_findfirst(path) {
+export function caml_unix_findfirst(path) {
   // The Windows code adds this glob to the path, so we need to remove it
   var path_js = caml_jsstring_of_string(path);
   path_js = path_js.replace(/(^|[\\/])\*\.\*$/, "");
@@ -853,29 +809,25 @@ function caml_unix_findfirst(path) {
 }
 
 //Provides: caml_unix_findnext
-//Requires: caml_unix_readdir
 //Alias: win_findnext
-function caml_unix_findnext(dir_handle) {
+export function caml_unix_findnext(dir_handle) {
   return caml_unix_readdir(dir_handle);
 }
 
 //Provides: caml_unix_findclose
-//Requires: caml_unix_closedir
 //Alias: win_findclose
-function caml_unix_findclose(dir_handle) {
+export function caml_unix_findclose(dir_handle) {
   return caml_unix_closedir(dir_handle);
 }
 
 //Provides: caml_unix_inet_addr_of_string const
 //Alias: unix_inet_addr_of_string
-function caml_unix_inet_addr_of_string() {
+export function caml_unix_inet_addr_of_string() {
   return 0;
 }
 
 //Provides: caml_raise_system_error
-//Requires: caml_raise_with_args, make_unix_err_args, caml_named_value
-//Requires: caml_raise_sys_error
-function caml_raise_system_error(raise_unix, code, cmd, msg, path) {
+export function caml_raise_system_error(raise_unix, code, cmd, msg, path) {
   var unix_error = caml_named_value("Unix.Unix_error");
   if (raise_unix && unix_error)
     caml_raise_with_args(unix_error, make_unix_err_args(code, cmd, path));

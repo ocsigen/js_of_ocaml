@@ -17,12 +17,16 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_failwith, caml_raise_zero_divide } from './fail.js';
+import { caml_finish_formatting, caml_parse_format } from './format.js';
+import { caml_parse_digit, caml_parse_sign_and_base } from './ints.js';
+import { caml_ml_string_length, caml_str_repeat, caml_string_unsafe_get } from './mlBytes.js';
+
 //Provides: caml_int64_offset
-var caml_int64_offset = Math.pow(2, -24);
+export var caml_int64_offset = Math.pow(2, -24);
 
 //Provides: MlInt64
-//Requires: caml_int64_offset, caml_raise_zero_divide
-class MlInt64 {
+export class MlInt64 {
   constructor(lo, mi, hi) {
     this.lo = lo & 0xffffff;
     this.mi = mi & 0xffffff;
@@ -257,109 +261,106 @@ class MlInt64 {
 }
 
 //Provides: caml_int64_ult const
-function caml_int64_ult(x, y) {
+export function caml_int64_ult(x, y) {
   return x.ucompare(y) < 0;
 }
 
 //Provides: caml_int64_compare const
-function caml_int64_compare(x, y, _total) {
+export function caml_int64_compare(x, y, _total) {
   return x.compare(y);
 }
 
 //Provides: caml_int64_neg const
-function caml_int64_neg(x) {
+export function caml_int64_neg(x) {
   return x.neg();
 }
 
 //Provides: caml_int64_add const
-function caml_int64_add(x, y) {
+export function caml_int64_add(x, y) {
   return x.add(y);
 }
 
 //Provides: caml_int64_sub const
-function caml_int64_sub(x, y) {
+export function caml_int64_sub(x, y) {
   return x.sub(y);
 }
 
 //Provides: caml_int64_mul const
-//Requires: caml_int64_offset
-function caml_int64_mul(x, y) {
+export function caml_int64_mul(x, y) {
   return x.mul(y);
 }
 
 //Provides: caml_int64_is_zero const
-function caml_int64_is_zero(x) {
+export function caml_int64_is_zero(x) {
   return +x.isZero();
 }
 
 //Provides: caml_int64_is_negative const
-function caml_int64_is_negative(x) {
+export function caml_int64_is_negative(x) {
   return +x.isNeg();
 }
 
 //Provides: caml_int64_and const
-function caml_int64_and(x, y) {
+export function caml_int64_and(x, y) {
   return x.and(y);
 }
 
 //Provides: caml_int64_or const
-function caml_int64_or(x, y) {
+export function caml_int64_or(x, y) {
   return x.or(y);
 }
 
 //Provides: caml_int64_xor const
-function caml_int64_xor(x, y) {
+export function caml_int64_xor(x, y) {
   return x.xor(y);
 }
 
 //Provides: caml_int64_shift_left const
-function caml_int64_shift_left(x, s) {
+export function caml_int64_shift_left(x, s) {
   return x.shift_left(s);
 }
 
 //Provides: caml_int64_shift_right_unsigned const
-function caml_int64_shift_right_unsigned(x, s) {
+export function caml_int64_shift_right_unsigned(x, s) {
   return x.shift_right_unsigned(s);
 }
 
 //Provides: caml_int64_shift_right const
-function caml_int64_shift_right(x, s) {
+export function caml_int64_shift_right(x, s) {
   return x.shift_right(s);
 }
 
 //Provides: caml_int64_div
-function caml_int64_div(x, y) {
+export function caml_int64_div(x, y) {
   return x.div(y);
 }
 
 //Provides: caml_int64_mod
-function caml_int64_mod(x, y) {
+export function caml_int64_mod(x, y) {
   return x.mod(y);
 }
 
 //Provides: caml_int64_of_int32 const
-//Requires: MlInt64
 //Alias: caml_int64_of_int
 //Alias: caml_int64_of_nativeint
-function caml_int64_of_int32(x) {
+export function caml_int64_of_int32(x) {
   return new MlInt64(x & 0xffffff, (x >> 24) & 0xffffff, (x >> 31) & 0xffff);
 }
 
 //Provides: caml_int64_to_int32 const
 //Alias: caml_int64_to_int
 //Alias: caml_int64_to_nativeint
-function caml_int64_to_int32(x) {
+export function caml_int64_to_int32(x) {
   return x.toInt();
 }
 
 //Provides: caml_int64_to_float const
-function caml_int64_to_float(x) {
+export function caml_int64_to_float(x) {
   return x.toFloat();
 }
 
 //Provides: caml_int64_of_float const
-//Requires: caml_int64_offset, MlInt64
-function caml_int64_of_float(x) {
+export function caml_int64_of_float(x) {
   if (x < 0) x = Math.ceil(x);
   return new MlInt64(
     x & 0xffffff,
@@ -369,11 +370,7 @@ function caml_int64_of_float(x) {
 }
 
 //Provides: caml_int64_format const
-//Requires: caml_parse_format, caml_finish_formatting
-//Requires: caml_int64_is_negative, caml_int64_neg
-//Requires: caml_int64_of_int32, caml_int64_to_int32
-//Requires: caml_int64_is_zero, caml_str_repeat
-function caml_int64_format(fmt, x) {
+export function caml_int64_format(fmt, x) {
   var f = caml_parse_format(fmt);
   if (f.signedconv && caml_int64_is_negative(x)) {
     f.sign = -1;
@@ -396,11 +393,7 @@ function caml_int64_format(fmt, x) {
 }
 
 //Provides: caml_int64_of_string
-//Requires: caml_parse_sign_and_base, caml_failwith, caml_parse_digit
-//Requires: caml_int64_of_int32, caml_int64_ult
-//Requires: caml_int64_add, caml_int64_mul, caml_int64_neg
-//Requires: caml_ml_string_length,caml_string_unsafe_get, MlInt64
-function caml_int64_of_string(s) {
+export function caml_int64_of_string(s) {
   var r = caml_parse_sign_and_base(s);
   var i = r[0],
     sign = r[1],
@@ -436,13 +429,11 @@ function caml_int64_of_string(s) {
 }
 
 //Provides: caml_int64_create_lo_mi_hi const
-//Requires: MlInt64
-function caml_int64_create_lo_mi_hi(lo, mi, hi) {
+export function caml_int64_create_lo_mi_hi(lo, mi, hi) {
   return new MlInt64(lo, mi, hi);
 }
 //Provides: caml_int64_create_lo_hi const
-//Requires: MlInt64
-function caml_int64_create_lo_hi(lo, hi) {
+export function caml_int64_create_lo_hi(lo, hi) {
   return new MlInt64(
     lo & 0xffffff,
     ((lo >>> 24) & 0xff) | ((hi & 0xffff) << 8),
@@ -450,18 +441,17 @@ function caml_int64_create_lo_hi(lo, hi) {
   );
 }
 //Provides: caml_int64_lo32 const
-function caml_int64_lo32(v) {
+export function caml_int64_lo32(v) {
   return v.lo32();
 }
 
 //Provides: caml_int64_hi32 const
-function caml_int64_hi32(v) {
+export function caml_int64_hi32(v) {
   return v.hi32();
 }
 
 //Provides: caml_int64_of_bytes const
-//Requires: MlInt64
-function caml_int64_of_bytes(a) {
+export function caml_int64_of_bytes(a) {
   return new MlInt64(
     (a[7] << 0) | (a[6] << 8) | (a[5] << 16),
     (a[4] << 0) | (a[3] << 8) | (a[2] << 16),
@@ -469,11 +459,11 @@ function caml_int64_of_bytes(a) {
   );
 }
 //Provides: caml_int64_to_bytes const
-function caml_int64_to_bytes(x) {
+export function caml_int64_to_bytes(x) {
   return x.toArray();
 }
 
 //Provides: caml_int64_hash const
-function caml_int64_hash(v) {
+export function caml_int64_hash(v) {
   return v.lo32() ^ v.hi32();
 }

@@ -24,14 +24,19 @@
 // - sub/slice/reshape
 // - retain fast path for 1d array access
 
+import { caml_array_bound_error, caml_failwith, caml_invalid_argument } from './fail.js';
+import { caml_hash_mix_float, caml_hash_mix_int } from './hash.js';
+import { caml_int32_bits_of_float, caml_int32_float_of_bits, caml_int64_bits_of_float, caml_int64_float_of_bits } from './ieee_754.js';
+import { caml_int64_create_lo_hi, caml_int64_hi32, caml_int64_lo32, caml_int64_of_bytes, caml_int64_to_bytes } from './int64.js';
+import { caml_js_from_array } from './jslib.js';
+
 //Provides: caml_ba_init const
-function caml_ba_init() {
+export function caml_ba_init() {
   return 0;
 }
 
 //Provides: caml_ba_get_size
-//Requires: caml_invalid_argument
-function caml_ba_get_size(dims) {
+export function caml_ba_get_size(dims) {
   var n_dims = dims.length;
   var size = 1;
   for (var i = 0; i < n_dims; i++) {
@@ -43,7 +48,7 @@ function caml_ba_get_size(dims) {
 }
 
 //Provides: caml_unpackFloat16
-var caml_unpackFloat16 = (function () {
+export var caml_unpackFloat16 = (function () {
   var pow = Math.pow;
 
   var EXP_MASK16 = 31; // 2 ** 5 - 1
@@ -73,7 +78,7 @@ var caml_unpackFloat16 = (function () {
 })();
 
 //Provides: caml_packFloat16
-var caml_packFloat16 = (function () {
+export var caml_packFloat16 = (function () {
   const INVERSE_OF_EPSILON = 1 / Number.EPSILON;
 
   function roundTiesToEven(num) {
@@ -181,7 +186,7 @@ var caml_packFloat16 = (function () {
 })();
 
 //Provides: caml_ba_get_size_per_element
-function caml_ba_get_size_per_element(kind) {
+export function caml_ba_get_size_per_element(kind) {
   switch (kind) {
     case 7:
     case 10:
@@ -193,9 +198,7 @@ function caml_ba_get_size_per_element(kind) {
 }
 
 //Provides: caml_ba_create_buffer
-//Requires: caml_ba_get_size_per_element
-//Requires: caml_invalid_argument
-function caml_ba_create_buffer(kind, size) {
+export function caml_ba_create_buffer(kind, size) {
   var view;
   switch (kind) {
     case 0:
@@ -247,13 +250,10 @@ function caml_ba_create_buffer(kind, size) {
 }
 
 //Provides: caml_ba_custom_name
-var caml_ba_custom_name = "_bigarr02";
+export var caml_ba_custom_name = "_bigarr02";
 
 //Provides: Ml_Bigarray
-//Requires: caml_array_bound_error, caml_invalid_argument, caml_ba_custom_name
-//Requires: caml_int64_create_lo_hi, caml_int64_hi32, caml_int64_lo32
-//Requires: caml_packFloat16, caml_unpackFloat16
-class Ml_Bigarray {
+export class Ml_Bigarray {
   constructor(kind, layout, dims, buffer) {
     this.kind = kind;
     this.layout = layout;
@@ -431,8 +431,7 @@ class Ml_Bigarray {
 }
 
 //Provides: Ml_Bigarray_c_1_1
-//Requires: Ml_Bigarray, caml_array_bound_error, caml_invalid_argument
-class Ml_Bigarray_c_1_1 extends Ml_Bigarray {
+export class Ml_Bigarray_c_1_1 extends Ml_Bigarray {
   offset(arg) {
     if (typeof arg !== "number") {
       if (Array.isArray(arg) && arg.length === 1) arg = arg[0];
@@ -458,14 +457,12 @@ class Ml_Bigarray_c_1_1 extends Ml_Bigarray {
 }
 
 //Provides: caml_ba_compare
-function caml_ba_compare(a, b, total) {
+export function caml_ba_compare(a, b, total) {
   return a.compare(b, total);
 }
 
 //Provides: caml_ba_create_unsafe
-//Requires: Ml_Bigarray, Ml_Bigarray_c_1_1, caml_ba_get_size, caml_ba_get_size_per_element
-//Requires: caml_invalid_argument
-function caml_ba_create_unsafe(kind, layout, dims, data) {
+export function caml_ba_create_unsafe(kind, layout, dims, data) {
   var size_per_element = caml_ba_get_size_per_element(kind);
   if (caml_ba_get_size(dims) * size_per_element !== data.length) {
     caml_invalid_argument("length doesn't match dims");
@@ -482,18 +479,14 @@ function caml_ba_create_unsafe(kind, layout, dims, data) {
 }
 
 //Provides: caml_ba_create
-//Requires: caml_js_from_array
-//Requires: caml_ba_get_size, caml_ba_create_unsafe
-//Requires: caml_ba_create_buffer
-function caml_ba_create(kind, layout, dims_ml) {
+export function caml_ba_create(kind, layout, dims_ml) {
   var dims = caml_js_from_array(dims_ml);
   var data = caml_ba_create_buffer(kind, caml_ba_get_size(dims));
   return caml_ba_create_unsafe(kind, layout, dims, data);
 }
 
 //Provides: caml_ba_change_layout
-//Requires: caml_ba_create_unsafe
-function caml_ba_change_layout(ba, layout) {
+export function caml_ba_change_layout(ba, layout) {
   if (ba.layout === layout) return ba;
   var new_dims = [];
   for (var i = 0; i < ba.dims.length; i++)
@@ -502,55 +495,49 @@ function caml_ba_change_layout(ba, layout) {
 }
 
 //Provides: caml_ba_kind
-function caml_ba_kind(ba) {
+export function caml_ba_kind(ba) {
   return ba.kind;
 }
 
 //Provides: caml_ba_layout
-function caml_ba_layout(ba) {
+export function caml_ba_layout(ba) {
   return ba.layout;
 }
 
 //Provides: caml_ba_num_dims
-function caml_ba_num_dims(ba) {
+export function caml_ba_num_dims(ba) {
   return ba.dims.length;
 }
 
 //Provides: caml_ba_dim
-//Requires: caml_invalid_argument
-function caml_ba_dim(ba, i) {
+export function caml_ba_dim(ba, i) {
   if (i < 0 || i >= ba.dims.length) caml_invalid_argument("Bigarray.dim");
   return ba.dims[i];
 }
 
 //Provides: caml_ba_dim_1
-//Requires: caml_ba_dim
-function caml_ba_dim_1(ba) {
+export function caml_ba_dim_1(ba) {
   return caml_ba_dim(ba, 0);
 }
 
 //Provides: caml_ba_dim_2
-//Requires: caml_ba_dim
-function caml_ba_dim_2(ba) {
+export function caml_ba_dim_2(ba) {
   return caml_ba_dim(ba, 1);
 }
 
 //Provides: caml_ba_dim_3
-//Requires: caml_ba_dim
-function caml_ba_dim_3(ba) {
+export function caml_ba_dim_3(ba) {
   return caml_ba_dim(ba, 2);
 }
 
 //Provides: caml_ba_get_generic
-//Requires: caml_js_from_array
-function caml_ba_get_generic(ba, i) {
+export function caml_ba_get_generic(ba, i) {
   var ofs = ba.offset(caml_js_from_array(i));
   return ba.get(ofs);
 }
 
 //Provides: caml_ba_uint8_get16
-//Requires: caml_array_bound_error
-function caml_ba_uint8_get16(ba, i0) {
+export function caml_ba_uint8_get16(ba, i0) {
   var ofs = ba.offset(i0);
   if (ofs + 1 >= ba.data.length) caml_array_bound_error();
   var b1 = ba.get(ofs);
@@ -559,8 +546,7 @@ function caml_ba_uint8_get16(ba, i0) {
 }
 
 //Provides: caml_ba_uint8_get32
-//Requires: caml_array_bound_error
-function caml_ba_uint8_get32(ba, i0) {
+export function caml_ba_uint8_get32(ba, i0) {
   var ofs = ba.offset(i0);
   if (ofs + 3 >= ba.data.length) caml_array_bound_error();
   var b1 = ba.get(ofs + 0);
@@ -571,8 +557,7 @@ function caml_ba_uint8_get32(ba, i0) {
 }
 
 //Provides: caml_ba_uint8_get64
-//Requires: caml_array_bound_error, caml_int64_of_bytes
-function caml_ba_uint8_get64(ba, i0) {
+export function caml_ba_uint8_get64(ba, i0) {
   var ofs = ba.offset(i0);
   if (ofs + 7 >= ba.data.length) caml_array_bound_error();
   var b1 = ba.get(ofs + 0);
@@ -587,30 +572,28 @@ function caml_ba_uint8_get64(ba, i0) {
 }
 
 //Provides: caml_ba_get_1
-function caml_ba_get_1(ba, i0) {
+export function caml_ba_get_1(ba, i0) {
   return ba.get(ba.offset(i0));
 }
 
 //Provides: caml_ba_get_2
-function caml_ba_get_2(ba, i0, i1) {
+export function caml_ba_get_2(ba, i0, i1) {
   return ba.get(ba.offset([i0, i1]));
 }
 
 //Provides: caml_ba_get_3
-function caml_ba_get_3(ba, i0, i1, i2) {
+export function caml_ba_get_3(ba, i0, i1, i2) {
   return ba.get(ba.offset([i0, i1, i2]));
 }
 
 //Provides: caml_ba_set_generic
-//Requires: caml_js_from_array
-function caml_ba_set_generic(ba, i, v) {
+export function caml_ba_set_generic(ba, i, v) {
   ba.set(ba.offset(caml_js_from_array(i)), v);
   return 0;
 }
 
 //Provides: caml_ba_uint8_set16
-//Requires: caml_array_bound_error
-function caml_ba_uint8_set16(ba, i0, v) {
+export function caml_ba_uint8_set16(ba, i0, v) {
   var ofs = ba.offset(i0);
   if (ofs + 1 >= ba.data.length) caml_array_bound_error();
   ba.set(ofs + 0, v & 0xff);
@@ -619,8 +602,7 @@ function caml_ba_uint8_set16(ba, i0, v) {
 }
 
 //Provides: caml_ba_uint8_set32
-//Requires: caml_array_bound_error
-function caml_ba_uint8_set32(ba, i0, v) {
+export function caml_ba_uint8_set32(ba, i0, v) {
   var ofs = ba.offset(i0);
   if (ofs + 3 >= ba.data.length) caml_array_bound_error();
   ba.set(ofs + 0, v & 0xff);
@@ -631,8 +613,7 @@ function caml_ba_uint8_set32(ba, i0, v) {
 }
 
 //Provides: caml_ba_uint8_set64
-//Requires: caml_array_bound_error, caml_int64_to_bytes
-function caml_ba_uint8_set64(ba, i0, v) {
+export function caml_ba_uint8_set64(ba, i0, v) {
   var ofs = ba.offset(i0);
   if (ofs + 7 >= ba.data.length) caml_array_bound_error();
   var v = caml_int64_to_bytes(v);
@@ -641,32 +622,31 @@ function caml_ba_uint8_set64(ba, i0, v) {
 }
 
 //Provides: caml_ba_set_1
-function caml_ba_set_1(ba, i0, v) {
+export function caml_ba_set_1(ba, i0, v) {
   ba.set(ba.offset(i0), v);
   return 0;
 }
 
 //Provides: caml_ba_set_2
-function caml_ba_set_2(ba, i0, i1, v) {
+export function caml_ba_set_2(ba, i0, i1, v) {
   ba.set(ba.offset([i0, i1]), v);
   return 0;
 }
 
 //Provides: caml_ba_set_3
-function caml_ba_set_3(ba, i0, i1, i2, v) {
+export function caml_ba_set_3(ba, i0, i1, i2, v) {
   ba.set(ba.offset([i0, i1, i2]), v);
   return 0;
 }
 
 //Provides: caml_ba_fill
-function caml_ba_fill(ba, v) {
+export function caml_ba_fill(ba, v) {
   ba.fill(v);
   return 0;
 }
 
 //Provides: caml_ba_blit
-//Requires: caml_invalid_argument
-function caml_ba_blit(src, dst) {
+export function caml_ba_blit(src, dst) {
   if (dst.dims.length !== src.dims.length)
     caml_invalid_argument("Bigarray.blit: dimension mismatch");
   for (var i = 0; i < dst.dims.length; i++)
@@ -677,9 +657,7 @@ function caml_ba_blit(src, dst) {
 }
 
 //Provides: caml_ba_sub
-//Requires: caml_invalid_argument, caml_ba_create_unsafe, caml_ba_get_size
-//Requires: caml_ba_get_size_per_element
-function caml_ba_sub(ba, ofs, len) {
+export function caml_ba_sub(ba, ofs, len) {
   var changed_dim;
   var mul = 1;
   if (ba.layout === 0) {
@@ -702,9 +680,7 @@ function caml_ba_sub(ba, ofs, len) {
 }
 
 //Provides: caml_ba_slice
-//Requires: caml_js_from_array, caml_ba_create_unsafe, caml_invalid_argument, caml_ba_get_size
-//Requires: caml_ba_get_size_per_element
-function caml_ba_slice(ba, vind) {
+export function caml_ba_slice(ba, vind) {
   vind = caml_js_from_array(vind);
   var num_inds = vind.length;
   var index = [];
@@ -736,8 +712,7 @@ function caml_ba_slice(ba, vind) {
 }
 
 //Provides: caml_ba_reshape
-//Requires: caml_js_from_array, caml_invalid_argument, caml_ba_create_unsafe, caml_ba_get_size
-function caml_ba_reshape(ba, vind) {
+export function caml_ba_reshape(ba, vind) {
   vind = caml_js_from_array(vind);
   var new_dim = [];
   var num_dims = vind.length;
@@ -761,10 +736,7 @@ function caml_ba_reshape(ba, vind) {
 }
 
 //Provides: caml_ba_serialize
-//Requires: caml_int64_bits_of_float, caml_int64_to_bytes
-//Requires: caml_int32_bits_of_float
-//Requires: caml_packFloat16
-function caml_ba_serialize(writer, ba, sz) {
+export function caml_ba_serialize(writer, ba, sz) {
   writer.write(32, ba.dims.length);
   writer.write(32, ba.kind | (ba.layout << 8));
   if (ba.caml_custom === "_bigarr02")
@@ -848,13 +820,7 @@ function caml_ba_serialize(writer, ba, sz) {
 }
 
 //Provides: caml_ba_deserialize
-//Requires: caml_ba_create_unsafe, caml_failwith
-//Requires: caml_ba_get_size
-//Requires: caml_int64_of_bytes, caml_int64_float_of_bits
-//Requires: caml_int32_float_of_bits
-//Requires: caml_ba_create_buffer
-//Requires: caml_unpackFloat16
-function caml_ba_deserialize(reader, sz, name) {
+export function caml_ba_deserialize(reader, sz, name) {
   var num_dims = reader.read32s();
   if (num_dims < 0 || num_dims > 16)
     caml_failwith("input_value: wrong number of bigarray dimensions");
@@ -966,9 +932,8 @@ function caml_ba_deserialize(reader, sz, name) {
 }
 
 //Provides: caml_ba_create_from
-//Requires: caml_ba_create_unsafe, caml_invalid_argument, caml_ba_get_size_per_element
 //Deprecated: Use [caml_ba_create_unsafe] instead
-function caml_ba_create_from(data1, data2, _jstyp, kind, layout, dims) {
+export function caml_ba_create_from(data1, data2, _jstyp, kind, layout, dims) {
   if (data2 || caml_ba_get_size_per_element(kind) === 2) {
     caml_invalid_argument(
       "caml_ba_create_from: use return caml_ba_create_unsafe",
@@ -978,9 +943,7 @@ function caml_ba_create_from(data1, data2, _jstyp, kind, layout, dims) {
 }
 
 //Provides: caml_ba_hash const
-//Requires: caml_ba_get_size, caml_hash_mix_int, caml_hash_mix_float
-//Requires: caml_unpackFloat16, caml_hash_mix_float16, caml_hash_mix_float32
-function caml_ba_hash(ba) {
+export function caml_ba_hash(ba) {
   var num_elts = caml_ba_get_size(ba.dims);
   var h = 0;
   switch (ba.kind) {
@@ -1068,8 +1031,7 @@ function caml_ba_hash(ba) {
 }
 
 //Provides: caml_hash_mix_float16
-//Requires: caml_hash_mix_int
-function caml_hash_mix_float16(hash, d) {
+export function caml_hash_mix_float16(hash, d) {
   /* Normalize NaNs */
   if ((d & 0x7c00) === 0x7c00 && (d & 0x03ff) !== 0) {
     d = 0x7c01;
@@ -1081,9 +1043,7 @@ function caml_hash_mix_float16(hash, d) {
 }
 
 //Provides: caml_hash_mix_float32
-//Requires: caml_int32_bits_of_float
-//Requires: caml_hash_mix_int
-function caml_hash_mix_float32(hash, v) {
+export function caml_hash_mix_float32(hash, v) {
   var i = caml_int32_bits_of_float(v);
   /* Normalize NaNs */
   if ((i & 0x7f800000) === 0x7f800000 && (i & 0x7fffff) !== 0) {
@@ -1099,13 +1059,12 @@ function caml_hash_mix_float32(hash, v) {
 }
 
 //Provides: caml_ba_to_typed_array mutable
-function caml_ba_to_typed_array(ba) {
+export function caml_ba_to_typed_array(ba) {
   return ba.data;
 }
 
 //Provides: caml_ba_kind_of_typed_array mutable
-//Requires: caml_invalid_argument
-function caml_ba_kind_of_typed_array(ta) {
+export function caml_ba_kind_of_typed_array(ta) {
   var kind;
   if (ta instanceof Float32Array) kind = 0;
   else if (ta instanceof Float64Array) kind = 1;
@@ -1121,9 +1080,7 @@ function caml_ba_kind_of_typed_array(ta) {
 }
 
 //Provides: caml_ba_from_typed_array mutable
-//Requires: caml_ba_kind_of_typed_array
-//Requires: caml_ba_create_unsafe
-function caml_ba_from_typed_array(ta) {
+export function caml_ba_from_typed_array(ta) {
   var kind = caml_ba_kind_of_typed_array(ta);
   var ta =
     /* Needed to avoid unsigned setters overflowing

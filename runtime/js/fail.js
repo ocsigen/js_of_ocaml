@@ -17,63 +17,58 @@
 
 //Raise exception
 
+import { caml_maybe_attach_backtrace } from './jslib.js';
+import { caml_string_of_jsbytes } from './mlBytes.js';
+import { caml_global_data } from './stdlib.js';
+
 //Provides: caml_raise_constant (const)
-function caml_raise_constant(tag) {
+export function caml_raise_constant(tag) {
   throw tag;
 }
 
 //Provides: caml_raise_with_arg (const, mutable)
-//Requires: caml_maybe_attach_backtrace
-function caml_raise_with_arg(tag, arg) {
+export function caml_raise_with_arg(tag, arg) {
   throw caml_maybe_attach_backtrace([0, tag, arg]);
 }
 
 //Provides: caml_raise_with_args (const, mutable)
-//Requires: caml_maybe_attach_backtrace
-function caml_raise_with_args(tag, args) {
+export function caml_raise_with_args(tag, args) {
   throw caml_maybe_attach_backtrace([0, tag].concat(args));
 }
 
 //Provides: caml_raise_with_string (const, const)
-//Requires: caml_raise_with_arg, caml_string_of_jsbytes
-function caml_raise_with_string(tag, msg) {
+export function caml_raise_with_string(tag, msg) {
   caml_raise_with_arg(tag, caml_string_of_jsbytes(msg));
 }
 
 //Provides: caml_failwith (const)
-//Requires: caml_raise_with_string, caml_global_data, caml_string_of_jsbytes
-function caml_failwith(msg) {
+export function caml_failwith(msg) {
   if (!caml_global_data.Failure)
     caml_global_data.Failure = [248, caml_string_of_jsbytes("Failure"), -3];
   caml_raise_with_string(caml_global_data.Failure, msg);
 }
 
 //Provides: caml_invalid_argument (const)
-//Requires: caml_raise_with_string, caml_global_data
-function caml_invalid_argument(msg) {
+export function caml_invalid_argument(msg) {
   caml_raise_with_string(caml_global_data.Invalid_argument, msg);
 }
 
 //Provides: caml_raise_end_of_file
-//Requires: caml_raise_constant, caml_global_data
-function caml_raise_end_of_file() {
+export function caml_raise_end_of_file() {
   caml_raise_constant(caml_global_data.End_of_file);
 }
 
 //Provides: caml_raise_zero_divide
-//Requires: caml_raise_constant, caml_global_data
-function caml_raise_zero_divide() {
+export function caml_raise_zero_divide() {
   caml_raise_constant(caml_global_data.Division_by_zero);
 }
 
 //Provides: caml_raise_not_found
-//Requires: caml_raise_constant, caml_global_data
-function caml_raise_not_found() {
+export function caml_raise_not_found() {
   caml_raise_constant(caml_global_data.Not_found);
 }
 
 //Provides: caml_array_bound_error
-//Requires: caml_invalid_argument
-function caml_array_bound_error() {
+export function caml_array_bound_error() {
   caml_invalid_argument("index out of bounds");
 }

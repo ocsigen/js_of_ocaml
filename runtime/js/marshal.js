@@ -17,8 +17,17 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_ba_compare, caml_ba_deserialize, caml_ba_hash, caml_ba_serialize } from './bigarray.js';
+import { caml_failwith, caml_invalid_argument } from './fail.js';
+import { caml_int64_bits_of_float, caml_int64_float_of_bits } from './ieee_754.js';
+import { caml_int64_compare, caml_int64_hash, caml_int64_of_bytes, caml_int64_to_bytes } from './int64.js';
+import { caml_list_to_js_array } from './jslib.js';
+import { caml_blit_bytes, caml_bytes_of_uint8_array, caml_bytes_unsafe_get, caml_is_ml_bytes, caml_is_ml_string, caml_ml_bytes_content, caml_ml_bytes_length, caml_ml_string_length, caml_string_of_jsbytes, caml_string_of_uint8_array, caml_string_unsafe_get, caml_uint8_array_of_bytes } from './mlBytes.js';
+import { caml_is_continuation_tag, caml_set_oo_id } from './obj.js';
+import { caml_decompress_input } from './zstd.js';
+
 //Provides: caml_marshal_constants
-var caml_marshal_constants = {
+export var caml_marshal_constants = {
   PREFIX_SMALL_BLOCK: 0x80,
   PREFIX_SMALL_INT: 0x40,
   PREFIX_SMALL_STRING: 0x20,
@@ -47,8 +56,7 @@ var caml_marshal_constants = {
 };
 
 //Provides: UInt8ArrayReader
-//Requires: caml_string_of_uint8_array
-class UInt8ArrayReader {
+export class UInt8ArrayReader {
   constructor(s, i) {
     this.s = s;
     this.i = i;
@@ -104,8 +112,7 @@ class UInt8ArrayReader {
 }
 
 //Provides: JsStringReader
-//Requires: caml_string_of_jsbytes
-class JsStringReader {
+export class JsStringReader {
   constructor(s, i) {
     this.s = s;
     this.i = i;
@@ -177,16 +184,12 @@ class JsStringReader {
 }
 
 //Provides: caml_float_of_bytes
-//Requires: caml_int64_float_of_bits, caml_int64_of_bytes
-function caml_float_of_bytes(a) {
+export function caml_float_of_bytes(a) {
   return caml_int64_float_of_bits(caml_int64_of_bytes(a));
 }
 
 //Provides: caml_input_value_from_bytes mutable
-//Requires: JsStringReader, UInt8ArrayReader
-//Requires: caml_input_value_from_reader
-//Requires: caml_ml_bytes_content
-function caml_input_value_from_bytes(s, ofs) {
+export function caml_input_value_from_bytes(s, ofs) {
   var c = caml_ml_bytes_content(s);
   var ofs = typeof ofs === "number" ? ofs : ofs[0];
   var reader =
@@ -197,8 +200,7 @@ function caml_input_value_from_bytes(s, ofs) {
 }
 
 //Provides: caml_int64_unmarshal
-//Requires: caml_int64_of_bytes
-function caml_int64_unmarshal(reader, size) {
+export function caml_int64_unmarshal(reader, size) {
   var t = new Array(8);
   for (var j = 0; j < 8; j++) t[j] = reader.read8u();
   size[0] = 8;
@@ -206,8 +208,7 @@ function caml_int64_unmarshal(reader, size) {
 }
 
 //Provides: caml_int64_marshal
-//Requires: caml_int64_to_bytes
-function caml_int64_marshal(writer, v, sizes) {
+export function caml_int64_marshal(writer, v, sizes) {
   var b = caml_int64_to_bytes(v);
   for (var i = 0; i < 8; i++) writer.write(8, b[i]);
   sizes[0] = 8;
@@ -215,14 +216,13 @@ function caml_int64_marshal(writer, v, sizes) {
 }
 
 //Provides: caml_int32_unmarshal
-function caml_int32_unmarshal(reader, size) {
+export function caml_int32_unmarshal(reader, size) {
   size[0] = 4;
   return reader.read32s();
 }
 
 //Provides: caml_nativeint_unmarshal
-//Requires: caml_failwith
-function caml_nativeint_unmarshal(reader, size) {
+export function caml_nativeint_unmarshal(reader, size) {
   switch (reader.read8u()) {
     case 1:
       size[0] = 4;
@@ -236,10 +236,7 @@ function caml_nativeint_unmarshal(reader, size) {
 }
 
 //Provides: caml_custom_ops
-//Requires: caml_int64_unmarshal, caml_int64_marshal, caml_int64_compare, caml_int64_hash
-//Requires: caml_int32_unmarshal, caml_nativeint_unmarshal
-//Requires: caml_ba_serialize, caml_ba_deserialize, caml_ba_compare, caml_ba_hash
-var caml_custom_ops = {
+export var caml_custom_ops = {
   _j: {
     deserialize: caml_int64_unmarshal,
     serialize: caml_int64_marshal,
@@ -274,12 +271,7 @@ var caml_custom_ops = {
 };
 
 //Provides: caml_input_value_from_reader mutable
-//Requires: caml_failwith
-//Requires: caml_float_of_bytes, caml_custom_ops
-//Requires: UInt8ArrayReader
-//Requires: caml_decompress_input
-//Requires: caml_set_oo_id
-function caml_input_value_from_reader(reader) {
+export function caml_input_value_from_reader(reader) {
   function readvlq(overflow) {
     var c = reader.read8u();
     var n = c & 0x7f;
@@ -528,18 +520,14 @@ function caml_input_value_from_reader(reader) {
 
 //Provides: caml_marshal_header_size
 //Version: < 5.1.0
-var caml_marshal_header_size = 20;
+export var caml_marshal_header_size$v5_1_minus = 20;
 
 //Provides: caml_marshal_header_size
 //Version: >= 5.1.0
-var caml_marshal_header_size = 16;
+export var caml_marshal_header_size$v5_1_plus = 16;
 
 //Provides: caml_marshal_data_size mutable
-//Requires: caml_failwith, caml_bytes_unsafe_get
-//Requires: caml_uint8_array_of_bytes
-//Requires: UInt8ArrayReader
-//Requires: caml_marshal_header_size
-function caml_marshal_data_size(s, ofs) {
+export function caml_marshal_data_size(s, ofs) {
   var r = new UInt8ArrayReader(caml_uint8_array_of_bytes(s), ofs);
   function readvlq(overflow) {
     var c = r.read8u();
@@ -581,7 +569,7 @@ function caml_marshal_data_size(s, ofs) {
 }
 
 //Provides: MlObjectTable
-class MlObjectTable {
+export class MlObjectTable {
   constructor() {
     this.objs = [];
     this.lookup = new globalThis.Map();
@@ -601,13 +589,7 @@ class MlObjectTable {
 }
 
 //Provides: caml_output_val
-//Requires: caml_int64_to_bytes, caml_failwith
-//Requires: caml_int64_bits_of_float
-//Requires: caml_is_ml_bytes, caml_ml_bytes_length, caml_bytes_unsafe_get
-//Requires: caml_is_ml_string, caml_ml_string_length, caml_string_unsafe_get
-//Requires: MlObjectTable, caml_list_to_js_array, caml_custom_ops
-//Requires: caml_invalid_argument,caml_string_of_jsbytes, caml_is_continuation_tag
-var caml_output_val = (function () {
+export var caml_output_val = (function () {
   class Writer {
     constructor() {
       this.chunk = [];
@@ -810,20 +792,17 @@ var caml_output_val = (function () {
 })();
 
 //Provides: caml_output_value_to_string mutable
-//Requires: caml_output_val, caml_string_of_uint8_array
-function caml_output_value_to_string(v, flags) {
+export function caml_output_value_to_string(v, flags) {
   return caml_string_of_uint8_array(caml_output_val(v, flags));
 }
 
 //Provides: caml_output_value_to_bytes mutable
-//Requires: caml_output_val, caml_bytes_of_uint8_array
-function caml_output_value_to_bytes(v, flags) {
+export function caml_output_value_to_bytes(v, flags) {
   return caml_bytes_of_uint8_array(caml_output_val(v, flags));
 }
 
 //Provides: caml_output_value_to_buffer
-//Requires: caml_output_val, caml_failwith, caml_blit_bytes, caml_bytes_of_uint8_array
-function caml_output_value_to_buffer(s, ofs, len, v, flags) {
+export function caml_output_value_to_buffer(s, ofs, len, v, flags) {
   var t = caml_output_val(v, flags);
   if (t.length > len) caml_failwith("Marshal.to_buffer: buffer overflow");
   caml_blit_bytes(caml_bytes_of_uint8_array(t), 0, s, ofs, t.length);

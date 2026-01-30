@@ -46,8 +46,11 @@
 //   is_ascii(x) =       x&1
 //   kind(x) =           x&6
 
+import { caml_failwith, caml_invalid_argument } from './fail.js';
+import { caml_int64_of_bytes, caml_int64_to_bytes } from './int64.js';
+
 //Provides: caml_str_repeat
-function caml_str_repeat(n, s) {
+export function caml_str_repeat(n, s) {
   return s.repeat(n);
 }
 
@@ -56,7 +59,7 @@ function caml_str_repeat(n, s) {
 // Pre ECMAScript 5, [apply] would not support array-like object.
 // In such setup, Typed_array would be implemented as polyfill, and [f.apply] would
 // fail here. Mark the primitive as Weakdef, so that people can override it easily.
-function caml_subarray_to_jsbytes(a, i, len) {
+export function caml_subarray_to_jsbytes(a, i, len) {
   var f = String.fromCharCode;
   if (i === 0 && len <= 4096 && len === a.length) return f.apply(null, a);
   var s = "";
@@ -70,7 +73,7 @@ function caml_subarray_to_jsbytes(a, i, len) {
 // Pre ECMAScript 5, [apply] would not support array-like object.
 // In such setup, Typed_array would be implemented as polyfill, and [f.apply] would
 // fail here. Mark the primitive as Weakdef, so that people can override it easily.
-function caml_sub_uint8_array_to_jsbytes(a, i, len) {
+export function caml_sub_uint8_array_to_jsbytes(a, i, len) {
   var f = String.fromCharCode;
   if (i === 0 && len <= 4096 && len === a.length) return f.apply(null, a);
   var s = "";
@@ -80,7 +83,7 @@ function caml_sub_uint8_array_to_jsbytes(a, i, len) {
 }
 
 //Provides: jsoo_is_ascii
-function jsoo_is_ascii(s) {
+export function jsoo_is_ascii(s) {
   // The regular expression gets better at around this point for all browsers
   if (s.length < 24) {
     // Spidermonkey gets much slower when s.length >= 24 (on 64 bit archs)
@@ -92,7 +95,7 @@ function jsoo_is_ascii(s) {
 }
 
 //Provides: caml_bytes_unsafe_get mutable
-function caml_bytes_unsafe_get(s, i) {
+export function caml_bytes_unsafe_get(s, i) {
   switch (s.t & 6) {
     case 0 /* BYTES */:
       return s.c.charCodeAt(i);
@@ -105,8 +108,7 @@ function caml_bytes_unsafe_get(s, i) {
 }
 
 //Provides: caml_bytes_unsafe_set
-//Requires: caml_convert_bytes_to_array
-function caml_bytes_unsafe_set(s, i, c) {
+export function caml_bytes_unsafe_set(s, i, c) {
   // The OCaml compiler uses Char.unsafe_chr on integers larger than 255!
   c &= 0xff;
   if (s.t !== 4 /* ARRAY */) {
@@ -122,29 +124,23 @@ function caml_bytes_unsafe_set(s, i, c) {
 }
 
 //Provides: caml_string_bound_error
-//Requires: caml_invalid_argument
-function caml_string_bound_error() {
+export function caml_string_bound_error() {
   caml_invalid_argument("index out of bounds");
 }
 
 //Provides: caml_bytes_bound_error
-//Requires: caml_invalid_argument
-function caml_bytes_bound_error() {
+export function caml_bytes_bound_error() {
   caml_invalid_argument("index out of bounds");
 }
 
 //Provides: caml_string_get
-//Requires: caml_string_bound_error, caml_string_unsafe_get
-//Requires: caml_ml_string_length
-function caml_string_get(s, i) {
+export function caml_string_get(s, i) {
   if (i >>> 0 >= caml_ml_string_length(s)) caml_string_bound_error();
   return caml_string_unsafe_get(s, i);
 }
 
 //Provides: caml_string_get16
-//Requires: caml_string_unsafe_get, caml_string_bound_error
-//Requires: caml_ml_string_length
-function caml_string_get16(s, i) {
+export function caml_string_get16(s, i) {
   if (i >>> 0 >= caml_ml_string_length(s) - 1) caml_string_bound_error();
   var b1 = caml_string_unsafe_get(s, i),
     b2 = caml_string_unsafe_get(s, i + 1);
@@ -152,8 +148,7 @@ function caml_string_get16(s, i) {
 }
 
 //Provides: caml_bytes_get16
-//Requires: caml_bytes_unsafe_get, caml_bytes_bound_error
-function caml_bytes_get16(s, i) {
+export function caml_bytes_get16(s, i) {
   if (i >>> 0 >= s.l - 1) caml_bytes_bound_error();
   var b1 = caml_bytes_unsafe_get(s, i),
     b2 = caml_bytes_unsafe_get(s, i + 1);
@@ -161,9 +156,7 @@ function caml_bytes_get16(s, i) {
 }
 
 //Provides: caml_string_get32
-//Requires: caml_string_unsafe_get, caml_string_bound_error
-//Requires: caml_ml_string_length
-function caml_string_get32(s, i) {
+export function caml_string_get32(s, i) {
   if (i >>> 0 >= caml_ml_string_length(s) - 3) caml_string_bound_error();
   var b1 = caml_string_unsafe_get(s, i),
     b2 = caml_string_unsafe_get(s, i + 1),
@@ -173,8 +166,7 @@ function caml_string_get32(s, i) {
 }
 
 //Provides: caml_bytes_get32
-//Requires: caml_bytes_unsafe_get, caml_bytes_bound_error
-function caml_bytes_get32(s, i) {
+export function caml_bytes_get32(s, i) {
   if (i >>> 0 >= s.l - 3) caml_bytes_bound_error();
   var b1 = caml_bytes_unsafe_get(s, i),
     b2 = caml_bytes_unsafe_get(s, i + 1),
@@ -184,10 +176,7 @@ function caml_bytes_get32(s, i) {
 }
 
 //Provides: caml_string_get64
-//Requires: caml_string_unsafe_get, caml_string_bound_error
-//Requires: caml_int64_of_bytes
-//Requires: caml_ml_string_length
-function caml_string_get64(s, i) {
+export function caml_string_get64(s, i) {
   if (i >>> 0 >= caml_ml_string_length(s) - 7) caml_string_bound_error();
   var a = new Array(8);
   for (var j = 0; j < 8; j++) {
@@ -197,9 +186,7 @@ function caml_string_get64(s, i) {
 }
 
 //Provides: caml_bytes_get64
-//Requires: caml_bytes_unsafe_get, caml_bytes_bound_error
-//Requires: caml_int64_of_bytes
-function caml_bytes_get64(s, i) {
+export function caml_bytes_get64(s, i) {
   if (i >>> 0 >= s.l - 7) caml_bytes_bound_error();
   var a = new Array(8);
   for (var j = 0; j < 8; j++) {
@@ -209,30 +196,26 @@ function caml_bytes_get64(s, i) {
 }
 
 //Provides: caml_bytes_get
-//Requires: caml_bytes_bound_error, caml_bytes_unsafe_get
-function caml_bytes_get(s, i) {
+export function caml_bytes_get(s, i) {
   if (i >>> 0 >= s.l) caml_bytes_bound_error();
   return caml_bytes_unsafe_get(s, i);
 }
 
 //Provides: caml_string_set
-//Requires: caml_failwith
 //If: js-string
-function caml_string_set(_s, _i, _c) {
+export function caml_string_set$js_string(_s, _i, _c) {
   caml_failwith("caml_string_set");
 }
 
 //Provides: caml_string_set
-//Requires: caml_string_unsafe_set, caml_string_bound_error
 //If: !js-string
-function caml_string_set(s, i, c) {
+export function caml_string_set$no_js_string(s, i, c) {
   if (i >>> 0 >= s.l) caml_string_bound_error();
   return caml_string_unsafe_set(s, i, c);
 }
 
 //Provides: caml_bytes_set16
-//Requires: caml_bytes_bound_error, caml_bytes_unsafe_set
-function caml_bytes_set16(s, i, i16) {
+export function caml_bytes_set16(s, i, i16) {
   if (i >>> 0 >= s.l - 1) caml_bytes_bound_error();
   var b2 = 0xff & (i16 >> 8),
     b1 = 0xff & i16;
@@ -242,8 +225,7 @@ function caml_bytes_set16(s, i, i16) {
 }
 
 //Provides: caml_bytes_set32
-//Requires: caml_bytes_bound_error, caml_bytes_unsafe_set
-function caml_bytes_set32(s, i, i32) {
+export function caml_bytes_set32(s, i, i32) {
   if (i >>> 0 >= s.l - 3) caml_bytes_bound_error();
   var b4 = 0xff & (i32 >> 24),
     b3 = 0xff & (i32 >> 16),
@@ -257,9 +239,7 @@ function caml_bytes_set32(s, i, i32) {
 }
 
 //Provides: caml_bytes_set64
-//Requires: caml_bytes_bound_error, caml_bytes_unsafe_set
-//Requires: caml_int64_to_bytes
-function caml_bytes_set64(s, i, i64) {
+export function caml_bytes_set64(s, i, i64) {
   if (i >>> 0 >= s.l - 7) caml_bytes_bound_error();
   var a = caml_int64_to_bytes(i64);
   for (var j = 0; j < 8; j++) {
@@ -269,22 +249,19 @@ function caml_bytes_set64(s, i, i64) {
 }
 
 //Provides: caml_bytes_set
-//Requires: caml_bytes_bound_error, caml_bytes_unsafe_set
-function caml_bytes_set(s, i, c) {
+export function caml_bytes_set(s, i, c) {
   if (i >>> 0 >= s.l) caml_bytes_bound_error();
   return caml_bytes_unsafe_set(s, i, c);
 }
 
 //Provides: jsoo_text_encoder
-var jsoo_text_encoder = new TextEncoder();
+export var jsoo_text_encoder = new TextEncoder();
 
 //Provides: jsoo_text_decoder
-var jsoo_text_decoder = new TextDecoder();
+export var jsoo_text_decoder = new TextDecoder();
 
 //Provides: caml_bytes_of_utf16_jsstring
-//Requires: MlBytes, jsoo_text_encoder
-//Requires: jsoo_is_ascii
-function caml_bytes_of_utf16_jsstring(s) {
+export function caml_bytes_of_utf16_jsstring(s) {
   if (jsoo_is_ascii(s)) {
     return new MlBytes(9, s, s.length);
   } else {
@@ -294,10 +271,7 @@ function caml_bytes_of_utf16_jsstring(s) {
 }
 
 //Provides: MlBytes
-//Requires: caml_convert_string_to_bytes, jsoo_is_ascii
-//Requires: caml_uint8_array_of_bytes
-//Requires: jsoo_text_decoder
-class MlBytes {
+export class MlBytes {
   constructor(tag, contents, length) {
     this.t = tag;
     this.c = contents;
@@ -334,8 +308,7 @@ class MlBytes {
 }
 
 //Provides: caml_convert_string_to_bytes
-//Requires: caml_str_repeat, caml_sub_uint8_array_to_jsbytes
-function caml_convert_string_to_bytes(s) {
+export function caml_convert_string_to_bytes(s) {
   /* Assumes not BYTES */
   if (s.t === 2 /* PARTIAL */) s.c += caml_str_repeat(s.l - s.c.length, "\0");
   else s.c = caml_sub_uint8_array_to_jsbytes(s.c, 0, s.c.length);
@@ -343,7 +316,7 @@ function caml_convert_string_to_bytes(s) {
 }
 
 //Provides: caml_convert_bytes_to_array
-function caml_convert_bytes_to_array(s) {
+export function caml_convert_bytes_to_array(s) {
   /* Assumes not ARRAY */
   var a = new Uint8Array(s.l);
   var b = s.c,
@@ -357,15 +330,13 @@ function caml_convert_bytes_to_array(s) {
 }
 
 //Provides: caml_uint8_array_of_bytes mutable
-//Requires: caml_convert_bytes_to_array
-function caml_uint8_array_of_bytes(s) {
+export function caml_uint8_array_of_bytes(s) {
   if (s.t !== 4 /* ARRAY */) caml_convert_bytes_to_array(s);
   return s.c;
 }
 
 //Provides: caml_uint8_array_of_string mutable
-//Requires: caml_ml_string_length, caml_string_unsafe_get
-function caml_uint8_array_of_string(s) {
+export function caml_uint8_array_of_string(s) {
   var l = caml_ml_string_length(s);
   var a = new Uint8Array(l);
   var i = 0;
@@ -374,50 +345,43 @@ function caml_uint8_array_of_string(s) {
 }
 
 //Provides: caml_create_string const
-//Requires: MlBytes, caml_invalid_argument
 //If: !js-string
-function caml_create_string(len) {
+export function caml_create_string$no_js_string(len) {
   if (len < 0) caml_invalid_argument("String.create");
   return new MlBytes(len ? 2 : 9, "", len);
 }
 
 //Provides: caml_create_string const
-//Requires: caml_invalid_argument
 //If: js-string
-function caml_create_string(_len) {
+export function caml_create_string$js_string(_len) {
   caml_invalid_argument("String.create");
 }
 
 //Provides: caml_create_bytes const
-//Requires: MlBytes,caml_invalid_argument
-function caml_create_bytes(len) {
+export function caml_create_bytes(len) {
   if (len < 0) caml_invalid_argument("Bytes.create");
   return new MlBytes(len ? 2 : 9, "", len);
 }
 
 //Provides: caml_string_of_array
-//Requires: caml_subarray_to_jsbytes, caml_string_of_jsbytes
-function caml_string_of_array(a) {
+export function caml_string_of_array(a) {
   return caml_string_of_jsbytes(caml_subarray_to_jsbytes(a, 0, a.length));
 }
 
 //Provides: caml_string_of_uint8_array
-//Requires: caml_sub_uint8_array_to_jsbytes
 //If: js-string
-function caml_string_of_uint8_array(a) {
+export function caml_string_of_uint8_array$js_string(a) {
   return caml_sub_uint8_array_to_jsbytes(a, 0, a.length);
 }
 
 //Provides: caml_string_of_uint8_array
-//Requires: caml_bytes_of_uint8_array
 //If: !js-string
-function caml_string_of_uint8_array(a) {
+export function caml_string_of_uint8_array$no_js_string(a) {
   return caml_bytes_of_uint8_array(a.slice());
 }
 
 //Provides: caml_bytes_of_array
-//Requires: MlBytes
-function caml_bytes_of_array(a) {
+export function caml_bytes_of_array(a) {
   if (!(a instanceof Uint8Array)) {
     a = new Uint8Array(a);
   }
@@ -425,22 +389,19 @@ function caml_bytes_of_array(a) {
 }
 
 //Provides: caml_bytes_of_uint8_array
-//Requires: MlBytes
-function caml_bytes_of_uint8_array(a) {
+export function caml_bytes_of_uint8_array(a) {
   return new MlBytes(4, a, a.length);
 }
 
 //Provides: caml_bytes_compare mutable
-//Requires: caml_convert_string_to_bytes
-function caml_bytes_compare(s1, s2) {
+export function caml_bytes_compare(s1, s2) {
   s1.t & 6 && caml_convert_string_to_bytes(s1);
   s2.t & 6 && caml_convert_string_to_bytes(s2);
   return s1.c < s2.c ? -1 : s1.c > s2.c ? 1 : 0;
 }
 
 //Provides: caml_bytes_equal mutable (const, const)
-//Requires: caml_convert_string_to_bytes
-function caml_bytes_equal(s1, s2) {
+export function caml_bytes_equal(s1, s2) {
   if (s1 === s2) return 1;
   s1.t & 6 && caml_convert_string_to_bytes(s1);
   s2.t & 6 && caml_convert_string_to_bytes(s2);
@@ -448,60 +409,51 @@ function caml_bytes_equal(s1, s2) {
 }
 
 //Provides: caml_string_notequal mutable (const, const)
-//Requires: caml_string_equal
-function caml_string_notequal(s1, s2) {
+export function caml_string_notequal(s1, s2) {
   return 1 - caml_string_equal(s1, s2);
 }
 
 //Provides: caml_bytes_notequal mutable (const, const)
-//Requires: caml_bytes_equal
-function caml_bytes_notequal(s1, s2) {
+export function caml_bytes_notequal(s1, s2) {
   return 1 - caml_bytes_equal(s1, s2);
 }
 
 //Provides: caml_bytes_lessequal mutable
-//Requires: caml_convert_string_to_bytes
-function caml_bytes_lessequal(s1, s2) {
+export function caml_bytes_lessequal(s1, s2) {
   s1.t & 6 && caml_convert_string_to_bytes(s1);
   s2.t & 6 && caml_convert_string_to_bytes(s2);
   return s1.c <= s2.c ? 1 : 0;
 }
 
 //Provides: caml_bytes_lessthan mutable
-//Requires: caml_convert_string_to_bytes
-function caml_bytes_lessthan(s1, s2) {
+export function caml_bytes_lessthan(s1, s2) {
   s1.t & 6 && caml_convert_string_to_bytes(s1);
   s2.t & 6 && caml_convert_string_to_bytes(s2);
   return s1.c < s2.c ? 1 : 0;
 }
 
 //Provides: caml_string_greaterequal
-//Requires: caml_string_lessequal
-function caml_string_greaterequal(s1, s2) {
+export function caml_string_greaterequal(s1, s2) {
   return caml_string_lessequal(s2, s1);
 }
 //Provides: caml_bytes_greaterequal
-//Requires: caml_bytes_lessequal
-function caml_bytes_greaterequal(s1, s2) {
+export function caml_bytes_greaterequal(s1, s2) {
   return caml_bytes_lessequal(s2, s1);
 }
 
 //Provides: caml_string_greaterthan
-//Requires: caml_string_lessthan
-function caml_string_greaterthan(s1, s2) {
+export function caml_string_greaterthan(s1, s2) {
   return caml_string_lessthan(s2, s1);
 }
 
 //Provides: caml_bytes_greaterthan
-//Requires: caml_bytes_lessthan
-function caml_bytes_greaterthan(s1, s2) {
+export function caml_bytes_greaterthan(s1, s2) {
   return caml_bytes_lessthan(s2, s1);
 }
 
 //Provides: caml_fill_bytes
-//Requires: caml_str_repeat, caml_convert_bytes_to_array
 //Alias: caml_fill_string
-function caml_fill_bytes(s, i, l, c) {
+export function caml_fill_bytes(s, i, l, c) {
   if (l > 0) {
     if (i === 0 && (l >= s.l || (s.t === 2 /* PARTIAL */ && l >= s.c.length))) {
       if (c === 0) {
@@ -520,8 +472,7 @@ function caml_fill_bytes(s, i, l, c) {
 }
 
 //Provides: caml_blit_bytes
-//Requires: caml_sub_uint8_array_to_jsbytes, caml_convert_bytes_to_array
-function caml_blit_bytes(s1, i1, s2, i2, len) {
+export function caml_blit_bytes(s1, i1, s2, i2, len) {
   if (len === 0) return 0;
   if (
     i2 === 0 &&
@@ -562,27 +513,25 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
 }
 
 //Provides: caml_blit_string
-//Requires: caml_blit_bytes, caml_bytes_of_string
-function caml_blit_string(a, b, c, d, e) {
+export function caml_blit_string(a, b, c, d, e) {
   caml_blit_bytes(caml_bytes_of_string(a), b, c, d, e);
   return 0;
 }
 
 //Provides: caml_ml_bytes_length const
-function caml_ml_bytes_length(s) {
+export function caml_ml_bytes_length(s) {
   return s.l;
 }
 
 //Provides: caml_string_concat const
 //If: js-string
-function caml_string_concat(a, b) {
+export function caml_string_concat$js_string(a, b) {
   return a + b;
 }
 
 //Provides: caml_string_concat const
-//Requires: caml_convert_string_to_bytes, MlBytes
 //If: !js-string
-function caml_string_concat(s1, s2) {
+export function caml_string_concat$no_js_string(s1, s2) {
   s1.t & 6 && caml_convert_string_to_bytes(s1);
   s2.t & 6 && caml_convert_string_to_bytes(s2);
   return new MlBytes(0, s1.c + s2.c, s1.l + s2.l);
@@ -590,77 +539,72 @@ function caml_string_concat(s1, s2) {
 
 //Provides: caml_string_unsafe_get const
 //If: js-string
-function caml_string_unsafe_get(s, i) {
+export function caml_string_unsafe_get$js_string(s, i) {
   return s.charCodeAt(i);
 }
 
 //Provides: caml_ml_string_length const
 //If: js-string
-function caml_ml_string_length(s) {
+export function caml_ml_string_length$js_string(s) {
   return s.length;
 }
 
 //Provides: caml_string_compare const
 //If: js-string
-function caml_string_compare(s1, s2) {
+export function caml_string_compare$js_string(s1, s2) {
   return s1 < s2 ? -1 : s1 > s2 ? 1 : 0;
 }
 
 //Provides: caml_string_equal const
 //If: js-string
-function caml_string_equal(s1, s2) {
+export function caml_string_equal$js_string(s1, s2) {
   if (s1 === s2) return 1;
   return 0;
 }
 
 //Provides: caml_string_lessequal const
 //If: js-string
-function caml_string_lessequal(s1, s2) {
+export function caml_string_lessequal$js_string(s1, s2) {
   return s1 <= s2 ? 1 : 0;
 }
 
 //Provides: caml_string_lessthan const
 //If: js-string
-function caml_string_lessthan(s1, s2) {
+export function caml_string_lessthan$js_string(s1, s2) {
   return s1 < s2 ? 1 : 0;
 }
 
 //Provides: caml_string_of_bytes
-//Requires: caml_convert_string_to_bytes, caml_string_of_jsbytes
 //If: js-string
-function caml_string_of_bytes(s) {
+export function caml_string_of_bytes$js_string(s) {
   s.t & 6 && caml_convert_string_to_bytes(s);
   return caml_string_of_jsbytes(s.c);
 }
 
 //Provides: caml_bytes_of_string const
-//Requires: caml_bytes_of_jsbytes, caml_jsbytes_of_string
 //If: js-string
-function caml_bytes_of_string(s) {
+export function caml_bytes_of_string$js_string(s) {
   return caml_bytes_of_jsbytes(caml_jsbytes_of_string(s));
 }
 
 //Provides: caml_string_of_jsbytes const
 //If: js-string
-function caml_string_of_jsbytes(x) {
+export function caml_string_of_jsbytes$js_string(x) {
   return x;
 }
 
 //Provides: caml_jsbytes_of_string const
 //If: js-string
-function caml_jsbytes_of_string(x) {
+export function caml_jsbytes_of_string$js_string(x) {
   return x;
 }
 
 //Provides: jsoo_text_decoder_buff
-var jsoo_text_decoder_buff = new ArrayBuffer(1024);
+export var jsoo_text_decoder_buff = new ArrayBuffer(1024);
 
 //Provides: caml_jsstring_of_string const
-//Requires: jsoo_is_ascii
-//Requires: jsoo_text_decoder
-//Requires: jsoo_text_decoder_buff
 //If: js-string
-function caml_jsstring_of_string(s) {
+export function caml_jsstring_of_string$js_string(s) {
   if (jsoo_is_ascii(s)) return s;
   var a =
     s.length <= jsoo_text_decoder_buff.length
@@ -673,123 +617,107 @@ function caml_jsstring_of_string(s) {
 }
 
 //Provides: caml_string_of_jsstring const
-//Requires: caml_string_of_array
-//Requires: jsoo_text_encoder
-//Requires: jsoo_is_ascii, caml_string_of_jsbytes
 //If: js-string
-function caml_string_of_jsstring(s) {
+export function caml_string_of_jsstring$js_string(s) {
   if (jsoo_is_ascii(s)) return caml_string_of_jsbytes(s);
   var a = jsoo_text_encoder.encode(s);
   return caml_string_of_array(a);
 }
 
 //Provides: caml_bytes_of_jsbytes const
-//Requires: MlBytes
-function caml_bytes_of_jsbytes(s) {
+export function caml_bytes_of_jsbytes(s) {
   return new MlBytes(0, s, s.length);
 }
 
 // The section below should be used when use-js-string=false
 
 //Provides: caml_string_unsafe_get const
-//Requires: caml_bytes_unsafe_get
 //If: !js-string
-function caml_string_unsafe_get(s, i) {
+export function caml_string_unsafe_get$no_js_string(s, i) {
   return caml_bytes_unsafe_get(s, i);
 }
 
 //Provides: caml_string_unsafe_set
-//Requires: caml_bytes_unsafe_set
 //If: !js-string
-function caml_string_unsafe_set(s, i, c) {
+export function caml_string_unsafe_set$no_js_string(s, i, c) {
   return caml_bytes_unsafe_set(s, i, c);
 }
 
 //Provides: caml_ml_string_length const
-//Requires: caml_ml_bytes_length
 //If: !js-string
-function caml_ml_string_length(s) {
+export function caml_ml_string_length$no_js_string(s) {
   return caml_ml_bytes_length(s);
 }
 
 //Provides: caml_string_compare
-//Requires: caml_bytes_compare
 //If: !js-string
-function caml_string_compare(s1, s2) {
+export function caml_string_compare$no_js_string(s1, s2) {
   return caml_bytes_compare(s1, s2);
 }
 
 //Provides: caml_string_equal
-//Requires: caml_bytes_equal
 //If: !js-string
-function caml_string_equal(s1, s2) {
+export function caml_string_equal$no_js_string(s1, s2) {
   return caml_bytes_equal(s1, s2);
 }
 
 //Provides: caml_string_lessequal
-//Requires: caml_bytes_lessequal
 //If: !js-string
-function caml_string_lessequal(s1, s2) {
+export function caml_string_lessequal$no_js_string(s1, s2) {
   return caml_bytes_lessequal(s1, s2);
 }
 
 //Provides: caml_string_lessthan
-//Requires: caml_bytes_lessthan
 //If: !js-string
-function caml_string_lessthan(s1, s2) {
+export function caml_string_lessthan$no_js_string(s1, s2) {
   return caml_bytes_lessthan(s1, s2);
 }
 
 //Provides: caml_string_of_bytes
 //If: !js-string
-function caml_string_of_bytes(s) {
+export function caml_string_of_bytes$no_js_string(s) {
   return s;
 }
 
 //Provides: caml_bytes_of_string const
 //If: !js-string
-function caml_bytes_of_string(s) {
+export function caml_bytes_of_string$no_js_string(s) {
   return s;
 }
 
 //Provides: caml_string_of_jsbytes const
-//Requires: caml_bytes_of_jsbytes
 //If: !js-string
-function caml_string_of_jsbytes(s) {
+export function caml_string_of_jsbytes$no_js_string(s) {
   return caml_bytes_of_jsbytes(s);
 }
 
 //Provides: caml_jsbytes_of_string const
-//Requires: caml_convert_string_to_bytes
 //If: !js-string
-function caml_jsbytes_of_string(s) {
+export function caml_jsbytes_of_string$no_js_string(s) {
   s.t & 6 && caml_convert_string_to_bytes(s);
   return s.c;
 }
 
 //Provides: caml_jsstring_of_string mutable (const)
 //If: !js-string
-function caml_jsstring_of_string(s) {
+export function caml_jsstring_of_string$no_js_string(s) {
   return s.toUtf16();
 }
 
 //Provides: caml_string_of_jsstring
-//Requires: caml_bytes_of_utf16_jsstring
 //If: !js-string
-function caml_string_of_jsstring(s) {
+export function caml_string_of_jsstring$no_js_string(s) {
   return caml_bytes_of_utf16_jsstring(s);
 }
 
 //Provides: caml_is_ml_bytes
-//Requires: MlBytes
-function caml_is_ml_bytes(s) {
+export function caml_is_ml_bytes(s) {
   return s instanceof MlBytes;
 }
 
 //Provides: caml_ml_bytes_content
-//Requires: MlBytes, caml_convert_string_to_bytes
 //Returns a (full) string of bytes or an array
-function caml_ml_bytes_content(s) {
+export function caml_ml_bytes_content(s) {
   switch (s.t & 6) {
     case 2 /* PARTIAL */:
       caml_convert_string_to_bytes(s);
@@ -801,65 +729,57 @@ function caml_ml_bytes_content(s) {
 
 //Provides: caml_is_ml_string
 //If: js-string
-function caml_is_ml_string(s) {
+export function caml_is_ml_string$js_string(s) {
   // biome-ignore lint/suspicious/noControlCharactersInRegex: expected
   return typeof s === "string" && !/[^\x00-\xff]/.test(s);
 }
 
 //Provides: caml_is_ml_string
-//Requires: caml_is_ml_bytes
 //If: !js-string
-function caml_is_ml_string(s) {
+export function caml_is_ml_string$no_js_string(s) {
   return caml_is_ml_bytes(s);
 }
 
 // The functions below are deprecated
 
 //Provides: caml_js_to_byte_string const
-//Requires: caml_string_of_jsbytes
 //Deprecated: Use [caml_string_of_jsbytes] instead
-function caml_js_to_byte_string(s) {
+export function caml_js_to_byte_string(s) {
   return caml_string_of_jsbytes(s);
 }
 
 //Provides: caml_js_from_string mutable (const)
-//Requires: caml_jsstring_of_string
 //Deprecated: Use [caml_jsstring_of_string] instead
-function caml_js_from_string(s) {
+export function caml_js_from_string(s) {
   return caml_jsstring_of_string(s);
 }
 
 //Provides: caml_to_js_string mutable (const)
-//Requires: caml_jsstring_of_string
 //Deprecated: Use [caml_jsstring_of_string] instead
-function caml_to_js_string(s) {
+export function caml_to_js_string(s) {
   return caml_jsstring_of_string(s);
 }
 
 //Provides: caml_js_to_string const
-//Requires: caml_string_of_jsstring
 //Deprecated: Use [caml_string_of_jsstring] instead
-function caml_js_to_string(s) {
+export function caml_js_to_string(s) {
   return caml_string_of_jsstring(s);
 }
 
 //Provides: caml_array_of_string
-//Requires: caml_uint8_array_of_string
 //Deprecated: Use [caml_uint8_array_of_string] instead
-function caml_array_of_string(x) {
+export function caml_array_of_string(x) {
   return caml_uint8_array_of_string(x);
 }
 
 //Provides: caml_array_of_bytes
-//Requires: caml_uint8_array_of_bytes
 //Deprecated: Use [caml_uint8_array_of_bytes] instead
-function caml_array_of_bytes(x) {
+export function caml_array_of_bytes(x) {
   return caml_uint8_array_of_bytes(x);
 }
 
 //Provides: caml_new_string
-//Requires: caml_string_of_jsbytes
 //Deprecated: Use [caml_string_of_jsbytes] instead
-function caml_new_string(s) {
+export function caml_new_string(s) {
   return caml_string_of_jsbytes(s);
 }

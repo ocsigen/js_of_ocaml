@@ -17,13 +17,16 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_failwith } from './fail.js';
+import { caml_finish_formatting, caml_parse_format } from './format.js';
+import { caml_int64_add, caml_int64_create_lo_mi_hi, caml_int64_of_int32, caml_int64_sub } from './int64.js';
+import { caml_jsbytes_of_string, caml_str_repeat, caml_string_of_jsstring } from './mlBytes.js';
+
 //Provides: jsoo_dataview
-var jsoo_dataview = new DataView(new ArrayBuffer(8));
+export var jsoo_dataview = new DataView(new ArrayBuffer(8));
 
 //Provides: caml_int64_bits_of_float const
-//Requires: caml_int64_create_lo_mi_hi
-//Requires: jsoo_dataview
-function caml_int64_bits_of_float(x) {
+export function caml_int64_bits_of_float(x) {
   jsoo_dataview.setFloat64(0, x, true);
   var lo32 = jsoo_dataview.getUint32(0, true);
   var hi32 = jsoo_dataview.getUint32(4, true);
@@ -38,8 +41,7 @@ function caml_int64_bits_of_float(x) {
 }
 
 //Provides: caml_int32_bits_of_float const
-//Requires: jsoo_dataview
-function caml_int32_bits_of_float(x) {
+export function caml_int32_bits_of_float(x) {
   jsoo_dataview.setFloat32(0, x, true);
   return jsoo_dataview.getUint32(0, true) | 0;
 }
@@ -48,8 +50,7 @@ function caml_int32_bits_of_float(x) {
 //notation 0x<mantissa in hex>p<exponent> from ISO C99.
 //https://github.com/dankogai/js-hexfloat/blob/master/hexfloat.js
 //Provides: caml_hexstring_of_float const
-//Requires: caml_string_of_jsstring, caml_str_repeat
-function caml_hexstring_of_float(x, prec, style) {
+export function caml_hexstring_of_float(x, prec, style) {
   if (!Number.isFinite(x)) {
     if (Number.isNaN(x)) return caml_string_of_jsstring("nan");
     return caml_string_of_jsstring(x > 0 ? "infinity" : "-infinity");
@@ -107,8 +108,7 @@ function caml_hexstring_of_float(x, prec, style) {
 }
 
 //Provides: caml_int64_float_of_bits const
-//Requires: jsoo_dataview
-function caml_int64_float_of_bits(x) {
+export function caml_int64_float_of_bits(x) {
   var lo = x.lo;
   var mi = x.mi;
   var hi = x.hi;
@@ -122,8 +122,7 @@ function caml_int64_float_of_bits(x) {
 }
 
 //Provides: caml_nextafter_float const
-//Requires: caml_int64_float_of_bits, caml_int64_bits_of_float, caml_int64_add, caml_int64_sub,caml_int64_of_int32
-function caml_nextafter_float(x, y) {
+export function caml_nextafter_float(x, y) {
   if (Number.isNaN(x) || Number.isNaN(y)) return Number.NaN;
   if (x === y) return y;
   if (x === 0) {
@@ -138,19 +137,18 @@ function caml_nextafter_float(x, y) {
 }
 
 //Provides: caml_trunc_float const
-function caml_trunc_float(x) {
+export function caml_trunc_float(x) {
   return Math.trunc(x);
 }
 
 //Provides: caml_int32_float_of_bits const
-//Requires: jsoo_dataview
-function caml_int32_float_of_bits(x) {
+export function caml_int32_float_of_bits(x) {
   jsoo_dataview.setUint32(0, x, true);
   return jsoo_dataview.getFloat32(0, true);
 }
 
 //Provides: caml_classify_float const
-function caml_classify_float(x) {
+export function caml_classify_float(x) {
   if (Number.isFinite(x)) {
     if (Math.abs(x) >= 2.2250738585072014e-308) return 0;
     if (x !== 0) return 1;
@@ -159,7 +157,7 @@ function caml_classify_float(x) {
   return Number.isNaN(x) ? 4 : 3;
 }
 //Provides: caml_modf_float const
-function caml_modf_float(x) {
+export function caml_modf_float(x) {
   if (Number.isFinite(x)) {
     var neg = 1 / x < 0;
     x = Math.abs(x);
@@ -175,7 +173,7 @@ function caml_modf_float(x) {
   return [0, 1 / x, x];
 }
 //Provides: caml_ldexp_float const
-function caml_ldexp_float(x, exp) {
+export function caml_ldexp_float(x, exp) {
   exp |= 0;
   if (exp > 1023) {
     exp -= 1023;
@@ -194,7 +192,7 @@ function caml_ldexp_float(x, exp) {
   return x;
 }
 //Provides: caml_frexp_float const
-function caml_frexp_float(x) {
+export function caml_frexp_float(x) {
   if (x === 0 || !Number.isFinite(x)) return [0, x, 0];
   var neg = x < 0;
   if (neg) x = -x;
@@ -213,7 +211,7 @@ function caml_frexp_float(x) {
 }
 
 //Provides: caml_float_compare const
-function caml_float_compare(x, y) {
+export function caml_float_compare(x, y) {
   if (x === y) return 0;
   if (x < y) return -1;
   if (x > y) return 1;
@@ -223,7 +221,7 @@ function caml_float_compare(x, y) {
 }
 
 //Provides: caml_copysign_float const
-function caml_copysign_float(x, y) {
+export function caml_copysign_float(x, y) {
   if (y === 0) y = 1 / y;
   x = Math.abs(x);
   return y < 0 ? -x : x;
@@ -231,61 +229,61 @@ function caml_copysign_float(x, y) {
 
 //Provides: caml_signbit_float const
 //Alias: caml_signbit
-function caml_signbit_float(x) {
+export function caml_signbit_float(x) {
   if (x === 0) x = 1 / x;
   return x < 0 ? 1 : 0;
 }
 
 //Provides: caml_expm1_float const
-function caml_expm1_float(x) {
+export function caml_expm1_float(x) {
   return Math.expm1(x);
 }
 //Provides: caml_exp2_float const
-function caml_exp2_float(x) {
+export function caml_exp2_float(x) {
   return Math.pow(2, x);
 }
 //Provides: caml_log1p_float const
-function caml_log1p_float(x) {
+export function caml_log1p_float(x) {
   return Math.log1p(x);
 }
 //Provides: caml_log2_float const
-function caml_log2_float(x) {
+export function caml_log2_float(x) {
   return Math.log2(x);
 }
 //Provides: caml_hypot_float const
-function caml_hypot_float(x, y) {
+export function caml_hypot_float(x, y) {
   return Math.hypot(x, y);
 }
 //Provides: caml_log10_float const
-function caml_log10_float(x) {
+export function caml_log10_float(x) {
   return Math.log10(x);
 }
 //Provides: caml_cosh_float const
-function caml_cosh_float(x) {
+export function caml_cosh_float(x) {
   return Math.cosh(x);
 }
 //Provides: caml_acosh_float const
-function caml_acosh_float(x) {
+export function caml_acosh_float(x) {
   return Math.acosh(x);
 }
 //Provides: caml_sinh_float const
-function caml_sinh_float(x) {
+export function caml_sinh_float(x) {
   return Math.sinh(x);
 }
 //Provides: caml_asinh_float const
-function caml_asinh_float(x) {
+export function caml_asinh_float(x) {
   return Math.asinh(x);
 }
 //Provides: caml_tanh_float const
-function caml_tanh_float(x) {
+export function caml_tanh_float(x) {
   return Math.tanh(x);
 }
 //Provides: caml_atanh_float const
-function caml_atanh_float(x) {
+export function caml_atanh_float(x) {
   return Math.atanh(x);
 }
 //Provides: caml_round_float const
-function caml_round_float(x) {
+export function caml_round_float(x) {
   if (x >= 0) {
     var y = Math.floor(x);
     return x - y >= 0.5 ? y + 1 : y;
@@ -295,12 +293,12 @@ function caml_round_float(x) {
   }
 }
 //Provides: caml_cbrt_float const
-function caml_cbrt_float(x) {
+export function caml_cbrt_float(x) {
   return Math.cbrt(x);
 }
 
 //Provides: caml_erf_float const
-function caml_erf_float(x) {
+export function caml_erf_float(x) {
   var a1 = 0.254829592;
   var a2 = -0.284496736;
   var a3 = 1.421413741;
@@ -321,13 +319,12 @@ function caml_erf_float(x) {
 }
 
 //Provides: caml_erfc_float const
-//Requires: caml_erf_float
-function caml_erfc_float(x) {
+export function caml_erfc_float(x) {
   return 1 - caml_erf_float(x);
 }
 
 //Provides: caml_fma_float const
-function caml_fma_float(x, y, z) {
+export function caml_fma_float(x, y, z) {
   var SPLIT = Math.pow(2, 27) + 1;
   var MIN_VALUE = Math.pow(2, -1022);
   var EPSILON = Math.pow(2, -52);
@@ -431,8 +428,7 @@ function caml_fma_float(x, y, z) {
 }
 
 //Provides: caml_format_float const
-//Requires: caml_str_repeat, caml_parse_format, caml_finish_formatting
-function caml_format_float(fmt, x) {
+export function caml_format_float(fmt, x) {
   function toFixed(x, dp) {
     if (Math.abs(x) < 1.0) {
       return x.toFixed(dp);
@@ -509,8 +505,7 @@ function caml_format_float(fmt, x) {
 }
 
 //Provides: caml_float_of_string (const)
-//Requires: caml_failwith, caml_jsbytes_of_string
-function caml_float_of_string(s) {
+export function caml_float_of_string(s) {
   var res;
   var r_float = /^ *[-+]?(?:\d*\.?\d+|\d+\.?\d*)(?:[eE][-+]?\d+)?$/;
   s = caml_jsbytes_of_string(s);

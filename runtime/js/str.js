@@ -20,9 +20,12 @@
 // Based on https://github.com/ocaml/ocaml/blob/4.07/otherlibs/str/strstubs.c
 // Copied from https://github.com/jscoq/jscoq/blob/v8.11/coq-js/js_stub/str.js
 
+import { caml_array_get } from './array.js';
+import { caml_failwith, caml_invalid_argument } from './fail.js';
+import { caml_js_from_array } from './jslib.js';
+import { caml_jsbytes_of_string, caml_ml_string_length, caml_string_get, caml_string_of_jsbytes, caml_uint8_array_of_string } from './mlBytes.js';
+
 //Provides: re_match
-//Requires: caml_jsbytes_of_string, caml_js_from_array, caml_uint8_array_of_string
-//Requires: caml_string_get
 
 var re_match = (function () {
   var re_word_letters = [
@@ -291,9 +294,7 @@ var re_match = (function () {
 })();
 
 //Provides: re_search_forward
-//Requires: re_match, caml_ml_string_length, caml_invalid_argument
-//Requires: caml_string_get
-function re_search_forward(re, s, pos) {
+export function re_search_forward(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.search_forward");
   var startchars = re[6] | 0;
@@ -321,9 +322,7 @@ function re_search_forward(re, s, pos) {
 }
 
 //Provides: re_search_backward
-//Requires: re_match, caml_ml_string_length, caml_invalid_argument
-//Requires: caml_string_get
-function re_search_backward(re, s, pos) {
+export function re_search_backward(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.search_backward");
   var startchars = re[6] | 0;
@@ -352,8 +351,7 @@ function re_search_backward(re, s, pos) {
 }
 
 //Provides: re_string_match
-//Requires: re_match, caml_ml_string_length, caml_invalid_argument
-function re_string_match(re, s, pos) {
+export function re_string_match(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.string_match");
   var res = re_match(re, s, pos, 0);
@@ -362,8 +360,7 @@ function re_string_match(re, s, pos) {
 }
 
 //Provides: re_partial_match
-//Requires: re_match, caml_ml_string_length, caml_invalid_argument
-function re_partial_match(re, s, pos) {
+export function re_partial_match(re, s, pos) {
   if (pos < 0 || pos > caml_ml_string_length(s))
     caml_invalid_argument("Str.partial_match");
   var res = re_match(re, s, pos, 1);
@@ -372,11 +369,8 @@ function re_partial_match(re, s, pos) {
 }
 
 //Provides: re_replacement_text
-//Requires: caml_jsbytes_of_string, caml_string_of_jsbytes
-//Requires: caml_array_get
-//Requires: caml_failwith
 // external re_replacement_text: string -> int array -> string -> string
-function re_replacement_text(repl, groups, orig) {
+export function re_replacement_text(repl, groups, orig) {
   var repl = caml_jsbytes_of_string(repl);
   var len = repl.length;
   var orig = caml_jsbytes_of_string(orig);

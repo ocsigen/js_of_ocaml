@@ -17,10 +17,15 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_cps_closure } from './effect.js';
+import { caml_failwith } from './fail.js';
+import { caml_callback } from './jslib.js';
+import { caml_jsbytes_of_string, caml_jsstring_of_string } from './mlBytes.js';
+
 //Provides: caml_call_gen (const, shallow)
 //If: !effects
 //Weakdef
-function caml_call_gen(f, args) {
+export function caml_call_gen$no_effects(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
@@ -66,7 +71,7 @@ function caml_call_gen(f, args) {
 //If: effects
 //If: !doubletranslate
 //Weakdef
-function caml_call_gen(f, args) {
+export function caml_call_gen$effects$no_doubletranslate(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
@@ -122,18 +127,16 @@ function caml_call_gen(f, args) {
 }
 
 //Provides: caml_call_gen_cps
-//Requires: caml_call_gen
 //If: effects
 //If: !doubletranslate
 //Weakdef
-var caml_call_gen_cps = caml_call_gen;
+export var caml_call_gen_cps$effects$no_doubletranslate = caml_call_gen;
 
 //Provides: caml_call_gen_tuple (const, shallow)
-//Requires: caml_cps_closure
 //If: effects
 //If: doubletranslate
 //Weakdef
-var caml_call_gen_tuple = (function () {
+export var caml_call_gen_tuple$effects$doubletranslate = (function () {
   function caml_call_gen_direct(f, args) {
     var n = f.l >= 0 ? f.l : (f.l = f.length);
     var argsLen = args.length;
@@ -207,41 +210,36 @@ var caml_call_gen_tuple = (function () {
 })();
 
 //Provides: caml_call_gen
-//Requires: caml_call_gen_tuple
 //If: effects
 //If: doubletranslate
 //Weakdef
-var caml_call_gen = caml_call_gen_tuple[0];
+export var caml_call_gen$effects$doubletranslate = caml_call_gen_tuple[0];
 
 //Provides: caml_call_gen_cps
-//Requires: caml_call_gen_tuple
 //If: effects
 //If: doubletranslate
 //Weakdef
-var caml_call_gen_cps = caml_call_gen_tuple[1];
+export var caml_call_gen_cps$effects$doubletranslate = caml_call_gen_tuple[1];
 
 //Provides: caml_named_values
-var caml_named_values = {};
+export var caml_named_values = {};
 
 //Provides: caml_register_named_value (const,mutable)
-//Requires: caml_named_values, caml_jsbytes_of_string
-function caml_register_named_value(nm, v) {
+export function caml_register_named_value(nm, v) {
   caml_named_values[caml_jsbytes_of_string(nm)] = v;
   return 0;
 }
 
 //Provides: caml_named_value
-//Requires: caml_named_values
-function caml_named_value(nm) {
+export function caml_named_value(nm) {
   return caml_named_values[nm];
 }
 
 //Provides: caml_global_data
-var caml_global_data = [0];
+export var caml_global_data = [0];
 
 //Provides: caml_build_symbols
-//Requires: caml_jsstring_of_string
-function caml_build_symbols(symb) {
+export function caml_build_symbols(symb) {
   var r = {};
   var max = -1;
   if (symb) {
@@ -256,13 +254,10 @@ function caml_build_symbols(symb) {
 }
 
 //Provides: jsoo_toplevel_reloc
-var jsoo_toplevel_reloc = undefined;
+export var jsoo_toplevel_reloc = undefined;
 
 //Provides: caml_register_global (const, shallow, const)
-//Requires: caml_global_data, caml_callback, caml_build_symbols
-//Requires: caml_failwith
-//Requires: jsoo_toplevel_reloc
-function caml_register_global(n, v, name_opt) {
+export function caml_register_global(n, v, name_opt) {
   if (name_opt) {
     var name = name_opt;
     if (jsoo_toplevel_reloc) {
@@ -286,17 +281,16 @@ function caml_register_global(n, v, name_opt) {
 }
 
 //Provides: caml_get_global_data mutable
-//Requires: caml_global_data
-function caml_get_global_data(_unit) {
+export function caml_get_global_data(_unit) {
   return caml_global_data;
 }
 
 //Provides: caml_is_printable const (const)
-function caml_is_printable(c) {
+export function caml_is_printable(c) {
   return +(c > 31 && c < 127);
 }
 
 //Provides: caml_maybe_print_stats
-function caml_maybe_print_stats(_unit) {
+export function caml_maybe_print_stats(_unit) {
   return 0;
 }

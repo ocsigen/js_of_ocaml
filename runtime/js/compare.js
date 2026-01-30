@@ -15,9 +15,13 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_invalid_argument } from './fail.js';
+import { caml_custom_ops } from './marshal.js';
+import { caml_bytes_compare, caml_is_ml_bytes, caml_is_ml_string, caml_jsbytes_of_string, caml_string_compare } from './mlBytes.js';
+import { caml_is_continuation_tag } from './obj.js';
+
 //Provides: caml_compare_val_tag
-//Requires: caml_is_ml_string, caml_is_ml_bytes
-function caml_compare_val_tag(a) {
+export function caml_compare_val_tag(a) {
   if (typeof a === "number")
     return 1000; // int_tag (we use it for all numbers)
   else if (caml_is_ml_bytes(a))
@@ -47,16 +51,14 @@ function caml_compare_val_tag(a) {
 }
 
 //Provides: caml_compare_val_get_custom
-//Requires: caml_custom_ops
-function caml_compare_val_get_custom(a) {
+export function caml_compare_val_get_custom(a) {
   return (
     caml_custom_ops[a.caml_custom] && caml_custom_ops[a.caml_custom].compare
   );
 }
 
 //Provides: caml_compare_val_number_custom
-//Requires: caml_compare_val_get_custom
-function caml_compare_val_number_custom(num, custom, swap, total) {
+export function caml_compare_val_number_custom(num, custom, swap, total) {
   var comp = caml_compare_val_get_custom(custom);
   if (comp) {
     var x = swap > 0 ? comp(custom, num, total) : comp(num, custom, total);
@@ -68,12 +70,7 @@ function caml_compare_val_number_custom(num, custom, swap, total) {
 }
 
 //Provides: caml_compare_val (const, const, const)
-//Requires: caml_int_compare, caml_string_compare, caml_bytes_compare
-//Requires: caml_invalid_argument, caml_compare_val_get_custom, caml_compare_val_tag
-//Requires: caml_compare_val_number_custom
-//Requires: caml_jsbytes_of_string
-//Requires: caml_is_continuation_tag
-function caml_compare_val(a, b, total) {
+export function caml_compare_val(a, b, total) {
   var stack = [];
   for (;;) {
     if (!(total && a === b)) {
@@ -254,15 +251,14 @@ function caml_compare_val(a, b, total) {
 
 // May raise
 //Provides: caml_compare (const, const)
-//Requires: caml_compare_val
-function caml_compare(a, b) {
+export function caml_compare(a, b) {
   return caml_compare_val(a, b, true);
 }
 
 //Provides: caml_int_compare const
 //Alias: caml_int32_compare
 //Alias: caml_nativeint_compare
-function caml_int_compare(a, b) {
+export function caml_int_compare(a, b) {
   if (a < b) return -1;
   if (a === b) return 0;
   return 1;
@@ -270,42 +266,36 @@ function caml_int_compare(a, b) {
 
 // May raise
 //Provides: caml_equal (const, const)
-//Requires: caml_compare_val
-function caml_equal(x, y) {
+export function caml_equal(x, y) {
   return +(caml_compare_val(x, y, false) === 0);
 }
 
 // May raise
 //Provides: caml_notequal (const, const)
-//Requires: caml_compare_val
-function caml_notequal(x, y) {
+export function caml_notequal(x, y) {
   return +(caml_compare_val(x, y, false) !== 0);
 }
 
 // May raise
 //Provides: caml_greaterequal (const, const)
-//Requires: caml_compare_val
-function caml_greaterequal(x, y) {
+export function caml_greaterequal(x, y) {
   return +(caml_compare_val(x, y, false) >= 0);
 }
 
 // May raise
 //Provides: caml_greaterthan (const, const)
-//Requires: caml_compare_val
-function caml_greaterthan(x, y) {
+export function caml_greaterthan(x, y) {
   return +(caml_compare_val(x, y, false) > 0);
 }
 
 // May raise
 //Provides: caml_lessequal (const, const)
-//Requires: caml_compare_val
-function caml_lessequal(x, y) {
+export function caml_lessequal(x, y) {
   return +(caml_compare_val(x, y, false) <= 0);
 }
 
 // May raise
 //Provides: caml_lessthan (const, const)
-//Requires: caml_compare_val
-function caml_lessthan(x, y) {
+export function caml_lessthan(x, y) {
   return +(caml_compare_val(x, y, false) < 0);
 }

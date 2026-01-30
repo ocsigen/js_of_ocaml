@@ -1,6 +1,6 @@
 //Provides: zstd_decompress
 //Version: >= 5.1
-var zstd_decompress = (function () {
+export var zstd_decompress$v5_1_plus = (function () {
   // aliases for shorter compressed code (most minifers don't do this)
   var ab = ArrayBuffer,
     u8 = Uint8Array,
@@ -700,29 +700,25 @@ var zstd_decompress = (function () {
 
 //Provides: caml_decompress_input
 //Version: < 5.1.0
-var caml_decompress_input = null;
+export var caml_decompress_input$v5_1_minus = null;
 
 //Provides: caml_decompress_input
 //Version: >= 5.1.0
 //Version: < 5.1.1
-//Requires: zstd_decompress
-var caml_decompress_input = zstd_decompress;
+export var caml_decompress_input$v5_1_plus$v5_1_minus = zstd_decompress;
 
 //Provides: caml_decompress_input
 //Version: >= 5.1.1
 //Version: < 5.2.0
-var caml_decompress_input = null;
+export var caml_decompress_input$v5_1_plus$v5_2_minus = null;
 
 //Provides: caml_decompress_input
 //Version: >= 5.2
-//Requires: zstd_decompress
-var caml_decompress_input = zstd_decompress;
+export var caml_decompress_input$v5_2_plus = zstd_decompress;
 
 //Provides: caml_zstd_initialize
-//Requires: caml_decompress_input
-//Requires: zstd_decompress
 //Version: >= 5.1.1
-function caml_zstd_initialize(_unit) {
+export function caml_zstd_initialize$v5_1_plus(_unit) {
   caml_decompress_input = zstd_decompress;
   return 1;
 }

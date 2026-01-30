@@ -17,9 +17,11 @@
 
 ///////////// Format
 
+import { caml_invalid_argument } from './fail.js';
+import { caml_jsbytes_of_string, caml_string_of_jsbytes } from './mlBytes.js';
+
 //Provides: caml_parse_format
-//Requires: caml_jsbytes_of_string, caml_invalid_argument
-function caml_parse_format(fmt) {
+export function caml_parse_format(fmt) {
   fmt = caml_jsbytes_of_string(fmt);
   var len = fmt.length;
   if (len > 31) caml_invalid_argument("format_int: format too long");
@@ -114,8 +116,7 @@ function caml_parse_format(fmt) {
 }
 
 //Provides: caml_finish_formatting
-//Requires: caml_string_of_jsbytes
-function caml_finish_formatting(f, rawbuffer) {
+export function caml_finish_formatting(f, rawbuffer) {
   if (f.uppercase) rawbuffer = rawbuffer.toUpperCase();
   var len = rawbuffer.length;
   /* Adjust len to reflect additional chars (sign, etc) */

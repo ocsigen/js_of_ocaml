@@ -19,9 +19,11 @@
 
 ///////////// Jslib: code specific to Js_of_ocaml
 
+import { caml_failwith } from './fail.js';
+
 //Provides: caml_js_html_escape const (const)
 var caml_js_regexps = { amp: /&/g, lt: /</g, quot: /"/g, all: /[&<"]/ };
-function caml_js_html_escape(s) {
+export function caml_js_html_escape(s) {
   if (!caml_js_regexps.all.test(s)) return s;
   return s
     .replace(caml_js_regexps.amp, "&amp;")
@@ -30,7 +32,7 @@ function caml_js_html_escape(s) {
 }
 
 //Provides: caml_js_html_entities
-function caml_js_html_entities(s) {
+export function caml_js_html_entities(s) {
   var entity = /^&#?[0-9a-zA-Z]+;$/;
   if (s.match(entity)) {
     var str,
@@ -45,7 +47,7 @@ function caml_js_html_entities(s) {
 }
 
 //Provides: caml_js_get_console const
-function caml_js_get_console() {
+export function caml_js_get_console() {
   var c = console;
   var m = [
     "log",
@@ -69,9 +71,8 @@ function caml_js_get_console() {
 }
 
 //Provides: caml_xmlhttprequest_create
-//Requires: caml_failwith
 //Weakdef
-function caml_xmlhttprequest_create(_unit) {
+export function caml_xmlhttprequest_create(_unit) {
   if (typeof XMLHttpRequest === "undefined") {
     caml_failwith("XMLHttpRequest is not available");
   }
@@ -83,7 +84,7 @@ function caml_xmlhttprequest_create(_unit) {
 }
 
 //Provides: caml_js_error_of_exception
-function caml_js_error_of_exception(exn) {
+export function caml_js_error_of_exception(exn) {
   if (exn.js_error) {
     return exn.js_error;
   }

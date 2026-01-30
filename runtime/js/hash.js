@@ -18,9 +18,15 @@
 ///////////// Hashtbl
 
 //function ROTL32(x,n) { return ((x << n) | (x >>> (32-n))); }
+import { caml_int64_bits_of_float } from './ieee_754.js';
+import { caml_int64_hi32, caml_int64_lo32 } from './int64.js';
+import { caml_mul } from './ints.js';
+import { caml_custom_ops } from './marshal.js';
+import { caml_is_ml_bytes, caml_is_ml_string, caml_jsbytes_of_string, caml_ml_bytes_content } from './mlBytes.js';
+import { caml_is_continuation_tag } from './obj.js';
+
 //Provides: caml_hash_mix_int
-//Requires: caml_mul
-function caml_hash_mix_int(h, d) {
+export function caml_hash_mix_int(h, d) {
   d = caml_mul(d, 0xcc9e2d51 | 0);
   d = (d << 15) | (d >>> (32 - 15)); // ROTL32(d, 15);
   d = caml_mul(d, 0x1b873593);
@@ -30,8 +36,7 @@ function caml_hash_mix_int(h, d) {
 }
 
 //Provides: caml_hash_mix_final
-//Requires: caml_mul
-function caml_hash_mix_final(h) {
+export function caml_hash_mix_final(h) {
   h ^= h >>> 16;
   h = caml_mul(h, 0x85ebca6b | 0);
   h ^= h >>> 13;
@@ -41,10 +46,7 @@ function caml_hash_mix_final(h) {
 }
 
 //Provides: caml_hash_mix_float
-//Requires: caml_int64_bits_of_float
-//Requires: caml_hash_mix_int
-//Requires: caml_int64_lo32, caml_int64_hi32
-function caml_hash_mix_float(hash, v0) {
+export function caml_hash_mix_float(hash, v0) {
   var i64 = caml_int64_bits_of_float(v0);
   var l = caml_int64_lo32(i64);
   var h = caml_int64_hi32(i64);
@@ -63,17 +65,14 @@ function caml_hash_mix_float(hash, v0) {
   return hash;
 }
 //Provides: caml_hash_mix_int64
-//Requires: caml_hash_mix_int
-//Requires: caml_int64_lo32, caml_int64_hi32
-function caml_hash_mix_int64(h, v) {
+export function caml_hash_mix_int64(h, v) {
   h = caml_hash_mix_int(h, caml_int64_lo32(v));
   h = caml_hash_mix_int(h, caml_int64_hi32(v));
   return h;
 }
 
 //Provides: caml_hash_mix_jsbytes
-//Requires: caml_hash_mix_int
-function caml_hash_mix_jsbytes(h, s) {
+export function caml_hash_mix_jsbytes(h, s) {
   var len = s.length,
     i,
     w;
@@ -104,8 +103,7 @@ function caml_hash_mix_jsbytes(h, s) {
 }
 
 //Provides: caml_hash_mix_bytes_arr
-//Requires: caml_hash_mix_int
-function caml_hash_mix_bytes_arr(h, s) {
+export function caml_hash_mix_bytes_arr(h, s) {
   var len = s.length,
     i,
     w;
@@ -132,28 +130,19 @@ function caml_hash_mix_bytes_arr(h, s) {
 }
 
 //Provides: caml_hash_mix_bytes
-//Requires: caml_ml_bytes_content
-//Requires: caml_hash_mix_jsbytes
-//Requires: caml_hash_mix_bytes_arr
-function caml_hash_mix_bytes(h, v) {
+export function caml_hash_mix_bytes(h, v) {
   var content = caml_ml_bytes_content(v);
   if (typeof content === "string") return caml_hash_mix_jsbytes(h, content);
   /* ARRAY */ else return caml_hash_mix_bytes_arr(h, content);
 }
 
 //Provides: caml_hash_mix_string
-//Requires: caml_hash_mix_jsbytes, caml_jsbytes_of_string
-function caml_hash_mix_string(h, v) {
+export function caml_hash_mix_string(h, v) {
   return caml_hash_mix_jsbytes(h, caml_jsbytes_of_string(v));
 }
 
 //Provides: caml_hash mutable
-//Requires: caml_is_ml_string, caml_is_ml_bytes
-//Requires: caml_hash_mix_int, caml_hash_mix_final
-//Requires: caml_hash_mix_float, caml_hash_mix_string, caml_hash_mix_bytes, caml_custom_ops
-//Requires: caml_hash_mix_jsbytes
-//Requires: caml_is_continuation_tag
-function caml_hash(count, limit, seed, obj) {
+export function caml_hash(count, limit, seed, obj) {
   var queue, rd, wr, sz, num, h, v, i, len;
   sz = limit;
   if (sz < 0 || sz > 256) sz = 256;
@@ -222,9 +211,8 @@ function caml_hash(count, limit, seed, obj) {
 }
 
 //Provides: caml_string_hash
-//Requires: caml_hash_mix_final, caml_hash_mix_string
 //Version: >= 5.0
-function caml_string_hash(h, v) {
+export function caml_string_hash$v5_0_plus(h, v) {
   var h = caml_hash_mix_string(h, v);
   var h = caml_hash_mix_final(h);
   return h & 0x3fffffff;

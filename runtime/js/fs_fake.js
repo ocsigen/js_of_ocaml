@@ -17,14 +17,13 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { MlFile, caml_raise_no_such_file } from './fs.js';
+import { caml_blit_bytes, caml_bytes_of_array, caml_bytes_of_jsbytes, caml_bytes_of_string, caml_bytes_of_uint8_array, caml_create_bytes, caml_is_ml_bytes, caml_is_ml_string, caml_ml_bytes_length, caml_string_of_jsbytes, caml_string_of_jsstring, caml_uint8_array_of_bytes } from './mlBytes.js';
+import { caml_raise_sys_error } from './sys.js';
+import { caml_raise_system_error } from './unix.js';
+
 //Provides: MlFakeDevice
-//Requires: MlFakeFile, MlFakeFd, caml_create_bytes
-//Requires: caml_raise_sys_error, caml_raise_no_such_file
-//Requires: caml_string_of_jsbytes, caml_string_of_jsstring
-//Requires: caml_bytes_of_array, caml_bytes_of_string, caml_bytes_of_jsbytes
-//Requires: caml_is_ml_bytes, caml_is_ml_string
-//Requires: caml_raise_system_error
-class MlFakeDevice {
+export class MlFakeDevice {
   constructor(root, f) {
     this.content = {};
     this.root = root;
@@ -351,10 +350,7 @@ class MlFakeDevice {
 }
 
 //Provides: MlFakeFile
-//Requires: MlFile
-//Requires: caml_create_bytes, caml_ml_bytes_length, caml_blit_bytes
-//Requires: caml_uint8_array_of_bytes, caml_bytes_of_uint8_array
-class MlFakeFile extends MlFile {
+export class MlFakeFile extends MlFile {
   constructor(content) {
     super();
     this.data = content;
@@ -405,9 +401,7 @@ class MlFakeFile extends MlFile {
 }
 
 //Provides: MlFakeFd_out
-//Requires: MlFakeFile, caml_create_bytes, caml_blit_bytes, caml_bytes_of_uint8_array
-//Requires: caml_raise_system_error
-class MlFakeFd_out extends MlFakeFile {
+export class MlFakeFd_out extends MlFakeFile {
   constructor(fd, flags) {
     super(caml_create_bytes(0));
     this.log = function (_s) {
@@ -477,9 +471,7 @@ class MlFakeFd_out extends MlFakeFile {
 }
 
 //Provides: MlFakeFd
-//Requires: MlFakeFile
-//Requires: caml_raise_system_error
-class MlFakeFd {
+export class MlFakeFd {
   constructor(name, file, flags) {
     this.file = file;
     this.name = name;

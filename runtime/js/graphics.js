@@ -16,14 +16,16 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_failwith } from './fail.js';
+import { caml_maybe_attach_backtrace } from './jslib.js';
+import { caml_jsstring_of_string, caml_string_of_jsbytes } from './mlBytes.js';
+import { caml_named_value } from './stdlib.js';
+
 //Provides: caml_gr_state
 var caml_gr_state;
 
 //Provides: caml_gr_state_get
-//Requires: caml_gr_state
-//Requires: caml_named_value, caml_string_of_jsbytes
-//Requires: caml_maybe_attach_backtrace
-function caml_gr_state_get() {
+export function caml_gr_state_get() {
   if (caml_gr_state) {
     return caml_gr_state;
   }
@@ -34,19 +36,14 @@ function caml_gr_state_get() {
   ]);
 }
 //Provides: caml_gr_state_set
-//Requires: caml_gr_state,caml_gr_state_init
-function caml_gr_state_set(ctx) {
+export function caml_gr_state_set(ctx) {
   caml_gr_state = ctx;
   caml_gr_state_init();
   return 0;
 }
 
 //Provides: caml_gr_open_graph
-//Requires: caml_gr_state_create
-//Requires: caml_gr_state_set
-//Requires: caml_failwith
-//Requires: caml_jsstring_of_string
-function caml_gr_open_graph(info) {
+export function caml_gr_open_graph(info) {
   var info = caml_jsstring_of_string(info);
   function get(name) {
     var res = info.match("(^|,) *" + name + " *= *([a-zA-Z0-9_]+) *(,|$)");
@@ -87,11 +84,7 @@ function caml_gr_open_graph(info) {
 }
 
 //Provides: caml_gr_state_init
-//Requires: caml_gr_state
-//Requires: caml_gr_set_color,caml_gr_moveto,caml_gr_resize_window
-//Requires: caml_gr_set_line_width,caml_gr_set_text_size,caml_gr_set_font
-//Requires: caml_gr_set_window_title
-function caml_gr_state_init() {
+export function caml_gr_state_init() {
   caml_gr_moveto(caml_gr_state.x, caml_gr_state.y);
   caml_gr_resize_window(caml_gr_state.width, caml_gr_state.height);
   caml_gr_set_line_width(caml_gr_state.line_width);
@@ -104,8 +97,7 @@ function caml_gr_state_init() {
 }
 
 //Provides: caml_gr_state_create
-//Requires: caml_string_of_jsbytes
-function caml_gr_state_create(canvas, w, h) {
+export function caml_gr_state_create(canvas, w, h) {
   var context = canvas.getContext("2d");
   return {
     context: context,
@@ -123,13 +115,12 @@ function caml_gr_state_create(canvas, w, h) {
 }
 
 //Provides: caml_gr_doc_of_state
-function caml_gr_doc_of_state(state) {
+export function caml_gr_doc_of_state(state) {
   if (state.canvas.ownerDocument) return state.canvas.ownerDocument;
 }
 
 //Provides: caml_gr_close_graph
-//Requires: caml_gr_state_get
-function caml_gr_close_graph() {
+export function caml_gr_close_graph() {
   var s = caml_gr_state_get();
   s.canvas.width = 0;
   s.canvas.height = 0;
@@ -137,9 +128,7 @@ function caml_gr_close_graph() {
 }
 
 //Provides: caml_gr_set_window_title
-//Requires: caml_gr_state_get
-//Requires: caml_jsstring_of_string
-function caml_gr_set_window_title(name) {
+export function caml_gr_set_window_title(name) {
   var s = caml_gr_state_get();
   s.title = name;
   var jsname = caml_jsstring_of_string(name);
@@ -148,8 +137,7 @@ function caml_gr_set_window_title(name) {
 }
 
 //Provides: caml_gr_resize_window
-//Requires: caml_gr_state_get
-function caml_gr_resize_window(w, h) {
+export function caml_gr_resize_window(w, h) {
   var s = caml_gr_state_get();
   s.width = w;
   s.height = h;
@@ -159,8 +147,7 @@ function caml_gr_resize_window(w, h) {
 }
 
 //Provides: caml_gr_clear_graph
-//Requires: caml_gr_state_get
-function caml_gr_clear_graph() {
+export function caml_gr_clear_graph() {
   var s = caml_gr_state_get();
   s.canvas.width = s.width;
   s.canvas.height = s.height;
@@ -169,21 +156,18 @@ function caml_gr_clear_graph() {
 }
 
 //Provides: caml_gr_size_x
-//Requires: caml_gr_state_get
-function caml_gr_size_x() {
+export function caml_gr_size_x() {
   var s = caml_gr_state_get();
   return s.width;
 }
 //Provides: caml_gr_size_y
-//Requires: caml_gr_state_get
-function caml_gr_size_y() {
+export function caml_gr_size_y() {
   var s = caml_gr_state_get();
   return s.height;
 }
 
 //Provides: caml_gr_set_color
-//Requires: caml_gr_state_get
-function caml_gr_set_color(color) {
+export function caml_gr_set_color(color) {
   var s = caml_gr_state_get();
   function convert(number) {
     var str = "" + number.toString(16);
@@ -200,8 +184,7 @@ function caml_gr_set_color(color) {
   return 0;
 }
 //Provides: caml_gr_plot
-//Requires: caml_gr_state_get
-function caml_gr_plot(x, y) {
+export function caml_gr_plot(x, y) {
   var s = caml_gr_state_get();
   var im = s.context.createImageData(1, 1);
   var d = im.data;
@@ -219,16 +202,14 @@ function caml_gr_plot(x, y) {
 }
 
 //Provides: caml_gr_point_color
-//Requires: caml_gr_state_get
-function caml_gr_point_color(x, y) {
+export function caml_gr_point_color(x, y) {
   var s = caml_gr_state_get();
   var im = s.context.getImageData(x, s.height - y, 1, 1);
   var d = im.data;
   return (d[0] << 16) + (d[1] << 8) + d[2];
 }
 //Provides: caml_gr_moveto
-//Requires: caml_gr_state_get
-function caml_gr_moveto(x, y) {
+export function caml_gr_moveto(x, y) {
   var s = caml_gr_state_get();
   s.x = x;
   s.y = y;
@@ -236,20 +217,17 @@ function caml_gr_moveto(x, y) {
 }
 
 //Provides: caml_gr_current_x
-//Requires: caml_gr_state_get
-function caml_gr_current_x() {
+export function caml_gr_current_x() {
   var s = caml_gr_state_get();
   return s.x;
 }
 //Provides: caml_gr_current_y
-//Requires: caml_gr_state_get
-function caml_gr_current_y() {
+export function caml_gr_current_y() {
   var s = caml_gr_state_get();
   return s.y;
 }
 //Provides: caml_gr_lineto
-//Requires: caml_gr_state_get
-function caml_gr_lineto(x, y) {
+export function caml_gr_lineto(x, y) {
   var s = caml_gr_state_get();
   s.context.beginPath();
   s.context.moveTo(s.x, s.height - s.y);
@@ -260,15 +238,14 @@ function caml_gr_lineto(x, y) {
   return 0;
 }
 //Provides: caml_gr_draw_rect
-//Requires: caml_gr_state_get
-function caml_gr_draw_rect(x, y, w, h) {
+export function caml_gr_draw_rect(x, y, w, h) {
   var s = caml_gr_state_get();
   s.context.strokeRect(x, s.height - y, w, -h);
   return 0;
 }
 
 //Provides: caml_gr_arc_aux
-function caml_gr_arc_aux(ctx, cx, cy, ry, rx, a1, a2) {
+export function caml_gr_arc_aux(ctx, cx, cy, ry, rx, a1, a2) {
   while (a1 > a2) a2 += 360;
   a1 /= 180;
   a2 /= 180;
@@ -305,8 +282,7 @@ function caml_gr_arc_aux(ctx, cx, cy, ry, rx, a1, a2) {
 }
 
 //Provides: caml_gr_draw_arc
-//Requires: caml_gr_state_get, caml_gr_arc_aux
-function caml_gr_draw_arc(x, y, rx, ry, a1, a2) {
+export function caml_gr_draw_arc(x, y, rx, ry, a1, a2) {
   var s = caml_gr_state_get();
   s.context.beginPath();
   caml_gr_arc_aux(s.context, x, s.height - y, rx, ry, a1, a2);
@@ -315,8 +291,7 @@ function caml_gr_draw_arc(x, y, rx, ry, a1, a2) {
 }
 
 //Provides: caml_gr_set_line_width
-//Requires: caml_gr_state_get
-function caml_gr_set_line_width(w) {
+export function caml_gr_set_line_width(w) {
   var s = caml_gr_state_get();
   s.line_width = w;
   s.context.lineWidth = w;
@@ -324,15 +299,13 @@ function caml_gr_set_line_width(w) {
 }
 
 //Provides: caml_gr_fill_rect
-//Requires: caml_gr_state_get
-function caml_gr_fill_rect(x, y, w, h) {
+export function caml_gr_fill_rect(x, y, w, h) {
   var s = caml_gr_state_get();
   s.context.fillRect(x, s.height - y, w, -h);
   return 0;
 }
 //Provides: caml_gr_fill_poly
-//Requires: caml_gr_state_get
-function caml_gr_fill_poly(ar) {
+export function caml_gr_fill_poly(ar) {
   var s = caml_gr_state_get();
   s.context.beginPath();
   s.context.moveTo(ar[1][1], s.height - ar[1][2]);
@@ -344,8 +317,7 @@ function caml_gr_fill_poly(ar) {
 }
 
 //Provides: caml_gr_fill_arc
-//Requires: caml_gr_state_get, caml_gr_arc_aux
-function caml_gr_fill_arc(x, y, rx, ry, a1, a2) {
+export function caml_gr_fill_arc(x, y, rx, ry, a1, a2) {
   var s = caml_gr_state_get();
   s.context.beginPath();
   caml_gr_arc_aux(s.context, x, s.height - y, rx, ry, a1, a2);
@@ -354,8 +326,7 @@ function caml_gr_fill_arc(x, y, rx, ry, a1, a2) {
 }
 
 //Provides: caml_gr_draw_str
-//Requires: caml_gr_state_get
-function caml_gr_draw_str(str) {
+export function caml_gr_draw_str(str) {
   var s = caml_gr_state_get();
   var m = s.context.measureText(str);
   var dx = m.width;
@@ -365,24 +336,19 @@ function caml_gr_draw_str(str) {
 }
 
 //Provides: caml_gr_draw_char
-//Requires: caml_gr_draw_str
-function caml_gr_draw_char(c) {
+export function caml_gr_draw_char(c) {
   caml_gr_draw_str(String.fromCharCode(c));
   return 0;
 }
 
 //Provides: caml_gr_draw_string
-//Requires: caml_gr_draw_str
-//Requires: caml_jsstring_of_string
-function caml_gr_draw_string(str) {
+export function caml_gr_draw_string(str) {
   caml_gr_draw_str(caml_jsstring_of_string(str));
   return 0;
 }
 
 //Provides: caml_gr_set_font
-//Requires: caml_gr_state_get
-//Requires: caml_jsstring_of_string
-function caml_gr_set_font(f) {
+export function caml_gr_set_font(f) {
   var s = caml_gr_state_get();
   s.font = f;
   s.context.font = s.text_size + "px " + caml_jsstring_of_string(s.font);
@@ -390,9 +356,7 @@ function caml_gr_set_font(f) {
 }
 
 //Provides: caml_gr_set_text_size
-//Requires: caml_gr_state_get
-//Requires: caml_jsstring_of_string
-function caml_gr_set_text_size(size) {
+export function caml_gr_set_text_size(size) {
   var s = caml_gr_state_get();
   s.text_size = size;
   s.context.font = s.text_size + "px " + caml_jsstring_of_string(s.font);
@@ -400,17 +364,14 @@ function caml_gr_set_text_size(size) {
 }
 
 //Provides: caml_gr_text_size
-//Requires: caml_gr_state_get
-//Requires: caml_jsstring_of_string
-function caml_gr_text_size(txt) {
+export function caml_gr_text_size(txt) {
   var s = caml_gr_state_get();
   var w = s.context.measureText(caml_jsstring_of_string(txt)).width;
   return [0, w, s.text_size];
 }
 
 //Provides: caml_gr_make_image
-//Requires: caml_gr_state_get
-function caml_gr_make_image(arr) {
+export function caml_gr_make_image(arr) {
   var s = caml_gr_state_get();
   var h = arr.length - 1;
   var w = arr[1].length - 1;
@@ -435,8 +396,7 @@ function caml_gr_make_image(arr) {
   return im;
 }
 //Provides: caml_gr_dump_image
-//Requires: caml_gr_state_get
-function caml_gr_dump_image(im) {
+export function caml_gr_dump_image(im) {
   var data = [0];
   for (var i = 0; i < im.height; i++) {
     data[i + 1] = [0];
@@ -451,8 +411,7 @@ function caml_gr_dump_image(im) {
   return data;
 }
 //Provides: caml_gr_draw_image
-//Requires: caml_gr_state_get
-function caml_gr_draw_image(im, x, y) {
+export function caml_gr_draw_image(im, x, y) {
   var s = caml_gr_state_get();
   if (!im.image) {
     var canvas = document.createElement("canvas");
@@ -471,14 +430,12 @@ function caml_gr_draw_image(im, x, y) {
   return 0;
 }
 //Provides: caml_gr_create_image
-//Requires: caml_gr_state_get
-function caml_gr_create_image(x, y) {
+export function caml_gr_create_image(x, y) {
   var s = caml_gr_state_get();
   return s.context.createImageData(x, y);
 }
 //Provides: caml_gr_blit_image
-//Requires: caml_gr_state_get
-function caml_gr_blit_image(im, x, y) {
+export function caml_gr_blit_image(im, x, y) {
   var s = caml_gr_state_get();
   var im2 = s.context.getImageData(
     x,
@@ -495,49 +452,42 @@ function caml_gr_blit_image(im, x, y) {
   return 0;
 }
 //Provides: caml_gr_sigio_handler
-function caml_gr_sigio_handler() {
+export function caml_gr_sigio_handler() {
   return 0;
 }
 //Provides: caml_gr_sigio_signal
-function caml_gr_sigio_signal() {
+export function caml_gr_sigio_signal() {
   return 0;
 }
 //Provides: caml_gr_wait_event
-//Requires: caml_failwith
-function caml_gr_wait_event(_evl) {
+export function caml_gr_wait_event(_evl) {
   caml_failwith("caml_gr_wait_event not Implemented: use Graphics_js instead");
 }
 
 //Provides: caml_gr_synchronize
-//Requires: caml_failwith
-function caml_gr_synchronize() {
+export function caml_gr_synchronize() {
   caml_failwith("caml_gr_synchronize not Implemented");
 }
 //Provides: caml_gr_remember_mode
-//Requires: caml_failwith
-function caml_gr_remember_mode() {
+export function caml_gr_remember_mode() {
   caml_failwith("caml_gr_remember_mode not Implemented");
 }
 //Provides: caml_gr_display_mode
-//Requires: caml_failwith
-function caml_gr_display_mode() {
+export function caml_gr_display_mode() {
   caml_failwith("caml_gr_display_mode not Implemented");
 }
 
 //Provides: caml_gr_window_id
-//Requires: caml_failwith
-function caml_gr_window_id(_a) {
+export function caml_gr_window_id(_a) {
   caml_failwith("caml_gr_window_id not Implemented");
 }
 
 //Provides: caml_gr_open_subwindow
-//Requires: caml_failwith
-function caml_gr_open_subwindow(_a, _b, _c, _d) {
+export function caml_gr_open_subwindow(_a, _b, _c, _d) {
   caml_failwith("caml_gr_open_subwindow not Implemented");
 }
 
 //Provides: caml_gr_close_subwindow
-//Requires: caml_failwith
-function caml_gr_close_subwindow(_a) {
+export function caml_gr_close_subwindow(_a) {
   caml_failwith("caml_gr_close_subwindow not Implemented");
 }

@@ -17,28 +17,29 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_ba_to_typed_array } from './bigarray.js';
+import { caml_failwith, caml_invalid_argument } from './fail.js';
+import { caml_callback, caml_list_of_js_array } from './jslib.js';
+import { caml_jsbytes_of_string, caml_string_of_jsbytes, caml_string_of_uint8_array, caml_uint8_array_of_bytes } from './mlBytes.js';
+import { caml_global_data, jsoo_toplevel_reloc } from './stdlib.js';
+
 //Provides: caml_terminfo_rows
-function caml_terminfo_rows() {
+export function caml_terminfo_rows() {
   return 0;
 }
 //Provides: caml_invoke_traced_function
-//Requires: caml_invalid_argument
-function caml_invoke_traced_function() {
+export function caml_invoke_traced_function() {
   caml_invalid_argument("Meta.invoke_traced_function");
 }
 //Provides: caml_get_current_environment
-//Requires: caml_failwith
-function caml_get_current_environment() {
+export function caml_get_current_environment() {
   caml_failwith("caml_get_current_environment not Implemented");
 }
 //////////////////////////////////////////////////////////////////////
 
 //Provides: caml_get_section_table
-//Requires: caml_global_data, caml_failwith
-//Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
-//Requires: caml_list_of_js_array
 //Version: < 5.3
-function caml_get_section_table() {
+export function caml_get_section_table$v5_3_minus() {
   if (!caml_global_data.sections) {
     caml_failwith("Program not compiled with --toplevel");
   }
@@ -65,9 +66,8 @@ function caml_get_section_table() {
 }
 
 //Provides: caml_dynlink_get_bytecode_sections
-//Requires: caml_global_data, caml_failwith
 //Alias: jsoo_get_bytecode_sections
-function caml_dynlink_get_bytecode_sections() {
+export function caml_dynlink_get_bytecode_sections() {
   if (!caml_global_data.sections) {
     caml_failwith("Program not compiled with --toplevel");
   }
@@ -75,8 +75,7 @@ function caml_dynlink_get_bytecode_sections() {
 }
 
 //Provides: jsoo_get_runtime_aliases
-//Requires: caml_global_data, caml_failwith
-function jsoo_get_runtime_aliases() {
+export function jsoo_get_runtime_aliases() {
   if (caml_global_data.aliases === undefined) {
     caml_failwith("Program not compiled with --toplevel");
   }
@@ -84,27 +83,21 @@ function jsoo_get_runtime_aliases() {
 }
 
 //Provides: jsoo_toplevel_compile
-//Requires: caml_failwith
-var jsoo_toplevel_compile = undefined;
+export var jsoo_toplevel_compile = undefined;
 
 //Provides: jsoo_toplevel_init_compile
-//Requires: jsoo_toplevel_compile
-function jsoo_toplevel_init_compile(f) {
+export function jsoo_toplevel_init_compile(f) {
   jsoo_toplevel_compile = f;
 }
 
 //Provides: jsoo_toplevel_init_reloc
-//Requires: jsoo_toplevel_reloc
-function jsoo_toplevel_init_reloc(f) {
+export function jsoo_toplevel_init_reloc(f) {
   jsoo_toplevel_reloc = f;
 }
 
 //Provides: caml_reify_bytecode
-//Requires: caml_callback
-//Requires: caml_string_of_uint8_array, caml_ba_to_typed_array
-//Requires: jsoo_toplevel_compile, caml_failwith
 //Version: >= 5.2
-function caml_reify_bytecode(code, debug, _digest) {
+export function caml_reify_bytecode$v5_2_plus(code, debug, _digest) {
   if (!jsoo_toplevel_compile) {
     caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
   }
@@ -113,11 +106,8 @@ function caml_reify_bytecode(code, debug, _digest) {
 }
 
 //Provides: caml_reify_bytecode
-//Requires: caml_callback
-//Requires: caml_string_of_uint8_array, caml_uint8_array_of_bytes
-//Requires: jsoo_toplevel_compile, caml_failwith
 //Version: < 5.2
-function caml_reify_bytecode(code, debug, _digest) {
+export function caml_reify_bytecode$v5_2_minus(code, debug, _digest) {
   if (!jsoo_toplevel_compile) {
     caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
   }
@@ -138,13 +128,12 @@ function caml_reify_bytecode(code, debug, _digest) {
 }
 
 //Provides: caml_static_release_bytecode
-function caml_static_release_bytecode() {
+export function caml_static_release_bytecode() {
   return 0;
 }
 
 //Provides: caml_realloc_global
-//Requires: caml_global_data
-function caml_realloc_global(len) {
+export function caml_realloc_global(len) {
   if (len + 1 > caml_global_data.length) caml_global_data.length = len + 1;
   return 0;
 }

@@ -17,11 +17,12 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_raise_end_of_file } from './fail.js';
+import { caml_ml_input_block } from './io.js';
+import { caml_bytes_of_string, caml_string_of_uint8_array, caml_uint8_array_of_bytes } from './mlBytes.js';
+
 //Provides: caml_md5_chan
-//Requires: caml_string_of_uint8_array
-//Requires: caml_raise_end_of_file, caml_ml_input_block
-//Requires: caml_MD5Init, caml_MD5Update, caml_MD5Final
-function caml_md5_chan(chanid, toread) {
+export function caml_md5_chan(chanid, toread) {
   var ctx = caml_MD5Init();
   var buffer = new Uint8Array(4096);
   if (toread < 0) {
@@ -47,13 +48,12 @@ function caml_md5_chan(chanid, toread) {
 }
 
 //Provides: caml_md5_string
-//Requires: caml_bytes_of_string, caml_md5_bytes
-function caml_md5_string(s, ofs, len) {
+export function caml_md5_string(s, ofs, len) {
   return caml_md5_bytes(caml_bytes_of_string(s), ofs, len);
 }
 
 //Provides: caml_MD5Transform
-var caml_MD5Transform = (function () {
+export var caml_MD5Transform = (function () {
   function add(x, y) {
     return (x + y) | 0;
   }
@@ -156,7 +156,7 @@ var caml_MD5Transform = (function () {
 })();
 
 //Provides: caml_MD5Init
-function caml_MD5Init() {
+export function caml_MD5Init() {
   var buffer = new ArrayBuffer(64);
   var b32 = new Uint32Array(buffer);
   var b8 = new Uint8Array(buffer);
@@ -169,8 +169,7 @@ function caml_MD5Init() {
 }
 
 //Provides: caml_MD5Update
-//Requires: caml_MD5Transform
-function caml_MD5Update(ctx, input, input_len) {
+export function caml_MD5Update(ctx, input, input_len) {
   var in_buf = ctx.len & 0x3f;
   var input_pos = 0;
   ctx.len += input_len;
@@ -196,8 +195,7 @@ function caml_MD5Update(ctx, input, input_len) {
 }
 
 //Provides: caml_MD5Final
-//Requires: caml_MD5Transform
-function caml_MD5Final(ctx) {
+export function caml_MD5Final(ctx) {
   var in_buf = ctx.len & 0x3f;
   ctx.b8[in_buf] = 0x80;
   in_buf++;
@@ -224,9 +222,7 @@ function caml_MD5Final(ctx) {
 }
 
 //Provides: caml_md5_bytes
-//Requires: caml_uint8_array_of_bytes, caml_string_of_uint8_array
-//Requires: caml_MD5Init, caml_MD5Update, caml_MD5Final
-function caml_md5_bytes(s, ofs, len) {
+export function caml_md5_bytes(s, ofs, len) {
   var ctx = caml_MD5Init();
   var a = caml_uint8_array_of_bytes(s);
   caml_MD5Update(ctx, a.subarray(ofs, ofs + len), len);

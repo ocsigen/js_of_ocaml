@@ -45,6 +45,12 @@ The handlers are CPS-transformed functions: they actually take an
 additional parameter which is the current low-level continuation.
 */
 
+import { caml_failwith, caml_raise_constant } from './fail.js';
+import { caml_callback, caml_stack_check_depth, caml_stack_depth, caml_trampoline_return, caml_wrap_exception } from './jslib.js';
+import { caml_string_of_jsbytes } from './mlBytes.js';
+import { caml_fresh_oo_id } from './obj.js';
+import { caml_call_gen, caml_call_gen_cps, caml_named_value } from './stdlib.js';
+
 //Provides: caml_current_stack
 //If: effects
 // This has the shape {k, x, h, e} where
@@ -52,19 +58,17 @@ additional parameter which is the current low-level continuation.
 // - k is the low level continuation
 // - x is the exception stack
 // - e is the fiber stack of the parent fiber.
-var caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
+export var caml_current_stack$effects = { k: 0, x: 0, h: 0, e: 0 };
 
 //Provides: caml_push_trap
-//Requires: caml_current_stack
 //If: effects
-function caml_push_trap(handler) {
+export function caml_push_trap$effects(handler) {
   caml_current_stack.x = { h: handler, t: caml_current_stack.x };
 }
 
 //Provides: caml_pop_trap
-//Requires: caml_current_stack
 //If: effects
-function caml_pop_trap() {
+export function caml_pop_trap$effects() {
   if (!caml_current_stack.x)
     return function (x) {
       throw x;
@@ -75,20 +79,17 @@ function caml_pop_trap() {
 }
 
 //Provides: caml_raise_unhandled
-//Requires: caml_make_unhandled_effect_exn
 //If: effects
 //Version: >= 5.0
-function caml_raise_unhandled(eff) {
+export function caml_raise_unhandled$effects$v5_0_plus(eff) {
   var exn = caml_make_unhandled_effect_exn(eff);
   throw exn;
 }
 
 //Provides:caml_resume_stack
-//Requires: caml_named_value, caml_raise_constant
-//Requires: caml_pop_fiber, caml_current_stack
 //If: effects
 //Version: >= 5.0
-function caml_resume_stack(stack, last, k) {
+export function caml_resume_stack$effects$v5_0_plus(stack, last, k) {
   if (!stack)
     caml_raise_constant(
       caml_named_value("Effect.Continuation_already_resumed"),
@@ -105,10 +106,9 @@ function caml_resume_stack(stack, last, k) {
 }
 
 //Provides: caml_pop_fiber
-//Requires: caml_current_stack
 //If: effects
 //Version: >= 5.0
-function caml_pop_fiber() {
+export function caml_pop_fiber$effects$v5_0_plus() {
   // Move to the parent fiber, returning the parent's low-level continuation
   var c = caml_current_stack.e;
   caml_current_stack.e = 0;
@@ -117,10 +117,9 @@ function caml_pop_fiber() {
 }
 
 //Provides: caml_make_unhandled_effect_exn
-//Requires: caml_named_value, caml_string_of_jsbytes, caml_fresh_oo_id
 //If: effects
 //Version: >= 5.0
-function caml_make_unhandled_effect_exn(eff) {
+export function caml_make_unhandled_effect_exn$effects$v5_0_plus(eff) {
   var exn = caml_named_value("Effect.Unhandled");
   if (exn) exn = [0, exn, eff];
   else {
@@ -134,12 +133,9 @@ function caml_make_unhandled_effect_exn(eff) {
 }
 
 //Provides: caml_perform_effect
-//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return
-//Requires: caml_make_unhandled_effect_exn, caml_current_stack
-//Requires: caml_get_cps_fun
 //If: effects
 //Version: >= 5.0
-function caml_perform_effect(eff, k0) {
+export function caml_perform_effect$effects$v5_0_plus(eff, k0) {
   if (caml_current_stack.e === 0) {
     var exn = caml_make_unhandled_effect_exn(eff);
     throw exn;
@@ -158,13 +154,9 @@ function caml_perform_effect(eff, k0) {
 }
 
 //Provides: caml_reperform_effect
-//Requires: caml_pop_fiber, caml_stack_check_depth, caml_trampoline_return
-//Requires: caml_make_unhandled_effect_exn, caml_current_stack
-//Requires: caml_resume_stack, caml_continuation_use_noexc
-//Requires: caml_get_cps_fun
 //If: effects
 //Version: >= 5.0
-function caml_reperform_effect(eff, cont, last, k0) {
+export function caml_reperform_effect$effects$v5_0_plus(eff, cont, last, k0) {
   if (caml_current_stack.e === 0) {
     var exn = caml_make_unhandled_effect_exn(eff);
     var stack = caml_continuation_use_noexc(cont);
@@ -188,14 +180,14 @@ function caml_reperform_effect(eff, cont, last, k0) {
 //Provides: caml_get_cps_fun
 //If: effects
 //If: !doubletranslate
-function caml_get_cps_fun(f) {
+export function caml_get_cps_fun$effects$no_doubletranslate(f) {
   return f;
 }
 
 //Provides: caml_get_cps_fun
 //If: effects
 //If: doubletranslate
-function caml_get_cps_fun(f) {
+export function caml_get_cps_fun$effects$doubletranslate(f) {
   // This function is only used to get the effect handler. If the
   // effect handler has no CPS function, we know that we can directly
   // call the direct version instead.
@@ -203,8 +195,6 @@ function caml_get_cps_fun(f) {
 }
 
 //Provides: caml_alloc_stack
-//Requires: caml_pop_fiber, caml_call_gen, caml_stack_check_depth, caml_trampoline_return
-//Requires: caml_call_gen_cps, caml_current_stack
 //If: effects
 //Version: >= 5.0
 function caml_alloc_stack_call(f, x) {
@@ -223,7 +213,7 @@ function caml_alloc_stack_hexn(e) {
   var f = caml_current_stack.h[2];
   return caml_alloc_stack_call(f, e);
 }
-function caml_alloc_stack(hv, hx, hf) {
+export function caml_alloc_stack$effects$v5_0_plus(hv, hx, hf) {
   var handlers = [0, hv, hx, hf];
   return {
     k: caml_alloc_stack_hval,
@@ -236,22 +226,21 @@ function caml_alloc_stack(hv, hx, hf) {
 //Provides: caml_alloc_stack
 //If: !effects
 //Version: >= 5.0
-function caml_alloc_stack(_hv, _hx, _hf) {
+export function caml_alloc_stack$no_effects$v5_0_plus(_hv, _hx, _hf) {
   return 0;
 }
 
 //Provides: caml_continuation_use_noexc
 //Version: >= 5.0
-function caml_continuation_use_noexc(cont) {
+export function caml_continuation_use_noexc$v5_0_plus(cont) {
   var stack = cont[1];
   cont[1] = 0;
   return stack;
 }
 
 //Provides: caml_continuation_use_and_update_handler_noexc
-//Requires: caml_continuation_use_noexc
 //Version: >= 5.0
-function caml_continuation_use_and_update_handler_noexc(
+export function caml_continuation_use_and_update_handler_noexc$v5_0_plus(
   cont,
   hval,
   hexn,
@@ -268,36 +257,35 @@ function caml_continuation_use_and_update_handler_noexc(
 
 //Provides: caml_get_continuation_callstack
 //Version: >= 5.0
-function caml_get_continuation_callstack() {
+export function caml_get_continuation_callstack$v5_0_plus() {
   return [0];
 }
 
 //Provides: caml_ml_condition_new
 //Version: >= 5.0
-function caml_ml_condition_new(_unit) {
+export function caml_ml_condition_new$v5_0_plus(_unit) {
   return { condition: 1 };
 }
 
 //Provides: caml_ml_condition_wait
 //Version: >= 5.0
-function caml_ml_condition_wait(_t, _mutext) {
+export function caml_ml_condition_wait$v5_0_plus(_t, _mutext) {
   return 0;
 }
 
 //Provides: caml_ml_condition_broadcast
 //Version: >= 5.0
-function caml_ml_condition_broadcast(_t) {
+export function caml_ml_condition_broadcast$v5_0_plus(_t) {
   return 0;
 }
 
 //Provides: caml_ml_condition_signal
 //Version: >= 5.0
-function caml_ml_condition_signal(_t) {
+export function caml_ml_condition_signal$v5_0_plus(_t) {
   return 0;
 }
 
 //Provides: jsoo_effect_not_supported
-//Requires: caml_failwith
 //!If: effects
 //Version: >= 5.0
 function jsoo_effect_not_supported() {
@@ -305,11 +293,10 @@ function jsoo_effect_not_supported() {
 }
 
 //Provides: caml_resume
-//Requires:caml_stack_depth, caml_call_gen_cps, caml_current_stack, caml_wrap_exception, caml_resume_stack
 //If: effects
 //If: doubletranslate
 //Version: >= 5.0
-function caml_resume(f, arg, stack, last) {
+export function caml_resume$effects$doubletranslate$v5_0_plus(f, arg, stack, last) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;
   try {
@@ -349,15 +336,14 @@ function caml_resume(f, arg, stack, last) {
 //Provides: caml_cps_closure
 //If: effects
 //If: doubletranslate
-function caml_cps_closure(direct_f, cps_f) {
+export function caml_cps_closure$effects$doubletranslate(direct_f, cps_f) {
   direct_f.cps = cps_f;
   return direct_f;
 }
 
 //Provides: caml_assume_no_perform
-//Requires: caml_callback
 //If: effects
 //If: !doubletranslate
-function caml_assume_no_perform(f) {
+export function caml_assume_no_perform$effects$no_doubletranslate(f) {
   return caml_callback(f, [0]);
 }

@@ -15,9 +15,11 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_failwith, caml_invalid_argument } from './fail.js';
+import { jsoo_sys_getenv } from './sys.js';
+
 //Provides: caml_record_backtrace_env_flag
-//Requires: jsoo_sys_getenv
-var caml_record_backtrace_env_flag = FLAG("with-js-error");
+export var caml_record_backtrace_env_flag = FLAG("with-js-error");
 
 (function () {
   var r = jsoo_sys_getenv("OCAMLRUNPARAM");
@@ -35,60 +37,55 @@ var caml_record_backtrace_env_flag = FLAG("with-js-error");
 })();
 
 //Provides: caml_record_backtrace_runtime_flag
-//Requires: caml_record_backtrace_env_flag
-var caml_record_backtrace_runtime_flag = caml_record_backtrace_env_flag;
+export var caml_record_backtrace_runtime_flag = caml_record_backtrace_env_flag;
 
 //Provides: caml_ml_debug_info_status const
-function caml_ml_debug_info_status() {
+export function caml_ml_debug_info_status() {
   return 0;
 }
 //Provides: caml_backtrace_status
-//Requires: caml_record_backtrace_runtime_flag
-function caml_backtrace_status(_unit) {
+export function caml_backtrace_status(_unit) {
   return caml_record_backtrace_runtime_flag ? 1 : 0;
 }
 //Provides: caml_get_exception_backtrace const
-function caml_get_exception_backtrace() {
+export function caml_get_exception_backtrace() {
   return 0;
 }
 //Provides: caml_get_exception_raw_backtrace const
-function caml_get_exception_raw_backtrace(_unit) {
+export function caml_get_exception_raw_backtrace(_unit) {
   return [0];
 }
 //Provides: caml_record_backtrace
-//Requires: caml_record_backtrace_runtime_flag
-function caml_record_backtrace(b) {
+export function caml_record_backtrace(b) {
   caml_record_backtrace_runtime_flag = b;
   return 0;
 }
 //Provides: caml_convert_raw_backtrace const
-function caml_convert_raw_backtrace() {
+export function caml_convert_raw_backtrace() {
   return [0];
 }
 //Provides: caml_raw_backtrace_length
-function caml_raw_backtrace_length() {
+export function caml_raw_backtrace_length() {
   return 0;
 }
 //Provides: caml_raw_backtrace_next_slot
-function caml_raw_backtrace_next_slot(_slot) {
+export function caml_raw_backtrace_next_slot(_slot) {
   return 0;
 }
 //Provides: caml_raw_backtrace_slot
-//Requires: caml_invalid_argument
-function caml_raw_backtrace_slot(_bt, _idx) {
+export function caml_raw_backtrace_slot(_bt, _idx) {
   caml_invalid_argument("Printexc.get_raw_backtrace_slot: index out of bounds");
 }
 //Provides: caml_restore_raw_backtrace
-function caml_restore_raw_backtrace(_exn, _bt) {
+export function caml_restore_raw_backtrace(_exn, _bt) {
   return 0;
 }
 //Provides: caml_get_current_callstack const
-function caml_get_current_callstack() {
+export function caml_get_current_callstack() {
   return [0];
 }
 
 //Provides: caml_convert_raw_backtrace_slot
-//Requires: caml_failwith
-function caml_convert_raw_backtrace_slot(_rbt) {
+export function caml_convert_raw_backtrace_slot(_rbt) {
   caml_failwith("caml_convert_raw_backtrace_slot");
 }

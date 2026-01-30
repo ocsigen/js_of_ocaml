@@ -17,15 +17,15 @@
 
 /* The pushdown automata */
 
+import { caml_ml_output, caml_sys_fds } from './io.js';
+import { caml_lex_array } from './lexing.js';
+import { MlBytes, caml_jsbytes_of_string, caml_jsstring_of_string, caml_ml_string_length, caml_string_of_jsbytes } from './mlBytes.js';
+
 //Provides: caml_parser_trace
-var caml_parser_trace = 0;
+export var caml_parser_trace = 0;
 
 //Provides: caml_parse_engine
-//Requires: caml_lex_array, caml_parser_trace,caml_jsstring_of_string
-//Requires: caml_ml_output, caml_ml_string_length, caml_string_of_jsbytes
-//Requires: caml_jsbytes_of_string, MlBytes
-//Requires: caml_sys_fds
-function caml_parse_engine(tables, env, cmd, arg) {
+export function caml_parse_engine(tables, env, cmd, arg) {
   var ERRCODE = 256;
 
   //var START = 0;
@@ -309,8 +309,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
 }
 
 //Provides: caml_set_parser_trace
-//Requires: caml_parser_trace
-function caml_set_parser_trace(bool) {
+export function caml_set_parser_trace(bool) {
   var oldflag = caml_parser_trace;
   caml_parser_trace = bool;
   return oldflag;

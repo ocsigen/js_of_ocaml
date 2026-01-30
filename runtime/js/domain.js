@@ -1,45 +1,45 @@
+import { caml_callback } from './jslib.js';
+import { caml_ml_mutex_unlock } from './sync.js';
+
 //Provides: caml_domain_dls
 //Version: >= 5
-var caml_domain_dls = [0];
+export var caml_domain_dls = [0];
 
 //Provides: caml_domain_dls_set
-//Requires: caml_domain_dls
 //Version: >= 5
-function caml_domain_dls_set(a) {
+export function caml_domain_dls_set(a) {
   caml_domain_dls = a;
 }
 
 //Provides: caml_domain_dls_compare_and_set
-//Requires: caml_domain_dls
 //Version: >= 5.2
-function caml_domain_dls_compare_and_set(old, n) {
+export function caml_domain_dls_compare_and_set$v5_2_plus(old, n) {
   if (caml_domain_dls !== old) return 0;
   caml_domain_dls = n;
   return 1;
 }
 
 //Provides: caml_domain_dls_get
-//Requires: caml_domain_dls
 //Version: >= 5
-function caml_domain_dls_get(_unit) {
+export function caml_domain_dls_get(_unit) {
   return caml_domain_dls;
 }
 
 //Provides: caml_atomic_load
 //Version: >= 5
-function caml_atomic_load(ref) {
+export function caml_atomic_load(ref) {
   return ref[1];
 }
 
 //Provides: caml_atomic_load_field
 //Version: >= 5.4
-function caml_atomic_load_field(b, i) {
+export function caml_atomic_load_field$v5_4_plus(b, i) {
   return b[i + 1];
 }
 
 //Provides: caml_atomic_cas
 //Version: >= 5
-function caml_atomic_cas(ref, o, n) {
+export function caml_atomic_cas(ref, o, n) {
   if (ref[1] === o) {
     ref[1] = n;
     return 1;
@@ -49,7 +49,7 @@ function caml_atomic_cas(ref, o, n) {
 
 //Provides: caml_atomic_cas_field
 //Version: >= 5.4
-function caml_atomic_cas_field(b, i, o, n) {
+export function caml_atomic_cas_field$v5_4_plus(b, i, o, n) {
   if (b[i + 1] === o) {
     b[i + 1] = n;
     return 1;
@@ -59,7 +59,7 @@ function caml_atomic_cas_field(b, i, o, n) {
 
 //Provides: caml_atomic_fetch_add
 //Version: >= 5
-function caml_atomic_fetch_add(ref, i) {
+export function caml_atomic_fetch_add(ref, i) {
   var old = ref[1];
   ref[1] += i;
   return old;
@@ -67,7 +67,7 @@ function caml_atomic_fetch_add(ref, i) {
 
 //Provides: caml_atomic_fetch_add_field
 //Version: >= 5.4
-function caml_atomic_fetch_add_field(b, i, n) {
+export function caml_atomic_fetch_add_field$v5_4_plus(b, i, n) {
   var old = b[i + 1];
   b[i + 1] += n;
   return old;
@@ -75,7 +75,7 @@ function caml_atomic_fetch_add_field(b, i, n) {
 
 //Provides: caml_atomic_exchange
 //Version: >= 5
-function caml_atomic_exchange(ref, v) {
+export function caml_atomic_exchange(ref, v) {
   var r = ref[1];
   ref[1] = v;
   return r;
@@ -83,7 +83,7 @@ function caml_atomic_exchange(ref, v) {
 
 //Provides: caml_atomic_exchange_field
 //Version: >= 5.4
-function caml_atomic_exchange_field(b, i, v) {
+export function caml_atomic_exchange_field$v5_4_plus(b, i, v) {
   var r = b[i + 1];
   b[i + 1] = v;
   return r;
@@ -91,41 +91,37 @@ function caml_atomic_exchange_field(b, i, v) {
 
 //Provides: caml_atomic_make_contended
 //Version: >= 5.2
-function caml_atomic_make_contended(a) {
+export function caml_atomic_make_contended$v5_2_plus(a) {
   return [0, a];
 }
 
 //Provides: caml_ml_domain_unique_token
 //Version: >= 5.0, < 5.2
 var caml_ml_domain_unique_token_ = [0];
-function caml_ml_domain_unique_token(_unit) {
+export function caml_ml_domain_unique_token$v5_0_plus(_unit) {
   return caml_ml_domain_unique_token_;
 }
 
 //Provides: caml_recommended_domain_count
 //Version: >= 5
-function caml_recommended_domain_count(_unit) {
+export function caml_recommended_domain_count(_unit) {
   return 1;
 }
 
 //Provides: caml_ml_domain_index
-//Requires: caml_domain_id
 //Version: >= 5.03
-function caml_ml_domain_index(_unit) {
+export function caml_ml_domain_index$v5_03_plus(_unit) {
   return caml_domain_id;
 }
 
 //Provides: caml_domain_id
 //Version: >= 5
-var caml_domain_id = 0;
+export var caml_domain_id = 0;
 
 //Provides: caml_domain_spawn
-//Requires: caml_ml_mutex_unlock
-//Requires: caml_domain_id
-//Requires: caml_callback
 //Version: >= 5.2
 var caml_domain_latest_idx = 1;
-function caml_domain_spawn(f, term_sync) {
+export function caml_domain_spawn$v5_2_plus(f, term_sync) {
   var id = caml_domain_latest_idx++;
   var old = caml_domain_id;
   caml_domain_id = id;
@@ -138,12 +134,9 @@ function caml_domain_spawn(f, term_sync) {
 }
 
 //Provides: caml_domain_spawn
-//Requires: caml_ml_mutex_unlock
-//Requires: caml_domain_id
-//Requires: caml_callback
 //Version: >= 5.0, < 5.2
 var caml_domain_latest_idx = 1;
-function caml_domain_spawn(f, mutex) {
+export function caml_domain_spawn$v5_0_plus(f, mutex) {
   var id = caml_domain_latest_idx++;
   var old = caml_domain_id;
   caml_domain_id = id;
@@ -154,14 +147,13 @@ function caml_domain_spawn(f, mutex) {
 }
 
 //Provides: caml_ml_domain_id
-//Requires: caml_domain_id
 //Version: >= 5.0
-function caml_ml_domain_id(_unit) {
+export function caml_ml_domain_id$v5_0_plus(_unit) {
   return caml_domain_id;
 }
 
 //Provides: caml_ml_domain_cpu_relax
 //Version: >= 5
-function caml_ml_domain_cpu_relax(_unit) {
+export function caml_ml_domain_cpu_relax(_unit) {
   return 0;
 }

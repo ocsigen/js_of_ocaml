@@ -17,26 +17,31 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+import { caml_raise_with_args } from './fail.js';
+import { MlFile } from './fs.js';
+import { caml_int64_of_float } from './int64.js';
+import { caml_bytes_set, caml_string_of_jsstring, caml_uint8_array_of_bytes, caml_uint8_array_of_string } from './mlBytes.js';
+import { caml_named_value } from './stdlib.js';
+import { caml_raise_sys_error } from './sys.js';
+import { caml_raise_system_error, make_unix_err_args } from './unix.js';
+
 //Provides: jsoo_is_win32
-var jsoo_is_win32 =
+export var jsoo_is_win32 =
   globalThis.Deno?.build?.os === "windows" ||
   globalThis.process?.platform === "win32";
 
 //Provides: fs_node_supported
-function fs_node_supported() {
+export function fs_node_supported() {
   return globalThis.process?.versions?.node !== undefined;
 }
 //Provides: fs_node_supported
 //If: browser
-function fs_node_supported() {
+export function fs_node_supported$browser() {
   return false;
 }
 
 //Provides: MlNodeDevice
-//Requires: MlNodeFd, caml_raise_sys_error, caml_string_of_jsstring
-//Requires: caml_raise_nodejs_error, ocaml_stats_from_node_stats
-//Requires: jsoo_is_win32
-class MlNodeDevice {
+export class MlNodeDevice {
   constructor(root) {
     this.fs = require("node:fs");
     this.root = root;
@@ -325,8 +330,7 @@ class MlNodeDevice {
 }
 
 //Provides: ocaml_stats_from_node_stats
-//Requires: caml_int64_of_float
-function ocaml_stats_from_node_stats(js_stats, large) {
+export function ocaml_stats_from_node_stats(js_stats, large) {
   /* ===Unix.file_kind===
    * type file_kind =
    *     S_REG                       (** Regular file *)
@@ -388,12 +392,10 @@ function ocaml_stats_from_node_stats(js_stats, large) {
 
 //Provides: MlNodeDevice
 //If: browser
-class MlNodeDevice {}
+export class MlNodeDevice$browser {}
 
 //Provides: MlNodeFd
-//Requires: MlFile, caml_uint8_array_of_string, caml_uint8_array_of_bytes, caml_bytes_set, caml_raise_sys_error
-//Requires: caml_raise_nodejs_error, caml_raise_system_error, ocaml_stats_from_node_stats
-class MlNodeFd extends MlFile {
+export class MlNodeFd extends MlFile {
   constructor(fd, flags) {
     super();
     this.fs = require("node:fs");
@@ -561,11 +563,10 @@ class MlNodeFd extends MlFile {
 
 //Provides: MlNodeFd
 //If: browser
-class MlNodeFd {}
+export class MlNodeFd$browser {}
 
 //Provides: caml_sys_open_for_node
-//Requires: MlNodeFd
-function caml_sys_open_for_node(fd, flags) {
+export function caml_sys_open_for_node(fd, flags) {
   if (flags.altname) {
     try {
       var fs = require("node:fs");
@@ -578,14 +579,12 @@ function caml_sys_open_for_node(fd, flags) {
 
 //Provides: caml_sys_open_for_node
 //If: browser
-function caml_sys_open_for_node(_fd, _flags) {
+export function caml_sys_open_for_node$browser(_fd, _flags) {
   return null;
 }
 
 //Provides: caml_raise_nodejs_error
-//Requires: caml_raise_with_args, make_unix_err_args, caml_named_value
-//Requires: caml_raise_sys_error
-function caml_raise_nodejs_error(err, raise_unix, cmd) {
+export function caml_raise_nodejs_error(err, raise_unix, cmd) {
   var unix_error = caml_named_value("Unix.Unix_error");
   if (raise_unix && unix_error) {
     var args = make_unix_err_args(
