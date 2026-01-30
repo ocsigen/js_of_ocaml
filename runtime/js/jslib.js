@@ -71,23 +71,23 @@ export function caml_trampoline_return(f, args, direct) {
 
 //Provides:caml_stack_depth
 //If: effects
-export var caml_stack_depth$effects = 0;
+export var caml_stack_depth = 0;
 
 //Provides:caml_stack_check_depth
 //If: effects
-export function caml_stack_check_depth$effects() {
+export function caml_stack_check_depth() {
   return --caml_stack_depth > 0;
 }
 
 //Provides: caml_callback
 //If: !effects
-export var caml_callback$no_effects = caml_call_gen;
+export var caml_callback = caml_call_gen;
 
 //Provides: caml_callback
 //If: effects
 //If: !doubletranslate
 //Alias: caml_cps_trampoline
-export function caml_callback$effects$no_doubletranslate(f, args) {
+export function caml_callback(f, args) {
   var saved_stack_depth = caml_stack_depth;
   var saved_current_stack = caml_current_stack;
   try {
@@ -120,7 +120,7 @@ export function caml_callback$effects$no_doubletranslate(f, args) {
 //Provides: caml_callback
 //If: effects
 //If: doubletranslate
-export var caml_callback$effects$doubletranslate = caml_call_gen;
+export var caml_callback = caml_call_gen;
 
 //Provides: caml_is_js
 export function caml_is_js() {
@@ -422,21 +422,21 @@ export function caml_js_wrap_meth_callback_unsafe(f) {
 
 //Provides: caml_js_function_arity
 //If: !effects
-export function caml_js_function_arity$no_effects(f) {
+export function caml_js_function_arity(f) {
   return f.l >= 0 ? f.l : (f.l = f.length);
 }
 
 //Provides: caml_js_function_arity
 //If: effects
 //If: doubletranslate
-export function caml_js_function_arity$effects$doubletranslate(f) {
+export function caml_js_function_arity(f) {
   return f.l >= 0 ? f.l : (f.l = f.length);
 }
 
 //Provides: caml_js_function_arity
 //If: effects
 //If: !doubletranslate
-export function caml_js_function_arity$effects$no_doubletranslate(f) {
+export function caml_js_function_arity(f) {
   // Functions have an additional continuation parameter. This should
   // not be visible when calling them from JavaScript
   return (f.l >= 0 ? f.l : (f.l = f.length)) - 1;

@@ -13,7 +13,7 @@ export function caml_domain_dls_set(a) {
 
 //Provides: caml_domain_dls_compare_and_set
 //Version: >= 5.2
-export function caml_domain_dls_compare_and_set$v5_2_plus(old, n) {
+export function caml_domain_dls_compare_and_set(old, n) {
   if (caml_domain_dls !== old) return 0;
   caml_domain_dls = n;
   return 1;
@@ -33,7 +33,7 @@ export function caml_atomic_load(ref) {
 
 //Provides: caml_atomic_load_field
 //Version: >= 5.4
-export function caml_atomic_load_field$v5_4_plus(b, i) {
+export function caml_atomic_load_field(b, i) {
   return b[i + 1];
 }
 
@@ -49,7 +49,7 @@ export function caml_atomic_cas(ref, o, n) {
 
 //Provides: caml_atomic_cas_field
 //Version: >= 5.4
-export function caml_atomic_cas_field$v5_4_plus(b, i, o, n) {
+export function caml_atomic_cas_field(b, i, o, n) {
   if (b[i + 1] === o) {
     b[i + 1] = n;
     return 1;
@@ -67,7 +67,7 @@ export function caml_atomic_fetch_add(ref, i) {
 
 //Provides: caml_atomic_fetch_add_field
 //Version: >= 5.4
-export function caml_atomic_fetch_add_field$v5_4_plus(b, i, n) {
+export function caml_atomic_fetch_add_field(b, i, n) {
   var old = b[i + 1];
   b[i + 1] += n;
   return old;
@@ -83,7 +83,7 @@ export function caml_atomic_exchange(ref, v) {
 
 //Provides: caml_atomic_exchange_field
 //Version: >= 5.4
-export function caml_atomic_exchange_field$v5_4_plus(b, i, v) {
+export function caml_atomic_exchange_field(b, i, v) {
   var r = b[i + 1];
   b[i + 1] = v;
   return r;
@@ -91,14 +91,14 @@ export function caml_atomic_exchange_field$v5_4_plus(b, i, v) {
 
 //Provides: caml_atomic_make_contended
 //Version: >= 5.2
-export function caml_atomic_make_contended$v5_2_plus(a) {
+export function caml_atomic_make_contended(a) {
   return [0, a];
 }
 
 //Provides: caml_ml_domain_unique_token
 //Version: >= 5.0, < 5.2
 var caml_ml_domain_unique_token_ = [0];
-export function caml_ml_domain_unique_token$v5_0_plus(_unit) {
+export function caml_ml_domain_unique_token(_unit) {
   return caml_ml_domain_unique_token_;
 }
 
@@ -110,7 +110,7 @@ export function caml_recommended_domain_count(_unit) {
 
 //Provides: caml_ml_domain_index
 //Version: >= 5.03
-export function caml_ml_domain_index$v5_03_plus(_unit) {
+export function caml_ml_domain_index(_unit) {
   return caml_domain_id;
 }
 
@@ -121,7 +121,7 @@ export var caml_domain_id = 0;
 //Provides: caml_domain_spawn
 //Version: >= 5.2
 var caml_domain_latest_idx = 1;
-export function caml_domain_spawn$v5_2_plus(f, term_sync) {
+export function caml_domain_spawn(f, term_sync) {
   var id = caml_domain_latest_idx++;
   var old = caml_domain_id;
   caml_domain_id = id;
@@ -136,7 +136,7 @@ export function caml_domain_spawn$v5_2_plus(f, term_sync) {
 //Provides: caml_domain_spawn
 //Version: >= 5.0, < 5.2
 var caml_domain_latest_idx = 1;
-export function caml_domain_spawn$v5_0_plus(f, mutex) {
+export function caml_domain_spawn(f, mutex) {
   var id = caml_domain_latest_idx++;
   var old = caml_domain_id;
   caml_domain_id = id;
@@ -148,7 +148,7 @@ export function caml_domain_spawn$v5_0_plus(f, mutex) {
 
 //Provides: caml_ml_domain_id
 //Version: >= 5.0
-export function caml_ml_domain_id$v5_0_plus(_unit) {
+export function caml_ml_domain_id(_unit) {
   return caml_domain_id;
 }
 

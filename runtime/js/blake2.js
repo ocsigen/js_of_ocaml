@@ -2,7 +2,7 @@ import { caml_bytes_of_jsbytes, caml_bytes_of_string, caml_jsbytes_of_string, ca
 
 //Provides: blake2b
 //Version: >= 5.2
-export var blake2b$v5_2_plus = (function () {
+export var blake2b = (function () {
   // Blake2B in pure Javascript
   // Adapted from the reference implementation in RFC7693
   // Ported to Javascript by DC - https://github.com/dcposch
@@ -306,7 +306,7 @@ export var blake2b$v5_2_plus = (function () {
 
 //Provides: caml_blake2_create
 //Version: >= 5.2
-export function caml_blake2_create$v5_2_plus(hashlen, key) {
+export function caml_blake2_create(hashlen, key) {
   key = caml_uint8_array_of_string(key);
   if (key.length > 64) {
     key.subarray(0, 64);
@@ -316,7 +316,7 @@ export function caml_blake2_create$v5_2_plus(hashlen, key) {
 
 //Provides: caml_blake2_final
 //Version: >= 5.2
-export function caml_blake2_final$v5_2_plus(ctx, _hashlen) {
+export function caml_blake2_final(ctx, _hashlen) {
   // ctx.outlen === hashlen
   var r = blake2b.Final(ctx);
   return caml_string_of_uint8_array(r);
@@ -324,7 +324,7 @@ export function caml_blake2_final$v5_2_plus(ctx, _hashlen) {
 
 //Provides: caml_blake2_update
 //Version: >= 5.2, < 5.3
-export function caml_blake2_update$v5_2_plus(ctx, buf, ofs, len) {
+export function caml_blake2_update(ctx, buf, ofs, len) {
   var input = caml_uint8_array_of_string(buf);
   input = input.subarray(ofs, ofs + len);
   blake2b.Update(ctx, input);
@@ -333,7 +333,7 @@ export function caml_blake2_update$v5_2_plus(ctx, buf, ofs, len) {
 
 //Provides: caml_blake2_update
 //Version: >= 5.3
-export function caml_blake2_update$v5_3_plus(ctx, buf, ofs, len) {
+export function caml_blake2_update(ctx, buf, ofs, len) {
   var input = caml_uint8_array_of_bytes(buf);
   input = input.subarray(ofs, ofs + len);
   blake2b.Update(ctx, input);
@@ -342,7 +342,7 @@ export function caml_blake2_update$v5_3_plus(ctx, buf, ofs, len) {
 
 //Provides: caml_blake2_string
 //Version: >= 5.2, < 5.3
-export function caml_blake2_string$v5_2_plus(hashlen, key, buf, ofs, len) {
+export function caml_blake2_string(hashlen, key, buf, ofs, len) {
   var ctx = caml_blake2_create(hashlen, key);
   caml_blake2_update(ctx, buf, ofs, len);
   return caml_blake2_final(ctx, hashlen);
@@ -350,7 +350,7 @@ export function caml_blake2_string$v5_2_plus(hashlen, key, buf, ofs, len) {
 
 //Provides: caml_blake2_string
 //Version: >= 5.3
-export function caml_blake2_string$v5_3_plus(hashlen, key, buf_str, ofs, len) {
+export function caml_blake2_string(hashlen, key, buf_str, ofs, len) {
   var ctx = caml_blake2_create(hashlen, key);
   var buf = caml_bytes_of_string(buf_str);
   caml_blake2_update(ctx, buf, ofs, len);
@@ -359,7 +359,7 @@ export function caml_blake2_string$v5_3_plus(hashlen, key, buf_str, ofs, len) {
 
 //Provides: caml_blake2_bytes
 //Version: >= 5.3
-export function caml_blake2_bytes$v5_3_plus(hashlen, key, buf, ofs, len) {
+export function caml_blake2_bytes(hashlen, key, buf, ofs, len) {
   var ctx = caml_blake2_create(hashlen, key);
   caml_blake2_update(ctx, buf, ofs, len);
   return caml_blake2_final(ctx, hashlen);
@@ -368,7 +368,7 @@ export function caml_blake2_bytes$v5_3_plus(hashlen, key, buf, ofs, len) {
 //Provides: blake2_js_for_wasm_create
 //If: wasm
 //Version: >= 5.2
-export function blake2_js_for_wasm_create$wasm$v5_2_plus(hashlen, key) {
+export function blake2_js_for_wasm_create(hashlen, key) {
   const key_jsoo_string = caml_string_of_jsbytes(key);
   return caml_blake2_create(hashlen, key_jsoo_string);
 }
@@ -376,14 +376,14 @@ export function blake2_js_for_wasm_create$wasm$v5_2_plus(hashlen, key) {
 //Provides: blake2_js_for_wasm_final
 //If: wasm
 //Version: >= 5.2
-export function blake2_js_for_wasm_final$wasm$v5_2_plus(ctx, hashlen) {
+export function blake2_js_for_wasm_final(ctx, hashlen) {
   return caml_jsbytes_of_string(caml_blake2_final(ctx, hashlen));
 }
 
 //Provides: blake2_js_for_wasm_update
 //If: wasm
 //Version: >= 5.2, < 5.3
-export function blake2_js_for_wasm_update$wasm$v5_2_plus(ctx, buf, ofs, len) {
+export function blake2_js_for_wasm_update(ctx, buf, ofs, len) {
   const buf_jsoo_string = caml_string_of_jsbytes(buf);
   return caml_blake2_update(ctx, buf_jsoo_string, ofs, len);
 }
@@ -391,7 +391,7 @@ export function blake2_js_for_wasm_update$wasm$v5_2_plus(ctx, buf, ofs, len) {
 //Provides: blake2_js_for_wasm_update
 //If: wasm
 //Version: >= 5.3
-export function blake2_js_for_wasm_update$wasm$v5_3_plus(ctx, buf, ofs, len) {
+export function blake2_js_for_wasm_update(ctx, buf, ofs, len) {
   const buf_jsoo_string = caml_bytes_of_jsbytes(buf);
   return caml_blake2_update(ctx, buf_jsoo_string, ofs, len);
 }

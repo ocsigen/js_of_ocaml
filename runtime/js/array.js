@@ -31,13 +31,13 @@ export function caml_array_sub(a, i, len) {
 
 //Provides: caml_floatarray_sub mutable
 //Version: >= 5.3
-export function caml_floatarray_sub$v5_3_plus(a, i, len) {
+export function caml_floatarray_sub(a, i, len) {
   return caml_array_sub(a, i, len);
 }
 
 //Provides: caml_uniform_array_sub mutable
 //Version: >= 5.3
-export function caml_uniform_array_sub$v5_3_plus(a, i, len) {
+export function caml_uniform_array_sub(a, i, len) {
   return caml_array_sub(a, i, len);
 }
 
@@ -57,13 +57,13 @@ export function caml_array_append(a1, a2) {
 
 //Provides: caml_floatarray_append mutable
 //Version: >= 5.3
-export function caml_floatarray_append$v5_3_plus(a1, a2) {
+export function caml_floatarray_append(a1, a2) {
   return caml_array_append(a1, a2);
 }
 
 //Provides: caml_uniform_array_append mutable
 //Version: >= 5.3
-export function caml_uniform_array_append$v5_3_plus(a1, a2) {
+export function caml_uniform_array_append(a1, a2) {
   return caml_array_append(a1, a2);
 }
 
@@ -80,7 +80,7 @@ export function caml_array_concat(l) {
 
 //Provides: caml_floatarray_concat mutable
 //Version: >= 5.4
-export function caml_floatarray_concat$v5_4_plus(l) {
+export function caml_floatarray_concat(l) {
   var a = [0];
   while (l !== 0) {
     var b = l[1];
@@ -92,7 +92,7 @@ export function caml_floatarray_concat$v5_4_plus(l) {
 
 //Provides: caml_uniform_array_concat mutable
 //Version: >= 5.4
-export function caml_uniform_array_concat$v5_4_plus(l) {
+export function caml_uniform_array_concat(l) {
   var a = [0];
   while (l !== 0) {
     var b = l[1];
@@ -119,7 +119,7 @@ export function caml_floatarray_blit(a1, i1, a2, i2, len) {
 
 //Provides: caml_uniform_array_blit
 //Version: >= 5.3
-export function caml_uniform_array_blit$v5_3_plus(a1, i1, a2, i2, len) {
+export function caml_uniform_array_blit(a1, i1, a2, i2, len) {
   return caml_array_blit(a1, i1, a2, i2, len);
 }
 
@@ -153,19 +153,19 @@ export function caml_array_fill(array, ofs, len, v) {
 
 //Provides: caml_floatarray_fill
 //Version: >= 5.3
-export function caml_floatarray_fill$v5_3_plus(array, ofs, len, v) {
+export function caml_floatarray_fill(array, ofs, len, v) {
   return caml_array_fill(array, ofs, len, v);
 }
 
 //Provides: caml_floatarray_fill_unboxed
 //Version: >= 5.3
-export function caml_floatarray_fill_unboxed$v5_3_plus(array, ofs, len, v) {
+export function caml_floatarray_fill_unboxed(array, ofs, len, v) {
   return caml_array_fill(array, ofs, len, v);
 }
 
 //Provides: caml_uniform_array_fill
 //Version: >= 5.3
-export function caml_uniform_array_fill$v5_3_plus(array, ofs, len, v) {
+export function caml_uniform_array_fill(array, ofs, len, v) {
   return caml_array_fill(array, ofs, len, v);
 }
 
@@ -204,7 +204,7 @@ export function caml_make_float_vect(len) {
 
 //Provides: caml_array_create_float const (const)
 //Version: >= 5.3
-export function caml_array_create_float$v5_3_plus(len) {
+export function caml_array_create_float(len) {
   if (len >>> 0 >= ((0x7fffffff / 8) | 0)) caml_array_bound_error();
   var len = (len + 1) | 0;
   var b = new Array(len);
@@ -224,7 +224,7 @@ export function caml_floatarray_create(len) {
 
 //Provides: caml_floatarray_make const (const)
 //Version: >= 5.3
-export function caml_floatarray_make$v5_3_plus(len, init) {
+export function caml_floatarray_make(len, init) {
   if (len >>> 0 >= ((0x7fffffff / 8) | 0)) caml_array_bound_error();
   var len = (len + 1) | 0;
   var b = new Array(len);
@@ -235,12 +235,12 @@ export function caml_floatarray_make$v5_3_plus(len, init) {
 
 //Provides: caml_floatarray_make_unboxed const (const)
 //Version: >= 5.3
-export function caml_floatarray_make_unboxed$v5_3_plus(len, init) {
+export function caml_floatarray_make_unboxed(len, init) {
   return caml_floatarray_make(len, init);
 }
 
 //Provides: caml_uniform_array_make const (const)
 //Version: >= 5.3
-export function caml_uniform_array_make$v5_3_plus(len, init) {
+export function caml_uniform_array_make(len, init) {
   return caml_array_make(len, init);
 }

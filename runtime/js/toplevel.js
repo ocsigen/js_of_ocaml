@@ -39,7 +39,7 @@ export function caml_get_current_environment() {
 
 //Provides: caml_get_section_table
 //Version: < 5.3
-export function caml_get_section_table$v5_3_minus() {
+export function caml_get_section_table() {
   if (!caml_global_data.sections) {
     caml_failwith("Program not compiled with --toplevel");
   }
@@ -97,7 +97,7 @@ export function jsoo_toplevel_init_reloc(f) {
 
 //Provides: caml_reify_bytecode
 //Version: >= 5.2
-export function caml_reify_bytecode$v5_2_plus(code, debug, _digest) {
+export function caml_reify_bytecode(code, debug, _digest) {
   if (!jsoo_toplevel_compile) {
     caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
   }
@@ -107,7 +107,7 @@ export function caml_reify_bytecode$v5_2_plus(code, debug, _digest) {
 
 //Provides: caml_reify_bytecode
 //Version: < 5.2
-export function caml_reify_bytecode$v5_2_minus(code, debug, _digest) {
+export function caml_reify_bytecode(code, debug, _digest) {
   if (!jsoo_toplevel_compile) {
     caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
   }

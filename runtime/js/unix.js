@@ -115,7 +115,7 @@ export function caml_unix_isatty(fd) {
 //Provides: caml_unix_isatty
 //Alias: unix_isatty
 //If: browser
-export function caml_unix_isatty$browser(_fileDescriptor) {
+export function caml_unix_isatty(_fileDescriptor) {
   return 0;
 }
 
@@ -231,7 +231,7 @@ export function caml_strerror(errno) {
 
 //Provides: caml_strerror
 //If: browser
-export function caml_strerror$browser(errno) {
+export function caml_strerror(errno) {
   const code = unix_error[errno];
   return code || "Unknown error " + errno;
 }
@@ -598,7 +598,7 @@ export function caml_unix_single_write(fd, buf, pos, len) {
 //Provides: caml_unix_write_bigarray
 //Alias: caml_unix_lookup_file
 //Version: >= 5.2
-export function caml_unix_write_bigarray$v5_2_plus(fd, buf, pos, len) {
+export function caml_unix_write_bigarray(fd, buf, pos, len) {
   var a = caml_ba_to_typed_array(buf);
   var file = caml_unix_lookup_file(fd, "write");
   var written = 0;
@@ -626,7 +626,7 @@ export function caml_unix_read(fd, buf, pos, len) {
 //Provides: caml_unix_read_bigarray
 //Alias: unix_read_bigarray
 //Version: >= 5.2
-export function caml_unix_read_bigarray$v5_2_plus(fd, buf, pos, len) {
+export function caml_unix_read_bigarray(fd, buf, pos, len) {
   var a = caml_ba_to_typed_array(buf);
   var file = caml_unix_lookup_file(fd, "read");
   return file.read(a, pos, len, /* raise unix_error */ 1);

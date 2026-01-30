@@ -212,7 +212,7 @@ export function caml_hash(count, limit, seed, obj) {
 
 //Provides: caml_string_hash
 //Version: >= 5.0
-export function caml_string_hash$v5_0_plus(h, v) {
+export function caml_string_hash(h, v) {
   var h = caml_hash_mix_string(h, v);
   var h = caml_hash_mix_final(h);
   return h & 0x3fffffff;

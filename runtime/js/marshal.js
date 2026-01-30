@@ -520,11 +520,11 @@ export function caml_input_value_from_reader(reader) {
 
 //Provides: caml_marshal_header_size
 //Version: < 5.1.0
-export var caml_marshal_header_size$v5_1_minus = 20;
+export var caml_marshal_header_size = 20;
 
 //Provides: caml_marshal_header_size
 //Version: >= 5.1.0
-export var caml_marshal_header_size$v5_1_plus = 16;
+export var caml_marshal_header_size = 16;
 
 //Provides: caml_marshal_data_size mutable
 export function caml_marshal_data_size(s, ofs) {

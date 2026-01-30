@@ -25,7 +25,7 @@ import { caml_jsbytes_of_string, caml_jsstring_of_string } from './mlBytes.js';
 //Provides: caml_call_gen (const, shallow)
 //If: !effects
 //Weakdef
-export function caml_call_gen$no_effects(f, args) {
+export function caml_call_gen(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
@@ -71,7 +71,7 @@ export function caml_call_gen$no_effects(f, args) {
 //If: effects
 //If: !doubletranslate
 //Weakdef
-export function caml_call_gen$effects$no_doubletranslate(f, args) {
+export function caml_call_gen(f, args) {
   var n = f.l >= 0 ? f.l : (f.l = f.length);
   var argsLen = args.length;
   var d = n - argsLen;
@@ -130,13 +130,13 @@ export function caml_call_gen$effects$no_doubletranslate(f, args) {
 //If: effects
 //If: !doubletranslate
 //Weakdef
-export var caml_call_gen_cps$effects$no_doubletranslate = caml_call_gen;
+export var caml_call_gen_cps = caml_call_gen;
 
 //Provides: caml_call_gen_tuple (const, shallow)
 //If: effects
 //If: doubletranslate
 //Weakdef
-export var caml_call_gen_tuple$effects$doubletranslate = (function () {
+export var caml_call_gen_tuple = (function () {
   function caml_call_gen_direct(f, args) {
     var n = f.l >= 0 ? f.l : (f.l = f.length);
     var argsLen = args.length;
@@ -213,13 +213,13 @@ export var caml_call_gen_tuple$effects$doubletranslate = (function () {
 //If: effects
 //If: doubletranslate
 //Weakdef
-export var caml_call_gen$effects$doubletranslate = caml_call_gen_tuple[0];
+export var caml_call_gen = caml_call_gen_tuple[0];
 
 //Provides: caml_call_gen_cps
 //If: effects
 //If: doubletranslate
 //Weakdef
-export var caml_call_gen_cps$effects$doubletranslate = caml_call_gen_tuple[1];
+export var caml_call_gen_cps = caml_call_gen_tuple[1];
 
 //Provides: caml_named_values
 export var caml_named_values = {};

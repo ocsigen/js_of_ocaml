@@ -132,7 +132,7 @@ export function caml_sys_getenv(name) {
 
 //Provides: caml_sys_getenv_opt (const)
 //Version: >= 5.4
-export function caml_sys_getenv_opt$v5_4_plus(name) {
+export function caml_sys_getenv_opt(name) {
   var r = jsoo_sys_getenv(caml_jsstring_of_string(name));
   if (r === undefined) return 0;
   return [0, caml_string_of_jsstring(r)];
@@ -204,7 +204,7 @@ export function caml_sys_system_command(cmd) {
 
 //Provides: caml_sys_system_command
 //If: browser
-export function caml_sys_system_command$browser(_cmd) {
+export function caml_sys_system_command(_cmd) {
   return 127;
 }
 
@@ -325,13 +325,13 @@ export function caml_sys_const_naked_pointers_checked(_unit) {
 
 //Provides: caml_xdg_defaults
 //Version: >= 5.2
-export function caml_xdg_defaults$v5_2_plus(_unit) {
+export function caml_xdg_defaults(_unit) {
   return 0; // empty list
 }
 
 //Provides: caml_sys_is_regular_file
 //Version: >= 5.1
-export function caml_sys_is_regular_file$v5_1_plus(name) {
+export function caml_sys_is_regular_file(name) {
   var root = resolve_fs_device(name);
   return root.device.isFile(root.rest);
 }
@@ -341,13 +341,13 @@ export var caml_io_buffer_size = 65536;
 
 //Provides: caml_sys_io_buffer_size
 //Version: >= 5.4
-export function caml_sys_io_buffer_size$v5_4_plus(_unit) {
+export function caml_sys_io_buffer_size(_unit) {
   return caml_io_buffer_size;
 }
 
 //Provides: caml_sys_temp_dir_name
 //Version: >= 5.4
-export function caml_sys_temp_dir_name$v5_4_plus(_unit) {
+export function caml_sys_temp_dir_name(_unit) {
   if (os_type === "Win32") {
     return caml_string_of_jsstring(require("node:os").tmpdir());
   } else {
@@ -358,19 +358,19 @@ export function caml_sys_temp_dir_name$v5_4_plus(_unit) {
 //Provides: caml_sys_temp_dir_name
 //Version: >= 5.4
 //If: browser
-export function caml_sys_temp_dir_name$v5_4_plus$browser(_unit) {
+export function caml_sys_temp_dir_name(_unit) {
   return caml_string_of_jsstring("");
 }
 
 //Provides: caml_sys_convert_signal_number
 //Version: >= 5.4
-export function caml_sys_convert_signal_number$v5_4_plus(signo) {
+export function caml_sys_convert_signal_number(signo) {
   return signo;
 }
 
 //Provides: caml_sys_rev_convert_signal_number
 //Version: >= 5.4
-export function caml_sys_rev_convert_signal_number$v5_4_plus(signo) {
+export function caml_sys_rev_convert_signal_number(signo) {
   return signo;
 }
 

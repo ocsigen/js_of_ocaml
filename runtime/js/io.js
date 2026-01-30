@@ -232,13 +232,13 @@ export function caml_ml_open_descriptor_in(fd) {
 
 //Provides: caml_ml_open_descriptor_in_with_flags
 //Version: >= 5.1
-export function caml_ml_open_descriptor_in_with_flags$v5_1_plus(fd, _flags) {
+export function caml_ml_open_descriptor_in_with_flags(fd, _flags) {
   return caml_ml_open_descriptor_in(fd);
 }
 
 //Provides: caml_ml_open_descriptor_out_with_flags
 //Version: >= 5.1
-export function caml_ml_open_descriptor_out_with_flags$v5_1_plus(fd, _flags) {
+export function caml_ml_open_descriptor_out_with_flags(fd, _flags) {
   return caml_ml_open_descriptor_out(fd);
 }
 
@@ -259,7 +259,7 @@ export function caml_ml_set_binary_mode(chanid, mode) {
 
 //Provides: caml_ml_is_binary_mode
 //Version: >= 5.2
-export function caml_ml_is_binary_mode$v5_2_plus(chanid) {
+export function caml_ml_is_binary_mode(chanid) {
   var chan = caml_ml_channel_get(chanid);
   return chan.file.flags.binary;
 }
@@ -348,7 +348,7 @@ export function caml_ml_input(chanid, b, i, l) {
 
 //Provides: caml_ml_input_bigarray
 //Version: >= 5.2
-export function caml_ml_input_bigarray$v5_2_plus(chanid, b, i, l) {
+export function caml_ml_input_bigarray(chanid, b, i, l) {
   var ba = caml_ba_to_typed_array(b);
   return caml_ml_input_block(chanid, ba, i, l);
 }
@@ -577,7 +577,7 @@ export function caml_ml_output_bytes(chanid, buffer, offset, len) {
 
 //Provides: caml_ml_output_bigarray
 //Version: >= 5.2
-export function caml_ml_output_bigarray$v5_2_plus(chanid, buffer, offset, len) {
+export function caml_ml_output_bigarray(chanid, buffer, offset, len) {
   var buffer = caml_ba_to_typed_array(buffer);
   return caml_ml_output_ta(chanid, buffer, offset, len);
 }

@@ -81,25 +81,25 @@ export function caml_memprof_stop(_unit) {
 
 //Provides: caml_memprof_discard
 //Version: >= 5.2
-export function caml_memprof_discard$v5_2_plus(_t) {
+export function caml_memprof_discard(_t) {
   return 0;
 }
 
 //Provides: caml_eventlog_resume
 //Version: < 5.0
-export function caml_eventlog_resume$v5_0_minus(_unit) {
+export function caml_eventlog_resume(_unit) {
   return 0;
 }
 
 //Provides: caml_eventlog_pause
 //Version: < 5.0
-export function caml_eventlog_pause$v5_0_minus(_unit) {
+export function caml_eventlog_pause(_unit) {
   return 0;
 }
 
 //Provides: caml_gc_huge_fallback_count
 //Version: < 5.0
-export function caml_gc_huge_fallback_count$v5_0_minus(_unit) {
+export function caml_gc_huge_fallback_count(_unit) {
   return 0;
 }
 
@@ -120,12 +120,12 @@ export function caml_get_minor_free(_unit) {
 
 //Provides: caml_get_major_bucket
 //Version: < 5.0
-export function caml_get_major_bucket$v5_0_minus(_n) {
+export function caml_get_major_bucket(_n) {
   return 0;
 }
 
 //Provides: caml_get_major_credit
 //Version: < 5.0
-export function caml_get_major_credit$v5_0_minus(_n) {
+export function caml_get_major_credit(_n) {
   return 0;
 }

@@ -36,7 +36,7 @@ export function fs_node_supported() {
 }
 //Provides: fs_node_supported
 //If: browser
-export function fs_node_supported$browser() {
+export function fs_node_supported() {
   return false;
 }
 
@@ -392,7 +392,7 @@ export function ocaml_stats_from_node_stats(js_stats, large) {
 
 //Provides: MlNodeDevice
 //If: browser
-export class MlNodeDevice$browser {}
+export class MlNodeDevice {}
 
 //Provides: MlNodeFd
 export class MlNodeFd extends MlFile {
@@ -563,7 +563,7 @@ export class MlNodeFd extends MlFile {
 
 //Provides: MlNodeFd
 //If: browser
-export class MlNodeFd$browser {}
+export class MlNodeFd {}
 
 //Provides: caml_sys_open_for_node
 export function caml_sys_open_for_node(fd, flags) {
@@ -579,7 +579,7 @@ export function caml_sys_open_for_node(fd, flags) {
 
 //Provides: caml_sys_open_for_node
 //If: browser
-export function caml_sys_open_for_node$browser(_fd, _flags) {
+export function caml_sys_open_for_node(_fd, _flags) {
   return null;
 }
 
