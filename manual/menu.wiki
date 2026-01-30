@@ -30,7 +30,7 @@
 ==How-to Guides
 ===[[build-toplevel|Build a toplevel or use Dynlink]]
 ===[[debug|Debug a program]]
-===[[performances|Performances]]
+===[[performances|Performance]]
 ===[[contribute|Contribute]]
 
 ==Examples

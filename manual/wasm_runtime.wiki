@@ -118,3 +118,8 @@ like property access and function calls:
 (import "env" "caml_js_get"
    (func $caml_js_get (param (ref eq)) (param (ref eq)) (result (ref eq))))
 }}}
+
+== See also
+
+* <<a_manual chapter="wasm_overview"|Wasm_of_ocaml overview>> — General usage and features
+* <<a_manual chapter="linker"|JavaScript primitives>> — Writing JavaScript primitives for js_of_ocaml

@@ -92,3 +92,9 @@ Test directories:
 * {{{runtime/}}} - JavaScript and WebAssembly runtime files
 * {{{toplevel/}}} - Web-based OCaml toplevel
 * {{{examples/}}} - Example projects
+
+== See also
+
+* [[https://github.com/ocsigen/js_of_ocaml|GitHub repository]]
+* [[https://github.com/ocsigen/js_of_ocaml/issues|Issue tracker]]
+* [[https://github.com/ocsigen/js_of_ocaml/pulls|Pull requests]]

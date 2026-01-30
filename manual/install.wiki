@@ -57,3 +57,8 @@ opam install wasm_of_ocaml-compiler
 **Additional requirement**: Binaryen 119 or later must be installed on your system. See [[https://github.com/WebAssembly/binaryen|Binaryen installation]].
 
 See <<a_manual chapter="wasm_overview"|wasm_of_ocaml>> for usage.
+
+== See also
+
+* <<a_manual chapter="quickstart"|Quick start>> — Get started with a simple example
+* <<a_manual chapter="overview"|Overview>> — Learn what js_of_ocaml can do

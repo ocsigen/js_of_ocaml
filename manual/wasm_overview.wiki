@@ -86,3 +86,8 @@ See <<a_manual chapter="wasm_runtime"|Writing Wasm primitives>>.
 If a js_of_ocaml project uses {{{external}}} primitives defined in companion
 {{{.js}}} files, you need to implement the same primitives in Wasm modules
 to build with wasm_of_ocaml.
+
+== See also
+
+* <<a_manual chapter="wasm_runtime"|Writing Wasm primitives>> — Implement custom Wasm primitives
+* <<a_manual chapter="overview"|Js_of_ocaml overview>> — JavaScript compilation alternative

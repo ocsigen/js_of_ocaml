@@ -1,4 +1,4 @@
-= Linking JavaScript code
+= JavaScript primitives
 
 This page covers how to link JavaScript files with js_of_ocaml, including
 writing primitives and discovering runtime files.

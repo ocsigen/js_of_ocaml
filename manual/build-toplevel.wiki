@@ -80,4 +80,5 @@ node ./main.js
 == See also
 
 * <<a_manual chapter="options"|Command-line options>> — The {{{--toplevel}}} and {{{--dynlink}}} flags
+* <<a_manual chapter="compilation-modes"|Compilation modes>> — Whole program vs separate compilation
 * <<a_api subproject="js_of_ocaml-toplevel"|index>> — Toplevel API
