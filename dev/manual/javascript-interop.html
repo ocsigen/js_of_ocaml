@@ -64,7 +64,17 @@ value:
 </p><p>To work with these values (access properties, call methods), you need the
 <span><a href=".././manual/ppx">PPX syntax extension</a></span> which provides operators like
 <span class="teletype">##.</span> and <span class="teletype">##</span>.
-</p><h2 id="conversions"> Conversions <a class="backref" href="#conversions">&#182;</a></h2><p>OCaml and JavaScript have different representations for basic types.
+</p><h2 id="conversions"> Conversions <a class="backref" href="#conversions">&#182;</a></h2><p>OCaml and JavaScript represent basic types differently. For example, OCaml
+strings are byte sequences while JavaScript strings are UTF-16. When passing
+values between OCaml and JavaScript code, you must convert them explicitly.
+</p><p>The conversion functions follow a consistent naming pattern:
+</p><ul><li> <strong><span class="teletype">Js.xxx</span></strong> converts OCaml to JavaScript (e.g., <span class="teletype">Js.string</span>, <span class="teletype">Js.bool</span>, <span class="teletype">Js.array</span>)
+</li><li> <strong><span class="teletype">Js.to_xxx</span></strong> converts JavaScript to OCaml (e.g., <span class="teletype">Js.to_string</span>, <span class="teletype">Js.to_bool</span>, <span class="teletype">Js.to_array</span>)
+</li></ul><p><strong>When do you need to convert?</strong>
+</p><ul><li> Passing OCaml values to JavaScript functions or properties
+</li><li> Reading JavaScript values back into OCaml
+</li><li> Working with DOM APIs (which use JavaScript types)
+</li></ul><p><strong>Exception</strong>: OCaml integers can be used directly—no conversion needed.
 </p><h3> Summary</h3><table><tr><th> OCaml type </th><th> JS type </th><th> OCaml -&gt; JS </th><th> JS -&gt; OCaml </th></tr><tr><td> <span class="teletype">string</span> </td><td> String </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-string">Js_of_ocaml.Js.string</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_string">Js_of_ocaml.Js.to_string</a></span> </td></tr><tr><td> <span class="teletype">string</span> (bytes) </td><td> String </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-bytestring">Js_of_ocaml.Js.bytestring</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_bytestring">Js_of_ocaml.Js.to_bytestring</a></span> </td></tr><tr><td> <span class="teletype">bool</span> </td><td> Boolean </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-bool">Js_of_ocaml.Js.bool</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_bool">Js_of_ocaml.Js.to_bool</a></span> </td></tr><tr><td> <span class="teletype">int</span> </td><td> Number </td><td> (direct) </td><td> (direct) </td></tr><tr><td> <span class="teletype">float</span> </td><td> Number </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-float">Js_of_ocaml.Js.float</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_float">Js_of_ocaml.Js.to_float</a></span> </td></tr><tr><td> <span class="teletype">'a array</span> </td><td> Array </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-array">Js_of_ocaml.Js.array</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_array">Js_of_ocaml.Js.to_array</a></span> </td></tr></table><h3> Strings</h3><p>OCaml strings are byte arrays; JavaScript strings are UTF-16.
 </p><pre class=""><code class="language-ocaml translatable">(* OCaml string -&gt; JS string *)
 let js_str : Js.js_string Js.t = Js.string &quot;Hello&quot;
@@ -82,22 +92,30 @@ let ocaml_float : float = Js.to_float js_num</code></pre><h3> Arrays</h3><pre cl
 let js_arr : int Js.js_array Js.t = Js.array [| 1; 2; 3 |]
 
 (* JS array -&gt; OCaml array *)
-let ocaml_arr : int array = Js.to_array js_arr</code></pre><h2 id="describing-objects"> Describing JS objects with class types <a class="backref" href="#describing-objects">&#182;</a></h2><p>Use OCaml class types to describe the shape of JavaScript objects. Each
-<span class="teletype">method</span> declaration represents either a property or a method.
+let ocaml_arr : int array = Js.to_array js_arr</code></pre><h2 id="describing-objects"> Describing JS objects <a class="backref" href="#describing-objects">&#182;</a></h2><p>To call methods or access properties on a JavaScript object, you need to
+tell OCaml what shape the object has. This is done using OCaml class types,
+where each <span class="teletype">method</span> declaration describes either a JavaScript property
+or method.
+</p><p>There are two ways to write these types:
+</p><p><strong>Inline (anonymous) types</strong> — useful for one-off or simple cases:
 </p><pre>&lt; field1 : type1; field2 : type2; ... &gt; Js.t
-</pre><p>For instance, a Javascript object of type:
-</p><pre>   &lt; data : js_string t Js.prop;
-     appendData : js_string t -&gt; unit Js.meth&gt; Js.t
-</pre><p>has a property <span class="teletype">data</span> containing a Javascript string, and a method
-<span class="teletype">appendData</span> taking a Javascript string as argument and returning
-no value.
-</p><h3> Property types</h3><table><tr><th> Type </th><th> Description </th></tr><tr><td> <span class="teletype">'a Js.readonly_prop</span> </td><td> Read-only property </td></tr><tr><td> <span class="teletype">'a Js.writeonly_prop</span> </td><td> Write-only property </td></tr><tr><td> <span class="teletype">'a Js.prop</span> </td><td> Read/write property </td></tr><tr><td> <span class="teletype">t1 -&gt; ... -&gt; tn -&gt; t Js.meth</span> </td><td> Method taking n arguments </td></tr><tr><td> <span class="teletype">'a Js.optdef_prop</span> </td><td> Optional property (may be <span class="teletype">undefined</span>) </td></tr></table><p>See <span><a href=".././manual/ppx">PPX syntax</a></span> for how to access these.
+</pre><p><strong>Named class types</strong> — better for reusable or complex interfaces:
+</p><pre class=""><code class="language-ocaml translatable">class type myObject = object
+  method field1 : type1
+  method field2 : type2
+end
+
+(* Use as: myObject Js.t *)</code></pre><p>For instance, a JavaScript object with a <span class="teletype">data</span> property and an
+<span class="teletype">appendData</span> method would have type:
+</p><pre>&lt; data : Js.js_string Js.t Js.prop;
+  appendData : Js.js_string Js.t -&gt; unit Js.meth &gt; Js.t
+</pre><h3> Property types</h3><table><tr><th> Type </th><th> Description </th></tr><tr><td> <span class="teletype">'a Js.readonly_prop</span> </td><td> Read-only property </td></tr><tr><td> <span class="teletype">'a Js.writeonly_prop</span> </td><td> Write-only property </td></tr><tr><td> <span class="teletype">'a Js.prop</span> </td><td> Read/write property </td></tr><tr><td> <span class="teletype">t1 -&gt; ... -&gt; tn -&gt; t Js.meth</span> </td><td> Method taking n arguments </td></tr><tr><td> <span class="teletype">'a Js.optdef_prop</span> </td><td> Optional property (may be <span class="teletype">undefined</span>) </td></tr></table><p>The <span><a href=".././manual/ppx">PPX syntax</a></span> rely on these info to provide type safe access to properties and method.
 </p><h3> Example</h3><p>Given a JavaScript object:
 </p><pre class="manually-translated"><code class="language-javascript">{
   name: &quot;example&quot;,           // read-only string
   count: 42,                 // read-write number
   greet: function(x) { ... } // method
-}</code></pre><p>Its type could be {({myObj Js.t}}}:
+}</code></pre><p>Its type could be <span class="teletype">myObj Js.t</span>:
 </p><pre class=""><code class="language-ocaml translatable">class type myObj = object
   method name : Js.js_string Js.t Js.readonly_prop
   method count : int Js.prop
@@ -144,8 +162,8 @@ end</code></pre><h4> Full naming rules</h4><pre class=""><code class="language-o
 end</code></pre><h3> Binding constants from a class</h3><p>For JavaScript constants like <span class="teletype">SomeLib.SomeClass.VALUE_A</span>:
 </p><pre class=""><code class="language-ocaml translatable">(* Type definition *)
 class type someClass = object
-  method _VALUE_A : int Js.readonly_prop
-  method _VALUE_B : int Js.readonly_prop
+  method _VALUE_A_ : int Js.readonly_prop
+  method _VALUE_B_ : int Js.readonly_prop
 end
 
 (* Get the class object *)
@@ -153,7 +171,7 @@ let someClass : someClass Js.t =
   (Js.Unsafe.js_expr &quot;SomeLib&quot;)##._SomeClass
 
 (* Access constants *)
-let value_a = someClass##._VALUE_A</code></pre><h2 id="accessing-values"> Accessing JavaScript values <a class="backref" href="#accessing-values">&#182;</a></h2><p>Once you have described a JavaScript object's type, use the
+let value_a = someClass##._VALUE_A_</code></pre><h2 id="accessing-values"> Accessing JavaScript values <a class="backref" href="#accessing-values">&#182;</a></h2><p>Once you have described a JavaScript object's type, use the
 <span><a href=".././manual/ppx">PPX syntax</a></span> to access its properties and methods:
 </p><ul><li> <span class="teletype">obj##.prop</span> — read a property
 </li><li> <span class="teletype">obj##.prop := v</span> — write a property
@@ -245,7 +263,7 @@ overhead of <span class="teletype">Js.Unsafe</span> wrappers. See <span><a href=
 for how to define such functions.
 </p><h2 id="callbacks"> Passing OCaml functions to JavaScript <a class="backref" href="#callbacks">&#182;</a></h2><p>When JavaScript code needs to call back into OCaml (e.g., event handlers,
 async callbacks), you must wrap OCaml functions appropriately.
-</p><h3> Basic callbacks with <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-wrap_callback">Js_of_ocaml.Js.wrap_callback</a></span></h3><pre class=""><code class="language-ocaml translatable">(* setTimeout example *)
+</p><h3> Basic callbacks with <span class="teletype">Js.wrap_callback</span></h3><pre class=""><code class="language-ocaml translatable">(* setTimeout example *)
 let set_timeout f ms =
   Js.Unsafe.global##setTimeout
     (Js.wrap_callback f)
@@ -329,13 +347,20 @@ let json : Js.js_string Js.t = Json.output value
 
 (* JSON string -&gt; OCaml value (unsafe, like Marshal) *)
 let value : 'a = Json.unsafe_input json</code></pre><p>For type-safe JSON handling, use <span><a href=".././manual/ppx-deriving">ppx_deriving_json</a></span>.
-</p><h2 id="runtime-values"> Accessing runtime values <a class="backref" href="#runtime-values">&#182;</a></h2><p><span><a href=".././api/js_of_ocaml/Jsoo_runtime/Js/#val-runtime_value">Jsoo_runtime.Js.runtime_value</a></span> provides direct access to JavaScript
-values declared with <span class="teletype">//Provides:</span> in runtime files. See <span><a href=".././manual/linker#writing-primitives">writing JavaScript primitives</a></span>
+</p><h2 id="runtime-values"> Accessing runtime values <a class="backref" href="#runtime-values">&#182;</a></h2><p>JavaScript values declared with <span class="teletype">//Provides:</span> in runtime files can be
+accessed from OCaml. There are two approaches depending on whether you're
+accessing a function or a non-function value.
+</p><p>See <span><a href=".././manual/linker#writing-primitives">writing JavaScript primitives</a></span>
 for more about the <span class="teletype">//Provides:</span> syntax.
-</p><p>Given a JavaScript file linked with your program:
+</p><h3> Functions: use <span class="teletype">external</span></h3><p>For JavaScript <strong>functions</strong>, use OCaml's <span class="teletype">external</span> declaration:
+</p><pre class="manually-translated"><code class="language-javascript">//Provides: my_add
+function my_add(x, y) { return x + y; }</code></pre><pre class=""><code class="language-ocaml translatable">external my_add : int -&gt; int -&gt; int = &quot;my_add&quot;
+
+let result = my_add 1 2  (* calls the JS function directly *)</code></pre><p>This is efficient and integrates naturally with OCaml code.
+</p><h3> Non-function values: use <span class="teletype">runtime_value</span></h3><p>For JavaScript <strong>objects, constants, or other non-function values</strong>, use
+<span class="teletype">Jsoo_runtime.Js.runtime_value</span>:
 </p><pre class="manually-translated"><code class="language-javascript">//Provides: myConfig
-var myConfig = { debug: true, version: 42 };</code></pre><p>Access it from OCaml:
-</p><pre class=""><code class="language-ocaml translatable">let config : &lt; debug : bool Js.t Js.prop; version : int Js.prop &gt; Js.t =
+var myConfig = { debug: true, version: 42 };</code></pre><pre class=""><code class="language-ocaml translatable">let config : &lt; debug : bool Js.t Js.prop; version : int Js.prop &gt; Js.t =
   Jsoo_runtime.Js.runtime_value &quot;myConfig&quot;</code></pre><p><strong>Important</strong>: The argument must be a string literal, not a variable.
 </p><h2> See also</h2><ul><li> <span><a href=".././manual/ppx">PPX syntax</a></span> - Syntax reference: <span class="teletype">##.</span>, <span class="teletype">##</span>, <span class="teletype">new%js</span>, <span class="teletype">object%js</span>
 </li><li> <span><a href=".././manual/rev-bindings">Exporting to JavaScript</a></span> - Make OCaml code callable from JavaScript

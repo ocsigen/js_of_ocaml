@@ -76,9 +76,9 @@ element##.style##.display := Js.string &quot;none&quot;
 (* Set event handler *)
 button##.onclick := Dom_html.handler (fun _ -&gt;
   Console.console##log (Js.string &quot;Clicked!&quot;);
-  Js._true)</code></pre><h3> Typing rule</h3><pre>obj : &lt;prop : t Js.prop&gt; Js.t
-         value : t
------------------------------
+  Js._true)</code></pre><h3> Typing rule</h3><pre>  obj : &lt;prop : t Js.writeonly_prop&gt; Js.t
+value : t
+-----------------------------------------
   obj##.prop := value : unit
 </pre><h2 id="calling-methods"> Calling methods <a class="backref" href="#calling-methods">&#182;</a></h2><p>Use <span class="teletype">##</span> (without a dot) to call a method:
 </p><pre class=""><code class="language-ocaml translatable">(* Console logging *)
@@ -102,9 +102,9 @@ let result = obj##meth1##meth2##meth3
 let result = obj##(meth1)##(meth2)##(meth3)
 
 (* Useful when methods have arguments *)
-let result = str##(split (Js.string &quot;,&quot;))##(join (Js.string &quot;;&quot;))</code></pre><h3> Typing rule</h3><pre>obj : &lt;meth : t1 -&gt; t2 -&gt; ... -&gt; tn -&gt; u Js.meth&gt; Js.t
-               args : t1, t2, ..., tn
-------------------------------------------------------
+let result = str##(split (Js.string &quot;,&quot;))##(join (Js.string &quot;;&quot;))</code></pre><h3> Typing rule</h3><pre> obj : &lt;meth : t1 -&gt; t2 -&gt; ... -&gt; tn -&gt; u Js.meth&gt; Js.t
+args : t1, t2, ..., tn
+-------------------------------------------------------
              obj##meth args : u
 </pre><p><strong>Note</strong>: Partial application is not allowed. You must provide all arguments.
 </p><h2 id="constructors"> Using constructors <a class="backref" href="#constructors">&#182;</a></h2><p>Use <span class="teletype">new%js</span> to call JavaScript constructors:
@@ -122,7 +122,7 @@ let array_constr = Js.Unsafe.global##._Array
 let arr = new%js array_constr 10</code></pre><h3> Non-identifier constructors</h3><p>When the constructor is not a simple identifier, bind it first:
 </p><pre class=""><code class="language-ocaml translatable">let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass in
 let obj = new%js constr arg1 arg2</code></pre><h3> Typing rule</h3><pre>constr : (t1 -&gt; ... -&gt; tn -&gt; u Js.t) Js.constr
-             args : t1, ..., tn
+  args : t1, ..., tn
 ----------------------------------------------
        new%js constr args : u Js.t
 </pre><h2 id="object-literals"> Creating object literals <a class="backref" href="#object-literals">&#182;</a></h2><p>Use <span class="teletype">object%js ... end</span> to create JavaScript object literals:
@@ -152,7 +152,7 @@ end</code></pre><h3> Property attributes</h3><p>Control property access with att
   val also_readwrite = 42 [@@readwrite]    (* explicit read/write *)
   val writeonly = 42 [@@writeonly]         (* write-only *)
   val optional = Js.undefined [@@optdef]   (* optional/undefined *)
-end</code></pre><table><tr><th> Declaration </th><th> Property type </th><th> Can read </th><th> Can write </th></tr><tr><td> <span class="teletype">val x = v</span> </td><td> <span class="teletype">readonly_prop</span> </td><td> Yes </td><td> No </td></tr><tr><td> <span class="teletype">val mutable x = v</span> </td><td> <span class="teletype">prop</span> </td><td> Yes </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@readonly]</span> </td><td> <span class="teletype">readonly_prop</span> </td><td> Yes </td><td> No </td></tr><tr><td> <span class="teletype">val x = v [@@readwrite]</span> </td><td> <span class="teletype">prop</span> </td><td> Yes </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@writeonly]</span> </td><td> <span class="teletype">writeonly_prop</span> </td><td> No </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@optdef]</span> </td><td> <span class="teletype">optdef_prop</span> </td><td> Yes (<span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Optdef/#module-Optdef">Js_of_ocaml.Js.Optdef</a></span>) </td><td> Yes </td></tr></table><h3> Using <span class="teletype">self</span></h3><p>The identifier in parentheses binds to JavaScript's <span class="teletype">this</span>:
+end</code></pre><table><tr><th> Declaration </th><th> Property type </th><th> Can read </th><th> Can write </th></tr><tr><td> <span class="teletype">val x = v</span> </td><td> <span class="teletype">readonly_prop</span> </td><td> Yes </td><td> No </td></tr><tr><td> <span class="teletype">val mutable x = v</span> </td><td> <span class="teletype">prop</span> </td><td> Yes </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@readonly]</span> </td><td> <span class="teletype">readonly_prop</span> </td><td> Yes </td><td> No </td></tr><tr><td> <span class="teletype">val x = v [@@readwrite]</span> </td><td> <span class="teletype">prop</span> </td><td> Yes </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@writeonly]</span> </td><td> <span class="teletype">writeonly_prop</span> </td><td> No </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@optdef]</span> </td><td> <span class="teletype">optdef_prop</span> </td><td> Yes (Js.Optdef) </td><td> Yes </td></tr></table><h3> Using <span class="teletype">self</span></h3><p>The identifier in parentheses binds to JavaScript's <span class="teletype">this</span>:
 </p><pre class=""><code class="language-ocaml translatable">let obj = object%js (self)
   val mutable x = 0
   method setX v = self##.x := v
