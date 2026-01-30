@@ -35,8 +35,9 @@ To work with these values (access properties, call methods), you need the
 
 ==@@id="conversions"@@ Conversions
 
-OCaml and JavaScript represent basic types differently. For example, OCaml
-strings are byte sequences while JavaScript strings are UTF-16. When passing
+OCaml and JavaScript represent basic types differently (see
+<<a_manual chapter="runtime-representation"|runtime representation>>). For example,
+OCaml strings are byte sequences while JavaScript strings are UTF-16. When passing
 values between OCaml and JavaScript code, you must convert them explicitly.
 
 The conversion functions follow a consistent naming pattern:

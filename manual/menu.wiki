@@ -21,6 +21,7 @@
 ===[[linker|JavaScript primitives]]
 ===[[tailcall|Tailcall optimization]]
 ===[[effects|Effect handlers]]
+===[[runtime-representation|Runtime representation]]
 
 ==Wasm_of_ocaml
 ===[[wasm_overview|Overview]]

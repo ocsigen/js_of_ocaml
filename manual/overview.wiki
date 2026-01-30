@@ -118,3 +118,5 @@ can yield different results:
 **Note**: Float rounding is slightly different between native and JavaScript.
 Both round to nearest but resolve ties differently: JavaScript resolves ties
 away from zero while libc resolves ties to even.
+
+See <<a_manual chapter="runtime-representation"|runtime representation>> for details.

@@ -58,7 +58,7 @@ let validate_positive n =
 
 When you export OCaml functions to JavaScript, uncaught OCaml exceptions will
 propagate to JavaScript. However, OCaml exceptions are **not** JavaScript
-{{{Error}}} objects - they are represented as JavaScript arrays.
+{{{Error}}} objects (see <<a_manual chapter="runtime-representation" fragment="exceptions"|runtime representation>>).
 
 <<code language="ocaml"|
 let divide x y =

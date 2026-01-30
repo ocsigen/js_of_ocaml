@@ -11,7 +11,7 @@ do not. To ensure portable stack safety, js_of_ocaml optimizes common tail call 
 | Mutually recursive tail calls | Compiled with a trampoline |
 | Other tail calls | Not optimized (may overflow) |
 
-To optimize other tail calls, use can try {{{--effects=cps}}} or {{{--effects=double-translation}}}.
+To optimize other tail calls, try {{{--effects=cps}}} or {{{--effects=double-translation}}}.
 This partially transforms the code to continuation-passing style, but has a performance cost.
 See <<a_manual chapter="effects"|effect handlers>>.
 

@@ -55,8 +55,10 @@ With **dune**, this is handled automatically.
 
 ==@@id="writing-primitives"@@ Writing JavaScript primitives
 
-User-defined primitives need to be implemented in a separate javascript file.
-Javascript functions implementing primitives should be annotated with additional information.
+User-defined primitives need to be implemented in a separate JavaScript file.
+See <<a_manual chapter="runtime-representation"|runtime representation>> for how
+OCaml values are represented in JavaScript. Primitives should be annotated with
+additional information.
 
 === Annotation syntax
 
