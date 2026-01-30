@@ -8,7 +8,7 @@ With dune, use the option {{{(wasm_of_ocaml (wasm_files ...))}}} to specify
 these runtime files.
 
 It still makes sense to link JavaScript files to specify the possible
-side-effects of some primitives (see <<a_manual chapter="linker"|Linking JavaScript code>>),
+side-effects of some primitives (see <<a_manual chapter="linker"|JavaScript primitives>>),
 or to implement some functionalities in JavaScript.
 With dune, use {{{(wasm_of_ocaml (javascript_files ...))}}} to specify these files.
 

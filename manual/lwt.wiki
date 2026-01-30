@@ -1,12 +1,18 @@
 = Lwt support
 
+The {{{js_of_ocaml-lwt}}} package provides integration between Lwt and browser APIs.
+It includes:
+
+* {{{Lwt_js}}} — basic JavaScript bindings (sleep, yield)
+* {{{Lwt_js_events}}} — DOM event handling with Lwt
+* {{{Lwt_xmlHttpRequest}}} — XMLHttpRequest with Lwt
+* {{{Lwt_jsonp}}} — JSONP requests
+
 ==@@id="events"@@ Events
 
-Besides the functions provided by <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Dom_html>> to register event handlers
-(mainly <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Dom_html.addEventListener>>)
-using the usual JavaScript way, js_of_ocaml provides another module to
-program event handlers easily and concisely:
-<<a_api subproject="js_of_ocaml-lwt"|module Js_of_ocaml_lwt.Lwt_js_events>>.
+The <<a_api subproject="js_of_ocaml-lwt"|module Js_of_ocaml_lwt.Lwt_js_events>> module
+provides a concise way to handle DOM events using Lwt threads, as an alternative to
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Dom_html.addEventListener>>.
 
 This module defines functions you can call on a DOM element to create
 an Lwt thread that will return when the event occurs.
