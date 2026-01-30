@@ -3,7 +3,7 @@
 This page explains how to make OCaml values (functions, objects, constants)
 accessible from JavaScript code.
 
-==@@id="basic-export"@@ Basic export with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>>
+==@@id="basic-export"@@ Basic export with {{{Js.export}}}
 
 Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> to export a single named value:
 
@@ -26,7 +26,7 @@ myMathLib.abs(-5);      // 5
 myMathLib.zero;         // 0
 >>
 
-==@@id="export-all"@@ Exporting multiple values with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>>
+==@@id="export-all"@@ Exporting multiple values with {{{Js.export_all}}}
 
 Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> to export all properties of an object as top-level
 exports:

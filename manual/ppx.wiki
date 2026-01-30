@@ -73,9 +73,9 @@ button##.onclick := Dom_html.handler (fun _ ->
 === Typing rule
 
 {{{
-obj : <prop : t Js.prop> Js.t
-         value : t
------------------------------
+  obj : <prop : t Js.writeonly_prop> Js.t
+value : t
+-----------------------------------------
   obj##.prop := value : unit
 }}}
 
@@ -118,9 +118,9 @@ let result = str##(split (Js.string ","))##(join (Js.string ";"))
 === Typing rule
 
 {{{
-obj : <meth : t1 -> t2 -> ... -> tn -> u Js.meth> Js.t
-               args : t1, t2, ..., tn
-------------------------------------------------------
+ obj : <meth : t1 -> t2 -> ... -> tn -> u Js.meth> Js.t
+args : t1, t2, ..., tn
+-------------------------------------------------------
              obj##meth args : u
 }}}
 
@@ -158,7 +158,7 @@ let obj = new%js constr arg1 arg2
 
 {{{
 constr : (t1 -> ... -> tn -> u Js.t) Js.constr
-             args : t1, ..., tn
+  args : t1, ..., tn
 ----------------------------------------------
        new%js constr args : u Js.t
 }}}
@@ -210,7 +210,7 @@ end
 | {{{val x = v [@@readonly]}}} | {{{readonly_prop}}} | Yes | No |
 | {{{val x = v [@@readwrite]}}} | {{{prop}}} | Yes | Yes |
 | {{{val x = v [@@writeonly]}}} | {{{writeonly_prop}}} | No | Yes |
-| {{{val x = v [@@optdef]}}} | {{{optdef_prop}}} | Yes (<<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Optdef>>) | Yes |
+| {{{val x = v [@@optdef]}}} | {{{optdef_prop}}} | Yes (Js.Optdef) | Yes |
 
 === Using {{{self}}}
 

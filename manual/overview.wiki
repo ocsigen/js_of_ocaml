@@ -21,7 +21,7 @@ Js_of_ocaml is composed of multiple packages:
 * {{{js_of_ocaml-ppx_deriving_json}}} - JSON derivation
 * {{{js_of_ocaml-lwt}}} - Lwt support
 * {{{js_of_ocaml-tyxml}}} - TyXML support
-* {{{js_of_ocaml-toplevel}}} - tools to build an OCaml toplevel
+* {{{js_of_ocaml-toplevel}}} - tools to <<a_manual chapter="build-toplevel"|build an OCaml toplevel>>
 
 There is also a compiler targeting WebAssembly provided by the
 {{{wasm_of_ocaml}}} package. See <<a_manual chapter="wasm_overview"|wasm_of_ocaml>>.
@@ -72,6 +72,7 @@ Js_of_ocaml provides an ocamlbuild plugin. See
 === Toplevel
 
 You can find an OCaml toplevel running in the browser <<a_file src="toplevel/index.html"|here>>.
+See <<a_manual chapter="build-toplevel"|Building a toplevel>> to create your own.
 
 ==@@id="supported-features"@@ Supported features
 
