@@ -34,6 +34,7 @@ Real-world projects built with js_of_ocaml:
 
 === Languages and compilers
 
+* [[https://flow.org/|Flow]] — Static type checker for JavaScript
 * [[https://grain-lang.org/|Grain]] — Functional programming language compiling to WebAssembly
 
 ==@@id="tutorials"@@ Tutorials and learning resources
