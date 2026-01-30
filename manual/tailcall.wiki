@@ -1,14 +1,24 @@
 = Tail call optimization
-JavaScript does not (yet) support tail call optimization.
-To circumvent this limitation, and mitigate stack overflows, the Js_of_ocaml
-compiler optimizes some common tail call patterns.
-Besides, all tail calls are optimized when you set the flag
-{{{--enable=effects}}}, at the cost of some performance degradation.
 
-=== Self tail recursive
-Self tail recursive functions are compiled into a loop.
+Tail call optimization (TCO) support in JavaScript depends on the VM. JavaScriptCore
+(Safari, Bun) implements TCO, but V8 (Chrome, Node.js) and SpiderMonkey (Firefox)
+do not. To ensure portable stack safety, js_of_ocaml optimizes common tail call patterns.
 
-==== OCaml
+==@@id="summary"@@ What gets optimized
+
+|= Pattern |= Optimization |
+| Self-recursive tail calls | Compiled to a loop |
+| Mutually recursive tail calls | Compiled with a trampoline |
+| Other tail calls | Not optimized (may overflow) |
+
+To optimize other tail calls, use can try {{{--effects=cps}}} or {{{--effects=double-translation}}}.
+This partially transforms the code to continuation-passing style, but has a performance cost.
+See <<a_manual chapter="effects"|effect handlers>>.
+
+==@@id="self-recursive"@@ Self-recursive functions
+
+Self-recursive tail calls are compiled into loops:
+
 <<code language="ocaml"|
 let rec fact x acc =
   if x = 0
@@ -16,84 +26,87 @@ let rec fact x acc =
   else fact (pred x) (acc * x)
 >>
 
-==== JavaScript
+Generated JavaScript:
 <<code language="javascript"|
-function fact(x,acc){
-  var x$0=x,acc$0=acc;
+function fact(x$1, acc$1){
+  var x = x$1, acc = acc$1;
   for(;;){
-    if(0===x$0) return acc$0;
-    var acc$1=caml_mul(acc$0,x$0),
-        x$1=x$0-1|0,
-        x$0=x$1,
-        acc$0=acc$1;
-    continue
+    if(0 === x) return acc;
+    var acc$0 = runtime.caml_mul(acc, x), x$0 = x - 1 | 0;
+    x = x$0;
+    acc = acc$0;
   }
 }
 >>
 
+==@@id="mutual-recursive"@@ Mutually recursive functions
 
-=== Mutually tail recursive functions
-Mutually tail recursive functions are compiled using a trampoline.
-Note that the generated code does not return to the trampoline at every
-recursive call to prevent too much slow down.
+Mutually recursive functions use a trampoline—a loop that catches returned
+continuations and re-invokes them, avoiding deep call stacks:
 
-==== OCaml
 <<code language="ocaml"|
 let rec even n =
   match n with
   | 0 -> true
-  | x -> odd (x-1)
+  | x -> odd (x - 1)
 and odd n =
   match n with
   | 0 -> false
-  | x -> even (x-1);;
+  | x -> even (x - 1)
 >>
 
-==== JavaScript
+Generated JavaScript:
 <<code language="javascript"|
-function even$0(counter,n){
-  if(0===n)return 1;
-  var _e_=n-1|0;
-  if(counter<50){
-    var counter$0=counter+1|0;
-    return odd$0(counter$0,_e_)
-  }
-  return caml_trampoline_return(odd$0,[0,_e_])
+function even$0(counter, n){
+  if(0 === n) return 1;
+  var a = n - 1 | 0;
+  if(counter >= 50) return caml_trampoline_return(odd$0, [0, a]);
+  var counter$0 = counter + 1 | 0;
+  return odd$0(counter$0, a);
 }
-function odd$0(counter,n){
-  if(0===n)return 0;
-  var _d_=n-1|0;
-  if(counter<50){
-    var counter$0=counter+1|0;
-    return even$0(counter$0,_d_)
-  }
-  return caml_trampoline_return(even$0,[0,_d_])
+function even(n){return caml_trampoline(even$0(0, n));}
+function odd$0(counter, n){
+  if(0 === n) return 0;
+  var a = n - 1 | 0;
+  if(counter >= 50) return caml_trampoline_return(even$0, [0, a]);
+  var counter$0 = counter + 1 | 0;
+  return even$0(counter$0, a);
 }
-function even(n){return caml_trampoline(even$0(0,n))}
-function odd(n){return caml_trampoline(odd$0(0,n))}
+function odd(n){return caml_trampoline(odd$0(0, n));}
 >>
 
+**Note**: The generated code doesn't return to the trampoline on every call (controlled
+by the {{{tc_depth}}} parameter, default 50). This balances stack safety with performance.
 
-==@@id="not-optimized"@@ Examples of patterns not optimized
+==@@id="not-optimized"@@ Patterns not optimized
 
-Recursive function where the tail call is made inside an intermediate function.
+These patterns are **not** optimized and may cause stack overflows with deep recursion:
+
+**Tail call through a local function:**
 <<code language="ocaml"|
 let rec f x =
   let g delta = f (x - delta) in
   if x < 0 then 0
-  else if x mod 2 = 0
-  then g 2
-  else g 1;;
+  else if x mod 2 = 0 then g 2
+  else g 1
 >>
 
-Tail call of a function given as argument
+**Tail call to a function argument:**
 <<code language="ocaml"|
 let bind x f =
   match x with
   | None -> None
-  | Some x -> f x
+  | Some x -> f x  (* f is unknown, can't optimize *)
 >>
 
-Note that in the future, more tail call optimizations could be performed with function specialization and
-better inlining.
+For these patterns, you can try {{{--effects=cps}}}.
 
+==@@id="tuning"@@ Tuning
+
+The trampoline depth can be adjusted with {{{--set tc_depth=N}}} (default: 50).
+Higher values improve performance but increase stack usage.
+
+== See also
+
+* <<a_manual chapter="effects"|Effect handlers>> — Full tail call optimization with CPS
+* <<a_manual chapter="options"|Command-line options>> — The {{{tc_depth}}} parameter
