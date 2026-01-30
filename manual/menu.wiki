@@ -33,13 +33,6 @@
 ===[[performances|Performance]]
 ===[[contribute|Contribute]]
 
-==Examples
-===<<a_file src="toplevel/index.html"|OCaml toplevel in the browser>>
-===<<a_file src="planet/index.html"|Animated 3D view of the Earth>>
-===<<a_file src="graph_viewer/index.html"|Graph viewer>>
-===<<a_file src="boulderdash/index.html"|Boulder Dash game>>
-===<<a_file src="wiki/index.html"|Realtime wiki editor>>
-===<<a_file src="webgl/index.html"|WebGL demo>>
-===<<a_file src="minesweeper/index.html"|Minesweeper game>>
-===<<a_file src="hyperbolic/index.html"|Hyperbolic tree viewer>>
-===<<a_file src="cubes/index.html"|Random walk on lozenge tilings>>
+==Try it
+===<<a_file src="toplevel/index.html"|OCaml toplevel>>
+===[[examples|Examples and projects]]
