@@ -13,6 +13,7 @@
 * Compiler: js-parser: support html-comments
 * Runtime: improved handling of NaNs (#2110)
 * Lib: allow to reference values from the runtime (#2086)
+* Runtime/wasm: optimized some bigstring primitives (#2144)
 
 ## Bug fixes
 * Compiler: fix purity of comparison functions (again) (#2092)

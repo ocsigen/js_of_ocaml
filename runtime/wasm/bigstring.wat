@@ -137,11 +137,65 @@
       (local $i i32) (local $pos1 i32) (local $pos2 i32) (local $len i32)
       (local $c1 i32) (local $c2 i32)
       (local $v1 (ref extern)) (local $v2 (ref extern))
+      (local $w1 i32) (local $w2 i32) (local $xored i32)
       (local.set $v1 (call $caml_ba_get_view (local.get $s1)))
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
       (local.set $v2 (call $caml_ba_get_view (local.get $s2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ;; Main loop: compare 4 bytes at a time
+      (block $done
+         (loop $loop
+            (br_if $done
+               (i32.gt_u (i32.add (local.get $i) (i32.const 4)) (local.get $len)))
+            (local.set $w1
+               (call $dv_get_i32_unaligned (local.get $v1)
+                  (i32.add (local.get $pos1) (local.get $i)) (i32.const 1)))
+            (local.set $w2
+               (call $dv_get_i32_unaligned (local.get $v2)
+                  (i32.add (local.get $pos2) (local.get $i)) (i32.const 1)))
+            (if (i32.eq (local.get $w1) (local.get $w2))
+               (then
+                  (local.set $i (i32.add (local.get $i) (i32.const 4)))
+                  (br $loop)))
+            ;; Words differ, find first differing byte (little-endian)
+            (local.set $xored (i32.xor (local.get $w1) (local.get $w2)))
+            (if (i32.and (local.get $xored) (i32.const 0xFF))
+               (then
+                  (local.set $c1 (i32.and (local.get $w1) (i32.const 0xFF)))
+                  (local.set $c2 (i32.and (local.get $w2) (i32.const 0xFF)))
+                  (return
+                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                        (i32.lt_u (local.get $c1) (local.get $c2))))))
+            (if (i32.and (local.get $xored) (i32.const 0xFF00))
+               (then
+                  (local.set $c1
+                     (i32.and (i32.shr_u (local.get $w1) (i32.const 8))
+                        (i32.const 0xFF)))
+                  (local.set $c2
+                     (i32.and (i32.shr_u (local.get $w2) (i32.const 8))
+                        (i32.const 0xFF)))
+                  (return
+                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                        (i32.lt_u (local.get $c1) (local.get $c2))))))
+            (if (i32.and (local.get $xored) (i32.const 0xFF0000))
+               (then
+                  (local.set $c1
+                     (i32.and (i32.shr_u (local.get $w1) (i32.const 16))
+                        (i32.const 0xFF)))
+                  (local.set $c2
+                     (i32.and (i32.shr_u (local.get $w2) (i32.const 16))
+                        (i32.const 0xFF)))
+                  (return
+                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                        (i32.lt_u (local.get $c1) (local.get $c2))))))
+            ;; Must be byte 3
+            (local.set $c1 (i32.shr_u (local.get $w1) (i32.const 24)))
+            (local.set $c2 (i32.shr_u (local.get $w2) (i32.const 24)))
+            (return
+               (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                  (i32.lt_u (local.get $c1) (local.get $c2))))))
+      ;; Handle remaining 0-3 bytes
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
@@ -166,11 +220,81 @@
       (local $c1 i32) (local $c2 i32)
       (local $v1 (ref extern))
       (local $s2 (ref $bytes))
+      (local $w1 i32) (local $w2 i32) (local $xored i32) (local $j i32)
       (local.set $v1 (call $caml_ba_get_view (local.get $s1)))
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
       (local.set $s2 (ref.cast (ref $bytes) (local.get $vs2)))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ;; Main loop: compare 4 bytes at a time
+      (block $done
+         (loop $loop
+            (br_if $done
+               (i32.gt_u (i32.add (local.get $i) (i32.const 4)) (local.get $len)))
+            (local.set $w1
+               (call $dv_get_i32_unaligned (local.get $v1)
+                  (i32.add (local.get $pos1) (local.get $i)) (i32.const 1)))
+            ;; Build w2 from 4 bytes of the $bytes array (little-endian)
+            (local.set $j (i32.add (local.get $pos2) (local.get $i)))
+            (local.set $w2
+               (i32.or
+                  (i32.or
+                     (array.get_u $bytes (local.get $s2) (local.get $j))
+                     (i32.shl
+                        (array.get_u $bytes (local.get $s2)
+                           (i32.add (local.get $j) (i32.const 1)))
+                        (i32.const 8)))
+                  (i32.or
+                     (i32.shl
+                        (array.get_u $bytes (local.get $s2)
+                           (i32.add (local.get $j) (i32.const 2)))
+                        (i32.const 16))
+                     (i32.shl
+                        (array.get_u $bytes (local.get $s2)
+                           (i32.add (local.get $j) (i32.const 3)))
+                        (i32.const 24)))))
+            (if (i32.eq (local.get $w1) (local.get $w2))
+               (then
+                  (local.set $i (i32.add (local.get $i) (i32.const 4)))
+                  (br $loop)))
+            ;; Words differ, find first differing byte (little-endian)
+            (local.set $xored (i32.xor (local.get $w1) (local.get $w2)))
+            (if (i32.and (local.get $xored) (i32.const 0xFF))
+               (then
+                  (local.set $c1 (i32.and (local.get $w1) (i32.const 0xFF)))
+                  (local.set $c2 (i32.and (local.get $w2) (i32.const 0xFF)))
+                  (return
+                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                        (i32.lt_u (local.get $c1) (local.get $c2))))))
+            (if (i32.and (local.get $xored) (i32.const 0xFF00))
+               (then
+                  (local.set $c1
+                     (i32.and (i32.shr_u (local.get $w1) (i32.const 8))
+                        (i32.const 0xFF)))
+                  (local.set $c2
+                     (i32.and (i32.shr_u (local.get $w2) (i32.const 8))
+                        (i32.const 0xFF)))
+                  (return
+                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                        (i32.lt_u (local.get $c1) (local.get $c2))))))
+            (if (i32.and (local.get $xored) (i32.const 0xFF0000))
+               (then
+                  (local.set $c1
+                     (i32.and (i32.shr_u (local.get $w1) (i32.const 16))
+                        (i32.const 0xFF)))
+                  (local.set $c2
+                     (i32.and (i32.shr_u (local.get $w2) (i32.const 16))
+                        (i32.const 0xFF)))
+                  (return
+                     (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                        (i32.lt_u (local.get $c1) (local.get $c2))))))
+            ;; Must be byte 3
+            (local.set $c1 (i32.shr_u (local.get $w1) (i32.const 24)))
+            (local.set $c2 (i32.shr_u (local.get $w2) (i32.const 24)))
+            (return
+               (select (ref.i31 (i32.const -1)) (ref.i31 (i32.const 1))
+                  (i32.lt_u (local.get $c1) (local.get $c2))))))
+      ;; Handle remaining 0-3 bytes
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
@@ -192,10 +316,43 @@
       (param $vpos (ref eq)) (param $vlen (ref eq)) (result (ref eq))
       (local $pos i32) (local $len i32) (local $c i32)
       (local $v (ref extern))
+      (local $mask i32) (local $word i32) (local $xored i32)
       (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
       (local.set $v (call $caml_ba_get_view (local.get $s)))
+      ;; Create mask: c | (c<<8) | (c<<16) | (c<<24)
+      (local.set $mask
+         (i32.mul (local.get $c) (i32.const 0x01010101)))
+      ;; Main loop: process 4 bytes at a time
+      (block $done
+         (loop $loop
+            (br_if $done (i32.lt_s (local.get $len) (i32.const 4)))
+            (local.set $word
+               (call $dv_get_i32_unaligned
+                  (local.get $v) (local.get $pos) (i32.const 1)))
+            (local.set $xored (i32.xor (local.get $word) (local.get $mask)))
+            ;; SWAR: check for zero byte using ((x - 0x01010101) & ~x & 0x80808080)
+            (if (i32.and
+                   (i32.and
+                      (i32.sub (local.get $xored) (i32.const 0x01010101))
+                      (i32.xor (local.get $xored) (i32.const -1)))
+                   (i32.const 0x80808080))
+               (then
+                  ;; Found a match in this word, find exact position (little-endian)
+                  (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF)))
+                     (then (return (ref.i31 (local.get $pos)))))
+                  (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF00)))
+                     (then
+                        (return (ref.i31 (i32.add (local.get $pos) (i32.const 1))))))
+                  (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF0000)))
+                     (then
+                        (return (ref.i31 (i32.add (local.get $pos) (i32.const 2))))))
+                  (return (ref.i31 (i32.add (local.get $pos) (i32.const 3))))))
+            (local.set $pos (i32.add (local.get $pos) (i32.const 4)))
+            (local.set $len (i32.sub (local.get $len) (i32.const 4)))
+            (br $loop)))
+      ;; Handle remaining 0-3 bytes
       (loop $loop
          (if (i32.gt_s (local.get $len) (i32.const 0))
             (then
@@ -213,12 +370,48 @@
       (param $vpos (ref eq)) (param $vlen (ref eq)) (result (ref eq))
       (local $pos i32) (local $len i32) (local $c i32) (local $cur i32)
       (local $v (ref extern))
+      (local $mask i32) (local $word i32) (local $xored i32)
       (local.set $c (i31.get_s (ref.cast (ref i31) (local.get $vc))))
       (local.set $pos (i31.get_s (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
       (local.set $v (call $caml_ba_get_view (local.get $s)))
+      ;; cur points to last byte to check
       (local.set $cur
          (i32.sub (i32.add (local.get $pos) (local.get $len)) (i32.const 1)))
+      ;; Create mask: c | (c<<8) | (c<<16) | (c<<24)
+      (local.set $mask
+         (i32.mul (local.get $c) (i32.const 0x01010101)))
+      ;; Main loop: process 4 bytes at a time, backwards
+      (loop $loop
+         (if (i32.ge_s (i32.sub (local.get $cur) (local.get $pos)) (i32.const 3))
+            (then
+               ;; Read 4 bytes ending at cur (so from cur-3 to cur)
+               (local.set $word
+                  (call $dv_get_i32_unaligned
+                     (local.get $v)
+                     (i32.sub (local.get $cur) (i32.const 3))
+                     (i32.const 1)))
+               (local.set $xored (i32.xor (local.get $word) (local.get $mask)))
+               ;; SWAR: check for zero byte
+               (if (i32.and
+                      (i32.and
+                         (i32.sub (local.get $xored) (i32.const 0x01010101))
+                         (i32.xor (local.get $xored) (i32.const -1)))
+                      (i32.const 0x80808080))
+                  (then
+                     ;; Found match, check from highest byte (cur) to lowest (cur-3)
+                     (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF000000)))
+                        (then (return (ref.i31 (local.get $cur)))))
+                     (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF0000)))
+                        (then
+                           (return (ref.i31 (i32.sub (local.get $cur) (i32.const 1))))))
+                     (if (i32.eqz (i32.and (local.get $xored) (i32.const 0xFF00)))
+                        (then
+                           (return (ref.i31 (i32.sub (local.get $cur) (i32.const 2))))))
+                     (return (ref.i31 (i32.sub (local.get $cur) (i32.const 3))))))
+               (local.set $cur (i32.sub (local.get $cur) (i32.const 4)))
+               (br $loop))))
+      ;; Handle remaining 0-3 bytes at the beginning
       (loop $loop
          (if (i32.ge_s (local.get $cur) (local.get $pos))
             (then
@@ -247,12 +440,89 @@
       (local $i i32)
       (local $c1 i32)
       (local $c2 i32)
+      (local $w1 i32) (local $w2 i32) (local $xored i32)
 
       (local.set $v1 (call $caml_ba_get_view (local.get $vs1)))
       (local.set $v2 (call $caml_ba_get_view (local.get $vs2)))
       (local.set $pos1 (i31.get_s (ref.cast (ref i31) (local.get $vpos1))))
       (local.set $pos2 (i31.get_s (ref.cast (ref i31) (local.get $vpos2))))
       (local.set $len (i31.get_s (ref.cast (ref i31) (local.get $vlen))))
+      ;; Main loop: compare 4 bytes at a time
+      (block $done
+         (loop $loop
+            (br_if $done
+               (i32.gt_u (i32.add (local.get $i) (i32.const 4)) (local.get $len)))
+            (local.set $w1
+               (call $dv_get_i32_unaligned (local.get $v1)
+                  (i32.add (local.get $pos1) (local.get $i)) (i32.const 1)))
+            (local.set $w2
+               (call $dv_get_i32_unaligned (local.get $v2)
+                  (i32.add (local.get $pos2) (local.get $i)) (i32.const 1)))
+            (if (i32.eq (local.get $w1) (local.get $w2))
+               (then
+                  ;; Words equal - check for null byte using SWAR
+                  (if (i32.and
+                         (i32.and
+                            (i32.sub (local.get $w1) (i32.const 0x01010101))
+                            (i32.xor (local.get $w1) (i32.const -1)))
+                         (i32.const 0x80808080))
+                     (then
+                        ;; Contains null, strings equal up to null
+                        (return (ref.i31 (i32.const 0)))))
+                  (local.set $i (i32.add (local.get $i) (i32.const 4)))
+                  (br $loop)))
+            ;; Words differ - find first differing byte, checking for nulls
+            (local.set $xored (i32.xor (local.get $w1) (local.get $w2)))
+            ;; Check byte 0
+            (local.set $c1 (i32.and (local.get $w1) (i32.const 0xFF)))
+            (local.set $c2 (i32.and (local.get $w2) (i32.const 0xFF)))
+            (if (i32.or (i32.and (local.get $xored) (i32.const 0xFF))
+                   (i32.eqz (local.get $c1)))
+               (then
+                  (if (i32.lt_u (local.get $c1) (local.get $c2))
+                     (then (return (ref.i31 (i32.const -1)))))
+                  (if (i32.gt_u (local.get $c1) (local.get $c2))
+                     (then (return (ref.i31 (i32.const 1)))))
+                  (return (ref.i31 (i32.const 0)))))
+            ;; Check byte 1
+            (local.set $c1
+               (i32.and (i32.shr_u (local.get $w1) (i32.const 8))
+                  (i32.const 0xFF)))
+            (local.set $c2
+               (i32.and (i32.shr_u (local.get $w2) (i32.const 8))
+                  (i32.const 0xFF)))
+            (if (i32.or (i32.and (local.get $xored) (i32.const 0xFF00))
+                   (i32.eqz (local.get $c1)))
+               (then
+                  (if (i32.lt_u (local.get $c1) (local.get $c2))
+                     (then (return (ref.i31 (i32.const -1)))))
+                  (if (i32.gt_u (local.get $c1) (local.get $c2))
+                     (then (return (ref.i31 (i32.const 1)))))
+                  (return (ref.i31 (i32.const 0)))))
+            ;; Check byte 2
+            (local.set $c1
+               (i32.and (i32.shr_u (local.get $w1) (i32.const 16))
+                  (i32.const 0xFF)))
+            (local.set $c2
+               (i32.and (i32.shr_u (local.get $w2) (i32.const 16))
+                  (i32.const 0xFF)))
+            (if (i32.or (i32.and (local.get $xored) (i32.const 0xFF0000))
+                   (i32.eqz (local.get $c1)))
+               (then
+                  (if (i32.lt_u (local.get $c1) (local.get $c2))
+                     (then (return (ref.i31 (i32.const -1)))))
+                  (if (i32.gt_u (local.get $c1) (local.get $c2))
+                     (then (return (ref.i31 (i32.const 1)))))
+                  (return (ref.i31 (i32.const 0)))))
+            ;; Byte 3 must differ (or be null)
+            (local.set $c1 (i32.shr_u (local.get $w1) (i32.const 24)))
+            (local.set $c2 (i32.shr_u (local.get $w2) (i32.const 24)))
+            (if (i32.lt_u (local.get $c1) (local.get $c2))
+               (then (return (ref.i31 (i32.const -1)))))
+            (if (i32.gt_u (local.get $c1) (local.get $c2))
+               (then (return (ref.i31 (i32.const 1)))))
+            (return (ref.i31 (i32.const 0)))))
+      ;; Handle remaining 0-3 bytes
       (loop $loop
          (if (i32.lt_u (local.get $i) (local.get $len))
             (then
