@@ -88,12 +88,19 @@ passed explicitly (here, {stdlib.js} and {std_exit.js} are the result of compili
 
 ==@@id="dune"@@ Support in dune
 
-Support for js_of_ocaml separate compilation has been added to dune
-(previously jbuilder). The separate compilation mode is selected when
-the build profile is dev, which is the default.  There is currently no
-other way to control this behavior.
+Dune has native support for both compilation modes:
 
-See [[https://dune.readthedocs.io/en/latest/jsoo.html|dune documentation]]
+* **Separate compilation** — used with the {{{dev}}} profile (default)
+* **Whole program compilation** — used with the {{{release}}} profile
+
+To switch profiles:
+{{{
+dune build --profile release
+}}}
+
+Or set the profile in your {{{dune-project}}} or {{{dune-workspace}}} file.
+
+See [[https://dune.readthedocs.io/en/latest/jsoo.html|dune documentation]] for details.
 
 ==@@id="source-maps"@@ Source-maps support
 

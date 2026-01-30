@@ -6,7 +6,8 @@ and how to properly handle errors in both directions.
 ==@@id="catching-js-exceptions"@@ Catching JavaScript exceptions in OCaml
 
 When JavaScript code throws an exception and it propagates to OCaml code,
-it is wrapped in the <<a_api subproject="js_of_ocaml"|exception Js_of_ocaml.Js_error.Exn>> exception.
+it is wrapped in the {{{Js_error.Exn}}} exception, which holds a value of type
+{{{Js_error.t}}}:
 
 <<code language="ocaml"|
 open Js_of_ocaml
@@ -15,6 +16,7 @@ let safe_parse json_str =
   try
     Some (Js._JSON##parse (Js.string json_str))
   with Js_error.Exn err ->
+    (* err has type Js_error.t *)
     Printf.eprintf "Parse error: %s\n" (Js_error.to_string err);
     None
 >>

@@ -58,8 +58,8 @@ Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime
 |= Option |= Description |
 | {{{--file <file>[:<target>]}}} | Register file to pseudo filesystem (default target: {{{/static/}}}) |
 | {{{--ofs <file>}}} | Write filesystem data to separate file |
-| {{{--extern-fs}}} | Allow accessing files outside embedded fs (default) |
-| {{{--no-extern-fs}}} | Only allow embedded filesystem access |
+| {{{--extern-fs}}} | Allow registering files from outside at runtime (default) |
+| {{{--no-extern-fs}}} | Only allow files embedded at compile time |
 
 ==@@id="env-vars"@@ Environment variables
 
@@ -121,7 +121,7 @@ Use {{{--opt <level>}}} to select a profile:
 
 For debugging:
 {{{
-js_of_ocaml --pretty --no-inline --debug-info program.byte
+js_of_ocaml --pretty --no-inline program.byte
 }}}
 
 For production:
