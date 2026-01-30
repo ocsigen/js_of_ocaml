@@ -294,10 +294,14 @@ for (const file of jsFiles) {
               } else if (declInfo.type === 'class') {
                 newLines.push(declLine.replace(`class ${providedName}`, `export class ${exportName}`));
               } else {
-                newLines.push(declLine.replace(`var ${providedName}`, `export var ${exportName}`));
+                newLines.push(declLine.replace(`var ${providedName}`, `export let ${exportName}`));
               }
             } else {
-              newLines.push(`export ${declLine}`);
+              // Replace var with let for exports
+              const exportLine = declInfo.type === 'var'
+                ? declLine.replace(/^var\s+/, 'let ')
+                : declLine;
+              newLines.push(`export ${exportLine}`);
             }
             processedLines.add(i);
             i++;
@@ -321,10 +325,14 @@ for (const file of jsFiles) {
                   } else if (searchDeclInfo.type === 'class') {
                     newLines.push(searchLine.replace(`class ${providedName}`, `export class ${exportName}`));
                   } else {
-                    newLines.push(searchLine.replace(`var ${providedName}`, `export var ${exportName}`));
+                    newLines.push(searchLine.replace(`var ${providedName}`, `export let ${exportName}`));
                   }
                 } else {
-                  newLines.push(`export ${searchLine}`);
+                  // Replace var with let for exports
+                  const exportLine = searchDeclInfo.type === 'var'
+                    ? searchLine.replace(/^var\s+/, 'let ')
+                    : searchLine;
+                  newLines.push(`export ${exportLine}`);
                 }
                 processedLines.add(i);
                 i++;

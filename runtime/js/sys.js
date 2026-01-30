@@ -103,7 +103,7 @@ export function caml_fatal_uncaught_exception(err) {
 }
 
 //Provides: jsoo_static_env
-export var jsoo_static_env = {};
+export let jsoo_static_env = {};
 
 //Provides: caml_set_static_env
 export function caml_set_static_env(k, v) {
@@ -144,7 +144,7 @@ export function caml_sys_unsafe_getenv(name) {
 }
 
 //Provides: caml_argv
-export var caml_argv = (function () {
+export let caml_argv = (function () {
   var process = globalThis.process;
   var main = "a.out";
   var args = [];
@@ -164,7 +164,7 @@ export var caml_argv = (function () {
 })();
 
 //Provides: caml_executable_name
-export var caml_executable_name = caml_argv[1];
+export let caml_executable_name = caml_argv[1];
 
 //Provides: caml_sys_get_argv
 export function caml_sys_get_argv(_unit) {
@@ -278,7 +278,7 @@ export function caml_sys_const_backend_type() {
 }
 
 //Provides: os_type
-export var os_type = jsoo_is_win32 ? "Win32" : "Unix";
+export let os_type = jsoo_is_win32 ? "Win32" : "Unix";
 
 //Provides: caml_sys_get_config const
 export function caml_sys_get_config() {
@@ -305,7 +305,7 @@ export function caml_install_signal_handler() {
 }
 
 //Provides: caml_runtime_warnings
-export var caml_runtime_warnings = 0;
+export let caml_runtime_warnings = 0;
 
 //Provides: caml_ml_enable_runtime_warnings
 export function caml_ml_enable_runtime_warnings(bool) {
@@ -337,7 +337,7 @@ export function caml_sys_is_regular_file(name) {
 }
 
 //Provides: caml_io_buffer_size
-export var caml_io_buffer_size = 65536;
+export let caml_io_buffer_size = 65536;
 
 //Provides: caml_sys_io_buffer_size
 //Version: >= 5.4

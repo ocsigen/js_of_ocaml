@@ -255,10 +255,10 @@ export function caml_bytes_set(s, i, c) {
 }
 
 //Provides: jsoo_text_encoder
-export var jsoo_text_encoder = new TextEncoder();
+export let jsoo_text_encoder = new TextEncoder();
 
 //Provides: jsoo_text_decoder
-export var jsoo_text_decoder = new TextDecoder();
+export let jsoo_text_decoder = new TextDecoder();
 
 //Provides: caml_bytes_of_utf16_jsstring
 export function caml_bytes_of_utf16_jsstring(s) {
@@ -600,7 +600,7 @@ export function caml_jsbytes_of_string(x) {
 }
 
 //Provides: jsoo_text_decoder_buff
-export var jsoo_text_decoder_buff = new ArrayBuffer(1024);
+export let jsoo_text_decoder_buff = new ArrayBuffer(1024);
 
 //Provides: caml_jsstring_of_string const
 //If: js-string

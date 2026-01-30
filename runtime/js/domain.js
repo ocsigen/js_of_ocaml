@@ -3,7 +3,7 @@ import { caml_ml_mutex_unlock } from './sync.js';
 
 //Provides: caml_domain_dls
 //Version: >= 5
-export var caml_domain_dls = [0];
+export let caml_domain_dls = [0];
 
 //Provides: caml_domain_dls_set
 //Version: >= 5
@@ -116,7 +116,7 @@ export function caml_ml_domain_index(_unit) {
 
 //Provides: caml_domain_id
 //Version: >= 5
-export var caml_domain_id = 0;
+export let caml_domain_id = 0;
 
 //Provides: caml_domain_spawn
 //Version: >= 5.2

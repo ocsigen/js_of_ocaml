@@ -4,13 +4,13 @@ import { caml_string_of_jsstring } from './mlBytes.js';
 
 //Provides: caml_lxm_M
 //Version: >= 5
-export var caml_lxm_M = caml_int64_of_string(
+export let caml_lxm_M = caml_int64_of_string(
   caml_string_of_jsstring("0xd1342543de82ef95"),
 );
 
 //Provides: caml_lxm_daba
 //Version: >= 5
-export var caml_lxm_daba = caml_int64_of_string(
+export let caml_lxm_daba = caml_int64_of_string(
   caml_string_of_jsstring("0xdaba0b6eb09322e3"),
 );
 

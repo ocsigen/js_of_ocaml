@@ -27,7 +27,7 @@ import { caml_is_continuation_tag, caml_set_oo_id } from './obj.js';
 import { caml_decompress_input } from './zstd.js';
 
 //Provides: caml_marshal_constants
-export var caml_marshal_constants = {
+export let caml_marshal_constants = {
   PREFIX_SMALL_BLOCK: 0x80,
   PREFIX_SMALL_INT: 0x40,
   PREFIX_SMALL_STRING: 0x20,
@@ -236,7 +236,7 @@ export function caml_nativeint_unmarshal(reader, size) {
 }
 
 //Provides: caml_custom_ops
-export var caml_custom_ops = {
+export let caml_custom_ops = {
   _j: {
     deserialize: caml_int64_unmarshal,
     serialize: caml_int64_marshal,
@@ -520,11 +520,11 @@ export function caml_input_value_from_reader(reader) {
 
 //Provides: caml_marshal_header_size
 //Version: < 5.1.0
-export var caml_marshal_header_size = 20;
+export let caml_marshal_header_size = 20;
 
 //Provides: caml_marshal_header_size
 //Version: >= 5.1.0
-export var caml_marshal_header_size = 16;
+export let caml_marshal_header_size = 16;
 
 //Provides: caml_marshal_data_size mutable
 export function caml_marshal_data_size(s, ofs) {
@@ -589,7 +589,7 @@ export class MlObjectTable {
 }
 
 //Provides: caml_output_val
-export var caml_output_val = (function () {
+export let caml_output_val = (function () {
   class Writer {
     constructor() {
       this.chunk = [];

@@ -58,7 +58,7 @@ import { caml_call_gen, caml_call_gen_cps, caml_named_value } from './stdlib.js'
 // - k is the low level continuation
 // - x is the exception stack
 // - e is the fiber stack of the parent fiber.
-export var caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
+export let caml_current_stack = { k: 0, x: 0, h: 0, e: 0 };
 
 //Provides: caml_push_trap
 //If: effects

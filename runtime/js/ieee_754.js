@@ -23,7 +23,7 @@ import { caml_int64_add, caml_int64_create_lo_mi_hi, caml_int64_of_int32, caml_i
 import { caml_jsbytes_of_string, caml_str_repeat, caml_string_of_jsstring } from './mlBytes.js';
 
 //Provides: jsoo_dataview
-export var jsoo_dataview = new DataView(new ArrayBuffer(8));
+export let jsoo_dataview = new DataView(new ArrayBuffer(8));
 
 //Provides: caml_int64_bits_of_float const
 export function caml_int64_bits_of_float(x) {

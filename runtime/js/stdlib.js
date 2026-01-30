@@ -130,13 +130,13 @@ export function caml_call_gen(f, args) {
 //If: effects
 //If: !doubletranslate
 //Weakdef
-export var caml_call_gen_cps = caml_call_gen;
+export let caml_call_gen_cps = caml_call_gen;
 
 //Provides: caml_call_gen_tuple (const, shallow)
 //If: effects
 //If: doubletranslate
 //Weakdef
-export var caml_call_gen_tuple = (function () {
+export let caml_call_gen_tuple = (function () {
   function caml_call_gen_direct(f, args) {
     var n = f.l >= 0 ? f.l : (f.l = f.length);
     var argsLen = args.length;
@@ -213,16 +213,16 @@ export var caml_call_gen_tuple = (function () {
 //If: effects
 //If: doubletranslate
 //Weakdef
-export var caml_call_gen = caml_call_gen_tuple[0];
+export let caml_call_gen = caml_call_gen_tuple[0];
 
 //Provides: caml_call_gen_cps
 //If: effects
 //If: doubletranslate
 //Weakdef
-export var caml_call_gen_cps = caml_call_gen_tuple[1];
+export let caml_call_gen_cps = caml_call_gen_tuple[1];
 
 //Provides: caml_named_values
-export var caml_named_values = {};
+export let caml_named_values = {};
 
 //Provides: caml_register_named_value (const,mutable)
 export function caml_register_named_value(nm, v) {
@@ -236,7 +236,7 @@ export function caml_named_value(nm) {
 }
 
 //Provides: caml_global_data
-export var caml_global_data = [0];
+export let caml_global_data = [0];
 
 //Provides: caml_build_symbols
 export function caml_build_symbols(symb) {
@@ -254,7 +254,7 @@ export function caml_build_symbols(symb) {
 }
 
 //Provides: jsoo_toplevel_reloc
-export var jsoo_toplevel_reloc = undefined;
+export let jsoo_toplevel_reloc = undefined;
 
 //Provides: caml_register_global (const, shallow, const)
 export function caml_register_global(n, v, name_opt) {

@@ -53,7 +53,7 @@ export function caml_md5_string(s, ofs, len) {
 }
 
 //Provides: caml_MD5Transform
-export var caml_MD5Transform = (function () {
+export let caml_MD5Transform = (function () {
   function add(x, y) {
     return (x + y) | 0;
   }

@@ -22,7 +22,7 @@ import { caml_lex_array } from './lexing.js';
 import { MlBytes, caml_jsbytes_of_string, caml_jsstring_of_string, caml_ml_string_length, caml_string_of_jsbytes } from './mlBytes.js';
 
 //Provides: caml_parser_trace
-export var caml_parser_trace = 0;
+export let caml_parser_trace = 0;
 
 //Provides: caml_parse_engine
 export function caml_parse_engine(tables, env, cmd, arg) {

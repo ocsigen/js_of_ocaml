@@ -30,7 +30,7 @@ import { caml_bytes_of_string, caml_bytes_of_uint8_array, caml_create_bytes, cam
 import { caml_io_buffer_size, caml_raise_sys_error } from './sys.js';
 
 //Provides: caml_sys_fds
-export var caml_sys_fds = new Array(3);
+export let caml_sys_fds = new Array(3);
 
 //Provides: caml_sys_close
 export function caml_sys_close(fd) {
@@ -153,7 +153,7 @@ class caml_ml_channels_state {
   }
 }
 
-export var caml_ml_channels = new caml_ml_channels_state();
+export let caml_ml_channels = new caml_ml_channels_state();
 
 //Provides: caml_ml_channel_get
 export function caml_ml_channel_get(id) {

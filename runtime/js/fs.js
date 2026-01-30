@@ -45,7 +45,7 @@ export function caml_get_root(path) {
 }
 
 //Provides: caml_root
-export var caml_root =
+export let caml_root =
   caml_get_root(caml_current_dir) ||
   caml_failwith("unable to compute caml_root");
 
@@ -77,7 +77,7 @@ function make_path_is_absolute() {
   }
   return jsoo_is_win32 ? win32 : posix;
 }
-export var path_is_absolute = make_path_is_absolute();
+export let path_is_absolute = make_path_is_absolute();
 
 //Provides: caml_make_path
 export function caml_make_path(name) {
@@ -106,7 +106,7 @@ export function caml_make_path(name) {
 }
 
 //Provides:jsoo_mount_point
-export var jsoo_mount_point = [];
+export let jsoo_mount_point = [];
 if (fs_node_supported()) {
   jsoo_mount_point.push({
     path: caml_root,

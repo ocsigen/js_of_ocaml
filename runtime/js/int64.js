@@ -23,7 +23,7 @@ import { caml_parse_digit, caml_parse_sign_and_base } from './ints.js';
 import { caml_ml_string_length, caml_str_repeat, caml_string_unsafe_get } from './mlBytes.js';
 
 //Provides: caml_int64_offset
-export var caml_int64_offset = Math.pow(2, -24);
+export let caml_int64_offset = Math.pow(2, -24);
 
 //Provides: MlInt64
 export class MlInt64 {

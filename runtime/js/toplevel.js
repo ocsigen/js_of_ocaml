@@ -83,7 +83,7 @@ export function jsoo_get_runtime_aliases() {
 }
 
 //Provides: jsoo_toplevel_compile
-export var jsoo_toplevel_compile = undefined;
+export let jsoo_toplevel_compile = undefined;
 
 //Provides: jsoo_toplevel_init_compile
 export function jsoo_toplevel_init_compile(f) {

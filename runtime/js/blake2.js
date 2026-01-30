@@ -2,7 +2,7 @@ import { caml_bytes_of_jsbytes, caml_bytes_of_string, caml_jsbytes_of_string, ca
 
 //Provides: blake2b
 //Version: >= 5.2
-export var blake2b = (function () {
+export let blake2b = (function () {
   // Blake2B in pure Javascript
   // Adapted from the reference implementation in RFC7693
   // Ported to Javascript by DC - https://github.com/dcposch

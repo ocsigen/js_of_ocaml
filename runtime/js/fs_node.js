@@ -26,7 +26,7 @@ import { caml_raise_sys_error } from './sys.js';
 import { caml_raise_system_error, make_unix_err_args } from './unix.js';
 
 //Provides: jsoo_is_win32
-export var jsoo_is_win32 =
+export let jsoo_is_win32 =
   globalThis.Deno?.build?.os === "windows" ||
   globalThis.process?.platform === "win32";
 

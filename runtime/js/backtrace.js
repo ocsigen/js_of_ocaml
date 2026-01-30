@@ -19,7 +19,7 @@ import { caml_failwith, caml_invalid_argument } from './fail.js';
 import { jsoo_sys_getenv } from './sys.js';
 
 //Provides: caml_record_backtrace_env_flag
-export var caml_record_backtrace_env_flag = FLAG("with-js-error");
+export let caml_record_backtrace_env_flag = FLAG("with-js-error");
 
 (function () {
   var r = jsoo_sys_getenv("OCAMLRUNPARAM");
@@ -37,7 +37,7 @@ export var caml_record_backtrace_env_flag = FLAG("with-js-error");
 })();
 
 //Provides: caml_record_backtrace_runtime_flag
-export var caml_record_backtrace_runtime_flag = caml_record_backtrace_env_flag;
+export let caml_record_backtrace_runtime_flag = caml_record_backtrace_env_flag;
 
 //Provides: caml_ml_debug_info_status const
 export function caml_ml_debug_info_status() {

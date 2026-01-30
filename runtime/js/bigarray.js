@@ -48,7 +48,7 @@ export function caml_ba_get_size(dims) {
 }
 
 //Provides: caml_unpackFloat16
-export var caml_unpackFloat16 = (function () {
+export let caml_unpackFloat16 = (function () {
   var pow = Math.pow;
 
   var EXP_MASK16 = 31; // 2 ** 5 - 1
@@ -78,7 +78,7 @@ export var caml_unpackFloat16 = (function () {
 })();
 
 //Provides: caml_packFloat16
-export var caml_packFloat16 = (function () {
+export let caml_packFloat16 = (function () {
   const INVERSE_OF_EPSILON = 1 / Number.EPSILON;
 
   function roundTiesToEven(num) {
@@ -250,7 +250,7 @@ export function caml_ba_create_buffer(kind, size) {
 }
 
 //Provides: caml_ba_custom_name
-export var caml_ba_custom_name = "_bigarr02";
+export let caml_ba_custom_name = "_bigarr02";
 
 //Provides: Ml_Bigarray
 export class Ml_Bigarray {

@@ -23,13 +23,13 @@ import { caml_array_blit } from './array.js';
 import { caml_obj_dup } from './obj.js';
 
 //Provides: caml_ephe_key_offset
-export var caml_ephe_key_offset = 3;
+export let caml_ephe_key_offset = 3;
 
 //Provides: caml_ephe_data_offset
-export var caml_ephe_data_offset = 2;
+export let caml_ephe_data_offset = 2;
 
 //Provides: caml_ephe_none
-export var caml_ephe_none = { caml_ephe_none: 0 };
+export let caml_ephe_none = { caml_ephe_none: 0 };
 
 //Provides: caml_ephe_set_key
 export function caml_ephe_set_key(x, i, v) {

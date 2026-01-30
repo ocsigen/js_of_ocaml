@@ -1,6 +1,6 @@
 //Provides: caml_custom_event_index
 //Version: >= 5.1
-export var caml_custom_event_index = 0;
+export let caml_custom_event_index = 0;
 
 //Provides: caml_runtime_events_user_register
 //Version: >= 5.1

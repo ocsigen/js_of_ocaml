@@ -1,6 +1,6 @@
 //Provides: zstd_decompress
 //Version: >= 5.1
-export var zstd_decompress = (function () {
+export let zstd_decompress = (function () {
   // aliases for shorter compressed code (most minifers don't do this)
   var ab = ArrayBuffer,
     u8 = Uint8Array,
@@ -700,21 +700,21 @@ export var zstd_decompress = (function () {
 
 //Provides: caml_decompress_input
 //Version: < 5.1.0
-export var caml_decompress_input = null;
+export let caml_decompress_input = null;
 
 //Provides: caml_decompress_input
 //Version: >= 5.1.0
 //Version: < 5.1.1
-export var caml_decompress_input = zstd_decompress;
+export let caml_decompress_input = zstd_decompress;
 
 //Provides: caml_decompress_input
 //Version: >= 5.1.1
 //Version: < 5.2.0
-export var caml_decompress_input = null;
+export let caml_decompress_input = null;
 
 //Provides: caml_decompress_input
 //Version: >= 5.2
-export var caml_decompress_input = zstd_decompress;
+export let caml_decompress_input = zstd_decompress;
 
 //Provides: caml_zstd_initialize
 //Version: >= 5.1.1

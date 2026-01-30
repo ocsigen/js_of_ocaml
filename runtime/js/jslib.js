@@ -71,7 +71,7 @@ export function caml_trampoline_return(f, args, direct) {
 
 //Provides:caml_stack_depth
 //If: effects
-export var caml_stack_depth = 0;
+export let caml_stack_depth = 0;
 
 //Provides:caml_stack_check_depth
 //If: effects
@@ -81,7 +81,7 @@ export function caml_stack_check_depth() {
 
 //Provides: caml_callback
 //If: !effects
-export var caml_callback = caml_call_gen;
+export let caml_callback = caml_call_gen;
 
 //Provides: caml_callback
 //If: effects
@@ -120,7 +120,7 @@ export function caml_callback(f, args) {
 //Provides: caml_callback
 //If: effects
 //If: doubletranslate
-export var caml_callback = caml_call_gen;
+export let caml_callback = caml_call_gen;
 
 //Provides: caml_is_js
 export function caml_is_js() {

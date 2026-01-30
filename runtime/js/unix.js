@@ -120,7 +120,7 @@ export function caml_unix_isatty(_fileDescriptor) {
 }
 
 //Provides: unix_error
-export var unix_error = [
+export let unix_error = [
   /* ===Unix.error===
    *
    * This array is in order of the variant in OCaml

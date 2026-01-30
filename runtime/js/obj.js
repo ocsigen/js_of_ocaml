@@ -143,7 +143,7 @@ export function caml_lazy_make_forward(v) {
 }
 
 //Provides: caml_method_cache
-export var caml_method_cache = [];
+export let caml_method_cache = [];
 
 //Provides: caml_oo_cache_id const
 export function caml_oo_cache_id() {
@@ -188,7 +188,7 @@ export function caml_get_public_method(obj, tag) {
 }
 
 //Provides: caml_oo_last_id
-export var caml_oo_last_id = 0;
+export let caml_oo_last_id = 0;
 
 //Provides: caml_set_oo_id
 export function caml_set_oo_id(b) {
