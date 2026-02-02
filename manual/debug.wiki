@@ -53,7 +53,7 @@ See https://developer.chrome.com/docs/devtools/javascript for details.
 
 === Programmatic breakpoints
 
-Insert breakpoints in your OCaml code using <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.debugger>>:
+Insert breakpoints in your OCaml code using <<a_api subproject="js_of_ocaml" text="Js.debugger"|val Js_of_ocaml.Js.debugger>>:
 
 <<code language="ocaml"|
 let my_function x =

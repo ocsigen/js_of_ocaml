@@ -80,13 +80,19 @@ Link to a specific anchor within another chapter using `fragment`:
 Link to API documentation with type specifier (`val`, `module`, `type`, `exception`):
 
 ```
-<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.string>>
-<<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js.Opt>>
-<<a_api subproject="js_of_ocaml"|type Js_of_ocaml.Js.t>>
-<<a_api subproject="js_of_ocaml"|exception Js_of_ocaml.Js_error.Exn>>
+<<a_api subproject="js_of_ocaml" text="Js.string"|val Js_of_ocaml.Js.string>>
+<<a_api subproject="js_of_ocaml" text="Js.Opt"|module Js_of_ocaml.Js.Opt>>
+<<a_api subproject="js_of_ocaml" text="Js.t"|type Js_of_ocaml.Js.t>>
+<<a_api subproject="js_of_ocaml" text="Js_error.Exn"|exception Js_of_ocaml.Js_error.Exn>>
 ```
 
 Common subprojects: `js_of_ocaml`, `js_of_ocaml-lwt`, `js_of_ocaml-toplevel`.
+
+Use `text="..."` to customize the displayed link text:
+
+```
+<<a_api subproject="js_of_ocaml" text="Js.string"|val Js_of_ocaml.Js.string>>
+```
 
 ### External links
 

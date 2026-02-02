@@ -5,7 +5,7 @@ accessible from JavaScript code.
 
 ==@@id="basic-export"@@ Basic export with {{{Js.export}}}
 
-Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> to export a single named value:
+Use <<a_api subproject="js_of_ocaml" text="Js.export"|val Js_of_ocaml.Js.export>> to export a single named value:
 
 <<code language="ocaml"|
 open Js_of_ocaml
@@ -28,7 +28,7 @@ myMathLib.zero;         // 0
 
 ==@@id="export-all"@@ Exporting multiple values with {{{Js.export_all}}}
 
-Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> to export all properties of an object as top-level
+Use <<a_api subproject="js_of_ocaml" text="Js.export_all"|val Js_of_ocaml.Js.export_all>> to export all properties of an object as top-level
 exports:
 
 <<code language="ocaml"|
@@ -76,7 +76,7 @@ factorial(5);      // 120
 
 ==@@id="type-considerations"@@ Type considerations
 
-Exported functions are automatically wrapped with <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.wrap_callback>>.
+Exported functions are automatically wrapped with <<a_api subproject="js_of_ocaml" text="Js.wrap_callback"|val Js_of_ocaml.Js.wrap_callback>>.
 However, you must convert OCaml values to their JavaScript equivalents (strings
 with {{{Js.string}}}, booleans with {{{Js.bool}}}, etc.). See
 <<a_manual chapter="javascript-interop" fragment="conversions"|type conversions>>
@@ -85,7 +85,7 @@ for the full list.
 ==@@id="callbacks"@@ Handling callbacks from JavaScript
 
 When JavaScript passes a callback to your OCaml code, you receive a JavaScript
-function. Use <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.Unsafe.fun_call>> to invoke it:
+function. Use <<a_api subproject="js_of_ocaml" text="Js.Unsafe.fun_call"|val Js_of_ocaml.Js.Unsafe.fun_call>> to invoke it:
 
 <<code language="ocaml"|
 let () =
@@ -108,7 +108,7 @@ utils.forEach([1, 2, 3], function(x) { console.log(x); });
 
 ==@@id="nodejs"@@ Using with Node.js
 
-<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export>> and <<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.export_all>> automatically use {{{module.exports}}}
+<<a_api subproject="js_of_ocaml" text="Js.export"|val Js_of_ocaml.Js.export>> and <<a_api subproject="js_of_ocaml" text="Js.export_all"|val Js_of_ocaml.Js.export_all>> automatically use {{{module.exports}}}
 when running in Node.js:
 
 <<code language="ocaml"|
