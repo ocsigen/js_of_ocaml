@@ -192,8 +192,8 @@ let%expect_test "static eval of tags (optimized switch)" =
        }
        var Stdlib_Random = runtime.caml_get_global_data().Stdlib__Random;
        caml_call1(Stdlib_Random[5], 3);
-       var foobar = 3, export$ = [0, foobar, foobar], Test = [0, foobar, export$];
-       runtime.caml_register_global(3, Test, "Test");
+       var foobar = 3;
+       runtime.caml_register_global(3, [0, foobar, [0, foobar, foobar]], "Test");
        return;
       }
       (globalThis));
@@ -233,8 +233,8 @@ let%expect_test "static eval of tags" =
        }
        var Stdlib_Random = runtime.caml_get_global_data().Stdlib__Random;
        caml_call1(Stdlib_Random[5], 3);
-       var foobar = 3, export$ = [0, foobar, foobar], Test = [0, foobar, export$];
-       runtime.caml_register_global(3, Test, "Test");
+       var foobar = 3;
+       runtime.caml_register_global(3, [0, foobar, [0, foobar, foobar]], "Test");
        return;
       }
       (globalThis));
@@ -286,19 +286,13 @@ let%expect_test "static eval int prims" =
        }
        var Stdlib_Random = runtime.caml_get_global_data().Stdlib__Random;
        caml_call1(Stdlib_Random[5], 3);
-       var lt = 1;
        caml_call1(Stdlib_Random[5], 3);
-       var le = 1;
        caml_call1(Stdlib_Random[5], 3);
-       var eq = 0;
        caml_call1(Stdlib_Random[5], 3);
-       var neq = 1;
        caml_call1(Stdlib_Random[5], 3);
-       var
-        ult = 1,
-        export$ = [0, lt, le, eq, neq, ult],
-        Test = [0, lt, le, eq, neq, ult, export$];
-       runtime.caml_register_global(1, Test, "Test");
+       var lt = 1, le = 1, eq = 0, neq = 1, ult = 1;
+       runtime.caml_register_global
+        (1, [0, lt, le, eq, neq, ult, [0, lt, le, eq, neq, ult]], "Test");
        return;
       }
       (globalThis));

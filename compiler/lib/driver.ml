@@ -551,6 +551,7 @@ let pack ~wrap_with_fun ~standalone { Linker.runtime_code = js; always_required_
       js)
     else js
   in
+  let js = if Config.Flag.constant_sinking () then Js_constant_sinking.f js else js in
   (* pack *)
   let wrap_in_iife ~use_strict js =
     let var ident e = J.variable_declaration [ J.ident ident, (e, J.N) ], J.N in

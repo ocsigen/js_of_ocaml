@@ -90,6 +90,21 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/constant_sinking.ml
+ (name constant_sinking_15)
+ (enabled_if true)
+ (modules constant_sinking)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/direct_calls.ml
  (name direct_calls_15)
  (enabled_if true)

@@ -142,7 +142,6 @@ let%expect_test "direct calls with --effects=double-translation" =
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        var
-        dummy = 0,
         global_data = runtime.caml_get_global_data(),
         _a_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
         cst_a$0 = caml_string_of_jsbytes("a"),
@@ -153,7 +152,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        function test1(param){
         function f(g, x){
          l[1] = [0, function(param){return 0;}, l[1]];
-         try{caml_call1(g, dummy); return;}
+         try{caml_call1(g, 0); return;}
          catch(e$0){
           var e = caml_wrap_exception(e$0);
           throw caml_maybe_attach_backtrace(e, 0);
@@ -216,7 +215,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        var test2 = caml_cps_closure(test2$0, test2$1);
        function test3(x){
         function F(symbol){
-         var r = [0, 0], for$ = 0;
+         var for$ = 0, r = [0, 0];
          for(;;){
           r[1]++;
           var _i_ = for$ + 1 | 0;
@@ -239,7 +238,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        function F(){
         function F(symbol){
-         var r = [0, 0], for$ = 0;
+         var for$ = 0, r = [0, 0];
          for(;;){
           r[1]++;
           var _i_ = for$ + 1 | 0;
@@ -307,10 +306,9 @@ let%expect_test "direct calls with --effects=double-translation" =
                           (g$0, - 5, function(_e_){return cont(0);});
                  });
        }
-       var
-        test5 = caml_cps_closure(test5$0, test5$1),
-        Test = [0, l, test1, test2, test3, test4, test5];
-       runtime.caml_register_global(7, Test, "Test");
+       var test5 = caml_cps_closure(test5$0, test5$1);
+       runtime.caml_register_global
+        (7, [0, l, test1, test2, test3, test4, test5], "Test");
        return;
       }
       (globalThis));

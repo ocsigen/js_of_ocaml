@@ -33,8 +33,7 @@ Printf.printf "%d\n" (f 3)
         (Stdlib_Printf[2],
          [[0, [4, 0, 0, 0, [12, 10, 0]], runtime.caml_string_of_jsbytes("%d\n")],
           _a_]);
-       var Test = [0];
-       runtime.caml_register_global(2, Test, "Test");
+       runtime.caml_register_global(2, [0], "Test");
        return;
       }
       (globalThis));

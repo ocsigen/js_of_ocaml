@@ -4,8 +4,8 @@
 (function
   (globalThis){
    "use strict";
-   var runtime = globalThis.jsoo_runtime, Shapes = [0];
-   runtime.caml_register_global(0, Shapes, "Shapes");
+   var runtime = globalThis.jsoo_runtime;
+   runtime.caml_register_global(0, [0], "Shapes");
    return;
   }
   (globalThis));
@@ -19,8 +19,7 @@
    function f(a, param){
      /*<<compiler/tests-full/m1.ml:1:14>>*/ return 0;
     /*<<compiler/tests-full/m1.ml:1:16>>*/ }
-   var Shapes_M1 =  /*<<?>>*/ [0, f];
-   runtime.caml_register_global(0, Shapes_M1, "Shapes__M1");
+    /*<<?>>*/ runtime.caml_register_global(0, [0, f], "Shapes__M1");
    return;
   }
   (globalThis));
@@ -33,13 +32,11 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
-    Stdlib = runtime.caml_get_global_data().Stdlib,
-    cst = "";
+    Stdlib = runtime.caml_get_global_data().Stdlib;
    function f(param){
-     /*<<compiler/tests-full/m2.ml:1:11>>*/ return Stdlib[46].call(null, cst) /*<<compiler/tests-full/m2.ml:1:27>>*/ ;
+     /*<<compiler/tests-full/m2.ml:1:11>>*/ return Stdlib[46].call(null, "") /*<<compiler/tests-full/m2.ml:1:27>>*/ ;
    }
-   var Shapes_M2 =  /*<<?>>*/ [0, f];
-   runtime.caml_register_global(2, Shapes_M2, "Shapes__M2");
+    /*<<?>>*/ runtime.caml_register_global(2, [0, f], "Shapes__M2");
    return;
   }
   (globalThis));
@@ -71,10 +68,9 @@
                       (null, 0) /*<<compiler/tests-full/m3.ml:1:66>>*/ ;
              };
    }
-   var
-    x =  /*<<compiler/tests-full/m3.ml:3:8>>*/ caml_call2(f(0), 0, 0),
-    Shapes_M3 =  /*<<compiler/tests-full/m3.ml:3:18>>*/ [0, f, x];
-   runtime.caml_register_global(3, Shapes_M3, "Shapes__M3");
+   var x =  /*<<compiler/tests-full/m3.ml:3:8>>*/ caml_call2(f(0), 0, 0);
+    /*<<compiler/tests-full/m3.ml:3:18>>*/ runtime.caml_register_global
+    (3, [0, f, x], "Shapes__M3");
    return;
    /*<<?>>*/ }
   (globalThis));

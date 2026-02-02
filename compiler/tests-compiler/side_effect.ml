@@ -69,7 +69,6 @@ let%expect_test _ =
         global_data = runtime.caml_get_global_data(),
         Stdlib_Printf = global_data.Stdlib__Printf,
         Stdlib = global_data.Stdlib,
-        i = [0, 0],
         cst_Success = caml_string_of_jsbytes("Success!");
        function log_success(param){return caml_call1(Stdlib[46], cst_Success);}
        var
@@ -84,7 +83,8 @@ let%expect_test _ =
            [11,
             caml_string_of_jsbytes("Side effect: "),
             [2, 0, [12, 10, [10, 0]]]],
-           caml_string_of_jsbytes("Side effect: %s\n%!")];
+           caml_string_of_jsbytes("Side effect: %s\n%!")],
+        i = [0, 0];
        function side_effect(yes, label){
         if(yes){caml_call2(Stdlib_Printf[2], _a_, label); i[1]++;}
         return 0;
@@ -114,8 +114,8 @@ let%expect_test _ =
         log_success(0);
        else
         caml_call1(log_failure, cst_side_effect_computed_twice);
-       var Test = [0, i, log_success, log_failure, side_effect, f];
-       runtime.caml_register_global(10, Test, "Test");
+       runtime.caml_register_global
+        (10, [0, i, log_success, log_failure, side_effect, f], "Test");
        return;
       }
       (globalThis));

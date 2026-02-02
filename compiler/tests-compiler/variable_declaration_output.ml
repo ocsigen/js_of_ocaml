@@ -23,6 +23,7 @@ let%expect_test _ =
   let program =
     compile_and_parse
       ~use_js_string:true
+      ~flags:[ "--disable=constant-sinking" ]
       {|
     type js_string
     external js_string : string -> js_string = "caml_jsstring_of_string"
@@ -58,12 +59,14 @@ let%expect_test _ =
     var cx = [254, NaN, NaN, Infinity, - Infinity, 0., - 0.];
     //end
     var symbol_op = [0, symbol_bind, symbol_map, symbol];
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let program =
     compile_and_parse
       ~use_js_string:false
+      ~flags:[ "--disable=constant-sinking" ]
       {|
     type js_string
     external js_string : string -> js_string = "caml_jsstring_of_string"
@@ -101,7 +104,8 @@ let%expect_test _ =
     var cx = [254, NaN, NaN, Infinity, - Infinity, 0., - 0.];
     //end
     var symbol_op = [0, symbol_bind, symbol_map, symbol];
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let compile ~enable s =

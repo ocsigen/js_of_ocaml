@@ -124,6 +124,7 @@ let compile_and_parse ?flags ?use_js_string s =
 let%expect_test "object" =
   let program =
     compile_and_parse
+      ~flags:[ "--disable=constant-sinking" ]
       {|
       let obj_literal =
         Js.obj
@@ -151,7 +152,8 @@ let%expect_test "object" =
       "\u{1ee62}": 1,
       "🐫": 1,
       𞹢: 1});
-    //end |}]
+    //end
+    |}]
 
 let%expect_test "get" =
   let program =
@@ -289,6 +291,7 @@ let%expect_test "meth_call2" =
 let%expect_test "jstring / bytestring " =
   let program =
     compile_and_parse
+      ~flags:[ "--disable=constant-sinking" ]
       {|
       let s1 = Js.string "a"
       let s2 = Js.bytestring "a"
@@ -309,7 +312,8 @@ let%expect_test "jstring / bytestring " =
     var s3 = "npiπ";
     //end
     var s4 = "npi\xcf\x80";
-    //end |}]
+    //end
+    |}]
 
 let string_sharing_prog =
   {|
@@ -346,52 +350,34 @@ let%expect_test "string sharing" =
     (function(globalThis){
        "use strict";
        var
+        runtime = globalThis.jsoo_runtime,
         str_abc_def = "abc\\def",
         str_npi = "npiπ",
         str_abcdef = "abcdef",
-        str_npi_xcf_x80 = "npi\xcf\x80",
-        runtime = globalThis.jsoo_runtime,
-        s3 = str_abcdef,
-        s6 = str_npi_xcf_x80,
-        s9 = str_abc_def,
-        s3_bis = str_abcdef,
-        s6_bis = str_npi_xcf_x80,
-        s9_bis = str_abc_def,
-        Js = [0],
-        s1 = str_abcdef,
-        s2 = str_abcdef,
-        s4 = str_npi,
-        s5 = str_npi_xcf_x80,
-        s7 = str_abc_def,
-        s8 = str_abc_def,
-        s1_bis = str_abcdef,
-        s2_bis = str_abcdef,
-        s4_bis = str_npi,
-        s5_bis = str_npi_xcf_x80,
-        s7_bis = str_abc_def,
-        s8_bis = str_abc_def,
-        Test =
-          [0,
-           Js,
-           s1,
-           s2,
-           s3,
-           s4,
-           s5,
-           s6,
-           s7,
-           s8,
-           s9,
-           s1_bis,
-           s2_bis,
-           s3_bis,
-           s4_bis,
-           s5_bis,
-           s6_bis,
-           s7_bis,
-           s8_bis,
-           s9_bis];
-       runtime.caml_register_global(18, Test, "Test");
+        str_npi_xcf_x80 = "npi\xcf\x80";
+       runtime.caml_register_global
+        (18,
+         [0,
+          [0],
+          str_abcdef,
+          str_abcdef,
+          str_abcdef,
+          str_npi,
+          str_npi_xcf_x80,
+          str_npi_xcf_x80,
+          str_abc_def,
+          str_abc_def,
+          str_abc_def,
+          str_abcdef,
+          str_abcdef,
+          str_abcdef,
+          str_npi,
+          str_npi_xcf_x80,
+          str_npi_xcf_x80,
+          str_abc_def,
+          str_abc_def,
+          str_abc_def],
+         "Test");
        return;
       }
       (globalThis));
@@ -400,7 +386,6 @@ let%expect_test "string sharing" =
   print_program (program ~share:false ~js_string:true);
   [%expect
     {|
-
     (function(globalThis){
        "use strict";
        var
@@ -408,105 +393,76 @@ let%expect_test "string sharing" =
         cst_npi = "npi\xcf\x80",
         cst_abc_def = "abc\\def",
         cst_abcdef = "abcdef",
-        cst_npi$0 = "npiπ",
-        s3 = cst_abcdef,
-        s6 = cst_npi,
-        s9 = cst_abc_def,
-        s3_bis = cst_abcdef,
-        s6_bis = cst_npi,
-        s9_bis = cst_abc_def,
-        Js = [0],
-        s1 = cst_abcdef,
-        s2 = cst_abcdef,
-        s4 = cst_npi$0,
-        s5 = cst_npi,
-        s7 = cst_abc_def,
-        s8 = cst_abc_def,
-        s1_bis = cst_abcdef,
-        s2_bis = cst_abcdef,
-        s4_bis = cst_npi$0,
-        s5_bis = cst_npi,
-        s7_bis = cst_abc_def,
-        s8_bis = cst_abc_def,
-        Test =
-          [0,
-           Js,
-           s1,
-           s2,
-           s3,
-           s4,
-           s5,
-           s6,
-           s7,
-           s8,
-           s9,
-           s1_bis,
-           s2_bis,
-           s3_bis,
-           s4_bis,
-           s5_bis,
-           s6_bis,
-           s7_bis,
-           s8_bis,
-           s9_bis];
-       runtime.caml_register_global(18, Test, "Test");
+        cst_npi$0 = "npiπ";
+       runtime.caml_register_global
+        (18,
+         [0,
+          [0],
+          cst_abcdef,
+          cst_abcdef,
+          cst_abcdef,
+          cst_npi$0,
+          cst_npi,
+          cst_npi,
+          cst_abc_def,
+          cst_abc_def,
+          cst_abc_def,
+          cst_abcdef,
+          cst_abcdef,
+          cst_abcdef,
+          cst_npi$0,
+          cst_npi,
+          cst_npi,
+          cst_abc_def,
+          cst_abc_def,
+          cst_abc_def],
+         "Test");
        return;
       }
       (globalThis));
-    //end |}];
+    //end
+    |}];
   print_program (program ~share:true ~js_string:false);
   [%expect
     {|
     (function(globalThis){
        "use strict";
        var
-        str_abc_def = "abc\\def",
-        str_npi = "npiπ",
-        str_abcdef = "abcdef",
-        str_npi_xcf_x80 = "npi\xcf\x80",
         runtime = globalThis.jsoo_runtime,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
+        str_abcdef = "abcdef",
         s3 = caml_string_of_jsbytes(str_abcdef),
+        str_npi_xcf_x80 = "npi\xcf\x80",
         s6 = caml_string_of_jsbytes(str_npi_xcf_x80),
+        str_abc_def = "abc\\def",
         s9 = caml_string_of_jsbytes(str_abc_def),
         s3_bis = caml_string_of_jsbytes(str_abcdef),
         s6_bis = caml_string_of_jsbytes(str_npi_xcf_x80),
         s9_bis = caml_string_of_jsbytes(str_abc_def),
-        Js = [0],
-        s1 = str_abcdef,
-        s2 = str_abcdef,
-        s4 = str_npi,
-        s5 = str_npi_xcf_x80,
-        s7 = str_abc_def,
-        s8 = str_abc_def,
-        s1_bis = str_abcdef,
-        s2_bis = str_abcdef,
-        s4_bis = str_npi,
-        s5_bis = str_npi_xcf_x80,
-        s7_bis = str_abc_def,
-        s8_bis = str_abc_def,
-        Test =
-          [0,
-           Js,
-           s1,
-           s2,
-           s3,
-           s4,
-           s5,
-           s6,
-           s7,
-           s8,
-           s9,
-           s1_bis,
-           s2_bis,
-           s3_bis,
-           s4_bis,
-           s5_bis,
-           s6_bis,
-           s7_bis,
-           s8_bis,
-           s9_bis];
-       runtime.caml_register_global(18, Test, "Test");
+        str_npi = "npiπ";
+       runtime.caml_register_global
+        (18,
+         [0,
+          [0],
+          str_abcdef,
+          str_abcdef,
+          s3,
+          str_npi,
+          str_npi_xcf_x80,
+          s6,
+          str_abc_def,
+          str_abc_def,
+          s9,
+          str_abcdef,
+          str_abcdef,
+          s3_bis,
+          str_npi,
+          str_npi_xcf_x80,
+          s6_bis,
+          str_abc_def,
+          str_abc_def,
+          s9_bis],
+         "Test");
        return;
       }
       (globalThis));
@@ -525,43 +481,32 @@ let%expect_test "string sharing" =
         s9 = caml_string_of_jsbytes("abc\\def"),
         s3_bis = caml_string_of_jsbytes("abcdef"),
         s6_bis = caml_string_of_jsbytes("npi\xcf\x80"),
-        s9_bis = caml_string_of_jsbytes("abc\\def"),
-        Js = [0],
-        s1 = "abcdef",
-        s2 = "abcdef",
-        s4 = "npiπ",
-        s5 = "npi\xcf\x80",
-        s7 = "abc\\def",
-        s8 = "abc\\def",
-        s1_bis = "abcdef",
-        s2_bis = "abcdef",
-        s4_bis = "npiπ",
-        s5_bis = "npi\xcf\x80",
-        s7_bis = "abc\\def",
-        s8_bis = "abc\\def",
-        Test =
-          [0,
-           Js,
-           s1,
-           s2,
-           s3,
-           s4,
-           s5,
-           s6,
-           s7,
-           s8,
-           s9,
-           s1_bis,
-           s2_bis,
-           s3_bis,
-           s4_bis,
-           s5_bis,
-           s6_bis,
-           s7_bis,
-           s8_bis,
-           s9_bis];
-       runtime.caml_register_global(18, Test, "Test");
+        s9_bis = caml_string_of_jsbytes("abc\\def");
+       runtime.caml_register_global
+        (18,
+         [0,
+          [0],
+          "abcdef",
+          "abcdef",
+          s3,
+          "npiπ",
+          "npi\xcf\x80",
+          s6,
+          "abc\\def",
+          "abc\\def",
+          s9,
+          "abcdef",
+          "abcdef",
+          s3_bis,
+          "npiπ",
+          "npi\xcf\x80",
+          s6_bis,
+          "abc\\def",
+          "abc\\def",
+          s9_bis],
+         "Test");
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

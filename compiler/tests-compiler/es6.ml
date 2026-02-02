@@ -18,12 +18,12 @@ let f x =
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
-        f = x=>{var g = y=>(x + y | 0) + 7 | 0; return g;},
-        Test = [0, f];
-       runtime.caml_register_global(0, Test, "Test");
+        f = x=>{var g = y=>(x + y | 0) + 7 | 0; return g;};
+       runtime.caml_register_global(0, [0, f], "Test");
        return;})
      (globalThis);
-    //end |}];
+    //end
+    |}];
   let program = Util.compile_and_parse ?effects:None ~pretty:false ~flags prog in
   Util.print_program program;
   [%expect
