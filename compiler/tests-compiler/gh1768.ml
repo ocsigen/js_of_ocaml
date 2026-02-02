@@ -67,8 +67,7 @@ let () =
        var _b_ = [0, caml_string_of_jsbytes("test.ml"), 8, 2];
        if(10 !== caml_call1(g(), 3))
         throw caml_maybe_attach_backtrace([0, Assert_failure, _b_], 1);
-       var Test = [0];
-       runtime.caml_register_global(3, Test, "Test");
+       runtime.caml_register_global(3, [0], "Test");
        return;
       }
       (globalThis));

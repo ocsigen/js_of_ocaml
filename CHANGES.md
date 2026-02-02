@@ -16,6 +16,7 @@
 * Lib: allow to reference values from the runtime (#2086)
 * Lib: add `Dom_html.onload` for WASM-safe load handling (#1948)
 * Runtime: make eval functions more robust (#2108)
+* Compiler: added a constant sinking pass (#2167)
 
 
 ## Bug fixes

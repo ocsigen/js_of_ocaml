@@ -77,13 +77,12 @@ let%expect_test _ =
       5:    "use strict";
       6:    var runtime = globalThis.jsoo_runtime;
       7:    function id(x){return x;}
-      8:    var Test = [0, id];
-      9:    runtime.caml_register_global(0, Test, "Test");
-     10:    return;
-     11:   }
-     12:   (globalThis));
-     13:
-     14: //# sourceMappingURL=test.map
+      8:    runtime.caml_register_global(0, [0, id], "Test");
+      9:    return;
+     10:   }
+     11:   (globalThis));
+     12:
+     13: //# sourceMappingURL=test.map
     /builtin/blackbox.ml:1:0 -> 6:7
     /builtin/blackbox.ml:1:0 -> 6:17
     /builtin/blackbox.ml:1:0 -> 7:0
@@ -92,8 +91,7 @@ let%expect_test _ =
     /dune-root/test.ml:1:11 -> 7:18
     /dune-root/test.ml:1:12 -> 7:27
     /dune-root/test.ml:1:12 -> 8:0
-    /dune-root/test.ml:1:12 -> 8:7
-    /builtin/blackbox.ml:1:0 -> 8:14
+    /builtin/blackbox.ml:1:0 -> 8:3
     |}]
 
 let%expect_test _ =

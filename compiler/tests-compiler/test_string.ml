@@ -53,13 +53,14 @@ let (_ : string) = here ()
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
-        cst_a = "a",
-        cst_b = "b",
         caml_string_concat = runtime.caml_string_concat,
         Test =
           [0,
            caml_string_concat,
-           function(_a_){return cst_a + cst_a + cst_b + cst_b;}];
+           function(_a_){
+            var cst_a = "a", cst_b = "b";
+            return cst_a + cst_a + cst_b + cst_b;
+           }];
        runtime.caml_register_global(2, Test, "Test");
        return;
       }

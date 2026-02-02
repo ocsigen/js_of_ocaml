@@ -45,8 +45,8 @@ let%expect_test _ =
   [%expect
     {|
     Function parameter properly assigned: 5/5
-    short variable count: 12/12
-    short variable occurrences: 23/23
+    short variable count: 11/11
+    short variable occurrences: 21/21
     (function(a){
        "use strict";
        var e = a.jsoo_runtime;
@@ -56,8 +56,7 @@ let%expect_test _ =
         try{var f = c(a), d = f;}catch(f){var d = c(g);}
         return d;
        }
-       var c = [0, b];
-       e.caml_register_global(0, c, "Test");
+       e.caml_register_global(0, [0, b], "Test");
        0;
        return;
       }

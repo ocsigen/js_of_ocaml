@@ -56,7 +56,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function exceptions$0(s){
-     try{var _f_ = caml_int_of_string(s), n = _f_;}
+     try{var _d_ = caml_int_of_string(s), n = _d_;}
      catch(exn$0){
       var exn = caml_wrap_exception(exn$0);
       if(exn[1] !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
@@ -65,7 +65,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _e_ = 7, m = _e_;
+      var m = 7;
      }
      catch(exn){
       var exn$0 = caml_wrap_exception(exn);
@@ -75,8 +75,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{
       if(caml_string_equal(s, cst))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _d_ = [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
-      return _d_;
+      var _c_ = [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
+      return _c_;
      }
      catch(exn){
       var exn$1 = caml_wrap_exception(exn);
@@ -86,7 +86,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
     }
     //end
     function exceptions$1(s, cont){
-     try{var _d_ = caml_int_of_string(s), n = _d_;}
+     try{var _c_ = caml_int_of_string(s), n = _c_;}
      catch(exn){
       var exn$2 = caml_wrap_exception(exn);
       if(exn$2[1] !== Stdlib[7]){
@@ -100,7 +100,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      try{
       if(caml_string_equal(s, cst$0))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _c_ = 7, m = _c_;
+      var m = 7;
      }
      catch(exn$0){
       var exn$1 = caml_wrap_exception(exn$0);
@@ -120,7 +120,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
       return caml_trampoline_cps_call2
               (Stdlib[79],
                cst_toto,
-               function(_d_){caml_pop_trap(); return cont([0, [0, _d_, n, m]]);});
+               function(_c_){caml_pop_trap(); return cont([0, [0, _c_, n, m]]);});
      var _b_ = Stdlib[8], raise = caml_pop_trap();
      return raise(caml_maybe_attach_backtrace(_b_, 1));
     }

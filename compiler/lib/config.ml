@@ -99,6 +99,8 @@ module Flag = struct
 
   let compact_vardecl = o ~name:"vardecl" ~default:false
 
+  let constant_sinking = o ~name:"constant-sinking" ~default:true
+
   let header = o ~name:"header" ~default:true
 
   let auto_link = o ~name:"auto-link" ~default:true

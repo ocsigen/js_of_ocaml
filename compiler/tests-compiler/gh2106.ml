@@ -63,8 +63,7 @@ end
            offset = 1;
           }
          });
-       var X = [0], Test = [0, X];
-       runtime.caml_register_global(2, Test, "Test");
+       runtime.caml_register_global(2, [0, [0]], "Test");
        return;
       }
       (globalThis));

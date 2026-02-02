@@ -72,7 +72,6 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
                 : runtime.caml_trampoline_return(f, [a0, a1], 0);
        }
        var
-        dummy = 0,
         _a_ =
           [0,
            [11, caml_string_of_jsbytes("abc"), 0],
@@ -91,7 +90,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
         function _a_(i){
          return caml_exact_trampoline_cps_call
                  (g,
-                  dummy,
+                  0,
                   function(_c_){
                    var _b_ = i + 1 | 0;
                    return 5 !== i ? caml_exact_trampoline_call1(_a_, _b_) : cont();
@@ -103,8 +102,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        g();
        f();
        g();
-       var Test = [0];
-       runtime.caml_register_global(2, Test, "Test");
+       runtime.caml_register_global(2, [0], "Test");
        return;
       }
       (globalThis));

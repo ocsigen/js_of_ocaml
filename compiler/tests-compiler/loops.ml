@@ -78,8 +78,8 @@ let rec fun_with_loop acc = function
   print_fun_decl program (Some "fun_with_loop");
   [%expect
     {|
-    function fun_with_loop(acc$1, param$0){
-     var acc = acc$1, param = param$0;
+    function fun_with_loop(acc$0, param$0){
+     var acc = acc$0, param = param$0;
      for(;;){
       if(! param)
        return caml_call1
@@ -89,7 +89,7 @@ let rec fun_with_loop acc = function
       var xs = param[2], a$2 = acc, i = 0;
       for(;;){
        var a = [0, 1, a$2], _a_ = i + 1 | 0;
-       if(10 === i){var acc$0 = [0, x, a]; acc = acc$0; param = xs; break;}
+       if(10 === i){acc = [0, x, a]; param = xs; break;}
        a$2 = a;
        i = _a_;
       }
@@ -485,7 +485,7 @@ let add_substitute =
            break a;
           }
          }
-         var new_start = start$0 + 1 | 0, k$2 = 0;
+         var new_start = start$0 + 1 | 0;
          if(40 === opening)
           var closing = 41;
          else{
@@ -493,7 +493,7 @@ let add_substitute =
            throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
           var closing = 125;
          }
-         var lim = caml_ml_string_length(s), k = k$2, stop = new_start;
+         var lim = caml_ml_string_length(s), k = 0, stop = new_start;
          for(;;){
           if(lim <= stop) throw caml_maybe_attach_backtrace(Stdlib[8], 1);
           if(caml_string_get(s, stop) === opening){
