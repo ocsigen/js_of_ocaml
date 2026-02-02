@@ -32,6 +32,10 @@ void caml_ba_to_typed_array () {
   caml_fatal_error("Unimplemented Javascript primitive caml_ba_to_typed_array!");
 }
 
+void caml_bytes_of_uint8_array () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_bytes_of_uint8_array!");
+}
+
 void caml_create_file () {
   caml_fatal_error("Unimplemented Javascript primitive caml_create_file!");
 }
@@ -278,6 +282,10 @@ void caml_string_of_uint8_array () {
 
 void caml_throw_js_exception () {
   caml_fatal_error("Unimplemented Javascript primitive caml_throw_js_exception!");
+}
+
+void caml_uint8_array_of_bytes () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_uint8_array_of_bytes!");
 }
 
 void caml_unmount () {
