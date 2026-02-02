@@ -48,7 +48,7 @@
    test_bigarray
    test_marshal_compressed
    test_parsing
-   test_custom
+   test_runtime_value
    test_custom_name
    calc_parser
    calc_lexer))
@@ -69,8 +69,8 @@
  (modes js wasm native))
 
 (test
- (name test_custom)
- (modules test_custom)
+ (name test_runtime_value)
+ (modules test_runtime_value)
  (libraries js_of_ocaml)
  (js_of_ocaml
   (javascript_files custom.js))
