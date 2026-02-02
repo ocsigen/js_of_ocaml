@@ -1,0 +1,7 @@
+(library
+ (name esm_bundle_tests)
+ (modules esm_bundle)
+ (libraries js_of_ocaml_compiler unix)
+ (inline_tests)
+ (preprocess
+  (pps ppx_expect)))
