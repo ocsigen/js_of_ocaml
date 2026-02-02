@@ -23,7 +23,7 @@ let safe_parse json_str =
 
 === Inspecting JavaScript errors
 
-The <<a_api subproject="js_of_ocaml" text="Js_error"|module Js_of_ocaml.Js_error>> module provides functions to inspect error details:
+The <<a_api subproject="js_of_ocaml" text="Js_error"|module Js_of_ocaml.Js.Js_error>> module provides functions to inspect error details:
 
 <<code language="ocaml"|
 let handle_error err =
@@ -94,7 +94,7 @@ so attaching one to an OCaml exception preserves the stack trace for debugging.
 
 === Manual attachment
 
-Use <<a_api subproject="js_of_ocaml" text="Js_error.attach_js_backtrace"|val Js_of_ocaml.Js_error.attach_js_backtrace>> to attach a JavaScript stack trace
+Use <<a_api subproject="js_of_ocaml" text="Js_error.attach_js_backtrace"|val Js_of_ocaml.Js.Js_error.attach_js_backtrace>> to attach a JavaScript stack trace
 to an OCaml exception:
 
 <<code language="ocaml"|
@@ -112,7 +112,7 @@ present. Use {{{~force:true}}} to always attach a fresh stack trace.
 
 === Extracting attached errors
 
-Use <<a_api subproject="js_of_ocaml" text="Js_error.of_exn"|val Js_of_ocaml.Js_error.of_exn>> to extract the JavaScript error from an OCaml
+Use <<a_api subproject="js_of_ocaml" text="Js_error.of_exn"|val Js_of_ocaml.Js.Js_error.of_exn>> to extract the JavaScript error from an OCaml
 exception:
 
 <<code language="ocaml"|

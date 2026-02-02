@@ -19,7 +19,7 @@ CPS version. The choice of running the CPS version is delayed to run time.
 
 Since CPS code is usually slower, this can avoid performance degradations. You can
 also ensure that some code runs in direct style using
-<<a_api subproject="js_of_ocaml"|val Jsoo_runtime.Effect.assume_no_perform>>.
+<<a_api subproject="js_of_ocaml-compiler"|val Jsoo_runtime.Effect.assume_no_perform>>.
 
 ==@@id="dune"@@ Dune integration
 
