@@ -115,6 +115,8 @@ module Js = struct
 
   external runtime_value : string -> 'a = "caml_jsoo_runtime_value"
   (** [runtime_value "FOO"] returns the JavaScript value FOO provided by the JavaScript runtime (with '//Provides: FOO'). The string argument must be a string literal. *)
+
+  external custom_identifier : Obj.t -> string = "caml_custom_identifier"
 end
 
 module Sys = struct

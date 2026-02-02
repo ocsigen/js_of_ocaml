@@ -40,6 +40,10 @@ void caml_create_file () {
   caml_fatal_error("Unimplemented Javascript primitive caml_create_file!");
 }
 
+void caml_custom_identifier () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_custom_identifier!");
+}
+
 void caml_exn_with_js_backtrace () {
   caml_fatal_error("Unimplemented Javascript primitive caml_exn_with_js_backtrace!");
 }

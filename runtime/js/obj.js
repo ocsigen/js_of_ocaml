@@ -289,7 +289,7 @@ function caml_is_continuation_tag(t) {
 //Provides: caml_custom_identifier
 //Requires: caml_string_of_jsstring
 function caml_custom_identifier(o) {
-  return caml_string_of_jsstring(o.caml_custom);
+  return caml_string_of_jsstring(o.caml_custom || "");
 }
 
 //Provides: caml_ml_gc_ramp_up

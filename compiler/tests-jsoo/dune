@@ -49,6 +49,7 @@
    test_marshal_compressed
    test_parsing
    test_custom
+   test_custom_name
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -76,6 +77,15 @@
  (wasm_of_ocaml
   (javascript_files custom.js custom.wat))
  (modes js wasm))
+
+(library
+ (name test_custom_name)
+ (modules test_custom_name)
+ (inline_tests
+  (modes js wasm))
+ (libraries js_of_ocaml)
+ (preprocess
+  (pps ppx_expect)))
 
 (ocamlyacc calc_parser)
 
