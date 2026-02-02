@@ -605,7 +605,7 @@ This is efficient and integrates naturally with OCaml code.
 === Non-function values: use {{{runtime_value}}}
 
 For JavaScript **objects, constants, or other non-function values**, use
-{{{Jsoo_runtime.Js.runtime_value}}}:
+<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Js.runtime_value>>:
 
 <<code language="javascript"|
 //Provides: myConfig
@@ -614,7 +614,7 @@ var myConfig = { debug: true, version: 42 };
 
 <<code language="ocaml"|
 let config : < debug : bool Js.t Js.prop; version : int Js.prop > Js.t =
-  Jsoo_runtime.Js.runtime_value "myConfig"
+  Js.runtime_value "myConfig"
 >>
 
 **Important**: The argument must be a string literal, not a variable.

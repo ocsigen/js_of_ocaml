@@ -968,6 +968,11 @@ module Unsafe : sig
   external pure_js_expr : string -> 'a = "caml_pure_js_expr"
   (** [pure_js_expr str] behaves like [pure_expr (fun () -> js_expr str)]. *)
 
+  external runtime_value : string -> 'a = "caml_jsoo_runtime_value"
+  (** [runtime_value "FOO"] returns the JavaScript value FOO provided
+      by the JavaScript runtime (with '//Provides: FOO'). The string
+      argument must be a string literal. *)
+
   val global : < .. > t
   (** Javascript global object *)
 

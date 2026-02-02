@@ -88,6 +88,8 @@ module Js = struct
       ('b -> any_js_array -> 'a) -> ('b, any_js_array -> 'a) meth_callback
       = "caml_js_wrap_meth_callback_arguments"
 
+    external runtime_value : string -> 'a = "caml_jsoo_runtime_value"
+
     (* DEPRECATED *)
     external variable : string -> 'a = "caml_js_var"
   end
