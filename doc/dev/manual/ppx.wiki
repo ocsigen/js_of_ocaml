@@ -249,4 +249,4 @@ Has the type:
 == See also
 
 * <<a_manual chapter="javascript-interop"|JavaScript interop>> - Concepts: type conversions, null/undefined, callbacks, bindings
-* <<a_api subproject="js_of_ocaml"|module Js_of_ocaml.Js>> - Full API reference
+* <<a_api subproject="js_of_ocaml" text="Js"|module Js_of_ocaml.Js>> - Full API reference

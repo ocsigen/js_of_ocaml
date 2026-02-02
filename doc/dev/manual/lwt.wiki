@@ -12,7 +12,7 @@ It includes:
 
 The <<a_api subproject="js_of_ocaml-lwt"|module Js_of_ocaml_lwt.Lwt_js_events>> module
 provides a concise way to handle DOM events using Lwt threads, as an alternative to
-<<a_api subproject="js_of_ocaml"|val Js_of_ocaml.Dom_html.addEventListener>>.
+<<a_api subproject="js_of_ocaml" text="Dom_html.addEventListener"|val Js_of_ocaml.Dom_html.addEventListener>>.
 
 This module defines functions you can call on a DOM element to create
 an Lwt thread that will return when the event occurs.
