@@ -39,7 +39,7 @@ class type ['a] messageEvent = object
 end
 
 class type eventSource = object ('self)
-  method url : string t readonly_prop
+  method url : js_string t readonly_prop
 
   method withCredentials : bool t readonly_prop
 
