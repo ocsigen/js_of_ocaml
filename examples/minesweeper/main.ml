@@ -14,8 +14,8 @@ let js = Js.string
 let document = Html.window##.document
 
 let int_input name value =
-  let res = document##createDocumentFragment in
-  Dom.appendChild res (document##createTextNode (js name));
+  let lab = Html.createLabel document in
+  Dom.appendChild lab (document##createTextNode (js name));
   let input = Html.createInput ~_type:(js "text") document in
   input##.value := js (string_of_int !value);
   input##.onchange :=
@@ -24,30 +24,34 @@ let int_input name value =
          with Invalid_argument _ -> ());
         input##.value := js (string_of_int !value);
         Js._false);
-  Dom.appendChild res input;
-  res
-
-let button name callback =
-  let res = document##createDocumentFragment in
-  let input = Html.createInput ~_type:(js "submit") document in
-  input##.value := js name;
-  input##.onclick := Html.handler callback;
-  Dom.appendChild res input;
-  res
+  Dom.appendChild lab input;
+  lab
 
 let () =
   let main = Js.Opt.get (document##getElementById (js "main")) (fun () -> assert false) in
   let nbr, nbc, nbm = ref 10, ref 12, ref 15 in
-  Dom.appendChild main (int_input "Number of columns" nbr);
-  Dom.appendChild main (Html.createBr document);
-  Dom.appendChild main (int_input "Number of rows" nbc);
-  Dom.appendChild main (Html.createBr document);
-  Dom.appendChild main (int_input "Number of mines" nbm);
-  Dom.appendChild main (Html.createBr document);
-  Dom.appendChild
-    main
-    (button "nouvelle partie" (fun _ ->
-         let div = Html.createDiv document in
-         Dom.appendChild main div;
-         Minesweeper.run div !nbc !nbr !nbm;
-         Js._false))
+  let ctrl = Html.createDiv document in
+  ctrl##.className := js "controls";
+  let fields = Html.createDiv document in
+  fields##.className := js "controls-fields";
+  Dom.appendChild fields (int_input "Columns" nbr);
+  Dom.appendChild fields (int_input "Rows" nbc);
+  Dom.appendChild fields (int_input "Mines" nbm);
+  Dom.appendChild ctrl fields;
+  let btn = Html.createInput ~_type:(js "submit") document in
+  btn##.value := js "New Game";
+  let board_div = Html.createDiv document in
+  let new_game () =
+    Js.Opt.iter board_div##.firstChild (fun c -> Dom.removeChild board_div c);
+    let div = Html.createDiv document in
+    Dom.appendChild board_div div;
+    Minesweeper.run div !nbc !nbr !nbm
+  in
+  btn##.onclick :=
+    Html.handler (fun _ ->
+        new_game ();
+        Js._false);
+  Dom.appendChild ctrl btn;
+  Dom.appendChild main ctrl;
+  Dom.appendChild main board_div;
+  new_game ()
