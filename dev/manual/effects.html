@@ -58,7 +58,7 @@ It keeps a direct-style version of the transformed functions in addition to the
 CPS version. The choice of running the CPS version is delayed to run time.
 </p><p>Since CPS code is usually slower, this can avoid performance degradations. You can
 also ensure that some code runs in direct style using
-<span><a href=".././api/js_of_ocaml/Jsoo_runtime/Effect/#val-assume_no_perform">Jsoo_runtime.Effect.assume_no_perform</a></span>.
+<span><a href=".././api/js_of_ocaml-compiler/Jsoo_runtime/Effect/#val-assume_no_perform">Jsoo_runtime.Effect.assume_no_perform</a></span>.
 </p><h2 id="dune"> Dune integration <a class="backref" href="#dune">&#182;</a></h2><p>Dune is aware of the <span class="teletype">--effects</span> option. You can add it to the
 js_of_ocaml flags wherever you want to use it:
 </p><pre>(js_of_ocaml (flags ...))

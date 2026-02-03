@@ -57,7 +57,7 @@ let safe_parse json_str =
   with Js_error.Exn err -&gt;
     (* err has type Js_error.t *)
     Printf.eprintf &quot;Parse error: %s\n&quot; (Js_error.to_string err);
-    None</code></pre><h3> Inspecting JavaScript errors</h3><p>The <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js_error/#module-Js_error">Js_of_ocaml.Js_error</a></span> module provides functions to inspect error details:
+    None</code></pre><h3> Inspecting JavaScript errors</h3><p>The <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Js_error/#module-Js_error">Js_error</a></span> module provides functions to inspect error details:
 </p><pre class=""><code class="language-ocaml translatable">let handle_error err =
   (* Error message *)
   let msg = Js_error.message err in
@@ -97,7 +97,7 @@ browser DevTools or Node.js.
 </p><p>The solution is to attach a JavaScript <span class="teletype">Error</span> object to an OCaml exception.
 JavaScript <span class="teletype">Error</span> objects capture the call stack at the point of creation,
 so attaching one to an OCaml exception preserves the stack trace for debugging.
-</p><h3> Manual attachment</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js_error/#val-attach_js_backtrace">Js_of_ocaml.Js_error.attach_js_backtrace</a></span> to attach a JavaScript stack trace
+</p><h3> Manual attachment</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Js_error/#val-attach_js_backtrace">Js_error.attach_js_backtrace</a></span> to attach a JavaScript stack trace
 to an OCaml exception:
 </p><pre class=""><code class="language-ocaml translatable">let process data =
   try
@@ -107,7 +107,7 @@ to an OCaml exception:
     (* Log or rethrow with JS backtrace attached *)
     raise exn</code></pre><p>The <span class="teletype">~force:false</span> parameter only attaches a new error if one isn't already
 present. Use <span class="teletype">~force:true</span> to always attach a fresh stack trace.
-</p><h3> Extracting attached errors</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js_error/#val-of_exn">Js_of_ocaml.Js_error.of_exn</a></span> to extract the JavaScript error from an OCaml
+</p><h3> Extracting attached errors</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Js_error/#val-of_exn">Js_error.of_exn</a></span> to extract the JavaScript error from an OCaml
 exception:
 </p><pre class=""><code class="language-ocaml translatable">let log_with_backtrace exn =
   match Js_error.of_exn exn with

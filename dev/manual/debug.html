@@ -61,7 +61,7 @@ directly in your OCaml files.
 </p><h2 id="breakpoints"> Breakpoints <a class="backref" href="#breakpoints">&#182;</a></h2><h3> In browser developer tools</h3><p>Open browser developer tools (F12), navigate to the Sources panel, and set
 breakpoints in your OCaml files (when using source maps) or JavaScript files.
 </p><p>See <a href="https://developer.chrome.com/docs/devtools/javascript" class="ocsimore_phrasing_link">https://developer.chrome.com/docs/devtools/javascript</a> for details.
-</p><h3> Programmatic breakpoints</h3><p>Insert breakpoints in your OCaml code using <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-debugger">Js_of_ocaml.Js.debugger</a></span>:
+</p><h3> Programmatic breakpoints</h3><p>Insert breakpoints in your OCaml code using <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-debugger">Js.debugger</a></span>:
 </p><pre class=""><code class="language-ocaml translatable">let my_function x =
   Js_of_ocaml.Js.debugger ();  (* Breaks here when devtools are open *)
   x + 1</code></pre><p>Note: Browsers only pause at <span class="teletype">debugger</span> statements when developer tools are open.
