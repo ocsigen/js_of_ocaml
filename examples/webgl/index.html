@@ -5,10 +5,39 @@
   <head>
     <title>WebGL monkey</title>
 <style type="text/css">
-<!--
-body {background-color:black; color:white}
-canvas {float:left;}
--->
+body {
+  background-color: #111;
+  color: #ddd;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.6em;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #eee;
+  margin: 0 0 16px;
+}
+canvas {
+  display: block;
+  border-radius: 8px;
+  box-shadow: 0 0 32px rgba(0,0,0,0.6);
+}
+.info {
+  margin-top: 12px;
+  color: #777;
+  font-size: 0.85em;
+}
+.info span {
+  color: #aaa;
+  font-variant-numeric: tabular-nums;
+}
 </style>
 <script id="vertex-shader" type="x-shader/x-vertex">
   attribute vec3 a_position;
@@ -48,7 +77,8 @@ canvas {float:left;}
   </script>
   </head>
   <body>
-    <canvas id="canvas" height="400" width="400"></canvas>
-    <div><span id="fps"></span> frames per second</div>
+    <h1>WebGL Monkey</h1>
+    <canvas id="canvas" height="500" width="500"></canvas>
+    <div class="info"><span id="fps"></span> frames per second</div>
   </body>
 </html>
