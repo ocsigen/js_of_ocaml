@@ -41,7 +41,7 @@ end
 class type position = object
   method coords : coordinates Js.t Js.readonly_prop
 
-  method timestamp : Js.date Js.readonly_prop
+  method timestamp : Js.date Js.t Js.readonly_prop
 end
 
 class type positionOptions = object
