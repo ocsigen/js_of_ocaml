@@ -24,6 +24,7 @@
 * Lib: fix `file.lastModifiedDate` type to use `Js.date t`, add `lastModified`
 * Lib: fix `Form.get_form_elements` infinite loop bug
 * Lib: fix `position.timestamp` type in Geolocation module
+* Lib: remove non-existent `setDay` and `setUTCDay` methods from `Js.date`
 * Compiler: fix purity of comparison functions (again) (#2092)
 * Compiler: fix inlining (#2107)
 * Compiler: allow arrow functions in for loops

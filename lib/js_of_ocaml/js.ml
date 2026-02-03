@@ -557,10 +557,6 @@ class type date = object
 
   method setUTCDate : int -> number_t meth
 
-  method setDay : int -> number_t meth
-
-  method setUTCDay : int -> number_t meth
-
   method setHours : int -> number_t meth
 
   method setUTCHours : int -> number_t meth
