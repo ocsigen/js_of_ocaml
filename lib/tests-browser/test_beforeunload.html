@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>beforeunload handler test</title>
+  <script>
+    var isWasm = /[?&]wasm\b/.test(location.search);
+    (function () {
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = isWasm ? 'test_beforeunload.bc.wasm.js' : 'test_beforeunload.bc.js';
+      document.head.appendChild(s);
+    })();
+  </script>
+  <style>
+    body { font-family: monospace; margin: 2em; }
+    button { margin: 0.3em; padding: 0.5em 1em; font-size: 14px; cursor: pointer; }
+    #log { margin-top: 1em; padding: 1em; background: #f4f4f4; border: 1px solid #ccc;
+           min-height: 4em; white-space: pre-wrap; }
+    #log div { margin: 0.2em 0; }
+    a { display: inline-block; margin-top: 1em; font-size: 16px; }
+    h1 { font-size: 18px; }
+    table { border-collapse: collapse; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 0.4em 0.8em; text-align: left; font-size: 13px; }
+    th { background: #eee; }
+    .yes { color: green; }
+  </style>
+</head>
+<body>
+  <h1>beforeunload handler test (#1436)</h1>
+  <p>
+    Mode: <strong><script>document.write(isWasm ? 'wasm' : 'js')</script></strong>
+    — <script>document.write(isWasm ? '<a href="test_beforeunload.html">switch to js</a>' : '<a href="test_beforeunload.html?wasm">switch to wasm</a>')</script>
+  </p>
+
+  <p>Pick a strategy, then try to navigate away using the link at the bottom,
+     closing the tab, or pressing F5.</p>
+
+  <div id="controls"></div>
+  <div id="log"></div>
+
+  <a href="https://example.com">Navigate away (example.com) &rarr;</a>
+
+  <table>
+    <tr>
+      <th>Strategy</th>
+      <th>Expected</th>
+      <th>What it tests</th>
+    </tr>
+    <tr>
+      <td>1: block navigation</td>
+      <td class="yes">Dialog</td>
+      <td>handler + Js._false: preventDefault + returnValue + non-undefined return</td>
+    </tr>
+    <tr>
+      <td>2: allow navigation</td>
+      <td class="yes">No dialog</td>
+      <td>handler + Js._true: detects beforeunload, returns undefined to JS</td>
+    </tr>
+    <tr>
+      <td>3: conditional</td>
+      <td class="yes">Depends on toggle</td>
+      <td>Same handler, runtime decision &mdash; use toggle button to switch</td>
+    </tr>
+    <tr>
+      <td>4: clear handler</td>
+      <td class="yes">No dialog</td>
+      <td>no_handler: sets onbeforeunload to null</td>
+    </tr>
+  </table>
+
+  <p style="margin-top: 1.5em; font-size: 13px; color: #666;">
+    <code>Dom.handler</code> detects <code>beforeunload</code> events at runtime
+    and adjusts the return value: <code>Js._true</code> returns <code>undefined</code>
+    (allowing navigation) and <code>Js._false</code> also sets
+    <code>event.returnValue</code> for legacy browser compatibility.
+  </p>
+</body>
+</html>

@@ -1,6 +1,0 @@
-(executables
- (names test_wheel)
- (libraries js_of_ocaml)
- (modes js wasm)
- (preprocess
-  (pps js_of_ocaml-ppx)))

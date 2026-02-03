@@ -1,0 +1,24 @@
+(executables
+ (names test_beforeunload test_wheel)
+ (libraries js_of_ocaml)
+ (modes js wasm)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+(alias
+ (name default)
+ (deps
+  index.html
+  test_beforeunload.bc.js
+  test_beforeunload.html
+  test_wheel.bc.js
+  test_wheel.html))
+
+(alias
+ (name default)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps
+  test_beforeunload.bc.wasm.js
+  test_beforeunload.html
+  test_wheel.bc.wasm.js
+  test_wheel.html))
