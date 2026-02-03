@@ -1166,7 +1166,7 @@ val domContentLoaded : unit -> unit Lwt.t
 
 val onunload : unit -> Dom_html.event Js.t Lwt.t
 
-val onbeforeunload : unit -> Dom_html.event Js.t Lwt.t
+val onbeforeunload : unit -> Dom_html.beforeUnloadEvent Js.t Lwt.t
 
 val onresize : unit -> Dom_html.event Js.t Lwt.t
 
