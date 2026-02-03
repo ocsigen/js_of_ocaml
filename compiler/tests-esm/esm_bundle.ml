@@ -972,3 +972,255 @@ export function main() { return x() + y(); }
     z preserved (via B): true
     unused removed: true
     |}]
+
+(* ========== merge_modules tests ========== *)
+
+let analyze_js ~resolve name content =
+  (* Parse and analyze a JS module *)
+  let lexer = Parse_js.Lexer.of_string content in
+  let program = Parse_js.parse `Module lexer in
+  let id = Esm.ModuleId.of_path name in
+  Esm.analyze_module ~resolve id program
+
+let%expect_test "merge_modules simple" =
+  (* Test merging two independent modules *)
+  let resolve _ = failwith "no resolution needed" in
+  let m1 =
+    analyze_js
+      ~resolve
+      "a.js"
+      {|
+export const foo = 1;
+export function hello() { return "hello"; }
+|}
+  in
+  let m2 =
+    analyze_js
+      ~resolve
+      "b.js"
+      {|
+export const bar = 2;
+export function world() { return "world"; }
+|}
+  in
+  let merged = Esm_bundle.merge_modules ~dest:"bundle.js" [ m1; m2 ] in
+  let output = bundle_to_string merged in
+  print_endline output;
+  [%expect
+    {|
+    const foo = 1;
+    function hello(){return "hello";}
+    const bar = 2;
+    function world(){return "world";}
+    export { hello };
+    export { foo };
+    export { world };
+    export { bar };
+    |}]
+
+let%expect_test "merge_modules removes self-imports" =
+  (* Test that imports from the destination file are removed and substituted *)
+  let resolve specifier =
+    (* Resolve ./a.js to bundle.js to simulate self-import *)
+    if String.equal specifier "./a.js"
+    then Esm.ModuleId.of_path "bundle.js"
+    else Esm.ModuleId.of_path specifier
+  in
+  let m1 = analyze_js ~resolve "a.js" {|
+export const foo = 42;
+|} in
+  let m2 =
+    analyze_js
+      ~resolve
+      "b.js"
+      {|
+import { foo } from './a.js';
+export function useFoo() { return foo + 1; }
+|}
+  in
+  let merged = Esm_bundle.merge_modules ~dest:"bundle.js" [ m1; m2 ] in
+  let output = bundle_to_string merged in
+  print_endline output;
+  (* Verify no import statement remains *)
+  let has_import = contains_substring output "import" in
+  Printf.printf "import removed: %b\n" (not has_import);
+  [%expect
+    {|
+    const foo = 42;
+    function useFoo(){return foo + 1;}
+    export { foo };
+    export { useFoo };
+
+    import removed: true
+    |}]
+
+let%expect_test "merge_modules with default export" =
+  let resolve specifier =
+    if String.equal specifier "./a.js"
+    then Esm.ModuleId.of_path "bundle.js"
+    else Esm.ModuleId.of_path specifier
+  in
+  let m1 =
+    analyze_js ~resolve "a.js" {|
+export default function greet() { return "hi"; }
+|}
+  in
+  let m2 =
+    analyze_js
+      ~resolve
+      "b.js"
+      {|
+import greet from './a.js';
+export function useGreet() { return greet() + "!"; }
+|}
+  in
+  let merged = Esm_bundle.merge_modules ~dest:"bundle.js" [ m1; m2 ] in
+  let output = bundle_to_string merged in
+  print_endline output;
+  let has_import = contains_substring output "import" in
+  Printf.printf "import removed: %b\n" (not has_import);
+  [%expect
+    {|
+    function greet(){return "hi";}
+    function useGreet(){return greet() + "!";}
+    export { greet as default };
+    export { useGreet };
+
+    import removed: true
+    |}]
+
+let%expect_test "merge_modules preserves all exports" =
+  let resolve _ = failwith "no resolution needed" in
+  let m1 =
+    analyze_js
+      ~resolve
+      "utils.js"
+      {|
+export const A = 1;
+export const B = 2;
+export function helper() { return A + B; }
+|}
+  in
+  let m2 =
+    analyze_js
+      ~resolve
+      "main.js"
+      {|
+export const C = 3;
+export function main() { return C; }
+|}
+  in
+  let merged = Esm_bundle.merge_modules ~dest:"bundle.js" [ m1; m2 ] in
+  let output = bundle_to_string merged in
+  print_endline output;
+  (* Count exports *)
+  let export_count =
+    List.length (List.filter ~f:(fun line -> contains_substring line "export") (String.split_on_char ~sep:'\n' output))
+  in
+  Printf.printf "Total exports: %d\n" export_count;
+  [%expect
+    {|
+    const A = 1;
+    const B = 2;
+    function helper(){return A + B;}
+    const C = 3;
+    function main(){return C;}
+    export { helper };
+    export { B };
+    export { A };
+    export { main };
+    export { C };
+
+    Total exports: 5
+    |}]
+
+let%expect_test "merge_modules preserves external imports" =
+  (* Test that imports from external modules (not dest) are preserved *)
+  let resolve specifier =
+    if String.equal specifier "./internal.js"
+    then Esm.ModuleId.of_path "bundle.js"
+    else Esm.ModuleId.of_path specifier
+  in
+  let m1 =
+    analyze_js ~resolve "internal.js" {|
+export const foo = 42;
+|}
+  in
+  let m2 =
+    analyze_js
+      ~resolve
+      "main.js"
+      {|
+import { foo } from './internal.js';
+import { external } from './external.js';
+import defaultExt from './default-ext.js';
+export function useBoth() { return foo + external + defaultExt; }
+|}
+  in
+  let merged = Esm_bundle.merge_modules ~dest:"bundle.js" [ m1; m2 ] in
+  let output = bundle_to_string merged in
+  print_endline output;
+  (* Verify external imports are preserved *)
+  let has_external_import = contains_substring output "external.js" in
+  let has_default_import = contains_substring output "default-ext.js" in
+  let has_internal_import = contains_substring output "internal.js" in
+  Printf.printf "external.js import preserved: %b\n" has_external_import;
+  Printf.printf "default-ext.js import preserved: %b\n" has_default_import;
+  Printf.printf "internal.js import removed: %b\n" (not has_internal_import);
+  [%expect
+    {|
+    import { external } from "./external.js";
+    import defaultExt from "./default-ext.js";
+    const foo = 42;
+    function useBoth(){return foo + external + defaultExt;}
+    export { foo };
+    export { useBoth };
+
+    external.js import preserved: true
+    default-ext.js import preserved: true
+    internal.js import removed: true
+    |}]
+
+let%expect_test "merge_modules with same-named helpers" =
+  (* Test that modules with identically named functions don't collide *)
+  let resolve _ = failwith "no resolution needed" in
+  let m1 =
+    analyze_js
+      ~resolve
+      "a.js"
+      {|
+function helper() { return "from a"; }
+export function useA() { return helper(); }
+|}
+  in
+  let m2 =
+    analyze_js
+      ~resolve
+      "b.js"
+      {|
+function helper() { return "from b"; }
+export function useB() { return helper(); }
+|}
+  in
+  let merged = Esm_bundle.merge_modules ~dest:"bundle.js" [ m1; m2 ] in
+  let output = bundle_to_string merged in
+  print_endline output;
+  (* Count helper functions - should be 2 distinct ones *)
+  let helper_count =
+    List.length
+      (List.filter
+         ~f:(fun line -> contains_substring line "function helper")
+         (String.split_on_char ~sep:'\n' output))
+  in
+  Printf.printf "Number of helper functions: %d\n" helper_count;
+  [%expect
+    {|
+    function helper(){return "from a";}
+    function useA(){return helper();}
+    function helper$0(){return "from b";}
+    function useB(){return helper$0();}
+    export { useA };
+    export { useB };
+
+    Number of helper functions: 2
+    |}]
