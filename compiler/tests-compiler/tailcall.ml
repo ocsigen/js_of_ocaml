@@ -48,17 +48,17 @@ let%expect_test _ =
      function odd$0(counter, x){
       if(0 === x) return 0;
       var _c_ = x - 1 | 0;
-      if(counter >= 50) return caml_trampoline_return(even$0, [0, _c_]);
-      var counter$0 = counter + 1 | 0;
-      return even$0(counter$0, _c_);
+      return counter < 50
+              ? even$0(counter + 1 | 0, _c_)
+              : caml_trampoline_return(even$0, [0, _c_]);
      }
      function odd(x){return caml_trampoline(odd$0(0, x));}
      function even$0(counter, x){
       if(0 === x) return 1;
       var _c_ = x - 1 | 0;
-      if(counter >= 50) return caml_trampoline_return(odd$0, [0, _c_]);
-      var counter$0 = counter + 1 | 0;
-      return odd$0(counter$0, _c_);
+      return counter < 50
+              ? odd$0(counter + 1 | 0, _c_)
+              : caml_trampoline_return(odd$0, [0, _c_]);
      }
      function even(x){return caml_trampoline(even$0(0, x));}
      var _b_ = even(1);

@@ -60,7 +60,9 @@ module Var : sig
 
   val compare : t -> t -> int
 
-  val set_name : t -> string -> unit
+  val set_name : t -> ?generated:bool -> string -> unit
+
+  val generated_name : t -> bool
 
   val get_name : t -> string option
 
@@ -123,6 +125,11 @@ end = struct
   include T
 
   module Name = struct
+    type t =
+      { name : string
+      ; generated : bool
+      }
+
     let names = Int.Hashtbl.create 100
 
     let reset () = Int.Hashtbl.clear names
@@ -134,17 +141,14 @@ end = struct
     let is_reserved s = String.Hashtbl.mem reserved s
 
     let merge n1 n2 =
-      match n1, n2 with
-      | "", n2 -> n2
-      | n1, "" -> n1
-      | n1, n2 ->
-          if generated_name n1
-          then n2
-          else if generated_name n2
-          then n1
-          else if String.length n1 > String.length n2
-          then n1
-          else n2
+      (* Prefer non-generated names over generated ones *)
+      if n1.generated && not n2.generated
+      then n2
+      else if n2.generated && not n1.generated
+      then n1
+      else if String.length n1.name > String.length n2.name
+      then n1
+      else n2
 
     let set_raw v nm = Int.Hashtbl.replace names v nm
 
@@ -156,7 +160,7 @@ end = struct
         | name' -> set_raw v' (merge name name')
       with Not_found -> ()
 
-    let set v nm_orig =
+    let set v ?(generated = false) nm_orig =
       let len = String.length nm_orig in
       if len > 0
       then (
@@ -192,9 +196,11 @@ end = struct
         let str =
           if String.length str > max_len then String.sub str ~pos:0 ~len:max_len else str
         in
-        set_raw v str)
+        set_raw v { name = str; generated })
 
-    let get v = try Some (Int.Hashtbl.find names v) with Not_found -> None
+    let get v = try Some (Int.Hashtbl.find names v).name with Not_found -> None
+
+    let generated v = try (Int.Hashtbl.find names v).generated with Not_found -> true
   end
 
   let last_var = ref 0
@@ -212,7 +218,9 @@ end = struct
       | None -> ""
       | Some nm -> "{" ^ nm ^ "}")
 
-  let set_name i nm = Name.set i nm
+  let set_name = Name.set
+
+  let generated_name i = Name.generated i
 
   let fresh () =
     incr last_var;
@@ -220,7 +228,7 @@ end = struct
 
   let fresh_n nm =
     incr last_var;
-    set_name !last_var nm;
+    set_name !last_var ~generated:true nm;
     !last_var
 
   let count () = !last_var + 1

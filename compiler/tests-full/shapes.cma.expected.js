@@ -33,9 +33,8 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
-    global_data = runtime.caml_get_global_data(),
-    cst = "",
-    Stdlib = global_data.Stdlib;
+    Stdlib = runtime.caml_get_global_data().Stdlib,
+    cst = "";
    function f(param){
      /*<<compiler/tests-full/m2.ml:1:11>>*/ return Stdlib[46].call(null, cst) /*<<compiler/tests-full/m2.ml:1:27>>*/ ;
    }

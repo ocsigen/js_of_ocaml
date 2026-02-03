@@ -24,8 +24,7 @@ Printf.printf "%d\n" (f 3)
        "use strict";
        var
         runtime = globalThis.jsoo_runtime,
-        global_data = runtime.caml_get_global_data(),
-        Stdlib_Printf = global_data.Stdlib__Printf;
+        Stdlib_Printf = runtime.caml_get_global_data().Stdlib__Printf;
        function h(x, y){function h(z){return (x + y | 0) + z | 0;} return h;}
        function g(x){function g(y){var h$0 = h(x, y); return h$0(7);} return g;}
        function f(x){var g$0 = g(x); return g$0(5);}

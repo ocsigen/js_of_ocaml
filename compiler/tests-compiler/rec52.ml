@@ -62,8 +62,7 @@ let%expect_test "let rec" =
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
        var
-        global_data = runtime.caml_get_global_data(),
-        Stdlib_Hashtbl = global_data.Stdlib__Hashtbl,
+        Stdlib_Hashtbl = runtime.caml_get_global_data().Stdlib__Hashtbl,
         letrec_function_context = [],
         c = [],
         d = runtime.caml_array_make(5, 0),
