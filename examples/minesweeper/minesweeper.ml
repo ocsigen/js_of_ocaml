@@ -144,6 +144,25 @@ type demin_cf =
   ; mutable flag_switch_on : bool
   }
 
+let show_popup msg =
+  let overlay = Html.createDiv document in
+  overlay##.className := js "popup-overlay";
+  let box = Html.createDiv document in
+  box##.className := js "popup-box";
+  let p = Html.createP document in
+  Dom.appendChild p (document##createTextNode (js msg));
+  Dom.appendChild box p;
+  let btn = Html.createButton document in
+  btn##.className := js "popup-btn";
+  Dom.appendChild btn (document##createTextNode (js "OK"));
+  btn##.onclick :=
+    Html.handler (fun _ ->
+        Dom.removeChild document##.body overlay;
+        Js._false);
+  Dom.appendChild box btn;
+  Dom.appendChild overlay box;
+  Dom.appendChild document##.body overlay
+
 let draw_cell dom bd =
   dom##.src :=
     js
@@ -170,7 +189,6 @@ let disable_events d =
     for x = 0 to d.cf.nbcols - 1 do
       d.dom.(y).(x)##.onclick
       := Html.handler (fun _ ->
-          Html.window##alert (js "GAME OVER");
           Js._false)
     done
   done
@@ -196,7 +214,7 @@ let reveal d i j =
   then (
     draw_board d;
     disable_events d;
-    Html.window##alert (js "YOU WIN"))
+    show_popup "YOU WIN !")
 
 let create_demin nb_c nb_r nb_m =
   let nbc = max default_config.nbcols nb_c and nbr = max default_config.nbrows nb_r in
@@ -217,22 +235,45 @@ type mode =
 
 let init_table d board_div =
   let mode = ref Normal in
-  let buf = document##createDocumentFragment in
-  Dom.appendChild buf (document##createTextNode (js "Mode : "));
-  let img = Html.createImg document in
-  Dom.appendChild buf img;
-  img##.src := js "sprites/bomb.png";
-  img##.onclick :=
+  let toggle = Html.createDiv document in
+  toggle##.className := js "mode-toggle";
+  let btn_reveal = Html.createButton document in
+  btn_reveal##.className := js "mode-btn mode-btn-active";
+  let img_reveal = Html.createImg document in
+  img_reveal##.src := js "sprites/bomb.png";
+  Dom.appendChild btn_reveal img_reveal;
+  Dom.appendChild btn_reveal (document##createTextNode (js " Reveal"));
+  let btn_flag = Html.createButton document in
+  btn_flag##.className := js "mode-btn";
+  let img_flag = Html.createImg document in
+  img_flag##.src := js "sprites/flag.png";
+  Dom.appendChild btn_flag img_flag;
+  Dom.appendChild btn_flag (document##createTextNode (js " Flag"));
+  let set_mode m =
+    mode := m;
+    (match m with
+    | Normal ->
+        btn_reveal##.className := js "mode-btn mode-btn-active";
+        btn_flag##.className := js "mode-btn"
+    | Flag ->
+        btn_reveal##.className := js "mode-btn";
+        btn_flag##.className := js "mode-btn mode-btn-active")
+  in
+  btn_reveal##.onclick :=
     Html.handler (fun _ ->
-        (match !mode with
-        | Normal ->
-            mode := Flag;
-            img##.src := js "sprites/flag.png"
-        | Flag ->
-            mode := Normal;
-            img##.src := js "sprites/bomb.png");
+        set_mode Normal;
         Js._false);
-  Dom.appendChild buf (Html.createBr document);
+  btn_flag##.onclick :=
+    Html.handler (fun _ ->
+        set_mode Flag;
+        Js._false);
+  let toggle_inner = Html.createDiv document in
+  toggle_inner##.className := js "mode-toggle-inner";
+  Dom.appendChild toggle_inner btn_reveal;
+  Dom.appendChild toggle_inner btn_flag;
+  Dom.appendChild toggle toggle_inner;
+  let board = Html.createDiv document in
+  board##.className := js "board";
   for y = 0 to d.cf.nbrows - 1 do
     let imgs = ref [] in
     for x = 0 to d.cf.nbcols - 1 do
@@ -253,19 +294,19 @@ let init_table d board_div =
                 then (
                   draw_board d;
                   disable_events d;
-                  Html.window##alert (js "YOU LOSE"))
+                  show_popup "YOU LOSE !")
                 else reveal d x y
             | Flag ->
                 d.bd.(x).(y).flag <- not d.bd.(x).(y).flag;
                 draw_cell img d.bd.(x).(y));
             Js._false);
-      Dom.appendChild buf img
+      Dom.appendChild board img
     done;
-    Dom.appendChild buf (Html.createBr document);
+    Dom.appendChild board (Html.createBr document);
     d.dom.(y) <- Array.of_list (List.rev !imgs)
   done;
-  board_div##.style##.lineHeight := js "0";
-  Dom.appendChild board_div buf
+  Dom.appendChild board_div board;
+  Dom.appendChild board_div toggle
 
 let run div nbc nbr nbm =
   let d = create_demin nbc nbr nbm in
