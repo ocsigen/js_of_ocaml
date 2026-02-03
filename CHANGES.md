@@ -17,6 +17,7 @@
 
 
 ## Bug fixes
+* Lib: fix `characterData.substringData` method name typo in Dom module
 * Compiler: fix purity of comparison functions (again) (#2092)
 * Compiler: fix inlining (#2107)
 * Compiler: allow arrow functions in for loops

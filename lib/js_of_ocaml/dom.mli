@@ -186,7 +186,7 @@ class type characterData = object
 
   method length : int readonly_prop
 
-  method subjs_stringData : int -> int -> js_string t meth
+  method substringData : int -> int -> js_string t meth
 
   method appendData : js_string t -> unit meth
 
