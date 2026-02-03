@@ -49,19 +49,19 @@ let%expect_test "conditional" =
        if(! b && ! c && ! d && ! e && ! f){var x = 1; break a;}
       }
       else if(b){
-       if(! c && ! d && ! e && ! f){var x = 2; break a;}
+       if(! c && ! d && ! e && ! f){x = 2; break a;}
       }
       else if(c){
-       if(! d && ! e && ! f){var x = 3; break a;}
+       if(! d && ! e && ! f){x = 3; break a;}
       }
       else if(d){
-       if(! e && ! f){var x = 4; break a;}
+       if(! e && ! f){x = 4; break a;}
       }
       else{
-       if(! e){if(f){var x = 6; break a;} var x = 100; break a;}
-       if(! f){var x = 5; break a;}
+       if(! e){if(f){x = 6; break a;} x = 100; break a;}
+       if(! f){x = 5; break a;}
       }
-      var x = - 1;
+      x = - 1;
      }
      return x + 2 | 0;
     }
@@ -154,8 +154,8 @@ let rip_relative_kind_beq x y =
        case 0:
         var i = 0 === y ? 1 : 2; break;
        case 1:
-        var i = 1 === y ? 1 : 2; break;
-       default: var i = 2 === y ? 1 : 2;
+        i = 1 === y ? 1 : 2; break;
+       default: i = 2 === y ? 1 : 2;
      }
      return caml_call1(Stdlib[44], i);
     }
