@@ -1,5 +1,9 @@
 # js_of_ocaml Standard API Bindings Status
 
+> **Note:** This document was generated with the help of an LLM and may contain
+> inaccurate or outdated information. Please verify against the actual source
+> code before relying on it.
+
 This document lists standard JavaScript/Web APIs and their support status in js_of_ocaml and [Brr](https://github.com/dbuenzli/brr/).
 
 - **Yes** — Full or near-complete bindings available
@@ -32,7 +36,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | API | jsoo | Brr | jsoo Module / Notes |
 |-----|------|-----|---------------------|
 | CSS Values (colors, lengths, angles) | Yes | No | `CSS` |
-| CSSOM | Partial | No | `Dom_html` (CSSStyleDeclaration) |
+| CSSOM | Partial | Partial | `Dom_html` (CSSStyleDeclaration) · Brr: `Brr.El` (inline_style, computed_style) |
 | CSS Typed OM | No | No | |
 
 ## Network / Communication
@@ -70,7 +74,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Typed Arrays / ArrayBuffer | Yes | Yes | `Typed_array` · Brr: `Brr.Tarray` |
 | SharedArrayBuffer / Atomics | No | No | [#1930](https://github.com/ocsigen/js_of_ocaml/issues/1930) |
 | Streams API | No | No | |
-| Encoding API (TextEncoder/TextDecoder) | No | Partial | Brr: `Brr.Tarray` (of_utf_8/to_utf_8) |
+| Encoding API (TextEncoder/TextDecoder) | No | Partial | Brr: `Brr.Tarray` (of_jstr/to_jstr) |
 
 ## Form
 
@@ -83,8 +87,8 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | API | jsoo | Brr | jsoo Module / Notes |
 |-----|------|-----|---------------------|
 | Canvas 2D | Yes | Yes | `Dom_html` (canvasRenderingContext2D) · Brr: `Brr_canvas.C2d` |
-| WebGL | Yes | Partial | `WebGL` · Brr: `Brr_canvas.Gl` (WebGL 1 only) |
-| WebGL2 | No | No | [#1226](https://github.com/ocsigen/js_of_ocaml/issues/1226) |
+| WebGL | Yes | Yes | `WebGL` · Brr: `Brr_canvas.Gl` |
+| WebGL2 | No | Yes | [#1226](https://github.com/ocsigen/js_of_ocaml/issues/1226) · Brr: `Brr_canvas.Gl` (WebGL2 by default) |
 
 ## Media
 
@@ -110,7 +114,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Fullscreen API | No | Yes | Brr: `Brr.El.request_fullscreen`, `Brr.Document.exit_fullscreen` |
 | Gamepad API | No | No | |
 | Pointer Lock API | No | Yes | Brr: `Brr.El.request_pointer_lock` |
-| Selection API | Partial | Partial | `Dom_html` (selection, range) — [#453](https://github.com/ocsigen/js_of_ocaml/issues/453) · Brr: `Brr.Range` (Range only) |
+| Selection API | Partial | No | `Dom_html` (selection, range) — [#453](https://github.com/ocsigen/js_of_ocaml/issues/453) |
 
 ## Observers
 
@@ -205,7 +209,7 @@ These form a dependency chain and should be tackled together.
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
-| WebGL2 | [#1226](https://github.com/ocsigen/js_of_ocaml/issues/1226) | No | 3D graphics. Large API surface, niche audience. |
+| WebGL2 | [#1226](https://github.com/ocsigen/js_of_ocaml/issues/1226) | Yes | 3D graphics. Large API surface, niche audience. |
 | SharedArrayBuffer / Atomics | [#1930](https://github.com/ocsigen/js_of_ocaml/issues/1930) | No | Advanced concurrency. Requires cross-origin isolation headers. |
 | WebRTC | — | No | Peer-to-peer media/data. Very large, complex API. |
 | Web Components (Custom Elements, Shadow DOM) | — | No | Large surface, competes with framework approaches. |
@@ -215,7 +219,7 @@ These form a dependency chain and should be tackled together.
 | Gamepad API | — | No | Gaming only. |
 | Screen Orientation | — | No | Mobile-specific. |
 | Beacon API | — | No | Analytics pings. Trivial to call via `Js.Unsafe`. |
-| Selection API (upgrade) | [#453](https://github.com/ocsigen/js_of_ocaml/issues/453) | Partial | Rich text editors. Niche but has an open issue. |
+| Selection API (upgrade) | [#453](https://github.com/ocsigen/js_of_ocaml/issues/453) | No | Rich text editors. Niche but has an open issue. |
 
 ### Suggested implementation order
 
