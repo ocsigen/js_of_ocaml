@@ -66,9 +66,9 @@ let%expect_test _ =
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
        var
-        global_data = runtime.caml_get_global_data(),
-        Stdlib_Printf = global_data.Stdlib__Printf,
-        Stdlib = global_data.Stdlib,
+        _a_ = runtime.caml_get_global_data(),
+        Stdlib_Printf = _a_.Stdlib__Printf,
+        Stdlib = _a_.Stdlib,
         cst_Success = caml_string_of_jsbytes("Success!");
        function log_success(param){return caml_call1(Stdlib[46], cst_Success);}
        var
@@ -78,7 +78,7 @@ let%expect_test _ =
             [0,
              [11, caml_string_of_jsbytes("Failure! "), [2, 0, 0]],
              caml_string_of_jsbytes("Failure! %s")]),
-        _a_ =
+        _b_ =
           [0,
            [11,
             caml_string_of_jsbytes("Side effect: "),
@@ -86,15 +86,15 @@ let%expect_test _ =
            caml_string_of_jsbytes("Side effect: %s\n%!")],
         i = [0, 0];
        function side_effect(yes, label){
-        if(yes){caml_call2(Stdlib_Printf[2], _a_, label); i[1]++;}
+        if(yes){caml_call2(Stdlib_Printf[2], _b_, label); i[1]++;}
         return 0;
        }
        side_effect(0, caml_string_of_jsbytes("this is only to avoid inlining"));
+       _a_ =
+        [0,
+         [11, caml_string_of_jsbytes("Or this\n"), [10, 0]],
+         caml_string_of_jsbytes("Or this\n%!")];
        var
-        _b_ =
-          [0,
-           [11, caml_string_of_jsbytes("Or this\n"), [10, 0]],
-           caml_string_of_jsbytes("Or this\n%!")],
         _c_ =
           [0,
            [11,
@@ -108,7 +108,7 @@ let%expect_test _ =
            <
             side_effect(1, caml_string_of_jsbytes("Should only see this once"))
             >>> 0
-           ? caml_call1(Stdlib_Printf[2], _b_)
+           ? caml_call1(Stdlib_Printf[2], _a_)
            : caml_call1(Stdlib_Printf[2], _c_);
        if(1 === i[1])
         log_success(0);

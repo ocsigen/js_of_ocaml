@@ -164,11 +164,11 @@ let ()  = M.myfun M.x
          function(n, l){
           if(2 === n){
            if(l){
-            var match = l[2];
-            if(match){
+            var _a_ = l[2];
+            if(_a_){
              var
-              tl = match[2],
-              x2 = match[1],
+              tl = _a_[2],
+              x2 = _a_[1],
               x1 = l[1],
               s =
                 0 < caml_int_compare(x1, x2)
@@ -179,14 +179,14 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var _b_ = l[2];
-           if(_b_){
-            var match$2 = _b_[2];
-            if(match$2){
+           _a_ = l[2];
+           if(_a_){
+            var match = _a_[2];
+            if(match){
              var
-              tl$1 = match$2[2],
-              x3 = match$2[1],
-              x2$0 = _b_[1],
+              tl$1 = match[2],
+              x3 = match[1],
+              x2$0 = _a_[1],
               x1$0 = l[1],
               s$0 =
                 0 < caml_int_compare(x1$0, x2$0)
@@ -211,12 +211,12 @@ let ()  = M.myfun M.x
           var
            n1 = n >> 1,
            n2 = n - n1 | 0,
-           match$0 = rev_sort$0(n1, l),
-           l2$0 = match$0[2],
-           s1 = match$0[1],
-           match$1 = rev_sort$0(n2, l2$0),
-           tl$0 = match$1[2],
-           s2 = match$1[1],
+           _a_ = rev_sort$0(n1, l),
+           l2$0 = _a_[2],
+           s1 = _a_[1],
+           _a_ = rev_sort$0(n2, l2$0),
+           tl$0 = _a_[2],
+           s2 = _a_[1],
            l1 = s1,
            l2 = s2,
            accu = 0;
@@ -235,22 +235,22 @@ let ()  = M.myfun M.x
              accu = accu$1;
              continue;
             }
-            var _c_ = rev_append(l1, accu);
+            _a_ = rev_append(l1, accu);
            }
            else
-            _c_ = rev_append(l2, accu);
-           return [0, _c_, tl$0];
+            _a_ = rev_append(l2, accu);
+           return [0, _a_, tl$0];
           }
          },
        rev_sort =
          function(n, l){
           if(2 === n){
            if(l){
-            var match = l[2];
-            if(match){
+            var _a_ = l[2];
+            if(_a_){
              var
-              tl = match[2],
-              x2 = match[1],
+              tl = _a_[2],
+              x2 = _a_[1],
               x1 = l[1],
               s =
                 0 < caml_int_compare(x1, x2)
@@ -261,13 +261,13 @@ let ()  = M.myfun M.x
            }
           }
           else if(3 === n && l){
-           var _a_ = l[2];
+           _a_ = l[2];
            if(_a_){
-            var match$2 = _a_[2];
-            if(match$2){
+            var match = _a_[2];
+            if(match){
              var
-              tl$1 = match$2[2],
-              x3 = match$2[1],
+              tl$1 = match[2],
+              x3 = match[1],
               x2$0 = _a_[1],
               x1$0 = l[1],
               s$0 =
@@ -293,12 +293,12 @@ let ()  = M.myfun M.x
           var
            n1 = n >> 1,
            n2 = n - n1 | 0,
-           match$0 = sort$0(n1, l),
-           l2$0 = match$0[2],
-           s1 = match$0[1],
-           match$1 = sort$0(n2, l2$0),
-           tl$0 = match$1[2],
-           s2 = match$1[1],
+           _a_ = sort$0(n1, l),
+           l2$0 = _a_[2],
+           s1 = _a_[1],
+           _a_ = sort$0(n2, l2$0),
+           tl$0 = _a_[2],
+           s2 = _a_[1],
            l1 = s1,
            l2 = s2,
            accu = 0;
@@ -317,11 +317,11 @@ let ()  = M.myfun M.x
              accu = accu$1;
              continue;
             }
-            var _b_ = rev_append(l1, accu);
+            _a_ = rev_append(l1, accu);
            }
            else
-            _b_ = rev_append(l2, accu);
-           return [0, _b_, tl$0];
+            _a_ = rev_append(l2, accu);
+           return [0, _a_, tl$0];
           }
          };
       let sort$0 = sort, rev_sort$0 = rev_sort;
@@ -371,7 +371,7 @@ let ()  = M.run ()
   Util.print_fun_decl program (Some "run");
   [%expect
     {|
-    function run(param){
+    function run(_a_){
      var i = 0;
      for(;;){
       var
@@ -399,7 +399,7 @@ let ()  = M.run ()
          };
       let odd$0 = odd, even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
-      var _a_ = i + 1 | 0;
+      _a_ = i + 1 | 0;
       if(4 === i) return 0;
       i = _a_;
      }
@@ -469,7 +469,7 @@ let ()  = M.run ()
   Util.print_fun_decl program (Some "run");
   [%expect
     {|
-    function run(param){
+    function run(_c_){
      var i = 0;
      for(;;){
       let i$0 = i;
@@ -506,7 +506,7 @@ let ()  = M.run ()
          };
       let odd$0 = odd, even$0 = even;
       if(even(i)) caml_call1(Stdlib[42], cst);
-      var _c_ = i + 1 | 0;
+      _c_ = i + 1 | 0;
       if(4 === i) break;
       i = _c_;
      }
@@ -584,7 +584,7 @@ let ()  = M.run ()
   Util.print_fun_decl program (Some "run");
   [%expect
     {|
-    function run(param){
+    function run(_e_){
      var i = 0;
      for(;;){
       let i$0 = i;
@@ -632,14 +632,14 @@ let ()  = M.run ()
           }
          };
       let odd$0 = odd, even$0 = even;
-      var param$0 = even(i);
+      _e_ = even(i);
       for(;;){
-       var variant = param$0[1];
+       var variant = _e_[1];
        if(759635106 <= variant) break;
-       var f = param$0[2];
-       param$0 = f(0);
+       var f = _e_[2];
+       _e_ = f(0);
       }
-      var _e_ = i + 1 | 0;
+      _e_ = i + 1 | 0;
       if(4 === i) break;
       i = _e_;
      }

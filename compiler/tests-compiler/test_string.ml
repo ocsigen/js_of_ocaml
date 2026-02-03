@@ -58,8 +58,9 @@ let (_ : string) = here ()
           [0,
            caml_string_concat,
            function(_a_){
-            var cst_a = "a", cst_b = "b";
-            return cst_a + cst_a + cst_b + cst_b;
+            _a_ = "a";
+            var cst_b = "b";
+            return _a_ + _a_ + cst_b + cst_b;
            }];
        runtime.caml_register_global(2, Test, "Test");
        return;

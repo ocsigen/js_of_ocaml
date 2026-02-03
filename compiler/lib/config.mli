@@ -50,6 +50,8 @@ module Flag : sig
 
   val constant_sinking : unit -> bool
 
+  val var_coalescing : unit -> bool
+
   val debugger : unit -> bool
 
   val pretty : unit -> bool
