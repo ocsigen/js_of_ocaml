@@ -25,7 +25,6 @@ open Js_of_ocaml_toplevel
 open Lwt
 
 let compiler_name = "OCaml"
-
 let by_id s = Dom_html.getElementById s
 
 let by_id_coerce s f =
@@ -96,7 +95,6 @@ module Version = struct
              x)
 
   let current : t = split Sys.ocaml_version
-
   let compint (a : int) b = compare a b
 
   let rec compare v v' =
@@ -128,7 +126,7 @@ let setup_toplevel () =
     Printf.sprintf "     Compiled with Js_of_ocaml version %s" Sys_js.js_of_ocaml_version
   in
   exec' (Printf.sprintf "Format.printf \"%s@.\" Sys.ocaml_version;;" header1);
-  exec' (Printf.sprintf "Format.printf \"%s@.\";;" header2);
+  exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header2);
   exec' "#enable \"pretty\";;";
   exec' "#disable \"shortvar\";;";
   Ppx_support.init ();
@@ -305,7 +303,6 @@ let append colorize output cl s =
 
 module History = struct
   let data = ref [| "" |]
-
   let idx = ref 0
 
   let get_storage () =
@@ -433,7 +430,7 @@ let run _ =
             Js._false
         | 76 when meta e ->
             output##.innerHTML := Js.string "";
-            Js._true
+            Js._false
         | 75 when meta e ->
             setup_toplevel ();
             Js._false
