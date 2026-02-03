@@ -133,7 +133,7 @@ let get_form_elements (form : formElement t) =
     then acc
     else
       match Opt.to_option (form##.elements##item i) with
-      | None -> loop acc (i - i)
+      | None -> loop acc (i - 1)
       | Some x -> loop (x :: acc) (i - 1)
   in
   loop [] (form##.elements##.length - 1)
