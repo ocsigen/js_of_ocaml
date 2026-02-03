@@ -20,11 +20,9 @@
 open Util
 
 let%expect_test "parallel renaming" =
-  let p =
-    {|
+  let p = {|
 let rec f n x y = if n = 0 then (x, y) else f (n - 1) y x
-   |}
-  in
+   |} in
   let p = compile_and_parse p in
   print_fun_decl p (Some "f");
   [%expect
@@ -33,9 +31,8 @@ let rec f n x y = if n = 0 then (x, y) else f (n - 1) y x
      var n = n$1, x = x$0, y = y$0;
      for(;;){
       if(0 === n) return [0, x, y];
-      var n$0 = n - 1 | 0, _a_ = _a_;
+      var n$0 = n - 1 | 0, _a_ = y;
       n = n$0;
-      _a_ = y;
       y = x;
       x = _a_;
      }

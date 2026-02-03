@@ -1014,18 +1014,28 @@ let parallel_renaming ctx loc back_edge params args continuation queue =
     let l = visit_all params args in
     (* if not back_edge
      * then assert (Poly.equal l (List.rev_map2 params args ~f:(fun a b -> a, b))); *)
+    let params_set =
+      List.fold_left params ~init:Var.Set.empty ~f:(fun s x -> Var.Set.add x s)
+    in
     let queue, before, renaming, _ =
       List.fold_left
         l
         ~init:(queue, [], [], Code.Var.Set.empty)
         ~f:(fun (queue, before, renaming, seen) (y, x) ->
           let ((_, deps_x), cx, locx), queue = Q.access_queue_loc ~ctx queue loc x in
-          let seen' = Code.Var.Set.add y seen in
+          (* Only track params in [seen], not fresh temps introduced by [visit].
+             Fresh temps are safe to read after being written. *)
+          let seen' = if Var.Set.mem y params_set then Var.Set.add y seen else seen in
           if not Code.Var.Set.(is_empty (inter seen deps_x))
           then
             let () = assert back_edge in
             let before = (J.variable_declaration [ J.V x, (cx, locx) ], locx) :: before in
             let renaming = (y, J.EVar (J.V x)) :: renaming in
+            queue, before, renaming, seen'
+          else if back_edge && not (Var.Set.mem y params_set)
+          then
+            (* Fresh temp introduced by [visit]: emit [var y = cx] directly *)
+            let before = (J.variable_declaration [ J.V y, (cx, locx) ], locx) :: before in
             queue, before, renaming, seen'
           else
             let renaming = (y, cx) :: renaming in

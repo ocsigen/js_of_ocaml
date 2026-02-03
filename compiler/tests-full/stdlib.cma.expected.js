@@ -9154,8 +9154,8 @@
      match =  /*<<string.ml:311:17>>*/ uchar_array_of_utf_8_string(s1),
      len1 =  /*<<string.ml:311:47>>*/ match[2],
      s0$0 = match[1],
-     _o_ =  /*<<string.ml:312:22>>*/ Stdlib_Int[11].call(null, len0, len1),
-     limit$0 =  /*<<string.ml:312:14>>*/ Stdlib_Int[10].call(null, _o_, limit);
+     _n_ =  /*<<string.ml:312:22>>*/ Stdlib_Int[11].call(null, len0, len1),
+     limit$0 =  /*<<string.ml:312:14>>*/ Stdlib_Int[10].call(null, _n_, limit);
      /*<<string.ml:313:5>>*/ if
      (limit$0 <= Stdlib_Int[4].call(null, len1 - len0 | 0))
       /*<<string.ml:313:41>>*/ return limit$0;
@@ -9186,11 +9186,11 @@
     for(;;){
       /*<<string.ml:317:4>>*/ if(len0$0 < i)
       var
-       _b_ =  /*<<string.ml:317:21>>*/ row_minus1$0.length - 2 | 0,
+       _a_ =  /*<<string.ml:317:21>>*/ row_minus1$0.length - 2 | 0,
        d =
           /*<<string.ml:317:61>>*/  /*<<string.ml:317:21>>*/ caml_check_bound
-           (row_minus1$0, _b_)
-          [_b_ + 1];
+           (row_minus1$0, _a_)
+          [_a_ + 1];
      else{
       var
        len1$1 =  /*<<string.ml:318:4>>*/ row_minus1.length - 2 | 0,
@@ -9201,67 +9201,67 @@
           /*<<string.ml:322:17>>*/ Stdlib_Int[10].call
           (null, len1$1, (i + limit$0 | 0) - 1 | 0),
        jmax$0 =  /*<<string.ml:323:6>>*/ 0 <= jmax ? jmax : len1$1,
-       _c_ =
+       _b_ =
           /*<<string.ml:325:12>>*/ Stdlib_Int[11].call
           (null, 1, i - limit$0 | 0);
-       /*<<string.ml:325:33>>*/ if(jmax$0 < _c_)
+       /*<<string.ml:325:33>>*/ if(jmax$0 < _b_)
        var row_min$1 = row_min;
       else{
-       var row_min$0 = row_min, j = _c_;
+       var row_min$0 = row_min, j = _b_;
        for(;;){
         var
-         _d_ =  /*<<string.ml:326:6>>*/ j - 1 | 0,
-         _e_ =  /*<<string.ml:326:49>>*/ i - 1 | 0,
-         _p_ =  /*<<string.ml:326:41>>*/ caml_check_bound(s1$0, _d_)[_d_ + 1],
-         _q_ =  /*<<string.ml:326:32>>*/ caml_check_bound(s0$1, _e_)[_e_ + 1],
+         _c_ =  /*<<string.ml:326:6>>*/ j - 1 | 0,
+         _d_ =  /*<<string.ml:326:49>>*/ i - 1 | 0,
+         _o_ =  /*<<string.ml:326:41>>*/ caml_check_bound(s1$0, _c_)[_c_ + 1],
+         _p_ =  /*<<string.ml:326:32>>*/ caml_check_bound(s0$1, _d_)[_d_ + 1],
          cost =
-            /*<<string.ml:326:20>>*/ Stdlib_Uchar[15].call(null, _q_, _p_)
+            /*<<string.ml:326:20>>*/ Stdlib_Uchar[15].call(null, _p_, _o_)
             ? 0
             : 1,
-         _f_ =  /*<<string.ml:327:6>>*/ j - 1 | 0,
+         _e_ =  /*<<string.ml:327:6>>*/ j - 1 | 0,
          c =
-            /*<<string.ml:330:11>>*/ caml_check_bound(row_minus1, _f_)
-            [_f_ + 1]
+            /*<<string.ml:330:11>>*/ caml_check_bound(row_minus1, _e_)
+            [_e_ + 1]
            + 1
            | 0,
          b =
             /*<<string.ml:329:11>>*/ caml_check_bound(row_minus1$0, j)[j + 1]
            + 1
            | 0,
-         _g_ =  /*<<string.ml:329:25>>*/ j - 1 | 0,
+         _f_ =  /*<<string.ml:329:25>>*/ j - 1 | 0,
          a =
-            /*<<string.ml:328:11>>*/ caml_check_bound(row_minus1$0, _g_)
-            [_g_ + 1]
+            /*<<string.ml:328:11>>*/ caml_check_bound(row_minus1$0, _f_)
+            [_f_ + 1]
            + cost
            | 0,
-         _n_ =  /*<<string.ml:310:41>>*/ Stdlib_Int[10].call(null, b, c),
-         min =  /*<<string.ml:310:54>>*/ Stdlib_Int[10].call(null, a, _n_);
+         _m_ =  /*<<string.ml:310:41>>*/ Stdlib_Int[10].call(null, b, c),
+         min =  /*<<string.ml:310:54>>*/ Stdlib_Int[10].call(null, a, _m_);
          /*<<string.ml:337:6>>*/ if(1 < i && 1 < j){
          var
-          _h_ = j - 2 | 0,
-          _i_ =  /*<<string.ml:339:41>>*/ i - 1 | 0,
-          _r_ =  /*<<string.ml:339:33>>*/ caml_check_bound(s1$0, _h_)[_h_ + 1],
-          _s_ =  /*<<string.ml:339:24>>*/ caml_check_bound(s0$1, _i_)[_i_ + 1];
-          /*<<string.ml:339:12>>*/ if(Stdlib_Uchar[15].call(null, _s_, _r_)){
+          _g_ = j - 2 | 0,
+          _h_ =  /*<<string.ml:339:41>>*/ i - 1 | 0,
+          _q_ =  /*<<string.ml:339:33>>*/ caml_check_bound(s1$0, _g_)[_g_ + 1],
+          _r_ =  /*<<string.ml:339:24>>*/ caml_check_bound(s0$1, _h_)[_h_ + 1];
+          /*<<string.ml:339:12>>*/ if(Stdlib_Uchar[15].call(null, _r_, _q_)){
           var
-           _j_ =  /*<<string.ml:339:41>>*/ j - 1 | 0,
-           _k_ =  /*<<string.ml:340:41>>*/ i - 2 | 0,
+           _i_ =  /*<<string.ml:339:41>>*/ j - 1 | 0,
+           _j_ =  /*<<string.ml:340:41>>*/ i - 2 | 0,
+           _s_ =
+              /*<<string.ml:340:33>>*/ caml_check_bound(s1$0, _i_)[_i_ + 1],
            _t_ =
-              /*<<string.ml:340:33>>*/ caml_check_bound(s1$0, _j_)[_j_ + 1],
-           _u_ =
-              /*<<string.ml:340:24>>*/ caml_check_bound(s0$1, _k_)[_k_ + 1];
-           /*<<string.ml:340:12>>*/ if(Stdlib_Uchar[15].call(null, _u_, _t_))
+              /*<<string.ml:340:24>>*/ caml_check_bound(s0$1, _j_)[_j_ + 1];
+           /*<<string.ml:340:12>>*/ if(Stdlib_Uchar[15].call(null, _t_, _s_))
            var
-            _l_ =  /*<<string.ml:341:13>>*/ j - 2 | 0,
-            _v_ =
-               /*<<string.ml:341:26>>*/ caml_check_bound(row_minus2, _l_)
-               [_l_ + 1]
+            _k_ =  /*<<string.ml:341:13>>*/ j - 2 | 0,
+            _u_ =
+               /*<<string.ml:341:26>>*/ caml_check_bound(row_minus2, _k_)
+               [_k_ + 1]
               + cost
               | 0,
             min$0 =
                /*<<string.ml:341:50>>*/  /*<<string.ml:341:13>>*/ Stdlib_Int
                 [10].call
-               (null, min, _v_);
+               (null, min, _u_);
           else
            var min$0 =  /*<<string.ml:340:41>>*/ min;
          }
@@ -9272,21 +9272,20 @@
          var min$0 =  /*<<string.ml:337:6>>*/ min;
          /*<<string.ml:344:6>>*/ caml_check_bound(row_minus1, j)[j + 1] = min$0;
         var
-         _m_ =
+         _l_ =
             /*<<string.ml:345:17>>*/ Stdlib_Int[10].call
             (null, row_min$0, min$0),
-         _w_ =  /*<<string.ml:345:37>>*/ j + 1 | 0;
-        if(jmax$0 === j){var row_min$1 = _m_; break;}
-        row_min$0 = _m_;
-        j = _w_;
+         _v_ =  /*<<string.ml:345:37>>*/ j + 1 | 0;
+        if(jmax$0 === j){var row_min$1 = _l_; break;}
+        row_min$0 = _l_;
+        j = _v_;
        }
       }
        /*<<string.ml:347:4>>*/ if(limit$0 > row_min$1){
-       var i$0 =  /*<<string.ml:348:4>>*/ i + 1 | 0, _a_ = _a_;
-       _a_ = row_minus1;
+       var i$0 =  /*<<string.ml:348:4>>*/ i + 1 | 0, _w_ = row_minus1;
        row_minus1 = row_minus2;
        row_minus2 = row_minus1$0;
-       row_minus1$0 = _a_;
+       row_minus1$0 = _w_;
        i = i$0;
        continue;
       }
