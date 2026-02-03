@@ -20,9 +20,14 @@ module type S = sig
   type expression = Code_generation.expression
 
   module Memory : sig
-    val allocate : tag:int -> Wasm_ast.expression list Code_generation.t -> expression
+    val allocate :
+         ?safepoint_friendly_array_init:bool
+      -> tag:int
+      -> Wasm_ast.expression list Code_generation.t
+      -> expression
 
-    val allocate_float_array : Wasm_ast.expression list Code_generation.t -> expression
+    val allocate_float_array :
+      ?safepoint_friendly_array_init:bool -> Wasm_ast.expression list Code_generation.t -> expression
 
     val load_function_pointer :
          cps:bool
