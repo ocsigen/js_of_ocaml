@@ -1044,7 +1044,7 @@ class type renderingContext = object
 
   method _MAX_CUBE_MAP_TEXTURE_SIZE_ : int parameter readonly_prop
 
-  method _ACTIVE_TEXTURE_ : int parameter readonly_prop
+  method _ACTIVE_TEXTURE_ : textureUnit parameter readonly_prop
 
   method _FRAMEBUFFER_BINDING_ : framebuffer t opt parameter readonly_prop
 
