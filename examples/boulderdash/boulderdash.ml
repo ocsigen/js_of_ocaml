@@ -153,7 +153,42 @@ let rec fall state =
   done;
   if !changed then Lwt_js.sleep 0.05 >>= fun () -> fall state else Lwt.return ()
 
-let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
+let show_popup parent msg on_restart on_next =
+  let overlay = Html.createDiv document in
+  overlay##.className := js "popup-overlay";
+  let box = Html.createDiv document in
+  box##.className := js "popup-box";
+  let p = Html.createP document in
+  append_text p msg;
+  Dom.appendChild box p;
+  let btns = Html.createDiv document in
+  btns##.className := js "popup-btns";
+  let btn = Html.createButton document in
+  btn##.className := js "popup-btn";
+  append_text btn "Restart";
+  btn##.onclick :=
+    Html.handler (fun _ ->
+        Dom.removeChild parent overlay;
+        on_restart ();
+        Js._false);
+  Dom.appendChild btns btn;
+  (match on_next with
+  | Some next ->
+      let btn2 = Html.createButton document in
+      btn2##.className := js "popup-btn popup-btn-next";
+      append_text btn2 "Next Level";
+      btn2##.onclick :=
+        Html.handler (fun _ ->
+            Dom.removeChild parent overlay;
+            next ();
+            Js._false);
+      Dom.appendChild btns btn2
+  | None -> ());
+  Dom.appendChild box btns;
+  Dom.appendChild overlay box;
+  Dom.appendChild parent overlay
+
+let rec build_interaction state show_rem restart on_next ((_, _, clock_stop) as clock) =
   Lwt_mutex.lock state.map_mutex
   >>= fun () ->
   for y = 0 to Array.length state.map - 1 do
@@ -227,7 +262,7 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
                 state.dead <- true;
                 Lwt.return ()
             | _ -> Lwt.fail e)
-        >>= fun () -> build_interaction state show_rem clock
+        >>= fun () -> build_interaction state show_rem restart on_next clock
       in
       state.imgs.(y).(x)##.onmouseover
       := Html.handler (inhibit (set_pending_out (with_pending_out over) out));
@@ -265,7 +300,7 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
                 state.dead <- true;
                 Lwt.return ()
             | e -> Lwt.fail e)
-        >>= fun () -> build_interaction state show_rem clock
+        >>= fun () -> build_interaction state show_rem restart on_next clock
       in
       state.imgs.(y').(x')##.onmouseover
       := Html.handler (inhibit (set_pending_out (with_pending_out over) out));
@@ -276,11 +311,11 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
   if state.pos = state.endpos
   then (
     clock_stop ();
-    Html.window##alert (js "YOU WIN !"))
+    show_popup document##.body "YOU WIN !" restart on_next)
   else if state.dead
   then (
     clock_stop ();
-    Html.window##alert (js "YOU LOSE !"))
+    show_popup document##.body "YOU LOSE !" restart None)
   else (
     if state.rem = 0
     then (
@@ -387,7 +422,20 @@ let start _ =
       in
       Lwt.return (List.rev (scan_pairs 0 [])))
   >>= fun levels ->
-  let load_level file =
+  let current_file = ref "" in
+  let select_ref : Html.selectElement Js.t option ref = ref None in
+  let rec load_level file =
+    current_file := file;
+    (match !select_ref with
+    | Some select ->
+        let rec find_index i = function
+          | (f, _) :: _ when f = file -> i
+          | _ :: rest -> find_index (i + 1) rest
+          | [] -> -1
+        in
+        let idx = find_index 0 levels in
+        if idx >= 0 then select##.selectedIndex := idx + 1
+    | None -> ());
     load_data file (fun data ->
         let map, cells =
           let res = ref [] and row = ref [] in
@@ -440,6 +488,17 @@ let start _ =
             cells
         in
         replace_child board_div table;
+        let restart () = ignore (load_level !current_file) in
+        let on_next =
+          let rec find = function
+            | (f, _) :: (next_f, _) :: _ when f = file -> Some next_f
+            | _ :: rest -> find rest
+            | [] -> None
+          in
+          match find levels with
+          | Some next_f -> Some (fun () -> ignore (load_level next_f))
+          | None -> None
+        in
         build_interaction
           { map
           ; imgs = cells
@@ -452,6 +511,8 @@ let start _ =
           ; pending_out_cb = ref None
           }
           show_rem
+          restart
+          on_next
           clock
         >>= fun () ->
         let t0 = Sys.time () in
@@ -484,6 +545,7 @@ let start _ =
   Dom.appendChild div rem_div;
   append_text div " ";
   let select = Html.createSelect document in
+  select_ref := Some select;
   let option = Html.createOption document in
   append_text option "Choose a level";
   Dom.appendChild select option;
