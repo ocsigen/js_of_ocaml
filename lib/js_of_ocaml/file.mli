@@ -53,7 +53,10 @@ class type file = object
 
   method name : js_string t readonly_prop
 
-  method lastModifiedDate : js_string t readonly_prop
+  method lastModified : number_t readonly_prop
+
+  method lastModifiedDate : Js.date t readonly_prop
+  (** @deprecated Use [lastModified] instead. *)
 end
 
 type file_any

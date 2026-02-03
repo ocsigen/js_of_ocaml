@@ -88,7 +88,10 @@ class type file = object
 
   method name : js_string t readonly_prop
 
-  method lastModifiedDate : js_string t readonly_prop
+  method lastModified : number_t readonly_prop
+
+  method lastModifiedDate : Js.date t readonly_prop
+  (** @deprecated Use [lastModified] instead. *)
 end
 
 (* in firefox 3.0-3.5 file.name is not available, we use the nonstandard fileName instead *)
