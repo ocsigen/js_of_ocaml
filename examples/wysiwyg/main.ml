@@ -108,24 +108,42 @@ let () =
     Js.Opt.get (d##getElementById (Js.string "wiki_demo")) (fun () -> assert false)
   in
   let iframe = Html.createIframe d in
-  iframe##.style##.border := Js.string "2px green solid";
   iframe##.src := Js.string "#";
   iframe##.id := Js.string "wysiFrame";
   Dom.appendChild body iframe;
   Js.Opt.iter iframe##.contentDocument (fun iDoc ->
       iDoc##open_;
       iDoc##write
-        (Js.string "<html><body><p><b>Camelus</b><i>bactrianus</i></p></body></html>");
+        (Js.string
+           "<html><body>\
+            <h1>Bactrian Camel</h1>\
+            <p>The <b>Bactrian camel</b> (<i>Camelus bactrianus</i>) is a large \
+            even-toed ungulate native to the steppes of Central Asia. It has two humps \
+            on its back, in contrast to the single-humped dromedary.</p>\
+            <h2>Characteristics</h2>\
+            <p>Bactrian camels are exceptionally well adapted to the harsh conditions of \
+            the <b>Gobi Desert</b> and surrounding regions. They can withstand temperatures \
+            ranging from <i>-40\194\176C in winter</i> to <i>+40\194\176C in summer</i>.</p>\
+            <p>Key features include:</p>\
+            <p>- Thick, woolly coat that sheds in summer<br>\
+            - Broad, tough feet for walking on sand and snow<br>\
+            - Ability to go without water for months</p>\
+            <h2>Conservation</h2>\
+            <p>Wild Bactrian camels are <b>critically endangered</b>, with fewer than \
+            1,000 remaining in remote areas of China and Mongolia.</p>\
+            </body></html>");
       iDoc##close;
       iDoc##.designMode := Js.string "On";
       let iWin = iframe##.contentWindow in
-      Dom.appendChild body (Html.createBr d);
-      (* see http://www.quirksmode.org/dom/execCommand.html
-       * http://www.mozilla.org/editor/midas-spec.html
-       *)
-      let createButton ?(show = Js._false) ?(value = None) title action =
-        let but = Html.createInput ?_type:(Some (Js.string "submit")) d in
-        but##.value := Js.string title;
+      let toolbar = Html.createDiv d in
+      toolbar##.className := Js.string "toolbar";
+      Dom.appendChild body toolbar;
+      let createButton ?(show = Js._false) ?(value = None) ?(html = None) parent title action
+          =
+        let but = Html.createButton ~_type:(Js.string "button") d in
+        (match html with
+        | Some h -> but##.innerHTML := Js.string h
+        | None -> Dom.appendChild but (d##createTextNode (Js.string title)));
         let wrap s =
           match s with
           | None -> Js.null
@@ -136,62 +154,88 @@ let () =
               iWin##focus;
               iDoc##execCommand (Js.string action) show (wrap value);
               Js._true);
-        Dom.appendChild body but;
+        Dom.appendChild parent but;
         but
       in
-      ignore (createButton "hr" "inserthorizontalrule");
-      ignore (createButton "remove format" "removeformat");
-      ignore (createButton "B" "bold");
-      ignore (createButton "I" "italic");
-      Dom.appendChild body (Html.createBr d);
-      ignore (createButton "p" "formatblock" ~value:(Some "p"));
-      ignore (createButton "h1" "formatblock" ~value:(Some "h1"));
-      ignore (createButton "h2" "formatblock" ~value:(Some "h2"));
-      ignore (createButton "h3" "formatblock" ~value:(Some "h3"));
+      let format_group = Html.createDiv d in
+      format_group##.className := Js.string "toolbar-group";
+      Dom.appendChild toolbar format_group;
+      ignore (createButton format_group "B" "bold");
+      ignore (createButton format_group "I" "italic");
+      let remove_fmt_svg =
+        "<svg width='14' height='14' viewBox='0 0 16 16' fill='none' \
+         stroke='currentColor' stroke-linecap='round'>\
+         <line x1='4' y1='3' x2='12' y2='3' stroke-width='2.5'/>\
+         <line x1='8' y1='3' x2='7' y2='13' stroke-width='2.5'/>\
+         <line x1='3' y1='14' x2='14' y2='3' stroke-width='1.5' stroke='#e06060'/>\
+         </svg>"
+      in
+      ignore
+        (createButton format_group "" "removeformat" ~html:(Some remove_fmt_svg));
+      let block_group = Html.createDiv d in
+      block_group##.className := Js.string "toolbar-group";
+      Dom.appendChild toolbar block_group;
+      ignore (createButton block_group "P" "formatblock" ~value:(Some "p"));
+      ignore (createButton block_group "H1" "formatblock" ~value:(Some "h1"));
+      ignore (createButton block_group "H2" "formatblock" ~value:(Some "h2"));
+      ignore (createButton block_group "H3" "formatblock" ~value:(Some "h3"));
+      let insert_group = Html.createDiv d in
+      insert_group##.className := Js.string "toolbar-group";
+      Dom.appendChild toolbar insert_group;
+      ignore (createButton insert_group "HR" "inserthorizontalrule");
+      let link_group = Html.createDiv d in
+      link_group##.className := Js.string "toolbar-group";
+      Dom.appendChild toolbar link_group;
       let prompt query default =
         Js.Opt.get
           (iWin##prompt (Js.string query) (Js.string default))
           (fun () -> Js.string default)
         |> Js.to_string
       in
-      (createButton "link" "inserthtml")##.onclick
+      (createButton link_group "Link" "inserthtml")##.onclick
       := Html.handler (fun _ ->
-          let link = prompt "Enter a link" "http://google.ru" in
-          let desc = prompt "Enter description" "desc" in
+          let link = prompt "Enter a URL" "https://example.com" in
+          let desc = prompt "Enter description" link in
           let link =
             String.concat
               ""
               [ "<a href=\""; link; "\" wysitype=\"global\">"; desc; "</a>" ]
           in
-          iWin##alert (Js.string link);
           iDoc##execCommand (Js.string "inserthtml") Js._false (Js.some (Js.string link));
           Js._true);
-      (createButton "link2wiki" "inserthtml")##.onclick
+      (createButton link_group "Wiki Link" "inserthtml")##.onclick
       := Html.handler (fun _ ->
-          let link = prompt "Enter a wikipage" "lololo" in
+          let link = prompt "Enter a wiki page" "PageName" in
           let link =
             [ "<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>" ]
             |> String.concat ""
           in
-          iWin##alert (Js.string link);
           iDoc##execCommand (Js.string "inserthtml") Js._false (Js.some (Js.string link));
           Js._true);
-      Dom.appendChild body (Html.createBr d);
+      let panels = Html.createDiv d in
+      panels##.className := Js.string "output-panels";
+      Dom.appendChild body panels;
+      let html_panel = Html.createDiv d in
+      html_panel##.className := Js.string "output-panel";
+      Dom.appendChild panels html_panel;
+      let html_label = Html.createDiv d in
+      html_label##.className := Js.string "panel-label";
+      Dom.appendChild html_label (d##createTextNode (Js.string "HTML Output"));
+      Dom.appendChild html_panel html_label;
       let preview = Html.createTextarea d in
       preview##.readOnly := Js._true;
-      preview##.cols := 34;
-      preview##.rows := 10;
-      preview##.style##.border := Js.string "1px black solid";
-      preview##.style##.padding := Js.string "5px";
-      Dom.appendChild body preview;
+      Dom.appendChild html_panel preview;
+      let wiki_panel = Html.createDiv d in
+      wiki_panel##.className := Js.string "output-panel";
+      Dom.appendChild panels wiki_panel;
+      let wiki_label = Html.createDiv d in
+      wiki_label##.className := Js.string "panel-label";
+      Dom.appendChild wiki_label (d##createTextNode (Js.string "Wiki Markup"));
+      Dom.appendChild wiki_panel wiki_label;
       let wikiFrame = Html.createTextarea d in
       wikiFrame##.id := Js.string "wikiFrame";
       wikiFrame##.readOnly := Js._true;
-      wikiFrame##.cols := 34;
-      wikiFrame##.rows := 10;
-      preview##.style##.border := Js.string "2px blue solid";
-      preview##.style##.padding := Js.string "5px";
-      Dom.appendChild body wikiFrame;
+      Dom.appendChild wiki_panel wikiFrame;
       let rec dyn_preview old_text n =
         let text = Js.to_string iDoc##.body##.innerHTML in
         let n =
