@@ -21,10 +21,18 @@ p.subtitle {
   color: #666;
   margin-top: 0;
 }
+h2 {
+  font-size: 1.1em;
+  font-weight: 600;
+  color: #555;
+  margin: 2em 0 0.3em;
+  padding-bottom: 0.3em;
+  border-bottom: 1px solid #e0e0e0;
+}
 table {
   width: 100%;
   border-collapse: collapse;
-  margin: 1.5em 0;
+  margin: 0 0 1em;
 }
 th, td {
   text-align: left;
@@ -49,6 +57,7 @@ footer img { vertical-align: middle; }
     <h1><code>Js_of_ocaml</code> examples</h1>
     <p class="subtitle">Demos compiled from OCaml bytecode to JavaScript and WebAssembly</p>
 
+    <h2>Graphics &amp; Visualization</h2>
     <table>
       <tr><th>Example</th><th>JS</th><th>WASM</th></tr>
       <tr>
@@ -57,27 +66,7 @@ footer img { vertical-align: middle; }
         <td><a href="planet/index.html?wasm">wasm</a></td>
       </tr>
       <tr>
-        <td>Graph viewer</td>
-        <td><a href="graph_viewer/index.html">js</a></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>Boulder Dash game</td>
-        <td><a href="boulderdash/index.html">js</a></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>Minesweeper game</td>
-        <td><a href="minesweeper/index.html">js</a></td>
-        <td><a href="minesweeper/index.html?wasm">wasm</a></td>
-      </tr>
-      <tr>
-        <td>Real-time wiki editor</td>
-        <td><a href="wiki/index.html">js</a></td>
-        <td><a href="wiki/index.html?wasm">wasm</a></td>
-      </tr>
-      <tr>
-        <td>Random walk on lozenge tilings</td>
+        <td>Lozenge tilings</td>
         <td><a href="cubes/index.html">js</a></td>
         <td><a href="cubes/index.html?wasm">wasm</a></td>
       </tr>
@@ -87,19 +76,49 @@ footer img { vertical-align: middle; }
         <td></td>
       </tr>
       <tr>
-        <td>WYSIWYG editor</td>
-        <td><a href="wysiwyg/index.html">js</a></td>
-        <td><a href="wysiwyg/index.html?wasm">wasm</a></td>
+        <td>Hyperbolic tree</td>
+        <td><a href="hyperbolic/index.html">js</a></td>
+        <td></td>
       </tr>
       <tr>
-        <td>Hyperbolic tree viewer</td>
-        <td><a href="hyperbolic/index.html">js</a></td>
+        <td>Graph viewer</td>
+        <td><a href="graph_viewer/index.html">js</a></td>
         <td></td>
       </tr>
       <tr>
         <td>OCaml Graphics library</td>
         <td><a href="graphics/index.html">js</a></td>
         <td><a href="graphics/index.html?wasm">wasm</a></td>
+      </tr>
+    </table>
+
+    <h2>Games</h2>
+    <table>
+      <tr><th>Example</th><th>JS</th><th>WASM</th></tr>
+      <tr>
+        <td>Boulder Dash</td>
+        <td><a href="boulderdash/index.html">js</a></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>Minesweeper</td>
+        <td><a href="minesweeper/index.html">js</a></td>
+        <td><a href="minesweeper/index.html?wasm">wasm</a></td>
+      </tr>
+    </table>
+
+    <h2>Editors</h2>
+    <table>
+      <tr><th>Example</th><th>JS</th><th>WASM</th></tr>
+      <tr>
+        <td>Real-time wiki editor</td>
+        <td><a href="wiki/index.html">js</a></td>
+        <td><a href="wiki/index.html?wasm">wasm</a></td>
+      </tr>
+      <tr>
+        <td>WYSIWYG wiki editor</td>
+        <td><a href="wysiwyg/index.html">js</a></td>
+        <td><a href="wysiwyg/index.html?wasm">wasm</a></td>
       </tr>
     </table>
 
