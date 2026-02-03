@@ -44,27 +44,27 @@ let%expect_test _ =
   Util.print_fun_decl program (Some "fun1");
   [%expect
     {|
-    function fun1(param){
+    function fun1(_b_){
      function odd$0(counter, x){
       if(0 === x) return 0;
-      var _c_ = x - 1 | 0;
+      var _b_ = x - 1 | 0;
       return counter < 50
-              ? even$0(counter + 1 | 0, _c_)
-              : caml_trampoline_return(even$0, [0, _c_]);
+              ? even$0(counter + 1 | 0, _b_)
+              : caml_trampoline_return(even$0, [0, _b_]);
      }
      function odd(x){return caml_trampoline(odd$0(0, x));}
      function even$0(counter, x){
       if(0 === x) return 1;
-      var _c_ = x - 1 | 0;
+      var _b_ = x - 1 | 0;
       return counter < 50
-              ? odd$0(counter + 1 | 0, _c_)
-              : caml_trampoline_return(odd$0, [0, _c_]);
+              ? odd$0(counter + 1 | 0, _b_)
+              : caml_trampoline_return(odd$0, [0, _b_]);
      }
      function even(x){return caml_trampoline(even$0(0, x));}
      var _b_ = even(1);
      if(odd(1) === _b_)
       throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
-     try{odd(5000); var _c_ = log_success(0); return _c_;}
+     try{odd(5000); _b_ = log_success(0); return _b_;}
      catch(exn){return caml_call1(log_failure, cst_too_much_recursion);}
     }
     //end
@@ -94,7 +94,7 @@ let%expect_test _ =
   Util.print_fun_decl program (Some "fun1");
   [%expect
     {|
-    function fun1(param){
+    function fun1(_b_){
      function odd$0(x){
       return 0 === x ? 0 : caml_trampoline_return(even$0, [0, x - 1 | 0]);
      }
@@ -106,7 +106,7 @@ let%expect_test _ =
      var _b_ = even(1);
      if(odd(1) === _b_)
       throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
-     try{odd(5000); var _c_ = log_success(0); return _c_;}
+     try{odd(5000); _b_ = log_success(0); return _b_;}
      catch(exn){return caml_call1(log_failure, cst_too_much_recursion);}
     }
     //end

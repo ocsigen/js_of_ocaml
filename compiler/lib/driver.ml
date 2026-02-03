@@ -674,6 +674,7 @@ if (typeof module === 'object' && module.exports) {
 let simplify_js js =
   (* post pack optim *)
   let t = Timer.make () in
+  let js = if Config.Flag.var_coalescing () then Js_variable_coalescing.f js else js in
   let t3 = Timer.make () in
   let js = (new Js_traverse.simpl)#program js in
   if times () then Format.eprintf "    simpl: %a@." Timer.print t3;
