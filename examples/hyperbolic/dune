@@ -29,4 +29,4 @@
 (alias
  (name default)
  (enabled_if %{env:WASM_OF_OCAML=false})
- (deps hypertree.bc.wasm.js index-wasm.html))
+ (deps hypertree.bc.wasm.js))

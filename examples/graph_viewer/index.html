@@ -4,7 +4,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>Graph viewer</title>
-  <script type="text/javascript" src="viewer_js.bc.js" defer></script>
+  <script type="text/javascript">
+    var s = (new URLSearchParams(location.search)).has('wasm') ? 'viewer_js.bc.wasm.js' : 'viewer_js.bc.js';
+    document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+  </script>
   </head>
   <body>
   </body>

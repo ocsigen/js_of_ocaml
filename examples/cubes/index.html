@@ -4,7 +4,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>Cubes</title>
-    <script type="text/javascript" src="cubes.bc.js" defer></script>
+    <script type="text/javascript">
+      var s = (new URLSearchParams(location.search)).has('wasm') ? 'cubes.bc.wasm.js' : 'cubes.bc.js';
+      document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+    </script>
   </head>
   <body>
   </body>
