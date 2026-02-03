@@ -320,8 +320,10 @@ and mouseEvent = object
   method which : mouse_button optdef readonly_prop
 
   method fromElement : element t opt optdef readonly_prop
+  (** @deprecated Use [relatedTarget] instead. *)
 
   method toElement : element t opt optdef readonly_prop
+  (** @deprecated Use [relatedTarget] instead. *)
 
   method pageX : number_t optdef readonly_prop
 
@@ -441,7 +443,7 @@ end
 and submitEvent = object
   inherit event
 
-  method submitter : element t readonly_prop
+  method submitter : element t opt readonly_prop
 end
 
 and dragEvent = object
@@ -467,9 +469,9 @@ end
 and mediaQueryListEvent = object
   inherit event
 
-  method matches : js_string t readonly_prop
+  method matches : bool t readonly_prop
 
-  method media : bool t readonly_prop
+  method media : js_string t readonly_prop
 end
 
 and dataTransfer = object
@@ -581,25 +583,25 @@ end
 and pointerEvent = object
   inherit mouseEvent
 
-  method pointerId : int Js.readonly_prop
+  method pointerId : int readonly_prop
 
-  method width : number_t Js.readonly_prop
+  method width : number_t readonly_prop
 
-  method height : number_t Js.readonly_prop
+  method height : number_t readonly_prop
 
-  method pressure : number_t Js.readonly_prop
+  method pressure : number_t readonly_prop
 
-  method tangentialPressure : number_t Js.readonly_prop
+  method tangentialPressure : number_t readonly_prop
 
-  method tiltX : int Js.readonly_prop
+  method tiltX : int readonly_prop
 
-  method tiltY : int Js.readonly_prop
+  method tiltY : int readonly_prop
 
-  method twist : int Js.readonly_prop
+  method twist : int readonly_prop
 
-  method pointerType : Js.js_string Js.t Js.readonly_prop
+  method pointerType : js_string t readonly_prop
 
-  method isPrimary : bool Js.t Js.readonly_prop
+  method isPrimary : bool t readonly_prop
 end
 
 and storageEvent = object
@@ -743,9 +745,9 @@ and element = object
 
   method scrollTop : number_t prop
 
-  method scrollWidth : int prop
+  method scrollWidth : int readonly_prop
 
-  method scrollHeight : int prop
+  method scrollHeight : int readonly_prop
 
   method getClientRects : clientRectList t meth
 
@@ -1170,6 +1172,7 @@ class type inputElement = object ('self)
   method accessKey : js_string t prop
 
   method align : js_string t prop
+  (** @deprecated Use CSS instead. *)
 
   method alt : js_string t prop
 
@@ -2323,7 +2326,7 @@ end
 class type mediaQueryList = object
   method media : js_string t prop
 
-  method matches : bool readonly_prop
+  method matches : bool t readonly_prop
 
   method onchange : (mediaQueryList t, mediaQueryListEvent t) event_listener prop
 
