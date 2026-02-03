@@ -117,7 +117,7 @@ let%expect_test _ =
   Util.print_fun_decl program (Some "fun1");
   [%expect
     {|
-    function fun1(param){
+    function fun1(_b_){
      var i = 0;
      for(;;){
       let i$0 = i;
@@ -125,40 +125,40 @@ let%expect_test _ =
        f$0 =
          function(counter, n){
           if(- 1 === n){
-           var _d_ = - 2;
+           var _b_ = - 2;
            return counter < 50
-                   ? g$0(counter + 1 | 0, _d_)
-                   : caml_trampoline_return(g$0, [0, _d_]);
+                   ? g$0(counter + 1 | 0, _b_)
+                   : caml_trampoline_return(g$0, [0, _b_]);
           }
           if(0 === n) return i$0;
-          var _e_ = n - 1 | 0;
+          _b_ = n - 1 | 0;
           return counter < 50
-                  ? g$0(counter + 1 | 0, _e_)
-                  : caml_trampoline_return(g$0, [0, _e_]);
+                  ? g$0(counter + 1 | 0, _b_)
+                  : caml_trampoline_return(g$0, [0, _b_]);
          },
        f = function(n){return caml_trampoline(f$1(0, n));},
        g =
          function(counter, n){
           if(- 1 === n){
-           var _c_ = - 2;
+           var _b_ = - 2;
            return counter < 50
-                   ? f$1(counter + 1 | 0, _c_)
-                   : caml_trampoline_return(f$1, [0, _c_]);
+                   ? f$1(counter + 1 | 0, _b_)
+                   : caml_trampoline_return(f$1, [0, _b_]);
           }
           if(0 === n) return i$0;
-          var _d_ = n - 1 | 0;
+          _b_ = n - 1 | 0;
           return counter < 50
-                  ? f$1(counter + 1 | 0, _d_)
-                  : caml_trampoline_return(f$1, [0, _d_]);
+                  ? f$1(counter + 1 | 0, _b_)
+                  : caml_trampoline_return(f$1, [0, _b_]);
          };
       let f$1 = f$0, g$0 = g;
-      var _b_ = direct[1];
+      _b_ = direct[1];
       direct[1] = [0, f(i), _b_];
       let f$2 = f;
       indirect[1] = [0, function(param){return f$2(i$0);}, indirect[1]];
-      var _c_ = i + 1 | 0;
+      _b_ = i + 1 | 0;
       if(3 === i) break;
-      i = _c_;
+      i = _b_;
      }
      var
       indirect$0 =
