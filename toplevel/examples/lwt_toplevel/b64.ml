@@ -17,9 +17,7 @@
  *)
 
 let default_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
 let uri_safe_alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"
-
 let padding = '='
 
 let of_char ?(alphabet = default_alphabet) x =

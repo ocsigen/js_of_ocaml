@@ -1,17 +1,14 @@
+[@@@ocamlformat "let-binding-spacing=compact"]
+[@@@ocamlformat "module-item-spacing=compact"]
+
 (** Overview *)
 
 let x = 10 + 10
-
 let y = x * 3
-
 let c = String.make x 'a'
-
 let sin1 = sin 1.
-
 let rec fact n = if n = 0 then 1. else float n *. fact (n - 1)
-
 let _ = Printf.printf "fact 20 = %f\n" (fact 20)
-
 let _ = "abc" < "def"
 
 (** Mutually recursive function *)
@@ -52,9 +49,7 @@ let display x =
 module RList = ReactiveData.RList
 
 let rl, rhandle = RList.create []
-
 let li_rl = RList.map (fun x -> Tyxml_js.Html.(li [ txt x ])) rl
-
 let ul_elt = Tyxml_js.R.Html.ul li_rl
 
 let init =
@@ -65,11 +60,8 @@ let init =
   ()
 
 let snoc s = RList.snoc s rhandle
-
 let cons s = RList.cons s rhandle
-
 let insert s pos = RList.insert s pos rhandle
-
 let remove pos = RList.remove pos rhandle
 
 let time_signal =
@@ -122,11 +114,8 @@ open Graphics_js
 let c = 3
 
 let x0 = 0
-
 and x1 = size_x ()
-
 and y0 = 0
-
 and y1 = size_y ()
 
 let draw_ball x y =
@@ -134,7 +123,6 @@ let draw_ball x y =
   fill_circle x y c
 
 let state = ref (Lwt.task ())
-
 let wait () = fst !state
 
 let rec pong_aux x y dx dy =
@@ -153,11 +141,8 @@ let rec start () =
   Lwt.bind (Lwt_js.sleep (1. /. 60.)) start
 
 let pong x y dx dy = pong_aux x y dx dy
-
 let _ = pong 111 87 2 3
-
 let _ = pong 28 57 5 3
-
 let _ = start ()
 
 (** Effect handler *)
@@ -166,18 +151,14 @@ module Txn : sig
   type 'a t
 
   val atomically : (unit -> unit) -> unit
-
   val ref : 'a -> 'a t
-
   val ( ! ) : 'a t -> 'a
-
   val ( := ) : 'a t -> 'a -> unit
 end = struct
   open Effect
   open Effect.Deep
 
   type 'a t = 'a ref
-
   type _ Effect.t += Update : 'a t * 'a -> unit Effect.t
 
   let atomically f =
@@ -207,9 +188,7 @@ end = struct
     comp (fun () -> ())
 
   let ref = ref
-
   let ( ! ) = ( ! )
-
   let ( := ) r v = perform (Update (r, v))
 end
 
