@@ -94,7 +94,7 @@ let icons =
 
 let icon nm = Js.string ("icons/" ^ nm)
 
-let tree_color = Js.string "#794c0d"
+let tree_color = Js.string "#3a6a9e"
 
 (*
 let outside_color = Js.string (*"#3d2606"*) "#1e1303"
@@ -742,7 +742,7 @@ let draw canvas vertices edges nodes boxes =
                   c##.shadowBlur := Js.float (if blur < 1. then 0. else blur);
                   c##.shadowOffsetX := Js.float (if blur < 1. then 0. else offset);
                   c##.shadowOffsetY := Js.float (if blur < 1. then 0. else offset);
-                  c##.shadowColor := Js.string "black");
+                  c##.shadowColor := Js.string "rgba(0,0,0,0.6)");
                 let x = (z.x *. rx) +. dx in
                 let y = (z.y *. ry) +. dy in
                 c##drawImage_withSize
@@ -1456,15 +1456,21 @@ let show_image all_messages image_info name small_image =
 
 let information_en =
   Js.string
-    "<h1>A tree of animals</h1> This <a target=\"_blank\" \
+    "<h1>A Tree of Animals</h1>\
+     <p>This <a target=\"_blank\" \
      href=\"http://en.wikipedia.org/wiki/Phylogenetic_tree\"><em>phylogenetic</em> \
-     tree</a> displays the relationships among animals.<h2>Usage</h2>Browse the tree by \
+     tree</a> displays the relationships among animals.</p>\
+     <h2>Usage</h2>\
+     <p>Browse the tree by \
      dragging it with the mouse. Click on any image to display a larger \
-     version.<h2>Credits</h2>This software and the images it uses are under free \
+     version. Use arrow keys to navigate.</p>\
+     <h2>Credits</h2>\
+     <p>This software and the images it uses are under free \
      licenses. Images are from <a target=\"_blank\" \
-     href=\"http://commons.wikimedia.org/wiki/Main_Page\">Wikimedia Commons</a>.  You \
-     can click on each image for details.  The software has been written by Jérôme \
-     Vouillon (CNRS)."
+     href=\"http://commons.wikimedia.org/wiki/Main_Page\">Wikimedia Commons</a>. \
+     You can click on each image for details.</p>\
+     <p>The software has been written by J\195\169r\195\180me \
+     Vouillon (CNRS).</p>"
 
 let show_information_page messages tree_i18n =
   let info =
