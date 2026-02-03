@@ -12,4 +12,4 @@
 (alias
  (name default)
  (enabled_if %{env:WASM_OF_OCAML=false})
- (deps planet.bc.wasm.js index-wasm.html))
+ (deps planet.bc.wasm.js))

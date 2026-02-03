@@ -23,4 +23,4 @@ to serve the files, for instance with the following command:
 ```
 python -m http.server -d _build/default/examples/boulderdash/
 ```
-and then open `http://localhost:8000/index-wasm.html` in a browser.
+and then open `http://localhost:8000/index.html?wasm` in a browser.

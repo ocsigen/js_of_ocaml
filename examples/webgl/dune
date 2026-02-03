@@ -15,4 +15,4 @@
 (alias
  (name default)
  (enabled_if %{env:WASM_OF_OCAML=false})
- (deps webgldemo.bc.wasm.js index-wasm.html))
+ (deps webgldemo.bc.wasm.js))

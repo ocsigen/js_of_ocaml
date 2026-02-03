@@ -5,7 +5,10 @@
   <head>
     <title>Boulder Dash</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <script type="text/javascript" src="boulderdash.bc.js" defer></script>
+    <script type="text/javascript">
+      var s = (new URLSearchParams(location.search)).has('wasm') ? 'boulderdash.bc.wasm.js' : 'boulderdash.bc.js';
+      document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+    </script>
   </head>
   <body id="boulderdash">
   </body>

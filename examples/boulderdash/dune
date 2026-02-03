@@ -22,4 +22,4 @@
 (alias
  (name default)
  (enabled_if %{env:WASM_OF_OCAML=false})
- (deps boulderdash.bc.wasm.js index-wasm.html))
+ (deps boulderdash.bc.wasm.js))

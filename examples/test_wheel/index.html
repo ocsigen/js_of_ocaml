@@ -3,7 +3,10 @@
 
 <head>
   <title>test_wheel</title>
-  <script defer type="text/javascript" src="test_wheel.bc.js"></script>
+  <script type="text/javascript">
+    var s = (new URLSearchParams(location.search)).has('wasm') ? 'test_wheel.bc.wasm.js' : 'test_wheel.bc.js';
+    document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+  </script>
 </head>
 
 <body>

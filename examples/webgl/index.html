@@ -42,7 +42,10 @@ canvas {float:left;}
     gl_FragColor = vec4( col * lighting + u_ambientLight, 1);
   }
 </script>
-  <script type="text/javascript" src="webgldemo.bc.js" defer></script>
+  <script type="text/javascript">
+    var s = (new URLSearchParams(location.search)).has('wasm') ? 'webgldemo.bc.wasm.js' : 'webgldemo.bc.js';
+    document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+  </script>
   </head>
   <body>
     <canvas id="canvas" height="400" width="400"></canvas>
