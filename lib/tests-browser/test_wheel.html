@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html style="height: 100%;">
+
+<head>
+  <title>test_wheel</title>
+  <style>
+    body {
+      font-family: monospace;
+      margin: 2em;
+    }
+
+    #log {
+      margin-top: 1em;
+      padding: 1em;
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      min-height: 200px;
+      overflow-y: auto;
+      max-height: 60vh;
+    }
+
+    #log div {
+      padding: 2px 0;
+    }
+  </style>
+  <script>
+    var isWasm = /[?&]wasm\b/.test(location.search);
+    (function () {
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = isWasm ? 'test_wheel.bc.wasm.js' : 'test_wheel.bc.js';
+      document.head.appendChild(s);
+    })();
+  </script>
+</head>
+
+<body>
+  <h2>Wheel event test</h2>
+  <p>Scroll anywhere on the page to see wheel event data logged below.</p>
+  <p>
+    Mode: <strong><script>document.write(isWasm ? 'wasm' : 'js')</script></strong>
+    — <script>document.write(isWasm ? '<a href="test_wheel.html">switch to js</a>' : '<a href="test_wheel.html?wasm">switch to wasm</a>')</script>
+  </p>
+  <div id="log"></div>
+</body>
+
+</html>
