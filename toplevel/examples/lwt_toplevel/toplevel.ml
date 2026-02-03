@@ -486,8 +486,4 @@ let run _ =
         (Js.string (Printexc.to_string exc))
         exc
 
-let _ =
-  Dom_html.window##.onload :=
-    Dom_html.handler (fun _ ->
-        run ();
-        Js._false)
+let _ = Dom_html.onload (fun () -> run ())

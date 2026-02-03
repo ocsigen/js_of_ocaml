@@ -3255,6 +3255,11 @@ val setTimeout : (unit -> unit) -> float -> timeout_id_safe
 
 val clearTimeout : timeout_id_safe -> unit
 
+val onload : (unit -> unit) -> unit
+(** Register a callback to run when the page finishes loading.
+    If the page has already loaded (e.g. when running as WebAssembly),
+    the callback is invoked immediately. *)
+
 val js_array_of_collection : #element collection Js.t -> #element Js.t Js.js_array Js.t
 (** Convert a [Dom_html.collection] to a Js array *)
 
