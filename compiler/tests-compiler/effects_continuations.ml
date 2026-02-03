@@ -109,7 +109,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        var raise$1 = caml_pop_trap(), exn$2 = caml_maybe_attach_backtrace(exn, 0);
        return raise$1(exn$2);
       }
-      var n = 0;
+      n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
@@ -124,7 +124,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
         exn$1 = caml_maybe_attach_backtrace(exn$0, 0);
        return raise$0(exn$1);
       }
-      var m = 0;
+      m = 0;
      }
      runtime.caml_push_trap
       (function(exn){
