@@ -51,3 +51,15 @@ val bundle_modules :
     @param entry_points List of entry point file paths
     @param tree_shake Whether to perform tree-shaking
 *)
+
+val merge_modules : dest:string -> Esm.esm_module list -> Javascript.program
+(** [merge_modules ~dest modules] merges multiple ES modules into a single program.
+
+    - Removes imports that reference the destination file (self-imports after merge)
+    - Substitutes import bindings with actual exported identifiers from source modules
+    - Preserves all exports from all input modules
+
+    @param dest Path of the destination/merged module (imports from this path will be removed)
+    @param modules List of analyzed ESM modules to merge
+    @return Single JavaScript program with all bodies and exports
+*)

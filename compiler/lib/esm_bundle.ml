@@ -310,3 +310,91 @@ let bundle_modules ~parse ~resolve ~entry_points ~tree_shake:do_tree_shake : pro
     else graph
   in
   bundle graph ~entry_points:entry_ids
+
+(* ========== Module Merging ========== *)
+
+(* Convert an Esm.import_entry back to a Javascript.Import statement *)
+let generate_import_statement (import : Esm.import_entry) : statement =
+  let from = Utf8_string.of_string_exn (Esm.ModuleId.to_path import.Esm.source) in
+  (* Collect bindings by type *)
+  let default_opt, named, namespace_opt, has_side_effect =
+    List.fold_left
+      import.Esm.bindings
+      ~init:(None, [], None, false)
+      ~f:(fun (def, named, ns, side) binding ->
+        match binding with
+        | Esm.ImportDefault id -> Some id, named, ns, side
+        | Esm.ImportNamed (orig_name, local_id) ->
+            def, (Utf8_string.of_string_exn orig_name, local_id) :: named, ns, side
+        | Esm.ImportNamespace id -> def, named, Some id, side
+        | Esm.ImportSideEffect -> def, named, ns, true)
+  in
+  let kind =
+    match default_opt, List.rev named, namespace_opt, has_side_effect with
+    | None, [], None, true -> SideEffect
+    | Some id, [], None, _ -> Default id
+    | def_opt, named, None, _ when not (List.is_empty named) -> Named (def_opt, named)
+    | def_opt, [], Some ns_id, _ -> Namespace (def_opt, ns_id)
+    | _ -> SideEffect (* fallback *)
+  in
+  Import ({ from; kind; withClause = None }, Parse_info.zero)
+
+let merge_modules ~dest (modules : Esm.esm_module list) : program =
+  let dest_id = Esm.ModuleId.of_path dest in
+  (* Build a combined map of all exports across all modules.
+     When an import from dest is found, we look up the export by name here. *)
+  let all_exports =
+    List.fold_left modules ~init:StringMap.empty ~f:(fun acc m ->
+        StringMap.fold
+          (fun name export acc ->
+            (* First module's export wins for conflicting names *)
+            if StringMap.mem name acc then acc else StringMap.add name export acc)
+          m.Esm.exports
+          acc)
+  in
+  (* Collect external imports (not from dest) and generate import statements *)
+  let import_stmts =
+    List.concat_map modules ~f:(fun m ->
+        List.filter_map m.Esm.imports ~f:(fun import ->
+            if Esm.ModuleId.equal import.Esm.source dest_id
+            then None (* Internal import - will be substituted *)
+            else Some (generate_import_statement import, N)))
+  in
+  (* Process each module: filter imports and apply substitutions *)
+  let body_stmts =
+    List.concat_map modules ~f:(fun m ->
+        (* Filter out imports from the destination module *)
+        let internal_imports =
+          List.filter m.Esm.imports ~f:(fun import ->
+              Esm.ModuleId.equal import.Esm.source dest_id)
+        in
+        (* Build substitution for internal imports *)
+        let subst =
+          List.fold_left internal_imports ~init:Code.Var.Map.empty ~f:(fun acc import ->
+              List.fold_left import.Esm.bindings ~init:acc ~f:(fun acc binding ->
+                  match binding with
+                  | Esm.ImportNamed (orig_name, V v) -> (
+                      match StringMap.find_opt orig_name all_exports with
+                      | Some export -> Code.Var.Map.add v export.Esm.local_ident acc
+                      | None -> acc)
+                  | Esm.ImportDefault (V v) -> (
+                      match StringMap.find_opt "default" all_exports with
+                      | Some export -> Code.Var.Map.add v export.Esm.local_ident acc
+                      | None -> acc)
+                  | _ -> acc))
+        in
+        apply_import_substitutions subst m.Esm.body)
+  in
+  (* Collect all exports from all modules *)
+  let export_stmts =
+    List.concat_map modules ~f:(fun m ->
+        StringMap.fold
+          (fun _name export acc ->
+            let exported_name = Utf8_string.of_string_exn export.Esm.exported_name in
+            ( Export (ExportNames [ export.Esm.local_ident, exported_name ], Parse_info.zero)
+            , N )
+            :: acc)
+          m.Esm.exports
+          [])
+  in
+  import_stmts @ body_stmts @ export_stmts
