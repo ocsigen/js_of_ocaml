@@ -267,11 +267,11 @@ let f t x =
         }
         if(val && ! val[2]){
          var y = val[1], _b_ = y === (x$0 + 1 | 0);
-         if(_b_){var _a_ = _b_; break a;}
+         if(_b_){_a_ = _b_; break a;}
          x$0 = y;
          continue;
         }
-        var _a_ = 0;
+        _a_ = 0;
        }
        return _a_ ? 1 : 2;
       }
@@ -325,7 +325,7 @@ in loop x
           case 3:
            var n$0 = caml_call1(Stdlib_Random[5], 2); x$0 = n$0; continue;
         }
-       var _a_ = 2;
+       _a_ = 2;
       }
       return _a_ + 2 | 0;
      }
@@ -465,17 +465,17 @@ let add_substitute =
               if(97 <= match){
                if(123 <= match){var stop$0 = i$2; break b;}
               }
-              else if(95 !== match){var stop$0 = i$2; break b;}
+              else if(95 !== match){stop$0 = i$2; break b;}
              }
              else if(58 <= match){
-              if(65 > match){var stop$0 = i$2; break b;}
+              if(65 > match){stop$0 = i$2; break b;}
              }
-             else if(48 > match){var stop$0 = i$2; break b;}
+             else if(48 > match){stop$0 = i$2; break b;}
              var i$3 = i$2 + 1 | 0;
              i$2 = i$3;
              continue;
             }
-            var stop$0 = lim$0;
+            stop$0 = lim$0;
            }
            var
             match$0 =
@@ -491,7 +491,7 @@ let add_substitute =
          else{
           if(123 !== opening)
            throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
-          var closing = 125;
+          closing = 125;
          }
          var lim = caml_ml_string_length(s), k = 0, stop = new_start;
          for(;;){
@@ -503,11 +503,10 @@ let add_substitute =
           }
           else if(caml_string_get(s, stop) === closing){
            if(0 === k){
-            var
-             match$0 =
-               [0,
-                caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0),
-                stop + 1 | 0];
+            match$0 =
+             [0,
+              caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0),
+              stop + 1 | 0];
             break;
            }
            var i$0 = stop + 1 | 0, k$1 = k - 1 | 0;
@@ -604,7 +603,7 @@ let () = print_endline (trim " ")
         }
         throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
        }
-       var b = empty;
+       b = empty;
       }
       return caml_string_of_bytes(copy(b));
      }

@@ -357,11 +357,12 @@ let%expect_test "let inside block" =
       1: (function(){
       2:    let v1 = 2;
       3:    var v2 = 0;
-      4:    {let v3 = 3; var v2 = 4;}
+      4:    {let v3 = 3; v2 = 4;}
       5:    console.log(v2, v1);
       6:   }
       7:   ());
-    4 2 |}]
+    4 2
+    |}]
 
 let%expect_test "functions have local scope" =
   test {|

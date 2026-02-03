@@ -85,7 +85,7 @@ let fun2 () =
        break a;
       }
       if(0 !== i$1) return i$1 + 1 | 0;
-      var i$0 = i$1;
+      i$0 = i$1;
      }
      return i$0;
     }
@@ -100,7 +100,7 @@ let fun2 () =
        throw caml_maybe_attach_backtrace(_a_, 0);
       }
       if(0 !== i$0) return i$0 + 1 | 0;
-      var i = i$0;
+      i = i$0;
      }
      return i;
     }

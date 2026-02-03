@@ -105,7 +105,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      catch(exn$0){
       var exn = caml_wrap_exception(exn$0);
       if(exn[1] !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
-      var n = 0;
+      n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
@@ -115,7 +115,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      catch(exn){
       var exn$0 = caml_wrap_exception(exn);
       if(exn$0 !== Stdlib[8]) throw caml_maybe_attach_backtrace(exn$0, 0);
-      var m = 0;
+      m = 0;
      }
      try{
       if(caml_string_equal(s, cst))
@@ -140,7 +140,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
         exn$0 = caml_maybe_attach_backtrace(exn$2, 0);
        return raise$1(exn$0);
       }
-      var n = 0;
+      n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
@@ -153,7 +153,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        var raise$0 = caml_pop_trap(), exn = caml_maybe_attach_backtrace(exn$1, 0);
        return raise$0(exn);
       }
-      var m = 0;
+      m = 0;
      }
      runtime.caml_push_trap
       (function(exn$0){

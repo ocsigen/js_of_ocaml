@@ -39,14 +39,14 @@ let%expect_test "Eliminates unused functions from functor" =
     {|
     function height(param){if(! param) return 0; var h = param[4]; return h;}
     function create(l, v, r){
-     if(l) var h = l[4], hl = h; else var hl = 0;
-     if(r) var h$0 = r[4], hr = h$0; else var hr = 0;
+     if(l) var h = l[4], hl = h; else hl = 0;
+     if(r) var h$0 = r[4], hr = h$0; else hr = 0;
      var _j_ = hr <= hl ? hl + 1 | 0 : hr + 1 | 0;
      return [0, l, v, r, _j_];
     }
     function bal(l, v, r){
-     if(l) var h = l[4], hl = h; else var hl = 0;
-     if(r) var h$0 = r[4], hr = h$0; else var hr = 0;
+     if(l) var h = l[4], hl = h; else hl = 0;
+     if(r) var h$0 = r[4], hr = h$0; else hr = 0;
      if((hr + 2 | 0) < hl){
       if(! l) return invalid_arg(_c_);
       var lr = l[3], lv = l[2], ll = l[1], _f_ = height(lr);

@@ -238,7 +238,7 @@ let ()  = M.myfun M.x
             var _c_ = rev_append(l1, accu);
            }
            else
-            var _c_ = rev_append(l2, accu);
+            _c_ = rev_append(l2, accu);
            return [0, _c_, tl$0];
           }
          },
@@ -320,7 +320,7 @@ let ()  = M.myfun M.x
             var _b_ = rev_append(l1, accu);
            }
            else
-            var _b_ = rev_append(l2, accu);
+            _b_ = rev_append(l2, accu);
            return [0, _b_, tl$0];
           }
          };

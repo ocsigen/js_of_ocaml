@@ -1911,6 +1911,7 @@ class clean =
       let bopt = function
         | Some (Block [], _) -> None
         | Some (Block [ x ], _) -> Some x
+        | Some (Empty_statement, _) -> None
         | Some b -> Some b
         | None -> None
       in
@@ -1964,9 +1965,31 @@ let use_fun_context l =
 (* - rewrite function_expression into function_declaration *)
 (* - if simplification *)
 (* - arithmetic simplification *)
+(* - remove unnecessary var keywords *)
 class simpl =
   object (m)
     inherit map as super
+
+    val declared = Code.Var.Tbl.make () false
+
+    method private declare ident =
+      match ident with
+      | V var -> Code.Var.Tbl.set declared var true
+      | S _ -> ()
+
+    method private declare_list idents = List.iter ~f:(fun id -> m#declare id) idents
+
+    method! fun_decl f =
+      let _, params, _, _ = f in
+      m#declare_list (bound_idents_of_params params);
+      super#fun_decl f
+
+    method variable_declaration kind x =
+      (match kind, x with
+      | Var, DeclIdent (id, _) -> m#declare id
+      | Var, DeclPattern (p, _) -> m#declare_list (bound_idents_of_pattern p)
+      | (Let | Const | Using | AwaitUsing), _ -> ());
+      super#variable_declaration kind x
 
     method expression e =
       let e = super#expression e in
@@ -2003,8 +2026,29 @@ class simpl =
           else EArrow (fun_decl, consise, ANo_fun_context)
       | e -> e
 
+    val mutable in_var_sequence = false
+
+    method private with_in_var_sequence seq f v =
+      let old = in_var_sequence in
+      in_var_sequence <- seq;
+      let result = f v in
+      in_var_sequence <- old;
+      result
+
     method statement s =
-      let s = super#statement s in
+      let s =
+        match s with
+        | Variable_statement (Var, [ DeclIdent (V x, Some (EVar (V y), _)) ])
+          when Code.Var.equal x y && Code.Var.Tbl.get declared x ->
+            Empty_statement
+        | Expression_statement (EBin (Eq, EVar (V x), EVar (V y))) when Code.Var.equal x y
+          -> Empty_statement
+        | Variable_statement (Var, [ DeclIdent (V x, Some (expr, _)) ])
+          when Code.Var.Tbl.get declared x && not in_var_sequence ->
+            Expression_statement (EBin (Eq, EVar (V x), expr))
+        | _ -> s
+      in
+      let s = m#with_in_var_sequence false super#statement s in
       match s with
       | Block [ x ] -> fst x
       | _ -> s
@@ -2026,13 +2070,22 @@ class simpl =
           | s -> s, loc))
 
     method statements s =
-      let s = super#statements s in
-      List.fold_right s ~init:[] ~f:(fun (st, loc) rem ->
+      (* Process a single statement: var->expr conversion and if simplifications.
+         Returns (acc, is_var) where is_var indicates if result is a var statement. *)
+      let process_one acc prev_is_var st loc =
+        let st = m#with_in_var_sequence prev_is_var m#statement st in
+        let is_var =
+          match st with
+          | Variable_statement (Var, _) -> true
+          | Empty_statement -> prev_is_var
+          | _ -> false
+        in
+        let acc =
           match st with
           (* if (1) e1 ... --> e1 *)
-          | If_statement (ENum n, iftrue, _) when Num.is_one n -> iftrue :: rem
+          | If_statement (ENum n, iftrue, _) when Num.is_one n -> iftrue :: acc
           (* if (0) e1 else e2 --> e2 *)
-          | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse rem
+          | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse acc
           (* if (e1) return e2 else return e3 --> return e1 ? e2 : e3 *)
           | If_statement
               ( cond
@@ -2045,28 +2098,50 @@ class simpl =
                       end of the function, but we can't easily get it. *)
                   )
               , loc )
-              :: rem
+              :: acc
           (* if (e1) v1 = e2 else v1 = e3 --> v1 = e1 ? e2 : e3 *)
           | If_statement
               ( cond
               , (Expression_statement (EBin (Eq, v1, e1)), _)
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
             when expression_equal v1 v2 ->
-              (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
+              (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: acc
           (* The following optimizations cause the generated JS to compress less.
              (* if (e1) e2 else e3 --> e1 ? e2 : e3 *)
              | If_statement
                  (e1, (Expression_statement e2, _), Some (Expression_statement e3, _)) ->
-                 (Expression_statement (ECond (e1, e2, e3)), loc) :: rem
+                 (Expression_statement (ECond (e1, e2, e3)), loc) :: acc
              (* if (!e1) e2 --> e1 || e2 *)
              | If_statement (EUn (Not, e1), (Expression_statement e2, _), None) ->
-                 (Expression_statement (EBin (Or, e1, e2)), loc) :: rem
+                 (Expression_statement (EBin (Or, e1, e2)), loc) :: acc
              (* if (e1) e2 --> e1 && e2 *)
              | If_statement (e1, (Expression_statement e2, _), None) ->
-                 (Expression_statement (EBin (And, e1, e2)), loc) :: rem
+                 (Expression_statement (EBin (And, e1, e2)), loc) :: acc
           *)
-          | Variable_statement (((Var | Let | Const) as k), l1) ->
-              let x = List.map l1 ~f:(fun d -> Variable_statement (k, [ d ]), loc) in
-              x @ rem
-          | _ -> (st, loc) :: rem)
+          | _ -> (st, loc) :: acc
+        in
+        acc, is_var
+      in
+      (* Process statements: expands multi-declaration var statements,
+         adjacency tracking for var->expr conversion, and if simplifications.
+         Tail-recursive, reverses once at the end. *)
+      let rec process_statements acc prev_is_var = function
+        | [] -> List.rev acc
+        | (st, loc) :: rest -> (
+            match st with
+            | Variable_statement (((Var | Let | Const) as k), l) ->
+                (* Expand and process each declaration *)
+                let acc, is_var =
+                  List.fold_left
+                    l
+                    ~init:(acc, prev_is_var)
+                    ~f:(fun (acc, prev_is_var) d ->
+                      process_one acc prev_is_var (Variable_statement (k, [ d ])) loc)
+                in
+                process_statements acc is_var rest
+            | _ ->
+                let acc, is_var = process_one acc prev_is_var st loc in
+                process_statements acc is_var rest)
+      in
+      process_statements [] false s
   end

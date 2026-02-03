@@ -40,8 +40,8 @@ let%expect_test "static eval of string get" =
      if(250 === _a_)
       var _b_ = lz[1];
      else{
-      if(246 !== _a_ && 244 !== _a_){var _b_ = lz; break a;}
-      var _b_ = caml_call1(CamlinternalLazy[2], lz);
+      if(246 !== _a_ && 244 !== _a_){_b_ = lz; break a;}
+      _b_ = caml_call1(CamlinternalLazy[2], lz);
      }
      return [0, _b_, _c_];
     }
