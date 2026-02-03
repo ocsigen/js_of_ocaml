@@ -32,16 +32,26 @@ let () =
   let body =
     Js.Opt.get (d##getElementById (Js.string "wiki_demo")) (fun () -> assert false)
   in
+  let edit_pane = Html.createDiv d in
+  edit_pane##.className := Js.string "pane";
+  let edit_label = Html.createDiv d in
+  edit_label##.className := Js.string "pane-label";
+  Dom.appendChild edit_label (d##createTextNode (Js.string "Editor"));
+  Dom.appendChild edit_pane edit_label;
   let textbox = Html.createTextarea d in
-  textbox##.rows := 20;
-  textbox##.cols := 80;
   textbox##.value := Js.string Test.test1;
+  Dom.appendChild edit_pane textbox;
+  Dom.appendChild body edit_pane;
+  let preview_pane = Html.createDiv d in
+  preview_pane##.className := Js.string "pane";
+  let preview_label = Html.createDiv d in
+  preview_label##.className := Js.string "pane-label";
+  Dom.appendChild preview_label (d##createTextNode (Js.string "Preview"));
+  Dom.appendChild preview_pane preview_label;
   let preview = Html.createDiv d in
-  preview##.style##.border := Js.string "1px black dashed";
-  preview##.style##.padding := Js.string "5px";
-  Dom.appendChild body textbox;
-  Dom.appendChild body (Html.createBr d);
-  Dom.appendChild body preview;
+  preview##.className := Js.string "preview";
+  Dom.appendChild preview_pane preview;
+  Dom.appendChild body preview_pane;
   let rec dyn_preview old_text n =
     let text = Js.to_string textbox##.value in
     let n =
