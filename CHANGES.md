@@ -38,6 +38,7 @@
 * Runtime/wasm: fix unmarshalling of compressed data (#2141)
 * Runtime: fix compilation of loops at start of exception handlers (#2151)
 * Compiler: fix parallel renaming (#2156)
+* Lib: fix `onbeforeunload` handler breaking navigation (#1436)
 
 # 6.2.0 (2025-07-30) - Lille
 
