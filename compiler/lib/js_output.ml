@@ -143,7 +143,9 @@ struct
   open D
 
   let nane_of_label = function
-    | Javascript.Label.L _ -> assert false
+    | Javascript.Label.L v ->
+        assert accept_unnamed_var;
+        Utf8_string.of_string_exn (Format.asprintf "<%a>" Code.Var.print v)
     | Javascript.Label.S n -> n
 
   let debug_enabled = Config.Flag.debuginfo ()
