@@ -42,7 +42,7 @@ module Common = Viewer_common.F (struct
 
   type text = Js.js_string Js.t
 
-  let white = Js.string "white"
+  let white = Js.string "#e8e8ee"
 
   type ctx = Html.canvasRenderingContext2D Js.t
 
@@ -83,12 +83,20 @@ module Common = Viewer_common.F (struct
   let rectangle ctx ~x ~y ~width ~height =
     ctx##rect (Js.float x) (Js.float y) (Js.float width) (Js.float height)
 
+  let remap_color c =
+    let s = Js.to_string c in
+    match s with
+    | "#000000" -> Js.string "#2a2a3a"
+    | "#0000ff" -> Js.string "#3a6a9e"
+    | "#ff0000" -> Js.string "#c04040"
+    | _ -> c
+
   let fill ctx c =
-    ctx##.fillStyle := c;
+    ctx##.fillStyle := remap_color c;
     ctx##fill
 
   let stroke ctx c =
-    ctx##.strokeStyle := c;
+    ctx##.strokeStyle := remap_color c;
     ctx##stroke
 
   let clip ctx = ctx##clip
@@ -99,12 +107,12 @@ module Common = Viewer_common.F (struct
     ctx##.textBaseline := Js.string "middle";
     (match fill_color with
     | Some c ->
-        ctx##.fillStyle := c;
+        ctx##.fillStyle := remap_color c;
         ctx##fillText txt (Js.float x) (Js.float y)
     | None -> ());
     match stroke_color with
     | Some c ->
-        ctx##.strokeStyle := c;
+        ctx##.strokeStyle := remap_color c;
         ctx##strokeText txt (Js.float x) (Js.float y)
     | None -> ()
 
@@ -291,17 +299,16 @@ let start () =
   let doc = Html.document in
   let page = doc##.documentElement in
   page##.style##.overflow := Js.string "hidden";
-  doc##.body##.style##.overflow := Js.string "hidden";
-  doc##.body##.style##.margin := Js.string "0px";
   let started = ref false in
   let p = Html.createP doc in
   p##.innerHTML := Js.string "Loading graph...";
+  p##.className := Js.string "loading";
   p##.style##.display := Js.string "none";
   Dom.appendChild doc##.body p;
   ignore
     (Lwt_js.sleep 0.5
     >>= fun () ->
-    if not !started then p##.style##.display := Js.string "inline";
+    if not !started then p##.style##.display := Js.string "block";
     Lwt.return ());
   (*
   Console.console##time(Js.string "loading");
@@ -410,29 +417,36 @@ Console.console##log(Js.string "sleep");
     invalidate_pixmap st.st_pixmap;
     update_view false
   in
-  let size = 16 in
-  let height = 300 - size in
+  let thumb_h = 28 in
+  let slider_w = 28 in
+  let height = 400 - thumb_h in
   let points d = Js.string (Printf.sprintf "%dpx" d) in
-  let size_px = points size in
   let pos = ref height in
+  let track = Html.createDiv doc in
+  track##.className := Js.string "zoom-track";
+  let style = track##.style in
+  style##.position := Js.string "absolute";
+  style##.width := Js.string "4px";
+  style##.top := points (thumb_h / 2);
+  style##.bottom := points (thumb_h / 2);
+  style##.left := points ((slider_w - 4) / 2);
   let thumb = Html.createDiv doc in
+  thumb##.className := Js.string "zoom-thumb";
   let style = thumb##.style in
   style##.position := Js.string "absolute";
-  style##.width := size_px;
-  style##.height := size_px;
+  style##.width := points slider_w;
+  style##.height := points thumb_h;
   style##.top := points !pos;
   style##.left := Js.string "0px";
-  style##.margin := Js.string "1px";
-  style##.backgroundColor := Js.string "black";
   let slider = Html.createDiv doc in
+  slider##.className := Js.string "zoom-slider";
   let style = slider##.style in
   style##.position := Js.string "absolute";
-  style##.width := size_px;
-  style##.height := points (height + size);
-  style##.border := Js.string "2px solid black";
-  style##.padding := Js.string "1px";
-  style##.top := Js.string "10px";
-  style##.left := Js.string "10px";
+  style##.width := points slider_w;
+  style##.height := points (height + thumb_h);
+  style##.top := Js.string "16px";
+  style##.right := Js.string "16px";
+  Dom.appendChild slider track;
   Dom.appendChild slider thumb;
   Dom.appendChild doc##.body slider;
   let set_slider_position pos' =
@@ -449,7 +463,7 @@ Console.console##log(Js.string "sleep");
     Html.handler (fun ev ->
         let ey = Js.to_float ev##.clientY in
         let _, sy = Dom_html.elementClientPosition slider in
-        set_slider_position (max 0 (min height (int_of_float ey - sy - (size / 2))));
+        set_slider_position (max 0 (min height (int_of_float ey - sy - (thumb_h / 2))));
         Js._false);
   let adjust_slider () =
     let pos' = height - truncate ((sadj#value *. float height /. sadj#upper) +. 0.5) in
