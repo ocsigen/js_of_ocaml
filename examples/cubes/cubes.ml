@@ -22,7 +22,7 @@ open Js_of_ocaml_lwt
 
 let n = 12
 
-let h = 20.
+let h = 24.
 
 let w = floor ((h *. sqrt 3. /. 2.) +. 0.5)
 
@@ -55,11 +55,11 @@ let update a =
 
 module Html = Dom_html
 
-let top = Js.string "#a8a8f6"
+let top = Js.string "#7eb8da"
 
-let left = Js.string "#d9d9d9"
+let left = Js.string "#c8dce8"
 
-let right = Js.string "#767676"
+let right = Js.string "#4a7a9b"
 
 let on_cube c i j k f =
   let x = float (i - k + n - 1) *. w in
@@ -192,7 +192,7 @@ let redraw ctx canvas a =
 let ( >>= ) = Lwt.bind
 
 let rec loop c c' a =
-  Lwt_js.sleep 0.2
+  Lwt_js.sleep 0.05
   >>= fun () ->
   let need_redraw = ref false in
   for _i = 0 to 99 do
