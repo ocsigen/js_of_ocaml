@@ -99,17 +99,25 @@ class map : mapper =
 
     method private early_error { reason; loc } = { reason; loc = m#parse_info loc }
 
-    method statements l = List.map l ~f:(fun (s, pc) -> m#statement s, m#loc pc)
+    method statements l =
+      List.map l ~f:(fun (s, pc) ->
+          let s = m#statement s in
+          s, m#loc pc)
 
     method variable_declaration _ x =
       match x with
-      | DeclIdent (id, eo) -> DeclIdent (m#ident id, m#initialiser_o eo)
-      | DeclPattern (p, i) -> DeclPattern (m#binding_pattern p, m#initialiser i)
+      | DeclIdent (id, eo) ->
+          let id = m#ident id in
+          DeclIdent (id, m#initialiser_o eo)
+      | DeclPattern (p, i) ->
+          let p = m#binding_pattern p in
+          DeclPattern (p, m#initialiser i)
 
     method for_binding _ x = m#binding x
 
     method formal_parameter_list { list; rest } =
-      { list = List.map list ~f:m#param; rest = Option.map rest ~f:m#binding }
+      let list = List.map list ~f:m#param in
+      { list; rest = Option.map rest ~f:m#binding }
 
     method private property_name x =
       match x with
@@ -117,24 +125,29 @@ class map : mapper =
       | PComputed e -> PComputed (m#expression e)
 
     method fun_decl (k, params, body, nid) =
-      k, m#formal_parameter_list params, m#function_body body, m#loc nid
+      let params = m#formal_parameter_list params in
+      let body = m#function_body body in
+      k, params, body, m#loc nid
 
     method class_decl x =
-      { decorators = List.map x.decorators ~f:m#expression
-      ; extends = Option.map x.extends ~f:m#expression
-      ; body = List.map x.body ~f:m#class_element
-      }
+      let decorators = List.map x.decorators ~f:m#expression in
+      let extends = Option.map x.extends ~f:m#expression in
+      { decorators; extends; body = List.map x.body ~f:m#class_element }
 
     method class_element x =
       match x with
       | CEMethod (d, s, n, meth) ->
-          CEMethod (List.map d ~f:m#expression, s, m#class_element_name n, m#method_ meth)
+          let d = List.map d ~f:m#expression in
+          let n = m#class_element_name n in
+          CEMethod (d, s, n, m#method_ meth)
       | CEField (d, s, n, i) ->
-          CEField
-            (List.map d ~f:m#expression, s, m#class_element_name n, m#initialiser_o i)
+          let d = List.map d ~f:m#expression in
+          let n = m#class_element_name n in
+          CEField (d, s, n, m#initialiser_o i)
       | CEAccessor (d, s, n, i) ->
-          CEAccessor
-            (List.map d ~f:m#expression, s, m#class_element_name n, m#initialiser_o i)
+          let d = List.map d ~f:m#expression in
+          let n = m#class_element_name n in
+          CEAccessor (d, s, n, m#initialiser_o i)
       | CEStaticBLock b -> CEStaticBLock (m#block b)
 
     method private class_element_name x =
@@ -150,18 +163,27 @@ class map : mapper =
       | Variable_statement (k, l) ->
           Variable_statement (k, List.map l ~f:(m#variable_declaration k))
       | Function_declaration (id, fun_decl) ->
-          Function_declaration (m#ident id, m#fun_decl fun_decl)
+          let id = m#ident id in
+          Function_declaration (id, m#fun_decl fun_decl)
       | Class_declaration (id, cl_decl) ->
-          Class_declaration (m#ident id, m#class_decl cl_decl)
+          let id = m#ident id in
+          Class_declaration (id, m#class_decl cl_decl)
       | Empty_statement -> Empty_statement
       | Debugger_statement -> Debugger_statement
       | Expression_statement e -> Expression_statement (m#expression e)
       | If_statement (e, (s, loc), sopt) ->
-          If_statement (m#expression e, (m#statement s, m#loc loc), m#statement_o sopt)
+          let e = m#expression e in
+          let s = m#statement s in
+          let loc = m#loc loc in
+          If_statement (e, (s, loc), m#statement_o sopt)
       | Do_while_statement ((s, loc), e) ->
-          Do_while_statement ((m#statement s, m#loc loc), m#expression e)
+          let s = m#statement s in
+          let loc = m#loc loc in
+          Do_while_statement ((s, loc), m#expression e)
       | While_statement (e, (s, loc)) ->
-          While_statement (m#expression e, (m#statement s, m#loc loc))
+          let e = m#expression e in
+          let s = m#statement s in
+          While_statement (e, (s, m#loc loc))
       | For_statement (e1, e2, e3, (s, loc)) ->
           let e1 =
             match e1 with
@@ -169,65 +191,101 @@ class map : mapper =
             | Right (k, l) ->
                 Right (k, List.map l ~f:(fun d -> m#variable_declaration k d))
           in
-          For_statement
-            (e1, m#expression_o e2, m#expression_o e3, (m#statement s, m#loc loc))
+          let e2 = m#expression_o e2 in
+          let e3 = m#expression_o e3 in
+          let s = m#statement s in
+          For_statement (e1, e2, e3, (s, m#loc loc))
       | ForIn_statement (e1, e2, (s, loc)) ->
           let e1 =
             match e1 with
             | Left e -> Left (m#expression e)
             | Right (k, d) -> Right (k, m#for_binding k d)
           in
-          ForIn_statement (e1, m#expression e2, (m#statement s, m#loc loc))
+          let e2 = m#expression e2 in
+          let s = m#statement s in
+          ForIn_statement (e1, e2, (s, m#loc loc))
       | ForOf_statement (e1, e2, (s, loc)) ->
           let e1 =
             match e1 with
             | Left e -> Left (m#expression e)
             | Right (k, d) -> Right (k, m#for_binding k d)
           in
-          ForOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
+          let e2 = m#expression e2 in
+          let s = m#statement s in
+          ForOf_statement (e1, e2, (s, m#loc loc))
       | ForAwaitOf_statement (e1, e2, (s, loc)) ->
           let e1 =
             match e1 with
             | Left e -> Left (m#expression e)
             | Right (k, d) -> Right (k, m#for_binding k d)
           in
-          ForAwaitOf_statement (e1, m#expression e2, (m#statement s, m#loc loc))
+          let e2 = m#expression e2 in
+          let s = m#statement s in
+          ForAwaitOf_statement (e1, e2, (s, m#loc loc))
       | Continue_statement s -> Continue_statement s
       | Break_statement s -> Break_statement s
-      | Return_statement (e, loc) -> Return_statement (m#expression_o e, m#loc loc)
+      | Return_statement (e, loc) ->
+          let e = m#expression_o e in
+          Return_statement (e, m#loc loc)
       | Labelled_statement (l, (s, loc)) ->
-          Labelled_statement (l, (m#statement s, m#loc loc))
+          let s = m#statement s in
+          Labelled_statement (l, (s, m#loc loc))
       | Throw_statement e -> Throw_statement (m#expression e)
       | Switch_statement (e, l, def, l') ->
+          let e = m#expression e in
+          let l =
+            List.map l ~f:(fun (e, s) ->
+                let e = m#switch_case e in
+                e, m#statements s)
+          in
+          let def =
+            match def with
+            | None -> None
+            | Some l -> Some (m#statements l)
+          in
           Switch_statement
-            ( m#expression e
-            , List.map l ~f:(fun (e, s) -> m#switch_case e, m#statements s)
-            , (match def with
-              | None -> None
-              | Some l -> Some (m#statements l))
-            , List.map l' ~f:(fun (e, s) -> m#switch_case e, m#statements s) )
+            ( e
+            , l
+            , def
+            , List.map l' ~f:(fun (e, s) ->
+                  let e = m#switch_case e in
+                  e, m#statements s) )
       | Try_statement (b, catch, final) ->
+          let b = m#block b in
+          let catch =
+            match catch with
+            | None -> None
+            | Some (id, b) ->
+                let id = Option.map ~f:m#param id in
+                Some (id, m#block b)
+          in
           Try_statement
-            ( m#block b
-            , (match catch with
-              | None -> None
-              | Some (id, b) -> Some (Option.map ~f:m#param id, m#block b))
+            ( b
+            , catch
             , match final with
               | None -> None
               | Some s -> Some (m#block s) )
       | With_statement (e, (s, loc)) ->
-          With_statement (m#expression e, (m#statement s, m#loc loc))
-      | Import (import, loc) -> Import (m#import import, m#parse_info loc)
-      | Export (export, loc) -> Export (m#export export, m#parse_info loc)
+          let e = m#expression e in
+          let s = m#statement s in
+          With_statement (e, (s, m#loc loc))
+      | Import (import, loc) ->
+          let import = m#import import in
+          Import (import, m#parse_info loc)
+      | Export (export, loc) ->
+          let export = m#export export in
+          Export (export, m#parse_info loc)
 
     method import { from; kind; withClause } =
       let kind =
         match kind with
         | DeferNamespace i -> DeferNamespace (m#ident i)
-        | Namespace (iopt, i) -> Namespace (Option.map ~f:m#ident iopt, m#ident i)
+        | Namespace (iopt, i) ->
+            let iopt = Option.map ~f:m#ident iopt in
+            Namespace (iopt, m#ident i)
         | Named (iopt, l) ->
-            Named
-              (Option.map ~f:m#ident iopt, List.map ~f:(fun (s, id) -> s, m#ident id) l)
+            let iopt = Option.map ~f:m#ident iopt in
+            Named (iopt, List.map ~f:(fun (s, id) -> s, m#ident id) l)
         | Default import_default -> Default (m#ident import_default)
         | SideEffect -> SideEffect
       in
@@ -278,7 +336,9 @@ class map : mapper =
     method statement_o x =
       match x with
       | None -> None
-      | Some (s, loc) -> Some (m#statement s, m#loc loc)
+      | Some (s, loc) ->
+          let s = m#statement s in
+          Some (s, m#loc loc)
 
     method switch_case e = m#expression e
 
@@ -294,9 +354,16 @@ class map : mapper =
 
     method expression x =
       match x with
-      | ESeq (e1, e2) -> ESeq (m#expression e1, m#expression e2)
-      | ECond (e1, e2, e3) -> ECond (m#expression e1, m#expression e2, m#expression e3)
-      | EBin (b, e1, e2) -> EBin (b, m#expression e1, m#expression e2)
+      | ESeq (e1, e2) ->
+          let e1 = m#expression e1 in
+          ESeq (e1, m#expression e2)
+      | ECond (e1, e2, e3) ->
+          let e1 = m#expression e1 in
+          let e2 = m#expression e2 in
+          ECond (e1, e2, m#expression e3)
+      | EBin (b, e1, e2) ->
+          let e1 = m#expression e1 in
+          EBin (b, e1, m#expression e2)
       | EAssignTarget x -> (
           match x with
           | ArrayTarget l ->
@@ -305,7 +372,8 @@ class map : mapper =
                    (List.map l ~f:(function
                      | TargetElementHole -> TargetElementHole
                      | TargetElementId (i, e) ->
-                         TargetElementId (m#ident i, m#initialiser_o e)
+                         let i = m#ident i in
+                         TargetElementId (i, m#initialiser_o e)
                      | TargetElement e -> TargetElement (m#expression e)
                      | TargetElementSpread e -> TargetElementSpread (m#expression e))))
           | ObjectTarget l ->
@@ -313,28 +381,41 @@ class map : mapper =
                 (ObjectTarget
                    (List.map l ~f:(function
                      | TargetPropertyId (Prop_and_ident i, e) ->
-                         TargetPropertyId (Prop_and_ident (m#ident i), m#initialiser_o e)
+                         let i = m#ident i in
+                         TargetPropertyId (Prop_and_ident i, m#initialiser_o e)
                      | TargetProperty (n, e, i) ->
-                         TargetProperty
-                           (m#property_name n, m#expression e, m#initialiser_o i)
+                         let n = m#property_name n in
+                         let e = m#expression e in
+                         TargetProperty (n, e, m#initialiser_o i)
                      | TargetPropertyMethod (n, x) ->
-                         TargetPropertyMethod (m#property_name n, m#method_ x)
+                         let n = m#property_name n in
+                         TargetPropertyMethod (n, m#method_ x)
                      | TargetPropertySpread e -> TargetPropertySpread (m#expression e)))))
       | EUn (b, e1) -> EUn (b, m#expression e1)
       | ECallTemplate (e1, t, loc) ->
-          ECallTemplate (m#expression e1, m#template t, m#loc loc)
+          let e1 = m#expression e1 in
+          let t = m#template t in
+          ECallTemplate (e1, t, m#loc loc)
       | ECall (e1, ak, e2, loc) ->
-          ECall (m#expression e1, ak, List.map e2 ~f:m#argument, m#loc loc)
-      | EAccess (e1, ak, e2) -> EAccess (m#expression e1, ak, m#expression e2)
+          let e1 = m#expression e1 in
+          let e2 = List.map e2 ~f:m#argument in
+          ECall (e1, ak, e2, m#loc loc)
+      | EAccess (e1, ak, e2) ->
+          let e1 = m#expression e1 in
+          EAccess (e1, ak, m#expression e2)
       | EDot (e1, ak, id) -> EDot (m#expression e1, ak, id)
       | EDotPrivate (e1, ak, id) -> EDotPrivate (m#expression e1, ak, id)
       | ENew (e1, args, loc) ->
-          ENew (m#expression e1, Option.map ~f:(List.map ~f:m#argument) args, m#loc loc)
+          let e1 = m#expression e1 in
+          let args = Option.map ~f:(List.map ~f:m#argument) args in
+          ENew (e1, args, m#loc loc)
       | EVar v -> EVar (m#ident v)
       | EFun (idopt, fun_decl) ->
           let idopt = Option.map ~f:m#ident idopt in
           EFun (idopt, m#fun_decl fun_decl)
-      | EClass (id, cl_decl) -> EClass (Option.map ~f:m#ident id, m#class_decl cl_decl)
+      | EClass (id, cl_decl) ->
+          let id = Option.map ~f:m#ident id in
+          EClass (id, m#class_decl cl_decl)
       | EArrow (fun_decl, consise, x) -> EArrow (m#fun_decl fun_decl, consise, x)
       | EArr l ->
           EArr
@@ -346,8 +427,12 @@ class map : mapper =
           EObj
             (List.map l ~f:(fun p ->
                  match p with
-                 | Property (i, e) -> Property (m#property_name i, m#expression e)
-                 | PropertyMethod (n, x) -> PropertyMethod (m#property_name n, m#method_ x)
+                 | Property (i, e) ->
+                     let i = m#property_name i in
+                     Property (i, m#expression e)
+                 | PropertyMethod (n, x) ->
+                     let n = m#property_name n in
+                     PropertyMethod (n, m#method_ x)
                  | PropertySpread e -> PropertySpread (m#expression e)
                  | CoverInitializedName (e, a, b) ->
                      CoverInitializedName (m#early_error e, a, b)))
@@ -368,7 +453,9 @@ class map : mapper =
 
     method private param p = m#binding_element p
 
-    method private binding_element (b, e) = m#binding b, m#initialiser_o e
+    method private binding_element (b, e) =
+      let b = m#binding b in
+      b, m#initialiser_o e
 
     method private binding x =
       match x with
@@ -378,33 +465,36 @@ class map : mapper =
     method private binding_pattern x =
       match x with
       | ObjectBinding { list; rest } ->
-          ObjectBinding
-            { list = List.map list ~f:m#binding_property
-            ; rest = Option.map rest ~f:m#ident
-            }
+          let list = List.map list ~f:m#binding_property in
+          ObjectBinding { list; rest = Option.map rest ~f:m#ident }
       | ArrayBinding { list; rest } ->
-          ArrayBinding
-            { list = List.map list ~f:m#binding_array_elt
-            ; rest = Option.map rest ~f:m#binding
-            }
+          let list = List.map list ~f:m#binding_array_elt in
+          ArrayBinding { list; rest = Option.map rest ~f:m#binding }
 
     method private binding_array_elt x =
       match x with
       | None -> None
-      | Some (b, e) -> Some (m#binding b, m#initialiser_o e)
+      | Some (b, e) ->
+          let b = m#binding b in
+          Some (b, m#initialiser_o e)
 
     method binding_property x =
       match x with
-      | Prop_binding (i, e) -> Prop_binding (m#property_name i, m#binding_element e)
+      | Prop_binding (i, e) ->
+          let i = m#property_name i in
+          Prop_binding (i, m#binding_element e)
       | Prop_ident (Prop_and_ident i, e) ->
-          Prop_ident (Prop_and_ident (m#ident i), m#initialiser_o e)
+          let i = m#ident i in
+          Prop_ident (Prop_and_ident i, m#initialiser_o e)
 
     method expression_o x =
       match x with
       | None -> None
       | Some s -> Some (m#expression s)
 
-    method initialiser (e, loc) = m#expression e, m#loc loc
+    method initialiser (e, loc) =
+      let e = m#expression e in
+      e, m#loc loc
 
     method initialiser_o x =
       match x with
