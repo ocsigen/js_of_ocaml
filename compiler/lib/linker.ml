@@ -286,6 +286,44 @@ module Fragment = struct
     in
     p
 
+  let script_to_module ~runtime_import p =
+    let open Javascript in
+    List.concat_map p ~f:(fun (annots, code_fragments) ->
+        (* Extract provides and requires from annotations *)
+        let provides, requires =
+          List.fold_left annots ~init:(None, []) ~f:(fun (prov, reqs) ((_, a), _pi) ->
+              match a with
+              | `Provides (name, _, _) -> Some name, reqs
+              | `Requires names -> prov, names @ reqs
+              | _ -> prov, reqs)
+        in
+        (* Build import statement if there are requires *)
+        let import_stmt =
+          match requires with
+          | [] -> []
+          | _ ->
+              let named =
+                List.map requires ~f:(fun name ->
+                    let utf8 = Utf8_string.of_string_exn name in
+                    utf8, ident utf8)
+              in
+              let imp =
+                { from = runtime_import; kind = Named (None, named); withClause = None }
+              in
+              [ Import (imp, Parse_info.zero), N ]
+        in
+        (* Build export statement if there's a provides *)
+        let export_stmt =
+          match provides with
+          | None -> []
+          | Some name ->
+              let utf8 = Utf8_string.of_string_exn name in
+              let id = ident utf8 in
+              [ Export (ExportNames [ id, utf8 ], Parse_info.zero), N ]
+        in
+        let code = List.concat code_fragments in
+        import_stmt @ code @ export_stmt)
+
   let parse_from_lex ~filename lex =
     let program =
       try

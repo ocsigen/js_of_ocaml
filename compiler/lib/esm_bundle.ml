@@ -39,7 +39,8 @@ let build_import_substitutions
                 match StringMap.find_opt "default" source_module.exports with
                 | Some e -> e
                 | None ->
-                    failwith ("No default export in " ^ Esm.ModuleId.to_path import.Esm.source)
+                    failwith
+                      ("No default export in " ^ Esm.ModuleId.to_path import.Esm.source)
               in
               let source_ident = Esm.resolve_reexport all_modules export in
               match local_id with
@@ -123,9 +124,7 @@ let optimize_namespace_imports (m : Esm.esm_module) : Esm.esm_module =
             match binding with
             | Esm.ImportNamespace (V v) -> Code.Var.Map.add v import.Esm.source acc
             | Esm.ImportNamespace (S _)
-            | Esm.ImportNamed _
-            | Esm.ImportDefault _
-            | Esm.ImportSideEffect -> acc))
+            | Esm.ImportNamed _ | Esm.ImportDefault _ | Esm.ImportSideEffect -> acc))
   in
   if Code.Var.Map.is_empty namespace_vars
   then m
@@ -178,9 +177,8 @@ let optimize_namespace_imports (m : Esm.esm_module) : Esm.esm_module =
                         (* Keep as namespace import *)
                         [ binding ])
                 | Esm.ImportNamespace (S _)
-                | Esm.ImportNamed _
-                | Esm.ImportDefault _
-                | Esm.ImportSideEffect -> [ binding ])
+                | Esm.ImportNamed _ | Esm.ImportDefault _ | Esm.ImportSideEffect ->
+                    [ binding ])
           in
           { import with bindings })
     in
@@ -238,7 +236,8 @@ let generate_namespace_bindings
                   []
               in
               Some
-                ( Variable_statement (Const, [ DeclIdent (local_id, Some (EObj props, N)) ])
+                ( Variable_statement
+                    (Const, [ DeclIdent (local_id, Some (EObj props, N)) ])
                 , N )
           | Esm.ImportNamed _ | Esm.ImportDefault _ | Esm.ImportSideEffect -> None))
 

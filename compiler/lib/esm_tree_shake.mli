@@ -37,7 +37,8 @@
 
 open Stdlib
 
-val run : Esm.module_graph -> entry_exports:StringSet.t Esm.ModuleId.Map.t -> Esm.module_graph
+val run :
+  Esm.module_graph -> entry_exports:StringSet.t Esm.ModuleId.Map.t -> Esm.module_graph
 (** [run graph ~entry_exports] performs tree shaking on the module graph.
 
     @param graph The module graph to shake

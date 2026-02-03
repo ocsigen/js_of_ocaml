@@ -313,7 +313,11 @@ export function app() {
   in
   (* Bundle WITH tree shaking *)
   let output_shaken =
-    Esm_bundle.bundle_modules ~parse:parse_file ~resolve ~entry_points:[ entry ] ~tree_shake:true
+    Esm_bundle.bundle_modules
+      ~parse:parse_file
+      ~resolve
+      ~entry_points:[ entry ]
+      ~tree_shake:true
   in
   let output_shaken_str = bundle_to_string output_shaken in
   (* Bundle WITHOUT tree shaking for comparison *)
@@ -659,7 +663,11 @@ export function app() { return used; }
 |}
   in
   let output_shaken =
-    Esm_bundle.bundle_modules ~parse:parse_file ~resolve ~entry_points:[ entry ] ~tree_shake:true
+    Esm_bundle.bundle_modules
+      ~parse:parse_file
+      ~resolve
+      ~entry_points:[ entry ]
+      ~tree_shake:true
   in
   let output_str = bundle_to_string output_shaken in
   print_endline output_str;
@@ -699,7 +707,11 @@ export function app() { return foo; }
 |}
   in
   let output_shaken =
-    Esm_bundle.bundle_modules ~parse:parse_file ~resolve ~entry_points:[ entry ] ~tree_shake:true
+    Esm_bundle.bundle_modules
+      ~parse:parse_file
+      ~resolve
+      ~entry_points:[ entry ]
+      ~tree_shake:true
   in
   let output_str = bundle_to_string output_shaken in
   print_endline output_str;
@@ -740,7 +752,11 @@ export function app() { return foo; }
 |}
   in
   let output_shaken =
-    Esm_bundle.bundle_modules ~parse:parse_file ~resolve ~entry_points:[ entry ] ~tree_shake:true
+    Esm_bundle.bundle_modules
+      ~parse:parse_file
+      ~resolve
+      ~entry_points:[ entry ]
+      ~tree_shake:true
   in
   let output_str = bundle_to_string output_shaken in
   print_endline output_str;
@@ -764,22 +780,14 @@ let%expect_test "tree shaking preserves side-effect-only imports" =
   (* Test import './module.js' style imports that have no bindings *)
   with_test_dir
   @@ fun ~write ->
-  let _ =
-    write
-      "setup.js"
-      {|
+  let _ = write "setup.js" {|
 console.log("setup module loaded");
 export {};
-|}
-  in
-  let _ =
-    write
-      "lib.js"
-      {|
+|} in
+  let _ = write "lib.js" {|
 import './setup.js';
 export const foo = 1;
-|}
-  in
+|} in
   let entry =
     write
       "app.js"
@@ -813,31 +821,21 @@ let%expect_test "tree shaking preserves transitive side-effect imports" =
   (* Test that import './a.js' -> import './b.js' chains are preserved *)
   with_test_dir
   @@ fun ~write ->
-  let _ =
-    write
-      "deep.js"
-      {|
+  let _ = write "deep.js" {|
 console.log("deep module");
 export {};
-|}
-  in
+|} in
   let _ =
-    write
-      "middle.js"
-      {|
+    write "middle.js" {|
 import './deep.js';
 console.log("middle module");
 export {};
 |}
   in
-  let _ =
-    write
-      "lib.js"
-      {|
+  let _ = write "lib.js" {|
 import './middle.js';
 export const foo = 1;
-|}
-  in
+|} in
   let entry =
     write
       "app.js"
@@ -894,7 +892,11 @@ export function app() { return used(); }
 |}
   in
   let output_shaken =
-    Esm_bundle.bundle_modules ~parse:parse_file ~resolve ~entry_points:[ entry ] ~tree_shake:true
+    Esm_bundle.bundle_modules
+      ~parse:parse_file
+      ~resolve
+      ~entry_points:[ entry ]
+      ~tree_shake:true
   in
   let output_str = bundle_to_string output_shaken in
   print_endline output_str;
@@ -917,24 +919,38 @@ let%expect_test "diamond dependency - both paths need different exports" =
   with_test_dir
   @@ fun ~write ->
   (* A exports x and z *)
-  let _ = write "a.js" {|
+  let _ =
+    write
+      "a.js"
+      {|
 export function x() { return "x"; }
 export function z() { return "z"; }
 export function unused() { return "unused"; }
-|} in
+|}
+  in
   (* B depends on A.z *)
-  let _ = write "b.js" {|
+  let _ =
+    write "b.js" {|
 import { z } from './a.js';
 export function y() { return z(); }
-|} in
+|}
+  in
   (* root depends on A.x and B.y *)
-  let entry = write "root.js" {|
+  let entry =
+    write
+      "root.js"
+      {|
 import { x } from './a.js';
 import { y } from './b.js';
 export function main() { return x() + y(); }
-|} in
+|}
+  in
   let output =
-    Esm_bundle.bundle_modules ~parse:parse_file ~resolve ~entry_points:[ entry ] ~tree_shake:true
+    Esm_bundle.bundle_modules
+      ~parse:parse_file
+      ~resolve
+      ~entry_points:[ entry ]
+      ~tree_shake:true
   in
   let output_str = bundle_to_string output in
   print_endline output_str;
