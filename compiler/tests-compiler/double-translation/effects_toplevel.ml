@@ -82,17 +82,17 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
         return caml_trampoline_cps_call2(Stdlib_Printf[2], _a_, cont);
        }
        var g = caml_cps_closure(g$0, g$1);
-       function f$0(param){
+       function f$0(_b_){
         var i = 1;
-        for(;;){g(); var _c_ = i + 1 | 0; if(5 === i) return; i = _c_;}
+        for(;;){g(); _b_ = i + 1 | 0; if(5 === i) return; i = _b_;}
        }
        function f$1(param, cont){
         function _a_(i){
          return caml_exact_trampoline_cps_call
                  (g,
                   0,
-                  function(_c_){
-                   var _b_ = i + 1 | 0;
+                  function(_b_){
+                   _b_ = i + 1 | 0;
                    return 5 !== i ? caml_exact_trampoline_call1(_a_, _b_) : cont();
                   });
         }

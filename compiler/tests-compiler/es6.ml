@@ -57,11 +57,10 @@ let rec odd n' = function
         (0,
          [0,
           (a, b)=>{
-           var d = a, c = b;
            for(;;){
-            if(0 === c) return [0, d, 0];
-            if(1 === c) return [0, d, 1];
-            [d, c] = [(c - 1 | 0) - 1 | 0, (d - 1 | 0) - 1 | 0];
+            if(0 === b) return [0, a, 0];
+            if(1 === b) return [0, a, 1];
+            [a, b] = [(b - 1 | 0) - 1 | 0, (a - 1 | 0) - 1 | 0];
            }}],
          "Test");
        return;})
@@ -79,17 +78,17 @@ let rec odd n' = function
         (0,
          [0,
           function(a, b){
-           var d = a, c = b;
            for(;;){
-            if(0 === c) return [0, d, 0];
-            if(1 === c) return [0, d, 1];
-            var e = (d - 1 | 0) - 1 | 0;
-            d = (c - 1 | 0) - 1 | 0;
-            c = e;
+            if(0 === b) return [0, a, 0];
+            if(1 === b) return [0, a, 1];
+            var c = (a - 1 | 0) - 1 | 0;
+            a = (b - 1 | 0) - 1 | 0;
+            b = c;
            }
           }],
          "Test");
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]
