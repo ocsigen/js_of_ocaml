@@ -55,8 +55,7 @@ let rec expr_has_side_effects expr =
         | Element e | ElementSpread e -> expr_has_side_effects e)
   | EObj l ->
       List.exists l ~f:(function
-        | Property (pn, e) ->
-            property_name_has_side_effects pn || expr_has_side_effects e
+        | Property (pn, e) -> property_name_has_side_effects pn || expr_has_side_effects e
         | PropertySpread e -> expr_has_side_effects e
         | PropertyMethod (pn, _) -> property_name_has_side_effects pn
         | CoverInitializedName _ -> false)
@@ -66,14 +65,52 @@ let rec expr_has_side_effects expr =
   | EBin (op, e1, e2) -> (
       match op with
       (* Assignment operators have side effects *)
-      | Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq | LslEq | AsrEq | LsrEq | BandEq
-      | BxorEq | BorEq | OrEq | AndEq | ExpEq | CoalesceEq ->
-          true
+      | Eq
+      | StarEq
+      | SlashEq
+      | ModEq
+      | PlusEq
+      | MinusEq
+      | LslEq
+      | AsrEq
+      | LsrEq
+      | BandEq
+      | BxorEq
+      | BorEq
+      | OrEq
+      | AndEq
+      | ExpEq
+      | CoalesceEq -> true
       (* Non-assignment operators: check operands *)
-      | Or | And | Bor | Bxor | Band | EqEq | NotEq | EqEqEq | NotEqEq | Lt | Le | Gt | Ge
-      | LtInt | LeInt | GtInt | GeInt | InstanceOf | In | Lsl | Lsr | Asr | Plus | Minus
-      | Mul | Div | Mod | Exp | Coalesce ->
-          expr_has_side_effects e1 || expr_has_side_effects e2)
+      | Or
+      | And
+      | Bor
+      | Bxor
+      | Band
+      | EqEq
+      | NotEq
+      | EqEqEq
+      | NotEqEq
+      | Lt
+      | Le
+      | Gt
+      | Ge
+      | LtInt
+      | LeInt
+      | GtInt
+      | GeInt
+      | InstanceOf
+      | In
+      | Lsl
+      | Lsr
+      | Asr
+      | Plus
+      | Minus
+      | Mul
+      | Div
+      | Mod
+      | Exp
+      | Coalesce -> expr_has_side_effects e1 || expr_has_side_effects e2)
   | EUn (op, e) -> (
       match op with
       (* These operators have side effects *)
@@ -117,13 +154,13 @@ let rec stmt_has_side_effects stmt =
   | While_statement (e, (s, _)) -> expr_has_side_effects e || stmt_has_side_effects s
   | For_statement (init, cond, incr, (body, _)) ->
       (match init with
-      | Left None -> false
-      | Left (Some e) -> expr_has_side_effects e
-      | Right (_, decls) ->
-          List.exists decls ~f:(function
-            | DeclIdent (_, None) -> false
-            | DeclIdent (_, Some (e, _)) -> expr_has_side_effects e
-            | DeclPattern (_, (e, _)) -> expr_has_side_effects e))
+        | Left None -> false
+        | Left (Some e) -> expr_has_side_effects e
+        | Right (_, decls) ->
+            List.exists decls ~f:(function
+              | DeclIdent (_, None) -> false
+              | DeclIdent (_, Some (e, _)) -> expr_has_side_effects e
+              | DeclPattern (_, (e, _)) -> expr_has_side_effects e))
       || option_has cond ~f:expr_has_side_effects
       || option_has incr ~f:expr_has_side_effects
       || stmt_has_side_effects body
@@ -137,20 +174,20 @@ let rec stmt_has_side_effects stmt =
   | Switch_statement (e, cases1, default, cases2) ->
       expr_has_side_effects e
       || List.exists cases1 ~f:(fun (ce, sl) ->
-             expr_has_side_effects ce
-             || List.exists sl ~f:(fun (s, _) -> stmt_has_side_effects s))
+          expr_has_side_effects ce
+          || List.exists sl ~f:(fun (s, _) -> stmt_has_side_effects s))
       || option_has default ~f:(fun sl ->
-             List.exists sl ~f:(fun (s, _) -> stmt_has_side_effects s))
+          List.exists sl ~f:(fun (s, _) -> stmt_has_side_effects s))
       || List.exists cases2 ~f:(fun (ce, sl) ->
-             expr_has_side_effects ce
-             || List.exists sl ~f:(fun (s, _) -> stmt_has_side_effects s))
+          expr_has_side_effects ce
+          || List.exists sl ~f:(fun (s, _) -> stmt_has_side_effects s))
   | Throw_statement _ -> true
   | Try_statement (b, catch, finally) ->
       List.exists b ~f:(fun (s, _) -> stmt_has_side_effects s)
       || option_has catch ~f:(fun (_, b) ->
-             List.exists b ~f:(fun (s, _) -> stmt_has_side_effects s))
+          List.exists b ~f:(fun (s, _) -> stmt_has_side_effects s))
       || option_has finally ~f:(fun b ->
-             List.exists b ~f:(fun (s, _) -> stmt_has_side_effects s))
+          List.exists b ~f:(fun (s, _) -> stmt_has_side_effects s))
   | With_statement (e, (s, _)) -> expr_has_side_effects e || stmt_has_side_effects s
   | Import _ -> true
   | Export _ -> true
@@ -158,15 +195,14 @@ let rec stmt_has_side_effects stmt =
 and class_decl_has_side_effects decl =
   option_has decl.extends ~f:expr_has_side_effects
   || List.exists decl.body ~f:(function
-       | CEMethod (_, _, name, _) -> class_element_name_has_side_effects name
-       | CEField (_, _, name, init) ->
-           class_element_name_has_side_effects name
-           || option_has init ~f:(fun (e, _) -> expr_has_side_effects e)
-       | CEStaticBLock stmts ->
-           List.exists stmts ~f:(fun (s, _) -> stmt_has_side_effects s)
-       | CEAccessor (_, _, name, init) ->
-           class_element_name_has_side_effects name
-           || option_has init ~f:(fun (e, _) -> expr_has_side_effects e))
+    | CEMethod (_, _, name, _) -> class_element_name_has_side_effects name
+    | CEField (_, _, name, init) ->
+        class_element_name_has_side_effects name
+        || option_has init ~f:(fun (e, _) -> expr_has_side_effects e)
+    | CEStaticBLock stmts -> List.exists stmts ~f:(fun (s, _) -> stmt_has_side_effects s)
+    | CEAccessor (_, _, name, init) ->
+        class_element_name_has_side_effects name
+        || option_has init ~f:(fun (e, _) -> expr_has_side_effects e))
 
 and class_element_name_has_side_effects name =
   match name with
@@ -179,7 +215,7 @@ type stmt_info =
   ; defines : IdentSet.t
   ; uses : IdentSet.t (* local uses within the module *)
   ; import_uses : (Esm.ModuleId.t * string * Code.Var.t) list
-      (* (source, export_name, local_binding_var) *)
+        (* (source, export_name, local_binding_var) *)
   ; has_side_effects : bool
   ; stmt : statement * location
   }
@@ -201,8 +237,7 @@ let build_import_map (imports : Esm.import_entry list) :
           | Esm.ImportNamed (_, S _)
           | Esm.ImportDefault (S _)
           | Esm.ImportNamespace (S _)
-          | Esm.ImportSideEffect ->
-              acc))
+          | Esm.ImportSideEffect -> acc))
 
 (* Analyze a statement: extract defines, split uses into local vs import *)
 let analyze_stmt import_map idx (stmt, loc) : stmt_info =
@@ -218,7 +253,8 @@ let analyze_stmt import_map idx (stmt, loc) : stmt_info =
           List.fold_left decls ~init:IdentSet.empty ~f:(fun acc decl ->
               match decl with
               | DeclIdent (_, None) -> acc
-              | DeclIdent (_, Some (e, _)) -> IdentSet.union acc (collect_free_vars_expr e)
+              | DeclIdent (_, Some (e, _)) ->
+                  IdentSet.union acc (collect_free_vars_expr e)
               | DeclPattern (_, (e, _)) -> IdentSet.union acc (collect_free_vars_expr e))
         in
         let side_effects =
@@ -238,11 +274,27 @@ let analyze_stmt import_map idx (stmt, loc) : stmt_info =
         let side_effects = class_decl_has_side_effects decl in
         defines, uses, side_effects
     (* Statements that don't define module-level bindings *)
-    | Block _ | Empty_statement | Expression_statement _ | If_statement _
-    | Do_while_statement _ | While_statement _ | For_statement _ | ForIn_statement _
-    | ForOf_statement _ | ForAwaitOf_statement _ | Continue_statement _ | Break_statement _
-    | Return_statement _ | With_statement _ | Labelled_statement _ | Switch_statement _
-    | Throw_statement _ | Try_statement _ | Debugger_statement | Import _ | Export _ ->
+    | Block _
+    | Empty_statement
+    | Expression_statement _
+    | If_statement _
+    | Do_while_statement _
+    | While_statement _
+    | For_statement _
+    | ForIn_statement _
+    | ForOf_statement _
+    | ForAwaitOf_statement _
+    | Continue_statement _
+    | Break_statement _
+    | Return_statement _
+    | With_statement _
+    | Labelled_statement _
+    | Switch_statement _
+    | Throw_statement _
+    | Try_statement _
+    | Debugger_statement
+    | Import _
+    | Export _ ->
         let uses = collect_free_vars stmt in
         IdentSet.empty, uses, stmt_has_side_effects stmt
   in
@@ -480,12 +532,9 @@ let run (graph : Esm.module_graph) ~(entry_exports : StringSet.t Esm.ModuleId.Ma
                       (* S identifiers are not tracked in live_idents *)
                       | Esm.ImportNamed (_, S _)
                       | Esm.ImportDefault (S _)
-                      | Esm.ImportNamespace (S _) ->
-                          false)
+                      | Esm.ImportNamespace (S _) -> false)
                 in
-                if List.is_empty bindings
-                then None
-                else Some { import with bindings })
+                if List.is_empty bindings then None else Some { import with bindings })
           in
           Some { m with body; exports; imports })
       graph.modules
