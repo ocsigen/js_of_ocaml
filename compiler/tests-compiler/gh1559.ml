@@ -92,10 +92,10 @@ let () = my_ref := 2
           this_will_be_undefined =
             function(param){
              a:
-             {if(t$1 && 1 === t$1[1]){var _b_ = 1; break a;} var _b_ = 0;}
+             {if(t$1 && 1 === t$1[1]){var _b_ = 1; break a;} _b_ = 0;}
              return _b_ ? 1 : 2;
             };
-         if(t$0) var i = t$0[1], match = i; else var match = - 1;
+         if(t$0) var i = t$0[1], match = i; else match = - 1;
          if(0 === match) return this_will_be_undefined(0);
          if(1 === match){
           var nesting = 1;
@@ -200,10 +200,10 @@ let () = my_ref := 2
            this_will_be_undefined =
              function(param){
               a:
-              {if(t$1 && 1 === t$1[1]){var _c_ = 1; break a;} var _c_ = 0;}
+              {if(t$1 && 1 === t$1[1]){var _c_ = 1; break a;} _c_ = 0;}
               return _c_ ? 1 : 2;
              };
-          if(t$0) var i = t$0[1], match = i; else var match = - 1;
+          if(t$0) var i = t$0[1], match = i; else match = - 1;
           if(0 === match) break;
           if(1 === match) break a;
           t$0 = t;
