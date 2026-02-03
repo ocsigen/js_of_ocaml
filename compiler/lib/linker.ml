@@ -254,9 +254,43 @@ module Fragment = struct
   let version_match =
     List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
 
+  let attach_annot p toks =
+    let take_annot_before =
+      let toks_r = ref toks in
+      let rec loop start_pos acc (toks : (Js_token.t * _) list) =
+        match toks with
+        | [] -> assert false
+        | (TAnnot a, loc) :: xs ->
+            loop start_pos ((a, Parse_info.t_of_pos (Loc.p1 loc)) :: acc) xs
+        | ((TComment _ | TCommentLineDirective _), _) :: xs -> loop start_pos acc xs
+        | (_, loc) :: xs ->
+            if Loc.cnum loc = start_pos.Lexing.pos_cnum
+            then (
+              toks_r := toks;
+              List.rev acc)
+            else loop start_pos [] xs
+      in
+      fun start_pos -> loop start_pos [] !toks_r
+    in
+    let p = List.map p ~f:(fun (start_pos, s) -> take_annot_before start_pos, s) in
+    let groups =
+      List.group p ~f:(fun a _pred ->
+          match a with
+          | [], _ -> true
+          | _ :: _, _ -> false)
+    in
+    let p =
+      List.map groups ~f:(function
+        | [] -> assert false
+        | (annot, _) :: _ as l -> annot, List.map l ~f:snd)
+    in
+    p
+
   let parse_from_lex ~filename lex =
-    let program, _ =
-      try Parse_js.parse' `Script lex
+    let program =
+      try
+        let p, toks = Parse_js.parse' `Script lex in
+        attach_annot p toks
       with Parse_js.Parsing_error pi ->
         let name =
           match pi with
