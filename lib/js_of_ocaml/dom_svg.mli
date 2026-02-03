@@ -223,7 +223,7 @@ and animatedInteger = [int] animated
 and animatedNumber = [number_t] animated
 
 (* interface SVGNumberList *)
-and numberList = [number t] list
+and numberList = [number_t] list
 
 (* interface SVGAnimatedNumberList *)
 and animatedNumberList = [numberList t] animated

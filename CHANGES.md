@@ -19,6 +19,7 @@
 ## Bug fixes
 * Lib: fix `characterData.substringData` method name typo in Dom module
 * Lib: fix various Dom_html bindings (submitEvent, mediaQueryListEvent, pointerEvent, element, inputElement, tableElement types and deprecations)
+* Lib: fix `numberList` type in Dom_svg to use `number_t`
 * Compiler: fix purity of comparison functions (again) (#2092)
 * Compiler: fix inlining (#2107)
 * Compiler: allow arrow functions in for loops
