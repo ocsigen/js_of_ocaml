@@ -48,8 +48,7 @@ end
        var
         runtime = globalThis.jsoo_runtime,
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
-        global_data = runtime.caml_get_global_data(),
-        Assert_failure = global_data.Assert_failure,
+        Assert_failure = runtime.caml_get_global_data().Assert_failure,
         _a_ = [0, runtime.caml_string_of_jsbytes("test.ml"), 12, 38];
        runtime.foo
         (function(param){

@@ -1173,10 +1173,6 @@ let file_lines_text file =
   close_in ic;
   c
 
-let generated_name = function
-  | "param" | "match" | "switcher" -> true
-  | s -> String.starts_with ~prefix:"cst_" s
-
 module Hashtbl = struct
   include Hashtbl
 

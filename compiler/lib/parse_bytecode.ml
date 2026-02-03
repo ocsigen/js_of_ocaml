@@ -724,7 +724,15 @@ module State = struct
                    Code.Var.Hashtbl.add st.immutable v ()
                | Not_module -> Ident.Tbl.add st.module_or_not ident Not_module
                | Unknown -> ()));
-        Var.set_name v (Ident.name ident);
+        let name = Ident.name ident in
+        let generated =
+          (String.length name > 1 && Char.equal name.[0] '*')
+          ||
+          match name with
+          | "param" | "switcher" | "tag" -> true
+          | _ -> false
+        in
+        Var.set_name v ~generated name;
         name_rec debug st (i + 1) lrem srem summary
     | (j, _) :: _, _ :: srem when i < j -> name_rec debug st (i + 1) l srem summary
     | _ -> assert false
@@ -2864,11 +2872,11 @@ let from_bytes ~prims ~debug (code : bytecode) =
     let value = (Meta.global_data ()).(i) in
     let tag = Obj.tag value in
     if tag = Obj.string_tag
-    then Some ("cst_" ^ Obj.magic value : string)
+    then Some (("cst_" ^ Obj.magic value : string), true)
     else
       match Int.Hashtbl.find ident_table i with
       | exception Not_found -> None
-      | glob -> Some (Ocaml_compiler.Symtable.Global.name glob)
+      | glob -> Some (Ocaml_compiler.Symtable.Global.name glob, false)
   in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
@@ -2878,7 +2886,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
              then
                match find_name i with
                | None -> ()
-               | Some name -> Code.Var.set_name x name);
+               | Some (name, generated) -> Code.Var.set_name x ~generated name);
             need_gdata := true;
             Let (x, Field (gdata, i, Non_float)) :: l
         | _ -> l)
@@ -3010,7 +3018,8 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
                 let l = register_global globals i l in
                 let cst = globals.constants.(i) in
                 (match cst, Code.Var.get_name x with
-                | String str, None -> Var.set_name x (Printf.sprintf "cst_%s" str)
+                | String str, None ->
+                    Var.set_name x ~generated:true (Printf.sprintf "cst_%s" str)
                 | _ -> ());
                 Let (x, Constant cst) :: l
             | Some name ->

@@ -52,8 +52,7 @@ let () =
        }
        var
         dummy = 0,
-        global_data = runtime.caml_get_global_data(),
-        Assert_failure = global_data.Assert_failure,
+        Assert_failure = runtime.caml_get_global_data().Assert_failure,
         _a_ = [0, caml_string_of_jsbytes("test.ml"), 4, 27];
        function h(x){x[1] = function(x, y){return x + y | 0;};}
        function f(param){

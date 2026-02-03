@@ -1447,15 +1447,7 @@ let remove_unused_tail_args ctx exact trampolined args =
     else args
   else args
 
-let keep_name x =
-  match Code.Var.get_name x with
-  | None -> false
-  | Some "" -> false
-  | Some s ->
-      (* "switcher" is emitted by the OCaml compiler when compiling
-        pattern matching, it does not help much to keep it in the
-        generated js, let's drop it *)
-      (not (generated_name s)) && not (String.starts_with s ~prefix:"jsoo_")
+let keep_name x = not (Code.Var.generated_name x)
 
 let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t =
   let open Expr_builder in

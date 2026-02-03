@@ -73,12 +73,11 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        }
        var
         dummy = 0,
-        global_data = runtime.caml_get_global_data(),
         _a_ =
           [0,
            [11, caml_string_of_jsbytes("abc"), 0],
            caml_string_of_jsbytes("abc")],
-        Stdlib_Printf = global_data.Stdlib__Printf;
+        Stdlib_Printf = runtime.caml_get_global_data().Stdlib__Printf;
        function g$0(param){return caml_call1(Stdlib_Printf[2], _a_);}
        function g$1(param, cont){
         return caml_trampoline_cps_call2(Stdlib_Printf[2], _a_, cont);

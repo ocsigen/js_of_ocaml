@@ -63,8 +63,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        }
        var
         dummy = 0,
-        global_data = runtime.caml_get_global_data(),
-        Stdlib_Printf = global_data.Stdlib__Printf,
+        Stdlib_Printf = runtime.caml_get_global_data().Stdlib__Printf,
         _a_ =
           [0,
            [11, caml_string_of_jsbytes("abc"), 0],

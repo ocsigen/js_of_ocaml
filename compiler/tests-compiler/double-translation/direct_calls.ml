@@ -268,8 +268,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        function recfuncs(x){
         function f(y){return 0 === y ? 1 : x + h(y - 1 | 0) | 0;}
         function h(z){return 0 === z ? 1 : x + f(z - 1 | 0) | 0;}
-        var tuple = [0, h, f];
-        return tuple;
+        return [0, h, f];
        }
        function g(){
         function g$0(x){
