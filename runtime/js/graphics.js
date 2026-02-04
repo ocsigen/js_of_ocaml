@@ -153,8 +153,8 @@ function caml_gr_resize_window(w, h) {
   var s = caml_gr_state_get();
   s.width = w;
   s.height = h;
-  s.canvas.width = w;
-  s.canvas.height = h;
+  if (w !== s.canvas.width) s.canvas.width = w;
+  if (h !== s.canvas.height) s.canvas.height = h;
   return 0;
 }
 
@@ -162,9 +162,7 @@ function caml_gr_resize_window(w, h) {
 //Requires: caml_gr_state_get
 function caml_gr_clear_graph() {
   var s = caml_gr_state_get();
-  s.canvas.width = s.width;
-  s.canvas.height = s.height;
-  //  s.context.strokeRect (0., 0., s.width, s.height);
+  s.context.clearRect(0, 0, s.canvas.width, s.canvas.height);
   return 0;
 }
 
