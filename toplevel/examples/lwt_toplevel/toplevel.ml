@@ -250,7 +250,9 @@ let setup_share_button ~output =
             let append_url str =
               let dom =
                 Tyxml_js.Html.(
-                  p [ txt "Share this url : "; a ~a:[ a_href str ] [ txt str ] ])
+                  p
+                    ~a:[ a_class [ "share-url" ] ]
+                    [ txt "Share: "; a ~a:[ a_href str ] [ txt str ] ])
               in
               Dom.appendChild output (Tyxml_js.To_dom.of_element dom)
             in
@@ -266,8 +268,17 @@ let setup_share_button ~output =
                           (Url.urlencode uri)
                       in
                       Lwt.bind (Js_of_ocaml_lwt.Jsonp.call uri) (fun o ->
-                          let str = Js.to_string o##.shorturl in
-                          append_url str;
+                          (match
+                             ( Js.Optdef.to_option o##.errorcode
+                             , Js.Optdef.to_option o##.errormessage )
+                           with
+                          | _, Some err -> failwith (Js.to_string err)
+                          | Some err_code, _ ->
+                              failwith (Printf.sprintf "Unknown error %d" err_code)
+                          | None, None -> (
+                              match Js.Optdef.to_option o##.shorturl with
+                              | None -> failwith "Unknown error"
+                              | Some url -> append_url (Js.to_string url)));
                           Lwt.return_unit))
                   (fun exn ->
                     Format.eprintf
