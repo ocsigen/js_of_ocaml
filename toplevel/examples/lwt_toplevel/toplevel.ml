@@ -230,7 +230,10 @@ let setup_share_button ~output =
               (iter_on_sharp ~f:(fun e ->
                    code :=
                      Js.Opt.case e##.textContent (fun () -> "") Js.to_string :: !code));
-            let code_encoded = B64.encode (String.concat "" (List.rev !code)) in
+            let code_encoded =
+              Js_of_ocaml_compiler.Base64.encode_string
+                (String.concat "" (List.rev !code))
+            in
             let url, is_file =
               match Url.Current.get () with
               | Some (Url.Http url) -> Url.Http { url with Url.hu_fragment = "" }, false
@@ -476,7 +479,7 @@ let run _ =
   (* Run initial code if any *)
   try
     let code = List.assoc "code" (parse_hash ()) in
-    textbox##.value := Js.string (B64.decode code);
+    textbox##.value := Js.string (Js_of_ocaml_compiler.Base64.decode_exn code);
     Lwt.async execute
   with
   | Not_found -> ()
