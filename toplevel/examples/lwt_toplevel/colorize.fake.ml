@@ -2,6 +2,7 @@ open Js_of_ocaml
 open Js_of_ocaml_tyxml
 
 let text ~a_class:cl s = Tyxml_js.Html.(span ~a:[ a_class [ cl ] ] [ txt s ])
+
 let ocaml = text
 
 let highlight from_ to_ e =

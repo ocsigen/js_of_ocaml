@@ -1,4 +1,5 @@
 [@@@ocamlformat "let-binding-spacing=compact"]
+
 [@@@ocamlformat "module-item-spacing=compact"]
 
 (** Overview *)
