@@ -24,10 +24,10 @@
    (higlo -> colorize.higlo.ml)
    (!higlo -> colorize.fake.ml))
   (select
-   graphics_support.ml
+   graphics_dummy.ml
    from
-   (js_of_ocaml-lwt.graphics -> graphics_support.enabled.ml)
-   (-> graphics_support.disabled.ml))
+   (js_of_ocaml-lwt.graphics -> graphics_dummy.in.ml)
+   (-> graphics_dummy.in.ml))
   (select
    ppx_support.ml
    from
