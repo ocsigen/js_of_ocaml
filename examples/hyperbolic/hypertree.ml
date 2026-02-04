@@ -1456,21 +1456,15 @@ let show_image all_messages image_info name small_image =
 
 let information_en =
   Js.string
-    "<h1>A Tree of Animals</h1>\
-     <p>This <a target=\"_blank\" \
+    "<h1>A Tree of Animals</h1><p>This <a target=\"_blank\" \
      href=\"http://en.wikipedia.org/wiki/Phylogenetic_tree\"><em>phylogenetic</em> \
-     tree</a> displays the relationships among animals.</p>\
-     <h2>Usage</h2>\
-     <p>Browse the tree by \
-     dragging it with the mouse. Click on any image to display a larger \
-     version. Use arrow keys to navigate.</p>\
-     <h2>Credits</h2>\
-     <p>This software and the images it uses are under free \
-     licenses. Images are from <a target=\"_blank\" \
-     href=\"http://commons.wikimedia.org/wiki/Main_Page\">Wikimedia Commons</a>. \
-     You can click on each image for details.</p>\
-     <p>The software has been written by J\195\169r\195\180me \
-     Vouillon (CNRS).</p>"
+     tree</a> displays the relationships among animals.</p><h2>Usage</h2><p>Browse the \
+     tree by dragging it with the mouse. Click on any image to display a larger version. \
+     Use arrow keys to navigate.</p><h2>Credits</h2><p>This software and the images it \
+     uses are under free licenses. Images are from <a target=\"_blank\" \
+     href=\"http://commons.wikimedia.org/wiki/Main_Page\">Wikimedia Commons</a>. You can \
+     click on each image for details.</p><p>The software has been written by \
+     J\195\169r\195\180me Vouillon (CNRS).</p>"
 
 let show_information_page messages tree_i18n =
   let info =

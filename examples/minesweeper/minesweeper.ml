@@ -187,9 +187,7 @@ let draw_board d =
 let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
-      d.dom.(y).(x)##.onclick
-      := Html.handler (fun _ ->
-          Js._false)
+      d.dom.(y).(x)##.onclick := Html.handler (fun _ -> Js._false)
     done
   done
 
@@ -251,13 +249,13 @@ let init_table d board_div =
   Dom.appendChild btn_flag (document##createTextNode (js " Flag"));
   let set_mode m =
     mode := m;
-    (match m with
+    match m with
     | Normal ->
         btn_reveal##.className := js "mode-btn mode-btn-active";
         btn_flag##.className := js "mode-btn"
     | Flag ->
         btn_reveal##.className := js "mode-btn";
-        btn_flag##.className := js "mode-btn mode-btn-active")
+        btn_flag##.className := js "mode-btn mode-btn-active"
   in
   btn_reveal##.onclick :=
     Html.handler (fun _ ->

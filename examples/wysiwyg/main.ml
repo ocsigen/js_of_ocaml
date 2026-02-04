@@ -115,31 +115,31 @@ let () =
       iDoc##open_;
       iDoc##write
         (Js.string
-           "<html><body>\
-            <h1>Bactrian Camel</h1>\
-            <p>The <b>Bactrian camel</b> (<i>Camelus bactrianus</i>) is a large \
-            even-toed ungulate native to the steppes of Central Asia. It has two humps \
-            on its back, in contrast to the single-humped dromedary.</p>\
-            <h2>Characteristics</h2>\
-            <p>Bactrian camels are exceptionally well adapted to the harsh conditions of \
-            the <b>Gobi Desert</b> and surrounding regions. They can withstand temperatures \
-            ranging from <i>-40\194\176C in winter</i> to <i>+40\194\176C in summer</i>.</p>\
-            <p>Key features include:</p>\
-            <p>- Thick, woolly coat that sheds in summer<br>\
-            - Broad, tough feet for walking on sand and snow<br>\
-            - Ability to go without water for months</p>\
-            <h2>Conservation</h2>\
-            <p>Wild Bactrian camels are <b>critically endangered</b>, with fewer than \
-            1,000 remaining in remote areas of China and Mongolia.</p>\
-            </body></html>");
+           "<html><body><h1>Bactrian Camel</h1><p>The <b>Bactrian camel</b> (<i>Camelus \
+            bactrianus</i>) is a large even-toed ungulate native to the steppes of \
+            Central Asia. It has two humps on its back, in contrast to the single-humped \
+            dromedary.</p><h2>Characteristics</h2><p>Bactrian camels are exceptionally \
+            well adapted to the harsh conditions of the <b>Gobi Desert</b> and \
+            surrounding regions. They can withstand temperatures ranging from \
+            <i>-40\194\176C in winter</i> to <i>+40\194\176C in summer</i>.</p><p>Key \
+            features include:</p><p>- Thick, woolly coat that sheds in summer<br>- \
+            Broad, tough feet for walking on sand and snow<br>- Ability to go without \
+            water for months</p><h2>Conservation</h2><p>Wild Bactrian camels are \
+            <b>critically endangered</b>, with fewer than 1,000 remaining in remote \
+            areas of China and Mongolia.</p></body></html>");
       iDoc##close;
       iDoc##.designMode := Js.string "On";
       let iWin = iframe##.contentWindow in
       let toolbar = Html.createDiv d in
       toolbar##.className := Js.string "toolbar";
       Dom.appendChild body toolbar;
-      let createButton ?(show = Js._false) ?(value = None) ?(html = None) parent title action
-          =
+      let createButton
+          ?(show = Js._false)
+          ?(value = None)
+          ?(html = None)
+          parent
+          title
+          action =
         let but = Html.createButton ~_type:(Js.string "button") d in
         (match html with
         | Some h -> but##.innerHTML := Js.string h
@@ -164,14 +164,12 @@ let () =
       ignore (createButton format_group "I" "italic");
       let remove_fmt_svg =
         "<svg width='14' height='14' viewBox='0 0 16 16' fill='none' \
-         stroke='currentColor' stroke-linecap='round'>\
-         <line x1='4' y1='3' x2='12' y2='3' stroke-width='2.5'/>\
-         <line x1='8' y1='3' x2='7' y2='13' stroke-width='2.5'/>\
-         <line x1='3' y1='14' x2='14' y2='3' stroke-width='1.5' stroke='#e06060'/>\
-         </svg>"
+         stroke='currentColor' stroke-linecap='round'><line x1='4' y1='3' x2='12' y2='3' \
+         stroke-width='2.5'/><line x1='8' y1='3' x2='7' y2='13' \
+         stroke-width='2.5'/><line x1='3' y1='14' x2='14' y2='3' stroke-width='1.5' \
+         stroke='#e06060'/></svg>"
       in
-      ignore
-        (createButton format_group "" "removeformat" ~html:(Some remove_fmt_svg));
+      ignore (createButton format_group "" "removeformat" ~html:(Some remove_fmt_svg));
       let block_group = Html.createDiv d in
       block_group##.className := Js.string "toolbar-group";
       Dom.appendChild toolbar block_group;
