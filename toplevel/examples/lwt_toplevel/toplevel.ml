@@ -467,7 +467,6 @@ let run _ =
       >>= fun () ->
       textbox##focus;
       Lwt.return_unit);
-  Graphics_support.init (by_id_coerce "test-canvas" Dom_html.CoerceTo.canvas);
   Sys_js.set_channel_flusher caml_chan (append Colorize.ocaml output "caml");
   Sys_js.set_channel_flusher sharp_chan (append Colorize.ocaml output "sharp");
   Sys_js.set_channel_flusher stdout (append Colorize.text output "stdout");
