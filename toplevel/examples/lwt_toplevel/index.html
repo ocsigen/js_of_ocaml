@@ -189,14 +189,15 @@
       }
 
       canvas {
-        border: 1px dashed rgba(255, 255, 255, 0.2);
+        background-color: #888;
+        border: 1px solid rgba(255, 255, 255, 0.12);
         border-radius: 4px;
       }
 
       #output canvas {
-        background-color: #464646;
+        background-color: #888;
         display: block;
-        border: 1px dashed rgba(255, 255, 255, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.12);
         margin: 7px;
         border-radius: 4px;
       }
@@ -475,7 +476,6 @@
         <h4>Examples</h4>
         <div id="examples-row">
           <div id="toplevel-examples" class="list-group"></div>
-          <canvas width=200 height=200 id="test-canvas"></canvas>
         </div>
         <details id="js-details">
           <summary>See the generated javascript code</summary>
