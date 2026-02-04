@@ -76,8 +76,14 @@
         font-size: 13px;
       }
 
+      #toplevel-container > div:last-of-type {
+        display: flex;
+        align-items: flex-start;
+      }
+
       #toplevel-container textarea {
-        width: 90%;
+        flex: 1;
+        min-width: 0;
         line-height: 20px;
         font-size: 13px;
         background-color: transparent;
@@ -87,17 +93,16 @@
         outline: none;
         font-family: "SF Mono", "Fira Code", Consolas, monospace;
         font-weight: bold;
-        float: left;
         margin: 0;
         padding: 0;
       }
 
       #toplevel-container #sharp {
-        float: left;
         line-height: 20px;
         font-size: 13px;
         font-family: "SF Mono", "Fira Code", Consolas, monospace;
         white-space: pre;
+        flex-shrink: 0;
       }
 
       .sharp:before {
@@ -233,8 +238,6 @@
       }
 
       #btn-share {
-        float: right;
-        margin-top: -20px;
         background-color: #2a2a3a;
         color: #ccc;
         border: 1px solid rgba(255, 255, 255, 0.15);
@@ -245,6 +248,9 @@
         cursor: pointer;
         display: none;
         transition: background 0.15s;
+        margin-left: auto;
+        align-self: flex-start;
+        flex-shrink: 0;
       }
 
       #btn-share:hover {
@@ -253,6 +259,26 @@
       }
 
       .clear { clear: both; }
+
+      #output .share-url {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        padding: 8px 12px;
+        margin: 6px 0;
+        font-size: 12px;
+        line-height: 1.5;
+        word-break: break-all;
+      }
+
+      #output .share-url a {
+        color: rgb(110, 160, 255);
+        text-decoration: none;
+      }
+
+      #output .share-url a:hover {
+        text-decoration: underline;
+      }
 
       /* Keyboard shortcuts table */
       table {
