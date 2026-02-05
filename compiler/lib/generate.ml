@@ -304,6 +304,7 @@ module Ctx = struct
     ; mutated_vars : Code.Var.Set.t Code.Addr.Map.t
     ; freevars : Code.Var.Set.t Code.Addr.Map.t
     ; in_cps : Effects.in_cps
+    ; bool_context : Bool_context.t
     }
 
   let initial
@@ -314,6 +315,7 @@ module Ctx = struct
       ~mutated_vars
       ~freevars
       ~in_cps
+      ~bool_context
       blocks
       live
       trampolined_calls
@@ -329,6 +331,7 @@ module Ctx = struct
     ; mutated_vars
     ; freevars
     ; in_cps
+    ; bool_context
     }
 end
 
@@ -372,7 +375,10 @@ let plus_int x y =
   | J.ENum x, J.ENum y -> J.ENum (J.Num.add x y)
   | x, y -> J.EBin (J.Plus, x, y)
 
-let bool e = J.ECond (e, one, zero)
+let maybe_bool ctx x e =
+  if Bool_context.is_bool_context_only ctx.Ctx.bool_context x
+  then e
+  else J.ECond (e, one, zero)
 
 (****)
 
@@ -1336,14 +1342,6 @@ let _ =
     [ "%int_neg"; "caml_int32_neg"; "caml_nativeint_neg" ]
     `Pure
     (fun cx _ -> to_int (J.EUn (J.Neg, cx)));
-  register_bin_prim "caml_eq_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.EqEqEq, cx, cy)));
-  register_bin_prim "caml_neq_float" `Pure (fun cx cy _ ->
-      bool (J.EBin (J.NotEqEq, cx, cy)));
-  register_bin_prim "caml_ge_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cy, cx)));
-  register_bin_prim "caml_le_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Le, cx, cy)));
-  register_bin_prim "caml_gt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cy, cx)));
-  register_bin_prim "caml_lt_float" `Pure (fun cx cy _ -> bool (J.EBin (J.Lt, cx, cy)));
   register_bin_prim "caml_add_float" `Pure (fun cx cy _ -> J.EBin (J.Plus, cx, cy));
   register_bin_prim "caml_sub_float" `Pure (fun cx cy _ -> J.EBin (J.Minus, cx, cy));
   register_bin_prim "caml_mul_float" `Pure (fun cx cy _ -> J.EBin (J.Mul, cx, cy));
@@ -1394,12 +1392,6 @@ let _ =
   register_bin_prim "caml_js_get" `Mutator (fun cx cy _ -> J.EAccess (cx, ANormal, cy));
   register_bin_prim "caml_js_delete" `Mutator (fun cx cy _ ->
       J.EUn (J.Delete, J.EAccess (cx, ANormal, cy)));
-  register_bin_prim "caml_js_equals" `Mutable (fun cx cy _ ->
-      bool (J.EBin (J.EqEq, cx, cy)));
-  register_bin_prim "caml_js_strict_equals" `Mutable (fun cx cy _ ->
-      bool (J.EBin (J.EqEqEq, cx, cy)));
-  register_bin_prim "caml_js_instanceof" `Mutator (fun cx cy _ ->
-      bool (J.EBin (J.InstanceOf, cx, cy)));
   register_un_prim "caml_js_typeof" `Mutator (fun cx _ -> J.EUn (J.Typeof, cx))
 
 (****)
@@ -1665,11 +1657,11 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
         | Extern "caml_string_notequal", [ a; b ] when Config.Flag.use_js_string () ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
-            return (bool (J.EBin (J.NotEqEq, cx, cy)))
+            return (maybe_bool ctx x (J.EBin (J.NotEqEq, cx, cy)))
         | Extern "caml_string_equal", [ a; b ] when Config.Flag.use_js_string () ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
-            return (bool (J.EBin (J.EqEqEq, cx, cy)))
+            return (maybe_bool ctx x (J.EBin (J.EqEqEq, cx, cy)))
         | Extern "caml_string_concat", [ a; b ] when Config.Flag.use_js_string () ->
             let* ca = access' ~ctx a in
             let* cb = access' ~ctx b in
@@ -1679,6 +1671,45 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               | _ -> J.EBin (J.Plus, ca, cb)
             in
             return (add ca cb)
+        | Extern "caml_eq_float", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            return (maybe_bool ctx x (J.EBin (J.EqEqEq, cx, cy)))
+        | Extern "caml_neq_float", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            return (maybe_bool ctx x (J.EBin (J.NotEqEq, cx, cy)))
+        | Extern "caml_ge_float", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            return (maybe_bool ctx x (J.EBin (J.Le, cy, cx)))
+        | Extern "caml_le_float", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            return (maybe_bool ctx x (J.EBin (J.Le, cx, cy)))
+        | Extern "caml_gt_float", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            return (maybe_bool ctx x (J.EBin (J.Lt, cy, cx)))
+        | Extern "caml_lt_float", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            return (maybe_bool ctx x (J.EBin (J.Lt, cx, cy)))
+        | Extern "caml_js_equals", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            let* () = info mutable_p in
+            return (maybe_bool ctx x (J.EBin (J.EqEq, cx, cy)))
+        | Extern "caml_js_strict_equals", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            let* () = info mutable_p in
+            return (maybe_bool ctx x (J.EBin (J.EqEqEq, cx, cy)))
+        | Extern "caml_js_instanceof", [ a; b ] ->
+            let* cx = access' ~ctx a in
+            let* cy = access' ~ctx b in
+            let* () = info mutator_p in
+            return (maybe_bool ctx x (J.EBin (J.InstanceOf, cx, cy)))
         | Extern name_orig, l -> (
             let name = Primitive.resolve name_orig in
             match internal_prim name with
@@ -1693,29 +1724,29 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
         | Not, [ x ] ->
             let* cx = access' ~ctx x in
             return (J.EBin (J.Minus, one, cx))
-        | Lt, [ x; y ] ->
-            let* cx = access' ~ctx x in
+        | Lt, [ y; z ] ->
             let* cy = access' ~ctx y in
-            return (bool (J.EBin (J.LtInt, cx, cy)))
-        | Le, [ x; y ] ->
-            let* cx = access' ~ctx x in
+            let* cz = access' ~ctx z in
+            return (maybe_bool ctx x (J.EBin (J.LtInt, cy, cz)))
+        | Le, [ y; z ] ->
             let* cy = access' ~ctx y in
-            return (bool (J.EBin (J.LeInt, cx, cy)))
-        | Eq, [ x; y ] ->
-            let* cx = access' ~ctx x in
+            let* cz = access' ~ctx z in
+            return (maybe_bool ctx x (J.EBin (J.LeInt, cy, cz)))
+        | Eq, [ y; z ] ->
             let* cy = access' ~ctx y in
-            return (bool (J.EBin (J.EqEqEq, cx, cy)))
-        | Neq, [ x; y ] ->
-            let* cx = access' ~ctx x in
+            let* cz = access' ~ctx z in
+            return (maybe_bool ctx x (J.EBin (J.EqEqEq, cy, cz)))
+        | Neq, [ y; z ] ->
             let* cy = access' ~ctx y in
-            return (bool (J.EBin (J.NotEqEq, cx, cy)))
-        | IsInt, [ x ] ->
-            let* cx = access' ~ctx x in
-            return (bool (Mlvalue.is_immediate cx))
-        | Ult, [ x; y ] ->
-            let* cx = access' ~ctx x in
+            let* cz = access' ~ctx z in
+            return (maybe_bool ctx x (J.EBin (J.NotEqEq, cy, cz)))
+        | IsInt, [ y ] ->
             let* cy = access' ~ctx y in
-            return (bool (J.EBin (J.LtInt, unsigned cx, unsigned cy)))
+            return (maybe_bool ctx x (Mlvalue.is_immediate cy))
+        | Ult, [ y; z ] ->
+            let* cy = access' ~ctx y in
+            let* cz = access' ~ctx z in
+            return (maybe_bool ctx x (J.EBin (J.LtInt, unsigned cy, unsigned cz)))
         | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
             assert false
       in
@@ -2413,6 +2444,7 @@ let f
     ~warn_on_unhandled_effect
     ~deadcode_sentinal =
   let p = Structure.norm p in
+  let bool_context = Bool_context.f p in
   let mutated_vars = Freevars.f_mutable p in
   let freevars = Freevars.f p in
   let t' = Timer.make () in
@@ -2429,6 +2461,7 @@ let f
       ~mutated_vars
       ~freevars
       ~in_cps
+      ~bool_context
       p.blocks
       live_vars
       trampolined_calls
@@ -2441,4 +2474,18 @@ let f
 let init () =
   String.Hashtbl.iter
     (fun name (k, _) -> Primitive.register name k None None)
-    internal_primitives
+    internal_primitives;
+  (* Register prims that are handled directly in translate_expr
+     (with maybe_bool) rather than through internal_primitives *)
+  List.iter
+    [ "caml_eq_float"
+    ; "caml_neq_float"
+    ; "caml_ge_float"
+    ; "caml_le_float"
+    ; "caml_gt_float"
+    ; "caml_lt_float"
+    ]
+    ~f:(fun name -> Primitive.register name `Pure None None);
+  List.iter [ "caml_js_equals"; "caml_js_strict_equals" ] ~f:(fun name ->
+      Primitive.register name `Mutable None None);
+  Primitive.register "caml_js_instanceof" `Mutator None None

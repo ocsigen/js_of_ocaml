@@ -15,6 +15,21 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/bool_context.ml
+ (name bool_context_15)
+ (enabled_if true)
+ (modules bool_context)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (enabled_if true)
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/build_path_prefix_map.ml
  (name build_path_prefix_map_15)
  (enabled_if true)
