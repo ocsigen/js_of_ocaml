@@ -150,3 +150,30 @@ let%expect_test _ =
     Side effect: Should only see this once
     Please don't optimize this away
     Success! |}]
+
+(* An infinite loop has no side effects, but it does not terminate.
+   Dead code elimination must not remove a call to a non-terminating
+   function, even if its result is unused — doing so would change
+   program behavior from "hangs forever" to "continues". This is
+   consistent with how we treat recursive function calls: a call to
+   a function not yet known to be pure is considered impure. *)
+let%expect_test "infinite loop is not treated as pure" =
+  let prog =
+    Util.compile_and_parse
+      {|
+      let f () : unit = while true do () done
+      let () = f (); print_endline "BUG"
+      |}
+  in
+  Util.print_program prog;
+  [%expect
+    {|
+    (function(globalThis){
+       "use strict";
+       var runtime = globalThis.jsoo_runtime;
+       runtime.caml_get_global_data().Stdlib;
+       for(;;) ;
+      }
+      (globalThis));
+    //end
+    |}]
