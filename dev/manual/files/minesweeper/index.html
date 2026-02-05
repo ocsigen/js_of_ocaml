@@ -5,9 +5,197 @@
   <head>
     <title>Minesweeper</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <script type="text/javascript" src="main.bc.js" defer></script>
+<style type="text/css">
+body {
+  background-color: #2b2b2b;
+  color: #ddd;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+}
+h1 {
+  font-size: 1.6em;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: #eee;
+  margin: 0 0 16px;
+}
+#main {
+  text-align: center;
+}
+.controls {
+  background-color: #1a1a1a;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 16px;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+.controls-fields {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.controls label {
+  color: #888;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.controls input[type="text"] {
+  background-color: #252525;
+  color: #ddd;
+  border: 1px solid #3a3a3a;
+  border-radius: 4px;
+  padding: 6px 8px;
+  width: 52px;
+  text-align: center;
+  font-size: 1em;
+  transition: border-color 0.15s;
+}
+.controls input[type="text"]:hover,
+.controls input[type="text"]:focus {
+  border-color: #555;
+  outline: none;
+}
+.controls input[type="submit"] {
+  display: block;
+  width: 100%;
+  background-color: #2a5a2a;
+  color: #ddd;
+  border: 1px solid #4a8a4a;
+  border-radius: 5px;
+  padding: 7px 18px;
+  font-size: 0.95em;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.controls input[type="submit"]:hover {
+  background-color: #3a6a3a;
+  border-color: #5a9a5a;
+}
+.controls input[type="submit"]:active {
+  background-color: #4a7a4a;
+}
+.mode-toggle {
+  display: block;
+  text-align: center;
+  margin-top: 10px;
+}
+.mode-toggle-inner {
+  display: inline-flex;
+  gap: 0;
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid #3a3a3a;
+}
+.mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background-color: #1e1e1e;
+  color: #666;
+  border: none;
+  padding: 7px 16px;
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.mode-btn:not(:last-child) {
+  border-right: 1px solid #3a3a3a;
+}
+.mode-btn:hover {
+  background-color: #2a2a2a;
+  color: #aaa;
+}
+.mode-btn img {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  opacity: 0.5;
+  transition: opacity 0.15s;
+}
+.mode-btn-active {
+  background-color: #4a7a4a;
+  color: #fff;
+}
+.mode-btn-active:hover {
+  background-color: #4a7a4a;
+}
+.mode-btn-active img {
+  opacity: 1;
+}
+.board {
+  display: inline-block;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 0 24px rgba(0,0,0,0.5);
+  line-height: 0;
+}
+.board img {
+  display: inline-block;
+  image-rendering: pixelated;
+}
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.popup-box {
+  background-color: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 10px;
+  padding: 28px 40px;
+  text-align: center;
+  box-shadow: 0 4px 30px rgba(0,0,0,0.5);
+}
+.popup-box p {
+  color: #eee;
+  font-size: 1.4em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin: 0 0 20px;
+}
+.popup-btn {
+  background-color: #3a3a3a;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 5px;
+  padding: 8px 28px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.popup-btn:hover {
+  background-color: #4a4a4a;
+  border-color: #666;
+}
+.popup-btn:active {
+  background-color: #555;
+}
+</style>
+    <script type="text/javascript">
+      var s = (new URLSearchParams(location.search)).has('wasm') ? 'main.bc.wasm.js' : 'main.bc.js';
+      document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+    </script>
   </head>
   <body>
+    <h1>Minesweeper</h1>
     <div id="main"></div>
   </body>
 </html>

@@ -3,9 +3,79 @@
           "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <title>Graph viewer</title>
-  <script type="text/javascript" src="viewer_js.bc.js" defer></script>
+    <title>Graph Viewer</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+* {
+  box-sizing: border-box;
+}
+body {
+  background-color: #e8e8ee;
+  color: #333;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  margin: 0;
+  overflow: hidden;
+}
+.page-title {
+  position: absolute;
+  top: 10px;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 1.8em;
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  color: rgba(60, 60, 80, 0.3);
+  margin: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+.loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(60, 60, 80, 0.5);
+  font-size: 1.1em;
+  font-weight: 300;
+  letter-spacing: 0.03em;
+  z-index: 10;
+}
+.zoom-slider {
+  z-index: 2;
+  cursor: pointer;
+}
+.zoom-track {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 2px;
+}
+.zoom-thumb {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 14px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+  transition: background 0.15s, box-shadow 0.15s;
+  cursor: grab;
+}
+.zoom-thumb:hover {
+  background: #fff !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+.zoom-thumb:active {
+  cursor: grabbing;
+  background: #f0f0f0 !important;
+}
+canvas {
+  display: block;
+}
+</style>
+  <script type="text/javascript">
+    var s = (new URLSearchParams(location.search)).has('wasm') ? 'viewer_js.bc.wasm.js' : 'viewer_js.bc.js';
+    document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+  </script>
   </head>
   <body>
+    <h1 class="page-title">Graph Viewer</h1>
   </body>
 </html>
