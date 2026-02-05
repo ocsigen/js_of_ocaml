@@ -266,7 +266,7 @@ let f t x =
          break a;
         }
         if(val && ! val[2]){
-         var y = val[1], _b_ = y === (x$0 + 1 | 0) ? 1 : 0;
+         var y = val[1], _b_ = y === (x$0 + 1 | 0);
          if(_b_){var _a_ = _b_; break a;}
          x$0 = y;
          continue;

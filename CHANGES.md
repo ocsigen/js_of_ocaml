@@ -11,6 +11,7 @@
 * Compiler: js-parser: support 'using X = E' for resource management (#2143)
 * Compiler: js-parser: support decorators
 * Compiler: js-parser: support html-comments
+* Compiler: avoid unnecessary boolean-to-integer conversions (#2168)
 * Runtime: improved handling of NaNs (#2110)
 * Lib: allow to reference values from the runtime (#2086)
 * Lib: add `Dom_html.onload` for WASM-safe load handling (#1948)
