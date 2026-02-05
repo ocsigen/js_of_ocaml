@@ -1,12 +1,8 @@
-(rule
- (target dune.inc)
- (mode promote)
- (action
-  (with-stdout-to
-   %{target}
-   (run ./gen_dune_inc.exe))))
-
 (executable
  (name gen_dune_inc))
 
-(include dune.inc)
+(alias
+ (name doc-manual)
+ (deps
+  (glob_files *wiki)
+  (source_tree files)))
