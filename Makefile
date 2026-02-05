@@ -12,11 +12,9 @@ test runtest runtests: tests
 doc:
 	rm -rf doc-dev
 	mkdir doc-dev
-	dune clean
-	dune build @doc --cache=disabled --force
+	dune build @doc @doc-manual
 	rsync -av --delete _build/default/_doc/_html/ doc-dev/api
-	dune build @doc-manual --cache=disabled --force
-	rsync -av --delete --exclude=".*" _build/default/manual/ doc-dev/manual
+	rsync -av --delete --exclude=".*" --exclude="dune*" --exclude="gen_dune_inc.*" _build/default/manual/ doc-dev/manual
 	find doc-dev/ -name dune -delete
 	find doc-dev/ -name "*.exe" -delete
 
@@ -37,7 +35,7 @@ clean:
 	dune clean
 
 installdoc:
-	git worktree add _wikidoc origin/wikidoc
+	if [ -d _wikidoc ]; then git fetch origin wikidoc && git -C _wikidoc checkout origin/wikidoc; else git worktree add _wikidoc origin/wikidoc; fi
 	rsync -av doc-dev/ _wikidoc/doc/dev/
 
 bench:

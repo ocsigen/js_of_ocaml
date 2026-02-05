@@ -1,0 +1,11 @@
+(rule
+ (target dune.inc)
+ (mode promote)
+ (deps
+  (source_tree ../../examples))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ../gen_dune_inc.exe))))
+
+(include dune.inc)
