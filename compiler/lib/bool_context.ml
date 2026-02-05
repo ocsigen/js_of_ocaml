@@ -19,6 +19,8 @@
 open! Stdlib
 open Code
 
+let times = Debug.find "times"
+
 (* Backward dataflow analysis to determine which variables are only
    used in "boolean contexts" — places where a JS boolean (true/false)
    behaves identically to an OCaml int boolean (1/0).
@@ -49,6 +51,7 @@ let mark_prim_arg not_bool_only worklist = function
   | Pc _ -> ()
 
 let f (p : program) =
+  let t = Timer.make () in
   let nv = Var.count () in
   (* backward_edges.(idx of x) = list of vars y such that y flows into x
      (via block params or Assign). When x is tainted, y must be too. *)
@@ -122,4 +125,5 @@ let f (p : program) =
       backward_edges.(Var.idx v)
       ~f:(fun pred -> mark_var not_bool_only worklist pred)
   done;
+  if times () then Format.eprintf "  bool-analysis: %a@." Timer.print t;
   not_bool_only
