@@ -28,7 +28,7 @@ type optimized_result =
   ; variable_uses : Deadcode.variable_uses
   ; trampolined_calls : Effects.trampolined_calls
   ; in_cps : Effects.in_cps
-  ; deadcode_sentinal : Code.Var.t
+  ; deadcode_sentinel : Code.Var.t
   ; shapes : Shape.t StringMap.t
   }
 
@@ -144,7 +144,7 @@ let collects_shapes ~shapes (p : Code.program) =
 
 let effects_and_exact_calls
     ~keep_flow_data
-    ~deadcode_sentinal
+    ~deadcode_sentinel
     ~shapes
     (profile : Profile.t)
     p =
@@ -161,7 +161,7 @@ let effects_and_exact_calls
   let p, live_vars =
     if Config.Flag.globaldeadcode () && Config.Flag.deadcode ()
     then
-      let p = Global_deadcode.f pure_fun p ~deadcode_sentinal info in
+      let p = Global_deadcode.f pure_fun p ~deadcode_sentinel info in
       Deadcode.f pure_fun p
     else Deadcode.f pure_fun p
   in
@@ -239,7 +239,7 @@ let generate
     ~exported_runtime
     ~wrap_with_fun
     ~warn_on_unhandled_effect
-    { program; variable_uses; trampolined_calls; deadcode_sentinal; in_cps; shapes = _ } =
+    { program; variable_uses; trampolined_calls; deadcode_sentinel; in_cps; shapes = _ } =
   if times () then Format.eprintf "Start Generation...@.";
   let should_export = should_export wrap_with_fun in
   Generate.f
@@ -250,7 +250,7 @@ let generate
     ~in_cps
     ~should_export
     ~warn_on_unhandled_effect
-    ~deadcode_sentinal
+    ~deadcode_sentinel
 
 let debug_linker = Debug.find "linker"
 
@@ -699,7 +699,7 @@ let link_and_pack ?(standalone = true) ?(wrap_with_fun = `Iife) ?(link = `No) p 
   |> check_js
 
 let optimize ~shapes ~profile ~keep_flow_data p =
-  let deadcode_sentinal =
+  let deadcode_sentinel =
     (* If deadcode is disabled, this field is just fresh variable *)
     Code.Var.fresh_n "dummy"
   in
@@ -711,7 +711,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
       | O2 -> o2
       | O3 -> o3)
     +> specialize_js_once_after
-    +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinal ~shapes profile
+    +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> map_fst5
          (match Config.target (), Config.effects () with
          | `JavaScript, `Disabled -> Generate_closure.f
@@ -726,7 +726,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     opt p
   in
   let () = if times () then Format.eprintf " optimizations : %a@." Timer.print t in
-  ( { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinal; shapes }
+  ( { program; variable_uses; trampolined_calls; in_cps; deadcode_sentinel; shapes }
   , global_flow_info )
 
 let optimize_for_wasm ~shapes ~profile p =

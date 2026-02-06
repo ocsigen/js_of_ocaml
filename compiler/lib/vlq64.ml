@@ -77,7 +77,7 @@ let encode_l b l = List.iter ~f:(encode b) l
 
 let rec decode' acc s start pos =
   let digit = code_rev.(Char.code s.[pos]) in
-  if digit = -1 then invalid_arg "Vql64.decode'";
+  if digit = -1 then invalid_arg "Vlq64.decode'";
   let cont = digit land vlq_continuation_bit = vlq_continuation_bit in
   let digit = digit land vlq_base_mask in
   let acc = acc + (digit lsl ((pos - start) * vlq_base_shift)) in
@@ -107,9 +107,9 @@ type input =
   }
 
 let rec decode' src s pos len offset i =
-  if pos = len then invalid_arg "Vql64.decode'";
+  if pos = len then invalid_arg "Vlq64.decode'";
   let digit = Array.unsafe_get code_rev (Char.code s.[pos]) in
-  if digit = -1 then invalid_arg "Vql64.decode'";
+  if digit = -1 then invalid_arg "Vlq64.decode'";
   let i = i + ((digit land vlq_base_mask) lsl offset) in
   if digit >= vlq_continuation_bit
   then decode' src s (pos + 1) len (offset + vlq_base_shift) i

@@ -26,7 +26,7 @@ val f :
   -> in_cps:Effects.in_cps
   -> should_export:bool
   -> warn_on_unhandled_effect:bool
-  -> deadcode_sentinal:Code.Var.t
+  -> deadcode_sentinel:Code.Var.t
   -> Javascript.program
 
 val init : unit -> unit

@@ -1936,11 +1936,11 @@ let init = G.init
 
 let start () = make_context ~value_type:Gc_target.Type.value
 
-let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinal ~global_flow_data =
+let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_data =
   let global_flow_state, global_flow_info = global_flow_data in
   let fun_info = Call_graph_analysis.f p global_flow_info in
   let types =
-    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p
+    Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
   in
   let t = Timer.make () in
   let p = Structure.norm p in

@@ -142,7 +142,7 @@ end) =
 struct
   open D
 
-  let nane_of_label = function
+  let name_of_label = function
     | Javascript.Label.L v ->
         assert accept_unnamed_var;
         Utf8_string.of_string_exn (Format.asprintf "<%a>" Code.Var.print v)
@@ -1635,7 +1635,7 @@ struct
         last_semi ()
     | Continue_statement (Some s) ->
         PP.string f "continue ";
-        let (Utf8 l) = nane_of_label s in
+        let (Utf8 l) = name_of_label s in
         identName f l;
         last_semi ()
     | Break_statement None ->
@@ -1643,7 +1643,7 @@ struct
         last_semi ()
     | Break_statement (Some s) ->
         PP.string f "break ";
-        let (Utf8 l) = nane_of_label s in
+        let (Utf8 l) = name_of_label s in
         identName f l;
         last_semi ()
     | Return_statement (e, loc) -> (
@@ -1688,7 +1688,7 @@ struct
                argument. A line return will not work *)
         )
     | Labelled_statement (i, s) ->
-        let (Utf8 l) = nane_of_label i in
+        let (Utf8 l) = name_of_label i in
         identName f l;
         PP.string f ":";
         PP.space f;

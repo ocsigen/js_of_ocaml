@@ -26,7 +26,7 @@ val f :
   -> Code.program
   -> live_vars:int array
   -> in_cps:Effects.in_cps
-  -> deadcode_sentinal:Code.Var.t
+  -> deadcode_sentinel:Code.Var.t
   -> global_flow_data:Global_flow.state * Global_flow.info
   -> Wasm_ast.var * (string * Javascript.expression) list
 
