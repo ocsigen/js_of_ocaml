@@ -52,7 +52,16 @@ let pure_instr pure_funs i =
 
 let rec traverse blocks pc visited pure_blocks funs =
   if BitSet.mem visited pc
-  then BitSet.mem pure_blocks pc
+  then
+    (* Back-edge (cycle in the CFG): conservatively treat as impure.
+       We cannot determine whether the loop terminates, so we treat
+       it as potentially non-terminating. This is consistent with how
+       we handle recursive function calls in [pure_expr], where a
+       call to a function not yet known to be pure is considered
+       impure. Since dead code elimination relies on purity to remove
+       unused calls, incorrectly marking a non-terminating loop as
+       pure could change program behavior. *)
+    BitSet.mem pure_blocks pc
   else (
     BitSet.set visited pc;
     let pure = block blocks pc visited pure_blocks funs in
