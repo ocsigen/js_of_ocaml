@@ -1,4 +1,4 @@
-(* Wasm_of_ocaml compiler
+(* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,27 +16,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml_compiler
+type value_spec =
+  | Bool of (bool -> unit)
+  | Enum of string list * (string -> unit)
 
-type t =
-  { common : Jsoo_cmdline.Arg.t
-  ; (* compile option *)
-    profile : Profile.t option
-  ; runtime_files : string list
-  ; runtime_only : bool
-  ; output_file : string * bool
-  ; input_file : string option
-  ; enable_source_maps : bool
-  ; sourcemap_root : string option
-  ; sourcemap_don't_inline_content : bool
-  ; params : (string * string) list
-  ; include_dirs : string list
-  ; effects : Config.effects_backend
-  ; shape_files : string list
-  ; build_config : bool
-  ; apply_build_config : string option
-  }
+val parse : (string * value_spec) list -> string -> unit
+(** Parse "key1=val1+key2=val2", validate against known keys/values,
+    and apply callbacks. Raises [Failure] on invalid input. *)
 
-val options : unit -> t Cmdliner.Term.t
-
-val options_runtime_only : unit -> t Cmdliner.Term.t
+val print_and_exit : (string * string) list -> 'a
+(** Print entries as sorted "key1=val1+key2=val2" to stdout and exit. *)
