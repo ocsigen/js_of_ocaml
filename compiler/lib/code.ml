@@ -125,6 +125,8 @@ end = struct
   include T
 
   module Name = struct
+    let names_hashcons = String.Hashtbl.create 100
+
     let names = Int.Hashtbl.create 100
 
     let user_defined = ref (BitSet.create' 16)
@@ -204,6 +206,13 @@ end = struct
         let max_len = 30 in
         let str =
           if String.length str > max_len then String.sub str ~pos:0 ~len:max_len else str
+        in
+        let str =
+          match String.Hashtbl.find_opt names_hashcons str with
+          | Some str -> str
+          | None ->
+              String.Hashtbl.add names_hashcons str str;
+              str
         in
         set_raw v str generated)
 
