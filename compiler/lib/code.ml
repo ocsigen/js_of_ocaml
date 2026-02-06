@@ -125,14 +125,15 @@ end = struct
   include T
 
   module Name = struct
-    type t =
-      { name : string
-      ; generated : bool
-      }
-
     let names = Int.Hashtbl.create 100
 
-    let reset () = Int.Hashtbl.clear names
+    let user_defined = ref (BitSet.create' 16)
+
+    let generated v = not (BitSet.mem !user_defined v)
+
+    let reset () =
+      Int.Hashtbl.clear names;
+      user_defined := BitSet.create' 16
 
     let reserved = String.Hashtbl.create 100
 
@@ -140,24 +141,32 @@ end = struct
 
     let is_reserved s = String.Hashtbl.mem reserved s
 
-    let merge n1 n2 =
+    let merge v1 v2 =
+      let n1_generated = generated v1 in
+      let n2_generated = generated v2 in
+      let n1_name = Int.Hashtbl.find names v1 in
+      let n2_name = Int.Hashtbl.find names v2 in
       (* Prefer non-generated names over generated ones *)
-      if n1.generated && not n2.generated
-      then n2
-      else if n2.generated && not n1.generated
-      then n1
-      else if String.length n1.name > String.length n2.name
-      then n1
-      else n2
+      if n1_generated && not n2_generated
+      then n2_name, n2_generated
+      else if n2_generated && not n1_generated
+      then n1_name, n1_generated
+      else if String.length n1_name > String.length n2_name
+      then n1_name, n1_generated
+      else n2_name, n2_generated
 
-    let set_raw v nm = Int.Hashtbl.replace names v nm
+    let set_raw v nm gen =
+      Int.Hashtbl.replace names v nm;
+      if gen then BitSet.unset !user_defined v else BitSet.set !user_defined v
 
     let propagate v v' =
       try
         let name = Int.Hashtbl.find names v in
         match Int.Hashtbl.find names v' with
-        | exception Not_found -> set_raw v' name
-        | name' -> set_raw v' (merge name name')
+        | exception Not_found -> set_raw v' name (generated v)
+        | _ ->
+            let name, gen = merge v v' in
+            set_raw v' name gen
       with Not_found -> ()
 
     let set v ?(generated = false) nm_orig =
@@ -196,11 +205,9 @@ end = struct
         let str =
           if String.length str > max_len then String.sub str ~pos:0 ~len:max_len else str
         in
-        set_raw v { name = str; generated })
+        set_raw v str generated)
 
-    let get v = try Some (Int.Hashtbl.find names v).name with Not_found -> None
-
-    let generated v = try (Int.Hashtbl.find names v).generated with Not_found -> true
+    let get v = try Some (Int.Hashtbl.find names v) with Not_found -> None
   end
 
   let last_var = ref 0
