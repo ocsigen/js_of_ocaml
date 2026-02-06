@@ -149,7 +149,12 @@ let cont_deps blocks st ?ignore (pc, args) =
   let block = Addr.Map.find pc blocks in
   arg_deps st ?ignore block.params args
 
-let do_escape st level x = st.variable_may_escape.(Var.idx x) <- level
+let do_escape st level x =
+  let idx = Var.idx x in
+  match level, st.variable_may_escape.(idx) with
+  | Escape, (Escape_constant | No) | Escape_constant, No ->
+      st.variable_may_escape.(idx) <- level
+  | Escape, Escape | Escape_constant, (Escape | Escape_constant) | No, _ -> ()
 
 let possibly_mutable st x = st.variable_mutable_fields.(Var.idx x) <- All_fields
 
