@@ -25,7 +25,7 @@ blocks with the specific fields that are live. It also uses
 values. It first computes an initial liveness of each variable by
 traversing the program IR.  Then it propagates this information to
 the dependencies of each variable using a flow analysis
-solver. Lastly it replaces dead variables with a sentinal zero
+solver. Lastly it replaces dead variables with a sentinel zero
 variable (the JS value `undefined`).
 
 Although this module does not perform any dead-code elimination
@@ -37,6 +37,6 @@ which the original deadcode elimination cannot.  *)
 val f :
      Pure_fun.t
   -> Code.program
-  -> deadcode_sentinal:Code.Var.t
+  -> deadcode_sentinel:Code.Var.t
   -> Global_flow.info
   -> Code.program

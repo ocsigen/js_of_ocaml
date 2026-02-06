@@ -87,6 +87,6 @@ val f :
      global_flow_state:Global_flow.state
   -> global_flow_info:Global_flow.info
   -> fun_info:Call_graph_analysis.t
-  -> deadcode_sentinal:Code.Var.t
+  -> deadcode_sentinel:Code.Var.t
   -> Code.program
   -> t

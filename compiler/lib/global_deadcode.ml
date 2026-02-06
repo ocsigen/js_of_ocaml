@@ -74,7 +74,7 @@ end = struct
     | Live f ->
         if depth = 0 then Top else Live (IntMap.map (fun l' -> truncate (depth - 1) l') f)
 
-  let depth_treshold = 4
+  let depth_threshold = 4
 
   let live_block = Live IntMap.empty
 
@@ -86,7 +86,7 @@ end = struct
     Live
       (IntMap.singleton
          i
-         (if depth l > depth_treshold then truncate depth_treshold l else l))
+         (if depth l > depth_threshold then truncate depth_threshold l else l))
 
   (** Join the liveness according to lattice structure. *)
   let rec join l1 l2 =
@@ -433,17 +433,17 @@ let solver vars uses defs live_vars scoped_live_vars =
   in
   Solver.f ~state:live_vars g (propagate defs scoped_live_vars)
 
-(** Replace each instance of a dead variable with a sentinal value.
+(** Replace each instance of a dead variable with a sentinel value.
   Blocks that end in dead variables are compacted to the first live entry.
   Dead variables are replaced when
     + They appear in a dead field of a block; or
     + They are returned; or
     + They are applied to a function.
  *)
-let zero prog pure_funs sentinal live_table =
+let zero prog pure_funs sentinel live_table =
   let compact_vars vars =
     let i = ref (Array.length vars - 1) in
-    while !i >= 0 && Var.equal vars.(!i) sentinal do
+    while !i >= 0 && Var.equal vars.(!i) sentinel do
       i := !i - 1
     done;
     if !i + 1 < Array.length vars then Array.sub vars ~pos:0 ~len:(!i + 1) else vars
@@ -453,7 +453,7 @@ let zero prog pure_funs sentinal live_table =
     | Domain.Dead -> false
     | Top | Live _ -> true
   in
-  let zero_var x = if is_live x then x else sentinal in
+  let zero_var x = if is_live x then x else sentinel in
   let zero_instr instr =
     match instr with
     | Let (x, e) -> (
@@ -463,7 +463,7 @@ let zero prog pure_funs sentinal live_table =
             | Live fields ->
                 let vars =
                   Array.mapi
-                    ~f:(fun i v -> if IntMap.mem i fields then v else sentinal)
+                    ~f:(fun i v -> if IntMap.mem i fields then v else sentinel)
                     vars
                   |> compact_vars
                 in
@@ -558,20 +558,20 @@ module Print = struct
       live_table
 end
 
-(** Add a sentinal variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
-let add_sentinal p sentinal =
-  let instr = Let (sentinal, Constant (Int Targetint.zero)) in
+(** Add a sentinel variable declaration to the IR. The fresh variable is assigned to `undefined`. *)
+let add_sentinel p sentinel =
+  let instr = Let (sentinel, Constant (Int Targetint.zero)) in
   Code.prepend p [ instr ]
 
-(** Run the liveness analysis and replace dead variables with the given sentinal. *)
-let f pure_funs p ~deadcode_sentinal global_info =
+(** Run the liveness analysis and replace dead variables with the given sentinel. *)
+let f pure_funs p ~deadcode_sentinel global_info =
   Code.invariant p;
   let t = Timer.make () in
-  (* Add sentinal variable *)
+  (* Add sentinel variable *)
   let p =
-    match global_info.Global_flow.info_defs.(Var.idx deadcode_sentinal) with
+    match global_info.Global_flow.info_defs.(Var.idx deadcode_sentinel) with
     | Expr _ -> p
-    | _ -> add_sentinal p deadcode_sentinal
+    | _ -> add_sentinel p deadcode_sentinel
   in
   (* Compute definitions *)
   let defs = definitions p in
@@ -590,7 +590,7 @@ let f pure_funs p ~deadcode_sentinal global_info =
     Print.print_uses uses;
     Print.print_live_tbl live_table);
   (* Zero out dead fields *)
-  let p = zero p pure_funs deadcode_sentinal live_table in
+  let p = zero p pure_funs deadcode_sentinel live_table in
   if debug ()
   then (
     Format.eprintf "After Zeroing:@.";

@@ -30,7 +30,7 @@ function caml_int64_bits_of_float(x) {
   var lo = lo32 & 0xffffff;
   var mi = (lo32 >>> 24) | ((hi32 << 8) & 0xffffff);
   var hi = (hi32 >>> 16) & 0xffff;
-  // V8 uses signaling NaNs as sentinal. So, NaNs are made quiet when
+  // V8 uses signaling NaNs as sentinel. So, NaNs are made quiet when
   // they are stored in an array. Make them quiet here so that we get
   // consistent results.
   if ((hi & 0x7ff8) === 0x7ff0 && (mi | lo | (hi & 0xf)) !== 0) hi |= 8;
@@ -112,7 +112,7 @@ function caml_int64_float_of_bits(x) {
   var lo = x.lo;
   var mi = x.mi;
   var hi = x.hi;
-  // V8 uses signaling NaNs as sentinal. So, NaNs are made quiet when
+  // V8 uses signaling NaNs as sentinel. So, NaNs are made quiet when
   // they are stored in an array. Make them quiet here so that we get
   // consistent results.
   if ((hi & 0x7ff8) === 0x7ff0 && (mi | lo | (hi & 0xf)) !== 0) hi |= 8;

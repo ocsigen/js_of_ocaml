@@ -25,7 +25,7 @@ type optimized_result =
   ; variable_uses : Deadcode.variable_uses
   ; trampolined_calls : Effects.trampolined_calls
   ; in_cps : Effects.in_cps
-  ; deadcode_sentinal : Code.Var.t
+  ; deadcode_sentinel : Code.Var.t
   ; shapes : Shape.t StringMap.t
   }
 

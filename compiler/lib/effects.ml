@@ -139,7 +139,7 @@ let dominance_frontier g idom =
     g.preds;
   frontiers
 
-(* Split a block, separating the last instruction from the preceeding
+(* Split a block, separating the last instruction from the preceding
    ones, ignoring events *)
 let block_split_last xs =
   let rec aux acc = function
@@ -522,7 +522,7 @@ let rewrite_instr ~st (instr : instr) : instr =
   match instr with
   | Let (x, Closure (_, (pc, _), _)) when Var.Set.mem x st.cps_needed ->
       (* When CPS-transforming with double translation enabled, there are no closures in
-         code that requires transforming, due to lambda lifiting. *)
+         code that requires transforming, due to lambda lifting. *)
       assert (not (double_translate ()));
       (* Add the continuation parameter, and change the initial block if
          needed *)
@@ -1039,7 +1039,7 @@ let rewrite_toplevel_instr (p, cps_needed, accu) instr =
   | _ -> p, cps_needed, [ instr ] :: accu
 
 (* Wrap function calls inside [caml_cps_trampoline] at toplevel to avoid
-   unncessary function nestings. This is not done inside loops since
+   unnecessary function nestings. This is not done inside loops since
    using repeatedly [caml_cps_trampoline] can be costly. *)
 let rewrite_toplevel ~cps_needed p =
   let { start; blocks; _ } = p in

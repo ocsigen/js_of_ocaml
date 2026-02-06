@@ -41,7 +41,7 @@ let column = function
   | SameLine { line = { pos_bol; _ }; cnum_start; _ } -> cnum_start - pos_bol
   | MultiLine { line_start = { pos_bol; _ }; cnum_start; _ } -> cnum_start - pos_bol
 
-let dummy_line = { pos_fname = "<dumnmy>"; pos_lnum = 0; pos_bol = 0 }
+let dummy_line = { pos_fname = "<dummy>"; pos_lnum = 0; pos_bol = 0 }
 
 let dummy = SameLine { line = dummy_line; cnum_start = 0; offset = 0 }
 

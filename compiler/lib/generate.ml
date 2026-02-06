@@ -300,7 +300,7 @@ module Ctx = struct
     ; should_export : bool
     ; effect_warning : bool ref
     ; trampolined_calls : Effects.trampolined_calls
-    ; deadcode_sentinal : Var.t
+    ; deadcode_sentinel : Var.t
     ; mutated_vars : Code.Var.Set.t Code.Addr.Map.t
     ; freevars : Code.Var.Set.t Code.Addr.Map.t
     ; in_cps : Effects.in_cps
@@ -311,7 +311,7 @@ module Ctx = struct
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
-      ~deadcode_sentinal
+      ~deadcode_sentinel
       ~mutated_vars
       ~freevars
       ~in_cps
@@ -327,7 +327,7 @@ module Ctx = struct
     ; should_export
     ; effect_warning = ref (not warn_on_unhandled_effect)
     ; trampolined_calls
-    ; deadcode_sentinal
+    ; deadcode_sentinel
     ; mutated_vars
     ; freevars
     ; in_cps
@@ -1423,7 +1423,7 @@ let remove_unused_tail_args ctx exact trampolined args =
   then
     let has_unused_tail_args =
       List.fold_left
-        ~f:(fun _ x -> Var.equal x ctx.Ctx.deadcode_sentinal)
+        ~f:(fun _ x -> Var.equal x ctx.Ctx.deadcode_sentinel)
         ~init:false
         args
     in
@@ -1432,7 +1432,7 @@ let remove_unused_tail_args ctx exact trampolined args =
       List.fold_right
         ~f:(fun x args ->
           match args with
-          | [] when Var.equal x ctx.Ctx.deadcode_sentinal -> []
+          | [] when Var.equal x ctx.Ctx.deadcode_sentinel -> []
           | _ -> x :: args)
         ~init:[]
         args
@@ -1460,7 +1460,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let cx =
               match cx with
               | J.EVar (J.V v) ->
-                  if Var.equal v ctx.deadcode_sentinal
+                  if Var.equal v ctx.deadcode_sentinel
                   then J.ElementHole
                   else J.Element cx
               | _ -> J.Element cx
@@ -2159,7 +2159,7 @@ and compile_conditional st queue ~fall_through loc last scope_stack : _ * _ =
         let instrs =
           let* cx = access ~ctx x in
           let return_expr =
-            if Var.equal st.ctx.deadcode_sentinal x then None else Some cx
+            if Var.equal st.ctx.deadcode_sentinel x then None else Some cx
           in
           let loc' =
             match cx with
@@ -2442,7 +2442,7 @@ let f
     ~in_cps
     ~should_export
     ~warn_on_unhandled_effect
-    ~deadcode_sentinal =
+    ~deadcode_sentinel =
   let p = Structure.norm p in
   let bool_context = Bool_context.f p in
   let mutated_vars = Freevars.f_mutable p in
@@ -2457,7 +2457,7 @@ let f
       ~warn_on_unhandled_effect
       ~exported_runtime
       ~should_export
-      ~deadcode_sentinal
+      ~deadcode_sentinel
       ~mutated_vars
       ~freevars
       ~in_cps

@@ -195,7 +195,7 @@ module Domain = struct
 
   let bot = Bot
 
-  let depth_treshold = 4
+  let depth_threshold = 4
 
   let rec depth t =
     match t with
@@ -210,7 +210,7 @@ module Domain = struct
         then Top
         else Tuple (Array.map ~f:(fun t' -> truncate (depth - 1) t') l)
 
-  let limit t = if depth t > depth_treshold then truncate depth_treshold t else t
+  let limit t = if depth t > depth_threshold then truncate depth_threshold t else t
 
   let box t =
     match t with
@@ -628,13 +628,13 @@ type t =
   ; return_types : typ Var.Hashtbl.t
   }
 
-let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinal p =
+let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let t = Timer.make () in
   update_deps global_flow_state p;
   let boxed_function_parameters = mark_boxed_function_parameters ~fun_info p in
   let st = { global_flow_state; global_flow_info; boxed_function_parameters; fun_info } in
   let types = solver st in
-  Var.Tbl.set types deadcode_sentinal (Int Normalized);
+  Var.Tbl.set types deadcode_sentinel (Int Normalized);
   box_numbers p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()

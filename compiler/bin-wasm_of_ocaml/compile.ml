@@ -249,7 +249,7 @@ let generate_prelude ~out_file =
           { program
           ; variable_uses
           ; in_cps
-          ; deadcode_sentinal
+          ; deadcode_sentinel
           ; shapes = _
           ; trampolined_calls = _
           }
@@ -263,7 +263,7 @@ let generate_prelude ~out_file =
       ~unit_name:(Some "prelude")
       ~live_vars:variable_uses
       ~in_cps
-      ~deadcode_sentinal
+      ~deadcode_sentinel
       ~global_flow_data
       program
   in
@@ -434,7 +434,7 @@ let run
             { program
             ; variable_uses
             ; in_cps
-            ; deadcode_sentinal
+            ; deadcode_sentinel
             ; shapes
             ; trampolined_calls = _
             }
@@ -449,7 +449,7 @@ let run
         ~unit_name
         ~live_vars:variable_uses
         ~in_cps
-        ~deadcode_sentinal
+        ~deadcode_sentinel
         ~global_flow_data
         program
     in
