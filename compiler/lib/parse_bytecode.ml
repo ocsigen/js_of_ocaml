@@ -756,7 +756,7 @@ end
 
 let primitive_name state i =
   let g = State.globals state in
-  assert (i >= 0 && i <= Array.length g.primitives);
+  assert (i >= 0 && i < Array.length g.primitives);
   let prim = g.primitives.(i) in
   Primitive.add_external prim;
   prim
