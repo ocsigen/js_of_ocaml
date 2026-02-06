@@ -7,7 +7,7 @@ type sexp =
   | List of sexp list
 
 let read_file path =
-  let ic = open_in path in
+  let ic = open_in_bin path in
   Fun.protect
     ~finally:(fun () -> close_in ic)
     (fun () ->
