@@ -46,7 +46,7 @@ let to_float x = Int32.to_float x
 let to_int32 x = x
 
 let to_int_exn x =
-  if Sys.int_size >= 32 || Int32.of_int Int.min_int <= x || x <= Int32.of_int Int.max_int
+  if Sys.int_size >= 32 || (Int32.of_int Int.min_int <= x && x <= Int32.of_int Int.max_int)
   then Int32.to_int x
   else failwith "to_int_exn"
 
@@ -99,7 +99,7 @@ let is_zero x = equal x 0l
 let of_int_exn (x : int) =
   let offset = offset () in
   if
-    Sys.int_size <= 32
+    Sys.int_size <= num_bits ()
     || (Int32.to_int (min_int_ offset) <= x && x <= Int32.to_int (max_int_ offset))
   then Int32.of_int x
   else failwith (Printf.sprintf "of_int_exn(%d)" x)
@@ -114,12 +114,12 @@ let of_string_exn x =
   try
     let offset = offset () in
     let x32 = Int32.of_string x in
-    if min_int_ offset <= x32 || x32 <= max_int_ offset then x32 else raise Not_found
+    if min_int_ offset <= x32 && x32 <= max_int_ offset then x32 else raise Not_found
   with Not_found | _ -> failwith (Printf.sprintf "Targetint.of_string_exn(%s)" x)
 
 let of_float_opt x =
   let offset = offset () in
-  if Int32.to_float (min_int_ offset) <= x || x <= Int32.to_float (max_int_ offset)
+  if Int32.to_float (min_int_ offset) <= x && x <= Int32.to_float (max_int_ offset)
   then Some (wrap_modulo (Int32.of_float x))
   else None
 
