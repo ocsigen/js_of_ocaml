@@ -151,6 +151,7 @@ Use {{{--enable <opt>}}} or {{{--disable <opt>}}} to control these flags:
 | {{{staticeval}}} | true | Static evaluation of constants |
 | {{{share}}} | true | Share string and number constants |
 | {{{optcall}}} | true | JavaScript call optimizations |
+| {{{constant-sinking}}} | true | Move constant declarations closer to usage sites |
 
 === Runtime behavior
 
@@ -204,7 +205,7 @@ Available warnings:
 Use {{{--debug <section>}}} to enable debug output for compiler internals:
 
 {{{times}}}, {{{stats}}}, {{{deadcode}}}, {{{globaldeadcode}}}, {{{inlining}}},
-{{{gen}}}, {{{linker}}}, {{{sourcemap}}}, {{{flow}}}, {{{parser}}}
+{{{constant-sinking}}}, {{{gen}}}, {{{linker}}}, {{{sourcemap}}}, {{{flow}}}, {{{parser}}}
 
 ==@@id="subcommands"@@ Subcommands
 
