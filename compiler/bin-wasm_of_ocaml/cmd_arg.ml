@@ -64,6 +64,8 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; build_config : bool
+  ; apply_build_config : string option
   }
 
 let set_param =
@@ -97,7 +99,19 @@ let options () =
   in
   let input_file =
     let doc = "Compile the bytecode program [$(docv)]. " in
-    Arg.(required & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
+    Arg.(value & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
+  in
+  let build_config =
+    let doc = "Print build-relevant configuration as key=value pairs and exit." in
+    Arg.(value & flag & info [ "build-config" ] ~doc)
+  in
+  let apply_build_config =
+    let doc =
+      "Override build-relevant configuration. $(docv) is a '+'-separated list of \
+       key=value pairs (e.g. effects=cps+js-string=true)."
+    in
+    Arg.(
+      value & opt (some string) None & info [ "apply-build-config" ] ~docv:"CONFIG" ~doc)
   in
   let shape_files =
     let doc = "load shape file [$(docv)]." in
@@ -158,20 +172,31 @@ let options () =
       input_file
       runtime_files
       effects
-      shape_files =
+      shape_files
+      build_config
+      apply_build_config =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
+    match build_config, input_file with
+    | false, None -> `Error (true, "required argument PROGRAM is missing")
+    | _ ->
     let output_file =
-      let ext =
-        try
-          snd
-            (List.find
-               ~f:(fun (ext, _) -> Filename.check_suffix input_file ext)
-               [ ".cmo", ".wasmo"; ".cma", ".wasma" ])
-        with Not_found -> ".js"
-      in
-      match output_file with
-      | Some s -> s, true
-      | None -> chop_extension input_file ^ ext, false
+      match input_file with
+      | Some input_file ->
+          let ext =
+            try
+              snd
+                (List.find
+                   ~f:(fun (ext, _) -> Filename.check_suffix input_file ext)
+                   [ ".cmo", ".wasmo"; ".cma", ".wasma" ])
+            with Not_found -> ".js"
+          in
+          (match output_file with
+          | Some s -> s, true
+          | None -> chop_extension input_file ^ ext, false)
+      | None ->
+          (match output_file with
+          | Some s -> s, true
+          | None -> "a.out.js", false)
     in
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
@@ -183,7 +208,7 @@ let options () =
       ; include_dirs
       ; profile
       ; output_file
-      ; input_file = Some input_file
+      ; input_file
       ; runtime_files
       ; runtime_only = false
       ; enable_source_maps
@@ -191,6 +216,8 @@ let options () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files
+      ; build_config
+      ; apply_build_config
       }
   in
   let t =
@@ -209,7 +236,9 @@ let options () =
       $ input_file
       $ runtime_files
       $ effects
-      $ shape_files)
+      $ shape_files
+      $ build_config
+      $ apply_build_config)
   in
   Term.ret t
 
@@ -254,6 +283,18 @@ let options_runtime_only () =
       & opt (some (enum [ "jspi", `Jspi; "cps", `Cps; "disabled", `Disabled ])) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
+  let build_config =
+    let doc = "Print build-relevant configuration as key=value pairs and exit." in
+    Arg.(value & flag & info [ "build-config" ] ~doc)
+  in
+  let apply_build_config =
+    let doc =
+      "Override build-relevant configuration. $(docv) is a '+'-separated list of \
+       key=value pairs (e.g. effects=cps+js-string=true)."
+    in
+    Arg.(
+      value & opt (some string) None & info [ "apply-build-config" ] ~docv:"CONFIG" ~doc)
+  in
   let build_t
       common
       set_param
@@ -264,7 +305,9 @@ let options_runtime_only () =
       sourcemap_root
       output_file
       runtime_files
-      effects =
+      effects
+      build_config
+      apply_build_config =
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
     let include_dirs = normalize_include_dirs include_dirs in
@@ -283,6 +326,8 @@ let options_runtime_only () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files = []
+      ; build_config
+      ; apply_build_config
       }
   in
   let t =
@@ -297,6 +342,8 @@ let options_runtime_only () =
       $ sourcemap_root
       $ output_file
       $ runtime_files
-      $ effects)
+      $ effects
+      $ build_config
+      $ apply_build_config)
   in
   Term.ret t

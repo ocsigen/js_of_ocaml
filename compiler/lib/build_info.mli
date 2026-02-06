@@ -20,6 +20,8 @@ open! Stdlib
 
 val string_of_effects_backend : Config.effects_backend -> string
 
+val effects_backend_of_string : string -> Config.effects_backend
+
 type t
 
 type kind =
