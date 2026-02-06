@@ -494,9 +494,9 @@ let rec constant_rec ~ctx x level instrs =
       let p =
         Share.get_prim (runtime_fun ctx) "caml_int64_create_lo_mi_hi" ctx.Ctx.share
       in
-      let lo = int (Int64.to_int i land 0xffffff)
-      and mi = int (Int64.to_int (Int64.shift_right i 24) land 0xffffff)
-      and hi = int (Int64.to_int (Int64.shift_right i 48) land 0xffff) in
+      let lo = int (Int64.to_int (Int64.logand i 0xffffffL))
+      and mi = int (Int64.to_int (Int64.logand (Int64.shift_right i 24) 0xffffffL))
+      and hi = int (Int64.to_int (Int64.logand (Int64.shift_right i 48) 0xffffL)) in
       J.call p [ lo; mi; hi ] J.N, instrs
   | Tuple (tag, a, _) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
@@ -1805,10 +1805,11 @@ and translate_instr ctx expr_queue loc instr =
          let expr = Mlvalue.Block.field cx 0 in
          let expr' =
            match n with
+           | 0 -> expr (* no-op, but shouldn't happen in practice *)
            | 1 -> J.EUn (J.IncrA, expr)
            | -1 -> J.EUn (J.DecrA, expr)
-           | n when n < 0 (* *) -> J.EBin (J.MinusEq, expr, int (-n))
-           | n (*   n > 0    *) -> J.EBin (J.PlusEq, expr, int n)
+           | n when n < 0 -> J.EBin (J.MinusEq, expr, int (-n))
+           | n (* n > 0 *) -> J.EBin (J.PlusEq, expr, int n)
          in
          let* () = info mutator_p in
          let* loc = statement_loc loc in
