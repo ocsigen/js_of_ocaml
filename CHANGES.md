@@ -20,6 +20,9 @@
 
 
 ## Bug fixes
+* Compiler: fix `Global_flow.do_escape` monotonicity
+* Compiler: fix static eval of `caml_nativeint_to_int`
+* Compiler: remove invalid conditional simplification
 * Lib: fix `characterData.substringData` method name typo in Dom module
 * Lib: fix various Dom_html bindings (submitEvent, mediaQueryListEvent, pointerEvent, element, inputElement, tableElement types and deprecations)
 * Lib: fix `numberList` type in Dom_svg to use `number_t`
