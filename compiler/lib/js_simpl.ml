@@ -143,9 +143,6 @@ let simplify_condition = function
   | J.ECond (e, J.ENum one, J.ENum zero) when J.Num.is_one one && J.Num.is_zero zero -> e
   | J.ECond (e, J.ENum zero, J.ENum one) when J.Num.is_one one && J.Num.is_zero zero ->
       J.EUn (J.Not, e)
-  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), J.ENum n, y), e1, e2)
-  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), y, J.ENum n), e1, e2) ->
-      J.ECond (J.EBin (J.Band, y, J.ENum n), e1, e2)
   | cond -> cond
 
 let rec depth = function
