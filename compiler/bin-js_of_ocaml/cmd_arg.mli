@@ -51,6 +51,8 @@ type t =
   ; fs_external : bool
   ; keep_unit_names : bool
   ; effects : Config.effects_backend
+  ; build_config : bool
+  ; apply_build_config : string option
   }
 
 val options : t Cmdliner.Term.t

@@ -157,6 +157,8 @@ let run
     ; include_runtime
     ; effects
     ; shape_files
+    ; build_config
+    ; apply_build_config
     } =
   let source_map_base =
     Option.map ~f:(fun spec -> spec.Source_map.Encoding_spec.source_map) source_map
@@ -166,6 +168,32 @@ let run
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
+  let toplevel =
+    match apply_build_config with
+    | None -> toplevel
+    | Some s ->
+        let toplevel = ref toplevel in
+        let specs =
+          [ ( "effects"
+            , Jsoo_cmdline.Build_config.Enum
+                ( [ "cps"; "disabled"; "double-translation" ]
+                , fun s ->
+                    Config.set_effects_backend (Build_info.effects_backend_of_string s) )
+            )
+          ; "js-string", Jsoo_cmdline.Build_config.Bool (Config.Flag.set "use-js-string")
+          ; "toplevel", Jsoo_cmdline.Build_config.Bool (( := ) toplevel)
+          ]
+        in
+        Jsoo_cmdline.Build_config.parse specs s;
+        !toplevel
+  in
+  if build_config
+  then
+    Jsoo_cmdline.Build_config.print_and_exit
+      [ "effects", Build_info.string_of_effects_backend (Config.effects ())
+      ; "js-string", string_of_bool (Config.Flag.use_js_string ())
+      ; "toplevel", string_of_bool toplevel
+      ];
   Linker.reset ();
   (match output_file with
   | `Stdout, _ -> ()
