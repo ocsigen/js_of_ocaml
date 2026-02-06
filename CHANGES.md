@@ -1,6 +1,7 @@
 # dev
 
 ## Features/Changes
+* OxCaml support (#2105)
 * Runtime/wasm: faster copy between a Wasm string and an JavaScript array buffer (#2124)
 * Runtime/wasm: faster conversion of small JavaScript strings to Wasm (#2124)
 
