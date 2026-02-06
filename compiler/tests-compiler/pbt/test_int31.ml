@@ -12,14 +12,15 @@ let max_int31 = Int32.(sub (shift_left 1l 30) 1l)
 
 let in_range i = Int32.(min_int31 <= i && i <= max_int31)
 
-let in_range_i32 = Gen.(Int32.of_int <$> int_range (-(1 lsl 30)) ((1 lsl 30) - 1))
+let in_range_i32 = Gen.map (fun i -> Int31.to_int32 (Int31.of_int32_truncate i)) Gen.int32
+
+let out_of_range_i32 =
+  Gen.map (fun i -> if in_range i then Int32.logxor i Int32.min_int else i) Gen.int32
 
 let out_of_range_int =
-  let open Gen in
-  oneof
-    [ int_range (-(1 lsl 31)) (-(1 lsl 30) - 1); int_range (1 lsl 30) ((1 lsl 31) - 1) ]
-
-let out_of_range_i32 = out_of_range_int |> Gen.map Int32.of_int
+  if Sys.int_size <= 31
+  then Gen.pure 0 (* no int is out of range for Int31 on 32-bit; tests are guarded *)
+  else Gen.map Int32.to_int out_of_range_i32
 
 let t_corner =
   let open Gen in
@@ -617,4 +618,84 @@ let%expect_test _ =
          in_range r_int31
          && Int32.equal r_int31 r_int32
          && (Int.equal i 0 --> Int32.(r_int31 = x_int32)));
+  [%expect ""]
+
+let%expect_test _ =
+  Test.check_exn
+  @@ Test.make
+       ~count:1000
+       ~name:"Int31.of_string_exn: roundtrip"
+       t_corner
+       ~print:print_t
+       (fun i ->
+         let s = Int32.to_string (Int31.to_int32 i) in
+         Int31.equal (Int31.of_string_exn s) i);
+  [%expect ""]
+
+let%expect_test _ =
+  Test.check_exn
+  @@ Test.make
+       ~count:1000
+       ~name:"Int31.of_string_exn: out of range"
+       out_of_range_i32
+       ~print:(fun i -> Printf.sprintf "%ld" i)
+       (fun i ->
+         let s = Int32.to_string i in
+         match Int31.of_string_exn s with
+         | exception Failure _ -> true
+         | _ -> false);
+  [%expect ""]
+
+let%expect_test _ =
+  Test.check_exn
+  @@ Test.make
+       ~count:1000
+       ~name:"Int31.of_float_opt: roundtrip"
+       t_corner
+       ~print:print_t
+       (fun i ->
+         let f = Int32.to_float (Int31.to_int32 i) in
+         match Int31.of_float_opt f with
+         | Some r -> Int31.equal r i
+         | None -> false);
+  [%expect ""]
+
+let%expect_test _ =
+  Test.check_exn
+  @@ Test.make
+       ~count:1000
+       ~name:"Int31.of_float_opt: out of range"
+       (Gen.map Int32.to_float out_of_range_i32)
+       ~print:(fun f -> Printf.sprintf "%g" f)
+       (fun f ->
+         match Int31.of_float_opt f with
+         | None -> true
+         | Some _ -> false);
+  [%expect ""]
+
+let%expect_test _ =
+  Test.check_exn
+  @@ Test.make
+       ~count:1000
+       ~name:"Int31.of_int_exn: roundtrip"
+       (Gen.map Int32.to_int in_range_i32)
+       ~print:Print.int
+       (fun i ->
+         let r = Int31.of_int_exn i in
+         Int.equal (Int31.to_int32 r |> Int32.to_int) i);
+  [%expect ""]
+
+let%expect_test _ =
+  if Sys.int_size > 31
+  then
+    Test.check_exn
+    @@ Test.make
+         ~count:1000
+         ~name:"Int31.of_int_exn: out of range"
+         out_of_range_int
+         ~print:Print.int
+         (fun i ->
+           match Int31.of_int_exn i with
+           | exception Failure _ -> true
+           | _ -> false);
   [%expect ""]
