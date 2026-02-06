@@ -131,4 +131,5 @@ let reset () =
   String.Hashtbl.clear kind_args_tbl;
   String.Hashtbl.clear arities;
   String.Hashtbl.clear aliases_;
-  named_values := StringSet.empty
+  named_values := StringSet.empty;
+  externals := StringSet.empty
