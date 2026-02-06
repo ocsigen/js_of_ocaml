@@ -152,7 +152,7 @@ module Symtable = struct
 
     let iter ~f t = iter (fun id pos -> f (to_local id) pos) t
 
-    let fold f t acc = fold (fun id acc -> f (to_local id) acc) t acc
+    let fold f t acc = fold (fun id pos acc -> f (to_local id) pos acc) t acc
 
     let enter t id = enter t (of_local id)
   end
@@ -182,7 +182,7 @@ module Symtable = struct
 
     let iter ~f t = iter (fun id pos -> f (to_local id) pos) t
 
-    let fold f t acc = fold (fun id acc -> f (to_local id) acc) t acc
+    let fold f t acc = fold (fun id pos acc -> f (to_local id) pos acc) t acc
 
     let enter t id = enter t (of_local id)
   end
