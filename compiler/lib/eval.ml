@@ -297,7 +297,8 @@ let eval_prim ~target x =
           nativeint_shiftop l Int32.shift_right_logical
       | "caml_nativeint_compare", [ NativeInt i; NativeInt j ] ->
           Some (Int (Targetint.of_int_exn (Int32.compare i j)))
-      | "caml_nativeint_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
+      | "caml_nativeint_to_int", [ NativeInt i ] ->
+          Some (Int (Targetint.of_int32_truncate i))
       | "caml_nativeint_of_int", [ Int i ] -> nativeint (Targetint.to_int32 i)
       (* int64 *)
       | "caml_int64_bits_of_float", [ Float f ] -> int64 f
