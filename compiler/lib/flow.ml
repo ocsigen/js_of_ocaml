@@ -480,9 +480,9 @@ let the_shape_of ~return_values ~pure info x =
               | Expr (Closure (l, _, _)) ->
                   let pure = Pure_fun.pure pure x in
                   let res =
-                    match Var.Map.find x return_values with
-                    | exception Not_found -> Shape.Top
-                    | set ->
+                    match Var.Map.find_opt x return_values with
+                    | None -> Shape.Top
+                    | Some set ->
                         let set = Var.Set.remove x set in
                         if Var.Set.is_empty set
                         then Shape.Top
