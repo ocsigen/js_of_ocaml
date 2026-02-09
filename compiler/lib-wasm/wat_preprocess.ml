@@ -283,8 +283,6 @@ let is_id s =
 
 (****)
 
-module StringMap = Map.Make (String)
-
 type typ =
   | Bool
   | String
