@@ -34,8 +34,10 @@ type closure_info =
 module SCC = Strongly_connected_components.Make (Var)
 
 let add_multi k v map =
-  let set = try Var.Map.find k map with Not_found -> Addr.Set.empty in
-  Var.Map.add k (Addr.Set.add v set) map
+  Var.Map.update
+    k
+    (fun set -> Some (Addr.Set.add v (Option.value ~default:Addr.Set.empty set)))
+    map
 
 let rec collect_apply pc blocks visited tc =
   if Addr.Set.mem pc visited
