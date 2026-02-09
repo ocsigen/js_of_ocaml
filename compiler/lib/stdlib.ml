@@ -871,6 +871,33 @@ module BitSet : sig
 end = struct
   type t = { mutable arr : int array }
 
+  (* Count trailing zeros. [w] must be non-zero. *)
+  let ctz w =
+    let n = ref 0 in
+    let w = ref w in
+    if Sys.int_size > 32 && !w land ((1 lsl 32) - 1) = 0
+    then (
+      n := 32;
+      w := !w lsr 32);
+    if !w land 0xFFFF = 0
+    then (
+      n := !n + 16;
+      w := !w lsr 16);
+    if !w land 0xFF = 0
+    then (
+      n := !n + 8;
+      w := !w lsr 8);
+    if !w land 0xF = 0
+    then (
+      n := !n + 4;
+      w := !w lsr 4);
+    if !w land 0x3 = 0
+    then (
+      n := !n + 2;
+      w := !w lsr 2);
+    if !w land 0x1 = 0 then n := !n + 1;
+    !n
+
   let create () = { arr = Array.make 1 0 }
 
   let create' n = { arr = Array.make ((n / Sys.int_size) + 1) 0 }
@@ -917,24 +944,69 @@ end = struct
       if b <> 0 && b land mask <> 0 then Array.unsafe_set t.arr idx (b lxor mask)
 
   let next_free t i =
-    let x = ref i in
-    while mem t !x do
-      incr x
-    done;
-    !x
+    let arr = t.arr in
+    let len = Array.length arr in
+    let idx = ref (i / Sys.int_size) in
+    if !idx >= len
+    then i
+    else
+      let off = i mod Sys.int_size in
+      (* [lnot] flips set/unset so that [ctz] finds the first *free* bit *)
+      let word = lnot (Array.unsafe_get arr !idx) lsr off in
+      if word <> 0
+      then
+        (* There's a free bit in this word at or above [off] *)
+        i + ctz word
+      else (
+        (* Search subsequent words *)
+        incr idx;
+        while !idx < len && Array.unsafe_get arr !idx = -1 do
+          incr idx
+        done;
+        if !idx >= len
+        then len * Sys.int_size
+        else
+          (* [lnot] to find first free (zero) bit via [ctz] *)
+          let w = lnot (Array.unsafe_get arr !idx) in
+          (!idx * Sys.int_size) + ctz w)
 
   let next_mem t i =
-    let x = ref i in
-    while not (mem t !x) do
-      incr x
-    done;
-    !x
+    let arr = t.arr in
+    let len = Array.length arr in
+    let idx = ref (i / Sys.int_size) in
+    if !idx >= len
+    then failwith "BitSet.next_mem: no set bit found"
+    else
+      let off = i mod Sys.int_size in
+      (* Mask out bits below [off] *)
+      let word = Array.unsafe_get arr !idx lsr off in
+      if word <> 0
+      then i + ctz word
+      else (
+        incr idx;
+        while !idx < len && Array.unsafe_get arr !idx = 0 do
+          incr idx
+        done;
+        if !idx >= len
+        then failwith "BitSet.next_mem: no set bit found"
+        else
+          let w = Array.unsafe_get arr !idx in
+          (!idx * Sys.int_size) + ctz w)
 
   let copy t = { arr = Array.copy t.arr }
 
   let iter ~f t =
-    for i = 0 to size t do
-      if mem t i then f i
+    let arr = t.arr in
+    for idx = 0 to Array.length arr - 1 do
+      let ref_word = ref (Array.unsafe_get arr idx) in
+      if !ref_word <> 0
+      then
+        let base = idx * Sys.int_size in
+        while !ref_word <> 0 do
+          let bit = ctz !ref_word in
+          f (base + bit);
+          ref_word := !ref_word land (!ref_word - 1)
+        done
     done
 end
 
