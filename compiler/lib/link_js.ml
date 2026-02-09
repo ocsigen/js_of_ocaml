@@ -340,7 +340,7 @@ let link
             | Drop -> skip ic
             | Unit ->
                 let u = Units.read ic Unit_info.empty in
-                if StringSet.cardinal (StringSet.inter u.Unit_info.provides to_link) > 0
+                if not (StringSet.disjoint u.Unit_info.provides to_link)
                 then (
                   if u.effects_without_cps && not !warn_effects
                   then (

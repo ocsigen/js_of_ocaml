@@ -342,9 +342,9 @@ let get_approx
   if Var.Tbl.get info_maybe_unknown x
   then top
   else
-    match Var.Set.cardinal s with
-    | 0 -> top
-    | 1 -> f (Var.Set.choose s)
+    match Var.Set.to_list_bounded 1 s with
+    | Some [] -> top
+    | Some [ x ] -> f x
     | _ -> Var.Set.fold (fun x u -> join (f x) u) s (f (Var.Set.choose s))
 
 let the_def_of info x =
@@ -532,7 +532,7 @@ let build_subst (info : Info.t) vars =
       (if not u
        then
          let s = Var.Tbl.get info.info_known_origins x in
-         if Var.Set.cardinal s = 1 then subst.(x_idx) <- Var.Set.choose s);
+         if Var.Set.compare_cardinal_with s 1 = 0 then subst.(x_idx) <- Var.Set.choose s);
       (if Var.equal subst.(x_idx) x
        then
          match direct_approx info x with

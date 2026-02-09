@@ -37,7 +37,7 @@ let block_deps ~info ~non_escaping ~ambiguous ~blocks pc =
           match get_approx info f with
           | Top -> ()
           | Values { known; others } ->
-              if (not exact) || others || Var.Set.cardinal known > 1
+              if (not exact) || others || Var.Set.compare_cardinal_with known 1 > 0
               then Var.Set.iter (fun x -> Var.Hashtbl.replace ambiguous x ()) known;
               if debug ()
               then
@@ -47,7 +47,10 @@ let block_deps ~info ~non_escaping ~ambiguous ~blocks pc =
           match get_approx info x with
           | Top -> ()
           | Values { known; others } ->
-              if Var.Set.cardinal known = 1 && (not others) && Var.Set.mem x known
+              if
+                Var.Set.compare_cardinal_with known 1 = 0
+                && (not others)
+                && Var.Set.mem x known
               then (
                 let may_escape = Var.ISet.mem info.Global_flow.info_may_escape x in
                 if debug () then Format.eprintf "CLOSURE may-escape:%b@." may_escape;
