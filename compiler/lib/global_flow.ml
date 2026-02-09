@@ -70,7 +70,7 @@ type escape_status =
 
 type mutable_fields =
   | No_field
-  | Some_fields of IntSet.t
+  | Some_fields of FBitSet.t
   | All_fields
 
 type state =
@@ -160,9 +160,10 @@ let possibly_mutable st x = st.variable_mutable_fields.(Var.idx x) <- All_fields
 
 let field_possibly_mutable st x n =
   match st.variable_mutable_fields.(Var.idx x) with
-  | No_field -> st.variable_mutable_fields.(Var.idx x) <- Some_fields (IntSet.singleton n)
+  | No_field ->
+      st.variable_mutable_fields.(Var.idx x) <- Some_fields (FBitSet.singleton n)
   | Some_fields s ->
-      st.variable_mutable_fields.(Var.idx x) <- Some_fields (IntSet.add n s)
+      st.variable_mutable_fields.(Var.idx x) <- Some_fields (FBitSet.add n s)
   | All_fields -> ()
 
 let expr_deps blocks st x e =
@@ -425,9 +426,9 @@ module Domain = struct
                     st.mutable_fields.(Var.idx x) <- mutable_fields;
                     update ~children:true x
                 | Some_fields s, Some_fields s' ->
-                    if IntSet.exists (fun i -> not (IntSet.mem i s)) s'
+                    if FBitSet.exists (fun i -> not (FBitSet.mem i s)) s'
                     then (
-                      st.mutable_fields.(Var.idx x) <- Some_fields (IntSet.union s s');
+                      st.mutable_fields.(Var.idx x) <- Some_fields (FBitSet.union s s');
                       update ~children:true x)
                 | Some_fields _, All_fields ->
                     st.mutable_fields.(Var.idx x) <- All_fields;
@@ -469,7 +470,7 @@ let propagate st ~update approx x =
                       let m =
                         match st.mutable_fields.(Var.idx z) with
                         | No_field -> false
-                        | Some_fields s -> IntSet.mem n s
+                        | Some_fields s -> FBitSet.mem n s
                         | All_fields -> true
                       in
                       if not m then add_dep st x z;
@@ -732,7 +733,7 @@ let f ~fast p =
                           (Format.pp_print_list
                              ~pp_sep:(fun f () -> Format.fprintf f ", ")
                              (fun f i -> Format.fprintf f "%d" i))
-                          (IntSet.elements s)
+                          (FBitSet.elements s)
                     | All_fields -> Format.fprintf f "yes"
                   in
                   Format.fprintf

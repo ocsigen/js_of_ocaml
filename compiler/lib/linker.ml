@@ -420,7 +420,7 @@ type always_required =
   }
 
 type state =
-  { ids : IntSet.t
+  { ids : FBitSet.t
   ; always_required_codes : always_required list
   ; codes : (Javascript.program pack * bool) list
   ; deprecation : (int list * string) list
@@ -656,7 +656,7 @@ let rec resolve_dep_name_rev state path nm =
   | exception Not_found -> { state with missing = StringSet.add nm state.missing }
 
 and resolve_dep_id_rev state path id =
-  if IntSet.mem id state.ids
+  if FBitSet.mem id state.ids
   then (
     if List.mem ~eq:Int.equal id path
     then
@@ -669,7 +669,7 @@ and resolve_dep_id_rev state path id =
   else
     let path = id :: path in
     let code, has_macro, req, deprecated = Int.Hashtbl.find code_pieces id in
-    let state = { state with ids = IntSet.add id state.ids } in
+    let state = { state with ids = FBitSet.add id state.ids } in
     let state =
       List.fold_left req ~init:state ~f:(fun state nm ->
           resolve_dep_name_rev state path nm)
@@ -691,7 +691,7 @@ let init ?from () =
     | None -> fun _ -> true
     | Some l -> fun fn -> List.mem ~eq:String.equal fn l
   in
-  { ids = IntSet.empty
+  { ids = FBitSet.empty
   ; always_required_codes =
       List.rev
         (List.filter_map !always_included ~f:(fun x ->
@@ -779,7 +779,7 @@ let link ?(check_missing = true) program (state : state) =
   { runtime_code = runtime; always_required_codes = always_required }
 
 let all state =
-  IntSet.fold
+  FBitSet.fold
     (fun id acc ->
       try
         let name, _ = Int.Hashtbl.find provided_rev id in

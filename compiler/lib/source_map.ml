@@ -541,14 +541,14 @@ module Standard = struct
         in
         let ignore_list =
           let s =
-            IntSet.of_list
+            FBitSet.of_list
               (List.map
                  ~f:int_of_intlit
                  (Option.value ~default:[] (list_intlit "ignoreList" rest)))
           in
           List.filter_map
             ~f:(fun x -> x)
-            (List.mapi ~f:(fun i nm -> if IntSet.mem i s then Some nm else None) sources)
+            (List.mapi ~f:(fun i nm -> if FBitSet.mem i s then Some nm else None) sources)
         in
         { version = int_of_string version
         ; file

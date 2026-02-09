@@ -47,7 +47,7 @@ type info =
 
 type mutable_fields =
   | No_field
-  | Some_fields of Stdlib.IntSet.t
+  | Some_fields of Stdlib.FBitSet.t
   | All_fields
 
 module VarPairTbl : Hashtbl.S with type key = Var.t * Var.t

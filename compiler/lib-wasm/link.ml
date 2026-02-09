@@ -615,16 +615,16 @@ let compute_dependencies ~files_to_link ~files =
               StringSet.fold
                 (fun unit_name s ->
                   match String.Hashtbl.find_opt h unit_name with
-                  | Some i -> IntSet.add i s
+                  | Some i -> FBitSet.add i s
                   | None -> s)
                 unit_info.requires
                 s)
-            ~init:IntSet.empty
+            ~init:FBitSet.empty
             units
         in
         List.iter ~f:(fun { unit_name; _ } -> String.Hashtbl.add h unit_name !i) units;
         incr i;
-        Some (Some (IntSet.elements s)))
+        Some (Some (FBitSet.elements s)))
       else None)
     (List.tl files)
 

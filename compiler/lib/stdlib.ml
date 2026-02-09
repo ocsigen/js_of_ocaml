@@ -891,6 +891,33 @@ module StringMap = Map.Make (String)
 module Utf8_string_set = Set.Make (Utf8_string)
 module Utf8_string_map = Map.Make (Utf8_string)
 
+(* Count trailing zeros. [w] must be non-zero. *)
+let ctz w =
+  let n = ref 0 in
+  let w = ref w in
+  if Sys.int_size > 32 && !w land ((1 lsl 32) - 1) = 0
+  then (
+    n := 32;
+    w := !w lsr 32);
+  if !w land 0xFFFF = 0
+  then (
+    n := !n + 16;
+    w := !w lsr 16);
+  if !w land 0xFF = 0
+  then (
+    n := !n + 8;
+    w := !w lsr 8);
+  if !w land 0xF = 0
+  then (
+    n := !n + 4;
+    w := !w lsr 4);
+  if !w land 0x3 = 0
+  then (
+    n := !n + 2;
+    w := !w lsr 2);
+  if !w land 0x1 = 0 then n := !n + 1;
+  !n
+
 module BitSet : sig
   type t
 
@@ -917,33 +944,6 @@ module BitSet : sig
   val clear : t -> unit
 end = struct
   type t = { mutable arr : int array }
-
-  (* Count trailing zeros. [w] must be non-zero. *)
-  let ctz w =
-    let n = ref 0 in
-    let w = ref w in
-    if Sys.int_size > 32 && !w land ((1 lsl 32) - 1) = 0
-    then (
-      n := 32;
-      w := !w lsr 32);
-    if !w land 0xFFFF = 0
-    then (
-      n := !n + 16;
-      w := !w lsr 16);
-    if !w land 0xFF = 0
-    then (
-      n := !n + 8;
-      w := !w lsr 8);
-    if !w land 0xF = 0
-    then (
-      n := !n + 4;
-      w := !w lsr 4);
-    if !w land 0x3 = 0
-    then (
-      n := !n + 2;
-      w := !w lsr 2);
-    if !w land 0x1 = 0 then n := !n + 1;
-    !n
 
   let create () = { arr = Array.make 1 0 }
 
@@ -1055,6 +1055,381 @@ end = struct
           ref_word := !ref_word land (!ref_word - 1)
         done
     done
+end
+
+module FBitSet : Set.S with type elt = int = struct
+  type elt = int
+
+  type t = int IntMap.t
+
+  (* Position of the highest set bit. [w] must be non-zero. *)
+  let highest_bit w =
+    let n = ref 0 in
+    let w = ref w in
+    if Sys.int_size > 32 && !w lsr 32 <> 0
+    then (
+      n := 32;
+      w := !w lsr 32);
+    if !w lsr 16 <> 0
+    then (
+      n := !n + 16;
+      w := !w lsr 16);
+    if !w lsr 8 <> 0
+    then (
+      n := !n + 8;
+      w := !w lsr 8);
+    if !w lsr 4 <> 0
+    then (
+      n := !n + 4;
+      w := !w lsr 4);
+    if !w lsr 2 <> 0
+    then (
+      n := !n + 2;
+      w := !w lsr 2);
+    if !w lsr 1 <> 0 then n := !n + 1;
+    !n
+
+  let popcount w =
+    let w = ref w in
+    let count = ref 0 in
+    while !w <> 0 do
+      incr count;
+      w := !w land (!w - 1)
+    done;
+    !count
+
+  let empty = IntMap.empty
+
+  let is_empty = IntMap.is_empty
+
+  let mem x t =
+    let idx = x / Sys.int_size in
+    let off = x mod Sys.int_size in
+    match IntMap.find_opt idx t with
+    | None -> false
+    | Some w -> w land (1 lsl off) <> 0
+
+  let add x t =
+    let idx = x / Sys.int_size in
+    let off = x mod Sys.int_size in
+    let mask = 1 lsl off in
+    IntMap.update
+      idx
+      (function
+        | None -> Some mask
+        | Some w -> Some (w lor mask))
+      t
+
+  let singleton x = add x empty
+
+  let remove x t =
+    let idx = x / Sys.int_size in
+    let off = x mod Sys.int_size in
+    IntMap.update
+      idx
+      (function
+        | None -> None
+        | Some w ->
+            let w = w land lnot (1 lsl off) in
+            if w = 0 then None else Some w)
+      t
+
+  let union t1 t2 = IntMap.union (fun _ a b -> Some (a lor b)) t1 t2
+
+  let inter t1 t2 =
+    IntMap.merge
+      (fun _ a b ->
+        match a, b with
+        | Some a, Some b ->
+            let w = a land b in
+            if w = 0 then None else Some w
+        | _ -> None)
+      t1
+      t2
+
+  let diff t1 t2 =
+    IntMap.merge
+      (fun _ a b ->
+        match a, b with
+        | Some a, Some b ->
+            let w = a land lnot b in
+            if w = 0 then None else Some w
+        | Some a, None -> Some a
+        | _ -> None)
+      t1
+      t2
+
+  let disjoint t1 t2 =
+    try
+      ignore
+        (IntMap.merge
+           (fun _ a b ->
+             match a, b with
+             | Some a, Some b -> if a land b <> 0 then raise_notrace Exit else None
+             | _ -> None)
+           t1
+           t2
+          : t);
+      true
+    with Exit -> false
+
+  let compare = IntMap.compare Int.compare
+
+  let equal = IntMap.equal Int.equal
+
+  let subset t1 t2 =
+    try
+      IntMap.iter
+        (fun idx w1 ->
+          match IntMap.find_opt idx t2 with
+          | None -> raise_notrace Exit
+          | Some w2 -> if w1 land lnot w2 <> 0 then raise_notrace Exit)
+        t1;
+      true
+    with Exit -> false
+
+  let iter f t =
+    IntMap.iter
+      (fun idx word ->
+        let ref_word = ref word in
+        let base = idx * Sys.int_size in
+        while !ref_word <> 0 do
+          let bit = ctz !ref_word in
+          f (base + bit);
+          ref_word := !ref_word land (!ref_word - 1)
+        done)
+      t
+
+  let fold f t init =
+    IntMap.fold
+      (fun idx word acc ->
+        let ref_word = ref word in
+        let acc = ref acc in
+        let base = idx * Sys.int_size in
+        while !ref_word <> 0 do
+          let bit = ctz !ref_word in
+          acc := f (base + bit) !acc;
+          ref_word := !ref_word land (!ref_word - 1)
+        done;
+        !acc)
+      t
+      init
+
+  let for_all f t =
+    try
+      iter (fun x -> if not (f x) then raise_notrace Exit) t;
+      true
+    with Exit -> false
+
+  let exists f t =
+    try
+      iter (fun x -> if f x then raise_notrace Exit) t;
+      false
+    with Exit -> true
+
+  let filter f t =
+    IntMap.filter_map
+      (fun idx word ->
+        let ref_word = ref word in
+        let result = ref 0 in
+        let base = idx * Sys.int_size in
+        while !ref_word <> 0 do
+          let bit = ctz !ref_word in
+          if f (base + bit) then result := !result lor (1 lsl bit);
+          ref_word := !ref_word land (!ref_word - 1)
+        done;
+        if !result = 0 then None else Some !result)
+      t
+
+  let filter_map f t =
+    fold
+      (fun x acc ->
+        match f x with
+        | Some y -> add y acc
+        | None -> acc)
+      t
+      empty
+
+  let partition f t =
+    IntMap.fold
+      (fun idx word (yes, no) ->
+        let ref_word = ref word in
+        let y = ref 0 in
+        let n = ref 0 in
+        let base = idx * Sys.int_size in
+        while !ref_word <> 0 do
+          let bit = ctz !ref_word in
+          if f (base + bit) then y := !y lor (1 lsl bit) else n := !n lor (1 lsl bit);
+          ref_word := !ref_word land (!ref_word - 1)
+        done;
+        let yes = if !y = 0 then yes else IntMap.add idx !y yes in
+        let no = if !n = 0 then no else IntMap.add idx !n no in
+        yes, no)
+      t
+      (empty, empty)
+
+  let map f t = fold (fun x acc -> add (f x) acc) t empty
+
+  let cardinal t = IntMap.fold (fun _ word acc -> acc + popcount word) t 0
+
+  let elements t = fold (fun x acc -> x :: acc) t [] |> List.rev
+
+  let to_list = elements
+
+  let min_elt t =
+    let idx, word = IntMap.min_binding t in
+    (idx * Sys.int_size) + ctz word
+
+  let min_elt_opt t =
+    match IntMap.min_binding_opt t with
+    | None -> None
+    | Some (idx, word) -> Some ((idx * Sys.int_size) + ctz word)
+
+  let max_elt t =
+    let idx, word = IntMap.max_binding t in
+    (idx * Sys.int_size) + highest_bit word
+
+  let max_elt_opt t =
+    match IntMap.max_binding_opt t with
+    | None -> None
+    | Some (idx, word) -> Some ((idx * Sys.int_size) + highest_bit word)
+
+  let choose = min_elt
+
+  let choose_opt = min_elt_opt
+
+  let find x t = if mem x t then x else raise Not_found
+
+  let find_opt x t = if mem x t then Some x else None
+
+  let find_first f t =
+    let result = ref None in
+    (try
+       iter
+         (fun x ->
+           if f x
+           then (
+             result := Some x;
+             raise_notrace Exit))
+         t
+     with Exit -> ());
+    match !result with
+    | Some x -> x
+    | None -> raise Not_found
+
+  let find_first_opt f t = try Some (find_first f t) with Not_found -> None
+
+  let find_last f t =
+    let result = ref None in
+    (try iter (fun x -> if f x then result := Some x else raise_notrace Exit) t
+     with Exit -> ());
+    match !result with
+    | Some x -> x
+    | None -> raise Not_found
+
+  let find_last_opt f t = try Some (find_last f t) with Not_found -> None
+
+  let split x t =
+    let idx = x / Sys.int_size in
+    let off = x mod Sys.int_size in
+    let lt_map, found, gt_map = IntMap.split idx t in
+    let mem_x = ref false in
+    let lt =
+      match found with
+      | None -> lt_map
+      | Some w ->
+          mem_x := w land (1 lsl off) <> 0;
+          let low = w land ((1 lsl off) - 1) in
+          if low = 0 then lt_map else IntMap.add idx low lt_map
+    in
+    let gt =
+      match found with
+      | None -> gt_map
+      | Some w ->
+          let high = w land lnot ((1 lsl off) lor ((1 lsl off) - 1)) in
+          if high = 0 then gt_map else IntMap.add idx high gt_map
+    in
+    lt, !mem_x, gt
+
+  let of_list l = List.fold_left ~f:(fun acc x -> add x acc) ~init:empty l
+
+  let to_seq t =
+    let map_seq = IntMap.to_seq t in
+    let rec bits base w rest () =
+      if w = 0
+      then words rest ()
+      else
+        let bit = ctz w in
+        Seq.Cons (base + bit, bits base (w land (w - 1)) rest)
+    and words s () =
+      match s () with
+      | Seq.Nil -> Seq.Nil
+      | Seq.Cons ((idx, word), rest) -> bits (idx * Sys.int_size) word rest ()
+    in
+    words map_seq
+
+  let to_rev_seq t =
+    let map_seq = IntMap.to_rev_seq t in
+    let rec bits base w rest () =
+      if w = 0
+      then words rest ()
+      else
+        let bit = highest_bit w in
+        Seq.Cons (base + bit, bits base (w lxor (1 lsl bit)) rest)
+    and words s () =
+      match s () with
+      | Seq.Nil -> Seq.Nil
+      | Seq.Cons ((idx, word), rest) -> bits (idx * Sys.int_size) word rest ()
+    in
+    words map_seq
+
+  let to_seq_from x t =
+    let idx = x / Sys.int_size in
+    let off = x mod Sys.int_size in
+    let map_seq = IntMap.to_seq_from idx t in
+    let rec bits base w rest () =
+      if w = 0
+      then words rest ()
+      else
+        let bit = ctz w in
+        Seq.Cons (base + bit, bits base (w land (w - 1)) rest)
+    and words s () =
+      match s () with
+      | Seq.Nil -> Seq.Nil
+      | Seq.Cons ((i, word), rest) ->
+          let w = if i = idx then word land lnot ((1 lsl off) - 1) else word in
+          bits (i * Sys.int_size) w rest ()
+    in
+    words map_seq
+
+  let add_seq s t = Seq.fold_left (fun acc x -> add x acc) t s
+
+  let of_seq s = add_seq s empty
+
+  let compare_cardinal_with s n =
+    let r =
+      try
+        IntMap.fold
+          (fun _ word n ->
+            let c = popcount word in
+            let n = n - c in
+            if n < 0 then raise_notrace Exit else n)
+          s
+          n
+      with Exit -> -1
+    in
+    if r < 0 then 1 else Int.compare 0 r
+
+  let to_list_bounded n s =
+    try
+      Some
+        (fold
+           (fun x (n, acc) -> if n <= 0 then raise_notrace Exit else n - 1, x :: acc)
+           s
+           (n, [])
+        |> snd
+        |> List.rev)
+    with Exit -> None
 end
 
 module Array = struct

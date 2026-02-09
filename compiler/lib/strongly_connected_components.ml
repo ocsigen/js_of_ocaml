@@ -87,11 +87,11 @@ end = struct
   let component_graph graph =
     let ncomponents, components = kosaraju graph in
     let id_scc = Array.make ncomponents [] in
-    let component_graph = Array.make ncomponents IntSet.empty in
+    let component_graph = Array.make ncomponents FBitSet.empty in
     let add_component_dep node set =
       let node_deps = graph.(node) in
       List.fold_left
-        ~f:(fun set dep -> IntSet.add components.(dep) set)
+        ~f:(fun set dep -> FBitSet.add components.(dep) set)
         ~init:set
         node_deps
     in
@@ -101,7 +101,7 @@ end = struct
         component_graph.(component) <- add_component_dep node component_graph.(component))
       components;
     { sorted_connected_components = id_scc
-    ; component_edges = Array.map ~f:IntSet.elements component_graph
+    ; component_edges = Array.map ~f:FBitSet.elements component_graph
     }
 end
 

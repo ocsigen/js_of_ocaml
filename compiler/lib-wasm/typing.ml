@@ -389,7 +389,7 @@ let propagate st approx x : Domain.t =
                ~f:(fun i y ->
                  match st.global_flow_state.mutable_fields.(Var.idx x) with
                  | All_fields -> Top
-                 | Some_fields s when IntSet.mem i s -> Top
+                 | Some_fields s when FBitSet.mem i s -> Top
                  | Some_fields _ | No_field ->
                      Domain.limit (Domain.box (Var.Tbl.get approx y)))
                lst)

@@ -26,7 +26,7 @@ let times = Debug.find "times"
 module Addr = struct
   type t = int
 
-  module Set = Set.Make (Int)
+  module Set = FBitSet
   module Map = Map.Make (Int)
   module Hashtbl = Int.Hashtbl
 
@@ -253,7 +253,7 @@ end = struct
     propagate_name o n;
     n
 
-  module Set = Set.Make (T)
+  module Set = FBitSet
   module Map = Map.Make (T)
 
   module Tbl = struct
