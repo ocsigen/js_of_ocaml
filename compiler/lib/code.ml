@@ -207,7 +207,7 @@ end = struct
         in
         set_raw v str generated)
 
-    let get v = try Some (Int.Hashtbl.find names v) with Not_found -> None
+    let get v = Int.Hashtbl.find_opt names v
   end
 
   let last_var = ref 0

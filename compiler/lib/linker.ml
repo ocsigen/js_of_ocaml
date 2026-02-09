@@ -534,7 +534,9 @@ let load_fragment ~target_env ~filename (f : Fragment.t) =
               Option.value ~default:Target_env.Isomorphic fragment_target
             in
             let exists =
-              try `Exists (String.Hashtbl.find provided name) with Not_found -> `New
+              match String.Hashtbl.find_opt provided name with
+              | Some v -> `Exists v
+              | None -> `New
             in
             let is_updating =
               match

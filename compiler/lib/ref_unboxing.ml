@@ -208,7 +208,7 @@ let f p =
         | _ -> "")
       p;
   Var.Hashtbl.filter_map_inplace
-    (fun x _depth -> try Some (Var.Hashtbl.find updated x) with Not_found -> None)
+    (fun x _depth -> Var.Hashtbl.find_opt updated x)
     candidates;
   let functions =
     Var.Hashtbl.fold (fun _ pc s -> Addr.Set.add pc s) candidates Addr.Set.empty

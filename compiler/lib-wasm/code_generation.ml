@@ -660,51 +660,57 @@ let need_apply_fun ~cps ~arity st =
   let ctx = st.context in
   ( (if cps
      then (
-       try IntMap.find arity ctx.cps_apply_funs
-       with Not_found ->
-         let x = Var.fresh_n (Printf.sprintf "cps_apply_%d" arity) in
-         ctx.cps_apply_funs <- IntMap.add arity x ctx.cps_apply_funs;
-         x)
+       match IntMap.find_opt arity ctx.cps_apply_funs with
+       | Some x -> x
+       | None ->
+           let x = Var.fresh_n (Printf.sprintf "cps_apply_%d" arity) in
+           ctx.cps_apply_funs <- IntMap.add arity x ctx.cps_apply_funs;
+           x)
      else
-       try IntMap.find arity ctx.apply_funs
-       with Not_found ->
-         let x = Var.fresh_n (Printf.sprintf "apply_%d" arity) in
-         ctx.apply_funs <- IntMap.add arity x ctx.apply_funs;
-         x)
+       match IntMap.find_opt arity ctx.apply_funs with
+       | Some x -> x
+       | None ->
+           let x = Var.fresh_n (Printf.sprintf "apply_%d" arity) in
+           ctx.apply_funs <- IntMap.add arity x ctx.apply_funs;
+           x)
   , st )
 
 let need_curry_fun ~cps ~arity st =
   let ctx = st.context in
   ( (if cps
      then (
-       try IntMap.find arity ctx.cps_curry_funs
-       with Not_found ->
-         let x = Var.fresh_n (Printf.sprintf "cps_curry_%d" arity) in
-         ctx.cps_curry_funs <- IntMap.add arity x ctx.cps_curry_funs;
-         x)
+       match IntMap.find_opt arity ctx.cps_curry_funs with
+       | Some x -> x
+       | None ->
+           let x = Var.fresh_n (Printf.sprintf "cps_curry_%d" arity) in
+           ctx.cps_curry_funs <- IntMap.add arity x ctx.cps_curry_funs;
+           x)
      else
-       try IntMap.find arity ctx.curry_funs
-       with Not_found ->
-         let x = Var.fresh_n (Printf.sprintf "curry_%d" arity) in
-         ctx.curry_funs <- IntMap.add arity x ctx.curry_funs;
-         x)
+       match IntMap.find_opt arity ctx.curry_funs with
+       | Some x -> x
+       | None ->
+           let x = Var.fresh_n (Printf.sprintf "curry_%d" arity) in
+           ctx.curry_funs <- IntMap.add arity x ctx.curry_funs;
+           x)
   , st )
 
 let need_dummy_fun ~cps ~arity st =
   let ctx = st.context in
   ( (if cps
      then (
-       try IntMap.find arity ctx.cps_dummy_funs
-       with Not_found ->
-         let x = Var.fresh_n (Printf.sprintf "cps_dummy_%d" arity) in
-         ctx.cps_dummy_funs <- IntMap.add arity x ctx.cps_dummy_funs;
-         x)
+       match IntMap.find_opt arity ctx.cps_dummy_funs with
+       | Some x -> x
+       | None ->
+           let x = Var.fresh_n (Printf.sprintf "cps_dummy_%d" arity) in
+           ctx.cps_dummy_funs <- IntMap.add arity x ctx.cps_dummy_funs;
+           x)
      else
-       try IntMap.find arity ctx.dummy_funs
-       with Not_found ->
-         let x = Var.fresh_n (Printf.sprintf "dummy_%d" arity) in
-         ctx.dummy_funs <- IntMap.add arity x ctx.dummy_funs;
-         x)
+       match IntMap.find_opt arity ctx.dummy_funs with
+       | Some x -> x
+       | None ->
+           let x = Var.fresh_n (Printf.sprintf "dummy_%d" arity) in
+           ctx.dummy_funs <- IntMap.add arity x ctx.dummy_funs;
+           x)
   , st )
 
 let init_code context = instrs context.init_code

@@ -39,7 +39,7 @@ module VarPairTbl = Hashtbl.Make (struct
   let equal (a, b) (c, d) = Var.equal a c && Var.equal b d
 end)
 
-let associated_list h x = try Var.Hashtbl.find h x with Not_found -> []
+let associated_list h x = Var.Hashtbl.find_opt h x |> Option.value ~default:[]
 
 let add_to_list h x v = Var.Hashtbl.replace h x (v :: associated_list h x)
 
@@ -297,7 +297,7 @@ let program_deps st { start; blocks; _ } =
                     Addr.Hashtbl.replace
                       h
                       pc
-                      (i :: (try Addr.Hashtbl.find h pc with Not_found -> [])));
+                      (i :: (Addr.Hashtbl.find_opt h pc |> Option.value ~default:[])));
                 Addr.Hashtbl.iter
                   (fun pc tags ->
                     let block = Addr.Map.find pc blocks in
@@ -451,9 +451,7 @@ let propagate st ~update approx x =
       | Field (y, n, _) -> (
           match Var.Tbl.get approx y with
           | Values { known; others } ->
-              let tags =
-                try Some (Var.Hashtbl.find st.known_cases x) with Not_found -> None
-              in
+              let tags = Var.Hashtbl.find_opt st.known_cases x in
               Domain.join_set
                 ~others
                 ~update

@@ -158,7 +158,7 @@ struct
           let _, dests = a.(i) in
           Id.Set.fold
             (fun dest acc ->
-              let v = try Id.Map.find dest back with Not_found -> assert false in
+              let v = Id.Map.find dest back in
               v :: acc)
             dests
             [])

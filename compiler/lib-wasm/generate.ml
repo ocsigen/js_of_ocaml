@@ -1898,7 +1898,7 @@ let fix_switch_branches p =
         if not (List.is_empty args)
         then
           l.(i) <-
-            ( (let l = try Addr.Map.find pc !updates with Not_found -> [] in
+            ( (let l = Addr.Map.find_opt pc !updates |> Option.value ~default:[] in
                match
                  List.find_map
                    ~f:(fun (args', pc') ->
