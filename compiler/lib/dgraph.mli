@@ -17,11 +17,29 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+module type SET = sig
+  type elt
+
+  type t
+
+  val empty : t
+
+  val add : elt -> t -> t
+
+  val remove : elt -> t -> t
+
+  val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+
+  val mem : elt -> t -> bool
+
+  val equal : t -> t -> bool
+end
+
 module Make
     (N : sig
       type t
     end)
-    (NSet : Set.S with type elt = N.t)
+    (NSet : SET with type elt = N.t)
     (NMap : Map.S with type key = N.t) : sig
   type t =
     { domain : NSet.t

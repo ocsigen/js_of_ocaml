@@ -16,13 +16,21 @@
 
 (** Kosaraju's algorithm for strongly connected components. *)
 
+module type SET = sig
+  type elt
+
+  type t
+
+  val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
+end
+
 module type S = sig
   module Id : sig
     type t
 
     module Map : Map.S with type key = t
 
-    module Set : Set.S with type elt = t
+    module Set : SET with type elt = t
   end
 
   type directed_graph = Id.Set.t Id.Map.t
@@ -44,5 +52,5 @@ module Make (Id : sig
 
   module Map : Map.S with type key = t
 
-  module Set : Set.S with type elt = t
+  module Set : SET with type elt = t
 end) : S with module Id = Id
