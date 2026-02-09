@@ -167,7 +167,7 @@ end = struct
     let unit =
       try UnitTable.find units (ev_module, pos_fname)
       with Not_found ->
-        let crc = try String.Hashtbl.find crcs ev_module with Not_found -> None in
+        let crc = String.Hashtbl.find_opt crcs ev_module |> Option.join in
         let source : path option =
           (* First search the source based on [pos_fname] because the
              filename of the source might be unreleased to the

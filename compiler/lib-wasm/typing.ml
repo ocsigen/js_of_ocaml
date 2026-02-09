@@ -364,7 +364,10 @@ let prim_type ~st ~approx prim args =
           | Expr (Block _) -> bigarray_type ~approx ba
           | _ -> Top)
       | [] | [ _ ] | _ :: Pc _ :: _ -> Top)
-  | _ -> ( try snd (String.Hashtbl.find primitive_types prim) with Not_found -> Top)
+  | _ -> (
+      match String.Hashtbl.find_opt primitive_types prim with
+      | Some (_, typ) -> typ
+      | None -> Top)
 
 let reset () = String.Hashtbl.reset primitive_types
 
@@ -483,7 +486,7 @@ module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Solver = G.Solver (Domain)
 
 let solver st =
-  let associated_list h x = try Var.Hashtbl.find h x with Not_found -> [] in
+  let associated_list h x = Var.Hashtbl.find_opt h x |> Option.value ~default:[] in
   let g =
     { G.domain = st.global_flow_state.vars
     ; G.iter_children =
@@ -680,4 +683,5 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
 
 let var_type info x = Var.Tbl.get info.types x
 
-let return_type info f = try Var.Hashtbl.find info.return_types f with Not_found -> Top
+let return_type info f =
+  Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top

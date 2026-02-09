@@ -31,7 +31,7 @@ struct
     ; fold_children : 'a. (N.t -> 'a -> 'a) -> N.t -> 'a -> 'a
     }
 
-  let successors g x = try NMap.find x g with Not_found -> NSet.empty
+  let successors g x = NMap.find_opt x g |> Option.value ~default:NSet.empty
 
   let add_edge g x y =
     let l = successors g x in

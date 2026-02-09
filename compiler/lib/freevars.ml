@@ -189,27 +189,27 @@ let free_variables vars in_loop p =
           if pc' <> -1
           then
             let fv =
-              try Addr.Map.find pc' !all_freevars with Not_found -> Var.Set.empty
+              Addr.Map.find_opt pc' !all_freevars |> Option.value ~default:Var.Set.empty
             in
             let s = Var.Set.add x fv in
             all_freevars := Addr.Map.add pc' s !all_freevars)
         block;
-      (try
-         let pc'' = Addr.Map.find pc in_loop in
-         all_freevars := Addr.Map.remove pc'' !all_freevars
-       with Not_found -> ());
+      (match Addr.Map.find_opt pc in_loop with
+      | Some pc'' -> all_freevars := Addr.Map.remove pc'' !all_freevars
+      | None -> ());
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (_, Closure (_, (pc', _), _)) -> (
               traverse pc';
-              try
-                let pc'' = Addr.Map.find pc in_loop in
-                let fv =
-                  try Addr.Map.find pc'' !all_freevars with Not_found -> Var.Set.empty
-                in
-                freevars := Addr.Map.add pc' fv !freevars;
-                all_freevars := Addr.Map.remove pc'' !all_freevars
-              with Not_found -> freevars := Addr.Map.add pc' Var.Set.empty !freevars)
+              match Addr.Map.find_opt pc in_loop with
+              | Some pc'' ->
+                  let fv =
+                    Addr.Map.find_opt pc'' !all_freevars
+                    |> Option.value ~default:Var.Set.empty
+                  in
+                  freevars := Addr.Map.add pc' fv !freevars;
+                  all_freevars := Addr.Map.remove pc'' !all_freevars
+              | None -> freevars := Addr.Map.add pc' Var.Set.empty !freevars)
           | _ -> ());
       Code.fold_children p.blocks pc (fun pc' () -> traverse pc') ())
   in

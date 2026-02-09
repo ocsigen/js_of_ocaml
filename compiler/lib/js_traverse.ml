@@ -1599,7 +1599,9 @@ class rename_variable ~esm =
       match x with
       | V _ -> x
       | S { name = Utf8 name; _ } -> (
-          try V (StringMap.find name subst) with Not_found -> x)
+          match StringMap.find_opt name subst with
+          | Some v -> V v
+          | None -> x)
 
     method class_element x =
       match x with

@@ -1,7 +1,7 @@
 open Stdlib
 open Code
 
-let get_edges g src = try Addr.Hashtbl.find g src with Not_found -> Addr.Set.empty
+let get_edges g src = Addr.Hashtbl.find_opt g src |> Option.value ~default:Addr.Set.empty
 
 let add_edge g src dst = Addr.Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
 
@@ -42,7 +42,7 @@ let is_forward g pc pc' =
 
 (* pc has at least two forward edges moving into it *)
 let is_merge_node' block_order preds pc =
-  let s = try Addr.Hashtbl.find preds pc with Not_found -> Addr.Set.empty in
+  let s = Addr.Hashtbl.find_opt preds pc |> Option.value ~default:Addr.Set.empty in
   let o = Addr.Hashtbl.find block_order pc in
   try
     ignore
@@ -143,7 +143,11 @@ let reversed_dominator_tree g =
         (fun pc' ->
           if is_forward g pc pc'
           then
-            let d = try inter pc (Addr.Hashtbl.find dom pc') with Not_found -> pc in
+            let d =
+              match Addr.Hashtbl.find_opt dom pc' with
+              | Some d -> inter pc d
+              | None -> pc
+            in
             Addr.Hashtbl.replace dom pc' d)
         l);
   (* Check we have reached a fixed point (reducible graph) *)
@@ -167,7 +171,7 @@ let dominator_tree g =
 let is_merge_node g pc = is_merge_node' g.block_order g.preds pc
 
 let is_loop_header g pc =
-  let s = try Addr.Hashtbl.find g.preds pc with Not_found -> Addr.Set.empty in
+  let s = Addr.Hashtbl.find_opt g.preds pc |> Option.value ~default:Addr.Set.empty in
   let o = Addr.Hashtbl.find g.block_order pc in
   Addr.Set.exists (fun pc' -> Addr.Hashtbl.find g.block_order pc' >= o) s
 

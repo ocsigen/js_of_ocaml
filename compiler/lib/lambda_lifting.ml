@@ -177,7 +177,7 @@ let rec traverse var_depth (program, functions) pc depth limit =
                 let program =
                   Subst.Excluding_Binders.cont (Subst.from_map s) pc' program
                 in
-                let f' = try Var.Map.find f s with Not_found -> Var.fork f in
+                let f' = Var.Map.find_opt f s |> Option.value ~default:(Var.fork f) in
                 let s = Var.Map.bindings (Var.Map.remove f s) in
                 let f'' = Var.fork f in
                 if debug ()

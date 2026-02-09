@@ -162,7 +162,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
     List.iter2 ~f:(fun x y -> add_use (Propagate { scope = []; src = x }) x y) params args
   in
   let add_cont_deps (pc, args) =
-    match try Some (Addr.Map.find pc prog.blocks) with Not_found -> None with
+    match Addr.Map.find_opt pc prog.blocks with
     | Some block -> add_arg_dep block.params args
     | None -> () (* Dead continuation *)
   in
@@ -308,7 +308,7 @@ let liveness prog pure_funs (global_info : Global_flow.info) =
         Var.Hashtbl.replace
           h
           v
-          (update_field (try Var.Hashtbl.find h v with Not_found -> Domain.bot) i)
+          (update_field (Var.Hashtbl.find_opt h v |> Option.value ~default:Domain.bot) i)
   in
   let live_instruction scope i =
     match i with

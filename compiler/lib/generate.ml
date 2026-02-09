@@ -227,80 +227,77 @@ module Share = struct
     if not t.alias_strings
     then gen s
     else
-      try
-        let c = StringMap.find s t.count.byte_strings in
-        if c > 1
-        then (
-          try J.EVar (StringMap.find s t.vars.byte_strings)
-          with Not_found ->
-            let x = Var.fresh_n (Printf.sprintf "cst_%s" s) in
-            let v = J.V x in
-            t.vars <- { t.vars with byte_strings = StringMap.add s v t.vars.byte_strings };
-            J.EVar v)
-        else gen s
-      with Not_found -> gen s
+      match StringMap.find_opt s t.count.byte_strings with
+      | None | Some 1 -> gen s
+      | Some _ -> (
+          match StringMap.find_opt s t.vars.byte_strings with
+          | Some v -> J.EVar v
+          | None ->
+              let x = Var.fresh_n (Printf.sprintf "cst_%s" s) in
+              let v = J.V x in
+              t.vars <-
+                { t.vars with byte_strings = StringMap.add s v t.vars.byte_strings };
+              J.EVar v)
 
   let get_utf_string gen s t =
     if not t.alias_strings
     then gen s
     else
-      try
-        let c = StringMap.find s t.count.utf_strings in
-        if c > 1
-        then (
-          try J.EVar (StringMap.find s t.vars.utf_strings)
-          with Not_found ->
-            let x = Var.fresh_n (Printf.sprintf "cst_%s" s) in
-            let v = J.V x in
-            t.vars <- { t.vars with utf_strings = StringMap.add s v t.vars.utf_strings };
-            J.EVar v)
-        else gen s
-      with Not_found -> gen s
+      match StringMap.find_opt s t.count.utf_strings with
+      | None | Some 1 -> gen s
+      | Some _ -> (
+          match StringMap.find_opt s t.vars.utf_strings with
+          | Some v -> J.EVar v
+          | None ->
+              let x = Var.fresh_n (Printf.sprintf "cst_%s" s) in
+              let v = J.V x in
+              t.vars <- { t.vars with utf_strings = StringMap.add s v t.vars.utf_strings };
+              J.EVar v)
 
   let get_prim gen s t =
     let s = Primitive.resolve s in
     if not t.alias_prims
     then gen s
     else
-      try
-        let c = StringMap.find s t.count.prims in
-        if c > 1 || c = -1
-        then (
-          try J.EVar (StringMap.find s t.vars.prims)
-          with Not_found ->
-            let x = Var.fresh_n s in
-            let v = J.V x in
-            t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
-            J.EVar v)
-        else gen s
-      with Not_found -> gen s
+      match StringMap.find_opt s t.count.prims with
+      | None -> gen s
+      | Some c when c > 1 || c = -1 -> (
+          match StringMap.find_opt s t.vars.prims with
+          | Some v -> J.EVar v
+          | None ->
+              let x = Var.fresh_n s in
+              let v = J.V x in
+              t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
+              J.EVar v)
+      | Some _ -> gen s
 
   let get_apply gen desc t =
     if not t.alias_apply
     then gen desc
     else
-      try J.EVar (AppMap.find desc t.vars.applies)
-      with Not_found ->
-        let x =
-          let { arity; exact; trampolined; in_cps } = desc in
-          Var.fresh_n
-            (Printf.sprintf
-               "caml_%scall%d"
-               (match exact, trampolined, in_cps with
-               | true, false, false -> assert false (* inlined *)
-               | true, false, true -> "exact_cps_"
-               | true, true, false -> "exact_trampoline_"
-               | false, false, true ->
-                   assert false (* CPS functions are always trampolined *)
-               | false, false, false -> ""
-               | false, true, false -> "trampoline_"
-               | false, true, true -> "trampoline_cps_"
-               | true, true, true -> "exact_trampoline_cps_")
-               arity)
-        in
-        let v = J.V x in
-        t.vars <- { t.vars with applies = AppMap.add desc v t.vars.applies };
-        J.EVar v
+      match AppMap.find_opt desc t.vars.applies with
+      | Some v -> J.EVar v
+      | None ->
+          let x =
+            let { arity; exact; trampolined; in_cps } = desc in
+            Var.fresh_n
+              (Printf.sprintf
+                 "caml_%scall%d"
+                 (match exact, trampolined, in_cps with
+                 | true, false, false -> assert false (* inlined *)
+                 | true, false, true -> "exact_cps_"
+                 | true, true, false -> "exact_trampoline_"
+                 | false, false, true ->
+                     assert false (* CPS functions are always trampolined *)
+                 | false, false, false -> ""
+                 | false, true, false -> "trampoline_"
+                 | false, true, true -> "trampoline_cps_"
+                 | true, true, true -> "exact_trampoline_cps_")
+                 arity)
+          in
+          let v = J.V x in
+          t.vars <- { t.vars with applies = AppMap.add desc v t.vars.applies };
+          J.EVar v
 end
 
 module Ctx = struct

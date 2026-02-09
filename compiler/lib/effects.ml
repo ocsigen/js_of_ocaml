@@ -44,7 +44,7 @@ let double_translate () =
   | `Cps -> false
   | `Double_translation -> true
 
-let get_edges g src = try Addr.Hashtbl.find g src with Not_found -> Addr.Set.empty
+let get_edges g src = Addr.Hashtbl.find_opt g src |> Option.value ~default:Addr.Set.empty
 
 let add_edge g src dst = Addr.Hashtbl.replace g src (Addr.Set.add dst (get_edges g src))
 
@@ -97,7 +97,11 @@ let dominator_tree g =
       let l = Addr.Hashtbl.find g.succs pc in
       Addr.Set.iter
         (fun pc' ->
-          let d = try inter pc (Addr.Hashtbl.find dom pc') with Not_found -> pc in
+          let d =
+            match Addr.Hashtbl.find_opt dom pc' with
+            | Some d -> inter pc d
+            | None -> pc
+          in
           Addr.Hashtbl.replace dom pc' d)
         l);
   (* Check we have reached a fixed point (reducible graph) *)
@@ -112,7 +116,7 @@ let dominator_tree g =
 
 (* pc has at least two forward edges moving into it *)
 let is_merge_node g pc =
-  let s = try Addr.Hashtbl.find g.preds pc with Not_found -> assert false in
+  let s = Addr.Hashtbl.find g.preds pc in
   let o = Addr.Hashtbl.find g.block_order pc in
   let n =
     Addr.Set.fold
@@ -316,8 +320,7 @@ let mk_cps_pc_of_direct ~st pc =
 
 let cps_cont_of_direct ~st (pc, args) = mk_cps_pc_of_direct ~st pc, args
 
-let closure_of_pc ~st pc =
-  try Addr.Map.find pc st.jc.closure_of_jump with Not_found -> assert false
+let closure_of_pc ~st pc = Addr.Map.find pc st.jc.closure_of_jump
 
 let allocate_closure ~st ~params ~body ~branch =
   if debug ()

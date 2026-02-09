@@ -33,8 +33,7 @@ let clear_static_env () = String.Hashtbl.clear static_env
 
 let set_static_env s value = String.Hashtbl.add static_env s value
 
-let get_static_env s =
-  try Some (String.Hashtbl.find static_env s) with Not_found -> None
+let get_static_env s = String.Hashtbl.find_opt static_env s
 
 let int_unop l f =
   match l with

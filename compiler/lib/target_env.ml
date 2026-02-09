@@ -36,4 +36,4 @@ let to_string = function
 let of_string =
   let t = String.Hashtbl.create 17 in
   List.iter all ~f:(fun x -> String.Hashtbl.add t (to_string x) x);
-  fun name -> try Some (String.Hashtbl.find t name) with Not_found -> None
+  fun name -> String.Hashtbl.find_opt t name

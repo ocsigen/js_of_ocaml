@@ -107,7 +107,7 @@ let rec build_mapping params args =
   | [], [] -> Var.Map.empty
   | _ -> assert false
 
-let from_map m x = try Var.Map.find x m with Not_found -> x
+let from_map m x = Var.Map.find_opt x m |> Option.value ~default:x
 
 (****)
 

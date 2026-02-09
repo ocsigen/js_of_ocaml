@@ -614,7 +614,9 @@ let compute_dependencies ~files_to_link ~files =
             ~f:(fun s { unit_info; _ } ->
               StringSet.fold
                 (fun unit_name s ->
-                  try IntSet.add (String.Hashtbl.find h unit_name) s with Not_found -> s)
+                  match String.Hashtbl.find_opt h unit_name with
+                  | Some i -> IntSet.add i s
+                  | None -> s)
                 unit_info.requires
                 s)
             ~init:IntSet.empty
