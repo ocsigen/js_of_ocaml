@@ -24,19 +24,32 @@ module type SET = sig
   val fold : (elt -> 'a -> 'a) -> t -> 'a -> 'a
 end
 
+module type MAP = sig
+  type key
+
+  type 'a t
+
+  val cardinal : 'a t -> int
+
+  val bindings : 'a t -> (key * 'a) list
+
+  val empty : 'a t
+
+  val find : key -> 'a t -> 'a
+
+  val add : key -> 'a -> 'a t -> 'a t
+end
+
 module type S = sig
   module Id : sig
     type t
 
-    module Map : Map.S with type key = t
+    module Map : MAP with type key = t
 
     module Set : SET with type elt = t
   end
 
   type directed_graph = Id.Set.t Id.Map.t
-  (** If (a -> set) belongs to the map, it means that there are edges
-      from [a] to every element of [set].  It is assumed that no edge
-      points to a vertex not represented in the map. *)
 
   type component =
     | Has_loop of Id.t list
@@ -50,7 +63,7 @@ end
 module Make (Id : sig
   type t
 
-  module Map : Map.S with type key = t
+  module Map : MAP with type key = t
 
   module Set : SET with type elt = t
 end) : S with module Id = Id

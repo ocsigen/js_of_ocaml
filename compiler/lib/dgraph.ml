@@ -37,12 +37,26 @@ module type SET = sig
   val equal : t -> t -> bool
 end
 
+module type MAP = sig
+  type key
+
+  type 'a t
+
+  val empty : 'a t
+
+  val find : key -> 'a t -> 'a
+
+  val find_opt : key -> 'a t -> 'a option
+
+  val add : key -> 'a -> 'a t -> 'a t
+end
+
 module Make
     (N : sig
       type t
     end)
     (NSet : SET with type elt = N.t)
-    (NMap : Map.S with type key = N.t) =
+    (NMap : MAP with type key = N.t) =
 struct
   type t =
     { domain : NSet.t

@@ -79,7 +79,23 @@ let is_module_in_summary ident summary =
 
 module Symtable = struct
   (* Copied from ocaml/bytecomp/symtable.ml *)
-  module Num_tbl (M : Map.S) = struct
+  module type MAP = sig
+    type key
+
+    type 'a t
+
+    val empty : 'a t
+
+    val find : key -> 'a t -> 'a
+
+    val iter : (key -> 'a -> unit) -> 'a t -> unit
+
+    val fold : (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
+
+    val add : key -> 'a -> 'a t -> 'a t
+  end
+
+  module Num_tbl (M : MAP) = struct
     [@@@ocaml.warning "-32"]
 
     type t =
