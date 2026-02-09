@@ -854,6 +854,16 @@ module Set = struct
   module Make (Ord : Set.OrderedType) : S with type elt = Ord.t = struct
     include Set.Make (Ord)
 
+    let equal a b = phys_equal a b || equal a b
+
+    let compare a b = if phys_equal a b then 0 else compare a b
+
+    let union a b = if phys_equal a b then a else union a b
+
+    let inter a b = if phys_equal a b then a else inter a b
+
+    let diff a b = if phys_equal a b then empty else diff a b
+
     let compare_cardinal_with s n =
       let r =
         try
