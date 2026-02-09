@@ -837,6 +837,41 @@ module Int = struct
   end)
 end
 
+module Set = struct
+  module type S = sig
+    include Set.S
+
+    val compare_cardinal_with : t -> int -> int
+    (** [compare_cardinal_with s n] is equivalent to [compare (cardinal s) n]
+        but runs in O(min(n, cardinal s)) time instead of O(cardinal s). *)
+
+    val to_list_bounded : int -> t -> elt list option
+    (** [to_list_bounded n s] returns [Some l] if [s] has at most [n] elements,
+        where [l] is the sorted list of all elements. Returns [None] if [s] has
+        more than [n] elements. Traverses at most [n+1] elements. *)
+  end
+
+  module Make (Ord : Set.OrderedType) : S with type elt = Ord.t = struct
+    include Set.Make (Ord)
+
+    let compare_cardinal_with s n =
+      let rec aux seq n =
+        match seq () with
+        | Seq.Nil -> Int.compare 0 n
+        | Seq.Cons (_, rest) -> if n <= 0 then 1 else aux rest (n - 1)
+      in
+      aux (to_seq s) n
+
+    let to_list_bounded n s =
+      let rec aux seq n acc =
+        match seq () with
+        | Seq.Nil -> Some (List.rev acc)
+        | Seq.Cons (x, rest) -> if n <= 0 then None else aux rest (n - 1) (x :: acc)
+      in
+      aux (to_seq s) n []
+  end
+end
+
 module IntSet = Set.Make (Int)
 module IntMap = Map.Make (Int)
 module StringSet = Set.Make (String)

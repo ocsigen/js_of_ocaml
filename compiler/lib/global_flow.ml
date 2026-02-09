@@ -584,7 +584,7 @@ let propagate st ~update approx x =
 let propagate st ~update approx x =
   let res = propagate st ~update approx x in
   match res with
-  | Values { known; _ } when Var.Set.cardinal known >= 200 ->
+  | Values { known; _ } when Var.Set.compare_cardinal_with known 200 >= 0 ->
       (* When the set of possible values get to large, we give up and
          just forget about it. This is crucial to make the analysis
          terminates in a reasonable amount of time. This happens when

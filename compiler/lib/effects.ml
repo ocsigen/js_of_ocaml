@@ -130,7 +130,7 @@ let dominance_frontier g idom =
   let frontiers = Addr.Hashtbl.create 16 in
   Addr.Hashtbl.iter
     (fun pc preds ->
-      if Addr.Set.cardinal preds > 1
+      if Addr.Set.compare_cardinal_with preds 1 > 0
       then
         let dom = Addr.Hashtbl.find idom pc in
         let rec loop runner =

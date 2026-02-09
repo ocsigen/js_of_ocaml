@@ -119,13 +119,14 @@ let propagate1 deps defs reprs st x =
       Var.Set.fold (fun x s -> Var.Set.add (repr reprs x) s) defs.(idx) Var.Set.empty
     in
     defs.(idx) <- s;
-    match Var.Set.cardinal s with
-    | 1 -> replace deps reprs x (Var.Set.choose s)
-    | 2 -> (
-        match Var.Set.elements s with
-        | [ y; z ] when Var.compare x y = 0 -> replace deps reprs x z
-        | [ z; y ] when Var.compare x y = 0 -> replace deps reprs x z
-        | _ -> false)
+    match Var.Set.to_list_bounded 2 s with
+    | Some [ a ] -> replace deps reprs x a
+    | Some [ a; b ] ->
+        if Var.compare x a = 0
+        then replace deps reprs x b
+        else if Var.compare x b = 0
+        then replace deps reprs x a
+        else false
     | _ -> false
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)

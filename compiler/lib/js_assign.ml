@@ -481,7 +481,7 @@ let program' (module Strategy : Strategy) p =
         S (Utf8_string.of_string_exn lname_per_depth.(i))
   in
   let p = (new name ident label)#program p in
-  (if has_free_var || Var.Set.cardinal !unallocated_names > 0
+  (if has_free_var || not (Var.Set.is_empty !unallocated_names)
    then
      let () =
        if not (debug_shortvar () || debug ())
