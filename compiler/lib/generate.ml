@@ -105,23 +105,35 @@ module Share = struct
     }
 
   let add_byte_string s t =
-    let n = try StringMap.find s t.byte_strings with Not_found -> 0 in
-    { t with byte_strings = StringMap.add s (n + 1) t.byte_strings }
+    { t with
+      byte_strings =
+        StringMap.update s (fun n -> Some (Option.value ~default:0 n + 1)) t.byte_strings
+    }
 
   let add_utf_string s t =
-    let n = try StringMap.find s t.utf_strings with Not_found -> 0 in
-    { t with utf_strings = StringMap.add s (n + 1) t.utf_strings }
+    { t with
+      utf_strings =
+        StringMap.update s (fun n -> Some (Option.value ~default:0 n + 1)) t.utf_strings
+    }
 
   let add_prim s t =
-    let n = try StringMap.find s t.prims with Not_found -> 0 in
-    if n < 0 then t else { t with prims = StringMap.add s (n + 1) t.prims }
+    { t with
+      prims =
+        StringMap.update
+          s
+          (function
+            | Some n when n < 0 -> Some n
+            | opt -> Some (Option.value ~default:0 opt + 1))
+          t.prims
+    }
 
   let add_special_prim_if_exists s t =
     if Primitive.exists s then { t with prims = StringMap.add s (-1) t.prims } else t
 
   let add_apply i t =
-    let n = try AppMap.find i t.applies with Not_found -> 0 in
-    { t with applies = AppMap.add i (n + 1) t.applies }
+    { t with
+      applies = AppMap.update i (fun n -> Some (Option.value ~default:0 n + 1)) t.applies
+    }
 
   let add_code_string s share =
     let share =
