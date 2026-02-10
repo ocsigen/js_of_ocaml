@@ -41,6 +41,7 @@ module Generate (Target : Target_sig.S) = struct
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
+    ; at_toplevel : bool
     }
 
   let label_index context pc =
@@ -1204,12 +1205,14 @@ module Generate (Target : Target_sig.S) = struct
         if tag = 254
         then
           Memory.allocate_float_array
+            ~safepoint_friendly_array_init:ctx.at_toplevel
             (expression_list
                (fun x ->
                  convert ~from:(Typing.var_type ctx.types x) ~into:float_u (load x))
                (Array.to_list a))
         else
           Memory.allocate
+            ~safepoint_friendly_array_init:ctx.at_toplevel
             ~tag
             (expression_list (fun x -> load_and_box ctx x) (Array.to_list a))
     | Field (y, n, Non_float) -> Memory.field (load_and_box ctx y) n
@@ -1510,6 +1513,11 @@ module Generate (Target : Target_sig.S) = struct
       ((pc, _) as cont)
       cloc
       acc =
+    let ctx =
+      match name_opt with
+      | None -> { ctx with at_toplevel = true }
+      | Some _ -> ctx
+    in
     let return_type =
       match name_opt with
       | Some f -> Typing.return_type ctx.types f
@@ -1819,6 +1827,7 @@ module Generate (Target : Target_sig.S) = struct
       ; blocks = p.blocks
       ; closures
       ; global_context
+      ; at_toplevel = false
       }
     in
     let toplevel_name = Var.fresh_n "toplevel" in

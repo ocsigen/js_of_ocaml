@@ -698,16 +698,63 @@ module Memory = struct
     let* ty = Type.float_type in
     wasm_struct_get ty (wasm_cast ty e) 0
 
-  let allocate ~tag l =
+  let allocation_threshold = 100
+
+  let allocate ?(safepoint_friendly_array_init = false) ~tag l =
     assert (tag <> 254);
     let* l = l in
     let* ty = Type.block_type in
-    return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
+    let len = List.length l + 1 in
+    if safepoint_friendly_array_init && len >= allocation_threshold
+    then
+      let tag_val = W.RefI31 (Const (I32 (Int32.of_int tag))) in
+      let arr = Code.Var.fresh_n "arr" in
+      seq
+        (let* () =
+           store arr (return (W.ArrayNew (ty, tag_val, Const (I32 (Int32.of_int len)))))
+         in
+         let rec loop i l =
+           match l with
+           | [] -> return ()
+           | h :: t ->
+               let* () =
+                 wasm_array_set (load arr) (Arith.const (Int32.of_int i)) (return h)
+               in
+               loop (i + 1) t
+         in
+         loop 1 l)
+        (load arr)
+    else return (W.ArrayNewFixed (ty, RefI31 (Const (I32 (Int32.of_int tag))) :: l))
 
-  let allocate_float_array l =
+  let allocate_float_array ?(safepoint_friendly_array_init = false) l =
     let* l = l in
     let* ty = Type.float_array_type in
-    return (W.ArrayNewFixed (ty, l))
+    let len = List.length l in
+    if safepoint_friendly_array_init && len >= allocation_threshold
+    then
+      let arr = Code.Var.fresh_n "arr" in
+      seq
+        (let* () =
+           store
+             arr
+             (return (W.ArrayNew (ty, Const (F64 0.), Const (I32 (Int32.of_int len)))))
+         in
+         let rec loop i l =
+           match l with
+           | [] -> return ()
+           | h :: t ->
+               let* () =
+                 wasm_array_set
+                   ~ty:Type.float_array_type
+                   (load arr)
+                   (Arith.const (Int32.of_int i))
+                   (return h)
+               in
+               loop (i + 1) t
+         in
+         loop 0 l)
+        (load arr)
+    else return (W.ArrayNewFixed (ty, l))
 
   let tag e = wasm_array_get e (Arith.const 0l)
 
