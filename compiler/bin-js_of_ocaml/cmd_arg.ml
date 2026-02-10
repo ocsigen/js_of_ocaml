@@ -78,6 +78,8 @@ type t =
   ; fs_external : bool
   ; keep_unit_names : bool
   ; effects : Config.effects_backend
+  ; build_config : bool
+  ; apply_build_config : string option
   }
 
 let set_param =
@@ -144,7 +146,19 @@ let options =
       "Compile the bytecode program [$(docv)]. "
       ^ "Use '-' to read from the standard input instead."
     in
-    Arg.(required & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
+    Arg.(value & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
+  in
+  let build_config =
+    let doc = "Print build-relevant configuration as key=value pairs and exit." in
+    Arg.(value & flag & info [ "build-config" ] ~doc)
+  in
+  let apply_build_config =
+    let doc =
+      "Override build-relevant configuration. $(docv) is a '+'-separated list of \
+       key=value pairs (e.g. effects=cps+js-string=true)."
+    in
+    Arg.(
+      value & opt (some string) None & info [ "apply-build-config" ] ~docv:"CONFIG" ~doc)
   in
   let keep_unit_names =
     let doc = "Keep unit name" in
@@ -335,15 +349,21 @@ let options =
       js_files
       keep_unit_names
       effects
-      shape_files =
+      shape_files
+      build_config
+      apply_build_config =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
     let fs_external = fs_external || (toplevel && no_cmis) in
+    match build_config, input_file with
+    | false, None -> `Error (true, "required argument PROGRAM is missing")
+    | _ ->
     let bytecode =
       match input_file with
-      | "-" -> `Stdin
-      | x -> `File x
+      | Some "-" -> `Stdin
+      | Some x -> `File x
+      | None -> `None
     in
     let output_file =
       match output_file with
@@ -352,7 +372,7 @@ let options =
       | None -> (
           match bytecode with
           | `File s -> `Name (chop_extension s ^ ".js"), false
-          | `Stdin -> `Stdout, false)
+          | `Stdin | `None -> `Stdout, false)
     in
     let source_map =
       if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
@@ -407,6 +427,8 @@ let options =
       ; keep_unit_names
       ; effects
       ; shape_files
+      ; build_config
+      ; apply_build_config
       }
   in
   let t =
@@ -440,7 +462,9 @@ let options =
       $ js_files
       $ keep_unit_names
       $ effects
-      $ shape_files)
+      $ shape_files
+      $ build_config
+      $ apply_build_config)
   in
   Term.ret t
 
@@ -579,6 +603,18 @@ let options_runtime_only =
           None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
+  let build_config =
+    let doc = "Print build-relevant configuration as key=value pairs and exit." in
+    Arg.(value & flag & info [ "build-config" ] ~doc)
+  in
+  let apply_build_config =
+    let doc =
+      "Override build-relevant configuration. $(docv) is a '+'-separated list of \
+       key=value pairs (e.g. effects=cps+js-string=true)."
+    in
+    Arg.(
+      value & opt (some string) None & info [ "apply-build-config" ] ~docv:"CONFIG" ~doc)
+  in
   let build_t
       common
       toplevel
@@ -600,7 +636,9 @@ let options_runtime_only =
       target_env
       output_file
       js_files
-      effects =
+      effects
+      build_config
+      apply_build_config =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
@@ -662,6 +700,8 @@ let options_runtime_only =
       ; keep_unit_names = false
       ; effects
       ; shape_files = []
+      ; build_config
+      ; apply_build_config
       }
   in
   let t =
@@ -687,6 +727,8 @@ let options_runtime_only =
       $ target_env
       $ output_file
       $ js_files
-      $ effects)
+      $ effects
+      $ build_config
+      $ apply_build_config)
   in
   Term.ret t
