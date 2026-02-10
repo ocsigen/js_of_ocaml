@@ -76,8 +76,8 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
          return caml_exact_trampoline_cps_call
                  (g,
                   dummy,
-                  function(_c_){
-                   var _b_ = i + 1 | 0;
+                  function(_b_){
+                   _b_ = i + 1 | 0;
                    return 5 !== i ? caml_exact_trampoline_call1(_a_, _b_) : cont();
                   });
         }
