@@ -2845,15 +2845,11 @@ let from_bytes ~prims ~debug (code : bytecode) =
   let debug_data = Debug.create ~include_cmis:false true in
   let t = Timer.make () in
   if Debug.names debug_data
-  then
+  then (
+    let crcs = String.Hashtbl.create 0 in
     Array.iter debug ~f:(fun l ->
         List.iter l ~f:(fun ev ->
-            Debug.read_event
-              ~paths:[]
-              ~crcs:(String.Hashtbl.create 17)
-              ~orig:0
-              debug_data
-              ev));
+            Debug.read_event ~paths:[] ~crcs ~orig:0 debug_data ev)));
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
   let ident_table =
     let t = Int.Hashtbl.create 17 in
