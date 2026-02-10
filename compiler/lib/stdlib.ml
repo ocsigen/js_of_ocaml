@@ -855,20 +855,32 @@ module Set = struct
     include Set.Make (Ord)
 
     let compare_cardinal_with s n =
-      let rec aux seq n =
-        match seq () with
-        | Seq.Nil -> Int.compare 0 n
-        | Seq.Cons (_, rest) -> if n <= 0 then 1 else aux rest (n - 1)
+      let r =
+        try
+          fold
+            (fun _ n ->
+              (* [n <= 0] means we've already counted [n] elements, so
+                 [cardinal s > n] and we can stop early. *)
+              if n <= 0 then raise_notrace Exit else n - 1)
+            s
+            n
+        with Exit -> -1
       in
-      aux (to_seq s) n
+      if r < 0 then 1 else Int.compare 0 r
 
     let to_list_bounded n s =
-      let rec aux seq n acc =
-        match seq () with
-        | Seq.Nil -> Some (List.rev acc)
-        | Seq.Cons (x, rest) -> if n <= 0 then None else aux rest (n - 1) (x :: acc)
-      in
-      aux (to_seq s) n []
+      try
+        Some
+          (fold
+             (fun x (n, acc) ->
+               (* [n <= 0] means we've already collected [n] elements,
+                  so [cardinal s > n] and we return [None]. *)
+               if n <= 0 then raise_notrace Exit else n - 1, x :: acc)
+             s
+             (n, [])
+          |> snd
+          |> List.rev)
+      with Exit -> None
   end
 end
 
