@@ -253,7 +253,10 @@ end = struct
     propagate_name o n;
     n
 
-  module Set = FBitSet
+  (* Not FBitSet: variable indices are spread across the whole program,
+     so few elements share a 63-element chunk. IntMap nodes are 20%
+     larger than Set nodes, making FBitSet a net loss for Var.Set. *)
+  module Set = Set.Make (T)
   module Map = Map.Make (T)
 
   module Tbl = struct
