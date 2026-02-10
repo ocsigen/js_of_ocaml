@@ -574,6 +574,12 @@ and eventTarget = object ('self)
   method dispatchEvent : event t -> bool t meth
 end
 
+and beforeUnloadEvent = object
+  inherit event
+
+  method returnValue : js_string t prop
+end
+
 and popStateEvent = object
   inherit event
 
@@ -873,6 +879,8 @@ module Event = struct
 
   let unload = Dom.Event.make "unload"
 
+  (** The event type is [beforeUnloadEvent], which exposes the [returnValue]
+      property needed to trigger the browser's "leave page?" confirmation dialog. *)
   let beforeunload = Dom.Event.make "beforeunload"
 
   let resize = Dom.Event.make "resize"
@@ -2428,7 +2436,7 @@ class type window = object
 
   method onunload : (window t, event t) event_listener prop
 
-  method onbeforeunload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, beforeUnloadEvent t) event_listener prop
 
   method onblur : (window t, focusEvent t) event_listener prop
 
