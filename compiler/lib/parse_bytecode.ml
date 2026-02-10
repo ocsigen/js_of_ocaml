@@ -47,7 +47,8 @@ module Debug : sig
 
   val dbg_section_needed : t -> bool
 
-  val find : t -> Code.Addr.t -> (int * Ident.t) list * Env.summary
+  val find :
+    t -> Code.Addr.t -> (int * Ident.t) list * (Ident.t -> Ocaml_compiler.module_or_not)
 
   val find_rec : t -> Code.Addr.t -> (int * Ident.t) list
 
@@ -105,9 +106,15 @@ end = struct
   [@@ocaml.warning "-unused-field"]
 
   type event_and_source =
-    { event : debug_event
-    ; source : path option
-    }
+    | Full of
+        { event : debug_event
+        ; source : path option
+        }
+    | Names_only of
+        { compenv : Instruct.compilation_env
+        ; stacksize : int
+        ; module_info : Ocaml_compiler.module_or_not Ident.Tbl.t
+        }
 
   module UnitTable = Hashtbl.Make (struct
     type t = string * string option
@@ -205,9 +212,26 @@ end = struct
         u
     in
     relocate_event orig ev;
-    if enabled || names
-    then Int.Hashtbl.add events_by_pc ev.ev_pos { event = ev; source = unit.source };
-    ()
+    if enabled
+    then
+      Int.Hashtbl.add events_by_pc ev.ev_pos (Full { event = ev; source = unit.source })
+    else if names
+    then (
+      let module_info = Ident.Tbl.create 0 in
+      Ident.fold_name
+        (fun ident _i () ->
+          match (Ident.name ident).[0] with
+          | 'A' .. 'Z' -> (
+              match Ocaml_compiler.is_module_in_summary ident ev.ev_typenv with
+              | (Module | Not_module) as m -> Ident.Tbl.add module_info ident m
+              | Unknown -> ())
+          | _ -> ())
+        ev.ev_compenv.ce_stack
+        ();
+      Int.Hashtbl.add
+        events_by_pc
+        ev.ev_pos
+        (Names_only { compenv = ev.ev_compenv; stacksize = ev.ev_stacksize; module_info }))
 
   let read_event_list =
     let rewrite_path path =
@@ -237,23 +261,42 @@ end = struct
     done
 
   let find { events_by_pc; _ } pc =
+    let default_lookup _ident = Ocaml_compiler.Unknown in
     try
-      let { event; _ } = Int.Hashtbl.find events_by_pc pc in
-      let l =
-        Ident.fold_name
-          (fun ident i acc -> (event.ev_stacksize - i, ident) :: acc)
-          event.ev_compenv.ce_stack
-          []
-        |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
-      in
-
-      l, event.ev_typenv
-    with Not_found -> [], Env.Env_empty
+      match Int.Hashtbl.find events_by_pc pc with
+      | Full { event; _ } ->
+          let l =
+            Ident.fold_name
+              (fun ident i acc -> (event.ev_stacksize - i, ident) :: acc)
+              event.ev_compenv.ce_stack
+              []
+            |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
+          in
+          let lookup ident = Ocaml_compiler.is_module_in_summary ident event.ev_typenv in
+          l, lookup
+      | Names_only { compenv; stacksize; module_info } ->
+          let l =
+            Ident.fold_name
+              (fun ident i acc -> (stacksize - i, ident) :: acc)
+              compenv.ce_stack
+              []
+            |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
+          in
+          let lookup ident =
+            match Ident.Tbl.find module_info ident with
+            | m -> m
+            | exception Not_found -> Unknown
+          in
+          l, lookup
+    with Not_found -> [], default_lookup
 
   let find_rec { events_by_pc; _ } pc =
     try
-      let { event; _ } = Int.Hashtbl.find events_by_pc pc in
-      let env = event.ev_compenv in
+      let env =
+        match Int.Hashtbl.find events_by_pc pc with
+        | Full { event; _ } -> event.ev_compenv
+        | Names_only { compenv; _ } -> compenv
+      in
       let names =
         Ident.fold_name (fun ident i acc -> (i / 3, ident) :: acc) env.ce_rec []
       in
@@ -264,8 +307,11 @@ end = struct
 
   let find_rec { events_by_pc; _ } pc =
     try
-      let { event; _ } = Int.Hashtbl.find events_by_pc pc in
-      let env = event.ev_compenv in
+      let env =
+        match Int.Hashtbl.find events_by_pc pc with
+        | Full { event; _ } -> event.ev_compenv
+        | Names_only { compenv; _ } -> compenv
+      in
       let names =
         match env.ce_closure with
         | Not_in_closure -> raise Not_found
@@ -296,8 +342,10 @@ end = struct
      in the expected order: first after the function call, then before
      the continuation. *)
   let find_locs { events_by_pc; _ } pc =
-    List.filter_map (Int.Hashtbl.find_all events_by_pc pc) ~f:(fun { event; source } ->
-        if dummy_location event.ev_loc then None else Some (source, event))
+    List.filter_map (Int.Hashtbl.find_all events_by_pc pc) ~f:(function
+      | Full { event; source } ->
+          if dummy_location event.ev_loc then None else Some (source, event)
+      | Names_only _ -> None)
 
   let event_location ~position ~source ~event =
     let pos =
@@ -708,7 +756,7 @@ module State = struct
     | 'A' .. 'Z' -> true
     | _ -> false
 
-  let rec name_rec debug st i l s summary =
+  let rec name_rec debug st i l s check_module =
     match l, s with
     | [], _ -> ()
     | (j, ident) :: lrem, Var v :: srem when i = j ->
@@ -718,8 +766,8 @@ module State = struct
            | Module -> Code.Var.Hashtbl.add st.immutable v ()
            | Not_module -> ()
            | (exception Not_found) | Unknown -> (
-               match Ocaml_compiler.is_module_in_summary ident summary with
-               | Module ->
+               match check_module ident with
+               | Ocaml_compiler.Module ->
                    Ident.Tbl.add st.module_or_not ident Module;
                    Code.Var.Hashtbl.add st.immutable v ()
                | Not_module -> Ident.Tbl.add st.module_or_not ident Not_module
@@ -733,15 +781,15 @@ module State = struct
           | _ -> false
         in
         Var.set_name v ~generated name;
-        name_rec debug st (i + 1) lrem srem summary
-    | (j, _) :: _, _ :: srem when i < j -> name_rec debug st (i + 1) l srem summary
+        name_rec debug st (i + 1) lrem srem check_module
+    | (j, _) :: _, _ :: srem when i < j -> name_rec debug st (i + 1) l srem check_module
     | _ -> assert false
 
   let name_vars st debug pc =
     if Debug.names debug
     then
-      let l, summary = Debug.find debug pc in
-      name_rec debug st 0 l st.stack summary
+      let l, check_module = Debug.find debug pc in
+      name_rec debug st 0 l st.stack check_module
 
   let rec make_stack i state =
     if i = 0
@@ -985,50 +1033,54 @@ and compile infos pc state (instrs : instr list) =
         Format.eprintf "@@@@ %s @@@@@." s);
 
   let instrs =
-    let push_event position source event instrs =
-      match instrs with
-      | Event _ :: instrs | instrs ->
-          Event (Debug.event_location ~position ~source ~event) :: instrs
-    in
-    List.fold_left
-      (Debug.find_locs infos.debug pc)
-      ~init:instrs
-      ~f:(fun instrs (source, event) ->
-        match event, instrs with
-        | { Instruct.ev_kind = Event_pseudo; ev_info = Event_other; _ }, _ ->
-            (* Ignore allocation events (not very interesting) *)
-            if debug_parser () then Format.eprintf "Ignored allocation event@.";
-            instrs
-        | ( { ev_kind = Event_pseudo | Event_after _; ev_info = Event_return _; _ }
-          , (Let (_, (Apply _ | Prim _)) as i) :: rem ) ->
-            (* Event after a call. If it is followed by another event,
-               it may have been weaken to a pseudo-event but was kept
-               for stack traces *)
-            if debug_parser () then Format.eprintf "Added event across call@.";
-            push_event After source event (i :: push_event Before source event rem)
-        | { ev_kind = Event_pseudo; ev_info = Event_function; _ }, [] ->
-            (* At beginning of function *)
-            if debug_parser () then Format.eprintf "Added event at function start@.";
-            push_event Before source event instrs
-        | { ev_kind = Event_after _ | Event_pseudo; ev_info = Event_return _; _ }, _ ->
-            if debug_parser ()
-            then
-              Format.eprintf "Ignored useless event (beginning of a block after a call)@.";
-            instrs
-        | { ev_kind = Event_after _; ev_info = Event_other; _ }, _ ->
-            if debug_parser ()
-            then Format.eprintf "Ignored useless event (before a raise)@.";
-            (* We already have an event for the exception. The
-               compiler add these events for stack traces. *)
-            instrs
-        | { ev_kind = Event_before; ev_info = Event_other; _ }, _
-        | { ev_kind = Event_before | Event_pseudo; ev_info = Event_function; _ }, _ ->
-            if debug_parser () then Format.eprintf "added event@.";
-            push_event Before source event instrs
-        | { ev_kind = Event_after _; ev_info = Event_function; _ }, _
-        | { ev_kind = Event_before; ev_info = Event_return _; _ }, _ ->
-            (* Nonsensical events *)
-            assert false)
+    if not (Debug.enabled infos.debug)
+    then instrs
+    else
+      let push_event position source event instrs =
+        match instrs with
+        | Event _ :: instrs | instrs ->
+            Event (Debug.event_location ~position ~source ~event) :: instrs
+      in
+      List.fold_left
+        (Debug.find_locs infos.debug pc)
+        ~init:instrs
+        ~f:(fun instrs (source, event) ->
+          match event, instrs with
+          | { Instruct.ev_kind = Event_pseudo; ev_info = Event_other; _ }, _ ->
+              (* Ignore allocation events (not very interesting) *)
+              if debug_parser () then Format.eprintf "Ignored allocation event@.";
+              instrs
+          | ( { ev_kind = Event_pseudo | Event_after _; ev_info = Event_return _; _ }
+            , (Let (_, (Apply _ | Prim _)) as i) :: rem ) ->
+              (* Event after a call. If it is followed by another event,
+                 it may have been weaken to a pseudo-event but was kept
+                 for stack traces *)
+              if debug_parser () then Format.eprintf "Added event across call@.";
+              push_event After source event (i :: push_event Before source event rem)
+          | { ev_kind = Event_pseudo; ev_info = Event_function; _ }, [] ->
+              (* At beginning of function *)
+              if debug_parser () then Format.eprintf "Added event at function start@.";
+              push_event Before source event instrs
+          | { ev_kind = Event_after _ | Event_pseudo; ev_info = Event_return _; _ }, _ ->
+              if debug_parser ()
+              then
+                Format.eprintf
+                  "Ignored useless event (beginning of a block after a call)@.";
+              instrs
+          | { ev_kind = Event_after _; ev_info = Event_other; _ }, _ ->
+              if debug_parser ()
+              then Format.eprintf "Ignored useless event (before a raise)@.";
+              (* We already have an event for the exception. The
+                 compiler add these events for stack traces. *)
+              instrs
+          | { ev_kind = Event_before; ev_info = Event_other; _ }, _
+          | { ev_kind = Event_before | Event_pseudo; ev_info = Event_function; _ }, _ ->
+              if debug_parser () then Format.eprintf "added event@.";
+              push_event Before source event instrs
+          | { ev_kind = Event_after _; ev_info = Event_function; _ }, _
+          | { ev_kind = Event_before; ev_info = Event_return _; _ }, _ ->
+              (* Nonsensical events *)
+              assert false)
   in
 
   if pc = infos.limit
@@ -2844,12 +2896,11 @@ let from_exe
 let from_bytes ~prims ~debug (code : bytecode) =
   let debug_data = Debug.create ~include_cmis:false true in
   let t = Timer.make () in
-  if Debug.names debug_data
-  then (
-    let crcs = String.Hashtbl.create 0 in
-    Array.iter debug ~f:(fun l ->
-        List.iter l ~f:(fun ev ->
-            Debug.read_event ~paths:[] ~crcs ~orig:0 debug_data ev)));
+  (if Debug.names debug_data
+   then
+     let crcs = String.Hashtbl.create 0 in
+     Array.iter debug ~f:(fun l ->
+         List.iter l ~f:(fun ev -> Debug.read_event ~paths:[] ~crcs ~orig:0 debug_data ev)));
   if times () then Format.eprintf "    read debug events: %a@." Timer.print t;
   let ident_table =
     let t = Int.Hashtbl.create 17 in
