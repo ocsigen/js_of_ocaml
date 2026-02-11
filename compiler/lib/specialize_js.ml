@@ -191,6 +191,7 @@ let specialize_instr opt_count ~target info i =
   | Let (x, Prim (Extern "caml_jsoo_runtime_value", [ nm ])), _ -> (
       match the_string_of info nm with
       | Some nm when Javascript.is_ident nm ->
+          incr opt_count;
           Let (x, Prim (Extern "caml_jsoo_runtime_value", [ Pc (String nm) ]))
       | _ -> i)
   | _, _ -> i
