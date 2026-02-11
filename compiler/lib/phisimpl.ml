@@ -165,22 +165,24 @@ let f p =
   if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
   Array.iteri subst ~f:(fun idx y ->
       if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
-  let need_stats = stats () || debug_stats () in
   let count_uniq = ref 0 in
-  let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
+  let count_seen = BitSet.create' (Var.count ()) in
   let subst v1 =
     let idx1 = Code.Var.idx v1 in
     let v2 = subst.(idx1) in
     if Code.Var.equal v1 v2
     then v1
     else (
-      if need_stats && not (BitSet.mem count_seen idx1)
+      if not (BitSet.mem count_seen idx1)
       then (
         incr count_uniq;
         BitSet.set count_seen idx1);
       v2)
   in
-  let p = Subst.Excluding_Binders.program subst p in
+  let p =
+    let p' = Subst.Excluding_Binders.program subst p in
+    if !count_uniq = 0 then p else p'
+  in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
   if stats ()
   then (

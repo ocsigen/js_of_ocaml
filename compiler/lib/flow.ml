@@ -584,22 +584,27 @@ let f p =
     }
   in
   let s = build_subst info vars in
-  let need_stats = stats () || debug_stats () in
   let count_uniq = ref 0 in
-  let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
+  let count_seen = BitSet.create' (Var.count ()) in
   let subst v1 =
     let idx1 = Code.Var.idx v1 in
     let v2 = s.(idx1) in
     if Code.Var.equal v1 v2
     then v1
     else (
-      if need_stats && not (BitSet.mem count_seen idx1)
+      if not (BitSet.mem count_seen idx1)
       then (
         incr count_uniq;
         BitSet.set count_seen idx1);
       v2)
   in
-  let p = Subst.Excluding_Binders.program subst p in
+  let p =
+    if Array.length s = 0
+    then p
+    else
+      let p' = Subst.Excluding_Binders.program subst p in
+      if !count_uniq = 0 then p else p'
+  in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
   if stats ()

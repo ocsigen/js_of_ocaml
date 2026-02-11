@@ -486,30 +486,46 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
             st.deleted_blocks <- st.deleted_blocks + 1;
             None)
           else
-            let block' =
-              { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
-              ; body =
-                  List.fold_left block.body ~init:[] ~f:(fun acc i ->
-                      match i, acc with
-                      | Event _, Event _ :: prev ->
-                          (* Avoid consecutive events (keep just the last one) *)
-                          i :: prev
-                      | _ ->
-                          if live_instr st i
-                          then filter_closure all_blocks st i :: acc
-                          else (
-                            st.deleted_instrs <- st.deleted_instrs + 1;
-                            acc))
-                  |> List.rev
-              ; branch = filter_live_last all_blocks st block.branch
-              }
+            let saved_instrs = st.deleted_instrs in
+            let saved_params = st.deleted_params in
+            let params_changed =
+              List.exists block.params ~f:(fun x -> st.live.(Var.idx x) = 0)
             in
-            Some (if Code.block_equal block block' then block else block'))
+            let params =
+              if params_changed
+              then List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
+              else block.params
+            in
+            let body =
+              List.fold_left block.body ~init:[] ~f:(fun acc i ->
+                  match i, acc with
+                  | Event _, Event _ :: prev ->
+                      (* Avoid consecutive events (keep just the last one) *)
+                      i :: prev
+                  | _ ->
+                      if live_instr st i
+                      then filter_closure all_blocks st i :: acc
+                      else (
+                        st.deleted_instrs <- st.deleted_instrs + 1;
+                        acc))
+              |> List.rev
+            in
+            let branch = filter_live_last all_blocks st block.branch in
+            if (not params_changed)
+               && st.deleted_instrs = saved_instrs
+               && st.deleted_params = saved_params
+            then Some block
+            else Some { params; body; branch })
         blocks
     in
-    { p with blocks }
+    if st.deleted_instrs + st.deleted_blocks + st.deleted_params = 0
+    then p
+    else { p with blocks }
   in
-  let p = remove_empty_blocks st p in
+  let p =
+    let p' = remove_empty_blocks st p in
+    if st.block_shortcut = 0 then p else p'
+  in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
   then (

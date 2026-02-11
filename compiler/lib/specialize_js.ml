@@ -401,17 +401,15 @@ let specialize_all_instrs ~target opt_count info p =
   let blocks =
     Addr.Map.map
       (fun block ->
-        let block' =
-          { block with
-            Code.body =
-              specialize_instrs
-                ~target
-                opt_count
-                info
-                (specialize_string_concat opt_count block.body)
-          }
+        let saved = !opt_count in
+        let body =
+          specialize_instrs
+            ~target
+            opt_count
+            info
+            (specialize_string_concat opt_count block.body)
         in
-        if Code.block_equal block block' then block else block')
+        if !opt_count = saved then block else { block with Code.body = body })
       p.blocks
   in
   { p with blocks }
@@ -423,7 +421,8 @@ let f info p =
   let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
-  let p = specialize_all_instrs ~target:(Config.target ()) opt_count info p in
+  let p' = specialize_all_instrs ~target:(Config.target ()) opt_count info p in
+  let p = if !opt_count = 0 then p else p' in
   if times () then Format.eprintf "  specialize_js: %a@." Timer.print t;
   if stats ()
   then (

@@ -829,14 +829,20 @@ let drop_exception_handler drop_count blocks =
 let eval update_count update_branch inline_constant ~target info blocks =
   Addr.Map.map
     (fun block ->
+      let saved_update = !update_count in
+      let saved_branch = !update_branch in
+      let saved_inline = !inline_constant in
       let body =
         List.concat_map
           block.body
           ~f:(eval_instr update_count inline_constant ~target info)
       in
       let branch = eval_branch update_branch info block.branch in
-      let block' = { block with Code.body; Code.branch } in
-      if Code.block_equal block block' then block else block')
+      if !update_count = saved_update
+         && !update_branch = saved_branch
+         && !inline_constant = saved_inline
+      then block
+      else { block with Code.body = body; Code.branch = branch })
     blocks
 
 let f info p =
@@ -857,7 +863,11 @@ let f info p =
       p.blocks
   in
   let blocks = drop_exception_handler drop_count blocks in
-  let p = { p with blocks } in
+  let p =
+    if !update_count + !update_branch + !inline_constant + !drop_count = 0
+    then p
+    else { p with blocks }
+  in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;
   if stats ()
   then (
