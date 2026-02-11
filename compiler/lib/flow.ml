@@ -525,6 +525,7 @@ let the_shape_of ~return_values ~pure info x =
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in
   let subst = Array.init nv ~f:(fun i -> Var.of_idx i) in
+  let has_subst = ref false in
   Var.ISet.iter
     (fun x ->
       let x_idx = Var.idx x in
@@ -538,9 +539,13 @@ let build_subst (info : Info.t) vars =
          match direct_approx info x with
          | None -> ()
          | Some y -> subst.(x_idx) <- y);
-      if Var.equal subst.(x_idx) x then () else Var.propagate_name x subst.(x_idx))
+      if Var.equal subst.(x_idx) x
+      then ()
+      else (
+        has_subst := true;
+        Var.propagate_name x subst.(x_idx)))
     vars;
-  subst
+  if !has_subst then Some subst else None
 
 (****)
 
@@ -583,25 +588,24 @@ let f p =
     ; info_possibly_mutable = possibly_mutable
     }
   in
-  let s = build_subst info vars in
   let count_uniq = ref 0 in
-  let count_seen = BitSet.create' (Var.count ()) in
-  let subst v1 =
-    let idx1 = Code.Var.idx v1 in
-    let v2 = s.(idx1) in
-    if Code.Var.equal v1 v2
-    then v1
-    else (
-      if not (BitSet.mem count_seen idx1)
-      then (
-        incr count_uniq;
-        BitSet.set count_seen idx1);
-      v2)
-  in
   let p =
-    if Array.length s = 0
-    then p
-    else
+    match build_subst info vars with
+    | None -> p
+    | Some s ->
+      let count_seen = BitSet.create' (Var.count ()) in
+      let subst v1 =
+        let idx1 = Code.Var.idx v1 in
+        let v2 = s.(idx1) in
+        if Code.Var.equal v1 v2
+        then v1
+        else (
+          if not (BitSet.mem count_seen idx1)
+          then (
+            incr count_uniq;
+            BitSet.set count_seen idx1);
+          v2)
+      in
       let p' = Subst.Excluding_Binders.program subst p in
       if !count_uniq = 0
       then (
