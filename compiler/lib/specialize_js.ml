@@ -399,8 +399,8 @@ let specialize_instrs ~target opt_count info l =
 
 let specialize_all_instrs ~target opt_count info p =
   let blocks =
-    Addr.Map.map
-      (fun block ->
+    Addr.Map.fold
+      (fun pc block blocks ->
         let saved = !opt_count in
         let body =
           specialize_instrs
@@ -412,8 +412,9 @@ let specialize_all_instrs ~target opt_count info p =
         if !opt_count = saved
         then (
           Code.assert_block_equal ~name:"specialize_js" block { block with Code.body = body };
-          block)
-        else { block with Code.body = body })
+          blocks)
+        else Addr.Map.add pc { block with Code.body = body } blocks)
+      p.blocks
       p.blocks
   in
   { p with blocks }
@@ -444,6 +445,7 @@ let f info p =
   p
 
 let f_once_before p =
+  let count = ref 0 in
   let rec loop acc l =
     match l with
     | [] -> List.rev acc
@@ -461,13 +463,22 @@ let f_once_before p =
                      | "caml_array_unsafe_set_float"
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
+            incr count;
             let x' = Code.Var.fork x in
             let acc = Let (x', p) :: Let (x, Constant (Int Targetint.zero)) :: acc in
             loop acc r
         | _ -> loop (i :: acc) r)
   in
   let blocks =
-    Addr.Map.map (fun block -> { block with Code.body = loop [] block.body }) p.blocks
+    Addr.Map.fold
+      (fun pc block blocks ->
+        let saved = !count in
+        let body = loop [] block.body in
+        if !count = saved
+        then blocks
+        else Addr.Map.add pc { block with Code.body = body } blocks)
+      p.blocks
+      p.blocks
   in
   let p = { p with blocks } in
   Code.invariant p;
@@ -486,6 +497,7 @@ let f_once_after p =
     | `JavaScript, (`Cps | `Double_translation) | `Wasm, _ -> false
     | `JavaScript, `Jspi -> assert false
   in
+  let count = ref 0 in
   let f = function
     | Let (x, Closure (l, (pc, []), _)) as i -> (
         let block = Addr.Map.find pc p.blocks in
@@ -502,7 +514,9 @@ let f_once_after p =
               Code.Var.compare y y' = 0
               && Primitive.has_arity prim len
               && args_equal l args
-            then Let (x, Special (Alias_prim prim))
+            then (
+              incr count;
+              Let (x, Special (Alias_prim prim)))
             else i
         | _ -> i)
     | i -> i
@@ -510,8 +524,14 @@ let f_once_after p =
   if first_class_primitives
   then (
     let blocks =
-      Addr.Map.map
-        (fun block -> { block with Code.body = List.map block.body ~f })
+      Addr.Map.fold
+        (fun pc block blocks ->
+          let saved = !count in
+          let body = List.map block.body ~f in
+          if !count = saved
+          then blocks
+          else Addr.Map.add pc { block with Code.body = body } blocks)
+        p.blocks
         p.blocks
     in
     let p = Deadcode.remove_unused_blocks { p with blocks } in

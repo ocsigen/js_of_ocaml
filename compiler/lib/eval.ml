@@ -827,8 +827,8 @@ let drop_exception_handler drop_count blocks =
     blocks
 
 let eval update_count update_branch inline_constant ~target info blocks =
-  Addr.Map.map
-    (fun block ->
+  Addr.Map.fold
+    (fun pc block blocks ->
       let saved_update = !update_count in
       let saved_branch = !update_branch in
       let saved_inline = !inline_constant in
@@ -842,9 +842,13 @@ let eval update_count update_branch inline_constant ~target info blocks =
          && !update_branch = saved_branch
          && !inline_constant = saved_inline
       then (
-        Code.assert_block_equal ~name:"eval" block { block with Code.body = body; Code.branch = branch };
-        block)
-      else { block with Code.body = body; Code.branch = branch })
+        Code.assert_block_equal
+          ~name:"eval"
+          block
+          { block with Code.body = body; Code.branch = branch };
+        blocks)
+      else Addr.Map.add pc { block with Code.body = body; Code.branch = branch } blocks)
+    blocks
     blocks
 
 let f info p =
