@@ -602,7 +602,10 @@ let f p =
   let p = Subst.Excluding_Binders.program subst p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - flow updates: %d@." !count_uniq;
+  if stats ()
+  then (
+    Format.eprintf "Stats - flow updates: %d@." !count_uniq;
+    Code.print_block_sharing ~name:"flow" previous_p p);
   if debug_stats () then Code.check_updates ~name:"flow" previous_p p ~updates:!count_uniq;
   Code.invariant p;
   p, info

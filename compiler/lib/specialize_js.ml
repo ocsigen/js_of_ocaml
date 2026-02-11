@@ -421,7 +421,10 @@ let f info p =
   let opt_count = ref 0 in
   let p = specialize_all_instrs ~target:(Config.target ()) opt_count info p in
   if times () then Format.eprintf "  specialize_js: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - specialize_js: %d@." !opt_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - specialize_js: %d@." !opt_count;
+    Code.print_block_sharing ~name:"specialize_js" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"specialize_js" previous_p p ~updates:!opt_count;
   Code.invariant p;

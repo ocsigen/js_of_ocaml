@@ -122,7 +122,10 @@ let f ~shape ~update_def p =
     if Config.Flag.optcall () then specialize_instrs ~shape ~update_def opt_count p else p
   in
   if times () then Format.eprintf "  optcall: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - optcall: %d@." !opt_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - optcall: %d@." !opt_count;
+    Code.print_block_sharing ~name:"optcall" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"optcall" previous_p p ~updates:!opt_count;
   Code.invariant p;
@@ -354,7 +357,10 @@ let switches p =
     }
   in
   if times () then Format.eprintf "  switches: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - switches: %d@." !opt_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - switches: %d@." !opt_count;
+    Code.print_block_sharing ~name:"switches" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"switches" previous_p p ~updates:!opt_count;
   Deadcode.remove_unused_blocks p

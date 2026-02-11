@@ -213,7 +213,10 @@ let remove_unused_blocks p =
   let t = Timer.make () in
   let p, count = remove_unused_blocks' p in
   if times () then Format.eprintf "  dead block: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - dead block: deleted %d@." count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - dead block: deleted %d@." count;
+    Code.print_block_sharing ~name:"dead block" previous_p p);
   if debug_stats () then Code.check_updates ~name:"dead block" previous_p p ~updates:count;
   p
 
@@ -326,7 +329,10 @@ let merge_blocks p =
       Subst.Excluding_Binders.program rename p
   in
   if times () then Format.eprintf "  merge block: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - merge block: merged %d@." !merged;
+  if stats ()
+  then (
+    Format.eprintf "Stats - merge block: merged %d@." !merged;
+    Code.print_block_sharing ~name:"merge block" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"merge block" previous_p p ~updates:!merged;
   p
@@ -504,7 +510,7 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
   let p = remove_empty_blocks st p in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
-  then
+  then (
     Format.eprintf
       "Stats - dead code: deleted %d instructions, %d blocks, %d parameters, %d \
        branches@."
@@ -512,6 +518,7 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
       st.deleted_blocks
       st.deleted_params
       st.block_shortcut;
+    Code.print_block_sharing ~name:"deadcode" previous_p p);
   if debug_stats ()
   then
     Code.check_updates

@@ -319,6 +319,8 @@ val print_diff : program -> program -> unit
 
 val check_updates : name:string -> program -> program -> updates:int -> unit
 
+val print_block_sharing : name:string -> program -> program -> unit
+
 val invariant : program -> unit
 
 val cont_equal : cont -> cont -> bool

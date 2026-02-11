@@ -149,7 +149,10 @@ let f p =
     p.blocks;
   let p = { p with blocks = !blocks; free_pc = !free_pc } in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - tail calls: %d optimizations@." !update_count;
+    Code.print_block_sharing ~name:"tailcall" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"tailcall" previous_p p ~updates:!update_count;
   Code.invariant p;

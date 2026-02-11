@@ -928,6 +928,25 @@ let check_updates ~name p1 p2 ~updates =
       print_diff p1 p2;
       assert false
 
+let print_block_sharing ~name p1 p2 =
+  let shared = ref 0 in
+  let updated = ref 0 in
+  Addr.Map.iter
+    (fun pc b2 ->
+      match Addr.Map.find_opt pc p1.blocks with
+      | Some b1 when phys_equal b1 b2 -> incr shared
+      | Some _ -> incr updated
+      | None -> incr updated)
+    p2.blocks;
+  let removed = Addr.Map.cardinal p1.blocks - !shared - !updated in
+  Format.eprintf
+    "Stats - %s sharing: %d/%d blocks shared, %d updated, %d removed@."
+    name
+    !shared
+    (Addr.Map.cardinal p2.blocks)
+    !updated
+    removed
+
 let cont_equal (pc, args) (pc', args') = pc = pc' && List.equal ~eq:Var.equal args args'
 
 let cont_compare (pc, args) (pc', args') =

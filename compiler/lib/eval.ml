@@ -856,7 +856,7 @@ let f info p =
   let p = { p with blocks } in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;
   if stats ()
-  then
+  then (
     Format.eprintf
       "Stats - eval: %d optimizations, %d inlined cst, %d dropped exception handlers, %d \
        branch updated@."
@@ -864,6 +864,7 @@ let f info p =
       !inline_constant
       !drop_count
       !update_branch;
+    Code.print_block_sharing ~name:"eval" previous_p p);
   if debug_stats ()
   then
     Code.check_updates

@@ -182,7 +182,10 @@ let f p =
   in
   let p = Subst.Excluding_Binders.program subst p in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - phi updates: %d@." !count_uniq;
+  if stats ()
+  then (
+    Format.eprintf "Stats - phi updates: %d@." !count_uniq;
+    Code.print_block_sharing ~name:"phi" previous_p p);
   if debug_stats () then Code.check_updates ~name:"phi" previous_p p ~updates:!count_uniq;
   Code.invariant p;
   p

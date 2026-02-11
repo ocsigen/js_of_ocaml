@@ -755,7 +755,10 @@ let f ~profile p live_vars =
   let t = Timer.make () in
   let p = inline ~profile ~inline_count p ~live_vars in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - inlining: %d inlined functions@." !inline_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - inlining: %d inlined functions@." !inline_count;
+    Code.print_block_sharing ~name:"inline" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"inline" previous_p p ~updates:!inline_count;
   let p = Deadcode.remove_unused_blocks p in
