@@ -210,8 +210,11 @@ let rec loop max name round i (p : 'a) : 'a =
   else if Code.equal p' p
   then (
     if debug then Format.eprintf "%s#%d: fix-point reached.@." name i;
+    if stats () then Code.print_block_sharing ~name:(Printf.sprintf "%s#%d" name i) p p';
     p')
-  else loop max name round (i + 1) p'
+  else (
+    if stats () then Code.print_block_sharing ~name:(Printf.sprintf "%s#%d" name i) p p';
+    loop max name round (i + 1) p')
 
 let round profile : 'a -> 'a =
   print
