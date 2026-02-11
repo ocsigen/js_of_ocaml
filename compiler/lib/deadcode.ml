@@ -486,7 +486,7 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
             st.deleted_blocks <- st.deleted_blocks + 1;
             None)
           else
-            Some
+            let block' =
               { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
               ; body =
                   List.fold_left block.body ~init:[] ~f:(fun acc i ->
@@ -502,7 +502,9 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
                             acc))
                   |> List.rev
               ; branch = filter_live_last all_blocks st block.branch
-              })
+              }
+            in
+            Some (if Code.block_equal block block' then block else block'))
         blocks
     in
     { p with blocks }

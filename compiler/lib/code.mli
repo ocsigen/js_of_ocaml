@@ -313,6 +313,8 @@ val compact : program -> program
 
 val is_empty : program -> bool
 
+val block_equal : block -> block -> bool
+
 val equal : program -> program -> bool
 
 val print_diff : program -> program -> unit

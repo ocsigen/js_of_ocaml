@@ -832,7 +832,8 @@ let eval update_count update_branch inline_constant ~target info blocks =
           ~f:(eval_instr update_count inline_constant ~target info)
       in
       let branch = eval_branch update_branch info block.branch in
-      { block with Code.body; Code.branch })
+      let block' = { block with Code.body; Code.branch } in
+      if Code.block_equal block block' then block else block')
     blocks
 
 let f info p =

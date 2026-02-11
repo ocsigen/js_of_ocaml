@@ -884,15 +884,14 @@ let return_values p =
           Var.Map.add name s rets)
     Var.Map.empty
 
+let block_equal b1 b2 =
+  phys_equal b1 b2
+  || (List.equal ~eq:Var.equal b1.params b2.params
+      && Poly.equal b1.branch b2.branch
+      && List.equal ~eq:Poly.equal b1.body b2.body)
+
 let equal p1 p2 =
-  p1.start = p2.start
-  && Addr.Map.equal
-       (fun { params; body; branch } b ->
-         List.equal ~eq:Var.equal params b.params
-         && Poly.equal branch b.branch
-         && List.equal ~eq:Poly.equal body b.body)
-       p1.blocks
-       p2.blocks
+  p1.start = p2.start && Addr.Map.equal block_equal p1.blocks p2.blocks
 
 let print_to_file p =
   let file = Filename.temp_file "jsoo" "prog" in

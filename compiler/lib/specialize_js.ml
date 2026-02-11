@@ -400,14 +400,17 @@ let specialize_all_instrs ~target opt_count info p =
   let blocks =
     Addr.Map.map
       (fun block ->
-        { block with
-          Code.body =
-            specialize_instrs
-              ~target
-              opt_count
-              info
-              (specialize_string_concat opt_count block.body)
-        })
+        let block' =
+          { block with
+            Code.body =
+              specialize_instrs
+                ~target
+                opt_count
+                info
+                (specialize_string_concat opt_count block.body)
+          }
+        in
+        if Code.block_equal block block' then block else block')
       p.blocks
   in
   { p with blocks }
