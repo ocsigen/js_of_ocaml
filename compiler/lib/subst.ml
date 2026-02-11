@@ -67,11 +67,18 @@ module Excluding_Binders = struct
     { params = block.params; body = instrs s block.body; branch = last s block.branch }
 
   let program s p =
+    let changed = ref false in
+    let s' x =
+      let y = s x in
+      if not (Code.Var.equal x y) then changed := true;
+      y
+    in
     let blocks =
       Addr.Map.map
         (fun b ->
-          let b' = block s b in
-          if Code.block_equal b b' then b else b')
+          changed := false;
+          let b' = block s' b in
+          if !changed then b' else b)
         p.blocks
     in
     { p with blocks }
