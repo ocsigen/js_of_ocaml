@@ -954,6 +954,23 @@ let cont_compare (pc, args) (pc', args') =
 
 let with_invariant = Debug.find "invariant"
 
+let assert_block_equal ~name b_old b_new =
+  if with_invariant ()
+  then
+    if not (block_equal b_old b_new)
+    then (
+      Format.eprintf "ASSERT_BLOCK_EQUAL: %s: counter=0 but block differs.@." name;
+      assert false)
+
+let assert_program_equal ~name p_old p_new =
+  if with_invariant ()
+  then
+    if not (equal p_old p_new)
+    then (
+      Format.eprintf "ASSERT_PROGRAM_EQUAL: %s: counter=0 but program differs.@." name;
+      print_diff p_old p_new;
+      assert false)
+
 let do_compact { blocks; start; free_pc = _ } =
   let remap =
     let max = fst (Addr.Map.max_binding blocks) in

@@ -514,17 +514,25 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
             if (not params_changed)
                && st.deleted_instrs = saved_instrs
                && st.deleted_params = saved_params
-            then Some block
+            then (
+              Code.assert_block_equal ~name:"deadcode" block { params; body; branch };
+              Some block)
             else Some { params; body; branch })
         blocks
     in
     if st.deleted_instrs + st.deleted_blocks + st.deleted_params = 0
-    then p
+    then (
+      Code.assert_program_equal ~name:"deadcode(filter)" p { p with blocks };
+      p)
     else { p with blocks }
   in
   let p =
     let p' = remove_empty_blocks st p in
-    if st.block_shortcut = 0 then p else p'
+    if st.block_shortcut = 0
+    then (
+      Code.assert_program_equal ~name:"deadcode(shortcut)" p p';
+      p)
+    else p'
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()

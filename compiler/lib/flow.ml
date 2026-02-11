@@ -603,7 +603,11 @@ let f p =
     then p
     else
       let p' = Subst.Excluding_Binders.program subst p in
-      if !count_uniq = 0 then p else p'
+      if !count_uniq = 0
+      then (
+        Code.assert_program_equal ~name:"flow" p p';
+        p)
+      else p'
   in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;

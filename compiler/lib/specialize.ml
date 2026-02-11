@@ -122,7 +122,11 @@ let f ~shape ~update_def p =
     if Config.Flag.optcall ()
     then
       let p' = specialize_instrs ~shape ~update_def opt_count p in
-      if !opt_count = 0 then p else p'
+      if !opt_count = 0
+      then (
+        Code.assert_program_equal ~name:"optcall" p p';
+        p)
+      else p'
     else p
   in
   if times () then Format.eprintf "  optcall: %a@." Timer.print t;
@@ -357,7 +361,13 @@ let switches p =
       p.blocks
       p.blocks
   in
-  let p = if !opt_count = 0 then p else { p with blocks } in
+  let p =
+    if !opt_count = 0
+    then (
+      Code.assert_program_equal ~name:"switches" p { p with blocks };
+      p)
+    else { p with blocks }
+  in
   if times () then Format.eprintf "  switches: %a@." Timer.print t;
   if stats ()
   then (

@@ -325,6 +325,10 @@ val print_block_sharing : name:string -> program -> program -> unit
 
 val invariant : program -> unit
 
+val assert_block_equal : name:string -> block -> block -> unit
+
+val assert_program_equal : name:string -> program -> program -> unit
+
 val cont_equal : cont -> cont -> bool
 
 val cont_compare : cont -> cont -> int

@@ -757,7 +757,11 @@ let f ~profile p live_vars =
   let t = Timer.make () in
   let p =
     let p' = inline ~profile ~inline_count ~dead_closure_count p ~live_vars in
-    if !inline_count + !dead_closure_count = 0 then p else p'
+    if !inline_count + !dead_closure_count = 0
+    then (
+      Code.assert_program_equal ~name:"inline" p p';
+      p)
+    else p'
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
   if stats ()

@@ -841,7 +841,9 @@ let eval update_count update_branch inline_constant ~target info blocks =
       if !update_count = saved_update
          && !update_branch = saved_branch
          && !inline_constant = saved_inline
-      then block
+      then (
+        Code.assert_block_equal ~name:"eval" block { block with Code.body = body; Code.branch = branch };
+        block)
       else { block with Code.body = body; Code.branch = branch })
     blocks
 
@@ -865,7 +867,9 @@ let f info p =
   let blocks = drop_exception_handler drop_count blocks in
   let p =
     if !update_count + !update_branch + !inline_constant + !drop_count = 0
-    then p
+    then (
+      Code.assert_program_equal ~name:"eval" p { p with blocks };
+      p)
     else { p with blocks }
   in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;

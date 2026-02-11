@@ -148,7 +148,11 @@ let f p =
       if !rewrite_body then blocks := Addr.Map.add pc { block with body } !blocks)
     p.blocks;
   let p =
-    if !update_count = 0 then p else { p with blocks = !blocks; free_pc = !free_pc }
+    if !update_count = 0
+    then (
+      Code.assert_program_equal ~name:"tailcall" p { p with blocks = !blocks; free_pc = !free_pc };
+      p)
+    else { p with blocks = !blocks; free_pc = !free_pc }
   in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;
   if stats ()

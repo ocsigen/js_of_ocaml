@@ -181,7 +181,11 @@ let f p =
   in
   let p =
     let p' = Subst.Excluding_Binders.program subst p in
-    if !count_uniq = 0 then p else p'
+    if !count_uniq = 0
+    then (
+      Code.assert_program_equal ~name:"phi" p p';
+      p)
+    else p'
   in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
   if stats ()

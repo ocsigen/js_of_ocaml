@@ -409,7 +409,11 @@ let specialize_all_instrs ~target opt_count info p =
             info
             (specialize_string_concat opt_count block.body)
         in
-        if !opt_count = saved then block else { block with Code.body = body })
+        if !opt_count = saved
+        then (
+          Code.assert_block_equal ~name:"specialize_js" block { block with Code.body = body };
+          block)
+        else { block with Code.body = body })
       p.blocks
   in
   { p with blocks }
@@ -422,7 +426,13 @@ let f info p =
   let t = Timer.make () in
   let opt_count = ref 0 in
   let p' = specialize_all_instrs ~target:(Config.target ()) opt_count info p in
-  let p = if !opt_count = 0 then p else p' in
+  let p =
+    if !opt_count = 0
+    then (
+      Code.assert_program_equal ~name:"specialize_js" p p';
+      p)
+    else p'
+  in
   if times () then Format.eprintf "  specialize_js: %a@." Timer.print t;
   if stats ()
   then (

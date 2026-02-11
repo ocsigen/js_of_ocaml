@@ -78,7 +78,11 @@ module Excluding_Binders = struct
         (fun b ->
           changed := false;
           let b' = block s' b in
-          if !changed then b' else b)
+          if !changed
+          then b'
+          else (
+            Code.assert_block_equal ~name:"subst" b b';
+            b))
         p.blocks
     in
     { p with blocks }
