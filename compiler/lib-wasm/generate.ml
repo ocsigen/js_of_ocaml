@@ -1979,8 +1979,7 @@ let wasm_output ch ~opt_source_map_file ~context =
   if times () then Format.eprintf "  output: %a@." Timer.print t
 
 let compile ~unit_name code =
-  let ( Driver.{ program; variable_uses; in_cps; deadcode_sentinel; _ }
-      , global_flow_data ) =
+  let Driver.{ program; variable_uses; in_cps; deadcode_sentinel; _ }, global_flow_data =
     Driver.optimize_for_wasm ~shapes:false ~profile:O1 code
   in
   let context = start () in

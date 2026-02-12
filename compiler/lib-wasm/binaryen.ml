@@ -101,10 +101,22 @@ let filter_unused_primitives primitives usage_file =
 
 let dead_code_elimination
     ~dependencies
+    ~skip
     ~opt_input_sourcemap
     ~input_file
     ~opt_output_sourcemap
     ~output_file =
+  if skip
+  then (
+    Fs.write_file ~name:output_file ~contents:(Fs.read_file input_file);
+    Option.iter
+      ~f:(fun src ->
+        Option.iter
+          ~f:(fun dst -> Fs.write_file ~name:dst ~contents:(Fs.read_file src))
+          opt_output_sourcemap)
+      opt_input_sourcemap;
+    Linker.list_all ())
+  else
   Fs.with_intermediate_file (Filename.temp_file "deps" ".json")
   @@ fun deps_file ->
   Fs.with_intermediate_file (Filename.temp_file "usage" ".txt")

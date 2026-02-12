@@ -133,3 +133,31 @@
  (alias runtest-wasm)
  (action
   (diff test_toplevel.out.expected test_toplevel.out)))
+
+(executable
+ (name test_real_toplevel)
+ (modules test_real_toplevel)
+ (libraries wasm_of_ocaml-compiler.dynlink-compiler compiler-libs.toplevel)
+ (link_flags
+  (:standard -linkall))
+ (modes byte))
+
+(rule
+ (targets test_real_toplevel.js (dir test_real_toplevel.assets))
+ (action
+  (run %{bin:wasm_of_ocaml} compile --toplevel
+       %{dep:test_real_toplevel.bc} -o test_real_toplevel.js)))
+
+(rule
+ (target test_real_toplevel.out)
+ (deps
+  (glob_files test_real_toplevel.assets/*))
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./test_real_toplevel.js}))))
+
+(rule
+ (alias runtest-wasm)
+ (action
+  (diff test_real_toplevel.out.expected test_real_toplevel.out)))

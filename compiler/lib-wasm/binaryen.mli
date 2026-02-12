@@ -32,6 +32,7 @@ val link :
 
 val dead_code_elimination :
      dependencies:string
+  -> skip:bool
   -> opt_input_sourcemap:string option
   -> input_file:string
   -> opt_output_sourcemap:string option

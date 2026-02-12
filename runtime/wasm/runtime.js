@@ -778,6 +778,10 @@
         .fill(link.slice(2).values())
         .map(loadModules);
       await Promise.all(workers);
+    } else {
+      // Exe mode: runtime and code are merged into one module.
+      // Share namespace so get_ocaml_unit_list / get_named_global find globals.
+      imports.OCaml = imports.env;
     }
     return { instance: { exports: Object.assign(imports.env, imports.OCaml) } };
   }

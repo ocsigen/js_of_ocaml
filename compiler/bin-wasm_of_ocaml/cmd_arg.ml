@@ -64,6 +64,8 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; toplevel : bool
+  ; no_cmis : bool
   }
 
 let set_param =
@@ -114,6 +116,16 @@ let options () =
     let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
     Arg.(value & flag & info [ "linkall" ] ~doc)
   in
+  let toplevel =
+    let doc =
+      "Compile a toplevel and embed necessary cmis (unless '--no-cmis' is provided)."
+    in
+    Arg.(value & flag & info [ "toplevel" ] ~doc)
+  in
+  let no_cmis =
+    let doc = "Do not include cmis when compiling toplevel." in
+    Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~doc)
+  in
   let no_sourcemap =
     let doc = "Disable sourcemap output." in
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
@@ -150,6 +162,8 @@ let options () =
       include_dirs
       profile
       _
+      toplevel
+      no_cmis
       sourcemap
       no_sourcemap
       sourcemap_don't_inline_content
@@ -191,6 +205,8 @@ let options () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files
+      ; toplevel
+      ; no_cmis
       }
   in
   let t =
@@ -201,6 +217,8 @@ let options () =
       $ include_dirs
       $ profile
       $ linkall
+      $ toplevel
+      $ no_cmis
       $ sourcemap
       $ no_sourcemap
       $ sourcemap_don't_inline_content
@@ -283,6 +301,8 @@ let options_runtime_only () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files = []
+      ; toplevel = false
+      ; no_cmis = false
       }
   in
   let t =

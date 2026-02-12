@@ -63,8 +63,21 @@
             (global.set $caml_global_data (local.get $new))))
       (ref.i31 (i32.const 0)))
 
-   ;; Bytecode sections: set by OCaml-side init code
-   (global $bytecode_sections (mut (ref eq)) (ref.i31 (i32.const 0)))
+   ;; Bytecode sections: initialized to empty record so that
+   ;; Symtable.init_toplevel() (called from Toploop module init) does not
+   ;; crash if it runs before dynlink-compiler populates the real data.
+   ;; Layout: { symb: GlobalMap.t; crcs: list; prim: list; dlpt: list }
+   ;; GlobalMap.t = { cnt: int; tbl: Map.t } where Map.empty = 0
+   (global $bytecode_sections (mut (ref eq))
+      (array.new_fixed $block 5
+         (ref.i31 (i32.const 0))
+         (array.new_fixed $block 3
+            (ref.i31 (i32.const 0))
+            (ref.i31 (i32.const 0))
+            (ref.i31 (i32.const 0)))
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))))
 
    (func (export "wasm_dynlink_init_sections")
       (param $sections (ref eq)) (result (ref eq))
@@ -86,6 +99,11 @@
    (func (export "caml_reify_bytecode")
       (param $code (ref eq)) (param $debug (ref eq)) (param $digest (ref eq))
       (result (ref eq))
+      (if (ref.test (ref i31) (global.get $toplevel_compile))
+         (then
+            (call $caml_failwith
+               (@string "Toplevel compile callback not initialized"))
+            (unreachable)))
       (array.new_fixed $block 3
          (ref.i31 (i32.const 0))
          (ref.i31 (i32.const 0))
@@ -108,6 +126,28 @@
    (func (export "caml_dynlink_get_bytecode_sections")
       (param (ref eq)) (result (ref eq))
       (global.get $bytecode_sections))
+
+   ;; Stubs for primitives required by compiler-libs.toplevel.
+   ;; These must be proper Wasm exports so that any failure raises an OCaml
+   ;; exception (via caml_failwith) instead of a JS Error from dummy stubs,
+   ;; which would cause "illegal cast" in OCaml exception handlers.
+
+   (func (export "caml_sys_modify_argv")
+      (param (ref eq)) (result (ref eq))
+      ;; no-op: Sys.argv modification is not meaningful in Wasm
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_get_current_environment")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_failwith
+         (@string "caml_get_current_environment: not available in Wasm"))
+      (unreachable))
+
+   (func (export "caml_invoke_traced_function")
+      (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (call $caml_failwith
+         (@string "caml_invoke_traced_function: not available in Wasm"))
+      (unreachable))
 
    ;; Look up a named Wasm global in imports.OCaml and return its value.
    ;; Returns 0 (as i31ref) if not found.

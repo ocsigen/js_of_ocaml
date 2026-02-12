@@ -138,6 +138,7 @@ let link_and_optimize
     ~sourcemap_root
     ~sourcemap_don't_inline_content
     ~opt_sourcemap
+    ?(toplevel = false)
     runtime_wasm_files
     wat_files
     output_file =
@@ -186,6 +187,7 @@ let link_and_optimize
   let primitives =
     Binaryen.dead_code_elimination
       ~dependencies:Runtime_files.dependencies
+      ~skip:toplevel
       ~opt_input_sourcemap:opt_temp_sourcemap
       ~opt_output_sourcemap:opt_temp_sourcemap'
       ~input_file:temp_file
@@ -360,6 +362,8 @@ let run
     ; sourcemap_don't_inline_content
     ; effects
     ; shape_files
+    ; toplevel
+    ; no_cmis
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
@@ -551,16 +555,29 @@ let run
      (match kind with
      | `Exe ->
          let t1 = Timer.make () in
+         let include_cmis = toplevel && not no_cmis in
+         let linkall = toplevel in
          let code =
            Parse_bytecode.from_exe
              ~includes:include_dirs
-             ~include_cmis:false
+             ~include_cmis
              ~link_info:false
-             ~linkall:false
+             ~linkall
              ~debug:need_debug
              ic
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+         let embedded_files =
+           if include_cmis
+           then
+             let paths =
+               include_dirs
+               @ StringSet.elements
+                   (Parse_bytecode.Debug.paths code.debug ~units:code.cmis)
+             in
+             Pseudo_fs.collect_cmis ~cmis:code.cmis ~paths
+           else []
+         in
          Fs.with_intermediate_file (Filename.temp_file "code" ".wasm")
          @@ fun input_wasm_file ->
          let dir = Filename.chop_extension output_file ^ ".assets" in
@@ -593,6 +610,7 @@ let run
              ~sourcemap_root
              ~sourcemap_don't_inline_content
              ~opt_sourcemap
+             ~toplevel
              runtime_wasm_files
              [ input_wasm_file, opt_source_map_file ]
              tmp_wasm_file
@@ -630,7 +648,7 @@ let run
                   ~link_spec:[ wasm_name, None ]
                   ~separate_compilation:false
                   ~generated_js:[ None, generated_js ]
-                  ~embedded_files:[]
+                  ~embedded_files
                   ())
              ()
          in
