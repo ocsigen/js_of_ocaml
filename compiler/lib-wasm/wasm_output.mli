@@ -16,5 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+val to_string : Wasm_ast.module_field list -> string
+
 val f :
   opt_source_map_file:string option -> out_channel -> Wasm_ast.module_field list -> unit

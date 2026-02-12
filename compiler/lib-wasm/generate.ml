@@ -1968,3 +1968,28 @@ let wasm_output ch ~opt_source_map_file ~context =
   if times () then Format.eprintf "    fields: %a@." Timer.print t;
   Wasm_output.f ch ~opt_source_map_file fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t
+
+let compile ~unit_name code =
+  let ( Driver.{ program; variable_uses; in_cps; deadcode_sentinel; _ }
+      , global_flow_data ) =
+    Driver.optimize_for_wasm ~shapes:false ~profile:O1 code
+  in
+  let context = start () in
+  let toplevel_name, fragments =
+    f
+      ~context
+      ~unit_name
+      ~live_vars:variable_uses
+      ~in_cps
+      ~deadcode_sentinel
+      ~global_flow_data
+      program
+  in
+  add_start_function ~context toplevel_name;
+  let fields = G.output ~context in
+  let wasm_binary = Wasm_output.to_string fields in
+  wasm_binary, fragments
+
+let from_string ~prims ~debug ~unit_name s =
+  let code = Parse_bytecode.from_string ~prims ~debug s in
+  compile ~unit_name code
