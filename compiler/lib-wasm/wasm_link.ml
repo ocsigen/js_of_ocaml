@@ -2210,7 +2210,7 @@ let f files ~output_file =
       Write.start buf start;
       add_section out_ch ~id:8 buf
   | _ :: _ :: _ ->
-      Write.start buf (func_count - 1);
+      Write.start buf (get_exportable_info unresolved_imports Func + func_count - 1);
       add_section out_ch ~id:8 buf);
 
   (* 9: elements *)
@@ -2295,6 +2295,9 @@ let f files ~output_file =
         Buffer.add_char buf (Char.chr 0x10);
         Write.uint buf idx)
       starts;
+    (* end *)
+    Buffer.add_char buf (Char.chr 0x0B);
+    Write.uint code_pieces (Buffer.length buf);
     Buffer.add_buffer code_pieces buf;
     Buffer.clear buf);
   let code_section_offset =
