@@ -1,0 +1,32 @@
+(executable
+ (name main)
+ (modules main)
+ (libraries wasm_of_ocaml-compiler.dynlink)
+ (link_flags
+  (:standard -linkall))
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode separate)))
+
+(rule
+ (target plugin.cmo)
+ (action
+  (run %{bin:ocamlc} -c %{dep:./plugin.ml})))
+
+(rule
+ (target plugin.wasmo)
+ (action
+  (run %{bin:wasm_of_ocaml} compile %{dep:plugin.cmo} -o %{target})))
+
+(rule
+ (target main.out)
+ (deps plugin.wasmo)
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./main.bc.wasm.js}))))
+
+(rule
+ (alias runtest-wasm)
+ (action
+  (diff main.out.expected main.out)))

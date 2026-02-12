@@ -26,6 +26,7 @@ type t =
   ; output_file : string
   ; linkall : bool
   ; mklib : bool
+  ; dynlink : bool
   ; enable_source_maps : bool
   }
 
@@ -61,9 +62,16 @@ let options () =
     in
     Arg.(value & flag & info [ "a" ] ~doc)
   in
-  let build_t common no_sourcemap sourcemap output_file files linkall mklib =
+  let dynlink =
+    let doc =
+      "Enable dynamic linking support. Implies $(b,--linkall). The resulting program can \
+       load additional .wasmo modules at runtime."
+    in
+    Arg.(value & flag & info [ "dynlink" ] ~doc)
+  in
+  let build_t common no_sourcemap sourcemap output_file files linkall mklib dynlink =
     let enable_source_maps = (not no_sourcemap) && sourcemap in
-    `Ok { common; output_file; files; linkall; mklib; enable_source_maps }
+    `Ok { common; output_file; files; linkall; mklib; dynlink; enable_source_maps }
   in
   let t =
     Term.(
@@ -74,14 +82,16 @@ let options () =
       $ output_file
       $ files
       $ linkall
-      $ mklib)
+      $ mklib
+      $ dynlink)
   in
   Term.ret t
 
-let f { common; output_file; files; linkall; enable_source_maps; mklib } =
+let f { common; output_file; files; linkall; enable_source_maps; mklib; dynlink } =
   Js_of_ocaml_compiler.Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
-  Link.link ~output_file ~linkall ~mklib ~enable_source_maps ~files
+  let linkall = linkall || dynlink in
+  Link.link ~output_file ~linkall ~mklib ~dynlink ~enable_source_maps ~files
 
 let info =
   Info.make

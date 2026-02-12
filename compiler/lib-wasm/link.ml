@@ -925,7 +925,7 @@ let make_library ~output_file ~enable_source_maps ~files =
   if enable_source_maps then add_source_map files z output_sourcemap;
   Zip.close_out z
 
-let link ~output_file ~linkall ~mklib ~enable_source_maps ~files =
+let link ~output_file ~linkall ~mklib ~dynlink:_ ~enable_source_maps ~files =
   try
     if mklib
     then make_library ~output_file ~enable_source_maps ~files

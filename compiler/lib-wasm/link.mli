@@ -64,6 +64,7 @@ val link :
      output_file:string
   -> linkall:bool
   -> mklib:bool
+  -> dynlink:bool
   -> enable_source_maps:bool
   -> files:string list
   -> unit
