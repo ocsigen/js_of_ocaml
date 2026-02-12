@@ -206,7 +206,7 @@ let remove_unused_blocks' p =
         b)
       p.blocks
   in
-  { p with blocks }, !count
+  if !count = 0 then p, 0 else { p with blocks }, !count
 
 let remove_unused_blocks p =
   let previous_p = p in
