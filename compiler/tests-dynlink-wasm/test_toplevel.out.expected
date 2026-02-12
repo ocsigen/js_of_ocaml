@@ -1,0 +1,9 @@
+read_file_content: hello from virtual fs
+file_exists /static/test.txt: true
+file_exists /static: true
+file_exists /nonexistent: false
+is_directory /static: true
+open_in read: hello from virtual fs
+readdir /static: test.txt
+expected error: /nonexistent: No such file or directory
+done

@@ -28,6 +28,7 @@ type t =
   ; mklib : bool
   ; dynlink : bool
   ; enable_source_maps : bool
+  ; fs_files : string list
   }
 
 let options () =
@@ -69,9 +70,15 @@ let options () =
     in
     Arg.(value & flag & info [ "dynlink" ] ~doc)
   in
-  let build_t common no_sourcemap sourcemap output_file files linkall mklib dynlink =
+  let fs_files =
+    let doc = "Register [$(docv)] to the pseudo filesystem." in
+    Arg.(value & opt_all string [] & info [ "file" ] ~docv:"FILE" ~doc)
+  in
+  let build_t common no_sourcemap sourcemap output_file files linkall mklib dynlink fs_files
+      =
     let enable_source_maps = (not no_sourcemap) && sourcemap in
-    `Ok { common; output_file; files; linkall; mklib; dynlink; enable_source_maps }
+    `Ok
+      { common; output_file; files; linkall; mklib; dynlink; enable_source_maps; fs_files }
   in
   let t =
     Term.(
@@ -83,15 +90,30 @@ let options () =
       $ files
       $ linkall
       $ mklib
-      $ dynlink)
+      $ dynlink
+      $ fs_files)
   in
   Term.ret t
 
-let f { common; output_file; files; linkall; enable_source_maps; mklib; dynlink } =
+let f { common; output_file; files; linkall; enable_source_maps; mklib; dynlink; fs_files }
+    =
   Js_of_ocaml_compiler.Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   let linkall = linkall || dynlink in
-  Link.link ~output_file ~linkall ~mklib ~dynlink ~enable_source_maps ~files
+  let embedded_files =
+    List.concat_map fs_files ~f:(fun f ->
+        Js_of_ocaml_compiler.Pseudo_fs.list_files f [])
+    |> List.map ~f:(fun (name, filename) ->
+        name, Js_of_ocaml_compiler.Fs.read_file filename)
+  in
+  Link.link
+    ~output_file
+    ~linkall
+    ~mklib
+    ~dynlink
+    ~enable_source_maps
+    ~embedded_files
+    ~files
 
 let info =
   Info.make

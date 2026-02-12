@@ -630,6 +630,7 @@ let run
                   ~link_spec:[ wasm_name, None ]
                   ~separate_compilation:false
                   ~generated_js:[ None, generated_js ]
+                  ~embedded_files:[]
                   ())
              ()
          in
