@@ -24,6 +24,14 @@ external toplevel_init_compile :
 
 external dynlink_init_sections : Obj.t -> unit = "wasm_dynlink_init_sections"
 
+external get_named_global : string -> Obj.t = "wasm_get_named_global"
+
+external get_ocaml_unit_list : unit -> string = "wasm_get_ocaml_unit_list"
+
+external caml_register_global : int -> Obj.t -> string -> unit = "caml_register_global"
+
+external caml_realloc_global : int -> unit = "caml_realloc_global"
+
 type bytecode_sections =
   { symb : Symtable.global_map
   ; crcs : (string * Digest.t option) list
@@ -74,23 +82,60 @@ let () =
   Config.set_target `Wasm;
   Config.set_effects_backend `Disabled;
   Wasm_of_ocaml_compiler.Generate.init ();
-  (* Register dummy bytecode sections so that Symtable.init_toplevel succeeds.
-     A proper implementation will embed real sections at link time (step 5). *)
-  let sections =
-    { symb = Symtable.empty_global_map
-    ; crcs = [ "Stdlib", None ]
-    ; prim = Ocaml_compiler.Symtable.all_primitives ()
-    ; dlpt = []
-    }
+  (* Discover all named Wasm globals from imports.OCaml *)
+  let all_names =
+    get_ocaml_unit_list ()
+    |> String.split_on_char '\x00'
+    |> List.filter (fun s -> s <> "")
   in
+  let predef_exns = Array.to_list Runtimedef.builtin_exceptions in
+  let unit_names =
+    List.filter (fun n -> not (List.mem n predef_exns)) all_names
+  in
+  (* Build GlobalMap — predefs first (indices 0..N-1), then units (N..) *)
+  let symb_ref = ref Ocaml_compiler.Symtable.GlobalMap.empty in
+  List.iter
+    (fun name ->
+      ignore
+        (Ocaml_compiler.Symtable.GlobalMap.enter
+           symb_ref
+           (Ocaml_compiler.Symtable.Global.Glob_predef name)))
+    predef_exns;
+  (* Grow caml_global_data and populate with unit data *)
+  let num_predef = List.length predef_exns in
+  let total = num_predef + List.length unit_names in
+  caml_realloc_global total;
+  List.iter
+    (fun name ->
+      let idx =
+        Ocaml_compiler.Symtable.GlobalMap.enter
+          symb_ref
+          (Ocaml_compiler.Symtable.Global.Glob_compunit name)
+      in
+      let data = get_named_global name in
+      caml_register_global idx data name)
+    unit_names;
+  (* Build and register bytecode sections *)
+  let symb : Symtable.global_map = Obj.magic !symb_ref in
+  let crcs = List.map (fun n -> (n, None)) (predef_exns @ unit_names) in
+  let prim = Ocaml_compiler.Symtable.all_primitives () in
+  let sections = { symb; crcs; prim; dlpt = [] } in
   dynlink_init_sections (Obj.repr sections);
+  (* Also initialize compiler-libs.bytecomp's Symtable so that
+     Parse_bytecode.from_bytes can resolve global names *)
+  Symtable.restore_state symb;
+  (* Register compile callback *)
   let toplevel_compile (code : Obj.t) (debug : Instruct.debug_event list array) :
       unit -> unit =
     let s = bigarray_to_string code in
     let s = normalize_bytecode s in
     let prims = Array.of_list (Ocaml_compiler.Symtable.all_primitives ()) in
     let wasm_binary, _fragments =
-      Wasm_of_ocaml_compiler.Generate.from_string ~prims ~debug ~unit_name:None s
+      Wasm_of_ocaml_compiler.Generate.from_string
+        ~prims
+        ~debug
+        ~unit_name:(Some "_dynlink")
+        s
     in
     fun () -> Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)
   in

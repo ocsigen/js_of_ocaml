@@ -600,6 +600,21 @@
       const wasmBytes = zipBytes.subarray(wasmOff, wasmOff + wasmSize);
       bindings.load_module(wasmBytes);
     },
+    get_named_global(name) {
+      const g = imports.OCaml[name];
+      if (g === undefined || !(g instanceof WebAssembly.Global)) return null;
+      return g.value;
+    },
+    get_ocaml_unit_list() {
+      return Object.keys(imports.OCaml)
+        .filter(
+          (k) =>
+            imports.OCaml[k] instanceof WebAssembly.Global &&
+            k[0] >= "A" &&
+            k[0] <= "Z",
+        )
+        .join("\x00");
+    },
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),

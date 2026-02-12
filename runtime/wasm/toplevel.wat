@@ -22,6 +22,16 @@
       (func $caml_callback_2
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
+   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "caml_jsstring_of_string"
+      (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
+   (import "jslib" "caml_string_of_jsstring"
+      (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
+   (import "bindings" "get_named_global"
+      (func $get_named_global (param anyref) (result anyref)))
+   (import "bindings" "get_ocaml_unit_list"
+      (func $get_ocaml_unit_list (result anyref)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -98,4 +108,22 @@
    (func (export "caml_dynlink_get_bytecode_sections")
       (param (ref eq)) (result (ref eq))
       (global.get $bytecode_sections))
+
+   ;; Look up a named Wasm global in imports.OCaml and return its value.
+   ;; Returns 0 (as i31ref) if not found.
+   (func (export "wasm_get_named_global")
+      (param $name (ref eq)) (result (ref eq))
+      (local $result anyref)
+      (local.set $result
+         (call $get_named_global
+            (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+      (if (ref.is_null (local.get $result))
+         (then (return (ref.i31 (i32.const 0)))))
+      (call $wrap (local.get $result)))
+
+   ;; Return a '\x00'-separated string of all named Wasm global names.
+   (func (export "wasm_get_ocaml_unit_list")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_string_of_jsstring
+         (call $wrap (call $get_ocaml_unit_list))))
 )

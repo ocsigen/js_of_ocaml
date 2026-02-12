@@ -92,7 +92,7 @@
 (executable
  (name dynlink_loadfile)
  (modules dynlink_loadfile)
- (libraries wasm_of_ocaml-compiler.dynlink-compiler)
+ (libraries dynlink wasm_of_ocaml-compiler.dynlink-compiler)
  (link_flags
   (:standard -linkall))
  (modes wasm)

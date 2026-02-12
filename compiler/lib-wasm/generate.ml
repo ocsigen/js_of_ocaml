@@ -1238,6 +1238,15 @@ module Generate (Target : Target_sig.S) = struct
         Closure.dummy ~cps:(effects_cps ()) ~arity:(Targetint.to_int_exn arity)
     | Prim (Extern "caml_alloc_dummy_infix", _) ->
         Closure.dummy ~cps:(effects_cps ()) ~arity:1
+    | Prim (Extern "caml_get_global_data", []) ->
+        let* x =
+          let* typ = Value.block_type in
+          register_import
+            ~import_module:"env"
+            ~name:"caml_global_data"
+            (Global { mut = true; typ })
+        in
+        return (W.GlobalGet x)
     | Prim (Extern "caml_get_global", [ Pc (String name) ]) ->
         let* x =
           let* context = get_context in

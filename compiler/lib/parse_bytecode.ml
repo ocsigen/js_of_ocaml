@@ -772,19 +772,29 @@ let access_global g i =
 
 let register_global ?(force = false) g i rem =
   match g.is_exported.(i), force, Config.target () with
-  | true, _, `Wasm ->
+  | true, _, `Wasm -> (
       (* Register a compilation unit (Wasm) *)
       assert (not force);
-      let name =
-        match g.named_value.(i) with
-        | None -> assert false
-        | Some name -> name
-      in
-      Var.set_name (access_global g i) name;
-      Let
-        ( Var.fresh ()
-        , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ]) )
-      :: rem
+      match g.named_value.(i) with
+      | Some name ->
+          Var.set_name (access_global g i) name;
+          Let
+            ( Var.fresh ()
+            , Prim
+                (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ])
+            )
+          :: rem
+      | None ->
+          (* Dynamic loading: no named global, use index-based registration *)
+          Let
+            ( Var.fresh ()
+            , Prim
+                ( Extern "caml_register_global"
+                , [ Pc (Int (Targetint.of_int_exn i))
+                  ; Pv (access_global g i)
+                  ; Pc (String "")
+                  ] ) )
+          :: rem)
   | true, _, (`JavaScript as target) | false, true, ((`Wasm | `JavaScript) as target) ->
       (* Register an exception (if force = true), or a compilation unit
          (Javascript) *)
@@ -842,12 +852,17 @@ let get_global state instrs i =
                 | Some shape -> Shape.State.assign x shape));
             x, state, instrs
         | false, `Wasm -> (
-            (* Reference to another compilation units in case of separate
+            (* Reference to another compilation unit in case of separate
                compilation (Wasm).
                The toplevel module is available in an imported global
-               variables. *)
+               variable. For dynamically-assigned literals (no named_value),
+               fall back to index-based access from caml_global_data. *)
             match g.named_value.(i) with
-            | None -> assert false
+            | None ->
+                g.is_const.(i) <- true;
+                let x, state = State.fresh_var state in
+                g.vars.(i) <- Some x;
+                x, state, instrs
             | Some name ->
                 let x, state = State.fresh_var state in
                 if debug_parser ()
@@ -2865,6 +2880,17 @@ let from_bytes ~prims ~debug (code : bytecode) =
     t
   in
   let globals = make_globals 0 [||] prims in
+  (* In Wasm mode, populate named_value from Symtable so that get_global
+     can resolve global references by name *)
+  (match Config.target () with
+  | `Wasm ->
+      Ocaml_compiler.Symtable.GlobalMap.iter
+        (Ocaml_compiler.Symtable.current_state ())
+        ~f:(fun id pos ->
+          let size = pos + 1 in
+          if size > Array.length globals.named_value then resize_globals globals size;
+          globals.named_value.(pos) <- Some (Ocaml_compiler.Symtable.Global.name id))
+  | `JavaScript -> ());
   let p = parse_bytecode code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
