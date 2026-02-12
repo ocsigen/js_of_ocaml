@@ -67,7 +67,25 @@ module Excluding_Binders = struct
     { params = block.params; body = instrs s block.body; branch = last s block.branch }
 
   let program s p =
-    let blocks = Addr.Map.map (fun b -> block s b) p.blocks in
+    let count = ref 0 in
+    let s' x =
+      let y = s x in
+      if not (Code.Var.equal x y) then incr count;
+      y
+    in
+    let blocks =
+      Addr.Map.fold
+        (fun pc b blocks ->
+          let saved = !count in
+          let b' = block s' b in
+          if !count = saved
+          then (
+            Code.assert_block_equal ~name:"subst" b b';
+            blocks)
+          else Addr.Map.add pc b' blocks)
+        p.blocks
+        p.blocks
+    in
     { p with blocks }
 
   let rec cont' s pc blocks visited =
