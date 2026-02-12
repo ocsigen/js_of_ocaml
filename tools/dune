@@ -1,7 +1,16 @@
 (executable
  (name node_wrapper)
- (modules node_wrapper)
+ (link_deps
+  (env_var WASM_ENGINE))
+ (modules node_wrapper node_wrapper_per_engine)
  (libraries unix))
+
+(rule
+ (target node_wrapper_per_engine.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (run echo "let engine = \"%{env:WASM_ENGINE=node}\""))))
 
 (executable
  (name ci_setup)

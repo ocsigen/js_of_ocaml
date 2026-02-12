@@ -16,7 +16,7 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
-(@if (>= ocaml_version (5 1 0))
+(@if (and (>= ocaml_version (5 1 0)) (not wasi))
 (@then
    (import "bindings" "ta_new" (func $ta_new (param i32) (result (ref extern))))
    (import "bindings" "ta_blit_from_bytes"
@@ -58,5 +58,9 @@
    (func (export "caml_zstd_initialize") (param (ref eq)) (result (ref eq))
       (global.set $caml_intern_decompress_input (ref.func $decompress))
       (ref.i31 (i32.const 1)))
+)
+(@else
+   (func (export "caml_zstd_initialize") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
 ))
 )

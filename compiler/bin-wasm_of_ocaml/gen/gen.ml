@@ -75,15 +75,28 @@ let check_js_file fname =
 (* Keep the two variables below in sync with function build_runtime in
    ../compile.ml *)
 
-let default_flags = []
+let default_flags = [ "exnref", `B false ]
 
-let interesting_runtimes = [ [ "effects", `S "jspi" ]; [ "effects", `S "cps" ] ]
+let interesting_runtimes =
+  [ [ "effects", `S "jspi"; "wasi", `B false ]
+  ; [ "effects", `S "cps"; "wasi", `B false ]
+  ; [ "effects", `S "disabled"; "wasi", `B true ]
+  ; [ "effects", `S "cps"; "wasi", `B true ]
+  ]
+
+let defaults = [ "effects", "disabled" ]
 
 let name_runtime standard l =
   let flags =
     List.filter_map l ~f:(fun (k, v) ->
         match v with
-        | `S s -> Some s
+        | `S s ->
+            if
+              List.exists
+                ~f:(fun (k', s') -> String.equal k k' && String.equal s s')
+                defaults
+            then None
+            else Some s
         | `B b -> if b then Some k else None)
   in
   String.concat ~sep:"-" ("runtime" :: (if standard then [ "standard" ] else flags))
@@ -110,11 +123,13 @@ let print_flags f flags =
 
 let () =
   let () = set_binary_mode_out stdout true in
-  let js_runtime, deps, wat_files, runtimes =
+  let js_launcher, deps, js_wasi_launcher, wasi_deps, wasi_libc, wat_files, runtimes =
     match Array.to_list Sys.argv with
-    | _ :: js_runtime :: deps :: rest ->
-        assert (Filename.check_suffix js_runtime ".js");
+    | _ :: js_launcher :: deps :: js_wasi_launcher :: wasi_deps :: wasi_libc :: rest ->
+        assert (Filename.check_suffix js_launcher ".js");
+        assert (Filename.check_suffix js_wasi_launcher ".js");
         assert (Filename.check_suffix deps ".json");
+        assert (Filename.check_suffix wasi_deps ".json");
         let wat_files, rest =
           List.partition rest ~f:(fun f -> Filename.check_suffix f ".wat")
         in
@@ -122,13 +137,17 @@ let () =
           List.partition rest ~f:(fun f -> Filename.check_suffix f ".wasm")
         in
         assert (List.is_empty rest);
-        js_runtime, deps, wat_files, wasm_files
+        js_launcher, deps, js_wasi_launcher, wasi_deps, wasi_libc, wat_files, wasm_files
     | _ -> assert false
   in
-  check_js_file js_runtime;
+  check_js_file js_launcher;
+  check_js_file js_wasi_launcher;
   Format.printf "open Wasm_of_ocaml_compiler@.";
-  Format.printf "let js_runtime = {|\n%s\n|}@." (Fs.read_file js_runtime);
+  Format.printf "let js_launcher = {|\n%s\n|}@." (Fs.read_file js_launcher);
   Format.printf "let dependencies = {|\n%s\n|}@." (Fs.read_file deps);
+  Format.printf "let js_wasi_launcher = {|\n%s\n|}@." (Fs.read_file js_wasi_launcher);
+  Format.printf "let wasi_dependencies = {|\n%s\n|}@." (Fs.read_file wasi_deps);
+  Format.printf "let wasi_libc = %S@." (Fs.read_file wasi_libc);
   Format.printf
     "let wat_files = [%a]@."
     (Format.pp_print_list (fun f file ->

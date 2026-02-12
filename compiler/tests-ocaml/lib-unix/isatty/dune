@@ -6,7 +6,10 @@
 (tests
  (names isatty_tty)
  (enabled_if
-  (not %{env:CI=false}))
+  (and
+   (<> %{profile} wasi)
+   (not %{env:CI=false})))
+ ; WASI has no notion of tty
  ; isatty_tty does not work on the CI since we are not running in a tty there
  (libraries ocaml_testing unix)
  (modes js wasm))
