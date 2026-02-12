@@ -201,6 +201,10 @@ type desc =
   ; opcode : int
   }
 
+let if_oxcaml k = k [@@if oxcaml]
+
+let if_oxcaml _ = K_will_not_happen [@@if not oxcaml]
+
 let ops =
   let if_v500 =
     match Ocaml_version.compare Ocaml_version.current [ 5; 0 ] < 0 with
@@ -361,7 +365,7 @@ let ops =
      ; RESUME, if_v500 KNullaryCall, "RESUME"
      ; RESUMETERM, if_v500 (KStop 1), "RESUMETERM"
      ; REPERFORMTERM, if_v500 (KStop 1), "REPERFORMTERM"
-     ; MAKE_FAUX_MIXEDBLOCK, KBinary, "MAKE_FAUX_MIXEDBLOCK"
+     ; MAKE_FAUX_MIXEDBLOCK, if_oxcaml KBinary, "MAKE_FAUX_MIXEDBLOCK"
      ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"
     |]
   in
