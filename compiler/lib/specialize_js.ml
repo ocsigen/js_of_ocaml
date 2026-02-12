@@ -411,9 +411,9 @@ let specialize_all_instrs ~target opt_count info p =
         in
         if !opt_count = saved
         then (
-          Code.assert_block_equal ~name:"specialize_js" block { block with Code.body = body };
+          Code.assert_block_equal ~name:"specialize_js" block { block with Code.body };
           blocks)
-        else Addr.Map.add pc { block with Code.body = body } blocks)
+        else Addr.Map.add pc { block with Code.body } blocks)
       p.blocks
       p.blocks
   in
@@ -474,9 +474,7 @@ let f_once_before p =
       (fun pc block blocks ->
         let saved = !count in
         let body = loop [] block.body in
-        if !count = saved
-        then blocks
-        else Addr.Map.add pc { block with Code.body = body } blocks)
+        if !count = saved then blocks else Addr.Map.add pc { block with Code.body } blocks)
       p.blocks
       p.blocks
   in
@@ -530,7 +528,7 @@ let f_once_after p =
           let body = List.map block.body ~f in
           if !count = saved
           then blocks
-          else Addr.Map.add pc { block with Code.body = body } blocks)
+          else Addr.Map.add pc { block with Code.body } blocks)
         p.blocks
         p.blocks
     in

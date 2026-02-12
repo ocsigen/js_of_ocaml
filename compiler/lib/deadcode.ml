@@ -511,9 +511,10 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
               |> List.rev
             in
             let branch = filter_live_last all_blocks st block.branch in
-            if (not params_changed)
-               && st.deleted_instrs = saved_instrs
-               && st.deleted_params = saved_params
+            if
+              (not params_changed)
+              && st.deleted_instrs = saved_instrs
+              && st.deleted_params = saved_params
             then (
               Code.assert_block_equal ~name:"deadcode" block { params; body; branch };
               Some block)

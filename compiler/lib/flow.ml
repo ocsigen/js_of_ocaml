@@ -593,25 +593,25 @@ let f p =
     match build_subst info vars with
     | None -> p
     | Some s ->
-      let count_seen = BitSet.create' (Var.count ()) in
-      let subst v1 =
-        let idx1 = Code.Var.idx v1 in
-        let v2 = s.(idx1) in
-        if Code.Var.equal v1 v2
-        then v1
-        else (
-          if not (BitSet.mem count_seen idx1)
-          then (
-            incr count_uniq;
-            BitSet.set count_seen idx1);
-          v2)
-      in
-      let p' = Subst.Excluding_Binders.program subst p in
-      if !count_uniq = 0
-      then (
-        Code.assert_program_equal ~name:"flow" p p';
-        p)
-      else p'
+        let count_seen = BitSet.create' (Var.count ()) in
+        let subst v1 =
+          let idx1 = Code.Var.idx v1 in
+          let v2 = s.(idx1) in
+          if Code.Var.equal v1 v2
+          then v1
+          else (
+            if not (BitSet.mem count_seen idx1)
+            then (
+              incr count_uniq;
+              BitSet.set count_seen idx1);
+            v2)
+        in
+        let p' = Subst.Excluding_Binders.program subst p in
+        if !count_uniq = 0
+        then (
+          Code.assert_program_equal ~name:"flow" p p';
+          p)
+        else p'
   in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;

@@ -150,7 +150,10 @@ let f p =
   let p =
     if !update_count = 0
     then (
-      Code.assert_program_equal ~name:"tailcall" p { p with blocks = !blocks; free_pc = !free_pc };
+      Code.assert_program_equal
+        ~name:"tailcall"
+        p
+        { p with blocks = !blocks; free_pc = !free_pc };
       p)
     else { p with blocks = !blocks; free_pc = !free_pc }
   in

@@ -233,6 +233,5 @@ let f p =
   then (
     Format.eprintf "Stats - reference unboxing: %d@." updates;
     Code.print_block_sharing ~name:"ref_unboxing" previous_p p);
-  if debug_stats ()
-  then Code.check_updates ~name:"ref_unboxing" previous_p p ~updates;
+  if debug_stats () then Code.check_updates ~name:"ref_unboxing" previous_p p ~updates;
   p

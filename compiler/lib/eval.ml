@@ -838,16 +838,14 @@ let eval update_count update_branch inline_constant ~target info blocks =
           ~f:(eval_instr update_count inline_constant ~target info)
       in
       let branch = eval_branch update_branch info block.branch in
-      if !update_count = saved_update
-         && !update_branch = saved_branch
-         && !inline_constant = saved_inline
+      if
+        !update_count = saved_update
+        && !update_branch = saved_branch
+        && !inline_constant = saved_inline
       then (
-        Code.assert_block_equal
-          ~name:"eval"
-          block
-          { block with Code.body = body; Code.branch = branch };
+        Code.assert_block_equal ~name:"eval" block { block with Code.body; Code.branch };
         blocks)
-      else Addr.Map.add pc { block with Code.body = body; Code.branch = branch } blocks)
+      else Addr.Map.add pc { block with Code.body; Code.branch } blocks)
     blocks
     blocks
 

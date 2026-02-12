@@ -153,8 +153,8 @@ let solver1 vars deps defs =
     Array.mapi reprs ~f:(fun idx y ->
         match y with
         | Some y ->
-          has_subst := true;
-          repr reprs y
+            has_subst := true;
+            repr reprs y
         | None -> Var.of_idx idx)
   in
   if !has_subst then Some subst else None
@@ -171,31 +171,31 @@ let f p =
   let p =
     match solver1 vars deps defs with
     | None ->
-      if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
-      p
+        if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
+        p
     | Some subst ->
-      if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
-      Array.iteri subst ~f:(fun idx y ->
-          if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
-      let count_seen = BitSet.create' (Var.count ()) in
-      let subst v1 =
-        let idx1 = Code.Var.idx v1 in
-        let v2 = subst.(idx1) in
-        if Code.Var.equal v1 v2
-        then v1
-        else (
-          if not (BitSet.mem count_seen idx1)
-          then (
-            incr count_uniq;
-            BitSet.set count_seen idx1);
-          v2)
-      in
-      let p' = Subst.Excluding_Binders.program subst p in
-      if !count_uniq = 0
-      then (
-        Code.assert_program_equal ~name:"phi" p p';
-        p)
-      else p'
+        if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
+        Array.iteri subst ~f:(fun idx y ->
+            if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
+        let count_seen = BitSet.create' (Var.count ()) in
+        let subst v1 =
+          let idx1 = Code.Var.idx v1 in
+          let v2 = subst.(idx1) in
+          if Code.Var.equal v1 v2
+          then v1
+          else (
+            if not (BitSet.mem count_seen idx1)
+            then (
+              incr count_uniq;
+              BitSet.set count_seen idx1);
+            v2)
+        in
+        let p' = Subst.Excluding_Binders.program subst p in
+        if !count_uniq = 0
+        then (
+          Code.assert_program_equal ~name:"phi" p p';
+          p)
+        else p'
   in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
   if stats ()
