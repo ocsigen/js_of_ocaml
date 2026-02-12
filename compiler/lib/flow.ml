@@ -525,6 +525,7 @@ let the_shape_of ~return_values ~pure info x =
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in
   let subst = Array.init nv ~f:(fun i -> Var.of_idx i) in
+  let has_subst = ref false in
   Var.ISet.iter
     (fun x ->
       let x_idx = Var.idx x in
@@ -538,9 +539,13 @@ let build_subst (info : Info.t) vars =
          match direct_approx info x with
          | None -> ()
          | Some y -> subst.(x_idx) <- y);
-      if Var.equal subst.(x_idx) x then () else Var.propagate_name x subst.(x_idx))
+      if Var.equal subst.(x_idx) x
+      then ()
+      else (
+        has_subst := true;
+        Var.propagate_name x subst.(x_idx)))
     vars;
-  subst
+  if !has_subst then Some subst else None
 
 (****)
 
@@ -583,26 +588,42 @@ let f p =
     ; info_possibly_mutable = possibly_mutable
     }
   in
-  let s = build_subst info vars in
-  let need_stats = stats () || debug_stats () in
+  let stats_needed = stats () || debug_stats () in
   let count_uniq = ref 0 in
-  let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
-  let subst v1 =
-    let idx1 = Code.Var.idx v1 in
-    let v2 = s.(idx1) in
-    if Code.Var.equal v1 v2
-    then v1
-    else (
-      if need_stats && not (BitSet.mem count_seen idx1)
-      then (
-        incr count_uniq;
-        BitSet.set count_seen idx1);
-      v2)
+  let p =
+    match build_subst info vars with
+    | None -> p
+    | Some s ->
+        let subst =
+          if stats_needed
+          then
+            let count_seen = BitSet.create' (Var.count ()) in
+            fun v1 ->
+              let idx1 = Code.Var.idx v1 in
+              let v2 = s.(idx1) in
+              if Code.Var.equal v1 v2
+              then v1
+              else (
+                if not (BitSet.mem count_seen idx1)
+                then (
+                  incr count_uniq;
+                  BitSet.set count_seen idx1);
+                v2)
+          else fun v1 -> s.(Code.Var.idx v1)
+        in
+        let p' = Subst.Excluding_Binders.program subst p in
+        if phys_equal p.blocks p'.blocks
+        then (
+          Code.assert_program_equal ~name:"flow" p p';
+          p)
+        else p'
   in
-  let p = Subst.Excluding_Binders.program subst p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - flow updates: %d@." !count_uniq;
+  if stats ()
+  then (
+    Format.eprintf "Stats - flow updates: %d@." !count_uniq;
+    Code.print_block_sharing ~name:"flow" previous_p p);
   if debug_stats () then Code.check_updates ~name:"flow" previous_p p ~updates:!count_uniq;
   Code.invariant p;
   p, info

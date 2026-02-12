@@ -313,13 +313,21 @@ val compact : program -> program
 
 val is_empty : program -> bool
 
+val block_equal : block -> block -> bool
+
 val equal : program -> program -> bool
 
 val print_diff : program -> program -> unit
 
 val check_updates : name:string -> program -> program -> updates:int -> unit
 
+val print_block_sharing : name:string -> program -> program -> unit
+
 val invariant : program -> unit
+
+val assert_block_equal : name:string -> block -> block -> unit
+
+val assert_program_equal : name:string -> program -> program -> unit
 
 val cont_equal : cont -> cont -> bool
 
