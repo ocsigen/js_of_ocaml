@@ -216,17 +216,22 @@ let rec loop max name round i (p : 'a) : 'a =
     if stats () then Code.print_block_sharing ~name:(Printf.sprintf "%s#%d" name i) p p';
     loop max name round (i + 1) p')
 
-let cached f =
-  let last = ref None in
-  fun p ->
-    match !last with
-    | Some (blocks, result) when phys_equal p.Code.blocks blocks -> result
-    | _ ->
-        let result = f p in
-        last := Some (p.blocks, result);
-        result
+let cached () =
+  let all_cached = ref [] in
+  fun f ->
+    let last = ref None in
+    all_cached := last :: !all_cached;
+    fun p ->
+      match !last with
+      | Some (blocks, result) when phys_equal p.Code.blocks blocks -> result
+      | _ ->
+          let result = f p in
+          List.iter !all_cached ~f:(fun r -> r := None);
+          last := Some (p.blocks, result);
+          result
 
 let round profile : 'a -> 'a =
+  let cached = cached () in
   let tailcall = cached tailcall in
   let ref_unboxing = cached Ref_unboxing.f in
   let flow_specialize_eval = cached (flow +> specialize +> eval +> fst) in
@@ -234,7 +239,13 @@ let round profile : 'a -> 'a =
   let phi = cached phi in
   let deadcode = cached deadcode in
   fun p ->
-    p |> print |> tailcall |> ref_unboxing |> flow_specialize_eval |> inline |> phi
+    p
+    |> print
+    |> tailcall
+    |> ref_unboxing
+    |> flow_specialize_eval
+    |> inline
+    |> phi
     |> deadcode
 
 (* o1 *)
