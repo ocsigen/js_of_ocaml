@@ -356,6 +356,30 @@ module Float = struct
   external ( >= ) : t -> t -> bool = "%greaterequal"
 end
 
+module Float32 = struct
+  type t
+
+  let of_float _ = assert false
+
+  let to_float _ = assert false
+
+  let of_string _ = assert false
+end
+[@@if not oxcaml]
+
+module Float32 = struct
+  type t = float32
+
+  external of_float : float -> t = "%float32offloat"
+
+  external to_float : t -> float = "%floatoffloat32"
+
+  (* In javascript/wasm, we define float32 parsing as rounding the 64-bit result.
+     This is not equivalent to native code, which parses to 32 bits directly. *)
+  let of_string s = float_of_string s |> of_float
+end
+[@@if oxcaml]
+
 module Bool = struct
   include Bool
 
@@ -1329,3 +1353,7 @@ module Lexing = struct
       Printf.sprintf "File \"%s\", line %d, characters %d-%d:\n" file line char1 char2
   (* use [char1 + 1] and [char2 + 1] if *not* using Caml mode *)
 end
+
+let with_async_exns = Sys.with_async_exns [@@if oxcaml]
+
+let with_async_exns f = f () [@@if not oxcaml]

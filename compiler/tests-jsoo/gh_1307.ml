@@ -5,9 +5,7 @@ let test content =
   | n ->
       Printf.printf "%d\n" n;
       print_endline "success"
-  | exception e ->
-      print_endline (Printexc.to_string e);
-      print_endline "failure"
+  | exception Parsing.Parse_error -> print_endline "Parse_error"
 
 let%expect_test "parsing" =
   (* use [Parsing.set_trace true] once https://github.com/janestreet/ppx_expect/issues/43 is fixed *)
@@ -15,8 +13,7 @@ let%expect_test "parsing" =
   test "a";
   [%expect {|
     input: "a"
-    Stdlib.Parsing.Parse_error
-    failure |}];
+    Parse_error |}];
   test "aa";
   [%expect {|
     input: "aa"
@@ -25,7 +22,6 @@ let%expect_test "parsing" =
   test "aaa";
   [%expect {|
     input: "aaa"
-    Stdlib.Parsing.Parse_error
-    failure |}];
+    Parse_error |}];
   let (_ : bool) = Parsing.set_trace old in
   ()

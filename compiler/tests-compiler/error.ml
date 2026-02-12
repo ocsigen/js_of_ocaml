@@ -46,7 +46,9 @@ let%expect_test "uncaugh error" =
   let prog =
     {|
 let null = Array.unsafe_get [|1|] 1
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
 exception C
 let _ = raise C |}
   in
@@ -61,7 +63,9 @@ let _ = raise C |}
   let prog =
     {|
 let null = Array.unsafe_get [|1|] 1
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
 exception D of int * string * Int64.t
 let _ = raise (D(2,"test",43L))
               |}
@@ -77,37 +81,45 @@ let _ = raise (D(2,"test",43L))
   let prog =
     {|
 let null = Array.unsafe_get [|1|] 1
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
 let _ = assert false |}
   in
   compile_and_run prog;
   print_endline (normalize [%expect.output]);
   [%expect
     {|
-    Fatal error: exception Assert_failure("test.ml", 4, 8)
+    Fatal error: exception Assert_failure("test.ml", 6, 8)
 
     process exited with error code 2
-     %{NODE} test.js |}];
+     %{NODE} test.js
+    |}];
   let prog =
     {|
 let null = Array.unsafe_get [|1|] 1
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
  [@@@ocaml.warning "-8"] let _ = match 3 with 2 -> () |}
   in
   compile_and_run prog;
   print_endline (normalize [%expect.output]);
   [%expect
     {|
-    Fatal error: exception Match_failure("test.ml", 4, 33)
+    Fatal error: exception Match_failure("test.ml", 6, 33)
 
     process exited with error code 2
-     %{NODE} test.js |}];
+     %{NODE} test.js
+    |}];
 
   (* Uncaught javascript exception *)
   let prog =
     {|
 let null : _ -> _ -> _ = Array.unsafe_get [||] 0
-let () = Callback.register "Printexc.handle_uncaught_exception" null
+let () =
+  (Callback.register [@ocaml.alert "-unsafe_multidomain"])
+    "Printexc.handle_uncaught_exception" null
 exception D of int * string * Int64.t
 let _ = null 1 2
              |}

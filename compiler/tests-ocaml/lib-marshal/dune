@@ -2,7 +2,9 @@
  (names compressed)
  (libraries compiler-libs.common)
  (build_if
-  (>= %{ocaml_version} 5.2))
+  (and
+   (>= %{ocaml_version} 5.2)
+   (not %{oxcaml_supported})))
  (modes js wasm))
 
 (tests

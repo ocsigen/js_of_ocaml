@@ -312,6 +312,34 @@ function caml_sys_isatty(_chan) {
   return 0;
 }
 
+//Provides: caml_sys_const_runtime5 const
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_sys_const_runtime5(_unit) {
+  return 1;
+}
+
+//Provides: arch
+//Version: >= 5.2, < 5.3
+//OxCaml
+var arch = globalThis.process?.arch === "arm64" ? "arm64" : "amd64";
+
+//Provides: caml_sys_const_arch_amd64 const
+//Requires: arch
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_sys_const_arch_amd64(_unit) {
+  return arch === "amd64" ? 1 : 0;
+}
+
+//Provides: caml_sys_const_arch_arm64 const
+//Requires: arch
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_sys_const_arch_arm64(_unit) {
+  return arch === "arm64" ? 1 : 0;
+}
+
 //Provides: caml_runtime_variant
 //Requires: caml_string_of_jsbytes
 function caml_runtime_variant(_unit) {
