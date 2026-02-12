@@ -1886,7 +1886,7 @@ type input =
   ; opt_source_map : Source_map.Standard.t option
   }
 
-let f files ~output_file =
+let f ?(filter_export = fun _ -> true) files ~output_file =
   let files =
     Array.map
       ~f:(fun { module_name; file; code; opt_source_map } ->
@@ -2140,20 +2140,28 @@ let f files ~output_file =
   Array.iter ~f:Scan.clear_position_data positions;
 
   (* 7: export *)
+  let exports =
+    Array.map
+      ~f:(fun intf ->
+        map_exportable_info
+          (fun _ exports -> List.filter ~f:(fun (nm, _) -> filter_export nm) exports)
+          intf.Read.exports)
+      intfs
+  in
   let export_count =
     Array.fold_left
-      ~f:(fun count intf ->
+      ~f:(fun count exports ->
         fold_exportable_info
           (fun _ exports count -> List.length exports + count)
           count
-          intf.Read.exports)
+          exports)
       ~init:0
-      intfs
+      exports
   in
   Write.uint buf export_count;
-  let exports = String.Hashtbl.create 128 in
+  let export_tbl = String.Hashtbl.create 128 in
   Array.iteri
-    ~f:(fun i intf ->
+    ~f:(fun i exports ->
       iter_exportable_info
         (fun kind lst ->
           let map =
@@ -2166,7 +2174,7 @@ let f files ~output_file =
           in
           List.iter
             ~f:(fun (name, idx) ->
-              match String.Hashtbl.find exports name with
+              match String.Hashtbl.find export_tbl name with
               | i' ->
                   failwith
                     (Printf.sprintf
@@ -2175,11 +2183,11 @@ let f files ~output_file =
                        files.(i').file
                        files.(i).file)
               | exception Not_found ->
-                  String.Hashtbl.add exports name i;
+                  String.Hashtbl.add export_tbl name i;
                   Write.export buf kind name map.(idx))
             lst)
-        intf.Read.exports)
-    intfs;
+        exports)
+    exports;
   add_section out_ch ~id:7 buf;
 
   (* 8: start *)
