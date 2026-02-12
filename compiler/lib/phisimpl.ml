@@ -167,6 +167,7 @@ let f p =
   let vars, deps, defs = program_deps p in
   if times () then Format.eprintf "    phi-simpl. 1: %a@." Timer.print t';
   let t' = Timer.make () in
+  let stats_needed = stats () || debug_stats () in
   let count_uniq = ref 0 in
   let p =
     match solver1 vars deps defs with
@@ -177,21 +178,25 @@ let f p =
         if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
         Array.iteri subst ~f:(fun idx y ->
             if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
-        let count_seen = BitSet.create' (Var.count ()) in
-        let subst v1 =
-          let idx1 = Code.Var.idx v1 in
-          let v2 = subst.(idx1) in
-          if Code.Var.equal v1 v2
-          then v1
-          else (
-            if not (BitSet.mem count_seen idx1)
-            then (
-              incr count_uniq;
-              BitSet.set count_seen idx1);
-            v2)
+        let subst =
+          if stats_needed
+          then
+            let count_seen = BitSet.create' (Var.count ()) in
+            fun v1 ->
+              let idx1 = Code.Var.idx v1 in
+              let v2 = subst.(idx1) in
+              if Code.Var.equal v1 v2
+              then v1
+              else (
+                if not (BitSet.mem count_seen idx1)
+                then (
+                  incr count_uniq;
+                  BitSet.set count_seen idx1);
+                v2)
+          else fun v1 -> subst.(Code.Var.idx v1)
         in
         let p' = Subst.Excluding_Binders.program subst p in
-        if !count_uniq = 0
+        if phys_equal p.blocks p'.blocks
         then (
           Code.assert_program_equal ~name:"phi" p p';
           p)

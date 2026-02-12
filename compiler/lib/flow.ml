@@ -588,26 +588,31 @@ let f p =
     ; info_possibly_mutable = possibly_mutable
     }
   in
+  let stats_needed = stats () || debug_stats () in
   let count_uniq = ref 0 in
   let p =
     match build_subst info vars with
     | None -> p
     | Some s ->
-        let count_seen = BitSet.create' (Var.count ()) in
-        let subst v1 =
-          let idx1 = Code.Var.idx v1 in
-          let v2 = s.(idx1) in
-          if Code.Var.equal v1 v2
-          then v1
-          else (
-            if not (BitSet.mem count_seen idx1)
-            then (
-              incr count_uniq;
-              BitSet.set count_seen idx1);
-            v2)
+        let subst =
+          if stats_needed
+          then
+            let count_seen = BitSet.create' (Var.count ()) in
+            fun v1 ->
+              let idx1 = Code.Var.idx v1 in
+              let v2 = s.(idx1) in
+              if Code.Var.equal v1 v2
+              then v1
+              else (
+                if not (BitSet.mem count_seen idx1)
+                then (
+                  incr count_uniq;
+                  BitSet.set count_seen idx1);
+                v2)
+          else fun v1 -> s.(Code.Var.idx v1)
         in
         let p' = Subst.Excluding_Binders.program subst p in
-        if !count_uniq = 0
+        if phys_equal p.blocks p'.blocks
         then (
           Code.assert_program_equal ~name:"flow" p p';
           p)
