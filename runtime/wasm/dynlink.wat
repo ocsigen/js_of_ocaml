@@ -19,8 +19,9 @@
    (import "bigarray" "caml_uint8_array_of_string"
       (func $caml_uint8_array_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "bindings" "load_module"
-      (func $load_module (param anyref)))
+      (func $load_module (param anyref) (result anyref)))
    (import "bindings" "load_wasmo"
       (func $load_wasmo (param anyref)))
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
@@ -32,10 +33,10 @@
 
    (func (export "caml_wasm_load_module")
       (param $bytes (ref eq)) (result (ref eq))
-      (call $load_module
-         (call $unwrap
-            (call $caml_uint8_array_of_string (local.get $bytes))))
-      (ref.i31 (i32.const 0)))
+      (call $wrap
+         (call $load_module
+            (call $unwrap
+               (call $caml_uint8_array_of_string (local.get $bytes))))))
 
    (func (export "caml_wasm_load_wasmo")
       (param $bytes (ref eq)) (result (ref eq))

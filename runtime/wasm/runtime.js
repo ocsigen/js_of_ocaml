@@ -636,9 +636,12 @@
       const module = new WebAssembly.Module(wasmBytes, options);
       const inst = new WebAssembly.Instance(module, imports, options);
       Object.assign(imports.OCaml, inst.exports);
+      let retval = null;
       for (const [name, value] of Object.entries(inst.exports)) {
-        if (name.endsWith(".init") && typeof value === "function") value();
+        if (name.endsWith(".init") && typeof value === "function")
+          retval = value();
       }
+      return retval;
     },
     load_wasmo: (zipBytes) => {
       // Parse ZIP to extract code.wasm (uncompressed ZIP)

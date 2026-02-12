@@ -24,7 +24,7 @@ val loadfile : string -> unit
     Raises [Failure] if the file cannot be read or the module cannot be
     instantiated. *)
 
-val load_module_bytes : bytes -> unit
+val load_module_bytes : bytes -> Obj.t
 (** [load_module_bytes wasm_bytes] loads a raw Wasm binary module from the
     given bytes. The module is instantiated and its exports are merged into
-    the running program. *)
+    the running program. Returns the result of the module's init function. *)

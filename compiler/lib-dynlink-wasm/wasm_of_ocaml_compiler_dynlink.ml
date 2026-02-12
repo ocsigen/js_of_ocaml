@@ -19,7 +19,7 @@
 open Js_of_ocaml_compiler
 
 external toplevel_init_compile :
-  (Obj.t -> Instruct.debug_event list array -> (unit -> unit)) -> unit
+  (Obj.t -> Instruct.debug_event list array -> unit -> Obj.t) -> unit
   = "wasm_toplevel_init_compile"
 
 external dynlink_init_sections : Obj.t -> unit = "wasm_dynlink_init_sections"
@@ -74,7 +74,7 @@ let loadfile filename =
           let wasm_binary, _fragments =
             Wasm_of_ocaml_compiler.Generate.compile ~unit_name:(Some unit_name) one.code
           in
-          Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)
+          ignore (Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary))
       | `Cma _ -> failwith "loadfile: .cma files not yet supported"
       | `Exe -> failwith "loadfile: executable files not supported")
 
@@ -118,7 +118,19 @@ let () =
   (* Build and register bytecode sections *)
   let symb : Symtable.global_map = Obj.magic !symb_ref in
   let crcs = List.map (fun n -> (n, None)) (predef_exns @ unit_names) in
-  let prim = Ocaml_compiler.Symtable.all_primitives () in
+  let prim =
+    let runtime_prims = Ocaml_compiler.Symtable.all_primitives () in
+    let compiler_prims = Primitive.get_external () in
+    let known = Hashtbl.create 512 in
+    List.iter (fun p -> Hashtbl.replace known p ()) runtime_prims;
+    let extra =
+      Js_of_ocaml_compiler.Stdlib.StringSet.fold
+        (fun p acc -> if Hashtbl.mem known p then acc else p :: acc)
+        compiler_prims
+        []
+    in
+    runtime_prims @ extra
+  in
   let sections = { symb; crcs; prim; dlpt = [] } in
   dynlink_init_sections (Obj.repr sections);
   (* Also initialize compiler-libs.bytecomp's Symtable so that
@@ -126,7 +138,7 @@ let () =
   Symtable.restore_state symb;
   (* Register compile callback *)
   let toplevel_compile (code : Obj.t) (debug : Instruct.debug_event list array) :
-      unit -> unit =
+      unit -> Obj.t =
     let s = bigarray_to_string code in
     let s = normalize_bytecode s in
     let prims = Array.of_list (Ocaml_compiler.Symtable.all_primitives ()) in
@@ -137,6 +149,7 @@ let () =
         ~unit_name:(Some "_dynlink")
         s
     in
-    fun () -> Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)
+    fun () ->
+      Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)
   in
   toplevel_init_compile toplevel_compile

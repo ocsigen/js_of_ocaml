@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-external caml_wasm_load_module : bytes -> unit = "caml_wasm_load_module"
+external caml_wasm_load_module : bytes -> Obj.t = "caml_wasm_load_module"
 
 external caml_wasm_load_wasmo : bytes -> unit = "caml_wasm_load_wasmo"
 
@@ -32,4 +32,4 @@ let loadfile filename =
   let b = read_file filename in
   caml_wasm_load_wasmo b
 
-let load_module_bytes wasm_bytes = caml_wasm_load_module wasm_bytes
+let load_module_bytes wasm_bytes : Obj.t = caml_wasm_load_module wasm_bytes
