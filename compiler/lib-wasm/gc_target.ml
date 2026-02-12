@@ -676,11 +676,11 @@ module Memory = struct
     let* e' = e' in
     instr (W.StructSet (ty, i, e, e'))
 
-  let wasm_array_get ?(ty = Type.block_type) e e' =
+  let wasm_array_get ?signage ?(ty = Type.block_type) e e' =
     let* ty = ty in
     let* e = wasm_cast ty e in
     let* e' = e' in
-    return (W.ArrayGet (None, ty, e, e'))
+    return (W.ArrayGet (signage, ty, e, e'))
 
   let wasm_array_set ?(ty = Type.block_type) e e' e'' =
     let* ty = ty in
@@ -823,7 +823,7 @@ module Memory = struct
     let* e = wasm_cast ty e in
     return (W.ArrayLen e)
 
-  let bytes_get e e' = wasm_array_get ~ty:Type.string_type e e'
+  let bytes_get e e' = wasm_array_get ~signage:U ~ty:Type.string_type e e'
 
   let bytes_set e e' e'' = wasm_array_set ~ty:Type.string_type e e' e''
 
