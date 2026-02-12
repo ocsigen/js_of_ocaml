@@ -47,7 +47,7 @@
    ;; Standard OCaml dynlink primitives (stubs)
 
    (func (export "caml_dynlink_open_lib")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
+      (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_dynlink_close_lib")

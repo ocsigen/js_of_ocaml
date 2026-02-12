@@ -64,3 +64,27 @@
  (alias runtest-wasm)
  (action
   (diff main_from_string.out.expected main_from_string.out)))
+
+(executable
+ (name compile_and_load)
+ (modules compile_and_load)
+ (libraries wasm_of_ocaml-compiler js_of_ocaml-compiler
+            wasm_of_ocaml-compiler.dynlink)
+ (link_flags
+  (:standard -linkall))
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode separate)))
+
+(rule
+ (target compile_and_load.out)
+ (deps plugin.cmo)
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./compile_and_load.bc.wasm.js}))))
+
+(rule
+ (alias runtest-wasm)
+ (action
+  (diff compile_and_load.out.expected compile_and_load.out)))
