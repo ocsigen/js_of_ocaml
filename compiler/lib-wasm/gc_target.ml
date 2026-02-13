@@ -93,6 +93,14 @@ module Type = struct
                 [ { mut = false; typ = Value I32 }; { mut = false; typ = Value I32 } ]
           })
 
+  let int_type =
+    register_type "ocaml_int" (fun () ->
+        return
+          { supertype = None
+          ; final = true
+          ; typ = W.Struct [ { mut = false; typ = Value I64 } ]
+          })
+
   let serialize_type =
     register_type "serialize" (fun () ->
         return
@@ -480,9 +488,84 @@ module Value = struct
 
   let unit = return (W.RefI31 (Const (I32 0l)))
 
-  let val_int = Arith.to_int31
+  let rec effect_free e =
+    match e with
+    | W.Const _ | LocalGet _ | GlobalGet _ | RefFunc _ | RefNull _ -> true
+    | UnOp (_, e')
+    | I32WrapI64 e'
+    | I64ExtendI32 (_, e')
+    | F32DemoteF64 e'
+    | F64PromoteF32 e'
+    | RefI31 e'
+    | I31Get (_, e')
+    | ArrayLen e'
+    | StructGet (_, _, _, e')
+    | RefCast (_, e')
+    | RefTest (_, e')
+    | ExternConvertAny e'
+    | AnyConvertExtern e' -> effect_free e'
+    | BinOp (_, e1, e2)
+    | ArrayNew (_, e1, e2)
+    | ArrayNewData (_, _, e1, e2)
+    | ArrayGet (_, _, e1, e2)
+    | RefEq (e1, e2) -> effect_free e1 && effect_free e2
+    | LocalTee _
+    | BlockExpr _
+    | Call _
+    | Seq _
+    | Pop _
+    | Call_ref _
+    | Br_on_cast _
+    | Br_on_cast_fail _
+    | Br_on_null _
+    | Try _ -> false
+    | IfExpr (_, e1, e2, e3) -> effect_free e1 && effect_free e2 && effect_free e3
+    | ArrayNewFixed (_, l) | StructNew (_, l) -> List.for_all ~f:effect_free l
 
-  let int_val i = Arith.of_int31 (cast I31 i)
+  and if_expr ty cond ift iff =
+    let* cond = cond in
+    let* ift = ift in
+    let* iff = iff in
+    match cond with
+    | W.Const (I32 n) -> return (if Int32.equal n 0l then iff else ift)
+    | _ ->
+        if Poly.equal ift iff && effect_free cond
+        then return ift
+        else return (W.IfExpr (ty, cond, ift, iff))
+
+  let val_int i =
+    let* e = i in
+    match e with
+    | W.Const (I64 n) ->
+        if Int64.compare n (-0x40000000L) >= 0 && Int64.compare n 0x3fffffffL <= 0
+        then return (W.RefI31 (Const (I32 (Int64.to_int32 n))))
+        else
+          let* ty = Type.int_type in
+          return (W.StructNew (ty, [ Const (I64 n) ]))
+    | _ ->
+        let* ty = Type.int_type in
+        if_expr
+          Type.value
+          (Arith64.ult_i32
+             (Arith64.( + ) (return e) (Arith64.const 0x40000000L))
+             (Arith64.const 0x80000000L))
+          (return (W.RefI31 (I32WrapI64 e)))
+          (return (W.StructNew (ty, [ e ])))
+
+  let int_val i =
+    let* e = i in
+    match e with
+    | W.RefI31 (Const (I32 n)) -> return (W.Const (I64 (Int64.of_int32 n)))
+    | W.RefI31 e' -> return (W.I64ExtendI32 (S, e'))
+    | _ ->
+        let* ty = Type.int_type in
+        if_expr
+          I64
+          (return (W.RefTest ({ nullable = false; typ = I31 }, e)))
+          (return
+             (W.I64ExtendI32 (S, I31Get (S, RefCast ({ nullable = false; typ = I31 }, e)))))
+          (return
+             (W.StructGet (None, ty, 0, RefCast ({ nullable = false; typ = Type ty }, e))))
 
   let check_is_not_zero i =
     let* i = i in
@@ -490,13 +573,18 @@ module Value = struct
 
   let check_is_int i =
     let* i = i in
-    return (W.RefTest ({ nullable = false; typ = I31 }, i))
+    let* ty = Type.int_type in
+    return
+      (W.BinOp
+         ( I32 Or
+         , RefTest ({ nullable = false; typ = I31 }, i)
+         , RefTest ({ nullable = false; typ = Type ty }, i) ))
 
-  let not i = Arith.eqz i
+  let not i = Arith64.eqz i
 
-  let lt = Arith.( < )
+  let lt = Arith64.( < )
 
-  let le = Arith.( <= )
+  let le = Arith64.( <= )
 
   let ref_eq i i' =
     let* i = i in
@@ -532,51 +620,6 @@ module Value = struct
     in
     return (W.Call (f, [ x; y ]))
 
-  let rec effect_free e =
-    match e with
-    | W.Const _ | LocalGet _ | GlobalGet _ | RefFunc _ | RefNull _ -> true
-    | UnOp (_, e')
-    | I32WrapI64 e'
-    | I64ExtendI32 (_, e')
-    | F32DemoteF64 e'
-    | F64PromoteF32 e'
-    | RefI31 e'
-    | I31Get (_, e')
-    | ArrayLen e'
-    | StructGet (_, _, _, e')
-    | RefCast (_, e')
-    | RefTest (_, e')
-    | ExternConvertAny e'
-    | AnyConvertExtern e' -> effect_free e'
-    | BinOp (_, e1, e2)
-    | ArrayNew (_, e1, e2)
-    | ArrayNewData (_, _, e1, e2)
-    | ArrayGet (_, _, e1, e2)
-    | RefEq (e1, e2) -> effect_free e1 && effect_free e2
-    | LocalTee _
-    | BlockExpr _
-    | Call _
-    | Seq _
-    | Pop _
-    | Call_ref _
-    | Br_on_cast _
-    | Br_on_cast_fail _
-    | Br_on_null _
-    | Try _ -> false
-    | IfExpr (_, e1, e2, e3) -> effect_free e1 && effect_free e2 && effect_free e3
-    | ArrayNewFixed (_, l) | StructNew (_, l) -> List.for_all ~f:effect_free l
-
-  let if_expr ty cond ift iff =
-    let* cond = cond in
-    let* ift = ift in
-    let* iff = iff in
-    match cond with
-    | W.Const (I32 n) -> return (if Int32.equal n 0l then iff else ift)
-    | _ ->
-        if Poly.equal ift iff && effect_free cond
-        then return ift
-        else return (W.IfExpr (ty, cond, ift, iff))
-
   let map f x =
     let* x = x in
     return (f x)
@@ -589,7 +632,7 @@ module Value = struct
     let* js = Type.js_type in
     let n =
       if_expr
-        I32
+        I64
         (* We mimic an "and" on the two conditions, but in a way that is nicer to the
            binaryen optimizer. *)
         (if_expr
@@ -599,54 +642,61 @@ module Value = struct
            (Arith.const 0l))
         (caml_js_strict_equals (load xv) (load yv)
         >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
-        >>| fun e -> W.I31Get (S, e))
-        (ref_eq (load xv) (load yv))
+        >>| (fun e -> W.I31Get (S, e))
+        >>| fun e -> W.I64ExtendI32 (S, e))
+        (let* e = ref_eq (load xv) (load yv) in
+         return (W.I64ExtendI32 (U, e)))
     in
     seq
       (let* () = store xv x in
        let* () = store yv y in
        return ())
-      (if negate then Arith.eqz n else n)
+      (if negate then Arith64.eqz n else n)
 
   let phys_eq x y =
     let* x = x in
     let* y = y in
-    return (W.RefEq (x, y))
+    return (W.I64ExtendI32 (U, RefEq (x, y)))
 
   let phys_neq x y =
     let* x = x in
     let* y = y in
-    Arith.eqz (return (W.RefEq (x, y)))
+    return (W.I64ExtendI32 (U, UnOp (I32 Eqz, RefEq (x, y))))
 
-  let ult = Arith.ult
+  let ult = Arith64.ult
 
   let is_int i =
     let* i = i in
-    return (W.RefTest ({ nullable = false; typ = I31 }, i))
+    let* ty = Type.int_type in
+    return
+      (W.BinOp
+         ( I32 Or
+         , RefTest ({ nullable = false; typ = I31 }, i)
+         , RefTest ({ nullable = false; typ = Type ty }, i) ))
 
-  let int_add = Arith.( + )
+  let int_add = Arith64.( + )
 
-  let int_sub = Arith.( - )
+  let int_sub = Arith64.( - )
 
-  let int_mul = Arith.( * )
+  let int_mul = Arith64.( * )
 
-  let int_div = Arith.( / )
+  let int_div = Arith64.( / )
 
-  let int_mod = Arith.( mod )
+  let int_mod = Arith64.( mod )
 
-  let int_neg i = Arith.(const 0l - i)
+  let int_neg i = Arith64.(const 0L - i)
 
-  let int_or = Arith.( lor )
+  let int_or = Arith64.( lor )
 
-  let int_and = Arith.( land )
+  let int_and = Arith64.( land )
 
-  let int_xor = Arith.( lxor )
+  let int_xor = Arith64.( lxor )
 
-  let int_lsl = Arith.( lsl )
+  let int_lsl = Arith64.( lsl )
 
-  let int_lsr i i' = Arith.((i land const 0x7fffffffl) lsr i')
+  let int_lsr = Arith64.( lsr )
 
-  let int_asr = Arith.( asr )
+  let int_asr = Arith64.( asr )
 end
 
 module Memory = struct
@@ -709,7 +759,9 @@ module Memory = struct
     let* ty = Type.float_array_type in
     return (W.ArrayNewFixed (ty, l))
 
-  let tag e = wasm_array_get e (Arith.const 0l)
+  let tag e =
+    let* e = wasm_array_get e (Arith.const 0l) in
+    return (W.I64ExtendI32 (U, I31Get (U, RefCast ({ nullable = false; typ = I31 }, e))))
 
   let check_is_float_array e =
     let* float_array = Type.float_array_type in
@@ -1063,7 +1115,7 @@ module Constant = struct
 
   let translate ~unboxed c =
     match c with
-    | Code.Int i -> return (W.Const (I32 (Targetint.to_int32 i)))
+    | Code.Int i -> return (W.Const (I64 (Int64.of_int32 (Targetint.to_int32 i))))
     | Float f when unboxed -> return (W.Const (F64 (Int64.float_of_bits f)))
     | Int64 i when unboxed -> return (W.Const (I64 i))
     | (Int32 i | NativeInt i) when unboxed -> return (W.Const (I32 i))
@@ -1419,14 +1471,44 @@ module Bigarray = struct
               let* x = x in
               return (W.F64PromoteF32 x) )
       | Float64 -> "dv_get_f64", F64, 3, Fun.id
-      | Int8_signed -> "dv_get_i8", I32, 0, Fun.id
-      | Int8_unsigned -> "dv_get_ui8", I32, 0, Fun.id
-      | Int16_signed -> "dv_get_i16", I32, 1, Fun.id
-      | Int16_unsigned -> "dv_get_ui16", I32, 1, Fun.id
+      | Int8_signed ->
+          ( "dv_get_i8"
+          , I32
+          , 0
+          , fun x ->
+              let* x = x in
+              return (W.I64ExtendI32 (S, x)) )
+      | Int8_unsigned ->
+          ( "dv_get_ui8"
+          , I32
+          , 0
+          , fun x ->
+              let* x = x in
+              return (W.I64ExtendI32 (U, x)) )
+      | Int16_signed ->
+          ( "dv_get_i16"
+          , I32
+          , 1
+          , fun x ->
+              let* x = x in
+              return (W.I64ExtendI32 (S, x)) )
+      | Int16_unsigned ->
+          ( "dv_get_ui16"
+          , I32
+          , 1
+          , fun x ->
+              let* x = x in
+              return (W.I64ExtendI32 (U, x)) )
       | Int32 -> "dv_get_i32", I32, 2, Fun.id
       | Nativeint -> "dv_get_i32", I32, 2, Fun.id
       | Int64 -> "dv_get_i64", I64, 3, Fun.id
-      | Int -> "dv_get_i32", I32, 2, Fun.id
+      | Int ->
+          ( "dv_get_i32"
+          , I32
+          , 2
+          , fun x ->
+              let* x = x in
+              return (W.I64ExtendI32 (S, x)) )
       | Float16 ->
           ( "dv_get_i16"
           , I32
@@ -1504,12 +1586,30 @@ module Bigarray = struct
               let* x = x in
               return (W.F32DemoteF64 x) )
       | Float64 -> "dv_set_f64", F64, 3, Fun.id
-      | Int8_signed | Int8_unsigned -> "dv_set_i8", I32, 0, Fun.id
-      | Int16_signed | Int16_unsigned -> "dv_set_i16", I32, 1, Fun.id
+      | Int8_signed | Int8_unsigned ->
+          ( "dv_set_i8"
+          , I32
+          , 0
+          , fun x ->
+              let* x = x in
+              return (W.I32WrapI64 x) )
+      | Int16_signed | Int16_unsigned ->
+          ( "dv_set_i16"
+          , I32
+          , 1
+          , fun x ->
+              let* x = x in
+              return (W.I32WrapI64 x) )
       | Int32 -> "dv_set_i32", I32, 2, Fun.id
       | Nativeint -> "dv_set_i32", I32, 2, Fun.id
       | Int64 -> "dv_set_i64", I64, 3, Fun.id
-      | Int -> "dv_set_i32", I32, 2, Fun.id
+      | Int ->
+          ( "dv_set_i32"
+          , I32
+          , 2
+          , fun x ->
+              let* x = x in
+              return (W.I32WrapI64 x) )
       | Float16 ->
           ( "dv_set_i16"
           , I32
@@ -1584,6 +1684,7 @@ module Bigarray = struct
     let l =
       List.mapi
         ~f:(fun pos i ->
+          let i = Arith64.to_i32 i in
           let i =
             match layout with
             | C -> i

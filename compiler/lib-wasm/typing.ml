@@ -41,15 +41,13 @@ let can_unbox_return_value fun_info f =
 
 module Integer = struct
   type kind =
-    | Ref
-    | Normalized
-    | Unnormalized
+    | Small
+    | Large
 
   let join r r' =
     match r, r' with
-    | Unnormalized, _ | _, Unnormalized -> Unnormalized
-    | Ref, Ref -> Ref
-    | _ -> Normalized
+    | Small, Small -> Small
+    | _ -> Large
 end
 
 type boxed_number =
@@ -143,9 +141,10 @@ type typ =
   | Int of Integer.kind
   | Number of boxed_number * boxed_status
   | Tuple of typ array
-      (** This value is a block or an integer; if it's an integer, an
-          overapproximation of the possible values of each of its
-          fields is given by the array of types *)
+      (** This value is a block or an integer; if it's an
+          integer, an overapproximation of the possible values
+          of each of its fields is given by the array of types
+      *)
   | Bigarray of Bigarray.t
   | Bot
 
@@ -214,7 +213,7 @@ module Domain = struct
 
   let box t =
     match t with
-    | Int _ -> Int Ref
+    | Int _ -> Top
     | Number (n, _) -> Number (n, Boxed)
     | _ -> t
 
@@ -227,9 +226,8 @@ module Domain = struct
           f
           "int{%s}"
           (match k with
-          | Ref -> "ref"
-          | Normalized -> "normalized"
-          | Unnormalized -> "unnormalized")
+          | Small -> "small"
+          | Large -> "large")
     | Number (n, b) ->
         Format.fprintf
           f
@@ -262,10 +260,7 @@ let update_deps st { blocks; _ } =
               ( x
               , Prim
                   ( Extern
-                      ( "%int_and"
-                      | "%int_or"
-                      | "%int_xor"
-                      | "caml_ba_get_1"
+                      ( "caml_ba_get_1"
                       | "caml_ba_get_2"
                       | "caml_ba_get_3"
                       | "caml_ba_get_generic" )
@@ -302,7 +297,7 @@ type st =
 
 let rec constant_type (c : constant) =
   match c with
-  | Int _ -> Int Normalized
+  | Int _ -> Int Small
   | Int32 _ -> Number (Int32, Unboxed)
   | Int64 _ -> Number (Int64, Unboxed)
   | NativeInt _ -> Number (Nativeint, Unboxed)
@@ -318,8 +313,8 @@ let arg_type ~approx arg =
 let bigarray_element_type (kind : Bigarray.kind) =
   match kind with
   | Float16 | Float32 | Float64 -> Number (Float, Unboxed)
-  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Normalized
-  | Int -> Int Unnormalized
+  | Int8_signed | Int8_unsigned | Int16_signed | Int16_unsigned -> Int Small
+  | Int -> Int Large
   | Int32 -> Number (Int32, Unboxed)
   | Int64 -> Number (Int64, Unboxed)
   | Nativeint -> Number (Nativeint, Unboxed)
@@ -335,16 +330,7 @@ let primitive_types = String.Hashtbl.create 16
 
 let prim_type ~st ~approx prim args =
   match prim with
-  | "%int_and" -> (
-      match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); _ ] | [ _; (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
-  | "%int_or" | "%int_xor" -> (
-      match List.map ~f:(fun x -> arg_type ~approx x) args with
-      | [ (Bot | Int (Ref | Normalized)); (Bot | Int (Ref | Normalized)) ] ->
-          Int Normalized
-      | _ -> Int Unnormalized)
+  | "%int_and" | "%int_or" | "%int_xor" -> Int Large
   | "caml_ba_create" -> (
       match args with
       | [ Pc (Int kind); Pc (Int layout); _ ] ->
@@ -377,7 +363,7 @@ let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
   | Phi { known; others; unit } ->
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
-      let res = if unit then Domain.join (Int Unnormalized) res else res in
+      let res = if unit then Domain.join (Int Large) res else res in
       if Var.ISet.mem st.boxed_function_parameters x then Domain.box res else res
   | Expr e -> (
       match e with
@@ -428,7 +414,7 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
+      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Small
       | Prim (Extern prim, args) -> prim_type ~st ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -637,7 +623,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let boxed_function_parameters = mark_boxed_function_parameters ~fun_info p in
   let st = { global_flow_state; global_flow_info; boxed_function_parameters; fun_info } in
   let types = solver st in
-  Var.Tbl.set types deadcode_sentinel (Int Normalized);
+  Var.Tbl.set types deadcode_sentinel (Int Small);
   box_numbers p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()

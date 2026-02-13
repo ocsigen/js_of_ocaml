@@ -105,6 +105,66 @@ module Arith : sig
   val eqz : expression -> expression
 end
 
+module Arith64 : sig
+  val const : int64 -> expression
+
+  val ( + ) : expression -> expression -> expression
+
+  val ( - ) : expression -> expression -> expression
+
+  val ( * ) : expression -> expression -> expression
+
+  val ( / ) : expression -> expression -> expression
+
+  val ( mod ) : expression -> expression -> expression
+
+  val ( lsl ) : expression -> expression -> expression
+
+  val ( lsr ) : expression -> expression -> expression
+
+  val ( asr ) : expression -> expression -> expression
+
+  val ( land ) : expression -> expression -> expression
+
+  val ( lor ) : expression -> expression -> expression
+
+  val ( lxor ) : expression -> expression -> expression
+
+  val ( < ) : expression -> expression -> expression
+
+  val ( <= ) : expression -> expression -> expression
+
+  val ( = ) : expression -> expression -> expression
+
+  val ( <> ) : expression -> expression -> expression
+
+  val ult : expression -> expression -> expression
+
+  val uge : expression -> expression -> expression
+
+  val eqz : expression -> expression
+
+  val lt_i32 : expression -> expression -> expression
+
+  val le_i32 : expression -> expression -> expression
+
+  val eq_i32 : expression -> expression -> expression
+
+  val ne_i32 : expression -> expression -> expression
+
+  val eqz_i32 : expression -> expression
+
+  val ult_i32 : expression -> expression -> expression
+
+  val uge_i32 : expression -> expression -> expression
+
+  val to_i32 : expression -> expression
+
+  val of_i32_s : expression -> expression
+
+  val of_i32_u : expression -> expression
+end
+
 val cast : ?nullable:bool -> Wasm_ast.heap_type -> expression -> expression
 
 val load : Wasm_ast.var -> expression

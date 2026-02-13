@@ -79,7 +79,7 @@ __run_effects:
 fastrun:
 	make _noprecomp
 	echo "======================== WARNING: fast benchs!"
-	$(RUN) -ffast -all
+	$(RUN) -fast #-all
 	touch __run
 
 _noprecomp:

@@ -417,6 +417,153 @@ module Arith = struct
     | _ -> return (W.I31Get (S, n))
 end
 
+module Arith64 = struct
+  let binary op e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.BinOp (I64 op, e, e'))
+
+  let const n = return (W.Const (I64 n))
+
+  let ( + ) e e' =
+    let* e = e in
+    let* e' = e' in
+    return
+      (match e, e' with
+      | W.BinOp (I64 Add, e1, W.Const (I64 n)), W.Const (I64 n') ->
+          let n'' = Int64.add n n' in
+          if Int64.equal n'' 0L
+          then e1
+          else W.BinOp (I64 Add, e1, W.Const (I64 (Int64.add n n')))
+      | W.Const (I64 n), W.Const (I64 n') -> W.Const (I64 (Int64.add n n'))
+      | W.Const (I64 0L), _ -> e'
+      | _, W.Const (I64 0L) -> e
+      | W.Const _, _ -> W.BinOp (I64 Add, e', e)
+      | _ -> W.BinOp (I64 Add, e, e'))
+
+  let ( - ) e e' =
+    let* e = e in
+    let* e' = e' in
+    return
+      (match e, e' with
+      | W.BinOp (I64 Add, e1, W.Const (I64 n)), W.Const (I64 n') ->
+          let n'' = Int64.sub n n' in
+          if Int64.equal n'' 0L then e1 else W.BinOp (I64 Add, e1, W.Const (I64 n''))
+      | W.Const (I64 n), W.Const (I64 n') -> W.Const (I64 (Int64.sub n n'))
+      | _, W.Const (I64 n) ->
+          if Int64.equal n 0L then e else W.BinOp (I64 Add, e, W.Const (I64 (Int64.neg n)))
+      | _ -> W.BinOp (I64 Sub, e, e'))
+
+  let ( * ) = binary Mul
+
+  let ( / ) = binary (Div S)
+
+  let ( mod ) = binary (Rem S)
+
+  let ( lsl ) e e' =
+    let* e = e in
+    let* e' = e' in
+    return
+      (match e, e' with
+      | W.Const (I64 n), W.Const (I64 n') when Int64.(n' < 63L) ->
+          W.Const (I64 (Int64.shift_left n (Int64.to_int n')))
+      | _, W.Const (I64 0L) -> e
+      | _ -> W.BinOp (I64 Shl, e, e'))
+
+  let ( lsr ) = binary (Shr U)
+
+  let ( asr ) = binary (Shr S)
+
+  let ( land ) = binary And
+
+  let ( lor ) = binary Or
+
+  let ( lxor ) = binary Xor
+
+  (* Comparisons returning I64 (for OCaml int results) *)
+  let ( < ) e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.I64ExtendI32 (U, BinOp (I64 (Lt S), e, e')))
+
+  let ( <= ) e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.I64ExtendI32 (U, BinOp (I64 (Le S), e, e')))
+
+  let ( = ) e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.I64ExtendI32 (U, BinOp (I64 Eq, e, e')))
+
+  let ( <> ) e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.I64ExtendI32 (U, BinOp (I64 Ne, e, e')))
+
+  let ult e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.I64ExtendI32 (U, BinOp (I64 (Lt U), e, e')))
+
+  let uge e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.I64ExtendI32 (U, BinOp (I64 (Ge U), e, e')))
+
+  let eqz e =
+    let* e = e in
+    return (W.I64ExtendI32 (U, UnOp (I64 Eqz, e)))
+
+  (* Comparisons returning I32 (for Wasm control flow: Br_if, If) *)
+  let lt_i32 e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.BinOp (I64 (Lt S), e, e'))
+
+  let le_i32 e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.BinOp (I64 (Le S), e, e'))
+
+  let eq_i32 e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.BinOp (I64 Eq, e, e'))
+
+  let ne_i32 e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.BinOp (I64 Ne, e, e'))
+
+  let eqz_i32 e =
+    let* e = e in
+    return (W.UnOp (I64 Eqz, e))
+
+  let ult_i32 e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.BinOp (I64 (Lt U), e, e'))
+
+  let uge_i32 e e' =
+    let* e = e in
+    let* e' = e' in
+    return (W.BinOp (I64 (Ge U), e, e'))
+
+  (* Width conversions *)
+  let to_i32 e =
+    let* e = e in
+    return (W.I32WrapI64 e)
+
+  let of_i32_s e =
+    let* e = e in
+    return (W.I64ExtendI32 (S, e))
+
+  let of_i32_u e =
+    let* e = e in
+    return (W.I64ExtendI32 (U, e))
+end
+
 let is_small_constant e =
   match e with
   | W.Const _ | W.RefI31 (W.Const _) | W.RefFunc _ -> return true
