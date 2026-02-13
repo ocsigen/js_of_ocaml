@@ -8,3 +8,7 @@ CAMLprim value caml_wasm_load_module(value bytes) {
 CAMLprim value caml_wasm_load_wasmo(value bytes) {
   caml_failwith("caml_wasm_load_wasmo: only available in wasm_of_ocaml");
 }
+
+CAMLprim value caml_wasm_register_fragments(value unit_name, value source) {
+  caml_failwith("caml_wasm_register_fragments: only available in wasm_of_ocaml");
+}

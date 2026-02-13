@@ -32,6 +32,8 @@
       (func $get_named_global (param anyref) (result anyref)))
    (import "bindings" "get_ocaml_unit_list"
       (func $get_ocaml_unit_list (result anyref)))
+   (import "bindings" "get_prim_list"
+      (func $get_prim_list (result anyref)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -166,4 +168,10 @@
       (param (ref eq)) (result (ref eq))
       (call $caml_string_of_jsstring
          (call $wrap (call $get_ocaml_unit_list))))
+
+   ;; Return a '\x00'-separated string of all available primitive names.
+   (func (export "wasm_get_prim_list")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_string_of_jsstring
+         (call $wrap (call $get_prim_list))))
 )

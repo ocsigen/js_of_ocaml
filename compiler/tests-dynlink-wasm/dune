@@ -16,7 +16,18 @@
 (rule
  (target plugin2.cma)
  (action
-  (run %{bin:ocamlc} -a %{dep:./plugin2a.ml} %{dep:./plugin2b.ml} -o plugin2.cma)))
+  (run
+   %{bin:ocamlc}
+   -a
+   %{dep:./plugin2a.ml}
+   %{dep:./plugin2b.ml}
+   -o
+   plugin2.cma)))
+
+(rule
+ (target plugin_js.cmo)
+ (action
+  (run %{bin:ocamlc} -c %{dep:./plugin_js.ml})))
 
 (rule
  (target plugin.wasmo)
@@ -73,8 +84,10 @@
 (executable
  (name compile_and_load)
  (modules compile_and_load)
- (libraries wasm_of_ocaml-compiler js_of_ocaml-compiler
-            wasm_of_ocaml-compiler.dynlink)
+ (libraries
+  wasm_of_ocaml-compiler
+  js_of_ocaml-compiler
+  wasm_of_ocaml-compiler.dynlink)
  (link_flags
   (:standard -linkall))
  (modes wasm)
@@ -120,21 +133,33 @@
 (executable
  (name dynlink_loadfile_wp)
  (modules dynlink_loadfile_wp)
- (libraries dynlink wasm_of_ocaml-compiler.dynlink-compiler)
+ (libraries
+  dynlink
+  wasm_of_ocaml-compiler.dynlink-compiler
+  js_of_ocaml-compiler.runtime)
  (link_flags
   (:standard -linkall))
  (modes byte))
 
 (rule
- (targets dynlink_loadfile_wp.js (dir dynlink_loadfile_wp.assets))
+ (targets
+  dynlink_loadfile_wp.js
+  (dir dynlink_loadfile_wp.assets))
  (action
-  (run %{bin:wasm_of_ocaml} compile --dynlink
-       %{dep:dynlink_loadfile_wp.bc} -o dynlink_loadfile_wp.js)))
+  (run
+   %{bin:wasm_of_ocaml}
+   compile
+   --dynlink
+   %{dep:dynlink_loadfile_wp.bc}
+   -o
+   dynlink_loadfile_wp.js)))
 
 (rule
  (target dynlink_loadfile_wp.out)
  (deps
-  plugin.cmo plugin2.cma
+  plugin.cmo
+  plugin2.cma
+  plugin_js.cmo
   (glob_files dynlink_loadfile_wp.assets/*))
  (action
   (with-outputs-to
@@ -177,10 +202,17 @@
  (modes byte))
 
 (rule
- (targets test_real_toplevel.js (dir test_real_toplevel.assets))
+ (targets
+  test_real_toplevel.js
+  (dir test_real_toplevel.assets))
  (action
-  (run %{bin:wasm_of_ocaml} compile --toplevel
-       %{dep:test_real_toplevel.bc} -o test_real_toplevel.js)))
+  (run
+   %{bin:wasm_of_ocaml}
+   compile
+   --toplevel
+   %{dep:test_real_toplevel.bc}
+   -o
+   test_real_toplevel.js)))
 
 (rule
  (target test_real_toplevel.out)

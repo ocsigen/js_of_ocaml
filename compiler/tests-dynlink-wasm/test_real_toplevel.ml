@@ -6,6 +6,9 @@ let () = print_endline "hello";;
 1+;;
 Missing_module.f;;
 let y = float 1 /. float 3;;
+external pure_js_expr : string -> 'a = "caml_pure_js_expr";;
+external js_to_string : 'a -> string = "caml_js_to_string";;
+let () = print_endline (js_to_string (pure_js_expr "'hello from JS'"));;
 |}
   in
   Topdirs.dir_directory "/static/cmis";

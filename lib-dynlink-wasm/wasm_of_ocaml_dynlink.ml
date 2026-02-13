@@ -20,6 +20,9 @@ external caml_wasm_load_module : bytes -> Obj.t = "caml_wasm_load_module"
 
 external caml_wasm_load_wasmo : bytes -> unit = "caml_wasm_load_wasmo"
 
+external caml_wasm_register_fragments : string -> string -> unit
+  = "caml_wasm_register_fragments"
+
 let read_file filename =
   let ic = open_in_bin filename in
   let n = in_channel_length ic in
@@ -31,5 +34,7 @@ let read_file filename =
 let loadfile filename =
   let b = read_file filename in
   caml_wasm_load_wasmo b
+
+let register_fragments unit_name source = caml_wasm_register_fragments unit_name source
 
 let load_module_bytes wasm_bytes : Obj.t = caml_wasm_load_module wasm_bytes

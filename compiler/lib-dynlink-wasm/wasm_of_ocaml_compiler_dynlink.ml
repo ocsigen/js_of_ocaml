@@ -28,6 +28,8 @@ external get_named_global : string -> Obj.t = "wasm_get_named_global"
 
 external get_ocaml_unit_list : unit -> string = "wasm_get_ocaml_unit_list"
 
+external get_prim_list : unit -> string = "wasm_get_prim_list"
+
 external caml_register_global : int -> Obj.t -> string -> unit = "caml_register_global"
 
 external caml_realloc_global : int -> unit = "caml_realloc_global"
@@ -64,27 +66,49 @@ let bigarray_to_string ba =
   done;
   Bytes.unsafe_to_string b
 
+let fragments_to_js_source fragments =
+  let open Javascript in
+  let props =
+    List.map
+      (fun (nm, e) ->
+        Property (PNS (Js_of_ocaml_compiler.Stdlib.Utf8_string.of_string_exn nm), e))
+      fragments
+  in
+  let expr = EObj props in
+  let prog = [ Expression_statement expr, N ] in
+  Wasm_of_ocaml_compiler.Link.output_js prog
+
+let register_fragments unit_name fragments =
+  if fragments <> []
+  then
+    let source = fragments_to_js_source fragments in
+    Wasm_of_ocaml_dynlink.register_fragments unit_name source
+
 let loadfile filename =
   let ic = open_in_bin filename in
-  Fun.protect ~finally:(fun () -> close_in ic) (fun () ->
+  Fun.protect
+    ~finally:(fun () -> close_in ic)
+    (fun () ->
       match Parse_bytecode.from_channel ic with
       | `Cmo cmo ->
           let unit_name = Ocaml_compiler.Cmo_format.name cmo in
           let one = Parse_bytecode.from_cmo ~debug:false cmo ic in
-          let wasm_binary, _fragments =
+          let wasm_binary, fragments =
             Wasm_of_ocaml_compiler.Generate.compile ~unit_name:(Some unit_name) one.code
           in
+          register_fragments unit_name fragments;
           ignore (Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary))
       | `Cma cma ->
           List.iter
             (fun cmo ->
               let unit_name = Ocaml_compiler.Cmo_format.name cmo in
               let one = Parse_bytecode.from_cmo ~debug:false cmo ic in
-              let wasm_binary, _fragments =
+              let wasm_binary, fragments =
                 Wasm_of_ocaml_compiler.Generate.compile
                   ~unit_name:(Some unit_name)
                   one.code
               in
+              register_fragments unit_name fragments;
               ignore
                 (Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)))
             cma.Cmo_format.lib_units
@@ -101,9 +125,7 @@ let () =
     |> List.filter (fun s -> s <> "")
   in
   let predef_exns = Array.to_list Runtimedef.builtin_exceptions in
-  let unit_names =
-    List.filter (fun n -> not (List.mem n predef_exns)) all_names
-  in
+  let unit_names = List.filter (fun n -> not (List.mem n predef_exns)) all_names in
   (* Build GlobalMap — predefs first (indices 0..N-1), then units (N..) *)
   let symb_ref = ref Ocaml_compiler.Symtable.GlobalMap.empty in
   List.iter
@@ -129,20 +151,23 @@ let () =
     unit_names;
   (* Build and register bytecode sections *)
   let symb : Symtable.global_map = Obj.magic !symb_ref in
-  let crcs = List.map (fun n -> (n, None)) (predef_exns @ unit_names) in
+  let crcs = List.map (fun n -> n, None) (predef_exns @ unit_names) in
   let prim =
-    let runtime_prims = Ocaml_compiler.Symtable.all_primitives () in
+    let wasm_prims =
+      get_prim_list () |> String.split_on_char '\x00' |> List.filter (fun s -> s <> "")
+    in
     let compiler_prims = Primitive.get_external () in
     let known = Hashtbl.create 512 in
-    List.iter (fun p -> Hashtbl.replace known p ()) runtime_prims;
+    List.iter (fun p -> Hashtbl.replace known p ()) wasm_prims;
     let extra =
       Js_of_ocaml_compiler.Stdlib.StringSet.fold
         (fun p acc -> if Hashtbl.mem known p then acc else p :: acc)
         compiler_prims
         []
     in
-    runtime_prims @ extra
+    wasm_prims @ extra
   in
+  let prim_table = Array.of_list prim in
   let sections = { symb; crcs; prim; dlpt = [] } in
   dynlink_init_sections (Obj.repr sections);
   (* Also initialize compiler-libs.bytecomp's Symtable so that
@@ -153,8 +178,13 @@ let () =
       unit -> Obj.t =
     let s = bigarray_to_string code in
     let s = normalize_bytecode s in
-    let prims = Array.of_list (Ocaml_compiler.Symtable.all_primitives ()) in
-    let wasm_binary, _fragments =
+    (* Use our stored prim table rather than compiler-libs/Symtable.all_primitives().
+       The dynlink library uses its own Dynlink_symtable module (separate from
+       compiler-libs/Symtable), so compiler-libs/Symtable.c_prim_table is never
+       populated. We must use the same prim list that we put in bytecode_sections,
+       since Dynlink_symtable.init_toplevel() reads it from there. *)
+    let prims = prim_table in
+    let wasm_binary, fragments =
       Wasm_of_ocaml_compiler.Generate.from_string
         ~prims
         ~debug
@@ -162,6 +192,7 @@ let () =
         s
     in
     fun () ->
+      register_fragments "_dynlink" fragments;
       Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)
   in
   toplevel_init_compile toplevel_compile

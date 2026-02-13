@@ -632,6 +632,10 @@
     map_delete: (m, x) => m.delete(x),
     hash_string,
     log: (x) => console.log(x),
+    register_fragments: (unitName, fragmentsSource) => {
+      const frags = (1, eval)(fragmentsSource);
+      imports[unitName + ".fragments"] = frags;
+    },
     load_module: (wasmBytes) => {
       const module = new WebAssembly.Module(wasmBytes, options);
       const inst = new WebAssembly.Instance(module, imports, options);
@@ -704,6 +708,11 @@
             k[0] >= "A" &&
             k[0] <= "Z",
         )
+        .join("\x00");
+    },
+    get_prim_list() {
+      return Object.keys(imports.env)
+        .filter((k) => typeof imports.env[k] === "function")
         .join("\x00");
     },
   };

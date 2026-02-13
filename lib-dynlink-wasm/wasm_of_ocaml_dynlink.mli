@@ -24,6 +24,12 @@ val loadfile : string -> unit
     Raises [Failure] if the file cannot be read or the module cannot be
     instantiated. *)
 
+val register_fragments : string -> string -> unit
+(** [register_fragments unit_name source] registers JavaScript fragments
+    for a dynamically loaded unit. [unit_name] is the compilation unit name
+    and [source] is a JavaScript object literal source string. Must be called
+    before [load_module_bytes] for the module that imports these fragments. *)
+
 val load_module_bytes : bytes -> Obj.t
 (** [load_module_bytes wasm_bytes] loads a raw Wasm binary module from the
     given bytes. The module is instantiated and its exports are merged into

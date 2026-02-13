@@ -5,3 +5,6 @@ Error: Syntax error
 Line 5, characters 0-14:
 Error: Unbound module Missing_module
 val y : float = 0.333333333333333315
+external pure_js_expr : string -> 'a = "caml_pure_js_expr"
+external js_to_string : 'a -> string = "caml_js_to_string"
+hello from JS

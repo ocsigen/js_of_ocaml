@@ -16,6 +16,9 @@ CAMLprim value wasm_get_named_global(value name) {
 CAMLprim value wasm_get_ocaml_unit_list(value unit) {
   caml_failwith("wasm_get_ocaml_unit_list: not available in bytecode mode");
 }
+CAMLprim value wasm_get_prim_list(value unit) {
+  caml_failwith("wasm_get_prim_list: not available in bytecode mode");
+}
 void caml_register_global(value idx, value data, value name) {
   /* no-op in bytecode mode; only meaningful in Wasm */
 }
