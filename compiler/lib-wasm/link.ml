@@ -553,7 +553,9 @@ let build_runtime_arguments
       , obj
           (List.map
              ~f:(fun (name, content) ->
-               name, Javascript.EStr (Utf8_string.of_string_exn (Base64.encode_string content)))
+               ( name
+               , Javascript.EStr
+                   (Utf8_string.of_string_exn (Base64.encode_string content)) ))
              embedded_files) )
       :: props
   in
@@ -939,7 +941,14 @@ let make_library ~output_file ~enable_source_maps ~files =
   if enable_source_maps then add_source_map files z output_sourcemap;
   Zip.close_out z
 
-let link ~output_file ~linkall ~mklib ~dynlink:_ ~enable_source_maps ~embedded_files ~files =
+let link
+    ~output_file
+    ~linkall
+    ~mklib
+    ~dynlink:_
+    ~enable_source_maps
+    ~embedded_files
+    ~files =
   try
     if mklib
     then make_library ~output_file ~enable_source_maps ~files

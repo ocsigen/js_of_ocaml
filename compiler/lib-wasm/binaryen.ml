@@ -117,21 +117,23 @@ let dead_code_elimination
       opt_input_sourcemap;
     Linker.list_all ())
   else
-  Fs.with_intermediate_file (Filename.temp_file "deps" ".json")
-  @@ fun deps_file ->
-  Fs.with_intermediate_file (Filename.temp_file "usage" ".txt")
-  @@ fun usage_file ->
-  let primitives = Linker.list_all () in
-  Fs.write_file ~name:deps_file ~contents:(generate_dependencies ~dependencies primitives);
-  command
-    ("wasm-metadce"
-    :: (common_options ()
-       @ [ "--graph-file"; Filename.quote deps_file; Filename.quote input_file ]
-       @ opt_flag "--input-source-map" opt_input_sourcemap
-       @ [ "-o"; Filename.quote output_file ]
-       @ opt_flag "--output-source-map" opt_output_sourcemap
-       @ [ ">"; Filename.quote usage_file ]));
-  filter_unused_primitives primitives usage_file
+    Fs.with_intermediate_file (Filename.temp_file "deps" ".json")
+    @@ fun deps_file ->
+    Fs.with_intermediate_file (Filename.temp_file "usage" ".txt")
+    @@ fun usage_file ->
+    let primitives = Linker.list_all () in
+    Fs.write_file
+      ~name:deps_file
+      ~contents:(generate_dependencies ~dependencies primitives);
+    command
+      ("wasm-metadce"
+      :: (common_options ()
+         @ [ "--graph-file"; Filename.quote deps_file; Filename.quote input_file ]
+         @ opt_flag "--input-source-map" opt_input_sourcemap
+         @ [ "-o"; Filename.quote output_file ]
+         @ opt_flag "--output-source-map" opt_output_sourcemap
+         @ [ ">"; Filename.quote usage_file ]));
+    filter_unused_primitives primitives usage_file
 
 let optimization_options : Profile.t -> _ = function
   | O1 -> [ "-O2"; "--skip-pass=inlining-optimizing"; "--traps-never-happen" ]

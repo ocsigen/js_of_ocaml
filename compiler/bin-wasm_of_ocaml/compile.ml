@@ -661,7 +661,9 @@ let run
          @@ fun tmp_output_file ->
          let z = Zip.open_out tmp_output_file in
          let compile_cmo' z cmo =
-           compile_cmo cmo (fun unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes ->
+           compile_cmo
+             cmo
+             (fun unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes ->
                Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
                Zip.add_entry z ~name:"link_order" ~contents:unit_name;
                Zip.add_entry z ~name:"shapes.sexp" ~contents:(string_of_shapes shapes);

@@ -794,8 +794,7 @@ let register_global ?(force = false) g i rem =
           in
           Let
             ( Var.fresh ()
-            , Prim
-                (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ])
+            , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ])
             )
           :: rem
       | None ->
