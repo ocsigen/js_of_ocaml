@@ -715,6 +715,9 @@
         .filter((k) => typeof imports.env[k] === "function")
         .join("\x00");
     },
+    get_crcs() {
+      return args?.crcs ?? "";
+    },
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),

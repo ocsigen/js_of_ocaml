@@ -51,6 +51,8 @@ external get_ocaml_unit_list : unit -> string = "wasm_get_ocaml_unit_list"
 
 external get_prim_list : unit -> string = "wasm_get_prim_list"
 
+external get_crcs : unit -> string = "wasm_get_crcs"
+
 external caml_register_global : int -> Obj.t -> string -> unit = "caml_register_global"
 
 external caml_realloc_global : int -> unit = "caml_realloc_global"
@@ -105,6 +107,48 @@ let register_fragments unit_name fragments =
     let source = fragments_to_js_source fragments in
     caml_wasm_register_fragments unit_name source
 
+let hex_to_digest s =
+  (* Convert a 32-char hex string to a 16-byte binary digest *)
+  let len = String.length s in
+  if len <> 32
+  then None
+  else
+    let b = Bytes.create 16 in
+    let hex_val c =
+      match c with
+      | '0' .. '9' -> Char.code c - Char.code '0'
+      | 'a' .. 'f' -> Char.code c - Char.code 'a' + 10
+      | 'A' .. 'F' -> Char.code c - Char.code 'A' + 10
+      | _ -> -1
+    in
+    try
+      for i = 0 to 15 do
+        let hi = hex_val s.[i * 2] in
+        let lo = hex_val s.[(i * 2) + 1] in
+        if hi < 0 || lo < 0 then raise Exit;
+        Bytes.set b i (Char.chr ((hi lsl 4) lor lo))
+      done;
+      Some (Bytes.unsafe_to_string b)
+    with Exit -> None
+
+let parse_crcs s =
+  if s = ""
+  then []
+  else
+    s
+    |> String.split_on_char '\x00'
+    |> List.filter_map (fun entry ->
+        if entry = ""
+        then None
+        else
+          match String.index_opt entry '\x01' with
+          | None -> None
+          | Some idx ->
+              let name = String.sub entry 0 idx in
+              let hex = String.sub entry (idx + 1) (String.length entry - idx - 1) in
+              let digest = if hex = "" then None else hex_to_digest hex in
+              Some (name, digest))
+
 let () =
   Config.set_target `Wasm;
   Config.set_effects_backend (Jsoo_runtime.Sys.Config.effects ());
@@ -142,7 +186,10 @@ let () =
     unit_names;
   (* Build and register bytecode sections *)
   let symb : Symtable.global_map = Obj.magic !symb_ref in
-  let crcs = List.map (fun n -> n, None) (predef_exns @ unit_names) in
+  let crcs =
+    let parsed = parse_crcs (get_crcs ()) in
+    if parsed = [] then List.map (fun n -> n, None) (predef_exns @ unit_names) else parsed
+  in
   let prim =
     let wasm_prims =
       get_prim_list () |> String.split_on_char '\x00' |> List.filter (fun s -> s <> "")

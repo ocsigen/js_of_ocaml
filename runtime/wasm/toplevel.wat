@@ -34,6 +34,8 @@
       (func $get_ocaml_unit_list (result anyref)))
    (import "bindings" "get_prim_list"
       (func $get_prim_list (result anyref)))
+   (import "bindings" "get_crcs"
+      (func $get_crcs (result anyref)))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -174,4 +176,10 @@
       (param (ref eq)) (result (ref eq))
       (call $caml_string_of_jsstring
          (call $wrap (call $get_prim_list))))
+
+   ;; Return the CRC string passed via runtime arguments.
+   (func (export "wasm_get_crcs")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_string_of_jsstring
+         (call $wrap (call $get_crcs))))
 )

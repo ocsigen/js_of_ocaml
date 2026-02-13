@@ -39,6 +39,7 @@ type unit_data =
   { unit_name : string
   ; unit_info : Unit_info.t
   ; fragments : (string * Javascript.expression) list
+  ; crcs : (string * string option) list
   }
 
 val add_info :
@@ -56,6 +57,7 @@ val build_runtime_arguments :
   -> wasm_dir:string
   -> generated_js:(string option * (string * Javascript.expression) list) list
   -> embedded_files:(string * string) list
+  -> crcs:(string * string option) list
   -> unit
   -> Javascript.expression
 

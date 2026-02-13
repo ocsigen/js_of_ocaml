@@ -2693,6 +2693,10 @@ let read_primitives toc ic =
   assert (Char.equal (String.get prim (String.length prim - 1)) '\000');
   String.split_on_char ~sep:'\000' (String.sub prim ~pos:0 ~len:(String.length prim - 1))
 
+let read_crcs ic =
+  let toc = Toc.read ic in
+  Toc.read_crcs toc ic
+
 type bytesections =
   { symb : Ocaml_compiler.Symtable.GlobalMap.t
   ; crcs : (string * Digest.t option) list

@@ -79,6 +79,8 @@ val from_string :
 
 val predefined_exceptions : unit -> Code.program * Unit_info.t
 
+val read_crcs : in_channel -> (string * Digest.t option) list
+
 val link_info :
      symbols:Ocaml_compiler.Symtable.GlobalMap.t
   -> primitives:StringSet.t

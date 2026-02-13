@@ -315,20 +315,33 @@ type unit_data =
   { unit_name : string
   ; unit_info : Unit_info.t
   ; fragments : (string * Javascript.expression) list
+  ; crcs : (string * string option) list
   }
 
 let info_to_sexp ~predefined_exceptions ~build_info ~unit_data =
   let add nm skip v rem = if skip then rem else Sexp.List (Atom nm :: v) :: rem in
   let units =
     List.map
-      ~f:(fun { unit_name; unit_info; fragments } ->
+      ~f:(fun { unit_name; unit_info; fragments; crcs } ->
         Sexp.List
           (Unit_info.to_sexp unit_info
           |> add "name" false [ Atom unit_name ]
           |> add
                "fragments"
                (List.is_empty fragments)
-               [ Sexp.Atom (Base64.encode_string (Marshal.to_string fragments [])) ]))
+               [ Sexp.Atom (Base64.encode_string (Marshal.to_string fragments [])) ]
+          |> add
+               "crcs"
+               (List.is_empty crcs)
+               (List.map
+                  ~f:(fun (name, digest) ->
+                    Sexp.List
+                      (Sexp.Atom name
+                      ::
+                      (match digest with
+                      | None -> []
+                      | Some d -> [ Sexp.Atom d ])))
+                  crcs)))
       unit_data
   in
   Sexp.List
@@ -373,7 +386,22 @@ let info_from_sexp info =
                                   , let lex = Parse_js.Lexer.of_string (to_string e) in
                                     Parse_js.parse_expr lex ))*)
         in
-        { unit_name; unit_info; fragments })
+        let crcs =
+          u
+          |> member "crcs"
+          |> Option.value ~default:[]
+          |> List.map ~f:(fun entry ->
+              match entry with
+              | Sexp.List (Atom name :: rest) ->
+                  let digest =
+                    match rest with
+                    | [ Atom d ] -> Some d
+                    | _ -> None
+                  in
+                  name, digest
+              | _ -> failwith "invalid crcs entry in info.sexp")
+        in
+        { unit_name; unit_info; fragments; crcs })
   in
   build_info, predefined_exceptions, unit_data
 
@@ -417,6 +445,19 @@ let report_missing_primitives missing =
       (Format.pp_print_list Format.pp_print_string)
       missing
 
+let encode_crcs crcs =
+  String.concat
+    ~sep:"\x00"
+    (List.map
+       ~f:(fun (name, digest) ->
+         name
+         ^ "\x01"
+         ^
+         match digest with
+         | Some d -> d
+         | None -> "")
+       crcs)
+
 let build_runtime_arguments
     ~link_spec
     ~separate_compilation
@@ -424,6 +465,7 @@ let build_runtime_arguments
     ~wasm_dir
     ~generated_js
     ~embedded_files
+    ~crcs
     () =
   let missing_primitives = if Config.Flag.genprim () then missing_primitives else [] in
   if not separate_compilation then report_missing_primitives missing_primitives;
@@ -559,6 +601,11 @@ let build_runtime_arguments
              embedded_files) )
       :: props
   in
+  let props =
+    if List.is_empty crcs
+    then props
+    else ("crcs", Javascript.EStr (Utf8_string.of_string_exn (encode_crcs crcs))) :: props
+  in
   obj props
 
 let source_name i j file =
@@ -691,7 +738,7 @@ let gen_dir dir f =
     remove_directory d_tmp;
     raise exc
 
-let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
+let link ~output_file ~linkall ~dynlink ~enable_source_maps ~embedded_files ~files =
   if times () then Format.eprintf "linking@.";
   let t = Timer.make () in
   let predefined_exceptions, files = load_information files in
@@ -818,6 +865,14 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
     @@ List.map files ~f:(fun (_, (_, units)) ->
         List.map units ~f:(fun { unit_name; fragments; _ } -> Some unit_name, fragments))
   in
+  let crcs =
+    if dynlink
+    then
+      List.concat
+      @@ List.map files ~f:(fun (_, (_, units)) ->
+          List.concat @@ List.map units ~f:(fun { crcs; _ } -> crcs))
+    else []
+  in
   let runtime_args =
     let js =
       build_runtime_arguments
@@ -827,6 +882,7 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
         ~wasm_dir
         ~generated_js
         ~embedded_files
+        ~crcs
         ()
     in
     output_js [ Javascript.Expression_statement js, Javascript.N ]
@@ -941,18 +997,12 @@ let make_library ~output_file ~enable_source_maps ~files =
   if enable_source_maps then add_source_map files z output_sourcemap;
   Zip.close_out z
 
-let link
-    ~output_file
-    ~linkall
-    ~mklib
-    ~dynlink:_
-    ~enable_source_maps
-    ~embedded_files
-    ~files =
+let link ~output_file ~linkall ~mklib ~dynlink ~enable_source_maps ~embedded_files ~files
+    =
   try
     if mklib
     then make_library ~output_file ~enable_source_maps ~files
-    else link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files
+    else link ~output_file ~linkall ~dynlink ~enable_source_maps ~embedded_files ~files
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"

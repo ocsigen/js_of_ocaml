@@ -22,6 +22,6 @@ let () =
   Link.add_info
     z
     ~build_info:(Build_info.create `Cmo)
-    ~unit_data:[ { Link.unit_name; unit_info; fragments } ]
+    ~unit_data:[ { Link.unit_name; unit_info; fragments; crcs = [] } ]
     ();
   Zip.close_out z

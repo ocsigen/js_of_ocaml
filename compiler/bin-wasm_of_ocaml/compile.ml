@@ -568,7 +568,8 @@ let run
            ~input_file
            ~output_file:tmp_wasm_file
            ();
-         { Link.unit_name; unit_info; fragments }, shapes
+         let crcs = Ocaml_compiler.Cmo_format.imports cmo in
+         { Link.unit_name; unit_info; fragments; crcs }, shapes
        in
        cont unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes
      in
@@ -586,6 +587,23 @@ let run
              ~linkall
              ~debug:need_debug
              ic
+         in
+         let crcs =
+           if toplevel || dynlink
+           then
+             let all_crcs = Parse_bytecode.read_crcs ic in
+             let keep =
+               match exported_unit with
+               | None -> fun _ -> true
+               | Some units ->
+                   let set = StringSet.of_list units in
+                   fun name -> StringSet.mem name set
+             in
+             List.filter_map all_crcs ~f:(fun (name, digest) ->
+                 if keep name
+                 then Some (name, Option.map ~f:Digest.to_hex digest)
+                 else None)
+           else []
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          let embedded_files =
@@ -679,6 +697,7 @@ let run
                   ~separate_compilation:false
                   ~generated_js:[ None, generated_js ]
                   ~embedded_files
+                  ~crcs
                   ())
              ()
          in
