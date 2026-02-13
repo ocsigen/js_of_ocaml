@@ -3,6 +3,7 @@
  (libraries
   js_of_ocaml
   wasm_of_ocaml-compiler.dynlink-compiler
+  js_of_ocaml-toplevel.common
   compiler-libs.toplevel)
  (link_flags
   (:standard -linkall))

@@ -132,7 +132,8 @@
    js_of_ocaml
    js_of_ocaml-lwt
    js_of_ocaml-tyxml
-   js_of_ocaml-toplevel)))
+   js_of_ocaml-toplevel
+   js_of_ocaml-toplevel.common)))
 
 (executable
  (name effects_flags)

@@ -3,9 +3,5 @@
  (public_name js_of_ocaml-toplevel)
  (synopsis "Js_of_ocaml toplevel library")
  (libraries
-  js_of_ocaml-compiler
-  js_of_ocaml-compiler.dynlink
-  compiler-libs.bytecomp
-  compiler-libs.toplevel)
- (preprocess
-  (pps ppx_optcomp_light)))
+  js_of_ocaml-toplevel.common
+  js_of_ocaml-compiler.dynlink))
