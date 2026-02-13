@@ -34,6 +34,7 @@ type t =
   ; effects : Config.effects_backend
   ; shape_files : string list
   ; toplevel : bool
+  ; dynlink : bool
   ; no_cmis : bool
   }
 

@@ -363,6 +363,7 @@ let run
     ; effects
     ; shape_files
     ; toplevel
+    ; dynlink
     ; no_cmis
     } =
   Config.set_target `Wasm;
@@ -556,7 +557,7 @@ let run
      | `Exe ->
          let t1 = Timer.make () in
          let include_cmis = toplevel && not no_cmis in
-         let linkall = toplevel in
+         let linkall = toplevel || dynlink in
          let code =
            Parse_bytecode.from_exe
              ~includes:include_dirs
@@ -610,7 +611,7 @@ let run
              ~sourcemap_root
              ~sourcemap_don't_inline_content
              ~opt_sourcemap
-             ~toplevel
+             ~toplevel:(toplevel || dynlink)
              runtime_wasm_files
              [ input_wasm_file, opt_source_map_file ]
              tmp_wasm_file

@@ -65,6 +65,7 @@ type t =
   ; effects : Config.effects_backend
   ; shape_files : string list
   ; toplevel : bool
+  ; dynlink : bool
   ; no_cmis : bool
   }
 
@@ -122,6 +123,12 @@ let options () =
     in
     Arg.(value & flag & info [ "toplevel" ] ~doc)
   in
+  let dynlink =
+    let doc =
+      "Compile for dynamic linking (preserve all exports, no dead code elimination)."
+    in
+    Arg.(value & flag & info [ "dynlink" ] ~doc)
+  in
   let no_cmis =
     let doc = "Do not include cmis when compiling toplevel." in
     Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~doc)
@@ -163,6 +170,7 @@ let options () =
       profile
       _
       toplevel
+      dynlink
       no_cmis
       sourcemap
       no_sourcemap
@@ -206,6 +214,7 @@ let options () =
       ; effects
       ; shape_files
       ; toplevel
+      ; dynlink
       ; no_cmis
       }
   in
@@ -218,6 +227,7 @@ let options () =
       $ profile
       $ linkall
       $ toplevel
+      $ dynlink
       $ no_cmis
       $ sourcemap
       $ no_sourcemap
@@ -302,6 +312,7 @@ let options_runtime_only () =
       ; effects
       ; shape_files = []
       ; toplevel = false
+      ; dynlink = false
       ; no_cmis = false
       }
   in
