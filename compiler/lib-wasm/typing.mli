@@ -18,9 +18,8 @@
 
 module Integer : sig
   type kind =
-    | Ref
-    | Normalized
-    | Unnormalized
+    | Small
+    | Large
 end
 
 type boxed_number =
