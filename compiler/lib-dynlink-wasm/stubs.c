@@ -22,3 +22,12 @@ CAMLprim value wasm_get_prim_list(value unit) {
 void caml_register_global(value idx, value data, value name) {
   /* no-op in bytecode mode; only meaningful in Wasm */
 }
+CAMLprim value caml_wasm_load_module(value bytes) {
+  caml_failwith("caml_wasm_load_module: only available in wasm_of_ocaml");
+}
+CAMLprim value caml_wasm_load_wasmo(value bytes) {
+  caml_failwith("caml_wasm_load_wasmo: only available in wasm_of_ocaml");
+}
+CAMLprim value caml_wasm_register_fragments(value unit_name, value source) {
+  caml_failwith("caml_wasm_register_fragments: only available in wasm_of_ocaml");
+}

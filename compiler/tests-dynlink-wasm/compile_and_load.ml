@@ -16,5 +16,5 @@ let () =
   close_in ic;
   let wasm_binary, _fragments = Generate.compile ~unit_name:(Some unit_name) one.code in
   print_endline "compilation ok";
-  ignore (Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary));
+  ignore (Wasm_of_ocaml_compiler_dynlink.load_module_bytes (Bytes.of_string wasm_binary));
   print_endline "done"

@@ -18,6 +18,27 @@
 
 open Js_of_ocaml_compiler
 
+external caml_wasm_load_module : bytes -> Obj.t = "caml_wasm_load_module"
+
+external caml_wasm_load_wasmo : bytes -> unit = "caml_wasm_load_wasmo"
+
+external caml_wasm_register_fragments : string -> string -> unit
+  = "caml_wasm_register_fragments"
+
+let read_file filename =
+  let ic = open_in_bin filename in
+  let n = in_channel_length ic in
+  let b = Bytes.create n in
+  really_input ic b 0 n;
+  close_in ic;
+  b
+
+let loadfile filename =
+  let b = read_file filename in
+  caml_wasm_load_wasmo b
+
+let load_module_bytes wasm_bytes : Obj.t = caml_wasm_load_module wasm_bytes
+
 external toplevel_init_compile :
   (Obj.t -> Instruct.debug_event list array -> unit -> Obj.t) -> unit
   = "wasm_toplevel_init_compile"
@@ -82,37 +103,7 @@ let register_fragments unit_name fragments =
   if fragments <> []
   then
     let source = fragments_to_js_source fragments in
-    Wasm_of_ocaml_dynlink.register_fragments unit_name source
-
-let loadfile filename =
-  let ic = open_in_bin filename in
-  Fun.protect
-    ~finally:(fun () -> close_in ic)
-    (fun () ->
-      match Parse_bytecode.from_channel ic with
-      | `Cmo cmo ->
-          let unit_name = Ocaml_compiler.Cmo_format.name cmo in
-          let one = Parse_bytecode.from_cmo ~debug:false cmo ic in
-          let wasm_binary, fragments =
-            Wasm_of_ocaml_compiler.Generate.compile ~unit_name:(Some unit_name) one.code
-          in
-          register_fragments unit_name fragments;
-          ignore (Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary))
-      | `Cma cma ->
-          List.iter
-            (fun cmo ->
-              let unit_name = Ocaml_compiler.Cmo_format.name cmo in
-              let one = Parse_bytecode.from_cmo ~debug:false cmo ic in
-              let wasm_binary, fragments =
-                Wasm_of_ocaml_compiler.Generate.compile
-                  ~unit_name:(Some unit_name)
-                  one.code
-              in
-              register_fragments unit_name fragments;
-              ignore
-                (Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)))
-            cma.Cmo_format.lib_units
-      | `Exe -> failwith "loadfile: executable files not supported")
+    caml_wasm_register_fragments unit_name source
 
 let () =
   Config.set_target `Wasm;
@@ -193,6 +184,6 @@ let () =
     in
     fun () ->
       register_fragments "_dynlink" fragments;
-      Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)
+      load_module_bytes (Bytes.of_string wasm_binary)
   in
   toplevel_init_compile toplevel_compile

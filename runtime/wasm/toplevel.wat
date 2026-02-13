@@ -67,7 +67,7 @@
 
    ;; Bytecode sections: initialized to empty record so that
    ;; Symtable.init_toplevel() (called from Toploop module init) does not
-   ;; crash if it runs before dynlink-compiler populates the real data.
+   ;; crash if it runs before the dynlink library populates the real data.
    ;; Layout: { symb: GlobalMap.t; crcs: list; prim: list; dlpt: list }
    ;; GlobalMap.t = { cnt: int; tbl: Map.t } where Map.empty = 0
    (global $bytecode_sections (mut (ref eq))

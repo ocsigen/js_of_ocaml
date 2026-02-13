@@ -17,9 +17,14 @@
  *)
 
 val loadfile : string -> unit
-(** [loadfile filename] compiles a [.cmo] bytecode file to WebAssembly and
-    loads it into the running program. This bypasses OCaml's [Dynlink] module
-    (which requires section table support) and uses [Parse_bytecode.from_cmo]
-    directly to handle relocation.
+(** [loadfile filename] dynamically loads a pre-compiled [.wasmo] file.
+    Reads the file, extracts the Wasm module, instantiates it, merges its
+    exports into the running program, and runs its initialization code.
 
-    Raises [Failure] if the file is not a [.cmo] or cannot be compiled. *)
+    Raises [Failure] if the file cannot be read or the module cannot be
+    instantiated. *)
+
+val load_module_bytes : bytes -> Obj.t
+(** [load_module_bytes wasm_bytes] loads a raw Wasm binary module from the
+    given bytes. The module is instantiated and its exports are merged into
+    the running program. Returns the result of the module's init function. *)

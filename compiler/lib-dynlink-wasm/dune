@@ -1,6 +1,6 @@
 (library
  (name wasm_of_ocaml_compiler_dynlink)
- (public_name wasm_of_ocaml-compiler.dynlink-compiler)
+ (public_name wasm_of_ocaml-compiler.dynlink)
  (library_flags (-linkall))
  (foreign_stubs
   (language c)
@@ -9,5 +9,4 @@
   wasm_of_ocaml-compiler
   js_of_ocaml-compiler
   js_of_ocaml-compiler.runtime
-  wasm_of_ocaml-compiler.dynlink
   compiler-libs.bytecomp))

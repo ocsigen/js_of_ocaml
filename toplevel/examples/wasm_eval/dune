@@ -2,7 +2,7 @@
  (name eval)
  (libraries
   js_of_ocaml
-  wasm_of_ocaml-compiler.dynlink-compiler
+  wasm_of_ocaml-compiler.dynlink
   js_of_ocaml-toplevel.common
   compiler-libs.toplevel)
  (link_flags

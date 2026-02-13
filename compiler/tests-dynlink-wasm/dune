@@ -110,7 +110,7 @@
 (executable
  (name dynlink_loadfile)
  (modules dynlink_loadfile)
- (libraries dynlink wasm_of_ocaml-compiler.dynlink-compiler)
+ (libraries dynlink wasm_of_ocaml-compiler.dynlink)
  (link_flags
   (:standard -linkall))
  (modes wasm)
@@ -135,7 +135,7 @@
  (modules dynlink_loadfile_wp)
  (libraries
   dynlink
-  wasm_of_ocaml-compiler.dynlink-compiler
+  wasm_of_ocaml-compiler.dynlink
   js_of_ocaml-compiler.runtime)
  (link_flags
   (:standard -linkall))
@@ -196,7 +196,7 @@
 (executable
  (name test_real_toplevel)
  (modules test_real_toplevel)
- (libraries wasm_of_ocaml-compiler.dynlink-compiler compiler-libs.toplevel)
+ (libraries wasm_of_ocaml-compiler.dynlink compiler-libs.toplevel)
  (link_flags
   (:standard -linkall))
  (modes byte))

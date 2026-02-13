@@ -86,7 +86,7 @@
  (name toplevel_wasm)
  (modules toplevel_wasm)
  (libraries
-  wasm_of_ocaml-compiler.dynlink-compiler
+  wasm_of_ocaml-compiler.dynlink
   lwt_toplevel_lib
   js_of_ocaml
   js_of_ocaml-toplevel.common)
