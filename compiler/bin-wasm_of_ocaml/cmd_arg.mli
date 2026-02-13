@@ -36,6 +36,7 @@ type t =
   ; toplevel : bool
   ; dynlink : bool
   ; no_cmis : bool
+  ; export_file : string option
   }
 
 val options : unit -> t Cmdliner.Term.t

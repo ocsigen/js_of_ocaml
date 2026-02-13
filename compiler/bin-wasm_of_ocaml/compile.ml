@@ -365,6 +365,7 @@ let run
     ; toplevel
     ; dynlink
     ; no_cmis
+    ; export_file
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
@@ -388,6 +389,23 @@ let run
   let t = Timer.make () in
   let include_dirs =
     List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
+  in
+  let exported_unit =
+    match export_file with
+    | None -> None
+    | Some file ->
+        if not (Sys.file_exists file)
+        then failwith (Printf.sprintf "export file %S does not exist" file);
+        let ic = open_in_text file in
+        let t = String.Hashtbl.create 17 in
+        (try
+           while true do
+             String.Hashtbl.add t (String.trim (In_channel.input_line_exn ic)) ()
+           done;
+           assert false
+         with End_of_file -> ());
+        close_in ic;
+        Some (String.Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
   let runtime_wasm_files, runtime_js_files =
     List.partition runtime_files ~f:(fun name ->
@@ -562,6 +580,7 @@ let run
            Parse_bytecode.from_exe
              ~includes:include_dirs
              ~include_cmis
+             ?exported_unit
              ~link_info:false
              ~linkall
              ~debug:need_debug

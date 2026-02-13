@@ -67,6 +67,7 @@ type t =
   ; toplevel : bool
   ; dynlink : bool
   ; no_cmis : bool
+  ; export_file : string option
   }
 
 let set_param =
@@ -133,6 +134,13 @@ let options () =
     let doc = "Do not include cmis when compiling toplevel." in
     Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~doc)
   in
+  let export_file =
+    let doc =
+      "File containing the list of unit to export in a toplevel, with Dynlink or with \
+       --linkall. If absent, all units will be exported."
+    in
+    Arg.(value & opt (some filepath) None & info [ "export" ] ~doc)
+  in
   let no_sourcemap =
     let doc = "Disable sourcemap output." in
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
@@ -172,6 +180,7 @@ let options () =
       toplevel
       dynlink
       no_cmis
+      export_file
       sourcemap
       no_sourcemap
       sourcemap_don't_inline_content
@@ -216,6 +225,7 @@ let options () =
       ; toplevel
       ; dynlink
       ; no_cmis
+      ; export_file
       }
   in
   let t =
@@ -229,6 +239,7 @@ let options () =
       $ toplevel
       $ dynlink
       $ no_cmis
+      $ export_file
       $ sourcemap
       $ no_sourcemap
       $ sourcemap_don't_inline_content
@@ -314,6 +325,7 @@ let options_runtime_only () =
       ; toplevel = false
       ; dynlink = false
       ; no_cmis = false
+      ; export_file = None
       }
   in
   let t =
