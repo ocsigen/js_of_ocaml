@@ -644,7 +644,7 @@
       return retval;
     },
     load_wasmo: (zipBytes) => {
-      // Parse ZIP to extract code.wasm (uncompressed ZIP)
+      // Parse ZIP to extract code.wasm and link_order (uncompressed ZIP)
       const dv = new DataView(
         zipBytes.buffer,
         zipBytes.byteOffset,
@@ -658,9 +658,8 @@
       if (eocdOff < 0) throw new Error("Invalid ZIP: EOCD not found");
       const cdOff = dv.getUint32(eocdOff + 16, true);
       const cdEntries = dv.getUint16(eocdOff + 10, true);
-      // Scan central directory for code.wasm
-      let wasmOff = -1;
-      let wasmSize = -1;
+      // Scan central directory for code.wasm and link_order
+      const entries = {};
       let off = cdOff;
       for (let i = 0; i < cdEntries; i++) {
         if (dv.getUint32(off, true) !== 0x02014b50)
@@ -672,18 +671,23 @@
         const name = decoder.decode(
           zipBytes.subarray(off + 46, off + 46 + nameLen),
         );
-        if (name === "code.wasm") {
-          wasmSize = dv.getUint32(off + 24, true); // uncompressed size
-          // Parse local file header to find data start
-          const localNameLen = dv.getUint16(localOff + 26, true);
-          const localExtraLen = dv.getUint16(localOff + 28, true);
-          wasmOff = localOff + 30 + localNameLen + localExtraLen;
-        }
+        const size = dv.getUint32(off + 24, true);
+        const localNameLen = dv.getUint16(localOff + 26, true);
+        const localExtraLen = dv.getUint16(localOff + 28, true);
+        const dataOff = localOff + 30 + localNameLen + localExtraLen;
+        entries[name] = zipBytes.subarray(dataOff, dataOff + size);
         off += 46 + nameLen + extraLen + commentLen;
       }
-      if (wasmOff < 0) throw new Error("code.wasm not found in .wasmo");
-      const wasmBytes = zipBytes.subarray(wasmOff, wasmOff + wasmSize);
-      bindings.load_module(wasmBytes);
+      if (!entries["code.wasm"])
+        throw new Error("code.wasm not found in .wasmo");
+      const module = new WebAssembly.Module(entries["code.wasm"], options);
+      const inst = new WebAssembly.Instance(module, imports, options);
+      Object.assign(imports.OCaml, inst.exports);
+      const names = decoder.decode(entries.link_order).split("\x00");
+      for (const name of names) {
+        const init = inst.exports[name + ".init"];
+        if (init) init();
+      }
     },
     get_named_global(name) {
       const g = imports.OCaml[name];

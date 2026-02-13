@@ -75,7 +75,19 @@ let loadfile filename =
             Wasm_of_ocaml_compiler.Generate.compile ~unit_name:(Some unit_name) one.code
           in
           ignore (Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary))
-      | `Cma _ -> failwith "loadfile: .cma files not yet supported"
+      | `Cma cma ->
+          List.iter
+            (fun cmo ->
+              let unit_name = Ocaml_compiler.Cmo_format.name cmo in
+              let one = Parse_bytecode.from_cmo ~debug:false cmo ic in
+              let wasm_binary, _fragments =
+                Wasm_of_ocaml_compiler.Generate.compile
+                  ~unit_name:(Some unit_name)
+                  one.code
+              in
+              ignore
+                (Wasm_of_ocaml_dynlink.load_module_bytes (Bytes.of_string wasm_binary)))
+            cma.Cmo_format.lib_units
       | `Exe -> failwith "loadfile: executable files not supported")
 
 let () =
