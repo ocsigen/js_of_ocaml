@@ -1,6 +1,8 @@
 = Command-line options
 
 This page documents the command-line options for the {{{js_of_ocaml}}} compiler.
+Most of these options also apply to {{{wasm_of_ocaml}}}. Differences are noted
+where applicable.
 
 ==@@id="general"@@ General options
 
@@ -33,12 +35,17 @@ Possible values:
 ==@@id="effects"@@ Effect handlers
 
 |= Option |= Description |
-| {{{--effects <mode>}}} | Select effect handler implementation (default: {{{disabled}}}) |
+| {{{--effects <mode>}}} | Select effect handler implementation |
 
-Possible values:
+For **js_of_ocaml** (default: {{{disabled}}}):
 * **{{{disabled}}}** - No effect handler support (default)
 * **{{{cps}}}** - CPS transformation for effect support
 * **{{{double-translation}}}** - Keep both direct and CPS versions; choose at runtime
+
+For **wasm_of_ocaml** (default: {{{jspi}}}):
+* **{{{jspi}}}** - JavaScript-Promise Integration (default)
+* **{{{cps}}}** - CPS transformation for effect support
+* **{{{disabled}}}** - No effect handler support
 
 See <<a_manual chapter="effects"|Effect handlers>> for details.
 
@@ -54,12 +61,13 @@ See <<a_manual chapter="effects"|Effect handlers>> for details.
 ==@@id="pseudo-fs"@@ Pseudo filesystem
 
 Js_of_ocaml provides a pseudo filesystem for programs that read files at runtime.
+The {{{--file}}} flag is also supported by wasm_of_ocaml.
 
 |= Option |= Description |
 | {{{--file <file>[:<target>]}}} | Register file to pseudo filesystem (default target: {{{/static/}}}) |
-| {{{--ofs <file>}}} | Write filesystem data to separate file |
-| {{{--extern-fs}}} | Allow registering files from outside at runtime (default) |
-| {{{--no-extern-fs}}} | Only allow files embedded at compile time |
+| {{{--ofs <file>}}} | Write filesystem data to separate file (js_of_ocaml only) |
+| {{{--extern-fs}}} | Allow registering files from outside at runtime (default, js_of_ocaml only) |
+| {{{--no-extern-fs}}} | Only allow files embedded at compile time (js_of_ocaml only) |
 
 ==@@id="env-vars"@@ Environment variables
 
@@ -216,6 +224,13 @@ The {{{js_of_ocaml}}} command has several subcommands:
 | {{{js_of_ocaml link}}} | Link JavaScript files together |
 | {{{js_of_ocaml build-runtime}}} | Build standalone runtime |
 | {{{js_of_ocaml build-fs}}} | Build pseudo filesystem |
+
+The {{{wasm_of_ocaml}}} command has similar subcommands:
+
+|= Command |= Description |
+| {{{wasm_of_ocaml compile}}} | Compile bytecode to WebAssembly (default) |
+| {{{wasm_of_ocaml link}}} | Link files together |
+| {{{wasm_of_ocaml build-runtime}}} | Build standalone runtime |
 
 === Link command
 
