@@ -1,0 +1,5 @@
+= Camlp4 syntax extension
+
+The Camlp4 syntax extension is deprecated and no longer part of js_of_ocaml.
+
+Use the <<a_manual chapter="ppx"|PPX syntax extension>> instead.

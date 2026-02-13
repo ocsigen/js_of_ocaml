@@ -1,0 +1,100 @@
+= Contributing to Js_of_ocaml
+
+==@@id="reporting-issues"@@ Reporting issues
+
+If you encounter a problem or have questions, please open a [[https://github.com/ocsigen/js_of_ocaml/issues/|GitHub issue]].
+
+# Check if your issue has already been [[https://github.com/ocsigen/js_of_ocaml/issues/|reported]]
+# Include version information ({{{ocamlc -version}}}, {{{js_of_ocaml --version}}})
+# Describe the expected and actual behavior
+# Provide a minimal reproducible example if possible
+
+==@@id="development-setup"@@ Development setup
+
+=== Install dependencies
+
+{{{
+opam install --deps-only -t js_of_ocaml js_of_ocaml-lwt \
+  js_of_ocaml-compiler js_of_ocaml-toplevel js_of_ocaml-ppx \
+  js_of_ocaml-ppx_deriving_json js_of_ocaml-tyxml
+}}}
+
+=== Build
+
+{{{
+dune build @all
+}}}
+
+==@@id="pull-requests"@@ Pull requests
+
+# Discuss significant changes in an issue first
+# Fork the repository and create your branch from {{{master}}}
+# Write tests for new code
+# Ensure tests pass ({{{make tests}}})
+# Update {{{CHANGES.md}}} with an entry describing your change
+
+==@@id="code-style"@@ Code style
+
+=== OCaml
+
+Code is formatted with **ocamlformat 0.28.1**. Run before committing:
+{{{
+make fmt
+}}}
+
+=== JavaScript
+
+JavaScript runtime files are formatted and linted with **Biome**:
+{{{
+make fmt-js
+make lint-js
+}}}
+
+==@@id="testing"@@ Testing
+
+{{{
+# Run all tests
+make tests
+
+# Run WebAssembly tests
+make tests-wasm
+
+# Run a specific test directory
+dune build @compiler/tests-jsoo/runtest
+dune build @compiler/tests-ocaml/runtest-js
+WASM_OF_OCAML=true dune build @compiler/tests-ocaml/runtest-wasm
+
+# Run javascript parser tests
+cd compiler/tests-js-parser
+git clone https://github.com/tc39/test262.git test262
+dune build @runtest-parser
+
+# Update expected test output after intentional changes
+dune promote
+}}}
+
+Test directories:
+* {{{compiler/tests-jsoo/}}} - JavaScript and WebAssembly tests
+* {{{compiler/tests-wasm_of_ocaml/}}} - JavaScript and WebAssembly tests
+* {{{compiler/tests-compiler/}}} - Compiler unit tests
+* {{{compiler/tests-ocaml/}}} - Tests from the OCaml compiler codebase
+* {{{compiler/tests-full/}}} - Full integration tests
+
+==@@id="project-structure"@@ Project structure
+
+* {{{compiler/}}} - Compiler implementation
+  * {{{lib/}}} - Core compiler library
+  * {{{lib-wasm/}}} - WebAssembly backend
+  * {{{bin-js_of_ocaml/}}} - js_of_ocaml entry point
+  * {{{bin-wasm_of_ocaml/}}} - wasm_of_ocaml entry point
+* {{{lib/}}} - Library packages (js_of_ocaml, lwt, tyxml bindings)
+* {{{ppx/}}} - PPX syntax extensions
+* {{{runtime/}}} - JavaScript and WebAssembly runtime files
+* {{{toplevel/}}} - Web-based OCaml toplevel
+* {{{examples/}}} - Example projects
+
+== See also
+
+* [[https://github.com/ocsigen/js_of_ocaml|GitHub repository]]
+* [[https://github.com/ocsigen/js_of_ocaml/issues|Issue tracker]]
+* [[https://github.com/ocsigen/js_of_ocaml/pulls|Pull requests]]

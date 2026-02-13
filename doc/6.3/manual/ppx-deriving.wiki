@@ -1,0 +1,61 @@
+= JSON derivation
+
+The {{{js_of_ocaml-ppx_deriving_json}}} package provides a PPX deriver for
+serializing OCaml values to JSON.
+
+**Important**: The serialization format follows js_of_ocaml's
+<<a_manual chapter="runtime-representation"|internal representation>>.
+It is designed for communication between a js_of_ocaml program and a server-side
+OCaml application, not for interacting with third-party APIs.
+
+==@@id="installation"@@ Installation
+
+{{{
+opam install js_of_ocaml-ppx_deriving_json
+}}}
+
+==@@id="usage"@@ Usage
+
+Add {{{[@@deriving json]}}} to your type definitions:
+
+<<code language="ocaml"|
+type person = {
+  name : string;
+  age : int;
+}
+[@@deriving json]
+
+(* Serialize to JSON *)
+let json_str = person_to_json { name = "Alice"; age = 30 }
+
+(* Deserialize from JSON *)
+let alice = person_of_json json_str
+>>
+
+The {{{[@@deriving json]}}} attribute generates:
+* {{{person_of_json}}} — deserialize from JSON
+* {{{person_to_json}}} — serialize to JSON
+* {{{person_json}}} — a {{{Deriving_Json.t}}} witness
+
+**Note**: For types named {{{t}}}, the prefix is omitted (e.g., {{{of_json}}} instead of {{{t_of_json}}}).
+
+The {{{[%to_json: type]}}} and {{{[%of_json: type]}}} syntax also works with any type expression:
+
+<<code language="ocaml"|
+let json = [%to_json: int list] [1; 2; 3]
+let nums = [%of_json: int list] json
+>>
+
+==@@id="supported-types"@@ Supported types
+
+The deriver supports:
+* Basic types: {{{int}}}, {{{float}}}, {{{string}}}, {{{bool}}}
+* Options: {{{'a option}}}
+* Lists and arrays: {{{'a list}}}, {{{'a array}}}
+* Records and variants
+* Polymorphic variants
+* Recursive types
+
+== See also
+
+* <<a_manual chapter="javascript-interop" fragment="json"|JSON serialization>> — Direct JSON output

@@ -1,0 +1,84 @@
+= Toplevel and Dynlink
+
+This page explains how to build an OCaml toplevel (REPL) that runs in the browser,
+and how to use dynamic linking to load bytecode at runtime.
+
+==@@id="toplevel"@@ Building a toplevel
+
+A toplevel is an interactive OCaml environment (like {{{ocaml}}} or {{{utop}}}).
+Js_of_ocaml can compile a toplevel to JavaScript, allowing it to run in the browser.
+See the <<a_file src="toplevel/index.html"|live demo>>.
+
+=== Steps
+
+# Initialize the toplevel in your OCaml code using
+  <<a_api subproject="js_of_ocaml-toplevel"|val Js_of_ocaml_toplevel.JsooTop.initialize>>
+
+# Build your bytecode with debug info and linkall:
+{{{
+ocamlfind ocamlc -g -linkall -package js_of_ocaml-toplevel \
+    -linkpkg toplevel.ml -o toplevel.byte
+}}}
+
+# Compile to JavaScript with the {{{--toplevel}}} flag:
+{{{
+js_of_ocaml --toplevel toplevel.byte -o toplevel.js
+}}}
+
+=== Limiting available modules
+
+By default, all linked modules are available in the toplevel. To limit this,
+use {{{--export FILE}}} where {{{FILE}}} lists compilation unit names (one per line).
+
+The {{{jsoo_listunits}}} tool generates this list from findlib libraries:
+
+{{{
+jsoo_listunits -o units.txt stdlib str
+js_of_ocaml --toplevel --export units.txt toplevel.byte
+}}}
+
+==@@id="dynlink"@@ Using the Dynlink library
+
+OCaml's {{{Dynlink}}} module lets you load bytecode files at runtime. This works
+in js_of_ocaml with some setup.
+
+=== Steps
+
+# Link {{{js_of_ocaml-compiler.dynlink}}} in your program (initializes dynlink support)
+
+# Build your bytecode with debug info and linkall:
+{{{
+ocamlfind ocamlc -g -linkall -package dynlink \
+    -package js_of_ocaml-compiler.dynlink -linkpkg main.ml -o main.byte
+}}}
+
+# Compile to JavaScript with the {{{--dynlink}}} flag:
+{{{
+js_of_ocaml --dynlink main.byte -o main.js
+}}}
+
+=== Example
+
+<<code language="ocaml"|
+(* main.ml *)
+let () = Dynlink.loadfile "./plugin.cmo"
+>>
+
+{{{
+# Compile main program
+ocamlfind ocamlc -g -linkall -package dynlink \
+    -package js_of_ocaml-compiler.dynlink -linkpkg main.ml -o main.byte
+js_of_ocaml --dynlink main.byte -o main.js
+
+# Compile plugin
+ocamlfind ocamlc -c plugin.ml
+
+# Run
+node ./main.js
+}}}
+
+== See also
+
+* <<a_manual chapter="options"|Command-line options>> — The {{{--toplevel}}} and {{{--dynlink}}} flags
+* <<a_manual chapter="compilation-modes"|Compilation modes>> — Whole program vs separate compilation
+* <<a_api subproject="js_of_ocaml-toplevel"|index>> — Toplevel API

@@ -1,0 +1,3 @@
+= Library overview
+
+This page has been merged into <<a_manual chapter="javascript-interop"|JavaScript interop>>.

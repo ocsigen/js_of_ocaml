@@ -1,0 +1,62 @@
+= Effect handlers
+
+Js_of_ocaml supports effect handlers with the {{{--effects=cps}}} flag.
+This is based on partially transforming the program to continuation-passing style.
+As a consequence, <<a_manual chapter="tailcall"|tail calls>> can be fully optimized
+(when CPS transformed).
+
+This is not the default because the generated code can be slower, larger, and
+less readable. The transformation uses an analysis to detect parts of the code
+that cannot involve effects and keeps them in direct style. The analysis is
+especially effective on monomorphic code but less effective when higher-order
+functions are heavily used ({{{Lwt}}}, {{{Async}}}, {{{Incremental}}}).
+
+==@@id="double-translation"@@ Double translation mode
+
+An alternative CPS transform is provided with {{{--effects=double-translation}}}.
+It keeps a direct-style version of the transformed functions in addition to the
+CPS version. The choice of running the CPS version is delayed to run time.
+
+Since CPS code is usually slower, this can avoid performance degradations. You can
+also ensure that some code runs in direct style using
+<<a_api subproject="js_of_ocaml-compiler"|val Jsoo_runtime.Effect.assume_no_perform>>.
+
+==@@id="dune"@@ Dune integration
+
+Dune is aware of the {{{--effects}}} option. You can add it to the
+js_of_ocaml flags wherever you want to use it:
+
+{{{
+(js_of_ocaml (flags ...))
+}}}
+
+=== Whole workspace setup
+
+To enable effects for the entire workspace, add this to a {{{dune}}} or
+{{{dune-workspace}}} file at the root:
+
+{{{
+(env
+ (_
+  (js_of_ocaml
+   (flags (:standard --effects=double-translation))
+   (build_runtime_flags (:standard --effects=double-translation)))))
+}}}
+
+This setup supports both separate and whole program compilation.
+
+=== Per-executable setup
+
+To enable effect handlers for specific executables:
+
+{{{
+(executable
+ (name main)
+ (js_of_ocaml
+  (flags (:standard --effects=double-translation))))
+}}}
+
+== See also
+
+* <<a_manual chapter="options" fragment="effects"|Command line options>> - Full list of {{{--effects}}} modes
+* <<a_manual chapter="tailcall"|Tailcall optimization>> - How tail calls interact with effects

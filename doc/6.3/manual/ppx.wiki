@@ -1,0 +1,252 @@
+= PPX syntax extension
+
+The {{{js_of_ocaml-ppx}}} package provides syntax for working with JavaScript
+values from OCaml. This page is a **syntax reference**; see
+<<a_manual chapter="javascript-interop"|JavaScript interop>> for conceptual
+background on types, conversions, and when to use each approach.
+
+==@@id="installation"@@ Installation
+
+{{{
+opam install js_of_ocaml-ppx
+}}}
+
+With dune, add the preprocessor to your library or executable:
+
+{{{
+(library
+ (name mylib)
+ (preprocess (pps js_of_ocaml-ppx)))
+}}}
+
+==@@id="quick-reference"@@ Quick reference
+
+|= Syntax |= Description |= Example |
+| {{{obj##.prop}}} | Get property | {{{element##.innerHTML}}} |
+| {{{obj##.prop := v}}} | Set property | {{{element##.innerHTML := Js.string "Hi"}}} |
+| {{{obj##meth args}}} | Call method | {{{console##log (Js.string "Hi")}}} |
+| {{{new%js constr args}}} | Call constructor | {{{new%js array_constr 10}}} |
+| {{{object%js ... end}}} | Create object literal | See below |
+
+==@@id="getting-properties"@@ Getting properties
+
+Use {{{##.}}} (with a dot) to access a property:
+
+<<code language="ocaml"|
+(* Get the document title *)
+let title = Dom_html.document##.title
+
+(* Get element dimensions *)
+let width = element##.clientWidth
+let height = element##.clientHeight
+
+(* Get nested properties *)
+let href = Dom_html.window##.location##.href
+>>
+
+=== Typing rule
+
+{{{
+obj : <prop : t Js.readonly_prop> Js.t
+--------------------------------------
+          obj##.prop : t
+}}}
+
+==@@id="setting-properties"@@ Setting properties
+
+Use {{{##.}}} with {{{:=}}} to set a property:
+
+<<code language="ocaml"|
+(* Set the document title *)
+Dom_html.document##.title := Js.string "New Title"
+
+(* Set element style *)
+element##.style##.color := Js.string "red"
+element##.style##.display := Js.string "none"
+
+(* Set event handler *)
+button##.onclick := Dom_html.handler (fun _ ->
+  Console.console##log (Js.string "Clicked!");
+  Js._true)
+>>
+
+=== Typing rule
+
+{{{
+  obj : <prop : t Js.writeonly_prop> Js.t
+value : t
+-----------------------------------------
+  obj##.prop := value : unit
+}}}
+
+==@@id="calling-methods"@@ Calling methods
+
+Use {{{##}}} (without a dot) to call a method:
+
+<<code language="ocaml"|
+(* Console logging *)
+Console.console##log (Js.string "Hello")
+Console.console##warn (Js.string "Warning!")
+
+(* DOM methods *)
+let element = Dom_html.document##getElementById (Js.string "myId")
+Dom_html.document##.body##appendChild element
+
+(* String methods *)
+let upper = js_string##toUpperCase
+let sub = js_string##substring 0 5
+
+(* Array methods *)
+js_array##push item
+js_array##forEach (Js.wrap_callback (fun x _idx _arr ->
+  Console.console##log x))
+>>
+
+=== Method chaining
+
+For easier chaining, you can wrap the method call in parentheses:
+
+<<code language="ocaml"|
+(* These are equivalent *)
+let result = obj##meth1##meth2##meth3
+let result = obj##(meth1)##(meth2)##(meth3)
+
+(* Useful when methods have arguments *)
+let result = str##(split (Js.string ","))##(join (Js.string ";"))
+>>
+
+=== Typing rule
+
+{{{
+ obj : <meth : t1 -> t2 -> ... -> tn -> u Js.meth> Js.t
+args : t1, t2, ..., tn
+-------------------------------------------------------
+             obj##meth args : u
+}}}
+
+**Note**: Partial application is not allowed. You must provide all arguments.
+
+==@@id="constructors"@@ Using constructors
+
+Use {{{new%js}}} to call JavaScript constructors:
+
+<<code language="ocaml"|
+(* Create a Date *)
+let date_constr = Js.Unsafe.global##._Date
+let now = new%js date_constr
+let specific = new%js date_constr 2024 0 15  (* Jan 15, 2024 *)
+
+(* Create a RegExp *)
+let regexp_constr = Js.Unsafe.global##._RegExp
+let pattern = new%js regexp_constr (Js.string "\\d+") (Js.string "g")
+
+(* Create an Array with size *)
+let array_constr = Js.Unsafe.global##._Array
+let arr = new%js array_constr 10
+>>
+
+=== Non-identifier constructors
+
+When the constructor is not a simple identifier, bind it first:
+
+<<code language="ocaml"|
+let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass in
+let obj = new%js constr arg1 arg2
+>>
+
+=== Typing rule
+
+{{{
+constr : (t1 -> ... -> tn -> u Js.t) Js.constr
+  args : t1, ..., tn
+----------------------------------------------
+       new%js constr args : u Js.t
+}}}
+
+==@@id="object-literals"@@ Creating object literals
+
+Use {{{object%js ... end}}} to create JavaScript object literals:
+
+<<code language="ocaml"|
+(* Simple object *)
+let point = object%js
+  val x = 10
+  val y = 20
+end
+
+(* Object with methods *)
+let counter = object%js (self)
+  val mutable count = 0
+  method increment = self##.count := self##.count + 1
+  method get = self##.count
+end
+
+(* Configuration object *)
+let config = object%js
+  val url = Js.string "https://api.example.com"
+  val timeout = 5000
+  val mutable retries = 3
+end
+>>
+
+=== Property attributes
+
+Control property access with attributes:
+
+<<code language="ocaml"|
+object%js
+  val readonly_prop = 42                   (* read-only by default *)
+  val also_readonly = 42 [@@readonly]      (* explicit read-only *)
+  val mutable readwrite = 42               (* read/write with mutable *)
+  val also_readwrite = 42 [@@readwrite]    (* explicit read/write *)
+  val writeonly = 42 [@@writeonly]         (* write-only *)
+  val optional = Js.undefined [@@optdef]   (* optional/undefined *)
+end
+>>
+
+|= Declaration |= Property type |= Can read |= Can write |
+| {{{val x = v}}} | {{{readonly_prop}}} | Yes | No |
+| {{{val mutable x = v}}} | {{{prop}}} | Yes | Yes |
+| {{{val x = v [@@readonly]}}} | {{{readonly_prop}}} | Yes | No |
+| {{{val x = v [@@readwrite]}}} | {{{prop}}} | Yes | Yes |
+| {{{val x = v [@@writeonly]}}} | {{{writeonly_prop}}} | No | Yes |
+| {{{val x = v [@@optdef]}}} | {{{optdef_prop}}} | Yes (Js.Optdef) | Yes |
+
+=== Using {{{self}}}
+
+The identifier in parentheses binds to JavaScript's {{{this}}}:
+
+<<code language="ocaml"|
+let obj = object%js (self)
+  val mutable x = 0
+  method setX v = self##.x := v
+  method getX = self##.x
+  method double = self##setX (self##.x * 2)
+end
+>>
+
+=== Generated type
+
+The object literal:
+
+<<code language="ocaml"|
+object%js (self)
+  val x = 3
+  val mutable y = 4
+  method add dx dy =
+    self##.x + self##.y + dx + dy
+end
+>>
+
+Has the type:
+
+<<code language="ocaml"|
+< x : int Js.readonly_prop;
+  y : int Js.prop;
+  add : int -> int -> int Js.meth > Js.t
+>>
+
+== See also
+
+* <<a_manual chapter="javascript-interop"|JavaScript interop>> - Concepts: type conversions, null/undefined, callbacks, bindings
+* <<a_api subproject="js_of_ocaml" text="Js"|module Js_of_ocaml.Js>> - Full API reference
