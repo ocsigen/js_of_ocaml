@@ -14,6 +14,11 @@
   (run %{bin:ocamlc} -c %{dep:./plugin.ml})))
 
 (rule
+ (target plugin2.cma)
+ (action
+  (run %{bin:ocamlc} -a %{dep:./plugin2a.ml} %{dep:./plugin2b.ml} -o plugin2.cma)))
+
+(rule
  (target plugin.wasmo)
  (action
   (run %{bin:wasm_of_ocaml} compile %{dep:plugin.cmo} -o %{target})))
@@ -101,7 +106,7 @@
 
 (rule
  (target dynlink_loadfile.out)
- (deps plugin.cmo)
+ (deps plugin.cmo plugin2.cma)
  (action
   (with-outputs-to
    %{target}

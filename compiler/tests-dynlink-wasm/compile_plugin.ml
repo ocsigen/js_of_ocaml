@@ -18,6 +18,7 @@ let () =
   let wasm_binary, fragments = Generate.compile ~unit_name:(Some unit_name) one.code in
   let z = Zip.open_out "plugin_compiled.wasmo" in
   Zip.add_entry z ~name:"code.wasm" ~contents:wasm_binary;
+  Zip.add_entry z ~name:"link_order" ~contents:unit_name;
   Link.add_info
     z
     ~build_info:(Build_info.create `Cmo)
