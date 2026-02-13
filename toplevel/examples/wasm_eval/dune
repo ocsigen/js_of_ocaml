@@ -1,0 +1,16 @@
+(executable
+ (name eval)
+ (libraries js_of_ocaml wasm_of_ocaml-compiler.dynlink-compiler compiler-libs.toplevel)
+ (link_flags
+  (:standard -linkall))
+ (modes byte))
+
+(rule
+ (targets eval.js (dir eval.assets))
+ (action
+  (run %{bin:wasm_of_ocaml} compile --toplevel
+       %{dep:eval.bc} -o eval.js)))
+
+(alias
+ (name default)
+ (deps eval.js index.html (glob_files eval.assets/*)))

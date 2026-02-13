@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>OCaml Wasm Toplevel</title>
+  <style>
+    body { font-family: monospace; max-width: 800px; margin: 2em auto; }
+    textarea { width: 100%; height: 120px; font-family: monospace; font-size: 14px; }
+    #output { white-space: pre-wrap; background: #f5f5f5; padding: 1em;
+              border: 1px solid #ddd; min-height: 100px; margin-top: 1em; }
+    button { margin-top: 0.5em; padding: 0.5em 1em; }
+    #status { color: #888; margin-bottom: 1em; }
+  </style>
+</head>
+<body>
+  <h1>OCaml Wasm Toplevel</h1>
+  <div id="status">Loading...</div>
+  <textarea id="input" disabled>let () = print_endline "hello";;
+1 + 1;;
+let y = float 1 /. float 3;;</textarea>
+  <br/>
+  <button id="run" disabled>Run</button>
+  <div id="output"></div>
+
+  <script src="eval.js"></script>
+  <script>
+    const input = document.getElementById('input');
+    const output = document.getElementById('output');
+    const runBtn = document.getElementById('run');
+    const status = document.getElementById('status');
+
+    // Wait for Wasm initialization
+    (function check() {
+      if (typeof wasmExecute === 'function') {
+        status.textContent = 'Ready';
+        input.disabled = false;
+        runBtn.disabled = false;
+      } else {
+        setTimeout(check, 50);
+      }
+    })();
+
+    runBtn.addEventListener('click', () => {
+      const code = input.value;
+      // Intercept console.log/error to capture stdout/stderr
+      const captured = [];
+      const origLog = console.log;
+      const origErr = console.error;
+      console.log = (...args) => captured.push(args.join(' '));
+      console.error = (...args) => captured.push('ERR: ' + args.join(' '));
+      try {
+        const result = wasmExecute(code);
+        console.log = origLog;
+        console.error = origErr;
+        const stdoutText = captured.join('\n');
+        output.textContent = (stdoutText ? stdoutText + '\n' : '') + result;
+      } catch(e) {
+        console.log = origLog;
+        console.error = origErr;
+        output.textContent = 'Error: ' + e.message;
+      }
+    });
+  </script>
+</body>
+</html>
