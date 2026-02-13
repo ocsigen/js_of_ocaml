@@ -38,6 +38,7 @@ module Generate (Target : Target_sig.S) = struct
     ; global_flow_info : Global_flow.info
     ; fun_info : Call_graph_analysis.t
     ; types : Typing.t
+    ; raising_funcs : unit Var.Hashtbl.t
     ; blocks : block Addr.Map.t
     ; closures : Closure_conversion.closure Var.Map.t
     ; global_context : Code_generation.context
@@ -1147,6 +1148,19 @@ module Generate (Target : Target_sig.S) = struct
     | Number (n, Boxed) as into -> convert ~from:(Number (n, Unboxed)) ~into e
     | _ -> e
 
+  let exception_handler_pc = -3
+
+  let direct_call ctx context f args closure =
+    let e = W.Call (f, args @ [ closure ]) in
+    let e =
+      if Var.Hashtbl.mem ctx.raising_funcs f
+      then
+        let label = label_index context exception_handler_pc in
+        W.Br_on_null (label, e)
+      else e
+    in
+    return e
+
   let rec translate_expr ctx context x e =
     match e with
     | Apply { f; args; exact; _ } ->
@@ -1180,7 +1194,7 @@ module Generate (Target : Target_sig.S) = struct
               convert
                 ~from:(Typing.return_type ctx.types g)
                 ~into:(Typing.var_type ctx.types x)
-                (return (W.Call (g, args @ [ cl ])))
+                (direct_call ctx context g args cl)
           | None -> (
               let funct = Var.fresh () in
               let* closure = tee funct (return closure) in
@@ -1192,7 +1206,7 @@ module Generate (Target : Target_sig.S) = struct
               in
               let* args = expression_list (fun x -> load_and_box ctx x) args in
               match funct with
-              | W.RefFunc g -> return (W.Call (g, args @ [ closure ]))
+              | W.RefFunc g -> direct_call ctx context g args closure
               | _ -> return (W.Call_ref (ty, funct, args @ [ closure ])))
         else
           let* apply =
@@ -1477,25 +1491,47 @@ module Generate (Target : Target_sig.S) = struct
         instr W.Unreachable
     else body ~result_typ ~fall_through ~context
 
-  let wrap_with_handlers p pc ~result_typ ~fall_through ~context body =
+  let wrap_with_handlers ~location p pc ~result_typ ~fall_through ~context body =
     let need_zero_divide_handler, need_bound_error_handler = needed_handlers p pc in
     wrap_with_handler
-      need_bound_error_handler
-      bound_error_pc
-      (let* f =
-         register_import ~name:"caml_bound_error" (Fun { params = []; result = [] })
-       in
-       instr (CallInstr (f, [])))
-      (wrap_with_handler
-         need_zero_divide_handler
-         zero_divide_pc
-         (let* f =
+      true
+      exception_handler_pc
+      (match location with
+      | `Toplevel ->
+          let* exn =
             register_import
-              ~name:"caml_raise_zero_divide"
-              (Fun { params = []; result = [] })
+              ~import_module:"env"
+              ~name:"caml_exception"
+              (Global { mut = true; typ = Type.value })
+          in
+          let* tag = register_import ~name:exception_name (Tag Type.value) in
+          instr (Throw (tag, GlobalGet exn))
+      | `Exception_handler ->
+          let* exn =
+            register_import
+              ~import_module:"env"
+              ~name:"caml_exception"
+              (Global { mut = true; typ = Type.value })
+          in
+          instr (Br (2, Some (GlobalGet exn)))
+      | `Function -> instr (Return (Some (RefNull Any))))
+      (wrap_with_handler
+         need_bound_error_handler
+         bound_error_pc
+         (let* f =
+            register_import ~name:"caml_bound_error" (Fun { params = []; result = [] })
           in
           instr (CallInstr (f, [])))
-         body)
+         (wrap_with_handler
+            need_zero_divide_handler
+            zero_divide_pc
+            (let* f =
+               register_import
+                 ~name:"caml_raise_zero_divide"
+                 (Fun { params = []; result = [] })
+             in
+             instr (CallInstr (f, [])))
+            body))
       ~result_typ
       ~fall_through
       ~context
@@ -1514,6 +1550,11 @@ module Generate (Target : Target_sig.S) = struct
       match name_opt with
       | Some f -> Typing.return_type ctx.types f
       | _ -> Typing.Top
+    in
+    let return_exn =
+      match name_opt with
+      | Some f -> Var.Hashtbl.mem ctx.raising_funcs f
+      | _ -> false
     in
     let g = Structure.build_graph ctx.blocks pc in
     let dom = Structure.dominator_tree g in
@@ -1608,19 +1649,34 @@ module Generate (Target : Target_sig.S) = struct
               instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
               let* e = load x in
-              let* tag = register_import ~name:exception_name (Tag Type.value) in
               match fall_through with
               | `Catch -> instr (Push e)
               | `Block _ | `Return | `Skip -> (
                   match catch_index context with
                   | Some i -> instr (Br (i, Some e))
-                  | None -> instr (Throw (tag, e))))
+                  | None ->
+                      if return_exn
+                      then
+                        let* exn =
+                          register_import
+                            ~import_module:"env"
+                            ~name:"caml_exception"
+                            (Global { mut = true; typ = Type.value })
+                        in
+                        let* () = instr (GlobalSet (exn, e)) in
+                        instr (Return (Some (RefNull Any)))
+                      else
+                        let* tag =
+                          register_import ~name:exception_name (Tag Type.value)
+                        in
+                        instr (Throw (tag, e))))
           | Pushtrap (cont, x, cont') ->
               handle_exceptions
                 ~result_typ
                 ~fall_through
                 ~context:(extend_context fall_through context)
                 (wrap_with_handlers
+                   ~location:`Exception_handler
                    p
                    (fst cont)
                    (fun ~result_typ ~fall_through ~context ->
@@ -1681,6 +1737,7 @@ module Generate (Target : Target_sig.S) = struct
     let locals, body =
       function_body
         ~context:ctx.global_context
+        ~return_exn
         ~param_names
         ~body:
           (let* () =
@@ -1692,6 +1749,7 @@ module Generate (Target : Target_sig.S) = struct
            let* () = build_initial_env in
            let* () =
              wrap_with_handlers
+               ~location:(if return_exn then `Function else `Toplevel)
                p
                pc
                ~result_typ:[ Option.value ~default:Type.value (unboxed_type return_type) ]
@@ -1729,7 +1787,11 @@ module Generate (Target : Target_sig.S) = struct
                           (unboxed_type (Typing.var_type ctx.types x)))
                       params
                     @ [ Type.value ]
-                ; result = [ Option.value ~default:Type.value (unboxed_type return_type) ]
+                ; result =
+                    [ Option.value
+                        ~default:(if return_exn then Type.value_or_exn else Type.value)
+                        (unboxed_type return_type)
+                    ]
                 }
               else Type.func_type (param_count - 1))
       ; param_names
@@ -1744,6 +1806,7 @@ module Generate (Target : Target_sig.S) = struct
     let locals, body =
       function_body
         ~context
+        ~return_exn:false
         ~param_names:[]
         ~body:
           (List.fold_right
@@ -1774,7 +1837,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let entry_point context toplevel_fun entry_name =
     let signature, param_names, body = entry_point ~toplevel_fun in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, body = function_body ~context ~return_exn:false ~param_names ~body in
     W.Function
       { name = Var.fresh_n "entry_point"
       ; exported_name = Some entry_name
@@ -1804,7 +1867,8 @@ module Generate (Target : Target_sig.S) = struct
 *)
       ~global_flow_info
       ~fun_info
-      ~types =
+      ~types
+      ~raising_funcs =
     global_context.unit_name <- unit_name;
     let p, closures = Closure_conversion.f p in
     (*
@@ -1816,6 +1880,7 @@ module Generate (Target : Target_sig.S) = struct
       ; global_flow_info
       ; fun_info
       ; types
+      ; raising_funcs
       ; blocks = p.blocks
       ; closures
       ; global_context
@@ -1942,11 +2007,26 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_d
   let types =
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
   in
+  let raising_funcs =
+    Call_graph_analysis.raising_functions p global_flow_info fun_info (fun f ->
+        match Typing.return_type types f with
+        | Int (Normalized | Unnormalized) | Number (_, Unboxed) -> false
+        | Int Ref | Number (_, Boxed) | Top | Bot | Tuple _ | Bigarray _ -> true)
+  in
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in
   let res =
-    G.f ~context ~unit_name ~live_vars ~in_cps ~global_flow_info ~fun_info ~types p
+    G.f
+      ~context
+      ~unit_name
+      ~live_vars
+      ~in_cps
+      ~global_flow_info
+      ~fun_info
+      ~types
+      ~raising_funcs
+      p
   in
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
