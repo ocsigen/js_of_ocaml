@@ -86,9 +86,9 @@
  (name toplevel_wasm)
  (modules toplevel_wasm)
  (libraries
+  wasm_of_ocaml-compiler.dynlink-compiler
   lwt_toplevel_lib
   js_of_ocaml
-  wasm_of_ocaml-compiler.dynlink-compiler
   js_of_ocaml-toplevel.common)
  (flags
   (:standard -rectypes))
@@ -245,6 +245,9 @@
    %{bin:wasm_of_ocaml}
    compile
    --toplevel
+   %{read-strings:effects_flags.txt}
+   --file
+   %{dep:examples.ml}
    --export
    %{dep:export_wasm.txt}
    %{dep:toplevel_wasm.bc}

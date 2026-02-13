@@ -68,6 +68,7 @@ type t =
   ; dynlink : bool
   ; no_cmis : bool
   ; export_file : string option
+  ; fs_files : string list
   }
 
 let set_param =
@@ -161,6 +162,10 @@ let options () =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(value & opt_all dirpath [] & info [ "I" ] ~docv:"DIR" ~doc)
   in
+  let fs_files =
+    let doc = "Register [$(docv)] to the pseudo filesystem." in
+    Arg.(value & opt_all filepath [] & info [ "file" ] ~docv:"FILE" ~doc)
+  in
   let effects =
     let doc =
       "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
@@ -175,6 +180,7 @@ let options () =
       common
       set_param
       include_dirs
+      fs_files
       profile
       _
       toplevel
@@ -226,6 +232,7 @@ let options () =
       ; dynlink
       ; no_cmis
       ; export_file
+      ; fs_files
       }
   in
   let t =
@@ -234,6 +241,7 @@ let options () =
       $ Lazy.force Jsoo_cmdline.Arg.t
       $ set_param
       $ include_dirs
+      $ fs_files
       $ profile
       $ linkall
       $ toplevel
@@ -326,6 +334,7 @@ let options_runtime_only () =
       ; dynlink = false
       ; no_cmis = false
       ; export_file = None
+      ; fs_files = []
       }
   in
   let t =

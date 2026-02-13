@@ -366,6 +366,7 @@ let run
     ; dynlink
     ; no_cmis
     ; export_file
+    ; fs_files
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
@@ -588,15 +589,24 @@ let run
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          let embedded_files =
-           if include_cmis
-           then
-             let paths =
-               include_dirs
-               @ StringSet.elements
-                   (Parse_bytecode.Debug.paths code.debug ~units:code.cmis)
-             in
-             Pseudo_fs.collect_cmis ~cmis:code.cmis ~paths
-           else []
+           let cmi_files =
+             if include_cmis
+             then
+               let paths =
+                 include_dirs
+                 @ StringSet.elements
+                     (Parse_bytecode.Debug.paths code.debug ~units:code.cmis)
+               in
+               Pseudo_fs.collect_cmis ~cmis:code.cmis ~paths
+             else []
+           in
+           let user_files =
+             List.concat_map fs_files ~f:(fun f ->
+                 List.map
+                   (Pseudo_fs.list_files f include_dirs)
+                   ~f:(fun (name, filename) -> name, Fs.read_file filename))
+           in
+           user_files @ cmi_files
          in
          Fs.with_intermediate_file (Filename.temp_file "code" ".wasm")
          @@ fun input_wasm_file ->
