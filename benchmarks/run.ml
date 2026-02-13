@@ -254,7 +254,7 @@ let _ =
   let compile_wasmoo ?(effects = `None) opts =
     compile
       (Format.sprintf
-         "wasm_of_ocaml -q %s %s"
+         "../_build/default/compiler/bin-wasm_of_ocaml/wasm_of_ocaml.exe -q %s %s"
          opts
          (match effects with
          | `None -> ""
@@ -366,10 +366,12 @@ let _ =
     Spec.js_of_ocaml_effects_double_translation;
   if compile_only then exit 0;
   Format.eprintf "Measure@.";
-  if filter_bench ("", Spec.opt) then measure ~param ~code ~meas:times ~spec:Spec.opt "";
+  (*  if filter_bench ("", Spec.opt) then measure ~param ~code ~meas:times ~spec:Spec.opt "";
   if filter_bench ("", Spec.byte) then measure ~param ~code ~meas:times ~spec:Spec.byte "";
+*)
   let all_spec =
-    [ Some Spec.js_of_ocaml
+    [ (*
+Some Spec.js_of_ocaml
     ; Some Spec.js_of_ocaml_o3
     ; Some Spec.js_of_ocaml_js_string
     ; Some Spec.js_of_ocaml_unsafe
@@ -379,7 +381,8 @@ let _ =
     ; Some Spec.js_of_ocaml_call
     ; Some Spec.js_of_ocaml_effects_cps
     ; Some Spec.js_of_ocaml_effects_double_translation
-    ; Some Spec.wasm_of_ocaml
+    ; *)
+      Some Spec.wasm_of_ocaml
     ]
   in
   let interpreters, suites =
@@ -389,7 +392,7 @@ let _ =
       ( (match interpreters with
         | i :: _ -> [ i ]
         | [] -> [])
-      , [ Some Spec.js_of_ocaml; Some Spec.wasm_of_ocaml ] )
+      , [ (*Some Spec.js_of_ocaml;*) Some Spec.wasm_of_ocaml ] )
   in
   List.iter interpreters ~f:(fun (comp, dir) ->
       (* Measure the time taken by an implementation in Javascript for comparison *)
