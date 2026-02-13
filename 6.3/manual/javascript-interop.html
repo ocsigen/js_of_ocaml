@@ -1,0 +1,369 @@
+<html><head><title> JavaScript interoperability</title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="https://ocsigen.org/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script type="application/javascript" src="https://ocsigen.org/js/client.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js">
+//<![CDATA[
+
+//]]>
+</script></head><body class="javascript-interop js_of_ocaml"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href=".././../../" class="ocsimore_phrasing_link"><img src=".././../../img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml</p><div class="mainmenu"><p class="mainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a></p><p class="mainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a></p><p><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a></p><p class="mainmenu-current"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a></p><p><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a></p><p><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a></p><p><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a></p><p><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a></p></div><form id="googlesearch" action="https://google.com/search"><input name="q" id="gsearch-box" placeholder="Search using Google"/><label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label><input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/></form><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a>
+</li><li class="drawermainmenu-project"><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-project"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a>
+</li><li class="drawermainmenu-project"><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-toolkit/" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsipersist/" class="ocsimore_phrasing_link">Ocsipersist</a>
+</li><li class="drawermainmenu-project"><a href=".././../../html_of_wiki/" class="ocsimore_phrasing_link">html_of_wiki</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsimore/" class="ocsimore_phrasing_link">Ocsimore (<em>deprecated</em>)</a>
+</li><li class="drawermainmenu-page"><a href=".././../../projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href=".././../../papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href=".././../../credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li><li class="drawermainmenu-page"><a href=".././../../contributing" class="ocsimore_phrasing_link">Contributing</a>
+</li><li class="drawermainmenu-page"><a href=".././../../blog" class="ocsimore_phrasing_link">Blog</a>
+</li><li class="drawermainmenu-page"><a href=".././../../install" class="ocsimore_phrasing_link">Installation</a>
+</li><li class="drawermainmenu-page"><a href="https://github.com/ocsigen" class="ocsimore_phrasing_link">Source code</a>
+</li></ul><nav class="how-doctree"><h2>Getting Started</h2><h3><a href="overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="install" class="ocsimore_phrasing_link">Installation</a></h3><h3><a href="quickstart" class="ocsimore_phrasing_link">Quick Start</a></h3><h2>Programming Guide</h2><h3><a href="javascript-interop" class="ocsimore_phrasing_link">JavaScript interop</a></h3><h3><a href="ppx" class="ocsimore_phrasing_link">PPX syntax extension</a></h3><h3><a href="ppx-deriving" class="ocsimore_phrasing_link">JSON derivation</a></h3><h3><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h3><h3><a href="errors" class="ocsimore_phrasing_link">Error handling</a></h3><h3><span><a href=".././api/js_of_ocaml/">API</a></span></h3><h2>Lwt Support</h2><h3><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h3><h3><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h3><h2>Compiler</h2><h3><a href="options" class="ocsimore_phrasing_link">Command line options</a></h3><h3><a href="compilation-modes" class="ocsimore_phrasing_link">Compilation modes</a></h3><h3><a href="linker" class="ocsimore_phrasing_link">JavaScript primitives</a></h3><h3><a href="tailcall" class="ocsimore_phrasing_link">Tailcall optimization</a></h3><h3><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h3><h3><a href="runtime-representation" class="ocsimore_phrasing_link">Runtime representation</a></h3><h2>Wasm_of_ocaml</h2><h3><a href="wasm_overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="wasm_runtime" class="ocsimore_phrasing_link">Writing Wasm primitives</a></h3><h2>How-to Guides</h2><h3><a href="build-toplevel" class="ocsimore_phrasing_link">Build a toplevel or use Dynlink</a></h3><h3><a href="debug" class="ocsimore_phrasing_link">Debug a program</a></h3><h3><a href="performances" class="ocsimore_phrasing_link">Performance</a></h3><h3><a href="contribute" class="ocsimore_phrasing_link">Contribute</a></h3><h2>Try it</h2><h3><span><a href=".././manual/files/toplevel/index.html">OCaml toplevel</a></span></h3><h3><a href="examples" class="ocsimore_phrasing_link">Examples and projects</a></h3></nav></nav></aside></div><p class="reasonwarning">Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+</p><button id="reason">Switch to </button><div class="twocols"><nav class="leftcol">Version <select class="how-versions" onchange="location = this.value;"><option value=".././../dev/manual/javascript-interop">dev</option><option value=".././../6.3/manual/javascript-interop" selected="selected">6.3</option><option value=".././../6.2.0/manual/javascript-interop">6.2.0</option><option value=".././../6.1.0/manual/javascript-interop">6.1.0</option><option value=".././../6.0.1/manual/javascript-interop">6.0.1</option><option value=".././../5.9.1/manual/javascript-interop">5.9.1</option><option value=".././../5.8.2/manual/javascript-interop">5.8.2</option><option value=".././../5.7.2/manual/javascript-interop">5.7.2</option><option value=".././../5.6.0/manual/javascript-interop">5.6.0</option><option value=".././../5.5.2/manual/javascript-interop">5.5.2</option><option value=".././../5.4.0/manual/javascript-interop">5.4.0</option><option value=".././../5.3.0/manual/javascript-interop">5.3.0</option><option value=".././../5.2.0/manual/javascript-interop">5.2.0</option><option value=".././../5.1.0/manual/javascript-interop">5.1.0</option><option value=".././../5.0.1/manual/javascript-interop">5.0.1</option><option value=".././../4.1.0/manual/javascript-interop">4.1.0</option><option value=".././../4.0.0/manual/javascript-interop">4.0.0</option><option value=".././../3.11.0/manual/javascript-interop">3.11.0</option><option value=".././../3.10.0/manual/javascript-interop">3.10.0</option><option value=".././../3.9.0/manual/javascript-interop">3.9.0</option><option value=".././../3.8.0/manual/javascript-interop">3.8.0</option><option value=".././../3.7.0/manual/javascript-interop">3.7.0</option><option value=".././../3.6.0/manual/javascript-interop">3.6.0</option><option value=".././../3.5.1/manual/javascript-interop">3.5.1</option></select><nav class="how-doctree"><h2>Getting Started</h2><h3><a href="overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="install" class="ocsimore_phrasing_link">Installation</a></h3><h3><a href="quickstart" class="ocsimore_phrasing_link">Quick Start</a></h3><h2>Programming Guide</h2><h3><a href="javascript-interop" class="ocsimore_phrasing_link">JavaScript interop</a></h3><h3><a href="ppx" class="ocsimore_phrasing_link">PPX syntax extension</a></h3><h3><a href="ppx-deriving" class="ocsimore_phrasing_link">JSON derivation</a></h3><h3><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h3><h3><a href="errors" class="ocsimore_phrasing_link">Error handling</a></h3><h3><span><a href=".././api/js_of_ocaml/">API</a></span></h3><h2>Lwt Support</h2><h3><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h3><h3><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h3><h2>Compiler</h2><h3><a href="options" class="ocsimore_phrasing_link">Command line options</a></h3><h3><a href="compilation-modes" class="ocsimore_phrasing_link">Compilation modes</a></h3><h3><a href="linker" class="ocsimore_phrasing_link">JavaScript primitives</a></h3><h3><a href="tailcall" class="ocsimore_phrasing_link">Tailcall optimization</a></h3><h3><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h3><h3><a href="runtime-representation" class="ocsimore_phrasing_link">Runtime representation</a></h3><h2>Wasm_of_ocaml</h2><h3><a href="wasm_overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="wasm_runtime" class="ocsimore_phrasing_link">Writing Wasm primitives</a></h3><h2>How-to Guides</h2><h3><a href="build-toplevel" class="ocsimore_phrasing_link">Build a toplevel or use Dynlink</a></h3><h3><a href="debug" class="ocsimore_phrasing_link">Debug a program</a></h3><h3><a href="performances" class="ocsimore_phrasing_link">Performance</a></h3><h3><a href="contribute" class="ocsimore_phrasing_link">Contribute</a></h3><h2>Try it</h2><h3><span><a href=".././manual/files/toplevel/index.html">OCaml toplevel</a></span></h3><h3><a href="examples" class="ocsimore_phrasing_link">Examples and projects</a></h3></nav></nav><article class="rightcol"><h1> JavaScript interoperability</h1><p>This page explains how to interact with JavaScript from OCaml using
+the Js_of_ocaml library.
+</p><h2 id="introduction"> Introduction <a class="backref" href="#introduction">&#182;</a></h2><p>OCaml and JavaScript represent values differently, for example:
+</p><ul><li> OCaml strings are sequence of bytes; JavaScript strings are UTF-16
+</li><li> OCaml booleans are integers (0/1); JavaScript has distinct <span class="teletype">true</span>/<span class="teletype">false</span>
+</li><li> OCaml arrays have a tag element; JavaScript arrays don't
+</li><li> OCaml objects don't map to JavaScript objects
+</li></ul><p>Js_of_ocaml (the lib) provides a typed interface to bridge these differences safely.
+</p><h3> Alternatives</h3><p>Other libraries for JavaScript interop:
+</p><ul><li> <a href="https://erratique.ch/software/brr" class="ocsimore_phrasing_link">Brr</a> — Alternative browser API bindings with a different design
+</li><li> <a href="https://github.com/LexiFi/gen_js_api" class="ocsimore_phrasing_link">gen_js_api</a> — Generates bindings from TypeScript definitions
+</li></ul><h2 id="js-t"> Core concept: <span class="teletype">'a Js.t</span> <a class="backref" href="#js-t">&#182;</a></h2><p>All JavaScript values have type <span class="teletype">'a Js.t</span>
+where the phantom type parameter <span class="teletype">'a</span> encodes the shape of the JavaScript
+value:
+</p><p>For example, <span class="teletype">Js.js_string Js.t</span> represents a JavaScript string, and
+<span class="teletype">&lt; length : int Js.readonly_prop &gt; Js.t</span> represents an object with a
+<span class="teletype">length</span> property.
+</p><p>To work with these values (access properties, call methods), you need the
+<span><a href=".././manual/ppx">PPX syntax extension</a></span> which provides operators like
+<span class="teletype">##.</span> and <span class="teletype">##</span>.
+</p><h2 id="conversions"> Conversions <a class="backref" href="#conversions">&#182;</a></h2><p>OCaml and JavaScript represent basic types differently (see
+<span><a href=".././manual/runtime-representation">runtime representation</a></span>). For example,
+OCaml strings are byte sequences while JavaScript strings are UTF-16. When passing
+values between OCaml and JavaScript code, you must convert them explicitly.
+</p><p>The conversion functions follow a consistent naming pattern:
+</p><ul><li> <strong><span class="teletype">Js.xxx</span></strong> converts OCaml to JavaScript (e.g., <span class="teletype">Js.string</span>, <span class="teletype">Js.bool</span>, <span class="teletype">Js.array</span>)
+</li><li> <strong><span class="teletype">Js.to_xxx</span></strong> converts JavaScript to OCaml (e.g., <span class="teletype">Js.to_string</span>, <span class="teletype">Js.to_bool</span>, <span class="teletype">Js.to_array</span>)
+</li></ul><p><strong>When do you need to convert?</strong>
+</p><ul><li> Passing OCaml values to JavaScript functions or properties
+</li><li> Reading JavaScript values back into OCaml
+</li><li> Working with DOM APIs (which use JavaScript types)
+</li></ul><p><strong>Exception</strong>: OCaml integers can be used directly—no conversion needed.
+</p><h3> Summary</h3><table><tr><th> OCaml type </th><th> JS type </th><th> OCaml -&gt; JS </th><th> JS -&gt; OCaml </th></tr><tr><td> <span class="teletype">string</span> </td><td> String </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-string">Js.string</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_string">Js.to_string</a></span> </td></tr><tr><td> <span class="teletype">string</span> (bytes) </td><td> String </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-bytestring">Js.bytestring</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_bytestring">Js.to_bytestring</a></span> </td></tr><tr><td> <span class="teletype">bool</span> </td><td> Boolean </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-bool">Js.bool</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_bool">Js.to_bool</a></span> </td></tr><tr><td> <span class="teletype">int</span> </td><td> Number </td><td> (direct) </td><td> (direct) </td></tr><tr><td> <span class="teletype">float</span> </td><td> Number </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-float">Js.float</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_float">Js.to_float</a></span> </td></tr><tr><td> <span class="teletype">'a array</span> </td><td> Array </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-array">Js.array</a></span> </td><td> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_array">Js.to_array</a></span> </td></tr></table><h3> Strings</h3><p>OCaml strings are byte arrays; JavaScript strings are UTF-16.
+</p><pre class=""><code class="language-ocaml translatable">(* OCaml string -&gt; JS string *)
+let js_str : Js.js_string Js.t = Js.string &quot;Hello&quot;
+
+(* JS string -&gt; OCaml string *)
+let ocaml_str : string = Js.to_string js_str</code></pre><p>For binary data (bytes 0-255), use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-bytestring">Js.bytestring</a></span> and <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-to_bytestring">Js.to_bytestring</a></span>:
+</p><pre class=""><code class="language-ocaml translatable">let js_bytes = Js.bytestring &quot;\x00\x01\x02&quot;
+let ocaml_bytes = Js.to_bytestring js_bytes</code></pre><h3> Booleans</h3><p>OCaml booleans are encoded as 0 and 1, not JavaScript's <span class="teletype">true</span> and <span class="teletype">false</span>.
+</p><pre class=""><code class="language-ocaml translatable">let js_true : bool Js.t = Js._true        (* or Js.bool true *)
+let js_false : bool Js.t = Js._false      (* or Js.bool false *)
+let ocaml_bool : bool = Js.to_bool js_true</code></pre><h3> Numbers</h3><p>OCaml integers can be used directly. Floats need conversion.
+</p><pre class=""><code class="language-ocaml translatable">(* Floats need conversion *)
+let js_num : Js.number Js.t = Js.float 3.14
+let ocaml_float : float = Js.to_float js_num</code></pre><h3> Arrays</h3><pre class=""><code class="language-ocaml translatable">(* OCaml array -&gt; JS array *)
+let js_arr : int Js.js_array Js.t = Js.array [| 1; 2; 3 |]
+
+(* JS array -&gt; OCaml array *)
+let ocaml_arr : int array = Js.to_array js_arr</code></pre><h2 id="describing-objects"> Describing JS objects <a class="backref" href="#describing-objects">&#182;</a></h2><p>To call methods or access properties on a JavaScript object, you need to
+tell OCaml what shape the object has. This is done using OCaml class types,
+where each <span class="teletype">method</span> declaration describes either a JavaScript property
+or method.
+</p><p>There are two ways to write these types:
+</p><p><strong>Inline (anonymous) types</strong> — useful for one-off or simple cases:
+</p><pre>&lt; field1 : type1; field2 : type2; ... &gt; Js.t
+</pre><p><strong>Named class types</strong> — better for reusable or complex interfaces:
+</p><pre class=""><code class="language-ocaml translatable">class type myObject = object
+  method field1 : type1
+  method field2 : type2
+end
+
+(* Use as: myObject Js.t *)</code></pre><p>For instance, a JavaScript object with a <span class="teletype">data</span> property and an
+<span class="teletype">appendData</span> method would have type:
+</p><pre>&lt; data : Js.js_string Js.t Js.prop;
+  appendData : Js.js_string Js.t -&gt; unit Js.meth &gt; Js.t
+</pre><h3> Property types</h3><table><tr><th> Type </th><th> Description </th></tr><tr><td> <span class="teletype">'a Js.readonly_prop</span> </td><td> Read-only property </td></tr><tr><td> <span class="teletype">'a Js.writeonly_prop</span> </td><td> Write-only property </td></tr><tr><td> <span class="teletype">'a Js.prop</span> </td><td> Read/write property </td></tr><tr><td> <span class="teletype">t1 -&gt; ... -&gt; tn -&gt; t Js.meth</span> </td><td> Method taking n arguments </td></tr><tr><td> <span class="teletype">'a Js.optdef_prop</span> </td><td> Optional property (may be <span class="teletype">undefined</span>) </td></tr></table><p>The <span><a href=".././manual/ppx">PPX syntax</a></span> rely on these info to provide type safe access to properties and method.
+</p><h3> Example</h3><p>Given a JavaScript object:
+</p><pre class="manually-translated"><code class="language-javascript">{
+  name: &quot;example&quot;,           // read-only string
+  count: 42,                 // read-write number
+  greet: function(x) { ... } // method
+}</code></pre><p>Its type could be <span class="teletype">myObj Js.t</span>:
+</p><pre class=""><code class="language-ocaml translatable">class type myObj = object
+  method name : Js.js_string Js.t Js.readonly_prop
+  method count : int Js.prop
+  method greet : Js.js_string Js.t -&gt; unit Js.meth
+end</code></pre><h3> Method and property name mangling</h3><p>When accessing a field using the <span class="teletype">##.</span>/<span class="teletype">##</span> syntax, the field name is transformed by:
+</p><ol><li> Removing a leading underscore (if present)
+</li><li> Removing all characters starting from the last underscore
+</li></ol><p>This enables:
+</p><ul><li> <strong>Capitalized names</strong>: <span class="teletype">_Foo</span> refers to JavaScript's <span class="teletype">Foo</span>
+</li><li> <strong>Reserved ocaml keywords</strong>: <span class="teletype">_type</span> refers to JavaScript's <span class="teletype">type</span>
+</li><li> <strong>Method overloading</strong>: <span class="teletype">foo_int</span> and <span class="teletype">foo_string</span> both refer to <span class="teletype">foo</span>
+</li></ul><p><strong>Warning</strong>: This mangling is a common source of bugs. If you write
+<span class="teletype">obj##.some_property</span>, it accesses the JavaScript property <span class="teletype">some</span> (not
+<span class="teletype">some_property</span>). To access <span class="teletype">some_property</span>, use <span class="teletype">obj##._some_property_</span>
+or <span class="teletype">obj##.some_property_</span>.
+</p><h4> Examples</h4><pre class=""><code class="language-ocaml translatable">class type canvas = object
+  (* All three refer to the same JS method: drawImage *)
+  method drawImage :
+      imageElement Js.t -&gt; int -&gt; int -&gt; unit Js.meth
+  method drawImage_withSize :
+      imageElement Js.t -&gt; int -&gt; int -&gt; int -&gt; int -&gt; unit Js.meth
+  method drawImage_fromCanvas :
+      canvasElement Js.t -&gt; int -&gt; int -&gt; unit Js.meth
+end</code></pre><h4> Full naming rules</h4><pre class=""><code class="language-ocaml translatable">class type example = object
+  (* All of these refer to JS field [meth] *)
+  method meth : ..
+  method meth_int : ..
+  method _meth_ : ..
+  method _meth_aa : ..
+
+  (* All of these refer to JS field [meth_a] *)
+  method meth_a_int : ..
+  method _meth_a_ : ..
+  method _meth_a_b : ..
+
+  (* Refer to [Meth] (capitalized) *)
+  method _Meth : ..
+
+  (* Refer to [_meth] (leading underscore in JS) *)
+  method __meth : ..
+
+  (* Refer to [_] *)
+  method __ : ..
+end</code></pre><h3> Binding constants from a class</h3><p>For JavaScript constants like <span class="teletype">SomeLib.SomeClass.VALUE_A</span>:
+</p><pre class=""><code class="language-ocaml translatable">(* Type definition *)
+class type someClass = object
+  method _VALUE_A_ : int Js.readonly_prop
+  method _VALUE_B_ : int Js.readonly_prop
+end
+
+(* Get the class object *)
+let someClass : someClass Js.t =
+  (Js.Unsafe.js_expr &quot;SomeLib&quot;)##._SomeClass
+
+(* Access constants *)
+let value_a = someClass##._VALUE_A_</code></pre><h2 id="accessing-values"> Accessing JavaScript values <a class="backref" href="#accessing-values">&#182;</a></h2><p>Once you have described a JavaScript object's type, use the
+<span><a href=".././manual/ppx">PPX syntax</a></span> to access its properties and methods:
+</p><ul><li> <span class="teletype">obj##.prop</span> — read a property
+</li><li> <span class="teletype">obj##.prop := v</span> — write a property
+</li><li> <span class="teletype">obj##meth args</span> — call a method
+</li></ul><h3> Global variables</h3><p>Global JavaScript variables are properties of the global object. Use
+<span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-global">Js.Unsafe.global</a></span> to access them (<span class="teletype">window</span> in browsers,
+<span class="teletype">globalThis</span> in Node.js):
+</p><pre class=""><code class="language-ocaml translatable">(* Access document *)
+let doc : Dom_html.document Js.t = Js.Unsafe.global##.document
+
+(* Read and write a custom global *)
+let get_config () : config Js.t = Js.Unsafe.global##.myAppConfig
+let set_config (x : config Js.t) = Js.Unsafe.global##.myAppConfig := x</code></pre><p>You can also use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-js_expr">Js.Unsafe.js_expr</a></span> for any JavaScript expression:
+</p><pre class=""><code class="language-ocaml translatable">let v = (Js.Unsafe.js_expr &quot;window&quot;)##.document</code></pre><p>Be careful: both <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-global">Js.Unsafe.global</a></span> and <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-js_expr">Js.Unsafe.js_expr</a></span> are untyped.
+Verify the library documentation before writing type annotations.
+</p><h3> Untyped property access</h3><p>When a property is missing from the OCaml interface, use
+<span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-coerce">Js.Unsafe.coerce</a></span> for untyped access:
+</p><pre class=""><code class="language-ocaml translatable">(* Read a property *)
+let value = (Js.Unsafe.coerce obj)##.someProp
+
+(* Write a property *)
+(Js.Unsafe.coerce obj)##.someProp := v</code></pre><h2 id="null-undefined"> Handling null and undefined <a class="backref" href="#null-undefined">&#182;</a></h2><p>JavaScript has two &quot;missing value&quot; types: <span class="teletype">null</span> and <span class="teletype">undefined</span>.
+Js_of_ocaml represents these with distinct types.
+</p><h3> Js.Opt for nullable values (<span class="teletype">null</span>)</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Opt/#module-Opt">Js.Opt</a></span> for values that may be <span class="teletype">null</span> (e.g., DOM methods that
+return <span class="teletype">null</span> when an element is not found):
+</p><pre class=""><code class="language-ocaml translatable">(* Check if null *)
+let is_present = Js.Opt.test value
+
+(* Convert to OCaml option *)
+let opt : element Js.t option = Js.Opt.to_option value
+
+(* Handle both cases *)
+let result = Js.Opt.case value
+  (fun () -&gt; (* null *) &quot;not found&quot;)
+  (fun v -&gt; (* has value *) process v)
+
+(* Get value or raise exception *)
+let v = Js.Opt.get value (fun () -&gt; failwith &quot;was null&quot;)
+
+(* Create nullable values *)
+let some_val : element Js.t Js.opt = Js.some element
+let null_val : element Js.t Js.opt = Js.null</code></pre><h3> Js.Optdef for optional values (<span class="teletype">undefined</span>)</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Optdef/#module-Optdef">Js.Optdef</a></span> for values that may be <span class="teletype">undefined</span> (e.g., optional
+object properties, array access beyond bounds):
+</p><pre class=""><code class="language-ocaml translatable">(* Check if defined *)
+let is_defined = Js.Optdef.test value
+
+(* Convert to OCaml option *)
+let opt : config Js.t option = Js.Optdef.to_option value
+
+(* Handle both cases *)
+let result = Js.Optdef.case value
+  (fun () -&gt; (* undefined *) default_config)
+  (fun v -&gt; (* defined *) v)
+
+(* Create optdef values *)
+let def_val : int Js.optdef = Js.def 42
+let undef_val : int Js.optdef = Js.undefined</code></pre><h2 id="calling-functions"> Calling JavaScript functions <a class="backref" href="#calling-functions">&#182;</a></h2><p>OCaml and Javascript do not follow the same calling convention. In
+OCaml, functions can be partially applied, returning a function
+closure. In Javascript, when only some of the parameters are passed,
+the others are set to the undefined value. As a consequence, it is not
+possible to call a Javascript function from OCaml as if it was an
+OCaml function, and conversely.
+</p><p>There are three ways to call JavaScript functions, depending on how <span class="teletype">this</span>
+should be bound.
+</p><p>At the moment, there is no syntactic sugar for calling Javascript functions.
+</p><h3> Standalone functions with <span class="teletype">fun_call</span></h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-fun_call">Js.Unsafe.fun_call</a></span> for functions where <span class="teletype">this</span> doesn't matter:
+</p><pre class=""><code class="language-ocaml translatable">(* Equivalent to: decodeURI(s) *)
+let decodeURI (s : Js.js_string Js.t) : Js.js_string Js.t =
+  Js.Unsafe.fun_call
+    (Js.Unsafe.js_expr &quot;decodeURI&quot;)
+    [| Js.Unsafe.inject s |]
+
+(* Equivalent to: parseInt(s, 10) *)
+let parseInt (s : Js.js_string Js.t) : int =
+  Js.Unsafe.fun_call
+    (Js.Unsafe.js_expr &quot;parseInt&quot;)
+    [| Js.Unsafe.inject s; Js.Unsafe.inject 10 |]</code></pre><h3> Methods with <span class="teletype">meth_call</span></h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-meth_call">Js.Unsafe.meth_call</a></span> to call a method on an object (<span class="teletype">this</span> is
+bound to the object):
+</p><pre class=""><code class="language-ocaml translatable">(* Equivalent to: arr.slice(1, 3) *)
+let slice arr start stop =
+  Js.Unsafe.meth_call arr &quot;slice&quot;
+    [| Js.Unsafe.inject start; Js.Unsafe.inject stop |]</code></pre><h3> Functions with explicit <span class="teletype">this</span> binding</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-call">Js.Unsafe.call</a></span> when you need to explicitly set <span class="teletype">this</span>:
+</p><pre class=""><code class="language-ocaml translatable">(* Equivalent to: func.call(thisArg, arg1, arg2) *)
+let result =
+  Js.Unsafe.call func thisArg [| Js.Unsafe.inject arg1; Js.Unsafe.inject arg2 |]</code></pre><h3> Calling runtime primitives</h3><p>For JavaScript functions declared in runtime files (with <span class="teletype">//Provides:</span>),
+you can use OCaml <span class="teletype">external</span> declarations:
+</p><pre class=""><code class="language-ocaml translatable">external my_primitive : int -&gt; int -&gt; int = &quot;my_js_function&quot;</code></pre><p>This calls the JavaScript function <span class="teletype">my_js_function</span> directly, without the
+overhead of <span class="teletype">Js.Unsafe</span> wrappers. See <span><a href=".././manual/linker#writing-primitives">writing JavaScript primitives</a></span>
+for how to define such functions.
+</p><h2 id="callbacks"> Passing OCaml functions to JavaScript <a class="backref" href="#callbacks">&#182;</a></h2><p>When JavaScript code needs to call back into OCaml (e.g., event handlers,
+async callbacks), you must wrap OCaml functions appropriately.
+</p><h3> Basic callbacks with <span class="teletype">Js.wrap_callback</span></h3><pre class=""><code class="language-ocaml translatable">(* setTimeout example *)
+let set_timeout f ms =
+  Js.Unsafe.global##setTimeout
+    (Js.wrap_callback f)
+    ms
+
+let () = set_timeout (fun () -&gt; print_endline &quot;Hello!&quot;) 1000</code></pre><p><span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-wrap_callback">Js.wrap_callback</a></span> handles partial application: if JavaScript
+calls the function with fewer arguments than expected, the result is a
+partially applied function.
+</p><h3> Callbacks with <span class="teletype">this</span> binding</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-wrap_meth_callback">Js.wrap_meth_callback</a></span> when the callback needs access to <span class="teletype">this</span>:
+</p><pre class=""><code class="language-ocaml translatable">(* The first parameter receives the 'this' value *)
+let callback = Js.wrap_meth_callback (fun this event -&gt;
+  let target : Dom_html.element Js.t = this in
+  (* ... handle event ... *)
+  Js._true)</code></pre><h3> DOM event handlers</h3><p>For DOM events, use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Dom_html/#val-handler">Dom_html.handler</a></span> which wraps the function
+and handles the return value (<span class="teletype">Js._false</span> prevents the default action):
+</p><pre class=""><code class="language-ocaml translatable">let handler = Dom_html.handler (fun event -&gt;
+  Dom_html.window##alert (Js.string &quot;Clicked!&quot;);
+  Js._true)
+
+button##.onclick := handler</code></pre><p>For handlers that need access to <span class="teletype">this</span>, use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Dom/#val-full_handler">Dom.full_handler</a></span>:
+</p><pre class=""><code class="language-ocaml translatable">let handler = Dom.full_handler (fun this event -&gt;
+  let element : Dom_html.element Js.t = this in
+  (* ... *)
+  Js._true)</code></pre><h3> Strict arity callbacks</h3><p>For performance-critical code, or when you don't need partial application,
+use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-callback">Js.Unsafe.callback</a></span>:
+</p><pre class=""><code class="language-ocaml translatable">(* Strict callback - missing args become undefined, extra args are lost *)
+let strict_cb = Js.Unsafe.callback (fun x y -&gt; x + y)
+
+(* Explicit arity - ensures exactly 2 arguments *)
+let arity_cb = Js.Unsafe.callback_with_arity 2 (fun x y -&gt; x + y)</code></pre><h3> Callbacks with variable arguments</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/#val-callback_with_arguments">Js.Unsafe.callback_with_arguments</a></span> when the callback receives a
+variable number of arguments:
+</p><pre class=""><code class="language-ocaml translatable">let varargs_cb = Js.Unsafe.callback_with_arguments (fun args -&gt;
+  let len = args##.length in
+  Printf.printf &quot;Called with %d arguments\n&quot; len)</code></pre><h2 id="feature-detection"> Feature detection <a class="backref" href="#feature-detection">&#182;</a></h2><p>JavaScript APIs vary across browsers. Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Optdef/#module-Optdef">Js.Optdef</a></span>
+to check for optional features:
+</p><pre class=""><code class="language-ocaml translatable">let supports_fetch () =
+  Js.Optdef.test Js.Unsafe.global##.fetch
+
+let supports_local_storage () =
+  Js.Optdef.test Js.Unsafe.global##.localStorage
+
+(* Safely access optional members *)
+let get_optional_method obj =
+  Js.Optdef.to_option (Js.Unsafe.coerce obj)##.someMethod</code></pre><h2 id="union-types"> Union types <a class="backref" href="#union-types">&#182;</a></h2><p>JavaScript APIs often use union types (e.g., <span class="teletype">string | Node</span>). Since OCaml
+requires a single type, use an opaque type with runtime checking.
+</p><h3> Using <span class="teletype">instanceof</span> for object types</h3><pre class=""><code class="language-ocaml translatable">(* Opaque type representing the union: Element | Text *)
+type element_or_text
+
+class type container = object
+  method child : element_or_text Js.t Js.prop
+end
+
+(* Cast using instanceof *)
+let as_element (x : element_or_text Js.t) : Dom.element Js.t Js.opt =
+  if Js.instanceof x (Js.Unsafe.global##._Element)
+  then Js.some (Js.Unsafe.coerce x)
+  else Js.null</code></pre><h3> Using <span class="teletype">typeof</span> for primitive types</h3><pre class=""><code class="language-ocaml translatable">type string_or_number
+
+let as_string (x : string_or_number Js.t) : Js.js_string Js.t Js.opt =
+  if Js.typeof x = Js.string &quot;string&quot;
+  then Js.some (Js.Unsafe.coerce x)
+  else Js.null</code></pre><h3> Converting to OCaml variants</h3><pre class=""><code class="language-ocaml translatable">type child =
+  | Element of Dom.element Js.t
+  | Text of Dom.text Js.t
+
+let classify_child (x : element_or_text Js.t) : child =
+  if Js.instanceof x (Js.Unsafe.global##._Element)
+  then Element (Js.Unsafe.coerce x)
+  else Text (Js.Unsafe.coerce x)
+
+(* Now use pattern matching *)
+let handle container =
+  match classify_child container##.child with
+  | Element e -&gt; (* work with element *)
+  | Text t -&gt; (* work with text node *)</code></pre><h2 id="json"> JSON serialization <a class="backref" href="#json">&#182;</a></h2><p>The <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Json/#module-Json">Json</a></span> module
+provides serialization between OCaml values and JSON strings. The
+deserialization is unsafe in the same way the OCaml
+Marshal.from_string function is.
+</p><pre class=""><code class="language-ocaml translatable">(* OCaml value -&gt; JSON string *)
+let json : Js.js_string Js.t = Json.output value
+
+(* JSON string -&gt; OCaml value (unsafe, like Marshal) *)
+let value : 'a = Json.unsafe_input json</code></pre><p>For type-safe JSON handling, use <span><a href=".././manual/ppx-deriving">ppx_deriving_json</a></span>.
+</p><h2 id="runtime-values"> Accessing runtime values <a class="backref" href="#runtime-values">&#182;</a></h2><p>JavaScript values declared with <span class="teletype">//Provides:</span> in runtime files can be
+accessed from OCaml. There are two approaches depending on whether you're
+accessing a function or a non-function value.
+</p><p>See <span><a href=".././manual/linker#writing-primitives">writing JavaScript primitives</a></span>
+for more about the <span class="teletype">//Provides:</span> syntax.
+</p><h3> Functions: use <span class="teletype">external</span></h3><p>For JavaScript <strong>functions</strong>, use OCaml's <span class="teletype">external</span> declaration:
+</p><pre class="manually-translated"><code class="language-javascript">//Provides: my_add
+function my_add(x, y) { return x + y; }</code></pre><pre class=""><code class="language-ocaml translatable">external my_add : int -&gt; int -&gt; int = &quot;my_add&quot;
+
+let result = my_add 1 2  (* calls the JS function directly *)</code></pre><p>This is efficient and integrates naturally with OCaml code.
+</p><h3> Non-function values: use <span class="teletype">runtime_value</span></h3><p>For JavaScript <strong>objects, constants, or other non-function values</strong>, use
+<span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#val-runtime_value">Js.runtime_value</a></span>:
+</p><pre class="manually-translated"><code class="language-javascript">//Provides: myConfig
+var myConfig = { debug: true, version: 42 };</code></pre><pre class=""><code class="language-ocaml translatable">let config : &lt; debug : bool Js.t Js.prop; version : int Js.prop &gt; Js.t =
+  Js.runtime_value &quot;myConfig&quot;</code></pre><p><strong>Important</strong>: The argument must be a string literal, not a variable.
+</p><h2> See also</h2><ul><li> <span><a href=".././manual/ppx">PPX syntax</a></span> - Syntax reference: <span class="teletype">##.</span>, <span class="teletype">##</span>, <span class="teletype">new%js</span>, <span class="teletype">object%js</span>
+</li><li> <span><a href=".././manual/rev-bindings">Exporting to JavaScript</a></span> - Make OCaml code callable from JavaScript
+</li><li> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#module-Js">Js</a></span> - Core JavaScript bindings
+</li><li> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Dom_html/#module-Dom_html">Dom_html</a></span> - HTML DOM bindings</li></ul></article></div></div></body></html>

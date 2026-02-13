@@ -1,0 +1,132 @@
+<html><head><title> Error handling between OCaml and JavaScript</title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="https://ocsigen.org/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script type="application/javascript" src="https://ocsigen.org/js/client.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js">
+//<![CDATA[
+
+//]]>
+</script></head><body class="errors js_of_ocaml"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href=".././../../" class="ocsimore_phrasing_link"><img src=".././../../img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml</p><div class="mainmenu"><p class="mainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a></p><p class="mainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a></p><p><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a></p><p class="mainmenu-current"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a></p><p><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a></p><p><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a></p><p><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a></p><p><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a></p></div><form id="googlesearch" action="https://google.com/search"><input name="q" id="gsearch-box" placeholder="Search using Google"/><label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label><input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/></form><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a>
+</li><li class="drawermainmenu-project"><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-project"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a>
+</li><li class="drawermainmenu-project"><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-toolkit/" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsipersist/" class="ocsimore_phrasing_link">Ocsipersist</a>
+</li><li class="drawermainmenu-project"><a href=".././../../html_of_wiki/" class="ocsimore_phrasing_link">html_of_wiki</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsimore/" class="ocsimore_phrasing_link">Ocsimore (<em>deprecated</em>)</a>
+</li><li class="drawermainmenu-page"><a href=".././../../projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href=".././../../papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href=".././../../credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li><li class="drawermainmenu-page"><a href=".././../../contributing" class="ocsimore_phrasing_link">Contributing</a>
+</li><li class="drawermainmenu-page"><a href=".././../../blog" class="ocsimore_phrasing_link">Blog</a>
+</li><li class="drawermainmenu-page"><a href=".././../../install" class="ocsimore_phrasing_link">Installation</a>
+</li><li class="drawermainmenu-page"><a href="https://github.com/ocsigen" class="ocsimore_phrasing_link">Source code</a>
+</li></ul><nav class="how-doctree"><h2>Getting Started</h2><h3><a href="overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="install" class="ocsimore_phrasing_link">Installation</a></h3><h3><a href="quickstart" class="ocsimore_phrasing_link">Quick Start</a></h3><h2>Programming Guide</h2><h3><a href="javascript-interop" class="ocsimore_phrasing_link">JavaScript interop</a></h3><h3><a href="ppx" class="ocsimore_phrasing_link">PPX syntax extension</a></h3><h3><a href="ppx-deriving" class="ocsimore_phrasing_link">JSON derivation</a></h3><h3><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h3><h3><a href="errors" class="ocsimore_phrasing_link">Error handling</a></h3><h3><span><a href=".././api/js_of_ocaml/">API</a></span></h3><h2>Lwt Support</h2><h3><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h3><h3><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h3><h2>Compiler</h2><h3><a href="options" class="ocsimore_phrasing_link">Command line options</a></h3><h3><a href="compilation-modes" class="ocsimore_phrasing_link">Compilation modes</a></h3><h3><a href="linker" class="ocsimore_phrasing_link">JavaScript primitives</a></h3><h3><a href="tailcall" class="ocsimore_phrasing_link">Tailcall optimization</a></h3><h3><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h3><h3><a href="runtime-representation" class="ocsimore_phrasing_link">Runtime representation</a></h3><h2>Wasm_of_ocaml</h2><h3><a href="wasm_overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="wasm_runtime" class="ocsimore_phrasing_link">Writing Wasm primitives</a></h3><h2>How-to Guides</h2><h3><a href="build-toplevel" class="ocsimore_phrasing_link">Build a toplevel or use Dynlink</a></h3><h3><a href="debug" class="ocsimore_phrasing_link">Debug a program</a></h3><h3><a href="performances" class="ocsimore_phrasing_link">Performance</a></h3><h3><a href="contribute" class="ocsimore_phrasing_link">Contribute</a></h3><h2>Try it</h2><h3><span><a href=".././manual/files/toplevel/index.html">OCaml toplevel</a></span></h3><h3><a href="examples" class="ocsimore_phrasing_link">Examples and projects</a></h3></nav></nav></aside></div><p class="reasonwarning">Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+</p><button id="reason">Switch to </button><div class="twocols"><nav class="leftcol">Version <select class="how-versions" onchange="location = this.value;"><option value=".././../dev/manual/errors">dev</option><option value=".././../6.3/manual/errors" selected="selected">6.3</option><option value=".././../6.2.0/manual/errors">6.2.0</option><option value=".././../6.1.0/manual/errors">6.1.0</option><option value=".././../6.0.1/manual/errors">6.0.1</option><option value=".././../5.9.1/manual/errors">5.9.1</option><option value=".././../5.8.2/manual/errors">5.8.2</option><option value=".././../5.7.2/manual/errors">5.7.2</option><option value=".././../5.6.0/manual/errors">5.6.0</option><option value=".././../5.5.2/manual/errors">5.5.2</option><option value=".././../5.4.0/manual/errors">5.4.0</option><option value=".././../5.3.0/manual/errors">5.3.0</option><option value=".././../5.2.0/manual/errors">5.2.0</option><option value=".././../5.1.0/manual/errors">5.1.0</option><option value=".././../5.0.1/manual/errors">5.0.1</option><option value=".././../4.1.0/manual/errors">4.1.0</option><option value=".././../4.0.0/manual/errors">4.0.0</option><option value=".././../3.11.0/manual/errors">3.11.0</option><option value=".././../3.10.0/manual/errors">3.10.0</option><option value=".././../3.9.0/manual/errors">3.9.0</option><option value=".././../3.8.0/manual/errors">3.8.0</option><option value=".././../3.7.0/manual/errors">3.7.0</option><option value=".././../3.6.0/manual/errors">3.6.0</option><option value=".././../3.5.1/manual/errors">3.5.1</option></select><nav class="how-doctree"><h2>Getting Started</h2><h3><a href="overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="install" class="ocsimore_phrasing_link">Installation</a></h3><h3><a href="quickstart" class="ocsimore_phrasing_link">Quick Start</a></h3><h2>Programming Guide</h2><h3><a href="javascript-interop" class="ocsimore_phrasing_link">JavaScript interop</a></h3><h3><a href="ppx" class="ocsimore_phrasing_link">PPX syntax extension</a></h3><h3><a href="ppx-deriving" class="ocsimore_phrasing_link">JSON derivation</a></h3><h3><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h3><h3><a href="errors" class="ocsimore_phrasing_link">Error handling</a></h3><h3><span><a href=".././api/js_of_ocaml/">API</a></span></h3><h2>Lwt Support</h2><h3><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h3><h3><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h3><h2>Compiler</h2><h3><a href="options" class="ocsimore_phrasing_link">Command line options</a></h3><h3><a href="compilation-modes" class="ocsimore_phrasing_link">Compilation modes</a></h3><h3><a href="linker" class="ocsimore_phrasing_link">JavaScript primitives</a></h3><h3><a href="tailcall" class="ocsimore_phrasing_link">Tailcall optimization</a></h3><h3><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h3><h3><a href="runtime-representation" class="ocsimore_phrasing_link">Runtime representation</a></h3><h2>Wasm_of_ocaml</h2><h3><a href="wasm_overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="wasm_runtime" class="ocsimore_phrasing_link">Writing Wasm primitives</a></h3><h2>How-to Guides</h2><h3><a href="build-toplevel" class="ocsimore_phrasing_link">Build a toplevel or use Dynlink</a></h3><h3><a href="debug" class="ocsimore_phrasing_link">Debug a program</a></h3><h3><a href="performances" class="ocsimore_phrasing_link">Performance</a></h3><h3><a href="contribute" class="ocsimore_phrasing_link">Contribute</a></h3><h2>Try it</h2><h3><span><a href=".././manual/files/toplevel/index.html">OCaml toplevel</a></span></h3><h3><a href="examples" class="ocsimore_phrasing_link">Examples and projects</a></h3></nav></nav><article class="rightcol"><h1> Error handling between OCaml and JavaScript</h1><p>This page explains how exceptions propagate between OCaml and JavaScript code,
+and how to properly handle errors in both directions.
+</p><h2 id="catching-js-exceptions"> Catching JavaScript exceptions in OCaml <a class="backref" href="#catching-js-exceptions">&#182;</a></h2><p>When JavaScript code throws an exception and it propagates to OCaml code,
+it is wrapped in the <span class="teletype">Js_error.Exn</span> exception, which holds a value of type
+<span class="teletype">Js_error.t</span>:
+</p><pre class=""><code class="language-ocaml translatable">open Js_of_ocaml
+
+let safe_parse json_str =
+  try
+    Some (Js._JSON##parse (Js.string json_str))
+  with Js_error.Exn err -&gt;
+    (* err has type Js_error.t *)
+    Printf.eprintf &quot;Parse error: %s\n&quot; (Js_error.to_string err);
+    None</code></pre><h3> Inspecting JavaScript errors</h3><p>The <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Js_error/#module-Js_error">Js_error</a></span> module provides functions to inspect error details:
+</p><pre class=""><code class="language-ocaml translatable">let handle_error err =
+  (* Error message *)
+  let msg = Js_error.message err in
+
+  (* Error name (e.g., &quot;TypeError&quot;, &quot;ReferenceError&quot;) *)
+  let name = Js_error.name err in
+
+  (* Stack trace (if available) *)
+  let stack = Js_error.stack err in
+
+  Printf.eprintf &quot;Error [%s]: %s\n&quot; name msg;
+  Option.iter (Printf.eprintf &quot;Stack:\n%s\n&quot;) stack</code></pre><h2 id="raising-js-errors"> Raising JavaScript errors from OCaml <a class="backref" href="#raising-js-errors">&#182;</a></h2><p>To throw a JavaScript error that JavaScript code can catch:
+</p><pre class=""><code class="language-ocaml translatable">let validate_positive n =
+  if n &lt; 0 then
+    let err = new%js Js.error_constr (Js.string &quot;Value must be positive&quot;) in
+    Js_error.raise_ (Js_error.of_error err)
+  else
+    n</code></pre><h2 id="exception-propagation"> Exception propagation in exported functions <a class="backref" href="#exception-propagation">&#182;</a></h2><p>When you export OCaml functions to JavaScript, uncaught OCaml exceptions will
+propagate to JavaScript. However, OCaml exceptions are <strong>not</strong> JavaScript
+<span class="teletype">Error</span> objects (see <span><a href=".././manual/runtime-representation#exceptions">runtime representation</a></span>).
+</p><pre class=""><code class="language-ocaml translatable">let divide x y =
+  if y = 0 then failwith &quot;Division by zero&quot;
+  else x / y
+
+let () = Js.export &quot;divide&quot; divide</code></pre><p>From JavaScript, you can catch the exception, but it won't be an <span class="teletype">Error</span>:
+</p><pre class="manually-translated"><code class="language-javascript">try {
+  divide(10, 0);
+} catch (e) {
+  // e is an array, not an Error object
+  // e.message is undefined
+  console.log(e);  // [0, [0, &quot;Failure&quot;, ...], &quot;Division by zero&quot;]
+}</code></pre><p>For better JavaScript interoperability, raise JavaScript errors instead of
+OCaml exceptions
+</p><h2 id="stack-traces"> Stack traces for OCaml exceptions <a class="backref" href="#stack-traces">&#182;</a></h2><p>By default, OCaml exceptions don't carry JavaScript stack traces. This makes
+debugging difficult since you can't see where an exception originated in
+browser DevTools or Node.js.
+</p><p>The solution is to attach a JavaScript <span class="teletype">Error</span> object to an OCaml exception.
+JavaScript <span class="teletype">Error</span> objects capture the call stack at the point of creation,
+so attaching one to an OCaml exception preserves the stack trace for debugging.
+</p><h3> Manual attachment</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Js_error/#val-attach_js_backtrace">Js_error.attach_js_backtrace</a></span> to attach a JavaScript stack trace
+to an OCaml exception:
+</p><pre class=""><code class="language-ocaml translatable">let process data =
+  try
+    do_something data
+  with exn -&gt;
+    let exn = Js_error.attach_js_backtrace exn ~force:false in
+    (* Log or rethrow with JS backtrace attached *)
+    raise exn</code></pre><p>The <span class="teletype">~force:false</span> parameter only attaches a new error if one isn't already
+present. Use <span class="teletype">~force:true</span> to always attach a fresh stack trace.
+</p><h3> Extracting attached errors</h3><p>Use <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/Js_error/#val-of_exn">Js_error.of_exn</a></span> to extract the JavaScript error from an OCaml
+exception:
+</p><pre class=""><code class="language-ocaml translatable">let log_with_backtrace exn =
+  match Js_error.of_exn exn with
+  | Some js_err -&gt;
+      Printf.eprintf &quot;JS Error: %s\n&quot; (Js_error.to_string js_err);
+      Option.iter (Printf.eprintf &quot;Stack:\n%s\n&quot;) (Js_error.stack js_err)
+  | None -&gt;
+      Printf.eprintf &quot;OCaml Error: %s\n&quot; (Printexc.to_string exn)</code></pre><h3> Automatic attachment</h3><p>Js_of_ocaml can automatically attach a JavaScript <span class="teletype">Error</span> whenever an OCaml
+exception is raised. This is convenient but has a performance cost since creating
+<span class="teletype">Error</span> objects is expensive.
+</p><p>Automatic attachment is enabled when:
+</p><ol><li> <span class="teletype">Printexc.backtrace_status() = true</span>, <strong>and</strong>
+</li><li> Either:
+</li></ol><ul><li> The environment variable <span class="teletype">OCAMLRUNPARAM</span> contains <span class="teletype">b=1</span>, or
+</li><li> The program was compiled with <span class="teletype">--enable with-js-error</span>
+</li></ul><p>Example with environment variable:
+</p><pre>OCAMLRUNPARAM=b=1 node program.js
+</pre><p>Example with compiler flag:
+</p><pre>js_of_ocaml --enable with-js-error program.byte
+</pre><p>When an unhandled OCaml exception has an attached JavaScript <span class="teletype">Error</span>, it will
+be thrown as that error, allowing browsers and Node.js to display a proper stack
+trace.</p></article></div></div></body></html>

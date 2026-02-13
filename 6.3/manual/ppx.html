@@ -1,0 +1,171 @@
+<html><head><title> PPX syntax extension</title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="https://ocsigen.org/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script type="application/javascript" src="https://ocsigen.org/js/client.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js">
+//<![CDATA[
+
+//]]>
+</script></head><body class="ppx js_of_ocaml"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href=".././../../" class="ocsimore_phrasing_link"><img src=".././../../img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml</p><div class="mainmenu"><p class="mainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a></p><p class="mainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a></p><p><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a></p><p class="mainmenu-current"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a></p><p><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a></p><p><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a></p><p><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a></p><p><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a></p></div><form id="googlesearch" action="https://google.com/search"><input name="q" id="gsearch-box" placeholder="Search using Google"/><label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label><input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/></form><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a>
+</li><li class="drawermainmenu-project"><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-project"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a>
+</li><li class="drawermainmenu-project"><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-toolkit/" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsipersist/" class="ocsimore_phrasing_link">Ocsipersist</a>
+</li><li class="drawermainmenu-project"><a href=".././../../html_of_wiki/" class="ocsimore_phrasing_link">html_of_wiki</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsimore/" class="ocsimore_phrasing_link">Ocsimore (<em>deprecated</em>)</a>
+</li><li class="drawermainmenu-page"><a href=".././../../projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href=".././../../papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href=".././../../credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li><li class="drawermainmenu-page"><a href=".././../../contributing" class="ocsimore_phrasing_link">Contributing</a>
+</li><li class="drawermainmenu-page"><a href=".././../../blog" class="ocsimore_phrasing_link">Blog</a>
+</li><li class="drawermainmenu-page"><a href=".././../../install" class="ocsimore_phrasing_link">Installation</a>
+</li><li class="drawermainmenu-page"><a href="https://github.com/ocsigen" class="ocsimore_phrasing_link">Source code</a>
+</li></ul><nav class="how-doctree"><h2>Getting Started</h2><h3><a href="overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="install" class="ocsimore_phrasing_link">Installation</a></h3><h3><a href="quickstart" class="ocsimore_phrasing_link">Quick Start</a></h3><h2>Programming Guide</h2><h3><a href="javascript-interop" class="ocsimore_phrasing_link">JavaScript interop</a></h3><h3><a href="ppx" class="ocsimore_phrasing_link">PPX syntax extension</a></h3><h3><a href="ppx-deriving" class="ocsimore_phrasing_link">JSON derivation</a></h3><h3><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h3><h3><a href="errors" class="ocsimore_phrasing_link">Error handling</a></h3><h3><span><a href=".././api/js_of_ocaml/">API</a></span></h3><h2>Lwt Support</h2><h3><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h3><h3><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h3><h2>Compiler</h2><h3><a href="options" class="ocsimore_phrasing_link">Command line options</a></h3><h3><a href="compilation-modes" class="ocsimore_phrasing_link">Compilation modes</a></h3><h3><a href="linker" class="ocsimore_phrasing_link">JavaScript primitives</a></h3><h3><a href="tailcall" class="ocsimore_phrasing_link">Tailcall optimization</a></h3><h3><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h3><h3><a href="runtime-representation" class="ocsimore_phrasing_link">Runtime representation</a></h3><h2>Wasm_of_ocaml</h2><h3><a href="wasm_overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="wasm_runtime" class="ocsimore_phrasing_link">Writing Wasm primitives</a></h3><h2>How-to Guides</h2><h3><a href="build-toplevel" class="ocsimore_phrasing_link">Build a toplevel or use Dynlink</a></h3><h3><a href="debug" class="ocsimore_phrasing_link">Debug a program</a></h3><h3><a href="performances" class="ocsimore_phrasing_link">Performance</a></h3><h3><a href="contribute" class="ocsimore_phrasing_link">Contribute</a></h3><h2>Try it</h2><h3><span><a href=".././manual/files/toplevel/index.html">OCaml toplevel</a></span></h3><h3><a href="examples" class="ocsimore_phrasing_link">Examples and projects</a></h3></nav></nav></aside></div><p class="reasonwarning">Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+</p><button id="reason">Switch to </button><div class="twocols"><nav class="leftcol">Version <select class="how-versions" onchange="location = this.value;"><option value=".././../dev/manual/ppx">dev</option><option value=".././../6.3/manual/ppx" selected="selected">6.3</option><option value=".././../6.2.0/manual/ppx">6.2.0</option><option value=".././../6.1.0/manual/ppx">6.1.0</option><option value=".././../6.0.1/manual/ppx">6.0.1</option><option value=".././../5.9.1/manual/ppx">5.9.1</option><option value=".././../5.8.2/manual/ppx">5.8.2</option><option value=".././../5.7.2/manual/ppx">5.7.2</option><option value=".././../5.6.0/manual/ppx">5.6.0</option><option value=".././../5.5.2/manual/ppx">5.5.2</option><option value=".././../5.4.0/manual/ppx">5.4.0</option><option value=".././../5.3.0/manual/ppx">5.3.0</option><option value=".././../5.2.0/manual/ppx">5.2.0</option><option value=".././../5.1.0/manual/ppx">5.1.0</option><option value=".././../5.0.1/manual/ppx">5.0.1</option><option value=".././../4.1.0/manual/ppx">4.1.0</option><option value=".././../4.0.0/manual/ppx">4.0.0</option><option value=".././../3.11.0/manual/ppx">3.11.0</option><option value=".././../3.10.0/manual/ppx">3.10.0</option><option value=".././../3.9.0/manual/ppx">3.9.0</option><option value=".././../3.8.0/manual/ppx">3.8.0</option><option value=".././../3.7.0/manual/ppx">3.7.0</option><option value=".././../3.6.0/manual/ppx">3.6.0</option><option value=".././../3.5.1/manual/ppx">3.5.1</option></select><nav class="how-doctree"><h2>Getting Started</h2><h3><a href="overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="install" class="ocsimore_phrasing_link">Installation</a></h3><h3><a href="quickstart" class="ocsimore_phrasing_link">Quick Start</a></h3><h2>Programming Guide</h2><h3><a href="javascript-interop" class="ocsimore_phrasing_link">JavaScript interop</a></h3><h3><a href="ppx" class="ocsimore_phrasing_link">PPX syntax extension</a></h3><h3><a href="ppx-deriving" class="ocsimore_phrasing_link">JSON derivation</a></h3><h3><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h3><h3><a href="errors" class="ocsimore_phrasing_link">Error handling</a></h3><h3><span><a href=".././api/js_of_ocaml/">API</a></span></h3><h2>Lwt Support</h2><h3><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h3><h3><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h3><h2>Compiler</h2><h3><a href="options" class="ocsimore_phrasing_link">Command line options</a></h3><h3><a href="compilation-modes" class="ocsimore_phrasing_link">Compilation modes</a></h3><h3><a href="linker" class="ocsimore_phrasing_link">JavaScript primitives</a></h3><h3><a href="tailcall" class="ocsimore_phrasing_link">Tailcall optimization</a></h3><h3><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h3><h3><a href="runtime-representation" class="ocsimore_phrasing_link">Runtime representation</a></h3><h2>Wasm_of_ocaml</h2><h3><a href="wasm_overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="wasm_runtime" class="ocsimore_phrasing_link">Writing Wasm primitives</a></h3><h2>How-to Guides</h2><h3><a href="build-toplevel" class="ocsimore_phrasing_link">Build a toplevel or use Dynlink</a></h3><h3><a href="debug" class="ocsimore_phrasing_link">Debug a program</a></h3><h3><a href="performances" class="ocsimore_phrasing_link">Performance</a></h3><h3><a href="contribute" class="ocsimore_phrasing_link">Contribute</a></h3><h2>Try it</h2><h3><span><a href=".././manual/files/toplevel/index.html">OCaml toplevel</a></span></h3><h3><a href="examples" class="ocsimore_phrasing_link">Examples and projects</a></h3></nav></nav><article class="rightcol"><h1> PPX syntax extension</h1><p>The <span class="teletype">js_of_ocaml-ppx</span> package provides syntax for working with JavaScript
+values from OCaml. This page is a <strong>syntax reference</strong>; see
+<span><a href=".././manual/javascript-interop">JavaScript interop</a></span> for conceptual
+background on types, conversions, and when to use each approach.
+</p><h2 id="installation"> Installation <a class="backref" href="#installation">&#182;</a></h2><pre>opam install js_of_ocaml-ppx
+</pre><p>With dune, add the preprocessor to your library or executable:
+</p><pre>(library
+ (name mylib)
+ (preprocess (pps js_of_ocaml-ppx)))
+</pre><h2 id="quick-reference"> Quick reference <a class="backref" href="#quick-reference">&#182;</a></h2><table><tr><th> Syntax </th><th> Description </th><th> Example </th></tr><tr><td> <span class="teletype">obj##.prop</span> </td><td> Get property </td><td> <span class="teletype">element##.innerHTML</span> </td></tr><tr><td> <span class="teletype">obj##.prop := v</span> </td><td> Set property </td><td> <span class="teletype">element##.innerHTML := Js.string &quot;Hi&quot;</span> </td></tr><tr><td> <span class="teletype">obj##meth args</span> </td><td> Call method </td><td> <span class="teletype">console##log (Js.string &quot;Hi&quot;)</span> </td></tr><tr><td> <span class="teletype">new%js constr args</span> </td><td> Call constructor </td><td> <span class="teletype">new%js array_constr 10</span> </td></tr><tr><td> <span class="teletype">object%js ... end</span> </td><td> Create object literal </td><td> See below </td></tr></table><h2 id="getting-properties"> Getting properties <a class="backref" href="#getting-properties">&#182;</a></h2><p>Use <span class="teletype">##.</span> (with a dot) to access a property:
+</p><pre class=""><code class="language-ocaml translatable">(* Get the document title *)
+let title = Dom_html.document##.title
+
+(* Get element dimensions *)
+let width = element##.clientWidth
+let height = element##.clientHeight
+
+(* Get nested properties *)
+let href = Dom_html.window##.location##.href</code></pre><h3> Typing rule</h3><pre>obj : &lt;prop : t Js.readonly_prop&gt; Js.t
+--------------------------------------
+          obj##.prop : t
+</pre><h2 id="setting-properties"> Setting properties <a class="backref" href="#setting-properties">&#182;</a></h2><p>Use <span class="teletype">##.</span> with <span class="teletype">:=</span> to set a property:
+</p><pre class=""><code class="language-ocaml translatable">(* Set the document title *)
+Dom_html.document##.title := Js.string &quot;New Title&quot;
+
+(* Set element style *)
+element##.style##.color := Js.string &quot;red&quot;
+element##.style##.display := Js.string &quot;none&quot;
+
+(* Set event handler *)
+button##.onclick := Dom_html.handler (fun _ -&gt;
+  Console.console##log (Js.string &quot;Clicked!&quot;);
+  Js._true)</code></pre><h3> Typing rule</h3><pre>  obj : &lt;prop : t Js.writeonly_prop&gt; Js.t
+value : t
+-----------------------------------------
+  obj##.prop := value : unit
+</pre><h2 id="calling-methods"> Calling methods <a class="backref" href="#calling-methods">&#182;</a></h2><p>Use <span class="teletype">##</span> (without a dot) to call a method:
+</p><pre class=""><code class="language-ocaml translatable">(* Console logging *)
+Console.console##log (Js.string &quot;Hello&quot;)
+Console.console##warn (Js.string &quot;Warning!&quot;)
+
+(* DOM methods *)
+let element = Dom_html.document##getElementById (Js.string &quot;myId&quot;)
+Dom_html.document##.body##appendChild element
+
+(* String methods *)
+let upper = js_string##toUpperCase
+let sub = js_string##substring 0 5
+
+(* Array methods *)
+js_array##push item
+js_array##forEach (Js.wrap_callback (fun x _idx _arr -&gt;
+  Console.console##log x))</code></pre><h3> Method chaining</h3><p>For easier chaining, you can wrap the method call in parentheses:
+</p><pre class=""><code class="language-ocaml translatable">(* These are equivalent *)
+let result = obj##meth1##meth2##meth3
+let result = obj##(meth1)##(meth2)##(meth3)
+
+(* Useful when methods have arguments *)
+let result = str##(split (Js.string &quot;,&quot;))##(join (Js.string &quot;;&quot;))</code></pre><h3> Typing rule</h3><pre> obj : &lt;meth : t1 -&gt; t2 -&gt; ... -&gt; tn -&gt; u Js.meth&gt; Js.t
+args : t1, t2, ..., tn
+-------------------------------------------------------
+             obj##meth args : u
+</pre><p><strong>Note</strong>: Partial application is not allowed. You must provide all arguments.
+</p><h2 id="constructors"> Using constructors <a class="backref" href="#constructors">&#182;</a></h2><p>Use <span class="teletype">new%js</span> to call JavaScript constructors:
+</p><pre class=""><code class="language-ocaml translatable">(* Create a Date *)
+let date_constr = Js.Unsafe.global##._Date
+let now = new%js date_constr
+let specific = new%js date_constr 2024 0 15  (* Jan 15, 2024 *)
+
+(* Create a RegExp *)
+let regexp_constr = Js.Unsafe.global##._RegExp
+let pattern = new%js regexp_constr (Js.string &quot;\\d+&quot;) (Js.string &quot;g&quot;)
+
+(* Create an Array with size *)
+let array_constr = Js.Unsafe.global##._Array
+let arr = new%js array_constr 10</code></pre><h3> Non-identifier constructors</h3><p>When the constructor is not a simple identifier, bind it first:
+</p><pre class=""><code class="language-ocaml translatable">let constr = (Js.Unsafe.global##.SomeLib)##._SomeClass in
+let obj = new%js constr arg1 arg2</code></pre><h3> Typing rule</h3><pre>constr : (t1 -&gt; ... -&gt; tn -&gt; u Js.t) Js.constr
+  args : t1, ..., tn
+----------------------------------------------
+       new%js constr args : u Js.t
+</pre><h2 id="object-literals"> Creating object literals <a class="backref" href="#object-literals">&#182;</a></h2><p>Use <span class="teletype">object%js ... end</span> to create JavaScript object literals:
+</p><pre class=""><code class="language-ocaml translatable">(* Simple object *)
+let point = object%js
+  val x = 10
+  val y = 20
+end
+
+(* Object with methods *)
+let counter = object%js (self)
+  val mutable count = 0
+  method increment = self##.count := self##.count + 1
+  method get = self##.count
+end
+
+(* Configuration object *)
+let config = object%js
+  val url = Js.string &quot;https://api.example.com&quot;
+  val timeout = 5000
+  val mutable retries = 3
+end</code></pre><h3> Property attributes</h3><p>Control property access with attributes:
+</p><pre class=""><code class="language-ocaml translatable">object%js
+  val readonly_prop = 42                   (* read-only by default *)
+  val also_readonly = 42 [@@readonly]      (* explicit read-only *)
+  val mutable readwrite = 42               (* read/write with mutable *)
+  val also_readwrite = 42 [@@readwrite]    (* explicit read/write *)
+  val writeonly = 42 [@@writeonly]         (* write-only *)
+  val optional = Js.undefined [@@optdef]   (* optional/undefined *)
+end</code></pre><table><tr><th> Declaration </th><th> Property type </th><th> Can read </th><th> Can write </th></tr><tr><td> <span class="teletype">val x = v</span> </td><td> <span class="teletype">readonly_prop</span> </td><td> Yes </td><td> No </td></tr><tr><td> <span class="teletype">val mutable x = v</span> </td><td> <span class="teletype">prop</span> </td><td> Yes </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@readonly]</span> </td><td> <span class="teletype">readonly_prop</span> </td><td> Yes </td><td> No </td></tr><tr><td> <span class="teletype">val x = v [@@readwrite]</span> </td><td> <span class="teletype">prop</span> </td><td> Yes </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@writeonly]</span> </td><td> <span class="teletype">writeonly_prop</span> </td><td> No </td><td> Yes </td></tr><tr><td> <span class="teletype">val x = v [@@optdef]</span> </td><td> <span class="teletype">optdef_prop</span> </td><td> Yes (Js.Optdef) </td><td> Yes </td></tr></table><h3> Using <span class="teletype">self</span></h3><p>The identifier in parentheses binds to JavaScript's <span class="teletype">this</span>:
+</p><pre class=""><code class="language-ocaml translatable">let obj = object%js (self)
+  val mutable x = 0
+  method setX v = self##.x := v
+  method getX = self##.x
+  method double = self##setX (self##.x * 2)
+end</code></pre><h3> Generated type</h3><p>The object literal:
+</p><pre class=""><code class="language-ocaml translatable">object%js (self)
+  val x = 3
+  val mutable y = 4
+  method add dx dy =
+    self##.x + self##.y + dx + dy
+end</code></pre><p>Has the type:
+</p><pre class=""><code class="language-ocaml translatable">&lt; x : int Js.readonly_prop;
+  y : int Js.prop;
+  add : int -&gt; int -&gt; int Js.meth &gt; Js.t</code></pre><h2> See also</h2><ul><li> <span><a href=".././manual/javascript-interop">JavaScript interop</a></span> - Concepts: type conversions, null/undefined, callbacks, bindings
+</li><li> <span><a href=".././api/js_of_ocaml/Js_of_ocaml/Js/#module-Js">Js</a></span> - Full API reference</li></ul></article></div></div></body></html>

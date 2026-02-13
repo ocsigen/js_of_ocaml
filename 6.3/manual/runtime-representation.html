@@ -1,0 +1,123 @@
+<html><head><title> Runtime representation</title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="https://ocsigen.org/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script type="application/javascript" src="https://ocsigen.org/js/client.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="application/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js">
+//<![CDATA[
+
+//]]>
+</script></head><body class="runtime-representation js_of_ocaml"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href=".././../../" class="ocsimore_phrasing_link"><img src=".././../../img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml</p><div class="mainmenu"><p class="mainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a></p><p class="mainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a></p><p><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a></p><p class="mainmenu-current"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a></p><p><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a></p><p><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a></p><p><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a></p><p><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a></p></div><form id="googlesearch" action="https://google.com/search"><input name="q" id="gsearch-box" placeholder="Search using Google"/><label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label><input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/></form><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a>
+</li><li class="drawermainmenu-project"><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-project"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a>
+</li><li class="drawermainmenu-project"><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-toolkit/" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsipersist/" class="ocsimore_phrasing_link">Ocsipersist</a>
+</li><li class="drawermainmenu-project"><a href=".././../../html_of_wiki/" class="ocsimore_phrasing_link">html_of_wiki</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsimore/" class="ocsimore_phrasing_link">Ocsimore (<em>deprecated</em>)</a>
+</li><li class="drawermainmenu-page"><a href=".././../../projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href=".././../../papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href=".././../../credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li><li class="drawermainmenu-page"><a href=".././../../contributing" class="ocsimore_phrasing_link">Contributing</a>
+</li><li class="drawermainmenu-page"><a href=".././../../blog" class="ocsimore_phrasing_link">Blog</a>
+</li><li class="drawermainmenu-page"><a href=".././../../install" class="ocsimore_phrasing_link">Installation</a>
+</li><li class="drawermainmenu-page"><a href="https://github.com/ocsigen" class="ocsimore_phrasing_link">Source code</a>
+</li></ul><nav class="how-doctree"><h2>Getting Started</h2><h3><a href="overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="install" class="ocsimore_phrasing_link">Installation</a></h3><h3><a href="quickstart" class="ocsimore_phrasing_link">Quick Start</a></h3><h2>Programming Guide</h2><h3><a href="javascript-interop" class="ocsimore_phrasing_link">JavaScript interop</a></h3><h3><a href="ppx" class="ocsimore_phrasing_link">PPX syntax extension</a></h3><h3><a href="ppx-deriving" class="ocsimore_phrasing_link">JSON derivation</a></h3><h3><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h3><h3><a href="errors" class="ocsimore_phrasing_link">Error handling</a></h3><h3><span><a href=".././api/js_of_ocaml/">API</a></span></h3><h2>Lwt Support</h2><h3><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h3><h3><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h3><h2>Compiler</h2><h3><a href="options" class="ocsimore_phrasing_link">Command line options</a></h3><h3><a href="compilation-modes" class="ocsimore_phrasing_link">Compilation modes</a></h3><h3><a href="linker" class="ocsimore_phrasing_link">JavaScript primitives</a></h3><h3><a href="tailcall" class="ocsimore_phrasing_link">Tailcall optimization</a></h3><h3><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h3><h3><a href="runtime-representation" class="ocsimore_phrasing_link">Runtime representation</a></h3><h2>Wasm_of_ocaml</h2><h3><a href="wasm_overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="wasm_runtime" class="ocsimore_phrasing_link">Writing Wasm primitives</a></h3><h2>How-to Guides</h2><h3><a href="build-toplevel" class="ocsimore_phrasing_link">Build a toplevel or use Dynlink</a></h3><h3><a href="debug" class="ocsimore_phrasing_link">Debug a program</a></h3><h3><a href="performances" class="ocsimore_phrasing_link">Performance</a></h3><h3><a href="contribute" class="ocsimore_phrasing_link">Contribute</a></h3><h2>Try it</h2><h3><span><a href=".././manual/files/toplevel/index.html">OCaml toplevel</a></span></h3><h3><a href="examples" class="ocsimore_phrasing_link">Examples and projects</a></h3></nav></nav></aside></div><p class="reasonwarning">Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+</p><button id="reason">Switch to </button><div class="twocols"><nav class="leftcol">Version <select class="how-versions" onchange="location = this.value;"><option value=".././../dev/manual/runtime-representation">dev</option><option value=".././../6.3/manual/runtime-representation" selected="selected">6.3</option><option value=".././../6.2.0/manual/runtime-representation">6.2.0</option><option value=".././../6.1.0/manual/runtime-representation">6.1.0</option><option value=".././../6.0.1/manual/runtime-representation">6.0.1</option><option value=".././../5.9.1/manual/runtime-representation">5.9.1</option><option value=".././../5.8.2/manual/runtime-representation">5.8.2</option><option value=".././../5.7.2/manual/runtime-representation">5.7.2</option><option value=".././../5.6.0/manual/runtime-representation">5.6.0</option><option value=".././../5.5.2/manual/runtime-representation">5.5.2</option><option value=".././../5.4.0/manual/runtime-representation">5.4.0</option><option value=".././../5.3.0/manual/runtime-representation">5.3.0</option><option value=".././../5.2.0/manual/runtime-representation">5.2.0</option><option value=".././../5.1.0/manual/runtime-representation">5.1.0</option><option value=".././../5.0.1/manual/runtime-representation">5.0.1</option><option value=".././../4.1.0/manual/runtime-representation">4.1.0</option><option value=".././../4.0.0/manual/runtime-representation">4.0.0</option><option value=".././../3.11.0/manual/runtime-representation">3.11.0</option><option value=".././../3.10.0/manual/runtime-representation">3.10.0</option><option value=".././../3.9.0/manual/runtime-representation">3.9.0</option><option value=".././../3.8.0/manual/runtime-representation">3.8.0</option><option value=".././../3.7.0/manual/runtime-representation">3.7.0</option><option value=".././../3.6.0/manual/runtime-representation">3.6.0</option><option value=".././../3.5.1/manual/runtime-representation">3.5.1</option></select><nav class="how-doctree"><h2>Getting Started</h2><h3><a href="overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="install" class="ocsimore_phrasing_link">Installation</a></h3><h3><a href="quickstart" class="ocsimore_phrasing_link">Quick Start</a></h3><h2>Programming Guide</h2><h3><a href="javascript-interop" class="ocsimore_phrasing_link">JavaScript interop</a></h3><h3><a href="ppx" class="ocsimore_phrasing_link">PPX syntax extension</a></h3><h3><a href="ppx-deriving" class="ocsimore_phrasing_link">JSON derivation</a></h3><h3><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h3><h3><a href="errors" class="ocsimore_phrasing_link">Error handling</a></h3><h3><span><a href=".././api/js_of_ocaml/">API</a></span></h3><h2>Lwt Support</h2><h3><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h3><h3><span><a href=".././api/js_of_ocaml-lwt/">API</a></span></h3><h2>Compiler</h2><h3><a href="options" class="ocsimore_phrasing_link">Command line options</a></h3><h3><a href="compilation-modes" class="ocsimore_phrasing_link">Compilation modes</a></h3><h3><a href="linker" class="ocsimore_phrasing_link">JavaScript primitives</a></h3><h3><a href="tailcall" class="ocsimore_phrasing_link">Tailcall optimization</a></h3><h3><a href="effects" class="ocsimore_phrasing_link">Effect handlers</a></h3><h3><a href="runtime-representation" class="ocsimore_phrasing_link">Runtime representation</a></h3><h2>Wasm_of_ocaml</h2><h3><a href="wasm_overview" class="ocsimore_phrasing_link">Overview</a></h3><h3><a href="wasm_runtime" class="ocsimore_phrasing_link">Writing Wasm primitives</a></h3><h2>How-to Guides</h2><h3><a href="build-toplevel" class="ocsimore_phrasing_link">Build a toplevel or use Dynlink</a></h3><h3><a href="debug" class="ocsimore_phrasing_link">Debug a program</a></h3><h3><a href="performances" class="ocsimore_phrasing_link">Performance</a></h3><h3><a href="contribute" class="ocsimore_phrasing_link">Contribute</a></h3><h2>Try it</h2><h3><span><a href=".././manual/files/toplevel/index.html">OCaml toplevel</a></span></h3><h3><a href="examples" class="ocsimore_phrasing_link">Examples and projects</a></h3></nav></nav><article class="rightcol"><h1> Runtime representation</h1><p>This page describes how OCaml values are represented at runtime in JavaScript.
+Understanding this is useful for debugging, writing JavaScript primitives, and
+understanding compatibility limitations.
+</p><h2 id="overview"> Overview <a class="backref" href="#overview">&#182;</a></h2><p>Js_of_ocaml maps OCaml values to JavaScript values as directly as possible
+for performance. This differs from the standard OCaml runtime representation.
+</p><table><tr><th> OCaml type </th><th> JavaScript representation </th></tr><tr><td> <span class="teletype">int</span> </td><td> Number (32-bit) </td></tr><tr><td> <span class="teletype">float</span> </td><td> Number (unboxed) </td></tr><tr><td> <span class="teletype">bool</span> </td><td> Number (0 or 1) </td></tr><tr><td> <span class="teletype">char</span> </td><td> Number (0-255) </td></tr><tr><td> <span class="teletype">string</span> </td><td> Special string object (MlBytes) or JavaScript string </td></tr><tr><td> <span class="teletype">bytes</span> </td><td> Special bytes object (MlBytes) </td></tr><tr><td> <span class="teletype">array</span> </td><td> JavaScript Array with tag </td></tr><tr><td> <span class="teletype">tuple</span> </td><td> JavaScript Array with tag 0 </td></tr><tr><td> <span class="teletype">record</span> </td><td> JavaScript Array with tag 0 </td></tr><tr><td> <span class="teletype">variant</span> </td><td> Number (constant) or Array (with arguments) </td></tr><tr><td> <span class="teletype">int32</span> </td><td> Number (32-bit) </td></tr><tr><td> <span class="teletype">nativeint</span> </td><td> Number (32-bit) </td></tr><tr><td> <span class="teletype">int64</span> </td><td> MlInt64 object </td></tr><tr><td> <span class="teletype">bigarray</span> </td><td> Ml_Bigarray object </td></tr><tr><td> <span class="teletype">exception</span> </td><td> Array with exception identity </td></tr><tr><td> <span class="teletype">object</span> </td><td> Array with method table and instance variables </td></tr></table><h2 id="integers"> Integers <a class="backref" href="#integers">&#182;</a></h2><p>OCaml integers are represented as JavaScript numbers. Unlike native OCaml
+where integers are 31 or 63 bits (with one bit used for tagging), js_of_ocaml
+uses the full 32-bit range.
+</p><p><strong>Implications</strong>:
+</p><ul><li> Arithmetic behaves slightly differently at the boundaries
+</li><li> <span class="teletype">max_int</span> and <span class="teletype">min_int</span> have different values than native OCaml
+</li></ul><h2 id="floats"> Floats <a class="backref" href="#floats">&#182;</a></h2><p>OCaml floats are JavaScript numbers directly.
+</p><p><strong>Implications</strong>:
+</p><ul><li> Better performance for float-heavy code
+</li><li> Polymorphic hash and comparison may give different results than native
+</li><li> Marshalled floats cannot be unmarshalled by the native OCaml runtime
+</li></ul><p><strong>Rounding difference</strong>: JavaScript rounds ties away from zero, while native
+OCaml (libc) rounds ties to even.
+</p><h2 id="booleans"> Booleans <a class="backref" href="#booleans">&#182;</a></h2><p>OCaml booleans are represented as the numbers 0 (<span class="teletype">false</span>) and 1 (<span class="teletype">true</span>),
+not JavaScript's <span class="teletype">true</span> and <span class="teletype">false</span>. See
+<span><a href=".././manual/javascript-interop#conversions">type conversions</a></span>
+for converting between them.
+</p><h2 id="bytes"> Bytes <a class="backref" href="#bytes">&#182;</a></h2><p>OCaml bytes are always represented as MlBytes objects with:
+</p><ul><li> <span class="teletype">t</span> — tag indicating the encoding
+</li><li> <span class="teletype">l</span> — length in bytes
+</li><li> <span class="teletype">c</span> — contents (a JavaScript string or array of bytes)
+</li></ul><p>The contents can be a JavaScript string (more memory efficient) or an array
+of bytes (for mutation). The runtime converts between these as needed.
+</p><h2 id="strings"> Strings <a class="backref" href="#strings">&#182;</a></h2><p>OCaml strings can be represented as:
+</p><ul><li> A JavaScript string directly (when <span class="teletype">--enable use-js-string</span> is set, which is the default)
+</li><li> An MlBytes object (above)
+</li></ul><p><strong>Important</strong>: Even when represented as a JavaScript string, it encodes a sequence
+of bytes, not UTF-16 text. Each character's code point represents one byte (0-255).
+Assuming the bytes are UTF-8 encoded text, use <span class="teletype">Js.string</span> to convert to a
+native UTF-16 JavaScript string. To convert back, use <span class="teletype">Js.to_string</span>.
+See <span><a href=".././manual/javascript-interop#conversions">conversions</a></span>.
+</p><h2 id="blocks"> Blocks, arrays, records, modules <a class="backref" href="#blocks">&#182;</a></h2><p>OCaml heap-allocated values (arrays, tuples, records, variant constructors with
+arguments) are represented as JavaScript arrays where:
+</p><ul><li> Index 0 contains the block tag
+</li><li> Remaining indices contain the fields
+</li></ul><p>For example, <span class="teletype">Some 42</span> becomes <span class="teletype">[0, 42]</span> (tag 0, one field).
+</p><h2 id="variants"> Variants <a class="backref" href="#variants">&#182;</a></h2><ul><li> <strong>Constant constructors</strong> (no arguments): represented as integers starting from 0
+</li><li> <strong>Non-constant constructors</strong>: represented as arrays with a tag
+</li></ul><pre class=""><code class="language-ocaml translatable">type t =
+  | A        (* 0 *)
+  | B        (* 1 *)
+  | C of int (* [0, n] — tag 0, since it's the first non-constant *)
+  | D of int (* [1, n] — tag 1 *)</code></pre><h2 id="int32"> Int32 and Nativeint <a class="backref" href="#int32">&#182;</a></h2><p><span class="teletype">Int32.t</span> and <span class="teletype">Nativeint.t</span> are represented directly as JavaScript
+numbers, like regular <span class="teletype">int</span> values.
+</p><p>Note that <span class="teletype">nativeint</span> is 32 bits in js_of_ocaml (matching JavaScript's
+bitwise operations), not the platform's native word size.
+</p><h2 id="int64"> Int64 <a class="backref" href="#int64">&#182;</a></h2><p><span class="teletype">Int64.t</span> values are represented as MlInt64 objects, which store the
+value as three numbers: two 24-bit integers (lo, mi) and one 16-bit integer (hi),
+since JavaScript numbers cannot represent the full 64-bit range precisely.
+</p><h2 id="bigarray"> Bigarray <a class="backref" href="#bigarray">&#182;</a></h2><p>Bigarrays are represented as Ml_Bigarray objects, which use JavaScript Typed
+Arrays for storing the underlying data:
+</p><table><tr><th> OCaml kind </th><th> JavaScript Typed Array </th></tr><tr><td> <span class="teletype">Float32</span> </td><td> <span class="teletype">Float32Array</span> </td></tr><tr><td> <span class="teletype">Float64</span> </td><td> <span class="teletype">Float64Array</span> </td></tr><tr><td> <span class="teletype">Int8_signed</span> </td><td> <span class="teletype">Int8Array</span> </td></tr><tr><td> <span class="teletype">Int8_unsigned</span> </td><td> <span class="teletype">Uint8Array</span> </td></tr><tr><td> <span class="teletype">Int16_signed</span> </td><td> <span class="teletype">Int16Array</span> </td></tr><tr><td> <span class="teletype">Int16_unsigned</span> </td><td> <span class="teletype">Uint16Array</span> </td></tr><tr><td> <span class="teletype">Int32</span> </td><td> <span class="teletype">Int32Array</span> </td></tr><tr><td> <span class="teletype">Int64</span> </td><td> Two <span class="teletype">Int32Array</span>s </td></tr><tr><td> <span class="teletype">Int</span> </td><td> <span class="teletype">Int32Array</span> </td></tr><tr><td> <span class="teletype">Nativeint</span> </td><td> <span class="teletype">Int32Array</span> </td></tr><tr><td> <span class="teletype">Complex32</span> </td><td> <span class="teletype">Float32Array</span> (2 elements per complex) </td></tr><tr><td> <span class="teletype">Complex64</span> </td><td> <span class="teletype">Float64Array</span> (2 elements per complex) </td></tr><tr><td> <span class="teletype">Char</span> </td><td> <span class="teletype">Uint8Array</span> </td></tr></table><h2 id="exceptions"> Exceptions <a class="backref" href="#exceptions">&#182;</a></h2><p>OCaml exceptions are represented as:
+</p><ul><li> <strong>Without arguments</strong>: the exception identity directly (a unique object per exception type)
+</li><li> <strong>With arguments</strong>: a JavaScript array where index 1 is the exception identity and remaining indices contain the arguments
+</li></ul><p>For example, <span class="teletype">Not_found</span> is just its identity object, while <span class="teletype">Failure &quot;oops&quot;</span>
+becomes <span class="teletype">[&lt;Failure identity&gt;, &quot;oops&quot;]</span>.
+</p><p><strong>Note</strong>: OCaml exceptions are not JavaScript <span class="teletype">Error</span> objects. When an OCaml
+exception propagates to JavaScript code, it appears as an array, not an <span class="teletype">Error</span>.
+See <span><a href=".././manual/errors">error handling</a></span> for how to work with exceptions
+across the OCaml/JavaScript boundary.
+</p><h2 id="objects"> Objects <a class="backref" href="#objects">&#182;</a></h2><p>OCaml objects (from the object-oriented layer) are implemented using JavaScript
+arrays. They have nothing to do with JavaScript objects. Use the
+<span><a href=".././manual/ppx">PPX syntax</a></span> (<span class="teletype">object%js</span>) to create JavaScript objects.
+</p><h2 id="compatibility"> Compatibility considerations <a class="backref" href="#compatibility">&#182;</a></h2><p>Due to representation differences, some operations behave differently:
+</p><p><strong>Marshalling (<span class="teletype">Marshal</span> module)</strong>:
+</p><ul><li> Output may differ from native OCaml
+</li><li> Do not unmarshal js_of_ocaml output with native OCaml (especially floats)
+</li><li> Marshalling between js_of_ocaml programs works correctly
+</li></ul><p><strong>Polymorphic comparison and hashing</strong>:
+</p><ul><li> Results may differ from native OCaml for floats
+</li></ul><h2> See also</h2><ul><li> <span><a href=".././manual/javascript-interop#conversions">Type conversions</a></span> — Converting between OCaml and JavaScript types
+</li><li> <span><a href=".././manual/linker">JavaScript primitives</a></span> — Writing custom primitives</li></ul></article></div></div></body></html>

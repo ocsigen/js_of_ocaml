@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>Hyperbolic Tree</title>
+    <meta charset="utf-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <style type="text/css">
+      * { box-sizing: border-box; }
+      body {
+        background-color: #0a0e1a;
+        margin: 0;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-size: 14px;
+      }
+      .page-title {
+        position: absolute;
+        top: 12px;
+        left: 0;
+        width: 100%;
+        text-align: center;
+        font-size: 1.4em;
+        font-weight: 300;
+        letter-spacing: 0.05em;
+        color: rgba(200, 210, 230, 0.5);
+        margin: 0;
+        pointer-events: none;
+        z-index: 1;
+      }
+      .tooltip {
+        color: #eee;
+        background-color: rgba(20, 24, 40, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        padding: 0.5em 0.7em;
+        white-space: nowrap;
+        z-index: 1;
+        font-size: 13px;
+        backdrop-filter: blur(8px);
+      }
+      .overlay {
+        background-color: #0a0e1a;
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: 2;
+      }
+      .translucent {
+        background-color: rgba(10, 14, 26, 0.85);
+        backdrop-filter: blur(6px);
+      }
+      .text {
+        background-color: rgba(20, 24, 40, 0.95);
+        color: #ccc;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 1em;
+        overflow: auto;
+        backdrop-filter: blur(8px);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      .text p { margin: 0 0 0.6em; }
+      .text dl {
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+      .text dd {
+        font-weight: 600;
+        margin-left: 0;
+        color: #eee;
+      }
+      .text dt {
+        margin-bottom: 0.4em;
+        color: #999;
+      }
+      .text ul { padding-left: 10px; margin: 0; }
+      .text li { list-style-type: none; }
+      .text li a {
+        display: block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background 0.15s;
+      }
+      .text li a:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .text h1 {
+        text-align: center;
+        margin: 0 0 1em;
+        color: #eee;
+        font-weight: 400;
+        font-size: 1.5em;
+      }
+      .text h2 {
+        color: #bbb;
+        font-weight: 500;
+        font-size: 1.1em;
+        margin: 1em 0 0.4em;
+      }
+      .text a {
+        color: #6cb4ee;
+        text-decoration: none;
+      }
+      .text a:hover {
+        color: #8ccaff;
+        text-decoration: underline;
+      }
+      .text em {
+        color: #ddd;
+        font-style: italic;
+      }
+      .text button {
+        background: #2a3a50;
+        color: #ddd;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 6px;
+        padding: 8px 24px;
+        font-family: inherit;
+        font-size: 14px;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .text button:hover {
+        background: #3a4a60;
+      }
+      .button .on { visibility: hidden; }
+      .button:hover .on { visibility: visible; }
+      .button:hover .off { visibility: hidden; }
+      .filled_button.on {
+        background: linear-gradient(to bottom, #505068, #383850);
+        border-radius: 6px;
+      }
+      .filled_button.off {
+        background: linear-gradient(to bottom, #2a2a3a, #202030);
+        border-radius: 6px;
+      }
+    </style>
+    <script type="text/javascript">
+      var hyp_style =
+        { border: 8, padding: 2,
+          backgroundColor: "#0a0e1a",
+          treeColor: "#3a6a9e",
+          nodeBackgroundColor: "#1e3a5c", nodeColor: "#e0e8f0",
+          nodeFont: "600 16px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          buttonColor: "#aabbcc" };
+    </script>
+  </head>
+  <body>
+    <h1 class="page-title">Hyperbolic Tree</h1>
+    <script type="text/javascript">
+      var s = (new URLSearchParams(location.search)).has('wasm') ? 'hypertree.bc.wasm.js' : 'hypertree.bc.js';
+      document.write('<script type="text/javascript" src="' + s + '" defer><\/script>');
+    </script>
+  </body>
+</html>
