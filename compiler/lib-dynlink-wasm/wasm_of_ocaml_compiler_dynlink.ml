@@ -80,7 +80,7 @@ let loadfile filename =
 
 let () =
   Config.set_target `Wasm;
-  Config.set_effects_backend `Disabled;
+  Config.set_effects_backend (Jsoo_runtime.Sys.Config.effects ());
   Wasm_of_ocaml_compiler.Generate.init ();
   (* Discover all named Wasm globals from imports.OCaml *)
   let all_names =

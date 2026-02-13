@@ -154,6 +154,7 @@ module Sys = struct
       [ `Disabled
       | `Cps
       | `Double_translation
+      | `Jspi
       ]
 
     external effects_ : unit -> string = "caml_jsoo_flags_effects"
@@ -163,6 +164,7 @@ module Sys = struct
       | "disabled" -> `Disabled
       | "cps" -> `Cps
       | "double-translation" -> `Double_translation
+      | "jspi" -> `Jspi
       | _ -> assert false
   end
 

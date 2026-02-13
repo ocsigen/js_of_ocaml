@@ -8,5 +8,6 @@
  (libraries
   wasm_of_ocaml-compiler
   js_of_ocaml-compiler
+  js_of_ocaml-compiler.runtime
   wasm_of_ocaml-compiler.dynlink
   compiler-libs.bytecomp))

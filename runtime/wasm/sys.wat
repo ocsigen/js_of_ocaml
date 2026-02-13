@@ -204,6 +204,10 @@
       (param (ref eq)) (result (ref eq))
       (ref.i31 (global.get $caml_runtime_warnings)))
 
+   (func (export "caml_xdg_defaults") (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)) ;; empty list
+   )
+
    (@string $toString "toString")
 
    (func $caml_handle_sys_error (export "caml_handle_sys_error")
