@@ -1,3 +1,9 @@
+# 6.3.1 (2026-02-13) - Lille
+
+## Changes
+*  Misc: fix installation of completion files in monorepo, working around
+   bugs in dune
+
 # 6.3.0 (2026-02-06) - Lille
 
 ## Features/Changes
@@ -17,7 +23,6 @@
 * Lib: add `Dom_html.onload` for WASM-safe load handling (#1948)
 * Runtime: make eval functions more robust (#2108)
 * Compiler: added a constant sinking pass (#2167)
-
 
 ## Bug fixes
 * Compiler: fix `Global_flow.do_escape` monotonicity
