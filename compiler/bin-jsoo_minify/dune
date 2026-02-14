@@ -5,15 +5,3 @@
  (libraries jsoo_cmdline js_of_ocaml-compiler cmdliner compiler-libs.common)
  (flags
   (:standard -safe-string)))
-
-(rule
- (targets jsoo_minify.1)
- (action
-  (with-stdout-to
-   %{targets}
-   (run %{bin:jsoo_minify} --help=groff))))
-
-(install
- (section man)
- (package js_of_ocaml-compiler)
- (files jsoo_minify.1))

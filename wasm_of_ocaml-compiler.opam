@@ -50,6 +50,6 @@ build: [
   ["cmdliner" "install" "tool-support"
               "--update-opam-install=%{_:name}%.install"
               "_build/install/default/bin/wasm_of_ocaml" {os-family != "windows"}
-              "_build/install/default/bin/wasm_of_ocaml.exe" {os-family = "windows"}
+              "_build/install/default/bin/wasm_of_ocaml.exe:wasm_of_ocaml" {os-family = "windows"}
               "_build/cmdliner-install"]
 ]
