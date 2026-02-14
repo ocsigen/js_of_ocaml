@@ -632,7 +632,7 @@ module Value = struct
     let* js = Type.js_type in
     let n =
       if_expr
-        I64
+        I32
         (* We mimic an "and" on the two conditions, but in a way that is nicer to the
            binaryen optimizer. *)
         (if_expr
@@ -642,37 +642,31 @@ module Value = struct
            (Arith.const 0l))
         (caml_js_strict_equals (load xv) (load yv)
         >>| (fun e -> W.RefCast ({ nullable = false; typ = I31 }, e))
-        >>| (fun e -> W.I31Get (S, e))
-        >>| fun e -> W.I64ExtendI32 (S, e))
+        >>| fun e -> W.I31Get (S, e))
         (let* e = ref_eq (load xv) (load yv) in
-         return (W.I64ExtendI32 (U, e)))
+         return e)
     in
     seq
       (let* () = store xv x in
        let* () = store yv y in
        return ())
-      (if negate then Arith64.eqz n else n)
+      (if negate then Arith.eqz n else n)
 
   let phys_eq x y =
     let* x = x in
     let* y = y in
-    return (W.I64ExtendI32 (U, RefEq (x, y)))
+    return (W.RefEq (x, y))
 
   let phys_neq x y =
     let* x = x in
     let* y = y in
-    return (W.I64ExtendI32 (U, UnOp (I32 Eqz, RefEq (x, y))))
+    return (W.UnOp (I32 Eqz, RefEq (x, y)))
 
   let ult = Arith64.ult
 
-  let is_int i =
+  let is_small_int i =
     let* i = i in
-    let* ty = Type.int_type in
-    return
-      (W.BinOp
-         ( I32 Or
-         , RefTest ({ nullable = false; typ = I31 }, i)
-         , RefTest ({ nullable = false; typ = Type ty }, i) ))
+    return (W.RefTest ({ nullable = false; typ = I31 }, i))
 
   let int_add = Arith64.( + )
 
@@ -761,7 +755,7 @@ module Memory = struct
 
   let tag e =
     let* e = wasm_array_get e (Arith.const 0l) in
-    return (W.I64ExtendI32 (U, I31Get (U, RefCast ({ nullable = false; typ = I31 }, e))))
+    return (W.I31Get (U, RefCast ({ nullable = false; typ = I31 }, e)))
 
   let check_is_float_array e =
     let* float_array = Type.float_array_type in

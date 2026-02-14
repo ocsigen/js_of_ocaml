@@ -167,24 +167,28 @@ module Generate (Target : Target_sig.S) = struct
 
   let convert ~(from : Typing.typ) ~(into : Typing.typ) e =
     match from, into with
-    (* Int <-> Int: both stored as I64, always identity *)
-    | Int _, Int _ -> e
+    (* Int <-> Int: same kind is identity *)
+    | Int Small, Int Small | Int Large, Int Large -> e
+    (* Int Small (I32) <-> Int Large (I64) *)
+    | Int Small, Int Large ->
+        let* e = e in
+        return (W.I64ExtendI32 (S, e))
+    | Int Large, Int Small ->
+        let* e = e in
+        return (W.I32WrapI64 e)
     (* Dummy values for dead code *)
     | Int _, Number ((Int32 | Nativeint), Unboxed) -> return (W.Const (I32 0l))
     | Int _, Number (Int64, Unboxed) -> return (W.Const (I64 0L))
     | Int _, Number (Float, Unboxed) -> return (W.Const (F64 0.))
-    (* Unboxing: (ref eq) -> Int *)
+    (* Unboxing: (ref eq) -> Int Small: skip type test *)
     | _, Int Small ->
-        (* Optimized: skip type test, assume (ref i31) *)
         let* e = e in
-        return
-          (W.I64ExtendI32 (S, I31Get (S, RefCast ({ nullable = false; typ = I31 }, e))))
+        return (W.I31Get (S, RefCast ({ nullable = false; typ = I31 }, e)))
     | _, Int Large -> Value.int_val e
-    (* Boxing: Int -> (ref eq) *)
+    (* Boxing: Int Small (I32) -> (ref eq): skip range check *)
     | Int Small, _ ->
-        (* Optimized: skip range check, known to fit in i31 *)
         let* e = e in
-        return (W.RefI31 (I32WrapI64 e))
+        return (W.RefI31 e)
     | Int Large, _ -> Value.val_int e
     (* Number conversions *)
     | Number (_, Unboxed), Number (_, Unboxed) -> e
@@ -201,20 +205,29 @@ module Generate (Target : Target_sig.S) = struct
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
 
   let transl_prim_arg ctx ?(typ = Typing.Top) x =
+    let from = get_type ctx x in
     convert
-      ~from:(get_type ctx x)
+      ~from
       ~into:typ
       (match x with
       | Pv x -> load x
-      | Pc c -> Constant.translate ~unboxed:false c)
+      | Pc c -> (
+          match from with
+          | Int Small -> (
+              match c with
+              | Code.Int i -> return (W.Const (I32 (Targetint.to_int32 i)))
+              | _ -> Constant.translate ~unboxed:false c)
+          | _ -> Constant.translate ~unboxed:false c))
 
   let translate_int_comparison ctx op x y =
-    op (transl_prim_arg ctx ~typ:(Int Large) x) (transl_prim_arg ctx ~typ:(Int Large) y)
+    let x = transl_prim_arg ctx ~typ:(Int Large) x in
+    let y = transl_prim_arg ctx ~typ:(Int Large) y in
+    op x y
 
   let translate_int_equality ctx ~negate x y =
     match get_type ctx x, get_type ctx y with
     | Int _, Int _ ->
-        (if negate then Arith64.( <> ) else Arith64.( = ))
+        (if negate then Arith64.ne_i32 else Arith64.eq_i32)
           (transl_prim_arg ctx ~typ:(Int Large) x)
           (transl_prim_arg ctx ~typ:(Int Large) y)
     | Top, Top ->
@@ -329,19 +342,19 @@ module Generate (Target : Target_sig.S) = struct
             | Number (Int32, _), Number (Int32, _) ->
                 let x = transl_prim_arg ctx ~typ:int32_u x in
                 let y = transl_prim_arg ctx ~typ:int32_u y in
-                Arith64.of_i32_s (int32_bin_op cmp_boxed_int x y)
+                int32_bin_op cmp_boxed_int x y
             | Number (Nativeint, _), Number (Nativeint, _) ->
                 let x = transl_prim_arg ctx ~typ:nativeint_u x in
                 let y = transl_prim_arg ctx ~typ:nativeint_u y in
-                Arith64.of_i32_s (nativeint_bin_op cmp_boxed_int x y)
+                nativeint_bin_op cmp_boxed_int x y
             | Number (Int64, _), Number (Int64, _) ->
                 let x = transl_prim_arg ctx ~typ:int64_u x in
                 let y = transl_prim_arg ctx ~typ:int64_u y in
-                Arith64.of_i32_s (int64_bin_op cmp_boxed_int x y)
+                int64_bin_op cmp_boxed_int x y
             | Number (Float, _), Number (Float, _) ->
                 let x = transl_prim_arg ctx ~typ:float_u x in
                 let y = transl_prim_arg ctx ~typ:float_u y in
-                Arith64.of_i32_s (float_bin_op cmp_float x y)
+                float_bin_op cmp_float x y
             | _ ->
                 let* f =
                   register_import
@@ -350,7 +363,7 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 let* x = transl_prim_arg ctx x in
                 let* y = transl_prim_arg ctx y in
-                Arith64.of_i32_s (return (W.Call (f, [ x; y ]))))
+                return (W.Call (f, [ x; y ])))
         | _ -> invalid_arity name l ~expected:2)
 
   let () =
@@ -367,13 +380,13 @@ module Generate (Target : Target_sig.S) = struct
     register_tern_prim "caml_floatarray_unsafe_set" ~ty:int_l ~tz:float_u (fun x y z ->
         seq (Memory.float_array_set x (Arith64.to_i32 y) z) Value.unit);
     register_bin_prim "caml_string_unsafe_get" `Pure ~ty:int_l ~ret_typ:int_s (fun x y ->
-        Arith64.of_i32_u (Memory.bytes_get x (Arith64.to_i32 y)));
+        Memory.bytes_get x (Arith64.to_i32 y));
     register_bin_prim
       "caml_bytes_unsafe_get"
       `Mutable
       ~ty:int_l
       ~ret_typ:int_s
-      (fun x y -> Arith64.of_i32_u (Memory.bytes_get x (Arith64.to_i32 y)));
+      (fun x y -> Memory.bytes_get x (Arith64.to_i32 y));
     register_tern_prim "caml_string_unsafe_set" ~ty:int_l ~tz:int_l (fun x y z ->
         seq (Memory.bytes_set x (Arith64.to_i32 y) (Arith64.to_i32 z)) Value.unit);
     register_tern_prim "caml_bytes_unsafe_set" ~ty:int_l ~tz:int_l (fun x y z ->
@@ -382,7 +395,7 @@ module Generate (Target : Target_sig.S) = struct
       seq
         (let* cond = Arith64.uge_i32 y (Arith64.of_i32_u (Memory.bytes_length x)) in
          instr (W.Br_if (label_index context bound_error_pc, cond)))
-        (Arith64.of_i32_u (Memory.bytes_get x (Arith64.to_i32 y)))
+        (Memory.bytes_get x (Arith64.to_i32 y))
     in
     register_bin_prim_ctx "caml_string_get" ~ty:int_l ~ret_typ:int_s bytes_get;
     register_bin_prim_ctx "caml_bytes_get" ~ty:int_l ~ret_typ:int_s bytes_get;
@@ -396,9 +409,9 @@ module Generate (Target : Target_sig.S) = struct
     register_tern_prim_ctx "caml_string_set" ~ty:int_l ~tz:int_l bytes_set;
     register_tern_prim_ctx "caml_bytes_set" ~ty:int_l ~tz:int_l bytes_set;
     register_un_prim "caml_ml_string_length" `Pure ~ret_typ:int_s (fun x ->
-        Arith64.of_i32_u (Memory.bytes_length x));
+        Memory.bytes_length x);
     register_un_prim "caml_ml_bytes_length" `Pure ~ret_typ:int_s (fun x ->
-        Arith64.of_i32_u (Memory.bytes_length x));
+        Memory.bytes_length x);
     register_arith_bin_prim "%int_add" `Pure ~typ:int_l Value.int_add;
     register_arith_bin_prim "%int_sub" `Pure ~typ:int_l Value.int_sub;
     register_arith_bin_prim "%int_mul" `Pure ~typ:int_l Value.int_mul;
@@ -469,7 +482,8 @@ module Generate (Target : Target_sig.S) = struct
         float_bin_op CopySign f g);
     register_un_prim "caml_signbit_float" `Pure ~typ:float_u ~ret_typ:int_s (fun f ->
         let* f = f in
-        return (W.BinOp (I64 (Shr U), W.UnOp (I64 ReinterpretF, f), W.Const (I64 63L))));
+        return
+          (W.I32WrapI64 (BinOp (I64 (Shr U), UnOp (I64 ReinterpretF, f), Const (I64 63L)))));
     register_un_prim "caml_neg_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
         float_un_op Neg f);
     register_un_prim "caml_abs_float" `Pure ~typ:float_u ~ret_typ:float_u (fun f ->
@@ -488,42 +502,42 @@ module Generate (Target : Target_sig.S) = struct
       ~tx:float_u
       ~ty:float_u
       ~ret_typ:int_s
-      (fun f g -> Arith64.of_i32_u (float_bin_op Eq f g));
+      (fun f g -> float_bin_op Eq f g);
     register_bin_prim
       "caml_neq_float"
       `Pure
       ~tx:float_u
       ~ty:float_u
       ~ret_typ:int_s
-      (fun f g -> Arith64.of_i32_u (float_bin_op Ne f g));
+      (fun f g -> float_bin_op Ne f g);
     register_bin_prim
       "caml_ge_float"
       `Pure
       ~tx:float_u
       ~ty:float_u
       ~ret_typ:int_s
-      (fun f g -> Arith64.of_i32_u (float_bin_op Ge f g));
+      (fun f g -> float_bin_op Ge f g);
     register_bin_prim
       "caml_le_float"
       `Pure
       ~tx:float_u
       ~ty:float_u
       ~ret_typ:int_s
-      (fun f g -> Arith64.of_i32_u (float_bin_op Le f g));
+      (fun f g -> float_bin_op Le f g);
     register_bin_prim
       "caml_gt_float"
       `Pure
       ~tx:float_u
       ~ty:float_u
       ~ret_typ:int_s
-      (fun f g -> Arith64.of_i32_u (float_bin_op Gt f g));
+      (fun f g -> float_bin_op Gt f g);
     register_bin_prim
       "caml_lt_float"
       ~tx:float_u
       ~ty:float_u
       ~ret_typ:int_s
       `Pure
-      (fun f g -> Arith64.of_i32_u (float_bin_op Lt f g));
+      (fun f g -> float_bin_op Lt f g);
     register_un_prim "caml_int_of_float" `Pure ~typ:float_u ~ret_typ:int_l (fun f ->
         let* f = f in
         return (W.UnOp (I64 (TruncSat (`F64, S)), f)));
@@ -942,17 +956,17 @@ module Generate (Target : Target_sig.S) = struct
       ~tx:int_l
       ~ty:int_l
       ~ret_typ:int_s
-      (fun i j -> Arith64.((j < i) - (i < j)));
+      (fun i j -> Arith.(Arith64.lt_i32 j i - Arith64.lt_i32 i j));
     register_prim "%js_array" `Pure (fun ctx _ l ->
         Memory.allocate ~tag:0 (expression_list (fun x -> transl_prim_arg ctx x) l));
     register_comparison "caml_greaterthan" (Gt S) Gt (fun ctx x y ->
-        translate_int_comparison ctx (fun y x -> Arith64.(x < y)) x y);
+        translate_int_comparison ctx (fun y x -> Arith64.lt_i32 x y) x y);
     register_comparison "caml_greaterequal" (Ge S) Ge (fun ctx x y ->
-        translate_int_comparison ctx (fun y x -> Arith64.(x <= y)) x y);
+        translate_int_comparison ctx (fun y x -> Arith64.le_i32 x y) x y);
     register_comparison "caml_lessthan" (Lt S) Lt (fun ctx x y ->
-        translate_int_comparison ctx Arith64.( < ) x y);
+        translate_int_comparison ctx Arith64.lt_i32 x y);
     register_comparison "caml_lessequal" (Le S) Le (fun ctx x y ->
-        translate_int_comparison ctx Arith64.( <= ) x y);
+        translate_int_comparison ctx Arith64.le_i32 x y);
     register_comparison "caml_equal" Eq Eq (fun ctx x y ->
         translate_int_equality ctx ~negate:false x y);
     register_comparison "caml_notequal" Ne Ne (fun ctx x y ->
@@ -964,7 +978,7 @@ module Generate (Target : Target_sig.S) = struct
             | Int _, Int _ ->
                 let x' = transl_prim_arg ctx ~typ:int_l x in
                 let y' = transl_prim_arg ctx ~typ:int_l y in
-                Arith64.((y' < x') - (x' < y'))
+                Arith.(Arith64.lt_i32 y' x' - Arith64.lt_i32 x' y')
             | Number (Int32, _), Number (Int32, _)
             | Number (Nativeint, _), Number (Nativeint, _) ->
                 let* f =
@@ -974,7 +988,7 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 let* x' = transl_prim_arg ctx ~typ:int32_u x in
                 let* y' = transl_prim_arg ctx ~typ:int32_u y in
-                Arith64.of_i32_s (return (W.Call (f, [ x'; y' ])))
+                return (W.Call (f, [ x'; y' ]))
             | Number (Int64, _), Number (Int64, _) ->
                 let* f =
                   register_import
@@ -983,7 +997,7 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 let* x' = transl_prim_arg ctx ~typ:int64_u x in
                 let* y' = transl_prim_arg ctx ~typ:int64_u y in
-                Arith64.of_i32_s (return (W.Call (f, [ x'; y' ])))
+                return (W.Call (f, [ x'; y' ]))
             | Number (Float, _), Number (Float, _) ->
                 let* f =
                   register_import
@@ -992,7 +1006,7 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 let* x' = transl_prim_arg ctx ~typ:float_u x in
                 let* y' = transl_prim_arg ctx ~typ:float_u y in
-                Arith64.of_i32_s (return (W.Call (f, [ x'; y' ])))
+                return (W.Call (f, [ x'; y' ]))
             | _ ->
                 let* f =
                   register_import
@@ -1001,7 +1015,7 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 let* x' = transl_prim_arg ctx x in
                 let* y' = transl_prim_arg ctx y in
-                Arith64.of_i32_s (return (W.Call (f, [ x'; y' ]))))
+                return (W.Call (f, [ x'; y' ])))
         | _ -> invalid_arity "caml_compare" l ~expected:2);
     let bigarray_generic_access ~ctx ta indices =
       match
@@ -1134,7 +1148,8 @@ module Generate (Target : Target_sig.S) = struct
 
   let unboxed_type ty : W.value_type option =
     match ty with
-    | Typing.Int _ -> Some I64
+    | Typing.Int Small -> Some I32
+    | Typing.Int Large -> Some I64
     | Number ((Int32 | Nativeint), Unboxed) -> Some I32
     | Number (Int64, Unboxed) -> Some I64
     | Number (Float, Unboxed) -> Some F64
@@ -1223,13 +1238,20 @@ module Generate (Target : Target_sig.S) = struct
           ~cps:(Var.Set.mem x ctx.in_cps)
           ~no_code_pointer:(Call_graph_analysis.direct_calls_only ctx.fun_info x)
           x
-    | Constant c ->
-        Constant.translate
-          ~unboxed:
-            (match Typing.var_type ctx.types x with
-            | Number (_, Unboxed) -> true
-            | _ -> false)
-          c
+    | Constant c -> (
+        let var_typ = Typing.var_type ctx.types x in
+        match var_typ with
+        | Int Small -> (
+            match c with
+            | Code.Int i -> return (W.Const (I32 (Targetint.to_int32 i)))
+            | _ -> Constant.translate ~unboxed:false c)
+        | _ ->
+            Constant.translate
+              ~unboxed:
+                (match var_typ with
+                | Number (_, Unboxed) -> true
+                | _ -> false)
+              c)
     | Special (Alias_prim _) -> assert false
     | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ]) ->
         (* Removed in OCaml 5.2 *)
@@ -1266,20 +1288,16 @@ module Generate (Target : Target_sig.S) = struct
           (let* v = Value.as_block v in
            instr (W.GlobalSet (x, v)))
           Value.unit
-    | Prim (Not, [ x ]) -> Value.not (transl_prim_arg ctx ~typ:int_l x)
-    | Prim (Lt, [ x; y ]) -> translate_int_comparison ctx Arith64.( < ) x y
-    | Prim (Le, [ x; y ]) -> translate_int_comparison ctx Arith64.( <= ) x y
-    | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx Arith64.ult x y
+    | Prim (Not, [ x ]) -> Arith.eqz (transl_prim_arg ctx ~typ:int_s x)
+    | Prim (Lt, [ x; y ]) -> translate_int_comparison ctx Arith64.lt_i32 x y
+    | Prim (Le, [ x; y ]) -> translate_int_comparison ctx Arith64.le_i32 x y
+    | Prim (Ult, [ x; y ]) -> translate_int_comparison ctx Arith64.ult_i32 x y
     | Prim (Eq, [ x; y ]) -> translate_int_equality ctx ~negate:false x y
     | Prim (Neq, [ x; y ]) -> translate_int_equality ctx ~negate:true x y
     | Prim (Array_get, [ x; y ]) ->
-        Memory.array_get
-          (transl_prim_arg ctx x)
-          (Arith64.to_i32 (transl_prim_arg ctx ~typ:int_l y))
+        Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_s y)
     | Prim (Extern "caml_array_unsafe_get", [ x; y ]) ->
-        Memory.gen_array_get
-          (transl_prim_arg ctx x)
-          (Arith64.to_i32 (transl_prim_arg ctx ~typ:int_l y))
+        Memory.gen_array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_s y)
     | Prim (p, l) -> (
         match p with
         | Extern name when String.Hashtbl.mem internal_primitives name ->
@@ -1295,13 +1313,14 @@ module Generate (Target : Target_sig.S) = struct
               | [], [] -> (
                   let call = W.Call (f, List.rev acc) in
                   match ret with
-                  | Int _ -> Arith64.of_i32_s (return call)
+                  | Int Small -> return call
+                  | Int Large -> Arith64.of_i32_s (return call)
                   | _ -> return call)
               | repr :: rem, x :: r ->
                   let* x = transl_prim_arg ctx ?typ:(repr_type repr) x in
                   let x =
                     match repr with
-                    | Int _ -> W.I32WrapI64 x
+                    | Int Large -> W.I32WrapI64 x
                     | _ -> x
                   in
                   loop (x :: acc) rem r
@@ -1323,8 +1342,8 @@ module Generate (Target : Target_sig.S) = struct
                       loop (x :: acc) r
                 in
                 loop [] l
-            | IsInt, [ x ] -> Arith64.of_i32_u (Value.is_int x)
-            | Vectlength, [ x ] -> Arith64.of_i32_u (Memory.gen_array_length x)
+            | IsInt, [ x ] -> Value.is_small_int x
+            | Vectlength, [ x ] -> Memory.gen_array_length x
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
                 assert false))
 
@@ -1361,8 +1380,7 @@ module Generate (Target : Target_sig.S) = struct
     | Array_set (x, y, z) ->
         Memory.array_set
           (load x)
-          (Arith64.to_i32
-             (convert ~from:(Typing.var_type ctx.types y) ~into:int_l (load y)))
+          (convert ~from:(Typing.var_type ctx.types y) ~into:int_s (load y))
           (load_and_box ctx z)
     | Event loc -> event loc
 
@@ -1599,7 +1617,8 @@ module Generate (Target : Target_sig.S) = struct
               if_
                 { params = []; result = result_typ }
                 (match Typing.var_type ctx.types x with
-                | Int _ -> Arith64.ne_i32 (load x) (Arith64.const 0L)
+                | Int Small -> Arith.( <> ) (load x) (Arith.const 0l)
+                | Int Large -> Arith64.ne_i32 (load x) (Arith64.const 0L)
                 | _ -> Value.check_is_not_zero (load x))
                 (translate_branch result_typ fall_through pc cont1 context')
                 (translate_branch result_typ fall_through pc cont2 context')
@@ -1615,8 +1634,8 @@ module Generate (Target : Target_sig.S) = struct
                 assert (List.is_empty args);
                 label_index context pc
               in
-              let* e = convert ~from:(Typing.var_type ctx.types x) ~into:int_l (load x) in
-              instr (Br_table (W.I32WrapI64 e, List.map ~f:dest l, dest a.(len - 1)))
+              let* e = convert ~from:(Typing.var_type ctx.types x) ~into:int_s (load x) in
+              instr (Br_table (e, List.map ~f:dest l, dest a.(len - 1)))
           | Raise (x, _) -> (
               let* e = load x in
               let* tag = register_import ~name:exception_name (Tag Type.value) in

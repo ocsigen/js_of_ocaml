@@ -129,7 +129,7 @@ module type S = sig
 
     val ult : expression -> expression -> expression
 
-    val is_int : expression -> expression
+    val is_small_int : expression -> expression
 
     val int_add : expression -> expression -> expression
 
