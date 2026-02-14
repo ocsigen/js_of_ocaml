@@ -48,8 +48,9 @@
     ./wasm_of_ocaml.exe:wasm_of_ocaml
     cmdliner-support))))
 
-(install
- (section share_root)
- (package wasm_of_ocaml-compiler)
- (dirs
-  (cmdliner-support/share as .)))
+;; Restore once fixed in dune
+;; (install
+;;  (section share_root)
+;;  (package wasm_of_ocaml-compiler)
+;;  (dirs
+;;   (cmdliner-support/share as .)))
