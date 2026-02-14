@@ -51,7 +51,6 @@
 (rule
  (target install-in-share.sexp)
  (deps cmdliner-support/share)
- (mode promote)
  (action
   (with-stdout-to
    %{target}
