@@ -48,16 +48,8 @@
     ./wasm_of_ocaml.exe:wasm_of_ocaml
     cmdliner-support))))
 
-(rule
- (target install-in-share.sexp)
- (deps cmdliner-support/share)
- (action
-  (with-stdout-to
-   %{target}
-   (run ../../tools/gen_install.exe %{deps}))))
-
 (install
  (section share_root)
  (package wasm_of_ocaml-compiler)
- (files
-  (include install-in-share.sexp)))
+ (dirs
+  (cmdliner-support/share as .)))
