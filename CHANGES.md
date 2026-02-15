@@ -1,3 +1,8 @@
+# 6.3.2 (2026-02-15) - Lille
+
+## Changes
+*  Misc: fix installation of completion files again.
+
 # 6.3.1 (2026-02-13) - Lille
 
 ## Changes
