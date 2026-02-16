@@ -774,13 +774,25 @@ let register_global ?(force = false) g i rem =
   match g.is_exported.(i), force, Config.target () with
   | true, _, `Wasm ->
       (* Register a compilation unit (Wasm) *)
-      assert (not force);
       let name =
         match g.named_value.(i) with
         | None -> assert false
         | Some name -> name
       in
       Var.set_name (access_global g i) name;
+      let rem =
+        if force
+        then
+          Let
+            ( Var.fresh ()
+            , Prim
+                ( Extern "caml_register_global"
+                , Pc (Int (Targetint.of_int_exn i))
+                  :: Pv (access_global g i)
+                  :: [ Pc (String name) ] ) )
+          :: rem
+        else rem
+      in
       Let
         ( Var.fresh ()
         , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ]) )
