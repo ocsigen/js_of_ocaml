@@ -1,0 +1,52 @@
+(executable
+ (name effects_flags)
+ (modules effects_flags))
+
+(rule
+ (target effects_flags.txt)
+ (action
+  (with-stdout-to
+   %{target}
+   (run ./effects_flags.exe %{profile}))))
+
+(executable
+ (name main)
+ (modules main)
+ (libraries wasm_of_ocaml-compiler.dynlink)
+ (link_flags
+  (:standard -linkall))
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode separate)))
+
+(rule
+ (target plugin.cmo)
+ (action
+  (run %{bin:ocamlc} -c %{dep:./plugin.ml})))
+
+(rule
+ (target plugin.wasmo)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (run
+   %{bin:wasm_of_ocaml}
+   compile
+   %{read-strings:effects_flags.txt}
+   %{dep:plugin.cmo}
+   -o
+   %{target})))
+
+(rule
+ (target main.out)
+ (deps plugin.wasmo)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./main.bc.wasm.js}))))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (diff main.out.expected main.out)))
