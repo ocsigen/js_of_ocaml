@@ -66,9 +66,11 @@ type t =
   ; shape_files : string list
   ; build_config : bool
   ; apply_build_config : string option
+  ; fs_files : string list
   }
 
 let options () =
+  let filesystem_section = "OPTIONS (FILESYSTEM)" in
   let runtime_files =
     let doc = "Link JavaScript and WebAssembly files [$(docv)]. " in
     Arg.(value & pos_left ~rev:true 0 filepath [] & info [] ~docv:"RUNTIME_FILES" ~doc)
@@ -117,7 +119,15 @@ let options () =
   in
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
-    Arg.(value & opt_all dirpath [] & info [ "I" ] ~docv:"DIR" ~doc)
+    Arg.(
+      value & opt_all dirpath [] & info [ "I" ] ~docv:"DIR" ~docs:filesystem_section ~doc)
+  in
+  let fs_files =
+    let doc = "Register [$(docv)] to the pseudo filesystem." in
+    Arg.(
+      value
+      & opt_all filepath []
+      & info [ "file" ] ~docv:"FILE" ~docs:filesystem_section ~doc)
   in
   let effects =
     let doc =
@@ -133,6 +143,7 @@ let options () =
       common
       set_param
       include_dirs
+      fs_files
       profile
       _
       sourcemap
@@ -189,6 +200,7 @@ let options () =
           ; shape_files
           ; build_config
           ; apply_build_config
+          ; fs_files
           }
   in
   let t =
@@ -197,6 +209,7 @@ let options () =
       $ Lazy.force Jsoo_cmdline.Arg.t
       $ set_param
       $ include_dirs
+      $ fs_files
       $ profile
       $ linkall
       $ sourcemap
@@ -290,6 +303,7 @@ let options_runtime_only () =
       ; shape_files = []
       ; build_config
       ; apply_build_config
+      ; fs_files = []
       }
   in
   let t =
