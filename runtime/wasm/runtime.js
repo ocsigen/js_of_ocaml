@@ -626,6 +626,49 @@
     map_delete: (m, x) => m.delete(x),
     hash_string,
     log: (x) => console.log(x),
+    load_wasmo: (zipBytes) => {
+      // Parse ZIP to extract code.wasm and link_order (uncompressed ZIP)
+      const dv = new DataView(
+        zipBytes.buffer,
+        zipBytes.byteOffset,
+        zipBytes.byteLength,
+      );
+      const len = zipBytes.byteLength;
+      // Find End of Central Directory record (search backwards)
+      let eocdOff = len - 22;
+      while (eocdOff >= 0 && dv.getUint32(eocdOff, true) !== 0x06054b50)
+        eocdOff--;
+      if (eocdOff < 0) throw new Error("Invalid ZIP: EOCD not found");
+      const cdOff = dv.getUint32(eocdOff + 16, true);
+      const cdEntries = dv.getUint16(eocdOff + 10, true);
+      // Scan central directory for code.wasm and link_order
+      const entries = {};
+      let off = cdOff;
+      for (let i = 0; i < cdEntries; i++) {
+        if (dv.getUint32(off, true) !== 0x02014b50)
+          throw new Error("Invalid ZIP: bad CD entry");
+        const nameLen = dv.getUint16(off + 28, true);
+        const extraLen = dv.getUint16(off + 30, true);
+        const commentLen = dv.getUint16(off + 32, true);
+        const localOff = dv.getUint32(off + 42, true);
+        const name = decoder.decode(
+          zipBytes.subarray(off + 46, off + 46 + nameLen),
+        );
+        const size = dv.getUint32(off + 24, true);
+        const localNameLen = dv.getUint16(localOff + 26, true);
+        const localExtraLen = dv.getUint16(localOff + 28, true);
+        const dataOff = localOff + 30 + localNameLen + localExtraLen;
+        entries[name] = zipBytes.subarray(dataOff, dataOff + size);
+        off += 46 + nameLen + extraLen + commentLen;
+      }
+      if (!entries["code.wasm"])
+        throw new Error("code.wasm not found in .wasmo");
+      const module = new WebAssembly.Module(entries["code.wasm"], options);
+      const inst = new WebAssembly.Instance(module, imports);
+      Object.assign(imports.OCaml, inst.exports);
+      const names = decoder.decode(entries.link_order).split("\x00");
+      for (const name of names) inst.exports[name + ".init"]();
+    },
     register_file: (name, data) => register_virtual_file(name, data),
     read_file: (name) => virtual_files.get(name) ?? null,
   };

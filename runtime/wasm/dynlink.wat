@@ -16,4 +16,18 @@
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (module
+   (import "bigarray" "caml_uint8_array_of_string"
+      (func $caml_uint8_array_of_string (param (ref eq)) (result (ref eq))))
+   (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
+   (import "bindings" "load_wasmo"
+      (func $load_wasmo (param anyref)))
+
+   (type $bytes (array (mut i8)))
+
+   (func (export "caml_wasm_load_wasmo")
+      (param $bytes (ref eq)) (result (ref eq))
+      (call $load_wasmo
+         (call $unwrap
+            (call $caml_uint8_array_of_string (local.get $bytes))))
+      (ref.i31 (i32.const 0)))
 )
