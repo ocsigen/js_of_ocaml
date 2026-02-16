@@ -35,6 +35,7 @@ type t =
   ; shape_files : string list
   ; build_config : bool
   ; apply_build_config : string option
+  ; dynlink : bool
   ; fs_files : string list
   }
 
