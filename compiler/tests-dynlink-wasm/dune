@@ -30,3 +30,37 @@
  (alias runtest-wasm)
  (action
   (diff main.out.expected main.out)))
+
+(executable
+ (name compile_plugin)
+ (modules compile_plugin)
+ (libraries wasm_of_ocaml-compiler js_of_ocaml-compiler))
+
+(rule
+ (target plugin_compiled.wasmo)
+ (deps plugin.cmo)
+ (action
+  (run ./compile_plugin.exe)))
+
+(executable
+ (name main_compile_and_load)
+ (modules main_compile_and_load)
+ (libraries wasm_of_ocaml-compiler.dynlink)
+ (link_flags
+  (:standard -linkall))
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode separate)))
+
+(rule
+ (target main_compile_and_load.out)
+ (deps plugin_compiled.wasmo)
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./main_compile_and_load.bc.wasm.js}))))
+
+(rule
+ (alias runtest-wasm)
+ (action
+  (diff main_compile_and_load.out.expected main_compile_and_load.out)))
