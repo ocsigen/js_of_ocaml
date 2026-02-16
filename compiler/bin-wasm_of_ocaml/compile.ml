@@ -360,6 +360,7 @@ let run
     ; sourcemap_don't_inline_content
     ; effects
     ; shape_files
+    ; fs_files
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
@@ -561,6 +562,11 @@ let run
              ic
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+         let embedded_files =
+           List.concat_map fs_files ~f:(fun f ->
+               List.map (Pseudo_fs.list_files f include_dirs) ~f:(fun (name, filename) ->
+                   name, Fs.read_file filename))
+         in
          Fs.with_intermediate_file (Filename.temp_file "code" ".wasm")
          @@ fun input_wasm_file ->
          let dir = Filename.chop_extension output_file ^ ".assets" in
@@ -630,6 +636,7 @@ let run
                   ~link_spec:[ wasm_name, None ]
                   ~separate_compilation:false
                   ~generated_js:[ None, generated_js ]
+                  ~embedded_files
                   ())
              ()
          in
