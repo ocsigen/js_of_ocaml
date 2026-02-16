@@ -33,6 +33,7 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; fs_files : string list
   }
 
 val options : unit -> t Cmdliner.Term.t

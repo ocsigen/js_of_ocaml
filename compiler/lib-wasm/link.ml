@@ -423,6 +423,7 @@ let build_runtime_arguments
     ~missing_primitives
     ~wasm_dir
     ~generated_js
+    ~embedded_files
     () =
   let missing_primitives = if Config.Flag.genprim () then missing_primitives else [] in
   if not separate_compilation then report_missing_primitives missing_primitives;
@@ -543,6 +544,20 @@ let build_runtime_arguments
     | `Disabled -> ("disable_effects", Javascript.EBool true) :: props
     | `Jspi | `Cps -> props
     | `Double_translation -> assert false
+  in
+  let props =
+    if List.is_empty embedded_files
+    then props
+    else
+      ( "files"
+      , obj
+          (List.map
+             ~f:(fun (name, content) ->
+               ( name
+               , Javascript.EStr
+                   (Utf8_string.of_string_exn (Base64.encode_string content)) ))
+             embedded_files) )
+      :: props
   in
   obj props
 
@@ -676,7 +691,7 @@ let gen_dir dir f =
     remove_directory d_tmp;
     raise exc
 
-let link ~output_file ~linkall ~enable_source_maps ~files =
+let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
   if times () then Format.eprintf "linking@.";
   let t = Timer.make () in
   let predefined_exceptions, files = load_information files in
@@ -811,6 +826,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
         ~missing_primitives
         ~wasm_dir
         ~generated_js
+        ~embedded_files
         ()
     in
     output_js [ Javascript.Expression_statement js, Javascript.N ]
@@ -925,11 +941,11 @@ let make_library ~output_file ~enable_source_maps ~files =
   if enable_source_maps then add_source_map files z output_sourcemap;
   Zip.close_out z
 
-let link ~output_file ~linkall ~mklib ~enable_source_maps ~files =
+let link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files ~files =
   try
     if mklib
     then make_library ~output_file ~enable_source_maps ~files
-    else link ~output_file ~linkall ~enable_source_maps ~files
+    else link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"

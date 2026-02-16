@@ -64,6 +64,7 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; fs_files : string list
   }
 
 let set_param =
@@ -134,6 +135,10 @@ let options () =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(value & opt_all dirpath [] & info [ "I" ] ~docv:"DIR" ~doc)
   in
+  let fs_files =
+    let doc = "Register [$(docv)] to the pseudo filesystem." in
+    Arg.(value & opt_all filepath [] & info [ "file" ] ~docv:"FILE" ~doc)
+  in
   let effects =
     let doc =
       "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
@@ -148,6 +153,7 @@ let options () =
       common
       set_param
       include_dirs
+      fs_files
       profile
       _
       sourcemap
@@ -191,6 +197,7 @@ let options () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files
+      ; fs_files
       }
   in
   let t =
@@ -199,6 +206,7 @@ let options () =
       $ Lazy.force Jsoo_cmdline.Arg.t
       $ set_param
       $ include_dirs
+      $ fs_files
       $ profile
       $ linkall
       $ sourcemap
@@ -283,6 +291,7 @@ let options_runtime_only () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files = []
+      ; fs_files = []
       }
   in
   let t =

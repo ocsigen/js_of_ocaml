@@ -68,6 +68,32 @@
 
   const fs = isNode && require("node:fs");
 
+  // Virtual filesystem for embedded files (e.g. CMIs for toplevel)
+  const virtual_files = new Map(); // path -> Uint8Array
+  const virtual_dirs = new Set(); // directory paths
+  const virtual_fds = new Map(); // fd -> { data, offset }
+  let next_virtual_fd = 1000000;
+
+  function register_virtual_file(name, content) {
+    virtual_files.set(name, content);
+    let dir = name;
+    while (true) {
+      const i = dir.lastIndexOf("/");
+      if (i <= 0) break;
+      dir = dir.substring(0, i);
+      virtual_dirs.add(dir);
+    }
+  }
+
+  if (args.files) {
+    for (const [name, data] of Object.entries(args.files)) {
+      register_virtual_file(
+        name,
+        Uint8Array.from(atob(data), (c) => c.charCodeAt(0)),
+      );
+    }
+  }
+
   const fs_cst = fs?.constants;
 
   const access_flags = fs
@@ -443,13 +469,25 @@
         p,
         access_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
       ),
-    open: (p, flags, perm) =>
-      fs.openSync(
+    open: (p, flags, perm) => {
+      if (virtual_files.has(p) && !(flags & 2)) {
+        const fd = next_virtual_fd++;
+        virtual_fds.set(fd, { data: virtual_files.get(p), offset: 0 });
+        return fd;
+      }
+      return fs.openSync(
         p,
         open_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
         perm,
-      ),
-    close: (fd) => fs.closeSync(fd),
+      );
+    },
+    close: (fd) => {
+      if (virtual_fds.has(fd)) {
+        virtual_fds.delete(fd);
+        return;
+      }
+      fs.closeSync(fd);
+    },
     write: (fd, b, o, l, p) =>
       fs
         ? fs.writeSync(fd, b, o, l, p === null ? p : Number(p))
@@ -457,9 +495,24 @@
             typeof b === "string" ? b : decoder.decode(b.slice(o, o + l)),
           ),
           l),
-    read: (fd, b, o, l, p) => fs.readSync(fd, b, o, l, p),
+    read: (fd, b, o, l, p) => {
+      const vf = virtual_fds.get(fd);
+      if (vf) {
+        const pos = p === null ? vf.offset : Number(p);
+        const n = Math.min(l, vf.data.length - pos);
+        if (n <= 0) return 0;
+        b.set(vf.data.subarray(pos, pos + n), o);
+        vf.offset = pos + n;
+        return n;
+      }
+      return fs.readSync(fd, b, o, l, p);
+    },
     fsync: (fd) => fs.fsyncSync(fd),
-    file_size: (fd) => fs.fstatSync(fd, { bigint: true }).size,
+    file_size: (fd) => {
+      const vf = virtual_fds.get(fd);
+      if (vf) return BigInt(vf.data.length);
+      return fs.fstatSync(fd, { bigint: true }).size;
+    },
     register_channel,
     unregister_channel,
     channel_list,
@@ -487,7 +540,25 @@
     symlink: (t, p, kind) => fs.symlinkSync(t, p, [null, "file", "dir"][kind]),
     readlink: (p) => fs.readlinkSync(p),
     unlink: (p) => fs.unlinkSync(p),
-    read_dir: (p) => fs.readdirSync(p),
+    read_dir: (p) => {
+      const prefix = p.endsWith("/") ? p : p + "/";
+      const entries = new Set();
+      for (const name of virtual_files.keys()) {
+        if (name.startsWith(prefix)) {
+          const rest = name.substring(prefix.length);
+          const slash = rest.indexOf("/");
+          entries.add(slash < 0 ? rest : rest.substring(0, slash));
+        }
+      }
+      if (fs) {
+        try {
+          for (const e of fs.readdirSync(p)) entries.add(e);
+        } catch (e) {
+          if (entries.size === 0) throw e;
+        }
+      }
+      return [...entries];
+    },
     opendir: (p) => fs.opendirSync(p),
     readdir: (d) => {
       var n = d.readSync()?.name;
@@ -499,9 +570,20 @@
     fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
     chmod: (p, perms) => fs.chmodSync(p, perms),
     fchmod: (p, perms) => fs.fchmodSync(p, perms),
-    file_exists: (p) => +fs.existsSync(p),
-    is_directory: (p) => +fs.lstatSync(p).isDirectory(),
-    is_file: (p) => +fs.lstatSync(p).isFile(),
+    file_exists: (p) => {
+      if (virtual_files.has(p) || virtual_dirs.has(p)) return 1;
+      return fs ? +fs.existsSync(p) : 0;
+    },
+    is_directory: (p) => {
+      if (virtual_dirs.has(p)) return 1;
+      if (virtual_files.has(p)) return 0;
+      return +fs.lstatSync(p).isDirectory();
+    },
+    is_file: (p) => {
+      if (virtual_files.has(p)) return 1;
+      if (virtual_dirs.has(p)) return 0;
+      return +fs.lstatSync(p).isFile();
+    },
     utimes: (p, a, m) => fs.utimesSync(p, a, m),
     truncate: (p, l) => fs.truncateSync(p, l),
     ftruncate: (fd, l) => fs.ftruncateSync(fd, l),
@@ -550,6 +632,8 @@
     map_delete: (m, x) => m.delete(x),
     hash_string,
     log: (x) => console.log(x),
+    register_file: (name, data) => register_virtual_file(name, data),
+    read_file: (name) => virtual_files.get(name) ?? null,
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),

@@ -26,6 +26,8 @@ val f :
   -> paths:string list
   -> Code.instr list
 
+val list_files : string -> string list -> (string * string) list
+
 val embed_file : name:string -> filename:string -> Code.instr
 
 val init : unit -> Code.instr
