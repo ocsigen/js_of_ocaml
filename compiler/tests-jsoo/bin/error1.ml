@@ -1,3 +1,5 @@
+[@@@ocaml.alert "-unsafe_multidomain"]
+
 external unregister : string -> unit = "caml_unregister_named_value"
 
 let () =
@@ -8,7 +10,7 @@ let () =
 exception D of int * string * Int64.t
 
 let _ =
-  (Printexc.register_printer [@ocaml.alert "-unsafe_multidomain"]) (function
+  Printexc.register_printer (function
     | D _ -> Some "custom printer"
     | _ -> None)
 

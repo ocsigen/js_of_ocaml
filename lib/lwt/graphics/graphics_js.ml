@@ -28,10 +28,7 @@ end
 
 type context = context_ Js.t
 
-let _ =
-  (Callback.register_exception
-     "Graphics.Graphic_failure" [@ocaml.alert "-unsafe_multidomain"])
-    (Graphic_failure "")
+let _ = Callback.register_exception "Graphics.Graphic_failure" (Graphic_failure "")
 
 let ( >>= ) = Lwt.bind
 

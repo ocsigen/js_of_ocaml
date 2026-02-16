@@ -17,6 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+
+[@@@ocaml.alert "-unsafe_multidomain"]
+
 open! Import
 
 (* This local module [Js] is needed so that the ppx_js extension work within that file. *)
@@ -813,7 +816,7 @@ let parseFloat (s : js_string t) : number_t =
   if isNaN s then failwith "parseFloat" else s
 
 let _ =
-  (Printexc.register_printer [@ocaml.alert "-unsafe_multidomain"]) (fun e ->
+  Printexc.register_printer (fun e ->
       if instanceof (Obj.magic e : < .. > t) error_constr
       then
         let e = Js_error.of_error (Obj.magic e : error t) in

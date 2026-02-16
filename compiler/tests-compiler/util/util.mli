@@ -28,7 +28,11 @@ val parse_js : Filetype.js_file -> Javascript.program
 val compile_ocaml_to_cmo : ?debug:bool -> Filetype.ocaml_file -> Filetype.cmo_file
 
 val compile_ocaml_to_bc :
-  ?debug:bool -> ?unix:bool -> Filetype.ocaml_file -> Filetype.bc_file
+     ?debug:bool
+  -> ?unix:bool
+  -> ?ocaml_flags:string list
+  -> Filetype.ocaml_file
+  -> Filetype.bc_file
 
 val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
 
@@ -84,6 +88,7 @@ val compile_and_run :
      ?debug:bool
   -> ?pretty:bool
   -> ?flags:string list
+  -> ?ocaml_flags:string list
   -> ?effects:[ `Disabled | `Cps | `Double_translation ]
   -> ?use_js_string:bool
   -> ?unix:bool
