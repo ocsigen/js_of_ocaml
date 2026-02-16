@@ -138,6 +138,7 @@ let link_and_optimize
     ~sourcemap_root
     ~sourcemap_don't_inline_content
     ~opt_sourcemap
+    ~linkall
     runtime_wasm_files
     wat_files
     output_file =
@@ -176,35 +177,50 @@ let link_and_optimize
     ();
   if binaryen_times () then Format.eprintf "  binaryen link: %a@." Timer.print t);
 
-  Fs.with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
-  @@ fun temp_file' ->
-  opt_with
-    Fs.with_intermediate_file
-    (if enable_source_maps then Some (Filename.temp_file "wasm-dce" ".wasm.map") else None)
-  @@ fun opt_temp_sourcemap' ->
-  let t = Timer.make ~get_time:Unix.time () in
-  let primitives =
-    Binaryen.dead_code_elimination
-      ~dependencies:Runtime_files.dependencies
-      ~opt_input_sourcemap:opt_temp_sourcemap
-      ~opt_output_sourcemap:opt_temp_sourcemap'
-      ~input_file:temp_file
-      ~output_file:temp_file'
+  let optimize_and_finish ~opt_input_sourcemap ~input_file primitives =
+    let t = Timer.make ~get_time:Unix.time () in
+    Binaryen.optimize
+      ~profile
+      ~opt_input_sourcemap
+      ~opt_output_sourcemap:opt_sourcemap
+      ~input_file
+      ~output_file
+      ();
+    if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t;
+    Option.iter
+      ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
+      opt_sourcemap_file;
+    primitives
   in
-  if binaryen_times () then Format.eprintf "  binaryen dce: %a@." Timer.print t;
-  let t = Timer.make ~get_time:Unix.time () in
-  Binaryen.optimize
-    ~profile
-    ~opt_input_sourcemap:opt_temp_sourcemap'
-    ~opt_output_sourcemap:opt_sourcemap
-    ~input_file:temp_file'
-    ~output_file
-    ();
-  if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t;
-  Option.iter
-    ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
-    opt_sourcemap_file;
-  primitives
+  if linkall
+  then
+    optimize_and_finish
+      ~opt_input_sourcemap:opt_temp_sourcemap
+      ~input_file:temp_file
+      (Linker.list_all ())
+  else
+    Fs.with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
+    @@ fun temp_file' ->
+    opt_with
+      Fs.with_intermediate_file
+      (if enable_source_maps
+       then Some (Filename.temp_file "wasm-dce" ".wasm.map")
+       else None)
+    @@ fun opt_temp_sourcemap' ->
+    let t = Timer.make ~get_time:Unix.time () in
+    let primitives =
+      Binaryen.dead_code_elimination
+        ~dependencies:Runtime_files.dependencies
+        ~opt_input_sourcemap:opt_temp_sourcemap
+        ~opt_output_sourcemap:opt_temp_sourcemap'
+        ~input_file:temp_file
+        ~output_file:temp_file'
+    in
+    if binaryen_times () then Format.eprintf "  binaryen dce: %a@." Timer.print t;
+    optimize_and_finish
+      ~opt_input_sourcemap:opt_temp_sourcemap'
+      ~input_file:temp_file'
+      primitives
 
 let link_runtime ~profile runtime_wasm_files output_file =
   if List.is_empty runtime_wasm_files
@@ -360,6 +376,8 @@ let run
     ; sourcemap_don't_inline_content
     ; effects
     ; shape_files
+    ; dynlink
+    ; linkall
     ; fs_files
     } =
   Config.set_target `Wasm;
@@ -552,12 +570,13 @@ let run
      (match kind with
      | `Exe ->
          let t1 = Timer.make () in
+         let linkall = linkall || dynlink in
          let code =
            Parse_bytecode.from_exe
              ~includes:include_dirs
              ~include_cmis:false
              ~link_info:false
-             ~linkall:false
+             ~linkall
              ~debug:need_debug
              ic
          in
@@ -599,6 +618,7 @@ let run
              ~sourcemap_root
              ~sourcemap_don't_inline_content
              ~opt_sourcemap
+             ~linkall
              runtime_wasm_files
              [ input_wasm_file, opt_source_map_file ]
              tmp_wasm_file

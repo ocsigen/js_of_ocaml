@@ -64,6 +64,8 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; dynlink : bool
+  ; linkall : bool
   ; fs_files : string list
   }
 
@@ -112,8 +114,14 @@ let options () =
     Arg.(value & opt (some (enum profile)) None & info [ "opt" ] ~docv:"NUM" ~doc)
   in
   let linkall =
-    let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
+    let doc = "Link all primitives and compilation units." in
     Arg.(value & flag & info [ "linkall" ] ~doc)
+  in
+  let dynlink =
+    let doc =
+      "Compile for dynamic linking (preserve all exports, no dead code elimination)."
+    in
+    Arg.(value & flag & info [ "dynlink" ] ~doc)
   in
   let no_sourcemap =
     let doc = "Disable sourcemap output." in
@@ -155,7 +163,8 @@ let options () =
       include_dirs
       fs_files
       profile
-      _
+      dynlink
+      linkall
       sourcemap
       no_sourcemap
       sourcemap_don't_inline_content
@@ -197,6 +206,8 @@ let options () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files
+      ; dynlink
+      ; linkall
       ; fs_files
       }
   in
@@ -208,6 +219,7 @@ let options () =
       $ include_dirs
       $ fs_files
       $ profile
+      $ dynlink
       $ linkall
       $ sourcemap
       $ no_sourcemap
@@ -291,6 +303,8 @@ let options_runtime_only () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files = []
+      ; dynlink = false
+      ; linkall = false
       ; fs_files = []
       }
   in
