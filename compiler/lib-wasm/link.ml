@@ -417,6 +417,19 @@ let report_missing_primitives missing =
       (Format.pp_print_list Format.pp_print_string)
       missing
 
+let encode_crcs crcs =
+  String.concat
+    ~sep:"\x00"
+    (List.map
+       ~f:(fun (name, digest) ->
+         name
+         ^ "\x01"
+         ^
+         match digest with
+         | Some d -> Digest.to_hex d
+         | None -> "")
+       crcs)
+
 let build_runtime_arguments
     ~link_spec
     ~separate_compilation
@@ -424,6 +437,7 @@ let build_runtime_arguments
     ~wasm_dir
     ~generated_js
     ~embedded_files
+    ~crcs
     () =
   let missing_primitives = if Config.Flag.genprim () then missing_primitives else [] in
   if not separate_compilation then report_missing_primitives missing_primitives;
@@ -558,6 +572,11 @@ let build_runtime_arguments
                    (Utf8_string.of_string_exn (Base64.encode_string content)) ))
              embedded_files) )
       :: props
+  in
+  let props =
+    if List.is_empty crcs
+    then props
+    else ("crcs", Javascript.EStr (Utf8_string.of_string_exn (encode_crcs crcs))) :: props
   in
   obj props
 
@@ -827,6 +846,7 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
         ~wasm_dir
         ~generated_js
         ~embedded_files
+        ~crcs:[]
         ()
     in
     output_js [ Javascript.Expression_statement js, Javascript.N ]

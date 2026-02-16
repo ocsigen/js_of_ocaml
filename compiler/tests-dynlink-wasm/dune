@@ -25,6 +25,22 @@
   (run %{bin:ocamlc} -c %{dep:./plugin.ml})))
 
 (rule
+ (target plugin2.cma)
+ (action
+  (run
+   %{bin:ocamlc}
+   -a
+   %{dep:./plugin2a.ml}
+   %{dep:./plugin2b.ml}
+   -o
+   plugin2.cma)))
+
+(rule
+ (target plugin_js.cmo)
+ (action
+  (run %{bin:ocamlc} -c %{dep:./plugin_js.ml})))
+
+(rule
  (target plugin.wasmo)
  (enabled_if %{env:WASM_OF_OCAML=false})
  (action
@@ -86,3 +102,94 @@
  (enabled_if %{env:WASM_OF_OCAML=false})
  (action
   (diff main_compile_and_load.out.expected main_compile_and_load.out)))
+
+(executable
+ (name dynlink_loadfile)
+ (modules dynlink_loadfile)
+ (libraries dynlink wasm_of_ocaml-compiler.dynlink)
+ (link_flags
+  (:standard -linkall))
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode separate)))
+
+(rule
+ (target dynlink_loadfile.out)
+ (deps plugin.cmo plugin2.cma)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./dynlink_loadfile.bc.wasm.js}))))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (diff dynlink_loadfile.out.expected dynlink_loadfile.out)))
+
+(library
+ (name plugin_dep)
+ (modules plugin_dep)
+ (wrapped false))
+
+;; Compile plugin_uses_dep.cmo against a different version of
+;; plugin_dep.cmi (from plugin_dep_v2.mli) to create a CRC mismatch
+;; with the statically linked Plugin_dep.
+
+(rule
+ (target plugin_uses_dep.cmo)
+ (deps plugin_dep_v2.mli plugin_uses_dep.ml)
+ (action
+  (no-infer
+   (progn
+    (run mkdir -p _bad_crc)
+    (copy %{dep:plugin_dep_v2.mli} _bad_crc/plugin_dep.mli)
+    (copy %{dep:plugin_uses_dep.ml} _bad_crc/plugin_uses_dep.ml)
+    (run %{bin:ocamlc} -c -o _bad_crc/plugin_dep.cmi _bad_crc/plugin_dep.mli)
+    (chdir
+     _bad_crc
+     (run %{bin:ocamlc} -c plugin_uses_dep.ml))
+    (copy _bad_crc/plugin_uses_dep.cmo plugin_uses_dep.cmo)))))
+
+(executable
+ (name dynlink_loadfile_wp)
+ (modules dynlink_loadfile_wp)
+ (libraries
+  dynlink
+  plugin_dep
+  wasm_of_ocaml-compiler.dynlink
+  js_of_ocaml-compiler.runtime)
+ (link_flags
+  (:standard -linkall))
+ (modes byte))
+
+(rule
+ (targets
+  dynlink_loadfile_wp.js
+  (dir dynlink_loadfile_wp.assets))
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (run
+   %{bin:wasm_of_ocaml}
+   compile
+   --dynlink
+   %{read-strings:effects_flags.txt}
+   %{dep:dynlink_loadfile_wp.bc}
+   -o
+   dynlink_loadfile_wp.js)))
+
+(rule
+ (target dynlink_loadfile_wp.out)
+ (deps plugin.cmo plugin2.cma plugin_uses_dep.cmo plugin_js.cmo)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (with-outputs-to
+   %{target}
+   (run %{bin:node} %{dep:./dynlink_loadfile_wp.js}))))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (diff dynlink_loadfile_wp.out.expected dynlink_loadfile_wp.out)))

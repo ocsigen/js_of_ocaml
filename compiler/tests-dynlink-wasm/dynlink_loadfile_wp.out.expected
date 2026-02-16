@@ -1,0 +1,7 @@
+Plugin_dep.x = 42
+plugin loaded
+plugin 2a loaded
+plugin 2b loaded (from 2a: plugin 2a loaded)
+CRC mismatch detected
+hello from JS
+done

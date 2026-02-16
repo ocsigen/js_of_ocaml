@@ -1,0 +1,4 @@
+plugin loaded
+plugin 2a loaded
+plugin 2b loaded (from 2a: plugin 2a loaded)
+done

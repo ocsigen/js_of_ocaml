@@ -1998,6 +1998,6 @@ let compile ~unit_name code =
   let wasm_binary = Wasm_output.to_string fields in
   wasm_binary, fragments
 
-let from_string ~prims ~debug ~unit_name s =
-  let code = Parse_bytecode.from_string ~prims ~debug s in
+let from_string ~prims ~debug ~orig_units ~unit_name s =
+  let code = Parse_bytecode.from_string ~prims ~debug ~orig_units s in
   compile ~unit_name code

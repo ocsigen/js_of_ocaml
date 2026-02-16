@@ -685,4 +685,18 @@
    (func (export "caml_jsoo_flags_use_js_string")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_jsoo_flags_effects")
+      (param (ref eq)) (result (ref eq))
+(@if (= effects "cps")
+(@then
+      (@string "cps"))
+(@else
+(@if (= effects "jspi")
+(@then
+      (@string "jspi"))
+(@else
+      (@string "disabled"))
+))
+))
 )
