@@ -50,6 +50,7 @@ val compile :
 val from_string :
      prims:string array
   -> debug:Instruct.debug_event list array
+  -> orig_units:Stdlib.StringSet.t
   -> unit_name:string option
   -> string
   -> string * (string * Javascript.expression) list
