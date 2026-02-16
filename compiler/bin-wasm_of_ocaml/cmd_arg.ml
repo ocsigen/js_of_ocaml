@@ -64,6 +64,7 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; dynlink : bool
   ; fs_files : string list
   }
 
@@ -116,6 +117,14 @@ let options () =
     let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
     Arg.(value & flag & info [ "linkall" ] ~doc)
   in
+  let dynlink =
+    let doc =
+      "Enable dynlink of bytecode files.  Use this if you want to be able to use the \
+       Dynlink module. Note that you'll also need to link with \
+       'wasm_of_ocaml-compiler.dynlink'."
+    in
+    Arg.(value & flag & info [ "dynlink" ] ~doc)
+  in
   let no_sourcemap =
     let doc = "Disable sourcemap output." in
     Arg.(value & flag & info [ "no-sourcemap"; "no-source-map" ] ~doc)
@@ -160,6 +169,7 @@ let options () =
       include_dirs
       fs_files
       profile
+      dynlink
       _
       sourcemap
       no_sourcemap
@@ -202,6 +212,7 @@ let options () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files
+      ; dynlink
       ; fs_files
       }
   in
@@ -213,6 +224,7 @@ let options () =
       $ include_dirs
       $ fs_files
       $ profile
+      $ dynlink
       $ linkall
       $ sourcemap
       $ no_sourcemap
@@ -296,6 +308,7 @@ let options_runtime_only () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files = []
+      ; dynlink = false
       ; fs_files = []
       }
   in
