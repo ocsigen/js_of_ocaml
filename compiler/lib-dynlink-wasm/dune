@@ -1,0 +1,6 @@
+(library
+ (name wasm_of_ocaml_compiler_dynlink)
+ (public_name wasm_of_ocaml-compiler.dynlink)
+ (foreign_stubs
+  (language c)
+  (names stubs)))
