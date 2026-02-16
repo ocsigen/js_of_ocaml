@@ -1238,6 +1238,15 @@ module Generate (Target : Target_sig.S) = struct
         Closure.dummy ~cps:(effects_cps ()) ~arity:(Targetint.to_int_exn arity)
     | Prim (Extern "caml_alloc_dummy_infix", _) ->
         Closure.dummy ~cps:(effects_cps ()) ~arity:1
+    | Prim (Extern "caml_get_global_data", []) ->
+        let* x =
+          let* typ = Value.block_type in
+          register_import
+            ~import_module:"env"
+            ~name:"caml_global_data"
+            (Global { mut = true; typ })
+        in
+        return (W.GlobalGet x)
     | Prim (Extern "caml_get_global", [ Pc (String name) ]) ->
         let* x =
           let* context = get_context in
@@ -1968,3 +1977,27 @@ let wasm_output ch ~opt_source_map_file ~context =
   if times () then Format.eprintf "    fields: %a@." Timer.print t;
   Wasm_output.f ch ~opt_source_map_file fields;
   if times () then Format.eprintf "  output: %a@." Timer.print t
+
+let compile ~unit_name code =
+  let Driver.{ program; variable_uses; in_cps; deadcode_sentinel; _ }, global_flow_data =
+    Driver.optimize_for_wasm ~shapes:false ~profile:O1 code
+  in
+  let context = start () in
+  let toplevel_name, fragments =
+    f
+      ~context
+      ~unit_name
+      ~live_vars:variable_uses
+      ~in_cps
+      ~deadcode_sentinel
+      ~global_flow_data
+      program
+  in
+  add_start_function ~context toplevel_name;
+  let fields = G.output ~context in
+  let wasm_binary = Wasm_output.to_string fields in
+  wasm_binary, fragments
+
+let from_string ~prims ~debug ~unit_name s =
+  let code = Parse_bytecode.from_string ~prims ~debug s in
+  compile ~unit_name code
