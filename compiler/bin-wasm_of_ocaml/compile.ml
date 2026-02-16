@@ -578,6 +578,7 @@ let run
              ~debug:need_debug
              ic
          in
+         let crcs = if dynlink then Parse_bytecode.read_crcs ic else [] in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          let embedded_files =
            List.concat_map fs_files ~f:(fun f ->
@@ -655,6 +656,7 @@ let run
                   ~separate_compilation:false
                   ~generated_js:[ None, generated_js ]
                   ~embedded_files
+                  ~crcs
                   ())
              ()
          in
