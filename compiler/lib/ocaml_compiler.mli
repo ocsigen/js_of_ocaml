@@ -56,6 +56,8 @@ module Symtable : sig
 
   val current_state : unit -> GlobalMap.t
 
+  val restore_state : GlobalMap.t -> unit
+
   val all_primitives : unit -> string list
 end
 

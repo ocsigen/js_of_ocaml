@@ -244,6 +244,9 @@ module Symtable = struct
     let x : Symtable.global_map = Symtable.current_state () in
     Obj.magic x
 
+  let restore_state (symb : GlobalMap.t) =
+    Symtable.restore_state (Obj.magic symb : Symtable.global_map)
+
   let all_primitives () : string list =
     let split_primitives p =
       let len = String.length p in

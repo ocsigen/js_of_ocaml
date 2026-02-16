@@ -632,6 +632,16 @@
     map_delete: (m, x) => m.delete(x),
     hash_string,
     log: (x) => console.log(x),
+    register_fragments: (unitName, fragmentsSource) => {
+      const frags = eval?.(fragmentsSource);
+      imports[unitName + ".fragments"] = frags;
+    },
+    load_module: (wasmBytes) => {
+      const module = new WebAssembly.Module(wasmBytes, options);
+      const inst = new WebAssembly.Instance(module, imports);
+      Object.assign(imports.OCaml, inst.exports);
+      return inst.exports["_dynlink.init"]();
+    },
     load_wasmo: (zipBytes) => {
       // Parse ZIP to extract code.wasm and link_order (uncompressed ZIP)
       const dv = new DataView(
@@ -675,8 +685,23 @@
       const names = decoder.decode(entries.link_order).split("\x00");
       for (const name of names)  inst.exports[name + ".init"]();
     },
+    get_named_global(name) {
+      const g = imports.OCaml[name];
+      if (g === undefined || !(g instanceof WebAssembly.Global)) return null;
+      return g.value;
+    },
     register_file: (name, data) => register_virtual_file(name, data),
     read_file: (name) => virtual_files.get(name) ?? null,
+    get_ocaml_unit_list() {
+      return Object.keys(imports.OCaml)
+        .filter((k) => imports.OCaml[k] instanceof WebAssembly.Global)
+        .join("\x00");
+    },
+    get_prim_list() {
+      return Object.keys(imports.env)
+        .filter((k) => typeof imports.env[k] === "function")
+        .join("\x00");
+    },
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
@@ -756,6 +781,10 @@
         .fill(link.slice(2).values())
         .map(loadModules);
       await Promise.all(workers);
+    } else {
+      // Exe mode: runtime and code are merged into one module.
+      // Share namespace so get_ocaml_unit_list / get_named_global find globals.
+      imports.OCaml = imports.env;
     }
     return { instance: { exports: Object.assign(imports.env, imports.OCaml) } };
   }

@@ -770,21 +770,38 @@ let access_global g i =
       g.vars.(i) <- Some x;
       x
 
+let emit_register_global_by_index i v name rem =
+  Let
+    ( Var.fresh ()
+    , Prim
+        ( Extern "caml_register_global"
+        , [ Pc (Int (Targetint.of_int_exn i)); Pv v; Pc (String name) ] ) )
+  :: rem
+
+let emit_set_global_by_name v name rem =
+  Let (Var.fresh (), Prim (Extern "caml_set_global", [ Pc (String name); Pv v ])) :: rem
+
 let register_global ?(force = false) g i rem =
   match g.is_exported.(i), force, Config.target () with
-  | true, _, `Wasm ->
-      (* Register a compilation unit (Wasm) *)
-      assert (not force);
-      let name =
-        match g.named_value.(i) with
-        | None -> assert false
-        | Some name -> name
-      in
-      Var.set_name (access_global g i) name;
-      Let
-        ( Var.fresh ()
-        , Prim (Extern "caml_set_global", [ Pc (String name); Pv (access_global g i) ]) )
-      :: rem
+  | true, _, `Wasm -> (
+      match g.named_value.(i) with
+      | Some name ->
+          (* The global is known by name: register as a named Wasm
+             global via caml_set_global (for normal Wasm imports)
+             and, if force is set (predefined exceptions with
+             --dynlink/--linkall), also by index in caml_global_data
+             so that runtime functions (e.g. caml_raise_not_found)
+             and dynamically loaded code can find them. *)
+          Var.set_name (access_global g i) name;
+          let v = access_global g i in
+          let rem =
+            if force then emit_register_global_by_index i v name rem else rem
+          in
+          emit_set_global_by_name v name rem
+      | None ->
+          (* The global has no name (dynamic linking). Register by
+             index in caml_global_data only. *)
+          emit_register_global_by_index i (access_global g i) "" rem)
   | true, _, (`JavaScript as target) | false, true, ((`Wasm | `JavaScript) as target) ->
       (* Register an exception (if force = true), or a compilation unit
          (Javascript) *)
@@ -842,13 +859,20 @@ let get_global state instrs i =
                 | Some shape -> Shape.State.assign x shape));
             x, state, instrs
         | false, `Wasm -> (
-            (* Reference to another compilation units in case of separate
-               compilation (Wasm).
-               The toplevel module is available in an imported global
-               variables. *)
+            (* Reference to another compilation unit in case of separate
+               compilation (Wasm). *)
             match g.named_value.(i) with
-            | None -> assert false
+            | None ->
+                (* No name available (dynamic linking, or constants
+                   such as strings). Access by index from
+                   caml_global_data. *)
+                g.is_const.(i) <- true;
+                let x, state = State.fresh_var state in
+                g.vars.(i) <- Some x;
+                x, state, instrs
             | Some name ->
+                (* The global is known by name: access it as an
+                   imported Wasm global variable. *)
                 let x, state = State.fresh_var state in
                 if debug_parser ()
                 then Format.printf "%a = get_global(%s)@." Var.print x name;
@@ -2865,11 +2889,26 @@ let from_bytes ~prims ~debug (code : bytecode) =
     t
   in
   let globals = make_globals 0 [||] prims in
+  (* In Wasm mode, populate named_value for predefined exceptions only.
+     Other globals are accessed by index from caml_global_data. *)
+  (match Config.target () with
+  | `Wasm ->
+      Ocaml_compiler.Symtable.GlobalMap.iter
+        (Ocaml_compiler.Symtable.current_state ())
+        ~f:(fun id pos ->
+          match id with
+          | Ocaml_compiler.Symtable.Global.Glob_predef _ ->
+              let size = pos + 1 in
+              if size > Array.length globals.named_value then resize_globals globals size;
+              globals.named_value.(pos) <- Some (Ocaml_compiler.Symtable.Global.name id)
+          | Glob_compunit _ -> ())
+  | `JavaScript -> ());
   let p = parse_bytecode code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
   let find_name i =
-    let value = (Meta.global_data ()).(i) in
+    let gdata = Meta.global_data () in
+    let value = gdata.(i) in
     let tag = Obj.tag value in
     if tag = Obj.string_tag
     then Some (("cst_" ^ Obj.magic value : string), true)
@@ -3162,16 +3201,10 @@ let predefined_exceptions () =
                     , [ Pc (Int (Targetint.of_int_exn index)); Pv exn; Pv v_name_js ] ) )
             ]
         | `Wasm ->
-            [ Let
-                ( Var.fresh ()
-                , Prim
-                    ( Extern "caml_register_global"
-                    , [ Pc (Int (Targetint.of_int_exn index)); Pv exn; Pv v_name ] ) )
-              (* Also make the exception available to the generated code *)
-            ; Let
-                ( Var.fresh ()
-                , Prim (Extern "caml_set_global", [ Pc (String name); Pv exn ]) )
-            ])
+            emit_set_global_by_name
+              exn
+              name
+              (emit_register_global_by_index index exn name []))
     |> List.concat
   in
   let block = { params = []; body; branch = Stop } in
