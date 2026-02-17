@@ -366,25 +366,10 @@ let run
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
-  (match apply_build_config with
-  | None -> ()
-  | Some s ->
-      let specs =
-        [ ( "effects"
-          , Jsoo_cmdline.Build_config.Enum
-              ( [ "cps"; "disabled"; "jspi" ]
-              , fun s ->
-                  Config.set_effects_backend (Build_info.effects_backend_of_string s) ) )
-        ; "js-string", Jsoo_cmdline.Build_config.Bool (Config.Flag.set "use-js-string")
-        ]
-      in
-      Jsoo_cmdline.Build_config.parse specs s);
-  if build_config
-  then
-    Jsoo_cmdline.Build_config.print_and_exit
-      [ "effects", Build_info.string_of_effects_backend (Config.effects ())
-      ; "js-string", string_of_bool (Config.Flag.use_js_string ())
-      ];
+  Jsoo_cmdline.Build_config.process
+    `Wasm
+    ~apply:apply_build_config
+    ~print_and_exit:build_config;
   Generate.init ();
   List.iter shape_files ~f:(fun s ->
       let z = Zip.open_in s in

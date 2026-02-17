@@ -82,26 +82,6 @@ type t =
   ; apply_build_config : string option
   }
 
-let set_param =
-  let doc = "Set compiler options." in
-  let all = List.map (Config.Param.all ()) ~f:(fun (x, _, _) -> x, x) in
-  let pair = Arg.(pair ~sep:'=' (enum all) string) in
-  let parser s =
-    match Arg.conv_parser pair s with
-    | Ok (k, v) -> (
-        match
-          List.find ~f:(fun (k', _, _) -> String.equal k k') (Config.Param.all ())
-        with
-        | _, _, valid -> (
-            match valid v with
-            | Ok () -> Ok (k, v)
-            | Error msg -> Error (`Msg ("Unexpected VALUE after [=], " ^ msg))))
-    | Error _ as e -> e
-  in
-  let printer = Arg.conv_printer pair in
-  let c = Arg.conv (parser, printer) in
-  Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
-
 let wrap_with_fun_conv =
   let conv s =
     if String.equal s ""
@@ -148,18 +128,9 @@ let options =
     in
     Arg.(value & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
   in
-  let build_config =
-    let doc = "Print build-relevant configuration as key=value pairs and exit." in
-    Arg.(value & flag & info [ "build-config" ] ~doc)
-  in
-  let apply_build_config =
-    let doc =
-      "Override build-relevant configuration. $(docv) is a '+'-separated list of \
-       key=value pairs (e.g. effects=cps+js-string=true)."
-    in
-    Arg.(
-      value & opt (some string) None & info [ "apply-build-config" ] ~docv:"CONFIG" ~doc)
-  in
+  let build_config = Jsoo_cmdline.Arg.build_config in
+  let apply_build_config = Jsoo_cmdline.Arg.apply_build_config in
+  let set_param = Jsoo_cmdline.Arg.set_param in
   let keep_unit_names =
     let doc = "Keep unit name" in
     Arg.(value & flag & info [ "keep-unit-names" ] ~doc)
@@ -603,18 +574,9 @@ let options_runtime_only =
           None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
-  let build_config =
-    let doc = "Print build-relevant configuration as key=value pairs and exit." in
-    Arg.(value & flag & info [ "build-config" ] ~doc)
-  in
-  let apply_build_config =
-    let doc =
-      "Override build-relevant configuration. $(docv) is a '+'-separated list of \
-       key=value pairs (e.g. effects=cps+js-string=true)."
-    in
-    Arg.(
-      value & opt (some string) None & info [ "apply-build-config" ] ~docv:"CONFIG" ~doc)
-  in
+  let build_config = Jsoo_cmdline.Arg.build_config in
+  let apply_build_config = Jsoo_cmdline.Arg.apply_build_config in
+  let set_param = Jsoo_cmdline.Arg.set_param in
   let build_t
       common
       toplevel

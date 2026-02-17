@@ -168,32 +168,12 @@ let run
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
-  let toplevel =
-    match apply_build_config with
-    | None -> toplevel
-    | Some s ->
-        let toplevel = ref toplevel in
-        let specs =
-          [ ( "effects"
-            , Jsoo_cmdline.Build_config.Enum
-                ( [ "cps"; "disabled"; "double-translation" ]
-                , fun s ->
-                    Config.set_effects_backend (Build_info.effects_backend_of_string s) )
-            )
-          ; "js-string", Jsoo_cmdline.Build_config.Bool (Config.Flag.set "use-js-string")
-          ; "toplevel", Jsoo_cmdline.Build_config.Bool (( := ) toplevel)
-          ]
-        in
-        Jsoo_cmdline.Build_config.parse specs s;
-        !toplevel
-  in
-  if build_config
-  then
-    Jsoo_cmdline.Build_config.print_and_exit
-      [ "effects", Build_info.string_of_effects_backend (Config.effects ())
-      ; "js-string", string_of_bool (Config.Flag.use_js_string ())
-      ; "toplevel", string_of_bool toplevel
-      ];
+  Config.Flag.set "toplevel" toplevel;
+  Jsoo_cmdline.Build_config.process
+    `JavaScript
+    ~apply:apply_build_config
+    ~print_and_exit:build_config;
+  let toplevel = Config.Flag.toplevel () in
   Linker.reset ();
   (match output_file with
   | `Stdout, _ -> ()

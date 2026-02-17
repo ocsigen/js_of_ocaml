@@ -16,13 +16,21 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type value_spec =
-  | Bool of (bool -> unit)
-  | Enum of string list * (string -> unit)
+val process :
+     ?extra_keys:Js_of_ocaml_compiler.Build_info.config_key list
+  -> [ `JavaScript | `Wasm ]
+  -> apply:string option
+  -> print_and_exit:bool
+  -> unit
+(** [process ?extra_keys target ~apply ~print_and_exit] optionally
+    parses and applies a build config string, then optionally prints the
+    current config and exits. *)
 
-val parse : (string * value_spec) list -> string -> unit
-(** Parse "key1=val1+key2=val2", validate against known keys/values,
-    and apply callbacks. Raises [Failure] on invalid input. *)
+val parse : Js_of_ocaml_compiler.Build_info.config_key list -> string -> unit
+(** Parse "key1=val1+key2=val2", validate against known
+    keys/values, and apply callbacks. Raises [Failure] on
+    invalid input. *)
 
-val print_and_exit : (string * string) list -> 'a
-(** Print entries as sorted "key1=val1+key2=val2" to stdout and exit. *)
+val print_and_exit : Js_of_ocaml_compiler.Build_info.config_key list -> 'a
+(** Print entries as sorted "key1=val1+key2=val2" to stdout and
+    exit. *)

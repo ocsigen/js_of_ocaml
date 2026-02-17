@@ -41,8 +41,9 @@ let () =
   | Sys.(Native | Bytecode | Other _) -> failwith "Expected backend `js_of_ocaml`");
   let aliases = get_runtime_aliases () in
   let global = J.pure_js_expr "globalThis" in
-  Config.Flag.set "use-js-string" (Jsoo_runtime.Sys.Config.use_js_string ());
-  Config.set_effects_backend (Jsoo_runtime.Sys.Config.effects ());
+  Build_info.set_values
+    (Build_info.config_keys `JavaScript)
+    (Build_info.parse_config_string (Jsoo_runtime.Sys.Config.build_config ()));
   Linker.reset ();
   List.iter aliases ~f:(fun (a, b) -> Primitive.alias a b);
   (* this needs to stay synchronized with toplevel.js *)

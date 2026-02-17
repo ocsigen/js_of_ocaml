@@ -50,6 +50,16 @@ class macro_mapper ~flags =
                   super#expression x)
           | "CONFIG", [ J.Arg (J.EStr (Utf8 s)) ] ->
               failwith ("unsupported CONFIG parameter " ^ s)
+          | "BUILD_CONFIG", [] -> (
+              match flags with
+              | Replace ->
+                  let target = Config.target () in
+                  let entries = Build_info.get_values (Build_info.config_keys target) in
+                  let s = Build_info.to_config_string entries in
+                  J.EStr (Utf8_string.of_string_exn s)
+              | Count count ->
+                  incr count;
+                  super#expression x)
           | "BLOCK", J.Arg (J.ENum tag) :: (_ :: _ as args)
             when List.for_all args ~f:(function
                    | J.Arg _ -> true

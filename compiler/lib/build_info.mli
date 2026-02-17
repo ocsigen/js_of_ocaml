@@ -22,6 +22,33 @@ val string_of_effects_backend : Config.effects_backend -> string
 
 val effects_backend_of_string : string -> Config.effects_backend
 
+type config_key =
+  | Bool_key of
+      { name : string
+      ; get : unit -> bool
+      ; set : bool -> unit
+      }
+  | Enum_key of
+      { name : string
+      ; get : unit -> string
+      ; set : string -> unit
+      ; valid : string list
+      }
+
+val config_key_name : config_key -> string
+
+val config_keys : [ `JavaScript | `Wasm ] -> config_key list
+
+val config_key_values : config_key -> string list
+
+val get_values : config_key list -> (string * string) list
+
+val set_values : config_key list -> (string * string) list -> unit
+
+val to_config_string : (string * string) list -> string
+
+val parse_config_string : string -> (string * string) list
+
 type t
 
 type kind =
