@@ -220,7 +220,7 @@ let%expect_test "labeled break" =
   [%expect
     {|
     (function(x){
-       var a, a, a;
+       var a;
        a:
        {a = x + 1; if(a > 5) break a; a = x + 2;}
        console.log(a);
@@ -262,7 +262,6 @@ let%expect_test "switch cases" =
   [%expect
     {|
     (function(a){
-       var a;
        switch(a){
          case 0:
           a = 10; a = a + 1; break;
