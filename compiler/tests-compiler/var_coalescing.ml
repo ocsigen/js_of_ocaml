@@ -53,7 +53,7 @@ let%expect_test "disjoint lifespans — basic coalescing" =
 })(0)
 |};
   [%expect
-    {| (function(b){var a = b + 1; console.log(a); b = b + 2; console.log(b);}(0)); |}]
+    {| (function(b){var a = b + 1; console.log(a); b += 2; console.log(b);}(0)); |}]
 
 let%expect_test "disjoint lifespans — runtime correctness" =
   test_run
@@ -99,7 +99,7 @@ let%expect_test "copy hint elimination" =
   console.log(b);
 })(0)
 |};
-  [%expect {| (function(a){a = a + 1; console.log(a);}(0)); |}]
+  [%expect {| (function(a){a += 1; console.log(a);}(0)); |}]
 
 let%expect_test "copy hint elimination — runtime correctness" =
   test_run {|
@@ -177,9 +177,9 @@ let%expect_test "loop with variable reuse across iterations" =
        var sum = 0;
        for(var i = 0; i < n; i++){
         var a = i * 10;
-        sum = sum + a;
+        sum += a;
         a = i * 100;
-        sum = sum + a;
+        sum += a;
        }
        console.log(sum);
       }
@@ -264,12 +264,12 @@ let%expect_test "switch cases" =
     (function(a){
        switch(a){
          case 0:
-          a = 10; a = a + 1; break;
+          a = 10; a += 1; break;
          case 1:
-          a = 20; a = a + 2; break;
+          a = 20; a += 2; break;
          case 2:
-          a = 30; a = a + 3; break;
-         default: a = 40; a = a + 4; break;
+          a = 30; a += 3; break;
+         default: a = 40; a += 4; break;
        }
        console.log(a);
       }
@@ -345,5 +345,5 @@ let%expect_test "coalescing enabled vs disabled" =
     --- without coalescing ---
     (function(x){var a = x + 1; console.log(a); var b = x + 2; console.log(b);}(0));
     --- with coalescing ---
-    (function(b){var a = b + 1; console.log(a); b = b + 2; console.log(b);}(0));
+    (function(b){var a = b + 1; console.log(a); b += 2; console.log(b);}(0));
     |}]
