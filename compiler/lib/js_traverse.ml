@@ -2040,6 +2040,8 @@ class simpl =
         match s with
         | Variable_statement (Var, [ DeclIdent (V x, Some (EVar (V y), _)) ])
           when Code.Var.equal x y && Code.Var.Tbl.get declared x -> Empty_statement
+        | Variable_statement (Var, [ DeclIdent (V x, None) ])
+          when Code.Var.Tbl.get declared x -> Empty_statement
         | Expression_statement (EBin (Eq, EVar (V x), EVar (V y))) when Code.Var.equal x y
           -> Empty_statement
         | Variable_statement (Var, [ DeclIdent (V x, Some (expr, _)) ])
