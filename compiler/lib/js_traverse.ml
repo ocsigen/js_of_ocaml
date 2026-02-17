@@ -1998,6 +1998,49 @@ class simpl =
         | "0" | "0." -> true
         | _ -> false
       in
+      let assign_op op =
+        match op with
+        | Mul -> StarEq
+        | Div -> SlashEq
+        | Mod -> ModEq
+        | Plus -> PlusEq
+        | Minus -> MinusEq
+        | Lsl -> LslEq
+        | Asr -> AsrEq
+        | Lsr -> LsrEq
+        | Band -> BandEq
+        | Bxor -> BxorEq
+        | Bor -> BorEq
+        | Or -> OrEq
+        | And -> AndEq
+        | Exp -> ExpEq
+        | Coalesce -> CoalesceEq
+        | _ -> assert false
+      in
+      let has_assign_op op =
+        match op with
+        | Mul
+        | Div
+        | Mod
+        | Plus
+        | Minus
+        | Lsl
+        | Asr
+        | Lsr
+        | Band
+        | Bxor
+        | Bor
+        | Or
+        | And
+        | Exp
+        | Coalesce -> true
+        | _ -> false
+      in
+      let is_commutative_op op =
+        match op with
+        | Mul | Plus | Band | Bxor | Bor -> true
+        | _ -> false
+      in
       match e with
       | EBin (Plus, e1, e2) -> (
           match e1, e2 with
@@ -2024,6 +2067,11 @@ class simpl =
           if use_fun_context body
           then EArrow (fun_decl, consise, AUse_parent_fun_context)
           else EArrow (fun_decl, consise, ANo_fun_context)
+      | EBin (Eq, EVar x, EBin (op, EVar y, e)) when ident_equal x y && has_assign_op op
+        -> EBin (assign_op op, EVar x, e)
+      | EBin (Eq, EVar x, EBin (op, e, EVar y))
+        when ident_equal x y && has_assign_op op && is_commutative_op op ->
+          EBin (assign_op op, EVar x, e)
       | e -> e
 
     val mutable in_var_sequence = false
