@@ -439,7 +439,9 @@ let link
       | None, Some build_info_for_file -> build_info := Some (file, build_info_for_file)
       | Some (first_file, bi), Some build_info_for_file ->
           build_info :=
-            Some (first_file, Build_info.merge first_file bi file build_info_for_file));
+            Some
+              ( first_file
+              , Build_info.merge `JavaScript first_file bi file build_info_for_file ));
   if times () then Format.eprintf "  emit: %a@." Timer.print t;
   let t = Timer.make () in
   match source_map with

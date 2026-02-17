@@ -208,6 +208,10 @@ void caml_jsbytes_of_string () {
   caml_fatal_error("Unimplemented Javascript primitive caml_jsbytes_of_string!");
 }
 
+void caml_jsoo_build_config () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_jsoo_build_config!");
+}
+
 void caml_jsoo_flags_effects () {
   caml_fatal_error("Unimplemented Javascript primitive caml_jsoo_flags_effects!");
 }

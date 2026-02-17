@@ -48,10 +48,6 @@ let rec list_product l =
       let tail = list_product xs in
       List.concat_map values ~f:(fun v -> List.map tail ~f:(fun l -> (key, v) :: l))
 
-let bool = [ `Bool true; `Bool false ]
-
-let effects_backends = [ `Effects `Disabled; `Effects `Cps; `Effects `Double_translation ]
-
 let () =
   Js_of_ocaml_compiler.Warning.werror := true;
   Js_of_ocaml_compiler.Warning.enable `Unused_js_variable;
@@ -64,15 +60,17 @@ let () =
       let fragments =
         List.map rest ~f:(fun f -> f, Js_of_ocaml_compiler.Linker.Fragment.parse_file f)
       in
+      let keys = Js_of_ocaml_compiler.Build_info.config_keys `JavaScript in
       let variants =
-        list_product [ "use-js-string", bool; "effects", effects_backends ]
+        list_product
+          (List.map keys ~f:(fun key ->
+               let name = Js_of_ocaml_compiler.Build_info.config_key_name key in
+               let values = Js_of_ocaml_compiler.Build_info.config_key_values key in
+               name, values))
       in
       (* load all files to make sure they are valid *)
       List.iter variants ~f:(fun setup ->
-          List.iter setup ~f:(fun (name, v) ->
-              match v with
-              | `Bool b -> Js_of_ocaml_compiler.Config.Flag.set name b
-              | `Effects b -> Js_of_ocaml_compiler.Config.set_effects_backend b);
+          Js_of_ocaml_compiler.Build_info.set_values keys setup;
           List.iter Js_of_ocaml_compiler.Target_env.all ~f:(fun target_env ->
               Js_of_ocaml_compiler.Linker.reset ();
               List.iter fragments ~f:(fun (filename, frags) ->
