@@ -128,7 +128,7 @@ let%expect_test _ =
   [%expect
     {|
     function match_expr(_a_){
-     var _a_, _b_, _b_;
+     var _b_;
      a:
      if(_a_){
       _b_ = _a_[1];
