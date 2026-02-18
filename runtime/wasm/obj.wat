@@ -350,16 +350,24 @@
 
    (func (export "caml_obj_raw_field")
       (param $o (ref eq)) (param $i (ref eq)) (result (ref eq))
-      (array.get $block (ref.cast (ref $block) (local.get $o))
-         (i32.add
-            (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1))))
+      (if (ref.test (ref $block) (local.get $o))
+         (then
+            (return
+               (array.get $block (ref.cast (ref $block) (local.get $o))
+                  (i32.add
+                     (i31.get_u (ref.cast (ref i31) (local.get $i)))
+                     (i32.const 1))))))
+      (ref.i31 (i32.const 0)))
 
    (func (export "caml_obj_set_raw_field")
       (param $o (ref eq)) (param $i (ref eq)) (param $v (ref eq))
       (result (ref eq))
-      (array.set $block (ref.cast (ref $block) (local.get $o))
-         (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i))) (i32.const 1))
-         (local.get $v))
+      (if (ref.test (ref $block) (local.get $o))
+         (then
+            (array.set $block (ref.cast (ref $block) (local.get $o))
+               (i32.add (i31.get_u (ref.cast (ref i31) (local.get $i)))
+                        (i32.const 1))
+               (local.get $v))))
       (ref.i31 (i32.const 0)))
 
    (@string $not_implemented "Obj.add_offset is not supported")
