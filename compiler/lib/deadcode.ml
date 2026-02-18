@@ -206,14 +206,17 @@ let remove_unused_blocks' p =
         b)
       p.blocks
   in
-  { p with blocks }, !count
+  if !count = 0 then p, 0 else { p with blocks }, !count
 
 let remove_unused_blocks p =
   let previous_p = p in
   let t = Timer.make () in
   let p, count = remove_unused_blocks' p in
   if times () then Format.eprintf "  dead block: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - dead block: deleted %d@." count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - dead block: deleted %d@." count;
+    Code.print_block_sharing ~name:"dead block" previous_p p);
   if debug_stats () then Code.check_updates ~name:"dead block" previous_p p ~updates:count;
   p
 
@@ -326,7 +329,10 @@ let merge_blocks p =
       Subst.Excluding_Binders.program rename p
   in
   if times () then Format.eprintf "  merge block: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - merge block: merged %d@." !merged;
+  if stats ()
+  then (
+    Format.eprintf "Stats - merge block: merged %d@." !merged;
+    Code.print_block_sharing ~name:"merge block" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"merge block" previous_p p ~updates:!merged;
   p
@@ -480,31 +486,58 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
             st.deleted_blocks <- st.deleted_blocks + 1;
             None)
           else
-            Some
-              { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
-              ; body =
-                  List.fold_left block.body ~init:[] ~f:(fun acc i ->
-                      match i, acc with
-                      | Event _, Event _ :: prev ->
-                          (* Avoid consecutive events (keep just the last one) *)
-                          i :: prev
-                      | _ ->
-                          if live_instr st i
-                          then filter_closure all_blocks st i :: acc
-                          else (
-                            st.deleted_instrs <- st.deleted_instrs + 1;
-                            acc))
-                  |> List.rev
-              ; branch = filter_live_last all_blocks st block.branch
-              })
+            let saved_instrs = st.deleted_instrs in
+            let saved_params = st.deleted_params in
+            let params_changed =
+              List.exists block.params ~f:(fun x -> st.live.(Var.idx x) = 0)
+            in
+            let params =
+              if params_changed
+              then List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
+              else block.params
+            in
+            let body =
+              List.fold_left block.body ~init:[] ~f:(fun acc i ->
+                  match i, acc with
+                  | Event _, Event _ :: prev ->
+                      (* Avoid consecutive events (keep just the last one) *)
+                      i :: prev
+                  | _ ->
+                      if live_instr st i
+                      then filter_closure all_blocks st i :: acc
+                      else (
+                        st.deleted_instrs <- st.deleted_instrs + 1;
+                        acc))
+              |> List.rev
+            in
+            let branch = filter_live_last all_blocks st block.branch in
+            if
+              (not params_changed)
+              && st.deleted_instrs = saved_instrs
+              && st.deleted_params = saved_params
+            then (
+              Code.assert_block_equal ~name:"deadcode" block { params; body; branch };
+              Some block)
+            else Some { params; body; branch })
         blocks
     in
-    { p with blocks }
+    if st.deleted_instrs + st.deleted_blocks + st.deleted_params = 0
+    then (
+      Code.assert_program_equal ~name:"deadcode(filter)" p { p with blocks };
+      p)
+    else { p with blocks }
   in
-  let p = remove_empty_blocks st p in
+  let p =
+    let p' = remove_empty_blocks st p in
+    if st.block_shortcut = 0
+    then (
+      Code.assert_program_equal ~name:"deadcode(shortcut)" p p';
+      p)
+    else p'
+  in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   if stats ()
-  then
+  then (
     Format.eprintf
       "Stats - dead code: deleted %d instructions, %d blocks, %d parameters, %d \
        branches@."
@@ -512,6 +545,7 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
       st.deleted_blocks
       st.deleted_params
       st.block_shortcut;
+    Code.print_block_sharing ~name:"deadcode" previous_p p);
   if debug_stats ()
   then
     Code.check_updates

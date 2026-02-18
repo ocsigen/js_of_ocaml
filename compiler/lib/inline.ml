@@ -505,7 +505,7 @@ let trace_inlining ~context info x args =
    with an initial continuation pointing to a block belonging to
    another function. This removes these closures. *)
 
-let remove_dead_closures_from_block ~live_vars p pc block =
+let remove_dead_closures_from_block ~dead_closure_count ~live_vars p pc block =
   let is_dead_closure i =
     match i with
     | Let (f, Closure _) ->
@@ -514,7 +514,8 @@ let remove_dead_closures_from_block ~live_vars p pc block =
     | _ -> false
   in
   if List.exists ~f:is_dead_closure block.body
-  then
+  then (
+    incr dead_closure_count;
     { p with
       blocks =
         Addr.Map.add
@@ -530,15 +531,15 @@ let remove_dead_closures_from_block ~live_vars p pc block =
               |> List.rev
           }
           p.blocks
-    }
+    })
   else p
 
-let remove_dead_closures ~live_vars p pc =
+let remove_dead_closures ~dead_closure_count ~live_vars p pc =
   Code.traverse
     { fold = fold_children }
     (fun pc p ->
       let block = Addr.Map.find pc p.blocks in
-      remove_dead_closures_from_block ~live_vars p pc block)
+      remove_dead_closures_from_block ~dead_closure_count ~live_vars p pc block)
     pc
     p.blocks
     p
@@ -668,7 +669,7 @@ let inline_in_block ~context pc block p =
   in
   { p with blocks = Addr.Map.add pc { block with body; branch } p.blocks }
 
-let inline ~profile ~inline_count p ~live_vars =
+let inline ~profile ~inline_count ~dead_closure_count p ~live_vars =
   if debug () then Format.eprintf "====== inlining ======@.";
   (visit_closures
      p
@@ -711,7 +712,7 @@ let inline ~profile ~inline_count p ~live_vars =
            p.blocks
            p
        in
-       let p = remove_dead_closures ~live_vars p pc in
+       let p = remove_dead_closures ~dead_closure_count ~live_vars p pc in
        let env =
          match current_function with
          | Some f ->
@@ -751,13 +752,32 @@ let inline ~profile ~inline_count p ~live_vars =
 let f ~profile p live_vars =
   let previous_p = p in
   let inline_count = ref 0 in
+  let dead_closure_count = ref 0 in
   Code.invariant p;
   let t = Timer.make () in
-  let p = inline ~profile ~inline_count p ~live_vars in
+  let p =
+    let p' = inline ~profile ~inline_count ~dead_closure_count p ~live_vars in
+    if !inline_count + !dead_closure_count = 0
+    then (
+      Code.assert_program_equal ~name:"inline" p p';
+      p)
+    else p'
+  in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - inlining: %d inlined functions@." !inline_count;
+  if stats ()
+  then (
+    Format.eprintf
+      "Stats - inlining: %d inlined functions, %d dead closures@."
+      !inline_count
+      !dead_closure_count;
+    Code.print_block_sharing ~name:"inline" previous_p p);
   if debug_stats ()
-  then Code.check_updates ~name:"inline" previous_p p ~updates:!inline_count;
+  then
+    Code.check_updates
+      ~name:"inline"
+      previous_p
+      p
+      ~updates:(!inline_count + !dead_closure_count);
   let p = Deadcode.remove_unused_blocks p in
   Code.invariant p;
   p

@@ -37,6 +37,8 @@ let times = Debug.find "times"
 
 let stats = Debug.find "stats"
 
+let debug_stats = Debug.find "stats-debug"
+
 let rewrite_body unboxed_refs body ref_contents subst =
   let ref_contents, subst, l =
     List.fold_left
@@ -138,6 +140,7 @@ let rewrite_function p ~unboxed_refs pc subst =
   { p with blocks }, subst
 
 let f p =
+  let previous_p = p in
   let t = Timer.make () in
   let candidates = Var.Hashtbl.create 128 in
   let updated = Var.Hashtbl.create 128 in
@@ -225,6 +228,10 @@ let f p =
     else Subst.Excluding_Binders.program (Subst.from_map subst) p
   in
   if times () then Format.eprintf "  reference unboxing: %a@." Timer.print t;
+  let updates = Var.Hashtbl.length candidates in
   if stats ()
-  then Format.eprintf "Stats - reference unboxing: %d@." (Var.Hashtbl.length candidates);
+  then (
+    Format.eprintf "Stats - reference unboxing: %d@." updates;
+    Code.print_block_sharing ~name:"ref_unboxing" previous_p p);
+  if debug_stats () then Code.check_updates ~name:"ref_unboxing" previous_p p ~updates;
   p

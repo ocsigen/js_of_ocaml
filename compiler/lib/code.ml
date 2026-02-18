@@ -884,15 +884,15 @@ let return_values p =
           Var.Map.add name s rets)
     Var.Map.empty
 
+let block_equal b1 b2 =
+  phys_equal b1 b2
+  || List.equal ~eq:Var.equal b1.params b2.params
+     && Poly.equal b1.branch b2.branch
+     && List.equal ~eq:Poly.equal b1.body b2.body
+
 let equal p1 p2 =
   p1.start = p2.start
-  && Addr.Map.equal
-       (fun { params; body; branch } b ->
-         List.equal ~eq:Var.equal params b.params
-         && Poly.equal branch b.branch
-         && List.equal ~eq:Poly.equal body b.body)
-       p1.blocks
-       p2.blocks
+  && (phys_equal p1.blocks p2.blocks || Addr.Map.equal block_equal p1.blocks p2.blocks)
 
 let print_to_file p =
   let file = Filename.temp_file "jsoo" "prog" in
@@ -928,6 +928,25 @@ let check_updates ~name p1 p2 ~updates =
       print_diff p1 p2;
       assert false
 
+let print_block_sharing ~name p1 p2 =
+  let shared = ref 0 in
+  let updated = ref 0 in
+  Addr.Map.iter
+    (fun pc b2 ->
+      match Addr.Map.find_opt pc p1.blocks with
+      | Some b1 when phys_equal b1 b2 -> incr shared
+      | Some _ -> incr updated
+      | None -> incr updated)
+    p2.blocks;
+  let removed = Addr.Map.cardinal p1.blocks - !shared - !updated in
+  Format.eprintf
+    "Stats - %s sharing: %d/%d blocks shared, %d updated, %d removed@."
+    name
+    !shared
+    (Addr.Map.cardinal p2.blocks)
+    !updated
+    removed
+
 let cont_equal (pc, args) (pc', args') = pc = pc' && List.equal ~eq:Var.equal args args'
 
 let cont_compare (pc, args) (pc', args') =
@@ -935,6 +954,23 @@ let cont_compare (pc, args) (pc', args') =
   if c <> 0 then c else List.compare ~cmp:Var.compare args args'
 
 let with_invariant = Debug.find "invariant"
+
+let assert_block_equal ~name b_old b_new =
+  if with_invariant ()
+  then
+    if not (block_equal b_old b_new)
+    then (
+      Format.eprintf "ASSERT_BLOCK_EQUAL: %s: counter=0 but block differs.@." name;
+      assert false)
+
+let assert_program_equal ~name p_old p_new =
+  if with_invariant ()
+  then
+    if not (equal p_old p_new)
+    then (
+      Format.eprintf "ASSERT_PROGRAM_EQUAL: %s: counter=0 but program differs.@." name;
+      print_diff p_old p_new;
+      assert false)
 
 let do_compact { blocks; start; free_pc = _ } =
   let remap =

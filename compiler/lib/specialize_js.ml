@@ -191,6 +191,7 @@ let specialize_instr opt_count ~target info i =
   | Let (x, Prim (Extern "caml_jsoo_runtime_value", [ nm ])), _ -> (
       match the_string_of info nm with
       | Some nm when Javascript.is_ident nm ->
+          incr opt_count;
           Let (x, Prim (Extern "caml_jsoo_runtime_value", [ Pc (String nm) ]))
       | _ -> i)
   | _, _ -> i
@@ -398,16 +399,22 @@ let specialize_instrs ~target opt_count info l =
 
 let specialize_all_instrs ~target opt_count info p =
   let blocks =
-    Addr.Map.map
-      (fun block ->
-        { block with
-          Code.body =
-            specialize_instrs
-              ~target
-              opt_count
-              info
-              (specialize_string_concat opt_count block.body)
-        })
+    Addr.Map.fold
+      (fun pc block blocks ->
+        let saved = !opt_count in
+        let body =
+          specialize_instrs
+            ~target
+            opt_count
+            info
+            (specialize_string_concat opt_count block.body)
+        in
+        if !opt_count = saved
+        then (
+          Code.assert_block_equal ~name:"specialize_js" block { block with Code.body };
+          blocks)
+        else Addr.Map.add pc { block with Code.body } blocks)
+      p.blocks
       p.blocks
   in
   { p with blocks }
@@ -419,15 +426,26 @@ let f info p =
   let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
-  let p = specialize_all_instrs ~target:(Config.target ()) opt_count info p in
+  let p' = specialize_all_instrs ~target:(Config.target ()) opt_count info p in
+  let p =
+    if !opt_count = 0
+    then (
+      Code.assert_program_equal ~name:"specialize_js" p p';
+      p)
+    else p'
+  in
   if times () then Format.eprintf "  specialize_js: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - specialize_js: %d@." !opt_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - specialize_js: %d@." !opt_count;
+    Code.print_block_sharing ~name:"specialize_js" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"specialize_js" previous_p p ~updates:!opt_count;
   Code.invariant p;
   p
 
 let f_once_before p =
+  let count = ref 0 in
   let rec loop acc l =
     match l with
     | [] -> List.rev acc
@@ -445,13 +463,20 @@ let f_once_before p =
                      | "caml_array_unsafe_set_float"
                      | "caml_floatarray_unsafe_set" )
                  , [ _; _; _ ] ) as p) ) ->
+            incr count;
             let x' = Code.Var.fork x in
             let acc = Let (x', p) :: Let (x, Constant (Int Targetint.zero)) :: acc in
             loop acc r
         | _ -> loop (i :: acc) r)
   in
   let blocks =
-    Addr.Map.map (fun block -> { block with Code.body = loop [] block.body }) p.blocks
+    Addr.Map.fold
+      (fun pc block blocks ->
+        let saved = !count in
+        let body = loop [] block.body in
+        if !count = saved then blocks else Addr.Map.add pc { block with Code.body } blocks)
+      p.blocks
+      p.blocks
   in
   let p = { p with blocks } in
   Code.invariant p;
@@ -470,6 +495,7 @@ let f_once_after p =
     | `JavaScript, (`Cps | `Double_translation) | `Wasm, _ -> false
     | `JavaScript, `Jspi -> assert false
   in
+  let count = ref 0 in
   let f = function
     | Let (x, Closure (l, (pc, []), _)) as i -> (
         let block = Addr.Map.find pc p.blocks in
@@ -486,7 +512,9 @@ let f_once_after p =
               Code.Var.compare y y' = 0
               && Primitive.has_arity prim len
               && args_equal l args
-            then Let (x, Special (Alias_prim prim))
+            then (
+              incr count;
+              Let (x, Special (Alias_prim prim)))
             else i
         | _ -> i)
     | i -> i
@@ -494,8 +522,14 @@ let f_once_after p =
   if first_class_primitives
   then (
     let blocks =
-      Addr.Map.map
-        (fun block -> { block with Code.body = List.map block.body ~f })
+      Addr.Map.fold
+        (fun pc block blocks ->
+          let saved = !count in
+          let body = List.map block.body ~f in
+          if !count = saved
+          then blocks
+          else Addr.Map.add pc { block with Code.body } blocks)
+        p.blocks
         p.blocks
     in
     let p = Deadcode.remove_unused_blocks { p with blocks } in
