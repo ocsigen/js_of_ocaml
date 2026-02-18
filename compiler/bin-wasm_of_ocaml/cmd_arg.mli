@@ -35,7 +35,10 @@ type t =
   ; shape_files : string list
   ; build_config : bool
   ; apply_build_config : string option
+  ; toplevel : bool
   ; dynlink : bool
+  ; no_cmis : bool
+  ; export_file : string option
   ; fs_files : string list
   }
 
