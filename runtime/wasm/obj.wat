@@ -33,10 +33,12 @@
    (type $bytes (array (mut i8)))
    (type $float (struct (field f64)))
    (type $float_array (array (mut f64)))
-   (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
+   (type $function_1 (sub (func (param (ref eq) (ref eq)) (result (ref eq)))))
    (type $closure (sub (struct (field (ref $function_1)))))
-   (type $closure_last_arg (sub $closure (struct (field (ref $function_1)))))
-   (type $function_2 (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+   (type $closure_last_arg
+      (sub $closure (struct (field (ref $function_1)))))
+   (type $function_2
+      (sub (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
    (type $cps_closure (sub (struct (field (ref $function_2)))))
    (type $cps_closure_last_arg
       (sub $cps_closure (struct (field (ref $function_2)))))
@@ -57,7 +59,7 @@
             (field (mut (ref null $closure_2))))))
 
    (type $function_3
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq)))))
 
    (type $closure_3
       (sub $closure
@@ -69,8 +71,8 @@
             (field (mut (ref null $closure_3))))))
 
    (type $function_4
-      (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
-         (result (ref eq))))
+      (sub (func (param (ref eq) (ref eq) (ref eq) (ref eq) (ref eq))
+              (result (ref eq)))))
 
    (type $closure_4
       (sub $closure
