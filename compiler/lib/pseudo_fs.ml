@@ -100,7 +100,7 @@ let embed_file ~name ~filename =
 
 let init () = Code.(Let (Var.fresh (), Prim (Extern "caml_fs_init", [])))
 
-let f ~prim ~cmis ~files ~paths =
+let collect_cmis ~cmis ~paths =
   let cmi_files, missing_cmis =
     StringSet.fold
       (fun s (acc, missing) ->
@@ -128,6 +128,10 @@ let f ~prim ~cmis ~files ~paths =
        %a"
       (Format.pp_print_list Format.pp_print_string)
       missing_cmis;
+  cmi_files
+
+let f ~prim ~cmis ~files ~paths =
+  let cmi_files = collect_cmis ~cmis ~paths in
   (* [`ocamlc -where`/expunge in.byte out.byte moduleA moduleB ... moduleN] *)
   let other_files =
     List.map files ~f:(fun f ->
