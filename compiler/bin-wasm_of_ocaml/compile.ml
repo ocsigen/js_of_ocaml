@@ -376,7 +376,10 @@ let run
     ; sourcemap_don't_inline_content
     ; effects
     ; shape_files
+    ; toplevel
     ; dynlink
+    ; no_cmis
+    ; export_file
     ; fs_files
     } =
   Config.set_target `Wasm;
@@ -401,6 +404,23 @@ let run
   let t = Timer.make () in
   let include_dirs =
     List.filter_map (include_dirs @ [ "+stdlib/" ]) ~f:(fun d -> Findlib.find [] d)
+  in
+  let exported_unit =
+    match export_file with
+    | None -> None
+    | Some file ->
+        if not (Sys.file_exists file)
+        then failwith (Printf.sprintf "export file %S does not exist" file);
+        let ic = open_in_text file in
+        let t = String.Hashtbl.create 17 in
+        (try
+           while true do
+             String.Hashtbl.add t (String.trim (In_channel.input_line_exn ic)) ()
+           done;
+           assert false
+         with End_of_file -> ());
+        close_in ic;
+        Some (String.Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
   let runtime_wasm_files, runtime_js_files =
     List.partition runtime_files ~f:(fun name ->
@@ -569,21 +589,52 @@ let run
      (match kind with
      | `Exe ->
          let t1 = Timer.make () in
+         let include_cmis = toplevel && not no_cmis in
+         let dynlink = toplevel || dynlink in
          let code =
            Parse_bytecode.from_exe
              ~includes:include_dirs
-             ~include_cmis:false
+             ~include_cmis
+             ?exported_unit
              ~link_info:false
              ~linkall:dynlink
              ~debug:need_debug
              ic
          in
-         let crcs = if dynlink then Parse_bytecode.read_crcs ic else [] in
+         let crcs =
+           if toplevel || dynlink
+           then
+             let all_crcs = Parse_bytecode.read_crcs ic in
+             let keep =
+               match exported_unit with
+               | None -> fun _ -> true
+               | Some units ->
+                   let set = StringSet.of_list units in
+                   fun (name, _) -> StringSet.mem name set
+             in
+             List.filter ~f:keep all_crcs
+           else []
+         in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          let embedded_files =
-           List.concat_map fs_files ~f:(fun f ->
-               List.map (Pseudo_fs.list_files f include_dirs) ~f:(fun (name, filename) ->
-                   name, Fs.read_file filename))
+           let cmi_files =
+             if include_cmis
+             then
+               let paths =
+                 include_dirs
+                 @ StringSet.elements
+                     (Parse_bytecode.Debug.paths code.debug ~units:code.cmis)
+               in
+               Pseudo_fs.collect_cmis ~cmis:code.cmis ~paths
+             else []
+           in
+           let user_files =
+             List.concat_map fs_files ~f:(fun f ->
+                 List.map
+                   (Pseudo_fs.list_files f include_dirs)
+                   ~f:(fun (name, filename) -> name, Fs.read_file filename))
+           in
+           user_files @ cmi_files
          in
          Fs.with_intermediate_file (Filename.temp_file "code" ".wasm")
          @@ fun input_wasm_file ->

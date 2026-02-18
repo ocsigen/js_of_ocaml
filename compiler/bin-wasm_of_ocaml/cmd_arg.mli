@@ -33,7 +33,10 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; toplevel : bool
   ; dynlink : bool
+  ; no_cmis : bool
+  ; export_file : string option
   ; fs_files : string list
   }
 

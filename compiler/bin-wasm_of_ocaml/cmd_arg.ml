@@ -64,7 +64,10 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; toplevel : bool
   ; dynlink : bool
+  ; no_cmis : bool
+  ; export_file : string option
   ; fs_files : string list
   }
 
@@ -87,6 +90,8 @@ let set_param =
   let printer = Arg.conv_printer pair in
   let c = Arg.conv (parser, printer) in
   Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
+
+let toplevel_section = "OPTIONS (TOPLEVEL)"
 
 let options () =
   let filesystem_section = "OPTIONS (FILESYSTEM)" in
@@ -117,6 +122,12 @@ let options () =
     let doc = "Currently ignored (for compatibility with Js_of_ocaml)." in
     Arg.(value & flag & info [ "linkall" ] ~doc)
   in
+  let toplevel =
+    let doc =
+      "Compile a toplevel and embed necessary cmis (unless '--no-cmis' is provided)."
+    in
+    Arg.(value & flag & info [ "toplevel" ] ~docs:toplevel_section ~doc)
+  in
   let dynlink =
     let doc =
       "Enable dynlink of bytecode files.  Use this if you want to be able to use the \
@@ -124,6 +135,17 @@ let options () =
        'wasm_of_ocaml-compiler.dynlink'."
     in
     Arg.(value & flag & info [ "dynlink" ] ~doc)
+  in
+  let no_cmis =
+    let doc = "Do not include cmis when compiling toplevel." in
+    Arg.(value & flag & info [ "nocmis"; "no-cmis" ] ~docs:toplevel_section ~doc)
+  in
+  let export_file =
+    let doc =
+      "File containing the list of unit to export in a toplevel, with Dynlink or with \
+       --linkall. If absent, all units will be exported."
+    in
+    Arg.(value & opt (some filepath) None & info [ "export" ] ~docs:toplevel_section ~doc)
   in
   let no_sourcemap =
     let doc = "Disable sourcemap output." in
@@ -169,8 +191,11 @@ let options () =
       include_dirs
       fs_files
       profile
+      toplevel
       dynlink
       _
+      no_cmis
+      export_file
       sourcemap
       no_sourcemap
       sourcemap_don't_inline_content
@@ -212,7 +237,10 @@ let options () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files
+      ; toplevel
       ; dynlink
+      ; no_cmis
+      ; export_file
       ; fs_files
       }
   in
@@ -224,8 +252,11 @@ let options () =
       $ include_dirs
       $ fs_files
       $ profile
+      $ toplevel
       $ dynlink
       $ linkall
+      $ no_cmis
+      $ export_file
       $ sourcemap
       $ no_sourcemap
       $ sourcemap_don't_inline_content
@@ -265,6 +296,14 @@ let options_runtime_only () =
     let doc = "root dir for source map." in
     Arg.(value & opt (some dirpath) None & info [ "source-map-root" ] ~doc)
   in
+  let toplevel =
+    let doc =
+      "Compile a toplevel and embed necessary cmis (unless '--no-cmis' is provided). \
+       Exported compilation units can be configured with '--export'.  Note you you'll \
+       also need to link against js_of_ocaml-toplevel."
+    in
+    Arg.(value & flag & info [ "toplevel" ] ~docs:toplevel_section ~doc)
+  in
   let include_dirs =
     let doc = "Add [$(docv)] to the list of include directories." in
     Arg.(value & opt_all dirpath [] & info [ "I" ] ~docv:"DIR" ~doc)
@@ -287,6 +326,7 @@ let options_runtime_only () =
       no_sourcemap
       sourcemap_don't_inline_content
       sourcemap_root
+      toplevel
       output_file
       runtime_files
       effects =
@@ -308,7 +348,10 @@ let options_runtime_only () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files = []
+      ; toplevel
       ; dynlink = false
+      ; no_cmis = false
+      ; export_file = None
       ; fs_files = []
       }
   in
@@ -322,6 +365,7 @@ let options_runtime_only () =
       $ no_sourcemap
       $ sourcemap_don't_inline_content
       $ sourcemap_root
+      $ toplevel
       $ output_file
       $ runtime_files
       $ effects)
