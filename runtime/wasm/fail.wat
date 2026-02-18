@@ -35,14 +35,15 @@
          (array.new_fixed $block 3
             (ref.i31 (i32.const 0)) (local.get $tag) (local.get $arg))))
 
-   (global $OUT_OF_MEMORY_EXN i32 (i32.const 0))
+   ;; caml_global_data is a $block: index 0 is the tag, data starts at 1
+   (global $OUT_OF_MEMORY_EXN i32 (i32.const 1))
 
    (func (export "caml_raise_out_of_memory")
       (return_call $caml_raise_constant
          (array.get $block (global.get $caml_global_data)
                     (global.get $OUT_OF_MEMORY_EXN))))
 
-   (global $SYS_ERROR_EXN i32 (i32.const 1))
+   (global $SYS_ERROR_EXN i32 (i32.const 2))
 
    (func (export "caml_raise_sys_error") (param $msg (ref eq))
        (return_call $caml_raise_with_arg
@@ -50,7 +51,7 @@
               (global.get $SYS_ERROR_EXN))
            (local.get $msg)))
 
-   (global $FAILURE_EXN i32 (i32.const 2))
+   (global $FAILURE_EXN i32 (i32.const 3))
 
    (func (export "caml_failwith_tag") (result (ref eq))
        (array.get $block (global.get $caml_global_data)
@@ -62,7 +63,7 @@
               (global.get $FAILURE_EXN))
            (local.get 0)))
 
-   (global $INVALID_EXN i32 (i32.const 3))
+   (global $INVALID_EXN i32 (i32.const 4))
 
    (func $caml_invalid_argument (export "caml_invalid_argument")
        (param $arg (ref eq))
@@ -76,30 +77,30 @@
    (func (export "caml_bound_error")
       (return_call $caml_invalid_argument (global.get $index_out_of_bounds)))
 
-   (global $END_OF_FILE_EXN i32 (i32.const 4))
+   (global $END_OF_FILE_EXN i32 (i32.const 5))
 
    (func (export "caml_raise_end_of_file")
       (return_call $caml_raise_constant
          (array.get $block (global.get $caml_global_data)
                     (global.get $END_OF_FILE_EXN))))
 
-   (global $ZERO_DIVIDE_EXN i32 (i32.const 5))
+   (global $ZERO_DIVIDE_EXN i32 (i32.const 6))
 
    (func (export "caml_raise_zero_divide")
       (return_call $caml_raise_constant
          (array.get $block (global.get $caml_global_data)
                     (global.get $ZERO_DIVIDE_EXN))))
 
-   (global $NOT_FOUND_EXN i32 (i32.const 6))
+   (global $NOT_FOUND_EXN i32 (i32.const 7))
 
    (func (export "caml_raise_not_found")
       (return_call $caml_raise_constant
          (array.get $block (global.get $caml_global_data)
                     (global.get $NOT_FOUND_EXN))))
 
-   (global $MATCH_FAILURE_EXN i32 (i32.const 7))
-   (global $ASSERT_FAILURE_EXN i32 (i32.const 10))
-   (global $UNDEFINED_RECURSIVE_MODULE_EXN i32 (i32.const 11))
+   (global $MATCH_FAILURE_EXN i32 (i32.const 8))
+   (global $ASSERT_FAILURE_EXN i32 (i32.const 11))
+   (global $UNDEFINED_RECURSIVE_MODULE_EXN i32 (i32.const 12))
 
    (func (export "caml_is_special_exception") (param (ref eq)) (result i32)
       (i32.or

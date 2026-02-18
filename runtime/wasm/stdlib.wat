@@ -164,12 +164,14 @@
       (ref.i31 (i32.const 0)))
 
    (global $caml_global_data (export "caml_global_data") (mut (ref $block))
-      (array.new $block (ref.i31 (i32.const 0)) (i32.const 12)))
+      (array.new $block (ref.i31 (i32.const 0)) (i32.const 13)))
 
    (func (export "caml_register_global")
       (param (ref eq)) (param $v (ref eq)) (param (ref eq)) (result (ref eq))
       (local $i i32)
-      (local.set $i (i31.get_u (ref.cast (ref i31) (local.get 0))))
+      ;; caml_global_data is a $block: index 0 is the tag, data starts at 1
+      (local.set $i
+         (i32.add (i31.get_u (ref.cast (ref i31) (local.get 0))) (i32.const 1)))
       (if (i32.lt_u (local.get $i) (array.len (global.get $caml_global_data)))
          (then
             (array.set $block (global.get $caml_global_data)
