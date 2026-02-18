@@ -539,3 +539,432 @@ function caml_gr_open_subwindow(_a, _b, _c, _d) {
 function caml_gr_close_subwindow(_a) {
   caml_failwith("caml_gr_close_subwindow not Implemented");
 }
+
+// ---- Wasm helpers ----
+// These functions take/return plain JS values (ints, JS strings, JS objects)
+// and access caml_gr_state directly. State checking is done in WAT.
+
+//Provides: gr_state_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_state_for_wasm() {
+  if (caml_gr_state) return caml_gr_state;
+  return null;
+}
+
+//Provides: gr_state_create_for_wasm
+//If: wasm
+function gr_state_create_for_wasm(canvas, w, h) {
+  var context = canvas.getContext("2d");
+  return {
+    context: context,
+    canvas: canvas,
+    x: 0,
+    y: 0,
+    width: w,
+    height: h,
+    line_width: 1,
+    font: "fixed",
+    text_size: 26,
+    color: 0x000000,
+    title: "",
+  };
+}
+
+//Provides: gr_state_init_for_wasm
+//Requires: caml_gr_state
+//Requires: gr_set_color_for_wasm, gr_moveto_for_wasm, gr_resize_window_for_wasm
+//Requires: gr_set_line_width_for_wasm, gr_set_text_size_for_wasm
+//Requires: gr_set_font_for_wasm, gr_set_window_title_for_wasm
+//If: wasm
+function gr_state_init_for_wasm() {
+  var s = caml_gr_state;
+  gr_moveto_for_wasm(s.x, s.y);
+  gr_resize_window_for_wasm(s.width, s.height);
+  gr_set_line_width_for_wasm(s.line_width);
+  gr_set_text_size_for_wasm(s.text_size);
+  gr_set_font_for_wasm(s.font);
+  gr_set_color_for_wasm(s.color);
+  gr_set_window_title_for_wasm(s.title);
+  s.context.textBaseline = "bottom";
+}
+
+//Provides: gr_state_set_for_wasm
+//Requires: caml_gr_state, gr_state_init_for_wasm
+//If: wasm
+function gr_state_set_for_wasm(ctx) {
+  caml_gr_state = ctx;
+  gr_state_init_for_wasm();
+}
+
+//Provides: gr_open_for_wasm
+//Requires: gr_state_create_for_wasm, gr_state_set_for_wasm
+//If: wasm
+function gr_open_for_wasm(info) {
+  function get(name) {
+    var res = info.match("(^|,) *" + name + " *= *([a-zA-Z0-9_]+) *(,|$)");
+    if (res) return res[2];
+  }
+  var specs = [];
+  if (!(info === "")) specs.push(info);
+  var target = get("target");
+  if (!target) target = "";
+  var status = get("status");
+  if (!status) specs.push("status=1");
+  var w = get("width");
+  w = w ? Number.parseInt(w) : 200;
+  specs.push("width=" + w);
+  var h = get("height");
+  h = h ? Number.parseInt(h) : 200;
+  specs.push("height=" + h);
+  var win = globalThis.open("about:blank", target, specs.join(","));
+  if (!win) return -1;
+  var doc = win.document;
+  var canvas = doc.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  var ctx = gr_state_create_for_wasm(canvas, w, h);
+  ctx.set_title = function (title) {
+    doc.title = title;
+  };
+  gr_state_set_for_wasm(ctx);
+  var body = doc.body;
+  body.style.margin = "0px";
+  body.appendChild(canvas);
+  return 0;
+}
+
+//Provides: gr_close_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_close_for_wasm() {
+  caml_gr_state.canvas.width = 0;
+  caml_gr_state.canvas.height = 0;
+}
+
+//Provides: gr_clear_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_clear_for_wasm() {
+  var s = caml_gr_state;
+  s.context.clearRect(0, 0, s.canvas.width, s.canvas.height);
+}
+
+//Provides: gr_size_x_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_size_x_for_wasm() {
+  return caml_gr_state.width;
+}
+
+//Provides: gr_size_y_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_size_y_for_wasm() {
+  return caml_gr_state.height;
+}
+
+//Provides: gr_current_x_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_current_x_for_wasm() {
+  return caml_gr_state.x;
+}
+
+//Provides: gr_current_y_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_current_y_for_wasm() {
+  return caml_gr_state.y;
+}
+
+//Provides: gr_moveto_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_moveto_for_wasm(x, y) {
+  caml_gr_state.x = x;
+  caml_gr_state.y = y;
+}
+
+//Provides: gr_set_color_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_set_color_for_wasm(color) {
+  var s = caml_gr_state;
+  function convert(number) {
+    var str = "" + number.toString(16);
+    while (str.length < 2) str = "0" + str;
+    return str;
+  }
+  var r = (color >> 16) & 0xff,
+    g = (color >> 8) & 0xff,
+    b = (color >> 0) & 0xff;
+  s.color = color;
+  var c_str = "#" + convert(r) + convert(g) + convert(b);
+  s.context.fillStyle = c_str;
+  s.context.strokeStyle = c_str;
+}
+
+//Provides: gr_plot_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_plot_for_wasm(x, y) {
+  var s = caml_gr_state;
+  var im = s.context.createImageData(1, 1);
+  var d = im.data;
+  var color = s.color;
+  d[0] = (color >> 16) & 0xff;
+  d[1] = (color >> 8) & 0xff;
+  d[2] = (color >> 0) & 0xff;
+  d[3] = 0xff;
+  s.x = x;
+  s.y = y;
+  s.context.putImageData(im, x, s.height - y);
+}
+
+//Provides: gr_point_color_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_point_color_for_wasm(x, y) {
+  var s = caml_gr_state;
+  var im = s.context.getImageData(x, s.height - y, 1, 1);
+  var d = im.data;
+  return (d[0] << 16) + (d[1] << 8) + d[2];
+}
+
+//Provides: gr_lineto_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_lineto_for_wasm(x, y) {
+  var s = caml_gr_state;
+  s.context.beginPath();
+  s.context.moveTo(s.x, s.height - s.y);
+  s.context.lineTo(x, s.height - y);
+  s.context.stroke();
+  s.x = x;
+  s.y = y;
+}
+
+//Provides: gr_draw_rect_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_draw_rect_for_wasm(x, y, w, h) {
+  caml_gr_state.context.strokeRect(x, caml_gr_state.height - y, w, -h);
+}
+
+//Provides: gr_fill_rect_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_fill_rect_for_wasm(x, y, w, h) {
+  caml_gr_state.context.fillRect(x, caml_gr_state.height - y, w, -h);
+}
+
+//Provides: gr_draw_arc_for_wasm
+//Requires: caml_gr_state, caml_gr_arc_aux
+//If: wasm
+function gr_draw_arc_for_wasm(x, y, rx, ry, a1, a2) {
+  var s = caml_gr_state;
+  s.context.beginPath();
+  caml_gr_arc_aux(s.context, x, s.height - y, rx, ry, a1, a2);
+  s.context.stroke();
+}
+
+//Provides: gr_fill_arc_for_wasm
+//Requires: caml_gr_state, caml_gr_arc_aux
+//If: wasm
+function gr_fill_arc_for_wasm(x, y, rx, ry, a1, a2) {
+  var s = caml_gr_state;
+  s.context.beginPath();
+  caml_gr_arc_aux(s.context, x, s.height - y, rx, ry, a1, a2);
+  s.context.fill();
+}
+
+//Provides: gr_set_line_width_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_set_line_width_for_wasm(w) {
+  caml_gr_state.line_width = w;
+  caml_gr_state.context.lineWidth = w;
+}
+
+//Provides: gr_resize_window_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_resize_window_for_wasm(w, h) {
+  var s = caml_gr_state;
+  s.width = w;
+  s.height = h;
+  if (w !== s.canvas.width) s.canvas.width = w;
+  if (h !== s.canvas.height) s.canvas.height = h;
+}
+
+//Provides: gr_draw_char_for_wasm
+//Requires: gr_draw_str_for_wasm
+//If: wasm
+function gr_draw_char_for_wasm(c) {
+  gr_draw_str_for_wasm(String.fromCharCode(c));
+}
+
+//Provides: gr_draw_str_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_draw_str_for_wasm(str) {
+  var s = caml_gr_state;
+  var m = s.context.measureText(str);
+  var dx = m.width;
+  s.context.fillText(str, s.x, s.height - s.y);
+  s.x += dx | 0;
+}
+
+//Provides: gr_set_font_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_set_font_for_wasm(f) {
+  var s = caml_gr_state;
+  s.font = f;
+  s.context.font = s.text_size + "px " + f;
+}
+
+//Provides: gr_set_text_size_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_set_text_size_for_wasm(size) {
+  var s = caml_gr_state;
+  s.text_size = size;
+  s.context.font = s.text_size + "px " + s.font;
+}
+
+//Provides: gr_set_window_title_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_set_window_title_for_wasm(name) {
+  var s = caml_gr_state;
+  s.title = name;
+  if (s.set_title) s.set_title(name);
+}
+
+//Provides: gr_text_size_w_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_text_size_w_for_wasm(txt) {
+  return caml_gr_state.context.measureText(txt).width | 0;
+}
+
+//Provides: gr_text_size_h_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_text_size_h_for_wasm() {
+  return caml_gr_state.text_size;
+}
+
+//Provides: gr_fill_poly_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_fill_poly_for_wasm(ar, n) {
+  var s = caml_gr_state;
+  s.context.beginPath();
+  s.context.moveTo(ar[0], s.height - ar[1]);
+  for (var i = 1; i < n; i++)
+    s.context.lineTo(ar[i * 2], s.height - ar[i * 2 + 1]);
+  s.context.lineTo(ar[0], s.height - ar[1]);
+  s.context.fill();
+}
+
+//Provides: gr_create_image_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_create_image_for_wasm(x, y) {
+  return caml_gr_state.context.createImageData(x, y);
+}
+
+//Provides: gr_draw_image_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_draw_image_for_wasm(im, x, y) {
+  var s = caml_gr_state;
+  if (!im.image) {
+    var canvas = document.createElement("canvas");
+    canvas.width = s.width;
+    canvas.height = s.height;
+    canvas.getContext("2d").putImageData(im, 0, 0);
+    var image = new globalThis.Image();
+    image.onload = function () {
+      s.context.drawImage(image, x, s.height - im.height - y);
+      im.image = image;
+    };
+    image.src = canvas.toDataURL("image/png");
+  } else {
+    s.context.drawImage(im.image, x, s.height - im.height - y);
+  }
+}
+
+//Provides: gr_blit_image_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_blit_image_for_wasm(im, x, y) {
+  var s = caml_gr_state;
+  var im2 = s.context.getImageData(
+    x,
+    s.height - im.height - y,
+    im.width,
+    im.height,
+  );
+  for (var i = 0; i < im2.data.length; i += 4) {
+    im.data[i] = im2.data[i];
+    im.data[i + 1] = im2.data[i + 1];
+    im.data[i + 2] = im2.data[i + 2];
+    im.data[i + 3] = im2.data[i + 3];
+  }
+}
+
+//Provides: gr_make_image_for_wasm
+//Requires: caml_gr_state
+//If: wasm
+function gr_make_image_for_wasm(pixels, w, h) {
+  var s = caml_gr_state;
+  var im = s.context.createImageData(w, h);
+  for (var i = 0; i < h; i++) {
+    for (var j = 0; j < w; j++) {
+      var c = pixels[i * w + j];
+      var o = i * (w * 4) + j * 4;
+      if (c === -1) {
+        im.data[o + 0] = 0;
+        im.data[o + 1] = 0;
+        im.data[o + 2] = 0;
+        im.data[o + 3] = 0;
+      } else {
+        im.data[o + 0] = (c >> 16) & 0xff;
+        im.data[o + 1] = (c >> 8) & 0xff;
+        im.data[o + 2] = (c >> 0) & 0xff;
+        im.data[o + 3] = 0xff;
+      }
+    }
+  }
+  return im;
+}
+
+//Provides: gr_dump_image_width_for_wasm
+//If: wasm
+function gr_dump_image_width_for_wasm(im) {
+  return im.width;
+}
+
+//Provides: gr_dump_image_height_for_wasm
+//If: wasm
+function gr_dump_image_height_for_wasm(im) {
+  return im.height;
+}
+
+//Provides: gr_dump_image_pixel_for_wasm
+//If: wasm
+function gr_dump_image_pixel_for_wasm(im, i, j) {
+  var o = i * (im.width * 4) + j * 4;
+  return (im.data[o] << 16) + (im.data[o + 1] << 8) + im.data[o + 2];
+}
+
+//Provides: gr_doc_of_state_for_wasm
+//If: wasm
+function gr_doc_of_state_for_wasm(state) {
+  if (state.canvas.ownerDocument) return state.canvas.ownerDocument;
+  return null;
+}
