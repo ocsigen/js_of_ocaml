@@ -17,7 +17,7 @@ let clear_log () =
 let set_strategy_1 () =
   clear_log ();
   Dom_html.window##.onbeforeunload
-  := Dom_html.handler (fun (_e : Dom_html.event Js.t) ->
+  := Dom_html.handler (fun (_e : Dom_html.beforeUnloadEvent Js.t) ->
       log "handler called, returning Js._false (block)";
       Js._false);
   log "Strategy 1: handler returning Js._false (block)";
@@ -30,7 +30,7 @@ let set_strategy_1 () =
 let set_strategy_2 () =
   clear_log ();
   Dom_html.window##.onbeforeunload
-  := Dom_html.handler (fun (_e : Dom_html.event Js.t) ->
+  := Dom_html.handler (fun (_e : Dom_html.beforeUnloadEvent Js.t) ->
       log "handler called, returning Js._true (allow)";
       Js._true);
   log "Strategy 2: handler returning Js._true (allow)";
@@ -44,7 +44,7 @@ let should_block = ref true
 let set_strategy_3 () =
   clear_log ();
   Dom_html.window##.onbeforeunload
-  := Dom_html.handler (fun (_e : Dom_html.event Js.t) ->
+  := Dom_html.handler (fun (_e : Dom_html.beforeUnloadEvent Js.t) ->
       log (Printf.sprintf "handler called, should_block=%b" !should_block);
       Js.bool (not !should_block));
   log "Strategy 3: handler with conditional logic";
