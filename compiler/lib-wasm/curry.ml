@@ -35,7 +35,12 @@ module Make (Target : Target_sig.S) = struct
 
   let call ?typ ~cps ~arity closure args =
     let funct = Var.fresh () in
-    let* closure = tee ?typ funct closure in
+    let closure = tee ?typ funct closure in
+    let* closure =
+      match typ with
+      | None -> Memory.cast_closure ~cps ~arity closure
+      | Some _ -> closure
+    in
     let args = args @ [ closure ] in
     let* ty, funct =
       Memory.load_function_pointer
@@ -68,7 +73,7 @@ module Make (Target : Target_sig.S) = struct
     let body =
       let* () = no_event in
       let* () = bind_parameters args in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Type.closure f in
       let* args' = expression_list load args in
       let* _f = load f in
       let rec loop m args closure closure_typ =
@@ -126,7 +131,7 @@ module Make (Target : Target_sig.S) = struct
     let body =
       let* () = no_event in
       let* _ = add_var x in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Type.closure f in
       push (Closure.curry_allocate ~cps:false ~arity m ~f:name' ~closure:f ~arg:x)
     in
     let param_names = [ x; f ] in
@@ -154,7 +159,7 @@ module Make (Target : Target_sig.S) = struct
     let body =
       let* () = no_event in
       let* () = bind_parameters args in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Type.closure f in
       let* args' = expression_list load args in
       let* _f = load f in
       let rec loop m args closure closure_typ =
@@ -214,7 +219,7 @@ module Make (Target : Target_sig.S) = struct
       let* () = no_event in
       let* _ = add_var x in
       let* _ = add_var cont in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Type.closure f in
       let* e = Closure.curry_allocate ~cps:true ~arity m ~f:name' ~closure:f ~arg:x in
       let* c = call ~cps:false ~arity:1 (load cont) [ e ] in
       instr (W.Return (Some c))
@@ -326,7 +331,7 @@ module Make (Target : Target_sig.S) = struct
     let body =
       let* () = no_event in
       let* () = bind_parameters l in
-      let* _ = add_var f in
+      let* _ = add_var ~typ:Type.closure f in
       let* typ, closure = Memory.load_real_closure ~cps ~arity (load f) in
       let* l = expression_list load l in
       let* e =
