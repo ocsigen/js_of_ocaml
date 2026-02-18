@@ -1,9 +1,18 @@
-(executables
- (names toplevel)
+;; Shared library with all backend-neutral modules
+
+(library
+ (name lwt_toplevel_lib)
+ (modules
+  toplevel_main
+  indent
+  colorize
+  ocp_indent
+  ppx_support
+  graphics_dummy)
  (libraries
   js_of_ocaml-compiler
   js_of_ocaml-tyxml
-  js_of_ocaml-toplevel
+  js_of_ocaml-toplevel.common
   lwt
   js_of_ocaml-lwt
   ;; not used directly
@@ -33,14 +42,22 @@
    from
    (js_of_ocaml-ppx -> ppx_support.enabled.ml)
    (-> ppx_support.disabled.ml)))
+ (wrapped false)
  (flags
   (:standard -rectypes))
- (link_flags
-  (:standard -linkall))
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+;; JS executable (existing, slimmed down)
+
+(executable
+ (name toplevel)
+ (modules toplevel)
+ (libraries lwt_toplevel_lib js_of_ocaml js_of_ocaml-toplevel)
  (modes byte js)
  (js_of_ocaml
-  ; We use the generated file in the doc. Let's not bloat it with sourcemap.
-  ; Plus, the source map would be too large on 32-bit architectures
+  ;; We use the generated file in the doc. Let's not bloat it with sourcemap.
+  ;; Plus, the source map would be too large on 32-bit architectures
   (sourcemap no)
   (build_runtime_flags
    (:standard
@@ -56,10 +73,28 @@
     (:include html_types_path.txt)))
   (flags
    (:standard --toplevel)))
- (modules
-  (:standard \ test_dynlink examples effects_flags))
+ (flags
+  (:standard -rectypes))
+ (link_flags
+  (:standard -linkall))
  (preprocess
   (pps js_of_ocaml-ppx)))
+
+;; Wasm executable (new)
+
+(executable
+ (name toplevel_wasm)
+ (modules toplevel_wasm)
+ (libraries
+  wasm_of_ocaml-compiler.dynlink
+  lwt_toplevel_lib
+  js_of_ocaml
+  js_of_ocaml-toplevel.common)
+ (flags
+  (:standard -rectypes))
+ (link_flags
+  (:standard -linkall))
+ (modes byte))
 
 (rule
  (target html_types_path.txt)
@@ -132,7 +167,8 @@
    js_of_ocaml
    js_of_ocaml-lwt
    js_of_ocaml-tyxml
-   js_of_ocaml-toplevel)))
+   js_of_ocaml-toplevel
+   js_of_ocaml-toplevel.common)))
 
 (executable
  (name effects_flags)
@@ -173,6 +209,61 @@
    -o
    %{targets})))
 
+;; Export list for wasm
+
+(rule
+ (targets export_wasm.txt)
+ (deps
+  (package js_of_ocaml)
+  (package js_of_ocaml-compiler)
+  (package js_of_ocaml-lwt)
+  (package js_of_ocaml-tyxml)
+  (package js_of_ocaml-toplevel))
+ (action
+  (run
+   jsoo_listunits
+   -o
+   %{targets}
+   stdlib
+   graphics
+   str
+   dynlink
+   js_of_ocaml-lwt.graphics
+   js_of_ocaml.deriving
+   lwt
+   tyxml.functor
+   tyxml.functor:html_types.cmi
+   react
+   reactiveData
+   js_of_ocaml
+   js_of_ocaml-lwt
+   js_of_ocaml-tyxml
+   js_of_ocaml-toplevel.common)))
+
+;; Wasm compilation
+
+(rule
+ (targets
+  toplevel_wasm.js
+  (dir toplevel_wasm.assets))
+ (action
+  (run
+   %{bin:wasm_of_ocaml}
+   compile
+   --toplevel
+   --file
+   %{dep:examples.ml}
+   --export
+   %{dep:export_wasm.txt}
+   %{dep:toplevel_wasm.bc}
+   -o
+   toplevel_wasm.js)))
+
 (alias
  (name default)
- (deps toplevel.js toplevel.bc.js index.html))
+ (deps
+  toplevel.js
+  toplevel.bc.js
+  toplevel_wasm.js
+  (glob_files toplevel_wasm.assets/*)
+  index.html))

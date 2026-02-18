@@ -407,6 +407,7 @@
       var prefix = "";
       var version = "";
       var main = "toplevel.js";
+      var useWasm = globalThis?.WebAssembly?.JSTag;
       for(var f in fields){
         var data = fields[f].split(/=/);
         if(data[0] == "version"){
@@ -415,6 +416,9 @@
         else if (data[0] == "separate"){
           main = "toplevel.bc.js";
         }
+        else if (data[0] == "js"){
+          useWasm = false;
+        }
       }
       function load_script(url){
         var fileref=document.createElement('script');
@@ -422,8 +426,12 @@
         fileref.setAttribute("src", prefix+(version==""?"":(version+"/"))+url);
         document.getElementsByTagName("head")[0].appendChild(fileref);
       }
-      load_script("exported-unit.cmis.js");
-      load_script(main);
+      if (useWasm) {
+        load_script("toplevel_wasm.js");
+      } else {
+        load_script("exported-unit.cmis.js");
+        load_script(main);
+      }
 
     </script>
   </head>
