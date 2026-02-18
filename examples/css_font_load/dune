@@ -1,0 +1,14 @@
+(executables
+ (names css_font_load)
+ (libraries js_of_ocaml)
+ (modes js)
+ (preprocess
+  (pps js_of_ocaml-ppx)))
+
+(alias
+ (name default)
+ (deps css_font_load.bc.js index.html))
+
+(alias
+ (name default)
+ (deps BebasNeue-Regular.ttf))
