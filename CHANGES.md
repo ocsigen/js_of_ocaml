@@ -133,6 +133,7 @@
 * Ppx: allow "function" in object literals (#1897)
 * Lib: add Dom_html.window.matchMedia & Dom_html.mediaQueryList (#2017)
 * Lib: make the Wasm version of Json.output work with native ints and JavaScript objects (#1872)
+* Lib: add Intl.RelativeDateFormat (#2070)
 
 ## Bug fixes
 * Compiler: fix stack overflow issues with double translation (#1869)
