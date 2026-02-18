@@ -344,7 +344,7 @@ let () =
                 then add unsupported
                 else fail := (Parse (loc, content), filename) :: !fail
             | (p1, toks1), lexing_mode -> (
-                let p1 = List.concat_map p1 ~f:snd in
+                let p1 = List.map p1 ~f:snd in
                 match List.rev !errors with
                 | [] -> (
                     let s = p_to_string p1 in
@@ -358,7 +358,7 @@ let () =
                       Parse_js.parse' lexing_mode lex
                     with
                     | p2, toks2 -> (
-                        let p2 = List.concat_map p2 ~f:snd in
+                        let p2 = List.map p2 ~f:snd in
                         match
                           ( Poly.equal
                               (clean_loc (normalize p1))
