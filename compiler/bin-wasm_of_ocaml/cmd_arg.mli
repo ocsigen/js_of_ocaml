@@ -33,6 +33,8 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; build_config : bool
+  ; apply_build_config : string option
   }
 
 val options : unit -> t Cmdliner.Term.t

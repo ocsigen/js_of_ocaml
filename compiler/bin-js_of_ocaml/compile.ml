@@ -157,6 +157,8 @@ let run
     ; include_runtime
     ; effects
     ; shape_files
+    ; build_config
+    ; apply_build_config
     } =
   let source_map_base =
     Option.map ~f:(fun spec -> spec.Source_map.Encoding_spec.source_map) source_map
@@ -166,6 +168,12 @@ let run
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
+  Config.Flag.set "toplevel" toplevel;
+  Jsoo_cmdline.Build_config.process
+    `JavaScript
+    ~apply:apply_build_config
+    ~print_and_exit:build_config;
+  let toplevel = Config.Flag.toplevel () in
   Linker.reset ();
   (match output_file with
   | `Stdout, _ -> ()

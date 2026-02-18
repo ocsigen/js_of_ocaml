@@ -1,6 +1,5 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2014 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,26 +16,21 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type 'a on_off =
-  { enable : 'a
-  ; disable : 'a
-  }
+val process :
+     ?extra_keys:Js_of_ocaml_compiler.Build_info.config_key list
+  -> [ `JavaScript | `Wasm ]
+  -> apply:string option
+  -> print_and_exit:bool
+  -> unit
+(** [process ?extra_keys target ~apply ~print_and_exit] optionally
+    parses and applies a build config string, then optionally prints the
+    current config and exits. *)
 
-type t =
-  { debug : string list on_off
-  ; optim : string list on_off
-  ; quiet : bool
-  ; werror : bool
-  ; warnings : (bool * Js_of_ocaml_compiler.Warning.t) list
-  ; custom_header : string option
-  }
+val parse : Js_of_ocaml_compiler.Build_info.config_key list -> string -> unit
+(** Parse "key1=val1+key2=val2", validate against known
+    keys/values, and apply callbacks. Raises [Failure] on
+    invalid input. *)
 
-val build_config : bool Cmdliner.Term.t
-
-val apply_build_config : string option Cmdliner.Term.t
-
-val set_param : (string * string) list list Cmdliner.Term.t
-
-val t : t Cmdliner.Term.t Lazy.t
-
-val eval : t -> unit
+val print_and_exit : Js_of_ocaml_compiler.Build_info.config_key list -> 'a
+(** Print entries as sorted "key1=val1+key2=val2" to stdout and
+    exit. *)

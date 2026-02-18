@@ -164,6 +164,8 @@ module Sys = struct
       | "cps" -> `Cps
       | "double-translation" -> `Double_translation
       | _ -> assert false
+
+    external build_config : unit -> string = "caml_jsoo_build_config"
   end
 
   let version = Runtime_version.s

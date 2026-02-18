@@ -18,3 +18,4 @@
  *)
 
 module Arg = Arg
+module Build_config = Build_config
