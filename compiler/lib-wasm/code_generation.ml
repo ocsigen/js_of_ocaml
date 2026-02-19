@@ -715,7 +715,7 @@ let need_dummy_fun ~cps ~arity st =
 
 let init_code context = instrs context.init_code
 
-let function_body ~context ~param_names ~body =
+let function_body ~context ~return_exn ~param_names ~body =
   let st = { var_count = 0; vars = Var.Map.empty; instrs = []; context } in
   let (), st = body st in
   let local_count, body = st.var_count, List.rev st.instrs in
@@ -727,7 +727,7 @@ let function_body ~context ~param_names ~body =
       | Local (i, x, typ) -> local_types.(i) <- x, typ
       | Expr _ -> ())
     st.vars;
-  let body = Tail_call.f ~no_tail_call:context.no_tail_call body in
+  let body = Tail_call.f ~return_exn ~no_tail_call:context.no_tail_call body in
   let param_count = List.length param_names in
   let locals =
     local_types

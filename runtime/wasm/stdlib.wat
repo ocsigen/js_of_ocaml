@@ -234,4 +234,6 @@
                   (call $unwrap
                      (call $caml_jsstring_of_string (local.get $msg)))))
             (call $exit (i32.const 2)))))
+
+   (global (export "caml_exception") (mut (ref eq)) (ref.i31 (i32.const 0)))
 )
