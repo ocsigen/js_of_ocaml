@@ -121,7 +121,7 @@
 
    (@string $Bytes_create "Bytes.create")
 
-   (func (export "caml_create_bytes")
+   (func (export "caml_create_bytes") (export "caml_create_local_bytes")
       (param $len (ref eq)) (result (ref eq))
       (local $l i32)
       (local.set $l (i31.get_s (ref.cast (ref i31) (local.get $len))))

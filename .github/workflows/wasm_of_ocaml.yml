@@ -13,6 +13,7 @@ jobs:
   build:
     env:
       WASM_OF_OCAML: true
+      OXCAML_OPAM_REPO_REF: 5ac45e334a1d6b43d70ba5ad4bd58092f9796e2a
 
     strategy:
       fail-fast: false
@@ -59,6 +60,12 @@ jobs:
             separate_compilation: false
             jane_street_tests: true
             all_jane_street_tests: false
+          - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-compiler: "ocaml-variants.5.2.0+ox"
+            separate_compilation: true
+            jane_street_tests: true
+            all_jane_street_tests: true
 
     runs-on: ${{ matrix.os }}
 
@@ -76,11 +83,19 @@ jobs:
           path: wasm_of_ocaml
 
       - name: Checkout Jane Street opam repository
-        if: matrix.jane_street_tests
+        if: matrix.jane_street_tests && matrix.ocaml-compiler != 'ocaml-variants.5.2.0+ox'
         uses: actions/checkout@v6
         with:
           repository: janestreet/opam-repository
           ref: 2819773f29b6f6c14b918eae3cb40c8ff6b22d0e
+          path: janestreet/opam-repository
+
+      - name: Checkout OxCaml opam repository
+        if: matrix.jane_street_tests && matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
+        uses: actions/checkout@v5
+        with:
+          repository: oxcaml/opam-repository
+          ref: ${{ env.OXCAML_OPAM_REPO_REF }}
           path: janestreet/opam-repository
 
       - name: Set-up Node.js
@@ -92,6 +107,16 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+        if: matrix.ocaml-compiler != 'ocaml-variants.5.2.0+ox'
+
+      - name: Set-up OxCaml ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          opam-repositories: |
+            default: https://github.com/ocaml/opam-repository.git
+            ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
+        if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
 
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
@@ -106,7 +131,14 @@ jobs:
 
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml
-        run: opam pin . -n --with-version dev
+        run: opam pin . -n --with-version 6.0.1+ox
+
+      - name: Pin specific packages for OxCaml
+        run: |
+          opam pin add --with-version 1.0.3+ox -n https://github.com/vouillon/uutf.git#oxcaml
+          opam pin add -n zarith 1.12+ox
+          opam pin add -n lwt 6.0.0+ox
+        if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
 
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests

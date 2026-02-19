@@ -42,8 +42,8 @@ function caml_ba_get_size(dims) {
   return size;
 }
 
-//Provides: caml_unpackFloat16
-var caml_unpackFloat16 = (function () {
+//Provides: caml_double_of_float16 pure
+var caml_double_of_float16 = (function () {
   var pow = Math.pow;
 
   var EXP_MASK16 = 31; // 2 ** 5 - 1
@@ -72,8 +72,8 @@ var caml_unpackFloat16 = (function () {
   };
 })();
 
-//Provides: caml_packFloat16
-var caml_packFloat16 = (function () {
+//Provides: caml_float16_of_double pure
+var caml_float16_of_double = (function () {
   const INVERSE_OF_EPSILON = 1 / Number.EPSILON;
 
   function roundTiesToEven(num) {
@@ -252,7 +252,7 @@ var caml_ba_custom_name = "_bigarr02";
 //Provides: Ml_Bigarray
 //Requires: caml_array_bound_error, caml_invalid_argument, caml_ba_custom_name
 //Requires: caml_int64_create_lo_hi, caml_int64_hi32, caml_int64_lo32
-//Requires: caml_packFloat16, caml_unpackFloat16
+//Requires: caml_float16_of_double, caml_double_of_float16
 class Ml_Bigarray {
   constructor(kind, layout, dims, buffer) {
     this.kind = kind;
@@ -299,7 +299,7 @@ class Ml_Bigarray {
         var i = this.data[ofs * 2 + 1];
         return [254, r, i];
       case 13:
-        return caml_unpackFloat16(this.data[ofs]);
+        return caml_double_of_float16(this.data[ofs]);
       default:
         return this.data[ofs];
     }
@@ -319,7 +319,7 @@ class Ml_Bigarray {
         this.data[ofs * 2 + 1] = v[2];
         break;
       case 13:
-        this.data[ofs] = caml_packFloat16(v);
+        this.data[ofs] = caml_float16_of_double(v);
         break;
       default:
         this.data[ofs] = v;
@@ -356,7 +356,7 @@ class Ml_Bigarray {
         }
         break;
       case 13:
-        this.data.fill(caml_packFloat16(v));
+        this.data.fill(caml_float16_of_double(v));
         break;
       default:
         this.data.fill(v);
@@ -406,8 +406,8 @@ class Ml_Bigarray {
         break;
       case 13:
         for (var i = 0; i < this.data.length; i++) {
-          var aa = caml_unpackFloat16(this.data[i]);
-          var bb = caml_unpackFloat16(b.data[i]);
+          var aa = caml_double_of_float16(this.data[i]);
+          var bb = caml_double_of_float16(b.data[i]);
           if (aa < bb) return -1;
           if (aa > bb) return 1;
         }
@@ -587,16 +587,19 @@ function caml_ba_uint8_get64(ba, i0) {
 }
 
 //Provides: caml_ba_get_1
+//Alias: caml_ba_float32_get_1
 function caml_ba_get_1(ba, i0) {
   return ba.get(ba.offset(i0));
 }
 
 //Provides: caml_ba_get_2
+//Alias: caml_ba_float32_get_2
 function caml_ba_get_2(ba, i0, i1) {
   return ba.get(ba.offset([i0, i1]));
 }
 
 //Provides: caml_ba_get_3
+//Alias: caml_ba_float32_get_3
 function caml_ba_get_3(ba, i0, i1, i2) {
   return ba.get(ba.offset([i0, i1, i2]));
 }
@@ -641,18 +644,21 @@ function caml_ba_uint8_set64(ba, i0, v) {
 }
 
 //Provides: caml_ba_set_1
+//Alias: caml_ba_float32_set_1
 function caml_ba_set_1(ba, i0, v) {
   ba.set(ba.offset(i0), v);
   return 0;
 }
 
 //Provides: caml_ba_set_2
+//Alias: caml_ba_float32_set_2
 function caml_ba_set_2(ba, i0, i1, v) {
   ba.set(ba.offset([i0, i1]), v);
   return 0;
 }
 
 //Provides: caml_ba_set_3
+//Alias: caml_ba_float32_set_3
 function caml_ba_set_3(ba, i0, i1, i2, v) {
   ba.set(ba.offset([i0, i1, i2]), v);
   return 0;
@@ -763,7 +769,7 @@ function caml_ba_reshape(ba, vind) {
 //Provides: caml_ba_serialize
 //Requires: caml_int64_bits_of_float, caml_int64_to_bytes
 //Requires: caml_int32_bits_of_float
-//Requires: caml_packFloat16
+//Requires: caml_float16_of_double
 function caml_ba_serialize(writer, ba, sz) {
   writer.write(32, ba.dims.length);
   writer.write(32, ba.kind | (ba.layout << 8));
@@ -853,7 +859,7 @@ function caml_ba_serialize(writer, ba, sz) {
 //Requires: caml_int64_of_bytes, caml_int64_float_of_bits
 //Requires: caml_int32_float_of_bits
 //Requires: caml_ba_create_buffer
-//Requires: caml_unpackFloat16
+//Requires: caml_double_of_float16
 function caml_ba_deserialize(reader, sz, name) {
   var num_dims = reader.read32s();
   if (num_dims < 0 || num_dims > 16)
@@ -979,7 +985,7 @@ function caml_ba_create_from(data1, data2, _jstyp, kind, layout, dims) {
 
 //Provides: caml_ba_hash const
 //Requires: caml_ba_get_size, caml_hash_mix_int, caml_hash_mix_float
-//Requires: caml_unpackFloat16, caml_hash_mix_float16, caml_hash_mix_float32
+//Requires: caml_double_of_float16, caml_hash_mix_float16, caml_hash_mix_float32
 function caml_ba_hash(ba) {
   var num_elts = caml_ba_get_size(ba.dims);
   var h = 0;

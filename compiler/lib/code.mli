@@ -146,12 +146,14 @@ type constant =
   | String of string
   | NativeString of Native_string.t
   | Float of Int64.t
+  | Float32 of Int64.t
   | Float_array of Int64.t array
   | Int of Targetint.t
   | Int32 of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Int64 of Int64.t
   | NativeInt of Int32.t  (** Only produced when compiling to WebAssembly. *)
   | Tuple of int * constant array * array_or_not
+  | Null_
 
 module Constant : sig
   type t = constant

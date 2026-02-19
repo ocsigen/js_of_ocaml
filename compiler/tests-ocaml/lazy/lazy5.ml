@@ -1,6 +1,8 @@
 (* TEST
  ocamlopt_flags += " -O3 ";
 *)
+[@@@ocaml.alert "-unsafe_multidomain-unsafe_parallelism-do_not_spawn_domains"]
+
 let rec safe_force l =
   try Lazy.force l with
   | Lazy.Undefined ->

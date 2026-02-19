@@ -54,8 +54,9 @@ module Info = struct
   let possibly_mutable t x = Code.Var.ISet.mem t.info_possibly_mutable x
 
   let update_def { info_defs; _ } x exp =
+    (* [Specialize_js] can introduce fresh variables *)
     let idx = Code.Var.idx x in
-    info_defs.(idx) <- Expr exp
+    if idx < Array.length info_defs then info_defs.(idx) <- Expr exp
 end
 
 let undefined = Phi Var.Set.empty
@@ -338,10 +339,11 @@ let get_approx
     top
     join
     x =
-  let s = Var.Tbl.get info_known_origins x in
-  if Var.Tbl.get info_maybe_unknown x
+  (* [Specialize_js] can introduce fresh variables *)
+  if Var.idx x >= Var.Tbl.length info_known_origins || Var.Tbl.get info_maybe_unknown x
   then top
   else
+    let s = Var.Tbl.get info_known_origins x in
     match Var.Set.to_list_bounded 1 s with
     | Some [] -> top
     | Some [ x ] -> f x

@@ -21,6 +21,7 @@
       (func $caml_invalid_argument (param (ref eq))))
    (import "fail" "caml_raise_end_of_file" (func $caml_raise_end_of_file))
    (import "obj" "object_tag" (global $object_tag i32))
+   (import "obj" "null" (global $null (ref eq)))
    (import "obj" "caml_set_oo_id"
       (func $caml_set_oo_id (param (ref eq)) (result (ref eq))))
    (import "string" "caml_string_concat"
@@ -190,6 +191,7 @@
    (global $CODE_CUSTOM i32 (i32.const 0x12))
    (global $CODE_CUSTOM_LEN i32 (i32.const 0x18))
    (global $CODE_CUSTOM_FIXED i32 (i32.const 0x19))
+   (global $CODE_NULL i32 (i32.const 0x1F))
 
    (type $intern_state
       (struct
@@ -561,20 +563,26 @@
                                      (block $DOUBLE_ARRAY32
                                       (block $CODEPOINTER
                                        (block $CUSTOM
-                                        (block $default
-                                         (br_table $INT8 $INT16 $INT32 $INT64
-                                            $SHARED8 $SHARED16 $SHARED32
-                                            $DOUBLE_ARRAY32 $BLOCK32 $STRING8
-                                            $STRING32 $DOUBLE $DOUBLE
-                                            $DOUBLE_ARRAY8 $DOUBLE_ARRAY8
-                                            $DOUBLE_ARRAY32 $CODEPOINTER
-                                            $CODEPOINTER $CUSTOM $default
-                                            $default $default $default $default
-                                            $CUSTOM $CUSTOM $default
-                                            (local.get $code)))
-                                        ;; default
-                                        (call $caml_failwith
-                                           (global.get $ill_formed))
+                                        (block $NULL
+                                         (block $default
+                                          (br_table $INT8 $INT16 $INT32 $INT64
+                                             $SHARED8 $SHARED16 $SHARED32
+                                             $DOUBLE_ARRAY32 $BLOCK32 $STRING8
+                                             $STRING32 $DOUBLE $DOUBLE
+                                             $DOUBLE_ARRAY8 $DOUBLE_ARRAY8
+                                             $DOUBLE_ARRAY32 $CODEPOINTER
+                                             $CODEPOINTER $CUSTOM $default
+                                             $default $default $default $default
+                                             $CUSTOM $CUSTOM $default $default
+                                             $default $default $default $NULL
+                                             $default
+                                             (local.get $code)))
+                                         ;; default
+                                         (call $caml_failwith
+                                            (global.get $ill_formed))
+                                         (br $done))
+                                        ;; NULL
+                                        (local.set $v (global.get $null))
                                         (br $done))
                                        ;; CUSTOM
                                        (local.set $v
@@ -1273,6 +1281,10 @@
                            (local.get $sp)))))
                (local.set $v (array.get $block (local.get $b) (i32.const 1)))
                (br $loop)))
+            (if (ref.eq (local.get $v) (global.get $null))
+               (then
+                  (call $write (local.get $s) (global.get $CODE_NULL))
+                  (br $next_item)))
             (local.set $pos
                (call $extern_lookup_position (local.get $s) (local.get $v)))
             (if (i32.ge_s (local.get $pos) (i32.const 0))

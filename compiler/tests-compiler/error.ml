@@ -24,6 +24,9 @@ let normalize x =
   |> Str.global_replace (Str.regexp "ocamlrun\\(.exe\\)?") "%{OCAMLRUN}"
   |> Str.global_replace (Str.regexp "node\\(.exe\\)?") "%{NODE}"
 
+let compile_and_run_no_alert =
+  compile_and_run ~ocaml_flags:[ "-alert"; "-unsafe_multidomain" ]
+
 let%expect_test "uncaugh error" =
   let prog = {| let _ = raise Not_found |} in
   compile_and_run prog;
@@ -50,7 +53,7 @@ let () = Callback.register "Printexc.handle_uncaught_exception" null
 exception C
 let _ = raise C |}
   in
-  compile_and_run prog;
+  compile_and_run_no_alert prog;
   print_endline (normalize [%expect.output]);
   [%expect
     {|
@@ -66,7 +69,7 @@ exception D of int * string * Int64.t
 let _ = raise (D(2,"test",43L))
               |}
   in
-  compile_and_run prog;
+  compile_and_run_no_alert prog;
   print_endline (normalize [%expect.output]);
   [%expect
     {|
@@ -80,7 +83,7 @@ let null = Array.unsafe_get [|1|] 1
 let () = Callback.register "Printexc.handle_uncaught_exception" null
 let _ = assert false |}
   in
-  compile_and_run prog;
+  compile_and_run_no_alert prog;
   print_endline (normalize [%expect.output]);
   [%expect
     {|
@@ -94,7 +97,7 @@ let null = Array.unsafe_get [|1|] 1
 let () = Callback.register "Printexc.handle_uncaught_exception" null
  [@@@ocaml.warning "-8"] let _ = match 3 with 2 -> () |}
   in
-  compile_and_run prog;
+  compile_and_run_no_alert prog;
   print_endline (normalize [%expect.output]);
   [%expect
     {|
@@ -112,7 +115,7 @@ exception D of int * string * Int64.t
 let _ = null 1 2
              |}
   in
-  compile_and_run prog;
+  compile_and_run_no_alert prog;
   let s = normalize [%expect.output] in
   (try ignore (Str.search_forward (Str.regexp "TypeError: Cannot read") s 0)
    with Not_found -> print_endline s);

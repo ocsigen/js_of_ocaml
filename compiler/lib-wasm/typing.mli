@@ -28,6 +28,7 @@ type boxed_number =
   | Int64
   | Nativeint
   | Float
+  | Float32
 
 type boxed_status =
   | Boxed
@@ -37,6 +38,7 @@ module Bigarray : sig
   type kind =
     | Float16
     | Float32
+    | Float32_t
     | Float64
     | Int8_signed
     | Int8_unsigned
@@ -65,6 +67,7 @@ type typ =
   | Number of boxed_number * boxed_status
   | Tuple of typ array
   | Bigarray of Bigarray.t
+  | Null
   | Bot
 
 val constant_type : Code.constant -> typ

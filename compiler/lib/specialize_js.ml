@@ -288,6 +288,52 @@ let idx_equal (v1, c1) (v2, c2) =
   | `Var a, `Var b -> Code.Var.equal a b
   | `Cst _, `Var _ | `Var _, `Cst _ -> false
 
+let indexing_primitives l =
+  let h = String.Hashtbl.create 16 in
+  List.iter l ~f:(fun prim ->
+      List.iter [ "int32"; "nativeint"; "int64" ] ~f:(fun int ->
+          String.Hashtbl.add
+            h
+            (prim ^ "_indexed_by_" ^ int)
+            ("caml_checked_" ^ int ^ "_to_int", prim)));
+  h
+
+let getters =
+  indexing_primitives
+    [ "caml_array_get"
+    ; "caml_string_get16"
+    ; "caml_string_get32"
+    ; "caml_string_get64"
+    ; "caml_string_getf32"
+    ; "caml_bytes_get16"
+    ; "caml_bytes_get32"
+    ; "caml_bytes_get64"
+    ; "caml_bytes_getf32"
+    ; "caml_ba_uint8_get16"
+    ; "caml_ba_uint8_get32"
+    ; "caml_ba_uint8_get64"
+    ; "caml_ba_uint8_getf32"
+    ]
+
+let setters =
+  indexing_primitives
+    [ "caml_array_set"
+    ; "caml_bytes_set16"
+    ; "caml_bytes_set32"
+    ; "caml_bytes_set64"
+    ; "caml_bytes_setf32"
+    ; "caml_ba_uint8_set16"
+    ; "caml_ba_uint8_set32"
+    ; "caml_ba_uint8_set64"
+    ; "caml_ba_uint8_setf32"
+    ]
+
+let make_vect x y constant acc =
+  let c = Var.fresh () in
+  Let (x, Prim (Extern "caml_make_vect", [ y; Pv c ]))
+  :: Let (c, Constant constant)
+  :: acc
+
 let specialize_instrs ~target opt_count info l =
   let rec aux info checks l acc =
     match l with
@@ -298,6 +344,18 @@ let specialize_instrs ~target opt_count info l =
            the array access. The bound checking function returns the array,
            which allows to produce more compact code. *)
         match i with
+        | Let (x, Prim (Extern prim, [ y; z ])) when String.Hashtbl.mem getters prim ->
+            let conv, access = String.Hashtbl.find getters prim in
+            let z' = Code.Var.fresh () in
+            let r =
+              Let (z', Prim (Extern conv, [ z ]))
+              (* The recursive call to [aux] will optimize
+                 [caml_array_get] into a nominally "unsafe" (but
+                 guarded) access. *)
+              :: Let (x, Prim (Extern access, [ y; Pv z' ]))
+              :: r
+            in
+            aux info checks r acc
         | Let
             ( x
             , Prim
@@ -344,6 +402,18 @@ let specialize_instrs ~target opt_count info l =
               incr opt_count;
               let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
               aux info ((y, idx) :: checks) r acc
+        | Let (x, Prim (Extern prim, [ y; z; w ])) when String.Hashtbl.mem setters prim ->
+            let conv, setter = String.Hashtbl.find setters prim in
+            let z' = Code.Var.fresh () in
+            let r =
+              Let (z', Prim (Extern conv, [ z ]))
+              (* The recursive call to [aux] will optimize
+                 [caml_array_set] into a nominally "unsafe" (but
+                 guarded) access. *)
+              :: Let (x, Prim (Extern setter, [ y; Pv z'; w ]))
+              :: r
+            in
+            aux info checks r acc
         | Let
             ( x
             , Prim
@@ -390,6 +460,14 @@ let specialize_instrs ~target opt_count info l =
               let acc = instr y' :: Let (y', Prim (Extern check, [ Pv y; z ])) :: acc in
               incr opt_count;
               aux info ((y, idx) :: checks) r acc
+        | Let (x, Prim (Extern "caml_make_unboxed_int32_vect_bytecode", [ y ])) ->
+            aux info checks r (make_vect x y (Int32 0l) acc)
+        | Let (x, Prim (Extern "caml_make_unboxed_int64_vect_bytecode", [ y ])) ->
+            aux info checks r (make_vect x y (Int64 0L) acc)
+        | Let (x, Prim (Extern "caml_make_unboxed_nativeint_vect_bytecode", [ y ])) ->
+            aux info checks r (make_vect x y (NativeInt 0l) acc)
+        | Let (x, Prim (Extern "caml_make_unboxed_float32_vect_bytecode", [ y ])) ->
+            aux info checks r (make_vect x y (Float32 0L) acc)
         | _ ->
             let i = specialize_instr ~target opt_count info i in
             aux info checks r (i :: acc))

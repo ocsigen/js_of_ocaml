@@ -146,6 +146,24 @@
    (run ./effects_flags.exe txt %{profile}))))
 
 (rule
+ (target javascript_runtime_files.txt)
+ (action
+  (with-stdout-to
+   %{target}
+   (pipe-stdout
+    (run
+     ocamlfind
+     query
+     -format
+     "%+(jsoo_runtime)"
+     -r
+     js_of_ocaml-ppx.as-lib)
+    (run tr -d \r)
+    (with-accepted-exit-codes
+     (or 0 1)
+     (run grep -v ^$))))))
+
+(rule
  (targets toplevel.js)
  (action
   (run
@@ -169,6 +187,7 @@
    --toplevel
    --disable
    shortvar
+   %{read-strings:javascript_runtime_files.txt}
    %{dep:toplevel.bc}
    -o
    %{targets})))

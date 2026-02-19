@@ -99,6 +99,22 @@
    (global $double_array_tag (export "double_array_tag") i32 (i32.const 254))
    (global $custom_tag i32 (i32.const 255))
 
+   (func (export "caml_obj_is_stack")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_succ_scannable_prefix_len")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (@string $unique_words_unsupported
+      "Obj.uniquely_reachable_words is not available in wasm.")
+
+   (func (export "caml_obj_uniquely_reachable_words")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_failwith (global.get $unique_words_unsupported))
+      (ref.i31 (i32.const 0)))
+
    (func $caml_is_closure (export "caml_is_closure")
       (param $v (ref eq)) (result i32)
       (i32.or (ref.test (ref $closure) (local.get $v))
@@ -118,6 +134,12 @@
       (param $size (ref eq)) (result (ref eq))
       (array.new $float_array (f64.const 0)
          (i31.get_u (ref.cast (ref i31) (local.get $size)))))
+
+   (func (export "caml_alloc_dummy_mixed")
+      (param $size (ref eq)) (param (ref eq)) (result (ref eq))
+      (array.new $block (ref.i31 (i32.const 0))
+                 (i32.add (i31.get_u (ref.cast (ref i31) (local.get $size)))
+                          (i32.const 1))))
 
    (func (export "caml_update_dummy")
       (param $dummy (ref eq)) (param $newval (ref eq)) (result (ref eq))
@@ -261,6 +283,8 @@
       (local.get $res))
 
    (func (export "caml_obj_tag") (param $v (ref eq)) (result (ref eq))
+      (if (ref.eq (local.get $v) (global.get $null))
+         (then (return (ref.i31 (i32.const 1010)))))
       (if (ref.test (ref i31) (local.get $v))
          (then (return (ref.i31 (i32.const 1000)))))
       (drop (block $not_block (result (ref eq))
@@ -561,4 +585,16 @@
          (call $caml_callback_1 (local.get $f) (local.get $x))
          (local.get $y)))
 ))
+
+   (type $null (struct))
+   (global $null (export "null") (ref eq) (struct.new $null))
+
+   (@string $int_as_pointer_not_implemented
+      "caml_int_as_pointer is not supported")
+
+   (func (export "caml_int_as_pointer") (param $x (ref eq)) (result (ref eq))
+      (if (i32.eqz (ref.eq (local.get $x) (ref.i31 (i32.const 0))))
+         (then
+            (call $caml_failwith (global.get $int_as_pointer_not_implemented))))
+      (global.get $null))
 )

@@ -390,6 +390,7 @@ function caml_create_string(_len) {
 
 //Provides: caml_create_bytes const
 //Requires: MlBytes,caml_invalid_argument
+//Alias: caml_create_local_bytes
 function caml_create_bytes(len) {
   if (len < 0) caml_invalid_argument("Bytes.create");
   return new MlBytes(len ? 2 : 9, "", len);

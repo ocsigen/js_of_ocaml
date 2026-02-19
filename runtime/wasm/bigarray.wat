@@ -176,7 +176,7 @@
             (field $ba_kind i8) ;; kind
             (field $ba_layout i8)))) ;; layout
 
-   (func $double_to_float16 (export "caml_double_to_float16")
+   (func $double_to_float16 (export "caml_float16_of_double")
       (param $f f64) (result i32)
       (local $x i32) (local $sign i32) (local $o i32)
       (local.set $x (i32.reinterpret_f32 (f32.demote_f64 (local.get $f))))
@@ -1235,6 +1235,213 @@
 
    (func (export "caml_ba_dim_3") (param (ref eq)) (result (ref eq))
       (return_call $caml_ba_dim (local.get 0) (ref.i31 (i32.const 2))))
+
+   (func $caml_ba_float32_get_at_offset
+      (param $ba (ref $bigarray)) (param $i i32) (result f32)
+      (local $view (ref extern))
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (return
+         (call $dv_get_f32
+            (local.get $view) (i32.shl (local.get $i) (i32.const 2))
+            (global.get $littleEndian))))
+
+   (func $caml_ba_float32_set_at_offset
+      (param $ba (ref $bigarray)) (param $i i32) (param $v f32)
+      (local $view (ref extern))
+      (local $b (ref $float_array)) (local $l i64)
+      (local.set $view (struct.get $bigarray $ba_view (local.get $ba)))
+      (call $dv_set_f32
+         (local.get $view) (i32.shl (local.get $i) (i32.const 2)) (local.get $v)
+         (global.get $littleEndian)))
+
+   (func (export "caml_ba_float32_get_1")
+      (param (ref eq)) (param $i i32) (result f32)
+      (local $ba (ref $bigarray))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
+      (if (struct.get $bigarray $ba_layout (local.get $ba))
+         (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
+      (if (i32.ge_u (local.get $i)
+             (array.get $int_array (struct.get $bigarray $ba_dim (local.get $ba))
+                (i32.const 0)))
+         (then (call $caml_bound_error)))
+      (return_call $caml_ba_float32_get_at_offset
+         (local.get $ba) (local.get $i)))
+
+   (func (export "caml_ba_float32_set_1")
+      (param (ref eq)) (param $i i32) (param $v f32) (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get 0)))
+      (if (struct.get $bigarray $ba_layout (local.get $ba))
+         (then (local.set $i (i32.sub (local.get $i) (i32.const 1)))))
+      (if (i32.ge_u (local.get $i)
+             (array.get $int_array (struct.get $bigarray $ba_dim (local.get $ba))
+                (i32.const 0)))
+         (then (call $caml_bound_error)))
+      (call $caml_ba_float32_set_at_offset
+         (local.get $ba) (local.get $i) (local.get $v))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ba_float32_get_2")
+      (param $vba (ref eq)) (param $i i32) (param $j i32) (result f32)
+      (local $ba (ref $bigarray))
+      (local $offset i32)
+      (local $dim (ref $int_array))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
+      (if (struct.get $bigarray $ba_layout (local.get $ba))
+         (then
+            (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+            (local.set $j (i32.sub (local.get $j) (i32.const 1)))
+            (local.set $offset
+               (i32.add
+                  (i32.mul (local.get $j)
+                     (array.get $int_array (local.get $dim) (i32.const 0)))
+                  (local.get $i))))
+         (else
+            (local.set $offset
+               (i32.add
+                  (i32.mul (local.get $i)
+                     (array.get $int_array (local.get $dim) (i32.const 1)))
+                  (local.get $j)))))
+      (if (i32.or
+             (i32.ge_u (local.get $i)
+                (array.get $int_array (local.get $dim) (i32.const 0)))
+             (i32.ge_u (local.get $j)
+                (array.get $int_array (local.get $dim) (i32.const 1))))
+         (then
+            (call $caml_bound_error)))
+      (return_call $caml_ba_float32_get_at_offset
+         (local.get $ba) (local.get $offset)))
+
+   (func (export "caml_ba_float32_set_2")
+      (param $vba (ref eq)) (param $i i32) (param $j i32) (param $v f32)
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $offset i32)
+      (local $dim (ref $int_array))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
+      (if (struct.get $bigarray $ba_layout (local.get $ba))
+         (then
+            (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+            (local.set $j (i32.sub (local.get $j) (i32.const 1)))
+            (local.set $offset
+               (i32.add
+                  (i32.mul (local.get $j)
+                     (array.get $int_array (local.get $dim) (i32.const 0)))
+                  (local.get $i))))
+         (else
+            (local.set $offset
+               (i32.add
+                  (i32.mul (local.get $i)
+                     (array.get $int_array (local.get $dim) (i32.const 1)))
+                  (local.get $j)))))
+      (if (i32.or
+             (i32.ge_u (local.get $i)
+                (array.get $int_array (local.get $dim) (i32.const 0)))
+             (i32.ge_u (local.get $j)
+                (array.get $int_array (local.get $dim) (i32.const 1))))
+         (then
+            (call $caml_bound_error)))
+      (call $caml_ba_float32_set_at_offset
+         (local.get $ba) (local.get $offset) (local.get $v))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_ba_float32_get_3")
+      (param $vba (ref eq)) (param $i i32) (param $j i32) (param $k i32)
+      (result f32)
+      (local $ba (ref $bigarray))
+      (local $offset i32)
+      (local $dim (ref $int_array))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
+      (if (struct.get $bigarray $ba_layout (local.get $ba))
+         (then
+            (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+            (local.set $j (i32.sub (local.get $j) (i32.const 1)))
+            (local.set $k (i32.sub (local.get $k) (i32.const 1)))
+            (local.set $offset
+               (i32.add
+                  (i32.mul
+                     (i32.add
+                        (i32.mul
+                           (local.get $k)
+                           (array.get $int_array (local.get $dim) (i32.const 1)))
+                        (local.get $j))
+                     (array.get $int_array (local.get $dim) (i32.const 0)))
+                  (local.get $i))))
+         (else
+            (local.set $offset
+               (i32.add
+                  (i32.mul
+                     (i32.add
+                        (i32.mul
+                           (local.get $i)
+                           (array.get $int_array (local.get $dim) (i32.const 1)))
+                     (local.get $j))
+                     (array.get $int_array (local.get $dim) (i32.const 2)))
+                  (local.get $k)))))
+      (if (i32.or
+             (i32.ge_u (local.get $i)
+                (array.get $int_array (local.get $dim) (i32.const 0)))
+             (i32.or
+                (i32.ge_u (local.get $j)
+                   (array.get $int_array (local.get $dim) (i32.const 1)))
+                (i32.ge_u (local.get $k)
+                   (array.get $int_array (local.get $dim) (i32.const 2)))))
+         (then
+            (call $caml_bound_error)))
+      (return_call $caml_ba_float32_get_at_offset
+         (local.get $ba) (local.get $offset)))
+
+   (func (export "caml_ba_float32_set_3")
+      (param $vba (ref eq)) (param $i i32) (param $j i32) (param $k i32)
+      (param $v f32)
+      (result (ref eq))
+      (local $ba (ref $bigarray))
+      (local $offset i32)
+      (local $dim (ref $int_array))
+      (local.set $ba (ref.cast (ref $bigarray) (local.get $vba)))
+      (local.set $dim (struct.get $bigarray $ba_dim (local.get $ba)))
+      (if (struct.get $bigarray $ba_layout (local.get $ba))
+         (then
+            (local.set $i (i32.sub (local.get $i) (i32.const 1)))
+            (local.set $j (i32.sub (local.get $j) (i32.const 1)))
+            (local.set $k (i32.sub (local.get $k) (i32.const 1)))
+            (local.set $offset
+               (i32.add
+                  (i32.mul
+                     (i32.add
+                        (i32.mul
+                           (local.get $k)
+                           (array.get $int_array (local.get $dim) (i32.const 1)))
+                        (local.get $j))
+                     (array.get $int_array (local.get $dim) (i32.const 0)))
+                  (local.get $i))))
+         (else
+            (local.set $offset
+               (i32.add
+                  (i32.mul
+                     (i32.add
+                        (i32.mul
+                           (local.get $i)
+                           (array.get $int_array (local.get $dim) (i32.const 1)))
+                     (local.get $j))
+                     (array.get $int_array (local.get $dim) (i32.const 2)))
+                  (local.get $k)))))
+      (if (i32.or
+             (i32.ge_u (local.get $i)
+                (array.get $int_array (local.get $dim) (i32.const 0)))
+             (i32.or
+                (i32.ge_u (local.get $j)
+                   (array.get $int_array (local.get $dim) (i32.const 1)))
+                (i32.ge_u (local.get $k)
+                   (array.get $int_array (local.get $dim) (i32.const 2)))))
+         (then
+            (call $caml_bound_error)))
+      (call $caml_ba_float32_set_at_offset
+         (local.get $ba) (local.get $offset) (local.get $v))
+      (ref.i31 (i32.const 0)))
 
    (func $caml_ba_offset
       (param $b (ref $bigarray)) (param $index (ref $int_array)) (result i32)

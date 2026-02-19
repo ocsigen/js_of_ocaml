@@ -105,7 +105,7 @@ let%expect_test "null/undefined comparison" =
   assert (s1 = s1);
   assert (compare s1 s1 = 0);
   assert (compare s1 s2 = 1);
-  assert (compare s2 s1 = 1)
+  assert (compare s2 s1 = -1)
 
 let%expect_test "poly compare" =
   let l =
@@ -124,11 +124,11 @@ let%expect_test "poly compare" =
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l';
   print_endline "";
   [%expect {|
+    7
     1
     3
     2
     0
-    7
     6
     5
     4
@@ -138,6 +138,7 @@ let%expect_test "poly compare" =
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l';
   print_endline "";
   [%expect {|
+    7
     3
     1
     2
@@ -145,16 +146,15 @@ let%expect_test "poly compare" =
     4
     5
     6
-    7
     |}];
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l'';
   print_endline "";
   [%expect {|
+    7
     1
     3
     2
     0
     4
     5
-    6
-    7 |}]
+    6 |}]

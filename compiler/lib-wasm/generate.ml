@@ -72,6 +72,7 @@ module Generate (Target : Target_sig.S) = struct
   type repr =
     | Value
     | Float
+    | Float32
     | Int of normalized
     | Int32
     | Nativeint
@@ -81,6 +82,7 @@ module Generate (Target : Target_sig.S) = struct
     match r with
     | Value -> None
     | Float -> Some (Number (Float, Unboxed))
+    | Float32 -> Some (Number (Float32, Unboxed))
     | Int Normalized -> Some (Int Normalized)
     | Int Unnormalized -> Some (Int Unnormalized)
     | Int32 -> Some (Number (Int32, Unboxed))
@@ -91,6 +93,7 @@ module Generate (Target : Target_sig.S) = struct
     match r with
     | Value -> Type.value
     | Float -> F64
+    | Float32 -> F32
     | Int _ | Int32 | Nativeint -> I32
     | Int64 -> I64
 
@@ -110,20 +113,25 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_string_get16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_string_get32", (`Mutator, [ Value; Int Normalized ], Int32)
       ; "caml_string_get64", (`Mutator, [ Value; Int Normalized ], Int64)
+      ; "caml_string_getf32", (`Mutator, [ Value; Int Normalized ], Float32)
       ; "caml_bytes_get16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_bytes_get32", (`Mutator, [ Value; Int Normalized ], Int32)
       ; "caml_bytes_get64", (`Mutator, [ Value; Int Normalized ], Int64)
+      ; "caml_bytes_getf32", (`Mutator, [ Value; Int Normalized ], Float32)
       ; "caml_bytes_set16", (`Mutator, [ Value; Int Normalized; Int Unnormalized ], Value)
       ; "caml_bytes_set32", (`Mutator, [ Value; Int Normalized; Int32 ], Value)
       ; "caml_bytes_set64", (`Mutator, [ Value; Int Normalized; Int64 ], Value)
+      ; "caml_bytes_setf32", (`Mutator, [ Value; Int Normalized; Float32 ], Value)
       ; "caml_lxm_next", (`Mutable, [ Value ], Int64)
       ; "caml_ba_uint8_get16", (`Mutator, [ Value; Int Normalized ], Int Normalized)
       ; "caml_ba_uint8_get32", (`Mutator, [ Value; Int Normalized ], Int32)
       ; "caml_ba_uint8_get64", (`Mutator, [ Value; Int Normalized ], Int64)
+      ; "caml_ba_uint8_getf32", (`Mutator, [ Value; Int Normalized ], Float32)
       ; ( "caml_ba_uint8_set16"
         , (`Mutator, [ Value; Int Normalized; Int Unnormalized ], Value) )
       ; "caml_ba_uint8_set32", (`Mutator, [ Value; Int Normalized; Int32 ], Value)
       ; "caml_ba_uint8_set64", (`Mutator, [ Value; Int Normalized; Int64 ], Value)
+      ; "caml_ba_uint8_setf32", (`Mutator, [ Value; Int Normalized; Float32 ], Value)
       ; "caml_round_float", (`Pure, [ Float ], Float)
       ; "caml_nextafter_float", (`Pure, [ Float; Float ], Float)
       ; "caml_classify_float", (`Pure, [ Float ], Int Normalized)
@@ -131,6 +139,15 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_erf_float", (`Pure, [ Float ], Float)
       ; "caml_erfc_float", (`Pure, [ Float ], Float)
       ; "caml_float_compare", (`Pure, [ Float; Float ], Int Normalized)
+      ; "caml_round_float32_bytecode", (`Pure, [ Float32 ], Float32)
+      ; "caml_nextafter_float32_bytecode", (`Pure, [ Float32; Float32 ], Float32)
+      ; "caml_classify_float32_bytecode", (`Pure, [ Float32 ], Int Normalized)
+      ; "caml_ldexp_float32_bytecode", (`Pure, [ Float32; Int Normalized ], Float32)
+      ; "caml_erf_float32_bytecode", (`Pure, [ Float32 ], Float32)
+      ; "caml_erfc_float32_bytecode", (`Pure, [ Float32 ], Float32)
+      ; "caml_float32_compare", (`Pure, [ Float32; Float32 ], Int Normalized)
+      ; "caml_float16_of_double", (`Pure, [ Float ], Int32)
+      ; "caml_double_of_float16", (`Pure, [ Int32 ], Float)
       ];
     h
 
@@ -142,6 +159,15 @@ module Generate (Target : Target_sig.S) = struct
   let float_un_op op f =
     let* f = f in
     return (W.UnOp (F64 op, f))
+
+  let float32_bin_op op f g =
+    let* f = f in
+    let* g = g in
+    return (W.BinOp (F32 op, f, g))
+
+  let float32_un_op op f =
+    let* f = f in
+    return (W.UnOp (F32 op, f))
 
   let int32_bin_op op f g =
     let* f = f in
@@ -179,6 +205,8 @@ module Generate (Target : Target_sig.S) = struct
         return (W.Const (I64 0L))
     | Int (Unnormalized | Normalized), Number (Float, Unboxed) ->
         return (W.Const (F64 0.))
+    | Int (Unnormalized | Normalized), Number (Float32, Unboxed) ->
+        return (W.Const (F32 0.))
     | _, Int (Normalized | Unnormalized) -> Value.int_val e
     | Int (Unnormalized | Normalized), _ -> Value.val_int e
     | Number (_, Unboxed), Number (_, Unboxed) -> e
@@ -186,10 +214,12 @@ module Generate (Target : Target_sig.S) = struct
     | _, Number (Int64, Unboxed) -> Memory.unbox_int64 e
     | _, Number (Nativeint, Unboxed) -> Memory.unbox_nativeint e
     | _, Number (Float, Unboxed) -> Memory.unbox_float e
+    | _, Number (Float32, Unboxed) -> Memory.unbox_float32 e
     | Number (Int32, Unboxed), _ -> Memory.box_int32 e
     | Number (Int64, Unboxed), _ -> Memory.box_int64 e
     | Number (Nativeint, Unboxed), _ -> Memory.box_nativeint e
     | Number (Float, Unboxed), _ -> Memory.box_float e
+    | Number (Float32, Unboxed), _ -> Memory.box_float32 e
     | _ -> e
 
   let load_and_box ctx x = convert ~from:(Typing.var_type ctx.types x) ~into:Top (load x)
@@ -235,8 +265,8 @@ module Generate (Target : Target_sig.S) = struct
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
           (transl_prim_arg ctx ~typ:Top y)
-    | (Int _ | Number _ | Tuple _ | Bigarray _), _
-    | _, (Int _ | Number _ | Tuple _ | Bigarray _) ->
+    | (Int _ | Number _ | Tuple _ | Bigarray _ | Null), _
+    | _, (Int _ | Number _ | Tuple _ | Bigarray _ | Null) ->
         (* Only Top may contain JavaScript values *)
         (if negate then Value.phys_neq else Value.phys_eq)
           (transl_prim_arg ctx ~typ:Top x)
@@ -275,6 +305,8 @@ module Generate (Target : Target_sig.S) = struct
 
   let float_u = Typing.Number (Float, Unboxed)
 
+  let float32_u = Typing.Number (Float32, Unboxed)
+
   let int32_u = Typing.Number (Int32, Unboxed)
 
   let int64_u = Typing.Number (Int64, Unboxed)
@@ -285,6 +317,12 @@ module Generate (Target : Target_sig.S) = struct
     register_prim name k ~unbox:(is_unboxed typ) ?ret_typ (fun ctx _ l ->
         match l with
         | [ x ] -> f (transl_prim_arg ctx ?typ x)
+        | l -> invalid_arity name l ~expected:1)
+
+  let register_un_prim_ctx name ?typ ?ret_typ f =
+    register_prim name `Mutator ~unbox:(is_unboxed typ) ?ret_typ (fun ctx context l ->
+        match l with
+        | [ x ] -> f context (transl_prim_arg ctx ?typ x)
         | l -> invalid_arity name l ~expected:1)
 
   let register_bin_prim name k ?tx ?ty ?ret_typ f =
@@ -350,6 +388,10 @@ module Generate (Target : Target_sig.S) = struct
                 let x = transl_prim_arg ctx ~typ:float_u x in
                 let y = transl_prim_arg ctx ~typ:float_u y in
                 float_bin_op cmp_float x y
+            | Number (Float32, _), Number (Float32, _) ->
+                let x = transl_prim_arg ctx ~typ:float32_u x in
+                let y = transl_prim_arg ctx ~typ:float32_u y in
+                float32_bin_op cmp_float x y
             | _ ->
                 let* f =
                   register_import
@@ -361,6 +403,19 @@ module Generate (Target : Target_sig.S) = struct
                 return (W.Call (f, [ x; y ])))
         | _ -> invalid_arity name l ~expected:2)
 
+  let float_of_float32 f =
+    let* f = f in
+    return (W.F64PromoteF32 f)
+
+  let float32_of_float f =
+    let* f = f in
+    return (W.F32DemoteF64 f)
+
+  let lift_float_un_op op f = float32_of_float (op (float_of_float32 f))
+
+  let lift_float_bin_op op f g =
+    float32_of_float (op (float_of_float32 f) (float_of_float32 g))
+
   let () =
     register_bin_prim
       "caml_floatarray_unsafe_get"
@@ -368,12 +423,44 @@ module Generate (Target : Target_sig.S) = struct
       ~ty:int_n
       ~ret_typ:float_u
       Memory.float_array_get;
+    register_bin_prim
+      "caml_array_unsafe_get_indexed_by_int32"
+      `Mutable
+      ~ty:int32_u
+      (fun x y -> Memory.gen_array_get x y);
+    register_bin_prim
+      "caml_array_unsafe_get_indexed_by_int64"
+      `Mutable
+      ~ty:int64_u
+      (fun x y ->
+        let y =
+          let* y = y in
+          return (W.I32WrapI64 y)
+        in
+        Memory.gen_array_get x y);
+    register_bin_prim
+      "caml_array_unsafe_get_indexed_by_nativeint"
+      `Mutable
+      ~ty:nativeint_u
+      (fun x y -> Memory.gen_array_get x y);
     register_tern_prim "caml_array_unsafe_set" ~ty:int_n (fun x y z ->
         seq (Memory.gen_array_set x y z) Value.unit);
     register_tern_prim "caml_array_unsafe_set_addr" ~ty:int_n (fun x y z ->
         seq (Memory.array_set x y z) Value.unit);
     register_tern_prim "caml_floatarray_unsafe_set" ~ty:int_n ~tz:float_u (fun x y z ->
         seq (Memory.float_array_set x y z) Value.unit);
+    register_tern_prim "caml_array_unsafe_set_indexed_by_int32" ~ty:int32_u (fun x y z ->
+        seq (Memory.gen_array_set x y z) Value.unit);
+    register_tern_prim "caml_array_unsafe_set_indexed_by_int64" ~ty:int64_u (fun x y z ->
+        let y =
+          let* y = y in
+          return (W.I32WrapI64 y)
+        in
+        seq (Memory.gen_array_set x y z) Value.unit);
+    register_tern_prim
+      "caml_array_unsafe_set_indexed_by_nativeint"
+      ~ty:nativeint_u
+      (fun x y z -> seq (Memory.gen_array_set x y z) Value.unit);
     register_bin_prim
       "caml_string_unsafe_get"
       `Pure
@@ -467,6 +554,50 @@ module Generate (Target : Target_sig.S) = struct
            let* cond = Arith.uge y (Memory.float_array_length (load a)) in
            instr (W.Br_if (label, cond)))
           x);
+    register_un_prim_ctx
+      "caml_checked_int32_to_int"
+      ~typ:int32_u
+      ~ret_typ:int_n
+      (fun context x ->
+        let y = Code.Var.fresh () in
+        seq
+          (let* () = store y x in
+           let label = label_index context bound_error_pc in
+           let* cond = Arith.((load y lsl const 1l) asr const 1l <> load y) in
+           instr (W.Br_if (label, cond)))
+          (load y));
+    register_un_prim_ctx
+      "caml_checked_nativeint_to_int"
+      ~typ:nativeint_u
+      ~ret_typ:int_n
+      (fun context x ->
+        let y = Code.Var.fresh () in
+        seq
+          (let* () = store y x in
+           let label = label_index context bound_error_pc in
+           let* cond = Arith.((load y lsl const 1l) asr const 1l <> load y) in
+           instr (W.Br_if (label, cond)))
+          (load y));
+    register_un_prim_ctx
+      "caml_checked_int64_to_int"
+      ~typ:int64_u
+      ~ret_typ:int_n
+      (fun context x ->
+        let y = Code.Var.fresh () in
+        seq
+          (let* () = store y x in
+           let* y = load y in
+           let label = label_index context bound_error_pc in
+           let cond =
+             W.BinOp
+               ( I64 Ne
+               , y
+               , BinOp (I64 (Shr U), BinOp (I64 Shl, y, Const (I64 33L)), Const (I64 33L))
+               )
+           in
+           instr (W.Br_if (label, cond)))
+          (let* y = load y in
+           return (W.I32WrapI64 y)));
     register_arith_bin_prim "caml_add_float" `Pure ~typ:float_u (fun f g ->
         float_bin_op Add f g);
     register_arith_bin_prim "caml_sub_float" ~typ:float_u `Pure (fun f g ->
@@ -566,6 +697,324 @@ module Generate (Target : Target_sig.S) = struct
     register_arith_bin_prim "caml_power_float" `Pure ~typ:float_u Math.power;
     register_arith_bin_prim "caml_hypot_float" `Pure ~typ:float_u Math.hypot;
     register_arith_bin_prim "caml_fmod_float" `Pure ~typ:float_u Math.fmod;
+    register_arith_bin_prim "caml_add_float32" `Pure ~typ:float32_u (fun f g ->
+        float32_bin_op Add f g);
+    register_arith_bin_prim "caml_sub_float32" `Pure ~typ:float32_u (fun f g ->
+        float32_bin_op Sub f g);
+    register_arith_bin_prim "caml_mul_float32" `Pure ~typ:float32_u (fun f g ->
+        float32_bin_op Mul f g);
+    register_arith_bin_prim "caml_div_float32" `Pure ~typ:float32_u (fun f g ->
+        float32_bin_op Div f g);
+    register_arith_bin_prim
+      "caml_copysign_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      (fun f g -> float32_bin_op CopySign f g);
+    register_un_prim
+      "caml_signbit_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:int_n
+      (fun f ->
+        let* f = f in
+        Arith.(return (W.UnOp (I32 ReinterpretF, f)) lsr const 31l));
+    register_un_prim "caml_neg_float32" `Pure ~typ:float32_u ~ret_typ:float32_u (fun f ->
+        float32_un_op Neg f);
+    register_un_prim "caml_abs_float32" `Pure ~typ:float32_u ~ret_typ:float32_u (fun f ->
+        float32_un_op Abs f);
+    register_un_prim
+      "caml_ceil_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (fun f -> float32_un_op Ceil f);
+    register_un_prim
+      "caml_floor_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (fun f -> float32_un_op Floor f);
+    register_un_prim
+      "caml_trunc_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (fun f -> float32_un_op Trunc f);
+    register_un_prim
+      "caml_sqrt_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (fun f -> float32_un_op Sqrt f);
+    register_bin_prim
+      "caml_eq_float32"
+      `Pure
+      ~tx:float32_u
+      ~ty:float32_u
+      ~ret_typ:int_n
+      (fun f g -> float32_bin_op Eq f g);
+    register_bin_prim
+      "caml_neq_float32"
+      `Pure
+      ~tx:float32_u
+      ~ty:float32_u
+      ~ret_typ:int_n
+      (fun f g -> float32_bin_op Ne f g);
+    register_bin_prim
+      "caml_ge_float32"
+      `Pure
+      ~tx:float32_u
+      ~ty:float32_u
+      ~ret_typ:int_n
+      (fun f g -> float32_bin_op Ge f g);
+    register_bin_prim
+      "caml_le_float32"
+      `Pure
+      ~tx:float32_u
+      ~ty:float32_u
+      ~ret_typ:int_n
+      (fun f g -> float32_bin_op Le f g);
+    register_bin_prim
+      "caml_gt_float32"
+      `Pure
+      ~tx:float32_u
+      ~ty:float32_u
+      ~ret_typ:int_n
+      (fun f g -> float32_bin_op Gt f g);
+    register_bin_prim
+      "caml_lt_float32"
+      ~tx:float32_u
+      ~ty:float32_u
+      ~ret_typ:int_n
+      `Pure
+      (fun f g -> float32_bin_op Lt f g);
+    register_un_prim "caml_int_of_float32" `Pure ~typ:float32_u ~ret_typ:int_u (fun f ->
+        let* f = f in
+        return (W.UnOp (I32 (TruncSat (`F32, S)), f)));
+    register_un_prim "caml_float32_of_int" `Pure ~typ:int_n ~ret_typ:float32_u (fun n ->
+        float32_un_op (Convert (`I32, S)) n);
+    register_un_prim
+      "caml_cos_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.cos);
+    register_un_prim
+      "caml_sin_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.sin);
+    register_un_prim
+      "caml_tan_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.tan);
+    register_un_prim
+      "caml_acos_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.acos);
+    register_un_prim
+      "caml_asin_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.asin);
+    register_un_prim
+      "caml_atan_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.atan);
+    register_arith_bin_prim
+      "caml_atan2_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      (lift_float_bin_op Math.atan2);
+    register_un_prim
+      "caml_cosh_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.cosh);
+    register_un_prim
+      "caml_sinh_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.sinh);
+    register_un_prim
+      "caml_tanh_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.tanh);
+    register_un_prim
+      "caml_acosh_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.acosh);
+    register_un_prim
+      "caml_asinh_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.asinh);
+    register_un_prim
+      "caml_atanh_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.atanh);
+    register_un_prim
+      "caml_cbrt_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.cbrt);
+    register_un_prim
+      "caml_exp_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.exp);
+    register_un_prim
+      "caml_exp2_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.exp2);
+    register_un_prim
+      "caml_log_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.log);
+    register_un_prim
+      "caml_expm1_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.expm1);
+    register_un_prim
+      "caml_log1p_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.log1p);
+    register_un_prim
+      "caml_log2_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.log2);
+    register_un_prim
+      "caml_log10_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (lift_float_un_op Math.log10);
+    register_arith_bin_prim
+      "caml_power_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      (lift_float_bin_op Math.power);
+    register_arith_bin_prim
+      "caml_hypot_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      (lift_float_bin_op Math.hypot);
+    register_arith_bin_prim
+      "caml_fmod_float32_bytecode"
+      `Pure
+      ~typ:float32_u
+      (lift_float_bin_op Math.fmod);
+    register_un_prim
+      "caml_float32_to_bits_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:int32_u
+      (fun f ->
+        let* f = f in
+        return (W.UnOp (I32 ReinterpretF, f)));
+    register_un_prim
+      "caml_float32_of_bits_bytecode"
+      `Pure
+      ~typ:int32_u
+      ~ret_typ:float32_u
+      (fun i -> float32_un_op ReinterpretI i);
+    register_un_prim
+      "caml_float_of_float32"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float_u
+      float_of_float32;
+    register_un_prim
+      "caml_float32_of_float"
+      `Pure
+      ~typ:float_u
+      ~ret_typ:float32_u
+      float32_of_float;
+    register_un_prim
+      "caml_float32_to_int64_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:int64_u
+      (fun f ->
+        let* f = f in
+        return (W.UnOp (I64 (TruncSat (`F32, S)), f)));
+    register_un_prim
+      "caml_float32_of_int64_bytecode"
+      `Pure
+      ~typ:int64_u
+      ~ret_typ:float32_u
+      (fun n -> float32_un_op (Convert (`I64, S)) n);
+    register_un_prim
+      "caml_simd_cast_float32_int64_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:int64_u
+      (fun f ->
+        let* f = f in
+        return (W.UnOp (I64 (TruncSat (`F32, S)), W.UnOp (F32 Nearest, f))));
+    register_un_prim
+      "caml_simd_float32_round_current_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (fun f -> float32_un_op Nearest f);
+    register_un_prim
+      "caml_simd_float32_round_neg_inf_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (fun f -> float32_un_op Floor f);
+    register_un_prim
+      "caml_simd_float32_round_pos_inf_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (fun f -> float32_un_op Ceil f);
+    register_un_prim
+      "caml_simd_float32_round_towards_zero_bytecode"
+      `Pure
+      ~typ:float32_u
+      ~ret_typ:float32_u
+      (fun f -> float32_un_op Trunc f);
+    register_arith_bin_prim
+      "caml_simd_float32_min_bytecode"
+      `Pure
+      ~typ:float32_u
+      (fun f g -> float32_bin_op Min f g);
+    register_arith_bin_prim
+      "caml_simd_float32_max_bytecode"
+      `Pure
+      ~typ:float32_u
+      (fun f g -> float32_bin_op Max f g);
     register_un_prim
       "caml_int32_bits_of_float"
       `Pure
@@ -1076,6 +1525,50 @@ module Generate (Target : Target_sig.S) = struct
                 let* indices' = transl_prim_arg ctx indices in
                 return (W.Call (f, [ ta'; indices' ])))
         | _ -> invalid_arity "caml_ba_get_generic" l ~expected:2);
+    let caml_ba_float32_get_n ~ctx ~context ta indices =
+      match get_type ctx ta with
+      | Bigarray { layout; _ } ->
+          let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
+          caml_ba_get ~ctx ~context ~kind:Float32_t ~layout ta indices
+      | _ ->
+          let n = List.length indices in
+          let* f =
+            register_import
+              ~name:(Printf.sprintf "caml_ba_float32_get_%d" n)
+              (Fun
+                 { W.params =
+                     Type.value :: List.init ~len:n ~f:(fun _ : W.value_type -> I32)
+                 ; result = [ F32 ]
+                 })
+          in
+          let* ta' = transl_prim_arg ctx ta in
+          let* indices' = expression_list (transl_prim_arg ctx ~typ:int_n) indices in
+          return (W.Call (f, ta' :: indices'))
+    in
+    register_prim
+      "caml_ba_float32_get_1"
+      `Mutator
+      ~ret_typ:float32_u
+      (fun ctx context l ->
+        match l with
+        | [ ta; i ] -> caml_ba_float32_get_n ~ctx ~context ta [ i ]
+        | _ -> invalid_arity "caml_ba_float32_get_1" l ~expected:2);
+    register_prim
+      "caml_ba_float32_get_2"
+      `Mutator
+      ~ret_typ:float32_u
+      (fun ctx context l ->
+        match l with
+        | [ ta; i; j ] -> caml_ba_float32_get_n ~ctx ~context ta [ i; j ]
+        | _ -> invalid_arity "caml_ba_float32_get_2" l ~expected:3);
+    register_prim
+      "caml_ba_float32_get_3"
+      `Mutator
+      ~ret_typ:float32_u
+      (fun ctx context l ->
+        match l with
+        | [ ta; i; j; k ] -> caml_ba_float32_get_n ~ctx ~context ta [ i; j; k ]
+        | _ -> invalid_arity "caml_ba_float32_get_3" l ~expected:4);
     let caml_ba_set ~ctx ~context ~kind ~layout ta indices v =
       let ta' = transl_prim_arg ctx ta in
       let v' = transl_prim_arg ctx ~typ:(Typing.bigarray_element_type kind) v in
@@ -1132,7 +1625,47 @@ module Generate (Target : Target_sig.S) = struct
                 let* indices' = transl_prim_arg ctx indices in
                 let* v' = transl_prim_arg ctx v in
                 return (W.Call (f, [ ta'; indices'; v' ])))
-        | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3)
+        | _ -> invalid_arity "caml_ba_set_generic" l ~expected:3);
+    let caml_ba_float32_set_n ~ctx ~context ta indices v =
+      match get_type ctx ta with
+      | Bigarray { layout; _ } ->
+          let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
+          caml_ba_set ~ctx ~context ~kind:Float32_t ~layout ta indices v
+      | _ ->
+          let n = List.length indices in
+          let* f =
+            register_import
+              ~name:(Printf.sprintf "caml_ba_float32_set_%d" n)
+              (Fun
+                 { W.params =
+                     (Type.value :: List.init ~len:n ~f:(fun _ : W.value_type -> I32))
+                     @ [ F32 ]
+                 ; result = [ Type.value ]
+                 })
+          in
+          let* ta' = transl_prim_arg ctx ta in
+          let* indices' = expression_list (transl_prim_arg ctx ~typ:int_n) indices in
+          let* v' = transl_prim_arg ctx ~typ:float32_u v in
+          return (W.Call (f, ta' :: (indices' @ [ v' ])))
+    in
+    register_prim "caml_ba_float32_set_1" `Mutator ~unbox:true (fun ctx context l ->
+        match l with
+        | [ ta; i; v ] -> caml_ba_float32_set_n ~ctx ~context ta [ i ] v
+        | _ -> invalid_arity "caml_ba_float32_set_1" l ~expected:3);
+    register_prim "caml_ba_float32_set_2" `Mutator ~unbox:true (fun ctx context l ->
+        match l with
+        | [ ta; i; j; v ] -> caml_ba_float32_set_n ~ctx ~context ta [ i; j ] v
+        | _ -> invalid_arity "caml_ba_float32_set_2" l ~expected:4);
+    register_prim "caml_ba_float32_set_3" `Mutator ~unbox:true (fun ctx context l ->
+        match l with
+        | [ ta; i; j; k; v ] -> caml_ba_float32_set_n ~ctx ~context ta [ i; j; k ] v
+        | _ -> invalid_arity "caml_ba_float32_set_3" l ~expected:5);
+    register_un_prim "caml_is_null" `Pure ~ret_typ:int_n (fun x ->
+        let* x = x in
+        let* null =
+          register_import ~name:"null" (Global { mut = false; typ = Type.value })
+        in
+        return (W.RefEq (x, GlobalGet null)))
 
   let unboxed_type ty : W.value_type option =
     match ty with
@@ -1140,6 +1673,7 @@ module Generate (Target : Target_sig.S) = struct
         Some I32
     | Number (Int64, Unboxed) -> Some I64
     | Number (Float, Unboxed) -> Some F64
+    | Number (Float32, Unboxed) -> Some F32
     | _ -> None
 
   let box_number_if_needed ctx x e =
@@ -1433,14 +1967,23 @@ module Generate (Target : Target_sig.S) = struct
                         | "caml_check_bound"
                         | "caml_check_bound_gen"
                         | "caml_check_bound_float"
+                        | "caml_checked_int32_to_int"
+                        | "caml_checked_nativeint_to_int"
+                        | "caml_checked_int64_to_int"
                         | "caml_ba_get_1"
                         | "caml_ba_get_2"
                         | "caml_ba_get_3"
+                        | "caml_ba_float32_get_1"
+                        | "caml_ba_float32_get_2"
+                        | "caml_ba_float32_get_3"
                         | "caml_ba_get_generic"
                         | "caml_ba_set_1"
                         | "caml_ba_set_2"
                         | "caml_ba_set_3"
-                        | "caml_ba_set_generic" )
+                        | "caml_ba_set_generic"
+                        | "caml_ba_float32_set_1"
+                        | "caml_ba_float32_set_2"
+                        | "caml_ba_float32_set_3" )
                     , _ ) ) -> fst n, true
             | Let
                 ( _
@@ -1881,7 +2424,7 @@ module Generate (Target : Target_sig.S) = struct
             (List.exists
                ~f:(fun ty ->
                  match ty with
-                 | Int32 | Nativeint | Int64 | Float -> true
+                 | Int32 | Nativeint | Int64 | Float | Float32 -> true
                  | Value | Int _ -> false)
                param_types)
           (Option.value ~default:Typing.Top (repr_type typ)))

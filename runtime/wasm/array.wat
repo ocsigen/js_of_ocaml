@@ -62,7 +62,7 @@
 
    (func $caml_floatarray_create
       (export "caml_make_float_vect") (export "caml_floatarray_create")
-      (export "caml_array_create_float")
+      (export "caml_array_create_float") (export "caml_floatarray_create_local")
       (param $n (ref eq)) (result (ref eq))
       (local $sz i32)
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))
@@ -110,7 +110,7 @@
          (struct.get $float 0 (ref.cast (ref $float) (local.get $v))))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_array_sub")
+   (func (export "caml_array_sub") (export "caml_array_sub_local")
       (param $a (ref eq)) (param $i (ref eq)) (param $vlen (ref eq))
       (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $len i32)
@@ -163,7 +163,7 @@
          (local.get $len))
       (local.get $a'))
 
-   (func (export "caml_array_append")
+   (func (export "caml_array_append") (export "caml_array_append_local")
       (param $va1 (ref eq)) (param $va2 (ref eq)) (result (ref eq))
       (local $a1 (ref $block)) (local $a2 (ref $block)) (local $a (ref $block))
       (local $fa1 (ref $float_array)) (local $fa2 (ref $float_array))
@@ -235,7 +235,8 @@
          (return (local.get $fa))))
       (return_call $caml_floatarray_dup (local.get $fa1)))
 
-   (func (export "caml_array_concat") (param (ref eq)) (result (ref eq))
+   (func (export "caml_array_concat") (export "caml_array_concat_local")
+      (param (ref eq)) (result (ref eq))
       (local $i i32) (local $len i32)
       (local $l (ref eq)) (local $v (ref eq))
       (local $isfloat i32)
