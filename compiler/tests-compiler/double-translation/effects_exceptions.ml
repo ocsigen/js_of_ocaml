@@ -56,11 +56,11 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function exceptions$0(s){
-     try{var _d_ = caml_int_of_string(s), n = _d_;}
+     try{var _c_ = caml_int_of_string(s), n = _c_;}
      catch(exn$0){
       var exn = caml_wrap_exception(exn$0);
       if(exn[1] !== Stdlib[7]) throw caml_maybe_attach_backtrace(exn, 0);
-      var n = 0;
+      n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
@@ -70,12 +70,12 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      catch(exn){
       var exn$0 = caml_wrap_exception(exn);
       if(exn$0 !== Stdlib[8]) throw caml_maybe_attach_backtrace(exn$0, 0);
-      var m = 0;
+      m = 0;
      }
      try{
       if(caml_string_equal(s, cst))
        throw caml_maybe_attach_backtrace(Stdlib[8], 1);
-      var _c_ = [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
+      _c_ = [0, [0, caml_call1(Stdlib[79], cst_toto), n, m]];
       return _c_;
      }
      catch(exn){
@@ -90,12 +90,11 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      catch(exn){
       var exn$2 = caml_wrap_exception(exn);
       if(exn$2[1] !== Stdlib[7]){
-       var
-        raise$1 = caml_pop_trap(),
-        exn$0 = caml_maybe_attach_backtrace(exn$2, 0);
-       return raise$1(exn$0);
+       _c_ = caml_pop_trap();
+       var exn$0 = caml_maybe_attach_backtrace(exn$2, 0);
+       return _c_(exn$0);
       }
-      var n = 0;
+      n = 0;
      }
      try{
       if(caml_string_equal(s, cst$0))
@@ -105,10 +104,11 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
      catch(exn$0){
       var exn$1 = caml_wrap_exception(exn$0);
       if(exn$1 !== Stdlib[8]){
-       var raise$0 = caml_pop_trap(), exn = caml_maybe_attach_backtrace(exn$1, 0);
-       return raise$0(exn);
+       _c_ = caml_pop_trap();
+       var exn = caml_maybe_attach_backtrace(exn$1, 0);
+       return _c_(exn);
       }
-      var m = 0;
+      m = 0;
      }
      caml_push_trap
       (function(exn$0){
@@ -121,8 +121,9 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
               (Stdlib[79],
                cst_toto,
                function(_c_){caml_pop_trap(); return cont([0, [0, _c_, n, m]]);});
-     var _b_ = Stdlib[8], raise = caml_pop_trap();
-     return raise(caml_maybe_attach_backtrace(_b_, 1));
+     _c_ = Stdlib[8];
+     var raise = caml_pop_trap();
+     return raise(caml_maybe_attach_backtrace(_c_, 1));
     }
     //end
     var exceptions = caml_cps_closure(exceptions$0, exceptions$1);
@@ -132,16 +133,17 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function handler_is_loop$0(f, g, l){
-     try{var _b_ = caml_call1(f, 0); return _b_;}
+     try{var _c_ = caml_call1(f, 0); return _c_;}
      catch(exn$0){
       var l$0 = l;
       for(;;){
-       var match = caml_call1(g, l$0), variant = match[1];
+       _c_ = caml_call1(g, l$0);
+       var variant = _c_[1];
        if(72330306 > variant){
-        var exn = match[2];
+        var exn = _c_[2];
         throw caml_maybe_attach_backtrace(exn, 1);
        }
-       var l$1 = match[2];
+       var l$1 = _c_[2];
        l$0 = l$1;
       }
      }
@@ -154,17 +156,17 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
          return caml_trampoline_cps_call2
                  (g,
                   l,
-                  function(match){
-                   var variant = match[1];
+                  function(_c_){
+                   var variant = _c_[1];
                    if(72330306 <= variant){
-                    var l = match[2];
+                    var l = _c_[2];
                     return caml_exact_trampoline_call1(_b_, l);
                    }
                    var
-                    exn$0 = match[2],
-                    raise = caml_pop_trap(),
+                    exn$0 = _c_[2],
+                    _c_ = caml_pop_trap(),
                     exn = caml_maybe_attach_backtrace(exn$0, 1);
-                   return raise(exn);
+                   return _c_(exn);
                   });
         }
         return _b_(l);
@@ -180,7 +182,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
   [%expect
     {|
     function handler_is_merge_node$0(g){
-     try{var _b_ = caml_call1(g, 0), s = _b_;}catch(exn){var s = cst$1;}
+     try{var _b_ = caml_call1(g, 0), s = _b_;}catch(exn){s = cst$1;}
      return caml_call2(Stdlib[28], s, cst_aaa);
     }
     //end

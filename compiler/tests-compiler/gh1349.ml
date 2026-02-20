@@ -53,7 +53,7 @@ let%expect_test _ =
        function b(a, b){
         function c(a){return e.caml_div(a, 0);}
         var g = a < b ? 1 : 2;
-        try{var f = c(a), d = f;}catch(f){var d = c(g);}
+        try{var f = c(a), d = f;}catch(f){d = c(g);}
         return d;
        }
        e.caml_register_global(0, [0, b], "Test");
