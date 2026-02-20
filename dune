@@ -36,6 +36,17 @@
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
+ (with-native-effects
+  (js_of_ocaml
+   ;; Native effects is not supported in js
+   (enabled_if false))
+  (wasm_of_ocaml
+   (compilation_mode whole_program)
+   (flags
+    (:standard --effects native)))
+  (binaries
+   (tools/node_wrapper.exe as node)
+   (tools/node_wrapper.exe as node.exe)))
  (bench_no_debug
   (flags
    (:standard \ -g))
