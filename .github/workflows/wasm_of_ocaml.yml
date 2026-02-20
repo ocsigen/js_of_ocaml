@@ -86,7 +86,7 @@ jobs:
       - name: Set-up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: latest
+          node-version: v26.0.0-v8-canary20260216631fb6e5ef
 
       - name: Set-up OCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
@@ -150,6 +150,12 @@ jobs:
         continue-on-error: ${{ matrix.os == 'windows-latest' }}
         working-directory: ./wasm_of_ocaml
         run: opam exec -- dune build @runtest-wasm --profile with-effects
+
+      - name: Run tests with native effects
+        if: ${{ matrix.ocaml-compiler >= '5.' && matrix.separate_compilation }}
+        continue-on-error: ${{ matrix.os == 'windows-latest' }}
+        working-directory: ./wasm_of_ocaml
+        run: opam exec -- dune build @runtest-wasm --profile with-native-effects
 
       - name: Run Base tests
         if: matrix.all_jane_street_tests

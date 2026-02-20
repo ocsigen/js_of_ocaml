@@ -40,7 +40,7 @@ let debug = Debug.find "effects"
 
 let double_translate () =
   match Config.effects () with
-  | `Disabled | `Jspi -> assert false
+  | `Disabled | `Jspi | `Native -> assert false
   | `Cps -> false
   | `Double_translation -> true
 

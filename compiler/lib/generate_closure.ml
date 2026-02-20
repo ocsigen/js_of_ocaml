@@ -337,7 +337,7 @@ let f p : Code.program =
 let f p =
   assert (
     match Config.effects () with
-    | `Disabled | `Jspi -> true
+    | `Disabled | `Jspi | `Native -> true
     | `Cps | `Double_translation -> false);
   let open Config.Param in
   match tailcall_optim () with

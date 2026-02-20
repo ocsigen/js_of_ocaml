@@ -4,6 +4,7 @@ let () =
     match l, major >= 5 with
     | [ "with-effects-double-translation" ], true -> [ "--effects"; "double-translation" ]
     | [ "with-effects" ], true -> [ "--effects"; "cps" ]
+    | [ "with-native-effects" ], true -> [ "--effects"; "cps" ]
     | _, true -> [ "--effects"; "cps" ]
     | _, false -> [ "--effects"; "disabled" ]
   in

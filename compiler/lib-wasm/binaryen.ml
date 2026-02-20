@@ -38,6 +38,8 @@ let common_options () =
     ; "--enable-bulk-memory"
     ; "--enable-nontrapping-float-to-int"
     ; "--enable-strings"
+    ; "--enable-multimemory" (* To keep wasm-merge happy *)
+    ; "--enable-stack-switching"
     ]
   in
   let l = if Config.Flag.pretty () then "-g" :: l else l in

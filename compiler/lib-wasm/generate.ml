@@ -26,7 +26,7 @@ let times = Debug.find "times"
 let effects_cps () =
   match Config.effects () with
   | `Cps -> true
-  | `Disabled | `Jspi -> false
+  | `Disabled | `Jspi | `Native -> false
   | `Double_translation -> assert false
 
 module Generate (Target : Target_sig.S) = struct

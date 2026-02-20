@@ -1,6 +1,7 @@
 (env
  (with-effects-double-translation)
  (with-effects)
+ (with-native-effects)
  (_
   (js_of_ocaml
    (flags

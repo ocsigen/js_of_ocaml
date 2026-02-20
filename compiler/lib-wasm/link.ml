@@ -173,7 +173,20 @@ module Wasm_binary = struct
 
   let reftype' i ch =
     match i with
-    | 0x6a | 0x6b | 0x6c | 0x6d | 0x6e | 0x6f | 0x70 | 0x71 | 0x72 | 0x73 -> ()
+    | 0x68
+    | 0x69
+    | 0x6a
+    | 0x6b
+    | 0x6c
+    | 0x6d
+    | 0x6e
+    | 0x6f
+    | 0x70
+    | 0x71
+    | 0x72
+    | 0x73
+    | 0x74
+    | 0x75 -> ()
     | 0x63 | 0x64 -> heaptype ch
     | _ ->
         Format.eprintf "Unknown reftype %x@." i;
@@ -541,7 +554,7 @@ let build_runtime_arguments
   let props =
     match Config.effects () with
     | `Disabled -> ("disable_effects", Javascript.EBool true) :: props
-    | `Jspi | `Cps -> props
+    | `Jspi | `Cps | `Native -> props
     | `Double_translation -> assert false
   in
   obj props

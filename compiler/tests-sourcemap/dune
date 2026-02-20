@@ -7,7 +7,9 @@
  (name test)
  (modules test)
  (enabled_if
-  (<> %{profile} with-effects))
+  (and
+   (<> %{profile} with-effects)
+   (<> %{profile} with-native-effects)))
  (modes js)
  (js_of_ocaml
   (link_flags
