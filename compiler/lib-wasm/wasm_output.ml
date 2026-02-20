@@ -1214,6 +1214,50 @@ end = struct
     output_section 0 output_features ch ()
 end
 
+type buf =
+  { mutable b : bytes
+  ; mutable pos : int
+  ; mutable len : int
+  }
+
+let buf_ensure buf n =
+  let capacity = Bytes.length buf.b in
+  if buf.pos + n > capacity
+  then (
+    let new_capacity = max (capacity * 2) (buf.pos + n) in
+    let new_b = Bytes.create new_capacity in
+    Bytes.blit ~src:buf.b ~src_pos:0 ~dst:new_b ~dst_pos:0 ~len:buf.len;
+    buf.b <- new_b)
+
+let to_string fields =
+  let buf = { b = Bytes.create 4096; pos = 0; len = 0 } in
+  let module O = Make (struct
+    type t = buf
+
+    let position b = b.pos
+
+    let seek b p = b.pos <- p
+
+    let byte b c =
+      buf_ensure b 1;
+      Bytes.set b.b b.pos (Char.chr c);
+      b.pos <- b.pos + 1;
+      if b.pos > b.len then b.len <- b.pos
+
+    let string b s =
+      let n = String.length s in
+      buf_ensure b n;
+      Bytes.blit_string ~src:s ~src_pos:0 ~dst:b.b ~dst_pos:b.pos ~len:n;
+      b.pos <- b.pos + n;
+      if b.pos > b.len then b.len <- b.pos
+
+    let push_mapping _ = ()
+
+    let get_file_index _ = 0
+  end) in
+  O.output_module buf fields;
+  Bytes.sub_string buf.b ~pos:0 ~len:buf.len
+
 let f ~opt_source_map_file ch fields =
   let mappings = ref [] in
   let files = String.Hashtbl.create 16 in

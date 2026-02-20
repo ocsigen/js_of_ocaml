@@ -75,9 +75,15 @@ val from_channel :
   -> [ `Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe ]
 
 val from_string :
-  prims:string array -> debug:Instruct.debug_event list array -> string -> Code.program
+     prims:string array
+  -> debug:Instruct.debug_event list array
+  -> orig_units:StringSet.t
+  -> string
+  -> Code.program
 
 val predefined_exceptions : unit -> Code.program * Unit_info.t
+
+val read_crcs : in_channel -> (string * Digest.t option) list
 
 val link_info :
      symbols:Ocaml_compiler.Symtable.GlobalMap.t

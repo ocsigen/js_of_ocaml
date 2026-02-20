@@ -48,6 +48,14 @@
       (func $caml_string_concat (param (ref eq) (ref eq)) (result (ref eq))))
    (import "fail" "caml_raise_sys_error"
       (func $caml_raise_sys_error (param (ref eq))))
+   (import "bindings" "register_file"
+      (func $register_file (param anyref) (param anyref)))
+   (import "bindings" "read_file"
+      (func $read_file (param anyref) (result anyref)))
+   (import "bigarray" "caml_uint8_array_of_string"
+      (func $caml_uint8_array_of_string (param (ref eq)) (result (ref eq))))
+   (import "bigarray" "caml_string_of_uint8_array"
+      (func $caml_string_of_uint8_array (param (ref eq)) (result (ref eq))))
 
    (type $bytes (array (mut i8)))
 
@@ -138,13 +146,23 @@
             (global.get $no_such_file))))
 
    (func (export "caml_read_file_content")
-      (param (ref eq)) (result (ref eq))
-      (call $caml_raise_no_such_file (local.get 0))
-      (ref.i31 (i32.const 0)))
+      (param $name (ref eq)) (result (ref eq))
+      (local $res anyref)
+      (local.set $res
+         (call $read_file
+            (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
+      (if (ref.is_null (local.get $res))
+         (then
+            (call $caml_raise_no_such_file (local.get $name))
+            (return (ref.i31 (i32.const 0)))))
+      (return_call $caml_string_of_uint8_array
+         (call $wrap (local.get $res))))
 
    (func (export "caml_create_file")
-      (param (ref eq)) (param (ref eq)) (result (ref eq))
-      (call $caml_raise_no_such_file (local.get 0))
+      (param $name (ref eq)) (param $content (ref eq)) (result (ref eq))
+      (call $register_file
+         (call $unwrap (call $caml_jsstring_of_string (local.get $name)))
+         (call $unwrap (call $caml_uint8_array_of_string (local.get $content))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_fs_init") (result (ref eq))
