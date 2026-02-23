@@ -583,13 +583,16 @@ let eval_instr update_count inline_constant ~target info i =
   | Let (x, Prim (Extern "caml_atomic_load_field", [ Pv o; f ])) -> (
       match the_int info f with
       | None -> [ i ]
-      | Some i -> [ Let (x, Field (o, Targetint.to_int_exn i, Non_float)) ])
+      | Some i ->
+          incr update_count;
+          [ Let (x, Field (o, Targetint.to_int_exn i, Non_float)) ])
   | Let (x, Prim (IsInt, [ y ])) -> (
       match is_int info y with
       | Unknown -> [ i ]
       | Y ->
           let c = Constant (bool' true) in
           Flow.Info.update_def info x c;
+          incr update_count;
           [ Let (x, c) ]
       | N ->
           let c = Constant (bool' false) in
@@ -824,15 +827,26 @@ let drop_exception_handler drop_count blocks =
     blocks
 
 let eval update_count update_branch inline_constant ~target info blocks =
-  Addr.Map.map
-    (fun block ->
+  Addr.Map.fold
+    (fun pc block blocks ->
+      let saved_update = !update_count in
+      let saved_branch = !update_branch in
+      let saved_inline = !inline_constant in
       let body =
         List.concat_map
           block.body
           ~f:(eval_instr update_count inline_constant ~target info)
       in
       let branch = eval_branch update_branch info block.branch in
-      { block with Code.body; Code.branch })
+      if
+        !update_count = saved_update
+        && !update_branch = saved_branch
+        && !inline_constant = saved_inline
+      then (
+        Code.assert_block_equal ~name:"eval" block { block with Code.body; Code.branch };
+        blocks)
+      else Addr.Map.add pc { block with Code.body; Code.branch } blocks)
+    blocks
     blocks
 
 let f info p =
@@ -853,10 +867,16 @@ let f info p =
       p.blocks
   in
   let blocks = drop_exception_handler drop_count blocks in
-  let p = { p with blocks } in
+  let p =
+    if !update_count + !update_branch + !inline_constant + !drop_count = 0
+    then (
+      Code.assert_program_equal ~name:"eval" p { p with blocks };
+      p)
+    else { p with blocks }
+  in
   if times () then Format.eprintf "  eval: %a@." Timer.print t;
   if stats ()
-  then
+  then (
     Format.eprintf
       "Stats - eval: %d optimizations, %d inlined cst, %d dropped exception handlers, %d \
        branch updated@."
@@ -864,6 +884,7 @@ let f info p =
       !inline_constant
       !drop_count
       !update_branch;
+    Code.print_block_sharing ~name:"eval" previous_p p);
   if debug_stats ()
   then
     Code.check_updates

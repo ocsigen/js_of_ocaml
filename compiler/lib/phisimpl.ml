@@ -148,10 +148,16 @@ let solver1 vars deps defs =
     { G.domain = vars; G.iter_children = (fun f x -> Var.Set.iter f deps.(Var.idx x)) }
   in
   ignore (Solver1.f () g (propagate1 deps defs reprs));
-  Array.mapi reprs ~f:(fun idx y ->
-      match y with
-      | Some y -> repr reprs y
-      | None -> Var.of_idx idx)
+  let has_subst = ref false in
+  let subst =
+    Array.mapi reprs ~f:(fun idx y ->
+        match y with
+        | Some y ->
+            has_subst := true;
+            repr reprs y
+        | None -> Var.of_idx idx)
+  in
+  if !has_subst then Some subst else None
 
 let f p =
   let previous_p = p in
@@ -161,28 +167,46 @@ let f p =
   let vars, deps, defs = program_deps p in
   if times () then Format.eprintf "    phi-simpl. 1: %a@." Timer.print t';
   let t' = Timer.make () in
-  let subst = solver1 vars deps defs in
-  if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
-  Array.iteri subst ~f:(fun idx y ->
-      if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
-  let need_stats = stats () || debug_stats () in
+  let stats_needed = stats () || debug_stats () in
   let count_uniq = ref 0 in
-  let count_seen = BitSet.create' (if need_stats then Var.count () else 0) in
-  let subst v1 =
-    let idx1 = Code.Var.idx v1 in
-    let v2 = subst.(idx1) in
-    if Code.Var.equal v1 v2
-    then v1
-    else (
-      if need_stats && not (BitSet.mem count_seen idx1)
-      then (
-        incr count_uniq;
-        BitSet.set count_seen idx1);
-      v2)
+  let p =
+    match solver1 vars deps defs with
+    | None ->
+        if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
+        p
+    | Some subst ->
+        if times () then Format.eprintf "    phi-simpl. 2: %a@." Timer.print t';
+        Array.iteri subst ~f:(fun idx y ->
+            if Var.idx y = idx then () else Code.Var.propagate_name (Var.of_idx idx) y);
+        let subst =
+          if stats_needed
+          then
+            let count_seen = BitSet.create' (Var.count ()) in
+            fun v1 ->
+              let idx1 = Code.Var.idx v1 in
+              let v2 = subst.(idx1) in
+              if Code.Var.equal v1 v2
+              then v1
+              else (
+                if not (BitSet.mem count_seen idx1)
+                then (
+                  incr count_uniq;
+                  BitSet.set count_seen idx1);
+                v2)
+          else fun v1 -> subst.(Code.Var.idx v1)
+        in
+        let p' = Subst.Excluding_Binders.program subst p in
+        if phys_equal p.blocks p'.blocks
+        then (
+          Code.assert_program_equal ~name:"phi" p p';
+          p)
+        else p'
   in
-  let p = Subst.Excluding_Binders.program subst p in
   if times () then Format.eprintf "  phi-simpl.: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - phi updates: %d@." !count_uniq;
+  if stats ()
+  then (
+    Format.eprintf "Stats - phi updates: %d@." !count_uniq;
+    Code.print_block_sharing ~name:"phi" previous_p p);
   if debug_stats () then Code.check_updates ~name:"phi" previous_p p ~updates:!count_uniq;
   Code.invariant p;
   p

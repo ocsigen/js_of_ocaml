@@ -119,10 +119,21 @@ let f ~shape ~update_def p =
   let t = Timer.make () in
   let opt_count = ref 0 in
   let p =
-    if Config.Flag.optcall () then specialize_instrs ~shape ~update_def opt_count p else p
+    if Config.Flag.optcall ()
+    then
+      let p' = specialize_instrs ~shape ~update_def opt_count p in
+      if !opt_count = 0
+      then (
+        Code.assert_program_equal ~name:"optcall" p p';
+        p)
+      else p'
+    else p
   in
   if times () then Format.eprintf "  optcall: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - optcall: %d@." !opt_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - optcall: %d@." !opt_count;
+    Code.print_block_sharing ~name:"optcall" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"optcall" previous_p p ~updates:!opt_count;
   Code.invariant p;
@@ -290,71 +301,78 @@ let switches p =
   let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
+  let blocks =
+    Addr.Map.fold
+      (fun pc block blocks ->
+        match block.branch with
+        | Switch (x, l) -> (
+            match find_outlier_index l with
+            | #switch_to_cond as opt ->
+                incr opt_count;
+                let block = optimize_switch_to_cond block x l opt in
+                Addr.Map.add pc block blocks
+            | `Many_cases ->
+                let t = SBT.create 0 in
+                let rewrite = ref Addr.Set.empty in
+                let l =
+                  Array.map l ~f:(fun ((pc, _) as cont) ->
+                      let block = Code.Addr.Map.find pc blocks in
+                      if List.compare_length_with block.body ~len:7 <= 0
+                      then (
+                        let sb = Simple_block.make block in
+                        match SBT.find_opt t sb with
+                        | Some cont' when not (equal cont' cont) ->
+                            rewrite := Addr.Set.add (fst cont') !rewrite;
+                            cont'
+                        | Some _ | None ->
+                            SBT.add t sb cont;
+                            cont)
+                      else cont)
+                in
+                if not (Addr.Set.is_empty !rewrite)
+                then (
+                  incr opt_count;
+                  let blocks =
+                    Addr.Set.fold
+                      (fun pc blocks ->
+                        let block = Code.Addr.Map.find pc blocks in
+                        Addr.Map.add
+                          pc
+                          { block with
+                            body =
+                              List.filter
+                                ~f:(function
+                                  | Event _ -> false
+                                  | _ -> true)
+                                block.body
+                          }
+                          blocks)
+                      !rewrite
+                      blocks
+                  in
+                  match find_outlier_index l with
+                  | #switch_to_cond as opt ->
+                      let block = optimize_switch_to_cond block x l opt in
+                      Addr.Map.add pc block blocks
+                  | `Many_cases ->
+                      Addr.Map.add pc { block with branch = Switch (x, l) } blocks)
+                else blocks)
+        | _ -> blocks)
+      p.blocks
+      p.blocks
+  in
   let p =
-    { p with
-      blocks =
-        Addr.Map.fold
-          (fun pc block blocks ->
-            match block.branch with
-            | Switch (x, l) -> (
-                match find_outlier_index l with
-                | #switch_to_cond as opt ->
-                    incr opt_count;
-                    let block = optimize_switch_to_cond block x l opt in
-                    Addr.Map.add pc block blocks
-                | `Many_cases ->
-                    let t = SBT.create 0 in
-                    let rewrite = ref Addr.Set.empty in
-                    let l =
-                      Array.map l ~f:(fun ((pc, _) as cont) ->
-                          let block = Code.Addr.Map.find pc blocks in
-                          if List.compare_length_with block.body ~len:7 <= 0
-                          then (
-                            let sb = Simple_block.make block in
-                            match SBT.find_opt t sb with
-                            | Some cont' when not (equal cont' cont) ->
-                                rewrite := Addr.Set.add (fst cont') !rewrite;
-                                cont'
-                            | Some _ | None ->
-                                SBT.add t sb cont;
-                                cont)
-                          else cont)
-                    in
-                    if not (Addr.Set.is_empty !rewrite)
-                    then (
-                      incr opt_count;
-                      let blocks =
-                        Addr.Set.fold
-                          (fun pc blocks ->
-                            let block = Code.Addr.Map.find pc blocks in
-                            Addr.Map.add
-                              pc
-                              { block with
-                                body =
-                                  List.filter
-                                    ~f:(function
-                                      | Event _ -> false
-                                      | _ -> true)
-                                    block.body
-                              }
-                              blocks)
-                          !rewrite
-                          blocks
-                      in
-                      match find_outlier_index l with
-                      | #switch_to_cond as opt ->
-                          let block = optimize_switch_to_cond block x l opt in
-                          Addr.Map.add pc block blocks
-                      | `Many_cases ->
-                          Addr.Map.add pc { block with branch = Switch (x, l) } blocks)
-                    else blocks)
-            | _ -> blocks)
-          p.blocks
-          p.blocks
-    }
+    if !opt_count = 0
+    then (
+      Code.assert_program_equal ~name:"switches" p { p with blocks };
+      p)
+    else { p with blocks }
   in
   if times () then Format.eprintf "  switches: %a@." Timer.print t;
-  if stats () then Format.eprintf "Stats - switches: %d@." !opt_count;
+  if stats ()
+  then (
+    Format.eprintf "Stats - switches: %d@." !opt_count;
+    Code.print_block_sharing ~name:"switches" previous_p p);
   if debug_stats ()
   then Code.check_updates ~name:"switches" previous_p p ~updates:!opt_count;
   Deadcode.remove_unused_blocks p
