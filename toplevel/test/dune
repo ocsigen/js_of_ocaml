@@ -10,7 +10,14 @@
  (deps
   (package js_of_ocaml-toplevel))
  (action
-  (run jsoo_listunits -o %{targets} stdlib js_of_ocaml-toplevel re)))
+  (run
+   jsoo_listunits
+   -o
+   %{targets}
+   stdlib
+   js_of_ocaml-toplevel
+   js_of_ocaml-toplevel.common
+   re)))
 
 (rule
  (target re.cmis.js)

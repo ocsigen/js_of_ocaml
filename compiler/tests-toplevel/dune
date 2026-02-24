@@ -45,3 +45,65 @@
   (progn
    (diff test_toplevel.expected test_toplevel.bc.js.actual)
    (diff test_toplevel.expected test_toplevel.js.actual))))
+
+(executables
+ (names test_toplevel_wasm)
+ (libraries wasm_of_ocaml-compiler.dynlink compiler-libs.toplevel)
+ (flags
+  (:standard -linkall))
+ (wasm_of_ocaml
+  (flags :standard --toplevel))
+ (modes byte wasm))
+
+(rule
+ (target test_toplevel_wasm.ml)
+ (action
+  (copy %{dep:test_toplevel.ml} %{target})))
+
+(rule
+ (targets
+  test_toplevel_wasm.js
+  (dir test_toplevel_wasm.assets))
+ (action
+  (run
+   %{bin:wasm_of_ocaml}
+   --pretty
+   --toplevel
+   -w
+   no-missing-effects-backend
+   %{dep:test_toplevel_wasm.bc}
+   -o
+   test_toplevel_wasm.js)))
+
+(rule
+ (target test_toplevel_wasm.bc.wasm.js.actual)
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (>= %{ocaml_version} 5.4)))
+ (action
+  (with-stdout-to
+   %{target}
+   (run node %{dep:test_toplevel_wasm.bc.wasm.js}))))
+
+(rule
+ (target test_toplevel_wasm.js.actual)
+ (enabled_if
+  (>= %{ocaml_version} 5.4))
+ (deps
+  (glob_files test_toplevel_wasm.assets/*))
+ (action
+  (with-stdout-to
+   %{target}
+   (run node %{dep:test_toplevel.js}))))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (>= %{ocaml_version} 5.4)))
+ (action
+  (progn
+   (diff test_toplevel.expected test_toplevel_wasm.bc.wasm.js.actual)
+   (diff test_toplevel.expected test_toplevel_wasm.js.actual))))

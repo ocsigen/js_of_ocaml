@@ -68,6 +68,32 @@
 
   const fs = isNode && require("node:fs");
 
+  // Virtual filesystem for embedded files (e.g. CMIs for toplevel)
+  const virtual_files = new Map(); // path -> Uint8Array
+  const virtual_dirs = new Set(); // directory paths
+  const virtual_fds = new Map(); // fd -> { data, offset }
+  let next_virtual_fd = 1000000;
+
+  function register_virtual_file(name, content) {
+    virtual_files.set(name, content);
+    let dir = name;
+    while (true) {
+      const i = dir.lastIndexOf("/");
+      if (i <= 0) break;
+      dir = dir.substring(0, i);
+      virtual_dirs.add(dir);
+    }
+  }
+
+  if (args.files) {
+    for (const [name, data] of Object.entries(args.files)) {
+      register_virtual_file(
+        name,
+        Uint8Array.from(atob(data), (c) => c.charCodeAt(0)),
+      );
+    }
+  }
+
   const fs_cst = fs?.constants;
 
   const access_flags = fs
@@ -437,13 +463,25 @@
         p,
         access_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
       ),
-    open: (p, flags, perm) =>
-      fs.openSync(
+    open: (p, flags, perm) => {
+      if (virtual_files.has(p) && !(flags & 2)) {
+        const fd = next_virtual_fd++;
+        virtual_fds.set(fd, { data: virtual_files.get(p), offset: 0 });
+        return fd;
+      }
+      return fs.openSync(
         p,
         open_flags.reduce((f, v, i) => (flags & (1 << i) ? f | v : f), 0),
         perm,
-      ),
-    close: (fd) => fs.closeSync(fd),
+      );
+    },
+    close: (fd) => {
+      if (virtual_fds.has(fd)) {
+        virtual_fds.delete(fd);
+        return;
+      }
+      fs.closeSync(fd);
+    },
     write: (fd, b, o, l, p) =>
       fs
         ? fs.writeSync(fd, b, o, l, p === null ? p : Number(p))
@@ -451,9 +489,24 @@
             typeof b === "string" ? b : decoder.decode(b.slice(o, o + l)),
           ),
           l),
-    read: (fd, b, o, l, p) => fs.readSync(fd, b, o, l, p),
+    read: (fd, b, o, l, p) => {
+      const vf = virtual_fds.get(fd);
+      if (vf) {
+        const pos = p === null ? vf.offset : Number(p);
+        const n = Math.min(l, vf.data.length - pos);
+        if (n <= 0) return 0;
+        b.set(vf.data.subarray(pos, pos + n), o);
+        vf.offset = pos + n;
+        return n;
+      }
+      return fs.readSync(fd, b, o, l, p);
+    },
     fsync: (fd) => fs.fsyncSync(fd),
-    file_size: (fd) => fs.fstatSync(fd, { bigint: true }).size,
+    file_size: (fd) => {
+      const vf = virtual_fds.get(fd);
+      if (vf) return BigInt(vf.data.length);
+      return fs.fstatSync(fd, { bigint: true }).size;
+    },
     register_channel,
     unregister_channel,
     channel_list,
@@ -481,7 +534,25 @@
     symlink: (t, p, kind) => fs.symlinkSync(t, p, [null, "file", "dir"][kind]),
     readlink: (p) => fs.readlinkSync(p),
     unlink: (p) => fs.unlinkSync(p),
-    read_dir: (p) => fs.readdirSync(p),
+    read_dir: (p) => {
+      const prefix = p.endsWith("/") ? p : p + "/";
+      const entries = new Set();
+      for (const name of virtual_files.keys()) {
+        if (name.startsWith(prefix)) {
+          const rest = name.substring(prefix.length);
+          const slash = rest.indexOf("/");
+          entries.add(slash < 0 ? rest : rest.substring(0, slash));
+        }
+      }
+      if (fs) {
+        try {
+          for (const e of fs.readdirSync(p)) entries.add(e);
+        } catch (e) {
+          if (entries.size === 0) throw e;
+        }
+      }
+      return [...entries];
+    },
     opendir: (p) => fs.opendirSync(p),
     readdir: (d) => {
       var n = d.readSync()?.name;
@@ -493,9 +564,20 @@
     fstat: (fd, l) => alloc_stat(fs.fstatSync(fd), l),
     chmod: (p, perms) => fs.chmodSync(p, perms),
     fchmod: (p, perms) => fs.fchmodSync(p, perms),
-    file_exists: (p) => +fs.existsSync(p),
-    is_directory: (p) => +fs.lstatSync(p).isDirectory(),
-    is_file: (p) => +fs.lstatSync(p).isFile(),
+    file_exists: (p) => {
+      if (virtual_files.has(p) || virtual_dirs.has(p)) return 1;
+      return fs ? +fs.existsSync(p) : 0;
+    },
+    is_directory: (p) => {
+      if (virtual_dirs.has(p)) return 1;
+      if (virtual_files.has(p)) return 0;
+      return +fs.lstatSync(p).isDirectory();
+    },
+    is_file: (p) => {
+      if (virtual_files.has(p)) return 1;
+      if (virtual_dirs.has(p)) return 0;
+      return +fs.lstatSync(p).isFile();
+    },
     utimes: (p, a, m) => fs.utimesSync(p, a, m),
     truncate: (p, l) => fs.truncateSync(p, l),
     ftruncate: (fd, l) => fs.ftruncateSync(fd, l),
@@ -544,6 +626,80 @@
     map_delete: (m, x) => m.delete(x),
     hash_string,
     log: (x) => console.log(x),
+    register_fragments: (unitName, fragmentsSource) => {
+      // biome-ignore lint/security/noGlobalEval:
+      const frags = eval?.(fragmentsSource);
+      imports[unitName + ".fragments"] = frags;
+    },
+    load_module: (wasmBytes) => {
+      const module = new WebAssembly.Module(wasmBytes, options);
+      const inst = new WebAssembly.Instance(module, imports);
+      Object.assign(imports.OCaml, inst.exports);
+      return inst.exports["_dynlink.init"]();
+    },
+    load_wasmo: (zipBytes) => {
+      // Parse ZIP to extract code.wasm and link_order (uncompressed ZIP)
+      const dv = new DataView(
+        zipBytes.buffer,
+        zipBytes.byteOffset,
+        zipBytes.byteLength,
+      );
+      const len = zipBytes.byteLength;
+      // Find End of Central Directory record (search backwards)
+      let eocdOff = len - 22;
+      while (eocdOff >= 0 && dv.getUint32(eocdOff, true) !== 0x06054b50)
+        eocdOff--;
+      if (eocdOff < 0) throw new Error("Invalid ZIP: EOCD not found");
+      const cdOff = dv.getUint32(eocdOff + 16, true);
+      const cdEntries = dv.getUint16(eocdOff + 10, true);
+      // Scan central directory for code.wasm and link_order
+      const entries = {};
+      let off = cdOff;
+      for (let i = 0; i < cdEntries; i++) {
+        if (dv.getUint32(off, true) !== 0x02014b50)
+          throw new Error("Invalid ZIP: bad CD entry");
+        const nameLen = dv.getUint16(off + 28, true);
+        const extraLen = dv.getUint16(off + 30, true);
+        const commentLen = dv.getUint16(off + 32, true);
+        const localOff = dv.getUint32(off + 42, true);
+        const name = decoder.decode(
+          zipBytes.subarray(off + 46, off + 46 + nameLen),
+        );
+        const size = dv.getUint32(off + 24, true);
+        const localNameLen = dv.getUint16(localOff + 26, true);
+        const localExtraLen = dv.getUint16(localOff + 28, true);
+        const dataOff = localOff + 30 + localNameLen + localExtraLen;
+        entries[name] = zipBytes.subarray(dataOff, dataOff + size);
+        off += 46 + nameLen + extraLen + commentLen;
+      }
+      if (!entries["code.wasm"])
+        throw new Error("code.wasm not found in .wasmo");
+      const module = new WebAssembly.Module(entries["code.wasm"], options);
+      const inst = new WebAssembly.Instance(module, imports);
+      Object.assign(imports.OCaml, inst.exports);
+      const names = decoder.decode(entries.link_order).split("\x00");
+      for (const name of names) inst.exports[name + ".init"]();
+    },
+    get_named_global(name) {
+      const g = imports.OCaml[name];
+      if (g === undefined || !(g instanceof WebAssembly.Global)) return null;
+      return g.value;
+    },
+    register_file: (name, data) => register_virtual_file(name, data),
+    read_file: (name) => virtual_files.get(name) ?? null,
+    get_ocaml_unit_list() {
+      return Object.keys(imports.OCaml)
+        .filter((k) => imports.OCaml[k] instanceof WebAssembly.Global)
+        .join("\x00");
+    },
+    get_prim_list() {
+      return Object.keys(imports.env)
+        .filter((k) => typeof imports.env[k] === "function")
+        .join("\x00");
+    },
+    get_crcs() {
+      return args?.crcs ?? "";
+    },
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
@@ -623,6 +779,10 @@
         .fill(link.slice(2).values())
         .map(loadModules);
       await Promise.all(workers);
+    } else {
+      // Exe mode: runtime and code are merged into one module.
+      // Share namespace so get_ocaml_unit_list / get_named_global find globals.
+      imports.OCaml = imports.env;
     }
     return { instance: { exports: Object.assign(imports.env, imports.OCaml) } };
   }

@@ -417,12 +417,27 @@ let report_missing_primitives missing =
       (Format.pp_print_list Format.pp_print_string)
       missing
 
+let encode_crcs crcs =
+  String.concat
+    ~sep:"\x00"
+    (List.map
+       ~f:(fun (name, digest) ->
+         name
+         ^ "\x01"
+         ^
+         match digest with
+         | Some d -> Digest.to_hex d
+         | None -> "")
+       crcs)
+
 let build_runtime_arguments
     ~link_spec
     ~separate_compilation
     ~missing_primitives
     ~wasm_dir
     ~generated_js
+    ~embedded_files
+    ~crcs
     () =
   let missing_primitives = if Config.Flag.genprim () then missing_primitives else [] in
   if not separate_compilation then report_missing_primitives missing_primitives;
@@ -543,6 +558,25 @@ let build_runtime_arguments
     | `Disabled -> ("disable_effects", Javascript.EBool true) :: props
     | `Jspi | `Cps -> props
     | `Double_translation -> assert false
+  in
+  let props =
+    if List.is_empty embedded_files
+    then props
+    else
+      ( "files"
+      , obj
+          (List.map
+             ~f:(fun (name, content) ->
+               ( name
+               , Javascript.EStr
+                   (Utf8_string.of_string_exn (Base64.encode_string content)) ))
+             embedded_files) )
+      :: props
+  in
+  let props =
+    if List.is_empty crcs
+    then props
+    else ("crcs", Javascript.EStr (Utf8_string.of_string_exn (encode_crcs crcs))) :: props
   in
   obj props
 
@@ -676,7 +710,7 @@ let gen_dir dir f =
     remove_directory d_tmp;
     raise exc
 
-let link ~output_file ~linkall ~enable_source_maps ~files =
+let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
   if times () then Format.eprintf "linking@.";
   let t = Timer.make () in
   let predefined_exceptions, files = load_information files in
@@ -811,6 +845,8 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
         ~missing_primitives
         ~wasm_dir
         ~generated_js
+        ~embedded_files
+        ~crcs:[]
         ()
     in
     output_js [ Javascript.Expression_statement js, Javascript.N ]
@@ -869,7 +905,7 @@ let add_source_map files z sm =
         then Zip.copy_file z' z ~src_name:name ~dst_name:(source_name i j file));
   finalize ()
 
-let make_library ~output_file ~enable_source_maps ~files =
+let make_library ~linkall ~output_file ~enable_source_maps ~files =
   let info =
     List.map files ~f:(fun file ->
         let build_info, _predefined_exceptions, unit_data =
@@ -894,6 +930,14 @@ let make_library ~output_file ~enable_source_maps ~files =
       `Cma
   in
   let unit_data = List.concat (List.map ~f:(fun (_, _, unit_data) -> unit_data) info) in
+  let unit_data =
+    if linkall
+    then
+      List.map
+        ~f:(fun u -> { u with unit_info = { u.unit_info with force_link = true } })
+        unit_data
+    else unit_data
+  in
   Fs.gen_file output_file
   @@ fun tmp_output_file ->
   let z = Zip.open_out tmp_output_file in
@@ -925,11 +969,11 @@ let make_library ~output_file ~enable_source_maps ~files =
   if enable_source_maps then add_source_map files z output_sourcemap;
   Zip.close_out z
 
-let link ~output_file ~linkall ~mklib ~enable_source_maps ~files =
+let link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files ~files =
   try
     if mklib
-    then make_library ~output_file ~enable_source_maps ~files
-    else link ~output_file ~linkall ~enable_source_maps ~files
+    then make_library ~linkall ~output_file ~enable_source_maps ~files
+    else link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"
