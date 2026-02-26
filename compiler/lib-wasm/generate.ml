@@ -1307,6 +1307,38 @@ module Generate (Target : Target_sig.S) = struct
               | [], _ :: _ | _ :: _, [] -> assert false
             in
             loop [] arg_typ l |> box_number_if_needed ctx x
+        | Wasm_unbox_i32 -> (
+            match l with
+            | [ Pv v ] -> Memory.unbox_int32 (load v)
+            | _ -> assert false)
+        | Wasm_unbox_i64 -> (
+            match l with
+            | [ Pv v ] -> Memory.unbox_int64 (load v)
+            | _ -> assert false)
+        | Wasm_unbox_f64 -> (
+            match l with
+            | [ Pv v ] -> Memory.unbox_float (load v)
+            | _ -> assert false)
+        | Wasm_box_i32 -> (
+            match l with
+            | [ Pv v ] -> Memory.box_int32 (load v)
+            | _ -> assert false)
+        | Wasm_box_i64 -> (
+            match l with
+            | [ Pv v ] -> Memory.box_int64 (load v)
+            | _ -> assert false)
+        | Wasm_box_f64 -> (
+            match l with
+            | [ Pv v ] -> Memory.box_float (load v)
+            | _ -> assert false)
+        | Wasm_untag_int -> (
+            match l with
+            | [ Pv v ] -> Value.int_val (load v)
+            | _ -> assert false)
+        | Wasm_tag_int -> (
+            match l with
+            | [ Pv v ] -> Value.val_int (load v)
+            | _ -> assert false)
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
             match p, l with
@@ -1324,14 +1356,6 @@ module Generate (Target : Target_sig.S) = struct
                 loop [] l
             | IsInt, [ x ] -> Value.is_int x
             | Vectlength, [ x ] -> Memory.gen_array_length x
-            | Wasm_unbox_i32, [ x ] -> Memory.unbox_int32 x
-            | Wasm_unbox_i64, [ x ] -> Memory.unbox_int64 x
-            | Wasm_unbox_f64, [ x ] -> Memory.unbox_float x
-            | Wasm_box_i32, [ x ] -> Memory.box_int32 x
-            | Wasm_box_i64, [ x ] -> Memory.box_int64 x
-            | Wasm_box_f64, [ x ] -> Memory.box_float x
-            | Wasm_untag_int, [ x ] -> Value.int_val x
-            | Wasm_tag_int, [ x ] -> Value.val_int x
             | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _ ->
                 assert false))
 
