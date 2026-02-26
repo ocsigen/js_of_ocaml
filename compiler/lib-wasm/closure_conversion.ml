@@ -55,14 +55,21 @@ let collect_free_vars program var_depth depth pc closures =
   let add_if_free_variable x =
     let idx = Var.idx x in
     let d = var_depth.(idx) in
+    if d < 0 then failwith (Printf.sprintf "LCM DEBUG: unbound var %d named %s" idx (Option.value ~default:"None" (Var.get_name x)));
     assert (d >= 0);
     if d < depth then vars := Var.Set.add x !vars
+  in
+  let add_if_free_handle_err _pc _block x =
+    try add_if_free_variable x
+    with Failure e ->
+      Format.eprintf "DEBUG FATAL: %s@.%a@." e (fun fmt p -> Code.Print.program fmt (fun _ _ -> "") p) program;
+      exit 1
   in
   Code.preorder_traverse
     { fold = Code.fold_children }
     (fun pc () ->
       let block = Code.Addr.Map.find pc program.blocks in
-      Freevars.iter_block_free_vars add_if_free_variable block;
+      Freevars.iter_block_free_vars (add_if_free_handle_err pc block) block;
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (f, Closure _) -> (

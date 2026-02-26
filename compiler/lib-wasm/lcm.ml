@@ -201,9 +201,9 @@ type block_props =
 let remove_conversions_of_var convs v =
   ConvSet.filter (fun (_, arg) -> not (Var.equal arg v)) convs
 
-let compute_local_props all_convs block =
+let compute_local_props all_convs def_blocks pc block =
   let killed_vars = ref VarSet.empty in
-  Freevars.iter_block_bound_vars (fun v -> killed_vars := VarSet.add v !killed_vars) block;
+  Var.Tbl.iter (fun v def_pc -> if def_pc = pc then killed_vars := VarSet.add v !killed_vars) def_blocks;
   let transp = ConvSet.filter (fun (_, v) -> not (VarSet.mem v !killed_vars)) all_convs in
   let comp = ref ConvSet.empty in
   let antloc = ref ConvSet.empty in
@@ -250,11 +250,6 @@ module CFG = struct
     !preds
 end
 
-let remove_killed_mappings map v =
-  ConvMap.filter
-    (fun (_, arg) mapped -> not (Var.equal arg v) && not (Var.equal mapped v))
-    map
-
 let rec apply_subst subst x =
   match Var.Map.find_opt x subst with
   | Some y when not (Var.equal x y) -> apply_subst subst y
@@ -291,10 +286,48 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
   if ConvSet.is_empty all_convs
   then p, types
   else (
-    let props = Addr.Map.map (compute_local_props all_convs) p.blocks in
+    let def_blocks = Var.Tbl.make () (-1) in
+    let visited = BitSet.create' p.free_pc in
+    let rec traverse_defs pc =
+      if not (BitSet.mem visited pc) then (
+        BitSet.set visited pc;
+        let block = Addr.Map.find pc p.blocks in
+        Freevars.iter_block_bound_vars (fun x -> Var.Tbl.set def_blocks x pc) block;
+        List.iter
+          ~f:(function
+            | Let (_, Closure (params, (pc', _), _)) ->
+                List.iter params ~f:(fun x -> Var.Tbl.set def_blocks x pc);
+                traverse_defs pc'
+            | _ -> ())
+          block.body;
+        Code.fold_children p.blocks pc (fun pc' () -> traverse_defs pc') ()
+      )
+    in
+    traverse_defs p.start;
+    Var.Tbl.iter (fun v pc ->
+      if Var.idx v = 1188 then
+        Format.eprintf "LCM MAGIC DEBUG: s2 (ID %d) is defined in block %d@." (Var.idx v) pc
+    ) def_blocks;
+    let component_of = Addr.Tbl.create 16 in
+    let rec mark_comp pc comp_id =
+      if not (Addr.Tbl.mem component_of pc) then (
+        Addr.Tbl.add component_of pc comp_id;
+        Code.fold_children p.blocks pc (fun pc' () -> mark_comp pc' comp_id) ()
+      )
+    in
+    Code.fold_closures p (fun _ _ (pc, _) _ () -> mark_comp pc pc) ();
+    let get_comp pc = try Addr.Tbl.find component_of pc with Not_found -> -1 in
+    let conv_comp = ConvSet.fold (fun ((_, arg) as conv) acc ->
+        ConvMap.add conv (get_comp (Var.Tbl.get def_blocks arg)) acc
+      ) all_convs ConvMap.empty in
+    let comp_all_convs pc =
+      let my_comp = get_comp pc in
+      ConvSet.filter (fun conv -> let c = ConvMap.find conv conv_comp in c = my_comp || c = -1 || c = get_comp p.start) all_convs
+    in
+    let props = Addr.Map.mapi (fun pc block -> compute_local_props all_convs def_blocks pc block) p.blocks in
     let preds = CFG.predecessors p.blocks in
     (* 1. Anticipatability *)
-    let antin = ref (Addr.Map.map (fun _ -> all_convs) p.blocks) in
+    let antin = ref (Addr.Map.mapi (fun pc _ -> comp_all_convs pc) p.blocks) in
     let worklist = ref (Addr.Map.fold (fun pc _ acc -> pc :: acc) p.blocks []) in
     while not (List.is_empty !worklist) do
       let pc = List.hd !worklist in
@@ -306,8 +339,11 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
         then ConvSet.empty
         else
           List.fold_left
-            ~f:(fun acc succ -> ConvSet.inter acc (Addr.Map.find succ !antin))
-            ~init:all_convs
+            ~f:(fun acc succ ->
+              let succ_antin = Addr.Map.find succ !antin in
+              let valid_succ_antin = ConvSet.filter (fun (_, arg) -> Var.Tbl.get def_blocks arg <> succ) succ_antin in
+              ConvSet.inter acc valid_succ_antin)
+            ~init:(comp_all_convs pc)
             succs
       in
       let new_antin = ConvSet.union b_props.antloc (ConvSet.inter b_props.transp new_antout) in
@@ -433,7 +469,10 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
         then ConvSet.empty
         else
           List.fold_left
-            ~f:(fun acc s -> ConvSet.inter acc (Addr.Map.find s !isolatedin))
+            ~f:(fun acc s ->
+              let s_isolatedin = Addr.Map.find s !isolatedin in
+              let valid_s_isolatedin = ConvSet.filter (fun (_, arg) -> Var.Tbl.get def_blocks arg <> s) s_isolatedin in
+              ConvSet.inter acc valid_s_isolatedin)
             ~init:all_convs
             succs
       in
@@ -450,6 +489,20 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             if not (List.mem ~eq:Int.equal p' !worklist) then worklist := p' :: !worklist)
           ps)
     done;
+    let global_subst = ref Var.Map.empty in
+    let conv_to_global_tmp = ref ConvMap.empty in
+    let get_global_tmp ((kind, _) as conv) =
+      match ConvMap.find_opt conv !conv_to_global_tmp with
+      | Some tmp -> tmp
+      | None ->
+          let tmp = Var.fresh () in
+          let typ =
+            ConvMap.find_opt conv conv_types |> Option.value ~default:(type_of_kind kind)
+          in
+          Typing.set_var_type types tmp typ;
+          conv_to_global_tmp := ConvMap.add conv tmp !conv_to_global_tmp;
+          tmp
+    in
     let blocks =
       Addr.Map.mapi
         (fun pc block ->
@@ -457,49 +510,41 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
           in
           let inserted_rev = ref [] in
-          let conv_to_var = ref ConvMap.empty in
           ConvSet.iter
             (fun ((kind, arg) as conv) ->
-              let tmp = Var.fresh () in
-              let typ =
-                ConvMap.find_opt conv conv_types |> Option.value ~default:(type_of_kind kind)
-              in
-              Typing.set_var_type types tmp typ;
-              conv_to_var := ConvMap.add conv tmp !conv_to_var;
+              let tmp = get_global_tmp conv in
               inserted_rev := Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
             to_insert;
-          let subst = ref Var.Map.empty in
-          let subst_var x = apply_subst !subst x in
           let body_rev = ref [] in
           List.iter
             ~f:(fun i ->
-              let i = Subst.Excluding_Binders.instr subst_var i in
               match i with
               | Let (v, Prim (p, [ Pv arg ])) -> (
-                  conv_to_var := remove_killed_mappings !conv_to_var v;
-                  subst := Var.Map.remove v !subst;
                   match kind_of_prim p with
                   | Some kind -> (
                       let conv = kind, arg in
-                      match ConvMap.find_opt conv !conv_to_var with
-                      | Some tmp -> subst := Var.Map.add v tmp !subst
-                      | None ->
-                          body_rev := i :: !body_rev;
-                          conv_to_var := ConvMap.add conv v !conv_to_var)
+                      let is_isolated = ConvSet.mem conv (Addr.Map.find pc !isolatedout) in
+                      if not is_isolated then (
+                        let tmp = get_global_tmp conv in
+                        global_subst := Var.Map.add v tmp !global_subst
+                      ) else (
+                        body_rev := i :: !body_rev
+                      )
+                    )
                   | None -> body_rev := i :: !body_rev)
-              | Let (v, _) ->
-                  conv_to_var := remove_killed_mappings !conv_to_var v;
-                  subst := Var.Map.remove v !subst;
-                  body_rev := i :: !body_rev
-              | Assign (v, _) ->
-                  conv_to_var := remove_killed_mappings !conv_to_var v;
-                  subst := Var.Map.remove v !subst;
-                  body_rev := i :: !body_rev
-              | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
+              | Let (_, _) | Assign (_, _) | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
                   body_rev := i :: !body_rev)
             block.body;
-          let branch = Subst.Excluding_Binders.last subst_var block.branch in
-          { block with body = List.rev !inserted_rev @ List.rev !body_rev; branch })
+          { block with body = List.rev !inserted_rev @ List.rev !body_rev })
         p.blocks
+    in
+    let global_subst_var x = apply_subst !global_subst x in
+    let blocks =
+      Addr.Map.mapi
+        (fun _pc block ->
+          let body = List.map ~f:(Subst.Excluding_Binders.instr global_subst_var) block.body in
+          let branch = Subst.Excluding_Binders.last global_subst_var block.branch in
+          { block with body; branch })
+        blocks
     in
     { p with blocks }, types)
