@@ -371,9 +371,10 @@ let prim_type ~st ~approx prim args =
 
 let reset () = String.Hashtbl.reset primitive_types
 
-let register_prim nm ?args ~unbox typ = String.Hashtbl.replace primitive_types nm (args, unbox, typ)
+let register_prim nm ?args ~unbox typ =
+  String.Hashtbl.replace primitive_types nm (args, unbox, typ)
 
-let prim_sig nm = 
+let prim_sig nm =
   match String.Hashtbl.find_opt primitive_types nm with
   | Some (args, _, typ) -> args, typ
   | None -> None, Top
@@ -433,7 +434,24 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _) -> Int Normalized
+      | Prim
+          ( ( Vectlength
+            | Not
+            | IsInt
+            | Eq
+            | Neq
+            | Lt
+            | Le
+            | Ult
+            | Wasm_unbox_i32
+            | Wasm_unbox_i64
+            | Wasm_unbox_f64
+            | Wasm_box_i32
+            | Wasm_box_i64
+            | Wasm_box_f64
+            | Wasm_untag_int
+            | Wasm_tag_int )
+          , _ ) -> Int Normalized
       | Prim (Extern prim, args) -> prim_type ~st ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -590,8 +608,10 @@ let box_numbers p st types =
                   | Prim (Extern s, args) ->
                       if
                         not
-                          (String.Hashtbl.mem primitive_types s
-                           && (let _, unbox, _ = String.Hashtbl.find primitive_types s in unbox)
+                          ((String.Hashtbl.mem primitive_types s
+                           &&
+                           let _, unbox, _ = String.Hashtbl.find primitive_types s in
+                           unbox)
                           || type_specialized_primitive types st.global_flow_state s args
                           )
                       then
@@ -608,7 +628,23 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _)
+                  | Prim
+                      ( ( Vectlength
+                        | Array_get
+                        | Not
+                        | IsInt
+                        | Lt
+                        | Le
+                        | Ult
+                        | Wasm_unbox_i32
+                        | Wasm_unbox_i64
+                        | Wasm_unbox_f64
+                        | Wasm_box_i32
+                        | Wasm_box_i64
+                        | Wasm_box_f64
+                        | Wasm_untag_int
+                        | Wasm_tag_int )
+                      , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
               | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
@@ -637,7 +673,7 @@ type t =
   ; extra_types : typ Var.Hashtbl.t
   }
 
-let disable_box_numbers = ref false
+let disable_box_numbers = ref true
 
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let t = Timer.make () in
