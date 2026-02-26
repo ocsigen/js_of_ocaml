@@ -167,7 +167,7 @@ let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Globa
   in
   { p with blocks }
 
-let get_all_conversions program types =
+let get_all_conversions blocks types =
   let all_convs = ref ConvSet.empty in
   let conv_types = ref ConvMap.empty in
   Addr.Map.iter
@@ -189,7 +189,7 @@ let get_all_conversions program types =
               | None -> ())
           | _ -> ())
         block.body)
-    program.blocks;
+    blocks;
   !all_convs, !conv_types
 
 type block_props =
@@ -201,9 +201,18 @@ type block_props =
 let remove_conversions_of_var convs v =
   ConvSet.filter (fun (_, arg) -> not (Var.equal arg v)) convs
 
-let compute_local_props all_convs def_blocks pc block =
+let remove_killed_mappings map v =
+  ConvMap.filter
+    (fun (_, arg) mapped -> not (Var.equal arg v) && not (Var.equal mapped v))
+    map
+
+let compute_local_props all_convs block =
   let killed_vars = ref VarSet.empty in
-  Var.Tbl.iter (fun v def_pc -> if def_pc = pc then killed_vars := VarSet.add v !killed_vars) def_blocks;
+  List.iter
+    ~f:(function
+      | Let (v, _) | Assign (v, _) -> killed_vars := VarSet.add v !killed_vars
+      | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
+    block.body;
   let transp = ConvSet.filter (fun (_, v) -> not (VarSet.mem v !killed_vars)) all_convs in
   let comp = ref ConvSet.empty in
   let antloc = ref ConvSet.empty in
@@ -255,6 +264,146 @@ let rec apply_subst subst x =
   | Some y when not (Var.equal x y) -> apply_subst subst y
   | Some _ | None -> x
 
+let reachable_blocks all_blocks entry =
+  let visited = ref Addr.Set.empty in
+  let rec visit pc =
+    if not (Addr.Set.mem pc !visited)
+    then (
+      visited := Addr.Set.add pc !visited;
+      List.iter ~f:visit (CFG.successors all_blocks pc))
+  in
+  visit entry;
+  !visited
+
+(* Run the LCM data flow analysis and rewrite on a single function's blocks.
+   The analysis must be per-function to avoid cross-function variable references
+   in the inserted conversion instructions. *)
+let process_function types conv_types entry fun_blocks =
+  let all_convs, local_conv_types = get_all_conversions fun_blocks types in
+  (* Merge local conv_types into the global conv_types *)
+  ConvMap.iter (fun conv typ -> conv_types := ConvMap.add conv typ !conv_types) local_conv_types;
+  if ConvSet.is_empty all_convs
+  then fun_blocks
+  else (
+    let props = Addr.Map.map (compute_local_props all_convs) fun_blocks in
+    let preds = CFG.predecessors fun_blocks in
+    (* 1. Anticipatability *)
+    let antin = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
+    let worklist = ref (Addr.Map.fold (fun pc _ acc -> pc :: acc) fun_blocks []) in
+    while not (List.is_empty !worklist) do
+      let pc = List.hd !worklist in
+      worklist := List.tl !worklist;
+      let b_props = Addr.Map.find pc props in
+      let succs = CFG.successors fun_blocks pc in
+      let new_antout =
+        if List.is_empty succs
+        then ConvSet.empty
+        else
+          List.fold_left
+            ~f:(fun acc succ -> ConvSet.inter acc (Addr.Map.find succ !antin))
+            ~init:all_convs
+            succs
+      in
+      let new_antin = ConvSet.union b_props.antloc (ConvSet.inter b_props.transp new_antout) in
+      if not (ConvSet.equal (Addr.Map.find pc !antin) new_antin)
+      then (
+        antin := Addr.Map.add pc new_antin !antin;
+        let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+        List.iter
+          ~f:(fun p' ->
+            if not (List.mem ~eq:Int.equal p' !worklist) then worklist := p' :: !worklist)
+          ps)
+    done;
+    (* 2. Availability *)
+    let avout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
+    avout := Addr.Map.add entry ConvSet.empty !avout;
+    worklist := Addr.Map.fold (fun pc _ acc -> pc :: acc) fun_blocks [];
+    while not (List.is_empty !worklist) do
+      let pc = List.hd !worklist in
+      worklist := List.tl !worklist;
+      let b_props = Addr.Map.find pc props in
+      let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+      let new_avin =
+        if pc = entry || List.is_empty ps
+        then ConvSet.empty
+        else
+          List.fold_left
+            ~f:(fun acc p' -> ConvSet.inter acc (Addr.Map.find p' !avout))
+            ~init:all_convs
+            ps
+      in
+      let new_avout = ConvSet.union b_props.comp (ConvSet.inter b_props.transp new_avin) in
+      if not (ConvSet.equal (Addr.Map.find pc !avout) new_avout)
+      then (
+        avout := Addr.Map.add pc new_avout !avout;
+        let succs = CFG.successors fun_blocks pc in
+        List.iter
+          ~f:(fun s ->
+            if not (List.mem ~eq:Int.equal s !worklist) then worklist := s :: !worklist)
+          succs)
+    done;
+    let avin =
+      Addr.Map.mapi
+        (fun pc _ ->
+          let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+          if pc = entry || List.is_empty ps
+          then ConvSet.empty
+          else
+            List.fold_left
+              ~f:(fun acc p' -> ConvSet.inter acc (Addr.Map.find p' !avout))
+              ~init:all_convs
+              ps)
+        fun_blocks
+    in
+    Addr.Map.mapi
+      (fun pc block ->
+        let to_insert = ConvSet.diff (Addr.Map.find pc !antin) (Addr.Map.find pc avin) in
+        let inserted_rev = ref [] in
+        let conv_to_var = ref ConvMap.empty in
+        ConvSet.iter
+          (fun ((kind, arg) as conv) ->
+            let tmp = Var.fresh () in
+            let typ =
+              ConvMap.find_opt conv !conv_types |> Option.value ~default:(type_of_kind kind)
+            in
+            Typing.set_var_type types tmp typ;
+            conv_to_var := ConvMap.add conv tmp !conv_to_var;
+            inserted_rev := Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
+          to_insert;
+        let subst = ref Var.Map.empty in
+        let subst_var x = apply_subst !subst x in
+        let body_rev = ref [] in
+        List.iter
+          ~f:(fun i ->
+            let i = Subst.Excluding_Binders.instr subst_var i in
+            match i with
+            | Let (v, Prim (p, [ Pv arg ])) -> (
+                conv_to_var := remove_killed_mappings !conv_to_var v;
+                subst := Var.Map.remove v !subst;
+                match kind_of_prim p with
+                | Some kind -> (
+                    let conv = kind, arg in
+                    match ConvMap.find_opt conv !conv_to_var with
+                    | Some tmp -> subst := Var.Map.add v tmp !subst
+                    | None ->
+                        body_rev := i :: !body_rev;
+                        conv_to_var := ConvMap.add conv v !conv_to_var)
+                | None -> body_rev := i :: !body_rev)
+            | Let (v, _) ->
+                conv_to_var := remove_killed_mappings !conv_to_var v;
+                subst := Var.Map.remove v !subst;
+                body_rev := i :: !body_rev
+            | Assign (v, _) ->
+                conv_to_var := remove_killed_mappings !conv_to_var v;
+                subst := Var.Map.remove v !subst;
+                body_rev := i :: !body_rev
+            | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
+                body_rev := i :: !body_rev)
+          block.body;
+        let branch = Subst.Excluding_Binders.last subst_var block.branch in
+        { block with body = List.rev !inserted_rev @ List.rev !body_rev; branch })
+      fun_blocks)
+
 let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~fun_info =
   (* Global unboxing decision for direct calls. *)
   fold_closures
@@ -282,286 +431,27 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       | None -> ())
     ();
   let p = lower_conversions p types global_flow_info in
-  let all_convs, conv_types = get_all_conversions p types in
-  if ConvSet.is_empty all_convs
-  then p, types
-  else (
-    let def_blocks = Var.Tbl.make () (-1) in
-    let visited = BitSet.create' p.free_pc in
-    let rec traverse_defs pc =
-      if not (BitSet.mem visited pc) then (
-        BitSet.set visited pc;
-        let block = Addr.Map.find pc p.blocks in
-        Freevars.iter_block_bound_vars (fun x -> Var.Tbl.set def_blocks x pc) block;
-        List.iter
-          ~f:(function
-            | Let (_, Closure (params, (pc', _), _)) ->
-                List.iter params ~f:(fun x -> Var.Tbl.set def_blocks x pc);
-                traverse_defs pc'
-            | _ -> ())
-          block.body;
-        Code.fold_children p.blocks pc (fun pc' () -> traverse_defs pc') ()
-      )
-    in
-    traverse_defs p.start;
-    let component_of = Addr.Hashtbl.create 16 in
-    let rec mark_comp pc comp_id =
-      if not (Addr.Hashtbl.mem component_of pc) then (
-        Addr.Hashtbl.add component_of pc comp_id;
-        Code.fold_children p.blocks pc (fun pc' () -> mark_comp pc' comp_id) ()
-      )
-    in
-    Code.fold_closures p (fun _ _ (pc, _) _ () -> mark_comp pc pc) ();
-    let get_comp pc = try Addr.Hashtbl.find component_of pc with Not_found -> -1 in
-    let conv_comp = ConvSet.fold (fun ((_, arg) as conv) acc ->
-        ConvMap.add conv (get_comp (Var.Tbl.get def_blocks arg)) acc
-      ) all_convs ConvMap.empty in
-    let comp_all_convs pc =
-      let my_comp = get_comp pc in
-      ConvSet.filter (fun conv -> let c = ConvMap.find conv conv_comp in c = my_comp || c = -1 || c = get_comp p.start) all_convs
-    in
-    let props = Addr.Map.mapi (fun pc block -> compute_local_props all_convs def_blocks pc block) p.blocks in
-    let preds = CFG.predecessors p.blocks in
-    (* 1. Anticipatability *)
-    let antin = ref (Addr.Map.mapi (fun pc _ -> comp_all_convs pc) p.blocks) in
-    let worklist = ref (Addr.Map.fold (fun pc _ acc -> pc :: acc) p.blocks []) in
-    while not (List.is_empty !worklist) do
-      let pc = List.hd !worklist in
-      worklist := List.tl !worklist;
-      let b_props = Addr.Map.find pc props in
-      let succs = CFG.successors p.blocks pc in
-      let new_antout =
-        if List.is_empty succs
-        then ConvSet.empty
-        else
-          List.fold_left
-            ~f:(fun acc succ ->
-              let succ_antin = Addr.Map.find succ !antin in
-              let valid_succ_antin = ConvSet.filter (fun (_, arg) -> Var.Tbl.get def_blocks arg <> succ) succ_antin in
-              ConvSet.inter acc valid_succ_antin)
-            ~init:(comp_all_convs pc)
-            succs
+  (* Collect function entry points *)
+  let fun_entries = ref [ p.start ] in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter
+        ~f:(function
+          | Let (_, Closure (_, (pc, _), _)) -> fun_entries := pc :: !fun_entries
+          | _ -> ())
+        block.body)
+    p.blocks;
+  (* Process each function independently to avoid cross-function variable leakage
+     in the data flow analysis. *)
+  let conv_types = ref ConvMap.empty in
+  let blocks = ref p.blocks in
+  List.iter
+    ~f:(fun entry ->
+      let fun_block_pcs = reachable_blocks !blocks entry in
+      let fun_blocks =
+        Addr.Map.filter (fun pc _ -> Addr.Set.mem pc fun_block_pcs) !blocks
       in
-      let new_antin = ConvSet.union b_props.antloc (ConvSet.inter b_props.transp new_antout) in
-      if not (ConvSet.equal (Addr.Map.find pc !antin) new_antin)
-      then (
-        antin := Addr.Map.add pc new_antin !antin;
-        let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-        List.iter
-          ~f:(fun p' ->
-            if not (List.mem ~eq:Int.equal p' !worklist) then worklist := p' :: !worklist)
-          ps)
-    done;
-    (* 2. Availability *)
-    let avout = ref (Addr.Map.map (fun _ -> all_convs) p.blocks) in
-    avout := Addr.Map.add p.start ConvSet.empty !avout;
-    worklist := Addr.Map.fold (fun pc _ acc -> pc :: acc) p.blocks [];
-    while not (List.is_empty !worklist) do
-      let pc = List.hd !worklist in
-      worklist := List.tl !worklist;
-      let b_props = Addr.Map.find pc props in
-      let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-      let new_avin =
-        if pc = p.start || List.is_empty ps
-        then ConvSet.empty
-        else
-          List.fold_left
-            ~f:(fun acc p' -> ConvSet.inter acc (Addr.Map.find p' !avout))
-            ~init:all_convs
-            ps
-      in
-      let new_avout = ConvSet.union b_props.comp (ConvSet.inter b_props.transp new_avin) in
-      if not (ConvSet.equal (Addr.Map.find pc !avout) new_avout)
-      then (
-        avout := Addr.Map.add pc new_avout !avout;
-        let succs = CFG.successors p.blocks pc in
-        List.iter
-          ~f:(fun s ->
-            if not (List.mem ~eq:Int.equal s !worklist) then worklist := s :: !worklist)
-          succs)
-    done;
-    let avin =
-      Addr.Map.mapi
-        (fun pc _ ->
-          let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-          if pc = p.start || List.is_empty ps
-          then ConvSet.empty
-          else
-            List.fold_left
-              ~f:(fun acc p' -> ConvSet.inter acc (Addr.Map.find p' !avout))
-              ~init:all_convs
-              ps)
-        p.blocks
-    in
-    let earliest =
-      Addr.Map.mapi
-        (fun pc _ ->
-          ConvSet.diff (Addr.Map.find pc !antin) (Addr.Map.find pc avin))
-        p.blocks
-    in
-    (* 3. Delayability *)
-    let delayin = ref earliest in
-    let delayout = ref (Addr.Map.map (fun _ -> all_convs) p.blocks) in
-    worklist := Addr.Map.fold (fun pc _ acc -> pc :: acc) p.blocks [];
-    while not (List.is_empty !worklist) do
-      let pc = List.hd !worklist in
-      worklist := List.tl !worklist;
-      let b_props = Addr.Map.find pc props in
-      let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-      let new_delayin =
-        if pc = p.start || List.is_empty ps
-        then Addr.Map.find pc earliest
-        else
-          ConvSet.union
-            (Addr.Map.find pc earliest)
-            (List.fold_left
-               ~f:(fun acc p' -> ConvSet.inter acc (Addr.Map.find p' !delayout))
-               ~init:all_convs
-               ps)
-      in
-      delayin := Addr.Map.add pc new_delayin !delayin;
-      let new_delayout =
-        ConvSet.diff new_delayin b_props.comp
-      in
-      if not (ConvSet.equal (Addr.Map.find pc !delayout) new_delayout)
-      then (
-        delayout := Addr.Map.add pc new_delayout !delayout;
-        let succs = CFG.successors p.blocks pc in
-        List.iter
-          ~f:(fun s ->
-            if not (List.mem ~eq:Int.equal s !worklist) then worklist := s :: !worklist)
-          succs)
-    done;
-    (* 4. Latest *)
-    let latest =
-      Addr.Map.mapi
-        (fun pc _block ->
-          let succs = CFG.successors p.blocks pc in
-          let delayin_pc = Addr.Map.find pc !delayin in
-          let b_props = Addr.Map.find pc props in
-          let delayin_succs_intersect =
-            if List.is_empty succs
-            then ConvSet.empty
-            else
-              List.fold_left
-                ~f:(fun acc s -> ConvSet.inter acc (Addr.Map.find s !delayin))
-                ~init:all_convs
-                succs
-          in
-          ConvSet.inter delayin_pc (ConvSet.union b_props.comp (ConvSet.diff all_convs delayin_succs_intersect)))
-        p.blocks
-    in
-    (* 5. Isolated *)
-    let isolatedout = ref (Addr.Map.map (fun _ -> all_convs) p.blocks) in
-    let isolatedin = ref (Addr.Map.map (fun _ -> ConvSet.empty) p.blocks) in
-    worklist := Addr.Map.fold (fun pc _ acc -> pc :: acc) p.blocks [];
-    while not (List.is_empty !worklist) do
-      let pc = List.hd !worklist in
-      worklist := List.tl !worklist;
-      let b_props = Addr.Map.find pc props in
-      let succs = CFG.successors p.blocks pc in
-      let new_isolatedout =
-        if List.is_empty succs
-        then ConvSet.empty
-        else
-          List.fold_left
-            ~f:(fun acc s ->
-              let s_isolatedin = Addr.Map.find s !isolatedin in
-              let valid_s_isolatedin = ConvSet.filter (fun (_, arg) -> Var.Tbl.get def_blocks arg <> s) s_isolatedin in
-              ConvSet.inter acc valid_s_isolatedin)
-            ~init:all_convs
-            succs
-      in
-      isolatedout := Addr.Map.add pc new_isolatedout !isolatedout;
-      let new_isolatedin =
-        ConvSet.union (Addr.Map.find pc latest) (ConvSet.diff new_isolatedout b_props.comp)
-      in
-      if not (ConvSet.equal (Addr.Map.find pc !isolatedin) new_isolatedin)
-      then (
-        isolatedin := Addr.Map.add pc new_isolatedin !isolatedin;
-        let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-        List.iter
-          ~f:(fun p' ->
-            if not (List.mem ~eq:Int.equal p' !worklist) then worklist := p' :: !worklist)
-          ps)
-    done;
-    (* Track which conversions are inserted per component. *)
-    let inserted_by_comp = Int.Hashtbl.create 16 in
-    Addr.Map.iter
-      (fun pc _ ->
-        let to_insert =
-          ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
-        in
-        if not (ConvSet.is_empty to_insert)
-        then (
-          let comp = get_comp pc in
-          let existing =
-            try Int.Hashtbl.find inserted_by_comp comp with Not_found -> ConvSet.empty
-          in
-          Int.Hashtbl.replace inserted_by_comp comp (ConvSet.union existing to_insert)))
-      p.blocks;
-    let comp_inserted pc =
-      try Int.Hashtbl.find inserted_by_comp (get_comp pc) with Not_found -> ConvSet.empty
-    in
-    (* Use per-component tmp variables to avoid cross-function sharing. *)
-    let comp_tmp_map = ref Addr.Map.empty in
-    let get_comp_tmp comp ((kind, _) as conv) =
-      let comp_convs =
-        Addr.Map.find_opt comp !comp_tmp_map |> Option.value ~default:ConvMap.empty
-      in
-      match ConvMap.find_opt conv comp_convs with
-      | Some tmp -> tmp
-      | None ->
-          let tmp = Var.fresh () in
-          let typ =
-            ConvMap.find_opt conv conv_types |> Option.value ~default:(type_of_kind kind)
-          in
-          Typing.set_var_type types tmp typ;
-          comp_tmp_map := Addr.Map.add comp (ConvMap.add conv tmp comp_convs) !comp_tmp_map;
-          tmp
-    in
-    let global_subst = ref Var.Map.empty in
-    let blocks =
-      Addr.Map.mapi
-        (fun pc block ->
-          let comp = get_comp pc in
-          let to_insert =
-            ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
-          in
-          let inserted_rev = ref [] in
-          ConvSet.iter
-            (fun ((kind, arg) as conv) ->
-              let tmp = get_comp_tmp comp conv in
-              inserted_rev := Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
-            to_insert;
-          let my_inserted = comp_inserted pc in
-          let body_rev = ref [] in
-          List.iter
-            ~f:(fun i ->
-              match i with
-              | Let (v, Prim (p, [ Pv arg ])) -> (
-                  match kind_of_prim p with
-                  | Some kind -> (
-                      let conv = kind, arg in
-                      if ConvSet.mem conv my_inserted
-                      then (
-                        let tmp = get_comp_tmp comp conv in
-                        global_subst := Var.Map.add v tmp !global_subst)
-                      else body_rev := i :: !body_rev)
-                  | None -> body_rev := i :: !body_rev)
-              | Let (_, _) | Assign (_, _) | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
-                  body_rev := i :: !body_rev)
-            block.body;
-          { block with body = List.rev !inserted_rev @ List.rev !body_rev })
-        p.blocks
-    in
-    let global_subst_var x = apply_subst !global_subst x in
-    let blocks =
-      Addr.Map.mapi
-        (fun _pc block ->
-          let body = List.map ~f:(Subst.Excluding_Binders.instr global_subst_var) block.body in
-          let branch = Subst.Excluding_Binders.last global_subst_var block.branch in
-          { block with body; branch })
-        blocks
-    in
-    { p with blocks }, types)
+      let result = process_function types conv_types entry fun_blocks in
+      Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result)
+    !fun_entries;
+  { p with blocks = !blocks }, types
