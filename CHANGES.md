@@ -25,6 +25,7 @@
   (breaking change)
 * Lib: add `Fetch` and `Abort` modules — Fetch API binding with a typed
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
+* Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
