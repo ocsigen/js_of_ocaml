@@ -151,6 +151,57 @@ let%expect_test "Unix.read" =
     bad file descriptor
  |}]
 
+let%expect_test "Unix.read with offset" =
+  let tmp = Filename.temp_file "a" "txt" in
+  let fd = Unix.openfile tmp [ O_WRONLY; O_CREAT; O_TRUNC ] 0o666 in
+  let data = "abcdefghijklmnopqrstuvwxyz" in
+  let _ = Unix.write_substring fd data 0 (String.length data) in
+  Unix.close fd;
+  let fd = Unix.openfile tmp [ O_RDONLY ] 0o666 in
+  (* Read first 5 bytes *)
+  let buf = Bytes.create 5 in
+  let n = Unix.read fd buf 0 5 in
+  Printf.printf "read %d: %s\n" n (Bytes.sub_string buf 0 n);
+  (* Read next 5 bytes *)
+  let n = Unix.read fd buf 0 5 in
+  Printf.printf "read %d: %s\n" n (Bytes.sub_string buf 0 n);
+  (* Seek to position 20 and read *)
+  let _ = Unix.lseek fd 20 SEEK_SET in
+  let n = Unix.read fd buf 0 5 in
+  Printf.printf "read %d: %s\n" n (Bytes.sub_string buf 0 n);
+  Unix.close fd;
+  Unix.unlink tmp;
+  [%expect {|
+    read 5: abcde
+    read 5: fghij
+    read 5: abcde
+    |}]
+
+(*
+let%expect_test "Unix.LargeFile.fstat" =
+  let tmp = Filename.temp_file "a" "txt" in
+  let fd = Unix.openfile tmp [ O_WRONLY; O_CREAT; O_TRUNC ] 0o666 in
+  let data = String.make 1234 'z' in
+  let _ = Unix.write_substring fd data 0 (String.length data) in
+  let st = Unix.LargeFile.fstat fd in
+  Printf.printf "size: %Ld\n" st.st_size;
+  Unix.close fd;
+  Unix.unlink tmp;
+  [%expect {| size: 1234 |}]
+*)
+
+let%expect_test "Unix.symlink to_dir" =
+  let tmp = Filename.temp_file "a" "txt" in
+  Unix.unlink tmp;
+  (try
+     Unix.symlink ~to_dir:true "/some/target" tmp;
+     let target = Unix.readlink tmp in
+     Printf.printf "target: %s\n" target;
+     Unix.unlink tmp
+   with Unix.Unix_error (err, _, _) ->
+     Printf.printf "error: %s\n" (String.lowercase_ascii (Unix.error_message err)));
+  [%expect {| target: /some/target |}]
+
 let%expect_test "Unix.getenv" =
   Printf.printf "%s\n" (Sys.getenv "FOO");
   [%expect {| bar |}]
