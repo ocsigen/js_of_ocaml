@@ -428,7 +428,7 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
+      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _) -> Int Normalized
       | Prim (Extern prim, args) -> prim_type ~st ~approx prim args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
@@ -603,7 +603,7 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult), _)
+                  | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _)
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
               | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
@@ -631,6 +631,8 @@ type t =
   ; return_types : typ Var.Hashtbl.t
   }
 
+let disable_box_numbers = ref false
+
 let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let t = Timer.make () in
   update_deps global_flow_state p;
@@ -638,7 +640,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let st = { global_flow_state; global_flow_info; boxed_function_parameters; fun_info } in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
-  box_numbers p st types;
+  if not !disable_box_numbers then box_numbers p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
@@ -681,7 +683,15 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
     ();
   { types; return_types }
 
-let var_type info x = Var.Tbl.get info.types x
+let var_type info x =
+  let idx = Var.idx x in
+  if idx < Var.Tbl.length info.types then Var.Tbl.get info.types x else Top
+
+let count info = Var.Tbl.length info.types
 
 let return_type info f =
   Var.Hashtbl.find_opt info.return_types f |> Option.value ~default:Top
+
+let set_return_type info f t = Var.Hashtbl.replace info.return_types f t
+
+let join = Domain.join

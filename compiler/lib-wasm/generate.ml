@@ -1314,7 +1314,15 @@ module Generate (Target : Target_sig.S) = struct
                 loop [] l
             | IsInt, [ x ] -> Value.is_int x
             | Vectlength, [ x ] -> Memory.gen_array_length x
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
+            | Wasm_unbox_i32, [ x ] -> Memory.unbox_int32 x
+            | Wasm_unbox_i64, [ x ] -> Memory.unbox_int64 x
+            | Wasm_unbox_f64, [ x ] -> Memory.unbox_float x
+            | Wasm_box_i32, [ x ] -> Memory.box_int32 x
+            | Wasm_box_i64, [ x ] -> Memory.box_int64 x
+            | Wasm_box_f64, [ x ] -> Memory.box_float x
+            | Wasm_untag_int, [ x ] -> Value.int_val x
+            | Wasm_tag_int, [ x ] -> Value.val_int x
+            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _ ->
                 assert false))
 
   and translate_instr ctx context i =
@@ -1327,7 +1335,8 @@ module Generate (Target : Target_sig.S) = struct
              ~into:(Typing.var_type ctx.types x)
              (load y))
     | Let (x, e) ->
-        if ctx.live.(Var.idx x) = 0
+        let idx = Var.idx x in
+        if idx < Array.length ctx.live && ctx.live.(idx) = 0
         then drop (translate_expr ctx context x e)
         else
           store
@@ -1942,6 +1951,7 @@ let f ~context ~unit_name p ~live_vars ~in_cps ~deadcode_sentinel ~global_flow_d
   let types =
     Typing.f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p
   in
+  let p, types = Lcm.f p types ~global_flow_info ~fun_info in
   let t = Timer.make () in
   let p = Structure.norm p in
   let p = fix_switch_branches p in

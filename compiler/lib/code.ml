@@ -311,6 +311,14 @@ type prim =
   | Lt
   | Le
   | Ult
+  | Wasm_unbox_i32
+  | Wasm_unbox_i64
+  | Wasm_unbox_f64
+  | Wasm_box_i32
+  | Wasm_box_i64
+  | Wasm_box_f64
+  | Wasm_untag_int
+  | Wasm_tag_int
 
 type array_or_not =
   | Array
@@ -580,6 +588,14 @@ module Print = struct
     | Lt, [ x; y ] -> Format.fprintf f "%a < %a" arg x arg y
     | Le, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
     | Ult, [ x; y ] -> Format.fprintf f "%a <= %a" arg x arg y
+    | Wasm_unbox_i32, [ x ] -> Format.fprintf f "unbox_i32(%a)" arg x
+    | Wasm_unbox_i64, [ x ] -> Format.fprintf f "unbox_i64(%a)" arg x
+    | Wasm_unbox_f64, [ x ] -> Format.fprintf f "unbox_f64(%a)" arg x
+    | Wasm_box_i32, [ x ] -> Format.fprintf f "box_i32(%a)" arg x
+    | Wasm_box_i64, [ x ] -> Format.fprintf f "box_i64(%a)" arg x
+    | Wasm_box_f64, [ x ] -> Format.fprintf f "box_f64(%a)" arg x
+    | Wasm_untag_int, [ x ] -> Format.fprintf f "untag_int(%a)" arg x
+    | Wasm_tag_int, [ x ] -> Format.fprintf f "tag_int(%a)" arg x
     | _ -> assert false
 
   let special f s =

@@ -124,6 +124,14 @@ type prim =
   | Lt
   | Le
   | Ult
+  | Wasm_unbox_i32
+  | Wasm_unbox_i64
+  | Wasm_unbox_f64
+  | Wasm_box_i32
+  | Wasm_box_i64
+  | Wasm_box_f64
+  | Wasm_untag_int
+  | Wasm_tag_int
 
 type array_or_not =
   | Array

@@ -1756,7 +1756,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             let* cy = access' ~ctx y in
             let* cz = access' ~ctx z in
             return (maybe_bool ctx x (J.EBin (J.LtInt, unsigned cy, unsigned cz)))
-        | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult), _ ->
+        | (Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _ ->
             assert false
       in
       return (res, [])

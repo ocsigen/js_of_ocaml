@@ -69,19 +69,27 @@ type typ =
 
 val constant_type : Code.constant -> typ
 
+val join : typ -> typ -> typ
+
 val can_unbox_parameters : Call_graph_analysis.t -> Code.Var.t -> bool
 
 val bigarray_element_type : Bigarray.kind -> typ
 
 type t
 
+val count : t -> int
+
 val var_type : t -> Code.Var.t -> typ
 
 val return_type : t -> Code.Var.t -> typ
 
+val set_return_type : t -> Code.Var.t -> typ -> unit
+
 val reset : unit -> unit
 
 val register_prim : string -> unbox:bool -> typ -> unit
+
+val disable_box_numbers : bool ref
 
 val f :
      global_flow_state:Global_flow.state
