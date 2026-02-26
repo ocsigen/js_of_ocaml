@@ -206,8 +206,12 @@ let remove_killed_mappings map v =
     (fun (_, arg) mapped -> not (Var.equal arg v) && not (Var.equal mapped v))
     map
 
-let compute_local_props all_convs block =
+let compute_local_props all_convs ~all_params block =
   let killed_vars = ref VarSet.empty in
+  (* Block parameters are definitions too — they kill conversions involving them.
+     We mark ALL block parameters (from any block) as killed, since block params
+     are only available from their defining block onwards, not in predecessors. *)
+  VarSet.iter (fun v -> killed_vars := VarSet.add v !killed_vars) all_params;
   List.iter
     ~f:(function
       | Let (v, _) | Assign (v, _) -> killed_vars := VarSet.add v !killed_vars
@@ -241,7 +245,8 @@ module CFG = struct
     let b = Addr.Map.find pc blocks in
     match b.branch with
     | Return _ | Raise _ | Stop -> []
-    | Branch (pc', _) | Pushtrap ((pc', _), _, _) | Poptrap (pc', _) -> [ pc' ]
+    | Branch (pc', _) | Poptrap (pc', _) -> [ pc' ]
+    | Pushtrap ((pc', _), _, (pc_h, _)) -> [ pc'; pc_h ]
     | Cond (_, (pc1, _), (pc2, _)) -> [ pc1; pc2 ]
     | Switch (_, targets) -> Array.to_list (ArrayLabels.map ~f:(fun (pc, _) -> pc) targets)
 
@@ -285,7 +290,14 @@ let process_function types conv_types entry fun_blocks =
   if ConvSet.is_empty all_convs
   then fun_blocks
   else (
-    let props = Addr.Map.map (compute_local_props all_convs) fun_blocks in
+    let all_params =
+      Addr.Map.fold
+        (fun _ block acc ->
+          List.fold_left ~f:(fun acc v -> VarSet.add v acc) ~init:acc block.params)
+        fun_blocks
+        VarSet.empty
+    in
+    let props = Addr.Map.map (compute_local_props all_convs ~all_params) fun_blocks in
     let preds = CFG.predecessors fun_blocks in
     (* 1. Anticipatability *)
     let antin = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
