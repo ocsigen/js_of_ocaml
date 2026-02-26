@@ -78,27 +78,9 @@ type t =
   ; fs_external : bool
   ; keep_unit_names : bool
   ; effects : Config.effects_backend
+  ; build_config : bool
+  ; apply_build_config : string option
   }
-
-let set_param =
-  let doc = "Set compiler options." in
-  let all = List.map (Config.Param.all ()) ~f:(fun (x, _, _) -> x, x) in
-  let pair = Arg.(pair ~sep:'=' (enum all) string) in
-  let parser s =
-    match Arg.conv_parser pair s with
-    | Ok (k, v) -> (
-        match
-          List.find ~f:(fun (k', _, _) -> String.equal k k') (Config.Param.all ())
-        with
-        | _, _, valid -> (
-            match valid v with
-            | Ok () -> Ok (k, v)
-            | Error msg -> Error (`Msg ("Unexpected VALUE after [=], " ^ msg))))
-    | Error _ as e -> e
-  in
-  let printer = Arg.conv_printer pair in
-  let c = Arg.conv (parser, printer) in
-  Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
 
 let wrap_with_fun_conv =
   let conv s =
@@ -144,8 +126,11 @@ let options =
       "Compile the bytecode program [$(docv)]. "
       ^ "Use '-' to read from the standard input instead."
     in
-    Arg.(required & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
+    Arg.(value & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
   in
+  let build_config = Jsoo_cmdline.Arg.build_config in
+  let apply_build_config = Jsoo_cmdline.Arg.apply_build_config in
+  let set_param = Jsoo_cmdline.Arg.set_param in
   let keep_unit_names =
     let doc = "Keep unit name" in
     Arg.(value & flag & info [ "keep-unit-names" ] ~doc)
@@ -335,79 +320,87 @@ let options =
       js_files
       keep_unit_names
       effects
-      shape_files =
+      shape_files
+      build_config
+      apply_build_config =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
     let fs_external = fs_external || (toplevel && no_cmis) in
-    let bytecode =
-      match input_file with
-      | "-" -> `Stdin
-      | x -> `File x
-    in
-    let output_file =
-      match output_file with
-      | Some "-" -> `Stdout, true
-      | Some s -> `Name s, true
-      | None -> (
-          match bytecode with
-          | `File s -> `Name (chop_extension s ^ ".js"), false
-          | `Stdin -> `Stdout, false)
-    in
-    let source_map =
-      if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
-      then
-        let file, sm_output_file =
+    match build_config, input_file with
+    | false, None -> `Error (true, "required argument PROGRAM is missing")
+    | _ ->
+        let bytecode =
+          match input_file with
+          | Some "-" -> `Stdin
+          | Some x -> `File x
+          | None -> `None
+        in
+        let output_file =
           match output_file with
-          | `Name file, _ when sourcemap_inline_in_js -> Some file, None
-          | `Name file, _ -> Some file, Some (chop_extension file ^ ".map")
-          | `Stdout, _ -> None, None
+          | Some "-" -> `Stdout, true
+          | Some s -> `Name s, true
+          | None -> (
+              match bytecode with
+              | `File s -> `Name (chop_extension s ^ ".js"), false
+              | `Stdin | `None -> `Stdout, false)
         in
         let source_map =
-          { (Source_map.Standard.empty ~inline_source_content) with
-            file
-          ; sourceroot = sourcemap_root
-          }
+          if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
+          then
+            let file, sm_output_file =
+              match output_file with
+              | `Name file, _ when sourcemap_inline_in_js -> Some file, None
+              | `Name file, _ -> Some file, Some (chop_extension file ^ ".map")
+              | `Stdout, _ -> None, None
+            in
+            let source_map =
+              { (Source_map.Standard.empty ~inline_source_content) with
+                file
+              ; sourceroot = sourcemap_root
+              }
+            in
+            let spec =
+              { Source_map.Encoding_spec.output_file = sm_output_file
+              ; source_map
+              ; keep_empty = sourcemap_empty
+              }
+            in
+            Some spec
+          else None
         in
-        let spec =
-          { Source_map.Encoding_spec.output_file = sm_output_file
+        let params : (string * string) list = List.flatten set_param in
+        let static_env : (string * string) list = List.flatten set_env in
+        let include_dirs = normalize_include_dirs include_dirs in
+        let effects = normalize_effects effects common in
+        `Ok
+          { common
+          ; params
+          ; profile
+          ; static_env
+          ; wrap_with_fun
+          ; dynlink
+          ; linkall
+          ; target_env
+          ; toplevel
+          ; export_file
+          ; include_dirs
+          ; runtime_files
+          ; no_runtime
+          ; include_runtime
+          ; fs_files
+          ; fs_output
+          ; fs_external
+          ; no_cmis
+          ; output_file
+          ; bytecode
           ; source_map
-          ; keep_empty = sourcemap_empty
+          ; keep_unit_names
+          ; effects
+          ; shape_files
+          ; build_config
+          ; apply_build_config
           }
-        in
-        Some spec
-      else None
-    in
-    let params : (string * string) list = List.flatten set_param in
-    let static_env : (string * string) list = List.flatten set_env in
-    let include_dirs = normalize_include_dirs include_dirs in
-    let effects = normalize_effects effects common in
-    `Ok
-      { common
-      ; params
-      ; profile
-      ; static_env
-      ; wrap_with_fun
-      ; dynlink
-      ; linkall
-      ; target_env
-      ; toplevel
-      ; export_file
-      ; include_dirs
-      ; runtime_files
-      ; no_runtime
-      ; include_runtime
-      ; fs_files
-      ; fs_output
-      ; fs_external
-      ; no_cmis
-      ; output_file
-      ; bytecode
-      ; source_map
-      ; keep_unit_names
-      ; effects
-      ; shape_files
-      }
   in
   let t =
     Term.(
@@ -440,7 +433,9 @@ let options =
       $ js_files
       $ keep_unit_names
       $ effects
-      $ shape_files)
+      $ shape_files
+      $ build_config
+      $ apply_build_config)
   in
   Term.ret t
 
@@ -579,6 +574,9 @@ let options_runtime_only =
           None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
+  let build_config = Jsoo_cmdline.Arg.build_config in
+  let apply_build_config = Jsoo_cmdline.Arg.apply_build_config in
+  let set_param = Jsoo_cmdline.Arg.set_param in
   let build_t
       common
       toplevel
@@ -600,7 +598,9 @@ let options_runtime_only =
       target_env
       output_file
       js_files
-      effects =
+      effects
+      build_config
+      apply_build_config =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
@@ -662,6 +662,8 @@ let options_runtime_only =
       ; keep_unit_names = false
       ; effects
       ; shape_files = []
+      ; build_config
+      ; apply_build_config
       }
   in
   let t =
@@ -687,6 +689,8 @@ let options_runtime_only =
       $ target_env
       $ output_file
       $ js_files
-      $ effects)
+      $ effects
+      $ build_config
+      $ apply_build_config)
   in
   Term.ret t

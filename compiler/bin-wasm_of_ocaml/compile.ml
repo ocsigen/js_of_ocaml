@@ -360,10 +360,16 @@ let run
     ; sourcemap_don't_inline_content
     ; effects
     ; shape_files
+    ; build_config
+    ; apply_build_config
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
+  Jsoo_cmdline.Build_config.process
+    `Wasm
+    ~apply:apply_build_config
+    ~print_and_exit:build_config;
   Generate.init ();
   List.iter shape_files ~f:(fun s ->
       let z = Zip.open_in s in
