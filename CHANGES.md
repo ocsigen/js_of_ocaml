@@ -3,6 +3,7 @@
 ## Features/Changes
 * Runtime/wasm: faster copy between a Wasm string and an JavaScript array buffer (#2124)
 * Runtime/wasm: faster conversion of small JavaScript strings to Wasm (#2124)
+* Compiler/wasm: WASI 0.1 support (#1831)
 
 # 6.3.2 (2026-02-15) - Lille
 
