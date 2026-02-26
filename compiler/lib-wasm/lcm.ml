@@ -485,18 +485,31 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             if not (List.mem ~eq:Int.equal p' !worklist) then worklist := p' :: !worklist)
           ps)
     done;
-    let inserted_convs =
-      Addr.Map.fold
-        (fun pc _ acc ->
-          ConvSet.union acc
-            (ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)))
-        p.blocks
-        ConvSet.empty
+    (* Track which conversions are inserted per component. *)
+    let inserted_by_comp = Int.Hashtbl.create 16 in
+    Addr.Map.iter
+      (fun pc _ ->
+        let to_insert =
+          ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
+        in
+        if not (ConvSet.is_empty to_insert)
+        then (
+          let comp = get_comp pc in
+          let existing =
+            (try Int.Hashtbl.find inserted_by_comp comp with Not_found -> ConvSet.empty)
+          in
+          Int.Hashtbl.replace inserted_by_comp comp (ConvSet.union existing to_insert)))
+      p.blocks;
+    let comp_inserted pc =
+      try Int.Hashtbl.find inserted_by_comp (get_comp pc) with Not_found -> ConvSet.empty
     in
-    let global_subst = ref Var.Map.empty in
-    let conv_to_global_tmp = ref ConvMap.empty in
-    let get_global_tmp ((kind, _) as conv) =
-      match ConvMap.find_opt conv !conv_to_global_tmp with
+    (* Use per-component tmp variables to avoid cross-function sharing. *)
+    let comp_tmp_map = ref Addr.Map.empty in
+    let get_comp_tmp comp ((kind, _) as conv) =
+      let comp_convs =
+        Addr.Map.find_opt comp !comp_tmp_map |> Option.value ~default:ConvMap.empty
+      in
+      match ConvMap.find_opt conv comp_convs with
       | Some tmp -> tmp
       | None ->
           let tmp = Var.fresh () in
@@ -504,21 +517,24 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             ConvMap.find_opt conv conv_types |> Option.value ~default:(type_of_kind kind)
           in
           Typing.set_var_type types tmp typ;
-          conv_to_global_tmp := ConvMap.add conv tmp !conv_to_global_tmp;
+          comp_tmp_map := Addr.Map.add comp (ConvMap.add conv tmp comp_convs) !comp_tmp_map;
           tmp
     in
+    let global_subst = ref Var.Map.empty in
     let blocks =
       Addr.Map.mapi
         (fun pc block ->
+          let comp = get_comp pc in
           let to_insert =
             ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
           in
           let inserted_rev = ref [] in
           ConvSet.iter
             (fun ((kind, arg) as conv) ->
-              let tmp = get_global_tmp conv in
+              let tmp = get_comp_tmp comp conv in
               inserted_rev := Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
             to_insert;
+          let my_inserted = comp_inserted pc in
           let body_rev = ref [] in
           List.iter
             ~f:(fun i ->
@@ -527,9 +543,9 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
                   match kind_of_prim p with
                   | Some kind -> (
                       let conv = kind, arg in
-                      if ConvSet.mem conv inserted_convs
+                      if ConvSet.mem conv my_inserted
                       then (
-                        let tmp = get_global_tmp conv in
+                        let tmp = get_comp_tmp comp conv in
                         global_subst := Var.Map.add v tmp !global_subst)
                       else body_rev := i :: !body_rev)
                   | None -> body_rev := i :: !body_rev)
