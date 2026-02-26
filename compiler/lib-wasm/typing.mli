@@ -81,6 +81,8 @@ val count : t -> int
 
 val var_type : t -> Code.Var.t -> typ
 
+val set_var_type : t -> Code.Var.t -> typ -> unit
+
 val return_type : t -> Code.Var.t -> typ
 
 val set_return_type : t -> Code.Var.t -> typ -> unit

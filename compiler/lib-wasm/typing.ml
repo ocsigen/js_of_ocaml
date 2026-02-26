@@ -629,6 +629,7 @@ let print_opt types global_flow_state f e =
 type t =
   { types : typ Var.Tbl.t
   ; return_types : typ Var.Hashtbl.t
+  ; extra_types : typ Var.Hashtbl.t
   }
 
 let disable_box_numbers = ref false
@@ -681,11 +682,19 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
               (Var.Set.fold (fun x t -> Domain.join (Var.Tbl.get types x) t) s Bot))
         name_opt)
     ();
-  { types; return_types }
+  { types; return_types; extra_types = Var.Hashtbl.create 128 }
 
 let var_type info x =
   let idx = Var.idx x in
-  if idx < Var.Tbl.length info.types then Var.Tbl.get info.types x else Top
+  if idx < Var.Tbl.length info.types
+  then Var.Tbl.get info.types x
+  else Var.Hashtbl.find_opt info.extra_types x |> Option.value ~default:Top
+
+let set_var_type info x t =
+  let idx = Var.idx x in
+  if idx < Var.Tbl.length info.types
+  then Var.Tbl.set info.types x t
+  else Var.Hashtbl.replace info.extra_types x t
 
 let count info = Var.Tbl.length info.types
 
