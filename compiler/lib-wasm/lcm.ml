@@ -46,27 +46,28 @@ let kind_of_prim = function
   | _ -> None
 
 let type_of_kind = function
-  | Unbox_i32 -> Number (Int32, Unboxed)
-  | Unbox_i64 -> Number (Int64, Unboxed)
-  | Unbox_f64 -> Number (Float, Unboxed)
-  | Box_i32 | Box_i64 | Box_f64 -> Top
-  | Untag_int -> Int Normalized
-  | Tag_int -> Top
+  | Unbox_i32 -> Typing.Number (Typing.Int32, Typing.Unboxed)
+  | Unbox_i64 -> Typing.Number (Typing.Int64, Typing.Unboxed)
+  | Unbox_f64 -> Typing.Number (Typing.Float, Typing.Unboxed)
+  | Box_i32 | Box_i64 | Box_f64 -> Typing.Top
+  | Untag_int -> Typing.Int Typing.Integer.Normalized
+  | Tag_int -> Typing.Top
 
 (* First pass: only lower number boxing/unboxing conversions. *)
 let number_conversion_kind ~(from : Typing.typ) ~(into : Typing.typ) =
   match from, into with
-  | Number (Int32, Unboxed), Number (Int32, Unboxed)
-  | Number (Int64, Unboxed), Number (Int64, Unboxed)
-  | Number (Float, Unboxed), Number (Float, Unboxed) -> None
-  | Int _, _ | _, Int _ -> None
-  | Number (_, Unboxed), Number (_, Unboxed) -> None
-  | _, Number (Int32, Unboxed) -> Some Unbox_i32
-  | _, Number (Int64, Unboxed) -> Some Unbox_i64
-  | _, Number (Float, Unboxed) -> Some Unbox_f64
-  | Number (Int32, Unboxed), _ -> Some Box_i32
-  | Number (Int64, Unboxed), _ -> Some Box_i64
-  | Number (Float, Unboxed), _ -> Some Box_f64
+  | Typing.Number (Typing.Int32, Typing.Unboxed), Typing.Number (Typing.Int32, Typing.Unboxed)
+  | Typing.Number (Typing.Int64, Typing.Unboxed), Typing.Number (Typing.Int64, Typing.Unboxed)
+  | Typing.Number (Typing.Float, Typing.Unboxed), Typing.Number (Typing.Float, Typing.Unboxed)
+    -> None
+  | Typing.Int _, _ | _, Typing.Int _ -> None
+  | Typing.Number (_, Typing.Unboxed), Typing.Number (_, Typing.Unboxed) -> None
+  | _, Typing.Number (Typing.Int32, Typing.Unboxed) -> Some Unbox_i32
+  | _, Typing.Number (Typing.Int64, Typing.Unboxed) -> Some Unbox_i64
+  | _, Typing.Number (Typing.Float, Typing.Unboxed) -> Some Unbox_f64
+  | Typing.Number (Typing.Int32, Typing.Unboxed), _ -> Some Box_i32
+  | Typing.Number (Typing.Int64, Typing.Unboxed), _ -> Some Box_i64
+  | Typing.Number (Typing.Float, Typing.Unboxed), _ -> Some Box_f64
   | _ -> None
 
 let lower_var_conversion ~types ~(from : Typing.typ) ~(into : Typing.typ) x =
@@ -79,7 +80,7 @@ let lower_var_conversion ~types ~(from : Typing.typ) ~(into : Typing.typ) x =
 
 let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Global_flow.info)
     =
-  let lower_apply x ({ f; args; exact } as apply) =
+  let lower_apply x ~f ~args ~exact =
     let closure =
       if exact
       then
@@ -111,15 +112,15 @@ let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Globa
         let from = Typing.return_type types g in
         let into = Typing.var_type types x in
         match number_conversion_kind ~from ~into with
-        | None -> lowered_args @ [ Let (x, Apply { apply with args = args' }) ]
+        | None -> lowered_args @ [ Let (x, Apply { f; args = args'; exact }) ]
         | Some kind ->
             let tmp = Var.fresh () in
             Typing.set_var_type types tmp from;
             lowered_args
-            @ [ Let (tmp, Apply { apply with args = args' })
+            @ [ Let (tmp, Apply { f; args = args'; exact })
               ; Let (x, Prim (prim_of_kind kind, [ Pv tmp ]))
               ])
-    | None -> lowered_args @ [ Let (x, Apply { apply with args = args' }) ]
+    | None -> lowered_args @ [ Let (x, Apply { f; args = args'; exact }) ]
   in
   let lower_instr = function
     | Assign (x, y) ->
@@ -127,7 +128,7 @@ let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Globa
         let into = Typing.var_type types x in
         let lowered, y' = lower_var_conversion ~types ~from ~into y in
         lowered @ [ Assign (x, y') ]
-    | Let (x, Apply apply) -> lower_apply x apply
+    | Let (x, Apply { f; args; exact }) -> lower_apply x ~f ~args ~exact
     | i -> [ i ]
   in
   let blocks =
@@ -248,9 +249,16 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
               Var.Set.fold (fun x acc -> Typing.join (Typing.var_type types x) acc) s Typing.Bot
             in
             match t with
-            | Number (_, Unboxed) | Int Normalized -> Typing.set_return_type types g t
-            | Top | Int Ref | Int Unnormalized | Number (_, Boxed) | Tuple _ | Bigarray _ | Bot
-              -> ())
+            | Typing.Number (_, Typing.Unboxed)
+            | Typing.Int Typing.Integer.Normalized ->
+                Typing.set_return_type types g t
+            | Typing.Top
+            | Typing.Int Typing.Integer.Ref
+            | Typing.Int Typing.Integer.Unnormalized
+            | Typing.Number (_, Typing.Boxed)
+            | Typing.Tuple _
+            | Typing.Bigarray _
+            | Typing.Bot -> ())
       | None -> ())
     ();
   let p = lower_conversions p types global_flow_info in
