@@ -174,10 +174,9 @@ let%expect_test "Unix.read with offset" =
   [%expect {|
     read 5: abcde
     read 5: fghij
-    read 5: abcde
+    read 5: uvwxy
     |}]
 
-(*
 let%expect_test "Unix.LargeFile.fstat" =
   let tmp = Filename.temp_file "a" "txt" in
   let fd = Unix.openfile tmp [ O_WRONLY; O_CREAT; O_TRUNC ] 0o666 in
@@ -188,7 +187,6 @@ let%expect_test "Unix.LargeFile.fstat" =
   Unix.close fd;
   Unix.unlink tmp;
   [%expect {| size: 1234 |}]
-*)
 
 let%expect_test "Unix.symlink to_dir" =
   let tmp = Filename.temp_file "a" "txt" in
