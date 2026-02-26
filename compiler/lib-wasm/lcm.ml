@@ -304,10 +304,6 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       )
     in
     traverse_defs p.start;
-    Var.Tbl.iter (fun v pc ->
-      if Var.idx v = 1188 then
-        Format.eprintf "LCM MAGIC DEBUG: s2 (ID %d) is defined in block %d@." (Var.idx v) pc
-    ) def_blocks;
     let component_of = Addr.Hashtbl.create 16 in
     let rec mark_comp pc comp_id =
       if not (Addr.Hashtbl.mem component_of pc) then (
@@ -489,6 +485,14 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             if not (List.mem ~eq:Int.equal p' !worklist) then worklist := p' :: !worklist)
           ps)
     done;
+    let inserted_convs =
+      Addr.Map.fold
+        (fun pc _ acc ->
+          ConvSet.union acc
+            (ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)))
+        p.blocks
+        ConvSet.empty
+    in
     let global_subst = ref Var.Map.empty in
     let conv_to_global_tmp = ref ConvMap.empty in
     let get_global_tmp ((kind, _) as conv) =
@@ -523,14 +527,11 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
                   match kind_of_prim p with
                   | Some kind -> (
                       let conv = kind, arg in
-                      let is_isolated = ConvSet.mem conv (Addr.Map.find pc !isolatedout) in
-                      if not is_isolated then (
+                      if ConvSet.mem conv inserted_convs
+                      then (
                         let tmp = get_global_tmp conv in
-                        global_subst := Var.Map.add v tmp !global_subst
-                      ) else (
-                        body_rev := i :: !body_rev
-                      )
-                    )
+                        global_subst := Var.Map.add v tmp !global_subst)
+                      else body_rev := i :: !body_rev)
                   | None -> body_rev := i :: !body_rev)
               | Let (_, _) | Assign (_, _) | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
                   body_rev := i :: !body_rev)
