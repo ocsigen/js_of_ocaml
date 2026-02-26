@@ -1,0 +1,7 @@
+(tests
+ (names lcm_test)
+ (modes js wasm)
+ (js_of_ocaml
+  (flags :standard --disable optcall --no-inline))
+ (wasm_of_ocaml
+  (flags :standard --no-inline)))
