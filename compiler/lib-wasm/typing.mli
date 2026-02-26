@@ -89,7 +89,9 @@ val set_return_type : t -> Code.Var.t -> typ -> unit
 
 val reset : unit -> unit
 
-val register_prim : string -> unbox:bool -> typ -> unit
+val register_prim : string -> ?args:typ list -> unbox:bool -> typ -> unit
+
+val prim_sig : string -> typ list option * typ
 
 val disable_box_numbers : bool ref
 

@@ -249,12 +249,13 @@ module Generate (Target : Target_sig.S) = struct
         String.Hashtbl.add
           h
           nm
-          (k, false, Typing.Top, fun ctx _ l -> f (fun x -> transl_prim_arg ctx x) l))
+          (k, None, false, Typing.Top, fun ctx _ l -> f (fun x -> transl_prim_arg ctx x) l))
       internal_primitives;
     h
 
-  let register_prim name ?(unbox = false) ?(ret_typ = Typing.Top) kind f =
-    String.Hashtbl.add internal_primitives name (kind, unbox, ret_typ, f)
+  let register_prim name ?(args=[]) ?(unbox = false) ?(ret_typ = Typing.Top) kind f =
+    Typing.register_prim name ~args ~unbox ret_typ;
+    String.Hashtbl.add internal_primitives name (kind, Some args, unbox, ret_typ, f)
 
   let invalid_arity name l ~expected =
     failwith
@@ -282,14 +283,17 @@ module Generate (Target : Target_sig.S) = struct
   let nativeint_u = Typing.Number (Nativeint, Unboxed)
 
   let register_un_prim name k ?typ ?ret_typ f =
-    register_prim name k ~unbox:(is_unboxed typ) ?ret_typ (fun ctx _ l ->
+    let arg1 = Option.value ~default:Typing.Top typ in
+    register_prim name k ~args:[ arg1 ] ~unbox:(is_unboxed typ) ?ret_typ (fun ctx _ l ->
         match l with
         | [ x ] -> f (transl_prim_arg ctx ?typ x)
         | l -> invalid_arity name l ~expected:1)
 
   let register_bin_prim name k ?tx ?ty ?ret_typ f =
     let unbox = is_unboxed tx || is_unboxed ty in
-    register_prim name k ~unbox ?ret_typ (fun ctx _ l ->
+    let arg1 = Option.value ~default:Typing.Top tx in
+    let arg2 = Option.value ~default:Typing.Top ty in
+    register_prim name k ~args:[ arg1; arg2 ] ~unbox ?ret_typ (fun ctx _ l ->
         match l with
         | [ x; y ] -> f (transl_prim_arg ctx ?typ:tx x) (transl_prim_arg ctx ?typ:ty y)
         | _ -> invalid_arity name l ~expected:2)
@@ -299,7 +303,9 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_bin_prim_ctx name ?tx ?ty ?ret_typ f =
     let unbox = is_unboxed tx || is_unboxed ty in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx context l ->
+    let arg1 = Option.value ~default:Typing.Top tx in
+    let arg2 = Option.value ~default:Typing.Top ty in
+    register_prim name `Mutator ~args:[ arg1; arg2 ] ~unbox ?ret_typ (fun ctx context l ->
         match l with
         | [ x; y ] ->
             f context (transl_prim_arg ctx ?typ:tx x) (transl_prim_arg ctx ?typ:ty y)
@@ -307,7 +313,9 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_tern_prim name ?ty ?tz ?ret_typ f =
     let unbox = is_unboxed ty || is_unboxed tz in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx _ l ->
+    let arg2 = Option.value ~default:Typing.Top ty in
+    let arg3 = Option.value ~default:Typing.Top tz in
+    register_prim name `Mutator ~args:[ Typing.Top; arg2; arg3 ] ~unbox ?ret_typ (fun ctx _ l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -318,7 +326,9 @@ module Generate (Target : Target_sig.S) = struct
 
   let register_tern_prim_ctx name ?ty ?tz ?ret_typ f =
     let unbox = is_unboxed ty || is_unboxed tz in
-    register_prim name `Mutator ~unbox ?ret_typ (fun ctx context l ->
+    let arg2 = Option.value ~default:Typing.Top ty in
+    let arg3 = Option.value ~default:Typing.Top tz in
+    register_prim name `Mutator ~args:[ Typing.Top; arg2; arg3 ] ~unbox ?ret_typ (fun ctx context l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -1281,7 +1291,7 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (p, l) -> (
         match p with
         | Extern name when String.Hashtbl.mem internal_primitives name ->
-            let _, _, _, f = String.Hashtbl.find internal_primitives name in
+            let _, _, _, _, f = String.Hashtbl.find internal_primitives name in
             f ctx context l |> box_number_if_needed ctx x
         | Extern name when String.Hashtbl.mem specialized_primitives name ->
             let ((_, arg_typ, _) as typ) =
@@ -1877,9 +1887,9 @@ module Generate (Target : Target_sig.S) = struct
     Primitive.register "caml_make_array" `Mutable None None;
     Primitive.register "caml_array_of_uniform_array" `Mutable None None;
     String.Hashtbl.iter
-      (fun name (k, unbox, typ, _) ->
+      (fun name (k, args_opt, unbox, typ, _) ->
         Primitive.register name k None None;
-        Typing.register_prim name ~unbox typ)
+        Typing.register_prim name ?args:args_opt ~unbox typ)
       internal_primitives;
     String.Hashtbl.iter
       (fun name (k, param_types, typ) ->

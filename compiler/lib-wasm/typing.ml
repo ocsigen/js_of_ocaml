@@ -366,12 +366,17 @@ let prim_type ~st ~approx prim args =
       | [] | [ _ ] | _ :: Pc _ :: _ -> Top)
   | _ -> (
       match String.Hashtbl.find_opt primitive_types prim with
-      | Some (_, typ) -> typ
+      | Some (_, _, typ) -> typ
       | None -> Top)
 
 let reset () = String.Hashtbl.reset primitive_types
 
-let register_prim nm ~unbox typ = String.Hashtbl.replace primitive_types nm (unbox, typ)
+let register_prim nm ?args ~unbox typ = String.Hashtbl.replace primitive_types nm (args, unbox, typ)
+
+let prim_sig nm = 
+  match String.Hashtbl.find_opt primitive_types nm with
+  | Some (args, _, typ) -> args, typ
+  | None -> None, Top
 
 let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
@@ -586,7 +591,7 @@ let box_numbers p st types =
                       if
                         not
                           (String.Hashtbl.mem primitive_types s
-                           && fst (String.Hashtbl.find primitive_types s)
+                           && (let _, unbox, _ = String.Hashtbl.find primitive_types s in unbox)
                           || type_specialized_primitive types st.global_flow_state s args
                           )
                       then
