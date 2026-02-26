@@ -406,7 +406,7 @@
       (param $fd (ref eq)) (result (ref eq))
       (try (result (ref eq))
          (do
-            (call $fstat (local.get $fd) (i32.const 0)))
+            (call $fstat (local.get $fd) (i32.const 1)))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))
             (ref.i31 (i32.const 0)))))
@@ -613,7 +613,7 @@
                      (ref.cast (ref i31)
                         (array.get $block
                            (ref.cast (ref $block) (local.get $to_dir))
-                           (i32.const 0))))))))
+                           (i32.const 1))))))))
       (try
          (do
             (call $symlink
@@ -906,6 +906,8 @@
       (local.set $buf (call $get_io_buffer))
       (local.set $buf_view (ref.as_non_null (global.get $io_buffer_view)))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
+      (local.set $offset
+         (struct.get $fd_offset $offset (local.get $fd_offset)))
       (try
          (do
             (local.set $n
@@ -919,6 +921,10 @@
                         (i32.const 0) (local.get $len) (ref.null extern))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
+      (local.set $offset
+         (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
+      (struct.set $fd_offset $offset
+         (local.get $fd_offset) (local.get $offset))
       (call $caml_blit_dataview_to_bytes
          (local.get $buf_view) (i32.const 0)
          (ref.cast (ref $bytes) (local.get $vbuf)) (local.get $pos)
@@ -937,6 +943,8 @@
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
+      (local.set $offset
+         (struct.get $fd_offset $offset (local.get $fd_offset)))
       (loop $loop
          (if (i32.gt_u (local.get $len) (i32.const 0))
             (then
@@ -979,6 +987,8 @@
       (local.set $pos (i31.get_u (ref.cast (ref i31) (local.get $vpos))))
       (local.set $len (i31.get_u (ref.cast (ref i31) (local.get $vlen))))
       (local.set $fd_offset (call $get_fd_offset (local.get $fd)))
+      (local.set $offset
+         (struct.get $fd_offset $offset (local.get $fd_offset)))
       (try
          (do
             (local.set $n
@@ -992,8 +1002,10 @@
                         (local.get $pos) (local.get $len) (ref.null extern))))))
          (catch $javascript_exception
             (call $caml_unix_error (pop externref) (ref.null eq))))
+      (local.set $offset
+         (i64.add (local.get $offset) (i64.extend_i32_u (local.get $n))))
       (struct.set $fd_offset $offset (local.get $fd_offset)
-         (i64.add (local.get $offset) (i64.extend_i32_s (local.get $n))))
+         (local.get $offset))
       (ref.i31 (local.get $n)))
 
    (func $lseek_exn (param $errno i32) (result (ref eq))
