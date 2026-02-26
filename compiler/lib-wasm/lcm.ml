@@ -308,15 +308,15 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       if Var.idx v = 1188 then
         Format.eprintf "LCM MAGIC DEBUG: s2 (ID %d) is defined in block %d@." (Var.idx v) pc
     ) def_blocks;
-    let component_of = Addr.Tbl.create 16 in
+    let component_of = Addr.Hashtbl.create 16 in
     let rec mark_comp pc comp_id =
-      if not (Addr.Tbl.mem component_of pc) then (
-        Addr.Tbl.add component_of pc comp_id;
+      if not (Addr.Hashtbl.mem component_of pc) then (
+        Addr.Hashtbl.add component_of pc comp_id;
         Code.fold_children p.blocks pc (fun pc' () -> mark_comp pc' comp_id) ()
       )
     in
     Code.fold_closures p (fun _ _ (pc, _) _ () -> mark_comp pc pc) ();
-    let get_comp pc = try Addr.Tbl.find component_of pc with Not_found -> -1 in
+    let get_comp pc = try Addr.Hashtbl.find component_of pc with Not_found -> -1 in
     let conv_comp = ConvSet.fold (fun ((_, arg) as conv) acc ->
         ConvMap.add conv (get_comp (Var.Tbl.get def_blocks arg)) acc
       ) all_convs ConvMap.empty in
