@@ -8,6 +8,6 @@ let%expect_test "caml_list_of_js_array" =
   print_newline ();
   Printf.printf "equal: %b\n" (original = result);
   [%expect {|
-    5 4 3 2 1
-    equal: false
+    1 2 3 4 5
+    equal: true
     |}]

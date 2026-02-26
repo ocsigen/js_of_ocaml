@@ -177,16 +177,16 @@ let%expect_test "of_string" =
   [%expect {| Failure("float_of_string") |}];
   let x = " -0x1.1" in
   print' (fun () -> float_of_string x);
-  [%expect {| Failure("float_of_string") |}];
+  [%expect {| -1.062500 |}];
   let x = " +0x1.1" in
   print' (fun () -> float_of_string x);
-  [%expect {| Failure("float_of_string") |}];
+  [%expect {| 1.062500 |}];
   let x = " -inf" in
   print' (fun () -> float_of_string x);
-  [%expect {| Failure("float_of_string") |}];
+  [%expect {| -inf |}];
   let x = " +inf" in
   print' (fun () -> float_of_string x);
-  [%expect {| Failure("float_of_string") |}];
+  [%expect {| inf |}];
   let x = " nan" in
   print' (fun () -> float_of_string x);
   [%expect {| nan |}]
