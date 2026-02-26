@@ -115,7 +115,7 @@
                   (i32.const 0x7c00))
          (then
             (if (i32.and (local.get $i) (i32.const 0x03ff))
-               (then (local.set $i (i32.const 0x7FC01))))))
+               (then (local.set $i (i32.const 0x7C01))))))
       (if (i32.eq (local.get $i) (i32.const 0x8000))
          (then (local.set $i (i32.const 0))))
       (return_call $caml_hash_mix_int (local.get $h) (local.get $i)))
