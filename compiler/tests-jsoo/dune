@@ -46,6 +46,7 @@
    test_floats
    test_float16
    test_bigarray
+   test_list_of_js_array
    test_marshal_compressed
    test_parsing
    test_runtime_value
@@ -81,6 +82,15 @@
 (library
  (name test_custom_name)
  (modules test_custom_name)
+ (inline_tests
+  (modes js wasm))
+ (libraries js_of_ocaml)
+ (preprocess
+  (pps ppx_expect)))
+
+(library
+ (name test_list_of_js_array)
+ (modules test_list_of_js_array)
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)

@@ -21,4 +21,11 @@ let () =
     Printf.printf "%h\n%!" (if Float.is_nan old then Float.nan else old);
     ba'.{i} <- old;
     if old = old && not (old = ba'.{i}) then Printf.printf "%g <> %g\n%!" old ba'.{i}
-  done
+  done;
+  (* Test hashing of NaN values — exercises the NaN canonical value path *)
+  let nan_ba = Bigarray.Array1.create Bigarray.float16 Bigarray.c_layout 4 in
+  nan_ba.{0} <- Float.nan;
+  nan_ba.{1} <- Float.nan;
+  nan_ba.{2} <- 1.0;
+  nan_ba.{3} <- Float.nan;
+  Printf.printf "hash_nan: %08x\n%!" (Hashtbl.hash nan_ba)

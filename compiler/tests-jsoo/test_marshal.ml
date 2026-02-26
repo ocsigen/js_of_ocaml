@@ -172,6 +172,29 @@ let%expect_test "test float" =
     "\132\149\166\190\000\000\000\017\000\000\000\004\000\000\000\012\000\000\000\011\160\160\012\031\133\235Q\184\030\t@\004\001\160\004\003@"
     3.140000 3.140000 3.140000 3.140000 |}]
 
+let%expect_test "md5 digest via channel" =
+  (* The MD5 buffer offset bug only triggers when MD5Update is called with
+     in_buf != 0, i.e. when a previous update left a partial 64-byte block.
+     Digest.string does a single update from in_buf=0, so it can't trigger it.
+     To trigger it: write a file larger than the IO buffer (65536 bytes in wasm),
+     read a non-64-aligned prefix so that the first caml_getblock returns a
+     non-64-aligned amount. Then the second MD5Update call has in_buf != 0. *)
+  let total = 100_000 in
+  let skip = 37 in
+  let data = String.init total (fun i -> Char.chr (i mod 256)) in
+  let expected = Digest.to_hex (Digest.string (String.sub data skip (total - skip))) in
+  let tmp = Filename.temp_file "md5" "test" in
+  let oc = open_out_bin tmp in
+  output_string oc data;
+  close_out oc;
+  let ic = open_in_bin tmp in
+  ignore (really_input_string ic skip);
+  let got = Digest.to_hex (Digest.channel ic (-1)) in
+  close_in ic;
+  Sys.remove tmp;
+  Printf.printf "match: %b\n" (expected = got);
+  [%expect {| match: true |}]
+
 let%expect_test "test input with offset" =
   let s = 3.14 in
   let b = Bytes.create 1000 in
