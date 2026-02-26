@@ -122,6 +122,55 @@ let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Globa
               ])
     | None -> lowered_args @ [ Let (x, Apply { f; args = args'; exact }) ]
   in
+  let lower_prim x p args =
+    let target_types_opt =
+      match p with
+      | Extern nm -> fst (Typing.prim_sig nm)
+      | _ -> None
+    in
+    let args', lowered_args =
+      match target_types_opt with
+      | Some target_types when List.compare_length_with args ~len:(List.length target_types) = 0 ->
+          let lowered_args_rev = ref [] in
+          let args' =
+            List.map2
+              ~f:(fun arg into ->
+                match arg with
+                | Pv v ->
+                    let from = Typing.var_type types v in
+                    let lowered, v' = lower_var_conversion ~types ~from ~into v in
+                    lowered_args_rev := List.rev_append lowered !lowered_args_rev;
+                    Pv v'
+                | Pc _ -> arg)
+              args
+              target_types
+          in
+          args', List.rev !lowered_args_rev
+      | _ -> args, []
+    in
+    let lowered_args = lowered_args @ [ Let (x, Prim (p, args')) ] in
+    let from =
+      match target_types_opt with
+      | Some _ -> snd (Typing.prim_sig (match p with Extern nm -> nm | _ -> assert false))
+      | None -> Typing.Top
+    in
+    let into = Typing.var_type types x in
+    match number_conversion_kind ~from ~into with
+    | None -> lowered_args
+    | Some kind ->
+        let tmp = Var.fresh () in
+        Typing.set_var_type types tmp from;
+        let replace_x = function
+          | Let (_, instr) -> Let (tmp, instr)
+          | _ -> assert false
+        in
+        let lowered_args =
+          match List.rev lowered_args with
+          | last :: rest -> List.rev (replace_x last :: rest)
+          | [] -> assert false
+        in
+        lowered_args @ [ Let (x, Prim (prim_of_kind kind, [ Pv tmp ])) ]
+  in
   let lower_instr = function
     | Assign (x, y) ->
         let from = Typing.var_type types y in
@@ -129,6 +178,7 @@ let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Globa
         let lowered, y' = lower_var_conversion ~types ~from ~into y in
         lowered @ [ Assign (x, y') ]
     | Let (x, Apply { f; args; exact }) -> lower_apply x ~f ~args ~exact
+    | Let (x, Prim (p, args)) -> lower_prim x p args
     | i -> [ i ]
   in
   let blocks =
