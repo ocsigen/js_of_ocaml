@@ -99,6 +99,15 @@ let link
     ; allowed_imports
     ; binaryen_options = { common; merge; opt }
     } =
+  Js_of_ocaml_compiler.Config.set_effects_backend
+    (match
+       List.find_map
+         ~f:(fun (k, v) -> if String.equal k "effects" then Some v else None)
+         variables.set
+     with
+    | Some "native" -> `Native
+    | Some "cps" -> `Cps
+    | _ -> `Jspi);
   let inputs =
     List.map
       ~f:(fun (module_name, file) -> { Wat_preprocess.module_name; file; source = File })

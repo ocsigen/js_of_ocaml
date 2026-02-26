@@ -68,14 +68,20 @@ Compared to js_of_ocaml:
 
 === Effect handlers
 
-OCaml 5.x code using effect handlers can be compiled in two ways:
+OCaml 5.x code using effect handlers can be compiled in three ways:
 
 * **{{{--effects=cps}}}** - Uses the CPS transformation from js_of_ocaml
 * **{{{--effects=jspi}}}** (default) - Uses the [[https://github.com/WebAssembly/js-promise-integration|JavaScript-Promise Integration extension]]
+* **{{{--effects=native}}}** - Uses the [[https://github.com/WebAssembly/stack-switching|WebAssembly Stack Switching proposal]]
 
 The CPS transformation is not the default since the generated code is slower,
 larger, and less readable. However, the JSPI extension is not yet enabled by
 default in web browsers, and performing effects is slower when using it.
+
+The native implementation is based on the WebAssembly typed continuations
+proposal (stack switching). It provides the best performance but requires a
+runtime with support for the WasmFX extension (currently available in
+V8/Node.js behind the {{{--experimental-wasm-wasmfx}}} flag).
 
 ==@@id="js-bindings"@@ Binding with JavaScript libraries
 

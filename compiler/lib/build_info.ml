@@ -41,12 +41,14 @@ let string_of_effects_backend : Config.effects_backend -> string = function
   | `Cps -> "cps"
   | `Double_translation -> "double-translation"
   | `Jspi -> "jspi"
+  | `Native -> "native"
 
 let effects_backend_of_string = function
   | "disabled" -> `Disabled
   | "cps" -> `Cps
   | "double-translation" -> `Double_translation
   | "jspi" -> `Jspi
+  | "native" -> `Native
   | _ -> invalid_arg "effects_backend_of_string"
 
 let kind_of_string s =
