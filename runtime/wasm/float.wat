@@ -531,14 +531,14 @@
          (br_if $error
             (call $on_whitespace
                (local.get $s) (i32.sub (local.get $len) (i32.const 1))))
-         (local.set $c (array.get_u $bytes (local.get $s) (i32.const 0)))
+         (local.set $c (array.get_u $bytes (local.get $s) (local.get $i)))
          (if (i32.eq (local.get $c) (@char "-"))
             (then
                (local.set $negative (i32.const 1))
-               (local.set $i (i32.const 1))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))))
          (if (i32.eq (local.get $c) (@char "+"))
             (then
-               (local.set $i (i32.const 1))))
+               (local.set $i (i32.add (local.get $i) (i32.const 1)))))
          (if (i32.lt_u (i32.add (local.get $i) (i32.const 2)) (local.get $len))
             (then
                (if (i32.eq (array.get_u $bytes (local.get $s) (local.get $i))
