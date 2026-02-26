@@ -496,7 +496,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
         then (
           let comp = get_comp pc in
           let existing =
-            (try Int.Hashtbl.find inserted_by_comp comp with Not_found -> ConvSet.empty)
+            try Int.Hashtbl.find inserted_by_comp comp with Not_found -> ConvSet.empty
           in
           Int.Hashtbl.replace inserted_by_comp comp (ConvSet.union existing to_insert)))
       p.blocks;
