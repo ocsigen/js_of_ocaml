@@ -377,11 +377,11 @@ let register_prim nm ?args ~unbox typ =
 let prim_sig nm =
   match String.Hashtbl.find_opt primitive_types nm with
   | Some (args, _, typ) -> args, typ
-  | None ->
+  | None -> (
       match nm with
       | "caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen" ->
           Some [ Top; Int Normalized ], Top
-      | _ -> None, Top
+      | _ -> None, Top)
 
 let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
@@ -561,7 +561,7 @@ let type_specialized_primitive types global_flow_state name args =
       | _ -> false)
   | _ -> false
 
-let _box_numbers p st types =
+let box_numbers p st types =
   (* We box numbers eagerly if the boxed value is ever used. *)
   let should_box = Var.ISet.empty () in
   let rec box y =
@@ -599,12 +599,12 @@ let _box_numbers p st types =
               match i with
               | Let (_, e) -> (
                   match e with
-                  | Apply { f; args = _args; _ } ->
+                  | Apply { f; args; _ } ->
                       if
                         match Global_flow.get_unique_closure st.global_flow_info f with
                         | None -> true
                         | Some (g, _) -> not (can_unbox_parameters st.fun_info g)
-                      then () (* Let lcm.ml explicitly handle Apply argument conversions! *)
+                      then List.iter ~f:box args
                   | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
                   | Prim (Extern s, args) ->
                       if
@@ -683,7 +683,7 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let st = { global_flow_state; global_flow_info; boxed_function_parameters; fun_info } in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
-  (* box_numbers p st types; Disabled so LCM can optimally intercept raw boxes *)
+  if not !disable_box_numbers then box_numbers p st types;
   if times () then Format.eprintf "  type analysis: %a@." Timer.print t;
   if debug ()
   then (
