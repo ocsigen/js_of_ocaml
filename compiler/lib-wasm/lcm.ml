@@ -1,3 +1,44 @@
+(* Lazy Code Motion (LCM) for boxing/unboxing and tagging/untagging conversions.
+
+   In the wasm_of_ocaml backend, the type analysis (typing.ml) assigns unboxed or
+   untagged types to variables when profitable. The code generator then inserts
+   conversion operations (box/unbox/tag/untag) at every point where a representation
+   mismatch occurs: function call boundaries, branches to blocks with differently-typed
+   parameters, returns, stores, etc.
+
+   Many of these conversions are redundant or could be hoisted out of loops. For example,
+   a loop that repeatedly unboxes a float from an invariant variable will emit the same
+   unbox on every iteration. LCM eliminates this redundancy.
+
+   The pass works in two phases:
+
+   1. **Lowering** ([lower_conversions]): Materialises implicit representation mismatches
+      as explicit IR primitives (Wasm_box_*, Wasm_unbox_*, Wasm_tag_int, Wasm_untag_int).
+      After this phase, every conversion is a visible instruction that can be analysed.
+
+   2. **LCM optimisation** ([process_function]): Applies the classical Knoop-Ruthing-Steffen
+      Lazy Code Motion algorithm to these conversion instructions. LCM finds the optimal
+      placement: as early as necessary (to eliminate redundancy) but as late as possible
+      (to avoid lengthening lifetimes or executing speculatively). The five dataflow
+      analyses are:
+        - Anticipatability: can the conversion be moved to this point?
+        - Availability: has the conversion already been computed on all paths?
+        - Earliest = anticipated but not yet available
+        - Delayability: can we push earliest placements further down?
+        - Latest = last point where a delayed insertion is still correct
+        - Isolated: is the conversion used only once after insertion?
+      After computing optimal placements, the rewrite pass inserts conversions at
+      [latest \ isolated] points and substitutes redundant occurrences with the
+      hoisted result.
+
+   3. **Peephole cleanup** ([optimize_peephole_conversions]): Eliminates inverse conversion
+      pairs (e.g. box(unbox(x)) -> x) that may arise from the LCM rewrite.
+
+   The analysis runs independently on each function to avoid cross-function variable
+   references in inserted instructions.
+
+   Reference: J. Knoop, O. Ruthing, B. Steffen, "Lazy Code Motion", PLDI 1992. *)
+
 open! Stdlib
 open Code
 module VarSet = Var.Set
@@ -66,7 +107,9 @@ let type_of_kind = function
   | Untag_int -> Typing.Int Typing.Integer.Normalized
   | Tag_int -> Typing.Int Typing.Integer.Ref
 
-(* First pass: only lower number boxing/unboxing conversions. *)
+(* Determine which conversion operation, if any, is needed to go from one
+   representation to another. Returns [None] when the representations match
+   or no conversion is applicable. *)
 let number_conversion_kind ~(from : Typing.typ) ~(into : Typing.typ) =
   match from, into with
   | ( Typing.Number (Typing.Int32, Typing.Unboxed)
@@ -98,6 +141,18 @@ let lower_var_conversion ~types ~(from : Typing.typ) ~(into : Typing.typ) x =
       Typing.set_var_type types tmp into;
       [ Let (tmp, Prim (prim_of_kind kind, [ Pv x ])) ], tmp
 
+(* Phase 1: Lowering.
+
+   Walk every instruction and branch, and insert explicit conversion primitives
+   wherever the type analysis indicates a representation mismatch. For example,
+   if a function parameter expects an unboxed float but the argument is boxed, an
+   [Wasm_unbox_f64] instruction is inserted before the call. Similarly, if a
+   primitive produces an unboxed result but the variable is typed as boxed, a
+   boxing instruction is inserted after the definition.
+
+   For branches with multiple targets (Cond, Switch, Pushtrap), conversions
+   needed for different targets are placed on split edges (fresh intermediate
+   blocks) so they don't execute on the wrong path. *)
 let lower_conversions
     (blocks : block Addr.Map.t)
     (types : Typing.t)
@@ -329,6 +384,8 @@ let lower_conversions
   in
   Addr.Map.union (fun _ a _ -> Some a) blocks !new_blocks_map
 
+(* Collect the universe of all conversions that appear in the function,
+   along with the join of their result types across all occurrences. *)
 let get_all_conversions blocks types =
   let all_convs = ref ConvSet.empty in
   let conv_types = ref ConvMap.empty in
@@ -354,6 +411,18 @@ let get_all_conversions blocks types =
     blocks;
   !all_convs, !conv_types
 
+(* Local properties of a basic block, computed for the LCM dataflow analyses.
+
+   A conversion (kind, v) is identified by its operation and its operand variable.
+   It is "killed" in a block if v is redefined (by Let or Assign) in that block.
+
+   - [transp]: conversions whose operand is never killed in this block (transparent).
+   - [comp]: conversions that are computed (appear) in this block and are not
+     subsequently killed by a later redefinition of their operand.
+     (Downward-exposed computations.)
+   - [antloc]: conversions that are computed in this block and whose operand was
+     not killed before the computation. (Locally anticipatable: the operand's
+     value at block entry reaches the conversion.) *)
 type block_props =
   { transp : ConvSet.t
   ; comp : ConvSet.t
@@ -448,6 +517,13 @@ let reachable_blocks all_blocks entry =
   visit entry;
   !visited
 
+(* Phase 3: Peephole cleanup.
+
+   After LCM rewriting, inverse conversion pairs may appear:
+     let y = box_f64(x)     -- inserted by LCM or lowering
+     let z = unbox_f64(y)   -- original use
+   This pass detects such pairs and substitutes z with x directly,
+   removing the dead intermediate definitions. *)
 let optimize_peephole_conversions blocks =
   let defs = Var.Tbl.make () None in
   let subst = ref Var.Map.empty in
@@ -540,12 +616,15 @@ let optimize_peephole_conversions blocks =
         { block with body; branch })
       blocks
 
-(* Run the LCM data flow analysis and rewrite on a single function's blocks.
+(* Phase 2: LCM dataflow analysis and rewrite for a single function.
+
+   Given the explicit conversion instructions produced by lowering, compute the
+   optimal placement using five dataflow analyses, then rewrite the IR.
+
    The analysis must be per-function to avoid cross-function variable references
    in the inserted conversion instructions. *)
 let process_function types conv_types entry fun_blocks return_type =
   let all_convs, local_conv_types = get_all_conversions fun_blocks types in
-  (* Merge local conv_types into the global conv_types *)
   ConvMap.iter
     (fun conv typ -> conv_types := ConvMap.add conv typ !conv_types)
     local_conv_types;
@@ -554,7 +633,20 @@ let process_function types conv_types entry fun_blocks return_type =
   else
     let props = Addr.Map.map (compute_local_props all_convs) fun_blocks in
     let preds = CFG.predecessors fun_blocks in
-    (* 1. Anticipatability *)
+    (* Step 1: Anticipatability (backward dataflow, all-paths).
+
+       ANTIN(b) = set of conversions that will definitely be computed on every
+       path from b to the function exit, before their operand is redefined.
+
+       A conversion is anticipatable at a point if it is safe (and useful) to
+       move its computation to that point.
+
+       Equation: ANTIN(b) = ANTLOC(b) ∪ (TRANSP(b) ∩ ANTOUT(b))
+                 ANTOUT(b) = ∩ { ANTIN(s) | s ∈ successors(b) }
+
+       Initialised to the universal set (all_convs) and iterated to a fixpoint.
+       Conversions referencing a successor's block parameters are excluded from
+       ANTOUT since those variables are rebound at the block boundary. *)
     let antin = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
     let worklist =
       ref (Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty)
@@ -590,7 +682,20 @@ let process_function types conv_types entry fun_blocks return_type =
         let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
         List.iter ~f:(fun p' -> worklist := Addr.Set.add p' !worklist) ps)
     done;
-    (* 2. Availability *)
+    (* Step 2: Availability (forward dataflow, all-paths).
+
+       AVOUT(b) = set of conversions that have been computed on every path from
+       the function entry to the exit of b, without their operand being redefined.
+
+       Equation: AVIN(b)  = ∩ { AVOUT(p) | p ∈ predecessors(b) }
+                 AVOUT(b) = COMP(b) ∪ (TRANSP(b) ∩ AVIN(b))
+
+       The entry block is initialised to empty (nothing is available on entry).
+
+       EARLIEST(b) = ANTIN(b) \ AVIN(b)
+       A conversion is earliest at b if it is anticipated there but not yet
+       available — this is the first point where inserting it is both useful
+       and correct. *)
     let avout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
     avout := Addr.Map.add entry ConvSet.empty !avout;
     worklist :=
@@ -636,7 +741,16 @@ let process_function types conv_types entry fun_blocks return_type =
         (fun pc _ -> ConvSet.diff (Addr.Map.find pc !antin) (Addr.Map.find pc avin))
         fun_blocks
     in
-    (* 3. Delayability *)
+    (* Step 3: Delayability (forward dataflow, all-paths).
+
+       DELAYIN(b) = set of conversions whose earliest placement can be delayed
+       from their earliest point down to the entry of b without missing any use.
+
+       Equation: DELAYIN(b) = EARLIEST(b) ∪ (∩ { DELAYOUT(p) | p ∈ preds(b) })
+                 DELAYOUT(b) = DELAYIN(b) \ COMP(b)
+
+       A conversion can be delayed past a block as long as the block does not
+       use (compute) it. This pushes insertions as late as possible. *)
     let delayin = ref earliest in
     let delayout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
     worklist :=
@@ -665,7 +779,17 @@ let process_function types conv_types entry fun_blocks return_type =
         let succs = CFG.successors fun_blocks pc in
         List.iter ~f:(fun s -> worklist := Addr.Set.add s !worklist) succs)
     done;
-    (* 4. Latest *)
+    (* Step 4: Latest (derived, no iteration needed).
+
+       LATEST(b) = DELAYIN(b) ∩ (COMP(b) ∪ ¬(∩ { DELAYIN(s) | s ∈ succs(b) }))
+
+       A conversion is latest at b if it is delayable to b and either:
+       - b uses (computes) the conversion, or
+       - some successor cannot accept further delay (the conversion is not
+         delayable into all successors).
+
+       This is the optimal insertion point: as late as possible while still
+       covering all uses. *)
     let latest =
       Addr.Map.mapi
         (fun pc _block ->
@@ -686,7 +810,19 @@ let process_function types conv_types entry fun_blocks return_type =
             (ConvSet.union b_props.comp (ConvSet.diff all_convs delayin_succs_intersect)))
         fun_blocks
     in
-    (* 5. Isolated *)
+    (* Step 5: Isolation (forward dataflow, all-paths).
+
+       ISOLATEDIN(b) = LATEST(b) ∪ (ISOLATEDOUT(b) \ COMP(b))
+       ISOLATEDOUT(b) = ∩ { ISOLATEDIN(s) | s ∈ successors(b) }
+
+       A conversion is isolated at b if, after being inserted at its latest
+       point, it is never used again before the next insertion point. Isolated
+       conversions are not worth inserting — they would create a new temporary
+       without eliminating any redundancy.
+
+       The final insertion set is LATEST(b) \ ISOLATED(b): conversions placed
+       at their optimal point that actually eliminate at least one redundant
+       occurrence downstream. *)
     let isolatedout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
     let isolatedin = ref (Addr.Map.map (fun _ -> ConvSet.empty) fun_blocks) in
     worklist :=
@@ -726,6 +862,27 @@ let process_function types conv_types entry fun_blocks return_type =
         List.iter ~f:(fun p' -> worklist := Addr.Set.add p' !worklist) ps)
     done;
 
+    (* Rewrite phase: walk blocks in reverse post-order and apply the LCM results.
+
+       For each block:
+       1. Inherit available conversions from predecessors (conv_in): a mapping
+          from (kind, operand) to the variable holding the already-computed result.
+          Only conversions that are available (in AVIN) and agree across all
+          processed predecessors are inherited.
+
+       2. Insert new conversions at the top of the block for everything in
+          LATEST(b) \ ISOLATED(b). Each insertion creates a fresh variable and
+          adds it to the conv_to_var mapping.
+
+       3. Walk the block body: for each conversion instruction, check if the
+          conv_to_var mapping already has a result for it. If so, record a
+          substitution (the original variable maps to the pre-computed one) and
+          remove the instruction. Otherwise, keep it and register its result
+          in conv_to_var for later uses.
+
+       4. Rewrite the branch: if a branch target expects a converted value and
+          the conversion is available in conv_to_var, use the pre-computed result
+          directly instead of the unconverted variable. *)
     let rpo =
       Structure.blocks_in_reverse_post_order (Structure.build_graph fun_blocks entry)
     in
@@ -894,8 +1051,14 @@ let process_function types conv_types entry fun_blocks return_type =
       rpo;
     optimize_peephole_conversions !result
 
+(* Entry point. Three steps:
+   1. Decide which functions can return unboxed/untagged values for direct calls.
+   2. For each function, lower implicit conversions into explicit IR primitives.
+   3. Run the LCM analysis and rewrite to eliminate redundant conversions. *)
 let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~fun_info =
-  (* Global unboxing decision for direct calls. *)
+  (* Decide return-type unboxing for functions whose call sites are all known.
+     If a function always returns an unboxed number or a normalised int, record
+     that as its return type so callers can avoid re-boxing. *)
   fold_closures
     p
     (fun name_opt _ _ _ () ->
