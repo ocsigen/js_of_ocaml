@@ -190,9 +190,57 @@ let lower_conversions
     | Let (x, Prim (p, args)) -> lower_prim x p args
     | i -> [ i ]
   in
+  let lower_cont (pc, args) =
+    let target_block = Addr.Map.find pc p.blocks in
+    let target_types = List.map ~f:(Typing.var_type types) target_block.params in
+    let lowered_args_rev = ref [] in
+    let args' =
+      List.map2
+        ~f:(fun arg into ->
+          let from = Typing.var_type types arg in
+          let lowered, arg' = lower_var_conversion ~types ~from ~into arg in
+          lowered_args_rev := List.rev_append lowered !lowered_args_rev;
+          arg')
+        args
+        target_types
+    in
+    List.rev !lowered_args_rev, (pc, args')
+  in
+  let lower_branch branch =
+    let int_n = Typing.Int Typing.Integer.Normalized in
+    match branch with
+    | Return _ | Raise _ | Stop -> [], branch
+    | Branch cont ->
+        let l, cont' = lower_cont cont in
+        l, Branch cont'
+    | Cond (v, cont1, cont2) ->
+        let lowered_v, v' = lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v in
+        let l1, cont1' = lower_cont cont1 in
+        let l2, cont2' = lower_cont cont2 in
+        lowered_v @ l1 @ l2, Cond (v', cont1', cont2')
+    | Switch (v, conts) ->
+        let lowered_v, v' = lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v in
+        let lowered = ref (List.rev lowered_v) in
+        let conts' = Array.map ~f:(fun cont ->
+          let l, cont' = lower_cont cont in
+          lowered := List.rev_append l !lowered;
+          cont'
+        ) conts in
+        List.rev !lowered, Switch (v', conts')
+    | Pushtrap (cont1, v, cont2) ->
+        let l1, cont1' = lower_cont cont1 in
+        let l2, cont2' = lower_cont cont2 in
+        l1 @ l2, Pushtrap (cont1', v, cont2')
+    | Poptrap cont ->
+        let l, cont' = lower_cont cont in
+        l, Poptrap cont'
+  in
   let blocks =
     Addr.Map.map
-      (fun block -> { block with body = List.concat_map ~f:lower_instr block.body })
+      (fun block ->
+        let lowered_body = List.concat_map ~f:lower_instr block.body in
+        let branch_lowered_instrs, branch' = lower_branch block.branch in
+        { block with body = lowered_body @ branch_lowered_instrs; branch = branch' })
       p.blocks
   in
   { p with blocks }
