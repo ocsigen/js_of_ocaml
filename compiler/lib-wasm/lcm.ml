@@ -509,13 +509,44 @@ let process_function types conv_types entry fun_blocks =
           ps)
     done;
 
-    Addr.Map.mapi
-      (fun pc block ->
+    let rpo = Structure.blocks_in_reverse_post_order (Structure.build_graph fun_blocks entry) in
+    let conv_out_map = ref Addr.Map.empty in
+    let result = ref fun_blocks in
+    List.iter
+      ~f:(fun pc ->
+        let block = Addr.Map.find pc fun_blocks in
+        let preds_pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+        let processed_preds =
+          List.fold_left
+            ~f:(fun acc p ->
+              match Addr.Map.find_opt p !conv_out_map with
+              | Some map -> map :: acc
+              | None -> acc)
+            ~init:[]
+            preds_pc
+        in
+        let conv_in =
+          match processed_preds with
+          | [] -> ConvMap.empty
+          | hd :: tl ->
+              List.fold_left
+                ~f:(fun acc pred_conv_out ->
+                  ConvMap.filter
+                    (fun k v ->
+                      match ConvMap.find_opt k pred_conv_out with
+                      | Some v' when Var.equal v v' -> true
+                      | _ -> false)
+                    acc)
+                ~init:hd
+                tl
+        in
+        let pc_avin = Addr.Map.find pc avin in
+        let safe_conv_in = ConvMap.filter (fun k _ -> ConvSet.mem k pc_avin) conv_in in
         let to_insert =
           ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
         in
         let inserted_rev = ref [] in
-        let conv_to_var = ref ConvMap.empty in
+        let conv_to_var = ref safe_conv_in in
         ConvSet.iter
           (fun ((kind, arg) as conv) ->
             let tmp = Var.fresh () in
@@ -559,8 +590,13 @@ let process_function types conv_types entry fun_blocks =
                 body_rev := i :: !body_rev)
           block.body;
         let branch = Subst.Excluding_Binders.last subst_var block.branch in
-        { block with body = List.rev !inserted_rev @ List.rev !body_rev; branch })
-      fun_blocks
+        let new_block =
+          { block with body = List.rev !inserted_rev @ List.rev !body_rev; branch }
+        in
+        conv_out_map := Addr.Map.add pc !conv_to_var !conv_out_map;
+        result := Addr.Map.add pc new_block !result)
+      rpo;
+    !result
 
 let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~fun_info =
   (* Global unboxing decision for direct calls. *)
