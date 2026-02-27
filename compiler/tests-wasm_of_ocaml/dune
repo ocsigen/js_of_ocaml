@@ -1,10 +1,8 @@
 (tests
  (names gh38 gh46 gh107 gh112 gh1904 gh2034 lcm_regression)
  (modes js wasm)
- (js_of_ocaml
-  (flags :standard --opt 2 --no-inline))
  (wasm_of_ocaml
-  (flags :standard --opt 2 --no-inline)))
+  (flags :standard --opt 2)))
 
 (tests
  (names gh2093)
