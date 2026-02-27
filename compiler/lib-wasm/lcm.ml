@@ -60,7 +60,9 @@ let type_of_kind = function
   | Unbox_i32 -> Typing.Number (Typing.Int32, Typing.Unboxed)
   | Unbox_i64 -> Typing.Number (Typing.Int64, Typing.Unboxed)
   | Unbox_f64 -> Typing.Number (Typing.Float, Typing.Unboxed)
-  | Box_i32 | Box_i64 | Box_f64 -> Typing.Top
+  | Box_i32 -> Typing.Number (Typing.Int32, Typing.Boxed)
+  | Box_i64 -> Typing.Number (Typing.Int64, Typing.Boxed)
+  | Box_f64 -> Typing.Number (Typing.Float, Typing.Boxed)
   | Untag_int -> Typing.Int Typing.Integer.Normalized
   | Tag_int -> Typing.Int Typing.Integer.Ref
 
@@ -554,10 +556,12 @@ let process_function types conv_types entry fun_blocks return_type =
     let preds = CFG.predecessors fun_blocks in
     (* 1. Anticipatability *)
     let antin = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
-    let worklist = ref (Addr.Map.fold (fun pc _ acc -> pc :: acc) fun_blocks []) in
-    while not (List.is_empty !worklist) do
-      let pc = List.hd !worklist in
-      worklist := List.tl !worklist;
+    let worklist =
+      ref (Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty)
+    in
+    while not (Addr.Set.is_empty !worklist) do
+      let pc = Addr.Set.min_elt !worklist in
+      worklist := Addr.Set.remove pc !worklist;
       let b_props = Addr.Map.find pc props in
       let succs = CFG.successors fun_blocks pc in
       let new_antout =
@@ -584,18 +588,16 @@ let process_function types conv_types entry fun_blocks return_type =
       then (
         antin := Addr.Map.add pc new_antin !antin;
         let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-        List.iter
-          ~f:(fun p' ->
-            if not (List.mem ~eq:Int.equal p' !worklist) then worklist := p' :: !worklist)
-          ps)
+        List.iter ~f:(fun p' -> worklist := Addr.Set.add p' !worklist) ps)
     done;
     (* 2. Availability *)
     let avout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
     avout := Addr.Map.add entry ConvSet.empty !avout;
-    worklist := Addr.Map.fold (fun pc _ acc -> pc :: acc) fun_blocks [];
-    while not (List.is_empty !worklist) do
-      let pc = List.hd !worklist in
-      worklist := List.tl !worklist;
+    worklist :=
+      Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
+    while not (Addr.Set.is_empty !worklist) do
+      let pc = Addr.Set.min_elt !worklist in
+      worklist := Addr.Set.remove pc !worklist;
       let b_props = Addr.Map.find pc props in
       let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
       let new_avin =
@@ -614,10 +616,7 @@ let process_function types conv_types entry fun_blocks return_type =
       then (
         avout := Addr.Map.add pc new_avout !avout;
         let succs = CFG.successors fun_blocks pc in
-        List.iter
-          ~f:(fun s ->
-            if not (List.mem ~eq:Int.equal s !worklist) then worklist := s :: !worklist)
-          succs)
+        List.iter ~f:(fun s -> worklist := Addr.Set.add s !worklist) succs)
     done;
     let avin =
       Addr.Map.mapi
@@ -640,10 +639,11 @@ let process_function types conv_types entry fun_blocks return_type =
     (* 3. Delayability *)
     let delayin = ref earliest in
     let delayout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
-    worklist := Addr.Map.fold (fun pc _ acc -> pc :: acc) fun_blocks [];
-    while not (List.is_empty !worklist) do
-      let pc = List.hd !worklist in
-      worklist := List.tl !worklist;
+    worklist :=
+      Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
+    while not (Addr.Set.is_empty !worklist) do
+      let pc = Addr.Set.min_elt !worklist in
+      worklist := Addr.Set.remove pc !worklist;
       let b_props = Addr.Map.find pc props in
       let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
       let new_delayin =
@@ -663,10 +663,7 @@ let process_function types conv_types entry fun_blocks return_type =
       then (
         delayout := Addr.Map.add pc new_delayout !delayout;
         let succs = CFG.successors fun_blocks pc in
-        List.iter
-          ~f:(fun s ->
-            if not (List.mem ~eq:Int.equal s !worklist) then worklist := s :: !worklist)
-          succs)
+        List.iter ~f:(fun s -> worklist := Addr.Set.add s !worklist) succs)
     done;
     (* 4. Latest *)
     let latest =
@@ -692,10 +689,11 @@ let process_function types conv_types entry fun_blocks return_type =
     (* 5. Isolated *)
     let isolatedout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
     let isolatedin = ref (Addr.Map.map (fun _ -> ConvSet.empty) fun_blocks) in
-    worklist := Addr.Map.fold (fun pc _ acc -> pc :: acc) fun_blocks [];
-    while not (List.is_empty !worklist) do
-      let pc = List.hd !worklist in
-      worklist := List.tl !worklist;
+    worklist :=
+      Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
+    while not (Addr.Set.is_empty !worklist) do
+      let pc = Addr.Set.min_elt !worklist in
+      worklist := Addr.Set.remove pc !worklist;
       let b_props = Addr.Map.find pc props in
       let succs = CFG.successors fun_blocks pc in
       let new_isolatedout =
@@ -725,10 +723,7 @@ let process_function types conv_types entry fun_blocks return_type =
       then (
         isolatedin := Addr.Map.add pc new_isolatedin !isolatedin;
         let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-        List.iter
-          ~f:(fun p' ->
-            if not (List.mem ~eq:Int.equal p' !worklist) then worklist := p' :: !worklist)
-          ps)
+        List.iter ~f:(fun p' -> worklist := Addr.Set.add p' !worklist) ps)
     done;
 
     let rpo =
