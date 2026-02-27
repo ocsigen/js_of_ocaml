@@ -46,6 +46,16 @@ let kind_of_prim = function
   | Wasm_tag_int -> Some Tag_int
   | _ -> None
 
+let inverse_kind = function
+  | Unbox_i32 -> Some Box_i32
+  | Unbox_i64 -> Some Box_i64
+  | Unbox_f64 -> Some Box_f64
+  | Box_i32 -> Some Unbox_i32
+  | Box_i64 -> Some Unbox_i64
+  | Box_f64 -> Some Unbox_f64
+  | Untag_int -> Some Tag_int
+  | Tag_int -> Some Untag_int
+
 let type_of_kind = function
   | Unbox_i32 -> Typing.Number (Typing.Int32, Typing.Unboxed)
   | Unbox_i64 -> Typing.Number (Typing.Int64, Typing.Unboxed)
@@ -425,6 +435,73 @@ let reachable_blocks all_blocks entry =
   visit entry;
   !visited
 
+let optimize_peephole_conversions blocks =
+  let defs = Var.Tbl.make () None in
+  let subst = ref Var.Map.empty in
+  Addr.Map.iter (fun _ block ->
+    List.iter ~f:(function
+      | Let (x, Prim (p, [Pv y])) ->
+          (match kind_of_prim p with
+           | Some k -> Var.Tbl.set defs x (Some (k, y))
+           | None -> ())
+      | _ -> ()) block.body
+  ) blocks;
+  Var.Tbl.iter (fun x opt ->
+    match opt with
+    | Some (k1, y) ->
+        (match Var.Tbl.get defs y with
+         | Some (k2, z) when Poly.equal (inverse_kind k1) (Some k2) ->
+             subst := Var.Map.add x z !subst
+         | _ -> ())
+    | None -> ()
+  ) defs;
+  if Var.Map.is_empty !subst then blocks
+  else
+    let subst_var v = apply_subst !subst v in
+    let subst_arg = function
+      | Pv v -> Pv (subst_var v)
+      | Pc c -> Pc c
+    in
+    Addr.Map.map (fun block ->
+      let body = List.filter_map ~f:(function
+        | Let (x, _) when Var.Map.mem x !subst -> None
+        | Let (x, Apply {f; args; exact}) ->
+            Some (Let (x, Apply {f=subst_var f; args=List.map ~f:subst_var args; exact}))
+        | Let (x, Block (idx, arr, aon, mut)) ->
+            Some (Let (x, Block (idx, Array.map ~f:subst_var arr, aon, mut)))
+        | Let (x, Closure (lst1, (pc, lst2), cc)) ->
+            Some (Let (x, Closure (List.map ~f:subst_var lst1, (pc, List.map ~f:subst_var lst2), cc)))
+        | Let (x, Field (y, n, k)) ->
+            Some (Let (x, Field (subst_var y, n, k)))
+        | Let (x, Prim (p, args)) ->
+            Some (Let (x, Prim (p, List.map ~f:subst_arg args)))
+        | Assign (x, y) ->
+            Some (Assign (x, subst_var y))
+        | Array_set (x, y, z) ->
+            Some (Array_set (subst_var x, subst_var y, subst_var z))
+        | Set_field (x, n, k, y) ->
+            Some (Set_field (subst_var x, n, k, subst_var y))
+        | Offset_ref (x, n) ->
+            Some (Offset_ref (subst_var x, n))
+        | Event loc -> Some (Event loc)
+        | i -> Some i
+      ) block.body in
+      let branch = match block.branch with
+        | Return y -> Return (subst_var y)
+        | Raise (y, l) -> Raise (subst_var y, l)
+        | Branch (pc, args) -> Branch (pc, List.map ~f:subst_var args)
+        | Cond (v, (pc1, args1), (pc2, args2)) ->
+            Cond (subst_var v, (pc1, List.map ~f:subst_var args1), (pc2, List.map ~f:subst_var args2))
+        | Switch (v, targets) ->
+            Switch (subst_var v, Array.map ~f:(fun (pc, args) -> pc, List.map ~f:subst_var args) targets)
+        | Pushtrap ((pc1, args1), v, (pc2, args2)) ->
+            Pushtrap ((pc1, List.map ~f:subst_var args1), v, (pc2, List.map ~f:subst_var args2))
+        | Poptrap (pc, args) -> Poptrap (pc, List.map ~f:subst_var args)
+        | Stop -> Stop
+      in
+      { block with body; branch }
+    ) blocks
+
 (* Run the LCM data flow analysis and rewrite on a single function's blocks.
    The analysis must be per-function to avoid cross-function variable references
    in the inserted conversion instructions. *)
@@ -784,7 +861,7 @@ let process_function types conv_types entry fun_blocks return_type =
         conv_out_map := Addr.Map.add pc !conv_to_var !conv_out_map;
         result := Addr.Map.add pc new_block !result)
       rpo;
-    !result
+    optimize_peephole_conversions !result
 
 let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~fun_info =
   (* Global unboxing decision for direct calls. *)
