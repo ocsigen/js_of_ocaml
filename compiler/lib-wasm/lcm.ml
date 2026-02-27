@@ -1,7 +1,8 @@
 open! Stdlib
 open Code
-
 module VarSet = Var.Set
+
+let debug = Debug.find "lcm"
 
 type conversion_kind =
   | Unbox_i32
@@ -56,8 +57,10 @@ let type_of_kind = function
 (* First pass: only lower number boxing/unboxing conversions. *)
 let number_conversion_kind ~(from : Typing.typ) ~(into : Typing.typ) =
   match from, into with
-  | Typing.Number (Typing.Int32, Typing.Unboxed), Typing.Number (Typing.Int32, Typing.Unboxed)
-  | Typing.Number (Typing.Int64, Typing.Unboxed), Typing.Number (Typing.Int64, Typing.Unboxed)
+  | ( Typing.Number (Typing.Int32, Typing.Unboxed)
+    , Typing.Number (Typing.Int32, Typing.Unboxed) )
+  | ( Typing.Number (Typing.Int64, Typing.Unboxed)
+    , Typing.Number (Typing.Int64, Typing.Unboxed) )
   | ( Typing.Number (Typing.Float, Typing.Unboxed)
     , Typing.Number (Typing.Float, Typing.Unboxed) )
   | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> None
@@ -83,14 +86,17 @@ let lower_var_conversion ~types ~(from : Typing.typ) ~(into : Typing.typ) x =
       Typing.set_var_type types tmp into;
       [ Let (tmp, Prim (prim_of_kind kind, [ Pv x ])) ], tmp
 
-let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Global_flow.info)
-    =
+let lower_conversions
+    (p : program)
+    (types : Typing.t)
+    (global_flow_info : Global_flow.info) =
   let lower_apply x ~f ~args ~exact =
     let closure =
       if exact
       then
         match Global_flow.get_unique_closure global_flow_info f with
-        | Some (g, params) when List.compare_length_with args ~len:(List.length params) = 0 ->
+        | Some (g, params)
+          when List.compare_length_with args ~len:(List.length params) = 0 ->
             Some (g, params)
         | Some _ | None -> None
       else None
@@ -134,12 +140,13 @@ let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Globa
       match p with
       | Extern nm -> fst (Typing.prim_sig nm)
       | Array_get -> Some [ top; int_n ]
-      | Lt | Le | Ult | Eq | Neq -> Some [ int_n; int_n ]
+      | Lt | Le | Ult -> Some [ int_n; int_n ]
       | _ -> None
     in
     let args', lowered_args =
       match target_types_opt with
-      | Some target_types when List.compare_length_with args ~len:(List.length target_types) = 0 ->
+      | Some target_types
+        when List.compare_length_with args ~len:(List.length target_types) = 0 ->
           let lowered_args_rev = ref [] in
           let args' =
             List.map2
@@ -226,7 +233,7 @@ let remove_conversions_of_var convs v =
 
 let remove_killed_mappings map v =
   ConvMap.filter
-    (fun (_, arg) mapped -> not (Var.equal arg v) && not (Var.equal mapped v))
+    (fun (_, arg) mapped -> (not (Var.equal arg v)) && not (Var.equal mapped v))
     map
 
 let compute_local_props all_convs block =
@@ -253,7 +260,8 @@ let compute_local_props all_convs block =
           match kind_of_prim p with
           | Some kind ->
               let conv = kind, arg in
-              if not (VarSet.mem arg !current_killed) then antloc := ConvSet.add conv !antloc;
+              if not (VarSet.mem arg !current_killed)
+              then antloc := ConvSet.add conv !antloc;
               comp := ConvSet.add conv !comp;
               kill_var v
           | None -> kill_var v)
@@ -270,7 +278,8 @@ module CFG = struct
     | Branch (pc', _) | Poptrap (pc', _) -> [ pc' ]
     | Pushtrap ((pc', _), _, (pc_h, _)) -> [ pc'; pc_h ]
     | Cond (_, (pc1, _), (pc2, _)) -> [ pc1; pc2 ]
-    | Switch (_, targets) -> Array.to_list (ArrayLabels.map ~f:(fun (pc, _) -> pc) targets)
+    | Switch (_, targets) ->
+        Array.to_list (ArrayLabels.map ~f:(fun (pc, _) -> pc) targets)
 
   let predecessors blocks =
     let preds = ref Addr.Map.empty in
@@ -286,10 +295,15 @@ module CFG = struct
     !preds
 end
 
-let rec apply_subst subst x =
-  match Var.Map.find_opt x subst with
-  | Some y when not (Var.equal x y) -> apply_subst subst y
-  | Some _ | None -> x
+let apply_subst subst x =
+  let rec loop visited subst x =
+    match Var.Map.find_opt x subst with
+    | Some y ->
+        if List.exists ~f:(fun v -> Var.equal v y) visited then failwith "subst cycle";
+        loop (x :: visited) subst y
+    | None -> x
+  in
+  loop [] subst x
 
 let reachable_blocks all_blocks entry =
   let visited = ref Addr.Set.empty in
@@ -308,10 +322,12 @@ let reachable_blocks all_blocks entry =
 let process_function types conv_types entry fun_blocks =
   let all_convs, local_conv_types = get_all_conversions fun_blocks types in
   (* Merge local conv_types into the global conv_types *)
-  ConvMap.iter (fun conv typ -> conv_types := ConvMap.add conv typ !conv_types) local_conv_types;
+  ConvMap.iter
+    (fun conv typ -> conv_types := ConvMap.add conv typ !conv_types)
+    local_conv_types;
   if ConvSet.is_empty all_convs
   then fun_blocks
-  else (
+  else
     let props = Addr.Map.map (compute_local_props all_convs) fun_blocks in
     let preds = CFG.predecessors fun_blocks in
     (* 1. Anticipatability *)
@@ -330,14 +346,18 @@ let process_function types conv_types entry fun_blocks =
             ~f:(fun acc succ ->
               let succ_antin = Addr.Map.find succ !antin in
               let succ_block = Addr.Map.find succ fun_blocks in
-              let valid_succ_antin = 
-                ConvSet.filter (fun (_, arg) -> not (List.mem ~eq:Var.equal arg succ_block.params)) succ_antin
+              let valid_succ_antin =
+                ConvSet.filter
+                  (fun (_, arg) -> not (List.mem ~eq:Var.equal arg succ_block.params))
+                  succ_antin
               in
               ConvSet.inter acc valid_succ_antin)
             ~init:all_convs
             succs
       in
-      let new_antin = ConvSet.union b_props.antloc (ConvSet.inter b_props.transp new_antout) in
+      let new_antin =
+        ConvSet.union b_props.antloc (ConvSet.inter b_props.transp new_antout)
+      in
       if not (ConvSet.equal (Addr.Map.find pc !antin) new_antin)
       then (
         antin := Addr.Map.add pc new_antin !antin;
@@ -365,7 +385,9 @@ let process_function types conv_types entry fun_blocks =
             ~init:all_convs
             ps
       in
-      let new_avout = ConvSet.union b_props.comp (ConvSet.inter b_props.transp new_avin) in
+      let new_avout =
+        ConvSet.union b_props.comp (ConvSet.inter b_props.transp new_avin)
+      in
       if not (ConvSet.equal (Addr.Map.find pc !avout) new_avout)
       then (
         avout := Addr.Map.add pc new_avout !avout;
@@ -390,8 +412,7 @@ let process_function types conv_types entry fun_blocks =
     in
     let earliest =
       Addr.Map.mapi
-        (fun pc _ ->
-          ConvSet.diff (Addr.Map.find pc !antin) (Addr.Map.find pc avin))
+        (fun pc _ -> ConvSet.diff (Addr.Map.find pc !antin) (Addr.Map.find pc avin))
         fun_blocks
     in
     (* 3. Delayability *)
@@ -415,9 +436,7 @@ let process_function types conv_types entry fun_blocks =
                ps)
       in
       delayin := Addr.Map.add pc new_delayin !delayin;
-      let new_delayout =
-        ConvSet.diff new_delayin b_props.comp
-      in
+      let new_delayout = ConvSet.diff new_delayin b_props.comp in
       if not (ConvSet.equal (Addr.Map.find pc !delayout) new_delayout)
       then (
         delayout := Addr.Map.add pc new_delayout !delayout;
@@ -443,7 +462,9 @@ let process_function types conv_types entry fun_blocks =
                 ~init:all_convs
                 succs
           in
-          ConvSet.inter delayin_pc (ConvSet.union b_props.comp (ConvSet.diff all_convs delayin_succs_intersect)))
+          ConvSet.inter
+            delayin_pc
+            (ConvSet.union b_props.comp (ConvSet.diff all_convs delayin_succs_intersect)))
         fun_blocks
     in
     (* 5. Isolated *)
@@ -463,8 +484,10 @@ let process_function types conv_types entry fun_blocks =
             ~f:(fun acc s ->
               let s_isolatedin = Addr.Map.find s !isolatedin in
               let succ_block = Addr.Map.find s fun_blocks in
-              let valid_s_isolatedin = 
-                ConvSet.filter (fun (_, arg) -> not (List.mem ~eq:Var.equal arg succ_block.params)) s_isolatedin
+              let valid_s_isolatedin =
+                ConvSet.filter
+                  (fun (_, arg) -> not (List.mem ~eq:Var.equal arg succ_block.params))
+                  s_isolatedin
               in
               ConvSet.inter acc valid_s_isolatedin)
             ~init:all_convs
@@ -472,7 +495,9 @@ let process_function types conv_types entry fun_blocks =
       in
       isolatedout := Addr.Map.add pc new_isolatedout !isolatedout;
       let new_isolatedin =
-        ConvSet.union (Addr.Map.find pc latest) (ConvSet.diff new_isolatedout b_props.comp)
+        ConvSet.union
+          (Addr.Map.find pc latest)
+          (ConvSet.diff new_isolatedout b_props.comp)
       in
       if not (ConvSet.equal (Addr.Map.find pc !isolatedin) new_isolatedin)
       then (
@@ -486,18 +511,22 @@ let process_function types conv_types entry fun_blocks =
 
     Addr.Map.mapi
       (fun pc block ->
-        let to_insert = ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout) in
+        let to_insert =
+          ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
+        in
         let inserted_rev = ref [] in
         let conv_to_var = ref ConvMap.empty in
         ConvSet.iter
           (fun ((kind, arg) as conv) ->
             let tmp = Var.fresh () in
             let typ =
-              ConvMap.find_opt conv !conv_types |> Option.value ~default:(type_of_kind kind)
+              ConvMap.find_opt conv !conv_types
+              |> Option.value ~default:(type_of_kind kind)
             in
             Typing.set_var_type types tmp typ;
             conv_to_var := ConvMap.add conv tmp !conv_to_var;
-            inserted_rev := Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
+            inserted_rev :=
+              Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
           to_insert;
         let subst = ref Var.Map.empty in
         let subst_var x = apply_subst !subst x in
@@ -512,29 +541,18 @@ let process_function types conv_types entry fun_blocks =
                 match kind_of_prim p with
                 | Some kind -> (
                     let conv = kind, arg in
-                    let is_isolated = ConvSet.mem conv (Addr.Map.find pc !isolatedout) in
-                    if not is_isolated then (
-                      match ConvMap.find_opt conv !conv_to_var with
-                      | Some tmp ->
-                          (match kind with | Untag_int -> Printf.eprintf "SUBST v%d with v%d (arg v%d)\n%!" (Var.idx v) (Var.idx tmp) (Var.idx arg) | _ -> ());
-                          subst := Var.Map.add v tmp !subst
-                      | None ->
-                          (match kind with | Untag_int -> Printf.eprintf "ADDED CONV TO VAR: v%d -> v%d\n%!" (Var.idx arg) (Var.idx v) | _ -> ());
-                          body_rev := i :: !body_rev;
-                          conv_to_var := ConvMap.add conv v !conv_to_var
-                    ) else (
-                      body_rev := i :: !body_rev
-                    )
-                )
+                    match ConvMap.find_opt conv !conv_to_var with
+                    | Some tmp -> subst := Var.Map.add v tmp !subst
+                    | None ->
+                        body_rev := i :: !body_rev;
+                        conv_to_var := ConvMap.add conv v !conv_to_var)
                 | None -> body_rev := i :: !body_rev)
             | Let (v, _) ->
                 conv_to_var := remove_killed_mappings !conv_to_var v;
-                Printf.eprintf "REMOVED KILLED Let v%d\n%!" (Var.idx v);
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Assign (v, _) ->
                 conv_to_var := remove_killed_mappings !conv_to_var v;
-                Printf.eprintf "REMOVED KILLED Assign v%d\n%!" (Var.idx v);
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
@@ -542,7 +560,7 @@ let process_function types conv_types entry fun_blocks =
           block.body;
         let branch = Subst.Excluding_Binders.last subst_var block.branch in
         { block with body = List.rev !inserted_rev @ List.rev !body_rev; branch })
-      fun_blocks)
+      fun_blocks
 
 let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~fun_info =
   (* Global unboxing decision for direct calls. *)
@@ -550,27 +568,31 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
     p
     (fun name_opt _ _ _ () ->
       match name_opt with
-      | Some g ->
+      | Some g -> (
           if Typing.can_unbox_parameters fun_info g
-          then (
+          then
             let s = Var.Map.find g global_flow_info.info_return_vals in
             let t =
-              Var.Set.fold (fun x acc -> Typing.join (Typing.var_type types x) acc) s Typing.Bot
+              Var.Set.fold
+                (fun x acc -> Typing.join (Typing.var_type types x) acc)
+                s
+                Typing.Bot
             in
             match t with
-            | Typing.Number (_, Typing.Unboxed)
-            | Typing.Int Typing.Integer.Normalized ->
+            | Typing.Number (_, Typing.Unboxed) | Typing.Int Typing.Integer.Normalized ->
                 Typing.set_return_type types g t
             | Typing.Top
             | Typing.Int Typing.Integer.Ref
             | Typing.Int Typing.Integer.Unnormalized
             | Typing.Number (_, Typing.Boxed)
-            | Typing.Tuple _
-            | Typing.Bigarray _
-            | Typing.Bot -> ())
+            | Typing.Tuple _ | Typing.Bigarray _ | Typing.Bot -> ())
       | None -> ())
     ();
   let p = lower_conversions p types global_flow_info in
+  if debug ()
+  then (
+    prerr_endline "BEFORE";
+    Print.program Format.err_formatter (fun _ _ -> "") p);
   (* Collect function entry points *)
   let fun_entries = ref [ p.start ] in
   Addr.Map.iter
@@ -594,4 +616,9 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       let result = process_function types conv_types entry fun_blocks in
       Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result)
     !fun_entries;
-  { p with blocks = !blocks }, types
+  let p = { p with blocks = !blocks } in
+  if debug ()
+  then (
+    prerr_endline "AFTER";
+    Print.program Format.err_formatter (fun _ _ -> "") p);
+  p, types
