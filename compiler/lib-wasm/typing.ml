@@ -630,6 +630,18 @@ let box_numbers p st types =
                           | Pc _ -> ())
                         args
                   | Prim
+                      ( ( Wasm_unbox_i32
+                        | Wasm_unbox_i64
+                        | Wasm_unbox_f64
+                        | Wasm_untag_int )
+                      , args ) ->
+                      List.iter
+                        ~f:(fun a ->
+                          match a with
+                          | Pv y -> box y
+                          | Pc _ -> ())
+                        args
+                  | Prim
                       ( ( Vectlength
                         | Array_get
                         | Not
@@ -637,13 +649,9 @@ let box_numbers p st types =
                         | Lt
                         | Le
                         | Ult
-                        | Wasm_unbox_i32
-                        | Wasm_unbox_i64
-                        | Wasm_unbox_f64
                         | Wasm_box_i32
                         | Wasm_box_i64
                         | Wasm_box_f64
-                        | Wasm_untag_int
                         | Wasm_tag_int )
                       , _ )
                   | Field _ | Closure _ | Constant _ | Special _ -> ())

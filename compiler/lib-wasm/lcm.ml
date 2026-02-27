@@ -90,7 +90,8 @@ let lower_conversions
     (blocks : block Addr.Map.t)
     (types : Typing.t)
     (global_flow_info : Global_flow.info)
-    (return_type : Typing.typ) =
+    (return_type : Typing.typ)
+    (free_pc : int ref) =
   let lower_apply x ~f ~args ~exact =
     let closure =
       if exact
@@ -167,6 +168,27 @@ let lower_conversions
     in
     lowered_args @ [ Let (x, Prim (p, args')) ]
   in
+  let get_from e =
+    match e with
+    | Constant c -> Typing.constant_type c
+    | Field (_, _, Float) -> Typing.Number (Typing.Float, Typing.Unboxed)
+    | Prim (p, _) -> (
+        match p with
+        | Wasm_unbox_f64 -> Typing.Number (Typing.Float, Typing.Unboxed)
+        | Wasm_unbox_i32 -> Typing.Number (Typing.Int32, Typing.Unboxed)
+        | Wasm_unbox_i64 -> Typing.Number (Typing.Int64, Typing.Unboxed)
+        | Wasm_untag_int | Lt | Le | Ult | IsInt | Eq | Neq | Not | Vectlength ->
+            Typing.Int Typing.Integer.Normalized
+        | Extern nm -> snd (Typing.prim_sig nm)
+        | _ -> Typing.Top)
+    | Apply { f; _ } -> Typing.return_type types f
+    | _ -> Typing.Top
+  in
+  let replace_assigned x tmp i =
+    match i with
+    | Let (v, e) when Var.equal v x -> Let (tmp, e)
+    | _ -> i
+  in
   let lower_instr = function
     | Set_field (x, n, Non_float, y) ->
         let lowered, y' =
@@ -188,25 +210,38 @@ let lower_conversions
         let lowered, y' = lower_var_conversion ~types ~from ~into y in
         lowered @ [ Assign (x, y') ]
     | Let (x, Apply { f; args; exact }) -> lower_apply x ~f ~args ~exact
-    | Let (x, Prim (p, args)) -> lower_prim x p args
     | Let (x, e) ->
-        let from =
+        let lowered_e =
           match e with
-          | Constant c -> Typing.constant_type c
-          | Field (_, _, Float) -> Typing.Number (Typing.Float, Typing.Unboxed)
-          | _ -> Typing.Top
+          | Prim (p, args) -> lower_prim x p args
+          | _ -> [ Let (x, e) ]
         in
+        let from = get_from e in
         let into = Typing.var_type types x in
-        let lowered, tmp =
+        let lowered, _ =
           match number_conversion_kind ~from ~into with
           | Some kind ->
               let tmp = Var.fresh () in
               Typing.set_var_type types tmp from;
-              [ Let (tmp, e); Let (x, Prim (prim_of_kind kind, [ Pv tmp ])) ], tmp
-          | None -> [ Let (x, e) ], x
+              let lowered_e =
+                let last = List.hd (List.rev lowered_e) in
+                let rest = List.rev (List.tl (List.rev lowered_e)) in
+                rest @ [ replace_assigned x tmp last ]
+              in
+              lowered_e @ [ Let (x, Prim (prim_of_kind kind, [ Pv tmp ])) ], tmp
+          | None -> lowered_e, x
         in
         lowered
     | i -> [ i ]
+  in
+  let new_blocks_map = ref Addr.Map.empty in
+  let split_edge lowered (pc, args) =
+    if List.is_empty lowered then (pc, args)
+    else (
+      let new_pc = !free_pc in
+      free_pc := new_pc + 1;
+      new_blocks_map := Addr.Map.add new_pc { params = []; body = lowered; branch = Branch (pc, args) } !new_blocks_map;
+      new_pc, [])
   in
   let lower_branch branch =
     let lower_cont (pc, args) =
@@ -225,7 +260,7 @@ let lower_conversions
       in
       List.rev !lowered_args_rev, (pc, args')
     in
-    (*    let int_n = Typing.Int Typing.Integer.Normalized in*)
+    let int_n = Typing.Int Typing.Integer.Normalized in
     match branch with
     | Return y ->
         let from = Typing.var_type types y in
@@ -238,38 +273,38 @@ let lower_conversions
     | Branch cont ->
         let lowered, cont' = lower_cont cont in
         lowered, Branch cont'
-    (* INCORRECT: CAN'T MOVE A CONVERSION BEFORE A CONDITION
     | Cond (v, cont1, cont2) ->
-        let lowered_v, v' = lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v in
         let lowered1, cont1' = lower_cont cont1 in
         let lowered2, cont2' = lower_cont cont2 in
-        lowered_v @ lowered1 @ lowered2, Cond (v', cont1', cont2')
+        let cont1'' = split_edge lowered1 cont1' in
+        let cont2'' = split_edge lowered2 cont2' in
+        [], Cond (v, cont1'', cont2'')
     | Switch (v, conts) ->
         let lowered_v, v' = lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v in
-        let lowered_conts_rev = ref [] in
         let conts' = Array.map ~f:(fun cont -> 
             let lowered, cont' = lower_cont cont in 
-            lowered_conts_rev := List.rev_append lowered !lowered_conts_rev; 
-            cont') conts 
+            split_edge lowered cont') conts 
         in
-        lowered_v @ List.rev !lowered_conts_rev, Switch (v', conts')
-*)
+        lowered_v, Switch (v', conts')
     | Pushtrap (cont1, v, cont2) ->
         let lowered1, cont1' = lower_cont cont1 in
         let lowered2, cont2' = lower_cont cont2 in
-        lowered1 @ lowered2, Pushtrap (cont1', v, cont2')
+        let cont1'' = split_edge lowered1 cont1' in
+        let cont2'' = split_edge lowered2 cont2' in
+        [], Pushtrap (cont1'', v, cont2'')
     | Poptrap cont ->
         let lowered, cont' = lower_cont cont in
         lowered, Poptrap cont'
     | Stop -> [], Stop
-    | _ -> [], branch
   in
-  Addr.Map.map
+  let blocks = Addr.Map.map
     (fun block ->
       let body_lowered = List.concat_map ~f:lower_instr block.body in
       let branch_lowered, branch' = lower_branch block.branch in
       { block with body = body_lowered @ branch_lowered; branch = branch' })
     blocks
+  in
+  Addr.Map.union (fun _ a _ -> Some a) blocks !new_blocks_map
 
 let get_all_conversions blocks types =
   let all_convs = ref ConvSet.empty in
@@ -792,10 +827,10 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
      in the data flow analysis. *)
   let conv_types = ref ConvMap.empty in
   let blocks = ref p.blocks in
+  let free_pc = ref p.free_pc in
   List.iter
     ~f:(fun (name_opt, entry) ->
-      let return_type =
-        match name_opt with
+      let return_type = match name_opt with
         | Some f -> Typing.return_type types f
         | None -> Typing.Top
       in
@@ -803,11 +838,11 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       let fun_blocks =
         Addr.Map.filter (fun pc _ -> Addr.Set.mem pc fun_block_pcs) !blocks
       in
-      let fun_blocks = lower_conversions fun_blocks types global_flow_info return_type in
+      let fun_blocks = lower_conversions fun_blocks types global_flow_info return_type free_pc in
       let result = process_function types conv_types entry fun_blocks return_type in
       Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result)
     !fun_entries;
-  let p = { p with blocks = !blocks } in
+  let p = { p with blocks = !blocks; free_pc = !free_pc } in
   if debug ()
   then (
     prerr_endline "AFTER";
