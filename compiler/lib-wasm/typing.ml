@@ -630,10 +630,7 @@ let box_numbers p st types =
                           | Pc _ -> ())
                         args
                   | Prim
-                      ( ( Wasm_unbox_i32
-                        | Wasm_unbox_i64
-                        | Wasm_unbox_f64
-                        | Wasm_untag_int )
+                      ( (Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_untag_int)
                       , args ) ->
                       List.iter
                         ~f:(fun a ->

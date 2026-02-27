@@ -253,7 +253,7 @@ module Generate (Target : Target_sig.S) = struct
       internal_primitives;
     h
 
-  let register_prim name ?(args=[]) ?(unbox = false) ?(ret_typ = Typing.Top) kind f =
+  let register_prim name ?(args = []) ?(unbox = false) ?(ret_typ = Typing.Top) kind f =
     Typing.register_prim name ~args ~unbox ret_typ;
     String.Hashtbl.add internal_primitives name (kind, Some args, unbox, ret_typ, f)
 
@@ -315,7 +315,13 @@ module Generate (Target : Target_sig.S) = struct
     let unbox = is_unboxed ty || is_unboxed tz in
     let arg2 = Option.value ~default:Typing.Top ty in
     let arg3 = Option.value ~default:Typing.Top tz in
-    register_prim name `Mutator ~args:[ Typing.Top; arg2; arg3 ] ~unbox ?ret_typ (fun ctx _ l ->
+    register_prim
+      name
+      `Mutator
+      ~args:[ Typing.Top; arg2; arg3 ]
+      ~unbox
+      ?ret_typ
+      (fun ctx _ l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -328,7 +334,13 @@ module Generate (Target : Target_sig.S) = struct
     let unbox = is_unboxed ty || is_unboxed tz in
     let arg2 = Option.value ~default:Typing.Top ty in
     let arg3 = Option.value ~default:Typing.Top tz in
-    register_prim name `Mutator ~args:[ Typing.Top; arg2; arg3 ] ~unbox ?ret_typ (fun ctx context l ->
+    register_prim
+      name
+      `Mutator
+      ~args:[ Typing.Top; arg2; arg3 ]
+      ~unbox
+      ?ret_typ
+      (fun ctx context l ->
         match l with
         | [ x; y; z ] ->
             f
@@ -1356,8 +1368,24 @@ module Generate (Target : Target_sig.S) = struct
                 loop [] l
             | IsInt, [ x ] -> Value.is_int x
             | Vectlength, [ x ] -> Memory.gen_array_length x
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _ ->
-                assert false))
+            | ( ( Not
+                | Lt
+                | Le
+                | Eq
+                | Neq
+                | Ult
+                | Array_get
+                | IsInt
+                | Vectlength
+                | Wasm_unbox_i32
+                | Wasm_unbox_i64
+                | Wasm_unbox_f64
+                | Wasm_box_i32
+                | Wasm_box_i64
+                | Wasm_box_f64
+                | Wasm_untag_int
+                | Wasm_tag_int )
+              , _ ) -> assert false))
 
   and translate_instr ctx context i =
     match i with

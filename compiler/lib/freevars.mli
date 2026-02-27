@@ -31,7 +31,8 @@ val find_loops_in_closure : Code.program -> Code.Addr.t -> Code.Addr.t Code.Addr
 
 val find_all_loops : Code.program -> Code.Addr.t Code.Addr.Map.t
 
-val mark_variables : Code.Addr.t Code.Addr.Map.t -> Code.program -> Code.Addr.t Code.Var.Tbl.t
+val mark_variables :
+  Code.Addr.t Code.Addr.Map.t -> Code.program -> Code.Addr.t Code.Var.Tbl.t
 
 val f_mutable : Code.program -> Code.Var.Set.t Code.Addr.Map.t
 

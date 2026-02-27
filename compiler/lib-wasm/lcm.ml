@@ -246,12 +246,17 @@ let lower_conversions
   in
   let new_blocks_map = ref Addr.Map.empty in
   let split_edge lowered (pc, args) =
-    if List.is_empty lowered then (pc, args)
-    else (
+    if List.is_empty lowered
+    then pc, args
+    else
       let new_pc = !free_pc in
       free_pc := new_pc + 1;
-      new_blocks_map := Addr.Map.add new_pc { params = []; body = lowered; branch = Branch (pc, args) } !new_blocks_map;
-      new_pc, [])
+      new_blocks_map :=
+        Addr.Map.add
+          new_pc
+          { params = []; body = lowered; branch = Branch (pc, args) }
+          !new_blocks_map;
+      new_pc, []
   in
   let lower_branch branch =
     let lower_cont (pc, args) =
@@ -290,10 +295,15 @@ let lower_conversions
         let cont2'' = split_edge lowered2 cont2' in
         [], Cond (v, cont1'', cont2'')
     | Switch (v, conts) ->
-        let lowered_v, v' = lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v in
-        let conts' = Array.map ~f:(fun cont -> 
-            let lowered, cont' = lower_cont cont in 
-            split_edge lowered cont') conts 
+        let lowered_v, v' =
+          lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v
+        in
+        let conts' =
+          Array.map
+            ~f:(fun cont ->
+              let lowered, cont' = lower_cont cont in
+              split_edge lowered cont')
+            conts
         in
         lowered_v, Switch (v', conts')
     | Pushtrap (cont1, v, cont2) ->
@@ -307,12 +317,13 @@ let lower_conversions
         lowered, Poptrap cont'
     | Stop -> [], Stop
   in
-  let blocks = Addr.Map.map
-    (fun block ->
-      let body_lowered = List.concat_map ~f:lower_instr block.body in
-      let branch_lowered, branch' = lower_branch block.branch in
-      { block with body = body_lowered @ branch_lowered; branch = branch' })
-    blocks
+  let blocks =
+    Addr.Map.map
+      (fun block ->
+        let body_lowered = List.concat_map ~f:lower_instr block.body in
+        let branch_lowered, branch' = lower_branch block.branch in
+        { block with body = body_lowered @ branch_lowered; branch = branch' })
+      blocks
   in
   Addr.Map.union (fun _ a _ -> Some a) blocks !new_blocks_map
 
@@ -438,69 +449,94 @@ let reachable_blocks all_blocks entry =
 let optimize_peephole_conversions blocks =
   let defs = Var.Tbl.make () None in
   let subst = ref Var.Map.empty in
-  Addr.Map.iter (fun _ block ->
-    List.iter ~f:(function
-      | Let (x, Prim (p, [Pv y])) ->
-          (match kind_of_prim p with
-           | Some k -> Var.Tbl.set defs x (Some (k, y))
-           | None -> ())
-      | _ -> ()) block.body
-  ) blocks;
-  Var.Tbl.iter (fun x opt ->
-    match opt with
-    | Some (k1, y) ->
-        (match Var.Tbl.get defs y with
-         | Some (k2, z) when Poly.equal (inverse_kind k1) (Some k2) ->
-             subst := Var.Map.add x z !subst
-         | _ -> ())
-    | None -> ()
-  ) defs;
-  if Var.Map.is_empty !subst then blocks
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter
+        ~f:(function
+          | Let (x, Prim (p, [ Pv y ])) -> (
+              match kind_of_prim p with
+              | Some k -> Var.Tbl.set defs x (Some (k, y))
+              | None -> ())
+          | _ -> ())
+        block.body)
+    blocks;
+  Var.Tbl.iter
+    (fun x opt ->
+      match opt with
+      | Some (k1, y) -> (
+          match Var.Tbl.get defs y with
+          | Some (k2, z) when Poly.equal (inverse_kind k1) (Some k2) ->
+              subst := Var.Map.add x z !subst
+          | _ -> ())
+      | None -> ())
+    defs;
+  if Var.Map.is_empty !subst
+  then blocks
   else
     let subst_var v = apply_subst !subst v in
     let subst_arg = function
       | Pv v -> Pv (subst_var v)
       | Pc c -> Pc c
     in
-    Addr.Map.map (fun block ->
-      let body = List.filter_map ~f:(function
-        | Let (x, _) when Var.Map.mem x !subst -> None
-        | Let (x, Apply {f; args; exact}) ->
-            Some (Let (x, Apply {f=subst_var f; args=List.map ~f:subst_var args; exact}))
-        | Let (x, Block (idx, arr, aon, mut)) ->
-            Some (Let (x, Block (idx, Array.map ~f:subst_var arr, aon, mut)))
-        | Let (x, Closure (lst1, (pc, lst2), cc)) ->
-            Some (Let (x, Closure (List.map ~f:subst_var lst1, (pc, List.map ~f:subst_var lst2), cc)))
-        | Let (x, Field (y, n, k)) ->
-            Some (Let (x, Field (subst_var y, n, k)))
-        | Let (x, Prim (p, args)) ->
-            Some (Let (x, Prim (p, List.map ~f:subst_arg args)))
-        | Assign (x, y) ->
-            Some (Assign (x, subst_var y))
-        | Array_set (x, y, z) ->
-            Some (Array_set (subst_var x, subst_var y, subst_var z))
-        | Set_field (x, n, k, y) ->
-            Some (Set_field (subst_var x, n, k, subst_var y))
-        | Offset_ref (x, n) ->
-            Some (Offset_ref (subst_var x, n))
-        | Event loc -> Some (Event loc)
-        | i -> Some i
-      ) block.body in
-      let branch = match block.branch with
-        | Return y -> Return (subst_var y)
-        | Raise (y, l) -> Raise (subst_var y, l)
-        | Branch (pc, args) -> Branch (pc, List.map ~f:subst_var args)
-        | Cond (v, (pc1, args1), (pc2, args2)) ->
-            Cond (subst_var v, (pc1, List.map ~f:subst_var args1), (pc2, List.map ~f:subst_var args2))
-        | Switch (v, targets) ->
-            Switch (subst_var v, Array.map ~f:(fun (pc, args) -> pc, List.map ~f:subst_var args) targets)
-        | Pushtrap ((pc1, args1), v, (pc2, args2)) ->
-            Pushtrap ((pc1, List.map ~f:subst_var args1), v, (pc2, List.map ~f:subst_var args2))
-        | Poptrap (pc, args) -> Poptrap (pc, List.map ~f:subst_var args)
-        | Stop -> Stop
-      in
-      { block with body; branch }
-    ) blocks
+    Addr.Map.map
+      (fun block ->
+        let body =
+          List.filter_map
+            ~f:(function
+              | Let (x, _) when Var.Map.mem x !subst -> None
+              | Let (x, Apply { f; args; exact }) ->
+                  Some
+                    (Let
+                       ( x
+                       , Apply
+                           { f = subst_var f; args = List.map ~f:subst_var args; exact }
+                       ))
+              | Let (x, Block (idx, arr, aon, mut)) ->
+                  Some (Let (x, Block (idx, Array.map ~f:subst_var arr, aon, mut)))
+              | Let (x, Closure (lst1, (pc, lst2), cc)) ->
+                  Some
+                    (Let
+                       ( x
+                       , Closure
+                           ( List.map ~f:subst_var lst1
+                           , (pc, List.map ~f:subst_var lst2)
+                           , cc ) ))
+              | Let (x, Field (y, n, k)) -> Some (Let (x, Field (subst_var y, n, k)))
+              | Let (x, Prim (p, args)) ->
+                  Some (Let (x, Prim (p, List.map ~f:subst_arg args)))
+              | Assign (x, y) -> Some (Assign (x, subst_var y))
+              | Array_set (x, y, z) ->
+                  Some (Array_set (subst_var x, subst_var y, subst_var z))
+              | Set_field (x, n, k, y) ->
+                  Some (Set_field (subst_var x, n, k, subst_var y))
+              | Offset_ref (x, n) -> Some (Offset_ref (subst_var x, n))
+              | Event loc -> Some (Event loc)
+              | i -> Some i)
+            block.body
+        in
+        let branch =
+          match block.branch with
+          | Return y -> Return (subst_var y)
+          | Raise (y, l) -> Raise (subst_var y, l)
+          | Branch (pc, args) -> Branch (pc, List.map ~f:subst_var args)
+          | Cond (v, (pc1, args1), (pc2, args2)) ->
+              Cond
+                ( subst_var v
+                , (pc1, List.map ~f:subst_var args1)
+                , (pc2, List.map ~f:subst_var args2) )
+          | Switch (v, targets) ->
+              Switch
+                ( subst_var v
+                , Array.map ~f:(fun (pc, args) -> pc, List.map ~f:subst_var args) targets
+                )
+          | Pushtrap ((pc1, args1), v, (pc2, args2)) ->
+              Pushtrap
+                ((pc1, List.map ~f:subst_var args1), v, (pc2, List.map ~f:subst_var args2))
+          | Poptrap (pc, args) -> Poptrap (pc, List.map ~f:subst_var args)
+          | Stop -> Stop
+        in
+        { block with body; branch })
+      blocks
 
 (* Run the LCM data flow analysis and rewrite on a single function's blocks.
    The analysis must be per-function to avoid cross-function variable references
@@ -907,7 +943,8 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
   let free_pc = ref p.free_pc in
   List.iter
     ~f:(fun (name_opt, entry) ->
-      let return_type = match name_opt with
+      let return_type =
+        match name_opt with
         | Some f -> Typing.return_type types f
         | None -> Typing.Top
       in
@@ -915,7 +952,9 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       let fun_blocks =
         Addr.Map.filter (fun pc _ -> Addr.Set.mem pc fun_block_pcs) !blocks
       in
-      let fun_blocks = lower_conversions fun_blocks types global_flow_info return_type free_pc in
+      let fun_blocks =
+        lower_conversions fun_blocks types global_flow_info return_type free_pc
+      in
       let result = process_function types conv_types entry fun_blocks return_type in
       Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result)
     !fun_entries;

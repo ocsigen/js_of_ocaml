@@ -219,7 +219,25 @@ let expr_escape st _x e =
   | Special _ | Constant _ | Closure _ | Block _ | Field _ -> ()
   | Apply { args; _ } -> List.iter args ~f:(fun x -> block_escape st x)
   | Prim (Array_get, [ Pv x; _ ]) -> block_escape st x
-  | Prim ((Vectlength | Array_get | Not | IsInt | Eq | Neq | Lt | Le | Ult | Wasm_unbox_i32 | Wasm_unbox_i64 | Wasm_unbox_f64 | Wasm_box_i32 | Wasm_box_i64 | Wasm_box_f64 | Wasm_untag_int | Wasm_tag_int), _) -> ()
+  | Prim
+      ( ( Vectlength
+        | Array_get
+        | Not
+        | IsInt
+        | Eq
+        | Neq
+        | Lt
+        | Le
+        | Ult
+        | Wasm_unbox_i32
+        | Wasm_unbox_i64
+        | Wasm_unbox_f64
+        | Wasm_box_i32
+        | Wasm_box_i64
+        | Wasm_box_f64
+        | Wasm_untag_int
+        | Wasm_tag_int )
+      , _ ) -> ()
   | Prim (Extern ("caml_make_array" | "caml_array_of_uniform_array"), [ Pv _ ]) -> ()
   | Prim (Extern name, l) ->
       let ka =
