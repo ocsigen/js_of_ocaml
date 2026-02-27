@@ -887,6 +887,7 @@ let process_function types conv_types entry fun_blocks return_type =
       Structure.blocks_in_reverse_post_order (Structure.build_graph fun_blocks entry)
     in
     let conv_out_map = ref Addr.Map.empty in
+    let phi_info = ref Addr.Map.empty in
     let result = ref fun_blocks in
     List.iter
       ~f:(fun pc ->
@@ -901,6 +902,7 @@ let process_function types conv_types entry fun_blocks return_type =
             ~init:[]
             preds_pc
         in
+        let all_preds_processed = List.length processed_preds = List.length preds_pc in
         let conv_in =
           match processed_preds with
           | [] -> ConvMap.empty
@@ -918,11 +920,116 @@ let process_function types conv_types entry fun_blocks return_type =
         in
         let pc_avin = Addr.Map.find pc avin in
         let safe_conv_in = ConvMap.filter (fun k _ -> ConvSet.mem k pc_avin) conv_in in
+        (* Handle conversions present in ALL predecessors with different variables:
+           create a phi to merge them. Only at fully-processed merge points. *)
+        let safe_conv_in =
+          if all_preds_processed && List.length preds_pc > 1
+          then
+            let pred_maps =
+              List.filter_map
+                ~f:(fun p -> Addr.Map.find_opt p !conv_out_map)
+                preds_pc
+            in
+            match pred_maps with
+            | [] | [ _ ] -> safe_conv_in
+            | first :: rest ->
+                ConvMap.fold
+                  (fun conv _var acc ->
+                    if ConvMap.mem conv acc
+                    then acc (* already in conv_in with same variable *)
+                    else if not (ConvSet.mem conv pc_avin)
+                    then acc
+                    else if
+                      (* Check: all preds have it? *)
+                      List.for_all ~f:(fun m -> ConvMap.mem conv m) rest
+                    then (
+                      let kind, _ = conv in
+                      let phi_var = Var.fresh () in
+                      let typ =
+                        ConvMap.find_opt conv !conv_types
+                        |> Option.value ~default:(type_of_kind kind)
+                      in
+                      Typing.set_var_type types phi_var typ;
+                      phi_info :=
+                        Addr.Map.update
+                          pc
+                          (function
+                            | None -> Some [ conv, phi_var ]
+                            | Some l -> Some ((conv, phi_var) :: l))
+                          !phi_info;
+                      ConvMap.add conv phi_var acc)
+                    else acc)
+                  first
+                  safe_conv_in
+          else safe_conv_in
+        in
         let to_insert =
           ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
         in
         let inserted_rev = ref [] in
         let conv_to_var = ref safe_conv_in in
+        (* For merge blocks where all predecessors are processed: check if some
+           predecessors already have the conversion in their conv_out. If so,
+           insert the conversion at the missing predecessors and create a phi
+           at this block, turning a partial redundancy into a full one. *)
+        let to_insert =
+          if all_preds_processed && List.length preds_pc > 1
+          then
+            ConvSet.filter
+              (fun ((kind, _arg) as conv) ->
+                let have, missing =
+                  List.partition
+                    ~f:(fun p ->
+                      match Addr.Map.find_opt p !conv_out_map with
+                      | Some m -> ConvMap.mem conv m
+                      | None -> false)
+                    preds_pc
+                in
+                if List.is_empty have || List.is_empty missing
+                then (* All have it or none do — no partial redundancy *)
+                  true
+                else (
+                  (* Partial redundancy: insert at missing preds, create phi *)
+                  let typ =
+                    ConvMap.find_opt conv !conv_types
+                    |> Option.value ~default:(type_of_kind kind)
+                  in
+                  List.iter
+                    ~f:(fun pred_pc ->
+                      let tmp = Var.fresh () in
+                      Typing.set_var_type types tmp typ;
+                      let pred_block = Addr.Map.find pred_pc !result in
+                      let new_body =
+                        pred_block.body
+                        @ [ Let (tmp, Prim (prim_of_kind kind, [ Pv (snd conv) ])) ]
+                      in
+                      result :=
+                        Addr.Map.add
+                          pred_pc
+                          { pred_block with body = new_body }
+                          !result;
+                      conv_out_map :=
+                        Addr.Map.update
+                          pred_pc
+                          (function
+                            | None -> Some (ConvMap.singleton conv tmp)
+                            | Some m -> Some (ConvMap.add conv tmp m))
+                          !conv_out_map)
+                    missing;
+                  let phi_var = Var.fresh () in
+                  Typing.set_var_type types phi_var typ;
+                  conv_to_var := ConvMap.add conv phi_var !conv_to_var;
+                  phi_info :=
+                    Addr.Map.update
+                      pc
+                      (function
+                        | None -> Some [ conv, phi_var ]
+                        | Some l -> Some ((conv, phi_var) :: l))
+                      !phi_info;
+                  false))
+              to_insert
+          else to_insert
+        in
         ConvSet.iter
           (fun ((kind, arg) as conv) ->
             let tmp = Var.fresh () in
@@ -1049,6 +1156,52 @@ let process_function types conv_types entry fun_blocks return_type =
         conv_out_map := Addr.Map.add pc !conv_to_var !conv_out_map;
         result := Addr.Map.add pc new_block !result)
       rpo;
+    (* Post-pass: patch block params and predecessor branches for phi insertions. *)
+    Addr.Map.iter
+      (fun target_pc phis ->
+        let blk = Addr.Map.find target_pc !result in
+        let new_params = blk.params @ List.map ~f:snd phis in
+        result := Addr.Map.add target_pc { blk with params = new_params } !result;
+        let target_preds =
+          Addr.Map.find_opt target_pc preds |> Option.value ~default:[]
+        in
+        List.iter
+          ~f:(fun pred_pc ->
+            let pred_block = Addr.Map.find pred_pc !result in
+            let pred_conv_out =
+              Addr.Map.find_opt pred_pc !conv_out_map
+              |> Option.value ~default:ConvMap.empty
+            in
+            let extend_cont ((pc', args) as cont) =
+              if pc' = target_pc
+              then
+                let extra =
+                  List.map
+                    ~f:(fun (conv, _phi_var) ->
+                      match ConvMap.find_opt conv pred_conv_out with
+                      | Some v -> v
+                      | None ->
+                          (* Should not happen: conversion is in AVIN so all preds
+                             must have it *)
+                          let _, arg = conv in
+                          arg)
+                    phis
+                in
+                pc', args @ extra
+              else cont
+            in
+            let new_branch =
+              match pred_block.branch with
+              | Branch cont -> Branch (extend_cont cont)
+              | Cond (v, c1, c2) -> Cond (v, extend_cont c1, extend_cont c2)
+              | Switch (v, conts) -> Switch (v, Array.map ~f:extend_cont conts)
+              | Pushtrap (c1, v, c2) -> Pushtrap (extend_cont c1, v, extend_cont c2)
+              | Poptrap cont -> Poptrap (extend_cont cont)
+              | (Stop | Return _ | Raise _) as br -> br
+            in
+            result := Addr.Map.add pred_pc { pred_block with branch = new_branch } !result)
+          target_preds)
+      !phi_info;
     optimize_peephole_conversions !result
 
 (* Entry point. Three steps:
