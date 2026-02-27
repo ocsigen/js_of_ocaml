@@ -892,7 +892,11 @@ let process_function types conv_types entry fun_blocks return_type =
     List.iter
       ~f:(fun pc ->
         let block = Addr.Map.find pc fun_blocks in
-        let preds_pc = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+        let preds_pc =
+          Addr.Map.find_opt pc preds
+          |> Option.value ~default:[]
+          |> List.sort_uniq ~cmp:compare
+        in
         let processed_preds =
           List.fold_left
             ~f:(fun acc p ->
@@ -1163,7 +1167,9 @@ let process_function types conv_types entry fun_blocks return_type =
         let new_params = blk.params @ List.map ~f:snd phis in
         result := Addr.Map.add target_pc { blk with params = new_params } !result;
         let target_preds =
-          Addr.Map.find_opt target_pc preds |> Option.value ~default:[]
+          Addr.Map.find_opt target_pc preds
+          |> Option.value ~default:[]
+          |> List.sort_uniq ~cmp:compare
         in
         List.iter
           ~f:(fun pred_pc ->
