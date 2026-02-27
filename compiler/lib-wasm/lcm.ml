@@ -51,15 +51,20 @@ let type_of_kind = function
   | Unbox_f64 -> Typing.Number (Typing.Float, Typing.Unboxed)
   | Box_i32 | Box_i64 | Box_f64 -> Typing.Top
   | Untag_int -> Typing.Int Typing.Integer.Normalized
-  | Tag_int -> Typing.Top
+  | Tag_int -> Typing.Int Typing.Integer.Ref
 
 (* First pass: only lower number boxing/unboxing conversions. *)
 let number_conversion_kind ~(from : Typing.typ) ~(into : Typing.typ) =
   match from, into with
   | Typing.Number (Typing.Int32, Typing.Unboxed), Typing.Number (Typing.Int32, Typing.Unboxed)
   | Typing.Number (Typing.Int64, Typing.Unboxed), Typing.Number (Typing.Int64, Typing.Unboxed)
-  | Typing.Number (Typing.Float, Typing.Unboxed), Typing.Number (Typing.Float, Typing.Unboxed)
-    -> None
+  | ( Typing.Number (Typing.Float, Typing.Unboxed)
+    , Typing.Number (Typing.Float, Typing.Unboxed) )
+  | Int (Normalized | Unnormalized), Int (Normalized | Unnormalized) -> None
+  | _, Typing.Int (Typing.Integer.Normalized | Typing.Integer.Unnormalized) ->
+      Some Untag_int
+  | ( Typing.Int (Typing.Integer.Normalized | Typing.Integer.Unnormalized)
+    , Typing.Int Typing.Integer.Ref ) -> Some Tag_int
   | Typing.Int _, _ | _, Typing.Int _ -> None
   | Typing.Number (_, Typing.Unboxed), Typing.Number (_, Typing.Unboxed) -> None
   | _, Typing.Number (Typing.Int32, Typing.Unboxed) -> Some Unbox_i32
@@ -124,8 +129,12 @@ let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Globa
   in
   let lower_prim x p args =
     let target_types_opt =
+      let top = Typing.Top in
+      let int_n = Typing.Int Typing.Integer.Normalized in
       match p with
       | Extern nm -> fst (Typing.prim_sig nm)
+      | Array_get -> Some [ top; int_n ]
+      | Lt | Le | Ult | Eq | Neq -> Some [ int_n; int_n ]
       | _ -> None
     in
     let args', lowered_args =
@@ -151,6 +160,20 @@ let lower_conversions (p : program) (types : Typing.t) (global_flow_info : Globa
     lowered_args @ [ Let (x, Prim (p, args')) ]
   in
   let lower_instr = function
+    | Set_field (x, n, Non_float, y) ->
+        let lowered, y' =
+          lower_var_conversion ~types ~from:(Typing.var_type types y) ~into:Typing.Top y
+        in
+        lowered @ [ Set_field (x, n, Non_float, y') ]
+    | Array_set (x, y, z) ->
+        let int_n = Typing.Int Typing.Integer.Normalized in
+        let lowered1, y' =
+          lower_var_conversion ~types ~from:(Typing.var_type types y) ~into:int_n y
+        in
+        let lowered2, z' =
+          lower_var_conversion ~types ~from:(Typing.var_type types z) ~into:Typing.Top z
+        in
+        lowered1 @ lowered2 @ [ Array_set (x, y', z') ]
     | Assign (x, y) ->
         let from = Typing.var_type types y in
         let into = Typing.var_type types x in
@@ -492,20 +515,26 @@ let process_function types conv_types entry fun_blocks =
                     let is_isolated = ConvSet.mem conv (Addr.Map.find pc !isolatedout) in
                     if not is_isolated then (
                       match ConvMap.find_opt conv !conv_to_var with
-                      | Some tmp -> subst := Var.Map.add v tmp !subst
+                      | Some tmp ->
+                          (match kind with | Untag_int -> Printf.eprintf "SUBST v%d with v%d (arg v%d)\n%!" (Var.idx v) (Var.idx tmp) (Var.idx arg) | _ -> ());
+                          subst := Var.Map.add v tmp !subst
                       | None ->
+                          (match kind with | Untag_int -> Printf.eprintf "ADDED CONV TO VAR: v%d -> v%d\n%!" (Var.idx arg) (Var.idx v) | _ -> ());
                           body_rev := i :: !body_rev;
                           conv_to_var := ConvMap.add conv v !conv_to_var
                     ) else (
                       body_rev := i :: !body_rev
-                    ))
+                    )
+                )
                 | None -> body_rev := i :: !body_rev)
             | Let (v, _) ->
                 conv_to_var := remove_killed_mappings !conv_to_var v;
+                Printf.eprintf "REMOVED KILLED Let v%d\n%!" (Var.idx v);
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Assign (v, _) ->
                 conv_to_var := remove_killed_mappings !conv_to_var v;
+                Printf.eprintf "REMOVED KILLED Assign v%d\n%!" (Var.idx v);
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
