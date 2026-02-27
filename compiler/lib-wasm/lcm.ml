@@ -87,9 +87,10 @@ let lower_var_conversion ~types ~(from : Typing.typ) ~(into : Typing.typ) x =
       [ Let (tmp, Prim (prim_of_kind kind, [ Pv x ])) ], tmp
 
 let lower_conversions
-    (p : program)
+    (blocks : block Addr.Map.t)
     (types : Typing.t)
-    (global_flow_info : Global_flow.info) =
+    (global_flow_info : Global_flow.info)
+    (return_type : Typing.typ) =
   let lower_apply x ~f ~args ~exact =
     let closure =
       if exact
@@ -188,14 +189,87 @@ let lower_conversions
         lowered @ [ Assign (x, y') ]
     | Let (x, Apply { f; args; exact }) -> lower_apply x ~f ~args ~exact
     | Let (x, Prim (p, args)) -> lower_prim x p args
+    | Let (x, e) ->
+        let from =
+          match e with
+          | Constant c -> Typing.constant_type c
+          | Field (_, _, Float) -> Typing.Number (Typing.Float, Typing.Unboxed)
+          | _ -> Typing.Top
+        in
+        let into = Typing.var_type types x in
+        let lowered, tmp =
+          match number_conversion_kind ~from ~into with
+          | Some kind ->
+              let tmp = Var.fresh () in
+              Typing.set_var_type types tmp from;
+              [ Let (tmp, e); Let (x, Prim (prim_of_kind kind, [ Pv tmp ])) ], tmp
+          | None -> [ Let (x, e) ], x
+        in
+        lowered
     | i -> [ i ]
   in
-  let blocks =
-    Addr.Map.map
-      (fun block -> { block with body = List.concat_map ~f:lower_instr block.body })
-      p.blocks
+  let lower_branch branch =
+    let lower_cont (pc, args) =
+      let target_block = Addr.Map.find pc blocks in
+      let target_types = List.map ~f:(Typing.var_type types) target_block.params in
+      let lowered_args_rev = ref [] in
+      let args' =
+        List.map2
+          ~f:(fun arg into ->
+            let from = Typing.var_type types arg in
+            let lowered, arg' = lower_var_conversion ~types ~from ~into arg in
+            lowered_args_rev := List.rev_append lowered !lowered_args_rev;
+            arg')
+          args
+          target_types
+      in
+      List.rev !lowered_args_rev, (pc, args')
+    in
+    (*    let int_n = Typing.Int Typing.Integer.Normalized in*)
+    match branch with
+    | Return y ->
+        let from = Typing.var_type types y in
+        let lowered, y' = lower_var_conversion ~types ~from ~into:return_type y in
+        lowered, Return y'
+    | Raise (y, l) ->
+        let from = Typing.var_type types y in
+        let lowered, y' = lower_var_conversion ~types ~from ~into:Typing.Top y in
+        lowered, Raise (y', l)
+    | Branch cont ->
+        let lowered, cont' = lower_cont cont in
+        lowered, Branch cont'
+    (* INCORRECT: CAN'T MOVE A CONVERSION BEFORE A CONDITION
+    | Cond (v, cont1, cont2) ->
+        let lowered_v, v' = lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v in
+        let lowered1, cont1' = lower_cont cont1 in
+        let lowered2, cont2' = lower_cont cont2 in
+        lowered_v @ lowered1 @ lowered2, Cond (v', cont1', cont2')
+    | Switch (v, conts) ->
+        let lowered_v, v' = lower_var_conversion ~types ~from:(Typing.var_type types v) ~into:int_n v in
+        let lowered_conts_rev = ref [] in
+        let conts' = Array.map ~f:(fun cont -> 
+            let lowered, cont' = lower_cont cont in 
+            lowered_conts_rev := List.rev_append lowered !lowered_conts_rev; 
+            cont') conts 
+        in
+        lowered_v @ List.rev !lowered_conts_rev, Switch (v', conts')
+*)
+    | Pushtrap (cont1, v, cont2) ->
+        let lowered1, cont1' = lower_cont cont1 in
+        let lowered2, cont2' = lower_cont cont2 in
+        lowered1 @ lowered2, Pushtrap (cont1', v, cont2')
+    | Poptrap cont ->
+        let lowered, cont' = lower_cont cont in
+        lowered, Poptrap cont'
+    | Stop -> [], Stop
+    | _ -> [], branch
   in
-  { p with blocks }
+  Addr.Map.map
+    (fun block ->
+      let body_lowered = List.concat_map ~f:lower_instr block.body in
+      let branch_lowered, branch' = lower_branch block.branch in
+      { block with body = body_lowered @ branch_lowered; branch = branch' })
+    blocks
 
 let get_all_conversions blocks types =
   let all_convs = ref ConvSet.empty in
@@ -319,7 +393,7 @@ let reachable_blocks all_blocks entry =
 (* Run the LCM data flow analysis and rewrite on a single function's blocks.
    The analysis must be per-function to avoid cross-function variable references
    in the inserted conversion instructions. *)
-let process_function types conv_types entry fun_blocks =
+let process_function types conv_types entry fun_blocks return_type =
   let all_convs, local_conv_types = get_all_conversions fun_blocks types in
   (* Merge local conv_types into the global conv_types *)
   ConvMap.iter
@@ -509,7 +583,9 @@ let process_function types conv_types entry fun_blocks =
           ps)
     done;
 
-    let rpo = Structure.blocks_in_reverse_post_order (Structure.build_graph fun_blocks entry) in
+    let rpo =
+      Structure.blocks_in_reverse_post_order (Structure.build_graph fun_blocks entry)
+    in
     let conv_out_map = ref Addr.Map.empty in
     let result = ref fun_blocks in
     List.iter
@@ -612,11 +688,37 @@ let process_function types conv_types entry fun_blocks =
         let rewrite_branch branch =
           let int_n = Typing.Int Typing.Integer.Normalized in
           match branch with
-          | Return _ | Raise _ | Stop -> branch
+          | Stop -> branch
+          | Return y ->
+              let y' =
+                match
+                  number_conversion_kind ~from:(Typing.var_type types y) ~into:return_type
+                with
+                | Some kind -> (
+                    match ConvMap.find_opt (kind, y) !conv_to_var with
+                    | Some tmp -> tmp
+                    | None -> y)
+                | None -> y
+              in
+              Return y'
+          | Raise (y, l) ->
+              let y' =
+                match
+                  number_conversion_kind ~from:(Typing.var_type types y) ~into:Typing.Top
+                with
+                | Some kind -> (
+                    match ConvMap.find_opt (kind, y) !conv_to_var with
+                    | Some tmp -> tmp
+                    | None -> y)
+                | None -> y
+              in
+              Raise (y', l)
           | Branch cont -> Branch (rewrite_cont cont)
           | Cond (v, cont1, cont2) ->
               let v' =
-                match number_conversion_kind ~from:(Typing.var_type types v) ~into:int_n with
+                match
+                  number_conversion_kind ~from:(Typing.var_type types v) ~into:int_n
+                with
                 | Some kind -> (
                     match ConvMap.find_opt (kind, v) !conv_to_var with
                     | Some tmp -> tmp
@@ -626,7 +728,9 @@ let process_function types conv_types entry fun_blocks =
               Cond (v', rewrite_cont cont1, rewrite_cont cont2)
           | Switch (v, conts) ->
               let v' =
-                match number_conversion_kind ~from:(Typing.var_type types v) ~into:int_n with
+                match
+                  number_conversion_kind ~from:(Typing.var_type types v) ~into:int_n
+                with
                 | Some kind -> (
                     match ConvMap.find_opt (kind, v) !conv_to_var with
                     | Some tmp -> tmp
@@ -636,8 +740,7 @@ let process_function types conv_types entry fun_blocks =
               Switch (v', Array.map ~f:rewrite_cont conts)
           | Pushtrap (cont1, v, cont2) ->
               Pushtrap (rewrite_cont cont1, v, rewrite_cont cont2)
-          | Poptrap cont ->
-              Poptrap (rewrite_cont cont)
+          | Poptrap cont -> Poptrap (rewrite_cont cont)
         in
         let branch = rewrite_branch branch in
         let new_block =
@@ -674,18 +777,14 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             | Typing.Tuple _ | Typing.Bigarray _ | Typing.Bot -> ())
       | None -> ())
     ();
-  let p = lower_conversions p types global_flow_info in
-  if debug ()
-  then (
-    prerr_endline "BEFORE";
-    Print.program Format.err_formatter (fun _ _ -> "") p);
   (* Collect function entry points *)
-  let fun_entries = ref [ p.start ] in
+  let fun_entries = ref [ None, p.start ] in
   Addr.Map.iter
     (fun _ block ->
       List.iter
         ~f:(function
-          | Let (_, Closure (_, (pc, _), _)) -> fun_entries := pc :: !fun_entries
+          | Let (x, Closure (_, (pc, _), _)) ->
+              fun_entries := (Some x, pc) :: !fun_entries
           | _ -> ())
         block.body)
     p.blocks;
@@ -694,12 +793,18 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
   let conv_types = ref ConvMap.empty in
   let blocks = ref p.blocks in
   List.iter
-    ~f:(fun entry ->
+    ~f:(fun (name_opt, entry) ->
+      let return_type =
+        match name_opt with
+        | Some f -> Typing.return_type types f
+        | None -> Typing.Top
+      in
       let fun_block_pcs = reachable_blocks !blocks entry in
       let fun_blocks =
         Addr.Map.filter (fun pc _ -> Addr.Set.mem pc fun_block_pcs) !blocks
       in
-      let result = process_function types conv_types entry fun_blocks in
+      let fun_blocks = lower_conversions fun_blocks types global_flow_info return_type in
+      let result = process_function types conv_types entry fun_blocks return_type in
       Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result)
     !fun_entries;
   let p = { p with blocks = !blocks } in
