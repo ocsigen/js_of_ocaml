@@ -80,7 +80,7 @@ let find_candidates p =
     | Non_float -> true
     | Float -> unboxed_floats
   in
-  let rec traverse closure_pc start_pc pc params =
+  let rec traverse closure_pc start_pc pc params seen_apply =
     if not (BitSet.mem visited pc)
     then (
       BitSet.set visited pc;
@@ -91,24 +91,32 @@ let find_candidates p =
           ~init:params
           block.params
       in
+      let seen_apply = ref seen_apply in
       List.iter
         ~f:(fun i ->
           match i with
           | Let (_, Field (x, n, kind)) when Var.Map.mem x params && allowed_access kind
             ->
-              let size = n + 1 in
-              let tuple =
-                try Var.Hashtbl.find tbl x
-                with Not_found ->
-                  { size = 0
-                  ; loc = Var.Map.find x params
-                  ; start_pc
-                  ; closure_pc
-                  ; kind
-                  ; needed = IntSet.empty
-                  }
-              in
-              if tuple.size < size then Var.Hashtbl.replace tbl x { tuple with size }
+              if !seen_apply
+              then (* A function call could have mutated the block through
+                      an alias, so the field value may be stale after
+                      unboxing. Discard this candidate. *)
+                Var.Hashtbl.remove tbl x
+              else
+                let size = n + 1 in
+                let tuple =
+                  try Var.Hashtbl.find tbl x
+                  with Not_found ->
+                    { size = 0
+                    ; loc = Var.Map.find x params
+                    ; start_pc
+                    ; closure_pc
+                    ; kind
+                    ; needed = IntSet.empty
+                    }
+                in
+                if tuple.size < size then Var.Hashtbl.replace tbl x { tuple with size }
+          | Let (_, Apply _) -> seen_apply := true
           | Let (y, Closure (params, (pc', args), _)) when not (is_unboxing_wrapper p pc')
             ->
               traverse
@@ -123,18 +131,19 @@ let find_candidates p =
                         ~init:Var.Map.empty
                         params)
                    args)
+                false
           | _ -> ())
         block.body;
       match block.branch with
-      | Branch (pc', _) -> traverse closure_pc start_pc pc' params
+      | Branch (pc', _) -> traverse closure_pc start_pc pc' params !seen_apply
       | _ ->
           Code.fold_children
             p.blocks
             pc
-            (fun pc' () -> traverse closure_pc start_pc pc' Var.Map.empty)
+            (fun pc' () -> traverse closure_pc start_pc pc' Var.Map.empty false)
             ())
   in
-  traverse None p.start p.start Var.Map.empty;
+  traverse None p.start p.start Var.Map.empty false;
   tbl
 
 let check_tuple_accesses p tbl =
