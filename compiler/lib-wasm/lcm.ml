@@ -45,6 +45,62 @@ module VarSet = Var.Set
 
 let debug = Debug.find "lcm"
 
+let times = Debug.find "times"
+
+let stats = Debug.find "stats"
+
+type lcm_stats =
+  { mutable functions_processed : int
+  ; mutable functions_with_conversions : int
+  ; mutable conversions_lowered : int
+  ; mutable conversions_tracked : int
+  ; mutable ant_iterations : int
+  ; mutable avail_iterations : int
+  ; mutable delay_iterations : int
+  ; mutable isol_iterations : int
+  ; mutable conversions_inserted : int
+  ; mutable conversions_eliminated : int
+  ; mutable peephole_eliminated : int
+  ; mutable pde_sunk : int
+  ; mutable pde_dead : int
+  ; mutable pde_iterations : int
+  ; mutable params_widened : int
+  ; mutable time_lowering : float
+  ; mutable time_dataflow : float
+  ; mutable time_rewrite : float
+  ; mutable time_peephole : float
+  ; mutable time_pde : float
+  ; mutable time_widening : float
+  ; mutable time_setup : float
+  }
+
+let make_stats () =
+  { functions_processed = 0
+  ; functions_with_conversions = 0
+  ; conversions_lowered = 0
+  ; conversions_tracked = 0
+  ; ant_iterations = 0
+  ; avail_iterations = 0
+  ; delay_iterations = 0
+  ; isol_iterations = 0
+  ; conversions_inserted = 0
+  ; conversions_eliminated = 0
+  ; peephole_eliminated = 0
+  ; pde_sunk = 0
+  ; pde_dead = 0
+  ; pde_iterations = 0
+  ; params_widened = 0
+  ; time_lowering = 0.
+  ; time_dataflow = 0.
+  ; time_rewrite = 0.
+  ; time_peephole = 0.
+  ; time_pde = 0.
+  ; time_widening = 0.
+  ; time_setup = 0.
+  }
+
+let tick () = Sys.time ()
+
 type conversion_kind =
   | Unbox_i32
   | Unbox_i64
@@ -121,7 +177,8 @@ let is_safe_input kind typ =
   | Box_i32 | Box_i64 | Box_f64 | Tag_int -> true
   | Untag_int -> (
       match typ with
-      | Typing.Int (Typing.Integer.Ref | Typing.Integer.Normalized | Typing.Integer.Unnormalized)
+      | Typing.Int
+          (Typing.Integer.Ref | Typing.Integer.Normalized | Typing.Integer.Unnormalized)
         -> true
       | _ -> false)
 
@@ -176,7 +233,8 @@ let lower_conversions
     (types : Typing.t)
     (global_flow_info : Global_flow.info)
     (return_type : Typing.typ)
-    (free_pc : int ref) =
+    (free_pc : int ref)
+    ~(st : lcm_stats) =
   let lower_apply x ~f ~args ~exact =
     let closure =
       if exact
@@ -408,7 +466,17 @@ let lower_conversions
         { block with body = body_lowered @ branch_lowered; branch = branch' })
       blocks
   in
-  Addr.Map.union (fun _ a _ -> Some a) blocks !new_blocks_map
+  let result = Addr.Map.union (fun _ a _ -> Some a) blocks !new_blocks_map in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter
+        ~f:(function
+          | Let (_, Prim (p, [ Pv _ ])) when Option.is_some (kind_of_prim p) ->
+              st.conversions_lowered <- st.conversions_lowered + 1
+          | _ -> ())
+        block.body)
+    result;
+  result
 
 (* Collect the universe of all conversions that appear in the function,
    along with the join of their result types across all occurrences. *)
@@ -465,9 +533,13 @@ module ConvTracker : sig
   type t
 
   val of_map : Var.t ConvMap.t -> t
+
   val to_map : t -> Var.t ConvMap.t
+
   val find_opt : Conv.t -> t -> Var.t option
+
   val add : Conv.t -> Var.t -> t -> t
+
   val kill_var : Var.t -> t -> t
 end = struct
   type t =
@@ -538,7 +610,11 @@ let compute_local_props all_convs is_safe block =
      cannot be hoisted through it — they might execute on a path where the
      operand's runtime type doesn't match (e.g. with GADTs). *)
   let has_effects =
-    List.exists ~f:(function Let (_, Apply _) -> true | _ -> false) block.body
+    List.exists
+      ~f:(function
+        | Let (_, Apply _) -> true
+        | _ -> false)
+      block.body
   in
   let transp_ant =
     if has_effects then ConvSet.filter (fun c -> is_safe c) transp else transp
@@ -558,8 +634,9 @@ let compute_local_props all_convs is_safe block =
           match kind_of_prim p with
           | Some kind ->
               let conv = kind, arg in
-              if (not (VarSet.mem arg !current_killed))
-                 && (is_safe conv || not !seen_effect)
+              if
+                (not (VarSet.mem arg !current_killed))
+                && (is_safe conv || not !seen_effect)
               then antloc := ConvSet.add conv !antloc;
               comp := ConvSet.add conv !comp;
               kill_var v
@@ -602,7 +679,9 @@ let split_critical_edges blocks free_pc =
   let has_multiple_preds pc =
     match Addr.Map.find_opt pc preds with
     | Some ps ->
-        let unique = List.fold_left ~f:(fun s p -> Addr.Set.add p s) ~init:Addr.Set.empty ps in
+        let unique =
+          List.fold_left ~f:(fun s p -> Addr.Set.add p s) ~init:Addr.Set.empty ps
+        in
         Addr.Set.cardinal unique >= 2
     | None -> false
   in
@@ -614,7 +693,7 @@ let split_critical_edges blocks free_pc =
       free_pc := new_pc + 1;
       new_blocks :=
         Addr.Map.add new_pc { params = []; body = []; branch = Branch cont } !new_blocks;
-      (new_pc, []))
+      new_pc, [])
     else cont
   in
   let duplicate_targets targets =
@@ -677,7 +756,7 @@ let reachable_blocks all_blocks entry =
      let z = unbox_f64(y)   -- original use
    This pass detects such pairs and substitutes z with x directly,
    removing the dead intermediate definitions. *)
-let optimize_peephole_conversions blocks preds =
+let optimize_peephole_conversions blocks preds ~(st : lcm_stats) =
   let defs = Var.Tbl.make () None in
   let subst = ref Var.Map.empty in
   Addr.Map.iter
@@ -705,7 +784,7 @@ let optimize_peephole_conversions blocks preds =
           |> List.sort_uniq ~cmp:compare
         in
         if not (List.is_empty pred_pcs)
-        then
+        then (
           (* For each parameter index, collect the argument passed by each
              predecessor. Predecessors may branch to this block multiple
              times (e.g. Cond with both arms targeting the same block). *)
@@ -743,14 +822,13 @@ let optimize_peephole_conversions blocks preds =
                   match Var.Tbl.get defs single_arg with
                   | Some _ as def -> Var.Tbl.set defs param def
                   | None -> ())
-              | first :: rest
-                when List.for_all ~f:(fun a -> Var.equal a first) rest -> (
+              | first :: rest when List.for_all ~f:(fun a -> Var.equal a first) rest -> (
                   (* All edges pass the same variable *)
                   match Var.Tbl.get defs first with
                   | Some _ as def -> Var.Tbl.set defs param def
                   | None -> ())
               | _ -> ())
-            block.params)
+            block.params))
     blocks;
   Var.Tbl.iter
     (fun x opt ->
@@ -762,6 +840,7 @@ let optimize_peephole_conversions blocks preds =
           | _ -> ())
       | None -> ())
     defs;
+  st.peephole_eliminated <- st.peephole_eliminated + Var.Map.cardinal !subst;
   if Var.Map.is_empty !subst
   then blocks
   else
@@ -843,7 +922,7 @@ let optimize_peephole_conversions blocks preds =
    The pass iterates to a fixpoint: sinking a conversion into a successor
    may make it partially dead at that successor (if it has multiple successors
    of its own), enabling further sinking on the next iteration. *)
-let sink_partially_dead_conversions blocks all_blocks entry preds =
+let sink_partially_dead_conversions blocks all_blocks entry preds ~(st : lcm_stats) =
   (* Collect conversion result variables *)
   let conv_vars = ref VarSet.empty in
   Addr.Map.iter
@@ -873,14 +952,12 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
           (fun cpc ->
             let cblock = Addr.Map.find cpc all_blocks in
             Freevars.iter_block_free_vars
-              (fun x ->
-                if VarSet.mem x conv_vars then escaped := VarSet.add x !escaped)
+              (fun x -> if VarSet.mem x conv_vars then escaped := VarSet.add x !escaped)
               cblock;
             (* Recurse into closures defined within this closure *)
             List.iter
               ~f:(function
-                | Let (_, Closure (_, (inner_pc, _), _)) ->
-                    scan_closure_bodies inner_pc
+                | Let (_, Closure (_, (inner_pc, _), _)) -> scan_closure_bodies inner_pc
                 | _ -> ())
               cblock.body)
           closure_pcs
@@ -897,7 +974,10 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
     in
     let is_conv v = VarSet.mem v conv_vars in
     let add_cv acc v = if is_conv v then VarSet.add v acc else acc in
-    let add_pv acc = function Pv v -> add_cv acc v | Pc _ -> acc in
+    let add_pv acc = function
+      | Pv v -> add_cv acc v
+      | Pc _ -> acc
+    in
     (* Collect conv result vars referenced in an instruction's operands *)
     let used_in_instr i =
       match i with
@@ -905,8 +985,7 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
       | Let (_, Apply { f; args; _ }) ->
           List.fold_left ~f:add_cv ~init:(add_cv VarSet.empty f) args
       | Let (_, Field (x, _, _)) -> add_cv VarSet.empty x
-      | Let (_, Block (_, arr, _, _)) ->
-          Array.fold_left ~f:add_cv ~init:VarSet.empty arr
+      | Let (_, Block (_, arr, _, _)) -> Array.fold_left ~f:add_cv ~init:VarSet.empty arr
       | Let (_, Closure (_, (_, args), _)) ->
           List.fold_left ~f:add_cv ~init:VarSet.empty args
       | Let (_, (Constant _ | Special _)) -> VarSet.empty
@@ -922,8 +1001,7 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
       | Return y -> add_cv VarSet.empty y
       | Raise (y, _) -> add_cv VarSet.empty y
       | Branch (_, args) -> add_args VarSet.empty args
-      | Cond (v, (_, a1), (_, a2)) ->
-          add_args (add_args (add_cv VarSet.empty v) a1) a2
+      | Cond (v, (_, a1), (_, a2)) -> add_args (add_args (add_cv VarSet.empty v) a1) a2
       | Switch (v, targets) ->
           Array.fold_left
             ~f:(fun acc (_, args) -> add_args acc args)
@@ -940,6 +1018,7 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
     let did_sink = ref true in
     while !did_sink do
       did_sink := false;
+      st.pde_iterations <- st.pde_iterations + 1;
       (* Compute USE/DEF per block for backward liveness of conv result vars.
          USE(B) = upward-exposed uses (referenced before defined in B).
          DEF(B) = conv result vars defined in B. *)
@@ -953,8 +1032,7 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
                 let u = used_in_instr i in
                 use := VarSet.union !use (VarSet.diff u !def);
                 match i with
-                | Let (v, _) | Assign (v, _) ->
-                    if is_conv v then def := VarSet.add v !def
+                | Let (v, _) | Assign (v, _) -> if is_conv v then def := VarSet.add v !def
                 | _ -> ())
               block.body;
             let bu = used_in_branch block.branch in
@@ -967,8 +1045,7 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
          LIVE_IN(B)  = USE(B) ∪ (LIVE_OUT(B) \ DEF(B)) *)
       let live_in = ref (Addr.Map.map (fun _ -> VarSet.empty) !result) in
       let wl =
-        ref
-          (Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) !result Addr.Set.empty)
+        ref (Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) !result Addr.Set.empty)
       in
       while not (Addr.Set.is_empty !wl) do
         let pc = Addr.Set.max_elt !wl in
@@ -1003,8 +1080,8 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
             for idx = 0 to body_len - 1 do
               match body_arr.(idx) with
               | Let (v, Prim (p, [ Pv arg ]))
-                when Option.is_some (kind_of_prim p)
-                     && not (VarSet.mem v escaping_vars) ->
+                when Option.is_some (kind_of_prim p) && not (VarSet.mem v escaping_vars)
+                -> (
                   (* Condition 1: v not used in B after the conversion *)
                   let used_after = ref false in
                   for j = idx + 1 to body_len - 1 do
@@ -1012,7 +1089,7 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
                   done;
                   if VarSet.mem v (used_in_branch block.branch) then used_after := true;
                   if not !used_after
-                  then (
+                  then
                     (* Condition 3: v live on a strict subset of successor edges *)
                     let succs_live =
                       List.filter
@@ -1028,10 +1105,10 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
                            Conditions 4 & 5 must hold for all targets. *)
                         let arg_killed = ref false in
                         for j = idx + 1 to body_len - 1 do
-                          (match body_arr.(j) with
-                          | Let (w, _) | Assign (w, _) when Var.equal w arg ->
+                          match body_arr.(j) with
+                          | (Let (w, _) | Assign (w, _)) when Var.equal w arg ->
                               arg_killed := true
-                          | _ -> ())
+                          | _ -> ()
                         done;
                         let all_ok =
                           (not !arg_killed)
@@ -1053,10 +1130,14 @@ let sink_partially_dead_conversions blocks all_blocks entry preds =
             if (not (List.is_empty !to_sink)) || not (VarSet.is_empty !to_remove)
             then (
               did_sink := true;
+              st.pde_sunk <- st.pde_sunk + List.length !to_sink;
+              st.pde_dead <- st.pde_dead + VarSet.cardinal !to_remove;
               let sunk_vars =
                 List.fold_left
                   ~f:(fun acc (i, _) ->
-                    match i with Let (v, _) -> VarSet.add v acc | _ -> acc)
+                    match i with
+                    | Let (v, _) -> VarSet.add v acc
+                    | _ -> acc)
                   ~init:VarSet.empty
                   !to_sink
               in
@@ -1117,7 +1198,7 @@ let equal_origin a b =
    Example 2 (free variable): a block boxes a float v0, then branches to two
    successors that each immediately unbox it. The predecessors have v0 available,
    so widening threads v0 as a shadow parameter, eliminating the unbox. *)
-let eliminate_param_conversions blocks types preds =
+let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
   let result = ref blocks in
   (* Build conversion definition and computed-conversion tables *)
   let conv_defs = Var.Tbl.make () None in
@@ -1142,11 +1223,11 @@ let eliminate_param_conversions blocks types preds =
      - Already computed: kind(q) computed in pred block *)
   let find_direct_value pred_pc q kind =
     (match inverse_kind kind with
-    | Some inv_k -> (
-        match Var.Tbl.get conv_defs q with
-        | Some (k, u) when Poly.equal k inv_k -> Some u
-        | _ -> None)
-    | None -> None)
+      | Some inv_k -> (
+          match Var.Tbl.get conv_defs q with
+          | Some (k, u) when Poly.equal k inv_k -> Some u
+          | _ -> None)
+      | None -> None)
     |> function
     | Some _ as r -> r
     | None -> (
@@ -1200,21 +1281,21 @@ let eliminate_param_conversions blocks types preds =
       let rec check_preds ps acc_shadows =
         match ps with
         | [] -> Some acc_shadows
-        | pred_pc :: rest_preds ->
+        | pred_pc :: rest_preds -> (
             let pred_block = Addr.Map.find pred_pc !result in
             let conts = conts_to_target pred_block.branch bpc in
             let rec check_conts cs acc =
               match cs with
               | [] -> Some acc
-              | args :: rest_conts ->
+              | args :: rest_conts -> (
                   let q =
                     match origin with
                     | Param bpi -> List.nth args bpi
                     | Var v -> v
                   in
-                  (match find_direct_value pred_pc q kind with
+                  match find_direct_value pred_pc q kind with
                   | Some _ -> check_conts rest_conts acc
-                  | None ->
+                  | None -> (
                       (* q not directly available; trace how it enters pred *)
                       let pred_origin =
                         match find_param_idx q pred_block.params with
@@ -1222,42 +1303,40 @@ let eliminate_param_conversions blocks types preds =
                         | None -> Var q
                       in
                       let key = pred_pc, pred_origin in
-                      if List.exists
-                           ~f:(fun (a, b) ->
-                             a = pred_pc && equal_origin b pred_origin)
-                           visiting
+                      if
+                        List.exists
+                          ~f:(fun (a, b) -> a = pred_pc && equal_origin b pred_origin)
+                          visiting
                       then
                         (* Cycle: assume shadow will be there *)
                         let acc' =
-                          if List.exists
-                               ~f:(fun (a, b) ->
-                                 a = pred_pc && equal_origin b pred_origin)
-                               acc
+                          if
+                            List.exists
+                              ~f:(fun (a, b) -> a = pred_pc && equal_origin b pred_origin)
+                              acc
                           then acc
                           else key :: acc
                         in
                         check_conts rest_conts acc'
                       else
                         let acc' =
-                          if List.exists
-                               ~f:(fun (a, b) ->
-                                 a = pred_pc && equal_origin b pred_origin)
-                               acc
+                          if
+                            List.exists
+                              ~f:(fun (a, b) -> a = pred_pc && equal_origin b pred_origin)
+                              acc
                           then acc
                           else key :: acc
                         in
-                        (match
-                           can_supply pred_pc pred_origin kind (key :: visiting)
-                         with
+                        match can_supply pred_pc pred_origin kind (key :: visiting) with
                         | None -> None
                         | Some more ->
                             let combined =
                               List.fold_left
                                 ~f:(fun a ((spc, so) as s) ->
-                                  if List.exists
-                                       ~f:(fun (a2, b2) ->
-                                         a2 = spc && equal_origin b2 so)
-                                       a
+                                  if
+                                    List.exists
+                                      ~f:(fun (a2, b2) -> a2 = spc && equal_origin b2 so)
+                                      a
                                   then a
                                   else s :: a)
                                 ~init:acc'
@@ -1265,7 +1344,7 @@ let eliminate_param_conversions blocks types preds =
                             in
                             check_conts rest_conts combined))
             in
-            (match check_conts conts acc_shadows with
+            match check_conts conts acc_shadows with
             | None -> None
             | Some acc' -> check_preds rest_preds acc')
       in
@@ -1328,6 +1407,7 @@ let eliminate_param_conversions blocks types preds =
             | Some passthrough_shadows ->
                 let all_shadows = initial_key :: passthrough_shadows in
                 eliminated := VarSet.add v !eliminated;
+                st.params_widened <- st.params_widened + List.length all_shadows;
                 (* 1. Create shadow param variables *)
                 let shadow_vars =
                   List.map
@@ -1370,9 +1450,7 @@ let eliminate_param_conversions blocks types preds =
                 (match Addr.Map.find_opt pc !block_computed with
                 | Some bc ->
                     let bc' =
-                      ConvMap.map
-                        (fun w -> if Var.equal w v then target_sv else w)
-                        bc
+                      ConvMap.map (fun w -> if Var.equal w v then target_sv else w) bc
                     in
                     block_computed := Addr.Map.add pc bc' !block_computed
                 | None -> ());
@@ -1401,9 +1479,7 @@ let eliminate_param_conversions blocks types preds =
                               match find_direct_value pred_pc q kind with
                               | Some u -> u
                               | None ->
-                                  let pred_block =
-                                    Addr.Map.find pred_pc !result
-                                  in
+                                  let pred_block = Addr.Map.find pred_pc !result in
                                   let pred_origin =
                                     match find_param_idx q pred_block.params with
                                     | Some qi -> Param qi
@@ -1422,8 +1498,7 @@ let eliminate_param_conversions blocks types preds =
                           | Poptrap c -> Poptrap (ext c)
                           | br -> br
                         in
-                        result :=
-                          Addr.Map.add pred_pc { pb with branch = br } !result)
+                        result := Addr.Map.add pred_pc { pb with branch = br } !result)
                       bpc_preds)
                   shadow_vars)
         | _ -> ())
@@ -1439,9 +1514,7 @@ let eliminate_param_conversions blocks types preds =
     in
     Addr.Map.map
       (fun b ->
-        let new_body =
-          List.map ~f:(Subst.Excluding_Binders.instr subst_var) b.body
-        in
+        let new_body = List.map ~f:(Subst.Excluding_Binders.instr subst_var) b.body in
         let new_branch = Subst.Excluding_Binders.last subst_var b.branch in
         { b with body = new_body; branch = new_branch })
       !result
@@ -1453,17 +1526,26 @@ let eliminate_param_conversions blocks types preds =
 
    The analysis must be per-function to avoid cross-function variable references
    in the inserted conversion instructions. *)
-let process_function types conv_types entry fun_blocks return_type all_blocks =
+let process_function
+    types
+    conv_types
+    entry
+    fun_blocks
+    return_type
+    all_blocks
+    ~(st : lcm_stats) =
   let all_convs, local_conv_types = get_all_conversions fun_blocks types in
   ConvMap.iter
     (fun conv typ -> conv_types := ConvMap.add conv typ !conv_types)
     local_conv_types;
+  st.functions_processed <- st.functions_processed + 1;
   if ConvSet.is_empty all_convs
   then fun_blocks
-  else
-    let is_safe (kind, var) =
-      is_safe_input kind (Typing.var_type types var)
-    in
+  else (
+    st.functions_with_conversions <- st.functions_with_conversions + 1;
+    st.conversions_tracked <- st.conversions_tracked + ConvSet.cardinal all_convs;
+    let t0 = tick () in
+    let is_safe (kind, var) = is_safe_input kind (Typing.var_type types var) in
     let props = Addr.Map.map (compute_local_props all_convs is_safe) fun_blocks in
     let block_param_sets =
       Addr.Map.map
@@ -1491,6 +1573,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
       ref (Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty)
     in
     while not (Addr.Set.is_empty !worklist) do
+      st.ant_iterations <- st.ant_iterations + 1;
       let pc = Addr.Set.min_elt !worklist in
       worklist := Addr.Set.remove pc !worklist;
       let b_props = Addr.Map.find pc props in
@@ -1540,6 +1623,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
     worklist :=
       Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
     while not (Addr.Set.is_empty !worklist) do
+      st.avail_iterations <- st.avail_iterations + 1;
       let pc = Addr.Set.min_elt !worklist in
       worklist := Addr.Set.remove pc !worklist;
       let b_props = Addr.Map.find pc props in
@@ -1595,6 +1679,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
     worklist :=
       Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
     while not (Addr.Set.is_empty !worklist) do
+      st.delay_iterations <- st.delay_iterations + 1;
       let pc = Addr.Set.min_elt !worklist in
       worklist := Addr.Set.remove pc !worklist;
       let b_props = Addr.Map.find pc props in
@@ -1667,6 +1752,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
     worklist :=
       Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
     while not (Addr.Set.is_empty !worklist) do
+      st.isol_iterations <- st.isol_iterations + 1;
       let pc = Addr.Set.min_elt !worklist in
       worklist := Addr.Set.remove pc !worklist;
       let b_props = Addr.Map.find pc props in
@@ -1700,6 +1786,8 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
         let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
         List.iter ~f:(fun p' -> worklist := Addr.Set.add p' !worklist) ps)
     done;
+    let t1 = tick () in
+    st.time_dataflow <- st.time_dataflow +. (t1 -. t0);
 
     (* Rewrite phase: walk blocks in reverse post-order and apply the LCM results.
 
@@ -1769,9 +1857,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
           if all_preds_processed && List.length preds_pc > 1
           then
             let pred_maps =
-              List.filter_map
-                ~f:(fun p -> Addr.Map.find_opt p !conv_out_map)
-                preds_pc
+              List.filter_map ~f:(fun p -> Addr.Map.find_opt p !conv_out_map) preds_pc
             in
             match pred_maps with
             | [] | [ _ ] -> safe_conv_in
@@ -1821,7 +1907,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
         ConvSet.iter
           (fun ((kind, arg) as conv) ->
             if all_preds_processed && List.length preds_pc > 1
-            then (
+            then
               let preds_with =
                 List.filter
                   ~f:(fun p ->
@@ -1858,6 +1944,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                         pred_pc
                         { pred_block with body = pred_block.body @ [ instr ] }
                         !result;
+                    st.conversions_inserted <- st.conversions_inserted + 1;
                     let pred_conv_out =
                       Addr.Map.find_opt pred_pc !conv_out_map
                       |> Option.value ~default:ConvMap.empty
@@ -1876,7 +1963,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                       | Some l -> Some ((conv, phi_var) :: l))
                     !phi_info;
                 conv_to_var := ConvTracker.add conv phi_var !conv_to_var)
-              else to_insert_remaining := ConvSet.add conv !to_insert_remaining)
+              else to_insert_remaining := ConvSet.add conv !to_insert_remaining
             else to_insert_remaining := ConvSet.add conv !to_insert_remaining)
           to_insert;
         (* Insert remaining conversions (fully new, no partial redundancy) at block top *)
@@ -1889,6 +1976,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
             in
             Typing.set_var_type types tmp typ;
             conv_to_var := ConvTracker.add conv tmp !conv_to_var;
+            st.conversions_inserted <- st.conversions_inserted + 1;
             inserted_rev :=
               Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
           !to_insert_remaining;
@@ -1906,7 +1994,9 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                 | Some kind -> (
                     let conv = kind, arg in
                     match ConvTracker.find_opt conv !conv_to_var with
-                    | Some tmp -> subst := Var.Map.add v tmp !subst
+                    | Some tmp ->
+                        st.conversions_eliminated <- st.conversions_eliminated + 1;
+                        subst := Var.Map.add v tmp !subst
                     | None ->
                         body_rev := i :: !body_rev;
                         conv_to_var := ConvTracker.add conv v !conv_to_var)
@@ -2054,15 +2144,25 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
             result := Addr.Map.add pred_pc { pred_block with branch = new_branch } !result)
           target_preds)
       !phi_info;
-    let result = optimize_peephole_conversions !result preds in
-    let result = sink_partially_dead_conversions result all_blocks entry preds in
-    eliminate_param_conversions result types preds
+    let t2 = tick () in
+    st.time_rewrite <- st.time_rewrite +. (t2 -. t1);
+    let result = optimize_peephole_conversions !result preds ~st in
+    let t3 = tick () in
+    st.time_peephole <- st.time_peephole +. (t3 -. t2);
+    let result = sink_partially_dead_conversions result all_blocks entry preds ~st in
+    let t4 = tick () in
+    st.time_pde <- st.time_pde +. (t4 -. t3);
+    let result = eliminate_param_conversions result types preds ~st in
+    st.time_widening <- st.time_widening +. (tick () -. t4);
+    result)
 
 (* Entry point. Three steps:
    1. Decide which functions can return unboxed/untagged values for direct calls.
    2. For each function, lower implicit conversions into explicit IR primitives.
    3. Run the LCM analysis and rewrite to eliminate redundant conversions. *)
 let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~fun_info =
+  let t = Timer.make () in
+  let st = make_stats () in
   (* Decide return-type unboxing for functions whose call sites are all known.
      If a function always returns an unboxed number or a normalised int, record
      that as its return type so callers can avoid re-boxing. *)
@@ -2109,6 +2209,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
   let start = ref p.start in
   List.iter
     ~f:(fun (name_opt, entry) ->
+      let ts = tick () in
       let return_type =
         match name_opt with
         | Some f -> Typing.return_type types f
@@ -2118,13 +2219,17 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       let fun_blocks =
         Addr.Map.filter (fun pc _ -> Addr.Set.mem pc fun_block_pcs) !blocks
       in
+      let t0 = tick () in
+      st.time_setup <- st.time_setup +. (t0 -. ts);
       let fun_blocks =
-        lower_conversions fun_blocks types global_flow_info return_type free_pc
+        lower_conversions fun_blocks types global_flow_info return_type free_pc ~st
       in
       let fun_blocks = split_critical_edges fun_blocks free_pc in
+      st.time_lowering <- st.time_lowering +. (tick () -. t0);
       (* If the entry block has CFG predecessors (e.g. it's a loop header),
          split the entry edge: insert a forwarding block so that the implicit
          Closure→entry edge doesn't conflict with parameter widening. *)
+      let ts2 = tick () in
       let fun_blocks, entry =
         let preds = CFG.predecessors fun_blocks in
         match Addr.Map.find_opt entry preds with
@@ -2142,14 +2247,9 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
                 entry_block.params
             in
             let new_entry_block =
-              { params = new_params
-              ; body = []
-              ; branch = Branch (entry, new_params)
-              }
+              { params = new_params; body = []; branch = Branch (entry, new_params) }
             in
-            let fun_blocks =
-              Addr.Map.add new_entry_pc new_entry_block fun_blocks
-            in
+            let fun_blocks = Addr.Map.add new_entry_pc new_entry_block fun_blocks in
             (* Update the Closure instruction in the parent blocks to
                target the new entry block *)
             (match name_opt with
@@ -2173,12 +2273,49 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             fun_blocks, new_entry_pc
         | _ -> fun_blocks, entry
       in
+      st.time_setup <- st.time_setup +. (tick () -. ts2);
       let result =
-        process_function types conv_types entry fun_blocks return_type !blocks
+        process_function types conv_types entry fun_blocks return_type !blocks ~st
       in
-      Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result)
+      let ts3 = tick () in
+      Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result;
+      st.time_setup <- st.time_setup +. (tick () -. ts3))
     !fun_entries;
   let p = { start = !start; blocks = !blocks; free_pc = !free_pc } in
+  if times ()
+  then (
+    Format.eprintf "  lcm: %a@." Timer.print t;
+    Format.eprintf
+      "    lowering: %.2f@.    dataflow: %.2f@.    rewrite: %.2f@.    peephole: \
+       %.2f@.    pde: %.2f@.    widening: %.2f@.    setup: %.2f@."
+      st.time_lowering
+      st.time_dataflow
+      st.time_rewrite
+      st.time_peephole
+      st.time_pde
+      st.time_widening
+      st.time_setup);
+  if stats ()
+  then
+    Format.eprintf
+      "Stats - lcm: %d functions (%d with conversions), %d lowered, %d tracked, ant:%d \
+       avail:%d delay:%d isol:%d iters, %d inserted, %d eliminated, %d peephole, pde:%d \
+       sunk %d dead %d rounds, %d params widened@."
+      st.functions_processed
+      st.functions_with_conversions
+      st.conversions_lowered
+      st.conversions_tracked
+      st.ant_iterations
+      st.avail_iterations
+      st.delay_iterations
+      st.isol_iterations
+      st.conversions_inserted
+      st.conversions_eliminated
+      st.peephole_eliminated
+      st.pde_sunk
+      st.pde_dead
+      st.pde_iterations
+      st.params_widened;
   if debug ()
   then (
     prerr_endline "AFTER";
