@@ -23966,13 +23966,14 @@
     cst_Digest_subbytes =  /*<<?>>*/ "Digest.subbytes",
     cst_Digest_substring = "Digest.substring",
     cst_Digest_to_hex = "Digest.to_hex";
-   function BLAKE2(hash_length){
-    var _a_ = hash_length < 1, _b_ = _a_ || 64 < hash_length;
+   function BLAKE2(X){
+    var _a_ = X[1] < 1, _b_ = _a_ || 64 < X[1];
     if(_b_)
       /*<<digest.ml:68:9>>*/ Stdlib[1].call
       (null, "Digest.BLAKE2: wrong hash size");
     var
-     compare =  /*<<digest.ml:69:4>>*/ Stdlib_String[10],
+     hash_length =  /*<<digest.ml:69:4>>*/ X[1],
+     compare = Stdlib_String[10],
      equal = Stdlib_String[9],
      cst =  /*<<?>>*/ "";
     function string(str){
@@ -24087,9 +24088,9 @@
             of_hex];
    }
    var
-    BLAKE128 =  /*<<?>>*/ BLAKE2(16),
-    BLAKE256 = BLAKE2(32),
-    BLAKE512 = BLAKE2(64),
+    BLAKE128 =  /*<<?>>*/ BLAKE2([0, 16]),
+    BLAKE256 = BLAKE2([0, 32]),
+    BLAKE512 = BLAKE2([0, 64]),
     compare = Stdlib_String[10],
     equal = Stdlib_String[9];
    function string(str){
@@ -33504,7 +33505,8 @@
       /*<<dynarray.ml:854:43>>*/ if(! _K_) return _K_;
     }
     /*<<dynarray.ml:857:5>>*/ }
-   function iter$0(length, arr, dummy, f, k){
+   function iter(f, k, a){
+    var length =  /*<<dynarray.ml:877:2>>*/ a[1], arr = a[2], dummy = a[3];
      /*<<dynarray.ml:901:2>>*/ check_valid_length(length, arr);
     var _J_ =  /*<<dynarray.ml:901:31>>*/ length - 1 | 0;
     if(_J_ >= 0){
@@ -33517,10 +33519,10 @@
       i = _K_;
      }
     }
-     /*<<dynarray.ml:905:2>>*/ return check_same_length(length, f, length) /*<<dynarray.ml:905:31>>*/ ;
+     /*<<dynarray.ml:905:2>>*/ return check_same_length(a[1], f, length) /*<<dynarray.ml:905:31>>*/ ;
    }
-   function iter(k, a){
-     /*<<dynarray.ml:908:2>>*/ return iter$0(a[1], a[2], a[3], "iter", k) /*<<dynarray.ml:908:18>>*/ ;
+   function iter$0(k, a){
+     /*<<dynarray.ml:908:2>>*/ return iter("iter", k, a) /*<<dynarray.ml:908:18>>*/ ;
    }
    function iteri(k, a){
     var length =  /*<<dynarray.ml:911:2>>*/ a[1], arr = a[2], dummy = a[3];
@@ -33755,33 +33757,29 @@
     /*<<dynarray.ml:1034:5>>*/ }
    function filter(f, a){
     var b =  /*<<dynarray.ml:1037:10>>*/ create(0);
-     /*<<dynarray.ml:1038:2>>*/ iter$0
-     (a[1],
-      a[2],
-      a[3],
-      "filter",
+     /*<<dynarray.ml:1038:2>>*/ iter
+     ("filter",
       function(x){
        var _A_ =  /*<<dynarray.ml:1038:30>>*/ caml_call1(f, x);
         /*<<dynarray.ml:1038:33>>*/ return _A_
                ?  /*<<dynarray.ml:1038:39>>*/ add_last(b, x)
                : _A_ /*<<dynarray.ml:1038:51>>*/ ;
-      });
+      },
+      a);
      /*<<dynarray.ml:1038:54>>*/ return b;
     /*<<dynarray.ml:1039:3>>*/ }
    function filter_map(f, a){
     var b =  /*<<dynarray.ml:1042:10>>*/ create(0);
-     /*<<dynarray.ml:1043:2>>*/ iter$0
-     (a[1],
-      a[2],
-      a[3],
-      "filter_map",
+     /*<<dynarray.ml:1043:2>>*/ iter
+     ("filter_map",
       function(x){
        var match =  /*<<dynarray.ml:1044:10>>*/ caml_call1(f, x);
         /*<<dynarray.ml:1044:13>>*/ if(! match)
          /*<<dynarray.ml:1045:14>>*/ return 0;
        var y =  /*<<dynarray.ml:1044:13>>*/ match[1];
         /*<<dynarray.ml:1046:16>>*/ return add_last(b, y) /*<<dynarray.ml:1046:28>>*/ ;
-      });
+      },
+      a);
      /*<<dynarray.ml:1047:5>>*/ return b;
     /*<<dynarray.ml:1048:3>>*/ }
    function mem(x, a){
@@ -34191,7 +34189,7 @@
       remove_last,
       truncate,
       clear,
-      iter,
+      iter$0,
       iteri,
       map,
       mapi,
@@ -35135,19 +35133,20 @@
             ?  /*<<ephemeron.ml:413:30>>*/ get_data(eph)
             : 0 /*<<ephemeron.ml:414:20>>*/ ;
    }
-   function MakeSeeded$3(_o_, seeded_hash){
+   function MakeSeeded$0(H){
     function create$0(k, d){
      var c =  /*<<ephemeron.ml:421:16>>*/ create(0);
       /*<<ephemeron.ml:422:8>>*/ set_data(c, d);
       /*<<ephemeron.ml:423:8>>*/ set_key(c, k);
       /*<<ephemeron.ml:423:19>>*/ return c;
      /*<<ephemeron.ml:424:9>>*/ }
+    var seeded_hash =  /*<<?>>*/ H[2];
     function equal(c, k){
      var match =  /*<<ephemeron.ml:429:14>>*/ get_key(c);
       /*<<ephemeron.ml:429:23>>*/ if(! match)
        /*<<ephemeron.ml:430:18>>*/ return 2;
      var k$0 =  /*<<ephemeron.ml:429:23>>*/ match[1];
-      /*<<ephemeron.ml:432:15>>*/ return caml_call2(_o_, k, k$0) ? 0 : 1 /*<<ephemeron.ml:432:76>>*/ ;
+      /*<<ephemeron.ml:432:15>>*/ return caml_call2(H[1], k, k$0) ? 0 : 1 /*<<ephemeron.ml:432:76>>*/ ;
     }
     function set_key_data(c, k, d){
       /*<<ephemeron.ml:402:40>>*/ caml_call1(Stdlib_Obj[23][12], c);
@@ -35163,7 +35162,6 @@
               set_key_data,
               check_key]);
    }
-   function MakeSeeded$0(_o_){return MakeSeeded$3(_o_[1], _o_[2]);}
    var _a_ = [0, 0];
    function Make(H){
     var equal = H[1];
@@ -35171,7 +35169,7 @@
       /*<<ephemeron.ml:446:41>>*/ return caml_call1(H[2], x) /*<<ephemeron.ml:446:49>>*/ ;
     }
     var
-     include =  /*<<?>>*/ MakeSeeded$3(equal, seeded_hash),
+     include =  /*<<?>>*/ MakeSeeded$0([0, equal, seeded_hash]),
      _o_ = include[1],
      clear = include[2],
      reset = include[3],

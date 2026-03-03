@@ -181,6 +181,44 @@ let check_tuple_accesses p tbl =
         | Closure _ -> tuple.start_pc))
     tbl
 
+(* Check that there is no function call between the start of the
+   scope and the last field access. A function call could update a
+   mutable block through an alias, making the unboxed field values
+   stale. *)
+let check_no_apply_before_field_access p tbl =
+  Var.Hashtbl.filter_map_inplace
+    (fun x tuple ->
+      let start_pc =
+        match tuple.loc with
+        | Block pc -> pc
+        | Closure _ -> tuple.start_pc
+      in
+      let visited = BitSet.create' p.free_pc in
+      (* Walk the scope of this candidate. Return true if we find
+         an Apply that can reach a Field access on [x]. We do this
+         by tracking [seen_apply] through the traversal. *)
+      let dominated_by_apply = ref false in
+      let rec traverse pc seen_apply =
+        if not (BitSet.mem visited pc)
+        then (
+          BitSet.set visited pc;
+          let block = Addr.Map.find pc p.blocks in
+          let seen_apply = ref seen_apply in
+          List.iter
+            ~f:(fun i ->
+              match i with
+              | Let (_, Field (y, _, _)) when Var.equal x y ->
+                  if !seen_apply then dominated_by_apply := true
+              | Let (_, Apply _) -> seen_apply := true
+              | Let (_, Closure (_, (pc', _), _)) -> traverse pc' false
+              | _ -> ())
+            block.body;
+          Code.fold_children p.blocks pc (fun pc' () -> traverse pc' !seen_apply) ())
+      in
+      traverse start_pc false;
+      if !dominated_by_apply then None else Some tuple)
+    tbl
+
 let check_call_sites p tbl =
   let relevant_closures =
     Var.Hashtbl.fold
@@ -483,6 +521,9 @@ let f p =
   (* Check that the tuples don't escape and that we don't access more
      fields than expected *)
   check_tuple_accesses p tbl;
+  (* Discard candidates where a function call could mutate the block
+     through an alias before a field access *)
+  check_no_apply_before_field_access p tbl;
   (* Do not unbox function parameters when we are using too many of
      their fields *)
   Var.Hashtbl.filter_map_inplace
