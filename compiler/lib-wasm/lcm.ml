@@ -530,6 +530,57 @@ module CFG = struct
     !preds
 end
 
+let split_critical_edges blocks free_pc =
+  let preds = CFG.predecessors blocks in
+  let has_multiple_preds pc =
+    match Addr.Map.find_opt pc preds with
+    | Some ps ->
+        let unique = List.fold_left ~f:(fun s p -> Addr.Set.add p s) ~init:Addr.Set.empty ps in
+        Addr.Set.cardinal unique >= 2
+    | None -> false
+  in
+  let new_blocks = ref Addr.Map.empty in
+  let make_split_cont needs_split ((target_pc, _args) as cont) =
+    if needs_split target_pc
+    then (
+      let new_pc = !free_pc in
+      free_pc := new_pc + 1;
+      new_blocks :=
+        Addr.Map.add new_pc { params = []; body = []; branch = Branch cont } !new_blocks;
+      (new_pc, []))
+    else cont
+  in
+  let duplicate_targets targets =
+    let rec collect seen dups = function
+      | [] -> dups
+      | pc :: rest ->
+          if Addr.Set.mem pc seen
+          then collect seen (Addr.Set.add pc dups) rest
+          else collect (Addr.Set.add pc seen) dups rest
+    in
+    collect Addr.Set.empty Addr.Set.empty targets
+  in
+  let needs_split targets pc =
+    has_multiple_preds pc || Addr.Set.mem pc (duplicate_targets targets)
+  in
+  let split_branch = function
+    | Cond (v, ((pc1, _) as cont1), ((pc2, _) as cont2)) ->
+        let needs = needs_split [ pc1; pc2 ] in
+        Cond (v, make_split_cont needs cont1, make_split_cont needs cont2)
+    | Switch (v, conts) ->
+        let targets = Array.to_list (Array.map ~f:fst conts) in
+        let needs = needs_split targets in
+        Switch (v, Array.map ~f:(make_split_cont needs) conts)
+    | Pushtrap (((pc1, _) as cont1), v, ((pc2, _) as cont2)) ->
+        let needs = needs_split [ pc1; pc2 ] in
+        Pushtrap (make_split_cont needs cont1, v, make_split_cont needs cont2)
+    | (Branch _ | Poptrap _ | Return _ | Raise _ | Stop) as b -> b
+  in
+  let blocks =
+    Addr.Map.map (fun block -> { block with branch = split_branch block.branch }) blocks
+  in
+  Addr.Map.union (fun _pc _a b -> Some b) !new_blocks blocks
+
 let apply_subst subst x =
   let rec loop visited subst x =
     match Var.Map.find_opt x subst with
@@ -1899,6 +1950,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       let fun_blocks =
         lower_conversions fun_blocks types global_flow_info return_type free_pc
       in
+      let fun_blocks = split_critical_edges fun_blocks free_pc in
       let result =
         process_function types conv_types entry fun_blocks return_type !blocks
       in
