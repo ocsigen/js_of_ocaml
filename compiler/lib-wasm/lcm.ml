@@ -659,7 +659,7 @@ let optimize_peephole_conversions blocks =
    This is the dual of PRE: PRE hoists to eliminate redundancy, PDE sinks to
    eliminate partial deadness. Only the simple case is handled: sink when the
    result is live on exactly one successor edge, or remove when live on none. *)
-let sink_partially_dead_conversions blocks entry =
+let sink_partially_dead_conversions blocks all_blocks entry =
   (* Collect conversion result variables *)
   let conv_vars = ref VarSet.empty in
   Addr.Map.iter
@@ -677,6 +677,31 @@ let sink_partially_dead_conversions blocks entry =
   if VarSet.is_empty conv_vars
   then blocks
   else
+    (* Collect conv result vars that are free in nested closure bodies.
+       These must not be removed or sunk, since their uses in the closure
+       body are invisible to the function-scoped liveness analysis. *)
+    let escaping_vars =
+      let escaped = ref VarSet.empty in
+      Addr.Map.iter
+        (fun _ block ->
+          List.iter
+            ~f:(function
+              | Let (_, Closure (_, (pc, _), _)) ->
+                  let closure_pcs = reachable_blocks all_blocks pc in
+                  Addr.Set.iter
+                    (fun cpc ->
+                      let cblock = Addr.Map.find cpc all_blocks in
+                      Freevars.iter_block_free_vars
+                        (fun x ->
+                          if VarSet.mem x conv_vars
+                          then escaped := VarSet.add x !escaped)
+                        cblock)
+                    closure_pcs
+              | _ -> ())
+            block.body)
+        blocks;
+      !escaped
+    in
     let is_conv v = VarSet.mem v conv_vars in
     let add_cv acc v = if is_conv v then VarSet.add v acc else acc in
     let add_pv acc = function Pv v -> add_cv acc v | Pc _ -> acc in
@@ -689,8 +714,7 @@ let sink_partially_dead_conversions blocks entry =
       | Let (_, Field (x, _, _)) -> add_cv VarSet.empty x
       | Let (_, Block (_, arr, _, _)) ->
           Array.fold_left ~f:add_cv ~init:VarSet.empty arr
-      | Let (_, Closure (fvs, (_, args), _)) ->
-          List.fold_left ~f:add_cv ~init:VarSet.empty (fvs @ args)
+      | Let (_, Closure _) -> VarSet.empty
       | Let (_, (Constant _ | Special _)) -> VarSet.empty
       | Assign (_, y) -> add_cv VarSet.empty y
       | Set_field (x, _, _, y) -> add_cv (add_cv VarSet.empty x) y
@@ -782,7 +806,9 @@ let sink_partially_dead_conversions blocks entry =
           let body_len = Array.length body_arr in
           for idx = 0 to body_len - 1 do
             match body_arr.(idx) with
-            | Let (v, Prim (p, [ Pv arg ])) when Option.is_some (kind_of_prim p) ->
+            | Let (v, Prim (p, [ Pv arg ]))
+              when Option.is_some (kind_of_prim p)
+                   && not (VarSet.mem v escaping_vars) ->
                 (* Condition 1: v not used in B after the conversion *)
                 let used_after = ref false in
                 for j = idx + 1 to body_len - 1 do
@@ -857,7 +883,7 @@ let sink_partially_dead_conversions blocks entry =
 
    The analysis must be per-function to avoid cross-function variable references
    in the inserted conversion instructions. *)
-let process_function types conv_types entry fun_blocks return_type =
+let process_function types conv_types entry fun_blocks return_type all_blocks =
   let all_convs, local_conv_types = get_all_conversions fun_blocks types in
   ConvMap.iter
     (fun conv typ -> conv_types := ConvMap.add conv typ !conv_types)
@@ -1453,7 +1479,7 @@ let process_function types conv_types entry fun_blocks return_type =
           target_preds)
       !phi_info;
     let result = optimize_peephole_conversions !result in
-    sink_partially_dead_conversions result entry
+    sink_partially_dead_conversions result all_blocks entry
 
 (* Entry point. Three steps:
    1. Decide which functions can return unboxed/untagged values for direct calls.
@@ -1517,7 +1543,9 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       let fun_blocks =
         lower_conversions fun_blocks types global_flow_info return_type free_pc
       in
-      let result = process_function types conv_types entry fun_blocks return_type in
+      let result =
+        process_function types conv_types entry fun_blocks return_type !blocks
+      in
       Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result)
     !fun_entries;
   let p = { p with blocks = !blocks; free_pc = !free_pc } in

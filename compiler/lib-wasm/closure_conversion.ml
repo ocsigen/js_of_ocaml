@@ -54,6 +54,7 @@ let collect_free_vars program var_depth depth pc closures =
   let vars = ref Var.Set.empty in
   let add_if_free_variable x =
     let d = var_depth.(Var.idx x) in
+    if d < 0 then Format.eprintf "ZZZ %a@." Code.Var.print x;
     assert (d >= 0);
     if d < depth then vars := Var.Set.add x !vars
   in
