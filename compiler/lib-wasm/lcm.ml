@@ -757,7 +757,7 @@ let reachable_blocks all_blocks entry =
    This pass detects such pairs and substitutes z with x directly,
    removing the dead intermediate definitions. *)
 let optimize_peephole_conversions blocks preds ~(st : lcm_stats) =
-  let defs = Var.Tbl.make () None in
+  let defs = Var.Hashtbl.create 16 in
   let subst = ref Var.Map.empty in
   Addr.Map.iter
     (fun _ block ->
@@ -765,7 +765,7 @@ let optimize_peephole_conversions blocks preds ~(st : lcm_stats) =
         ~f:(function
           | Let (x, Prim (p, [ Pv y ])) -> (
               match kind_of_prim p with
-              | Some k -> Var.Tbl.set defs x (Some (k, y))
+              | Some k -> Var.Hashtbl.replace defs x (k, y)
               | None -> ())
           | _ -> ())
         block.body)
@@ -819,26 +819,23 @@ let optimize_peephole_conversions blocks preds ~(st : lcm_stats) =
               match args_per_param.(i) with
               | [ single_arg ] -> (
                   (* Exactly one incoming edge for this parameter *)
-                  match Var.Tbl.get defs single_arg with
-                  | Some _ as def -> Var.Tbl.set defs param def
+                  match Var.Hashtbl.find_opt defs single_arg with
+                  | Some def -> Var.Hashtbl.replace defs param def
                   | None -> ())
               | first :: rest when List.for_all ~f:(fun a -> Var.equal a first) rest -> (
                   (* All edges pass the same variable *)
-                  match Var.Tbl.get defs first with
-                  | Some _ as def -> Var.Tbl.set defs param def
+                  match Var.Hashtbl.find_opt defs first with
+                  | Some def -> Var.Hashtbl.replace defs param def
                   | None -> ())
               | _ -> ())
             block.params))
     blocks;
-  Var.Tbl.iter
-    (fun x opt ->
-      match opt with
-      | Some (k1, y) -> (
-          match Var.Tbl.get defs y with
-          | Some (k2, z) when Poly.equal (inverse_kind k1) (Some k2) ->
-              subst := Var.Map.add x z !subst
-          | _ -> ())
-      | None -> ())
+  Var.Hashtbl.iter
+    (fun x (k1, y) ->
+      match Var.Hashtbl.find_opt defs y with
+      | Some (k2, z) when Poly.equal (inverse_kind k1) (Some k2) ->
+          subst := Var.Map.add x z !subst
+      | _ -> ())
     defs;
   st.peephole_eliminated <- st.peephole_eliminated + Var.Map.cardinal !subst;
   if Var.Map.is_empty !subst
@@ -1201,7 +1198,7 @@ let equal_origin a b =
 let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
   let result = ref blocks in
   (* Build conversion definition and computed-conversion tables *)
-  let conv_defs = Var.Tbl.make () None in
+  let conv_defs = Var.Hashtbl.create 16 in
   let block_computed = ref Addr.Map.empty in
   Addr.Map.iter
     (fun pc block ->
@@ -1211,7 +1208,7 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
           | Let (x, Prim (p, [ Pv y ])) -> (
               match kind_of_prim p with
               | Some k ->
-                  Var.Tbl.set conv_defs x (Some (k, y));
+                  Var.Hashtbl.replace conv_defs x (k, y);
                   computed := ConvMap.add (k, y) x !computed
               | None -> ())
           | _ -> ())
@@ -1224,7 +1221,7 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
   let find_direct_value pred_pc q kind =
     (match inverse_kind kind with
       | Some inv_k -> (
-          match Var.Tbl.get conv_defs q with
+          match Var.Hashtbl.find_opt conv_defs q with
           | Some (k, u) when Poly.equal k inv_k -> Some u
           | _ -> None)
       | None -> None)
@@ -1446,7 +1443,7 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
                 in
                 result := Addr.Map.add pc { b with body = new_body } !result;
                 (* Update tables *)
-                Var.Tbl.set conv_defs v None;
+                Var.Hashtbl.remove conv_defs v;
                 (match Addr.Map.find_opt pc !block_computed with
                 | Some bc ->
                     let bc' =
@@ -2201,9 +2198,10 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
           | _ -> ())
         block.body)
     p.blocks;
+
   (* Precompute per-function block submaps via DFS.
      Each function's blocks are disjoint, so total work is O(N log N). *)
-  let fun_block_tbl = Hashtbl.create (List.length !fun_entries) in
+  let fun_block_tbl = Addr.Hashtbl.create (List.length !fun_entries) in
   List.iter
     ~f:(fun (_, entry, _) ->
       let visited = ref Addr.Map.empty in
@@ -2215,8 +2213,9 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
           List.iter ~f:visit (CFG.successors p.blocks pc))
       in
       visit entry;
-      Hashtbl.add fun_block_tbl entry !visited)
+      Addr.Hashtbl.add fun_block_tbl entry !visited)
     !fun_entries;
+
   (* Process each function independently to avoid cross-function variable leakage
      in the data flow analysis. *)
   let conv_types = ref ConvMap.empty in
@@ -2231,7 +2230,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
         | Some f -> Typing.return_type types f
         | None -> Typing.Top
       in
-      let fun_blocks = Hashtbl.find fun_block_tbl entry in
+      let fun_blocks = Addr.Hashtbl.find fun_block_tbl entry in
       let t0 = tick () in
       st.time_setup <- st.time_setup +. (t0 -. ts);
       let fun_blocks =
@@ -2291,6 +2290,7 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
       Addr.Map.iter (fun pc block -> blocks := Addr.Map.add pc block !blocks) result;
       st.time_setup <- st.time_setup +. (tick () -. ts3))
     !fun_entries;
+
   let p = { start = !start; blocks = !blocks; free_pc = !free_pc } in
   if times ()
   then (
