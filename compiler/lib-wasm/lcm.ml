@@ -107,6 +107,24 @@ let type_of_kind = function
   | Untag_int -> Typing.Int Typing.Integer.Normalized
   | Tag_int -> Typing.Int Typing.Integer.Ref
 
+(* Check whether a conversion is safe given the operand's type. A conversion
+   is safe when the operand's type is known to match the expected input
+   representation — e.g. Unbox_f64 on a value typed as Number(Float, Boxed).
+   Box/Tag operations are inherently safe since their operands have distinct
+   Wasm types. Unsafe conversions operate on Top-typed operands where the
+   runtime representation may not match (e.g. with GADTs). *)
+let is_safe_input kind typ =
+  match kind with
+  | Unbox_i32 -> Poly.equal typ (Typing.Number (Typing.Int32, Typing.Boxed))
+  | Unbox_i64 -> Poly.equal typ (Typing.Number (Typing.Int64, Typing.Boxed))
+  | Unbox_f64 -> Poly.equal typ (Typing.Number (Typing.Float, Typing.Boxed))
+  | Box_i32 | Box_i64 | Box_f64 | Tag_int -> true
+  | Untag_int -> (
+      match typ with
+      | Typing.Int (Typing.Integer.Ref | Typing.Integer.Normalized | Typing.Integer.Unnormalized)
+        -> true
+      | _ -> false)
+
 (* Determine which conversion operation, if any, is needed to go from one
    representation to another. Returns [None] when the representations match
    or no conversion is applicable. *)
@@ -425,6 +443,7 @@ let get_all_conversions blocks types =
      value at block entry reaches the conversion.) *)
 type block_props =
   { transp : ConvSet.t
+  ; transp_ant : ConvSet.t
   ; comp : ConvSet.t
   ; antloc : ConvSet.t
   }
@@ -437,7 +456,7 @@ let remove_killed_mappings map v =
     (fun (_, arg) mapped -> (not (Var.equal arg v)) && not (Var.equal mapped v))
     map
 
-let compute_local_props all_convs block =
+let compute_local_props all_convs is_safe block =
   let killed_vars = ref VarSet.empty in
   (* Block parameters are definitions. They kill conversions involving them. *)
   List.iter ~f:(fun v -> killed_vars := VarSet.add v !killed_vars) block.params;
@@ -447,9 +466,20 @@ let compute_local_props all_convs block =
       | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
     block.body;
   let transp = ConvSet.filter (fun (_, v) -> not (VarSet.mem v !killed_vars)) all_convs in
+  (* transp_ant: restricted transparency for the anticipatability analysis.
+     If the block contains any effectful instruction (Apply), unsafe conversions
+     cannot be hoisted through it — they might execute on a path where the
+     operand's runtime type doesn't match (e.g. with GADTs). *)
+  let has_effects =
+    List.exists ~f:(function Let (_, Apply _) -> true | _ -> false) block.body
+  in
+  let transp_ant =
+    if has_effects then ConvSet.filter (fun c -> is_safe c) transp else transp
+  in
   let comp = ref ConvSet.empty in
   let antloc = ref ConvSet.empty in
   let current_killed = ref VarSet.empty in
+  let seen_effect = ref false in
   List.iter ~f:(fun v -> current_killed := VarSet.add v !current_killed) block.params;
   let kill_var v =
     current_killed := VarSet.add v !current_killed;
@@ -461,15 +491,19 @@ let compute_local_props all_convs block =
           match kind_of_prim p with
           | Some kind ->
               let conv = kind, arg in
-              if not (VarSet.mem arg !current_killed)
+              if (not (VarSet.mem arg !current_killed))
+                 && (is_safe conv || not !seen_effect)
               then antloc := ConvSet.add conv !antloc;
               comp := ConvSet.add conv !comp;
               kill_var v
           | None -> kill_var v)
+      | Let (v, Apply _) ->
+          seen_effect := true;
+          kill_var v
       | Let (v, _) | Assign (v, _) -> kill_var v
       | Set_field _ | Offset_ref _ | Array_set _ | Event _ -> ())
     block.body;
-  { transp; comp = !comp; antloc = !antloc }
+  { transp; transp_ant; comp = !comp; antloc = !antloc }
 
 module CFG = struct
   let successors blocks pc =
@@ -631,7 +665,10 @@ let process_function types conv_types entry fun_blocks return_type =
   if ConvSet.is_empty all_convs
   then fun_blocks
   else
-    let props = Addr.Map.map (compute_local_props all_convs) fun_blocks in
+    let is_safe (kind, var) =
+      is_safe_input kind (Typing.var_type types var)
+    in
+    let props = Addr.Map.map (compute_local_props all_convs is_safe) fun_blocks in
     let preds = CFG.predecessors fun_blocks in
     (* Step 1: Anticipatability (backward dataflow, all-paths).
 
@@ -674,7 +711,7 @@ let process_function types conv_types entry fun_blocks return_type =
             succs
       in
       let new_antin =
-        ConvSet.union b_props.antloc (ConvSet.inter b_props.transp new_antout)
+        ConvSet.union b_props.antloc (ConvSet.inter b_props.transp_ant new_antout)
       in
       if not (ConvSet.equal (Addr.Map.find pc !antin) new_antin)
       then (
@@ -972,68 +1009,75 @@ let process_function types conv_types entry fun_blocks return_type =
         in
         let inserted_rev = ref [] in
         let conv_to_var = ref safe_conv_in in
-        (* For merge blocks where all predecessors are processed: check if some
-           predecessors already have the conversion in their conv_out. If so,
-           insert the conversion at the missing predecessors and create a phi
-           at this block, turning a partial redundancy into a full one. *)
-        let to_insert =
-          if all_preds_processed && List.length preds_pc > 1
-          then
-            ConvSet.filter
-              (fun ((kind, _arg) as conv) ->
-                let have, missing =
-                  List.partition
-                    ~f:(fun p ->
-                      match Addr.Map.find_opt p !conv_out_map with
-                      | Some m -> ConvMap.mem conv m
-                      | None -> false)
-                    preds_pc
+        (* Partial redundancy elimination: for each conversion in to_insert,
+           check if some predecessors already have it. If so, insert only at
+           the missing predecessors and create a phi to merge the results.
+           This avoids redundant computation on paths that already have it.
+           Only at fully-processed non-loop merge points (same guard as the
+           all-preds phi insertion above). *)
+        let to_insert_remaining = ref ConvSet.empty in
+        ConvSet.iter
+          (fun ((kind, arg) as conv) ->
+            if all_preds_processed && List.length preds_pc > 1
+            then (
+              let preds_with =
+                List.filter
+                  ~f:(fun p ->
+                    match Addr.Map.find_opt p !conv_out_map with
+                    | Some m -> ConvMap.mem conv m
+                    | None -> false)
+                  preds_pc
+              in
+              let preds_without =
+                List.filter
+                  ~f:(fun p ->
+                    match Addr.Map.find_opt p !conv_out_map with
+                    | Some m -> not (ConvMap.mem conv m)
+                    | None -> true)
+                  preds_pc
+              in
+              if (not (List.is_empty preds_with)) && not (List.is_empty preds_without)
+              then (
+                (* Partial redundancy: insert at missing preds, create phi *)
+                let phi_var = Var.fresh () in
+                let typ =
+                  ConvMap.find_opt conv !conv_types
+                  |> Option.value ~default:(type_of_kind kind)
                 in
-                if List.is_empty have || List.is_empty missing
-                then (* All have it or none do — no partial redundancy *)
-                  true
-                else (
-                  (* Partial redundancy: insert at missing preds, create phi *)
-                  let typ =
-                    ConvMap.find_opt conv !conv_types
-                    |> Option.value ~default:(type_of_kind kind)
-                  in
-                  List.iter
-                    ~f:(fun pred_pc ->
-                      let tmp = Var.fresh () in
-                      Typing.set_var_type types tmp typ;
-                      let pred_block = Addr.Map.find pred_pc !result in
-                      let new_body =
-                        pred_block.body
-                        @ [ Let (tmp, Prim (prim_of_kind kind, [ Pv (snd conv) ])) ]
-                      in
-                      result :=
-                        Addr.Map.add
-                          pred_pc
-                          { pred_block with body = new_body }
-                          !result;
-                      conv_out_map :=
-                        Addr.Map.update
-                          pred_pc
-                          (function
-                            | None -> Some (ConvMap.singleton conv tmp)
-                            | Some m -> Some (ConvMap.add conv tmp m))
-                          !conv_out_map)
-                    missing;
-                  let phi_var = Var.fresh () in
-                  Typing.set_var_type types phi_var typ;
-                  conv_to_var := ConvMap.add conv phi_var !conv_to_var;
-                  phi_info :=
-                    Addr.Map.update
-                      pc
-                      (function
-                        | None -> Some [ conv, phi_var ]
-                        | Some l -> Some ((conv, phi_var) :: l))
-                      !phi_info;
-                  false))
-              to_insert
-          else to_insert
-        in
+                Typing.set_var_type types phi_var typ;
+                List.iter
+                  ~f:(fun pred_pc ->
+                    let tmp = Var.fresh () in
+                    Typing.set_var_type types tmp typ;
+                    let instr = Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) in
+                    let pred_block = Addr.Map.find pred_pc !result in
+                    result :=
+                      Addr.Map.add
+                        pred_pc
+                        { pred_block with body = pred_block.body @ [ instr ] }
+                        !result;
+                    let pred_conv_out =
+                      Addr.Map.find_opt pred_pc !conv_out_map
+                      |> Option.value ~default:ConvMap.empty
+                    in
+                    conv_out_map :=
+                      Addr.Map.add
+                        pred_pc
+                        (ConvMap.add conv tmp pred_conv_out)
+                        !conv_out_map)
+                  preds_without;
+                phi_info :=
+                  Addr.Map.update
+                    pc
+                    (function
+                      | None -> Some [ conv, phi_var ]
+                      | Some l -> Some ((conv, phi_var) :: l))
+                    !phi_info;
+                conv_to_var := ConvMap.add conv phi_var !conv_to_var)
+              else to_insert_remaining := ConvSet.add conv !to_insert_remaining)
+            else to_insert_remaining := ConvSet.add conv !to_insert_remaining)
+          to_insert;
+        (* Insert remaining conversions (fully new, no partial redundancy) at block top *)
         ConvSet.iter
           (fun ((kind, arg) as conv) ->
             let tmp = Var.fresh () in
@@ -1045,7 +1089,7 @@ let process_function types conv_types entry fun_blocks return_type =
             conv_to_var := ConvMap.add conv tmp !conv_to_var;
             inserted_rev :=
               Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
-          to_insert;
+          !to_insert_remaining;
         let subst = ref Var.Map.empty in
         let subst_var x = apply_subst !subst x in
         let body_rev = ref [] in
