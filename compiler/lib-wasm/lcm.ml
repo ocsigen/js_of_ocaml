@@ -309,9 +309,9 @@ let lower_conversions
               let tmp = Var.fresh () in
               Typing.set_var_type types tmp from;
               let lowered_e =
-                let last = List.hd (List.rev lowered_e) in
-                let rest = List.rev (List.tl (List.rev lowered_e)) in
-                rest @ [ replace_assigned x tmp last ]
+                match List.rev lowered_e with
+                | [] -> assert false
+                | last :: rest -> List.rev (replace_assigned x tmp last :: rest)
               in
               lowered_e @ [ Let (x, Prim (prim_of_kind kind, [ Pv tmp ])) ], tmp
           | None -> lowered_e, x
@@ -560,8 +560,9 @@ let split_critical_edges blocks free_pc =
     in
     collect Addr.Set.empty Addr.Set.empty targets
   in
-  let needs_split targets pc =
-    has_multiple_preds pc || Addr.Set.mem pc (duplicate_targets targets)
+  let needs_split targets =
+    let dups = duplicate_targets targets in
+    fun pc -> has_multiple_preds pc || Addr.Set.mem pc dups
   in
   let split_branch = function
     | Cond (v, ((pc1, _) as cont1), ((pc2, _) as cont2)) ->
@@ -974,10 +975,10 @@ let equal_origin a b =
    so widening threads v0 as a shadow parameter, eliminating the unbox. *)
 let eliminate_param_conversions blocks types =
   let result = ref blocks in
+  let preds = CFG.predecessors blocks in
   let did_change = ref true in
   while !did_change do
     did_change := false;
-    let preds = CFG.predecessors !result in
     (* Build conversion definition and computed-conversion tables *)
     let conv_defs = Var.Tbl.make () None in
     let block_computed = ref Addr.Map.empty in
