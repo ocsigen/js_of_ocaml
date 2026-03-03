@@ -663,36 +663,47 @@ let box_numbers p st types =
           | Branch cont | Poptrap cont ->
               let pc', args = cont in
               let b' = Addr.Map.find pc' p.blocks in
-              List.iter2 ~f:(fun param arg ->
-                if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed)) then
-                   box arg
-              ) b'.params args
+              List.iter2
+                ~f:(fun param arg ->
+                  if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
+                  then box arg)
+                b'.params
+                args
           | Cond (_, cont1, cont2) ->
               let check_cont (pc', args) =
                 let b' = Addr.Map.find pc' p.blocks in
-                List.iter2 ~f:(fun param arg ->
-                   if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed)) then
-                      box arg
-                ) b'.params args
+                List.iter2
+                  ~f:(fun param arg ->
+                    if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
+                    then box arg)
+                  b'.params
+                  args
               in
-              check_cont cont1; check_cont cont2
+              check_cont cont1;
+              check_cont cont2
           | Switch (_, conts) ->
-              Array.iter ~f:(fun (pc', args) ->
-                let b' = Addr.Map.find pc' p.blocks in
-                List.iter2 ~f:(fun param arg ->
-                   if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed)) then
-                      box arg
-                ) b'.params args
-              ) conts
+              Array.iter
+                ~f:(fun (pc', args) ->
+                  let b' = Addr.Map.find pc' p.blocks in
+                  List.iter2
+                    ~f:(fun param arg ->
+                      if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
+                      then box arg)
+                    b'.params
+                    args)
+                conts
           | Pushtrap (cont1, _, cont2) ->
               let check_cont (pc', args) =
                 let b' = Addr.Map.find pc' p.blocks in
-                List.iter2 ~f:(fun param arg ->
-                   if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed)) then
-                      box arg
-                ) b'.params args
+                List.iter2
+                  ~f:(fun param arg ->
+                    if Poly.equal (Var.Tbl.get types param) (Number (Float, Boxed))
+                    then box arg)
+                  b'.params
+                  args
               in
-              check_cont cont1; check_cont cont2
+              check_cont cont1;
+              check_cont cont2
           | Raise _ | Stop -> ())
         pc
         p.blocks
