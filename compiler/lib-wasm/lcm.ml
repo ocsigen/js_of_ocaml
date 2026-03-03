@@ -610,7 +610,7 @@ let reachable_blocks all_blocks entry =
      let z = unbox_f64(y)   -- original use
    This pass detects such pairs and substitutes z with x directly,
    removing the dead intermediate definitions. *)
-let optimize_peephole_conversions blocks =
+let optimize_peephole_conversions blocks preds =
   let defs = Var.Tbl.make () None in
   let subst = ref Var.Map.empty in
   Addr.Map.iter
@@ -623,6 +623,67 @@ let optimize_peephole_conversions blocks =
               | None -> ())
           | _ -> ())
         block.body)
+    blocks;
+  (* Propagate conversion info through block parameters: if all predecessors
+     pass the same conversion result for a parameter, record that parameter
+     as having the conversion's (kind, arg) in defs. This lets the inverse-pair
+     detection below catch box/unbox pairs split across block boundaries. *)
+  Addr.Map.iter
+    (fun pc block ->
+      if not (List.is_empty block.params)
+      then
+        let pred_pcs =
+          Addr.Map.find_opt pc preds
+          |> Option.value ~default:[]
+          |> List.sort_uniq ~cmp:compare
+        in
+        if not (List.is_empty pred_pcs)
+        then
+          (* For each parameter index, collect the argument passed by each
+             predecessor. Predecessors may branch to this block multiple
+             times (e.g. Cond with both arms targeting the same block). *)
+          let param_count = List.length block.params in
+          let args_per_param = Array.make param_count [] in
+          List.iter
+            ~f:(fun pred_pc ->
+              let pred_block = Addr.Map.find pred_pc blocks in
+              let collect_args (tpc, args) =
+                if tpc = pc
+                then
+                  List.iteri
+                    ~f:(fun i arg ->
+                      if i < param_count
+                      then args_per_param.(i) <- arg :: args_per_param.(i))
+                    args
+              in
+              match pred_block.branch with
+              | Branch cont -> collect_args cont
+              | Cond (_, c1, c2) ->
+                  collect_args c1;
+                  collect_args c2
+              | Switch (_, cs) -> Array.iter ~f:collect_args cs
+              | Pushtrap (c1, _, c2) ->
+                  collect_args c1;
+                  collect_args c2
+              | Poptrap c -> collect_args c
+              | Return _ | Raise _ | Stop -> ())
+            pred_pcs;
+          List.iteri
+            ~f:(fun i param ->
+              match args_per_param.(i) with
+              | [ single_arg ] -> (
+                  (* Exactly one incoming edge for this parameter *)
+                  match Var.Tbl.get defs single_arg with
+                  | Some _ as def -> Var.Tbl.set defs param def
+                  | None -> ())
+              | first :: rest
+                when List.for_all ~f:(fun a -> Var.equal a first) rest -> (
+                  (* All edges pass the same variable *)
+                  match Var.Tbl.get defs first with
+                  | Some _ as def -> Var.Tbl.set defs param def
+                  | None -> ())
+              | _ -> ())
+            block.params)
     blocks;
   Var.Tbl.iter
     (fun x opt ->
@@ -889,13 +950,9 @@ let sink_partially_dead_conversions blocks all_blocks entry =
                   | [] ->
                       (* Dead on all paths: remove *)
                       to_remove := VarSet.add v !to_remove
-                  | [ target ] ->
-                      let target_block = Addr.Map.find target !result in
-                      (* Condition 4: arg ∉ target.params *)
-                      let arg_in_params =
-                        List.mem ~eq:Var.equal arg target_block.params
-                      in
-                      (* Condition 5: arg not killed after conversion in B *)
+                  | targets when List.length targets < List.length succs ->
+                      (* Live on a strict subset of successors: sink to each.
+                         Conditions 4 & 5 must hold for all targets. *)
                       let arg_killed = ref false in
                       for j = idx + 1 to body_len - 1 do
                         (match body_arr.(j) with
@@ -903,9 +960,21 @@ let sink_partially_dead_conversions blocks all_blocks entry =
                             arg_killed := true
                         | _ -> ())
                       done;
-                      if (not arg_in_params) && not !arg_killed
-                      then to_sink := (body_arr.(idx), target) :: !to_sink
-                  | _ -> (* live on multiple successors, don't sink *) ())
+                      let all_ok =
+                        (not !arg_killed)
+                        && List.for_all
+                             ~f:(fun target ->
+                               let target_block = Addr.Map.find target !result in
+                               not (List.mem ~eq:Var.equal arg target_block.params))
+                             targets
+                      in
+                      if all_ok
+                      then
+                        List.iter
+                          ~f:(fun target ->
+                            to_sink := (body_arr.(idx), target) :: !to_sink)
+                          targets
+                  | _ -> (* live on all successors, not partially dead *) ())
             | _ -> ()
           done;
           if (not (List.is_empty !to_sink)) || not (VarSet.is_empty !to_remove)
@@ -975,366 +1044,332 @@ let equal_origin a b =
    so widening threads v0 as a shadow parameter, eliminating the unbox. *)
 let eliminate_param_conversions blocks types preds =
   let result = ref blocks in
-  let did_change = ref true in
-  while !did_change do
-    did_change := false;
-    (* Build conversion definition and computed-conversion tables *)
-    let conv_defs = Var.Tbl.make () None in
-    let block_computed = ref Addr.Map.empty in
-    Addr.Map.iter
-      (fun pc block ->
-        let computed = ref ConvMap.empty in
-        List.iter
-          ~f:(function
-            | Let (x, Prim (p, [ Pv y ])) -> (
-                match kind_of_prim p with
-                | Some k ->
-                    Var.Tbl.set conv_defs x (Some (k, y));
-                    computed := ConvMap.add (k, y) x !computed
-                | None -> ())
-            | _ -> ())
-          block.body;
-        block_computed := Addr.Map.add pc !computed !block_computed)
-      !result;
-    (* Check if a predecessor can directly supply kind(q):
-       - Inverse pair: q = inv_kind(u) → supply u
-       - Already computed: kind(q) computed in pred block *)
-    let find_direct_value pred_pc q kind =
-      (match inverse_kind kind with
-      | Some inv_k -> (
-          match Var.Tbl.get conv_defs q with
-          | Some (k, u) when Poly.equal k inv_k -> Some u
-          | _ -> None)
-      | None -> None)
-      |> function
-      | Some _ as r -> r
-      | None -> (
-          match Addr.Map.find_opt pred_pc !block_computed with
-          | Some m -> ConvMap.find_opt (kind, q) m
-          | None -> None)
+  (* Build conversion definition and computed-conversion tables *)
+  let conv_defs = Var.Tbl.make () None in
+  let block_computed = ref Addr.Map.empty in
+  Addr.Map.iter
+    (fun pc block ->
+      let computed = ref ConvMap.empty in
+      List.iter
+        ~f:(function
+          | Let (x, Prim (p, [ Pv y ])) -> (
+              match kind_of_prim p with
+              | Some k ->
+                  Var.Tbl.set conv_defs x (Some (k, y));
+                  computed := ConvMap.add (k, y) x !computed
+              | None -> ())
+          | _ -> ())
+        block.body;
+      block_computed := Addr.Map.add pc !computed !block_computed)
+    !result;
+  (* Check if a predecessor can directly supply kind(q):
+     - Inverse pair: q = inv_kind(u) → supply u
+     - Already computed: kind(q) computed in pred block *)
+  let find_direct_value pred_pc q kind =
+    (match inverse_kind kind with
+    | Some inv_k -> (
+        match Var.Tbl.get conv_defs q with
+        | Some (k, u) when Poly.equal k inv_k -> Some u
+        | _ -> None)
+    | None -> None)
+    |> function
+    | Some _ as r -> r
+    | None -> (
+        match Addr.Map.find_opt pred_pc !block_computed with
+        | Some m -> ConvMap.find_opt (kind, q) m
+        | None -> None)
+  in
+  let find_param_idx x params =
+    let rec loop i = function
+      | [] -> None
+      | p :: _ when Var.equal p x -> Some i
+      | _ :: rest -> loop (i + 1) rest
     in
-    let find_param_idx x params =
-      let rec loop i = function
-        | [] -> None
-        | p :: _ when Var.equal p x -> Some i
-        | _ :: rest -> loop (i + 1) rest
-      in
-      loop 0 params
-    in
-    (* Collect all continuations from a block's branch that target a given pc *)
-    let conts_to_target branch target_pc =
-      let acc = ref [] in
-      (match branch with
-      | Branch (tpc, args) -> if tpc = target_pc then acc := args :: !acc
-      | Cond (_, (t1, a1), (t2, a2)) ->
-          if t1 = target_pc then acc := a1 :: !acc;
-          if t2 = target_pc then acc := a2 :: !acc
-      | Switch (_, cs) ->
-          Array.iter ~f:(fun (t, a) -> if t = target_pc then acc := a :: !acc) cs
-      | Pushtrap ((t1, a1), _, (t2, a2)) ->
-          if t1 = target_pc then acc := a1 :: !acc;
-          if t2 = target_pc then acc := a2 :: !acc
-      | Poptrap (t, a) -> if t = target_pc then acc := a :: !acc
-      | Return _ | Raise _ | Stop -> ());
-      !acc
-    in
-    (* DFS: check whether all predecessors of block bpc can supply kind(q)
-       where q is determined by origin:
-       - Param bpi: q is what predecessors pass at param index bpi
-       - Var v: q is the free variable v (same in all predecessors)
+    loop 0 params
+  in
+  (* Collect all continuations from a block's branch that target a given pc *)
+  let conts_to_target branch target_pc =
+    let acc = ref [] in
+    (match branch with
+    | Branch (tpc, args) -> if tpc = target_pc then acc := args :: !acc
+    | Cond (_, (t1, a1), (t2, a2)) ->
+        if t1 = target_pc then acc := a1 :: !acc;
+        if t2 = target_pc then acc := a2 :: !acc
+    | Switch (_, cs) ->
+        Array.iter ~f:(fun (t, a) -> if t = target_pc then acc := a :: !acc) cs
+    | Pushtrap ((t1, a1), _, (t2, a2)) ->
+        if t1 = target_pc then acc := a1 :: !acc;
+        if t2 = target_pc then acc := a2 :: !acc
+    | Poptrap (t, a) -> if t = target_pc then acc := a :: !acc
+    | Return _ | Raise _ | Stop -> ());
+    !acc
+  in
+  (* DFS: check whether all predecessors of block bpc can supply kind(q)
+     where q is determined by origin:
+     - Param bpi: q is what predecessors pass at param index bpi
+     - Var v: q is the free variable v (same in all predecessors)
 
-       visiting: set of (bpc, origin) on the DFS stack for cycle detection.
-       Returns Some shadows_needed or None on failure.
-       shadows_needed: list of (block_pc, origin) that need shadow params
-       (includes the initial (bpc, origin) passed to the top-level call). *)
-    let rec can_supply bpc origin kind visiting =
-      let pred_pcs =
-        Addr.Map.find_opt bpc preds
-        |> Option.value ~default:[]
-        |> List.sort_uniq ~cmp:compare
-      in
-      if List.is_empty pred_pcs
-      then None
-      else
-        let rec check_preds ps acc_shadows =
-          match ps with
-          | [] -> Some acc_shadows
-          | pred_pc :: rest_preds ->
-              let pred_block = Addr.Map.find pred_pc !result in
-              let conts = conts_to_target pred_block.branch bpc in
-              let rec check_conts cs acc =
-                match cs with
-                | [] -> Some acc
-                | args :: rest_conts ->
-                    let q =
-                      match origin with
-                      | Param bpi -> List.nth args bpi
-                      | Var v -> v
-                    in
-                    (match find_direct_value pred_pc q kind with
-                    | Some _ -> check_conts rest_conts acc
-                    | None ->
-                        (* q not directly available; trace how it enters pred *)
-                        let pred_origin =
-                          match find_param_idx q pred_block.params with
-                          | Some qi -> Param qi
-                          | None -> Var q
-                        in
-                        let key = pred_pc, pred_origin in
-                        if List.exists
-                             ~f:(fun (a, b) ->
-                               a = pred_pc && equal_origin b pred_origin)
-                             visiting
-                        then
-                          (* Cycle: assume shadow will be there *)
-                          let acc' =
-                            if List.exists
-                                 ~f:(fun (a, b) ->
-                                   a = pred_pc && equal_origin b pred_origin)
-                                 acc
-                            then acc
-                            else key :: acc
-                          in
-                          check_conts rest_conts acc'
-                        else
-                          let acc' =
-                            if List.exists
-                                 ~f:(fun (a, b) ->
-                                   a = pred_pc && equal_origin b pred_origin)
-                                 acc
-                            then acc
-                            else key :: acc
-                          in
-                          (match
-                             can_supply pred_pc pred_origin kind (key :: visiting)
-                           with
-                          | None -> None
-                          | Some more ->
-                              let combined =
-                                List.fold_left
-                                  ~f:(fun a ((spc, so) as s) ->
-                                    if List.exists
-                                         ~f:(fun (a2, b2) ->
-                                           a2 = spc && equal_origin b2 so)
-                                         a
-                                    then a
-                                    else s :: a)
-                                  ~init:acc'
-                                  more
-                              in
-                              check_conts rest_conts combined))
-              in
-              (match check_conts conts acc_shadows with
-              | None -> None
-              | Some acc' -> check_preds rest_preds acc')
-        in
-        check_preds pred_pcs []
+     visiting: set of (bpc, origin) on the DFS stack for cycle detection.
+     Returns Some shadows_needed or None on failure.
+     shadows_needed: list of (block_pc, origin) that need shadow params
+     (includes the initial (bpc, origin) passed to the top-level call). *)
+  let rec can_supply bpc origin kind visiting =
+    let pred_pcs =
+      Addr.Map.find_opt bpc preds
+      |> Option.value ~default:[]
+      |> List.sort_uniq ~cmp:compare
     in
-    (* Find and apply the first applicable transformation, then restart *)
-    let found = ref false in
-    Addr.Map.iter
-      (fun pc _ ->
-        if !found then ()
-        else
-          let block = Addr.Map.find pc !result in
-          List.iter
-            ~f:(fun instr ->
-              if !found
-              then ()
-              else
-                match instr with
-                | Let (v, Prim (p, [ Pv param_var ])) -> (
-                    match kind_of_prim p with
-                    | Some kind -> (
-                        let initial_origin =
-                          match find_param_idx param_var block.params with
-                          | Some pi -> Param pi
-                          | None -> Var param_var
+    if List.is_empty pred_pcs
+    then None
+    else
+      let rec check_preds ps acc_shadows =
+        match ps with
+        | [] -> Some acc_shadows
+        | pred_pc :: rest_preds ->
+            let pred_block = Addr.Map.find pred_pc !result in
+            let conts = conts_to_target pred_block.branch bpc in
+            let rec check_conts cs acc =
+              match cs with
+              | [] -> Some acc
+              | args :: rest_conts ->
+                  let q =
+                    match origin with
+                    | Param bpi -> List.nth args bpi
+                    | Var v -> v
+                  in
+                  (match find_direct_value pred_pc q kind with
+                  | Some _ -> check_conts rest_conts acc
+                  | None ->
+                      (* q not directly available; trace how it enters pred *)
+                      let pred_origin =
+                        match find_param_idx q pred_block.params with
+                        | Some qi -> Param qi
+                        | None -> Var q
+                      in
+                      let key = pred_pc, pred_origin in
+                      if List.exists
+                           ~f:(fun (a, b) ->
+                             a = pred_pc && equal_origin b pred_origin)
+                           visiting
+                      then
+                        (* Cycle: assume shadow will be there *)
+                        let acc' =
+                          if List.exists
+                               ~f:(fun (a, b) ->
+                                 a = pred_pc && equal_origin b pred_origin)
+                               acc
+                          then acc
+                          else key :: acc
                         in
-                        let initial_key = pc, initial_origin in
-                        match
-                          can_supply
-                            pc
-                            initial_origin
-                            kind
-                            [ initial_key ]
-                        with
-                              | None -> ()
-                              | Some passthrough_shadows ->
-                                  (* Success: apply the transformation.
-                                     All blocks in initial_key :: passthrough_shadows
-                                     get a shadow parameter appended. *)
-                                  let all_shadows = initial_key :: passthrough_shadows in
-                                  found := true;
-                                  did_change := true;
-                                  (* 1. Create shadow param variables *)
-                                  let shadow_vars =
-                                    List.map
-                                      ~f:(fun (bpc, orig) ->
-                                        let sv = Var.fresh () in
-                                        Typing.set_var_type
-                                          types
-                                          sv
-                                          (type_of_kind kind);
-                                        bpc, orig, sv)
-                                      all_shadows
-                                  in
-                                  let find_shadow_var bpc orig =
-                                    let _, _, sv =
-                                      List.find
-                                        ~f:(fun (a, b, _) ->
-                                          a = bpc && equal_origin b orig)
-                                        shadow_vars
-                                    in
-                                    sv
-                                  in
-                                  (* 2. Append shadow params to each block *)
-                                  List.iter
-                                    ~f:(fun (bpc, _orig, sv) ->
-                                      let b = Addr.Map.find bpc !result in
-                                      result :=
-                                        Addr.Map.add
-                                          bpc
-                                          { b with params = b.params @ [ sv ] }
-                                          !result)
-                                    shadow_vars;
-                                  (* 3. Substitute v with target_sv globally
-                                     and remove the conversion in the target block.
-                                     The substitution must be global because v may
-                                     be used as a free variable in successor blocks. *)
-                                  let target_sv = find_shadow_var pc initial_origin in
-                                  let subst_v x =
-                                    if Var.equal x v then target_sv else x
-                                  in
-                                  result :=
-                                    Addr.Map.mapi
-                                      (fun bpc b ->
-                                        let new_body =
-                                          if bpc = pc
-                                          then
-                                            List.filter_map
-                                              ~f:(function
-                                                | Let (x, _)
-                                                  when Var.equal x v -> None
-                                                | i ->
-                                                    Some
-                                                      (Subst
-                                                         .Excluding_Binders
-                                                         .instr
-                                                         subst_v
-                                                         i))
-                                              b.body
-                                          else
-                                            List.map
-                                              ~f:
-                                                (Subst.Excluding_Binders
-                                                   .instr
-                                                   subst_v)
-                                              b.body
-                                        in
-                                        let new_branch =
-                                          Subst.Excluding_Binders.last
-                                            subst_v
-                                            b.branch
-                                        in
-                                        { b with
-                                          body = new_body
-                                        ; branch = new_branch
-                                        })
-                                      !result;
-                                  (* Update block_computed: the eliminated
-                                     conversion's result v is now target_sv *)
-                                  (match Addr.Map.find_opt pc !block_computed with
-                                  | Some bc ->
-                                      let bc' =
-                                        ConvMap.map
-                                          (fun w ->
-                                            if Var.equal w v then target_sv
-                                            else w)
-                                          bc
-                                      in
-                                      block_computed :=
-                                        Addr.Map.add pc bc' !block_computed
-                                  | None -> ());
-                                  (* 4. Update predecessor branches for each
-                                     shadow block to pass the shadow value *)
-                                  List.iter
-                                    ~f:(fun (bpc, origin, _sv) ->
-                                      let bpc_preds =
-                                        Addr.Map.find_opt bpc preds
-                                        |> Option.value ~default:[]
-                                        |> List.sort_uniq ~cmp:compare
-                                      in
-                                      List.iter
-                                        ~f:(fun pred_pc ->
-                                          let pb =
-                                            Addr.Map.find pred_pc !result
-                                          in
-                                          let ext ((tpc, args) as cont) =
-                                            if tpc <> bpc
-                                            then cont
-                                            else
-                                              let q =
-                                                match origin with
-                                                | Param bpi ->
-                                                    List.nth args bpi
-                                                | Var v -> v
-                                              in
-                                              let shadow_val =
-                                                match
-                                                  find_direct_value
-                                                    pred_pc
-                                                    q
-                                                    kind
-                                                with
-                                                | Some u -> u
-                                                | None ->
-                                                    let pred_block =
-                                                      Addr.Map.find
-                                                        pred_pc
-                                                        !result
-                                                    in
-                                                    let pred_origin =
-                                                      match
-                                                        find_param_idx
-                                                          q
-                                                          pred_block.params
-                                                      with
-                                                      | Some qi -> Param qi
-                                                      | None -> Var q
-                                                    in
-                                                    find_shadow_var
-                                                      pred_pc
-                                                      pred_origin
-                                              in
-                                              tpc, args @ [ shadow_val ]
-                                          in
-                                          let br =
-                                            match pb.branch with
-                                            | Branch c -> Branch (ext c)
-                                            | Cond (w, c1, c2) ->
-                                                Cond (w, ext c1, ext c2)
-                                            | Switch (w, cs) ->
-                                                Switch
-                                                  (w, Array.map ~f:ext cs)
-                                            | Pushtrap (c1, w, c2) ->
-                                                Pushtrap (ext c1, w, ext c2)
-                                            | Poptrap c -> Poptrap (ext c)
-                                            | br -> br
-                                          in
-                                          result :=
-                                            Addr.Map.add
-                                              pred_pc
-                                              { pb with branch = br }
-                                              !result)
-                                        bpc_preds)
-                                    shadow_vars)
-                      | None -> ())
-                  | _ -> ())
-              block.body)
+                        check_conts rest_conts acc'
+                      else
+                        let acc' =
+                          if List.exists
+                               ~f:(fun (a, b) ->
+                                 a = pred_pc && equal_origin b pred_origin)
+                               acc
+                          then acc
+                          else key :: acc
+                        in
+                        (match
+                           can_supply pred_pc pred_origin kind (key :: visiting)
+                         with
+                        | None -> None
+                        | Some more ->
+                            let combined =
+                              List.fold_left
+                                ~f:(fun a ((spc, so) as s) ->
+                                  if List.exists
+                                       ~f:(fun (a2, b2) ->
+                                         a2 = spc && equal_origin b2 so)
+                                       a
+                                  then a
+                                  else s :: a)
+                                ~init:acc'
+                                more
+                            in
+                            check_conts rest_conts combined))
+            in
+            (match check_conts conts acc_shadows with
+            | None -> None
+            | Some acc' -> check_preds rest_preds acc')
+      in
+      check_preds pred_pcs []
+  in
+  (* Collect all candidate conversions *)
+  let candidates =
+    Addr.Map.fold
+      (fun pc block acc ->
+        List.fold_left
+          ~f:(fun acc instr ->
+            match instr with
+            | Let (v, Prim (p, [ Pv param_var ])) -> (
+                match kind_of_prim p with
+                | Some kind -> (pc, v, kind, param_var) :: acc
+                | None -> acc)
+            | _ -> acc)
+          ~init:acc
+          block.body)
       !result
-  done;
-  !result
+      []
+  in
+  (* Process each candidate. Apply shadow params and branch extensions
+     immediately (cheap, targeted), but collect v -> target_sv substitutions
+     for a single batched pass at the end. *)
+  let eliminated = ref VarSet.empty in
+  let all_substs = ref Var.Map.empty in
+  List.iter
+    ~f:(fun (pc, v, kind, _param_var) ->
+      if VarSet.mem v !eliminated
+      then ()
+      else
+        (* Re-read the block and find the conversion (it may have been
+           modified by a prior shadow param addition). *)
+        let block = Addr.Map.find pc !result in
+        let still_present =
+          List.find_opt
+            ~f:(function
+              | Let (x, Prim (p, [ Pv _ ])) ->
+                  Var.equal x v && Option.is_some (kind_of_prim p)
+              | _ -> false)
+            block.body
+        in
+        match still_present with
+        | None -> ()
+        | Some (Let (_, Prim (p, [ Pv param_var ]))) -> (
+            let kind =
+              match kind_of_prim p with
+              | Some k -> k
+              | None -> kind
+            in
+            let initial_origin =
+              match find_param_idx param_var block.params with
+              | Some pi -> Param pi
+              | None -> Var param_var
+            in
+            let initial_key = pc, initial_origin in
+            match can_supply pc initial_origin kind [ initial_key ] with
+            | None -> ()
+            | Some passthrough_shadows ->
+                let all_shadows = initial_key :: passthrough_shadows in
+                eliminated := VarSet.add v !eliminated;
+                (* 1. Create shadow param variables *)
+                let shadow_vars =
+                  List.map
+                    ~f:(fun (bpc, orig) ->
+                      let sv = Var.fresh () in
+                      Typing.set_var_type types sv (type_of_kind kind);
+                      bpc, orig, sv)
+                    all_shadows
+                in
+                let find_shadow_var bpc orig =
+                  let _, _, sv =
+                    List.find
+                      ~f:(fun (a, b, _) -> a = bpc && equal_origin b orig)
+                      shadow_vars
+                  in
+                  sv
+                in
+                (* 2. Append shadow params to each block *)
+                List.iter
+                  ~f:(fun (bpc, _orig, sv) ->
+                    let b = Addr.Map.find bpc !result in
+                    result :=
+                      Addr.Map.add bpc { b with params = b.params @ [ sv ] } !result)
+                  shadow_vars;
+                (* 3. Record substitution v -> target_sv and remove the
+                   conversion from the target block *)
+                let target_sv = find_shadow_var pc initial_origin in
+                all_substs := Var.Map.add v target_sv !all_substs;
+                let b = Addr.Map.find pc !result in
+                let new_body =
+                  List.filter
+                    ~f:(function
+                      | Let (x, _) when Var.equal x v -> false
+                      | _ -> true)
+                    b.body
+                in
+                result := Addr.Map.add pc { b with body = new_body } !result;
+                (* Update tables *)
+                Var.Tbl.set conv_defs v None;
+                (match Addr.Map.find_opt pc !block_computed with
+                | Some bc ->
+                    let bc' =
+                      ConvMap.map
+                        (fun w -> if Var.equal w v then target_sv else w)
+                        bc
+                    in
+                    block_computed := Addr.Map.add pc bc' !block_computed
+                | None -> ());
+                (* 4. Update predecessor branches for each
+                   shadow block to pass the shadow value *)
+                List.iter
+                  ~f:(fun (bpc, origin, _sv) ->
+                    let bpc_preds =
+                      Addr.Map.find_opt bpc preds
+                      |> Option.value ~default:[]
+                      |> List.sort_uniq ~cmp:compare
+                    in
+                    List.iter
+                      ~f:(fun pred_pc ->
+                        let pb = Addr.Map.find pred_pc !result in
+                        let ext ((tpc, args) as cont) =
+                          if tpc <> bpc
+                          then cont
+                          else
+                            let q =
+                              match origin with
+                              | Param bpi -> List.nth args bpi
+                              | Var v -> v
+                            in
+                            let shadow_val =
+                              match find_direct_value pred_pc q kind with
+                              | Some u -> u
+                              | None ->
+                                  let pred_block =
+                                    Addr.Map.find pred_pc !result
+                                  in
+                                  let pred_origin =
+                                    match find_param_idx q pred_block.params with
+                                    | Some qi -> Param qi
+                                    | None -> Var q
+                                  in
+                                  find_shadow_var pred_pc pred_origin
+                            in
+                            tpc, args @ [ shadow_val ]
+                        in
+                        let br =
+                          match pb.branch with
+                          | Branch c -> Branch (ext c)
+                          | Cond (w, c1, c2) -> Cond (w, ext c1, ext c2)
+                          | Switch (w, cs) -> Switch (w, Array.map ~f:ext cs)
+                          | Pushtrap (c1, w, c2) -> Pushtrap (ext c1, w, ext c2)
+                          | Poptrap c -> Poptrap (ext c)
+                          | br -> br
+                        in
+                        result :=
+                          Addr.Map.add pred_pc { pb with branch = br } !result)
+                      bpc_preds)
+                  shadow_vars)
+        | _ -> ())
+    candidates;
+  (* Apply all substitutions in a single pass *)
+  if Var.Map.is_empty !all_substs
+  then !result
+  else
+    let subst_var x =
+      match Var.Map.find_opt x !all_substs with
+      | Some sv -> sv
+      | None -> x
+    in
+    Addr.Map.map
+      (fun b ->
+        let new_body =
+          List.map ~f:(Subst.Excluding_Binders.instr subst_var) b.body
+        in
+        let new_branch = Subst.Excluding_Binders.last subst_var b.branch in
+        { b with body = new_body; branch = new_branch })
+      !result
 
 (* Phase 2: LCM dataflow analysis and rewrite for a single function.
 
@@ -1938,7 +1973,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
             result := Addr.Map.add pred_pc { pred_block with branch = new_branch } !result)
           target_preds)
       !phi_info;
-    let result = optimize_peephole_conversions !result in
+    let result = optimize_peephole_conversions !result preds in
     let result = sink_partially_dead_conversions result all_blocks entry in
     eliminate_param_conversions result types preds
 
@@ -1965,11 +2000,11 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
                 Typing.Bot
             in
             match t with
-            | Typing.Number (_, Typing.Unboxed) | Typing.Int Typing.Integer.Normalized ->
+            | Typing.Number (_, Typing.Unboxed)
+            | Typing.Int (Typing.Integer.Normalized | Typing.Integer.Unnormalized) ->
                 Typing.set_return_type types g t
             | Typing.Top
             | Typing.Int Typing.Integer.Ref
-            | Typing.Int Typing.Integer.Unnormalized
             | Typing.Number (_, Typing.Boxed)
             | Typing.Tuple _ | Typing.Bigarray _ | Typing.Bot -> ())
       | None -> ())
