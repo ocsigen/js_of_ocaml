@@ -1545,6 +1545,36 @@ let process_function
         fun_blocks
     in
     let preds = CFG.predecessors fun_blocks in
+    (* Compute reverse post-order (RPO) via DFS from entry.
+       Forward analyses process in RPO (index 0..n-1).
+       Backward analyses process in reverse RPO = post-order (index n-1..0). *)
+    let rpo_order =
+      let order = ref [] in
+      let visited = ref Addr.Set.empty in
+      let rec visit pc =
+        if not (Addr.Set.mem pc !visited)
+        then (
+          visited := Addr.Set.add pc !visited;
+          List.iter ~f:visit (CFG.successors fun_blocks pc);
+          order := pc :: !order)
+      in
+      visit entry;
+      Array.of_list !order
+    in
+    let n_blocks = Array.length rpo_order in
+    let rpo_index = Addr.Hashtbl.create n_blocks in
+    Array.iteri ~f:(fun i pc -> Addr.Hashtbl.add rpo_index pc i) rpo_order;
+    (* Precompute per-block successor and predecessor lists as arrays for
+       fast indexed access during the iterative sweeps. *)
+    let succs_of = Array.init n_blocks ~f:(fun i -> CFG.successors fun_blocks rpo_order.(i)) in
+    let preds_of =
+      Array.init n_blocks ~f:(fun i ->
+        Addr.Map.find_opt rpo_order.(i) preds |> Option.value ~default:[])
+    in
+    let props_of = Array.init n_blocks ~f:(fun i -> Addr.Map.find rpo_order.(i) props) in
+    let param_sets_of =
+      Array.init n_blocks ~f:(fun i -> Addr.Map.find rpo_order.(i) block_param_sets)
+    in
     (* Step 1: Anticipatability (backward dataflow, all-paths).
 
        ANTIN(b) = set of conversions that will definitely be computed on every
@@ -1559,41 +1589,41 @@ let process_function
        Initialised to the universal set (all_convs) and iterated to a fixpoint.
        Conversions referencing a successor's block parameters are excluded from
        ANTOUT since those variables are rebound at the block boundary. *)
-    let antin = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
-    let worklist =
-      ref (Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty)
-    in
-    while not (Addr.Set.is_empty !worklist) do
-      st.ant_iterations <- st.ant_iterations + 1;
-      let pc = Addr.Set.min_elt !worklist in
-      worklist := Addr.Set.remove pc !worklist;
-      let b_props = Addr.Map.find pc props in
-      let succs = CFG.successors fun_blocks pc in
-      let new_antout =
-        if List.is_empty succs
-        then ConvSet.empty
-        else
-          List.fold_left
-            ~f:(fun acc succ ->
-              let succ_antin = Addr.Map.find succ !antin in
-              let succ_param_set = Addr.Map.find succ block_param_sets in
-              let valid_succ_antin =
-                ConvSet.filter
-                  (fun (_, arg) -> not (VarSet.mem arg succ_param_set))
-                  succ_antin
-              in
-              ConvSet.inter acc valid_succ_antin)
-            ~init:all_convs
-            succs
-      in
-      let new_antin =
-        ConvSet.union b_props.antloc (ConvSet.inter b_props.transp_ant new_antout)
-      in
-      if not (ConvSet.equal (Addr.Map.find pc !antin) new_antin)
-      then (
-        antin := Addr.Map.add pc new_antin !antin;
-        let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-        List.iter ~f:(fun p' -> worklist := Addr.Set.add p' !worklist) ps)
+    let antin = Array.make n_blocks all_convs in
+    let changed = ref true in
+    while !changed do
+      changed := false;
+      (* Backward: sweep in post-order = reverse RPO *)
+      for ri = n_blocks - 1 downto 0 do
+        st.ant_iterations <- st.ant_iterations + 1;
+        let b_props = props_of.(ri) in
+        let succs = succs_of.(ri) in
+        let new_antout =
+          if List.is_empty succs
+          then ConvSet.empty
+          else
+            List.fold_left
+              ~f:(fun acc succ ->
+                let si = Addr.Hashtbl.find rpo_index succ in
+                let succ_antin = antin.(si) in
+                let succ_param_set = param_sets_of.(si) in
+                let valid_succ_antin =
+                  ConvSet.filter
+                    (fun (_, arg) -> not (VarSet.mem arg succ_param_set))
+                    succ_antin
+                in
+                ConvSet.inter acc valid_succ_antin)
+              ~init:all_convs
+              succs
+        in
+        let new_antin =
+          ConvSet.union b_props.antloc (ConvSet.inter b_props.transp_ant new_antout)
+        in
+        if not (ConvSet.equal antin.(ri) new_antin)
+        then (
+          antin.(ri) <- new_antin;
+          changed := true)
+      done
     done;
     (* Step 2: Availability (forward dataflow, all-paths).
 
@@ -1609,51 +1639,51 @@ let process_function
        A conversion is earliest at b if it is anticipated there but not yet
        available — this is the first point where inserting it is both useful
        and correct. *)
-    let avout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
-    avout := Addr.Map.add entry ConvSet.empty !avout;
-    worklist :=
-      Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
-    while not (Addr.Set.is_empty !worklist) do
-      st.avail_iterations <- st.avail_iterations + 1;
-      let pc = Addr.Set.min_elt !worklist in
-      worklist := Addr.Set.remove pc !worklist;
-      let b_props = Addr.Map.find pc props in
-      let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-      let new_avin =
-        if pc = entry || List.is_empty ps
-        then ConvSet.empty
-        else
-          List.fold_left
-            ~f:(fun acc p' -> ConvSet.inter acc (Addr.Map.find p' !avout))
-            ~init:all_convs
-            ps
-      in
-      let new_avout =
-        ConvSet.union b_props.comp (ConvSet.inter b_props.transp new_avin)
-      in
-      if not (ConvSet.equal (Addr.Map.find pc !avout) new_avout)
-      then (
-        avout := Addr.Map.add pc new_avout !avout;
-        let succs = CFG.successors fun_blocks pc in
-        List.iter ~f:(fun s -> worklist := Addr.Set.add s !worklist) succs)
-    done;
-    let avin =
-      Addr.Map.mapi
-        (fun pc _ ->
-          let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+    let avout = Array.make n_blocks all_convs in
+    avout.(0) <- ConvSet.empty;
+    changed := true;
+    while !changed do
+      changed := false;
+      (* Forward: sweep in RPO *)
+      for ri = 0 to n_blocks - 1 do
+        st.avail_iterations <- st.avail_iterations + 1;
+        let pc = rpo_order.(ri) in
+        let b_props = props_of.(ri) in
+        let ps = preds_of.(ri) in
+        let new_avin =
           if pc = entry || List.is_empty ps
           then ConvSet.empty
           else
             List.fold_left
-              ~f:(fun acc p' -> ConvSet.inter acc (Addr.Map.find p' !avout))
+              ~f:(fun acc p' ->
+                ConvSet.inter acc avout.(Addr.Hashtbl.find rpo_index p'))
               ~init:all_convs
-              ps)
-        fun_blocks
+              ps
+        in
+        let new_avout =
+          ConvSet.union b_props.comp (ConvSet.inter b_props.transp new_avin)
+        in
+        if not (ConvSet.equal avout.(ri) new_avout)
+        then (
+          avout.(ri) <- new_avout;
+          changed := true)
+      done
+    done;
+    let avin =
+      Array.init n_blocks ~f:(fun ri ->
+        let pc = rpo_order.(ri) in
+        let ps = preds_of.(ri) in
+        if pc = entry || List.is_empty ps
+        then ConvSet.empty
+        else
+          List.fold_left
+            ~f:(fun acc p' ->
+              ConvSet.inter acc avout.(Addr.Hashtbl.find rpo_index p'))
+            ~init:all_convs
+            ps)
     in
     let earliest =
-      Addr.Map.mapi
-        (fun pc _ -> ConvSet.diff (Addr.Map.find pc !antin) (Addr.Map.find pc avin))
-        fun_blocks
+      Array.init n_blocks ~f:(fun ri -> ConvSet.diff antin.(ri) avin.(ri))
     in
     (* Step 3: Delayability (forward dataflow, all-paths).
 
@@ -1665,34 +1695,36 @@ let process_function
 
        A conversion can be delayed past a block as long as the block does not
        use (compute) it. This pushes insertions as late as possible. *)
-    let delayin = ref earliest in
-    let delayout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
-    worklist :=
-      Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
-    while not (Addr.Set.is_empty !worklist) do
-      st.delay_iterations <- st.delay_iterations + 1;
-      let pc = Addr.Set.min_elt !worklist in
-      worklist := Addr.Set.remove pc !worklist;
-      let b_props = Addr.Map.find pc props in
-      let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-      let new_delayin =
-        if pc = entry || List.is_empty ps
-        then Addr.Map.find pc earliest
-        else
-          ConvSet.union
-            (Addr.Map.find pc earliest)
-            (List.fold_left
-               ~f:(fun acc p' -> ConvSet.inter acc (Addr.Map.find p' !delayout))
-               ~init:all_convs
-               ps)
-      in
-      delayin := Addr.Map.add pc new_delayin !delayin;
-      let new_delayout = ConvSet.diff new_delayin b_props.comp in
-      if not (ConvSet.equal (Addr.Map.find pc !delayout) new_delayout)
-      then (
-        delayout := Addr.Map.add pc new_delayout !delayout;
-        let succs = CFG.successors fun_blocks pc in
-        List.iter ~f:(fun s -> worklist := Addr.Set.add s !worklist) succs)
+    let delayin = Array.copy earliest in
+    let delayout = Array.make n_blocks all_convs in
+    changed := true;
+    while !changed do
+      changed := false;
+      (* Forward: sweep in RPO *)
+      for ri = 0 to n_blocks - 1 do
+        st.delay_iterations <- st.delay_iterations + 1;
+        let pc = rpo_order.(ri) in
+        let b_props = props_of.(ri) in
+        let ps = preds_of.(ri) in
+        let new_delayin =
+          if pc = entry || List.is_empty ps
+          then earliest.(ri)
+          else
+            ConvSet.union
+              earliest.(ri)
+              (List.fold_left
+                 ~f:(fun acc p' ->
+                   ConvSet.inter acc delayout.(Addr.Hashtbl.find rpo_index p'))
+                 ~init:all_convs
+                 ps)
+        in
+        delayin.(ri) <- new_delayin;
+        let new_delayout = ConvSet.diff new_delayin b_props.comp in
+        if not (ConvSet.equal delayout.(ri) new_delayout)
+        then (
+          delayout.(ri) <- new_delayout;
+          changed := true)
+      done
     done;
     (* Step 4: Latest (derived, no iteration needed).
 
@@ -1706,24 +1738,23 @@ let process_function
        This is the optimal insertion point: as late as possible while still
        covering all uses. *)
     let latest =
-      Addr.Map.mapi
-        (fun pc _block ->
-          let succs = CFG.successors fun_blocks pc in
-          let delayin_pc = Addr.Map.find pc !delayin in
-          let b_props = Addr.Map.find pc props in
-          let delayin_succs_intersect =
-            if List.is_empty succs
-            then ConvSet.empty
-            else
-              List.fold_left
-                ~f:(fun acc s -> ConvSet.inter acc (Addr.Map.find s !delayin))
-                ~init:all_convs
-                succs
-          in
-          ConvSet.inter
-            delayin_pc
-            (ConvSet.union b_props.comp (ConvSet.diff all_convs delayin_succs_intersect)))
-        fun_blocks
+      Array.init n_blocks ~f:(fun ri ->
+        let succs = succs_of.(ri) in
+        let delayin_pc = delayin.(ri) in
+        let b_props = props_of.(ri) in
+        let delayin_succs_intersect =
+          if List.is_empty succs
+          then ConvSet.empty
+          else
+            List.fold_left
+              ~f:(fun acc s ->
+                ConvSet.inter acc delayin.(Addr.Hashtbl.find rpo_index s))
+              ~init:all_convs
+              succs
+        in
+        ConvSet.inter
+          delayin_pc
+          (ConvSet.union b_props.comp (ConvSet.diff all_convs delayin_succs_intersect)))
     in
     (* Step 5: Isolation (forward dataflow, all-paths).
 
@@ -1738,45 +1769,55 @@ let process_function
        The final insertion set is LATEST(b) \ ISOLATED(b): conversions placed
        at their optimal point that actually eliminate at least one redundant
        occurrence downstream. *)
-    let isolatedout = ref (Addr.Map.map (fun _ -> all_convs) fun_blocks) in
-    let isolatedin = ref (Addr.Map.map (fun _ -> ConvSet.empty) fun_blocks) in
-    worklist :=
-      Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) fun_blocks Addr.Set.empty;
-    while not (Addr.Set.is_empty !worklist) do
-      st.isol_iterations <- st.isol_iterations + 1;
-      let pc = Addr.Set.min_elt !worklist in
-      worklist := Addr.Set.remove pc !worklist;
-      let b_props = Addr.Map.find pc props in
-      let succs = CFG.successors fun_blocks pc in
-      let new_isolatedout =
-        if List.is_empty succs
-        then ConvSet.empty
-        else
-          List.fold_left
-            ~f:(fun acc s ->
-              let s_isolatedin = Addr.Map.find s !isolatedin in
-              let succ_param_set = Addr.Map.find s block_param_sets in
-              let valid_s_isolatedin =
-                ConvSet.filter
-                  (fun (_, arg) -> not (VarSet.mem arg succ_param_set))
-                  s_isolatedin
-              in
-              ConvSet.inter acc valid_s_isolatedin)
-            ~init:all_convs
-            succs
-      in
-      isolatedout := Addr.Map.add pc new_isolatedout !isolatedout;
-      let new_isolatedin =
-        ConvSet.union
-          (Addr.Map.find pc latest)
-          (ConvSet.diff new_isolatedout b_props.comp)
-      in
-      if not (ConvSet.equal (Addr.Map.find pc !isolatedin) new_isolatedin)
-      then (
-        isolatedin := Addr.Map.add pc new_isolatedin !isolatedin;
-        let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
-        List.iter ~f:(fun p' -> worklist := Addr.Set.add p' !worklist) ps)
+    let isolatedout = Array.make n_blocks all_convs in
+    let isolatedin = Array.make n_blocks ConvSet.empty in
+    changed := true;
+    while !changed do
+      changed := false;
+      (* Backward: sweep in post-order = reverse RPO *)
+      for ri = n_blocks - 1 downto 0 do
+        st.isol_iterations <- st.isol_iterations + 1;
+        let b_props = props_of.(ri) in
+        let succs = succs_of.(ri) in
+        let new_isolatedout =
+          if List.is_empty succs
+          then ConvSet.empty
+          else
+            List.fold_left
+              ~f:(fun acc s ->
+                let si = Addr.Hashtbl.find rpo_index s in
+                let s_isolatedin = isolatedin.(si) in
+                let succ_param_set = param_sets_of.(si) in
+                let valid_s_isolatedin =
+                  ConvSet.filter
+                    (fun (_, arg) -> not (VarSet.mem arg succ_param_set))
+                    s_isolatedin
+                in
+                ConvSet.inter acc valid_s_isolatedin)
+              ~init:all_convs
+              succs
+        in
+        isolatedout.(ri) <- new_isolatedout;
+        let new_isolatedin =
+          ConvSet.union latest.(ri) (ConvSet.diff new_isolatedout b_props.comp)
+        in
+        if not (ConvSet.equal isolatedin.(ri) new_isolatedin)
+        then (
+          isolatedin.(ri) <- new_isolatedin;
+          changed := true)
+      done
     done;
+    (* Convert array results back to maps for the rewrite phase. *)
+    let to_map arr =
+      let m = ref Addr.Map.empty in
+      for i = 0 to n_blocks - 1 do
+        m := Addr.Map.add rpo_order.(i) arr.(i) !m
+      done;
+      !m
+    in
+    let avin = to_map avin in
+    let latest = to_map latest in
+    let isolatedout = ref (to_map isolatedout) in
     let t1 = tick () in
     st.time_dataflow <- st.time_dataflow +. (t1 -. t0);
 
