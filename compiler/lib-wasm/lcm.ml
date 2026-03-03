@@ -1170,6 +1170,21 @@ let equal_origin a b =
   | Var v1, Var v2 -> Var.equal v1 v2
   | Param _, Var _ | Var _, Param _ -> false
 
+let compare_origin a b =
+  match a, b with
+  | Param i, Param j -> compare i j
+  | Var v1, Var v2 -> Var.compare v1 v2
+  | Param _, Var _ -> -1
+  | Var _, Param _ -> 1
+
+module AddrOriginSet = Set.Make (struct
+  type t = Addr.t * origin
+
+  let compare (a1, o1) (a2, o2) =
+    let c = compare a1 a2 in
+    if c <> 0 then c else compare_origin o1 o2
+end)
+
 (* Phase 5: Conversion elimination through parameter widening.
 
    When a block converts a value that flows in from predecessors — either as a
@@ -1197,9 +1212,11 @@ let equal_origin a b =
    so widening threads v0 as a shadow parameter, eliminating the unbox. *)
 let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
   let result = ref blocks in
-  (* Build conversion definition and computed-conversion tables *)
+  (* Build conversion definition table, computed-conversion table,
+     and candidate list in a single pass over the blocks. *)
   let conv_defs = Var.Hashtbl.create 16 in
   let block_computed = ref Addr.Map.empty in
+  let candidates = ref [] in
   Addr.Map.iter
     (fun pc block ->
       let computed = ref ConvMap.empty in
@@ -1209,22 +1226,28 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
               match kind_of_prim p with
               | Some k ->
                   Var.Hashtbl.replace conv_defs x (k, y);
-                  computed := ConvMap.add (k, y) x !computed
+                  computed := ConvMap.add (k, y) x !computed;
+                  candidates := (pc, x, k, y) :: !candidates
               | None -> ())
           | _ -> ())
         block.body;
-      block_computed := Addr.Map.add pc !computed !block_computed)
+      if not (ConvMap.is_empty !computed)
+      then block_computed := Addr.Map.add pc !computed !block_computed)
     !result;
+  let candidates = !candidates in
+  if List.is_empty candidates
+  then blocks
+  else
   (* Check if a predecessor can directly supply kind(q):
      - Inverse pair: q = inv_kind(u) → supply u
      - Already computed: kind(q) computed in pred block *)
   let find_direct_value pred_pc q kind =
     (match inverse_kind kind with
-      | Some inv_k -> (
-          match Var.Hashtbl.find_opt conv_defs q with
-          | Some (k, u) when Poly.equal k inv_k -> Some u
-          | _ -> None)
-      | None -> None)
+    | Some inv_k -> (
+        match Var.Hashtbl.find_opt conv_defs q with
+        | Some (k, u) when Poly.equal k inv_k -> Some u
+        | _ -> None)
+    | None -> None)
     |> function
     | Some _ as r -> r
     | None -> (
@@ -1266,11 +1289,16 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
      Returns Some shadows_needed or None on failure.
      shadows_needed: list of (block_pc, origin) that need shadow params
      (includes the initial (bpc, origin) passed to the top-level call). *)
+  (* Pre-sort and deduplicate predecessor lists once *)
+  let sorted_preds =
+    Addr.Map.map
+      (fun ps -> List.sort_uniq ~cmp:compare ps)
+      preds
+  in
   let rec can_supply bpc origin kind visiting =
     let pred_pcs =
-      Addr.Map.find_opt bpc preds
+      Addr.Map.find_opt bpc sorted_preds
       |> Option.value ~default:[]
-      |> List.sort_uniq ~cmp:compare
     in
     if List.is_empty pred_pcs
     then None
@@ -1300,69 +1328,28 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
                         | None -> Var q
                       in
                       let key = pred_pc, pred_origin in
-                      if
-                        List.exists
-                          ~f:(fun (a, b) -> a = pred_pc && equal_origin b pred_origin)
-                          visiting
+                      let acc' = AddrOriginSet.add key acc in
+                      if AddrOriginSet.mem key visiting
                       then
                         (* Cycle: assume shadow will be there *)
-                        let acc' =
-                          if
-                            List.exists
-                              ~f:(fun (a, b) -> a = pred_pc && equal_origin b pred_origin)
-                              acc
-                          then acc
-                          else key :: acc
-                        in
                         check_conts rest_conts acc'
                       else
-                        let acc' =
-                          if
-                            List.exists
-                              ~f:(fun (a, b) -> a = pred_pc && equal_origin b pred_origin)
-                              acc
-                          then acc
-                          else key :: acc
-                        in
-                        match can_supply pred_pc pred_origin kind (key :: visiting) with
+                        match
+                          can_supply
+                            pred_pc
+                            pred_origin
+                            kind
+                            (AddrOriginSet.add key visiting)
+                        with
                         | None -> None
                         | Some more ->
-                            let combined =
-                              List.fold_left
-                                ~f:(fun a ((spc, so) as s) ->
-                                  if
-                                    List.exists
-                                      ~f:(fun (a2, b2) -> a2 = spc && equal_origin b2 so)
-                                      a
-                                  then a
-                                  else s :: a)
-                                ~init:acc'
-                                more
-                            in
-                            check_conts rest_conts combined))
+                            check_conts rest_conts (AddrOriginSet.union acc' more)))
             in
             match check_conts conts acc_shadows with
             | None -> None
             | Some acc' -> check_preds rest_preds acc')
       in
-      check_preds pred_pcs []
-  in
-  (* Collect all candidate conversions *)
-  let candidates =
-    Addr.Map.fold
-      (fun pc block acc ->
-        List.fold_left
-          ~f:(fun acc instr ->
-            match instr with
-            | Let (v, Prim (p, [ Pv param_var ])) -> (
-                match kind_of_prim p with
-                | Some kind -> (pc, v, kind, param_var) :: acc
-                | None -> acc)
-            | _ -> acc)
-          ~init:acc
-          block.body)
-      !result
-      []
+      check_preds pred_pcs AddrOriginSet.empty
   in
   (* Process each candidate. Apply shadow params and branch extensions
      immediately (cheap, targeted), but collect v -> target_sv substitutions
@@ -1399,10 +1386,18 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
               | None -> Var param_var
             in
             let initial_key = pc, initial_origin in
-            match can_supply pc initial_origin kind [ initial_key ] with
+            match
+              can_supply
+                pc
+                initial_origin
+                kind
+                (AddrOriginSet.singleton initial_key)
+            with
             | None -> ()
             | Some passthrough_shadows ->
-                let all_shadows = initial_key :: passthrough_shadows in
+                let all_shadows =
+                  AddrOriginSet.elements (AddrOriginSet.add initial_key passthrough_shadows)
+                in
                 eliminated := VarSet.add v !eliminated;
                 st.params_widened <- st.params_widened + List.length all_shadows;
                 (* 1. Create shadow param variables *)
@@ -1456,9 +1451,8 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
                 List.iter
                   ~f:(fun (bpc, origin, _sv) ->
                     let bpc_preds =
-                      Addr.Map.find_opt bpc preds
+                      Addr.Map.find_opt bpc sorted_preds
                       |> Option.value ~default:[]
-                      |> List.sort_uniq ~cmp:compare
                     in
                     List.iter
                       ~f:(fun pred_pc ->
