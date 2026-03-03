@@ -451,10 +451,69 @@ type block_props =
 let remove_conversions_of_var convs v =
   ConvSet.filter (fun (_, arg) -> not (Var.equal arg v)) convs
 
-let remove_killed_mappings map v =
-  ConvMap.filter
-    (fun (_, arg) mapped -> (not (Var.equal arg v)) && not (Var.equal mapped v))
-    map
+(* A ConvMap with a reverse index from variables to the conv keys they appear in,
+   enabling O(log n) removal when a variable is killed instead of O(n) filtering. *)
+module ConvTracker : sig
+  type t
+
+  val of_map : Var.t ConvMap.t -> t
+  val to_map : t -> Var.t ConvMap.t
+  val find_opt : Conv.t -> t -> Var.t option
+  val add : Conv.t -> Var.t -> t -> t
+  val kill_var : Var.t -> t -> t
+end = struct
+  type t =
+    { fwd : Var.t ConvMap.t
+    ; rev : ConvSet.t Var.Map.t (* var -> set of conv keys mentioning it *)
+    }
+
+  let rev_add v conv rev =
+    Var.Map.update
+      v
+      (function
+        | None -> Some (ConvSet.singleton conv)
+        | Some s -> Some (ConvSet.add conv s))
+      rev
+
+  let of_map fwd =
+    let rev =
+      ConvMap.fold
+        (fun ((_, arg) as conv) mapped acc -> rev_add arg conv (rev_add mapped conv acc))
+        fwd
+        Var.Map.empty
+    in
+    { fwd; rev }
+
+  let to_map t = t.fwd
+
+  let find_opt conv t = ConvMap.find_opt conv t.fwd
+
+  let add conv mapped t =
+    let _, arg = conv in
+    let fwd = ConvMap.add conv mapped t.fwd in
+    let rev = rev_add arg conv (rev_add mapped conv t.rev) in
+    { fwd; rev }
+
+  let kill_var v t =
+    match Var.Map.find_opt v t.rev with
+    | None -> t
+    | Some convs ->
+        let fwd =
+          ConvSet.fold
+            (fun conv fwd ->
+              match ConvMap.find_opt conv fwd with
+              | Some mapped ->
+                  let _, arg = conv in
+                  if Var.equal arg v || Var.equal mapped v
+                  then ConvMap.remove conv fwd
+                  else fwd
+              | None -> fwd)
+            convs
+            t.fwd
+        in
+        let rev = Var.Map.remove v t.rev in
+        { fwd; rev }
+end
 
 let compute_local_props all_convs is_safe block =
   let killed_vars = ref VarSet.empty in
@@ -772,7 +831,7 @@ let optimize_peephole_conversions blocks preds =
    This is the dual of PRE: PRE hoists to eliminate redundancy, PDE sinks to
    eliminate partial deadness. Only the simple case is handled: sink when the
    result is live on exactly one successor edge, or remove when live on none. *)
-let sink_partially_dead_conversions blocks all_blocks entry =
+let sink_partially_dead_conversions blocks all_blocks entry preds =
   (* Collect conversion result variables *)
   let conv_vars = ref VarSet.empty in
   Addr.Map.iter
@@ -884,7 +943,6 @@ let sink_partially_dead_conversions blocks all_blocks entry =
           !use, !def)
         blocks
     in
-    let preds = CFG.predecessors blocks in
     (* Backward liveness fixpoint:
        LIVE_OUT(B) = ∪ { LIVE_IN(S) | S ∈ successors(B) }
        LIVE_IN(B)  = USE(B) ∪ (LIVE_OUT(B) \ DEF(B)) *)
@@ -1390,6 +1448,12 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
       is_safe_input kind (Typing.var_type types var)
     in
     let props = Addr.Map.map (compute_local_props all_convs is_safe) fun_blocks in
+    let block_param_sets =
+      Addr.Map.map
+        (fun block ->
+          List.fold_left ~f:(fun s v -> VarSet.add v s) ~init:VarSet.empty block.params)
+        fun_blocks
+    in
     let preds = CFG.predecessors fun_blocks in
     (* Step 1: Anticipatability (backward dataflow, all-paths).
 
@@ -1421,10 +1485,10 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
           List.fold_left
             ~f:(fun acc succ ->
               let succ_antin = Addr.Map.find succ !antin in
-              let succ_block = Addr.Map.find succ fun_blocks in
+              let succ_param_set = Addr.Map.find succ block_param_sets in
               let valid_succ_antin =
                 ConvSet.filter
-                  (fun (_, arg) -> not (List.mem ~eq:Var.equal arg succ_block.params))
+                  (fun (_, arg) -> not (VarSet.mem arg succ_param_set))
                   succ_antin
               in
               ConvSet.inter acc valid_succ_antin)
@@ -1597,10 +1661,10 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
           List.fold_left
             ~f:(fun acc s ->
               let s_isolatedin = Addr.Map.find s !isolatedin in
-              let succ_block = Addr.Map.find s fun_blocks in
+              let succ_param_set = Addr.Map.find s block_param_sets in
               let valid_s_isolatedin =
                 ConvSet.filter
-                  (fun (_, arg) -> not (List.mem ~eq:Var.equal arg succ_block.params))
+                  (fun (_, arg) -> not (VarSet.mem arg succ_param_set))
                   s_isolatedin
               in
               ConvSet.inter acc valid_s_isolatedin)
@@ -1729,7 +1793,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
           ConvSet.diff (Addr.Map.find pc latest) (Addr.Map.find pc !isolatedout)
         in
         let inserted_rev = ref [] in
-        let conv_to_var = ref safe_conv_in in
+        let conv_to_var = ref (ConvTracker.of_map safe_conv_in) in
         (* Partial redundancy elimination: for each conversion in to_insert,
            check if some predecessors already have it. If so, insert only at
            the missing predecessors and create a phi to merge the results.
@@ -1794,7 +1858,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                       | None -> Some [ conv, phi_var ]
                       | Some l -> Some ((conv, phi_var) :: l))
                     !phi_info;
-                conv_to_var := ConvMap.add conv phi_var !conv_to_var)
+                conv_to_var := ConvTracker.add conv phi_var !conv_to_var)
               else to_insert_remaining := ConvSet.add conv !to_insert_remaining)
             else to_insert_remaining := ConvSet.add conv !to_insert_remaining)
           to_insert;
@@ -1807,7 +1871,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
               |> Option.value ~default:(type_of_kind kind)
             in
             Typing.set_var_type types tmp typ;
-            conv_to_var := ConvMap.add conv tmp !conv_to_var;
+            conv_to_var := ConvTracker.add conv tmp !conv_to_var;
             inserted_rev :=
               Let (tmp, Prim (prim_of_kind kind, [ Pv arg ])) :: !inserted_rev)
           !to_insert_remaining;
@@ -1819,23 +1883,23 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
             let i = Subst.Excluding_Binders.instr subst_var i in
             match i with
             | Let (v, Prim (p, [ Pv arg ])) -> (
-                conv_to_var := remove_killed_mappings !conv_to_var v;
+                conv_to_var := ConvTracker.kill_var v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 match kind_of_prim p with
                 | Some kind -> (
                     let conv = kind, arg in
-                    match ConvMap.find_opt conv !conv_to_var with
+                    match ConvTracker.find_opt conv !conv_to_var with
                     | Some tmp -> subst := Var.Map.add v tmp !subst
                     | None ->
                         body_rev := i :: !body_rev;
-                        conv_to_var := ConvMap.add conv v !conv_to_var)
+                        conv_to_var := ConvTracker.add conv v !conv_to_var)
                 | None -> body_rev := i :: !body_rev)
             | Let (v, _) ->
-                conv_to_var := remove_killed_mappings !conv_to_var v;
+                conv_to_var := ConvTracker.kill_var v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Assign (v, _) ->
-                conv_to_var := remove_killed_mappings !conv_to_var v;
+                conv_to_var := ConvTracker.kill_var v !conv_to_var;
                 subst := Var.Map.remove v !subst;
                 body_rev := i :: !body_rev
             | Set_field _ | Offset_ref _ | Array_set _ | Event _ ->
@@ -1852,7 +1916,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                 match number_conversion_kind ~from ~into with
                 | Some kind -> (
                     let conv = kind, arg in
-                    match ConvMap.find_opt conv !conv_to_var with
+                    match ConvTracker.find_opt conv !conv_to_var with
                     | Some tmp -> tmp
                     | None -> arg)
                 | None -> arg)
@@ -1871,7 +1935,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                   number_conversion_kind ~from:(Typing.var_type types y) ~into:return_type
                 with
                 | Some kind -> (
-                    match ConvMap.find_opt (kind, y) !conv_to_var with
+                    match ConvTracker.find_opt (kind, y) !conv_to_var with
                     | Some tmp -> tmp
                     | None -> y)
                 | None -> y
@@ -1883,7 +1947,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                   number_conversion_kind ~from:(Typing.var_type types y) ~into:Typing.Top
                 with
                 | Some kind -> (
-                    match ConvMap.find_opt (kind, y) !conv_to_var with
+                    match ConvTracker.find_opt (kind, y) !conv_to_var with
                     | Some tmp -> tmp
                     | None -> y)
                 | None -> y
@@ -1896,7 +1960,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                   number_conversion_kind ~from:(Typing.var_type types v) ~into:int_n
                 with
                 | Some kind -> (
-                    match ConvMap.find_opt (kind, v) !conv_to_var with
+                    match ConvTracker.find_opt (kind, v) !conv_to_var with
                     | Some tmp -> tmp
                     | None -> v)
                 | None -> v
@@ -1908,7 +1972,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
                   number_conversion_kind ~from:(Typing.var_type types v) ~into:int_n
                 with
                 | Some kind -> (
-                    match ConvMap.find_opt (kind, v) !conv_to_var with
+                    match ConvTracker.find_opt (kind, v) !conv_to_var with
                     | Some tmp -> tmp
                     | None -> v)
                 | None -> v
@@ -1922,7 +1986,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
         let new_block =
           { block with body = List.rev !inserted_rev @ List.rev !body_rev; branch }
         in
-        conv_out_map := Addr.Map.add pc !conv_to_var !conv_out_map;
+        conv_out_map := Addr.Map.add pc (ConvTracker.to_map !conv_to_var) !conv_out_map;
         result := Addr.Map.add pc new_block !result)
       rpo;
     (* Post-pass: patch block params and predecessor branches for phi insertions. *)
@@ -1974,7 +2038,7 @@ let process_function types conv_types entry fun_blocks return_type all_blocks =
           target_preds)
       !phi_info;
     let result = optimize_peephole_conversions !result preds in
-    let result = sink_partially_dead_conversions result all_blocks entry in
+    let result = sink_partially_dead_conversions result all_blocks entry preds in
     eliminate_param_conversions result types preds
 
 (* Entry point. Three steps:
