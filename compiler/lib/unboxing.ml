@@ -20,9 +20,6 @@
 (*
 Unboxing wrappers should be inlined
 
-Less aggressive variant: only apply if one branch / call site has an
-explicit tuple argument
-
 Also look at function calls to see whether we know more about a parameter.
 *)
 
@@ -268,6 +265,107 @@ let check_call_sites p tbl =
       | _ -> Some tuple)
     tbl;
   locations
+
+let check_eliminates_tuple p tbl =
+  (* 1. Collect all variables defined as Block literals *)
+  let is_block = ref Var.Set.empty in
+  let visited = BitSet.create' p.free_pc in
+  let rec collect pc =
+    if not (BitSet.mem visited pc)
+    then (
+      BitSet.set visited pc;
+      let block = Addr.Map.find pc p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (x, Block _) | Let (x, Constant (Tuple _)) ->
+              is_block := Var.Set.add x !is_block
+          | Let (_, Closure (_, (pc', _), _)) -> collect pc'
+          | _ -> ())
+        block.body;
+      Code.fold_children p.blocks pc (fun pc' () -> collect pc') ())
+  in
+  collect p.start;
+  let is_block = !is_block in
+  (* 2. Build reverse maps for efficient lookup *)
+  (* block_cands: target_pc -> (candidate var * position) list *)
+  let block_cands = ref Addr.Map.empty in
+  (* closure_cands: closure var -> (candidate var * position) list *)
+  let closure_cands = Var.Hashtbl.create 16 in
+  Var.Hashtbl.iter
+    (fun x tuple ->
+      match tuple.loc with
+      | Block pc ->
+          let block = Addr.Map.find pc p.blocks in
+          let i = Option.get (List.find_index ~f:(fun y -> Var.equal x y) block.params) in
+          block_cands :=
+            Addr.Map.update
+              pc
+              (function
+                | None -> Some [ x, i ]
+                | Some l -> Some ((x, i) :: l))
+              !block_cands
+      | Closure (f, params) ->
+          let i = Option.get (List.find_index ~f:(fun y -> Var.equal x y) params) in
+          let existing =
+            try Var.Hashtbl.find closure_cands f with Not_found -> []
+          in
+          Var.Hashtbl.replace closure_cands f ((x, i) :: existing))
+    tbl;
+  let block_cands = !block_cands in
+  (* 3. Traverse, check branches and call sites *)
+  let useful = ref Var.Set.empty in
+  let mark_useful_cont (pc', args) =
+    match Addr.Map.find pc' block_cands with
+    | lst ->
+        List.iter
+          ~f:(fun (x, pos) ->
+            if pos < List.length args && Var.Set.mem (List.nth args pos) is_block
+            then useful := Var.Set.add x !useful)
+          lst
+    | exception Not_found -> ()
+  in
+  let visited2 = BitSet.create' p.free_pc in
+  let rec check pc =
+    if not (BitSet.mem visited2 pc)
+    then (
+      BitSet.set visited2 pc;
+      let block = Addr.Map.find pc p.blocks in
+      List.iter
+        ~f:(fun i ->
+          match i with
+          | Let (_, Apply { f; args; exact = true; _ }) -> (
+              match Var.Hashtbl.find closure_cands f with
+              | lst ->
+                  List.iter
+                    ~f:(fun (x, pos) ->
+                      if pos < List.length args
+                         && Var.Set.mem (List.nth args pos) is_block
+                      then useful := Var.Set.add x !useful)
+                    lst
+              | exception Not_found -> ())
+          | Let (_, Closure (_, (pc', _), _)) -> check pc'
+          | _ -> ())
+        block.body;
+      (match block.branch with
+      | Branch cont -> mark_useful_cont cont
+      | Cond (_, c1, c2) ->
+          mark_useful_cont c1;
+          mark_useful_cont c2
+      | Switch (_, conts) -> Array.iter ~f:mark_useful_cont conts
+      | Pushtrap (c1, _, c2) ->
+          mark_useful_cont c1;
+          mark_useful_cont c2
+      | Poptrap cont -> mark_useful_cont cont
+      | Return _ | Raise _ | Stop -> ());
+      Code.fold_children p.blocks pc (fun pc' () -> check pc') ())
+  in
+  check p.start;
+  let useful = !useful in
+  (* 4. Filter *)
+  Var.Hashtbl.filter_map_inplace
+    (fun x tuple -> if Var.Set.mem x useful then Some tuple else None)
+    tbl
 
 let rewrite_blocks p tbl =
   let ops = Int.Hashtbl.create 16 in
@@ -535,6 +633,9 @@ let f p =
   (* Only unbox closure parameters when they have at least one known
      call site *)
   let locations = check_call_sites p tbl in
+  (* Only unbox when at least one call site / branch passes a Block
+     literal, so that we actually eliminate a tuple allocation *)
+  check_eliminates_tuple p tbl;
   if debug ()
   then (
     Format.eprintf "Unboxed tuples:@.";
