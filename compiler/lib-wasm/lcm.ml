@@ -728,26 +728,35 @@ let sink_partially_dead_conversions blocks all_blocks entry =
   if VarSet.is_empty conv_vars
   then blocks
   else
-    (* Collect conv result vars that are free in nested closure bodies.
-       These must not be removed or sunk, since their uses in the closure
-       body are invisible to the function-scoped liveness analysis. *)
+    (* Collect conv result vars that are free in nested closure bodies
+       (at any depth).  These must not be removed or sunk, since their uses
+       in the closure body are invisible to the function-scoped liveness
+       analysis. *)
     let escaping_vars =
       let escaped = ref VarSet.empty in
+      let rec scan_closure_bodies pc =
+        let closure_pcs = reachable_blocks all_blocks pc in
+        Addr.Set.iter
+          (fun cpc ->
+            let cblock = Addr.Map.find cpc all_blocks in
+            Freevars.iter_block_free_vars
+              (fun x ->
+                if VarSet.mem x conv_vars then escaped := VarSet.add x !escaped)
+              cblock;
+            (* Recurse into closures defined within this closure *)
+            List.iter
+              ~f:(function
+                | Let (_, Closure (_, (inner_pc, _), _)) ->
+                    scan_closure_bodies inner_pc
+                | _ -> ())
+              cblock.body)
+          closure_pcs
+      in
       Addr.Map.iter
         (fun _ block ->
           List.iter
             ~f:(function
-              | Let (_, Closure (_, (pc, _), _)) ->
-                  let closure_pcs = reachable_blocks all_blocks pc in
-                  Addr.Set.iter
-                    (fun cpc ->
-                      let cblock = Addr.Map.find cpc all_blocks in
-                      Freevars.iter_block_free_vars
-                        (fun x ->
-                          if VarSet.mem x conv_vars
-                          then escaped := VarSet.add x !escaped)
-                        cblock)
-                    closure_pcs
+              | Let (_, Closure (_, (pc, _), _)) -> scan_closure_bodies pc
               | _ -> ())
             block.body)
         blocks;
@@ -765,7 +774,8 @@ let sink_partially_dead_conversions blocks all_blocks entry =
       | Let (_, Field (x, _, _)) -> add_cv VarSet.empty x
       | Let (_, Block (_, arr, _, _)) ->
           Array.fold_left ~f:add_cv ~init:VarSet.empty arr
-      | Let (_, Closure _) -> VarSet.empty
+      | Let (_, Closure (_, (_, args), _)) ->
+          List.fold_left ~f:add_cv ~init:VarSet.empty args
       | Let (_, (Constant _ | Special _)) -> VarSet.empty
       | Assign (_, y) -> add_cv VarSet.empty y
       | Set_field (x, _, _, y) -> add_cv (add_cv VarSet.empty x) y
