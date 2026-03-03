@@ -650,6 +650,206 @@ let optimize_peephole_conversions blocks =
         { block with body; branch })
       blocks
 
+(* Phase 4: Partial Dead Code Elimination (PDE) for conversions.
+
+   After LCM and peephole cleanup, a conversion placed at a branch point may be
+   partially dead — used on some successor paths but not others. PDE sinks such
+   conversions to the paths where they are actually needed.
+
+   This is the dual of PRE: PRE hoists to eliminate redundancy, PDE sinks to
+   eliminate partial deadness. Only the simple case is handled: sink when the
+   result is live on exactly one successor edge, or remove when live on none. *)
+let sink_partially_dead_conversions blocks entry =
+  (* Collect conversion result variables *)
+  let conv_vars = ref VarSet.empty in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter
+        ~f:(function
+          | Let (v, Prim (p, [ Pv _ ])) -> (
+              match kind_of_prim p with
+              | Some _ -> conv_vars := VarSet.add v !conv_vars
+              | None -> ())
+          | _ -> ())
+        block.body)
+    blocks;
+  let conv_vars = !conv_vars in
+  if VarSet.is_empty conv_vars
+  then blocks
+  else
+    let is_conv v = VarSet.mem v conv_vars in
+    let add_cv acc v = if is_conv v then VarSet.add v acc else acc in
+    let add_pv acc = function Pv v -> add_cv acc v | Pc _ -> acc in
+    (* Collect conv result vars referenced in an instruction's operands *)
+    let used_in_instr i =
+      match i with
+      | Let (_, Prim (_, args)) -> List.fold_left ~f:add_pv ~init:VarSet.empty args
+      | Let (_, Apply { f; args; _ }) ->
+          List.fold_left ~f:add_cv ~init:(add_cv VarSet.empty f) args
+      | Let (_, Field (x, _, _)) -> add_cv VarSet.empty x
+      | Let (_, Block (_, arr, _, _)) ->
+          Array.fold_left ~f:add_cv ~init:VarSet.empty arr
+      | Let (_, Closure (fvs, (_, args), _)) ->
+          List.fold_left ~f:add_cv ~init:VarSet.empty (fvs @ args)
+      | Let (_, (Constant _ | Special _)) -> VarSet.empty
+      | Assign (_, y) -> add_cv VarSet.empty y
+      | Set_field (x, _, _, y) -> add_cv (add_cv VarSet.empty x) y
+      | Array_set (x, y, z) -> add_cv (add_cv (add_cv VarSet.empty x) y) z
+      | Offset_ref (x, _) -> add_cv VarSet.empty x
+      | Event _ -> VarSet.empty
+    in
+    let used_in_branch br =
+      let add_args acc args = List.fold_left ~f:add_cv ~init:acc args in
+      match br with
+      | Return y -> add_cv VarSet.empty y
+      | Raise (y, _) -> add_cv VarSet.empty y
+      | Branch (_, args) -> add_args VarSet.empty args
+      | Cond (v, (_, a1), (_, a2)) ->
+          add_args (add_args (add_cv VarSet.empty v) a1) a2
+      | Switch (v, targets) ->
+          Array.fold_left
+            ~f:(fun acc (_, args) -> add_args acc args)
+            ~init:(add_cv VarSet.empty v)
+            targets
+      | Pushtrap ((_, a1), _, (_, a2)) -> add_args (add_args VarSet.empty a1) a2
+      | Poptrap (_, args) -> add_args VarSet.empty args
+      | Stop -> VarSet.empty
+    in
+    (* Compute USE/DEF per block for backward liveness of conv result vars.
+       USE(B) = upward-exposed uses (referenced before defined in B).
+       DEF(B) = conv result vars defined in B. *)
+    let block_use_def =
+      Addr.Map.map
+        (fun block ->
+          let use = ref VarSet.empty in
+          let def = ref VarSet.empty in
+          List.iter
+            ~f:(fun i ->
+              let u = used_in_instr i in
+              use := VarSet.union !use (VarSet.diff u !def);
+              match i with
+              | Let (v, _) | Assign (v, _) ->
+                  if is_conv v then def := VarSet.add v !def
+              | _ -> ())
+            block.body;
+          let bu = used_in_branch block.branch in
+          use := VarSet.union !use (VarSet.diff bu !def);
+          !use, !def)
+        blocks
+    in
+    let preds = CFG.predecessors blocks in
+    (* Backward liveness fixpoint:
+       LIVE_OUT(B) = ∪ { LIVE_IN(S) | S ∈ successors(B) }
+       LIVE_IN(B)  = USE(B) ∪ (LIVE_OUT(B) \ DEF(B)) *)
+    let live_in = ref (Addr.Map.map (fun _ -> VarSet.empty) blocks) in
+    let wl =
+      ref
+        (Addr.Map.fold (fun pc _ acc -> Addr.Set.add pc acc) blocks Addr.Set.empty)
+    in
+    while not (Addr.Set.is_empty !wl) do
+      let pc = Addr.Set.max_elt !wl in
+      wl := Addr.Set.remove pc !wl;
+      let use_b, def_b = Addr.Map.find pc block_use_def in
+      let succs = CFG.successors blocks pc in
+      let live_out =
+        List.fold_left
+          ~f:(fun acc s -> VarSet.union acc (Addr.Map.find s !live_in))
+          ~init:VarSet.empty
+          succs
+      in
+      let new_li = VarSet.union use_b (VarSet.diff live_out def_b) in
+      if not (VarSet.equal (Addr.Map.find pc !live_in) new_li)
+      then (
+        live_in := Addr.Map.add pc new_li !live_in;
+        let ps = Addr.Map.find_opt pc preds |> Option.value ~default:[] in
+        List.iter ~f:(fun p -> wl := Addr.Set.add p !wl) ps)
+    done;
+    (* Sinking pass: RPO traversal (predecessors before successors). *)
+    let rpo =
+      Structure.blocks_in_reverse_post_order (Structure.build_graph blocks entry)
+    in
+    let result = ref blocks in
+    List.iter
+      ~f:(fun pc ->
+        let block = Addr.Map.find pc !result in
+        let succs = CFG.successors blocks pc in
+        if List.length succs >= 2
+        then (
+          let to_sink = ref [] in
+          let to_remove = ref VarSet.empty in
+          let body = block.body in
+          let body_arr = Array.of_list body in
+          let body_len = Array.length body_arr in
+          for idx = 0 to body_len - 1 do
+            match body_arr.(idx) with
+            | Let (v, Prim (p, [ Pv arg ])) when Option.is_some (kind_of_prim p) ->
+                (* Condition 1: v not used in B after the conversion *)
+                let used_after = ref false in
+                for j = idx + 1 to body_len - 1 do
+                  if VarSet.mem v (used_in_instr body_arr.(j)) then used_after := true
+                done;
+                if VarSet.mem v (used_in_branch block.branch) then used_after := true;
+                if not !used_after
+                then (
+                  (* Condition 3: v live on a strict subset of successor edges *)
+                  let succs_live =
+                    List.filter
+                      ~f:(fun s -> VarSet.mem v (Addr.Map.find s !live_in))
+                      succs
+                  in
+                  match succs_live with
+                  | [] ->
+                      (* Dead on all paths: remove *)
+                      to_remove := VarSet.add v !to_remove
+                  | [ target ] ->
+                      let target_block = Addr.Map.find target !result in
+                      (* Condition 4: arg ∉ target.params *)
+                      let arg_in_params =
+                        List.mem ~eq:Var.equal arg target_block.params
+                      in
+                      (* Condition 5: arg not killed after conversion in B *)
+                      let arg_killed = ref false in
+                      for j = idx + 1 to body_len - 1 do
+                        (match body_arr.(j) with
+                        | Let (w, _) | Assign (w, _) when Var.equal w arg ->
+                            arg_killed := true
+                        | _ -> ())
+                      done;
+                      if (not arg_in_params) && not !arg_killed
+                      then to_sink := (body_arr.(idx), target) :: !to_sink
+                  | _ -> (* live on multiple successors, don't sink *) ())
+            | _ -> ()
+          done;
+          if (not (List.is_empty !to_sink)) || not (VarSet.is_empty !to_remove)
+          then (
+            let sunk_vars =
+              List.fold_left
+                ~f:(fun acc (i, _) ->
+                  match i with Let (v, _) -> VarSet.add v acc | _ -> acc)
+                ~init:VarSet.empty
+                !to_sink
+            in
+            let remove_set = VarSet.union sunk_vars !to_remove in
+            let new_body =
+              List.filter
+                ~f:(function
+                  | Let (v, _) -> not (VarSet.mem v remove_set)
+                  | _ -> true)
+                body
+            in
+            result := Addr.Map.add pc { block with body = new_body } !result;
+            (* Insert sunk instructions at the top of their target blocks.
+               to_sink is in reverse body order, so List.iter prepends them
+               back into the correct (original) order. *)
+            List.iter
+              ~f:(fun (instr, target_pc) ->
+                let tb = Addr.Map.find target_pc !result in
+                result :=
+                  Addr.Map.add target_pc { tb with body = instr :: tb.body } !result)
+              !to_sink)))
+      rpo;
+    !result
+
 (* Phase 2: LCM dataflow analysis and rewrite for a single function.
 
    Given the explicit conversion instructions produced by lowering, compute the
@@ -1252,7 +1452,8 @@ let process_function types conv_types entry fun_blocks return_type =
             result := Addr.Map.add pred_pc { pred_block with branch = new_branch } !result)
           target_preds)
       !phi_info;
-    optimize_peephole_conversions !result
+    let result = optimize_peephole_conversions !result in
+    sink_partially_dead_conversions result entry
 
 (* Entry point. Three steps:
    1. Decide which functions can return unboxed/untagged values for direct calls.
