@@ -253,7 +253,7 @@ let lower_conversions
     in
     lowered_args @ [ Let (x, Prim (p, args')) ]
   in
-  let get_from e =
+  let get_from ~into e =
     match e with
     | Constant c -> Typing.constant_type c
     | Field (_, _, Float) -> Typing.Number (Typing.Float, Typing.Unboxed)
@@ -264,7 +264,15 @@ let lower_conversions
         | Wasm_unbox_i64 -> Typing.Number (Typing.Int64, Typing.Unboxed)
         | Wasm_untag_int | Lt | Le | Ult | IsInt | Eq | Neq | Not | Vectlength ->
             Typing.Int Typing.Integer.Normalized
-        | Extern nm -> snd (Typing.prim_sig nm)
+        | Extern nm ->
+            let t = snd (Typing.prim_sig nm) in
+            (* For context-dependent prims (e.g. caml_ba_get_N), prim_sig
+               returns Top because the return type depends on argument types.
+               In that case, fall back to the variable's type from the typing
+               pass, which was computed with full context. This avoids
+               inserting spurious conversions when generate.ml produces
+               optimised code matching the variable's type directly. *)
+            if Poly.equal t Typing.Top then into else t
         | _ -> Typing.Top)
     | Apply { f; _ } -> Typing.return_type types f
     | _ -> Typing.Top
@@ -301,8 +309,8 @@ let lower_conversions
           | Prim (p, args) -> lower_prim x p args
           | _ -> [ Let (x, e) ]
         in
-        let from = get_from e in
         let into = Typing.var_type types x in
+        let from = get_from ~into e in
         let lowered, _ =
           match number_conversion_kind ~from ~into with
           | Some kind ->
