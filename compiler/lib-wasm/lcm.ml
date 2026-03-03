@@ -1327,23 +1327,23 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
                         | Some qi -> Param qi
                         | None -> Var q
                       in
-                      let key = pred_pc, pred_origin in
-                      let acc' = AddrOriginSet.add key acc in
-                      if AddrOriginSet.mem key visiting
-                      then
-                        (* Cycle: assume shadow will be there *)
-                        check_conts rest_conts acc'
-                      else
-                        match
-                          can_supply
-                            pred_pc
-                            pred_origin
-                            kind
-                            (AddrOriginSet.add key visiting)
-                        with
-                        | None -> None
-                        | Some more ->
-                            check_conts rest_conts (AddrOriginSet.union acc' more)))
+                          let key = pred_pc, pred_origin in
+                          let acc' = AddrOriginSet.add key acc in
+                          if AddrOriginSet.mem key visiting
+                          then
+                            (* Cycle: assume shadow will be there *)
+                            check_conts rest_conts acc'
+                          else
+                            match
+                              can_supply
+                                pred_pc
+                                pred_origin
+                                kind
+                                (AddrOriginSet.add key visiting)
+                            with
+                            | None -> None
+                            | Some more ->
+                                check_conts rest_conts (AddrOriginSet.union acc' more)))
             in
             match check_conts conts acc_shadows with
             | None -> None
@@ -1386,6 +1386,13 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
               | None -> Var param_var
             in
             let initial_key = pc, initial_origin in
+            (* Skip Var-origin candidates: empirically they never succeed
+               and the DFS exploration is very expensive (3122 candidates,
+               0 successes on ocamlc). Param-origin candidates may still
+               recurse through Var sub-origins internally. *)
+            match initial_origin with
+            | Var _ -> ()
+            | Param _ -> (
             match
               can_supply
                 pc
@@ -1491,7 +1498,7 @@ let eliminate_param_conversions blocks types preds ~(st : lcm_stats) =
                         in
                         result := Addr.Map.add pred_pc { pb with branch = br } !result)
                       bpc_preds)
-                  shadow_vars)
+                  shadow_vars))
         | _ -> ())
     candidates;
   (* Apply all substitutions in a single pass *)
