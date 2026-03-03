@@ -2190,17 +2190,33 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
             | Typing.Tuple _ | Typing.Bigarray _ | Typing.Bot -> ())
       | None -> ())
     ();
-  (* Collect function entry points *)
-  let fun_entries = ref [ None, p.start ] in
+  (* Collect function entry points, recording the defining block PC for closures *)
+  let fun_entries = ref [ None, p.start, None ] in
   Addr.Map.iter
-    (fun _ block ->
+    (fun def_pc block ->
       List.iter
         ~f:(function
           | Let (x, Closure (_, (pc, _), _)) ->
-              fun_entries := (Some x, pc) :: !fun_entries
+              fun_entries := (Some x, pc, Some def_pc) :: !fun_entries
           | _ -> ())
         block.body)
     p.blocks;
+  (* Precompute per-function block submaps via DFS.
+     Each function's blocks are disjoint, so total work is O(N log N). *)
+  let fun_block_tbl = Hashtbl.create (List.length !fun_entries) in
+  List.iter
+    ~f:(fun (_, entry, _) ->
+      let visited = ref Addr.Map.empty in
+      let rec visit pc =
+        if not (Addr.Map.mem pc !visited)
+        then (
+          let block = Addr.Map.find pc p.blocks in
+          visited := Addr.Map.add pc block !visited;
+          List.iter ~f:visit (CFG.successors p.blocks pc))
+      in
+      visit entry;
+      Hashtbl.add fun_block_tbl entry !visited)
+    !fun_entries;
   (* Process each function independently to avoid cross-function variable leakage
      in the data flow analysis. *)
   let conv_types = ref ConvMap.empty in
@@ -2208,17 +2224,14 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
   let free_pc = ref p.free_pc in
   let start = ref p.start in
   List.iter
-    ~f:(fun (name_opt, entry) ->
+    ~f:(fun (name_opt, entry, def_pc_opt) ->
       let ts = tick () in
       let return_type =
         match name_opt with
         | Some f -> Typing.return_type types f
         | None -> Typing.Top
       in
-      let fun_block_pcs = reachable_blocks !blocks entry in
-      let fun_blocks =
-        Addr.Map.filter (fun pc _ -> Addr.Set.mem pc fun_block_pcs) !blocks
-      in
+      let fun_blocks = Hashtbl.find fun_block_tbl entry in
       let t0 = tick () in
       st.time_setup <- st.time_setup +. (t0 -. ts);
       let fun_blocks =
@@ -2250,23 +2263,20 @@ let f (p : program) (types : Typing.t) ~(global_flow_info : Global_flow.info) ~f
               { params = new_params; body = []; branch = Branch (entry, new_params) }
             in
             let fun_blocks = Addr.Map.add new_entry_pc new_entry_block fun_blocks in
-            (* Update the Closure instruction in the parent blocks to
+            (* Update the Closure instruction in the defining block to
                target the new entry block *)
-            (match name_opt with
-            | Some _ ->
-                blocks :=
-                  Addr.Map.map
-                    (fun block ->
-                      { block with
-                        body =
-                          List.map
-                            ~f:(function
-                              | Let (x, Closure (fv, (pc, args), cc)) when pc = entry ->
-                                  Let (x, Closure (fv, (new_entry_pc, args), cc))
-                              | i -> i)
-                            block.body
-                      })
-                    !blocks
+            (match def_pc_opt with
+            | Some def_pc ->
+                let def_block = Addr.Map.find def_pc !blocks in
+                let new_body =
+                  List.map
+                    ~f:(function
+                      | Let (x, Closure (fv, (pc, args), cc)) when pc = entry ->
+                          Let (x, Closure (fv, (new_entry_pc, args), cc))
+                      | i -> i)
+                    def_block.body
+                in
+                blocks := Addr.Map.add def_pc { def_block with body = new_body } !blocks
             | None ->
                 (* Program start — update start pc *)
                 start := new_entry_pc);
