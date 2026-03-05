@@ -58,20 +58,10 @@ let iter_instr_free_vars f i =
   | Event _ -> ()
 
 let iter_last_free_var f l =
-  match l with
-  | Return x | Raise (x, _) -> f x
-  | Stop -> ()
-  | Branch cont | Poptrap cont -> iter_cont_free_vars f cont
-  | Cond (x, cont1, cont2) ->
-      f x;
-      iter_cont_free_vars f cont1;
-      iter_cont_free_vars f cont2
-  | Switch (x, a1) ->
-      f x;
-      Array.iter a1 ~f:(fun c -> iter_cont_free_vars f c)
-  | Pushtrap (cont1, _, cont2) ->
-      iter_cont_free_vars f cont1;
-      iter_cont_free_vars f cont2
+  (match l with
+  | Return x | Raise (x, _) | Cond (x, _, _) | Switch (x, _) -> f x
+  | Stop | Branch _ | Poptrap _ | Pushtrap _ -> ());
+  iter_last_conts (iter_cont_free_vars f) l
 
 let iter_block_free_vars f block =
   List.iter block.body ~f:(fun i -> iter_instr_free_vars f i);

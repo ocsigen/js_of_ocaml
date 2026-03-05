@@ -222,17 +222,7 @@ let usages prog (global_info : Global_flow.info) scoped_live_vars :
         | Event _ | Set_field (_, _, _, _) | Offset_ref (_, _) | Array_set (_, _, _) -> ())
       block.body;
     (* Add uses from block branch *)
-    match block.branch with
-    | Return _ | Raise _ | Stop -> ()
-    | Branch cont -> add_cont_deps cont
-    | Cond (_, cont1, cont2) ->
-        add_cont_deps cont1;
-        add_cont_deps cont2
-    | Switch (_, a) -> Array.iter ~f:add_cont_deps a
-    | Pushtrap (cont, _, cont_h) ->
-        add_cont_deps cont;
-        add_cont_deps cont_h
-    | Poptrap cont -> add_cont_deps cont
+    iter_last_conts add_cont_deps block.branch
   in
   iter_with_scope prog (fun f block ->
       add_block_uses

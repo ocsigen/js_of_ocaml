@@ -100,21 +100,11 @@ let f (p : program) =
             mark_var not_bool_only worklist z
         | Event _ -> ());
     (* Classify terminator uses *)
-    match block.branch with
+    (match block.branch with
     | Return v | Raise (v, _) -> mark_var not_bool_only worklist v
-    | Stop -> ()
-    | Branch cont -> add_cont_edges cont
-    | Cond (_, cont1, cont2) ->
-        (* v is used as condition — bool context, don't mark *)
-        add_cont_edges cont1;
-        add_cont_edges cont2
-    | Switch (v, conts) ->
-        mark_var not_bool_only worklist v;
-        Array.iter conts ~f:add_cont_edges
-    | Pushtrap (cont1, _, cont2) ->
-        add_cont_edges cont1;
-        add_cont_edges cont2
-    | Poptrap cont -> add_cont_edges cont
+    | Switch (v, _) -> mark_var not_bool_only worklist v
+    | Stop | Branch _ | Cond _ | Pushtrap _ | Poptrap _ -> ());
+    iter_last_conts add_cont_edges block.branch
   in
   (* Process all blocks *)
   Addr.Map.iter process_block p.blocks;

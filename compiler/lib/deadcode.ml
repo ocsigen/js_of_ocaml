@@ -120,20 +120,11 @@ and mark_reachable st pc =
             mark_var st y;
             mark_var st z
         | Offset_ref (x, _) -> mark_var st x);
-    match block.branch with
+    (match block.branch with
     | Return x | Raise (x, _) -> mark_var st x
-    | Stop -> ()
-    | Branch cont | Poptrap cont -> mark_cont_reachable st cont
-    | Cond (x, cont1, cont2) ->
-        mark_var st x;
-        mark_cont_reachable st cont1;
-        mark_cont_reachable st cont2
-    | Switch (x, a1) ->
-        mark_var st x;
-        Array.iter a1 ~f:(fun cont -> mark_cont_reachable st cont)
-    | Pushtrap (cont1, _, cont2) ->
-        mark_cont_reachable st cont1;
-        mark_cont_reachable st cont2)
+    | Cond (x, _, _) | Switch (x, _) -> mark_var st x
+    | Stop | Branch _ | Poptrap _ | Pushtrap _ -> ());
+    iter_last_conts (mark_cont_reachable st) block.branch)
 
 (****)
 
@@ -165,16 +156,7 @@ let filter_closure blocks st i =
       Let (x, Closure (l, filter_cont blocks st cont, gloc))
   | _ -> i
 
-let filter_live_last blocks st l =
-  match l with
-  | Return _ | Raise _ | Stop -> l
-  | Branch cont -> Branch (filter_cont blocks st cont)
-  | Cond (x, cont1, cont2) ->
-      Cond (x, filter_cont blocks st cont1, filter_cont blocks st cont2)
-  | Switch (x, a1) -> Switch (x, Array.map a1 ~f:(fun cont -> filter_cont blocks st cont))
-  | Pushtrap (cont1, x, cont2) ->
-      Pushtrap (filter_cont blocks st cont1, x, filter_cont blocks st cont2)
-  | Poptrap cont -> Poptrap (filter_cont blocks st cont)
+let filter_live_last blocks st l = map_last_conts (filter_cont blocks st) l
 
 (****)
 
@@ -254,17 +236,7 @@ let merge_blocks p =
           | Let (_, Closure (_, cont, _)) -> mark_cont cont
           | Assign (x, _) -> assigned := Var.Set.add x !assigned
           | _ -> ());
-        match branch with
-        | Branch cont -> mark_cont cont
-        | Cond (_, cont1, cont2) ->
-            mark_cont cont1;
-            mark_cont cont2
-        | Switch (_, a1) -> Array.iter ~f:mark_cont a1
-        | Pushtrap (cont1, _, cont2) ->
-            mark_cont cont1;
-            mark_cont cont2
-        | Poptrap cont -> mark_cont cont
-        | Return _ | Raise _ | Stop -> ())
+        iter_last_conts mark_cont branch)
       p.blocks
   in
   let p =
@@ -444,17 +416,7 @@ let f pure_funs ({ blocks; _ } as p : Code.program) =
           | Assign (x, y) -> add_def defs x (Var y)
           | Event _ | Set_field (_, _, _, _) | Array_set (_, _, _) | Offset_ref (_, _) ->
               ());
-      match block.branch with
-      | Return _ | Raise _ | Stop -> ()
-      | Branch cont -> add_cont_dep blocks defs cont
-      | Cond (_, cont1, cont2) ->
-          add_cont_dep blocks defs cont1;
-          add_cont_dep blocks defs cont2
-      | Switch (_, a1) -> Array.iter a1 ~f:(fun cont -> add_cont_dep blocks defs cont)
-      | Pushtrap (cont, _, cont_h) ->
-          add_cont_dep blocks defs cont_h;
-          add_cont_dep blocks defs cont
-      | Poptrap cont -> add_cont_dep blocks defs cont)
+      iter_last_conts (add_cont_dep blocks defs) block.branch)
     blocks;
   let st =
     { live

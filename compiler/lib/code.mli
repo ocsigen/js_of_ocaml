@@ -286,6 +286,12 @@ val fold_closures_outermost_first :
     outermost closures first. Unlike with {!fold_closures}, only the closures
     reachable from [p.start] are considered. *)
 
+val iter_last_conts : (cont -> unit) -> last -> unit
+
+val fold_last_conts : (cont -> 'a -> 'a) -> last -> 'a -> 'a
+
+val map_last_conts : (cont -> cont) -> last -> last
+
 val fold_children : 'c fold_blocs
 
 val fold_children_skip_try_body : 'c fold_blocs

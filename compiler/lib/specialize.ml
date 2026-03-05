@@ -173,15 +173,14 @@ end = struct
   let instrs s d l = List.map l ~f:(fun i -> instr s d i)
 
   let last s l =
+    let l = map_last_conts (subst_cont s) l in
     match l with
-    | Stop -> l
-    | Branch cont -> Branch (subst_cont s cont)
-    | Pushtrap (cont1, x, cont2) -> Pushtrap (subst_cont s cont1, s x, subst_cont s cont2)
     | Return x -> Return (s x)
     | Raise (x, k) -> Raise (s x, k)
-    | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
-    | Switch (x, conts) -> Switch (s x, Array.map conts ~f:(fun cont -> subst_cont s cont))
-    | Poptrap cont -> Poptrap (subst_cont s cont)
+    | Cond (x, cont1, cont2) -> Cond (s x, cont1, cont2)
+    | Switch (x, a) -> Switch (s x, a)
+    | Pushtrap (cont1, x, cont2) -> Pushtrap (cont1, s x, cont2)
+    | Stop | Branch _ | Poptrap _ -> l
 
   let block s d block =
     let params = List.map block.params ~f:s in

@@ -80,22 +80,7 @@ let rewrite_cont relevant_vars ref_contents (pc', args) =
   pc', List.map ~f:snd (Var.Map.bindings vars) @ args
 
 let rewrite_branch relevant_vars ref_contents branch =
-  match branch with
-  | Return _ | Raise _ | Stop -> branch
-  | Branch cont -> Branch (rewrite_cont relevant_vars ref_contents cont)
-  | Cond (x, cont, cont') ->
-      Cond
-        ( x
-        , rewrite_cont relevant_vars ref_contents cont
-        , rewrite_cont relevant_vars ref_contents cont' )
-  | Switch (x, a) ->
-      Switch (x, Array.map ~f:(fun cont -> rewrite_cont relevant_vars ref_contents cont) a)
-  | Pushtrap (cont, x, cont') ->
-      Pushtrap
-        ( rewrite_cont relevant_vars ref_contents cont
-        , x
-        , rewrite_cont relevant_vars ref_contents cont' )
-  | Poptrap cont -> Poptrap (rewrite_cont relevant_vars ref_contents cont)
+  map_last_conts (rewrite_cont relevant_vars ref_contents) branch
 
 let rewrite_function p ~unboxed_refs pc subst =
   let g = Structure.(dominator_tree (build_graph p.blocks pc)) in

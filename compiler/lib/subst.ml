@@ -53,15 +53,13 @@ module Excluding_Binders = struct
   let instrs s l = List.map l ~f:(fun i -> instr s i)
 
   let last s l =
+    let l = map_last_conts (subst_cont s) l in
     match l with
-    | Stop -> l
-    | Branch cont -> Branch (subst_cont s cont)
-    | Pushtrap (cont1, x, cont2) -> Pushtrap (subst_cont s cont1, x, subst_cont s cont2)
     | Return x -> Return (s x)
     | Raise (x, k) -> Raise (s x, k)
-    | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
-    | Switch (x, a1) -> Switch (s x, Array.map a1 ~f:(fun cont -> subst_cont s cont))
-    | Poptrap cont -> Poptrap (subst_cont s cont)
+    | Cond (x, cont1, cont2) -> Cond (s x, cont1, cont2)
+    | Switch (x, a) -> Switch (s x, a)
+    | Stop | Branch _ | Poptrap _ | Pushtrap _ -> l
 
   let block s block =
     { params = block.params; body = instrs s block.body; branch = last s block.branch }
@@ -140,15 +138,14 @@ module Including_Binders = struct
   let instrs s l = List.map l ~f:(fun i -> instr s i)
 
   let last s l =
+    let l = map_last_conts (subst_cont s) l in
     match l with
-    | Stop -> l
-    | Branch cont -> Branch (subst_cont s cont)
-    | Pushtrap (cont1, x, cont2) -> Pushtrap (subst_cont s cont1, s x, subst_cont s cont2)
     | Return x -> Return (s x)
     | Raise (x, k) -> Raise (s x, k)
-    | Cond (x, cont1, cont2) -> Cond (s x, subst_cont s cont1, subst_cont s cont2)
-    | Switch (x, conts) -> Switch (s x, Array.map conts ~f:(fun cont -> subst_cont s cont))
-    | Poptrap cont -> Poptrap (subst_cont s cont)
+    | Cond (x, cont1, cont2) -> Cond (s x, cont1, cont2)
+    | Switch (x, a) -> Switch (s x, a)
+    | Pushtrap (cont1, x, cont2) -> Pushtrap (cont1, s x, cont2)
+    | Stop | Branch _ | Poptrap _ -> l
 
   let block s block =
     { params = List.map block.params ~f:s
@@ -187,16 +184,14 @@ module Including_Binders = struct
     let instrs m s l = List.map l ~f:(fun i -> instr m s i)
 
     let last m s l =
+      let l = map_last_conts (subst_cont m s) l in
       match l with
-      | Stop -> l
-      | Branch cont -> Branch (subst_cont m s cont)
-      | Pushtrap (cont1, x, cont2) ->
-          Pushtrap (subst_cont m s cont1, s x, subst_cont m s cont2)
       | Return x -> Return (s x)
       | Raise (x, k) -> Raise (s x, k)
-      | Cond (x, cont1, cont2) -> Cond (s x, subst_cont m s cont1, subst_cont m s cont2)
-      | Switch (x, a1) -> Switch (s x, Array.map a1 ~f:(fun cont -> subst_cont m s cont))
-      | Poptrap cont -> Poptrap (subst_cont m s cont)
+      | Cond (x, cont1, cont2) -> Cond (s x, cont1, cont2)
+      | Switch (x, a) -> Switch (s x, a)
+      | Pushtrap (cont1, x, cont2) -> Pushtrap (cont1, s x, cont2)
+      | Stop | Branch _ | Poptrap _ -> l
 
     let block m s block =
       { params = List.map ~f:s block.params

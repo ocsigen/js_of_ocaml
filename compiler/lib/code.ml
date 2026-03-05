@@ -742,22 +742,36 @@ let poptraps blocks pc =
   in
   loop blocks pc Addr.Set.empty 0 Addr.Set.empty |> fst
 
+let iter_last_conts f l =
+  match l with
+  | Return _ | Raise _ | Stop -> ()
+  | Branch cont | Poptrap cont -> f cont
+  | Cond (_, cont1, cont2) | Pushtrap (cont1, _, cont2) ->
+      f cont1;
+      f cont2
+  | Switch (_, a) -> Array.iter a ~f
+
+let fold_last_conts f l accu =
+  match l with
+  | Return _ | Raise _ | Stop -> accu
+  | Branch cont | Poptrap cont -> f cont accu
+  | Cond (_, cont1, cont2) | Pushtrap (cont1, _, cont2) ->
+      let accu = f cont1 accu in
+      f cont2 accu
+  | Switch (_, a) -> Array.fold_right a ~init:accu ~f:(fun cont accu -> f cont accu)
+
+let map_last_conts f l =
+  match l with
+  | Return _ | Raise _ | Stop -> l
+  | Branch cont -> Branch (f cont)
+  | Poptrap cont -> Poptrap (f cont)
+  | Cond (x, cont1, cont2) -> Cond (x, f cont1, f cont2)
+  | Switch (x, a) -> Switch (x, Array.map a ~f)
+  | Pushtrap (cont1, x, cont2) -> Pushtrap (f cont1, x, f cont2)
+
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
-  match block.branch with
-  | Return _ | Raise _ | Stop -> accu
-  | Branch (pc', _) | Poptrap (pc', _) -> f pc' accu
-  | Pushtrap ((pc', _), _, (pc_h, _)) ->
-      let accu = f pc' accu in
-      let accu = f pc_h accu in
-      accu
-  | Cond (_, (pc1, _), (pc2, _)) ->
-      let accu = f pc1 accu in
-      let accu = f pc2 accu in
-      accu
-  | Switch (_, a1) ->
-      let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a1 in
-      accu
+  fold_last_conts (fun (pc', _) accu -> f pc' accu) block.branch accu
 
 let fold_children_skip_try_body blocks pc f accu =
   let block = Addr.Map.find pc blocks in

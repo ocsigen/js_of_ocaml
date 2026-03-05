@@ -76,18 +76,7 @@ let program_deps { blocks; _ } =
               add_dep deps x y;
               add_def vars defs x y
           | Event _ | Set_field _ | Array_set _ | Offset_ref _ -> ());
-      match block.branch with
-      | Return _ | Raise _ | Stop -> ()
-      | Branch cont -> cont_deps blocks vars deps defs cont
-      | Cond (_, cont1, cont2) ->
-          cont_deps blocks vars deps defs cont1;
-          cont_deps blocks vars deps defs cont2
-      | Switch (_, a1) ->
-          Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
-      | Pushtrap (cont, _, cont_h) ->
-          cont_deps blocks vars deps defs cont_h;
-          cont_deps blocks vars deps defs cont
-      | Poptrap cont -> cont_deps blocks vars deps defs cont)
+      iter_last_conts (cont_deps blocks vars deps defs) block.branch)
     blocks;
   vars, deps, defs
 
