@@ -8,34 +8,51 @@
 
    Many of these conversions are redundant or could be hoisted out of loops. For example,
    a loop that repeatedly unboxes a float from an invariant variable will emit the same
-   unbox on every iteration. LCM eliminates this redundancy.
-
-   The pass works in two phases:
+   unbox on every iteration. This pass eliminates such redundancy through five phases,
+   run independently on each function to avoid cross-function variable references.
 
    1. **Lowering** ([lower_conversions]): Materialises implicit representation mismatches
       as explicit IR primitives (Wasm_box_*, Wasm_unbox_*, Wasm_tag_int, Wasm_untag_int).
       After this phase, every conversion is a visible instruction that can be analysed.
 
-   2. **LCM optimisation** ([process_function]): Applies the classical Knoop-Ruthing-Steffen
-      Lazy Code Motion algorithm to these conversion instructions. LCM finds the optimal
-      placement: as early as necessary (to eliminate redundancy) but as late as possible
-      (to avoid lengthening lifetimes or executing speculatively). The five dataflow
-      analyses are:
+   2. **LCM dataflow and rewrite** ([process_function]): Applies the classical
+      Knoop-Ruthing-Steffen Lazy Code Motion algorithm. LCM finds the optimal placement:
+      as early as necessary (to eliminate redundancy) but as late as possible (to avoid
+      lengthening lifetimes or executing speculatively). The five dataflow analyses are:
         - Anticipatability: can the conversion be moved to this point?
         - Availability: has the conversion already been computed on all paths?
         - Earliest = anticipated but not yet available
         - Delayability: can we push earliest placements further down?
         - Latest = last point where a delayed insertion is still correct
         - Isolated: is the conversion used only once after insertion?
-      After computing optimal placements, the rewrite pass inserts conversions at
-      [latest \ isolated] points and substitutes redundant occurrences with the
-      hoisted result.
+      The rewrite pass inserts conversions at [latest \ isolated] points and substitutes
+      redundant occurrences with the hoisted result.
 
    3. **Peephole cleanup** ([optimize_peephole_conversions]): Eliminates inverse conversion
-      pairs (e.g. box(unbox(x)) -> x) that may arise from the LCM rewrite.
+      pairs (e.g. box(unbox(x)) → x) that may arise from the LCM rewrite. Also propagates
+      conversion info through block parameters so that pairs split across block boundaries
+      are detected.
 
-   The analysis runs independently on each function to avoid cross-function variable
-   references in inserted instructions.
+   4. **Partial dead code elimination** ([sink_partially_dead_conversions]): After LCM and
+      peephole cleanup, a conversion placed at a branch point may be partially dead — used
+      on some successor paths but not others. PDE sinks such conversions to the paths where
+      they are actually needed, or removes them when dead on all paths. This is the dual of
+      PRE: PRE hoists to eliminate redundancy, PDE sinks to eliminate partial deadness. The
+      pass iterates to a fixpoint since sinking may expose further partial deadness.
+
+   5. **Parameter widening** ([eliminate_param_conversions]): When a block converts a value
+      that arrives as a block parameter, widening threads the already-converted value as an
+      additional "shadow" parameter, eliminating the conversion. This handles patterns like
+      a loop header that receives a boxed float and immediately unboxes it: by adding an
+      unboxed parameter, the box-unbox pair across the loop back-edge is eliminated. A DFS
+      checks that all predecessors can supply the converted value (via inverse pairs or
+      pre-computed results), accumulating shadow parameter slots along the chain. Cycles
+      are handled optimistically.
+
+   The phases are ordered so that each feeds into the next: LCM creates optimal placements
+   but may introduce inverse pairs; peephole cleans those up; PDE sinks surviving
+   conversions closer to their uses, which may push them into block-parameter positions
+   that widening can then eliminate.
 
    Reference: J. Knoop, O. Ruthing, B. Steffen, "Lazy Code Motion", PLDI 1992. *)
 
