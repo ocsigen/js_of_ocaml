@@ -201,10 +201,10 @@ module List = struct
 
   let append l1 l2 = count_append l1 l2 0 [@@if ocaml_version < (5, 1, 0)]
 
-  let find_index p =
+  let find_index ~f =
     let rec aux i = function
       | [] -> None
-      | a :: l -> if p a then Some i else aux (i + 1) l
+      | a :: l -> if f a then Some i else aux (i + 1) l
     in
     aux 0
   [@@if ocaml_version < (5, 1, 0)]
