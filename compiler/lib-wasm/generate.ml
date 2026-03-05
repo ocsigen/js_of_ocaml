@@ -76,7 +76,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let repr_type r : Typing.typ option =
     match r with
-    | Value -> None
+    | Value | Int Ref -> None
     | Float -> Some (Number (Float, Unboxed))
     | Float32 -> Some (Number (Float32, Unboxed))
     | Int Small -> Some (Int Small)
@@ -87,7 +87,7 @@ module Generate (Target : Target_sig.S) = struct
 
   let repr_import_type r =
     match r with
-    | Value -> Type.value
+    | Value | Int Ref -> Type.value
     | Float -> F64
     | Float32 -> F32
     | Int Small | Int32 | Nativeint -> I32

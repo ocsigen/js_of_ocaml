@@ -20,6 +20,7 @@ module Integer : sig
   type kind =
     | Small
     | Large
+    | Ref
 end
 
 type boxed_number =

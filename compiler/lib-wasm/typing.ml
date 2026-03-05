@@ -43,10 +43,12 @@ module Integer = struct
   type kind =
     | Small
     | Large
+    | Ref
 
   let join r r' =
     match r, r' with
     | Small, Small -> Small
+    | Ref, Ref -> Ref
     | _ -> Large
 end
 
@@ -219,7 +221,7 @@ module Domain = struct
 
   let box t =
     match t with
-    | Int _ -> Top
+    | Int _ -> Int Ref
     | Number (n, _) -> Number (n, Boxed)
     | _ -> t
 
@@ -233,7 +235,8 @@ module Domain = struct
           "int{%s}"
           (match k with
           | Small -> "small"
-          | Large -> "large")
+          | Large -> "large"
+          | Ref -> "ref")
     | Number (n, b) ->
         Format.fprintf
           f
