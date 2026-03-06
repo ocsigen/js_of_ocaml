@@ -34,7 +34,7 @@ open Code
 module VarPairTbl = Hashtbl.Make (struct
   type t = Var.t * Var.t
 
-  let hash (a, b) = Var.idx a + Var.idx b
+  let hash (a, b) = (Var.idx a * 65599) + Var.idx b
 
   let equal (a, b) (c, d) = Var.equal a c && Var.equal b d
 end)

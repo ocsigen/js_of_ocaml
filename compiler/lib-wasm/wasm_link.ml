@@ -275,7 +275,7 @@ module Write = struct
             byte ch 0x01;
             tabletype st ch typ
         | Mem l ->
-            byte ch 0x03;
+            byte ch 0x02;
             limits ch l
         | Global { mut; typ } ->
             byte ch 0x03;

@@ -583,13 +583,16 @@ let eval_instr update_count inline_constant ~target info i =
   | Let (x, Prim (Extern "caml_atomic_load_field", [ Pv o; f ])) -> (
       match the_int info f with
       | None -> [ i ]
-      | Some i -> [ Let (x, Field (o, Targetint.to_int_exn i, Non_float)) ])
+      | Some i ->
+          incr update_count;
+          [ Let (x, Field (o, Targetint.to_int_exn i, Non_float)) ])
   | Let (x, Prim (IsInt, [ y ])) -> (
       match is_int info y with
       | Unknown -> [ i ]
       | Y ->
           let c = Constant (bool' true) in
           Flow.Info.update_def info x c;
+          incr update_count;
           [ Let (x, c) ]
       | N ->
           let c = Constant (bool' false) in
