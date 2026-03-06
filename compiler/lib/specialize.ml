@@ -214,7 +214,15 @@ end = struct
     && List.equal ~eq:instr_equal a.body b.body
     && Poly.equal a.branch b.branch
 
-  let hash (x : block) = Hashtbl.hash x
+  let hash (x : block) =
+    let body =
+      List.filter
+        ~f:(function
+          | Event _ -> false
+          | _ -> true)
+        x.body
+    in
+    Hashtbl.hash { x with body }
 end
 
 module SBT = Hashtbl.Make (Simple_block)
