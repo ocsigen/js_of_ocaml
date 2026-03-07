@@ -146,6 +146,8 @@ module HofM (M: Map.S) : Hashtbl.SeededS with type key = M.key =
     let of_seq = Hashtbl.of_seq
     let add_seq = Hashtbl.add_seq
     let replace_seq = Hashtbl.replace_seq
+    let find_and_remove = Hashtbl.find_and_remove
+    let find_and_replace = Hashtbl.find_and_replace
   end
 
 module HS1 = HofM(MS)

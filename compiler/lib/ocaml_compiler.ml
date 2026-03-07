@@ -20,15 +20,24 @@ open! Stdlib
 
 let rec constant_of_const c : Code.constant =
   let open Lambda in
-  let open Asttypes in
   match c with
-  | Const_base (Const_int i) -> Int (Targetint.of_int_warning_on_overflow i)
-  | Const_base (Const_char c) -> Int (Targetint.of_int_exn (Char.code c))
-  | Const_base (Const_string (s, _, _)) -> String s
-  | Const_base (Const_float s) -> Float (Int64.bits_of_float (float_of_string s))
-  | Const_base (Const_int32 i) -> Int32 i
-  | Const_base (Const_int64 i) -> Int64 i
-  | Const_base (Const_nativeint i) -> NativeInt (Int32.of_nativeint_warning_on_overflow i)
+  | Const_base (Const_int i) [@if ocaml_version < (5, 5, 0)]
+  | Const_int i [@if ocaml_version >= (5, 5, 0)] -> Int (Targetint.of_int_warning_on_overflow i)
+  | Const_base (Const_char c)  [@if ocaml_version < (5, 5, 0)]
+| (Const_char c)  [@if ocaml_version >= (5, 5, 0)]
+    -> Int (Targetint.of_int_exn (Char.code c))
+  | Const_base (Const_string (s, _, _))  [@if ocaml_version < (5, 5, 0)]
+     -> String s
+  | Const_base (Const_float s)  [@if ocaml_version < (5, 5, 0)]
+    | (Const_float s)  [@if ocaml_version >= (5, 5, 0)]
+    -> Float (Int64.bits_of_float (float_of_string s))
+  | Const_base (Const_int32 i)  [@if ocaml_version < (5, 5, 0)]
+    | (Const_int32 i)  [@if ocaml_version >= (5, 5, 0)] -> Int32 i
+  | Const_base (Const_int64 i)  [@if ocaml_version < (5, 5, 0)]
+    | (Const_int64 i)  [@if ocaml_version >= (5, 5, 0)]
+    -> Int64 i
+  | Const_base (Const_nativeint i)  [@if ocaml_version < (5, 5, 0)]
+    | (Const_nativeint i)  [@if ocaml_version >= (5, 5, 0)] -> NativeInt (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
       let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
@@ -47,8 +56,9 @@ let rec is_module_in_summary deep ident' summary =
   (* Unknown *)
   | Env.Env_empty -> deep, Unknown
   (* Module *)
+  | Env.Env_not_aliasable (summary, ident) [@if ocaml_version >= (5,5,0)] -> if Ident.same ident ident' then deep, Module else is_module_in_summary (deep + 1) ident' summary
   | Env.Env_module (summary, ident, _, _)
-  | Env.Env_functor_arg (summary, ident)
+  | Env.Env_functor_arg (summary, ident) [@if ocaml_version < (5, 5, 0)]
   | Env.Env_persistent (summary, ident) ->
       if Ident.same ident ident'
       then deep, Module

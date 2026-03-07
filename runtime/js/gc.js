@@ -25,8 +25,15 @@ function caml_gc_counters(_unit) {
   return [254, 0, 0, 0];
 }
 //Provides: caml_gc_quick_stat
+//Version: < 5.5
 function caml_gc_quick_stat(_unit) {
   return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+}
+
+//Provides: caml_gc_quick_stat
+//Version: >= 5.5
+function caml_gc_quick_stat(_unit) {
+  return [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
 }
 
 //Provides: caml_gc_stat
@@ -86,6 +93,9 @@ function caml_memprof_discard(_t) {
   return 0;
 }
 
+//Provides: caml_memprof_is_sampling
+function caml_memprof_is_sampling(_unit) { return 0 }
+
 //Provides: caml_eventlog_resume
 //Version: < 5.0
 function caml_eventlog_resume(_unit) {
@@ -130,3 +140,14 @@ function caml_get_major_bucket(_n) {
 function caml_get_major_credit(_n) {
   return 0;
 }
+
+//Provides: caml_gc_tweak_get
+//Requires: caml_invalid_argument
+function caml_gc_tweak_get(_name) { caml_invalid_argument("Gc.Tweak: parameter not found") }
+
+//Provides: caml_gc_tweak_set
+//Requires: caml_invalid_argument
+function caml_gc_tweak_set(_name, _v) { caml_invalid_argument("Gc.Tweak: parameter not found") }
+
+//Provides: caml_gc_tweak_list_active
+function caml_gc_tweak_list_active(_unit) { return 0 }
