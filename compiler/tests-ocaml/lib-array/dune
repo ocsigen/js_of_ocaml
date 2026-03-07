@@ -9,3 +9,15 @@
   (>= %{ocaml_version} 5.2))
  (action
   (diff test_array.ml test_array.ml.corrected)))
+
+(rule
+ (target test_iarray.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:test_iarray.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
+ (action
+  (diff test_iarray.ml test_iarray.ml.corrected)))
