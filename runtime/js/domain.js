@@ -165,3 +165,6 @@ function caml_ml_domain_id(_unit) {
 function caml_ml_domain_cpu_relax(_unit) {
   return 0;
 }
+
+//Provides: caml_domain_count
+function caml_domain_count(_unit) { return 1 }

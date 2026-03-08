@@ -239,12 +239,13 @@ end = struct
   let find { events_by_pc; _ } pc =
     try
       let { event; _ } = Int.Hashtbl.find events_by_pc pc in
-      let l =
+      let l = try
         Ident.fold_name
           (fun ident i acc -> (event.ev_stacksize - i, ident) :: acc)
           event.ev_compenv.ce_stack
           []
         |> List.sort ~cmp:(fun (i, _) (j, _) -> compare i j)
+        with _ -> raise Not_found
       in
 
       l, event.ev_typenv
@@ -270,13 +271,14 @@ end = struct
         match env.ce_closure with
         | Not_in_closure -> raise Not_found
         | In_closure { entries; _ } ->
-            Ident.fold_name
+            try Ident.fold_name
               (fun ident ent acc ->
                 match ent with
                 | Function i -> (i / 3, ident) :: acc
                 | Free_variable _ -> acc)
               entries
               []
+            with _ -> raise Not_found
       in
       List.sort names ~cmp:(fun (i, _) (j, _) -> compare i j)
     with Not_found -> []

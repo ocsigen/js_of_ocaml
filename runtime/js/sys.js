@@ -405,6 +405,20 @@ function caml_sys_rev_convert_signal_number(signo) {
   return signo;
 }
 
+//Provides: caml_sys_proc_self_exe
+function caml_sys_proc_self_exe(_unit) { return 0 }
+
+//Provides: caml_sys_get_stdlib_dirs
+function caml_sys_get_stdlib_dirs(stdlib_default) {
+    return [ 0, stdlib_default, 0]
+}
+
+//Provides: caml_sys_const_standard_library_default
+//Requires: caml_string_of_jsstring
+function caml_sys_const_standard_library_default(_unit){
+    return caml_string_of_jsstring("/static/cmis/");
+}
+
 //Always
 //Requires: caml_fatal_uncaught_exception
 //If: !wasm
@@ -424,3 +438,5 @@ function caml_setup_uncaught_exception_handler() {
   }
 }
 caml_setup_uncaught_exception_handler();
+
+

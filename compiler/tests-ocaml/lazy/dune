@@ -9,6 +9,8 @@
   ; lazy7
   lazy8
   ; minor_major_force
+  lazy9
+  lazy10
   )
  (build_if
   (>= %{ocaml_version} 5.0))
