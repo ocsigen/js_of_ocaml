@@ -416,7 +416,7 @@ function caml_sys_get_stdlib_dirs(stdlib_default) {
 //Provides: caml_sys_const_standard_library_default
 //Requires: caml_string_of_jsstring
 function caml_sys_const_standard_library_default(_unit){
-    return caml_string_of_jsstring("/static/cmis");
+    return caml_string_of_jsstring("/static/cmis/");
 }
 
 //Always
