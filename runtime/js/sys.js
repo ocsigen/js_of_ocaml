@@ -224,9 +224,9 @@ function caml_sys_system_command(_cmd) {
 }
 
 //Provides: caml_sys_time mutable
-var caml_initial_time = new Date().getTime() * 0.001;
+var caml_initial_time = Date.now() * 0.001;
 function caml_sys_time() {
-  var now = new Date().getTime();
+  var now = Date.now();
   return now * 0.001 - caml_initial_time;
 }
 
@@ -248,7 +248,7 @@ function caml_sys_random_seed() {
       return [0, a[0], a[1], a[2], a[3]];
     }
   }
-  var now = new Date().getTime();
+  var now = Date.now();
   var x = now ^ (0xffffffff * Math.random());
   return [0, x];
 }
