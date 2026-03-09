@@ -68,7 +68,7 @@ let () =
   let current = Ocaml_version.current in
   if Ocaml_version.compare current [ 4; 13 ] < 0
   then failwith "OCaml version unsupported. Upgrade to OCaml 4.13 or newer."
-  else if Ocaml_version.compare current [ 5; 5 ] >= 0
+  else if Ocaml_version.compare current [ 5; 6 ] >= 0
   then failwith "OCaml version unsupported. Upgrade js_of_ocaml."
 
 let v = snd (of_string Ocaml_common.Config.exec_magic_number)

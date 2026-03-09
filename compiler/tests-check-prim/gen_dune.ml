@@ -9,6 +9,7 @@ type version =
   | `V5_3
   | `V5_4
   | `V5_5
+  | `V5_6
   ]
 
 let string_of_version : version -> string = function
@@ -20,6 +21,7 @@ let string_of_version : version -> string = function
   | `V5_3 -> "5.3"
   | `V5_4 -> "5.4"
   | `V5_5 -> "5.5"
+  | `V5_6 -> "5.6"
 
 let next_version : version -> version option = function
   | `V4_13 -> Some `V4_14
@@ -29,7 +31,8 @@ let next_version : version -> version option = function
   | `V5_2 -> Some `V5_3
   | `V5_3 -> Some `V5_4
   | `V5_4 -> Some `V5_5
-  | `V5_5 -> None
+  | `V5_5 -> Some `V5_6
+  | `V5_6 -> None
 
 type os_type =
   | Unix

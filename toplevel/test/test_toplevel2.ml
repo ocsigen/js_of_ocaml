@@ -1,3 +1,9 @@
+let () =
+  let open Js_of_ocaml.Js in
+  Unsafe.fun_call
+    (Unsafe.js_expr "require")
+    [| Unsafe.coerce (string "./stdlib.cmis.js") |]
+
 let () = Js_of_ocaml_toplevel.JsooTop.initialize ()
 
 let fmt = Format.std_formatter

@@ -18,6 +18,11 @@
   (run jsoo_mkcmis -o %{target} re)))
 
 (rule
+ (target stdlib.cmis.js)
+ (action
+  (run jsoo_mkcmis -o %{target} stdlib)))
+
+(rule
  (targets test_toplevel1.js)
  (action
   (run
@@ -58,7 +63,7 @@
 
 (rule
  (target test_toplevel2.actual)
- (deps test_toplevel2.js re.cmis.js)
+ (deps test_toplevel2.js stdlib.cmis.js re.cmis.js)
  (action
   (with-stdout-to
    %{target}
