@@ -71,3 +71,9 @@ function caml_dynlink_get_current_libs() {
   for (var i = 0; i < len; i++) a[i] = i;
   return a;
 }
+
+//Provides: caml_dynlink_parse_ld_conf
+//Version: >= 5.5
+function caml_dynlink_parse_ld_conf(_stdlib) {
+  return 0;
+}

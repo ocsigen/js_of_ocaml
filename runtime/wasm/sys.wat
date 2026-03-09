@@ -95,6 +95,10 @@
          (ref.cast (ref $block) (call $caml_js_to_string_array (call $argv)))
          (i32.const 1)))
 
+   (func (export "caml_sys_proc_self_exe")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
    (func (export "caml_sys_time") (export "caml_sys_time_include_children")
       (param (ref eq)) (result (ref eq))
       (struct.new $float (f64.mul (call $time) (f64.const 0.001))))
@@ -158,6 +162,17 @@
    (func (export "caml_sys_const_ostype_cygwin")
       (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_sys_const_standard_library_default")
+      (param (ref eq)) (result (ref eq))
+      (@string "/static/cmis"))
+
+   (func (export "caml_sys_get_stdlib_dirs")
+      (param $stdlib (ref eq)) (result (ref eq))
+      (array.new_fixed $block 3 (ref.i31 (i32.const 0))
+        (local.get $stdlib)
+        (ref.i31 (i32.const 0)))
+   )
 
    (@string $Unix "Unix")
    (@string $Win32 "Win32")

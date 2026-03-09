@@ -55,4 +55,5 @@ let () =
   | 5, 0 | 5, 1 | 5, 2 -> dump_file "toplevel_expect_test.ml-4.11"
   | 5, 3 -> dump_file "toplevel_expect_test.ml-5.3"
   | 5, 4 -> dump_file "toplevel_expect_test.ml-5.4"
+  | 5, 5 -> dump_file "toplevel_expect_test.ml-5.4"
   | _ -> failwith ("unsupported version " ^ Sys.ocaml_version)

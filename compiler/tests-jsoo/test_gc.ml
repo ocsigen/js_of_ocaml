@@ -34,6 +34,7 @@ let%expect_test "stat" =
   let s = Gc.stat () in
   let size = Obj.size (Obj.repr s) in
   (match size with
+  | 18 when ocaml_version >= (5, 5) -> ok ()
   | 17 when ocaml_version >= (4, 12) -> ok ()
   | 16 when ocaml_version < (4, 12) -> ok ()
   | _ -> ko size);
@@ -43,6 +44,7 @@ let%expect_test "quick_stat" =
   let s = Gc.quick_stat () in
   let size = Obj.size (Obj.repr s) in
   (match size with
+  | 18 when ocaml_version >= (5, 5) -> ok ()
   | 17 when ocaml_version >= (4, 12) -> ok ()
   | 16 when ocaml_version < (4, 12) -> ok ()
   | _ -> ko size);
