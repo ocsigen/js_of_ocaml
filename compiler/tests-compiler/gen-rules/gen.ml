@@ -49,6 +49,7 @@ let prefix : string =
 type enabled_if =
   | GE5
   | GE52
+  | GE55
   | LT52
   | B64
   | NotOxCaml
@@ -58,6 +59,8 @@ type enabled_if =
 let lib_enabled_if = function
   | "obj" | "effects" -> GE5
   | "gh1051" -> B64
+  | "gh1494" -> GE55
+  | "gh1559" -> GE55
   | _ -> Any
 
 let test_enabled_if = function
@@ -82,6 +85,7 @@ let enabled_if = function
   | Any -> "true"
   | GE5 -> "(>= %{ocaml_version} 5)"
   | GE52 -> "(>= %{ocaml_version} 5.2)"
+  | GE55 -> "(>= %{ocaml_version} 5.5)"
   | LT52 -> "(< %{ocaml_version} 5.2)"
   | B64 -> "%{arch_sixtyfour}"
   | GE5NotOxCaml -> "(and (>= %{ocaml_version} 5) (not %{oxcaml_supported}))"

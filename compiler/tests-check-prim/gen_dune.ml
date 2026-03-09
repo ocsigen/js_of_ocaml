@@ -103,7 +103,7 @@ let rule bc ocaml_version os_type ocaml_variant =
 
 let () =
   let versions : (version * variant) list =
-    [ `V4_14, `Mainstream; `V5_4, `Mainstream; `V5_2, `OxCaml ]
+    [ `V4_14, `Mainstream; `V5_4, `Mainstream; `V5_5, `Mainstream; `V5_2, `OxCaml ]
   in
   set_binary_mode_out stdout true;
   List.iter

@@ -27,3 +27,33 @@
    %{env:WASM_OF_OCAML=false}))
  (action
   (diff test_array.ml test_array_wasm.ml.corrected)))
+
+(rule
+ (target test_iarray.ml.corrected)
+ (action
+  (run node %{dep:../expect.bc.js} %{dep:test_iarray.ml})))
+
+(rule
+ (alias runtest-js)
+ (enabled_if
+  (>= %{ocaml_version} 5.2))
+ (action
+  (diff test_iarray.ml test_iarray.ml.corrected)))
+
+(rule
+ (copy test_iarray.ml test_iarray_wasm.ml))
+
+(rule
+ (target test_iarray_wasm.ml.corrected)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_iarray_wasm.ml})))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} 5.2)
+   %{env:WASM_OF_OCAML=false}))
+ (action
+  (diff test_iarray.ml test_iarray_wasm.ml.corrected)))

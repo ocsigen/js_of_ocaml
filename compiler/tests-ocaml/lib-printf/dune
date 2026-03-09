@@ -5,3 +5,13 @@
   js
   wasm
   (best exe)))
+
+(tests
+ (names tlprintf)
+ (libraries ocaml_testing)
+ (build_if
+  (>= %{ocaml_version} 5.5))
+ (modes
+  js
+  wasm
+  (best exe)))
