@@ -132,11 +132,11 @@ function caml_parse_engine(tables, env, cmd, arg) {
 
   the_loop: for (;;) {
     switch (cmd) {
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
       case 0: //START:
-        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         state = 0;
         errflag = 0;
-      // fallthrough
+      // falls through
 
       case 6: //loop:
         n = tables.defred[state];
@@ -152,8 +152,8 @@ function caml_parse_engine(tables, env, cmd, arg) {
         break the_loop;
       /* The ML code calls the lexer and updates */
       /* symb_start and symb_end */
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
       case 1: //TOKEN_READ:
-        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         if (Array.isArray(arg)) {
           env[env_curr_char] = tables[tbl_transl_block][arg[0] + 1];
           env[env_lval] = arg[1];
@@ -162,10 +162,10 @@ function caml_parse_engine(tables, env, cmd, arg) {
           env[env_lval] = 0;
         }
         if (caml_parser_trace) print_token(state, arg);
-      // fallthrough
+      // falls through
 
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
       case 7: //testshift:
-        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         n1 = tables.sindex[state];
         n2 = n1 + env[env_curr_char];
         if (
@@ -193,7 +193,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           res = CALL_ERROR_FUNCTION;
           break the_loop;
         }
-      // fallthrough
+      // falls through
       /* The ML code calls the error function */
       case 5: //ERROR_DETECTED:
         if (errflag < 3) {
@@ -230,13 +230,13 @@ function caml_parse_engine(tables, env, cmd, arg) {
           continue the_loop;
         }
       // Unreachable
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
       case 8: //shift:
-        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         env[env_curr_char] = -1;
         if (errflag > 0) errflag--;
-      // fallthrough
+      // falls through
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
       case 9: //shift_recover:
-        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         if (caml_parser_trace)
           log("State " + state + ": shift to state " + tables.table[n2]);
         state = tables.table[n2];
@@ -245,7 +245,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           res = GROW_STACKS_1;
           break the_loop;
         }
-      // fallthrough
+      // falls through
       /* The ML code resizes the stacks */
       case 2: //STACKS_GROWN_1:
         env[env_s_stack][sp + 1] = state;
@@ -255,8 +255,8 @@ function caml_parse_engine(tables, env, cmd, arg) {
         cmd = loop;
         continue the_loop;
 
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
       case 10: //reduce:
-        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         if (caml_parser_trace) log("State " + state + ": reduce by rule " + n);
         var m = tables.len[n];
         env[env_asp] = sp;
@@ -279,7 +279,7 @@ function caml_parse_engine(tables, env, cmd, arg) {
           res = GROW_STACKS_2;
           break the_loop;
         }
-      // fallthrough
+      // falls through
       /* The ML code resizes the stacks */
       case 3: //STACKS_GROWN_2:
         res = COMPUTE_SEMANTIC_ACTION;
