@@ -31,4 +31,4 @@
    (:standard \ --Werror)
    --toplevel)
   (compilation_mode whole_program))
- (modes js))
+ (modes js)) ;; Can we have a version using wasm ?

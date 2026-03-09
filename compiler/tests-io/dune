@@ -79,7 +79,7 @@
 (tests
  (names non_ascii_filenames)
  (deps "accentué")
- (modes js)
+ (modes js) ;; Currently fails with wasmoo, can it be fixed ?
  (js_of_ocaml
   (compilation_mode whole_program)
   (flags
@@ -93,7 +93,7 @@
 (tests
  (names gh1856)
  (deps file.txt)
- (modes js)
+ (modes js wasm)
  (js_of_ocaml
   (compilation_mode whole_program)
   (flags
