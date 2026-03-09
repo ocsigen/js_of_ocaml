@@ -1,12 +1,13 @@
 {
-  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
   "files": {
-    "ignore": [
-      "benchmarks/sources/js",
-      "compiler/tests-full",
-      "compiler/tests-js-parser",
-      "examples/**/*.json",
-      "runtime/js/zstd.ts"
+    "includes": [
+      "**",
+      "!**/benchmarks/sources/js",
+      "!**/compiler/tests-full",
+      "!**/compiler/tests-js-parser",
+      "!**/examples/**/*.json",
+      "!**/runtime/js/zstd.ts"
     ]
   },
   "formatter": {
@@ -18,34 +19,44 @@
     "rules": {
       "recommended": true,
       "complexity": {
-        "useArrowFunction": "off"
+        "useArrowFunction": "off",
+        "noImportantStyles": "off",
+        "noCommaOperator": "off",
+        "noUselessEscapeInRegex": "error"
       },
       "correctness": {
         "noInnerDeclarations": "off",
         "noInvalidUseBeforeDeclaration": "off",
-        "noSwitchDeclarations": "off"
+        "noSwitchDeclarations": "off",
+        "noUnusedVariables": "off",
+        "noUnusedFunctionParameters": "off",
+        "useParseIntRadix": "off"
       },
-      "nursery": {
-        "noUselessEscapeInRegex": "error",
-        "noSubstr": "error"
-      },
+      "nursery": {},
       "style": {
-        "noCommaOperator": "off",
         "noParameterAssign": "off",
         "noUselessElse": "off",
-        "noVar": "off",
         "useExponentiationOperator": "off",
         "useSingleVarDeclarator": "off",
-        "useTemplate": "off"
+        "noSubstr": "error",
+        "useTemplate": "off",
+        "noDescendingSpecificity": "off"
       },
       "suspicious": {
         "noAssignInExpressions": "off",
-        "noRedeclare": "off"
+        "noUselessEscapeInString": "off",
+        "noVar": "off",
+        "noRedeclare": "off",
+        "noEmptyBlock": "off"
       }
     }
   },
-  "organizeImports": {
-    "enabled": true
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
   },
   "vcs": {
     "clientKind": "git",
