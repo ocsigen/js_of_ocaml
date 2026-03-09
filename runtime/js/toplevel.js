@@ -85,7 +85,7 @@ function jsoo_get_runtime_aliases() {
 
 //Provides: jsoo_toplevel_compile
 //Requires: caml_failwith
-var jsoo_toplevel_compile = undefined;
+var jsoo_toplevel_compile;
 
 //Provides: jsoo_toplevel_init_compile
 //Requires: jsoo_toplevel_compile

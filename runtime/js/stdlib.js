@@ -256,7 +256,7 @@ function caml_build_symbols(symb) {
 }
 
 //Provides: jsoo_toplevel_reloc
-var jsoo_toplevel_reloc = undefined;
+var jsoo_toplevel_reloc;
 
 //Provides: caml_register_global (const, shallow, const)
 //Requires: caml_global_data, caml_callback, caml_build_symbols
