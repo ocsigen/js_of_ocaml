@@ -409,17 +409,17 @@
       var main = "toplevel.js";
       for(var f in fields){
         var data = fields[f].split(/=/);
-        if(data[0] == "version"){
+        if(data[0] === "version"){
           version = data[1].replace(/%20|%2B/g,"+");
         }
-        else if (data[0] == "separate"){
+        else if (data[0] === "separate"){
           main = "toplevel.bc.js";
         }
       }
       function load_script(url){
         var fileref=document.createElement('script');
         fileref.setAttribute("type","text/javascript");
-        fileref.setAttribute("src", prefix+(version==""?"":(version+"/"))+url);
+        fileref.setAttribute("src", prefix+(version===""?"":(version+"/"))+url);
         document.getElementsByTagName("head")[0].appendChild(fileref);
       }
       load_script("exported-unit.cmis.js");
