@@ -379,7 +379,7 @@
       }
       return pad ? " " + s : s;
     },
-    gettimeofday: () => new Date().getTime() / 1000,
+    gettimeofday: () => Date.now() / 1000,
     times: () => {
       if (globalThis.process?.cpuUsage) {
         var t = globalThis.process.cpuUsage();

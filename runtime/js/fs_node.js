@@ -108,7 +108,7 @@ class MlNodeDevice {
   utimes(name, atime, mtime, raise_unix) {
     try {
       if (atime === 0 && mtime === 0) {
-        atime = new Date().getTime() / 1000;
+        atime = Date.now() / 1000;
         mtime = atime;
       }
       this.fs.utimesSync(this.nm(name), atime, mtime);
