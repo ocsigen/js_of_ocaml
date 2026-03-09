@@ -1,4 +1,6 @@
 (tests
  (names test issue9460)
  (libraries)
+ (build_if
+  (>= %{ocaml_version} 5.5))
  (modes js wasm))
