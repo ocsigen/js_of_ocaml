@@ -310,10 +310,10 @@ class MlBytes {
       case 8 /*BYTES | NOT_ASCII*/:
         return this.c;
       case 4: /* ARRAY */
+      // biome-ignore lint/suspicious/noFallthroughSwitchClause: falls through
       case 2 /* PARTIAL */:
-        // biome-ignore lint/suspicious/noFallthroughSwitchClause:
         caml_convert_string_to_bytes(this);
-      // fallthrough
+      // falls through
       case 0 /*BYTES | UNKNOWN*/:
         if (jsoo_is_ascii(this.c)) this.t = 9; /*BYTES | ASCII*/
         else this.t = 8; /*BYTES | NOT_ASCII*/

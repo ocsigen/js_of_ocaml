@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (js) => async (args) => {
-  // biome-ignore lint/suspicious/noRedundantUseStrict:
+  // biome-ignore lint/suspicious/noRedundantUseStrict: ..
   "use strict";
   const { link, src, generated, disable_effects } = args;
 
@@ -209,7 +209,7 @@
     delete: (x, y) => delete x[y],
     instanceof: (x, y) => x instanceof y,
     typeof: (x) => typeof x,
-    // biome-ignore lint/suspicious/noDoubleEquals:
+    // biome-ignore lint/suspicious/noDoubleEquals: ..
     equals: (x, y) => x == y,
     strict_equals: (x, y) => x === y,
     fun_call: (f, o, args) => f.apply(o, args),
