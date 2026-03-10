@@ -73,7 +73,8 @@ val the_shape_of :
   -> pure:Pure_fun.t
   -> blocks:bool
   -> Info.t
-  -> Code.Var.t
-  -> Shape.t
-(** Returns a function [get] where [get x] computes the shape of
-    variable [x]. Results are memoized across calls to [get]. *)
+  -> (Code.Var.t -> Shape.t) * (Code.Var.t -> Shape.t -> unit)
+(** Returns [(get, set)] where [get x] computes the shape of variable [x]
+    and [set x s] injects a shape for [x] into the internal cache (used to
+    register shapes of fresh variables introduced by specialization).
+    Results are memoized across calls to [get]. *)
