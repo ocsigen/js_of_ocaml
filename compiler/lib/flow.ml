@@ -667,7 +667,8 @@ let the_shape_of ~return_values ~pure ~blocks info =
         Var.Hashtbl.replace cache x s;
         s
   in
-  get
+  let set x s = Var.Hashtbl.replace cache x s in
+  get, set
 
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in

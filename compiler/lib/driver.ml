@@ -64,8 +64,14 @@ let inline profile p =
 let specialize_1 (p, info) =
   if debug () then Format.eprintf "Specialize...@.";
   let return_values = Code.Var.Map.empty in
-  let shape = Flow.the_shape_of ~return_values ~pure:Pure_fun.empty ~blocks:false info in
-  Specialize.f ~shape ~update_def:(fun x expr -> Flow.Info.update_def info x expr) p
+  let shape, set_shape =
+    Flow.the_shape_of ~return_values ~pure:Pure_fun.empty ~blocks:false info
+  in
+  Specialize.f
+    ~shape
+    ~set_shape
+    ~update_def:(fun x expr -> Flow.Info.update_def info x expr)
+    p
 
 let specialize_js (p, info) =
   if debug () then Format.eprintf "Specialize js...@.";
@@ -129,7 +135,9 @@ let collects_shapes ~shapes (p : Code.program) =
         let _, info = Flow.f p in
         let pure = Pure_fun.f p in
         let return_values = Code.return_values p in
-        let shape = Flow.the_shape_of ~return_values ~pure ~blocks:true info in
+        let shape, _set_shape =
+          Flow.the_shape_of ~return_values ~pure ~blocks:true info
+        in
         StringMap.filter_map
           (fun _ x ->
             let s = shape x in
@@ -183,6 +191,7 @@ let effects_and_exact_calls
             match Global_flow.function_arity info f with
             | None -> Shape.top
             | Some arity -> Shape.funct ~arity ~pure:false ~res:Shape.top)
+          ~set_shape:(fun _ _ -> ())
           ~update_def:(fun x expr -> Global_flow.update_def info x expr)
           p
       in

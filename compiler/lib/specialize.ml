@@ -35,7 +35,7 @@ let unknown_apply = function
   | Let (_, Apply { f = _; args = _; exact = false }) -> true
   | _ -> false
 
-let specialize_apply opt_count shape update_def =
+let specialize_apply opt_count shape set_shape update_def =
   let rec loop x f args shape loc (acc, free_pc, extra) =
     match shape.Shape.desc with
     | Top | Block _ -> Let (x, Apply { f; args; exact = false }) :: acc, free_pc, extra
@@ -71,6 +71,7 @@ let specialize_apply opt_count shape update_def =
           (* over application *)
           incr opt_count;
           let v = Code.Var.fresh () in
+          set_shape v res;
           let args, rest = List.take arity args in
           let exact_expr = Apply { f; args; exact = true } in
           let body =
@@ -84,9 +85,9 @@ let specialize_apply opt_count shape update_def =
     | Let (x, Apply { f; args; exact = false }) -> loop x f args (shape f) loc acc
     | _ -> i :: body_rev, free_pc, extra
 
-let specialize_instrs ~shape ~update_def opt_count p =
+let specialize_instrs ~shape ~set_shape ~update_def opt_count p =
   let blocks, free_pc =
-    let specialize_instrs = specialize_apply opt_count shape update_def in
+    let specialize_instrs = specialize_apply opt_count shape set_shape update_def in
     Addr.Map.fold
       (fun pc block (blocks, free_pc) ->
         if List.exists ~f:unknown_apply block.body
@@ -113,13 +114,15 @@ let specialize_instrs ~shape ~update_def opt_count p =
   in
   { p with blocks; free_pc }
 
-let f ~shape ~update_def p =
+let f ~shape ~set_shape ~update_def p =
   Code.invariant p;
   let previous_p = p in
   let t = Timer.make () in
   let opt_count = ref 0 in
   let p =
-    if Config.Flag.optcall () then specialize_instrs ~shape ~update_def opt_count p else p
+    if Config.Flag.optcall ()
+    then specialize_instrs ~shape ~set_shape ~update_def opt_count p
+    else p
   in
   if times () then Format.eprintf "  optcall: %a@." Timer.print t;
   if stats () then Format.eprintf "Stats - optcall: %d@." !opt_count;
