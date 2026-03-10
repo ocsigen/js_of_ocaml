@@ -1,5 +1,5 @@
 
-let () = Js_of_ocaml_toplevel.JsooTop.initialize ()
+let () = Js_of_ocaml_toplevel_common.JsooTop.initialize ()
 
 let () = Printexc.register_printer (fun x ->
              match Js_of_ocaml.Js_error.of_exn x with
