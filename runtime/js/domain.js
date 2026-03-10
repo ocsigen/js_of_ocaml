@@ -166,7 +166,7 @@ function caml_ml_domain_cpu_relax(_unit) {
   return 0;
 }
 
-//Provides: caml_domain_count
+//Provides: caml_domain_count const
 //Version: >= 5.5
 function caml_domain_count(_unit) {
   return 1;
