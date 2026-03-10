@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type t =
+type desc =
   | Top
   | Block of t list
   | Function of
@@ -25,6 +25,17 @@ type t =
       ; pure : bool
       ; res : t
       }
+
+and t =
+  { id : int
+  ; mutable desc : desc
+  }
+
+val top : t
+
+val block : t list -> t
+
+val funct : arity:int -> pure:bool -> res:t -> t
 
 val to_string : t -> string
 

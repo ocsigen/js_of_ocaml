@@ -19,7 +19,7 @@
 
 open! Stdlib
 
-type t =
+type desc =
   | Top
   | Block of t list
   | Function of
@@ -28,18 +28,38 @@ type t =
       ; res : t
       }
 
+and t =
+  { id : int
+  ; mutable desc : desc
+  }
+
+let next_id = ref 0
+
+let fresh_id () =
+  let id = !next_id in
+  incr next_id;
+  id
+
+let make desc = { id = fresh_id (); desc }
+
+let top = make Top
+
+let block fields = make (Block fields)
+
+let funct ~arity ~pure ~res = make (Function { arity; pure; res })
+
 let rec merge (u : t) (v : t) =
-  match u, v with
+  match u.desc, v.desc with
   | ( Function { arity = a1; pure = p1; res = r1 }
     , Function { arity = a2; pure = p2; res = r2 } ) ->
-      if a1 = a2 then Function { arity = a1; pure = p1 && p2; res = merge r1 r2 } else Top
+      if a1 = a2 then funct ~arity:a1 ~pure:(p1 && p2) ~res:(merge r1 r2) else top
   | Block b1, Block b2 ->
-      if List.compare_lengths b1 b2 = 0 then Block (List.map2 b1 b2 ~f:merge) else Top
-  | Top, _ | _, Top -> Top
-  | Function _, Block _ | Block _, Function _ -> Top
+      if List.compare_lengths b1 b2 = 0 then block (List.map2 b1 b2 ~f:merge) else top
+  | Top, _ | _, Top -> top
+  | Function _, Block _ | Block _, Function _ -> top
 
 let rec to_string (shape : t) =
-  match shape with
+  match shape.desc with
   | Top -> "N"
   | Block l -> "[" ^ String.concat ~sep:"," (List.map ~f:to_string l) ^ "]"
   | Function { arity; pure; res } ->
@@ -47,7 +67,7 @@ let rec to_string (shape : t) =
         "F(%d)%s%s"
         arity
         (if pure then "*" else "")
-        (match res with
+        (match res.desc with
         | Top -> ""
         | _ -> "->" ^ to_string res)
 
@@ -83,7 +103,7 @@ let of_string (s : string) =
         parse_block []
     | 'N' ->
         next ();
-        Top
+        top
     | 'F' ->
         next ();
         parse_fun ()
@@ -92,7 +112,7 @@ let of_string (s : string) =
     match current () with
     | ']' ->
         next ();
-        Block (List.rev acc)
+        block (List.rev acc)
     | _ -> (
         let x = parse_shape () in
         match current () with
@@ -101,7 +121,7 @@ let of_string (s : string) =
             parse_block (x :: acc)
         | ']' ->
             next ();
-            Block (List.rev (x :: acc))
+            block (List.rev (x :: acc))
         | _ -> assert false)
   and parse_fun () =
     let () = parse_char '(' in
@@ -113,8 +133,8 @@ let of_string (s : string) =
         next ();
         parse_char '>';
         let res = parse_shape () in
-        Function { arity; pure; res }
-    | _ -> Function { arity; pure; res = Top }
+        funct ~arity ~pure ~res
+    | _ -> funct ~arity ~pure ~res:top
   in
   parse_shape ()
 
@@ -153,8 +173,10 @@ module State = struct
   let propagate x offset target =
     match Code.Var.Hashtbl.find_opt t.table x with
     | None -> ()
-    | Some (Top | Function _) -> ()
-    | Some (Block l) -> assign target (List.nth l offset)
+    | Some shape -> (
+        match shape.desc with
+        | Top | Function _ -> ()
+        | Block fields -> assign target (List.nth fields offset))
 
   let mem x = BitSet.mem t.cache (Code.Var.idx x)
 
@@ -163,8 +185,10 @@ module State = struct
   let is_pure_fun x =
     match Code.Var.Hashtbl.find_opt t.table x with
     | None -> false
-    | Some (Top | Block _) -> false
-    | Some (Function { pure; _ }) -> pure
+    | Some shape -> (
+        match shape.desc with
+        | Top | Block _ -> false
+        | Function { pure; _ } -> pure)
 
   let reset () =
     Code.Var.Hashtbl.clear t.table;

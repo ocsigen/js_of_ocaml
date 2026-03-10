@@ -465,7 +465,7 @@ let direct_approx (info : Info.t) x =
 let the_shape_of ~return_values ~pure info x =
   let rec loop info x acc : Shape.t =
     if Var.Set.mem x acc
-    then Top
+    then Shape.top
     else
       let acc = Var.Set.add x acc in
       get_approx
@@ -476,16 +476,16 @@ let the_shape_of ~return_values ~pure info x =
           | None -> (
               match info.info_defs.(Var.idx x) with
               | Expr (Block (_, a, _, Immutable)) ->
-                  Shape.Block (List.map ~f:(fun x -> loop info x acc) (Array.to_list a))
+                  Shape.block (List.map ~f:(fun x -> loop info x acc) (Array.to_list a))
               | Expr (Closure (l, _, _)) ->
                   let pure = Pure_fun.pure pure x in
                   let res =
                     match Var.Map.find_opt x return_values with
-                    | None -> Shape.Top
+                    | None -> Shape.top
                     | Some set ->
                         let set = Var.Set.remove x set in
                         if Var.Set.is_empty set
-                        then Shape.Top
+                        then Shape.top
                         else
                           let first = Var.Set.choose set in
                           Var.Set.fold
@@ -495,28 +495,28 @@ let the_shape_of ~return_values ~pure info x =
                             set
                             (loop info first acc)
                   in
-                  Shape.Function { arity = List.length l; pure; res }
+                  Shape.funct ~arity:(List.length l) ~pure ~res
               | Expr (Special (Alias_prim name)) -> (
                   try
                     let arity = Primitive.arity name in
                     let pure = Primitive.is_pure name in
-                    Shape.Function { arity; pure; res = Top }
-                  with _ -> Top)
+                    Shape.funct ~arity ~pure ~res:Shape.top
+                  with Not_found -> Shape.top)
               | Expr (Apply { f; args; _ }) ->
                   let shape = loop info f (Var.Set.add f acc) in
                   let rec loop n' shape =
-                    match shape with
-                    | Shape.Function { arity = n; pure; res } ->
+                    match shape.Shape.desc with
+                    | Function { arity = n; pure; res } ->
                         if n = n'
                         then res
                         else if n' < n
-                        then Shape.Function { arity = n - n'; pure; res }
+                        then Shape.funct ~arity:(n - n') ~pure ~res
                         else loop (n' - n) res
-                    | Shape.Block _ | Shape.Top -> Shape.Top
+                    | Block _ | Top -> Shape.top
                   in
                   loop (List.length args) shape
-              | _ -> Shape.Top))
-        Top
+              | _ -> Shape.top))
+        Shape.top
         (fun u v -> Shape.merge u v)
         x
   in
