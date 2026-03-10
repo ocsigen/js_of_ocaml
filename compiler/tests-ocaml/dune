@@ -31,4 +31,24 @@
    (:standard \ --Werror)
    --toplevel)
   (compilation_mode whole_program))
- (modes js)) ;; Can we have a version using wasm ?
+ (modes js))
+
+(rule
+ (copy expect.ml expect_wasm.ml))
+
+(executable
+ (name expect_wasm)
+ (modules expect_wasm)
+ (libraries
+  wasm_of_ocaml-compiler.dynlink
+  toplevel_expect_test
+  js_of_ocaml
+  js_of_ocaml-toplevel.common)
+ (flags
+  (:standard -linkall))
+ (wasm_of_ocaml
+  (flags
+   (:standard \ --Werror)
+   --toplevel)
+  (compilation_mode whole_program))
+ (modes wasm))
