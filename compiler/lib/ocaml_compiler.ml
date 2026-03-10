@@ -142,7 +142,16 @@ module Symtable = struct
 
     let to_ident = function
       | Glob_compunit x -> Ident.create_persistent x
-      | Glob_predef x -> Ident.create_predef x
+      | Glob_predef x -> (
+          (* Use the real predef ident from Predef.builtin_values so that
+             the stamp matches the one used by the compiler.
+             Ident.create_predef would create a fresh stamp that doesn't
+             match in Ident.Map (which compares Predef idents by stamp). *)
+          match
+            List.find ~f:(fun (name, _) -> String.equal name x) Predef.builtin_values
+          with
+          | _, id -> id
+          | exception Not_found -> Ident.create_predef x)
     [@@ocaml.warning "-32"]
   end
 
