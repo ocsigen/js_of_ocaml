@@ -4,6 +4,7 @@
 * Compiler: initial support for OCaml 5.5.0~alpha0 (#2197)
 * Runtime/wasm: faster copy between a Wasm string and an JavaScript array buffer (#2124)
 * Runtime/wasm: faster conversion of small JavaScript strings to Wasm (#2124)
+* Compiler: improved shape computation (#2198)
 
 ## Bug fixes
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
