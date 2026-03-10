@@ -415,12 +415,18 @@ module Generate (Target : Target_sig.S) = struct
     register_arith_bin_prim "%int_sub" `Pure ~typ:int_u Value.int_sub;
     register_arith_bin_prim "%int_mul" `Pure ~typ:int_u Value.int_mul;
     register_arith_bin_prim "%direct_int_mul" `Pure ~typ:int_u Value.int_mul;
-    register_arith_bin_prim "%direct_int_div" `Pure ~typ:int_n Value.int_div;
+    register_bin_prim
+      "%direct_int_div"
+      `Pure
+      ~tx:int_n
+      ~ty:int_n
+      ~ret_typ:int_u
+      Value.int_div;
     register_bin_prim_ctx
       "%int_div"
       ~tx:int_n
       ~ty:int_n
-      ~ret_typ:int_n
+      ~ret_typ:int_u
       (fun context x y ->
         seq
           (let* cond = Arith.eqz y in
