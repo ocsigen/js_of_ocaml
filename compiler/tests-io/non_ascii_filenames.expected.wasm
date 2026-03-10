@@ -1,0 +1,11 @@
+opening files
+  /static/accentué: PASS
+  /static/accentu�: FAIL
+  accentué: PASS
+  accentu�: FAIL
+reading directories
+  .: PASS
+  /static: PASS
+current working directory
+  ./répertoire: PASS
+  /static/répertoire: FAIL
