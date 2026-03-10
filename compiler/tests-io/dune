@@ -79,11 +79,26 @@
 (tests
  (names non_ascii_filenames)
  (deps "accentué")
- (modes js) ;; Currently fails with wasmoo, can it be fixed ?
+ (modes js)
  (js_of_ocaml
   (compilation_mode whole_program)
   (flags
    (:standard --file "accentué"))))
+
+(tests
+ (names non_ascii_filenames_wasm)
+ (deps "accentué")
+ (modes wasm)
+ (wasm_of_ocaml
+  (compilation_mode whole_program)
+  (flags
+   (:standard --file "accentué"))))
+
+(rule
+ (copy non_ascii_filenames.ml non_ascii_filenames_wasm.ml))
+
+(rule
+ (copy non_ascii_filenames.expected.wasm non_ascii_filenames_wasm.expected))
 
 (rule
  (with-stdout-to
@@ -95,6 +110,10 @@
  (deps file.txt)
  (modes js wasm)
  (js_of_ocaml
+  (compilation_mode whole_program)
+  (flags
+   (:standard --file file.txt)))
+ (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags
    (:standard --file file.txt))))
