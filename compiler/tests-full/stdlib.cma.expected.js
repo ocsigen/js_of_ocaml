@@ -32545,7 +32545,7 @@
 
 //# unitInfo: Provides: Stdlib__Oo
 //# unitInfo: Requires: CamlinternalOO
-//# shape: Stdlib__Oo:[F(1),F(1),F(1)]
+//# shape: Stdlib__Oo:[F(1),#0=F(1),$0]
 (function
   (globalThis){
    "use strict";
