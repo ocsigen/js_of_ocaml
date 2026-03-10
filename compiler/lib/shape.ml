@@ -50,15 +50,11 @@ let block fields = make (Block fields)
 
 let funct ~arity ~pure ~res = make (Function { arity; pure; res })
 
-let rec merge (u : t) (v : t) =
-  match u.desc, v.desc with
-  | ( Function { arity = a1; pure = p1; res = r1 }
-    , Function { arity = a2; pure = p2; res = r2 } ) ->
-      if a1 = a2 then funct ~arity:a1 ~pure:(p1 && p2) ~res:(merge r1 r2) else top
-  | Block b1, Block b2 ->
-      if List.compare_lengths b1 b2 = 0 then block (List.map2 b1 b2 ~f:merge) else top
-  | Top, _ | _, Top -> top
-  | Function _, Block _ | Block _, Function _ -> top
+module Set = Set.Make (struct
+  type nonrec t = t
+
+  let compare a b = Int.compare a.id b.id
+end)
 
 let to_string (shape : t) =
   let counts = Int.Hashtbl.create 17 in

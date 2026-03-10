@@ -74,3 +74,5 @@ val the_shape_of :
   -> Info.t
   -> Code.Var.t
   -> Shape.t
+(** Returns a function [get] where [get x] computes the shape of
+    variable [x]. Results are memoized across calls to [get]. *)

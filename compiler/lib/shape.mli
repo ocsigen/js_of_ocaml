@@ -39,11 +39,11 @@ val funct : arity:int -> pure:bool -> res:t -> t
 
 val proxy : unit -> t
 
+module Set : Set.S with type elt = t
+
 val to_string : t -> string
 
 val of_string : string -> t
-
-val merge : t -> t -> t
 
 module Store : sig
   val set : name:string -> t -> unit
