@@ -37,7 +37,7 @@ let unknown_apply = function
 
 let specialize_apply opt_count shape update_def =
   let rec loop x f args shape loc (acc, free_pc, extra) =
-    match (shape : Shape.t) with
+    match shape.Shape.desc with
     | Top | Block _ -> Let (x, Apply { f; args; exact = false }) :: acc, free_pc, extra
     | Function { arity; res; _ } ->
         let nargs = List.length args in

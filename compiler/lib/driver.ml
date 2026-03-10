@@ -133,9 +133,10 @@ let collects_shapes ~shapes (p : Code.program) =
         let return_values = Code.return_values p in
         StringMap.filter_map
           (fun _ x ->
-            match Flow.the_shape_of ~return_values ~pure info x with
+            let s = Flow.the_shape_of ~return_values ~pure info x in
+            match s.desc with
             | Top -> None
-            | (Function _ | Block _) as s -> Some s)
+            | Function _ | Block _ -> Some s)
           !shapes
     in
     if times () then Format.eprintf "  shapes: %a@." Timer.print t;
@@ -181,8 +182,8 @@ let effects_and_exact_calls
         Specialize.f
           ~shape:(fun f ->
             match Global_flow.function_arity info f with
-            | None -> Shape.Top
-            | Some arity -> Shape.Function { arity; pure = false; res = Top })
+            | None -> Shape.top
+            | Some arity -> Shape.funct ~arity ~pure:false ~res:Shape.top)
           ~update_def:(fun x expr -> Global_flow.update_def info x expr)
           p
       in
