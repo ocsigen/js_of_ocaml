@@ -93,7 +93,7 @@ function caml_memprof_discard(_t) {
   return 0;
 }
 
-//Provides: caml_memprof_is_sampling
+//Provides: caml_memprof_is_sampling const
 //Version: >= 5.5
 function caml_memprof_is_sampling(_unit) {
   return 0;
@@ -158,7 +158,7 @@ function caml_gc_tweak_set(_name, _v) {
   caml_invalid_argument("Gc.Tweak: parameter not found");
 }
 
-//Provides: caml_gc_tweak_list_active
+//Provides: caml_gc_tweak_list_active const
 //Version: >= 5.5
 function caml_gc_tweak_list_active(_unit) {
   return 0;

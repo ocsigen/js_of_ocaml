@@ -405,7 +405,7 @@ function caml_sys_rev_convert_signal_number(signo) {
   return signo;
 }
 
-//Provides: caml_sys_proc_self_exe
+//Provides: caml_sys_proc_self_exe const
 //Version: >= 5.5
 function caml_sys_proc_self_exe(_unit) {
   return 0;
@@ -417,7 +417,7 @@ function caml_sys_get_stdlib_dirs(stdlib_default) {
   return [0, stdlib_default, 0];
 }
 
-//Provides: caml_sys_const_standard_library_default
+//Provides: caml_sys_const_standard_library_default const
 //Requires: caml_string_of_jsstring
 //Version: >= 5.5
 function caml_sys_const_standard_library_default(_unit) {
