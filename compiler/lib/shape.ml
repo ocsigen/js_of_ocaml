@@ -28,17 +28,6 @@ type t =
       ; res : t
       }
 
-let rec equal a b =
-  match a, b with
-  | Top, Top -> true
-  | ( Function { arity = a1; pure = p1; res = r1 }
-    , Function { arity = a2; pure = p2; res = r2 } ) ->
-      a1 = a2 && Bool.(p1 = p2) && equal r1 r2
-  | Block b1, Block b2 -> (
-      try List.for_all2 ~f:equal b1 b2 with Invalid_argument _ -> false)
-  | Top, (Function _ | Block _) | Function _, (Top | Block _) | Block _, (Top | Function _)
-    -> false
-
 let rec merge (u : t) (v : t) =
   match u, v with
   | ( Function { arity = a1; pure = p1; res = r1 }
