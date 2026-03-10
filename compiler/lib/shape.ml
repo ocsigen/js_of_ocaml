@@ -42,7 +42,9 @@ let fresh_id () =
 
 let make desc = { id = fresh_id (); desc }
 
-let top = make Top
+let proxy () = make Top
+
+let top = proxy ()
 
 let block fields = make (Block fields)
 
@@ -58,18 +60,59 @@ let rec merge (u : t) (v : t) =
   | Top, _ | _, Top -> top
   | Function _, Block _ | Block _, Function _ -> top
 
-let rec to_string (shape : t) =
-  match shape.desc with
-  | Top -> "N"
-  | Block l -> "[" ^ String.concat ~sep:"," (List.map ~f:to_string l) ^ "]"
-  | Function { arity; pure; res } ->
-      Printf.sprintf
-        "F(%d)%s%s"
-        arity
-        (if pure then "*" else "")
-        (match res.desc with
-        | Top -> ""
-        | _ -> "->" ^ to_string res)
+let to_string (shape : t) =
+  let counts = Int.Hashtbl.create 17 in
+  let rec count (s : t) =
+    let n = try Int.Hashtbl.find counts s.id with Not_found -> 0 in
+    Int.Hashtbl.replace counts s.id (n + 1);
+    if n = 0
+    then
+      match s.desc with
+      | Top -> ()
+      | Function { res; _ } -> count res
+      | Block fields -> List.iter ~f:count fields
+  in
+  count shape;
+  let names = Int.Hashtbl.create 17 in
+  let next_name = ref 0 in
+  let buf = Buffer.create 64 in
+  let rec emit (s : t) =
+    let desc = s.desc in
+    match desc with
+    | Top -> Buffer.add_char buf 'N'
+    | _ -> (
+        let multi = Int.Hashtbl.find counts s.id > 1 in
+        match if multi then Int.Hashtbl.find_opt names s.id else None with
+        | Some name -> Buffer.add_string buf (Printf.sprintf "$%d" name)
+        | None -> (
+            if multi
+            then begin
+              let name = !next_name in
+              incr next_name;
+              Int.Hashtbl.replace names s.id name;
+              Buffer.add_string buf (Printf.sprintf "#%d=" name)
+            end;
+            match desc with
+            | Top -> assert false
+            | Function { arity; pure; res } -> (
+                Buffer.add_string buf (Printf.sprintf "F(%d)" arity);
+                if pure then Buffer.add_char buf '*';
+                match res.desc with
+                | Top -> ()
+                | _ ->
+                    Buffer.add_string buf "->";
+                    emit res)
+            | Block fields ->
+                Buffer.add_char buf '[';
+                List.iteri
+                  ~f:(fun i x ->
+                    if i > 0 then Buffer.add_char buf ',';
+                    emit x)
+                  fields;
+                Buffer.add_char buf ']'))
+  in
+  emit shape;
+  Buffer.contents buf
 
 let of_string (s : string) =
   let pos = ref 0 in
@@ -96,6 +139,7 @@ let of_string (s : string) =
         parse_int acc
     | _ -> acc
   in
+  let ref_table = Int.Hashtbl.create 17 in
   let rec parse_shape () =
     match current () with
     | '[' ->
@@ -107,6 +151,19 @@ let of_string (s : string) =
     | 'F' ->
         next ();
         parse_fun ()
+    | '#' ->
+        next ();
+        let parsed_id = parse_int 0 in
+        parse_char '=';
+        let shape_proxy = proxy () in
+        Int.Hashtbl.replace ref_table parsed_id shape_proxy;
+        let actual_shape = parse_shape () in
+        shape_proxy.desc <- actual_shape.desc;
+        shape_proxy
+    | '$' ->
+        next ();
+        let parsed_id = parse_int 0 in
+        Int.Hashtbl.find ref_table parsed_id
     | _ -> assert false
   and parse_block acc =
     match current () with

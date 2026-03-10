@@ -37,6 +37,8 @@ val block : t list -> t
 
 val funct : arity:int -> pure:bool -> res:t -> t
 
+val proxy : unit -> t
+
 val to_string : t -> string
 
 val of_string : string -> t
