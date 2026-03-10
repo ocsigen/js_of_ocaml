@@ -47,13 +47,8 @@
 (function
   (globalThis){
    "use strict";
-   var runtime = globalThis.jsoo_runtime;
-   function caml_call2(f, a0, a1){
-    return (f.l >= 0 ? f.l : f.l = f.length) === 2
-            ? f(a0, a1)
-            : runtime.caml_call_gen(f, [a0, a1]);
-   }
    var
+    runtime = globalThis.jsoo_runtime,
     global_data = runtime.caml_get_global_data(),
     Shapes_M2 = global_data.Shapes__M2,
     Stdlib_Random = global_data.Stdlib__Random,
@@ -68,7 +63,7 @@
                       (null, 0) /*<<compiler/tests-full/m3.ml:1:66>>*/ ;
              };
    }
-   var x =  /*<<compiler/tests-full/m3.ml:3:8>>*/ caml_call2(f(0), 0, 0);
+   var x =  /*<<compiler/tests-full/m3.ml:3:8>>*/ f(0)(0, 0);
     /*<<compiler/tests-full/m3.ml:3:18>>*/ runtime.caml_register_global
     (3, [0, f, x], "Shapes__M3");
    return;
