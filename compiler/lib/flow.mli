@@ -71,6 +71,7 @@ val f : Code.program -> Code.program * Info.t
 val the_shape_of :
      return_values:Code.Var.Set.t Code.Var.Map.t
   -> pure:Pure_fun.t
+  -> blocks:bool
   -> Info.t
   -> Code.Var.t
   -> Shape.t

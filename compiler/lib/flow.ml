@@ -524,7 +524,7 @@ let shape_to_prop s =
       PFunction
         { arity; pure; res_vars = Var.Set.empty; res_shapes = Shape.Set.singleton res }
 
-let the_shape_of ~return_values ~pure info =
+let the_shape_of ~return_values ~pure ~blocks info =
   let cache = Var.Hashtbl.create 17 in
   let set_cache = ref VarSetShapeSetMap.empty in
   let eval_var_cache = Var.Hashtbl.create 17 in
@@ -612,10 +612,13 @@ let the_shape_of ~return_values ~pure info =
     | None -> (
         match info.Info.info_defs.(Var.idx x) with
         | Expr (Block (_, a, _, Immutable)) ->
-            PBlock
-              { fields_vars = Array.map ~f:Var.Set.singleton a
-              ; fields_shapes = Array.make (Array.length a) Shape.Set.empty
-              }
+            if not blocks
+            then PTop
+            else
+              PBlock
+                { fields_vars = Array.map ~f:Var.Set.singleton a
+                ; fields_shapes = Array.make (Array.length a) Shape.Set.empty
+                }
         | Expr (Closure (l, _, _)) ->
             let res_vars =
               match Var.Map.find_opt x return_values with
