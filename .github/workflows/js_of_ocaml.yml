@@ -66,6 +66,13 @@ jobs:
             skip-doc: false
           - os: ubuntu-latest
             os-name: Ubuntu
+            ocaml-name: "5.4+hints"
+            ocaml-compiler: "5.4.1"
+            skip-effects: false
+            skip-test: false
+            skip-doc: false
+          - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "5.1"
             skip-effects: false
             skip-test: false
@@ -127,6 +134,10 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: patch compiler
+        if: matrix.ocaml-name == '5.4+hints'
+        run: opam pin --update-invariant ocaml-variants https://github.com/vouillon/ocaml.git#optimization-hints-test
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
