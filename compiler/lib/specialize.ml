@@ -63,7 +63,7 @@ let specialize_apply opt_count shape update_def =
             ; branch = Return return'
             }
           in
-          let expr = Closure (missing, (free_pc, missing), None) in
+          let expr = Closure (missing, (free_pc, missing), (None, None)) in
           update_def x expr;
           Let (x, expr) :: acc, free_pc + 1, (free_pc, block) :: extra)
         else (

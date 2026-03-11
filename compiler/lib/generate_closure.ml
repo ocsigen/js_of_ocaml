@@ -28,7 +28,7 @@ type closure_info =
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
   ; pos : int
-  ; cloc : Parse_info.t option
+  ; cloc : Optimization_hint.closure_hint option * Parse_info.t option
   }
 
 module SCC = Strongly_connected_components.Make (Var)

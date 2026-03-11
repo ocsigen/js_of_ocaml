@@ -74,11 +74,34 @@ type ccall =
   | Hint_bigarray of Bigarray.t
   | Hint_primitive of primitive
 
+type inline_attribute =
+  | Always_inline
+  | Never_inline
+  | Hint_inline
+  | Unroll of int
+  | Default_inline
+
+type specialise_attribute =
+  | Always_specialise
+  | Never_specialise
+  | Default_specialise
+
+type closure_hint =
+  { params : repr list
+  ; return : repr
+  ; inline : inline_attribute
+  ; specialise : specialise_attribute
+  ; is_a_functor : bool
+  }
+
 type t =
   | Hint_immutable_block
   | Hint_arraylength of array_kind
+  | Hint_closures of closure_hint list
   | Hint_ccall of ccall
 
 val print_ccall : Format.formatter -> ccall -> unit
 
 val print : Format.formatter -> t -> unit
+
+val print_closure_hint : Format.formatter -> closure_hint -> unit

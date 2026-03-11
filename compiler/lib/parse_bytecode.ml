@@ -359,6 +359,11 @@ module Hints = struct
     match Int.Hashtbl.find_opt t.hints pc with
     | Some (Hint_ccall h) -> Some h
     | _ -> None
+
+  let find_closures_opt t pc =
+    match Int.Hashtbl.find_opt t.hints pc with
+    | Some (Hint_closures l) -> Some l
+    | _ -> None
 end
 
 (* Block analysis *)
@@ -1333,6 +1338,11 @@ and compile infos pc state (instrs : instr list) =
         let state' = State.clear_accu state' in
         compile_block infos.blocks infos.joins infos.hints infos.debug code addr state';
         if debug_parser () then Format.printf "}@.";
+        let closure_hint =
+          match Hints.find_closures_opt infos.hints pc with
+          | Some [ h ] -> Some h
+          | _ -> None
+        in
         compile
           infos
           (pc + 3)
@@ -1342,7 +1352,7 @@ and compile infos pc state (instrs : instr list) =
              , Closure
                  ( List.rev params
                  , (addr, [])
-                 , Debug.find_loc infos.debug ~position:After addr ) )
+                 , (closure_hint, Debug.find_loc infos.debug ~position:After addr) ) )
           :: instrs)
     | CLOSUREREC ->
         let nfuncs = getu code (pc + 1) in
@@ -1375,6 +1385,14 @@ and compile infos pc state (instrs : instr list) =
               env := infix_tag :: !env);
         let env = Array.of_list !env in
         let state = !state in
+        let closure_hints =
+          match Hints.find_closures_opt infos.hints pc with
+          | Some l ->
+              let a = Array.of_list l in
+              assert (Array.length a = nfuncs);
+              Some a
+          | None -> None
+        in
         let instrs =
           List.fold_left (List.rev !vars) ~init:instrs ~f:(fun instr (i, x) ->
               let addr = pc + 3 + gets code (pc + 3 + i) in
@@ -1398,12 +1416,13 @@ and compile infos pc state (instrs : instr list) =
                 addr
                 state';
               if debug_parser () then Format.printf "}@.";
+              let closure_hint = Option.map ~f:(fun a -> a.(i)) closure_hints in
               Let
                 ( x
                 , Closure
                     ( List.rev params
                     , (addr, [])
-                    , Debug.find_loc infos.debug ~position:After addr ) )
+                    , (closure_hint, Debug.find_loc infos.debug ~position:After addr) ) )
               :: instr)
         in
         compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
