@@ -73,8 +73,8 @@ let f (p : program) =
         | Let (_, Prim (Not, [ Pv _ ])) ->
             (* Bool context: 1 - v works for JS booleans *)
             ()
-        | Let (_, Prim (Extern name, [ Pv _ ])) when String.equal name "caml_js_from_bool"
-          ->
+        | Let (_, Prim (Extern (name, _), [ Pv _ ]))
+          when String.equal name "caml_js_from_bool" ->
             (* Bool context: !!v works for JS booleans *)
             ()
         | Let (_, Prim (_, args)) ->
