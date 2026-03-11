@@ -299,4 +299,128 @@ module Cmo_format = struct
   let imports (t : t) = t.cu_imports
 
   let force_link (t : t) = t.cu_force_link
+
+  let hints_pos (t : t) = t.cu_hint [@@if ocaml_version >= (5, 4, 1)]
+
+  let hints_size (t : t) = t.cu_hintsize [@@if ocaml_version >= (5, 4, 1)]
+
+  let hints_size _ = 0 [@@if ocaml_version < (5, 4, 1)]
+
+  let hints_pos _ = 0 [@@if ocaml_version < (5, 4, 1)]
 end
+
+module Hint = struct
+  type t = Ocaml_bytecomp.Instruct.optimization_hint
+
+  let import_ccall (h : Ocaml_bytecomp.Instruct.ccall_hint) :
+      Optimization_hint.ccall option =
+    match h with
+    | Hint_unsafe -> Some Hint_unsafe
+    | Hint_int kind ->
+        Some
+          (Hint_int
+             (match kind with
+             | Pnativeint -> Nativeint
+             | Pint32 -> Int32
+             | Pint64 -> Int64))
+    | Hint_bigarray { elt_kind = Pbigarray_unknown; _ }
+    | Hint_bigarray { layout = Pbigarray_unknown_layout; _ } -> None
+    | Hint_bigarray { unsafe; elt_kind; layout } ->
+        let kind : Optimization_hint.Bigarray.kind =
+          match elt_kind with
+          | Pbigarray_unknown -> assert false
+          | (Pbigarray_float16 [@if ocaml_version >= (5, 2, 0)]) -> Float16
+          | Pbigarray_float32 -> Float32
+          | Pbigarray_float64 -> Float64
+          | Pbigarray_sint8 -> Int8_signed
+          | Pbigarray_uint8 -> Int8_unsigned
+          | Pbigarray_sint16 -> Int16_signed
+          | Pbigarray_uint16 -> Int16_unsigned
+          | Pbigarray_int32 -> Int32
+          | Pbigarray_int64 -> Int64
+          | Pbigarray_caml_int -> Int
+          | Pbigarray_native_int -> Nativeint
+          | Pbigarray_complex32 -> Complex32
+          | Pbigarray_complex64 -> Complex64
+        in
+        let layout : Optimization_hint.Bigarray.layout =
+          match layout with
+          | Pbigarray_unknown_layout -> assert false
+          | Pbigarray_c_layout -> C
+          | Pbigarray_fortran_layout -> Fortran
+        in
+        Some (Hint_bigarray { unsafe; kind; layout })
+    | Hint_primitive { prim_native_name; prim_native_repr_args; prim_native_repr_res; _ }
+      ->
+        let repr (r : Ocaml_common.Primitive.native_repr) : Optimization_hint.repr =
+          match r with
+          | Same_as_ocaml_repr -> Value
+          | Unboxed_float -> Float
+          | Unboxed_integer Pint32 -> Int32
+          | Unboxed_integer Pnativeint -> Nativeint
+          | Unboxed_integer Pint64 -> Int64
+          | Untagged_immediate -> Int
+        in
+        Some
+          (Hint_primitive
+             { name = prim_native_name
+             ; args = List.map ~f:repr prim_native_repr_args
+             ; res = repr prim_native_repr_res
+             })
+
+  let import_value_kind (k : Ocaml_common.Lambda.value_kind) : Optimization_hint.repr =
+    match k with
+    | Pgenval -> Value
+    | Pfloatval -> Float
+    | Pboxedintval Pint32 -> Int32
+    | Pboxedintval Pnativeint -> Nativeint
+    | Pboxedintval Pint64 -> Int64
+    | Pintval -> Int
+
+  let import_inline (i : Ocaml_common.Lambda.inline_attribute) :
+      Optimization_hint.inline_attribute =
+    match i with
+    | Always_inline -> Always_inline
+    | Never_inline -> Never_inline
+    | Hint_inline -> Hint_inline
+    | Unroll n -> Unroll n
+    | Default_inline -> Default_inline
+
+  let import_specialise (s : Ocaml_common.Lambda.specialise_attribute) :
+      Optimization_hint.specialise_attribute =
+    match s with
+    | Always_specialise -> Always_specialise
+    | Never_specialise -> Never_specialise
+    | Default_specialise -> Default_specialise
+
+  let import_closure_hint (h : Ocaml_bytecomp.Instruct.closure_hint) :
+      Optimization_hint.closure_hint =
+    { params = List.map ~f:import_value_kind h.params
+    ; return = import_value_kind h.return
+    ; inline = import_inline h.inline
+    ; specialise = import_specialise h.specialise
+    ; is_a_functor = h.is_a_functor
+    }
+
+  let import (h : t) : Optimization_hint.t option =
+    match h with
+    | Hint_immutable_block -> Some Hint_immutable_block
+    | Hint_arraylength kind ->
+        Some
+          (Hint_arraylength
+             (match kind with
+             | Pgenarray -> Generic
+             | Paddrarray | Pintarray -> Value
+             | Pfloatarray -> Float))
+    | Hint_closures l -> Some (Hint_closures (List.map ~f:import_closure_hint l))
+    | Hint_ccall hint ->
+        Option.map ~f:(fun h -> Optimization_hint.Hint_ccall h) (import_ccall hint)
+end
+[@@if ocaml_version >= (5, 4, 1)]
+
+module Hint = struct
+  type t = unit
+
+  let import _ = None
+end
+[@@if ocaml_version < (5, 4, 1)]

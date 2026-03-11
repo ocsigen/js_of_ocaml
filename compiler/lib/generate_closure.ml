@@ -28,7 +28,7 @@ type closure_info =
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
   ; pos : int
-  ; cloc : Parse_info.t option
+  ; cloc : Optimization_hint.closure_hint option * Parse_info.t option
   }
 
 module SCC = Strongly_connected_components.Make (Var)
@@ -112,7 +112,8 @@ module Trampoline = struct
         ; body =
             [ Let
                 ( counter_plus_1
-                , Prim (Extern "%int_add", [ Pv counter; Pc (Int Targetint.one) ]) )
+                , Prim (Extern ("%int_add", None), [ Pv counter; Pc (Int Targetint.one) ])
+                )
             ; Let (return, Apply { f; args = counter_plus_1 :: args; exact = true })
             ]
         ; branch = Return return
@@ -126,9 +127,10 @@ module Trampoline = struct
         [ Let
             ( new_args
             , Prim
-                ( Extern "%js_array"
+                ( Extern ("%js_array", None)
                 , Pc (Int Targetint.zero) :: List.map args ~f:(fun x -> Pv x) ) )
-        ; Let (return, Prim (Extern "caml_trampoline_return", [ Pv f; Pv new_args ]))
+        ; Let
+            (return, Prim (Extern ("caml_trampoline_return", None), [ Pv f; Pv new_args ]))
         ]
     ; branch = Return return
     }
@@ -144,14 +146,14 @@ module Trampoline = struct
               [ Event loc
               ; Let (result1, Apply { f; args; exact = true })
               ; Event Parse_info.zero
-              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
+              ; Let (result2, Prim (Extern ("caml_trampoline", None), [ Pv result1 ]))
               ]
           | Some counter ->
               [ Event loc
               ; Let (counter, Constant (Int Targetint.zero))
               ; Let (result1, Apply { f; args = counter :: args; exact = true })
               ; Event Parse_info.zero
-              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
+              ; Let (result2, Prim (Extern ("caml_trampoline", None), [ Pv result1 ]))
               ])
       ; branch = Return result2
       }
