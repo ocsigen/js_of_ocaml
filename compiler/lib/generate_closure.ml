@@ -35,7 +35,7 @@ type closure_info =
   ; cont : Code.cont
   ; tc : Code.Addr.Set.t Code.Var.Map.t
   ; pos : int
-  ; cloc : Parse_info.t option
+  ; cloc : Optimization_hint.closure_hint option * Parse_info.t option
   ; (* Under --effects=double-translation, the [Closure] instruction that
        binds [f_name]'s direct version is followed by a sibling [Closure] for
        the CPS version and a [caml_cps_closure] primitive pairing them. In
@@ -351,7 +351,8 @@ module Trampoline_dt = struct
             (args_arr, Prim (Extern ("%js_array", None), List.map args ~f:(fun x -> Pv x)))
         ; Event Parse_info.zero
         ; Let
-            (result, Prim (Extern ("caml_direct_trampoline", None), [ Pv inner; Pv args_arr ]))
+            ( result
+            , Prim (Extern ("caml_direct_trampoline", None), [ Pv inner; Pv args_arr ]) )
         ]
     ; branch = Return result
     }
