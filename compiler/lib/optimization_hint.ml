@@ -75,9 +75,30 @@ type ccall =
   | Hint_bigarray of Bigarray.t
   | Hint_primitive of primitive
 
+type inline_attribute =
+  | Always_inline
+  | Never_inline
+  | Hint_inline
+  | Unroll of int
+  | Default_inline
+
+type specialise_attribute =
+  | Always_specialise
+  | Never_specialise
+  | Default_specialise
+
+type closure_hint =
+  { params : repr list
+  ; return : repr
+  ; inline : inline_attribute
+  ; specialise : specialise_attribute
+  ; is_a_functor : bool
+  }
+
 type t =
   | Hint_immutable_block
   | Hint_arraylength of array_kind
+  | Hint_closures of closure_hint list
   | Hint_ccall of ccall
 
 let print_ccall f h =
@@ -138,6 +159,38 @@ let print_ccall f h =
         print_repr
         res
 
+let print_closure_hint f { params; return; inline; specialise; is_a_functor } =
+  let print_repr f r =
+    Format.fprintf
+      f
+      "%s"
+      (match r with
+      | Value -> "value"
+      | Float -> "float"
+      | Int32 -> "int32"
+      | Nativeint -> "nativeint"
+      | Int64 -> "int64"
+      | Int -> "int")
+  in
+  Format.fprintf
+    f
+    "(%a)->%a"
+    (Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f ",") print_repr)
+    params
+    print_repr
+    return;
+  (match inline with
+  | Always_inline -> Format.fprintf f " always_inline"
+  | Never_inline -> Format.fprintf f " never_inline"
+  | Hint_inline -> Format.fprintf f " hint_inline"
+  | Unroll n -> Format.fprintf f " unroll(%d)" n
+  | Default_inline -> ());
+  (match specialise with
+  | Always_specialise -> Format.fprintf f " always_specialise"
+  | Never_specialise -> Format.fprintf f " never_specialise"
+  | Default_specialise -> ());
+  if is_a_functor then Format.fprintf f " functor"
+
 let print f h =
   match h with
   | Hint_immutable_block -> Format.fprintf f "immutable"
@@ -149,4 +202,12 @@ let print f h =
         | Generic -> "generic"
         | Value -> "value"
         | Float -> "float")
+  | Hint_closures l ->
+      Format.fprintf
+        f
+        "closures(%a)"
+        (Format.pp_print_list
+           ~pp_sep:(fun f () -> Format.fprintf f ",")
+           print_closure_hint)
+        l
   | Hint_ccall h -> print_ccall f h

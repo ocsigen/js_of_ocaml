@@ -1500,7 +1500,7 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
       let* cx = access ~ctx x in
       let* () = info mutable_p in
       return (Mlvalue.Block.field cx n, [])
-  | Closure (args, ((pc, _) as cont), cloc) ->
+  | Closure (args, ((pc, _) as cont), (_, cloc)) ->
       let loc = source_location cloc in
       let fv = Addr.Map.find pc ctx.freevars in
       let clo = compile_closure ctx cont cloc in

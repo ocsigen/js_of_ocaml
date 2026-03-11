@@ -516,6 +516,40 @@ module Hint = struct
              ; res = repr prim_native_repr_res
              })
 
+  let import_value_kind (k : Ocaml_common.Lambda.value_kind) : Optimization_hint.repr =
+    match k with
+    | Pgenval -> Value
+    | Pfloatval -> Float
+    | Pboxedintval Pint32 -> Int32
+    | Pboxedintval Pnativeint -> Nativeint
+    | Pboxedintval Pint64 -> Int64
+    | Pintval -> Int
+
+  let import_inline (i : Ocaml_common.Lambda.inline_attribute) :
+      Optimization_hint.inline_attribute =
+    match i with
+    | Always_inline -> Always_inline
+    | Never_inline -> Never_inline
+    | Hint_inline -> Hint_inline
+    | Unroll n -> Unroll n
+    | Default_inline -> Default_inline
+
+  let import_specialise (s : Ocaml_common.Lambda.specialise_attribute) :
+      Optimization_hint.specialise_attribute =
+    match s with
+    | Always_specialise -> Always_specialise
+    | Never_specialise -> Never_specialise
+    | Default_specialise -> Default_specialise
+
+  let import_closure_hint (h : Ocaml_bytecomp.Instruct.closure_hint) :
+      Optimization_hint.closure_hint =
+    { params = List.map ~f:import_value_kind h.params
+    ; return = import_value_kind h.return
+    ; inline = import_inline h.inline
+    ; specialise = import_specialise h.specialise
+    ; is_a_functor = h.is_a_functor
+    }
+
   let import (h : t) : Optimization_hint.t option =
     match h with
     | Hint_immutable_block -> Some Hint_immutable_block
@@ -526,7 +560,7 @@ module Hint = struct
              | Pgenarray -> Generic
              | Paddrarray | Pintarray -> Value
              | Pfloatarray -> Float))
-    | Hint_closures _ -> None
+    | Hint_closures l -> Some (Hint_closures (List.map ~f:import_closure_hint l))
     | Hint_ccall hint ->
         Option.map ~f:(fun h -> Optimization_hint.Hint_ccall h) (import_ccall hint)
 end

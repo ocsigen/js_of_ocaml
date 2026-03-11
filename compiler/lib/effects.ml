@@ -328,7 +328,7 @@ let allocate_closure ~st ~params ~body ~branch =
   let block = { params = []; body; branch } in
   let pc = add_block st block in
   let name = Var.fresh () in
-  [ Let (name, Closure (params, (pc, []), None)) ], name
+  [ Let (name, Closure (params, (pc, []), (None, None))) ], name
 
 let tail_call ~st ?(instrs = []) ~exact ~in_cps ~check ~f args =
   assert (exact || check);
@@ -532,7 +532,7 @@ let rewrite_instr ~st (instr : instr) : instr =
          needed *)
       let cps_params, cps_cont = Addr.Hashtbl.find st.closure_info pc in
       st.in_cps := Var.Set.add x !(st.in_cps);
-      Let (x, Closure (cps_params, cps_cont, None))
+      Let (x, Closure (cps_params, cps_cont, (None, None)))
   | Let (x, Prim (Extern ("caml_alloc_dummy_function", _), [ size; arity ])) -> (
       (* Removed in OCaml 5.2 *)
       match arity with
@@ -621,7 +621,7 @@ let cps_block ~st ~k ~orig_pc block =
               else jump_block.params
             in
             let cps_jump_pc = mk_cps_pc_of_direct ~st jump_pc in
-            Let (cname, Closure (params, (cps_jump_pc, []), None)))
+            Let (cname, Closure (params, (cps_jump_pc, []), (None, None))))
     | exception Not_found -> []
   in
 
@@ -732,7 +732,7 @@ let rewrite_direct_block ~st ~cps_needed ~closure_info ~pc block =
           let cps_c = Var.fork x in
           let cps_params, cps_cont = Addr.Hashtbl.find closure_info pc in
           [ Let (direct_c, Closure (params, cont, cloc))
-          ; Let (cps_c, Closure (cps_params, cps_cont, None))
+          ; Let (cps_c, Closure (cps_params, cps_cont, (None, None)))
           ; Let (x, Prim (Extern ("caml_cps_closure", None), [ Pv direct_c; Pv cps_c ]))
           ]
       | Let (x, Prim (Extern ("%resume", _), [ stack; f; arg; tail ])) ->
@@ -988,7 +988,7 @@ let cps_transform ~live_vars ~flow_info ~cps_needed p =
               new_start
               { params = []
               ; body =
-                  [ Let (main, Closure (cps_params, cps_cont, None))
+                  [ Let (main, Closure (cps_params, cps_cont, (None, None)))
                   ; Let (args, Prim (Extern ("%js_array", None), []))
                   ; Let
                       ( res
@@ -1036,7 +1036,7 @@ let wrap_primitive ~cps_needed (p : program) x e accu =
     }
   , Var.Set.remove x (Var.Set.add f cps_needed)
   , let args = Var.fresh () in
-    [ Let (f, Closure ([], (closure_pc, []), None))
+    [ Let (f, Closure ([], (closure_pc, []), (None, None)))
     ; Let (args, Prim (Extern ("%js_array", None), []))
     ; Let (x, Prim (Extern ("caml_cps_trampoline", None), [ Pv f; Pv args ]))
     ]
