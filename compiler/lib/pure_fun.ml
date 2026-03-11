@@ -39,7 +39,7 @@ let pure_expr pure_funs e =
       exact && (Var.Set.mem f pure_funs || Shape.State.is_pure_fun f)
   | Prim (p, _l) -> (
       match p with
-      | Extern f -> Primitive.is_pure f
+      | Extern (f, _) -> Primitive.is_pure f
       | _ -> true)
 
 let pure_instr pure_funs i =
