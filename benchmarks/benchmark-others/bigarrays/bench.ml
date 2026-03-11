@@ -4,7 +4,10 @@ let deltay = 40_000. /. 360. /. 3600. *. 1000.
 
 let deltax = deltay *. cos (44. *. pi /. 180.)
 
-let precompute tile_height tile_width tile =
+let precompute
+    tile_height
+    tile_width
+    (tile : (float, Bigarray.float32_elt, Bigarray.c_layout) Bigarray.Array2.t) =
   let normals =
     Bigarray.(Array3.create Int8_signed C_layout) (tile_height - 2) (tile_width - 2) 3
   in
