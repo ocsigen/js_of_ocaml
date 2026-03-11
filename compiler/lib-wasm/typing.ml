@@ -273,10 +273,38 @@ let mark_boxed_function_parameters ~fun_info { blocks; _ } =
     blocks;
   boxed_function_parameters
 
+let repr_to_type (r : Optimization_hint.repr) : typ =
+  match r with
+  | Value -> Top
+  | Float -> Number (Float, Boxed)
+  | Int32 -> Number (Int32, Boxed)
+  | Nativeint -> Number (Nativeint, Boxed)
+  | Int64 -> Number (Int64, Boxed)
+  | Int -> Int Ref
+
+let collect_parameter_type_hints { blocks; _ } =
+  let h = Var.Hashtbl.create 16 in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (_, Closure (params, _, (Some { params = param_reprs; _ }, _))) ->
+              List.iter2
+                ~f:(fun p r ->
+                  match repr_to_type r with
+                  | Top -> ()
+                  | t -> Var.Hashtbl.replace h p t)
+                params
+                param_reprs
+          | _ -> ()))
+    blocks;
+  h
+
 type st =
   { global_flow_state : Global_flow.state
   ; global_flow_info : Global_flow.info
   ; boxed_function_parameters : Var.ISet.t
+  ; parameter_type_hints : typ Var.Hashtbl.t
   ; fun_info : Call_graph_analysis.t
   }
 
@@ -357,10 +385,18 @@ let register_prim nm ~unbox typ = String.Hashtbl.replace primitive_types nm (unb
 
 let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
-  | Phi { known; others; unit } ->
+  | Phi { known; others; unit } -> (
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
       let res = if unit then Domain.join (Int Unnormalized) res else res in
-      if Var.ISet.mem st.boxed_function_parameters x then Domain.box res else res
+      let res =
+        if Var.ISet.mem st.boxed_function_parameters x then Domain.box res else res
+      in
+      match res with
+      | Top -> (
+          match Var.Hashtbl.find_opt st.parameter_type_hints x with
+          | Some t -> t
+          | None -> Top)
+      | _ -> res)
   | Expr e -> (
       match e with
       | Constant c -> constant_type c
@@ -620,7 +656,15 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let t = Timer.make () in
   update_deps global_flow_state p;
   let boxed_function_parameters = mark_boxed_function_parameters ~fun_info p in
-  let st = { global_flow_state; global_flow_info; boxed_function_parameters; fun_info } in
+  let parameter_type_hints = collect_parameter_type_hints p in
+  let st =
+    { global_flow_state
+    ; global_flow_info
+    ; boxed_function_parameters
+    ; parameter_type_hints
+    ; fun_info
+    }
+  in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
   box_numbers p st types;
