@@ -74,6 +74,13 @@ jobs:
             skip-doc: false
           - os: ubuntu-latest
             os-name: Ubuntu
+            ocaml-name: "5.6+trunk"
+            ocaml-compiler: "ocaml-variants.5.6.0+trunk"
+            skip-effects: false
+            skip-test: false
+            skip-doc: false
+          - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "5.1"
             skip-effects: false
             skip-test: false
@@ -152,6 +159,10 @@ jobs:
             default: https://github.com/ocaml/opam-repository.git
             ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
+
+      - name: Pin ppxlib
+        if: matrix.ocaml-name == '5.6+trunk'
+        run: opam pin add -n ppxlib https://github.com/hhugo/ppxlib.git#support-5.6
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
