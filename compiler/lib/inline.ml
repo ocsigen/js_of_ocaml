@@ -246,12 +246,13 @@ let rec block_size ~inline_comparisons ~recurse ~context { branch; body; _ } =
           ( _
           , Prim
               ( Extern
-                  ( "caml_lessthan"
-                  | "caml_lessequal"
-                  | "caml_greaterthan"
-                  | "caml_greaterequal"
-                  | "caml_equal"
-                  | "caml_notequal" )
+                  ( ( "caml_lessthan"
+                    | "caml_lessequal"
+                    | "caml_greaterthan"
+                    | "caml_greaterequal"
+                    | "caml_equal"
+                    | "caml_notequal" )
+                  , _ )
               , _ ) )
         when inline_comparisons ->
           (* Bias toward inlining functions containing polymorphic
