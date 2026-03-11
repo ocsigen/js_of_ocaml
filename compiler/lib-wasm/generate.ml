@@ -1472,7 +1472,7 @@ module Generate (Target : Target_sig.S) = struct
           | Pv indices -> Some (indices, ctx.global_flow_info.info_defs.(Var.idx indices))
           | Pc _ -> None )
       with
-      | Bigarray { kind; layout }, Some (indices, Expr (Block (_, l, _, _))) ->
+      | Bigarray { kind; layout; _ }, Some (indices, Expr (Block (_, l, _, _))) ->
           Some
             ( kind
             , layout
@@ -1494,7 +1494,7 @@ module Generate (Target : Target_sig.S) = struct
     in
     let caml_ba_get_n ~ctx ~context ta indices =
       match get_type ctx ta with
-      | Bigarray { kind; layout } ->
+      | Bigarray { kind; layout; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_get ~ctx ~context ~kind ~layout ta indices
       | _ ->
@@ -1593,7 +1593,7 @@ module Generate (Target : Target_sig.S) = struct
     in
     let caml_ba_set_n ~ctx ~context ta indices v =
       match get_type ctx ta with
-      | Bigarray { kind; layout } ->
+      | Bigarray { kind; layout; _ } ->
           let indices = List.map ~f:(fun i -> transl_prim_arg ctx ~typ:int_n i) indices in
           caml_ba_set ~ctx ~context ~kind ~layout ta indices v
       | _ ->
@@ -1778,12 +1778,12 @@ module Generate (Target : Target_sig.S) = struct
             | _ -> false)
           c
     | Special (Alias_prim _) -> assert false
-    | Prim (Extern "caml_alloc_dummy_function", [ _; Pc (Int arity) ]) ->
+    | Prim (Extern ("caml_alloc_dummy_function", _), [ _; Pc (Int arity) ]) ->
         (* Removed in OCaml 5.2 *)
         Closure.dummy ~cps:(effects_cps ()) ~arity:(Targetint.to_int_exn arity)
-    | Prim (Extern "caml_alloc_dummy_infix", _) ->
+    | Prim (Extern ("caml_alloc_dummy_infix", _), _) ->
         Closure.dummy ~cps:(effects_cps ()) ~arity:1
-    | Prim (Extern "caml_get_global_data", []) ->
+    | Prim (Extern ("caml_get_global_data", _), []) ->
         let* x =
           let* typ = Value.block_type in
           register_import
@@ -1792,7 +1792,7 @@ module Generate (Target : Target_sig.S) = struct
             (Global { mut = true; typ })
         in
         return (W.GlobalGet x)
-    | Prim (Extern "caml_get_global", [ Pc (String name) ]) ->
+    | Prim (Extern ("caml_get_global", _), [ Pc (String name) ]) ->
         let* x =
           let* context = get_context in
           match
@@ -1810,7 +1810,7 @@ module Generate (Target : Target_sig.S) = struct
               register_import ~import_module:"OCaml" ~name (Global { mut = true; typ })
         in
         return (W.GlobalGet x)
-    | Prim (Extern "caml_get_global_predef", [ Pc (String name) ]) ->
+    | Prim (Extern ("caml_get_global_predef", _), [ Pc (String name) ]) ->
         let exported_name = "predef:" ^ name in
         let* x =
           let* context = get_context in
@@ -1832,7 +1832,7 @@ module Generate (Target : Target_sig.S) = struct
                 (Global { mut = true; typ })
         in
         return (W.GlobalGet x)
-    | Prim (Extern "caml_register_global", [ v; Pc (String name) ]) ->
+    | Prim (Extern ("caml_register_global", _), [ v; Pc (String name) ]) ->
         let v = transl_prim_arg ctx v in
         let x = Var.fresh_n name in
         let* () =
@@ -1850,7 +1850,7 @@ module Generate (Target : Target_sig.S) = struct
            let* name_str = Constant.translate ~unboxed:false (String name) in
            instr (W.Drop (W.Call (f, [ v; name_str ]))))
           Value.unit
-    | Prim (Extern "caml_register_global_predef", [ v; Pc (String name) ]) ->
+    | Prim (Extern ("caml_register_global_predef", _), [ v; Pc (String name) ]) ->
         let exported_name = "predef:" ^ name in
         let v = transl_prim_arg ctx v in
         let x = Var.fresh_n name in
@@ -1879,14 +1879,14 @@ module Generate (Target : Target_sig.S) = struct
     | Prim (Neq, [ x; y ]) -> translate_int_equality ctx ~negate:true x y
     | Prim (Array_get, [ x; y ]) ->
         Memory.array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
-    | Prim (Extern "caml_array_unsafe_get", [ x; y ]) ->
+    | Prim (Extern ("caml_array_unsafe_get", _), [ x; y ]) ->
         Memory.gen_array_get (transl_prim_arg ctx x) (transl_prim_arg ctx ~typ:int_n y)
     | Prim (p, l) -> (
         match p with
-        | Extern name when String.Hashtbl.mem internal_primitives name ->
+        | Extern (name, _) when String.Hashtbl.mem internal_primitives name ->
             let _, _, _, f = String.Hashtbl.find internal_primitives name in
             f ctx context l |> box_number_if_needed ctx x
-        | Extern name when String.Hashtbl.mem specialized_primitives name ->
+        | Extern (name, _) when String.Hashtbl.mem specialized_primitives name ->
             let ((_, arg_typ, _) as typ) =
               String.Hashtbl.find specialized_primitives name
             in
@@ -1903,7 +1903,7 @@ module Generate (Target : Target_sig.S) = struct
         | _ -> (
             let l = List.map ~f:(fun x -> transl_prim_arg ctx x) l in
             match p, l with
-            | Extern name, l ->
+            | Extern (name, _), l ->
                 let* f =
                   register_import ~name (Fun (Type.primitive_type (List.length l)))
                 in
@@ -1916,8 +1916,8 @@ module Generate (Target : Target_sig.S) = struct
                 in
                 loop [] l
             | IsInt, [ x ] -> Value.is_int x
-            | Vectlength, [ x ] -> Memory.gen_array_length x
-            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength), _ ->
+            | Vectlength _, [ x ] -> Memory.gen_array_length x
+            | (Not | Lt | Le | Eq | Neq | Ult | Array_get | IsInt | Vectlength _), _ ->
                 assert false))
 
   and translate_instr ctx context i =
@@ -2048,43 +2048,45 @@ module Generate (Target : Target_sig.S) = struct
                 ( _
                 , Prim
                     ( Extern
-                        ( "caml_string_get"
-                        | "caml_bytes_get"
-                        | "caml_string_set"
-                        | "caml_bytes_set"
-                        | "caml_check_bound"
-                        | "caml_check_bound_gen"
-                        | "caml_check_bound_float"
-                        | "caml_checked_int32_to_int"
-                        | "caml_checked_nativeint_to_int"
-                        | "caml_checked_int64_to_int"
-                        | "caml_ba_get_1"
-                        | "caml_ba_get_2"
-                        | "caml_ba_get_3"
-                        | "caml_ba_float32_get_1"
-                        | "caml_ba_float32_get_2"
-                        | "caml_ba_float32_get_3"
-                        | "caml_ba_get_generic"
-                        | "caml_ba_set_1"
-                        | "caml_ba_set_2"
-                        | "caml_ba_set_3"
-                        | "caml_ba_set_generic"
-                        | "caml_ba_float32_set_1"
-                        | "caml_ba_float32_set_2"
-                        | "caml_ba_float32_set_3" )
+                        ( ( "caml_string_get"
+                          | "caml_bytes_get"
+                          | "caml_string_set"
+                          | "caml_bytes_set"
+                          | "caml_check_bound"
+                          | "caml_check_bound_gen"
+                          | "caml_check_bound_float"
+                          | "caml_checked_int32_to_int"
+                          | "caml_checked_nativeint_to_int"
+                          | "caml_checked_int64_to_int"
+                          | "caml_ba_get_1"
+                          | "caml_ba_get_2"
+                          | "caml_ba_get_3"
+                          | "caml_ba_float32_get_1"
+                          | "caml_ba_float32_get_2"
+                          | "caml_ba_float32_get_3"
+                          | "caml_ba_get_generic"
+                          | "caml_ba_set_1"
+                          | "caml_ba_set_2"
+                          | "caml_ba_set_3"
+                          | "caml_ba_set_generic"
+                          | "caml_ba_float32_set_1"
+                          | "caml_ba_float32_set_2"
+                          | "caml_ba_float32_set_3" )
+                        , _ )
                     , _ ) ) -> fst n, true
             | Let
                 ( _
                 , Prim
                     ( Extern
-                        ( "%int_div"
-                        | "%int_mod"
-                        | "caml_int32_div"
-                        | "caml_int32_mod"
-                        | "caml_int64_div"
-                        | "caml_int64_mod"
-                        | "caml_nativeint_div"
-                        | "caml_nativeint_mod" )
+                        ( ( "%int_div"
+                          | "%int_mod"
+                          | "caml_int32_div"
+                          | "caml_int32_mod"
+                          | "caml_int64_div"
+                          | "caml_int64_mod"
+                          | "caml_nativeint_div"
+                          | "caml_nativeint_mod" )
+                        , _ )
                     , _ ) ) -> true, snd n
             | _ -> n)
           ~init:n

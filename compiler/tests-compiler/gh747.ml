@@ -221,7 +221,7 @@ end
       1:
       2: //# unitInfo: Provides: Test
       3: //# unitInfo: Requires: Stdlib__Printf
-      4: //# shape: Test:[N,N,[N],N,N,N,N,N,N,N,N,N,N,F(2),F(2),[F(4)]]
+      4: //# shape: Test:[N,N,[N],N,N,N,N,N,N,N,N,N,[N,N],F(2),F(2),[F(4)]]
       5: (function
       6:   (globalThis){
       7:    "use strict";
@@ -390,7 +390,8 @@ end
     170:   (globalThis));
     171:
     172: //# sourceMappingURL=test.map
-     |} [@when ocaml_version >= (5, 6, 0)])];
+     |}
+    [@when ocaml_version >= (5, 6, 0)])];
   [%expect
     ({|
     $ cat "test.js"
@@ -566,4 +567,5 @@ end
     170:   (globalThis));
     171:
     172: //# sourceMappingURL=test.map
-     |} [@when ocaml_version < (5, 6, 0)])]
+     |}
+    [@when ocaml_version < (5, 6, 0)])]
