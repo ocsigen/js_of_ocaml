@@ -40,17 +40,17 @@ let rec f x y z =
         (0,
          [0,
           function(a, b, c){
-           var f = a, e = b, d = c;
            for(;;){
-            if(0 === f && 0 === e && 0 === d) return 1;
-            var g = (d + f | 0) + e | 0;
-            f = f + d | 0;
-            e = e - d | 0;
-            d = g;
+            if(0 === a && 0 === b && 0 === c) return 1;
+            var d = (c + a | 0) + b | 0;
+            a = a + c | 0;
+            b = b - c | 0;
+            c = d;
            }
           }],
          "Test");
        return;
       }
       (globalThis));
-    //end |}]
+    //end
+    |}]

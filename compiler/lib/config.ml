@@ -101,6 +101,8 @@ module Flag = struct
 
   let constant_sinking = o ~name:"constant-sinking" ~default:true
 
+  let var_coalescing = o ~name:"var-coalescing" ~default:true
+
   let header = o ~name:"header" ~default:true
 
   let auto_link = o ~name:"auto-link" ~default:true
