@@ -36,11 +36,11 @@
    (type $bytes (array (mut i8)))
 
    (func (export "caml_wasm_load_module")
-      (param $bytes (ref eq)) (result (ref eq))
+      (param $str (ref eq)) (result (ref eq))
       (call $wrap
          (call $load_module
             (call $unwrap
-               (call $caml_uint8_array_of_string (local.get $bytes))))))
+               (call $caml_uint8_array_of_string (local.get $str))))))
 
    (func (export "caml_wasm_load_wasmo")
       (param $str (ref eq)) (result (ref eq))

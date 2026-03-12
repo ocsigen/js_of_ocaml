@@ -81,7 +81,16 @@ val from_string :
   -> string
   -> Code.program
 
+val normalize_bytecode : string -> string
+
 val predefined_exceptions : unit -> Code.program * Unit_info.t
+
+type bytesections =
+  { symb : Ocaml_compiler.Symtable.GlobalMap.t
+  ; crcs : (string * Digest.t option) list
+  ; prim : string list
+  ; dlpt : string list
+  }
 
 val read_crcs : in_channel -> (string * Digest.t option) list
 

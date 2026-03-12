@@ -37,7 +37,7 @@ external wasm_register_fragments : string -> string -> unit
   = "caml_wasm_register_fragments"
 
 external toplevel_init_compile :
-  (Obj.t -> Instruct.debug_event list array -> unit -> Obj.t) -> unit
+  (string -> Instruct.debug_event list array -> unit -> Obj.t) -> unit
   = "wasm_toplevel_init_compile"
 
 external dynlink_init_sections : Obj.t -> unit = "wasm_dynlink_init_sections"
@@ -54,44 +54,11 @@ external caml_register_global : int -> Obj.t -> string -> unit = "caml_register_
 
 external caml_realloc_global : int -> unit = "caml_realloc_global"
 
-type bytecode_sections =
-  { symb : Ocaml_compiler.Symtable.GlobalMap.t
-  ; crcs : (string * Digest.t option) list
-  ; prim : string list
-  ; dlpt : string list
-  }
-[@@ocaml.warning "-unused-field"]
-
-let normalize_bytecode code =
-  match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
-  | true -> code
-  | false ->
-      (* Starting with OCaml 5.2, the toplevel no longer appends [RETURN 1] *)
-      let { Instr.opcode; _ } = Instr.find RETURN in
-      let len = String.length code in
-      let b = Bytes.create (len + 8) in
-      Bytes.blit_string code 0 b 0 len;
-      Bytes.set_int32_le b len (Int32.of_int opcode);
-      Bytes.set_int32_le b (len + 4) 1l;
-      Bytes.to_string b
-
-let bigarray_to_string ba =
-  let ba : (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t =
-    Obj.obj ba
-  in
-  let len = Bigarray.Array1.dim ba in
-  let b = Bytes.create len in
-  for i = 0 to len - 1 do
-    Bytes.unsafe_set b i (Bigarray.Array1.unsafe_get ba i)
-  done;
-  Bytes.unsafe_to_string b
-
 let fragments_to_js_source fragments =
   let open Javascript in
   let props =
     List.map
-      (fun (nm, e) ->
-        Property (PNS (Js_of_ocaml_compiler.Stdlib.Utf8_string.of_string_exn nm), e))
+      (fun (nm, e) -> Property (PNS (Stdlib.Utf8_string.of_string_exn nm), e))
       fragments
   in
   let expr = EObj props in
@@ -138,11 +105,9 @@ let parse_crcs s =
         if entry = ""
         then None
         else
-          match String.index_opt entry '\x01' with
+          match Stdlib.String.lsplit2 entry ~on:'\x01' with
           | None -> None
-          | Some idx ->
-              let name = String.sub entry 0 idx in
-              let hex = String.sub entry (idx + 1) (String.length entry - idx - 1) in
+          | Some (name, hex) ->
               let digest = if hex = "" then None else hex_to_digest hex in
               Some (name, digest))
 
@@ -193,7 +158,7 @@ let () =
     List.iter (fun p -> Hashtbl.replace known p ()) wasm_prims;
     let compiler_prims = Primitive.get_external () in
     let extra =
-      Js_of_ocaml_compiler.Stdlib.StringSet.fold
+      Stdlib.StringSet.fold
         (fun p acc -> if Hashtbl.mem known p then acc else p :: acc)
         compiler_prims
         []
@@ -201,14 +166,12 @@ let () =
     wasm_prims @ extra
   in
   let prims = Array.of_list prim in
-  let sections = { symb = !symb; crcs; prim; dlpt = [] } in
+  let sections : Parse_bytecode.bytesections = { symb = !symb; crcs; prim; dlpt = [] } in
   dynlink_init_sections (Obj.repr sections);
-  let orig_units = Js_of_ocaml_compiler.Stdlib.StringSet.of_list unit_names in
+  let orig_units = Stdlib.StringSet.of_list unit_names in
   (* Register compile callback *)
-  let toplevel_compile (code : Obj.t) (debug : Instruct.debug_event list array) :
-      unit -> Obj.t =
-    let s = bigarray_to_string code in
-    let s = normalize_bytecode s in
+  let toplevel_compile code (debug : Instruct.debug_event list array) : unit -> Obj.t =
+    let s = Parse_bytecode.normalize_bytecode code in
     let wasm_binary, fragments =
       Wasm_of_ocaml_compiler.Generate.from_string
         ~prims

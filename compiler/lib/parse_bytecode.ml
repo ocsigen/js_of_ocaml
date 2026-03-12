@@ -2949,6 +2949,19 @@ let from_bytes ~prims ~debug ~orig_units (code : bytecode) =
 let from_string ~prims ~debug ~orig_units (code : string) =
   from_bytes ~prims ~debug ~orig_units code
 
+let normalize_bytecode code =
+  match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
+  | true -> code
+  | false ->
+      (* Starting with OCaml 5.2, the toplevel no longer appends [RETURN 1] *)
+      let { opcode; _ } = find RETURN in
+      let len = String.length code in
+      let b = Bytes.create (len + 8) in
+      Bytes.blit_string ~src:code ~src_pos:0 ~dst:b ~dst_pos:0 ~len;
+      Bytes.set_int32_le b len (Int32.of_int opcode);
+      Bytes.set_int32_le b (len + 4) 1l;
+      Bytes.to_string b
+
 module Reloc = struct
   let gen_patch_int buff pos n =
     Bytes.set buff (pos + 0) (Char.unsafe_chr n);

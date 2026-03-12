@@ -38,10 +38,10 @@
       (func $get_prim_list (result anyref)))
    (import "bindings" "get_crcs"
       (func $get_crcs (result anyref)))
-   (import "bigarray" "caml_uint8_array_of_string"
-      (func $caml_uint8_array_of_string (param (ref eq)) (result (ref eq))))
-   (import "bigarray" "caml_ba_from_typed_array"
-      (func $caml_ba_from_typed_array (param (ref eq)) (result (ref eq))))
+   (import "bigarray" "caml_ba_to_typed_array"
+      (func $caml_ba_to_typed_array (param (ref eq)) (result (ref eq))))
+   (import "bigarray" "caml_string_of_uint8_array"
+      (func $caml_string_of_uint8_array (param (ref eq)) (result (ref eq))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -105,13 +105,13 @@
       (ref.i31 (i32.const 0)))
 
    ;; Called by OCaml's Dynlink/Toploop to compile bytecode.
-   ;; Passes the raw code value and debug info to the registered callback,
-   ;; which compiles to Wasm and returns a (unit -> unit) thunk.
+   ;; Passes the raw code as a string and debug info to the registered
+   ;; callback, which compiles to Wasm and returns a (unit -> unit) thunk.
    ;; Returns (0, thunk) as expected by the caller.
    ;;
-   ;; In OCaml >= 5.2, code is a bigarray (passed directly).
-   ;; In OCaml < 5.2, code is a block (array) of bytes values that must
-   ;; be concatenated into a single bytes then wrapped as a bigarray.
+   ;; In OCaml >= 5.2, code arrives as a bigarray and is converted to a string.
+   ;; In OCaml < 5.2, code is a block (array) of bytes values that are
+   ;; concatenated into a single string.
 
 (@if (>= ocaml_version (5 2 0))
 (@then
@@ -128,7 +128,8 @@
          (ref.i31 (i32.const 0))
          (call $caml_callback_2
             (global.get $toplevel_compile)
-            (local.get $code)
+            (call $caml_string_of_uint8_array
+               (call $caml_ba_to_typed_array (local.get $code)))
             (local.get $debug))))
 )
 (@else
@@ -182,14 +183,12 @@
                (i32.add (local.get $pos) (local.get $chunk_len)))
             (local.set $i (i32.add (local.get $i) (i32.const 1)))
             (br $loop2)))
-      ;; Convert to bigarray (Uint8Array) as expected by the callback.
       (array.new_fixed $block 3
          (ref.i31 (i32.const 0))
          (ref.i31 (i32.const 0))
          (call $caml_callback_2
             (global.get $toplevel_compile)
-            (call $caml_ba_from_typed_array
-               (call $caml_uint8_array_of_string (local.get $buf)))
+            (local.get $buf)
             (local.get $debug))))
 ))
 
