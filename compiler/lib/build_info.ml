@@ -107,8 +107,21 @@ let set_values keys entries =
   List.iter entries ~f:(fun (k, v) ->
       match List.find_opt keys ~f:(fun key -> String.equal (config_key_name key) k) with
       | None -> failwith (Printf.sprintf "unknown config key %S" k)
-      | Some (Bool_key { set; _ }) -> set (bool_of_string v)
-      | Some (Enum_key { set; _ }) -> set v)
+      | Some (Bool_key { set; _ }) -> (
+          match v with
+          | "true" -> set true
+          | "false" -> set false
+          | _ -> failwith (Printf.sprintf "key %S expects true or false, got %S" k v))
+      | Some (Enum_key { set; valid; _ }) ->
+          if List.mem ~eq:String.equal v valid
+          then set v
+          else
+            failwith
+              (Printf.sprintf
+                 "key %S expects one of {%s}, got %S"
+                 k
+                 (String.concat ~sep:", " valid)
+                 v))
 
 let parse_entries ~sep s =
   if String.is_empty s
