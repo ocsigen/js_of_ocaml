@@ -201,4 +201,12 @@
    (func (export "caml_mount_autoload")
       (param (ref eq) (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_list_mount_point")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_unmount")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
 )

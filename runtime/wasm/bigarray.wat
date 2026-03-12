@@ -807,6 +807,23 @@
             (struct.get $bigarray $ba_data
                (ref.cast (ref $bigarray) (local.get 0))))))
 
+   (@string $ba_kind_unsupported
+      "caml_ba_kind_of_typed_array: unsupported kind")
+
+   (func (export "caml_ba_kind_of_typed_array")
+      (param $ta (ref eq)) (result (ref eq))
+      (local $kind i32)
+      (local.set $kind
+         (call $ta_kind
+            (ref.as_non_null
+               (extern.convert_any (call $unwrap (local.get $ta))))))
+      (if (i32.lt_s (local.get $kind) (i32.const 0))
+         (then (call $caml_invalid_argument
+                  (global.get $ba_kind_unsupported))))
+      (if (i32.eq (local.get $kind) (i32.const 14)) ;; Uint8ClampedArray
+         (then (local.set $kind (i32.const 3))))
+      (ref.i31 (local.get $kind)))
+
    (func $caml_ba_get_at_offset
       (param $ba (ref $bigarray)) (param $i i32) (result (ref eq))
       (local $view (ref extern))
