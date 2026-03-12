@@ -9,7 +9,13 @@
   ; lazy7
   lazy8
   ; minor_major_force
-  )
+  lazy10)
  (build_if
   (>= %{ocaml_version} 5.0))
+ (modes js wasm))
+
+(tests
+ (names lazy9)
+ (build_if
+  (>= %{ocaml_version} 5.5))
  (modes js wasm))

@@ -66,6 +66,13 @@ jobs:
             skip-doc: false
           - os: ubuntu-latest
             os-name: Ubuntu
+            ocaml-name: "5.5.0~alpha1"
+            ocaml-compiler: "ocaml-compiler.5.5.0~alpha1"
+            skip-effects: false
+            skip-test: false
+            skip-doc: true
+          - os: ubuntu-latest
+            os-name: Ubuntu
             ocaml-compiler: "5.1"
             skip-effects: false
             skip-test: false
@@ -127,6 +134,9 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - run: opam repo add alpha git+https://github.com/kit-ty-kate/opam-alpha-repository.git
+        if: contains( matrix.ocaml-compiler, 'alpha1')
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other

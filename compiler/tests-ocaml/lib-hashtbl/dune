@@ -20,6 +20,6 @@
  (deps ../../../LICENSE)
  (modules htbl)
  (build_if
-  (>= %{ocaml_version} 5))
+  (>= %{ocaml_version} 5.5))
  (libraries)
  (modes js wasm))
