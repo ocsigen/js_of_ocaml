@@ -265,7 +265,8 @@ module Share = struct
           match StringMap.find_opt s t.vars.prims with
           | Some v -> J.EVar v
           | None ->
-              let x = Var.fresh_n s in
+              let x = Var.fresh () in
+              Var.set_name x ~generated:false s;
               let v = J.V x in
               t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
               J.EVar v)
