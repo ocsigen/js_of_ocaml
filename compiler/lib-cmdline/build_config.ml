@@ -23,29 +23,7 @@ let print_and_exit keys =
   Printf.printf "%s\n" (Build_info.to_config_string (Build_info.get_values keys));
   exit 0
 
-let validate_and_set keys (key, value) =
-  match
-    List.find_opt keys ~f:(fun k -> String.equal (Build_info.config_key_name k) key)
-  with
-  | None -> failwith (Printf.sprintf "unknown key %S" key)
-  | Some (Build_info.Bool_key { set; _ }) -> (
-      match value with
-      | "true" -> set true
-      | "false" -> set false
-      | _ -> failwith (Printf.sprintf "key %S expects true or false, got %S" key value))
-  | Some (Build_info.Enum_key { set; valid; _ }) ->
-      if List.mem ~eq:String.equal value valid
-      then set value
-      else
-        failwith
-          (Printf.sprintf
-             "key %S expects one of {%s}, got %S"
-             key
-             (String.concat ~sep:", " valid)
-             value)
-
-let parse keys input =
-  List.iter (Build_info.parse_config_string input) ~f:(validate_and_set keys)
+let parse keys input = Build_info.set_values keys (Build_info.parse_config_string input)
 
 let process target ~apply ~print_and_exit:do_print =
   let keys = Build_info.config_keys target in
