@@ -124,6 +124,7 @@ type effects_backend =
   | `Cps
   | `Double_translation
   | `Jspi
+  | `Native
   ]
 
 val effects : unit -> effects_backend
