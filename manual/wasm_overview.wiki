@@ -62,9 +62,9 @@ supported in general. However:
 === Differences from js_of_ocaml
 
 Compared to js_of_ocaml:
-* Dynlink is not supported
-* Building an OCaml toplevel is not possible
-* The virtual filesystem is not implemented
+* The default effect handler mode is {{{jspi}}} (instead of {{{disabled}}})
+* The {{{--effects}}} flag accepts {{{jspi}}} instead of {{{double-translation}}}
+* There is no {{{build-fs}}} subcommand; use the {{{--file}}} flag instead
 
 === Effect handlers
 
@@ -87,7 +87,32 @@ If a js_of_ocaml project uses {{{external}}} primitives defined in companion
 {{{.js}}} files, you need to implement the same primitives in Wasm modules
 to build with wasm_of_ocaml.
 
+==@@id="toplevel"@@ Toplevel
+
+Wasm_of_ocaml can compile an OCaml toplevel (REPL) to WebAssembly.
+The toplevel dynamically compiles OCaml bytecode to Wasm and instantiates
+it in the browser.
+
+See <<a_manual chapter="build-toplevel"|Toplevel and Dynlink>> for build instructions.
+
+==@@id="dynlink"@@ Dynlink
+
+OCaml's {{{Dynlink}}} module is supported. Plugin {{{.cmo}}} files are compiled
+on the fly to WebAssembly and instantiated at runtime.
+
+See <<a_manual chapter="build-toplevel"|Toplevel and Dynlink>> for build instructions.
+
+==@@id="pseudo-fs"@@ Pseudo filesystem
+
+The pseudo filesystem is supported. Use the {{{--file}}} flag to embed files,
+the same way as with js_of_ocaml:
+
+{{{
+wasm_of_ocaml --file data.txt cubes.byte
+}}}
+
 == See also
 
+* <<a_manual chapter="build-toplevel"|Toplevel and Dynlink>> — Build a toplevel or use dynamic linking
 * <<a_manual chapter="wasm_runtime"|Writing Wasm primitives>> — Implement custom Wasm primitives
 * <<a_manual chapter="overview"|Js_of_ocaml overview>> — JavaScript compilation alternative

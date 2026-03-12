@@ -786,7 +786,7 @@ let f'
   full_no_source_map ~formatter ~shapes:false ~standalone ~wrap_with_fun ~profile ~link p
 
 let from_string ~prims ~debug s formatter =
-  let p = Parse_bytecode.from_string ~prims ~debug s in
+  let p = Parse_bytecode.from_string ~prims ~debug ~orig_units:StringSet.empty s in
   full_no_source_map
     ~formatter
     ~shapes:false

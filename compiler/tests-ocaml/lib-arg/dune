@@ -11,3 +11,18 @@
  (alias runtest-js)
  (action
   (diff test_rest_all.ml test_rest_all.ml.corrected)))
+
+(rule
+ (copy test_rest_all.ml test_rest_all_wasm.ml))
+
+(rule
+ (target test_rest_all_wasm.ml.corrected)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_rest_all_wasm.ml})))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (diff test_rest_all.ml test_rest_all_wasm.ml.corrected)))

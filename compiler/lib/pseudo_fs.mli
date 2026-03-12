@@ -19,12 +19,16 @@
 
 open Stdlib
 
+val collect_cmis : cmis:StringSet.t -> paths:string list -> (string * string) list
+
 val f :
      prim:[ `create_file | `create_file_extern ]
   -> cmis:StringSet.t
   -> files:string list
   -> paths:string list
   -> Code.instr list
+
+val list_files : string -> string list -> (string * string) list
 
 val embed_file : name:string -> filename:string -> Code.instr
 

@@ -9,3 +9,21 @@
   (>= %{ocaml_version} 5.2))
  (action
   (diff test_array.ml test_array.ml.corrected)))
+
+(rule
+ (copy test_array.ml test_array_wasm.ml))
+
+(rule
+ (target test_array_wasm.ml.corrected)
+ (enabled_if %{env:WASM_OF_OCAML=false})
+ (action
+  (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_array_wasm.ml})))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if
+  (and
+   (>= %{ocaml_version} 5.2)
+   %{env:WASM_OF_OCAML=false}))
+ (action
+  (diff test_array.ml test_array_wasm.ml.corrected)))
