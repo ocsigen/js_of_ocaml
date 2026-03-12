@@ -86,7 +86,7 @@ let to_string (shape : t) =
               let name = !next_name in
               incr next_name;
               Int.Hashtbl.replace names s.id name;
-              Buffer.add_string buf (Printf.sprintf "#%d=" name)
+              Buffer.add_string buf (Printf.sprintf "$%d=" name)
             end;
             match desc with
             | Top -> assert false
@@ -147,19 +147,17 @@ let of_string (s : string) =
     | 'F' ->
         next ();
         parse_fun ()
-    | '#' ->
-        next ();
-        let parsed_id = parse_int 0 in
-        parse_char '=';
-        let shape_proxy = proxy () in
-        Int.Hashtbl.replace ref_table parsed_id shape_proxy;
-        let actual_shape = parse_shape () in
-        shape_proxy.desc <- actual_shape.desc;
-        shape_proxy
     | '$' ->
         next ();
         let parsed_id = parse_int 0 in
-        Int.Hashtbl.find ref_table parsed_id
+        if parse_char_opt '='
+        then (
+          let shape_proxy = proxy () in
+          Int.Hashtbl.replace ref_table parsed_id shape_proxy;
+          let actual_shape = parse_shape () in
+          shape_proxy.desc <- actual_shape.desc;
+          shape_proxy)
+        else Int.Hashtbl.find ref_table parsed_id
     | _ -> assert false
   and parse_block acc =
     match current () with
