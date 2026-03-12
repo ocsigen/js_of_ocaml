@@ -18,15 +18,14 @@
 
 open Js_of_ocaml_compiler
 
-external caml_wasm_load_wasmo : bytes -> unit = "caml_wasm_load_wasmo"
+external caml_wasm_load_wasmo : string -> unit = "caml_wasm_load_wasmo"
 
 let read_file filename =
   let ic = open_in_bin filename in
   let n = in_channel_length ic in
-  let b = Bytes.create n in
-  really_input ic b 0 n;
+  let s = really_input_string ic n in
   close_in ic;
-  b
+  s
 
 let loadfile filename =
   let b = read_file filename in

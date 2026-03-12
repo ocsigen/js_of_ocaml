@@ -43,10 +43,10 @@
                (call $caml_uint8_array_of_string (local.get $bytes))))))
 
    (func (export "caml_wasm_load_wasmo")
-      (param $bytes (ref eq)) (result (ref eq))
+      (param $str (ref eq)) (result (ref eq))
       (call $load_wasmo
          (call $unwrap
-            (call $caml_uint8_array_of_string (local.get $bytes))))
+            (call $caml_uint8_array_of_string (local.get $str))))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_wasm_register_fragments")
