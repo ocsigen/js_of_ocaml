@@ -61,9 +61,9 @@ type kind =
 
 val create : kind -> t
 
-val to_string : t -> string
+val to_comment : t -> string
 
-val parse : string -> t option
+val parse_comment : string -> t option
 
 val to_map : t -> string StringMap.t
 

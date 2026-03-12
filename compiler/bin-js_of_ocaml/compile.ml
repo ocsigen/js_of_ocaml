@@ -35,7 +35,7 @@ let header formatter ~custom_header =
 
 let jsoo_header formatter build_info =
   Pretty_print.string formatter (Printf.sprintf "%s\n" Global_constant.header);
-  Pretty_print.string formatter (Build_info.to_string build_info)
+  Pretty_print.string formatter (Build_info.to_comment build_info)
 
 let source_map_enabled : Source_map.Encoding_spec.t option -> bool = function
   | None -> false
