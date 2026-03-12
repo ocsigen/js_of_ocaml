@@ -106,25 +106,29 @@ let get_values keys =
 let set_values keys entries =
   List.iter entries ~f:(fun (k, v) ->
       match List.find_opt keys ~f:(fun key -> String.equal (config_key_name key) k) with
-      | None -> ()
+      | None -> failwith (Printf.sprintf "unknown config key %S" k)
       | Some (Bool_key { set; _ }) -> set (bool_of_string v)
       | Some (Enum_key { set; _ }) -> set v)
 
-let to_config_string entries =
-  let entries = List.sort ~cmp:(fun (k1, _) (k2, _) -> String.compare k1 k2) entries in
-  String.concat ~sep:"+" (List.map ~f:(fun (k, v) -> Printf.sprintf "%s=%s" k v) entries)
-
-let parse_config_string s =
+let parse_entries ~sep s =
   if String.is_empty s
   then []
   else
     s
-    |> String.split_on_char ~sep:'+'
+    |> String.split_on_char ~sep
     |> List.map ~f:String.trim
     |> List.map ~f:(fun s ->
         match String.lsplit2 ~on:'=' s with
-        | None -> s, ""
+        | None -> failwith (Printf.sprintf "invalid config entry %S: missing '='" s)
         | Some (k, v) -> k, v)
+
+let entries_to_string ~sep entries =
+  let entries = List.sort ~cmp:(fun (k1, _) (k2, _) -> String.compare k1 k2) entries in
+  String.concat ~sep (List.map ~f:(fun (k, v) -> Printf.sprintf "%s=%s" k v) entries)
+
+let to_config_string entries = entries_to_string ~sep:"+" entries
+
+let parse_config_string s = parse_entries ~sep:'+' s
 
 let kind_of_string s =
   match List.find_opt all ~f:(fun k -> String.equal s (string_of_kind k)) with
@@ -152,26 +156,16 @@ let with_kind t kind = StringMap.add "kind" (string_of_kind kind) t
 
 let prefix = "//# buildInfo:"
 
-let to_string info =
-  let str =
-    StringMap.bindings info
-    |> List.map ~f:(fun (k, v) -> Printf.sprintf "%s=%s" k v)
-    |> String.concat ~sep:", "
-  in
+let to_comment info =
+  let str = entries_to_string ~sep:", " (StringMap.bindings info) in
   Printf.sprintf "%s%s\n" prefix str
 
-let parse s =
+let parse_comment s =
   match String.drop_prefix ~prefix s with
   | None -> None
   | Some suffix ->
       let t =
-        suffix
-        |> String.split_on_char ~sep:','
-        |> List.map ~f:String.trim
-        |> List.map ~f:(fun s ->
-            match String.lsplit2 ~on:'=' s with
-            | None -> s, ""
-            | Some (k, v) -> k, v)
+        parse_entries ~sep:',' suffix
         |> List.fold_left ~init:StringMap.empty ~f:(fun acc (k, v) ->
             StringMap.add k v acc)
       in
@@ -228,5 +222,13 @@ let merge target fname1 info1 fname2 info2 =
       info2
 
 let configure t =
-  let entries = StringMap.fold (fun k v acc -> (k, v) :: acc) t [] in
+  let entries =
+    StringMap.fold
+      (fun k v acc ->
+        match k with
+        | "version" | "kind" -> acc
+        | _ -> (k, v) :: acc)
+      t
+      []
+  in
   set_values (config_keys (Config.target ())) entries
