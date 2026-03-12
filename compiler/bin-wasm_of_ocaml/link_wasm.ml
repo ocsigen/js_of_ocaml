@@ -32,6 +32,7 @@ type options =
   ; variables : Preprocess.variables
   ; allowed_imports : string list option
   ; binaryen_options : binaryen_options
+  ; effects_backend : Js_of_ocaml_compiler.Config.effects_backend
   }
 
 let options =
@@ -71,13 +72,30 @@ let options =
     let allowed_imports =
       if List.is_empty allowed_imports then None else Some (List.concat allowed_imports)
     in
-    `Ok
-      { input_modules
-      ; output_file
-      ; variables
-      ; allowed_imports
-      ; binaryen_options = { common; opt; merge }
-      }
+    let effects_backend =
+      match
+        List.find_map
+          ~f:(fun (k, v) -> if String.equal k "effects" then Some v else None)
+          variables.Preprocess.set
+      with
+      | Some "native" -> Ok (`Native : Js_of_ocaml_compiler.Config.effects_backend)
+      | Some "cps" -> Ok `Cps
+      | Some "jspi" | None -> Ok `Jspi
+      | Some "double-translation" -> Ok `Double_translation
+      | Some "disabled" -> Ok `Disabled
+      | Some other -> Error other
+    in
+    match effects_backend with
+    | Ok effects_backend ->
+        `Ok
+          { input_modules
+          ; output_file
+          ; variables
+          ; allowed_imports
+          ; binaryen_options = { common; opt; merge }
+          ; effects_backend
+          }
+    | Error other -> `Error (false, Printf.sprintf "unknown effects backend %s" other)
   in
   let t =
     Term.(
@@ -98,7 +116,11 @@ let link
     ; variables
     ; allowed_imports
     ; binaryen_options = { common; merge; opt }
+    ; effects_backend
     } =
+  (* So that the --enable-stack-switching option is passed to Binaryen
+     tools for native effects. *)
+  Js_of_ocaml_compiler.Config.set_effects_backend effects_backend;
   let inputs =
     List.map
       ~f:(fun (module_name, file) -> { Wat_preprocess.module_name; file; source = File })

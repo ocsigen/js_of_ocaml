@@ -21,6 +21,19 @@ Since CPS code is usually slower, this can avoid performance degradations. You c
 also ensure that some code runs in direct style using
 <<a_api subproject="js_of_ocaml-compiler"|val Jsoo_runtime.Effect.assume_no_perform>>.
 
+==@@id="wasm"@@ Wasm_of_ocaml
+
+Wasm_of_ocaml provides three effect handler implementations:
+
+* **{{{--effects=jspi}}}** (default) uses the JavaScript-Promise Integration extension.
+  It does not require any code transformation but requires a runtime that supports JSPI.
+* **{{{--effects=cps}}}** uses the same CPS transformation as js_of_ocaml.
+* **{{{--effects=native}}}** uses the
+  [[https://github.com/WebAssembly/stack-switching|WebAssembly Stack Switching proposal]]
+  (typed continuations). It provides the best performance but requires a runtime with
+  support for the WasmFX extension (currently available in V8/Node.js behind the
+  {{{--experimental-wasm-wasmfx}}} flag).
+
 ==@@id="dune"@@ Dune integration
 
 Dune is aware of the {{{--effects}}} option. You can add it to the

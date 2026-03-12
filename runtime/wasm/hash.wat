@@ -304,6 +304,8 @@
                                           (local.get $v))))))))
                      (local.set $num (i32.sub (local.get $num) (i32.const 1)))
                      (br $loop)))
+(@if (not wasi)
+(@then
                   (drop (block $not_jsstring (result anyref)
                      (local.set $str
                         (struct.get $js 0
@@ -315,6 +317,7 @@
                      (local.set $h
                         (call $jsstring_hash (local.get $h) (local.get $str)))
                      (ref.i31 (i32.const 0))))
+))
                   ;; closures and continuations and other js values are ignored
                   (br $loop)))))
       ;; clear the queue to avoid a memory leak

@@ -38,7 +38,7 @@ let trim_trailing_dir_sep s =
 
 let normalize_include_dirs dirs = List.map dirs ~f:trim_trailing_dir_sep
 
-let normalize_effects (effects : [ `Disabled | `Cps | `Jspi ] option) common :
+let normalize_effects (effects : [ `Disabled | `Cps | `Jspi | `Native ] option) common :
     Config.effects_backend =
   match effects with
   | None ->
@@ -46,8 +46,10 @@ let normalize_effects (effects : [ `Disabled | `Cps | `Jspi ] option) common :
         [--effects cps] *)
       if List.mem ~eq:String.equal "effects" common.Jsoo_cmdline.Arg.optim.enable
       then `Cps
+      else if List.mem ~eq:String.equal "wasi" common.Jsoo_cmdline.Arg.optim.enable
+      then `Disabled
       else `Jspi
-  | Some ((`Disabled | `Cps | `Jspi) as e) -> e
+  | Some ((`Disabled | `Cps | `Jspi | `Native) as e) -> e
 
 type t =
   { common : Jsoo_cmdline.Arg.t
@@ -137,11 +139,15 @@ let options () =
   let effects =
     let doc =
       "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
-       (the default), $(b,cps), or $(b,disabled)."
+       (the default), $(b,cps), $(b,native) or $(b,disabled)."
     in
     Arg.(
       value
-      & opt (some (enum [ "jspi", `Jspi; "cps", `Cps; "disabled", `Disabled ])) None
+      & opt
+          (some
+             (enum
+                [ "jspi", `Jspi; "cps", `Cps; "native", `Native; "disabled", `Disabled ]))
+          None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
   let build_t
@@ -247,11 +253,15 @@ let options_runtime_only () =
   let effects =
     let doc =
       "Select an implementation of effect handlers. [$(docv)] should be one of $(b,jspi) \
-       (the default), $(b,cps), or $(b,disabled)."
+       (the default), $(b,cps), $(b,native) or $(b,disabled)."
     in
     Arg.(
       value
-      & opt (some (enum [ "jspi", `Jspi; "cps", `Cps; "disabled", `Disabled ])) None
+      & opt
+          (some
+             (enum
+                [ "jspi", `Jspi; "cps", `Cps; "native", `Native; "disabled", `Disabled ]))
+          None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
   let build_t

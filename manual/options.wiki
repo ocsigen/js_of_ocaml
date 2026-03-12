@@ -36,9 +36,11 @@ Possible values:
 | {{{--effects <mode>}}} | Select effect handler implementation (default: {{{disabled}}}) |
 
 Possible values:
-* **{{{disabled}}}** - No effect handler support (default)
+* **{{{disabled}}}** - No effect handler support (default for js_of_ocaml)
 * **{{{cps}}}** - CPS transformation for effect support
-* **{{{double-translation}}}** - Keep both direct and CPS versions; choose at runtime
+* **{{{double-translation}}}** - Keep both direct and CPS versions; choose at runtime (js_of_ocaml only)
+* **{{{jspi}}}** - JavaScript-Promise Integration (default for wasm_of_ocaml)
+* **{{{native}}}** - WebAssembly stack switching (wasm_of_ocaml only, requires WasmFX runtime support)
 
 See <<a_manual chapter="effects"|Effect handlers>> for details.
 
