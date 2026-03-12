@@ -146,7 +146,6 @@ let run
     ; dynlink
     ; linkall
     ; target_env
-    ; toplevel
     ; no_cmis
     ; include_dirs
     ; fs_files
@@ -163,17 +162,16 @@ let run
   let source_map_base =
     Option.map ~f:(fun spec -> spec.Source_map.Encoding_spec.source_map) source_map
   in
-  let include_cmis = toplevel && not no_cmis in
   let custom_header = common.Jsoo_cmdline.Arg.custom_header in
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
-  Config.Flag.set "toplevel" toplevel;
   Jsoo_cmdline.Build_config.process
     `JavaScript
     ~apply:apply_build_config
     ~print_and_exit:build_config;
   let toplevel = Config.Flag.toplevel () in
+  let include_cmis = toplevel && not no_cmis in
   Linker.reset ();
   (match output_file with
   | `Stdout, _ -> ()

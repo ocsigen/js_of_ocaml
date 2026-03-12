@@ -68,7 +68,6 @@ type t =
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool
-  ; toplevel : bool
   ; export_file : string option
   ; no_cmis : bool
   ; (* filesystem *)
@@ -326,6 +325,15 @@ let options =
     let inline_source_content = not sourcemap_don't_inline_content in
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let runtime_files = js_files in
+    let common =
+      if toplevel
+      then
+        let open Jsoo_cmdline.Arg in
+        { common with
+          optim = { common.optim with enable = "toplevel" :: common.optim.enable }
+        }
+      else common
+    in
     let fs_external = fs_external || (toplevel && no_cmis) in
     match build_config, input_file with
     | false, None -> `Error (true, "required argument PROGRAM is missing")
@@ -382,7 +390,6 @@ let options =
           ; dynlink
           ; linkall
           ; target_env
-          ; toplevel
           ; export_file
           ; include_dirs
           ; runtime_files
@@ -637,6 +644,15 @@ let options_runtime_only =
     let static_env : (string * string) list = List.flatten set_env in
     let include_dirs = normalize_include_dirs include_dirs in
     let effects = normalize_effects effects common in
+    let common =
+      if toplevel
+      then
+        let open Jsoo_cmdline.Arg in
+        { common with
+          optim = { common.optim with enable = "toplevel" :: common.optim.enable }
+        }
+      else common
+    in
     `Ok
       { common
       ; params
@@ -646,7 +662,6 @@ let options_runtime_only =
       ; dynlink = false
       ; linkall = false
       ; target_env
-      ; toplevel
       ; export_file = None
       ; include_dirs
       ; runtime_files

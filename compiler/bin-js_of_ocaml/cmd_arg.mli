@@ -41,7 +41,6 @@ type t =
   ; (* toplevel *)
     dynlink : bool
   ; linkall : bool
-  ; toplevel : bool
   ; export_file : string option
   ; no_cmis : bool
   ; (* filesystem *)
