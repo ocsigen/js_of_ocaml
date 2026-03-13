@@ -590,6 +590,12 @@ and eventTarget = object ('self)
   method dispatchEvent : event t -> bool t meth
 end
 
+and beforeUnloadEvent = object
+  inherit event
+
+  method returnValue : js_string t prop
+end
+
 and popStateEvent = object
   inherit event
 
@@ -2289,7 +2295,7 @@ class type window = object
 
   method onunload : (window t, event t) event_listener prop
 
-  method onbeforeunload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, beforeUnloadEvent t) event_listener prop
 
   method onblur : (window t, focusEvent t) event_listener prop
 
@@ -2479,7 +2485,7 @@ module Event : sig
 
   val unload : event t typ
 
-  val beforeunload : event t typ
+  val beforeunload : beforeUnloadEvent t typ
 
   val resize : event t typ
 
