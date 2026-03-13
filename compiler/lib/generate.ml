@@ -494,6 +494,7 @@ let rec constant_rec ~ctx x level instrs =
       | Byte x -> Share.get_byte_string str_js_byte x ctx.Ctx.share, instrs
       | Utf (Utf8 x) -> Share.get_utf_string str_js_utf8 x ctx.Ctx.share, instrs)
   | Float f -> float_const f, instrs
+  | Float32 f -> float_const f, instrs
   | Float_array a ->
       ( Mlvalue.Array.make
           ~tag:Obj.double_array_tag
@@ -551,6 +552,7 @@ let rec constant_rec ~ctx x level instrs =
           Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> targetint i, instrs
   | Int32 i | NativeInt i -> targetint (Targetint.of_int32_exn i), instrs
+  | Null_ -> s_var "null", instrs
 
 let constant ~ctx x level =
   let expr, instr = constant_rec ~ctx x level [] in
@@ -1282,6 +1284,8 @@ let _ =
     [ "caml_array_unsafe_get"
     ; "caml_array_unsafe_get_float"
     ; "caml_floatarray_unsafe_get"
+    ; "caml_array_unsafe_get_indexed_by_int32"
+    ; "caml_array_unsafe_get_indexed_by_nativeint"
     ]
     `Mutable
     (fun cx cy _ -> Mlvalue.Array.field cx cy);
@@ -1297,6 +1301,10 @@ let _ =
     ; "caml_float_of_int"
     ]
     `Pure
+    (fun cx _ -> cx);
+  register_un_prims
+    [ "caml_checked_nativeint_to_int"; "caml_checked_int32_to_int" ]
+    `Mutator
     (fun cx _ -> cx);
   register_bin_prims
     [ "%int_add"; "caml_int32_add"; "caml_nativeint_add" ]
@@ -1362,11 +1370,15 @@ let _ =
     ; "caml_array_unsafe_set_float"
     ; "caml_floatarray_unsafe_set"
     ; "caml_array_unsafe_set_addr"
+    ; "caml_array_unsafe_set_indexed_by_int32"
+    ; "caml_array_unsafe_set_indexed_by_nativeint"
     ]
     `Mutator
     (fun cx cy cz _ -> J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
-  register_un_prims [ "caml_alloc_dummy"; "caml_alloc_dummy_float" ] `Pure (fun _ _ ->
-      J.array []);
+  register_un_prims
+    [ "caml_alloc_dummy"; "caml_alloc_dummy_float"; "caml_alloc_dummy_mixed" ]
+    `Pure
+    (fun _ _ -> J.array []);
   register_un_prims
     [ "caml_int_of_float"
     ; "caml_int32_of_float"
@@ -1680,30 +1692,33 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
               | _ -> J.EBin (J.Plus, ca, cb)
             in
             return (add ca cb)
-        | Extern "caml_eq_float", [ a; b ] ->
+        | Extern ("caml_eq_float" | "caml_eq_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.EqEqEq, cx, cy)))
-        | Extern "caml_neq_float", [ a; b ] ->
+        | Extern ("caml_neq_float" | "caml_neq_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.NotEqEq, cx, cy)))
-        | Extern "caml_ge_float", [ a; b ] ->
+        | Extern ("caml_ge_float" | "caml_ge_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Le, cy, cx)))
-        | Extern "caml_le_float", [ a; b ] ->
+        | Extern ("caml_le_float" | "caml_le_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Le, cx, cy)))
-        | Extern "caml_gt_float", [ a; b ] ->
+        | Extern ("caml_gt_float" | "caml_gt_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Lt, cy, cx)))
-        | Extern "caml_lt_float", [ a; b ] ->
+        | Extern ("caml_lt_float" | "caml_lt_float32"), [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
             return (maybe_bool ctx x (J.EBin (J.Lt, cx, cy)))
+        | Extern "caml_is_null", [ a ] ->
+            let* cx = access' ~ctx a in
+            return (maybe_bool ctx x (J.EBin (EqEqEq, cx, s_var "null")))
         | Extern "caml_js_equals", [ a; b ] ->
             let* cx = access' ~ctx a in
             let* cy = access' ~ctx b in
@@ -2494,6 +2509,13 @@ let init () =
     ; "caml_le_float"
     ; "caml_gt_float"
     ; "caml_lt_float"
+    ; "caml_eq_float32"
+    ; "caml_neq_float32"
+    ; "caml_ge_float32"
+    ; "caml_le_float32"
+    ; "caml_gt_float32"
+    ; "caml_lt_float32"
+    ; "caml_is_null"
     ]
     ~f:(fun name -> Primitive.register name `Pure None None);
   List.iter [ "caml_js_equals"; "caml_js_strict_equals" ] ~f:(fun name ->

@@ -103,7 +103,7 @@ function jsoo_toplevel_init_reloc(f) {
 //Requires: caml_callback
 //Requires: caml_string_of_uint8_array, caml_ba_to_typed_array
 //Requires: jsoo_toplevel_compile, caml_failwith
-//Version: >= 5.2
+//Version: >= 5.3
 function caml_reify_bytecode(code, debug, _digest) {
   if (!jsoo_toplevel_compile) {
     caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
@@ -132,6 +132,39 @@ function caml_reify_bytecode(code, debug, _digest) {
   for (var i = 0, len = 0; i < all.length; i++) {
     code.set(all[i], len);
     len += all[i].length;
+  }
+  code = caml_string_of_uint8_array(code);
+  return [0, 0, caml_callback(jsoo_toplevel_compile, [code, debug])];
+}
+
+//Provides: caml_reify_bytecode
+//Requires: caml_callback
+//Requires: caml_string_of_uint8_array, caml_uint8_array_of_bytes
+//Requires: caml_ba_to_typed_array
+//Requires: jsoo_toplevel_compile, caml_failwith
+//Version: >= 5.2, < 5.3
+//Compatible with OxCaml
+function caml_reify_bytecode(code, debug, _digest) {
+  if (!jsoo_toplevel_compile) {
+    caml_failwith("Toplevel not initialized (jsoo_toplevel_compile)");
+  }
+  if (code.data) {
+    //Version: >= 5.2
+    code = caml_ba_to_typed_array(code);
+  } else {
+    // Oxcaml or version < 5.2
+    var len = 0;
+    var all = [];
+    for (var i = 1; i < code.length; i++) {
+      var a = caml_uint8_array_of_bytes(code[i]);
+      all.push(a);
+      len += a.length;
+    }
+    code = new Uint8Array(len);
+    for (var i = 0, len = 0; i < all.length; i++) {
+      code.set(all[i], len);
+      len += all[i].length;
+    }
   }
   code = caml_string_of_uint8_array(code);
   return [0, 0, caml_callback(jsoo_toplevel_compile, [code, debug])];

@@ -2,6 +2,9 @@
  ocamlopt_flags += " -O3 ";
 *)
 
+[@@@ocaml.alert
+"-unsafe_multidomain-unsafe_parallelism-do_not_spawn_domains"]
+
 open Domain
 
 let () =

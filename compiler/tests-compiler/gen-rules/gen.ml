@@ -51,6 +51,8 @@ type enabled_if =
   | GE52
   | LT52
   | B64
+  | NotOxCaml
+  | GE5NotOxCaml
   | Any
 
 let lib_enabled_if = function
@@ -59,10 +61,21 @@ let lib_enabled_if = function
   | _ -> Any
 
 let test_enabled_if = function
-  | "obj" | "lazy" -> GE5
+  | "obj" -> GE5NotOxCaml (* Some Obj functions are no longer primitives *)
+  | "lazy" -> GE5
   | "gh1051" -> B64
   | "rec52" -> GE52
   | "rec" -> LT52
+  | "gh1354"
+  | "gh1868"
+  | "exceptions"
+  | "effects_continuations"
+  | "effects_exceptions"
+  | "eliminate_exception_handler"
+  | "loops"
+  | "global_deadcode" -> NotOxCaml (* In OxCaml, raise is always reraise *)
+  | "effects" -> NotOxCaml (* Call to Printf.printf is somehow compiled differently *)
+  | "gh747" -> NotOxCaml (* More debug locations *)
   | _ -> Any
 
 let enabled_if = function
@@ -71,6 +84,8 @@ let enabled_if = function
   | GE52 -> "(>= %{ocaml_version} 5.2)"
   | LT52 -> "(< %{ocaml_version} 5.2)"
   | B64 -> "%{arch_sixtyfour}"
+  | GE5NotOxCaml -> "(and (>= %{ocaml_version} 5) (not %{oxcaml_supported}))"
+  | NotOxCaml -> "(not %{oxcaml_supported})"
 
 let () =
   Array.to_list (Sys.readdir ".")
