@@ -95,11 +95,11 @@ module Make (Target : Target_sig.S) = struct
       loop m [] f None
     in
     let param_names = args @ [ f ] in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name
       ; exported_name = None
-      ; typ = None
+      ; typ = Some (eval ~context (Type.function_type ~cps:false 1))
       ; signature = Type.func_type 1
       ; param_names
       ; locals
@@ -130,11 +130,11 @@ module Make (Target : Target_sig.S) = struct
       push (Closure.curry_allocate ~cps:false ~arity m ~f:name' ~closure:f ~arg:x)
     in
     let param_names = [ x; f ] in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name
       ; exported_name = None
-      ; typ = None
+      ; typ = Some (eval ~context (Type.function_type ~cps:false 1))
       ; signature = Type.func_type 1
       ; param_names
       ; locals
@@ -181,11 +181,11 @@ module Make (Target : Target_sig.S) = struct
       loop m [] f None
     in
     let param_names = args @ [ f ] in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name
       ; exported_name = None
-      ; typ = None
+      ; typ = Some (eval ~context (Type.function_type ~cps:true 1))
       ; signature = Type.func_type 2
       ; param_names
       ; locals
@@ -220,11 +220,11 @@ module Make (Target : Target_sig.S) = struct
       instr (W.Return (Some c))
     in
     let param_names = [ x; cont; f ] in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name
       ; exported_name = None
-      ; typ = None
+      ; typ = Some (eval ~context (Type.function_type ~cps:true 1))
       ; signature = Type.func_type 2
       ; param_names
       ; locals
@@ -264,7 +264,7 @@ module Make (Target : Target_sig.S) = struct
          build_applies (load f) l)
     in
     let param_names = l @ [ f ] in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name
       ; exported_name = None
@@ -305,7 +305,7 @@ module Make (Target : Target_sig.S) = struct
          push (call ~cps:true ~arity:2 (load f) [ x; iterate ]))
     in
     let param_names = l @ [ f ] in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name
       ; exported_name = None
@@ -340,11 +340,13 @@ module Make (Target : Target_sig.S) = struct
       instr (W.Return (Some e))
     in
     let param_names = l @ [ f ] in
-    let locals, body = function_body ~context ~param_names ~body in
+    let locals, _, body = function_body ~context ~param_names ~body in
     W.Function
       { name
       ; exported_name = None
-      ; typ = None
+      ; typ =
+          Some
+            (eval ~context (Type.function_type ~cps (if cps then arity - 1 else arity)))
       ; signature = Type.func_type arity
       ; param_names
       ; locals
