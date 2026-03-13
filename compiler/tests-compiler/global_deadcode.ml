@@ -109,7 +109,7 @@ let%expect_test "Omit unused fields" =
     {|
     function f(b, x){
      l[1] = [0, function(y){return x + y | 0;}, l[1]];
-     var t = b ? [0, 1, , x] : [0, 3, , 4], v = t[3], u = t[1];
+     if(b) var v = x, u = 1; else var v = 4, u = 3;
      return [0, u, v];
     }
     //end
