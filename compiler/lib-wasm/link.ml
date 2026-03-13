@@ -698,7 +698,7 @@ let link ~output_file ~linkall ~enable_source_maps ~files =
              | `Runtime ->
                  failwith "The runtime file should be listed first on the command line."
              | _ -> ());
-             Build_info.merge file bi file' bi')
+             Build_info.merge `Wasm file bi file' bi')
            r));
   if times () then Format.eprintf "    reading information: %a@." Timer.print t;
   let t1 = Timer.make () in
@@ -888,7 +888,7 @@ let make_library ~output_file ~enable_source_maps ~files =
           Build_info.configure bi;
           List.fold_left
             ~init:bi
-            ~f:(fun bi (file', bi', _) -> Build_info.merge file bi file' bi')
+            ~f:(fun bi (file', bi', _) -> Build_info.merge `Wasm file bi file' bi')
             r
       | [] -> Build_info.create `Cma)
       `Cma
