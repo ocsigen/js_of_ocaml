@@ -1,3 +1,0 @@
-[submodule "compiler/tests-js-parser/test262"]
-	path = compiler/tests-js-parser/test262
-	url = https://github.com/tc39/test262.git
