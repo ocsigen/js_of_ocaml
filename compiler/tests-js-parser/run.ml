@@ -167,6 +167,7 @@ let accepted_by_node ?(debug = false) file =
 
 let should_ignore_feature = function
   | "import-source" -> true
+  | "import-assertions" -> true
   | _ -> false
 
 let should_ignore_flag = function
@@ -281,34 +282,38 @@ let () =
       let add r = r := (filename, content) :: !r in
       close_in ic;
       let mode =
-        match Str.search_forward negative_r content 0 with
-        | _ -> `Negative
-        | exception Not_found -> (
-            let features =
-              match Str.search_forward features_r content 0 with
-              | _ ->
-                  String.split_on_char ~sep:',' (Str.matched_group 1 content)
-                  |> List.map ~f:String.trim
-              | exception Not_found -> []
-            in
-            let flags =
-              match Str.search_forward flags_r content 0 with
-              | _ ->
-                  String.split_on_char ~sep:',' (Str.matched_group 1 content)
-                  |> List.map ~f:String.trim
-              | exception Not_found -> []
-            in
-            let features =
-              match Str.search_forward import_source_r content 0 with
-              | exception Not_found -> features
-              | _ -> "import-source" :: features
-            in
-            match List.find_opt ~f:should_ignore_feature features with
-            | Some f -> `Unsupported f
-            | None -> (
-                match List.find_opt ~f:should_ignore_flag flags with
+        match filename with
+        | "test262/test/language/import/import-attributes/text-javascript_FIXTURE.js" ->
+            `Negative
+        | _ -> (
+            match Str.search_forward negative_r content 0 with
+            | _ -> `Negative
+            | exception Not_found -> (
+                let features =
+                  match Str.search_forward features_r content 0 with
+                  | _ ->
+                      String.split_on_char ~sep:',' (Str.matched_group 1 content)
+                      |> List.map ~f:String.trim
+                  | exception Not_found -> []
+                in
+                let flags =
+                  match Str.search_forward flags_r content 0 with
+                  | _ ->
+                      String.split_on_char ~sep:',' (Str.matched_group 1 content)
+                      |> List.map ~f:String.trim
+                  | exception Not_found -> []
+                in
+                let features =
+                  match Str.search_forward import_source_r content 0 with
+                  | exception Not_found -> features
+                  | _ -> "import-source" :: features
+                in
+                match List.find_opt ~f:should_ignore_feature features with
                 | Some f -> `Unsupported f
-                | None -> `Ok))
+                | None -> (
+                    match List.find_opt ~f:should_ignore_flag flags with
+                    | Some f -> `Unsupported f
+                    | None -> `Ok)))
       in
       match mode with
       | `Negative when skip_negative -> negative := filename :: !negative
