@@ -60,3 +60,24 @@ let%expect_test "inline small function exposing more tc" =
     //end
     not found
     |}]
+
+(* When inline_recursively inlines a function passed as argument,
+   the actual argument is still referenced in block arguments.
+   Without forced duplication, the closure's params would conflict
+   with the intermediate block's params. *)
+let%expect_test "inline_recursively must duplicate closure" =
+  let program =
+    compile_and_parse
+      ~flags:[ "--debug"; "invariant" ]
+      {|
+    let hash_fold_int acc x = 7 * acc + x
+    let as_int f s x = hash_fold_int s (f x)
+    let hash_fold_char = as_int Char.code
+    let hash_char x = hash_fold_char 0 x
+  |}
+  in
+  print_fun_decl program (Some "hash_char");
+  [%expect {|
+    function hash_char(x){return hash_fold_int(0, x);}
+    //end
+    |}]
