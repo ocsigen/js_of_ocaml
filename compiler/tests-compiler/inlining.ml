@@ -50,12 +50,12 @@ let%expect_test "inline small function exposing more tc" =
   [%expect
     {|
     function f(g, x){
-     var variant$0 = x[1];
-     if(106380200 <= variant$0) return x;
-     var v$0 = x[2], x$0 = caml_call1(g, v$0), variant = x$0[1];
-     if(106380200 <= variant) return x$0;
-     var v = x$0[2];
-     return v;
+     var variant = x[1];
+     if(106380200 <= variant) return x;
+     var v = x[2], x$0 = caml_call1(g, v), variant$0 = x$0[1];
+     if(106380200 <= variant$0) return x$0;
+     var v$0 = x$0[2];
+     return v$0;
     }
     //end
     not found
