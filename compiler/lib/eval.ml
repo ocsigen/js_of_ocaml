@@ -149,8 +149,29 @@ let eval_prim ~target x =
   | Neq, [ Int i; Int j ] -> bool Targetint.(i <> j)
   | Ult, [ Int i; Int j ] -> bool (Targetint.unsigned_lt i j)
   | Extern name, l -> (
+      let wasm = match target with `Wasm -> true | `JavaScript -> false in
       match name, l with
       (* int *)
+      (* When targeting wasm with 64-bit integers, Targetint (31-bit) doesn't
+         match the runtime integer width, so int constant folding would produce
+         wrong results. Binaryen will constant-fold at the wasm level instead. *)
+      | ( "%int_add"
+        | "%int_sub"
+        | "%int_mul"
+        | "%direct_int_mul"
+        | "%direct_int_div"
+        | "%int_div"
+        | "%direct_int_mod"
+        | "%int_mod"
+        | "%int_and"
+        | "%int_or"
+        | "%int_xor"
+        | "%int_lsl"
+        | "%int_lsr"
+        | "%int_asr"
+        | "%int_neg" ), _
+        when wasm ->
+          None
       | "%int_add", _ -> int_binop l Targetint.add
       | "%int_sub", _ -> int_binop l Targetint.sub
       | ("%int_mul" | "%direct_int_mul"), _ -> int_binop l Targetint.mul
@@ -260,7 +281,8 @@ let eval_prim ~target x =
       | "caml_int32_shift_right_unsigned", _ -> int32_shiftop l Int32.shift_right_logical
       | "caml_int32_compare", [ Int32 i; Int32 j ] ->
           Some (Int (Targetint.of_int_exn (Int32.compare i j)))
-      | "caml_int32_to_int", [ Int32 i ] -> Some (Int (Targetint.of_int32_truncate i))
+      | "caml_int32_to_int", [ Int32 i ] when not wasm ->
+          Some (Int (Targetint.of_int32_truncate i))
       | "caml_int32_of_int", [ Int i ] -> int32 (Targetint.to_int32 i)
       | "caml_nativeint_of_int32", [ Int32 i ] -> Some (NativeInt i)
       | "caml_nativeint_to_int32", [ NativeInt i ] -> Some (Int32 i)
@@ -296,7 +318,7 @@ let eval_prim ~target x =
           nativeint_shiftop l Int32.shift_right_logical
       | "caml_nativeint_compare", [ NativeInt i; NativeInt j ] ->
           Some (Int (Targetint.of_int_exn (Int32.compare i j)))
-      | "caml_nativeint_to_int", [ NativeInt i ] ->
+      | "caml_nativeint_to_int", [ NativeInt i ] when not wasm ->
           Some (Int (Targetint.of_int32_truncate i))
       | "caml_nativeint_of_int", [ Int i ] -> nativeint (Targetint.to_int32 i)
       (* int64 *)
@@ -326,7 +348,7 @@ let eval_prim ~target x =
       | "caml_int64_shift_right_unsigned", _ -> int64_shiftop l Int64.shift_right_logical
       | "caml_int64_compare", [ Int64 i; Int64 j ] ->
           Some (Int (Targetint.of_int_exn (Int64.compare i j)))
-      | "caml_int64_to_int", [ Int64 i ] ->
+      | "caml_int64_to_int", [ Int64 i ] when not wasm ->
           Some (Int (Targetint.of_int32_truncate (Int64.to_int32 i)))
       | "caml_int64_of_int", [ Int i ] -> int64 (Int64.of_int32 (Targetint.to_int32 i))
       | "caml_int64_to_int32", [ Int64 i ] -> int32 (Int64.to_int32 i)
