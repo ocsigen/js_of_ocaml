@@ -347,3 +347,24 @@ let%expect_test "coalescing enabled vs disabled" =
     --- with coalescing ---
     (function(b){var a = b + 1; console.log(a); b += 2; console.log(b);}(0));
     |}]
+
+let%expect_test "empty try body" =
+  test
+    {|
+(function(x) {
+  var a = x + 1;
+  try {} catch(e) { console.log(a); }
+  var b = x + 2;
+  console.log(b);
+})(0)
+|};
+  [%expect
+    {|
+    (function(b){
+       var a = b + 1;
+       try{}catch(e){console.log(a);}
+       b += 2;
+       console.log(b);
+      }
+      (0));
+    |}]
