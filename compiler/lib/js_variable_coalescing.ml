@@ -515,15 +515,21 @@ let build_cfg stmts candidates param_vars =
           | None -> finally_entry
         in
         let body_entry = visit_stmts context finally_entry body in
-        (* Map handler entry -> try body entry. This is used during live range
-           computation to extend the live range of variables that are live at the
-           handler entry to cover the entire try body, since any statement in the
-           try block might throw and jump to the handler. *)
-        if Option.is_some catch
-        then Int.Hashtbl.replace builder.tries catch_entry body_entry;
-        if Option.is_some finally
-        then Int.Hashtbl.replace builder.tries finally_entry body_entry;
-        add_node Nop [ body_entry; catch_entry; finally_entry ]
+        if body_entry = finally_entry
+        then
+          (* Empty body: no statement can throw, so the catch is
+             unreachable and we go straight to the finally block. *)
+          finally_entry
+        else (
+          (* Map handler entry -> try body entry. This is used during live range
+             computation to extend the live range of variables that are live at the
+             handler entry to cover the entire try body, since any statement in the
+             try block might throw and jump to the handler. *)
+          if Option.is_some catch
+          then Int.Hashtbl.replace builder.tries catch_entry body_entry;
+          if Option.is_some finally
+          then Int.Hashtbl.replace builder.tries finally_entry body_entry;
+          add_node Nop [ body_entry; catch_entry; finally_entry ])
     | ForIn_statement (left, right, (body, _))
     | ForOf_statement (left, right, (body, _))
     | ForAwaitOf_statement (left, right, (body, _)) ->
