@@ -66,6 +66,8 @@ module Var : sig
 
   val propagate_name : t -> t -> unit
 
+  val forget_generated_name : t -> unit
+
   val reset : unit -> unit
 
   module Set : Set.S with type elt = t

@@ -135,7 +135,7 @@ let prefix_kind line =
   | true -> (
       match String.starts_with ~prefix:sourceMappingURL line with
       | false -> (
-          match Build_info.parse line with
+          match Build_info.parse_comment line with
           | Some bi -> `Build_info bi
           | None -> (
               match Unit_info.parse Unit_info.empty line with
@@ -335,7 +335,7 @@ let link
                 then (
                   let bi = Build_info.with_kind bi (if mklib then `Cma else `Unknown) in
                   Line_writer.write oc Global_constant.header;
-                  Line_writer.write_lines oc (Build_info.to_string bi);
+                  Line_writer.write_lines oc (Build_info.to_comment bi);
                   build_info_emitted := true)
             | Drop -> skip ic
             | Unit ->
@@ -439,7 +439,9 @@ let link
       | None, Some build_info_for_file -> build_info := Some (file, build_info_for_file)
       | Some (first_file, bi), Some build_info_for_file ->
           build_info :=
-            Some (first_file, Build_info.merge first_file bi file build_info_for_file));
+            Some
+              ( first_file
+              , Build_info.merge `JavaScript first_file bi file build_info_for_file ));
   if times () then Format.eprintf "  emit: %a@." Timer.print t;
   let t = Timer.make () in
   match source_map with

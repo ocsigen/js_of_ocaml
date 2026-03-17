@@ -68,6 +68,8 @@ module Var : sig
 
   val propagate_name : t -> t -> unit
 
+  val forget_generated_name : t -> unit
+
   val reset : unit -> unit
 
   module Set : Set.S with type elt = t
@@ -208,6 +210,8 @@ end = struct
         set_raw v str generated)
 
     let get v = Int.Hashtbl.find_opt names v
+
+    let forget_generated_name v = if generated v then Int.Hashtbl.remove names v
   end
 
   let last_var = ref 0
@@ -247,6 +251,8 @@ end = struct
   let get_name i = Name.get i
 
   let propagate_name i j = Name.propagate i j
+
+  let forget_generated_name = Name.forget_generated_name
 
   let fork o =
     let n = fresh () in

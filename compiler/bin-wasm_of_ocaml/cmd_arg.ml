@@ -64,27 +64,9 @@ type t =
   ; include_dirs : string list
   ; effects : Config.effects_backend
   ; shape_files : string list
+  ; build_config : bool
+  ; apply_build_config : string option
   }
-
-let set_param =
-  let doc = "Set compiler options." in
-  let all = List.map (Config.Param.all ()) ~f:(fun (x, _, _) -> x, x) in
-  let pair = Arg.(pair ~sep:'=' (enum all) string) in
-  let parser s =
-    match Arg.conv_parser pair s with
-    | Ok (k, v) -> (
-        match
-          List.find ~f:(fun (k', _, _) -> String.equal k k') (Config.Param.all ())
-        with
-        | _, _, valid -> (
-            match valid v with
-            | Ok () -> Ok (k, v)
-            | Error msg -> Error (`Msg ("Unexpected VALUE after [=], " ^ msg))))
-    | Error _ as e -> e
-  in
-  let printer = Arg.conv_printer pair in
-  let c = Arg.conv (parser, printer) in
-  Arg.(value & opt_all (list c) [] & info [ "set" ] ~docv:"PARAM=VALUE" ~doc)
 
 let options () =
   let runtime_files =
@@ -97,8 +79,11 @@ let options () =
   in
   let input_file =
     let doc = "Compile the bytecode program [$(docv)]. " in
-    Arg.(required & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
+    Arg.(value & pos ~rev:true 0 (some filepath) None & info [] ~docv:"PROGRAM" ~doc)
   in
+  let build_config = Jsoo_cmdline.Arg.build_config in
+  let apply_build_config = Jsoo_cmdline.Arg.apply_build_config in
+  let set_param = Jsoo_cmdline.Arg.set_param in
   let shape_files =
     let doc = "load shape file [$(docv)]." in
     Arg.(value & opt_all filepath [] & info [ "load-shape" ] ~docv:"FILE" ~doc)
@@ -158,40 +143,53 @@ let options () =
       input_file
       runtime_files
       effects
-      shape_files =
+      shape_files
+      build_config
+      apply_build_config =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
-    let output_file =
-      let ext =
-        try
-          snd
-            (List.find
-               ~f:(fun (ext, _) -> Filename.check_suffix input_file ext)
-               [ ".cmo", ".wasmo"; ".cma", ".wasma" ])
-        with Not_found -> ".js"
-      in
-      match output_file with
-      | Some s -> s, true
-      | None -> chop_extension input_file ^ ext, false
-    in
-    let params : (string * string) list = List.flatten set_param in
-    let enable_source_maps = (not no_sourcemap) && sourcemap in
-    let include_dirs = normalize_include_dirs include_dirs in
-    let effects = normalize_effects effects common in
-    `Ok
-      { common
-      ; params
-      ; include_dirs
-      ; profile
-      ; output_file
-      ; input_file = Some input_file
-      ; runtime_files
-      ; runtime_only = false
-      ; enable_source_maps
-      ; sourcemap_root
-      ; sourcemap_don't_inline_content
-      ; effects
-      ; shape_files
-      }
+    match build_config, input_file with
+    | false, None -> `Error (true, "required argument PROGRAM is missing")
+    | _ ->
+        let output_file =
+          match input_file with
+          | Some input_file -> (
+              let ext =
+                try
+                  snd
+                    (List.find
+                       ~f:(fun (ext, _) -> Filename.check_suffix input_file ext)
+                       [ ".cmo", ".wasmo"; ".cma", ".wasma" ])
+                with Not_found -> ".js"
+              in
+              match output_file with
+              | Some s -> s, true
+              | None -> chop_extension input_file ^ ext, false)
+          | None -> (
+              match output_file with
+              | Some s -> s, true
+              | None -> "a.out.js", false)
+        in
+        let params : (string * string) list = List.flatten set_param in
+        let enable_source_maps = (not no_sourcemap) && sourcemap in
+        let include_dirs = normalize_include_dirs include_dirs in
+        let effects = normalize_effects effects common in
+        `Ok
+          { common
+          ; params
+          ; include_dirs
+          ; profile
+          ; output_file
+          ; input_file
+          ; runtime_files
+          ; runtime_only = false
+          ; enable_source_maps
+          ; sourcemap_root
+          ; sourcemap_don't_inline_content
+          ; effects
+          ; shape_files
+          ; build_config
+          ; apply_build_config
+          }
   in
   let t =
     Term.(
@@ -209,7 +207,9 @@ let options () =
       $ input_file
       $ runtime_files
       $ effects
-      $ shape_files)
+      $ shape_files
+      $ build_config
+      $ apply_build_config)
   in
   Term.ret t
 
@@ -254,6 +254,9 @@ let options_runtime_only () =
       & opt (some (enum [ "jspi", `Jspi; "cps", `Cps; "disabled", `Disabled ])) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
+  let build_config = Jsoo_cmdline.Arg.build_config in
+  let apply_build_config = Jsoo_cmdline.Arg.apply_build_config in
+  let set_param = Jsoo_cmdline.Arg.set_param in
   let build_t
       common
       set_param
@@ -264,7 +267,9 @@ let options_runtime_only () =
       sourcemap_root
       output_file
       runtime_files
-      effects =
+      effects
+      build_config
+      apply_build_config =
     let params : (string * string) list = List.flatten set_param in
     let enable_source_maps = (not no_sourcemap) && sourcemap in
     let include_dirs = normalize_include_dirs include_dirs in
@@ -283,6 +288,8 @@ let options_runtime_only () =
       ; sourcemap_don't_inline_content
       ; effects
       ; shape_files = []
+      ; build_config
+      ; apply_build_config
       }
   in
   let t =
@@ -297,6 +304,8 @@ let options_runtime_only () =
       $ sourcemap_root
       $ output_file
       $ runtime_files
-      $ effects)
+      $ effects
+      $ build_config
+      $ apply_build_config)
   in
   Term.ret t

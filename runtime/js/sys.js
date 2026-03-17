@@ -224,9 +224,9 @@ function caml_sys_system_command(_cmd) {
 }
 
 //Provides: caml_sys_time mutable
-var caml_initial_time = new Date().getTime() * 0.001;
+var caml_initial_time = Date.now() * 0.001;
 function caml_sys_time() {
-  var now = new Date().getTime();
+  var now = Date.now();
   return now * 0.001 - caml_initial_time;
 }
 
@@ -248,7 +248,7 @@ function caml_sys_random_seed() {
       return [0, a[0], a[1], a[2], a[3]];
     }
   }
-  var now = new Date().getTime();
+  var now = Date.now();
   var x = now ^ (0xffffffff * Math.random());
   return [0, x];
 }
@@ -403,6 +403,25 @@ function caml_sys_convert_signal_number(signo) {
 //Version: >= 5.4
 function caml_sys_rev_convert_signal_number(signo) {
   return signo;
+}
+
+//Provides: caml_sys_proc_self_exe const
+//Version: >= 5.5
+function caml_sys_proc_self_exe(_unit) {
+  return 0;
+}
+
+//Provides: caml_sys_get_stdlib_dirs
+//Version: >= 5.5
+function caml_sys_get_stdlib_dirs(stdlib_default) {
+  return [0, stdlib_default, 0];
+}
+
+//Provides: caml_sys_const_standard_library_default const
+//Requires: caml_string_of_jsstring
+//Version: >= 5.5
+function caml_sys_const_standard_library_default(_unit) {
+  return caml_string_of_jsstring("/static/cmis/");
 }
 
 //Always

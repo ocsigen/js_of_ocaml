@@ -275,7 +275,7 @@ module Write = struct
             byte ch 0x01;
             tabletype st ch typ
         | Mem l ->
-            byte ch 0x03;
+            byte ch 0x02;
             limits ch l
         | Global { mut; typ } ->
             byte ch 0x03;
@@ -1551,12 +1551,17 @@ let heap_subtype (subtyping_info : subtype array) (ty : heaptype) (ty' : heaptyp
   | (Func | Nofunc), Func
   | Nofunc, Nofunc
   | (Extern | Noextern), Extern
-  | (Any | Eq | I31 | Struct | Array | None_ | Type _), Any
-  | (Eq | I31 | Struct | Array | None_ | Type _), Eq
+  | Noextern, Noextern
+  | (Any | Eq | I31 | Struct | Array | None_), Any
+  | (Eq | I31 | Struct | Array | None_), Eq
   | (I31 | None_), I31
   | (Struct | None_), Struct
   | (Array | None_), Array
   | None_, None_ -> true
+  | Type i, (Any | Eq) -> (
+      match subtyping_info.(i).typ with
+      | Struct _ | Array _ -> true
+      | Func _ -> false)
   | Type i, Struct -> (
       match subtyping_info.(i).typ with
       | Struct _ -> true
@@ -1566,6 +1571,14 @@ let heap_subtype (subtyping_info : subtype array) (ty : heaptype) (ty' : heaptyp
       | Array _ -> true
       | Struct _ | Func _ -> false)
   | Type i, Func -> (
+      match subtyping_info.(i).typ with
+      | Func _ -> true
+      | Struct _ | Array _ -> false)
+  | None_, Type i -> (
+      match subtyping_info.(i).typ with
+      | Struct _ | Array _ -> true
+      | Func _ -> false)
+  | Nofunc, Type i -> (
       match subtyping_info.(i).typ with
       | Func _ -> true
       | Struct _ | Array _ -> false)
@@ -2197,7 +2210,7 @@ let f files ~output_file =
       Write.start buf start;
       add_section out_ch ~id:8 buf
   | _ :: _ :: _ ->
-      Write.start buf (func_count - 1);
+      Write.start buf (get_exportable_info unresolved_imports Func + func_count - 1);
       add_section out_ch ~id:8 buf);
 
   (* 9: elements *)
@@ -2282,6 +2295,9 @@ let f files ~output_file =
         Buffer.add_char buf (Char.chr 0x10);
         Write.uint buf idx)
       starts;
+    (* end *)
+    Buffer.add_char buf (Char.chr 0x0B);
+    Write.uint code_pieces (Buffer.length buf);
     Buffer.add_buffer code_pieces buf;
     Buffer.clear buf);
   let code_section_offset =

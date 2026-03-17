@@ -31,6 +31,12 @@ type t =
   ; custom_header : string option
   }
 
+val build_config : bool Cmdliner.Term.t
+
+val apply_build_config : string option Cmdliner.Term.t
+
+val set_param : (string * string) list list Cmdliner.Term.t
+
 val t : t Cmdliner.Term.t Lazy.t
 
 val eval : t -> unit

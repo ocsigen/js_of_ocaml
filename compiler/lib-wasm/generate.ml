@@ -415,12 +415,18 @@ module Generate (Target : Target_sig.S) = struct
     register_arith_bin_prim "%int_sub" `Pure ~typ:int_u Value.int_sub;
     register_arith_bin_prim "%int_mul" `Pure ~typ:int_u Value.int_mul;
     register_arith_bin_prim "%direct_int_mul" `Pure ~typ:int_u Value.int_mul;
-    register_arith_bin_prim "%direct_int_div" `Pure ~typ:int_n Value.int_div;
+    register_bin_prim
+      "%direct_int_div"
+      `Pure
+      ~tx:int_n
+      ~ty:int_n
+      ~ret_typ:int_u
+      Value.int_div;
     register_bin_prim_ctx
       "%int_div"
       ~tx:int_n
       ~ty:int_n
-      ~ret_typ:int_n
+      ~ret_typ:int_u
       (fun context x y ->
         seq
           (let* cond = Arith.eqz y in
@@ -538,7 +544,7 @@ module Generate (Target : Target_sig.S) = struct
       (fun f g -> float_bin_op Lt f g);
     register_un_prim "caml_int_of_float" `Pure ~typ:float_u ~ret_typ:int_u (fun f ->
         let* f = f in
-        return (W.UnOp (I32 (TruncSatF64 S), f)));
+        return (W.UnOp (I32 (TruncSat (`F64, S)), f)));
     register_un_prim "caml_float_of_int" `Pure ~typ:int_n ~ret_typ:float_u (fun n ->
         let* n = n in
         return (W.UnOp (F64 (Convert (`I32, S)), n)));
@@ -584,7 +590,7 @@ module Generate (Target : Target_sig.S) = struct
         return (W.F64PromoteF32 (UnOp (F32 ReinterpretI, i))));
     register_un_prim "caml_int32_of_float" `Pure ~typ:float_u ~ret_typ:int32_u (fun f ->
         let* f = f in
-        return (W.UnOp (I32 (TruncSatF64 S), f)));
+        return (W.UnOp (I32 (TruncSat (`F64, S)), f)));
     register_un_prim "caml_int32_to_float" `Pure ~typ:int32_u ~ret_typ:float_u (fun n ->
         let* n = n in
         return (W.UnOp (F64 (Convert (`I32, S)), n)));
@@ -703,7 +709,7 @@ module Generate (Target : Target_sig.S) = struct
         return (W.UnOp (F64 ReinterpretI, i)));
     register_un_prim "caml_int64_of_float" `Pure ~typ:float_u ~ret_typ:int64_u (fun f ->
         let* f = f in
-        return (W.UnOp (I64 (TruncSatF64 S), f)));
+        return (W.UnOp (I64 (TruncSat (`F64, S)), f)));
     register_un_prim "caml_int64_to_float" `Pure ~typ:int64_u ~ret_typ:float_u (fun n ->
         let* n = n in
         return (W.UnOp (F64 (Convert (`I64, S)), n)));
@@ -844,7 +850,7 @@ module Generate (Target : Target_sig.S) = struct
       ~ret_typ:nativeint_u
       (fun f ->
         let* f = f in
-        return (W.UnOp (I32 (TruncSatF64 S), f)));
+        return (W.UnOp (I32 (TruncSat (`F64, S)), f)));
     register_un_prim
       "caml_nativeint_to_float"
       `Pure

@@ -624,7 +624,6 @@ var caml_output_val = (function () {
     }
 
     write_at(pos, size, value) {
-      var pos = pos;
       for (var i = size - 8; i >= 0; i -= 8)
         this.chunk[pos++] = (value >> i) & 0xff;
     }

@@ -139,6 +139,12 @@ function caml_jsoo_flags_effects(_unit) {
   return caml_string_of_jsstring(CONFIG("effects"));
 }
 
+//Provides: caml_jsoo_build_config
+//Requires: caml_string_of_jsstring
+function caml_jsoo_build_config(_unit) {
+  return caml_string_of_jsstring(BUILD_CONFIG());
+}
+
 //Provides: caml_wrap_exception const (mutable)
 //Requires: caml_global_data,caml_string_of_jsstring,caml_named_value
 function caml_wrap_exception(e) {
@@ -279,7 +285,7 @@ function caml_js_var(x) {
     );
     //console.error("Js.Unsafe.eval_string")
   }
-  // biome-ignore lint/security/noGlobalEval:
+  // biome-ignore lint/security/noGlobalEval: ..
   return eval?.(x);
 }
 //Provides: caml_js_call (const, mutable, shallow)
@@ -466,7 +472,7 @@ function caml_js_function_arity(f) {
 
 //Provides: caml_js_equals mutable (const, const)
 function caml_js_equals(x, y) {
-  // biome-ignore lint/suspicious/noDoubleEquals:
+  // biome-ignore lint/suspicious/noDoubleEquals: ..
   return +(x == y);
 }
 
@@ -483,7 +489,7 @@ function caml_js_eval_string(s) {
   // This is faster and avoid variable captures.
   // Also prepends `"use strict"` directive since this is not inherited
   // from the enclosing function with an indirect eval.
-  // biome-ignore lint/security/noGlobalEval:
+  // biome-ignore lint/security/noGlobalEval: ..
   return eval?.('"use strict";' + caml_jsstring_of_string(s));
 }
 
@@ -494,7 +500,7 @@ function caml_js_expr(s) {
   // We add parentheses to avoid the ambiguity between expressions
   // and statements. This means that we accept invalid inputs like
   // "a)(b", but this is unlikely to be an issue in practice.
-  // biome-ignore lint/security/noGlobalEval:
+  // biome-ignore lint/security/noGlobalEval: ..
   return eval?.('"use strict";(' + caml_jsstring_of_string(s) + ")");
 }
 
@@ -502,7 +508,7 @@ function caml_js_expr(s) {
 //Requires: caml_jsstring_of_string
 function caml_pure_js_expr(s) {
   console.error("caml_pure_js_expr: fallback to runtime evaluation\n");
-  // biome-ignore lint/security/noGlobalEval:
+  // biome-ignore lint/security/noGlobalEval: ..
   return eval?.('"use strict";(' + caml_jsstring_of_string(s) + ")");
 }
 

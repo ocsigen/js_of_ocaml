@@ -1,3 +1,31 @@
+# dev
+
+## Features/Changes
+* Compiler: initial support for OCaml 5.5.0~alpha0 (#2197)
+* Compiler: added a variable coalescing pass (#2166)
+* Runtime/wasm: faster copy between a Wasm string and an JavaScript array buffer (#2124)
+* Runtime/wasm: faster conversion of small JavaScript strings to Wasm (#2124)
+* Compiler: improved shape computation (#2198)
+* Add the --build-config and --apply-build-config flags (#2177)
+* Runtime/wasm: optimized some bigstring primitives (#2144)
+
+## Bug fixes
+* Compiler/wasm: fix int division return type to Unnormalized (#2197)
+
+
+
+
+# 6.3.2 (2026-02-15) - Lille
+
+## Changes
+*  Misc: fix installation of completion files again.
+
+# 6.3.1 (2026-02-13) - Lille
+
+## Changes
+*  Misc: fix installation of completion files in monorepo, working around
+   bugs in dune
+
 # 6.3.0 (2026-02-06) - Lille
 
 ## Features/Changes
@@ -17,7 +45,7 @@
 * Lib: add `Dom_html.onload` for WASM-safe load handling (#1948)
 * Runtime: make eval functions more robust (#2108)
 * Compiler: added a constant sinking pass (#2167)
-
+* Compiler: added a variable coalescing pass (#2166)
 
 ## Bug fixes
 * Compiler: fix `Global_flow.do_escape` monotonicity

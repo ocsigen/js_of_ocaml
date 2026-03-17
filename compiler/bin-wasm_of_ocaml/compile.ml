@@ -336,8 +336,7 @@ let add_source_map sourcemap_don't_inline_content z opt_source_map =
                 ~name:(Link.source_name i j file)
                 ~contents:(Yojson.Basic.to_string (`String sm))))
 
-let merge_shape a b =
-  StringMap.union (fun _name s1 s2 -> if Shape.equal s1 s2 then Some s1 else None) a b
+let merge_shape a b = StringMap.union (fun _name _s1 _s2 -> assert false) a b
 
 let sexp_of_shapes s =
   StringMap.bindings s
@@ -360,10 +359,16 @@ let run
     ; sourcemap_don't_inline_content
     ; effects
     ; shape_files
+    ; build_config
+    ; apply_build_config
     } =
   Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Config.set_effects_backend effects;
+  Jsoo_cmdline.Build_config.process
+    `Wasm
+    ~apply:apply_build_config
+    ~print_and_exit:build_config;
   Generate.init ();
   List.iter shape_files ~f:(fun s ->
       let z = Zip.open_in s in

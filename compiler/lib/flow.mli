@@ -71,6 +71,10 @@ val f : Code.program -> Code.program * Info.t
 val the_shape_of :
      return_values:Code.Var.Set.t Code.Var.Map.t
   -> pure:Pure_fun.t
+  -> blocks:bool
   -> Info.t
-  -> Code.Var.t
-  -> Shape.t
+  -> (Code.Var.t -> Shape.t) * (Code.Var.t -> Shape.t -> unit)
+(** Returns [(get, set)] where [get x] computes the shape of variable [x]
+    and [set x s] injects a shape for [x] into the internal cache (used to
+    register shapes of fresh variables introduced by specialization).
+    Results are memoized across calls to [get]. *)

@@ -19,7 +19,7 @@
 
 open! Stdlib
 
-type t =
+type desc =
   | Top
   | Block of t list
   | Function of
@@ -28,39 +28,87 @@ type t =
       ; res : t
       }
 
-let rec equal a b =
-  match a, b with
-  | Top, Top -> true
-  | ( Function { arity = a1; pure = p1; res = r1 }
-    , Function { arity = a2; pure = p2; res = r2 } ) ->
-      a1 = a2 && Bool.(p1 = p2) && equal r1 r2
-  | Block b1, Block b2 -> (
-      try List.for_all2 ~f:equal b1 b2 with Invalid_argument _ -> false)
-  | Top, (Function _ | Block _) | Function _, (Top | Block _) | Block _, (Top | Function _)
-    -> false
+and t =
+  { id : int
+  ; mutable desc : desc
+  }
 
-let rec merge (u : t) (v : t) =
-  match u, v with
-  | ( Function { arity = a1; pure = p1; res = r1 }
-    , Function { arity = a2; pure = p2; res = r2 } ) ->
-      if a1 = a2 then Function { arity = a1; pure = p1 && p2; res = merge r1 r2 } else Top
-  | Block b1, Block b2 ->
-      if List.compare_lengths b1 b2 = 0 then Block (List.map2 b1 b2 ~f:merge) else Top
-  | Top, _ | _, Top -> Top
-  | Function _, Block _ | Block _, Function _ -> Top
+let next_id = ref 0
 
-let rec to_string (shape : t) =
-  match shape with
-  | Top -> "N"
-  | Block l -> "[" ^ String.concat ~sep:"," (List.map ~f:to_string l) ^ "]"
-  | Function { arity; pure; res } ->
-      Printf.sprintf
-        "F(%d)%s%s"
-        arity
-        (if pure then "*" else "")
-        (match res with
-        | Top -> ""
-        | _ -> "->" ^ to_string res)
+let fresh_id () =
+  let id = !next_id in
+  incr next_id;
+  id
+
+let make desc = { id = fresh_id (); desc }
+
+let proxy () = make Top
+
+let top = proxy ()
+
+let block fields = make (Block fields)
+
+let funct ~arity ~pure ~res = make (Function { arity; pure; res })
+
+module Set = Set.Make (struct
+  type nonrec t = t
+
+  let compare a b = Int.compare a.id b.id
+end)
+
+let to_string (shape : t) =
+  let counts = Int.Hashtbl.create 17 in
+  let rec count (s : t) =
+    let n = try Int.Hashtbl.find counts s.id with Not_found -> 0 in
+    Int.Hashtbl.replace counts s.id (n + 1);
+    if n = 0
+    then
+      match s.desc with
+      | Top -> ()
+      | Function { res; _ } -> count res
+      | Block fields -> List.iter ~f:count fields
+  in
+  count shape;
+  let names = Int.Hashtbl.create 17 in
+  let next_name = ref 0 in
+  let buf = Buffer.create 64 in
+  let rec emit (s : t) =
+    let desc = s.desc in
+    match desc with
+    | Top -> Buffer.add_char buf 'N'
+    | _ -> (
+        let multi = Int.Hashtbl.find counts s.id > 1 in
+        match if multi then Int.Hashtbl.find_opt names s.id else None with
+        | Some name -> Buffer.add_string buf (Printf.sprintf "$%d" name)
+        | None -> (
+            if multi
+            then begin
+              let name = !next_name in
+              incr next_name;
+              Int.Hashtbl.replace names s.id name;
+              Buffer.add_string buf (Printf.sprintf "$%d=" name)
+            end;
+            match desc with
+            | Top -> assert false
+            | Function { arity; pure; res } -> (
+                Buffer.add_string buf (Printf.sprintf "F(%d)" arity);
+                if pure then Buffer.add_char buf '*';
+                match res.desc with
+                | Top -> ()
+                | _ ->
+                    Buffer.add_string buf "->";
+                    emit res)
+            | Block fields ->
+                Buffer.add_char buf '[';
+                List.iteri
+                  ~f:(fun i x ->
+                    if i > 0 then Buffer.add_char buf ',';
+                    emit x)
+                  fields;
+                Buffer.add_char buf ']'))
+  in
+  emit shape;
+  Buffer.contents buf
 
 let of_string (s : string) =
   let pos = ref 0 in
@@ -87,6 +135,7 @@ let of_string (s : string) =
         parse_int acc
     | _ -> acc
   in
+  let ref_table = Int.Hashtbl.create 17 in
   let rec parse_shape () =
     match current () with
     | '[' ->
@@ -94,16 +143,27 @@ let of_string (s : string) =
         parse_block []
     | 'N' ->
         next ();
-        Top
+        top
     | 'F' ->
         next ();
         parse_fun ()
+    | '$' ->
+        next ();
+        let parsed_id = parse_int 0 in
+        if parse_char_opt '='
+        then (
+          let shape_proxy = proxy () in
+          Int.Hashtbl.replace ref_table parsed_id shape_proxy;
+          let actual_shape = parse_shape () in
+          shape_proxy.desc <- actual_shape.desc;
+          shape_proxy)
+        else Int.Hashtbl.find ref_table parsed_id
     | _ -> assert false
   and parse_block acc =
     match current () with
     | ']' ->
         next ();
-        Block (List.rev acc)
+        block (List.rev acc)
     | _ -> (
         let x = parse_shape () in
         match current () with
@@ -112,7 +172,7 @@ let of_string (s : string) =
             parse_block (x :: acc)
         | ']' ->
             next ();
-            Block (List.rev (x :: acc))
+            block (List.rev (x :: acc))
         | _ -> assert false)
   and parse_fun () =
     let () = parse_char '(' in
@@ -124,8 +184,8 @@ let of_string (s : string) =
         next ();
         parse_char '>';
         let res = parse_shape () in
-        Function { arity; pure; res }
-    | _ -> Function { arity; pure; res = Top }
+        funct ~arity ~pure ~res
+    | _ -> funct ~arity ~pure ~res:top
   in
   parse_shape ()
 
@@ -164,8 +224,10 @@ module State = struct
   let propagate x offset target =
     match Code.Var.Hashtbl.find_opt t.table x with
     | None -> ()
-    | Some (Top | Function _) -> ()
-    | Some (Block l) -> assign target (List.nth l offset)
+    | Some shape -> (
+        match shape.desc with
+        | Top | Function _ -> ()
+        | Block fields -> assign target (List.nth fields offset))
 
   let mem x = BitSet.mem t.cache (Code.Var.idx x)
 
@@ -174,8 +236,10 @@ module State = struct
   let is_pure_fun x =
     match Code.Var.Hashtbl.find_opt t.table x with
     | None -> false
-    | Some (Top | Block _) -> false
-    | Some (Function { pure; _ }) -> pure
+    | Some shape -> (
+        match shape.desc with
+        | Top | Block _ -> false
+        | Function { pure; _ } -> pure)
 
   let reset () =
     Code.Var.Hashtbl.clear t.table;

@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type t =
+type desc =
   | Top
   | Block of t list
   | Function of
@@ -26,13 +26,24 @@ type t =
       ; res : t
       }
 
+and t =
+  { id : int
+  ; mutable desc : desc
+  }
+
+val top : t
+
+val block : t list -> t
+
+val funct : arity:int -> pure:bool -> res:t -> t
+
+val proxy : unit -> t
+
+module Set : Set.S with type elt = t
+
 val to_string : t -> string
 
 val of_string : string -> t
-
-val equal : t -> t -> bool
-
-val merge : t -> t -> t
 
 module Store : sig
   val set : name:string -> t -> unit

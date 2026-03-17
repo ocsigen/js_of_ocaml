@@ -36,15 +36,15 @@ let rec fun_with_loop acc = function
   print_fun_decl program (Some "fun_with_loop");
   [%expect
     {|
-    function fun_with_loop(acc$1, param$0){
-     var acc = acc$1, param = param$0;
+    function fun_with_loop(acc$1, _a_){
+     var acc = acc$1;
      for(;;){
-      if(! param)
+      if(! _a_)
        return caml_call1
                (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc)));
-      var xs = param[2], x = param[1], acc$0 = [0, x, acc];
+      var xs = _a_[2], x = _a_[1], acc$0 = [0, x, acc];
       acc = acc$0;
-      param = xs;
+      _a_ = xs;
      }
     }
     //end
@@ -78,28 +78,28 @@ let rec fun_with_loop acc = function
   print_fun_decl program (Some "fun_with_loop");
   [%expect
     {|
-    function fun_with_loop(acc$0, param$0){
-     var acc = acc$0, param = param$0;
+    function fun_with_loop(acc$0, _a_){
+     var acc = acc$0;
      for(;;){
-      if(! param)
+      if(! _a_)
        return caml_call1
                (list_rev, caml_call1(list_rev, caml_call1(list_rev, acc)));
-      var x = param[1];
-      if(1 === x && ! param[2]) break;
-      var xs = param[2], a$2 = acc, i = 0;
+      var x = _a_[1];
+      if(1 === x && ! _a_[2]) break;
+      var xs = _a_[2], a$2 = acc, i = 0;
       for(;;){
        var a = [0, 1, a$2], _a_ = i + 1 | 0;
-       if(10 === i){acc = [0, x, a]; param = xs; break;}
+       if(10 === i){acc = [0, x, a]; _a_ = xs; break;}
        a$2 = a;
        i = _a_;
       }
      }
      var a$1 = acc, i$0 = 0;
      for(;;){
-      var a$0 = [0, 1, a$1], _b_ = i$0 + 1 | 0;
+      var a$0 = [0, 1, a$1], _a_ = i$0 + 1 | 0;
       if(10 === i$0) return a$0;
       a$1 = a$0;
-      i$0 = _b_;
+      i$0 = _a_;
      }
     }
     //end
@@ -123,15 +123,15 @@ let for_for_while () =
   print_fun_decl program (Some "for_for_while");
   [%expect
     {|
-    function for_for_while(param){
+    function for_for_while(_a_){
      var k = 1;
      for(;;){
       var j = 1;
       for(;;)
        if(10 <= runtime.caml_mul(k, j)){
-        var _b_ = j + 1 | 0;
-        if(10 === j){var _a_ = k + 1 | 0; if(10 === k) return 0; k = _a_; break;}
-        j = _b_;
+        _a_ = j + 1 | 0;
+        if(10 === j){_a_ = k + 1 | 0; if(10 === k) return 0; k = _a_; break;}
+        j = _a_;
        }
        else
         id[1]++;
@@ -159,15 +159,15 @@ let for_for_while () =
   print_fun_decl program (Some "for_for_while");
   [%expect
     {|
-    function for_for_while(param){
+    function for_for_while(_a_){
      var k = 1;
      for(;;){
       var j = 1;
       for(;;)
        if(10 <= caml_div(k, j)){
-        var _b_ = j + 1 | 0;
-        if(10 === j){var _a_ = k + 1 | 0; if(10 === k) return 0; k = _a_; break;}
-        j = _b_;
+        _a_ = j + 1 | 0;
+        if(10 === j){_a_ = k + 1 | 0; if(10 === k) return 0; k = _a_; break;}
+        j = _a_;
        }
        else{
         try{caml_div(k, j);}
@@ -266,12 +266,12 @@ let f t x =
          break a;
         }
         if(val && ! val[2]){
-         var y = val[1], _b_ = y === (x$0 + 1 | 0);
-         if(_b_){var _a_ = _b_; break a;}
+         var y = val[1], _a_ = y === (x$0 + 1 | 0);
+         if(_a_) break a;
          x$0 = y;
          continue;
         }
-        var _a_ = 0;
+        _a_ = 0;
        }
        return _a_ ? 1 : 2;
       }
@@ -325,7 +325,7 @@ in loop x
           case 3:
            var n$0 = caml_call1(Stdlib_Random[5], 2); x$0 = n$0; continue;
         }
-       var _a_ = 2;
+       _a_ = 2;
       }
       return _a_ + 2 | 0;
      }
@@ -460,28 +460,25 @@ let add_substitute =
            b:
            {
             if(lim$0 > i$2){
-             var match = caml_string_get(s, i$2);
-             if(91 <= match){
-              if(97 <= match){
-               if(123 <= match){var stop$0 = i$2; break b;}
+             _b_ = caml_string_get(s, i$2);
+             if(91 <= _b_){
+              if(97 <= _b_){
+               if(123 <= _b_){var stop$0 = i$2; break b;}
               }
-              else if(95 !== match){var stop$0 = i$2; break b;}
+              else if(95 !== _b_){stop$0 = i$2; break b;}
              }
-             else if(58 <= match){
-              if(65 > match){var stop$0 = i$2; break b;}
+             else if(58 <= _b_){
+              if(65 > _b_){stop$0 = i$2; break b;}
              }
-             else if(48 > match){var stop$0 = i$2; break b;}
+             else if(48 > _b_){stop$0 = i$2; break b;}
              var i$3 = i$2 + 1 | 0;
              i$2 = i$3;
              continue;
             }
-            var stop$0 = lim$0;
+            stop$0 = lim$0;
            }
-           var
-            match$0 =
-              [0,
-               caml_call3(string_sub, s, start$0, stop$0 - start$0 | 0),
-               stop$0];
+           _b_ =
+            [0, caml_call3(string_sub, s, start$0, stop$0 - start$0 | 0), stop$0];
            break a;
           }
          }
@@ -491,7 +488,7 @@ let add_substitute =
          else{
           if(123 !== opening)
            throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
-          var closing = 125;
+          closing = 125;
          }
          var lim = caml_ml_string_length(s), k = 0, stop = new_start;
          for(;;){
@@ -503,11 +500,10 @@ let add_substitute =
           }
           else if(caml_string_get(s, stop) === closing){
            if(0 === k){
-            var
-             match$0 =
-               [0,
-                caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0),
-                stop + 1 | 0];
+            _b_ =
+             [0,
+              caml_call3(string_sub, s, new_start, (stop - start$0 | 0) - 1 | 0),
+              stop + 1 | 0];
             break;
            }
            var i$0 = stop + 1 | 0, k$1 = k - 1 | 0;
@@ -517,7 +513,7 @@ let add_substitute =
           else{var i$1 = stop + 1 | 0; stop = i$1;}
          }
         }
-        var next_i = match$0[2], ident = match$0[1];
+        var next_i = _b_[2], ident = _b_[1];
         caml_call2(add_string, b, caml_call1(f, ident));
         previous = 32;
         i$4 = next_i;
@@ -604,7 +600,7 @@ let () = print_endline (trim " ")
         }
         throw caml_maybe_attach_backtrace([0, Invalid_argument, s], 1);
        }
-       var b = empty;
+       b = empty;
       }
       return caml_string_of_bytes(copy(b));
      }

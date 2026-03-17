@@ -5,30 +5,3 @@
  (libraries jsoo_cmdline js_of_ocaml-compiler cmdliner compiler-libs.common)
  (flags
   (:standard -safe-string)))
-
-(rule
- (target
-  (dir cmdliner-support))
- (deps jsoo_minify.exe)
- (action
-  (ignore-stdout
-   (run
-    cmdliner
-    install
-    tool-support
-    ./jsoo_minify.exe:jsoo_minify
-    cmdliner-support))))
-
-(rule
- (target install-in-share.sexp)
- (deps cmdliner-support/share)
- (action
-  (with-stdout-to
-   %{target}
-   (run ../../tools/gen_install.exe %{deps}))))
-
-(install
- (section share_root)
- (package js_of_ocaml-compiler)
- (files
-  (include install-in-share.sexp)))

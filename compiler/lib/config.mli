@@ -50,6 +50,8 @@ module Flag : sig
 
   val constant_sinking : unit -> bool
 
+  val var_coalescing : unit -> bool
+
   val debugger : unit -> bool
 
   val pretty : unit -> bool
@@ -77,6 +79,8 @@ module Flag : sig
   val es6 : unit -> bool
 
   val load_shapes_auto : unit -> bool
+
+  val toplevel : unit -> bool
 
   val enable : string -> unit
 

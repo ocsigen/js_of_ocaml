@@ -13,7 +13,7 @@ doc: "https://ocsigen.org/js_of_ocaml/latest/manual/overview"
 bug-reports: "https://github.com/ocsigen/js_of_ocaml/issues"
 depends: [
   "dune" {>= "3.19"}
-  "ocaml" {>= "4.13" & < "5.5"}
+  "ocaml" {>= "4.13" & < "5.6"}
   "num" {with-test}
   "ppx_expect" {>= "v0.16.1" & with-test}
   "ppxlib" {>= "0.35"}
@@ -46,4 +46,14 @@ build: [
     "@install"
     "@doc" {with-doc}
   ]
+  ["cmdliner" "install" "tool-support"
+              "--update-opam-install=%{_:name}%.install"
+              "_build/install/default/bin/js_of_ocaml" {os-family != "windows"}
+              "_build/install/default/bin/js_of_ocaml.exe:js_of_ocaml" {os-family = "windows"}
+              "_build/cmdliner-install"]
+  ["cmdliner" "install" "tool-support"
+              "--update-opam-install=%{_:name}%.install"
+              "_build/install/default/bin/jsoo_minify" {os-family != "windows"}
+              "_build/install/default/bin/jsoo_minify.exe:jsoo_minify" {os-family = "windows"}
+              "_build/cmdliner-install"]
 ]

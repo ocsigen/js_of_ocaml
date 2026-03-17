@@ -60,7 +60,7 @@ jobs:
             skip-doc: true
           - os: ubuntu-latest
             os-name: Ubuntu
-            ocaml-compiler: "5.4"
+            ocaml-compiler: "5.4.0"
             skip-effects: false
             skip-test: false
             skip-doc: false
@@ -80,13 +80,13 @@ jobs:
             skip-doc: true
           - os: macos-latest
             os-name: MacOS
-            ocaml-compiler: "5.4"
+            ocaml-compiler: "5.4.0"
             skip-effects: true
             skip-test: false
             skip-doc: true
           - os: windows-latest
             os-name: Windows
-            ocaml-compiler: "5.4"
+            ocaml-compiler: "5.4.0"
             skip-effects: false
             skip-test: false
             skip-doc: true

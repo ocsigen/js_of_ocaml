@@ -35,9 +35,9 @@ let unknown_apply = function
   | Let (_, Apply { f = _; args = _; exact = false }) -> true
   | _ -> false
 
-let specialize_apply opt_count shape update_def =
+let specialize_apply opt_count shape set_shape update_def =
   let rec loop x f args shape loc (acc, free_pc, extra) =
-    match (shape : Shape.t) with
+    match shape.Shape.desc with
     | Top | Block _ -> Let (x, Apply { f; args; exact = false }) :: acc, free_pc, extra
     | Function { arity; res; _ } ->
         let nargs = List.length args in
@@ -71,6 +71,7 @@ let specialize_apply opt_count shape update_def =
           (* over application *)
           incr opt_count;
           let v = Code.Var.fresh () in
+          set_shape v res;
           let args, rest = List.take arity args in
           let exact_expr = Apply { f; args; exact = true } in
           let body =
@@ -84,9 +85,9 @@ let specialize_apply opt_count shape update_def =
     | Let (x, Apply { f; args; exact = false }) -> loop x f args (shape f) loc acc
     | _ -> i :: body_rev, free_pc, extra
 
-let specialize_instrs ~shape ~update_def opt_count p =
+let specialize_instrs ~shape ~set_shape ~update_def opt_count p =
   let blocks, free_pc =
-    let specialize_instrs = specialize_apply opt_count shape update_def in
+    let specialize_instrs = specialize_apply opt_count shape set_shape update_def in
     Addr.Map.fold
       (fun pc block (blocks, free_pc) ->
         if List.exists ~f:unknown_apply block.body
@@ -113,7 +114,7 @@ let specialize_instrs ~shape ~update_def opt_count p =
   in
   { p with blocks; free_pc }
 
-let f ~shape ~update_def p =
+let f ~shape ~set_shape ~update_def p =
   Code.invariant p;
   let previous_p = p in
   let t = Timer.make () in
@@ -121,7 +122,7 @@ let f ~shape ~update_def p =
   let p =
     if Config.Flag.optcall ()
     then
-      let p' = specialize_instrs ~shape ~update_def opt_count p in
+      let p' = specialize_instrs ~shape ~set_shape ~update_def opt_count p in
       if !opt_count = 0
       then (
         Code.assert_program_equal ~name:"optcall" p p';
@@ -225,7 +226,15 @@ end = struct
     && List.equal ~eq:instr_equal a.body b.body
     && Poly.equal a.branch b.branch
 
-  let hash (x : block) = Hashtbl.hash x
+  let hash (x : block) =
+    let body =
+      List.filter
+        ~f:(function
+          | Event _ -> false
+          | _ -> true)
+        x.body
+    in
+    Hashtbl.hash { x with body }
 end
 
 module SBT = Hashtbl.Make (Simple_block)

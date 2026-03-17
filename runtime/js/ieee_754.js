@@ -519,7 +519,7 @@ function caml_float_of_string(s) {
   if (!Number.isNaN(res) && r_float.test(s)) return res;
   s = s.replace(/_/g, "");
   res = +s;
-  if ((!Number.isNaN(res) && r_float.test(s)) || /^[+-]?nan$/i.test(s))
+  if ((!Number.isNaN(res) && r_float.test(s)) || /^ *[+-]?nan$/i.test(s))
     return res;
   var m = /^ *([+-]?)0x([0-9a-f]+)\.?([0-9a-f]*)(p([+-]?[0-9]+))?$/i.exec(s);
   //          1        2             3           5
@@ -530,7 +530,7 @@ function caml_float_of_string(s) {
     res = mantissa * Math.pow(2, exponent);
     return res;
   }
-  if (/^\+?inf(inity)?$/i.test(s)) return Number.POSITIVE_INFINITY;
-  if (/^-inf(inity)?$/i.test(s)) return Number.NEGATIVE_INFINITY;
+  if (/^ *\+?inf(inity)?$/i.test(s)) return Number.POSITIVE_INFINITY;
+  if (/^ *-inf(inity)?$/i.test(s)) return Number.NEGATIVE_INFINITY;
   caml_failwith("float_of_string");
 }

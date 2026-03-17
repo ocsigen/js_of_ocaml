@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (js) => async (args) => {
-  // biome-ignore lint/suspicious/noRedundantUseStrict:
+  // biome-ignore lint/suspicious/noRedundantUseStrict: ..
   "use strict";
   const { link, src, generated, disable_effects } = args;
 
@@ -194,6 +194,9 @@
 
   const on_windows = isNode && globalThis.process.platform === "win32";
 
+  // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Error/stack
+  const isV8 = new Error().stack?.includes("\n    at ") ?? false;
+
   const call = Function.prototype.call;
   const DV = DataView.prototype;
 
@@ -209,7 +212,7 @@
     delete: (x, y) => delete x[y],
     instanceof: (x, y) => x instanceof y,
     typeof: (x) => typeof x,
-    // biome-ignore lint/suspicious/noDoubleEquals:
+    // biome-ignore lint/suspicious/noDoubleEquals: ..
     equals: (x, y) => x == y,
     strict_equals: (x, y) => x === y,
     fun_call: (f, o, args) => f.apply(o, args),
@@ -258,17 +261,16 @@
     ta_copy: (ta, t, s, e) => ta.copyWithin(t, s, e),
     ta_bytes: (a) =>
       new Uint8Array(a.buffer, a.byteOffset, a.length * a.BYTES_PER_ELEMENT),
-    ta_blit_from_bytes: (s, p1, a, p2, l) => {
-      for (let i = 0; i < l; i++) a[p2 + i] = bytes_get(s, p1 + i);
-    },
-    ta_blit_to_bytes: (a, p1, s, p2, l) => {
-      for (let i = 0; i < l; i++) bytes_set(s, p2 + i, a[p1 + i]);
-    },
     dv_make: (a) => new DataView(a.buffer, a.byteOffset, a.byteLength),
     dv_get_f64: call.bind(DV.getFloat64),
     dv_get_f32: call.bind(DV.getFloat32),
     dv_get_i64: call.bind(DV.getBigInt64),
-    dv_get_i32: call.bind(DV.getInt32),
+    // 2026-03-16: using call.bind is faster in V8 which recognize the
+    // primitive and generate inlined call, but calling a JavaScript
+    // function is currently faster in other engines which does not
+    // have this optimization yet. Use benchmarks/bench_dv_getint32.js
+    // for performance comparisons.
+    dv_get_i32: isV8 ? call.bind(DV.getInt32) : (x, y, z) => x.getInt32(y, z),
     dv_get_i16: call.bind(DV.getInt16),
     dv_get_ui16: call.bind(DV.getUint16),
     dv_get_i8: call.bind(DV.getInt8),
@@ -385,7 +387,7 @@
       }
       return pad ? " " + s : s;
     },
-    gettimeofday: () => new Date().getTime() / 1000,
+    gettimeofday: () => Date.now() / 1000,
     times: () => {
       if (globalThis.process?.cpuUsage) {
         var t = globalThis.process.cpuUsage();
@@ -643,8 +645,6 @@
     caml_handle_uncaught_exception,
     caml_buffer,
     caml_extract_bytes,
-    bytes_get,
-    bytes_set,
     _initialize,
   } = wasmModule.instance.exports;
 

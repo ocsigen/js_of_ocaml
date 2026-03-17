@@ -462,65 +462,213 @@ let direct_approx (info : Info.t) x =
         y
   | _ -> None
 
-let the_shape_of ~return_values ~pure info x =
-  let rec loop info x acc : Shape.t =
-    if Var.Set.mem x acc
-    then Top
-    else
-      let acc = Var.Set.add x acc in
-      get_approx
-        info
-        (fun x ->
-          match Shape.State.get x with
-          | Some shape -> shape
-          | None -> (
-              match info.info_defs.(Var.idx x) with
-              | Expr (Block (_, a, _, Immutable)) ->
-                  Shape.Block (List.map ~f:(fun x -> loop info x acc) (Array.to_list a))
-              | Expr (Closure (l, _, _)) ->
-                  let pure = Pure_fun.pure pure x in
-                  let res =
-                    match Var.Map.find_opt x return_values with
-                    | None -> Shape.Top
-                    | Some set ->
-                        let set = Var.Set.remove x set in
-                        if Var.Set.is_empty set
-                        then Shape.Top
-                        else
-                          let first = Var.Set.choose set in
-                          Var.Set.fold
-                            (fun x s1 ->
-                              let s2 = loop info x acc in
-                              Shape.merge s1 s2)
-                            set
-                            (loop info first acc)
-                  in
-                  Shape.Function { arity = List.length l; pure; res }
-              | Expr (Special (Alias_prim name)) -> (
-                  try
-                    let arity = Primitive.arity name in
-                    let pure = Primitive.is_pure name in
-                    Shape.Function { arity; pure; res = Top }
-                  with _ -> Top)
-              | Expr (Apply { f; args; _ }) ->
-                  let shape = loop info f (Var.Set.add f acc) in
-                  let rec loop n' shape =
-                    match shape with
-                    | Shape.Function { arity = n; pure; res } ->
-                        if n = n'
-                        then res
-                        else if n' < n
-                        then Shape.Function { arity = n - n'; pure; res }
-                        else loop (n' - n) res
-                    | Shape.Block _ | Shape.Top -> Shape.Top
-                  in
-                  loop (List.length args) shape
-              | _ -> Shape.Top))
-        Top
-        (fun u v -> Shape.merge u v)
-        x
+type prop =
+  | PTop
+  | PBlock of
+      { fields_vars : Var.Set.t array
+      ; fields_shapes : Shape.Set.t array
+      }
+  | PFunction of
+      { arity : int
+      ; pure : bool
+      ; res_vars : Var.Set.t
+      ; res_shapes : Shape.Set.t
+      }
+
+let merge_prop p1 p2 =
+  match p1, p2 with
+  | PBlock b1, PBlock b2 ->
+      let len1 = Array.length b1.fields_vars in
+      let len2 = Array.length b2.fields_vars in
+      if len1 = len2
+      then
+        let fields_vars =
+          Array.init len1 ~f:(fun i ->
+              Var.Set.union b1.fields_vars.(i) b2.fields_vars.(i))
+        in
+        let fields_shapes =
+          Array.init len1 ~f:(fun i ->
+              Shape.Set.union b1.fields_shapes.(i) b2.fields_shapes.(i))
+        in
+        PBlock { fields_vars; fields_shapes }
+      else PTop
+  | PFunction f1, PFunction f2 when f1.arity = f2.arity ->
+      PFunction
+        { arity = f1.arity
+        ; pure = f1.pure && f2.pure
+        ; res_vars = Var.Set.union f1.res_vars f2.res_vars
+        ; res_shapes = Shape.Set.union f1.res_shapes f2.res_shapes
+        }
+  | _ -> PTop
+
+module VarSetShapeSetId = struct
+  type t = Var.Set.t * Shape.Set.t
+
+  let compare (v1, s1) (v2, s2) =
+    let c = Var.Set.compare v1 v2 in
+    if c <> 0 then c else Shape.Set.compare s1 s2
+end
+
+module VarSetShapeSetMap = Map.Make (VarSetShapeSetId)
+
+let shape_to_prop s =
+  match s.Shape.desc with
+  | Top -> PTop
+  | Block fields ->
+      let len = List.length fields in
+      PBlock
+        { fields_vars = Array.make len Var.Set.empty
+        ; fields_shapes = Array.of_list (List.map ~f:Shape.Set.singleton fields)
+        }
+  | Function { arity; pure; res } ->
+      PFunction
+        { arity; pure; res_vars = Var.Set.empty; res_shapes = Shape.Set.singleton res }
+
+let the_shape_of ~return_values ~pure ~blocks info =
+  let cache = Var.Hashtbl.create 17 in
+  let set_cache = ref VarSetShapeSetMap.empty in
+  let eval_var_cache = Var.Hashtbl.create 17 in
+  let rec compute_set vars shapes =
+    if Var.Set.compare_cardinal_with vars 1 = 0 && Shape.Set.is_empty shapes
+    then (
+      let x = Var.Set.choose vars in
+      match Var.Hashtbl.find_opt cache x with
+      | Some s -> s
+      | None ->
+          let s = compute_internal vars shapes in
+          Var.Hashtbl.replace cache x s;
+          s)
+    else compute_internal vars shapes
+  and compute_internal vars shapes =
+    let key = vars, shapes in
+    match VarSetShapeSetMap.find_opt key !set_cache with
+    | Some shape -> shape
+    | None ->
+        let shape_proxy = Shape.proxy () in
+        set_cache := VarSetShapeSetMap.add key shape_proxy !set_cache;
+        let unknown =
+          Var.Set.exists (fun x -> Var.Tbl.get info.Info.info_maybe_unknown x) vars
+        in
+        (if not unknown
+         then
+           let p_vars =
+             let expanded =
+               Var.Set.fold
+                 (fun x expanded ->
+                   Var.Set.union expanded (Var.Tbl.get info.Info.info_known_origins x))
+                 vars
+                 Var.Set.empty
+             in
+             if Var.Set.is_empty expanded
+             then None
+             else
+               let first = Var.Set.choose expanded in
+               let rest = Var.Set.remove first expanded in
+               Some
+                 (Var.Set.fold
+                    (fun x acc -> merge_prop acc (eval_var x))
+                    rest
+                    (eval_var first))
+           in
+           let p_shapes =
+             if Shape.Set.is_empty shapes
+             then None
+             else
+               let first = Shape.Set.choose shapes in
+               let rest = Shape.Set.remove first shapes in
+               Some
+                 (Shape.Set.fold
+                    (fun s acc -> merge_prop acc (shape_to_prop s))
+                    rest
+                    (shape_to_prop first))
+           in
+           let p_combined =
+             match p_vars, p_shapes with
+             | None, None -> PTop
+             | Some p, None | None, Some p -> p
+             | Some p1, Some p2 -> merge_prop p1 p2
+           in
+           shape_proxy.desc <- prop_to_desc p_combined);
+        shape_proxy
+  and prop_to_desc p : Shape.desc =
+    match p with
+    | PTop -> Shape.Top
+    | PBlock { fields_vars; fields_shapes } ->
+        Shape.Block
+          (List.init ~len:(Array.length fields_vars) ~f:(fun i ->
+               compute_set fields_vars.(i) fields_shapes.(i)))
+    | PFunction { arity; pure; res_vars; res_shapes } ->
+        Shape.Function { arity; pure; res = compute_set res_vars res_shapes }
+  and eval_var x =
+    match Var.Hashtbl.find_opt eval_var_cache x with
+    | Some p -> p
+    | None ->
+        let p = eval_var_uncached x in
+        Var.Hashtbl.replace eval_var_cache x p;
+        p
+  and eval_var_uncached x =
+    match Shape.State.get x with
+    | Some s -> shape_to_prop s
+    | None -> (
+        match info.Info.info_defs.(Var.idx x) with
+        | Expr (Block (_, a, _, Immutable)) ->
+            if not blocks
+            then PTop
+            else
+              PBlock
+                { fields_vars = Array.map ~f:Var.Set.singleton a
+                ; fields_shapes = Array.make (Array.length a) Shape.Set.empty
+                }
+        | Expr (Closure (l, _, _)) ->
+            let res_vars =
+              match Var.Map.find_opt x return_values with
+              | None -> Var.Set.empty
+              | Some set -> set
+            in
+            PFunction
+              { arity = List.length l
+              ; pure = Pure_fun.pure pure x
+              ; res_vars
+              ; res_shapes = Shape.Set.empty
+              }
+        | Expr (Special (Alias_prim name)) -> (
+            try
+              let arity = Primitive.arity name in
+              let pure = Primitive.is_pure name in
+              PFunction
+                { arity; pure; res_vars = Var.Set.empty; res_shapes = Shape.Set.empty }
+            with Not_found -> PTop)
+        | Expr (Apply { f; args; _ }) ->
+            let f_shape = compute_set (Var.Set.singleton f) Shape.Set.empty in
+            let rec loop n' shape =
+              match shape.Shape.desc with
+              | Function { arity = n; pure; res } ->
+                  if n = n'
+                  then shape_to_prop res
+                  else if n' < n
+                  then
+                    PFunction
+                      { arity = n - n'
+                      ; pure
+                      ; res_vars = Var.Set.empty
+                      ; res_shapes = Shape.Set.singleton res
+                      }
+                  else loop (n' - n) res
+              | Block _ | Top -> PTop
+            in
+            loop (List.length args) f_shape
+        | _ -> PTop)
   in
-  loop info x Var.Set.empty
+  let get x =
+    match Var.Hashtbl.find_opt cache x with
+    | Some s -> s
+    | None ->
+        let s = compute_internal (Var.Set.singleton x) Shape.Set.empty in
+        Var.Hashtbl.replace cache x s;
+        s
+  in
+  let set x s = Var.Hashtbl.replace cache x s in
+  get, set
 
 let build_subst (info : Info.t) vars =
   let nv = Var.count () in

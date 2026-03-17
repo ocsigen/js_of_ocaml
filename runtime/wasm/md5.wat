@@ -449,13 +449,13 @@
                (then
                   (array.copy $bytes $bytes
                      (struct.get $context 3 (local.get $ctx))
-                     (local.get $missing)
+                     (local.get $in_buf)
                      (local.get $input) (local.get $input_pos)
                      (local.get $input_len))
                   (return)))
             (array.copy $bytes $bytes
                (struct.get $context 3 (local.get $ctx))
-               (local.get $missing)
+               (local.get $in_buf)
                (local.get $input) (local.get $input_pos) (local.get $missing))
             (call $MD5Transform (struct.get $context 0 (local.get $ctx))
                (struct.get $context 2 (local.get $ctx))

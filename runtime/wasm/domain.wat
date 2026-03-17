@@ -200,4 +200,8 @@
 
    (func (export "caml_ml_domain_cpu_relax") (param (ref eq)) (result (ref eq))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_domain_count")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 1)))
 )
