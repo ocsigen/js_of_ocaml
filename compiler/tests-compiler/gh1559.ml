@@ -68,7 +68,9 @@ let () = my_ref := 2
     {|
     (function(globalThis){
        "use strict";
-       var runtime = globalThis.jsoo_runtime;
+       var
+        runtime = globalThis.jsoo_runtime,
+        caml_get_global = runtime.caml_get_global;
        function caml_call1(f, a0){
         return (f.l >= 0 ? f.l : f.l = f.length) === 1
                 ? f(a0)
@@ -80,9 +82,8 @@ let () = my_ref := 2
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
        var
-        _a_ = runtime.caml_get_global_data(),
-        Stdlib_Int = _a_.Stdlib__Int,
-        Stdlib = _a_.Stdlib,
+        Stdlib_Int = caml_get_global("Stdlib__Int"),
+        Stdlib = caml_get_global("Stdlib"),
         t = [0, 0];
        function handle_state(t$1){
         var t$0 = t$1;
@@ -110,7 +111,7 @@ let () = my_ref := 2
        caml_call1(Stdlib[46], _a_);
        var my_ref = [0, 1];
        my_ref[1] = 2;
-       runtime.caml_register_global(4, [0, my_ref], "Test");
+       runtime.caml_register_global([0, my_ref], "Test");
        return;
       }
       (globalThis));
@@ -173,7 +174,9 @@ let () = my_ref := 2
     {|
     (function(globalThis){
        "use strict";
-       var runtime = globalThis.jsoo_runtime;
+       var
+        runtime = globalThis.jsoo_runtime,
+        caml_get_global = runtime.caml_get_global;
        function caml_call1(f, a0){
         return (f.l >= 0 ? f.l : f.l = f.length) === 1
                 ? f(a0)
@@ -185,10 +188,9 @@ let () = my_ref := 2
                 : runtime.caml_call_gen(f, [a0, a1]);
        }
        var
-        _a_ = runtime.caml_get_global_data(),
-        Stdlib_Random = _a_.Stdlib__Random,
-        Stdlib_Int = _a_.Stdlib__Int,
-        Stdlib = _a_.Stdlib,
+        Stdlib_Random = caml_get_global("Stdlib__Random"),
+        Stdlib_Int = caml_get_global("Stdlib__Int"),
+        Stdlib = caml_get_global("Stdlib"),
         t = [0, 0];
        function handle_state(t$1){
         a:
@@ -227,7 +229,7 @@ let () = my_ref := 2
        caml_call1(Stdlib[46], _a_);
        var my_ref = [0, 1];
        my_ref[1] = 2;
-       runtime.caml_register_global(5, [0, my_ref], "Test");
+       runtime.caml_register_global([0, my_ref], "Test");
        return;
       }
       (globalThis));

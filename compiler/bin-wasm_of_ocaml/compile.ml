@@ -601,24 +601,10 @@ let run
              ~includes:include_dirs
              ~include_cmis
              ?exported_unit
-             ~link_info:false
+             ~link_info:(toplevel || dynlink)
              ~linkall:dynlink
              ~debug:need_debug
              ic
-         in
-         let crcs =
-           if toplevel || dynlink
-           then
-             let all_crcs = Parse_bytecode.read_crcs ic in
-             let keep =
-               match exported_unit with
-               | None -> fun _ -> true
-               | Some units ->
-                   let set = StringSet.of_list units in
-                   fun (name, _) -> StringSet.mem name set
-             in
-             List.filter ~f:keep all_crcs
-           else []
          in
          if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
          let embedded_files =
@@ -712,7 +698,6 @@ let run
                   ~separate_compilation:false
                   ~generated_js:[ None, generated_js ]
                   ~embedded_files
-                  ~crcs
                   ())
              ()
          in

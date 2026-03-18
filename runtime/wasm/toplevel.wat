@@ -18,6 +18,8 @@
 (module
    (import "stdlib" "caml_global_data"
       (global $caml_global_data (mut (ref $block))))
+   (import "stdlib" "link_info"
+      (global $link_info (mut (ref $block))))
    (import "obj" "caml_callback_2"
       (func $caml_callback_2
          (param (ref eq)) (param (ref eq)) (param (ref eq)) (result (ref eq))))
@@ -30,8 +32,6 @@
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "caml_string_of_jsstring"
       (func $caml_string_of_jsstring (param (ref eq)) (result (ref eq))))
-   (import "bindings" "get_named_global"
-      (func $get_named_global (param anyref) (result anyref)))
    (import "bindings" "get_ocaml_unit_list"
       (func $get_ocaml_unit_list (result anyref)))
    (import "bindings" "get_prim_list"
@@ -75,26 +75,9 @@
             (global.set $caml_global_data (local.get $new))))
       (ref.i31 (i32.const 0)))
 
-   ;; Bytecode sections: initialized to empty record so that
-   ;; Symtable.init_toplevel() (called from Toploop module init) does not
-   ;; crash if it runs before the dynlink library populates the real data.
-   ;; Layout: { symb: GlobalMap.t; crcs: list; prim: list; dlpt: list }
-   ;; GlobalMap.t = { cnt: int; tbl: Map.t } where Map.empty = 0
-   (global $bytecode_sections (mut (ref eq))
-      (array.new_fixed $block 5
-         (ref.i31 (i32.const 0))
-         (array.new_fixed $block 3
-            (ref.i31 (i32.const 0))
-            (ref.i31 (i32.const 0))
-            (ref.i31 (i32.const 0)))
-         (ref.i31 (i32.const 0))
-         (ref.i31 (i32.const 0))
-         (ref.i31 (i32.const 0))))
-
-   (func (export "wasm_dynlink_init_sections")
-      (param $sections (ref eq)) (result (ref eq))
-      (global.set $bytecode_sections (local.get $sections))
-      (ref.i31 (i32.const 0)))
+   ;; Field indices for link_info (must match stdlib.wat)
+   (global $LINK_INFO_SECTIONS i32 (i32.const 1))
+   (global $LINK_INFO_ALIASES i32 (i32.const 4))
 
    ;; Compile callback: set by OCaml-side init code
    (global $toplevel_compile (mut (ref eq)) (ref.i31 (i32.const 0)))
@@ -228,7 +211,7 @@
       (local $prim (ref eq))
       (local $dlpt (ref eq))
       (local.set $sections
-         (ref.cast (ref $block) (global.get $bytecode_sections)))
+         (ref.cast (ref $block) (array.get $block (global.get $link_info) (global.get $LINK_INFO_SECTIONS))))
       (local.set $symb (array.get $block (local.get $sections) (i32.const 1)))
       (local.set $crcs  (array.get $block (local.get $sections) (i32.const 2)))
       (local.set $prim
@@ -270,7 +253,15 @@
    ;; { symb: GlobalMap.t; crcs: ...; prim: string list; dlpt: string list }
    (func (export "caml_dynlink_get_bytecode_sections")
       (param (ref eq)) (result (ref eq))
-      (global.get $bytecode_sections))
+      (array.get $block (global.get $link_info) (global.get $LINK_INFO_SECTIONS)))
+
+   (func (export "wasm_get_bytecode_sections")
+      (param (ref eq)) (result (ref eq))
+      (array.get $block (global.get $link_info) (global.get $LINK_INFO_SECTIONS)))
+
+   (func (export "wasm_get_runtime_aliases")
+      (param (ref eq)) (result (ref eq))
+      (array.get $block (global.get $link_info) (global.get $LINK_INFO_ALIASES)))
 
    ;; Stubs for primitives required by compiler-libs.toplevel.
    ;; These must be proper Wasm exports so that any failure raises an OCaml
@@ -294,33 +285,4 @@
          (@string "caml_invoke_traced_function: not available in Wasm"))
       (unreachable))
 
-   ;; Look up a named Wasm global in imports.OCaml and return its value.
-   ;; Returns 0 (as i31ref) if not found.
-   (func (export "wasm_get_named_global")
-      (param $name (ref eq)) (result (ref eq))
-      (local $result anyref)
-      (local.set $result
-         (call $get_named_global
-            (call $unwrap (call $caml_jsstring_of_string (local.get $name)))))
-      (if (ref.is_null (local.get $result))
-         (then (return (ref.i31 (i32.const 0)))))
-      (call $wrap (local.get $result)))
-
-   ;; Return a '\x00'-separated string of all named Wasm global names.
-   (func (export "wasm_get_ocaml_unit_list")
-      (param (ref eq)) (result (ref eq))
-      (call $caml_string_of_jsstring
-         (call $wrap (call $get_ocaml_unit_list))))
-
-   ;; Return a '\x00'-separated string of all available primitive names.
-   (func (export "wasm_get_prim_list")
-      (param (ref eq)) (result (ref eq))
-      (call $caml_string_of_jsstring
-         (call $wrap (call $get_prim_list))))
-
-   ;; Return the CRC string passed via runtime arguments.
-   (func (export "wasm_get_crcs")
-      (param (ref eq)) (result (ref eq))
-      (call $caml_string_of_jsstring
-         (call $wrap (call $get_crcs))))
 )

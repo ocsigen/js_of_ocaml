@@ -76,7 +76,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
           [0,
            [11, caml_string_of_jsbytes("abc"), 0],
            caml_string_of_jsbytes("abc")],
-        Stdlib_Printf = runtime.caml_get_global_data().Stdlib__Printf;
+        Stdlib_Printf = runtime.caml_get_global("Stdlib__Printf");
        function g$0(param){return caml_call1(Stdlib_Printf[2], _a_);}
        function g$1(param, cont){
         return caml_trampoline_cps_call2(Stdlib_Printf[2], _a_, cont);
@@ -102,7 +102,7 @@ let%expect_test "test-compiler/lib-effects/test1.ml" =
        g();
        f();
        g();
-       runtime.caml_register_global(2, [0], "Test");
+       runtime.caml_register_global([0], "Test");
        return;
       }
       (globalThis));

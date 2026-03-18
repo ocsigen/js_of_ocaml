@@ -22,6 +22,7 @@
    (import "string" "caml_string_equal"
       (func $caml_string_equal
          (param (ref eq)) (param (ref eq)) (result (ref eq))))
+
    (import "jslib" "caml_jsstring_of_string"
       (func $caml_jsstring_of_string (param (ref eq)) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))
@@ -59,7 +60,11 @@
    (global $named_value_table (ref $assoc_array)
      (array.new $assoc_array (ref.null $assoc) (global.get $Named_value_size)))
 
-   (func $find_named_value
+   (global $symbol_table (mut (ref $assoc_array))
+      (array.new $assoc_array (ref.null $assoc) (i32.const 1)))
+   (global $symbol_table_size (mut i32) (i32.const 1))
+
+   (func $assoc_find
       (param $s (ref eq)) (param $l (ref null $assoc)) (result (ref null $assoc))
       (local $a (ref $assoc))
       (block $tail (result (ref null $assoc))
@@ -82,7 +87,7 @@
          (return
             (struct.get $assoc 1
                (br_on_null $not_found
-                  (call $find_named_value
+                  (call $assoc_find
                      (local.get $s)
                      (array.get $assoc_array (global.get $named_value_table)
                         (i32.rem_u
@@ -110,7 +115,7 @@
       (block $not_found
          (struct.set $assoc 1
             (br_on_null $not_found
-               (call $find_named_value (local.get 0) (local.get $r)))
+               (call $assoc_find (local.get 0) (local.get $r)))
             (local.get 1))
          (return (ref.i31 (i32.const 0))))
       (array.set $assoc_array
@@ -166,16 +171,213 @@
    (global $caml_global_data (export "caml_global_data") (mut (ref $block))
       (array.new $block (ref.i31 (i32.const 0)) (i32.const 13)))
 
-   (func (export "caml_register_global")
-      (param (ref eq)) (param $v (ref eq)) (param (ref eq)) (result (ref eq))
+   ;; Grow caml_global_data so that index $min_idx is valid.
+   (func $grow_global_data (param $min_idx i32)
+      (local $old (ref $block))
+      (local $new_len i32)
+      (local.set $old (global.get $caml_global_data))
+      ;; new length = min_idx + 1, but at least double the old size
+      (local.set $new_len
+         (i32.add (local.get $min_idx) (i32.const 1)))
+      (if (i32.lt_u (local.get $new_len)
+                     (i32.shl (array.len (local.get $old)) (i32.const 1)))
+         (then
+            (local.set $new_len
+               (i32.shl (array.len (local.get $old)) (i32.const 1)))))
+      (global.set $caml_global_data
+         (array.new $block (ref.i31 (i32.const 0)) (local.get $new_len)))
+      (array.copy $block $block
+         (global.get $caml_global_data) (i32.const 0)
+         (local.get $old) (i32.const 0)
+         (array.len (local.get $old))))
+
+   ;; Link info: a single mutable block holding all linker-provided data.
+   ;; Layout (OCaml block, field 0 = tag):
+   ;;   field 1: sections  — bytesections record { symb; crcs; prim; dlpt }
+   ;;   field 2: symbols   — array of (string * int) pairs for name→index mapping
+   ;;   field 3: prim_count — int (number of registered primitives)
+   ;;   field 4: aliases    — (string * string) list of primitive aliases
+   ;; All fields default to 0 (unit/empty).
+   (global $link_info (export "link_info") (mut (ref $block))
+      (array.new_fixed $block 5
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))
+         (ref.i31 (i32.const 0))))
+
+   ;; Field indices for $link_info (after tag at 0)
+   (global $LINK_INFO_SECTIONS i32 (i32.const 1))
+   (global $LINK_INFO_SYMBOLS i32 (i32.const 2))
+   (global $LINK_INFO_PRIM_COUNT i32 (i32.const 3))
+   (global $LINK_INFO_ALIASES i32 (i32.const 4))
+
+   ;; Next available index for dynamically loaded modules not in the
+   ;; static symbols table. Initialized when symbols are set.
+   (global $next_idx (mut i32) (i32.const 0))
+
+   (func (export "caml_set_link_info")
+      (param $info (ref eq)) (result (ref eq))
+      (local $arr (ref $block))
+      (local $pair (ref $block))
+      (local $j i32)
+      (local $n i32)
+      (local $h i32)
+      (local $max i32)
+      (local $idx i32)
+      (global.set $link_info (ref.cast (ref $block) (local.get $info)))
+      ;; Compute next_idx from symbols field
+      (if (ref.test (ref $block)
+             (array.get $block (global.get $link_info)
+                (global.get $LINK_INFO_SYMBOLS)))
+         (then
+            (local.set $arr
+               (ref.cast (ref $block)
+                  (array.get $block (global.get $link_info)
+                     (global.get $LINK_INFO_SYMBOLS))))
+            (local.set $max (i32.const -1))
+            ;; n = number of symbol entries (array.len - 1 to skip tag)
+            (local.set $n
+               (i32.sub (array.len (local.get $arr)) (i32.const 1)))
+            ;; Create hash table of size max(n, 1)
+            (if (i32.gt_u (local.get $n) (i32.const 0))
+               (then
+                  (global.set $symbol_table_size (local.get $n))
+                  (global.set $symbol_table
+                     (array.new $assoc_array
+                        (ref.null $assoc) (local.get $n)))))
+            (local.set $j (i32.const 1))
+            (block $done
+               (loop $loop
+                  (br_if $done
+                     (i32.ge_u (local.get $j) (array.len (local.get $arr))))
+                  (local.set $pair
+                     (ref.cast (ref $block)
+                        (array.get $block (local.get $arr) (local.get $j))))
+                  (local.set $idx
+                     (i31.get_u
+                        (ref.cast (ref i31)
+                           (array.get $block (local.get $pair) (i32.const 2)))))
+                  (if (i32.gt_s (local.get $idx) (local.get $max))
+                     (then (local.set $max (local.get $idx))))
+                  ;; Insert into symbol hash table
+                  (local.set $h
+                     (i32.rem_u
+                        (i31.get_s
+                           (ref.cast (ref i31)
+                              (call $caml_string_hash
+                                 (ref.i31 (i32.const 0))
+                                 (array.get $block
+                                    (local.get $pair) (i32.const 1)))))
+                        (global.get $symbol_table_size)))
+                  (array.set $assoc_array
+                     (global.get $symbol_table) (local.get $h)
+                     (struct.new $assoc
+                        (ref.cast (ref $bytes)
+                           (array.get $block (local.get $pair) (i32.const 1)))
+                        (array.get $block (local.get $pair) (i32.const 2))
+                        (array.get $assoc_array
+                           (global.get $symbol_table) (local.get $h))))
+                  (local.set $j (i32.add (local.get $j) (i32.const 1)))
+                  (br $loop)))
+            (global.set $next_idx (i32.add (local.get $max) (i32.const 1)))))
+      (ref.i31 (i32.const 0)))
+
+   ;; Relocation callback: set by wasm_of_ocaml_compiler_dynlink when
+   ;; the toplevel is active. Maps a name (string) to its symtable index.
+   ;; Similar to jsoo_toplevel_reloc in the JS runtime.
+   (global $toplevel_reloc (export "toplevel_reloc") (mut (ref eq))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "wasm_toplevel_init_reloc")
+      (param $f (ref eq)) (result (ref eq))
+      (global.set $toplevel_reloc (local.get $f))
+      (ref.i31 (i32.const 0)))
+
+   ;; Look up a name in the symbol hash table and return the symtable index.
+   ;; Returns -1 if not found or if symbols is not set.
+   (func $lookup_symbol (param $name (ref eq)) (result i32)
+      (if (ref.test (ref i31)
+             (array.get $block (global.get $link_info)
+                (global.get $LINK_INFO_SYMBOLS)))
+         (then (return (i32.const -1))))
+      (block $not_found
+         (return
+            (i31.get_u
+               (ref.cast (ref i31)
+                  (struct.get $assoc 1
+                     (br_on_null $not_found
+                        (call $assoc_find
+                           (local.get $name)
+                           (array.get $assoc_array
+                              (global.get $symbol_table)
+                              (i32.rem_u
+                                 (i31.get_s
+                                    (ref.cast (ref i31)
+                                       (call $caml_string_hash
+                                          (ref.i31 (i32.const 0))
+                                          (local.get $name))))
+                                 (global.get $symbol_table_size))))))))))
+      (i32.const -1))
+
+   (global $caml_register_global_idx (mut i32) (i32.const 0))
+
+   (func (export "caml_register_global_by_index")
+      (param $v (ref eq)) (param $idx (ref eq)) (result (ref eq))
       (local $i i32)
       ;; caml_global_data is a $block: index 0 is the tag, data starts at 1
       (local.set $i
-         (i32.add (i31.get_u (ref.cast (ref i31) (local.get 0))) (i32.const 1)))
-      (if (i32.lt_u (local.get $i) (array.len (global.get $caml_global_data)))
+         (i32.add (i31.get_u (ref.cast (ref i31) (local.get $idx))) (i32.const 1)))
+      (if (i32.ge_u (local.get $i) (array.len (global.get $caml_global_data)))
          (then
-            (array.set $block (global.get $caml_global_data)
-               (local.get $i) (local.get $v))))
+            (call $grow_global_data (local.get $i))))
+      (array.set $block (global.get $caml_global_data)
+         (local.get $i) (local.get $v))
+      (ref.i31 (i32.const 0)))
+
+   (func (export "caml_register_global")
+      (param $v (ref eq)) (param $name (ref eq)) (result (ref eq))
+      (local $i i32)
+      (local $idx i32)
+      ;; Try to resolve the name to a symtable index.
+      ;; 1. toplevel_reloc callback (set by wasm_of_ocaml_compiler_dynlink)
+      (if (i32.eqz (ref.test (ref i31) (global.get $toplevel_reloc)))
+         (then
+            (local.set $i
+               (i32.add
+                  (i31.get_u
+                     (ref.cast (ref i31)
+                        (call $caml_callback_1
+                           (global.get $toplevel_reloc)
+                           (local.get $name))))
+                  (i32.const 1))))
+         (else
+            ;; 2. static symbols array (set by linker in link_info)
+            (if (i32.eqz (ref.test (ref i31)
+                   (array.get $block (global.get $link_info)
+                      (global.get $LINK_INFO_SYMBOLS))))
+               (then
+                  (local.set $idx
+                     (call $lookup_symbol (local.get $name)))
+                  (if (i32.ge_s (local.get $idx) (i32.const 0))
+                     (then
+                        (local.set $i
+                           (i32.add (local.get $idx) (i32.const 1))))
+                     (else
+                        ;; Not found in symbols: assign a new index
+                        (local.set $i
+                           (i32.add (global.get $next_idx) (i32.const 1)))
+                        (global.set $next_idx
+                           (i32.add (global.get $next_idx) (i32.const 1))))))
+               (else
+                  ;; 3. No relocation info: nothing to do.
+                  ;; caml_global_data is populated by caml_register_global_by_index.
+                  (return (ref.i31 (i32.const 0)))))))
+      (if (i32.ge_u (local.get $i) (array.len (global.get $caml_global_data)))
+         (then
+            (call $grow_global_data (local.get $i))))
+      (array.set $block (global.get $caml_global_data)
+         (local.get $i) (local.get $v))
       (ref.i31 (i32.const 0)))
 
    (func (export "caml_get_global_data") (param (ref eq)) (result (ref eq))

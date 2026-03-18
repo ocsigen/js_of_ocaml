@@ -356,8 +356,7 @@ let%expect_test "string sharing" =
         str_abcdef = "abcdef",
         str_npi_xcf_x80 = "npi\xcf\x80";
        runtime.caml_register_global
-        (18,
-         [0,
+        ([0,
           [0],
           str_abcdef,
           str_abcdef,
@@ -395,8 +394,7 @@ let%expect_test "string sharing" =
         cst_abcdef = "abcdef",
         cst_npi$0 = "npiπ";
        runtime.caml_register_global
-        (18,
-         [0,
+        ([0,
           [0],
           cst_abcdef,
           cst_abcdef,
@@ -441,8 +439,7 @@ let%expect_test "string sharing" =
         s9_bis = caml_string_of_jsbytes(str_abc_def),
         str_npi = "npiπ";
        runtime.caml_register_global
-        (18,
-         [0,
+        ([0,
           [0],
           str_abcdef,
           str_abcdef,
@@ -483,8 +480,7 @@ let%expect_test "string sharing" =
         s6_bis = caml_string_of_jsbytes("npi\xcf\x80"),
         s9_bis = caml_string_of_jsbytes("abc\\def");
        runtime.caml_register_global
-        (18,
-         [0,
+        ([0,
           [0],
           "abcdef",
           "abcdef",

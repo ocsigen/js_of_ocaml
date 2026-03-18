@@ -56,7 +56,7 @@ let%expect_test _ =
         try{var f = c(a), d = f;}catch(f){d = c(g);}
         return d;
        }
-       e.caml_register_global(0, [0, b], "Test");
+       e.caml_register_global([0, b], "Test");
        0;
        return;
       }

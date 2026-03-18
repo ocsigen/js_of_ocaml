@@ -417,19 +417,6 @@ let report_missing_primitives missing =
       (Format.pp_print_list Format.pp_print_string)
       missing
 
-let encode_crcs crcs =
-  String.concat
-    ~sep:"\x00"
-    (List.map
-       ~f:(fun (name, digest) ->
-         name
-         ^ "\x01"
-         ^
-         match digest with
-         | Some d -> Digest.to_hex d
-         | None -> "")
-       crcs)
-
 let build_runtime_arguments
     ~link_spec
     ~separate_compilation
@@ -437,7 +424,6 @@ let build_runtime_arguments
     ~wasm_dir
     ~generated_js
     ~embedded_files
-    ~crcs
     () =
   let missing_primitives = if Config.Flag.genprim () then missing_primitives else [] in
   if not separate_compilation then report_missing_primitives missing_primitives;
@@ -576,11 +562,6 @@ let build_runtime_arguments
              embedded_files) )
       :: props
   in
-  let props =
-    if List.is_empty crcs
-    then props
-    else ("crcs", Javascript.EStr (Utf8_string.of_string_exn (encode_crcs crcs))) :: props
-  in
   obj props
 
 let source_name i j file =
@@ -713,6 +694,42 @@ let gen_dir dir f =
     remove_directory d_tmp;
     raise exc
 
+let build_dynlink_init ~predefined_exceptions ~to_link ~all_primitives =
+  Generate.init ();
+  (* Build the GlobalMap (symtable).
+     Unlike JS (where predefined exceptions are accessed by name on
+     caml_global_data), Wasm accesses them by hardcoded index in fail.wat.
+     So we must enter predefined exceptions first (indices 0-11) to avoid
+     compilation unit indices overlapping with exception slots. *)
+  let symb = ref Ocaml_compiler.Symtable.GlobalMap.empty in
+  let predef_exns = Runtimedef.builtin_exceptions in
+  Array.iter predef_exns ~f:(fun name ->
+      ignore
+        (Ocaml_compiler.Symtable.GlobalMap.enter
+           symb
+           (Ocaml_compiler.Symtable.Global.Glob_predef name)));
+  let unit_names =
+    List.filter ~f:(fun n -> not (StringSet.mem n predefined_exceptions)) to_link
+  in
+  List.iter unit_names ~f:(fun name ->
+      ignore
+        (Ocaml_compiler.Symtable.GlobalMap.enter
+           symb
+           (Ocaml_compiler.Symtable.Global.Glob_compunit name)));
+  (* Build CRCs: no real digests available at link time *)
+  let crcs = List.map ~f:(fun name -> name, None) unit_names in
+  (* Collect all primitives *)
+  let primitives = StringSet.union (Primitive.get_external ()) all_primitives in
+  let num_globals =
+    Ocaml_compiler.Symtable.GlobalMap.fold (fun _ n m -> max n m) !symb 0 + 1
+  in
+  (* Use Parse_bytecode.link_info to generate wasm_set_symbols and
+     wasm_dynlink_init_sections calls *)
+  let code = Parse_bytecode.link_info ~symbols:!symb ~primitives ~crcs ~num_globals in
+  (* Compile to a wasm module *)
+  let wasm_binary, _fragments = Generate.compile ~unit_name:(Some "_link_info") code in
+  wasm_binary
+
 let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
   if times () then Format.eprintf "linking@.";
   let t = Timer.make () in
@@ -815,8 +832,21 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
           ~pos:0
           ~len:8
     in
+    let all_primitives =
+      List.fold_left files ~init:StringSet.empty ~f:(fun acc (_, (_, units)) ->
+          List.fold_left units ~init:acc ~f:(fun acc { unit_info; _ } ->
+              List.fold_left unit_info.Unit_info.primitives ~init:acc ~f:(fun acc p ->
+                  StringSet.add p acc)))
+    in
+    let link_info_wasm =
+      build_dynlink_init ~predefined_exceptions ~to_link ~all_primitives
+    in
+    let link_info_module = "_link_info" in
+    let out = Filename.concat tmp_dir (link_info_module ^ ".wasm") in
+    Fs.write_file ~name:out ~contents:link_info_wasm;
+    let start_to_link = link_info_module :: to_link in
     generate_start_function
-      ~to_link
+      ~to_link:start_to_link
       ~out_file:(Filename.concat tmp_dir (start_module ^ ".wasm"));
     let module_names, interfaces =
       link_to_directory ~files_to_link ~files ~enable_source_maps ~dir:tmp_dir
@@ -824,7 +854,8 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
     ( interfaces
     , dir
     , let to_link = compute_dependencies ~files_to_link ~files in
-      List.combine module_names (None :: None :: to_link) @ [ start_module, None ] )
+      List.combine module_names (None :: None :: to_link)
+      @ [ link_info_module, None; start_module, None ] )
   in
   let missing_primitives = compute_missing_primitives interfaces in
   if times () then Format.eprintf "    copy wasm files: %a@." Timer.print t;
@@ -849,7 +880,6 @@ let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
         ~wasm_dir
         ~generated_js
         ~embedded_files
-        ~crcs:[]
         ()
     in
     output_js [ Javascript.Expression_statement js, Javascript.N ]

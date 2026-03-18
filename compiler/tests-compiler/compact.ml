@@ -37,8 +37,7 @@ let rec f x y z =
        "use strict";
        var b = a.jsoo_runtime;
        b.caml_register_global
-        (0,
-         [0,
+        ([0,
           function(a, b, c){
            for(;;){
             if(0 === a && 0 === b && 0 === c) return 1;

@@ -239,6 +239,18 @@ function caml_named_value(nm) {
 //Provides: caml_global_data
 var caml_global_data = [0];
 
+//Provides: caml_link_info
+var caml_link_info = {};
+
+//Provides: caml_set_link_info
+//Requires: caml_link_info
+function caml_set_link_info(info) {
+  caml_link_info.sections = info[1];
+  caml_link_info.symbols = info[2];
+  caml_link_info.prim_count = info[3];
+  caml_link_info.aliases = info[4];
+}
+
 //Provides: caml_build_symbols
 //Requires: caml_jsstring_of_string
 function caml_build_symbols(symb) {
@@ -258,31 +270,40 @@ function caml_build_symbols(symb) {
 //Provides: jsoo_toplevel_reloc
 var jsoo_toplevel_reloc;
 
-//Provides: caml_register_global (const, shallow, const)
+//Provides: caml_register_global_by_index (shallow, const)
+//Requires: caml_global_data
+function caml_register_global_by_index(v, idx) {
+  caml_global_data[idx + 1] = v;
+}
+
+//Provides: caml_register_global (shallow, const)
 //Requires: caml_global_data, caml_callback, caml_build_symbols
-//Requires: caml_failwith
+//Requires: caml_link_info
 //Requires: jsoo_toplevel_reloc
-function caml_register_global(n, v, name_opt) {
-  if (name_opt) {
-    var name = name_opt;
-    if (jsoo_toplevel_reloc) {
-      n = caml_callback(jsoo_toplevel_reloc, [name]);
-    } else if (caml_global_data.symbols) {
-      if (!caml_global_data.symidx) {
-        caml_global_data.symidx = caml_build_symbols(caml_global_data.symbols);
-      }
-      var nid = caml_global_data.symidx[name];
-      if (nid >= 0) n = nid;
-      else {
-        // The unit is unknown, this can happen when dynlinking a precompiled js,
-        // let's allocate a fresh idx.
-        var n = caml_global_data.symidx.next_idx++;
-        caml_global_data.symidx[name] = n;
-      }
+function caml_register_global(v, name) {
+  if (jsoo_toplevel_reloc) {
+    var n = caml_callback(jsoo_toplevel_reloc, [name]);
+    caml_global_data[n + 1] = v;
+  } else if (caml_link_info.symbols) {
+    if (!caml_link_info.symidx) {
+      caml_link_info.symidx = caml_build_symbols(caml_link_info.symbols);
     }
+    var nid = caml_link_info.symidx[name];
+    if (nid === undefined) {
+      // The unit is unknown, this can happen when dynlinking a precompiled js,
+      // let's allocate a fresh idx.
+      nid = caml_link_info.symidx.next_idx++;
+      caml_link_info.symidx[name] = nid;
+    }
+    caml_global_data[nid + 1] = v;
   }
-  caml_global_data[n + 1] = v;
-  if (name_opt) caml_global_data[name_opt] = v;
+  caml_global_data[name] = v;
+}
+
+//Provides: caml_get_global (mutable)
+//Requires: caml_global_data
+function caml_get_global(name) {
+  return caml_global_data[name];
 }
 
 //Provides: caml_get_global_data mutable

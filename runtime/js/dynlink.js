@@ -56,10 +56,10 @@ function caml_dynlink_lookup_symbol(idx, fun_name) {
 }
 
 //Provides: caml_dynlink_add_primitive
-//Requires: caml_global_data
+//Requires: caml_link_info
 function caml_dynlink_add_primitive(dll_addr) {
   globalThis.jsoo_runtime[dll_addr.name] = dll_addr.symbol;
-  return caml_global_data.prim_count++;
+  return caml_link_info.prim_count++;
 }
 
 //Provides: caml_dynlink_get_current_libs

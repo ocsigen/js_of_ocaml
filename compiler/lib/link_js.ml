@@ -228,13 +228,9 @@ let link
     ~output
     ~linkall
     ~mklib
-    ~toplevel
     ~files
     ~resolve_sourcemap_url
     ~(source_map : Source_map.Encoding_spec.t option) =
-  (* we currently don't do anything with [toplevel]. It could be used
-     to conditionally include link_info ?*)
-  ignore (toplevel : bool);
   let t = Timer.make () in
   let oc = Line_writer.of_channel output in
   let warn_effects = ref false in
@@ -422,7 +418,12 @@ let link
                 List.iter u.aliases ~f:(fun (a, b) -> Primitive.alias a b);
                 StringSet.union acc (StringSet.of_list u.primitives))
           in
-          let code = Parse_bytecode.link_info ~symbols:!sym ~primitives ~crcs:[] in
+          let num_globals =
+            Ocaml_compiler.Symtable.GlobalMap.fold (fun _ n m -> max n m) !sym 0 + 1
+          in
+          let code =
+            Parse_bytecode.link_info ~symbols:!sym ~primitives ~crcs:[] ~num_globals
+          in
           let b = Buffer.create 100 in
           let fmt = Pretty_print.to_buffer b in
           Driver.configure fmt;
@@ -514,8 +515,8 @@ let link
           Line_writer.write oc s);
       if times () then Format.eprintf "  sourcemap: %a@." Timer.print t
 
-let link ~output ~linkall ~mklib ~toplevel ~files ~resolve_sourcemap_url ~source_map =
-  try link ~output ~linkall ~toplevel ~mklib ~files ~resolve_sourcemap_url ~source_map
+let link ~output ~linkall ~mklib ~files ~resolve_sourcemap_url ~source_map =
+  try link ~output ~linkall ~mklib ~files ~resolve_sourcemap_url ~source_map
   with Build_info.Incompatible_build_info { key; first = f1, v1; second = f2, v2 } ->
     let string_of_v = function
       | None -> "<empty>"

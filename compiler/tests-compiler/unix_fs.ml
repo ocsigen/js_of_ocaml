@@ -38,7 +38,8 @@ in
 f ();Sys.chdir "/static"; f ()|};
   [%expect {|
     bbb
-    bbb|}]
+    bbb
+    |}]
 
 let%expect_test "Unix.mkdir_ENOENT" =
   compile_and_run
@@ -53,7 +54,8 @@ in
 f (); Sys.chdir "/static"; f ()|};
   [%expect {|
     ENOENT: mkdir
-    ENOENT: mkdir|}]
+    ENOENT: mkdir
+    |}]
 
 let%expect_test "Unix.mkdir_ENOTDIR" =
   compile_and_run
@@ -75,7 +77,8 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     EXPECTED ERROR: mkdir
-    EXPECTED ERROR: mkdir|}]
+    EXPECTED ERROR: mkdir
+    |}]
 
 let%expect_test "Unix.rmdir_ENOENT" =
   compile_and_run
@@ -90,7 +93,8 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     ENOENT: rmdir
-    ENOENT: rmdir|}]
+    ENOENT: rmdir
+    |}]
 
 let%expect_test "Unix.rmdir_ENOTDIR" =
   compile_and_run
@@ -114,7 +118,8 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     EXPECTED ERROR: rmdir
-    EXPECTED ERROR: rmdir|}]
+    EXPECTED ERROR: rmdir
+    |}]
 
 let%expect_test "Unix.stat_file" =
   compile_and_run
@@ -136,7 +141,8 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     File size: 3
-    Failure("caml_unix_stat: not implemented")|}]
+    Failure("caml_unix_stat: not implemented")
+    |}]
 
 let%expect_test "Unix.stat_dir" =
   compile_and_run
@@ -153,7 +159,8 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     Found dir
-    Failure("caml_unix_stat: not implemented")|}]
+    Failure("caml_unix_stat: not implemented")
+    |}]
 
 let%expect_test "Unix.stat_symlink" =
   compile_and_run
@@ -180,7 +187,8 @@ f (); Sys.chdir "/static"; f () |};
     {|
     File size: 3
     Failure("caml_unix_symlink: not implemented")
-    Failure("caml_unix_stat: not implemented")|}]
+    Failure("caml_unix_stat: not implemented")
+    |}]
 
 let%expect_test "Unix.symlink_Unix.readlink" =
   compile_and_run
@@ -207,7 +215,8 @@ f (); Sys.chdir "/static"; f () |};
     {|
     bbb
     Failure("caml_unix_symlink: not implemented")
-    Failure("caml_unix_readlink: not implemented")|}]
+    Failure("caml_unix_readlink: not implemented")
+    |}]
 
 let%expect_test "Unix.readlink_EINVAL" =
   compile_and_run
@@ -223,9 +232,11 @@ let f () =
   | _ -> print_endline "UNEXPECTED SUCCESS");
 in
 f (); Sys.chdir "/static"; f () |};
-  [%expect {|
+  [%expect
+    {|
     EXPECTED ERROR
-    Failure("caml_unix_readlink: not implemented")|}]
+    Failure("caml_unix_readlink: not implemented")
+    |}]
 
 let%expect_test "Unix.lstat_file" =
   compile_and_run
@@ -247,7 +258,8 @@ in
 f (); Sys.chdir "/static"; f () |};
   [%expect {|
     File size: 3
-    Failure("caml_unix_lstat: not implemented")|}]
+    Failure("caml_unix_lstat: not implemented")
+    |}]
 
 let%expect_test "Unix.lstat_symlink" =
   compile_and_run
@@ -271,7 +283,8 @@ f (); Sys.chdir "/static"; f () |};
     {|
     Found link
     Failure("caml_unix_symlink: not implemented")
-    Failure("caml_unix_lstat: not implemented")|}]
+    Failure("caml_unix_lstat: not implemented")
+    |}]
 
 let%expect_test "Unix.opendir" =
   compile_and_run
@@ -357,7 +370,8 @@ let () = f (); Sys.chdir "/static"; f () |};
     <file 1>
     <file 1>
     Unix.Unix_error(Unix.EBADF, "closedir", "<PATH>")
-    Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>") |}]
+    Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>")
+    |}]
 
 let%expect_test "Unix.opendir - empty path" =
   compile_and_run
@@ -445,4 +459,5 @@ let () = f (); Sys.chdir "/static"; f () |};
     <file 1>
     <file 1>
     Unix.Unix_error(Unix.EBADF, "closedir", "<PATH>")
-    Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>") |}]
+    Unix.Unix_error(Unix.EBADF, "readdir", "<PATH>")
+    |}]

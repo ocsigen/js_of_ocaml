@@ -770,58 +770,48 @@ let access_global g i =
       g.vars.(i) <- Some x;
       x
 
-let emit_register_global_by_index i v name rem =
-  Let
-    ( Var.fresh ()
-    , Prim
-        ( Extern "caml_register_global"
-        , [ Pc (Int (Targetint.of_int_exn i)); Pv v; Pc (String name) ] ) )
-  :: rem
-
-let emit_set_global_by_name v name rem =
-  Let (Var.fresh (), Prim (Extern "caml_set_global", [ Pc (String name); Pv v ])) :: rem
+let register_global_instrs var ?name ?by_index rem =
+  let rem =
+    match by_index with
+    | Some index ->
+        Let
+          ( Var.fresh ()
+          , Prim
+              ( Extern "caml_register_global_by_index"
+              , [ Pv var; Pc (Int (Targetint.of_int_exn index)) ] ) )
+        :: rem
+    | None -> rem
+  in
+  match name with
+  | Some name ->
+      let name =
+        Pc
+          (match Config.target () with
+          | `JavaScript -> NativeString (Native_string.of_string name)
+          | `Wasm -> String name)
+      in
+      Let (Var.fresh (), Prim (Extern "caml_register_global", [ Pv var; name ])) :: rem
+  | None -> rem
 
 let register_global ?(force = false) g i rem =
-  match g.is_exported.(i), force, Config.target () with
-  | true, _, `Wasm -> (
+  let dominated = g.is_exported.(i) || force in
+  if not dominated
+  then rem
+  else
+    let var = access_global g i in
+    let by_index =
       match g.named_value.(i) with
-      | Some name ->
-          (* The global is known by name: register as a named Wasm
-             global via caml_set_global (for normal Wasm imports)
-             and, if force is set (predefined exceptions with
-             --dynlink/--linkall), also by index in caml_global_data
-             so that runtime functions (e.g. caml_raise_not_found)
-             and dynamically loaded code can find them. *)
-          Var.set_name (access_global g i) name;
-          let v = access_global g i in
-          let rem = if force then emit_register_global_by_index i v name rem else rem in
-          emit_set_global_by_name v name rem
-      | None ->
-          (* The global has no name: it is a dynamically loaded module
-             (not in orig_units). Register by index in
-             caml_global_data only. *)
-          emit_register_global_by_index i (access_global g i) "" rem)
-  | true, _, (`JavaScript as target) | false, true, ((`Wasm | `JavaScript) as target) ->
-      (* Register an exception (if force = true), or a compilation unit
-         (Javascript) *)
-      let args =
-        match g.named_value.(i) with
-        | None -> []
-        | Some name ->
-            Var.set_name (access_global g i) name;
-            [ Pc
-                (match target with
-                | `JavaScript -> NativeString (Native_string.of_string name)
-                | `Wasm -> String name)
-            ]
-      in
-      Let
-        ( Var.fresh ()
-        , Prim
-            ( Extern "caml_register_global"
-            , Pc (Int (Targetint.of_int_exn i)) :: Pv (access_global g i) :: args ) )
-      :: rem
-  | false, false, (`JavaScript | `Wasm) -> rem
+      | None -> Some i
+      | Some _ ->
+          (* For wasm predefined exceptions (force=true), also register by
+             index so that runtime functions (e.g. caml_raise_not_found in
+             fail.wat) can find them in caml_global_data. *)
+          if force && Poly.equal (Config.target ()) `Wasm then Some i else None
+    in
+    (match g.named_value.(i) with
+    | Some name -> Var.set_name var name
+    | None -> ());
+    register_global_instrs var ?name:g.named_value.(i) ?by_index rem
 
 let get_global state instrs i =
   State.size_globals state (i + 1);
@@ -840,12 +830,11 @@ let get_global state instrs i =
         let cst = g.constants.(i) in
         x, state, Let (x, Constant cst) :: instrs
       else
-        match i < Array.length g.constants, target with
-        | true, _ | false, `JavaScript ->
-            (* Non-inlined constant, and reference to another compilation
-               units in case of separate compilation (JavaScript).
-               Some code is generated in a prelude to store the relevant
-               module in variable [x]. *)
+        match i < Array.length g.constants, g.named_value.(i) with
+        | true, _ | false, None ->
+            (* Non-inlined constant, or reference to another compilation
+               unit without a known name (e.g. toplevel).
+               Some code is generated in a prelude to initialize [x]. *)
             g.is_const.(i) <- true;
             let x, state = State.fresh_var state in
             if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
@@ -857,27 +846,23 @@ let get_global state instrs i =
                 | None -> ()
                 | Some shape -> Shape.State.assign x shape));
             x, state, instrs
-        | false, `Wasm -> (
+        | false, Some name -> (
             (* Reference to another compilation unit in case of separate
-               compilation (Wasm). *)
-            match g.named_value.(i) with
-            | None ->
-                (* No name available: this is a dynamically loaded
-                   module (not in orig_units). Access by index from
-                   caml_global_data. *)
+               compilation. *)
+            let x, state = State.fresh_var state in
+            if debug_parser () then Format.printf "%a = get_global(%s)@." Var.print x name;
+            (match Shape.Store.load ~name with
+            | None -> ()
+            | Some shape -> Shape.State.assign x shape);
+            match Config.target () with
+            | `JavaScript ->
+                (* Cache the var and mark as const; the prelude will
+                   initialize it with a single caml_get_global call. *)
                 g.is_const.(i) <- true;
-                let x, state = State.fresh_var state in
                 g.vars.(i) <- Some x;
+                Var.set_name x name;
                 x, state, instrs
-            | Some name ->
-                (* The global is known by name: access it as an
-                   imported Wasm global variable. *)
-                let x, state = State.fresh_var state in
-                if debug_parser ()
-                then Format.printf "%a = get_global(%s)@." Var.print x name;
-                (match Shape.Store.load ~name with
-                | None -> ()
-                | Some shape -> Shape.State.assign x shape);
+            | `Wasm ->
                 ( x
                 , state
                 , Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])) :: instrs
@@ -2700,8 +2685,20 @@ type bytesections =
   }
 [@@ocaml.warning "-unused-field"]
 
-let emit_link_info ~symbols ~primitives ~crcs body =
-  let gdata = Code.Var.fresh_n "global_data" in
+type link_info =
+  { sections : bytesections
+  ; symbols : (string * int) array
+  ; prim_count : int
+  ; aliases : (string * string) list
+  }
+[@@ocaml.warning "-unused-field"]
+
+let emit_link_info ~symbols ~primitives ~crcs ~num_globals body =
+  let primitives =
+    (* Add the externals translated by jsoo directly (in generate.ml) *)
+    StringSet.union (Primitive.get_external ()) (StringSet.of_list primitives)
+    |> StringSet.elements
+  in
   let symbols_array =
     Ocaml_compiler.Symtable.GlobalMap.fold
       (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
@@ -2709,33 +2706,27 @@ let emit_link_info ~symbols ~primitives ~crcs body =
       []
     |> Array.of_list
   in
-  let primitives =
-    (* Add the externals translated by jsoo directly (in generate.ml) *)
-    StringSet.union (Primitive.get_external ()) (StringSet.of_list primitives)
-    |> StringSet.elements
-  in
+
   let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
   let aliases = Primitive.aliases () in
-  let infos =
-    [ "sections", Constants.parse (Obj.repr sections)
-    ; "symbols", Constants.parse (Obj.repr symbols_array)
-    ; "prim_count", Int (Targetint.of_int_exn (List.length primitives))
-    ; "aliases", Constants.parse (Obj.repr aliases)
-    ]
+  let info =
+    { sections; symbols = symbols_array; prim_count = List.length primitives; aliases }
   in
   let body =
-    List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
-        let c = Var.fresh () in
-        Let (c, Constant const)
-        :: Let
-             ( Var.fresh ()
-             , Prim
-                 ( Extern "caml_js_set"
-                 , [ Pv gdata; Pc (NativeString (Native_string.of_string name)); Pv c ] )
-             )
-        :: rem)
+    match Config.target () with
+    | `JavaScript -> body
+    | `Wasm ->
+        Let
+          ( Var.fresh ()
+          , Prim
+              ( Extern "caml_realloc_global"
+              , [ Pc (Int (Targetint.of_int_exn num_globals)) ] ) )
+        :: body
   in
-  Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
+  let c = Var.fresh () in
+  Let (c, Constant (Constants.parse (Obj.repr info)))
+  :: Let (Var.fresh (), Prim (Extern "caml_set_link_info", [ Pv c ]))
+  :: body
 
 let from_exe
     ?(includes = [])
@@ -2818,7 +2809,13 @@ let from_exe
   in
   let body =
     if link_info
-    then emit_link_info ~symbols ~primitives:(Array.to_list globals.primitives) ~crcs body
+    then
+      emit_link_info
+        ~symbols
+        ~primitives:(Array.to_list globals.primitives)
+        ~crcs
+        ~num_globals:(Array.length globals.vars)
+        body
     else body
   in
   (* List interface files *)
@@ -2867,7 +2864,7 @@ let from_exe
   { code; cmis; debug = Debug.summarize debug_data }
 
 (* As input: list of primitives + size of global table *)
-let from_bytes ~prims ~debug ~orig_units (code : bytecode) =
+let from_bytes ~prims ~debug (code : bytecode) =
   let debug_data = Debug.create ~include_cmis:false true in
   let t = Timer.make () in
   if Debug.names debug_data
@@ -2891,27 +2888,6 @@ let from_bytes ~prims ~debug ~orig_units (code : bytecode) =
     t
   in
   let globals = make_globals 0 [||] prims in
-  (* In Wasm mode, populate named_value for modules from the original
-     program (which have named Wasm globals). Dynamically loaded modules
-     are accessed by index from caml_global_data instead. *)
-  (match Config.target () with
-  | `Wasm ->
-      Ocaml_compiler.Symtable.GlobalMap.iter
-        (Ocaml_compiler.Symtable.current_state ())
-        ~f:(fun id pos ->
-          match id with
-          | Ocaml_compiler.Symtable.Global.Glob_predef _ ->
-              let size = pos + 1 in
-              if size > Array.length globals.named_value then resize_globals globals size;
-              globals.named_value.(pos) <- Some (Ocaml_compiler.Symtable.Global.name id)
-          | Glob_compunit name ->
-              if StringSet.mem name orig_units
-              then (
-                let size = pos + 1 in
-                if size > Array.length globals.named_value
-                then resize_globals globals size;
-                globals.named_value.(pos) <- Some name))
-  | `JavaScript -> ());
   let p = parse_bytecode code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let need_gdata = ref false in
@@ -2945,8 +2921,7 @@ let from_bytes ~prims ~debug ~orig_units (code : bytecode) =
   in
   prepend p body
 
-let from_string ~prims ~debug ~orig_units (code : string) =
-  from_bytes ~prims ~debug ~orig_units code
+let from_string ~prims ~debug (code : string) = from_bytes ~prims ~debug code
 
 let normalize_bytecode code =
   match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
@@ -3068,14 +3043,12 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
     String.concat ~sep:"" l
   in
   let prog = parse_bytecode code globals debug_data in
-  let gdata = Var.fresh_n "global_data" in
-  let need_gdata = ref false in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
         match var with
         | Some x when globals.is_const.(i) -> (
-            match globals.named_value.(i) with
-            | None ->
+            match i < Array.length globals.constants, globals.named_value.(i) with
+            | true, _ ->
                 let l = register_global globals i l in
                 let cst = globals.constants.(i) in
                 (match cst, Code.Var.get_name x with
@@ -3083,22 +3056,17 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
                     Var.set_name x ~generated:true (Printf.sprintf "cst_%s" str)
                 | _ -> ());
                 Let (x, Constant cst) :: l
-            | Some name ->
+            | false, Some name ->
+                (* Cross-unit reference: initialize via caml_get_global *)
                 Var.set_name x name;
-                need_gdata := true;
                 Let
                   ( x
                   , Prim
-                      ( Extern "caml_js_get"
-                      , [ Pv gdata; Pc (NativeString (Native_string.of_string name)) ] )
-                  )
-                :: l)
+                      ( Extern "caml_get_global"
+                      , [ Pc (NativeString (Native_string.of_string name)) ] ) )
+                :: l
+            | false, None -> l)
         | _ -> l)
-  in
-  let body =
-    if !need_gdata
-    then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
-    else body
   in
   let cmis =
     if include_cmis
@@ -3200,6 +3168,11 @@ let predefined_exceptions () =
         let exn = Var.fresh () in
         let v_name = Var.fresh () in
         let v_index = Var.fresh () in
+        let by_index =
+          match Config.target () with
+          | `Wasm -> Some index
+          | `JavaScript -> None
+        in
         [ Let (v_name, Constant (String name))
         ; Let
             ( v_index
@@ -3211,22 +3184,7 @@ let predefined_exceptions () =
                       (-index - 1))) )
         ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable))
         ]
-        @
-        match Config.target () with
-        | `JavaScript ->
-            let v_name_js = Var.fresh () in
-            [ Let (v_name_js, Constant (NativeString (Native_string.of_string name)))
-            ; Let
-                ( Var.fresh ()
-                , Prim
-                    ( Extern "caml_register_global"
-                    , [ Pc (Int (Targetint.of_int_exn index)); Pv exn; Pv v_name_js ] ) )
-            ]
-        | `Wasm ->
-            emit_set_global_by_name
-              exn
-              name
-              (emit_register_global_by_index index exn name []))
+        @ register_global_instrs exn ~name ?by_index [])
     |> List.concat
   in
   let block = { params = []; body; branch = Stop } in
@@ -3241,8 +3199,8 @@ let predefined_exceptions () =
   in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
 
-let link_info ~symbols ~primitives ~crcs =
+let link_info ~symbols ~primitives ~crcs ~num_globals =
   let primitives = StringSet.elements primitives in
-  let body = emit_link_info ~symbols ~primitives ~crcs [] in
+  let body = emit_link_info ~symbols ~primitives ~crcs ~num_globals [] in
   let block = { params = []; body; branch = Stop } in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }

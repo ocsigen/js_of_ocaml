@@ -31,6 +31,8 @@
    (import "fail" "caml_failwith" (func $caml_failwith (param (ref eq))))
    (import "fail" "javascript_exception"
       (tag $javascript_exception (param externref)))
+   (import "stdlib" "link_info"
+      (global $link_info (mut (ref $block))))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))
@@ -56,7 +58,10 @@
          (call $unwrap (call $caml_jsstring_of_string (local.get $source))))
       (ref.i31 (i32.const 0)))
 
-   ;; Standard OCaml dynlink primitives (stubs)
+   ;; Field index for prim_count in link_info (must match stdlib.wat)
+   (global $LINK_INFO_PRIM_COUNT i32 (i32.const 3))
+
+   ;; Standard OCaml dynlink primitives
 
 (@if (>= ocaml_version (5 1 0))
 (@then
@@ -80,7 +85,16 @@
 
    (func (export "caml_dynlink_add_primitive")
       (param (ref eq)) (result (ref eq))
-      (ref.i31 (i32.const 0)))
+      (local $idx i32)
+      (local.set $idx
+         (i31.get_u
+            (ref.cast (ref i31)
+               (array.get $block (global.get $link_info)
+                  (global.get $LINK_INFO_PRIM_COUNT)))))
+      (array.set $block (global.get $link_info)
+         (global.get $LINK_INFO_PRIM_COUNT)
+         (ref.i31 (i32.add (local.get $idx) (i32.const 1))))
+      (ref.i31 (local.get $idx)))
 
    (func (export "caml_dynlink_get_current_libs")
       (param (ref eq)) (result (ref eq))

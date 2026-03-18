@@ -128,9 +128,9 @@ let%expect_test "Omit unused return expressions" =
   (* Expect return value of f to be omitted. *)
   print_fun_decl program (Some "f");
   [%expect {|
-       function f(x){caml_call1(Stdlib[44], x);}
-       //end
-     |}]
+    function f(x){caml_call1(Stdlib[44], x);}
+    //end
+    |}]
 
 let%expect_test "Bug fix in PR #1681" =
   let program =

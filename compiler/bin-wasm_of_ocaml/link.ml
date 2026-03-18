@@ -25,6 +25,7 @@ type t =
   ; files : string list
   ; output_file : string
   ; linkall : bool
+  ; dynlink : bool
   ; mklib : bool
   ; enable_source_maps : bool
   }
@@ -61,9 +62,15 @@ let options () =
     in
     Arg.(value & flag & info [ "a" ] ~doc)
   in
-  let build_t common no_sourcemap sourcemap output_file files linkall mklib =
+  let dynlink =
+    let doc =
+      "Enable dynlink/toplevel support (populate bytecode sections at link time)."
+    in
+    Arg.(value & flag & info [ "dynlink"; "toplevel" ] ~doc)
+  in
+  let build_t common no_sourcemap sourcemap output_file files linkall dynlink mklib =
     let enable_source_maps = (not no_sourcemap) && sourcemap in
-    `Ok { common; output_file; files; linkall; mklib; enable_source_maps }
+    `Ok { common; output_file; files; linkall; dynlink; mklib; enable_source_maps }
   in
   let t =
     Term.(
@@ -74,11 +81,12 @@ let options () =
       $ output_file
       $ files
       $ linkall
+      $ dynlink
       $ mklib)
   in
   Term.ret t
 
-let f { common; output_file; files; linkall; enable_source_maps; mklib } =
+let f { common; output_file; files; linkall; dynlink = _; enable_source_maps; mklib } =
   Js_of_ocaml_compiler.Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Link.link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files:[] ~files

@@ -62,28 +62,28 @@ print_endline(String.make 1 "Ɋ".[0] ^ String.make 1 "Ɋ".[1]);;
       7:    "use strict";
       8:    var
       9:     runtime = globalThis.jsoo_runtime,
-     10:     caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
-     11:    function caml_call1(f, a0){
-     12:     return (f.l >= 0 ? f.l : f.l = f.length) === 1
-     13:             ? f(a0)
-     14:             : runtime.caml_call_gen(f, [a0]);
-     15:    }
-     16:    function caml_call2(f, a0, a1){
-     17:     return (f.l >= 0 ? f.l : f.l = f.length) === 2
-     18:             ? f(a0, a1)
-     19:             : runtime.caml_call_gen(f, [a0, a1]);
-     20:    }
-     21:    var
-     22:     _a_ = runtime.caml_get_global_data(),
+     10:     caml_get_global = runtime.caml_get_global,
+     11:     caml_string_of_jsbytes = runtime.caml_string_of_jsbytes;
+     12:    function caml_call1(f, a0){
+     13:     return (f.l >= 0 ? f.l : f.l = f.length) === 1
+     14:             ? f(a0)
+     15:             : runtime.caml_call_gen(f, [a0]);
+     16:    }
+     17:    function caml_call2(f, a0, a1){
+     18:     return (f.l >= 0 ? f.l : f.l = f.length) === 2
+     19:             ? f(a0, a1)
+     20:             : runtime.caml_call_gen(f, [a0, a1]);
+     21:    }
+     22:    var
      23:     greeting = caml_string_of_jsbytes("hello world"),
      24:     greeting$0 = caml_string_of_jsbytes("hello world with unicode: \xc9\x8a"),
-     25:     Stdlib = _a_.Stdlib,
-     26:     Stdlib_Random = _a_.Stdlib__Random,
-     27:     Stdlib_String = _a_.Stdlib__String;
+     25:     Stdlib = caml_get_global("Stdlib"),
+     26:     Stdlib_Random = caml_get_global("Stdlib__Random"),
+     27:     Stdlib_String = caml_get_global("Stdlib__String");
      28:     /*<<test.ml:3:0>>*/ caml_call1(Stdlib[46], greeting);
      29:     /*<<test.ml:5:0>>*/ caml_call1(Stdlib[46], greeting$0);
-     30:     /*<<test.ml:7:47>>*/ _a_ = caml_call1(Stdlib_Random[5], 30);
-     31:    var
+     30:    var
+     31:     _a_ =  /*<<test.ml:7:47>>*/ caml_call1(Stdlib_Random[5], 30),
      32:     unicodeLength =
      33:        /*<<test.ml:7:34>>*/  /*<<test.ml:7:67>>*/ runtime.caml_ml_string_length
      34:        ( /*<<test.ml:7:34>>*/ caml_call2(Stdlib_String[1], _a_, 105)),
@@ -100,7 +100,7 @@ print_endline(String.make 1 "Ɋ".[0] ^ String.make 1 "Ɋ".[1]);;
      45:     _a_ =  /*<<test.ml:9:13>>*/ caml_call2(Stdlib[28], _b_, _a_);
      46:     /*<<test.ml:9:0>>*/ caml_call1(Stdlib[46], _a_);
      47:     /*<<test.ml:9:62>>*/ runtime.caml_register_global
-     48:     (8, [0, greeting$0, unicodeLength], "Test");
+     48:     ([0, greeting$0, unicodeLength], "Test");
      49:    return;
      50:    /*<<?>>*/ }
      51:   (globalThis));
@@ -245,7 +245,7 @@ end
      24:             : runtime.caml_call_gen(f, [a0, a1, a2, a3, a4, a5, a6, a7]);
      25:    }
      26:    var
-     27:     Stdlib_Printf = runtime.caml_get_global_data().Stdlib__Printf,
+     27:     Stdlib_Printf = runtime.caml_get_global("Stdlib__Printf"),
      28:     executable_name =
      29:        /*<<test.ml:14:22>>*/ runtime.caml_sys_executable_name(0),
      30:     os_type =  /*<<test.ml:15:22>>*/ runtime.caml_sys_get_config(0)[1],
@@ -368,28 +368,27 @@ end
     147:      /*<<test.ml:79:26>>*/ return caml_call2(right, v1$0, v2$0) /*<<test.ml:81:24>>*/ ;
     148:    }
     149:     /*<<test.ml:15:34>>*/ runtime.caml_register_global
-    150:     (12,
-    151:      [0,
-    152:       executable_name,
-    153:       os_type,
-    154:       backend_type,
-    155:       0,
+    150:     ([0,
+    151:       executable_name,
+    152:       os_type,
+    153:       backend_type,
+    154:       0,
+    155:       32,
     156:       32,
-    157:       32,
-    158:       unix,
-    159:       win32,
-    160:       cygwin,
-    161:       max_array_length,
-    162:       max_floatarray_length,
-    163:       max_string_length,
-    164:       Unhandled,
-    165:       format_backtrace_slot,
-    166:       print_exception_backtrace,
-    167:       [0, compare]],
-    168:      "Test");
-    169:    return;
-    170:    /*<<?>>*/ }
-    171:   (globalThis));
-    172:
-    173: //# sourceMappingURL=test.map
+    157:       unix,
+    158:       win32,
+    159:       cygwin,
+    160:       max_array_length,
+    161:       max_floatarray_length,
+    162:       max_string_length,
+    163:       Unhandled,
+    164:       format_backtrace_slot,
+    165:       print_exception_backtrace,
+    166:       [0, compare]],
+    167:      "Test");
+    168:    return;
+    169:    /*<<?>>*/ }
+    170:   (globalThis));
+    171:
+    172: //# sourceMappingURL=test.map
     |}]
