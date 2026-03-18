@@ -19,7 +19,7 @@ let f x =
        var
         runtime = globalThis.jsoo_runtime,
         f = x=>{var g = y=>(x + y | 0) + 7 | 0; return g;};
-       runtime.caml_register_global(0, [0, f], "Test");
+       runtime.caml_register_global([0, f], "Test");
        return;})
      (globalThis);
     //end
@@ -31,10 +31,11 @@ let f x =
     (a=>{
        "use strict";
        var b = a.jsoo_runtime;
-       b.caml_register_global(0, [0, b=>a=>(b + a | 0) + 7 | 0], "Test");
+       b.caml_register_global([0, b=>a=>(b + a | 0) + 7 | 0], "Test");
        return;})
      (globalThis);
-    //end |}]
+    //end
+    |}]
 
 let%expect_test _ =
   let prog =
@@ -54,8 +55,7 @@ let rec odd n' = function
        "use strict";
        var b = a.jsoo_runtime;
        b.caml_register_global
-        (0,
-         [0,
+        ([0,
           (a, b)=>{
            for(;;){
             if(0 === b) return [0, a, 0];
@@ -75,8 +75,7 @@ let rec odd n' = function
        "use strict";
        var b = a.jsoo_runtime;
        b.caml_register_global
-        (0,
-         [0,
+        ([0,
           function(a, b){
            for(;;){
             if(0 === b) return [0, a, 0];

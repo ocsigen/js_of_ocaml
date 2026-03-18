@@ -185,7 +185,7 @@ let f =
        "use strict";
        var runtime = globalThis.jsoo_runtime, my_ref = [0, 1];
        function f(param){my_ref[1]++; return my_ref[1];}
-       runtime.caml_register_global(0, [0, f], "Test");
+       runtime.caml_register_global([0, f], "Test");
        return;
       }
       (globalThis));

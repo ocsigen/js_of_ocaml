@@ -194,8 +194,11 @@ caml_runtime_events_read_poll
 caml_runtime_events_user_resolve
 
 From +stdlib.js:
+caml_get_global
 caml_is_printable
 caml_maybe_print_stats
+caml_register_global_by_index
+caml_set_link_info
 
 From +sys.js:
 caml_fatal_uncaught_exception

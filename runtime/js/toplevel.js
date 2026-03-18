@@ -34,18 +34,18 @@ function caml_get_current_environment() {
 //////////////////////////////////////////////////////////////////////
 
 //Provides: caml_get_section_table
-//Requires: caml_global_data, caml_failwith
+//Requires: caml_link_info, caml_failwith
 //Requires: caml_string_of_jsbytes, caml_jsbytes_of_string
 //Requires: caml_list_of_js_array
 //Version: < 5.3
 function caml_get_section_table() {
-  if (!caml_global_data.sections) {
+  if (!caml_link_info.sections) {
     caml_failwith("Program not compiled with --toplevel");
   }
-  var symb = caml_global_data.sections[1];
-  var crcs = caml_global_data.sections[2];
-  var prim = caml_global_data.sections[3];
-  var dlpt = caml_global_data.sections[4];
+  var symb = caml_link_info.sections[1];
+  var crcs = caml_link_info.sections[2];
+  var prim = caml_link_info.sections[3];
+  var dlpt = caml_link_info.sections[4];
   function sl(l) {
     var x = "";
     while (l) {
@@ -65,22 +65,22 @@ function caml_get_section_table() {
 }
 
 //Provides: caml_dynlink_get_bytecode_sections
-//Requires: caml_global_data, caml_failwith
+//Requires: caml_link_info, caml_failwith
 //Alias: jsoo_get_bytecode_sections
 function caml_dynlink_get_bytecode_sections() {
-  if (!caml_global_data.sections) {
+  if (!caml_link_info.sections) {
     caml_failwith("Program not compiled with --toplevel");
   }
-  return caml_global_data.sections;
+  return caml_link_info.sections;
 }
 
 //Provides: jsoo_get_runtime_aliases
-//Requires: caml_global_data, caml_failwith
+//Requires: caml_link_info, caml_failwith
 function jsoo_get_runtime_aliases() {
-  if (caml_global_data.aliases === undefined) {
+  if (caml_link_info.aliases === undefined) {
     caml_failwith("Program not compiled with --toplevel");
   }
-  return caml_global_data.aliases;
+  return caml_link_info.aliases;
 }
 
 //Provides: jsoo_toplevel_compile

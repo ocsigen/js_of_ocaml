@@ -1271,7 +1271,7 @@ module Generate (Target : Target_sig.S) = struct
               register_import ~import_module:"OCaml" ~name (Global { mut = true; typ })
         in
         return (W.GlobalGet x)
-    | Prim (Extern "caml_set_global", [ Pc (String name); v ]) ->
+    | Prim (Extern "caml_register_global", [ v; Pc (String name) ]) ->
         let v = transl_prim_arg ctx v in
         let x = Var.fresh_n name in
         let* () =
@@ -1280,8 +1280,18 @@ module Generate (Target : Target_sig.S) = struct
           register_global x ~exported_name:name { mut = true; typ } dummy
         in
         seq
-          (let* v = Value.as_block v in
-           instr (W.GlobalSet (x, v)))
+          (let* v = v in
+           let* v_block = Value.as_block (return v) in
+           let* () = instr (W.GlobalSet (x, v_block)) in
+           (* Also register in caml_global_data for runtime access
+              (needed for toplevel/dynlink name-based relocation;
+              predefined exceptions are handled separately via
+              caml_register_global_by_index) *)
+           let* f =
+             register_import ~name:"caml_register_global" (Fun (Type.primitive_type 2))
+           in
+           let* name_str = Constant.translate ~unboxed:false (String name) in
+           instr (W.Drop (W.Call (f, [ v; name_str ]))))
           Value.unit
     | Prim (Not, [ x ]) -> Value.not (transl_prim_arg ctx ~typ:int_u x)
     | Prim (Lt, [ x; y ]) -> translate_int_comparison ctx Arith.( < ) x y
@@ -2010,6 +2020,6 @@ let compile ~unit_name code =
   let wasm_binary = Wasm_output.to_string fields in
   wasm_binary, fragments
 
-let from_string ~prims ~debug ~orig_units ~unit_name s =
-  let code = Parse_bytecode.from_string ~prims ~debug ~orig_units s in
+let from_string ~prims ~debug ~unit_name s =
+  let code = Parse_bytecode.from_string ~prims ~debug s in
   compile ~unit_name code

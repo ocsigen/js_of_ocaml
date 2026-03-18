@@ -113,19 +113,13 @@ let collects_shapes ~shapes (p : Code.program) =
       (fun _ block ->
         List.iter block.Code.body ~f:(fun i ->
             match i with
-            | Code.Let
-                ( _
-                , Prim
-                    ( Extern "caml_register_global"
-                    , [ _code; Pv block; Pc (NativeString name) ] ) ) ->
+            | Code.Let (_, Prim (Extern "caml_register_global", [ Pv block; Pc name ])) ->
                 let name =
                   match name with
-                  | Byte s -> s
-                  | Utf (Utf8 s) -> s
+                  | NativeString (Byte s) | NativeString (Utf (Utf8 s)) | String s -> s
+                  | _ -> assert false
                 in
                 shapes := StringMap.add name block !shapes
-            | Code.Let (_, Prim (Extern "caml_set_global", [ Pc (String name); Pv block ]))
-              -> shapes := StringMap.add name block !shapes
             | _ -> ()))
       p.blocks;
     let map =
@@ -796,7 +790,7 @@ let f'
   full_no_source_map ~formatter ~shapes:false ~standalone ~wrap_with_fun ~profile ~link p
 
 let from_string ~prims ~debug s formatter =
-  let p = Parse_bytecode.from_string ~prims ~debug ~orig_units:StringSet.empty s in
+  let p = Parse_bytecode.from_string ~prims ~debug s in
   full_no_source_map
     ~formatter
     ~shapes:false

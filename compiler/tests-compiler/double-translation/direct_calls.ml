@@ -85,6 +85,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        var
         runtime = globalThis.jsoo_runtime,
         caml_cps_closure = runtime.caml_cps_closure,
+        caml_get_global = runtime.caml_get_global,
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
         caml_pop_trap = runtime.caml_pop_trap,
         caml_string_of_jsbytes = runtime.caml_string_of_jsbytes,
@@ -142,12 +143,11 @@ let%expect_test "direct calls with --effects=double-translation" =
                 : runtime.caml_trampoline_return(f, [a0, a1, a2], 0);
        }
        var
-        global_data = runtime.caml_get_global_data(),
         _a_ = [0, [4, 0, 0, 0, 0], caml_string_of_jsbytes("%d")],
         cst_a$0 = caml_string_of_jsbytes("a"),
         cst_a = caml_string_of_jsbytes("a"),
-        Stdlib = global_data.Stdlib,
-        Stdlib_Printf = global_data.Stdlib__Printf,
+        Stdlib = caml_get_global("Stdlib"),
+        Stdlib_Printf = caml_get_global("Stdlib__Printf"),
         l = [0, 0];
        function test1(param){
         function f(g, x){
@@ -300,7 +300,7 @@ let%expect_test "direct calls with --effects=double-translation" =
        }
        var test5 = caml_cps_closure(test5$0, test5$1);
        runtime.caml_register_global
-        (7, [0, l, test1, test2, test3, test4, test5], "Test");
+        ([0, l, test1, test2, test3, test4, test5], "Test");
        return;
       }
       (globalThis));

@@ -25,7 +25,7 @@ let f x =
        "use strict";
        var runtime = globalThis.jsoo_runtime;
        function f(x){for(;;) ;}
-       runtime.caml_register_global(0, [0, f], "Test");
+       runtime.caml_register_global([0, f], "Test");
        return;
       }
       (globalThis));

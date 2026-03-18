@@ -79,8 +79,8 @@ let options =
     Arg.(value & flag & info [ "a" ] ~doc)
   in
   let toplevel =
-    let doc = "Compile a toplevel." in
-    Arg.(value & flag & info [ "toplevel" ] ~doc)
+    let doc = "Enable dynlink/toplevel support." in
+    Arg.(value & flag & info [ "dynlink"; "toplevel" ] ~doc)
   in
   let build_t
       common
@@ -157,7 +157,7 @@ let f
     ; js_files
     ; linkall
     ; mklib
-    ; toplevel
+    ; toplevel = _
     } =
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
@@ -172,7 +172,6 @@ let f
         ~output
         ~linkall
         ~mklib
-        ~toplevel
         ~files:js_files
         ~source_map
         ~resolve_sourcemap_url)

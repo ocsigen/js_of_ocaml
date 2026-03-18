@@ -5,7 +5,7 @@
   (globalThis){
    "use strict";
    var runtime = globalThis.jsoo_runtime;
-   runtime.caml_register_global(0, [0], "Shapes");
+   runtime.caml_register_global([0], "Shapes");
    return;
   }
   (globalThis));
@@ -19,7 +19,7 @@
    function f(a, param){
      /*<<compiler/tests-full/m1.ml:1:14>>*/ return 0;
     /*<<compiler/tests-full/m1.ml:1:16>>*/ }
-    /*<<?>>*/ runtime.caml_register_global(0, [0, f], "Shapes__M1");
+    /*<<?>>*/ runtime.caml_register_global([0, f], "Shapes__M1");
    return;
   }
   (globalThis));
@@ -32,11 +32,11 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
-    Stdlib = runtime.caml_get_global_data().Stdlib;
+    Stdlib = runtime.caml_get_global("Stdlib");
    function f(param){
      /*<<compiler/tests-full/m2.ml:1:11>>*/ return Stdlib[46].call(null, "") /*<<compiler/tests-full/m2.ml:1:27>>*/ ;
    }
-    /*<<?>>*/ runtime.caml_register_global(2, [0, f], "Shapes__M2");
+    /*<<?>>*/ runtime.caml_register_global([0, f], "Shapes__M2");
    return;
   }
   (globalThis));
@@ -49,10 +49,10 @@
    "use strict";
    var
     runtime = globalThis.jsoo_runtime,
-    global_data = runtime.caml_get_global_data(),
-    Shapes_M2 = global_data.Shapes__M2,
-    Stdlib_Random = global_data.Stdlib__Random,
-    Shapes_M1 = global_data.Shapes__M1;
+    caml_get_global = runtime.caml_get_global,
+    Shapes_M2 = caml_get_global("Shapes__M2"),
+    Stdlib_Random = caml_get_global("Stdlib__Random"),
+    Shapes_M1 = caml_get_global("Shapes__M1");
    function f(param){
      /*<<compiler/tests-full/m3.ml:1:14>>*/ return 1
             < Stdlib_Random[5].call(null, 2)
@@ -65,7 +65,7 @@
    }
    var x =  /*<<compiler/tests-full/m3.ml:3:8>>*/ f(0)(0, 0);
     /*<<compiler/tests-full/m3.ml:3:18>>*/ runtime.caml_register_global
-    (3, [0, f, x], "Shapes__M3");
+    ([0, f, x], "Shapes__M3");
    return;
    /*<<?>>*/ }
   (globalThis));

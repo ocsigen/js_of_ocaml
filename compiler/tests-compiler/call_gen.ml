@@ -140,7 +140,8 @@ module M2 = struct
       function f_prime_prime(f){return caml_call1(f, 0);}
       //end
       function g(a, b, c, d, e, f){return caml_call1(Stdlib[2], cst_printed_g);}
-      //end |}]
+      //end
+      |}]
 
   let%expect_test _ =
     compile_and_run code;

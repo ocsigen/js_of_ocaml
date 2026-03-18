@@ -35,7 +35,7 @@ let%expect_test _ =
   (match Sys.getenv "B" with
   | exception Not_found -> ()
   | _ -> print_endline "BUG")|};
-  [%expect {||}]
+  [%expect {| |}]
 
 let%expect_test _ =
   compile_and_run

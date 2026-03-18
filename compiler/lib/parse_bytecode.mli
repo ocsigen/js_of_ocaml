@@ -75,11 +75,7 @@ val from_channel :
   -> [ `Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe ]
 
 val from_string :
-     prims:string array
-  -> debug:Instruct.debug_event list array
-  -> orig_units:StringSet.t
-  -> string
-  -> Code.program
+  prims:string array -> debug:Instruct.debug_event list array -> string -> Code.program
 
 val normalize_bytecode : string -> string
 
@@ -98,4 +94,5 @@ val link_info :
      symbols:Ocaml_compiler.Symtable.GlobalMap.t
   -> primitives:StringSet.t
   -> crcs:(string * Digest.t option) list
+  -> num_globals:int
   -> Code.program

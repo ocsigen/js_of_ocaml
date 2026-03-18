@@ -62,7 +62,7 @@ let (_ : string) = here ()
             var cst_b = "b";
             return _a_ + _a_ + cst_b + cst_b;
            }];
-       runtime.caml_register_global(2, Test, "Test");
+       runtime.caml_register_global(Test, "Test");
        return;
       }
       (globalThis));
@@ -116,7 +116,7 @@ let (_ : string) = here ()
                     (cst_a,
                      caml_string_concat(cst_a, caml_string_concat(cst_b, cst_b)));
            }];
-       runtime.caml_register_global(2, Test, "Test");
+       runtime.caml_register_global(Test, "Test");
        return;
       }
       (globalThis));

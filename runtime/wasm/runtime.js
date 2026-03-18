@@ -688,26 +688,8 @@
       const names = decoder.decode(entries.link_order).split("\x00");
       for (const name of names) inst.exports[name + ".init"]();
     },
-    get_named_global(name) {
-      const g = imports.OCaml[name];
-      if (g === undefined || !(g instanceof WebAssembly.Global)) return null;
-      return g.value;
-    },
     register_file: (name, data) => register_virtual_file(name, data),
     read_file: (name) => virtual_files.get(name) ?? null,
-    get_ocaml_unit_list() {
-      return Object.keys(imports.OCaml)
-        .filter((k) => imports.OCaml[k] instanceof WebAssembly.Global)
-        .join("\x00");
-    },
-    get_prim_list() {
-      return Object.keys(imports.env)
-        .filter((k) => typeof imports.env[k] === "function")
-        .join("\x00");
-    },
-    get_crcs() {
-      return args?.crcs ?? "";
-    },
   };
   const string_ops = {
     test: (v) => +(typeof v === "string"),
@@ -787,10 +769,6 @@
         .fill(link.slice(2).values())
         .map(loadModules);
       await Promise.all(workers);
-    } else {
-      // Exe mode: runtime and code are merged into one module.
-      // Share namespace so get_ocaml_unit_list / get_named_global find globals.
-      imports.OCaml = imports.env;
     }
     return { instance: { exports: Object.assign(imports.env, imports.OCaml) } };
   }

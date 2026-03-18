@@ -48,7 +48,7 @@ end
        var
         runtime = globalThis.jsoo_runtime,
         caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
-        Assert_failure = runtime.caml_get_global_data().Assert_failure,
+        Assert_failure = runtime.caml_get_global("Assert_failure"),
         _a_ = [0, runtime.caml_string_of_jsbytes("test.ml"), 12, 38];
        runtime.foo
         (function(param){
@@ -63,7 +63,7 @@ end
            offset = 1;
           }
          });
-       runtime.caml_register_global(2, [0, [0]], "Test");
+       runtime.caml_register_global([0, [0]], "Test");
        return;
       }
       (globalThis));

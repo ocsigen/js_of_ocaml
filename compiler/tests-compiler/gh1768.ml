@@ -52,7 +52,7 @@ let () =
        }
        var
         _a_ = 0,
-        Assert_failure = runtime.caml_get_global_data().Assert_failure,
+        Assert_failure = runtime.caml_get_global("Assert_failure"),
         _b_ = [0, caml_string_of_jsbytes("test.ml"), 4, 27];
        function h(x){x[1] = function(x, y){return x + y | 0;};}
        function f(param){
@@ -67,7 +67,7 @@ let () =
        _a_ = [0, caml_string_of_jsbytes("test.ml"), 8, 2];
        if(10 !== caml_call1(g(), 3))
         throw caml_maybe_attach_backtrace([0, Assert_failure, _a_], 1);
-       runtime.caml_register_global(3, [0], "Test");
+       runtime.caml_register_global([0], "Test");
        return;
       }
       (globalThis));
