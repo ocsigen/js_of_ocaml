@@ -2673,6 +2673,43 @@ type bytesections =
   }
 [@@ocaml.warning "-unused-field"]
 
+let emit_link_info ~symbols ~primitives ~crcs body =
+  let gdata = Code.Var.fresh_n "global_data" in
+  let symbols_array =
+    Ocaml_compiler.Symtable.GlobalMap.fold
+      (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
+      symbols
+      []
+    |> Array.of_list
+  in
+  let primitives =
+    (* Add the externals translated by jsoo directly (in generate.ml) *)
+    StringSet.union (Primitive.get_external ()) (StringSet.of_list primitives)
+    |> StringSet.elements
+  in
+  let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
+  let aliases = Primitive.aliases () in
+  let infos =
+    [ "sections", Constants.parse (Obj.repr sections)
+    ; "symbols", Constants.parse (Obj.repr symbols_array)
+    ; "prim_count", Int (Targetint.of_int_exn (List.length primitives))
+    ; "aliases", Constants.parse (Obj.repr aliases)
+    ]
+  in
+  let body =
+    List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
+        let c = Var.fresh () in
+        Let (c, Constant const)
+        :: Let
+             ( Var.fresh ()
+             , Prim
+                 ( Extern "caml_js_set"
+                 , [ Pv gdata; Pc (NativeString (Native_string.of_string name)); Pv c ] )
+             )
+        :: rem)
+  in
+  Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
+
 let from_exe
     ?(includes = [])
     ~linkall
@@ -2754,45 +2791,7 @@ let from_exe
   in
   let body =
     if link_info
-    then
-      let symbols_array =
-        Ocaml_compiler.Symtable.GlobalMap.fold
-          (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
-          symbols
-          []
-        |> Array.of_list
-      in
-      (* Include linking information *)
-      let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
-      let gdata = Var.fresh () in
-      let need_gdata = ref false in
-      let aliases = Primitive.aliases () in
-      let infos =
-        [ "sections", Constants.parse (Obj.repr sections)
-        ; "symbols", Constants.parse (Obj.repr symbols_array)
-        ; "prim_count", Int (Targetint.of_int_exn (Array.length globals.primitives))
-        ; "aliases", Constants.parse (Obj.repr aliases)
-        ]
-      in
-      let body =
-        List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
-            assert (String.is_valid_utf_8 name);
-            need_gdata := true;
-            let c = Var.fresh () in
-            Let (c, Constant const)
-            :: Let
-                 ( Var.fresh ()
-                 , Prim
-                     ( Extern "caml_js_set"
-                     , [ Pv gdata
-                       ; Pc (NativeString (Code.Native_string.of_string name))
-                       ; Pv c
-                       ] ) )
-            :: rem)
-      in
-      if !need_gdata
-      then Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
-      else body
+    then emit_link_info ~symbols ~primitives:(Array.to_list globals.primitives) ~crcs body
     else body
   in
   (* List interface files *)
@@ -3187,43 +3186,7 @@ let predefined_exceptions () =
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }, unit_info
 
 let link_info ~symbols ~primitives ~crcs =
-  let gdata = Code.Var.fresh_n "global_data" in
-  let symbols_array =
-    Ocaml_compiler.Symtable.GlobalMap.fold
-      (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
-      symbols
-      []
-    |> Array.of_list
-  in
-  let primitives =
-    (* Add the externals translated by jsoo directly (in generate.ml) *)
-    StringSet.union (Primitive.get_external ()) primitives |> StringSet.elements
-  in
-  let body = [] in
-  let body =
-    (* Include linking information *)
-    let sections = { symb = symbols; crcs; prim = primitives; dlpt = [] } in
-    let aliases = Primitive.aliases () in
-    let infos =
-      [ "sections", Constants.parse (Obj.repr sections)
-      ; "symbols", Constants.parse (Obj.repr symbols_array)
-      ; "prim_count", Int (Targetint.of_int_exn (List.length primitives))
-      ; "aliases", Constants.parse (Obj.repr aliases)
-      ]
-    in
-    let body =
-      List.fold_left infos ~init:body ~f:(fun rem (name, const) ->
-          let c = Var.fresh () in
-          Let (c, Constant const)
-          :: Let
-               ( Var.fresh ()
-               , Prim
-                   ( Extern "caml_js_set"
-                   , [ Pv gdata; Pc (NativeString (Native_string.of_string name)); Pv c ]
-                   ) )
-          :: rem)
-    in
-    Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
-  in
+  let primitives = StringSet.elements primitives in
+  let body = emit_link_info ~symbols ~primitives ~crcs [] in
   let block = { params = []; body; branch = Stop } in
   { start = 0; blocks = Addr.Map.singleton 0 block; free_pc = 1 }
