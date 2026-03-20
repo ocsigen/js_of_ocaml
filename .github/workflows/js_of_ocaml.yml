@@ -134,7 +134,7 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-        if: matrix.ocaml-compiler != 'ocaml-variants.5.2.0+ox'
+        if: ${{ ! endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Set-up OxCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
@@ -143,7 +143,7 @@ jobs:
           opam-repositories: |
             default: https://github.com/ocaml/opam-repository.git
             ox: https://github.com/oxcaml/opam-repository.git
-        if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       # Work-around a race between reinstalling mingw-w64-shims
       # (because of conf-pkg-config optional dep) and installing other
@@ -164,7 +164,7 @@ jobs:
         run: |
           opam pin add --with-version 1.0.3+ox -n https://github.com/vouillon/uutf.git#oxcaml
           opam pin add -n lwt 6.0.0+ox
-        if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - run: opam install . --deps-only --with-test
         # Install the test dependencies
