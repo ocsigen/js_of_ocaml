@@ -83,7 +83,7 @@ jobs:
           path: wasm_of_ocaml
 
       - name: Checkout Jane Street opam repository
-        if: matrix.jane_street_tests && matrix.ocaml-compiler != 'ocaml-variants.5.2.0+ox'
+        if: ${{ matrix.jane_street_tests && ! endsWith(matrix.ocaml-compiler, '+ox') }}
         uses: actions/checkout@v6
         with:
           repository: janestreet/opam-repository
@@ -91,7 +91,7 @@ jobs:
           path: janestreet/opam-repository
 
       - name: Checkout OxCaml opam repository
-        if: matrix.jane_street_tests && matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
+        if: ${{ matrix.jane_street_tests && endsWith(matrix.ocaml-compiler, '+ox') }}
         uses: actions/checkout@v5
         with:
           repository: oxcaml/opam-repository
@@ -107,7 +107,7 @@ jobs:
         uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
-        if: matrix.ocaml-compiler != 'ocaml-variants.5.2.0+ox'
+        if: ${{ ! endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Set-up OxCaml ${{ matrix.ocaml-compiler }}
         uses: ocaml/setup-ocaml@v3
@@ -116,7 +116,7 @@ jobs:
           opam-repositories: |
             default: https://github.com/ocaml/opam-repository.git
             ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
-        if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
@@ -138,7 +138,7 @@ jobs:
           opam pin add --with-version 1.0.3+ox -n https://github.com/vouillon/uutf.git#oxcaml
           opam pin add -n zarith 1.12+ox
           opam pin add -n lwt 6.0.0+ox
-        if: matrix.ocaml-compiler == 'ocaml-variants.5.2.0+ox'
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests
