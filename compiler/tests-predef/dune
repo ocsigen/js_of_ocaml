@@ -1,0 +1,61 @@
+(env
+ (_
+  (js_of_ocaml
+   (compilation_mode separate))
+  (wasm_of_ocaml
+   (compilation_mode separate))))
+
+(library
+ (name predef_lib)
+ (modules not_found)
+ (wrapped false))
+
+(executable
+ (name main)
+ (modules main)
+ (libraries predef_lib)
+ (modes byte js wasm))
+
+(rule
+ (target main-byte.out)
+ (action
+  (with-stdout-to
+   %{target}
+   (run %{dep:./main.bc}))))
+
+(rule
+ (target main-js.out)
+ (action
+  (with-accepted-exit-codes
+   (or 0 2)
+   (with-outputs-to
+    %{target}
+    (run %{bin:node} %{dep:./main.bc.js})))))
+
+(rule
+ (alias runtest)
+ (action
+  (diff main.expected main-byte.out)))
+
+(rule
+ (alias runtest-js)
+ (action
+  (diff main.expected main-js.out)))
+
+(rule
+ (target main-wasm.out)
+ (enabled_if
+  %{env:WASM_OF_OCAML=false})
+ (action
+  (with-accepted-exit-codes
+   (or 0 2 7)
+   (with-outputs-to
+    %{target}
+    (run %{bin:node} %{dep:./main.bc.wasm.js})))))
+
+(rule
+ (alias runtest-wasm)
+ (enabled_if
+  %{env:WASM_OF_OCAML=false})
+ (action
+  (diff main.expected main-wasm.out)))
