@@ -62,6 +62,28 @@
 
    (global $symbol_table (mut (ref $assoc_array))
       (array.new $assoc_array (ref.null $assoc) (i32.const 1)))
+
+   (@string $predef_prefix "predef:")
+
+   ;; Build a symbol key: for predefs, prepend "predef:" to the name.
+   ;; For compunits (is_predef=0), return name unchanged.
+   (func $make_symbol_key (param $is_predef i32) (param $name (ref $bytes))
+      (result (ref $bytes))
+      (local $len i32)
+      (local $key (ref $bytes))
+      (if (i32.eqz (local.get $is_predef))
+         (then (return (local.get $name))))
+      (local.set $len (array.len (local.get $name)))
+      (local.set $key
+         (array.new $bytes (i32.const 0) (i32.add (local.get $len) (i32.const 7))))
+      (array.copy $bytes $bytes
+         (local.get $key) (i32.const 0)
+         (ref.cast (ref $bytes) (global.get $predef_prefix)) (i32.const 0) (i32.const 7))
+      (array.copy $bytes $bytes
+         (local.get $key) (i32.const 7)
+         (local.get $name) (i32.const 0)
+         (local.get $len))
+      (local.get $key))
    (global $symbol_table_size (mut i32) (i32.const 1))
 
    (func $assoc_find
@@ -225,6 +247,7 @@
       (local $h i32)
       (local $max i32)
       (local $idx i32)
+      (local $key (ref $bytes))
       (global.set $link_info (ref.cast (ref $block) (local.get $info)))
       ;; Compute next_idx from symbols field
       (if (ref.test (ref $block)
@@ -251,6 +274,8 @@
                (loop $loop
                   (br_if $done
                      (i32.ge_u (local.get $j) (array.len (local.get $arr))))
+                  ;; pair = [tag, global_name, index]
+                  ;; global_name = [is_predef, name]
                   (local.set $pair
                      (ref.cast (ref $block)
                         (array.get $block (local.get $arr) (local.get $j))))
@@ -260,6 +285,21 @@
                            (array.get $block (local.get $pair) (i32.const 2)))))
                   (if (i32.gt_s (local.get $idx) (local.get $max))
                      (then (local.set $max (local.get $idx))))
+                  ;; Build key from global_name
+                  (local.set $key
+                     (call $make_symbol_key
+                        ;; is_predef = tag of global_name block
+                        (i31.get_u
+                           (ref.cast (ref i31)
+                              (array.get $block
+                                 (ref.cast (ref $block)
+                                    (array.get $block (local.get $pair) (i32.const 1)))
+                                 (i32.const 0))))
+                        (ref.cast (ref $bytes)
+                           (array.get $block
+                              (ref.cast (ref $block)
+                                 (array.get $block (local.get $pair) (i32.const 1)))
+                              (i32.const 1)))))
                   ;; Insert into symbol hash table
                   (local.set $h
                      (i32.rem_u
@@ -267,14 +307,12 @@
                            (ref.cast (ref i31)
                               (call $caml_string_hash
                                  (ref.i31 (i32.const 0))
-                                 (array.get $block
-                                    (local.get $pair) (i32.const 1)))))
+                                 (local.get $key))))
                         (global.get $symbol_table_size)))
                   (array.set $assoc_array
                      (global.get $symbol_table) (local.get $h)
                      (struct.new $assoc
-                        (ref.cast (ref $bytes)
-                           (array.get $block (local.get $pair) (i32.const 1)))
+                        (local.get $key)
                         (array.get $block (local.get $pair) (i32.const 2))
                         (array.get $assoc_array
                            (global.get $symbol_table) (local.get $h))))
@@ -296,11 +334,15 @@
 
    ;; Look up a name in the symbol hash table and return the symtable index.
    ;; Returns -1 if not found or if symbols is not set.
-   (func $lookup_symbol (param $name (ref eq)) (result i32)
+   (func $lookup_symbol (param $name (ref eq)) (param $kind i32) (result i32)
+      (local $key (ref $bytes))
       (if (ref.test (ref i31)
              (array.get $block (global.get $link_info)
                 (global.get $LINK_INFO_SYMBOLS)))
          (then (return (i32.const -1))))
+      (local.set $key
+         (call $make_symbol_key (local.get $kind)
+            (ref.cast (ref $bytes) (local.get $name))))
       (block $not_found
          (return
             (i31.get_u
@@ -308,7 +350,7 @@
                   (struct.get $assoc 1
                      (br_on_null $not_found
                         (call $assoc_find
-                           (local.get $name)
+                           (local.get $key)
                            (array.get $assoc_array
                               (global.get $symbol_table)
                               (i32.rem_u
@@ -316,7 +358,7 @@
                                     (ref.cast (ref i31)
                                        (call $caml_string_hash
                                           (ref.i31 (i32.const 0))
-                                          (local.get $name))))
+                                          (local.get $key))))
                                  (global.get $symbol_table_size))))))))))
       (i32.const -1))
 
@@ -335,8 +377,9 @@
          (local.get $i) (local.get $v))
       (ref.i31 (i32.const 0)))
 
-   (func (export "caml_register_global")
-      (param $v (ref eq)) (param $name (ref eq)) (result (ref eq))
+   (func $do_register_global
+      (param $v (ref eq)) (param $name (ref eq)) (param $is_predef i32)
+      (result (ref eq))
       (local $i i32)
       (local $idx i32)
       ;; Try to resolve the name to a symtable index.
@@ -349,7 +392,10 @@
                      (ref.cast (ref i31)
                         (call $caml_callback_1
                            (global.get $toplevel_reloc)
-                           (local.get $name))))
+                           ;; Construct global_name: [tag, name]
+                           (array.new_fixed $block 2
+                              (ref.i31 (local.get $is_predef))
+                              (local.get $name)))))
                   (i32.const 1))))
          (else
             ;; 2. static symbols array (set by linker in link_info)
@@ -358,7 +404,9 @@
                       (global.get $LINK_INFO_SYMBOLS))))
                (then
                   (local.set $idx
-                     (call $lookup_symbol (local.get $name)))
+                     (call $lookup_symbol
+                        (local.get $name)
+                        (local.get $is_predef)))
                   (if (i32.ge_s (local.get $idx) (i32.const 0))
                      (then
                         (local.set $i
@@ -379,6 +427,14 @@
       (array.set $block (global.get $caml_global_data)
          (local.get $i) (local.get $v))
       (ref.i31 (i32.const 0)))
+
+   (func (export "caml_register_global")
+      (param $v (ref eq)) (param $name (ref eq)) (result (ref eq))
+      (call $do_register_global (local.get $v) (local.get $name) (i32.const 0)))
+
+   (func (export "caml_register_global_predef")
+      (param $v (ref eq)) (param $name (ref eq)) (result (ref eq))
+      (call $do_register_global (local.get $v) (local.get $name) (i32.const 1)))
 
    (func (export "caml_get_global_data") (param (ref eq)) (result (ref eq))
       (global.get $caml_global_data))

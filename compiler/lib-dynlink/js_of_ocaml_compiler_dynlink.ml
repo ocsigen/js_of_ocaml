@@ -11,7 +11,8 @@ external toplevel_init_compile :
   (string -> Instruct.debug_event list array -> unit -> J.t) -> unit
   = "jsoo_toplevel_init_compile"
 
-external toplevel_init_reloc : (J.t -> int) -> unit = "jsoo_toplevel_init_reloc"
+external toplevel_init_reloc : (Parse_bytecode.Global_name.t -> int) -> unit
+  = "jsoo_toplevel_init_reloc"
 
 let eval_ref = ref (fun (_ : string) -> failwith "toplevel: eval not initialized")
 
@@ -53,18 +54,16 @@ let () =
       res
   in
   let toc = get_bytecode_sections () in
-  let sym =
-    let t : Ocaml_compiler.Symtable.GlobalMap.t = toc.symb in
-    Ocaml_compiler.Symtable.GlobalMap.fold
-      (fun i n acc -> StringMap.add (Ocaml_compiler.Symtable.Global.name i) n acc)
-      t
-      StringMap.empty
-  in
-  let toplevel_reloc (name : J.t) : int =
-    let name = J.to_string name in
-    match StringMap.find_opt name sym with
-    | Some i -> i
-    | None -> Js_of_ocaml_compiler.Ocaml_compiler.Symtable.reloc_ident name
+  let sym : Ocaml_compiler.Symtable.GlobalMap.t = toc.symb in
+  let toplevel_reloc (gn : Parse_bytecode.Global_name.t) : int =
+    match
+      Ocaml_compiler.Symtable.GlobalMap.find
+        (Parse_bytecode.Global_name.to_symtable_global gn)
+        sym
+    with
+    | i -> i
+    | exception Not_found ->
+        Ocaml_compiler.Symtable.reloc_ident (Parse_bytecode.Global_name.to_string gn)
   in
   eval_ref := toplevel_eval;
   toplevel_init_compile toplevel_compile;

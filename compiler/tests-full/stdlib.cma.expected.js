@@ -554,7 +554,7 @@
     caml_atomic_cas_field = runtime.caml_atomic_cas_field,
     caml_create_bytes = runtime.caml_create_bytes,
     caml_float_of_string = runtime.caml_float_of_string,
-    caml_get_global = runtime.caml_get_global,
+    caml_get_global_predef = runtime.caml_get_global_predef,
     caml_int_of_string = runtime.caml_int_of_string,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
     caml_ml_bytes_length = runtime.caml_ml_bytes_length,
@@ -582,19 +582,21 @@
             : runtime.caml_call_gen(f, [a0]);
    }
    var
-    CamlinternalFormatBasics = caml_get_global("CamlinternalFormatBasics"),
-    Invalid_argument = caml_get_global("Invalid_argument"),
-    Failure = caml_get_global("Failure"),
-    Match_failure = caml_get_global("Match_failure"),
-    Assert_failure = caml_get_global("Assert_failure"),
-    Not_found = caml_get_global("Not_found"),
-    Out_of_memory = caml_get_global("Out_of_memory"),
-    Stack_overflow = caml_get_global("Stack_overflow"),
-    Sys_error = caml_get_global("Sys_error"),
-    End_of_file = caml_get_global("End_of_file"),
-    Division_by_zero = caml_get_global("Division_by_zero"),
-    Sys_blocked_io = caml_get_global("Sys_blocked_io"),
-    Undefined_recursive_module = caml_get_global("Undefined_recursive_module");
+    CamlinternalFormatBasics =
+      runtime.caml_get_global("CamlinternalFormatBasics"),
+    Invalid_argument = caml_get_global_predef("Invalid_argument"),
+    Failure = caml_get_global_predef("Failure"),
+    Match_failure = caml_get_global_predef("Match_failure"),
+    Assert_failure = caml_get_global_predef("Assert_failure"),
+    Not_found = caml_get_global_predef("Not_found"),
+    Out_of_memory = caml_get_global_predef("Out_of_memory"),
+    Stack_overflow = caml_get_global_predef("Stack_overflow"),
+    Sys_error = caml_get_global_predef("Sys_error"),
+    End_of_file = caml_get_global_predef("End_of_file"),
+    Division_by_zero = caml_get_global_predef("Division_by_zero"),
+    Sys_blocked_io = caml_get_global_predef("Sys_blocked_io"),
+    Undefined_recursive_module =
+      caml_get_global_predef("Undefined_recursive_module");
    function failwith(s){
      /*<<stdlib.ml:29:17>>*/ throw caml_maybe_attach_backtrace
            ([0, Failure, s], 1);
@@ -1927,7 +1929,7 @@
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
    var
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     Stdlib_Atomic = caml_get_global("Stdlib__Atomic"),
     CamlinternalLazy = caml_get_global("CamlinternalLazy"),
     Stdlib = caml_get_global("Stdlib"),
@@ -3537,11 +3539,10 @@
    var
     runtime = globalThis.jsoo_runtime,
     caml_format_int = runtime.caml_format_int,
-    caml_get_global = runtime.caml_get_global,
     caml_hash = runtime.caml_hash,
     caml_maybe_attach_backtrace = runtime.caml_maybe_attach_backtrace,
-    Assert_failure = caml_get_global("Assert_failure"),
-    Stdlib = caml_get_global("Stdlib");
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
+    Stdlib = runtime.caml_get_global("Stdlib");
    function succ(u){
      /*<<uchar.ml:34:2>>*/ return u === 55295
             ? 57344
@@ -5361,7 +5362,7 @@
    var
     Stdlib_Seq = caml_get_global("Stdlib__Seq"),
     Stdlib = caml_get_global("Stdlib"),
-    Assert_failure = caml_get_global("Assert_failure");
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure");
    function init(l, f){
      /*<<array.ml:48:2>>*/ if(0 === l)  /*<<array.ml:48:16>>*/ return [0];
      /*<<array.ml:49:2>>*/ if(0 > l)
@@ -6857,7 +6858,7 @@
     _a_ = 0,
     Stdlib = caml_get_global("Stdlib"),
     Stdlib_Uchar = caml_get_global("Stdlib__Uchar"),
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     Stdlib_Sys = caml_get_global("Stdlib__Sys"),
     Stdlib_Int = caml_get_global("Stdlib__Int"),
     Stdlib_Seq = caml_get_global("Stdlib__Seq"),
@@ -9232,7 +9233,7 @@
    var
     Stdlib_Seq = caml_get_global("Stdlib__Seq"),
     Stdlib_List = caml_get_global("Stdlib__List"),
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     Stdlib = caml_get_global("Stdlib"),
     infinity = Stdlib[22],
     neg_infinity = Stdlib[23],
@@ -10273,7 +10274,7 @@
     caml_wrap_exception = runtime.caml_wrap_exception,
     Stdlib = caml_get_global("Stdlib"),
     Stdlib_Sys = caml_get_global("Stdlib__Sys"),
-    Assert_failure = caml_get_global("Assert_failure");
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure");
    function succ(n){ /*<<int32.ml:48:21>>*/ return n + 1 | 0;}
    function pred(n){ /*<<int32.ml:49:21>>*/ return n - 1 | 0;}
    function abs(n){
@@ -11215,7 +11216,7 @@
     Stdlib = caml_get_global("Stdlib"),
     Stdlib_Seq = caml_get_global("Stdlib__Seq"),
     Stdlib_List = caml_get_global("Stdlib__List"),
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     _a_ = [0, 0, 0, 0],
     _b_ = [0, 0, 0],
     _c_ = [0, "set.ml", 571, 18],
@@ -12231,7 +12232,7 @@
    }
    var
     Stdlib = caml_get_global("Stdlib"),
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     Stdlib_Seq = caml_get_global("Stdlib__Seq"),
     Stdlib_List = caml_get_global("Stdlib__List"),
     _a_ = [0, 0, 0, 0],
@@ -13585,7 +13586,7 @@
     Stdlib_Seq = caml_get_global("Stdlib__Seq"),
     Stdlib = caml_get_global("Stdlib"),
     Stdlib_String = caml_get_global("Stdlib__String"),
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     dummy = 0;
    function create(n){
     var
@@ -14357,7 +14358,7 @@
     Stdlib = caml_get_global("Stdlib"),
     Stdlib_Array = caml_get_global("Stdlib__Array"),
     Stdlib_List = caml_get_global("Stdlib__List"),
-    Assert_failure = caml_get_global("Assert_failure");
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure");
    function cpu_relax(param){
      /*<<domain.ml:47:19>>*/ return runtime.caml_ml_domain_cpu_relax(0) /*<<domain.ml:47:35>>*/ ;
    }
@@ -14641,7 +14642,7 @@
    }
    var
     _a_ = 0,
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     CamlinternalFormatBasics = caml_get_global("CamlinternalFormatBasics"),
     Stdlib = caml_get_global("Stdlib"),
     Stdlib_Buffer = caml_get_global("Stdlib__Buffer"),
@@ -25060,7 +25061,7 @@
     Stdlib_Seq = caml_get_global("Stdlib__Seq"),
     Stdlib_Int = caml_get_global("Stdlib__Int"),
     Stdlib_Array = caml_get_global("Stdlib__Array");
-   caml_get_global("Assert_failure");
+   runtime.caml_get_global_predef("Assert_failure");
    var Stdlib_String = caml_get_global("Stdlib__String");
    function ongoing_traversal(h){
     var
@@ -29059,7 +29060,7 @@
     CamlinternalFormatBasics = caml_get_global("CamlinternalFormatBasics"),
     Stdlib_String = caml_get_global("Stdlib__String"),
     Stdlib = caml_get_global("Stdlib"),
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     Stdlib_Printf = caml_get_global("Stdlib__Printf"),
     Stdlib_Int = caml_get_global("Stdlib__Int"),
     Stdlib_Buffer = caml_get_global("Stdlib__Buffer"),
@@ -31190,7 +31191,7 @@
             : runtime.caml_call_gen(f, [a0, a1, a2]);
    }
    var
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     Stdlib_Atomic = caml_get_global("Stdlib__Atomic"),
     Stdlib_Sys = caml_get_global("Stdlib__Sys"),
     Stdlib_Obj = caml_get_global("Stdlib__Obj"),
@@ -32174,7 +32175,7 @@
     Stdlib = caml_get_global("Stdlib"),
     CamlinternalLazy = caml_get_global("CamlinternalLazy"),
     CamlinternalOO = caml_get_global("CamlinternalOO"),
-    Assert_failure = caml_get_global("Assert_failure");
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure");
    function init_mod_block(loc, comps$0){
     var
      length =  /*<<camlinternalMod.ml:52:2>>*/ comps$0.length - 1,
@@ -32356,7 +32357,7 @@
     Stdlib_Printf = caml_get_global("Stdlib__Printf"),
     Stdlib_Seq = caml_get_global("Stdlib__Seq"),
     Stdlib_Sys = caml_get_global("Stdlib__Sys"),
-    Assert_failure = caml_get_global("Assert_failure"),
+    Assert_failure = runtime.caml_get_global_predef("Assert_failure"),
     Stdlib_Obj = caml_get_global("Stdlib__Obj"),
     CamlinternalOO = caml_get_global("CamlinternalOO");
    function copy_from_array(a, dummy){

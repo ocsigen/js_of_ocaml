@@ -157,20 +157,24 @@ function caml_wrap_exception(e) {
       e instanceof globalThis.RangeError &&
       e.message?.match(/maximum call stack/i)
     )
-      exn = caml_global_data.Stack_overflow;
+      exn = caml_global_data["predef:Stack_overflow"];
     //Stack_overflow: firefox
     else if (
       globalThis.InternalError &&
       e instanceof globalThis.InternalError &&
       e.message?.match(/too much recursion/i)
     )
-      exn = caml_global_data.Stack_overflow;
+      exn = caml_global_data["predef:Stack_overflow"];
     //Wrap Error in Js.Error exception
     else if (e instanceof globalThis.Error && caml_named_value("jsError"))
       exn = [0, caml_named_value("jsError"), e];
     //fallback: wrapped in Failure
     else
-      exn = [0, caml_global_data.Failure, caml_string_of_jsstring(String(e))];
+      exn = [
+        0,
+        caml_global_data["predef:Failure"],
+        caml_string_of_jsstring(String(e)),
+      ];
     // We already have an error at hand, let's use it.
     if (e instanceof globalThis.Error) exn.js_error = e;
     return exn;

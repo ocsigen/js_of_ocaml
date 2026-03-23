@@ -43,33 +43,37 @@ function caml_raise_with_string(tag, msg) {
 //Provides: caml_failwith (const)
 //Requires: caml_raise_with_string, caml_global_data, caml_string_of_jsbytes
 function caml_failwith(msg) {
-  if (!caml_global_data.Failure)
-    caml_global_data.Failure = [248, caml_string_of_jsbytes("Failure"), -3];
-  caml_raise_with_string(caml_global_data.Failure, msg);
+  if (!caml_global_data["predef:Failure"])
+    caml_global_data["predef:Failure"] = [
+      248,
+      caml_string_of_jsbytes("Failure"),
+      -3,
+    ];
+  caml_raise_with_string(caml_global_data["predef:Failure"], msg);
 }
 
 //Provides: caml_invalid_argument (const)
 //Requires: caml_raise_with_string, caml_global_data
 function caml_invalid_argument(msg) {
-  caml_raise_with_string(caml_global_data.Invalid_argument, msg);
+  caml_raise_with_string(caml_global_data["predef:Invalid_argument"], msg);
 }
 
 //Provides: caml_raise_end_of_file
 //Requires: caml_raise_constant, caml_global_data
 function caml_raise_end_of_file() {
-  caml_raise_constant(caml_global_data.End_of_file);
+  caml_raise_constant(caml_global_data["predef:End_of_file"]);
 }
 
 //Provides: caml_raise_zero_divide
 //Requires: caml_raise_constant, caml_global_data
 function caml_raise_zero_divide() {
-  caml_raise_constant(caml_global_data.Division_by_zero);
+  caml_raise_constant(caml_global_data["predef:Division_by_zero"]);
 }
 
 //Provides: caml_raise_not_found
 //Requires: caml_raise_constant, caml_global_data
 function caml_raise_not_found() {
-  caml_raise_constant(caml_global_data.Not_found);
+  caml_raise_constant(caml_global_data["predef:Not_found"]);
 }
 
 //Provides: caml_array_bound_error
