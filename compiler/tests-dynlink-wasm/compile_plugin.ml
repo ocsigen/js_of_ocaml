@@ -23,7 +23,7 @@ let () =
     | `Cmo cmo -> cmo
     | `Cma _ | `Exe -> failwith "Expected .cmo file"
   in
-  let unit_name = Ocaml_compiler.Cmo_format.name cmo in
+  let (Global_name.Compunit unit_name) = Ocaml_compiler.Cmo_format.name cmo in
   let unit_info = Unit_info.of_cmo cmo in
   let one = Parse_bytecode.from_cmo ~debug:false cmo ic in
   close_in ic;

@@ -242,7 +242,10 @@ let link
   let missing, to_link, all =
     List.fold_right
       files
-      ~init:(StringSet.empty, StringSet.empty, StringSet.empty)
+      ~init:
+        ( Global_name.Compunit_set.empty
+        , Global_name.Compunit_set.empty
+        , Global_name.Compunit_set.empty )
       ~f:(fun (_file, _lr, (build_info, units)) acc ->
         let cmo_file =
           match build_info with
@@ -256,43 +259,55 @@ let link
           units
           ~init:acc
           ~f:(fun (info : Unit_info.t) (requires, to_link, all) ->
-            let all = StringSet.union all info.provides in
+            let all = Global_name.Compunit_set.union all info.provides in
             if
               (not (Config.Flag.auto_link ()))
               || mklib
               || cmo_file
               || linkall
               || info.force_link
-              || not (StringSet.is_empty (StringSet.inter requires info.provides))
+              || not
+                   (Global_name.Compunit_set.is_empty
+                      (Global_name.Compunit_set.inter requires info.provides))
             then
-              ( StringSet.diff (StringSet.union info.requires requires) info.provides
-              , StringSet.union to_link info.provides
+              ( Global_name.Compunit_set.diff
+                  (Global_name.Compunit_set.union info.requires requires)
+                  info.provides
+              , Global_name.Compunit_set.union to_link info.provides
               , all )
             else requires, to_link, all))
   in
-  let _skip = StringSet.diff all to_link in
-  if (not (StringSet.is_empty missing)) && not mklib
+  let _skip = Global_name.Compunit_set.diff all to_link in
+  if (not (Global_name.Compunit_set.is_empty missing)) && not mklib
   then
     failwith
       (Printf.sprintf
          "Could not find compilation unit for %s"
-         (String.concat ~sep:", " (StringSet.elements missing)));
+         (String.concat
+            ~sep:", "
+            (List.map
+               ~f:(fun (Global_name.Compunit name) -> name)
+               (Global_name.Compunit_set.elements missing))));
   if times () then Format.eprintf "  scan: %a@." Timer.print t;
   let sm = ref [] in
   let build_info = ref None in
   let t = Timer.make () in
   let sym = ref Ocaml_compiler.Symtable.GlobalMap.empty in
-  let sym_js = ref [] in
+  Array.iter Runtimedef.builtin_exceptions ~f:(fun name ->
+      ignore
+        (Ocaml_compiler.Symtable.GlobalMap.enter
+           sym
+           (Global_name.Glob_predef (Predef name))
+          : int));
   List.iter files ~f:(fun (_, _, (_, units)) ->
       List.iter units ~f:(fun (u : Unit_info.t) ->
-          StringSet.iter
-            (fun s ->
+          Global_name.Compunit_set.iter
+            (fun (Global_name.Compunit name) ->
               ignore
                 (Ocaml_compiler.Symtable.GlobalMap.enter
                    sym
-                   (Ocaml_compiler.Symtable.Global.Glob_compunit s)
-                  : int);
-              sym_js := s :: !sym_js)
+                   (Global_name.Glob_compunit (Compunit name))
+                  : int))
             u.Unit_info.provides));
 
   let build_info_emitted = ref false in
@@ -336,7 +351,9 @@ let link
             | Drop -> skip ic
             | Unit ->
                 let u = Units.read ic Unit_info.empty in
-                if not (StringSet.disjoint u.Unit_info.provides to_link)
+                if
+                  u.Unit_info.force_link
+                  || not (Global_name.Compunit_set.disjoint u.Unit_info.provides to_link)
                 then (
                   if u.effects_without_cps && not !warn_effects
                   then (
@@ -380,14 +397,23 @@ let link
                       "Copy %d bytes for %s@."
                       !bsize
                       (match is_runtime with
-                      | None -> String.concat ~sep:", " (StringSet.elements u.provides)
+                      | None ->
+                          String.concat
+                            ~sep:", "
+                            (List.map
+                               ~f:(fun (Global_name.Compunit name) -> name)
+                               (Global_name.Compunit_set.elements u.provides))
                       | Some _ -> "the js runtime"))
                 else (
                   if debug ()
                   then
                     Format.eprintf
                       "Skip %s@."
-                      (String.concat ~sep:"," (StringSet.elements u.provides));
+                      (String.concat
+                         ~sep:","
+                         (List.map
+                            ~f:(fun (Global_name.Compunit name) -> name)
+                            (Global_name.Compunit_set.elements u.provides)));
                   let lnum = ref 0 in
                   let read_loffset = Line_reader.lnum ic in
                   while

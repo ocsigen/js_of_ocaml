@@ -43,8 +43,7 @@ external toplevel_init_compile :
 external get_bytecode_sections : unit -> Parse_bytecode.bytesections
   = "wasm_get_bytecode_sections"
 
-external toplevel_init_reloc : (Parse_bytecode.Global_name.t -> int) -> unit
-  = "wasm_toplevel_init_reloc"
+external toplevel_init_reloc : (Global_name.t -> int) -> unit = "wasm_toplevel_init_reloc"
 
 external get_runtime_aliases : unit -> (string * string) list = "wasm_get_runtime_aliases"
 
@@ -75,15 +74,11 @@ let () =
   let toc = get_bytecode_sections () in
   let prims = Array.of_list toc.prim in
   let sym : Ocaml_compiler.Symtable.GlobalMap.t = toc.symb in
-  let toplevel_reloc (gn : Parse_bytecode.Global_name.t) : int =
-    match
-      Ocaml_compiler.Symtable.GlobalMap.find
-        (Parse_bytecode.Global_name.to_symtable_global gn)
-        sym
-    with
+  let toplevel_reloc (gn : Global_name.t) : int =
+    match Ocaml_compiler.Symtable.GlobalMap.find gn sym with
     | i -> i
     | exception Not_found ->
-        Ocaml_compiler.Symtable.reloc_ident (Parse_bytecode.Global_name.to_string gn)
+        Ocaml_compiler.Symtable.reloc_ident (Global_name.to_string gn)
   in
   let toplevel_compile code (debug : Instruct.debug_event list array) : unit -> Obj.t =
     let s = Parse_bytecode.normalize_bytecode code in

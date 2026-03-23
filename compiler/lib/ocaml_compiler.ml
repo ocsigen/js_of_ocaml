@@ -136,63 +136,41 @@ module Symtable = struct
       n
   end
 
-  module Global = struct
-    type t =
-      | Glob_compunit of string
-      | Glob_predef of string
+  module GlobalMap = struct
+    module GlobalMap = Num_tbl (Ident.Map)
+    include GlobalMap
 
-    let name = function
-      | Glob_compunit cu -> cu
-      | Glob_predef exn -> exn
+    let to_global_name x =
+      let name = Ident.name x in
+      if Ident.is_predef x
+      then Global_name.Glob_predef (Predef name)
+      else Global_name.Glob_compunit (Compunit name)
 
-    let of_ident id =
-      let name = Ident.name id in
-      if Ident.is_predef id
-      then Some (Glob_predef name)
-      else if Ident.global id
-      then Some (Glob_compunit name)
-      else None
-
-    let to_ident = function
-      | Glob_compunit x -> Ident.create_persistent x
-      | Glob_predef x -> (
-          (* Use the real predef ident from Predef.builtin_values so that
-             the stamp matches the one used by the compiler.
-             Ident.create_predef would create a fresh stamp that doesn't
-             match in Ident.Map (which compares Predef idents by stamp). *)
+    let of_global_name : Global_name.t -> Ident.t = function
+      | Glob_compunit (Compunit x) -> Ident.create_persistent x
+      | Glob_predef (Predef x) -> (
           match
             List.find ~f:(fun (name, _) -> String.equal name x) Predef.builtin_values
           with
           | _, id -> id
           | exception Not_found -> Ident.create_predef x)
     [@@ocaml.warning "-32"]
-  end
 
-  module GlobalMap = struct
-    module GlobalMap = Num_tbl (Ident.Map)
-    include GlobalMap
-
-    let to_local x =
-      match Global.of_ident x with
-      | None -> assert false
-      | Some x -> x
-
-    let of_local = Global.to_ident
-
-    let filter (p : Global.t -> bool) (gmap : t) =
+    let filter (p : Global_name.t -> bool) (gmap : t) =
       let newtbl = ref Ident.Map.empty in
       Ident.Map.iter
-        (fun id num -> if p (to_local id) then newtbl := Ident.Map.add id num !newtbl)
+        (fun id num ->
+          if p (to_global_name id) then newtbl := Ident.Map.add id num !newtbl)
         gmap.tbl;
       { cnt = gmap.cnt; tbl = !newtbl }
 
-    let find id t = find (of_local id) t
+    let find id t = find (of_global_name id) t
 
-    let iter ~f t = iter (fun id pos -> f (to_local id) pos) t
+    let iter ~f t = iter (fun id pos -> f (to_global_name id) pos) t
 
-    let fold f t acc = fold (fun id pos acc -> f (to_local id) pos acc) t acc
+    let fold f t acc = fold (fun id pos acc -> f (to_global_name id) pos acc) t acc
 
-    let enter t id = enter t (of_local id)
+    let enter t id = enter t (of_global_name id)
   end
   [@@if ocaml_version < (5, 2, 0)]
 
@@ -200,29 +178,30 @@ module Symtable = struct
     module GlobalMap = Num_tbl (Symtable.Global.Map)
     include GlobalMap
 
-    let to_local = function
-      | Symtable.Global.Glob_compunit (Compunit x) -> Global.Glob_compunit x
-      | Symtable.Global.Glob_predef (Predef_exn x) -> Global.Glob_predef x
+    let to_global_name = function
+      | Symtable.Global.Glob_compunit (Compunit x) ->
+          Global_name.Glob_compunit (Compunit x)
+      | Symtable.Global.Glob_predef (Predef_exn x) -> Global_name.Glob_predef (Predef x)
 
-    let of_local = function
-      | Global.Glob_compunit x -> Symtable.Global.Glob_compunit (Compunit x)
-      | Global.Glob_predef x -> Symtable.Global.Glob_predef (Predef_exn x)
+    let of_global_name : Global_name.t -> Symtable.Global.t = function
+      | Glob_compunit (Compunit x) -> Symtable.Global.Glob_compunit (Compunit x)
+      | Glob_predef (Predef x) -> Symtable.Global.Glob_predef (Predef_exn x)
 
-    let filter (p : Global.t -> bool) (gmap : t) =
+    let filter (p : Global_name.t -> bool) (gmap : t) =
       let newtbl = ref Symtable.Global.Map.empty in
       Symtable.Global.Map.iter
         (fun id num ->
-          if p (to_local id) then newtbl := Symtable.Global.Map.add id num !newtbl)
+          if p (to_global_name id) then newtbl := Symtable.Global.Map.add id num !newtbl)
         gmap.tbl;
       { cnt = gmap.cnt; tbl = !newtbl }
 
-    let find id t = find (of_local id) t
+    let find id t = find (of_global_name id) t
 
-    let iter ~f t = iter (fun id pos -> f (to_local id) pos) t
+    let iter ~f t = iter (fun id pos -> f (to_global_name id) pos) t
 
-    let fold f t acc = fold (fun id pos acc -> f (to_local id) pos acc) t acc
+    let fold f t acc = fold (fun id pos acc -> f (to_global_name id) pos acc) t acc
 
-    let enter t id = enter t (of_local id)
+    let enter t id = enter t (of_global_name id)
   end
   [@@if ocaml_version >= (5, 2, 0)]
 
@@ -288,30 +267,35 @@ end
 module Cmo_format = struct
   type t = Cmo_format.compilation_unit
 
-  let name (t : t) = t.cu_name [@@if ocaml_version < (5, 2, 0)]
+  let name (t : t) = Global_name.Compunit t.cu_name [@@if ocaml_version < (5, 2, 0)]
 
   let name (t : t) =
     let (Compunit name) = t.cu_name in
-    name
+    Global_name.Compunit name
   [@@if ocaml_version >= (5, 2, 0)]
 
-  let requires (t : t) = List.map ~f:Ident.name t.cu_required_globals
+  let requires (t : t) =
+    List.filter_map
+      ~f:(fun id ->
+        if Ident.is_predef id then None else Some (Global_name.Compunit (Ident.name id)))
+      t.cu_required_globals
   [@@if ocaml_version < (5, 2, 0)]
 
-  let requires (t : t) = List.map t.cu_required_compunits ~f:(fun (Compunit u) -> u)
+  let requires (t : t) =
+    List.map t.cu_required_compunits ~f:(fun (Compunit u) -> Global_name.Compunit u)
   [@@if ocaml_version >= (5, 2, 0)]
 
   let provides (t : t) =
     List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
         match reloc with
-        | Reloc_setglobal i -> Some (Ident.name i)
+        | Reloc_setglobal i -> Some (Global_name.Compunit (Ident.name i))
         | Reloc_getglobal _ | Reloc_literal _ | Reloc_primitive _ -> None)
   [@@if ocaml_version < (5, 2, 0)]
 
   let provides (t : t) =
     List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
         match reloc with
-        | Reloc_setcompunit (Compunit u) -> Some u
+        | Reloc_setcompunit (Compunit u) -> Some (Global_name.Compunit u)
         | Reloc_getcompunit _ | Reloc_getpredef _ | Reloc_literal _ | Reloc_primitive _ ->
             None)
   [@@if ocaml_version >= (5, 2, 0)]
