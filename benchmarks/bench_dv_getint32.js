@@ -1,3 +1,4 @@
+// biome-ignore lint/suspicious/noRedundantUseStrict: needed for non-module execution
 "use strict";
 
 // Benchmark: call.bind(DV.getInt32) vs (x,y,z) => x.getInt32(y,z) as Wasm imports.

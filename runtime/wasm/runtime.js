@@ -16,7 +16,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 (js) => async (args) => {
-  // biome-ignore lint/suspicious/noRedundantUseStrict: ..
+  // biome-ignore lint/suspicious/noRedundantUseStrict: needed for non-module execution
   "use strict";
   const { link, src, generated, disable_effects } = args;
 
