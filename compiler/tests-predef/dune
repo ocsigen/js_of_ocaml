@@ -26,11 +26,9 @@
 (rule
  (target main-js.out)
  (action
-  (with-accepted-exit-codes
-   (or 0 2)
-   (with-outputs-to
-    %{target}
-    (run %{bin:node} %{dep:./main.bc.js})))))
+  (with-stdout-to
+   %{target}
+   (run %{bin:node} %{dep:./main.bc.js}))))
 
 (rule
  (alias runtest)
@@ -44,18 +42,14 @@
 
 (rule
  (target main-wasm.out)
- (enabled_if
-  %{env:WASM_OF_OCAML=false})
+ (enabled_if %{env:WASM_OF_OCAML=false})
  (action
-  (with-accepted-exit-codes
-   (or 0 2 7)
-   (with-outputs-to
-    %{target}
-    (run %{bin:node} %{dep:./main.bc.wasm.js})))))
+  (with-stdout-to
+   %{target}
+   (run %{bin:node} %{dep:./main.bc.wasm.js}))))
 
 (rule
  (alias runtest-wasm)
- (enabled_if
-  %{env:WASM_OF_OCAML=false})
+ (enabled_if %{env:WASM_OF_OCAML=false})
  (action
   (diff main.expected main-wasm.out)))

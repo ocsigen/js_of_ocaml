@@ -258,9 +258,12 @@ function caml_build_symbols(symb) {
   var max = -1;
   if (symb) {
     for (var i = 1; i < symb.length; i++) {
+      var gn = symb[i][1];
+      var is_predef = gn[0];
+      var name = caml_jsstring_of_string(gn[1]);
       var idx = symb[i][2];
       max = Math.max(max, idx);
-      r[caml_jsstring_of_string(symb[i][1])] = idx;
+      r[is_predef ? "predef:" + name : name] = idx;
     }
   }
   r.next_idx = max + 1;
@@ -282,7 +285,7 @@ function caml_register_global_by_index(v, idx) {
 //Requires: jsoo_toplevel_reloc
 function caml_register_global(v, name) {
   if (jsoo_toplevel_reloc) {
-    var n = caml_callback(jsoo_toplevel_reloc, [name]);
+    var n = caml_callback(jsoo_toplevel_reloc, [[0, name]]);
     caml_global_data[n + 1] = v;
   } else if (caml_link_info.symbols) {
     if (!caml_link_info.symidx) {
@@ -300,10 +303,39 @@ function caml_register_global(v, name) {
   caml_global_data[name] = v;
 }
 
+//Provides: caml_register_global_predef (shallow, const)
+//Requires: caml_global_data, caml_callback, caml_build_symbols
+//Requires: caml_link_info
+//Requires: jsoo_toplevel_reloc
+function caml_register_global_predef(v, name) {
+  var key = "predef:" + name;
+  if (jsoo_toplevel_reloc) {
+    var n = caml_callback(jsoo_toplevel_reloc, [[1, name]]);
+    caml_global_data[n + 1] = v;
+  } else if (caml_link_info.symbols) {
+    if (!caml_link_info.symidx) {
+      caml_link_info.symidx = caml_build_symbols(caml_link_info.symbols);
+    }
+    var nid = caml_link_info.symidx[key];
+    if (nid === undefined) {
+      nid = caml_link_info.symidx.next_idx++;
+      caml_link_info.symidx[key] = nid;
+    }
+    caml_global_data[nid + 1] = v;
+  }
+  caml_global_data[key] = v;
+}
+
 //Provides: caml_get_global (mutable)
 //Requires: caml_global_data
 function caml_get_global(name) {
   return caml_global_data[name];
+}
+
+//Provides: caml_get_global_predef (mutable)
+//Requires: caml_global_data
+function caml_get_global_predef(name) {
+  return caml_global_data["predef:" + name];
 }
 
 //Provides: caml_get_global_data mutable

@@ -527,11 +527,49 @@ let const32 i = Constant (Int (Targetint.of_int32_exn i))
 let const i = Constant (Int (Targetint.of_int_exn i))
 
 (* Globals *)
+module Global_name = struct
+  type t =
+    | Glob_compunit of string
+    | Glob_predef of string
+
+  let to_string = function
+    | Glob_compunit name | Glob_predef name -> name
+
+  let is_predef = function
+    | Glob_predef _ -> true
+    | Glob_compunit _ -> false
+
+  let equal a b =
+    match a, b with
+    | Glob_compunit a, Glob_compunit b | Glob_predef a, Glob_predef b -> String.equal a b
+    | Glob_compunit _, Glob_predef _ | Glob_predef _, Glob_compunit _ -> false
+
+  let hash = Hashtbl.hash
+
+  let to_symtable_global = function
+    | Glob_compunit name -> Ocaml_compiler.Symtable.Global.Glob_compunit name
+    | Glob_predef name -> Ocaml_compiler.Symtable.Global.Glob_predef name
+
+  let of_symtable_global = function
+    | Ocaml_compiler.Symtable.Global.Glob_compunit name -> Glob_compunit name
+    | Glob_predef name -> Glob_predef name
+
+  module Hashtbl = Hashtbl.Make (struct
+    type nonrec t = t
+
+    let equal = equal
+
+    let hash = hash
+  end)
+end
+
+open Global_name
+
 type globals =
   { mutable vars : Var.t option array
   ; mutable is_const : bool array
   ; mutable is_exported : bool array
-  ; mutable named_value : string option array
+  ; mutable named_value : Global_name.t option array
   ; mutable cache_ids : Var.t list
   ; constants : Code.constant array
   ; primitives : string array
@@ -783,35 +821,46 @@ let register_global_instrs var ?name ?by_index rem =
     | None -> rem
   in
   match name with
-  | Some name ->
-      let name =
+  | Some gn ->
+      let prim =
+        if Global_name.is_predef gn
+        then "caml_register_global_predef"
+        else "caml_register_global"
+      in
+      let name_pc =
+        let name = Global_name.to_string gn in
         Pc
           (match Config.target () with
           | `JavaScript -> NativeString (Native_string.of_string name)
           | `Wasm -> String name)
       in
-      Let (Var.fresh (), Prim (Extern "caml_register_global", [ Pv var; name ])) :: rem
+      Let (Var.fresh (), Prim (Extern prim, [ Pv var; name_pc ])) :: rem
   | None -> rem
 
-let register_global ?(force = false) g i rem =
-  let dominated = g.is_exported.(i) || force in
-  if not dominated
+let register_global g i rem =
+  if not g.is_exported.(i)
   then rem
   else
-    let var = access_global g i in
-    let by_index =
-      match g.named_value.(i) with
-      | None -> Some i
-      | Some _ ->
-          (* For wasm predefined exceptions (force=true), also register by
-             index so that runtime functions (e.g. caml_raise_not_found in
-             fail.wat) can find them in caml_global_data. *)
-          if force && Poly.equal (Config.target ()) `Wasm then Some i else None
-    in
-    (match g.named_value.(i) with
-    | Some name -> Var.set_name var name
-    | None -> ());
-    register_global_instrs var ?name:g.named_value.(i) ?by_index rem
+    match g.named_value.(i) with
+    | None ->
+        let var = access_global g i in
+        register_global_instrs var ~by_index:i rem
+    | Some (Glob_predef name as gn) ->
+        let var = access_global g i in
+        Var.set_name var name;
+        (* For wasm predefined exceptions, also register by index so that
+           runtime functions (e.g. caml_raise_not_found in fail.wat) can
+           find them in caml_global_data. *)
+        let by_index =
+          match Config.target () with
+          | `Wasm -> Some i
+          | `JavaScript -> None
+        in
+        register_global_instrs var ~name:gn ?by_index rem
+    | Some (Glob_compunit name as gn) ->
+        let var = access_global g i in
+        Var.set_name var name;
+        register_global_instrs var ~name:gn rem
 
 let get_global state instrs i =
   State.size_globals state (i + 1);
@@ -840,33 +889,40 @@ let get_global state instrs i =
             if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
             g.vars.(i) <- Some x;
             (match g.named_value.(i) with
-            | None -> ()
-            | Some name -> (
+            | None | Some (Glob_predef _) -> ()
+            | Some (Glob_compunit name) -> (
                 match Shape.Store.load ~name with
                 | None -> ()
                 | Some shape -> Shape.State.assign x shape));
             x, state, instrs
-        | false, Some name -> (
+        | false, Some gn -> (
             (* Reference to another compilation unit in case of separate
                compilation. *)
+            let name = Global_name.to_string gn in
             let x, state = State.fresh_var state in
+            Var.set_name x name;
             if debug_parser () then Format.printf "%a = get_global(%s)@." Var.print x name;
-            (match Shape.Store.load ~name with
-            | None -> ()
-            | Some shape -> Shape.State.assign x shape);
+            (match gn with
+            | Glob_predef _ -> ()
+            | Glob_compunit name -> (
+                match Shape.Store.load ~name with
+                | None -> ()
+                | Some shape -> Shape.State.assign x shape));
             match Config.target () with
             | `JavaScript ->
                 (* Cache the var and mark as const; the prelude will
-                   initialize it with a single caml_get_global call. *)
+                   initialize it with a single caml_get_global
+                   or caml_get_global_predef call. *)
                 g.is_const.(i) <- true;
                 g.vars.(i) <- Some x;
-                Var.set_name x name;
                 x, state, instrs
             | `Wasm ->
-                ( x
-                , state
-                , Let (x, Prim (Extern "caml_get_global", [ Pc (String name) ])) :: instrs
-                )))
+                let prim =
+                  if Global_name.is_predef gn
+                  then "caml_get_global_predef"
+                  else "caml_get_global"
+                in
+                x, state, Let (x, Prim (Extern prim, [ Pc (String name) ])) :: instrs))
 
 let tagged_blocks = ref Addr.Map.empty
 
@@ -2687,7 +2743,7 @@ type bytesections =
 
 type link_info =
   { sections : bytesections
-  ; symbols : (string * int) array
+  ; symbols : (Global_name.t * int) array
   ; prim_count : int
   ; aliases : (string * string) list
   }
@@ -2701,7 +2757,7 @@ let emit_link_info ~symbols ~primitives ~crcs ~num_globals body =
   in
   let symbols_array =
     Ocaml_compiler.Symtable.GlobalMap.fold
-      (fun i p acc -> (Ocaml_compiler.Symtable.Global.name i, p) :: acc)
+      (fun i p acc -> (Global_name.of_symtable_global i, p) :: acc)
       symbols
       []
     |> Array.of_list
@@ -2788,14 +2844,15 @@ let from_exe
   then
     (* export globals *)
     Ocaml_compiler.Symtable.GlobalMap.iter symbols ~f:(fun id n ->
-        globals.named_value.(n) <- Some (Ocaml_compiler.Symtable.Global.name id);
+        globals.named_value.(n) <- Some (Global_name.of_symtable_global id);
         globals.is_exported.(n) <- true);
   let p = parse_bytecode code globals debug_data in
   (* register predefined exception *)
   let body =
     List.fold_left predefined_exceptions ~init:[] ~f:(fun body (i, name) ->
-        globals.named_value.(i) <- Some name;
-        let body = register_global ~force:true globals i body in
+        globals.named_value.(i) <- Some (Glob_predef name);
+        globals.is_exported.(i) <- true;
+        let body = register_global globals i body in
         globals.is_exported.(i) <- false;
         body)
   in
@@ -2947,7 +3004,7 @@ module Reloc = struct
     { mutable pos : int
     ; mutable constants : Code.constant list
     ; mutable step2_started : bool
-    ; names : int String.Hashtbl.t
+    ; names : int Global_name.Hashtbl.t
     ; primitives : int String.Hashtbl.t
     }
 
@@ -2956,7 +3013,7 @@ module Reloc = struct
     { pos = List.length constants
     ; constants
     ; step2_started = false
-    ; names = String.Hashtbl.create 17
+    ; names = Global_name.Hashtbl.create 17
     ; primitives = String.Hashtbl.create 17
     }
 
@@ -2992,28 +3049,32 @@ module Reloc = struct
   let step2 t compunit code =
     t.step2_started <- true;
     let open Cmo_format in
-    let next name =
-      try String.Hashtbl.find t.names name
+    let next gn =
+      try Global_name.Hashtbl.find t.names gn
       with Not_found ->
         let pos = t.pos in
         t.pos <- succ t.pos;
-        String.Hashtbl.add t.names name pos;
+        Global_name.Hashtbl.add t.names gn pos;
         pos
     in
-    let slot_for_global id = next id in
     List.iter compunit.cu_reloc ~f:(fun (reloc, pos) ->
         let patch name = gen_patch_int code pos name in
         match reloc with
         | ((Reloc_getglobal id) [@if ocaml_version < (5, 2, 0)]) ->
-            patch (slot_for_global (Ident.name id))
+            let gn =
+              if Ident.is_predef id
+              then Glob_predef (Ident.name id)
+              else Glob_compunit (Ident.name id)
+            in
+            patch (next gn)
         | ((Reloc_setglobal id) [@if ocaml_version < (5, 2, 0)]) ->
-            patch (slot_for_global (Ident.name id))
+            patch (next (Glob_compunit (Ident.name id)))
         | ((Reloc_getcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global id)
+            patch (next (Glob_compunit id))
         | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global id)
+            patch (next (Glob_predef id))
         | ((Reloc_setcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (slot_for_global id)
+            patch (next (Glob_compunit id))
         | _ -> ())
 
   let primitives t =
@@ -3029,7 +3090,7 @@ module Reloc = struct
     let constants = constants t in
     let globals = make_globals (Array.length constants) constants primitives in
     resize_globals globals t.pos;
-    String.Hashtbl.iter (fun name i -> globals.named_value.(i) <- Some name) t.names;
+    Global_name.Hashtbl.iter (fun gn i -> globals.named_value.(i) <- Some gn) t.names;
     globals
 end
 
@@ -3056,14 +3117,21 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
                     Var.set_name x ~generated:true (Printf.sprintf "cst_%s" str)
                 | _ -> ());
                 Let (x, Constant cst) :: l
-            | false, Some name ->
-                (* Cross-unit reference: initialize via caml_get_global *)
+            | false, Some gn ->
+                (* Cross-unit reference: initialize via
+                   caml_get_global or caml_get_global_predef *)
+                let name = Global_name.to_string gn in
+                let prim =
+                  if Global_name.is_predef gn
+                  then "caml_get_global_predef"
+                  else "caml_get_global"
+                in
                 Var.set_name x name;
                 Let
                   ( x
                   , Prim
-                      ( Extern "caml_get_global"
-                      , [ Pc (NativeString (Native_string.of_string name)) ] ) )
+                      (Extern prim, [ Pc (NativeString (Native_string.of_string name)) ])
+                  )
                 :: l
             | false, None -> l)
         | _ -> l)
@@ -3184,7 +3252,7 @@ let predefined_exceptions () =
                       (-index - 1))) )
         ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable))
         ]
-        @ register_global_instrs exn ~name ?by_index [])
+        @ register_global_instrs exn ~name:(Glob_predef name) ?by_index [])
     |> List.concat
   in
   let block = { params = []; body; branch = Stop } in

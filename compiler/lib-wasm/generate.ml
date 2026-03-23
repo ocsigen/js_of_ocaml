@@ -1271,6 +1271,28 @@ module Generate (Target : Target_sig.S) = struct
               register_import ~import_module:"OCaml" ~name (Global { mut = true; typ })
         in
         return (W.GlobalGet x)
+    | Prim (Extern "caml_get_global_predef", [ Pc (String name) ]) ->
+        let exported_name = "predef:" ^ name in
+        let* x =
+          let* context = get_context in
+          match
+            List.find_map
+              ~f:(fun f ->
+                match f with
+                | W.Global { name = name'; exported_name = Some en; _ }
+                  when String.equal en exported_name -> Some name'
+                | _ -> None)
+              context.other_fields
+          with
+          | Some x -> return x
+          | _ ->
+              let* typ = Value.block_type in
+              register_import
+                ~import_module:"OCaml"
+                ~name:exported_name
+                (Global { mut = true; typ })
+        in
+        return (W.GlobalGet x)
     | Prim (Extern "caml_register_global", [ v; Pc (String name) ]) ->
         let v = transl_prim_arg ctx v in
         let x = Var.fresh_n name in
@@ -1283,12 +1305,29 @@ module Generate (Target : Target_sig.S) = struct
           (let* v = v in
            let* v_block = Value.as_block (return v) in
            let* () = instr (W.GlobalSet (x, v_block)) in
-           (* Also register in caml_global_data for runtime access
-              (needed for toplevel/dynlink name-based relocation;
-              predefined exceptions are handled separately via
-              caml_register_global_by_index) *)
            let* f =
              register_import ~name:"caml_register_global" (Fun (Type.primitive_type 2))
+           in
+           let* name_str = Constant.translate ~unboxed:false (String name) in
+           instr (W.Drop (W.Call (f, [ v; name_str ]))))
+          Value.unit
+    | Prim (Extern "caml_register_global_predef", [ v; Pc (String name) ]) ->
+        let exported_name = "predef:" ^ name in
+        let v = transl_prim_arg ctx v in
+        let x = Var.fresh_n name in
+        let* () =
+          let* typ = Value.block_type in
+          let* dummy = Value.dummy_block in
+          register_global x ~exported_name { mut = true; typ } dummy
+        in
+        seq
+          (let* v = v in
+           let* v_block = Value.as_block (return v) in
+           let* () = instr (W.GlobalSet (x, v_block)) in
+           let* f =
+             register_import
+               ~name:"caml_register_global_predef"
+               (Fun (Type.primitive_type 2))
            in
            let* name_str = Constant.translate ~unboxed:false (String name) in
            instr (W.Drop (W.Call (f, [ v; name_str ]))))

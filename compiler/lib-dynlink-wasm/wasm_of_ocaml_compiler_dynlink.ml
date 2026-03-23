@@ -43,7 +43,8 @@ external toplevel_init_compile :
 external get_bytecode_sections : unit -> Parse_bytecode.bytesections
   = "wasm_get_bytecode_sections"
 
-external toplevel_init_reloc : (string -> int) -> unit = "wasm_toplevel_init_reloc"
+external toplevel_init_reloc : (Parse_bytecode.Global_name.t -> int) -> unit
+  = "wasm_toplevel_init_reloc"
 
 external get_runtime_aliases : unit -> (string * string) list = "wasm_get_runtime_aliases"
 
@@ -73,19 +74,16 @@ let () =
   (* Read bytecode sections set up by the _link_info module *)
   let toc = get_bytecode_sections () in
   let prims = Array.of_list toc.prim in
-  (* Build a name->index map from the symtable for the reloc callback
-     (same as the JS dynlink module) *)
-  let sym =
-    let t : Ocaml_compiler.Symtable.GlobalMap.t = toc.symb in
-    Ocaml_compiler.Symtable.GlobalMap.fold
-      (fun i n acc -> Stdlib.StringMap.add (Ocaml_compiler.Symtable.Global.name i) n acc)
-      t
-      Stdlib.StringMap.empty
-  in
-  let toplevel_reloc (name : string) : int =
-    match Stdlib.StringMap.find_opt name sym with
-    | Some i -> i
-    | None -> Ocaml_compiler.Symtable.reloc_ident name
+  let sym : Ocaml_compiler.Symtable.GlobalMap.t = toc.symb in
+  let toplevel_reloc (gn : Parse_bytecode.Global_name.t) : int =
+    match
+      Ocaml_compiler.Symtable.GlobalMap.find
+        (Parse_bytecode.Global_name.to_symtable_global gn)
+        sym
+    with
+    | i -> i
+    | exception Not_found ->
+        Ocaml_compiler.Symtable.reloc_ident (Parse_bytecode.Global_name.to_string gn)
   in
   let toplevel_compile code (debug : Instruct.debug_event list array) : unit -> Obj.t =
     let s = Parse_bytecode.normalize_bytecode code in
