@@ -18,14 +18,14 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v6
       - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3.4.8
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "5.2"
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
         with:
           token: ${{ github.token }}
-      - uses: ocaml/setup-ocaml/lint-opam@v3.4.8
+      - uses: ocaml/setup-ocaml/lint-opam@v3
 
   lint-fmt:
     runs-on: ubuntu-latest
@@ -33,10 +33,10 @@ jobs:
       - name: Checkout tree
         uses: actions/checkout@v6
       - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3.4.8
+        uses: ocaml/setup-ocaml@v3
         with:
           ocaml-compiler: "5.2"
-      - uses: ocaml/setup-ocaml/lint-fmt@v3.4.8
+      - uses: ocaml/setup-ocaml/lint-fmt@v3
 
   lint-runtime:
     runs-on: ubuntu-latest
