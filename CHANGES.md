@@ -45,7 +45,6 @@
 * Lib: add `Dom_html.onload` for WASM-safe load handling (#1948)
 * Runtime: make eval functions more robust (#2108)
 * Compiler: added a constant sinking pass (#2167)
-* Compiler: added a variable coalescing pass (#2166)
 
 ## Bug fixes
 * Compiler: fix `Global_flow.do_escape` monotonicity
