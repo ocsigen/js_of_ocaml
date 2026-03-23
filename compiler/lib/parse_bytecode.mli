@@ -79,18 +79,6 @@ val from_string :
 
 val normalize_bytecode : string -> string
 
-module Global_name : sig
-  type t =
-    | Glob_compunit of string
-    | Glob_predef of string
-
-  val to_string : t -> string
-
-  val to_symtable_global : t -> Ocaml_compiler.Symtable.Global.t
-
-  val of_symtable_global : Ocaml_compiler.Symtable.Global.t -> t
-end
-
 val predefined_exceptions : unit -> Code.program * Unit_info.t
 
 type bytesections =

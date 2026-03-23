@@ -26,30 +26,20 @@ type module_or_not =
 val is_module_in_summary : Ident.t -> Env.summary -> module_or_not
 
 module Symtable : sig
-  module Global : sig
-    type t =
-      | Glob_compunit of string
-      | Glob_predef of string
-
-    val name : t -> string
-
-    val of_ident : Ident.t -> t option
-  end
-
   module GlobalMap : sig
     type t
 
     val empty : t
 
-    val filter : (Global.t -> bool) -> t -> t
+    val filter : (Global_name.t -> bool) -> t -> t
 
-    val find : Global.t -> t -> int
+    val find : Global_name.t -> t -> int
 
-    val iter : f:(Global.t -> int -> unit) -> t -> unit
+    val iter : f:(Global_name.t -> int -> unit) -> t -> unit
 
-    val fold : (Global.t -> int -> 'a -> 'a) -> t -> 'a -> 'a
+    val fold : (Global_name.t -> int -> 'a -> 'a) -> t -> 'a -> 'a
 
-    val enter : t ref -> Global.t -> int
+    val enter : t ref -> Global_name.t -> int
   end
 
   val reloc_ident : string -> int
@@ -62,11 +52,11 @@ end
 module Cmo_format : sig
   type t = Cmo_format.compilation_unit
 
-  val name : t -> string
+  val name : t -> Global_name.compunit
 
-  val requires : t -> string list
+  val requires : t -> Global_name.compunit list
 
-  val provides : t -> string list
+  val provides : t -> Global_name.compunit list
 
   val primitives : t -> string list
 

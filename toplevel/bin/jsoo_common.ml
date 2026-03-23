@@ -72,7 +72,7 @@ let cmis_of_cma ~dir cma_path =
   in
   let contains = unit_of_cma cma_path in
   let dir = Filename.dirname cma_path in
-  List.filter_map contains ~f:(fun s ->
+  List.filter_map contains ~f:(fun (Js_of_ocaml_compiler.Global_name.Compunit s) ->
       try Some (read_cmi ~dir (s ^ ".cmi")) with Not_found -> None)
 
 let cmis_of_package pkg : string list =

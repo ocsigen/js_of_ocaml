@@ -527,43 +527,6 @@ let const32 i = Constant (Int (Targetint.of_int32_exn i))
 let const i = Constant (Int (Targetint.of_int_exn i))
 
 (* Globals *)
-module Global_name = struct
-  type t =
-    | Glob_compunit of string
-    | Glob_predef of string
-
-  let to_string = function
-    | Glob_compunit name | Glob_predef name -> name
-
-  let is_predef = function
-    | Glob_predef _ -> true
-    | Glob_compunit _ -> false
-
-  let equal a b =
-    match a, b with
-    | Glob_compunit a, Glob_compunit b | Glob_predef a, Glob_predef b -> String.equal a b
-    | Glob_compunit _, Glob_predef _ | Glob_predef _, Glob_compunit _ -> false
-
-  let hash = Hashtbl.hash
-
-  let to_symtable_global = function
-    | Glob_compunit name -> Ocaml_compiler.Symtable.Global.Glob_compunit name
-    | Glob_predef name -> Ocaml_compiler.Symtable.Global.Glob_predef name
-
-  let of_symtable_global = function
-    | Ocaml_compiler.Symtable.Global.Glob_compunit name -> Glob_compunit name
-    | Glob_predef name -> Glob_predef name
-
-  module Hashtbl = Hashtbl.Make (struct
-    type nonrec t = t
-
-    let equal = equal
-
-    let hash = hash
-  end)
-end
-
-open Global_name
 
 type globals =
   { mutable vars : Var.t option array
@@ -845,7 +808,7 @@ let register_global g i rem =
     | None ->
         let var = access_global g i in
         register_global_instrs var ~by_index:i rem
-    | Some (Glob_predef name as gn) ->
+    | Some (Glob_predef (Predef name) as gn) ->
         let var = access_global g i in
         Var.set_name var name;
         (* For wasm predefined exceptions, also register by index so that
@@ -857,7 +820,7 @@ let register_global g i rem =
           | `JavaScript -> None
         in
         register_global_instrs var ~name:gn ?by_index rem
-    | Some (Glob_compunit name as gn) ->
+    | Some (Glob_compunit (Compunit name) as gn) ->
         let var = access_global g i in
         Var.set_name var name;
         register_global_instrs var ~name:gn rem
@@ -890,7 +853,7 @@ let get_global state instrs i =
             g.vars.(i) <- Some x;
             (match g.named_value.(i) with
             | None | Some (Glob_predef _) -> ()
-            | Some (Glob_compunit name) -> (
+            | Some (Glob_compunit (Compunit name)) -> (
                 match Shape.Store.load ~name with
                 | None -> ()
                 | Some shape -> Shape.State.assign x shape));
@@ -904,7 +867,7 @@ let get_global state instrs i =
             if debug_parser () then Format.printf "%a = get_global(%s)@." Var.print x name;
             (match gn with
             | Glob_predef _ -> ()
-            | Glob_compunit name -> (
+            | Glob_compunit (Compunit name) -> (
                 match Shape.Store.load ~name with
                 | None -> ()
                 | Some shape -> Shape.State.assign x shape));
@@ -2756,10 +2719,7 @@ let emit_link_info ~symbols ~primitives ~crcs ~num_globals body =
     |> StringSet.elements
   in
   let symbols_array =
-    Ocaml_compiler.Symtable.GlobalMap.fold
-      (fun i p acc -> (Global_name.of_symtable_global i, p) :: acc)
-      symbols
-      []
+    Ocaml_compiler.Symtable.GlobalMap.fold (fun gn p acc -> (gn, p) :: acc) symbols []
     |> Array.of_list
   in
 
@@ -2821,7 +2781,7 @@ let from_exe
     Ocaml_compiler.Symtable.GlobalMap.filter
       (function
         | Glob_predef _ -> true
-        | Glob_compunit name -> keep name)
+        | Glob_compunit (Compunit name) -> keep name)
       orig_symbols
   in
   let t = Timer.make () in
@@ -2843,14 +2803,14 @@ let from_exe
   if linkall
   then
     (* export globals *)
-    Ocaml_compiler.Symtable.GlobalMap.iter symbols ~f:(fun id n ->
-        globals.named_value.(n) <- Some (Global_name.of_symtable_global id);
+    Ocaml_compiler.Symtable.GlobalMap.iter symbols ~f:(fun gn n ->
+        globals.named_value.(n) <- Some gn;
         globals.is_exported.(n) <- true);
   let p = parse_bytecode code globals debug_data in
   (* register predefined exception *)
   let body =
     List.fold_left predefined_exceptions ~init:[] ~f:(fun body (i, name) ->
-        globals.named_value.(i) <- Some (Glob_predef name);
+        globals.named_value.(i) <- Some (Glob_predef (Predef name));
         globals.is_exported.(i) <- true;
         let body = register_global globals i body in
         globals.is_exported.(i) <- false;
@@ -2901,7 +2861,7 @@ let from_exe
       Ocaml_compiler.Symtable.GlobalMap.fold
         (fun id _num acc ->
           match id with
-          | Ocaml_compiler.Symtable.Global.Glob_compunit name ->
+          | Global_name.Glob_compunit (Compunit name) ->
               if is_module name then StringSet.add name acc else acc
           | Glob_predef _ -> acc)
         symbols
@@ -2956,7 +2916,7 @@ let from_bytes ~prims ~debug (code : bytecode) =
     else
       match Int.Hashtbl.find ident_table i with
       | exception Not_found -> None
-      | glob -> Some (Ocaml_compiler.Symtable.Global.name glob, false)
+      | glob -> Some (Global_name.to_string glob, false)
   in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
@@ -3061,20 +3021,20 @@ module Reloc = struct
         let patch name = gen_patch_int code pos name in
         match reloc with
         | ((Reloc_getglobal id) [@if ocaml_version < (5, 2, 0)]) ->
-            let gn =
+            let gn : Global_name.t =
               if Ident.is_predef id
-              then Glob_predef (Ident.name id)
-              else Glob_compunit (Ident.name id)
+              then Glob_predef (Predef (Ident.name id))
+              else Glob_compunit (Compunit (Ident.name id))
             in
             patch (next gn)
         | ((Reloc_setglobal id) [@if ocaml_version < (5, 2, 0)]) ->
-            patch (next (Glob_compunit (Ident.name id)))
+            patch (next (Glob_compunit (Compunit (Ident.name id))))
         | ((Reloc_getcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (next (Glob_compunit id))
+            patch (next (Glob_compunit (Compunit id)))
         | ((Reloc_getpredef (Predef_exn id)) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (next (Glob_predef id))
+            patch (next (Glob_predef (Predef id)))
         | ((Reloc_setcompunit (Compunit id)) [@if ocaml_version >= (5, 2, 0)]) ->
-            patch (next (Glob_compunit id))
+            patch (next (Glob_compunit (Compunit id)))
         | _ -> ())
 
   let primitives t =
@@ -3140,7 +3100,8 @@ let from_compilation_units ~includes:_ ~include_cmis ~debug_data l =
     if include_cmis
     then
       List.fold_left l ~init:StringSet.empty ~f:(fun acc (compunit, _) ->
-          StringSet.add (Ocaml_compiler.Cmo_format.name compunit) acc)
+          let (Global_name.Compunit name) = Ocaml_compiler.Cmo_format.name compunit in
+          StringSet.add name acc)
     else StringSet.empty
   in
   { code = prepend prog body; cmis; debug = Debug.summarize debug_data }
@@ -3252,13 +3213,13 @@ let predefined_exceptions () =
                       (-index - 1))) )
         ; Let (exn, Block (248, [| v_name; v_index |], NotArray, Immutable))
         ]
-        @ register_global_instrs exn ~name:(Glob_predef name) ?by_index [])
+        @ register_global_instrs exn ~name:(Glob_predef (Predef name)) ?by_index [])
     |> List.concat
   in
   let block = { params = []; body; branch = Stop } in
   let unit_info =
-    { Unit_info.provides = StringSet.of_list (List.map ~f:snd predefined_exceptions)
-    ; requires = StringSet.empty
+    { Unit_info.provides = Global_name.Compunit_set.empty
+    ; requires = Global_name.Compunit_set.empty
     ; force_link = true
     ; effects_without_cps = false
     ; primitives = []

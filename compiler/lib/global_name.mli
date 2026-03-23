@@ -19,25 +19,32 @@
 
 open! Stdlib
 
+type compunit = Compunit of string [@@unboxed]
+
+type predef = Predef of string [@@unboxed]
+
 type t =
-  { provides : Global_name.Compunit_set.t
-  ; requires : Global_name.Compunit_set.t
-  ; primitives : string list
-  ; aliases : (string * string) list
-  ; force_link : bool
-  ; effects_without_cps : bool
-  }
-
-val of_cmo : Cmo_format.compilation_unit -> t
-
-val of_primitives : aliases:(string * string) list -> string list -> t
-
-val union : t -> t -> t
-
-val empty : t
-
-val prefix : string
+  | Glob_compunit of compunit
+  | Glob_predef of predef
 
 val to_string : t -> string
 
-val parse : t -> string -> t option
+val is_predef : t -> bool
+
+val compare : t -> t -> int
+
+val equal : t -> t -> bool
+
+val hash : t -> int
+
+val compare_compunit : compunit -> compunit -> int
+
+module Compunit_set : Set.S with type elt = compunit
+
+module Compunit_hashtbl : Hashtbl.S with type key = compunit
+
+module Hashtbl : Hashtbl.S with type key = t
+
+module Set : Set.S with type elt = t
+
+module Map : Map.S with type key = t
