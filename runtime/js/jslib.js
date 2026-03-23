@@ -155,16 +155,14 @@ function caml_wrap_exception(e) {
     if (
       globalThis.RangeError &&
       e instanceof globalThis.RangeError &&
-      e.message &&
-      e.message.match(/maximum call stack/i)
+      e.message?.match(/maximum call stack/i)
     )
       exn = caml_global_data.Stack_overflow;
     //Stack_overflow: firefox
     else if (
       globalThis.InternalError &&
       e instanceof globalThis.InternalError &&
-      e.message &&
-      e.message.match(/too much recursion/i)
+      e.message?.match(/too much recursion/i)
     )
       exn = caml_global_data.Stack_overflow;
     //Wrap Error in Js.Error exception

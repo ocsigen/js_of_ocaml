@@ -26,7 +26,7 @@ function caml_trailing_slash(name) {
 
 //Provides: caml_current_dir
 //Requires: caml_trailing_slash, fs_node_supported
-if (fs_node_supported() && globalThis.process && globalThis.process.cwd)
+if (fs_node_supported() && globalThis.process?.cwd)
   var caml_current_dir = globalThis.process.cwd().replace(/\\/g, "/");
 else var caml_current_dir = "/static";
 caml_current_dir = caml_trailing_slash(caml_current_dir);
