@@ -28,7 +28,7 @@ jobs:
         with:
           node-version: latest
       - name: Set-up OCaml
-        uses: ocaml/setup-ocaml@v3
+        uses: ocaml/setup-ocaml@v3.4.8
         with:
           ocaml-compiler: 5.4
       - name: Set-up Binaryen
