@@ -80,7 +80,7 @@
     while (true) {
       const i = dir.lastIndexOf("/");
       if (i <= 0) break;
-      dir = dir.substring(0, i);
+      dir = dir.slice(0, i);
       virtual_dirs.add(dir);
     }
   }
@@ -547,9 +547,9 @@
       const entries = new Set();
       for (const name of virtual_files.keys()) {
         if (name.startsWith(prefix)) {
-          const rest = name.substring(prefix.length);
+          const rest = name.slice(prefix.length);
           const slash = rest.indexOf("/");
-          entries.add(slash < 0 ? rest : rest.substring(0, slash));
+          entries.add(slash < 0 ? rest : rest.slice(0, slash));
         }
       }
       if (fs) {
