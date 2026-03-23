@@ -134,6 +134,11 @@ jobs:
       - run: opam install conf-pkg-config conf-mingw-w64-g++-i686 conf-mingw-w64-g++-x86_64
         if: runner.os == 'Windows'
 
+      # Pin dune to 3.21.0 on Windows to work around a cram test regression
+      # in 3.22.0 (path separator mismatch in generated cram scripts).
+      - run: opam pin dune 3.21.0 --no-action
+        if: runner.os == 'Windows'
+
       - name: Set-up Binaryen
         uses: Aandreba/setup-binaryen@v1.0.0
         with:
