@@ -194,9 +194,11 @@ caml_to_js_string (deprecated)
 
 From +stdlib.js:
 caml_get_global
+caml_get_global_predef
 caml_is_printable
 caml_maybe_print_stats
 caml_register_global_by_index
+caml_register_global_predef
 caml_set_link_info
 
 From +sync.js:
