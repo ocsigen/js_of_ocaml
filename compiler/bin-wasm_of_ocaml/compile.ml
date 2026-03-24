@@ -133,7 +133,7 @@ let build_runtime ~runtime_file =
         ~inputs
         ~output_file:runtime_file
 
-let link_and_optimize
+let link_and_optimize_binaryen
     ~profile
     ~sourcemap_root
     ~sourcemap_don't_inline_content
@@ -206,39 +206,194 @@ let link_and_optimize
     opt_sourcemap_file;
   primitives
 
+let link_and_optimize_o1
+    ~sourcemap_root
+    ~sourcemap_don't_inline_content
+    ~opt_sourcemap
+    runtime_wasm_files
+    wat_files
+    output_file =
+  let opt_sourcemap_file = opt_sourcemap in
+  let enable_source_maps = Option.is_some opt_sourcemap_file in
+  let tmp_buf = Buffer.create 10000 in
+  Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
+  @@ fun runtime_file ->
+  build_runtime ~runtime_file;
+  (* Assemble extra WAT runtime files via wasm-merge if needed *)
+  with_runtime_files ~runtime_wasm_files
+  @@ fun runtime_inputs ->
+  (* Assemble any WAT inputs to binary via wasm-merge *)
+  let assemble_wat_inputs inputs =
+    List.fold_left
+      ~f:(fun cont ({ Binaryen.module_name; file; _ } as input) inputs ->
+        if Link.Wasm_binary.check_file ~file
+        then
+          cont
+            ({ Wasm_link.module_name; file; code = None; opt_source_map = None } :: inputs)
+        else
+          Fs.with_intermediate_file (Filename.temp_file "wat-asm" ".wasm")
+          @@ fun tmp_file ->
+          Binaryen.link
+            ~opt_output_sourcemap:None
+            ~inputs:[ input ]
+            ~output_file:tmp_file
+            ();
+          cont
+            ({ Wasm_link.module_name
+             ; file = tmp_file
+             ; code = None
+             ; opt_source_map = None
+             }
+            :: inputs))
+      ~init:(fun inputs -> inputs)
+      inputs
+      []
+  in
+  let runtime_link_inputs = assemble_wat_inputs runtime_inputs in
+  Fs.with_intermediate_file (Filename.temp_file "wasm-linked" ".wasm")
+  @@ fun linked_file ->
+  let t = Timer.make ~get_time:Unix.time () in
+  let all_inputs =
+    { Wasm_link.module_name = "env"
+    ; file = runtime_file
+    ; code = None
+    ; opt_source_map = None
+    }
+    :: runtime_link_inputs
+    @ List.map
+        ~f:(fun (file, source_map_file) ->
+          { Wasm_link.module_name = "OCaml"
+          ; file
+          ; code = None
+          ; opt_source_map =
+              Option.map
+                ~f:(fun f -> Source_map.Standard.of_file ~tmp_buf f)
+                source_map_file
+          })
+        wat_files
+  in
+  let source_map = Wasm_link.f all_inputs ~output_file:linked_file in
+  if binaryen_times () then Format.eprintf "  link: %a@." Timer.print t;
+  let t = Timer.make ~get_time:Unix.time () in
+  let opt_linked_sourcemap =
+    if enable_source_maps
+    then Some (Filename.temp_file "wasm-linked" ".wasm.map")
+    else None
+  in
+  Option.iter
+    ~f:(fun sm_file -> Source_map.to_file source_map sm_file)
+    opt_linked_sourcemap;
+  let primitives =
+    Wasm_dce.f
+      ~dependencies:Runtime_files.dependencies
+      ~opt_input_sourcemap:opt_linked_sourcemap
+      ~input_file:linked_file
+      ~opt_output_sourcemap:opt_sourcemap
+      ~output_file
+  in
+  if binaryen_times () then Format.eprintf "  dce: %a@." Timer.print t;
+  Option.iter
+    ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
+    opt_sourcemap_file;
+  primitives
+
+let link_and_optimize
+    ~profile
+    ~sourcemap_root
+    ~sourcemap_don't_inline_content
+    ~opt_sourcemap
+    runtime_wasm_files
+    wat_files
+    output_file =
+  match profile with
+  | Profile.O1 ->
+      link_and_optimize_o1
+        ~sourcemap_root
+        ~sourcemap_don't_inline_content
+        ~opt_sourcemap
+        runtime_wasm_files
+        wat_files
+        output_file
+  | O2 | O3 ->
+      link_and_optimize_binaryen
+        ~profile
+        ~sourcemap_root
+        ~sourcemap_don't_inline_content
+        ~opt_sourcemap
+        runtime_wasm_files
+        wat_files
+        output_file
+
+let link_runtime_binaryen ~profile runtime_wasm_files output_file =
+  Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
+  @@ fun extra_runtime ->
+  Fs.with_intermediate_file (Filename.temp_file "merged_runtime" ".wasm")
+  @@ fun temp_file ->
+  (with_runtime_files ~runtime_wasm_files
+  @@ fun runtime_inputs ->
+  Binaryen.link
+    ~opt_output_sourcemap:None
+    ~inputs:runtime_inputs
+    ~output_file:temp_file
+    ());
+  Binaryen.optimize
+    ~profile
+    ~opt_input_sourcemap:None
+    ~opt_output_sourcemap:None
+    ~input_file:temp_file
+    ~output_file:extra_runtime
+    ();
+  Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
+  @@ fun runtime_file ->
+  build_runtime ~runtime_file;
+  Binaryen.link
+    ~opt_output_sourcemap:None
+    ~inputs:
+      (List.map
+         ~f:(fun file -> { Binaryen.module_name = "env"; file; source_map_file = None })
+         [ runtime_file; extra_runtime ])
+    ~output_file
+    ()
+
+let link_runtime_o1 runtime_wasm_files output_file =
+  with_runtime_files ~runtime_wasm_files
+  @@ fun runtime_inputs ->
+  (* Assemble any WAT inputs to binary via wasm-merge *)
+  let link_inputs =
+    List.map
+      ~f:(fun ({ Binaryen.module_name; file; _ } as input) ->
+        if Link.Wasm_binary.check_file ~file
+        then { Wasm_link.module_name; file; code = None; opt_source_map = None }
+        else
+          let tmp_file = Filename.temp_file "wat-asm" ".wasm" in
+          Binaryen.link
+            ~opt_output_sourcemap:None
+            ~inputs:[ input ]
+            ~output_file:tmp_file
+            ();
+          { Wasm_link.module_name; file = tmp_file; code = None; opt_source_map = None })
+      runtime_inputs
+  in
+  Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
+  @@ fun runtime_file ->
+  build_runtime ~runtime_file;
+  let all_inputs =
+    { Wasm_link.module_name = "env"
+    ; file = runtime_file
+    ; code = None
+    ; opt_source_map = None
+    }
+    :: link_inputs
+  in
+  ignore (Wasm_link.f all_inputs ~output_file)
+
 let link_runtime ~profile runtime_wasm_files output_file =
   if List.is_empty runtime_wasm_files
   then build_runtime ~runtime_file:output_file
   else
-    Fs.with_intermediate_file (Filename.temp_file "extra_runtime" ".wasm")
-    @@ fun extra_runtime ->
-    Fs.with_intermediate_file (Filename.temp_file "merged_runtime" ".wasm")
-    @@ fun temp_file ->
-    (with_runtime_files ~runtime_wasm_files
-    @@ fun runtime_inputs ->
-    Binaryen.link
-      ~opt_output_sourcemap:None
-      ~inputs:runtime_inputs
-      ~output_file:temp_file
-      ());
-    Binaryen.optimize
-      ~profile
-      ~opt_input_sourcemap:None
-      ~opt_output_sourcemap:None
-      ~input_file:temp_file
-      ~output_file:extra_runtime
-      ();
-    Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
-    @@ fun runtime_file ->
-    build_runtime ~runtime_file;
-    Binaryen.link
-      ~opt_output_sourcemap:None
-      ~inputs:
-        (List.map
-           ~f:(fun file -> { Binaryen.module_name = "env"; file; source_map_file = None })
-           [ runtime_file; extra_runtime ])
-      ~output_file
-      ()
+    match profile with
+    | Profile.O1 -> link_runtime_o1 runtime_wasm_files output_file
+    | O2 | O3 -> link_runtime_binaryen ~profile runtime_wasm_files output_file
 
 let generate_prelude ~out_file =
   Filename.gen_file out_file
@@ -525,31 +680,45 @@ let run
           else None)
        @@ fun opt_tmp_map_file ->
        let unit_data, shapes =
-         Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
-         @@ fun input_file ->
-         opt_with
-           Fs.with_intermediate_file
-           (if enable_source_maps
-            then Some (Filename.temp_file unit_name ".wasm.map")
-            else None)
-         @@ fun opt_input_sourcemap ->
-         let fragments, shapes =
-           output
-             code
-             ~wat_file:
-               (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
-             ~unit_name:(Some unit_name)
-             ~file:input_file
-             ~opt_source_map_file:opt_input_sourcemap
-         in
-         Binaryen.optimize
-           ~profile
-           ~opt_input_sourcemap
-           ~opt_output_sourcemap:opt_tmp_map_file
-           ~input_file
-           ~output_file:tmp_wasm_file
-           ();
-         { Link.unit_name; unit_info; fragments }, shapes
+         match profile with
+         | Profile.O1 ->
+             (* At O1, skip Binaryen.optimize — write directly *)
+             let fragments, shapes =
+               output
+                 code
+                 ~wat_file:
+                   (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+                 ~unit_name:(Some unit_name)
+                 ~file:tmp_wasm_file
+                 ~opt_source_map_file:opt_tmp_map_file
+             in
+             { Link.unit_name; unit_info; fragments }, shapes
+         | O2 | O3 ->
+             Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
+             @@ fun input_file ->
+             opt_with
+               Fs.with_intermediate_file
+               (if enable_source_maps
+                then Some (Filename.temp_file unit_name ".wasm.map")
+                else None)
+             @@ fun opt_input_sourcemap ->
+             let fragments, shapes =
+               output
+                 code
+                 ~wat_file:
+                   (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+                 ~unit_name:(Some unit_name)
+                 ~file:input_file
+                 ~opt_source_map_file:opt_input_sourcemap
+             in
+             Binaryen.optimize
+               ~profile
+               ~opt_input_sourcemap
+               ~opt_output_sourcemap:opt_tmp_map_file
+               ~input_file
+               ~output_file:tmp_wasm_file
+               ();
+             { Link.unit_name; unit_info; fragments }, shapes
        in
        cont unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes
      in

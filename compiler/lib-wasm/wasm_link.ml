@@ -559,6 +559,10 @@ module Read = struct
 
   let create_types () = { types = RecTypeTbl.create 2000; last_index = 0; rev_list = [] }
 
+  let types_last_index t = t.last_index
+
+  let types_rev_list t = t.rev_list
+
   let add_rectype types typ =
     try RecTypeTbl.find types.types typ
     with Not_found ->
