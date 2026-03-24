@@ -765,24 +765,10 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
 
   (* Seed roots *)
 
-  (* 1. All exports are roots *)
-  Wasm_link.iter_exportable_info
-    (fun kind lst ->
-      List.iter
-        ~f:(fun (_name, idx) ->
-          match kind with
-          | Wasm_link.Func -> mark_func idx
-          | Wasm_link.Global -> mark_global idx
-          | Wasm_link.Tag -> mark_tag idx
-          | Wasm_link.Table | Wasm_link.Mem ->
-              () (* tables and memories are always kept *))
-        lst)
-    exports;
-
-  (* 2. Start function is a root *)
+  (* 1. Start function is a root *)
   Option.iter ~f:mark_func start_func;
 
-  (* 3. deps.json root entries *)
+  (* 2. deps.json root entries *)
   List.iter ~f:(fun entry -> if entry.root then resolve_dep_reaches entry) dep_entries;
 
   (* Read code section positions for each defined function *)
