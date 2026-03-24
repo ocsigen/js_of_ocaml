@@ -534,50 +534,55 @@ type dep_entry =
   }
 
 let parse_dependencies ~dependencies primitives =
-  (* Build the same augmented JSON that Binaryen.generate_dependencies creates *)
   let base_entries = Yojson.Basic.Util.to_list (Yojson.Basic.from_string dependencies) in
+  let find_field assoc key =
+    List.find_map ~f:(fun (k, v) -> if String.equal k key then Some v else None) assoc
+  in
   let prim_entries =
     StringSet.fold
       (fun nm l ->
-        `Assoc
-          [ "name", `String ("js:" ^ nm); "import", `List [ `String "js"; `String nm ] ]
+        { name = "js:" ^ nm
+        ; root = false
+        ; export = None
+        ; import = Some ("js", nm)
+        ; reaches = []
+        }
         :: l)
       primitives
       []
   in
-  let all_entries = prim_entries @ base_entries in
-  let find_field assoc key =
-    List.find_map ~f:(fun (k, v) -> if String.equal k key then Some v else None) assoc
+  let base_dep_entries =
+    List.map
+      ~f:(fun entry ->
+        let assoc = Yojson.Basic.Util.to_assoc entry in
+        let name =
+          Yojson.Basic.Util.to_string
+            (Option.value ~default:`Null (find_field assoc "name"))
+        in
+        let root =
+          match find_field assoc "root" with
+          | Some (`Bool b) -> b
+          | _ -> false
+        in
+        let export =
+          match find_field assoc "export" with
+          | Some (`String s) -> Some s
+          | _ -> None
+        in
+        let import =
+          match find_field assoc "import" with
+          | Some (`List [ `String m; `String n ]) -> Some (m, n)
+          | _ -> None
+        in
+        let reaches =
+          match find_field assoc "reaches" with
+          | Some (`List l) -> List.map ~f:Yojson.Basic.Util.to_string l
+          | _ -> []
+        in
+        { name; root; export; import; reaches })
+      base_entries
   in
-  List.map
-    ~f:(fun entry ->
-      let assoc = Yojson.Basic.Util.to_assoc entry in
-      let name =
-        Yojson.Basic.Util.to_string
-          (Option.value ~default:`Null (find_field assoc "name"))
-      in
-      let root =
-        match find_field assoc "root" with
-        | Some (`Bool b) -> b
-        | _ -> false
-      in
-      let export =
-        match find_field assoc "export" with
-        | Some (`String s) -> Some s
-        | _ -> None
-      in
-      let import =
-        match find_field assoc "import" with
-        | Some (`List [ `String m; `String n ]) -> Some (m, n)
-        | _ -> None
-      in
-      let reaches =
-        match find_field assoc "reaches" with
-        | Some (`List l) -> List.map ~f:Yojson.Basic.Util.to_string l
-        | _ -> []
-      in
-      { name; root; export; import; reaches })
-    all_entries
+  prim_entries @ base_dep_entries
 
 (* Main DCE function *)
 let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~output_file =
