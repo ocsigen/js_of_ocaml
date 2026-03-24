@@ -24,8 +24,6 @@ open Stdlib
 type refs =
   { mutable funcs : int list
   ; mutable types : int list
-  ; mutable tables : int list
-  ; mutable mems : int list
   ; mutable globals : int list
   ; mutable elems : int list
   ; mutable datas : int list
@@ -33,15 +31,7 @@ type refs =
   }
 
 let create_refs () =
-  { funcs = []
-  ; types = []
-  ; tables = []
-  ; mems = []
-  ; globals = []
-  ; elems = []
-  ; datas = []
-  ; tags = []
-  }
+  { funcs = []; types = []; globals = []; elems = []; datas = []; tags = [] }
 
 let collector code =
   let get pos = Char.code (String.get code pos) in
@@ -112,16 +102,8 @@ let collector code =
     refs.types <- idx :: refs.types;
     pos'
   in
-  let tableidx refs pos =
-    let pos', idx = collect_uint pos in
-    refs.tables <- idx :: refs.tables;
-    pos'
-  in
-  let memidx refs pos =
-    let pos', idx = collect_uint pos in
-    refs.mems <- idx :: refs.mems;
-    pos'
-  in
+  let tableidx _refs pos = int pos in
+  let memidx _refs pos = int pos in
   let globalidx refs pos =
     let pos', idx = collect_uint pos in
     refs.globals <- idx :: refs.globals;
@@ -169,14 +151,9 @@ let collector code =
     let c = get pos in
     if c >= 64 && c < 128 then pos |> valtype refs else pos |> signed_typeidx refs
   in
-  let memarg refs pos =
+  let memarg _refs pos =
     let pos', c = uint32 pos in
-    if c < 64
-    then (
-      (* implicit mem 0 *)
-      refs.mems <- 0 :: refs.mems;
-      pos' |> int)
-    else pos' |> memidx refs |> int
+    if c < 64 then pos' |> int else pos' |> int |> int
   in
   let rec instructions refs pos =
     match get pos with
@@ -671,20 +648,6 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
   (* Parse data count section *)
   let data_count = Wasm_link.Read.data_count file_contents in
 
-  (* Build import index: (module, name) -> (kind, index) *)
-  let import_by_module_name = Poly.Hashtbl.create 128 in
-  let register_imports kind imports =
-    Array.iteri
-      ~f:(fun i (imp : Wasm_link.import) ->
-        Poly.Hashtbl.replace import_by_module_name (imp.module_, imp.name) (kind, i))
-      imports
-  in
-  register_imports Wasm_link.Func intf.imports.func;
-  register_imports Wasm_link.Table intf.imports.table;
-  register_imports Wasm_link.Mem intf.imports.mem;
-  register_imports Wasm_link.Global intf.imports.global;
-  register_imports Wasm_link.Tag intf.imports.tag;
-
   (* Build export index: name -> (kind, index) *)
   let export_by_name = String.Hashtbl.create 128 in
   Wasm_link.iter_exportable_info
@@ -716,8 +679,6 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
   (* Reachability sets *)
   let func_reachable = Array.make total_func_count false in
   let type_reachable = Array.make type_count false in
-  let table_reachable = Array.make total_table_count false in
-  let mem_reachable = Array.make total_mem_count false in
   let global_reachable = Array.make total_global_count false in
   let elem_reachable = Array.make elem_count false in
   let data_reachable = Array.make data_count false in
@@ -741,12 +702,6 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
       type_reachable.(idx) <- true;
       Queue.push idx worklist_type)
   in
-  let mark_table idx =
-    if idx >= 0 && idx < total_table_count then table_reachable.(idx) <- true
-  in
-  let mark_mem idx =
-    if idx >= 0 && idx < total_mem_count then mem_reachable.(idx) <- true
-  in
   let mark_global idx =
     if idx >= 0 && idx < total_global_count && not global_reachable.(idx)
     then (
@@ -769,8 +724,6 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
        remap through type_mapping to deduped space.
        Negative indices are abstract heap types, not real type indices. *)
     List.iter ~f:(fun idx -> if idx >= 0 then mark_type type_mapping.(idx)) r.types;
-    List.iter ~f:mark_table r.tables;
-    List.iter ~f:mark_mem r.mems;
     List.iter ~f:mark_global r.globals;
     List.iter ~f:mark_elem r.elems;
     List.iter ~f:mark_data r.datas;
@@ -787,10 +740,10 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
             | Some export_name -> (
                 match String.Hashtbl.find_opt export_by_name export_name with
                 | Some (Wasm_link.Func, idx) -> mark_func idx
-                | Some (Wasm_link.Table, idx) -> mark_table idx
-                | Some (Wasm_link.Mem, idx) -> mark_mem idx
                 | Some (Wasm_link.Global, idx) -> mark_global idx
                 | Some (Wasm_link.Tag, idx) -> mark_tag idx
+                | Some ((Wasm_link.Table | Wasm_link.Mem), _) ->
+                    () (* tables and memories are always kept *)
                 | None -> ())
             | None -> ())
         | None -> ())
@@ -814,10 +767,10 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
         ~f:(fun (_name, idx) ->
           match kind with
           | Wasm_link.Func -> mark_func idx
-          | Wasm_link.Table -> mark_table idx
-          | Wasm_link.Mem -> mark_mem idx
           | Wasm_link.Global -> mark_global idx
-          | Wasm_link.Tag -> mark_tag idx)
+          | Wasm_link.Tag -> mark_tag idx
+          | Wasm_link.Table | Wasm_link.Mem ->
+              () (* tables and memories are always kept *))
         lst)
     exports;
 
@@ -888,6 +841,64 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
       (* Active segments: kinds 0, 2, 4, 6 (even numbers) *)
       if kind land 1 = 0 then mark_elem i
     done;
+
+  (* Parse data section for positions and active segment seeding *)
+  let data_offsets = Array.make data_count (0, 0) in
+  let has_data_section = Wasm_link.Read.find_section file_contents 11 in
+  if has_data_section
+  then (
+    let n = Wasm_link.Read.uint file_contents.ch in
+    assert (n = data_count);
+    let _, _, scan_expr = collector contents in
+    (* Read LEB128 uint and return (position after, value) *)
+    let read_leb128 pos =
+      let p = ref pos in
+      let v = ref 0 in
+      let shift = ref 0 in
+      let b = ref (Char.code contents.[!p]) in
+      while !b >= 128 do
+        v := !v lor ((!b land 0x7f) lsl !shift);
+        shift := !shift + 7;
+        incr p;
+        b := Char.code contents.[!p]
+      done;
+      v := !v lor (!b lsl !shift);
+      incr p;
+      !p, !v
+    in
+    (* Skip past a byte vector (LEB128 count + that many bytes) *)
+    let skip_bytes pos =
+      let pos, byte_count = read_leb128 pos in
+      pos + byte_count
+    in
+    for i = 0 to n - 1 do
+      let start_pos = Wasm_link.Read.pos_in file_contents.ch in
+      let kind = Char.code contents.[start_pos] in
+      let end_pos =
+        match kind with
+        | 0 ->
+            (* Active, memory 0: seed as root, scan offset expr *)
+            mark_data i;
+            let r = create_refs () in
+            let expr_end = scan_expr r (start_pos + 1) in
+            process_refs r;
+            skip_bytes expr_end
+        | 1 ->
+            (* Passive: not a root *)
+            skip_bytes (start_pos + 1)
+        | 2 ->
+            (* Active, explicit memory: seed as root *)
+            mark_data i;
+            let memidx_end, _ = read_leb128 (start_pos + 1) in
+            let r = create_refs () in
+            let expr_end = scan_expr r memidx_end in
+            process_refs r;
+            skip_bytes expr_end
+        | _ -> failwith (Printf.sprintf "Bad data segment kind %d" kind)
+      in
+      data_offsets.(i) <- (start_pos, end_pos - start_pos);
+      Wasm_link.Read.seek_in file_contents.ch end_pos
+    done);
 
   (* Worklist propagation *)
 
@@ -1049,25 +1060,29 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
       continue := true;
       let idx = Queue.pop worklist_elem in
       scan_elem_segment idx
+    done;
+    (* Check declarative element segments (kinds 3, 7).
+       These must be kept if they declare any function that is reachable
+       (for ref.func validation). When kept, all functions in the segment
+       become reachable via scan_elem_segment on the next iteration. *)
+    for i = 0 to elem_count - 1 do
+      if not elem_reachable.(i)
+      then
+        let start_pos, _size = elem_offsets.(i) in
+        let kind = Char.code contents.[start_pos] in
+        if kind = 3 || kind = 7
+        then (
+          let _, scan_elem, _ = collector contents in
+          let r = create_refs () in
+          ignore (scan_elem r start_pos);
+          let any_reachable =
+            List.exists
+              ~f:(fun idx ->
+                idx >= 0 && idx < total_func_count && func_reachable.(idx))
+              r.funcs
+          in
+          if any_reachable then mark_elem i)
     done
-  done;
-
-  (* Mark all memories as reachable (MVP simplification) *)
-  for i = 0 to total_mem_count - 1 do
-    mem_reachable.(i) <- true
-  done;
-  (* Mark all tables as reachable (MVP simplification) *)
-  for i = 0 to total_table_count - 1 do
-    table_reachable.(i) <- true
-  done;
-  (* Mark all data segments as reachable (MVP simplification) *)
-  for i = 0 to data_count - 1 do
-    data_reachable.(i) <- true
-  done;
-  (* Mark all element segments as reachable (MVP simplification).
-     Declarative segments are needed for ref.func validation. *)
-  for i = 0 to elem_count - 1 do
-    elem_reachable.(i) <- true
   done;
 
   (* Build mapping arrays: old index -> new dense index, -1 if removed *)
@@ -1093,12 +1108,9 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
   let func_map, _new_import_func_count, new_defined_func_count =
     build_map func_reachable total_func_count import_func_count
   in
-  let table_map, _new_import_table_count, new_defined_table_count =
-    build_map table_reachable total_table_count import_table_count
-  in
-  let mem_map, _new_import_mem_count, _new_defined_mem_count =
-    build_map mem_reachable total_mem_count import_mem_count
-  in
+  (* Tables and memories are always kept — use identity maps *)
+  let table_map = Array.init ~f:Fun.id total_table_count in
+  let mem_map = Array.init ~f:Fun.id total_mem_count in
   let global_map, _new_import_global_count, new_defined_global_count =
     build_map global_reachable total_global_count import_global_count
   in
@@ -1182,6 +1194,19 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
     List.map ~f:(fun rt -> Array.map ~f:remap_subtype rt) kept_rec_types
   in
 
+  (* Index remapping for the scanner *)
+  let maps =
+    { Wasm_link.Scan.typ = type_map
+    ; func = func_map
+    ; table = table_map
+    ; mem = mem_map
+    ; global = global_map
+    ; elem = elem_map
+    ; data = data_map
+    ; tag = tag_map
+    }
+  in
+
   (* Now write the output module *)
   let out_ch = open_out_bin output_file in
   output_string out_ch Wasm_link.Read.header;
@@ -1199,10 +1224,9 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
         let reachable =
           match kind with
           | Wasm_link.Func -> func_reachable.(i)
-          | Wasm_link.Table -> table_reachable.(i)
-          | Wasm_link.Mem -> mem_reachable.(i)
           | Wasm_link.Global -> global_reachable.(i)
           | Wasm_link.Tag -> tag_reachable.(i)
+          | Wasm_link.Table | Wasm_link.Mem -> true
         in
         if reachable
         then
@@ -1239,20 +1263,9 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
   Wasm_link.Write.functions buf new_func_types;
   Wasm_link.add_section out_ch ~id:3 buf;
 
-  (* Section 4: tables - rewrite with scan *)
-  if has_table_section && new_defined_table_count > 0
+  (* Section 4: tables — always kept, rewrite with scan *)
+  if has_table_section && defined_table_count > 0
   then (
-    let maps =
-      { Wasm_link.Scan.typ = type_map
-      ; func = func_map
-      ; table = table_map
-      ; mem = mem_map
-      ; global = global_map
-      ; elem = elem_map
-      ; data = data_map
-      ; tag = tag_map
-      }
-    in
     ignore (Wasm_link.Read.find_section file_contents 4);
     let n = Wasm_link.Read.uint file_contents.ch in
     let positions = Wasm_link.Scan.create_position_data () in
@@ -1260,17 +1273,10 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
     Wasm_link.Scan.table_section positions maps buf contents ~count:n section_start;
     Wasm_link.add_section out_ch ~id:4 ~count:n buf);
 
-  (* Section 5: memories *)
-  let kept_memories =
-    Array.of_list
-      (Array.to_list memories
-      |> List.mapi ~f:(fun i m -> i, m)
-      |> List.filter_map ~f:(fun (i, m) ->
-          if mem_reachable.(import_mem_count + i) then Some m else None))
-  in
-  if Array.length kept_memories > 0
+  (* Section 5: memories — always kept *)
+  if Array.length memories > 0
   then (
-    Wasm_link.Write.memories buf kept_memories;
+    Wasm_link.Write.memories buf memories;
     Wasm_link.add_section out_ch ~id:5 buf);
 
   (* Section 13: tags *)
@@ -1289,17 +1295,6 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
   (* Section 6: globals - rewrite with scan *)
   if has_global_section && new_defined_global_count > 0
   then (
-    let maps =
-      { Wasm_link.Scan.typ = type_map
-      ; func = func_map
-      ; table = table_map
-      ; mem = mem_map
-      ; global = global_map
-      ; elem = elem_map
-      ; data = data_map
-      ; tag = tag_map
-      }
-    in
     ignore (Wasm_link.Read.find_section file_contents 6);
     let n = Wasm_link.Read.uint file_contents.ch in
     let positions = Wasm_link.Scan.create_position_data () in
@@ -1331,46 +1326,35 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
       Wasm_link.add_section out_ch ~id:6 ~count:!count buf);
 
   (* Section 7: exports - remap indices *)
+  let export_buf = Buffer.create 1000 in
   let export_count = ref 0 in
   Wasm_link.iter_exportable_info
     (fun kind lst ->
       List.iter
-        ~f:(fun (_name, idx) ->
+        ~f:(fun (name, idx) ->
           let reachable =
             match kind with
             | Wasm_link.Func -> func_reachable.(idx)
-            | Wasm_link.Table -> table_reachable.(idx)
-            | Wasm_link.Mem -> mem_reachable.(idx)
             | Wasm_link.Global -> global_reachable.(idx)
             | Wasm_link.Tag -> tag_reachable.(idx)
+            | Wasm_link.Table | Wasm_link.Mem -> true
           in
-          if reachable then incr export_count)
+          if reachable
+          then (
+            let map =
+              match kind with
+              | Wasm_link.Func -> func_map
+              | Wasm_link.Table -> table_map
+              | Wasm_link.Mem -> mem_map
+              | Wasm_link.Global -> global_map
+              | Wasm_link.Tag -> tag_map
+            in
+            incr export_count;
+            Wasm_link.Write.export export_buf kind name map.(idx)))
         lst)
     exports;
   Wasm_link.Write.uint buf !export_count;
-  Wasm_link.iter_exportable_info
-    (fun kind lst ->
-      List.iter
-        ~f:(fun (name, idx) ->
-          let map =
-            match kind with
-            | Wasm_link.Func -> func_map
-            | Wasm_link.Table -> table_map
-            | Wasm_link.Mem -> mem_map
-            | Wasm_link.Global -> global_map
-            | Wasm_link.Tag -> tag_map
-          in
-          let reachable =
-            match kind with
-            | Wasm_link.Func -> func_reachable.(idx)
-            | Wasm_link.Table -> table_reachable.(idx)
-            | Wasm_link.Mem -> mem_reachable.(idx)
-            | Wasm_link.Global -> global_reachable.(idx)
-            | Wasm_link.Tag -> tag_reachable.(idx)
-          in
-          if reachable then Wasm_link.Write.export buf kind name map.(idx))
-        lst)
-    exports;
+  Buffer.add_buffer buf export_buf;
   Wasm_link.add_section out_ch ~id:7 buf;
 
   (* Section 8: start *)
@@ -1385,17 +1369,6 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
   (* Section 9: elements - rewrite with scan *)
   if has_elem_section && elem_count > 0
   then (
-    let maps =
-      { Wasm_link.Scan.typ = type_map
-      ; func = func_map
-      ; table = table_map
-      ; mem = mem_map
-      ; global = global_map
-      ; elem = elem_map
-      ; data = data_map
-      ; tag = tag_map
-      }
-    in
     let kept_count = ref 0 in
     for i = 0 to elem_count - 1 do
       if elem_reachable.(i)
@@ -1422,17 +1395,6 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
   (* Section 10: code - rewrite function bodies *)
   let code_pieces = Buffer.create 100000 in
   let resize_data = Wasm_link.Scan.create_resize_data () in
-  let maps =
-    { Wasm_link.Scan.typ = type_map
-    ; func = func_map
-    ; table = table_map
-    ; mem = mem_map
-    ; global = global_map
-    ; elem = elem_map
-    ; data = data_map
-    ; tag = tag_map
-    }
-  in
   Wasm_link.Write.uint code_pieces new_defined_func_count;
   let scan_func = Wasm_link.Scan.func resize_data maps buf contents in
   for i = 0 to defined_func_count - 1 do
@@ -1464,28 +1426,19 @@ let f ~dependencies ~opt_input_sourcemap ~input_file ~opt_output_sourcemap ~outp
       Fs.write_file ~name:output_sm ~contents:sm_contents
   | _ -> ());
 
-  (* Section 11: data *)
-  let has_data_section = Wasm_link.Read.find_section file_contents 11 in
+  (* Section 11: data — selectively write reachable segments *)
   if has_data_section && kept_data_count > 0
   then (
-    let n = Wasm_link.Read.uint file_contents.ch in
-    let maps =
-      { Wasm_link.Scan.typ = type_map
-      ; func = func_map
-      ; table = table_map
-      ; mem = mem_map
-      ; global = global_map
-      ; elem = elem_map
-      ; data = data_map
-      ; tag = tag_map
-      }
-    in
-    Wasm_link.Scan.data_section
-      maps
-      buf
-      contents
-      ~count:n
-      (Wasm_link.Read.pos_in file_contents.ch);
+    let section_buf = Buffer.create 10000 in
+    for i = 0 to data_count - 1 do
+      if data_reachable.(i)
+      then (
+        let start_pos, _size = data_offsets.(i) in
+        Wasm_link.Scan.data_section maps buf contents ~count:1 start_pos;
+        Buffer.add_buffer section_buf buf;
+        Buffer.clear buf)
+    done;
+    Buffer.add_buffer buf section_buf;
     Wasm_link.add_section out_ch ~id:11 ~count:kept_data_count buf);
 
   (* Custom section: name *)
