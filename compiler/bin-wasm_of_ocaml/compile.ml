@@ -33,43 +33,48 @@ let () = Sys.catch_break true
 let update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content sourcemap_file =
   if Option.is_some sourcemap_root || not sourcemap_don't_inline_content
   then (
-    let open Source_map in
-    let source_map =
-      match Source_map.of_file sourcemap_file with
-      | Index _ -> assert false
-      | Standard sm -> sm
-    in
-    assert (List.is_empty (Option.value source_map.sources_content ~default:[]));
-    (* Add source file contents to source map *)
-    let sources_content =
-      if sourcemap_don't_inline_content
-      then None
-      else
-        Some
-          (List.map source_map.sources ~f:(fun file ->
-               if String.equal file Wasm_source_map.blackbox_filename
-               then
-                 Some (Source_map.Source_content.create Wasm_source_map.blackbox_contents)
-               else if Sys.file_exists file && not (Sys.is_directory file)
-               then Some (Source_map.Source_content.create (Fs.read_file file))
-               else None))
-    in
-    let source_map =
-      { source_map with
+    let update_standard (sm : Source_map.Standard.t) =
+      assert (List.is_empty (Option.value sm.sources_content ~default:[]));
+      let sources_content =
+        if sourcemap_don't_inline_content
+        then None
+        else
+          Some
+            (List.map sm.sources ~f:(fun file ->
+                 if String.equal file Wasm_source_map.blackbox_filename
+                 then
+                   Some
+                     (Source_map.Source_content.create Wasm_source_map.blackbox_contents)
+                 else if Sys.file_exists file && not (Sys.is_directory file)
+                 then Some (Source_map.Source_content.create (Fs.read_file file))
+                 else None))
+      in
+      { sm with
         sources_content
       ; sourceroot =
-          (if Option.is_some sourcemap_root then sourcemap_root else source_map.sourceroot)
+          (if Option.is_some sourcemap_root then sourcemap_root else sm.sourceroot)
       ; ignore_list =
           (if
              List.mem
                ~eq:String.equal
                Wasm_source_map.blackbox_filename
-               source_map.sources
+               sm.sources
            then [ Wasm_source_map.blackbox_filename ]
            else [])
       }
     in
-    Source_map.to_file (Standard source_map) sourcemap_file)
+    let source_map =
+      match Source_map.of_file sourcemap_file with
+      | Standard sm -> Source_map.Standard (update_standard sm)
+      | Index idx ->
+          Source_map.Index
+            { idx with
+              sections =
+                List.map idx.sections ~f:(fun s ->
+                    { s with Source_map.Index.map = update_standard s.map })
+            }
+    in
+    Source_map.to_file source_map sourcemap_file)
 
 let opt_with action x f =
   match x with
