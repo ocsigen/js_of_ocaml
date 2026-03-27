@@ -1162,7 +1162,7 @@ module Generate (Target : Target_sig.S) = struct
           match
             if exact then Global_flow.get_unique_closure ctx.global_flow_info f else None
           with
-          | Some (g, params) ->
+          | Some (g, params) when ctx.live.(Var.idx g) > 0 ->
               let* cl =
                 (* Functions with constant closures ignore their environment. *)
                 match closure with
@@ -1187,7 +1187,7 @@ module Generate (Target : Target_sig.S) = struct
                 ~from:(Typing.return_type ctx.types g)
                 ~into:(Typing.var_type ctx.types x)
                 (return (W.Call (g, args @ [ cl ])))
-          | None -> (
+          | _ -> (
               let funct = Var.fresh () in
               let* closure = tee funct (return closure) in
               let* ty, funct =

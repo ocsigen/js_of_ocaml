@@ -11,7 +11,7 @@
 
 ## Bug fixes
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
-
+* Compiler/wasm: fix crash when compiling some function calls (#2208)
 
 
 
