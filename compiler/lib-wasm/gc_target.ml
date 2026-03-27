@@ -273,6 +273,10 @@ module Type = struct
                     ])
             })
 
+  let empty_closure_type () =
+    register_type "empty_closure" (fun () ->
+        return { supertype = None; final = true; typ = W.Struct [] })
+
   let make_env_type env_type =
     List.map
       ~f:(fun typ ->
@@ -1112,25 +1116,26 @@ module Closure = struct
     let* curry_fun = if arity > 1 then need_curry_fun ~cps ~arity else return f in
     if List.is_empty free_variables
     then
-      if no_code_pointer
-      then Value.unit
-      else
-        let* typ = Type.closure_type ~usage:`Alloc ~cps arity in
-        let name = Code.Var.fork f in
-        let* () =
-          register_global
-            name
-            { mut = false; typ = Type.value }
-            (W.StructNew
-               ( typ
-               , if no_code_pointer
-                 then []
-                 else
-                   match arity with
-                   | 0 | 1 -> [ W.RefFunc f ]
-                   | _ -> [ RefFunc curry_fun; RefFunc f ] ))
-        in
-        return (W.GlobalGet name)
+      let* typ =
+        if no_code_pointer
+        then Type.empty_closure_type ()
+        else Type.closure_type ~usage:`Alloc ~cps arity
+      in
+      let name = Code.Var.fork f in
+      let* () =
+        register_global
+          name
+          { mut = false; typ = Type.value }
+          (W.StructNew
+             ( typ
+             , if no_code_pointer
+               then []
+               else
+                 match arity with
+                 | 0 | 1 -> [ W.RefFunc f ]
+                 | _ -> [ RefFunc curry_fun; RefFunc f ] ))
+      in
+      return (W.GlobalGet name)
     else
       let* env_type = expression_list variable_type free_variables in
       let env_type_id =

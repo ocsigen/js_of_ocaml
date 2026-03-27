@@ -11,8 +11,8 @@
 
 ## Bug fixes
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
+* Compiler/wasm: preserve physical identity of empty closures (#2207)
 * Compiler/wasm: fix crash when compiling some function calls (#2208)
-
 
 
 # 6.3.2 (2026-02-15) - Lille
