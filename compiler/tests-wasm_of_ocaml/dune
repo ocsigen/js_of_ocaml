@@ -7,6 +7,10 @@
   (flags :standard --disable optcall --no-inline)))
 
 (tests
+ (names fun_eq)
+ (modes js wasm))
+
+(tests
  (names gh2093)
  (modes wasm)
  (enabled_if
