@@ -10,6 +10,7 @@
 * Runtime/wasm: optimized some bigstring primitives (#2144)
 
 ## Bug fixes
+* Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)
 * Compiler/wasm: fix crash when compiling some function calls (#2208)

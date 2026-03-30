@@ -43,7 +43,9 @@ let rewrite_body unboxed_refs body ref_contents subst =
       ~f:(fun (ref_contents, subst, acc) i ->
         match i with
         | Let (x, Block (0, [| y |], (NotArray | Unknown), Maybe_mutable))
-          when Var.Set.mem x unboxed_refs -> Var.Map.add x y ref_contents, subst, acc
+          when Var.Set.mem x unboxed_refs ->
+            let y = try Var.Map.find y subst with Not_found -> y in
+            Var.Map.add x y ref_contents, subst, acc
         | Let (y, Field (x, 0, Non_float)) when Var.Map.mem x ref_contents ->
             ref_contents, Var.Map.add y (Var.Map.find x ref_contents) subst, acc
         | Offset_ref (x, n) when Var.Map.mem x ref_contents ->
@@ -59,6 +61,7 @@ let rewrite_body unboxed_refs body ref_contents subst =
                       ] ) )
               :: acc )
         | Set_field (x, 0, Non_float, y) when Var.Map.mem x ref_contents ->
+            let y = try Var.Map.find y subst with Not_found -> y in
             Var.Map.add x y ref_contents, subst, acc
         | Event _ -> (
             ( ref_contents
