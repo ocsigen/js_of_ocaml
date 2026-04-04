@@ -29,7 +29,7 @@ type t =
   ; resolve_sourcemap_url : bool
   ; linkall : bool
   ; mklib : bool
-  ; toplevel : bool
+  ; dynlink : bool
   }
 
 let options =
@@ -78,7 +78,7 @@ let options =
     in
     Arg.(value & flag & info [ "a" ] ~doc)
   in
-  let toplevel =
+  let dynlink =
     let doc = "Enable dynlink/toplevel support." in
     Arg.(value & flag & info [ "dynlink"; "toplevel" ] ~doc)
   in
@@ -94,7 +94,7 @@ let options =
       js_files
       linkall
       mklib
-      toplevel =
+      dynlink =
     let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
     let source_map =
       if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
@@ -128,7 +128,7 @@ let options =
       ; resolve_sourcemap_url
       ; linkall
       ; mklib
-      ; toplevel
+      ; dynlink
       }
   in
   let t =
@@ -145,7 +145,7 @@ let options =
       $ js_files
       $ linkall
       $ mklib
-      $ toplevel)
+      $ dynlink)
   in
   Term.ret t
 
@@ -157,7 +157,14 @@ let f
     ; js_files
     ; linkall
     ; mklib
-    ; toplevel = _
+    ; dynlink =
+        _
+        (* TODO: when [dynlink] (i.e. --dynlink/--toplevel) is false, the linker
+         could optimize global references. Currently, [caml_register_global] and
+         [caml_get_global] use string-keyed lookups on [caml_global_data]. Since
+         the linker already knows the full symbol table, it could replace these
+         with index-based accesses ([caml_register_global_by_index]) and skip
+         emitting [caml_set_link_info] entirely. *)
     } =
   Config.set_target `JavaScript;
   Jsoo_cmdline.Arg.eval common;
