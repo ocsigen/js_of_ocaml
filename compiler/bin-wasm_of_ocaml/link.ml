@@ -86,7 +86,18 @@ let options () =
   in
   Term.ret t
 
-let f { common; output_file; files; linkall; dynlink = _; enable_source_maps; mklib } =
+let f
+    { common
+    ; output_file
+    ; files
+    ; linkall
+    ; dynlink =
+        _
+        (* TODO: when [dynlink] is false, the linker could optimize references
+         to globals, since the full set of modules is known at link time. *)
+    ; enable_source_maps
+    ; mklib
+    } =
   Js_of_ocaml_compiler.Config.set_target `Wasm;
   Jsoo_cmdline.Arg.eval common;
   Link.link ~output_file ~linkall ~mklib ~enable_source_maps ~embedded_files:[] ~files
