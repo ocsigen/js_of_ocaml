@@ -37,6 +37,7 @@ type st =
   ; visited_variables : int Code.Var.Map.t
   ; globals : Code.Var.Set.t
   ; closures : Closure_conversion.closure Code.Var.Map.t
+  ; constants : Code.Var.Set.t
   }
 
 let threshold = 1000
@@ -80,7 +81,8 @@ let traverse_expression x e st =
         ~f:(fun st x -> use x st)
         ~init:st
         (Code.Var.Map.find x st.closures).Closure_conversion.free_variables
-  | Constant _ | Special _ -> st
+  | Constant _ -> { st with constants = Code.Var.Set.add x st.constants }
+  | Special _ -> st
   | Prim (_, args) ->
       List.fold_left
         ~f:(fun st a ->
@@ -104,6 +106,25 @@ let traverse_block p st pc =
   let st = List.fold_left ~f:(fun st x -> declare x st) ~init:st b.Code.params in
   List.fold_left ~f:(fun st i -> traverse_instruction st i) ~init:st b.Code.body
 
+let available x st = Code.Var.Set.mem x st.globals || Code.Var.Set.mem x st.constants
+
+let propagate_instruction st i =
+  match i with
+  | Code.Let (x, Block (_, a, _, _)) when not (Code.Var.Set.mem x st.globals) ->
+      if Array.for_all ~f:(fun v -> available v st) a then globalize st x else st
+  | Code.Let (x, Closure _) when not (Code.Var.Set.mem x st.globals) -> (
+      match Code.Var.Map.find x st.closures with
+      | { free_variables; _ } ->
+          if List.for_all ~f:(fun v -> available v st) free_variables
+          then globalize st x
+          else st
+      | exception Not_found -> st)
+  | _ -> st
+
+let propagate_block p st pc =
+  let b = Code.Addr.Map.find pc p.Code.blocks in
+  List.fold_left ~f:(fun st i -> propagate_instruction st i) ~init:st b.Code.body
+
 let f p g closures =
   let l = Structure.blocks_in_reverse_post_order g in
   let in_loop = Freevars.find_loops_in_closure p p.Code.start in
@@ -116,7 +137,15 @@ let f p g closures =
         ; visited_variables = Code.Var.Map.empty
         ; globals = Code.Var.Set.empty
         ; closures
+        ; constants = Code.Var.Set.empty
         }
+      l
+  in
+  let st =
+    List.fold_left
+      ~f:(fun st pc ->
+        if Code.Addr.Map.mem pc in_loop then st else propagate_block p st pc)
+      ~init:st
       l
   in
   st.globals
