@@ -433,6 +433,46 @@ let is_small_constant e =
   | W.GlobalGet name -> global_is_constant name
   | _ -> return false
 
+let rec check_is_constant st (e : W.expression) =
+  match e with
+  | Const _ | RefFunc _ | RefNull _ -> true
+  | RefI31 e -> check_is_constant st e
+  | GlobalGet x -> (
+      match Var.Map.find_opt x st.context.constant_globals with
+      | Some { init = Some _; _ } -> true
+      | Some { init = None; _ } | None -> false)
+  | ArrayNewFixed (_, args) | StructNew (_, args) ->
+      List.for_all ~f:(fun x -> check_is_constant st x) args
+  | RefCast (_, e) | ExternConvertAny e | AnyConvertExtern e -> check_is_constant st e
+  | UnOp _
+  | BinOp _
+  | I32WrapI64 _
+  | I64ExtendI32 _
+  | F32DemoteF64 _
+  | F64PromoteF32 _
+  | LocalGet _
+  | LocalTee _
+  | BlockExpr _
+  | Call _
+  | Seq _
+  | Pop _
+  | Call_ref _
+  | I31Get _
+  | ArrayNew _
+  | ArrayNewData _
+  | ArrayGet _
+  | ArrayLen _
+  | StructGet _
+  | RefTest _
+  | RefEq _
+  | Br_on_cast _
+  | Br_on_cast_fail _
+  | Br_on_null _
+  | IfExpr _
+  | Try _ -> false
+
+let is_constant_expression e st = check_is_constant st e, st
+
 let load x =
   let* x = var x in
   match x with
@@ -576,23 +616,28 @@ let rec store ?(always = false) ?typ x e =
         let* b = should_make_global x in
         if b
         then
-          let* () =
-            let* b = global_is_registered x in
-            if b
-            then return ()
+          let* b = global_is_registered x in
+          if b
+          then instr (GlobalSet (x, e))
+          else
+            let* typ =
+              match typ with
+              | Some typ -> return typ
+              | None -> (
+                  if always
+                  then value_type
+                  else
+                    let* typ = expression_type e in
+                    match typ with
+                    | None -> value_type
+                    | Some typ -> return typ)
+            in
+            let* is_const = if always then return false else is_constant_expression e in
+            if is_const
+            then
+              let* () = register_constant x (W.GlobalGet x) in
+              register_global x { mut = false; typ } e
             else
-              let* typ =
-                match typ with
-                | Some typ -> return typ
-                | None -> (
-                    if always
-                    then value_type
-                    else
-                      let* typ = expression_type e in
-                      match typ with
-                      | None -> value_type
-                      | Some typ -> return typ)
-              in
               let* default, typ', cast = default_value typ in
               let* () =
                 register_constant
@@ -601,9 +646,10 @@ let rec store ?(always = false) ?typ x e =
                   | Some typ -> W.RefCast (typ, W.GlobalGet x)
                   | None -> W.GlobalGet x)
               in
-              register_global ~constant:true x { mut = true; typ = typ' } default
-          in
-          instr (GlobalSet (x, e))
+              let* () =
+                register_global ~constant:true x { mut = true; typ = typ' } default
+              in
+              instr (GlobalSet (x, e))
         else
           let* typ =
             match typ with
