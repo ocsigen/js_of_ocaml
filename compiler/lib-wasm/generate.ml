@@ -2446,6 +2446,7 @@ module Generate (Target : Target_sig.S) = struct
         functions
     in
     global_context.init_code <- [];
+    let functions = Hoist_loops.f ~toplevel:toplevel_name functions in
     global_context.other_fields <- List.rev_append functions global_context.other_fields;
     let js_code = StringMap.bindings global_context.fragments in
     global_context.fragments <- StringMap.empty;
