@@ -23,7 +23,12 @@ type ctx =
   ; uninitialized : Code.Var.Set.t ref
   }
 
+let create_context () =
+  { initialized = Code.Var.Set.empty; uninitialized = ref Code.Var.Set.empty }
+
 let mark_initialized ctx i = ctx.initialized <- Code.Var.Set.add i ctx.initialized
+
+let is_initialized ctx i = Code.Var.Set.mem i ctx.initialized
 
 let fork_context { initialized; uninitialized } = { initialized; uninitialized }
 
@@ -217,9 +222,7 @@ let has_default (ty : Wasm_ast.heap_type) =
   | Func | Extern | Array | Struct | None_ | Type _ -> false
 
 let f ~param_names ~locals instrs =
-  let ctx =
-    { initialized = Code.Var.Set.empty; uninitialized = ref Code.Var.Set.empty }
-  in
+  let ctx = create_context () in
   List.iter ~f:(fun x -> mark_initialized ctx x) param_names;
   List.iter
     ~f:(fun (var, typ) ->

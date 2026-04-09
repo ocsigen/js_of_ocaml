@@ -16,20 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type ctx
+(** Extract loops from a function into separate helper functions.
 
-val create_context : unit -> ctx
+    This avoids Wasm engines unnecessarily tiering up (compiling to optimised
+    native code) a large function that is called only once but contains a loop.
+    Only the small helper functions containing the loops will be tiered up. *)
 
-val mark_initialized : ctx -> Code.Var.t -> unit
-
-val is_initialized : ctx -> Code.Var.t -> bool
-
-val fork_context : ctx -> ctx
-
-val scan_instruction : ctx -> Wasm_ast.instruction -> unit
-
-val f :
-     param_names:Wasm_ast.var list
-  -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
-  -> Wasm_ast.instruction list
-  -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
+val f : toplevel:Code.Var.t -> Wasm_ast.module_field list -> Wasm_ast.module_field list
