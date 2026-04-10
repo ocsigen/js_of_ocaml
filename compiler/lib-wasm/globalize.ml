@@ -111,7 +111,17 @@ let available x st = Code.Var.Set.mem x st.globals || Code.Var.Set.mem x st.cons
 let propagate_instruction st i =
   match i with
   | Code.Let (x, Block (_, a, _, _)) when not (Code.Var.Set.mem x st.globals) ->
-      if Array.for_all ~f:(fun v -> available v st) a then globalize st x else st
+      (* Globalize a block when most of its fields are available
+         (global or constant). Available fields go into the global's
+         initializer; the rest are patched via [array.set] in the
+         function body. The [+1] keeps 2-field cons cells eligible
+         (one non-available field is allowed), which matters for
+         cascading: globalizing an inner block makes its variable
+         available for outer blocks. *)
+      let non_available =
+        Array.fold_right ~f:(fun v n -> if available v st then n else n + 1) a ~init:0
+      in
+      if 3 * non_available <= Array.length a + 1 then globalize st x else st
   | Code.Let (x, Closure _) when not (Code.Var.Set.mem x st.globals) -> (
       match Code.Var.Map.find x st.closures with
       | { free_variables; _ } ->
