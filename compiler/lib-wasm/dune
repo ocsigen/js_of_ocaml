@@ -6,4 +6,4 @@
  (flags
   (:standard -w -7-37 -safe-string -open Js_of_ocaml_compiler))
  (preprocess
-  (pps sedlex.ppx)))
+  (pps ppx_optcomp_light sedlex.ppx)))
