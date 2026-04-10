@@ -354,7 +354,7 @@ module Import_info = struct
   let make name crc =
     Import_info.create
       (Compilation_unit.Name.of_string name)
-      ~crc_with_unit:(Option.map (fun c -> Compilation_unit.of_string name, c) crc)
+      ~crc_with_unit:(Option.map ~f:(fun c -> Compilation_unit.of_string name, c) crc)
 
   let to_list = Array.to_list
 
@@ -423,15 +423,17 @@ end
 module Cmo_format = struct
   type t = Cmo_format.compilation_unit_descr
 
-  let name (t : t) = Compilation_unit.full_path_as_string t.cu_name
+  let name (t : t) = Global_name.Compunit (Compilation_unit.full_path_as_string t.cu_name)
 
   let requires (t : t) =
-    List.map t.cu_required_compunits ~f:Compilation_unit.full_path_as_string
+    List.map t.cu_required_compunits ~f:(fun u ->
+        Global_name.Compunit (Compilation_unit.full_path_as_string u))
 
   let provides (t : t) =
     List.filter_map t.cu_reloc ~f:(fun ((reloc : Cmo_format.reloc_info), _) ->
         match reloc with
-        | Reloc_setcompunit u -> Some (Compilation_unit.full_path_as_string u)
+        | Reloc_setcompunit u ->
+            Some (Global_name.Compunit (Compilation_unit.full_path_as_string u))
         | Reloc_getcompunit _ | Reloc_getpredef _ | Reloc_literal _ | Reloc_primitive _ ->
             None)
 

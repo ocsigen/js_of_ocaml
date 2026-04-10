@@ -601,6 +601,10 @@ let ocaml_version =
   Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun major minor patchlevel ->
       Version (major, minor, patchlevel))
 
+let is_oxcaml = false [@@if not oxcaml]
+
+let is_oxcaml = true [@@if oxcaml]
+
 let default_settings = [ "name-wasm-functions", Bool true ]
 
 let f ~variables ~filename ~contents:text =
@@ -611,6 +615,7 @@ let f ~variables ~filename ~contents:text =
       (default_settings @ variables)
   in
   let variables = StringMap.add "ocaml_version" ocaml_version variables in
+  let variables = StringMap.add "oxcaml" (Bool is_oxcaml) variables in
   let lexbuf = Sedlexing.Utf8.from_string text in
   Sedlexing.set_filename lexbuf filename;
   try
