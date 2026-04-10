@@ -723,7 +723,9 @@ let build_dynlink_init ~to_link ~all_primitives =
            symb
            (Global_name.Glob_compunit (Compunit name))));
   (* Build CRCs: no real digests available at link time *)
-  let crcs = List.map ~f:(fun name -> name, None) unit_names in
+  let crcs =
+    List.map ~f:(fun name -> Ocaml_compiler.Import_info.make name None) unit_names
+  in
   (* Collect all primitives *)
   let primitives = StringSet.union (Primitive.get_external ()) all_primitives in
   let num_globals =

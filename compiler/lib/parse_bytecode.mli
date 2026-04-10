@@ -83,12 +83,12 @@ val predefined_exceptions : unit -> Code.program * Unit_info.t
 
 type bytesections =
   { symb : Ocaml_compiler.Symtable.GlobalMap.t
-  ; crcs : (string * Digest.t option) list
+  ; crcs : Ocaml_compiler.Import_info.table
   ; prim : string list
   ; dlpt : string list
   }
 
-val read_crcs : in_channel -> (string * Digest.t option) list
+val read_crcs : in_channel -> Ocaml_compiler.Import_info.t list
 
 val link_info :
      symbols:Ocaml_compiler.Symtable.GlobalMap.t
