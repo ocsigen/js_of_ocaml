@@ -54,6 +54,8 @@ module Import_info : sig
 
   type table
 
+  val make : string -> Digest.t option -> t
+
   val to_list : table -> t list
 
   val of_list : t list -> table
