@@ -22,49 +22,61 @@ let rec constant_of_const c : Code.constant =
   let open Lambda in
   match c with
   | ((Const_base (Const_int i)) [@if ocaml_version < (5, 5, 0)])
-  | ((Const_int i) [@if ocaml_version >= (5, 5, 0)])
-  | ((Const_base
-        ( Const_int8 i
-        | Const_int16 i
-        | Const_untagged_int i
-        | Const_untagged_int8 i
-        | Const_untagged_int16 i ))
-     [@if oxcaml]) -> Int (Targetint.of_int_warning_on_overflow i)
+  | ((Const_int i) [@if ocaml_version >= (5, 5, 0)]) ->
+      Int (Targetint.of_int_warning_on_overflow i)
   | ((Const_base (Const_char c)) [@if ocaml_version < (5, 5, 0)])
-  | ((Const_char c) [@if ocaml_version >= (5, 5, 0)])
-  | ((Const_base (Const_untagged_char c)) [@if oxcaml]) ->
+  | ((Const_char c) [@if ocaml_version >= (5, 5, 0)]) ->
       Int (Targetint.of_int_exn (Char.code c))
   | ((Const_base (Const_string (s, _, _))) [@if ocaml_version < (5, 5, 0)]) -> String s
   | ((Const_base (Const_float s)) [@if ocaml_version < (5, 5, 0)])
-  | ((Const_float s) [@if ocaml_version >= (5, 5, 0)])
-  | ((Const_base (Const_unboxed_float s)) [@if oxcaml]) ->
+  | ((Const_float s) [@if ocaml_version >= (5, 5, 0)]) ->
       Float (Int64.bits_of_float (float_of_string s))
-  | ((Const_base (Const_float32 s | Const_unboxed_float32 s)) [@if oxcaml]) ->
-      Float32 (Int64.bits_of_float (Float32.of_string s |> Float32.to_float))
   | ((Const_base (Const_int32 i)) [@if ocaml_version < (5, 5, 0)])
-  | ((Const_int32 i) [@if ocaml_version >= (5, 5, 0)])
-  | ((Const_base (Const_unboxed_int32 i)) [@if oxcaml]) -> Int32 i
+  | ((Const_int32 i) [@if ocaml_version >= (5, 5, 0)]) -> Int32 i
   | ((Const_base (Const_int64 i)) [@if ocaml_version < (5, 5, 0)])
-  | ((Const_int64 i) [@if ocaml_version >= (5, 5, 0)])
-  | ((Const_base (Const_unboxed_int64 i)) [@if oxcaml]) -> Int64 i
+  | ((Const_int64 i) [@if ocaml_version >= (5, 5, 0)]) -> Int64 i
   | ((Const_base (Const_nativeint i)) [@if ocaml_version < (5, 5, 0)])
-  | ((Const_nativeint i) [@if ocaml_version >= (5, 5, 0)])
-  | ((Const_base (Const_unboxed_nativeint i)) [@if oxcaml]) ->
+  | ((Const_nativeint i) [@if ocaml_version >= (5, 5, 0)]) ->
       NativeInt (Int32.of_nativeint_warning_on_overflow i)
   | Const_immstring s -> String s
   | Const_float_array sl ->
       let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
       Float_array (Array.of_list l)
-  | ((Const_float_block sl) [@if oxcaml]) ->
-      let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
-      Float_array (Array.of_list l)
   | Const_block (tag, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-  | ((Const_mixed_block (tag, _, l)) [@if oxcaml]) ->
+[@@if not oxcaml]
+
+let rec constant_of_const c : Code.constant =
+  let open Lambda in
+  match c with
+  | Const_base (Const_int i)
+  | Const_base
+      ( Const_int8 i
+      | Const_int16 i
+      | Const_untagged_int i
+      | Const_untagged_int8 i
+      | Const_untagged_int16 i ) -> Int (Targetint.of_int_warning_on_overflow i)
+  | Const_base (Const_char c) | Const_base (Const_untagged_char c) ->
+      Int (Targetint.of_int_exn (Char.code c))
+  | Const_base (Const_string (s, _, _)) -> String s
+  | Const_base (Const_float s) | Const_base (Const_unboxed_float s) ->
+      Float (Int64.bits_of_float (float_of_string s))
+  | Const_base (Const_float32 s | Const_unboxed_float32 s) ->
+      Float32 (Int64.bits_of_float (Float32.of_string s |> Float32.to_float))
+  | Const_base (Const_int32 i) | Const_base (Const_unboxed_int32 i) -> Int32 i
+  | Const_base (Const_int64 i) | Const_base (Const_unboxed_int64 i) -> Int64 i
+  | Const_base (Const_nativeint i) | Const_base (Const_unboxed_nativeint i) ->
+      NativeInt (Int32.of_nativeint_warning_on_overflow i)
+  | Const_immstring s -> String s
+  | Const_float_array sl | Const_float_block sl ->
+      let l = List.map ~f:(fun f -> Int64.bits_of_float (float_of_string f)) sl in
+      Float_array (Array.of_list l)
+  | Const_block (tag, l) | Const_mixed_block (tag, _, l) ->
       let l = Array.of_list (List.map l ~f:constant_of_const) in
       Tuple (tag, l, Unknown)
-  | (Const_null [@if oxcaml]) -> Null_
+  | Const_null -> Null_
+[@@if oxcaml]
 
 type module_or_not =
   | Module
@@ -322,6 +334,8 @@ module Import_info = struct
 
   type table = t list
 
+  let make name crc = name, crc
+
   let to_list l = l
 
   let of_list l = l
@@ -336,6 +350,11 @@ module Import_info = struct
   type t = Import_info.t
 
   type table = t array
+
+  let make name crc =
+    Import_info.create
+      (Compilation_unit.Name.of_string name)
+      ~crc_with_unit:(Option.map (fun c -> Compilation_unit.of_string name, c) crc)
 
   let to_list = Array.to_list
 
