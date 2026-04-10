@@ -473,6 +473,32 @@ let rec check_is_constant st (e : W.expression) =
 
 let is_constant_expression e st = check_is_constant st e, st
 
+let partial_const_init x e st =
+  match e with
+  | W.ArrayNewFixed (ty, args) ->
+      let placeholder =
+        match (Var.Hashtbl.find st.context.types ty).typ with
+        | Array { typ = Value (Ref { typ = Eq; _ }); _ } -> W.RefI31 (W.Const (I32 0l))
+        | Array { typ = Value F64; _ } -> W.Const (F64 0.)
+        | _ -> assert false
+      in
+      let init_args, patches, _ =
+        List.fold_left
+          ~f:(fun (init_args, patches, i) a ->
+            if check_is_constant st a
+            then a :: init_args, patches, i + 1
+            else
+              ( placeholder :: init_args
+              , W.ArraySet (ty, W.GlobalGet x, W.Const (I32 (Int32.of_int i)), a)
+                :: patches
+              , i + 1 ))
+          ~init:([], [], 0)
+          args
+      in
+      assert (not (List.is_empty patches));
+      Some (W.ArrayNewFixed (ty, List.rev init_args), List.rev patches), st
+  | _ -> None, st
+
 let load x =
   let* x = var x in
   match x with
@@ -638,18 +664,25 @@ let rec store ?(always = false) ?typ x e =
               let* () = register_constant x (W.GlobalGet x) in
               register_global x { mut = false; typ } e
             else
-              let* default, typ', cast = default_value typ in
-              let* () =
-                register_constant
-                  x
-                  (match cast with
-                  | Some typ -> W.RefCast (typ, W.GlobalGet x)
-                  | None -> W.GlobalGet x)
-              in
-              let* () =
-                register_global ~constant:true x { mut = true; typ = typ' } default
-              in
-              instr (GlobalSet (x, e))
+              let* partial = if always then return None else partial_const_init x e in
+              match partial with
+              | Some (init_expr, patches) ->
+                  let* () = register_constant x (W.GlobalGet x) in
+                  let* () = register_global x { mut = false; typ } init_expr in
+                  instrs patches
+              | None ->
+                  let* default, typ', cast = default_value typ in
+                  let* () =
+                    register_constant
+                      x
+                      (match cast with
+                      | Some typ -> W.RefCast (typ, W.GlobalGet x)
+                      | None -> W.GlobalGet x)
+                  in
+                  let* () =
+                    register_global ~constant:true x { mut = true; typ = typ' } default
+                  in
+                  instr (GlobalSet (x, e))
         else
           let* typ =
             match typ with
