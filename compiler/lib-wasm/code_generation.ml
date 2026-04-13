@@ -227,6 +227,16 @@ let get_global name =
     | _ -> None)
 
 let register_import ?(allow_tail_call = true) ?(import_module = "env") ~name typ st =
+  let name =
+    (*
+       Workaround for use of caml_sys_exit with wrong arity in
+       OxCaml's native dynlink.
+       https://github.com/oxcaml/oxcaml/blob/1f2201cda5bea6ed25d4b5ac7116ac1baf3f161f/otherlibs/dynlink/native/dynlink.ml#L40-L55 *)
+    match name, typ with
+    | "caml_sys_exit", Wasm_ast.Fun { params = [ _; _ ]; _ } ->
+        "caml_nat_dynlink_dummy_function"
+    | _ -> name
+  in
   let x =
     try
       let x, typ' =
