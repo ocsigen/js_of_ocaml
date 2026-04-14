@@ -186,6 +186,7 @@ and collect_instrs acc l = List.fold_left ~f:collect_instr ~init:acc l
 type ctx =
   { var_types : W.value_type Code.Var.Hashtbl.t
   ; mutable new_fields : W.module_field list
+  ; mutable extra_locals : (Code.Var.t * W.value_type) list
   }
 
 let lookup_types ctx vars =
@@ -238,18 +239,41 @@ let extract_loop ctx ~is_initialized _ty body =
       ; body = loop_instr :: extra_body
       }
   in
-  let result_types = List.map ~f:snd modified_with_types in
-  let extra_body = List.map ~f:(fun (v, _) -> W.Push (LocalGet v)) modified_with_types in
-  let signature = { W.params = param_types; result = result_types } in
-  ctx.new_fields <- make_helper ~signature ~extra_body :: ctx.new_fields;
   match modified_with_types with
-  | [] -> [ W.CallInstr (helper_name, args) ]
-  | [ (v, _) ] -> [ W.LocalSet (v, Call (helper_name, args)) ]
+  | [] ->
+      let signature = { W.params = param_types; result = [] } in
+      ctx.new_fields <- make_helper ~signature ~extra_body:[] :: ctx.new_fields;
+      [ W.CallInstr (helper_name, args) ]
+  | [ (v, vt) ] ->
+      let signature = { W.params = param_types; result = [ vt ] } in
+      ctx.new_fields <-
+        make_helper ~signature ~extra_body:[ Push (LocalGet v) ] :: ctx.new_fields;
+      [ W.LocalSet (v, Call (helper_name, args)) ]
   | _ ->
-      (* Multi-value: call leaves results on the stack, pop in
-         reverse order (last pushed = top of stack = first popped). *)
-      W.CallInstr (helper_name, args)
-      :: List.rev_map ~f:(fun (v, t) -> W.LocalSet (v, Pop t)) modified_with_types
+      let ret_type_name = Code.Var.fresh_n "loop_ret" in
+      let fields =
+        List.map ~f:(fun (_, t) -> { W.mut = false; typ = W.Value t }) modified_with_types
+      in
+      ctx.new_fields <-
+        W.Type
+          [ { name = ret_type_name; typ = Struct fields; supertype = None; final = true }
+          ]
+        :: ctx.new_fields;
+      let ret_ref_type = W.Ref { nullable = false; typ = Type ret_type_name } in
+      let signature = { W.params = param_types; result = [ ret_ref_type ] } in
+      let struct_new =
+        W.StructNew
+          (ret_type_name, List.map ~f:(fun (v, _) -> W.LocalGet v) modified_with_types)
+      in
+      ctx.new_fields <-
+        make_helper ~signature ~extra_body:[ Push struct_new ] :: ctx.new_fields;
+      let tmp = Code.Var.fresh_n "loop_ret" in
+      ctx.extra_locals <- (tmp, ret_ref_type) :: ctx.extra_locals;
+      W.LocalSet (tmp, Call (helper_name, args))
+      :: List.mapi
+           ~f:(fun i (v, _) ->
+             W.LocalSet (v, StructGet (None, ret_type_name, i, LocalGet tmp)))
+           modified_with_types
 
 let fork_il_ctx = Initialize_locals.fork_context
 
@@ -298,7 +322,7 @@ let f ~toplevel fields =
             func.param_names
             func.signature.params;
           List.iter ~f:(fun (v, t) -> Code.Var.Hashtbl.add var_types v t) func.locals;
-          let ctx = { var_types; new_fields = [] } in
+          let ctx = { var_types; new_fields = []; extra_locals = [] } in
           let il_ctx = Initialize_locals.create_context () in
           List.iter ~f:(Initialize_locals.mark_initialized il_ctx) func.param_names;
           List.iter
@@ -309,7 +333,9 @@ let f ~toplevel fields =
               | Ref { nullable = false; _ } -> ())
             func.locals;
           let body = transform_instrs ctx il_ctx func.body in
-          let func' = W.Function { func with body } in
+          let func' =
+            W.Function { func with body; locals = func.locals @ ctx.extra_locals }
+          in
           List.rev ctx.new_fields @ [ func' ]
       | _ -> [ field ])
     fields
