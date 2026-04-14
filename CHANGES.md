@@ -12,6 +12,7 @@
 * Runtime/wasm: optimized some bigstring primitives (#2144)
 * Lib: many additional `Dom_html` bindings (#2221)
 * Lib: add `Performance` module (#2221)
+* Put more values into global variables (#2211)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
