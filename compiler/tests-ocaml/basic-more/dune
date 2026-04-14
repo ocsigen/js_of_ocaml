@@ -30,5 +30,7 @@
  (build_if
   (and
    (>= %{ocaml_version} 5.2)
+   ; OxCaml has a different evaluation order
+   ; See ocaml/ocaml#10653
    (not %{oxcaml_supported})))
  (modes js wasm))
