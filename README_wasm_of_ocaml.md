@@ -17,6 +17,8 @@ one can enable the CPS transformation from `js_of_ocaml` by passing the
 `--effects=jspi` and emit code utilizing
 - [the JavaScript-Promise Integration extension](https://github.com/WebAssembly/js-promise-integration/blob/main/proposals/js-promise-integration/Overview.md).
 
+Effects work by default (using JSPI) in Chrome 137, Node.js 25, and higher versions. For other browsers, use `--effects=cps`.
+
 ## Installation and usage
 
 Installation and usage documentation can be found in [the js_of_ocaml manual](https://ocsigen.org/js_of_ocaml/dev/manual/wasm_overview).

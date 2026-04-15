@@ -74,8 +74,9 @@ OCaml 5.x code using effect handlers can be compiled in two ways:
 * **{{{--effects=jspi}}}** (default) - Uses the [[https://github.com/WebAssembly/js-promise-integration|JavaScript-Promise Integration extension]]
 
 The CPS transformation is not the default since the generated code is slower,
-larger, and less readable. However, the JSPI extension is not yet enabled by
-default in web browsers, and performing effects is slower when using it.
+larger, and less readable. However, the JSPI extension is currently only
+available in Chrome 137 and Node.js 25 (or higher), and performing effects
+is slower when using it. Use {{{--effects=cps}}} for other browsers.
 
 ==@@id="js-bindings"@@ Binding with JavaScript libraries
 
