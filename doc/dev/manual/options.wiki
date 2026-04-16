@@ -43,7 +43,7 @@ For **js_of_ocaml** (default: {{{disabled}}}):
 * **{{{double-translation}}}** - Keep both direct and CPS versions; choose at runtime
 
 For **wasm_of_ocaml** (default: {{{jspi}}}):
-* **{{{jspi}}}** - JavaScript-Promise Integration (default)
+* **{{{jspi}}}** - JavaScript-Promise Integration (default). Available in Chrome 137, Node.js 25, and higher. Use {{{cps}}} for other browsers. Performing effects is slower than with {{{cps}}}.
 * **{{{cps}}}** - CPS transformation for effect support
 * **{{{disabled}}}** - No effect handler support
 
