@@ -60,7 +60,10 @@ end)
    changed. But it could cause bad asynchronicity in case the worker
    does a big computation just after a bufferized write. And it would
    still need some kind of active waiting to limit throughput. All in
-   all this spinwait is not that ugly. *)
+   all this spinwait is not that ugly.
+
+   TODO: replace with requestAnimationFrame or per-channel batching
+   (see #833 review). *)
 let last = ref 0.
 
 let rec wait () =

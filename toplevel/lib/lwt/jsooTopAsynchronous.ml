@@ -198,7 +198,7 @@ and do_reset_worker () =
       worker.wakeners <- IntMap.empty;
       worker.counter <- 0;
       worker.reset_worker <- do_reset_worker ();
-      (Obj.magic worker.worker)##.onmessage := Js.wrap_callback (onmessage worker);
+      worker.worker##.onmessage := Dom.handler (onmessage worker);
       Lwt_list.iter_p
         (fun name -> import_cmis_js worker name >>= fun _ -> Lwt.return_unit)
         imported
@@ -241,7 +241,7 @@ let create
     ; pp_stderr
     }
   in
-  (Obj.magic worker.worker)##.onmessage := Js.wrap_callback (onmessage worker);
+  worker.worker##.onmessage := Dom.handler (onmessage worker);
   post worker @@ Init cmis_prefix
   >>= fun _ -> worker.after_init worker >>= fun () -> Lwt.return worker
 
@@ -273,7 +273,7 @@ let reset worker ?(timeout = fun () -> never_ending) () =
 
 let check worker ?(setenv = false) code = post worker @@ Check (setenv, code)
 
-let execute worker ?ppf_code ?(print_outcome = false) ~ppf_answer code =
+let execute worker ?ppf_code ?(print_outcome = true) ~ppf_answer code =
   let ppf_code = map_option (create_fd worker) ppf_code in
   let ppf_answer = create_fd worker ppf_answer in
   post worker @@ Execute (ppf_code, print_outcome, ppf_answer, code)
@@ -282,20 +282,15 @@ let execute worker ?ppf_code ?(print_outcome = false) ~ppf_answer code =
   close_fd worker ppf_answer;
   Lwt.return result
 
-let use_string worker ?filename ?(print_outcome = false) ~ppf_answer code =
+let use_string worker ?filename ?(print_outcome = true) ~ppf_answer code =
   let ppf_answer = create_fd worker ppf_answer in
   post worker @@ Use_string (filename, print_outcome, ppf_answer, code)
   >>= fun result ->
   close_fd worker ppf_answer;
   Lwt.return result
 
-let use_mod_string
-    worker
-    ?(print_outcome = false)
-    ~ppf_answer
-    ~modname
-    ?sig_code
-    impl_code =
+let use_mod_string worker ?(print_outcome = true) ~ppf_answer ~modname ?sig_code impl_code
+    =
   let ppf_answer = create_fd worker ppf_answer in
   post worker @@ Use_mod_string (ppf_answer, print_outcome, modname, sig_code, impl_code)
   >>= fun result ->

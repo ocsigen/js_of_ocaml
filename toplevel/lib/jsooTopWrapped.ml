@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open! Js_of_ocaml
 open! Js_of_ocaml_compiler
 open! Js_of_ocaml_compiler.Stdlib
 module JsooTopPpx = Js_of_ocaml_toplevel_common.JsooTopPpx
@@ -129,7 +128,7 @@ let normalize code =
   let len = String.length content in
   if String.is_empty content
   then content
-  else if len > 2 && Char.equal content.[len - 2] ';' && Char.equal content.[len - 1] ';'
+  else if len >= 2 && Char.equal content.[len - 2] ';' && Char.equal content.[len - 1] ';'
   then content ^ "\n"
   else content ^ " ;;\n"
 
