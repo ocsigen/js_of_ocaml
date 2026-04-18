@@ -141,6 +141,7 @@ let handler : type a. a host_msg -> a return = function
   | Init prefix ->
       Worker.import_scripts [ prefix ^ "stdlib.cmis.js" ];
       JsooTop.initialize ();
+      JsooTopWrapped.initialize ();
       return_unit_success
   | Reset ->
       clear_fds ();

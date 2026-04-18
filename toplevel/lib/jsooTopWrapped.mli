@@ -34,6 +34,11 @@ and loc =
   ; loc_end : int * int
   }
 
+val initialize : unit -> unit
+(** Install the custom warning reporter and apply the [Includemod]/Marshal
+    workaround. Idempotent; must be called before any of the functions
+    below are used. *)
+
 include
   JsooTopIntf.Wrapped
     with type toplevel := unit

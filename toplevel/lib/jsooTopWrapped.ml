@@ -44,27 +44,34 @@ let convert_loc loc =
   let _file2, line2, col2 = Location.get_pos_info loc.Location.loc_end in
   { loc_start = line1, col1; loc_end = line2, col2 }
 
-let () =
-  let warning_reporter = !Location.warning_reporter in
-  Location.warning_reporter :=
-    fun loc w ->
-      match warning_reporter loc w with
-      | Some report ->
-          let buf = Buffer.create 503 in
-          let ppf = Format.formatter_of_buffer buf in
-          let printer = !Location.report_printer () in
-          printer.pp printer ppf report;
-          let msg = Buffer.contents buf in
-          let loc = convert_loc loc in
-          warnings := { msg; locs = [ loc ] } :: !warnings;
-          Some report
-      | None -> None
+let initialized = ref false
 
-(* Workaround Marshal bug triggered by includemod.ml:607 *)
-let () = Clflags.error_size := 0
-
-(* Disable inlining of JSOO which may blow the JS stack *)
-let () = Js_of_ocaml_compiler.Config.Flag.disable "inline"
+let initialize () =
+  if not !initialized
+  then (
+    initialized := true;
+    let warning_reporter = !Location.warning_reporter in
+    (Location.warning_reporter :=
+       fun loc w ->
+         match warning_reporter loc w with
+         | Some report ->
+             let buf = Buffer.create 503 in
+             let ppf = Format.formatter_of_buffer buf in
+             let printer = !Location.report_printer () in
+             printer.pp printer ppf report;
+             let msg = Buffer.contents buf in
+             let loc = convert_loc loc in
+             warnings := { msg; locs = [ loc ] } :: !warnings;
+             Some report
+         | None -> None);
+    (* [Includemod] attaches expanded signature context to module-type
+       mismatch error records. That context can hold closures (e.g. from
+       [Location.report_printer]), which are not marshallable — so when
+       [JsooTopAsynchronous] ships an error across a Worker boundary via
+       [Json.output] (built on [Marshal]) it raises "function value".
+       Setting [error_size := 0] disables the enrichment; errors still
+       report the mismatch, just without the fancy expansion. *)
+    Clflags.error_size := 0)
 
 let return_success e = Success (e, !warnings)
 

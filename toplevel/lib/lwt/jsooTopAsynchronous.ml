@@ -39,28 +39,6 @@ let return_success e = Lwt.return (JsooTopWrapped.Success (e, []))
 
 let return_unit_success = return_success ()
 
-(* let return_error e = Lwt.return (JsooTopWrapped.Error (e, [])) *)
-(* let return_exn exn = return_error (JsooTopWrapped.error_of_exn exn) *)
-
-(* let wrap pp = *)
-(* let buf = Buffer.create 503 in *)
-(* let flush () = *)
-(* let s = Buffer.contents buf in *)
-(* if s <> "" then begin *)
-(* Buffer.reset buf; *)
-(* pp s *)
-(* end in *)
-(* Format.make_formatter (Buffer.add_substring buf) flush *)
-
-(* let () = *)
-(* Location.register_error_of_exn *)
-(* (function *)
-(* | Js.Error e -> *)
-(* Console.console##log(e##stack); *)
-(* let msg = Js.to_string e##message in *)
-(* Some { Location.msg; if_highlight = msg; sub = []; loc = Location.none } *)
-(* | _ -> None) *)
-
 module IntMap = Map.Make (Int)
 
 let map_option f o =
