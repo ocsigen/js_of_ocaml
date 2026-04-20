@@ -52,7 +52,7 @@ let initialize () =
     let warning_reporter = !Location.warning_reporter in
     (* Capture warnings as first-class data and return [None] so the
        default Warnings machinery does not *also* render them through
-       [report_printer]. Consumers of [JsooTopWrapped] get warnings on
+       [report_printer]. Consumers of [Wrapped] get warnings on
        the result; if we returned [Some], they would additionally be
        printed to the toplevel's error stream (stderr in the worker,
        [pp_stderr] on the host), producing duplicated output. *)
@@ -73,7 +73,7 @@ let initialize () =
     (* [Includemod] attaches expanded signature context to module-type
        mismatch error records. That context can hold closures (e.g. from
        [Location.report_printer]), which are not marshallable — so when
-       [JsooTopAsynchronous] ships an error across a Worker boundary via
+       [Async] ships an error across a Worker boundary via
        [Json.output] (built on [Marshal]) it raises "function value".
        Setting [error_size := 0] disables the enrichment; errors still
        report the mismatch, just without the fancy expansion. *)
@@ -182,7 +182,7 @@ let execute () ?ppf_code ?(print_outcome = true) ~ppf_answer code =
   warnings := [];
   let rec loop () =
     let phr = !Toploop.parse_toplevel_phrase lb in
-    let phr = JsooTopPpx.preprocess_phrase phr in
+    let phr = Ppx.preprocess_phrase phr in
     let success = Toploop.execute_phrase print_outcome ppf_answer phr in
     Format.pp_print_flush ppf_answer ();
     if success then loop () else return_success false
@@ -209,7 +209,7 @@ let use_string () ?(filename = "//toplevel//") ?(print_outcome = true) ~ppf_answ
         if not (Toploop.execute_phrase print_outcome ppf_answer phr)
         then raise Exit
         else Format.pp_print_flush ppf_answer ())
-      (List.map ~f:JsooTopPpx.preprocess_phrase (!Toploop.parse_use_file lb));
+      (List.map ~f:Ppx.preprocess_phrase (!Toploop.parse_use_file lb));
     flush_all ();
     return_success true
   with
@@ -250,9 +250,9 @@ let use_mod_string () ?(print_outcome = true) ~ppf_answer ~modname ?sig_code imp
     if not (String.equal (String.capitalize_ascii modname) modname)
     then
       invalid_arg
-        "JsooTopWrapped.use_mod_string: the module name must start with a capital letter.";
+        "Wrapped.use_mod_string: the module name must start with a capital letter.";
     let phr =
-      JsooTopPpx.preprocess_phrase @@ parse_mod_string modname sig_code impl_code
+      Ppx.preprocess_phrase @@ parse_mod_string modname sig_code impl_code
     in
     let res = Toploop.execute_phrase print_outcome ppf_answer phr in
     Format.pp_print_flush ppf_answer ();
@@ -284,7 +284,7 @@ let check () ?(setenv = false) code =
       List.fold_left
         ~f:check_phrase
         ~init:!Toploop.toplevel_env
-        (List.map ~f:JsooTopPpx.preprocess_phrase (!Toploop.parse_use_file lb))
+        (List.map ~f:Ppx.preprocess_phrase (!Toploop.parse_use_file lb))
     in
     if setenv then Toploop.toplevel_env := env;
     return_success ()

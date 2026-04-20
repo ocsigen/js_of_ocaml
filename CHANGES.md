@@ -1,9 +1,9 @@
 # dev
 
 ## Features/Changes
-* Toplevel: new `JsooTopWrapped` and `JsooTopAsynchronous` APIs returning errors
-  and warnings as first-class values; adds a new `js_of_ocaml-toplevel.lwt`
-  sublibrary for running the toplevel in a WebWorker (#833)
+* Toplevel: new `Wrapped` and `Async` APIs returning errors and warnings as
+  first-class values; adds a new `js_of_ocaml-toplevel.lwt` sublibrary for
+  running the toplevel in a WebWorker (#833)
 * Compiler: initial support for OCaml 5.5.0~alpha0 (#2197)
 * Compiler: added a variable coalescing pass (#2166)
 * Wasm dynlink/toplevel support (#2186)

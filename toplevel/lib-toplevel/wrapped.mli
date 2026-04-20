@@ -40,7 +40,7 @@ val initialize : unit -> unit
     {!use_string} or {!use_mod_string}. {!error_of_exn} does not require it. *)
 
 include
-  JsooTopIntf.Wrapped
+  Wrapped_intf.Wrapped
     with type toplevel := unit
      and type 'a result := 'a result
      and type output := Format.formatter

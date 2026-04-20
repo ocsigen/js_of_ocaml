@@ -18,14 +18,14 @@
  *)
 open Js_of_ocaml
 open! Js_of_ocaml_toplevel
-open JsooTopWorkerIntf
+open Worker_msg
 
-type 'a result = 'a JsooTopWrapped.result Lwt.t
+type 'a result = 'a Wrapped.result Lwt.t
 
 let ( >>= ) = Lwt.bind
 
 let ( >>? ) o f =
-  let open! JsooTopWrapped in
+  let open! Wrapped in
   o
   >>= function
   | Error (err, w) -> Lwt.return (Error (err, w))
@@ -35,14 +35,14 @@ let ( >>? ) o f =
       | Error (err, w') -> Lwt.return (Error (err, w @ w'))
       | Success (x, w') -> Lwt.return (Success (x, w @ w')))
 
-let return_success e = Lwt.return (JsooTopWrapped.Success (e, []))
+let return_success e = Lwt.return (Wrapped.Success (e, []))
 
 let return_unit_success = return_success ()
 
 module IntMap = Map.Make (Int)
 
 type u =
-  | U : 'a msg_ty * 'a JsooTopWrapped.result Lwt.u * 'a JsooTopWrapped.result Lwt.t -> u
+  | U : 'a msg_ty * 'a Wrapped.result Lwt.u * 'a Wrapped.result Lwt.t -> u
 
 type output = string -> unit
 
@@ -50,7 +50,7 @@ type toplevel =
   { cmis_prefix : string
   ; js_file : string
   ; mutable imported : string list
-  ; mutable pending_imports : (string * unit JsooTopWrapped.result Lwt.t) list
+  ; mutable pending_imports : (string * unit Wrapped.result Lwt.t) list
   ; mutable worker : (Js.js_string Js.t, Js.js_string Js.t) Worker.worker Js.t
   ; mutable wakeners : u IntMap.t
   ; mutable counter : int
@@ -93,23 +93,23 @@ let onmessage worker (ev : _ Worker.messageEvent Js.t) =
       | Some (U (ty_u, u, _)) ->
           worker.wakeners <- IntMap.remove id worker.wakeners;
           (match check_equal ty_u ty_v with
-          | Eq -> Lwt.wakeup u (JsooTopWrapped.Success (v, w))
+          | Eq -> Lwt.wakeup u (Wrapped.Success (v, w))
           | exception Not_equal ->
               Console.console##warn
                 (Js.string (Printf.sprintf "Unexpected wakeners (%d)" id));
               let err =
-                { JsooTopWrapped.msg =
+                { Wrapped.msg =
                     Printf.sprintf "Worker returned a value of unexpected type for request %d" id
                 ; locs = []
                 }
               in
-              Lwt.wakeup u (JsooTopWrapped.Error (err, w)));
+              Lwt.wakeup u (Wrapped.Error (err, w)));
           Js._false)
   | ReturnError (id, e, w) -> (
       try
         let (U (_, u, _)) = IntMap.find id worker.wakeners in
         worker.wakeners <- IntMap.remove id worker.wakeners;
-        Lwt.wakeup u (JsooTopWrapped.Error (e, w));
+        Lwt.wakeup u (Wrapped.Error (e, w));
         Js._false
       with Not_found ->
         Console.console##warn (Js.string (Printf.sprintf "Missing wakeners (%d)" id));
@@ -131,7 +131,7 @@ let never_ending =
     [onmessage] by calling [Lwt.wakeup]. They should never end with
     an exception, unless canceled. When canceled, the worker is
     killed and a new one is spawned. *)
-let rec post : type a. toplevel -> a host_msg -> a JsooTopWrapped.result Lwt.t =
+let rec post : type a. toplevel -> a host_msg -> a Wrapped.result Lwt.t =
  fun worker msg ->
   let msg_id = worker.counter in
   let msg_ty = ty_of_host_msg msg in
@@ -243,12 +243,12 @@ let reset worker ?(timeout = fun () -> never_ending) () =
     ; (timeout >>= fun () -> Lwt.return `Timeout)
     ]
   >>= function
-  | `Reset (JsooTopWrapped.Success ((), _)) ->
+  | `Reset (Wrapped.Success ((), _)) ->
       Lwt.cancel timeout;
       worker.after_init worker
-  | `Reset (JsooTopWrapped.Error (err, _)) ->
+  | `Reset (Wrapped.Error (err, _)) ->
       Lwt.cancel timeout;
-      worker.pp_stderr err.JsooTopWrapped.msg;
+      worker.pp_stderr err.Wrapped.msg;
       worker.reset_worker worker
   | `Timeout ->
       (* Not canceling the Reset thread, but manually resetting. *)

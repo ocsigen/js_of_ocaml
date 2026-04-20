@@ -40,8 +40,8 @@ type (_, _) eq = Eq : ('a, 'a) eq
 
 type toploop_msg =
   | Write : int * string -> toploop_msg (* pseudo file descriptor * content *)
-  | ReturnSuccess : int * 'a msg_ty * 'a * JsooTopWrapped.warning list -> toploop_msg
-  | ReturnError : int * JsooTopWrapped.error * JsooTopWrapped.warning list -> toploop_msg
+  | ReturnSuccess : int * 'a msg_ty * 'a * Wrapped.warning list -> toploop_msg
+  | ReturnError : int * Wrapped.error * Wrapped.warning list -> toploop_msg
 
 let ty_of_host_msg : type t. t host_msg -> t msg_ty = function
   | Init _ -> Unit

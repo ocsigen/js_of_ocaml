@@ -17,6 +17,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module JsooTop = Js_of_ocaml_toplevel_common.JsooTop
-module JsooTopWrapped = Js_of_ocaml_toplevel_common.JsooTopWrapped
-module JsooTopIntf = Js_of_ocaml_toplevel_common.JsooTopIntf
+module Direct = Js_of_ocaml_toplevel_common.Direct
+module Wrapped = Js_of_ocaml_toplevel_common.Wrapped
+module Wrapped_intf = Js_of_ocaml_toplevel_common.Wrapped_intf
+
+module JsooTop = Direct
+[@@deprecated "Renamed to Direct; use Js_of_ocaml_toplevel.Direct."]
+
+module JsooTopWrapped = Wrapped
+[@@deprecated "Renamed to Wrapped; use Js_of_ocaml_toplevel.Wrapped."]
+
+module JsooTopIntf = Wrapped_intf
+[@@deprecated "Renamed to Wrapped_intf; use Js_of_ocaml_toplevel.Wrapped_intf."]

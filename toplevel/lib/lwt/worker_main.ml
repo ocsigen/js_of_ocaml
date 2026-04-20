@@ -19,11 +19,11 @@
 
 open Js_of_ocaml
 open! Js_of_ocaml_toplevel
-open JsooTopWorkerIntf
+open Worker_msg
 
 type 'a return =
-  | ReturnSuccess of 'a * JsooTopWrapped.warning list
-  | ReturnError of JsooTopWrapped.error * JsooTopWrapped.warning list
+  | ReturnSuccess of 'a * Wrapped.warning list
+  | ReturnError of Wrapped.error * Wrapped.warning list
 
 let return_success v w = ReturnSuccess (v, w)
 
@@ -31,9 +31,9 @@ let return_unit_success = return_success () []
 
 let return_error e w = ReturnError (e, w)
 
-let return_exn exn = return_error (JsooTopWrapped.error_of_exn exn) []
+let return_exn exn = return_error (Wrapped.error_of_exn exn) []
 
-let unwrap_result : _ JsooTopWrapped.result -> _ = function
+let unwrap_result : _ Wrapped.result -> _ = function
   | Success (b, w) -> return_success b w
   | Error (err, w) -> return_error err w
 
@@ -126,34 +126,34 @@ let () =
 let handler : type a. a host_msg -> a return = function
   | Init prefix ->
       Worker.import_scripts [ prefix ^ "stdlib.cmis.js" ];
-      JsooTop.initialize ();
-      JsooTopWrapped.initialize ();
+      Direct.initialize ();
+      Wrapped.initialize ();
       return_unit_success
   | Reset ->
       clear_fds ();
       Toploop.initialize_toplevel_env ();
       return_unit_success
   | Check (setenv, code) ->
-      let result = JsooTopWrapped.check () ~setenv code in
+      let result = Wrapped.check () ~setenv code in
       unwrap_result result
   | Execute (fd_code, print_outcome, fd_answer, code) ->
       let ppf_code = Option.map wrap_fd fd_code in
       let ppf_answer = wrap_fd fd_answer in
-      let result = JsooTopWrapped.execute () ?ppf_code ~print_outcome ~ppf_answer code in
+      let result = Wrapped.execute () ?ppf_code ~print_outcome ~ppf_answer code in
       Option.iter close_fd fd_code;
       close_fd fd_answer;
       unwrap_result result
   | Use_string (filename, print_outcome, fd_answer, code) ->
       let ppf_answer = wrap_fd fd_answer in
       let result =
-        JsooTopWrapped.use_string () ?filename ~print_outcome ~ppf_answer code
+        Wrapped.use_string () ?filename ~print_outcome ~ppf_answer code
       in
       close_fd fd_answer;
       unwrap_result result
   | Use_mod_string (fd_answer, print_outcome, modname, sig_code, impl_code) ->
       let ppf_answer = wrap_fd fd_answer in
       let result =
-        JsooTopWrapped.use_mod_string
+        Wrapped.use_mod_string
           ()
           ~ppf_answer
           ~print_outcome
@@ -185,8 +185,8 @@ let () =
     in
     match result with
     | ReturnSuccess (v, w) ->
-        post_message (JsooTopWorkerIntf.ReturnSuccess (id, ty, v, w))
-    | ReturnError (res, w) -> post_message (JsooTopWorkerIntf.ReturnError (id, res, w))
+        post_message (Worker_msg.ReturnSuccess (id, ty, v, w))
+    | ReturnError (res, w) -> post_message (Worker_msg.ReturnError (id, res, w))
   in
   new_directive
     "cmis"

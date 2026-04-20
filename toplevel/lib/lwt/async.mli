@@ -20,7 +20,7 @@ open! Js_of_ocaml_toplevel
 
 type toplevel
 
-type 'a result = 'a JsooTopWrapped.result Lwt.t
+type 'a result = 'a Wrapped.result Lwt.t
 
 type output = string -> unit
 
@@ -35,12 +35,12 @@ val create :
 
 val set_after_init : toplevel -> (toplevel -> unit Lwt.t) -> unit
 
-val import_cmis_js : toplevel -> string -> unit JsooTopWrapped.result Lwt.t
+val import_cmis_js : toplevel -> string -> unit Wrapped.result Lwt.t
 
 val reset : toplevel -> ?timeout:(unit -> unit Lwt.t) -> unit -> unit Lwt.t
 
 include
-  JsooTopIntf.Wrapped
+  Wrapped_intf.Wrapped
     with type toplevel := toplevel
      and type 'a result := 'a result
      and type output := output
