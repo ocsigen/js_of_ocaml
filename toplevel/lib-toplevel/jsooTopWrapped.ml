@@ -19,7 +19,6 @@
 
 open! Js_of_ocaml_compiler
 open! Js_of_ocaml_compiler.Stdlib
-module JsooTopPpx = Js_of_ocaml_toplevel_common.JsooTopPpx
 
 type loc =
   { loc_start : int * int

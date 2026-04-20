@@ -18,5 +18,5 @@
  *)
 
 module JsooTop = Js_of_ocaml_toplevel_common.JsooTop
-module JsooTopWrapped = JsooTopWrapped
-module JsooTopIntf = JsooTopIntf
+module JsooTopWrapped = Js_of_ocaml_toplevel_common.JsooTopWrapped
+module JsooTopIntf = Js_of_ocaml_toplevel_common.JsooTopIntf
