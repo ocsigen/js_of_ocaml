@@ -34,12 +34,6 @@ and loc =
   ; loc_end : int * int
   }
 
-val initialize : unit -> unit
-(** Install the custom warning reporter and apply the [Includemod]/Marshal
-    workaround. Idempotent; must be called (along with {!Direct.initialize},
-    which bootstraps the toploop itself) before {!check}, {!execute},
-    {!use_string} or {!use_mod_string}. {!error_of_exn} does not require it. *)
-
 include
   Wrapped_intf.Wrapped
     with type toplevel := unit

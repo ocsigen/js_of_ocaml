@@ -36,6 +36,8 @@ type 'a result =
   | Success of 'a * warning list
   | Error of error * warning list
 
+(* Module-scoped ref; only ever mutated inside [with_capture], which
+   resets it on entry and restores the previous value on exit. *)
 let warnings = ref []
 
 let convert_loc loc =
@@ -43,41 +45,50 @@ let convert_loc loc =
   let _file2, line2, col2 = Location.get_pos_info loc.Location.loc_end in
   { loc_start = line1, col1; loc_end = line2, col2 }
 
-let initialized = ref false
-
-let initialize () =
-  if not !initialized
-  then (
-    initialized := true;
-    let warning_reporter = !Location.warning_reporter in
-    (* Capture warnings as first-class data and return [None] so the
-       default Warnings machinery does not *also* render them through
-       [report_printer]. Consumers of [Wrapped] get warnings on
-       the result; if we returned [Some], they would additionally be
-       printed to the toplevel's error stream (stderr in the worker,
-       [pp_stderr] on the host), producing duplicated output. *)
-    (Location.warning_reporter :=
-       fun loc w ->
-         match warning_reporter loc w with
-         | Some report ->
-             let buf = Buffer.create 503 in
-             let ppf = Format.formatter_of_buffer buf in
-             let printer = !Location.report_printer () in
-             printer.pp printer ppf report;
-             Format.pp_print_flush ppf ();
-             let msg = Buffer.contents buf in
-             let loc = convert_loc loc in
-             warnings := { msg; locs = [ loc ] } :: !warnings;
-             None
-         | None -> None);
-    (* [Includemod] attaches expanded signature context to module-type
-       mismatch error records. That context can hold closures (e.g. from
-       [Location.report_printer]), which are not marshallable — so when
-       [Async] ships an error across a Worker boundary via
-       [Json.output] (built on [Marshal]) it raises "function value".
-       Setting [error_size := 0] disables the enrichment; errors still
-       report the mismatch, just without the fancy expansion. *)
-    Clflags.error_size := 0)
+(* Install a capturing [Location.warning_reporter] and the Marshal-safe
+   [Clflags.error_size] for the duration of [f], restoring the previous
+   values on exit. Scope captures are per-call instead of permanently
+   overwriting global state, so consumers of [Wrapped] don't leak their
+   reporter/error-size preferences into code that runs between calls. *)
+let with_capture f =
+  let prev_reporter = !Location.warning_reporter in
+  let prev_error_size = !Clflags.error_size in
+  let prev_warnings = !warnings in
+  warnings := [];
+  (* Capture warnings as first-class data and return [None] so the
+     default Warnings machinery does not *also* render them through
+     [report_printer]. Consumers of [Wrapped] get warnings on the
+     result; if we returned [Some], they would additionally be printed
+     to the toplevel's error stream (stderr in the worker, [pp_stderr]
+     on the host), producing duplicated output. *)
+  (Location.warning_reporter :=
+     fun loc w ->
+       match prev_reporter loc w with
+       | Some report ->
+           let buf = Buffer.create 503 in
+           let ppf = Format.formatter_of_buffer buf in
+           let printer = !Location.report_printer () in
+           printer.pp printer ppf report;
+           Format.pp_print_flush ppf ();
+           let msg = Buffer.contents buf in
+           let loc = convert_loc loc in
+           warnings := { msg; locs = [ loc ] } :: !warnings;
+           None
+       | None -> None);
+  (* [Includemod] attaches expanded signature context to module-type
+     mismatch error records. That context can hold closures (e.g. from
+     [Location.report_printer]), which are not marshallable — so when
+     [Async] ships an error across a Worker boundary via [Json.output]
+     (built on [Marshal]) it raises "function value". Setting
+     [error_size := 0] disables the enrichment; errors still report
+     the mismatch, just without the fancy expansion. *)
+  Clflags.error_size := 0;
+  Fun.protect
+    ~finally:(fun () ->
+      Location.warning_reporter := prev_reporter;
+      Clflags.error_size := prev_error_size;
+      warnings := prev_warnings)
+    f
 
 (* Warnings are prepended to [!warnings] as the typechecker walks the
    source, so [!warnings] is in reverse source order. Reverse here so
@@ -172,6 +183,7 @@ let refill_lexbuf s p ppf buffer len =
     len''
 
 let execute () ?ppf_code ?(print_outcome = true) ~ppf_answer code =
+  with_capture @@ fun () ->
   let code = normalize code in
   let lb =
     match ppf_code with
@@ -179,7 +191,6 @@ let execute () ?ppf_code ?(print_outcome = true) ~ppf_answer code =
     | None -> Lexing.from_string code
   in
   init_loc lb "//toplevel//";
-  warnings := [];
   let rec loop () =
     let phr = !Toploop.parse_toplevel_phrase lb in
     let phr = Ppx.preprocess_phrase phr in
@@ -200,9 +211,9 @@ let execute () ?ppf_code ?(print_outcome = true) ~ppf_answer code =
       return_error (error_of_exn exn)
 
 let use_string () ?(filename = "//toplevel//") ?(print_outcome = true) ~ppf_answer code =
+  with_capture @@ fun () ->
   let lb = Lexing.from_string code in
   init_loc lb filename;
-  warnings := [];
   try
     List.iter
       ~f:(fun phr ->
@@ -245,7 +256,7 @@ let parse_mod_string modname sig_code impl_code =
   Ptop_def [ Str.module_ (Mb.mk (Location.mknoloc (Some modname)) m) ]
 
 let use_mod_string () ?(print_outcome = true) ~ppf_answer ~modname ?sig_code impl_code =
-  warnings := [];
+  with_capture @@ fun () ->
   try
     if not (String.equal (String.capitalize_ascii modname) modname)
     then
@@ -276,9 +287,9 @@ let check_phrase env = function
   | Parsetree.Ptop_dir _ -> env
 
 let check () ?(setenv = false) code =
+  with_capture @@ fun () ->
   let lb = Lexing.from_string code in
   init_loc lb "//toplevel//";
-  warnings := [];
   try
     let env =
       List.fold_left
