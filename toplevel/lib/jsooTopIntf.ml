@@ -3,16 +3,16 @@
  * Copyright (C) 2016 OCamlPro
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Library General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, with linking exception;
  * either version 2.1 of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Library General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
@@ -56,11 +56,15 @@ module type Wrapped = sig
       @param print_outcome should the toplevel print the computed
              values and their types ?
 
-      @return [Error err] when parsing or typechecking failed, where
-              [err] contains the error message. It returns [Success true]
-              when the code evaluation finished without uncaught
-              exception, and [Success false] otherwise.
-  *)
+      @return Three outcomes:
+              - [Success true]: every phrase compiled and evaluated
+                without raising.
+              - [Success false]: a phrase was compiled but raised an
+                uncaught exception at evaluation time. The toplevel has
+                already rendered the backtrace to [ppf_answer]; no
+                structured error is returned here.
+              - [Error err]: parsing or typechecking failed before any
+                phrase could run; [err.msg] is the rendered error. *)
 
   val use_string :
        toplevel
@@ -69,8 +73,10 @@ module type Wrapped = sig
     -> ppf_answer:output
     -> string
     -> bool result
-  (** Execute a given source code. The code is parsed and
-      typechecked all at once before to start the evalution.
+  (** Execute a given source code. Unlike {!execute}, the whole buffer
+      is parsed up front (using [Toploop.parse_use_file]); each
+      resulting phrase is then typechecked and evaluated in sequence.
+      Parse errors abort before any phrase runs.
 
       @param filename a faked filename which will be used in error messages
 

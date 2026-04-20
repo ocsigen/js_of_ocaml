@@ -3,16 +3,16 @@
  * Copyright (C) 2016 OCamlPro
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Library General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, with linking exception;
  * either version 2.1 of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Library General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
@@ -51,6 +51,12 @@ let initialize () =
   then (
     initialized := true;
     let warning_reporter = !Location.warning_reporter in
+    (* Capture warnings as first-class data and return [None] so the
+       default Warnings machinery does not *also* render them through
+       [report_printer]. Consumers of [JsooTopWrapped] get warnings on
+       the result; if we returned [Some], they would additionally be
+       printed to the toplevel's error stream (stderr in the worker,
+       [pp_stderr] on the host), producing duplicated output. *)
     (Location.warning_reporter :=
        fun loc w ->
          match warning_reporter loc w with
@@ -59,10 +65,11 @@ let initialize () =
              let ppf = Format.formatter_of_buffer buf in
              let printer = !Location.report_printer () in
              printer.pp printer ppf report;
+             Format.pp_print_flush ppf ();
              let msg = Buffer.contents buf in
              let loc = convert_loc loc in
              warnings := { msg; locs = [ loc ] } :: !warnings;
-             Some report
+             None
          | None -> None);
     (* [Includemod] attaches expanded signature context to module-type
        mismatch error records. That context can hold closures (e.g. from
@@ -73,11 +80,12 @@ let initialize () =
        report the mismatch, just without the fancy expansion. *)
     Clflags.error_size := 0)
 
-let return_success e = Success (e, !warnings)
+(* Warnings are prepended to [!warnings] as the typechecker walks the
+   source, so [!warnings] is in reverse source order. Reverse here so
+   consumers iterate top-to-bottom like every other OCaml tool. *)
+let return_success e = Success (e, List.rev !warnings)
 
-let return_error e = Error (e, !warnings)
-
-(* let return_unit_success = return_success () *)
+let return_error e = Error (e, List.rev !warnings)
 
 (** Error handling *)
 
@@ -97,7 +105,9 @@ let report_error_rec ppf (report : Location.report) =
     }
   in
   printer.pp printer ppf report;
-  List.map ~f:convert_loc !locs
+  (* [locs] was built by prepending in callback order (main, then each
+     submsg), so reverse to hand back [main; sub1; sub2; ...]. *)
+  List.rev_map ~f:convert_loc !locs
 
 let report_error err =
   let buf = Buffer.create 503 in
@@ -125,17 +135,16 @@ let trim_end s =
   in
   let len = String.length s in
   let stop = ref (len - 1) in
-  while !stop > 0 && ws s.[!stop] do
+  while !stop >= 0 && ws s.[!stop] do
     decr stop
   done;
   String.sub s ~pos:0 ~len:(!stop + 1)
 
 let normalize code =
   let content = trim_end code in
-  let len = String.length content in
   if String.is_empty content
   then content
-  else if len >= 2 && Char.equal content.[len - 2] ';' && Char.equal content.[len - 1] ';'
+  else if String.ends_with ~suffix:";;" content
   then content ^ "\n"
   else content ^ " ;;\n"
 
@@ -157,7 +166,7 @@ let refill_lexbuf s p ppf buffer len =
     (match ppf with
     | Some ppf ->
         Format.fprintf ppf "%s" (Bytes.sub_string buffer ~pos:0 ~len:len'');
-        if nl then Format.pp_print_newline ppf ();
+        if nl && len'' = len' then Format.pp_print_newline ppf ();
         Format.pp_print_flush ppf ()
     | None -> ());
     p := !p + len'';
@@ -216,6 +225,10 @@ let use_string () ?(filename = "//toplevel//") ?(print_outcome = true) ~ppf_answ
 let parse_mod_string modname sig_code impl_code =
   let open Parsetree in
   let open Ast_helper in
+  (* [init_loc] mutates [Location.input_name]/[input_lexbuf]; we reset it
+     per sub-parse so positions in the Parsetree are tagged with the
+     right filename. Positions are captured at parse time, so the
+     leftover .mli state after this function returns is benign. *)
   let str =
     let impl_lb = Lexing.from_string impl_code in
     init_loc impl_lb (String.uncapitalize_ascii modname ^ ".ml");
@@ -233,12 +246,12 @@ let parse_mod_string modname sig_code impl_code =
   Ptop_def [ Str.module_ (Mb.mk (Location.mknoloc (Some modname)) m) ]
 
 let use_mod_string () ?(print_outcome = true) ~ppf_answer ~modname ?sig_code impl_code =
-  if not (String.equal (String.capitalize_ascii modname) modname)
-  then
-    invalid_arg
-      "JsooTopWrapped.use_mod_string: the module name must start with a capital letter.";
   warnings := [];
   try
+    if not (String.equal (String.capitalize_ascii modname) modname)
+    then
+      invalid_arg
+        "JsooTopWrapped.use_mod_string: the module name must start with a capital letter.";
     let phr =
       JsooTopPpx.preprocess_phrase @@ parse_mod_string modname sig_code impl_code
     in

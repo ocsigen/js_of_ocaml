@@ -3,16 +3,16 @@
  * Copyright (C) 2016 OCamlPro
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Library General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, with linking exception;
  * either version 2.1 of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Library General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
@@ -42,3 +42,12 @@ type toploop_msg =
   | Write : int * string -> toploop_msg (* pseudo file descriptor * content *)
   | ReturnSuccess : int * 'a msg_ty * 'a * JsooTopWrapped.warning list -> toploop_msg
   | ReturnError : int * JsooTopWrapped.error * JsooTopWrapped.warning list -> toploop_msg
+
+let ty_of_host_msg : type t. t host_msg -> t msg_ty = function
+  | Init _ -> Unit
+  | Reset -> Unit
+  | Check _ -> Unit
+  | Execute _ -> Bool
+  | Use_string _ -> Bool
+  | Use_mod_string _ -> Bool
+  | Import_scripts _ -> Unit

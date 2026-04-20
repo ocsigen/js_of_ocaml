@@ -3,16 +3,16 @@
  * Copyright (C) 2016 OCamlPro
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Library General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, with linking exception;
  * either version 2.1 of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Library General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
@@ -41,16 +41,6 @@ let return_unit_success = return_success ()
 
 module IntMap = Map.Make (Int)
 
-let map_option f o =
-  match o with
-  | None -> None
-  | Some o -> Some (f o)
-
-let iter_option f o =
-  match o with
-  | None -> ()
-  | Some o -> f o
-
 type u =
   | U : 'a msg_ty * 'a JsooTopWrapped.result Lwt.u * 'a JsooTopWrapped.result Lwt.t -> u
 
@@ -60,6 +50,7 @@ type toplevel =
   { cmis_prefix : string
   ; js_file : string
   ; mutable imported : string list
+  ; mutable pending_imports : (string * unit JsooTopWrapped.result Lwt.t) list
   ; mutable worker : (Js.js_string Js.t, Js.js_string Js.t) Worker.worker Js.t
   ; mutable wakeners : u IntMap.t
   ; mutable counter : int
@@ -95,18 +86,24 @@ let onmessage worker (ev : _ Worker.messageEvent Js.t) =
         Console.console##warn (Js.string (Printf.sprintf "Missing channels (%d)" fd));
         Js._false)
   | ReturnSuccess (id, ty_v, v, w) -> (
-      try
-        let (U (ty_u, u, _)) = IntMap.find id worker.wakeners in
-        let Eq = check_equal ty_u ty_v in
-        worker.wakeners <- IntMap.remove id worker.wakeners;
-        Lwt.wakeup u (JsooTopWrapped.Success (v, w));
-        Js._false
-      with
-      | Not_found ->
+      match IntMap.find_opt id worker.wakeners with
+      | None ->
           Console.console##warn (Js.string (Printf.sprintf "Missing wakeners (%d)" id));
           Js._false
-      | Not_equal ->
-          Console.console##warn (Js.string (Printf.sprintf "Unexpected wakeners (%d)" id));
+      | Some (U (ty_u, u, _)) ->
+          worker.wakeners <- IntMap.remove id worker.wakeners;
+          (match check_equal ty_u ty_v with
+          | Eq -> Lwt.wakeup u (JsooTopWrapped.Success (v, w))
+          | exception Not_equal ->
+              Console.console##warn
+                (Js.string (Printf.sprintf "Unexpected wakeners (%d)" id));
+              let err =
+                { JsooTopWrapped.msg =
+                    Printf.sprintf "Worker returned a value of unexpected type for request %d" id
+                ; locs = []
+                }
+              in
+              Lwt.wakeup u (JsooTopWrapped.Error (err, w)));
           Js._false)
   | ReturnError (id, e, w) -> (
       try
@@ -130,15 +127,6 @@ let never_ending =
   (* and not cancellable. *)
   fst (Lwt.wait ())
 
-let ty_of_host_msg : type t. t host_msg -> t msg_ty = function
-  | Init _ -> Unit
-  | Reset -> Unit
-  | Check _ -> Unit
-  | Execute _ -> Bool
-  | Use_string _ -> Bool
-  | Use_mod_string _ -> Bool
-  | Import_scripts _ -> Unit
-
 (** Threads created with [post] will always be wake-uped by
     [onmessage] by calling [Lwt.wakeup]. They should never end with
     an exception, unless canceled. When canceled, the worker is
@@ -148,7 +136,15 @@ let rec post : type a. toplevel -> a host_msg -> a JsooTopWrapped.result Lwt.t =
   let msg_id = worker.counter in
   let msg_ty = ty_of_host_msg msg in
   let t, u = Lwt.task () in
-  Lwt.on_cancel t (fun () -> Lwt.async (fun () -> worker.reset_worker worker));
+  (* Capture [worker.reset_worker] eagerly: if this cancel is fired from
+     inside [terminate] (itself called from the current reset), the field
+     still points to the in-progress closure whose [running] flag is
+     already [false], so the scheduled reset is a no-op. Reading the
+     field lazily at async-fire time would see the fresh closure
+     installed at the end of the reset and trigger a cascade. *)
+  Lwt.on_cancel t (fun () ->
+      let reset = worker.reset_worker in
+      Lwt.async (fun () -> reset worker));
   worker.wakeners <- IntMap.add msg_id (U (msg_ty, u, t)) worker.wakeners;
   worker.counter <- msg_id + 1;
   worker.worker##postMessage (Json.output (msg_id, msg));
@@ -161,10 +157,6 @@ and do_reset_worker () =
     then (
       running := false;
       terminate worker;
-      IntMap.iter
-        (* GRGR: Peut-on 'cancel' directement le Lwt.u ? *)
-        (fun _ (U (_, _, t)) -> Lwt.cancel t)
-        worker.wakeners;
       worker.worker <- Worker.create worker.js_file;
       worker.fds <-
         IntMap.empty
@@ -173,6 +165,7 @@ and do_reset_worker () =
       worker.fd_counter <- 2;
       let imported = worker.imported in
       worker.imported <- [];
+      worker.pending_imports <- [];
       worker.wakeners <- IntMap.empty;
       worker.counter <- 0;
       worker.reset_worker <- do_reset_worker ();
@@ -189,11 +182,22 @@ and import_cmis_js worker name =
   if List.mem name worker.imported
   then return_unit_success
   else
-    let url = worker.cmis_prefix ^ name ^ ".cmis.js" in
-    post worker @@ Import_scripts [ url ]
-    >>? fun () ->
-    worker.imported <- name :: worker.imported;
-    return_unit_success
+    match List.assoc_opt name worker.pending_imports with
+    | Some t -> t
+    | None ->
+        let url = worker.cmis_prefix ^ name ^ ".cmis.js" in
+        let t =
+          post worker @@ Import_scripts [ url ]
+          >>? fun () ->
+          worker.imported <- name :: worker.imported;
+          return_unit_success
+        in
+        worker.pending_imports <- (name, t) :: worker.pending_imports;
+        let remove_pending () =
+          worker.pending_imports <- List.remove_assoc name worker.pending_imports
+        in
+        Lwt.on_any t (fun _ -> remove_pending ()) (fun _ -> remove_pending ());
+        t
 
 let create
     ?(cmis_prefix = "")
@@ -207,6 +211,7 @@ let create
   let worker =
     { cmis_prefix
     ; imported = []
+    ; pending_imports = []
     ; worker
     ; js_file
     ; wakeners = IntMap.empty
@@ -252,11 +257,11 @@ let reset worker ?(timeout = fun () -> never_ending) () =
 let check worker ?(setenv = false) code = post worker @@ Check (setenv, code)
 
 let execute worker ?ppf_code ?(print_outcome = true) ~ppf_answer code =
-  let ppf_code = map_option (create_fd worker) ppf_code in
+  let ppf_code = Option.map (create_fd worker) ppf_code in
   let ppf_answer = create_fd worker ppf_answer in
   post worker @@ Execute (ppf_code, print_outcome, ppf_answer, code)
   >>= fun result ->
-  iter_option (close_fd worker) ppf_code;
+  Option.iter (close_fd worker) ppf_code;
   close_fd worker ppf_answer;
   Lwt.return result
 

@@ -3,16 +3,16 @@
  * Copyright (C) 2016 OCamlPro
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Library General Public License as published by
+ * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, with linking exception;
  * either version 2.1 of the License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Library General Public License for more details.
+ * GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Library General Public License
+ * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
@@ -39,11 +39,7 @@ let unwrap_result : _ JsooTopWrapped.result -> _ = function
 
 (** File descriptors *)
 
-module IntMap = Map.Make (struct
-  type t = int
-
-  let compare (x : int) (y : int) = compare x y
-end)
+module IntMap = Map.Make (Int)
 
 (* Limit the frequency of sent messages to one per ms, using an active
    loop (yuck) because, well, there is no other concurrency primitive
@@ -127,16 +123,6 @@ let () =
 
 (** Message dispatcher *)
 
-let map_option f o =
-  match o with
-  | None -> None
-  | Some o -> Some (f o)
-
-let iter_option f o =
-  match o with
-  | None -> ()
-  | Some o -> f o
-
 let handler : type a. a host_msg -> a return = function
   | Init prefix ->
       Worker.import_scripts [ prefix ^ "stdlib.cmis.js" ];
@@ -151,10 +137,10 @@ let handler : type a. a host_msg -> a return = function
       let result = JsooTopWrapped.check () ~setenv code in
       unwrap_result result
   | Execute (fd_code, print_outcome, fd_answer, code) ->
-      let ppf_code = map_option wrap_fd fd_code in
+      let ppf_code = Option.map wrap_fd fd_code in
       let ppf_answer = wrap_fd fd_answer in
       let result = JsooTopWrapped.execute () ?ppf_code ~print_outcome ~ppf_answer code in
-      iter_option close_fd fd_code;
+      Option.iter close_fd fd_code;
       close_fd fd_answer;
       unwrap_result result
   | Use_string (filename, print_outcome, fd_answer, code) ->
@@ -183,15 +169,6 @@ let handler : type a. a host_msg -> a return = function
         return_unit_success
       with exn -> return_exn exn)
 
-let ty_of_host_msg : type t. t host_msg -> t msg_ty = function
-  | Init _ -> Unit
-  | Reset -> Unit
-  | Check _ -> Unit
-  | Execute _ -> Bool
-  | Use_string _ -> Bool
-  | Use_mod_string _ -> Bool
-  | Import_scripts _ -> Unit
-
 let new_directive name k = Hashtbl.add Toploop.directive_table name k
 [@@alert "-deprecated"]
 
@@ -199,7 +176,14 @@ let () =
   let handler (type t) data =
     let (id, data) : int * t host_msg = Json.unsafe_input data in
     let ty = ty_of_host_msg data in
-    match handler data with
+    (* Never let an exception escape here: the host has already queued a
+       wakener under [id] and will hang forever if no [ReturnSuccess] or
+       [ReturnError] ever arrives. Any exception escaping the per-message
+       [handler] becomes a [ReturnError]. *)
+    let result =
+      try handler data with exn -> return_exn exn
+    in
+    match result with
     | ReturnSuccess (v, w) ->
         post_message (JsooTopWorkerIntf.ReturnSuccess (id, ty, v, w))
     | ReturnError (res, w) -> post_message (JsooTopWorkerIntf.ReturnError (id, res, w))
