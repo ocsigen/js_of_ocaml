@@ -36,25 +36,20 @@ type 'a result =
   | Success of 'a * warning list
   | Error of error * warning list
 
-(* Module-scoped ref; only ever mutated inside [with_capture], which
-   resets it on entry and restores the previous value on exit. *)
-let warnings = ref []
-
 let convert_loc loc =
   let _file1, line1, col1 = Location.get_pos_info loc.Location.loc_start in
   let _file2, line2, col2 = Location.get_pos_info loc.Location.loc_end in
   { loc_start = line1, col1; loc_end = line2, col2 }
 
-(* Install a capturing [Location.warning_reporter] and the Marshal-safe
-   [Clflags.error_size] for the duration of [f], restoring the previous
-   values on exit. Scope captures are per-call instead of permanently
-   overwriting global state, so consumers of [Wrapped] don't leak their
-   reporter/error-size preferences into code that runs between calls. *)
-let with_capture f =
+(* Run [f] with a capturing [Location.warning_reporter] and Marshal-safe
+   [Clflags.error_size] installed; restore both on exit. [f] returns
+   [`Ok v] or [`Err e]; [with_capture] pairs that with the captured
+   warning list to produce a [result]. All mutable state is local to
+   this call — the module exposes no global warning ref. *)
+let with_capture (f : unit -> [ `Ok of 'a | `Err of error ]) : 'a result =
+  let warnings = ref [] in
   let prev_reporter = !Location.warning_reporter in
   let prev_error_size = !Clflags.error_size in
-  let prev_warnings = !warnings in
-  warnings := [];
   (* Capture warnings as first-class data and return [None] so the
      default Warnings machinery does not *also* render them through
      [report_printer]. Consumers of [Wrapped] get warnings on the
@@ -83,19 +78,20 @@ let with_capture f =
      [error_size := 0] disables the enrichment; errors still report
      the mismatch, just without the fancy expansion. *)
   Clflags.error_size := 0;
-  Fun.protect
-    ~finally:(fun () ->
-      Location.warning_reporter := prev_reporter;
-      Clflags.error_size := prev_error_size;
-      warnings := prev_warnings)
-    f
-
-(* Warnings are prepended to [!warnings] as the typechecker walks the
-   source, so [!warnings] is in reverse source order. Reverse here so
-   consumers iterate top-to-bottom like every other OCaml tool. *)
-let return_success e = Success (e, List.rev !warnings)
-
-let return_error e = Error (e, List.rev !warnings)
+  let raw =
+    Fun.protect
+      ~finally:(fun () ->
+        Location.warning_reporter := prev_reporter;
+        Clflags.error_size := prev_error_size)
+      f
+  in
+  (* Warnings are prepended to [warnings] as the typechecker walks
+     the source, so it's in reverse source order. Reverse here so
+     consumers iterate top-to-bottom like every other OCaml tool. *)
+  let ws = List.rev !warnings in
+  match raw with
+  | `Ok v -> Success (v, ws)
+  | `Err e -> Error (e, ws)
 
 (** Error handling *)
 
@@ -133,8 +129,6 @@ let error_of_exn exn =
   | Some `Already_displayed | None ->
       let msg = Printexc.to_string exn in
       { msg; locs = [] }
-
-let return_exn exn = return_error (error_of_exn exn)
 
 (** Execution helpers *)
 
@@ -196,7 +190,7 @@ let execute () ?ppf_code ?(print_outcome = true) ~ppf_answer code =
     let phr = Ppx.preprocess_phrase phr in
     let success = Toploop.execute_phrase print_outcome ppf_answer phr in
     Format.pp_print_flush ppf_answer ();
-    if success then loop () else return_success false
+    if success then loop () else `Ok false
   in
   try
     let res = loop () in
@@ -205,10 +199,10 @@ let execute () ?ppf_code ?(print_outcome = true) ~ppf_answer code =
   with
   | End_of_file ->
       flush_all ();
-      return_success true
+      `Ok true
   | exn ->
       flush_all ();
-      return_error (error_of_exn exn)
+      `Err (error_of_exn exn)
 
 let use_string () ?(filename = "//toplevel//") ?(print_outcome = true) ~ppf_answer code =
   with_capture @@ fun () ->
@@ -222,15 +216,15 @@ let use_string () ?(filename = "//toplevel//") ?(print_outcome = true) ~ppf_answ
         else Format.pp_print_flush ppf_answer ())
       (List.map ~f:Ppx.preprocess_phrase (!Toploop.parse_use_file lb));
     flush_all ();
-    return_success true
+    `Ok true
   with
   | Exit ->
       flush_all ();
       Format.pp_print_flush ppf_answer ();
-      return_success false
+      `Ok false
   | exn ->
       flush_all ();
-      return_error (error_of_exn exn)
+      `Err (error_of_exn exn)
 
 let parse_mod_string modname sig_code impl_code =
   let open Parsetree in
@@ -268,10 +262,10 @@ let use_mod_string () ?(print_outcome = true) ~ppf_answer ~modname ?sig_code imp
     let res = Toploop.execute_phrase print_outcome ppf_answer phr in
     Format.pp_print_flush ppf_answer ();
     flush_all ();
-    return_success res
+    `Ok res
   with exn ->
     flush_all ();
-    return_error (error_of_exn exn)
+    `Err (error_of_exn exn)
 
 (* Extracted from the "execute" function in "ocaml/toplevel/toploop.ml" *)
 let check_phrase env = function
@@ -298,7 +292,7 @@ let check () ?(setenv = false) code =
         (List.map ~f:Ppx.preprocess_phrase (!Toploop.parse_use_file lb))
     in
     if setenv then Toploop.toplevel_env := env;
-    return_success ()
+    `Ok ()
   with
-  | End_of_file -> return_success ()
-  | exn -> return_exn exn
+  | End_of_file -> `Ok ()
+  | exn -> `Err (error_of_exn exn)
