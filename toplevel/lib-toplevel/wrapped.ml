@@ -49,6 +49,11 @@ let initialize () =
   if not !initialized
   then (
     initialized := true;
+    (* The wrapped API assumes the jsoo toplevel is bootstrapped (env
+       populated, directives registered). [Direct.initialize] is
+       idempotent, so callers that have already initialized Direct
+       don't pay twice. *)
+    Direct.initialize ();
     let warning_reporter = !Location.warning_reporter in
     (* Capture warnings as first-class data and return [None] so the
        default Warnings machinery does not *also* render them through

@@ -35,4 +35,4 @@ val execute :
     [pp_code] formatter can be use to output ocaml source during lexing. *)
 
 val initialize : unit -> unit
-(** Initialize Js_of_ocaml toplevel. *)
+(** Initialize Js_of_ocaml toplevel. Idempotent. *)

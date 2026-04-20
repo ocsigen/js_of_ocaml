@@ -105,9 +105,14 @@ let execute printval ?pp_code ?highlight_location pp_answer s =
    with End_of_file -> ());
   flush_all ()
 
+let initialized = ref false
+
 let initialize () =
-  Sys.interactive := false;
-  Lazy.force setup;
-  Toploop.initialize_toplevel_env ();
-  Toploop.input_name := "//toplevel//";
-  Sys.interactive := true
+  if not !initialized
+  then (
+    initialized := true;
+    Sys.interactive := false;
+    Lazy.force setup;
+    Toploop.initialize_toplevel_env ();
+    Toploop.input_name := "//toplevel//";
+    Sys.interactive := true)

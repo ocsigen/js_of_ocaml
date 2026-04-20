@@ -35,7 +35,8 @@ and loc =
   }
 
 val initialize : unit -> unit
-(** Install the custom warning reporter and apply the [Includemod]/Marshal
+(** Bootstrap the jsoo toplevel (by calling {!Direct.initialize}) and
+    install the custom warning reporter plus the [Includemod]/Marshal
     workaround. Idempotent; must be called before {!check}, {!execute},
     {!use_string} or {!use_mod_string}. {!error_of_exn} does not require it. *)
 
