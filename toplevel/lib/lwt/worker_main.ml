@@ -126,6 +126,7 @@ let () =
 let handler : type a. a host_msg -> a return = function
   | Init prefix ->
       Worker.import_scripts [ prefix ^ "stdlib.cmis.js" ];
+      Direct.initialize ();
       Wrapped.initialize ();
       return_unit_success
   | Reset ->

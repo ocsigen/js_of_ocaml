@@ -35,9 +35,9 @@ and loc =
   }
 
 val initialize : unit -> unit
-(** Bootstrap the jsoo toplevel (by calling {!Direct.initialize}) and
-    install the custom warning reporter plus the [Includemod]/Marshal
-    workaround. Idempotent; must be called before {!check}, {!execute},
+(** Install the custom warning reporter and apply the [Includemod]/Marshal
+    workaround. Idempotent; must be called (along with {!Direct.initialize},
+    which bootstraps the toploop itself) before {!check}, {!execute},
     {!use_string} or {!use_mod_string}. {!error_of_exn} does not require it. *)
 
 include
