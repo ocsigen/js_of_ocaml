@@ -15,7 +15,7 @@ See the <<a_file src="toplevel/index.html"|live demo>>.
 === With js_of_ocaml
 
 # Initialize the toplevel in your OCaml code using
-  <<a_api subproject="js_of_ocaml-toplevel"|val Js_of_ocaml_toplevel.JsooTop.initialize>>
+  <<a_api subproject="js_of_ocaml-toplevel"|val Js_of_ocaml_toplevel.Direct.initialize>>
 
 # Build your bytecode with debug info and linkall:
 {{{
@@ -31,7 +31,7 @@ js_of_ocaml --toplevel toplevel.byte -o toplevel.js
 === With wasm_of_ocaml
 
 # Initialize the toplevel in your OCaml code using
-  <<a_api subproject="js_of_ocaml-toplevel"|val Js_of_ocaml_toplevel.JsooTop.initialize>>
+  <<a_api subproject="js_of_ocaml-toplevel"|val Js_of_ocaml_toplevel.Direct.initialize>>
 
 # Build your bytecode with debug info and linkall, linking
   {{{wasm_of_ocaml-compiler.dynlink}}} and {{{js_of_ocaml-toplevel.common}}}:
