@@ -92,7 +92,7 @@ jobs:
 
       - name: Checkout OxCaml opam repository
         if: ${{ matrix.jane_street_tests && endsWith(matrix.ocaml-compiler, '+ox') }}
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: oxcaml/opam-repository
           ref: ${{ env.OXCAML_OPAM_REPO_REF }}
