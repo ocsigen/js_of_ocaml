@@ -297,7 +297,9 @@ module type S = sig
     -> unit Code_generation.t
 
   val post_process_function_body :
-       param_names:Wasm_ast.var list
+       profile:Profile.t
+    -> param_names:Wasm_ast.var list
+    -> param_types:Wasm_ast.value_type list
     -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
     -> Wasm_ast.instruction list
     -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
