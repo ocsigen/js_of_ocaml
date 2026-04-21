@@ -298,7 +298,6 @@ module type S = sig
 
   val post_process_function_body :
        profile:Profile.t
-    -> separate_compilation:bool
     -> param_names:Wasm_ast.var list
     -> param_types:Wasm_ast.value_type list
     -> locals:(Wasm_ast.var * Wasm_ast.value_type) list

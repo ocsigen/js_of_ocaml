@@ -178,15 +178,25 @@ let link_and_optimize
   if binaryen_times () then Format.eprintf "  binaryen link: %a@." Timer.print t);
 
   let optimize_and_finish ~opt_input_sourcemap ~input_file primitives =
-    let t = Timer.make ~get_time:Unix.time () in
-    Binaryen.optimize
-      ~profile
-      ~opt_input_sourcemap
-      ~opt_output_sourcemap:opt_sourcemap
-      ~input_file
-      ~output_file
-      ();
-    if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t;
+    (match profile with
+    | Profile.O1 -> (
+        (* Skip wasm-opt; just copy the input to the output. Sourcemap
+            too, if we have one. *)
+        Fs.write_file ~name:output_file ~contents:(Fs.read_file input_file);
+        match opt_input_sourcemap, opt_sourcemap with
+        | Some src_sm, Some dst_sm ->
+            Fs.write_file ~name:dst_sm ~contents:(Fs.read_file src_sm)
+        | _ -> ())
+    | O2 | O3 ->
+        let t = Timer.make ~get_time:Unix.time () in
+        Binaryen.optimize
+          ~profile
+          ~opt_input_sourcemap
+          ~opt_output_sourcemap:opt_sourcemap
+          ~input_file
+          ~output_file
+          ();
+        if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t);
     Option.iter
       ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
       opt_sourcemap_file;
