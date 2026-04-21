@@ -2333,6 +2333,7 @@ module Generate (Target : Target_sig.S) = struct
     let locals, body =
       post_process_function_body
         ~profile
+        ~separate_compilation:(Option.is_some unit_name)
         ~param_names
         ~param_types:signature.params
         ~locals
