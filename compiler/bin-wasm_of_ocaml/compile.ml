@@ -579,31 +579,45 @@ let run
           else None)
        @@ fun opt_tmp_map_file ->
        let unit_data, shapes =
-         Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
-         @@ fun input_file ->
-         opt_with
-           Fs.with_intermediate_file
-           (if enable_source_maps
-            then Some (Filename.temp_file unit_name ".wasm.map")
-            else None)
-         @@ fun opt_input_sourcemap ->
-         let fragments, shapes =
-           output
-             code
-             ~wat_file:
-               (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
-             ~unit_name:(Some unit_name)
-             ~file:input_file
-             ~opt_source_map_file:opt_input_sourcemap
-         in
-         Binaryen.optimize
-           ~profile
-           ~opt_input_sourcemap
-           ~opt_output_sourcemap:opt_tmp_map_file
-           ~input_file
-           ~output_file:tmp_wasm_file
-           ();
-         { Link.unit_name; unit_info; fragments }, shapes
+         match profile with
+         | Profile.O1 ->
+             (* At O1, skip Binaryen.optimize — write directly *)
+             let fragments, shapes =
+               output
+                 code
+                 ~wat_file:
+                   (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+                 ~unit_name:(Some unit_name)
+                 ~file:tmp_wasm_file
+                 ~opt_source_map_file:opt_tmp_map_file
+             in
+             { Link.unit_name; unit_info; fragments }, shapes
+         | O2 | O3 ->
+             Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
+             @@ fun input_file ->
+             opt_with
+               Fs.with_intermediate_file
+               (if enable_source_maps
+                then Some (Filename.temp_file unit_name ".wasm.map")
+                else None)
+             @@ fun opt_input_sourcemap ->
+             let fragments, shapes =
+               output
+                 code
+                 ~wat_file:
+                   (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+                 ~unit_name:(Some unit_name)
+                 ~file:input_file
+                 ~opt_source_map_file:opt_input_sourcemap
+             in
+             Binaryen.optimize
+               ~profile
+               ~opt_input_sourcemap
+               ~opt_output_sourcemap:opt_tmp_map_file
+               ~input_file
+               ~output_file:tmp_wasm_file
+               ();
+             { Link.unit_name; unit_info; fragments }, shapes
        in
        cont unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes cmi_files
      in
