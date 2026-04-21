@@ -394,8 +394,14 @@ let compute_liveness g =
   in
   let transfer state node_id =
     let live_out =
-      List.fold_left g.succs.(node_id) ~init:Var.Set.empty ~f:(fun acc id ->
-          Var.Set.union acc state.(id))
+      (* Most CFG nodes in our per-sub-expression layout have exactly one
+         successor; skip the fold + empty-set union in that case. *)
+      match g.succs.(node_id) with
+      | [] -> Var.Set.empty
+      | [ s ] -> state.(s)
+      | succs ->
+          List.fold_left succs ~init:Var.Set.empty ~f:(fun acc id ->
+              Var.Set.union acc state.(id))
     in
     let def = defs_of_action g.actions.(node_id) in
     let use = uses_of_action g.actions.(node_id) in
