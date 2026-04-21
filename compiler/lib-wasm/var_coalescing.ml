@@ -727,27 +727,24 @@ let allocate_registers subst types ranges hints =
         match Var.Hashtbl.find_opt hints current.Live_range.id with
         | None -> None
         | Some src -> (
-            match Var.Tbl.get subst src with
-            | exception Not_found -> None
+            match Var.Hashtbl.find_opt subst src with
             | None -> None
             | Some var -> (
                 if not (compatible var current.id)
                 then None
                 else
-                  match Var.Hashtbl.find_opt ranges var with
-                  | None -> None
-                  | Some r -> (
-                      match Live_range.advance r position with
-                      | `Dead ->
-                          r.assigned <- true;
-                          Some r
-                      | `Inactive ->
-                          if Live_range.intersects r current
-                          then None
-                          else (
-                            Var.Hashtbl.remove inactive r.id;
-                            Some r)
-                      | `Active -> None)))
+                  let r = Var.Hashtbl.find ranges var in
+                  match Live_range.advance r position with
+                  | `Dead ->
+                      r.assigned <- true;
+                      Some r
+                  | `Inactive ->
+                      if Live_range.intersects r current
+                      then None
+                      else (
+                        Var.Hashtbl.remove inactive r.id;
+                        Some r)
+                  | `Active -> None))
       in
       let repr =
         match hint_repr with
@@ -789,8 +786,8 @@ let allocate_registers subst types ranges hints =
       then (
         Var.forget_generated_name current.id;
         Var.forget_generated_name repr.id;
-        Live_range.add_ranges repr current.Live_range.ranges);
-      Var.Tbl.set subst current.id (Some repr.id);
+        Live_range.add_ranges repr current.Live_range.ranges;
+        Var.Hashtbl.replace subst current.id repr.id);
       active := Active_pqueue.add repr !active);
   !hint_count, !opportunistic_count
 
@@ -799,8 +796,7 @@ let allocate_registers subst types ranges hints =
 (* --------------------------------------------------------------------- *)
 
 let subst_var subst x =
-  match Var.Tbl.get subst x with
-  | exception Not_found -> x
+  match Var.Hashtbl.find_opt subst x with
   | None -> x
   | Some y -> y
 
@@ -907,7 +903,7 @@ let f ~param_names ~param_types ~locals instrs =
     let g = build_cfg ~candidates ~param_vars instrs in
     let live_in_map = compute_liveness g in
     let ranges = compute_live_ranges g live_in_map candidates param_vars in
-    let subst = Var.Tbl.make () None in
+    let subst = Var.Hashtbl.create num_candidates in
     let hint_count, opportunistic_count =
       allocate_registers subst types ranges g.coalescing_hints
     in
@@ -918,17 +914,9 @@ let f ~param_names ~param_types ~locals instrs =
         num_candidates
         hint_count
         opportunistic_count;
-    (* Determine which candidates changed (need rewriting) *)
-    let changed =
-      Var.Set.fold
-        (fun v acc ->
-          match Var.Tbl.get subst v with
-          | None -> acc
-          | Some v' -> if Var.equal v v' then acc else acc + 1)
-        candidates
-        0
-    in
-    if changed = 0
+    (* Only candidates that merged into a different representative are
+         recorded in [subst]; its size is therefore the count of changes. *)
+    if Var.Hashtbl.length subst = 0
     then (
       if times () then Format.eprintf "  wasm var coalescing: %a@." Timer.print t;
       locals, instrs)
@@ -938,10 +926,7 @@ let f ~param_names ~param_types ~locals instrs =
            i.e. those that weren't merged away. Preserve original ordering to
            keep the Wasm output deterministic. *)
       let kept_locals =
-        List.filter locals ~f:(fun (v, _) ->
-            match Var.Tbl.get subst v with
-            | None -> true
-            | Some v' -> Var.equal v v')
+        List.filter locals ~f:(fun (v, _) -> not (Var.Hashtbl.mem subst v))
       in
       if times () then Format.eprintf "  wasm var coalescing: %a@." Timer.print t;
       if stats ()
