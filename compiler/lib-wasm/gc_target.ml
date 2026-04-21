@@ -2041,7 +2041,14 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      let* () = no_event in
      exn_handler ~result_typ ~fall_through ~context)
 
-let post_process_function_body = Initialize_locals.f
+let post_process_function_body ~profile ~param_names ~param_types ~locals body =
+  let locals, body =
+    match (profile : Profile.t) with
+    | O1 when Config.Flag.wasm_var_coalescing () ->
+        Var_coalescing.f ~param_names ~param_types ~locals body
+    | O1 | O2 | O3 -> locals, body
+  in
+  Initialize_locals.f ~param_names ~locals body
 
 let entry_point ~toplevel_fun =
   let code =
