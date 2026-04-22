@@ -149,56 +149,117 @@ type walk_result =
 
 (* [reads] is [reads_of_expr e_to_sink]: the set of locals we must not
    let an intermediate [LocalSet]/[LocalTee] write. *)
-let rec walk_expr x e_to_sink reads (e : W.expression) =
+(* [ctx] bundles the parameters that don't change during a sink attempt:
+   the target variable, the expression to sink, its read set, and whether
+   the expression itself is [effect_free]. When [e_effect_free] is
+   [false] we may not cross any *evaluated* sub-expression or
+   instruction even if it is itself [effect_free] — the path could
+   read heap/global state that [e]'s side effects would change. *)
+type ctx =
+  { x : Var.t
+  ; e_to_sink : W.expression
+  ; reads : Var.Set.t
+  ; e_effect_free : bool
+  }
+
+(* Purely-local expression — no heap/global reads, no calls, no traps.
+   Stricter than [effect_free]: a [GlobalGet] or [ArrayGet] is
+   [effect_free] but not [trivially_pure], because crossing it with an
+   effectful [e] would reorder a read against [e]'s writes. *)
+let rec trivially_pure (e : W.expression) =
+  match e with
+  | W.Const _ | RefFunc _ | RefNull _ | LocalGet _ | Pop _ -> true
+  | UnOp (_, e')
+  | I32WrapI64 e'
+  | I64ExtendI32 (_, e')
+  | F32DemoteF64 e'
+  | F64PromoteF32 e'
+  | RefI31 e'
+  | I31Get (_, e')
+  | ExternConvertAny e'
+  | AnyConvertExtern e' -> trivially_pure e'
+  | BinOp (_, e1, e2) | RefEq (e1, e2) -> trivially_pure e1 && trivially_pure e2
+  | LocalTee _
+  | GlobalGet _
+  | ArrayLen _
+  | StructGet _
+  | ArrayGet _
+  | ArrayNew _
+  | ArrayNewData _
+  | ArrayNewFixed _
+  | StructNew _
+  | RefCast _
+  | RefTest _
+  | Br_on_cast _
+  | Br_on_cast_fail _
+  | Br_on_null _
+  | Call _
+  | Call_ref _
+  | IfExpr _
+  | BlockExpr _
+  | Seq _
+  | Try _ -> false
+
+(* A sibling sub-expression was walked [Clean] (no x) and we're about
+   to continue to the next sibling. This is the reorder point: [e] will
+   evaluate *after* [sibling] in the sunk version, whereas originally
+   [e] ran first. When [e] itself is [effect_free] it cannot observe
+   or alter anything an [effect_free] sibling does; when [e] may have
+   side effects (a Call, say), the sibling must be stricter — no
+   heap/global reads either, since those would see different values
+   after the move. *)
+let may_cross_sibling ctx sibling =
+  effect_free sibling && (ctx.e_effect_free || trivially_pure sibling)
+
+let rec walk_expr ctx (e : W.expression) =
   match e with
   | W.Const _ | GlobalGet _ | RefFunc _ | RefNull _ | Pop _ -> Clean
-  | LocalGet y -> if Var.equal y x then Found (W.LocalTee (x, e_to_sink)) else Clean
-  | LocalTee (y, _) when Var.equal y x ->
+  | LocalGet y ->
+      if Var.equal y ctx.x then Found (W.LocalTee (ctx.x, ctx.e_to_sink)) else Clean
+  | LocalTee (y, _) when Var.equal y ctx.x ->
       (* Another write to [x] — bail. *)
       Bail
   | LocalTee (y, e') -> (
       (* Reading [e'] first, then this tee writes [y]. If [y] is read by
          our sink expression, we cannot cross this write. *)
-      match walk_expr x e_to_sink reads e' with
+      match walk_expr ctx e' with
       | Found e'' -> Found (W.LocalTee (y, e''))
       | Bail -> Bail
-      | Clean -> if Var.Set.mem y reads then Bail else Clean)
-  | UnOp (op, e') -> wrap_unary (fun e -> W.UnOp (op, e)) x e_to_sink reads e'
-  | I32WrapI64 e' -> wrap_unary (fun e -> W.I32WrapI64 e) x e_to_sink reads e'
-  | I64ExtendI32 (s, e') ->
-      wrap_unary (fun e -> W.I64ExtendI32 (s, e)) x e_to_sink reads e'
-  | F32DemoteF64 e' -> wrap_unary (fun e -> W.F32DemoteF64 e) x e_to_sink reads e'
-  | F64PromoteF32 e' -> wrap_unary (fun e -> W.F64PromoteF32 e) x e_to_sink reads e'
-  | RefI31 e' -> wrap_unary (fun e -> W.RefI31 e) x e_to_sink reads e'
-  | I31Get (s, e') -> wrap_unary (fun e -> W.I31Get (s, e)) x e_to_sink reads e'
-  | ArrayLen e' -> wrap_unary (fun e -> W.ArrayLen e) x e_to_sink reads e'
-  | StructGet (s, ty, i, e') ->
-      wrap_unary (fun e -> W.StructGet (s, ty, i, e)) x e_to_sink reads e'
-  | RefCast (ty, e') -> wrap_unary (fun e -> W.RefCast (ty, e)) x e_to_sink reads e'
-  | RefTest (ty, e') -> wrap_unary (fun e -> W.RefTest (ty, e)) x e_to_sink reads e'
-  | ExternConvertAny e' -> wrap_unary (fun e -> W.ExternConvertAny e) x e_to_sink reads e'
-  | AnyConvertExtern e' -> wrap_unary (fun e -> W.AnyConvertExtern e) x e_to_sink reads e'
-  | BinOp (op, e1, e2) ->
-      wrap_binary (fun a b -> W.BinOp (op, a, b)) x e_to_sink reads e1 e2
-  | ArrayNew (ty, e1, e2) ->
-      wrap_binary (fun a b -> W.ArrayNew (ty, a, b)) x e_to_sink reads e1 e2
+      | Clean -> if Var.Set.mem y ctx.reads then Bail else Clean)
+  | UnOp (op, e') -> wrap_unary (fun e -> W.UnOp (op, e)) ctx e'
+  | I32WrapI64 e' -> wrap_unary (fun e -> W.I32WrapI64 e) ctx e'
+  | I64ExtendI32 (s, e') -> wrap_unary (fun e -> W.I64ExtendI32 (s, e)) ctx e'
+  | F32DemoteF64 e' -> wrap_unary (fun e -> W.F32DemoteF64 e) ctx e'
+  | F64PromoteF32 e' -> wrap_unary (fun e -> W.F64PromoteF32 e) ctx e'
+  | RefI31 e' -> wrap_unary (fun e -> W.RefI31 e) ctx e'
+  | I31Get (s, e') -> wrap_unary (fun e -> W.I31Get (s, e)) ctx e'
+  | ArrayLen e' -> wrap_unary (fun e -> W.ArrayLen e) ctx e'
+  | StructGet (s, ty, i, e') -> wrap_unary (fun e -> W.StructGet (s, ty, i, e)) ctx e'
+  | RefCast (ty, e') -> wrap_unary (fun e -> W.RefCast (ty, e)) ctx e'
+  | RefTest (ty, e') -> wrap_unary (fun e -> W.RefTest (ty, e)) ctx e'
+  | ExternConvertAny e' -> wrap_unary (fun e -> W.ExternConvertAny e) ctx e'
+  | AnyConvertExtern e' -> wrap_unary (fun e -> W.AnyConvertExtern e) ctx e'
+  | BinOp (op, e1, e2) -> wrap_binary (fun a b -> W.BinOp (op, a, b)) ctx e1 e2
+  | ArrayNew (ty, e1, e2) -> wrap_binary (fun a b -> W.ArrayNew (ty, a, b)) ctx e1 e2
   | ArrayNewData (ty, d, e1, e2) ->
-      wrap_binary (fun a b -> W.ArrayNewData (ty, d, a, b)) x e_to_sink reads e1 e2
+      wrap_binary (fun a b -> W.ArrayNewData (ty, d, a, b)) ctx e1 e2
   | ArrayGet (s, ty, e1, e2) ->
-      wrap_binary (fun a b -> W.ArrayGet (s, ty, a, b)) x e_to_sink reads e1 e2
-  | RefEq (e1, e2) -> wrap_binary (fun a b -> W.RefEq (a, b)) x e_to_sink reads e1 e2
-  | Call (f, args) -> wrap_list (fun args' -> W.Call (f, args')) x e_to_sink reads args
+      wrap_binary (fun a b -> W.ArrayGet (s, ty, a, b)) ctx e1 e2
+  | RefEq (e1, e2) -> wrap_binary (fun a b -> W.RefEq (a, b)) ctx e1 e2
+  | Call (f, args) -> wrap_list (fun args' -> W.Call (f, args')) ctx args
   | ArrayNewFixed (ty, args) ->
-      wrap_list (fun args' -> W.ArrayNewFixed (ty, args')) x e_to_sink reads args
-  | StructNew (ty, args) ->
-      wrap_list (fun args' -> W.StructNew (ty, args')) x e_to_sink reads args
+      wrap_list (fun args' -> W.ArrayNewFixed (ty, args')) ctx args
+  | StructNew (ty, args) -> wrap_list (fun args' -> W.StructNew (ty, args')) ctx args
   | Call_ref (ty, f, args) -> (
       (* Wasm evaluates args before the funcref. *)
-      match wrap_list_intermediate x e_to_sink reads args with
+      match wrap_list_intermediate ctx args with
       | `Found args' -> Found (W.Call_ref (ty, f, args'))
       | `Bail -> Bail
       | `Clean -> (
-          match walk_expr x e_to_sink reads f with
+          (* Between args and f, we've crossed every arg — allowed
+              only if each is [may_cross_sibling]-safe. That check was
+              already made inside [wrap_list_intermediate]. *)
+          match walk_expr ctx f with
           | Found f' -> Found (W.Call_ref (ty, f', args))
           | Bail -> Bail
           | Clean -> Clean))
@@ -213,56 +274,51 @@ let rec walk_expr x e_to_sink reads (e : W.expression) =
          these for sinking purposes. *)
       Bail
 
-and wrap_unary make x e_to_sink reads e' =
-  match walk_expr x e_to_sink reads e' with
+and wrap_unary make ctx e' =
+  match walk_expr ctx e' with
   | Found e'' -> Found (make e'')
   | Bail -> Bail
   | Clean -> Clean
 
-and wrap_binary make x e_to_sink reads e1 e2 =
-  match walk_expr x e_to_sink reads e1 with
+and wrap_binary make ctx e1 e2 =
+  match walk_expr ctx e1 with
   | Found e1' -> Found (make e1' e2)
   | Bail -> Bail
   | Clean -> (
-      if
-        (* [e1] was [Clean] so it contained no x. But the caller's
-         correctness depends on [e1] being effect-free: if [e1] has
-         observable effects (allocation, call, tee of something read by
-         e, etc.), we cannot sink [e_to_sink] past it. *)
-        not (effect_free e1)
+      if not (may_cross_sibling ctx e1)
       then Bail
       else
-        match walk_expr x e_to_sink reads e2 with
+        match walk_expr ctx e2 with
         | Found e2' -> Found (make e1 e2')
         | Bail -> Bail
         | Clean -> Clean)
 
-and wrap_list make x e_to_sink reads args =
-  match wrap_list_intermediate x e_to_sink reads args with
+and wrap_list make ctx args =
+  match wrap_list_intermediate ctx args with
   | `Found args' -> Found (make args')
   | `Bail -> Bail
   | `Clean -> Clean
 
-and wrap_list_intermediate x e_to_sink reads args =
+and wrap_list_intermediate ctx args =
   let rec loop acc = function
     | [] -> `Clean
     | a :: rest -> (
-        match walk_expr x e_to_sink reads a with
+        match walk_expr ctx a with
         | Found a' -> `Found (List.rev_append acc (a' :: rest))
         | Bail -> `Bail
-        | Clean -> if not (effect_free a) then `Bail else loop (a :: acc) rest)
+        | Clean -> if not (may_cross_sibling ctx a) then `Bail else loop (a :: acc) rest)
   in
   loop [] args
 
-(* Walk a single instruction looking for a sink target for [x]. *)
+(* Walk a single instruction looking for a sink target for [ctx.x]. *)
 type instr_result =
   | IFound of W.instruction
   | IBail
   | IClean
 
-let try_sink_in_instr x e_to_sink reads instr : instr_result =
+let try_sink_in_instr ctx instr : instr_result =
   let wrap_one make e =
-    match walk_expr x e_to_sink reads e with
+    match walk_expr ctx e with
     | Found e' -> IFound (make e')
     | Bail -> IBail
     | Clean -> IClean
@@ -271,141 +327,145 @@ let try_sink_in_instr x e_to_sink reads instr : instr_result =
   | Nop | Event _ -> IClean
   | Drop e -> wrap_one (fun e -> W.Drop e) e
   | Push e -> wrap_one (fun e -> W.Push e) e
-  | LocalSet (y, e) when Var.equal y x -> (
+  | LocalSet (y, e) when Var.equal y ctx.x -> (
       (* x may still appear inside [e] (evaluated before the set). If we
          find and rewrite it there, we stop (the [local.set x] after
          would be a shadowing write). If [e] is [Clean], this is a
          shadowing write without a sink target → bail. *)
-      match walk_expr x e_to_sink reads e with
+      match walk_expr ctx e with
       | Found e' -> IFound (W.LocalSet (y, e'))
       | Bail -> IBail
       | Clean -> IBail)
   | LocalSet (y, e) -> wrap_one (fun e -> W.LocalSet (y, e)) e
   | GlobalSet (g, e) -> wrap_one (fun e -> W.GlobalSet (g, e)) e
   | StructSet (ty, i, e1, e2) -> (
-      match walk_expr x e_to_sink reads e1 with
+      match walk_expr ctx e1 with
       | Found e1' -> IFound (W.StructSet (ty, i, e1', e2))
       | Bail -> IBail
       | Clean -> (
-          if not (effect_free e1)
+          if not (may_cross_sibling ctx e1)
           then IBail
           else
-            match walk_expr x e_to_sink reads e2 with
+            match walk_expr ctx e2 with
             | Found e2' -> IFound (W.StructSet (ty, i, e1, e2'))
             | Bail -> IBail
             | Clean -> IClean))
   | ArraySet (ty, e1, e2, e3) -> (
-      match walk_expr x e_to_sink reads e1 with
+      match walk_expr ctx e1 with
       | Found e1' -> IFound (W.ArraySet (ty, e1', e2, e3))
       | Bail -> IBail
       | Clean -> (
-          if not (effect_free e1)
+          if not (may_cross_sibling ctx e1)
           then IBail
           else
-            match walk_expr x e_to_sink reads e2 with
+            match walk_expr ctx e2 with
             | Found e2' -> IFound (W.ArraySet (ty, e1, e2', e3))
             | Bail -> IBail
             | Clean -> (
-                if not (effect_free e2)
+                if not (may_cross_sibling ctx e2)
                 then IBail
                 else
-                  match walk_expr x e_to_sink reads e3 with
+                  match walk_expr ctx e3 with
                   | Found e3' -> IFound (W.ArraySet (ty, e1, e2, e3'))
                   | Bail -> IBail
                   | Clean -> IClean)))
   | CallInstr (f, args) -> (
-      match wrap_list_intermediate x e_to_sink reads args with
+      match wrap_list_intermediate ctx args with
       | `Found args' -> IFound (W.CallInstr (f, args'))
       | `Bail -> IBail
       | `Clean -> IClean)
   (* Control-flow-terminal instructions with sub-expressions: we can still
      rewrite within the expression, but cannot continue past on a Clean. *)
   | Return (Some e) -> (
-      match walk_expr x e_to_sink reads e with
+      match walk_expr ctx e with
       | Found e' -> IFound (W.Return (Some e'))
       | Bail -> IBail
       | Clean -> IBail)
   | Throw (t, e) -> (
-      match walk_expr x e_to_sink reads e with
+      match walk_expr ctx e with
       | Found e' -> IFound (W.Throw (t, e'))
       | Bail -> IBail
       | Clean -> IBail)
   | Br (n, Some e) -> (
-      match walk_expr x e_to_sink reads e with
+      match walk_expr ctx e with
       | Found e' -> IFound (W.Br (n, Some e'))
       | Bail -> IBail
       | Clean -> IBail)
   | Br_if (n, e) -> (
-      match walk_expr x e_to_sink reads e with
+      match walk_expr ctx e with
       | Found e' -> IFound (W.Br_if (n, e'))
       | Bail -> IBail
       | Clean -> IBail)
   | Br_table (e, tl, d) -> (
-      match walk_expr x e_to_sink reads e with
+      match walk_expr ctx e with
       | Found e' -> IFound (W.Br_table (e', tl, d))
       | Bail -> IBail
       | Clean -> IBail)
   | Return_call (f, args) -> (
-      match wrap_list_intermediate x e_to_sink reads args with
+      match wrap_list_intermediate ctx args with
       | `Found args' -> IFound (W.Return_call (f, args'))
       | `Bail -> IBail
       | `Clean -> IBail)
   | Return_call_ref (ty, f, args) -> (
-      match wrap_list_intermediate x e_to_sink reads args with
+      match wrap_list_intermediate ctx args with
       | `Found args' -> IFound (W.Return_call_ref (ty, f, args'))
       | `Bail -> IBail
       | `Clean -> (
-          match walk_expr x e_to_sink reads f with
+          match walk_expr ctx f with
           | Found f' -> IFound (W.Return_call_ref (ty, f', args))
           | Bail -> IBail
           | Clean -> IBail))
   | Return None | Br (_, None) | Rethrow _ | Unreachable -> IBail
-  | Loop _ | Block _ | If _ ->
-      (* Control flow: do not sink across these. *)
+  | If (ty, cond, l1, l2) -> (
+      (* The condition is evaluated unconditionally before branching —
+         we can still sink into it. If no [x] is found there, we bail
+         because we can't continue past the branch. *)
+      match walk_expr ctx cond with
+      | Found cond' -> IFound (W.If (ty, cond', l1, l2))
+      | Bail -> IBail
+      | Clean -> IBail)
+  | Loop _ | Block _ ->
+      (* No expression to walk at this level; do not sink into the body. *)
       IBail
 
-(* An instruction we can cross without x being found: must be
-   effect-free in the sense that no writes observable to e happen. *)
-let can_cross_instr reads (instr : W.instruction) =
+(* Can we cross this instruction without [x] being found? Must be safe
+   with respect to [ctx.e_to_sink]'s potential side effects. *)
+let can_cross_instr ctx (instr : W.instruction) =
   match instr with
   | Nop | Event _ -> true
-  | Drop e | Push e -> effect_free e
-  | LocalSet (y, e) -> effect_free e && not (Var.Set.mem y reads)
+  | Drop e | Push e -> may_cross_sibling ctx e
+  | LocalSet (y, e) -> may_cross_sibling ctx e && not (Var.Set.mem y ctx.reads)
   | _ -> false
 
-(* Scan forward through an instruction list looking for a sink target for
-   [x]. Returns a rewritten list on success (original [local.set] dropped),
-   or [None] if we bail or find nothing. *)
-let try_sink_in_list x e_to_sink reads instrs =
+let try_sink_in_list ctx instrs =
   let rec loop acc = function
     | [] -> None
     | instr :: rest -> (
-        match try_sink_in_instr x e_to_sink reads instr with
+        match try_sink_in_instr ctx instr with
         | IFound instr' -> Some (List.rev_append acc (instr' :: rest))
         | IBail -> None
-        | IClean -> if can_cross_instr reads instr then loop (instr :: acc) rest else None
-        )
+        | IClean -> if can_cross_instr ctx instr then loop (instr :: acc) rest else None)
   in
   loop [] instrs
 
 (* Bottom-up transformation: recurse first, then try to sink each
-   [local.set] into the (already-transformed) tail. We only attempt to
-   sink when the expression is [effect_free], since our effect rule
-   allows crossing effect-free intermediate code only if [e] itself is
-   free of hidden side effects. *)
+   [local.set] into the (already-transformed) tail. *)
 let rec transform_instrs instrs =
   match instrs with
   | [] -> []
-  | W.LocalSet (x, e) :: rest ->
+  | W.LocalSet (x, e) :: rest -> (
       let e = transform_expr e in
       let rest = transform_instrs rest in
-      if effect_free e
-      then
-        let reads = reads_of_expr Var.Set.empty e in
-        match try_sink_in_list x e reads rest with
-        | Some new_rest -> new_rest
-        | None -> W.LocalSet (x, e) :: rest
-      else W.LocalSet (x, e) :: rest
+      let ctx =
+        { x
+        ; e_to_sink = e
+        ; reads = reads_of_expr Var.Set.empty e
+        ; e_effect_free = effect_free e
+        }
+      in
+      match try_sink_in_list ctx rest with
+      | Some new_rest -> new_rest
+      | None -> W.LocalSet (x, e) :: rest)
   | instr :: rest ->
       let instr = transform_instr instr in
       let rest = transform_instrs rest in
