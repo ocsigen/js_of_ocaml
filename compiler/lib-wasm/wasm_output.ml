@@ -1082,6 +1082,11 @@ end = struct
     output_byte ch id;
     with_size f ch x
 
+  (* Emit only the names that already exist on the [Var.t]; leave
+     anonymous vars out of the name section entirely rather than
+     synthesising alphabetical placeholders. Existing names that
+     collide with one already emitted are uniquified by appending
+     [$N]. *)
   let assign_names f tbl =
     let names = Code.Var.Hashtbl.fold (fun name idx rem -> (idx, name) :: rem) tbl [] in
     let names = List.sort ~cmp:(fun (idx, _) (idx', _) -> compare idx idx') names in
@@ -1099,31 +1104,16 @@ end = struct
       let nm = Printf.sprintf "%s$%d" name !i in
       if StringSet.mem nm used then find_available_name used name else nm
     in
-    let names =
-      List.map
-        ~f:(fun (idx, x) ->
-          match f x with
-          | None -> idx, None
-          | Some nm ->
-              let nm =
-                if StringSet.mem nm !used then find_available_name !used nm else nm
-              in
-              used := StringSet.add nm !used;
-              idx, Some nm)
-        names
-    in
-    let printer = Var_printer.create Var_printer.Alphabet.javascript in
-    let i = ref 0 in
-    let rec first_available_name () =
-      let nm = Var_printer.to_string printer !i in
-      incr i;
-      if StringSet.mem nm !used then first_available_name () else nm
-    in
-    List.map
-      ~f:(fun (idx, nm) ->
-        match nm with
-        | Some nm -> idx, nm
-        | None -> idx, first_available_name ())
+    List.filter_map
+      ~f:(fun (idx, x) ->
+        match f x with
+        | None -> None
+        | Some nm ->
+            let nm =
+              if StringSet.mem nm !used then find_available_name !used nm else nm
+            in
+            used := StringSet.add nm !used;
+            Some (idx, nm))
       names
 
   let output_names ch st =
