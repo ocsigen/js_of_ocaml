@@ -42,6 +42,37 @@ open! Stdlib
 module W = Wasm_ast
 module Var = Code.Var
 
+let times = Debug.find "times"
+
+let stats = Debug.find "stats"
+
+(* Aggregated statistics across all calls to [f]. The pass runs once per
+   Wasm function; per-function logs are noisy, so we accumulate here and
+   emit a single summary via [report_stats]. *)
+let total_time = ref 0.
+
+let total_calls = ref 0
+
+let total_candidates = ref 0
+
+let total_sunk = ref 0
+
+let report_stats () =
+  if !total_calls > 0
+  then (
+    if times () then Format.eprintf "  wasm local sink: %.2f@." !total_time;
+    if stats ()
+    then
+      Format.eprintf
+        "Stats - wasm local sink: %d functions, %d candidates, %d sunk@."
+        !total_calls
+        !total_candidates
+        !total_sunk;
+    total_time := 0.;
+    total_calls := 0;
+    total_candidates := 0;
+    total_sunk := 0)
+
 (* Same as [Gc_target.effect_free]. Copied here (it is a small and
    self-contained helper) to avoid exposing it as a shared interface. *)
 let rec effect_free (e : W.expression) =
@@ -78,14 +109,20 @@ let rec effect_free (e : W.expression) =
   | IfExpr (_, e1, e2, e3) -> effect_free e1 && effect_free e2 && effect_free e3
   | ArrayNewFixed (_, l) | StructNew (_, l) -> List.for_all ~f:effect_free l
 
-(* Set of locals read by [e] (LocalGet occurrences). LocalTee's inner
-   expression is also walked, but the tee'd variable itself is a write,
-   not a read. *)
-let rec reads_of_expr acc (e : W.expression) =
+(* Locals read and written by an expression. A [LocalTee y e'] both reads
+   [e']'s locals and writes [y]. *)
+type rw =
+  { mutable reads : Var.Set.t
+  ; mutable writes : Var.Set.t
+  }
+
+let rec collect_rw rw (e : W.expression) =
   match e with
-  | Const _ | GlobalGet _ | RefFunc _ | RefNull _ | Pop _ -> acc
-  | LocalGet x -> Var.Set.add x acc
-  | LocalTee (_, e')
+  | Const _ | GlobalGet _ | RefFunc _ | RefNull _ | Pop _ -> ()
+  | LocalGet x -> rw.reads <- Var.Set.add x rw.reads
+  | LocalTee (y, e') ->
+      rw.writes <- Var.Set.add y rw.writes;
+      collect_rw rw e'
   | UnOp (_, e')
   | I32WrapI64 e'
   | I64ExtendI32 (_, e')
@@ -101,43 +138,70 @@ let rec reads_of_expr acc (e : W.expression) =
   | AnyConvertExtern e'
   | Br_on_cast (_, _, _, e')
   | Br_on_cast_fail (_, _, _, e')
-  | Br_on_null (_, e') -> reads_of_expr acc e'
+  | Br_on_null (_, e') -> collect_rw rw e'
   | BinOp (_, e1, e2)
   | ArrayNew (_, e1, e2)
   | ArrayNewData (_, _, e1, e2)
   | ArrayGet (_, _, e1, e2)
-  | RefEq (e1, e2) -> reads_of_expr (reads_of_expr acc e1) e2
+  | RefEq (e1, e2) ->
+      collect_rw rw e1;
+      collect_rw rw e2
   | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) ->
-      List.fold_left l ~init:acc ~f:reads_of_expr
+      List.iter l ~f:(collect_rw rw)
   | Call_ref (_, f, l) ->
-      let acc = reads_of_expr acc f in
-      List.fold_left l ~init:acc ~f:reads_of_expr
-  | IfExpr (_, c, t, e) -> reads_of_expr (reads_of_expr (reads_of_expr acc c) t) e
-  | BlockExpr (_, l) -> reads_of_instrs acc l
-  | Seq (l, e') -> reads_of_expr (reads_of_instrs acc l) e'
-  | Try (_, body, _) -> reads_of_instrs acc body
+      collect_rw rw f;
+      List.iter l ~f:(collect_rw rw)
+  | IfExpr (_, c, t, el) ->
+      collect_rw rw c;
+      collect_rw rw t;
+      collect_rw rw el
+  | BlockExpr (_, l) -> List.iter l ~f:(collect_rw_instr rw)
+  | Seq (l, e') ->
+      List.iter l ~f:(collect_rw_instr rw);
+      collect_rw rw e'
+  | Try (_, body, _) -> List.iter body ~f:(collect_rw_instr rw)
 
-and reads_of_instrs acc l = List.fold_left l ~init:acc ~f:reads_of_instr
-
-and reads_of_instr acc (i : W.instruction) =
+and collect_rw_instr rw (i : W.instruction) =
   match i with
-  | Nop | Event _ | Br (_, None) | Return None | Rethrow _ | Unreachable -> acc
+  | Nop | Event _ | Br (_, None) | Return None | Rethrow _ | Unreachable -> ()
   | Drop e
   | Push e
   | GlobalSet (_, e)
-  | LocalSet (_, e)
   | Br (_, Some e)
   | Br_if (_, e)
   | Br_table (e, _, _)
   | Throw (_, e)
-  | Return (Some e) -> reads_of_expr acc e
-  | StructSet (_, _, e1, e2) -> reads_of_expr (reads_of_expr acc e1) e2
-  | ArraySet (_, e1, e2, e3) -> reads_of_expr (reads_of_expr (reads_of_expr acc e1) e2) e3
-  | CallInstr (_, l) | Return_call (_, l) -> List.fold_left l ~init:acc ~f:reads_of_expr
+  | Return (Some e) -> collect_rw rw e
+  | LocalSet (y, e) ->
+      rw.writes <- Var.Set.add y rw.writes;
+      collect_rw rw e
+  | StructSet (_, _, e1, e2) ->
+      collect_rw rw e1;
+      collect_rw rw e2
+  | ArraySet (_, e1, e2, e3) ->
+      collect_rw rw e1;
+      collect_rw rw e2;
+      collect_rw rw e3
+  | CallInstr (_, l) | Return_call (_, l) -> List.iter l ~f:(collect_rw rw)
   | Return_call_ref (_, f, l) ->
-      List.fold_left l ~init:(reads_of_expr acc f) ~f:reads_of_expr
-  | Loop (_, l) | Block (_, l) -> reads_of_instrs acc l
-  | If (_, c, t, e) -> reads_of_instrs (reads_of_instrs (reads_of_expr acc c) t) e
+      collect_rw rw f;
+      List.iter l ~f:(collect_rw rw)
+  | Loop (_, l) | Block (_, l) -> List.iter l ~f:(collect_rw_instr rw)
+  | If (_, c, t, el) ->
+      collect_rw rw c;
+      List.iter t ~f:(collect_rw_instr rw);
+      List.iter el ~f:(collect_rw_instr rw)
+
+let rw_of_expr e =
+  let rw = { reads = Var.Set.empty; writes = Var.Set.empty } in
+  collect_rw rw e;
+  rw.reads, rw.writes
+
+(* Reads of a sub-expression, used at [may_cross_sibling] check points. *)
+let reads_of_expr e =
+  let rw = { reads = Var.Set.empty; writes = Var.Set.empty } in
+  collect_rw rw e;
+  rw.reads
 
 (* Walker result for a single expression. [Clean] means "no occurrence
    of x in this expression; the caller may continue past, using
@@ -147,20 +211,28 @@ type walk_result =
   | Bail
   | Clean
 
-(* [reads] is [reads_of_expr e_to_sink]: the set of locals we must not
-   let an intermediate [LocalSet]/[LocalTee] write. *)
 (* [ctx] bundles the parameters that don't change during a sink attempt:
-   the target variable, the expression to sink, its read set, and whether
-   the expression itself is [effect_free]. When [e_effect_free] is
-   [false] we may not cross any *evaluated* sub-expression or
-   instruction even if it is itself [effect_free] — the path could
-   read heap/global state that [e]'s side effects would change. *)
+   the target variable, the expression to sink, the locals it reads and
+   writes, and whether the expression itself is [effect_free].
+   - [reads]: crossing a write to any of these would change [e]'s result.
+   - [writes]: crossing a read of any of these would make the reader see
+     the pre-sink value instead of the one [e] would have stored.
+   When [e_effect_free] is [false] we may not cross any *evaluated*
+   sub-expression or instruction even if it is itself [effect_free] —
+   the path could read heap/global state that [e]'s side effects would
+   change. *)
 type ctx =
   { x : Var.t
   ; e_to_sink : W.expression
   ; reads : Var.Set.t
+  ; writes : Var.Set.t
   ; e_effect_free : bool
   }
+
+(* True iff [vs] (a set of *reads* by intermediate code) does not
+   intersect [ctx.writes] — i.e. no variable that [e] writes is
+   observed by the intermediate code. *)
+let reads_disjoint_from_e_writes ctx vs = Var.Set.is_empty (Var.Set.inter vs ctx.writes)
 
 (* Purely-local expression — no heap/global reads, no calls, no traps.
    Stricter than [effect_free]: a [GlobalGet] or [ArrayGet] is
@@ -203,13 +275,19 @@ let rec trivially_pure (e : W.expression) =
 (* A sibling sub-expression was walked [Clean] (no x) and we're about
    to continue to the next sibling. This is the reorder point: [e] will
    evaluate *after* [sibling] in the sunk version, whereas originally
-   [e] ran first. When [e] itself is [effect_free] it cannot observe
-   or alter anything an [effect_free] sibling does; when [e] may have
-   side effects (a Call, say), the sibling must be stricter — no
-   heap/global reads either, since those would see different values
-   after the move. *)
+   [e] ran first. Three conditions must all hold:
+   - [sibling] has no observable side effects;
+   - either [e] is effect-free or [sibling] is trivially pure (no
+     heap/global reads, no calls);
+   - [sibling]'s reads are disjoint from [e]'s writes — otherwise
+     [sibling] would read the pre-sink value of a local that [e]
+     overwrites.  (The converse — [sibling] writing something [e]
+     reads — is caught by the walker returning [Bail] at intermediate
+     [LocalSet]/[LocalTee] and by [can_cross_instr] for instructions.) *)
 let may_cross_sibling ctx sibling =
-  effect_free sibling && (ctx.e_effect_free || trivially_pure sibling)
+  effect_free sibling
+  && (ctx.e_effect_free || trivially_pure sibling)
+  && reads_disjoint_from_e_writes ctx (reads_of_expr sibling)
 
 let rec walk_expr ctx (e : W.expression) =
   match e with
@@ -220,12 +298,16 @@ let rec walk_expr ctx (e : W.expression) =
       (* Another write to [x] — bail. *)
       Bail
   | LocalTee (y, e') -> (
-      (* Reading [e'] first, then this tee writes [y]. If [y] is read by
-         our sink expression, we cannot cross this write. *)
+      (* Reading [e'] first, then this tee writes [y]. Crossing this
+         point means [e] would run after the tee. Bail if:
+         - [y] is read by [e] (we'd read the tee's value instead of the
+           pre-tee one), or
+         - [y] is written by [e] (the final value of [y] would change). *)
       match walk_expr ctx e' with
       | Found e'' -> Found (W.LocalTee (y, e''))
       | Bail -> Bail
-      | Clean -> if Var.Set.mem y ctx.reads then Bail else Clean)
+      | Clean ->
+          if Var.Set.mem y ctx.reads || Var.Set.mem y ctx.writes then Bail else Clean)
   | UnOp (op, e') -> wrap_unary (fun e -> W.UnOp (op, e)) ctx e'
   | I32WrapI64 e' -> wrap_unary (fun e -> W.I32WrapI64 e) ctx e'
   | I64ExtendI32 (s, e') -> wrap_unary (fun e -> W.I64ExtendI32 (s, e)) ctx e'
@@ -434,7 +516,10 @@ let can_cross_instr ctx (instr : W.instruction) =
   match instr with
   | Nop | Event _ -> true
   | Drop e | Push e -> may_cross_sibling ctx e
-  | LocalSet (y, e) -> may_cross_sibling ctx e && not (Var.Set.mem y ctx.reads)
+  | LocalSet (y, e) ->
+      may_cross_sibling ctx e
+      && (not (Var.Set.mem y ctx.reads))
+      && not (Var.Set.mem y ctx.writes)
   | _ -> false
 
 let try_sink_in_list ctx instrs =
@@ -456,15 +541,13 @@ let rec transform_instrs instrs =
   | W.LocalSet (x, e) :: rest -> (
       let e = transform_expr e in
       let rest = transform_instrs rest in
-      let ctx =
-        { x
-        ; e_to_sink = e
-        ; reads = reads_of_expr Var.Set.empty e
-        ; e_effect_free = effect_free e
-        }
-      in
+      let reads, writes = rw_of_expr e in
+      let ctx = { x; e_to_sink = e; reads; writes; e_effect_free = effect_free e } in
+      incr total_candidates;
       match try_sink_in_list ctx rest with
-      | Some new_rest -> new_rest
+      | Some new_rest ->
+          incr total_sunk;
+          new_rest
       | None -> W.LocalSet (x, e) :: rest)
   | instr :: rest ->
       let instr = transform_instr instr in
@@ -532,4 +615,9 @@ and transform_expr (e : W.expression) : W.expression =
   | Seq (l, e') -> Seq (transform_instrs l, transform_expr e')
   | Try (ty, body, catches) -> Try (ty, transform_instrs body, catches)
 
-let f instrs = transform_instrs instrs
+let f instrs =
+  let t = Timer.make () in
+  incr total_calls;
+  let instrs = transform_instrs instrs in
+  total_time := !total_time +. Timer.get t;
+  instrs
