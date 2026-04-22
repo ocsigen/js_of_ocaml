@@ -2042,10 +2042,16 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      exn_handler ~result_typ ~fall_through ~context)
 
 let post_process_function_body ~profile ~param_names ~param_types ~locals body =
+  (* At [--opt 1] we skip [wasm-opt] entirely (both for .cmo/.cma and
+     for executables), so our own passes are the only ones tightening
+     the body. [Local_sink] runs first: shortening live ranges and
+     dropping [local.set]s simplifies the input to [Var_coalescing]. *)
+  let body =
+    match (profile : Profile.t) with
+    | O1 when Config.Flag.wasm_local_sink () -> Local_sink.f body
+    | O1 | O2 | O3 -> body
+  in
   let locals, body =
-    (* At [--opt 1] we skip [wasm-opt] entirely (both for .cmo/.cma and
-       for executables), so our own coalescing pass is the only one
-       shrinking the locals frame. *)
     match (profile : Profile.t) with
     | O1 when Config.Flag.wasm_var_coalescing () ->
         Var_coalescing.f ~param_names ~param_types ~locals body

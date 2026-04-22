@@ -2598,6 +2598,7 @@ let f
       ~types
       p
   in
+  Var_coalescing.report_stats ();
   if times () then Format.eprintf "  code gen.: %a@." Timer.print t;
   res
 

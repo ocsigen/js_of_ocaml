@@ -105,6 +105,8 @@ module Flag = struct
 
   let wasm_var_coalescing = o ~name:"wasm-var-coalescing" ~default:true
 
+  let wasm_local_sink = o ~name:"wasm-local-sink" ~default:true
+
   let header = o ~name:"header" ~default:true
 
   let auto_link = o ~name:"auto-link" ~default:true

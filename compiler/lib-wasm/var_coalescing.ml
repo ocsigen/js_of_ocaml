@@ -51,9 +51,44 @@ module W = Wasm_ast
 
 let times = Debug.find "times"
 
-let debug = Debug.find "wasm-var-coalescing"
-
 let stats = Debug.find "stats"
+
+(* Aggregated statistics across all calls to [f]. The pass runs once per
+   Wasm function; per-function logs are noisy, so we accumulate here and
+   emit a single summary via [report_stats]. *)
+let total_time = ref 0.
+
+let total_calls = ref 0
+
+let total_candidates = ref 0
+
+let total_hint_count = ref 0
+
+let total_opportunistic_count = ref 0
+
+let total_dead_tee_count = ref 0
+
+let report_stats () =
+  if !total_calls > 0
+  then (
+    if times () then Format.eprintf "  wasm var coalescing: %.2f@." !total_time;
+    if stats ()
+    then
+      Format.eprintf
+        "Stats - wasm var coalescing: %d functions, %d candidates, %d coalesced (%d \
+         hint, %d opportunistic), %d dead tees@."
+        !total_calls
+        !total_candidates
+        (!total_hint_count + !total_opportunistic_count)
+        !total_hint_count
+        !total_opportunistic_count
+        !total_dead_tee_count;
+    total_time := 0.;
+    total_calls := 0;
+    total_candidates := 0;
+    total_hint_count := 0;
+    total_opportunistic_count := 0;
+    total_dead_tee_count := 0)
 
 (* --------------------------------------------------------------------- *)
 (*  CFG construction                                                     *)
@@ -131,12 +166,18 @@ type stmt_graph =
             [catch_entry], every variable currently live is extended back to
             the start of the try body, modeling the fact that an exception
             can fire anywhere inside the body. *)
+  ; tee_nodes : node_id list
+        (** IDs of the [Def] nodes created for every [LocalTee] in AST
+            traversal order. Used by the dead-tee sweep after liveness
+            to decide which tees store a value no subsequent instruction
+            will read. *)
   }
 
 type graph_builder =
   { mutable nodes : (node_id * action * node_id list) list
   ; hints : Var.t Var.Hashtbl.t
   ; tries : node_id Int.Hashtbl.t
+  ; mutable tees : node_id list (* accumulated in reverse AST order *)
   }
 
 (* Block stack frame: the target node id reached by [br n] with n equal
@@ -165,7 +206,7 @@ let nth_opt l n =
 
 let build_cfg ~candidates ~param_vars instrs =
   let builder =
-    { nodes = []; hints = Var.Hashtbl.create 16; tries = Int.Hashtbl.create 8 }
+    { nodes = []; hints = Var.Hashtbl.create 16; tries = Int.Hashtbl.create 8; tees = [] }
   in
   let next_id = ref 0 in
   let reserve_id () =
@@ -200,12 +241,30 @@ let build_cfg ~candidates ~param_vars instrs =
     then add_node (Def (Var.Set.singleton x)) [ exit_node ]
     else exit_node
   in
+  (* For [LocalTee] we additionally remember the Def node we just
+     created so that the dead-tee sweep can later consult it. When [x]
+     is not a candidate, no Def node is created (we return [exit_node]
+     unchanged) and no tee-sweep is needed for that position either,
+     so we don't record anything. *)
+  let tee_node x exit_node =
+    if Var.Set.mem x candidates
+    then (
+      let id = add_node (Def (Var.Set.singleton x)) [ exit_node ] in
+      builder.tees <- id :: builder.tees;
+      id)
+    else (
+      (* Record [-1] as a placeholder so the rewriter can still pop one
+         entry per [LocalTee] it encounters in the AST, keeping the
+         traversal orders synchronised. *)
+      builder.tees <- -1 :: builder.tees;
+      exit_node)
+  in
   let rec build_expr block_stack exit_node (e : W.expression) =
     match e with
     | Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> exit_node
     | LocalGet x -> use_node x exit_node
     | LocalTee (x, e') ->
-        let tee = def_node x exit_node in
+        let tee = tee_node x exit_node in
         build_expr block_stack tee e'
     | UnOp (_, e')
     | I32WrapI64 e'
@@ -375,6 +434,7 @@ let build_cfg ~candidates ~param_vars instrs =
   ; succs
   ; coalescing_hints = builder.hints
   ; try_blocks = builder.tries
+  ; tee_nodes = List.rev builder.tees
   }
 
 (* --------------------------------------------------------------------- *)
@@ -806,78 +866,156 @@ let subst_var subst x =
   | None -> x
   | Some y -> y
 
-let rec rewrite_expr subst (e : W.expression) : W.expression =
+(* State threaded through the rewrite: the substitution, a mutable queue
+   of [tee_nodes] popped as we encounter each [LocalTee] in the AST, the
+   set of dead-tee node ids (as classified before rename), and an
+   accumulator of variables that had their only write eliminated by a
+   dead-tee replacement. *)
+type rewriter =
+  { subst : Var.t Var.Hashtbl.t
+  ; mutable tee_queue : node_id list
+  ; dead_tees : unit Int.Hashtbl.t
+  ; erased : unit Var.Hashtbl.t
+  }
+
+let pop_tee r =
+  match r.tee_queue with
+  | [] ->
+      (* Every [LocalTee] encountered by the rewriter corresponds to one
+         entry recorded by [build_cfg]. If the queue is empty here, the
+         two traversals have drifted out of sync. *)
+      assert false
+  | id :: rest ->
+      r.tee_queue <- rest;
+      id
+
+(* A [rev_map]-style helper that applies [f] to list elements in
+   right-to-left order, matching [List.fold_right]'s visit order used
+   by [build_cfg] — the tee queue must be consumed in the same order it
+   was produced. *)
+let map_right_to_left f l = List.fold_right l ~init:[] ~f:(fun x acc -> f x :: acc)
+
+let rec rewrite_expr r (e : W.expression) : W.expression =
   match e with
   | Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> e
-  | LocalGet x -> LocalGet (subst_var subst x)
-  | LocalTee (x, e') -> LocalTee (subst_var subst x, rewrite_expr subst e')
-  | UnOp (op, e') -> UnOp (op, rewrite_expr subst e')
-  | I32WrapI64 e' -> I32WrapI64 (rewrite_expr subst e')
-  | I64ExtendI32 (s, e') -> I64ExtendI32 (s, rewrite_expr subst e')
-  | F32DemoteF64 e' -> F32DemoteF64 (rewrite_expr subst e')
-  | F64PromoteF32 e' -> F64PromoteF32 (rewrite_expr subst e')
-  | RefI31 e' -> RefI31 (rewrite_expr subst e')
-  | I31Get (s, e') -> I31Get (s, rewrite_expr subst e')
-  | ArrayLen e' -> ArrayLen (rewrite_expr subst e')
-  | StructGet (s, ty, i, e') -> StructGet (s, ty, i, rewrite_expr subst e')
-  | RefCast (ty, e') -> RefCast (ty, rewrite_expr subst e')
-  | RefTest (ty, e') -> RefTest (ty, rewrite_expr subst e')
-  | Br_on_cast (i, a, b, e') -> Br_on_cast (i, a, b, rewrite_expr subst e')
-  | Br_on_cast_fail (i, a, b, e') -> Br_on_cast_fail (i, a, b, rewrite_expr subst e')
-  | Br_on_null (i, e') -> Br_on_null (i, rewrite_expr subst e')
-  | ExternConvertAny e' -> ExternConvertAny (rewrite_expr subst e')
-  | AnyConvertExtern e' -> AnyConvertExtern (rewrite_expr subst e')
-  | BinOp (op, e1, e2) -> BinOp (op, rewrite_expr subst e1, rewrite_expr subst e2)
-  | ArrayNew (ty, e1, e2) -> ArrayNew (ty, rewrite_expr subst e1, rewrite_expr subst e2)
+  | LocalGet x -> LocalGet (subst_var r.subst x)
+  | LocalTee (x, e') ->
+      (* [build_cfg] records the tee's Def-node id BEFORE recursing into
+         [e']; mirror that here. *)
+      let id = pop_tee r in
+      let dead = id <> -1 && Int.Hashtbl.mem r.dead_tees id in
+      let e'' = rewrite_expr r e' in
+      if dead
+      then (
+        Var.Hashtbl.replace r.erased x ();
+        e'')
+      else LocalTee (subst_var r.subst x, e'')
+  | UnOp (op, e') -> UnOp (op, rewrite_expr r e')
+  | I32WrapI64 e' -> I32WrapI64 (rewrite_expr r e')
+  | I64ExtendI32 (s, e') -> I64ExtendI32 (s, rewrite_expr r e')
+  | F32DemoteF64 e' -> F32DemoteF64 (rewrite_expr r e')
+  | F64PromoteF32 e' -> F64PromoteF32 (rewrite_expr r e')
+  | RefI31 e' -> RefI31 (rewrite_expr r e')
+  | I31Get (s, e') -> I31Get (s, rewrite_expr r e')
+  | ArrayLen e' -> ArrayLen (rewrite_expr r e')
+  | StructGet (s, ty, i, e') -> StructGet (s, ty, i, rewrite_expr r e')
+  | RefCast (ty, e') -> RefCast (ty, rewrite_expr r e')
+  | RefTest (ty, e') -> RefTest (ty, rewrite_expr r e')
+  | Br_on_cast (i, a, b, e') -> Br_on_cast (i, a, b, rewrite_expr r e')
+  | Br_on_cast_fail (i, a, b, e') -> Br_on_cast_fail (i, a, b, rewrite_expr r e')
+  | Br_on_null (i, e') -> Br_on_null (i, rewrite_expr r e')
+  | ExternConvertAny e' -> ExternConvertAny (rewrite_expr r e')
+  | AnyConvertExtern e' -> AnyConvertExtern (rewrite_expr r e')
+  (* Binary cases: [build_cfg] processes [e2] first (fold-right style). *)
+  | BinOp (op, e1, e2) ->
+      let e2' = rewrite_expr r e2 in
+      let e1' = rewrite_expr r e1 in
+      BinOp (op, e1', e2')
+  | ArrayNew (ty, e1, e2) ->
+      let e2' = rewrite_expr r e2 in
+      let e1' = rewrite_expr r e1 in
+      ArrayNew (ty, e1', e2')
   | ArrayNewData (ty, d, e1, e2) ->
-      ArrayNewData (ty, d, rewrite_expr subst e1, rewrite_expr subst e2)
+      let e2' = rewrite_expr r e2 in
+      let e1' = rewrite_expr r e1 in
+      ArrayNewData (ty, d, e1', e2')
   | ArrayGet (s, ty, e1, e2) ->
-      ArrayGet (s, ty, rewrite_expr subst e1, rewrite_expr subst e2)
-  | RefEq (e1, e2) -> RefEq (rewrite_expr subst e1, rewrite_expr subst e2)
-  | Call (f, l) -> Call (f, List.map l ~f:(rewrite_expr subst))
-  | ArrayNewFixed (ty, l) -> ArrayNewFixed (ty, List.map l ~f:(rewrite_expr subst))
-  | StructNew (ty, l) -> StructNew (ty, List.map l ~f:(rewrite_expr subst))
-  | Call_ref (f, g, l) ->
-      Call_ref (f, rewrite_expr subst g, List.map l ~f:(rewrite_expr subst))
+      let e2' = rewrite_expr r e2 in
+      let e1' = rewrite_expr r e1 in
+      ArrayGet (s, ty, e1', e2')
+  | RefEq (e1, e2) ->
+      let e2' = rewrite_expr r e2 in
+      let e1' = rewrite_expr r e1 in
+      RefEq (e1', e2')
+  (* List cases: args processed right-to-left. *)
+  | Call (f, l) -> Call (f, map_right_to_left (rewrite_expr r) l)
+  | ArrayNewFixed (ty, l) -> ArrayNewFixed (ty, map_right_to_left (rewrite_expr r) l)
+  | StructNew (ty, l) -> StructNew (ty, map_right_to_left (rewrite_expr r) l)
+  (* [Call_ref]: funcref first, then args right-to-left. *)
+  | Call_ref (ty, f, l) ->
+      let f' = rewrite_expr r f in
+      let l' = map_right_to_left (rewrite_expr r) l in
+      Call_ref (ty, f', l')
+  (* [IfExpr]: [e1], then [e2], then [cond] — [build_cfg] order. *)
   | IfExpr (ty, cond, e1, e2) ->
-      IfExpr (ty, rewrite_expr subst cond, rewrite_expr subst e1, rewrite_expr subst e2)
-  | BlockExpr (ty, l) -> BlockExpr (ty, rewrite_instrs subst l)
-  | Seq (l, e') -> Seq (rewrite_instrs subst l, rewrite_expr subst e')
-  | Try (ty, body, catches) -> Try (ty, rewrite_instrs subst body, catches)
+      let e1' = rewrite_expr r e1 in
+      let e2' = rewrite_expr r e2 in
+      let cond' = rewrite_expr r cond in
+      IfExpr (ty, cond', e1', e2')
+  | BlockExpr (ty, l) -> BlockExpr (ty, rewrite_instrs r l)
+  | Seq (l, e') ->
+      let e'' = rewrite_expr r e' in
+      let l' = rewrite_instrs r l in
+      Seq (l', e'')
+  | Try (ty, body, catches) -> Try (ty, rewrite_instrs r body, catches)
 
-and rewrite_instr subst (i : W.instruction) : W.instruction option =
+and rewrite_instr r (i : W.instruction) : W.instruction option =
   match i with
   | Nop | Event _ | Unreachable | Rethrow _ | Br (_, None) | Return None -> Some i
-  | Drop e -> Some (Drop (rewrite_expr subst e))
-  | Push e -> Some (Push (rewrite_expr subst e))
+  | Drop e -> Some (Drop (rewrite_expr r e))
+  | Push e -> Some (Push (rewrite_expr r e))
   | LocalSet (x, e) -> (
-      let x' = subst_var subst x in
-      let e' = rewrite_expr subst e in
+      let e' = rewrite_expr r e in
+      let x' = subst_var r.subst x in
       match e' with
       | LocalGet y when Var.equal x' y -> None
       | _ -> Some (LocalSet (x', e')))
-  | GlobalSet (x, e) -> Some (GlobalSet (x, rewrite_expr subst e))
+  | GlobalSet (x, e) -> Some (GlobalSet (x, rewrite_expr r e))
   | StructSet (ty, i, e1, e2) ->
-      Some (StructSet (ty, i, rewrite_expr subst e1, rewrite_expr subst e2))
+      let e2' = rewrite_expr r e2 in
+      let e1' = rewrite_expr r e1 in
+      Some (StructSet (ty, i, e1', e2'))
   | ArraySet (ty, e1, e2, e3) ->
-      Some
-        (ArraySet (ty, rewrite_expr subst e1, rewrite_expr subst e2, rewrite_expr subst e3))
-  | CallInstr (f, l) -> Some (CallInstr (f, List.map l ~f:(rewrite_expr subst)))
-  | Return_call (f, l) -> Some (Return_call (f, List.map l ~f:(rewrite_expr subst)))
-  | Return_call_ref (f, g, l) ->
-      Some (Return_call_ref (f, rewrite_expr subst g, List.map l ~f:(rewrite_expr subst)))
-  | Return (Some e) -> Some (Return (Some (rewrite_expr subst e)))
-  | Throw (t, e) -> Some (Throw (t, rewrite_expr subst e))
-  | Br (i, Some e) -> Some (Br (i, Some (rewrite_expr subst e)))
-  | Br_if (i, e) -> Some (Br_if (i, rewrite_expr subst e))
-  | Br_table (e, l, d) -> Some (Br_table (rewrite_expr subst e, l, d))
-  | Loop (ty, l) -> Some (Loop (ty, rewrite_instrs subst l))
-  | Block (ty, l) -> Some (Block (ty, rewrite_instrs subst l))
+      let e3' = rewrite_expr r e3 in
+      let e2' = rewrite_expr r e2 in
+      let e1' = rewrite_expr r e1 in
+      Some (ArraySet (ty, e1', e2', e3'))
+  | CallInstr (f, l) -> Some (CallInstr (f, map_right_to_left (rewrite_expr r) l))
+  | Return_call (f, l) -> Some (Return_call (f, map_right_to_left (rewrite_expr r) l))
+  | Return_call_ref (ty, f, l) ->
+      let f' = rewrite_expr r f in
+      let l' = map_right_to_left (rewrite_expr r) l in
+      Some (Return_call_ref (ty, f', l'))
+  | Return (Some e) -> Some (Return (Some (rewrite_expr r e)))
+  | Throw (t, e) -> Some (Throw (t, rewrite_expr r e))
+  | Br (i, Some e) -> Some (Br (i, Some (rewrite_expr r e)))
+  | Br_if (i, e) -> Some (Br_if (i, rewrite_expr r e))
+  | Br_table (e, l, d) -> Some (Br_table (rewrite_expr r e, l, d))
+  | Loop (ty, l) -> Some (Loop (ty, rewrite_instrs r l))
+  | Block (ty, l) -> Some (Block (ty, rewrite_instrs r l))
   | If (ty, cond, l1, l2) ->
-      Some
-        (If (ty, rewrite_expr subst cond, rewrite_instrs subst l1, rewrite_instrs subst l2))
+      let l1' = rewrite_instrs r l1 in
+      let l2' = rewrite_instrs r l2 in
+      let cond' = rewrite_expr r cond in
+      Some (If (ty, cond', l1', l2'))
 
-and rewrite_instrs subst l = List.filter_map l ~f:(rewrite_instr subst)
+(* [build_cfg] processes instruction lists right-to-left via [fold_right].
+   Use the same order here so the tee queue is consumed consistently. *)
+and rewrite_instrs r l =
+  List.fold_right l ~init:[] ~f:(fun i acc ->
+      match rewrite_instr r i with
+      | Some i' -> i' :: acc
+      | None -> acc)
 
 (* --------------------------------------------------------------------- *)
 (*  Entry point                                                          *)
@@ -905,43 +1043,148 @@ let f ~param_names ~param_types ~locals instrs =
   let num_candidates = Var.Set.cardinal candidates in
   if num_candidates <= 1
   then locals, instrs
-  else
+  else (
+    incr total_calls;
+    total_candidates := !total_candidates + num_candidates;
     let g = build_cfg ~candidates ~param_vars instrs in
     let live_in_map = compute_liveness g in
+    (* Dead-tee detection using the liveness already computed. A
+         [LocalTee x e] Def node is "dead" iff [x] is not in the node's
+         [live_out] — no subsequent instruction will read what the tee
+         stored. This must be done on the ORIGINAL variables, before
+         rename: coalescing only guarantees disjoint live ranges for
+         the vars it merges, not that the tee's write is unobserved by
+         the slot's other users. *)
+    let dead_tees = Int.Hashtbl.create 16 in
+    List.iter g.tee_nodes ~f:(fun id ->
+        if id >= 0
+        then
+          let live_out =
+            List.fold_left g.succs.(id) ~init:Var.Set.empty ~f:(fun acc s ->
+                Var.Set.union acc live_in_map.(s))
+          in
+          match (g.actions.(id) : action) with
+          | Def d ->
+              let x = Var.Set.choose d in
+              if not (Var.Set.mem x live_out) then Int.Hashtbl.replace dead_tees id ()
+          | Use _ | Nop -> ());
     let ranges = compute_live_ranges g live_in_map candidates param_vars in
     let subst = Var.Hashtbl.create num_candidates in
     let hint_count, opportunistic_count =
       allocate_registers subst types ranges g.coalescing_hints
     in
-    if debug ()
-    then
-      Format.eprintf
-        "wasm var-coalescing: %d candidates, %d hint + %d opportunistic@."
-        num_candidates
-        hint_count
-        opportunistic_count;
-    (* Only candidates that merged into a different representative are
-         recorded in [subst]; its size is therefore the count of changes. *)
-    if Var.Hashtbl.length subst = 0
+    let dead_tee_count = Int.Hashtbl.length dead_tees in
+    total_hint_count := !total_hint_count + hint_count;
+    total_opportunistic_count := !total_opportunistic_count + opportunistic_count;
+    total_dead_tee_count := !total_dead_tee_count + dead_tee_count;
+    (* Short-circuit only when BOTH rewriting drivers would be no-ops. *)
+    if Var.Hashtbl.length subst = 0 && dead_tee_count = 0
     then (
-      if times () then Format.eprintf "  wasm var coalescing: %a@." Timer.print t;
+      total_time := !total_time +. Timer.get t;
       locals, instrs)
     else
-      let instrs = rewrite_instrs subst instrs in
-      (* Rebuild locals: keep only those whose representative is themselves,
-           i.e. those that weren't merged away. Preserve original ordering to
-           keep the Wasm output deterministic. *)
-      let kept_locals =
-        List.filter locals ~f:(fun (v, _) -> not (Var.Hashtbl.mem subst v))
+      let r =
+        { subst; tee_queue = g.tee_nodes; dead_tees; erased = Var.Hashtbl.create 16 }
       in
-      if times () then Format.eprintf "  wasm var coalescing: %a@." Timer.print t;
-      if stats ()
-      then
-        Format.eprintf
-          "Stats - wasm var coalescing: %d candidates, %d coalesced (%d hint, %d \
-           opportunistic)@."
-          num_candidates
-          (hint_count + opportunistic_count)
-          hint_count
-          opportunistic_count;
-      kept_locals, instrs
+      let instrs = rewrite_instrs r instrs in
+      (* The tee queue must be fully consumed if [build_cfg] and the
+           rewriter saw the same AST. *)
+      assert (List.is_empty r.tee_queue);
+      (* Dropping dead tees may have left some locals with no
+           references at all. Scan the rewritten body once to find such
+           orphans among the vars we erased, and drop them from the
+           [locals] declaration. *)
+      let still_referenced =
+        if Var.Hashtbl.length r.erased = 0
+        then r.erased (* unused; avoid a scan *)
+        else
+          let seen = Var.Hashtbl.create (Var.Hashtbl.length r.erased) in
+          let note v = if Var.Hashtbl.mem r.erased v then Var.Hashtbl.replace seen v () in
+          let rec scan_expr (e : W.expression) =
+            match e with
+            | Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> ()
+            | LocalGet x -> note x
+            | LocalTee (x, e') ->
+                note x;
+                scan_expr e'
+            | UnOp (_, e')
+            | I32WrapI64 e'
+            | I64ExtendI32 (_, e')
+            | F32DemoteF64 e'
+            | F64PromoteF32 e'
+            | RefI31 e'
+            | I31Get (_, e')
+            | ArrayLen e'
+            | StructGet (_, _, _, e')
+            | RefCast (_, e')
+            | RefTest (_, e')
+            | Br_on_cast (_, _, _, e')
+            | Br_on_cast_fail (_, _, _, e')
+            | Br_on_null (_, e')
+            | ExternConvertAny e'
+            | AnyConvertExtern e' -> scan_expr e'
+            | BinOp (_, e1, e2)
+            | ArrayNew (_, e1, e2)
+            | ArrayNewData (_, _, e1, e2)
+            | ArrayGet (_, _, e1, e2)
+            | RefEq (e1, e2) ->
+                scan_expr e1;
+                scan_expr e2
+            | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) ->
+                List.iter l ~f:scan_expr
+            | Call_ref (_, f, l) ->
+                scan_expr f;
+                List.iter l ~f:scan_expr
+            | IfExpr (_, c, t, el) ->
+                scan_expr c;
+                scan_expr t;
+                scan_expr el
+            | BlockExpr (_, l) -> scan_instrs l
+            | Seq (l, e') ->
+                scan_instrs l;
+                scan_expr e'
+            | Try (_, body, _) -> scan_instrs body
+          and scan_instr (i : W.instruction) =
+            match i with
+            | Nop | Event _ | Br (_, None) | Return None | Rethrow _ | Unreachable -> ()
+            | Drop e
+            | Push e
+            | GlobalSet (_, e)
+            | Br (_, Some e)
+            | Br_if (_, e)
+            | Br_table (e, _, _)
+            | Throw (_, e)
+            | Return (Some e) -> scan_expr e
+            | LocalSet (x, e) ->
+                note x;
+                scan_expr e
+            | StructSet (_, _, e1, e2) ->
+                scan_expr e1;
+                scan_expr e2
+            | ArraySet (_, e1, e2, e3) ->
+                scan_expr e1;
+                scan_expr e2;
+                scan_expr e3
+            | CallInstr (_, l) | Return_call (_, l) -> List.iter l ~f:scan_expr
+            | Return_call_ref (_, f, l) ->
+                scan_expr f;
+                List.iter l ~f:scan_expr
+            | Loop (_, l) | Block (_, l) -> scan_instrs l
+            | If (_, c, t, el) ->
+                scan_expr c;
+                scan_instrs t;
+                scan_instrs el
+          and scan_instrs l = List.iter l ~f:scan_instr in
+          scan_instrs instrs;
+          seen
+      in
+      (* Rebuild locals: drop vars merged away, or vars whose only
+           reference was an eliminated dead tee and who have no
+           surviving references in the rewritten body. *)
+      let kept_locals =
+        List.filter locals ~f:(fun (v, _) ->
+            (not (Var.Hashtbl.mem subst v))
+            && not (Var.Hashtbl.mem r.erased v && not (Var.Hashtbl.mem still_referenced v)))
+      in
+      total_time := !total_time +. Timer.get t;
+      kept_locals, instrs)

@@ -34,3 +34,7 @@ val f :
   -> locals:(Code.Var.t * Wasm_ast.value_type) list
   -> Wasm_ast.instruction list
   -> (Code.Var.t * Wasm_ast.value_type) list * Wasm_ast.instruction list
+
+val report_stats : unit -> unit
+(** Emit aggregated time/stats logs accumulated across all [f] calls and
+    reset the counters. Honours the [times] and [stats] debug flags. *)
