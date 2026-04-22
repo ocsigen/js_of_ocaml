@@ -2057,7 +2057,17 @@ let post_process_function_body ~profile ~param_names ~param_types ~locals body =
         Var_coalescing.f ~param_names ~param_types ~locals body
     | O1 | O2 | O3 -> locals, body
   in
-  Initialize_locals.f ~param_names ~locals body
+  let locals, body = Initialize_locals.f ~param_names ~locals body in
+  (* Reorder locals so frequently-used ones get low Wasm indices
+     (one-byte LEB128 encoding for indices < 128). Gated on [O1] to
+     match the rest of this pipeline; at [O2]/[O3] [wasm-opt] handles
+     local reordering. *)
+  let locals =
+    match (profile : Profile.t) with
+    | O1 when Config.Flag.wasm_reorder_locals () -> Reorder_locals.f ~locals body
+    | O1 | O2 | O3 -> locals
+  in
+  locals, body
 
 let entry_point ~toplevel_fun =
   let code =
