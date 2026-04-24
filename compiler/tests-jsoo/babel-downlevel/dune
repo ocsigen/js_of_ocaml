@@ -1,0 +1,11 @@
+; Opt-in test that validates the recipe documented in
+; manual/browser-compat.wiki: post-processing js_of_ocaml output with
+; Babel + core-js for pre-ES2015 targets.
+;
+; Not attached to @runtest — only runs on the dedicated alias.
+; Requires `npm install` at the repository root (adds @babel/cli,
+; @babel/preset-env, core-js, es-check). Run via:
+;   make test-babel-downlevel
+
+(cram
+ (alias runtest-babel-downlevel))

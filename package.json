@@ -1,0 +1,12 @@
+{
+  "devDependencies": {
+    "@babel/cli": "^7.28.6",
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.2",
+    "es-check": "^9.6.4",
+    "esbuild": "^0.28.0"
+  },
+  "dependencies": {
+    "core-js": "^3.6.5"
+  }
+}
