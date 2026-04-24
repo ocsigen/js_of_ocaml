@@ -7,6 +7,12 @@ tests:
 tests-wasm:
 	WASM_OF_OCAML=true dune build @runtest-wasm
 
+# Validates the Babel downleveling recipe documented in
+# manual/browser-compat.wiki. Requires `npm install` at the repo root
+# for @babel/cli, @babel/preset-env, core-js, and es-check.
+test-babel-downlevel:
+	JSOO_ROOT=$(CURDIR) dune build @runtest-babel-downlevel
+
 test runtest runtests: tests
 
 doc:

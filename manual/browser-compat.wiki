@@ -1,0 +1,101 @@
+= Targeting older browsers
+
+Js_of_ocaml's generated code and runtime target **ECMAScript 2020 (ES2020)**.
+Out of the box, the output runs on Node.js 16+ and any evergreen browser
+released since early 2020 (Chrome 80+, Firefox 74+, Safari 13.4+, Edge 80+).
+
+If you need to support an older engine, you can post-process the
+generated JavaScript with [[https://babeljs.io|Babel]] and ship
+polyfills with [[https://github.com/zloirock/core-js|core-js]].
+Js_of_ocaml has no built-in downleveling.
+
+==@@id="babel-recipe"@@ Transpiling with Babel
+
+Install Babel and core-js:
+
+{{{
+npm install --save-dev @babel/core @babel/cli @babel/preset-env
+npm install core-js
+}}}
+
+Create a {{{babel.config.json}}} next to your build:
+
+<<code language="json"|
+{
+  "presets": [
+    ["@babel/preset-env", {
+      "targets": "> 0.5%, last 2 versions, not dead",
+      "useBuiltIns": "usage",
+      "corejs": "3.37"
+    }]
+  ]
+}
+>>
+
+Set {{{targets}}} to the
+[[https://github.com/browserslist/browserslist|browserslist query]]
+matching the engines you need to support.
+
+Compile your program with js_of_ocaml, then run Babel on the output:
+
+{{{
+js_of_ocaml --target-env=browser program.byte -o program.js
+npx babel program.js -o program.es5.js
+}}}
+
+{{{--target-env=browser}}} keeps the runtime from pulling in Node-only
+branches, which would otherwise fail to resolve when bundling.
+
+The resulting {{{program.es5.js}}} imports polyfills from {{{core-js}}}
+with {{{require("core-js/modules/...")}}} calls. Before shipping to a
+browser you need to bundle it so those imports are resolved and inlined.
+
+==@@id="bundling"@@ Bundling
+
+Any JavaScript bundler will work; [[https://esbuild.github.io|esbuild]]
+is a small, zero-config option:
+
+{{{
+npm install --save-dev esbuild
+npx esbuild program.es5.js --bundle --platform=browser \
+  --outfile=program.bundle.js
+}}}
+
+Esbuild preserves whatever ES level Babel produced; it just resolves
+{{{require}}} calls and concatenates modules.
+
+Ship {{{program.bundle.js}}} as a single script; no additional polyfills
+are required at load time.
+
+==@@id="dune"@@ With dune
+
+You can wire Babel into your dune rules so it runs automatically:
+
+{{{
+(rule
+ (targets program.es5.js)
+ (deps program.bc.js babel.config.json)
+ (action
+  (run npx babel %{dep:program.bc.js} -o %{targets})))
+}}}
+
+==@@id="caveats"@@ Caveats
+
+* **Code size**: polyfills and transpiled helpers add a non-trivial amount of
+  JavaScript. Expect the output to be noticeably larger.
+* **Performance**: transpiled code tends to run slower than the original
+  ES2020 output, especially the further back you target.
+* **Source maps**: pass {{{--source-map}}} to js_of_ocaml and {{{--source-maps}}}
+  to Babel to keep a mapping back to the OCaml source. Babel will chain the
+  source map through if one is present alongside its input.
+* **Weak references**: core-js does not polyfill {{{WeakRef}}} faithfully.
+  On engines without native {{{WeakRef}}}, {{{Stdlib.Weak}}} and
+  {{{Stdlib.Ephemeron}}} behave as strong references — values held by them
+  will not be collected.
+* **Wasm_of_ocaml**: targeting older browsers is not possible with
+  {{{wasm_of_ocaml}}}, which requires a WebAssembly GC-capable engine.
+
+==@@id="see-also"@@ See also
+
+* <<a_manual chapter="options"|Command line options>> — compiler flags
+* <<a_manual chapter="install"|Installation>> — supported engines
