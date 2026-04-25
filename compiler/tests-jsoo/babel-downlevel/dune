@@ -8,4 +8,5 @@
 ;   make test-babel-downlevel
 
 (cram
- (alias runtest-babel-downlevel))
+ (alias runtest-babel-downlevel)
+ (runtest_alias false))
