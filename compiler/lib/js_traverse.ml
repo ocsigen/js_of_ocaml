@@ -1927,11 +1927,6 @@ class clean =
       | s -> s
   end
 
-let opt_cons b l =
-  match b with
-  | Some b -> b :: l
-  | None -> l
-
 let use_fun_context l =
   let exception True in
   try
@@ -2122,6 +2117,20 @@ class simpl =
       (* Process a single statement: var->expr conversion and if simplifications.
          Returns (acc, is_var) where is_var indicates if result is a var statement. *)
       let process_one acc prev_is_var st loc =
+        (* Drop branches of if-statements with constant conditions before
+           visiting, so that variables declared in dropped branches are not
+           added to the [declared] set. *)
+        let st, loc =
+          match st with
+          (* if (1) e1 ... --> e1 *)
+          | If_statement (ENum n, (iftrue, iftrue_loc), _) when Num.is_one n ->
+              iftrue, iftrue_loc
+          (* if (0) e1 else e2 --> e2 *)
+          | If_statement (ENum n, _, Some (iffalse, iffalse_loc)) when Num.is_zero n ->
+              iffalse, iffalse_loc
+          | If_statement (ENum n, _, None) when Num.is_zero n -> Empty_statement, loc
+          | _ -> st, loc
+        in
         let st = m#with_in_var_sequence prev_is_var m#statement st in
         let is_var =
           match st with
@@ -2131,10 +2140,6 @@ class simpl =
         in
         let acc =
           match st with
-          (* if (1) e1 ... --> e1 *)
-          | If_statement (ENum n, iftrue, _) when Num.is_one n -> iftrue :: acc
-          (* if (0) e1 else e2 --> e2 *)
-          | If_statement (ENum n, _, iffalse) when Num.is_zero n -> opt_cons iffalse acc
           (* if (e1) return e2 else return e3 --> return e1 ? e2 : e3 *)
           | If_statement
               ( cond
