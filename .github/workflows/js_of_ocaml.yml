@@ -11,6 +11,9 @@ on:
 
 jobs:
   build:
+    env:
+      OXCAML_OPAM_REPO_REF: 5ac45e334a1d6b43d70ba5ad4bd58092f9796e2a
+
     strategy:
       fail-fast: false
       matrix:
@@ -93,7 +96,7 @@ jobs:
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "OxCaml"
-            ocaml-compiler: "ocaml-variants.5.2.0+ox,oxcaml-compiler.5.2.0minus25"
+            ocaml-compiler: "ocaml-variants.5.2.0+ox"
             skip-effects: false
             skip-test: false
             skip-doc: true
@@ -142,7 +145,7 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           opam-repositories: |
             default: https://github.com/ocaml/opam-repository.git
-            ox: https://github.com/oxcaml/opam-repository.git
+            ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       # Work-around a race between reinstalling mingw-w64-shims
@@ -162,13 +165,8 @@ jobs:
       - name: Pin specific packages for OxCaml
         # With OxCaml fixes
         run: |
+          opam pin add --with-version 1.0.3+ox -n https://github.com/vouillon/uutf.git#oxcaml
           opam pin add -n lwt 6.0.0+ox
-        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
-
-      - name: DEBUG
-        run: |
-          opam pin add -n opam-format 2.5.0+ox
-          opam install opam-format
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - run: opam install . --deps-only --with-test
