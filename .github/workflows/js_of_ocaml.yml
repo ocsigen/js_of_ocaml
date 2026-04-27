@@ -165,6 +165,12 @@ jobs:
           opam pin add -n lwt 6.0.0+ox
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
+      - name: DEBUG
+        run: |
+          opam pin add -n opam-format 2.5.0+ox
+          opam install opam-format
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
+
       - run: opam install . --deps-only --with-test
         # Install the test dependencies
         if: ${{ !matrix.skip-test }}
