@@ -546,10 +546,27 @@ let run
        let include_dirs = Filename.dirname input_file :: include_dirs in
        res, ch, (fun () -> close_in ch), include_dirs
      in
+     let include_cmis = toplevel && not no_cmis in
      let compile_cmo cmo cont =
        let t1 = Timer.make () in
        let code =
-         Parse_bytecode.from_cmo ~includes:include_dirs ~debug:need_debug cmo ic
+         Parse_bytecode.from_cmo
+           ~includes:include_dirs
+           ~include_cmis
+           ~debug:need_debug
+           cmo
+           ic
+       in
+       let cmi_files =
+         if include_cmis
+         then
+           let paths =
+             include_dirs
+             @ StringSet.elements
+                 (Parse_bytecode.Debug.paths code.debug ~units:code.cmis)
+           in
+           Pseudo_fs.collect_cmis ~cmis:code.cmis ~paths
+         else []
        in
        let unit_info = Unit_info.of_cmo cmo in
        let (Global_name.Compunit unit_name) = Ocaml_compiler.Cmo_format.name cmo in
@@ -589,12 +606,11 @@ let run
            ();
          { Link.unit_name; unit_info; fragments }, shapes
        in
-       cont unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes
+       cont unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes cmi_files
      in
      (match kind with
      | `Exe ->
          let t1 = Timer.make () in
-         let include_cmis = toplevel && not no_cmis in
          let dynlink = toplevel || dynlink in
          let code =
            Parse_bytecode.from_exe
@@ -711,11 +727,17 @@ let run
          let compile_cmo' z cmo =
            compile_cmo
              cmo
-             (fun unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes ->
+             (fun unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes cmi_files ->
                Zip.add_file z ~name:"code.wasm" ~file:tmp_wasm_file;
                Zip.add_entry z ~name:"link_order" ~contents:unit_name;
                Zip.add_entry z ~name:"shapes.sexp" ~contents:(string_of_shapes shapes);
                add_source_map sourcemap_don't_inline_content z (`File opt_tmp_map_file);
+               if not (List.is_empty cmi_files)
+               then
+                 Zip.add_entry
+                   z
+                   ~name:"embedded_files"
+                   ~contents:(Marshal.to_string cmi_files []);
                unit_data)
          in
          let unit_data = [ compile_cmo' z cmo ] in
@@ -730,8 +752,15 @@ let run
            List.fold_right
              ~f:(fun cmo cont l ->
                compile_cmo cmo
-               @@ fun unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes ->
-               cont ((unit_data, unit_name, tmp_wasm_file, opt_tmp_map_file, shapes) :: l))
+               @@ fun unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes cmi_files ->
+               cont
+                 (( unit_data
+                  , unit_name
+                  , tmp_wasm_file
+                  , opt_tmp_map_file
+                  , shapes
+                  , cmi_files )
+                  :: l))
              cma.lib_units
              ~init:(fun l ->
                Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
@@ -740,7 +769,7 @@ let run
                let source_map =
                  Wasm_link.f
                    (List.map
-                      ~f:(fun (_, _, file, opt_source_map, _) ->
+                      ~f:(fun (_, _, file, opt_source_map, _, _) ->
                         { Wasm_link.module_name = "OCaml"
                         ; file
                         ; code = None
@@ -759,18 +788,27 @@ let run
                  ~contents:
                    (String.concat
                       ~sep:"\x00"
-                      (List.map ~f:(fun (_, unit_name, _, _, _) -> unit_name) l));
+                      (List.map ~f:(fun (_, unit_name, _, _, _, _) -> unit_name) l));
                let shapes =
                  List.fold_left
                    ~init:StringMap.empty
-                   ~f:(fun acc (_, _, _, _, shapes) -> merge_shape acc shapes)
+                   ~f:(fun acc (_, _, _, _, shapes, _) -> merge_shape acc shapes)
                    l
                in
                Zip.add_entry z ~name:"shapes.sexp" ~contents:(string_of_shapes shapes);
                if enable_source_maps
                then
                  add_source_map sourcemap_don't_inline_content z (`Source_map source_map);
-               List.map ~f:(fun (unit_data, _, _, _, _) -> unit_data) l)
+               let cmi_files =
+                 List.concat_map ~f:(fun (_, _, _, _, _, cmis) -> cmis) l
+               in
+               if not (List.is_empty cmi_files)
+               then
+                 Zip.add_entry
+                   z
+                   ~name:"embedded_files"
+                   ~contents:(Marshal.to_string cmi_files []);
+               List.map ~f:(fun (unit_data, _, _, _, _, _) -> unit_data) l)
              []
          in
          Link.add_info z ~build_info:(Build_info.create `Cma) ~unit_data ();

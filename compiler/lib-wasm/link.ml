@@ -738,9 +738,18 @@ let build_dynlink_init ~to_link ~all_primitives =
   let wasm_binary, _fragments = Generate.compile ~unit_name:(Some "_link_info") code in
   wasm_binary
 
+let read_embedded_files file =
+  Zip.with_open_in file (fun z ->
+      if Zip.has_entry z ~name:"embedded_files"
+      then Marshal.from_string (Zip.read_entry z ~name:"embedded_files") 0
+      else [])
+
 let link ~output_file ~linkall ~enable_source_maps ~embedded_files ~files =
   if times () then Format.eprintf "linking@.";
   let t = Timer.make () in
+  let embedded_files =
+    embedded_files @ List.concat_map ~f:read_embedded_files files
+  in
   let files = load_information files in
   (match files with
   | [] -> assert false
