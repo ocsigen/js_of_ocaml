@@ -33,23 +33,11 @@ let f () =
   in
   let p = compile_and_parse ~flags:[ "--debug=invariant" ] p in
   print_fun_decl p (Some "f");
-  [%expect.unreachable]
-[@@expect.uncaught_exn
-  {|
-  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
-     This is strongly discouraged as backtraces are fragile.
-     Please change this test to not include a backtrace. *)
-  (Failure "non-zero exit code")
-  Raised at Stdlib__Buffer.add_channel in file "buffer.ml", line 213, characters 18-35
-  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string.loop in file "compiler/tests-compiler/util/util.ml", line 169, characters 4-52
-  Called from Jsoo_compiler_expect_tests_helper__Util.channel_to_string in file "compiler/tests-compiler/util/util.ml", line 172, characters 7-14
-
-  Trailing output
-  ---------------
-  Some variables escaped (#1). Use [--debug js_assign] for more info.
-  /home/jerome/js_of_ocaml/_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.exe: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :
-  Error: File "compiler/lib/js_assign.ml", line 503, characters 5-11: Assertion failed
-
-  process exited with error code 125
-   /home/jerome/js_of_ocaml/_build/default/compiler/bin-js_of_ocaml/js_of_ocaml.exe --pretty --debug var --sourcemap --effects=disabled --disable=use-js-string --disable header --debug=invariant --Werror test.cmo -o test.js
-  |}]
+  [%expect
+    {|
+    function f(param){
+     var f = Stdlib[46];
+     return function(string){var _a_ = string; return caml_call1(f, _a_);};
+    }
+    //end
+    |}]
