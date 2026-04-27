@@ -135,8 +135,6 @@ jobs:
 
       - name: Pin specific packages for OxCaml
         run: |
-          opam pin add --with-version 1.0.3+ox -n https://github.com/vouillon/uutf.git#oxcaml
-          opam pin add -n zarith 1.12+ox
           opam pin add -n lwt 6.0.0+ox
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
