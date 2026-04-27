@@ -93,7 +93,7 @@ jobs:
           - os: ubuntu-latest
             os-name: Ubuntu
             ocaml-name: "OxCaml"
-            ocaml-compiler: "ocaml-variants.5.2.0+ox"
+            ocaml-compiler: "ocaml-variants.5.2.0+ox,oxcaml-compiler.5.2.0minus25"
             skip-effects: false
             skip-test: false
             skip-doc: true
