@@ -376,7 +376,12 @@ let remove_empty_blocks st (p : Code.program) : Code.program =
         if
           match block.branch with
           | Branch (pc, _) | Poptrap (pc, _) -> not (Addr.Hashtbl.mem shortcuts pc)
-          | Cond (_, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _)) ->
+          | Cond (_, ((pc1, _) as cont1), ((pc2, _) as cont2)) ->
+              not
+                (Addr.Hashtbl.mem shortcuts pc1
+                || Addr.Hashtbl.mem shortcuts pc2
+                || Code.cont_equal cont1 cont2)
+          | Pushtrap ((pc1, _), _, (pc2, _)) ->
               not (Addr.Hashtbl.mem shortcuts pc1 || Addr.Hashtbl.mem shortcuts pc2)
           | Switch (_, a) ->
               not (Array.exists ~f:(fun (pc, _) -> Addr.Hashtbl.mem shortcuts pc) a)
