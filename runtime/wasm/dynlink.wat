@@ -99,4 +99,11 @@
    (func (export "caml_dynlink_get_current_libs")
       (param (ref eq)) (result (ref eq))
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
+
+(@if (>= ocaml_version (5 5 0))
+(@then
+   (func (export "caml_dynlink_parse_ld_conf")
+      (param (ref eq)) (result (ref eq))
+      (ref.i31 (i32.const 0)))
+))
 )
