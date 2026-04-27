@@ -562,8 +562,7 @@ let run
          then
            let paths =
              include_dirs
-             @ StringSet.elements
-                 (Parse_bytecode.Debug.paths code.debug ~units:code.cmis)
+             @ StringSet.elements (Parse_bytecode.Debug.paths code.debug ~units:code.cmis)
            in
            Pseudo_fs.collect_cmis ~cmis:code.cmis ~paths
          else []
@@ -752,7 +751,13 @@ let run
            List.fold_right
              ~f:(fun cmo cont l ->
                compile_cmo cmo
-               @@ fun unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes cmi_files ->
+               @@ fun unit_data
+                      unit_name
+                      tmp_wasm_file
+                      opt_tmp_map_file
+                      shapes
+                      cmi_files
+                    ->
                cont
                  (( unit_data
                   , unit_name
@@ -760,7 +765,7 @@ let run
                   , opt_tmp_map_file
                   , shapes
                   , cmi_files )
-                  :: l))
+                 :: l))
              cma.lib_units
              ~init:(fun l ->
                Fs.with_intermediate_file (Filename.temp_file "wasm" ".wasm")
@@ -799,9 +804,7 @@ let run
                if enable_source_maps
                then
                  add_source_map sourcemap_don't_inline_content z (`Source_map source_map);
-               let cmi_files =
-                 List.concat_map ~f:(fun (_, _, _, _, _, cmis) -> cmis) l
-               in
+               let cmi_files = List.concat_map ~f:(fun (_, _, _, _, _, cmis) -> cmis) l in
                if not (List.is_empty cmi_files)
                then
                  Zip.add_entry
