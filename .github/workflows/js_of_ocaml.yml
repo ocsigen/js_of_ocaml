@@ -11,6 +11,9 @@ on:
 
 jobs:
   build:
+    env:
+      OXCAML_OPAM_REPO_REF: 5ac45e334a1d6b43d70ba5ad4bd58092f9796e2a
+
     strategy:
       fail-fast: false
       matrix:
@@ -142,7 +145,7 @@ jobs:
           ocaml-compiler: ${{ matrix.ocaml-compiler }}
           opam-repositories: |
             default: https://github.com/ocaml/opam-repository.git
-            ox: https://github.com/oxcaml/opam-repository.git
+            ox: https://github.com/oxcaml/opam-repository.git#${{ env.OXCAML_OPAM_REPO_REF }}
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       # Work-around a race between reinstalling mingw-w64-shims
