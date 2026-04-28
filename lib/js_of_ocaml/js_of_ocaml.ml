@@ -37,6 +37,7 @@ module Js_error = Js.Js_error
 module Json = Json
 module Jstable = Jstable
 module MutationObserver = MutationObserver
+module Performance = Performance
 module PerformanceObserver = PerformanceObserver
 module ResizeObserver = ResizeObserver
 module Regexp = Regexp
