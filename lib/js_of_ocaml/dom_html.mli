@@ -2935,6 +2935,12 @@ external pixel_get : canvasPixelArray t -> int -> int = "caml_js_get"
 
 external pixel_set : canvasPixelArray t -> int -> int -> unit = "caml_js_set"
 
+type boundary_points_comparison =
+  | Start_to_start
+  | Start_to_end
+  | End_to_end
+  | End_to_start
+
 (** Object representing a range **)
 class type range = object
   method collapsed : bool t readonly_prop
@@ -2946,6 +2952,8 @@ class type range = object
   method startContainer : Dom.node t readonly_prop
 
   method endContainer : Dom.node t readonly_prop
+
+  method commonAncestorContainer : Dom.node t readonly_prop
 
   method setStart : Dom.node t -> int -> unit meth
 
@@ -2965,6 +2973,18 @@ class type range = object
 
   method collapse : bool t -> unit meth
 
+  method compareBoundaryPoints : boundary_points_comparison -> range t -> int meth
+
+  method comparePoint : Dom.node t -> int -> int meth
+
+  method isPointInRange : Dom.node t -> int -> bool t meth
+
+  method intersectsNode : Dom.node t -> bool t meth
+
+  method getBoundingClientRect : clientRect t meth
+
+  method getClientRects : clientRectList t meth
+
   method cloneContents : Dom.documentFragment t meth
 
   method extractContents : Dom.documentFragment t meth
@@ -2975,18 +2995,22 @@ class type range = object
 
   method surroundContents : Dom.node t -> unit meth
 
+  method createContextualFragment : js_string t -> Dom.documentFragment t meth
+
   method cloneRange : range t meth
+
+  method detach : unit meth
 
   method toString : js_string t meth
 end
 
 (** Information on current selection *)
 class type selection = object
-  method anchorNode : Dom.node t readonly_prop
+  method anchorNode : Dom.node t opt readonly_prop
 
   method anchorOffset : int readonly_prop
 
-  method focusNode : Dom.node t readonly_prop
+  method focusNode : Dom.node t opt readonly_prop
 
   method focusOffset : int readonly_prop
 
@@ -2994,9 +3018,20 @@ class type selection = object
 
   method rangeCount : int readonly_prop
 
+  method _type : js_string t readonly_prop
+  (** ["None"], ["Caret"] or ["Range"]. *)
+
   method getRangeAt : int -> range t meth
 
-  method collapse : bool t -> unit meth
+  method collapse : Dom.node t opt -> unit meth
+
+  method collapse_offset : Dom.node t opt -> int -> unit meth
+
+  method setPosition : Dom.node t opt -> unit meth
+
+  method setPosition_offset : Dom.node t opt -> int -> unit meth
+
+  method setBaseAndExtent : Dom.node t -> int -> Dom.node t -> int -> unit meth
 
   method extend : Dom.node t -> int -> unit meth
 
