@@ -10,6 +10,8 @@
 * Compiler: improved shape computation (#2198)
 * Add the --build-config and --apply-build-config flags (#2177)
 * Runtime/wasm: optimized some bigstring primitives (#2144)
+* Lib: many additional `Dom_html` bindings (#2221)
+* Lib: add `Performance` module (#2221)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
@@ -25,6 +27,7 @@
   whole-program builds emit reversed `Filename.concat` operands and
   silently broke `Filename.temp_file`
 * Runtime/wasm: fix string conversion from JS to OCaml (#2230)
+* Lib: fix several `Dom_html` bindings (#2221)
 
 
 # 6.3.2 (2026-02-15) - Lille
