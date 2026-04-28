@@ -3437,6 +3437,12 @@ class type mediaQueryList = object
   inherit eventTarget
 end
 
+class type windowPostMessageOptions = object
+  method targetOrigin : js_string t writeonly_prop
+
+  method transfer : Unsafe.any js_array t writeonly_prop
+end
+
 class type window = object
   inherit eventTarget
 
@@ -3470,11 +3476,21 @@ class type window = object
 
   method scrollY : number_t readonly_prop
 
+  method pageXOffset : number_t readonly_prop
+
+  method pageYOffset : number_t readonly_prop
+
   method scroll : number_t -> number_t -> unit meth
+
+  method scroll_options : scrollToOptions t -> unit meth
 
   method scrollTo : number_t -> number_t -> unit meth
 
+  method scrollTo_options : scrollToOptions t -> unit meth
+
   method scrollBy : number_t -> number_t -> unit meth
+
+  method scrollBy_options : scrollToOptions t -> unit meth
 
   method sessionStorage : storage t optdef readonly_prop
 
@@ -3484,9 +3500,19 @@ class type window = object
 
   method parent : window t readonly_prop
 
+  method opener : window t opt prop
+
   method frameElement : element t opt readonly_prop
 
   method open_ : js_string t -> js_string t -> js_string t opt -> window t opt meth
+
+  method postMessage : 'a. 'a -> unit meth
+
+  method postMessage_targetOrigin : 'a. 'a -> js_string t -> unit meth
+
+  method postMessage_transfer : 'a 'b. 'a -> js_string t -> 'b js_array t -> unit meth
+
+  method postMessage_options : 'a. 'a -> windowPostMessageOptions t -> unit meth
 
   method alert : js_string t -> unit meth
 
@@ -4854,6 +4880,12 @@ let focus ?preventScroll (el : #element t) =
       let opts : focusOptions t = Js.Unsafe.obj [||] in
       opts##.preventScroll := v;
       el##focus_options opts
+
+let postMessage ?transfer ?targetOrigin (w : window t) message =
+  let opts : windowPostMessageOptions t = Js.Unsafe.obj [||] in
+  Option.iter (fun v -> opts##.targetOrigin := v) targetOrigin;
+  Option.iter (fun v -> opts##.transfer := v) transfer;
+  w##postMessage_options message opts
 
 let makeScrollToOptions ?top ?left ?behavior () =
   let opts : scrollToOptions t = Js.Unsafe.obj [||] in

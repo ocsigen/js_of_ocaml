@@ -3298,6 +3298,13 @@ class type mediaQueryList = object
   inherit eventTarget
 end
 
+(** Options for [Window.postMessage]. *)
+class type windowPostMessageOptions = object
+  method targetOrigin : js_string t writeonly_prop
+
+  method transfer : Unsafe.any js_array t writeonly_prop
+end
+
 (** Specification of window objects *)
 class type window = object
   inherit eventTarget
@@ -3332,11 +3339,21 @@ class type window = object
 
   method scrollY : number_t readonly_prop
 
+  method pageXOffset : number_t readonly_prop
+
+  method pageYOffset : number_t readonly_prop
+
   method scroll : number_t -> number_t -> unit meth
+
+  method scroll_options : scrollToOptions t -> unit meth
 
   method scrollTo : number_t -> number_t -> unit meth
 
+  method scrollTo_options : scrollToOptions t -> unit meth
+
   method scrollBy : number_t -> number_t -> unit meth
+
+  method scrollBy_options : scrollToOptions t -> unit meth
 
   (* These two properties are not available on non-Web environments
      (for instance, Web workers, node). So we keep the [optdef]
@@ -3350,9 +3367,23 @@ class type window = object
 
   method parent : window t readonly_prop
 
+  method opener : window t opt prop
+
   method frameElement : element t opt readonly_prop
 
   method open_ : js_string t -> js_string t -> js_string t opt -> window t opt meth
+
+  method postMessage : 'a. 'a -> unit meth
+  (** [postMessage(message)] — [targetOrigin] defaults to ["/"] (same origin). *)
+
+  method postMessage_targetOrigin : 'a. 'a -> js_string t -> unit meth
+  (** [postMessage(message, targetOrigin)]. *)
+
+  method postMessage_transfer : 'a 'b. 'a -> js_string t -> 'b js_array t -> unit meth
+  (** [postMessage(message, targetOrigin, transfer)]. *)
+
+  method postMessage_options : 'a. 'a -> windowPostMessageOptions t -> unit meth
+  (** [postMessage(message, options)]. *)
 
   method alert : js_string t -> unit meth
 
@@ -4278,6 +4309,12 @@ val scrollIntoView :
 
 val focus : ?preventScroll:bool t -> #element t -> unit
 (** Wrapper for [HTMLElement.focus(options)] taking labeled arguments. *)
+
+val postMessage :
+  ?transfer:Unsafe.any js_array t -> ?targetOrigin:js_string t -> window t -> 'a -> unit
+(** Wrapper for [window.postMessage(message, options)] taking labeled
+    arguments. When [~targetOrigin] is omitted, the JavaScript default
+    of ["/"] (same origin) applies. *)
 
 val makeScrollToOptions :
   ?top:number_t -> ?left:number_t -> ?behavior:js_string t -> unit -> scrollToOptions t
