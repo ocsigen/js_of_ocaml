@@ -1919,7 +1919,7 @@ class type inputElement = object ('self)
 
   method defaultValue : js_string t prop
 
-  method defaultChecked : js_string t prop
+  method defaultChecked : bool t prop
 
   method form : formElement t opt readonly_prop
 
@@ -2008,7 +2008,7 @@ class type inputElement = object ('self)
 
   method files : File.fileList t readonly_prop
 
-  method placeholder : js_string t writeonly_prop
+  method placeholder : js_string t prop
 
   method selectionDirection : js_string t prop
 
@@ -2094,7 +2094,7 @@ class type textAreaElement = object ('self)
 
   method required : bool t writeonly_prop
 
-  method placeholder : js_string t writeonly_prop
+  method placeholder : js_string t prop
 
   method labels : labelElement Dom.nodeList t readonly_prop
 
