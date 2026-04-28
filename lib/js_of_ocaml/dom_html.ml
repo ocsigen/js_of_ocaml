@@ -2680,11 +2680,17 @@ class type document = object
 
   method _URL : js_string t readonly_prop
 
+  method lastModified : js_string t readonly_prop
+
   method head : headElement t prop
 
   method body : bodyElement t prop
 
   method documentElement : htmlElement t readonly_prop
+
+  method currentScript : element t opt readonly_prop
+
+  method scrollingElement : element t opt readonly_prop
 
   method images : imageElement collection t readonly_prop
 
@@ -2695,6 +2701,12 @@ class type document = object
   method forms : formElement collection t readonly_prop
 
   method anchors : element collection t readonly_prop
+
+  method embeds : embedElement collection t readonly_prop
+
+  method plugins : element collection t readonly_prop
+
+  method scripts : scriptElement collection t readonly_prop
 
   method cookie : js_string t prop
 
@@ -2720,7 +2732,39 @@ class type document = object
 
   method hidden : bool t readonly_prop
 
+  method visibilityState : js_string t readonly_prop
+
+  method fullscreenElement : element t opt readonly_prop
+
+  method fullscreenEnabled : bool t readonly_prop
+
+  method pointerLockElement : element t opt readonly_prop
+
+  method hasFocus : bool t meth
+
+  method elementFromPoint : number_t -> number_t -> element t opt meth
+
+  method elementsFromPoint : number_t -> number_t -> element t js_array t meth
+
+  method getSelection : selection t opt meth
+
+  method getAnimations : animation t js_array t meth
+
+  method exitFullscreen_ : unit meth
+
+  method exitPointerLock : unit meth
+
+  method onreadystatechange : (document t, event t) event_listener writeonly_prop
+
+  method onvisibilitychange : (document t, event t) event_listener writeonly_prop
+
   method onfullscreenchange : (document t, event t) event_listener writeonly_prop
+
+  method onfullscreenerror : (document t, event t) event_listener writeonly_prop
+
+  method onpointerlockchange : (document t, event t) event_listener writeonly_prop
+
+  method onpointerlockerror : (document t, event t) event_listener writeonly_prop
 
   method onwebkitfullscreenchange : (document t, event t) event_listener writeonly_prop
 
