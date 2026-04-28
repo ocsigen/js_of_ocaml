@@ -124,6 +124,7 @@ function caml_obj_with_tag(tag, x) {
 
 //Provides: caml_obj_dup mutable (mutable)
 function caml_obj_dup(x) {
+  if (x === null) return null;
   return typeof x === "number" ? x : x.slice();
 }
 

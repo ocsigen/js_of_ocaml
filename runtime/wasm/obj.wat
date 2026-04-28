@@ -222,6 +222,12 @@
       (local $forig (ref $float_array)) (local $fres (ref $float_array))
       (local $s (ref $bytes)) (local $s' (ref $bytes))
       (local $len i32)
+      ;; Handle null values for or_null
+      (if (ref.eq (local.get 0) (global.get $null))
+         (then (return (global.get $null))))
+      ;; Handle immediate integers
+      (if (ref.test (ref i31) (local.get 0))
+         (then (return (local.get 0))))
       (drop (block $not_block (result (ref eq))
          (local.set $orig (br_on_cast_fail $not_block (ref eq) (ref $block)
             (local.get 0)))
