@@ -38,6 +38,16 @@ class type cssStyleDeclaration = object
 
   method removeProperty : js_string t -> js_string t meth
 
+  method accentColor : js_string t prop
+
+  method alignContent : js_string t prop
+
+  method alignItems : js_string t prop
+
+  method alignSelf : js_string t prop
+
+  method all : js_string t prop
+
   method animation : js_string t prop
 
   method animationDelay : js_string t prop
@@ -56,23 +66,69 @@ class type cssStyleDeclaration = object
 
   method animationTimingFunction : js_string t prop
 
+  method appearance : js_string t prop
+
+  method aspectRatio : js_string t prop
+
+  method backdropFilter : js_string t prop
+
+  method backfaceVisibility : js_string t prop
+
   method background : js_string t prop
 
   method backgroundAttachment : js_string t prop
+
+  method backgroundBlendMode : js_string t prop
+
+  method backgroundClip : js_string t prop
 
   method backgroundColor : js_string t prop
 
   method backgroundImage : js_string t prop
 
+  method backgroundOrigin : js_string t prop
+
   method backgroundPosition : js_string t prop
 
   method backgroundRepeat : js_string t prop
 
+  method backgroundSize : js_string t prop
+
+  method blockSize : js_string t prop
+
   method border : js_string t prop
+
+  method borderBlock : js_string t prop
+
+  method borderBlockColor : js_string t prop
+
+  method borderBlockEnd : js_string t prop
+
+  method borderBlockEndColor : js_string t prop
+
+  method borderBlockEndStyle : js_string t prop
+
+  method borderBlockEndWidth : js_string t prop
+
+  method borderBlockStart : js_string t prop
+
+  method borderBlockStartColor : js_string t prop
+
+  method borderBlockStartStyle : js_string t prop
+
+  method borderBlockStartWidth : js_string t prop
+
+  method borderBlockStyle : js_string t prop
+
+  method borderBlockWidth : js_string t prop
 
   method borderBottom : js_string t prop
 
   method borderBottomColor : js_string t prop
+
+  method borderBottomLeftRadius : js_string t prop
+
+  method borderBottomRightRadius : js_string t prop
 
   method borderBottomStyle : js_string t prop
 
@@ -81,6 +137,42 @@ class type cssStyleDeclaration = object
   method borderCollapse : js_string t prop
 
   method borderColor : js_string t prop
+
+  method borderImage : js_string t prop
+
+  method borderImageOutset : js_string t prop
+
+  method borderImageRepeat : js_string t prop
+
+  method borderImageSlice : js_string t prop
+
+  method borderImageSource : js_string t prop
+
+  method borderImageWidth : js_string t prop
+
+  method borderInline : js_string t prop
+
+  method borderInlineColor : js_string t prop
+
+  method borderInlineEnd : js_string t prop
+
+  method borderInlineEndColor : js_string t prop
+
+  method borderInlineEndStyle : js_string t prop
+
+  method borderInlineEndWidth : js_string t prop
+
+  method borderInlineStart : js_string t prop
+
+  method borderInlineStartColor : js_string t prop
+
+  method borderInlineStartStyle : js_string t prop
+
+  method borderInlineStartWidth : js_string t prop
+
+  method borderInlineStyle : js_string t prop
+
+  method borderInlineWidth : js_string t prop
 
   method borderLeft : js_string t prop
 
@@ -108,6 +200,10 @@ class type cssStyleDeclaration = object
 
   method borderTopColor : js_string t prop
 
+  method borderTopLeftRadius : js_string t prop
+
+  method borderTopRightRadius : js_string t prop
+
   method borderTopStyle : js_string t prop
 
   method borderTopWidth : js_string t prop
@@ -116,13 +212,27 @@ class type cssStyleDeclaration = object
 
   method bottom : js_string t prop
 
+  method boxShadow : js_string t prop
+
+  method boxSizing : js_string t prop
+
   method captionSide : js_string t prop
+
+  method caretColor : js_string t prop
 
   method clear : js_string t prop
 
   method clip : js_string t prop
 
+  method clipPath : js_string t prop
+
   method color : js_string t prop
+
+  method colorScheme : js_string t prop
+
+  method columnGap : js_string t prop
+
+  method contain : js_string t prop
 
   method content : js_string t prop
 
@@ -144,19 +254,105 @@ class type cssStyleDeclaration = object
 
   method fill : js_string t prop
 
+  method filter : js_string t prop
+
+  method flex : js_string t prop
+
+  method flexBasis : js_string t prop
+
+  method flexDirection : js_string t prop
+
+  method flexFlow : js_string t prop
+
+  method flexGrow : js_string t prop
+
+  method flexShrink : js_string t prop
+
+  method flexWrap : js_string t prop
+
   method font : js_string t prop
 
   method fontFamily : js_string t prop
 
+  method fontFeatureSettings : js_string t prop
+
+  method fontKerning : js_string t prop
+
   method fontSize : js_string t prop
+
+  method fontStretch : js_string t prop
 
   method fontStyle : js_string t prop
 
   method fontVariant : js_string t prop
 
+  method fontVariantLigatures : js_string t prop
+
+  method fontVariantNumeric : js_string t prop
+
   method fontWeight : js_string t prop
 
+  method gap : js_string t prop
+
+  method grid : js_string t prop
+
+  method gridArea : js_string t prop
+
+  method gridAutoColumns : js_string t prop
+
+  method gridAutoFlow : js_string t prop
+
+  method gridAutoRows : js_string t prop
+
+  method gridColumn : js_string t prop
+
+  method gridColumnEnd : js_string t prop
+
+  method gridColumnStart : js_string t prop
+
+  method gridRow : js_string t prop
+
+  method gridRowEnd : js_string t prop
+
+  method gridRowStart : js_string t prop
+
+  method gridTemplate : js_string t prop
+
+  method gridTemplateAreas : js_string t prop
+
+  method gridTemplateColumns : js_string t prop
+
+  method gridTemplateRows : js_string t prop
+
   method height : js_string t prop
+
+  method hyphens : js_string t prop
+
+  method imageRendering : js_string t prop
+
+  method inlineSize : js_string t prop
+
+  method inset : js_string t prop
+
+  method insetBlock : js_string t prop
+
+  method insetBlockEnd : js_string t prop
+
+  method insetBlockStart : js_string t prop
+
+  method insetInline : js_string t prop
+
+  method insetInlineEnd : js_string t prop
+
+  method insetInlineStart : js_string t prop
+
+  method isolation : js_string t prop
+
+  method justifyContent : js_string t prop
+
+  method justifyItems : js_string t prop
+
+  method justifySelf : js_string t prop
 
   method left : js_string t prop
 
@@ -174,7 +370,19 @@ class type cssStyleDeclaration = object
 
   method margin : js_string t prop
 
+  method marginBlock : js_string t prop
+
+  method marginBlockEnd : js_string t prop
+
+  method marginBlockStart : js_string t prop
+
   method marginBottom : js_string t prop
+
+  method marginInline : js_string t prop
+
+  method marginInlineEnd : js_string t prop
+
+  method marginInlineStart : js_string t prop
 
   method marginLeft : js_string t prop
 
@@ -182,15 +390,35 @@ class type cssStyleDeclaration = object
 
   method marginTop : js_string t prop
 
+  method mask : js_string t prop
+
+  method maskImage : js_string t prop
+
+  method maxBlockSize : js_string t prop
+
   method maxHeight : js_string t prop
+
+  method maxInlineSize : js_string t prop
 
   method maxWidth : js_string t prop
 
+  method minBlockSize : js_string t prop
+
   method minHeight : js_string t prop
+
+  method minInlineSize : js_string t prop
 
   method minWidth : js_string t prop
 
+  method mixBlendMode : js_string t prop
+
+  method objectFit : js_string t prop
+
+  method objectPosition : js_string t prop
+
   method opacity : js_string t prop
+
+  method order : js_string t prop
 
   method outline : js_string t prop
 
@@ -204,13 +432,29 @@ class type cssStyleDeclaration = object
 
   method overflow : js_string t prop
 
+  method overflowWrap : js_string t prop
+
   method overflowX : js_string t prop
 
   method overflowY : js_string t prop
 
+  method overscrollBehavior : js_string t prop
+
   method padding : js_string t prop
 
+  method paddingBlock : js_string t prop
+
+  method paddingBlockEnd : js_string t prop
+
+  method paddingBlockStart : js_string t prop
+
   method paddingBottom : js_string t prop
+
+  method paddingInline : js_string t prop
+
+  method paddingInlineEnd : js_string t prop
+
+  method paddingInlineStart : js_string t prop
 
   method paddingLeft : js_string t prop
 
@@ -222,11 +466,37 @@ class type cssStyleDeclaration = object
 
   method pageBreakBefore : js_string t prop
 
+  method perspective : js_string t prop
+
+  method perspectiveOrigin : js_string t prop
+
+  method placeContent : js_string t prop
+
+  method placeItems : js_string t prop
+
+  method placeSelf : js_string t prop
+
   method pointerEvents : js_string t prop
 
   method position : js_string t prop
 
+  method quotes : js_string t prop
+
+  method resize : js_string t prop
+
   method right : js_string t prop
+
+  method rowGap : js_string t prop
+
+  method scrollBehavior : js_string t prop
+
+  method scrollMargin : js_string t prop
+
+  method scrollPadding : js_string t prop
+
+  method scrollSnapAlign : js_string t prop
+
+  method scrollSnapType : js_string t prop
 
   method stroke : js_string t prop
 
@@ -234,19 +504,49 @@ class type cssStyleDeclaration = object
 
   method tableLayout : js_string t prop
 
+  method tabSize : js_string t prop
+
   method textAlign : js_string t prop
 
   method textAnchor : js_string t prop
 
   method textDecoration : js_string t prop
 
+  method textDecorationColor : js_string t prop
+
+  method textDecorationLine : js_string t prop
+
+  method textDecorationStyle : js_string t prop
+
+  method textDecorationThickness : js_string t prop
+
   method textIndent : js_string t prop
+
+  method textOverflow : js_string t prop
+
+  method textShadow : js_string t prop
 
   method textTransform : js_string t prop
 
   method top : js_string t prop
 
   method transform : js_string t prop
+
+  method transformOrigin : js_string t prop
+
+  method transformStyle : js_string t prop
+
+  method transition : js_string t prop
+
+  method transitionDelay : js_string t prop
+
+  method transitionDuration : js_string t prop
+
+  method transitionProperty : js_string t prop
+
+  method transitionTimingFunction : js_string t prop
+
+  method userSelect : js_string t prop
 
   method verticalAlign : js_string t prop
 
@@ -256,7 +556,13 @@ class type cssStyleDeclaration = object
 
   method width : js_string t prop
 
+  method willChange : js_string t prop
+
+  method wordBreak : js_string t prop
+
   method wordSpacing : js_string t prop
+
+  method writingMode : js_string t prop
 
   method zIndex : js_string t prop
 end
