@@ -1,7 +1,7 @@
 # dev
 
 ## Features/Changes
-* Compiler: initial support for OCaml 5.5.0~alpha0 (#2197)
+* Compiler: initial support for OCaml 5.5.0 (#2197, #2220)
 * Compiler: added a variable coalescing pass (#2166)
 * Wasm dynlink/toplevel support (#2186)
 * OxCaml support (#2105)
