@@ -96,7 +96,7 @@
    ;; In OCaml < 5.2, code is a block (array) of bytes values that are
    ;; concatenated into a single string.
 
-(@if (and (>= ocaml_version (5 2 0)) (not oxcaml))
+(@if (>= ocaml_version (5 2 0))
 (@then
    (func (export "caml_reify_bytecode")
       (param $code (ref eq)) (param $debug (ref eq)) (param $digest (ref eq))

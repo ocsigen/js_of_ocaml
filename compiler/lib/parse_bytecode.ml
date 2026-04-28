@@ -3104,10 +3104,9 @@ module Reloc = struct
     }
 
   let constant_of_const x = Ocaml_compiler.constant_of_const x
-  [@@if oxcaml || ocaml_version < (5, 1, 0)]
+  [@@if ocaml_version < (5, 1, 0)]
 
-  let constant_of_const x = Constants.parse x
-  [@@if (not oxcaml) && ocaml_version >= (5, 1, 0)]
+  let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
 
   (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =
