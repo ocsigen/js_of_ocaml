@@ -1131,7 +1131,13 @@ end
 and animation = object
   method id : js_string t prop
 
+  method effect_ : animationEffect t opt prop
+
+  method timeline : animationTimeline t opt prop
+
   method playState : js_string t readonly_prop
+
+  method replaceState : js_string t readonly_prop
 
   method playbackRate : number_t prop
 
@@ -1154,6 +1160,138 @@ and animation = object
   method persist : unit meth
 
   method commitStyles : unit meth
+
+  method updatePlaybackRate : number_t -> unit meth
+
+  method oncancel : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
+
+  method onfinish : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
+
+  method onremove : (animation t, event t) event_listener writeonly_prop
+end
+
+and animationTimeline = object
+  method currentTime : number_t opt readonly_prop
+end
+
+and documentTimeline = object
+  inherit animationTimeline
+end
+
+and animationEffect = object
+  method updateTiming : optionalEffectTiming t -> unit meth
+
+  method getComputedTiming : computedEffectTiming t meth
+end
+
+and keyframeEffect = object
+  inherit animationEffect
+
+  method target : element t opt prop
+
+  method pseudoElement : js_string t opt prop
+
+  method composite : js_string t prop
+
+  method getKeyframes : computedKeyframe t js_array t meth
+
+  method setKeyframes : 'a. 'a -> unit meth
+end
+
+and computedKeyframe = object
+  method offset : number_t opt readonly_prop
+
+  method computedOffset : number_t readonly_prop
+
+  method easing : js_string t readonly_prop
+
+  method composite : js_string t readonly_prop
+end
+
+and optionalEffectTiming = object
+  method delay : number_t writeonly_prop
+
+  method endDelay : number_t writeonly_prop
+
+  method fill : js_string t writeonly_prop
+
+  method iterationStart : number_t writeonly_prop
+
+  method iterations : number_t writeonly_prop
+
+  method duration : number_t writeonly_prop
+
+  method duration_auto : js_string t writeonly_prop
+
+  method direction : js_string t writeonly_prop
+
+  method easing : js_string t writeonly_prop
+end
+
+and computedEffectTiming = object
+  method delay : number_t readonly_prop
+
+  method endDelay : number_t readonly_prop
+
+  method fill : js_string t readonly_prop
+
+  method iterationStart : number_t readonly_prop
+
+  method iterations : number_t readonly_prop
+
+  method duration : number_t readonly_prop
+  (** Duration in milliseconds. Computed timing always resolves the
+      ["auto"] keyword to a number. *)
+
+  method direction : js_string t readonly_prop
+
+  method easing : js_string t readonly_prop
+
+  method endTime : number_t readonly_prop
+
+  method activeDuration : number_t readonly_prop
+
+  method localTime : number_t opt readonly_prop
+
+  method progress : number_t opt readonly_prop
+
+  method currentIteration : number_t opt readonly_prop
+end
+
+and keyframeAnimationOptions = object
+  method delay : number_t writeonly_prop
+
+  method endDelay : number_t writeonly_prop
+
+  method fill : js_string t writeonly_prop
+
+  method iterationStart : number_t writeonly_prop
+
+  method iterations : number_t writeonly_prop
+
+  method duration : number_t writeonly_prop
+
+  method duration_auto : js_string t writeonly_prop
+
+  method direction : js_string t writeonly_prop
+
+  method easing : js_string t writeonly_prop
+
+  method id : js_string t writeonly_prop
+
+  method composite : js_string t writeonly_prop
+
+  method pseudoElement : js_string t opt writeonly_prop
+
+  method timeline : animationTimeline t opt writeonly_prop
+end
+
+and animationPlaybackEvent = object
+  inherit event
+
+  method currentTime : number_t opt readonly_prop
+
+  method timelineTime : number_t opt readonly_prop
 end
 
 and scrollToOptions = object
@@ -1298,6 +1436,15 @@ and element = object
       the proper version can later be added under [requestPointerLock]. *)
 
   method animate : 'a 'b. 'a -> 'b -> animation t meth
+
+  method animate_keyframes : 'a. 'a -> animation t meth
+  (** [animate(keyframes)] — no options/duration. *)
+
+  method animate_duration : 'a. 'a -> number_t -> animation t meth
+  (** [animate(keyframes, duration)] — duration in milliseconds. *)
+
+  method animate_options : 'a. 'a -> keyframeAnimationOptions t -> animation t meth
+  (** [animate(keyframes, options)] with a typed options dictionary. *)
 
   method getAnimations : animation t js_array t meth
 
@@ -2567,6 +2714,8 @@ class type document = object
 
   method getAnimations : animation t js_array t meth
 
+  method timeline : documentTimeline t readonly_prop
+
   method exitFullscreen_ : unit meth
   (** Returns a [Promise] in JavaScript. Bound as [unit meth]; the proper
       version can later be added under [exitFullscreen]. *)
@@ -3705,6 +3854,36 @@ val focus : ?preventScroll:bool t -> #element t -> unit
 val makeScrollToOptions :
   ?top:number_t -> ?left:number_t -> ?behavior:js_string t -> unit -> scrollToOptions t
 (** Smart constructor for {!scrollToOptions}. *)
+
+val makeKeyframeAnimationOptions :
+     ?delay:number_t
+  -> ?endDelay:number_t
+  -> ?fill:js_string t
+  -> ?iterationStart:number_t
+  -> ?iterations:number_t
+  -> ?duration:number_t
+  -> ?direction:js_string t
+  -> ?easing:js_string t
+  -> ?id:js_string t
+  -> ?composite:js_string t
+  -> ?pseudoElement:js_string t opt
+  -> ?timeline:animationTimeline t opt
+  -> unit
+  -> keyframeAnimationOptions t
+(** Smart constructor for {!keyframeAnimationOptions}. *)
+
+val makeOptionalEffectTiming :
+     ?delay:number_t
+  -> ?endDelay:number_t
+  -> ?fill:js_string t
+  -> ?iterationStart:number_t
+  -> ?iterations:number_t
+  -> ?duration:number_t
+  -> ?direction:js_string t
+  -> ?easing:js_string t
+  -> unit
+  -> optionalEffectTiming t
+(** Smart constructor for {!optionalEffectTiming}. *)
 
 module CoerceTo : sig
   (** HTMLElement *)
