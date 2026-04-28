@@ -12,8 +12,11 @@ root. A symlink is used so esbuild's module resolver can find core-js.
   $ ESCHECK="$JSOO_ROOT/node_modules/.bin/es-check"
   $ ln -s "$JSOO_ROOT/node_modules" node_modules
 
-Write a test program exercising print, Hashtbl, Marshal, and Weak (the
-last covers the runtime's WeakRef feature-detection path).
+Write a test program exercising print, Hashtbl, Marshal, Weak (the last
+covers the runtime's WeakRef feature-detection path), and a
+closure-in-loop pattern that compiles to `let` per iteration — Babel
+must rewrite the binding for ES5 because each closure captures its own
+copy, not the final value.
 
   $ cat > test.ml <<'EOF'
   > let () =
@@ -31,11 +34,19 @@ last covers the runtime's WeakRef feature-detection path).
   >   Weak.set w 0 (Some "held");
   >   (match Weak.get w 0 with
   >    | Some s -> Printf.printf "weak: %s\n" s
-  >    | None -> print_endline "weak: collected")
+  >    | None -> print_endline "weak: collected");
+  >   let funs = ref [] in
+  >   for i = 0 to 2 do funs := (fun () -> i) :: !funs done;
+  >   List.iter (fun f -> Printf.printf "fn=%d " (f ())) (List.rev !funs);
+  >   print_newline ()
   > EOF
 
+`--pretty` keeps the generated JavaScript readable and emits `let` for
+the per-iteration capture in the loop above (without it, the same
+binding lowers to `var` plus a hoisted helper).
+
   $ ocamlc test.ml -o test.bc
-  $ dune exec -- js_of_ocaml --target-env=browser test.bc -o test.js 2>&1
+  $ dune exec -- js_of_ocaml --pretty --target-env=browser test.bc -o test.js 2>&1
 
 Baseline (pre-Babel) output runs and produces expected results:
 
@@ -44,6 +55,7 @@ Baseline (pre-Babel) output runs and produces expected results:
   hashtbl: a=1 b=2
   marshal: 42 x [1;2;3]
   weak: held
+  fn=0 fn=1 fn=2 
 
 Transpile with Babel (targets ES5 to stress the full pipeline):
 
@@ -79,6 +91,7 @@ Bundle runs and matches the baseline:
   hashtbl: a=1 b=2
   marshal: 42 x [1;2;3]
   weak: held
+  fn=0 fn=1 fn=2 
 
 Weak still works (as a strong ref) when WeakRef / FinalizationRegistry
 are unavailable — this verifies the documented feature-detection path:
@@ -88,3 +101,4 @@ are unavailable — this verifies the documented feature-detection path:
   hashtbl: a=1 b=2
   marshal: 42 x [1;2;3]
   weak: held
+  fn=0 fn=1 fn=2 
