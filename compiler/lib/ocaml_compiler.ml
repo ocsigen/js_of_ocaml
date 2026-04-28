@@ -104,6 +104,10 @@ let rec is_module_in_summary deep ident' summary =
       if Ident.same ident ident'
       then deep, Not_module
       else is_module_in_summary (deep + 1) ident' summary
+  | ((Env.Env_jkind (summary, ident, _)) [@if oxcaml]) ->
+      if Ident.same ident ident'
+      then deep, Not_module
+      else is_module_in_summary (deep + 1) ident' summary
   (* Lowercase ident *)
   | Env.Env_type (summary, ident, _)
   | Env.Env_class (summary, ident, _)
