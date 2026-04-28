@@ -63,8 +63,8 @@ make bench
   - `ppx_deriving_json/` - JSON derivation PPX
 
 - **`/runtime/`** - JavaScript/WebAssembly runtime
-  - `js/` - JavaScript runtime modules
-  - `wasm/` - WebAssembly runtime modules
+  - `js/` - JavaScript runtime modules (`.js` files with `//Provides:` / `//Requires:` / `//If:` / `//Alias:` headers; `//Provides:` accepts flags `const`, `mutable`, `pure`, `shallow` that affect optimization)
+  - `wasm/` - WebAssembly runtime modules (`.wat`); JS and Wasm runtimes are parallel — primitives in one usually need a counterpart in the other
 
 - **`/examples/`** - Example projects
 - **`/toplevel/`** - Web-based OCaml toplevel
@@ -80,7 +80,7 @@ opam install odoc lwt_log yojson ocp-indent graphics higlo
 ```
 
 **Requirements:**
-- OCaml 4.13 to 5.4
+- OCaml 4.13 to 5.5
 - Dune 3.19+
 - For wasm_of_ocaml: Binaryen 119+
 
@@ -116,6 +116,8 @@ dune runtest compiler/tests-jsoo
 dune promote
 ```
 
+`make tests` requires a recent Node.js to be available on `PATH`.
+
 Test directories:
 - `compiler/tests-jsoo/` - JavaScript output tests
 - `compiler/tests-wasm_of_ocaml/` - WebAssembly tests
@@ -125,9 +127,16 @@ Test directories:
 
 ## Key Compiler Flags
 
-- `--effects={cps,double-translation}` - Effect handler support
-- `--enable es6` - ES6 output mode
-- `--compilation_mode separate` - Separate compilation
+- `--effects={disabled,cps,double-translation}` - Effect handler support (JS); wasm accepts `{disabled,cps,jspi}`
+- `--target-env={isomorphic,browser,nodejs}` - Runtime target (default `isomorphic`)
+- `--source-map` / `--debug-info` / `--pretty` - Debug-friendly output
+- `--opt {1,2,3}` - Optimization profile (default 1; 3 iterates to fix-point)
+- `--enable=OPT` / `--disable=OPT` - Toggle individual options (names in `compiler/lib/config.ml`), e.g. `--enable es6` to emit ES6 syntax in generated code
+- `--toplevel` - Compile a toplevel (link against `js_of_ocaml-toplevel`)
+
+### Compilation modes
+
+The `js_of_ocaml` CLI has subcommands `compile` (default), `build-runtime`, and `link`. Whole-program compilation runs `compile` end-to-end; separate compilation builds the runtime, compiles each `.cmo`/`.cma` independently, then links the pieces. Dune picks whole-program for `--profile release` and separate for `dev`. See `manual/compilation-modes.wiki`.
 
 ## Architecture Notes
 
@@ -143,10 +152,12 @@ Key modules in `compiler/lib/`:
 - `generate.ml` - JavaScript code generation
 - `driver.ml` - Compilation driver
 
+Wasm backend lives in `compiler/lib-wasm/` (e.g. `generate.ml`, `code_generation.ml`, `link.ml`).
+
 ## Contributing
 
 1. Create branch from `master`
 2. Write tests for new code
 3. Run `make tests` before submitting
-4. Update `CHANGES.md` with entry
+4. Add a `CHANGES.md` entry under the `# dev` heading, in an appropriate subsection (`Features/Changes`, `Bug fixes`, etc.) with a `(#NNNN)` PR reference
 5. Discuss significant changes via issues first
