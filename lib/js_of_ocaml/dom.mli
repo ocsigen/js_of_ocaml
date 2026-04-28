@@ -260,11 +260,34 @@ class type text = characterData
 class type documentFragment = node
 (** Specification of [DocumentFragment] objects. *)
 
+(** Specification of [DocumentType] objects. *)
+class type documentType = object
+  inherit node
+
+  method name : js_string t readonly_prop
+
+  method publicId : js_string t readonly_prop
+
+  method systemId : js_string t readonly_prop
+end
+
 (** Specification of [Document] objects. *)
 class type ['element] document = object
   inherit node
 
   method documentElement : 'element t readonly_prop
+
+  method doctype : documentType t opt readonly_prop
+
+  method _URL : js_string t readonly_prop
+
+  method documentURI : js_string t readonly_prop
+
+  method characterSet : js_string t readonly_prop
+
+  method contentType : js_string t readonly_prop
+
+  method compatMode : js_string t readonly_prop
 
   method createDocumentFragment : documentFragment t meth
 
@@ -281,6 +304,10 @@ class type ['element] document = object
   method getElementById : js_string t -> 'element t opt meth
 
   method getElementsByTagName : js_string t -> 'element nodeList t meth
+
+  method getElementsByTagNameNS : js_string t -> js_string t -> 'element nodeList t meth
+
+  method getElementsByClassName : js_string t -> 'element nodeList t meth
 
   method importNode : element t -> bool t -> 'element t meth
 
@@ -365,6 +392,8 @@ module CoerceTo : sig
   val text : #node t -> text t opt
 
   val attr : #node t -> attr t opt
+
+  val documentType : #node t -> documentType t opt
 end
 
 (** {2 Events} *)
