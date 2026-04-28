@@ -297,6 +297,10 @@ and mouseEvent = object
 
   method clientY : number_t readonly_prop
 
+  method x : number_t readonly_prop
+
+  method y : number_t readonly_prop
+
   method screenX : number_t readonly_prop
 
   method screenY : number_t readonly_prop
@@ -316,6 +320,8 @@ and mouseEvent = object
   method button : int readonly_prop
 
   method buttons : int readonly_prop
+
+  method getModifierState : js_string t -> bool t meth
 
   method which : mouse_button optdef readonly_prop
 
@@ -438,6 +444,14 @@ and touch = object
   method pageX : number_t readonly_prop
 
   method pageY : number_t readonly_prop
+
+  method radiusX : number_t readonly_prop
+
+  method radiusY : number_t readonly_prop
+
+  method rotationAngle : number_t readonly_prop
+
+  method force : number_t readonly_prop
 end
 
 and submitEvent = object
@@ -602,6 +616,8 @@ and pointerEvent = object
   method pointerType : js_string t readonly_prop
 
   method isPrimary : bool t readonly_prop
+
+  method getCoalescedEvents : pointerEvent t js_array t meth
 end
 
 and storageEvent = object
@@ -669,7 +685,79 @@ and messageEvent = object
 
   method data : Unsafe.any opt readonly_prop
 
+  method origin : js_string t readonly_prop
+
+  method lastEventId : js_string t readonly_prop
+
   method source : Unsafe.any opt readonly_prop
+end
+
+and staticRange = object
+  method collapsed : bool t readonly_prop
+
+  method startContainer : Dom.node t readonly_prop
+
+  method startOffset : int readonly_prop
+
+  method endContainer : Dom.node t readonly_prop
+
+  method endOffset : int readonly_prop
+end
+
+and compositionEvent = object
+  inherit event
+
+  method data : js_string t readonly_prop
+end
+
+and inputEvent = object
+  inherit event
+
+  method data : js_string t opt readonly_prop
+
+  method inputType : js_string t readonly_prop
+
+  method dataTransfer : dataTransfer t opt readonly_prop
+
+  method isComposing : bool t readonly_prop
+
+  method getTargetRanges : staticRange t js_array t meth
+end
+
+and errorEvent = object
+  inherit event
+
+  method message : js_string t readonly_prop
+
+  method filename : js_string t readonly_prop
+
+  method lineno : int readonly_prop
+
+  method colno : int readonly_prop
+
+  method error : 'a. 'a opt readonly_prop
+end
+
+and progressEvent = object
+  inherit event
+
+  method lengthComputable : bool t readonly_prop
+
+  method loaded : number_t readonly_prop
+
+  method total : number_t readonly_prop
+end
+
+and beforeUnloadEvent = object
+  inherit event
+
+  method returnValue : js_string t prop
+end
+
+and pageTransitionEvent = object
+  inherit event
+
+  method persisted : bool t readonly_prop
 end
 
 and nodeSelector = object
@@ -982,6 +1070,18 @@ module Event = struct
   let waiting = Dom.Event.make "waiting"
 
   let toggle = Dom.Event.make "toggle"
+
+  let compositionstart = Dom.Event.make "compositionstart"
+
+  let compositionupdate = Dom.Event.make "compositionupdate"
+
+  let compositionend = Dom.Event.make "compositionend"
+
+  let pageshow = Dom.Event.make "pageshow"
+
+  let pagehide = Dom.Event.make "pagehide"
+
+  let loadend = Dom.Event.make "loadend"
 
   let make = Dom.Event.make
 end
@@ -2428,7 +2528,7 @@ class type window = object
 
   method onunload : (window t, event t) event_listener prop
 
-  method onbeforeunload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, beforeUnloadEvent t) event_listener prop
 
   method onblur : (window t, focusEvent t) event_listener prop
 
@@ -2912,6 +3012,19 @@ module CoerceTo = struct
   let popStateEvent ev = unsafeCoerceEvent Js.Unsafe.global##._PopStateEvent ev
 
   let messageEvent ev = unsafeCoerceEvent Js.Unsafe.global##._MessageEvent ev
+
+  let inputEvent ev = unsafeCoerceEvent Js.Unsafe.global##._InputEvent ev
+
+  let compositionEvent ev = unsafeCoerceEvent Js.Unsafe.global##._CompositionEvent ev
+
+  let errorEvent ev = unsafeCoerceEvent Js.Unsafe.global##._ErrorEvent ev
+
+  let progressEvent ev = unsafeCoerceEvent Js.Unsafe.global##._ProgressEvent ev
+
+  let pageTransitionEvent ev =
+    unsafeCoerceEvent Js.Unsafe.global##._PageTransitionEvent ev
+
+  let beforeUnloadEvent ev = unsafeCoerceEvent Js.Unsafe.global##._BeforeUnloadEvent ev
 end
 
 (****)

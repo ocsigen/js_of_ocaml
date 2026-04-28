@@ -285,6 +285,12 @@ type (-'a, -'b) event_listener
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
 
+type event_phase =
+  | Phase_none
+  | Phase_capturing
+  | Phase_at_target
+  | Phase_bubbling
+
 class type ['a] event = object
   method _type : js_string t readonly_prop
 
@@ -292,7 +298,27 @@ class type ['a] event = object
 
   method currentTarget : 'a t opt readonly_prop
 
+  method eventPhase : event_phase readonly_prop
+
+  method bubbles : bool t readonly_prop
+
+  method cancelable : bool t readonly_prop
+
+  method defaultPrevented : bool t readonly_prop
+
+  method composed : bool t readonly_prop
+
+  method isTrusted : bool t readonly_prop
+
+  method timeStamp : number_t readonly_prop
+
+  method composedPath : Unsafe.any js_array t meth
+
   method preventDefault : unit meth
+
+  method stopPropagation : unit meth
+
+  method stopImmediatePropagation : unit meth
 
   (* Legacy methods *)
   method srcElement : 'a t opt readonly_prop
