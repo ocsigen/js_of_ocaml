@@ -1111,7 +1111,13 @@ end
 and animation = object
   method id : js_string t prop
 
+  method effect_ : animationEffect t opt prop
+
+  method timeline : animationTimeline t opt prop
+
   method playState : js_string t readonly_prop
+
+  method replaceState : js_string t readonly_prop
 
   method playbackRate : number_t prop
 
@@ -1134,6 +1140,136 @@ and animation = object
   method persist : unit meth
 
   method commitStyles : unit meth
+
+  method updatePlaybackRate : number_t -> unit meth
+
+  method oncancel : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
+
+  method onfinish : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
+
+  method onremove : (animation t, event t) event_listener writeonly_prop
+end
+
+and animationTimeline = object
+  method currentTime : number_t opt readonly_prop
+end
+
+and documentTimeline = object
+  inherit animationTimeline
+end
+
+and animationEffect = object
+  method updateTiming : optionalEffectTiming t -> unit meth
+
+  method getComputedTiming : computedEffectTiming t meth
+end
+
+and keyframeEffect = object
+  inherit animationEffect
+
+  method target : element t opt prop
+
+  method pseudoElement : js_string t opt prop
+
+  method composite : js_string t prop
+
+  method getKeyframes : computedKeyframe t js_array t meth
+
+  method setKeyframes : 'a. 'a -> unit meth
+end
+
+and computedKeyframe = object
+  method offset : number_t opt readonly_prop
+
+  method computedOffset : number_t readonly_prop
+
+  method easing : js_string t readonly_prop
+
+  method composite : js_string t readonly_prop
+end
+
+and optionalEffectTiming = object
+  method delay : number_t writeonly_prop
+
+  method endDelay : number_t writeonly_prop
+
+  method fill : js_string t writeonly_prop
+
+  method iterationStart : number_t writeonly_prop
+
+  method iterations : number_t writeonly_prop
+
+  method duration : number_t writeonly_prop
+
+  method duration_auto : js_string t writeonly_prop
+
+  method direction : js_string t writeonly_prop
+
+  method easing : js_string t writeonly_prop
+end
+
+and computedEffectTiming = object
+  method delay : number_t readonly_prop
+
+  method endDelay : number_t readonly_prop
+
+  method fill : js_string t readonly_prop
+
+  method iterationStart : number_t readonly_prop
+
+  method iterations : number_t readonly_prop
+
+  method duration : number_t readonly_prop
+
+  method direction : js_string t readonly_prop
+
+  method easing : js_string t readonly_prop
+
+  method endTime : number_t readonly_prop
+
+  method activeDuration : number_t readonly_prop
+
+  method localTime : number_t opt readonly_prop
+
+  method progress : number_t opt readonly_prop
+
+  method currentIteration : number_t opt readonly_prop
+end
+
+and keyframeAnimationOptions = object
+  method delay : number_t writeonly_prop
+
+  method endDelay : number_t writeonly_prop
+
+  method fill : js_string t writeonly_prop
+
+  method iterationStart : number_t writeonly_prop
+
+  method iterations : number_t writeonly_prop
+
+  method duration : number_t writeonly_prop
+
+  method duration_auto : js_string t writeonly_prop
+
+  method direction : js_string t writeonly_prop
+
+  method easing : js_string t writeonly_prop
+
+  method id : js_string t writeonly_prop
+
+  method composite : js_string t writeonly_prop
+
+  method pseudoElement : js_string t opt writeonly_prop
+
+  method timeline : animationTimeline t opt writeonly_prop
+end
+
+and animationPlaybackEvent = object
+  inherit event
+
+  method currentTime : number_t opt readonly_prop
+
+  method timelineTime : number_t opt readonly_prop
 end
 
 and scrollToOptions = object
@@ -1270,6 +1406,12 @@ and element = object
   method requestPointerLock_ : unit meth
 
   method animate : 'a 'b. 'a -> 'b -> animation t meth
+
+  method animate_keyframes : 'a. 'a -> animation t meth
+
+  method animate_duration : 'a. 'a -> number_t -> animation t meth
+
+  method animate_options : 'a. 'a -> keyframeAnimationOptions t -> animation t meth
 
   method getAnimations : animation t js_array t meth
 
@@ -2749,6 +2891,8 @@ class type document = object
   method getSelection : selection t opt meth
 
   method getAnimations : animation t js_array t meth
+
+  method timeline : documentTimeline t readonly_prop
 
   method exitFullscreen_ : unit meth
 
@@ -4290,6 +4434,56 @@ let makeScrollToOptions ?top ?left ?behavior () =
   Option.iter (fun v -> opts##.top := v) top;
   Option.iter (fun v -> opts##.left := v) left;
   Option.iter (fun v -> opts##.behavior := v) behavior;
+  opts
+
+let makeKeyframeAnimationOptions
+    ?delay
+    ?endDelay
+    ?fill
+    ?iterationStart
+    ?iterations
+    ?duration
+    ?direction
+    ?easing
+    ?id
+    ?composite
+    ?pseudoElement
+    ?timeline
+    () =
+  let opts : keyframeAnimationOptions t = Js.Unsafe.obj [||] in
+  Option.iter (fun v -> opts##.delay := v) delay;
+  Option.iter (fun v -> opts##.endDelay := v) endDelay;
+  Option.iter (fun v -> opts##.fill := v) fill;
+  Option.iter (fun v -> opts##.iterationStart := v) iterationStart;
+  Option.iter (fun v -> opts##.iterations := v) iterations;
+  Option.iter (fun v -> opts##.duration := v) duration;
+  Option.iter (fun v -> opts##.direction := v) direction;
+  Option.iter (fun v -> opts##.easing := v) easing;
+  Option.iter (fun v -> opts##.id := v) id;
+  Option.iter (fun v -> opts##.composite := v) composite;
+  Option.iter (fun v -> opts##.pseudoElement := v) pseudoElement;
+  Option.iter (fun v -> opts##.timeline := v) timeline;
+  opts
+
+let makeOptionalEffectTiming
+    ?delay
+    ?endDelay
+    ?fill
+    ?iterationStart
+    ?iterations
+    ?duration
+    ?direction
+    ?easing
+    () =
+  let opts : optionalEffectTiming t = Js.Unsafe.obj [||] in
+  Option.iter (fun v -> opts##.delay := v) delay;
+  Option.iter (fun v -> opts##.endDelay := v) endDelay;
+  Option.iter (fun v -> opts##.fill := v) fill;
+  Option.iter (fun v -> opts##.iterationStart := v) iterationStart;
+  Option.iter (fun v -> opts##.iterations := v) iterations;
+  Option.iter (fun v -> opts##.duration := v) duration;
+  Option.iter (fun v -> opts##.direction := v) direction;
+  Option.iter (fun v -> opts##.easing := v) easing;
   opts
 
 let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =

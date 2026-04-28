@@ -213,7 +213,6 @@ These form a dependency chain and should be tackled together.
 | WebRTC | — | No | Peer-to-peer media/data. Very large, complex API. |
 | Web Components — Custom Elements | — | No | Large surface, competes with framework approaches. Shadow DOM portion of Web Components is already bound. |
 | CSS Typed OM | — | No | Emerging API, limited browser adoption until recently. |
-| Web Animations API (upgrade) | — | No | CSS animations cover most use cases. `animate`/`getAnimations` and the `animation` interface are bound; AnimationTimeline/KeyframeEffect not yet. |
 | Media Source Extensions | — | No | Video streaming (HLS/DASH players). Very niche. |
 | Gamepad API | — | No | Gaming only. |
 | Screen Orientation | — | No | Mobile-specific. |
