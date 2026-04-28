@@ -1687,13 +1687,27 @@ class type linkElement = object
 
   method crossorigin : js_string t prop
 
+  method crossOrigin : js_string t opt prop
+
+  method _as : js_string t prop
+
   method href : js_string t prop
 
   method hreflang : js_string t prop
 
+  method imageSrcset : js_string t prop
+
+  method imageSizes : js_string t prop
+
+  method integrity : js_string t prop
+
   method media : js_string t prop
 
+  method referrerPolicy : js_string t prop
+
   method rel : js_string t prop
+
+  method relList : tokenList t readonly_prop
 
   method rev : js_string t prop
 
@@ -2386,7 +2400,13 @@ class type anchorElement = object
 
   method name : js_string t prop
 
+  method ping : js_string t prop
+
+  method referrerPolicy : js_string t prop
+
   method rel : js_string t prop
+
+  method relList : tokenList t readonly_prop
 
   method rev : js_string t prop
 
@@ -2395,6 +2415,8 @@ class type anchorElement = object
   method tabIndex : int prop
 
   method target : js_string t prop
+
+  method text : js_string t prop
 
   method _type : js_string t prop
 end
@@ -2415,6 +2437,20 @@ class type imageElement = object ('self)
   method alt : js_string t prop
 
   method src : js_string t prop
+
+  method srcset : js_string t prop
+
+  method sizes : js_string t prop
+
+  method currentSrc : js_string t readonly_prop
+
+  method crossOrigin : js_string t opt prop
+
+  method decoding : js_string t prop
+
+  method loading : js_string t prop
+
+  method referrerPolicy : js_string t prop
 
   method useMap : js_string t prop
 
@@ -2518,7 +2554,15 @@ class type scriptElement = object
 
   method charset : js_string t prop
 
+  method crossOrigin : js_string t opt prop
+
   method defer : bool t prop
+
+  method integrity : js_string t prop
+
+  method noModule : bool t prop
+
+  method referrerPolicy : js_string t prop
 
   method src : js_string t prop
 
@@ -2790,6 +2834,18 @@ end
 
 class type videoElement = object
   inherit mediaElement
+
+  method width : int prop
+
+  method height : int prop
+
+  method videoWidth : int readonly_prop
+
+  method videoHeight : int readonly_prop
+
+  method poster : js_string t prop
+
+  method playsInline : bool t prop
 end
 
 type context = js_string t
@@ -3562,11 +3618,17 @@ end
 class type iFrameElement = object
   inherit element
 
+  method allow : js_string t prop
+
+  method allowFullscreen : bool t prop
+
   method frameBorder : js_string t prop
 
   method height : js_string t prop
 
   method width : js_string t prop
+
+  method loading : js_string t prop
 
   method longDesc : js_string t prop
 
@@ -3576,9 +3638,15 @@ class type iFrameElement = object
 
   method name : js_string t prop
 
+  method referrerPolicy : js_string t prop
+
+  method sandbox : tokenList t readonly_prop
+
   method scrolling : js_string t prop
 
   method src : js_string t prop
+
+  method srcdoc : js_string t prop
 
   method contentDocument : document t opt readonly_prop
 
@@ -3800,7 +3868,7 @@ let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 
 let createAudio doc : audioElement t = unsafeCreateElement doc "audio"
 
-let createVideo doc : audioElement t = unsafeCreateElement doc "video"
+let createVideo doc : videoElement t = unsafeCreateElement doc "video"
 
 let createOutput doc : outputElement t = unsafeCreateElement doc "output"
 
