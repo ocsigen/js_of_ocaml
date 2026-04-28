@@ -100,14 +100,14 @@ let () = my_ref := 2
          if(0 === match) return this_will_be_undefined(0);
          if(1 === match){
           var nesting = 1;
-          return caml_call2(Stdlib_Int[8], nesting, 0)
+          return caml_call2(Stdlib_Int[12], nesting, 0)
                   ? nesting
                   : this_will_be_undefined(0);
          }
          t$0 = t;
         }
        }
-       var _a_ = handle_state([0, 1]), _a_ = caml_call1(Stdlib_Int[12], _a_);
+       var _a_ = handle_state([0, 1]), _a_ = caml_call1(Stdlib_Int[22], _a_);
        caml_call1(Stdlib[46], _a_);
        var my_ref = [0, 1];
        my_ref[1] = 2;
@@ -216,7 +216,7 @@ let () = my_ref := 2
          return g(0) + _a_ | 0;
         }
         var nesting = 1;
-        if(caml_call2(Stdlib_Int[8], nesting, 0)) return nesting;
+        if(caml_call2(Stdlib_Int[12], nesting, 0)) return nesting;
         function g$0(param){
          return 1 < caml_call1(Stdlib_Random[5], 3)
                  ? 2 + this_will_be_undefined(0) | 0
@@ -225,7 +225,7 @@ let () = my_ref := 2
         var _a_ = g$0(0);
         return g$0(0) + _a_ | 0;
        }
-       var _a_ = handle_state([0, 1]), _a_ = caml_call1(Stdlib_Int[12], _a_);
+       var _a_ = handle_state([0, 1]), _a_ = caml_call1(Stdlib_Int[22], _a_);
        caml_call1(Stdlib[46], _a_);
        var my_ref = [0, 1];
        my_ref[1] = 2;

@@ -407,7 +407,7 @@
 (library
  ;; compiler/tests-compiler/gh1494.ml
  (name gh1494_15)
- (enabled_if true)
+ (enabled_if (>= %{ocaml_version} 5.5))
  (modules gh1494)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests
@@ -422,7 +422,7 @@
 (library
  ;; compiler/tests-compiler/gh1559.ml
  (name gh1559_15)
- (enabled_if true)
+ (enabled_if (>= %{ocaml_version} 5.5))
  (modules gh1559)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
  (inline_tests

@@ -1,10 +1,14 @@
 (rule
  (target test.ml.corrected)
+ (enabled_if
+  (>= %{ocaml_version} 5.5))
  (action
   (run node %{dep:../expect.bc.js} %{dep:test.ml})))
 
 (rule
  (alias runtest-js)
+ (enabled_if
+  (>= %{ocaml_version} 5.5))
  (action
   (diff test.ml test.ml.corrected)))
 

@@ -35,6 +35,13 @@ jobs:
         all_jane_street_tests:
           - false
         include:
+          - os: ubuntu-latest
+            os-name: Ubuntu
+            ocaml-name: "5.5.0~alpha3"
+            ocaml-compiler: "ocaml-compiler.5.5.0~alpha3"
+            separate_compilation: true
+            jane_street_tests: false
+            all_jane_street_tests: false
           - os: macos-latest
             os-name: MacOS
             ocaml-compiler: "5.3"
@@ -128,6 +135,9 @@ jobs:
       # packages that implicitly depend on mingw-w64-shims.
       - run: opam install conf-pkg-config conf-mingw-w64-gcc-i686 conf-mingw-w64-g++-x86_64
         if: runner.os == 'Windows'
+
+      - run: opam repo add alpha git+https://github.com/kit-ty-kate/opam-alpha-repository.git
+        if: contains( matrix.ocaml-compiler, 'alpha3')
 
       - name: Pin wasm_of_ocaml
         working-directory: ./wasm_of_ocaml

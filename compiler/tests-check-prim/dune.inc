@@ -89,6 +89,51 @@
     %{dep:unix.bc}))))
 
 (rule
+ (targets main.5.5.output)
+ (mode
+  (promote (until-clean)))
+ (enabled_if (and (>= %{ocaml_version} 5.5)(< %{ocaml_version} 5.6)(not %{oxcaml_supported})))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:main.bc}))))
+
+(rule
+ (targets unix-Win32.5.5.output)
+ (mode
+  (promote (until-clean)))
+ (enabled_if (and (>= %{ocaml_version} 5.5)(< %{ocaml_version} 5.6)(= %{os_type} Win32)(not %{oxcaml_supported})))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:unix.bc}))))
+
+(rule
+ (targets unix-Unix.5.5.output)
+ (mode
+  (promote (until-clean)))
+ (enabled_if (and (>= %{ocaml_version} 5.5)(< %{ocaml_version} 5.6)(= %{os_type} Unix)(not %{oxcaml_supported})))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run
+    %{bin:js_of_ocaml}
+    check-runtime
+    +dynlink.js
+    +toplevel.js
+    %{dep:unix.bc}))))
+
+(rule
  (targets main.5.2+ox.output)
  (mode
   (promote (until-clean)))
