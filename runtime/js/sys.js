@@ -147,6 +147,18 @@ function caml_sys_getenv_opt(name) {
   return [0, caml_string_of_jsstring(r)];
 }
 
+//Provides: caml_sys_getenv_opt (const)
+//Requires: caml_string_of_jsstring
+//Requires: caml_jsstring_of_string
+//Requires: jsoo_sys_getenv
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_sys_getenv_opt(name) {
+  var r = jsoo_sys_getenv(caml_jsstring_of_string(name));
+  if (r === undefined) return 0;
+  return [0, caml_string_of_jsstring(r)];
+}
+
 //Provides: caml_sys_unsafe_getenv
 //Requires: caml_sys_getenv
 function caml_sys_unsafe_getenv(name) {
@@ -407,6 +419,14 @@ var caml_io_buffer_size = 65536;
 //Provides: caml_sys_io_buffer_size
 //Requires: caml_io_buffer_size
 //Version: >= 5.4
+function caml_sys_io_buffer_size(_unit) {
+  return caml_io_buffer_size;
+}
+
+//Provides: caml_sys_io_buffer_size
+//Requires: caml_io_buffer_size
+//Version: >= 5.2, < 5.3
+//OxCaml
 function caml_sys_io_buffer_size(_unit) {
   return caml_io_buffer_size;
 }
