@@ -114,7 +114,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Fullscreen API | Partial | Yes | `Dom_html` (element/document fullscreen — `requestFullscreen_`/`exitFullscreen_` returns Promise, not yet typed) · Brr: `Brr.El.request_fullscreen`, `Brr.Document.exit_fullscreen` |
 | Gamepad API | No | No | |
 | Pointer Lock API | Partial | Yes | `Dom_html` (element/document pointer lock — `requestPointerLock_` returns Promise, not yet typed) · Brr: `Brr.El.request_pointer_lock` |
-| Selection API | Partial | No | `Dom_html` (selection, range) — [#453](https://github.com/ocsigen/js_of_ocaml/issues/453) |
+| Selection API | Yes | No | `Dom_html` (`selection`, `range`) |
 
 ## Observers
 
@@ -217,7 +217,6 @@ These form a dependency chain and should be tackled together.
 | Gamepad API | — | No | Gaming only. |
 | Screen Orientation | — | No | Mobile-specific. |
 | Beacon API | — | No | Analytics pings. Trivial to call via `Js.Unsafe`. |
-| Selection API (upgrade) | [#453](https://github.com/ocsigen/js_of_ocaml/issues/453) | No | Rich text editors. Niche but has an open issue. |
 
 ### Suggested implementation order
 
