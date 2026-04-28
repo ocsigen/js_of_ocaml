@@ -1842,6 +1842,12 @@ class type optionElement = object
   method value : js_string t prop
 end
 
+class type dataListElement = object
+  inherit element
+
+  method options : optionElement collection t readonly_prop
+end
+
 class type selectElement = object ('self)
   inherit element
 
@@ -1934,7 +1940,7 @@ class type inputElement = object ('self)
 
   method indeterminate : bool t prop
 
-  method list : element t opt readonly_prop
+  method list : dataListElement t opt readonly_prop
 
   method max : js_string t prop
 
@@ -2175,6 +2181,138 @@ class type legendElement = object
   method form : formElement t opt readonly_prop
 
   method accessKey : js_string t prop
+end
+
+class type outputElement = object
+  inherit element
+
+  method form : formElement t opt readonly_prop
+
+  method name : js_string t prop
+
+  method _type : js_string t readonly_prop
+
+  method defaultValue : js_string t prop
+
+  method value : js_string t prop
+
+  method htmlFor : tokenList t readonly_prop
+
+  method labels : labelElement Dom.nodeList t readonly_prop
+
+  method validity : validityState t readonly_prop
+
+  method validationMessage : js_string t readonly_prop
+
+  method willValidate : bool t readonly_prop
+
+  method checkValidity : bool t meth
+
+  method reportValidity : bool t meth
+
+  method setCustomValidity : js_string t -> unit meth
+end
+
+class type progressElement = object
+  inherit element
+
+  method value : number_t prop
+
+  method max : number_t prop
+
+  method position : number_t readonly_prop
+
+  method labels : labelElement Dom.nodeList t readonly_prop
+end
+
+class type meterElement = object
+  inherit element
+
+  method value : number_t prop
+
+  method min : number_t prop
+
+  method max : number_t prop
+
+  method low : number_t prop
+
+  method high : number_t prop
+
+  method optimum : number_t prop
+
+  method labels : labelElement Dom.nodeList t readonly_prop
+end
+
+class type templateElement = object
+  inherit element
+
+  method content : Dom.documentFragment t readonly_prop
+end
+
+class type slotElement = object
+  inherit element
+
+  method name : js_string t prop
+
+  method assignedNodes : Dom.node t js_array t meth
+
+  method assignedElements : element t js_array t meth
+end
+
+class type pictureElement = element
+
+class type sourceElement = object
+  inherit element
+
+  method src : js_string t prop
+
+  method _type : js_string t prop
+
+  method srcset : js_string t prop
+
+  method sizes : js_string t prop
+
+  method media : js_string t prop
+
+  method width : int prop
+
+  method height : int prop
+end
+
+type trackReadyState =
+  | TRACK_NONE
+  | TRACK_LOADING
+  | TRACK_LOADED
+  | TRACK_ERROR
+
+class type trackElement = object
+  inherit element
+
+  method kind : js_string t prop
+
+  method src : js_string t prop
+
+  method srclang : js_string t prop
+
+  method label : js_string t prop
+
+  method default : bool t prop
+
+  method readyState_int : int readonly_prop
+
+  method readyState : trackReadyState readonly_prop
+end
+
+class type timeElement = object
+  inherit element
+
+  method dateTime : js_string t prop
+end
+
+class type dataElement = object
+  inherit element
+
+  method value : js_string t prop
 end
 
 class type uListElement = element
@@ -3663,6 +3801,28 @@ let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 let createAudio doc : audioElement t = unsafeCreateElement doc "audio"
 
 let createVideo doc : audioElement t = unsafeCreateElement doc "video"
+
+let createOutput doc : outputElement t = unsafeCreateElement doc "output"
+
+let createProgress doc : progressElement t = unsafeCreateElement doc "progress"
+
+let createMeter doc : meterElement t = unsafeCreateElement doc "meter"
+
+let createDatalist doc : dataListElement t = unsafeCreateElement doc "datalist"
+
+let createTemplate doc : templateElement t = unsafeCreateElement doc "template"
+
+let createSlot doc : slotElement t = unsafeCreateElement doc "slot"
+
+let createPicture doc : pictureElement t = unsafeCreateElement doc "picture"
+
+let createSource doc : sourceElement t = unsafeCreateElement doc "source"
+
+let createTrack doc : trackElement t = unsafeCreateElement doc "track"
+
+let createTime doc : timeElement t = unsafeCreateElement doc "time"
+
+let createData doc : dataElement t = unsafeCreateElement doc "data"
 
 exception Canvas_not_available
 
