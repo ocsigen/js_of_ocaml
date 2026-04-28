@@ -303,6 +303,10 @@ and mouseEvent = object
 
   method clientY : number_t readonly_prop
 
+  method x : number_t readonly_prop
+
+  method y : number_t readonly_prop
+
   (* Relative to the edge of the screen *)
   method screenX : number_t readonly_prop
 
@@ -323,6 +327,8 @@ and mouseEvent = object
   method button : int readonly_prop
 
   method buttons : int readonly_prop
+
+  method getModifierState : js_string t -> bool t meth
 
   (* Legacy methods *)
   method which : mouse_button optdef readonly_prop
@@ -451,6 +457,14 @@ and touch = object
   method pageX : number_t readonly_prop
 
   method pageY : number_t readonly_prop
+
+  method radiusX : number_t readonly_prop
+
+  method radiusY : number_t readonly_prop
+
+  method rotationAngle : number_t readonly_prop
+
+  method force : number_t readonly_prop
 end
 
 and submitEvent = object
@@ -618,6 +632,8 @@ and pointerEvent = object
   method pointerType : js_string t readonly_prop
 
   method isPrimary : bool t readonly_prop
+
+  method getCoalescedEvents : pointerEvent t js_array t meth
 end
 
 and storageEvent = object
@@ -686,7 +702,79 @@ and messageEvent = object
 
   method data : Unsafe.any opt readonly_prop
 
+  method origin : js_string t readonly_prop
+
+  method lastEventId : js_string t readonly_prop
+
   method source : Unsafe.any opt readonly_prop
+end
+
+and staticRange = object
+  method collapsed : bool t readonly_prop
+
+  method startContainer : Dom.node t readonly_prop
+
+  method startOffset : int readonly_prop
+
+  method endContainer : Dom.node t readonly_prop
+
+  method endOffset : int readonly_prop
+end
+
+and compositionEvent = object
+  inherit event
+
+  method data : js_string t readonly_prop
+end
+
+and inputEvent = object
+  inherit event
+
+  method data : js_string t opt readonly_prop
+
+  method inputType : js_string t readonly_prop
+
+  method dataTransfer : dataTransfer t opt readonly_prop
+
+  method isComposing : bool t readonly_prop
+
+  method getTargetRanges : staticRange t js_array t meth
+end
+
+and errorEvent = object
+  inherit event
+
+  method message : js_string t readonly_prop
+
+  method filename : js_string t readonly_prop
+
+  method lineno : int readonly_prop
+
+  method colno : int readonly_prop
+
+  method error : 'a. 'a opt readonly_prop
+end
+
+and progressEvent = object
+  inherit event
+
+  method lengthComputable : bool t readonly_prop
+
+  method loaded : number_t readonly_prop
+
+  method total : number_t readonly_prop
+end
+
+and beforeUnloadEvent = object
+  inherit event
+
+  method returnValue : js_string t prop
+end
+
+and pageTransitionEvent = object
+  inherit event
+
+  method persisted : bool t readonly_prop
 end
 
 (** {2 HTML elements} *)
@@ -2289,7 +2377,7 @@ class type window = object
 
   method onunload : (window t, event t) event_listener prop
 
-  method onbeforeunload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, beforeUnloadEvent t) event_listener prop
 
   method onblur : (window t, focusEvent t) event_listener prop
 
@@ -2479,7 +2567,7 @@ module Event : sig
 
   val unload : event t typ
 
-  val beforeunload : event t typ
+  val beforeunload : beforeUnloadEvent t typ
 
   val resize : event t typ
 
@@ -2588,6 +2676,18 @@ module Event : sig
   val waiting : mediaEvent t typ
 
   val toggle : toggleEvent t typ
+
+  val compositionstart : compositionEvent t typ
+
+  val compositionupdate : compositionEvent t typ
+
+  val compositionend : compositionEvent t typ
+
+  val pageshow : pageTransitionEvent t typ
+
+  val pagehide : pageTransitionEvent t typ
+
+  val loadend : progressEvent t typ
 
   val make : string -> 'a typ
 end
@@ -3245,6 +3345,18 @@ module CoerceTo : sig
   val popStateEvent : #event t -> popStateEvent t opt
 
   val messageEvent : #event t -> messageEvent t opt
+
+  val inputEvent : #event t -> inputEvent t opt
+
+  val compositionEvent : #event t -> compositionEvent t opt
+
+  val errorEvent : #event t -> errorEvent t opt
+
+  val progressEvent : #event t -> progressEvent t opt
+
+  val pageTransitionEvent : #event t -> pageTransitionEvent t opt
+
+  val beforeUnloadEvent : #event t -> beforeUnloadEvent t opt
 end
 
 type timeout_id_safe
