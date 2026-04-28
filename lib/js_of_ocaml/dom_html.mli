@@ -1551,6 +1551,35 @@ end
 
 class type bodyElement = element
 
+(** Result of the constraint validation API on form-associated elements. *)
+class type validityState = object
+  method valueMissing : bool t readonly_prop
+
+  method typeMismatch : bool t readonly_prop
+
+  method patternMismatch : bool t readonly_prop
+
+  method tooLong : bool t readonly_prop
+
+  method tooShort : bool t readonly_prop
+
+  method rangeUnderflow : bool t readonly_prop
+
+  method rangeOverflow : bool t readonly_prop
+
+  method stepMismatch : bool t readonly_prop
+
+  method badInput : bool t readonly_prop
+
+  method customError : bool t readonly_prop
+
+  method valid : bool t readonly_prop
+end
+
+class type submitterElement = object
+  inherit element
+end
+
 class type formElement = object
   inherit element
 
@@ -1558,21 +1587,47 @@ class type formElement = object
 
   method length : int readonly_prop
 
+  method name : js_string t prop
+
   method acceptCharset : js_string t prop
 
   method action : js_string t prop
+
+  method autocomplete : js_string t prop
 
   method enctype : js_string t prop
 
   method _method : js_string t prop
 
+  method noValidate : bool t prop
+
   method target : js_string t prop
 
   method submit : unit meth
 
+  method requestSubmit : unit meth
+
+  method requestSubmit_submitter : submitterElement t -> unit meth
+
   method reset : unit meth
 
+  method checkValidity : bool t meth
+
+  method reportValidity : bool t meth
+
   method onsubmit : ('self t, submitEvent t) event_listener writeonly_prop
+end
+
+class type labelElement = object
+  inherit element
+
+  method form : formElement t opt readonly_prop
+
+  method accessKey : js_string t prop
+
+  method htmlFor : js_string t prop
+
+  method control : element t opt readonly_prop
 end
 
 class type optGroupElement = object
@@ -1606,6 +1661,8 @@ class type selectElement = object ('self)
 
   method selectedIndex : int prop
 
+  method selectedOptions : optionElement collection t readonly_prop
+
   method value : js_string t prop
 
   method length : int prop
@@ -1630,13 +1687,27 @@ class type selectElement = object ('self)
 
   method required : bool t writeonly_prop
 
+  method labels : labelElement Dom.nodeList t readonly_prop
+
+  method validity : validityState t readonly_prop
+
+  method validationMessage : js_string t readonly_prop
+
+  method willValidate : bool t readonly_prop
+
+  method checkValidity : bool t meth
+
+  method reportValidity : bool t meth
+
+  method setCustomValidity : js_string t -> unit meth
+
   method onchange : ('self t, event t) event_listener prop
 
   method oninput : ('self t, event t) event_listener prop
 end
 
 class type inputElement = object ('self)
-  inherit element
+  inherit submitterElement
 
   method defaultValue : js_string t prop
 
@@ -1653,13 +1724,43 @@ class type inputElement = object ('self)
 
   method alt : js_string t prop
 
+  method autocomplete : js_string t prop
+
+  method capture : js_string t prop
+
   method checked : bool t prop
+
+  method dirName : js_string t prop
 
   method disabled : bool t prop
 
+  method formAction : js_string t prop
+
+  method formEnctype : js_string t prop
+
+  method formMethod : js_string t prop
+
+  method formNoValidate : bool t prop
+
+  method formTarget : js_string t prop
+
+  method indeterminate : bool t prop
+
+  method list : element t opt readonly_prop
+
+  method max : js_string t prop
+
   method maxLength : int prop
 
+  method min : js_string t prop
+
+  method minLength : int prop
+
+  method multiple : bool t prop
+
   method name : js_string t readonly_prop
+
+  method pattern : js_string t prop
 
   method readOnly : bool t prop
 
@@ -1668,6 +1769,8 @@ class type inputElement = object ('self)
   method size : int prop
 
   method src : js_string t prop
+
+  method step : js_string t prop
 
   method tabIndex : int prop
 
@@ -1678,7 +1781,23 @@ class type inputElement = object ('self)
 
   method value : js_string t prop
 
+  method valueAsDate : Js.date t opt prop
+
+  method valueAsNumber : number_t prop
+
+  method stepUp : unit meth
+
+  method stepUp_n : int -> unit meth
+
+  method stepDown : unit meth
+
+  method stepDown_n : int -> unit meth
+
   method select : unit meth
+
+  method setSelectionRange : int -> int -> unit meth
+
+  method setSelectionRange_direction : int -> int -> js_string t -> unit meth
 
   method files : File.fileList t readonly_prop
 
@@ -1689,6 +1808,20 @@ class type inputElement = object ('self)
   method selectionStart : int prop
 
   method selectionEnd : int prop
+
+  method labels : labelElement Dom.nodeList t readonly_prop
+
+  method validity : validityState t readonly_prop
+
+  method validationMessage : js_string t readonly_prop
+
+  method willValidate : bool t readonly_prop
+
+  method checkValidity : bool t meth
+
+  method reportValidity : bool t meth
+
+  method setCustomValidity : js_string t -> unit meth
 
   method onselect : ('self t, event t) event_listener prop
 
@@ -1710,9 +1843,17 @@ class type textAreaElement = object ('self)
 
   method accessKey : js_string t prop
 
+  method autocomplete : js_string t prop
+
   method cols : int prop
 
+  method dirName : js_string t prop
+
   method disabled : bool t prop
+
+  method maxLength : int prop
+
+  method minLength : int prop
 
   method name : js_string t readonly_prop
 
@@ -1732,11 +1873,35 @@ class type textAreaElement = object ('self)
 
   method value : js_string t prop
 
+  method wrap : js_string t prop
+
   method select : unit meth
+
+  method setSelectionRange : int -> int -> unit meth
+
+  method setSelectionRange_direction : int -> int -> js_string t -> unit meth
+
+  method setRangeText : js_string t -> unit meth
+
+  method setRangeText_full : js_string t -> int -> int -> js_string t -> unit meth
 
   method required : bool t writeonly_prop
 
   method placeholder : js_string t writeonly_prop
+
+  method labels : labelElement Dom.nodeList t readonly_prop
+
+  method validity : validityState t readonly_prop
+
+  method validationMessage : js_string t readonly_prop
+
+  method willValidate : bool t readonly_prop
+
+  method checkValidity : bool t meth
+
+  method reportValidity : bool t meth
+
+  method setCustomValidity : js_string t -> unit meth
 
   method onselect : ('self t, event t) event_listener prop
 
@@ -1750,13 +1915,23 @@ class type textAreaElement = object ('self)
 end
 
 class type buttonElement = object
-  inherit element
+  inherit submitterElement
 
   method form : formElement t opt readonly_prop
 
   method accessKey : js_string t prop
 
   method disabled : bool t prop
+
+  method formAction : js_string t prop
+
+  method formEnctype : js_string t prop
+
+  method formMethod : js_string t prop
+
+  method formNoValidate : bool t prop
+
+  method formTarget : js_string t prop
 
   method name : js_string t readonly_prop
 
@@ -1765,22 +1940,46 @@ class type buttonElement = object
   method _type : js_string t readonly_prop
 
   method value : js_string t prop
-end
 
-class type labelElement = object
-  inherit element
+  method labels : labelElement Dom.nodeList t readonly_prop
 
-  method form : formElement t opt readonly_prop
+  method validity : validityState t readonly_prop
 
-  method accessKey : js_string t prop
+  method validationMessage : js_string t readonly_prop
 
-  method htmlFor : js_string t prop
+  method willValidate : bool t readonly_prop
+
+  method checkValidity : bool t meth
+
+  method reportValidity : bool t meth
+
+  method setCustomValidity : js_string t -> unit meth
 end
 
 class type fieldSetElement = object
   inherit element
 
   method form : formElement t opt readonly_prop
+
+  method name : js_string t prop
+
+  method disabled : bool t prop
+
+  method _type : js_string t readonly_prop
+
+  method elements : element collection t readonly_prop
+
+  method validity : validityState t readonly_prop
+
+  method validationMessage : js_string t readonly_prop
+
+  method willValidate : bool t readonly_prop
+
+  method checkValidity : bool t meth
+
+  method reportValidity : bool t meth
+
+  method setCustomValidity : js_string t -> unit meth
 end
 
 class type legendElement = object
