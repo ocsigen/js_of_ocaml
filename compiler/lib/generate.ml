@@ -1663,7 +1663,9 @@ let rec translate_expr ctx loc x e level : (_ * J.statement_list) Expr_builder.t
             in
             return e
         | Extern "caml_alloc_dummy_function", _ -> assert false
-        | Extern ("%resume" | "%perform" | "%reperform"), _ ->
+        | ( Extern
+              ("%resume" | "%perform" | "%reperform" | "%with_stack" | "%with_stack_bind")
+          , _ ) ->
             assert (not (cps_transform ()));
             if not !(ctx.effect_warning)
             then (
