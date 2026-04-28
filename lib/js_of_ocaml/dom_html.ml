@@ -580,6 +580,8 @@ type delta_mode =
   | Delta_line
   | Delta_page
 
+type domStringMap
+
 class type event = object
   inherit [element] Dom.event
 end
@@ -1088,6 +1090,72 @@ and tokenList = object
   method stringifier : js_string t prop
 end
 
+and shadowRootInit = object
+  method mode : js_string t writeonly_prop
+
+  method delegatesFocus : bool t writeonly_prop
+end
+
+and shadowRoot = object
+  inherit Dom.documentFragment
+
+  method mode : js_string t readonly_prop
+
+  method host : element t readonly_prop
+
+  method innerHTML : js_string t prop
+
+  method activeElement : element t opt readonly_prop
+end
+
+and animation = object
+  method id : js_string t prop
+
+  method playState : js_string t readonly_prop
+
+  method playbackRate : number_t prop
+
+  method currentTime : number_t opt prop
+
+  method startTime : number_t opt prop
+
+  method pending : bool t readonly_prop
+
+  method play : unit meth
+
+  method pause : unit meth
+
+  method finish : unit meth
+
+  method cancel : unit meth
+
+  method reverse : unit meth
+
+  method persist : unit meth
+
+  method commitStyles : unit meth
+end
+
+and scrollToOptions = object
+  method top : number_t writeonly_prop
+
+  method left : number_t writeonly_prop
+
+  method behavior : js_string t writeonly_prop
+end
+
+and scrollIntoViewOptions = object
+  method behavior : js_string t writeonly_prop
+
+  method block : js_string t writeonly_prop
+
+  method inline : js_string t writeonly_prop
+end
+
+and focusOptions = object
+  method preventScroll : bool t writeonly_prop
+end
+
 and element = object
   inherit Dom.element
 
@@ -1107,6 +1175,14 @@ and element = object
 
   method closest : js_string t -> element t opt meth
 
+  method slot : js_string t prop
+
+  method shadowRoot : shadowRoot t opt readonly_prop
+
+  method assignedSlot : element t opt readonly_prop
+
+  method attachShadow : shadowRootInit t -> shadowRoot t meth
+
   method style : cssStyleDeclaration t prop
 
   method innerHTML : js_string t prop
@@ -1116,6 +1192,32 @@ and element = object
   method textContent : js_string t opt prop
 
   method innerText : js_string t prop
+
+  method dataset : domStringMap t readonly_prop
+
+  method tabIndex : int prop
+
+  method hidden : bool t writeonly_prop
+
+  method draggable : bool t prop
+
+  method spellcheck : bool t prop
+
+  method translate : bool t prop
+
+  method contentEditable : js_string t prop
+
+  method isContentEditable : bool t readonly_prop
+
+  method accessKey : js_string t prop
+
+  method autofocus : bool t prop
+
+  method inputMode : js_string t prop
+
+  method enterKeyHint : js_string t prop
+
+  method nonce : js_string t prop
 
   method clientLeft : int readonly_prop
 
@@ -1149,11 +1251,27 @@ and element = object
 
   method scrollIntoView : bool t -> unit meth
 
+  method scrollIntoView_options : scrollIntoViewOptions t -> unit meth
+
+  method scrollTo_options : scrollToOptions t -> unit meth
+
+  method scrollBy_options : scrollToOptions t -> unit meth
+
   method click : unit meth
 
   method focus : unit meth
 
+  method focus_options : focusOptions t -> unit meth
+
   method blur : unit meth
+
+  method requestFullscreen_ : unit meth
+
+  method requestPointerLock_ : unit meth
+
+  method animate : 'a 'b. 'a -> 'b -> animation t meth
+
+  method getAnimations : animation t js_array t meth
 
   inherit eventTarget
 end
@@ -4092,6 +4210,43 @@ let stopPropagation ev =
     e##.stopPropagation
     (fun () -> e##.cancelBubble := Js._true)
     (fun _ -> e##_stopPropagation)
+
+module DomStringMap = struct
+  let get (m : domStringMap t) (k : js_string t) : js_string t optdef = Js.Unsafe.get m k
+
+  let set (m : domStringMap t) (k : js_string t) (v : js_string t) : unit =
+    Js.Unsafe.set m k v
+
+  let remove (m : domStringMap t) (k : js_string t) : unit = Js.Unsafe.delete m k
+end
+
+let attachShadow ?delegatesFocus ~mode (el : #element t) =
+  let init : shadowRootInit t = Js.Unsafe.obj [||] in
+  init##.mode := mode;
+  Option.iter (fun v -> init##.delegatesFocus := v) delegatesFocus;
+  el##attachShadow init
+
+let scrollIntoView ?behavior ?block ?inline (el : #element t) =
+  let opts : scrollIntoViewOptions t = Js.Unsafe.obj [||] in
+  Option.iter (fun v -> opts##.behavior := v) behavior;
+  Option.iter (fun v -> opts##.block := v) block;
+  Option.iter (fun v -> opts##.inline := v) inline;
+  el##scrollIntoView_options opts
+
+let focus ?preventScroll (el : #element t) =
+  match preventScroll with
+  | None -> el##focus
+  | Some v ->
+      let opts : focusOptions t = Js.Unsafe.obj [||] in
+      opts##.preventScroll := v;
+      el##focus_options opts
+
+let makeScrollToOptions ?top ?left ?behavior () =
+  let opts : scrollToOptions t = Js.Unsafe.obj [||] in
+  Option.iter (fun v -> opts##.top := v) top;
+  Option.iter (fun v -> opts##.left := v) left;
+  Option.iter (fun v -> opts##.behavior := v) behavior;
+  opts
 
 let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
   Js.Unsafe.pure_expr (fun _ ->

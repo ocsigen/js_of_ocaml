@@ -584,6 +584,10 @@ type delta_mode =
   | Delta_line
   | Delta_page
 
+type domStringMap
+(** [DOMStringMap] used for the [dataset] property.  Use the
+    {!DomStringMap} module for typed access. *)
+
 class type event = object
   inherit [element] Dom.event
 end
@@ -1106,6 +1110,72 @@ and tokenList = object
   method stringifier : js_string t prop
 end
 
+and shadowRootInit = object
+  method mode : js_string t writeonly_prop
+
+  method delegatesFocus : bool t writeonly_prop
+end
+
+and shadowRoot = object
+  inherit Dom.documentFragment
+
+  method mode : js_string t readonly_prop
+
+  method host : element t readonly_prop
+
+  method innerHTML : js_string t prop
+
+  method activeElement : element t opt readonly_prop
+end
+
+and animation = object
+  method id : js_string t prop
+
+  method playState : js_string t readonly_prop
+
+  method playbackRate : number_t prop
+
+  method currentTime : number_t opt prop
+
+  method startTime : number_t opt prop
+
+  method pending : bool t readonly_prop
+
+  method play : unit meth
+
+  method pause : unit meth
+
+  method finish : unit meth
+
+  method cancel : unit meth
+
+  method reverse : unit meth
+
+  method persist : unit meth
+
+  method commitStyles : unit meth
+end
+
+and scrollToOptions = object
+  method top : number_t writeonly_prop
+
+  method left : number_t writeonly_prop
+
+  method behavior : js_string t writeonly_prop
+end
+
+and scrollIntoViewOptions = object
+  method behavior : js_string t writeonly_prop
+
+  method block : js_string t writeonly_prop
+
+  method inline : js_string t writeonly_prop
+end
+
+and focusOptions = object
+  method preventScroll : bool t writeonly_prop
+end
+
 (** Properties common to all HTML elements *)
 and element = object
   inherit Dom.element
@@ -1126,6 +1196,14 @@ and element = object
 
   method closest : js_string t -> element t opt meth
 
+  method slot : js_string t prop
+
+  method shadowRoot : shadowRoot t opt readonly_prop
+
+  method assignedSlot : element t opt readonly_prop
+
+  method attachShadow : shadowRootInit t -> shadowRoot t meth
+
   method style : cssStyleDeclaration t prop
 
   method innerHTML : js_string t prop
@@ -1135,6 +1213,34 @@ and element = object
   method textContent : js_string t opt prop
 
   method innerText : js_string t prop
+
+  method dataset : domStringMap t readonly_prop
+
+  method tabIndex : int prop
+
+  method hidden : bool t writeonly_prop
+  (** Setter only: reading [hidden] in some browsers can return the string
+      ["until-found"] rather than a boolean, so the getter is not exposed. *)
+
+  method draggable : bool t prop
+
+  method spellcheck : bool t prop
+
+  method translate : bool t prop
+
+  method contentEditable : js_string t prop
+
+  method isContentEditable : bool t readonly_prop
+
+  method accessKey : js_string t prop
+
+  method autofocus : bool t prop
+
+  method inputMode : js_string t prop
+
+  method enterKeyHint : js_string t prop
+
+  method nonce : js_string t prop
 
   method clientLeft : int readonly_prop
 
@@ -1168,11 +1274,32 @@ and element = object
 
   method scrollIntoView : bool t -> unit meth
 
+  method scrollIntoView_options : scrollIntoViewOptions t -> unit meth
+
+  method scrollTo_options : scrollToOptions t -> unit meth
+
+  method scrollBy_options : scrollToOptions t -> unit meth
+
   method click : unit meth
 
   method focus : unit meth
 
+  method focus_options : focusOptions t -> unit meth
+
   method blur : unit meth
+
+  method requestFullscreen_ : unit meth
+  (** Returns a [Promise] in JavaScript. Bound as [unit meth] to avoid pulling
+      in a Promise type; the proper version can later be added under
+      [requestFullscreen]. *)
+
+  method requestPointerLock_ : unit meth
+  (** Returns a [Promise] in JavaScript (since 2024). Bound as [unit meth];
+      the proper version can later be added under [requestPointerLock]. *)
+
+  method animate : 'a 'b. 'a -> 'b -> animation t meth
+
+  method getAnimations : animation t js_array t meth
 
   inherit eventTarget
 end
@@ -3505,6 +3632,33 @@ val taggedEvent : #event t -> taggedEvent
 val opt_taggedEvent : #event t opt -> taggedEvent option
 
 val stopPropagation : #event t -> unit
+
+(** Typed access to {!domStringMap} (the type of [Element.dataset]). *)
+module DomStringMap : sig
+  val get : domStringMap t -> js_string t -> js_string t optdef
+  (** [get m k] is the value stored under key [k], or [undefined] if absent. *)
+
+  val set : domStringMap t -> js_string t -> js_string t -> unit
+  (** [set m k v] sets [k] to [v]. *)
+
+  val remove : domStringMap t -> js_string t -> unit
+  (** [remove m k] deletes the [k] entry. *)
+end
+
+val attachShadow :
+  ?delegatesFocus:bool t -> mode:js_string t -> #element t -> shadowRoot t
+(** Wrapper for [Element.attachShadow(init)] taking labeled arguments. *)
+
+val scrollIntoView :
+  ?behavior:js_string t -> ?block:js_string t -> ?inline:js_string t -> #element t -> unit
+(** Wrapper for [Element.scrollIntoView(options)] taking labeled arguments. *)
+
+val focus : ?preventScroll:bool t -> #element t -> unit
+(** Wrapper for [HTMLElement.focus(options)] taking labeled arguments. *)
+
+val makeScrollToOptions :
+  ?top:number_t -> ?left:number_t -> ?behavior:js_string t -> unit -> scrollToOptions t
+(** Smart constructor for {!scrollToOptions}. *)
 
 module CoerceTo : sig
   (** HTMLElement *)
