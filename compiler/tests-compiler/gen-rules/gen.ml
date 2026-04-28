@@ -14,58 +14,57 @@ let is_implem x =
 
 let () = set_binary_mode_out stdout true
 
-let ends_with ~suffix s =
-  let open String in
-  let len_s = length s and len_suf = length suffix in
-  let diff = len_s - len_suf in
-  let rec aux i =
-    if i = len_suf
-    then true
-    else if unsafe_get s (diff + i) <> unsafe_get suffix i
-    then false
-    else aux (i + 1)
-  in
-  diff >= 0 && aux 0
-
 let prefix : string =
   let rec loop acc rem =
     let basename = Filename.basename rem in
     let dirname = Filename.dirname rem in
     if
       String.equal dirname rem
-      || ends_with ~suffix:"_build" dirname
+      || String.ends_with ~suffix:"_build" dirname
       || Sys.file_exists (Filename.concat rem "dune-project")
     then acc
     else
-      let acc = Filename.concat basename acc in
+      let acc = basename :: acc in
       loop acc dirname
   in
-  loop "" (Sys.getcwd ())
-  (* normalizatio for windows *)
-  |> String.map ~f:(function
-    | '\\' -> '/'
-    | c -> c)
+  loop [ "" ] (Sys.getcwd ()) |> String.concat ~sep:"/"
 
-type enabled_if =
-  | GE5
-  | GE52
-  | LT52
-  | B64
-  | NotOxCaml
-  | GE5NotOxCaml
-  | Any
+type lang =
+  | Not of lang
+  | GE of lang * lang
+  | LT of lang * lang
+  | Var of string
+  | Atom of string
+  | And of lang list
+
+let ocaml_version = Var "ocaml_version"
+
+let arch_sixtyfour = Var "arch_sixtyfour"
+
+let oxcaml = Var "oxcaml_supported"
+
+let ge v = GE (ocaml_version, Atom v)
+
+let lt v = LT (ocaml_version, Atom v)
+
+let not x = Not x
+
+let and_ = function
+  | [] -> assert false
+  | [ x ] -> x
+  | l -> And l
 
 let lib_enabled_if = function
-  | "obj" | "effects" -> GE5
-  | "gh1051" -> B64
-  | _ -> Any
+  | "obj" | "effects" -> [ ge "5" ]
+  | "gh1051" -> [ arch_sixtyfour ]
+  | _ -> []
 
 let test_enabled_if = function
-  | "obj" -> GE5NotOxCaml (* Some Obj functions are no longer primitives *)
-  | "lazy" -> GE5
-  | "gh1051" -> B64
-  | "rec52" -> GE52
-  | "rec" -> LT52
+  | "obj" -> [ ge "5"; not oxcaml ] (* Some Obj functions are no longer primitives *)
+  | "lazy" -> [ ge "5" ]
+  | "gh1051" -> [ arch_sixtyfour ]
+  | "rec52" -> [ ge "5.2" ]
+  | "rec" -> [ lt "5.2" ]
   | "gh1354"
   | "gh1868"
   | "exceptions"
@@ -73,19 +72,33 @@ let test_enabled_if = function
   | "effects_exceptions"
   | "eliminate_exception_handler"
   | "loops"
-  | "global_deadcode" -> NotOxCaml (* In OxCaml, raise is always reraise *)
-  | "effects" -> NotOxCaml (* Call to Printf.printf is somehow compiled differently *)
-  | "gh747" -> NotOxCaml (* More debug locations *)
-  | _ -> Any
+  | "global_deadcode" -> [ not oxcaml ] (* In OxCaml, raise is always reraise *)
+  | "effects" ->
+      [ not oxcaml ] (* Call to Printf.printf is somehow compiled differently *)
+  | "gh747" -> [ not oxcaml ] (* More debug locations *)
+  | _ -> []
 
-let enabled_if = function
-  | Any -> "true"
-  | GE5 -> "(>= %{ocaml_version} 5)"
-  | GE52 -> "(>= %{ocaml_version} 5.2)"
-  | LT52 -> "(< %{ocaml_version} 5.2)"
-  | B64 -> "%{arch_sixtyfour}"
-  | GE5NotOxCaml -> "(and (>= %{ocaml_version} 5) (not %{oxcaml_supported}))"
-  | NotOxCaml -> "(not %{oxcaml_supported})"
+let rec pp f = function
+  | Not x -> Format.fprintf f "(not %a)" pp x
+  | GE (a, b) -> Format.fprintf f "(>= %a %a)" pp a pp b
+  | LT (a, b) -> Format.fprintf f "(< %a %a)" pp a pp b
+  | Var x -> Format.fprintf f "%%{%s}" x
+  | Atom x -> Format.fprintf f "%s" x
+  | And [] -> assert false
+  | And l ->
+      Format.fprintf
+        f
+        "(and %a)"
+        (Format.pp_print_list ~pp_sep:(fun f () -> Format.fprintf f " ") pp)
+        l
+
+let enabled_if n fmt x =
+  match x with
+  | [] -> ()
+  | l ->
+      let x = and_ l in
+      Format.fprintf fmt "\n%s" (String.make n ' ');
+      Format.fprintf fmt "(enabled_if %a)" pp x
 
 let () =
   Array.to_list (Sys.readdir ".")
@@ -93,16 +106,14 @@ let () =
   |> List.sort ~cmp:compare
   |> List.iter ~f:(fun f ->
       let basename = Filename.chop_extension f in
-      Printf.printf
+      Format.printf
         {|
 (library
  ;; %s%s.ml
- (name %s_%d)
- (enabled_if %s)
+ (name %s_%d)%a
  (modules %s)
  (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
- (inline_tests
-  (enabled_if %s)
+ (inline_tests%a
   (deps
    (file %%{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
    (file %%{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
@@ -114,6 +125,8 @@ let () =
         basename
         basename
         (Hashtbl.hash prefix mod 100)
-        (enabled_if (lib_enabled_if basename))
+        (enabled_if 1)
+        (lib_enabled_if basename)
         basename
-        (enabled_if (test_enabled_if basename)))
+        (enabled_if 2)
+        (test_enabled_if basename))
