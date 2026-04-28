@@ -663,7 +663,12 @@ let eval_instr update_count inline_constant ~target info i =
       [ Let (jsoo, Constant (String backend_name))
       ; Let (x, Block (0, [| jsoo |], NotArray, Immutable))
       ]
-  | Let (_, Prim (Extern ("%resume" | "%perform" | "%reperform"), _)) ->
+  | Let
+      ( _
+      , Prim
+          ( Extern
+              ("%resume" | "%perform" | "%reperform" | "%with_stack" | "%with_stack_bind")
+          , _ ) ) ->
       [ i ] (* We need that the arguments to this primitives remain variables *)
   | Let (x, Prim (prim, prim_args)) -> (
       let prim_args' =
