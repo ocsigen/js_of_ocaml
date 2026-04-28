@@ -32,49 +32,36 @@ let is_implem x =
 
 let () = set_binary_mode_out stdout true
 
-let ends_with ~suffix s =
-  let open String in
-  let len_s = length s and len_suf = length suffix in
-  let diff = len_s - len_suf in
-  let rec aux i =
-    if i = len_suf
-    then true
-    else if unsafe_get s (diff + i) <> unsafe_get suffix i
-    then false
-    else aux (i + 1)
-  in
-  diff >= 0 && aux 0
-
 let prefix : string =
   let rec loop acc rem =
     let basename = Filename.basename rem in
     let dirname = Filename.dirname rem in
     if
       String.equal dirname rem
-      || ends_with ~suffix:"_build" dirname
+      || String.ends_with ~suffix:"_build" dirname
       || Sys.file_exists (Filename.concat rem "dune-project")
     then acc
     else
-      let acc = Filename.concat basename acc in
+      let acc = basename :: acc in
       loop acc dirname
   in
-  loop "" (Sys.getcwd ())
-  (* normalizatio for windows *)
-  |> String.map ~f:(function
-    | '\\' -> '/'
-    | c -> c)
+  loop [ "" ] (Sys.getcwd ()) |> String.concat ~sep:"/"
 
 type enabled_if =
   | GE5
-  | Not_wasm
-  | No_effects_not_wasm
+  | No_effects
   | Any
 
 let enabled_if = function
   | "test_sys" -> GE5
-  | "test_fun_call" -> No_effects_not_wasm
-  | "test_poly_compare" -> Not_wasm
+  | "test_fun_call" -> No_effects
   | _ -> Any
+
+let run_wasm = function
+  | "test_fun_call" -> false
+  | "test_poly_compare" -> false
+  | "test_sys" -> false (* ZZZ /static not yet implemented *)
+  | _ -> true
 
 let () =
   Array.to_list (Sys.readdir ".")
@@ -86,11 +73,10 @@ let () =
         {|
 (library
  ;; %s%s.ml
- (name %s_%d)
- (enabled_if %s)
+ (name %s_%d)%s
  (modules %s)
  (libraries js_of_ocaml unix)
- (inline_tests (modes js%s))
+ (inline_tests (modes %s))
  (preprocess
   (pps ppx_js_internal ppx_expect)))
 |}
@@ -99,11 +85,10 @@ let () =
         basename
         (Hashtbl.hash prefix mod 100)
         (match enabled_if basename with
-        | Any | Not_wasm -> "true"
-        | GE5 -> "(>= %{ocaml_version} 5)"
-        | No_effects_not_wasm -> "(<> %{profile} with-effects)")
+        | Any -> ""
+        | GE5 -> "\n (enabled_if (>= %{ocaml_version} 5))"
+        | No_effects -> "\n (enabled_if (<> %{profile} with-effects))")
         basename
-        (match enabled_if basename with
-        | Any -> " wasm"
-        | GE5 -> "" (* ZZZ /static not yet implemented *)
-        | Not_wasm | No_effects_not_wasm -> ""))
+        (match run_wasm basename with
+        | true -> "js wasm"
+        | false -> "js"))
