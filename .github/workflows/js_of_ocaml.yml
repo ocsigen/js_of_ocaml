@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     env:
-      OXCAML_OPAM_REPO_REF: 5ac45e334a1d6b43d70ba5ad4bd58092f9796e2a
+      OXCAML_OPAM_REPO_REF: 231c88c2e564fdca40e15e750aacad5fb0887435
 
     strategy:
       fail-fast: false
@@ -165,8 +165,7 @@ jobs:
       - name: Pin specific packages for OxCaml
         # With OxCaml fixes
         run: |
-          opam pin add --with-version 1.0.3+ox -n https://github.com/vouillon/uutf.git#oxcaml
-          opam pin add -n lwt 6.0.0+ox
+          opam pin add --with-version 2.5.0+ox -n opam-core https://github.com/vouillon/opam.git#oxcaml-31
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
       - run: opam install . --deps-only --with-test
