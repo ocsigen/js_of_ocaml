@@ -91,7 +91,9 @@ let rec html2wiki body =
                     Buffer.add_string
                       ans
                       (String.concat "" [ "[["; url; "|"; desc; "]]" ])
-                | "wiki" -> String.concat "" [ "[["; url; "]]" ] |> Buffer.add_string ans
+                | "wiki" ->
+                    String.concat "" [ "[["; url; "]]" ]
+                    |> fun s -> Buffer.add_string ans s
                 | _ -> Buffer.add_string ans "^error2_in_anchor^")
         | ("H1" | "H2" | "H3") as hh ->
             let n = int_of_char hh.[1] - int_of_char '0' + 1 in
