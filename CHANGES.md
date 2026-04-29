@@ -18,6 +18,7 @@
 * Compiler/wasm: fix crash when compiling some function calls (#2208)
 * Compiler: fix missing conditional simplification (#2217)
 * Compiler: fix Js_assign.simpl (#2218)
+* Runtime: fix caml_oo_cache_id (#2224)
 
 
 # 6.3.2 (2026-02-15) - Lille

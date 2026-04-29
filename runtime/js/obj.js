@@ -173,7 +173,7 @@ var caml_method_cache = [];
 function caml_oo_cache_id() {
   var cacheid = caml_method_cache.length;
   caml_method_cache[cacheid] = 0;
-  cacheid;
+  return cacheid;
 }
 
 ///////////// CamlinternalOO
