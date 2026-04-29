@@ -785,13 +785,13 @@ end
 and dragEvent = object
   inherit mouseEvent
 
-  method dataTransfer : dataTransfer t opt readonly_prop
+  method dataTransfer : dataTransfer t readonly_prop
 end
 
 and clipboardEvent = object
   inherit event
 
-  method clipboardData : dataTransfer t opt readonly_prop
+  method clipboardData : dataTransfer t readonly_prop
 end
 
 and toggleEvent = object
@@ -1702,7 +1702,7 @@ class type selectElement = object ('self)
 
   method required : bool t writeonly_prop
 
-  method labels : labelElement Dom.nodeList t opt readonly_prop
+  method labels : labelElement Dom.nodeList t readonly_prop
 
   method validity : validityState t readonly_prop
 
@@ -1814,7 +1814,7 @@ class type inputElement = object ('self)
 
   method setSelectionRange_direction : int -> int -> js_string t -> unit meth
 
-  method files : File.fileList t opt readonly_prop
+  method files : File.fileList t readonly_prop
 
   method placeholder : js_string t prop
 
@@ -1824,7 +1824,7 @@ class type inputElement = object ('self)
 
   method selectionEnd : int prop
 
-  method labels : labelElement Dom.nodeList t opt readonly_prop
+  method labels : labelElement Dom.nodeList t readonly_prop
 
   method validity : validityState t readonly_prop
 
@@ -1904,7 +1904,7 @@ class type textAreaElement = object ('self)
 
   method placeholder : js_string t prop
 
-  method labels : labelElement Dom.nodeList t opt readonly_prop
+  method labels : labelElement Dom.nodeList t readonly_prop
 
   method validity : validityState t readonly_prop
 
@@ -1956,7 +1956,7 @@ class type buttonElement = object
 
   method value : js_string t prop
 
-  method labels : labelElement Dom.nodeList t opt readonly_prop
+  method labels : labelElement Dom.nodeList t readonly_prop
 
   method validity : validityState t readonly_prop
 
@@ -2020,7 +2020,7 @@ class type outputElement = object
 
   method htmlFor : tokenList t readonly_prop
 
-  method labels : labelElement Dom.nodeList t opt readonly_prop
+  method labels : labelElement Dom.nodeList t readonly_prop
 
   method validity : validityState t readonly_prop
 
@@ -2044,7 +2044,7 @@ class type progressElement = object
 
   method position : number_t readonly_prop
 
-  method labels : labelElement Dom.nodeList t opt readonly_prop
+  method labels : labelElement Dom.nodeList t readonly_prop
 end
 
 class type meterElement = object
@@ -2062,7 +2062,7 @@ class type meterElement = object
 
   method optimum : number_t prop
 
-  method labels : labelElement Dom.nodeList t opt readonly_prop
+  method labels : labelElement Dom.nodeList t readonly_prop
 end
 
 class type templateElement = object
@@ -3000,11 +3000,11 @@ end
 
 (** Information on current selection *)
 class type selection = object
-  method anchorNode : Dom.node t opt readonly_prop
+  method anchorNode : Dom.node t readonly_prop
 
   method anchorOffset : int readonly_prop
 
-  method focusNode : Dom.node t opt readonly_prop
+  method focusNode : Dom.node t readonly_prop
 
   method focusOffset : int readonly_prop
 
@@ -3458,7 +3458,7 @@ class type window = object
 
   method onunload : (window t, event t) event_listener prop
 
-  method onbeforeunload : (window t, beforeUnloadEvent t) event_listener prop
+  method onbeforeunload : (window t, event t) event_listener prop
 
   method onblur : (window t, focusEvent t) event_listener prop
 
@@ -3553,7 +3553,7 @@ class type iFrameElement = object
 
   method contentDocument : document t opt readonly_prop
 
-  method contentWindow : window t opt readonly_prop
+  method contentWindow : window t readonly_prop
 end
 
 (****)
@@ -3660,7 +3660,7 @@ module Event : sig
 
   val unload : event t typ
 
-  val beforeunload : beforeUnloadEvent t typ
+  val beforeunload : event t typ
 
   val resize : event t typ
 

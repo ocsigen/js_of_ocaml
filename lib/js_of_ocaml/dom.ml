@@ -421,8 +421,6 @@ class type ['a] event = object
 
   method timeStamp : number_t readonly_prop
 
-  method composedPath : Unsafe.any js_array t meth
-
   method preventDefault : unit meth
 
   method stopPropagation : unit meth

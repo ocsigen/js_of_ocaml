@@ -151,7 +151,7 @@ let () =
         in
         but##.onclick :=
           Html.handler (fun _ ->
-              Js.Opt.iter iWin (fun iWin -> iWin##focus);
+              iWin##focus;
               iDoc##execCommand (Js.string action) show (wrap value);
               Js._true);
         Dom.appendChild parent but;
@@ -185,13 +185,9 @@ let () =
       link_group##.className := Js.string "toolbar-group";
       Dom.appendChild toolbar link_group;
       let prompt query default =
-        Js.Opt.case
-          iWin
+        Js.Opt.get
+          (iWin##prompt (Js.string query) (Js.string default))
           (fun () -> Js.string default)
-          (fun iWin ->
-            Js.Opt.get
-              (iWin##prompt (Js.string query) (Js.string default))
-              (fun () -> Js.string default))
         |> Js.to_string
       in
       (createButton link_group "Link" "inserthtml")##.onclick
