@@ -21,10 +21,9 @@ open Js_of_ocaml
 let%expect_test "poly equal" =
   let obj1 = Js.Unsafe.obj [||] in
   let obj2 = Js.Unsafe.obj [||] in
-  assert (obj1 = obj2);
+  assert (obj1 = obj1);
   assert (not (obj1 = obj2));
   ()
-[@@expect.uncaught_exn {| "Assert_failure lib/tests/test_poly_equal.ml:24:2" |}]
 
 let%expect_test "poly equal neg" =
   let obj1 = Js.Unsafe.obj [||] in
