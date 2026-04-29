@@ -99,24 +99,21 @@ let get_input_val ?(get = false) (elt : inputElement t) =
         if get
         then [ name, `String value ]
         else
-          Opt.case
-            elt##.files
-            (fun () -> [ name, `String (Js.string "") ])
-            (fun list ->
-              if list##.length = 0
-              then [ name, `String (Js.string "") ]
-              else if not (Js.to_bool elt##.multiple)
-              then
-                match Opt.to_option (list##item 0) with
-                | None -> []
-                | Some file -> [ name, `File file ]
-              else
-                filter_map
-                  (fun f ->
-                    match Opt.to_option f with
-                    | None -> None
-                    | Some file -> Some (name, `File file))
-                  (Array.to_list (Array.init list##.length (fun i -> list##item i))))
+          let list = elt##.files in
+          if list##.length = 0
+          then [ name, `String (Js.string "") ]
+          else if not (Js.to_bool elt##.multiple)
+          then
+            match Opt.to_option (list##item 0) with
+            | None -> []
+            | Some file -> [ name, `File file ]
+          else
+            filter_map
+              (fun f ->
+                match Opt.to_option f with
+                | None -> None
+                | Some file -> Some (name, `File file))
+              (Array.to_list (Array.init list##.length (fun i -> list##item i)))
     | _ -> [ name, `String value ]
   else []
 
