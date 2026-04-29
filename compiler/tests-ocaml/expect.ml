@@ -3,9 +3,9 @@
 let () = Js_of_ocaml_toplevel_common.JsooTop.initialize ()
 
 let () = Printexc.register_printer (fun x ->
-             match Js_of_ocaml.Js_error.of_exn x with
+             match Jsoo_runtime.Error.of_exn x with
              | None -> None
-             | Some e -> Some (Js_of_ocaml.Js_error.message e))
+             | Some e -> Some ("<JavaScript exception>"))
 
 let () = Toplevel_expect_test.run (fun _ -> Ast_mapper.default_mapper)
 
