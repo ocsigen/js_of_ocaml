@@ -142,7 +142,7 @@
       (local $len i32) (local $d i32) (local $c i32)
       (local $res i64) (local $threshold i64)
       (local.set $len (array.len (local.get $s)))
-      (if (i32.eqz (local.get $len))
+      (if (i32.ge_s (local.get $i) (local.get $len))
         (then (call $caml_failwith (local.get $errmsg))))
       (local.set $threshold
          (i64.div_u (i64.const -1) (i64.extend_i32_u (local.get $base))))
