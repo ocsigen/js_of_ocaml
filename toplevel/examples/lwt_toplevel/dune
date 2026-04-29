@@ -55,6 +55,13 @@
  (modules toplevel)
  (libraries lwt_toplevel_lib js_of_ocaml js_of_ocaml-toplevel)
  (modes byte js)
+ ;; Embedding the cmis as JS string literals overflows OCaml's 16 MB
+ ;; max_string_length on 32-bit. OCaml >= 5.1 compresses cmis on disk so
+ ;; the embedded literal stays small enough.
+ (enabled_if
+  (or
+   (>= %{ocaml_version} 5.1.0)
+   (= %{arch_sixtyfour} true)))
  (js_of_ocaml
   ;; We use the generated file in the doc. Let's not bloat it with sourcemap.
   ;; Plus, the source map would be too large on 32-bit architectures
@@ -90,6 +97,13 @@
   lwt_toplevel_lib
   js_of_ocaml
   js_of_ocaml-toplevel.common)
+ ;; Embedding the cmis as JS string literals overflows OCaml's 16 MB
+ ;; max_string_length on 32-bit. OCaml >= 5.1 compresses cmis on disk so
+ ;; the embedded literal stays small enough.
+ (enabled_if
+  (or
+   (>= %{ocaml_version} 5.1.0)
+   (= %{arch_sixtyfour} true)))
  (flags
   (:standard -rectypes))
  (link_flags
@@ -201,6 +215,13 @@
 
 (rule
  (targets toplevel.js)
+ ;; Embedding the cmis as JS string literals overflows OCaml's 16 MB
+ ;; max_string_length on 32-bit. OCaml >= 5.1 compresses cmis on disk so
+ ;; the embedded literal stays small enough.
+ (enabled_if
+  (or
+   (>= %{ocaml_version} 5.1.0)
+   (= %{arch_sixtyfour} true)))
  (action
   (run
    %{bin:js_of_ocaml}
@@ -265,6 +286,10 @@
  (targets
   toplevel_wasm.js
   (dir toplevel_wasm.assets))
+ (enabled_if
+  (or
+   (>= %{ocaml_version} 5.1.0)
+   (= %{arch_sixtyfour} true)))
  (action
   (run
    %{bin:wasm_of_ocaml}
@@ -281,9 +306,22 @@
 
 (alias
  (name default)
+ (deps index.html))
+
+(alias
+ (name default)
+ (enabled_if
+  (or
+   (>= %{ocaml_version} 5.1.0)
+   (= %{arch_sixtyfour} true)))
  (deps
-  toplevel.js
-  toplevel.bc.js
   toplevel_wasm.js
-  (glob_files toplevel_wasm.assets/*)
-  index.html))
+  (glob_files toplevel_wasm.assets/*)))
+
+(alias
+ (name default)
+ (enabled_if
+  (or
+   (>= %{ocaml_version} 5.1.0)
+   (= %{arch_sixtyfour} true)))
+ (deps toplevel.js toplevel.bc.js))
