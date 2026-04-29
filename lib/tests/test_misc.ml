@@ -16,8 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml
-
 (* Make sure we don't emit an unused warning for method not using "self" *)
 
 let x =
