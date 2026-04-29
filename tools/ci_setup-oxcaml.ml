@@ -30,8 +30,7 @@ let do_pin = StringSet.of_list [ "bigstringaf" ]
 
 let forked_packages =
   StringSet.of_list
-    [ "ocaml_intrinsics_kernel"
-    ; "base"
+    [ "base"
     ; "core"
     ; "bonsai_test"
     ; "bonsai_web_components"
@@ -215,7 +214,7 @@ index 7996514..d0b463a 100644
 @@ -1,7 +1,9 @@
  (library
   (name zarith_stubs_js_test)
-- (libraries core base.md5 zarith_stubs_js zarith)
+- (libraries zarith_stubs_js core base.md5 zarith)
 + (libraries zarith_wrapper core base.md5 zarith_stubs_js)
   (flags :standard -w -60)
 + (inline_tests (flags -drop-tag no-js -drop-tag 64-bits-only -drop-tag no-wasm) (modes js wasm))
@@ -280,8 +279,27 @@ let dependencies (_, { OpamFile.OPAM.depends; _ }) =
   |> List.map OpamPackage.Name.to_string
 
 let is_jane_street_package (_, (_, opam)) =
-  let url = OpamUrl.to_string (Option.get (OpamFile.OPAM.get_url opam)) in
-  String.starts_with ~prefix:"https://github.com/janestreet/" url
+  match OpamFile.OPAM.get_url opam with
+  | None -> false
+  | Some url ->
+      let url = OpamUrl.to_string url in
+      String.starts_with ~prefix:"https://github.com/janestreet/" url
+
+let latest_version pkg =
+  let dir = Filename.concat repo pkg in
+  let prefix = pkg ^ "." in
+  Sys.readdir dir
+  |> Array.to_list
+  |> List.filter (String.starts_with ~prefix)
+  |> List.sort (fun a b ->
+      let va =
+        String.sub a (String.length prefix) (String.length a - String.length prefix)
+      in
+      let vb =
+        String.sub b (String.length prefix) (String.length b - String.length prefix)
+      in
+      OpamVersionCompare.compare vb va)
+  |> List.hd
 
 let packages =
   repo
@@ -290,14 +308,7 @@ let packages =
   |> List.map (fun s ->
       if String.contains s '.'
       then String.sub s 0 (String.index s '.'), read_opam_file s
-      else
-        ( s
-        , read_opam_file
-            (Filename.concat
-               s
-               (List.find
-                  (fun f -> String.starts_with ~prefix:s f)
-                  (Array.to_list (Sys.readdir (Filename.concat repo s))))) ))
+      else s, read_opam_file (Filename.concat s (latest_version s)))
   |> List.filter is_jane_street_package
 
 let rec traverse visited p =
@@ -387,16 +398,19 @@ let () =
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
-      let branch = if is_forked nm then Some "wasm-oxcaml" else Some "oxcaml" in
+      let branch = if is_forked nm then Some "wasm-oxcaml-31" else Some "oxcaml" in
       let commit =
         if is_forked nm
         then None
         else
-          Some
-            (let _, opam = List.assoc nm packages in
-             let url = OpamUrl.to_string (Option.get (OpamFile.OPAM.get_url opam)) in
-             let tar_file = Filename.basename url in
-             String.sub tar_file 0 (String.index tar_file '.'))
+          let commit =
+            let _, opam = List.assoc nm packages in
+            let url = OpamUrl.to_string (Option.get (OpamFile.OPAM.get_url opam)) in
+            let tar_file = Filename.basename url in
+            String.sub tar_file 0 (String.index tar_file '.')
+          in
+          Format.eprintf "Cloning %s#%s@." nm commit;
+          Some commit
       in
       clone'
         ?branch
