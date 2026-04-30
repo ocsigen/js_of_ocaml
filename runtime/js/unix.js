@@ -213,6 +213,10 @@ function make_unix_err_args(code, syscall, path, errno) {
 //Provides: caml_strerror
 //Requires: unix_error
 function caml_strerror(errno) {
+  if (typeof require === "undefined") {
+    const code = unix_error[errno];
+    return code || "Unknown error " + errno;
+  }
   const util = require("node:util");
   if (errno >= 0) {
     const code = unix_error[errno];
