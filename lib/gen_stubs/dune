@@ -1,3 +1,5 @@
 (executable
  (name gen_stubs)
- (libraries compiler-libs.common))
+ (libraries compiler-libs.common)
+ (preprocess
+  (pps ppx_optcomp_light)))
