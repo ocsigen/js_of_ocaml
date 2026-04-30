@@ -68,8 +68,13 @@
    %{target}
    (run node ./test_toplevel1.js))))
 
+; test_toplevel2 loads CMI bundles via CommonJS `require("./stdlib.cmis.js")`,
+; which the QuickJS shim does not implement.
+
 (rule
  (target test_toplevel2.actual)
+ (enabled_if
+  (<> %{profile} quickjs))
  (deps test_toplevel2.js stdlib.cmis.js re.cmis.js)
  (action
   (with-stdout-to
@@ -83,6 +88,8 @@
 
 (rule
  (alias runtest-js)
+ (enabled_if
+  (<> %{profile} quickjs))
  (action
   (diff test_toplevel.expected test_toplevel2.actual)))
 

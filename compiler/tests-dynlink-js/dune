@@ -62,8 +62,13 @@
    %{read-strings:effects_flags.txt}
    %{dep:./plugin2.cma})))
 
+; Dynlink uses CommonJS-style relative-path `require("./plugin.js")`,
+; which the QuickJS shim does not implement.
+
 (rule
  (target main.out)
+ (enabled_if
+  (<> %{profile} quickjs))
  (deps plugin.js plugin2.js)
  (action
   (with-outputs-to
@@ -72,6 +77,8 @@
 
 (rule
  (target main.out2)
+ (enabled_if
+  (<> %{profile} quickjs))
  (deps plugin.js plugin2.js)
  (action
   (with-outputs-to
@@ -80,10 +87,14 @@
 
 (rule
  (alias runtest-js)
+ (enabled_if
+  (<> %{profile} quickjs))
  (action
   (diff main.out.expected main.out)))
 
 (rule
  (alias runtest-js)
+ (enabled_if
+  (<> %{profile} quickjs))
  (action
   (diff main.out.expected main.out2)))

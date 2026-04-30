@@ -34,9 +34,15 @@
   (:standard \ unhandled_unlinked))
  (modes js wasm))
 
+; This test asserts Node's exit-2-on-uncaught-exception convention,
+; which is wired through `process.on("uncaughtException", ...)`. QuickJS
+; has no equivalent global error event, so the exit code differs.
+
 (tests
  (build_if
   (>= %{ocaml_version} 5))
+ (enabled_if
+  (<> %{profile} quickjs))
  (names unhandled_unlinked)
  (modules unhandled_unlinked)
  (action
