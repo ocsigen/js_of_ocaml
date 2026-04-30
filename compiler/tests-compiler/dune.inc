@@ -811,6 +811,19 @@
   (pps ppx_expect)))
 
 (library
+ ;; compiler/tests-compiler/string_concat_eq.ml
+ (name string_concat_eq_15)
+ (modules string_concat_eq)
+ (libraries js_of_ocaml_compiler unix str jsoo_compiler_expect_tests_helper)
+ (inline_tests
+  (deps
+   (file %{project_root}/compiler/bin-js_of_ocaml/js_of_ocaml.exe)
+   (file %{project_root}/compiler/bin-jsoo_minify/jsoo_minify.exe)))
+ (flags (:standard -open Jsoo_compiler_expect_tests_helper))
+ (preprocess
+  (pps ppx_expect)))
+
+(library
  ;; compiler/tests-compiler/sys_command.ml
  (name sys_command_15)
  (modules sys_command)
