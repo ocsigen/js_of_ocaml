@@ -2529,11 +2529,13 @@ and compile infos pc state (instrs : instr list) =
             Var.print
             arg;
         let state, tail =
-          match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
-          | true -> State.pop 2 state, Pc (Int (Targetint.of_int_exn 0))
-          | false ->
-              let tail = State.peek 2 state in
-              State.pop 3 state, Pv tail
+          if
+            Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0
+            || Ocaml_version.compare Ocaml_version.current [ 5; 6 ] >= 0
+          then State.pop 2 state, Pc (Int (Targetint.of_int_exn 0))
+          else
+            let tail = State.peek 2 state in
+            State.pop 3 state, Pv tail
         in
         compile
           infos
@@ -2546,11 +2548,13 @@ and compile infos pc state (instrs : instr list) =
         let arg = State.peek 1 state in
         let x, state = State.fresh_var state in
         let tail =
-          match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
-          | true -> Pc (Int (Targetint.of_int_exn 0))
-          | false ->
-              let tail = State.peek 2 state in
-              Pv tail
+          if
+            Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0
+            || Ocaml_version.compare Ocaml_version.current [ 5; 6 ] >= 0
+          then Pc (Int (Targetint.of_int_exn 0))
+          else
+            let tail = State.peek 2 state in
+            Pv tail
         in
         if debug_parser ()
         then
@@ -2579,13 +2583,18 @@ and compile infos pc state (instrs : instr list) =
     | REPERFORMTERM ->
         let eff = State.accu state in
         let stack = State.peek 0 state in
-        let tail = State.peek 1 state in
-        let state = State.pop 2 state in
+        let tail, state =
+          if Ocaml_version.compare Ocaml_version.current [ 5; 6 ] >= 0
+          then Pc (Int (Targetint.of_int_exn 0)), State.pop 1 state
+          else
+            let tail = State.peek 1 state in
+            Pv tail, State.pop 2 state
+        in
         let x, state = State.fresh_var state in
 
         if debug_parser ()
         then Format.printf "return reperform(%a, %a)@." Var.print eff Var.print stack;
-        ( Let (x, Prim (Extern "%reperform", [ Pv eff; Pv stack; Pv tail ])) :: instrs
+        ( Let (x, Prim (Extern "%reperform", [ Pv eff; Pv stack; tail ])) :: instrs
         , Return x
         , state )
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
