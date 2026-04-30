@@ -276,10 +276,90 @@ function caml_bytes_set(s, i, c) {
 }
 
 //Provides: jsoo_text_encoder
-var jsoo_text_encoder = new TextEncoder();
+// Fall back to a small UTF-8 encoder when TextEncoder is not provided
+// by the host (e.g. QuickJS).
+var jsoo_text_encoder =
+  typeof TextEncoder !== "undefined"
+    ? new TextEncoder()
+    : {
+        encode: (s) => {
+          var len = s.length;
+          var n = 0;
+          for (var i = 0; i < len; i++) {
+            var c = s.charCodeAt(i);
+            if (c < 0x80) n += 1;
+            else if (c < 0x800) n += 2;
+            else if (c < 0xd800 || c >= 0xe000) n += 3;
+            else {
+              n += 4;
+              i++;
+            }
+          }
+          var bytes = new Uint8Array(n);
+          var j = 0;
+          for (var i = 0; i < len; i++) {
+            var c = s.charCodeAt(i);
+            if (c < 0x80) {
+              bytes[j++] = c;
+            } else if (c < 0x800) {
+              bytes[j++] = 0xc0 | (c >> 6);
+              bytes[j++] = 0x80 | (c & 0x3f);
+            } else if (c < 0xd800 || c >= 0xe000) {
+              bytes[j++] = 0xe0 | (c >> 12);
+              bytes[j++] = 0x80 | ((c >> 6) & 0x3f);
+              bytes[j++] = 0x80 | (c & 0x3f);
+            } else {
+              i++;
+              var c2 = s.charCodeAt(i);
+              var cp = 0x10000 + ((c & 0x3ff) << 10) + (c2 & 0x3ff);
+              bytes[j++] = 0xf0 | (cp >> 18);
+              bytes[j++] = 0x80 | ((cp >> 12) & 0x3f);
+              bytes[j++] = 0x80 | ((cp >> 6) & 0x3f);
+              bytes[j++] = 0x80 | (cp & 0x3f);
+            }
+          }
+          return bytes;
+        },
+      };
 
 //Provides: jsoo_text_decoder
-var jsoo_text_decoder = new TextDecoder();
+// Fall back to a small UTF-8 decoder when TextDecoder is not provided
+// by the host (e.g. QuickJS). Default-only (utf-8, fatal=false).
+var jsoo_text_decoder =
+  typeof TextDecoder !== "undefined"
+    ? new TextDecoder()
+    : {
+        decode: (a) => {
+          var len = a.length;
+          var s = "";
+          var i = 0;
+          while (i < len) {
+            var b1 = a[i++];
+            var cp;
+            if (b1 < 0x80) cp = b1;
+            else if ((b1 & 0xe0) === 0xc0)
+              cp = ((b1 & 0x1f) << 6) | (a[i++] & 0x3f);
+            else if ((b1 & 0xf0) === 0xe0)
+              cp =
+                ((b1 & 0x0f) << 12) | ((a[i++] & 0x3f) << 6) | (a[i++] & 0x3f);
+            else
+              cp =
+                ((b1 & 0x07) << 18) |
+                ((a[i++] & 0x3f) << 12) |
+                ((a[i++] & 0x3f) << 6) |
+                (a[i++] & 0x3f);
+            if (cp <= 0xffff) s += String.fromCharCode(cp);
+            else {
+              cp -= 0x10000;
+              s += String.fromCharCode(
+                0xd800 | (cp >> 10),
+                0xdc00 | (cp & 0x3ff),
+              );
+            }
+          }
+          return s;
+        },
+      };
 
 //Provides: caml_bytes_of_utf16_jsstring
 //Requires: MlBytes, jsoo_text_encoder

@@ -413,10 +413,20 @@ class MlFakeFd_out extends MlFakeFile {
     this.log = function (_s) {
       return 0;
     };
-    if (fd === 1 && typeof console.log === "function") this.log = console.log;
+    // Prefer a byte-faithful sink when available (e.g. QuickJS's
+    // `std.out.puts` / `std.err.puts`), otherwise fall back to
+    // `console.log` / `console.error`. The console.* path is lossy for
+    // partial writes because it appends a newline per call -- the
+    // [write] method below strips at most one trailing \n to mitigate.
+    var std = globalThis.std;
+    if (fd === 1 && std?.out?.puts) this.log = (s) => std.out.puts(s);
+    else if (fd === 2 && std?.err?.puts) this.log = (s) => std.err.puts(s);
+    else if (fd === 1 && typeof console.log === "function")
+      this.log = console.log;
     else if (fd === 2 && typeof console.error === "function")
       this.log = console.error;
     else if (typeof console.log === "function") this.log = console.log;
+    this.console = !std?.out?.puts;
     this.flags = flags;
   }
 
@@ -437,14 +447,17 @@ class MlFakeFd_out extends MlFakeFile {
     var written = len;
     if (this.log) {
       if (
+        this.console &&
         len > 0 &&
         pos >= 0 &&
         pos + len <= buf.length &&
         buf[pos + len - 1] === 10
       )
         len--;
-      // Do not output the last \n if present
-      // as console logging display a newline at the end
+      // When the sink is `console.log`/`console.error`, swallow the
+      // last \n because the console always appends one. When it's a
+      // byte-faithful sink (e.g. `std.out.puts`), pass the buffer
+      // through unchanged.
       var src = caml_create_bytes(len);
       caml_blit_bytes(caml_bytes_of_uint8_array(buf), pos, src, 0, len);
       this.log(src.toUtf16());
