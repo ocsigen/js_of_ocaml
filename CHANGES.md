@@ -20,6 +20,10 @@
 * Compiler: fix Js_assign.simpl (#2218)
 * Runtime: fix caml_oo_cache_id (#2224)
 * Runtime/wasm: fix Int64.of_string (#2223)
+* Compiler: don't rewrite `x = e + x` into `x += e` for the `Plus`
+  operator; JavaScript `+` is not commutative for strings, which made
+  whole-program builds emit reversed `Filename.concat` operands and
+  silently broke `Filename.temp_file`
 
 
 # 6.3.2 (2026-02-15) - Lille

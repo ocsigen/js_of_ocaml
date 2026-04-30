@@ -47,7 +47,7 @@ let%expect_test "inspect" =
        var Stdlib = runtime.caml_get_global("Stdlib");
        function _a_(_c_, _b_){
         _b_ = "@";
-        _b_ += _b_ + "=";
+        _b_ = _b_ + "=" + _b_;
         return _c_ ? _b_ : _b_ + "2";
        }
        var _b_ = _a_(1, 0);
@@ -64,6 +64,6 @@ let%expect_test "inspect" =
 let%expect_test "x = a + \"=\" + a is mis-rewritten by the [x = e + x] peephole" =
   Util.compile_and_run ~debug:false ~use_js_string:true prog;
   [%expect {|
-    @@=
-    @@=2
+    @=@
+    @=@2
     |}]
