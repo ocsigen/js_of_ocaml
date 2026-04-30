@@ -428,12 +428,24 @@ end
 
 let intl = Js.Unsafe.global##._Intl
 
-let collator_constr = Js.Unsafe.global##._Intl##._Collator
+(* On hosts without the ECMAScript Internationalization API (e.g. a
+   QuickJS build without --enable-intl), [globalThis.Intl] is
+   [undefined]. Reading [Intl.Collator] etc. eagerly would throw at
+   module-load time -- defeating [is_supported]. Look up the
+   constructors via Optdef so they collapse to [undefined] when Intl is
+   missing; callers are expected to gate on [is_supported]. *)
+let intl_get prop =
+  Js.Optdef.case
+    (Js.Unsafe.global##._Intl : intl Js.t Js.optdef)
+    (fun () -> Js.Unsafe.pure_js_expr "undefined")
+    (fun o -> Js.Unsafe.get o (Js.string prop))
 
-let dateTimeFormat_constr = Js.Unsafe.global##._Intl##._DateTimeFormat
+let collator_constr = intl_get "Collator"
 
-let numberFormat_constr = Js.Unsafe.global##._Intl##._NumberFormat
+let dateTimeFormat_constr = intl_get "DateTimeFormat"
 
-let pluralRules_constr = Js.Unsafe.global##._Intl##._PluralRules
+let numberFormat_constr = intl_get "NumberFormat"
+
+let pluralRules_constr = intl_get "PluralRules"
 
 let is_supported () = Js.Optdef.test intl
