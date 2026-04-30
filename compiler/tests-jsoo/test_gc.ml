@@ -31,7 +31,7 @@ let ok () = print_endline "OK"
 let ko size = Printf.printf "size=%d, ocaml_version=%s" size Sys.ocaml_version
 
 let%expect_test "stat" =
-  let s = Gc.stat () in
+  let s = (Gc.stat [@alert "-deprecated"]) () in
   let size = Obj.size (Obj.repr s) in
   (match size with
   | 18 when ocaml_version >= (5, 5) -> ok ()
