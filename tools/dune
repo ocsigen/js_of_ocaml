@@ -4,6 +4,11 @@
  (libraries unix))
 
 (executable
+ (name quickjs_wrapper)
+ (modules quickjs_wrapper)
+ (libraries unix))
+
+(executable
  (name ci_setup)
  (modules ci_setup)
  (libraries opam-format unix))
