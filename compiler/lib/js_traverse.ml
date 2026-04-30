@@ -2033,7 +2033,11 @@ class simpl =
       in
       let is_commutative_op op =
         match op with
-        | Mul | Plus | Band | Bxor | Bor -> true
+        (* [Plus] is excluded: JavaScript [+] doubles as string
+           concatenation, which is not commutative. Rewriting [x = e + x]
+           into [x += e] would silently reverse the operands when [e]
+           and [x] are strings. *)
+        | Mul | Band | Bxor | Bor -> true
         | _ -> false
       in
       match e with
