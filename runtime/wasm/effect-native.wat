@@ -49,11 +49,21 @@
    (type $bytes (array (mut i8)))
    (type $function_1 (func (param (ref eq) (ref eq)) (result (ref eq))))
    (type $closure (sub (struct (;(field i32);) (field $func (ref $function_1)))))
+(@if (< $ocaml_version (5 6 0))
+(@then
    (type $function_3
       (func (param (ref eq) (ref eq) (ref eq) (ref eq)) (result (ref eq))))
    (type $closure_3
       (sub $closure
          (struct (field $func (ref $function_1)) (field $direct (ref $function_3)))))
+)
+(@else
+   (type $function_2
+      (func (param (ref eq) (ref eq) (ref eq)) (result (ref eq))))
+   (type $closure_2
+      (sub $closure
+         (struct (field $func (ref $function_1)) (field $direct (ref $function_2)))))
+))
 
    ;; Effect types
 
@@ -176,6 +186,8 @@
             ;; handle effect
             (struct.set $fiber $continuation (local.get $fiber)
                (local.get $resume_res_1))
+(@if (< $ocaml_version (5 6 0))
+(@then
             (return_call_ref $function_3
                (local.get $resume_res_0)
                (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
@@ -188,7 +200,19 @@
                (local.tee $f
                   (struct.get $fiber $effect (local.get $fiber)))
                (struct.get $closure_3 1
-                  (ref.cast (ref $closure_3) (local.get $f))))))
+                  (ref.cast (ref $closure_3) (local.get $f))))
+)
+(@else
+            (return_call_ref $function_2
+               (local.get $resume_res_0)
+               (array.new_fixed $block 3 (ref.i31 (global.get $cont_tag))
+                  (local.get $fiber)
+                  (local.get $fiber))
+               (local.tee $f
+                  (struct.get $fiber $effect (local.get $fiber)))
+               (struct.get $closure_2 1
+                  (ref.cast (ref $closure_2) (local.get $f))))
+))))
       ;; handle exception
       (return_call_ref $function_1 (local.get $exn)
          (local.tee $f
@@ -197,6 +221,8 @@
 
    ;; Perform
 
+(@if (< $ocaml_version (5 6 0))
+(@then
    (func (export "%reperform")
       (param $eff (ref eq)) (param $continuation (ref eq)) (param $tail (ref eq))
       (result (ref eq))
@@ -212,6 +238,28 @@
          (local.get $res_0)
          (local.get $res_1)
          (local.get $tail)))
+)
+(@else
+   (func (export "%reperform")
+      (param $eff (ref eq)) (param $continuation (ref eq)) (param $_tail (ref eq))
+      (result (ref eq))
+      (local $tail (ref eq))
+      (local $res_0 (ref eq)) (local $res_1 (ref eq))
+      (local.set $tail
+         (array.get $block (ref.cast (ref $block) (local.get $continuation))
+            (i32.const 2)))
+      (suspend $effect (local.get $eff))
+      (local.set $res_1)
+      (local.set $res_0)
+      (return_call $resume_fiber
+         (ref.as_non_null
+            (array.get $block
+               (ref.cast (ref $block) (local.get $continuation))
+               (i32.const 1)))
+         (local.get $res_0)
+         (local.get $res_1)
+         (local.get $tail)))
+))
 
    (func (export "%perform") (param $eff (ref eq)) (result (ref eq))
       (local $res_0 (ref eq)) (local $res_1 (ref eq))
