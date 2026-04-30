@@ -29,7 +29,6 @@
   objects
   opt_variants
   patmatch
-  pr7253
   pr7533
   pr7657
   recvalues
@@ -40,6 +39,18 @@
   trigraph
   tuple_match
   zero_divided_by_n)
+ (build_if
+  (>= %{ocaml_version} 5.1))
+ (modes js wasm))
+
+; pr7253 uses [Printexc.set_uncaught_exception_handler] and [at_exit];
+; it relies on Node's [process.on("uncaughtException")] hook to drive
+; the OCaml uncaught handler. QuickJS has no equivalent.
+
+(tests
+ (names pr7253)
+ (enabled_if
+  (<> %{profile} quickjs))
  (build_if
   (>= %{ocaml_version} 5.1))
  (modes js wasm))
