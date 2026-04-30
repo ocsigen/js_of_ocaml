@@ -216,3 +216,41 @@ jobs:
           folder: doc-dev
           clean: true
           target-folder: doc/dev/
+
+  quickjs:
+    name: QuickJS-NG / Ubuntu / Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Update apt cache
+        run: sudo apt-get update
+
+      - name: Checkout tree
+        uses: actions/checkout@v6
+
+      - name: Set-up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: latest
+
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: "5.4.0"
+
+      - name: Build and install QuickJS-NG
+        run: |
+          git clone --depth 1 https://github.com/quickjs-ng/quickjs.git "$RUNNER_TEMP/quickjs-ng"
+          cd "$RUNNER_TEMP/quickjs-ng"
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j --target qjs
+          sudo install -m 0755 build/qjs /usr/local/bin/qjs
+          qjs --help | head -1
+
+      - run: opam install . --deps-only --with-test
+
+      - run: opam install .
+
+      - run: opam exec -- make all
+
+      - run: opam exec -- make tests-quickjs
