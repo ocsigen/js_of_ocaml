@@ -196,3 +196,22 @@ function caml_gc_tweak_list_active(_unit) {
 function caml_gc_tweak_list_active(_unit) {
   return 0;
 }
+
+//Provides: caml_runtime_hashtbl_randomized
+//Version: >= 5.6
+var caml_runtime_hashtbl_randomized = 0;
+
+//Provides: caml_runtime_hashtbl_randomize
+//Requires: caml_runtime_hashtbl_randomized
+//Version: >= 5.6
+function caml_runtime_hashtbl_randomize(_unit) {
+  caml_runtime_hashtbl_randomized = 1;
+  return 0;
+}
+
+//Provides: caml_runtime_hashtbl_is_randomized
+//Requires: caml_runtime_hashtbl_randomized
+//Version: >= 5.6
+function caml_runtime_hashtbl_is_randomized(_unit) {
+  return caml_runtime_hashtbl_randomized;
+}
