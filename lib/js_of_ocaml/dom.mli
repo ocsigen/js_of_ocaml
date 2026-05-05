@@ -304,6 +304,12 @@ class type ['a, 'b] customEvent = object
   method detail : 'b Js.opt Js.readonly_prop
 end
 
+class type beforeUnloadEvent = object
+  inherit [element] event
+
+  method returnValue : js_string t prop
+end
+
 (** {2 Event handlers} *)
 
 val no_handler : ('a, 'b) event_listener

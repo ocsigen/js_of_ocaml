@@ -293,26 +293,55 @@ class type ['a, 'b] customEvent = object
   method detail : 'b Js.opt Js.readonly_prop
 end
 
+class type beforeUnloadEvent = object
+  inherit [element] event
+
+  method returnValue : js_string t prop
+end
+
 let no_handler : ('a, 'b) event_listener = Js.null
 
 (* The function preventDefault must be called explicitly when
    using addEventListener... *)
+
+let beforeunload = Js.string "beforeunload"
+
+(* The [beforeunload] event has special return-value semantics: all modern
+   browsers show a confirmation dialog when the handler returns any value
+   other than [null] or [undefined].  When the handler returns [true] (allow
+   the event), we must return [undefined] to the browser instead of [true]
+   so that it does not trigger the dialog.  When the handler returns [false]
+   (block the event), we also set [returnValue] for legacy browser compat. *)
+let beforeunload_return (e : _ #event t) (res : bool t) : bool t =
+  if Js.Unsafe.strict_equals e##._type beforeunload
+  then
+    if Js.to_bool res
+    then (Obj.magic Js.undefined : bool t)
+    else begin
+      (Js.Unsafe.coerce e : beforeUnloadEvent t)##.returnValue := Js.string "";
+      res
+    end
+  else res
+
 let handler f =
   Js.some
     (Js.Unsafe.callback (fun e ->
          let res = f e in
          if not (Js.to_bool res) then e##preventDefault;
-         res))
+         beforeunload_return e res))
 
 let full_handler f =
   Js.some
     (Js.Unsafe.meth_callback (fun this e ->
          let res = f this e in
          if not (Js.to_bool res) then e##preventDefault;
-         res))
+         beforeunload_return e res))
 
 let invoke_handler (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
-  Js.Unsafe.call f this [| Js.Unsafe.inject event |]
+  let res = Js.Unsafe.call f this [| Js.Unsafe.inject event |] in
+  (* Normalize: beforeunload handlers return [undefined] for "allow navigation".
+     [undefined] is not a valid [bool t], so convert it back to [true]. *)
+  if Js.Optdef.test (Obj.magic res : bool t Js.optdef) then res else Js._true
 
 let eventTarget (e : (< .. > as 'a) #event t) : 'a t =
   Opt.get e##.target (fun () -> Opt.get e##.srcElement (fun () -> raise Not_found))
