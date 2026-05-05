@@ -49,8 +49,8 @@ let collect_closures p =
         List.iter
           ~f:(fun i ->
             match i with
-            | Let (f, Closure (params, ((pc', _) as cont), _)) ->
-                Var.Hashtbl.add closures f (params, cont, enclosing);
+            | Let (f, Closure (params, ((pc', _) as cont), (hint, _))) ->
+                Var.Hashtbl.add closures f (params, cont, enclosing, hint);
                 traverse p (Some f) pc'
             | _ -> ())
           block.body)
@@ -86,7 +86,7 @@ let collect_deps p closures =
       p.blocks
       ()
   in
-  Var.Hashtbl.iter (fun f (_, (pc, _), _) -> traverse p f pc) closures;
+  Var.Hashtbl.iter (fun f (_, (pc, _), _, _) -> traverse p f pc) closures;
   Var.Hashtbl.fold (fun f s m -> Var.Map.add f !s m) deps Var.Map.empty
 
 module Var_SCC = Strongly_connected_components.Make (Var)
@@ -95,8 +95,15 @@ let visit_closures p ~live_vars f acc =
   let closures = collect_closures p in
   let deps = collect_deps p closures in
   let f' ~recursive acc g =
-    let params, cont, enclosing_function = Var.Hashtbl.find closures g in
-    f ~recursive ~enclosing_function ~current_function:(Some g) ~params ~cont acc
+    let params, cont, enclosing_function, closure_hint = Var.Hashtbl.find closures g in
+    f
+      ~recursive
+      ~enclosing_function
+      ~current_function:(Some g)
+      ~closure_hint
+      ~params
+      ~cont
+      acc
   in
   let rec visit ~recursive deps acc =
     let scc = Var_SCC.connected_components_sorted_from_roots_to_leaf deps in
@@ -118,7 +125,7 @@ let visit_closures p ~live_vars f acc =
                           (* Make sure that inner closures are
                              processed before their enclosing
                              closure *)
-                          let _, _, enclosing = Var.Hashtbl.find closures g in
+                          let _, _, enclosing, _ = Var.Hashtbl.find closures g in
                           match enclosing with
                           | None -> Var.Set.empty
                           | Some enclosing -> Var.Set.singleton enclosing
@@ -136,6 +143,7 @@ let visit_closures p ~live_vars f acc =
     ~recursive:false
     ~enclosing_function:None
     ~current_function:None
+    ~closure_hint:None
     ~params:[]
     ~cont:(p.start, [])
     acc
@@ -175,6 +183,7 @@ type info =
   { f : Var.t
   ; params : Var.t list
   ; cont : Code.cont
+  ; closure_hint : Optimization_hint.closure_hint option
   ; enclosing_function : Var.t option
   ; recursive : bool
   ; loops : bool cache
@@ -246,12 +255,13 @@ let rec block_size ~inline_comparisons ~recurse ~context { branch; body; _ } =
           ( _
           , Prim
               ( Extern
-                  ( "caml_lessthan"
-                  | "caml_lessequal"
-                  | "caml_greaterthan"
-                  | "caml_greaterequal"
-                  | "caml_equal"
-                  | "caml_notequal" )
+                  ( ( "caml_lessthan"
+                    | "caml_lessequal"
+                    | "caml_greaterthan"
+                    | "caml_greaterequal"
+                    | "caml_equal"
+                    | "caml_notequal" )
+                  , _ )
               , _ ) )
         when inline_comparisons ->
           (* Bias toward inlining functions containing polymorphic
@@ -385,13 +395,18 @@ let functor_like ~context info =
     | `JavaScript, (O1 | O2) -> false
     | `JavaScript, O3 -> body_size ~context info <= 15)
   && (not info.recursive)
-  && (not (contains_loop ~context info))
-  && returns_a_block ~context info
-  && count_init_code ~context info * 2 > body_size ~context info
-  (* A large portion of the body is initialization code *)
   &&
-  (* The closures defined in this function are small on average *)
-  full_size ~context info - body_size ~context info <= 20 * closure_count ~context info
+  match info.closure_hint with
+  | Some { is_a_functor = true; _ } -> true
+  | _ ->
+      (not (contains_loop ~context info))
+      && returns_a_block ~context info
+      && count_init_code ~context info * 2 > body_size ~context info
+      (* A large portion of the body is initialization code *)
+      &&
+      (* The closures defined in this function are small on average *)
+      full_size ~context info - body_size ~context info
+      <= 20 * closure_count ~context info
 
 let trivial_function ~context info =
   (not info.recursive) && body_size ~context info <= 1 && closure_count ~context info = 0
@@ -436,41 +451,52 @@ and relevant_arguments ~context info args =
     ~init:Var.Map.empty
 
 and should_inline ~context info args =
-  (* Typically, in JavaScript implementations, a closure contains a
-     pointer to (recursively) the contexts of its enclosing functions.
-     The context of a function contains the variables bound in this
-     function which are referred to from one of the enclosed function.
-     To limit the risk of memory leaks, we try to avoid inlining functions
-     containing closures if this makes these closures capture
-     additional contexts shared with other closures.
-     We still inline into toplevel functions ([Option.is_none
-     context.enclosing_function]) since this results in significant
-     performance improvements. *)
-  (match Config.target (), Config.effects () with
-    | `JavaScript, (`Disabled | `Cps) ->
-        closure_count ~context info = 0
-        || Option.is_none context.enclosing_function
-        || Option.equal Var.equal info.enclosing_function context.current_function
-        || (not (Lazy.force !(context.has_closures)))
-           && Option.equal Var.equal info.enclosing_function context.enclosing_function
-    | `Wasm, _ | `JavaScript, `Double_translation -> true
-    | `JavaScript, `Jspi -> assert false)
-  && (functor_like ~context info
-     || (context.live_vars.(Var.idx info.f) = 1
-        &&
-        match Config.target () with
-        | `Wasm when Lazy.force context.in_loop ->
-            (* Avoid inlining in a loop since, if the loop is not hot,
-               the code might never get optimized *)
-            body_size ~context info < 30 && not (contains_loop ~context info)
-        | `JavaScript
-          when Option.is_none context.current_function && contains_loop ~context info ->
-            (* Avoid inlining loops at toplevel since the toplevel
-               code is less likely to get optimized *)
-            false
-        | _ -> body_size ~context info < Config.Param.inlining_limit ())
-     || trivial_function ~context info
-     || small_function ~context info args)
+  if info.recursive && context.live_vars.(Var.idx info.f) > 1
+  then false
+  else
+    match info.closure_hint with
+    | Some { inline = Never_inline; _ } -> false
+    | Some { inline = Always_inline; _ } -> true
+    | _ ->
+        (* Typically, in JavaScript implementations, a closure contains a
+         pointer to (recursively) the contexts of its enclosing functions.
+         The context of a function contains the variables bound in this
+         function which are referred to from one of the enclosed function.
+         To limit the risk of memory leaks, we try to avoid inlining functions
+         containing closures if this makes these closures capture
+         additional contexts shared with other closures.
+         We still inline into toplevel functions ([Option.is_none
+         context.enclosing_function]) since this results in significant
+         performance improvements. *)
+        (match Config.target (), Config.effects () with
+          | `JavaScript, (`Disabled | `Cps) ->
+              closure_count ~context info = 0
+              || Option.is_none context.enclosing_function
+              || Option.equal Var.equal info.enclosing_function context.current_function
+              || (not (Lazy.force !(context.has_closures)))
+                 && Option.equal
+                      Var.equal
+                      info.enclosing_function
+                      context.enclosing_function
+          | `Wasm, _ | `JavaScript, `Double_translation -> true
+          | `JavaScript, `Jspi -> assert false)
+        && (functor_like ~context info
+           || (context.live_vars.(Var.idx info.f) = 1
+              &&
+              match Config.target () with
+              | `Wasm when Lazy.force context.in_loop ->
+                  (* Avoid inlining in a loop since, if the loop is not hot,
+                   the code might never get optimized *)
+                  body_size ~context info < 30 && not (contains_loop ~context info)
+              | `JavaScript
+                when Option.is_none context.current_function
+                     && contains_loop ~context info ->
+                  (* Avoid inlining loops at toplevel since the toplevel
+                   code is less likely to get optimized *)
+                  false
+              | _ -> body_size ~context info < Config.Param.inlining_limit ())
+           || trivial_function ~context info
+           || small_function ~context info args)
 
 let trace_inlining ~context info x args =
   if debug ()
@@ -684,6 +710,7 @@ let inline ~profile ~inline_count p ~live_vars =
      (fun ~recursive
           ~enclosing_function
           ~current_function
+          ~closure_hint
           ~params
           ~cont:((pc, _) as cont)
           (context : context)
@@ -728,6 +755,7 @@ let inline ~profile ~inline_count p ~live_vars =
                { f
                ; params
                ; cont
+               ; closure_hint
                ; enclosing_function
                ; recursive
                ; loops = ref None

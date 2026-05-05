@@ -93,7 +93,7 @@ let block_deps ~info ~vars ~tail_deps ~deps ~blocks ~fun_name pc =
                      called functions must be in CPS *)
                   if not (double_translate ()) then add_dep deps g x)
                 known)
-      | Let (x, Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) -> (
+      | Let (x, Prim (Extern (("%perform" | "%reperform" | "%resume"), _), _)) -> (
           add_var vars x;
           match fun_name with
           | None -> ()
@@ -155,7 +155,7 @@ let cps_needed ~info ~in_mutual_recursion ~rev_deps st x =
       &&
       (* If a function escapes, it must be in CPS *)
       Var.ISet.mem info.Global_flow.info_may_escape x
-  | Expr (Prim (Extern ("%perform" | "%reperform" | "%resume"), _)) ->
+  | Expr (Prim (Extern (("%perform" | "%reperform" | "%resume"), _), _)) ->
       (* Effects primitives are in CPS *)
       true
   | Expr (Prim _ | Block _ | Constant _ | Field _ | Special _) | Phi _ -> false

@@ -64,33 +64,9 @@ type boxed_status =
   | Unboxed
 
 module Bigarray = struct
-  type kind =
-    | Float16
-    | Float32
-    | Float32_t
-    | Float64
-    | Int8_signed
-    | Int8_unsigned
-    | Int16_signed
-    | Int16_unsigned
-    | Int32
-    | Int64
-    | Int
-    | Nativeint
-    | Complex32
-    | Complex64
-
-  type layout =
-    | C
-    | Fortran
-
-  type t =
-    { kind : kind
-    ; layout : layout
-    }
-
-  let make ~kind ~layout =
-    { kind =
+  let make ~kind ~layout : Optimization_hint.Bigarray.t =
+    { unsafe = false
+    ; kind =
         (match kind with
         | 0 -> Float32
         | 1 -> Float64
@@ -114,7 +90,7 @@ module Bigarray = struct
         | _ -> assert false)
     }
 
-  let print f { kind; layout } =
+  let print f { Optimization_hint.Bigarray.kind; layout; _ } =
     Format.fprintf
       f
       "bigarray{%s,%s}"
@@ -137,8 +113,10 @@ module Bigarray = struct
       | C -> "C"
       | Fortran -> "Fortran")
 
-  let equal { kind; layout } { kind = kind'; layout = layout' } =
-    phys_equal kind kind' && phys_equal layout layout'
+  let equal
+      { Optimization_hint.Bigarray.unsafe; kind; layout }
+      { Optimization_hint.Bigarray.unsafe = unsafe'; kind = kind'; layout = layout' } =
+    Bool.equal unsafe unsafe' && phys_equal kind kind' && phys_equal layout layout'
 end
 
 type typ =
@@ -149,7 +127,7 @@ type typ =
       (** This value is a block or an integer; if it's an integer, an
           overapproximation of the possible values of each of its
           fields is given by the array of types *)
-  | Bigarray of Bigarray.t
+  | Bigarray of Optimization_hint.Bigarray.t
   | Null
   | Bot
 
@@ -270,13 +248,14 @@ let update_deps st { blocks; _ } =
               ( x
               , Prim
                   ( Extern
-                      ( "%int_and"
-                      | "%int_or"
-                      | "%int_xor"
-                      | "caml_ba_get_1"
-                      | "caml_ba_get_2"
-                      | "caml_ba_get_3"
-                      | "caml_ba_get_generic" )
+                      ( ( "%int_and"
+                        | "%int_or"
+                        | "%int_xor"
+                        | "caml_ba_get_1"
+                        | "caml_ba_get_2"
+                        | "caml_ba_get_3"
+                        | "caml_ba_get_generic" )
+                      , _ )
                   , lst ) ) ->
               (* The return type of these primitives depend on the input type *)
               List.iter
@@ -301,10 +280,38 @@ let mark_boxed_function_parameters ~fun_info { blocks; _ } =
     blocks;
   boxed_function_parameters
 
+let repr_to_type (r : Optimization_hint.repr) : typ =
+  match r with
+  | Value -> Top
+  | Float -> Number (Float, Boxed)
+  | Int32 -> Number (Int32, Boxed)
+  | Nativeint -> Number (Nativeint, Boxed)
+  | Int64 -> Number (Int64, Boxed)
+  | Int -> Int Ref
+
+let collect_parameter_type_hints { blocks; _ } =
+  let h = Var.Hashtbl.create 16 in
+  Addr.Map.iter
+    (fun _ block ->
+      List.iter block.body ~f:(fun i ->
+          match i with
+          | Let (_, Closure (params, _, (Some { params = param_reprs; _ }, _))) ->
+              List.iter2
+                ~f:(fun p r ->
+                  match repr_to_type r with
+                  | Top -> ()
+                  | t -> Var.Hashtbl.replace h p t)
+                params
+                param_reprs
+          | _ -> ()))
+    blocks;
+  h
+
 type st =
   { global_flow_state : Global_flow.state
   ; global_flow_info : Global_flow.info
   ; boxed_function_parameters : Var.ISet.t
+  ; parameter_type_hints : typ Var.Hashtbl.t
   ; fun_info : Call_graph_analysis.t
   }
 
@@ -325,7 +332,7 @@ let arg_type ~approx arg =
   | Pc c -> constant_type c
   | Pv x -> Var.Tbl.get approx x
 
-let bigarray_element_type (kind : Bigarray.kind) =
+let bigarray_element_type (kind : Optimization_hint.Bigarray.kind) =
   match kind with
   | Float16 | Float32 | Float64 -> Number (Float, Unboxed)
   | Float32_t -> Number (Float32, Unboxed)
@@ -344,7 +351,7 @@ let bigarray_type ~approx ba =
 
 let primitive_types = String.Hashtbl.create 16
 
-let prim_type ~st ~approx prim args =
+let prim_type ~st ~approx prim hint args =
   match prim with
   | "%int_and" -> (
       match List.map ~f:(fun x -> arg_type ~approx x) args with
@@ -365,9 +372,11 @@ let prim_type ~st ~approx prim args =
                ~layout:(Targetint.to_int_exn layout))
       | _ -> Top)
   | "caml_ba_get_1" | "caml_ba_get_2" | "caml_ba_get_3" -> (
-      match args with
-      | ba :: _ -> bigarray_type ~approx ba
-      | [] -> Top)
+      match hint, args with
+      | Some (Optimization_hint.Hint_bigarray { kind; _ }), _ ->
+          bigarray_element_type kind
+      | _, ba :: _ -> bigarray_type ~approx ba
+      | _, [] -> Top)
   | "caml_ba_get_generic" -> (
       match args with
       | ba :: Pv indices :: _ -> (
@@ -386,10 +395,18 @@ let register_prim nm ~unbox typ = String.Hashtbl.replace primitive_types nm (unb
 
 let propagate st approx x : Domain.t =
   match st.global_flow_state.defs.(Var.idx x) with
-  | Phi { known; others; unit } ->
+  | Phi { known; others; unit } -> (
       let res = Domain.join_set ~others (fun y -> Var.Tbl.get approx y) known in
       let res = if unit then Domain.join (Int Unnormalized) res else res in
-      if Var.ISet.mem st.boxed_function_parameters x then Domain.box res else res
+      let res =
+        if Var.ISet.mem st.boxed_function_parameters x then Domain.box res else res
+      in
+      match res with
+      | Top -> (
+          match Var.Hashtbl.find_opt st.parameter_type_hints x with
+          | Some t -> t
+          | None -> Top)
+      | _ -> res)
   | Expr e -> (
       match e with
       | Constant c -> constant_type c
@@ -411,9 +428,10 @@ let propagate st approx x : Domain.t =
           | Top -> Top
           | _ -> Bot)
       | Prim
-          ( Extern ("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen")
+          ( Extern
+              (("caml_check_bound" | "caml_check_bound_float" | "caml_check_bound_gen"), _)
           , [ Pv y; _ ] ) -> Var.Tbl.get approx y
-      | Prim ((Array_get | Extern "caml_array_unsafe_get"), [ Pv y; _ ]) -> (
+      | Prim ((Array_get | Extern ("caml_array_unsafe_get", _)), [ Pv y; _ ]) -> (
           match Var.Tbl.get st.global_flow_info.info_approximation y with
           | Values { known; others } ->
               Domain.join_set
@@ -439,8 +457,9 @@ let propagate st approx x : Domain.t =
                 known
           | Top -> Top)
       | Prim (Array_get, _) -> Top
-      | Prim ((Vectlength | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) -> Int Normalized
-      | Prim (Extern prim, args) -> prim_type ~st ~approx prim args
+      | Prim ((Vectlength _ | Not | IsInt | Eq | Neq | Lt | Le | Ult), _) ->
+          Int Normalized
+      | Prim (Extern (prim, hint), args) -> prim_type ~st ~approx prim hint args
       | Special _ -> Top
       | Apply { f; args; _ } -> (
           match Var.Tbl.get st.global_flow_info.info_approximation f with
@@ -456,8 +475,9 @@ let propagate st approx x : Domain.t =
                           (fun y ->
                             match st.global_flow_state.defs.(Var.idx y) with
                             | Expr
-                                (Prim (Extern "caml_ba_create", [ Pv kind; Pv layout; _ ]))
-                              -> (
+                                (Prim
+                                   ( Extern ("caml_ba_create", _)
+                                   , [ Pv kind; Pv layout; _ ] )) -> (
                                 let m =
                                   List.fold_left2
                                     ~f:(fun m p a -> Var.Map.add p a m)
@@ -594,7 +614,7 @@ let box_numbers p st types =
                         | Some (g, _) -> not (can_unbox_parameters st.fun_info g)
                       then List.iter ~f:box args
                   | Block (tag, lst, _, _) -> if tag <> 254 then Array.iter ~f:box lst
-                  | Prim (Extern s, args) ->
+                  | Prim (Extern (s, _), args) ->
                       if
                         not
                           (String.Hashtbl.mem primitive_types s
@@ -615,7 +635,7 @@ let box_numbers p st types =
                           | Pv y -> box y
                           | Pc _ -> ())
                         args
-                  | Prim ((Vectlength | Array_get | Not | IsInt | Lt | Le | Ult), _)
+                  | Prim ((Vectlength _ | Array_get | Not | IsInt | Lt | Le | Ult), _)
                   | Field _ | Closure _ | Constant _ | Special _ -> ())
               | Set_field (_, _, Non_float, y) | Array_set (_, _, y) -> box y
               | Assign _ | Offset_ref _ | Set_field (_, _, Float, _) | Event _ -> ())
@@ -633,7 +653,7 @@ let box_numbers p st types =
 
 let print_opt types global_flow_state f e =
   match e with
-  | Prim (Extern name, args)
+  | Prim (Extern (name, _), args)
     when type_specialized_primitive types global_flow_state name args ->
       Format.fprintf f " OPT"
   | _ -> ()
@@ -647,7 +667,15 @@ let f ~global_flow_state ~global_flow_info ~fun_info ~deadcode_sentinel p =
   let t = Timer.make () in
   update_deps global_flow_state p;
   let boxed_function_parameters = mark_boxed_function_parameters ~fun_info p in
-  let st = { global_flow_state; global_flow_info; boxed_function_parameters; fun_info } in
+  let parameter_type_hints = collect_parameter_type_hints p in
+  let st =
+    { global_flow_state
+    ; global_flow_info
+    ; boxed_function_parameters
+    ; parameter_type_hints
+    ; fun_info
+    }
+  in
   let types = solver st in
   Var.Tbl.set types deadcode_sentinel (Int Normalized);
   box_numbers p st types;

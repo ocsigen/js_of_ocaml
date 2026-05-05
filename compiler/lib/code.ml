@@ -307,9 +307,9 @@ end
 type cont = Addr.t * Var.t list
 
 type prim =
-  | Vectlength
+  | Vectlength of Optimization_hint.array_kind
   | Array_get
-  | Extern of string
+  | Extern of string * Optimization_hint.ccall option
   | Not
   | IsInt
   | Eq
@@ -484,7 +484,8 @@ type expr =
       }
   | Block of int * Var.t array * array_or_not * mutability
   | Field of Var.t * int * field_type
-  | Closure of Var.t list * cont * Parse_info.t option
+  | Closure of
+      Var.t list * cont * (Optimization_hint.closure_hint option * Parse_info.t option)
   | Constant of constant
   | Prim of prim * prim_arg list
   | Special of special
@@ -596,17 +597,29 @@ module Print = struct
     | "%int_neg" -> "-"
     | _ -> raise Not_found
 
+  let hint f h =
+    match h with
+    | None -> ()
+    | Some h -> Format.fprintf f " [hint:%a]" Optimization_hint.print_ccall h
+
   let prim f p l =
     match p, l with
-    | Vectlength, [ x ] -> Format.fprintf f "%a.length" arg x
+    | Vectlength k, [ x ] ->
+        Format.fprintf
+          f
+          "%a.length [hint:%a]"
+          arg
+          x
+          Optimization_hint.print
+          (Optimization_hint.Hint_arraylength k)
     | Array_get, [ x; y ] -> Format.fprintf f "%a[%a]" arg x arg y
-    | Extern s, [ x; y ] -> (
-        try Format.fprintf f "%a %s %a" arg x (binop s) arg y
-        with Not_found -> Format.fprintf f "\"%s\"(%a)" s (list arg) l)
-    | Extern s, [ x ] -> (
-        try Format.fprintf f "%s %a" (unop s) arg x
-        with Not_found -> Format.fprintf f "\"%s\"(%a)" s (list arg) l)
-    | Extern s, _ -> Format.fprintf f "\"%s\"(%a)" s (list arg) l
+    | Extern (s, h), [ x; y ] -> (
+        try Format.fprintf f "%a %s %a%a" arg x (binop s) arg y hint h
+        with Not_found -> Format.fprintf f "\"%s\"(%a)%a" s (list arg) l hint h)
+    | Extern (s, h), [ x ] -> (
+        try Format.fprintf f "%s %a%a" (unop s) arg x hint h
+        with Not_found -> Format.fprintf f "\"%s\"(%a) %a" s (list arg) l hint h)
+    | Extern (s, h), _ -> Format.fprintf f "\"%s\"(%a) %a" s (list arg) l hint h
     | Not, [ x ] -> Format.fprintf f "!%a" arg x
     | IsInt, [ x ] -> Format.fprintf f "is_int(%a)" arg x
     | Eq, [ x; y ] -> Format.fprintf f "%a === %a" arg x arg y
@@ -640,7 +653,11 @@ module Print = struct
         Format.fprintf f "}"
     | Field (x, i, Non_float) -> Format.fprintf f "%a[%d]" Var.print x i
     | Field (x, i, Float) -> Format.fprintf f "FLOAT{%a[%d]}" Var.print x i
-    | Closure (l, c, _) -> Format.fprintf f "fun(%a){%a}" var_list l cont c
+    | Closure (l, c, (hint, _)) -> (
+        Format.fprintf f "fun(%a){%a}" var_list l cont c;
+        match hint with
+        | None -> ()
+        | Some h -> Format.fprintf f " [hint:%a]" Optimization_hint.print_closure_hint h)
     | Constant c -> Format.fprintf f "CONST{%a}" constant c
     | Prim (p, l) -> prim f p l
     | Special s -> special f s
@@ -699,7 +716,7 @@ let fold_closures p f accu =
     (fun _ block accu ->
       List.fold_left block.body ~init:accu ~f:(fun accu i ->
           match i with
-          | Let (x, Closure (params, cont, cloc)) -> f (Some x) params cont cloc accu
+          | Let (x, Closure (params, cont, (_, cloc))) -> f (Some x) params cont cloc accu
           | _ -> accu))
     p.blocks
     (f None [] (p.start, []) None accu)
@@ -738,7 +755,8 @@ let is_empty p =
       match v with
       | { body; branch = Stop; params = _ } -> (
           match body with
-          | ([] | [ Let (_, Prim (Extern "caml_get_global_data", _)) ]) when true -> true
+          | ([] | [ Let (_, Prim (Extern ("caml_get_global_data", None), _)) ]) when true
+            -> true
           | _ -> false)
       | _ -> false)
   | _ -> false
@@ -858,7 +876,7 @@ let fold_closures_innermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont, cloc)) ->
+            | Let (x, Closure (params, cont, (_, cloc))) ->
                 let accu = visit blocks (fst cont) f accu in
                 f (Some x) params cont cloc accu
             | _ -> accu))
@@ -877,7 +895,7 @@ let fold_closures_outermost_first { start; blocks; _ } f accu =
         let block = Addr.Map.find pc blocks in
         List.fold_left block.body ~init:accu ~f:(fun accu i ->
             match i with
-            | Let (x, Closure (params, cont, cloc)) ->
+            | Let (x, Closure (params, cont, (_, cloc))) ->
                 let accu = f (Some x) params cont cloc accu in
                 visit blocks (fst cont) f accu
             | _ -> accu))
