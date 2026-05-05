@@ -136,6 +136,7 @@ let optimize
     () =
   command
     ("wasm-opt"
+     :: "--emit-exnref"
      :: (common_options ()
         @ (match options with
           | Some o -> o
