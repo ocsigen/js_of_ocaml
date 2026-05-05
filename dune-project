@@ -1,4 +1,4 @@
-(lang dune 3.20)
+(lang dune 3.23)
 (using menhir 3.0)
 (using directory-targets 0.1)
 (using oxcaml 0.1)
@@ -19,6 +19,7 @@
  (description
   "Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes it possible to run pure OCaml programs in JavaScript environment like browsers and Node.js")
  (depends
+  (dune (>= 3.23.1))
   (ocaml (and (>= 4.13) (< 5.6)))
   (num :with-test)
   (ppx_expect (and (>= v0.16.1) :with-test))
