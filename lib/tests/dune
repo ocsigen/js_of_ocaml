@@ -6,7 +6,7 @@
  (action
   (with-stdout-to
    dune.inc.gen
-   (run gen-rules/gen.exe jsoo_lib_expect_tests))))
+   (run gen-rules/gen.exe lib/tests))))
 
 (rule
  (alias runtest)
