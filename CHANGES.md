@@ -27,6 +27,7 @@
   operator; JavaScript `+` is not commutative for strings, which made
   whole-program builds emit reversed `Filename.concat` operands and
   silently broke `Filename.temp_file`
+* Runtime/wasm: fix string conversion from JS to OCaml (#2230)
 
 
 # 6.3.2 (2026-02-15) - Lille

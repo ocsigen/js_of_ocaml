@@ -699,6 +699,8 @@
     decodeStringFromUTF8Array: () => "",
     encodeStringToUTF8Array: () => 0,
     fromCharCodeArray: () => "",
+    length: (s) => s.length,
+    intoCharCodeArray: () => 0,
   };
   const imports = Object.assign(
     {

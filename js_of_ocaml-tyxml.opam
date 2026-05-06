@@ -23,6 +23,7 @@ depends: [
   "ppx_expect" {>= "v0.14.2" & with-test}
   "re" {>= "1.9.0" & with-test}
   "odoc" {with-doc}
+  "menhir" {>= "20180523"}
 ]
 dev-repo: "git+https://github.com/ocsigen/js_of_ocaml.git"
 x-maintenance-intent: ["(latest)"]
