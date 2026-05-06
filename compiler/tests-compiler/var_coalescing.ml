@@ -369,13 +369,13 @@ let%expect_test "unlabelled break inside labelled block within for-loop" =
 |};
   [%expect
     {|
-    (function(x){
-       var a = 100;
-       if(x >= 0){
+    (function(a){
+       var keep = 100;
+       if(a >= 0){
         a = 0;
         for(;;){a: {if(a >= 3) break; a += 1; continue;} throw "never";}
        }
-       console.log(a);
+       console.log(keep);
       }
       (1));
     |}]
@@ -400,7 +400,7 @@ let%expect_test
   console.log(keep);
 })(1)
 |};
-  [%expect {| 3 |}]
+  [%expect {| 100 |}]
 
 let%expect_test "empty try body" =
   test

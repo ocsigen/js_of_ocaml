@@ -286,6 +286,11 @@ type context_entry =
   { labels : Label.t list (* Labels for this entry; empty for unlabelled loops *)
   ; break : node_id
   ; continue : node_id option
+  ; iter_or_switch : bool
+        (* Whether unlabelled [break] can target this entry. True for
+           iteration statements and [switch]; false for labelled
+           non-iteration statements (e.g. labelled blocks), which are
+           valid targets only for [break label]. *)
   }
 
 let add_var candidates v s =
@@ -303,7 +308,7 @@ let rec find_break label ctx =
   match ctx, label with
   | [], _ -> failwith "Break without loop"
   | { labels; break; _ } :: _, Some l when List.mem ~eq:Label.equal l labels -> break
-  | { break; _ } :: _, None -> break
+  | { iter_or_switch = true; break; _ } :: _, None -> break
   | _ :: rest, _ -> find_break label rest
 
 let rec find_continue label ctx =
@@ -437,7 +442,10 @@ let build_cfg stmts candidates param_vars =
         add_node (Use u_cond) [ then_entry; else_entry ]
     | While_statement (cond, (body, _)) ->
         let loop_check = reserve_id () in
-        let context = { labels; break = exit; continue = Some loop_check } :: context in
+        let context =
+          { labels; break = exit; continue = Some loop_check; iter_or_switch = true }
+          :: context
+        in
         let body_entry = visit_stmt context loop_check body in
         let u_cond, _ = expr_use_def cond in
         set_node loop_check (Use u_cond) [ body_entry; exit ];
@@ -445,7 +453,10 @@ let build_cfg stmts candidates param_vars =
     | Do_while_statement ((body, _), cond) ->
         let loop_check = reserve_id () in
         let u_cond, _ = expr_use_def cond in
-        let context' = { labels; break = exit; continue = Some loop_check } :: context in
+        let context' =
+          { labels; break = exit; continue = Some loop_check; iter_or_switch = true }
+          :: context
+        in
         let body_entry = visit_stmt context' loop_check body in
         set_node loop_check (Use u_cond) [ body_entry; exit ];
         body_entry
@@ -473,7 +484,9 @@ let build_cfg stmts candidates param_vars =
         let u, _ = expr_use_def e in
         add_node (Use u) []
     | Switch_statement (cond, pre_cases, def_opt, post_cases) ->
-        let context = { labels; break = exit; continue = None } :: context in
+        let context =
+          { labels; break = exit; continue = None; iter_or_switch = true } :: context
+        in
         let process_body (_, stmts) (next_body, entries) =
           let next_body = visit_stmts context next_body stmts in
           next_body, next_body :: entries
@@ -534,7 +547,10 @@ let build_cfg stmts candidates param_vars =
     | ForOf_statement (left, right, (body, _))
     | ForAwaitOf_statement (left, right, (body, _)) ->
         let loop_check = reserve_id () in
-        let context = { labels; break = exit; continue = Some loop_check } :: context in
+        let context =
+          { labels; break = exit; continue = Some loop_check; iter_or_switch = true }
+          :: context
+        in
         let body_entry = visit_stmt context loop_check body in
         let body_start =
           match left with
@@ -564,7 +580,10 @@ let build_cfg stmts candidates param_vars =
               add_node (DefUse (def, use)) [ loop_check ]
           | None -> loop_check
         in
-        let context = { labels; break = exit; continue = Some update_node } :: context in
+        let context =
+          { labels; break = exit; continue = Some update_node; iter_or_switch = true }
+          :: context
+        in
         let body_entry = visit_stmt context update_node body in
         (* Condition check *)
         (match cond with
@@ -594,7 +613,8 @@ let build_cfg stmts candidates param_vars =
         then visit_stmt ~labels:(labels @ all_labels) context exit inner_stmt
         else
           let context =
-            { labels = all_labels; break = exit; continue = None } :: context
+            { labels = all_labels; break = exit; continue = None; iter_or_switch = false }
+            :: context
           in
           visit_stmt context exit inner_stmt
     | Empty_statement | Debugger_statement -> exit
