@@ -29,7 +29,9 @@
    (global $empty_array (ref eq)
       (array.new_fixed $block 1 (ref.i31 (i32.const 0))))
 
-   (func $caml_make_vect (export "caml_make_vect") (export "caml_array_make")
+   (func $caml_make_vect
+      (export "caml_make_vect") (export "caml_array_make")
+      (export "caml_uniform_array_make")
       (param $n (ref eq)) (param $v (ref eq)) (result (ref eq))
       (local $sz i32) (local $b (ref $block)) (local $f f64)
       (local.set $sz (i31.get_s (ref.cast (ref i31) (local.get $n))))

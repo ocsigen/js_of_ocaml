@@ -28,6 +28,29 @@ void %s () {
     s
     s
 
+let collect_prims externals _mapper desc =
+  let l = List.filter (fun x -> x.[0] <> '%') desc.Parsetree.pval_prim in
+  externals := List.fold_right String_set.add l !externals;
+  desc
+[@@if ocaml_version < (5, 6, 0)]
+
+let collect_prims externals _mapper desc =
+  (match desc.Parsetree.pprim_kind with
+  | Pprim_decl (_, l) ->
+      let l = List.filter (fun x -> x.[0] <> '%') l in
+      externals := List.fold_right String_set.add l !externals
+  | Pprim_alias _ -> ());
+  desc
+[@@if ocaml_version >= (5, 6, 0)]
+
+let make_mapper externals =
+  { Ast_mapper.default_mapper with value_description = collect_prims externals }
+[@@if ocaml_version < (5, 6, 0)]
+
+let make_mapper externals =
+  { Ast_mapper.default_mapper with primitive_description = collect_prims externals }
+[@@if ocaml_version >= (5, 6, 0)]
+
 let () =
   let mls = ref [] in
   let except_mls = ref [] in
@@ -39,12 +62,7 @@ let () =
   let get_externals l =
     let l = List.filter real_ml l in
     let externals = ref String_set.empty in
-    let value_description _mapper desc =
-      let l = List.filter (fun x -> x.[0] <> '%') desc.Parsetree.pval_prim in
-      externals := List.fold_right String_set.add l !externals;
-      desc
-    in
-    let mapper = { Ast_mapper.default_mapper with value_description } in
+    let mapper = make_mapper externals in
     List.iter
       (fun ml ->
         let in_ = open_in ml in

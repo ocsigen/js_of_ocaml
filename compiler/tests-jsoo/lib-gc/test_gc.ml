@@ -36,5 +36,5 @@ type control =
 
 let () =
   assert ((Gc.get ()).custom_minor_max_size = 0);
-  assert ((Gc.stat ()).forced_major_collections = 0);
+  assert (((Gc.stat [@alert "-deprecated"]) ()).forced_major_collections = 0);
   assert ((Gc.quick_stat ()).forced_major_collections = 0)
