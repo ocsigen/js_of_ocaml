@@ -115,6 +115,7 @@
 
 (rule
  (targets test_dynlink.js)
+ (deps test_dynlink.cmi)
  (action
   (run
    %{bin:js_of_ocaml}
@@ -200,6 +201,33 @@
      (run grep -v ^$))))))
 
 (rule
+ (target cmi_include_dirs.txt)
+ (deps
+  (package js_of_ocaml)
+  (package js_of_ocaml-compiler)
+  (package js_of_ocaml-lwt)
+  (package js_of_ocaml-tyxml)
+  (package js_of_ocaml-toplevel)
+  (package js_of_ocaml-ppx))
+ (action
+  (with-stdout-to
+   %{target}
+   (run
+    ocamlfind
+    query
+    -format
+    "-I\n%d"
+    -r
+    js_of_ocaml-compiler.runtime
+    js_of_ocaml-lwt
+    js_of_ocaml-lwt.graphics
+    js_of_ocaml-tyxml
+    js_of_ocaml-toplevel
+    js_of_ocaml-toplevel.common
+    js_of_ocaml-ppx.as-lib
+    js_of_ocaml.deriving))))
+
+(rule
  (targets toplevel.js)
  (action
   (run
@@ -223,6 +251,7 @@
    --toplevel
    --disable
    shortvar
+   %{read-strings:cmi_include_dirs.txt}
    %{read-strings:javascript_runtime_files.txt}
    %{dep:toplevel.bc}
    -o
@@ -271,6 +300,7 @@
    compile
    --toplevel
    --effects=cps
+   %{read-strings:cmi_include_dirs.txt}
    --file
    %{dep:examples.ml}
    --export
