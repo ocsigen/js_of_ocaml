@@ -8,6 +8,15 @@
  (modes byte js))
 
 (rule
+ (target cmi_include_dirs.txt)
+ (deps
+  (package js_of_ocaml-compiler))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ocamlfind query -format "-I\n%d" -r js_of_ocaml-compiler.dynlink))))
+
+(rule
  (targets test_toplevel.js)
  (action
   (run
@@ -15,6 +24,7 @@
    --toplevel
    -w
    no-missing-effects-backend
+   %{read-strings:cmi_include_dirs.txt}
    %{dep:test_toplevel.bc}
    -o
    %{targets})))
@@ -61,6 +71,16 @@
   (copy %{dep:test_toplevel.ml} %{target})))
 
 (rule
+ (target cmi_include_dirs_wasm.txt)
+ (deps
+  (package js_of_ocaml-compiler)
+  (package wasm_of_ocaml-compiler))
+ (action
+  (with-stdout-to
+   %{target}
+   (run ocamlfind query -format "-I\n%d" -r wasm_of_ocaml-compiler.dynlink))))
+
+(rule
  (targets
   test_toplevel_wasm.js
   (dir test_toplevel_wasm.assets))
@@ -71,6 +91,7 @@
    --toplevel
    -w
    no-missing-effects-backend
+   %{read-strings:cmi_include_dirs_wasm.txt}
    %{dep:test_toplevel_wasm.bc}
    -o
    test_toplevel_wasm.js)))
