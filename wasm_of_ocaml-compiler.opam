@@ -22,7 +22,7 @@ depends: [
   "cmdliner" {>= "2.0"}
   "opam-format" {with-test}
   "sedlex" {>= "2.3"}
-  "menhir"
+  "menhir" {>= "20180523"}
   "menhirLib"
   "menhirSdk"
   "yojson" {>= "2.1"}
