@@ -20,8 +20,8 @@ depends: [
   "num" {with-test}
   "ppx_expect" {>= "v0.14.2" & with-test}
   "re" {>= "1.9.0" & with-test}
-  "odoc" {with-doc}
   "menhir" {>= "20180523"}
+  "odoc" {with-doc}
 ]
 depopts: ["graphics" "lwt_log"]
 dev-repo: "git+https://github.com/ocsigen/js_of_ocaml.git"

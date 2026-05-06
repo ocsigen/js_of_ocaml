@@ -28,7 +28,7 @@
   (cmdliner (>= 2.0))
   (sedlex (>= 3.3))
   (qcheck :with-test)
-  menhir
+  (menhir (>= 20180523))
   menhirLib
   menhirSdk
   (yojson (>= 2.1)))
@@ -51,7 +51,8 @@
   (lwt (and (>= 2.4.4) (<> 5.9.2)))
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
-  (re (and (>= 1.9.0) :with-test)))
+  (re (and (>= 1.9.0) :with-test))
+  (menhir (>= 20180523)))
  (depopts
   graphics
   lwt_log
@@ -69,6 +70,7 @@
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
+  (menhir (>= 20180523))
 ))
 
 (package
@@ -83,6 +85,7 @@
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
+  (menhir (>= 20180523))
 ))
 
 (package
@@ -100,6 +103,7 @@
   (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (>= 0.33))
   (re (and (>= 1.9.0) :with-test))
+  (menhir (>= 20180523))
 ))
 
 (package
@@ -117,6 +121,7 @@
   (num :with-test)
   (ppx_expect (and (>= v0.14.2) :with-test))
   (re (and (>= 1.9.0) :with-test))
+  (menhir (>= 20180523))
 ))
 
 (package
@@ -131,6 +136,7 @@
   (ppx_expect (and (>= v0.14.2) :with-test))
   (ppxlib (>= 0.33))
   (re (and (>= 1.9.0) :with-test))
+  (menhir (>= 20180523))
 ))
 
 (package
@@ -148,7 +154,7 @@
   (cmdliner (>= 2.0))
   (opam-format :with-test)
   (sedlex (>= 2.3))
-  menhir
+  (menhir (>= 20180523))
   menhirLib
   menhirSdk
   (yojson (>= 2.1))
