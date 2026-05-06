@@ -43,6 +43,9 @@
   API, plus a `fonts` property on `Dom_html.document` (#2255)
 * Lib: `Lwt_js_events` `load`/`error`/`abort` and their `seq_loop` variants now
   accept any element, not only images (#2404)
+* Runtime/wasm: dispatch `wasmoocaml:loaded` and `wasmoocaml:error`
+  `CustomEvent`s on `globalThis` so that surrounding JavaScript can wait
+  for the asynchronous Wasm instantiation to complete
 
 ## Bug fixes
 * Compiler/Wasm runtime: fix toplevels built on Windows — the embedded cmi
