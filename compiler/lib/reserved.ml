@@ -143,6 +143,7 @@ let provided =
     ; "btoa"
     ; "clearInterval"
     ; "console"
+    ; "CustomEvent"
     ; "global" (* only available in node *)
     ; "importScripts" (* only available in WebWorker *)
     ; "performance" (* Not available in node until v16+ *)
