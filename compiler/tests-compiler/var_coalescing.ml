@@ -348,6 +348,60 @@ let%expect_test "coalescing enabled vs disabled" =
     (function(b){var a = b + 1; console.log(a); b += 2; console.log(b);}(0));
     |}]
 
+let%expect_test "unlabelled break inside labelled block within for-loop" =
+  test
+    {|
+(function(x) {
+  var keep = 100;
+  if (x >= 0) {
+    var i = 0;
+    for(;;) {
+      a: {
+        if (i >= 3) break;
+        i = i + 1;
+        continue;
+      }
+      throw "never";
+    }
+  }
+  console.log(keep);
+})(1)
+|};
+  [%expect
+    {|
+    (function(x){
+       var a = 100;
+       if(x >= 0){
+        a = 0;
+        for(;;){a: {if(a >= 3) break; a += 1; continue;} throw "never";}
+       }
+       console.log(a);
+      }
+      (1));
+    |}]
+
+let%expect_test
+    "unlabelled break inside labelled block within for-loop — runtime correctness" =
+  test_run
+    {|
+(function(x) {
+  var keep = 100;
+  if (x >= 0) {
+    var i = 0;
+    for(;;) {
+      a: {
+        if (i >= 3) break;
+        i = i + 1;
+        continue;
+      }
+      throw "never";
+    }
+  }
+  console.log(keep);
+})(1)
+|};
+  [%expect {| 3 |}]
+
 let%expect_test "empty try body" =
   test
     {|
