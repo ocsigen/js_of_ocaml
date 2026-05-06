@@ -10,6 +10,9 @@
 * Compiler: improved shape computation (#2198)
 * Add the --build-config and --apply-build-config flags (#2177)
 * Runtime/wasm: optimized some bigstring primitives (#2144)
+* Runtime/wasm: dispatch `wasmoocaml:loaded` and `wasmoocaml:error`
+  `CustomEvent`s on `globalThis` so that surrounding JavaScript can wait
+  for the asynchronous Wasm instantiation to complete
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
