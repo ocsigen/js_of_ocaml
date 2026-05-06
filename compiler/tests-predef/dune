@@ -43,6 +43,8 @@
 (rule
  (target main-wasm.out)
  (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps
+  (glob_files main.bc.wasm.assets/*))
  (action
   (with-stdout-to
    %{target}
