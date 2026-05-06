@@ -14,6 +14,8 @@
 (rule
  (target test_wasm.ml.corrected)
  (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps
+  (glob_files ../expect_wasm.bc.wasm.assets/*))
  (action
   (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_wasm.ml})))
 
