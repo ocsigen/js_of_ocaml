@@ -80,7 +80,7 @@ opam install odoc lwt_log yojson ocp-indent graphics higlo
 ```
 
 **Requirements:**
-- OCaml 4.13 to 5.4
+- OCaml 4.14 to 5.4
 - Dune 3.19+
 - For wasm_of_ocaml: Binaryen 119+
 

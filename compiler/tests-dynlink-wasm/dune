@@ -54,7 +54,9 @@
 
 (rule
  (target main.out)
- (deps plugin.wasmo)
+ (deps
+  plugin.wasmo
+  (glob_files main.bc.wasm.assets/*))
  (enabled_if %{env:WASM_OF_OCAML=false})
  (action
   (with-outputs-to
@@ -90,7 +92,9 @@
 
 (rule
  (target main_compile_and_load.out)
- (deps plugin_compiled.wasmo)
+ (deps
+  plugin_compiled.wasmo
+  (glob_files main_compile_and_load.bc.wasm.assets/*))
  (enabled_if %{env:WASM_OF_OCAML=false})
  (action
   (with-outputs-to
@@ -115,7 +119,10 @@
 
 (rule
  (target dynlink_loadfile.out)
- (deps plugin.cmo plugin2.cma)
+ (deps
+  plugin.cmo
+  plugin2.cma
+  (glob_files dynlink_loadfile.bc.wasm.assets/*))
  (enabled_if %{env:WASM_OF_OCAML=false})
  (action
   (with-outputs-to
@@ -181,7 +188,12 @@
 
 (rule
  (target dynlink_loadfile_wp.out)
- (deps plugin.cmo plugin2.cma plugin_uses_dep.cmo plugin_js.cmo)
+ (deps
+  plugin.cmo
+  plugin2.cma
+  plugin_uses_dep.cmo
+  plugin_js.cmo
+  (glob_files dynlink_loadfile_wp.assets/*))
  (enabled_if %{env:WASM_OF_OCAML=false})
  (action
   (with-outputs-to

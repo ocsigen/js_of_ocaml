@@ -1,5 +1,6 @@
 (tests
  (names wc)
  (modes js wasm)
+ (deps wc.ml)
  (action
   (run node %{test} wc.ml)))
