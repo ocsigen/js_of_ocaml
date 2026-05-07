@@ -39,12 +39,9 @@ matching the engines you need to support.
 Compile your program with js_of_ocaml, then run Babel on the output:
 
 {{{
-js_of_ocaml --target-env=browser program.byte -o program.js
+js_of_ocaml program.byte -o program.js
 npx babel program.js -o program.es5.js
 }}}
-
-{{{--target-env=browser}}} keeps the runtime from pulling in Node-only
-branches, which would otherwise fail to resolve when bundling.
 
 The resulting {{{program.es5.js}}} imports polyfills from {{{core-js}}}
 with {{{require("core-js/modules/...")}}} calls. Before shipping to a
@@ -58,8 +55,13 @@ is a small, zero-config option:
 {{{
 npm install --save-dev esbuild
 npx esbuild program.es5.js --bundle --platform=browser \
-  --outfile=program.bundle.js
+  --external:node:* --outfile=program.bundle.js
 }}}
+
+The runtime contains a few {{{require("node:*")}}} calls (filesystem,
+tty, etc.) guarded by Node-detection branches that never run in a
+browser. {{{--external:node:*}}} tells esbuild to leave those imports
+in place instead of failing to resolve them at bundle time.
 
 Esbuild preserves whatever ES level Babel produced; it just resolves
 {{{require}}} calls and concatenates modules.
