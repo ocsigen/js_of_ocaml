@@ -27,6 +27,12 @@ class type ['node] nodeList = object
   method length : int readonly_prop
 end
 
+class type ['node] collection = object
+  inherit ['node] nodeList
+
+  method namedItem : js_string t -> 'node t opt meth
+end
+
 let list_of_nodeList (nodeList : 'a nodeList t) =
   let length = nodeList##.length in
   let rec add_item acc i =
@@ -88,6 +94,8 @@ class type node = object
 
   method parentNode : node t opt prop
 
+  method parentElement : element t opt readonly_prop
+
   method childNodes : node nodeList t prop
 
   method firstChild : node t opt prop
@@ -99,6 +107,8 @@ class type node = object
   method nextSibling : node t opt prop
 
   method namespaceURI : js_string t opt prop
+
+  method isConnected : bool t readonly_prop
 
   method insertBefore : node t -> node t opt -> node t meth
 
@@ -114,23 +124,25 @@ class type node = object
 
   method compareDocumentPosition : node t -> DocumentPosition.t meth
 
+  method contains : node t -> bool t meth
+
+  method getRootNode : node t meth
+
+  method getRootNode_options : getRootNodeOptions t -> node t meth
+
+  method isEqualNode : node t -> bool t meth
+
+  method isSameNode : node t -> bool t meth
+
+  method normalize : unit meth
+
   method lookupNamespaceURI : js_string t -> js_string t opt meth
 
   method lookupPrefix : js_string t -> js_string t opt meth
 end
 
-let appendChild (p : #node t) (n : #node t) = ignore (p##appendChild (n :> node t))
-
-let removeChild (p : #node t) (n : #node t) = ignore (p##removeChild (n :> node t))
-
-let replaceChild (p : #node t) (n : #node t) (o : #node t) =
-  ignore (p##replaceChild (n :> node t) (o :> node t))
-
-let insertBefore (p : #node t) (n : #node t) (o : #node t opt) =
-  ignore (p##insertBefore (n :> node t) (o :> node t opt))
-
 (** Specification of [Attr] objects. *)
-class type attr = object
+and attr = object
   inherit node
 
   method name : js_string t readonly_prop
@@ -161,6 +173,10 @@ and element = object
 
   method tagName : js_string t readonly_prop
 
+  method localName : js_string t readonly_prop
+
+  method prefix : js_string t opt readonly_prop
+
   method getAttribute : js_string t -> js_string t opt meth
 
   method setAttribute : js_string t -> js_string t -> unit meth
@@ -168,6 +184,14 @@ and element = object
   method removeAttribute : js_string t -> unit meth
 
   method hasAttribute : js_string t -> bool t meth
+
+  method hasAttributes : bool t meth
+
+  method toggleAttribute : js_string t -> bool t meth
+
+  method toggleAttribute_force : js_string t -> bool t -> bool t meth
+
+  method getAttributeNames : js_string t js_array t meth
 
   method getAttributeNS : js_string t -> js_string t -> js_string t opt meth
 
@@ -187,10 +211,78 @@ and element = object
 
   method setAttributeNodeNS : attr t -> attr t opt meth
 
-  method getElementsByTagName : js_string t -> element nodeList t meth
+  method getElementsByTagName : js_string t -> element collection t meth
+
+  method getElementsByClassName : js_string t -> element collection t meth
+
+  method matches : js_string t -> bool t meth
 
   method attributes : attr namedNodeMap t readonly_prop
+
+  method children : element collection t readonly_prop
+
+  method firstElementChild : element t opt readonly_prop
+
+  method lastElementChild : element t opt readonly_prop
+
+  method childElementCount : int readonly_prop
+
+  method previousElementSibling : element t opt readonly_prop
+
+  method nextElementSibling : element t opt readonly_prop
+
+  method insertAdjacentHTML : js_string t -> js_string t -> unit meth
+
+  method insertAdjacentText : js_string t -> js_string t -> unit meth
+
+  method insertAdjacentElement : js_string t -> element t -> element t opt meth
 end
+
+and getRootNodeOptions = object
+  method composed : bool t writeonly_prop
+end
+
+let appendChild (p : #node t) (n : #node t) = ignore (p##appendChild (n :> node t))
+
+let removeChild (p : #node t) (n : #node t) = ignore (p##removeChild (n :> node t))
+
+let replaceChild (p : #node t) (n : #node t) (o : #node t) =
+  ignore (p##replaceChild (n :> node t) (o :> node t))
+
+let insertBefore (p : #node t) (n : #node t) (o : #node t opt) =
+  ignore (p##insertBefore (n :> node t) (o :> node t opt))
+
+type child_node = Unsafe.any
+
+let node (n : #node t) : child_node = Js.Unsafe.inject (n :> node t)
+
+let text (s : js_string t) : child_node = Js.Unsafe.inject s
+
+let apply_child_nodes elt meth children : unit =
+  Js.Unsafe.meth_call elt meth (Array.of_list children)
+
+let before (elt : #node t) children = apply_child_nodes elt "before" children
+
+let after (elt : #node t) children = apply_child_nodes elt "after" children
+
+let replaceWith (elt : #node t) children = apply_child_nodes elt "replaceWith" children
+
+let prepend (elt : #element t) children = apply_child_nodes elt "prepend" children
+
+let append (elt : #element t) children = apply_child_nodes elt "append" children
+
+let replaceChildren (elt : #element t) children =
+  apply_child_nodes elt "replaceChildren" children
+
+let remove (n : #node t) : unit = (Js.Unsafe.coerce n)##remove
+
+let getRootNode ?composed (n : #node t) =
+  match composed with
+  | None -> n##getRootNode
+  | Some v ->
+      let opts : getRootNodeOptions t = Js.Unsafe.obj [||] in
+      opts##.composed := v;
+      n##getRootNode_options opts
 
 class type characterData = object
   inherit node
@@ -216,10 +308,32 @@ class type text = characterData
 
 class type documentFragment = node
 
+class type documentType = object
+  inherit node
+
+  method name : js_string t readonly_prop
+
+  method publicId : js_string t readonly_prop
+
+  method systemId : js_string t readonly_prop
+end
+
 class type ['element] document = object
   inherit node
 
   method documentElement : 'element t readonly_prop
+
+  method doctype : documentType t opt readonly_prop
+
+  method _URL : js_string t readonly_prop
+
+  method documentURI : js_string t readonly_prop
+
+  method characterSet : js_string t readonly_prop
+
+  method contentType : js_string t readonly_prop
+
+  method compatMode : js_string t readonly_prop
 
   method createDocumentFragment : documentFragment t meth
 
@@ -235,7 +349,11 @@ class type ['element] document = object
 
   method getElementById : js_string t -> 'element t opt meth
 
-  method getElementsByTagName : js_string t -> 'element nodeList t meth
+  method getElementsByTagName : js_string t -> 'element collection t meth
+
+  method getElementsByTagNameNS : js_string t -> js_string t -> 'element collection t meth
+
+  method getElementsByClassName : js_string t -> 'element collection t meth
 
   method importNode : element t -> bool t -> 'element t meth
 
@@ -267,12 +385,20 @@ module CoerceTo = struct
     else Js.null
 
   let attr e : attr Js.t Js.opt = cast e ATTRIBUTE
+
+  let documentType e : documentType Js.t Js.opt = cast e DOCUMENT_TYPE
 end
 
 type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
 (** The type of event listener functions.  The first type parameter
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
+
+type event_phase =
+  | Phase_none
+  | Phase_capturing
+  | Phase_at_target
+  | Phase_bubbling
 
 class type ['a] event = object
   method _type : js_string t readonly_prop
@@ -281,7 +407,25 @@ class type ['a] event = object
 
   method currentTarget : 'a t opt readonly_prop
 
+  method eventPhase : event_phase readonly_prop
+
+  method bubbles : bool t readonly_prop
+
+  method cancelable : bool t readonly_prop
+
+  method defaultPrevented : bool t readonly_prop
+
+  method composed : bool t readonly_prop
+
+  method isTrusted : bool t readonly_prop
+
+  method timeStamp : number_t readonly_prop
+
   method preventDefault : unit meth
+
+  method stopPropagation : unit meth
+
+  method stopImmediatePropagation : unit meth
 
   (* Legacy methods *)
   method srcElement : 'a t opt readonly_prop

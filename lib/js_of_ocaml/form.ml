@@ -85,14 +85,6 @@ let get_select_val (elt : selectElement t) =
     else [ name, `String elt##.value ]
   else []
 
-class type file_input = object
-  inherit inputElement
-
-  method files : File.fileList t readonly_prop
-
-  method multiple : bool optdef readonly_prop
-end
-
 let get_input_val ?(get = false) (elt : inputElement t) =
   if have_content (elt :> submittableElement t)
   then
@@ -103,27 +95,25 @@ let get_input_val ?(get = false) (elt : inputElement t) =
         if to_bool elt##.checked then [ name, `String value ] else []
     | "submit" | "reset" -> []
     | "text" | "password" -> [ name, `String value ]
-    | "file" -> (
+    | "file" ->
         if get
         then [ name, `String value ]
         else
-          let elt : file_input t = Unsafe.coerce elt in
           let list = elt##.files in
           if list##.length = 0
           then [ name, `String (Js.string "") ]
+          else if not (Js.to_bool elt##.multiple)
+          then
+            match Opt.to_option (list##item 0) with
+            | None -> []
+            | Some file -> [ name, `File file ]
           else
-            match Optdef.to_option elt##.multiple with
-            | None | Some false -> (
-                match Opt.to_option (list##item 0) with
-                | None -> []
-                | Some file -> [ name, `File file ])
-            | Some true ->
-                filter_map
-                  (fun f ->
-                    match Opt.to_option f with
-                    | None -> None
-                    | Some file -> Some (name, `File file))
-                  (Array.to_list (Array.init list##.length (fun i -> list##item i))))
+            filter_map
+              (fun f ->
+                match Opt.to_option f with
+                | None -> None
+                | Some file -> Some (name, `File file))
+              (Array.to_list (Array.init list##.length (fun i -> list##item i)))
     | _ -> [ name, `String value ]
   else []
 

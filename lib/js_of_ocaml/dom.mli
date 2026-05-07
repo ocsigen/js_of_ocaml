@@ -34,6 +34,16 @@ class type ['node] nodeList = object
   method length : int readonly_prop
 end
 
+(** Specification of [HTMLCollection] objects.  Returned by
+    [Element.children], [getElementsByTagName],
+    [getElementsByClassName], etc.  Always live, contains only
+    elements, and adds a [namedItem] lookup. *)
+class type ['node] collection = object
+  inherit ['node] nodeList
+
+  method namedItem : js_string t -> 'node t opt meth
+end
+
 type nodeType =
   | OTHER
   (* Will not happen *)
@@ -84,6 +94,8 @@ class type node = object
 
   method parentNode : node t opt prop
 
+  method parentElement : element t opt readonly_prop
+
   method childNodes : node nodeList t prop
 
   method firstChild : node t opt prop
@@ -95,6 +107,8 @@ class type node = object
   method nextSibling : node t opt prop
 
   method namespaceURI : js_string t opt prop
+
+  method isConnected : bool t readonly_prop
 
   method insertBefore : node t -> node t opt -> node t meth
 
@@ -110,13 +124,25 @@ class type node = object
 
   method compareDocumentPosition : node t -> DocumentPosition.t meth
 
+  method contains : node t -> bool t meth
+
+  method getRootNode : node t meth
+
+  method getRootNode_options : getRootNodeOptions t -> node t meth
+
+  method isEqualNode : node t -> bool t meth
+
+  method isSameNode : node t -> bool t meth
+
+  method normalize : unit meth
+
   method lookupNamespaceURI : js_string t -> js_string t opt meth
 
   method lookupPrefix : js_string t -> js_string t opt meth
 end
 
 (** Specification of [Attr] objects. *)
-class type attr = object
+and attr = object
   inherit node
 
   method name : js_string t readonly_prop
@@ -147,6 +173,10 @@ and element = object
 
   method tagName : js_string t readonly_prop
 
+  method localName : js_string t readonly_prop
+
+  method prefix : js_string t opt readonly_prop
+
   method getAttribute : js_string t -> js_string t opt meth
 
   method setAttribute : js_string t -> js_string t -> unit meth
@@ -154,6 +184,14 @@ and element = object
   method removeAttribute : js_string t -> unit meth
 
   method hasAttribute : js_string t -> bool t meth
+
+  method hasAttributes : bool t meth
+
+  method toggleAttribute : js_string t -> bool t meth
+
+  method toggleAttribute_force : js_string t -> bool t -> bool t meth
+
+  method getAttributeNames : js_string t js_array t meth
 
   method getAttributeNS : js_string t -> js_string t -> js_string t opt meth
 
@@ -173,9 +211,35 @@ and element = object
 
   method setAttributeNodeNS : attr t -> attr t opt meth
 
-  method getElementsByTagName : js_string t -> element nodeList t meth
+  method getElementsByTagName : js_string t -> element collection t meth
+
+  method getElementsByClassName : js_string t -> element collection t meth
+
+  method matches : js_string t -> bool t meth
 
   method attributes : attr namedNodeMap t readonly_prop
+
+  method children : element collection t readonly_prop
+
+  method firstElementChild : element t opt readonly_prop
+
+  method lastElementChild : element t opt readonly_prop
+
+  method childElementCount : int readonly_prop
+
+  method previousElementSibling : element t opt readonly_prop
+
+  method nextElementSibling : element t opt readonly_prop
+
+  method insertAdjacentHTML : js_string t -> js_string t -> unit meth
+
+  method insertAdjacentText : js_string t -> js_string t -> unit meth
+
+  method insertAdjacentElement : js_string t -> element t -> element t opt meth
+end
+
+and getRootNodeOptions = object
+  method composed : bool t writeonly_prop
 end
 
 (** Specification of [CharacterData] objects. *)
@@ -206,11 +270,34 @@ class type text = characterData
 class type documentFragment = node
 (** Specification of [DocumentFragment] objects. *)
 
+(** Specification of [DocumentType] objects. *)
+class type documentType = object
+  inherit node
+
+  method name : js_string t readonly_prop
+
+  method publicId : js_string t readonly_prop
+
+  method systemId : js_string t readonly_prop
+end
+
 (** Specification of [Document] objects. *)
 class type ['element] document = object
   inherit node
 
   method documentElement : 'element t readonly_prop
+
+  method doctype : documentType t opt readonly_prop
+
+  method _URL : js_string t readonly_prop
+
+  method documentURI : js_string t readonly_prop
+
+  method characterSet : js_string t readonly_prop
+
+  method contentType : js_string t readonly_prop
+
+  method compatMode : js_string t readonly_prop
 
   method createDocumentFragment : documentFragment t meth
 
@@ -226,7 +313,11 @@ class type ['element] document = object
 
   method getElementById : js_string t -> 'element t opt meth
 
-  method getElementsByTagName : js_string t -> 'element nodeList t meth
+  method getElementsByTagName : js_string t -> 'element collection t meth
+
+  method getElementsByTagNameNS : js_string t -> js_string t -> 'element collection t meth
+
+  method getElementsByClassName : js_string t -> 'element collection t meth
 
   method importNode : element t -> bool t -> 'element t meth
 
@@ -260,6 +351,41 @@ val appendChild : #node t -> #node t -> unit
       but avoid the need of coercing the
       different objects to [node t]. *)
 
+type child_node
+(** The type of values accepted by DOM APIs that take either a node or a string. *)
+
+val node : #node t -> child_node
+(** Coerce a DOM node to a {!type-child_node}. *)
+
+val text : js_string t -> child_node
+(** Coerce a string to a {!type-child_node}. *)
+
+val before : #node t -> child_node list -> unit
+(** Call the JavaScript [before(...)] method on a DOM node. *)
+
+val after : #node t -> child_node list -> unit
+(** Call the JavaScript [after(...)] method on a DOM node. *)
+
+val replaceWith : #node t -> child_node list -> unit
+(** Call the JavaScript [replaceWith(...)] method on a DOM node. *)
+
+val prepend : #element t -> child_node list -> unit
+(** Call the JavaScript [prepend(...)] method on an element. *)
+
+val append : #element t -> child_node list -> unit
+(** Call the JavaScript [append(...)] method on an element. *)
+
+val replaceChildren : #element t -> child_node list -> unit
+(** Call the JavaScript [replaceChildren(...)] method on an element. *)
+
+val remove : #node t -> unit
+(** Call the JavaScript [remove()] method, removing the node from its
+    parent. *)
+
+val getRootNode : ?composed:bool t -> #node t -> node t
+(** Wrapper for [Node.getRootNode(options)] taking labeled arguments.
+    Pass [~composed:Js._true] to cross shadow-DOM boundaries. *)
+
 val list_of_nodeList : 'a nodeList t -> 'a t list
 
 type node_type =
@@ -276,6 +402,8 @@ module CoerceTo : sig
   val text : #node t -> text t opt
 
   val attr : #node t -> attr t opt
+
+  val documentType : #node t -> documentType t opt
 end
 
 (** {2 Events} *)
@@ -285,6 +413,12 @@ type (-'a, -'b) event_listener
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
 
+type event_phase =
+  | Phase_none
+  | Phase_capturing
+  | Phase_at_target
+  | Phase_bubbling
+
 class type ['a] event = object
   method _type : js_string t readonly_prop
 
@@ -292,7 +426,25 @@ class type ['a] event = object
 
   method currentTarget : 'a t opt readonly_prop
 
+  method eventPhase : event_phase readonly_prop
+
+  method bubbles : bool t readonly_prop
+
+  method cancelable : bool t readonly_prop
+
+  method defaultPrevented : bool t readonly_prop
+
+  method composed : bool t readonly_prop
+
+  method isTrusted : bool t readonly_prop
+
+  method timeStamp : number_t readonly_prop
+
   method preventDefault : unit meth
+
+  method stopPropagation : unit meth
+
+  method stopImmediatePropagation : unit meth
 
   (* Legacy methods *)
   method srcElement : 'a t opt readonly_prop
