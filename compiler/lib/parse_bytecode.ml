@@ -945,6 +945,41 @@ let string_of_addr debug_data addr =
 
 let is_immutable _instr _infos _pc = (* We don't know yet *) Maybe_mutable
 
+(* Decode the operands of the RESUME / RESUMETERM bytecode instructions.
+   In OxCaml, %resume takes a continuation directly: [accu] holds the
+   continuation, and the bytecode interpreter is responsible for unpacking it
+   into a stack pointer and a [last_fiber]. We mimic that unpacking at the
+   IR level so that the rest of the pipeline keeps working with the
+   four-argument [%resume stack f arg tail] primitive. *)
+let read_resume_args state =
+  let cont = State.accu state in
+  let func = State.peek 0 state in
+  let arg = State.peek 1 state in
+  let state = State.pop 2 state in
+  let last = Var.fresh_n "last" in
+  let stack = Var.fresh_n "stack" in
+  let prelude =
+    [ Let (last, Field (cont, 1, Non_float))
+    ; Let (stack, Prim (Extern "caml_continuation_use_noexc", [ Pv cont ]))
+    ]
+  in
+  state, prelude, stack, func, arg, Pv last
+[@@if oxcaml]
+
+let read_resume_args state =
+  let stack = State.accu state in
+  let func = State.peek 0 state in
+  let arg = State.peek 1 state in
+  let state, tail =
+    match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
+    | true -> State.pop 2 state, Pc (Int (Targetint.of_int_exn 0))
+    | false ->
+        let tail = State.peek 2 state in
+        State.pop 3 state, Pv tail
+  in
+  state, [], stack, func, arg, tail
+[@@if not oxcaml]
+
 let rec compile_block blocks joins debug_data code pc state : unit =
   match Addr.Map.find_opt pc !tagged_blocks with
   | Some old_state -> (
@@ -2512,9 +2547,7 @@ and compile infos pc state (instrs : instr list) =
           :: instrs)
     | STOP -> instrs, Stop, state
     | RESUME ->
-        let stack = State.accu state in
-        let func = State.peek 0 state in
-        let arg = State.peek 1 state in
+        let state, prelude, stack, func, arg, tail = read_resume_args state in
         let x, state = State.fresh_var state in
         if debug_parser ()
         then
@@ -2528,30 +2561,15 @@ and compile infos pc state (instrs : instr list) =
             func
             Var.print
             arg;
-        let state, tail =
-          match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
-          | true -> State.pop 2 state, Pc (Int (Targetint.of_int_exn 0))
-          | false ->
-              let tail = State.peek 2 state in
-              State.pop 3 state, Pv tail
-        in
         compile
           infos
           (pc + 1)
           state
-          (Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg; tail ])) :: instrs)
+          (Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg; tail ]))
+          :: List.rev_append prelude instrs)
     | RESUMETERM ->
-        let stack = State.accu state in
-        let func = State.peek 0 state in
-        let arg = State.peek 1 state in
+        let state, prelude, stack, func, arg, tail = read_resume_args state in
         let x, state = State.fresh_var state in
-        let tail =
-          match Ocaml_version.compare Ocaml_version.current [ 5; 2 ] < 0 with
-          | true -> Pc (Int (Targetint.of_int_exn 0))
-          | false ->
-              let tail = State.peek 2 state in
-              Pv tail
-        in
         if debug_parser ()
         then
           Format.printf
@@ -2562,7 +2580,8 @@ and compile infos pc state (instrs : instr list) =
             func
             Var.print
             arg;
-        ( Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg; tail ])) :: instrs
+        ( Let (x, Prim (Extern "%resume", [ Pv stack; Pv func; Pv arg; tail ]))
+          :: List.rev_append prelude instrs
         , Return x
         , state )
     | PERFORM ->
@@ -2588,6 +2607,81 @@ and compile infos pc state (instrs : instr list) =
         ( Let (x, Prim (Extern "%reperform", [ Pv eff; Pv stack; Pv tail ])) :: instrs
         , Return x
         , state )
+    | WITH_STACK ->
+        let valuec = State.accu state in
+        let exnc = State.peek 0 state in
+        let effc = State.peek 1 state in
+        let f = State.peek 2 state in
+        let arg = State.peek 3 state in
+        let state = State.pop 4 state in
+        let x, state = State.fresh_var state in
+
+        if debug_parser ()
+        then
+          Format.printf
+            "%a = with_stack(%a, %a, %a, %a, %a)@."
+            Var.print
+            x
+            Var.print
+            valuec
+            Var.print
+            exnc
+            Var.print
+            effc
+            Var.print
+            f
+            Var.print
+            arg;
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             ( x
+             , Prim (Extern "%with_stack", [ Pv valuec; Pv exnc; Pv effc; Pv f; Pv arg ])
+             )
+          :: instrs)
+    | WITH_STACK_BIND ->
+        let valuec = State.accu state in
+        let exnc = State.peek 0 state in
+        let effc = State.peek 1 state in
+        let dyn = State.peek 2 state in
+        let bind = State.peek 3 state in
+        let f = State.peek 4 state in
+        let arg = State.peek 5 state in
+        let state = State.pop 6 state in
+        let x, state = State.fresh_var state in
+
+        if debug_parser ()
+        then
+          Format.printf
+            "%a = with_stack_bind(%a, %a, %a, %a, %a, %a, %a)@."
+            Var.print
+            x
+            Var.print
+            valuec
+            Var.print
+            exnc
+            Var.print
+            effc
+            Var.print
+            dyn
+            Var.print
+            bind
+            Var.print
+            f
+            Var.print
+            arg;
+        compile
+          infos
+          (pc + 1)
+          state
+          (Let
+             ( x
+             , Prim
+                 ( Extern "%with_stack_bind"
+                 , [ Pv valuec; Pv exnc; Pv effc; Pv dyn; Pv bind; Pv f; Pv arg ] ) )
+          :: instrs)
     | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
 (****)
@@ -3010,10 +3104,9 @@ module Reloc = struct
     }
 
   let constant_of_const x = Ocaml_compiler.constant_of_const x
-  [@@if oxcaml || ocaml_version < (5, 1, 0)]
+  [@@if ocaml_version < (5, 1, 0)]
 
-  let constant_of_const x = Constants.parse x
-  [@@if (not oxcaml) && ocaml_version >= (5, 1, 0)]
+  let constant_of_const x = Constants.parse x [@@if ocaml_version >= (5, 1, 0)]
 
   (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =

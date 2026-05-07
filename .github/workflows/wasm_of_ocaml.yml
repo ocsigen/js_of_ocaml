@@ -13,7 +13,7 @@ jobs:
   build:
     env:
       WASM_OF_OCAML: true
-      OXCAML_OPAM_REPO_REF: 5ac45e334a1d6b43d70ba5ad4bd58092f9796e2a
+      OXCAML_OPAM_REPO_REF: 231c88c2e564fdca40e15e750aacad5fb0887435
 
     strategy:
       fail-fast: false
@@ -135,10 +135,19 @@ jobs:
 
       - name: Pin specific packages for OxCaml
         run: |
-          opam pin add --with-version 1.0.3+ox -n https://github.com/vouillon/uutf.git#oxcaml
-          opam pin add -n zarith 1.12+ox
-          opam pin add -n lwt 6.0.0+ox
+          opam pin add --with-version 2.5.0+ox -n opam-core https://github.com/vouillon/opam.git#oxcaml-31
+          opam pin add gen_js_api -n 1.1.2+ox
+          opam pin add zarith -n 1.14+ox
+          opam pin add sedlex -n 3.6+ox
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
+
+      # Add some packaged to the opam invariant;
+      # opam makes wrong choices otherwise
+      - name: Hold some packages
+        if: ${{ matrix.jane_street_tests && endsWith(matrix.ocaml-compiler, '+ox') }}
+        run: |
+          opam install gen_js_api zarith opam-format
+          opam switch set-invariant --formula '["ocaml-variants" {= "5.2.0+ox"} "zarith" "gen_js_api" "opam-format"]'
 
       - name: Checkout Jane Street packages
         if: matrix.jane_street_tests

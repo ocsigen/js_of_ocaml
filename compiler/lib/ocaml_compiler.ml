@@ -104,6 +104,10 @@ let rec is_module_in_summary deep ident' summary =
       if Ident.same ident ident'
       then deep, Not_module
       else is_module_in_summary (deep + 1) ident' summary
+  | ((Env.Env_jkind (summary, ident, _)) [@if oxcaml]) ->
+      if Ident.same ident ident'
+      then deep, Not_module
+      else is_module_in_summary (deep + 1) ident' summary
   (* Lowercase ident *)
   | Env.Env_type (summary, ident, _)
   | Env.Env_class (summary, ident, _)
@@ -292,7 +296,7 @@ module Symtable = struct
     let get i = Char.code (Bytes.get buf i) in
     let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
     n
-  [@@if oxcaml || ocaml_version < (5, 2, 0)]
+  [@@if ocaml_version < (5, 2, 0)]
 
   let reloc_ident name =
     let buf = Bigarray.(Array1.create char c_layout 4) in
@@ -304,7 +308,7 @@ module Symtable = struct
     let get i = Char.code (Bigarray.Array1.get buf i) in
     let n = get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24) in
     n
-  [@@if (not oxcaml) && ocaml_version >= (5, 2, 0)]
+  [@@if ocaml_version >= (5, 2, 0)]
 
   let current_state () : GlobalMap.t =
     let x : Symtable.global_map = Symtable.current_state () in

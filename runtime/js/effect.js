@@ -266,6 +266,19 @@ function caml_continuation_use_and_update_handler_noexc(
   return stack;
 }
 
+//Provides: caml_continuation_update_handler_noexc
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_continuation_update_handler_noexc(cont, hval, hexn, heff) {
+  var stack = cont[1];
+  if (stack === 0) return cont;
+  var last = cont[2];
+  last.h[1] = hval;
+  last.h[2] = hexn;
+  last.h[3] = heff;
+  return cont;
+}
+
 //Provides: caml_get_continuation_callstack
 //Version: >= 5.0
 function caml_get_continuation_callstack() {
