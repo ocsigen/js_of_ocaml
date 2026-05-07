@@ -419,9 +419,15 @@ let build_cfg stmts candidates param_vars =
      - [exit] is the node id of the statement following the current one.
      - [context] contains the targets for break and continue statements.
 
-     The function returns the node id of the first statement of the visited block
-     (which acts as the entry point for that block). *)
-  let rec visit_stmt ?(labels = []) context exit stmt =
+     Statements that own a break/continue context (iteration statements and
+     [switch]) are visited through [visit_owning_stmt], which takes a [labels]
+     list to associate with the new context entry. All other statements go
+     through [visit_stmt], which has no [labels] parameter — so we cannot
+     accidentally drop labels for a statement that needs them.
+
+     Both functions return the node id of the first statement of the visited
+     block (which acts as the entry point for that block). *)
+  let rec visit_stmt context exit stmt =
     match stmt with
     | Block stmts -> visit_stmts context exit stmts
     | Expression_statement e ->
@@ -440,26 +446,13 @@ let build_cfg stmts candidates param_vars =
         let then_entry = visit_stmt context exit then_s in
         let u_cond, _ = expr_use_def cond in
         add_node (Use u_cond) [ then_entry; else_entry ]
-    | While_statement (cond, (body, _)) ->
-        let loop_check = reserve_id () in
-        let context =
-          { labels; break = exit; continue = Some loop_check; iter_or_switch = true }
-          :: context
-        in
-        let body_entry = visit_stmt context loop_check body in
-        let u_cond, _ = expr_use_def cond in
-        set_node loop_check (Use u_cond) [ body_entry; exit ];
-        loop_check
-    | Do_while_statement ((body, _), cond) ->
-        let loop_check = reserve_id () in
-        let u_cond, _ = expr_use_def cond in
-        let context' =
-          { labels; break = exit; continue = Some loop_check; iter_or_switch = true }
-          :: context
-        in
-        let body_entry = visit_stmt context' loop_check body in
-        set_node loop_check (Use u_cond) [ body_entry; exit ];
-        body_entry
+    | While_statement _
+    | Do_while_statement _
+    | Switch_statement _
+    | ForIn_statement _
+    | ForOf_statement _
+    | ForAwaitOf_statement _
+    | For_statement _ -> visit_owning_stmt [] context exit stmt
     | Break_statement label -> find_break label context
     | Continue_statement label -> find_continue label context
     | Variable_statement (_kind, decls) ->
@@ -483,39 +476,6 @@ let build_cfg stmts candidates param_vars =
     | Throw_statement e ->
         let u, _ = expr_use_def e in
         add_node (Use u) []
-    | Switch_statement (cond, pre_cases, def_opt, post_cases) ->
-        let context =
-          { labels; break = exit; continue = None; iter_or_switch = true } :: context
-        in
-        let process_body (_, stmts) (next_body, entries) =
-          let next_body = visit_stmts context next_body stmts in
-          next_body, next_body :: entries
-        in
-        let next_body, post_bodies =
-          List.fold_right ~f:process_body post_cases ~init:(exit, [])
-        in
-        let next_body, default_body =
-          match def_opt with
-          | Some stmts ->
-              let entry = visit_stmts context next_body stmts in
-              entry, entry
-          | None -> next_body, exit
-        in
-        let _, pre_bodies =
-          List.fold_right ~f:process_body pre_cases ~init:(next_body, [])
-        in
-        let process_case (e, _) body_entry next_case =
-          let u, _ = expr_use_def e in
-          add_node (Use u) [ body_entry; next_case ]
-        in
-        let next_case =
-          List.fold_right2 ~f:process_case post_cases post_bodies ~init:default_body
-        in
-        let first_case =
-          List.fold_right2 ~f:process_case pre_cases pre_bodies ~init:next_case
-        in
-        let u_cond, _ = expr_use_def cond in
-        add_node (Use u_cond) [ first_case ]
     | Try_statement (body, catch, finally) ->
         let finally_entry =
           match finally with
@@ -549,6 +509,88 @@ let build_cfg stmts candidates param_vars =
         if Option.is_some finally
         then Int.Hashtbl.replace builder.tries finally_entry body_entry;
         add_node Nop [ body_entry; catch_entry; finally_entry ]
+    | Labelled_statement (label, (stmt, _)) ->
+        (* Collect all labels for chained labelled statements *)
+        let rec collect_labels acc s =
+          match s with
+          | Labelled_statement (l, (inner, _)) -> collect_labels (l :: acc) inner
+          | _ -> List.rev acc, s
+        in
+        let all_labels, inner_stmt = collect_labels [ label ] stmt in
+        if has_own_context inner_stmt
+        then visit_owning_stmt all_labels context exit inner_stmt
+        else
+          let context =
+            { labels = all_labels; break = exit; continue = None; iter_or_switch = false }
+            :: context
+          in
+          visit_stmt context exit inner_stmt
+    | Empty_statement | Debugger_statement -> exit
+    | Function_declaration (_, _) | Class_declaration (_, _) -> exit
+    | With_statement (e, (body, _)) ->
+        let body_entry = visit_stmt context exit body in
+        let u, _ = expr_use_def e in
+        add_node (Use u) [ body_entry ]
+    | Import (_, _) | Export (_, _) -> exit
+  (* Visits a statement that owns its own break/continue context: iteration
+     statements ([while]/[do-while]/[for]/[for-in]/[for-of]/[for-await-of])
+     and [switch]. [labels] are the labels (possibly empty) under which this
+     statement appears, and become part of the new context entry. *)
+  and visit_owning_stmt labels context exit stmt =
+    match stmt with
+    | While_statement (cond, (body, _)) ->
+        let loop_check = reserve_id () in
+        let context =
+          { labels; break = exit; continue = Some loop_check; iter_or_switch = true }
+          :: context
+        in
+        let body_entry = visit_stmt context loop_check body in
+        let u_cond, _ = expr_use_def cond in
+        set_node loop_check (Use u_cond) [ body_entry; exit ];
+        loop_check
+    | Do_while_statement ((body, _), cond) ->
+        let loop_check = reserve_id () in
+        let u_cond, _ = expr_use_def cond in
+        let context' =
+          { labels; break = exit; continue = Some loop_check; iter_or_switch = true }
+          :: context
+        in
+        let body_entry = visit_stmt context' loop_check body in
+        set_node loop_check (Use u_cond) [ body_entry; exit ];
+        body_entry
+    | Switch_statement (cond, pre_cases, def_opt, post_cases) ->
+        let context =
+          { labels; break = exit; continue = None; iter_or_switch = true } :: context
+        in
+        let process_body (_, stmts) (next_body, entries) =
+          let next_body = visit_stmts context next_body stmts in
+          next_body, next_body :: entries
+        in
+        let next_body, post_bodies =
+          List.fold_right ~f:process_body post_cases ~init:(exit, [])
+        in
+        let next_body, default_body =
+          match def_opt with
+          | Some stmts ->
+              let entry = visit_stmts context next_body stmts in
+              entry, entry
+          | None -> next_body, exit
+        in
+        let _, pre_bodies =
+          List.fold_right ~f:process_body pre_cases ~init:(next_body, [])
+        in
+        let process_case (e, _) body_entry next_case =
+          let u, _ = expr_use_def e in
+          add_node (Use u) [ body_entry; next_case ]
+        in
+        let next_case =
+          List.fold_right2 ~f:process_case post_cases post_bodies ~init:default_body
+        in
+        let first_case =
+          List.fold_right2 ~f:process_case pre_cases pre_bodies ~init:next_case
+        in
+        let u_cond, _ = expr_use_def cond in
+        add_node (Use u_cond) [ first_case ]
     | ForIn_statement (left, right, (body, _))
     | ForOf_statement (left, right, (body, _))
     | ForAwaitOf_statement (left, right, (body, _)) ->
@@ -607,29 +649,23 @@ let build_cfg stmts candidates param_vars =
                 let u, d = decl_use_def decl in
                 add_node (DefUse (d, u)) [ next ])
         | Right ((Let | Const | Using | AwaitUsing), _) | Left None -> loop_check)
-    | Labelled_statement (label, (stmt, _)) ->
-        (* Collect all labels for chained labelled statements *)
-        let rec collect_labels acc s =
-          match s with
-          | Labelled_statement (l, (inner, _)) -> collect_labels (l :: acc) inner
-          | _ -> List.rev acc, s
-        in
-        let all_labels, inner_stmt = collect_labels [ label ] stmt in
-        if has_own_context inner_stmt
-        then visit_stmt ~labels:(labels @ all_labels) context exit inner_stmt
-        else
-          let context =
-            { labels = all_labels; break = exit; continue = None; iter_or_switch = false }
-            :: context
-          in
-          visit_stmt context exit inner_stmt
-    | Empty_statement | Debugger_statement -> exit
-    | Function_declaration (_, _) | Class_declaration (_, _) -> exit
-    | With_statement (e, (body, _)) ->
-        let body_entry = visit_stmt context exit body in
-        let u, _ = expr_use_def e in
-        add_node (Use u) [ body_entry ]
-    | Import (_, _) | Export (_, _) -> exit
+    | Block _
+    | Expression_statement _
+    | If_statement _
+    | Break_statement _
+    | Continue_statement _
+    | Variable_statement _
+    | Return_statement _
+    | Throw_statement _
+    | Try_statement _
+    | Labelled_statement _
+    | Empty_statement
+    | Debugger_statement
+    | Function_declaration _
+    | Class_declaration _
+    | With_statement _
+    | Import _
+    | Export _ -> assert false
   and visit_stmts context exit stmts =
     List.fold_left (List.rev stmts) ~init:exit ~f:(fun next (s, _) ->
         visit_stmt context next s)
