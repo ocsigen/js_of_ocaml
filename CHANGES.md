@@ -10,6 +10,10 @@
 * Compiler: improved shape computation (#2198)
 * Add the --build-config and --apply-build-config flags (#2177)
 * Runtime/wasm: optimized some bigstring primitives (#2144)
+* Runtime: run on QuickJS-NG — fall back to `std.getenviron()` for
+  environment variables, the `unix_error` code table for `strerror`,
+  a built-in UTF-8 codec when `TextEncoder`/`TextDecoder` are absent,
+  and `std.out.puts` for byte-faithful console writes
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
@@ -25,6 +29,9 @@
   whole-program builds emit reversed `Filename.concat` operands and
   silently broke `Filename.temp_file`
 * Runtime/wasm: fix string conversion from JS to OCaml (#2230)
+* Lib: defer `Intl.{Collator,DateTimeFormat,...}` member lookups so the
+  `Intl` module no longer throws at load time on hosts where
+  `globalThis.Intl` is undefined
 
 
 # 6.3.2 (2026-02-15) - Lille
