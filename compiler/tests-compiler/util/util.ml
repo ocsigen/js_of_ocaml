@@ -236,14 +236,31 @@ let run_javascript file =
     ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
     ()
 
+(* QuickJS has no [--check] equivalent; under that profile, skip the
+   parse-only validation entirely rather than emulating it. *)
+let check_supported =
+  match Sys.getenv_opt "JSOO_TEST_ENGINE" with
+  | Some "quickjs" -> false
+  | _ -> true
+
 let check_javascript file =
-  exec_to_string_exn
-    ~fail:false
-    ~cmd:(Format.sprintf "%s --check %s" node (Filetype.path_of_js_file file))
-    ()
+  if check_supported
+  then
+    exec_to_string_exn
+      ~fail:false
+      ~cmd:(Format.sprintf "%s --check %s" node (Filetype.path_of_js_file file))
+      ()
+  else ""
 
 let check_javascript_source source =
-  exec_to_string_exn ~input:source ~fail:false ~cmd:(Format.sprintf "%s --check" node) ()
+  if check_supported
+  then
+    exec_to_string_exn
+      ~input:source
+      ~fail:false
+      ~cmd:(Format.sprintf "%s --check" node)
+      ()
+  else ""
 
 let run_bytecode file =
   exec_to_string_exn
