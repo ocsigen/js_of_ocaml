@@ -56,7 +56,7 @@ let of_cmo (cmo : Ocaml_compiler.Cmo_format.t) =
   let requires = Global_name.Compunit_set.diff requires provides in
   let effects_without_cps =
     (match Config.effects () with
-      | `Disabled | `Jspi -> true
+      | `Disabled | `Jspi | `Native -> true
       | `Cps | `Double_translation -> false)
     && List.exists (Cmo_format.primitives cmo) ~f:(function
       | "%resume" | "%reperform" | "%perform" -> true

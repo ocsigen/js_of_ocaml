@@ -18,7 +18,13 @@
 (module
    (import "stdlib" "caml_global_data"
       (global $caml_global_data (mut (ref $block))))
+(@if wasi
+(@then
+   (tag $javascript_exception (param externref))
+)
+(@else
    (import "bindings" "jstag" (tag $javascript_exception (param externref)))
+))
 
    (type $block (array (mut (ref eq))))
    (type $bytes (array (mut i8)))

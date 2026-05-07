@@ -10,6 +10,8 @@
 * Compiler: improved shape computation (#2198)
 * Add the --build-config and --apply-build-config flags (#2177)
 * Runtime/wasm: optimized some bigstring primitives (#2144)
+* Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
+* Compiler/wasm: WASI 0.1 support (#1831)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)

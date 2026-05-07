@@ -41,12 +41,14 @@ let string_of_effects_backend : Config.effects_backend -> string = function
   | `Cps -> "cps"
   | `Double_translation -> "double-translation"
   | `Jspi -> "jspi"
+  | `Native -> "native"
 
 let effects_backend_of_string = function
   | "disabled" -> `Disabled
   | "cps" -> `Cps
   | "double-translation" -> `Double_translation
   | "jspi" -> `Jspi
+  | "native" -> `Native
   | _ -> invalid_arg "effects_backend_of_string"
 
 type config_key =
@@ -73,7 +75,7 @@ let config_keys target =
         ( [ "disabled"; "cps"; "double-translation" ]
         , fun () -> string_of_effects_backend (Config.effects ()) )
     | `Wasm ->
-        ( [ "disabled"; "cps"; "jspi" ]
+        ( [ "disabled"; "cps"; "jspi"; "native" ]
         , fun () -> string_of_effects_backend (Config.effects ()) )
   in
   [ Enum_key
@@ -90,6 +92,11 @@ let config_keys target =
   ; Bool_key
       { name = "toplevel"; get = Config.Flag.toplevel; set = Config.Flag.set "toplevel" }
   ]
+  @
+  match target with
+  | `Wasm ->
+      [ Bool_key { name = "wasi"; get = Config.Flag.wasi; set = Config.Flag.set "wasi" } ]
+  | `JavaScript -> []
 
 let config_key_values = function
   | Bool_key _ -> [ "true"; "false" ]

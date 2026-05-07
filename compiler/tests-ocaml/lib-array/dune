@@ -15,7 +15,12 @@
 
 (rule
  (target test_array_wasm.ml.corrected)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} wasi)))
+ (deps
+  (glob_files ../expect_wasm.bc.wasm.assets/*))
  (action
   (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_array_wasm.ml})))
 
@@ -24,6 +29,7 @@
  (enabled_if
   (and
    (>= %{ocaml_version} 5.2)
+   (<> %{profile} wasi)
    %{env:WASM_OF_OCAML=false}))
  (action
   (diff test_array.ml test_array_wasm.ml.corrected)))
