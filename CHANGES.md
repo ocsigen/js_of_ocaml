@@ -10,6 +10,7 @@
 * Compiler: improved shape computation (#2198)
 * Add the --build-config and --apply-build-config flags (#2177)
 * Runtime/wasm: optimized some bigstring primitives (#2144)
+* Put more values into global variables (#2211)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
