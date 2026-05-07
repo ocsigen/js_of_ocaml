@@ -415,18 +415,22 @@ class MlFakeFd_out extends MlFakeFile {
     };
     // Prefer a byte-faithful sink when available (e.g. QuickJS's
     // `std.out.puts` / `std.err.puts`), otherwise fall back to
-    // `console.log` / `console.error`. The console.* path is lossy for
-    // partial writes because it appends a newline per call -- the
-    // [write] method below strips at most one trailing \n to mitigate.
+    // `console.log` / `console.error`. The console.* sinks always
+    // append a newline, so wrap them to swallow at most one trailing
+    // \n -- otherwise OCaml's own newline doubles up.
     var std = globalThis.std;
+    var via_console = (sink) => (s) =>
+      sink(
+        s.length > 0 && s.charCodeAt(s.length - 1) === 10 ? s.slice(0, -1) : s,
+      );
     if (fd === 1 && std?.out?.puts) this.log = (s) => std.out.puts(s);
     else if (fd === 2 && std?.err?.puts) this.log = (s) => std.err.puts(s);
     else if (fd === 1 && typeof console.log === "function")
-      this.log = console.log;
+      this.log = via_console(console.log);
     else if (fd === 2 && typeof console.error === "function")
-      this.log = console.error;
-    else if (typeof console.log === "function") this.log = console.log;
-    this.console = !std?.out?.puts;
+      this.log = via_console(console.error);
+    else if (typeof console.log === "function")
+      this.log = via_console(console.log);
     this.flags = flags;
   }
 
@@ -444,24 +448,11 @@ class MlFakeFd_out extends MlFakeFile {
   }
 
   write(buf, pos, len, raise_unix) {
-    var written = len;
     if (this.log) {
-      if (
-        this.console &&
-        len > 0 &&
-        pos >= 0 &&
-        pos + len <= buf.length &&
-        buf[pos + len - 1] === 10
-      )
-        len--;
-      // When the sink is `console.log`/`console.error`, swallow the
-      // last \n because the console always appends one. When it's a
-      // byte-faithful sink (e.g. `std.out.puts`), pass the buffer
-      // through unchanged.
       var src = caml_create_bytes(len);
       caml_blit_bytes(caml_bytes_of_uint8_array(buf), pos, src, 0, len);
       this.log(src.toUtf16());
-      return written;
+      return len;
     }
     caml_raise_system_error(
       raise_unix,
