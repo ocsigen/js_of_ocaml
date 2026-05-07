@@ -1472,14 +1472,8 @@ and clientRectList = object
   method item : int -> clientRect t opt meth
 end
 
-(** Collection of HTML elements *)
-class type ['node] collection = object
-  method length : int readonly_prop
-
-  method item : int -> 'node t opt meth
-
-  method namedItem : js_string t -> 'node t opt meth
-end
+class type ['node] collection = ['node] Dom.collection
+(** Collection of HTML elements. Alias for {!Dom.collection}. *)
 
 class type htmlElement = element
 
@@ -3117,7 +3111,7 @@ class type document = object
 
   method readyState : js_string t readonly_prop
 
-  method getElementsByClassName : js_string t -> element Dom.nodeList t meth
+  method getElementsByClassName : js_string t -> element Dom.collection t meth
 
   method getElementsByName : js_string t -> element Dom.nodeList t meth
 

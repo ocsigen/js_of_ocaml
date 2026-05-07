@@ -27,6 +27,12 @@ class type ['node] nodeList = object
   method length : int readonly_prop
 end
 
+class type ['node] collection = object
+  inherit ['node] nodeList
+
+  method namedItem : js_string t -> 'node t opt meth
+end
+
 let list_of_nodeList (nodeList : 'a nodeList t) =
   let length = nodeList##.length in
   let rec add_item acc i =
@@ -205,15 +211,15 @@ and element = object
 
   method setAttributeNodeNS : attr t -> attr t opt meth
 
-  method getElementsByTagName : js_string t -> element nodeList t meth
+  method getElementsByTagName : js_string t -> element collection t meth
 
-  method getElementsByClassName : js_string t -> element nodeList t meth
+  method getElementsByClassName : js_string t -> element collection t meth
 
   method matches : js_string t -> bool t meth
 
   method attributes : attr namedNodeMap t readonly_prop
 
-  method children : element nodeList t readonly_prop
+  method children : element collection t readonly_prop
 
   method firstElementChild : element t opt readonly_prop
 
@@ -343,11 +349,11 @@ class type ['element] document = object
 
   method getElementById : js_string t -> 'element t opt meth
 
-  method getElementsByTagName : js_string t -> 'element nodeList t meth
+  method getElementsByTagName : js_string t -> 'element collection t meth
 
-  method getElementsByTagNameNS : js_string t -> js_string t -> 'element nodeList t meth
+  method getElementsByTagNameNS : js_string t -> js_string t -> 'element collection t meth
 
-  method getElementsByClassName : js_string t -> 'element nodeList t meth
+  method getElementsByClassName : js_string t -> 'element collection t meth
 
   method importNode : element t -> bool t -> 'element t meth
 
