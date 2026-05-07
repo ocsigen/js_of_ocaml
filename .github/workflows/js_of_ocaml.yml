@@ -187,6 +187,12 @@ jobs:
       - run: opam exec -- make tests
         if: ${{ !matrix.skip-test }}
 
+      - name: Run Babel downleveling test
+        if: ${{ !matrix.skip-test && runner.os == 'Linux' }}
+        run: |
+          npm install
+          opam exec -- make test-babel-downlevel
+
       - run: opam exec -- dune build @all @runtest @runtest-js --profile with-effects
         if: ${{ !matrix.skip-effects }}
 

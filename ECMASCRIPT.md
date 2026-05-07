@@ -35,6 +35,11 @@ Features are grouped by ECMAScript version.
 
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/assign#browser_compatibility)
 
+### Promise
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise#browser_compatibility)
+- For Wasm_of_ocaml
+
 ### Rest parameters
 
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/rest_parameters#browser_compatibility)
@@ -46,6 +51,10 @@ Features are grouped by ECMAScript version.
 ### Spread syntax (in function call)
 
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax#browser_compatibility)
+
+### Template literals
+
+- [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Template_literals#browser_compatibility)
 
 ### TypedArray
 
@@ -60,7 +69,7 @@ Features are grouped by ECMAScript version.
 
 - [Compatibility](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/DataView#browser_compatibility)
 
-## ECMAScript 2016
+## ECMAScript 2017
 
 ### async function
 

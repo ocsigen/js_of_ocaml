@@ -56,3 +56,7 @@ toplevel/examples/lwt_toplevel_bin/toplevel.js
 toplevel/examples/lwt_toplevel_bin/eval.js
 
 janestreet
+
+# npm (for the Babel downleveling test)
+node_modules
+package-lock.json
