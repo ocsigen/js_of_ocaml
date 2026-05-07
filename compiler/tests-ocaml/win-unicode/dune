@@ -1,4 +1,9 @@
+; mltest calls Unix.lstat on a directory tree; caml_unix_lstat_64 is
+; not implemented under the QuickJS runtime.
+
 (tests
  (names mltest)
+ (enabled_if
+  (<> %{profile} quickjs))
  (libraries ocaml_testing unix)
  (modes js wasm))
