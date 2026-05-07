@@ -13,6 +13,9 @@
   taku)
  (modes js wasm))
 
+; pr7168 segfaults qjs (deep recursion exhausts even the bumped engine
+; stack); the test was already gated to `js` only because wasm fails.
+
 (tests
  (names
   pr7168
@@ -29,4 +32,6 @@
   ;; --output-source-map
   ;; '/tmp/build_664e90_dune/Dune__exe__Pr7168164d5d.wasm.map'
   )
+ (enabled_if
+  (<> %{profile} quickjs))
  (modes js))

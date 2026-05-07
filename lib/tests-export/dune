@@ -49,8 +49,13 @@
  (name default)
  (deps a.js b.js a-iife.js index.html))
 
+; for-node.js loads modules via CommonJS-style relative-path
+; `require("./a.js")`, which the QuickJS shim does not implement.
+
 (rule
  (target for-node.actual)
+ (enabled_if
+  (<> %{profile} quickjs))
  (deps a.js b.js a-iife.js for-node.js)
  (action
   (with-outputs-to
@@ -59,5 +64,7 @@
 
 (rule
  (alias runtest-js)
+ (enabled_if
+  (<> %{profile} quickjs))
  (action
   (diff %{dep:for-node.expected} %{dep:for-node.actual})))

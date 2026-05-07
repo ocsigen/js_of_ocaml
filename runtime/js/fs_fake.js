@@ -413,10 +413,24 @@ class MlFakeFd_out extends MlFakeFile {
     this.log = function (_s) {
       return 0;
     };
-    if (fd === 1 && typeof console.log === "function") this.log = console.log;
+    // Prefer a byte-faithful sink when available (e.g. QuickJS's
+    // `std.out.puts` / `std.err.puts`), otherwise fall back to
+    // `console.log` / `console.error`. The console.* sinks always
+    // append a newline, so wrap them to swallow at most one trailing
+    // \n -- otherwise OCaml's own newline doubles up.
+    var std = globalThis.std;
+    var via_console = (sink) => (s) =>
+      sink(
+        s.length > 0 && s.charCodeAt(s.length - 1) === 10 ? s.slice(0, -1) : s,
+      );
+    if (fd === 1 && std?.out?.puts) this.log = (s) => std.out.puts(s);
+    else if (fd === 2 && std?.err?.puts) this.log = (s) => std.err.puts(s);
+    else if (fd === 1 && typeof console.log === "function")
+      this.log = via_console(console.log);
     else if (fd === 2 && typeof console.error === "function")
-      this.log = console.error;
-    else if (typeof console.log === "function") this.log = console.log;
+      this.log = via_console(console.error);
+    else if (typeof console.log === "function")
+      this.log = via_console(console.log);
     this.flags = flags;
   }
 
@@ -434,21 +448,11 @@ class MlFakeFd_out extends MlFakeFile {
   }
 
   write(buf, pos, len, raise_unix) {
-    var written = len;
     if (this.log) {
-      if (
-        len > 0 &&
-        pos >= 0 &&
-        pos + len <= buf.length &&
-        buf[pos + len - 1] === 10
-      )
-        len--;
-      // Do not output the last \n if present
-      // as console logging display a newline at the end
       var src = caml_create_bytes(len);
       caml_blit_bytes(caml_bytes_of_uint8_array(buf), pos, src, 0, len);
       this.log(src.toUtf16());
-      return written;
+      return len;
     }
     caml_raise_system_error(
       raise_unix,

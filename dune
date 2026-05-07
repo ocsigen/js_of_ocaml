@@ -46,6 +46,12 @@
   (binaries
    (tools/node_wrapper.exe as node)
    (tools/node_wrapper.exe as node.exe)))
+ (quickjs
+  (binaries
+   (tools/quickjs_wrapper.exe as node)
+   (tools/quickjs_wrapper.exe as node.exe))
+  (env-vars
+   (JSOO_TEST_ENGINE quickjs)))
  (_
   (binaries
    (tools/node_wrapper.exe as node)

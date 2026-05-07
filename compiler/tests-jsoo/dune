@@ -75,12 +75,28 @@
    test_parsing
    test_runtime_value
    test_custom_name
+   test_unix
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (foreign_stubs
   (language c)
   (names bigarray_stubs jsoo_runtime_stubs))
+ (inline_tests
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+; test_unix exercises [Unix.access] / [Unix.chmod] semantics that the
+; QuickJS shim only approximates, so it lives in its own library that's
+; disabled under the quickjs profile.
+
+(library
+ (name jsoo_testsuite_unix)
+ (enabled_if
+  (<> %{profile} quickjs))
+ (modules test_unix)
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
  (inline_tests
   (modes js wasm best))
  (preprocess

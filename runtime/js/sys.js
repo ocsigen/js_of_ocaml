@@ -34,6 +34,8 @@ function caml_sys_exit(code) {
   if (globalThis.quit) globalThis.quit(code);
   //nodejs
   if (globalThis.process?.exit) globalThis.process.exit(code);
+  //QuickJS (with --std)
+  if (globalThis.std?.exit) globalThis.std.exit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
@@ -120,6 +122,12 @@ function jsoo_sys_getenv(n) {
   //nodejs env
   if (process && process.env && process.env[n] !== undefined)
     return process.env[n];
+  //QuickJS: no `process`, but the host environment is reachable via `std`.
+  var std = globalThis.std;
+  if (std && typeof std.getenviron === "function") {
+    var v = std.getenviron()[n];
+    if (v !== undefined) return v;
+  }
   if (globalThis.jsoo_env && typeof globalThis.jsoo_env[n] === "string") {
     return globalThis.jsoo_env[n];
   }
@@ -165,6 +173,13 @@ var caml_argv = (function () {
     //nodejs
     main = argv[1];
     args = argv.slice(2);
+  } else if (
+    Array.isArray(globalThis.scriptArgs) &&
+    globalThis.scriptArgs.length > 0
+  ) {
+    //QuickJS: scriptArgs is [script, ...userArgs]
+    main = globalThis.scriptArgs[0];
+    args = globalThis.scriptArgs.slice(1);
   }
 
   var p = caml_string_of_jsstring(main);

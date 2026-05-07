@@ -31,6 +31,7 @@ let prefix : string =
 
 type lang =
   | Not of lang
+  | NEQ of lang * lang
   | GE of lang * lang
   | LT of lang * lang
   | Var of string
@@ -43,11 +44,15 @@ let arch_sixtyfour = Var "arch_sixtyfour"
 
 let oxcaml = Var "oxcaml_supported"
 
+let profile = Var "profile"
+
 let ge v = GE (ocaml_version, Atom v)
 
 let lt v = LT (ocaml_version, Atom v)
 
 let not x = Not x
+
+let not_quickjs = NEQ (profile, Atom "quickjs")
 
 let and_ = function
   | [] -> assert false
@@ -76,10 +81,24 @@ let test_enabled_if = function
   | "effects" ->
       [ not oxcaml ] (* Call to Printf.printf is somehow compiled differently *)
   | "gh747" -> [ not oxcaml ] (* More debug locations *)
+  | "error"
+  | "scopes"
+  | "unix_fs"
+  | "js_parser_printer"
+  | "sys_command"
+  | "sys_fs"
+  | "target_env" ->
+      (* Tests assert engine-specific output: jsoo's [caml_fatal_uncaught_exception]
+         only fires under Node (via process.on("uncaughtException")), and
+         [node --check] error messages differ from QuickJS's parser.
+         [sys_command]/[sys_fs]/[target_env] exercise the Node-backed
+         filesystem, which is unavailable under the QuickJS profile. *)
+      [ not_quickjs ]
   | _ -> []
 
 let rec pp f = function
   | Not x -> Format.fprintf f "(not %a)" pp x
+  | NEQ (a, b) -> Format.fprintf f "(<> %a %a)" pp a pp b
   | GE (a, b) -> Format.fprintf f "(>= %a %a)" pp a pp b
   | LT (a, b) -> Format.fprintf f "(< %a %a)" pp a pp b
   | Var x -> Format.fprintf f "%%{%s}" x

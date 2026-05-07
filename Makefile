@@ -7,6 +7,11 @@ tests:
 tests-wasm:
 	WASM_OF_OCAML=true dune build @runtest-wasm
 
+# Run the JS test suite using QuickJS-NG (`qjs`) in place of `node`.
+# Override the engine binary with JSOO_QUICKJS_BIN if `qjs` is not on PATH.
+tests-quickjs:
+	dune build @runtest @runtest-js --profile=quickjs
+
 # Validates the Babel downleveling recipe documented in
 # manual/browser-compat.wiki. Requires `npm install` at the repo root
 # for @babel/cli, @babel/preset-env, core-js, and es-check.
@@ -47,4 +52,4 @@ installdoc:
 bench:
 	$(MAKE) -C benchmarks bench
 
-.PHONY: all tests tests-wasm test runtest runtests doc clean installdoc bench
+.PHONY: all tests tests-wasm tests-quickjs test runtest runtests doc clean installdoc bench
