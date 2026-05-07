@@ -1,5 +1,12 @@
+; cat reads from stdin and md5 reads both file dependencies and stdin;
+; the QuickJS runtime fallback can't read piped stdin (EBADF) and has
+; no host-filesystem access for `(dep ...)` files (ENOENT under
+; /static/).
+
 (tests
  (names cat)
+ (enabled_if
+  (<> %{profile} quickjs))
  (modes js wasm)
  (action
   (pipe-stdout
@@ -20,6 +27,8 @@
 
 (tests
  (names md5)
+ (enabled_if
+  (<> %{profile} quickjs))
  (modes js wasm)
  (action
   (progn
@@ -76,8 +85,15 @@
   "accentué"
   (echo test)))
 
+; non_ascii_filenames opens "accentué" both via the in-program
+; --file embed and as a host file under cwd; QuickJS can read the
+; embed but can't reach the cwd-relative file, so the second probe
+; reports FAIL.
+
 (tests
  (names non_ascii_filenames)
+ (enabled_if
+  (<> %{profile} quickjs))
  (deps "accentué")
  (modes js)
  (js_of_ocaml

@@ -1,4 +1,10 @@
+; t01 prints regexes containing non-UTF-8 bytes (e.g. /^\xa1/). Node's
+; console.log writes the underlying byte buffer through; QuickJS's
+; std.out converts to UTF-8 first, replacing or duplicating the byte.
+
 (tests
  (names t01)
+ (enabled_if
+  (<> %{profile} quickjs))
  (libraries str)
  (modes js wasm))
