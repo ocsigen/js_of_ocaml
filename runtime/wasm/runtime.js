@@ -776,34 +776,49 @@
     }
     return { instance: { exports: Object.assign(imports.env, imports.OCaml) } };
   }
-  const wasmModule = await instantiateFromDir();
-
-  var {
-    caml_callback,
-    caml_alloc_times,
-    caml_alloc_tm,
-    caml_alloc_stat,
-    caml_start_fiber,
-    caml_handle_uncaught_exception,
-    caml_buffer,
-    caml_extract_bytes,
-    _initialize,
-  } = wasmModule.instance.exports;
-
-  var buffer = caml_buffer?.buffer;
-  var out_buffer = buffer && new Uint8Array(buffer, 0, buffer.length);
-
-  start_fiber = make_promising(caml_start_fiber);
-  var _initialize = make_promising(_initialize);
-  if (globalThis.process?.on) {
-    globalThis.process.on("uncaughtException", (err, _origin) =>
-      caml_handle_uncaught_exception(err),
-    );
-  } else if (globalThis.addEventListener) {
-    globalThis.addEventListener(
-      "error",
-      (event) => event.error && caml_handle_uncaught_exception(event.error),
-    );
+  function dispatchLifecycleEvent(name, detail) {
+    if (
+      typeof globalThis.dispatchEvent === "function" &&
+      typeof CustomEvent === "function"
+    ) {
+      globalThis.dispatchEvent(new CustomEvent(name, { detail }));
+    }
   }
-  await _initialize();
+
+  try {
+    const wasmModule = await instantiateFromDir();
+
+    var {
+      caml_callback,
+      caml_alloc_times,
+      caml_alloc_tm,
+      caml_alloc_stat,
+      caml_start_fiber,
+      caml_handle_uncaught_exception,
+      caml_buffer,
+      caml_extract_bytes,
+      _initialize,
+    } = wasmModule.instance.exports;
+
+    var buffer = caml_buffer?.buffer;
+    var out_buffer = buffer && new Uint8Array(buffer, 0, buffer.length);
+
+    start_fiber = make_promising(caml_start_fiber);
+    var _initialize = make_promising(_initialize);
+    if (globalThis.process?.on) {
+      globalThis.process.on("uncaughtException", (err, _origin) =>
+        caml_handle_uncaught_exception(err),
+      );
+    } else if (globalThis.addEventListener) {
+      globalThis.addEventListener(
+        "error",
+        (event) => event.error && caml_handle_uncaught_exception(event.error),
+      );
+    }
+    await _initialize();
+    dispatchLifecycleEvent("wasmoocaml:loaded", { src });
+  } catch (error) {
+    dispatchLifecycleEvent("wasmoocaml:error", { src, error });
+    throw error;
+  }
 };
