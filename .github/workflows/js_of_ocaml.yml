@@ -243,7 +243,7 @@ jobs:
           git clone --depth 1 https://github.com/quickjs-ng/quickjs.git "$RUNNER_TEMP/quickjs-ng"
           cd "$RUNNER_TEMP/quickjs-ng"
           cmake -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j --target qjs
+          cmake --build build -j --target qjs_exe
           sudo install -m 0755 build/qjs /usr/local/bin/qjs
           qjs --help | head -1
 
