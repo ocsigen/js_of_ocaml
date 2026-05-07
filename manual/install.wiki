@@ -2,7 +2,7 @@
 
 ==@@id="requirements"@@ Requirements
 
-**OCaml**: 4.13 to 5.4
+**OCaml**: 4.14 to 5.4
 
 **Build tools**:
 * dune >= 3.19

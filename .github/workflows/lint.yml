@@ -26,6 +26,7 @@ jobs:
         with:
           token: ${{ github.token }}
       - run: sh tools/make_opam_dune_lint_dir.sh
+      - run: opam pin -n opam-dune-lint --dev-repo
       - uses: ocaml/setup-ocaml/lint-opam@v3
 
   lint-fmt:

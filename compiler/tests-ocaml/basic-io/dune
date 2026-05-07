@@ -2,4 +2,4 @@
  (names wc)
  (modes js wasm)
  (action
-  (run node %{test} wc.ml)))
+  (run node %{test} %{dep:wc.ml})))
