@@ -13,6 +13,7 @@
 * Lib: many additional `Dom_html` bindings (#2221)
 * Lib: add `Performance` module (#2221)
 * Put more values into global variables (#2211)
+* Runtime: intial support for quickjs-ng
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
@@ -29,7 +30,9 @@
   silently broke `Filename.temp_file`
 * Runtime/wasm: fix string conversion from JS to OCaml (#2230)
 * Lib: fix several `Dom_html` bindings (#2221)
-
+* Lib: defer `Intl.{Collator,DateTimeFormat,...}` member lookups so the
+  `Intl` module no longer throws at load time on hosts where
+  `globalThis.Intl` is undefined
 
 # 6.3.2 (2026-02-15) - Lille
 
