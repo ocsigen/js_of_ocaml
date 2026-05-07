@@ -31,6 +31,11 @@ jobs:
         with:
           ocaml-compiler: "5.4.0"
 
+      - name: Set-up Binaryen
+        uses: Aandreba/setup-binaryen@v1.0.0
+        with:
+          token: ${{ github.token }}
+
       - name: Build and install QuickJS-NG
         run: |
           git clone --depth 1 https://github.com/quickjs-ng/quickjs.git "$RUNNER_TEMP/quickjs-ng"
