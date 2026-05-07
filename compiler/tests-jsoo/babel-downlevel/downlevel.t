@@ -46,11 +46,13 @@ the per-iteration capture in the loop above (without it, the same
 binding lowers to `var` plus a hoisted helper).
 
   $ ocamlc test.ml -o test.bc
-  $ dune exec -- js_of_ocaml --pretty --target-env=browser test.bc -o test.js 2>&1
+  $ dune exec -- js_of_ocaml --pretty test.bc -o test.js 2>&1
 
 Baseline (pre-Babel) output runs and produces expected results:
 
-  $ node test.js
+
+
+  $ node test.js 
   hello
   hashtbl: a=1 b=2
   marshal: 42 x [1;2;3]
@@ -74,9 +76,13 @@ Transpile with Babel (targets ES5 to stress the full pipeline):
   >   "$BABEL" test.js -o test.es5.js 2>&1 | grep -v "^Successfully" | cat
 
 Bundle with esbuild (resolves core-js polyfill imports into a single
-browser-ready file):
+browser-ready file). The runtime contains `require("node:*")` calls
+guarded by `fs_node_supported()` etc.; mark them external so esbuild
+leaves them in place rather than failing to resolve them at bundle
+time:
 
   $ "$ESBUILD" test.es5.js --bundle --platform=browser \
+  >   --external:node:* \
   >   --target=es5 --log-level=error --outfile=test.bundle.js
 
 Bundle is ES5-compatible:
