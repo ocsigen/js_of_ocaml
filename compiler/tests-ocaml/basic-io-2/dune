@@ -1,5 +1,11 @@
+; The test verifies its file copies with [Sys.command "cmp ..."],
+; which under QuickJS returns 127 (no child_process); every check
+; reports FAILED even when the copy itself succeeded.
+
 (tests
  (names io)
+ (enabled_if
+  (<> %{profile} quickjs))
  (modes js wasm)
  (action
   (run node %{test} %{dep:test-file-short-lines})))
