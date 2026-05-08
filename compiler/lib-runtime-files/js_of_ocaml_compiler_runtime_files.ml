@@ -29,6 +29,7 @@ let runtime =
     ; fs
     ; fs_fake
     ; fs_node
+    ; fs_quickjs
     ; gc
     ; graphics
     ; hash

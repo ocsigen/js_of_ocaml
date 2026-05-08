@@ -26,6 +26,7 @@ let%expect_test _ =
     +fs.js
     +fs_fake.js
     +fs_node.js
+    +fs_quickjs.js
     +gc.js
     +graphics.js
     +hash.js
@@ -70,6 +71,7 @@ let%expect_test _ =
     +fs.js
     +fs_fake.js
     +fs_node.js
+    +fs_quickjs.js
     +gc.js
     +graphics.js
     +hash.js
