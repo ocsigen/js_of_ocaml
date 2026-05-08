@@ -25,10 +25,16 @@ function caml_trailing_slash(name) {
 }
 
 //Provides: caml_current_dir
-//Requires: caml_trailing_slash, fs_node_supported
-if (fs_node_supported() && globalThis.process?.cwd)
-  var caml_current_dir = globalThis.process.cwd().replace(/\\/g, "/");
-else var caml_current_dir = "/static";
+//Requires: caml_trailing_slash, fs_node_supported, fs_quickjs_supported
+var caml_current_dir = (function () {
+  if (fs_node_supported() && globalThis.process?.cwd)
+    return globalThis.process.cwd().replace(/\\/g, "/");
+  if (fs_quickjs_supported()) {
+    var r = globalThis.os.getcwd();
+    if (r[1] === 0) return r[0];
+  }
+  return "/static";
+})();
 caml_current_dir = caml_trailing_slash(caml_current_dir);
 
 //Provides: caml_get_root
@@ -106,12 +112,17 @@ function caml_make_path(name) {
 }
 
 //Provides:jsoo_mount_point
-//Requires: MlFakeDevice, MlNodeDevice, caml_root, fs_node_supported
+//Requires: MlFakeDevice, MlNodeDevice, MlQuickJSDevice, caml_root, fs_node_supported, fs_quickjs_supported
 var jsoo_mount_point = [];
 if (fs_node_supported()) {
   jsoo_mount_point.push({
     path: caml_root,
     device: new MlNodeDevice(caml_root),
+  });
+} else if (fs_quickjs_supported()) {
+  jsoo_mount_point.push({
+    path: caml_root,
+    device: new MlQuickJSDevice(caml_root),
   });
 } else {
   jsoo_mount_point.push({
