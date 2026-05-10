@@ -111,6 +111,20 @@ function caml_make_path(name) {
   return ncomp;
 }
 
+// QuickJS filesystem support can be added with by passing
+// +fs_quickjs.js to the command line. It's not included by default to
+// avoid bloat.
+
+//Provides: MlQuickJSDevice
+//Weakdef
+class MlQuickJSDevice {}
+
+//Provides: fs_quickjs_supported
+//Weakdef
+function fs_quickjs_supported() {
+  return false;
+}
+
 //Provides:jsoo_mount_point
 //Requires: MlFakeDevice, MlNodeDevice, MlQuickJSDevice, caml_root, fs_node_supported, fs_quickjs_supported
 var jsoo_mount_point = [];
