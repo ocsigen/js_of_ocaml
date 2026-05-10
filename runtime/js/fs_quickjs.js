@@ -404,3 +404,96 @@ class MlQuickJSFd extends MlFile {
 //Provides: MlQuickJSFd
 //If: browser
 class MlQuickJSFd {}
+
+// Stream FD wrapping the host's stdin / stdout / stderr (qjs fd 0 / 1 /
+// 2) via os.read / os.write. Used as the qjs counterpart of MlNodeFd
+// for the standard streams; opt-in like the rest of fs_quickjs.
+
+//Provides: MlQuickJSStdFd
+//Requires: MlFile, caml_raise_system_error
+class MlQuickJSStdFd extends MlFile {
+  constructor(fd, flags) {
+    super();
+    this.os = globalThis.os;
+    this.fd = fd;
+    this.flags = flags;
+    flags.noSeek = true;
+  }
+
+  isatty() {
+    return this.os.isatty(this.fd) ? 1 : 0;
+  }
+
+  length() {
+    return 0;
+  }
+
+  read(a, buf_offset, len, raise_unix) {
+    if (this.fd !== 0)
+      caml_raise_system_error(
+        raise_unix,
+        "EBADF",
+        "read",
+        "bad file descriptor",
+      );
+    var ab = a.buffer || a;
+    var base = a.byteOffset || 0;
+    var n = this.os.read(this.fd, ab, base + buf_offset, len);
+    return n < 0 ? 0 : n;
+  }
+
+  write(buf, buf_offset, len, raise_unix) {
+    if (this.fd !== 1 && this.fd !== 2)
+      caml_raise_system_error(
+        raise_unix,
+        "EBADF",
+        "write",
+        "bad file descriptor",
+      );
+    var ab = buf.buffer || buf;
+    var base = buf.byteOffset || 0;
+    var n = this.os.write(this.fd, ab, base + buf_offset, len);
+    return n < 0 ? 0 : n;
+  }
+
+  seek(_offset, _whence, raise_unix) {
+    caml_raise_system_error(raise_unix, "ESPIPE", "lseek", "illegal seek");
+  }
+
+  pos() {
+    return -1;
+  }
+
+  truncate(_len, raise_unix) {
+    caml_raise_system_error(
+      raise_unix,
+      "EINVAL",
+      "ftruncate",
+      "invalid argument",
+    );
+  }
+
+  close(_raise_unix) {
+    return 0;
+  }
+
+  check_stream_semantics(_cmd) {
+    return 0;
+  }
+}
+
+//Provides: MlQuickJSStdFd
+//If: browser
+class MlQuickJSStdFd {}
+
+//Provides: caml_sys_open_for_quickjs
+//Requires: MlQuickJSStdFd
+function caml_sys_open_for_quickjs(fd, flags) {
+  return new MlQuickJSStdFd(fd, flags);
+}
+
+//Provides: caml_sys_open_for_quickjs
+//If: browser
+function caml_sys_open_for_quickjs(_fd, _flags) {
+  return null;
+}
