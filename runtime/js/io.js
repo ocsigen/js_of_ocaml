@@ -43,8 +43,10 @@ function MlChanid(id) {
 //Requires: MlFakeFd_out
 //Requires: resolve_fs_device
 //Requires: fs_node_supported
+//Requires: fs_quickjs_supported
 //Requires: caml_sys_fds
 //Requires: caml_sys_open_for_node
+//Requires: caml_sys_open_for_quickjs
 //Requires: MlChanid
 function caml_sys_open_internal(file, idx) {
   var chanid;
@@ -98,21 +100,23 @@ function caml_sys_open(name, flags, perms) {
 }
 (function () {
   var is_node = fs_node_supported();
+  var is_qjs = !is_node && fs_quickjs_supported();
+  var buffered = is_node || is_qjs ? 1 : 2;
   function file(fd, flags) {
-    if (is_node) {
-      return caml_sys_open_for_node(fd, flags);
-    } else return new MlFakeFd_out(fd, flags);
+    if (is_node) return caml_sys_open_for_node(fd, flags);
+    if (is_qjs) return caml_sys_open_for_quickjs(fd, flags);
+    return new MlFakeFd_out(fd, flags);
   }
   caml_sys_open_internal(
     file(0, { rdonly: 1, altname: "/dev/stdin", isCharacterDevice: true }),
     0,
   );
   caml_sys_open_internal(
-    file(1, { buffered: is_node ? 1 : 2, wronly: 1, isCharacterDevice: true }),
+    file(1, { buffered: buffered, wronly: 1, isCharacterDevice: true }),
     1,
   );
   caml_sys_open_internal(
-    file(2, { buffered: is_node ? 1 : 2, wronly: 1, isCharacterDevice: true }),
+    file(2, { buffered: buffered, wronly: 1, isCharacterDevice: true }),
     2,
   );
 })();

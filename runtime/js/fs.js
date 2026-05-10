@@ -125,6 +125,12 @@ function fs_quickjs_supported() {
   return false;
 }
 
+//Provides: caml_sys_open_for_quickjs
+//Weakdef
+function caml_sys_open_for_quickjs(_fd, _flags) {
+  return null;
+}
+
 //Provides:jsoo_mount_point
 //Requires: MlFakeDevice, MlNodeDevice, MlQuickJSDevice, caml_root, fs_node_supported, fs_quickjs_supported
 var jsoo_mount_point = [];
