@@ -86,13 +86,12 @@ let test_enabled_if = function
   | "unix_fs"
   | "js_parser_printer"
   | "sys_command"
-  | "sys_fs"
   | "target_env" ->
       (* Tests assert engine-specific output: jsoo's [caml_fatal_uncaught_exception]
          only fires under Node (via process.on("uncaughtException")), and
          [node --check] error messages differ from QuickJS's parser.
-         [sys_command]/[sys_fs]/[target_env] exercise the Node-backed
-         filesystem, which is unavailable under the QuickJS profile. *)
+         [sys_command]/[target_env] exercise Sys.command / process.versions,
+         which the QuickJS runtime does not expose. *)
       [ not_quickjs ]
   | _ -> []
 
