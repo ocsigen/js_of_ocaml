@@ -348,7 +348,8 @@ var jsoo_text_decoder =
               // 0xf5..0xff: out of Unicode range. None start a sequence.
               cp = REPL;
             } else if (b1 < 0xe0) {
-              if (i < len && cont(a[i])) cp = ((b1 & 0x1f) << 6) | (a[i++] & 0x3f);
+              if (i < len && cont(a[i]))
+                cp = ((b1 & 0x1f) << 6) | (a[i++] & 0x3f);
               else cp = REPL;
             } else if (b1 < 0xf0) {
               var b2 = i < len ? a[i] : -1;
