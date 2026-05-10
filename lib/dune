@@ -1,4 +1,5 @@
 (env
+ (quickjs)
  (_
   (js_of_ocaml
    (build_runtime_flags
