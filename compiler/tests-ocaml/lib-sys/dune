@@ -1,11 +1,5 @@
-; Sys.rename followed by Sys.is_directory on the renamed path
-; segfaults qjs (likely a missing primitive turning into a bad call
-; through the MlFakeFd shim).
-
 (tests
  (names rename)
- (enabled_if
-  (<> %{profile} quickjs))
  (libraries ocaml_testing)
  (modes js wasm))
 
