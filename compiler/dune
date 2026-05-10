@@ -1,5 +1,10 @@
 (env
- (quickjs)
+ (quickjs
+  (js_of_ocaml
+   (build_runtime_flags
+    ("+fs_quickjs.js" :standard))
+   (flags
+    ("+fs_quickjs.js" :standard))))
  (_
   (js_of_ocaml
    (build_runtime_flags
