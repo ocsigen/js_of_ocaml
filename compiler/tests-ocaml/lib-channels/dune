@@ -1,14 +1,8 @@
-; close_in / in_channel_length / seek_in open the test binary itself
-; as a regular file (Sys.argv.(0)). Under Node, jsoo's runtime resolves
-; that path on the host filesystem; under QuickJS it falls back to the
-; in-memory MlFakeFd at /static/, where the binary doesn't exist.
 ; buffered relies on Node's specific stdout/stderr flushing order at
 ; exit, which differs under QuickJS.
 
 (tests
  (names close_in in_channel_length seek_in)
- (enabled_if
-  (<> %{profile} quickjs))
  (libraries ocaml_testing)
  (modes js wasm))
 

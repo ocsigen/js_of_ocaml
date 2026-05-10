@@ -1,12 +1,10 @@
 ; Most Unix tests here exercise primitives that the QuickJS runtime
 ; does not implement (caml_unix_stat, caml_unix_utimes, ...) or rely
-; on Node-specific Unix.access / Unix.rename semantics. uexit
-; additionally depends on Node's stdout/stderr flushing order on exit.
+; on Node-specific Unix.rename semantics. uexit additionally depends
+; on Node's stdout/stderr flushing order on exit.
 
 (tests
  (names append)
- (enabled_if
-  (<> %{profile} quickjs))
  (libraries ocaml_testing unix)
  (locks append.txt)
  (modes js wasm))

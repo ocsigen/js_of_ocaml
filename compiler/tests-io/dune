@@ -85,15 +85,8 @@
   "accentué"
   (echo test)))
 
-; non_ascii_filenames opens "accentué" both via the in-program
-; --file embed and as a host file under cwd; QuickJS can read the
-; embed but can't reach the cwd-relative file, so the second probe
-; reports FAIL.
-
 (tests
  (names non_ascii_filenames)
- (enabled_if
-  (<> %{profile} quickjs))
  (deps "accentué")
  (modes js)
  (js_of_ocaml
