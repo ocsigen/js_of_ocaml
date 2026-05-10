@@ -410,27 +410,44 @@ class MlFakeFile extends MlFile {
 class MlFakeFd_out extends MlFakeFile {
   constructor(fd, flags) {
     super(caml_create_bytes(0));
-    this.log = function (_s) {
-      return 0;
-    };
-    // Prefer a byte-faithful sink when available (e.g. QuickJS's
-    // `std.out.puts` / `std.err.puts`), otherwise fall back to
-    // `console.log` / `console.error`. The console.* sinks always
-    // append a newline, so wrap them to swallow at most one trailing
-    // \n -- otherwise OCaml's own newline doubles up.
+    // Pick a stdout / stderr sink for fd 1 / 2. In preference order:
+    //   1. QuickJS's `os.write(fd, buffer, off, len)` — byte-faithful,
+    //      so a stray non-UTF-8 byte (e.g. 0xff in Str regex output)
+    //      survives intact instead of round-tripping through UTF-16
+    //      and becoming U+FFFD (ef bf bd).
+    //   2. `std.out.puts` / `std.err.puts` — string-only, but better
+    //      than console.* when qjs has them.
+    //   3. `console.log` / `console.error` — appends a newline, so
+    //      wrap to drop a trailing \n if any (else OCaml's newline
+    //      doubles up).
+    this.log = null;
+    this.write_bytes = null;
+    var os = globalThis.os;
     var std = globalThis.std;
-    var via_console = (sink) => (s) =>
-      sink(
-        s.length > 0 && s.charCodeAt(s.length - 1) === 10 ? s.slice(0, -1) : s,
-      );
-    if (fd === 1 && std?.out?.puts) this.log = (s) => std.out.puts(s);
-    else if (fd === 2 && std?.err?.puts) this.log = (s) => std.err.puts(s);
-    else if (fd === 1 && typeof console.log === "function")
-      this.log = via_console(console.log);
-    else if (fd === 2 && typeof console.error === "function")
-      this.log = via_console(console.error);
-    else if (typeof console.log === "function")
-      this.log = via_console(console.log);
+    if ((fd === 1 || fd === 2) && os && typeof os.write === "function") {
+      this.write_bytes = (buf, pos, len) => {
+        var ab = buf.buffer || buf;
+        var base = buf.byteOffset || 0;
+        var n = os.write(fd, ab, base + pos, len);
+        return n < 0 ? 0 : n;
+      };
+    } else {
+      var via_console = (sink) => (s) =>
+        sink(
+          s.length > 0 && s.charCodeAt(s.length - 1) === 10
+            ? s.slice(0, -1)
+            : s,
+        );
+      if (fd === 1 && std?.out?.puts) this.log = (s) => std.out.puts(s);
+      else if (fd === 2 && std?.err?.puts) this.log = (s) => std.err.puts(s);
+      else if (fd === 1 && typeof console.log === "function")
+        this.log = via_console(console.log);
+      else if (fd === 2 && typeof console.error === "function")
+        this.log = via_console(console.error);
+      else if (typeof console.log === "function")
+        this.log = via_console(console.log);
+      else this.log = (_s) => 0;
+    }
     this.flags = flags;
   }
 
@@ -448,6 +465,10 @@ class MlFakeFd_out extends MlFakeFile {
   }
 
   write(buf, pos, len, raise_unix) {
+    if (this.write_bytes) {
+      this.write_bytes(buf, pos, len);
+      return len;
+    }
     if (this.log) {
       var src = caml_create_bytes(len);
       caml_blit_bytes(caml_bytes_of_uint8_array(buf), pos, src, 0, len);

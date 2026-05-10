@@ -324,7 +324,10 @@ var jsoo_text_encoder =
 
 //Provides: jsoo_text_decoder
 // Fall back to a small UTF-8 decoder when TextDecoder is not provided
-// by the host (e.g. QuickJS). Default-only (utf-8, fatal=false).
+// by the host (e.g. QuickJS). Default-only (utf-8, fatal=false): any
+// byte that doesn't start a valid UTF-8 sequence (e.g. a stray 0xff)
+// becomes U+FFFD without consuming the bytes that follow it, matching
+// the WHATWG default substitution-of-maximal-subpart rule.
 var jsoo_text_decoder =
   typeof TextDecoder !== "undefined"
     ? new TextDecoder()
@@ -333,21 +336,49 @@ var jsoo_text_decoder =
           var len = a.length;
           var s = "";
           var i = 0;
+          var REPL = 0xfffd;
+          var cont = (b) => (b & 0xc0) === 0x80;
           while (i < len) {
             var b1 = a[i++];
             var cp;
-            if (b1 < 0x80) cp = b1;
-            else if ((b1 & 0xe0) === 0xc0)
-              cp = ((b1 & 0x1f) << 6) | (a[i++] & 0x3f);
-            else if ((b1 & 0xf0) === 0xe0)
-              cp =
-                ((b1 & 0x0f) << 12) | ((a[i++] & 0x3f) << 6) | (a[i++] & 0x3f);
-            else
-              cp =
-                ((b1 & 0x07) << 18) |
-                ((a[i++] & 0x3f) << 12) |
-                ((a[i++] & 0x3f) << 6) |
-                (a[i++] & 0x3f);
+            if (b1 < 0x80) {
+              cp = b1;
+            } else if (b1 < 0xc2 || b1 > 0xf4) {
+              // 0x80..0xbf: stray continuation; 0xc0/0xc1: overlong;
+              // 0xf5..0xff: out of Unicode range. None start a sequence.
+              cp = REPL;
+            } else if (b1 < 0xe0) {
+              if (i < len && cont(a[i])) cp = ((b1 & 0x1f) << 6) | (a[i++] & 0x3f);
+              else cp = REPL;
+            } else if (b1 < 0xf0) {
+              var b2 = i < len ? a[i] : -1;
+              // Reject UTF-16 surrogates and non-shortest encodings.
+              var lo = b1 === 0xe0 ? 0xa0 : 0x80;
+              var hi = b1 === 0xed ? 0x9f : 0xbf;
+              if (b2 >= lo && b2 <= hi && i + 1 < len && cont(a[i + 1])) {
+                cp =
+                  ((b1 & 0x0f) << 12) | ((b2 & 0x3f) << 6) | (a[i + 1] & 0x3f);
+                i += 2;
+              } else cp = REPL;
+            } else {
+              var b2 = i < len ? a[i] : -1;
+              var lo = b1 === 0xf0 ? 0x90 : 0x80;
+              var hi = b1 === 0xf4 ? 0x8f : 0xbf;
+              if (
+                b2 >= lo &&
+                b2 <= hi &&
+                i + 2 < len &&
+                cont(a[i + 1]) &&
+                cont(a[i + 2])
+              ) {
+                cp =
+                  ((b1 & 0x07) << 18) |
+                  ((b2 & 0x3f) << 12) |
+                  ((a[i + 1] & 0x3f) << 6) |
+                  (a[i + 2] & 0x3f);
+                i += 3;
+              } else cp = REPL;
+            }
             if (cp <= 0xffff) s += String.fromCharCode(cp);
             else {
               cp -= 0x10000;
