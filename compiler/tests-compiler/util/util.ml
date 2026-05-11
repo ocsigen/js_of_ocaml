@@ -289,6 +289,11 @@ let compile_to_javascript
     ~sourcemap
     file =
   let out_file = swap_extention file ~ext:"js" in
+  let is_qjs =
+    match Sys.getenv_opt "JSOO_TEST_ENGINE" with
+    | Some "quickjs" -> true
+    | _ -> false
+  in
   let extra_args =
     List.flatten
       [ (if pretty then [ "--pretty"; "--debug"; "var" ] else [])
@@ -300,6 +305,11 @@ let compile_to_javascript
       ; (if use_js_string
          then [ "--enable=use-js-string" ]
          else [ "--disable=use-js-string" ])
+      ; (* The qjs runtime needs +fs_quickjs.js for host-fs access. The
+           dune env stanza adds it for in-tree builds, but
+           [compile_and_run] invokes [js_of_ocaml.exe] as a subprocess
+           and bypasses that, so pass it explicitly. *)
+        (if is_qjs then [ "+fs_quickjs.js" ] else [])
       ; flags
       ; (if werror then [ "--Werror" ] else [])
       ]
