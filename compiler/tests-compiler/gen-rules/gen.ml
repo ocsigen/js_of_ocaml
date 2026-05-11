@@ -81,17 +81,10 @@ let test_enabled_if = function
   | "effects" ->
       [ not oxcaml ] (* Call to Printf.printf is somehow compiled differently *)
   | "gh747" -> [ not oxcaml ] (* More debug locations *)
-  | "error"
-  | "scopes"
-  | "unix_fs"
-  | "js_parser_printer"
-  | "sys_command"
-  | "target_env" ->
+  | "error" | "scopes" | "unix_fs" | "js_parser_printer" ->
       (* Tests assert engine-specific output: jsoo's [caml_fatal_uncaught_exception]
          only fires under Node (via process.on("uncaughtException")), and
-         [node --check] error messages differ from QuickJS's parser.
-         [sys_command]/[target_env] exercise Sys.command / process.versions,
-         which the QuickJS runtime does not expose. *)
+         [node --check] error messages differ from QuickJS's parser. *)
       [ not_quickjs ]
   | _ -> []
 
