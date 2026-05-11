@@ -2236,6 +2236,15 @@ let handle_exceptions ~result_typ ~fall_through ~context body x exn_handler =
      exn_handler ~result_typ ~fall_through ~context)
 
 let post_process_function_body ~profile ~param_names ~param_types ~locals body =
+  (* When [wasm-opt] does not run (at [--opt 1], both for .cmo/.cma
+     and for executables), our own passes are the only ones tightening
+     the body. [Local_sink] runs first: shortening live ranges and
+     dropping [local.set]s simplifies the input to [Var_coalescing]. *)
+  let locals, body =
+    if (not (Binaryen.optimizes profile)) && Config.Flag.wasm_local_sink ()
+    then Local_sink.f ~locals body
+    else locals, body
+  in
   let locals, body =
     if (not (Binaryen.optimizes profile)) && Config.Flag.wasm_var_coalescing ()
     then Var_coalescing.f ~param_names ~param_types ~locals body
