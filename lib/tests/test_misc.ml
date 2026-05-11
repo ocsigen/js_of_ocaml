@@ -24,5 +24,5 @@ let x =
   object%js (self)
     method foo = self##bar
 
-    method bar = ()
+    method bar = Js.string "bar"
   end
