@@ -231,7 +231,18 @@ function caml_sys_system_command(cmd) {
       } catch (e) {
         return 1;
       }
-  } else return 127;
+  }
+  // QuickJS: spawn `sh -c <cmd>` via os.exec. With block:true the
+  // returned wait status is the exit code on normal exit, or
+  // 128+signum on signal -- the same shape POSIX system(3) gives us.
+  if (typeof globalThis.os?.exec === "function") {
+    try {
+      return globalThis.os.exec(["sh", "-c", cmd], { block: true }) | 0;
+    } catch (_e) {
+      return 127;
+    }
+  }
+  return 127;
 }
 
 //Provides: caml_sys_system_command
