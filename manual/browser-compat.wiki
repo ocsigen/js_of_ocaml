@@ -26,7 +26,7 @@ Create a {{{babel.config.json}}} next to your build:
     ["@babel/preset-env", {
       "targets": "> 0.5%, last 2 versions, not dead",
       "useBuiltIns": "usage",
-      "corejs": "3.37"
+      "corejs": 3
     }]
   ]
 }
@@ -55,7 +55,7 @@ is a small, zero-config option:
 {{{
 npm install --save-dev esbuild
 npx esbuild program.es5.js --bundle --platform=browser \
-  --external:node:* --outfile=program.bundle.js
+  --external:node:* --target=es5 --outfile=program.bundle.js
 }}}
 
 The runtime contains a few {{{require("node:*")}}} calls (filesystem,
@@ -63,15 +63,20 @@ tty, etc.) guarded by Node-detection branches that never run in a
 browser. {{{--external:node:*}}} tells esbuild to leave those imports
 in place instead of failing to resolve them at bundle time.
 
-Esbuild preserves whatever ES level Babel produced; it just resolves
-{{{require}}} calls and concatenates modules.
+[[https://esbuild.github.io/api/#target|{{{--target}}}]] is needed even
+when Babel has lowered the input: esbuild's own IIFE wrapper and CommonJS
+helpers use arrow functions and other post-ES5 syntax, and {{{--target}}}
+is what tells it to lower those too. Set it to the lowest syntax level
+your browserslist query implies.
 
 Ship {{{program.bundle.js}}} as a single script; no additional polyfills
 are required at load time.
 
 ==@@id="dune"@@ With dune
 
-You can wire Babel into your dune rules so it runs automatically:
+Assuming dune builds your program to {{{program.bc.js}}} (e.g. from an
+{{{(executable (modes js) ...)}}} stanza), wire the Babel and esbuild
+steps into the build with two rules:
 
 {{{
 (rule
@@ -79,23 +84,15 @@ You can wire Babel into your dune rules so it runs automatically:
  (deps program.bc.js babel.config.json)
  (action
   (run npx babel %{dep:program.bc.js} -o %{targets})))
+
+(rule
+ (targets program.bundle.js)
+ (deps program.es5.js)
+ (action
+  (run npx esbuild %{dep:program.es5.js}
+       --bundle --platform=browser --external:node:*
+       --target=es5 --outfile=%{targets})))
 }}}
-
-==@@id="caveats"@@ Caveats
-
-* **Code size**: polyfills and transpiled helpers add a non-trivial amount of
-  JavaScript. Expect the output to be noticeably larger.
-* **Performance**: transpiled code tends to run slower than the original
-  ES2020 output, especially the further back you target.
-* **Source maps**: pass {{{--source-map}}} to js_of_ocaml and {{{--source-maps}}}
-  to Babel to keep a mapping back to the OCaml source. Babel will chain the
-  source map through if one is present alongside its input.
-* **Weak references**: core-js does not polyfill {{{WeakRef}}} faithfully.
-  On engines without native {{{WeakRef}}}, {{{Stdlib.Weak}}} and
-  {{{Stdlib.Ephemeron}}} behave as strong references — values held by them
-  will not be collected.
-* **Wasm_of_ocaml**: targeting older browsers is not possible with
-  {{{wasm_of_ocaml}}}, which requires a WebAssembly GC-capable engine.
 
 ==@@id="see-also"@@ See also
 

@@ -18,7 +18,7 @@
 
 The generated JavaScript works with:
 * Node.js 16 or later
-* Any modern browser supporting ECMAScript 6 (ES2015)
+* Any modern browser supporting ECMAScript 2020 (ES2020) — Chrome 80+, Firefox 74+, Safari 13.4+, Edge 80+
 
 **Note**: {{{Stdlib.Weak}}} and {{{Stdlib.Ephemeron}}} require {{{WeakRef}}} support (ECMAScript 2021), available in all modern browsers and Node.js 14.6+.
 
