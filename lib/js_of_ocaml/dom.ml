@@ -454,20 +454,27 @@ let no_handler : ('a, 'b) event_listener = Js.null
    the event), we must return [undefined] to the browser instead of [true]
    so that it does not trigger the dialog.  When the handler returns [false]
    (block the event), we also set [returnValue] for legacy browser compat. *)
-let beforeunload_return (e : _ #event t) (res : bool t) : bool t =
-  let is_beforeunload_event : _ #event t -> bool t =
-    Js.Unsafe.pure_js_expr
-      {| (function (e) { return ("type" in e && e.type === "beforeunload") }) |}
+
+let is_beforeunload_event : _ #event t -> beforeUnloadEvent t option =
+ fun e ->
+  let b : bool t =
+    Js.Unsafe.fun_call
+      (Js.Unsafe.pure_js_expr
+         {| (function (e) { return ("type" in e && e.type === "beforeunload") }) |})
+      [| Js.Unsafe.coerce e |]
   in
-  if Js.to_bool (is_beforeunload_event e)
-  then
-    if Js.to_bool res
-    then (Obj.magic Js.undefined : bool t)
-    else begin
-      (Js.Unsafe.coerce e : beforeUnloadEvent t)##.returnValue := Js.string "";
-      res
-    end
-  else res
+  if Js.to_bool b then Some (Js.Unsafe.coerce e : beforeUnloadEvent t) else None
+
+let beforeunload_return (e : _ #event t) (res : bool t) : bool t =
+  match is_beforeunload_event e with
+  | None -> res
+  | Some e ->
+      if Js.to_bool res
+      then (Obj.magic Js.undefined : bool t)
+      else begin
+        e##.returnValue := Js.string "";
+        res
+      end
 
 let handler f =
   Js.some

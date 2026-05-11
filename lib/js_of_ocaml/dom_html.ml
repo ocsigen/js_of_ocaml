@@ -896,12 +896,6 @@ and eventTarget = object ('self)
   method dispatchEvent : event t -> bool t meth
 end
 
-and beforeUnloadEvent = object
-  inherit event
-
-  method returnValue : js_string t prop
-end
-
 and popStateEvent = object
   inherit event
 
