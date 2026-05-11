@@ -54,6 +54,8 @@ module Flag : sig
 
   val wasm_var_coalescing : unit -> bool
 
+  val wasm_local_sink : unit -> bool
+
   val debugger : unit -> bool
 
   val pretty : unit -> bool

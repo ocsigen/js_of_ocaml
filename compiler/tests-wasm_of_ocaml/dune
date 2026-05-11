@@ -69,6 +69,22 @@
  (names string_interning)
  (modes wasm))
 
+(tests
+ (names local_sink_exn)
+ (modes js wasm)
+ ; The bug only shows up without debug information
+ (ocamlc_flags ())
+ ; Source maps are enabled in dev mode, where they warn about the missing
+ ; debug information. (Passing --no-source-map instead would fail in
+ ; release mode, where dune passes it already and the option cannot be
+ ; repeated.)
+ (js_of_ocaml
+  (flags :standard -w no-missing-debug-event)
+  (link_flags :standard -w no-missing-debug-event))
+ (wasm_of_ocaml
+  (flags :standard -w no-missing-debug-event)
+  (link_flags :standard -w no-missing-debug-event)))
+
 ; The programs compiled here run Wasm code and rely on Node's module
 ; resolution (`require`, `require.main`). QuickJS provides neither, so these
 ; tests are skipped under the `quickjs` profile.
