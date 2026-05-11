@@ -107,6 +107,8 @@ module Flag = struct
 
   let wasm_local_sink = o ~name:"wasm-local-sink" ~default:true
 
+  let wasm_reorder_locals = o ~name:"wasm-reorder-locals" ~default:true
+
   let header = o ~name:"header" ~default:true
 
   let auto_link = o ~name:"auto-link" ~default:true
