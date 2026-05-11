@@ -22,6 +22,7 @@
 ===[[tailcall|Tailcall optimization]]
 ===[[effects|Effect handlers]]
 ===[[runtime-representation|Runtime representation]]
+===[[browser-compat|Targeting older browsers]]
 
 ==Wasm_of_ocaml
 ===[[wasm_overview|Overview]]
