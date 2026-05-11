@@ -2093,7 +2093,17 @@ let post_process_function_body ~profile ~param_names ~param_types ~locals body =
     then Var_coalescing.f ~param_names ~param_types ~locals body
     else locals, body
   in
-  Initialize_locals.f ~param_names ~locals body
+  let locals, body = Initialize_locals.f ~param_names ~locals body in
+  (* Reorder locals so frequently-used ones get low Wasm indices
+     (one-byte LEB128 encoding for indices < 128). Only when
+     wasm-opt does not run, like the rest of this pipeline: otherwise,
+     [wasm-opt] handles local reordering. *)
+  let locals =
+    if (not (Binaryen.optimizes profile)) && Config.Flag.wasm_reorder_locals ()
+    then Reorder_locals.f ~locals body
+    else locals
+  in
+  locals, body
 
 let entry_point ~toplevel_fun =
   let code =
