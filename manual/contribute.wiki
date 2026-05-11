@@ -37,7 +37,7 @@ dune build @all
 
 === OCaml
 
-Code is formatted with **ocamlformat 0.28.1**. Run before committing:
+Code is formatted with **ocamlformat 0.29.0**. Run before committing:
 {{{
 make fmt
 }}}
