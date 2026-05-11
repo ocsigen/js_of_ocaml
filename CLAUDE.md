@@ -87,7 +87,7 @@ opam install odoc lwt_log yojson ocp-indent graphics higlo
 ## Code Style
 
 ### OCaml
-- Formatter: **ocamlformat 0.28.1** (config in `.ocamlformat`)
+- Formatter: **ocamlformat 0.29.0** (config in `.ocamlformat`)
 - Line margin: 90 characters
 - All compiler files use `open! Stdlib` explicitly
 - Comprehensive `.mli` module signatures
