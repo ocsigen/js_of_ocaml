@@ -456,8 +456,11 @@ let no_handler : ('a, 'b) event_listener = Js.null
    (block the event), we also set [returnValue] for legacy browser compat. *)
 let beforeunload_return (e : _ #event t) (res : bool t) : bool t =
   let is_beforeunload_event : _ #event t -> bool t =
-    Js.Unsafe.pure_js_expr
-      {| (function (e) { return ("type" in e && e.type === "beforeunload") }) |}
+   fun e ->
+    Js.Unsafe.fun_call
+      (Js.Unsafe.pure_js_expr
+         {| (function (e) { return ("type" in e && e.type === "beforeunload") }) |})
+      [| Js.Unsafe.coerce e |]
   in
   if Js.to_bool (is_beforeunload_event e)
   then
