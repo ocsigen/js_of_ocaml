@@ -17,23 +17,27 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Liveness analysis and variable coalescing for the Wasm backend.
+(** Local.set sinking for the Wasm backend.
 
-    Merges Wasm locals (including parameters) with disjoint live ranges so
-    that a single local is reused. This shrinks the function's [locals]
-    declaration and eliminates redundant [local.set]/[local.get] copies.
+    For each [local.set x e] in a function, the pass tries to push the
+    write forward to the first subsequent [local.get x], turning the
+    [set]/[get] pair into a single [local.tee]. The sink is applied only
+    when it does not cross another write to [x] (no intervening
+    [local.set x] / [local.tee x]), does not cross a control-flow
+    boundary, and does not reorder effects unsafely (conservatively, we
+    require [e] or the intervening code to be effect-free).
 
-    Parameters are valid coalescing targets: a local whose live range does
-    not overlap a parameter's can be rewritten to use the parameter's
-    index. Two parameters never merge because they are all live at
-    function entry. *)
+    When the [local.get x] is the only read of [x], it is replaced by
+    [e] itself, and [x] is removed from [locals] if it is no longer
+    accessed. *)
 
 val f :
-     param_names:Code.Var.t list
-  -> param_types:Wasm_ast.value_type list
-  -> locals:(Code.Var.t * Wasm_ast.value_type) list
+     effect_free:(Wasm_ast.expression -> bool)
+  -> locals:(Wasm_ast.var * Wasm_ast.value_type) list
   -> Wasm_ast.instruction list
-  -> (Code.Var.t * Wasm_ast.value_type) list * Wasm_ast.instruction list
+  -> (Wasm_ast.var * Wasm_ast.value_type) list * Wasm_ast.instruction list
+(** [effect_free e] must hold only if evaluating [e] has no side effect
+    and always falls through (we assume traps never happen). *)
 
 val report_stats : unit -> unit
 (** Emit aggregated time/stats logs accumulated across all [f] calls and

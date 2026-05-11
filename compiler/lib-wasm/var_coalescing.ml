@@ -51,9 +51,40 @@ module W = Wasm_ast
 
 let times = Debug.find "times"
 
-let debug = Debug.find "wasm-var-coalescing"
-
 let stats = Debug.find "stats"
+
+(* Aggregated statistics across all calls to [f]. The pass runs once per
+   Wasm function; per-function logs are noisy, so we accumulate here and
+   emit a single summary via [report_stats]. *)
+let total_time = ref 0.
+
+let total_calls = ref 0
+
+let total_candidates = ref 0
+
+let total_hint_count = ref 0
+
+let total_opportunistic_count = ref 0
+
+let report_stats () =
+  if !total_calls > 0
+  then (
+    if times () then Format.eprintf "  wasm var coalescing: %.2f@." !total_time;
+    if stats ()
+    then
+      Format.eprintf
+        "Stats - wasm var coalescing: %d functions, %d candidates, %d coalesced (%d \
+         hint, %d opportunistic)@."
+        !total_calls
+        !total_candidates
+        (!total_hint_count + !total_opportunistic_count)
+        !total_hint_count
+        !total_opportunistic_count;
+    total_time := 0.;
+    total_calls := 0;
+    total_candidates := 0;
+    total_hint_count := 0;
+    total_opportunistic_count := 0)
 
 (* --------------------------------------------------------------------- *)
 (*  CFG construction                                                     *)
@@ -858,7 +889,9 @@ let f ~param_names ~param_types ~locals instrs =
   let num_candidates = Var.Set.cardinal candidates in
   if num_candidates <= 1
   then locals, instrs
-  else
+  else (
+    incr total_calls;
+    total_candidates := !total_candidates + num_candidates;
     let g = build_cfg ~candidates ~param_vars instrs in
     let live_in_map = compute_liveness g in
     let ranges = compute_live_ranges g live_in_map candidates param_vars in
@@ -866,35 +899,14 @@ let f ~param_names ~param_types ~locals instrs =
     let hint_count, opportunistic_count =
       allocate_registers subst types ranges g.coalescing_hints
     in
-    if debug ()
-    then
-      Format.eprintf
-        "wasm var-coalescing: %d candidates, %d hint + %d opportunistic@."
-        num_candidates
-        hint_count
-        opportunistic_count;
-    (* Only candidates that merged into a different representative are
-         recorded in [subst]; its size is therefore the count of changes. *)
-    if Var.Hashtbl.length subst = 0
-    then (
-      if times () then Format.eprintf "  wasm var coalescing: %a@." Timer.print t;
-      locals, instrs)
-    else
-      let instrs = rewrite_instrs subst instrs in
-      (* Rebuild locals: keep only those whose representative is themselves,
-           i.e. those that weren't merged away. Preserve original ordering to
-           keep the Wasm output deterministic. *)
-      let kept_locals =
-        List.filter locals ~f:(fun (v, _) -> not (Var.Hashtbl.mem subst v))
-      in
-      if times () then Format.eprintf "  wasm var coalescing: %a@." Timer.print t;
-      if stats ()
-      then
-        Format.eprintf
-          "Stats - wasm var coalescing: %d candidates, %d coalesced (%d hint, %d \
-           opportunistic)@."
-          num_candidates
-          (hint_count + opportunistic_count)
-          hint_count
-          opportunistic_count;
-      kept_locals, instrs
+    total_hint_count := !total_hint_count + hint_count;
+    total_opportunistic_count := !total_opportunistic_count + opportunistic_count;
+    let res =
+      if Var.Hashtbl.length subst = 0
+      then locals, instrs
+      else
+        ( List.filter locals ~f:(fun (v, _) -> not (Var.Hashtbl.mem subst v))
+        , rewrite_instrs subst instrs )
+    in
+    total_time := !total_time +. Timer.get t;
+    res)

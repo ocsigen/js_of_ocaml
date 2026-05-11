@@ -60,6 +60,18 @@
  (names string_interning)
  (modes wasm))
 
+(tests
+ (names local_sink_exn)
+ (modes js wasm)
+ ; The bug only shows up without debug information
+ (ocamlc_flags ())
+ (js_of_ocaml
+  (flags :standard --no-source-map)
+  (link_flags :standard --no-source-map))
+ (wasm_of_ocaml
+  (flags :standard --no-source-map)
+  (link_flags :standard --no-source-map)))
+
 ; The programs compiled here run Wasm code and rely on Node's module
 ; resolution (`require`, `require.main`). QuickJS provides neither, so these
 ; tests are skipped under the `quickjs` profile.
