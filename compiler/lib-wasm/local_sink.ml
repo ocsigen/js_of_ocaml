@@ -42,6 +42,12 @@ open! Stdlib
 module W = Wasm_ast
 module Var = Code.Var
 
+(* Hard upper bound on how far a single sink attempt may search forward.
+   The walker is O(N) per candidate with O(N) candidates per function, so
+   without a cap the pass is O(N²). Most profitable sinks have the target
+   within a few steps; this bound just clips the long tail. *)
+let max_walk_distance = 64
+
 let times = Debug.find "times"
 
 let stats = Debug.find "stats"
@@ -227,7 +233,20 @@ type ctx =
   ; reads : Var.Set.t
   ; writes : Var.Set.t
   ; e_effect_free : bool
+  ; mutable budget : int
   }
+
+(* Spend one unit of walk budget. Returns [false] when the budget is
+   exhausted, in which case callers must Bail rather than continue. We
+   only tick at the points where the walker steps forward in evaluation
+   order (instruction-to-instruction or sibling-to-sibling); descending
+   into a unary sub-expression is free. *)
+let tick ctx =
+  if ctx.budget <= 0
+  then false
+  else (
+    ctx.budget <- ctx.budget - 1;
+    true)
 
 (* True iff [vs] (a set of *reads* by intermediate code) does not
    intersect [ctx.writes] — i.e. no variable that [e] writes is
@@ -367,7 +386,7 @@ and wrap_binary make ctx e1 e2 =
   | Found e1' -> Found (make e1' e2)
   | Bail -> Bail
   | Clean -> (
-      if not (may_cross_sibling ctx e1)
+      if not (may_cross_sibling ctx e1 && tick ctx)
       then Bail
       else
         match walk_expr ctx e2 with
@@ -388,7 +407,10 @@ and wrap_list_intermediate ctx args =
         match walk_expr ctx a with
         | Found a' -> `Found (List.rev_append acc (a' :: rest))
         | Bail -> `Bail
-        | Clean -> if not (may_cross_sibling ctx a) then `Bail else loop (a :: acc) rest)
+        | Clean ->
+            if not (may_cross_sibling ctx a && tick ctx)
+            then `Bail
+            else loop (a :: acc) rest)
   in
   loop [] args
 
@@ -425,7 +447,7 @@ let try_sink_in_instr ctx instr : instr_result =
       | Found e1' -> IFound (W.StructSet (ty, i, e1', e2))
       | Bail -> IBail
       | Clean -> (
-          if not (may_cross_sibling ctx e1)
+          if not (may_cross_sibling ctx e1 && tick ctx)
           then IBail
           else
             match walk_expr ctx e2 with
@@ -437,14 +459,14 @@ let try_sink_in_instr ctx instr : instr_result =
       | Found e1' -> IFound (W.ArraySet (ty, e1', e2, e3))
       | Bail -> IBail
       | Clean -> (
-          if not (may_cross_sibling ctx e1)
+          if not (may_cross_sibling ctx e1 && tick ctx)
           then IBail
           else
             match walk_expr ctx e2 with
             | Found e2' -> IFound (W.ArraySet (ty, e1, e2', e3))
             | Bail -> IBail
             | Clean -> (
-                if not (may_cross_sibling ctx e2)
+                if not (may_cross_sibling ctx e2 && tick ctx)
                 then IBail
                 else
                   match walk_expr ctx e3 with
@@ -534,7 +556,10 @@ let try_sink_in_list ctx instrs =
         match try_sink_in_instr ctx instr with
         | IFound instr' -> Some (List.rev_append acc (instr' :: rest))
         | IBail -> None
-        | IClean -> if can_cross_instr ctx instr then loop (instr :: acc) rest else None)
+        | IClean ->
+            if can_cross_instr ctx instr && tick ctx
+            then loop (instr :: acc) rest
+            else None)
   in
   loop [] instrs
 
@@ -547,7 +572,15 @@ let rec transform_instrs instrs =
       let e = transform_expr e in
       let rest = transform_instrs rest in
       let reads, writes = rw_of_expr e in
-      let ctx = { x; e_to_sink = e; reads; writes; e_effect_free = effect_free e } in
+      let ctx =
+        { x
+        ; e_to_sink = e
+        ; reads
+        ; writes
+        ; e_effect_free = effect_free e
+        ; budget = max_walk_distance
+        }
+      in
       incr total_candidates;
       match try_sink_in_list ctx rest with
       | Some new_rest ->
