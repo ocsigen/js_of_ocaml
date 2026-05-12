@@ -207,7 +207,7 @@
                         (i32.const 13)))))))
       (i32.or (local.get $o) (i32.shr_u (local.get $sign) (i32.const 16))))
 
-   (func $float16_to_double (export "caml_float16_to_double")
+   (func $double_of_float16 (export "caml_double_of_float16")
       (param $d i32) (result f64)
       (local $f f32)
       (local.set $f
@@ -848,7 +848,7 @@
                   ;; float16
                   (return
                      (struct.new $float
-                        (call $float16_to_double
+                        (call $double_of_float16
                            (call $dv_get_ui16
                               (local.get $view)
                               (i32.shl (local.get $i) (i32.const 1))
@@ -2047,11 +2047,11 @@
                    (if (i32.lt_u (local.get $i) (local.get $len))
                       (then
                          (local.set $f1
-                            (call $float16_to_double
+                            (call $double_of_float16
                                (call $dv_get_ui16 (local.get $view1) (local.get $i)
                                   (global.get $littleEndian))))
                          (local.set $f2
-                            (call $float16_to_double
+                            (call $double_of_float16
                                (call $dv_get_ui16 (local.get $view2) (local.get $i)
                                   (global.get $littleEndian))))
                          (if (f64.lt (local.get $f1) (local.get $f2))
