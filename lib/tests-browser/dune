@@ -1,5 +1,5 @@
 (executables
- (names test_beforeunload test_wheel)
+ (names test_beforeunload test_wheel test_fetch)
  (libraries js_of_ocaml)
  (modes js wasm)
  (preprocess
@@ -12,7 +12,9 @@
   test_beforeunload.bc.js
   test_beforeunload.html
   test_wheel.bc.js
-  test_wheel.html))
+  test_wheel.html
+  test_fetch.bc.js
+  test_fetch.html))
 
 (alias
  (name default)
@@ -21,4 +23,6 @@
   test_beforeunload.bc.wasm.js
   test_beforeunload.html
   test_wheel.bc.wasm.js
-  test_wheel.html))
+  test_wheel.html
+  test_fetch.bc.wasm.js
+  test_fetch.html))

@@ -23,6 +23,8 @@
   `imageElement.decode`, and `Animation.{finished,ready}`.
   `mediaElement.play` now returns `unit Promise.t` instead of `unit`
   (breaking change)
+* Lib: add `Fetch` and `Abort` modules — Fetch API binding with a typed
+  `AbortController`/`AbortSignal` primitive for cancellation (#596)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
