@@ -50,11 +50,13 @@ let prefix : string =
 type enabled_if =
   | GE5
   | No_effects
+  | Not_quickjs
   | Any
 
 let enabled_if = function
   | "test_sys" -> GE5
   | "test_fun_call" -> No_effects
+  | "test_fetch" -> Not_quickjs
   | _ -> Any
 
 let run_wasm = function
@@ -87,7 +89,8 @@ let () =
         (match enabled_if basename with
         | Any -> ""
         | GE5 -> "\n (enabled_if (>= %{ocaml_version} 5))"
-        | No_effects -> "\n (enabled_if (<> %{profile} with-effects))")
+        | No_effects -> "\n (enabled_if (<> %{profile} with-effects))"
+        | Not_quickjs -> "\n (enabled_if (<> %{profile} quickjs))")
         basename
         (match run_wasm basename with
         | true -> "js wasm"

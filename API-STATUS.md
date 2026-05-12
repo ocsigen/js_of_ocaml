@@ -44,7 +44,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | API | jsoo | Brr | jsoo Module / Notes |
 |-----|------|-----|---------------------|
 | XMLHttpRequest | Yes | No | `XmlHttpRequest` |
-| Fetch API | No | Yes | [#596](https://github.com/ocsigen/js_of_ocaml/issues/596) · Brr: `Brr_io.Fetch` |
+| Fetch API | Yes | Yes | `Fetch` · Brr: `Brr_io.Fetch` |
 | MessageChannel / MessagePort | No | Yes | [#1464](https://github.com/ocsigen/js_of_ocaml/issues/1464) · Brr: `Brr_io.Message` |
 | WebSocket | Yes | Yes | `WebSockets` · Brr: `Brr_io.Websocket` |
 | Server-Sent Events (EventSource) | Yes | No | `EventSource` |
@@ -156,7 +156,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Web Crypto API | No | Yes | Brr: `Brr_webcrypto` |
 | Notifications API | No | Yes | Brr: `Brr_io.Notification` |
 | Broadcast Channel API | No | Yes | Brr: `Brr_io.Message.Broadcast_channel` |
-| AbortController / AbortSignal | No | Yes | Brr: `Brr.Abort` |
+| AbortController / AbortSignal | Yes | Yes | `Abort` · Brr: `Brr.Abort` |
 
 ---
 
@@ -167,17 +167,7 @@ widely used the API is in modern web development, whether an open issue exists,
 whether Brr already provides it (proving OCaml ecosystem demand), and whether
 other APIs depend on it.
 
-### Tier 1 — Critical
-
-These form a dependency chain and should be tackled together.
-
-| API | Issue | In Brr | Why |
-|-----|-------|--------|-----|
-| Promise (upgrade to full) | [#2031](https://github.com/ocsigen/js_of_ocaml/issues/2031) | Yes | Core async primitive of JavaScript. Prerequisite for idiomatic Fetch, Web Crypto, and most modern APIs. |
-| AbortController / AbortSignal | — | Yes | Required for cancelling Fetch requests, event listeners, and streams. Foundational primitive that Fetch and Streams depend on. |
-| Fetch API | [#596](https://github.com/ocsigen/js_of_ocaml/issues/596) | Yes | The standard replacement for XHR. Virtually every modern web app uses it. The single most impactful missing binding. |
-
-### Tier 2 — High
+### Tier 1 — High
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
@@ -188,7 +178,7 @@ These form a dependency chain and should be tackled together.
 | MessageChannel / MessagePort | [#1464](https://github.com/ocsigen/js_of_ocaml/issues/1464) | Yes | Structured communication between Workers, iframes, and windows. Needed for non-trivial Worker usage. |
 | Notifications API | — | Yes | Common engagement feature in web apps. Small API surface. |
 
-### Tier 3 — Medium
+### Tier 2 — Medium
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
@@ -202,7 +192,7 @@ These form a dependency chain and should be tackled together.
 | History API (upgrade to full) | — | Yes | SPA routing depends on pushState/replaceState. Current binding is limited. |
 | HTMLMediaElement (upgrade to full) | — | Yes | Better audio/video control. Current binding only covers basic element types. |
 
-### Tier 4 — Lower priority
+### Tier 3 — Lower priority
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
@@ -218,12 +208,9 @@ These form a dependency chain and should be tackled together.
 
 ### Suggested implementation order
 
-1. **Promise (full) + AbortController + Fetch API** — as a single effort, since
-   they are interdependent. Closes the largest gap and addresses the oldest open
-   feature request ([#596](https://github.com/ocsigen/js_of_ocaml/issues/596), from 2017).
-2. **Web Crypto API** — security-critical, no safe workaround.
-3. **Clipboard API** — small surface, high user-facing value.
-4. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
+1. **Web Crypto API** — security-critical, no safe workaround.
+2. **Clipboard API** — small surface, high user-facing value.
+3. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
    cannot fully support today.
-5. **MessageChannel / Notifications / Broadcast Channel** — small APIs that fill
+4. **MessageChannel / Notifications / Broadcast Channel** — small APIs that fill
    out the remaining communication gaps.

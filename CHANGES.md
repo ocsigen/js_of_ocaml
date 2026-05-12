@@ -22,6 +22,8 @@
   `requestPointerLock`, `exitFullscreen`, `mediaElement.play`, and
   `Animation.{finished,ready}`. Existing fire-and-forget forms are kept
   under the `_`-suffixed names
+* Lib: add `Fetch` and `Abort` modules — Fetch API binding with a typed
+  `AbortController`/`AbortSignal` primitive for cancellation (#596)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
