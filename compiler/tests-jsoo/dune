@@ -75,6 +75,7 @@
    test_parsing
    test_runtime_value
    test_custom_name
+   test_text_codec_fallback
    test_unix
    calc_parser
    calc_lexer))
@@ -127,6 +128,21 @@
  (libraries js_of_ocaml)
  (preprocess
   (pps ppx_expect)))
+
+; The TextEncoder/TextDecoder fallbacks in [runtime/js/mlBytes.js] are
+; cross-checked against the host Web Encoding API. That only works on
+; hosts that provide TextEncoder/TextDecoder, so skip under quickjs.
+
+(library
+ (name test_text_codec_fallback)
+ (enabled_if
+  (<> %{profile} quickjs))
+ (modules test_text_codec_fallback)
+ (inline_tests
+  (modes js))
+ (libraries js_of_ocaml)
+ (preprocess
+  (pps js_of_ocaml-ppx ppx_expect)))
 
 (library
  (name test_list_of_js_array)

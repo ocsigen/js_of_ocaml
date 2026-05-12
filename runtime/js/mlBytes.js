@@ -275,123 +275,152 @@ function caml_bytes_set(s, i, c) {
   return caml_bytes_unsafe_set(s, i, c);
 }
 
+//Provides: jsoo_text_encoder_fallback
+// Small UTF-8 encoder used when the host doesn't provide TextEncoder
+// (e.g. QuickJS). WHATWG-compatible: lone UTF-16 surrogates become the
+// UTF-8 encoding of U+FFFD.
+var jsoo_text_encoder_fallback = {
+  encode: (s) => {
+    var len = s.length;
+    var n = 0;
+    for (var i = 0; i < len; i++) {
+      var c = s.charCodeAt(i);
+      if (c < 0x80) n += 1;
+      else if (c < 0x800) n += 2;
+      else if (c < 0xd800 || c >= 0xe000) n += 3;
+      else if (c < 0xdc00 && i + 1 < len) {
+        var c2 = s.charCodeAt(i + 1);
+        if (c2 >= 0xdc00 && c2 < 0xe000) {
+          n += 4;
+          i++;
+        } else n += 3; /* lone high surrogate -> U+FFFD */
+      } else n += 3; /* lone low surrogate or trailing high -> U+FFFD */
+    }
+    var bytes = new Uint8Array(n);
+    var j = 0;
+    for (var i = 0; i < len; i++) {
+      var c = s.charCodeAt(i);
+      if (c < 0x80) {
+        bytes[j++] = c;
+      } else if (c < 0x800) {
+        bytes[j++] = 0xc0 | (c >> 6);
+        bytes[j++] = 0x80 | (c & 0x3f);
+      } else if (c < 0xd800 || c >= 0xe000) {
+        bytes[j++] = 0xe0 | (c >> 12);
+        bytes[j++] = 0x80 | ((c >> 6) & 0x3f);
+        bytes[j++] = 0x80 | (c & 0x3f);
+      } else if (c < 0xdc00 && i + 1 < len) {
+        var c2 = s.charCodeAt(i + 1);
+        if (c2 >= 0xdc00 && c2 < 0xe000) {
+          var cp = 0x10000 + ((c & 0x3ff) << 10) + (c2 & 0x3ff);
+          bytes[j++] = 0xf0 | (cp >> 18);
+          bytes[j++] = 0x80 | ((cp >> 12) & 0x3f);
+          bytes[j++] = 0x80 | ((cp >> 6) & 0x3f);
+          bytes[j++] = 0x80 | (cp & 0x3f);
+          i++;
+        } else {
+          /* lone high surrogate */
+          bytes[j++] = 0xef;
+          bytes[j++] = 0xbf;
+          bytes[j++] = 0xbd;
+        }
+      } else {
+        /* lone low surrogate or trailing high surrogate */
+        bytes[j++] = 0xef;
+        bytes[j++] = 0xbf;
+        bytes[j++] = 0xbd;
+      }
+    }
+    return bytes;
+  },
+};
+
 //Provides: jsoo_text_encoder
-// Fall back to a small UTF-8 encoder when TextEncoder is not provided
-// by the host (e.g. QuickJS).
+//Requires: jsoo_text_encoder_fallback
 var jsoo_text_encoder =
   typeof TextEncoder !== "undefined"
     ? new TextEncoder()
-    : {
-        encode: (s) => {
-          var len = s.length;
-          var n = 0;
-          for (var i = 0; i < len; i++) {
-            var c = s.charCodeAt(i);
-            if (c < 0x80) n += 1;
-            else if (c < 0x800) n += 2;
-            else if (c < 0xd800 || c >= 0xe000) n += 3;
-            else {
-              n += 4;
-              i++;
-            }
+    : jsoo_text_encoder_fallback;
+
+//Provides: jsoo_text_decoder_fallback
+// Small UTF-8 decoder used when the host doesn't provide TextDecoder
+// (e.g. QuickJS). Default-only (utf-8, fatal=false) and implements the
+// WHATWG substitution-of-maximal-subpart rule: an invalid sequence is
+// replaced by a single U+FFFD that consumes the longest prefix that
+// could have started a valid sequence (1 byte if no valid prefix).
+var jsoo_text_decoder_fallback = {
+  decode: (a) => {
+    var len = a.length;
+    var s = "";
+    var i = 0;
+    var REPL = 0xfffd;
+    var cont = (b) => (b & 0xc0) === 0x80;
+    while (i < len) {
+      var b1 = a[i++];
+      var cp;
+      if (b1 < 0x80) {
+        cp = b1;
+      } else if (b1 < 0xc2 || b1 > 0xf4) {
+        // 0x80..0xbf: stray continuation; 0xc0/0xc1: overlong;
+        // 0xf5..0xff: out of Unicode range. None start a sequence.
+        cp = REPL;
+      } else if (b1 < 0xe0) {
+        if (i < len && cont(a[i])) cp = ((b1 & 0x1f) << 6) | (a[i++] & 0x3f);
+        else cp = REPL;
+      } else if (b1 < 0xf0) {
+        // Reject UTF-16 surrogates and non-shortest encodings.
+        var lo = b1 === 0xe0 ? 0xa0 : 0x80;
+        var hi = b1 === 0xed ? 0x9f : 0xbf;
+        var b2 = i < len ? a[i] : -1;
+        if (b2 < lo || b2 > hi) cp = REPL;
+        else if (i + 1 < len && cont(a[i + 1])) {
+          cp = ((b1 & 0x0f) << 12) | ((b2 & 0x3f) << 6) | (a[i + 1] & 0x3f);
+          i += 2;
+        } else {
+          /* valid 2-byte prefix, but third byte missing or invalid */
+          cp = REPL;
+          i += 1;
+        }
+      } else {
+        var lo = b1 === 0xf0 ? 0x90 : 0x80;
+        var hi = b1 === 0xf4 ? 0x8f : 0xbf;
+        var b2 = i < len ? a[i] : -1;
+        if (b2 < lo || b2 > hi) cp = REPL;
+        else if (i + 1 < len && cont(a[i + 1])) {
+          if (i + 2 < len && cont(a[i + 2])) {
+            cp =
+              ((b1 & 0x07) << 18) |
+              ((b2 & 0x3f) << 12) |
+              ((a[i + 1] & 0x3f) << 6) |
+              (a[i + 2] & 0x3f);
+            i += 3;
+          } else {
+            /* valid 3-byte prefix, fourth byte missing or invalid */
+            cp = REPL;
+            i += 2;
           }
-          var bytes = new Uint8Array(n);
-          var j = 0;
-          for (var i = 0; i < len; i++) {
-            var c = s.charCodeAt(i);
-            if (c < 0x80) {
-              bytes[j++] = c;
-            } else if (c < 0x800) {
-              bytes[j++] = 0xc0 | (c >> 6);
-              bytes[j++] = 0x80 | (c & 0x3f);
-            } else if (c < 0xd800 || c >= 0xe000) {
-              bytes[j++] = 0xe0 | (c >> 12);
-              bytes[j++] = 0x80 | ((c >> 6) & 0x3f);
-              bytes[j++] = 0x80 | (c & 0x3f);
-            } else {
-              i++;
-              var c2 = s.charCodeAt(i);
-              var cp = 0x10000 + ((c & 0x3ff) << 10) + (c2 & 0x3ff);
-              bytes[j++] = 0xf0 | (cp >> 18);
-              bytes[j++] = 0x80 | ((cp >> 12) & 0x3f);
-              bytes[j++] = 0x80 | ((cp >> 6) & 0x3f);
-              bytes[j++] = 0x80 | (cp & 0x3f);
-            }
-          }
-          return bytes;
-        },
-      };
+        } else {
+          /* valid 2-byte prefix, third byte missing or invalid */
+          cp = REPL;
+          i += 1;
+        }
+      }
+      if (cp <= 0xffff) s += String.fromCharCode(cp);
+      else {
+        cp -= 0x10000;
+        s += String.fromCharCode(0xd800 | (cp >> 10), 0xdc00 | (cp & 0x3ff));
+      }
+    }
+    return s;
+  },
+};
 
 //Provides: jsoo_text_decoder
-// Fall back to a small UTF-8 decoder when TextDecoder is not provided
-// by the host (e.g. QuickJS). Default-only (utf-8, fatal=false): any
-// byte that doesn't start a valid UTF-8 sequence (e.g. a stray 0xff)
-// becomes U+FFFD without consuming the bytes that follow it, matching
-// the WHATWG default substitution-of-maximal-subpart rule.
+//Requires: jsoo_text_decoder_fallback
 var jsoo_text_decoder =
   typeof TextDecoder !== "undefined"
     ? new TextDecoder()
-    : {
-        decode: (a) => {
-          var len = a.length;
-          var s = "";
-          var i = 0;
-          var REPL = 0xfffd;
-          var cont = (b) => (b & 0xc0) === 0x80;
-          while (i < len) {
-            var b1 = a[i++];
-            var cp;
-            if (b1 < 0x80) {
-              cp = b1;
-            } else if (b1 < 0xc2 || b1 > 0xf4) {
-              // 0x80..0xbf: stray continuation; 0xc0/0xc1: overlong;
-              // 0xf5..0xff: out of Unicode range. None start a sequence.
-              cp = REPL;
-            } else if (b1 < 0xe0) {
-              if (i < len && cont(a[i]))
-                cp = ((b1 & 0x1f) << 6) | (a[i++] & 0x3f);
-              else cp = REPL;
-            } else if (b1 < 0xf0) {
-              var b2 = i < len ? a[i] : -1;
-              // Reject UTF-16 surrogates and non-shortest encodings.
-              var lo = b1 === 0xe0 ? 0xa0 : 0x80;
-              var hi = b1 === 0xed ? 0x9f : 0xbf;
-              if (b2 >= lo && b2 <= hi && i + 1 < len && cont(a[i + 1])) {
-                cp =
-                  ((b1 & 0x0f) << 12) | ((b2 & 0x3f) << 6) | (a[i + 1] & 0x3f);
-                i += 2;
-              } else cp = REPL;
-            } else {
-              var b2 = i < len ? a[i] : -1;
-              var lo = b1 === 0xf0 ? 0x90 : 0x80;
-              var hi = b1 === 0xf4 ? 0x8f : 0xbf;
-              if (
-                b2 >= lo &&
-                b2 <= hi &&
-                i + 2 < len &&
-                cont(a[i + 1]) &&
-                cont(a[i + 2])
-              ) {
-                cp =
-                  ((b1 & 0x07) << 18) |
-                  ((b2 & 0x3f) << 12) |
-                  ((a[i + 1] & 0x3f) << 6) |
-                  (a[i + 2] & 0x3f);
-                i += 3;
-              } else cp = REPL;
-            }
-            if (cp <= 0xffff) s += String.fromCharCode(cp);
-            else {
-              cp -= 0x10000;
-              s += String.fromCharCode(
-                0xd800 | (cp >> 10),
-                0xdc00 | (cp & 0x3ff),
-              );
-            }
-          }
-          return s;
-        },
-      };
+    : jsoo_text_decoder_fallback;
 
 //Provides: caml_bytes_of_utf16_jsstring
 //Requires: MlBytes, jsoo_text_encoder
