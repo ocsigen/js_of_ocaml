@@ -114,6 +114,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Fullscreen API | Yes | Yes | `Dom_html` (`requestFullscreen` / `exitFullscreen`) · Brr: `Brr.El.request_fullscreen`, `Brr.Document.exit_fullscreen` |
 | Gamepad API | No | No | |
 | Pointer Lock API | Yes | Yes | `Dom_html` (`requestPointerLock`) · Brr: `Brr.El.request_pointer_lock` |
+| Popover API | Yes | Partial | `Dom_html` (`showPopover`, `hidePopover`, `togglePopover` with `?force`, `popover` attribute, `popoverTargetElement`/`popoverTargetAction` on input/button, `beforetoggle`/`toggle` events, `ToggleEvent.source`) · Brr: `Brr.El.{show,hide,toggle}_popover` (no `force` arg, no toggle event bindings) |
 | Selection API | Yes | No | `Dom_html` (`selection`, `range`) |
 
 ## Observers
