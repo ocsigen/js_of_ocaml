@@ -1143,6 +1143,10 @@ and animation = object
 
   method updatePlaybackRate : number_t -> unit meth
 
+  method finished : animation t Promise.t readonly_prop
+
+  method ready : animation t Promise.t readonly_prop
+
   method oncancel : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
 
   method onfinish : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
@@ -1403,7 +1407,11 @@ and element = object
 
   method requestFullscreen_ : unit meth
 
+  method requestFullscreen : unit Promise.t meth
+
   method requestPointerLock_ : unit meth
+
+  method requestPointerLock : unit Promise.t meth
 
   method animate : 'a 'b. 'a -> 'b -> animation t meth
 
@@ -2737,7 +2745,9 @@ class type mediaElement = object
 
   method load : unit meth
 
-  method play : unit meth
+  method play_ : unit meth
+
+  method play : unit Promise.t meth
 
   method pause : unit meth
 
@@ -3314,6 +3324,8 @@ class type document = object
   method timeline : documentTimeline t readonly_prop
 
   method exitFullscreen_ : unit meth
+
+  method exitFullscreen : unit Promise.t meth
 
   method exitPointerLock : unit meth
 

@@ -18,6 +18,10 @@
   preserve type safety in the presence of `'a Promise.t Promise.t` (#2031)
 * Lib: add Lwt interop for `Promise` in `Js_of_ocaml_lwt.Promise`
   (`to_lwt` / `of_lwt`)
+* Lib: add Promise-typed `Dom_html` bindings — `requestFullscreen`,
+  `requestPointerLock`, `exitFullscreen`, `mediaElement.play`, and
+  `Animation.{finished,ready}`. Existing fire-and-forget forms are kept
+  under the `_`-suffixed names
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
