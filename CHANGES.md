@@ -16,6 +16,8 @@
 * Runtime: intial support for quickjs-ng
 * Lib: add `Promise` module — bindings to JavaScript promises that
   preserve type safety in the presence of `'a Promise.t Promise.t` (#2031)
+* Lib: add Lwt interop for `Promise` in `Js_of_ocaml_lwt.Promise`
+  (`to_lwt` / `of_lwt`)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
