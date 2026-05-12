@@ -262,6 +262,9 @@ From +block_index.js:
 caml_get_idx_bytecode
 caml_set_idx_bytecode
 
+From +domain.js:
+caml_max_domain_count
+
 From +effect.js:
 caml_continuation_use_and_update_handler_noexc
 jsoo_effect_not_supported
