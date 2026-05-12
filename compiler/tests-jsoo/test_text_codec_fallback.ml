@@ -27,16 +27,14 @@ let dec_host : decoder Js.t = Js.Unsafe.eval_string "new TextDecoder()"
 let hex_of_bytes (a : Typed_array.uint8Array Js.t) =
   String.concat
     " "
-    (List.init a##.length (fun i ->
-         Printf.sprintf "%02x" (Typed_array.unsafe_get a i)))
+    (List.init a##.length (fun i -> Printf.sprintf "%02x" (Typed_array.unsafe_get a i)))
 
 let bytes_eq (a : Typed_array.uint8Array Js.t) (b : Typed_array.uint8Array Js.t) =
   let n = a##.length in
   n = b##.length
   &&
   let rec loop i =
-    i = n
-    || (Typed_array.unsafe_get a i = Typed_array.unsafe_get b i && loop (i + 1))
+    i = n || (Typed_array.unsafe_get a i = Typed_array.unsafe_get b i && loop (i + 1))
   in
   loop 0
 
@@ -44,9 +42,7 @@ let codepoints_of_jsstring (s : Js.js_string Js.t) =
   String.concat
     " "
     (List.init s##.length (fun i ->
-         Printf.sprintf
-           "U+%04X"
-           (int_of_float (Js.float_of_number (s##charCodeAt i)))))
+         Printf.sprintf "U+%04X" (int_of_float (Js.float_of_number (s##charCodeAt i)))))
 
 let uint8_of_list xs =
   let arr = new%js Typed_array.uint8Array (List.length xs) in
@@ -66,19 +62,14 @@ let check_encode label (s : Js.js_string Js.t) =
   let fb = enc_fallback##encode s in
   let host = enc_host##encode s in
   Printf.printf "%s -> [%s]" label (hex_of_bytes fb);
-  if not (bytes_eq fb host)
-  then Printf.printf "  ! host: [%s]" (hex_of_bytes host);
+  if not (bytes_eq fb host) then Printf.printf "  ! host: [%s]" (hex_of_bytes host);
   print_newline ()
 
 let check_decode label bytes =
   let arr = uint8_of_list bytes in
   let fb = dec_fallback##decode arr in
   let host = dec_host##decode arr in
-  Printf.printf
-    "%s [%s] -> [%s]"
-    label
-    (hex_of_list bytes)
-    (codepoints_of_jsstring fb);
+  Printf.printf "%s [%s] -> [%s]" label (hex_of_list bytes) (codepoints_of_jsstring fb);
   if Js.to_string fb <> Js.to_string host
   then Printf.printf "  ! host: [%s]" (codepoints_of_jsstring host);
   print_newline ()
