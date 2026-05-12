@@ -46,6 +46,7 @@ let runtime =
     ; nat
     ; obj
     ; parsing
+    ; promise
     ; stdlib
     ; sys
     ; str

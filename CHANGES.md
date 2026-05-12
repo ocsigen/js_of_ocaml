@@ -14,6 +14,8 @@
 * Lib: add `Performance` module (#2221)
 * Put more values into global variables (#2211)
 * Runtime: intial support for quickjs-ng
+* Lib: add `Promise` module — bindings to JavaScript promises that
+  preserve type safety in the presence of `'a Promise.t Promise.t` (#2031)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)

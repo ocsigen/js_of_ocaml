@@ -19,7 +19,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | JSON | Yes | Yes | `Json` · Brr: `Brr.Json` |
 | Date | Yes | No | `Js` (Js.date) |
 | Math | Yes | No | `Js` (Js.math) |
-| Promise | Partial | Yes | `Js.Promise` / lwt bindings — [#2031](https://github.com/ocsigen/js_of_ocaml/issues/2031) · Brr: `Jv.Promise`, `Fut` |
+| Promise | Yes | Yes | `Promise` · Brr: `Jv.Promise`, `Fut` |
 | Console | Yes | Yes | `Console` · Brr: `Brr.Console` |
 
 ## DOM
