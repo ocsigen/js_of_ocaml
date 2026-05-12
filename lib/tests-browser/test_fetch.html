@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%;">
+
+<head>
+  <meta charset="utf-8">
+  <title>test_fetch</title>
+  <style>
+    body {
+      font-family: monospace;
+      margin: 2em;
+    }
+
+    #log {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      background: #f5f5f5;
+      border: 1px solid #ccc;
+      min-height: 200px;
+      overflow-y: auto;
+      max-height: 60vh;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1.5em 22em 1fr;
+      align-items: baseline;
+      padding: 2px 0;
+    }
+
+    .mark {
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .mark.pass {
+      color: #1a7f37;
+    }
+
+    .mark.fail {
+      color: #cf222e;
+    }
+
+    .label {
+      color: #1f2328;
+    }
+
+    .detail {
+      color: #57606a;
+    }
+
+    .summary {
+      margin-top: 1em;
+      padding: 0.5em 1em;
+      font-weight: bold;
+      border-radius: 4px;
+    }
+
+    .summary.pass {
+      background: #dafbe1;
+      color: #1a7f37;
+    }
+
+    .summary.fail {
+      background: #ffebe9;
+      color: #cf222e;
+    }
+  </style>
+  <script>
+    var isWasm = /[?&]wasm\b/.test(location.search);
+    (function () {
+      var s = document.createElement('script');
+      s.defer = true;
+      s.src = isWasm ? 'test_fetch.bc.wasm.js' : 'test_fetch.bc.js';
+      document.head.appendChild(s);
+    })();
+  </script>
+</head>
+
+<body>
+  <h2>Fetch API test</h2>
+  <p>Exercises the async Promise round-trip through <code>Fetch.fetch</code>,
+     <code>fetch_with_init</code>, <code>fetch_request</code>, and a rejection path.</p>
+  <p>
+    Mode: <strong><script>document.write(isWasm ? 'wasm' : 'js')</script></strong>
+    — <script>document.write(isWasm ? '<a href="test_fetch.html">switch to js</a>' : '<a href="test_fetch.html?wasm">switch to wasm</a>')</script>
+  </p>
+  <div id="log"></div>
+  <div id="summary" class="summary"></div>
+</body>
+
+</html>
