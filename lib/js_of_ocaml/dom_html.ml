@@ -1472,17 +1472,6 @@ and clientRectList = object
   method item : int -> clientRect t opt meth
 end
 
-let showPopover_options ?source () : showPopover_options t =
-  let init = Js.Unsafe.obj [||] in
-  Option.iter (fun s -> init##.source := s) source;
-  init
-
-let togglePopover_options ?force ?source () : togglePopover_options t =
-  let init = Js.Unsafe.obj [||] in
-  Option.iter (fun f -> init##.force := Js.bool f) force;
-  Option.iter (fun s -> init##.source := s) source;
-  init
-
 let no_handler : ('a, 'b) event_listener = Dom.no_handler
 
 let handler = Dom.handler
@@ -4966,6 +4955,26 @@ let focus ?preventScroll (el : #element t) =
       let opts : focusOptions t = Js.Unsafe.obj [||] in
       opts##.preventScroll := v;
       el##focus_options opts
+
+let showPopover ?source (el : #element t) =
+  match source with
+  | None -> el##showPopover
+  | Some s ->
+      let opts : showPopover_options t = Js.Unsafe.obj [||] in
+      opts##.source := s;
+      el##showPopover_options opts
+
+let hidePopover (el : #element t) = el##hidePopover
+
+let togglePopover ?force ?source (el : #element t) =
+  match force, source with
+  | None, None -> el##togglePopover
+  | Some f, None -> el##togglePopover_force f
+  | _, _ ->
+      let opts : togglePopover_options t = Js.Unsafe.obj [||] in
+      Option.iter (fun f -> opts##.force := f) force;
+      Option.iter (fun s -> opts##.source := s) source;
+      el##togglePopover_options opts
 
 let postMessage ?transfer ?targetOrigin (w : window t) message =
   let opts : windowPostMessageOptions t = Js.Unsafe.obj [||] in
