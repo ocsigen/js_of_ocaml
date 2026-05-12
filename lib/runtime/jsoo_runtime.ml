@@ -291,3 +291,14 @@ module Effect : sig
 end = struct
   external assume_no_perform : (unit -> 'a) -> 'a = "caml_assume_no_perform"
 end
+
+module Promise = struct
+  (** Low-level wrap/unwrap helpers for the [Js_of_ocaml.Promise] binding.
+      Implemented in [runtime/{js,wasm}/promise.{js,wat}]. Wrapping is
+      conditional on the value being thenable, so non-thenable values are
+      passed through unchanged. *)
+
+  external wrap : 'a -> Js.t = "caml_jsoo_promise_wrap"
+
+  external unwrap : Js.t -> 'a = "caml_jsoo_promise_unwrap"
+end
