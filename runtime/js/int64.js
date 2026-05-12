@@ -502,3 +502,13 @@ function caml_int64_to_bytes(x) {
 function caml_int64_hash(v) {
   return v.lo32() ^ v.hi32();
 }
+
+//Provides: caml_reinterpret_unboxed_int64_as_tagged_int63
+//Requires: caml_failwith
+//Version: >= 5.2, < 5.3
+//OxCaml
+function caml_reinterpret_unboxed_int64_as_tagged_int63(_v) {
+  caml_failwith(
+    "caml_reinterpret_unboxed_int64_as_tagged_int63 is not supported in javascript.",
+  );
+}
