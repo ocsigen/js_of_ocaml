@@ -78,6 +78,7 @@
    test_text_codec_fallback
    test_unix
    test_promise
+   test_lwt_promise
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -125,6 +126,15 @@
  (name test_promise)
  (modules test_promise)
  (libraries js_of_ocaml)
+ (modes js wasm)
+ (preprocess
+  (pps ppx_js_internal)))
+
+(test
+ (name test_lwt_promise)
+ (package js_of_ocaml-lwt)
+ (modules test_lwt_promise)
+ (libraries js_of_ocaml js_of_ocaml-lwt lwt)
  (modes js wasm)
  (preprocess
   (pps ppx_js_internal)))
