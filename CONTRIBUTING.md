@@ -29,3 +29,29 @@ opam install odoc lwt_log yojson ocp-indent graphics higlo
 ### Running the tests
 
 Run `make tests`.
+
+## Library binding conventions
+
+When adding new bindings under `lib/js_of_ocaml/`, follow these rules so
+that the role of an underscore in a method name is unambiguous.
+
+### Underscores in method names
+
+- **Leading `_`** — pure name mangling. Use it when the JavaScript
+  identifier is an OCaml keyword (`type`, `method`, `open`, `match`,
+  `end`, `as`, `effect`, `class`, `for`, `assert`, …) or starts with an
+  uppercase letter (which OCaml method names cannot). The `ppx_js_internal`
+  preprocessor strips the leading underscore in the generated JS, so
+  `method _type` reads `.type` on the JS side. Examples: `_method`,
+  `_type`, `_open`, `_URL`, `_PI`, `_HORIZONTAL_AXIS`.
+
+- **Trailing `_`** — *not* mangling. Reserved for an argument-overload
+  variant: same JS method, different OCaml signature (e.g. extra
+  optional flag, different result type). Existing examples: `getInt16_`
+  / `setInt16_` (DataView, take a little-endian boolean), `bindBuffer_`
+  / `bindFramebuffer_` / `bindTexture_` (WebGL, accept an `opt`
+  binding).
+
+Older code mixes these roles (`open_`, `type_`, `method_`, `assert_`,
+`effect_` use trailing `_` for keyword escape rather than leading);
+those are grandfathered. New code should follow the split above.
