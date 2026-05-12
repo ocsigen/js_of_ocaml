@@ -16,6 +16,7 @@ let%expect_test _ =
     +bigarray.js
     +bigstring.js
     +blake2.js
+    +block_index.js
     +compare.js
     +domain.js
     +dynlink.js
@@ -61,6 +62,7 @@ let%expect_test _ =
     +bigarray.js
     +bigstring.js
     +blake2.js
+    +block_index.js
     +compare.js
     +domain.js
     +effect.js
