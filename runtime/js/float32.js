@@ -424,14 +424,14 @@ function caml_fma_float32_bytecode(x, y, z) {
 //Version: >= 5.2, < 5.3
 //OxCaml
 function caml_simd_float32_min_bytecode(x, y) {
-  return Math.min(x, y);
+  return x < y ? x : y;
 }
 
 //Provides: caml_simd_float32_max_bytecode const
 //Version: >= 5.2, < 5.3
 //OxCaml
 function caml_simd_float32_max_bytecode(x, y) {
-  return Math.max(x, y);
+  return x > y ? x : y;
 }
 
 //Provides: caml_simd_cast_float32_int64_bytecode const

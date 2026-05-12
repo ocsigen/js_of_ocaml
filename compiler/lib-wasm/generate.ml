@@ -145,6 +145,8 @@ module Generate (Target : Target_sig.S) = struct
       ; "caml_ldexp_float32_bytecode", (`Pure, [ Float32; Int Normalized ], Float32)
       ; "caml_erf_float32_bytecode", (`Pure, [ Float32 ], Float32)
       ; "caml_erfc_float32_bytecode", (`Pure, [ Float32 ], Float32)
+      ; "caml_simd_float32_min_bytecode", (`Pure, [ Float32; Float32 ], Float32)
+      ; "caml_simd_float32_max_bytecode", (`Pure, [ Float32; Float32 ], Float32)
       ; "caml_float32_compare", (`Pure, [ Float32; Float32 ], Int Normalized)
       ; "caml_float16_of_double", (`Pure, [ Float ], Int32)
       ; "caml_double_of_float16", (`Pure, [ Int32 ], Float)
@@ -1011,16 +1013,6 @@ module Generate (Target : Target_sig.S) = struct
       ~typ:float32_u
       ~ret_typ:float32_u
       (fun f -> float32_un_op Trunc f);
-    register_arith_bin_prim
-      "caml_simd_float32_min_bytecode"
-      `Pure
-      ~typ:float32_u
-      (fun f g -> float32_bin_op Min f g);
-    register_arith_bin_prim
-      "caml_simd_float32_max_bytecode"
-      `Pure
-      ~typ:float32_u
-      (fun f g -> float32_bin_op Max f g);
     register_un_prim
       "caml_int32_bits_of_float"
       `Pure
