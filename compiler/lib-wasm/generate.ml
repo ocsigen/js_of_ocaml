@@ -1392,6 +1392,18 @@ module Generate (Target : Target_sig.S) = struct
     register_un_prim "caml_nativeint_of_int" `Pure ~typ:int_n ~ret_typ:nativeint_u Fun.id;
     register_arith_bin_prim "caml_int_compare" `Pure ~typ:int_n (fun i j ->
         Arith.((j < i) - (i < j)));
+    (* The runtime function has a fixed signature (no parameters), but
+       this primitive stands in for externals of varying arity. We bridge
+       the two by dropping the call site's arguments and invoking the
+       runtime function with none -- it always traps, so they are
+       unused. *)
+    register_prim "caml_no_bytecode_impl" `Mutator (fun _ _ _ ->
+        let* f =
+          register_import ~name:"caml_no_bytecode_impl" (Fun { params = []; result = [] })
+        in
+        let* () = instr (W.CallInstr (f, [])) in
+        let* () = instr W.Unreachable in
+        return (W.RefI31 (Const (I32 0l))));
     register_prim "%js_array" `Pure (fun ctx _ l ->
         Memory.allocate ~tag:0 (expression_list (fun x -> transl_prim_arg ctx x) l));
     register_comparison "caml_greaterthan" (Gt S) Gt (fun ctx x y ->
