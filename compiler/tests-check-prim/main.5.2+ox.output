@@ -137,7 +137,6 @@ caml_bytes_setf32_indexed_by_int64
 caml_bytes_setf32_indexed_by_int8
 caml_bytes_setf32_indexed_by_nativeint
 caml_continuation_use
-caml_deepen_idx_bytecode
 caml_drop_continuation
 caml_dynamic_get
 caml_dynamic_make
@@ -234,8 +233,6 @@ caml_unboxed_int64_vect_blit
 caml_unboxed_nativeint_vect_blit
 caml_unboxed_vec128_vect_blit
 caml_unboxed_vec256_vect_blit
-caml_unsafe_get_idx_bytecode
-caml_unsafe_set_idx_bytecode
 caml_untagged_int16_vect_blit
 caml_untagged_int8_vect_blit
 caml_untagged_int_vect_blit
