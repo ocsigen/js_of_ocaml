@@ -423,15 +423,18 @@ function caml_fma_float32_bytecode(x, y, z) {
 //Provides: caml_simd_float32_min_bytecode const
 //Version: >= 5.2, < 5.3
 //OxCaml
+// Mirrors x86 MINSS: returns y when the comparison fails (NaN or equal,
+// including ±0), unlike Math.min which propagates NaN and treats -0 < +0.
 function caml_simd_float32_min_bytecode(x, y) {
-  return Math.min(x, y);
+  return x < y ? x : y;
 }
 
 //Provides: caml_simd_float32_max_bytecode const
 //Version: >= 5.2, < 5.3
 //OxCaml
+// Mirrors x86 MAXSS; see caml_simd_float32_min_bytecode.
 function caml_simd_float32_max_bytecode(x, y) {
-  return Math.max(x, y);
+  return x > y ? x : y;
 }
 
 //Provides: caml_simd_cast_float32_int64_bytecode const

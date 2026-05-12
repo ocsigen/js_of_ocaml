@@ -278,4 +278,19 @@
       (param $a (ref eq)) (param $i i32) (param $v f32) (result (ref eq))
       (call $caml_bytes_set32 (local.get $a) (local.get $i)
          (i32.reinterpret_f32 (local.get $v))))
+
+   ;; Mirrors x86 MINSS/MAXSS: returns $y when the comparison fails
+   ;; (NaN or equal, including ±0). Unlike f32.min/f32.max, which
+   ;; propagate NaN and canonicalise -0 vs +0.
+   (func (export "caml_simd_float32_min_bytecode")
+      (param $x f32) (param $y f32) (result f32)
+      (if (result f32) (f32.lt (local.get $x) (local.get $y))
+         (then (local.get $x))
+         (else (local.get $y))))
+
+   (func (export "caml_simd_float32_max_bytecode")
+      (param $x f32) (param $y f32) (result f32)
+      (if (result f32) (f32.gt (local.get $x) (local.get $y))
+         (then (local.get $x))
+         (else (local.get $y))))
 )
