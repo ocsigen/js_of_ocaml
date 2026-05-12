@@ -1,0 +1,4 @@
+(tests
+ (names test)
+ (build_if %{oxcaml_supported})
+ (modes js wasm))
