@@ -2,9 +2,9 @@
  (quickjs
   (js_of_ocaml
    (build_runtime_flags
-    ("+fs_quickjs.js" :standard))
+    (:standard "+fs_quickjs.js"))
    (flags
-    ("+fs_quickjs.js" :standard))))
+    (:standard "+fs_quickjs.js"))))
  (_
   (js_of_ocaml
    (build_runtime_flags
