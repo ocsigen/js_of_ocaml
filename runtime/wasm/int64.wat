@@ -317,4 +317,10 @@
                               (local.get $uppercase)))))))))
       (local.get $s))
 
+   (@string $unsupported "caml_reinterpret_unboxed_int64_as_tagged_int63 is not supported in wasm.")
+
+   (func (export "caml_reinterpret_unboxed_int64_as_tagged_int63")
+      (param (ref eq)) (result (ref eq))
+      (call $caml_failwith (global.get $unsupported))
+      (ref.i31 (i32.const 0)))
 )
