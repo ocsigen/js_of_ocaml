@@ -128,6 +128,35 @@ let cases =
             let x, y = Float32.min_max_num 0.s (-0.s) in
             1.s /. x, 1.s /. y)
         , (Float32.neg_infinity, Float32.infinity) ) )
+  (* With_weird_nan_behavior.{min,max} mirror x86 MINSS/MAXSS: when the
+     comparison fails (NaN or equal, including ±0), the second operand is
+     returned. *)
+  ; 94, Equal ((fun () -> Float32.With_weird_nan_behavior.min 1.s 2.s), 1.s)
+  ; 95, Equal ((fun () -> Float32.With_weird_nan_behavior.min 2.s 1.s), 1.s)
+  ; 96, True Float32.(fun () -> is_nan (With_weird_nan_behavior.min 1.s nan))
+  ; 97, Equal Float32.((fun () -> With_weird_nan_behavior.min nan 2.s), 2.s)
+  ; 98, True Float32.(fun () -> is_nan (With_weird_nan_behavior.min nan nan))
+  ; ( 99
+    , Equal
+        ( (fun () -> 1.s /. Float32.With_weird_nan_behavior.min (-0.s) 0.s)
+        , Float32.infinity ) )
+  ; ( 100
+    , Equal
+        ( (fun () -> 1.s /. Float32.With_weird_nan_behavior.min 0.s (-0.s))
+        , Float32.neg_infinity ) )
+  ; 101, Equal ((fun () -> Float32.With_weird_nan_behavior.max 1.s 2.s), 2.s)
+  ; 102, Equal ((fun () -> Float32.With_weird_nan_behavior.max 2.s 1.s), 2.s)
+  ; 103, True Float32.(fun () -> is_nan (With_weird_nan_behavior.max 1.s nan))
+  ; 104, Equal Float32.((fun () -> With_weird_nan_behavior.max nan 2.s), 2.s)
+  ; 105, True Float32.(fun () -> is_nan (With_weird_nan_behavior.max nan nan))
+  ; ( 106
+    , Equal
+        ( (fun () -> 1.s /. Float32.With_weird_nan_behavior.max (-0.s) 0.s)
+        , Float32.infinity ) )
+  ; ( 107
+    , Equal
+        ( (fun () -> 1.s /. Float32.With_weird_nan_behavior.max 0.s (-0.s))
+        , Float32.neg_infinity ) )
   ]
 
 let () =
