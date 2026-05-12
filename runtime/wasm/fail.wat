@@ -102,6 +102,12 @@
    (global $ASSERT_FAILURE_EXN i32 (i32.const 11))
    (global $UNDEFINED_RECURSIVE_MODULE_EXN i32 (i32.const 12))
 
+   (@string $no_bytecode_impl
+      "No bytecode implementation provided for this external")
+
+   (func (export "caml_no_bytecode_impl")
+      (return_call $caml_failwith (global.get $no_bytecode_impl)))
+
    (func (export "caml_is_special_exception") (param (ref eq)) (result i32)
       (i32.or
          (ref.eq (local.get 0)
