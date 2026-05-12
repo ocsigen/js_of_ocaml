@@ -23,6 +23,7 @@
   mlBytes.js
   nat.js
   parsing.js
+  promise.js
   stdlib.js
   toplevel.js
   unix.js

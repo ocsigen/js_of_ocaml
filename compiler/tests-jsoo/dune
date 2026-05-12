@@ -77,6 +77,7 @@
    test_custom_name
    test_text_codec_fallback
    test_unix
+   test_promise
    calc_parser
    calc_lexer))
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -119,6 +120,14 @@
  (wasm_of_ocaml
   (javascript_files custom.js custom.wat))
  (modes js wasm))
+
+(test
+ (name test_promise)
+ (modules test_promise)
+ (libraries js_of_ocaml)
+ (modes js wasm)
+ (preprocess
+  (pps ppx_js_internal)))
 
 (library
  (name test_custom_name)

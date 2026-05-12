@@ -39,6 +39,7 @@ module Jstable = Jstable
 module MutationObserver = MutationObserver
 module Performance = Performance
 module PerformanceObserver = PerformanceObserver
+module Promise = Promise
 module ResizeObserver = ResizeObserver
 module Regexp = Regexp
 module Sys_js = Sys_js

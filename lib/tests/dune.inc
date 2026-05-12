@@ -100,6 +100,15 @@
   (pps ppx_js_internal ppx_expect)))
 
 (library
+ ;; lib/tests/test_promise.ml
+ (name test_promise_75)
+ (modules test_promise)
+ (libraries js_of_ocaml unix)
+ (inline_tests (modes js wasm))
+ (preprocess
+  (pps ppx_js_internal ppx_expect)))
+
+(library
  ;; lib/tests/test_regexp.ml
  (name test_regexp_75)
  (modules test_regexp)

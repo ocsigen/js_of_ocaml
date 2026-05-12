@@ -220,6 +220,14 @@ void caml_jsoo_flags_use_js_string () {
   caml_fatal_error("Unimplemented Javascript primitive caml_jsoo_flags_use_js_string!");
 }
 
+void caml_jsoo_promise_unwrap () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_jsoo_promise_unwrap!");
+}
+
+void caml_jsoo_promise_wrap () {
+  caml_fatal_error("Unimplemented Javascript primitive caml_jsoo_promise_wrap!");
+}
+
 void caml_jsoo_runtime_value () {
   caml_fatal_error("Unimplemented Javascript primitive caml_jsoo_runtime_value!");
 }
