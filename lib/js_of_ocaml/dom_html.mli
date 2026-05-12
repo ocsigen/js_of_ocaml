@@ -1876,7 +1876,7 @@ class type inputElement = object ('self)
 
   method setCustomValidity : js_string t -> unit meth
 
-  method popoverTarget : element t opt prop
+  method popoverTargetElement : element t opt prop
 
   method popoverTargetAction : js_string t prop
 
@@ -1998,7 +1998,7 @@ class type buttonElement = object
 
   method value : js_string t prop
 
-  method popoverTarget : element t opt prop
+  method popoverTargetElement : element t opt prop
 
   method popoverTargetAction : js_string t prop
 
