@@ -1163,6 +1163,14 @@ and animation = object
 
   method updatePlaybackRate : number_t -> unit meth
 
+  method finished : animation t Promise.t readonly_prop
+  (** Resolves when the animation reaches its end, or rejects when it is
+      cancelled. *)
+
+  method ready : animation t Promise.t readonly_prop
+  (** Resolves when the animation is ready to play (i.e. the user agent
+      has finished any pending changes to its state). *)
+
   method oncancel : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
 
   method onfinish : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
@@ -1426,14 +1434,9 @@ and element = object
 
   method blur : unit meth
 
-  method requestFullscreen_ : unit meth
-  (** Returns a [Promise] in JavaScript. Bound as [unit meth] to avoid pulling
-      in a Promise type; the proper version can later be added under
-      [requestFullscreen]. *)
+  method requestFullscreen : unit Promise.t meth
 
-  method requestPointerLock_ : unit meth
-  (** Returns a [Promise] in JavaScript (since 2024). Bound as [unit meth];
-      the proper version can later be added under [requestPointerLock]. *)
+  method requestPointerLock : unit Promise.t meth
 
   method animate : 'a 'b. 'a -> 'b -> animation t meth
 
@@ -2275,6 +2278,8 @@ class type imageElement = object ('self)
 
   method complete : bool t prop
 
+  method decode : unit Promise.t meth
+
   method onload : ('self t, event t) event_listener prop
 
   method onerror : ('self t, event t) event_listener prop
@@ -2555,7 +2560,7 @@ class type mediaElement = object
 
   method load : unit meth
 
-  method play : unit meth
+  method play : unit Promise.t meth
 
   method pause : unit meth
 
@@ -3139,9 +3144,7 @@ class type document = object
 
   method timeline : documentTimeline t readonly_prop
 
-  method exitFullscreen_ : unit meth
-  (** Returns a [Promise] in JavaScript. Bound as [unit meth]; the proper
-      version can later be added under [exitFullscreen]. *)
+  method exitFullscreen : unit Promise.t meth
 
   method exitPointerLock : unit meth
 
