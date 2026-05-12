@@ -1475,6 +1475,8 @@ and element = object
   method togglePopover : bool t meth
 
   method togglePopover_force : bool t -> bool t meth
+  (** [togglePopover(force)] — [force=true] forces the popover open, [false]
+      forces it closed; the no-arg form toggles. Returns the new open state. *)
 
   method togglePopover_options : togglePopover_options t -> bool t meth
 
@@ -1501,11 +1503,6 @@ and clientRectList = object
 
   method item : int -> clientRect t opt meth
 end
-
-val showPopover_options : ?source:element t -> unit -> showPopover_options t
-
-val togglePopover_options :
-  ?force:bool -> ?source:element t -> unit -> togglePopover_options t
 
 class type ['node] collection = ['node] Dom.collection
 (** Collection of HTML elements. Alias for {!Dom.collection}. *)
@@ -4381,6 +4378,16 @@ val scrollIntoView :
 
 val focus : ?preventScroll:bool t -> #element t -> unit
 (** Wrapper for [HTMLElement.focus(options)] taking labeled arguments. *)
+
+val showPopover : ?source:element t -> #element t -> unit
+(** Wrapper for [Element.showPopover(options)] taking labeled arguments. *)
+
+val hidePopover : #element t -> unit
+(** Wrapper for [Element.hidePopover()]. *)
+
+val togglePopover : ?force:bool t -> ?source:element t -> #element t -> bool t
+(** Wrapper for [Element.togglePopover(options)] taking labeled arguments.
+    Returns the new open state. *)
 
 val postMessage :
   ?transfer:Unsafe.any js_array t -> ?targetOrigin:js_string t -> window t -> 'a -> unit
