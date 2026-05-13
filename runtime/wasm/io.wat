@@ -269,7 +269,7 @@
                      (call $caml_jsstring_of_string (local.get $path)))
                   (local.get $flags)
                   (i31.get_u (ref.cast (ref i31) (local.get $perm)))))
-            (if (i32.and (local.get $flags) (i32.const 4)) ;; O_APPEND
+            (if (i32.and (local.get $flags) (i32.const 8)) ;; O_APPEND
                (then (local.set $offset (call $file_size (local.get $fd))))))
          (catch $javascript_exception
             (call $caml_handle_sys_error (pop externref))))
