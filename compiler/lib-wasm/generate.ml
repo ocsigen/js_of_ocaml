@@ -2016,9 +2016,28 @@ module Generate (Target : Target_sig.S) = struct
     | (`Block _ | `Catch | `Skip) as b -> b :: context
     | `Return -> `Skip :: context
 
-  let needed_handlers (p : program) pc =
+  (* Walk the dominator subtree of [pc] (the structural region of the
+     loop body, try body, or function body that the wrap covers),
+     skipping any nested try body since it carries its own wrap. *)
+  let needed_handlers (p : program) ~dom pc =
+    let fold : 'c. _ -> _ -> (Addr.t -> 'c -> 'c) -> 'c -> 'c =
+     fun _blocks pc' f accu ->
+      let block = Addr.Map.find pc' p.blocks in
+      let try_body =
+        match block.branch with
+        | Pushtrap ((pc'', _), _, _) -> Some pc''
+        | _ -> None
+      in
+      Addr.Set.fold
+        (fun child acc ->
+          match try_body with
+          | Some pc'' when pc'' = child -> acc
+          | _ -> f child acc)
+        (Structure.get_edges dom pc')
+        accu
+    in
     Code.traverse
-      { fold = fold_children_skip_try_body }
+      { fold }
       (fun pc n ->
         let block = Addr.Map.find pc p.blocks in
         List.fold_left
@@ -2088,8 +2107,8 @@ module Generate (Target : Target_sig.S) = struct
         instr W.Unreachable
     else body ~result_typ ~fall_through ~context
 
-  let wrap_with_handlers p pc ~result_typ ~fall_through ~context body =
-    let need_zero_divide_handler, need_bound_error_handler = needed_handlers p pc in
+  let wrap_with_handlers p ~dom pc ~result_typ ~fall_through ~context body =
+    let need_zero_divide_handler, need_bound_error_handler = needed_handlers p ~dom pc in
     wrap_with_handler
       need_bound_error_handler
       bound_error_pc
@@ -2233,6 +2252,7 @@ module Generate (Target : Target_sig.S) = struct
                 ~context:(extend_context fall_through context)
                 (wrap_with_handlers
                    p
+                   ~dom
                    (fst cont)
                    (fun ~result_typ ~fall_through ~context ->
                      translate_branch result_typ fall_through pc cont context))
@@ -2304,6 +2324,7 @@ module Generate (Target : Target_sig.S) = struct
            let* () =
              wrap_with_handlers
                p
+               ~dom
                pc
                ~result_typ:[ Option.value ~default:Type.value (unboxed_type return_type) ]
                ~fall_through:`Return
