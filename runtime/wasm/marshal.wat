@@ -66,7 +66,7 @@
          (call $get_intern_state (local.get $str) (local.get $ofs)))
       (local.set $h
          (call $parse_header (local.get $s) (global.get $input_val_from_string)))
-      (if (i32.gt_s
+      (if (i32.gt_u
              (i32.add (local.get $ofs)
                 (i32.add (struct.get $marshal_header $header_len (local.get $h))
                     (struct.get $marshal_header $data_len (local.get $h))))
@@ -86,7 +86,7 @@
       (local $r i32) (local $magic i32) (local $len i32)
       (local $header (ref $bytes)) (local $buf (ref $bytes))
       (local $s (ref $intern_state)) (local $h (ref $marshal_header))
-      (local.set $header (array.new $bytes (i32.const 0) (i32.const 55)))
+      (local.set $header (array.new $bytes (i32.const 0) (i32.const 64)))
       (local.set $r
          (call $caml_really_getblock
             (local.get $ch) (local.get $header) (i32.const 0) (i32.const 5)))
@@ -105,9 +105,10 @@
              (global.get $Intext_magic_number_compressed))
          (then
             (local.set $len
-               (i32.sub
-                  (i32.and (call $read8u (local.get $s)) (i32.const 0x3F))
-                  (i32.const 5)))))
+               (i32.and (call $read8u (local.get $s)) (i32.const 0x3F)))
+            (if (i32.lt_u (local.get $len) (i32.const 5))
+               (then (call $bad_object (global.get $marshal_data_size))))
+            (local.set $len (i32.sub (local.get $len) (i32.const 5)))))
       (if (i32.eqz (local.get $len))
          (then (call $bad_object (global.get $marshal_data_size))))
       (if (i32.lt_u
@@ -1216,8 +1217,8 @@
                (local.get $s) (local.get $v) (local.get $serialize)))
          (call $store32 (local.get $buf) (local.get $pos)
             (tuple.extract 2 0 (local.get $r)))
-         (call $store32 (local.get $buf) (i32.add (local.get $pos) (i32.const 8))
-            (tuple.extract 2 1 (local.get $r)))
+         (call $store64 (local.get $buf) (i32.add (local.get $pos) (i32.const 4))
+            (i64.extend_i32_u (tuple.extract 2 1 (local.get $r))))
          (return (local.get $r)))
       (call $caml_invalid_argument (global.get $cust_value))
       (return (tuple.make 2 (i32.const 0) (i32.const 0))))
