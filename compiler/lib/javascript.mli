@@ -31,7 +31,11 @@ module Num : sig
 
   val of_float : float -> t
 
-  val to_string : t -> string
+  val to_string : ?minify:bool -> t -> string
+  (** [to_string ~minify:true] applies cosmetic compaction (strips the
+      leading zero of [0.D…]/[-0.D…] literals and normalizes exponents);
+      [~minify:false] (the default) returns the literal verbatim, preserving
+      [--pretty] output. *)
 
   val to_targetint : t -> Targetint.t
 

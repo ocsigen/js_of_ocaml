@@ -28,6 +28,11 @@
 * Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
 * Lib: implement popover API (#1734)
 * Lib: add Intl.RelativeTimeFormat (#2070)
+* Compiler: cosmetic minification of generated JavaScript
+  in compact mode: emit `!0`/`!1` for booleans, drop the leading zero
+  from `0.x` fractions, normalise exponent forms (`1e+05` → `1e5`), and
+  pick backticks for string literals when they reduce escape count.
+  Pretty-printed output (`--pretty`) is unchanged. (#1117)
 
 ## Bug fixes
 * Compiler: bound the statement-nesting depth of generated functions by
