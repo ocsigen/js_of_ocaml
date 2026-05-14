@@ -540,15 +540,22 @@ struct
     | Try_statement _
     | Debugger_statement -> true
 
-  let best_string_quote s =
-    let simple = ref 0 and double = ref 0 in
-    for i = 0 to String.length s - 1 do
+  let best_string_quote ?(allow_backtick = false) s =
+    let single = ref 0 and double = ref 0 and backtick = ref 0 in
+    let len = String.length s in
+    for i = 0 to len - 1 do
       match s.[i] with
-      | '\'' -> incr simple
+      | '\'' -> incr single
       | '"' -> incr double
+      | '`' -> incr backtick
+      | '$' when i + 1 < len && Char.equal s.[i + 1] '{' -> incr backtick
       | _ -> ()
     done;
-    if !simple < !double then '\'' else '"'
+    if allow_backtick && !backtick < !single && !backtick < !double
+    then '`'
+    else if !single < !double
+    then '\''
+    else '"'
 
   let pp_string f ?(quote = '"') s =
     let l = String.length s in
@@ -570,6 +577,8 @@ struct
       | '\000' .. '\031' | '\127' ->
           Buffer.add_string b "\\x";
           Buffer.add_char_hex b c
+      | '$' when Char.equal quote '`' && i + 1 < l && Char.equal s.[i + 1] '{' ->
+          Buffer.add_string b "\\$"
       | _ ->
           if Char.equal c quote
           then (
@@ -580,8 +589,8 @@ struct
     Buffer.add_char b quote;
     PP.string f (Buffer.contents b)
 
-  let pp_string_lit f (Stdlib.Utf8_string.Utf8 s) =
-    let quote = best_string_quote s in
+  let pp_string_lit ?(allow_backtick = false) f (Stdlib.Utf8_string.Utf8 s) =
+    let quote = best_string_quote ~allow_backtick s in
     pp_string f ~quote s
 
   let pp_ident_or_string_lit f (Stdlib.Utf8_string.Utf8 s_lit as s) =
@@ -730,11 +739,18 @@ struct
         then (
           PP.string f ")";
           PP.end_group f)
-    | EStr x -> pp_string_lit f x
+    | EStr x -> pp_string_lit ~allow_backtick:(PP.compact f) f x
     | ETemplate l -> template f l
-    | EBool b -> PP.string f (if b then "true" else "false")
+    | EBool b ->
+        if PP.compact f
+        then
+          (* Emit [!0]/[!1] in compact mode. Recurse into the [EUn (Not, _)]
+             printer so precedence-driven parenthesisation comes for free. *)
+          let n = if b then "0" else "1" in
+          expression l f (EUn (Not, ENum (Num.of_string_unsafe n)))
+        else PP.string f (if b then "true" else "false")
     | ENum num ->
-        let s = Num.to_string num in
+        let s = Num.to_string ~minify:(PP.compact f) num in
         let need_parent =
           if Num.is_neg num
           then

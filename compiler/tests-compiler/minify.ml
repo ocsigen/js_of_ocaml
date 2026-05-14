@@ -208,7 +208,7 @@ a = function (aaa,b,c,yyy) {
           4:         else { let xxx = 3; let aaa = xxx; return xxx * yyy }
           5:         }
         $ cat "test.min.js"
-          1: a=function(a,b,c,d){if(true){let
+          1: a=function(a,b,c,d){if(!0){let
           2: a=2;var
           3: e=3;return a+a}else{let
           4: a=3,b=a;return a*d}};
@@ -295,9 +295,10 @@ let%expect_test _ =
         $ cat "test.min.js"
           1: function
           2: f(){const
-          3: a=2;if(true){var
+          3: a=2;if(!0){var
           4: b=a;const
-          5: c=b+1}} |}])
+          5: c=b+1}}
+        |}])
 
 let%expect_test _ =
   with_temp_dir ~f:(fun () ->
@@ -512,4 +513,191 @@ function f () {
           5: 1:let
           6: c=1;return c;case
           7: 2:[b]=a}}
+        |}])
+
+(* Cosmetic minification: booleans rendered as !0/!1 in compact mode.
+   #1117 *)
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let minify ?(pretty = false) js_prog =
+        let js_file =
+          js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+        in
+        let js_min_file = js_file |> jsoo_minify ~flags:[] ~pretty in
+        print_file (Filetype.path_of_js_file js_min_file)
+      in
+      (* Booleans become !0/!1 in compact mode. *)
+      minify {|
+var a = true;
+var b = false;
+if (true) { f(false) }
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: a=!0,b=!1;if(!0)f(!1);
+        |}];
+      (* Boolean used at property access position needs parens. *)
+      minify {|
+var x = true.toString();
+var y = false.toString();
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: x=(!0).toString(),y=(!1).toString();
+        |}];
+      (* Boolean as base of [**] also needs parens. *)
+      minify {|
+var z = true ** 2;
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: z=(!0)**2;
+        |}];
+      (* Pretty mode preserves true/false. *)
+      minify ~pretty:true {|
+var a = true;
+var b = false;
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var a = true, b = false;
+        |}])
+
+(* Cosmetic minification: leading zero stripped from positive and negative
+   fractions in compact mode.  #1117 *)
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let minify ?(pretty = false) js_prog =
+        let js_file =
+          js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+        in
+        let js_min_file = js_file |> jsoo_minify ~flags:[] ~pretty in
+        print_file (Filetype.path_of_js_file js_min_file)
+      in
+      minify
+        {|
+var a = 0.3;
+var b = -0.3;
+var c = 0.5e-10;
+var d = 1.0;
+var e = 0;
+var f = 0.;
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: a=.3,b=-.3,c=.5e-10,d=1.0,e=0,f=0.;
+        |}];
+      (* Pretty mode preserves the leading zero. *)
+      minify ~pretty:true {|
+var a = 0.3;
+var b = -0.3;
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var a = 0.3, b = - 0.3;
+        |}])
+
+(* Exponent normalisation: a redundant [+] after [e]/[E] is dropped.
+   Unconditional cosmetic, applied in pretty mode too. *)
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let minify ?(pretty = false) js_prog =
+        let js_file =
+          js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+        in
+        let js_min_file = js_file |> jsoo_minify ~flags:[] ~pretty in
+        print_file (Filetype.path_of_js_file js_min_file)
+      in
+      minify {|
+var a = 1e+05;
+var b = 1e+5;
+var c = 1e-05;
+var d = 1E+3;
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: a=1e5,b=1e5,c=1e-5,d=1E3;
+        |}];
+      (* Hex literals use [e]/[E] as digits, not as an exponent marker: they
+         must be left untouched (and must not crash the printer).  #1117 *)
+      minify
+        {|
+var a = 0xfe;
+var b = 0x1e3;
+var c = 0x8495a6be;
+var d = 0x0e;
+var e = 0Xbe;
+var f = -0xfe;
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: a=0xfe,b=0x1e3,c=0x8495a6be,d=0x0e,e=0Xbe,f=-0xfe;
+        |}])
+
+(* Cosmetic minification: backticks preferred when they avoid string-quote
+   escapes.  #1117 *)
+let%expect_test _ =
+  with_temp_dir ~f:(fun () ->
+      let minify ?(pretty = false) js_prog =
+        let js_file =
+          js_prog |> Filetype.js_text_of_string |> Filetype.write_js ~name:"test.js"
+        in
+        let js_min_file = js_file |> jsoo_minify ~flags:[] ~pretty in
+        print_file (Filetype.path_of_js_file js_min_file)
+      in
+      (* Strings with both single and double quotes are emitted as backticks. *)
+      minify {|
+var a = "it's a \"test\"";
+var b = 'plain';
+var c = "plain";
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: a=`it's a "test"`,b="plain",c="plain";
+        |}];
+      (* Strings containing a backtick or ${ stay with regular quotes. *)
+      minify {|
+var a = "back`tick";
+var b = "interp${val}";
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: a="back`tick",b="interp${val}";
+        |}];
+      (* Property keys are never rewritten to backticks (illegal JS). *)
+      minify {|
+var o = {"a-b": 1, "it's": 2, 'two"quotes': 3};
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var
+          2: o={"a-b":1,"it's":2,'two"quotes':3};
+        |}];
+      (* Pretty mode never uses backticks. *)
+      minify ~pretty:true {|
+var a = "it's a \"test\"";
+|};
+      [%expect
+        {|
+        $ cat "test.min.js"
+          1: var a = 'it\'s a "test"';
         |}])

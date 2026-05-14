@@ -30,7 +30,7 @@ module Num : sig
 
   val of_float : float -> t
 
-  val to_string : t -> string
+  val to_string : ?minify:bool -> t -> string
 
   val to_targetint : t -> Targetint.t
 
@@ -55,8 +55,6 @@ end = struct
   type t = string
 
   let of_string_unsafe s = s
-
-  let to_string s = s
 
   let to_targetint s =
     if
@@ -88,7 +86,22 @@ end = struct
       | None -> find_smaller ~f ~bad:mid ~good ~good_s
       | Some s -> find_smaller ~f ~bad ~good:mid ~good_s:s
 
-  (* Windows uses 3 digits for the exponent, let's fix it. *)
+  (* Radix-prefixed literals such as [0xfe] or [0x1e3] use [e]/[E] as digits,
+     not as an exponent marker, and have no leading zero to strip — they must
+     not go through [fix_exponent]. *)
+  let is_radix_prefixed s =
+    let i = if String.length s > 0 && Char.equal s.[0] '-' then 1 else 0 in
+    i + 1 < String.length s
+    && Char.equal s.[i] '0'
+    &&
+    match s.[i + 1] with
+    | 'x' | 'X' | 'b' | 'B' | 'o' | 'O' -> true
+    | _ -> false
+
+  (* Normalize the exponent of a printed decimal number: drop Windows-style
+     padding zeros and the redundant '+' sign after [e]/[E]. Must only be
+     called on decimal literals (see [is_radix_prefixed]).
+     [1e+05] → [1e5], [1e+5] → [1e5], [1e-05] → [1e-5], [1E+3] → [1E3]. *)
   let fix_exponent s =
     let e_pos =
       match String.index_from_opt s 0 'e' with
@@ -99,23 +112,49 @@ end = struct
     | None -> s
     | Some e_pos ->
         let len = String.length s in
-        let start = e_pos + 1 in
-        assert (start < len);
-        let start =
-          match String.get s start with
-          | '-' | '+' -> start + 1
-          | _ -> start
+        let after_e = e_pos + 1 in
+        assert (after_e < len);
+        let drop_plus, after_sign =
+          match String.get s after_e with
+          | '+' -> true, after_e + 1
+          | '-' -> false, after_e + 1
+          | _ -> false, after_e
         in
-        (* Skip leading zeros but keep at least one digit *)
+        (* Skip leading zeros but keep at least one digit. *)
         let rec first_nonzero i =
           if i < len - 1 && Char.equal (String.get s i) '0'
           then first_nonzero (i + 1)
           else i
         in
-        let stop = first_nonzero start in
-        if stop = start
+        let stop = first_nonzero after_sign in
+        if (not drop_plus) && stop = after_sign
         then s
-        else String.sub s ~pos:0 ~len:start ^ String.sub s ~pos:stop ~len:(len - stop)
+        else
+          let sign =
+            if drop_plus then "" else String.sub s ~pos:after_e ~len:(after_sign - after_e)
+          in
+          String.sub s ~pos:0 ~len:after_e
+          ^ sign
+          ^ String.sub s ~pos:stop ~len:(len - stop)
+
+  let to_string ?(minify = false) s =
+    if (not minify) || is_radix_prefixed s
+    then s
+    else
+      (* Cosmetic compaction for compact-mode output: normalize the exponent
+         and drop the leading zero of [0.D…]/[-0.D…] literals. *)
+      let s = fix_exponent s in
+      let len = String.length s in
+      if len >= 3 && Char.equal s.[0] '0' && Char.equal s.[1] '.' && Char.is_digit s.[2]
+      then String.sub s ~pos:1 ~len:(len - 1)
+      else if
+        len >= 4
+        && Char.equal s.[0] '-'
+        && Char.equal s.[1] '0'
+        && Char.equal s.[2] '.'
+        && Char.is_digit s.[3]
+      then "-" ^ String.sub s ~pos:2 ~len:(len - 2)
+      else s
 
   let of_float v =
     match Float.classify_float v with
