@@ -28,7 +28,7 @@
   (cmdliner (>= 2.0))
   (sedlex (>= 3.3))
   (qcheck :with-test)
-  menhir
+  (menhir (>= 20180523))
   menhirLib
   menhirSdk
   (yojson (>= 2.1)))
@@ -148,7 +148,7 @@
   (cmdliner (>= 2.0))
   (opam-format :with-test)
   (sedlex (>= 2.3))
-  menhir
+  (menhir (>= 20180523))
   menhirLib
   menhirSdk
   (yojson (>= 2.1))
