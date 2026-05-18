@@ -7,8 +7,12 @@
   (flags :standard --disable optcall --no-inline)))
 
 (tests
- (names fun_eq)
+ (names fun_eq open_append)
  (modes js wasm))
+
+(tests
+ (names marshal_regressions)
+ (modes wasm))
 
 (tests
  (names gh2093)
