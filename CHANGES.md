@@ -43,6 +43,13 @@
 * Lib: defer `Intl.{Collator,DateTimeFormat,...}` member lookups so the
   `Intl` module no longer throws at load time on hosts where
   `globalThis.Intl` is undefined
+* Lib: fix method-name mangling on a few bindings where the OCaml name
+  resolved to the wrong JavaScript identifier:
+  `Typed_array._BYTES_PER_ELEMENT` (called `BYTES_PER`),
+  `WebGL._MAX_RENDERBUFFER_SIZE` (called `MAX_RENDERBUFFER`), and
+  `canvasElement.toDataURL_type_compression` (called `toDataURL_type`).
+  Renamed to `_BYTES_PER_ELEMENT_`, `_MAX_RENDERBUFFER_SIZE_`, and
+  `toDataURL_compression` respectively
 
 # 6.3.2 (2026-02-15) - Lille
 
