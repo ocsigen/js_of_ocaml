@@ -43,7 +43,7 @@ end
 class type ['a, 'b, 'c] typedArray = object
   inherit arrayBufferView
 
-  method _BYTES_PER_ELEMENT : int readonly_prop
+  method _BYTES_PER_ELEMENT_ : int readonly_prop
 
   method length : int readonly_prop
 
