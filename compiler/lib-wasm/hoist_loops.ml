@@ -188,6 +188,91 @@ let empty_var_sets = { reads = Code.Var.Set.empty; writes = Code.Var.Set.empty }
 
 let empty_vars = Code.Var.Set.empty
 
+(* The liveness analysis below only needs to track variables that are
+   written in some [Loop] body — those are the only ones whose value
+   the helper would write back. Other variables are either never
+   written (read-only in the loop, always need the pre-loop value) or
+   only written outside loops (never appear in any [returned_vars] or
+   [live_in] decision). Restricting the dataflow to this set keeps the
+   live sets small and speeds up the unions inside the fixpoint.
+
+   We use a hashtable since the only operations needed are insertion
+   (during this pre-pass) and O(1) membership lookup at every LocalGet
+   in the liveness analysis. *)
+let writes_in_loops body =
+  let acc = Code.Var.Hashtbl.create 16 in
+  let add_writes body =
+    let { writes; _ } = collect_instrs empty_var_sets body in
+    Code.Var.Set.iter (fun v -> Code.Var.Hashtbl.replace acc v ()) writes
+  in
+  let rec expr (e : W.expression) =
+    match e with
+    | Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ | LocalGet _ -> ()
+    | LocalTee (_, e')
+    | UnOp (_, e')
+    | I32WrapI64 e'
+    | I64ExtendI32 (_, e')
+    | F32DemoteF64 e'
+    | F64PromoteF32 e'
+    | RefI31 e'
+    | I31Get (_, e')
+    | ArrayLen e'
+    | StructGet (_, _, _, e')
+    | RefCast (_, e')
+    | RefTest (_, e')
+    | Br_on_cast (_, _, _, e')
+    | Br_on_cast_fail (_, _, _, e')
+    | Br_on_null (_, e')
+    | ExternConvertAny e'
+    | AnyConvertExtern e' -> expr e'
+    | BinOp (_, e1, e2)
+    | ArrayNew (_, e1, e2)
+    | ArrayNewData (_, _, e1, e2)
+    | ArrayGet (_, _, e1, e2)
+    | RefEq (e1, e2) ->
+        expr e1;
+        expr e2
+    | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) -> List.iter ~f:expr l
+    | Call_ref (_, e', l) ->
+        List.iter ~f:expr l;
+        expr e'
+    | BlockExpr (_, body) | Try (_, body, _) -> instrs body
+    | Seq (l, e') ->
+        instrs l;
+        expr e'
+    | IfExpr (_, cond, e1, e2) ->
+        expr cond;
+        expr e1;
+        expr e2
+  and instr (i : W.instruction) =
+    match i with
+    | Loop (_, body) ->
+        (* [collect_instrs] descends into nested structures, so this
+           captures writes from any nested loops as well. *)
+        add_writes body
+    | Block (_, body) -> instrs body
+    | If (_, e, l1, l2) ->
+        expr e;
+        instrs l1;
+        instrs l2
+    | Drop e | GlobalSet (_, e) | Push e | Throw (_, e) | LocalSet (_, e) -> expr e
+    | Br (_, Some e) | Br_if (_, e) | Br_table (e, _, _) | Return (Some e) -> expr e
+    | Br (_, None) | Return None | Nop | Unreachable | Event _ | Rethrow _ -> ()
+    | CallInstr (_, l) | Return_call (_, l) -> List.iter ~f:expr l
+    | Return_call_ref (_, e', l) ->
+        List.iter ~f:expr l;
+        expr e'
+    | ArraySet (_, e1, e2, e3) ->
+        expr e1;
+        expr e2;
+        expr e3
+    | StructSet (_, _, e1, e2) ->
+        expr e1;
+        expr e2
+  and instrs l = List.iter ~f:instr l in
+  instrs body;
+  acc
+
 let label_reads labels depth =
   let rec find labels depth =
     match labels, depth with
@@ -203,15 +288,19 @@ let catches_live_out labels ~exn_live_out catches =
     ~init:exn_live_out
     ~f:(fun acc (_, label, _) -> Code.Var.Set.union acc (label_reads labels label))
 
-let rec live_before_expr ~labels ~live_out ~exn_live_out (e : W.expression) =
+let rec live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars (e : W.expression) =
   match e with
   | Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> live_out
-  | LocalGet v -> Code.Var.Set.add v live_out
+  | LocalGet v ->
+      if Code.Var.Hashtbl.mem tracked_vars v
+      then Code.Var.Set.add v live_out
+      else live_out
   | LocalTee (v, e') ->
       live_before_expr
         ~labels
         ~live_out:(Code.Var.Set.remove v live_out)
         ~exn_live_out
+        ~tracked_vars
         e'
   | UnOp (_, e')
   | I32WrapI64 e'
@@ -225,84 +314,126 @@ let rec live_before_expr ~labels ~live_out ~exn_live_out (e : W.expression) =
   | RefCast (_, e')
   | RefTest (_, e')
   | ExternConvertAny e'
-  | AnyConvertExtern e' -> live_before_expr ~labels ~live_out ~exn_live_out e'
+  | AnyConvertExtern e' ->
+      live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e'
   | BinOp (_, e1, e2)
   | ArrayNew (_, e1, e2)
   | ArrayNewData (_, _, e1, e2)
   | ArrayGet (_, _, e1, e2)
   | RefEq (e1, e2) ->
-      let live_out = live_before_expr ~labels ~live_out ~exn_live_out e2 in
-      live_before_expr ~labels ~live_out ~exn_live_out e1
+      let live_out = live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e2 in
+      live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e1
   | Br_on_cast (n, _, _, e') | Br_on_cast_fail (n, _, _, e') | Br_on_null (n, e') ->
       let live_out = Code.Var.Set.union live_out (label_reads labels n) in
-      live_before_expr ~labels ~live_out ~exn_live_out e'
+      live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e'
   | Call (_, l) ->
-      let live_out = Code.Var.Set.union live_out exn_live_out in
-      live_before_exprs ~labels ~live_out ~exn_live_out l
+      let live_out =
+        if Code.Var.Set.is_empty exn_live_out
+        then live_out
+        else Code.Var.Set.union live_out exn_live_out
+      in
+      live_before_exprs ~labels ~live_out ~exn_live_out ~tracked_vars l
   | ArrayNewFixed (_, l) | StructNew (_, l) ->
-      live_before_exprs ~labels ~live_out ~exn_live_out l
+      live_before_exprs ~labels ~live_out ~exn_live_out ~tracked_vars l
   | Call_ref (_, e', l) ->
-      let live_out = Code.Var.Set.union live_out exn_live_out in
-      live_before_exprs ~labels ~live_out ~exn_live_out (l @ [ e' ])
+      let live_out =
+        if Code.Var.Set.is_empty exn_live_out
+        then live_out
+        else Code.Var.Set.union live_out exn_live_out
+      in
+      live_before_exprs ~labels ~live_out ~exn_live_out ~tracked_vars (l @ [ e' ])
   | BlockExpr (_, body) ->
       let _, live_in =
-        live_before_instrs ~labels:(live_out :: labels) ~live_out ~exn_live_out body
+        live_before_instrs
+          ~labels:(live_out :: labels)
+          ~live_out
+          ~exn_live_out
+          ~tracked_vars
+          body
       in
       live_in
   | Seq (instrs, e') ->
-      let live_out = live_before_expr ~labels ~live_out ~exn_live_out e' in
-      let _, live_in = live_before_instrs ~labels ~live_out ~exn_live_out instrs in
+      let live_out = live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e' in
+      let _, live_in =
+        live_before_instrs ~labels ~live_out ~exn_live_out ~tracked_vars instrs
+      in
       live_in
   | IfExpr (_, cond, e1, e2) ->
       let branch_labels = live_out :: labels in
-      let live1 = live_before_expr ~labels:branch_labels ~live_out ~exn_live_out e1 in
-      let live2 = live_before_expr ~labels:branch_labels ~live_out ~exn_live_out e2 in
+      let live1 =
+        live_before_expr ~labels:branch_labels ~live_out ~exn_live_out ~tracked_vars e1
+      in
+      let live2 =
+        live_before_expr ~labels:branch_labels ~live_out ~exn_live_out ~tracked_vars e2
+      in
       let live_out = Code.Var.Set.union live1 live2 in
-      live_before_expr ~labels ~live_out ~exn_live_out cond
+      live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars cond
   | Try (_, body, catches) ->
       let exn_live_out = catches_live_out labels ~exn_live_out catches in
       let _, live_in =
-        live_before_instrs ~labels:(live_out :: labels) ~live_out ~exn_live_out body
+        live_before_instrs
+          ~labels:(live_out :: labels)
+          ~live_out
+          ~exn_live_out
+          ~tracked_vars
+          body
       in
       live_in
 
-and live_before_exprs ~labels ~live_out ~exn_live_out l =
+and live_before_exprs ~labels ~live_out ~exn_live_out ~tracked_vars l =
   List.fold_right
     l
     ~init:live_out
-    ~f:(fun e live_out -> live_before_expr ~labels ~live_out ~exn_live_out e)
+    ~f:(fun e live_out -> live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e)
 
-and loop_live_in ~labels ~live_out ~exn_live_out body =
+and loop_live_in ~labels ~live_out ~exn_live_out ~tracked_vars body =
   let rec fix live_head =
     let _, live_head' =
-      live_before_instrs ~labels:(live_head :: labels) ~live_out ~exn_live_out body
+      live_before_instrs
+        ~labels:(live_head :: labels)
+        ~live_out
+        ~exn_live_out
+        ~tracked_vars
+        body
     in
     if Code.Var.Set.equal live_head live_head' then live_head else fix live_head'
   in
   fix empty_vars
 
-and live_before_loop_body ~labels ~live_out ~exn_live_out body =
-  let live_head = loop_live_in ~labels ~live_out ~exn_live_out body in
-  live_before_instrs ~labels:(live_head :: labels) ~live_out ~exn_live_out body
+and live_before_loop_body ~labels ~live_out ~exn_live_out ~tracked_vars body =
+  let live_head = loop_live_in ~labels ~live_out ~exn_live_out ~tracked_vars body in
+  live_before_instrs
+    ~labels:(live_head :: labels)
+    ~live_out
+    ~exn_live_out
+    ~tracked_vars
+    body
 
-and live_before_instr ~labels ~rest_loops ~live_out ~exn_live_out (i : W.instruction) =
+and live_before_instr
+    ~labels
+    ~rest_loops
+    ~live_out
+    ~exn_live_out
+    ~tracked_vars
+    (i : W.instruction) =
   match i with
   | Drop e | Push e ->
-      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e
+      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e
   | GlobalSet (_, e) ->
-      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e
+      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e
   | Throw (_, e) ->
-      rest_loops, live_before_expr ~labels ~live_out:exn_live_out ~exn_live_out e
+      ( rest_loops
+      , live_before_expr ~labels ~live_out:exn_live_out ~exn_live_out ~tracked_vars e )
   | LocalSet (v, e) ->
       let live_out = Code.Var.Set.remove v live_out in
-      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e
+      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e
   | Br (n, None) -> rest_loops, label_reads labels n
   | Br (n, Some e) ->
       let live_out = label_reads labels n in
-      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e
+      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e
   | Br_if (n, e) ->
       let live_out = Code.Var.Set.union live_out (label_reads labels n) in
-      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e
+      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e
   | Br_table (e, targets, default) ->
       let live_out =
         List.fold_left
@@ -310,10 +441,11 @@ and live_before_instr ~labels ~rest_loops ~live_out ~exn_live_out (i : W.instruc
           ~f:(fun acc n -> Code.Var.Set.union acc (label_reads labels n))
           targets
       in
-      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e
+      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e
   | Return None -> rest_loops, empty_vars
   | Return (Some e) ->
-      rest_loops, live_before_expr ~labels ~live_out:empty_vars ~exn_live_out e
+      ( rest_loops
+      , live_before_expr ~labels ~live_out:empty_vars ~exn_live_out ~tracked_vars e )
   | Loop (ty, body) ->
       let extractable =
         List.is_empty ty.result
@@ -324,53 +456,81 @@ and live_before_instr ~labels ~rest_loops ~live_out ~exn_live_out (i : W.instruc
       in
       if extractable
       then
-        let live_in = loop_live_in ~labels ~live_out ~exn_live_out body in
+        let live_in =
+          loop_live_in ~labels ~live_out ~exn_live_out ~tracked_vars body
+        in
         Some (live_out, live_in) :: rest_loops, live_in
       else
         let body_loops, live_in =
-          live_before_loop_body ~labels ~live_out ~exn_live_out body
+          live_before_loop_body ~labels ~live_out ~exn_live_out ~tracked_vars body
         in
         (None :: body_loops) @ rest_loops, live_in
   | Block (_, body) ->
       let body_loops, live_in =
-        live_before_instrs ~labels:(live_out :: labels) ~live_out ~exn_live_out body
+        live_before_instrs
+          ~labels:(live_out :: labels)
+          ~live_out
+          ~exn_live_out
+          ~tracked_vars
+          body
       in
       body_loops @ rest_loops, live_in
   | If (_, e, l1, l2) ->
       let branch_labels = live_out :: labels in
       let loops1, live1 =
-        live_before_instrs ~labels:branch_labels ~live_out ~exn_live_out l1
+        live_before_instrs
+          ~labels:branch_labels
+          ~live_out
+          ~exn_live_out
+          ~tracked_vars
+          l1
       in
       let loops2, live2 =
-        live_before_instrs ~labels:branch_labels ~live_out ~exn_live_out l2
+        live_before_instrs
+          ~labels:branch_labels
+          ~live_out
+          ~exn_live_out
+          ~tracked_vars
+          l2
       in
       let live_out = Code.Var.Set.union live1 live2 in
-      let live_in = live_before_expr ~labels ~live_out ~exn_live_out e in
+      let live_in = live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e in
       loops1 @ loops2 @ rest_loops, live_in
   | CallInstr (_, l) ->
-      let live_out = Code.Var.Set.union live_out exn_live_out in
-      rest_loops, live_before_exprs ~labels ~live_out ~exn_live_out l
+      let live_out =
+        if Code.Var.Set.is_empty exn_live_out
+        then live_out
+        else Code.Var.Set.union live_out exn_live_out
+      in
+      rest_loops, live_before_exprs ~labels ~live_out ~exn_live_out ~tracked_vars l
   | Nop | Event _ -> rest_loops, live_out
   | ArraySet (_, e1, e2, e3) ->
-      let live_out = live_before_expr ~labels ~live_out ~exn_live_out e3 in
-      let live_out = live_before_expr ~labels ~live_out ~exn_live_out e2 in
-      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e1
+      let live_out = live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e3 in
+      let live_out = live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e2 in
+      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e1
   | StructSet (_, _, e1, e2) ->
-      let live_out = live_before_expr ~labels ~live_out ~exn_live_out e2 in
-      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e1
+      let live_out = live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e2 in
+      rest_loops, live_before_expr ~labels ~live_out ~exn_live_out ~tracked_vars e1
   | Return_call (_, l) ->
-      rest_loops, live_before_exprs ~labels ~live_out:empty_vars ~exn_live_out l
+      ( rest_loops
+      , live_before_exprs ~labels ~live_out:empty_vars ~exn_live_out ~tracked_vars l )
   | Return_call_ref (_, e', l) ->
-      rest_loops, live_before_exprs ~labels ~live_out:empty_vars ~exn_live_out (l @ [ e' ])
+      ( rest_loops
+      , live_before_exprs
+          ~labels
+          ~live_out:empty_vars
+          ~exn_live_out
+          ~tracked_vars
+          (l @ [ e' ]) )
   | Rethrow _ -> rest_loops, exn_live_out
   | Unreachable -> rest_loops, empty_vars
 
-and live_before_instrs ~labels ~live_out ~exn_live_out l =
+and live_before_instrs ~labels ~live_out ~exn_live_out ~tracked_vars l =
   List.fold_right
     l
     ~init:([], live_out)
     ~f:(fun i (rest_loops, live_out) ->
-      live_before_instr ~labels ~rest_loops ~live_out ~exn_live_out i)
+      live_before_instr ~labels ~rest_loops ~live_out ~exn_live_out ~tracked_vars i)
 
 (* Backward dataflow over the function body, producing one entry per
    [Loop] encountered in source order: [Some (live_out, live_in)] for
@@ -382,9 +542,14 @@ and live_before_instrs ~labels ~live_out ~exn_live_out l =
    an exceptional exit, which the helper has no way to write back).
    The forward pass in [transform_instrs] consumes the list in the same
    order. *)
-let loops_after_reads body =
+let loops_after_reads ~tracked_vars body =
   let loops, _ =
-    live_before_instrs ~labels:[] ~live_out:empty_vars ~exn_live_out:empty_vars body
+    live_before_instrs
+      ~labels:[]
+      ~live_out:empty_vars
+      ~exn_live_out:empty_vars
+      ~tracked_vars
+      body
   in
   loops
 
@@ -392,6 +557,7 @@ let loops_after_reads body =
 
 type ctx =
   { var_types : W.value_type Code.Var.Hashtbl.t
+  ; tracked_vars : unit Code.Var.Hashtbl.t
   ; mutable new_fields : W.module_field list
   ; mutable extra_locals : (Code.Var.t * W.value_type) list
   }
@@ -408,9 +574,15 @@ let lookup_types ctx vars =
 let extract_loop ctx ~is_initialized ~after_reads ~live_in body =
   let { reads; writes } = collect_instrs empty_var_sets body in
   let all_vars = Code.Var.Set.union reads writes in
+  (* Variables in [all_vars] that are not tracked are read in the body
+     and written nowhere in any loop — they trivially need their
+     pre-loop value, so treat them as live-in. *)
   let param_vars =
     Code.Var.Set.filter
-      (fun v -> is_initialized v && Code.Var.Set.mem v live_in)
+      (fun v ->
+        is_initialized v
+        && (Code.Var.Set.mem v live_in
+            || not (Code.Var.Hashtbl.mem ctx.tracked_vars v)))
       all_vars
   in
   let local_vars = Code.Var.Set.diff all_vars param_vars in
@@ -525,7 +697,8 @@ let f ~toplevel fields =
             func.param_names
             func.signature.params;
           List.iter ~f:(fun (v, t) -> Code.Var.Hashtbl.add var_types v t) func.locals;
-          let ctx = { var_types; new_fields = []; extra_locals = [] } in
+          let tracked_vars = writes_in_loops func.body in
+          let ctx = { var_types; tracked_vars; new_fields = []; extra_locals = [] } in
           let il_ctx = Initialize_locals.create_context () in
           List.iter ~f:(Initialize_locals.mark_initialized il_ctx) func.param_names;
           List.iter
@@ -535,7 +708,7 @@ let f ~toplevel fields =
                   Initialize_locals.mark_initialized il_ctx var
               | Ref { nullable = false; _ } -> ())
             func.locals;
-          let pending_loops = ref (loops_after_reads func.body) in
+          let pending_loops = ref (loops_after_reads ~tracked_vars func.body) in
           let body = transform_instrs ctx il_ctx pending_loops func.body in
           let func' =
             W.Function { func with body; locals = func.locals @ ctx.extra_locals }
