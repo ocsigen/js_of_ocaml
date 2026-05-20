@@ -26,21 +26,17 @@
    body (no escaping [Br], [Return], or [Rethrow]).
 
    Variables used in the loop are split into parameters and locals.
-   A variable becomes a parameter when its pre-loop value is needed:
-   either it is a non-nullable [ref] (no default value available), the
-   body's first use of it may be a read, or the body writes it and the
-   caller reads it after the loop (a conditional in-loop write must not
-   discard the caller's value, since the helper writes back what it
-   returns). The remaining variables become locals of the helper —
-   non-nullable refs that the body sets before getting (the Wasm
-   validator accepts this since [Initialize_locals] has already run on
-   the original function), or defaultable types whose helper default
-   matches the caller's.
+   A variable becomes a parameter when its current value is live at the
+   loop head: either the body may read it before rewriting it on some
+   reachable path, or the loop may exit to a caller read without first
+   rewriting it. The remaining variables become locals of the helper.
+   This includes non-nullable refs whose set/get discipline is already
+   known to be valid because [Initialize_locals] has run on the original
+   function.
 
-   Modified parameters read by the caller are returned via a struct
-   (or directly when there are zero or one). Locals are never returned:
-   by the parameter rules above, any modified variable read by the
-   caller is already a parameter. *)
+   Modified variables that are live after the loop are returned via a
+   struct (or directly when there are zero or one), whether they are
+   parameters or helper locals. *)
 
 open! Stdlib
 module W = Wasm_ast
@@ -182,80 +178,142 @@ and collect_instr acc (i : W.instruction) =
 
 and collect_instrs acc l = List.fold_left ~f:collect_instr ~init:acc l
 
-let read_before_written_instrs body =
-  let rec expr (reads, writes) (e : W.expression) =
-    match e with
-    | Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> (reads, writes)
-    | LocalGet v ->
-        if Code.Var.Set.mem v writes
-        then (reads, writes)
-        else (Code.Var.Set.add v reads, writes)
-    | LocalTee (v, e') ->
-        let reads, writes = expr (reads, writes) e' in
-        (reads, Code.Var.Set.add v writes)
-    | UnOp (_, e')
-    | I32WrapI64 e'
-    | I64ExtendI32 (_, e')
-    | F32DemoteF64 e'
-    | F64PromoteF32 e'
-    | RefI31 e'
-    | I31Get (_, e')
-    | ArrayLen e'
-    | StructGet (_, _, _, e')
-    | RefCast (_, e')
-    | RefTest (_, e')
-    | ExternConvertAny e'
-    | AnyConvertExtern e' -> expr (reads, writes) e'
-    | BinOp (_, e1, e2)
-    | ArrayNew (_, e1, e2)
-    | ArrayNewData (_, _, e1, e2)
-    | ArrayGet (_, _, e1, e2)
-    | RefEq (e1, e2) -> expr (expr (reads, writes) e1) e2
-    | Br_on_cast (_, _, _, e') | Br_on_cast_fail (_, _, _, e') | Br_on_null (_, e') ->
-        expr (reads, writes) e'
-    | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) -> exprs (reads, writes) l
-    | Call_ref (_, e', l) -> expr (exprs (reads, writes) l) e'
-    | BlockExpr (_, body) -> instrs (reads, writes) body
-    | Seq (instrs', e') -> expr (instrs (reads, writes) instrs') e'
-    | IfExpr (_, cond, e1, e2) ->
-        let reads, writes = expr (reads, writes) cond in
-        let reads1, writes1 = expr (reads, writes) e1 in
-        let reads2, writes2 = expr (reads, writes) e2 in
-        (Code.Var.Set.union reads1 reads2, Code.Var.Set.inter writes1 writes2)
-    | Try (_, body, _) -> instrs (reads, writes) body
-
-  and exprs acc l = List.fold_left ~f:expr ~init:acc l
-
-  and instr (reads, writes) (i : W.instruction) =
-    match i with
-    | Drop e | GlobalSet (_, e) | Push e | Throw (_, e) -> expr (reads, writes) e
-    | LocalSet (v, e) ->
-        let reads, writes = expr (reads, writes) e in
-        (reads, Code.Var.Set.add v writes)
-    | Br (_, Some e) | Br_if (_, e) | Br_table (e, _, _) -> expr (reads, writes) e
-    | Br (_, None) | Return None | Nop | Unreachable | Event _ | Rethrow _ -> (reads, writes)
-    | Return (Some e) -> expr (reads, writes) e
-    | Loop (_, body) | Block (_, body) -> instrs (reads, writes) body
-    | If (_, e, l1, l2) ->
-        let reads, writes = expr (reads, writes) e in
-        let reads1, writes1 = instrs (reads, writes) l1 in
-        let reads2, writes2 = instrs (reads, writes) l2 in
-        (Code.Var.Set.union reads1 reads2, Code.Var.Set.inter writes1 writes2)
-    | CallInstr (_, l) | Return_call (_, l) -> exprs (reads, writes) l
-    | Return_call_ref (_, e', l) -> expr (exprs (reads, writes) l) e'
-    | ArraySet (_, e1, e2, e3) -> expr (expr (expr (reads, writes) e1) e2) e3
-    | StructSet (_, _, e1, e2) -> expr (expr (reads, writes) e1) e2
-
-  and instrs acc l = List.fold_left ~f:instr ~init:acc l
-  in
-  let reads, _ = instrs (Code.Var.Set.empty, Code.Var.Set.empty) body in
-  reads
-
 let empty_var_sets = { reads = Code.Var.Set.empty; writes = Code.Var.Set.empty }
 
-let reads_in_expr e = (collect_expr empty_var_sets e).reads
+let empty_vars = Code.Var.Set.empty
 
-let reads_in_instr i = (collect_instr empty_var_sets i).reads
+let label_reads labels depth =
+  let rec find labels depth =
+    match labels, depth with
+    | live :: _, 0 -> live
+    | _ :: tl, n -> find tl (n - 1)
+    | [], _ -> assert false
+  in
+  find labels depth
+
+let rec live_before_expr ~labels ~live_out (e : W.expression) =
+  match e with
+  | Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> live_out
+  | LocalGet v -> Code.Var.Set.add v live_out
+  | LocalTee (v, e') -> live_before_expr ~labels ~live_out:(Code.Var.Set.remove v live_out) e'
+  | UnOp (_, e')
+  | I32WrapI64 e'
+  | I64ExtendI32 (_, e')
+  | F32DemoteF64 e'
+  | F64PromoteF32 e'
+  | RefI31 e'
+  | I31Get (_, e')
+  | ArrayLen e'
+  | StructGet (_, _, _, e')
+  | RefCast (_, e')
+  | RefTest (_, e')
+  | ExternConvertAny e'
+  | AnyConvertExtern e' -> live_before_expr ~labels ~live_out e'
+  | BinOp (_, e1, e2)
+  | ArrayNew (_, e1, e2)
+  | ArrayNewData (_, _, e1, e2)
+  | ArrayGet (_, _, e1, e2)
+  | RefEq (e1, e2) ->
+      let live_out = live_before_expr ~labels ~live_out e2 in
+      live_before_expr ~labels ~live_out e1
+  | Br_on_cast (n, _, _, e') | Br_on_cast_fail (n, _, _, e') | Br_on_null (n, e') ->
+      let live_out = Code.Var.Set.union live_out (label_reads labels n) in
+      live_before_expr ~labels ~live_out e'
+  | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) -> live_before_exprs ~labels ~live_out l
+  | Call_ref (_, e', l) -> live_before_exprs ~labels ~live_out (l @ [ e' ])
+  | BlockExpr (_, body) ->
+      let _, live_in = live_before_instrs ~labels:(live_out :: labels) ~live_out body in
+      live_in
+  | Seq (instrs, e') ->
+      let live_out = live_before_expr ~labels ~live_out e' in
+      let _, live_in = live_before_instrs ~labels ~live_out instrs in
+      live_in
+  | IfExpr (_, cond, e1, e2) ->
+      let branch_labels = live_out :: labels in
+      let live1 = live_before_expr ~labels:branch_labels ~live_out e1 in
+      let live2 = live_before_expr ~labels:branch_labels ~live_out e2 in
+      let live_out = Code.Var.Set.union live1 live2 in
+      live_before_expr ~labels ~live_out cond
+  | Try (_, body, _) ->
+      let _, live_in = live_before_instrs ~labels:(live_out :: labels) ~live_out body in
+      live_in
+
+and live_before_exprs ~labels ~live_out l =
+  List.fold_right l ~init:live_out ~f:(fun e live_out -> live_before_expr ~labels ~live_out e)
+
+and live_before_loop_body ~labels ~live_out body =
+  let rec fix live_head =
+    let _, live_head' = live_before_instrs ~labels:(live_head :: labels) ~live_out body in
+    if Code.Var.Set.equal live_head live_head' then live_head else fix live_head'
+  in
+  let live_head = fix empty_vars in
+  live_before_instrs ~labels:(live_head :: labels) ~live_out body
+
+and live_before_instr ~labels ~rest_loops ~live_out (i : W.instruction) =
+  match i with
+  | Drop e | Push e ->
+      rest_loops, live_before_expr ~labels ~live_out e
+  | GlobalSet (_, e) ->
+      rest_loops, live_before_expr ~labels ~live_out e
+  | Throw (_, e) ->
+      rest_loops, live_before_expr ~labels ~live_out:empty_vars e
+  | LocalSet (v, e) ->
+      let live_out = Code.Var.Set.remove v live_out in
+      rest_loops, live_before_expr ~labels ~live_out e
+  | Br (n, None) -> rest_loops, label_reads labels n
+  | Br (n, Some e) ->
+      let live_out = label_reads labels n in
+      rest_loops, live_before_expr ~labels ~live_out e
+  | Br_if (n, e) ->
+      let live_out = Code.Var.Set.union live_out (label_reads labels n) in
+      rest_loops, live_before_expr ~labels ~live_out e
+  | Br_table (e, targets, default) ->
+      let live_out =
+        List.fold_left
+          ~init:(label_reads labels default)
+          ~f:(fun acc n -> Code.Var.Set.union acc (label_reads labels n))
+          targets
+      in
+      rest_loops, live_before_expr ~labels ~live_out e
+  | Return None -> rest_loops, empty_vars
+  | Return (Some e) -> rest_loops, live_before_expr ~labels ~live_out:empty_vars e
+  | Loop (ty, body) ->
+      let body_loops, live_in = live_before_loop_body ~labels ~live_out body in
+      let loops =
+        if List.is_empty ty.result && is_contained_instrs ~depth:1 body
+        then Some live_out :: rest_loops
+        else (None :: body_loops) @ rest_loops
+      in
+      loops, live_in
+  | Block (_, body) ->
+      let body_loops, live_in = live_before_instrs ~labels:(live_out :: labels) ~live_out body in
+      body_loops @ rest_loops, live_in
+  | If (_, e, l1, l2) ->
+      let branch_labels = live_out :: labels in
+      let loops1, live1 = live_before_instrs ~labels:branch_labels ~live_out l1 in
+      let loops2, live2 = live_before_instrs ~labels:branch_labels ~live_out l2 in
+      let live_out = Code.Var.Set.union live1 live2 in
+      let live_in = live_before_expr ~labels ~live_out e in
+      loops1 @ loops2 @ rest_loops, live_in
+  | CallInstr (_, l) -> rest_loops, live_before_exprs ~labels ~live_out l
+  | Nop | Event _ -> rest_loops, live_out
+  | ArraySet (_, e1, e2, e3) ->
+      let live_out = live_before_expr ~labels ~live_out e3 in
+      let live_out = live_before_expr ~labels ~live_out e2 in
+      rest_loops, live_before_expr ~labels ~live_out e1
+  | StructSet (_, _, e1, e2) ->
+      let live_out = live_before_expr ~labels ~live_out e2 in
+      rest_loops, live_before_expr ~labels ~live_out e1
+  | Return_call (_, l) -> rest_loops, live_before_exprs ~labels ~live_out:empty_vars l
+  | Return_call_ref (_, e', l) ->
+      rest_loops, live_before_exprs ~labels ~live_out:empty_vars (l @ [ e' ])
+  | Rethrow _ | Unreachable -> rest_loops, empty_vars
+
+and live_before_instrs ~labels ~live_out l =
+  List.fold_right
+    l
+    ~init:([], live_out)
+    ~f:(fun i (rest_loops, live_out) -> live_before_instr ~labels ~rest_loops ~live_out i)
 
 (* Backward scan over the function body, producing one entry per [Loop]
    encountered in source order: [Some s] for extractable loops, where
@@ -264,40 +322,7 @@ let reads_in_instr i = (collect_instr empty_var_sets i).reads
    forward pass in [transform_instrs] consumes the list in the same
    order. *)
 let scan_right_to_left body =
-  let rec instr (loops, acc_reads) i =
-    match i with
-    | W.Loop (ty, body) when List.is_empty ty.result && is_contained_instrs ~depth:1 body ->
-        let loops' = Some acc_reads :: loops in
-        let acc_reads' =
-          Code.Var.Set.union acc_reads (read_before_written_instrs body)
-        in
-        (loops', acc_reads')
-    | W.Loop (_, body) ->
-        let acc_reads' =
-          Code.Var.Set.union acc_reads (read_before_written_instrs body)
-        in
-        let loops', acc_reads'' = instrs (loops, acc_reads') body in
-        (None :: loops', acc_reads'')
-    | W.Block (_, body) -> instrs (loops, acc_reads) body
-    | W.If (_, cond, l1, l2) ->
-        let loops', l2_reads = instrs (loops, acc_reads) l2 in
-        let loops'', l1_reads = instrs (loops', acc_reads) l1 in
-        let acc_reads' =
-          Code.Var.Set.union
-            (reads_in_expr cond)
-            (Code.Var.Set.union l1_reads l2_reads)
-        in
-        (loops'', acc_reads')
-    | W.LocalSet (v, e) ->
-        let acc_reads' =
-          Code.Var.Set.union (Code.Var.Set.remove v acc_reads) (reads_in_expr e)
-        in
-        (loops, acc_reads')
-    | _ -> (loops, Code.Var.Set.union acc_reads (reads_in_instr i))
-  and instrs (loops, acc_reads) l =
-    List.fold_right l ~init:(loops, acc_reads) ~f:(fun i acc -> instr acc i)
-  in
-  let loops, _ = instrs ([], Code.Var.Set.empty) body in
+  let loops, _ = live_before_instrs ~labels:[] ~live_out:empty_vars body in
   loops
 
 (* Transformation context *)
@@ -320,16 +345,10 @@ let lookup_types ctx vars =
 let extract_loop ctx ~is_initialized ~after_reads body =
   let { reads; writes } = collect_instrs empty_var_sets body in
   let all_vars = Code.Var.Set.union reads writes in
-  let read_before_written = read_before_written_instrs body in
+  let _, live_in = live_before_loop_body ~labels:[] ~live_out:after_reads body in
   let param_vars =
     Code.Var.Set.filter
-      (fun v ->
-        is_initialized v
-        && ((match Code.Var.Hashtbl.find_opt ctx.var_types v with
-             | Some (Ref { nullable = false; _ }) -> true
-             | _ -> false)
-            || Code.Var.Set.mem v read_before_written
-            || (Code.Var.Set.mem v writes && Code.Var.Set.mem v after_reads)))
+      (fun v -> is_initialized v && Code.Var.Set.mem v live_in)
       all_vars
   in
   let local_vars = Code.Var.Set.diff all_vars param_vars in
