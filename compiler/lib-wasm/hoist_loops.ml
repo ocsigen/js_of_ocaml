@@ -315,10 +315,17 @@ and live_before_instr ~labels ~rest_loops ~live_out ~exn_live_out (i : W.instruc
   | Return (Some e) ->
       rest_loops, live_before_expr ~labels ~live_out:empty_vars ~exn_live_out e
   | Loop (ty, body) ->
-      if List.is_empty ty.result && is_extractable_loop_body body
+      let extractable =
+        List.is_empty ty.result
+        && is_extractable_loop_body body
+        &&
+        let { writes; _ } = collect_instrs empty_var_sets body in
+        Code.Var.Set.is_empty (Code.Var.Set.inter writes exn_live_out)
+      in
+      if extractable
       then
         let live_in = loop_live_in ~labels ~live_out ~exn_live_out body in
-        Some (live_out, exn_live_out, live_in) :: rest_loops, live_in
+        Some (live_out, live_in) :: rest_loops, live_in
       else
         let body_loops, live_in =
           live_before_loop_body ~labels ~live_out ~exn_live_out body
@@ -352,9 +359,9 @@ and live_before_instr ~labels ~rest_loops ~live_out ~exn_live_out (i : W.instruc
       let live_out = live_before_expr ~labels ~live_out ~exn_live_out e2 in
       rest_loops, live_before_expr ~labels ~live_out ~exn_live_out e1
   | Return_call (_, l) ->
-      rest_loops, live_before_exprs ~labels ~live_out:exn_live_out ~exn_live_out l
+      rest_loops, live_before_exprs ~labels ~live_out:empty_vars ~exn_live_out l
   | Return_call_ref (_, e', l) ->
-      rest_loops, live_before_exprs ~labels ~live_out:exn_live_out ~exn_live_out (l @ [ e' ])
+      rest_loops, live_before_exprs ~labels ~live_out:empty_vars ~exn_live_out (l @ [ e' ])
   | Rethrow _ -> rest_loops, exn_live_out
   | Unreachable -> rest_loops, empty_vars
 
@@ -366,14 +373,15 @@ and live_before_instrs ~labels ~live_out ~exn_live_out l =
       live_before_instr ~labels ~rest_loops ~live_out ~exn_live_out i)
 
 (* Backward dataflow over the function body, producing one entry per
-   [Loop] encountered in source order: [Some (live_out, exn_live_out, live_in)] for
-   extractable loops, where [live_out] is the set of variables read
+   [Loop] encountered in source order: [Some (live_out, live_in)] for
+   loops that will be hoisted — [live_out] is the set of variables read
    after the loop on any normal path through the rest of the function,
-   [exn_live_out] is the set of variables read after an exceptional exit
-   from the loop, and
-   [live_in] is the fixpoint set of variables whose pre-loop value the
-   body may need; [None] for non-extractable loops. The forward pass
-   in [transform_instrs] consumes the list in the same order. *)
+   and [live_in] is the fixpoint set of variables whose pre-loop value
+   the body may need; [None] for loops that are left in place (either
+   not contained, or contained but writing a variable that is read on
+   an exceptional exit, which the helper has no way to write back).
+   The forward pass in [transform_instrs] consumes the list in the same
+   order. *)
 let loops_after_reads body =
   let loops, _ =
     live_before_instrs ~labels:[] ~live_out:empty_vars ~exn_live_out:empty_vars body
@@ -471,22 +479,15 @@ and transform_instr ctx il_ctx pending_loops (i : W.instruction) =
   match i with
   | Loop (ty, body) -> (
       match !pending_loops with
-      | Some (after_reads, exn_after_reads, live_in) :: tl ->
+      | Some (after_reads, live_in) :: tl ->
           pending_loops := tl;
-          let { writes; _ } = collect_instrs empty_var_sets body in
           let result =
-            if Code.Var.Set.is_empty (Code.Var.Set.inter writes exn_after_reads)
-            then
-              extract_loop
-                ctx
-                ~is_initialized:(Initialize_locals.is_initialized il_ctx)
-                ~after_reads
-                ~live_in
-                body
-            else
-              let inner = fork_il_ctx il_ctx in
-              let body' = transform_instrs ctx inner pending_loops body in
-              [ W.Loop (ty, body') ]
+            extract_loop
+              ctx
+              ~is_initialized:(Initialize_locals.is_initialized il_ctx)
+              ~after_reads
+              ~live_in
+              body
           in
           Initialize_locals.scan_instruction il_ctx i;
           result
