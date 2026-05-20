@@ -66,3 +66,22 @@ that the role of an underscore in a method name is unambiguous.
 Older code mixes these roles (`open_`, `type_`, `method_`, `assert_`,
 `effect_` use trailing `_` for keyword escape rather than leading);
 those are grandfathered. New code should follow the split above.
+
+### Multi-underscore names
+
+The mangler strips at most one leading `_` and then drops the last `_`
+and everything after it. So a name with more than one non-leading
+underscore resolves to something shorter than you might expect:
+
+| OCaml method            | Calls JS identifier |
+| ----------------------- | ------------------- |
+| `abort_with_reason`     | `abort_with`        |
+| `_BYTES_PER_ELEMENT`    | `BYTES_PER`         |
+| `toDataURL_type_quality`| `toDataURL_type`    |
+
+If the underlying JS identifier itself contains underscores (e.g. a
+WebGL constant like `MAX_RENDERBUFFER_SIZE`), terminate the OCaml name
+with a trailing `_` to anchor the rindex on the very end:
+`_MAX_RENDERBUFFER_SIZE_`. If you want a single overload disambiguator
+on a method like `toDataURL`, give the OCaml name exactly one trailing
+`_<suffix>` (e.g. `toDataURL_quality`, not `toDataURL_type_quality`).
