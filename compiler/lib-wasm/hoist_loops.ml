@@ -26,20 +26,21 @@
    body (no escaping [Br], [Return], or [Rethrow]).
 
    Variables used in the loop are split into parameters and locals.
-   Parameters are variables whose pre-loop value may be needed:
-   either read before being written in the loop body, or with a
-   defaultable type (scalars, nullable refs, [ref eq], …).
-   The remaining variables — non-defaultable non-nullable refs that
-   are always written before their first read — become locals of the
-   helper. They have no meaningful value before the loop, so passing
-   them as parameters would introduce a read that did not exist in
-   the original code. Since [Initialize_locals] has already run on
-   the original function, these locals have a set/get pattern that
-   the Wasm validator accepts without initialisation.
+   A variable becomes a parameter when its pre-loop value is needed:
+   either it is a non-nullable [ref] (no default value available), the
+   body's first use of it may be a read, or the body writes it and the
+   caller reads it after the loop (a conditional in-loop write must not
+   discard the caller's value, since the helper writes back what it
+   returns). The remaining variables become locals of the helper —
+   non-nullable refs that the body sets before getting (the Wasm
+   validator accepts this since [Initialize_locals] has already run on
+   the original function), or defaultable types whose helper default
+   matches the caller's.
 
-   Modified parameters are returned to the caller via a struct (or
-   directly when there are zero or one). Locals are not returned:
-   they are purely internal to the loop. *)
+   Modified parameters read by the caller are returned via a struct
+   (or directly when there are zero or one). Locals are never returned:
+   by the parameter rules above, any modified variable read by the
+   caller is already a parameter. *)
 
 open! Stdlib
 module W = Wasm_ast
@@ -181,6 +182,124 @@ and collect_instr acc (i : W.instruction) =
 
 and collect_instrs acc l = List.fold_left ~f:collect_instr ~init:acc l
 
+let read_before_written_instrs body =
+  let rec expr (reads, writes) (e : W.expression) =
+    match e with
+    | Const _ | GlobalGet _ | Pop _ | RefFunc _ | RefNull _ -> (reads, writes)
+    | LocalGet v ->
+        if Code.Var.Set.mem v writes
+        then (reads, writes)
+        else (Code.Var.Set.add v reads, writes)
+    | LocalTee (v, e') ->
+        let reads, writes = expr (reads, writes) e' in
+        (reads, Code.Var.Set.add v writes)
+    | UnOp (_, e')
+    | I32WrapI64 e'
+    | I64ExtendI32 (_, e')
+    | F32DemoteF64 e'
+    | F64PromoteF32 e'
+    | RefI31 e'
+    | I31Get (_, e')
+    | ArrayLen e'
+    | StructGet (_, _, _, e')
+    | RefCast (_, e')
+    | RefTest (_, e')
+    | ExternConvertAny e'
+    | AnyConvertExtern e' -> expr (reads, writes) e'
+    | BinOp (_, e1, e2)
+    | ArrayNew (_, e1, e2)
+    | ArrayNewData (_, _, e1, e2)
+    | ArrayGet (_, _, e1, e2)
+    | RefEq (e1, e2) -> expr (expr (reads, writes) e1) e2
+    | Br_on_cast (_, _, _, e') | Br_on_cast_fail (_, _, _, e') | Br_on_null (_, e') ->
+        expr (reads, writes) e'
+    | Call (_, l) | ArrayNewFixed (_, l) | StructNew (_, l) -> exprs (reads, writes) l
+    | Call_ref (_, e', l) -> expr (exprs (reads, writes) l) e'
+    | BlockExpr (_, body) -> instrs (reads, writes) body
+    | Seq (instrs', e') -> expr (instrs (reads, writes) instrs') e'
+    | IfExpr (_, cond, e1, e2) ->
+        let reads, writes = expr (reads, writes) cond in
+        let reads1, writes1 = expr (reads, writes) e1 in
+        let reads2, writes2 = expr (reads, writes) e2 in
+        (Code.Var.Set.union reads1 reads2, Code.Var.Set.inter writes1 writes2)
+    | Try (_, body, _) -> instrs (reads, writes) body
+
+  and exprs acc l = List.fold_left ~f:expr ~init:acc l
+
+  and instr (reads, writes) (i : W.instruction) =
+    match i with
+    | Drop e | GlobalSet (_, e) | Push e | Throw (_, e) -> expr (reads, writes) e
+    | LocalSet (v, e) ->
+        let reads, writes = expr (reads, writes) e in
+        (reads, Code.Var.Set.add v writes)
+    | Br (_, Some e) | Br_if (_, e) | Br_table (e, _, _) -> expr (reads, writes) e
+    | Br (_, None) | Return None | Nop | Unreachable | Event _ | Rethrow _ -> (reads, writes)
+    | Return (Some e) -> expr (reads, writes) e
+    | Loop (_, body) | Block (_, body) -> instrs (reads, writes) body
+    | If (_, e, l1, l2) ->
+        let reads, writes = expr (reads, writes) e in
+        let reads1, writes1 = instrs (reads, writes) l1 in
+        let reads2, writes2 = instrs (reads, writes) l2 in
+        (Code.Var.Set.union reads1 reads2, Code.Var.Set.inter writes1 writes2)
+    | CallInstr (_, l) | Return_call (_, l) -> exprs (reads, writes) l
+    | Return_call_ref (_, e', l) -> expr (exprs (reads, writes) l) e'
+    | ArraySet (_, e1, e2, e3) -> expr (expr (expr (reads, writes) e1) e2) e3
+    | StructSet (_, _, e1, e2) -> expr (expr (reads, writes) e1) e2
+
+  and instrs acc l = List.fold_left ~f:instr ~init:acc l
+  in
+  let reads, _ = instrs (Code.Var.Set.empty, Code.Var.Set.empty) body in
+  reads
+
+let empty_var_sets = { reads = Code.Var.Set.empty; writes = Code.Var.Set.empty }
+
+let reads_in_expr e = (collect_expr empty_var_sets e).reads
+
+let reads_in_instr i = (collect_instr empty_var_sets i).reads
+
+(* Backward scan over the function body, producing one entry per [Loop]
+   encountered in source order: [Some s] for extractable loops, where
+   [s] is the set of variables read after the loop on any path through
+   the rest of the function; [None] for non-extractable loops. The
+   forward pass in [transform_instrs] consumes the list in the same
+   order. *)
+let scan_right_to_left body =
+  let rec instr (loops, acc_reads) i =
+    match i with
+    | W.Loop (ty, body) when List.is_empty ty.result && is_contained_instrs ~depth:1 body ->
+        let loops' = Some acc_reads :: loops in
+        let acc_reads' =
+          Code.Var.Set.union acc_reads (read_before_written_instrs body)
+        in
+        (loops', acc_reads')
+    | W.Loop (_, body) ->
+        let acc_reads' =
+          Code.Var.Set.union acc_reads (read_before_written_instrs body)
+        in
+        let loops', acc_reads'' = instrs (loops, acc_reads') body in
+        (None :: loops', acc_reads'')
+    | W.Block (_, body) -> instrs (loops, acc_reads) body
+    | W.If (_, cond, l1, l2) ->
+        let loops', l2_reads = instrs (loops, acc_reads) l2 in
+        let loops'', l1_reads = instrs (loops', acc_reads) l1 in
+        let acc_reads' =
+          Code.Var.Set.union
+            (reads_in_expr cond)
+            (Code.Var.Set.union l1_reads l2_reads)
+        in
+        (loops'', acc_reads')
+    | W.LocalSet (v, e) ->
+        let acc_reads' =
+          Code.Var.Set.union (Code.Var.Set.remove v acc_reads) (reads_in_expr e)
+        in
+        (loops, acc_reads')
+    | _ -> (loops, Code.Var.Set.union acc_reads (reads_in_instr i))
+  and instrs (loops, acc_reads) l =
+    List.fold_right l ~init:(loops, acc_reads) ~f:(fun i acc -> instr acc i)
+  in
+  let loops, _ = instrs ([], Code.Var.Set.empty) body in
+  loops
+
 (* Transformation context *)
 
 type ctx =
@@ -198,31 +317,26 @@ let lookup_types ctx vars =
     vars
     []
 
-let extract_loop ctx ~is_initialized body =
-  let { reads; writes } =
-    collect_instrs { reads = Code.Var.Set.empty; writes = Code.Var.Set.empty } body
-  in
+let extract_loop ctx ~is_initialized ~after_reads body =
+  let { reads; writes } = collect_instrs empty_var_sets body in
   let all_vars = Code.Var.Set.union reads writes in
-  (* Non-nullable ref variables that are not yet initialised when
-     reaching the loop become locals (passing them as parameters would
-     introduce a read that did not exist in the original code).
-     Scalars and nullable refs are safe as parameters since they have
-     Wasm default values. *)
-  let local_vars =
+  let read_before_written = read_before_written_instrs body in
+  let param_vars =
     Code.Var.Set.filter
       (fun v ->
-        (not (is_initialized v))
-        &&
-        match Code.Var.Hashtbl.find_opt ctx.var_types v with
-        | Some (Ref { nullable = false; _ }) -> true
-        | _ -> false)
+        is_initialized v
+        && ((match Code.Var.Hashtbl.find_opt ctx.var_types v with
+             | Some (Ref { nullable = false; _ }) -> true
+             | _ -> false)
+            || Code.Var.Set.mem v read_before_written
+            || (Code.Var.Set.mem v writes && Code.Var.Set.mem v after_reads)))
       all_vars
   in
-  let param_vars = Code.Var.Set.diff all_vars local_vars in
+  let local_vars = Code.Var.Set.diff all_vars param_vars in
   let param_with_types = lookup_types ctx param_vars in
   let local_with_types = lookup_types ctx local_vars in
-  (* Only return modified parameters — locals are loop-internal. *)
-  let modified_with_types = lookup_types ctx (Code.Var.Set.inter param_vars writes) in
+  let returned_vars = Code.Var.Set.inter writes after_reads in
+  let modified_with_types = lookup_types ctx returned_vars in
   let helper_name = Code.Var.fresh_n "loop_helper" in
   let args = List.map ~f:(fun (v, _) -> W.LocalGet v) param_with_types in
   let param_types = List.map ~f:snd param_with_types in
@@ -277,34 +391,41 @@ let extract_loop ctx ~is_initialized body =
 
 let fork_il_ctx = Initialize_locals.fork_context
 
-let rec transform_instrs ctx il_ctx instrs =
-  List.concat_map ~f:(transform_instr ctx il_ctx) instrs
+let rec transform_instrs ctx il_ctx pending_loops instrs =
+  List.concat_map ~f:(transform_instr ctx il_ctx pending_loops) instrs
 
-and transform_instr ctx il_ctx (i : W.instruction) =
+and transform_instr ctx il_ctx pending_loops (i : W.instruction) =
   match i with
-  | Loop (ty, body) when List.is_empty ty.result && is_contained_instrs ~depth:1 body ->
-      (* Use the current initialized set — then scan the original
-         instruction to update the outer context for what follows. *)
-      let result =
-        extract_loop ctx ~is_initialized:(Initialize_locals.is_initialized il_ctx) body
-      in
-      Initialize_locals.scan_instruction il_ctx i;
-      result
-  | Loop (ty, body) ->
-      let inner = fork_il_ctx il_ctx in
-      let body' = transform_instrs ctx inner body in
-      Initialize_locals.scan_instruction il_ctx i;
-      [ W.Loop (ty, body') ]
+  | Loop (ty, body) -> (
+      match !pending_loops with
+      | Some after_reads :: tl ->
+          pending_loops := tl;
+          let result =
+            extract_loop
+              ctx
+              ~is_initialized:(Initialize_locals.is_initialized il_ctx)
+              ~after_reads
+              body
+          in
+          Initialize_locals.scan_instruction il_ctx i;
+          result
+      | None :: tl ->
+          pending_loops := tl;
+          let inner = fork_il_ctx il_ctx in
+          let body' = transform_instrs ctx inner pending_loops body in
+          Initialize_locals.scan_instruction il_ctx i;
+          [ W.Loop (ty, body') ]
+      | [] -> assert false)
   | Block (ty, body) ->
       let inner = fork_il_ctx il_ctx in
-      let body' = transform_instrs ctx inner body in
+      let body' = transform_instrs ctx inner pending_loops body in
       Initialize_locals.scan_instruction il_ctx i;
       [ W.Block (ty, body') ]
   | If (ty, e, l1, l2) ->
       let inner1 = fork_il_ctx il_ctx in
       let inner2 = fork_il_ctx il_ctx in
-      let l1' = transform_instrs ctx inner1 l1 in
-      let l2' = transform_instrs ctx inner2 l2 in
+      let l1' = transform_instrs ctx inner1 pending_loops l1 in
+      let l2' = transform_instrs ctx inner2 pending_loops l2 in
       Initialize_locals.scan_instruction il_ctx i;
       [ W.If (ty, e, l1', l2') ]
   | _ ->
@@ -332,7 +453,8 @@ let f ~toplevel fields =
                   Initialize_locals.mark_initialized il_ctx var
               | Ref { nullable = false; _ } -> ())
             func.locals;
-          let body = transform_instrs ctx il_ctx func.body in
+          let pending_loops = ref (scan_right_to_left func.body) in
+          let body = transform_instrs ctx il_ctx pending_loops func.body in
           let func' =
             W.Function { func with body; locals = func.locals @ ctx.extra_locals }
           in
