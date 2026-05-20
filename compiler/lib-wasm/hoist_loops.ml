@@ -45,6 +45,10 @@
 open! Stdlib
 module W = Wasm_ast
 
+let times = Debug.find "times"
+
+let stats = Debug.find "stats"
+
 (* Check that all branches in a loop body target labels within the loop.
    [depth] counts the number of enclosing control flow constructs
    including the loop itself, so it starts at 1 when called on the loop
@@ -687,32 +691,49 @@ and transform_instr ctx il_ctx pending_loops (i : W.instruction) =
       [ i ]
 
 let f ~toplevel fields =
-  List.concat_map
-    ~f:(fun field ->
-      match field with
-      | W.Function ({ name; _ } as func) when Code.Var.equal name toplevel ->
-          let var_types = Code.Var.Hashtbl.create 16 in
-          List.iter2
-            ~f:(fun v t -> Code.Var.Hashtbl.add var_types v t)
-            func.param_names
-            func.signature.params;
-          List.iter ~f:(fun (v, t) -> Code.Var.Hashtbl.add var_types v t) func.locals;
-          let tracked_vars = writes_in_loops func.body in
-          let ctx = { var_types; tracked_vars; new_fields = []; extra_locals = [] } in
-          let il_ctx = Initialize_locals.create_context () in
-          List.iter ~f:(Initialize_locals.mark_initialized il_ctx) func.param_names;
-          List.iter
-            ~f:(fun (var, typ) ->
-              match (typ : W.value_type) with
-              | I32 | I64 | F32 | F64 | Ref { nullable = true; _ } ->
-                  Initialize_locals.mark_initialized il_ctx var
-              | Ref { nullable = false; _ } -> ())
-            func.locals;
-          let pending_loops = ref (loops_after_reads ~tracked_vars func.body) in
-          let body = transform_instrs ctx il_ctx pending_loops func.body in
-          let func' =
-            W.Function { func with body; locals = func.locals @ ctx.extra_locals }
-          in
-          List.rev ctx.new_fields @ [ func' ]
-      | _ -> [ field ])
-    fields
+  let t = Timer.make () in
+  let hoisted = ref 0 in
+  let left_in_place = ref 0 in
+  let result =
+    List.concat_map
+      ~f:(fun field ->
+        match field with
+        | W.Function ({ name; _ } as func) when Code.Var.equal name toplevel ->
+            let var_types = Code.Var.Hashtbl.create 16 in
+            List.iter2
+              ~f:(fun v t -> Code.Var.Hashtbl.add var_types v t)
+              func.param_names
+              func.signature.params;
+            List.iter ~f:(fun (v, t) -> Code.Var.Hashtbl.add var_types v t) func.locals;
+            let tracked_vars = writes_in_loops func.body in
+            let ctx = { var_types; tracked_vars; new_fields = []; extra_locals = [] } in
+            let il_ctx = Initialize_locals.create_context () in
+            List.iter ~f:(Initialize_locals.mark_initialized il_ctx) func.param_names;
+            List.iter
+              ~f:(fun (var, typ) ->
+                match (typ : W.value_type) with
+                | I32 | I64 | F32 | F64 | Ref { nullable = true; _ } ->
+                    Initialize_locals.mark_initialized il_ctx var
+                | Ref { nullable = false; _ } -> ())
+              func.locals;
+            let loops = loops_after_reads ~tracked_vars func.body in
+            List.iter loops ~f:(function
+              | Some _ -> incr hoisted
+              | None -> incr left_in_place);
+            let pending_loops = ref loops in
+            let body = transform_instrs ctx il_ctx pending_loops func.body in
+            let func' =
+              W.Function { func with body; locals = func.locals @ ctx.extra_locals }
+            in
+            List.rev ctx.new_fields @ [ func' ]
+        | _ -> [ field ])
+      fields
+  in
+  if times () then Format.eprintf "  loop hoisting: %a@." Timer.print t;
+  if stats ()
+  then
+    Format.eprintf
+      "Stats - loop hoisting: hoisted %d, left in place %d@."
+      !hoisted
+      !left_in_place;
+  result
