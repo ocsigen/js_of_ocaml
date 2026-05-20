@@ -241,12 +241,15 @@ let rec live_before_expr ~labels ~live_out (e : W.expression) =
 and live_before_exprs ~labels ~live_out l =
   List.fold_right l ~init:live_out ~f:(fun e live_out -> live_before_expr ~labels ~live_out e)
 
-and live_before_loop_body ~labels ~live_out body =
+and loop_live_in ~labels ~live_out body =
   let rec fix live_head =
     let _, live_head' = live_before_instrs ~labels:(live_head :: labels) ~live_out body in
     if Code.Var.Set.equal live_head live_head' then live_head else fix live_head'
   in
-  let live_head = fix empty_vars in
+  fix empty_vars
+
+and live_before_loop_body ~labels ~live_out body =
+  let live_head = loop_live_in ~labels ~live_out body in
   live_before_instrs ~labels:(live_head :: labels) ~live_out body
 
 and live_before_instr ~labels ~rest_loops ~live_out (i : W.instruction) =
@@ -278,13 +281,13 @@ and live_before_instr ~labels ~rest_loops ~live_out (i : W.instruction) =
   | Return None -> rest_loops, empty_vars
   | Return (Some e) -> rest_loops, live_before_expr ~labels ~live_out:empty_vars e
   | Loop (ty, body) ->
-      let body_loops, live_in = live_before_loop_body ~labels ~live_out body in
-      let loops =
-        if List.is_empty ty.result && is_contained_instrs ~depth:1 body
-        then Some live_out :: rest_loops
-        else (None :: body_loops) @ rest_loops
-      in
-      loops, live_in
+      if List.is_empty ty.result && is_contained_instrs ~depth:1 body
+      then
+        let live_in = loop_live_in ~labels ~live_out body in
+        Some (live_out, live_in) :: rest_loops, live_in
+      else
+        let body_loops, live_in = live_before_loop_body ~labels ~live_out body in
+        (None :: body_loops) @ rest_loops, live_in
   | Block (_, body) ->
       let body_loops, live_in = live_before_instrs ~labels:(live_out :: labels) ~live_out body in
       body_loops @ rest_loops, live_in
@@ -315,13 +318,14 @@ and live_before_instrs ~labels ~live_out l =
     ~init:([], live_out)
     ~f:(fun i (rest_loops, live_out) -> live_before_instr ~labels ~rest_loops ~live_out i)
 
-(* Backward scan over the function body, producing one entry per [Loop]
-   encountered in source order: [Some s] for extractable loops, where
-   [s] is the set of variables read after the loop on any path through
-   the rest of the function; [None] for non-extractable loops. The
-   forward pass in [transform_instrs] consumes the list in the same
-   order. *)
-let scan_right_to_left body =
+(* Backward dataflow over the function body, producing one entry per
+   [Loop] encountered in source order: [Some (live_out, live_in)] for
+   extractable loops, where [live_out] is the set of variables read
+   after the loop on any path through the rest of the function and
+   [live_in] is the fixpoint set of variables whose pre-loop value the
+   body may need; [None] for non-extractable loops. The forward pass
+   in [transform_instrs] consumes the list in the same order. *)
+let loops_after_reads body =
   let loops, _ = live_before_instrs ~labels:[] ~live_out:empty_vars body in
   loops
 
@@ -342,10 +346,9 @@ let lookup_types ctx vars =
     vars
     []
 
-let extract_loop ctx ~is_initialized ~after_reads body =
+let extract_loop ctx ~is_initialized ~after_reads ~live_in body =
   let { reads; writes } = collect_instrs empty_var_sets body in
   let all_vars = Code.Var.Set.union reads writes in
-  let _, live_in = live_before_loop_body ~labels:[] ~live_out:after_reads body in
   let param_vars =
     Code.Var.Set.filter
       (fun v -> is_initialized v && Code.Var.Set.mem v live_in)
@@ -417,13 +420,14 @@ and transform_instr ctx il_ctx pending_loops (i : W.instruction) =
   match i with
   | Loop (ty, body) -> (
       match !pending_loops with
-      | Some after_reads :: tl ->
+      | Some (after_reads, live_in) :: tl ->
           pending_loops := tl;
           let result =
             extract_loop
               ctx
               ~is_initialized:(Initialize_locals.is_initialized il_ctx)
               ~after_reads
+              ~live_in
               body
           in
           Initialize_locals.scan_instruction il_ctx i;
@@ -472,7 +476,7 @@ let f ~toplevel fields =
                   Initialize_locals.mark_initialized il_ctx var
               | Ref { nullable = false; _ } -> ())
             func.locals;
-          let pending_loops = ref (scan_right_to_left func.body) in
+          let pending_loops = ref (loops_after_reads func.body) in
           let body = transform_instrs ctx il_ctx pending_loops func.body in
           let func' =
             W.Function { func with body; locals = func.locals @ ctx.extra_locals }
