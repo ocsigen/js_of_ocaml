@@ -2865,7 +2865,7 @@ class type canvasElement = object
 
   method toDataURL_type : js_string t -> js_string t meth
 
-  method toDataURL_type_compression : js_string t -> number_t -> js_string t meth
+  method toDataURL_compression : js_string t -> number_t -> js_string t meth
 
   method getContext : js_string t -> canvasRenderingContext2D t meth
 end

@@ -1050,7 +1050,7 @@ class type renderingContext = object
 
   method _RENDERBUFFER_BINDING_ : renderbuffer t opt parameter readonly_prop
 
-  method _MAX_RENDERBUFFER_SIZE : int parameter readonly_prop
+  method _MAX_RENDERBUFFER_SIZE_ : int parameter readonly_prop
 
   method _NEVER : depthFunction readonly_prop
 
