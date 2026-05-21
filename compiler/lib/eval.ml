@@ -992,6 +992,11 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
             in
             let fuel = ref static_eval_fuel in
             match eval_block ~fuel ~info ~blocks ~target ~env pc args' with
+            | Some (Tuple _ | Float_array _) ->
+                (* The outcome is not supposed to be a block; emitting one as
+                   a constant loses the array_or_not / field-type information
+                   the back-end needs (e.g. for float records). *)
+                [ i ]
             | Some c ->
                 if debug_static_eval () then Format.eprintf "===> STATIC@.";
                 let c = Constant c in
