@@ -303,7 +303,15 @@ module Type = struct
 
   let env_type ~cps ~arity ~no_code_pointer ~env_type_id ~env_type =
     register_type
-      (if cps
+      (if no_code_pointer
+       then
+         (* The struct has no fn pointer, so its layout doesn't depend on
+            [arity]. Omitting [arity] keeps the name space disjoint from
+            indirect closures (which always include it). *)
+         if cps
+         then Printf.sprintf "cps_env_%d" env_type_id
+         else Printf.sprintf "env_%d" env_type_id
+       else if cps
        then Printf.sprintf "cps_env_%d_%d" arity env_type_id
        else Printf.sprintf "env_%d_%d" arity env_type_id)
       (fun () ->
@@ -356,7 +364,12 @@ module Type = struct
   let rec_closure_type ~cps ~arity ~no_code_pointer ~function_count ~env_type_id ~env_type
       =
     register_type
-      (if cps
+      (if no_code_pointer
+       then
+         if cps
+         then Printf.sprintf "cps_closure_rec_%d_%d" function_count env_type_id
+         else Printf.sprintf "closure_rec_%d_%d" function_count env_type_id
+       else if cps
        then Printf.sprintf "cps_closure_rec_%d_%d_%d" arity function_count env_type_id
        else Printf.sprintf "closure_rec_%d_%d_%d" arity function_count env_type_id)
       (fun () ->
@@ -1156,8 +1169,10 @@ module Closure = struct
            ~f:(fun x -> Code.Var.Set.mem x context.globalized_variables)
            free_variables));
     let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
-    let arity = if no_code_pointer then 0 else if cps then arity - 1 else arity in
-    let* curry_fun = if arity > 1 then need_curry_fun ~cps ~arity else return f in
+    let arity = if cps then arity - 1 else arity in
+    let* curry_fun =
+      if arity > 1 && not no_code_pointer then need_curry_fun ~cps ~arity else return f
+    in
     if List.is_empty free_variables
     then
       let* typ =
@@ -1279,7 +1294,7 @@ module Closure = struct
     else
       let env_type_id = Option.value ~default:(-1) info.id in
       let _, arity = List.find ~f:(fun (f', _) -> Code.Var.equal f f') info.functions in
-      let arity = if no_code_pointer then 0 else if cps then arity - 1 else arity in
+      let arity = if cps then arity - 1 else arity in
       let offset = Memory.env_start ~no_code_pointer arity in
       match info.Closure_conversion.functions with
       | [ _ ] ->
