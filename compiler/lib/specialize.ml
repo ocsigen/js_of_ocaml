@@ -63,7 +63,7 @@ let specialize_apply opt_count shape set_shape update_def =
             ; branch = Return return'
             }
           in
-          let expr = Closure (missing, (free_pc, missing), None) in
+          let expr = Closure (missing, (free_pc, missing), (None, None)) in
           update_def x expr;
           Let (x, expr) :: acc, free_pc + 1, (free_pc, block) :: extra)
         else (
@@ -291,7 +291,9 @@ let optimize_switch_to_cond block x l (opt : switch_to_cond) =
           block.body
           @ [ Let
                 ( shifted
-                , Prim (Extern "%int_sub", [ Pv x; Pc (Int (Targetint.of_int_exn i)) ]) )
+                , Prim
+                    ( Extern ("%int_sub", None)
+                    , [ Pv x; Pc (Int (Targetint.of_int_exn i)) ] ) )
             ; Let (c, Prim (Ult, [ Pv shifted; Pc (Int (Targetint.of_int_exn (j - i))) ]))
             ]
       ; branch = Cond (c, l.(i), l.(j))

@@ -9,6 +9,10 @@ RUN sudo ln -sf /usr/bin/opam-2.3 /usr/bin/opam
 RUN opam remote add origin https://github.com/ocaml/opam-repository.git \
  && opam update
 
+# Switch to patched OCaml compiler
+RUN opam switch create hints 5.4.1 \
+ && opam pin ocaml-variants https://github.com/vouillon/ocaml.git#optimization-hints-test
+
 # Install node
 ENV NODE_VERSION=v24.0.0-v8-canary2025030537242e55ac
 ENV NODE=node-$NODE_VERSION-linux-x64

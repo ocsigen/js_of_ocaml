@@ -113,11 +113,14 @@ let collects_shapes ~shapes (p : Code.program) =
       (fun _ block ->
         List.iter block.Code.body ~f:(fun i ->
             match i with
-            | Code.Let (_, Prim (Extern "caml_register_global", [ Pv block; Pc name ])) ->
+            | Code.Let
+                ( _
+                , Prim
+                    ( Extern ("caml_register_global", _)
+                    , [ Pv block; Pc (NativeString name) ] ) ) ->
                 let name =
                   match name with
-                  | NativeString (Byte s) | NativeString (Utf (Utf8 s)) | String s -> s
-                  | _ -> assert false
+                  | Byte s | Utf (Utf8 s) -> s
                 in
                 shapes := StringMap.add name block !shapes
             | _ -> ()))
