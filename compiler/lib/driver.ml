@@ -715,6 +715,7 @@ let optimize ~shapes ~profile ~keep_flow_data p =
       | O2 -> o2
       | O3 -> o3)
     +> specialize_js_once_after
+    +> Hoist_loops.f
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> map_fst5
          (match Config.target (), Config.effects () with

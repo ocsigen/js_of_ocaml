@@ -14,6 +14,7 @@
 * Lib: add `Performance` module (#2221)
 * Put more values into global variables (#2211)
 * Runtime: intial support for quickjs-ng
+* Extract loops from toplevel function into helper functions (#2245)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
