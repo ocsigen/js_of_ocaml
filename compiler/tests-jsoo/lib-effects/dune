@@ -20,7 +20,6 @@
    assume_no_perform_nested_handler
    deep_state
    effects))
- (libraries jsoo_runtime)
  (preprocess
   (pps ppx_expect)))
 
