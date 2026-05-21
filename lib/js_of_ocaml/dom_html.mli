@@ -1163,6 +1163,14 @@ and animation = object
 
   method updatePlaybackRate : number_t -> unit meth
 
+  method finished : animation t Promise.t readonly_prop
+  (** Resolves when the animation reaches its end, or rejects when it is
+      cancelled. *)
+
+  method ready : animation t Promise.t readonly_prop
+  (** Resolves when the animation is ready to play (i.e. the user agent
+      has finished any pending changes to its state). *)
+
   method oncancel : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
 
   method onfinish : (animation t, animationPlaybackEvent t) event_listener writeonly_prop
@@ -1427,13 +1435,16 @@ and element = object
   method blur : unit meth
 
   method requestFullscreen_ : unit meth
-  (** Returns a [Promise] in JavaScript. Bound as [unit meth] to avoid pulling
-      in a Promise type; the proper version can later be added under
-      [requestFullscreen]. *)
+  (** Fire-and-forget binding. See {!requestFullscreen} for the version that
+      exposes the returned [Promise]. *)
+
+  method requestFullscreen : unit Promise.t meth
 
   method requestPointerLock_ : unit meth
-  (** Returns a [Promise] in JavaScript (since 2024). Bound as [unit meth];
-      the proper version can later be added under [requestPointerLock]. *)
+  (** Fire-and-forget binding. See {!requestPointerLock} for the version that
+      exposes the returned [Promise] (available since 2024). *)
+
+  method requestPointerLock : unit Promise.t meth
 
   method animate : 'a 'b. 'a -> 'b -> animation t meth
 
@@ -2555,7 +2566,12 @@ class type mediaElement = object
 
   method load : unit meth
 
-  method play : unit meth
+  method play_ : unit meth
+  (** Fire-and-forget binding. See {!play} for the version that exposes
+      the returned [Promise], which is what you need to detect autoplay
+      rejections (e.g. [NotAllowedError]). *)
+
+  method play : unit Promise.t meth
 
   method pause : unit meth
 
@@ -2679,7 +2695,7 @@ class type canvasElement = object
 
   method toDataURL_type : js_string t -> js_string t meth
 
-  method toDataURL_type_compression : js_string t -> number_t -> js_string t meth
+  method toDataURL_compression : js_string t -> number_t -> js_string t meth
 
   method getContext : context -> canvasRenderingContext2D t meth
 end
@@ -3140,8 +3156,10 @@ class type document = object
   method timeline : documentTimeline t readonly_prop
 
   method exitFullscreen_ : unit meth
-  (** Returns a [Promise] in JavaScript. Bound as [unit meth]; the proper
-      version can later be added under [exitFullscreen]. *)
+  (** Fire-and-forget binding. See {!exitFullscreen} for the version that
+      exposes the returned [Promise]. *)
+
+  method exitFullscreen : unit Promise.t meth
 
   method exitPointerLock : unit meth
 

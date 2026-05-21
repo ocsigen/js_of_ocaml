@@ -14,6 +14,16 @@
 * Lib: add `Performance` module (#2221)
 * Put more values into global variables (#2211)
 * Runtime: intial support for quickjs-ng
+* Lib: add `Promise` module — bindings to JavaScript promises that
+  preserve type safety in the presence of `'a Promise.t Promise.t` (#2031)
+* Lib: add Lwt interop for `Promise` in `Js_of_ocaml_lwt.Promise`
+  (`to_lwt` / `of_lwt`)
+* Lib: add Promise-typed `Dom_html` bindings — `requestFullscreen`,
+  `requestPointerLock`, `exitFullscreen`, `mediaElement.play`, and
+  `Animation.{finished,ready}`. Existing fire-and-forget forms are kept
+  under the `_`-suffixed names
+* Lib: add `Fetch` and `Abort` modules — Fetch API binding with a typed
+  `AbortController`/`AbortSignal` primitive for cancellation (#596)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
@@ -33,6 +43,13 @@
 * Lib: defer `Intl.{Collator,DateTimeFormat,...}` member lookups so the
   `Intl` module no longer throws at load time on hosts where
   `globalThis.Intl` is undefined
+* Lib: fix method-name mangling on a few bindings where the OCaml name
+  resolved to the wrong JavaScript identifier:
+  `Typed_array._BYTES_PER_ELEMENT` (called `BYTES_PER`),
+  `WebGL._MAX_RENDERBUFFER_SIZE` (called `MAX_RENDERBUFFER`), and
+  `canvasElement.toDataURL_type_compression` (called `toDataURL_type`).
+  Renamed to `_BYTES_PER_ELEMENT_`, `_MAX_RENDERBUFFER_SIZE_`, and
+  `toDataURL_compression` respectively
 
 # 6.3.2 (2026-02-15) - Lille
 

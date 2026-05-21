@@ -19,7 +19,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | JSON | Yes | Yes | `Json` · Brr: `Brr.Json` |
 | Date | Yes | No | `Js` (Js.date) |
 | Math | Yes | No | `Js` (Js.math) |
-| Promise | Partial | Yes | `Js.Promise` / lwt bindings — [#2031](https://github.com/ocsigen/js_of_ocaml/issues/2031) · Brr: `Jv.Promise`, `Fut` |
+| Promise | Yes | Yes | `Promise` · Brr: `Jv.Promise`, `Fut` |
 | Console | Yes | Yes | `Console` · Brr: `Brr.Console` |
 
 ## DOM
@@ -44,7 +44,7 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | API | jsoo | Brr | jsoo Module / Notes |
 |-----|------|-----|---------------------|
 | XMLHttpRequest | Yes | No | `XmlHttpRequest` |
-| Fetch API | No | Yes | [#596](https://github.com/ocsigen/js_of_ocaml/issues/596) · Brr: `Brr_io.Fetch` |
+| Fetch API | Yes | Yes | `Fetch` · Brr: `Brr_io.Fetch` |
 | MessageChannel / MessagePort | No | Yes | [#1464](https://github.com/ocsigen/js_of_ocaml/issues/1464) · Brr: `Brr_io.Message` |
 | WebSocket | Yes | Yes | `WebSockets` · Brr: `Brr_io.Websocket` |
 | Server-Sent Events (EventSource) | Yes | No | `EventSource` |
@@ -111,9 +111,9 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 | Wheel Events | Yes | Yes | `Dom_html` · Brr: `Brr.Ev.Wheel` |
 | Drag and Drop Events | Yes | Yes | `Dom_html` · Brr: `Brr.Ev.Drag` |
 | Clipboard API | No | Yes | Brr: `Brr_io.Clipboard` |
-| Fullscreen API | Partial | Yes | `Dom_html` (element/document fullscreen — `requestFullscreen_`/`exitFullscreen_` returns Promise, not yet typed) · Brr: `Brr.El.request_fullscreen`, `Brr.Document.exit_fullscreen` |
+| Fullscreen API | Yes | Yes | `Dom_html` (`requestFullscreen` / `exitFullscreen`) · Brr: `Brr.El.request_fullscreen`, `Brr.Document.exit_fullscreen` |
 | Gamepad API | No | No | |
-| Pointer Lock API | Partial | Yes | `Dom_html` (element/document pointer lock — `requestPointerLock_` returns Promise, not yet typed) · Brr: `Brr.El.request_pointer_lock` |
+| Pointer Lock API | Yes | Yes | `Dom_html` (`requestPointerLock`) · Brr: `Brr.El.request_pointer_lock` |
 | Selection API | Yes | No | `Dom_html` (`selection`, `range`) |
 
 ## Observers
@@ -151,12 +151,12 @@ This document lists standard JavaScript/Web APIs and their support status in js_
 |-----|------|-----|---------------------|
 | requestAnimationFrame | Yes | Yes | `Dom_html` (window) · Brr: `Brr.G.request_animation_frame` |
 | Performance API (now, mark, measure, entries) | Yes | Partial | `Performance` · Brr: `Brr.Performance` |
-| Web Animations API | Yes | No | `Dom_html` (`animate`, `getAnimations`; `animation`, `animationEffect`, `keyframeEffect`, `computedKeyframe`, `animationTimeline`, `documentTimeline`, `optionalEffectTiming`, `computedEffectTiming`, `keyframeAnimationOptions`, `animationPlaybackEvent`); `Animation.finished`/`ready` Promise getters omitted — use `onfinish` event and `pending` property |
+| Web Animations API | Yes | No | `Dom_html` (`animate`, `getAnimations`; `animation`, `animationEffect`, `keyframeEffect`, `computedKeyframe`, `animationTimeline`, `documentTimeline`, `optionalEffectTiming`, `computedEffectTiming`, `keyframeAnimationOptions`, `animationPlaybackEvent`) |
 | Web Components (Custom Elements, Shadow DOM) | Partial | No | `Dom_html` (Shadow DOM — `attachShadow`, `shadowRoot`, `assignedSlot`, `slot`); Custom Elements not bound |
 | Web Crypto API | No | Yes | Brr: `Brr_webcrypto` |
 | Notifications API | No | Yes | Brr: `Brr_io.Notification` |
 | Broadcast Channel API | No | Yes | Brr: `Brr_io.Message.Broadcast_channel` |
-| AbortController / AbortSignal | No | Yes | Brr: `Brr.Abort` |
+| AbortController / AbortSignal | Yes | Yes | `Abort` · Brr: `Brr.Abort` |
 
 ---
 
@@ -167,17 +167,7 @@ widely used the API is in modern web development, whether an open issue exists,
 whether Brr already provides it (proving OCaml ecosystem demand), and whether
 other APIs depend on it.
 
-### Tier 1 — Critical
-
-These form a dependency chain and should be tackled together.
-
-| API | Issue | In Brr | Why |
-|-----|-------|--------|-----|
-| Promise (upgrade to full) | [#2031](https://github.com/ocsigen/js_of_ocaml/issues/2031) | Yes | Core async primitive of JavaScript. Prerequisite for idiomatic Fetch, Web Crypto, and most modern APIs. |
-| AbortController / AbortSignal | — | Yes | Required for cancelling Fetch requests, event listeners, and streams. Foundational primitive that Fetch and Streams depend on. |
-| Fetch API | [#596](https://github.com/ocsigen/js_of_ocaml/issues/596) | Yes | The standard replacement for XHR. Virtually every modern web app uses it. The single most impactful missing binding. |
-
-### Tier 2 — High
+### Tier 1 — High
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
@@ -188,11 +178,10 @@ These form a dependency chain and should be tackled together.
 | MessageChannel / MessagePort | [#1464](https://github.com/ocsigen/js_of_ocaml/issues/1464) | Yes | Structured communication between Workers, iframes, and windows. Needed for non-trivial Worker usage. |
 | Notifications API | — | Yes | Common engagement feature in web apps. Small API surface. |
 
-### Tier 3 — Medium
+### Tier 2 — Medium
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
-| Fullscreen API (upgrade) | — | Yes | Media players, presentations, games. Element/Document surface is bound; `requestFullscreen`/`exitFullscreen` need a typed Promise return (currently `requestFullscreen_`/`exitFullscreen_` return `unit`). |
 | Broadcast Channel API | — | Yes | Cross-tab communication (sync auth state, shared data). Simple API. |
 | Web Audio API | — | Yes | Audio processing, games, music apps. Large API surface but well-defined. |
 | Media Capture (getUserMedia) | — | Yes | Video calls, camera/mic access. Growing use with remote work tooling. |
@@ -202,9 +191,8 @@ These form a dependency chain and should be tackled together.
 | Streams API | — | No | Modern data processing. Fetch response bodies are ReadableStreams. Increasingly foundational. |
 | History API (upgrade to full) | — | Yes | SPA routing depends on pushState/replaceState. Current binding is limited. |
 | HTMLMediaElement (upgrade to full) | — | Yes | Better audio/video control. Current binding only covers basic element types. |
-| Pointer Lock API (upgrade) | — | Yes | 3D/game applications. Element/Document surface is bound; `requestPointerLock` needs a typed Promise return. |
 
-### Tier 4 — Lower priority
+### Tier 3 — Lower priority
 
 | API | Issue | In Brr | Why |
 |-----|-------|--------|-----|
@@ -220,17 +208,9 @@ These form a dependency chain and should be tackled together.
 
 ### Suggested implementation order
 
-1. **Promise (full) + AbortController + Fetch API** — as a single effort, since
-   they are interdependent. Closes the largest gap and addresses the oldest open
-   feature request ([#596](https://github.com/ocsigen/js_of_ocaml/issues/596), from 2017).
-2. **Web Crypto API** — security-critical, no safe workaround.
-3. **Clipboard API** — small surface, high user-facing value.
-4. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
+1. **Web Crypto API** — security-critical, no safe workaround.
+2. **Clipboard API** — small surface, high user-facing value.
+3. **Service Workers + Cache API** — enables PWAs, the main class of apps jsoo
    cannot fully support today.
-5. **MessageChannel / Notifications / Broadcast Channel** — small APIs that fill
+4. **MessageChannel / Notifications / Broadcast Channel** — small APIs that fill
    out the remaining communication gaps.
-6. **Promise-typed Fullscreen / Pointer Lock / Animation** — once
-   Promise is upgraded, replace the placeholder `requestFullscreen_` /
-   `requestPointerLock_` / `exitFullscreen_` methods with proper typed
-   bindings, and add `Animation.finished` / `Animation.ready` (currently
-   omitted because their only purpose is to be awaited).

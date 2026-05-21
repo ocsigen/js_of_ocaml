@@ -1,0 +1,13 @@
+start
+scheduled
+then_/map got 2
+make got hello
+caught boom
+finally ok
+finally err
+all got [10; 20; 30]
+race got 42
+nested got 7
+of_any got 99
+reject-with-promise got 555
+done

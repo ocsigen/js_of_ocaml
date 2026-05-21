@@ -1,6 +1,5 @@
-(* Js_of_ocaml compiler
+(* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2020 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,48 +16,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let runtime =
-  Files.
-    [ array
-    ; backtrace
-    ; bigarray
-    ; bigstring
-    ; compare
-    ; fail
-    ; format
-    ; fs
-    ; fs_fake
-    ; fs_node
-    ; gc
-    ; graphics
-    ; hash
-    ; ieee_754
-    ; float32
-    ; int64
-    ; ints
-    ; io
-    ; jslib
-    ; jslib_js_of_ocaml
-    ; lexing
-    ; marshal
-    ; md5
-    ; mlBytes
-    ; nat
-    ; obj
-    ; parsing
-    ; promise
-    ; stdlib
-    ; sys
-    ; str
-    ; unix
-    ; weak
-    ; domain
-    ; prng
-    ; sync
-    ; effect_
-    ; zstd
-    ; runtime_events
-    ; blake2
-    ]
+open Js_of_ocaml
 
-include Files
+exception Rejected of Promise.error
+
+let to_lwt (p : 'a Promise.t) : 'a Lwt.t =
+  let t, w = Lwt.task () in
+  let _ : unit Promise.t =
+    Promise.then_
+      (fun x ->
+        Lwt.wakeup_later w x;
+        Promise.resolve ())
+      p
+    |> Promise.catch (fun e ->
+        Lwt.wakeup_later_exn w (Rejected e);
+        Promise.resolve ())
+  in
+  t
+
+let of_lwt (t : 'a Lwt.t) : 'a Promise.t =
+  Promise.make (fun ~resolve ~reject ->
+      Lwt.on_any t resolve (fun exn -> reject (Promise.error_of_exn exn)))

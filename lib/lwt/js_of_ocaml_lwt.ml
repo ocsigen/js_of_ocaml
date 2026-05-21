@@ -27,6 +27,11 @@ module File = struct
   include Lwt_file
 end
 
+module Promise = struct
+  include Js_of_ocaml.Promise
+  include Lwt_promise
+end
+
 module Jsonp = Lwt_jsonp
 module Lwt_js = Lwt_js
 module Lwt_js_events = Lwt_js_events

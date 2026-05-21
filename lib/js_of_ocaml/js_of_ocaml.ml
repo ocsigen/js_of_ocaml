@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+module Abort = Abort
 module CSS = CSS
 module Console = Console
 module Dom = Dom
@@ -25,6 +26,7 @@ module Dom_html = Dom_html
 module Dom_svg = Dom_svg
 module Effect_js = Effect_js
 module EventSource = EventSource
+module Fetch = Fetch
 module File = File
 module Firebug = Console
 [@@ocaml.deprecated "[since 6.0] Use Js_of_ocaml.Console instead."]
@@ -39,6 +41,7 @@ module Jstable = Jstable
 module MutationObserver = MutationObserver
 module Performance = Performance
 module PerformanceObserver = PerformanceObserver
+module Promise = Promise
 module ResizeObserver = ResizeObserver
 module Regexp = Regexp
 module Sys_js = Sys_js

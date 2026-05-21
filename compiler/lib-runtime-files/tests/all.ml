@@ -44,6 +44,7 @@ let%expect_test _ =
     +obj.js
     +parsing.js
     +prng.js
+    +promise.js
     +runtime_events.js
     +stdlib.js
     +str.js
@@ -88,6 +89,7 @@ let%expect_test _ =
     +obj.js
     +parsing.js
     +prng.js
+    +promise.js
     +runtime_events.js
     +stdlib.js
     +str.js

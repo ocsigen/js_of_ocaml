@@ -29,3 +29,59 @@ opam install odoc lwt_log yojson ocp-indent graphics higlo
 ### Running the tests
 
 Run `make tests`.
+
+## Library binding conventions
+
+When adding new bindings under `lib/js_of_ocaml/`, follow these rules so
+that the role of an underscore in a method name is unambiguous.
+
+### Underscores in method names
+
+- **Leading `_`** — pure name mangling. Use it when the JavaScript
+  identifier is an OCaml keyword (`type`, `method`, `open`, `match`,
+  `end`, `as`, `effect`, `class`, `for`, `assert`, …) or starts with an
+  uppercase letter (which OCaml method names cannot). The `ppx_js_internal`
+  preprocessor strips the leading underscore in the generated JS, so
+  `method _type` reads `.type` on the JS side. Examples: `_method`,
+  `_type`, `_open`, `_URL`, `_PI`, `_HORIZONTAL_AXIS`.
+
+- **Trailing `_`** — *not* mangling. Reserved for a deliberate alternate
+  form of a method that already exists under the unsuffixed name:
+
+  - **Argument-overload variant.** Same JS method, different OCaml
+    signature (e.g. extra optional flag, different result type).
+    Existing examples: `getInt16_` / `setInt16_` (DataView, take a
+    little-endian boolean), `bindBuffer_` / `bindFramebuffer_` /
+    `bindTexture_` (WebGL, accept an `opt` binding).
+
+  - **Legacy fire-and-forget kept beside a Promise-typed version.**
+    When a JS API was previously bound as `foo : unit Js.meth` (ignoring
+    the returned `Promise`), and you are adding the proper
+    `foo : unit Promise.t Js.meth`, rename the legacy method to `foo_`
+    and put the Promise version on the unsuffixed `foo`. Document the
+    legacy form as fire-and-forget. Existing examples:
+    `requestFullscreen_`, `exitFullscreen_`, `requestPointerLock_`,
+    `play_` (HTMLMediaElement).
+
+Older code mixes these roles (`open_`, `type_`, `method_`, `assert_`,
+`effect_` use trailing `_` for keyword escape rather than leading);
+those are grandfathered. New code should follow the split above.
+
+### Multi-underscore names
+
+The mangler strips at most one leading `_` and then drops the last `_`
+and everything after it. So a name with more than one non-leading
+underscore resolves to something shorter than you might expect:
+
+| OCaml method            | Calls JS identifier |
+| ----------------------- | ------------------- |
+| `abort_with_reason`     | `abort_with`        |
+| `_BYTES_PER_ELEMENT`    | `BYTES_PER`         |
+| `toDataURL_type_quality`| `toDataURL_type`    |
+
+If the underlying JS identifier itself contains underscores (e.g. a
+WebGL constant like `MAX_RENDERBUFFER_SIZE`), terminate the OCaml name
+with a trailing `_` to anchor the rindex on the very end:
+`_MAX_RENDERBUFFER_SIZE_`. If you want a single overload disambiguator
+on a method like `toDataURL`, give the OCaml name exactly one trailing
+`_<suffix>` (e.g. `toDataURL_quality`, not `toDataURL_type_quality`).

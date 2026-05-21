@@ -1,6 +1,5 @@
-(* Js_of_ocaml compiler
+(* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2020 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,48 +16,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let runtime =
-  Files.
-    [ array
-    ; backtrace
-    ; bigarray
-    ; bigstring
-    ; compare
-    ; fail
-    ; format
-    ; fs
-    ; fs_fake
-    ; fs_node
-    ; gc
-    ; graphics
-    ; hash
-    ; ieee_754
-    ; float32
-    ; int64
-    ; ints
-    ; io
-    ; jslib
-    ; jslib_js_of_ocaml
-    ; lexing
-    ; marshal
-    ; md5
-    ; mlBytes
-    ; nat
-    ; obj
-    ; parsing
-    ; promise
-    ; stdlib
-    ; sys
-    ; str
-    ; unix
-    ; weak
-    ; domain
-    ; prng
-    ; sync
-    ; effect_
-    ; zstd
-    ; runtime_events
-    ; blake2
-    ]
+open! Import
 
-include Files
+class type signal = object ('self)
+  method aborted : bool Js.t Js.readonly_prop
+
+  method reason : Js.Unsafe.any Js.readonly_prop
+
+  method onabort : ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
+
+  method throwIfAborted : unit Js.meth
+end
+
+class type controller = object
+  method signal : signal Js.t Js.readonly_prop
+
+  method abort : unit Js.meth
+
+  method abort_reason : Js.Unsafe.any -> unit Js.meth
+end
+
+let controller : controller Js.t Js.constr = Js.Unsafe.global##._AbortController
