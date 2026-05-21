@@ -435,7 +435,12 @@ let program' (module Strategy : Strategy) p =
     let o = new traverse_idents_and_labels ~idents:count ~labels in
     o#program p
   in
-  mapper#record_block Normal;
+  (* Use Params for top-level to include both def_var and def_local.
+     - For ESM: module-level var/let/const all need names allocated
+     - For scripts: also safe because top-level var declarations are in def_var,
+       and using Params ensures they're included (Normal would only include def_local).
+     The empty params list means no parameter name preferences are recorded. *)
+  mapper#record_block (Params { list = []; rest = None });
   let freevar =
     IdentSet.fold
       (fun ident acc ->

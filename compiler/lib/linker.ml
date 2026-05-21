@@ -254,9 +254,81 @@ module Fragment = struct
   let version_match =
     List.for_all ~f:(fun (op, str) -> op Ocaml_version.(compare current (split str)) 0)
 
+  let attach_annot p toks =
+    let take_annot_before =
+      let toks_r = ref toks in
+      let rec loop start_pos acc (toks : (Js_token.t * _) list) =
+        match toks with
+        | [] -> assert false
+        | (TAnnot a, loc) :: xs ->
+            loop start_pos ((a, Parse_info.t_of_pos (Loc.p1 loc)) :: acc) xs
+        | ((TComment _ | TCommentLineDirective _), _) :: xs -> loop start_pos acc xs
+        | (_, loc) :: xs ->
+            if Loc.cnum loc = start_pos.Lexing.pos_cnum
+            then (
+              toks_r := toks;
+              List.rev acc)
+            else loop start_pos [] xs
+      in
+      fun start_pos -> loop start_pos [] !toks_r
+    in
+    let p = List.map p ~f:(fun (start_pos, s) -> take_annot_before start_pos, s) in
+    let groups =
+      List.group p ~f:(fun a _pred ->
+          match a with
+          | [], _ -> true
+          | _ :: _, _ -> false)
+    in
+    let p =
+      List.map groups ~f:(function
+        | [] -> assert false
+        | (annot, _) :: _ as l -> annot, List.map l ~f:snd)
+    in
+    p
+
+  let script_to_module ~runtime_import p =
+    let open Javascript in
+    List.concat_map p ~f:(fun (annots, code_fragments) ->
+        (* Extract provides and requires from annotations *)
+        let provides, requires =
+          List.fold_left annots ~init:(None, []) ~f:(fun (prov, reqs) ((_, a), _pi) ->
+              match a with
+              | `Provides (name, _, _) -> Some name, reqs
+              | `Requires names -> prov, names @ reqs
+              | _ -> prov, reqs)
+        in
+        (* Build import statement if there are requires *)
+        let import_stmt =
+          match requires with
+          | [] -> []
+          | _ ->
+              let named =
+                List.map requires ~f:(fun name ->
+                    let utf8 = Utf8_string.of_string_exn name in
+                    utf8, ident utf8)
+              in
+              let imp =
+                { from = runtime_import; kind = Named (None, named); withClause = None }
+              in
+              [ Import (imp, Parse_info.zero), N ]
+        in
+        (* Build export statement if there's a provides *)
+        let export_stmt =
+          match provides with
+          | None -> []
+          | Some name ->
+              let utf8 = Utf8_string.of_string_exn name in
+              let id = ident utf8 in
+              [ Export (ExportNames [ id, utf8 ], Parse_info.zero), N ]
+        in
+        let code = List.concat code_fragments in
+        import_stmt @ code @ export_stmt)
+
   let parse_from_lex ~filename lex =
-    let program, _ =
-      try Parse_js.parse' `Script lex
+    let program =
+      try
+        let p, toks = Parse_js.parse' `Script lex in
+        attach_annot p toks
       with Parse_js.Parsing_error pi ->
         let name =
           match pi with
