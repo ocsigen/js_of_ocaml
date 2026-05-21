@@ -595,9 +595,10 @@ let rec eval_block ~fuel ~info ~blocks ~target ~env pc args =
         | Branch (pc', args') -> eval_block ~fuel ~info ~blocks ~target ~env pc' args'
         | Cond (x, (pc1, args1), (pc2, args2)) -> (
             match resolve ~info ~env (Pv x) with
-            | Some (Int i) ->
-                let pc', args' = if Targetint.is_zero i then pc2, args2 else pc1, args1 in
-                eval_block ~fuel ~info ~blocks ~target ~env pc' args'
+            | Some (Int i) when Targetint.is_zero i ->
+                eval_block ~fuel ~info ~blocks ~target ~env pc2 args2
+            | Some (Int _ | Tuple _) ->
+                eval_block ~fuel ~info ~blocks ~target ~env pc1 args1
             | _ -> None)
         | Switch (x, conts) -> (
             match resolve ~info ~env (Pv x) with
