@@ -140,7 +140,7 @@ module Mappings = struct
                 done;
                 gen_col_r := 0;
                 gen_line_r := gen_line c)
-              else if i > 0
+              else if prev >= 0
               then Buffer.add_char buf ',';
               let l =
                 match c with
