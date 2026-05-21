@@ -384,6 +384,7 @@ let eval_prim ~target x =
           Some (Int (Targetint.of_int_exn (Targetint.num_bits ())))
       | "caml_sys_const_big_endian", [ _ ] -> Some (Int Targetint.zero)
       | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int Targetint.zero)
+      | "caml_sys_const_runtime5", [ _ ] -> Some (Int Targetint.one)
       | "caml_obj_dup", [ x ] -> (
           match x with
           | NativeString _
