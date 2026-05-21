@@ -37,6 +37,8 @@ let stats = Debug.find "stats"
 
 let debug_stats = Debug.find "stats-debug"
 
+let debug_static_eval = Debug.find "static-eval"
+
 let static_env = String.Hashtbl.create 17
 
 let clear_static_env () = String.Hashtbl.clear static_env
@@ -384,7 +386,14 @@ let eval_prim ~target x =
       | "caml_sys_const_naked_pointers_checked", [ _ ] -> Some (Int Targetint.zero)
       | "caml_obj_dup", [ x ] -> (
           match x with
-          | NativeString _ | Float _ | Int _ | Int32 _ | Int64 _ | NativeInt _ -> Some x
+          | NativeString _
+          | Float _
+          | Float32 _
+          | Int _
+          | Int32 _
+          | Int64 _
+          | NativeInt _
+          | Null_ -> Some x
           | String _ | Float_array _ | Tuple _ -> None)
       | "caml_greaterthan", args -> eval_comparison ( > ) args
       | "caml_greaterequal", args -> eval_comparison ( >= ) args
@@ -558,39 +567,45 @@ let constant_equal a b =
   | (String _ | NativeString _), _ -> false
   | (Float_array _ | Tuple _), _ -> false
 
-let rec eval_block ~info ~blocks ~target ~env pc args =
-  let block = Addr.Map.find pc blocks in
-  let env =
-    List.fold_left2
-      ~f:(fun env x x' ->
-        match resolve ~info ~env (Pv x') with
-        | None -> Var.Map.remove x env
-        | Some c -> Var.Map.add x c env)
-      block.params
-      args
-      ~init:env
-  in
-  match eval_block_body ~info ~blocks ~target ~env block.body with
-  | None -> None
-  | Some env -> (
-      Format.eprintf "instr %a@." Code.Print.last block.branch;
-      match block.branch with
-      | Return x -> resolve ~info ~env (Pv x)
-      | Branch (pc', args') -> eval_block ~info ~blocks ~target ~env pc' args'
-      | Cond (x, (pc1, args1), (pc2, args2)) -> (
-          match resolve ~info ~env (Pv x) with
-          | Some (Int i) when Targetint.is_zero i ->
-              eval_block ~info ~blocks ~target ~env pc2 args2
-          | Some (Int _ | Tuple _) -> eval_block ~info ~blocks ~target ~env pc1 args1
-          | Some _ -> assert false
-          | None -> None)
-      | Switch (x, conts) -> (
-          match resolve ~info ~env (Pv x) with
-          | Some (Int i) ->
-              let pc', args' = conts.(Targetint.to_int_exn i) in
-              eval_block ~info ~blocks ~target ~env pc' args'
-          | _ -> None)
-      | Raise _ | Stop | Pushtrap _ | Poptrap _ -> None)
+let static_eval_fuel = 1000
+
+let rec eval_block ~fuel ~info ~blocks ~target ~env pc args =
+  if !fuel <= 0
+  then None
+  else (
+    decr fuel;
+    let block = Addr.Map.find pc blocks in
+    let env =
+      List.fold_left2
+        ~f:(fun env x x' ->
+          match resolve ~info ~env (Pv x') with
+          | None -> Var.Map.remove x env
+          | Some c -> Var.Map.add x c env)
+        block.params
+        args
+        ~init:env
+    in
+    match eval_block_body ~fuel ~info ~blocks ~target ~env block.body with
+    | None -> None
+    | Some env -> (
+        if debug_static_eval ()
+        then Format.eprintf "instr %a@." Code.Print.last block.branch;
+        match block.branch with
+        | Return x -> resolve ~info ~env (Pv x)
+        | Branch (pc', args') -> eval_block ~fuel ~info ~blocks ~target ~env pc' args'
+        | Cond (x, (pc1, args1), (pc2, args2)) -> (
+            match resolve ~info ~env (Pv x) with
+            | Some (Int i) ->
+                let pc', args' = if Targetint.is_zero i then pc2, args2 else pc1, args1 in
+                eval_block ~fuel ~info ~blocks ~target ~env pc' args'
+            | _ -> None)
+        | Switch (x, conts) -> (
+            match resolve ~info ~env (Pv x) with
+            | Some (Int i) ->
+                let pc', args' = conts.(Targetint.to_int_exn i) in
+                eval_block ~fuel ~info ~blocks ~target ~env pc' args'
+            | _ -> None)
+        | Raise _ | Stop | Pushtrap _ | Poptrap _ -> None))
 
 and resolve ~info ~env ?(eq = constant_equal) a =
   match
@@ -601,13 +616,15 @@ and resolve ~info ~env ?(eq = constant_equal) a =
   | Some _ as c -> c
   | None -> the_const_of ~eq info a
 
-and eval_block_body ~info ~blocks ~target ~env instrs =
-  (match instrs with
-  | i :: _ -> Format.eprintf "instr %a@." Code.Print.instr i
-  | [] -> ());
+and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
+  (if debug_static_eval ()
+   then
+     match instrs with
+     | i :: _ -> Format.eprintf "instr %a@." Code.Print.instr i
+     | [] -> ());
   match instrs with
   | [] -> Some env
-  | Event _ :: rem -> eval_block_body ~info ~blocks ~target ~env rem
+  | Event _ :: rem -> eval_block_body ~fuel ~info ~blocks ~target ~env rem
   | Let (x, Prim (Extern (("caml_equal" | "caml_notequal") as prim), [ y; z ])) :: rem
     -> (
       let eq e1 e2 =
@@ -626,8 +643,13 @@ and eval_block_body ~info ~blocks ~target ~env instrs =
                 | "caml_notequal" -> not c
                 | _ -> assert false
               in
-              eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x (bool' c) env) rem
-          )
+              eval_block_body
+                ~fuel
+                ~info
+                ~blocks
+                ~target
+                ~env:(Var.Map.add x (bool' c) env)
+                rem)
       | _ -> None)
   | Let (x, Prim (IsInt, [ y ])) :: rem -> (
       let res =
@@ -643,21 +665,22 @@ and eval_block_body ~info ~blocks ~target ~env instrs =
       match res with
       | None -> None
       | Some b ->
-          eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x (bool' b) env) rem)
+          eval_block_body
+            ~fuel
+            ~info
+            ~blocks
+            ~target
+            ~env:(Var.Map.add x (bool' b) env)
+            rem)
   | (Let (x, Prim (prim, prim_args)) as i) :: rem -> (
       let prim_args' = List.map prim_args ~f:(fun a -> resolve ~info ~env a) in
-      if
-        List.exists prim_args' ~f:(function
-          | Some _ -> false
-          | None -> true)
+      if List.exists prim_args' ~f:Option.is_none
       then (
-        List.iter prim_args' ~f:(fun x ->
-            Format.eprintf
-              "%s"
-              (match x with
-              | Some _ -> "x"
-              | None -> "?"));
-        Format.eprintf "@.";
+        if debug_static_eval ()
+        then (
+          List.iter prim_args' ~f:(fun a ->
+              Format.eprintf "%s" (if Option.is_some a then "x" else "?"));
+          Format.eprintf "@.");
         None)
       else
         let res =
@@ -670,45 +693,46 @@ and eval_block_body ~info ~blocks ~target ~env instrs =
         in
         match res with
         | None ->
-            Format.eprintf "INSTR %a@." Code.Print.instr i;
+            if debug_static_eval () then Format.eprintf "INSTR %a@." Code.Print.instr i;
             None
-        | Some c -> eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x c env) rem)
+        | Some c ->
+            eval_block_body ~fuel ~info ~blocks ~target ~env:(Var.Map.add x c env) rem)
   | Let (x, Constant c) :: rem -> (
       match c with
-      | Float _ | Int _ | Int32 _ | Int64 _ | NativeInt _ | NativeString _ | Float_array _
-        -> eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x c env) rem
-      | String _ (*ZZZ*) | Tuple _ -> None)
+      | Float _
+      | Float32 _
+      | Int _
+      | Int32 _
+      | Int64 _
+      | NativeInt _
+      | NativeString _
+      | Float_array _
+      | Null_ ->
+          eval_block_body ~fuel ~info ~blocks ~target ~env:(Var.Map.add x c env) rem
+      | String _ | Tuple _ -> None)
   | Let (x, Apply { f; args; _ }) :: rem -> (
       match get_approx info (fun g -> Flow.Info.def info g) None (fun _ _ -> None) f with
       | Some (Closure (params, (pc, args'), _)) when List.compare_lengths args params = 0
         ->
           let args = List.map args ~f:(fun x -> resolve ~info ~env (Pv x)) in
-          if
-            List.for_all args ~f:(fun x ->
-                match x with
-                | Some _ -> true
-                | None -> false)
+          if List.for_all args ~f:Option.is_some
           then
-            let env =
+            let callee_env =
               List.fold_left2
                 ~f:(fun s x v -> Var.Map.add x (Option.get v) s)
                 params
                 args
-                ~init:env
+                ~init:Var.Map.empty
             in
-            let res = eval_block ~info ~blocks ~target ~env pc args' in
-            match res with
+            match eval_block ~fuel ~info ~blocks ~target ~env:callee_env pc args' with
             | Some c ->
-                eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x c env) rem
+                eval_block_body ~fuel ~info ~blocks ~target ~env:(Var.Map.add x c env) rem
             | None -> None
           else None
       | _ -> None)
   | Let (x, Block (tag, fields, _, _)) :: rem ->
       let fields = Array.map fields ~f:(fun x -> resolve ~info ~env (Pv x)) in
-      if
-        Array.exists fields ~f:(function
-          | Some _ -> false
-          | None -> true)
+      if Array.exists fields ~f:Option.is_none
       then None
       else
         let fields =
@@ -717,6 +741,7 @@ and eval_block_body ~info ~blocks ~target ~env instrs =
             | None -> assert false)
         in
         eval_block_body
+          ~fuel
           ~info
           ~blocks
           ~target
@@ -725,7 +750,13 @@ and eval_block_body ~info ~blocks ~target ~env instrs =
   | Let (x, Field (y, i, _)) :: rem -> (
       match resolve ~info ~env (Pv y) with
       | Some (Tuple (_, fields, _)) when i < Array.length fields ->
-          eval_block_body ~info ~blocks ~target ~env:(Var.Map.add x fields.(i) env) rem
+          eval_block_body
+            ~fuel
+            ~info
+            ~blocks
+            ~target
+            ~env:(Var.Map.add x fields.(i) env)
+            rem
       | _ -> None)
   | ( Let (_, (Closure _ | Special _))
     | Assign _ | Set_field _ | Offset_ref _ | Array_set _ )
@@ -928,29 +959,15 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
                             | None, _ -> arg)) ) )
           ])
   | Let (x, Apply { f; args; _ }) -> (
-      match
-        get_approx
-          info
-          (fun g ->
-            match Flow.Info.def info g with
-            | Some e -> Some (g, e)
-            | _ -> None)
-          None
-          (fun _ _ -> None)
-          f
-      with
-      | Some (f, Closure (params, (pc, args'), _))
-        when List.compare_lengths args params = 0 ->
+      match get_approx info (fun g -> Flow.Info.def info g) None (fun _ _ -> None) f with
+      | Some (Closure (params, (pc, args'), _)) when List.compare_lengths args params = 0
+        ->
           let args =
             List.map args ~f:(fun x -> the_const_of ~eq:constant_equal info (Pv x))
           in
-          if
-            List.for_all args ~f:(fun x ->
-                match x with
-                | Some _ -> true
-                | None -> false)
+          if List.for_all args ~f:Option.is_some
           then (
-            Format.eprintf "ZZZ %a@." Code.Var.print f;
+            if debug_static_eval () then Format.eprintf "ZZZ %a@." Code.Var.print f;
             let env =
               List.fold_left2
                 ~f:(fun s x v -> Var.Map.add x (Option.get v) s)
@@ -958,10 +975,10 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
                 args
                 ~init:Var.Map.empty
             in
-            let res = eval_block ~info ~blocks ~target ~env pc args' in
-            match res with
+            let fuel = ref static_eval_fuel in
+            match eval_block ~fuel ~info ~blocks ~target ~env pc args' with
             | Some c ->
-                Format.eprintf "===> STATIC@.";
+                if debug_static_eval () then Format.eprintf "===> STATIC@.";
                 let c = Constant c in
                 Flow.Info.update_def info x c;
                 incr update_count;
