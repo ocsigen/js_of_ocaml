@@ -81,7 +81,7 @@
    (global $raise_unhandled (ref $closure)
       (struct.new $closure (ref.func $raise_unhandled)))
 
-   (global $effect_allowed (mut i32) (i32.const 1))
+   (global $effect_allowed (export "effect_allowed") (mut i32) (i32.const 1))
 
    (func $caml_continuation_use_noexc (export "caml_continuation_use_noexc")
       (param (ref eq)) (result (ref eq))

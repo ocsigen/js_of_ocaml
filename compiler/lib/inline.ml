@@ -454,7 +454,7 @@ and should_inline ~context info args =
         || (not (Lazy.force !(context.has_closures)))
            && Option.equal Var.equal info.enclosing_function context.enclosing_function
     | `Wasm, _ | `JavaScript, `Double_translation -> true
-    | `JavaScript, `Jspi -> assert false)
+    | `JavaScript, (`Jspi | `Native) -> assert false)
   && (functor_like ~context info
      || (context.live_vars.(Var.idx info.f) = 1
         &&

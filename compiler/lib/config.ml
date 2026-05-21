@@ -236,6 +236,7 @@ type effects_backend =
   | `Cps
   | `Double_translation
   | `Jspi
+  | `Native
   ]
 
 let effects_ : [< `None | effects_backend ] ref = ref `None
@@ -243,7 +244,7 @@ let effects_ : [< `None | effects_backend ] ref = ref `None
 let effects () =
   match !effects_ with
   | `None -> failwith "effects was not set"
-  | (`Jspi | `Cps | `Disabled | `Double_translation) as b -> b
+  | (`Jspi | `Cps | `Native | `Disabled | `Double_translation) as b -> b
 
 let set_effects_backend (backend : effects_backend) =
   effects_ := (backend :> [ `None | effects_backend ])
