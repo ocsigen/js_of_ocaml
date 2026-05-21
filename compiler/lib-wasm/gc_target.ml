@@ -303,7 +303,15 @@ module Type = struct
 
   let env_type ~cps ~arity ~no_code_pointer ~env_type_id ~env_type =
     register_type
-      (if cps
+      (if no_code_pointer
+       then
+         (* The struct has no fn pointer, so its layout doesn't depend on
+            [arity]. Omitting [arity] keeps the name space disjoint from
+            indirect closures (which always include it). *)
+         if cps
+         then Printf.sprintf "cps_env_%d" env_type_id
+         else Printf.sprintf "env_%d" env_type_id
+       else if cps
        then Printf.sprintf "cps_env_%d_%d" arity env_type_id
        else Printf.sprintf "env_%d_%d" arity env_type_id)
       (fun () ->
@@ -356,7 +364,12 @@ module Type = struct
   let rec_closure_type ~cps ~arity ~no_code_pointer ~function_count ~env_type_id ~env_type
       =
     register_type
-      (if cps
+      (if no_code_pointer
+       then
+         if cps
+         then Printf.sprintf "cps_closure_rec_%d_%d" function_count env_type_id
+         else Printf.sprintf "closure_rec_%d_%d" function_count env_type_id
+       else if cps
        then Printf.sprintf "cps_closure_rec_%d_%d_%d" arity function_count env_type_id
        else Printf.sprintf "closure_rec_%d_%d_%d" arity function_count env_type_id)
       (fun () ->
