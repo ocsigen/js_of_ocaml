@@ -32,6 +32,8 @@ let get_nodes g =
     ~f:(fun s pc -> Addr.Set.add pc s)
     g.reverse_post_order
 
+let preds g pc = Addr.Hashtbl.find_opt g.preds pc |> Option.value ~default:Addr.Set.empty
+
 let block_order g pc = Addr.Hashtbl.find g.block_order pc
 
 let is_backward g pc pc' =
