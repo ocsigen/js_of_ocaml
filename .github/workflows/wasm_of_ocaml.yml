@@ -141,6 +141,13 @@ jobs:
           opam pin add sedlex -n 3.6+ox
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
+      # oxcaml-dune-patches pins dune <= 3.21, but the project requires
+      # dune >= 3.23. Install dune.3.23.1 with the constraint ignored so
+      # both can coexist on the OxCaml switch.
+      - name: Install dune.3.23.1 (OxCaml workaround)
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
+        run: opam install dune.3.23.1 --ignore-constraints-on=dune
+
       # Add some packaged to the opam invariant;
       # opam makes wrong choices otherwise
       - name: Hold some packages
