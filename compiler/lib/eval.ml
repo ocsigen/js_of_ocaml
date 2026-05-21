@@ -674,6 +674,17 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
             ~target
             ~env:(Var.Map.add x (bool' b) env)
             rem)
+  | Let (x, Prim (Extern "caml_obj_tag", [ y ])) :: rem -> (
+      match resolve ~info ~env y with
+      | Some (Tuple (tag, _, _)) ->
+          eval_block_body
+            ~fuel
+            ~info
+            ~blocks
+            ~target
+            ~env:(Var.Map.add x (Int (Targetint.of_int_exn tag)) env)
+            rem
+      | _ -> None)
   | (Let (x, Prim (prim, prim_args)) as i) :: rem -> (
       let prim_args' = List.map prim_args ~f:(fun a -> resolve ~info ~env a) in
       if List.exists prim_args' ~f:Option.is_none
