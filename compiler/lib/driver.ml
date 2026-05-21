@@ -718,9 +718,8 @@ let optimize ~shapes ~profile ~keep_flow_data p =
     +> effects_and_exact_calls ~keep_flow_data ~deadcode_sentinel ~shapes profile
     +> map_fst5
          (match Config.target (), Config.effects () with
-         | `JavaScript, `Disabled -> Generate_closure.f
-         | `JavaScript, (`Cps | `Double_translation)
-         | `Wasm, (`Disabled | `Jspi | `Cps | `Native) -> Fun.id
+         | `JavaScript, (`Disabled | `Double_translation) -> Generate_closure.f
+         | `JavaScript, `Cps | `Wasm, (`Disabled | `Jspi | `Cps | `Native) -> Fun.id
          | `JavaScript, (`Jspi | `Native) | `Wasm, `Double_translation -> assert false)
     +> map_fst5 deadcode'
   in
