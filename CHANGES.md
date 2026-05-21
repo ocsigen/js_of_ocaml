@@ -60,6 +60,11 @@
   spurious confirmation dialog. Adds `Dom.listener`/`full_listener`, and
   types `onbeforeunload` and `Event.beforeunload` against the
   `beforeUnloadEvent` class.
+* Compiler: avoid JS stack overflow on deep mutually recursive
+  direct-style calls under `--effects=double-translation`; the trampoline
+  pass now applies the same `caml_stack_check_depth` / trampoline pattern
+  used for CPS calls to the direct half of cps_needed mutually recursive
+  closures
 
 # 6.3.2 (2026-02-15) - Lille
 
