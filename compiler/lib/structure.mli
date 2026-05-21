@@ -7,6 +7,8 @@ type t
 
 val get_edges : graph -> Addr.t -> Addr.Set.t
 
+val preds : t -> Addr.t -> Addr.Set.t
+
 val is_backward : t -> Addr.t -> Addr.t -> bool
 
 val is_forward : t -> Addr.t -> Addr.t -> bool

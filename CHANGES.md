@@ -24,6 +24,7 @@
   asynchronous toplevel originally contributed in the unmerged #435 (#66, #833)
 * Lib: add `FontFace` module — partial binding to the CSS Font Loading
   API, plus a `fonts` property on `Dom_html.document` (#2255)
+* Extract loops from toplevel function into helper functions (#2245)
 
 ## Bug fixes
 * Wasm: embed cmis when building a toplevel with separate compilation.
