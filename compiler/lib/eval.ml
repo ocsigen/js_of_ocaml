@@ -25,6 +25,13 @@ Static evaluation
   (`return x` where x is a constant global variable (not in env),
    or a parameter from the initial call)
 - Deal with constant tuples (see one_ulp / lower_bound_for_int)
+
+We need to keep track of whether we have a global constant,
+a small constant, a tuple built during evaluation.
+==> beware of sharing when building a tuple (maybe do not allow tuple of anything but small constants and global constants? at least after evaluation)
+==> should keep referring to global constants and not duplicate them
+
+Add tests
 *)
 
 open! Stdlib
