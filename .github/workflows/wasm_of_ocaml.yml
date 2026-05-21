@@ -202,6 +202,20 @@ jobs:
           opam pin add sedlex -n 3.6+ox
         if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
 
+      # oxcaml-dune-patches pins dune <= 3.21, but the project requires
+      # dune >= 3.23. Re-pin the package with the dune version constraint
+      # stripped — opam re-checks dependency constraints on every install,
+      # so a one-shot --ignore-constraints-on flag isn't enough.
+      - name: Drop dune version constraint from oxcaml-dune-patches (OxCaml)
+        if: ${{ endsWith(matrix.ocaml-compiler, '+ox') }}
+        run: |
+          VERSION=$(opam show --field=version oxcaml-dune-patches)
+          DIR=$(mktemp -d)
+          opam show --raw oxcaml-dune-patches \
+            | sed -E 's/"dune" \{build & \([^)]+\)\}/"dune" {build}/' \
+            > "$DIR/oxcaml-dune-patches.opam"
+          opam pin add "oxcaml-dune-patches.$VERSION" "$DIR" -k path -n -y
+
       # Add some packaged to the opam invariant;
       # opam makes wrong choices otherwise
       - name: Hold some packages
