@@ -1,5 +1,5 @@
 (module
-(@if (>= ocaml_version (5 2 0))
+(@if (and (>= ocaml_version (5 2 0)) (not wasi))
 (@then
    (import "jslib" "wrap" (func $wrap (param anyref) (result (ref eq))))
    (import "jslib" "unwrap" (func $unwrap (param (ref eq)) (result anyref)))

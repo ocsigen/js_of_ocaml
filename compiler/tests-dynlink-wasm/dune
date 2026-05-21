@@ -42,7 +42,11 @@
 
 (rule
  (target plugin.wasmo)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} with-native-effects)
+   (<> %{profile} wasi)))
  (action
   (run
    %{bin:wasm_of_ocaml}
@@ -54,8 +58,14 @@
 
 (rule
  (target main.out)
- (deps plugin.wasmo)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps
+  plugin.wasmo
+  (glob_files main.bc.wasm.assets/*))
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} with-native-effects)
+   (<> %{profile} wasi)))
  (action
   (with-outputs-to
    %{target}
@@ -63,7 +73,11 @@
 
 (rule
  (alias runtest-wasm)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} with-native-effects)
+   (<> %{profile} wasi)))
  (action
   (diff main.out.expected main.out)))
 
@@ -90,8 +104,14 @@
 
 (rule
  (target main_compile_and_load.out)
- (deps plugin_compiled.wasmo)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps
+  plugin_compiled.wasmo
+  (glob_files main_compile_and_load.bc.wasm.assets/*))
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} with-native-effects)
+   (<> %{profile} wasi)))
  (action
   (with-outputs-to
    %{target}
@@ -99,7 +119,11 @@
 
 (rule
  (alias runtest-wasm)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} with-native-effects)
+   (<> %{profile} wasi)))
  (action
   (diff main_compile_and_load.out.expected main_compile_and_load.out)))
 
@@ -115,8 +139,15 @@
 
 (rule
  (target dynlink_loadfile.out)
- (deps plugin.cmo plugin2.cma)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps
+  plugin.cmo
+  plugin2.cma
+  (glob_files dynlink_loadfile.bc.wasm.assets/*))
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} with-native-effects)
+   (<> %{profile} wasi)))
  (action
   (with-outputs-to
    %{target}
@@ -124,7 +155,11 @@
 
 (rule
  (alias runtest-wasm)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} with-native-effects)
+   (<> %{profile} wasi)))
  (action
   (diff dynlink_loadfile.out.expected dynlink_loadfile.out)))
 
@@ -168,7 +203,10 @@
  (targets
   dynlink_loadfile_wp.js
   (dir dynlink_loadfile_wp.assets))
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} wasi)))
  (action
   (run
    %{bin:wasm_of_ocaml}
@@ -181,8 +219,16 @@
 
 (rule
  (target dynlink_loadfile_wp.out)
- (deps plugin.cmo plugin2.cma plugin_uses_dep.cmo plugin_js.cmo)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (deps
+  plugin.cmo
+  plugin2.cma
+  plugin_uses_dep.cmo
+  plugin_js.cmo
+  (glob_files dynlink_loadfile_wp.assets/*))
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} wasi)))
  (action
   (with-outputs-to
    %{target}
@@ -190,6 +236,9 @@
 
 (rule
  (alias runtest-wasm)
- (enabled_if %{env:WASM_OF_OCAML=false})
+ (enabled_if
+  (and
+   %{env:WASM_OF_OCAML=false}
+   (<> %{profile} wasi)))
  (action
   (diff dynlink_loadfile_wp.out.expected dynlink_loadfile_wp.out)))

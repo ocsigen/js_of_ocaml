@@ -32,20 +32,14 @@ let is_implem x =
 
 let () = set_binary_mode_out stdout true
 
+(* Project-relative path to this directory, passed by dune *)
 let prefix : string =
-  let rec loop acc rem =
-    let basename = Filename.basename rem in
-    let dirname = Filename.dirname rem in
-    if
-      String.equal dirname rem
-      || String.ends_with ~suffix:"_build" dirname
-      || Sys.file_exists (Filename.concat rem "dune-project")
-    then acc
-    else
-      let acc = basename :: acc in
-      loop acc dirname
-  in
-  loop [ "" ] (Sys.getcwd ()) |> String.concat ~sep:"/"
+  if Array.length Sys.argv < 2
+  then failwith "gen.exe: expected source directory as first argument";
+  let p = Sys.argv.(1) in
+  if String.length p > 0 && not (Char.equal p.[String.length p - 1] '/')
+  then p ^ "/"
+  else p
 
 type enabled_if =
   | GE5
@@ -85,7 +79,7 @@ let () =
         basename
         (Hashtbl.hash prefix mod 100)
         (match enabled_if basename with
-        | Any -> ""
+        | Any -> "\n (enabled_if (<> %{profile} wasi))"
         | GE5 -> "\n (enabled_if (>= %{ocaml_version} 5))"
         | No_effects -> "\n (enabled_if (<> %{profile} with-effects))")
         basename
