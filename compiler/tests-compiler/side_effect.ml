@@ -172,7 +172,8 @@ let%expect_test "infinite loop is not treated as pure" =
        "use strict";
        var runtime = globalThis.jsoo_runtime;
        runtime.caml_get_global("Stdlib");
-       for(;;) ;
+       (function(){for(;;) ;}());
+       return;
       }
       (globalThis));
     //end

@@ -25,6 +25,7 @@
   (breaking change)
 * Lib: add `Fetch` and `Abort` modules — Fetch API binding with a typed
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
+* Extract loops from toplevel function into helper functions (#2245)
 
 ## Bug fixes
 * Compiler: fix reference unboxing (#2210)
