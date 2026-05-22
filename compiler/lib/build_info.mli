@@ -34,6 +34,7 @@ type config_key =
       { name : string
       ; get : unit -> bool
       ; set : bool -> unit
+      ; default : bool
       }
   | Enum_key of
       { name : string
@@ -48,7 +49,7 @@ val config_keys : [ `JavaScript | `Wasm ] -> config_key list
 
 val config_key_values : config_key -> string list
 
-val get_values : config_key list -> (string * string) list
+val get_non_default_values : config_key list -> (string * string) list
 
 val set_values : config_key list -> (string * string) list -> unit
 
