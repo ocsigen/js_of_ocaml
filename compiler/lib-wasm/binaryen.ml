@@ -141,11 +141,16 @@ let optimize
     ~output_file
     () =
   command
-    ("wasm-opt"
-     :: (common_options ()
-        @ (match options with
-          | Some o -> o
-          | None -> optimization_options profile)
-        @ [ Filename.quote input_file; "-o"; Filename.quote output_file ])
+    (* [--emit-exnref] is needed even though [Wasm_output] and
+       [Wat_output] now emit [try_table] directly when targeting WASI:
+       the runtime [.wat] files still use the legacy [try]/[catch] syntax,
+       and this flag converts them to [try_table] so the whole output is
+       uniformly in the new form. *)
+    (("wasm-opt" :: (if Config.Flag.wasi () then [ "--emit-exnref" ] else []))
+    @ common_options ()
+    @ (match options with
+      | Some o -> o
+      | None -> optimization_options profile)
+    @ [ Filename.quote input_file; "-o"; Filename.quote output_file ]
     @ opt_flag "--input-source-map" opt_input_sourcemap
     @ opt_flag "--output-source-map" opt_output_sourcemap)

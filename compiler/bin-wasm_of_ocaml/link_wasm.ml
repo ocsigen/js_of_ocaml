@@ -117,6 +117,9 @@ let link
   (* So that the --enable-stack-switching option is passed to Binaryen
      tools for native effects. *)
   Js_of_ocaml_compiler.Config.set_effects_backend effects_backend;
+  (* So that wasm-opt is invoked with --emit-exnref when targeting WASI. *)
+  if List.mem ~eq:String.equal "wasi" variables.Preprocess.enable
+  then Js_of_ocaml_compiler.Config.Flag.enable "wasi";
   let inputs =
     List.map
       ~f:(fun (module_name, file) -> { Wat_preprocess.module_name; file; source = File })
