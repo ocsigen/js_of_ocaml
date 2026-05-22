@@ -483,19 +483,33 @@ let expression_or_instructions ctx st in_function =
             @ [ List (Atom "else" :: expression iff) ])
         ]
     | Try (ty, body, catches) ->
-        [ List
-            (Atom "try"
-            :: (block_type st ty
-               @ List (Atom "do" :: instructions body)
-                 :: List.map
-                      ~f:(fun (tag, i, ty) ->
-                        List
-                          (Atom "catch"
-                          :: index st.tag_names tag
-                          :: (instruction (Wasm_ast.Event Code_generation.hidden_location)
-                             @ instruction (Wasm_ast.Br (i + 1, Some (Pop ty))))))
-                      catches))
-        ]
+        if Config.Flag.wasi ()
+        then
+          [ List
+              (Atom "try_table"
+              :: (block_type st ty
+                 @ List.map
+                     ~f:(fun (tag, i, _ty) ->
+                       List
+                         [ Atom "catch"; index st.tag_names tag; Atom (string_of_int i) ])
+                     catches
+                 @ instructions body))
+          ]
+        else
+          [ List
+              (Atom "try"
+              :: (block_type st ty
+                 @ List (Atom "do" :: instructions body)
+                   :: List.map
+                        ~f:(fun (tag, i, ty) ->
+                          List
+                            (Atom "catch"
+                            :: index st.tag_names tag
+                            :: (instruction
+                                  (Wasm_ast.Event Code_generation.hidden_location)
+                               @ instruction (Wasm_ast.Br (i + 1, Some (Pop ty))))))
+                        catches))
+          ]
     | ExternConvertAny e' -> [ List (Atom "extern.convert_any" :: expression e') ]
     | AnyConvertExtern e' -> [ List (Atom "any.convert_extern" :: expression e') ]
   and instruction i =
