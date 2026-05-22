@@ -54,7 +54,9 @@ class macro_mapper ~flags =
               match flags with
               | Replace ->
                   let target = Config.target () in
-                  let entries = Build_info.get_values (Build_info.config_keys target) in
+                  let entries =
+                    Build_info.get_non_default_values (Build_info.config_keys target)
+                  in
                   let s = Build_info.to_config_string entries in
                   J.EStr (Utf8_string.of_string_exn s)
               | Count count ->
