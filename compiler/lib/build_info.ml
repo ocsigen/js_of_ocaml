@@ -54,6 +54,7 @@ type config_key =
       { name : string
       ; get : unit -> bool
       ; set : bool -> unit
+      ; default : bool
       }
   | Enum_key of
       { name : string
@@ -86,9 +87,14 @@ let config_keys target =
       { name = "use-js-string"
       ; get = Config.Flag.use_js_string
       ; set = Config.Flag.set "use-js-string"
+      ; default = true
       }
   ; Bool_key
-      { name = "toplevel"; get = Config.Flag.toplevel; set = Config.Flag.set "toplevel" }
+      { name = "toplevel"
+      ; get = Config.Flag.toplevel
+      ; set = Config.Flag.set "toplevel"
+      ; default = false
+      }
   ]
 
 let config_key_values = function
@@ -104,24 +110,40 @@ let get_values keys =
     keys
 
 let set_values keys entries =
-  List.iter entries ~f:(fun (k, v) ->
-      match List.find_opt keys ~f:(fun key -> String.equal (config_key_name key) k) with
-      | None -> failwith (Printf.sprintf "unknown config key %S" k)
-      | Some (Bool_key { set; _ }) -> (
+  (* Reject unknown keys before applying anything. *)
+  List.iter entries ~f:(fun (k, _) ->
+      if not (List.exists keys ~f:(fun key -> String.equal (config_key_name key) k))
+      then failwith (Printf.sprintf "unknown config key %S" k));
+  (* Iterate over [keys] (not [entries]) so that a key omitted from
+     [entries] is reset to its default rather than silently keeping
+     whatever value the caller left it at. *)
+  List.iter keys ~f:(fun key ->
+      let name = config_key_name key in
+      let v =
+        List.find_map entries ~f:(fun (k, v) ->
+            if String.equal k name then Some v else None)
+      in
+      match key with
+      | Bool_key { set; default; _ } -> (
           match v with
-          | "true" -> set true
-          | "false" -> set false
-          | _ -> failwith (Printf.sprintf "key %S expects true or false, got %S" k v))
-      | Some (Enum_key { set; valid; _ }) ->
-          if List.mem ~eq:String.equal v valid
-          then set v
-          else
-            failwith
-              (Printf.sprintf
-                 "key %S expects one of {%s}, got %S"
-                 k
-                 (String.concat ~sep:", " valid)
-                 v))
+          | None -> set default
+          | Some "true" -> set true
+          | Some "false" -> set false
+          | Some v ->
+              failwith (Printf.sprintf "key %S expects true or false, got %S" name v))
+      | Enum_key { set; valid; _ } -> (
+          match v with
+          | None -> failwith (Printf.sprintf "missing required config key %S" name)
+          | Some v ->
+              if List.mem ~eq:String.equal v valid
+              then set v
+              else
+                failwith
+                  (Printf.sprintf
+                     "key %S expects one of {%s}, got %S"
+                     name
+                     (String.concat ~sep:", " valid)
+                     v)))
 
 let parse_entries ~sep s =
   if String.is_empty s
@@ -138,6 +160,19 @@ let parse_entries ~sep s =
 let entries_to_string ~sep entries =
   let entries = List.sort ~cmp:(fun (k1, _) (k2, _) -> String.compare k1 k2) entries in
   String.concat ~sep (List.map ~f:(fun (k, v) -> Printf.sprintf "%s=%s" k v) entries)
+
+(* Like [get_values] but omits any bool key whose current value equals its
+   default. Used to produce a compact [--build-config] output:
+   [set_values] resets an omitted bool back to its default, so the
+   omitted-at-default convention round-trips. Keeps the build-config
+   directory name dune derives from this output short on Windows. *)
+let get_non_default_values keys =
+  List.filter_map keys ~f:(fun key ->
+      match key with
+      | Bool_key { name; get; default; _ } ->
+          let v = get () in
+          if Bool.equal v default then None else Some (name, string_of_bool v)
+      | Enum_key { name; get; _ } -> Some (name, get ()))
 
 let to_config_string entries = entries_to_string ~sep:"+" entries
 

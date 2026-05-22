@@ -20,7 +20,9 @@ open Js_of_ocaml_compiler
 open! Stdlib
 
 let print_and_exit keys =
-  Printf.printf "%s\n" (Build_info.to_config_string (Build_info.get_values keys));
+  Printf.printf
+    "%s\n"
+    (Build_info.to_config_string (Build_info.get_non_default_values keys));
   exit 0
 
 let parse keys input = Build_info.set_values keys (Build_info.parse_config_string input)
