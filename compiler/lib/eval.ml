@@ -17,23 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-Static evaluation
-=================
-- Limited amount of fuel
-- Cannot return a static boxed constant
-  (`return x` where x is a constant global variable (not in env),
-   or a parameter from the initial call)
-- Deal with constant tuples (see one_ulp / lower_bound_for_int)
-
-We need to keep track of whether we have a global constant,
-a small constant, a tuple built during evaluation.
-==> beware of sharing when building a tuple (maybe do not allow tuple of anything but small constants and global constants? at least after evaluation)
-==> should keep referring to global constants and not duplicate them
-
-Add tests
-*)
-
 open! Stdlib
 open Code
 open Flow
@@ -583,7 +566,7 @@ type value =
   | Val_constant of constant
   | Val_block of int * constant array * array_or_not * mutability
 
-let static_eval_fuel = 1000
+let static_eval_fuel = 50
 
 let rec eval_block ~fuel ~info ~blocks ~target ~env pc args =
   if !fuel <= 0
