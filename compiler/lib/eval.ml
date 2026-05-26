@@ -841,11 +841,23 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
     | Assign _ | Set_field _ | Offset_ref _ | Array_set _ )
     :: _ -> None
 
-let emit_value update_count x v =
+let emit_value update_count i x v =
   match v with
   | Val_constant c ->
-      incr update_count;
-      [ Let (x, Constant c) ]
+     (         match c with
+               | Float _
+                 | Float32 _
+                 | Int _
+                 | Int32 _
+                 | Int64 _
+                 | NativeInt _
+                 | Null_ ->
+                  incr update_count;
+                  [ Let (x, Constant c) ]
+               | Float_array _
+                 | Tuple _
+                 | NativeString _
+                 | String _ -> [ i ])
   | Val_block (tag, fields, array_or_not, mutability) ->
       let instrs, vars =
         Array.fold_left fields ~init:([], []) ~f:(fun (instrs, vars) c ->
@@ -1075,7 +1087,7 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
             match eval_block ~fuel ~info ~blocks ~target ~env pc args' with
             | Some v ->
                 if debug_static_eval () then Format.eprintf "===> STATIC@.";
-                let res_instrs = emit_value update_count x v in
+                let res_instrs = emit_value update_count i x v in
                 (match v with
                 | Val_constant c -> Flow.Info.update_def info x (Constant c)
                 | Val_block _ -> ());
