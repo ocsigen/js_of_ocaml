@@ -640,7 +640,6 @@ and resolve ~info ~env ?(eq = constant_equal) a =
       | None -> None
       | Some c -> Some (Val_constant c))
 
-
 and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
   (if debug_static_eval ()
    then
@@ -745,14 +744,14 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
                 ~target
                 ~env:(Var.Map.add x (Val_constant c) env)
                 rem)
-  | Let (x, Constant c) :: rem -> (
-          eval_block_body
-            ~fuel
-            ~info
-            ~blocks
-            ~target
-            ~env:(Var.Map.add x (Val_constant c) env)
-            rem)
+  | Let (x, Constant c) :: rem ->
+      eval_block_body
+        ~fuel
+        ~info
+        ~blocks
+        ~target
+        ~env:(Var.Map.add x (Val_constant c) env)
+        rem
   | Let (x, Apply { f; args; _ }) :: rem -> (
       match get_approx info (fun g -> Flow.Info.def info g) None (fun _ _ -> None) f with
       | Some (Closure (params, (pc, args'), _)) when List.compare_lengths args params = 0
@@ -816,23 +815,19 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
     | Assign _ | Set_field _ | Offset_ref _ | Array_set _ )
     :: _ -> None
 
-let emit_value update_count i x v =
+let is_small_value v =
+  let is_small_constant (c : constant) =
+    match c with
+    | Float _ | Float32 _ | Int _ | Int32 _ | Int64 _ | NativeInt _ | Null_ -> true
+    | Float_array _ | Tuple _ | NativeString _ | String _ -> false
+  in
   match v with
-  | Val_constant c ->
-     (         match c with
-               | Float _
-                 | Float32 _
-                 | Int _
-                 | Int32 _
-                 | Int64 _
-                 | NativeInt _
-                 | Null_ ->
-                  incr update_count;
-                  [ Let (x, Constant c) ]
-               | Float_array _
-                 | Tuple _
-                 | NativeString _
-                 | String _ -> [ i ])
+  | Val_constant c -> is_small_constant c
+  | Val_block (_, fields, _, _) -> Array.for_all ~f:is_small_constant fields
+
+let emit_value update_count x v =
+  match v with
+  | Val_constant c -> [ Let (x, Constant c) ]
   | Val_block (tag, fields, array_or_not, mutability) ->
       let instrs, vars =
         Array.fold_left fields ~init:([], []) ~f:(fun (instrs, vars) c ->
@@ -1060,14 +1055,14 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
             in
             let fuel = ref static_eval_fuel in
             match eval_block ~fuel ~info ~blocks ~target ~env pc args' with
-            | Some v ->
+            | Some v when is_small_value v ->
                 if debug_static_eval () then Format.eprintf "===> STATIC@.";
-                let res_instrs = emit_value update_count i x v in
+                let res_instrs = emit_value update_count x v in
                 (match v with
                 | Val_constant c -> Flow.Info.update_def info x (Constant c)
                 | Val_block _ -> ());
                 res_instrs
-            | None -> [ i ])
+            | _ -> [ i ])
           else [ i ]
       | _ -> [ i ])
   | _ -> [ i ]
