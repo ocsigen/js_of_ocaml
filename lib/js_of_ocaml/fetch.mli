@@ -129,6 +129,12 @@ val request : (js_string t -> request t) constr
 
 val request_with_init : (js_string t -> requestInit t -> request t) constr
 
+val request_of_request : (request t -> request t) constr
+
+val request_of_request_with_init : (request t -> requestInit t -> request t) constr
+(** [new%js request_of_request_with_init r init] builds a request using [r] as
+    a template, overriding fields set in [init]. *)
+
 (** {1 Response} *)
 
 class type responseInit = object
