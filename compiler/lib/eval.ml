@@ -562,10 +562,17 @@ let constant_equal a b =
   | (String _ | NativeString _), _ -> false
   | (Float_array _ | Tuple _), _ -> false
 
+(* Abstract value computed while statically evaluating a function body. A
+   [Val_block] is a freshly allocated block whose fields are all constants; it
+   is kept distinct from [Val_constant (Tuple ...)] because re-emitting it at
+   the call site must produce a fresh allocation (see [emit_value]). *)
 type value =
   | Val_constant of constant
   | Val_block of int * constant array * array_or_not * mutability
 
+(* Maximum number of basic blocks visited while statically evaluating a single
+   call. This bounds the work per call site and guarantees termination in the
+   presence of loops and recursion. *)
 let static_eval_fuel = 50
 
 let rec eval_block ~fuel ~info ~blocks ~target ~env pc args =
@@ -588,7 +595,7 @@ let rec eval_block ~fuel ~info ~blocks ~target ~env pc args =
     | None -> None
     | Some env -> (
         if debug_static_eval ()
-        then Format.eprintf "instr %a@." Code.Print.last block.branch;
+        then Format.eprintf "static eval: branch %a@." Code.Print.last block.branch;
         match block.branch with
         | Return x -> resolve ~info ~env (Pv x)
         | Branch (pc', args') -> eval_block ~fuel ~info ~blocks ~target ~env pc' args'
@@ -627,7 +634,7 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
   (if debug_static_eval ()
    then
      match instrs with
-     | i :: _ -> Format.eprintf "instr %a@." Code.Print.instr i
+     | i :: _ -> Format.eprintf "static eval: instr %a@." Code.Print.instr i
      | [] -> ());
   match instrs with
   | [] -> Some env
@@ -696,6 +703,9 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
       then (
         if debug_static_eval ()
         then (
+          (* One character per argument: 'x' if it resolved to a value, '?'
+             otherwise (the latter is why this primitive cannot be evaluated). *)
+          Format.eprintf "static eval: %a not evaluated, args " Code.Print.instr i;
           List.iter prim_args' ~f:(fun a ->
               Format.eprintf "%s" (if Option.is_some a then "x" else "?"));
           Format.eprintf "@.");
@@ -717,7 +727,12 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
           let res = eval_prim ~target (prim, prim_args'') in
           match res with
           | None ->
-              if debug_static_eval () then Format.eprintf "INSTR %a@." Code.Print.instr i;
+              if debug_static_eval ()
+              then
+                Format.eprintf
+                  "static eval: %a not evaluated (primitive not foldable)@."
+                  Code.Print.instr
+                  i;
               None
           | Some c ->
               eval_block_body
@@ -758,6 +773,9 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
   | Let (x, Block (tag, fields, array_or_not, mutability)) :: rem ->
       let fields = Array.map ~f:(fun x -> resolve ~info ~env (Pv x)) fields in
       if
+        (* Only track small blocks: a large block would be expensive to
+           re-materialise at the call site (one allocation per field, see
+           [emit_value]) and rarely pays off. *)
         Array.length fields > 3
         || Array.exists fields ~f:(function
           | Some (Val_constant _) -> false
@@ -813,16 +831,18 @@ let emit_value update_count x v =
   match v with
   | Val_constant c -> [ Let (x, Constant c) ]
   | Val_block (tag, fields, array_or_not, mutability) ->
-      let instrs, vars =
+      (* Bind each field to a fresh variable, then allocate the block from those
+         variables. Instructions and variables are accumulated in reverse and
+         reversed once, to avoid the quadratic cost of appending at the end. *)
+      let rev_instrs, rev_vars =
         Array.fold_left fields ~init:([], []) ~f:(fun (instrs, vars) c ->
             let v = Code.Var.fresh () in
             incr update_count;
-            let field_instr = Let (v, Constant c) in
-            instrs @ [ field_instr ], v :: vars)
+            Let (v, Constant c) :: instrs, v :: vars)
       in
-      let vars = Array.of_list (List.rev vars) in
+      let vars = Array.of_list (List.rev rev_vars) in
       incr update_count;
-      instrs @ [ Let (x, Block (tag, vars, array_or_not, mutability)) ]
+      List.rev (Let (x, Block (tag, vars, array_or_not, mutability)) :: rev_instrs)
 
 let eval_instr update_count inline_constant ~target info ~blocks i =
   match i with
@@ -1029,7 +1049,12 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
           in
           if List.for_all args ~f:Option.is_some
           then (
-            if debug_static_eval () then Format.eprintf "ZZZ %a@." Code.Var.print f;
+            if debug_static_eval ()
+            then
+              Format.eprintf
+                "static eval: trying %a (all arguments constant)@."
+                Code.Var.print
+                f;
             let env =
               List.fold_left2
                 ~f:(fun s x v -> Var.Map.add x (Val_constant (Option.get v)) s)
@@ -1040,10 +1065,14 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
             let fuel = ref static_eval_fuel in
             match eval_block ~fuel ~info ~blocks ~target ~env pc args' with
             | Some v when is_small_value v ->
-                if debug_static_eval () then Format.eprintf "===> STATIC@.";
+                if debug_static_eval ()
+                then Format.eprintf "static eval: %a folded@." Code.Var.print x;
                 let res_instrs = emit_value update_count x v in
                 (match v with
                 | Val_constant c -> Flow.Info.update_def info x (Constant c)
+                (* For a block we leave the flow info untouched: [x] is now bound
+                   to a fresh allocation rather than a constant, and recording it
+                   does not enable further folding. *)
                 | Val_block _ -> ());
                 res_instrs
             | _ -> [ i ])
