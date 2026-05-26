@@ -581,13 +581,7 @@ let constant_equal a b =
 
 type value =
   | Val_constant of constant
-  | Val_block of int * value array * array_or_not * mutability
-
-let rec value_of_constant c =
-  match c with
-  | Tuple (tag, fields, array_or_not) ->
-      Val_block (tag, Array.map ~f:value_of_constant fields, array_or_not, Immutable)
-  | c -> Val_constant c
+  | Val_block of int * constant array * array_or_not * mutability
 
 let static_eval_fuel = 1000
 
@@ -644,7 +638,7 @@ and resolve ~info ~env ?(eq = constant_equal) a =
   | None -> (
       match the_const_of ~eq info a with
       | None -> None
-      | Some c -> Some (value_of_constant c))
+      | Some c -> Some (Val_constant c))
 
 and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
   (if debug_static_eval ()
@@ -704,8 +698,7 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
             rem)
   | Let (x, Prim (Extern "caml_obj_tag", [ y ])) :: rem -> (
       match resolve ~info ~env y with
-      | Some (Val_constant (Tuple (tag, _, _)))
-      | Some (Val_block (tag, _, _, _)) ->
+      | Some (Val_constant (Tuple (tag, _, _))) | Some (Val_block (tag, _, _, _)) ->
           eval_block_body
             ~fuel
             ~info
@@ -738,18 +731,19 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
               | Some (Val_constant c) -> c
               | _ -> assert false)
           in
-          let res =
-            eval_prim
-              ~target
-              ( prim
-              , prim_args'' )
-          in
+          let res = eval_prim ~target (prim, prim_args'') in
           match res with
           | None ->
               if debug_static_eval () then Format.eprintf "INSTR %a@." Code.Print.instr i;
               None
           | Some c ->
-              eval_block_body ~fuel ~info ~blocks ~target ~env:(Var.Map.add x (Val_constant c) env) rem)
+              eval_block_body
+                ~fuel
+                ~info
+                ~blocks
+                ~target
+                ~env:(Var.Map.add x (Val_constant c) env)
+                rem)
   | Let (x, Constant c) :: rem -> (
       match c with
       | Float _
@@ -760,16 +754,14 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
       | NativeInt _
       | NativeString _
       | Float_array _
+      | Tuple _
       | Null_ ->
-          eval_block_body ~fuel ~info ~blocks ~target ~env:(Var.Map.add x (Val_constant c) env) rem
-      | Tuple (tag, fields, array_or_not) ->
-          let fields = Array.map ~f:value_of_constant fields in
           eval_block_body
             ~fuel
             ~info
             ~blocks
             ~target
-            ~env:(Var.Map.add x (Val_block (tag, fields, array_or_not, Immutable)) env)
+            ~env:(Var.Map.add x (Val_constant c) env)
             rem
       | String _ -> None)
   | Let (x, Apply { f; args; _ }) :: rem -> (
@@ -794,13 +786,16 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
       | _ -> None)
   | Let (x, Block (tag, fields, array_or_not, mutability)) :: rem ->
       let fields = Array.map ~f:(fun x -> resolve ~info ~env (Pv x)) fields in
-      if Array.exists fields ~f:Option.is_none
+      if
+        Array.exists fields ~f:(function
+          | Some (Val_constant _) -> false
+          | _ -> true)
       then None
       else
         let fields =
           Array.map fields ~f:(function
-            | Some c -> c
-            | None -> assert false)
+            | Some (Val_constant c) -> c
+            | _ -> assert false)
         in
         eval_block_body
           ~fuel
@@ -817,27 +812,33 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
             ~info
             ~blocks
             ~target
-            ~env:(Var.Map.add x fields.(i) env)
+            ~env:(Var.Map.add x (Val_constant fields.(i)) env)
+            rem
+      | Some (Val_constant (Tuple (_, fields, _))) when i < Array.length fields ->
+          eval_block_body
+            ~fuel
+            ~info
+            ~blocks
+            ~target
+            ~env:(Var.Map.add x (Val_constant fields.(i)) env)
             rem
       | _ -> None)
   | ( Let (_, (Closure _ | Special _))
     | Assign _ | Set_field _ | Offset_ref _ | Array_set _ )
     :: _ -> None
 
-let rec emit_value update_count x v =
+let emit_value update_count x v =
   match v with
   | Val_constant c ->
       incr update_count;
       [ Let (x, Constant c) ]
   | Val_block (tag, fields, array_or_not, mutability) ->
       let instrs, vars =
-        Array.fold_left
-          fields
-          ~init:([], [])
-          ~f:(fun (instrs, vars) field ->
+        Array.fold_left fields ~init:([], []) ~f:(fun (instrs, vars) c ->
             let v = Code.Var.fresh () in
-            let field_instrs = emit_value update_count v field in
-            (instrs @ field_instrs, v :: vars))
+            incr update_count;
+            let field_instr = Let (v, Constant c) in
+            instrs @ [ field_instr ], v :: vars)
       in
       let vars = Array.of_list (List.rev vars) in
       incr update_count;
@@ -1062,8 +1063,8 @@ let eval_instr update_count inline_constant ~target info ~blocks i =
                 if debug_static_eval () then Format.eprintf "===> STATIC@.";
                 let res_instrs = emit_value update_count x v in
                 (match v with
-                 | Val_constant c -> Flow.Info.update_def info x (Constant c)
-                 | Val_block _ -> ());
+                | Val_constant c -> Flow.Info.update_def info x (Constant c)
+                | Val_block _ -> ());
                 res_instrs
             | None -> [ i ])
           else [ i ]
