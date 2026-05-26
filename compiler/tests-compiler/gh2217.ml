@@ -29,7 +29,8 @@ let g () =
   in
   let p = compile_and_parse ~flags:[ "--debug=invariant" ] p in
   print_fun_decl p (Some "g");
-  [%expect {|
+  [%expect
+    {|
     function g(_a_){
      function f(b){return [0, b];}
      var _a_ = f(0)[1];
