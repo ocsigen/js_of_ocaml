@@ -21,6 +21,7 @@
  (deps
   binaryen-version-check
   args
+  zstd-impl.wasm
   (glob_files *.wat))
  (action
   (run
@@ -31,6 +32,7 @@
    --disable=wasi
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
+   zstd:zstd-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -38,6 +40,7 @@
  (deps
   binaryen-version-check
   args
+  zstd-impl.wasm
   (glob_files *.wat))
  (action
   (run
@@ -48,6 +51,7 @@
    --disable=wasi
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
+   zstd:zstd-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -55,7 +59,8 @@
  (deps
   args
   (glob_files *.wat)
-  libc.wasm)
+  libc.wasm
+  zstd-impl.wasm)
  (action
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
@@ -66,6 +71,7 @@
    --allowed-imports=wasi_snapshot_preview1,OCaml
    %{target}
    libc:libc.wasm
+   zstd:zstd-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -73,7 +79,8 @@
  (deps
   args
   (glob_files *.wat)
-  libc.wasm)
+  libc.wasm
+  zstd-impl.wasm)
  (action
   (run
    ../../compiler/bin-wasm_of_ocaml/wasmoo_link_wasm.exe
@@ -83,6 +90,7 @@
    --enable=wasi
    %{target}
    libc:libc.wasm
+   zstd:zstd-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -95,15 +103,20 @@
    %{target}
    (run ocaml %{deps}))))
 
-; libc.wasm is compiled from libc/libc.c with the wasi-sdk, which we run via
-; docker. Normal builds use the committed libc.wasm as-is and never need
-; docker: the rule that rebuilds it lives in the vendored 'libc' subdirectory,
-; which dune excludes from @all. After editing libc/libc.c, regenerate
-; libc.wasm on demand (docker required) with:
+; libc.wasm and zstd-impl.wasm are compiled from C sources with the wasi-sdk,
+; which we run via docker. Normal builds use the committed .wasm files as-is and
+; never need docker: each rebuild rule lives in a vendored subdirectory ('libc',
+; 'zstd'), which dune excludes from @all. After editing the corresponding
+; sources, regenerate the .wasm on demand (docker required) with one of:
 ;   dune build @runtime/wasm/recompile-libc
+;   dune build @runtime/wasm/recompile-zstd
 
-(vendored_dirs libc)
+(vendored_dirs libc zstd)
 
 (alias
  (name recompile-libc)
  (deps libc/libc.wasm))
+
+(alias
+ (name recompile-zstd)
+ (deps zstd/zstd-impl.wasm))

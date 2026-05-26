@@ -20,6 +20,9 @@
   now work as on the JavaScript runtime (#2263)
 * Runtime/wasm: faster string↔ArrayBuffer copies, faster small-string
   conversions, and optimized bigstring primitives (#2124, #2144)
+* Runtime/wasm: pure-Wasm zstd decompressor for compressed marshal data;
+  the runtime no longer needs the JavaScript zstd implementation to
+  unmarshal compressed values, unblocking JS-less embedders (#2249)
 * Runtime: initial support for quickjs-ng
 * Lib: add `Promise` — type-safe bindings to JavaScript promises (even for
   `'a Promise.t Promise.t`), with Lwt interop in `Js_of_ocaml_lwt.Promise`
