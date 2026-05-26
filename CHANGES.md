@@ -65,6 +65,7 @@
   fixed-width `Bytes` accesses (#2470, #2505)
 * Compiler/Wasm: link with our own linker, which also removes dead code,
   instead of wasm-merge and wasm-metadce: faster compilation (#2506)
+* Compiler/Wasm: skip wasm-opt at --opt 1 (#2238)
 
 ### Libraries
 * Lib: add `WebGL2` bindings; the `webgl` example uses WebGL2 and a new
