@@ -31,10 +31,6 @@ let g () =
   print_fun_decl p (Some "g");
   [%expect
     {|
-    function g(_a_){
-     function f(b){return [0, b];}
-     var _a_ = f(0)[1];
-     return [0, f(1)[1], _a_];
-    }
+    function g(param){return [0, 1, 0];}
     //end
     |}]
