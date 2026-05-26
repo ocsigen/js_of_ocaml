@@ -43,28 +43,29 @@ end = struct
   external unwrap : 'a t -> 'a = "caml_jsoo_promise_unwrap"
 end
 
-class type promise_object = object
-  method _then :
-    'a. ('a Wrapped.t -> promise_object Js.t) Js.callback -> promise_object Js.t Js.meth
+class type promise = object
+  method _then : 'a. ('a Wrapped.t -> promise Js.t) Js.callback -> promise Js.t Js.meth
+
+  method _then_map :
+    'a 'b. ('a Wrapped.t -> 'b Wrapped.t) Js.callback -> promise Js.t Js.meth
 
   method _then_err :
     'a.
-       ('a Wrapped.t -> promise_object Js.t) Js.callback
-    -> (Js.Unsafe.any -> promise_object Js.t) Js.callback
-    -> promise_object Js.t Js.meth
+       ('a Wrapped.t -> promise Js.t) Js.callback
+    -> (Js.Unsafe.any -> promise Js.t) Js.callback
+    -> promise Js.t Js.meth
 
-  method _catch :
-    (Js.Unsafe.any -> promise_object Js.t) Js.callback -> promise_object Js.t Js.meth
+  method _catch : (Js.Unsafe.any -> promise Js.t) Js.callback -> promise Js.t Js.meth
 
-  method _finally : (unit -> unit) Js.callback -> promise_object Js.t Js.meth
+  method _finally : (unit -> unit) Js.callback -> promise Js.t Js.meth
 end
 
-type +'a t = promise_object Js.t
+type +'a t = promise Js.t
 
 type error = Js.Unsafe.any
 
 class type with_resolvers = object
-  method promise : promise_object Js.t Js.readonly_prop
+  method promise : promise Js.t Js.readonly_prop
 
   method resolve : Js.Unsafe.any Js.readonly_prop
 
@@ -79,34 +80,33 @@ class type all_settled_entry = object
   method reason : Js.Unsafe.any Js.readonly_prop
 end
 
-class type promise_constructor = object
-  method resolve : 'a. 'a Wrapped.t -> promise_object Js.t Js.meth
+class type promise_static = object
+  method resolve : 'a. 'a Wrapped.t -> promise Js.t Js.meth
 
-  method reject : Js.Unsafe.any -> promise_object Js.t Js.meth
+  method reject : Js.Unsafe.any -> promise Js.t Js.meth
 
-  method all : promise_object Js.t Js.js_array Js.t -> promise_object Js.t Js.meth
+  method all : promise Js.t Js.js_array Js.t -> promise Js.t Js.meth
 
-  method allSettled : promise_object Js.t Js.js_array Js.t -> promise_object Js.t Js.meth
+  method allSettled : promise Js.t Js.js_array Js.t -> promise Js.t Js.meth
 
-  method any : promise_object Js.t Js.js_array Js.t -> promise_object Js.t Js.meth
+  method any : promise Js.t Js.js_array Js.t -> promise Js.t Js.meth
 
-  method race : promise_object Js.t Js.js_array Js.t -> promise_object Js.t Js.meth
+  method race : promise Js.t Js.js_array Js.t -> promise Js.t Js.meth
 
   method withResolvers : with_resolvers Js.t Js.meth
 end
 
-let promise_global : promise_constructor Js.t = Js.Unsafe.global##._Promise
+let promise_static : promise_static Js.t = Js.Unsafe.global##._Promise
 
 let promise_constr :
-    ((Js.Unsafe.any -> Js.Unsafe.any -> unit) Js.callback -> promise_object Js.t)
-    Js.constr =
+    ((Js.Unsafe.any -> Js.Unsafe.any -> unit) Js.callback -> promise Js.t) Js.constr =
   Js.Unsafe.global##._Promise
 
 let is_supported () = Js.Optdef.test (Js.Unsafe.global##._Promise : _ Js.Optdef.t)
 
-let resolve (x : 'a) : 'a t = promise_global##resolve (Wrapped.wrap x)
+let resolve (x : 'a) : 'a t = promise_static##resolve (Wrapped.wrap x)
 
-let reject (e : error) : 'a t = promise_global##reject e
+let reject (e : error) : 'a t = promise_static##reject e
 
 let make (f : resolve:('a -> unit) -> reject:(error -> unit) -> unit) : 'a t =
   let body =
@@ -124,7 +124,7 @@ let make (f : resolve:('a -> unit) -> reject:(error -> unit) -> unit) : 'a t =
   new%js promise_constr body
 
 let with_resolvers () : 'a t * ('a -> unit) * (error -> unit) =
-  let r = promise_global##withResolvers in
+  let r = promise_static##withResolvers in
   let resolve x =
     ignore
       (Js.Unsafe.fun_call r##.resolve [| Js.Unsafe.inject (Wrapped.wrap x) |]
@@ -147,23 +147,27 @@ let catch (f : error -> 'a t) (p : 'a t) : 'a t = p##_catch (Js.wrap_callback f)
 
 let finally (f : unit -> unit) (p : 'a t) : 'a t = p##_finally (Js.wrap_callback f)
 
-let map (f : 'a -> 'b) (p : 'a t) : 'b t = then_ (fun x -> resolve (f x)) p
+let map (f : 'a -> 'b) (p : 'a t) : 'b t =
+  let cb =
+    Js.wrap_callback (fun (w : 'a Wrapped.t) -> Wrapped.wrap (f (Wrapped.unwrap w)))
+  in
+  p##_then_map cb
 
 let bind f p = then_ f p
 
 let all (ps : 'a t list) : 'a list t =
   let arr = Js.array (Array.of_list ps) in
-  let raw = promise_global##all arr in
+  let raw = promise_static##all arr in
   let cb =
     Js.wrap_callback (fun (w : 'a Wrapped.t Js.js_array Js.t Wrapped.t) ->
         let arr = Wrapped.unwrap w in
-        resolve (List.map Wrapped.unwrap (Array.to_list (Js.to_array arr))))
+        Wrapped.wrap (List.map Wrapped.unwrap (Array.to_list (Js.to_array arr))))
   in
-  raw##_then cb
+  raw##_then_map cb
 
 let all_settled (ps : 'a t list) : ('a, error) result list t =
   let arr = Js.array (Array.of_list ps) in
-  let raw = promise_global##allSettled arr in
+  let raw = promise_static##allSettled arr in
   let cb =
     Js.wrap_callback (fun (w : all_settled_entry Js.t Js.js_array Js.t Wrapped.t) ->
         let arr = Wrapped.unwrap w in
@@ -175,17 +179,17 @@ let all_settled (ps : 'a t list) : ('a, error) result list t =
               else Error (entry##.reason : error))
             (Array.to_list (Js.to_array arr))
         in
-        resolve lst)
+        Wrapped.wrap lst)
   in
-  raw##_then cb
+  raw##_then_map cb
 
 let any (ps : 'a t list) : 'a t =
   let arr = Js.array (Array.of_list ps) in
-  promise_global##any arr
+  promise_static##any arr
 
 let race (ps : 'a t list) : 'a t =
   let arr = Js.array (Array.of_list ps) in
-  promise_global##race arr
+  promise_static##race arr
 
 let error_of_any (x : Js.Unsafe.any) : error = x
 
