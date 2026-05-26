@@ -147,6 +147,13 @@ let build_runtime ~runtime_file =
         ~inputs
         ~output_file:runtime_file
 
+(* The output of one Binaryen pipeline step: the wasm file and its
+   optional sourcemap. A step reads one [step_io] and writes another. *)
+type step_io =
+  { file : string
+  ; opt_sm : string option
+  }
+
 let link_and_optimize
     ~profile
     ~sourcemap_root
@@ -166,63 +173,42 @@ let link_and_optimize
     | Some _ | None -> opt_sourcemap
   in
   let enable_source_maps = Option.is_some opt_sourcemap_file in
+  (* Allocate a fresh temp [step_io] (wasm file + sourcemap) for an
+     intermediate step, scoped to the continuation. *)
+  let with_temp_step base k =
+    Fs.with_intermediate_file (Filename.temp_file base ".wasm")
+    @@ fun file ->
+    opt_with
+      Fs.with_intermediate_file
+      (if enable_source_maps then Some (Filename.temp_file base ".wasm.map") else None)
+    @@ fun opt_sm -> k { file; opt_sm }
+  in
   Fs.with_intermediate_file (Filename.temp_file "runtime" ".wasm")
   @@ fun runtime_file ->
   build_runtime ~runtime_file;
-  Fs.with_intermediate_file (Filename.temp_file "wasm-merged" ".wasm")
-  @@ fun temp_file ->
-  opt_with
-    Fs.with_intermediate_file
-    (if enable_source_maps
-     then Some (Filename.temp_file "wasm-merged" ".wasm.map")
-     else None)
-  @@ fun opt_temp_sourcemap ->
-  (with_runtime_files ~runtime_wasm_files
-  @@ fun runtime_inputs ->
-  let t = Timer.make ~get_time:Unix.time () in
-  Binaryen.link
-    ~inputs:
-      ({ Binaryen.module_name = "env"; file = runtime_file; source_map_file = None }
-       :: runtime_inputs
-      @ List.map
-          ~f:(fun (file, source_map_file) ->
-            { Binaryen.module_name = "OCaml"; file; source_map_file })
-          wat_files)
-    ~opt_output_sourcemap:opt_temp_sourcemap
-    ~output_file:temp_file
-    ();
-  if binaryen_times () then Format.eprintf "  binaryen link: %a@." Timer.print t);
-
-  let optimize_and_finish ~opt_input_sourcemap ~input_file primitives =
+  (* The producer: merge the runtime and the compiled units. *)
+  let link ~(output : step_io) =
+    with_runtime_files ~runtime_wasm_files
+    @@ fun runtime_inputs ->
     let t = Timer.make ~get_time:Unix.time () in
-    Binaryen.optimize
-      ~profile
-      ~opt_input_sourcemap
-      ~opt_output_sourcemap:opt_sourcemap
-      ~input_file
-      ~output_file
+    Binaryen.link
+      ~inputs:
+        ({ Binaryen.module_name = "env"; file = runtime_file; source_map_file = None }
+         :: runtime_inputs
+        @ List.map
+            ~f:(fun (file, source_map_file) ->
+              { Binaryen.module_name = "OCaml"; file; source_map_file })
+            wat_files)
+      ~opt_output_sourcemap:output.opt_sm
+      ~output_file:output.file
       ();
-    if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t;
-    Option.iter
-      ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
-      opt_sourcemap_file;
-    primitives
+    if binaryen_times () then Format.eprintf "  binaryen link: %a@." Timer.print t;
+    Linker.list_all ()
   in
-  if dynlink
-  then
-    optimize_and_finish
-      ~opt_input_sourcemap:opt_temp_sourcemap
-      ~input_file:temp_file
-      (Linker.list_all ())
-  else
-    Fs.with_intermediate_file (Filename.temp_file "wasm-dce" ".wasm")
-    @@ fun temp_file' ->
-    opt_with
-      Fs.with_intermediate_file
-      (if enable_source_maps
-       then Some (Filename.temp_file "wasm-dce" ".wasm.map")
-       else None)
-    @@ fun opt_temp_sourcemap' ->
+  (* A transformer reads the previous step's output and writes the next;
+     it returns the primitive list known after it runs. [dce] computes a
+     pruned list, [optimize] passes the incoming one through. *)
+  let dce ~(input : step_io) ~(output : step_io) ~primitives:_ =
     let t = Timer.make ~get_time:Unix.time () in
     let primitives =
       Binaryen.dead_code_elimination
@@ -230,16 +216,63 @@ let link_and_optimize
           (if Config.Flag.wasi ()
            then Runtime_files.wasi_dependencies
            else Runtime_files.dependencies)
-        ~opt_input_sourcemap:opt_temp_sourcemap
-        ~opt_output_sourcemap:opt_temp_sourcemap'
-        ~input_file:temp_file
-        ~output_file:temp_file'
+        ~opt_input_sourcemap:input.opt_sm
+        ~opt_output_sourcemap:output.opt_sm
+        ~input_file:input.file
+        ~output_file:output.file
     in
     if binaryen_times () then Format.eprintf "  binaryen dce: %a@." Timer.print t;
-    optimize_and_finish
-      ~opt_input_sourcemap:opt_temp_sourcemap'
-      ~input_file:temp_file'
-      primitives
+    primitives
+  in
+  let optimize ~(input : step_io) ~(output : step_io) ~primitives =
+    let t = Timer.make ~get_time:Unix.time () in
+    Binaryen.optimize
+      ~profile
+      ~opt_input_sourcemap:input.opt_sm
+      ~opt_output_sourcemap:output.opt_sm
+      ~input_file:input.file
+      ~output_file:output.file
+      ();
+    if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t;
+    primitives
+  in
+  (* The pipeline shape, decided in one place: link, then DCE unless we are
+     building a dynamically-linkable unit, then wasm-opt. *)
+  let transformers =
+    List.filter_map
+      ~f:(fun x -> x)
+      [ (if dynlink then None else Some ("wasm-dce", dce))
+      ; Some ("wasm-opt", optimize)
+      ]
+  in
+  let final = { file = output_file; opt_sm = opt_sourcemap_file } in
+  (* Run the transformers in order: each but the last writes to a temp
+     file; the last writes straight to [final], so nothing is ever copied
+     through memory just to land at the output path. *)
+  let rec run_transformers ~input ~primitives = function
+    | [] -> primitives
+    | [ (_, last) ] -> last ~input ~output:final ~primitives
+    | (name, step) :: rest ->
+        with_temp_step name
+        @@ fun output ->
+        let primitives = step ~input ~output ~primitives in
+        run_transformers ~input:output ~primitives rest
+  in
+  let primitives =
+    match transformers with
+    | [] -> link ~output:final
+    | _ ->
+        with_temp_step "wasm-merged"
+        @@ fun linked ->
+        let primitives = link ~output:linked in
+        run_transformers ~input:linked ~primitives transformers
+  in
+  Option.iter
+    ~f:(update_sourcemap ~sourcemap_root ~sourcemap_don't_inline_content)
+    opt_sourcemap_file;
+  (* [opt_sourcemap_file] is [None] when Binaryen cannot produce
+     sourcemaps, even though one was requested. *)
+  primitives, opt_sourcemap_file
 
 let link_runtime ~profile runtime_wasm_files output_file =
   if List.is_empty runtime_wasm_files
@@ -712,7 +745,7 @@ let run
          in
          let tmp_wasm_file = Filename.concat tmp_dir "code.wasm" in
          let t2 = Timer.make ~get_time:Unix.time () in
-         let primitives =
+         let primitives, opt_sourcemap =
            link_and_optimize
              ~profile
              ~sourcemap_root
@@ -735,12 +768,11 @@ let run
          in
          let tmp_wasm_file' = Filename.concat tmp_dir (wasm_name ^ ".wasm") in
          Sys.rename tmp_wasm_file tmp_wasm_file';
-         if enable_source_maps
-         then (
-           Sys.rename (Filename.concat tmp_dir "code.wasm.map") (tmp_wasm_file' ^ ".map");
-           Link.Wasm_binary.append_source_map_section
-             ~file:tmp_wasm_file'
-             ~url:(wasm_name ^ ".wasm.map"));
+         Option.iter opt_sourcemap ~f:(fun sourcemap ->
+             Sys.rename sourcemap (tmp_wasm_file' ^ ".map");
+             Link.Wasm_binary.append_source_map_section
+               ~file:tmp_wasm_file'
+               ~url:(wasm_name ^ ".wasm.map"));
          if times () then Format.eprintf "Start building js runtime@.";
          let js_runtime =
            let missing_primitives =
