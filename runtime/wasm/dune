@@ -21,6 +21,7 @@
  (deps
   binaryen-version-check
   args
+  zstd-impl.wasm
   (glob_files *.wat))
  (action
   (run
@@ -30,6 +31,7 @@
    --set=effects=jspi
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
+   zstd:zstd-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -37,6 +39,7 @@
  (deps
   binaryen-version-check
   args
+  zstd-impl.wasm
   (glob_files *.wat))
  (action
   (run
@@ -46,6 +49,7 @@
    --set=effects=cps
    --allowed-imports=bindings,Math,js,wasm:js-string,wasm:text-encoder,wasm:text-decoder
    %{target}
+   zstd:zstd-impl.wasm
    %{read-lines:args})))
 
 (rule
@@ -57,3 +61,47 @@
   (with-stdout-to
    %{target}
    (run ocaml %{deps}))))
+
+(rule
+ (target zstd-impl.new.wasm)
+ (deps zstddeclib.c zstd_wrap.c)
+ (enabled_if
+  (not %{env:CI=false}))
+ (mode promote)
+ (action
+  (with-stdout-to
+   %{target}
+   (pipe-stdout
+    (run
+     docker
+     run
+     -v
+     .:/src
+     -w
+     /src
+     ghcr.io/webassembly/wasi-sdk
+     /opt/wasi-sdk/bin/clang
+     ;; -Oz yields a smaller binary than -O2 for the decoder.
+     -Oz
+     -flto
+     -nodefaultlibs
+     -nostartfiles
+     -ffreestanding
+     -fno-builtin
+     -mbulk-memory
+     -fno-stack-protector
+     -DNDEBUG
+     -DZSTD_NO_TRACE
+     -DZSTD_DISABLE_ASM
+     -Wl,--no-entry
+     -Wl,--export-memory=zstd_memory
+     zstddeclib.c
+     zstd_wrap.c
+     -o
+     -)
+    (run wasm-opt -Oz --strip-debug --strip-dwarf - -o -)))))
+
+(rule
+ (alias recompile-zstd)
+ (action
+  (cmp zstd-impl.wasm zstd-impl.new.wasm)))
