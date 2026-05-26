@@ -775,7 +775,8 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
   | Let (x, Block (tag, fields, array_or_not, mutability)) :: rem ->
       let fields = Array.map ~f:(fun x -> resolve ~info ~env (Pv x)) fields in
       if
-        Array.exists fields ~f:(function
+        Array.length fields <= 3
+        && Array.exists fields ~f:(function
           | Some (Val_constant _) -> false
           | _ -> true)
       then None
