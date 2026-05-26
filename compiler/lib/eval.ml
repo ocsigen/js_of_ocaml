@@ -638,7 +638,21 @@ and resolve ~info ~env ?(eq = constant_equal) a =
   | None -> (
       match the_const_of ~eq info a with
       | None -> None
-      | Some c -> Some (Val_constant c))
+      | Some c -> 
+         match c with
+         | Float _
+           | Float32 _
+           | Int _
+           | Int32 _
+           | Int64 _
+           | NativeInt _
+           | Null_ ->
+            Some (Val_constant c)
+         | Float_array _
+           | Tuple _
+           | NativeString _
+           | String _ -> None)
+
 
 and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
   (if debug_static_eval ()
@@ -752,9 +766,6 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
       | Int32 _
       | Int64 _
       | NativeInt _
-      | NativeString _
-      | Float_array _
-      | Tuple _
       | Null_ ->
           eval_block_body
             ~fuel
@@ -763,6 +774,9 @@ and eval_block_body ~fuel ~info ~blocks ~target ~env instrs =
             ~target
             ~env:(Var.Map.add x (Val_constant c) env)
             rem
+      | Float_array _
+      | Tuple _
+      | NativeString _
       | String _ -> None)
   | Let (x, Apply { f; args; _ }) :: rem -> (
       match get_approx info (fun g -> Flow.Info.def info g) None (fun _ _ -> None) f with
