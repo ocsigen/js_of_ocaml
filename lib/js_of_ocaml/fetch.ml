@@ -123,6 +123,13 @@ let request_with_init : (Js.js_string Js.t -> requestInit Js.t -> request Js.t) 
     =
   Js.Unsafe.global##._Request
 
+let request_of_request : (request Js.t -> request Js.t) Js.constr =
+  Js.Unsafe.global##._Request
+
+let request_of_request_with_init :
+    (request Js.t -> requestInit Js.t -> request Js.t) Js.constr =
+  Js.Unsafe.global##._Request
+
 class type responseInit = object
   method status : int Js.writeonly_prop
 
