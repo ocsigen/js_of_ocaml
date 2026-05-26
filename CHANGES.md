@@ -10,7 +10,7 @@
 * Compiler: improved shape computation (#2198)
 * Add the --build-config and --apply-build-config flags (#2177)
 * Runtime/wasm: optimized some bigstring primitives (#2144)
-* Lib: many additional `Dom_html` bindings (#2221)
+* Lib: many additional `Dom_html` bindings (#2221, #2248)
 * Lib: add `Performance` module (#2221)
 * Put more values into global variables (#2211)
 * Runtime: intial support for quickjs-ng
