@@ -164,7 +164,11 @@ let eval_comparison op args =
   | [ Int64 i; Int64 j ] -> bool (op (Int64.compare i j) 0)
   | [ NativeInt i; NativeInt j ] -> bool (op (Int32.compare i j) 0)
   | [ Float f; Float g ] ->
-      bool (op (Float.compare (Int64.float_of_bits f) (Int64.float_of_bits g)) 0)
+      let f = Int64.float_of_bits f in
+      let g = Int64.float_of_bits g in
+      if Float.is_nan f || Float.is_nan g
+      then bool false
+      else bool (op (Float.compare f g) 0)
   | _ -> None
 
 let quiet_nan n = Int64.logor n 0x00_08_00_00_00_00_00_00L
@@ -611,8 +615,12 @@ let rec eval_block ~fuel ~info ~blocks ~target ~env pc args =
         | Switch (x, conts) -> (
             match resolve ~info ~env (Pv x) with
             | Some (Int i) ->
-                let pc', args' = conts.(Targetint.to_int_exn i) in
-                eval_block ~fuel ~info ~blocks ~target ~env pc' args'
+                let idx = Targetint.to_int_exn i in
+                if idx >= 0 && idx < Array.length conts
+                then
+                  let pc', args' = conts.(idx) in
+                  eval_block ~fuel ~info ~blocks ~target ~env pc' args'
+                else None
             | _ -> None)
         | Raise _ | Stop | Pushtrap _ | Poptrap _ -> None))
 
