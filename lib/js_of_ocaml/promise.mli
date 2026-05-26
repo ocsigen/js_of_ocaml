@@ -69,6 +69,12 @@ val make : (resolve:('a -> unit) -> reject:(error -> unit) -> unit) -> 'a t
 (** [make f] runs [f] synchronously with two callbacks; [f] is expected to
     eventually invoke either [resolve] or [reject] to settle the promise. *)
 
+val with_resolvers : unit -> 'a t * ('a -> unit) * (error -> unit)
+(** [with_resolvers ()] returns [(p, resolve, reject)] where [p] is a fresh
+    promise that is settled by calling [resolve x] (to fulfill with [x]) or
+    [reject e] (to reject with [e]). Bound to the [Promise.withResolvers()]
+    static method (ES2024). *)
+
 (** {1 Chaining} *)
 
 val then_ : ?on_error:(error -> 'b t) -> ('a -> 'b t) -> 'a t -> 'b t
@@ -101,6 +107,16 @@ val bind : ('a -> 'b t) -> 'a t -> 'b t
 val all : 'a t list -> 'a list t
 (** [all ps] resolves with the values of all promises in [ps], in order,
     or rejects with the reason of the first promise to reject. *)
+
+val all_settled : 'a t list -> ('a, error) result list t
+(** [all_settled ps] resolves once every promise in [ps] has settled, with
+    a list in the same order: [Ok v] for a fulfilled promise and
+    [Error e] for a rejected one. The returned promise never rejects. *)
+
+val any : 'a t list -> 'a t
+(** [any ps] fulfills as soon as any promise in [ps] fulfills. If every
+    promise rejects, the returned promise rejects with an [AggregateError]
+    whose [errors] property lists the rejection reasons. *)
 
 val race : 'a t list -> 'a t
 (** [race ps] settles like the first promise in [ps] to settle, fulfilled

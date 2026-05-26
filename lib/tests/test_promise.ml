@@ -66,3 +66,31 @@ let%expect_test "all/race build Promises without blowing up" =
     all OK
     race OK
     |}]
+
+let%expect_test "all_settled/any build Promises without blowing up" =
+  let p1 = Promise.resolve 1 in
+  let p2 = Promise.resolve 2 in
+  let pas = Promise.all_settled [ p1; p2 ] in
+  let pan = Promise.any [ p1; p2 ] in
+  let is_promise any =
+    Js.instanceof
+      (Js.Unsafe.coerce any : _ Js.t)
+      (Js.Unsafe.global##._Promise : _ Js.constr)
+  in
+  print_endline
+    (if is_promise (Promise.to_any pas) then "all_settled OK" else "all_settled KO");
+  print_endline (if is_promise (Promise.to_any pan) then "any OK" else "any KO");
+  [%expect {|
+    all_settled OK
+    any OK
+    |}]
+
+let%expect_test "with_resolvers returns a Promise" =
+  let p, _resolve, _reject = Promise.with_resolvers () in
+  let is_promise =
+    Js.instanceof
+      (Js.Unsafe.coerce (Promise.to_any p) : _ Js.t)
+      (Js.Unsafe.global##._Promise : _ Js.constr)
+  in
+  print_endline (if is_promise then "PASSED" else "FAILED");
+  [%expect {| PASSED |}]

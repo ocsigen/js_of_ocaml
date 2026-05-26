@@ -66,6 +66,34 @@ let test_race () =
   log (Printf.sprintf "race got %d" x);
   return ()
 
+let test_all_settled () =
+  let bad = Promise.reject (Promise.error_of_any (Js.Unsafe.inject (Js.string "nope"))) in
+  Promise.all_settled [ return 1; bad; return 3 ]
+  >>= fun rs ->
+  let show = function
+    | Ok n -> Printf.sprintf "Ok %d" n
+    | Error e ->
+        let s : Js.js_string Js.t = Js.Unsafe.coerce (Promise.error_to_any e) in
+        Printf.sprintf "Error %s" (Js.to_string s)
+  in
+  log (Printf.sprintf "all_settled got [%s]" (String.concat "; " (List.map show rs)));
+  return ()
+
+let test_any () =
+  let bad = Promise.reject (Promise.error_of_any (Js.Unsafe.inject (Js.string "x"))) in
+  Promise.any [ bad; return 77 ]
+  >>= fun x ->
+  log (Printf.sprintf "any got %d" x);
+  return ()
+
+let test_with_resolvers () =
+  let p, resolve, _reject = Promise.with_resolvers () in
+  resolve 123;
+  p
+  >>= fun n ->
+  log (Printf.sprintf "with_resolvers got %d" n);
+  return ()
+
 let test_no_flatten () =
   let inner : int Promise.t = return 7 in
   (return inner : int Promise.t Promise.t)
@@ -111,6 +139,9 @@ let () =
     >>= test_finally_err
     >>= test_all
     >>= test_race
+    >>= test_all_settled
+    >>= test_any
+    >>= test_with_resolvers
     >>= test_no_flatten
     >>= test_of_any_foreign
     >>= test_reject_with_promise

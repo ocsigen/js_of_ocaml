@@ -7,6 +7,9 @@ finally ok
 finally err
 all got [10; 20; 30]
 race got 42
+all_settled got [Ok 1; Error nope; Ok 3]
+any got 77
+with_resolvers got 123
 nested got 7
 of_any got 99
 reject-with-promise got 555
