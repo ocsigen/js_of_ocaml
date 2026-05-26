@@ -221,13 +221,16 @@ let link_and_optimize
     if binaryen_times () then Format.eprintf "  binaryen opt: %a@." Timer.print t;
     primitives
   in
-  (* The pipeline shape, decided in one place: link, then DCE unless we are
-     building a dynamically-linkable unit, then wasm-opt. *)
+  (* The pipeline shape, decided in one place: DCE unless we are building a
+     dynamically-linkable unit; wasm-opt only above --opt 1 (at --opt 1 we
+     rely on our own passes instead). *)
   let transformers =
     List.filter_map
       ~f:(fun x -> x)
       [ (if dynlink then None else Some ("wasm-dce", dce))
-      ; Some ("wasm-opt", optimize)
+      ; (match (profile : Profile.t) with
+        | O1 -> None
+        | O2 | O3 -> Some ("wasm-opt", optimize))
       ]
   in
   let final = { file = output_file; opt_sm = opt_sourcemap_file } in
@@ -614,31 +617,45 @@ let run
           else None)
        @@ fun opt_tmp_map_file ->
        let unit_data, shapes =
-         Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
-         @@ fun input_file ->
-         opt_with
-           Fs.with_intermediate_file
-           (if enable_source_maps
-            then Some (Filename.temp_file unit_name ".wasm.map")
-            else None)
-         @@ fun opt_input_sourcemap ->
-         let fragments, shapes =
-           output
-             code
-             ~wat_file:
-               (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
-             ~unit_name:(Some unit_name)
-             ~file:input_file
-             ~opt_source_map_file:opt_input_sourcemap
-         in
-         Binaryen.optimize
-           ~profile
-           ~opt_input_sourcemap
-           ~opt_output_sourcemap:opt_tmp_map_file
-           ~input_file
-           ~output_file:tmp_wasm_file
-           ();
-         { Link.unit_name; unit_info; fragments }, shapes
+         match profile with
+         | Profile.O1 ->
+             (* At O1, skip Binaryen.optimize — write directly *)
+             let fragments, shapes =
+               output
+                 code
+                 ~wat_file:
+                   (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+                 ~unit_name:(Some unit_name)
+                 ~file:tmp_wasm_file
+                 ~opt_source_map_file:opt_tmp_map_file
+             in
+             { Link.unit_name; unit_info; fragments }, shapes
+         | O2 | O3 ->
+             Fs.with_intermediate_file (Filename.temp_file unit_name ".wasm")
+             @@ fun input_file ->
+             opt_with
+               Fs.with_intermediate_file
+               (if enable_source_maps
+                then Some (Filename.temp_file unit_name ".wasm.map")
+                else None)
+             @@ fun opt_input_sourcemap ->
+             let fragments, shapes =
+               output
+                 code
+                 ~wat_file:
+                   (Filename.concat (Filename.dirname output_file) (unit_name ^ ".wat"))
+                 ~unit_name:(Some unit_name)
+                 ~file:input_file
+                 ~opt_source_map_file:opt_input_sourcemap
+             in
+             Binaryen.optimize
+               ~profile
+               ~opt_input_sourcemap
+               ~opt_output_sourcemap:opt_tmp_map_file
+               ~input_file
+               ~output_file:tmp_wasm_file
+               ();
+             { Link.unit_name; unit_info; fragments }, shapes
        in
        cont unit_data unit_name tmp_wasm_file opt_tmp_map_file shapes cmi_files
      in
