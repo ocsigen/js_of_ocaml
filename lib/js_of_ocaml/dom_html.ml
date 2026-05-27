@@ -1448,6 +1448,10 @@ let handler = Dom.handler
 
 let full_handler = Dom.full_handler
 
+let listener = Dom.listener
+
+let full_listener = Dom.full_listener
+
 let invoke_handler = Dom.invoke_handler
 
 module Event = struct
@@ -3591,7 +3595,7 @@ class type window = object
 
   method onunload : (window t, event t) event_listener prop
 
-  method onbeforeunload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, beforeUnloadEvent t) event_listener prop
 
   method onblur : (window t, focusEvent t) event_listener prop
 

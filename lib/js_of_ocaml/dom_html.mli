@@ -3461,7 +3461,7 @@ class type window = object
 
   method onunload : (window t, event t) event_listener prop
 
-  method onbeforeunload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, beforeUnloadEvent t) event_listener prop
 
   method onblur : (window t, focusEvent t) event_listener prop
 
@@ -3572,6 +3572,12 @@ val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_listener
 val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_listener
 (** see [Dom.full_handler] *)
 
+val listener : ((#event t as 'b) -> unit) -> ('a, 'b) event_listener
+(** see [Dom.listener] *)
+
+val full_listener : ('a -> (#event t as 'b) -> unit) -> ('a, 'b) event_listener
+(** see [Dom.full_listener] *)
+
 val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
 (** see [Dom.invoke_handler] *)
 
@@ -3663,7 +3669,7 @@ module Event : sig
 
   val unload : event t typ
 
-  val beforeunload : event t typ
+  val beforeunload : beforeUnloadEvent t typ
 
   val resize : event t typ
 
