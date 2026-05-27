@@ -389,10 +389,16 @@ module CoerceTo = struct
   let documentType e : documentType Js.t Js.opt = cast e DOCUMENT_TYPE
 end
 
-type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
+type ('a, 'b) event_listener = ('a, 'b -> bool t optdef) meth_callback opt
 (** The type of event listener functions.  The first type parameter
       ['a] is the type of the target object; the second parameter
-      ['b] is the type of the event object. *)
+      ['b] is the type of the event object.
+
+      Handlers return [bool t optdef]: a defined boolean signals an opinion
+      ([false] cancels the default action via [preventDefault]), while
+      [undefined] means "no opinion".  This matters for events like
+      [beforeunload], where the browser interprets any returned non-undefined
+      value as a request to show the confirmation dialog. *)
 
 type event_phase =
   | Phase_none
@@ -445,18 +451,36 @@ let handler f =
   Js.some
     (Js.Unsafe.callback (fun e ->
          let res = f e in
-         if not (Js.to_bool res) then e##preventDefault;
-         res))
+         if Js.to_bool res
+         then Js.undefined
+         else (
+           e##preventDefault;
+           Js.def Js._false)))
 
 let full_handler f =
   Js.some
     (Js.Unsafe.meth_callback (fun this e ->
          let res = f this e in
-         if not (Js.to_bool res) then e##preventDefault;
-         res))
+         if Js.to_bool res
+         then Js.undefined
+         else (
+           e##preventDefault;
+           Js.def Js._false)))
+
+let listener f : ('a, 'b) event_listener =
+  Js.some
+    (Js.Unsafe.callback (fun e ->
+         f e;
+         if Js.to_bool e##.defaultPrevented then Js.def Js._false else Js.undefined))
+
+let full_listener f : ('a, 'b) event_listener =
+  Js.some
+    (Js.Unsafe.meth_callback (fun this e ->
+         f this e;
+         if Js.to_bool e##.defaultPrevented then Js.def Js._false else Js.undefined))
 
 let invoke_handler (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
-  Js.Unsafe.call f this [| Js.Unsafe.inject event |]
+  Js.Optdef.get (Js.Unsafe.call f this [| Js.Unsafe.inject event |]) (fun () -> Js._true)
 
 let eventTarget (e : (< .. > as 'a) #event t) : 'a t =
   Opt.get e##.target (fun () -> Opt.get e##.srcElement (fun () -> raise Not_found))

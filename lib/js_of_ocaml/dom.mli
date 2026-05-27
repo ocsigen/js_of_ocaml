@@ -463,20 +463,32 @@ val no_handler : ('a, 'b) event_listener
 
 val handler : (('e #event t as 'b) -> bool t) -> ('a, 'b) event_listener
 (** Create an event handler that invokes the provided function.
-      If the handler returns false, the default action is prevented. *)
+    If the handler returns false, the default action is prevented. *)
 
 val full_handler : ('a -> ('e #event t as 'b) -> bool t) -> ('a, 'b) event_listener
 (** Create an event handler that invokes the provided function.
-      The event target (implicit parameter [this]) is also passed as
-      argument to the function.  *)
+    The event target (implicit parameter [this]) is also passed as
+    argument to the function.  *)
+
+val listener : (('e #event t as 'b) -> unit) -> ('a, 'b) event_listener
+(** Create an event listener that invokes the provided function and lets
+    the browser decide what to do based on whether [preventDefault] was
+    called.  Unlike [handler], the listener returns no opinion when
+    [preventDefault] was not called — which is what events like
+    [beforeunload] require to avoid spurious confirmation dialogs. *)
+
+val full_listener : ('a -> ('e #event t as 'b) -> unit) -> ('a, 'b) event_listener
+(** Same as [listener] but also passes the event target (implicit
+    parameter [this]) to the function. *)
 
 val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
-(** Invoke an existing handler.  Useful to chain event handlers. *)
+(** Invoke an existing handler.  Useful to chain event handlers.
+    Listeners that return no opinion are normalized to [Js._true]. *)
 
 val eventTarget : (< .. > as 'a) #event t -> 'a t
 (** Returns which object is the target of this event.
-      It raises [Not_found] in case there is no target
-      (if the event has not been triggered yet) *)
+    It raises [Not_found] in case there is no target
+    (if the event has not been triggered yet) *)
 
 type event_listener_id
 

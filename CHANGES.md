@@ -53,6 +53,12 @@
   `canvasElement.toDataURL_type_compression` (called `toDataURL_type`).
   Renamed to `_BYTES_PER_ELEMENT_`, `_MAX_RENDERBUFFER_SIZE_`, and
   `toDataURL_compression` respectively
+* Lib: fix `onbeforeunload` handler breaking navigation (#1436). The
+  `event_listener` return type is now `bool t optdef`, with `undefined`
+  meaning "no opinion" so `beforeunload` handlers don't trigger a
+  spurious confirmation dialog. Adds `Dom.listener`/`full_listener`, and
+  types `onbeforeunload` and `Event.beforeunload` against the new
+  `beforeUnloadEvent` class.
 
 # 6.3.2 (2026-02-15) - Lille
 
