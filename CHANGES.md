@@ -58,7 +58,7 @@
   `event_listener` return type is now `bool t optdef`, with `undefined`
   meaning "no opinion" so `beforeunload` handlers don't trigger a
   spurious confirmation dialog. Adds `Dom.listener`/`full_listener`, and
-  types `onbeforeunload` and `Event.beforeunload` against the new
+  types `onbeforeunload` and `Event.beforeunload` against the
   `beforeUnloadEvent` class.
 
 # 6.3.2 (2026-02-15) - Lille
