@@ -33,6 +33,9 @@ let forked_packages =
     ; "typerep" (* https://github.com/janestreet/typerep/pull/7 *)
     ]
 
+let fixed_packages =
+  StringSet.of_list [ "bonsai_web"; "bonsai_web_components"; "virtual_dom" ]
+
 let dune_workspace =
   {|(lang dune 3.17)
 (env
@@ -325,6 +328,8 @@ let rec traverse visited p =
 
 let is_forked p = StringSet.mem p forked_packages
 
+let is_fixed p = StringSet.mem p fixed_packages
+
 let exec_async cmd =
   let p = Unix.open_process_out cmd in
   fun () -> ignore (Unix.close_process_out p)
@@ -396,9 +401,15 @@ let () =
   sync_exec (fun () -> exec_async "opam install uri --deps-only") [ () ];
   sync_exec
     (fun nm ->
-      let branch = if is_forked nm then Some "wasm-latest" else None in
+      let branch =
+        if is_fixed nm
+        then Some "wasm-latest-fixed"
+        else if is_forked nm
+        then Some "wasm-latest"
+        else None
+      in
       let commit =
-        if is_forked nm
+        if is_fixed nm || is_forked nm
         then None
         else
           Some
@@ -413,7 +424,7 @@ let () =
         nm
         (Printf.sprintf
            "https://github.com/%s/%s"
-           (if is_forked nm then "ocaml-wasm" else "janestreet")
+           (if is_fixed nm || is_forked nm then "ocaml-wasm" else "janestreet")
            nm))
     (StringSet.elements (StringSet.diff js omitted_js))
 
