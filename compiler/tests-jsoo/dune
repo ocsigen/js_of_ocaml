@@ -50,6 +50,28 @@
   (pps ppx_expect)))
 
 (library
+ (name jsoo_testsuite_ugeint)
+ (modules test_ugeint)
+ (libraries unix compiler-libs.common js_of_ocaml-compiler)
+ (enabled_if %{oxcaml_supported})
+ (inline_tests
+  (modes js wasm best))
+ (preprocess
+  (pps ppx_expect)))
+
+(rule
+ ; Guard against future OxCaml changes peepholing UGEINT away the same
+ ; way vanilla ocamlc does. If this rule fails, [test_ugeint] still
+ ; passes its assertions but no longer exercises the UGEINT code path
+ ; in [parse_bytecode.ml], and the regression coverage is gone.
+ (alias runtest)
+ (enabled_if %{oxcaml_supported})
+ (deps ugeint_bytecode_probe.ml)
+ (action
+  (bash
+   "ocamlc %{deps} -o probe.bc && dumpobj probe.bc | grep -qE '^[[:space:]]*[0-9]+[[:space:]]+UGEINT'")))
+
+(library
  (name jsoo_testsuite_float32)
  (modules test_marshal_float32)
  (libraries unix compiler-libs.common js_of_ocaml-compiler)
@@ -73,6 +95,8 @@
    test_marshal_float32
    test_marshal_float32_js
    test_parsing
+   test_ugeint
+   ugeint_bytecode_probe
    test_runtime_value
    test_custom_name
    test_text_codec_fallback
