@@ -776,6 +776,15 @@ let poptraps blocks pc =
   in
   loop blocks pc Addr.Set.empty 0 Addr.Set.empty |> fst
 
+let map_branch_conts f branch =
+  match branch with
+  | Branch c -> Branch (f c)
+  | Cond (x, c1, c2) -> Cond (x, f c1, f c2)
+  | Switch (x, a) -> Switch (x, Array.map a ~f)
+  | Pushtrap (c1, x, c2) -> Pushtrap (f c1, x, f c2)
+  | Poptrap c -> Poptrap (f c)
+  | (Return _ | Raise _ | Stop) as b -> b
+
 let fold_children blocks pc f accu =
   let block = Addr.Map.find pc blocks in
   match block.branch with
