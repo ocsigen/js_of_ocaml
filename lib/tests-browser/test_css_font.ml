@@ -165,7 +165,7 @@ let test_delete () =
   return ()
 
 let run () =
-  let _ : unit Promise.t =
+  let tests =
     test_initial_state ()
     >>= test_descriptor_defaults
     >>= test_descriptor_writes
@@ -174,6 +174,16 @@ let run () =
     >>= test_ready
     >>= test_load_failure
     >>= test_delete
+  in
+  let _ : unit Promise.t =
+    Promise.catch
+      (fun e ->
+        check
+          "test suite ran to completion without an unexpected rejection"
+          false
+          (stringify (Promise.error_to_any e));
+        return ())
+      tests
     >>= fun () ->
     summarize ();
     return ()

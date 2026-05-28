@@ -62,7 +62,7 @@ class type fontFaceSet = object
 end
 
 let constr : (js_string t -> js_string t -> fontFace t) Js.constr =
-  Unsafe.pure_js_expr "FontFace"
+  Js.Unsafe.global##._FontFace
 
 let create_font_face (family : js_string Js.t) (source : js_string Js.t) =
   new%js constr family source
