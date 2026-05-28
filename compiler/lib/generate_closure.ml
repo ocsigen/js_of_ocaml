@@ -142,6 +142,8 @@ type w =
       ; pair_code : Code.instr
       }
 
+let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
+
 module Trampoline = struct
   let direct_call_block ~counter ~x ~f ~args =
     let return = Code.Var.fork x in
@@ -202,8 +204,6 @@ module Trampoline = struct
       }
     in
     block
-
-  let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
 
   let has_loop free_pc blocks closures_map all =
     if debug_tc ()
@@ -375,8 +375,6 @@ module Trampoline_dt = struct
         ]
     ; branch = Return result
     }
-
-  let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
 
   let has_loop free_pc blocks closures_map all =
     if debug_tc ()
