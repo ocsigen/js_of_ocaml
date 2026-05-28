@@ -2077,9 +2077,16 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
       (* Too many sibling merge-node targets: a tower of nested labelled
          blocks would nest as deep as [new_scopes], which overflows some JS
          engine parsers (#2122). Emit a flat selector-driven dispatch loop
-         instead, whose statement-nesting depth is constant. Each branch to a
-         target [x_i] becomes [sel = i; continue L]; branches to the join
-         become [break L]. *)
+         instead, whose statement-nesting depth is constant. A branch to a
+         target [x_i] becomes [sel = i; continue L]; a branch to the join
+         becomes [break L].
+
+         The cases are laid out in the same textual order as the nested
+         scheme (the dispatch, then the targets in reverse), and each is
+         compiled with the textually-next case as its fall-through. A branch
+         to that next case is then elided and falls through in the [switch]
+         instead of routing through the loop, exactly as it would fall through
+         in the nested scheme. *)
       let sel = Code.Var.fresh () in
       let l = J.Label.fresh () in
       let used = ref false in
@@ -2094,24 +2101,40 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
         | Block fpc -> (fpc, (l, used, Exit_loop (ref false))) :: scope_stack
         | Return -> scope_stack
       in
-      (* Branches are routed through the selector, so the bodies must never
-         rely on falling through to the join; compile them with a [Return]
-         fall-through so every exit is explicit. *)
-      let dispatch_never, dispatch_code =
-        compile_conditional st queue ~fall_through:Return loc block.branch scope_stack
+      (* Targets are emitted in reverse so that each one falls through to the
+         previous target, and the first target ([x_1]) falls through to the
+         join. *)
+      let ordered = List.rev indexed in
+      let dispatch_fall_through =
+        match ordered with
+        | (_, x) :: _ -> Block x
+        | [] -> fall_through
       in
-      let close never code =
-        if never then code else code @ [ J.Break_statement None, J.N ]
+      let _dispatch_never, dispatch_code =
+        compile_conditional
+          st
+          queue
+          ~fall_through:dispatch_fall_through
+          loc
+          block.branch
+          scope_stack
       in
-      let cases =
-        (int 0, close dispatch_never dispatch_code)
-        :: List.map indexed ~f:(fun (c, x) ->
-            let never, code =
-              compile_block st loc Q.empty x scope_stack ~fall_through:Return
+      let rec scope_cases = function
+        | [] -> []
+        | (c, x) :: rest ->
+            let fall_through =
+              match rest with
+              | (_, x') :: _ -> Block x'
+              | [] -> fall_through
             in
-            int c, close never code)
+            let _never, code = compile_block st loc Q.empty x scope_stack ~fall_through in
+            (int c, code) :: scope_cases rest
       in
+      let cases = (int 0, dispatch_code) :: scope_cases ordered in
       let switch = J.Switch_statement (var sel, cases, None, []), loc in
+      (* A target that falls off its case lands on the next case; the dispatch
+         and the join exit the loop. The trailing [break L] catches a case
+         that falls through to the join. *)
       let body = Js_simpl.block [ switch; J.Break_statement (Some l), J.N ] in
       let for_loop = J.For_statement (J.Left None, None, None, body), loc in
       let for_loop =
