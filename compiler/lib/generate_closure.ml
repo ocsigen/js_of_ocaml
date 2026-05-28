@@ -64,10 +64,9 @@ let rec collect_apply pc blocks visited tc =
       match block.branch with
       | Return x -> (
           match List.last block.body with
-          | Some (Let (y, Apply { f; exact = true; _ })) when Code.Var.compare x y = 0 ->
+          | Some (Let (y, Apply { f; exact = true; _ })) when Code.Var.equal x y ->
               Some (add_multi f pc tc)
-          | None -> None
-          | Some _ -> None)
+          | None | Some _ -> None)
       | _ -> None
     in
     match tc_opt with
@@ -184,27 +183,24 @@ module Trampoline = struct
   let wrapper_block f ~args ~counter loc =
     let result1 = Code.Var.fresh () in
     let result2 = Code.Var.fresh () in
-    let block =
-      { params = []
-      ; body =
-          (match counter with
-          | None ->
-              [ Event loc
-              ; Let (result1, Apply { f; args; exact = true })
-              ; Event Parse_info.zero
-              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
-              ]
-          | Some counter ->
-              [ Event loc
-              ; Let (counter, Constant (Int Targetint.zero))
-              ; Let (result1, Apply { f; args = counter :: args; exact = true })
-              ; Event Parse_info.zero
-              ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
-              ])
-      ; branch = Return result2
-      }
-    in
-    block
+    { params = []
+    ; body =
+        (match counter with
+        | None ->
+            [ Event loc
+            ; Let (result1, Apply { f; args; exact = true })
+            ; Event Parse_info.zero
+            ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
+            ]
+        | Some counter ->
+            [ Event loc
+            ; Let (counter, Constant (Int Targetint.zero))
+            ; Let (result1, Apply { f; args = counter :: args; exact = true })
+            ; Event Parse_info.zero
+            ; Let (result2, Prim (Extern "caml_trampoline", [ Pv result1 ]))
+            ])
+    ; branch = Return result2
+    }
 
   let has_loop free_pc blocks closures_map all =
     debug_cycle "Detect cycles" all;
