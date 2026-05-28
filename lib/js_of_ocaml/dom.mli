@@ -410,8 +410,8 @@ end
 
 type (-'a, -'b) event_listener
 (** The type of event listener functions.  The first type parameter
-      ['a] is the type of the target object; the second parameter
-      ['b] is the type of the event object. *)
+    ['a] is the type of the target object; the second parameter
+    ['b] is the type of the event object. *)
 
 type event_phase =
   | Phase_none
@@ -471,11 +471,11 @@ val full_handler : ('a -> ('e #event t as 'b) -> bool t) -> ('a, 'b) event_liste
     argument to the function.  *)
 
 val listener : (('e #event t as 'b) -> unit) -> ('a, 'b) event_listener
-  (** Create an event listener from a [unit]-returning function.  Unlike
-      [handler], which signals "prevent default" via a [false] return,
-      the callback here must call [preventDefault] explicitly on the event.
-      Convenient for events like [beforeunload] where there is no natural
-      boolean to return. *)
+(** Create an event listener from a [unit]-returning function.  Unlike
+    [handler], which signals "prevent default" via a [false] return,
+    the callback here must call [preventDefault] explicitly on the event.
+    Convenient for events like [beforeunload] where there is no natural
+    boolean to return. *)
 
 val full_listener : ('a -> ('e #event t as 'b) -> unit) -> ('a, 'b) event_listener
 (** Same as [listener] but also passes the event target (implicit
