@@ -28,6 +28,8 @@
 * Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
 * Lib: implement popover API (#1734)
 * Lib: add Intl.RelativeTimeFormat (#2070)
+* Lib: add `Css_font_loading` module — partial binding to the CSS Font Loading
+  API, plus a `fonts` property on `Dom_html.document` (#1833)
 
 ## Bug fixes
 * Compiler: bound the statement-nesting depth of generated functions by
