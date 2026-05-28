@@ -454,14 +454,26 @@ module Trampoline_dt = struct
     free_pc, blocks, closures
 end
 
-let dispatch_component free_pc blocks closures_map component =
-  match component with
+let emit_unchanged closures_map id =
+  let ci = Var.Map.find id closures_map in
+  { name = ci.f_name; code = [ Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) ] }
+
+(* --effects=disabled: nothing is paired, so recursive groups get the classic
+   counter-based trampoline and everything else is emitted unchanged. *)
+let dispatch_component_disabled free_pc blocks closures_map = function
+  | SCC.No_loop id -> free_pc, blocks, [ emit_unchanged closures_map id ]
+  | SCC.Has_loop all -> Trampoline.has_loop free_pc blocks closures_map all
+
+(* --effects=double-translation: cps_needed closures arrive paired via
+   caml_cps_closure. A paired recursive group gets the CPS-style trampoline;
+   an unpaired recursive group is rare (partial_cps_analysis promotes whole
+   mutually recursive groups to cps_needed) and is left unchanged, since the
+   counter trampoline's bounce doesn't compose with the CPS call-gen. *)
+let dispatch_component_dt free_pc blocks closures_map = function
   | SCC.No_loop id ->
       let ci = Var.Map.find id closures_map in
       (match ci.cps_pair with
-       | None ->
-           let instr = Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) in
-           free_pc, blocks, [ { name = ci.f_name; code = [ instr ] } ]
+       | None -> free_pc, blocks, [ emit_unchanged closures_map id ]
        | Some { direct_c; cps_c; cps_code } ->
            let direct_code = Let (direct_c, Closure (ci.args, ci.cont, ci.cloc)) in
            let pair_code =
@@ -473,35 +485,19 @@ let dispatch_component free_pc blocks closures_map component =
            , blocks
            , [ { name = ci.f_name; code = [ direct_code; cps_code; pair_code ] } ] ))
   | SCC.Has_loop all ->
-      let all_paired =
-        List.for_all all ~f:(fun id ->
-            Option.is_some (Var.Map.find id closures_map).cps_pair)
-      in
-      let any_paired =
-        List.exists all ~f:(fun id ->
-            Option.is_some (Var.Map.find id closures_map).cps_pair)
-      in
-      assert (Bool.equal any_paired all_paired);
+      let paired id = Option.is_some (Var.Map.find id closures_map).cps_pair in
+      let all_paired = List.for_all all ~f:paired in
+      (* An SCC is either fully paired or fully unpaired. *)
+      assert (all_paired || not (List.exists all ~f:paired));
       if all_paired
       then Trampoline_dt.has_loop free_pc blocks closures_map all
-      else if not (Poly.equal (Config.effects ()) `Disabled)
-      then
-        (* Under --effects=cps/double-translation/jspi, unpaired SCCs are
-           rare and the classic [Trampoline] transformation is not safe to
-           run on them (its bounce mechanism doesn't compose with the CPS
-           call-gen). Emit the closures back unchanged; deep recursion in
-           these will still risk overflow, but they should generally not
-           occur because partial_cps_analysis promotes mutually recursive
-           functions to cps_needed. *)
-        let closures =
-          List.map all ~f:(fun id ->
-              let ci = Var.Map.find id closures_map in
-              { name = ci.f_name
-              ; code = [ Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) ]
-              })
-        in
-        free_pc, blocks, closures
-      else Trampoline.has_loop free_pc blocks closures_map all
+      else free_pc, blocks, List.map all ~f:(emit_unchanged closures_map)
+
+let dispatch_component free_pc blocks closures_map component =
+  match Config.effects () with
+  | `Disabled -> dispatch_component_disabled free_pc blocks closures_map component
+  | `Double_translation -> dispatch_component_dt free_pc blocks closures_map component
+  | `Cps | `Jspi | `Native -> assert false
 
 let rec rewrite_closures free_pc blocks body : int * _ * _ list =
   match body with
