@@ -1,7 +1,5 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2014 Hugo Heuzard
- * Copyright (C) 2014 Jérôme Vouillon
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -25,7 +23,7 @@ This is a partial binding to the CSS Font Loading API
 
 open Js
 
-class type fontFaceElement = object
+class type fontFace = object
   method family : js_string t readonly_prop
 
   method style : js_string t readonly_prop
@@ -46,30 +44,25 @@ class type fontFaceElement = object
 
   method status : js_string t readonly_prop
 
-  method load : unit -> 'a meth
+  method load : fontFace t Promise.t meth
 end
 
 class type fontFaceSet = object
-  method add : fontFaceElement Js.t -> unit meth
+  method add : fontFace Js.t -> unit meth
 
-  method check : js_string t -> js_string t -> bool meth
+  method check : js_string t -> js_string t -> bool t meth
 
-  method delete : fontFaceElement Js.t -> unit meth
+  method delete : fontFace Js.t -> unit meth
 
-  method load : unit -> 'a meth
+  method load : js_string t -> js_string t -> fontFace t js_array t Promise.t meth
 
-  method ready : bool readonly_prop
+  method ready : fontFaceSet t Promise.t readonly_prop
 
   method status : js_string t readonly_prop
 end
 
-let constr : (js_string t -> js_string t -> fontFaceElement t) Js.constr =
+let constr : (js_string t -> js_string t -> fontFace t) Js.constr =
   Unsafe.pure_js_expr "FontFace"
 
 let create_font_face (family : js_string Js.t) (source : js_string Js.t) =
   new%js constr family source
-
-let load_and_then (font_face : fontFaceElement Js.t) (f : unit -> unit) =
-  let f = Unsafe.inject @@ Js.wrap_meth_callback f in
-  let js_promise = font_face##load () in
-  Unsafe.meth_call js_promise "then" [| Unsafe.coerce f |]
