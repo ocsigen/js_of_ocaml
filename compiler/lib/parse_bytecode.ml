@@ -2476,14 +2476,16 @@ and compile infos pc state (instrs : instr list) =
         let y = State.accu state in
         let z = State.peek 0 state in
         let x, state = State.fresh_var state in
-
+        let lt = Var.fresh () in
         if debug_parser ()
         then Format.printf "%a = mk_bool(%a >= %a)@." Var.print x Var.print y Var.print z;
         compile
           infos
           (pc + 1)
           (State.pop 1 state)
-          (Let (x, Prim (Ult, [ Pv z; Pv y ])) :: instrs)
+          (Let (x, Prim (Not, [ Pv lt ]))
+          :: Let (lt, Prim (Ult, [ Pv y; Pv z ]))
+          :: instrs)
     | GETPUBMET ->
         let n = gets32 code (pc + 1) in
         let obj = State.accu state in
