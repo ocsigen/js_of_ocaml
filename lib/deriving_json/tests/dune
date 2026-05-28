@@ -3,7 +3,9 @@
  (libraries unix js_of_ocaml js_of_ocaml.deriving)
  (inline_tests
   (enabled_if
-   (<> %{profile} wasi))
+   (and
+    (<> %{profile} wasi)
+    (<> %{profile} wasi-with-native-effects)))
   (modes js wasm))
  (preprocess
   (pps ppx_expect ppx_deriving_json)))

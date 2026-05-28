@@ -2,6 +2,7 @@
  (with-effects-double-translation)
  (with-native-effects)
  (with-effects)
+ (wasi-with-native-effects)
  (wasi
   (wasm_of_ocaml
    (flags

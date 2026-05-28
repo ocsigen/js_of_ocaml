@@ -10,6 +10,7 @@
  (build_if
   (and
    (>= %{ocaml_version} 5.2)
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (modules digests)
  (modes js wasm))
