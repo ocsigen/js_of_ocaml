@@ -12,6 +12,7 @@
    guards the fix. *)
 
 let rec ping n acc = if n = 0 then acc else pong (n - 1) (acc + 1)
+
 and pong n acc = if n = 0 then acc else ping (n - 1) (acc + 1)
 
 let run n =

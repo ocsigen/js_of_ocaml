@@ -87,16 +87,16 @@ let rec collect_closures blocks l pos =
     when Var.equal d direct_c && Var.equal c cps_c ->
       let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
       let l, rem = collect_closures blocks rem (succ pos) in
-      { f_name = x
-      ; args
-      ; cont
-      ; tc
-      ; pos
-      ; cloc
-      ; cps_pair = Some { direct_c; cps_c; cps_code }
-      }
-      :: l
-      , rem
+      ( { f_name = x
+        ; args
+        ; cont
+        ; tc
+        ; pos
+        ; cloc
+        ; cps_pair = Some { direct_c; cps_c; cps_code }
+        }
+        :: l
+      , rem )
   | Let (f_name, Closure (args, ((pc, _) as cont), cloc)) :: rem ->
       let _, tc = collect_apply pc blocks Addr.Set.empty Var.Map.empty in
       let l, rem = collect_closures blocks rem (succ pos) in
@@ -215,8 +215,7 @@ module Trampoline = struct
         all
         ~init:(blocks, free_pc, [])
         ~f:(fun (blocks, free_pc, closures) (counter, ci) ->
-          if debug_tc ()
-          then Format.eprintf "Rewriting for %a\n%!" Var.print ci.f_name;
+          if debug_tc () then Format.eprintf "Rewriting for %a\n%!" Var.print ci.f_name;
           let new_f = Code.Var.fork ci.f_name in
           let new_args = List.map ci.args ~f:Code.Var.fork in
           let wrapper_pc = free_pc in
@@ -232,8 +231,7 @@ module Trampoline = struct
           let instr_real =
             match counter with
             | None -> Let (new_f, Closure (ci.args, ci.cont, ci.cloc))
-            | Some counter ->
-                Let (new_f, Closure (counter :: ci.args, ci.cont, ci.cloc))
+            | Some counter -> Let (new_f, Closure (counter :: ci.args, ci.cont, ci.cloc))
           in
           let counter_and_pc =
             List.fold_left all ~init:[] ~f:(fun acc (counter, ci2) ->
@@ -266,10 +264,7 @@ module Trampoline = struct
                     blocks
                 in
                 let blocks =
-                  Addr.Map.add
-                    bounce_call_pc
-                    (bounce_call_block ~x ~f:new_f ~args)
-                    blocks
+                  Addr.Map.add bounce_call_pc (bounce_call_block ~x ~f:new_f ~args) blocks
                 in
                 let block =
                   match counter with
@@ -333,8 +328,7 @@ module Trampoline_dt = struct
     let new_args = Code.Var.fresh () in
     { params = []
     ; body =
-        [ Let
-            (new_args, Prim (Extern "%js_array", List.map args ~f:(fun x -> Pv x)))
+        [ Let (new_args, Prim (Extern "%js_array", List.map args ~f:(fun x -> Pv x)))
         ; Let
             ( return
             , Prim
@@ -350,12 +344,8 @@ module Trampoline_dt = struct
     { params = []
     ; body =
         [ Event loc
-        ; Let
-            (args_arr, Prim (Extern "%js_array", List.map args ~f:(fun x -> Pv x)))
-        ; Let
-            ( result
-            , Prim
-                (Extern "caml_direct_trampoline", [ Pv inner; Pv args_arr ]) )
+        ; Let (args_arr, Prim (Extern "%js_array", List.map args ~f:(fun x -> Pv x)))
+        ; Let (result, Prim (Extern "caml_direct_trampoline", [ Pv inner; Pv args_arr ]))
         ]
     ; branch = Return result
     }
@@ -391,9 +381,7 @@ module Trampoline_dt = struct
             Let (new_direct_c, Closure (ci.args, ci.cont, ci.cloc))
           in
           let pair_code =
-            Let
-              ( ci.f_name
-              , Prim (Extern "caml_cps_closure", [ Pv wrapper_c; Pv cps_c ]) )
+            Let (ci.f_name, Prim (Extern "caml_cps_closure", [ Pv wrapper_c; Pv cps_c ]))
           in
           let scc_callees =
             List.fold_left all ~init:[] ~f:(fun acc ci2 ->
@@ -407,8 +395,7 @@ module Trampoline_dt = struct
               scc_callees
               ~init:(blocks, free_pc)
               ~f:(fun (blocks, free_pc) pc ->
-                if debug_tc ()
-                then Format.eprintf "Rewriting tc (paired) in %d\n%!" pc;
+                if debug_tc () then Format.eprintf "Rewriting tc (paired) in %d\n%!" pc;
                 let block = Addr.Map.find pc blocks in
                 let x, args, rem_rev =
                   match List.rev block.body with
@@ -465,20 +452,18 @@ let dispatch_component_disabled free_pc blocks closures_map = function
    mutually recursive groups to cps_needed) and is left unchanged, since the
    counter trampoline's bounce doesn't compose with the CPS call-gen. *)
 let dispatch_component_dt free_pc blocks closures_map = function
-  | SCC.No_loop id ->
+  | SCC.No_loop id -> (
       let ci = Var.Map.find id closures_map in
-      (match ci.cps_pair with
-       | None -> free_pc, blocks, [ emit_unchanged closures_map id ]
-       | Some { direct_c; cps_c; cps_code } ->
-           let direct_code = Let (direct_c, Closure (ci.args, ci.cont, ci.cloc)) in
-           let pair_code =
-             Let
-               ( ci.f_name
-               , Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]) )
-           in
-           ( free_pc
-           , blocks
-           , [ { name = ci.f_name; code = [ direct_code; cps_code; pair_code ] } ] ))
+      match ci.cps_pair with
+      | None -> free_pc, blocks, [ emit_unchanged closures_map id ]
+      | Some { direct_c; cps_c; cps_code } ->
+          let direct_code = Let (direct_c, Closure (ci.args, ci.cont, ci.cloc)) in
+          let pair_code =
+            Let (ci.f_name, Prim (Extern "caml_cps_closure", [ Pv direct_c; Pv cps_c ]))
+          in
+          ( free_pc
+          , blocks
+          , [ { name = ci.f_name; code = [ direct_code; cps_code; pair_code ] } ] ))
   | SCC.Has_loop all ->
       let paired id = Option.is_some (Var.Map.find id closures_map).cps_pair in
       let all_paired = List.for_all all ~f:paired in
