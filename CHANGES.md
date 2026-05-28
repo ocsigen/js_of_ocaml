@@ -22,6 +22,8 @@
   `js_of_ocaml-toplevel.worker` and `js_of_ocaml-toplevel.worker_lwt_client`
   sublibraries for running the toplevel in a WebWorker. Revives the
   asynchronous toplevel originally contributed in the unmerged #435 (#66, #833)
+* Lib: add `Css_font_loading` module — partial binding to the CSS Font
+  Loading API, plus a `fonts` property on `Dom_html.document` (#2255)
 
 ## Bug fixes
 * Toplevel: keep the `/static/cmis` directory on the load path across
