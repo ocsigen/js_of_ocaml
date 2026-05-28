@@ -3124,7 +3124,7 @@ class type document = object
 
   method images : imageElement collection t readonly_prop
 
-  method fonts : Css_font.fontFaceSet t readonly_prop
+  method fonts : Css_font_loading.fontFaceSet t readonly_prop
 
   method applets : element collection t readonly_prop
 
