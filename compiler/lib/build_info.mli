@@ -22,6 +22,13 @@ val string_of_effects_backend : Config.effects_backend -> string
 
 val effects_backend_of_string : string -> Config.effects_backend
 
+val effects_backend_of_string_result : string -> (Config.effects_backend, string) result
+
+val effects_backends_javascript :
+  (string * [ `Cps | `Double_translation | `Disabled ]) list
+
+val effects_backends_wasm : (string * [ `Jspi | `Cps | `Native | `Disabled ]) list
+
 type config_key =
   | Bool_key of
       { name : string

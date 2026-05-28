@@ -186,11 +186,7 @@ let options () =
     in
     Arg.(
       value
-      & opt
-          (some
-             (enum
-                [ "jspi", `Jspi; "cps", `Cps; "native", `Native; "disabled", `Disabled ]))
-          None
+      & opt (some (enum Build_info.effects_backends_wasm)) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
   let build_t
@@ -338,11 +334,7 @@ let options_runtime_only () =
     in
     Arg.(
       value
-      & opt
-          (some
-             (enum
-                [ "jspi", `Jspi; "cps", `Cps; "native", `Native; "disabled", `Disabled ]))
-          None
+      & opt (some (enum Build_info.effects_backends_wasm)) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
   let build_config = Jsoo_cmdline.Arg.build_config in

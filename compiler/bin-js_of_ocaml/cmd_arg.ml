@@ -280,14 +280,7 @@ let options =
     in
     Arg.(
       value
-      & opt
-          (some
-             (enum
-                [ "cps", `Cps
-                ; "double-translation", `Double_translation
-                ; "disabled", `Disabled
-                ]))
-          None
+      & opt (some (enum Build_info.effects_backends_javascript)) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
   let build_t
@@ -571,14 +564,7 @@ let options_runtime_only =
     in
     Arg.(
       value
-      & opt
-          (some
-             (enum
-                [ "cps", `Cps
-                ; "double-translation", `Double_translation
-                ; "disabled", `Disabled
-                ]))
-          None
+      & opt (some (enum Build_info.effects_backends_javascript)) None
       & info [ "effects" ] ~docv:"KIND" ~doc)
   in
   let build_config = Jsoo_cmdline.Arg.build_config in

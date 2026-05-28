@@ -43,13 +43,24 @@ let string_of_effects_backend : Config.effects_backend -> string = function
   | `Jspi -> "jspi"
   | `Native -> "native"
 
-let effects_backend_of_string = function
-  | "disabled" -> `Disabled
-  | "cps" -> `Cps
-  | "double-translation" -> `Double_translation
-  | "jspi" -> `Jspi
-  | "native" -> `Native
-  | _ -> invalid_arg "effects_backend_of_string"
+let effects_backend_of_string_result = function
+  | "disabled" -> Ok `Disabled
+  | "cps" -> Ok `Cps
+  | "double-translation" -> Ok `Double_translation
+  | "jspi" -> Ok `Jspi
+  | "native" -> Ok `Native
+  | s -> Error (Printf.sprintf "unknown effects backend %s" s)
+
+let effects_backend_of_string s =
+  match effects_backend_of_string_result s with
+  | Ok b -> b
+  | Error _ -> invalid_arg "effects_backend_of_string"
+
+let effects_backends_javascript =
+  [ "cps", `Cps; "double-translation", `Double_translation; "disabled", `Disabled ]
+
+let effects_backends_wasm =
+  [ "jspi", `Jspi; "cps", `Cps; "native", `Native; "disabled", `Disabled ]
 
 type config_key =
   | Bool_key of
@@ -69,15 +80,12 @@ let config_key_name = function
   | Enum_key { name; _ } -> name
 
 let config_keys target =
-  let effects_valid, effects_get =
+  let effects_valid =
     match target with
-    | `JavaScript ->
-        ( [ "disabled"; "cps"; "double-translation" ]
-        , fun () -> string_of_effects_backend (Config.effects ()) )
-    | `Wasm ->
-        ( [ "disabled"; "cps"; "jspi"; "native" ]
-        , fun () -> string_of_effects_backend (Config.effects ()) )
+    | `JavaScript -> List.map ~f:fst effects_backends_javascript
+    | `Wasm -> List.map ~f:fst effects_backends_wasm
   in
+  let effects_get () = string_of_effects_backend (Config.effects ()) in
   [ Enum_key
       { name = "effects"
       ; get = effects_get
