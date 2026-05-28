@@ -131,7 +131,7 @@ let test_ready () =
   fonts##.ready
   >>= fun set ->
   let s = Js.to_string set##.status in
-  check "document.fonts.ready resolves" (s = "loaded" || s = "loading") s;
+  check "document.fonts.ready resolves with status loaded" (s = "loaded") s;
   return ()
 
 let test_load_failure () =
