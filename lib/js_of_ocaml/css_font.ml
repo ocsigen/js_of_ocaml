@@ -16,31 +16,31 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** CSS Font Loading API binding
+(** CSS Font Loading API binding.
 
-This is a partial binding to the CSS Font Loading API
-*)
+    This is a partial binding to the CSS Font Loading API.
+
+    @see <https://developer.mozilla.org/en-US/docs/Web/API/CSS_Font_Loading_API>
+    @see <https://www.w3.org/TR/css-font-loading-3/> *)
 
 open Js
 
 class type fontFace = object
-  method family : js_string t readonly_prop
+  method family : js_string t prop
 
-  method style : js_string t readonly_prop
+  method style : js_string t prop
 
-  method weight : js_string t readonly_prop
+  method weight : js_string t prop
 
-  method stretch : js_string t readonly_prop
+  method stretch : js_string t prop
 
-  method unicodeRange : js_string t readonly_prop
+  method unicodeRange : js_string t prop
 
-  method variant : js_string t readonly_prop
+  method variant : js_string t prop
 
-  method featureSettings : js_string t readonly_prop
+  method featureSettings : js_string t prop
 
-  method display : js_string t readonly_prop
-
-  method src : js_string t readonly_prop
+  method display : js_string t prop
 
   method status : js_string t readonly_prop
 
@@ -52,7 +52,7 @@ class type fontFaceSet = object
 
   method check : js_string t -> js_string t -> bool t meth
 
-  method delete : fontFace Js.t -> unit meth
+  method delete : fontFace Js.t -> bool t meth
 
   method load : js_string t -> js_string t -> fontFace t js_array t Promise.t meth
 
