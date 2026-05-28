@@ -118,29 +118,12 @@ let group_closures closures_map =
   in
   SCC.connected_components_sorted_from_roots_to_leaf graph |> Array.to_list
 
+(* A closure (or paired/wrapped closure) to re-emit, with the original
+   position of its public name so the group can be restored to source order. *)
 type w =
-  | One of
-      { name : Code.Var.t
-      ; code : Code.instr
-      }
-  | Wrapper of
-      { name : Code.Var.t
-      ; code : Code.instr
-      ; wrapper : Code.instr
-      }
-  | Paired_one of
-      { name : Code.Var.t
-      ; direct_code : Code.instr
-      ; cps_code : Code.instr
-      ; pair_code : Code.instr
-      }
-  | Paired_wrapper of
-      { name : Code.Var.t
-      ; inner_direct_code : Code.instr
-      ; wrapper_code : Code.instr
-      ; cps_code : Code.instr
-      ; pair_code : Code.instr
-      }
+  { name : Code.Var.t
+  ; code : Code.instr list
+  }
 
 let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
 
@@ -312,8 +295,7 @@ module Trampoline = struct
           in
           ( blocks
           , free_pc
-          , Wrapper { name = ci.f_name; code = instr_real; wrapper = instr_wrapper }
-            :: closures ))
+          , { name = ci.f_name; code = [ instr_real; instr_wrapper ] } :: closures ))
     in
     free_pc, blocks, closures
 end
@@ -474,13 +456,9 @@ module Trampoline_dt = struct
           in
           ( blocks
           , free_pc
-          , Paired_wrapper
-              { name = ci.f_name
-              ; inner_direct_code
-              ; wrapper_code
-              ; cps_code
-              ; pair_code
-              }
+          , { name = ci.f_name
+            ; code = [ inner_direct_code; wrapper_code; cps_code; pair_code ]
+            }
             :: closures ))
     in
     free_pc, blocks, closures
@@ -493,7 +471,7 @@ let dispatch_component free_pc blocks closures_map component =
       (match ci.cps_pair with
        | None ->
            let instr = Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) in
-           free_pc, blocks, [ One { name = ci.f_name; code = instr } ]
+           free_pc, blocks, [ { name = ci.f_name; code = [ instr ] } ]
        | Some { direct_c; cps_c; cps_code } ->
            let direct_code = Let (direct_c, Closure (ci.args, ci.cont, ci.cloc)) in
            let pair_code =
@@ -503,8 +481,7 @@ let dispatch_component free_pc blocks closures_map component =
            in
            ( free_pc
            , blocks
-           , [ Paired_one { name = ci.f_name; direct_code; cps_code; pair_code } ]
-           ))
+           , [ { name = ci.f_name; code = [ direct_code; cps_code; pair_code ] } ] ))
   | SCC.Has_loop all ->
       let all_paired =
         List.for_all all ~f:(fun id ->
@@ -529,10 +506,9 @@ let dispatch_component free_pc blocks closures_map component =
         let closures =
           List.map all ~f:(fun id ->
               let ci = Var.Map.find id closures_map in
-              One
-                { name = ci.f_name
-                ; code = Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc))
-                })
+              { name = ci.f_name
+              ; code = [ Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) ]
+              })
         in
         free_pc, blocks, closures
       else Trampoline.has_loop free_pc blocks closures_map all
@@ -558,23 +534,10 @@ let rec rewrite_closures free_pc blocks body : int * _ * _ list =
             free_pc, blocks, intrs)
       in
       let closures =
-        let pos_of_var x = (Var.Map.find x closures_map).pos in
-        let pos = function
-          | One { name; _ } -> pos_of_var name
-          | Wrapper { name; _ } -> pos_of_var name
-          | Paired_one { name; _ } -> pos_of_var name
-          | Paired_wrapper { name; _ } -> pos_of_var name
-        in
+        let pos w = (Var.Map.find w.name closures_map).pos in
         List.flatten closures
         |> List.sort ~cmp:(fun a b -> compare (pos a) (pos b))
-        |> List.concat_map ~f:(function
-          | One { code; _ } -> [ code ]
-          | Wrapper { code; wrapper; _ } -> [ code; wrapper ]
-          | Paired_one { direct_code; cps_code; pair_code; _ } ->
-              [ direct_code; cps_code; pair_code ]
-          | Paired_wrapper
-              { inner_direct_code; wrapper_code; cps_code; pair_code; _ } ->
-              [ inner_direct_code; wrapper_code; cps_code; pair_code ])
+        |> List.concat_map ~f:(fun w -> w.code)
       in
       let free_pc, blocks, rem = rewrite_closures free_pc blocks rem in
       free_pc, blocks, closures @ rem
