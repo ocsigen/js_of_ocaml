@@ -249,49 +249,51 @@ module Trampoline = struct
               ~f:(fun (blocks, free_pc) (counter, pc) ->
                 if debug_tc () then Format.eprintf "Rewriting tc in %d\n%!" pc;
                 let block = Addr.Map.find pc blocks in
+                let x, args, rem_rev =
+                  match List.rev block.body with
+                  | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
+                      assert (Var.equal f ci.f_name);
+                      x, args, rem_rev
+                  | _ -> assert false
+                in
                 let direct_call_pc = free_pc in
                 let bounce_call_pc = free_pc + 1 in
                 let free_pc = free_pc + 2 in
-                match List.rev block.body with
-                | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
-                    assert (Var.equal f ci.f_name);
-                    let blocks =
-                      Addr.Map.add
-                        direct_call_pc
-                        (direct_call_block ~counter ~x ~f:new_f ~args)
-                        blocks
-                    in
-                    let blocks =
-                      Addr.Map.add
-                        bounce_call_pc
-                        (bounce_call_block ~x ~f:new_f ~args)
-                        blocks
-                    in
-                    let block =
-                      match counter with
-                      | None ->
-                          let branch = Branch (bounce_call_pc, []) in
-                          { block with body = List.rev rem_rev; branch }
-                      | Some counter ->
-                          let direct = Code.Var.fresh () in
-                          let branch =
-                            Cond (direct, (direct_call_pc, []), (bounce_call_pc, []))
-                          in
-                          let last =
-                            Let
-                              ( direct
-                              , Prim
-                                  ( Lt
-                                  , [ Pv counter
-                                    ; Pc
-                                        (Int (Targetint.of_int_exn tailcall_max_depth))
-                                    ] ) )
-                          in
-                          { block with body = List.rev (last :: rem_rev); branch }
-                    in
-                    let blocks = Addr.Map.remove pc blocks in
-                    Addr.Map.add pc block blocks, free_pc
-                | _ -> assert false)
+                let blocks =
+                  Addr.Map.add
+                    direct_call_pc
+                    (direct_call_block ~counter ~x ~f:new_f ~args)
+                    blocks
+                in
+                let blocks =
+                  Addr.Map.add
+                    bounce_call_pc
+                    (bounce_call_block ~x ~f:new_f ~args)
+                    blocks
+                in
+                let block =
+                  match counter with
+                  | None ->
+                      let branch = Branch (bounce_call_pc, []) in
+                      { block with body = List.rev rem_rev; branch }
+                  | Some counter ->
+                      let direct = Code.Var.fresh () in
+                      let branch =
+                        Cond (direct, (direct_call_pc, []), (bounce_call_pc, []))
+                      in
+                      let last =
+                        Let
+                          ( direct
+                          , Prim
+                              ( Lt
+                              , [ Pv counter
+                                ; Pc (Int (Targetint.of_int_exn tailcall_max_depth))
+                                ] ) )
+                      in
+                      { block with body = List.rev (last :: rem_rev); branch }
+                in
+                let blocks = Addr.Map.remove pc blocks in
+                Addr.Map.add pc block blocks, free_pc)
           in
           ( blocks
           , free_pc
@@ -408,37 +410,34 @@ module Trampoline_dt = struct
                 if debug_tc ()
                 then Format.eprintf "Rewriting tc (paired) in %d\n%!" pc;
                 let block = Addr.Map.find pc blocks in
+                let x, args, rem_rev =
+                  match List.rev block.body with
+                  | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
+                      assert (Var.equal f ci.f_name);
+                      x, args, rem_rev
+                  | _ -> assert false
+                in
                 let direct_call_pc = free_pc in
                 let bounce_call_pc = free_pc + 1 in
                 let free_pc = free_pc + 2 in
-                match List.rev block.body with
-                | Let (x, Apply { f; args; exact = true }) :: rem_rev ->
-                    assert (Var.equal f ci.f_name);
-                    let blocks =
-                      Addr.Map.add
-                        direct_call_pc
-                        (direct_call_block ~x ~f:new_direct_c ~args)
-                        blocks
-                    in
-                    let blocks =
-                      Addr.Map.add
-                        bounce_call_pc
-                        (bounce_call_block ~x ~f:new_direct_c ~args)
-                        blocks
-                    in
-                    let direct = Code.Var.fresh () in
-                    let branch =
-                      Cond (direct, (direct_call_pc, []), (bounce_call_pc, []))
-                    in
-                    let last =
-                      Let (direct, Prim (Extern "caml_stack_check_depth", []))
-                    in
-                    let block =
-                      { block with body = List.rev (last :: rem_rev); branch }
-                    in
-                    let blocks = Addr.Map.remove pc blocks in
-                    Addr.Map.add pc block blocks, free_pc
-                | _ -> assert false)
+                let blocks =
+                  Addr.Map.add
+                    direct_call_pc
+                    (direct_call_block ~x ~f:new_direct_c ~args)
+                    blocks
+                in
+                let blocks =
+                  Addr.Map.add
+                    bounce_call_pc
+                    (bounce_call_block ~x ~f:new_direct_c ~args)
+                    blocks
+                in
+                let direct = Code.Var.fresh () in
+                let branch = Cond (direct, (direct_call_pc, []), (bounce_call_pc, [])) in
+                let last = Let (direct, Prim (Extern "caml_stack_check_depth", [])) in
+                let block = { block with body = List.rev (last :: rem_rev); branch } in
+                let blocks = Addr.Map.remove pc blocks in
+                Addr.Map.add pc block blocks, free_pc)
           in
           ( blocks
           , free_pc
