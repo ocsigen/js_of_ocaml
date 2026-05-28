@@ -35,7 +35,8 @@ let%expect_test "mutual tail recursion with --effects=double-translation" =
       |}
   in
   print_program code;
-  [%expect {|
+  [%expect
+    {|
     (function(globalThis){
        "use strict";
        var
