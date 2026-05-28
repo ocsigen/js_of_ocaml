@@ -127,6 +127,24 @@ type w =
 
 let wrapper_closure pc args cloc = Closure (args, (pc, []), cloc)
 
+(* Source location of a closure's entry block, used to tag the wrapper. *)
+let start_loc blocks ci =
+  let block = Addr.Map.find (fst ci.cont) blocks in
+  match block.body with
+  | Event loc :: _ -> loc
+  | _ -> Parse_info.zero
+
+let debug_cycle msg all =
+  if debug_tc ()
+  then (
+    Format.eprintf "%s of size (%d).\n%!" msg (List.length all);
+    Format.eprintf
+      "%a\n%!"
+      (Format.pp_print_list
+         ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
+         Var.print)
+      all)
+
 module Trampoline = struct
   let direct_call_block ~counter ~x ~f ~args =
     let return = Code.Var.fork x in
@@ -189,15 +207,7 @@ module Trampoline = struct
     block
 
   let has_loop free_pc blocks closures_map all =
-    if debug_tc ()
-    then (
-      Format.eprintf "Detect cycles of size (%d).\n%!" (List.length all);
-      Format.eprintf
-        "%a\n%!"
-        (Format.pp_print_list
-           ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
-           Var.print)
-        all);
+    debug_cycle "Detect cycles" all;
     let tailcall_max_depth = Config.Param.tailcall_max_depth () in
     let all =
       List.map all ~f:(fun id ->
@@ -216,14 +226,8 @@ module Trampoline = struct
           let wrapper_pc = free_pc in
           let free_pc = free_pc + 1 in
           let new_counter = Option.map counter ~f:Code.Var.fork in
-          let start_loc =
-            let block = Addr.Map.find (fst ci.cont) blocks in
-            match block.body with
-            | Event loc :: _ -> loc
-            | _ -> Parse_info.zero
-          in
           let wrapper_block =
-            wrapper_block new_f ~args:new_args ~counter:new_counter start_loc
+            wrapper_block new_f ~args:new_args ~counter:new_counter (start_loc blocks ci)
           in
           let blocks = Addr.Map.add wrapper_pc wrapper_block blocks in
           let instr_wrapper =
@@ -359,17 +363,7 @@ module Trampoline_dt = struct
     }
 
   let has_loop free_pc blocks closures_map all =
-    if debug_tc ()
-    then (
-      Format.eprintf
-        "Detect cycles (paired, double-translation) of size (%d).\n%!"
-        (List.length all);
-      Format.eprintf
-        "%a\n%!"
-        (Format.pp_print_list
-           ~pp_sep:(fun fmt () -> Format.pp_print_string fmt ", ")
-           Var.print)
-        all);
+    debug_cycle "Detect cycles (paired, double-translation)" all;
     let all = List.map all ~f:(fun id -> Var.Map.find id closures_map) in
     let blocks, free_pc, closures =
       List.fold_left
@@ -387,13 +381,9 @@ module Trampoline_dt = struct
           let new_args = List.map ci.args ~f:Code.Var.fork in
           let wrapper_pc = free_pc in
           let free_pc = free_pc + 1 in
-          let start_loc =
-            let block = Addr.Map.find (fst ci.cont) blocks in
-            match block.body with
-            | Event loc :: _ -> loc
-            | _ -> Parse_info.zero
+          let wrapper_b =
+            wrapper_block new_direct_c ~args:new_args (start_loc blocks ci)
           in
-          let wrapper_b = wrapper_block new_direct_c ~args:new_args start_loc in
           let blocks = Addr.Map.add wrapper_pc wrapper_b blocks in
           let wrapper_c = Code.Var.fresh_n "wrapper" in
           let wrapper_code =
