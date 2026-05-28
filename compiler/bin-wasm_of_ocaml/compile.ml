@@ -80,11 +80,14 @@ let preprocessor_variables () =
   (* Keep this variables in sync with gen/gen.ml *)
   [ ( "effects"
     , Wat_preprocess.String
-        (match Config.effects () with
-        | `Disabled | `Jspi -> "jspi"
-        | `Cps -> "cps"
-        | `Native -> "native"
-        | `Double_translation -> assert false) )
+        ((match Config.effects () with
+           | `Disabled ->
+               (* We are using the same runtime
+                  [runtime-standard.wasm] in both cases. *)
+               `Jspi
+           | (`Jspi | `Cps | `Native) as e -> e
+           | `Double_translation -> assert false)
+        |> Build_info.string_of_effects_backend) )
   ]
 
 let with_runtime_files ~runtime_wasm_files f =

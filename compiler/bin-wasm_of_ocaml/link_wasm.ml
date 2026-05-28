@@ -78,12 +78,8 @@ let options =
           ~f:(fun (k, v) -> if String.equal k "effects" then Some v else None)
           variables.Preprocess.set
       with
-      | Some "native" -> Ok (`Native : Js_of_ocaml_compiler.Config.effects_backend)
-      | Some "cps" -> Ok `Cps
-      | Some "jspi" | None -> Ok `Jspi
-      | Some "double-translation" -> Ok `Double_translation
-      | Some "disabled" -> Ok `Disabled
-      | Some other -> Error other
+      | None -> Ok (`Jspi : Js_of_ocaml_compiler.Config.effects_backend)
+      | Some s -> Js_of_ocaml_compiler.Build_info.effects_backend_of_string_result s
     in
     match effects_backend with
     | Ok effects_backend ->
@@ -95,7 +91,7 @@ let options =
           ; binaryen_options = { common; opt; merge }
           ; effects_backend
           }
-    | Error other -> `Error (false, Printf.sprintf "unknown effects backend %s" other)
+    | Error msg -> `Error (false, msg)
   in
   let t =
     Term.(
