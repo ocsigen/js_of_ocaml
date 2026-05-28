@@ -471,11 +471,11 @@ val full_handler : ('a -> ('e #event t as 'b) -> bool t) -> ('a, 'b) event_liste
     argument to the function.  *)
 
 val listener : (('e #event t as 'b) -> unit) -> ('a, 'b) event_listener
-(** Create an event listener that invokes the provided function and lets
-    the browser decide what to do based on whether [preventDefault] was
-    called.  Unlike [handler], the listener returns no opinion when
-    [preventDefault] was not called — which is what events like
-    [beforeunload] require to avoid spurious confirmation dialogs. *)
+  (** Create an event listener from a [unit]-returning function.  Unlike
+      [handler], which signals "prevent default" via a [false] return,
+      the callback here must call [preventDefault] explicitly on the event.
+      Convenient for events like [beforeunload] where there is no natural
+      boolean to return. *)
 
 val full_listener : ('a -> ('e #event t as 'b) -> unit) -> ('a, 'b) event_listener
 (** Same as [listener] but also passes the event target (implicit
