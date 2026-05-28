@@ -86,6 +86,24 @@ let test_descriptor_defaults () =
   default "display" (Js.to_string bebas##.display) "auto";
   return ()
 
+let test_descriptor_writes () =
+  let f =
+    Css_font.create_font_face
+      (Js.string "WriteTest")
+      (Js.string "url(BebasNeue-Regular.ttf)")
+  in
+  f##.style := Js.string "italic";
+  f##.weight := Js.string "700";
+  check
+    "FontFace.style is writable"
+    (Js.to_string f##.style = "italic")
+    (Js.to_string f##.style);
+  check
+    "FontFace.weight is writable"
+    (Js.to_string f##.weight = "700")
+    (Js.to_string f##.weight);
+  return ()
+
 let test_load_success () =
   fonts##add bebas;
   bebas##load
@@ -135,17 +153,22 @@ let test_load_failure () =
     check "load of a missing source rejects" false "unexpectedly resolved";
     return ())
 
-(* No [has]/[size]/iteration is bound on [fontFaceSet], so this only checks
-   that [delete] runs without raising. *)
 let test_delete () =
-  fonts##delete bebas;
-  check "document.fonts.delete does not raise" true "";
+  check
+    "document.fonts.delete returns true for a present face"
+    (Js.to_bool (fonts##delete bebas))
+    "";
+  check
+    "document.fonts.delete returns false once already removed"
+    (not (Js.to_bool (fonts##delete bebas)))
+    "";
   return ()
 
 let run () =
   let _ : unit Promise.t =
     test_initial_state ()
     >>= test_descriptor_defaults
+    >>= test_descriptor_writes
     >>= test_load_success
     >>= test_set_load
     >>= test_ready
