@@ -99,7 +99,7 @@ let%expect_test "match with many shared continuations is a flat dispatch loop" =
         case 1:
          return 0;
       }
-      break a;
+      break;
      }
     }
     //end
@@ -190,7 +190,7 @@ let%expect_test "non-independent scopes fall through to the join where adjacent"
         case 1:
          return (n * 100 | 0) + runtime.caml_ml_string_length(s) | 0;
       }
-      break a;
+      break;
      }
     }
     //end
