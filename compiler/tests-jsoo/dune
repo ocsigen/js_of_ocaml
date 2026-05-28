@@ -54,6 +54,7 @@
  (enabled_if
   (and
    (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)
    (<> %{profile} quickjs)))
  (inline_tests
   (deps
@@ -169,7 +170,9 @@
  (modules test_runtime_value)
  (libraries js_of_ocaml)
  (enabled_if
-  (<> %{profile} wasi))
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (js_of_ocaml
   (javascript_files custom.js))
  (wasm_of_ocaml
@@ -180,7 +183,9 @@
  (name test_promise)
  (modules test_promise)
  (enabled_if
-  (<> %{profile} wasi))
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (libraries js_of_ocaml)
  (modes js wasm)
  (preprocess
@@ -191,7 +196,9 @@
  (package js_of_ocaml-lwt)
  (modules test_lwt_promise)
  (enabled_if
-  (<> %{profile} wasi))
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (libraries js_of_ocaml js_of_ocaml-lwt lwt)
  (modes js wasm)
  (preprocess
@@ -201,7 +208,9 @@
  (name test_custom_name)
  (modules test_custom_name)
  (enabled_if
-  (<> %{profile} wasi))
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)
@@ -227,7 +236,9 @@
  (name test_list_of_js_array)
  (modules test_list_of_js_array)
  (enabled_if
-  (<> %{profile} wasi))
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (inline_tests
   (modes js wasm))
  (libraries js_of_ocaml)

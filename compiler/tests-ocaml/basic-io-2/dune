@@ -3,6 +3,8 @@
  (modes js wasm)
  ;; Sys.command not available
  (enabled_if
-  (<> %{profile} wasi))
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (run node %{test} %{dep:test-file-short-lines})))

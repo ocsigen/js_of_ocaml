@@ -46,7 +46,8 @@
   (and
    %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (run
    %{bin:wasm_of_ocaml}
@@ -63,7 +64,8 @@
   (and
    %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (with-outputs-to
    %{target}
@@ -75,7 +77,8 @@
   (and
    %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (diff main.out.expected main.out)))
 
@@ -107,7 +110,8 @@
   (and
    %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (with-outputs-to
    %{target}
@@ -119,7 +123,8 @@
   (and
    %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (diff main_compile_and_load.out.expected main_compile_and_load.out)))
 
@@ -140,7 +145,8 @@
   (and
    %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (with-outputs-to
    %{target}
@@ -152,7 +158,8 @@
   (and
    %{env:WASM_OF_OCAML=false}
    (<> %{profile} with-native-effects)
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (diff dynlink_loadfile.out.expected dynlink_loadfile.out)))
 

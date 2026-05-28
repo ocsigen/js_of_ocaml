@@ -18,7 +18,8 @@
  (enabled_if
   (and
    %{env:WASM_OF_OCAML=false}
-   (<> %{profile} wasi)))
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (action
   (run node %{dep:../expect_wasm.bc.wasm.js} %{dep:test_array_wasm.ml})))
 
@@ -28,6 +29,7 @@
   (and
    (>= %{ocaml_version} 5.2)
    (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)
    %{env:WASM_OF_OCAML=false}))
  (action
   (diff test_array.ml test_array_wasm.ml.corrected)))

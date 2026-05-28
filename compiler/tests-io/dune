@@ -92,7 +92,9 @@
  (deps "accentué")
  (modes wasm)
  (enabled_if
-  (<> %{profile} wasi))
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (wasm_of_ocaml
   (compilation_mode whole_program)
   (flags
@@ -114,7 +116,9 @@
  (deps file.txt)
  (modes js wasm)
  (enabled_if
-  (<> %{profile} wasi))
+  (and
+   (<> %{profile} wasi)
+   (<> %{profile} wasi-with-native-effects)))
  (js_of_ocaml
   (compilation_mode whole_program)
   (flags
