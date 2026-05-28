@@ -28,6 +28,11 @@
 * Wasm_of_ocaml: alternative effect implementation based on the Stack Switching proposal (#2189)
 
 ## Bug fixes
+* Compiler: bound the statement-nesting depth of generated functions by
+  emitting a flat dispatch loop instead of a deep tower of nested labelled
+  blocks when a block has many sibling merge-node branch targets. Deep
+  nesting could overflow some JavaScript engine parsers (e.g. SpiderMonkey,
+  "too much recursion" at load time) (#2122)
 * Compiler: fix UGEINT bytecode lowering (returned wrong result on
   equal operands)
 * Compiler: fix reference unboxing (#2210)

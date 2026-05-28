@@ -350,6 +350,9 @@ type edge_kind =
   | Exit_loop of bool ref
   | Exit_switch of bool ref
   | Forward
+  (* Branch target reached through a flat dispatch loop: assign the
+     selector variable the given case index and [continue] the loop. *)
+  | Dispatch of Code.Var.t * int
 
 let var x = J.EVar (J.V x)
 
@@ -2068,7 +2071,56 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
         | true -> never, [ J.Labelled_statement (l, (J.Block inner, J.N)), J.N ] @ code
         | false -> never, inner @ code)
   in
-  let never_after, after = loop ~scope_stack ~fall_through new_scopes in
+  let never_after, after =
+    if List.length new_scopes > Config.Param.merge_node_max ()
+    then
+      (* Too many sibling merge-node targets: a tower of nested labelled
+         blocks would nest as deep as [new_scopes], which overflows some JS
+         engine parsers (#2122). Emit a flat selector-driven dispatch loop
+         instead, whose statement-nesting depth is constant. Each branch to a
+         target [x_i] becomes [sel = i; continue L]; branches to the join
+         become [break L]. *)
+      let sel = Code.Var.fresh () in
+      let l = J.Label.fresh () in
+      let used = ref false in
+      (* case 0 is the dispatch itself, the targets are cases 1..n *)
+      let indexed = List.mapi new_scopes ~f:(fun i x -> succ i, x) in
+      let scope_stack =
+        List.fold_left indexed ~init:scope_stack ~f:(fun ss (c, x) ->
+            (x, (l, used, Dispatch (sel, c))) :: ss)
+      in
+      let scope_stack =
+        match fall_through with
+        | Block fpc -> (fpc, (l, used, Exit_loop (ref false))) :: scope_stack
+        | Return -> scope_stack
+      in
+      (* Branches are routed through the selector, so the bodies must never
+         rely on falling through to the join; compile them with a [Return]
+         fall-through so every exit is explicit. *)
+      let dispatch_never, dispatch_code =
+        compile_conditional st queue ~fall_through:Return loc block.branch scope_stack
+      in
+      let close never code =
+        if never then code else code @ [ J.Break_statement None, J.N ]
+      in
+      let cases =
+        (int 0, close dispatch_never dispatch_code)
+        :: List.map indexed ~f:(fun (c, x) ->
+            let never, code =
+              compile_block st loc Q.empty x scope_stack ~fall_through:Return
+            in
+            int c, close never code)
+      in
+      let switch = J.Switch_statement (var sel, cases, None, []), loc in
+      let body = Js_simpl.block [ switch; J.Break_statement (Some l), J.N ] in
+      let for_loop = J.For_statement (J.Left None, None, None, body), loc in
+      let for_loop =
+        if !used then J.Labelled_statement (l, for_loop), J.N else for_loop
+      in
+      let decl = J.variable_declaration [ J.V sel, (int 0, J.N) ], J.N in
+      false, [ decl; for_loop ]
+    else loop ~scope_stack ~fall_through new_scopes
+  in
   never_after, seq @ after
 
 and compile_decision_tree kind st scope_stack loc_before cx loc_after dtree ~fall_through
@@ -2340,7 +2392,7 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
               match scope_stack with
               | [] -> assert false
               | (_, (_, _, (Forward | Exit_switch _))) :: rem -> can_skip_label rem
-              | (pc', (l', _, (Loop | Exit_loop _))) :: rem ->
+              | (pc', (l', _, (Loop | Exit_loop _ | Dispatch _))) :: rem ->
                   J.Label.equal l' l && (pc = pc' || can_skip_label rem)
             in
             let label =
@@ -2365,8 +2417,8 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
               match scope_stack with
               | [] -> assert false
               | (_, (_, _, Forward)) :: rem -> can_skip_label rem
-              | (pc', (l', _, (Loop | Exit_loop _ | Exit_switch _))) :: rem ->
-                  J.Label.equal l' l && (pc = pc' || can_skip_label rem)
+              | (pc', (l', _, (Loop | Exit_loop _ | Exit_switch _ | Dispatch _))) :: rem
+                -> J.Label.equal l' l && (pc = pc' || can_skip_label rem)
             in
             let label =
               if can_skip_label scope_stack
@@ -2386,6 +2438,18 @@ and compile_branch st loc queue ((pc, _) as cont) scope_stack ~fall_through : bo
             if debug () then Format.eprintf "(br %d)@;" pc;
             used := true;
             true, Q.flush_all queue loc [ J.Break_statement (Some l), J.N ]
+        | Some (l, used, Dispatch (sel, k)) ->
+            (* Reach the target through the enclosing dispatch loop: select the
+               corresponding case and loop back. The label is mandatory. *)
+            if debug () then Format.eprintf "(dispatch %d -> %d)@;" pc k;
+            used := true;
+            ( true
+            , Q.flush_all
+                queue
+                loc
+                [ J.Expression_statement (J.EBin (J.Eq, var sel, int k)), loc
+                ; J.Continue_statement (Some l), J.N
+                ] )
         | None -> compile_block st loc queue pc scope_stack ~fall_through)
 
 and compile_closure ctx (pc, args) (cloc : Parse_info.t option) =

@@ -101,6 +101,8 @@ module Param : sig
 
   val constant_max_depth : unit -> int
 
+  val merge_node_max : unit -> int
+
   type tc =
     | TcNone
     | TcTrampoline

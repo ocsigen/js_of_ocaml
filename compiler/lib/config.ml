@@ -181,6 +181,18 @@ module Param = struct
       ~desc:"set the maximum depth of generated literal JavaScript values"
       (int 10)
 
+  let merge_node_max =
+    (* Above this many sibling merge-node branch targets, emit a flat
+       selector-driven dispatch loop instead of a tower of nested labelled
+       blocks, to bound the statement-nesting depth of generated functions
+       (deep nesting overflows some JS engine parsers, e.g. SpiderMonkey). *)
+    p
+      ~name:"merge_node_max"
+      ~desc:
+        "set the maximum number of nested labelled blocks before switching to a flat \
+         dispatch loop"
+      (int 50)
+
   type tc =
     | TcNone
     | TcTrampoline
