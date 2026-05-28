@@ -57,7 +57,7 @@ let fonts = Dom_html.document##.fonts
 let family = "BebasNeueTest"
 
 let bebas =
-  Css_font.create_font_face (Js.string family) (Js.string "url(BebasNeue-Regular.ttf)")
+  Css_font_loading.create_font_face (Js.string family) (Js.string "url(BebasNeue-Regular.ttf)")
 
 let test_initial_state () =
   check
@@ -88,7 +88,7 @@ let test_descriptor_defaults () =
 
 let test_descriptor_writes () =
   let f =
-    Css_font.create_font_face
+    Css_font_loading.create_font_face
       (Js.string "WriteTest")
       (Js.string "url(BebasNeue-Regular.ttf)")
   in
@@ -136,7 +136,7 @@ let test_ready () =
 
 let test_load_failure () =
   let missing =
-    Css_font.create_font_face
+    Css_font_loading.create_font_face
       (Js.string "Missing Font")
       (Js.string "url(does-not-exist-xyz.ttf)")
   in
