@@ -25,8 +25,8 @@ let debug_tc = Debug.find "gen_tc"
 type cps_pair =
   { direct_c : Code.Var.t
   ; cps_c : Code.Var.t
-  ; cps_args : Code.Var.t list
-  ; cps_cont : Code.cont
+  ; (* The [Let (cps_c, Closure …)] instruction, re-emitted verbatim. *)
+    cps_code : Code.instr
   }
 
 type closure_info =
@@ -82,7 +82,7 @@ let rec collect_apply pc blocks visited tc =
 let rec collect_closures blocks l pos =
   match l with
   | Let (direct_c, Closure (args, ((pc, _) as cont), cloc))
-    :: Let (cps_c, Closure (cps_args, cps_cont, _))
+    :: (Let (cps_c, Closure (_, _, _)) as cps_code)
     :: Let (x, Prim (Extern "caml_cps_closure", [ Pv d; Pv c ]))
     :: rem
     when Var.equal d direct_c && Var.equal c cps_c ->
@@ -94,7 +94,7 @@ let rec collect_closures blocks l pos =
       ; tc
       ; pos
       ; cloc
-      ; cps_pair = Some { direct_c; cps_c; cps_args; cps_cont }
+      ; cps_pair = Some { direct_c; cps_c; cps_code }
       }
       :: l
       , rem
@@ -396,7 +396,7 @@ module Trampoline_dt = struct
         all
         ~init:(blocks, free_pc, [])
         ~f:(fun (blocks, free_pc, closures) ci ->
-          let { direct_c; cps_c; cps_args; cps_cont } =
+          let { direct_c; cps_c; cps_code } =
             match ci.cps_pair with
             | Some p -> p
             | None -> assert false
@@ -422,7 +422,6 @@ module Trampoline_dt = struct
           let inner_direct_code =
             Let (new_direct_c, Closure (ci.args, ci.cont, ci.cloc))
           in
-          let cps_code = Let (cps_c, Closure (cps_args, cps_cont, None)) in
           let pair_code =
             Let
               ( ci.f_name
@@ -497,9 +496,8 @@ let dispatch_component free_pc blocks closures_map component =
        | None ->
            let instr = Let (ci.f_name, Closure (ci.args, ci.cont, ci.cloc)) in
            free_pc, blocks, [ One { name = ci.f_name; code = instr } ]
-       | Some { direct_c; cps_c; cps_args; cps_cont } ->
+       | Some { direct_c; cps_c; cps_code } ->
            let direct_code = Let (direct_c, Closure (ci.args, ci.cont, ci.cloc)) in
-           let cps_code = Let (cps_c, Closure (cps_args, cps_cont, None)) in
            let pair_code =
              Let
                ( ci.f_name
