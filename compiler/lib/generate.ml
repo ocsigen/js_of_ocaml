@@ -2133,9 +2133,11 @@ and compile_block_no_loop st loc queue (pc : Addr.t) ~fall_through scope_stack =
       let cases = (int 0, dispatch_code) :: scope_cases ordered in
       let switch = J.Switch_statement (var sel, cases, None, []), loc in
       (* A target that falls off its case lands on the next case; the dispatch
-         and the join exit the loop. The trailing [break L] catches a case
-         that falls through to the join. *)
-      let body = Js_simpl.block [ switch; J.Break_statement (Some l), J.N ] in
+         and the join exit the loop. The trailing [break] (unlabelled: it sits
+         in the loop body, after the [switch]) catches a case that falls through
+         to the join. It must not be labelled with [l], as [l] is only emitted
+         when a branch actually routes through the loop ([!used]). *)
+      let body = Js_simpl.block [ switch; J.Break_statement None, J.N ] in
       let for_loop = J.For_statement (J.Left None, None, None, body), loc in
       let for_loop =
         if !used then J.Labelled_statement (l, for_loop), J.N else for_loop
