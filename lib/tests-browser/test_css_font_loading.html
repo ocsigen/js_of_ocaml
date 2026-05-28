@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>test_css_font</title>
+  <title>test_css_font_loading</title>
   <style>
     body {
       font-family: monospace;
@@ -70,7 +70,7 @@
     (function () {
       var s = document.createElement('script');
       s.defer = true;
-      s.src = isWasm ? 'test_css_font.bc.wasm.js' : 'test_css_font.bc.js';
+      s.src = isWasm ? 'test_css_font_loading.bc.wasm.js' : 'test_css_font_loading.bc.js';
       document.head.appendChild(s);
     })();
   </script>
@@ -78,12 +78,12 @@
 
 <body>
   <h2>CSS Font Loading API test</h2>
-  <p>Exercises <code>Css_font.create_font_face</code>, <code>FontFace#load</code>,
+  <p>Exercises <code>Css_font_loading.create_font_face</code>, <code>FontFace#load</code>,
      and the <code>document.fonts</code> <code>FontFaceSet</code> (<code>add</code>,
      <code>check</code>, <code>ready</code>), including a rejection path.</p>
   <p>
     Mode: <strong><script>document.write(isWasm ? 'wasm' : 'js')</script></strong>
-    — <script>document.write(isWasm ? '<a href="test_css_font.html">switch to js</a>' : '<a href="test_css_font.html?wasm">switch to wasm</a>')</script>
+    — <script>document.write(isWasm ? '<a href="test_css_font_loading.html">switch to js</a>' : '<a href="test_css_font_loading.html?wasm">switch to wasm</a>')</script>
   </p>
   <div id="log"></div>
   <div id="summary" class="summary"></div>
