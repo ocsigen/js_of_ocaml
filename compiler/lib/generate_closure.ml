@@ -345,6 +345,7 @@ module Trampoline_dt = struct
     ; body =
         [ Event loc
         ; Let (args_arr, Prim (Extern "%js_array", List.map args ~f:(fun x -> Pv x)))
+        ; Event Parse_info.zero
         ; Let (result, Prim (Extern "caml_direct_trampoline", [ Pv inner; Pv args_arr ]))
         ]
     ; branch = Return result
