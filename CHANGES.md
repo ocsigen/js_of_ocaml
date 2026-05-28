@@ -27,6 +27,8 @@
   `AbortController`/`AbortSignal` primitive for cancellation (#596)
 
 ## Bug fixes
+* Compiler: fix UGEINT bytecode lowering (returned wrong result on
+  equal operands)
 * Compiler: fix reference unboxing (#2210)
 * Compiler/wasm: fix int division return type to Unnormalized (#2197)
 * Compiler/wasm: preserve physical identity of empty closures (#2207)

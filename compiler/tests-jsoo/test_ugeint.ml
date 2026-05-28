@@ -36,7 +36,7 @@ let%expect_test _ =
   Printf.printf "ugt (-1) 5  = %b\n" (ugt (-1) 5);
   [%expect
     {|
-    uge 5 5     = false
+    uge 5 5     = true
     uge 5 3     = true
     uge 3 5     = false
     uge (-1) 5  = true
@@ -44,7 +44,7 @@ let%expect_test _ =
     ult 3 5     = true
     ult 5 3     = false
     ult (-1) 5  = false
-    ule 5 5     = false
+    ule 5 5     = true
     ule 3 5     = true
     ule 5 3     = false
     ule 5 (-1)  = true
